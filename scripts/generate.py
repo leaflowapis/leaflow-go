@@ -134,12 +134,21 @@ require (
 
 
 def write_module(service):
-    """给这个服务写一份 go.mod。
+    """没有 go.mod 时给这个服务补一份。
 
-    每次生成都覆盖：它是产物不是手写文件，手改会在下一次生成时被静默抹掉。要加依赖就改上面
-    那个模板——那样六个服务一起变，不会漏掉一个。
+    **只在缺的时候写，不覆盖。** 它一度是每次生成都重写的——理由是「它是产物不是手写文件」，
+    而那在依赖固定的时候成立。现在不成立了：这些模块要 require 共用类型那个包，版本由
+    `go get` / `go mod tidy` 维护，而覆盖会把那一行抹掉。
+
+    抹掉之后的表现很绕：本地 `go build` 还是好的（go.sum 和 module cache 都在），
+    **只有 CI 的「生成物是不是最新的」那一步会红**，报的是「契约改了但生成物没跟着更新」——
+    一句完全指错方向的话，因为契约根本没改。
+
+    所以模板只负责让一个新服务第一次生成时有个能编译的起点，之后归 go 的工具链管。
     """
     path = ROOT / service / "go.mod"
+    if path.exists():
+        return
     path.write_text(GO_MOD.format(service=service), encoding="utf-8")
 
 
