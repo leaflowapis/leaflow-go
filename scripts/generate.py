@@ -64,6 +64,15 @@ CLIENT_GENERATE = {"models": True, "client": True}
 # 共用类型那份只出类型：它没有 paths，生成 client 会得到一个空壳。
 SHARED_GENERATE = {"models": True}
 
+# skip-prune 只给共用类型那份开。
+#
+# 生成器默认裁掉「没被任何接口引用」的 component，而这份文件里的 Error 恰恰谁都不引用——它存在
+# 就是为了被别的契约 $ref。不开的话生成出来是一个**只有 package 一行的空文件**，而且不报错：
+# 报错的是几百公里外那七个服务包，一句 undefined: externalRef0.Error。
+#
+# 服务那边保持裁剪：那边的未引用 schema 是真的没人要。
+SHARED_OUTPUT_OPTIONS = {**{"skip-prune": True}}
+
 # SHARED 是那份共用类型在契约里的相对路径，以及它生成出来的 Go 包。
 #
 # 生成器对外部 $ref **拒绝内联**，要求你说清它对应哪个 Go 包（--import-mapping）。那比内联好：
@@ -81,14 +90,14 @@ SHARED_PACKAGE = "github.com/LeaflowNET/leaflow-go/type/v1"
 OUTPUT_OPTIONS = {"prefer-skip-optional-pointer-on-container-types": True}
 
 
-def codegen(spec, package, output, generate, scratch, mapping=None):
+def codegen(spec, package, output, generate, scratch, mapping=None, options=None):
     output.parent.mkdir(parents=True, exist_ok=True)
     config = scratch / f"{package}-{len(generate)}.codegen.yaml"
     document = {
         "package": package,
         "generate": generate,
         "output": str(output),
-        "output-options": OUTPUT_OPTIONS,
+        "output-options": {**OUTPUT_OPTIONS, **(options or {})},
     }
     if mapping:
         document["import-mapping"] = mapping
@@ -146,7 +155,7 @@ def main():
         shared_out = ROOT / "type" / "v1"
         shutil.rmtree(shared_out, ignore_errors=True)
         codegen(CONTRACTS / SHARED_SPEC, "typev1", shared_out / "types.gen.go",
-                SHARED_GENERATE, scratch)
+                SHARED_GENERATE, scratch, options=SHARED_OUTPUT_OPTIONS)
         write_module("type")
         print(f"{SHARED_SPEC:24} → type/v1")
 
