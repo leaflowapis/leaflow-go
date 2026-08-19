@@ -14,6 +14,7 @@ import (
 	"net/http"
 	"time"
 
+	externalRef0 "github.com/LeaflowNET/leaflow-go/type/v1"
 	"github.com/oapi-codegen/runtime"
 	openapi_types "github.com/oapi-codegen/runtime/types"
 )
@@ -839,12 +840,7 @@ type EnrollmentResource struct {
 }
 
 // Error defines model for Error.
-type Error struct {
-	Code    *string                `json:"code,omitempty"`
-	Message string                 `json:"message"`
-	Meta    map[string]interface{} `json:"meta,omitempty"`
-	Status  int64                  `json:"status"`
-}
+type Error = externalRef0.Error
 
 // HostInterfaceResource defines model for HostInterfaceResource.
 type HostInterfaceResource struct {
