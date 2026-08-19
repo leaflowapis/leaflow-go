@@ -1,0 +1,48 @@
+# 只有校验，没有发布。
+#
+# **Go 模块没有「发布」这回事**：打个 tag 就是发布，`go get` 直接从 git 读。所以这条流水线要
+# 保证的是另一件事——**签进仓库的 .gen.go 和契约是对得上的**。
+#
+# 那一点在 Go 这边比在 TS 那边更硬：TS 有构建步骤，发布前 tsc 一次；Go 没有，签进去的东西就是
+# 消费者拿到的东西。打错的 tag 也救不回来——tag 是不可变的。
+#
+# # 每个服务一个模块，所以要逐个编译
+#
+# `go build ./...` 在仓库根上什么都不做：这里没有根模块，每个服务目录各自是一个模块。少编一个
+# 的表现是那个服务的 SDK 发出去之后编译不过，而 CI 是绿的。
+name: ci
+
+on:
+  push:
+    branches: [main]
+    tags: ['*/v*']
+  pull_request:
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          submodules: true
+      - uses: actions/setup-go@v5
+        with:
+          go-version: '1.26'
+      - run: pip install pyyaml
+
+      - name: 生成物是最新的
+        run: |
+          python3 scripts/generate.py
+          if ! git diff --quiet; then
+            echo "::error::契约改了但生成物没跟着更新。本地跑一次 python3 scripts/generate.py 再提交。" >&2
+            git --no-pager diff --stat >&2
+            exit 1
+          fi
+
+      # 逐个模块编译。用 find 而不是写死服务名单：加一个服务时忘了改这里的表现是它从来没被编译过。
+      - name: 每个模块都编译得过
+        run: |
+          for mod in $(find . -name go.mod -not -path './leaflowapis/*' | xargs -n1 dirname | sort); do
+            echo "── $mod"
+            (cd "$mod" && go build ./... && go vet ./...)
+          done
