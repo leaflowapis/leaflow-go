@@ -1,0 +1,151 @@
+#!/usr/bin/env python3
+"""把契约编译成 Go：一个客户端包，一个服务端包。
+
+    openapi/<服务>/<版本>/openapi.yaml
+        → go/<服务>/<版本>/client.gen.go          package <服务><版本>
+        → go/<服务>/<版本>/server/server.gen.go   package <服务><版本>server
+
+一个服务一个契约文件。它一度按 OpenAPI 的节点类型拆过（paths/ 加 schemas/，一个 schema 一个
+文件），compute 拆出 74 个三十来行的文件——形式上模块化，实际是把「改一个接口」变成在十几个
+文件之间跳。哪天某个服务真的长到难受了再单独给它拆。
+
+# 客户端和服务端出自同一份契约，也在同一个 Go 模块里
+
+因为它们必须来自同一版契约。分成两个模块两个 tag 的话，服务端可以钉 v1.4、客户端钉 v1.2，
+而那正是这套东西要消除的漂移——一个 tag 管住两边，就不存在「钉得不一致」这回事。
+
+分成两个**包**是因为它们的内容真的不同（一个发请求一个收请求），而且 Go 不编译没被 import
+的包：外部用户只 import <服务>/<版本>，服务端那套一个字节都不会进他的二进制。
+
+# 身份不在契约里，也不在生成的代码里
+
+这里一度往服务端那份副本里注入 X-Leaflow-User-Id 之类的头，让身份变成 handler 的必填参数。
+那套被换掉了，因为**头没有签名**：谁能连上服务的端口，谁就能自己写一个，而挡住伪造只能靠
+「流量一定经过 waypoint」——那依赖 Service 上两个标签，少一个就漏一半，且漏了不报错。
+
+现在身份走 kit/auth：请求上那张 IAM 签发的 access token 一路带到服务，服务自己验签，
+中间件把它变成 Principal 放进 context。生成的 handler 因此完全不知道身份这回事，而
+`auth.FromContext(ctx)` 在漏挂中间件时 panic——那条「handler 拿不到空身份」的保证还在，
+只是换了执行者。
+
+顺带解决了另一件事：邮箱和姓名曾经也是头。它们是**用户资料**不是安全主体，会变，而一个会变的
+东西被复制进每一次请求就有两处不一致的时刻。要显示名字去 IAM 的 ConnectRPC 拿一次。
+"""
+import os
+import pathlib
+import shutil
+import subprocess
+import sys
+import tempfile
+
+import yaml
+
+ROOT = pathlib.Path(__file__).resolve().parent.parent
+
+# 契约是一个 submodule，钉在某一个 commit 上。
+#
+# 钉着而不是跟着 main 走，是因为那个指针同时回答了「这版 SDK 出自哪版契约」——它出现在 git
+# diff 里，review 看得见，出事时答得出。跟 main 走的话，同一个 tag 在两台机器上能生成出不同的
+# 代码，而那件事不报错。
+CONTRACTS = ROOT / "leaflowapis"
+
+# 生成器版本钉死，不用 latest：换一版会改字段名和可选性，而那种改动在服务仓库的 diff 里看起来
+# 和「契约改了」一模一样，一次 review 分不出谁改了 API、谁升了工具。
+CODEGEN = "github.com/oapi-codegen/oapi-codegen/v2/cmd/oapi-codegen@v2.8.0"
+
+# 配置文件里的键名和命令行 flag 不一样：-generate types 在配置里叫 models。写错的话它不报错，
+# 只是那一项没生成——而「少了一半类型」要等到调用方编译不过才发现。
+#
+# strict-server 给的是 (ctx, request) (response, error)——和 huma 那套形状一致，所以迁移时
+# handler 里那层业务代码几乎不用动。std-http-server 是把它接到标准库 ServeMux 上的胶水：
+# Go 1.22 之后 http.ServeMux 自己就认 method 和路径参数，不需要第三方路由。
+SERVER_GENERATE = {"models": True, "strict-server": True, "std-http-server": True}
+CLIENT_GENERATE = {"models": True, "client": True}
+
+# prefer-skip-optional-pointer-on-container-types
+#   可选的数组和 map 生成成值，不是指针。`*[]string` 除了逼每个调用点写一次解引用之外没有任何
+#   信息量——一个 nil 切片和一个「没传的切片」在这套 API 里是同一件事。
+#
+#   **不开全局那个 prefer-skip-optional-pointer**：标量必须保持指针，PATCH 靠它区分「这个字段
+#   不动」和「把它改成空」。开了的话，一次只改名字的请求会把描述一起清掉，而且不报错。
+OUTPUT_OPTIONS = {"prefer-skip-optional-pointer-on-container-types": True}
+
+
+def codegen(spec, package, output, generate, scratch):
+    output.parent.mkdir(parents=True, exist_ok=True)
+    config = scratch / f"{package}-{len(generate)}.codegen.yaml"
+    with open(config, "w", encoding="utf-8") as fh:
+        yaml.dump({
+            "package": package,
+            "generate": generate,
+            "output": str(output),
+            "output-options": OUTPUT_OPTIONS,
+        }, fh)
+    try:
+        subprocess.run(
+            ["go", "run", CODEGEN, "-config", str(config), str(spec)],
+            check=True, capture_output=True, text=True,
+            env={**os.environ, "GOFLAGS": "-mod=mod"})
+    except subprocess.CalledProcessError as failure:
+        print(failure.stderr, file=sys.stderr)
+        sys.exit(f"{output} 生成失败")
+
+
+# GO_MOD 是每个服务那份 go.mod 的模板。
+#
+# **一个服务一个模块**，不是整个仓库一个：装 compute 的人不该被拖进 monitoring 的依赖，而改
+# compute 的契约也不该 bump iam 的版本号——版本号是外部用户看得见的东西，无关的跳动会让他们
+# 以为自己漏了什么。google-cloud-go 是同一个形状（compute/go.mod = cloud.google.com/go/compute）。
+#
+# 代价是 tag 要带服务名前缀（iam/v0.1.0），忘了打前缀的表现是「发了但 go get 拿不到」。
+GO_MOD = """module github.com/LeaflowNET/leaflow-go/{service}
+
+go 1.26.0
+
+require github.com/oapi-codegen/runtime v1.7.0
+
+require (
+	github.com/apapsch/go-jsonmerge/v2 v2.0.0 // indirect
+	github.com/google/uuid v1.6.0 // indirect
+)
+"""
+
+
+def write_module(service):
+    """给这个服务写一份 go.mod。
+
+    每次生成都覆盖：它是产物不是手写文件，手改会在下一次生成时被静默抹掉。要加依赖就改上面
+    那个模板——那样六个服务一起变，不会漏掉一个。
+    """
+    path = ROOT / service / "go.mod"
+    path.write_text(GO_MOD.format(service=service), encoding="utf-8")
+
+
+def main():
+    contracts = sorted(CONTRACTS.glob("*/*/openapi.yaml"))
+    if not contracts:
+        sys.exit(f"{CONTRACTS} 下一份契约都没有")
+
+    with tempfile.TemporaryDirectory(prefix="leaflow-go-") as raw:
+        scratch = pathlib.Path(raw)
+        for contract in contracts:
+            version = contract.parent.name
+            service = contract.parent.parent.name
+            package = f"{service}{version}"
+            out = ROOT / service / version
+
+            # 生成前先删干净。覆盖式生成留得下垃圾：改一个 schema 的名字，旧那份代码没人删，
+            # 而它照样编译、照样被 go get 拉走。现在这个 SDK 的 clean-generated.mjs 记着
+            # v0.1.0 → v0.2.0 那次重命名留下了 584 个没人要的文件。
+            shutil.rmtree(out, ignore_errors=True)
+
+            codegen(contract, package, out / "client.gen.go", CLIENT_GENERATE, scratch)
+            codegen(contract, f"{package}server", out / "server" / "server.gen.go",
+                    SERVER_GENERATE, scratch)
+
+            write_module(service)
+            print(f"{service}/{version:8} → {service}/{version}")
+
+
+if __name__ == "__main__":
+    main()
