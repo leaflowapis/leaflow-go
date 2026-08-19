@@ -61,6 +61,16 @@ CODEGEN = "github.com/oapi-codegen/oapi-codegen/v2/cmd/oapi-codegen@v2.8.0"
 # Go 1.22 之后 http.ServeMux 自己就认 method 和路径参数，不需要第三方路由。
 SERVER_GENERATE = {"models": True, "strict-server": True, "std-http-server": True}
 CLIENT_GENERATE = {"models": True, "client": True}
+# 共用类型那份只出类型：它没有 paths，生成 client 会得到一个空壳。
+SHARED_GENERATE = {"models": True}
+
+# SHARED 是那份共用类型在契约里的相对路径，以及它生成出来的 Go 包。
+#
+# 生成器对外部 $ref **拒绝内联**，要求你说清它对应哪个 Go 包（--import-mapping）。那比内联好：
+# 内联的话十三份契约会得到十三个长得一样的 Go 类型，调用方拿 compute 的 Error 去喂一个收 iam
+# Error 的函数会编译不过——而它们本来就是同一个东西。
+SHARED_SPEC = "type/v1/error.yaml"
+SHARED_PACKAGE = "github.com/LeaflowNET/leaflow-go/type/v1"
 
 # prefer-skip-optional-pointer-on-container-types
 #   可选的数组和 map 生成成值，不是指针。`*[]string` 除了逼每个调用点写一次解引用之外没有任何
@@ -71,16 +81,19 @@ CLIENT_GENERATE = {"models": True, "client": True}
 OUTPUT_OPTIONS = {"prefer-skip-optional-pointer-on-container-types": True}
 
 
-def codegen(spec, package, output, generate, scratch):
+def codegen(spec, package, output, generate, scratch, mapping=None):
     output.parent.mkdir(parents=True, exist_ok=True)
     config = scratch / f"{package}-{len(generate)}.codegen.yaml"
+    document = {
+        "package": package,
+        "generate": generate,
+        "output": str(output),
+        "output-options": OUTPUT_OPTIONS,
+    }
+    if mapping:
+        document["import-mapping"] = mapping
     with open(config, "w", encoding="utf-8") as fh:
-        yaml.dump({
-            "package": package,
-            "generate": generate,
-            "output": str(output),
-            "output-options": OUTPUT_OPTIONS,
-        }, fh)
+        yaml.dump(document, fh)
     try:
         subprocess.run(
             ["go", "run", CODEGEN, "-config", str(config), str(spec)],
@@ -128,6 +141,15 @@ def main():
 
     with tempfile.TemporaryDirectory(prefix="leaflow-go-") as raw:
         scratch = pathlib.Path(raw)
+
+        # 共用类型先生成：各服务的包会 import 它。
+        shared_out = ROOT / "type" / "v1"
+        shutil.rmtree(shared_out, ignore_errors=True)
+        codegen(CONTRACTS / SHARED_SPEC, "typev1", shared_out / "types.gen.go",
+                SHARED_GENERATE, scratch)
+        write_module("type")
+        print(f"{SHARED_SPEC:24} → type/v1")
+
         for contract in contracts:
             version = contract.parent.name
             service = contract.parent.parent.name
@@ -139,9 +161,11 @@ def main():
             # v0.1.0 → v0.2.0 那次重命名留下了 584 个没人要的文件。
             shutil.rmtree(out, ignore_errors=True)
 
-            codegen(contract, package, out / "client.gen.go", CLIENT_GENERATE, scratch)
+            # 相对路径按契约文件自己的位置算：<服务>/<版本>/openapi.yaml 到共用类型是 ../../
+            mapping = {f"../../{SHARED_SPEC}": SHARED_PACKAGE}
+            codegen(contract, package, out / "client.gen.go", CLIENT_GENERATE, scratch, mapping)
             codegen(contract, f"{package}server", out / "server" / "server.gen.go",
-                    SERVER_GENERATE, scratch)
+                    SERVER_GENERATE, scratch, mapping)
 
             write_module(service)
             print(f"{service}/{version:8} → {service}/{version}")
