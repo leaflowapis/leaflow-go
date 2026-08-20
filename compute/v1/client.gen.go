@@ -2224,10 +2224,7 @@ type ClientInterface interface {
 
 	// RenameSecurityGroupWithBody 重命名安全组
 	//
-	// 仅可修改名称，规则请用规则接口。
-	//
-	// 改的是**平台上这个安全组的名字**，网络后端那一侧不动——后端那个安全组的名字是它的 id，
-	// 排障时按 id 找，不按名字找。
+	// 仅可修改名称，规则请用规则接口。.
 	//
 	// Takes any type of body and a specified content type.
 	//
@@ -2236,10 +2233,7 @@ type ClientInterface interface {
 
 	// RenameSecurityGroup 重命名安全组
 	//
-	// 仅可修改名称，规则请用规则接口。
-	//
-	// 改的是**平台上这个安全组的名字**，网络后端那一侧不动——后端那个安全组的名字是它的 id，
-	// 排障时按 id 找，不按名字找。
+	// 仅可修改名称，规则请用规则接口。.
 	//
 	// Takes a body of the `application/json` content type.
 	//
@@ -4199,10 +4193,7 @@ func (c *Client) GetSecurityGroup(ctx context.Context, securityGroupId openapi_t
 
 // RenameSecurityGroupWithBody 重命名安全组
 //
-// 仅可修改名称，规则请用规则接口。
-//
-// 改的是**平台上这个安全组的名字**，网络后端那一侧不动——后端那个安全组的名字是它的 id，
-// 排障时按 id 找，不按名字找。
+// 仅可修改名称，规则请用规则接口。.
 //
 // Takes any type of body and a specified content type.
 //
@@ -4221,10 +4212,7 @@ func (c *Client) RenameSecurityGroupWithBody(ctx context.Context, securityGroupI
 
 // RenameSecurityGroup 重命名安全组
 //
-// 仅可修改名称，规则请用规则接口。
-//
-// 改的是**平台上这个安全组的名字**，网络后端那一侧不动——后端那个安全组的名字是它的 id，
-// 排障时按 id 找，不按名字找。
+// 仅可修改名称，规则请用规则接口。.
 //
 // Takes a body of the `application/json` content type.
 //
@@ -8897,10 +8885,7 @@ type ClientWithResponsesInterface interface {
 
 	// RenameSecurityGroupWithBodyWithResponse 重命名安全组
 	//
-	// 仅可修改名称，规则请用规则接口。
-	//
-	// 改的是**平台上这个安全组的名字**，网络后端那一侧不动——后端那个安全组的名字是它的 id，
-	// 排障时按 id 找，不按名字找。
+	// 仅可修改名称，规则请用规则接口。.
 	//
 	// Takes any type of body and a specified content type, and returns a wrapper object for the known response body format(s).
 	//
@@ -8909,10 +8894,7 @@ type ClientWithResponsesInterface interface {
 
 	// RenameSecurityGroupWithResponse 重命名安全组
 	//
-	// 仅可修改名称，规则请用规则接口。
-	//
-	// 改的是**平台上这个安全组的名字**，网络后端那一侧不动——后端那个安全组的名字是它的 id，
-	// 排障时按 id 找，不按名字找。
+	// 仅可修改名称，规则请用规则接口。.
 	//
 	// Takes a body of the `application/json` content type, and returns a wrapper object for the known response body format(s).
 	//
@@ -14465,10 +14447,7 @@ func (c *ClientWithResponses) GetSecurityGroupWithResponse(ctx context.Context, 
 
 // RenameSecurityGroupWithBodyWithResponse 重命名安全组
 //
-// 仅可修改名称，规则请用规则接口。
-//
-// 改的是**平台上这个安全组的名字**，网络后端那一侧不动——后端那个安全组的名字是它的 id，
-// 排障时按 id 找，不按名字找。
+// 仅可修改名称，规则请用规则接口。.
 //
 // Takes any type of body and a specified content type, and returns a wrapper object for the known response body format(s).
 //
@@ -14483,10 +14462,7 @@ func (c *ClientWithResponses) RenameSecurityGroupWithBodyWithResponse(ctx contex
 
 // RenameSecurityGroupWithResponse 重命名安全组
 //
-// 仅可修改名称，规则请用规则接口。
-//
-// 改的是**平台上这个安全组的名字**，网络后端那一侧不动——后端那个安全组的名字是它的 id，
-// 排障时按 id 找，不按名字找。
+// 仅可修改名称，规则请用规则接口。.
 //
 // Takes a body of the `application/json` content type, and returns a wrapper object for the known response body format(s).
 //

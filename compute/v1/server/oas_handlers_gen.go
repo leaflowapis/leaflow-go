@@ -14700,10 +14700,7 @@ func (s *Server) handleRenamePrivateNetworkRequest(args [1]string, argsEscaped b
 
 // handleRenameSecurityGroupRequest handles rename-security-group operation.
 //
-// 仅可修改名称，规则请用规则接口。
-//
-// 改的是平台上这个安全组的名字，网络后端那一侧不动——后端那个安全组的名字是它的
-// id， 排障时按 id 找，不按名字找。.
+// 仅可修改名称，规则请用规则接口。.
 //
 // PATCH /api/v1/security-groups/{securityGroupId}
 func (s *Server) handleRenameSecurityGroupRequest(args [1]string, argsEscaped bool, w http.ResponseWriter, r *http.Request) {

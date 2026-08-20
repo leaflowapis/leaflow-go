@@ -513,10 +513,7 @@ type Handler interface {
 	RenamePrivateNetwork(ctx context.Context, req *RenamePrivateNetworkRequestBody, params RenamePrivateNetworkParams) (*PrivateNetworkResource, error)
 	// RenameSecurityGroup implements rename-security-group operation.
 	//
-	// 仅可修改名称，规则请用规则接口。
-	//
-	// 改的是平台上这个安全组的名字，网络后端那一侧不动——后端那个安全组的名字是它的
-	// id， 排障时按 id 找，不按名字找。.
+	// 仅可修改名称，规则请用规则接口。.
 	//
 	// PATCH /api/v1/security-groups/{securityGroupId}
 	RenameSecurityGroup(ctx context.Context, req *RenameSecurityGroupRequestBody, params RenameSecurityGroupParams) (*SecurityGroupResource, error)
