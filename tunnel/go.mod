@@ -7,7 +7,7 @@ require github.com/oapi-codegen/runtime v1.7.0
 require github.com/rogpeppe/go-internal v1.9.0 // indirect
 
 require (
-	github.com/getkin/kin-openapi v0.147.0
+	github.com/getkin/kin-openapi v0.147.0 // indirect
 	github.com/go-openapi/jsonpointer v0.22.5 // indirect
 	github.com/go-openapi/swag/jsonname v0.25.5 // indirect
 	github.com/oasdiff/yaml v0.1.1 // indirect
