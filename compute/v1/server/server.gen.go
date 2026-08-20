@@ -14,7 +14,7 @@ import (
 	"net/http"
 	"time"
 
-	externalRef0 "github.com/LeaflowNET/leaflow-go/type/v1"
+	externalRef0 "github.com/leaflowapis/leaflow-go/type/v1"
 	"github.com/oapi-codegen/runtime"
 	openapi_types "github.com/oapi-codegen/runtime/types"
 )
