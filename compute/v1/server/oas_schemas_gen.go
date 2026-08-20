@@ -18,8 +18,8 @@ func (s *ErrorStatusCode) Error() string {
 // Ref: #/components/schemas/ActOnInstanceRequestBody
 type ActOnInstanceRequestBody struct {
 	Action ActOnInstanceRequestBodyAction `json:"action"`
-	// 仅适用于
-	// reboot。强制重启不等待操作系统正常关闭，未落盘的数据会丢失，用于系统已无响应的情况.
+	// Applies to `reboot` only. A forced reboot does not wait for the operating system to shut down and
+	// unwritten data is lost; use it when the system is unresponsive.
 	Force OptBool `json:"force"`
 }
 
@@ -93,7 +93,7 @@ func (s *ActOnInstanceRequestBodyAction) UnmarshalText(data []byte) error {
 
 // Ref: #/components/schemas/AllocateFloatingIPRequestBody
 type AllocateFloatingIPRequestBody struct {
-	// 指定要申领的地址。留空时由平台自动分配.
+	// The address to allocate. Allocated by the platform when omitted.
 	Address          OptString `json:"address"`
 	PrivateNetworkID uuid.UUID `json:"private_network_id"`
 }
@@ -180,15 +180,15 @@ func (s *BackupListResponseBody) SetItems(val []BackupResource) {
 
 // Ref: #/components/schemas/BackupResource
 type BackupResource struct {
-	// 源云硬盘所在的可用区。恢复时可选择本地区的其他可用区.
+	// Availability zone of the source disk. A restore may target another zone in the same region.
 	AvailabilityZone string    `json:"availability_zone"`
 	CreatedAt        time.Time `json:"created_at"`
 	ID               uuid.UUID `json:"id"`
 	Name             string    `json:"name"`
 	RegionCode       string    `json:"region_code"`
-	// 创建备份时源云硬盘的容量。恢复出的云硬盘不能小于此容量.
+	// Capacity of the source disk when the backup was created. A restored disk cannot be smaller than this.
 	SizeGB int64 `json:"size_gb"`
-	// 备份来源。该云硬盘删除后本备份仍然可用.
+	// The disk this backup was taken from. The backup remains usable after that disk is deleted.
 	SourceDiskID uuid.UUID            `json:"source_disk_id"`
 	Status       BackupResourceStatus `json:"status"`
 }
@@ -377,7 +377,7 @@ func (s *BindFloatingIPRequestBody) SetPortID(val uuid.UUID) {
 
 // Ref: #/components/schemas/ConsoleOutputResponseBody
 type ConsoleOutputResponseBody struct {
-	// 串口输出的原始文本，行序与云服务器内一致.
+	// Raw text of the console output, in the same line order as inside the instance.
 	Output string `json:"output"`
 }
 
@@ -393,7 +393,7 @@ func (s *ConsoleOutputResponseBody) SetOutput(val string) {
 
 // Ref: #/components/schemas/ConsoleResponseBody
 type ConsoleResponseBody struct {
-	// 远程控制台的连接地址，一次性使用且数分钟后失效.
+	// Connection address of the remote console; single-use and expires within minutes.
 	ConsoleURL string `json:"console_url"`
 }
 
@@ -438,7 +438,7 @@ type CreateDiskRequestBody struct {
 	DiskTypeID uuid.UUID `json:"disk_type_id"`
 	Name       string    `json:"name"`
 	SizeGB     int64     `json:"size_gb"`
-	// 从该快照恢复。提供时容量只需不小于快照本身.
+	// Restore from this snapshot. When given, the capacity need only be no smaller than the snapshot.
 	SnapshotID OptUUID `json:"snapshot_id"`
 }
 
@@ -485,9 +485,9 @@ func (s *CreateDiskRequestBody) SetSnapshotID(val OptUUID) {
 // Ref: #/components/schemas/CreatePortRequestBody
 type CreatePortRequestBody struct {
 	Name OptString `json:"name"`
-	// 指定私网地址。留空时自动分配.
+	// The private address to assign. Allocated automatically when omitted.
 	PrivateIP OptString `json:"private_ip"`
-	// 至少一个，且必须属于同一个私有网络.
+	// At least one, and all must belong to the same private network.
 	SecurityGroupIds []uuid.UUID `json:"security_group_ids"`
 	SubnetID         uuid.UUID   `json:"subnet_id"`
 }
@@ -534,7 +534,7 @@ func (s *CreatePortRequestBody) SetSubnetID(val uuid.UUID) {
 
 // Ref: #/components/schemas/CreatePrivateImageRequestBody
 type CreatePrivateImageRequestBody struct {
-	// 制作依据其系统盘，数据盘不包含在内.
+	// Captured from the system disk of this instance; data disks are not included.
 	InstanceID uuid.UUID `json:"instance_id"`
 	Name       string    `json:"name"`
 }
@@ -561,7 +561,7 @@ func (s *CreatePrivateImageRequestBody) SetName(val string) {
 
 // Ref: #/components/schemas/CreatePrivateNetworkRequestBody
 type CreatePrivateNetworkRequestBody struct {
-	// 必须是 RFC1918 的私有网段，掩码在 /8 到 /24 之间，例如 10.0.0.0/16.
+	// Must be an RFC 1918 private CIDR with a prefix length between /8 and /24, for example `10.0.0.0/16`.
 	Cidr       string `json:"cidr"`
 	Name       string `json:"name"`
 	RegionCode string `json:"region_code"`
@@ -600,9 +600,9 @@ func (s *CreatePrivateNetworkRequestBody) SetRegionCode(val string) {
 // Ref: #/components/schemas/CreateRouteRequestBody
 type CreateRouteRequestBody struct {
 	Description OptString `json:"description"`
-	// 目的网段。不能为 0.0.0.0/0，也不能为某个子网自身的网段.
+	// Destination CIDR. It cannot be `0.0.0.0/0`, nor the CIDR of a subnet of this network.
 	Destination string `json:"destination"`
-	// 云服务器的私网地址，必须落在该私有网络的某个子网内.
+	// Private address of an instance; must fall inside a subnet of this private network.
 	Nexthop string `json:"nexthop"`
 }
 
@@ -678,13 +678,13 @@ type CreateSecurityRuleRequestBody struct {
 	Description OptString                              `json:"description"`
 	Direction   CreateSecurityRuleRequestBodyDirection `json:"direction"`
 	Ethertype   CreateSecurityRuleRequestBodyEthertype `json:"ethertype"`
-	// ICMP 协议下表示 code（0–255），而非端口.
+	// Denotes the ICMP code (0–255) rather than a port when the protocol is ICMP.
 	PortRangeMax OptNilInt64 `json:"port_range_max"`
-	// ICMP 协议下表示 type（0–255），而非端口.
+	// Denotes the ICMP type (0–255) rather than a port when the protocol is ICMP.
 	PortRangeMin OptNilInt64 `json:"port_range_min"`
-	// 如 tcp、udp、icmp、ipv6-icmp。留空表示全部协议.
+	// For example `tcp`, `udp`, `icmp` or `ipv6-icmp`. All protocols when omitted.
 	Protocol OptString `json:"protocol"`
-	// 留空等同于 0.0.0.0/0 或 ::/0.
+	// Equivalent to `0.0.0.0/0` or `::/0` when omitted.
 	RemoteIPPrefix OptString `json:"remote_ip_prefix"`
 }
 
@@ -868,7 +868,7 @@ func (s *CreateSnapshotRequestBody) SetName(val string) {
 
 // Ref: #/components/schemas/CreateSubnetRequestBody
 type CreateSubnetRequestBody struct {
-	// 必须落在私有网络的网段内，且不能与已有子网重叠.
+	// Must fall inside the CIDR of the private network and must not overlap an existing subnet.
 	Cidr string `json:"cidr"`
 	Name string `json:"name"`
 }
@@ -947,14 +947,14 @@ func (s *DiskListResponseBody) SetItems(val []DiskResource) {
 // Ref: #/components/schemas/DiskResource
 type DiskResource struct {
 	AttachedInstanceID NilString `json:"attached_instance_id"`
-	// 云硬盘实际所在的可用区。挂载时云服务器必须位于同一可用区.
+	// Availability zone the disk actually resides in. An instance must be in the same zone to attach it.
 	AvailabilityZone string    `json:"availability_zone"`
 	CreatedAt        time.Time `json:"created_at"`
-	// 系统分配的设备名，在云服务器内看到的即为该名称.
+	// Device name assigned by the system, as seen inside the instance.
 	Device     NilString `json:"device"`
 	DiskTypeID uuid.UUID `json:"disk_type_id"`
 	ID         uuid.UUID `json:"id"`
-	// 系统盘随云服务器一并释放，不能卸载也不能单独删除.
+	// A system disk is released with its instance and can be neither detached nor deleted individually.
 	IsSystem   bool               `json:"is_system"`
 	Name       string             `json:"name"`
 	RegionCode string             `json:"region_code"`
@@ -1463,7 +1463,7 @@ type FloatingIPResource struct {
 	DetachedAt      NilDateTime `json:"detached_at"`
 	ID              uuid.UUID   `json:"id"`
 	RegionCode      string      `json:"region_code"`
-	// Idle 表示尚未绑定到网卡.
+	// `idle` means the address is not bound to a network interface.
 	Status FloatingIPResourceStatus `json:"status"`
 }
 
@@ -1557,7 +1557,7 @@ func (s *FloatingIPResource) SetStatus(val FloatingIPResourceStatus) {
 	s.Status = val
 }
 
-// Idle 表示尚未绑定到网卡.
+// `idle` means the address is not bound to a network interface.
 type FloatingIPResourceStatus string
 
 const (
@@ -1601,10 +1601,10 @@ func (s *FloatingIPResourceStatus) UnmarshalText(data []byte) error {
 
 // Ref: #/components/schemas/IPv6ResponseBody
 type IPv6ResponseBody struct {
-	// 已分配的 /64 前缀，未启用时为空.
+	// The allocated /64 prefix; empty while IPv6 is disabled.
 	Cidr    string `json:"cidr"`
 	Enabled bool   `json:"enabled"`
-	// 为 active 时表示 IPv6 已完全可用.
+	// `active` means IPv6 is fully available.
 	Status IPv6ResponseBodyStatus `json:"status"`
 }
 
@@ -1638,7 +1638,7 @@ func (s *IPv6ResponseBody) SetStatus(val IPv6ResponseBodyStatus) {
 	s.Status = val
 }
 
-// 为 active 时表示 IPv6 已完全可用.
+// `active` means IPv6 is fully available.
 type IPv6ResponseBodyStatus string
 
 const (
@@ -1712,7 +1712,7 @@ type ImageResource struct {
 	OsFamily     string    `json:"os_family"`
 	OsVersion    string    `json:"os_version"`
 	RegionCode   string    `json:"region_code"`
-	// False 表示由该镜像创建的云服务器只能通过重装系统设置新密码.
+	// False means a new password can only be set by rebuilding an instance created from this image.
 	SupportsPasswordReset bool `json:"supports_password_reset"`
 }
 
@@ -1825,39 +1825,41 @@ func (s *InstanceListResponseBody) SetItems(val []InstanceResource) {
 type InstanceResource struct {
 	AvailabilityZone string    `json:"availability_zone"`
 	CreatedAt        time.Time `json:"created_at"`
-	// 云服务器内的主机名，等于云服务器 id.
+	// Hostname inside the instance; equals the instance id.
 	Hostname string    `json:"hostname"`
 	ID       uuid.UUID `json:"id"`
-	// 从平台提供的镜像创建时非空.
+	// Non-empty when the instance was created from a platform image.
 	ImageID NilUUID `json:"image_id"`
-	// 当前生效的机型，即当前计费依据.
+	// The instance type in effect, and the basis for billing.
 	InstanceTypeID uuid.UUID `json:"instance_type_id"`
-	// 云服务器主网卡的 IPv6 地址。私有网络启用 IPv6 后自动下发.
+	// IPv6 address of the primary network interface. Assigned automatically once IPv6 is enabled on the
+	// private network.
 	Ipv6Address NilString `json:"ipv6_address"`
 	Name        string    `json:"name"`
-	// 非空表示存在待确认的变配。确认后该机型生效，回滚则丢弃.
+	// Non-empty while a resize awaits confirmation. Confirming puts this type into effect, reverting
+	// discards it.
 	PendingInstanceTypeID NilUUID `json:"pending_instance_type_id"`
-	// 从自制的私有镜像创建时非空.
+	// Non-empty when the instance was created from a private image.
 	PrivateImageID NilUUID `json:"private_image_id"`
-	// 云服务器的内网地址.
+	// Private address of the instance.
 	PrivateIP NilString `json:"private_ip"`
-	// 云服务器主网卡所在的私有网络.
+	// Private network of the primary network interface.
 	PrivateNetworkID NilString `json:"private_network_id"`
-	// 云服务器主网卡上绑定的公网 IPv4，未绑定时为空数组.
+	// Floating IPv4 addresses bound to the primary network interface; an empty array when none are bound.
 	PublicIps  []string `json:"public_ips"`
 	RegionCode string   `json:"region_code"`
-	// 只有 running 和 stopped
-	// 可以下命令，其余取值都表示云服务器正在变更中，此时开机、关机、重启、变配、重装、重置密码都会被拒绝。
+	// Only `running` and `stopped` accept commands. Every other value means the instance is changing, and
+	// start, stop, reboot, resize, rebuild and password reset are all rejected.
 	//
-	// `transitioning`
-	// 是「正在执行某项变更，但不属于上面任何一类」的兜底取值，见到它继续轮询即可，不代表出错。
+	// `transitioning` is the fallback for a change that falls into none of the categories above. It does
+	// not indicate an error; keep polling.
 	//
-	// `resize_verifying`
-	// 不是瞬态：变配已在新规格上启动，会一直停在这里直到确认或回滚，期间新旧两份规格同时计费。.
+	// `resize_verifying` is not transient: the instance is running on the new size and stays there until
+	// the resize is confirmed or reverted, with both sizes billed in the meantime.
 	Status InstanceResourceStatus `json:"status"`
-	// 云服务器主网卡所在的子网.
+	// Subnet of the primary network interface.
 	SubnetID NilString `json:"subnet_id"`
-	// 非空表示已被平台停服，需先解除后才能操作.
+	// Non-empty once the platform has suspended the instance, which must be lifted before any operation.
 	SuspendedAt NilDateTime `json:"suspended_at"`
 	UpdatedAt   time.Time   `json:"updated_at"`
 }
@@ -2042,14 +2044,14 @@ func (s *InstanceResource) SetUpdatedAt(val time.Time) {
 	s.UpdatedAt = val
 }
 
-// 只有 running 和 stopped
-// 可以下命令，其余取值都表示云服务器正在变更中，此时开机、关机、重启、变配、重装、重置密码都会被拒绝。
+// Only `running` and `stopped` accept commands. Every other value means the instance is changing, and
+// start, stop, reboot, resize, rebuild and password reset are all rejected.
 //
-// `transitioning`
-// 是「正在执行某项变更，但不属于上面任何一类」的兜底取值，见到它继续轮询即可，不代表出错。
+// `transitioning` is the fallback for a change that falls into none of the categories above. It does
+// not indicate an error; keep polling.
 //
-// `resize_verifying`
-// 不是瞬态：变配已在新规格上启动，会一直停在这里直到确认或回滚，期间新旧两份规格同时计费。.
+// `resize_verifying` is not transient: the instance is running on the new size and stays there until
+// the resize is confirmed or reverted, with both sizes billed in the meantime.
 type InstanceResourceStatus string
 
 const (
@@ -2178,7 +2180,7 @@ func (s *InstanceTypeListResponseBody) SetItems(val []InstanceTypeResource) {
 
 // Ref: #/components/schemas/InstanceTypeResource
 type InstanceTypeResource struct {
-	// 该机型所属的可用区。云硬盘必须位于同一可用区才能挂载.
+	// Availability zone of this instance type. A disk must be in the same zone to be attached.
 	AvailabilityZoneCode string    `json:"availability_zone_code"`
 	ID                   uuid.UUID `json:"id"`
 	MaxBandwidthMbps     int64     `json:"max_bandwidth_mbps"`
@@ -2282,27 +2284,29 @@ func (s *InstanceTypeResource) SetVcpus(val int64) {
 
 // Ref: #/components/schemas/LaunchInstanceRequestBody
 type LaunchInstanceRequestBody struct {
-	// 一次创建的台数，留空为 1。多台时名称自动编号.
+	// Number of instances to create; 1 when omitted. Names are numbered automatically for several.
 	Count OptInt64 `json:"count"`
-	// 由平台生成随机密码，仅在本次响应中返回.
+	// Have the platform generate a random password, returned only in this response.
 	GeneratePassword OptBool `json:"generate_password"`
-	// 平台提供的镜像。与 private_image_id 二选一.
+	// A platform image. Exactly one of this and `private_image_id`.
 	ImageID        OptUUID   `json:"image_id"`
 	InstanceTypeID uuid.UUID `json:"instance_type_id"`
 	Name           string    `json:"name"`
-	// Root 的登录密码。留空时仅使用项目的 SSH 公钥.
+	// Root password. Only the SSH public keys of the project are used when omitted.
 	Password OptString `json:"password"`
-	// 使用已有网卡（可预先绑定公网 IP）。与 subnet_id
-	// 二选一；使用时只能创建一台.
+	// Use an existing network interface, which may already have a floating IP bound. Exactly one of this
+	// and `subnet_id`; only one instance can be created when it is used.
 	PortID OptUUID `json:"port_id"`
-	// 自制镜像。与 image_id 二选一.
+	// A private image. Exactly one of this and `image_id`.
 	PrivateImageID OptUUID `json:"private_image_id"`
-	// 系统盘容量（GB）。留空时按镜像要求与平台下限自动选择.
+	// System disk capacity in GB. Chosen automatically from the requirement of the image and the platform
+	// minimum when omitted.
 	RootDiskGB OptInt64 `json:"root_disk_gb"`
-	// 新建主网卡时必填，至少一个；不会自动使用默认安全组。使用 port_id
-	// 时忽略——那张网卡的安全组在创建它时已经定了.
+	// Required when a primary network interface is created, at least one; the default security group is
+	// not applied automatically. Ignored together with `port_id`, as the security groups of that interface
+	// were fixed when it was created.
 	SecurityGroupIds OptNilUUIDArray `json:"security_group_ids"`
-	// 在该子网内新建主网卡。与 port_id 二选一.
+	// Create the primary network interface in this subnet. Exactly one of this and `port_id`.
 	SubnetID OptUUID `json:"subnet_id"`
 }
 
@@ -2418,11 +2422,11 @@ func (s *LaunchInstanceRequestBody) SetSubnetID(val OptUUID) {
 
 // Ref: #/components/schemas/LaunchInstanceResponseBody
 type LaunchInstanceResponseBody struct {
-	// 非空表示只成功创建了部分云服务器，其余因该原因中止.
+	// Non-empty when only some of the instances were created, stating why the sequence stopped.
 	Failure NilString `json:"failure"`
-	// 按请求顺序返回，单台创建时也是数组.
+	// Returned in request order; an array even for a single instance.
 	Instances []InstanceResource `json:"instances"`
-	// 仅在本次响应中返回，请及时保存。批量创建时所有云服务器共用它.
+	// Returned only in this response; store it immediately. All instances of a batch share it.
 	Password string `json:"password"`
 }
 
@@ -2458,7 +2462,7 @@ func (s *LaunchInstanceResponseBody) SetPassword(val string) {
 
 // Ref: #/components/schemas/NextFreeCidrResponseBody
 type NextFreeCidrResponseBody struct {
-	// 为空表示该私有网络内已无满足该掩码的空闲网段.
+	// Empty when the private network has no free CIDR left for that prefix length.
 	Cidr string `json:"cidr"`
 }
 
@@ -2680,20 +2684,20 @@ func (s *OperationLogListResponseBody) SetTotal(val int64) {
 
 // Ref: #/components/schemas/OperationLogResource
 type OperationLogResource struct {
-	// 操作名，与接口的 operation id 一致.
+	// Name of the operation; matches the operation id of the endpoint.
 	Action string `json:"action"`
-	// 发起该操作的用户。平台执行时为空.
+	// The user who initiated the operation. Empty when the platform performed it.
 	Actor NilString `json:"actor"`
-	// True 表示由平台代为执行.
+	// True when the operation was performed by the platform.
 	ByPlatform bool      `json:"by_platform"`
 	CreatedAt  time.Time `json:"created_at"`
-	// 失败时的简要原因.
+	// Brief reason for the failure.
 	Failure NilString `json:"failure"`
 	ID      uuid.UUID `json:"id"`
-	// 该次请求的路径与查询参数。密码一类的字段已被隐去.
+	// Path and query parameters of the request. Fields such as passwords are redacted.
 	Payload    OperationLogResourcePayload `json:"payload"`
 	RegionCode NilString                   `json:"region_code"`
-	// 创建类操作为空：新资源的 id 在响应中，不在请求路径上.
+	// Empty for create operations: the id of the new resource is in the response, not in the request path.
 	SubjectID   string `json:"subject_id"`
 	SubjectType string `json:"subject_type"`
 	Succeeded   bool   `json:"succeeded"`
@@ -2809,7 +2813,7 @@ func (s *OperationLogResource) SetSucceeded(val bool) {
 	s.Succeeded = val
 }
 
-// 该次请求的路径与查询参数。密码一类的字段已被隐去.
+// Path and query parameters of the request. Fields such as passwords are redacted.
 type OperationLogResourcePayload map[string]jx.Raw
 
 func (s *OperationLogResourcePayload) init() OperationLogResourcePayload {
@@ -3207,13 +3211,14 @@ type PortResource struct {
 	AttachedInstanceID NilString `json:"attached_instance_id"`
 	ID                 uuid.UUID `json:"id"`
 	Ipv6Address        NilString `json:"ipv6_address"`
-	// 主网卡随云服务器一并创建和释放，不可单独卸载.
+	// A primary network interface is created and released with its instance and cannot be detached
+	// individually.
 	IsPrimary        bool      `json:"is_primary"`
 	MAC              NilString `json:"mac"`
 	Name             string    `json:"name"`
 	PrivateIP        NilString `json:"private_ip"`
 	PrivateNetworkID uuid.UUID `json:"private_network_id"`
-	// 绑在这张网卡上的公网 IPv4，未绑定时为空数组.
+	// Floating IPv4 addresses bound to this network interface; an empty array when none are bound.
 	PublicIps []string  `json:"public_ips"`
 	SubnetID  uuid.UUID `json:"subnet_id"`
 }
@@ -3337,24 +3342,24 @@ func (s *PrivateImageListResponseBody) SetItems(val []PrivateImageResource) {
 type PrivateImageResource struct {
 	Architecture string    `json:"architecture"`
 	CreatedAt    time.Time `json:"created_at"`
-	// 制作失败的原因，仅在 status 为 error 时非空.
+	// Reason the capture failed; non-empty only when `status` is `error`.
 	Failure NilString `json:"failure"`
 	ID      uuid.UUID `json:"id"`
-	// 使用本镜像创建云服务器时，系统盘不能小于此容量.
+	// The system disk of an instance created from this image cannot be smaller than this.
 	MinDiskGB int64 `json:"min_disk_gb"`
-	// 使用本镜像创建云服务器时，机型内存不能小于此容量.
+	// The instance type of an instance created from this image must have at least this much memory.
 	MinRAMMB  int64  `json:"min_ram_mb"`
 	Name      string `json:"name"`
 	OsFamily  string `json:"os_family"`
 	OsVersion string `json:"os_version"`
-	// 镜像只能用于所在地区.
+	// An image can only be used in the region that holds it.
 	RegionCode string `json:"region_code"`
-	// 镜像占用的存储容量，制作完成前为 0.
+	// Storage occupied by the image; 0 until the capture completes.
 	SizeBytes int64 `json:"size_bytes"`
-	// 制作来源。该云服务器释放后本镜像仍然可用.
+	// The instance this image was captured from. The image remains usable after that instance is released.
 	SourceInstanceID NilUUID                    `json:"source_instance_id"`
 	Status           PrivateImageResourceStatus `json:"status"`
-	// False 表示由该镜像创建的云服务器只能通过重装系统设置新密码.
+	// False means a new password can only be set by rebuilding an instance created from this image.
 	SupportsPasswordReset bool `json:"supports_password_reset"`
 }
 
@@ -3711,10 +3716,10 @@ func (s *PrivateNetworkResourceStatus) UnmarshalText(data []byte) error {
 // Ref: #/components/schemas/RebuildInstanceRequestBody
 type RebuildInstanceRequestBody struct {
 	GeneratePassword OptBool `json:"generate_password"`
-	// 平台提供的镜像。与 private_image_id 二选一.
+	// A platform image. Exactly one of this and `private_image_id`.
 	ImageID  OptUUID   `json:"image_id"`
 	Password OptString `json:"password"`
-	// 自制镜像。与 image_id 二选一.
+	// A private image. Exactly one of this and `image_id`.
 	PrivateImageID OptUUID `json:"private_image_id"`
 }
 
@@ -3761,7 +3766,7 @@ func (s *RebuildInstanceRequestBody) SetPrivateImageID(val OptUUID) {
 // Ref: #/components/schemas/RebuildInstanceResponseBody
 type RebuildInstanceResponseBody struct {
 	Instance InstanceResource `json:"instance"`
-	// 仅在本次响应中返回，请及时保存.
+	// Returned only in this response; store it immediately.
 	Password string `json:"password"`
 }
 
@@ -3947,9 +3952,9 @@ func (s *RenameSnapshotRequestBody) SetName(val string) {
 
 // Ref: #/components/schemas/ResetPasswordRequestBody
 type ResetPasswordRequestBody struct {
-	// 由平台生成随机密码，仅在本次响应中返回.
+	// Have the platform generate a random password, returned only in this response.
 	GeneratePassword OptBool `json:"generate_password"`
-	// 新的 root 密码。与 generate_password 二选一.
+	// New root password. Exactly one of this and `generate_password`.
 	Password OptString `json:"password"`
 }
 
@@ -3975,7 +3980,8 @@ func (s *ResetPasswordRequestBody) SetPassword(val OptString) {
 
 // Ref: #/components/schemas/ResetPasswordResponseBody
 type ResetPasswordResponseBody struct {
-	// 平台生成的密码，仅本次返回。自行设置密码时为空.
+	// The password generated by the platform, returned only in this response. Empty when the password was
+	// supplied in the request.
 	Password string `json:"password"`
 }
 
@@ -3991,7 +3997,7 @@ func (s *ResetPasswordResponseBody) SetPassword(val string) {
 
 // Ref: #/components/schemas/ResizeDiskRequestBody
 type ResizeDiskRequestBody struct {
-	// 必须大于当前容量.
+	// Must be larger than the current capacity.
 	SizeGB int64 `json:"size_gb"`
 }
 
@@ -4007,7 +4013,7 @@ func (s *ResizeDiskRequestBody) SetSizeGB(val int64) {
 
 // Ref: #/components/schemas/ResizeInstanceRequestBody
 type ResizeInstanceRequestBody struct {
-	// 必须与当前机型位于同一地区和可用区.
+	// Must be in the same region and availability zone as the current instance type.
 	InstanceTypeID uuid.UUID `json:"instance_type_id"`
 }
 
@@ -4023,10 +4029,10 @@ func (s *ResizeInstanceRequestBody) SetInstanceTypeID(val uuid.UUID) {
 
 // Ref: #/components/schemas/RestoreBackupRequestBody
 type RestoreBackupRequestBody struct {
-	// 可选择与源云硬盘不同的可用区，但必须在同一地区.
+	// May differ from the availability zone of the source disk, but must be in the same region.
 	DiskTypeID uuid.UUID `json:"disk_type_id"`
 	Name       string    `json:"name"`
-	// 留空时与备份等大。给出时不能小于备份.
+	// Matches the size of the backup when omitted. When given, it must not be smaller than the backup.
 	SizeGB OptInt64 `json:"size_gb"`
 }
 
@@ -4062,7 +4068,7 @@ func (s *RestoreBackupRequestBody) SetSizeGB(val OptInt64) {
 
 // Ref: #/components/schemas/RevertDiskRequestBody
 type RevertDiskRequestBody struct {
-	// 必须是该云硬盘最新的一个快照.
+	// Must be the most recent snapshot of the disk.
 	SnapshotID uuid.UUID `json:"snapshot_id"`
 }
 
@@ -4170,7 +4176,7 @@ type SecurityGroupResource struct {
 	CreatedAt   time.Time `json:"created_at"`
 	Description string    `json:"description"`
 	ID          uuid.UUID `json:"id"`
-	// 默认安全组随私有网络一并释放，不可单独删除.
+	// The default security group is released with its private network and cannot be deleted individually.
 	IsDefault        bool      `json:"is_default"`
 	Name             string    `json:"name"`
 	PrivateNetworkID uuid.UUID `json:"private_network_id"`
@@ -4258,9 +4264,9 @@ type SecurityRuleResource struct {
 	Direction   SecurityRuleResourceDirection `json:"direction"`
 	Ethertype   SecurityRuleResourceEthertype `json:"ethertype"`
 	ID          uuid.UUID                     `json:"id"`
-	// ICMP 协议下表示 code，而非端口.
+	// Denotes the ICMP code rather than a port when the protocol is ICMP.
 	PortRangeMax NilInt64 `json:"port_range_max"`
-	// ICMP 协议下表示 type，而非端口.
+	// Denotes the ICMP type rather than a port when the protocol is ICMP.
 	PortRangeMin   NilInt64  `json:"port_range_min"`
 	Protocol       NilString `json:"protocol"`
 	RemoteIPPrefix NilString `json:"remote_ip_prefix"`
@@ -4440,7 +4446,7 @@ func (s *SecurityRuleResourceEthertype) UnmarshalText(data []byte) error {
 
 // Ref: #/components/schemas/SetBandwidthRequestBody
 type SetBandwidthRequestBody struct {
-	// 出入方向均限制为该值.
+	// Applied to both directions.
 	Mbps int64 `json:"mbps"`
 }
 
@@ -4471,14 +4477,14 @@ func (s *SnapshotListResponseBody) SetItems(val []SnapshotResource) {
 
 // Ref: #/components/schemas/SnapshotResource
 type SnapshotResource struct {
-	// 由该快照恢复的云硬盘必须位于此可用区.
+	// A disk restored from this snapshot must reside in this availability zone.
 	AvailabilityZone string    `json:"availability_zone"`
 	CreatedAt        time.Time `json:"created_at"`
 	DiskID           uuid.UUID `json:"disk_id"`
 	ID               uuid.UUID `json:"id"`
 	Name             string    `json:"name"`
 	RegionCode       string    `json:"region_code"`
-	// 创建快照时源云硬盘的容量。由该快照恢复的云硬盘不能小于此容量.
+	// Capacity of the source disk when the snapshot was created. A disk restored from it cannot be smaller.
 	SizeGB int64                  `json:"size_gb"`
 	Status SnapshotResourceStatus `json:"status"`
 }

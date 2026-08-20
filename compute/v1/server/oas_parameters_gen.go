@@ -2221,7 +2221,7 @@ func decodeGetInstanceParams(args [1]string, argsEscaped bool, r *http.Request) 
 // GetInstanceConsoleOutputParams is parameters of get-instance-console-output operation.
 type GetInstanceConsoleOutputParams struct {
 	InstanceId uuid.UUID
-	// 返回末尾多少行，0 表示全部.
+	// Number of trailing lines to return; 0 returns the entire output.
 	Lines OptInt64 `json:",omitempty,omitzero"`
 }
 
@@ -2778,7 +2778,7 @@ func decodeListAvailabilityZonesParams(args [1]string, argsEscaped bool, r *http
 
 // ListBackupsParams is parameters of list-backups operation.
 type ListBackupsParams struct {
-	// 只返回该云硬盘的备份.
+	// Return only the backups of this disk.
 	DiskID OptUUID `json:",omitempty,omitzero"`
 }
 
@@ -2921,7 +2921,7 @@ func decodeListDiskTypesParams(args [0]string, argsEscaped bool, r *http.Request
 // ListDisksParams is parameters of list-disks operation.
 type ListDisksParams struct {
 	RegionCode OptString `json:",omitempty,omitzero"`
-	// 与 region_code 同时提供，用于筛选可挂载的云硬盘.
+	// Supplied together with `region_code` to filter attachable disks.
 	AvailabilityZone OptString `json:",omitempty,omitzero"`
 }
 
@@ -3374,7 +3374,7 @@ func decodeListInstanceTypesParams(args [0]string, argsEscaped bool, r *http.Req
 
 // ListOperationLogsParams is parameters of list-operation-logs operation.
 type ListOperationLogsParams struct {
-	// 只看某一种操作，取值与接口的 operation id 一致.
+	// Return a single kind of operation; the value matches the operation id of the endpoint.
 	Action OptString `json:",omitempty,omitzero"`
 	Limit  OptInt64  `json:",omitempty,omitzero"`
 	Offset OptInt64  `json:",omitempty,omitzero"`
@@ -3628,7 +3628,7 @@ func decodeListOperationLogsParams(args [0]string, argsEscaped bool, r *http.Req
 
 // ListPrivateImagesParams is parameters of list-private-images operation.
 type ListPrivateImagesParams struct {
-	// 只返回该地区的镜像。镜像只能用于所在地区.
+	// Return only the images of this region. An image can only be used in the region that holds it.
 	RegionCode OptString `json:",omitempty,omitzero"`
 }
 
@@ -3720,7 +3720,7 @@ func decodeListPrivateImagesParams(args [0]string, argsEscaped bool, r *http.Req
 
 // ListPrivateNetworksParams is parameters of list-private-networks operation.
 type ListPrivateNetworksParams struct {
-	// 不传时返回全部地区.
+	// Returns every region when omitted.
 	RegionCode OptString `json:",omitempty,omitzero"`
 }
 
@@ -3943,7 +3943,7 @@ func decodeListSecurityGroupRulesParams(args [1]string, argsEscaped bool, r *htt
 // ListSecurityGroupsParams is parameters of list-security-groups operation.
 type ListSecurityGroupsParams struct {
 	RegionCode OptString `json:",omitempty,omitzero"`
-	// 只返回该私有网络下的安全组.
+	// Return only the security groups of this private network.
 	PrivateNetworkID OptString `json:",omitempty,omitzero"`
 }
 
@@ -4085,7 +4085,7 @@ func decodeListSecurityGroupsParams(args [0]string, argsEscaped bool, r *http.Re
 
 // ListSnapshotsParams is parameters of list-snapshots operation.
 type ListSnapshotsParams struct {
-	// 只返回该云硬盘的快照.
+	// Return only the snapshots of this disk.
 	DiskID OptUUID `json:",omitempty,omitzero"`
 }
 

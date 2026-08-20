@@ -10,593 +10,652 @@ import (
 type Handler interface {
 	// ActOnInstance implements act-on-instance operation.
 	//
-	// 重启默认为软重启，由操作系统正常关闭后重新启动。
+	// Reboot defaults to a soft reboot, in which the operating system shuts down normally before starting
+	// again.
 	//
-	// 系统已无响应时软重启不会生效，此时可设置 `force`
-	// 强制重启。强制重启不等待操作系统关闭，未落盘的数据会丢失。`force`
-	// 仅适用于 reboot。
+	// A soft reboot has no effect once the system is unresponsive. Set `force` to reboot forcibly: a
+	// forced reboot does not wait for the operating system to shut down, so unwritten data is lost.
+	// `force` applies to `reboot` only.
 	//
-	// 已被平台停服的云服务器需先解除停服。
+	// An instance suspended by the platform must be unsuspended first.
 	//
-	// 本接口立即返回，返回的 `status` 是变更中的瞬态：start 为 `starting`、stop 为
-	// `stopping`、reboot 为 `rebooting`。轮询云服务器详情直至落定为 `running` 或
-	// `stopped`。.
+	// This endpoint returns immediately and the `status` it returns is a transient state: `starting` for
+	// start, `stopping` for stop, `rebooting` for reboot. Poll the instance until it settles at `running`
+	// or `stopped`.
 	//
 	// POST /api/v1/instances/{instanceId}/actions
 	ActOnInstance(ctx context.Context, req *ActOnInstanceRequestBody, params ActOnInstanceParams) (*InstanceResource, error)
 	// AllocateFloatingIP implements allocate-floating-ip operation.
 	//
-	// 若该私有网络尚未连通外网，会一并为其接入外网。
+	// If the private network is not yet connected to the internet, connectivity is established as part of
+	// this call.
 	//
-	// IPv6 不通过本接口申请。IPv6
-	// 地址由私有网络自动下发至云服务器，在私有网络上启用即可。.
+	// IPv6 is not requested through this endpoint. IPv6 addresses are assigned to instances by the private
+	// network; enable IPv6 on that network instead.
 	//
 	// POST /api/v1/floating-ips
 	AllocateFloatingIP(ctx context.Context, req *AllocateFloatingIPRequestBody) (*FloatingIPResource, error)
 	// AttachDisk implements attach-disk operation.
 	//
-	// 云硬盘必须与云服务器位于同一地区和可用区。挂载后需在云服务器内自行分区并挂载文件系统。.
+	// The disk must be in the same region and availability zone as the instance. Partition it and mount
+	// the file system inside the instance once it is attached.
 	//
 	// POST /api/v1/instances/{instanceId}/disks
 	AttachDisk(ctx context.Context, req *AttachDiskRequestBody, params AttachDiskParams) (*DiskResource, error)
 	// AttachInstanceFloatingIP implements attach-instance-floating-ip operation.
 	//
-	// 公网 IP 绑定在云服务器的主网卡上。.
+	// The floating IP is bound to the primary network interface of the instance.
 	//
 	// POST /api/v1/instances/{instanceId}/floating-ips
 	AttachInstanceFloatingIP(ctx context.Context, req *AttachFloatingIPRequestBody, params AttachInstanceFloatingIPParams) (*FloatingIPResource, error)
 	// AttachPort implements attach-port operation.
 	//
-	// 挂载网卡.
+	// Attach a network interface.
 	//
 	// POST /api/v1/instances/{instanceId}/ports
 	AttachPort(ctx context.Context, req *AttachPortRequestBody, params AttachPortParams) (*PortResource, error)
 	// BindFloatingIP implements bind-floating-ip operation.
 	//
-	// 将公网 IP 绑定到网卡.
+	// Bind a floating IP to a network interface.
 	//
 	// PUT /api/v1/floating-ips/{floatingIpId}/binding
 	BindFloatingIP(ctx context.Context, req *BindFloatingIPRequestBody, params BindFloatingIPParams) (*FloatingIPResource, error)
 	// ConfirmInstanceResize implements confirm-instance-resize operation.
 	//
-	// 释放原规格占用的资源，`pending_instance_type_id`
-	// 成为生效机型并从此按它计费。.
+	// Releases the resources held by the previous size. `pending_instance_type_id` becomes the type in
+	// effect and is billed from then on.
 	//
 	// POST /api/v1/instances/{instanceId}/resize/confirm
 	ConfirmInstanceResize(ctx context.Context, params ConfirmInstanceResizeParams) (*InstanceResource, error)
 	// CreateBackup implements create-backup operation.
 	//
-	// 备份是云硬盘在独立存储中的一份完整副本：**源云硬盘删除后仍可恢复，且可恢复到本地区的其他可用区。**快照不具备这两项能力，它与源云硬盘位于同一存储，且源云硬盘存在快照时无法删除。
+	// A backup is a complete copy of a disk held in separate storage: it remains restorable after the
+	// source disk is deleted, and can be restored to another availability zone in the same region. A
+	// snapshot offers neither capability, as it resides in the same storage as the source disk and
+	// prevents that disk from being deleted while it exists.
 	//
-	// 运行中云服务器上挂载的云硬盘、以及系统盘，均可创建备份。
+	// Disks attached to a running instance, including system disks, can be backed up.
 	//
-	// 备份耗时取决于数据量。接口返回时尚未完成，请轮询查看接口。.
+	// The duration depends on the amount of data. The backup is not complete when this endpoint returns;
+	// poll the retrieve endpoint.
 	//
 	// POST /api/v1/backups
 	CreateBackup(ctx context.Context, req *CreateBackupRequestBody) (*BackupResource, error)
 	// CreateDisk implements create-disk operation.
 	//
-	// 云硬盘创建在所选硬盘类型所属的可用区，云服务器必须位于同一可用区才能挂载。因此选定硬盘类型即确定了可用区。.
+	// The disk is created in the availability zone of the selected disk type, and an instance must reside
+	// in the same zone to attach it. Choosing the disk type therefore determines the zone.
 	//
 	// POST /api/v1/disks
 	CreateDisk(ctx context.Context, req *CreateDiskRequestBody) (*DiskResource, error)
 	// CreatePort implements create-port operation.
 	//
-	// 创建出的网卡尚未挂载到任何云服务器。主网卡不由本接口创建，它随云服务器一并创建。.
+	// The new network interface is not attached to any instance. Primary network interfaces are not
+	// created here; they are created with the instance.
 	//
 	// POST /api/v1/ports
 	CreatePort(ctx context.Context, req *CreatePortRequestBody) (*PortResource, error)
 	// CreatePrivateImage implements create-private-image operation.
 	//
-	// 依据云服务器的系统盘制作，数据盘不包含在内。制作出的镜像可用于创建云服务器或重装系统，并在源云服务器释放后继续可用。
+	// Captured from the system disk of the instance; data disks are not included. The resulting image can
+	// create instances and rebuild them, and remains usable after the source instance is released.
 	//
-	// 镜像内容取自开始制作的那一刻，此后对云服务器的改动不会包含在内。
+	// The image reflects the moment the capture started. Later changes to the instance are not included.
 	//
-	// 制作分两个阶段，请轮询查看接口：
+	// The capture has two phases. Poll the retrieve endpoint:
 	//
-	//  - `provisioning`
-	//    正在读取系统盘，通常数十秒。此阶段云服务器可以继续使用，但为保证一致性建议先关机。
-	//  - `uploading`
-	//    已与系统盘无关，此时即可开机，无需等待制作完成。该阶段耗时与系统盘容量成正比，20
-	//    GB 约需 3 分钟。
+	//  - `provisioning` — the system disk is being read, usually for tens of seconds. The instance
+	//    remains usable during this phase, although stopping it first is recommended for consistency.
+	//  - `uploading` — no longer tied to the system disk. The instance may be started at this point;
+	//    there is no need to wait for the capture to finish. The duration of this phase is proportional to
+	//    the size of the system disk, roughly 3 minutes for 20 GB.
 	//
-	// 运行中的云服务器其文件系统可能处于写入中间状态，制作出的镜像等同于一次断电后的磁盘内容。对一致性有要求时，请在开始制作前关机，并在状态变为
-	// `uploading` 后开机。
+	// The file system of a running instance may be captured mid-write, in which case the image is
+	// equivalent to the disk contents after a power loss. Where consistency matters, stop the instance
+	// before starting the capture and start it again once the status becomes `uploading`.
 	//
-	// 制作期间该云服务器可以正常启停与使用，但无法释放。.
+	// The instance can be started, stopped and used normally during the capture, but cannot be released.
 	//
 	// POST /api/v1/private-images
 	CreatePrivateImage(ctx context.Context, req *CreatePrivateImageRequestBody) (*PrivateImageResource, error)
 	// CreatePrivateNetwork implements create-private-network operation.
 	//
-	// 同时创建一张网络、一台路由器和一个默认安全组。默认安全组拒绝全部入站流量、放行全部出站流量。.
+	// Creates a network, a router and a default security group in one call. The default security group
+	// denies all inbound traffic and permits all outbound traffic.
 	//
 	// POST /api/v1/private-networks
 	CreatePrivateNetwork(ctx context.Context, req *CreatePrivateNetworkRequestBody) (*PrivateNetworkResource, error)
 	// CreateRoute implements create-route operation.
 	//
-	// 以下三种会导致网络中断的写法会被拒绝：目的网段为
-	// 0.0.0.0/0（覆盖默认路由，所有公网 IP
-	// 立即失效）、目的网段为某个子网自身（覆盖直连路由）、下一跳为某个子网的网关（指回路由器自身）。.
+	// Three forms that would sever connectivity are rejected: a destination of `0.0.0.0/0`, which
+	// overrides the default route and takes every floating IP offline immediately; a destination equal to
+	// the CIDR of a subnet, which overrides its directly connected route; and a next hop equal to the
+	// gateway of a subnet, which points back at the router itself.
 	//
 	// POST /api/v1/private-networks/{privateNetworkId}/routes
 	CreateRoute(ctx context.Context, req *CreateRouteRequestBody, params CreateRouteParams) (*RouteResource, error)
 	// CreateSecurityGroup implements create-security-group operation.
 	//
-	// 新建的安全组带有一条规则：放行 ICMP 需要分片（type 3 code
-	// 4）。缺少该规则会导致路径 MTU
-	// 发现失败，表现为连接建立后传输大数据包时卡住。.
+	// A new security group carries one rule, permitting ICMP fragmentation-needed messages (type 3, code
+	// 4). Without it path MTU discovery fails, which presents as connections that establish and then stall
+	// on large packets.
 	//
 	// POST /api/v1/security-groups
 	CreateSecurityGroup(ctx context.Context, req *CreateSecurityGroupRequestBody) (*SecurityGroupResource, error)
 	// CreateSecurityGroupRule implements create-security-group-rule operation.
 	//
-	// 重复添加同一条规则会被拒绝。判重时 `0.0.0.0/0`、`::/0` 与留空视为等同。.
+	// Adding an identical rule twice is rejected. For that comparison `0.0.0.0/0`, `::/0` and an omitted
+	// value are treated as equivalent.
 	//
 	// POST /api/v1/security-groups/{securityGroupId}/rules
 	CreateSecurityGroupRule(ctx context.Context, req *CreateSecurityRuleRequestBody, params CreateSecurityGroupRuleParams) (*SecurityRuleResource, error)
 	// CreateSnapshot implements create-snapshot operation.
 	//
-	// 运行中云服务器上挂载的云硬盘同样可以创建快照。快照记录的是某一时刻的块设备状态，文件系统层面可能不一致，重要数据建议先在云服务器内执行
-	// sync。
+	// Disks attached to a running instance can be snapshotted. A snapshot records the state of the block
+	// device at a point in time and may be inconsistent at the file-system level, so run `sync` inside the
+	// instance first where the data matters.
 	//
-	// 系统盘的快照不能用于回滚该系统盘：回滚要求先从云服务器上卸载，而系统盘不可卸载。它可用于创建一块新的数据盘。需要保留并恢复整个系统时，请使用自制镜像；需要可跨可用区、且在云硬盘删除后仍可恢复的副本时，请使用备份。.
+	// A snapshot of a system disk cannot be used to revert that system disk: reverting requires the disk
+	// to be detached, and a system disk cannot be detached. It can be used to create a new data disk. To
+	// preserve and restore an entire system, use a private image; for a copy that crosses availability
+	// zones and survives deletion of the disk, use a backup.
 	//
 	// POST /api/v1/snapshots
 	CreateSnapshot(ctx context.Context, req *CreateSnapshotRequestBody) (*SnapshotResource, error)
 	// CreateSubnet implements create-subnet operation.
 	//
-	// 创建子网.
+	// Create a subnet.
 	//
 	// POST /api/v1/private-networks/{privateNetworkId}/subnets
 	CreateSubnet(ctx context.Context, req *CreateSubnetRequestBody, params CreateSubnetParams) (*SubnetResource, error)
 	// DeleteBackup implements delete-backup operation.
 	//
-	// 与源云硬盘无关，源云硬盘是否存在都不影响删除。.
+	// Independent of the source disk: deletion succeeds whether or not that disk still exists.
 	//
 	// DELETE /api/v1/backups/{backupId}
 	DeleteBackup(ctx context.Context, params DeleteBackupParams) error
 	// DeleteDisk implements delete-disk operation.
 	//
-	// 云硬盘处于挂载状态，或仍存在基于它创建的快照时，删除会被拒绝。.
+	// Deletion is rejected while the disk is attached, or while snapshots created from it still exist.
 	//
 	// DELETE /api/v1/disks/{diskId}
 	DeleteDisk(ctx context.Context, params DeleteDiskParams) error
 	// DeleteInstance implements delete-instance operation.
 	//
-	// 系统盘随云服务器一并删除，基于系统盘创建的快照也会一并删除。数据盘会被卸载并保留，其快照与备份不受影响。主网卡随云服务器一并释放。
+	// The system disk is deleted with the instance, and snapshots created from the system disk are deleted
+	// with it. Data disks are detached and kept, and their snapshots and backups are unaffected. The
+	// primary network interface is released with the instance.
 	//
-	// 正在制作镜像的云服务器无法释放，请等待制作完成或先删除该镜像。.
+	// An instance being captured as a private image cannot be released. Wait for the capture to finish, or
+	// delete that image first.
 	//
 	// DELETE /api/v1/instances/{instanceId}
 	DeleteInstance(ctx context.Context, params DeleteInstanceParams) error
 	// DeletePort implements delete-port operation.
 	//
-	// 主网卡不可单独删除，它随云服务器一并释放。仍挂载在云服务器上的网卡也无法删除。.
+	// The primary network interface cannot be deleted on its own, as it is released with the instance. A
+	// network interface still attached to an instance cannot be deleted either.
 	//
 	// DELETE /api/v1/ports/{portId}
 	DeletePort(ctx context.Context, params DeletePortParams) error
 	// DeletePrivateImage implements delete-private-image operation.
 	//
-	// 仍有云服务器由该镜像创建时，删除会被拒绝：这些云服务器需要它才能重装系统。
+	// Deletion is rejected while instances created from the image still exist, as they need it in order to
+	// be rebuilt.
 	//
-	// 制作尚未完成的镜像也可以删除，制作会被终止。.
+	// An image whose capture has not finished can be deleted; the capture is aborted.
 	//
 	// DELETE /api/v1/private-images/{privateImageId}
 	DeletePrivateImage(ctx context.Context, params DeletePrivateImageParams) error
 	// DeletePrivateNetwork implements delete-private-network operation.
 	//
-	// 其中仍有云服务器或网卡时，释放会被拒绝。IPv6、路由器与安全组随之一并释放。.
+	// Release is rejected while instances or network interfaces remain in the network. IPv6, the router
+	// and the security groups are released with it.
 	//
 	// DELETE /api/v1/private-networks/{privateNetworkId}
 	DeletePrivateNetwork(ctx context.Context, params DeletePrivateNetworkParams) error
 	// DeleteRoute implements delete-route operation.
 	//
-	// 删除静态路由.
+	// Delete a static route.
 	//
 	// DELETE /api/v1/private-networks/{privateNetworkId}/routes/{routeId}
 	DeleteRoute(ctx context.Context, params DeleteRouteParams) error
 	// DeleteSecurityGroup implements delete-security-group operation.
 	//
-	// 默认安全组不可删除，它随私有网络一并释放。仍被网卡引用的安全组也无法删除。.
+	// The default security group cannot be deleted, as it is released with the private network. A security
+	// group still referenced by a network interface cannot be deleted either.
 	//
 	// DELETE /api/v1/security-groups/{securityGroupId}
 	DeleteSecurityGroup(ctx context.Context, params DeleteSecurityGroupParams) error
 	// DeleteSecurityGroupRule implements delete-security-group-rule operation.
 	//
-	// 删除安全组规则.
+	// Delete a security group rule.
 	//
 	// DELETE /api/v1/security-groups/{securityGroupId}/rules/{ruleId}
 	DeleteSecurityGroupRule(ctx context.Context, params DeleteSecurityGroupRuleParams) error
 	// DeleteSnapshot implements delete-snapshot operation.
 	//
-	// 删除快照.
+	// Delete a snapshot.
 	//
 	// DELETE /api/v1/snapshots/{snapshotId}
 	DeleteSnapshot(ctx context.Context, params DeleteSnapshotParams) error
 	// DeleteSubnet implements delete-subnet operation.
 	//
-	// 该子网中仍有网卡，或仍有静态路由的下一跳落在该网段内时，删除会被拒绝。.
+	// Deletion is rejected while network interfaces remain in the subnet, or while a static route has a
+	// next hop inside its CIDR.
 	//
 	// DELETE /api/v1/private-networks/{privateNetworkId}/subnets/{subnetId}
 	DeleteSubnet(ctx context.Context, params DeleteSubnetParams) error
 	// DetachDisk implements detach-disk operation.
 	//
-	// 请先在云服务器内卸载（umount）该设备再调用本接口，正在写入的文件系统被强制卸载会损坏数据。.
+	// Unmount the device inside the instance before calling this endpoint. Forcibly detaching a file
+	// system that is being written to corrupts data.
 	//
 	// DELETE /api/v1/instances/{instanceId}/disks/{diskId}
 	DetachDisk(ctx context.Context, params DetachDiskParams) (*DiskResource, error)
 	// DetachInstanceFloatingIP implements detach-instance-floating-ip operation.
 	//
-	// 解绑云服务器的公网 IP.
+	// Unbind the floating IP of an instance.
 	//
 	// DELETE /api/v1/instances/{instanceId}/floating-ips/{floatingIpId}
 	DetachInstanceFloatingIP(ctx context.Context, params DetachInstanceFloatingIPParams) (*FloatingIPResource, error)
 	// DetachPort implements detach-port operation.
 	//
-	// 主网卡不可卸载，卸载后云服务器将失去网络地址。.
+	// The primary network interface cannot be detached; the instance would lose its network address.
 	//
 	// DELETE /api/v1/instances/{instanceId}/ports/{portId}
 	DetachPort(ctx context.Context, params DetachPortParams) (*PortResource, error)
 	// DisablePrivateNetworkIpv6 implements disable-private-network-ipv6 operation.
 	//
-	// 释放的前缀不会立即重新分配。.
+	// A released prefix is not re-allocated immediately.
 	//
 	// DELETE /api/v1/private-networks/{privateNetworkId}/ipv6
 	DisablePrivateNetworkIpv6(ctx context.Context, params DisablePrivateNetworkIpv6Params) error
 	// EnablePrivateNetworkIpv6 implements enable-private-network-ipv6 operation.
 	//
-	// 为该私有网络分配一段 IPv6
-	// 地址。地址由私有网络自动下发至云服务器，无需也无法单独申领，也不占用公网
-	// IPv4。
+	// Allocates an IPv6 prefix to the private network. Addresses are assigned to instances by the network
+	// itself, can be neither requested nor released individually, and consume no public IPv4 address.
 	//
-	// 该私有网络尚未接入外网时会自动接入，无需单独操作。.
+	// If the private network is not yet connected to the internet, connectivity is established as part of
+	// this call.
 	//
 	// POST /api/v1/private-networks/{privateNetworkId}/ipv6
 	EnablePrivateNetworkIpv6(ctx context.Context, params EnablePrivateNetworkIpv6Params) (*IPv6ResponseBody, error)
 	// GetBackup implements get-backup operation.
 	//
-	// 会实时查询备份的当前状态，因此比列表接口慢但更准确。轮询创建进度请使用本接口。.
+	// Queries the current state of the backup, which makes it slower but more accurate than the list
+	// endpoint. Use it to poll creation progress.
 	//
 	// GET /api/v1/backups/{backupId}
 	GetBackup(ctx context.Context, params GetBackupParams) (*BackupResource, error)
 	// GetDisk implements get-disk operation.
 	//
-	// 会实时查询云硬盘的当前状态，因此比列表接口慢但更准确。.
+	// Queries the current state of the disk, which makes it slower but more accurate than the list
+	// endpoint.
 	//
 	// GET /api/v1/disks/{diskId}
 	GetDisk(ctx context.Context, params GetDiskParams) (*DiskResource, error)
 	// GetFloatingIP implements get-floating-ip operation.
 	//
-	// 查看公网 IP.
+	// Retrieve a floating IP.
 	//
 	// GET /api/v1/floating-ips/{floatingIpId}
 	GetFloatingIP(ctx context.Context, params GetFloatingIPParams) (*FloatingIPResource, error)
 	// GetInstance implements get-instance operation.
 	//
-	// 会实时查询云服务器的当前状态，因此比列表接口慢但更准确。轮询创建进度请使用本接口。.
+	// Queries the current state of the instance, which makes it slower but more accurate than the list
+	// endpoint. Use it to poll creation progress.
 	//
 	// GET /api/v1/instances/{instanceId}
 	GetInstance(ctx context.Context, params GetInstanceParams) (*InstanceResource, error)
 	// GetInstanceConsoleOutput implements get-instance-console-output operation.
 	//
-	// 云服务器启动过程与内核输出的原始文本。无法登录或远程控制台无输出时，应首先查看本接口。其中可查看启动停止于哪一步、系统盘是否正常挂载、初始化过程是否报错。
+	// The raw text produced by the instance during boot and by the kernel. Consult it first when login
+	// fails or the remote console shows no output: it reveals where boot stopped, whether the system disk
+	// was mounted, and whether initialisation reported errors.
 	//
-	// 处于错误状态或已被平台停服的云服务器同样可以读取。.
+	// Instances in an error state, and instances suspended by the platform, can be read as well.
 	//
 	// GET /api/v1/instances/{instanceId}/console-output
 	GetInstanceConsoleOutput(ctx context.Context, params GetInstanceConsoleOutputParams) (*ConsoleOutputResponseBody, error)
 	// GetPrivateImage implements get-private-image operation.
 	//
-	// 轮询制作进度请使用本接口。status 为 error 时，failure 给出失败原因。.
+	// Use this endpoint to poll capture progress. When `status` is `error`, `failure` states the reason.
 	//
 	// GET /api/v1/private-images/{privateImageId}
 	GetPrivateImage(ctx context.Context, params GetPrivateImageParams) (*PrivateImageResource, error)
 	// GetPrivateNetwork implements get-private-network operation.
 	//
-	// 查看私有网络.
+	// Retrieve a private network.
 	//
 	// GET /api/v1/private-networks/{privateNetworkId}
 	GetPrivateNetwork(ctx context.Context, params GetPrivateNetworkParams) (*PrivateNetworkResource, error)
 	// GetPrivateNetworkIpv6 implements get-private-network-ipv6 operation.
 	//
-	// 查看私有网络的 IPv6.
+	// Retrieve the IPv6 configuration of a private network.
 	//
 	// GET /api/v1/private-networks/{privateNetworkId}/ipv6
 	GetPrivateNetworkIpv6(ctx context.Context, params GetPrivateNetworkIpv6Params) (*IPv6ResponseBody, error)
 	// GetSecurityGroup implements get-security-group operation.
 	//
-	// 查看安全组.
+	// Retrieve a security group.
 	//
 	// GET /api/v1/security-groups/{securityGroupId}
 	GetSecurityGroup(ctx context.Context, params GetSecurityGroupParams) (*SecurityGroupResource, error)
 	// GetSnapshot implements get-snapshot operation.
 	//
-	// 查看快照.
+	// Retrieve a snapshot.
 	//
 	// GET /api/v1/snapshots/{snapshotId}
 	GetSnapshot(ctx context.Context, params GetSnapshotParams) (*SnapshotResource, error)
 	// LaunchInstance implements launch-instance operation.
 	//
-	// 必须在请求中设置密码：不设置时请求会被拒绝，否则创建出的云服务器将无法登录。密码可由平台生成，此时仅在本次响应中返回一次。
+	// A password must be set in the request. The request is rejected otherwise, since the resulting
+	// instance would be unreachable. The platform can generate one, in which case it is returned only in
+	// this response.
 	//
-	// `count` 可一次创建多台（最多 20 台），名称自动加 `-1`、`-2`
-	// 编号，所有云服务器共用同一个密码。响应中的 `instances`
-	// 始终是数组，单台创建时也是。
+	// `count` creates several instances at once, 20 at most. Names are numbered `-1`, `-2` automatically
+	// and all instances share one password. `instances` in the response is always an array, including for
+	// a single instance.
 	//
-	// 批量创建按顺序逐台进行。若中途失败（例如配额不足），已创建的云服务器会保留，响应中的
-	// `failure`
-	// 给出中止原因；第一台就失败时视为整次请求失败，不会创建任何云服务器。
+	// Instances are created one by one in order. If the sequence stops part way through, because of a
+	// quota limit for example, the instances already created are kept and `failure` states why it stopped.
+	// A failure on the first instance is treated as a failure of the whole request and no instance is
+	// created.
 	//
-	// 镜像二选一：`image_id` 使用平台提供的镜像，`private_image_id`
-	// 使用自制镜像。两者都给或都不给都会被拒绝。
+	// Exactly one image source must be given: `image_id` for a platform image, `private_image_id` for a
+	// private image. Supplying both or neither is rejected.
 	//
-	// 云服务器创建在机型所属的可用区。后续要挂载的云硬盘必须位于同一可用区。
+	// Instances are created in the availability zone of the instance type. Disks to be attached later must
+	// reside in the same zone.
 	//
-	// 接口返回时创建尚未完成（status 为 provisioning），请轮询 GET 确认结果。.
+	// Creation is not complete when this endpoint returns and `status` is `provisioning`. Poll GET to
+	// observe the outcome.
 	//
 	// POST /api/v1/instances
 	LaunchInstance(ctx context.Context, req *LaunchInstanceRequestBody) (*LaunchInstanceResponseBody, error)
 	// ListAvailabilityZones implements list-availability-zones operation.
 	//
-	// 云硬盘与云服务器必须位于同一可用区才能挂载，创建前请确认所选可用区。.
+	// A disk and an instance must reside in the same availability zone to be attached. Confirm the zone
+	// before creating either.
 	//
 	// GET /api/v1/regions/{regionCode}/availability-zones
 	ListAvailabilityZones(ctx context.Context, params ListAvailabilityZonesParams) (*ZoneListResponseBody, error)
 	// ListBackups implements list-backups operation.
 	//
-	// 列出备份.
+	// List backups.
 	//
 	// GET /api/v1/backups
 	ListBackups(ctx context.Context, params ListBackupsParams) (*BackupListResponseBody, error)
 	// ListDiskTypes implements list-disk-types operation.
 	//
-	// 列出在售硬盘类型.
+	// List disk types on sale.
 	//
 	// GET /api/v1/disk-types
 	ListDiskTypes(ctx context.Context, params ListDiskTypesParams) (*DiskTypeListResponseBody, error)
 	// ListDisks implements list-disks operation.
 	//
-	// 同时提供 region_code 与 availability_zone
-	// 时，只返回可挂载到该位置云服务器的云硬盘。.
+	// When both `region_code` and `availability_zone` are supplied, only disks attachable to an instance
+	// at that location are returned.
 	//
 	// GET /api/v1/disks
 	ListDisks(ctx context.Context, params ListDisksParams) (*DiskListResponseBody, error)
 	// ListFloatingIps implements list-floating-ips operation.
 	//
-	// 列出公网 IP.
+	// List floating IPs.
 	//
 	// GET /api/v1/floating-ips
 	ListFloatingIps(ctx context.Context) (*FloatingIPListResponseBody, error)
 	// ListImages implements list-images operation.
 	//
-	// Min_ram_mb 超过所选机型内存的镜像无法启动，请据此过滤可选项。.
+	// An image whose `min_ram_mb` exceeds the memory of the selected instance type cannot boot. Filter the
+	// options accordingly.
 	//
 	// GET /api/v1/images
 	ListImages(ctx context.Context, params ListImagesParams) (*ImageListResponseBody, error)
 	// ListInstanceDisks implements list-instance-disks operation.
 	//
-	// 列出云服务器已挂载的云硬盘.
+	// List the disks attached to an instance.
 	//
 	// GET /api/v1/instances/{instanceId}/disks
 	ListInstanceDisks(ctx context.Context, params ListInstanceDisksParams) (*DiskListResponseBody, error)
 	// ListInstancePorts implements list-instance-ports operation.
 	//
-	// 列出云服务器的网卡.
+	// List the network interfaces of an instance.
 	//
 	// GET /api/v1/instances/{instanceId}/ports
 	ListInstancePorts(ctx context.Context, params ListInstancePortsParams) (*PortListResponseBody, error)
 	// ListInstanceTypes implements list-instance-types operation.
 	//
-	// 列出在售机型.
+	// List instance types on sale.
 	//
 	// GET /api/v1/instance-types
 	ListInstanceTypes(ctx context.Context, params ListInstanceTypesParams) (*InstanceTypeListResponseBody, error)
 	// ListInstances implements list-instances operation.
 	//
-	// 列出云服务器.
+	// List instances.
 	//
 	// GET /api/v1/instances
 	ListInstances(ctx context.Context) (*InstanceListResponseBody, error)
 	// ListOperationLogs implements list-operation-logs operation.
 	//
-	// 记录本项目内的每一次写操作：谁、在什么时候、对什么做了什么、成功还是失败。读取操作不记录。
+	// Records every write operation in the project: who performed it, when, on what, and whether it
+	// succeeded. Read operations are not recorded.
 	//
-	// 平台代为执行的操作也在其中，但不显示具体执行人，`by_platform` 为
-	// true。例如欠费停机、违规封禁：需要知道机器何时被平台停止，但执行人属于平台内部信息。
+	// Operations performed by the platform are included, but the individual operator is not disclosed and
+	// `by_platform` is true. Suspension for non-payment and bans for abuse are examples: the time at which
+	// an instance was stopped by the platform is needed, whereas the operator is internal information.
 	//
-	// 密码一类的字段在写入时即被替换为占位符，不会出现在 `payload` 中。.
+	// Fields such as passwords are replaced with a placeholder as the record is written and never appear
+	// in `payload`.
 	//
 	// GET /api/v1/operation-logs
 	ListOperationLogs(ctx context.Context, params ListOperationLogsParams) (*OperationLogListResponseBody, error)
 	// ListPorts implements list-ports operation.
 	//
-	// 列出网卡.
+	// List network interfaces.
 	//
 	// GET /api/v1/ports
 	ListPorts(ctx context.Context) (*PortListResponseBody, error)
 	// ListPrivateImages implements list-private-images operation.
 	//
-	// 列出自制镜像.
+	// List private images.
 	//
 	// GET /api/v1/private-images
 	ListPrivateImages(ctx context.Context, params ListPrivateImagesParams) (*PrivateImageListResponseBody, error)
 	// ListPrivateNetworks implements list-private-networks operation.
 	//
-	// 列出私有网络.
+	// List private networks.
 	//
 	// GET /api/v1/private-networks
 	ListPrivateNetworks(ctx context.Context, params ListPrivateNetworksParams) (*PrivateNetworkListResponseBody, error)
 	// ListRegions implements list-regions operation.
 	//
-	// 列出可用的地区.
+	// List available regions.
 	//
 	// GET /api/v1/regions
 	ListRegions(ctx context.Context) (*RegionListResponseBody, error)
 	// ListRoutes implements list-routes operation.
 	//
-	// 列出静态路由.
+	// List static routes.
 	//
 	// GET /api/v1/private-networks/{privateNetworkId}/routes
 	ListRoutes(ctx context.Context, params ListRoutesParams) (*RouteListResponseBody, error)
 	// ListSecurityGroupRules implements list-security-group-rules operation.
 	//
-	// 列出安全组规则.
+	// List security group rules.
 	//
 	// GET /api/v1/security-groups/{securityGroupId}/rules
 	ListSecurityGroupRules(ctx context.Context, params ListSecurityGroupRulesParams) (*SecurityRuleListResponseBody, error)
 	// ListSecurityGroups implements list-security-groups operation.
 	//
-	// 列出安全组.
+	// List security groups.
 	//
 	// GET /api/v1/security-groups
 	ListSecurityGroups(ctx context.Context, params ListSecurityGroupsParams) (*SecurityGroupListResponseBody, error)
 	// ListSnapshots implements list-snapshots operation.
 	//
-	// 列出快照.
+	// List snapshots.
 	//
 	// GET /api/v1/snapshots
 	ListSnapshots(ctx context.Context, params ListSnapshotsParams) (*SnapshotListResponseBody, error)
 	// ListSubnets implements list-subnets operation.
 	//
-	// IPv6 子网也在返回结果中，ip_version 为 6。它在启用 IPv6
-	// 时自动创建，不可单独删除。.
+	// IPv6 subnets are included, with `ip_version` 6. They are created when IPv6 is enabled and cannot be
+	// deleted individually.
 	//
 	// GET /api/v1/private-networks/{privateNetworkId}/subnets
 	ListSubnets(ctx context.Context, params ListSubnetsParams) (*SubnetListResponseBody, error)
 	// OpenInstanceConsole implements open-instance-console operation.
 	//
-	// 在浏览器中直接操作云服务器，无需网络可达，适用于网络配置失误导致无法登录的情况。
+	// Operates the instance directly from a browser and does not require the instance to be reachable over
+	// the network, which makes it usable when a network misconfiguration prevents login.
 	//
-	// 返回的地址一次性使用，数分钟后失效。请勿缓存，每次使用前重新获取。.
+	// The returned address is single-use and expires within minutes. Do not cache it; request a new one
+	// before each use.
 	//
 	// POST /api/v1/instances/{instanceId}/console
 	OpenInstanceConsole(ctx context.Context, params OpenInstanceConsoleParams) (*ConsoleResponseBody, error)
 	// RebuildInstance implements rebuild-instance operation.
 	//
-	// 系统盘数据将被清除且无法恢复。 已挂载的数据盘不受影响。.
+	// All data on the system disk is erased and cannot be recovered. Attached data disks are unaffected.
 	//
 	// POST /api/v1/instances/{instanceId}/rebuild
 	RebuildInstance(ctx context.Context, req *RebuildInstanceRequestBody, params RebuildInstanceParams) (*RebuildInstanceResponseBody, error)
 	// ReleaseFloatingIP implements release-floating-ip operation.
 	//
-	// 地址释放后进入冷却期才会重新分配，以免仍指向它的 DNS
-	// 记录和访问白名单立即失效。因此释放后的短时间内无法重新申领同一个地址，请谨慎操作。.
+	// A released address enters a cooldown period before it is allocated again, so that DNS records and
+	// allow-lists still pointing at it do not break immediately. The same address therefore cannot be
+	// re-allocated for some time after release. Proceed with care.
 	//
 	// DELETE /api/v1/floating-ips/{floatingIpId}
 	ReleaseFloatingIP(ctx context.Context, params ReleaseFloatingIPParams) error
 	// RenameBackup implements rename-backup operation.
 	//
-	// 重命名备份.
+	// Rename a backup.
 	//
 	// PATCH /api/v1/backups/{backupId}
 	RenameBackup(ctx context.Context, req *RenameBackupRequestBody, params RenameBackupParams) (*BackupResource, error)
 	// RenameDisk implements rename-disk operation.
 	//
-	// 仅可修改名称。容量请使用扩容接口，类型与可用区不可修改。.
+	// Changes the name only. Use the resize endpoint for capacity; type and availability zone are
+	// immutable.
 	//
 	// PATCH /api/v1/disks/{diskId}
 	RenameDisk(ctx context.Context, req *RenameDiskRequestBody, params RenameDiskParams) (*DiskResource, error)
 	// RenameInstance implements rename-instance operation.
 	//
-	// 仅修改显示名称。云服务器内的主机名不变，它等于云服务器 id。.
+	// Changes the display name only. The hostname inside the instance is unchanged; it equals the instance
+	// id.
 	//
 	// PATCH /api/v1/instances/{instanceId}
 	RenameInstance(ctx context.Context, req *RenameInstanceRequestBody, params RenameInstanceParams) (*InstanceResource, error)
 	// RenamePrivateImage implements rename-private-image operation.
 	//
-	// 重命名自制镜像.
+	// Rename a private image.
 	//
 	// PATCH /api/v1/private-images/{privateImageId}
 	RenamePrivateImage(ctx context.Context, req *RenamePrivateImageRequestBody, params RenamePrivateImageParams) (*PrivateImageResource, error)
 	// RenamePrivateNetwork implements rename-private-network operation.
 	//
-	// 仅修改显示名称。网段、路由与外网网关均不可修改。.
+	// Changes the display name only. The CIDR, the routes and the internet gateway are immutable.
 	//
 	// PATCH /api/v1/private-networks/{privateNetworkId}
 	RenamePrivateNetwork(ctx context.Context, req *RenamePrivateNetworkRequestBody, params RenamePrivateNetworkParams) (*PrivateNetworkResource, error)
 	// RenameSecurityGroup implements rename-security-group operation.
 	//
-	// 仅可修改名称，规则请用规则接口。.
+	// Changes the name only. Use the rule endpoints to change rules.
 	//
 	// PATCH /api/v1/security-groups/{securityGroupId}
 	RenameSecurityGroup(ctx context.Context, req *RenameSecurityGroupRequestBody, params RenameSecurityGroupParams) (*SecurityGroupResource, error)
 	// RenameSnapshot implements rename-snapshot operation.
 	//
-	// 重命名快照.
+	// Rename a snapshot.
 	//
 	// PATCH /api/v1/snapshots/{snapshotId}
 	RenameSnapshot(ctx context.Context, req *RenameSnapshotRequestBody, params RenameSnapshotParams) (*SnapshotResource, error)
 	// ResetInstancePassword implements reset-instance-password operation.
 	//
-	// 在不重启的情况下改掉 root 的密码，云服务器必须处于运行中。
+	// Changes the root password without a reboot. The instance must be running.
 	//
-	// 并非所有镜像都支持：镜像列表中 `supports_password_reset` 为 false
-	// 的镜像做不到，此时只能通过重装系统设置新密码，而重装会清除系统盘上的全部数据。
+	// Not every image supports this. Images whose `supports_password_reset` is false cannot, and a new
+	// password can then only be set by rebuilding the instance, which erases all data on the system disk.
 	//
-	// 镜像标记为支持、但云服务器内相应组件已被卸载或停止时，本接口同样会被拒绝。.
+	// The request is also rejected when the image is marked as supported but the corresponding component
+	// has been removed or stopped inside the instance.
 	//
 	// POST /api/v1/instances/{instanceId}/password
 	ResetInstancePassword(ctx context.Context, req *ResetPasswordRequestBody, params ResetInstancePasswordParams) (*ResetPasswordResponseBody, error)
 	// ResizeDisk implements resize-disk operation.
 	//
-	// 容量只能增加，不支持缩容。扩容完成后需在云服务器内自行扩展文件系统。.
+	// Capacity can only be increased; shrinking is not supported. Extend the file system inside the
+	// instance once the resize completes.
 	//
 	// POST /api/v1/disks/{diskId}/resize
 	ResizeDisk(ctx context.Context, req *ResizeDiskRequestBody, params ResizeDiskParams) (*DiskResource, error)
 	// ResizeInstance implements resize-instance operation.
 	//
-	// 只能变更为同一地区、同一可用区的机型，否则已挂载的云硬盘无法随之迁移。
+	// Only an instance type in the same region and availability zone can be selected, as attached disks
+	// cannot follow the instance elsewhere.
 	//
-	// 变配分两步：本接口下发后云服务器会在新规格上重新启动，状态变为
-	// `resize_verifying`，此时必须调用确认或回滚接口。目标机型在确认前记在
-	// `pending_instance_type_id` 上，`instance_type_id` 仍为当前生效并计费的机型。
+	// A resize has two steps. This endpoint restarts the instance on the new size and the status becomes
+	// `resize_verifying`, at which point the confirm or revert endpoint must be called. Until confirmation
+	// the target type is recorded in `pending_instance_type_id`, while `instance_type_id` remains the type
+	// in effect and billed.
 	//
-	// 未确认期间新旧两份规格同时占用资源。 请在状态变为 `resize_verifying`
-	// 后尽快确认。.
+	// Both sizes hold resources while the resize is unconfirmed. Confirm promptly once the status becomes
+	// `resize_verifying`.
 	//
 	// POST /api/v1/instances/{instanceId}/resize
 	ResizeInstance(ctx context.Context, req *ResizeInstanceRequestBody, params ResizeInstanceParams) (*InstanceResource, error)
 	// RestoreBackup implements restore-backup operation.
 	//
-	// 恢复到一块新建的云硬盘上，源云硬盘不受影响，也不要求它仍然存在。
+	// Restores onto a newly created disk. The source disk is unaffected and need not still exist.
 	//
-	// 目标硬盘类型可位于本地区的其他可用区，容量不能小于备份。恢复完成前该云硬盘不可挂载，请轮询云硬盘查看接口。.
+	// The target disk type may belong to another availability zone of the same region, and its capacity
+	// must not be smaller than the backup. The disk cannot be attached until the restore completes; poll
+	// the disk retrieve endpoint.
 	//
 	// POST /api/v1/backups/{backupId}/restore
 	RestoreBackup(ctx context.Context, req *RestoreBackupRequestBody, params RestoreBackupParams) (*DiskResource, error)
 	// RevertDisk implements revert-disk operation.
 	//
-	// 将云硬盘的内容恢复到创建该快照的时刻。该时刻之后写入的数据全部丢失，且无法撤销。
+	// Restores the contents of the disk to the moment the snapshot was taken. All data written after that
+	// moment is lost and cannot be recovered.
 	//
-	// 三项限制：只能回滚到该云硬盘最新的一个快照；云硬盘必须先从云服务器上卸载；创建快照后扩容过的云硬盘不能回滚。需要回到更早的时刻，或需要保留现有云硬盘时，请改用由快照创建一块新的云硬盘。
+	// Three restrictions apply: only the most recent snapshot of the disk can be reverted to; the disk
+	// must be detached from its instance first; and a disk resized since the snapshot was taken cannot be
+	// reverted. To return to an earlier point in time, or to keep the existing disk, create a new disk
+	// from the snapshot instead.
 	//
-	// 接口返回时回滚尚未完成，请轮询查看接口。.
+	// The revert is not complete when this endpoint returns; poll the retrieve endpoint.
 	//
 	// POST /api/v1/disks/{diskId}/revert
 	RevertDisk(ctx context.Context, req *RevertDiskRequestBody, params RevertDiskParams) (*DiskResource, error)
 	// RevertInstanceResize implements revert-instance-resize operation.
 	//
-	// 云服务器回到原规格，`pending_instance_type_id`
-	// 被丢弃，计费不受本次变配影响。.
+	// The instance returns to its previous size, `pending_instance_type_id` is discarded, and billing is
+	// unaffected by the resize.
 	//
 	// POST /api/v1/instances/{instanceId}/resize/revert
 	RevertInstanceResize(ctx context.Context, params RevertInstanceResizeParams) (*InstanceResource, error)
 	// SetFloatingIPBandwidth implements set-floating-ip-bandwidth operation.
 	//
-	// 出入两个方向同时限速。仅限制出方向无法防止入方向流量打满上联带宽。.
+	// Limits both directions at once. Limiting egress alone does not prevent ingress traffic from
+	// saturating the uplink.
 	//
 	// PUT /api/v1/floating-ips/{floatingIpId}/bandwidth
 	SetFloatingIPBandwidth(ctx context.Context, req *SetBandwidthRequestBody, params SetFloatingIPBandwidthParams) (*FloatingIPResource, error)
 	// SuggestSubnetCidr implements suggest-subnet-cidr operation.
 	//
-	// 返回的只是建议值，创建子网时仍会重新校验。用于避免手工计算下一个空闲网段时出错。.
+	// The returned value is a suggestion and is validated again when the subnet is created. It exists to
+	// avoid errors when computing the next free CIDR by hand.
 	//
 	// GET /api/v1/private-networks/{privateNetworkId}/subnets/next-free-cidr
 	SuggestSubnetCidr(ctx context.Context, params SuggestSubnetCidrParams) (*NextFreeCidrResponseBody, error)
 	// UnbindFloatingIP implements unbind-floating-ip operation.
 	//
-	// 地址仍归本项目持有，只是不再指向任何网卡。.
+	// The address remains held by the project and simply no longer points at any network interface.
 	//
 	// DELETE /api/v1/floating-ips/{floatingIpId}/binding
 	UnbindFloatingIP(ctx context.Context, params UnbindFloatingIPParams) (*FloatingIPResource, error)

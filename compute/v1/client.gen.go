@@ -386,7 +386,7 @@ func (e SubnetResourceIpVersion) Valid() bool {
 type ActOnInstanceRequestBody struct {
 	Action ActOnInstanceRequestBodyAction `json:"action"`
 
-	// Force 仅适用于 reboot。强制重启不等待操作系统正常关闭，未落盘的数据会丢失，用于系统已无响应的情况
+	// Force Applies to `reboot` only. A forced reboot does not wait for the operating system to shut down and unwritten data is lost; use it when the system is unresponsive
 	Force *bool `json:"force,omitempty"`
 }
 
@@ -395,7 +395,7 @@ type ActOnInstanceRequestBodyAction string
 
 // AllocateFloatingIPRequestBody defines model for AllocateFloatingIPRequestBody.
 type AllocateFloatingIPRequestBody struct {
-	// Address 指定要申领的地址。留空时由平台自动分配
+	// Address The address to allocate. Allocated by the platform when omitted
 	Address          *string            `json:"address,omitempty"`
 	PrivateNetworkId openapi_types.UUID `json:"private_network_id"`
 }
@@ -422,17 +422,17 @@ type BackupListResponseBody struct {
 
 // BackupResource defines model for BackupResource.
 type BackupResource struct {
-	// AvailabilityZone 源云硬盘所在的可用区。恢复时可选择本地区的其他可用区
+	// AvailabilityZone Availability zone of the source disk. A restore may target another zone in the same region
 	AvailabilityZone string             `json:"availability_zone"`
 	CreatedAt        time.Time          `json:"created_at"`
 	Id               openapi_types.UUID `json:"id"`
 	Name             string             `json:"name"`
 	RegionCode       string             `json:"region_code"`
 
-	// SizeGb 创建备份时源云硬盘的容量。恢复出的云硬盘不能小于此容量
+	// SizeGb Capacity of the source disk when the backup was created. A restored disk cannot be smaller than this
 	SizeGb int64 `json:"size_gb"`
 
-	// SourceDiskId 备份来源。该云硬盘删除后本备份仍然可用
+	// SourceDiskId The disk this backup was taken from. The backup remains usable after that disk is deleted
 	SourceDiskId openapi_types.UUID   `json:"source_disk_id"`
 	Status       BackupResourceStatus `json:"status"`
 }
@@ -447,13 +447,13 @@ type BindFloatingIPRequestBody struct {
 
 // ConsoleOutputResponseBody defines model for ConsoleOutputResponseBody.
 type ConsoleOutputResponseBody struct {
-	// Output 串口输出的原始文本，行序与云服务器内一致
+	// Output Raw text of the console output, in the same line order as inside the instance
 	Output string `json:"output"`
 }
 
 // ConsoleResponseBody defines model for ConsoleResponseBody.
 type ConsoleResponseBody struct {
-	// ConsoleUrl 远程控制台的连接地址，一次性使用且数分钟后失效
+	// ConsoleUrl Connection address of the remote console; single-use and expires within minutes
 	ConsoleUrl string `json:"console_url"`
 }
 
@@ -469,7 +469,7 @@ type CreateDiskRequestBody struct {
 	Name       string             `json:"name"`
 	SizeGb     int64              `json:"size_gb"`
 
-	// SnapshotId 从该快照恢复。提供时容量只需不小于快照本身
+	// SnapshotId Restore from this snapshot. When given, the capacity need only be no smaller than the snapshot
 	SnapshotId *openapi_types.UUID `json:"snapshot_id,omitempty"`
 }
 
@@ -477,24 +477,24 @@ type CreateDiskRequestBody struct {
 type CreatePortRequestBody struct {
 	Name *string `json:"name,omitempty"`
 
-	// PrivateIp 指定私网地址。留空时自动分配
+	// PrivateIp The private address to assign. Allocated automatically when omitted
 	PrivateIp *string `json:"private_ip,omitempty"`
 
-	// SecurityGroupIds 至少一个，且必须属于同一个私有网络
+	// SecurityGroupIds At least one, and all must belong to the same private network
 	SecurityGroupIds []openapi_types.UUID `json:"security_group_ids"`
 	SubnetId         openapi_types.UUID   `json:"subnet_id"`
 }
 
 // CreatePrivateImageRequestBody defines model for CreatePrivateImageRequestBody.
 type CreatePrivateImageRequestBody struct {
-	// InstanceId 制作依据其系统盘，数据盘不包含在内
+	// InstanceId Captured from the system disk of this instance; data disks are not included
 	InstanceId openapi_types.UUID `json:"instance_id"`
 	Name       string             `json:"name"`
 }
 
 // CreatePrivateNetworkRequestBody defines model for CreatePrivateNetworkRequestBody.
 type CreatePrivateNetworkRequestBody struct {
-	// Cidr 必须是 RFC1918 的私有网段，掩码在 /8 到 /24 之间，例如 10.0.0.0/16
+	// Cidr Must be an RFC 1918 private CIDR with a prefix length between /8 and /24, for example `10.0.0.0/16`
 	Cidr       string `json:"cidr"`
 	Name       string `json:"name"`
 	RegionCode string `json:"region_code"`
@@ -504,10 +504,10 @@ type CreatePrivateNetworkRequestBody struct {
 type CreateRouteRequestBody struct {
 	Description *string `json:"description,omitempty"`
 
-	// Destination 目的网段。不能为 0.0.0.0/0，也不能为某个子网自身的网段
+	// Destination Destination CIDR. It cannot be `0.0.0.0/0`, nor the CIDR of a subnet of this network
 	Destination string `json:"destination"`
 
-	// Nexthop 云服务器的私网地址，必须落在该私有网络的某个子网内
+	// Nexthop Private address of an instance; must fall inside a subnet of this private network
 	Nexthop string `json:"nexthop"`
 }
 
@@ -524,16 +524,16 @@ type CreateSecurityRuleRequestBody struct {
 	Direction   CreateSecurityRuleRequestBodyDirection `json:"direction"`
 	Ethertype   CreateSecurityRuleRequestBodyEthertype `json:"ethertype"`
 
-	// PortRangeMax ICMP 协议下表示 code（0–255），而非端口
+	// PortRangeMax Denotes the ICMP code (0–255) rather than a port when the protocol is ICMP
 	PortRangeMax *int64 `json:"port_range_max,omitempty"`
 
-	// PortRangeMin ICMP 协议下表示 type（0–255），而非端口
+	// PortRangeMin Denotes the ICMP type (0–255) rather than a port when the protocol is ICMP
 	PortRangeMin *int64 `json:"port_range_min,omitempty"`
 
-	// Protocol 如 tcp、udp、icmp、ipv6-icmp。留空表示全部协议
+	// Protocol For example `tcp`, `udp`, `icmp` or `ipv6-icmp`. All protocols when omitted
 	Protocol *string `json:"protocol,omitempty"`
 
-	// RemoteIpPrefix 留空等同于 0.0.0.0/0 或 ::/0
+	// RemoteIpPrefix Equivalent to `0.0.0.0/0` or `::/0` when omitted
 	RemoteIpPrefix *string `json:"remote_ip_prefix,omitempty"`
 }
 
@@ -551,7 +551,7 @@ type CreateSnapshotRequestBody struct {
 
 // CreateSubnetRequestBody defines model for CreateSubnetRequestBody.
 type CreateSubnetRequestBody struct {
-	// Cidr 必须落在私有网络的网段内，且不能与已有子网重叠
+	// Cidr Must fall inside the CIDR of the private network and must not overlap an existing subnet
 	Cidr string `json:"cidr"`
 	Name string `json:"name"`
 }
@@ -565,16 +565,16 @@ type DiskListResponseBody struct {
 type DiskResource struct {
 	AttachedInstanceId *string `json:"attached_instance_id"`
 
-	// AvailabilityZone 云硬盘实际所在的可用区。挂载时云服务器必须位于同一可用区
+	// AvailabilityZone Availability zone the disk actually resides in. An instance must be in the same zone to attach it
 	AvailabilityZone string    `json:"availability_zone"`
 	CreatedAt        time.Time `json:"created_at"`
 
-	// Device 系统分配的设备名，在云服务器内看到的即为该名称
+	// Device Device name assigned by the system, as seen inside the instance
 	Device     *string            `json:"device"`
 	DiskTypeId openapi_types.UUID `json:"disk_type_id"`
 	Id         openapi_types.UUID `json:"id"`
 
-	// IsSystem 系统盘随云服务器一并释放，不能卸载也不能单独删除
+	// IsSystem A system disk is released with its instance and can be neither detached nor deleted individually
 	IsSystem   bool               `json:"is_system"`
 	Name       string             `json:"name"`
 	RegionCode string             `json:"region_code"`
@@ -626,24 +626,24 @@ type FloatingIPResource struct {
 	Id              openapi_types.UUID `json:"id"`
 	RegionCode      string             `json:"region_code"`
 
-	// Status idle 表示尚未绑定到网卡
+	// Status `idle` means the address is not bound to a network interface
 	Status FloatingIPResourceStatus `json:"status"`
 }
 
-// FloatingIPResourceStatus idle 表示尚未绑定到网卡
+// FloatingIPResourceStatus `idle` means the address is not bound to a network interface
 type FloatingIPResourceStatus string
 
 // IPv6ResponseBody defines model for IPv6ResponseBody.
 type IPv6ResponseBody struct {
-	// Cidr 已分配的 /64 前缀，未启用时为空
+	// Cidr The allocated /64 prefix; empty while IPv6 is disabled
 	Cidr    string `json:"cidr"`
 	Enabled bool   `json:"enabled"`
 
-	// Status 为 active 时表示 IPv6 已完全可用
+	// Status `active` means IPv6 is fully available
 	Status IPv6ResponseBodyStatus `json:"status"`
 }
 
-// IPv6ResponseBodyStatus 为 active 时表示 IPv6 已完全可用
+// IPv6ResponseBodyStatus `active` means IPv6 is fully available
 type IPv6ResponseBodyStatus string
 
 // ImageListResponseBody defines model for ImageListResponseBody.
@@ -662,7 +662,7 @@ type ImageResource struct {
 	OsVersion    string             `json:"os_version"`
 	RegionCode   string             `json:"region_code"`
 
-	// SupportsPasswordReset false 表示由该镜像创建的云服务器只能通过重装系统设置新密码
+	// SupportsPasswordReset False means a new password can only be set by rebuilding an instance created from this image
 	SupportsPasswordReset bool `json:"supports_password_reset"`
 }
 
@@ -676,56 +676,56 @@ type InstanceResource struct {
 	AvailabilityZone string    `json:"availability_zone"`
 	CreatedAt        time.Time `json:"created_at"`
 
-	// Hostname 云服务器内的主机名，等于云服务器 id
+	// Hostname Hostname inside the instance; equals the instance id
 	Hostname string             `json:"hostname"`
 	Id       openapi_types.UUID `json:"id"`
 
-	// ImageId 从平台提供的镜像创建时非空
+	// ImageId Non-empty when the instance was created from a platform image
 	ImageId *openapi_types.UUID `json:"image_id"`
 
-	// InstanceTypeId 当前生效的机型，即当前计费依据
+	// InstanceTypeId The instance type in effect, and the basis for billing
 	InstanceTypeId openapi_types.UUID `json:"instance_type_id"`
 
-	// Ipv6Address 云服务器主网卡的 IPv6 地址。私有网络启用 IPv6 后自动下发
+	// Ipv6Address IPv6 address of the primary network interface. Assigned automatically once IPv6 is enabled on the private network
 	Ipv6Address *string `json:"ipv6_address"`
 	Name        string  `json:"name"`
 
-	// PendingInstanceTypeId 非空表示存在待确认的变配。确认后该机型生效，回滚则丢弃
+	// PendingInstanceTypeId Non-empty while a resize awaits confirmation. Confirming puts this type into effect, reverting discards it
 	PendingInstanceTypeId *openapi_types.UUID `json:"pending_instance_type_id"`
 
-	// PrivateImageId 从自制的私有镜像创建时非空
+	// PrivateImageId Non-empty when the instance was created from a private image
 	PrivateImageId *openapi_types.UUID `json:"private_image_id"`
 
-	// PrivateIp 云服务器的内网地址
+	// PrivateIp Private address of the instance
 	PrivateIp *string `json:"private_ip"`
 
-	// PrivateNetworkId 云服务器主网卡所在的私有网络
+	// PrivateNetworkId Private network of the primary network interface
 	PrivateNetworkId *string `json:"private_network_id"`
 
-	// PublicIps 云服务器主网卡上绑定的公网 IPv4，未绑定时为空数组
+	// PublicIps Floating IPv4 addresses bound to the primary network interface; an empty array when none are bound
 	PublicIps  []string `json:"public_ips"`
 	RegionCode string   `json:"region_code"`
 
-	// Status 只有 running 和 stopped 可以下命令，其余取值都表示云服务器正在变更中，此时开机、关机、重启、变配、重装、重置密码都会被拒绝。
+	// Status Only `running` and `stopped` accept commands. Every other value means the instance is changing, and start, stop, reboot, resize, rebuild and password reset are all rejected.
 	//
-	// `transitioning` 是「正在执行某项变更，但不属于上面任何一类」的兜底取值，见到它继续轮询即可，不代表出错。
+	// `transitioning` is the fallback for a change that falls into none of the categories above. It does not indicate an error; keep polling.
 	//
-	// `resize_verifying` 不是瞬态：变配已在新规格上启动，会一直停在这里直到确认或回滚，期间新旧两份规格同时计费。
+	// `resize_verifying` is not transient: the instance is running on the new size and stays there until the resize is confirmed or reverted, with both sizes billed in the meantime.
 	Status InstanceResourceStatus `json:"status"`
 
-	// SubnetId 云服务器主网卡所在的子网
+	// SubnetId Subnet of the primary network interface
 	SubnetId *string `json:"subnet_id"`
 
-	// SuspendedAt 非空表示已被平台停服，需先解除后才能操作
+	// SuspendedAt Non-empty once the platform has suspended the instance, which must be lifted before any operation
 	SuspendedAt *time.Time `json:"suspended_at"`
 	UpdatedAt   time.Time  `json:"updated_at"`
 }
 
-// InstanceResourceStatus 只有 running 和 stopped 可以下命令，其余取值都表示云服务器正在变更中，此时开机、关机、重启、变配、重装、重置密码都会被拒绝。
+// InstanceResourceStatus Only `running` and `stopped` accept commands. Every other value means the instance is changing, and start, stop, reboot, resize, rebuild and password reset are all rejected.
 //
-// `transitioning` 是「正在执行某项变更，但不属于上面任何一类」的兜底取值，见到它继续轮询即可，不代表出错。
+// `transitioning` is the fallback for a change that falls into none of the categories above. It does not indicate an error; keep polling.
 //
-// `resize_verifying` 不是瞬态：变配已在新规格上启动，会一直停在这里直到确认或回滚，期间新旧两份规格同时计费。
+// `resize_verifying` is not transient: the instance is running on the new size and stays there until the resize is confirmed or reverted, with both sizes billed in the meantime.
 type InstanceResourceStatus string
 
 // InstanceTypeListResponseBody defines model for InstanceTypeListResponseBody.
@@ -735,7 +735,7 @@ type InstanceTypeListResponseBody struct {
 
 // InstanceTypeResource defines model for InstanceTypeResource.
 type InstanceTypeResource struct {
-	// AvailabilityZoneCode 该机型所属的可用区。云硬盘必须位于同一可用区才能挂载
+	// AvailabilityZoneCode Availability zone of this instance type. A disk must be in the same zone to be attached
 	AvailabilityZoneCode string             `json:"availability_zone_code"`
 	Id                   openapi_types.UUID `json:"id"`
 	MaxBandwidthMbps     int64              `json:"max_bandwidth_mbps"`
@@ -749,51 +749,51 @@ type InstanceTypeResource struct {
 
 // LaunchInstanceRequestBody defines model for LaunchInstanceRequestBody.
 type LaunchInstanceRequestBody struct {
-	// Count 一次创建的台数，留空为 1。多台时名称自动编号
+	// Count Number of instances to create; 1 when omitted. Names are numbered automatically for several
 	Count *int64 `json:"count,omitempty"`
 
-	// GeneratePassword 由平台生成随机密码，仅在本次响应中返回
+	// GeneratePassword Have the platform generate a random password, returned only in this response
 	GeneratePassword *bool `json:"generate_password,omitempty"`
 
-	// ImageId 平台提供的镜像。与 private_image_id 二选一
+	// ImageId A platform image. Exactly one of this and `private_image_id`
 	ImageId        *openapi_types.UUID `json:"image_id,omitempty"`
 	InstanceTypeId openapi_types.UUID  `json:"instance_type_id"`
 	Name           string              `json:"name"`
 
-	// Password root 的登录密码。留空时仅使用项目的 SSH 公钥
+	// Password Root password. Only the SSH public keys of the project are used when omitted
 	Password *string `json:"password,omitempty"`
 
-	// PortId 使用已有网卡（可预先绑定公网 IP）。与 subnet_id 二选一；使用时只能创建一台
+	// PortId Use an existing network interface, which may already have a floating IP bound. Exactly one of this and `subnet_id`; only one instance can be created when it is used
 	PortId *openapi_types.UUID `json:"port_id,omitempty"`
 
-	// PrivateImageId 自制镜像。与 image_id 二选一
+	// PrivateImageId A private image. Exactly one of this and `image_id`
 	PrivateImageId *openapi_types.UUID `json:"private_image_id,omitempty"`
 
-	// RootDiskGb 系统盘容量（GB）。留空时按镜像要求与平台下限自动选择
+	// RootDiskGb System disk capacity in GB. Chosen automatically from the requirement of the image and the platform minimum when omitted
 	RootDiskGb *int64 `json:"root_disk_gb,omitempty"`
 
-	// SecurityGroupIds 新建主网卡时必填，至少一个；不会自动使用默认安全组。使用 port_id 时忽略——那张网卡的安全组在创建它时已经定了
+	// SecurityGroupIds Required when a primary network interface is created, at least one; the default security group is not applied automatically. Ignored together with `port_id`, as the security groups of that interface were fixed when it was created
 	SecurityGroupIds []openapi_types.UUID `json:"security_group_ids,omitempty"`
 
-	// SubnetId 在该子网内新建主网卡。与 port_id 二选一
+	// SubnetId Create the primary network interface in this subnet. Exactly one of this and `port_id`
 	SubnetId *openapi_types.UUID `json:"subnet_id,omitempty"`
 }
 
 // LaunchInstanceResponseBody defines model for LaunchInstanceResponseBody.
 type LaunchInstanceResponseBody struct {
-	// Failure 非空表示只成功创建了部分云服务器，其余因该原因中止
+	// Failure Non-empty when only some of the instances were created, stating why the sequence stopped
 	Failure *string `json:"failure"`
 
-	// Instances 按请求顺序返回，单台创建时也是数组
+	// Instances Returned in request order; an array even for a single instance
 	Instances []InstanceResource `json:"instances"`
 
-	// Password 仅在本次响应中返回，请及时保存。批量创建时所有云服务器共用它
+	// Password Returned only in this response; store it immediately. All instances of a batch share it
 	Password string `json:"password"`
 }
 
 // NextFreeCidrResponseBody defines model for NextFreeCidrResponseBody.
 type NextFreeCidrResponseBody struct {
-	// Cidr 为空表示该私有网络内已无满足该掩码的空闲网段
+	// Cidr Empty when the private network has no free CIDR left for that prefix length
 	Cidr string `json:"cidr"`
 }
 
@@ -805,25 +805,25 @@ type OperationLogListResponseBody struct {
 
 // OperationLogResource defines model for OperationLogResource.
 type OperationLogResource struct {
-	// Action 操作名，与接口的 operation id 一致
+	// Action Name of the operation; matches the operation id of the endpoint
 	Action string `json:"action"`
 
-	// Actor 发起该操作的用户。平台执行时为空
+	// Actor The user who initiated the operation. Empty when the platform performed it
 	Actor *string `json:"actor"`
 
-	// ByPlatform true 表示由平台代为执行
+	// ByPlatform True when the operation was performed by the platform
 	ByPlatform bool      `json:"by_platform"`
 	CreatedAt  time.Time `json:"created_at"`
 
-	// Failure 失败时的简要原因
+	// Failure Brief reason for the failure
 	Failure *string            `json:"failure"`
 	Id      openapi_types.UUID `json:"id"`
 
-	// Payload 该次请求的路径与查询参数。密码一类的字段已被隐去
+	// Payload Path and query parameters of the request. Fields such as passwords are redacted
 	Payload    map[string]interface{} `json:"payload"`
 	RegionCode *string                `json:"region_code"`
 
-	// SubjectId 创建类操作为空：新资源的 id 在响应中，不在请求路径上
+	// SubjectId Empty for create operations: the id of the new resource is in the response, not in the request path
 	SubjectId   string `json:"subject_id"`
 	SubjectType string `json:"subject_type"`
 	Succeeded   bool   `json:"succeeded"`
@@ -840,14 +840,14 @@ type PortResource struct {
 	Id                 openapi_types.UUID `json:"id"`
 	Ipv6Address        *string            `json:"ipv6_address"`
 
-	// IsPrimary 主网卡随云服务器一并创建和释放，不可单独卸载
+	// IsPrimary A primary network interface is created and released with its instance and cannot be detached individually
 	IsPrimary        bool               `json:"is_primary"`
 	Mac              *string            `json:"mac"`
 	Name             string             `json:"name"`
 	PrivateIp        *string            `json:"private_ip"`
 	PrivateNetworkId openapi_types.UUID `json:"private_network_id"`
 
-	// PublicIps 绑在这张网卡上的公网 IPv4，未绑定时为空数组
+	// PublicIps Floating IPv4 addresses bound to this network interface; an empty array when none are bound
 	PublicIps []string           `json:"public_ips"`
 	SubnetId  openapi_types.UUID `json:"subnet_id"`
 }
@@ -862,30 +862,30 @@ type PrivateImageResource struct {
 	Architecture string    `json:"architecture"`
 	CreatedAt    time.Time `json:"created_at"`
 
-	// Failure 制作失败的原因，仅在 status 为 error 时非空
+	// Failure Reason the capture failed; non-empty only when `status` is `error`
 	Failure *string            `json:"failure"`
 	Id      openapi_types.UUID `json:"id"`
 
-	// MinDiskGb 使用本镜像创建云服务器时，系统盘不能小于此容量
+	// MinDiskGb The system disk of an instance created from this image cannot be smaller than this
 	MinDiskGb int64 `json:"min_disk_gb"`
 
-	// MinRamMb 使用本镜像创建云服务器时，机型内存不能小于此容量
+	// MinRamMb The instance type of an instance created from this image must have at least this much memory
 	MinRamMb  int64  `json:"min_ram_mb"`
 	Name      string `json:"name"`
 	OsFamily  string `json:"os_family"`
 	OsVersion string `json:"os_version"`
 
-	// RegionCode 镜像只能用于所在地区
+	// RegionCode An image can only be used in the region that holds it
 	RegionCode string `json:"region_code"`
 
-	// SizeBytes 镜像占用的存储容量，制作完成前为 0
+	// SizeBytes Storage occupied by the image; 0 until the capture completes
 	SizeBytes int64 `json:"size_bytes"`
 
-	// SourceInstanceId 制作来源。该云服务器释放后本镜像仍然可用
+	// SourceInstanceId The instance this image was captured from. The image remains usable after that instance is released
 	SourceInstanceId *openapi_types.UUID        `json:"source_instance_id"`
 	Status           PrivateImageResourceStatus `json:"status"`
 
-	// SupportsPasswordReset false 表示由该镜像创建的云服务器只能通过重装系统设置新密码
+	// SupportsPasswordReset False means a new password can only be set by rebuilding an instance created from this image
 	SupportsPasswordReset bool `json:"supports_password_reset"`
 }
 
@@ -916,11 +916,11 @@ type PrivateNetworkResourceStatus string
 type RebuildInstanceRequestBody struct {
 	GeneratePassword *bool `json:"generate_password,omitempty"`
 
-	// ImageId 平台提供的镜像。与 private_image_id 二选一
+	// ImageId A platform image. Exactly one of this and `private_image_id`
 	ImageId  *openapi_types.UUID `json:"image_id,omitempty"`
 	Password *string             `json:"password,omitempty"`
 
-	// PrivateImageId 自制镜像。与 image_id 二选一
+	// PrivateImageId A private image. Exactly one of this and `image_id`
 	PrivateImageId *openapi_types.UUID `json:"private_image_id,omitempty"`
 }
 
@@ -928,7 +928,7 @@ type RebuildInstanceRequestBody struct {
 type RebuildInstanceResponseBody struct {
 	Instance InstanceResource `json:"instance"`
 
-	// Password 仅在本次响应中返回，请及时保存
+	// Password Returned only in this response; store it immediately
 	Password string `json:"password"`
 }
 
@@ -981,44 +981,44 @@ type RenameSnapshotRequestBody struct {
 
 // ResetPasswordRequestBody defines model for ResetPasswordRequestBody.
 type ResetPasswordRequestBody struct {
-	// GeneratePassword 由平台生成随机密码，仅在本次响应中返回
+	// GeneratePassword Have the platform generate a random password, returned only in this response
 	GeneratePassword *bool `json:"generate_password,omitempty"`
 
-	// Password 新的 root 密码。与 generate_password 二选一
+	// Password New root password. Exactly one of this and `generate_password`
 	Password *string `json:"password,omitempty"`
 }
 
 // ResetPasswordResponseBody defines model for ResetPasswordResponseBody.
 type ResetPasswordResponseBody struct {
-	// Password 平台生成的密码，仅本次返回。自行设置密码时为空
+	// Password The password generated by the platform, returned only in this response. Empty when the password was supplied in the request
 	Password string `json:"password"`
 }
 
 // ResizeDiskRequestBody defines model for ResizeDiskRequestBody.
 type ResizeDiskRequestBody struct {
-	// SizeGb 必须大于当前容量
+	// SizeGb Must be larger than the current capacity
 	SizeGb int64 `json:"size_gb"`
 }
 
 // ResizeInstanceRequestBody defines model for ResizeInstanceRequestBody.
 type ResizeInstanceRequestBody struct {
-	// InstanceTypeId 必须与当前机型位于同一地区和可用区
+	// InstanceTypeId Must be in the same region and availability zone as the current instance type
 	InstanceTypeId openapi_types.UUID `json:"instance_type_id"`
 }
 
 // RestoreBackupRequestBody defines model for RestoreBackupRequestBody.
 type RestoreBackupRequestBody struct {
-	// DiskTypeId 可选择与源云硬盘不同的可用区，但必须在同一地区
+	// DiskTypeId May differ from the availability zone of the source disk, but must be in the same region
 	DiskTypeId openapi_types.UUID `json:"disk_type_id"`
 	Name       string             `json:"name"`
 
-	// SizeGb 留空时与备份等大。给出时不能小于备份
+	// SizeGb Matches the size of the backup when omitted. When given, it must not be smaller than the backup
 	SizeGb *int64 `json:"size_gb,omitempty"`
 }
 
 // RevertDiskRequestBody defines model for RevertDiskRequestBody.
 type RevertDiskRequestBody struct {
-	// SnapshotId 必须是该云硬盘最新的一个快照
+	// SnapshotId Must be the most recent snapshot of the disk
 	SnapshotId openapi_types.UUID `json:"snapshot_id"`
 }
 
@@ -1047,7 +1047,7 @@ type SecurityGroupResource struct {
 	Description string             `json:"description"`
 	Id          openapi_types.UUID `json:"id"`
 
-	// IsDefault 默认安全组随私有网络一并释放，不可单独删除
+	// IsDefault The default security group is released with its private network and cannot be deleted individually
 	IsDefault        bool               `json:"is_default"`
 	Name             string             `json:"name"`
 	PrivateNetworkId openapi_types.UUID `json:"private_network_id"`
@@ -1066,10 +1066,10 @@ type SecurityRuleResource struct {
 	Ethertype   SecurityRuleResourceEthertype `json:"ethertype"`
 	Id          openapi_types.UUID            `json:"id"`
 
-	// PortRangeMax ICMP 协议下表示 code，而非端口
+	// PortRangeMax Denotes the ICMP code rather than a port when the protocol is ICMP
 	PortRangeMax *int64 `json:"port_range_max"`
 
-	// PortRangeMin ICMP 协议下表示 type，而非端口
+	// PortRangeMin Denotes the ICMP type rather than a port when the protocol is ICMP
 	PortRangeMin   *int64  `json:"port_range_min"`
 	Protocol       *string `json:"protocol"`
 	RemoteIpPrefix *string `json:"remote_ip_prefix"`
@@ -1083,7 +1083,7 @@ type SecurityRuleResourceEthertype string
 
 // SetBandwidthRequestBody defines model for SetBandwidthRequestBody.
 type SetBandwidthRequestBody struct {
-	// Mbps 出入方向均限制为该值
+	// Mbps Applied to both directions
 	Mbps int64 `json:"mbps"`
 }
 
@@ -1094,7 +1094,7 @@ type SnapshotListResponseBody struct {
 
 // SnapshotResource defines model for SnapshotResource.
 type SnapshotResource struct {
-	// AvailabilityZone 由该快照恢复的云硬盘必须位于此可用区
+	// AvailabilityZone A disk restored from this snapshot must reside in this availability zone
 	AvailabilityZone string             `json:"availability_zone"`
 	CreatedAt        time.Time          `json:"created_at"`
 	DiskId           openapi_types.UUID `json:"disk_id"`
@@ -1102,7 +1102,7 @@ type SnapshotResource struct {
 	Name             string             `json:"name"`
 	RegionCode       string             `json:"region_code"`
 
-	// SizeGb 创建快照时源云硬盘的容量。由该快照恢复的云硬盘不能小于此容量
+	// SizeGb Capacity of the source disk when the snapshot was created. A disk restored from it cannot be smaller
 	SizeGb int64                  `json:"size_gb"`
 	Status SnapshotResourceStatus `json:"status"`
 }
@@ -1141,7 +1141,7 @@ type ZoneResource struct {
 
 // ListBackupsParams defines parameters for ListBackups.
 type ListBackupsParams struct {
-	// DiskId 只返回该云硬盘的备份
+	// DiskId Return only the backups of this disk
 	DiskId *openapi_types.UUID `form:"disk_id,omitempty" json:"disk_id,omitempty"`
 }
 
@@ -1154,7 +1154,7 @@ type ListDiskTypesParams struct {
 type ListDisksParams struct {
 	RegionCode *string `form:"region_code,omitempty" json:"region_code,omitempty"`
 
-	// AvailabilityZone 与 region_code 同时提供，用于筛选可挂载的云硬盘
+	// AvailabilityZone Supplied together with `region_code` to filter attachable disks
 	AvailabilityZone *string `form:"availability_zone,omitempty" json:"availability_zone,omitempty"`
 }
 
@@ -1170,13 +1170,13 @@ type ListInstanceTypesParams struct {
 
 // GetInstanceConsoleOutputParams defines parameters for GetInstanceConsoleOutput.
 type GetInstanceConsoleOutputParams struct {
-	// Lines 返回末尾多少行，0 表示全部
+	// Lines Number of trailing lines to return; 0 returns the entire output
 	Lines *int64 `form:"lines,omitempty" json:"lines,omitempty"`
 }
 
 // ListOperationLogsParams defines parameters for ListOperationLogs.
 type ListOperationLogsParams struct {
-	// Action 只看某一种操作，取值与接口的 operation id 一致
+	// Action Return a single kind of operation; the value matches the operation id of the endpoint
 	Action *string `form:"action,omitempty" json:"action,omitempty"`
 	Limit  *int64  `form:"limit,omitempty" json:"limit,omitempty"`
 	Offset *int64  `form:"offset,omitempty" json:"offset,omitempty"`
@@ -1184,13 +1184,13 @@ type ListOperationLogsParams struct {
 
 // ListPrivateImagesParams defines parameters for ListPrivateImages.
 type ListPrivateImagesParams struct {
-	// RegionCode 只返回该地区的镜像。镜像只能用于所在地区
+	// RegionCode Return only the images of this region. An image can only be used in the region that holds it
 	RegionCode *string `form:"region_code,omitempty" json:"region_code,omitempty"`
 }
 
 // ListPrivateNetworksParams defines parameters for ListPrivateNetworks.
 type ListPrivateNetworksParams struct {
-	// RegionCode 不传时返回全部地区
+	// RegionCode Returns every region when omitted
 	RegionCode *string `form:"region_code,omitempty" json:"region_code,omitempty"`
 }
 
@@ -1203,13 +1203,13 @@ type SuggestSubnetCidrParams struct {
 type ListSecurityGroupsParams struct {
 	RegionCode *string `form:"region_code,omitempty" json:"region_code,omitempty"`
 
-	// PrivateNetworkId 只返回该私有网络下的安全组
+	// PrivateNetworkId Return only the security groups of this private network
 	PrivateNetworkId *string `form:"private_network_id,omitempty" json:"private_network_id,omitempty"`
 }
 
 // ListSnapshotsParams defines parameters for ListSnapshots.
 type ListSnapshotsParams struct {
-	// DiskId 只返回该云硬盘的快照
+	// DiskId Return only the snapshots of this disk
 	DiskId *openapi_types.UUID `form:"disk_id,omitempty" json:"disk_id,omitempty"`
 }
 
@@ -1380,962 +1380,962 @@ func WithRequestEditorFn(fn RequestEditorFn) ClientOption {
 // The interface specification for the client above.
 type ClientInterface interface {
 
-	// ListBackups 列出备份
+	// ListBackups List backups
 	//
 	// Corresponds with GET /api/v1/backups (the `ListBackups` operationId).
 	ListBackups(ctx context.Context, params *ListBackupsParams, reqEditors ...RequestEditorFn) (*http.Response, error)
 
-	// CreateBackupWithBody 创建备份
+	// CreateBackupWithBody Create a backup
 	//
-	// 备份是云硬盘在独立存储中的一份完整副本：**源云硬盘删除后仍可恢复，且可恢复到本地区的其他可用区。**快照不具备这两项能力，它与源云硬盘位于同一存储，且源云硬盘存在快照时无法删除。
+	// A backup is a complete copy of a disk held in separate storage: **it remains restorable after the source disk is deleted, and can be restored to another availability zone in the same region.** A snapshot offers neither capability, as it resides in the same storage as the source disk and prevents that disk from being deleted while it exists.
 	//
-	// 运行中云服务器上挂载的云硬盘、以及系统盘，均可创建备份。
+	// Disks attached to a running instance, including system disks, can be backed up.
 	//
-	// 备份耗时取决于数据量。接口返回时尚未完成，请轮询查看接口。
+	// The duration depends on the amount of data. The backup is not complete when this endpoint returns; poll the retrieve endpoint.
 	//
 	// Takes any type of body and a specified content type.
 	//
 	// Corresponds with POST /api/v1/backups (the `CreateBackup` operationId).
 	CreateBackupWithBody(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
 
-	// CreateBackup 创建备份
+	// CreateBackup Create a backup
 	//
-	// 备份是云硬盘在独立存储中的一份完整副本：**源云硬盘删除后仍可恢复，且可恢复到本地区的其他可用区。**快照不具备这两项能力，它与源云硬盘位于同一存储，且源云硬盘存在快照时无法删除。
+	// A backup is a complete copy of a disk held in separate storage: **it remains restorable after the source disk is deleted, and can be restored to another availability zone in the same region.** A snapshot offers neither capability, as it resides in the same storage as the source disk and prevents that disk from being deleted while it exists.
 	//
-	// 运行中云服务器上挂载的云硬盘、以及系统盘，均可创建备份。
+	// Disks attached to a running instance, including system disks, can be backed up.
 	//
-	// 备份耗时取决于数据量。接口返回时尚未完成，请轮询查看接口。
+	// The duration depends on the amount of data. The backup is not complete when this endpoint returns; poll the retrieve endpoint.
 	//
 	// Takes a body of the `application/json` content type.
 	//
 	// Corresponds with POST /api/v1/backups (the `CreateBackup` operationId).
 	CreateBackup(ctx context.Context, body CreateBackupJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
 
-	// DeleteBackup 删除备份
+	// DeleteBackup Delete a backup
 	//
-	// 与源云硬盘无关，源云硬盘是否存在都不影响删除。.
+	// Independent of the source disk: deletion succeeds whether or not that disk still exists.
 	//
 	// Corresponds with DELETE /api/v1/backups/{backupId} (the `DeleteBackup` operationId).
 	DeleteBackup(ctx context.Context, backupId openapi_types.UUID, reqEditors ...RequestEditorFn) (*http.Response, error)
 
-	// GetBackup 查看备份
+	// GetBackup Retrieve a backup
 	//
-	// 会实时查询备份的当前状态，因此比列表接口慢但更准确。轮询创建进度请使用本接口。.
+	// Queries the current state of the backup, which makes it slower but more accurate than the list endpoint. Use it to poll creation progress.
 	//
 	// Corresponds with GET /api/v1/backups/{backupId} (the `GetBackup` operationId).
 	GetBackup(ctx context.Context, backupId openapi_types.UUID, reqEditors ...RequestEditorFn) (*http.Response, error)
 
-	// RenameBackupWithBody 重命名备份
+	// RenameBackupWithBody Rename a backup
 	//
 	// Takes any type of body and a specified content type.
 	//
 	// Corresponds with PATCH /api/v1/backups/{backupId} (the `RenameBackup` operationId).
 	RenameBackupWithBody(ctx context.Context, backupId openapi_types.UUID, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
 
-	// RenameBackup 重命名备份
+	// RenameBackup Rename a backup
 	//
 	// Takes a body of the `application/json` content type.
 	//
 	// Corresponds with PATCH /api/v1/backups/{backupId} (the `RenameBackup` operationId).
 	RenameBackup(ctx context.Context, backupId openapi_types.UUID, body RenameBackupJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
 
-	// RestoreBackupWithBody 由备份恢复
+	// RestoreBackupWithBody Restore from a backup
 	//
-	// 恢复到一块**新建的**云硬盘上，源云硬盘不受影响，也不要求它仍然存在。
+	// Restores onto a **newly created** disk. The source disk is unaffected and need not still exist.
 	//
-	// 目标硬盘类型可位于本地区的其他可用区，容量不能小于备份。恢复完成前该云硬盘不可挂载，请轮询云硬盘查看接口。
+	// The target disk type may belong to another availability zone of the same region, and its capacity must not be smaller than the backup. The disk cannot be attached until the restore completes; poll the disk retrieve endpoint.
 	//
 	// Takes any type of body and a specified content type.
 	//
 	// Corresponds with POST /api/v1/backups/{backupId}/restore (the `RestoreBackup` operationId).
 	RestoreBackupWithBody(ctx context.Context, backupId openapi_types.UUID, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
 
-	// RestoreBackup 由备份恢复
+	// RestoreBackup Restore from a backup
 	//
-	// 恢复到一块**新建的**云硬盘上，源云硬盘不受影响，也不要求它仍然存在。
+	// Restores onto a **newly created** disk. The source disk is unaffected and need not still exist.
 	//
-	// 目标硬盘类型可位于本地区的其他可用区，容量不能小于备份。恢复完成前该云硬盘不可挂载，请轮询云硬盘查看接口。
+	// The target disk type may belong to another availability zone of the same region, and its capacity must not be smaller than the backup. The disk cannot be attached until the restore completes; poll the disk retrieve endpoint.
 	//
 	// Takes a body of the `application/json` content type.
 	//
 	// Corresponds with POST /api/v1/backups/{backupId}/restore (the `RestoreBackup` operationId).
 	RestoreBackup(ctx context.Context, backupId openapi_types.UUID, body RestoreBackupJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
 
-	// ListDiskTypes 列出在售硬盘类型
+	// ListDiskTypes List disk types on sale
 	//
 	// Corresponds with GET /api/v1/disk-types (the `ListDiskTypes` operationId).
 	ListDiskTypes(ctx context.Context, params *ListDiskTypesParams, reqEditors ...RequestEditorFn) (*http.Response, error)
 
-	// ListDisks 列出云硬盘
+	// ListDisks List disks
 	//
-	// 同时提供 region_code 与 availability_zone 时，只返回可挂载到该位置云服务器的云硬盘。.
+	// When both `region_code` and `availability_zone` are supplied, only disks attachable to an instance at that location are returned.
 	//
 	// Corresponds with GET /api/v1/disks (the `ListDisks` operationId).
 	ListDisks(ctx context.Context, params *ListDisksParams, reqEditors ...RequestEditorFn) (*http.Response, error)
 
-	// CreateDiskWithBody 创建云硬盘
+	// CreateDiskWithBody Create a disk
 	//
-	// 云硬盘创建在所选硬盘类型所属的可用区，云服务器必须位于同一可用区才能挂载。因此选定硬盘类型即确定了可用区。.
+	// The disk is created in the availability zone of the selected disk type, and an instance must reside in the same zone to attach it. Choosing the disk type therefore determines the zone.
 	//
 	// Takes any type of body and a specified content type.
 	//
 	// Corresponds with POST /api/v1/disks (the `CreateDisk` operationId).
 	CreateDiskWithBody(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
 
-	// CreateDisk 创建云硬盘
+	// CreateDisk Create a disk
 	//
-	// 云硬盘创建在所选硬盘类型所属的可用区，云服务器必须位于同一可用区才能挂载。因此选定硬盘类型即确定了可用区。.
+	// The disk is created in the availability zone of the selected disk type, and an instance must reside in the same zone to attach it. Choosing the disk type therefore determines the zone.
 	//
 	// Takes a body of the `application/json` content type.
 	//
 	// Corresponds with POST /api/v1/disks (the `CreateDisk` operationId).
 	CreateDisk(ctx context.Context, body CreateDiskJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
 
-	// DeleteDisk 删除云硬盘
+	// DeleteDisk Delete a disk
 	//
-	// 云硬盘处于挂载状态，或仍存在基于它创建的快照时，删除会被拒绝。.
+	// Deletion is rejected while the disk is attached, or while snapshots created from it still exist.
 	//
 	// Corresponds with DELETE /api/v1/disks/{diskId} (the `DeleteDisk` operationId).
 	DeleteDisk(ctx context.Context, diskId openapi_types.UUID, reqEditors ...RequestEditorFn) (*http.Response, error)
 
-	// GetDisk 查看云硬盘
+	// GetDisk Retrieve a disk
 	//
-	// 会实时查询云硬盘的当前状态，因此比列表接口慢但更准确。.
+	// Queries the current state of the disk, which makes it slower but more accurate than the list endpoint.
 	//
 	// Corresponds with GET /api/v1/disks/{diskId} (the `GetDisk` operationId).
 	GetDisk(ctx context.Context, diskId openapi_types.UUID, reqEditors ...RequestEditorFn) (*http.Response, error)
 
-	// RenameDiskWithBody 重命名云硬盘
+	// RenameDiskWithBody Rename a disk
 	//
-	// 仅可修改名称。容量请使用扩容接口，类型与可用区不可修改。.
+	// Changes the name only. Use the resize endpoint for capacity; type and availability zone are immutable.
 	//
 	// Takes any type of body and a specified content type.
 	//
 	// Corresponds with PATCH /api/v1/disks/{diskId} (the `RenameDisk` operationId).
 	RenameDiskWithBody(ctx context.Context, diskId openapi_types.UUID, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
 
-	// RenameDisk 重命名云硬盘
+	// RenameDisk Rename a disk
 	//
-	// 仅可修改名称。容量请使用扩容接口，类型与可用区不可修改。.
+	// Changes the name only. Use the resize endpoint for capacity; type and availability zone are immutable.
 	//
 	// Takes a body of the `application/json` content type.
 	//
 	// Corresponds with PATCH /api/v1/disks/{diskId} (the `RenameDisk` operationId).
 	RenameDisk(ctx context.Context, diskId openapi_types.UUID, body RenameDiskJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
 
-	// ResizeDiskWithBody 扩容
+	// ResizeDiskWithBody Resize a disk
 	//
-	// 容量只能增加，不支持缩容。扩容完成后需在云服务器内自行扩展文件系统。.
+	// Capacity can only be increased; shrinking is not supported. Extend the file system inside the instance once the resize completes.
 	//
 	// Takes any type of body and a specified content type.
 	//
 	// Corresponds with POST /api/v1/disks/{diskId}/resize (the `ResizeDisk` operationId).
 	ResizeDiskWithBody(ctx context.Context, diskId openapi_types.UUID, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
 
-	// ResizeDisk 扩容
+	// ResizeDisk Resize a disk
 	//
-	// 容量只能增加，不支持缩容。扩容完成后需在云服务器内自行扩展文件系统。.
+	// Capacity can only be increased; shrinking is not supported. Extend the file system inside the instance once the resize completes.
 	//
 	// Takes a body of the `application/json` content type.
 	//
 	// Corresponds with POST /api/v1/disks/{diskId}/resize (the `ResizeDisk` operationId).
 	ResizeDisk(ctx context.Context, diskId openapi_types.UUID, body ResizeDiskJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
 
-	// RevertDiskWithBody 回滚到快照
+	// RevertDiskWithBody Revert to a snapshot
 	//
-	// 将云硬盘的内容恢复到创建该快照的时刻。**该时刻之后写入的数据全部丢失，且无法撤销。**
+	// Restores the contents of the disk to the moment the snapshot was taken. **All data written after that moment is lost and cannot be recovered.**
 	//
-	// 三项限制：只能回滚到该云硬盘最新的一个快照；云硬盘必须先从云服务器上卸载；创建快照后扩容过的云硬盘不能回滚。需要回到更早的时刻，或需要保留现有云硬盘时，请改用由快照创建一块新的云硬盘。
+	// Three restrictions apply: only the most recent snapshot of the disk can be reverted to; the disk must be detached from its instance first; and a disk resized since the snapshot was taken cannot be reverted. To return to an earlier point in time, or to keep the existing disk, create a new disk from the snapshot instead.
 	//
-	// 接口返回时回滚尚未完成，请轮询查看接口。
+	// The revert is not complete when this endpoint returns; poll the retrieve endpoint.
 	//
 	// Takes any type of body and a specified content type.
 	//
 	// Corresponds with POST /api/v1/disks/{diskId}/revert (the `RevertDisk` operationId).
 	RevertDiskWithBody(ctx context.Context, diskId openapi_types.UUID, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
 
-	// RevertDisk 回滚到快照
+	// RevertDisk Revert to a snapshot
 	//
-	// 将云硬盘的内容恢复到创建该快照的时刻。**该时刻之后写入的数据全部丢失，且无法撤销。**
+	// Restores the contents of the disk to the moment the snapshot was taken. **All data written after that moment is lost and cannot be recovered.**
 	//
-	// 三项限制：只能回滚到该云硬盘最新的一个快照；云硬盘必须先从云服务器上卸载；创建快照后扩容过的云硬盘不能回滚。需要回到更早的时刻，或需要保留现有云硬盘时，请改用由快照创建一块新的云硬盘。
+	// Three restrictions apply: only the most recent snapshot of the disk can be reverted to; the disk must be detached from its instance first; and a disk resized since the snapshot was taken cannot be reverted. To return to an earlier point in time, or to keep the existing disk, create a new disk from the snapshot instead.
 	//
-	// 接口返回时回滚尚未完成，请轮询查看接口。
+	// The revert is not complete when this endpoint returns; poll the retrieve endpoint.
 	//
 	// Takes a body of the `application/json` content type.
 	//
 	// Corresponds with POST /api/v1/disks/{diskId}/revert (the `RevertDisk` operationId).
 	RevertDisk(ctx context.Context, diskId openapi_types.UUID, body RevertDiskJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
 
-	// ListFloatingIps 列出公网 IP
+	// ListFloatingIps List floating IPs
 	//
 	// Corresponds with GET /api/v1/floating-ips (the `ListFloatingIps` operationId).
 	ListFloatingIps(ctx context.Context, reqEditors ...RequestEditorFn) (*http.Response, error)
 
-	// AllocateFloatingIpWithBody 申领公网 IP
+	// AllocateFloatingIpWithBody Allocate a floating IP
 	//
-	// 若该私有网络尚未连通外网，会一并为其接入外网。
+	// If the private network is not yet connected to the internet, connectivity is established as part of this call.
 	//
-	// IPv6 不通过本接口申请。IPv6 地址由私有网络自动下发至云服务器，在私有网络上启用即可。
+	// IPv6 is not requested through this endpoint. IPv6 addresses are assigned to instances by the private network; enable IPv6 on that network instead.
 	//
 	// Takes any type of body and a specified content type.
 	//
 	// Corresponds with POST /api/v1/floating-ips (the `AllocateFloatingIp` operationId).
 	AllocateFloatingIpWithBody(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
 
-	// AllocateFloatingIp 申领公网 IP
+	// AllocateFloatingIp Allocate a floating IP
 	//
-	// 若该私有网络尚未连通外网，会一并为其接入外网。
+	// If the private network is not yet connected to the internet, connectivity is established as part of this call.
 	//
-	// IPv6 不通过本接口申请。IPv6 地址由私有网络自动下发至云服务器，在私有网络上启用即可。
+	// IPv6 is not requested through this endpoint. IPv6 addresses are assigned to instances by the private network; enable IPv6 on that network instead.
 	//
 	// Takes a body of the `application/json` content type.
 	//
 	// Corresponds with POST /api/v1/floating-ips (the `AllocateFloatingIp` operationId).
 	AllocateFloatingIp(ctx context.Context, body AllocateFloatingIpJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
 
-	// ReleaseFloatingIp 释放公网 IP
+	// ReleaseFloatingIp Release a floating IP
 	//
-	// 地址释放后进入冷却期才会重新分配，以免仍指向它的 DNS 记录和访问白名单立即失效。因此释放后的短时间内**无法重新申领同一个地址**，请谨慎操作。.
+	// A released address enters a cooldown period before it is allocated again, so that DNS records and allow-lists still pointing at it do not break immediately. **The same address therefore cannot be re-allocated** for some time after release. Proceed with care.
 	//
 	// Corresponds with DELETE /api/v1/floating-ips/{floatingIpId} (the `ReleaseFloatingIp` operationId).
 	ReleaseFloatingIp(ctx context.Context, floatingIpId openapi_types.UUID, reqEditors ...RequestEditorFn) (*http.Response, error)
 
-	// GetFloatingIp 查看公网 IP
+	// GetFloatingIp Retrieve a floating IP
 	//
 	// Corresponds with GET /api/v1/floating-ips/{floatingIpId} (the `GetFloatingIp` operationId).
 	GetFloatingIp(ctx context.Context, floatingIpId openapi_types.UUID, reqEditors ...RequestEditorFn) (*http.Response, error)
 
-	// SetFloatingIpBandwidthWithBody 设带宽上限
+	// SetFloatingIpBandwidthWithBody Set the bandwidth limit
 	//
-	// 出入两个方向同时限速。仅限制出方向无法防止入方向流量打满上联带宽。.
+	// Limits both directions at once. Limiting egress alone does not prevent ingress traffic from saturating the uplink.
 	//
 	// Takes any type of body and a specified content type.
 	//
 	// Corresponds with PUT /api/v1/floating-ips/{floatingIpId}/bandwidth (the `SetFloatingIpBandwidth` operationId).
 	SetFloatingIpBandwidthWithBody(ctx context.Context, floatingIpId openapi_types.UUID, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
 
-	// SetFloatingIpBandwidth 设带宽上限
+	// SetFloatingIpBandwidth Set the bandwidth limit
 	//
-	// 出入两个方向同时限速。仅限制出方向无法防止入方向流量打满上联带宽。.
+	// Limits both directions at once. Limiting egress alone does not prevent ingress traffic from saturating the uplink.
 	//
 	// Takes a body of the `application/json` content type.
 	//
 	// Corresponds with PUT /api/v1/floating-ips/{floatingIpId}/bandwidth (the `SetFloatingIpBandwidth` operationId).
 	SetFloatingIpBandwidth(ctx context.Context, floatingIpId openapi_types.UUID, body SetFloatingIpBandwidthJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
 
-	// UnbindFloatingIp 解绑公网 IP
+	// UnbindFloatingIp Unbind a floating IP
 	//
-	// 地址仍归本项目持有，只是不再指向任何网卡。.
+	// The address remains held by the project and simply no longer points at any network interface.
 	//
 	// Corresponds with DELETE /api/v1/floating-ips/{floatingIpId}/binding (the `UnbindFloatingIp` operationId).
 	UnbindFloatingIp(ctx context.Context, floatingIpId openapi_types.UUID, reqEditors ...RequestEditorFn) (*http.Response, error)
 
-	// BindFloatingIpWithBody 将公网 IP 绑定到网卡
+	// BindFloatingIpWithBody Bind a floating IP to a network interface
 	//
 	// Takes any type of body and a specified content type.
 	//
 	// Corresponds with PUT /api/v1/floating-ips/{floatingIpId}/binding (the `BindFloatingIp` operationId).
 	BindFloatingIpWithBody(ctx context.Context, floatingIpId openapi_types.UUID, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
 
-	// BindFloatingIp 将公网 IP 绑定到网卡
+	// BindFloatingIp Bind a floating IP to a network interface
 	//
 	// Takes a body of the `application/json` content type.
 	//
 	// Corresponds with PUT /api/v1/floating-ips/{floatingIpId}/binding (the `BindFloatingIp` operationId).
 	BindFloatingIp(ctx context.Context, floatingIpId openapi_types.UUID, body BindFloatingIpJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
 
-	// ListImages 列出在售镜像
+	// ListImages List images on sale
 	//
-	// min_ram_mb 超过所选机型内存的镜像无法启动，请据此过滤可选项。.
+	// An image whose `min_ram_mb` exceeds the memory of the selected instance type cannot boot. Filter the options accordingly.
 	//
 	// Corresponds with GET /api/v1/images (the `ListImages` operationId).
 	ListImages(ctx context.Context, params *ListImagesParams, reqEditors ...RequestEditorFn) (*http.Response, error)
 
-	// ListInstanceTypes 列出在售机型
+	// ListInstanceTypes List instance types on sale
 	//
 	// Corresponds with GET /api/v1/instance-types (the `ListInstanceTypes` operationId).
 	ListInstanceTypes(ctx context.Context, params *ListInstanceTypesParams, reqEditors ...RequestEditorFn) (*http.Response, error)
 
-	// ListInstances 列出云服务器
+	// ListInstances List instances
 	//
 	// Corresponds with GET /api/v1/instances (the `ListInstances` operationId).
 	ListInstances(ctx context.Context, reqEditors ...RequestEditorFn) (*http.Response, error)
 
-	// LaunchInstanceWithBody 创建云服务器
+	// LaunchInstanceWithBody Create instances
 	//
-	// **必须在请求中设置密码**：不设置时请求会被拒绝，否则创建出的云服务器将无法登录。密码可由平台生成，此时仅在本次响应中返回一次。
+	// **A password must be set in the request.** The request is rejected otherwise, since the resulting instance would be unreachable. The platform can generate one, in which case it is returned only in this response.
 	//
-	// `count` 可一次创建多台（最多 20 台），名称自动加 `-1`、`-2` 编号，所有云服务器共用同一个密码。**响应中的 `instances` 始终是数组**，单台创建时也是。
+	// `count` creates several instances at once, 20 at most. Names are numbered `-1`, `-2` automatically and all instances share one password. **`instances` in the response is always an array**, including for a single instance.
 	//
-	// 批量创建按顺序逐台进行。若中途失败（例如配额不足），**已创建的云服务器会保留**，响应中的 `failure` 给出中止原因；第一台就失败时视为整次请求失败，不会创建任何云服务器。
+	// Instances are created one by one in order. If the sequence stops part way through, because of a quota limit for example, **the instances already created are kept** and `failure` states why it stopped. A failure on the first instance is treated as a failure of the whole request and no instance is created.
 	//
-	// 镜像二选一：`image_id` 使用平台提供的镜像，`private_image_id` 使用自制镜像。两者都给或都不给都会被拒绝。
+	// Exactly one image source must be given: `image_id` for a platform image, `private_image_id` for a private image. Supplying both or neither is rejected.
 	//
-	// 云服务器创建在机型所属的可用区。后续要挂载的云硬盘必须位于同一可用区。
+	// Instances are created in the availability zone of the instance type. Disks to be attached later must reside in the same zone.
 	//
-	// 接口返回时创建尚未完成（status 为 provisioning），请轮询 GET 确认结果。
+	// Creation is not complete when this endpoint returns and `status` is `provisioning`. Poll GET to observe the outcome.
 	//
 	// Takes any type of body and a specified content type.
 	//
 	// Corresponds with POST /api/v1/instances (the `LaunchInstance` operationId).
 	LaunchInstanceWithBody(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
 
-	// LaunchInstance 创建云服务器
+	// LaunchInstance Create instances
 	//
-	// **必须在请求中设置密码**：不设置时请求会被拒绝，否则创建出的云服务器将无法登录。密码可由平台生成，此时仅在本次响应中返回一次。
+	// **A password must be set in the request.** The request is rejected otherwise, since the resulting instance would be unreachable. The platform can generate one, in which case it is returned only in this response.
 	//
-	// `count` 可一次创建多台（最多 20 台），名称自动加 `-1`、`-2` 编号，所有云服务器共用同一个密码。**响应中的 `instances` 始终是数组**，单台创建时也是。
+	// `count` creates several instances at once, 20 at most. Names are numbered `-1`, `-2` automatically and all instances share one password. **`instances` in the response is always an array**, including for a single instance.
 	//
-	// 批量创建按顺序逐台进行。若中途失败（例如配额不足），**已创建的云服务器会保留**，响应中的 `failure` 给出中止原因；第一台就失败时视为整次请求失败，不会创建任何云服务器。
+	// Instances are created one by one in order. If the sequence stops part way through, because of a quota limit for example, **the instances already created are kept** and `failure` states why it stopped. A failure on the first instance is treated as a failure of the whole request and no instance is created.
 	//
-	// 镜像二选一：`image_id` 使用平台提供的镜像，`private_image_id` 使用自制镜像。两者都给或都不给都会被拒绝。
+	// Exactly one image source must be given: `image_id` for a platform image, `private_image_id` for a private image. Supplying both or neither is rejected.
 	//
-	// 云服务器创建在机型所属的可用区。后续要挂载的云硬盘必须位于同一可用区。
+	// Instances are created in the availability zone of the instance type. Disks to be attached later must reside in the same zone.
 	//
-	// 接口返回时创建尚未完成（status 为 provisioning），请轮询 GET 确认结果。
+	// Creation is not complete when this endpoint returns and `status` is `provisioning`. Poll GET to observe the outcome.
 	//
 	// Takes a body of the `application/json` content type.
 	//
 	// Corresponds with POST /api/v1/instances (the `LaunchInstance` operationId).
 	LaunchInstance(ctx context.Context, body LaunchInstanceJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
 
-	// DeleteInstance 释放云服务器
+	// DeleteInstance Release an instance
 	//
-	// 系统盘随云服务器一并删除，**基于系统盘创建的快照也会一并删除**。数据盘会被卸载并保留，其快照与备份不受影响。主网卡随云服务器一并释放。
+	// The system disk is deleted with the instance, and **snapshots created from the system disk are deleted with it**. Data disks are detached and kept, and their snapshots and backups are unaffected. The primary network interface is released with the instance.
 	//
-	// 正在制作镜像的云服务器无法释放，请等待制作完成或先删除该镜像。
+	// An instance being captured as a private image cannot be released. Wait for the capture to finish, or delete that image first.
 	//
 	// Corresponds with DELETE /api/v1/instances/{instanceId} (the `DeleteInstance` operationId).
 	DeleteInstance(ctx context.Context, instanceId openapi_types.UUID, reqEditors ...RequestEditorFn) (*http.Response, error)
 
-	// GetInstance 查看云服务器
+	// GetInstance Retrieve an instance
 	//
-	// 会实时查询云服务器的当前状态，因此比列表接口慢但更准确。轮询创建进度请使用本接口。.
+	// Queries the current state of the instance, which makes it slower but more accurate than the list endpoint. Use it to poll creation progress.
 	//
 	// Corresponds with GET /api/v1/instances/{instanceId} (the `GetInstance` operationId).
 	GetInstance(ctx context.Context, instanceId openapi_types.UUID, reqEditors ...RequestEditorFn) (*http.Response, error)
 
-	// RenameInstanceWithBody 重命名云服务器
+	// RenameInstanceWithBody Rename an instance
 	//
-	// 仅修改显示名称。云服务器内的主机名不变，它等于云服务器 id。.
+	// Changes the display name only. The hostname inside the instance is unchanged; it equals the instance id.
 	//
 	// Takes any type of body and a specified content type.
 	//
 	// Corresponds with PATCH /api/v1/instances/{instanceId} (the `RenameInstance` operationId).
 	RenameInstanceWithBody(ctx context.Context, instanceId openapi_types.UUID, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
 
-	// RenameInstance 重命名云服务器
+	// RenameInstance Rename an instance
 	//
-	// 仅修改显示名称。云服务器内的主机名不变，它等于云服务器 id。.
+	// Changes the display name only. The hostname inside the instance is unchanged; it equals the instance id.
 	//
 	// Takes a body of the `application/json` content type.
 	//
 	// Corresponds with PATCH /api/v1/instances/{instanceId} (the `RenameInstance` operationId).
 	RenameInstance(ctx context.Context, instanceId openapi_types.UUID, body RenameInstanceJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
 
-	// ActOnInstanceWithBody 开机、关机、重启
+	// ActOnInstanceWithBody Start, stop or reboot an instance
 	//
-	// 重启默认为软重启，由操作系统正常关闭后重新启动。
+	// Reboot defaults to a soft reboot, in which the operating system shuts down normally before starting again.
 	//
-	// 系统已无响应时软重启不会生效，此时可设置 `force` 强制重启。强制重启不等待操作系统关闭，**未落盘的数据会丢失**。`force` 仅适用于 reboot。
+	// A soft reboot has no effect once the system is unresponsive. Set `force` to reboot forcibly: a forced reboot does not wait for the operating system to shut down, so **unwritten data is lost**. `force` applies to `reboot` only.
 	//
-	// 已被平台停服的云服务器需先解除停服。
+	// An instance suspended by the platform must be unsuspended first.
 	//
-	// 本接口立即返回，返回的 `status` 是变更中的瞬态：start 为 `starting`、stop 为 `stopping`、reboot 为 `rebooting`。轮询云服务器详情直至落定为 `running` 或 `stopped`。
+	// This endpoint returns immediately and the `status` it returns is a transient state: `starting` for start, `stopping` for stop, `rebooting` for reboot. Poll the instance until it settles at `running` or `stopped`.
 	//
 	// Takes any type of body and a specified content type.
 	//
 	// Corresponds with POST /api/v1/instances/{instanceId}/actions (the `ActOnInstance` operationId).
 	ActOnInstanceWithBody(ctx context.Context, instanceId openapi_types.UUID, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
 
-	// ActOnInstance 开机、关机、重启
+	// ActOnInstance Start, stop or reboot an instance
 	//
-	// 重启默认为软重启，由操作系统正常关闭后重新启动。
+	// Reboot defaults to a soft reboot, in which the operating system shuts down normally before starting again.
 	//
-	// 系统已无响应时软重启不会生效，此时可设置 `force` 强制重启。强制重启不等待操作系统关闭，**未落盘的数据会丢失**。`force` 仅适用于 reboot。
+	// A soft reboot has no effect once the system is unresponsive. Set `force` to reboot forcibly: a forced reboot does not wait for the operating system to shut down, so **unwritten data is lost**. `force` applies to `reboot` only.
 	//
-	// 已被平台停服的云服务器需先解除停服。
+	// An instance suspended by the platform must be unsuspended first.
 	//
-	// 本接口立即返回，返回的 `status` 是变更中的瞬态：start 为 `starting`、stop 为 `stopping`、reboot 为 `rebooting`。轮询云服务器详情直至落定为 `running` 或 `stopped`。
+	// This endpoint returns immediately and the `status` it returns is a transient state: `starting` for start, `stopping` for stop, `rebooting` for reboot. Poll the instance until it settles at `running` or `stopped`.
 	//
 	// Takes a body of the `application/json` content type.
 	//
 	// Corresponds with POST /api/v1/instances/{instanceId}/actions (the `ActOnInstance` operationId).
 	ActOnInstance(ctx context.Context, instanceId openapi_types.UUID, body ActOnInstanceJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
 
-	// OpenInstanceConsole 打开远程控制台
+	// OpenInstanceConsole Open a remote console
 	//
-	// 在浏览器中直接操作云服务器，无需网络可达，适用于网络配置失误导致无法登录的情况。
+	// Operates the instance directly from a browser and does not require the instance to be reachable over the network, which makes it usable when a network misconfiguration prevents login.
 	//
-	// 返回的地址一次性使用，数分钟后失效。**请勿缓存**，每次使用前重新获取。
+	// The returned address is single-use and expires within minutes. **Do not cache it**; request a new one before each use.
 	//
 	// Corresponds with POST /api/v1/instances/{instanceId}/console (the `OpenInstanceConsole` operationId).
 	OpenInstanceConsole(ctx context.Context, instanceId openapi_types.UUID, reqEditors ...RequestEditorFn) (*http.Response, error)
 
-	// GetInstanceConsoleOutput 读取串口输出
+	// GetInstanceConsoleOutput Read the console output
 	//
-	// 云服务器启动过程与内核输出的原始文本。无法登录或远程控制台无输出时，应首先查看本接口。其中可查看启动停止于哪一步、系统盘是否正常挂载、初始化过程是否报错。
+	// The raw text produced by the instance during boot and by the kernel. Consult it first when login fails or the remote console shows no output: it reveals where boot stopped, whether the system disk was mounted, and whether initialisation reported errors.
 	//
-	// 处于错误状态或已被平台停服的云服务器同样可以读取。
+	// Instances in an error state, and instances suspended by the platform, can be read as well.
 	//
 	// Corresponds with GET /api/v1/instances/{instanceId}/console-output (the `GetInstanceConsoleOutput` operationId).
 	GetInstanceConsoleOutput(ctx context.Context, instanceId openapi_types.UUID, params *GetInstanceConsoleOutputParams, reqEditors ...RequestEditorFn) (*http.Response, error)
 
-	// ListInstanceDisks 列出云服务器已挂载的云硬盘
+	// ListInstanceDisks List the disks attached to an instance
 	//
 	// Corresponds with GET /api/v1/instances/{instanceId}/disks (the `ListInstanceDisks` operationId).
 	ListInstanceDisks(ctx context.Context, instanceId openapi_types.UUID, reqEditors ...RequestEditorFn) (*http.Response, error)
 
-	// AttachDiskWithBody 挂载云硬盘
+	// AttachDiskWithBody Attach a disk
 	//
-	// 云硬盘必须与云服务器位于同一地区和可用区。挂载后需在云服务器内自行分区并挂载文件系统。.
+	// The disk must be in the same region and availability zone as the instance. Partition it and mount the file system inside the instance once it is attached.
 	//
 	// Takes any type of body and a specified content type.
 	//
 	// Corresponds with POST /api/v1/instances/{instanceId}/disks (the `AttachDisk` operationId).
 	AttachDiskWithBody(ctx context.Context, instanceId openapi_types.UUID, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
 
-	// AttachDisk 挂载云硬盘
+	// AttachDisk Attach a disk
 	//
-	// 云硬盘必须与云服务器位于同一地区和可用区。挂载后需在云服务器内自行分区并挂载文件系统。.
+	// The disk must be in the same region and availability zone as the instance. Partition it and mount the file system inside the instance once it is attached.
 	//
 	// Takes a body of the `application/json` content type.
 	//
 	// Corresponds with POST /api/v1/instances/{instanceId}/disks (the `AttachDisk` operationId).
 	AttachDisk(ctx context.Context, instanceId openapi_types.UUID, body AttachDiskJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
 
-	// DetachDisk 卸载云硬盘
+	// DetachDisk Detach a disk
 	//
-	// 请先在云服务器内卸载（umount）该设备再调用本接口，正在写入的文件系统被强制卸载会损坏数据。.
+	// Unmount the device inside the instance before calling this endpoint. Forcibly detaching a file system that is being written to corrupts data.
 	//
 	// Corresponds with DELETE /api/v1/instances/{instanceId}/disks/{diskId} (the `DetachDisk` operationId).
 	DetachDisk(ctx context.Context, instanceId openapi_types.UUID, diskId openapi_types.UUID, reqEditors ...RequestEditorFn) (*http.Response, error)
 
-	// AttachInstanceFloatingIpWithBody 为云服务器绑定公网 IP
+	// AttachInstanceFloatingIpWithBody Bind a floating IP to an instance
 	//
-	// 公网 IP 绑定在云服务器的主网卡上。.
+	// The floating IP is bound to the primary network interface of the instance.
 	//
 	// Takes any type of body and a specified content type.
 	//
 	// Corresponds with POST /api/v1/instances/{instanceId}/floating-ips (the `AttachInstanceFloatingIp` operationId).
 	AttachInstanceFloatingIpWithBody(ctx context.Context, instanceId openapi_types.UUID, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
 
-	// AttachInstanceFloatingIp 为云服务器绑定公网 IP
+	// AttachInstanceFloatingIp Bind a floating IP to an instance
 	//
-	// 公网 IP 绑定在云服务器的主网卡上。.
+	// The floating IP is bound to the primary network interface of the instance.
 	//
 	// Takes a body of the `application/json` content type.
 	//
 	// Corresponds with POST /api/v1/instances/{instanceId}/floating-ips (the `AttachInstanceFloatingIp` operationId).
 	AttachInstanceFloatingIp(ctx context.Context, instanceId openapi_types.UUID, body AttachInstanceFloatingIpJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
 
-	// DetachInstanceFloatingIp 解绑云服务器的公网 IP
+	// DetachInstanceFloatingIp Unbind the floating IP of an instance
 	//
 	// Corresponds with DELETE /api/v1/instances/{instanceId}/floating-ips/{floatingIpId} (the `DetachInstanceFloatingIp` operationId).
 	DetachInstanceFloatingIp(ctx context.Context, instanceId openapi_types.UUID, floatingIpId openapi_types.UUID, reqEditors ...RequestEditorFn) (*http.Response, error)
 
-	// ResetInstancePasswordWithBody 重置登录密码
+	// ResetInstancePasswordWithBody Reset the login password
 	//
-	// 在不重启的情况下改掉 root 的密码，云服务器必须处于运行中。
+	// Changes the root password without a reboot. The instance must be running.
 	//
-	// **并非所有镜像都支持**：镜像列表中 `supports_password_reset` 为 false 的镜像做不到，此时只能通过重装系统设置新密码，而重装会清除系统盘上的全部数据。
+	// **Not every image supports this.** Images whose `supports_password_reset` is false cannot, and a new password can then only be set by rebuilding the instance, which erases all data on the system disk.
 	//
-	// 镜像标记为支持、但云服务器内相应组件已被卸载或停止时，本接口同样会被拒绝。
+	// The request is also rejected when the image is marked as supported but the corresponding component has been removed or stopped inside the instance.
 	//
 	// Takes any type of body and a specified content type.
 	//
 	// Corresponds with POST /api/v1/instances/{instanceId}/password (the `ResetInstancePassword` operationId).
 	ResetInstancePasswordWithBody(ctx context.Context, instanceId openapi_types.UUID, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
 
-	// ResetInstancePassword 重置登录密码
+	// ResetInstancePassword Reset the login password
 	//
-	// 在不重启的情况下改掉 root 的密码，云服务器必须处于运行中。
+	// Changes the root password without a reboot. The instance must be running.
 	//
-	// **并非所有镜像都支持**：镜像列表中 `supports_password_reset` 为 false 的镜像做不到，此时只能通过重装系统设置新密码，而重装会清除系统盘上的全部数据。
+	// **Not every image supports this.** Images whose `supports_password_reset` is false cannot, and a new password can then only be set by rebuilding the instance, which erases all data on the system disk.
 	//
-	// 镜像标记为支持、但云服务器内相应组件已被卸载或停止时，本接口同样会被拒绝。
+	// The request is also rejected when the image is marked as supported but the corresponding component has been removed or stopped inside the instance.
 	//
 	// Takes a body of the `application/json` content type.
 	//
 	// Corresponds with POST /api/v1/instances/{instanceId}/password (the `ResetInstancePassword` operationId).
 	ResetInstancePassword(ctx context.Context, instanceId openapi_types.UUID, body ResetInstancePasswordJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
 
-	// ListInstancePorts 列出云服务器的网卡
+	// ListInstancePorts List the network interfaces of an instance
 	//
 	// Corresponds with GET /api/v1/instances/{instanceId}/ports (the `ListInstancePorts` operationId).
 	ListInstancePorts(ctx context.Context, instanceId openapi_types.UUID, reqEditors ...RequestEditorFn) (*http.Response, error)
 
-	// AttachPortWithBody 挂载网卡
+	// AttachPortWithBody Attach a network interface
 	//
 	// Takes any type of body and a specified content type.
 	//
 	// Corresponds with POST /api/v1/instances/{instanceId}/ports (the `AttachPort` operationId).
 	AttachPortWithBody(ctx context.Context, instanceId openapi_types.UUID, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
 
-	// AttachPort 挂载网卡
+	// AttachPort Attach a network interface
 	//
 	// Takes a body of the `application/json` content type.
 	//
 	// Corresponds with POST /api/v1/instances/{instanceId}/ports (the `AttachPort` operationId).
 	AttachPort(ctx context.Context, instanceId openapi_types.UUID, body AttachPortJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
 
-	// DetachPort 卸载网卡
+	// DetachPort Detach a network interface
 	//
-	// 主网卡不可卸载，卸载后云服务器将失去网络地址。.
+	// The primary network interface cannot be detached; the instance would lose its network address.
 	//
 	// Corresponds with DELETE /api/v1/instances/{instanceId}/ports/{portId} (the `DetachPort` operationId).
 	DetachPort(ctx context.Context, instanceId openapi_types.UUID, portId openapi_types.UUID, reqEditors ...RequestEditorFn) (*http.Response, error)
 
-	// RebuildInstanceWithBody 重装系统
+	// RebuildInstanceWithBody Rebuild an instance
 	//
-	// **系统盘数据将被清除且无法恢复。** 已挂载的数据盘不受影响。.
+	// **All data on the system disk is erased and cannot be recovered.** Attached data disks are unaffected.
 	//
 	// Takes any type of body and a specified content type.
 	//
 	// Corresponds with POST /api/v1/instances/{instanceId}/rebuild (the `RebuildInstance` operationId).
 	RebuildInstanceWithBody(ctx context.Context, instanceId openapi_types.UUID, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
 
-	// RebuildInstance 重装系统
+	// RebuildInstance Rebuild an instance
 	//
-	// **系统盘数据将被清除且无法恢复。** 已挂载的数据盘不受影响。.
+	// **All data on the system disk is erased and cannot be recovered.** Attached data disks are unaffected.
 	//
 	// Takes a body of the `application/json` content type.
 	//
 	// Corresponds with POST /api/v1/instances/{instanceId}/rebuild (the `RebuildInstance` operationId).
 	RebuildInstance(ctx context.Context, instanceId openapi_types.UUID, body RebuildInstanceJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
 
-	// ResizeInstanceWithBody 变配
+	// ResizeInstanceWithBody Resize an instance
 	//
-	// 只能变更为同一地区、同一可用区的机型，否则已挂载的云硬盘无法随之迁移。
+	// Only an instance type in the same region and availability zone can be selected, as attached disks cannot follow the instance elsewhere.
 	//
-	// 变配分两步：本接口下发后云服务器会在新规格上重新启动，状态变为 `resize_verifying`，此时**必须**调用确认或回滚接口。目标机型在确认前记在 `pending_instance_type_id` 上，`instance_type_id` 仍为当前生效并计费的机型。
+	// A resize has two steps. This endpoint restarts the instance on the new size and the status becomes `resize_verifying`, at which point the confirm or revert endpoint **must** be called. Until confirmation the target type is recorded in `pending_instance_type_id`, while `instance_type_id` remains the type in effect and billed.
 	//
-	// **未确认期间新旧两份规格同时占用资源。** 请在状态变为 `resize_verifying` 后尽快确认。
+	// **Both sizes hold resources while the resize is unconfirmed.** Confirm promptly once the status becomes `resize_verifying`.
 	//
 	// Takes any type of body and a specified content type.
 	//
 	// Corresponds with POST /api/v1/instances/{instanceId}/resize (the `ResizeInstance` operationId).
 	ResizeInstanceWithBody(ctx context.Context, instanceId openapi_types.UUID, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
 
-	// ResizeInstance 变配
+	// ResizeInstance Resize an instance
 	//
-	// 只能变更为同一地区、同一可用区的机型，否则已挂载的云硬盘无法随之迁移。
+	// Only an instance type in the same region and availability zone can be selected, as attached disks cannot follow the instance elsewhere.
 	//
-	// 变配分两步：本接口下发后云服务器会在新规格上重新启动，状态变为 `resize_verifying`，此时**必须**调用确认或回滚接口。目标机型在确认前记在 `pending_instance_type_id` 上，`instance_type_id` 仍为当前生效并计费的机型。
+	// A resize has two steps. This endpoint restarts the instance on the new size and the status becomes `resize_verifying`, at which point the confirm or revert endpoint **must** be called. Until confirmation the target type is recorded in `pending_instance_type_id`, while `instance_type_id` remains the type in effect and billed.
 	//
-	// **未确认期间新旧两份规格同时占用资源。** 请在状态变为 `resize_verifying` 后尽快确认。
+	// **Both sizes hold resources while the resize is unconfirmed.** Confirm promptly once the status becomes `resize_verifying`.
 	//
 	// Takes a body of the `application/json` content type.
 	//
 	// Corresponds with POST /api/v1/instances/{instanceId}/resize (the `ResizeInstance` operationId).
 	ResizeInstance(ctx context.Context, instanceId openapi_types.UUID, body ResizeInstanceJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
 
-	// ConfirmInstanceResize 确认变配
+	// ConfirmInstanceResize Confirm a resize
 	//
-	// 释放原规格占用的资源，`pending_instance_type_id` 成为生效机型并从此按它计费。.
+	// Releases the resources held by the previous size. `pending_instance_type_id` becomes the type in effect and is billed from then on.
 	//
 	// Corresponds with POST /api/v1/instances/{instanceId}/resize/confirm (the `ConfirmInstanceResize` operationId).
 	ConfirmInstanceResize(ctx context.Context, instanceId openapi_types.UUID, reqEditors ...RequestEditorFn) (*http.Response, error)
 
-	// RevertInstanceResize 回滚变配
+	// RevertInstanceResize Revert a resize
 	//
-	// 云服务器回到原规格，`pending_instance_type_id` 被丢弃，计费不受本次变配影响。.
+	// The instance returns to its previous size, `pending_instance_type_id` is discarded, and billing is unaffected by the resize.
 	//
 	// Corresponds with POST /api/v1/instances/{instanceId}/resize/revert (the `RevertInstanceResize` operationId).
 	RevertInstanceResize(ctx context.Context, instanceId openapi_types.UUID, reqEditors ...RequestEditorFn) (*http.Response, error)
 
-	// ListOperationLogs 列出本项目的操作记录
+	// ListOperationLogs List the operation log of the project
 	//
-	// 记录本项目内的每一次写操作：谁、在什么时候、对什么做了什么、成功还是失败。读取操作不记录。
+	// Records every write operation in the project: who performed it, when, on what, and whether it succeeded. Read operations are not recorded.
 	//
-	// **平台代为执行的操作也在其中，但不显示具体执行人**，`by_platform` 为 true。例如欠费停机、违规封禁：需要知道机器何时被平台停止，但执行人属于平台内部信息。
+	// **Operations performed by the platform are included, but the individual operator is not disclosed** and `by_platform` is true. Suspension for non-payment and bans for abuse are examples: the time at which an instance was stopped by the platform is needed, whereas the operator is internal information.
 	//
-	// 密码一类的字段在写入时即被替换为占位符，不会出现在 `payload` 中。
+	// Fields such as passwords are replaced with a placeholder as the record is written and never appear in `payload`.
 	//
 	// Corresponds with GET /api/v1/operation-logs (the `ListOperationLogs` operationId).
 	ListOperationLogs(ctx context.Context, params *ListOperationLogsParams, reqEditors ...RequestEditorFn) (*http.Response, error)
 
-	// ListPorts 列出网卡
+	// ListPorts List network interfaces
 	//
 	// Corresponds with GET /api/v1/ports (the `ListPorts` operationId).
 	ListPorts(ctx context.Context, reqEditors ...RequestEditorFn) (*http.Response, error)
 
-	// CreatePortWithBody 创建网卡
+	// CreatePortWithBody Create a network interface
 	//
-	// 创建出的网卡尚未挂载到任何云服务器。主网卡不由本接口创建，它随云服务器一并创建。.
+	// The new network interface is not attached to any instance. Primary network interfaces are not created here; they are created with the instance.
 	//
 	// Takes any type of body and a specified content type.
 	//
 	// Corresponds with POST /api/v1/ports (the `CreatePort` operationId).
 	CreatePortWithBody(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
 
-	// CreatePort 创建网卡
+	// CreatePort Create a network interface
 	//
-	// 创建出的网卡尚未挂载到任何云服务器。主网卡不由本接口创建，它随云服务器一并创建。.
+	// The new network interface is not attached to any instance. Primary network interfaces are not created here; they are created with the instance.
 	//
 	// Takes a body of the `application/json` content type.
 	//
 	// Corresponds with POST /api/v1/ports (the `CreatePort` operationId).
 	CreatePort(ctx context.Context, body CreatePortJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
 
-	// DeletePort 删除网卡
+	// DeletePort Delete a network interface
 	//
-	// 主网卡不可单独删除，它随云服务器一并释放。仍挂载在云服务器上的网卡也无法删除。.
+	// The primary network interface cannot be deleted on its own, as it is released with the instance. A network interface still attached to an instance cannot be deleted either.
 	//
 	// Corresponds with DELETE /api/v1/ports/{portId} (the `DeletePort` operationId).
 	DeletePort(ctx context.Context, portId openapi_types.UUID, reqEditors ...RequestEditorFn) (*http.Response, error)
 
-	// ListPrivateImages 列出自制镜像
+	// ListPrivateImages List private images
 	//
 	// Corresponds with GET /api/v1/private-images (the `ListPrivateImages` operationId).
 	ListPrivateImages(ctx context.Context, params *ListPrivateImagesParams, reqEditors ...RequestEditorFn) (*http.Response, error)
 
-	// CreatePrivateImageWithBody 将云服务器制作为镜像
+	// CreatePrivateImageWithBody Capture an instance as a private image
 	//
-	// 依据云服务器的系统盘制作，数据盘不包含在内。制作出的镜像可用于创建云服务器或重装系统，并在源云服务器释放后继续可用。
+	// Captured from the system disk of the instance; data disks are not included. The resulting image can create instances and rebuild them, and remains usable after the source instance is released.
 	//
-	// **镜像内容取自开始制作的那一刻，此后对云服务器的改动不会包含在内。**
+	// **The image reflects the moment the capture started. Later changes to the instance are not included.**
 	//
-	// 制作分两个阶段，请轮询查看接口：
+	// The capture has two phases. Poll the retrieve endpoint:
 	//
-	// - `provisioning` 正在读取系统盘，通常数十秒。此阶段云服务器可以继续使用，但为保证一致性建议先关机。
-	// - `uploading` 已与系统盘无关，**此时即可开机，无需等待制作完成**。该阶段耗时与系统盘容量成正比，20 GB 约需 3 分钟。
+	// - `provisioning` — the system disk is being read, usually for tens of seconds. The instance remains usable during this phase, although stopping it first is recommended for consistency.
+	// - `uploading` — no longer tied to the system disk. **The instance may be started at this point; there is no need to wait for the capture to finish.** The duration of this phase is proportional to the size of the system disk, roughly 3 minutes for 20 GB.
 	//
-	// 运行中的云服务器其文件系统可能处于写入中间状态，制作出的镜像等同于一次断电后的磁盘内容。对一致性有要求时，请在开始制作前关机，并在状态变为 `uploading` 后开机。
+	// The file system of a running instance may be captured mid-write, in which case the image is equivalent to the disk contents after a power loss. Where consistency matters, stop the instance before starting the capture and start it again once the status becomes `uploading`.
 	//
-	// 制作期间该云服务器可以正常启停与使用，但无法释放。
+	// The instance can be started, stopped and used normally during the capture, but cannot be released.
 	//
 	// Takes any type of body and a specified content type.
 	//
 	// Corresponds with POST /api/v1/private-images (the `CreatePrivateImage` operationId).
 	CreatePrivateImageWithBody(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
 
-	// CreatePrivateImage 将云服务器制作为镜像
+	// CreatePrivateImage Capture an instance as a private image
 	//
-	// 依据云服务器的系统盘制作，数据盘不包含在内。制作出的镜像可用于创建云服务器或重装系统，并在源云服务器释放后继续可用。
+	// Captured from the system disk of the instance; data disks are not included. The resulting image can create instances and rebuild them, and remains usable after the source instance is released.
 	//
-	// **镜像内容取自开始制作的那一刻，此后对云服务器的改动不会包含在内。**
+	// **The image reflects the moment the capture started. Later changes to the instance are not included.**
 	//
-	// 制作分两个阶段，请轮询查看接口：
+	// The capture has two phases. Poll the retrieve endpoint:
 	//
-	// - `provisioning` 正在读取系统盘，通常数十秒。此阶段云服务器可以继续使用，但为保证一致性建议先关机。
-	// - `uploading` 已与系统盘无关，**此时即可开机，无需等待制作完成**。该阶段耗时与系统盘容量成正比，20 GB 约需 3 分钟。
+	// - `provisioning` — the system disk is being read, usually for tens of seconds. The instance remains usable during this phase, although stopping it first is recommended for consistency.
+	// - `uploading` — no longer tied to the system disk. **The instance may be started at this point; there is no need to wait for the capture to finish.** The duration of this phase is proportional to the size of the system disk, roughly 3 minutes for 20 GB.
 	//
-	// 运行中的云服务器其文件系统可能处于写入中间状态，制作出的镜像等同于一次断电后的磁盘内容。对一致性有要求时，请在开始制作前关机，并在状态变为 `uploading` 后开机。
+	// The file system of a running instance may be captured mid-write, in which case the image is equivalent to the disk contents after a power loss. Where consistency matters, stop the instance before starting the capture and start it again once the status becomes `uploading`.
 	//
-	// 制作期间该云服务器可以正常启停与使用，但无法释放。
+	// The instance can be started, stopped and used normally during the capture, but cannot be released.
 	//
 	// Takes a body of the `application/json` content type.
 	//
 	// Corresponds with POST /api/v1/private-images (the `CreatePrivateImage` operationId).
 	CreatePrivateImage(ctx context.Context, body CreatePrivateImageJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
 
-	// DeletePrivateImage 删除自制镜像
+	// DeletePrivateImage Delete a private image
 	//
-	// 仍有云服务器由该镜像创建时，删除会被拒绝：这些云服务器需要它才能重装系统。
+	// Deletion is rejected while instances created from the image still exist, as they need it in order to be rebuilt.
 	//
-	// 制作尚未完成的镜像也可以删除，制作会被终止。
+	// An image whose capture has not finished can be deleted; the capture is aborted.
 	//
 	// Corresponds with DELETE /api/v1/private-images/{privateImageId} (the `DeletePrivateImage` operationId).
 	DeletePrivateImage(ctx context.Context, privateImageId openapi_types.UUID, reqEditors ...RequestEditorFn) (*http.Response, error)
 
-	// GetPrivateImage 查看自制镜像
+	// GetPrivateImage Retrieve a private image
 	//
-	// 轮询制作进度请使用本接口。status 为 error 时，failure 给出失败原因。.
+	// Use this endpoint to poll capture progress. When `status` is `error`, `failure` states the reason.
 	//
 	// Corresponds with GET /api/v1/private-images/{privateImageId} (the `GetPrivateImage` operationId).
 	GetPrivateImage(ctx context.Context, privateImageId openapi_types.UUID, reqEditors ...RequestEditorFn) (*http.Response, error)
 
-	// RenamePrivateImageWithBody 重命名自制镜像
+	// RenamePrivateImageWithBody Rename a private image
 	//
 	// Takes any type of body and a specified content type.
 	//
 	// Corresponds with PATCH /api/v1/private-images/{privateImageId} (the `RenamePrivateImage` operationId).
 	RenamePrivateImageWithBody(ctx context.Context, privateImageId openapi_types.UUID, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
 
-	// RenamePrivateImage 重命名自制镜像
+	// RenamePrivateImage Rename a private image
 	//
 	// Takes a body of the `application/json` content type.
 	//
 	// Corresponds with PATCH /api/v1/private-images/{privateImageId} (the `RenamePrivateImage` operationId).
 	RenamePrivateImage(ctx context.Context, privateImageId openapi_types.UUID, body RenamePrivateImageJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
 
-	// ListPrivateNetworks 列出私有网络
+	// ListPrivateNetworks List private networks
 	//
 	// Corresponds with GET /api/v1/private-networks (the `ListPrivateNetworks` operationId).
 	ListPrivateNetworks(ctx context.Context, params *ListPrivateNetworksParams, reqEditors ...RequestEditorFn) (*http.Response, error)
 
-	// CreatePrivateNetworkWithBody 创建私有网络
+	// CreatePrivateNetworkWithBody Create a private network
 	//
-	// 同时创建一张网络、一台路由器和一个默认安全组。默认安全组拒绝全部入站流量、放行全部出站流量。.
+	// Creates a network, a router and a default security group in one call. The default security group denies all inbound traffic and permits all outbound traffic.
 	//
 	// Takes any type of body and a specified content type.
 	//
 	// Corresponds with POST /api/v1/private-networks (the `CreatePrivateNetwork` operationId).
 	CreatePrivateNetworkWithBody(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
 
-	// CreatePrivateNetwork 创建私有网络
+	// CreatePrivateNetwork Create a private network
 	//
-	// 同时创建一张网络、一台路由器和一个默认安全组。默认安全组拒绝全部入站流量、放行全部出站流量。.
+	// Creates a network, a router and a default security group in one call. The default security group denies all inbound traffic and permits all outbound traffic.
 	//
 	// Takes a body of the `application/json` content type.
 	//
 	// Corresponds with POST /api/v1/private-networks (the `CreatePrivateNetwork` operationId).
 	CreatePrivateNetwork(ctx context.Context, body CreatePrivateNetworkJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
 
-	// DeletePrivateNetwork 释放私有网络
+	// DeletePrivateNetwork Release a private network
 	//
-	// 其中仍有云服务器或网卡时，释放会被拒绝。IPv6、路由器与安全组随之一并释放。.
+	// Release is rejected while instances or network interfaces remain in the network. IPv6, the router and the security groups are released with it.
 	//
 	// Corresponds with DELETE /api/v1/private-networks/{privateNetworkId} (the `DeletePrivateNetwork` operationId).
 	DeletePrivateNetwork(ctx context.Context, privateNetworkId openapi_types.UUID, reqEditors ...RequestEditorFn) (*http.Response, error)
 
-	// GetPrivateNetwork 查看私有网络
+	// GetPrivateNetwork Retrieve a private network
 	//
 	// Corresponds with GET /api/v1/private-networks/{privateNetworkId} (the `GetPrivateNetwork` operationId).
 	GetPrivateNetwork(ctx context.Context, privateNetworkId openapi_types.UUID, reqEditors ...RequestEditorFn) (*http.Response, error)
 
-	// RenamePrivateNetworkWithBody 重命名私有网络
+	// RenamePrivateNetworkWithBody Rename a private network
 	//
-	// 仅修改显示名称。网段、路由与外网网关均不可修改。.
+	// Changes the display name only. The CIDR, the routes and the internet gateway are immutable.
 	//
 	// Takes any type of body and a specified content type.
 	//
 	// Corresponds with PATCH /api/v1/private-networks/{privateNetworkId} (the `RenamePrivateNetwork` operationId).
 	RenamePrivateNetworkWithBody(ctx context.Context, privateNetworkId openapi_types.UUID, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
 
-	// RenamePrivateNetwork 重命名私有网络
+	// RenamePrivateNetwork Rename a private network
 	//
-	// 仅修改显示名称。网段、路由与外网网关均不可修改。.
+	// Changes the display name only. The CIDR, the routes and the internet gateway are immutable.
 	//
 	// Takes a body of the `application/json` content type.
 	//
 	// Corresponds with PATCH /api/v1/private-networks/{privateNetworkId} (the `RenamePrivateNetwork` operationId).
 	RenamePrivateNetwork(ctx context.Context, privateNetworkId openapi_types.UUID, body RenamePrivateNetworkJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
 
-	// DisablePrivateNetworkIpv6 关闭私有网络的 IPv6
+	// DisablePrivateNetworkIpv6 Disable IPv6 on a private network
 	//
-	// 释放的前缀不会立即重新分配。.
+	// A released prefix is not re-allocated immediately.
 	//
 	// Corresponds with DELETE /api/v1/private-networks/{privateNetworkId}/ipv6 (the `DisablePrivateNetworkIpv6` operationId).
 	DisablePrivateNetworkIpv6(ctx context.Context, privateNetworkId openapi_types.UUID, reqEditors ...RequestEditorFn) (*http.Response, error)
 
-	// GetPrivateNetworkIpv6 查看私有网络的 IPv6
+	// GetPrivateNetworkIpv6 Retrieve the IPv6 configuration of a private network
 	//
 	// Corresponds with GET /api/v1/private-networks/{privateNetworkId}/ipv6 (the `GetPrivateNetworkIpv6` operationId).
 	GetPrivateNetworkIpv6(ctx context.Context, privateNetworkId openapi_types.UUID, reqEditors ...RequestEditorFn) (*http.Response, error)
 
-	// EnablePrivateNetworkIpv6 为私有网络启用 IPv6
+	// EnablePrivateNetworkIpv6 Enable IPv6 on a private network
 	//
-	// 为该私有网络分配一段 IPv6 地址。地址由私有网络自动下发至云服务器，无需也无法单独申领，也不占用公网 IPv4。
+	// Allocates an IPv6 prefix to the private network. Addresses are assigned to instances by the network itself, can be neither requested nor released individually, and consume no public IPv4 address.
 	//
-	// 该私有网络尚未接入外网时会自动接入，无需单独操作。
+	// If the private network is not yet connected to the internet, connectivity is established as part of this call.
 	//
 	// Corresponds with POST /api/v1/private-networks/{privateNetworkId}/ipv6 (the `EnablePrivateNetworkIpv6` operationId).
 	EnablePrivateNetworkIpv6(ctx context.Context, privateNetworkId openapi_types.UUID, reqEditors ...RequestEditorFn) (*http.Response, error)
 
-	// ListRoutes 列出静态路由
+	// ListRoutes List static routes
 	//
 	// Corresponds with GET /api/v1/private-networks/{privateNetworkId}/routes (the `ListRoutes` operationId).
 	ListRoutes(ctx context.Context, privateNetworkId openapi_types.UUID, reqEditors ...RequestEditorFn) (*http.Response, error)
 
-	// CreateRouteWithBody 创建静态路由
+	// CreateRouteWithBody Create a static route
 	//
-	// 以下三种会导致网络中断的写法会被拒绝：目的网段为 0.0.0.0/0（覆盖默认路由，所有公网 IP 立即失效）、目的网段为某个子网自身（覆盖直连路由）、下一跳为某个子网的网关（指回路由器自身）。
+	// Three forms that would sever connectivity are rejected: a destination of `0.0.0.0/0`, which overrides the default route and takes every floating IP offline immediately; a destination equal to the CIDR of a subnet, which overrides its directly connected route; and a next hop equal to the gateway of a subnet, which points back at the router itself.
 	//
 	// Takes any type of body and a specified content type.
 	//
 	// Corresponds with POST /api/v1/private-networks/{privateNetworkId}/routes (the `CreateRoute` operationId).
 	CreateRouteWithBody(ctx context.Context, privateNetworkId openapi_types.UUID, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
 
-	// CreateRoute 创建静态路由
+	// CreateRoute Create a static route
 	//
-	// 以下三种会导致网络中断的写法会被拒绝：目的网段为 0.0.0.0/0（覆盖默认路由，所有公网 IP 立即失效）、目的网段为某个子网自身（覆盖直连路由）、下一跳为某个子网的网关（指回路由器自身）。
+	// Three forms that would sever connectivity are rejected: a destination of `0.0.0.0/0`, which overrides the default route and takes every floating IP offline immediately; a destination equal to the CIDR of a subnet, which overrides its directly connected route; and a next hop equal to the gateway of a subnet, which points back at the router itself.
 	//
 	// Takes a body of the `application/json` content type.
 	//
 	// Corresponds with POST /api/v1/private-networks/{privateNetworkId}/routes (the `CreateRoute` operationId).
 	CreateRoute(ctx context.Context, privateNetworkId openapi_types.UUID, body CreateRouteJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
 
-	// DeleteRoute 删除静态路由
+	// DeleteRoute Delete a static route
 	//
 	// Corresponds with DELETE /api/v1/private-networks/{privateNetworkId}/routes/{routeId} (the `DeleteRoute` operationId).
 	DeleteRoute(ctx context.Context, privateNetworkId openapi_types.UUID, routeId openapi_types.UUID, reqEditors ...RequestEditorFn) (*http.Response, error)
 
-	// ListSubnets 列出子网
+	// ListSubnets List subnets
 	//
-	// IPv6 子网也在返回结果中，ip_version 为 6。它在启用 IPv6 时自动创建，不可单独删除。.
+	// IPv6 subnets are included, with `ip_version` 6. They are created when IPv6 is enabled and cannot be deleted individually.
 	//
 	// Corresponds with GET /api/v1/private-networks/{privateNetworkId}/subnets (the `ListSubnets` operationId).
 	ListSubnets(ctx context.Context, privateNetworkId openapi_types.UUID, reqEditors ...RequestEditorFn) (*http.Response, error)
 
-	// CreateSubnetWithBody 创建子网
+	// CreateSubnetWithBody Create a subnet
 	//
 	// Takes any type of body and a specified content type.
 	//
 	// Corresponds with POST /api/v1/private-networks/{privateNetworkId}/subnets (the `CreateSubnet` operationId).
 	CreateSubnetWithBody(ctx context.Context, privateNetworkId openapi_types.UUID, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
 
-	// CreateSubnet 创建子网
+	// CreateSubnet Create a subnet
 	//
 	// Takes a body of the `application/json` content type.
 	//
 	// Corresponds with POST /api/v1/private-networks/{privateNetworkId}/subnets (the `CreateSubnet` operationId).
 	CreateSubnet(ctx context.Context, privateNetworkId openapi_types.UUID, body CreateSubnetJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
 
-	// SuggestSubnetCidr 推荐下一个空闲网段
+	// SuggestSubnetCidr Suggest the next free CIDR
 	//
-	// 返回的只是建议值，创建子网时仍会重新校验。用于避免手工计算下一个空闲网段时出错。.
+	// The returned value is a suggestion and is validated again when the subnet is created. It exists to avoid errors when computing the next free CIDR by hand.
 	//
 	// Corresponds with GET /api/v1/private-networks/{privateNetworkId}/subnets/next-free-cidr (the `SuggestSubnetCidr` operationId).
 	SuggestSubnetCidr(ctx context.Context, privateNetworkId openapi_types.UUID, params *SuggestSubnetCidrParams, reqEditors ...RequestEditorFn) (*http.Response, error)
 
-	// DeleteSubnet 删除子网
+	// DeleteSubnet Delete a subnet
 	//
-	// 该子网中仍有网卡，或仍有静态路由的下一跳落在该网段内时，删除会被拒绝。.
+	// Deletion is rejected while network interfaces remain in the subnet, or while a static route has a next hop inside its CIDR.
 	//
 	// Corresponds with DELETE /api/v1/private-networks/{privateNetworkId}/subnets/{subnetId} (the `DeleteSubnet` operationId).
 	DeleteSubnet(ctx context.Context, privateNetworkId openapi_types.UUID, subnetId openapi_types.UUID, reqEditors ...RequestEditorFn) (*http.Response, error)
 
-	// ListRegions 列出可用的地区
+	// ListRegions List available regions
 	//
 	// Corresponds with GET /api/v1/regions (the `ListRegions` operationId).
 	ListRegions(ctx context.Context, reqEditors ...RequestEditorFn) (*http.Response, error)
 
-	// ListAvailabilityZones 列出一个地区的可用区
+	// ListAvailabilityZones List the availability zones of a region
 	//
-	// 云硬盘与云服务器必须位于同一可用区才能挂载，创建前请确认所选可用区。.
+	// A disk and an instance must reside in the same availability zone to be attached. Confirm the zone before creating either.
 	//
 	// Corresponds with GET /api/v1/regions/{regionCode}/availability-zones (the `ListAvailabilityZones` operationId).
 	ListAvailabilityZones(ctx context.Context, regionCode string, reqEditors ...RequestEditorFn) (*http.Response, error)
 
-	// ListSecurityGroups 列出安全组
+	// ListSecurityGroups List security groups
 	//
 	// Corresponds with GET /api/v1/security-groups (the `ListSecurityGroups` operationId).
 	ListSecurityGroups(ctx context.Context, params *ListSecurityGroupsParams, reqEditors ...RequestEditorFn) (*http.Response, error)
 
-	// CreateSecurityGroupWithBody 创建安全组
+	// CreateSecurityGroupWithBody Create a security group
 	//
-	// 新建的安全组带有一条规则：放行 ICMP 需要分片（type 3 code 4）。缺少该规则会导致路径 MTU 发现失败，表现为连接建立后传输大数据包时卡住。.
+	// A new security group carries one rule, permitting ICMP fragmentation-needed messages (type 3, code 4). Without it path MTU discovery fails, which presents as connections that establish and then stall on large packets.
 	//
 	// Takes any type of body and a specified content type.
 	//
 	// Corresponds with POST /api/v1/security-groups (the `CreateSecurityGroup` operationId).
 	CreateSecurityGroupWithBody(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
 
-	// CreateSecurityGroup 创建安全组
+	// CreateSecurityGroup Create a security group
 	//
-	// 新建的安全组带有一条规则：放行 ICMP 需要分片（type 3 code 4）。缺少该规则会导致路径 MTU 发现失败，表现为连接建立后传输大数据包时卡住。.
+	// A new security group carries one rule, permitting ICMP fragmentation-needed messages (type 3, code 4). Without it path MTU discovery fails, which presents as connections that establish and then stall on large packets.
 	//
 	// Takes a body of the `application/json` content type.
 	//
 	// Corresponds with POST /api/v1/security-groups (the `CreateSecurityGroup` operationId).
 	CreateSecurityGroup(ctx context.Context, body CreateSecurityGroupJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
 
-	// DeleteSecurityGroup 删除安全组
+	// DeleteSecurityGroup Delete a security group
 	//
-	// 默认安全组不可删除，它随私有网络一并释放。仍被网卡引用的安全组也无法删除。.
+	// The default security group cannot be deleted, as it is released with the private network. A security group still referenced by a network interface cannot be deleted either.
 	//
 	// Corresponds with DELETE /api/v1/security-groups/{securityGroupId} (the `DeleteSecurityGroup` operationId).
 	DeleteSecurityGroup(ctx context.Context, securityGroupId openapi_types.UUID, reqEditors ...RequestEditorFn) (*http.Response, error)
 
-	// GetSecurityGroup 查看安全组
+	// GetSecurityGroup Retrieve a security group
 	//
 	// Corresponds with GET /api/v1/security-groups/{securityGroupId} (the `GetSecurityGroup` operationId).
 	GetSecurityGroup(ctx context.Context, securityGroupId openapi_types.UUID, reqEditors ...RequestEditorFn) (*http.Response, error)
 
-	// RenameSecurityGroupWithBody 重命名安全组
+	// RenameSecurityGroupWithBody Rename a security group
 	//
-	// 仅可修改名称，规则请用规则接口。.
+	// Changes the name only. Use the rule endpoints to change rules.
 	//
 	// Takes any type of body and a specified content type.
 	//
 	// Corresponds with PATCH /api/v1/security-groups/{securityGroupId} (the `RenameSecurityGroup` operationId).
 	RenameSecurityGroupWithBody(ctx context.Context, securityGroupId openapi_types.UUID, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
 
-	// RenameSecurityGroup 重命名安全组
+	// RenameSecurityGroup Rename a security group
 	//
-	// 仅可修改名称，规则请用规则接口。.
+	// Changes the name only. Use the rule endpoints to change rules.
 	//
 	// Takes a body of the `application/json` content type.
 	//
 	// Corresponds with PATCH /api/v1/security-groups/{securityGroupId} (the `RenameSecurityGroup` operationId).
 	RenameSecurityGroup(ctx context.Context, securityGroupId openapi_types.UUID, body RenameSecurityGroupJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
 
-	// ListSecurityGroupRules 列出安全组规则
+	// ListSecurityGroupRules List security group rules
 	//
 	// Corresponds with GET /api/v1/security-groups/{securityGroupId}/rules (the `ListSecurityGroupRules` operationId).
 	ListSecurityGroupRules(ctx context.Context, securityGroupId openapi_types.UUID, reqEditors ...RequestEditorFn) (*http.Response, error)
 
-	// CreateSecurityGroupRuleWithBody 创建安全组规则
+	// CreateSecurityGroupRuleWithBody Create a security group rule
 	//
-	// 重复添加同一条规则会被拒绝。判重时 `0.0.0.0/0`、`::/0` 与留空视为等同。
+	// Adding an identical rule twice is rejected. For that comparison `0.0.0.0/0`, `::/0` and an omitted value are treated as equivalent.
 	//
 	// Takes any type of body and a specified content type.
 	//
 	// Corresponds with POST /api/v1/security-groups/{securityGroupId}/rules (the `CreateSecurityGroupRule` operationId).
 	CreateSecurityGroupRuleWithBody(ctx context.Context, securityGroupId openapi_types.UUID, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
 
-	// CreateSecurityGroupRule 创建安全组规则
+	// CreateSecurityGroupRule Create a security group rule
 	//
-	// 重复添加同一条规则会被拒绝。判重时 `0.0.0.0/0`、`::/0` 与留空视为等同。
+	// Adding an identical rule twice is rejected. For that comparison `0.0.0.0/0`, `::/0` and an omitted value are treated as equivalent.
 	//
 	// Takes a body of the `application/json` content type.
 	//
 	// Corresponds with POST /api/v1/security-groups/{securityGroupId}/rules (the `CreateSecurityGroupRule` operationId).
 	CreateSecurityGroupRule(ctx context.Context, securityGroupId openapi_types.UUID, body CreateSecurityGroupRuleJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
 
-	// DeleteSecurityGroupRule 删除安全组规则
+	// DeleteSecurityGroupRule Delete a security group rule
 	//
 	// Corresponds with DELETE /api/v1/security-groups/{securityGroupId}/rules/{ruleId} (the `DeleteSecurityGroupRule` operationId).
 	DeleteSecurityGroupRule(ctx context.Context, securityGroupId openapi_types.UUID, ruleId openapi_types.UUID, reqEditors ...RequestEditorFn) (*http.Response, error)
 
-	// ListSnapshots 列出快照
+	// ListSnapshots List snapshots
 	//
 	// Corresponds with GET /api/v1/snapshots (the `ListSnapshots` operationId).
 	ListSnapshots(ctx context.Context, params *ListSnapshotsParams, reqEditors ...RequestEditorFn) (*http.Response, error)
 
-	// CreateSnapshotWithBody 创建快照
+	// CreateSnapshotWithBody Create a snapshot
 	//
-	// 运行中云服务器上挂载的云硬盘同样可以创建快照。快照记录的是某一时刻的块设备状态，文件系统层面可能不一致，重要数据建议先在云服务器内执行 sync。
+	// Disks attached to a running instance can be snapshotted. A snapshot records the state of the block device at a point in time and may be inconsistent at the file-system level, so run `sync` inside the instance first where the data matters.
 	//
-	// **系统盘的快照不能用于回滚该系统盘**：回滚要求先从云服务器上卸载，而系统盘不可卸载。它可用于创建一块新的数据盘。需要保留并恢复整个系统时，请使用自制镜像；需要可跨可用区、且在云硬盘删除后仍可恢复的副本时，请使用备份。
+	// **A snapshot of a system disk cannot be used to revert that system disk**: reverting requires the disk to be detached, and a system disk cannot be detached. It can be used to create a new data disk. To preserve and restore an entire system, use a private image; for a copy that crosses availability zones and survives deletion of the disk, use a backup.
 	//
 	// Takes any type of body and a specified content type.
 	//
 	// Corresponds with POST /api/v1/snapshots (the `CreateSnapshot` operationId).
 	CreateSnapshotWithBody(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
 
-	// CreateSnapshot 创建快照
+	// CreateSnapshot Create a snapshot
 	//
-	// 运行中云服务器上挂载的云硬盘同样可以创建快照。快照记录的是某一时刻的块设备状态，文件系统层面可能不一致，重要数据建议先在云服务器内执行 sync。
+	// Disks attached to a running instance can be snapshotted. A snapshot records the state of the block device at a point in time and may be inconsistent at the file-system level, so run `sync` inside the instance first where the data matters.
 	//
-	// **系统盘的快照不能用于回滚该系统盘**：回滚要求先从云服务器上卸载，而系统盘不可卸载。它可用于创建一块新的数据盘。需要保留并恢复整个系统时，请使用自制镜像；需要可跨可用区、且在云硬盘删除后仍可恢复的副本时，请使用备份。
+	// **A snapshot of a system disk cannot be used to revert that system disk**: reverting requires the disk to be detached, and a system disk cannot be detached. It can be used to create a new data disk. To preserve and restore an entire system, use a private image; for a copy that crosses availability zones and survives deletion of the disk, use a backup.
 	//
 	// Takes a body of the `application/json` content type.
 	//
 	// Corresponds with POST /api/v1/snapshots (the `CreateSnapshot` operationId).
 	CreateSnapshot(ctx context.Context, body CreateSnapshotJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
 
-	// DeleteSnapshot 删除快照
+	// DeleteSnapshot Delete a snapshot
 	//
 	// Corresponds with DELETE /api/v1/snapshots/{snapshotId} (the `DeleteSnapshot` operationId).
 	DeleteSnapshot(ctx context.Context, snapshotId openapi_types.UUID, reqEditors ...RequestEditorFn) (*http.Response, error)
 
-	// GetSnapshot 查看快照
+	// GetSnapshot Retrieve a snapshot
 	//
 	// Corresponds with GET /api/v1/snapshots/{snapshotId} (the `GetSnapshot` operationId).
 	GetSnapshot(ctx context.Context, snapshotId openapi_types.UUID, reqEditors ...RequestEditorFn) (*http.Response, error)
 
-	// RenameSnapshotWithBody 重命名快照
+	// RenameSnapshotWithBody Rename a snapshot
 	//
 	// Takes any type of body and a specified content type.
 	//
 	// Corresponds with PATCH /api/v1/snapshots/{snapshotId} (the `RenameSnapshot` operationId).
 	RenameSnapshotWithBody(ctx context.Context, snapshotId openapi_types.UUID, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
 
-	// RenameSnapshot 重命名快照
+	// RenameSnapshot Rename a snapshot
 	//
 	// Takes a body of the `application/json` content type.
 	//
@@ -2343,7 +2343,7 @@ type ClientInterface interface {
 	RenameSnapshot(ctx context.Context, snapshotId openapi_types.UUID, body RenameSnapshotJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
 }
 
-// ListBackups 列出备份
+// ListBackups List backups
 //
 // Corresponds with GET /api/v1/backups (the `ListBackups` operationId).
 func (c *Client) ListBackups(ctx context.Context, params *ListBackupsParams, reqEditors ...RequestEditorFn) (*http.Response, error) {
@@ -2358,13 +2358,13 @@ func (c *Client) ListBackups(ctx context.Context, params *ListBackupsParams, req
 	return c.Client.Do(req)
 }
 
-// CreateBackupWithBody 创建备份
+// CreateBackupWithBody Create a backup
 //
-// 备份是云硬盘在独立存储中的一份完整副本：**源云硬盘删除后仍可恢复，且可恢复到本地区的其他可用区。**快照不具备这两项能力，它与源云硬盘位于同一存储，且源云硬盘存在快照时无法删除。
+// A backup is a complete copy of a disk held in separate storage: **it remains restorable after the source disk is deleted, and can be restored to another availability zone in the same region.** A snapshot offers neither capability, as it resides in the same storage as the source disk and prevents that disk from being deleted while it exists.
 //
-// 运行中云服务器上挂载的云硬盘、以及系统盘，均可创建备份。
+// Disks attached to a running instance, including system disks, can be backed up.
 //
-// 备份耗时取决于数据量。接口返回时尚未完成，请轮询查看接口。
+// The duration depends on the amount of data. The backup is not complete when this endpoint returns; poll the retrieve endpoint.
 //
 // Takes any type of body and a specified content type.
 //
@@ -2381,13 +2381,13 @@ func (c *Client) CreateBackupWithBody(ctx context.Context, contentType string, b
 	return c.Client.Do(req)
 }
 
-// CreateBackup 创建备份
+// CreateBackup Create a backup
 //
-// 备份是云硬盘在独立存储中的一份完整副本：**源云硬盘删除后仍可恢复，且可恢复到本地区的其他可用区。**快照不具备这两项能力，它与源云硬盘位于同一存储，且源云硬盘存在快照时无法删除。
+// A backup is a complete copy of a disk held in separate storage: **it remains restorable after the source disk is deleted, and can be restored to another availability zone in the same region.** A snapshot offers neither capability, as it resides in the same storage as the source disk and prevents that disk from being deleted while it exists.
 //
-// 运行中云服务器上挂载的云硬盘、以及系统盘，均可创建备份。
+// Disks attached to a running instance, including system disks, can be backed up.
 //
-// 备份耗时取决于数据量。接口返回时尚未完成，请轮询查看接口。
+// The duration depends on the amount of data. The backup is not complete when this endpoint returns; poll the retrieve endpoint.
 //
 // Takes a body of the `application/json` content type.
 //
@@ -2404,9 +2404,9 @@ func (c *Client) CreateBackup(ctx context.Context, body CreateBackupJSONRequestB
 	return c.Client.Do(req)
 }
 
-// DeleteBackup 删除备份
+// DeleteBackup Delete a backup
 //
-// 与源云硬盘无关，源云硬盘是否存在都不影响删除。.
+// Independent of the source disk: deletion succeeds whether or not that disk still exists.
 //
 // Corresponds with DELETE /api/v1/backups/{backupId} (the `DeleteBackup` operationId).
 func (c *Client) DeleteBackup(ctx context.Context, backupId openapi_types.UUID, reqEditors ...RequestEditorFn) (*http.Response, error) {
@@ -2421,9 +2421,9 @@ func (c *Client) DeleteBackup(ctx context.Context, backupId openapi_types.UUID, 
 	return c.Client.Do(req)
 }
 
-// GetBackup 查看备份
+// GetBackup Retrieve a backup
 //
-// 会实时查询备份的当前状态，因此比列表接口慢但更准确。轮询创建进度请使用本接口。.
+// Queries the current state of the backup, which makes it slower but more accurate than the list endpoint. Use it to poll creation progress.
 //
 // Corresponds with GET /api/v1/backups/{backupId} (the `GetBackup` operationId).
 func (c *Client) GetBackup(ctx context.Context, backupId openapi_types.UUID, reqEditors ...RequestEditorFn) (*http.Response, error) {
@@ -2438,7 +2438,7 @@ func (c *Client) GetBackup(ctx context.Context, backupId openapi_types.UUID, req
 	return c.Client.Do(req)
 }
 
-// RenameBackupWithBody 重命名备份
+// RenameBackupWithBody Rename a backup
 //
 // Takes any type of body and a specified content type.
 //
@@ -2455,7 +2455,7 @@ func (c *Client) RenameBackupWithBody(ctx context.Context, backupId openapi_type
 	return c.Client.Do(req)
 }
 
-// RenameBackup 重命名备份
+// RenameBackup Rename a backup
 //
 // Takes a body of the `application/json` content type.
 //
@@ -2472,11 +2472,11 @@ func (c *Client) RenameBackup(ctx context.Context, backupId openapi_types.UUID, 
 	return c.Client.Do(req)
 }
 
-// RestoreBackupWithBody 由备份恢复
+// RestoreBackupWithBody Restore from a backup
 //
-// 恢复到一块**新建的**云硬盘上，源云硬盘不受影响，也不要求它仍然存在。
+// Restores onto a **newly created** disk. The source disk is unaffected and need not still exist.
 //
-// 目标硬盘类型可位于本地区的其他可用区，容量不能小于备份。恢复完成前该云硬盘不可挂载，请轮询云硬盘查看接口。
+// The target disk type may belong to another availability zone of the same region, and its capacity must not be smaller than the backup. The disk cannot be attached until the restore completes; poll the disk retrieve endpoint.
 //
 // Takes any type of body and a specified content type.
 //
@@ -2493,11 +2493,11 @@ func (c *Client) RestoreBackupWithBody(ctx context.Context, backupId openapi_typ
 	return c.Client.Do(req)
 }
 
-// RestoreBackup 由备份恢复
+// RestoreBackup Restore from a backup
 //
-// 恢复到一块**新建的**云硬盘上，源云硬盘不受影响，也不要求它仍然存在。
+// Restores onto a **newly created** disk. The source disk is unaffected and need not still exist.
 //
-// 目标硬盘类型可位于本地区的其他可用区，容量不能小于备份。恢复完成前该云硬盘不可挂载，请轮询云硬盘查看接口。
+// The target disk type may belong to another availability zone of the same region, and its capacity must not be smaller than the backup. The disk cannot be attached until the restore completes; poll the disk retrieve endpoint.
 //
 // Takes a body of the `application/json` content type.
 //
@@ -2514,7 +2514,7 @@ func (c *Client) RestoreBackup(ctx context.Context, backupId openapi_types.UUID,
 	return c.Client.Do(req)
 }
 
-// ListDiskTypes 列出在售硬盘类型
+// ListDiskTypes List disk types on sale
 //
 // Corresponds with GET /api/v1/disk-types (the `ListDiskTypes` operationId).
 func (c *Client) ListDiskTypes(ctx context.Context, params *ListDiskTypesParams, reqEditors ...RequestEditorFn) (*http.Response, error) {
@@ -2529,9 +2529,9 @@ func (c *Client) ListDiskTypes(ctx context.Context, params *ListDiskTypesParams,
 	return c.Client.Do(req)
 }
 
-// ListDisks 列出云硬盘
+// ListDisks List disks
 //
-// 同时提供 region_code 与 availability_zone 时，只返回可挂载到该位置云服务器的云硬盘。.
+// When both `region_code` and `availability_zone` are supplied, only disks attachable to an instance at that location are returned.
 //
 // Corresponds with GET /api/v1/disks (the `ListDisks` operationId).
 func (c *Client) ListDisks(ctx context.Context, params *ListDisksParams, reqEditors ...RequestEditorFn) (*http.Response, error) {
@@ -2546,9 +2546,9 @@ func (c *Client) ListDisks(ctx context.Context, params *ListDisksParams, reqEdit
 	return c.Client.Do(req)
 }
 
-// CreateDiskWithBody 创建云硬盘
+// CreateDiskWithBody Create a disk
 //
-// 云硬盘创建在所选硬盘类型所属的可用区，云服务器必须位于同一可用区才能挂载。因此选定硬盘类型即确定了可用区。.
+// The disk is created in the availability zone of the selected disk type, and an instance must reside in the same zone to attach it. Choosing the disk type therefore determines the zone.
 //
 // Takes any type of body and a specified content type.
 //
@@ -2565,9 +2565,9 @@ func (c *Client) CreateDiskWithBody(ctx context.Context, contentType string, bod
 	return c.Client.Do(req)
 }
 
-// CreateDisk 创建云硬盘
+// CreateDisk Create a disk
 //
-// 云硬盘创建在所选硬盘类型所属的可用区，云服务器必须位于同一可用区才能挂载。因此选定硬盘类型即确定了可用区。.
+// The disk is created in the availability zone of the selected disk type, and an instance must reside in the same zone to attach it. Choosing the disk type therefore determines the zone.
 //
 // Takes a body of the `application/json` content type.
 //
@@ -2584,9 +2584,9 @@ func (c *Client) CreateDisk(ctx context.Context, body CreateDiskJSONRequestBody,
 	return c.Client.Do(req)
 }
 
-// DeleteDisk 删除云硬盘
+// DeleteDisk Delete a disk
 //
-// 云硬盘处于挂载状态，或仍存在基于它创建的快照时，删除会被拒绝。.
+// Deletion is rejected while the disk is attached, or while snapshots created from it still exist.
 //
 // Corresponds with DELETE /api/v1/disks/{diskId} (the `DeleteDisk` operationId).
 func (c *Client) DeleteDisk(ctx context.Context, diskId openapi_types.UUID, reqEditors ...RequestEditorFn) (*http.Response, error) {
@@ -2601,9 +2601,9 @@ func (c *Client) DeleteDisk(ctx context.Context, diskId openapi_types.UUID, reqE
 	return c.Client.Do(req)
 }
 
-// GetDisk 查看云硬盘
+// GetDisk Retrieve a disk
 //
-// 会实时查询云硬盘的当前状态，因此比列表接口慢但更准确。.
+// Queries the current state of the disk, which makes it slower but more accurate than the list endpoint.
 //
 // Corresponds with GET /api/v1/disks/{diskId} (the `GetDisk` operationId).
 func (c *Client) GetDisk(ctx context.Context, diskId openapi_types.UUID, reqEditors ...RequestEditorFn) (*http.Response, error) {
@@ -2618,9 +2618,9 @@ func (c *Client) GetDisk(ctx context.Context, diskId openapi_types.UUID, reqEdit
 	return c.Client.Do(req)
 }
 
-// RenameDiskWithBody 重命名云硬盘
+// RenameDiskWithBody Rename a disk
 //
-// 仅可修改名称。容量请使用扩容接口，类型与可用区不可修改。.
+// Changes the name only. Use the resize endpoint for capacity; type and availability zone are immutable.
 //
 // Takes any type of body and a specified content type.
 //
@@ -2637,9 +2637,9 @@ func (c *Client) RenameDiskWithBody(ctx context.Context, diskId openapi_types.UU
 	return c.Client.Do(req)
 }
 
-// RenameDisk 重命名云硬盘
+// RenameDisk Rename a disk
 //
-// 仅可修改名称。容量请使用扩容接口，类型与可用区不可修改。.
+// Changes the name only. Use the resize endpoint for capacity; type and availability zone are immutable.
 //
 // Takes a body of the `application/json` content type.
 //
@@ -2656,9 +2656,9 @@ func (c *Client) RenameDisk(ctx context.Context, diskId openapi_types.UUID, body
 	return c.Client.Do(req)
 }
 
-// ResizeDiskWithBody 扩容
+// ResizeDiskWithBody Resize a disk
 //
-// 容量只能增加，不支持缩容。扩容完成后需在云服务器内自行扩展文件系统。.
+// Capacity can only be increased; shrinking is not supported. Extend the file system inside the instance once the resize completes.
 //
 // Takes any type of body and a specified content type.
 //
@@ -2675,9 +2675,9 @@ func (c *Client) ResizeDiskWithBody(ctx context.Context, diskId openapi_types.UU
 	return c.Client.Do(req)
 }
 
-// ResizeDisk 扩容
+// ResizeDisk Resize a disk
 //
-// 容量只能增加，不支持缩容。扩容完成后需在云服务器内自行扩展文件系统。.
+// Capacity can only be increased; shrinking is not supported. Extend the file system inside the instance once the resize completes.
 //
 // Takes a body of the `application/json` content type.
 //
@@ -2694,13 +2694,13 @@ func (c *Client) ResizeDisk(ctx context.Context, diskId openapi_types.UUID, body
 	return c.Client.Do(req)
 }
 
-// RevertDiskWithBody 回滚到快照
+// RevertDiskWithBody Revert to a snapshot
 //
-// 将云硬盘的内容恢复到创建该快照的时刻。**该时刻之后写入的数据全部丢失，且无法撤销。**
+// Restores the contents of the disk to the moment the snapshot was taken. **All data written after that moment is lost and cannot be recovered.**
 //
-// 三项限制：只能回滚到该云硬盘最新的一个快照；云硬盘必须先从云服务器上卸载；创建快照后扩容过的云硬盘不能回滚。需要回到更早的时刻，或需要保留现有云硬盘时，请改用由快照创建一块新的云硬盘。
+// Three restrictions apply: only the most recent snapshot of the disk can be reverted to; the disk must be detached from its instance first; and a disk resized since the snapshot was taken cannot be reverted. To return to an earlier point in time, or to keep the existing disk, create a new disk from the snapshot instead.
 //
-// 接口返回时回滚尚未完成，请轮询查看接口。
+// The revert is not complete when this endpoint returns; poll the retrieve endpoint.
 //
 // Takes any type of body and a specified content type.
 //
@@ -2717,13 +2717,13 @@ func (c *Client) RevertDiskWithBody(ctx context.Context, diskId openapi_types.UU
 	return c.Client.Do(req)
 }
 
-// RevertDisk 回滚到快照
+// RevertDisk Revert to a snapshot
 //
-// 将云硬盘的内容恢复到创建该快照的时刻。**该时刻之后写入的数据全部丢失，且无法撤销。**
+// Restores the contents of the disk to the moment the snapshot was taken. **All data written after that moment is lost and cannot be recovered.**
 //
-// 三项限制：只能回滚到该云硬盘最新的一个快照；云硬盘必须先从云服务器上卸载；创建快照后扩容过的云硬盘不能回滚。需要回到更早的时刻，或需要保留现有云硬盘时，请改用由快照创建一块新的云硬盘。
+// Three restrictions apply: only the most recent snapshot of the disk can be reverted to; the disk must be detached from its instance first; and a disk resized since the snapshot was taken cannot be reverted. To return to an earlier point in time, or to keep the existing disk, create a new disk from the snapshot instead.
 //
-// 接口返回时回滚尚未完成，请轮询查看接口。
+// The revert is not complete when this endpoint returns; poll the retrieve endpoint.
 //
 // Takes a body of the `application/json` content type.
 //
@@ -2740,7 +2740,7 @@ func (c *Client) RevertDisk(ctx context.Context, diskId openapi_types.UUID, body
 	return c.Client.Do(req)
 }
 
-// ListFloatingIps 列出公网 IP
+// ListFloatingIps List floating IPs
 //
 // Corresponds with GET /api/v1/floating-ips (the `ListFloatingIps` operationId).
 func (c *Client) ListFloatingIps(ctx context.Context, reqEditors ...RequestEditorFn) (*http.Response, error) {
@@ -2755,11 +2755,11 @@ func (c *Client) ListFloatingIps(ctx context.Context, reqEditors ...RequestEdito
 	return c.Client.Do(req)
 }
 
-// AllocateFloatingIpWithBody 申领公网 IP
+// AllocateFloatingIpWithBody Allocate a floating IP
 //
-// 若该私有网络尚未连通外网，会一并为其接入外网。
+// If the private network is not yet connected to the internet, connectivity is established as part of this call.
 //
-// IPv6 不通过本接口申请。IPv6 地址由私有网络自动下发至云服务器，在私有网络上启用即可。
+// IPv6 is not requested through this endpoint. IPv6 addresses are assigned to instances by the private network; enable IPv6 on that network instead.
 //
 // Takes any type of body and a specified content type.
 //
@@ -2776,11 +2776,11 @@ func (c *Client) AllocateFloatingIpWithBody(ctx context.Context, contentType str
 	return c.Client.Do(req)
 }
 
-// AllocateFloatingIp 申领公网 IP
+// AllocateFloatingIp Allocate a floating IP
 //
-// 若该私有网络尚未连通外网，会一并为其接入外网。
+// If the private network is not yet connected to the internet, connectivity is established as part of this call.
 //
-// IPv6 不通过本接口申请。IPv6 地址由私有网络自动下发至云服务器，在私有网络上启用即可。
+// IPv6 is not requested through this endpoint. IPv6 addresses are assigned to instances by the private network; enable IPv6 on that network instead.
 //
 // Takes a body of the `application/json` content type.
 //
@@ -2797,9 +2797,9 @@ func (c *Client) AllocateFloatingIp(ctx context.Context, body AllocateFloatingIp
 	return c.Client.Do(req)
 }
 
-// ReleaseFloatingIp 释放公网 IP
+// ReleaseFloatingIp Release a floating IP
 //
-// 地址释放后进入冷却期才会重新分配，以免仍指向它的 DNS 记录和访问白名单立即失效。因此释放后的短时间内**无法重新申领同一个地址**，请谨慎操作。.
+// A released address enters a cooldown period before it is allocated again, so that DNS records and allow-lists still pointing at it do not break immediately. **The same address therefore cannot be re-allocated** for some time after release. Proceed with care.
 //
 // Corresponds with DELETE /api/v1/floating-ips/{floatingIpId} (the `ReleaseFloatingIp` operationId).
 func (c *Client) ReleaseFloatingIp(ctx context.Context, floatingIpId openapi_types.UUID, reqEditors ...RequestEditorFn) (*http.Response, error) {
@@ -2814,7 +2814,7 @@ func (c *Client) ReleaseFloatingIp(ctx context.Context, floatingIpId openapi_typ
 	return c.Client.Do(req)
 }
 
-// GetFloatingIp 查看公网 IP
+// GetFloatingIp Retrieve a floating IP
 //
 // Corresponds with GET /api/v1/floating-ips/{floatingIpId} (the `GetFloatingIp` operationId).
 func (c *Client) GetFloatingIp(ctx context.Context, floatingIpId openapi_types.UUID, reqEditors ...RequestEditorFn) (*http.Response, error) {
@@ -2829,9 +2829,9 @@ func (c *Client) GetFloatingIp(ctx context.Context, floatingIpId openapi_types.U
 	return c.Client.Do(req)
 }
 
-// SetFloatingIpBandwidthWithBody 设带宽上限
+// SetFloatingIpBandwidthWithBody Set the bandwidth limit
 //
-// 出入两个方向同时限速。仅限制出方向无法防止入方向流量打满上联带宽。.
+// Limits both directions at once. Limiting egress alone does not prevent ingress traffic from saturating the uplink.
 //
 // Takes any type of body and a specified content type.
 //
@@ -2848,9 +2848,9 @@ func (c *Client) SetFloatingIpBandwidthWithBody(ctx context.Context, floatingIpI
 	return c.Client.Do(req)
 }
 
-// SetFloatingIpBandwidth 设带宽上限
+// SetFloatingIpBandwidth Set the bandwidth limit
 //
-// 出入两个方向同时限速。仅限制出方向无法防止入方向流量打满上联带宽。.
+// Limits both directions at once. Limiting egress alone does not prevent ingress traffic from saturating the uplink.
 //
 // Takes a body of the `application/json` content type.
 //
@@ -2867,9 +2867,9 @@ func (c *Client) SetFloatingIpBandwidth(ctx context.Context, floatingIpId openap
 	return c.Client.Do(req)
 }
 
-// UnbindFloatingIp 解绑公网 IP
+// UnbindFloatingIp Unbind a floating IP
 //
-// 地址仍归本项目持有，只是不再指向任何网卡。.
+// The address remains held by the project and simply no longer points at any network interface.
 //
 // Corresponds with DELETE /api/v1/floating-ips/{floatingIpId}/binding (the `UnbindFloatingIp` operationId).
 func (c *Client) UnbindFloatingIp(ctx context.Context, floatingIpId openapi_types.UUID, reqEditors ...RequestEditorFn) (*http.Response, error) {
@@ -2884,7 +2884,7 @@ func (c *Client) UnbindFloatingIp(ctx context.Context, floatingIpId openapi_type
 	return c.Client.Do(req)
 }
 
-// BindFloatingIpWithBody 将公网 IP 绑定到网卡
+// BindFloatingIpWithBody Bind a floating IP to a network interface
 //
 // Takes any type of body and a specified content type.
 //
@@ -2901,7 +2901,7 @@ func (c *Client) BindFloatingIpWithBody(ctx context.Context, floatingIpId openap
 	return c.Client.Do(req)
 }
 
-// BindFloatingIp 将公网 IP 绑定到网卡
+// BindFloatingIp Bind a floating IP to a network interface
 //
 // Takes a body of the `application/json` content type.
 //
@@ -2918,9 +2918,9 @@ func (c *Client) BindFloatingIp(ctx context.Context, floatingIpId openapi_types.
 	return c.Client.Do(req)
 }
 
-// ListImages 列出在售镜像
+// ListImages List images on sale
 //
-// min_ram_mb 超过所选机型内存的镜像无法启动，请据此过滤可选项。.
+// An image whose `min_ram_mb` exceeds the memory of the selected instance type cannot boot. Filter the options accordingly.
 //
 // Corresponds with GET /api/v1/images (the `ListImages` operationId).
 func (c *Client) ListImages(ctx context.Context, params *ListImagesParams, reqEditors ...RequestEditorFn) (*http.Response, error) {
@@ -2935,7 +2935,7 @@ func (c *Client) ListImages(ctx context.Context, params *ListImagesParams, reqEd
 	return c.Client.Do(req)
 }
 
-// ListInstanceTypes 列出在售机型
+// ListInstanceTypes List instance types on sale
 //
 // Corresponds with GET /api/v1/instance-types (the `ListInstanceTypes` operationId).
 func (c *Client) ListInstanceTypes(ctx context.Context, params *ListInstanceTypesParams, reqEditors ...RequestEditorFn) (*http.Response, error) {
@@ -2950,7 +2950,7 @@ func (c *Client) ListInstanceTypes(ctx context.Context, params *ListInstanceType
 	return c.Client.Do(req)
 }
 
-// ListInstances 列出云服务器
+// ListInstances List instances
 //
 // Corresponds with GET /api/v1/instances (the `ListInstances` operationId).
 func (c *Client) ListInstances(ctx context.Context, reqEditors ...RequestEditorFn) (*http.Response, error) {
@@ -2965,19 +2965,19 @@ func (c *Client) ListInstances(ctx context.Context, reqEditors ...RequestEditorF
 	return c.Client.Do(req)
 }
 
-// LaunchInstanceWithBody 创建云服务器
+// LaunchInstanceWithBody Create instances
 //
-// **必须在请求中设置密码**：不设置时请求会被拒绝，否则创建出的云服务器将无法登录。密码可由平台生成，此时仅在本次响应中返回一次。
+// **A password must be set in the request.** The request is rejected otherwise, since the resulting instance would be unreachable. The platform can generate one, in which case it is returned only in this response.
 //
-// `count` 可一次创建多台（最多 20 台），名称自动加 `-1`、`-2` 编号，所有云服务器共用同一个密码。**响应中的 `instances` 始终是数组**，单台创建时也是。
+// `count` creates several instances at once, 20 at most. Names are numbered `-1`, `-2` automatically and all instances share one password. **`instances` in the response is always an array**, including for a single instance.
 //
-// 批量创建按顺序逐台进行。若中途失败（例如配额不足），**已创建的云服务器会保留**，响应中的 `failure` 给出中止原因；第一台就失败时视为整次请求失败，不会创建任何云服务器。
+// Instances are created one by one in order. If the sequence stops part way through, because of a quota limit for example, **the instances already created are kept** and `failure` states why it stopped. A failure on the first instance is treated as a failure of the whole request and no instance is created.
 //
-// 镜像二选一：`image_id` 使用平台提供的镜像，`private_image_id` 使用自制镜像。两者都给或都不给都会被拒绝。
+// Exactly one image source must be given: `image_id` for a platform image, `private_image_id` for a private image. Supplying both or neither is rejected.
 //
-// 云服务器创建在机型所属的可用区。后续要挂载的云硬盘必须位于同一可用区。
+// Instances are created in the availability zone of the instance type. Disks to be attached later must reside in the same zone.
 //
-// 接口返回时创建尚未完成（status 为 provisioning），请轮询 GET 确认结果。
+// Creation is not complete when this endpoint returns and `status` is `provisioning`. Poll GET to observe the outcome.
 //
 // Takes any type of body and a specified content type.
 //
@@ -2994,19 +2994,19 @@ func (c *Client) LaunchInstanceWithBody(ctx context.Context, contentType string,
 	return c.Client.Do(req)
 }
 
-// LaunchInstance 创建云服务器
+// LaunchInstance Create instances
 //
-// **必须在请求中设置密码**：不设置时请求会被拒绝，否则创建出的云服务器将无法登录。密码可由平台生成，此时仅在本次响应中返回一次。
+// **A password must be set in the request.** The request is rejected otherwise, since the resulting instance would be unreachable. The platform can generate one, in which case it is returned only in this response.
 //
-// `count` 可一次创建多台（最多 20 台），名称自动加 `-1`、`-2` 编号，所有云服务器共用同一个密码。**响应中的 `instances` 始终是数组**，单台创建时也是。
+// `count` creates several instances at once, 20 at most. Names are numbered `-1`, `-2` automatically and all instances share one password. **`instances` in the response is always an array**, including for a single instance.
 //
-// 批量创建按顺序逐台进行。若中途失败（例如配额不足），**已创建的云服务器会保留**，响应中的 `failure` 给出中止原因；第一台就失败时视为整次请求失败，不会创建任何云服务器。
+// Instances are created one by one in order. If the sequence stops part way through, because of a quota limit for example, **the instances already created are kept** and `failure` states why it stopped. A failure on the first instance is treated as a failure of the whole request and no instance is created.
 //
-// 镜像二选一：`image_id` 使用平台提供的镜像，`private_image_id` 使用自制镜像。两者都给或都不给都会被拒绝。
+// Exactly one image source must be given: `image_id` for a platform image, `private_image_id` for a private image. Supplying both or neither is rejected.
 //
-// 云服务器创建在机型所属的可用区。后续要挂载的云硬盘必须位于同一可用区。
+// Instances are created in the availability zone of the instance type. Disks to be attached later must reside in the same zone.
 //
-// 接口返回时创建尚未完成（status 为 provisioning），请轮询 GET 确认结果。
+// Creation is not complete when this endpoint returns and `status` is `provisioning`. Poll GET to observe the outcome.
 //
 // Takes a body of the `application/json` content type.
 //
@@ -3023,11 +3023,11 @@ func (c *Client) LaunchInstance(ctx context.Context, body LaunchInstanceJSONRequ
 	return c.Client.Do(req)
 }
 
-// DeleteInstance 释放云服务器
+// DeleteInstance Release an instance
 //
-// 系统盘随云服务器一并删除，**基于系统盘创建的快照也会一并删除**。数据盘会被卸载并保留，其快照与备份不受影响。主网卡随云服务器一并释放。
+// The system disk is deleted with the instance, and **snapshots created from the system disk are deleted with it**. Data disks are detached and kept, and their snapshots and backups are unaffected. The primary network interface is released with the instance.
 //
-// 正在制作镜像的云服务器无法释放，请等待制作完成或先删除该镜像。
+// An instance being captured as a private image cannot be released. Wait for the capture to finish, or delete that image first.
 //
 // Corresponds with DELETE /api/v1/instances/{instanceId} (the `DeleteInstance` operationId).
 func (c *Client) DeleteInstance(ctx context.Context, instanceId openapi_types.UUID, reqEditors ...RequestEditorFn) (*http.Response, error) {
@@ -3042,9 +3042,9 @@ func (c *Client) DeleteInstance(ctx context.Context, instanceId openapi_types.UU
 	return c.Client.Do(req)
 }
 
-// GetInstance 查看云服务器
+// GetInstance Retrieve an instance
 //
-// 会实时查询云服务器的当前状态，因此比列表接口慢但更准确。轮询创建进度请使用本接口。.
+// Queries the current state of the instance, which makes it slower but more accurate than the list endpoint. Use it to poll creation progress.
 //
 // Corresponds with GET /api/v1/instances/{instanceId} (the `GetInstance` operationId).
 func (c *Client) GetInstance(ctx context.Context, instanceId openapi_types.UUID, reqEditors ...RequestEditorFn) (*http.Response, error) {
@@ -3059,9 +3059,9 @@ func (c *Client) GetInstance(ctx context.Context, instanceId openapi_types.UUID,
 	return c.Client.Do(req)
 }
 
-// RenameInstanceWithBody 重命名云服务器
+// RenameInstanceWithBody Rename an instance
 //
-// 仅修改显示名称。云服务器内的主机名不变，它等于云服务器 id。.
+// Changes the display name only. The hostname inside the instance is unchanged; it equals the instance id.
 //
 // Takes any type of body and a specified content type.
 //
@@ -3078,9 +3078,9 @@ func (c *Client) RenameInstanceWithBody(ctx context.Context, instanceId openapi_
 	return c.Client.Do(req)
 }
 
-// RenameInstance 重命名云服务器
+// RenameInstance Rename an instance
 //
-// 仅修改显示名称。云服务器内的主机名不变，它等于云服务器 id。.
+// Changes the display name only. The hostname inside the instance is unchanged; it equals the instance id.
 //
 // Takes a body of the `application/json` content type.
 //
@@ -3097,15 +3097,15 @@ func (c *Client) RenameInstance(ctx context.Context, instanceId openapi_types.UU
 	return c.Client.Do(req)
 }
 
-// ActOnInstanceWithBody 开机、关机、重启
+// ActOnInstanceWithBody Start, stop or reboot an instance
 //
-// 重启默认为软重启，由操作系统正常关闭后重新启动。
+// Reboot defaults to a soft reboot, in which the operating system shuts down normally before starting again.
 //
-// 系统已无响应时软重启不会生效，此时可设置 `force` 强制重启。强制重启不等待操作系统关闭，**未落盘的数据会丢失**。`force` 仅适用于 reboot。
+// A soft reboot has no effect once the system is unresponsive. Set `force` to reboot forcibly: a forced reboot does not wait for the operating system to shut down, so **unwritten data is lost**. `force` applies to `reboot` only.
 //
-// 已被平台停服的云服务器需先解除停服。
+// An instance suspended by the platform must be unsuspended first.
 //
-// 本接口立即返回，返回的 `status` 是变更中的瞬态：start 为 `starting`、stop 为 `stopping`、reboot 为 `rebooting`。轮询云服务器详情直至落定为 `running` 或 `stopped`。
+// This endpoint returns immediately and the `status` it returns is a transient state: `starting` for start, `stopping` for stop, `rebooting` for reboot. Poll the instance until it settles at `running` or `stopped`.
 //
 // Takes any type of body and a specified content type.
 //
@@ -3122,15 +3122,15 @@ func (c *Client) ActOnInstanceWithBody(ctx context.Context, instanceId openapi_t
 	return c.Client.Do(req)
 }
 
-// ActOnInstance 开机、关机、重启
+// ActOnInstance Start, stop or reboot an instance
 //
-// 重启默认为软重启，由操作系统正常关闭后重新启动。
+// Reboot defaults to a soft reboot, in which the operating system shuts down normally before starting again.
 //
-// 系统已无响应时软重启不会生效，此时可设置 `force` 强制重启。强制重启不等待操作系统关闭，**未落盘的数据会丢失**。`force` 仅适用于 reboot。
+// A soft reboot has no effect once the system is unresponsive. Set `force` to reboot forcibly: a forced reboot does not wait for the operating system to shut down, so **unwritten data is lost**. `force` applies to `reboot` only.
 //
-// 已被平台停服的云服务器需先解除停服。
+// An instance suspended by the platform must be unsuspended first.
 //
-// 本接口立即返回，返回的 `status` 是变更中的瞬态：start 为 `starting`、stop 为 `stopping`、reboot 为 `rebooting`。轮询云服务器详情直至落定为 `running` 或 `stopped`。
+// This endpoint returns immediately and the `status` it returns is a transient state: `starting` for start, `stopping` for stop, `rebooting` for reboot. Poll the instance until it settles at `running` or `stopped`.
 //
 // Takes a body of the `application/json` content type.
 //
@@ -3147,11 +3147,11 @@ func (c *Client) ActOnInstance(ctx context.Context, instanceId openapi_types.UUI
 	return c.Client.Do(req)
 }
 
-// OpenInstanceConsole 打开远程控制台
+// OpenInstanceConsole Open a remote console
 //
-// 在浏览器中直接操作云服务器，无需网络可达，适用于网络配置失误导致无法登录的情况。
+// Operates the instance directly from a browser and does not require the instance to be reachable over the network, which makes it usable when a network misconfiguration prevents login.
 //
-// 返回的地址一次性使用，数分钟后失效。**请勿缓存**，每次使用前重新获取。
+// The returned address is single-use and expires within minutes. **Do not cache it**; request a new one before each use.
 //
 // Corresponds with POST /api/v1/instances/{instanceId}/console (the `OpenInstanceConsole` operationId).
 func (c *Client) OpenInstanceConsole(ctx context.Context, instanceId openapi_types.UUID, reqEditors ...RequestEditorFn) (*http.Response, error) {
@@ -3166,11 +3166,11 @@ func (c *Client) OpenInstanceConsole(ctx context.Context, instanceId openapi_typ
 	return c.Client.Do(req)
 }
 
-// GetInstanceConsoleOutput 读取串口输出
+// GetInstanceConsoleOutput Read the console output
 //
-// 云服务器启动过程与内核输出的原始文本。无法登录或远程控制台无输出时，应首先查看本接口。其中可查看启动停止于哪一步、系统盘是否正常挂载、初始化过程是否报错。
+// The raw text produced by the instance during boot and by the kernel. Consult it first when login fails or the remote console shows no output: it reveals where boot stopped, whether the system disk was mounted, and whether initialisation reported errors.
 //
-// 处于错误状态或已被平台停服的云服务器同样可以读取。
+// Instances in an error state, and instances suspended by the platform, can be read as well.
 //
 // Corresponds with GET /api/v1/instances/{instanceId}/console-output (the `GetInstanceConsoleOutput` operationId).
 func (c *Client) GetInstanceConsoleOutput(ctx context.Context, instanceId openapi_types.UUID, params *GetInstanceConsoleOutputParams, reqEditors ...RequestEditorFn) (*http.Response, error) {
@@ -3185,7 +3185,7 @@ func (c *Client) GetInstanceConsoleOutput(ctx context.Context, instanceId openap
 	return c.Client.Do(req)
 }
 
-// ListInstanceDisks 列出云服务器已挂载的云硬盘
+// ListInstanceDisks List the disks attached to an instance
 //
 // Corresponds with GET /api/v1/instances/{instanceId}/disks (the `ListInstanceDisks` operationId).
 func (c *Client) ListInstanceDisks(ctx context.Context, instanceId openapi_types.UUID, reqEditors ...RequestEditorFn) (*http.Response, error) {
@@ -3200,9 +3200,9 @@ func (c *Client) ListInstanceDisks(ctx context.Context, instanceId openapi_types
 	return c.Client.Do(req)
 }
 
-// AttachDiskWithBody 挂载云硬盘
+// AttachDiskWithBody Attach a disk
 //
-// 云硬盘必须与云服务器位于同一地区和可用区。挂载后需在云服务器内自行分区并挂载文件系统。.
+// The disk must be in the same region and availability zone as the instance. Partition it and mount the file system inside the instance once it is attached.
 //
 // Takes any type of body and a specified content type.
 //
@@ -3219,9 +3219,9 @@ func (c *Client) AttachDiskWithBody(ctx context.Context, instanceId openapi_type
 	return c.Client.Do(req)
 }
 
-// AttachDisk 挂载云硬盘
+// AttachDisk Attach a disk
 //
-// 云硬盘必须与云服务器位于同一地区和可用区。挂载后需在云服务器内自行分区并挂载文件系统。.
+// The disk must be in the same region and availability zone as the instance. Partition it and mount the file system inside the instance once it is attached.
 //
 // Takes a body of the `application/json` content type.
 //
@@ -3238,9 +3238,9 @@ func (c *Client) AttachDisk(ctx context.Context, instanceId openapi_types.UUID, 
 	return c.Client.Do(req)
 }
 
-// DetachDisk 卸载云硬盘
+// DetachDisk Detach a disk
 //
-// 请先在云服务器内卸载（umount）该设备再调用本接口，正在写入的文件系统被强制卸载会损坏数据。.
+// Unmount the device inside the instance before calling this endpoint. Forcibly detaching a file system that is being written to corrupts data.
 //
 // Corresponds with DELETE /api/v1/instances/{instanceId}/disks/{diskId} (the `DetachDisk` operationId).
 func (c *Client) DetachDisk(ctx context.Context, instanceId openapi_types.UUID, diskId openapi_types.UUID, reqEditors ...RequestEditorFn) (*http.Response, error) {
@@ -3255,9 +3255,9 @@ func (c *Client) DetachDisk(ctx context.Context, instanceId openapi_types.UUID, 
 	return c.Client.Do(req)
 }
 
-// AttachInstanceFloatingIpWithBody 为云服务器绑定公网 IP
+// AttachInstanceFloatingIpWithBody Bind a floating IP to an instance
 //
-// 公网 IP 绑定在云服务器的主网卡上。.
+// The floating IP is bound to the primary network interface of the instance.
 //
 // Takes any type of body and a specified content type.
 //
@@ -3274,9 +3274,9 @@ func (c *Client) AttachInstanceFloatingIpWithBody(ctx context.Context, instanceI
 	return c.Client.Do(req)
 }
 
-// AttachInstanceFloatingIp 为云服务器绑定公网 IP
+// AttachInstanceFloatingIp Bind a floating IP to an instance
 //
-// 公网 IP 绑定在云服务器的主网卡上。.
+// The floating IP is bound to the primary network interface of the instance.
 //
 // Takes a body of the `application/json` content type.
 //
@@ -3293,7 +3293,7 @@ func (c *Client) AttachInstanceFloatingIp(ctx context.Context, instanceId openap
 	return c.Client.Do(req)
 }
 
-// DetachInstanceFloatingIp 解绑云服务器的公网 IP
+// DetachInstanceFloatingIp Unbind the floating IP of an instance
 //
 // Corresponds with DELETE /api/v1/instances/{instanceId}/floating-ips/{floatingIpId} (the `DetachInstanceFloatingIp` operationId).
 func (c *Client) DetachInstanceFloatingIp(ctx context.Context, instanceId openapi_types.UUID, floatingIpId openapi_types.UUID, reqEditors ...RequestEditorFn) (*http.Response, error) {
@@ -3308,13 +3308,13 @@ func (c *Client) DetachInstanceFloatingIp(ctx context.Context, instanceId openap
 	return c.Client.Do(req)
 }
 
-// ResetInstancePasswordWithBody 重置登录密码
+// ResetInstancePasswordWithBody Reset the login password
 //
-// 在不重启的情况下改掉 root 的密码，云服务器必须处于运行中。
+// Changes the root password without a reboot. The instance must be running.
 //
-// **并非所有镜像都支持**：镜像列表中 `supports_password_reset` 为 false 的镜像做不到，此时只能通过重装系统设置新密码，而重装会清除系统盘上的全部数据。
+// **Not every image supports this.** Images whose `supports_password_reset` is false cannot, and a new password can then only be set by rebuilding the instance, which erases all data on the system disk.
 //
-// 镜像标记为支持、但云服务器内相应组件已被卸载或停止时，本接口同样会被拒绝。
+// The request is also rejected when the image is marked as supported but the corresponding component has been removed or stopped inside the instance.
 //
 // Takes any type of body and a specified content type.
 //
@@ -3331,13 +3331,13 @@ func (c *Client) ResetInstancePasswordWithBody(ctx context.Context, instanceId o
 	return c.Client.Do(req)
 }
 
-// ResetInstancePassword 重置登录密码
+// ResetInstancePassword Reset the login password
 //
-// 在不重启的情况下改掉 root 的密码，云服务器必须处于运行中。
+// Changes the root password without a reboot. The instance must be running.
 //
-// **并非所有镜像都支持**：镜像列表中 `supports_password_reset` 为 false 的镜像做不到，此时只能通过重装系统设置新密码，而重装会清除系统盘上的全部数据。
+// **Not every image supports this.** Images whose `supports_password_reset` is false cannot, and a new password can then only be set by rebuilding the instance, which erases all data on the system disk.
 //
-// 镜像标记为支持、但云服务器内相应组件已被卸载或停止时，本接口同样会被拒绝。
+// The request is also rejected when the image is marked as supported but the corresponding component has been removed or stopped inside the instance.
 //
 // Takes a body of the `application/json` content type.
 //
@@ -3354,7 +3354,7 @@ func (c *Client) ResetInstancePassword(ctx context.Context, instanceId openapi_t
 	return c.Client.Do(req)
 }
 
-// ListInstancePorts 列出云服务器的网卡
+// ListInstancePorts List the network interfaces of an instance
 //
 // Corresponds with GET /api/v1/instances/{instanceId}/ports (the `ListInstancePorts` operationId).
 func (c *Client) ListInstancePorts(ctx context.Context, instanceId openapi_types.UUID, reqEditors ...RequestEditorFn) (*http.Response, error) {
@@ -3369,7 +3369,7 @@ func (c *Client) ListInstancePorts(ctx context.Context, instanceId openapi_types
 	return c.Client.Do(req)
 }
 
-// AttachPortWithBody 挂载网卡
+// AttachPortWithBody Attach a network interface
 //
 // Takes any type of body and a specified content type.
 //
@@ -3386,7 +3386,7 @@ func (c *Client) AttachPortWithBody(ctx context.Context, instanceId openapi_type
 	return c.Client.Do(req)
 }
 
-// AttachPort 挂载网卡
+// AttachPort Attach a network interface
 //
 // Takes a body of the `application/json` content type.
 //
@@ -3403,9 +3403,9 @@ func (c *Client) AttachPort(ctx context.Context, instanceId openapi_types.UUID, 
 	return c.Client.Do(req)
 }
 
-// DetachPort 卸载网卡
+// DetachPort Detach a network interface
 //
-// 主网卡不可卸载，卸载后云服务器将失去网络地址。.
+// The primary network interface cannot be detached; the instance would lose its network address.
 //
 // Corresponds with DELETE /api/v1/instances/{instanceId}/ports/{portId} (the `DetachPort` operationId).
 func (c *Client) DetachPort(ctx context.Context, instanceId openapi_types.UUID, portId openapi_types.UUID, reqEditors ...RequestEditorFn) (*http.Response, error) {
@@ -3420,9 +3420,9 @@ func (c *Client) DetachPort(ctx context.Context, instanceId openapi_types.UUID, 
 	return c.Client.Do(req)
 }
 
-// RebuildInstanceWithBody 重装系统
+// RebuildInstanceWithBody Rebuild an instance
 //
-// **系统盘数据将被清除且无法恢复。** 已挂载的数据盘不受影响。.
+// **All data on the system disk is erased and cannot be recovered.** Attached data disks are unaffected.
 //
 // Takes any type of body and a specified content type.
 //
@@ -3439,9 +3439,9 @@ func (c *Client) RebuildInstanceWithBody(ctx context.Context, instanceId openapi
 	return c.Client.Do(req)
 }
 
-// RebuildInstance 重装系统
+// RebuildInstance Rebuild an instance
 //
-// **系统盘数据将被清除且无法恢复。** 已挂载的数据盘不受影响。.
+// **All data on the system disk is erased and cannot be recovered.** Attached data disks are unaffected.
 //
 // Takes a body of the `application/json` content type.
 //
@@ -3458,13 +3458,13 @@ func (c *Client) RebuildInstance(ctx context.Context, instanceId openapi_types.U
 	return c.Client.Do(req)
 }
 
-// ResizeInstanceWithBody 变配
+// ResizeInstanceWithBody Resize an instance
 //
-// 只能变更为同一地区、同一可用区的机型，否则已挂载的云硬盘无法随之迁移。
+// Only an instance type in the same region and availability zone can be selected, as attached disks cannot follow the instance elsewhere.
 //
-// 变配分两步：本接口下发后云服务器会在新规格上重新启动，状态变为 `resize_verifying`，此时**必须**调用确认或回滚接口。目标机型在确认前记在 `pending_instance_type_id` 上，`instance_type_id` 仍为当前生效并计费的机型。
+// A resize has two steps. This endpoint restarts the instance on the new size and the status becomes `resize_verifying`, at which point the confirm or revert endpoint **must** be called. Until confirmation the target type is recorded in `pending_instance_type_id`, while `instance_type_id` remains the type in effect and billed.
 //
-// **未确认期间新旧两份规格同时占用资源。** 请在状态变为 `resize_verifying` 后尽快确认。
+// **Both sizes hold resources while the resize is unconfirmed.** Confirm promptly once the status becomes `resize_verifying`.
 //
 // Takes any type of body and a specified content type.
 //
@@ -3481,13 +3481,13 @@ func (c *Client) ResizeInstanceWithBody(ctx context.Context, instanceId openapi_
 	return c.Client.Do(req)
 }
 
-// ResizeInstance 变配
+// ResizeInstance Resize an instance
 //
-// 只能变更为同一地区、同一可用区的机型，否则已挂载的云硬盘无法随之迁移。
+// Only an instance type in the same region and availability zone can be selected, as attached disks cannot follow the instance elsewhere.
 //
-// 变配分两步：本接口下发后云服务器会在新规格上重新启动，状态变为 `resize_verifying`，此时**必须**调用确认或回滚接口。目标机型在确认前记在 `pending_instance_type_id` 上，`instance_type_id` 仍为当前生效并计费的机型。
+// A resize has two steps. This endpoint restarts the instance on the new size and the status becomes `resize_verifying`, at which point the confirm or revert endpoint **must** be called. Until confirmation the target type is recorded in `pending_instance_type_id`, while `instance_type_id` remains the type in effect and billed.
 //
-// **未确认期间新旧两份规格同时占用资源。** 请在状态变为 `resize_verifying` 后尽快确认。
+// **Both sizes hold resources while the resize is unconfirmed.** Confirm promptly once the status becomes `resize_verifying`.
 //
 // Takes a body of the `application/json` content type.
 //
@@ -3504,9 +3504,9 @@ func (c *Client) ResizeInstance(ctx context.Context, instanceId openapi_types.UU
 	return c.Client.Do(req)
 }
 
-// ConfirmInstanceResize 确认变配
+// ConfirmInstanceResize Confirm a resize
 //
-// 释放原规格占用的资源，`pending_instance_type_id` 成为生效机型并从此按它计费。.
+// Releases the resources held by the previous size. `pending_instance_type_id` becomes the type in effect and is billed from then on.
 //
 // Corresponds with POST /api/v1/instances/{instanceId}/resize/confirm (the `ConfirmInstanceResize` operationId).
 func (c *Client) ConfirmInstanceResize(ctx context.Context, instanceId openapi_types.UUID, reqEditors ...RequestEditorFn) (*http.Response, error) {
@@ -3521,9 +3521,9 @@ func (c *Client) ConfirmInstanceResize(ctx context.Context, instanceId openapi_t
 	return c.Client.Do(req)
 }
 
-// RevertInstanceResize 回滚变配
+// RevertInstanceResize Revert a resize
 //
-// 云服务器回到原规格，`pending_instance_type_id` 被丢弃，计费不受本次变配影响。.
+// The instance returns to its previous size, `pending_instance_type_id` is discarded, and billing is unaffected by the resize.
 //
 // Corresponds with POST /api/v1/instances/{instanceId}/resize/revert (the `RevertInstanceResize` operationId).
 func (c *Client) RevertInstanceResize(ctx context.Context, instanceId openapi_types.UUID, reqEditors ...RequestEditorFn) (*http.Response, error) {
@@ -3538,13 +3538,13 @@ func (c *Client) RevertInstanceResize(ctx context.Context, instanceId openapi_ty
 	return c.Client.Do(req)
 }
 
-// ListOperationLogs 列出本项目的操作记录
+// ListOperationLogs List the operation log of the project
 //
-// 记录本项目内的每一次写操作：谁、在什么时候、对什么做了什么、成功还是失败。读取操作不记录。
+// Records every write operation in the project: who performed it, when, on what, and whether it succeeded. Read operations are not recorded.
 //
-// **平台代为执行的操作也在其中，但不显示具体执行人**，`by_platform` 为 true。例如欠费停机、违规封禁：需要知道机器何时被平台停止，但执行人属于平台内部信息。
+// **Operations performed by the platform are included, but the individual operator is not disclosed** and `by_platform` is true. Suspension for non-payment and bans for abuse are examples: the time at which an instance was stopped by the platform is needed, whereas the operator is internal information.
 //
-// 密码一类的字段在写入时即被替换为占位符，不会出现在 `payload` 中。
+// Fields such as passwords are replaced with a placeholder as the record is written and never appear in `payload`.
 //
 // Corresponds with GET /api/v1/operation-logs (the `ListOperationLogs` operationId).
 func (c *Client) ListOperationLogs(ctx context.Context, params *ListOperationLogsParams, reqEditors ...RequestEditorFn) (*http.Response, error) {
@@ -3559,7 +3559,7 @@ func (c *Client) ListOperationLogs(ctx context.Context, params *ListOperationLog
 	return c.Client.Do(req)
 }
 
-// ListPorts 列出网卡
+// ListPorts List network interfaces
 //
 // Corresponds with GET /api/v1/ports (the `ListPorts` operationId).
 func (c *Client) ListPorts(ctx context.Context, reqEditors ...RequestEditorFn) (*http.Response, error) {
@@ -3574,9 +3574,9 @@ func (c *Client) ListPorts(ctx context.Context, reqEditors ...RequestEditorFn) (
 	return c.Client.Do(req)
 }
 
-// CreatePortWithBody 创建网卡
+// CreatePortWithBody Create a network interface
 //
-// 创建出的网卡尚未挂载到任何云服务器。主网卡不由本接口创建，它随云服务器一并创建。.
+// The new network interface is not attached to any instance. Primary network interfaces are not created here; they are created with the instance.
 //
 // Takes any type of body and a specified content type.
 //
@@ -3593,9 +3593,9 @@ func (c *Client) CreatePortWithBody(ctx context.Context, contentType string, bod
 	return c.Client.Do(req)
 }
 
-// CreatePort 创建网卡
+// CreatePort Create a network interface
 //
-// 创建出的网卡尚未挂载到任何云服务器。主网卡不由本接口创建，它随云服务器一并创建。.
+// The new network interface is not attached to any instance. Primary network interfaces are not created here; they are created with the instance.
 //
 // Takes a body of the `application/json` content type.
 //
@@ -3612,9 +3612,9 @@ func (c *Client) CreatePort(ctx context.Context, body CreatePortJSONRequestBody,
 	return c.Client.Do(req)
 }
 
-// DeletePort 删除网卡
+// DeletePort Delete a network interface
 //
-// 主网卡不可单独删除，它随云服务器一并释放。仍挂载在云服务器上的网卡也无法删除。.
+// The primary network interface cannot be deleted on its own, as it is released with the instance. A network interface still attached to an instance cannot be deleted either.
 //
 // Corresponds with DELETE /api/v1/ports/{portId} (the `DeletePort` operationId).
 func (c *Client) DeletePort(ctx context.Context, portId openapi_types.UUID, reqEditors ...RequestEditorFn) (*http.Response, error) {
@@ -3629,7 +3629,7 @@ func (c *Client) DeletePort(ctx context.Context, portId openapi_types.UUID, reqE
 	return c.Client.Do(req)
 }
 
-// ListPrivateImages 列出自制镜像
+// ListPrivateImages List private images
 //
 // Corresponds with GET /api/v1/private-images (the `ListPrivateImages` operationId).
 func (c *Client) ListPrivateImages(ctx context.Context, params *ListPrivateImagesParams, reqEditors ...RequestEditorFn) (*http.Response, error) {
@@ -3644,20 +3644,20 @@ func (c *Client) ListPrivateImages(ctx context.Context, params *ListPrivateImage
 	return c.Client.Do(req)
 }
 
-// CreatePrivateImageWithBody 将云服务器制作为镜像
+// CreatePrivateImageWithBody Capture an instance as a private image
 //
-// 依据云服务器的系统盘制作，数据盘不包含在内。制作出的镜像可用于创建云服务器或重装系统，并在源云服务器释放后继续可用。
+// Captured from the system disk of the instance; data disks are not included. The resulting image can create instances and rebuild them, and remains usable after the source instance is released.
 //
-// **镜像内容取自开始制作的那一刻，此后对云服务器的改动不会包含在内。**
+// **The image reflects the moment the capture started. Later changes to the instance are not included.**
 //
-// 制作分两个阶段，请轮询查看接口：
+// The capture has two phases. Poll the retrieve endpoint:
 //
-// - `provisioning` 正在读取系统盘，通常数十秒。此阶段云服务器可以继续使用，但为保证一致性建议先关机。
-// - `uploading` 已与系统盘无关，**此时即可开机，无需等待制作完成**。该阶段耗时与系统盘容量成正比，20 GB 约需 3 分钟。
+// - `provisioning` — the system disk is being read, usually for tens of seconds. The instance remains usable during this phase, although stopping it first is recommended for consistency.
+// - `uploading` — no longer tied to the system disk. **The instance may be started at this point; there is no need to wait for the capture to finish.** The duration of this phase is proportional to the size of the system disk, roughly 3 minutes for 20 GB.
 //
-// 运行中的云服务器其文件系统可能处于写入中间状态，制作出的镜像等同于一次断电后的磁盘内容。对一致性有要求时，请在开始制作前关机，并在状态变为 `uploading` 后开机。
+// The file system of a running instance may be captured mid-write, in which case the image is equivalent to the disk contents after a power loss. Where consistency matters, stop the instance before starting the capture and start it again once the status becomes `uploading`.
 //
-// 制作期间该云服务器可以正常启停与使用，但无法释放。
+// The instance can be started, stopped and used normally during the capture, but cannot be released.
 //
 // Takes any type of body and a specified content type.
 //
@@ -3674,20 +3674,20 @@ func (c *Client) CreatePrivateImageWithBody(ctx context.Context, contentType str
 	return c.Client.Do(req)
 }
 
-// CreatePrivateImage 将云服务器制作为镜像
+// CreatePrivateImage Capture an instance as a private image
 //
-// 依据云服务器的系统盘制作，数据盘不包含在内。制作出的镜像可用于创建云服务器或重装系统，并在源云服务器释放后继续可用。
+// Captured from the system disk of the instance; data disks are not included. The resulting image can create instances and rebuild them, and remains usable after the source instance is released.
 //
-// **镜像内容取自开始制作的那一刻，此后对云服务器的改动不会包含在内。**
+// **The image reflects the moment the capture started. Later changes to the instance are not included.**
 //
-// 制作分两个阶段，请轮询查看接口：
+// The capture has two phases. Poll the retrieve endpoint:
 //
-// - `provisioning` 正在读取系统盘，通常数十秒。此阶段云服务器可以继续使用，但为保证一致性建议先关机。
-// - `uploading` 已与系统盘无关，**此时即可开机，无需等待制作完成**。该阶段耗时与系统盘容量成正比，20 GB 约需 3 分钟。
+// - `provisioning` — the system disk is being read, usually for tens of seconds. The instance remains usable during this phase, although stopping it first is recommended for consistency.
+// - `uploading` — no longer tied to the system disk. **The instance may be started at this point; there is no need to wait for the capture to finish.** The duration of this phase is proportional to the size of the system disk, roughly 3 minutes for 20 GB.
 //
-// 运行中的云服务器其文件系统可能处于写入中间状态，制作出的镜像等同于一次断电后的磁盘内容。对一致性有要求时，请在开始制作前关机，并在状态变为 `uploading` 后开机。
+// The file system of a running instance may be captured mid-write, in which case the image is equivalent to the disk contents after a power loss. Where consistency matters, stop the instance before starting the capture and start it again once the status becomes `uploading`.
 //
-// 制作期间该云服务器可以正常启停与使用，但无法释放。
+// The instance can be started, stopped and used normally during the capture, but cannot be released.
 //
 // Takes a body of the `application/json` content type.
 //
@@ -3704,11 +3704,11 @@ func (c *Client) CreatePrivateImage(ctx context.Context, body CreatePrivateImage
 	return c.Client.Do(req)
 }
 
-// DeletePrivateImage 删除自制镜像
+// DeletePrivateImage Delete a private image
 //
-// 仍有云服务器由该镜像创建时，删除会被拒绝：这些云服务器需要它才能重装系统。
+// Deletion is rejected while instances created from the image still exist, as they need it in order to be rebuilt.
 //
-// 制作尚未完成的镜像也可以删除，制作会被终止。
+// An image whose capture has not finished can be deleted; the capture is aborted.
 //
 // Corresponds with DELETE /api/v1/private-images/{privateImageId} (the `DeletePrivateImage` operationId).
 func (c *Client) DeletePrivateImage(ctx context.Context, privateImageId openapi_types.UUID, reqEditors ...RequestEditorFn) (*http.Response, error) {
@@ -3723,9 +3723,9 @@ func (c *Client) DeletePrivateImage(ctx context.Context, privateImageId openapi_
 	return c.Client.Do(req)
 }
 
-// GetPrivateImage 查看自制镜像
+// GetPrivateImage Retrieve a private image
 //
-// 轮询制作进度请使用本接口。status 为 error 时，failure 给出失败原因。.
+// Use this endpoint to poll capture progress. When `status` is `error`, `failure` states the reason.
 //
 // Corresponds with GET /api/v1/private-images/{privateImageId} (the `GetPrivateImage` operationId).
 func (c *Client) GetPrivateImage(ctx context.Context, privateImageId openapi_types.UUID, reqEditors ...RequestEditorFn) (*http.Response, error) {
@@ -3740,7 +3740,7 @@ func (c *Client) GetPrivateImage(ctx context.Context, privateImageId openapi_typ
 	return c.Client.Do(req)
 }
 
-// RenamePrivateImageWithBody 重命名自制镜像
+// RenamePrivateImageWithBody Rename a private image
 //
 // Takes any type of body and a specified content type.
 //
@@ -3757,7 +3757,7 @@ func (c *Client) RenamePrivateImageWithBody(ctx context.Context, privateImageId 
 	return c.Client.Do(req)
 }
 
-// RenamePrivateImage 重命名自制镜像
+// RenamePrivateImage Rename a private image
 //
 // Takes a body of the `application/json` content type.
 //
@@ -3774,7 +3774,7 @@ func (c *Client) RenamePrivateImage(ctx context.Context, privateImageId openapi_
 	return c.Client.Do(req)
 }
 
-// ListPrivateNetworks 列出私有网络
+// ListPrivateNetworks List private networks
 //
 // Corresponds with GET /api/v1/private-networks (the `ListPrivateNetworks` operationId).
 func (c *Client) ListPrivateNetworks(ctx context.Context, params *ListPrivateNetworksParams, reqEditors ...RequestEditorFn) (*http.Response, error) {
@@ -3789,9 +3789,9 @@ func (c *Client) ListPrivateNetworks(ctx context.Context, params *ListPrivateNet
 	return c.Client.Do(req)
 }
 
-// CreatePrivateNetworkWithBody 创建私有网络
+// CreatePrivateNetworkWithBody Create a private network
 //
-// 同时创建一张网络、一台路由器和一个默认安全组。默认安全组拒绝全部入站流量、放行全部出站流量。.
+// Creates a network, a router and a default security group in one call. The default security group denies all inbound traffic and permits all outbound traffic.
 //
 // Takes any type of body and a specified content type.
 //
@@ -3808,9 +3808,9 @@ func (c *Client) CreatePrivateNetworkWithBody(ctx context.Context, contentType s
 	return c.Client.Do(req)
 }
 
-// CreatePrivateNetwork 创建私有网络
+// CreatePrivateNetwork Create a private network
 //
-// 同时创建一张网络、一台路由器和一个默认安全组。默认安全组拒绝全部入站流量、放行全部出站流量。.
+// Creates a network, a router and a default security group in one call. The default security group denies all inbound traffic and permits all outbound traffic.
 //
 // Takes a body of the `application/json` content type.
 //
@@ -3827,9 +3827,9 @@ func (c *Client) CreatePrivateNetwork(ctx context.Context, body CreatePrivateNet
 	return c.Client.Do(req)
 }
 
-// DeletePrivateNetwork 释放私有网络
+// DeletePrivateNetwork Release a private network
 //
-// 其中仍有云服务器或网卡时，释放会被拒绝。IPv6、路由器与安全组随之一并释放。.
+// Release is rejected while instances or network interfaces remain in the network. IPv6, the router and the security groups are released with it.
 //
 // Corresponds with DELETE /api/v1/private-networks/{privateNetworkId} (the `DeletePrivateNetwork` operationId).
 func (c *Client) DeletePrivateNetwork(ctx context.Context, privateNetworkId openapi_types.UUID, reqEditors ...RequestEditorFn) (*http.Response, error) {
@@ -3844,7 +3844,7 @@ func (c *Client) DeletePrivateNetwork(ctx context.Context, privateNetworkId open
 	return c.Client.Do(req)
 }
 
-// GetPrivateNetwork 查看私有网络
+// GetPrivateNetwork Retrieve a private network
 //
 // Corresponds with GET /api/v1/private-networks/{privateNetworkId} (the `GetPrivateNetwork` operationId).
 func (c *Client) GetPrivateNetwork(ctx context.Context, privateNetworkId openapi_types.UUID, reqEditors ...RequestEditorFn) (*http.Response, error) {
@@ -3859,9 +3859,9 @@ func (c *Client) GetPrivateNetwork(ctx context.Context, privateNetworkId openapi
 	return c.Client.Do(req)
 }
 
-// RenamePrivateNetworkWithBody 重命名私有网络
+// RenamePrivateNetworkWithBody Rename a private network
 //
-// 仅修改显示名称。网段、路由与外网网关均不可修改。.
+// Changes the display name only. The CIDR, the routes and the internet gateway are immutable.
 //
 // Takes any type of body and a specified content type.
 //
@@ -3878,9 +3878,9 @@ func (c *Client) RenamePrivateNetworkWithBody(ctx context.Context, privateNetwor
 	return c.Client.Do(req)
 }
 
-// RenamePrivateNetwork 重命名私有网络
+// RenamePrivateNetwork Rename a private network
 //
-// 仅修改显示名称。网段、路由与外网网关均不可修改。.
+// Changes the display name only. The CIDR, the routes and the internet gateway are immutable.
 //
 // Takes a body of the `application/json` content type.
 //
@@ -3897,9 +3897,9 @@ func (c *Client) RenamePrivateNetwork(ctx context.Context, privateNetworkId open
 	return c.Client.Do(req)
 }
 
-// DisablePrivateNetworkIpv6 关闭私有网络的 IPv6
+// DisablePrivateNetworkIpv6 Disable IPv6 on a private network
 //
-// 释放的前缀不会立即重新分配。.
+// A released prefix is not re-allocated immediately.
 //
 // Corresponds with DELETE /api/v1/private-networks/{privateNetworkId}/ipv6 (the `DisablePrivateNetworkIpv6` operationId).
 func (c *Client) DisablePrivateNetworkIpv6(ctx context.Context, privateNetworkId openapi_types.UUID, reqEditors ...RequestEditorFn) (*http.Response, error) {
@@ -3914,7 +3914,7 @@ func (c *Client) DisablePrivateNetworkIpv6(ctx context.Context, privateNetworkId
 	return c.Client.Do(req)
 }
 
-// GetPrivateNetworkIpv6 查看私有网络的 IPv6
+// GetPrivateNetworkIpv6 Retrieve the IPv6 configuration of a private network
 //
 // Corresponds with GET /api/v1/private-networks/{privateNetworkId}/ipv6 (the `GetPrivateNetworkIpv6` operationId).
 func (c *Client) GetPrivateNetworkIpv6(ctx context.Context, privateNetworkId openapi_types.UUID, reqEditors ...RequestEditorFn) (*http.Response, error) {
@@ -3929,11 +3929,11 @@ func (c *Client) GetPrivateNetworkIpv6(ctx context.Context, privateNetworkId ope
 	return c.Client.Do(req)
 }
 
-// EnablePrivateNetworkIpv6 为私有网络启用 IPv6
+// EnablePrivateNetworkIpv6 Enable IPv6 on a private network
 //
-// 为该私有网络分配一段 IPv6 地址。地址由私有网络自动下发至云服务器，无需也无法单独申领，也不占用公网 IPv4。
+// Allocates an IPv6 prefix to the private network. Addresses are assigned to instances by the network itself, can be neither requested nor released individually, and consume no public IPv4 address.
 //
-// 该私有网络尚未接入外网时会自动接入，无需单独操作。
+// If the private network is not yet connected to the internet, connectivity is established as part of this call.
 //
 // Corresponds with POST /api/v1/private-networks/{privateNetworkId}/ipv6 (the `EnablePrivateNetworkIpv6` operationId).
 func (c *Client) EnablePrivateNetworkIpv6(ctx context.Context, privateNetworkId openapi_types.UUID, reqEditors ...RequestEditorFn) (*http.Response, error) {
@@ -3948,7 +3948,7 @@ func (c *Client) EnablePrivateNetworkIpv6(ctx context.Context, privateNetworkId 
 	return c.Client.Do(req)
 }
 
-// ListRoutes 列出静态路由
+// ListRoutes List static routes
 //
 // Corresponds with GET /api/v1/private-networks/{privateNetworkId}/routes (the `ListRoutes` operationId).
 func (c *Client) ListRoutes(ctx context.Context, privateNetworkId openapi_types.UUID, reqEditors ...RequestEditorFn) (*http.Response, error) {
@@ -3963,9 +3963,9 @@ func (c *Client) ListRoutes(ctx context.Context, privateNetworkId openapi_types.
 	return c.Client.Do(req)
 }
 
-// CreateRouteWithBody 创建静态路由
+// CreateRouteWithBody Create a static route
 //
-// 以下三种会导致网络中断的写法会被拒绝：目的网段为 0.0.0.0/0（覆盖默认路由，所有公网 IP 立即失效）、目的网段为某个子网自身（覆盖直连路由）、下一跳为某个子网的网关（指回路由器自身）。
+// Three forms that would sever connectivity are rejected: a destination of `0.0.0.0/0`, which overrides the default route and takes every floating IP offline immediately; a destination equal to the CIDR of a subnet, which overrides its directly connected route; and a next hop equal to the gateway of a subnet, which points back at the router itself.
 //
 // Takes any type of body and a specified content type.
 //
@@ -3982,9 +3982,9 @@ func (c *Client) CreateRouteWithBody(ctx context.Context, privateNetworkId opena
 	return c.Client.Do(req)
 }
 
-// CreateRoute 创建静态路由
+// CreateRoute Create a static route
 //
-// 以下三种会导致网络中断的写法会被拒绝：目的网段为 0.0.0.0/0（覆盖默认路由，所有公网 IP 立即失效）、目的网段为某个子网自身（覆盖直连路由）、下一跳为某个子网的网关（指回路由器自身）。
+// Three forms that would sever connectivity are rejected: a destination of `0.0.0.0/0`, which overrides the default route and takes every floating IP offline immediately; a destination equal to the CIDR of a subnet, which overrides its directly connected route; and a next hop equal to the gateway of a subnet, which points back at the router itself.
 //
 // Takes a body of the `application/json` content type.
 //
@@ -4001,7 +4001,7 @@ func (c *Client) CreateRoute(ctx context.Context, privateNetworkId openapi_types
 	return c.Client.Do(req)
 }
 
-// DeleteRoute 删除静态路由
+// DeleteRoute Delete a static route
 //
 // Corresponds with DELETE /api/v1/private-networks/{privateNetworkId}/routes/{routeId} (the `DeleteRoute` operationId).
 func (c *Client) DeleteRoute(ctx context.Context, privateNetworkId openapi_types.UUID, routeId openapi_types.UUID, reqEditors ...RequestEditorFn) (*http.Response, error) {
@@ -4016,9 +4016,9 @@ func (c *Client) DeleteRoute(ctx context.Context, privateNetworkId openapi_types
 	return c.Client.Do(req)
 }
 
-// ListSubnets 列出子网
+// ListSubnets List subnets
 //
-// IPv6 子网也在返回结果中，ip_version 为 6。它在启用 IPv6 时自动创建，不可单独删除。.
+// IPv6 subnets are included, with `ip_version` 6. They are created when IPv6 is enabled and cannot be deleted individually.
 //
 // Corresponds with GET /api/v1/private-networks/{privateNetworkId}/subnets (the `ListSubnets` operationId).
 func (c *Client) ListSubnets(ctx context.Context, privateNetworkId openapi_types.UUID, reqEditors ...RequestEditorFn) (*http.Response, error) {
@@ -4033,7 +4033,7 @@ func (c *Client) ListSubnets(ctx context.Context, privateNetworkId openapi_types
 	return c.Client.Do(req)
 }
 
-// CreateSubnetWithBody 创建子网
+// CreateSubnetWithBody Create a subnet
 //
 // Takes any type of body and a specified content type.
 //
@@ -4050,7 +4050,7 @@ func (c *Client) CreateSubnetWithBody(ctx context.Context, privateNetworkId open
 	return c.Client.Do(req)
 }
 
-// CreateSubnet 创建子网
+// CreateSubnet Create a subnet
 //
 // Takes a body of the `application/json` content type.
 //
@@ -4067,9 +4067,9 @@ func (c *Client) CreateSubnet(ctx context.Context, privateNetworkId openapi_type
 	return c.Client.Do(req)
 }
 
-// SuggestSubnetCidr 推荐下一个空闲网段
+// SuggestSubnetCidr Suggest the next free CIDR
 //
-// 返回的只是建议值，创建子网时仍会重新校验。用于避免手工计算下一个空闲网段时出错。.
+// The returned value is a suggestion and is validated again when the subnet is created. It exists to avoid errors when computing the next free CIDR by hand.
 //
 // Corresponds with GET /api/v1/private-networks/{privateNetworkId}/subnets/next-free-cidr (the `SuggestSubnetCidr` operationId).
 func (c *Client) SuggestSubnetCidr(ctx context.Context, privateNetworkId openapi_types.UUID, params *SuggestSubnetCidrParams, reqEditors ...RequestEditorFn) (*http.Response, error) {
@@ -4084,9 +4084,9 @@ func (c *Client) SuggestSubnetCidr(ctx context.Context, privateNetworkId openapi
 	return c.Client.Do(req)
 }
 
-// DeleteSubnet 删除子网
+// DeleteSubnet Delete a subnet
 //
-// 该子网中仍有网卡，或仍有静态路由的下一跳落在该网段内时，删除会被拒绝。.
+// Deletion is rejected while network interfaces remain in the subnet, or while a static route has a next hop inside its CIDR.
 //
 // Corresponds with DELETE /api/v1/private-networks/{privateNetworkId}/subnets/{subnetId} (the `DeleteSubnet` operationId).
 func (c *Client) DeleteSubnet(ctx context.Context, privateNetworkId openapi_types.UUID, subnetId openapi_types.UUID, reqEditors ...RequestEditorFn) (*http.Response, error) {
@@ -4101,7 +4101,7 @@ func (c *Client) DeleteSubnet(ctx context.Context, privateNetworkId openapi_type
 	return c.Client.Do(req)
 }
 
-// ListRegions 列出可用的地区
+// ListRegions List available regions
 //
 // Corresponds with GET /api/v1/regions (the `ListRegions` operationId).
 func (c *Client) ListRegions(ctx context.Context, reqEditors ...RequestEditorFn) (*http.Response, error) {
@@ -4116,9 +4116,9 @@ func (c *Client) ListRegions(ctx context.Context, reqEditors ...RequestEditorFn)
 	return c.Client.Do(req)
 }
 
-// ListAvailabilityZones 列出一个地区的可用区
+// ListAvailabilityZones List the availability zones of a region
 //
-// 云硬盘与云服务器必须位于同一可用区才能挂载，创建前请确认所选可用区。.
+// A disk and an instance must reside in the same availability zone to be attached. Confirm the zone before creating either.
 //
 // Corresponds with GET /api/v1/regions/{regionCode}/availability-zones (the `ListAvailabilityZones` operationId).
 func (c *Client) ListAvailabilityZones(ctx context.Context, regionCode string, reqEditors ...RequestEditorFn) (*http.Response, error) {
@@ -4133,7 +4133,7 @@ func (c *Client) ListAvailabilityZones(ctx context.Context, regionCode string, r
 	return c.Client.Do(req)
 }
 
-// ListSecurityGroups 列出安全组
+// ListSecurityGroups List security groups
 //
 // Corresponds with GET /api/v1/security-groups (the `ListSecurityGroups` operationId).
 func (c *Client) ListSecurityGroups(ctx context.Context, params *ListSecurityGroupsParams, reqEditors ...RequestEditorFn) (*http.Response, error) {
@@ -4148,9 +4148,9 @@ func (c *Client) ListSecurityGroups(ctx context.Context, params *ListSecurityGro
 	return c.Client.Do(req)
 }
 
-// CreateSecurityGroupWithBody 创建安全组
+// CreateSecurityGroupWithBody Create a security group
 //
-// 新建的安全组带有一条规则：放行 ICMP 需要分片（type 3 code 4）。缺少该规则会导致路径 MTU 发现失败，表现为连接建立后传输大数据包时卡住。.
+// A new security group carries one rule, permitting ICMP fragmentation-needed messages (type 3, code 4). Without it path MTU discovery fails, which presents as connections that establish and then stall on large packets.
 //
 // Takes any type of body and a specified content type.
 //
@@ -4167,9 +4167,9 @@ func (c *Client) CreateSecurityGroupWithBody(ctx context.Context, contentType st
 	return c.Client.Do(req)
 }
 
-// CreateSecurityGroup 创建安全组
+// CreateSecurityGroup Create a security group
 //
-// 新建的安全组带有一条规则：放行 ICMP 需要分片（type 3 code 4）。缺少该规则会导致路径 MTU 发现失败，表现为连接建立后传输大数据包时卡住。.
+// A new security group carries one rule, permitting ICMP fragmentation-needed messages (type 3, code 4). Without it path MTU discovery fails, which presents as connections that establish and then stall on large packets.
 //
 // Takes a body of the `application/json` content type.
 //
@@ -4186,9 +4186,9 @@ func (c *Client) CreateSecurityGroup(ctx context.Context, body CreateSecurityGro
 	return c.Client.Do(req)
 }
 
-// DeleteSecurityGroup 删除安全组
+// DeleteSecurityGroup Delete a security group
 //
-// 默认安全组不可删除，它随私有网络一并释放。仍被网卡引用的安全组也无法删除。.
+// The default security group cannot be deleted, as it is released with the private network. A security group still referenced by a network interface cannot be deleted either.
 //
 // Corresponds with DELETE /api/v1/security-groups/{securityGroupId} (the `DeleteSecurityGroup` operationId).
 func (c *Client) DeleteSecurityGroup(ctx context.Context, securityGroupId openapi_types.UUID, reqEditors ...RequestEditorFn) (*http.Response, error) {
@@ -4203,7 +4203,7 @@ func (c *Client) DeleteSecurityGroup(ctx context.Context, securityGroupId openap
 	return c.Client.Do(req)
 }
 
-// GetSecurityGroup 查看安全组
+// GetSecurityGroup Retrieve a security group
 //
 // Corresponds with GET /api/v1/security-groups/{securityGroupId} (the `GetSecurityGroup` operationId).
 func (c *Client) GetSecurityGroup(ctx context.Context, securityGroupId openapi_types.UUID, reqEditors ...RequestEditorFn) (*http.Response, error) {
@@ -4218,9 +4218,9 @@ func (c *Client) GetSecurityGroup(ctx context.Context, securityGroupId openapi_t
 	return c.Client.Do(req)
 }
 
-// RenameSecurityGroupWithBody 重命名安全组
+// RenameSecurityGroupWithBody Rename a security group
 //
-// 仅可修改名称，规则请用规则接口。.
+// Changes the name only. Use the rule endpoints to change rules.
 //
 // Takes any type of body and a specified content type.
 //
@@ -4237,9 +4237,9 @@ func (c *Client) RenameSecurityGroupWithBody(ctx context.Context, securityGroupI
 	return c.Client.Do(req)
 }
 
-// RenameSecurityGroup 重命名安全组
+// RenameSecurityGroup Rename a security group
 //
-// 仅可修改名称，规则请用规则接口。.
+// Changes the name only. Use the rule endpoints to change rules.
 //
 // Takes a body of the `application/json` content type.
 //
@@ -4256,7 +4256,7 @@ func (c *Client) RenameSecurityGroup(ctx context.Context, securityGroupId openap
 	return c.Client.Do(req)
 }
 
-// ListSecurityGroupRules 列出安全组规则
+// ListSecurityGroupRules List security group rules
 //
 // Corresponds with GET /api/v1/security-groups/{securityGroupId}/rules (the `ListSecurityGroupRules` operationId).
 func (c *Client) ListSecurityGroupRules(ctx context.Context, securityGroupId openapi_types.UUID, reqEditors ...RequestEditorFn) (*http.Response, error) {
@@ -4271,9 +4271,9 @@ func (c *Client) ListSecurityGroupRules(ctx context.Context, securityGroupId ope
 	return c.Client.Do(req)
 }
 
-// CreateSecurityGroupRuleWithBody 创建安全组规则
+// CreateSecurityGroupRuleWithBody Create a security group rule
 //
-// 重复添加同一条规则会被拒绝。判重时 `0.0.0.0/0`、`::/0` 与留空视为等同。
+// Adding an identical rule twice is rejected. For that comparison `0.0.0.0/0`, `::/0` and an omitted value are treated as equivalent.
 //
 // Takes any type of body and a specified content type.
 //
@@ -4290,9 +4290,9 @@ func (c *Client) CreateSecurityGroupRuleWithBody(ctx context.Context, securityGr
 	return c.Client.Do(req)
 }
 
-// CreateSecurityGroupRule 创建安全组规则
+// CreateSecurityGroupRule Create a security group rule
 //
-// 重复添加同一条规则会被拒绝。判重时 `0.0.0.0/0`、`::/0` 与留空视为等同。
+// Adding an identical rule twice is rejected. For that comparison `0.0.0.0/0`, `::/0` and an omitted value are treated as equivalent.
 //
 // Takes a body of the `application/json` content type.
 //
@@ -4309,7 +4309,7 @@ func (c *Client) CreateSecurityGroupRule(ctx context.Context, securityGroupId op
 	return c.Client.Do(req)
 }
 
-// DeleteSecurityGroupRule 删除安全组规则
+// DeleteSecurityGroupRule Delete a security group rule
 //
 // Corresponds with DELETE /api/v1/security-groups/{securityGroupId}/rules/{ruleId} (the `DeleteSecurityGroupRule` operationId).
 func (c *Client) DeleteSecurityGroupRule(ctx context.Context, securityGroupId openapi_types.UUID, ruleId openapi_types.UUID, reqEditors ...RequestEditorFn) (*http.Response, error) {
@@ -4324,7 +4324,7 @@ func (c *Client) DeleteSecurityGroupRule(ctx context.Context, securityGroupId op
 	return c.Client.Do(req)
 }
 
-// ListSnapshots 列出快照
+// ListSnapshots List snapshots
 //
 // Corresponds with GET /api/v1/snapshots (the `ListSnapshots` operationId).
 func (c *Client) ListSnapshots(ctx context.Context, params *ListSnapshotsParams, reqEditors ...RequestEditorFn) (*http.Response, error) {
@@ -4339,11 +4339,11 @@ func (c *Client) ListSnapshots(ctx context.Context, params *ListSnapshotsParams,
 	return c.Client.Do(req)
 }
 
-// CreateSnapshotWithBody 创建快照
+// CreateSnapshotWithBody Create a snapshot
 //
-// 运行中云服务器上挂载的云硬盘同样可以创建快照。快照记录的是某一时刻的块设备状态，文件系统层面可能不一致，重要数据建议先在云服务器内执行 sync。
+// Disks attached to a running instance can be snapshotted. A snapshot records the state of the block device at a point in time and may be inconsistent at the file-system level, so run `sync` inside the instance first where the data matters.
 //
-// **系统盘的快照不能用于回滚该系统盘**：回滚要求先从云服务器上卸载，而系统盘不可卸载。它可用于创建一块新的数据盘。需要保留并恢复整个系统时，请使用自制镜像；需要可跨可用区、且在云硬盘删除后仍可恢复的副本时，请使用备份。
+// **A snapshot of a system disk cannot be used to revert that system disk**: reverting requires the disk to be detached, and a system disk cannot be detached. It can be used to create a new data disk. To preserve and restore an entire system, use a private image; for a copy that crosses availability zones and survives deletion of the disk, use a backup.
 //
 // Takes any type of body and a specified content type.
 //
@@ -4360,11 +4360,11 @@ func (c *Client) CreateSnapshotWithBody(ctx context.Context, contentType string,
 	return c.Client.Do(req)
 }
 
-// CreateSnapshot 创建快照
+// CreateSnapshot Create a snapshot
 //
-// 运行中云服务器上挂载的云硬盘同样可以创建快照。快照记录的是某一时刻的块设备状态，文件系统层面可能不一致，重要数据建议先在云服务器内执行 sync。
+// Disks attached to a running instance can be snapshotted. A snapshot records the state of the block device at a point in time and may be inconsistent at the file-system level, so run `sync` inside the instance first where the data matters.
 //
-// **系统盘的快照不能用于回滚该系统盘**：回滚要求先从云服务器上卸载，而系统盘不可卸载。它可用于创建一块新的数据盘。需要保留并恢复整个系统时，请使用自制镜像；需要可跨可用区、且在云硬盘删除后仍可恢复的副本时，请使用备份。
+// **A snapshot of a system disk cannot be used to revert that system disk**: reverting requires the disk to be detached, and a system disk cannot be detached. It can be used to create a new data disk. To preserve and restore an entire system, use a private image; for a copy that crosses availability zones and survives deletion of the disk, use a backup.
 //
 // Takes a body of the `application/json` content type.
 //
@@ -4381,7 +4381,7 @@ func (c *Client) CreateSnapshot(ctx context.Context, body CreateSnapshotJSONRequ
 	return c.Client.Do(req)
 }
 
-// DeleteSnapshot 删除快照
+// DeleteSnapshot Delete a snapshot
 //
 // Corresponds with DELETE /api/v1/snapshots/{snapshotId} (the `DeleteSnapshot` operationId).
 func (c *Client) DeleteSnapshot(ctx context.Context, snapshotId openapi_types.UUID, reqEditors ...RequestEditorFn) (*http.Response, error) {
@@ -4396,7 +4396,7 @@ func (c *Client) DeleteSnapshot(ctx context.Context, snapshotId openapi_types.UU
 	return c.Client.Do(req)
 }
 
-// GetSnapshot 查看快照
+// GetSnapshot Retrieve a snapshot
 //
 // Corresponds with GET /api/v1/snapshots/{snapshotId} (the `GetSnapshot` operationId).
 func (c *Client) GetSnapshot(ctx context.Context, snapshotId openapi_types.UUID, reqEditors ...RequestEditorFn) (*http.Response, error) {
@@ -4411,7 +4411,7 @@ func (c *Client) GetSnapshot(ctx context.Context, snapshotId openapi_types.UUID,
 	return c.Client.Do(req)
 }
 
-// RenameSnapshotWithBody 重命名快照
+// RenameSnapshotWithBody Rename a snapshot
 //
 // Takes any type of body and a specified content type.
 //
@@ -4428,7 +4428,7 @@ func (c *Client) RenameSnapshotWithBody(ctx context.Context, snapshotId openapi_
 	return c.Client.Do(req)
 }
 
-// RenameSnapshot 重命名快照
+// RenameSnapshot Rename a snapshot
 //
 // Takes a body of the `application/json` content type.
 //
@@ -7955,1066 +7955,1066 @@ func WithBaseURL(baseURL string) ClientOption {
 // ClientWithResponsesInterface is the interface specification for the client with responses above.
 type ClientWithResponsesInterface interface {
 
-	// ListBackupsWithResponse 列出备份
+	// ListBackupsWithResponse List backups
 	//
 	// Returns a wrapper object for the known response body format(s).
 	//
 	// Corresponds with GET /api/v1/backups (the `ListBackups` operationId).
 	ListBackupsWithResponse(ctx context.Context, params *ListBackupsParams, reqEditors ...RequestEditorFn) (*ListBackupsResponse, error)
 
-	// CreateBackupWithBodyWithResponse 创建备份
+	// CreateBackupWithBodyWithResponse Create a backup
 	//
-	// 备份是云硬盘在独立存储中的一份完整副本：**源云硬盘删除后仍可恢复，且可恢复到本地区的其他可用区。**快照不具备这两项能力，它与源云硬盘位于同一存储，且源云硬盘存在快照时无法删除。
+	// A backup is a complete copy of a disk held in separate storage: **it remains restorable after the source disk is deleted, and can be restored to another availability zone in the same region.** A snapshot offers neither capability, as it resides in the same storage as the source disk and prevents that disk from being deleted while it exists.
 	//
-	// 运行中云服务器上挂载的云硬盘、以及系统盘，均可创建备份。
+	// Disks attached to a running instance, including system disks, can be backed up.
 	//
-	// 备份耗时取决于数据量。接口返回时尚未完成，请轮询查看接口。
+	// The duration depends on the amount of data. The backup is not complete when this endpoint returns; poll the retrieve endpoint.
 	//
 	// Takes any type of body and a specified content type, and returns a wrapper object for the known response body format(s).
 	//
 	// Corresponds with POST /api/v1/backups (the `CreateBackup` operationId).
 	CreateBackupWithBodyWithResponse(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*CreateBackupResponse, error)
 
-	// CreateBackupWithResponse 创建备份
+	// CreateBackupWithResponse Create a backup
 	//
-	// 备份是云硬盘在独立存储中的一份完整副本：**源云硬盘删除后仍可恢复，且可恢复到本地区的其他可用区。**快照不具备这两项能力，它与源云硬盘位于同一存储，且源云硬盘存在快照时无法删除。
+	// A backup is a complete copy of a disk held in separate storage: **it remains restorable after the source disk is deleted, and can be restored to another availability zone in the same region.** A snapshot offers neither capability, as it resides in the same storage as the source disk and prevents that disk from being deleted while it exists.
 	//
-	// 运行中云服务器上挂载的云硬盘、以及系统盘，均可创建备份。
+	// Disks attached to a running instance, including system disks, can be backed up.
 	//
-	// 备份耗时取决于数据量。接口返回时尚未完成，请轮询查看接口。
+	// The duration depends on the amount of data. The backup is not complete when this endpoint returns; poll the retrieve endpoint.
 	//
 	// Takes a body of the `application/json` content type, and returns a wrapper object for the known response body format(s).
 	//
 	// Corresponds with POST /api/v1/backups (the `CreateBackup` operationId).
 	CreateBackupWithResponse(ctx context.Context, body CreateBackupJSONRequestBody, reqEditors ...RequestEditorFn) (*CreateBackupResponse, error)
 
-	// DeleteBackupWithResponse 删除备份
+	// DeleteBackupWithResponse Delete a backup
 	//
-	// 与源云硬盘无关，源云硬盘是否存在都不影响删除。.
+	// Independent of the source disk: deletion succeeds whether or not that disk still exists.
 	//
 	// Returns a wrapper object for the known response body format(s).
 	//
 	// Corresponds with DELETE /api/v1/backups/{backupId} (the `DeleteBackup` operationId).
 	DeleteBackupWithResponse(ctx context.Context, backupId openapi_types.UUID, reqEditors ...RequestEditorFn) (*DeleteBackupResponse, error)
 
-	// GetBackupWithResponse 查看备份
+	// GetBackupWithResponse Retrieve a backup
 	//
-	// 会实时查询备份的当前状态，因此比列表接口慢但更准确。轮询创建进度请使用本接口。.
+	// Queries the current state of the backup, which makes it slower but more accurate than the list endpoint. Use it to poll creation progress.
 	//
 	// Returns a wrapper object for the known response body format(s).
 	//
 	// Corresponds with GET /api/v1/backups/{backupId} (the `GetBackup` operationId).
 	GetBackupWithResponse(ctx context.Context, backupId openapi_types.UUID, reqEditors ...RequestEditorFn) (*GetBackupResponse, error)
 
-	// RenameBackupWithBodyWithResponse 重命名备份
+	// RenameBackupWithBodyWithResponse Rename a backup
 	//
 	// Takes any type of body and a specified content type, and returns a wrapper object for the known response body format(s).
 	//
 	// Corresponds with PATCH /api/v1/backups/{backupId} (the `RenameBackup` operationId).
 	RenameBackupWithBodyWithResponse(ctx context.Context, backupId openapi_types.UUID, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*RenameBackupResponse, error)
 
-	// RenameBackupWithResponse 重命名备份
+	// RenameBackupWithResponse Rename a backup
 	//
 	// Takes a body of the `application/json` content type, and returns a wrapper object for the known response body format(s).
 	//
 	// Corresponds with PATCH /api/v1/backups/{backupId} (the `RenameBackup` operationId).
 	RenameBackupWithResponse(ctx context.Context, backupId openapi_types.UUID, body RenameBackupJSONRequestBody, reqEditors ...RequestEditorFn) (*RenameBackupResponse, error)
 
-	// RestoreBackupWithBodyWithResponse 由备份恢复
+	// RestoreBackupWithBodyWithResponse Restore from a backup
 	//
-	// 恢复到一块**新建的**云硬盘上，源云硬盘不受影响，也不要求它仍然存在。
+	// Restores onto a **newly created** disk. The source disk is unaffected and need not still exist.
 	//
-	// 目标硬盘类型可位于本地区的其他可用区，容量不能小于备份。恢复完成前该云硬盘不可挂载，请轮询云硬盘查看接口。
+	// The target disk type may belong to another availability zone of the same region, and its capacity must not be smaller than the backup. The disk cannot be attached until the restore completes; poll the disk retrieve endpoint.
 	//
 	// Takes any type of body and a specified content type, and returns a wrapper object for the known response body format(s).
 	//
 	// Corresponds with POST /api/v1/backups/{backupId}/restore (the `RestoreBackup` operationId).
 	RestoreBackupWithBodyWithResponse(ctx context.Context, backupId openapi_types.UUID, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*RestoreBackupResponse, error)
 
-	// RestoreBackupWithResponse 由备份恢复
+	// RestoreBackupWithResponse Restore from a backup
 	//
-	// 恢复到一块**新建的**云硬盘上，源云硬盘不受影响，也不要求它仍然存在。
+	// Restores onto a **newly created** disk. The source disk is unaffected and need not still exist.
 	//
-	// 目标硬盘类型可位于本地区的其他可用区，容量不能小于备份。恢复完成前该云硬盘不可挂载，请轮询云硬盘查看接口。
+	// The target disk type may belong to another availability zone of the same region, and its capacity must not be smaller than the backup. The disk cannot be attached until the restore completes; poll the disk retrieve endpoint.
 	//
 	// Takes a body of the `application/json` content type, and returns a wrapper object for the known response body format(s).
 	//
 	// Corresponds with POST /api/v1/backups/{backupId}/restore (the `RestoreBackup` operationId).
 	RestoreBackupWithResponse(ctx context.Context, backupId openapi_types.UUID, body RestoreBackupJSONRequestBody, reqEditors ...RequestEditorFn) (*RestoreBackupResponse, error)
 
-	// ListDiskTypesWithResponse 列出在售硬盘类型
+	// ListDiskTypesWithResponse List disk types on sale
 	//
 	// Returns a wrapper object for the known response body format(s).
 	//
 	// Corresponds with GET /api/v1/disk-types (the `ListDiskTypes` operationId).
 	ListDiskTypesWithResponse(ctx context.Context, params *ListDiskTypesParams, reqEditors ...RequestEditorFn) (*ListDiskTypesResponse, error)
 
-	// ListDisksWithResponse 列出云硬盘
+	// ListDisksWithResponse List disks
 	//
-	// 同时提供 region_code 与 availability_zone 时，只返回可挂载到该位置云服务器的云硬盘。.
+	// When both `region_code` and `availability_zone` are supplied, only disks attachable to an instance at that location are returned.
 	//
 	// Returns a wrapper object for the known response body format(s).
 	//
 	// Corresponds with GET /api/v1/disks (the `ListDisks` operationId).
 	ListDisksWithResponse(ctx context.Context, params *ListDisksParams, reqEditors ...RequestEditorFn) (*ListDisksResponse, error)
 
-	// CreateDiskWithBodyWithResponse 创建云硬盘
+	// CreateDiskWithBodyWithResponse Create a disk
 	//
-	// 云硬盘创建在所选硬盘类型所属的可用区，云服务器必须位于同一可用区才能挂载。因此选定硬盘类型即确定了可用区。.
+	// The disk is created in the availability zone of the selected disk type, and an instance must reside in the same zone to attach it. Choosing the disk type therefore determines the zone.
 	//
 	// Takes any type of body and a specified content type, and returns a wrapper object for the known response body format(s).
 	//
 	// Corresponds with POST /api/v1/disks (the `CreateDisk` operationId).
 	CreateDiskWithBodyWithResponse(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*CreateDiskResponse, error)
 
-	// CreateDiskWithResponse 创建云硬盘
+	// CreateDiskWithResponse Create a disk
 	//
-	// 云硬盘创建在所选硬盘类型所属的可用区，云服务器必须位于同一可用区才能挂载。因此选定硬盘类型即确定了可用区。.
+	// The disk is created in the availability zone of the selected disk type, and an instance must reside in the same zone to attach it. Choosing the disk type therefore determines the zone.
 	//
 	// Takes a body of the `application/json` content type, and returns a wrapper object for the known response body format(s).
 	//
 	// Corresponds with POST /api/v1/disks (the `CreateDisk` operationId).
 	CreateDiskWithResponse(ctx context.Context, body CreateDiskJSONRequestBody, reqEditors ...RequestEditorFn) (*CreateDiskResponse, error)
 
-	// DeleteDiskWithResponse 删除云硬盘
+	// DeleteDiskWithResponse Delete a disk
 	//
-	// 云硬盘处于挂载状态，或仍存在基于它创建的快照时，删除会被拒绝。.
+	// Deletion is rejected while the disk is attached, or while snapshots created from it still exist.
 	//
 	// Returns a wrapper object for the known response body format(s).
 	//
 	// Corresponds with DELETE /api/v1/disks/{diskId} (the `DeleteDisk` operationId).
 	DeleteDiskWithResponse(ctx context.Context, diskId openapi_types.UUID, reqEditors ...RequestEditorFn) (*DeleteDiskResponse, error)
 
-	// GetDiskWithResponse 查看云硬盘
+	// GetDiskWithResponse Retrieve a disk
 	//
-	// 会实时查询云硬盘的当前状态，因此比列表接口慢但更准确。.
+	// Queries the current state of the disk, which makes it slower but more accurate than the list endpoint.
 	//
 	// Returns a wrapper object for the known response body format(s).
 	//
 	// Corresponds with GET /api/v1/disks/{diskId} (the `GetDisk` operationId).
 	GetDiskWithResponse(ctx context.Context, diskId openapi_types.UUID, reqEditors ...RequestEditorFn) (*GetDiskResponse, error)
 
-	// RenameDiskWithBodyWithResponse 重命名云硬盘
+	// RenameDiskWithBodyWithResponse Rename a disk
 	//
-	// 仅可修改名称。容量请使用扩容接口，类型与可用区不可修改。.
+	// Changes the name only. Use the resize endpoint for capacity; type and availability zone are immutable.
 	//
 	// Takes any type of body and a specified content type, and returns a wrapper object for the known response body format(s).
 	//
 	// Corresponds with PATCH /api/v1/disks/{diskId} (the `RenameDisk` operationId).
 	RenameDiskWithBodyWithResponse(ctx context.Context, diskId openapi_types.UUID, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*RenameDiskResponse, error)
 
-	// RenameDiskWithResponse 重命名云硬盘
+	// RenameDiskWithResponse Rename a disk
 	//
-	// 仅可修改名称。容量请使用扩容接口，类型与可用区不可修改。.
+	// Changes the name only. Use the resize endpoint for capacity; type and availability zone are immutable.
 	//
 	// Takes a body of the `application/json` content type, and returns a wrapper object for the known response body format(s).
 	//
 	// Corresponds with PATCH /api/v1/disks/{diskId} (the `RenameDisk` operationId).
 	RenameDiskWithResponse(ctx context.Context, diskId openapi_types.UUID, body RenameDiskJSONRequestBody, reqEditors ...RequestEditorFn) (*RenameDiskResponse, error)
 
-	// ResizeDiskWithBodyWithResponse 扩容
+	// ResizeDiskWithBodyWithResponse Resize a disk
 	//
-	// 容量只能增加，不支持缩容。扩容完成后需在云服务器内自行扩展文件系统。.
+	// Capacity can only be increased; shrinking is not supported. Extend the file system inside the instance once the resize completes.
 	//
 	// Takes any type of body and a specified content type, and returns a wrapper object for the known response body format(s).
 	//
 	// Corresponds with POST /api/v1/disks/{diskId}/resize (the `ResizeDisk` operationId).
 	ResizeDiskWithBodyWithResponse(ctx context.Context, diskId openapi_types.UUID, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*ResizeDiskResponse, error)
 
-	// ResizeDiskWithResponse 扩容
+	// ResizeDiskWithResponse Resize a disk
 	//
-	// 容量只能增加，不支持缩容。扩容完成后需在云服务器内自行扩展文件系统。.
+	// Capacity can only be increased; shrinking is not supported. Extend the file system inside the instance once the resize completes.
 	//
 	// Takes a body of the `application/json` content type, and returns a wrapper object for the known response body format(s).
 	//
 	// Corresponds with POST /api/v1/disks/{diskId}/resize (the `ResizeDisk` operationId).
 	ResizeDiskWithResponse(ctx context.Context, diskId openapi_types.UUID, body ResizeDiskJSONRequestBody, reqEditors ...RequestEditorFn) (*ResizeDiskResponse, error)
 
-	// RevertDiskWithBodyWithResponse 回滚到快照
+	// RevertDiskWithBodyWithResponse Revert to a snapshot
 	//
-	// 将云硬盘的内容恢复到创建该快照的时刻。**该时刻之后写入的数据全部丢失，且无法撤销。**
+	// Restores the contents of the disk to the moment the snapshot was taken. **All data written after that moment is lost and cannot be recovered.**
 	//
-	// 三项限制：只能回滚到该云硬盘最新的一个快照；云硬盘必须先从云服务器上卸载；创建快照后扩容过的云硬盘不能回滚。需要回到更早的时刻，或需要保留现有云硬盘时，请改用由快照创建一块新的云硬盘。
+	// Three restrictions apply: only the most recent snapshot of the disk can be reverted to; the disk must be detached from its instance first; and a disk resized since the snapshot was taken cannot be reverted. To return to an earlier point in time, or to keep the existing disk, create a new disk from the snapshot instead.
 	//
-	// 接口返回时回滚尚未完成，请轮询查看接口。
+	// The revert is not complete when this endpoint returns; poll the retrieve endpoint.
 	//
 	// Takes any type of body and a specified content type, and returns a wrapper object for the known response body format(s).
 	//
 	// Corresponds with POST /api/v1/disks/{diskId}/revert (the `RevertDisk` operationId).
 	RevertDiskWithBodyWithResponse(ctx context.Context, diskId openapi_types.UUID, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*RevertDiskResponse, error)
 
-	// RevertDiskWithResponse 回滚到快照
+	// RevertDiskWithResponse Revert to a snapshot
 	//
-	// 将云硬盘的内容恢复到创建该快照的时刻。**该时刻之后写入的数据全部丢失，且无法撤销。**
+	// Restores the contents of the disk to the moment the snapshot was taken. **All data written after that moment is lost and cannot be recovered.**
 	//
-	// 三项限制：只能回滚到该云硬盘最新的一个快照；云硬盘必须先从云服务器上卸载；创建快照后扩容过的云硬盘不能回滚。需要回到更早的时刻，或需要保留现有云硬盘时，请改用由快照创建一块新的云硬盘。
+	// Three restrictions apply: only the most recent snapshot of the disk can be reverted to; the disk must be detached from its instance first; and a disk resized since the snapshot was taken cannot be reverted. To return to an earlier point in time, or to keep the existing disk, create a new disk from the snapshot instead.
 	//
-	// 接口返回时回滚尚未完成，请轮询查看接口。
+	// The revert is not complete when this endpoint returns; poll the retrieve endpoint.
 	//
 	// Takes a body of the `application/json` content type, and returns a wrapper object for the known response body format(s).
 	//
 	// Corresponds with POST /api/v1/disks/{diskId}/revert (the `RevertDisk` operationId).
 	RevertDiskWithResponse(ctx context.Context, diskId openapi_types.UUID, body RevertDiskJSONRequestBody, reqEditors ...RequestEditorFn) (*RevertDiskResponse, error)
 
-	// ListFloatingIpsWithResponse 列出公网 IP
+	// ListFloatingIpsWithResponse List floating IPs
 	//
 	// Returns a wrapper object for the known response body format(s).
 	//
 	// Corresponds with GET /api/v1/floating-ips (the `ListFloatingIps` operationId).
 	ListFloatingIpsWithResponse(ctx context.Context, reqEditors ...RequestEditorFn) (*ListFloatingIpsResponse, error)
 
-	// AllocateFloatingIpWithBodyWithResponse 申领公网 IP
+	// AllocateFloatingIpWithBodyWithResponse Allocate a floating IP
 	//
-	// 若该私有网络尚未连通外网，会一并为其接入外网。
+	// If the private network is not yet connected to the internet, connectivity is established as part of this call.
 	//
-	// IPv6 不通过本接口申请。IPv6 地址由私有网络自动下发至云服务器，在私有网络上启用即可。
+	// IPv6 is not requested through this endpoint. IPv6 addresses are assigned to instances by the private network; enable IPv6 on that network instead.
 	//
 	// Takes any type of body and a specified content type, and returns a wrapper object for the known response body format(s).
 	//
 	// Corresponds with POST /api/v1/floating-ips (the `AllocateFloatingIp` operationId).
 	AllocateFloatingIpWithBodyWithResponse(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*AllocateFloatingIpResponse, error)
 
-	// AllocateFloatingIpWithResponse 申领公网 IP
+	// AllocateFloatingIpWithResponse Allocate a floating IP
 	//
-	// 若该私有网络尚未连通外网，会一并为其接入外网。
+	// If the private network is not yet connected to the internet, connectivity is established as part of this call.
 	//
-	// IPv6 不通过本接口申请。IPv6 地址由私有网络自动下发至云服务器，在私有网络上启用即可。
+	// IPv6 is not requested through this endpoint. IPv6 addresses are assigned to instances by the private network; enable IPv6 on that network instead.
 	//
 	// Takes a body of the `application/json` content type, and returns a wrapper object for the known response body format(s).
 	//
 	// Corresponds with POST /api/v1/floating-ips (the `AllocateFloatingIp` operationId).
 	AllocateFloatingIpWithResponse(ctx context.Context, body AllocateFloatingIpJSONRequestBody, reqEditors ...RequestEditorFn) (*AllocateFloatingIpResponse, error)
 
-	// ReleaseFloatingIpWithResponse 释放公网 IP
+	// ReleaseFloatingIpWithResponse Release a floating IP
 	//
-	// 地址释放后进入冷却期才会重新分配，以免仍指向它的 DNS 记录和访问白名单立即失效。因此释放后的短时间内**无法重新申领同一个地址**，请谨慎操作。.
+	// A released address enters a cooldown period before it is allocated again, so that DNS records and allow-lists still pointing at it do not break immediately. **The same address therefore cannot be re-allocated** for some time after release. Proceed with care.
 	//
 	// Returns a wrapper object for the known response body format(s).
 	//
 	// Corresponds with DELETE /api/v1/floating-ips/{floatingIpId} (the `ReleaseFloatingIp` operationId).
 	ReleaseFloatingIpWithResponse(ctx context.Context, floatingIpId openapi_types.UUID, reqEditors ...RequestEditorFn) (*ReleaseFloatingIpResponse, error)
 
-	// GetFloatingIpWithResponse 查看公网 IP
+	// GetFloatingIpWithResponse Retrieve a floating IP
 	//
 	// Returns a wrapper object for the known response body format(s).
 	//
 	// Corresponds with GET /api/v1/floating-ips/{floatingIpId} (the `GetFloatingIp` operationId).
 	GetFloatingIpWithResponse(ctx context.Context, floatingIpId openapi_types.UUID, reqEditors ...RequestEditorFn) (*GetFloatingIpResponse, error)
 
-	// SetFloatingIpBandwidthWithBodyWithResponse 设带宽上限
+	// SetFloatingIpBandwidthWithBodyWithResponse Set the bandwidth limit
 	//
-	// 出入两个方向同时限速。仅限制出方向无法防止入方向流量打满上联带宽。.
+	// Limits both directions at once. Limiting egress alone does not prevent ingress traffic from saturating the uplink.
 	//
 	// Takes any type of body and a specified content type, and returns a wrapper object for the known response body format(s).
 	//
 	// Corresponds with PUT /api/v1/floating-ips/{floatingIpId}/bandwidth (the `SetFloatingIpBandwidth` operationId).
 	SetFloatingIpBandwidthWithBodyWithResponse(ctx context.Context, floatingIpId openapi_types.UUID, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*SetFloatingIpBandwidthResponse, error)
 
-	// SetFloatingIpBandwidthWithResponse 设带宽上限
+	// SetFloatingIpBandwidthWithResponse Set the bandwidth limit
 	//
-	// 出入两个方向同时限速。仅限制出方向无法防止入方向流量打满上联带宽。.
+	// Limits both directions at once. Limiting egress alone does not prevent ingress traffic from saturating the uplink.
 	//
 	// Takes a body of the `application/json` content type, and returns a wrapper object for the known response body format(s).
 	//
 	// Corresponds with PUT /api/v1/floating-ips/{floatingIpId}/bandwidth (the `SetFloatingIpBandwidth` operationId).
 	SetFloatingIpBandwidthWithResponse(ctx context.Context, floatingIpId openapi_types.UUID, body SetFloatingIpBandwidthJSONRequestBody, reqEditors ...RequestEditorFn) (*SetFloatingIpBandwidthResponse, error)
 
-	// UnbindFloatingIpWithResponse 解绑公网 IP
+	// UnbindFloatingIpWithResponse Unbind a floating IP
 	//
-	// 地址仍归本项目持有，只是不再指向任何网卡。.
+	// The address remains held by the project and simply no longer points at any network interface.
 	//
 	// Returns a wrapper object for the known response body format(s).
 	//
 	// Corresponds with DELETE /api/v1/floating-ips/{floatingIpId}/binding (the `UnbindFloatingIp` operationId).
 	UnbindFloatingIpWithResponse(ctx context.Context, floatingIpId openapi_types.UUID, reqEditors ...RequestEditorFn) (*UnbindFloatingIpResponse, error)
 
-	// BindFloatingIpWithBodyWithResponse 将公网 IP 绑定到网卡
+	// BindFloatingIpWithBodyWithResponse Bind a floating IP to a network interface
 	//
 	// Takes any type of body and a specified content type, and returns a wrapper object for the known response body format(s).
 	//
 	// Corresponds with PUT /api/v1/floating-ips/{floatingIpId}/binding (the `BindFloatingIp` operationId).
 	BindFloatingIpWithBodyWithResponse(ctx context.Context, floatingIpId openapi_types.UUID, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*BindFloatingIpResponse, error)
 
-	// BindFloatingIpWithResponse 将公网 IP 绑定到网卡
+	// BindFloatingIpWithResponse Bind a floating IP to a network interface
 	//
 	// Takes a body of the `application/json` content type, and returns a wrapper object for the known response body format(s).
 	//
 	// Corresponds with PUT /api/v1/floating-ips/{floatingIpId}/binding (the `BindFloatingIp` operationId).
 	BindFloatingIpWithResponse(ctx context.Context, floatingIpId openapi_types.UUID, body BindFloatingIpJSONRequestBody, reqEditors ...RequestEditorFn) (*BindFloatingIpResponse, error)
 
-	// ListImagesWithResponse 列出在售镜像
+	// ListImagesWithResponse List images on sale
 	//
-	// min_ram_mb 超过所选机型内存的镜像无法启动，请据此过滤可选项。.
+	// An image whose `min_ram_mb` exceeds the memory of the selected instance type cannot boot. Filter the options accordingly.
 	//
 	// Returns a wrapper object for the known response body format(s).
 	//
 	// Corresponds with GET /api/v1/images (the `ListImages` operationId).
 	ListImagesWithResponse(ctx context.Context, params *ListImagesParams, reqEditors ...RequestEditorFn) (*ListImagesResponse, error)
 
-	// ListInstanceTypesWithResponse 列出在售机型
+	// ListInstanceTypesWithResponse List instance types on sale
 	//
 	// Returns a wrapper object for the known response body format(s).
 	//
 	// Corresponds with GET /api/v1/instance-types (the `ListInstanceTypes` operationId).
 	ListInstanceTypesWithResponse(ctx context.Context, params *ListInstanceTypesParams, reqEditors ...RequestEditorFn) (*ListInstanceTypesResponse, error)
 
-	// ListInstancesWithResponse 列出云服务器
+	// ListInstancesWithResponse List instances
 	//
 	// Returns a wrapper object for the known response body format(s).
 	//
 	// Corresponds with GET /api/v1/instances (the `ListInstances` operationId).
 	ListInstancesWithResponse(ctx context.Context, reqEditors ...RequestEditorFn) (*ListInstancesResponse, error)
 
-	// LaunchInstanceWithBodyWithResponse 创建云服务器
+	// LaunchInstanceWithBodyWithResponse Create instances
 	//
-	// **必须在请求中设置密码**：不设置时请求会被拒绝，否则创建出的云服务器将无法登录。密码可由平台生成，此时仅在本次响应中返回一次。
+	// **A password must be set in the request.** The request is rejected otherwise, since the resulting instance would be unreachable. The platform can generate one, in which case it is returned only in this response.
 	//
-	// `count` 可一次创建多台（最多 20 台），名称自动加 `-1`、`-2` 编号，所有云服务器共用同一个密码。**响应中的 `instances` 始终是数组**，单台创建时也是。
+	// `count` creates several instances at once, 20 at most. Names are numbered `-1`, `-2` automatically and all instances share one password. **`instances` in the response is always an array**, including for a single instance.
 	//
-	// 批量创建按顺序逐台进行。若中途失败（例如配额不足），**已创建的云服务器会保留**，响应中的 `failure` 给出中止原因；第一台就失败时视为整次请求失败，不会创建任何云服务器。
+	// Instances are created one by one in order. If the sequence stops part way through, because of a quota limit for example, **the instances already created are kept** and `failure` states why it stopped. A failure on the first instance is treated as a failure of the whole request and no instance is created.
 	//
-	// 镜像二选一：`image_id` 使用平台提供的镜像，`private_image_id` 使用自制镜像。两者都给或都不给都会被拒绝。
+	// Exactly one image source must be given: `image_id` for a platform image, `private_image_id` for a private image. Supplying both or neither is rejected.
 	//
-	// 云服务器创建在机型所属的可用区。后续要挂载的云硬盘必须位于同一可用区。
+	// Instances are created in the availability zone of the instance type. Disks to be attached later must reside in the same zone.
 	//
-	// 接口返回时创建尚未完成（status 为 provisioning），请轮询 GET 确认结果。
+	// Creation is not complete when this endpoint returns and `status` is `provisioning`. Poll GET to observe the outcome.
 	//
 	// Takes any type of body and a specified content type, and returns a wrapper object for the known response body format(s).
 	//
 	// Corresponds with POST /api/v1/instances (the `LaunchInstance` operationId).
 	LaunchInstanceWithBodyWithResponse(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*LaunchInstanceResponse, error)
 
-	// LaunchInstanceWithResponse 创建云服务器
+	// LaunchInstanceWithResponse Create instances
 	//
-	// **必须在请求中设置密码**：不设置时请求会被拒绝，否则创建出的云服务器将无法登录。密码可由平台生成，此时仅在本次响应中返回一次。
+	// **A password must be set in the request.** The request is rejected otherwise, since the resulting instance would be unreachable. The platform can generate one, in which case it is returned only in this response.
 	//
-	// `count` 可一次创建多台（最多 20 台），名称自动加 `-1`、`-2` 编号，所有云服务器共用同一个密码。**响应中的 `instances` 始终是数组**，单台创建时也是。
+	// `count` creates several instances at once, 20 at most. Names are numbered `-1`, `-2` automatically and all instances share one password. **`instances` in the response is always an array**, including for a single instance.
 	//
-	// 批量创建按顺序逐台进行。若中途失败（例如配额不足），**已创建的云服务器会保留**，响应中的 `failure` 给出中止原因；第一台就失败时视为整次请求失败，不会创建任何云服务器。
+	// Instances are created one by one in order. If the sequence stops part way through, because of a quota limit for example, **the instances already created are kept** and `failure` states why it stopped. A failure on the first instance is treated as a failure of the whole request and no instance is created.
 	//
-	// 镜像二选一：`image_id` 使用平台提供的镜像，`private_image_id` 使用自制镜像。两者都给或都不给都会被拒绝。
+	// Exactly one image source must be given: `image_id` for a platform image, `private_image_id` for a private image. Supplying both or neither is rejected.
 	//
-	// 云服务器创建在机型所属的可用区。后续要挂载的云硬盘必须位于同一可用区。
+	// Instances are created in the availability zone of the instance type. Disks to be attached later must reside in the same zone.
 	//
-	// 接口返回时创建尚未完成（status 为 provisioning），请轮询 GET 确认结果。
+	// Creation is not complete when this endpoint returns and `status` is `provisioning`. Poll GET to observe the outcome.
 	//
 	// Takes a body of the `application/json` content type, and returns a wrapper object for the known response body format(s).
 	//
 	// Corresponds with POST /api/v1/instances (the `LaunchInstance` operationId).
 	LaunchInstanceWithResponse(ctx context.Context, body LaunchInstanceJSONRequestBody, reqEditors ...RequestEditorFn) (*LaunchInstanceResponse, error)
 
-	// DeleteInstanceWithResponse 释放云服务器
+	// DeleteInstanceWithResponse Release an instance
 	//
-	// 系统盘随云服务器一并删除，**基于系统盘创建的快照也会一并删除**。数据盘会被卸载并保留，其快照与备份不受影响。主网卡随云服务器一并释放。
+	// The system disk is deleted with the instance, and **snapshots created from the system disk are deleted with it**. Data disks are detached and kept, and their snapshots and backups are unaffected. The primary network interface is released with the instance.
 	//
-	// 正在制作镜像的云服务器无法释放，请等待制作完成或先删除该镜像。
+	// An instance being captured as a private image cannot be released. Wait for the capture to finish, or delete that image first.
 	//
 	// Returns a wrapper object for the known response body format(s).
 	//
 	// Corresponds with DELETE /api/v1/instances/{instanceId} (the `DeleteInstance` operationId).
 	DeleteInstanceWithResponse(ctx context.Context, instanceId openapi_types.UUID, reqEditors ...RequestEditorFn) (*DeleteInstanceResponse, error)
 
-	// GetInstanceWithResponse 查看云服务器
+	// GetInstanceWithResponse Retrieve an instance
 	//
-	// 会实时查询云服务器的当前状态，因此比列表接口慢但更准确。轮询创建进度请使用本接口。.
+	// Queries the current state of the instance, which makes it slower but more accurate than the list endpoint. Use it to poll creation progress.
 	//
 	// Returns a wrapper object for the known response body format(s).
 	//
 	// Corresponds with GET /api/v1/instances/{instanceId} (the `GetInstance` operationId).
 	GetInstanceWithResponse(ctx context.Context, instanceId openapi_types.UUID, reqEditors ...RequestEditorFn) (*GetInstanceResponse, error)
 
-	// RenameInstanceWithBodyWithResponse 重命名云服务器
+	// RenameInstanceWithBodyWithResponse Rename an instance
 	//
-	// 仅修改显示名称。云服务器内的主机名不变，它等于云服务器 id。.
+	// Changes the display name only. The hostname inside the instance is unchanged; it equals the instance id.
 	//
 	// Takes any type of body and a specified content type, and returns a wrapper object for the known response body format(s).
 	//
 	// Corresponds with PATCH /api/v1/instances/{instanceId} (the `RenameInstance` operationId).
 	RenameInstanceWithBodyWithResponse(ctx context.Context, instanceId openapi_types.UUID, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*RenameInstanceResponse, error)
 
-	// RenameInstanceWithResponse 重命名云服务器
+	// RenameInstanceWithResponse Rename an instance
 	//
-	// 仅修改显示名称。云服务器内的主机名不变，它等于云服务器 id。.
+	// Changes the display name only. The hostname inside the instance is unchanged; it equals the instance id.
 	//
 	// Takes a body of the `application/json` content type, and returns a wrapper object for the known response body format(s).
 	//
 	// Corresponds with PATCH /api/v1/instances/{instanceId} (the `RenameInstance` operationId).
 	RenameInstanceWithResponse(ctx context.Context, instanceId openapi_types.UUID, body RenameInstanceJSONRequestBody, reqEditors ...RequestEditorFn) (*RenameInstanceResponse, error)
 
-	// ActOnInstanceWithBodyWithResponse 开机、关机、重启
+	// ActOnInstanceWithBodyWithResponse Start, stop or reboot an instance
 	//
-	// 重启默认为软重启，由操作系统正常关闭后重新启动。
+	// Reboot defaults to a soft reboot, in which the operating system shuts down normally before starting again.
 	//
-	// 系统已无响应时软重启不会生效，此时可设置 `force` 强制重启。强制重启不等待操作系统关闭，**未落盘的数据会丢失**。`force` 仅适用于 reboot。
+	// A soft reboot has no effect once the system is unresponsive. Set `force` to reboot forcibly: a forced reboot does not wait for the operating system to shut down, so **unwritten data is lost**. `force` applies to `reboot` only.
 	//
-	// 已被平台停服的云服务器需先解除停服。
+	// An instance suspended by the platform must be unsuspended first.
 	//
-	// 本接口立即返回，返回的 `status` 是变更中的瞬态：start 为 `starting`、stop 为 `stopping`、reboot 为 `rebooting`。轮询云服务器详情直至落定为 `running` 或 `stopped`。
+	// This endpoint returns immediately and the `status` it returns is a transient state: `starting` for start, `stopping` for stop, `rebooting` for reboot. Poll the instance until it settles at `running` or `stopped`.
 	//
 	// Takes any type of body and a specified content type, and returns a wrapper object for the known response body format(s).
 	//
 	// Corresponds with POST /api/v1/instances/{instanceId}/actions (the `ActOnInstance` operationId).
 	ActOnInstanceWithBodyWithResponse(ctx context.Context, instanceId openapi_types.UUID, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*ActOnInstanceResponse, error)
 
-	// ActOnInstanceWithResponse 开机、关机、重启
+	// ActOnInstanceWithResponse Start, stop or reboot an instance
 	//
-	// 重启默认为软重启，由操作系统正常关闭后重新启动。
+	// Reboot defaults to a soft reboot, in which the operating system shuts down normally before starting again.
 	//
-	// 系统已无响应时软重启不会生效，此时可设置 `force` 强制重启。强制重启不等待操作系统关闭，**未落盘的数据会丢失**。`force` 仅适用于 reboot。
+	// A soft reboot has no effect once the system is unresponsive. Set `force` to reboot forcibly: a forced reboot does not wait for the operating system to shut down, so **unwritten data is lost**. `force` applies to `reboot` only.
 	//
-	// 已被平台停服的云服务器需先解除停服。
+	// An instance suspended by the platform must be unsuspended first.
 	//
-	// 本接口立即返回，返回的 `status` 是变更中的瞬态：start 为 `starting`、stop 为 `stopping`、reboot 为 `rebooting`。轮询云服务器详情直至落定为 `running` 或 `stopped`。
+	// This endpoint returns immediately and the `status` it returns is a transient state: `starting` for start, `stopping` for stop, `rebooting` for reboot. Poll the instance until it settles at `running` or `stopped`.
 	//
 	// Takes a body of the `application/json` content type, and returns a wrapper object for the known response body format(s).
 	//
 	// Corresponds with POST /api/v1/instances/{instanceId}/actions (the `ActOnInstance` operationId).
 	ActOnInstanceWithResponse(ctx context.Context, instanceId openapi_types.UUID, body ActOnInstanceJSONRequestBody, reqEditors ...RequestEditorFn) (*ActOnInstanceResponse, error)
 
-	// OpenInstanceConsoleWithResponse 打开远程控制台
+	// OpenInstanceConsoleWithResponse Open a remote console
 	//
-	// 在浏览器中直接操作云服务器，无需网络可达，适用于网络配置失误导致无法登录的情况。
+	// Operates the instance directly from a browser and does not require the instance to be reachable over the network, which makes it usable when a network misconfiguration prevents login.
 	//
-	// 返回的地址一次性使用，数分钟后失效。**请勿缓存**，每次使用前重新获取。
+	// The returned address is single-use and expires within minutes. **Do not cache it**; request a new one before each use.
 	//
 	// Returns a wrapper object for the known response body format(s).
 	//
 	// Corresponds with POST /api/v1/instances/{instanceId}/console (the `OpenInstanceConsole` operationId).
 	OpenInstanceConsoleWithResponse(ctx context.Context, instanceId openapi_types.UUID, reqEditors ...RequestEditorFn) (*OpenInstanceConsoleResponse, error)
 
-	// GetInstanceConsoleOutputWithResponse 读取串口输出
+	// GetInstanceConsoleOutputWithResponse Read the console output
 	//
-	// 云服务器启动过程与内核输出的原始文本。无法登录或远程控制台无输出时，应首先查看本接口。其中可查看启动停止于哪一步、系统盘是否正常挂载、初始化过程是否报错。
+	// The raw text produced by the instance during boot and by the kernel. Consult it first when login fails or the remote console shows no output: it reveals where boot stopped, whether the system disk was mounted, and whether initialisation reported errors.
 	//
-	// 处于错误状态或已被平台停服的云服务器同样可以读取。
+	// Instances in an error state, and instances suspended by the platform, can be read as well.
 	//
 	// Returns a wrapper object for the known response body format(s).
 	//
 	// Corresponds with GET /api/v1/instances/{instanceId}/console-output (the `GetInstanceConsoleOutput` operationId).
 	GetInstanceConsoleOutputWithResponse(ctx context.Context, instanceId openapi_types.UUID, params *GetInstanceConsoleOutputParams, reqEditors ...RequestEditorFn) (*GetInstanceConsoleOutputResponse, error)
 
-	// ListInstanceDisksWithResponse 列出云服务器已挂载的云硬盘
+	// ListInstanceDisksWithResponse List the disks attached to an instance
 	//
 	// Returns a wrapper object for the known response body format(s).
 	//
 	// Corresponds with GET /api/v1/instances/{instanceId}/disks (the `ListInstanceDisks` operationId).
 	ListInstanceDisksWithResponse(ctx context.Context, instanceId openapi_types.UUID, reqEditors ...RequestEditorFn) (*ListInstanceDisksResponse, error)
 
-	// AttachDiskWithBodyWithResponse 挂载云硬盘
+	// AttachDiskWithBodyWithResponse Attach a disk
 	//
-	// 云硬盘必须与云服务器位于同一地区和可用区。挂载后需在云服务器内自行分区并挂载文件系统。.
+	// The disk must be in the same region and availability zone as the instance. Partition it and mount the file system inside the instance once it is attached.
 	//
 	// Takes any type of body and a specified content type, and returns a wrapper object for the known response body format(s).
 	//
 	// Corresponds with POST /api/v1/instances/{instanceId}/disks (the `AttachDisk` operationId).
 	AttachDiskWithBodyWithResponse(ctx context.Context, instanceId openapi_types.UUID, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*AttachDiskResponse, error)
 
-	// AttachDiskWithResponse 挂载云硬盘
+	// AttachDiskWithResponse Attach a disk
 	//
-	// 云硬盘必须与云服务器位于同一地区和可用区。挂载后需在云服务器内自行分区并挂载文件系统。.
+	// The disk must be in the same region and availability zone as the instance. Partition it and mount the file system inside the instance once it is attached.
 	//
 	// Takes a body of the `application/json` content type, and returns a wrapper object for the known response body format(s).
 	//
 	// Corresponds with POST /api/v1/instances/{instanceId}/disks (the `AttachDisk` operationId).
 	AttachDiskWithResponse(ctx context.Context, instanceId openapi_types.UUID, body AttachDiskJSONRequestBody, reqEditors ...RequestEditorFn) (*AttachDiskResponse, error)
 
-	// DetachDiskWithResponse 卸载云硬盘
+	// DetachDiskWithResponse Detach a disk
 	//
-	// 请先在云服务器内卸载（umount）该设备再调用本接口，正在写入的文件系统被强制卸载会损坏数据。.
+	// Unmount the device inside the instance before calling this endpoint. Forcibly detaching a file system that is being written to corrupts data.
 	//
 	// Returns a wrapper object for the known response body format(s).
 	//
 	// Corresponds with DELETE /api/v1/instances/{instanceId}/disks/{diskId} (the `DetachDisk` operationId).
 	DetachDiskWithResponse(ctx context.Context, instanceId openapi_types.UUID, diskId openapi_types.UUID, reqEditors ...RequestEditorFn) (*DetachDiskResponse, error)
 
-	// AttachInstanceFloatingIpWithBodyWithResponse 为云服务器绑定公网 IP
+	// AttachInstanceFloatingIpWithBodyWithResponse Bind a floating IP to an instance
 	//
-	// 公网 IP 绑定在云服务器的主网卡上。.
+	// The floating IP is bound to the primary network interface of the instance.
 	//
 	// Takes any type of body and a specified content type, and returns a wrapper object for the known response body format(s).
 	//
 	// Corresponds with POST /api/v1/instances/{instanceId}/floating-ips (the `AttachInstanceFloatingIp` operationId).
 	AttachInstanceFloatingIpWithBodyWithResponse(ctx context.Context, instanceId openapi_types.UUID, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*AttachInstanceFloatingIpResponse, error)
 
-	// AttachInstanceFloatingIpWithResponse 为云服务器绑定公网 IP
+	// AttachInstanceFloatingIpWithResponse Bind a floating IP to an instance
 	//
-	// 公网 IP 绑定在云服务器的主网卡上。.
+	// The floating IP is bound to the primary network interface of the instance.
 	//
 	// Takes a body of the `application/json` content type, and returns a wrapper object for the known response body format(s).
 	//
 	// Corresponds with POST /api/v1/instances/{instanceId}/floating-ips (the `AttachInstanceFloatingIp` operationId).
 	AttachInstanceFloatingIpWithResponse(ctx context.Context, instanceId openapi_types.UUID, body AttachInstanceFloatingIpJSONRequestBody, reqEditors ...RequestEditorFn) (*AttachInstanceFloatingIpResponse, error)
 
-	// DetachInstanceFloatingIpWithResponse 解绑云服务器的公网 IP
+	// DetachInstanceFloatingIpWithResponse Unbind the floating IP of an instance
 	//
 	// Returns a wrapper object for the known response body format(s).
 	//
 	// Corresponds with DELETE /api/v1/instances/{instanceId}/floating-ips/{floatingIpId} (the `DetachInstanceFloatingIp` operationId).
 	DetachInstanceFloatingIpWithResponse(ctx context.Context, instanceId openapi_types.UUID, floatingIpId openapi_types.UUID, reqEditors ...RequestEditorFn) (*DetachInstanceFloatingIpResponse, error)
 
-	// ResetInstancePasswordWithBodyWithResponse 重置登录密码
+	// ResetInstancePasswordWithBodyWithResponse Reset the login password
 	//
-	// 在不重启的情况下改掉 root 的密码，云服务器必须处于运行中。
+	// Changes the root password without a reboot. The instance must be running.
 	//
-	// **并非所有镜像都支持**：镜像列表中 `supports_password_reset` 为 false 的镜像做不到，此时只能通过重装系统设置新密码，而重装会清除系统盘上的全部数据。
+	// **Not every image supports this.** Images whose `supports_password_reset` is false cannot, and a new password can then only be set by rebuilding the instance, which erases all data on the system disk.
 	//
-	// 镜像标记为支持、但云服务器内相应组件已被卸载或停止时，本接口同样会被拒绝。
+	// The request is also rejected when the image is marked as supported but the corresponding component has been removed or stopped inside the instance.
 	//
 	// Takes any type of body and a specified content type, and returns a wrapper object for the known response body format(s).
 	//
 	// Corresponds with POST /api/v1/instances/{instanceId}/password (the `ResetInstancePassword` operationId).
 	ResetInstancePasswordWithBodyWithResponse(ctx context.Context, instanceId openapi_types.UUID, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*ResetInstancePasswordResponse, error)
 
-	// ResetInstancePasswordWithResponse 重置登录密码
+	// ResetInstancePasswordWithResponse Reset the login password
 	//
-	// 在不重启的情况下改掉 root 的密码，云服务器必须处于运行中。
+	// Changes the root password without a reboot. The instance must be running.
 	//
-	// **并非所有镜像都支持**：镜像列表中 `supports_password_reset` 为 false 的镜像做不到，此时只能通过重装系统设置新密码，而重装会清除系统盘上的全部数据。
+	// **Not every image supports this.** Images whose `supports_password_reset` is false cannot, and a new password can then only be set by rebuilding the instance, which erases all data on the system disk.
 	//
-	// 镜像标记为支持、但云服务器内相应组件已被卸载或停止时，本接口同样会被拒绝。
+	// The request is also rejected when the image is marked as supported but the corresponding component has been removed or stopped inside the instance.
 	//
 	// Takes a body of the `application/json` content type, and returns a wrapper object for the known response body format(s).
 	//
 	// Corresponds with POST /api/v1/instances/{instanceId}/password (the `ResetInstancePassword` operationId).
 	ResetInstancePasswordWithResponse(ctx context.Context, instanceId openapi_types.UUID, body ResetInstancePasswordJSONRequestBody, reqEditors ...RequestEditorFn) (*ResetInstancePasswordResponse, error)
 
-	// ListInstancePortsWithResponse 列出云服务器的网卡
+	// ListInstancePortsWithResponse List the network interfaces of an instance
 	//
 	// Returns a wrapper object for the known response body format(s).
 	//
 	// Corresponds with GET /api/v1/instances/{instanceId}/ports (the `ListInstancePorts` operationId).
 	ListInstancePortsWithResponse(ctx context.Context, instanceId openapi_types.UUID, reqEditors ...RequestEditorFn) (*ListInstancePortsResponse, error)
 
-	// AttachPortWithBodyWithResponse 挂载网卡
+	// AttachPortWithBodyWithResponse Attach a network interface
 	//
 	// Takes any type of body and a specified content type, and returns a wrapper object for the known response body format(s).
 	//
 	// Corresponds with POST /api/v1/instances/{instanceId}/ports (the `AttachPort` operationId).
 	AttachPortWithBodyWithResponse(ctx context.Context, instanceId openapi_types.UUID, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*AttachPortResponse, error)
 
-	// AttachPortWithResponse 挂载网卡
+	// AttachPortWithResponse Attach a network interface
 	//
 	// Takes a body of the `application/json` content type, and returns a wrapper object for the known response body format(s).
 	//
 	// Corresponds with POST /api/v1/instances/{instanceId}/ports (the `AttachPort` operationId).
 	AttachPortWithResponse(ctx context.Context, instanceId openapi_types.UUID, body AttachPortJSONRequestBody, reqEditors ...RequestEditorFn) (*AttachPortResponse, error)
 
-	// DetachPortWithResponse 卸载网卡
+	// DetachPortWithResponse Detach a network interface
 	//
-	// 主网卡不可卸载，卸载后云服务器将失去网络地址。.
+	// The primary network interface cannot be detached; the instance would lose its network address.
 	//
 	// Returns a wrapper object for the known response body format(s).
 	//
 	// Corresponds with DELETE /api/v1/instances/{instanceId}/ports/{portId} (the `DetachPort` operationId).
 	DetachPortWithResponse(ctx context.Context, instanceId openapi_types.UUID, portId openapi_types.UUID, reqEditors ...RequestEditorFn) (*DetachPortResponse, error)
 
-	// RebuildInstanceWithBodyWithResponse 重装系统
+	// RebuildInstanceWithBodyWithResponse Rebuild an instance
 	//
-	// **系统盘数据将被清除且无法恢复。** 已挂载的数据盘不受影响。.
+	// **All data on the system disk is erased and cannot be recovered.** Attached data disks are unaffected.
 	//
 	// Takes any type of body and a specified content type, and returns a wrapper object for the known response body format(s).
 	//
 	// Corresponds with POST /api/v1/instances/{instanceId}/rebuild (the `RebuildInstance` operationId).
 	RebuildInstanceWithBodyWithResponse(ctx context.Context, instanceId openapi_types.UUID, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*RebuildInstanceResponse, error)
 
-	// RebuildInstanceWithResponse 重装系统
+	// RebuildInstanceWithResponse Rebuild an instance
 	//
-	// **系统盘数据将被清除且无法恢复。** 已挂载的数据盘不受影响。.
+	// **All data on the system disk is erased and cannot be recovered.** Attached data disks are unaffected.
 	//
 	// Takes a body of the `application/json` content type, and returns a wrapper object for the known response body format(s).
 	//
 	// Corresponds with POST /api/v1/instances/{instanceId}/rebuild (the `RebuildInstance` operationId).
 	RebuildInstanceWithResponse(ctx context.Context, instanceId openapi_types.UUID, body RebuildInstanceJSONRequestBody, reqEditors ...RequestEditorFn) (*RebuildInstanceResponse, error)
 
-	// ResizeInstanceWithBodyWithResponse 变配
+	// ResizeInstanceWithBodyWithResponse Resize an instance
 	//
-	// 只能变更为同一地区、同一可用区的机型，否则已挂载的云硬盘无法随之迁移。
+	// Only an instance type in the same region and availability zone can be selected, as attached disks cannot follow the instance elsewhere.
 	//
-	// 变配分两步：本接口下发后云服务器会在新规格上重新启动，状态变为 `resize_verifying`，此时**必须**调用确认或回滚接口。目标机型在确认前记在 `pending_instance_type_id` 上，`instance_type_id` 仍为当前生效并计费的机型。
+	// A resize has two steps. This endpoint restarts the instance on the new size and the status becomes `resize_verifying`, at which point the confirm or revert endpoint **must** be called. Until confirmation the target type is recorded in `pending_instance_type_id`, while `instance_type_id` remains the type in effect and billed.
 	//
-	// **未确认期间新旧两份规格同时占用资源。** 请在状态变为 `resize_verifying` 后尽快确认。
+	// **Both sizes hold resources while the resize is unconfirmed.** Confirm promptly once the status becomes `resize_verifying`.
 	//
 	// Takes any type of body and a specified content type, and returns a wrapper object for the known response body format(s).
 	//
 	// Corresponds with POST /api/v1/instances/{instanceId}/resize (the `ResizeInstance` operationId).
 	ResizeInstanceWithBodyWithResponse(ctx context.Context, instanceId openapi_types.UUID, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*ResizeInstanceResponse, error)
 
-	// ResizeInstanceWithResponse 变配
+	// ResizeInstanceWithResponse Resize an instance
 	//
-	// 只能变更为同一地区、同一可用区的机型，否则已挂载的云硬盘无法随之迁移。
+	// Only an instance type in the same region and availability zone can be selected, as attached disks cannot follow the instance elsewhere.
 	//
-	// 变配分两步：本接口下发后云服务器会在新规格上重新启动，状态变为 `resize_verifying`，此时**必须**调用确认或回滚接口。目标机型在确认前记在 `pending_instance_type_id` 上，`instance_type_id` 仍为当前生效并计费的机型。
+	// A resize has two steps. This endpoint restarts the instance on the new size and the status becomes `resize_verifying`, at which point the confirm or revert endpoint **must** be called. Until confirmation the target type is recorded in `pending_instance_type_id`, while `instance_type_id` remains the type in effect and billed.
 	//
-	// **未确认期间新旧两份规格同时占用资源。** 请在状态变为 `resize_verifying` 后尽快确认。
+	// **Both sizes hold resources while the resize is unconfirmed.** Confirm promptly once the status becomes `resize_verifying`.
 	//
 	// Takes a body of the `application/json` content type, and returns a wrapper object for the known response body format(s).
 	//
 	// Corresponds with POST /api/v1/instances/{instanceId}/resize (the `ResizeInstance` operationId).
 	ResizeInstanceWithResponse(ctx context.Context, instanceId openapi_types.UUID, body ResizeInstanceJSONRequestBody, reqEditors ...RequestEditorFn) (*ResizeInstanceResponse, error)
 
-	// ConfirmInstanceResizeWithResponse 确认变配
+	// ConfirmInstanceResizeWithResponse Confirm a resize
 	//
-	// 释放原规格占用的资源，`pending_instance_type_id` 成为生效机型并从此按它计费。.
+	// Releases the resources held by the previous size. `pending_instance_type_id` becomes the type in effect and is billed from then on.
 	//
 	// Returns a wrapper object for the known response body format(s).
 	//
 	// Corresponds with POST /api/v1/instances/{instanceId}/resize/confirm (the `ConfirmInstanceResize` operationId).
 	ConfirmInstanceResizeWithResponse(ctx context.Context, instanceId openapi_types.UUID, reqEditors ...RequestEditorFn) (*ConfirmInstanceResizeResponse, error)
 
-	// RevertInstanceResizeWithResponse 回滚变配
+	// RevertInstanceResizeWithResponse Revert a resize
 	//
-	// 云服务器回到原规格，`pending_instance_type_id` 被丢弃，计费不受本次变配影响。.
+	// The instance returns to its previous size, `pending_instance_type_id` is discarded, and billing is unaffected by the resize.
 	//
 	// Returns a wrapper object for the known response body format(s).
 	//
 	// Corresponds with POST /api/v1/instances/{instanceId}/resize/revert (the `RevertInstanceResize` operationId).
 	RevertInstanceResizeWithResponse(ctx context.Context, instanceId openapi_types.UUID, reqEditors ...RequestEditorFn) (*RevertInstanceResizeResponse, error)
 
-	// ListOperationLogsWithResponse 列出本项目的操作记录
+	// ListOperationLogsWithResponse List the operation log of the project
 	//
-	// 记录本项目内的每一次写操作：谁、在什么时候、对什么做了什么、成功还是失败。读取操作不记录。
+	// Records every write operation in the project: who performed it, when, on what, and whether it succeeded. Read operations are not recorded.
 	//
-	// **平台代为执行的操作也在其中，但不显示具体执行人**，`by_platform` 为 true。例如欠费停机、违规封禁：需要知道机器何时被平台停止，但执行人属于平台内部信息。
+	// **Operations performed by the platform are included, but the individual operator is not disclosed** and `by_platform` is true. Suspension for non-payment and bans for abuse are examples: the time at which an instance was stopped by the platform is needed, whereas the operator is internal information.
 	//
-	// 密码一类的字段在写入时即被替换为占位符，不会出现在 `payload` 中。
+	// Fields such as passwords are replaced with a placeholder as the record is written and never appear in `payload`.
 	//
 	// Returns a wrapper object for the known response body format(s).
 	//
 	// Corresponds with GET /api/v1/operation-logs (the `ListOperationLogs` operationId).
 	ListOperationLogsWithResponse(ctx context.Context, params *ListOperationLogsParams, reqEditors ...RequestEditorFn) (*ListOperationLogsResponse, error)
 
-	// ListPortsWithResponse 列出网卡
+	// ListPortsWithResponse List network interfaces
 	//
 	// Returns a wrapper object for the known response body format(s).
 	//
 	// Corresponds with GET /api/v1/ports (the `ListPorts` operationId).
 	ListPortsWithResponse(ctx context.Context, reqEditors ...RequestEditorFn) (*ListPortsResponse, error)
 
-	// CreatePortWithBodyWithResponse 创建网卡
+	// CreatePortWithBodyWithResponse Create a network interface
 	//
-	// 创建出的网卡尚未挂载到任何云服务器。主网卡不由本接口创建，它随云服务器一并创建。.
+	// The new network interface is not attached to any instance. Primary network interfaces are not created here; they are created with the instance.
 	//
 	// Takes any type of body and a specified content type, and returns a wrapper object for the known response body format(s).
 	//
 	// Corresponds with POST /api/v1/ports (the `CreatePort` operationId).
 	CreatePortWithBodyWithResponse(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*CreatePortResponse, error)
 
-	// CreatePortWithResponse 创建网卡
+	// CreatePortWithResponse Create a network interface
 	//
-	// 创建出的网卡尚未挂载到任何云服务器。主网卡不由本接口创建，它随云服务器一并创建。.
+	// The new network interface is not attached to any instance. Primary network interfaces are not created here; they are created with the instance.
 	//
 	// Takes a body of the `application/json` content type, and returns a wrapper object for the known response body format(s).
 	//
 	// Corresponds with POST /api/v1/ports (the `CreatePort` operationId).
 	CreatePortWithResponse(ctx context.Context, body CreatePortJSONRequestBody, reqEditors ...RequestEditorFn) (*CreatePortResponse, error)
 
-	// DeletePortWithResponse 删除网卡
+	// DeletePortWithResponse Delete a network interface
 	//
-	// 主网卡不可单独删除，它随云服务器一并释放。仍挂载在云服务器上的网卡也无法删除。.
+	// The primary network interface cannot be deleted on its own, as it is released with the instance. A network interface still attached to an instance cannot be deleted either.
 	//
 	// Returns a wrapper object for the known response body format(s).
 	//
 	// Corresponds with DELETE /api/v1/ports/{portId} (the `DeletePort` operationId).
 	DeletePortWithResponse(ctx context.Context, portId openapi_types.UUID, reqEditors ...RequestEditorFn) (*DeletePortResponse, error)
 
-	// ListPrivateImagesWithResponse 列出自制镜像
+	// ListPrivateImagesWithResponse List private images
 	//
 	// Returns a wrapper object for the known response body format(s).
 	//
 	// Corresponds with GET /api/v1/private-images (the `ListPrivateImages` operationId).
 	ListPrivateImagesWithResponse(ctx context.Context, params *ListPrivateImagesParams, reqEditors ...RequestEditorFn) (*ListPrivateImagesResponse, error)
 
-	// CreatePrivateImageWithBodyWithResponse 将云服务器制作为镜像
+	// CreatePrivateImageWithBodyWithResponse Capture an instance as a private image
 	//
-	// 依据云服务器的系统盘制作，数据盘不包含在内。制作出的镜像可用于创建云服务器或重装系统，并在源云服务器释放后继续可用。
+	// Captured from the system disk of the instance; data disks are not included. The resulting image can create instances and rebuild them, and remains usable after the source instance is released.
 	//
-	// **镜像内容取自开始制作的那一刻，此后对云服务器的改动不会包含在内。**
+	// **The image reflects the moment the capture started. Later changes to the instance are not included.**
 	//
-	// 制作分两个阶段，请轮询查看接口：
+	// The capture has two phases. Poll the retrieve endpoint:
 	//
-	// - `provisioning` 正在读取系统盘，通常数十秒。此阶段云服务器可以继续使用，但为保证一致性建议先关机。
-	// - `uploading` 已与系统盘无关，**此时即可开机，无需等待制作完成**。该阶段耗时与系统盘容量成正比，20 GB 约需 3 分钟。
+	// - `provisioning` — the system disk is being read, usually for tens of seconds. The instance remains usable during this phase, although stopping it first is recommended for consistency.
+	// - `uploading` — no longer tied to the system disk. **The instance may be started at this point; there is no need to wait for the capture to finish.** The duration of this phase is proportional to the size of the system disk, roughly 3 minutes for 20 GB.
 	//
-	// 运行中的云服务器其文件系统可能处于写入中间状态，制作出的镜像等同于一次断电后的磁盘内容。对一致性有要求时，请在开始制作前关机，并在状态变为 `uploading` 后开机。
+	// The file system of a running instance may be captured mid-write, in which case the image is equivalent to the disk contents after a power loss. Where consistency matters, stop the instance before starting the capture and start it again once the status becomes `uploading`.
 	//
-	// 制作期间该云服务器可以正常启停与使用，但无法释放。
+	// The instance can be started, stopped and used normally during the capture, but cannot be released.
 	//
 	// Takes any type of body and a specified content type, and returns a wrapper object for the known response body format(s).
 	//
 	// Corresponds with POST /api/v1/private-images (the `CreatePrivateImage` operationId).
 	CreatePrivateImageWithBodyWithResponse(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*CreatePrivateImageResponse, error)
 
-	// CreatePrivateImageWithResponse 将云服务器制作为镜像
+	// CreatePrivateImageWithResponse Capture an instance as a private image
 	//
-	// 依据云服务器的系统盘制作，数据盘不包含在内。制作出的镜像可用于创建云服务器或重装系统，并在源云服务器释放后继续可用。
+	// Captured from the system disk of the instance; data disks are not included. The resulting image can create instances and rebuild them, and remains usable after the source instance is released.
 	//
-	// **镜像内容取自开始制作的那一刻，此后对云服务器的改动不会包含在内。**
+	// **The image reflects the moment the capture started. Later changes to the instance are not included.**
 	//
-	// 制作分两个阶段，请轮询查看接口：
+	// The capture has two phases. Poll the retrieve endpoint:
 	//
-	// - `provisioning` 正在读取系统盘，通常数十秒。此阶段云服务器可以继续使用，但为保证一致性建议先关机。
-	// - `uploading` 已与系统盘无关，**此时即可开机，无需等待制作完成**。该阶段耗时与系统盘容量成正比，20 GB 约需 3 分钟。
+	// - `provisioning` — the system disk is being read, usually for tens of seconds. The instance remains usable during this phase, although stopping it first is recommended for consistency.
+	// - `uploading` — no longer tied to the system disk. **The instance may be started at this point; there is no need to wait for the capture to finish.** The duration of this phase is proportional to the size of the system disk, roughly 3 minutes for 20 GB.
 	//
-	// 运行中的云服务器其文件系统可能处于写入中间状态，制作出的镜像等同于一次断电后的磁盘内容。对一致性有要求时，请在开始制作前关机，并在状态变为 `uploading` 后开机。
+	// The file system of a running instance may be captured mid-write, in which case the image is equivalent to the disk contents after a power loss. Where consistency matters, stop the instance before starting the capture and start it again once the status becomes `uploading`.
 	//
-	// 制作期间该云服务器可以正常启停与使用，但无法释放。
+	// The instance can be started, stopped and used normally during the capture, but cannot be released.
 	//
 	// Takes a body of the `application/json` content type, and returns a wrapper object for the known response body format(s).
 	//
 	// Corresponds with POST /api/v1/private-images (the `CreatePrivateImage` operationId).
 	CreatePrivateImageWithResponse(ctx context.Context, body CreatePrivateImageJSONRequestBody, reqEditors ...RequestEditorFn) (*CreatePrivateImageResponse, error)
 
-	// DeletePrivateImageWithResponse 删除自制镜像
+	// DeletePrivateImageWithResponse Delete a private image
 	//
-	// 仍有云服务器由该镜像创建时，删除会被拒绝：这些云服务器需要它才能重装系统。
+	// Deletion is rejected while instances created from the image still exist, as they need it in order to be rebuilt.
 	//
-	// 制作尚未完成的镜像也可以删除，制作会被终止。
+	// An image whose capture has not finished can be deleted; the capture is aborted.
 	//
 	// Returns a wrapper object for the known response body format(s).
 	//
 	// Corresponds with DELETE /api/v1/private-images/{privateImageId} (the `DeletePrivateImage` operationId).
 	DeletePrivateImageWithResponse(ctx context.Context, privateImageId openapi_types.UUID, reqEditors ...RequestEditorFn) (*DeletePrivateImageResponse, error)
 
-	// GetPrivateImageWithResponse 查看自制镜像
+	// GetPrivateImageWithResponse Retrieve a private image
 	//
-	// 轮询制作进度请使用本接口。status 为 error 时，failure 给出失败原因。.
+	// Use this endpoint to poll capture progress. When `status` is `error`, `failure` states the reason.
 	//
 	// Returns a wrapper object for the known response body format(s).
 	//
 	// Corresponds with GET /api/v1/private-images/{privateImageId} (the `GetPrivateImage` operationId).
 	GetPrivateImageWithResponse(ctx context.Context, privateImageId openapi_types.UUID, reqEditors ...RequestEditorFn) (*GetPrivateImageResponse, error)
 
-	// RenamePrivateImageWithBodyWithResponse 重命名自制镜像
+	// RenamePrivateImageWithBodyWithResponse Rename a private image
 	//
 	// Takes any type of body and a specified content type, and returns a wrapper object for the known response body format(s).
 	//
 	// Corresponds with PATCH /api/v1/private-images/{privateImageId} (the `RenamePrivateImage` operationId).
 	RenamePrivateImageWithBodyWithResponse(ctx context.Context, privateImageId openapi_types.UUID, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*RenamePrivateImageResponse, error)
 
-	// RenamePrivateImageWithResponse 重命名自制镜像
+	// RenamePrivateImageWithResponse Rename a private image
 	//
 	// Takes a body of the `application/json` content type, and returns a wrapper object for the known response body format(s).
 	//
 	// Corresponds with PATCH /api/v1/private-images/{privateImageId} (the `RenamePrivateImage` operationId).
 	RenamePrivateImageWithResponse(ctx context.Context, privateImageId openapi_types.UUID, body RenamePrivateImageJSONRequestBody, reqEditors ...RequestEditorFn) (*RenamePrivateImageResponse, error)
 
-	// ListPrivateNetworksWithResponse 列出私有网络
+	// ListPrivateNetworksWithResponse List private networks
 	//
 	// Returns a wrapper object for the known response body format(s).
 	//
 	// Corresponds with GET /api/v1/private-networks (the `ListPrivateNetworks` operationId).
 	ListPrivateNetworksWithResponse(ctx context.Context, params *ListPrivateNetworksParams, reqEditors ...RequestEditorFn) (*ListPrivateNetworksResponse, error)
 
-	// CreatePrivateNetworkWithBodyWithResponse 创建私有网络
+	// CreatePrivateNetworkWithBodyWithResponse Create a private network
 	//
-	// 同时创建一张网络、一台路由器和一个默认安全组。默认安全组拒绝全部入站流量、放行全部出站流量。.
+	// Creates a network, a router and a default security group in one call. The default security group denies all inbound traffic and permits all outbound traffic.
 	//
 	// Takes any type of body and a specified content type, and returns a wrapper object for the known response body format(s).
 	//
 	// Corresponds with POST /api/v1/private-networks (the `CreatePrivateNetwork` operationId).
 	CreatePrivateNetworkWithBodyWithResponse(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*CreatePrivateNetworkResponse, error)
 
-	// CreatePrivateNetworkWithResponse 创建私有网络
+	// CreatePrivateNetworkWithResponse Create a private network
 	//
-	// 同时创建一张网络、一台路由器和一个默认安全组。默认安全组拒绝全部入站流量、放行全部出站流量。.
+	// Creates a network, a router and a default security group in one call. The default security group denies all inbound traffic and permits all outbound traffic.
 	//
 	// Takes a body of the `application/json` content type, and returns a wrapper object for the known response body format(s).
 	//
 	// Corresponds with POST /api/v1/private-networks (the `CreatePrivateNetwork` operationId).
 	CreatePrivateNetworkWithResponse(ctx context.Context, body CreatePrivateNetworkJSONRequestBody, reqEditors ...RequestEditorFn) (*CreatePrivateNetworkResponse, error)
 
-	// DeletePrivateNetworkWithResponse 释放私有网络
+	// DeletePrivateNetworkWithResponse Release a private network
 	//
-	// 其中仍有云服务器或网卡时，释放会被拒绝。IPv6、路由器与安全组随之一并释放。.
+	// Release is rejected while instances or network interfaces remain in the network. IPv6, the router and the security groups are released with it.
 	//
 	// Returns a wrapper object for the known response body format(s).
 	//
 	// Corresponds with DELETE /api/v1/private-networks/{privateNetworkId} (the `DeletePrivateNetwork` operationId).
 	DeletePrivateNetworkWithResponse(ctx context.Context, privateNetworkId openapi_types.UUID, reqEditors ...RequestEditorFn) (*DeletePrivateNetworkResponse, error)
 
-	// GetPrivateNetworkWithResponse 查看私有网络
+	// GetPrivateNetworkWithResponse Retrieve a private network
 	//
 	// Returns a wrapper object for the known response body format(s).
 	//
 	// Corresponds with GET /api/v1/private-networks/{privateNetworkId} (the `GetPrivateNetwork` operationId).
 	GetPrivateNetworkWithResponse(ctx context.Context, privateNetworkId openapi_types.UUID, reqEditors ...RequestEditorFn) (*GetPrivateNetworkResponse, error)
 
-	// RenamePrivateNetworkWithBodyWithResponse 重命名私有网络
+	// RenamePrivateNetworkWithBodyWithResponse Rename a private network
 	//
-	// 仅修改显示名称。网段、路由与外网网关均不可修改。.
+	// Changes the display name only. The CIDR, the routes and the internet gateway are immutable.
 	//
 	// Takes any type of body and a specified content type, and returns a wrapper object for the known response body format(s).
 	//
 	// Corresponds with PATCH /api/v1/private-networks/{privateNetworkId} (the `RenamePrivateNetwork` operationId).
 	RenamePrivateNetworkWithBodyWithResponse(ctx context.Context, privateNetworkId openapi_types.UUID, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*RenamePrivateNetworkResponse, error)
 
-	// RenamePrivateNetworkWithResponse 重命名私有网络
+	// RenamePrivateNetworkWithResponse Rename a private network
 	//
-	// 仅修改显示名称。网段、路由与外网网关均不可修改。.
+	// Changes the display name only. The CIDR, the routes and the internet gateway are immutable.
 	//
 	// Takes a body of the `application/json` content type, and returns a wrapper object for the known response body format(s).
 	//
 	// Corresponds with PATCH /api/v1/private-networks/{privateNetworkId} (the `RenamePrivateNetwork` operationId).
 	RenamePrivateNetworkWithResponse(ctx context.Context, privateNetworkId openapi_types.UUID, body RenamePrivateNetworkJSONRequestBody, reqEditors ...RequestEditorFn) (*RenamePrivateNetworkResponse, error)
 
-	// DisablePrivateNetworkIpv6WithResponse 关闭私有网络的 IPv6
+	// DisablePrivateNetworkIpv6WithResponse Disable IPv6 on a private network
 	//
-	// 释放的前缀不会立即重新分配。.
+	// A released prefix is not re-allocated immediately.
 	//
 	// Returns a wrapper object for the known response body format(s).
 	//
 	// Corresponds with DELETE /api/v1/private-networks/{privateNetworkId}/ipv6 (the `DisablePrivateNetworkIpv6` operationId).
 	DisablePrivateNetworkIpv6WithResponse(ctx context.Context, privateNetworkId openapi_types.UUID, reqEditors ...RequestEditorFn) (*DisablePrivateNetworkIpv6Response, error)
 
-	// GetPrivateNetworkIpv6WithResponse 查看私有网络的 IPv6
+	// GetPrivateNetworkIpv6WithResponse Retrieve the IPv6 configuration of a private network
 	//
 	// Returns a wrapper object for the known response body format(s).
 	//
 	// Corresponds with GET /api/v1/private-networks/{privateNetworkId}/ipv6 (the `GetPrivateNetworkIpv6` operationId).
 	GetPrivateNetworkIpv6WithResponse(ctx context.Context, privateNetworkId openapi_types.UUID, reqEditors ...RequestEditorFn) (*GetPrivateNetworkIpv6Response, error)
 
-	// EnablePrivateNetworkIpv6WithResponse 为私有网络启用 IPv6
+	// EnablePrivateNetworkIpv6WithResponse Enable IPv6 on a private network
 	//
-	// 为该私有网络分配一段 IPv6 地址。地址由私有网络自动下发至云服务器，无需也无法单独申领，也不占用公网 IPv4。
+	// Allocates an IPv6 prefix to the private network. Addresses are assigned to instances by the network itself, can be neither requested nor released individually, and consume no public IPv4 address.
 	//
-	// 该私有网络尚未接入外网时会自动接入，无需单独操作。
+	// If the private network is not yet connected to the internet, connectivity is established as part of this call.
 	//
 	// Returns a wrapper object for the known response body format(s).
 	//
 	// Corresponds with POST /api/v1/private-networks/{privateNetworkId}/ipv6 (the `EnablePrivateNetworkIpv6` operationId).
 	EnablePrivateNetworkIpv6WithResponse(ctx context.Context, privateNetworkId openapi_types.UUID, reqEditors ...RequestEditorFn) (*EnablePrivateNetworkIpv6Response, error)
 
-	// ListRoutesWithResponse 列出静态路由
+	// ListRoutesWithResponse List static routes
 	//
 	// Returns a wrapper object for the known response body format(s).
 	//
 	// Corresponds with GET /api/v1/private-networks/{privateNetworkId}/routes (the `ListRoutes` operationId).
 	ListRoutesWithResponse(ctx context.Context, privateNetworkId openapi_types.UUID, reqEditors ...RequestEditorFn) (*ListRoutesResponse, error)
 
-	// CreateRouteWithBodyWithResponse 创建静态路由
+	// CreateRouteWithBodyWithResponse Create a static route
 	//
-	// 以下三种会导致网络中断的写法会被拒绝：目的网段为 0.0.0.0/0（覆盖默认路由，所有公网 IP 立即失效）、目的网段为某个子网自身（覆盖直连路由）、下一跳为某个子网的网关（指回路由器自身）。
+	// Three forms that would sever connectivity are rejected: a destination of `0.0.0.0/0`, which overrides the default route and takes every floating IP offline immediately; a destination equal to the CIDR of a subnet, which overrides its directly connected route; and a next hop equal to the gateway of a subnet, which points back at the router itself.
 	//
 	// Takes any type of body and a specified content type, and returns a wrapper object for the known response body format(s).
 	//
 	// Corresponds with POST /api/v1/private-networks/{privateNetworkId}/routes (the `CreateRoute` operationId).
 	CreateRouteWithBodyWithResponse(ctx context.Context, privateNetworkId openapi_types.UUID, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*CreateRouteResponse, error)
 
-	// CreateRouteWithResponse 创建静态路由
+	// CreateRouteWithResponse Create a static route
 	//
-	// 以下三种会导致网络中断的写法会被拒绝：目的网段为 0.0.0.0/0（覆盖默认路由，所有公网 IP 立即失效）、目的网段为某个子网自身（覆盖直连路由）、下一跳为某个子网的网关（指回路由器自身）。
+	// Three forms that would sever connectivity are rejected: a destination of `0.0.0.0/0`, which overrides the default route and takes every floating IP offline immediately; a destination equal to the CIDR of a subnet, which overrides its directly connected route; and a next hop equal to the gateway of a subnet, which points back at the router itself.
 	//
 	// Takes a body of the `application/json` content type, and returns a wrapper object for the known response body format(s).
 	//
 	// Corresponds with POST /api/v1/private-networks/{privateNetworkId}/routes (the `CreateRoute` operationId).
 	CreateRouteWithResponse(ctx context.Context, privateNetworkId openapi_types.UUID, body CreateRouteJSONRequestBody, reqEditors ...RequestEditorFn) (*CreateRouteResponse, error)
 
-	// DeleteRouteWithResponse 删除静态路由
+	// DeleteRouteWithResponse Delete a static route
 	//
 	// Returns a wrapper object for the known response body format(s).
 	//
 	// Corresponds with DELETE /api/v1/private-networks/{privateNetworkId}/routes/{routeId} (the `DeleteRoute` operationId).
 	DeleteRouteWithResponse(ctx context.Context, privateNetworkId openapi_types.UUID, routeId openapi_types.UUID, reqEditors ...RequestEditorFn) (*DeleteRouteResponse, error)
 
-	// ListSubnetsWithResponse 列出子网
+	// ListSubnetsWithResponse List subnets
 	//
-	// IPv6 子网也在返回结果中，ip_version 为 6。它在启用 IPv6 时自动创建，不可单独删除。.
+	// IPv6 subnets are included, with `ip_version` 6. They are created when IPv6 is enabled and cannot be deleted individually.
 	//
 	// Returns a wrapper object for the known response body format(s).
 	//
 	// Corresponds with GET /api/v1/private-networks/{privateNetworkId}/subnets (the `ListSubnets` operationId).
 	ListSubnetsWithResponse(ctx context.Context, privateNetworkId openapi_types.UUID, reqEditors ...RequestEditorFn) (*ListSubnetsResponse, error)
 
-	// CreateSubnetWithBodyWithResponse 创建子网
+	// CreateSubnetWithBodyWithResponse Create a subnet
 	//
 	// Takes any type of body and a specified content type, and returns a wrapper object for the known response body format(s).
 	//
 	// Corresponds with POST /api/v1/private-networks/{privateNetworkId}/subnets (the `CreateSubnet` operationId).
 	CreateSubnetWithBodyWithResponse(ctx context.Context, privateNetworkId openapi_types.UUID, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*CreateSubnetResponse, error)
 
-	// CreateSubnetWithResponse 创建子网
+	// CreateSubnetWithResponse Create a subnet
 	//
 	// Takes a body of the `application/json` content type, and returns a wrapper object for the known response body format(s).
 	//
 	// Corresponds with POST /api/v1/private-networks/{privateNetworkId}/subnets (the `CreateSubnet` operationId).
 	CreateSubnetWithResponse(ctx context.Context, privateNetworkId openapi_types.UUID, body CreateSubnetJSONRequestBody, reqEditors ...RequestEditorFn) (*CreateSubnetResponse, error)
 
-	// SuggestSubnetCidrWithResponse 推荐下一个空闲网段
+	// SuggestSubnetCidrWithResponse Suggest the next free CIDR
 	//
-	// 返回的只是建议值，创建子网时仍会重新校验。用于避免手工计算下一个空闲网段时出错。.
+	// The returned value is a suggestion and is validated again when the subnet is created. It exists to avoid errors when computing the next free CIDR by hand.
 	//
 	// Returns a wrapper object for the known response body format(s).
 	//
 	// Corresponds with GET /api/v1/private-networks/{privateNetworkId}/subnets/next-free-cidr (the `SuggestSubnetCidr` operationId).
 	SuggestSubnetCidrWithResponse(ctx context.Context, privateNetworkId openapi_types.UUID, params *SuggestSubnetCidrParams, reqEditors ...RequestEditorFn) (*SuggestSubnetCidrResponse, error)
 
-	// DeleteSubnetWithResponse 删除子网
+	// DeleteSubnetWithResponse Delete a subnet
 	//
-	// 该子网中仍有网卡，或仍有静态路由的下一跳落在该网段内时，删除会被拒绝。.
+	// Deletion is rejected while network interfaces remain in the subnet, or while a static route has a next hop inside its CIDR.
 	//
 	// Returns a wrapper object for the known response body format(s).
 	//
 	// Corresponds with DELETE /api/v1/private-networks/{privateNetworkId}/subnets/{subnetId} (the `DeleteSubnet` operationId).
 	DeleteSubnetWithResponse(ctx context.Context, privateNetworkId openapi_types.UUID, subnetId openapi_types.UUID, reqEditors ...RequestEditorFn) (*DeleteSubnetResponse, error)
 
-	// ListRegionsWithResponse 列出可用的地区
+	// ListRegionsWithResponse List available regions
 	//
 	// Returns a wrapper object for the known response body format(s).
 	//
 	// Corresponds with GET /api/v1/regions (the `ListRegions` operationId).
 	ListRegionsWithResponse(ctx context.Context, reqEditors ...RequestEditorFn) (*ListRegionsResponse, error)
 
-	// ListAvailabilityZonesWithResponse 列出一个地区的可用区
+	// ListAvailabilityZonesWithResponse List the availability zones of a region
 	//
-	// 云硬盘与云服务器必须位于同一可用区才能挂载，创建前请确认所选可用区。.
+	// A disk and an instance must reside in the same availability zone to be attached. Confirm the zone before creating either.
 	//
 	// Returns a wrapper object for the known response body format(s).
 	//
 	// Corresponds with GET /api/v1/regions/{regionCode}/availability-zones (the `ListAvailabilityZones` operationId).
 	ListAvailabilityZonesWithResponse(ctx context.Context, regionCode string, reqEditors ...RequestEditorFn) (*ListAvailabilityZonesResponse, error)
 
-	// ListSecurityGroupsWithResponse 列出安全组
+	// ListSecurityGroupsWithResponse List security groups
 	//
 	// Returns a wrapper object for the known response body format(s).
 	//
 	// Corresponds with GET /api/v1/security-groups (the `ListSecurityGroups` operationId).
 	ListSecurityGroupsWithResponse(ctx context.Context, params *ListSecurityGroupsParams, reqEditors ...RequestEditorFn) (*ListSecurityGroupsResponse, error)
 
-	// CreateSecurityGroupWithBodyWithResponse 创建安全组
+	// CreateSecurityGroupWithBodyWithResponse Create a security group
 	//
-	// 新建的安全组带有一条规则：放行 ICMP 需要分片（type 3 code 4）。缺少该规则会导致路径 MTU 发现失败，表现为连接建立后传输大数据包时卡住。.
+	// A new security group carries one rule, permitting ICMP fragmentation-needed messages (type 3, code 4). Without it path MTU discovery fails, which presents as connections that establish and then stall on large packets.
 	//
 	// Takes any type of body and a specified content type, and returns a wrapper object for the known response body format(s).
 	//
 	// Corresponds with POST /api/v1/security-groups (the `CreateSecurityGroup` operationId).
 	CreateSecurityGroupWithBodyWithResponse(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*CreateSecurityGroupResponse, error)
 
-	// CreateSecurityGroupWithResponse 创建安全组
+	// CreateSecurityGroupWithResponse Create a security group
 	//
-	// 新建的安全组带有一条规则：放行 ICMP 需要分片（type 3 code 4）。缺少该规则会导致路径 MTU 发现失败，表现为连接建立后传输大数据包时卡住。.
+	// A new security group carries one rule, permitting ICMP fragmentation-needed messages (type 3, code 4). Without it path MTU discovery fails, which presents as connections that establish and then stall on large packets.
 	//
 	// Takes a body of the `application/json` content type, and returns a wrapper object for the known response body format(s).
 	//
 	// Corresponds with POST /api/v1/security-groups (the `CreateSecurityGroup` operationId).
 	CreateSecurityGroupWithResponse(ctx context.Context, body CreateSecurityGroupJSONRequestBody, reqEditors ...RequestEditorFn) (*CreateSecurityGroupResponse, error)
 
-	// DeleteSecurityGroupWithResponse 删除安全组
+	// DeleteSecurityGroupWithResponse Delete a security group
 	//
-	// 默认安全组不可删除，它随私有网络一并释放。仍被网卡引用的安全组也无法删除。.
+	// The default security group cannot be deleted, as it is released with the private network. A security group still referenced by a network interface cannot be deleted either.
 	//
 	// Returns a wrapper object for the known response body format(s).
 	//
 	// Corresponds with DELETE /api/v1/security-groups/{securityGroupId} (the `DeleteSecurityGroup` operationId).
 	DeleteSecurityGroupWithResponse(ctx context.Context, securityGroupId openapi_types.UUID, reqEditors ...RequestEditorFn) (*DeleteSecurityGroupResponse, error)
 
-	// GetSecurityGroupWithResponse 查看安全组
+	// GetSecurityGroupWithResponse Retrieve a security group
 	//
 	// Returns a wrapper object for the known response body format(s).
 	//
 	// Corresponds with GET /api/v1/security-groups/{securityGroupId} (the `GetSecurityGroup` operationId).
 	GetSecurityGroupWithResponse(ctx context.Context, securityGroupId openapi_types.UUID, reqEditors ...RequestEditorFn) (*GetSecurityGroupResponse, error)
 
-	// RenameSecurityGroupWithBodyWithResponse 重命名安全组
+	// RenameSecurityGroupWithBodyWithResponse Rename a security group
 	//
-	// 仅可修改名称，规则请用规则接口。.
+	// Changes the name only. Use the rule endpoints to change rules.
 	//
 	// Takes any type of body and a specified content type, and returns a wrapper object for the known response body format(s).
 	//
 	// Corresponds with PATCH /api/v1/security-groups/{securityGroupId} (the `RenameSecurityGroup` operationId).
 	RenameSecurityGroupWithBodyWithResponse(ctx context.Context, securityGroupId openapi_types.UUID, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*RenameSecurityGroupResponse, error)
 
-	// RenameSecurityGroupWithResponse 重命名安全组
+	// RenameSecurityGroupWithResponse Rename a security group
 	//
-	// 仅可修改名称，规则请用规则接口。.
+	// Changes the name only. Use the rule endpoints to change rules.
 	//
 	// Takes a body of the `application/json` content type, and returns a wrapper object for the known response body format(s).
 	//
 	// Corresponds with PATCH /api/v1/security-groups/{securityGroupId} (the `RenameSecurityGroup` operationId).
 	RenameSecurityGroupWithResponse(ctx context.Context, securityGroupId openapi_types.UUID, body RenameSecurityGroupJSONRequestBody, reqEditors ...RequestEditorFn) (*RenameSecurityGroupResponse, error)
 
-	// ListSecurityGroupRulesWithResponse 列出安全组规则
+	// ListSecurityGroupRulesWithResponse List security group rules
 	//
 	// Returns a wrapper object for the known response body format(s).
 	//
 	// Corresponds with GET /api/v1/security-groups/{securityGroupId}/rules (the `ListSecurityGroupRules` operationId).
 	ListSecurityGroupRulesWithResponse(ctx context.Context, securityGroupId openapi_types.UUID, reqEditors ...RequestEditorFn) (*ListSecurityGroupRulesResponse, error)
 
-	// CreateSecurityGroupRuleWithBodyWithResponse 创建安全组规则
+	// CreateSecurityGroupRuleWithBodyWithResponse Create a security group rule
 	//
-	// 重复添加同一条规则会被拒绝。判重时 `0.0.0.0/0`、`::/0` 与留空视为等同。
+	// Adding an identical rule twice is rejected. For that comparison `0.0.0.0/0`, `::/0` and an omitted value are treated as equivalent.
 	//
 	// Takes any type of body and a specified content type, and returns a wrapper object for the known response body format(s).
 	//
 	// Corresponds with POST /api/v1/security-groups/{securityGroupId}/rules (the `CreateSecurityGroupRule` operationId).
 	CreateSecurityGroupRuleWithBodyWithResponse(ctx context.Context, securityGroupId openapi_types.UUID, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*CreateSecurityGroupRuleResponse, error)
 
-	// CreateSecurityGroupRuleWithResponse 创建安全组规则
+	// CreateSecurityGroupRuleWithResponse Create a security group rule
 	//
-	// 重复添加同一条规则会被拒绝。判重时 `0.0.0.0/0`、`::/0` 与留空视为等同。
+	// Adding an identical rule twice is rejected. For that comparison `0.0.0.0/0`, `::/0` and an omitted value are treated as equivalent.
 	//
 	// Takes a body of the `application/json` content type, and returns a wrapper object for the known response body format(s).
 	//
 	// Corresponds with POST /api/v1/security-groups/{securityGroupId}/rules (the `CreateSecurityGroupRule` operationId).
 	CreateSecurityGroupRuleWithResponse(ctx context.Context, securityGroupId openapi_types.UUID, body CreateSecurityGroupRuleJSONRequestBody, reqEditors ...RequestEditorFn) (*CreateSecurityGroupRuleResponse, error)
 
-	// DeleteSecurityGroupRuleWithResponse 删除安全组规则
+	// DeleteSecurityGroupRuleWithResponse Delete a security group rule
 	//
 	// Returns a wrapper object for the known response body format(s).
 	//
 	// Corresponds with DELETE /api/v1/security-groups/{securityGroupId}/rules/{ruleId} (the `DeleteSecurityGroupRule` operationId).
 	DeleteSecurityGroupRuleWithResponse(ctx context.Context, securityGroupId openapi_types.UUID, ruleId openapi_types.UUID, reqEditors ...RequestEditorFn) (*DeleteSecurityGroupRuleResponse, error)
 
-	// ListSnapshotsWithResponse 列出快照
+	// ListSnapshotsWithResponse List snapshots
 	//
 	// Returns a wrapper object for the known response body format(s).
 	//
 	// Corresponds with GET /api/v1/snapshots (the `ListSnapshots` operationId).
 	ListSnapshotsWithResponse(ctx context.Context, params *ListSnapshotsParams, reqEditors ...RequestEditorFn) (*ListSnapshotsResponse, error)
 
-	// CreateSnapshotWithBodyWithResponse 创建快照
+	// CreateSnapshotWithBodyWithResponse Create a snapshot
 	//
-	// 运行中云服务器上挂载的云硬盘同样可以创建快照。快照记录的是某一时刻的块设备状态，文件系统层面可能不一致，重要数据建议先在云服务器内执行 sync。
+	// Disks attached to a running instance can be snapshotted. A snapshot records the state of the block device at a point in time and may be inconsistent at the file-system level, so run `sync` inside the instance first where the data matters.
 	//
-	// **系统盘的快照不能用于回滚该系统盘**：回滚要求先从云服务器上卸载，而系统盘不可卸载。它可用于创建一块新的数据盘。需要保留并恢复整个系统时，请使用自制镜像；需要可跨可用区、且在云硬盘删除后仍可恢复的副本时，请使用备份。
+	// **A snapshot of a system disk cannot be used to revert that system disk**: reverting requires the disk to be detached, and a system disk cannot be detached. It can be used to create a new data disk. To preserve and restore an entire system, use a private image; for a copy that crosses availability zones and survives deletion of the disk, use a backup.
 	//
 	// Takes any type of body and a specified content type, and returns a wrapper object for the known response body format(s).
 	//
 	// Corresponds with POST /api/v1/snapshots (the `CreateSnapshot` operationId).
 	CreateSnapshotWithBodyWithResponse(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*CreateSnapshotResponse, error)
 
-	// CreateSnapshotWithResponse 创建快照
+	// CreateSnapshotWithResponse Create a snapshot
 	//
-	// 运行中云服务器上挂载的云硬盘同样可以创建快照。快照记录的是某一时刻的块设备状态，文件系统层面可能不一致，重要数据建议先在云服务器内执行 sync。
+	// Disks attached to a running instance can be snapshotted. A snapshot records the state of the block device at a point in time and may be inconsistent at the file-system level, so run `sync` inside the instance first where the data matters.
 	//
-	// **系统盘的快照不能用于回滚该系统盘**：回滚要求先从云服务器上卸载，而系统盘不可卸载。它可用于创建一块新的数据盘。需要保留并恢复整个系统时，请使用自制镜像；需要可跨可用区、且在云硬盘删除后仍可恢复的副本时，请使用备份。
+	// **A snapshot of a system disk cannot be used to revert that system disk**: reverting requires the disk to be detached, and a system disk cannot be detached. It can be used to create a new data disk. To preserve and restore an entire system, use a private image; for a copy that crosses availability zones and survives deletion of the disk, use a backup.
 	//
 	// Takes a body of the `application/json` content type, and returns a wrapper object for the known response body format(s).
 	//
 	// Corresponds with POST /api/v1/snapshots (the `CreateSnapshot` operationId).
 	CreateSnapshotWithResponse(ctx context.Context, body CreateSnapshotJSONRequestBody, reqEditors ...RequestEditorFn) (*CreateSnapshotResponse, error)
 
-	// DeleteSnapshotWithResponse 删除快照
+	// DeleteSnapshotWithResponse Delete a snapshot
 	//
 	// Returns a wrapper object for the known response body format(s).
 	//
 	// Corresponds with DELETE /api/v1/snapshots/{snapshotId} (the `DeleteSnapshot` operationId).
 	DeleteSnapshotWithResponse(ctx context.Context, snapshotId openapi_types.UUID, reqEditors ...RequestEditorFn) (*DeleteSnapshotResponse, error)
 
-	// GetSnapshotWithResponse 查看快照
+	// GetSnapshotWithResponse Retrieve a snapshot
 	//
 	// Returns a wrapper object for the known response body format(s).
 	//
 	// Corresponds with GET /api/v1/snapshots/{snapshotId} (the `GetSnapshot` operationId).
 	GetSnapshotWithResponse(ctx context.Context, snapshotId openapi_types.UUID, reqEditors ...RequestEditorFn) (*GetSnapshotResponse, error)
 
-	// RenameSnapshotWithBodyWithResponse 重命名快照
+	// RenameSnapshotWithBodyWithResponse Rename a snapshot
 	//
 	// Takes any type of body and a specified content type, and returns a wrapper object for the known response body format(s).
 	//
 	// Corresponds with PATCH /api/v1/snapshots/{snapshotId} (the `RenameSnapshot` operationId).
 	RenameSnapshotWithBodyWithResponse(ctx context.Context, snapshotId openapi_types.UUID, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*RenameSnapshotResponse, error)
 
-	// RenameSnapshotWithResponse 重命名快照
+	// RenameSnapshotWithResponse Rename a snapshot
 	//
 	// Takes a body of the `application/json` content type, and returns a wrapper object for the known response body format(s).
 	//
@@ -12915,7 +12915,7 @@ func (r RenameSnapshotResponse) ContentType() string {
 	return ""
 }
 
-// ListBackupsWithResponse 列出备份
+// ListBackupsWithResponse List backups
 //
 // Returns a wrapper object for the known response body format(s).
 //
@@ -12928,13 +12928,13 @@ func (c *ClientWithResponses) ListBackupsWithResponse(ctx context.Context, param
 	return ParseListBackupsResponse(rsp)
 }
 
-// CreateBackupWithBodyWithResponse 创建备份
+// CreateBackupWithBodyWithResponse Create a backup
 //
-// 备份是云硬盘在独立存储中的一份完整副本：**源云硬盘删除后仍可恢复，且可恢复到本地区的其他可用区。**快照不具备这两项能力，它与源云硬盘位于同一存储，且源云硬盘存在快照时无法删除。
+// A backup is a complete copy of a disk held in separate storage: **it remains restorable after the source disk is deleted, and can be restored to another availability zone in the same region.** A snapshot offers neither capability, as it resides in the same storage as the source disk and prevents that disk from being deleted while it exists.
 //
-// 运行中云服务器上挂载的云硬盘、以及系统盘，均可创建备份。
+// Disks attached to a running instance, including system disks, can be backed up.
 //
-// 备份耗时取决于数据量。接口返回时尚未完成，请轮询查看接口。
+// The duration depends on the amount of data. The backup is not complete when this endpoint returns; poll the retrieve endpoint.
 //
 // Takes any type of body and a specified content type, and returns a wrapper object for the known response body format(s).
 //
@@ -12947,13 +12947,13 @@ func (c *ClientWithResponses) CreateBackupWithBodyWithResponse(ctx context.Conte
 	return ParseCreateBackupResponse(rsp)
 }
 
-// CreateBackupWithResponse 创建备份
+// CreateBackupWithResponse Create a backup
 //
-// 备份是云硬盘在独立存储中的一份完整副本：**源云硬盘删除后仍可恢复，且可恢复到本地区的其他可用区。**快照不具备这两项能力，它与源云硬盘位于同一存储，且源云硬盘存在快照时无法删除。
+// A backup is a complete copy of a disk held in separate storage: **it remains restorable after the source disk is deleted, and can be restored to another availability zone in the same region.** A snapshot offers neither capability, as it resides in the same storage as the source disk and prevents that disk from being deleted while it exists.
 //
-// 运行中云服务器上挂载的云硬盘、以及系统盘，均可创建备份。
+// Disks attached to a running instance, including system disks, can be backed up.
 //
-// 备份耗时取决于数据量。接口返回时尚未完成，请轮询查看接口。
+// The duration depends on the amount of data. The backup is not complete when this endpoint returns; poll the retrieve endpoint.
 //
 // Takes a body of the `application/json` content type, and returns a wrapper object for the known response body format(s).
 //
@@ -12966,9 +12966,9 @@ func (c *ClientWithResponses) CreateBackupWithResponse(ctx context.Context, body
 	return ParseCreateBackupResponse(rsp)
 }
 
-// DeleteBackupWithResponse 删除备份
+// DeleteBackupWithResponse Delete a backup
 //
-// 与源云硬盘无关，源云硬盘是否存在都不影响删除。.
+// Independent of the source disk: deletion succeeds whether or not that disk still exists.
 //
 // Returns a wrapper object for the known response body format(s).
 //
@@ -12981,9 +12981,9 @@ func (c *ClientWithResponses) DeleteBackupWithResponse(ctx context.Context, back
 	return ParseDeleteBackupResponse(rsp)
 }
 
-// GetBackupWithResponse 查看备份
+// GetBackupWithResponse Retrieve a backup
 //
-// 会实时查询备份的当前状态，因此比列表接口慢但更准确。轮询创建进度请使用本接口。.
+// Queries the current state of the backup, which makes it slower but more accurate than the list endpoint. Use it to poll creation progress.
 //
 // Returns a wrapper object for the known response body format(s).
 //
@@ -12996,7 +12996,7 @@ func (c *ClientWithResponses) GetBackupWithResponse(ctx context.Context, backupI
 	return ParseGetBackupResponse(rsp)
 }
 
-// RenameBackupWithBodyWithResponse 重命名备份
+// RenameBackupWithBodyWithResponse Rename a backup
 //
 // Takes any type of body and a specified content type, and returns a wrapper object for the known response body format(s).
 //
@@ -13009,7 +13009,7 @@ func (c *ClientWithResponses) RenameBackupWithBodyWithResponse(ctx context.Conte
 	return ParseRenameBackupResponse(rsp)
 }
 
-// RenameBackupWithResponse 重命名备份
+// RenameBackupWithResponse Rename a backup
 //
 // Takes a body of the `application/json` content type, and returns a wrapper object for the known response body format(s).
 //
@@ -13022,11 +13022,11 @@ func (c *ClientWithResponses) RenameBackupWithResponse(ctx context.Context, back
 	return ParseRenameBackupResponse(rsp)
 }
 
-// RestoreBackupWithBodyWithResponse 由备份恢复
+// RestoreBackupWithBodyWithResponse Restore from a backup
 //
-// 恢复到一块**新建的**云硬盘上，源云硬盘不受影响，也不要求它仍然存在。
+// Restores onto a **newly created** disk. The source disk is unaffected and need not still exist.
 //
-// 目标硬盘类型可位于本地区的其他可用区，容量不能小于备份。恢复完成前该云硬盘不可挂载，请轮询云硬盘查看接口。
+// The target disk type may belong to another availability zone of the same region, and its capacity must not be smaller than the backup. The disk cannot be attached until the restore completes; poll the disk retrieve endpoint.
 //
 // Takes any type of body and a specified content type, and returns a wrapper object for the known response body format(s).
 //
@@ -13039,11 +13039,11 @@ func (c *ClientWithResponses) RestoreBackupWithBodyWithResponse(ctx context.Cont
 	return ParseRestoreBackupResponse(rsp)
 }
 
-// RestoreBackupWithResponse 由备份恢复
+// RestoreBackupWithResponse Restore from a backup
 //
-// 恢复到一块**新建的**云硬盘上，源云硬盘不受影响，也不要求它仍然存在。
+// Restores onto a **newly created** disk. The source disk is unaffected and need not still exist.
 //
-// 目标硬盘类型可位于本地区的其他可用区，容量不能小于备份。恢复完成前该云硬盘不可挂载，请轮询云硬盘查看接口。
+// The target disk type may belong to another availability zone of the same region, and its capacity must not be smaller than the backup. The disk cannot be attached until the restore completes; poll the disk retrieve endpoint.
 //
 // Takes a body of the `application/json` content type, and returns a wrapper object for the known response body format(s).
 //
@@ -13056,7 +13056,7 @@ func (c *ClientWithResponses) RestoreBackupWithResponse(ctx context.Context, bac
 	return ParseRestoreBackupResponse(rsp)
 }
 
-// ListDiskTypesWithResponse 列出在售硬盘类型
+// ListDiskTypesWithResponse List disk types on sale
 //
 // Returns a wrapper object for the known response body format(s).
 //
@@ -13069,9 +13069,9 @@ func (c *ClientWithResponses) ListDiskTypesWithResponse(ctx context.Context, par
 	return ParseListDiskTypesResponse(rsp)
 }
 
-// ListDisksWithResponse 列出云硬盘
+// ListDisksWithResponse List disks
 //
-// 同时提供 region_code 与 availability_zone 时，只返回可挂载到该位置云服务器的云硬盘。.
+// When both `region_code` and `availability_zone` are supplied, only disks attachable to an instance at that location are returned.
 //
 // Returns a wrapper object for the known response body format(s).
 //
@@ -13084,9 +13084,9 @@ func (c *ClientWithResponses) ListDisksWithResponse(ctx context.Context, params 
 	return ParseListDisksResponse(rsp)
 }
 
-// CreateDiskWithBodyWithResponse 创建云硬盘
+// CreateDiskWithBodyWithResponse Create a disk
 //
-// 云硬盘创建在所选硬盘类型所属的可用区，云服务器必须位于同一可用区才能挂载。因此选定硬盘类型即确定了可用区。.
+// The disk is created in the availability zone of the selected disk type, and an instance must reside in the same zone to attach it. Choosing the disk type therefore determines the zone.
 //
 // Takes any type of body and a specified content type, and returns a wrapper object for the known response body format(s).
 //
@@ -13099,9 +13099,9 @@ func (c *ClientWithResponses) CreateDiskWithBodyWithResponse(ctx context.Context
 	return ParseCreateDiskResponse(rsp)
 }
 
-// CreateDiskWithResponse 创建云硬盘
+// CreateDiskWithResponse Create a disk
 //
-// 云硬盘创建在所选硬盘类型所属的可用区，云服务器必须位于同一可用区才能挂载。因此选定硬盘类型即确定了可用区。.
+// The disk is created in the availability zone of the selected disk type, and an instance must reside in the same zone to attach it. Choosing the disk type therefore determines the zone.
 //
 // Takes a body of the `application/json` content type, and returns a wrapper object for the known response body format(s).
 //
@@ -13114,9 +13114,9 @@ func (c *ClientWithResponses) CreateDiskWithResponse(ctx context.Context, body C
 	return ParseCreateDiskResponse(rsp)
 }
 
-// DeleteDiskWithResponse 删除云硬盘
+// DeleteDiskWithResponse Delete a disk
 //
-// 云硬盘处于挂载状态，或仍存在基于它创建的快照时，删除会被拒绝。.
+// Deletion is rejected while the disk is attached, or while snapshots created from it still exist.
 //
 // Returns a wrapper object for the known response body format(s).
 //
@@ -13129,9 +13129,9 @@ func (c *ClientWithResponses) DeleteDiskWithResponse(ctx context.Context, diskId
 	return ParseDeleteDiskResponse(rsp)
 }
 
-// GetDiskWithResponse 查看云硬盘
+// GetDiskWithResponse Retrieve a disk
 //
-// 会实时查询云硬盘的当前状态，因此比列表接口慢但更准确。.
+// Queries the current state of the disk, which makes it slower but more accurate than the list endpoint.
 //
 // Returns a wrapper object for the known response body format(s).
 //
@@ -13144,9 +13144,9 @@ func (c *ClientWithResponses) GetDiskWithResponse(ctx context.Context, diskId op
 	return ParseGetDiskResponse(rsp)
 }
 
-// RenameDiskWithBodyWithResponse 重命名云硬盘
+// RenameDiskWithBodyWithResponse Rename a disk
 //
-// 仅可修改名称。容量请使用扩容接口，类型与可用区不可修改。.
+// Changes the name only. Use the resize endpoint for capacity; type and availability zone are immutable.
 //
 // Takes any type of body and a specified content type, and returns a wrapper object for the known response body format(s).
 //
@@ -13159,9 +13159,9 @@ func (c *ClientWithResponses) RenameDiskWithBodyWithResponse(ctx context.Context
 	return ParseRenameDiskResponse(rsp)
 }
 
-// RenameDiskWithResponse 重命名云硬盘
+// RenameDiskWithResponse Rename a disk
 //
-// 仅可修改名称。容量请使用扩容接口，类型与可用区不可修改。.
+// Changes the name only. Use the resize endpoint for capacity; type and availability zone are immutable.
 //
 // Takes a body of the `application/json` content type, and returns a wrapper object for the known response body format(s).
 //
@@ -13174,9 +13174,9 @@ func (c *ClientWithResponses) RenameDiskWithResponse(ctx context.Context, diskId
 	return ParseRenameDiskResponse(rsp)
 }
 
-// ResizeDiskWithBodyWithResponse 扩容
+// ResizeDiskWithBodyWithResponse Resize a disk
 //
-// 容量只能增加，不支持缩容。扩容完成后需在云服务器内自行扩展文件系统。.
+// Capacity can only be increased; shrinking is not supported. Extend the file system inside the instance once the resize completes.
 //
 // Takes any type of body and a specified content type, and returns a wrapper object for the known response body format(s).
 //
@@ -13189,9 +13189,9 @@ func (c *ClientWithResponses) ResizeDiskWithBodyWithResponse(ctx context.Context
 	return ParseResizeDiskResponse(rsp)
 }
 
-// ResizeDiskWithResponse 扩容
+// ResizeDiskWithResponse Resize a disk
 //
-// 容量只能增加，不支持缩容。扩容完成后需在云服务器内自行扩展文件系统。.
+// Capacity can only be increased; shrinking is not supported. Extend the file system inside the instance once the resize completes.
 //
 // Takes a body of the `application/json` content type, and returns a wrapper object for the known response body format(s).
 //
@@ -13204,13 +13204,13 @@ func (c *ClientWithResponses) ResizeDiskWithResponse(ctx context.Context, diskId
 	return ParseResizeDiskResponse(rsp)
 }
 
-// RevertDiskWithBodyWithResponse 回滚到快照
+// RevertDiskWithBodyWithResponse Revert to a snapshot
 //
-// 将云硬盘的内容恢复到创建该快照的时刻。**该时刻之后写入的数据全部丢失，且无法撤销。**
+// Restores the contents of the disk to the moment the snapshot was taken. **All data written after that moment is lost and cannot be recovered.**
 //
-// 三项限制：只能回滚到该云硬盘最新的一个快照；云硬盘必须先从云服务器上卸载；创建快照后扩容过的云硬盘不能回滚。需要回到更早的时刻，或需要保留现有云硬盘时，请改用由快照创建一块新的云硬盘。
+// Three restrictions apply: only the most recent snapshot of the disk can be reverted to; the disk must be detached from its instance first; and a disk resized since the snapshot was taken cannot be reverted. To return to an earlier point in time, or to keep the existing disk, create a new disk from the snapshot instead.
 //
-// 接口返回时回滚尚未完成，请轮询查看接口。
+// The revert is not complete when this endpoint returns; poll the retrieve endpoint.
 //
 // Takes any type of body and a specified content type, and returns a wrapper object for the known response body format(s).
 //
@@ -13223,13 +13223,13 @@ func (c *ClientWithResponses) RevertDiskWithBodyWithResponse(ctx context.Context
 	return ParseRevertDiskResponse(rsp)
 }
 
-// RevertDiskWithResponse 回滚到快照
+// RevertDiskWithResponse Revert to a snapshot
 //
-// 将云硬盘的内容恢复到创建该快照的时刻。**该时刻之后写入的数据全部丢失，且无法撤销。**
+// Restores the contents of the disk to the moment the snapshot was taken. **All data written after that moment is lost and cannot be recovered.**
 //
-// 三项限制：只能回滚到该云硬盘最新的一个快照；云硬盘必须先从云服务器上卸载；创建快照后扩容过的云硬盘不能回滚。需要回到更早的时刻，或需要保留现有云硬盘时，请改用由快照创建一块新的云硬盘。
+// Three restrictions apply: only the most recent snapshot of the disk can be reverted to; the disk must be detached from its instance first; and a disk resized since the snapshot was taken cannot be reverted. To return to an earlier point in time, or to keep the existing disk, create a new disk from the snapshot instead.
 //
-// 接口返回时回滚尚未完成，请轮询查看接口。
+// The revert is not complete when this endpoint returns; poll the retrieve endpoint.
 //
 // Takes a body of the `application/json` content type, and returns a wrapper object for the known response body format(s).
 //
@@ -13242,7 +13242,7 @@ func (c *ClientWithResponses) RevertDiskWithResponse(ctx context.Context, diskId
 	return ParseRevertDiskResponse(rsp)
 }
 
-// ListFloatingIpsWithResponse 列出公网 IP
+// ListFloatingIpsWithResponse List floating IPs
 //
 // Returns a wrapper object for the known response body format(s).
 //
@@ -13255,11 +13255,11 @@ func (c *ClientWithResponses) ListFloatingIpsWithResponse(ctx context.Context, r
 	return ParseListFloatingIpsResponse(rsp)
 }
 
-// AllocateFloatingIpWithBodyWithResponse 申领公网 IP
+// AllocateFloatingIpWithBodyWithResponse Allocate a floating IP
 //
-// 若该私有网络尚未连通外网，会一并为其接入外网。
+// If the private network is not yet connected to the internet, connectivity is established as part of this call.
 //
-// IPv6 不通过本接口申请。IPv6 地址由私有网络自动下发至云服务器，在私有网络上启用即可。
+// IPv6 is not requested through this endpoint. IPv6 addresses are assigned to instances by the private network; enable IPv6 on that network instead.
 //
 // Takes any type of body and a specified content type, and returns a wrapper object for the known response body format(s).
 //
@@ -13272,11 +13272,11 @@ func (c *ClientWithResponses) AllocateFloatingIpWithBodyWithResponse(ctx context
 	return ParseAllocateFloatingIpResponse(rsp)
 }
 
-// AllocateFloatingIpWithResponse 申领公网 IP
+// AllocateFloatingIpWithResponse Allocate a floating IP
 //
-// 若该私有网络尚未连通外网，会一并为其接入外网。
+// If the private network is not yet connected to the internet, connectivity is established as part of this call.
 //
-// IPv6 不通过本接口申请。IPv6 地址由私有网络自动下发至云服务器，在私有网络上启用即可。
+// IPv6 is not requested through this endpoint. IPv6 addresses are assigned to instances by the private network; enable IPv6 on that network instead.
 //
 // Takes a body of the `application/json` content type, and returns a wrapper object for the known response body format(s).
 //
@@ -13289,9 +13289,9 @@ func (c *ClientWithResponses) AllocateFloatingIpWithResponse(ctx context.Context
 	return ParseAllocateFloatingIpResponse(rsp)
 }
 
-// ReleaseFloatingIpWithResponse 释放公网 IP
+// ReleaseFloatingIpWithResponse Release a floating IP
 //
-// 地址释放后进入冷却期才会重新分配，以免仍指向它的 DNS 记录和访问白名单立即失效。因此释放后的短时间内**无法重新申领同一个地址**，请谨慎操作。.
+// A released address enters a cooldown period before it is allocated again, so that DNS records and allow-lists still pointing at it do not break immediately. **The same address therefore cannot be re-allocated** for some time after release. Proceed with care.
 //
 // Returns a wrapper object for the known response body format(s).
 //
@@ -13304,7 +13304,7 @@ func (c *ClientWithResponses) ReleaseFloatingIpWithResponse(ctx context.Context,
 	return ParseReleaseFloatingIpResponse(rsp)
 }
 
-// GetFloatingIpWithResponse 查看公网 IP
+// GetFloatingIpWithResponse Retrieve a floating IP
 //
 // Returns a wrapper object for the known response body format(s).
 //
@@ -13317,9 +13317,9 @@ func (c *ClientWithResponses) GetFloatingIpWithResponse(ctx context.Context, flo
 	return ParseGetFloatingIpResponse(rsp)
 }
 
-// SetFloatingIpBandwidthWithBodyWithResponse 设带宽上限
+// SetFloatingIpBandwidthWithBodyWithResponse Set the bandwidth limit
 //
-// 出入两个方向同时限速。仅限制出方向无法防止入方向流量打满上联带宽。.
+// Limits both directions at once. Limiting egress alone does not prevent ingress traffic from saturating the uplink.
 //
 // Takes any type of body and a specified content type, and returns a wrapper object for the known response body format(s).
 //
@@ -13332,9 +13332,9 @@ func (c *ClientWithResponses) SetFloatingIpBandwidthWithBodyWithResponse(ctx con
 	return ParseSetFloatingIpBandwidthResponse(rsp)
 }
 
-// SetFloatingIpBandwidthWithResponse 设带宽上限
+// SetFloatingIpBandwidthWithResponse Set the bandwidth limit
 //
-// 出入两个方向同时限速。仅限制出方向无法防止入方向流量打满上联带宽。.
+// Limits both directions at once. Limiting egress alone does not prevent ingress traffic from saturating the uplink.
 //
 // Takes a body of the `application/json` content type, and returns a wrapper object for the known response body format(s).
 //
@@ -13347,9 +13347,9 @@ func (c *ClientWithResponses) SetFloatingIpBandwidthWithResponse(ctx context.Con
 	return ParseSetFloatingIpBandwidthResponse(rsp)
 }
 
-// UnbindFloatingIpWithResponse 解绑公网 IP
+// UnbindFloatingIpWithResponse Unbind a floating IP
 //
-// 地址仍归本项目持有，只是不再指向任何网卡。.
+// The address remains held by the project and simply no longer points at any network interface.
 //
 // Returns a wrapper object for the known response body format(s).
 //
@@ -13362,7 +13362,7 @@ func (c *ClientWithResponses) UnbindFloatingIpWithResponse(ctx context.Context, 
 	return ParseUnbindFloatingIpResponse(rsp)
 }
 
-// BindFloatingIpWithBodyWithResponse 将公网 IP 绑定到网卡
+// BindFloatingIpWithBodyWithResponse Bind a floating IP to a network interface
 //
 // Takes any type of body and a specified content type, and returns a wrapper object for the known response body format(s).
 //
@@ -13375,7 +13375,7 @@ func (c *ClientWithResponses) BindFloatingIpWithBodyWithResponse(ctx context.Con
 	return ParseBindFloatingIpResponse(rsp)
 }
 
-// BindFloatingIpWithResponse 将公网 IP 绑定到网卡
+// BindFloatingIpWithResponse Bind a floating IP to a network interface
 //
 // Takes a body of the `application/json` content type, and returns a wrapper object for the known response body format(s).
 //
@@ -13388,9 +13388,9 @@ func (c *ClientWithResponses) BindFloatingIpWithResponse(ctx context.Context, fl
 	return ParseBindFloatingIpResponse(rsp)
 }
 
-// ListImagesWithResponse 列出在售镜像
+// ListImagesWithResponse List images on sale
 //
-// min_ram_mb 超过所选机型内存的镜像无法启动，请据此过滤可选项。.
+// An image whose `min_ram_mb` exceeds the memory of the selected instance type cannot boot. Filter the options accordingly.
 //
 // Returns a wrapper object for the known response body format(s).
 //
@@ -13403,7 +13403,7 @@ func (c *ClientWithResponses) ListImagesWithResponse(ctx context.Context, params
 	return ParseListImagesResponse(rsp)
 }
 
-// ListInstanceTypesWithResponse 列出在售机型
+// ListInstanceTypesWithResponse List instance types on sale
 //
 // Returns a wrapper object for the known response body format(s).
 //
@@ -13416,7 +13416,7 @@ func (c *ClientWithResponses) ListInstanceTypesWithResponse(ctx context.Context,
 	return ParseListInstanceTypesResponse(rsp)
 }
 
-// ListInstancesWithResponse 列出云服务器
+// ListInstancesWithResponse List instances
 //
 // Returns a wrapper object for the known response body format(s).
 //
@@ -13429,19 +13429,19 @@ func (c *ClientWithResponses) ListInstancesWithResponse(ctx context.Context, req
 	return ParseListInstancesResponse(rsp)
 }
 
-// LaunchInstanceWithBodyWithResponse 创建云服务器
+// LaunchInstanceWithBodyWithResponse Create instances
 //
-// **必须在请求中设置密码**：不设置时请求会被拒绝，否则创建出的云服务器将无法登录。密码可由平台生成，此时仅在本次响应中返回一次。
+// **A password must be set in the request.** The request is rejected otherwise, since the resulting instance would be unreachable. The platform can generate one, in which case it is returned only in this response.
 //
-// `count` 可一次创建多台（最多 20 台），名称自动加 `-1`、`-2` 编号，所有云服务器共用同一个密码。**响应中的 `instances` 始终是数组**，单台创建时也是。
+// `count` creates several instances at once, 20 at most. Names are numbered `-1`, `-2` automatically and all instances share one password. **`instances` in the response is always an array**, including for a single instance.
 //
-// 批量创建按顺序逐台进行。若中途失败（例如配额不足），**已创建的云服务器会保留**，响应中的 `failure` 给出中止原因；第一台就失败时视为整次请求失败，不会创建任何云服务器。
+// Instances are created one by one in order. If the sequence stops part way through, because of a quota limit for example, **the instances already created are kept** and `failure` states why it stopped. A failure on the first instance is treated as a failure of the whole request and no instance is created.
 //
-// 镜像二选一：`image_id` 使用平台提供的镜像，`private_image_id` 使用自制镜像。两者都给或都不给都会被拒绝。
+// Exactly one image source must be given: `image_id` for a platform image, `private_image_id` for a private image. Supplying both or neither is rejected.
 //
-// 云服务器创建在机型所属的可用区。后续要挂载的云硬盘必须位于同一可用区。
+// Instances are created in the availability zone of the instance type. Disks to be attached later must reside in the same zone.
 //
-// 接口返回时创建尚未完成（status 为 provisioning），请轮询 GET 确认结果。
+// Creation is not complete when this endpoint returns and `status` is `provisioning`. Poll GET to observe the outcome.
 //
 // Takes any type of body and a specified content type, and returns a wrapper object for the known response body format(s).
 //
@@ -13454,19 +13454,19 @@ func (c *ClientWithResponses) LaunchInstanceWithBodyWithResponse(ctx context.Con
 	return ParseLaunchInstanceResponse(rsp)
 }
 
-// LaunchInstanceWithResponse 创建云服务器
+// LaunchInstanceWithResponse Create instances
 //
-// **必须在请求中设置密码**：不设置时请求会被拒绝，否则创建出的云服务器将无法登录。密码可由平台生成，此时仅在本次响应中返回一次。
+// **A password must be set in the request.** The request is rejected otherwise, since the resulting instance would be unreachable. The platform can generate one, in which case it is returned only in this response.
 //
-// `count` 可一次创建多台（最多 20 台），名称自动加 `-1`、`-2` 编号，所有云服务器共用同一个密码。**响应中的 `instances` 始终是数组**，单台创建时也是。
+// `count` creates several instances at once, 20 at most. Names are numbered `-1`, `-2` automatically and all instances share one password. **`instances` in the response is always an array**, including for a single instance.
 //
-// 批量创建按顺序逐台进行。若中途失败（例如配额不足），**已创建的云服务器会保留**，响应中的 `failure` 给出中止原因；第一台就失败时视为整次请求失败，不会创建任何云服务器。
+// Instances are created one by one in order. If the sequence stops part way through, because of a quota limit for example, **the instances already created are kept** and `failure` states why it stopped. A failure on the first instance is treated as a failure of the whole request and no instance is created.
 //
-// 镜像二选一：`image_id` 使用平台提供的镜像，`private_image_id` 使用自制镜像。两者都给或都不给都会被拒绝。
+// Exactly one image source must be given: `image_id` for a platform image, `private_image_id` for a private image. Supplying both or neither is rejected.
 //
-// 云服务器创建在机型所属的可用区。后续要挂载的云硬盘必须位于同一可用区。
+// Instances are created in the availability zone of the instance type. Disks to be attached later must reside in the same zone.
 //
-// 接口返回时创建尚未完成（status 为 provisioning），请轮询 GET 确认结果。
+// Creation is not complete when this endpoint returns and `status` is `provisioning`. Poll GET to observe the outcome.
 //
 // Takes a body of the `application/json` content type, and returns a wrapper object for the known response body format(s).
 //
@@ -13479,11 +13479,11 @@ func (c *ClientWithResponses) LaunchInstanceWithResponse(ctx context.Context, bo
 	return ParseLaunchInstanceResponse(rsp)
 }
 
-// DeleteInstanceWithResponse 释放云服务器
+// DeleteInstanceWithResponse Release an instance
 //
-// 系统盘随云服务器一并删除，**基于系统盘创建的快照也会一并删除**。数据盘会被卸载并保留，其快照与备份不受影响。主网卡随云服务器一并释放。
+// The system disk is deleted with the instance, and **snapshots created from the system disk are deleted with it**. Data disks are detached and kept, and their snapshots and backups are unaffected. The primary network interface is released with the instance.
 //
-// 正在制作镜像的云服务器无法释放，请等待制作完成或先删除该镜像。
+// An instance being captured as a private image cannot be released. Wait for the capture to finish, or delete that image first.
 //
 // Returns a wrapper object for the known response body format(s).
 //
@@ -13496,9 +13496,9 @@ func (c *ClientWithResponses) DeleteInstanceWithResponse(ctx context.Context, in
 	return ParseDeleteInstanceResponse(rsp)
 }
 
-// GetInstanceWithResponse 查看云服务器
+// GetInstanceWithResponse Retrieve an instance
 //
-// 会实时查询云服务器的当前状态，因此比列表接口慢但更准确。轮询创建进度请使用本接口。.
+// Queries the current state of the instance, which makes it slower but more accurate than the list endpoint. Use it to poll creation progress.
 //
 // Returns a wrapper object for the known response body format(s).
 //
@@ -13511,9 +13511,9 @@ func (c *ClientWithResponses) GetInstanceWithResponse(ctx context.Context, insta
 	return ParseGetInstanceResponse(rsp)
 }
 
-// RenameInstanceWithBodyWithResponse 重命名云服务器
+// RenameInstanceWithBodyWithResponse Rename an instance
 //
-// 仅修改显示名称。云服务器内的主机名不变，它等于云服务器 id。.
+// Changes the display name only. The hostname inside the instance is unchanged; it equals the instance id.
 //
 // Takes any type of body and a specified content type, and returns a wrapper object for the known response body format(s).
 //
@@ -13526,9 +13526,9 @@ func (c *ClientWithResponses) RenameInstanceWithBodyWithResponse(ctx context.Con
 	return ParseRenameInstanceResponse(rsp)
 }
 
-// RenameInstanceWithResponse 重命名云服务器
+// RenameInstanceWithResponse Rename an instance
 //
-// 仅修改显示名称。云服务器内的主机名不变，它等于云服务器 id。.
+// Changes the display name only. The hostname inside the instance is unchanged; it equals the instance id.
 //
 // Takes a body of the `application/json` content type, and returns a wrapper object for the known response body format(s).
 //
@@ -13541,15 +13541,15 @@ func (c *ClientWithResponses) RenameInstanceWithResponse(ctx context.Context, in
 	return ParseRenameInstanceResponse(rsp)
 }
 
-// ActOnInstanceWithBodyWithResponse 开机、关机、重启
+// ActOnInstanceWithBodyWithResponse Start, stop or reboot an instance
 //
-// 重启默认为软重启，由操作系统正常关闭后重新启动。
+// Reboot defaults to a soft reboot, in which the operating system shuts down normally before starting again.
 //
-// 系统已无响应时软重启不会生效，此时可设置 `force` 强制重启。强制重启不等待操作系统关闭，**未落盘的数据会丢失**。`force` 仅适用于 reboot。
+// A soft reboot has no effect once the system is unresponsive. Set `force` to reboot forcibly: a forced reboot does not wait for the operating system to shut down, so **unwritten data is lost**. `force` applies to `reboot` only.
 //
-// 已被平台停服的云服务器需先解除停服。
+// An instance suspended by the platform must be unsuspended first.
 //
-// 本接口立即返回，返回的 `status` 是变更中的瞬态：start 为 `starting`、stop 为 `stopping`、reboot 为 `rebooting`。轮询云服务器详情直至落定为 `running` 或 `stopped`。
+// This endpoint returns immediately and the `status` it returns is a transient state: `starting` for start, `stopping` for stop, `rebooting` for reboot. Poll the instance until it settles at `running` or `stopped`.
 //
 // Takes any type of body and a specified content type, and returns a wrapper object for the known response body format(s).
 //
@@ -13562,15 +13562,15 @@ func (c *ClientWithResponses) ActOnInstanceWithBodyWithResponse(ctx context.Cont
 	return ParseActOnInstanceResponse(rsp)
 }
 
-// ActOnInstanceWithResponse 开机、关机、重启
+// ActOnInstanceWithResponse Start, stop or reboot an instance
 //
-// 重启默认为软重启，由操作系统正常关闭后重新启动。
+// Reboot defaults to a soft reboot, in which the operating system shuts down normally before starting again.
 //
-// 系统已无响应时软重启不会生效，此时可设置 `force` 强制重启。强制重启不等待操作系统关闭，**未落盘的数据会丢失**。`force` 仅适用于 reboot。
+// A soft reboot has no effect once the system is unresponsive. Set `force` to reboot forcibly: a forced reboot does not wait for the operating system to shut down, so **unwritten data is lost**. `force` applies to `reboot` only.
 //
-// 已被平台停服的云服务器需先解除停服。
+// An instance suspended by the platform must be unsuspended first.
 //
-// 本接口立即返回，返回的 `status` 是变更中的瞬态：start 为 `starting`、stop 为 `stopping`、reboot 为 `rebooting`。轮询云服务器详情直至落定为 `running` 或 `stopped`。
+// This endpoint returns immediately and the `status` it returns is a transient state: `starting` for start, `stopping` for stop, `rebooting` for reboot. Poll the instance until it settles at `running` or `stopped`.
 //
 // Takes a body of the `application/json` content type, and returns a wrapper object for the known response body format(s).
 //
@@ -13583,11 +13583,11 @@ func (c *ClientWithResponses) ActOnInstanceWithResponse(ctx context.Context, ins
 	return ParseActOnInstanceResponse(rsp)
 }
 
-// OpenInstanceConsoleWithResponse 打开远程控制台
+// OpenInstanceConsoleWithResponse Open a remote console
 //
-// 在浏览器中直接操作云服务器，无需网络可达，适用于网络配置失误导致无法登录的情况。
+// Operates the instance directly from a browser and does not require the instance to be reachable over the network, which makes it usable when a network misconfiguration prevents login.
 //
-// 返回的地址一次性使用，数分钟后失效。**请勿缓存**，每次使用前重新获取。
+// The returned address is single-use and expires within minutes. **Do not cache it**; request a new one before each use.
 //
 // Returns a wrapper object for the known response body format(s).
 //
@@ -13600,11 +13600,11 @@ func (c *ClientWithResponses) OpenInstanceConsoleWithResponse(ctx context.Contex
 	return ParseOpenInstanceConsoleResponse(rsp)
 }
 
-// GetInstanceConsoleOutputWithResponse 读取串口输出
+// GetInstanceConsoleOutputWithResponse Read the console output
 //
-// 云服务器启动过程与内核输出的原始文本。无法登录或远程控制台无输出时，应首先查看本接口。其中可查看启动停止于哪一步、系统盘是否正常挂载、初始化过程是否报错。
+// The raw text produced by the instance during boot and by the kernel. Consult it first when login fails or the remote console shows no output: it reveals where boot stopped, whether the system disk was mounted, and whether initialisation reported errors.
 //
-// 处于错误状态或已被平台停服的云服务器同样可以读取。
+// Instances in an error state, and instances suspended by the platform, can be read as well.
 //
 // Returns a wrapper object for the known response body format(s).
 //
@@ -13617,7 +13617,7 @@ func (c *ClientWithResponses) GetInstanceConsoleOutputWithResponse(ctx context.C
 	return ParseGetInstanceConsoleOutputResponse(rsp)
 }
 
-// ListInstanceDisksWithResponse 列出云服务器已挂载的云硬盘
+// ListInstanceDisksWithResponse List the disks attached to an instance
 //
 // Returns a wrapper object for the known response body format(s).
 //
@@ -13630,9 +13630,9 @@ func (c *ClientWithResponses) ListInstanceDisksWithResponse(ctx context.Context,
 	return ParseListInstanceDisksResponse(rsp)
 }
 
-// AttachDiskWithBodyWithResponse 挂载云硬盘
+// AttachDiskWithBodyWithResponse Attach a disk
 //
-// 云硬盘必须与云服务器位于同一地区和可用区。挂载后需在云服务器内自行分区并挂载文件系统。.
+// The disk must be in the same region and availability zone as the instance. Partition it and mount the file system inside the instance once it is attached.
 //
 // Takes any type of body and a specified content type, and returns a wrapper object for the known response body format(s).
 //
@@ -13645,9 +13645,9 @@ func (c *ClientWithResponses) AttachDiskWithBodyWithResponse(ctx context.Context
 	return ParseAttachDiskResponse(rsp)
 }
 
-// AttachDiskWithResponse 挂载云硬盘
+// AttachDiskWithResponse Attach a disk
 //
-// 云硬盘必须与云服务器位于同一地区和可用区。挂载后需在云服务器内自行分区并挂载文件系统。.
+// The disk must be in the same region and availability zone as the instance. Partition it and mount the file system inside the instance once it is attached.
 //
 // Takes a body of the `application/json` content type, and returns a wrapper object for the known response body format(s).
 //
@@ -13660,9 +13660,9 @@ func (c *ClientWithResponses) AttachDiskWithResponse(ctx context.Context, instan
 	return ParseAttachDiskResponse(rsp)
 }
 
-// DetachDiskWithResponse 卸载云硬盘
+// DetachDiskWithResponse Detach a disk
 //
-// 请先在云服务器内卸载（umount）该设备再调用本接口，正在写入的文件系统被强制卸载会损坏数据。.
+// Unmount the device inside the instance before calling this endpoint. Forcibly detaching a file system that is being written to corrupts data.
 //
 // Returns a wrapper object for the known response body format(s).
 //
@@ -13675,9 +13675,9 @@ func (c *ClientWithResponses) DetachDiskWithResponse(ctx context.Context, instan
 	return ParseDetachDiskResponse(rsp)
 }
 
-// AttachInstanceFloatingIpWithBodyWithResponse 为云服务器绑定公网 IP
+// AttachInstanceFloatingIpWithBodyWithResponse Bind a floating IP to an instance
 //
-// 公网 IP 绑定在云服务器的主网卡上。.
+// The floating IP is bound to the primary network interface of the instance.
 //
 // Takes any type of body and a specified content type, and returns a wrapper object for the known response body format(s).
 //
@@ -13690,9 +13690,9 @@ func (c *ClientWithResponses) AttachInstanceFloatingIpWithBodyWithResponse(ctx c
 	return ParseAttachInstanceFloatingIpResponse(rsp)
 }
 
-// AttachInstanceFloatingIpWithResponse 为云服务器绑定公网 IP
+// AttachInstanceFloatingIpWithResponse Bind a floating IP to an instance
 //
-// 公网 IP 绑定在云服务器的主网卡上。.
+// The floating IP is bound to the primary network interface of the instance.
 //
 // Takes a body of the `application/json` content type, and returns a wrapper object for the known response body format(s).
 //
@@ -13705,7 +13705,7 @@ func (c *ClientWithResponses) AttachInstanceFloatingIpWithResponse(ctx context.C
 	return ParseAttachInstanceFloatingIpResponse(rsp)
 }
 
-// DetachInstanceFloatingIpWithResponse 解绑云服务器的公网 IP
+// DetachInstanceFloatingIpWithResponse Unbind the floating IP of an instance
 //
 // Returns a wrapper object for the known response body format(s).
 //
@@ -13718,13 +13718,13 @@ func (c *ClientWithResponses) DetachInstanceFloatingIpWithResponse(ctx context.C
 	return ParseDetachInstanceFloatingIpResponse(rsp)
 }
 
-// ResetInstancePasswordWithBodyWithResponse 重置登录密码
+// ResetInstancePasswordWithBodyWithResponse Reset the login password
 //
-// 在不重启的情况下改掉 root 的密码，云服务器必须处于运行中。
+// Changes the root password without a reboot. The instance must be running.
 //
-// **并非所有镜像都支持**：镜像列表中 `supports_password_reset` 为 false 的镜像做不到，此时只能通过重装系统设置新密码，而重装会清除系统盘上的全部数据。
+// **Not every image supports this.** Images whose `supports_password_reset` is false cannot, and a new password can then only be set by rebuilding the instance, which erases all data on the system disk.
 //
-// 镜像标记为支持、但云服务器内相应组件已被卸载或停止时，本接口同样会被拒绝。
+// The request is also rejected when the image is marked as supported but the corresponding component has been removed or stopped inside the instance.
 //
 // Takes any type of body and a specified content type, and returns a wrapper object for the known response body format(s).
 //
@@ -13737,13 +13737,13 @@ func (c *ClientWithResponses) ResetInstancePasswordWithBodyWithResponse(ctx cont
 	return ParseResetInstancePasswordResponse(rsp)
 }
 
-// ResetInstancePasswordWithResponse 重置登录密码
+// ResetInstancePasswordWithResponse Reset the login password
 //
-// 在不重启的情况下改掉 root 的密码，云服务器必须处于运行中。
+// Changes the root password without a reboot. The instance must be running.
 //
-// **并非所有镜像都支持**：镜像列表中 `supports_password_reset` 为 false 的镜像做不到，此时只能通过重装系统设置新密码，而重装会清除系统盘上的全部数据。
+// **Not every image supports this.** Images whose `supports_password_reset` is false cannot, and a new password can then only be set by rebuilding the instance, which erases all data on the system disk.
 //
-// 镜像标记为支持、但云服务器内相应组件已被卸载或停止时，本接口同样会被拒绝。
+// The request is also rejected when the image is marked as supported but the corresponding component has been removed or stopped inside the instance.
 //
 // Takes a body of the `application/json` content type, and returns a wrapper object for the known response body format(s).
 //
@@ -13756,7 +13756,7 @@ func (c *ClientWithResponses) ResetInstancePasswordWithResponse(ctx context.Cont
 	return ParseResetInstancePasswordResponse(rsp)
 }
 
-// ListInstancePortsWithResponse 列出云服务器的网卡
+// ListInstancePortsWithResponse List the network interfaces of an instance
 //
 // Returns a wrapper object for the known response body format(s).
 //
@@ -13769,7 +13769,7 @@ func (c *ClientWithResponses) ListInstancePortsWithResponse(ctx context.Context,
 	return ParseListInstancePortsResponse(rsp)
 }
 
-// AttachPortWithBodyWithResponse 挂载网卡
+// AttachPortWithBodyWithResponse Attach a network interface
 //
 // Takes any type of body and a specified content type, and returns a wrapper object for the known response body format(s).
 //
@@ -13782,7 +13782,7 @@ func (c *ClientWithResponses) AttachPortWithBodyWithResponse(ctx context.Context
 	return ParseAttachPortResponse(rsp)
 }
 
-// AttachPortWithResponse 挂载网卡
+// AttachPortWithResponse Attach a network interface
 //
 // Takes a body of the `application/json` content type, and returns a wrapper object for the known response body format(s).
 //
@@ -13795,9 +13795,9 @@ func (c *ClientWithResponses) AttachPortWithResponse(ctx context.Context, instan
 	return ParseAttachPortResponse(rsp)
 }
 
-// DetachPortWithResponse 卸载网卡
+// DetachPortWithResponse Detach a network interface
 //
-// 主网卡不可卸载，卸载后云服务器将失去网络地址。.
+// The primary network interface cannot be detached; the instance would lose its network address.
 //
 // Returns a wrapper object for the known response body format(s).
 //
@@ -13810,9 +13810,9 @@ func (c *ClientWithResponses) DetachPortWithResponse(ctx context.Context, instan
 	return ParseDetachPortResponse(rsp)
 }
 
-// RebuildInstanceWithBodyWithResponse 重装系统
+// RebuildInstanceWithBodyWithResponse Rebuild an instance
 //
-// **系统盘数据将被清除且无法恢复。** 已挂载的数据盘不受影响。.
+// **All data on the system disk is erased and cannot be recovered.** Attached data disks are unaffected.
 //
 // Takes any type of body and a specified content type, and returns a wrapper object for the known response body format(s).
 //
@@ -13825,9 +13825,9 @@ func (c *ClientWithResponses) RebuildInstanceWithBodyWithResponse(ctx context.Co
 	return ParseRebuildInstanceResponse(rsp)
 }
 
-// RebuildInstanceWithResponse 重装系统
+// RebuildInstanceWithResponse Rebuild an instance
 //
-// **系统盘数据将被清除且无法恢复。** 已挂载的数据盘不受影响。.
+// **All data on the system disk is erased and cannot be recovered.** Attached data disks are unaffected.
 //
 // Takes a body of the `application/json` content type, and returns a wrapper object for the known response body format(s).
 //
@@ -13840,13 +13840,13 @@ func (c *ClientWithResponses) RebuildInstanceWithResponse(ctx context.Context, i
 	return ParseRebuildInstanceResponse(rsp)
 }
 
-// ResizeInstanceWithBodyWithResponse 变配
+// ResizeInstanceWithBodyWithResponse Resize an instance
 //
-// 只能变更为同一地区、同一可用区的机型，否则已挂载的云硬盘无法随之迁移。
+// Only an instance type in the same region and availability zone can be selected, as attached disks cannot follow the instance elsewhere.
 //
-// 变配分两步：本接口下发后云服务器会在新规格上重新启动，状态变为 `resize_verifying`，此时**必须**调用确认或回滚接口。目标机型在确认前记在 `pending_instance_type_id` 上，`instance_type_id` 仍为当前生效并计费的机型。
+// A resize has two steps. This endpoint restarts the instance on the new size and the status becomes `resize_verifying`, at which point the confirm or revert endpoint **must** be called. Until confirmation the target type is recorded in `pending_instance_type_id`, while `instance_type_id` remains the type in effect and billed.
 //
-// **未确认期间新旧两份规格同时占用资源。** 请在状态变为 `resize_verifying` 后尽快确认。
+// **Both sizes hold resources while the resize is unconfirmed.** Confirm promptly once the status becomes `resize_verifying`.
 //
 // Takes any type of body and a specified content type, and returns a wrapper object for the known response body format(s).
 //
@@ -13859,13 +13859,13 @@ func (c *ClientWithResponses) ResizeInstanceWithBodyWithResponse(ctx context.Con
 	return ParseResizeInstanceResponse(rsp)
 }
 
-// ResizeInstanceWithResponse 变配
+// ResizeInstanceWithResponse Resize an instance
 //
-// 只能变更为同一地区、同一可用区的机型，否则已挂载的云硬盘无法随之迁移。
+// Only an instance type in the same region and availability zone can be selected, as attached disks cannot follow the instance elsewhere.
 //
-// 变配分两步：本接口下发后云服务器会在新规格上重新启动，状态变为 `resize_verifying`，此时**必须**调用确认或回滚接口。目标机型在确认前记在 `pending_instance_type_id` 上，`instance_type_id` 仍为当前生效并计费的机型。
+// A resize has two steps. This endpoint restarts the instance on the new size and the status becomes `resize_verifying`, at which point the confirm or revert endpoint **must** be called. Until confirmation the target type is recorded in `pending_instance_type_id`, while `instance_type_id` remains the type in effect and billed.
 //
-// **未确认期间新旧两份规格同时占用资源。** 请在状态变为 `resize_verifying` 后尽快确认。
+// **Both sizes hold resources while the resize is unconfirmed.** Confirm promptly once the status becomes `resize_verifying`.
 //
 // Takes a body of the `application/json` content type, and returns a wrapper object for the known response body format(s).
 //
@@ -13878,9 +13878,9 @@ func (c *ClientWithResponses) ResizeInstanceWithResponse(ctx context.Context, in
 	return ParseResizeInstanceResponse(rsp)
 }
 
-// ConfirmInstanceResizeWithResponse 确认变配
+// ConfirmInstanceResizeWithResponse Confirm a resize
 //
-// 释放原规格占用的资源，`pending_instance_type_id` 成为生效机型并从此按它计费。.
+// Releases the resources held by the previous size. `pending_instance_type_id` becomes the type in effect and is billed from then on.
 //
 // Returns a wrapper object for the known response body format(s).
 //
@@ -13893,9 +13893,9 @@ func (c *ClientWithResponses) ConfirmInstanceResizeWithResponse(ctx context.Cont
 	return ParseConfirmInstanceResizeResponse(rsp)
 }
 
-// RevertInstanceResizeWithResponse 回滚变配
+// RevertInstanceResizeWithResponse Revert a resize
 //
-// 云服务器回到原规格，`pending_instance_type_id` 被丢弃，计费不受本次变配影响。.
+// The instance returns to its previous size, `pending_instance_type_id` is discarded, and billing is unaffected by the resize.
 //
 // Returns a wrapper object for the known response body format(s).
 //
@@ -13908,13 +13908,13 @@ func (c *ClientWithResponses) RevertInstanceResizeWithResponse(ctx context.Conte
 	return ParseRevertInstanceResizeResponse(rsp)
 }
 
-// ListOperationLogsWithResponse 列出本项目的操作记录
+// ListOperationLogsWithResponse List the operation log of the project
 //
-// 记录本项目内的每一次写操作：谁、在什么时候、对什么做了什么、成功还是失败。读取操作不记录。
+// Records every write operation in the project: who performed it, when, on what, and whether it succeeded. Read operations are not recorded.
 //
-// **平台代为执行的操作也在其中，但不显示具体执行人**，`by_platform` 为 true。例如欠费停机、违规封禁：需要知道机器何时被平台停止，但执行人属于平台内部信息。
+// **Operations performed by the platform are included, but the individual operator is not disclosed** and `by_platform` is true. Suspension for non-payment and bans for abuse are examples: the time at which an instance was stopped by the platform is needed, whereas the operator is internal information.
 //
-// 密码一类的字段在写入时即被替换为占位符，不会出现在 `payload` 中。
+// Fields such as passwords are replaced with a placeholder as the record is written and never appear in `payload`.
 //
 // Returns a wrapper object for the known response body format(s).
 //
@@ -13927,7 +13927,7 @@ func (c *ClientWithResponses) ListOperationLogsWithResponse(ctx context.Context,
 	return ParseListOperationLogsResponse(rsp)
 }
 
-// ListPortsWithResponse 列出网卡
+// ListPortsWithResponse List network interfaces
 //
 // Returns a wrapper object for the known response body format(s).
 //
@@ -13940,9 +13940,9 @@ func (c *ClientWithResponses) ListPortsWithResponse(ctx context.Context, reqEdit
 	return ParseListPortsResponse(rsp)
 }
 
-// CreatePortWithBodyWithResponse 创建网卡
+// CreatePortWithBodyWithResponse Create a network interface
 //
-// 创建出的网卡尚未挂载到任何云服务器。主网卡不由本接口创建，它随云服务器一并创建。.
+// The new network interface is not attached to any instance. Primary network interfaces are not created here; they are created with the instance.
 //
 // Takes any type of body and a specified content type, and returns a wrapper object for the known response body format(s).
 //
@@ -13955,9 +13955,9 @@ func (c *ClientWithResponses) CreatePortWithBodyWithResponse(ctx context.Context
 	return ParseCreatePortResponse(rsp)
 }
 
-// CreatePortWithResponse 创建网卡
+// CreatePortWithResponse Create a network interface
 //
-// 创建出的网卡尚未挂载到任何云服务器。主网卡不由本接口创建，它随云服务器一并创建。.
+// The new network interface is not attached to any instance. Primary network interfaces are not created here; they are created with the instance.
 //
 // Takes a body of the `application/json` content type, and returns a wrapper object for the known response body format(s).
 //
@@ -13970,9 +13970,9 @@ func (c *ClientWithResponses) CreatePortWithResponse(ctx context.Context, body C
 	return ParseCreatePortResponse(rsp)
 }
 
-// DeletePortWithResponse 删除网卡
+// DeletePortWithResponse Delete a network interface
 //
-// 主网卡不可单独删除，它随云服务器一并释放。仍挂载在云服务器上的网卡也无法删除。.
+// The primary network interface cannot be deleted on its own, as it is released with the instance. A network interface still attached to an instance cannot be deleted either.
 //
 // Returns a wrapper object for the known response body format(s).
 //
@@ -13985,7 +13985,7 @@ func (c *ClientWithResponses) DeletePortWithResponse(ctx context.Context, portId
 	return ParseDeletePortResponse(rsp)
 }
 
-// ListPrivateImagesWithResponse 列出自制镜像
+// ListPrivateImagesWithResponse List private images
 //
 // Returns a wrapper object for the known response body format(s).
 //
@@ -13998,20 +13998,20 @@ func (c *ClientWithResponses) ListPrivateImagesWithResponse(ctx context.Context,
 	return ParseListPrivateImagesResponse(rsp)
 }
 
-// CreatePrivateImageWithBodyWithResponse 将云服务器制作为镜像
+// CreatePrivateImageWithBodyWithResponse Capture an instance as a private image
 //
-// 依据云服务器的系统盘制作，数据盘不包含在内。制作出的镜像可用于创建云服务器或重装系统，并在源云服务器释放后继续可用。
+// Captured from the system disk of the instance; data disks are not included. The resulting image can create instances and rebuild them, and remains usable after the source instance is released.
 //
-// **镜像内容取自开始制作的那一刻，此后对云服务器的改动不会包含在内。**
+// **The image reflects the moment the capture started. Later changes to the instance are not included.**
 //
-// 制作分两个阶段，请轮询查看接口：
+// The capture has two phases. Poll the retrieve endpoint:
 //
-// - `provisioning` 正在读取系统盘，通常数十秒。此阶段云服务器可以继续使用，但为保证一致性建议先关机。
-// - `uploading` 已与系统盘无关，**此时即可开机，无需等待制作完成**。该阶段耗时与系统盘容量成正比，20 GB 约需 3 分钟。
+// - `provisioning` — the system disk is being read, usually for tens of seconds. The instance remains usable during this phase, although stopping it first is recommended for consistency.
+// - `uploading` — no longer tied to the system disk. **The instance may be started at this point; there is no need to wait for the capture to finish.** The duration of this phase is proportional to the size of the system disk, roughly 3 minutes for 20 GB.
 //
-// 运行中的云服务器其文件系统可能处于写入中间状态，制作出的镜像等同于一次断电后的磁盘内容。对一致性有要求时，请在开始制作前关机，并在状态变为 `uploading` 后开机。
+// The file system of a running instance may be captured mid-write, in which case the image is equivalent to the disk contents after a power loss. Where consistency matters, stop the instance before starting the capture and start it again once the status becomes `uploading`.
 //
-// 制作期间该云服务器可以正常启停与使用，但无法释放。
+// The instance can be started, stopped and used normally during the capture, but cannot be released.
 //
 // Takes any type of body and a specified content type, and returns a wrapper object for the known response body format(s).
 //
@@ -14024,20 +14024,20 @@ func (c *ClientWithResponses) CreatePrivateImageWithBodyWithResponse(ctx context
 	return ParseCreatePrivateImageResponse(rsp)
 }
 
-// CreatePrivateImageWithResponse 将云服务器制作为镜像
+// CreatePrivateImageWithResponse Capture an instance as a private image
 //
-// 依据云服务器的系统盘制作，数据盘不包含在内。制作出的镜像可用于创建云服务器或重装系统，并在源云服务器释放后继续可用。
+// Captured from the system disk of the instance; data disks are not included. The resulting image can create instances and rebuild them, and remains usable after the source instance is released.
 //
-// **镜像内容取自开始制作的那一刻，此后对云服务器的改动不会包含在内。**
+// **The image reflects the moment the capture started. Later changes to the instance are not included.**
 //
-// 制作分两个阶段，请轮询查看接口：
+// The capture has two phases. Poll the retrieve endpoint:
 //
-// - `provisioning` 正在读取系统盘，通常数十秒。此阶段云服务器可以继续使用，但为保证一致性建议先关机。
-// - `uploading` 已与系统盘无关，**此时即可开机，无需等待制作完成**。该阶段耗时与系统盘容量成正比，20 GB 约需 3 分钟。
+// - `provisioning` — the system disk is being read, usually for tens of seconds. The instance remains usable during this phase, although stopping it first is recommended for consistency.
+// - `uploading` — no longer tied to the system disk. **The instance may be started at this point; there is no need to wait for the capture to finish.** The duration of this phase is proportional to the size of the system disk, roughly 3 minutes for 20 GB.
 //
-// 运行中的云服务器其文件系统可能处于写入中间状态，制作出的镜像等同于一次断电后的磁盘内容。对一致性有要求时，请在开始制作前关机，并在状态变为 `uploading` 后开机。
+// The file system of a running instance may be captured mid-write, in which case the image is equivalent to the disk contents after a power loss. Where consistency matters, stop the instance before starting the capture and start it again once the status becomes `uploading`.
 //
-// 制作期间该云服务器可以正常启停与使用，但无法释放。
+// The instance can be started, stopped and used normally during the capture, but cannot be released.
 //
 // Takes a body of the `application/json` content type, and returns a wrapper object for the known response body format(s).
 //
@@ -14050,11 +14050,11 @@ func (c *ClientWithResponses) CreatePrivateImageWithResponse(ctx context.Context
 	return ParseCreatePrivateImageResponse(rsp)
 }
 
-// DeletePrivateImageWithResponse 删除自制镜像
+// DeletePrivateImageWithResponse Delete a private image
 //
-// 仍有云服务器由该镜像创建时，删除会被拒绝：这些云服务器需要它才能重装系统。
+// Deletion is rejected while instances created from the image still exist, as they need it in order to be rebuilt.
 //
-// 制作尚未完成的镜像也可以删除，制作会被终止。
+// An image whose capture has not finished can be deleted; the capture is aborted.
 //
 // Returns a wrapper object for the known response body format(s).
 //
@@ -14067,9 +14067,9 @@ func (c *ClientWithResponses) DeletePrivateImageWithResponse(ctx context.Context
 	return ParseDeletePrivateImageResponse(rsp)
 }
 
-// GetPrivateImageWithResponse 查看自制镜像
+// GetPrivateImageWithResponse Retrieve a private image
 //
-// 轮询制作进度请使用本接口。status 为 error 时，failure 给出失败原因。.
+// Use this endpoint to poll capture progress. When `status` is `error`, `failure` states the reason.
 //
 // Returns a wrapper object for the known response body format(s).
 //
@@ -14082,7 +14082,7 @@ func (c *ClientWithResponses) GetPrivateImageWithResponse(ctx context.Context, p
 	return ParseGetPrivateImageResponse(rsp)
 }
 
-// RenamePrivateImageWithBodyWithResponse 重命名自制镜像
+// RenamePrivateImageWithBodyWithResponse Rename a private image
 //
 // Takes any type of body and a specified content type, and returns a wrapper object for the known response body format(s).
 //
@@ -14095,7 +14095,7 @@ func (c *ClientWithResponses) RenamePrivateImageWithBodyWithResponse(ctx context
 	return ParseRenamePrivateImageResponse(rsp)
 }
 
-// RenamePrivateImageWithResponse 重命名自制镜像
+// RenamePrivateImageWithResponse Rename a private image
 //
 // Takes a body of the `application/json` content type, and returns a wrapper object for the known response body format(s).
 //
@@ -14108,7 +14108,7 @@ func (c *ClientWithResponses) RenamePrivateImageWithResponse(ctx context.Context
 	return ParseRenamePrivateImageResponse(rsp)
 }
 
-// ListPrivateNetworksWithResponse 列出私有网络
+// ListPrivateNetworksWithResponse List private networks
 //
 // Returns a wrapper object for the known response body format(s).
 //
@@ -14121,9 +14121,9 @@ func (c *ClientWithResponses) ListPrivateNetworksWithResponse(ctx context.Contex
 	return ParseListPrivateNetworksResponse(rsp)
 }
 
-// CreatePrivateNetworkWithBodyWithResponse 创建私有网络
+// CreatePrivateNetworkWithBodyWithResponse Create a private network
 //
-// 同时创建一张网络、一台路由器和一个默认安全组。默认安全组拒绝全部入站流量、放行全部出站流量。.
+// Creates a network, a router and a default security group in one call. The default security group denies all inbound traffic and permits all outbound traffic.
 //
 // Takes any type of body and a specified content type, and returns a wrapper object for the known response body format(s).
 //
@@ -14136,9 +14136,9 @@ func (c *ClientWithResponses) CreatePrivateNetworkWithBodyWithResponse(ctx conte
 	return ParseCreatePrivateNetworkResponse(rsp)
 }
 
-// CreatePrivateNetworkWithResponse 创建私有网络
+// CreatePrivateNetworkWithResponse Create a private network
 //
-// 同时创建一张网络、一台路由器和一个默认安全组。默认安全组拒绝全部入站流量、放行全部出站流量。.
+// Creates a network, a router and a default security group in one call. The default security group denies all inbound traffic and permits all outbound traffic.
 //
 // Takes a body of the `application/json` content type, and returns a wrapper object for the known response body format(s).
 //
@@ -14151,9 +14151,9 @@ func (c *ClientWithResponses) CreatePrivateNetworkWithResponse(ctx context.Conte
 	return ParseCreatePrivateNetworkResponse(rsp)
 }
 
-// DeletePrivateNetworkWithResponse 释放私有网络
+// DeletePrivateNetworkWithResponse Release a private network
 //
-// 其中仍有云服务器或网卡时，释放会被拒绝。IPv6、路由器与安全组随之一并释放。.
+// Release is rejected while instances or network interfaces remain in the network. IPv6, the router and the security groups are released with it.
 //
 // Returns a wrapper object for the known response body format(s).
 //
@@ -14166,7 +14166,7 @@ func (c *ClientWithResponses) DeletePrivateNetworkWithResponse(ctx context.Conte
 	return ParseDeletePrivateNetworkResponse(rsp)
 }
 
-// GetPrivateNetworkWithResponse 查看私有网络
+// GetPrivateNetworkWithResponse Retrieve a private network
 //
 // Returns a wrapper object for the known response body format(s).
 //
@@ -14179,9 +14179,9 @@ func (c *ClientWithResponses) GetPrivateNetworkWithResponse(ctx context.Context,
 	return ParseGetPrivateNetworkResponse(rsp)
 }
 
-// RenamePrivateNetworkWithBodyWithResponse 重命名私有网络
+// RenamePrivateNetworkWithBodyWithResponse Rename a private network
 //
-// 仅修改显示名称。网段、路由与外网网关均不可修改。.
+// Changes the display name only. The CIDR, the routes and the internet gateway are immutable.
 //
 // Takes any type of body and a specified content type, and returns a wrapper object for the known response body format(s).
 //
@@ -14194,9 +14194,9 @@ func (c *ClientWithResponses) RenamePrivateNetworkWithBodyWithResponse(ctx conte
 	return ParseRenamePrivateNetworkResponse(rsp)
 }
 
-// RenamePrivateNetworkWithResponse 重命名私有网络
+// RenamePrivateNetworkWithResponse Rename a private network
 //
-// 仅修改显示名称。网段、路由与外网网关均不可修改。.
+// Changes the display name only. The CIDR, the routes and the internet gateway are immutable.
 //
 // Takes a body of the `application/json` content type, and returns a wrapper object for the known response body format(s).
 //
@@ -14209,9 +14209,9 @@ func (c *ClientWithResponses) RenamePrivateNetworkWithResponse(ctx context.Conte
 	return ParseRenamePrivateNetworkResponse(rsp)
 }
 
-// DisablePrivateNetworkIpv6WithResponse 关闭私有网络的 IPv6
+// DisablePrivateNetworkIpv6WithResponse Disable IPv6 on a private network
 //
-// 释放的前缀不会立即重新分配。.
+// A released prefix is not re-allocated immediately.
 //
 // Returns a wrapper object for the known response body format(s).
 //
@@ -14224,7 +14224,7 @@ func (c *ClientWithResponses) DisablePrivateNetworkIpv6WithResponse(ctx context.
 	return ParseDisablePrivateNetworkIpv6Response(rsp)
 }
 
-// GetPrivateNetworkIpv6WithResponse 查看私有网络的 IPv6
+// GetPrivateNetworkIpv6WithResponse Retrieve the IPv6 configuration of a private network
 //
 // Returns a wrapper object for the known response body format(s).
 //
@@ -14237,11 +14237,11 @@ func (c *ClientWithResponses) GetPrivateNetworkIpv6WithResponse(ctx context.Cont
 	return ParseGetPrivateNetworkIpv6Response(rsp)
 }
 
-// EnablePrivateNetworkIpv6WithResponse 为私有网络启用 IPv6
+// EnablePrivateNetworkIpv6WithResponse Enable IPv6 on a private network
 //
-// 为该私有网络分配一段 IPv6 地址。地址由私有网络自动下发至云服务器，无需也无法单独申领，也不占用公网 IPv4。
+// Allocates an IPv6 prefix to the private network. Addresses are assigned to instances by the network itself, can be neither requested nor released individually, and consume no public IPv4 address.
 //
-// 该私有网络尚未接入外网时会自动接入，无需单独操作。
+// If the private network is not yet connected to the internet, connectivity is established as part of this call.
 //
 // Returns a wrapper object for the known response body format(s).
 //
@@ -14254,7 +14254,7 @@ func (c *ClientWithResponses) EnablePrivateNetworkIpv6WithResponse(ctx context.C
 	return ParseEnablePrivateNetworkIpv6Response(rsp)
 }
 
-// ListRoutesWithResponse 列出静态路由
+// ListRoutesWithResponse List static routes
 //
 // Returns a wrapper object for the known response body format(s).
 //
@@ -14267,9 +14267,9 @@ func (c *ClientWithResponses) ListRoutesWithResponse(ctx context.Context, privat
 	return ParseListRoutesResponse(rsp)
 }
 
-// CreateRouteWithBodyWithResponse 创建静态路由
+// CreateRouteWithBodyWithResponse Create a static route
 //
-// 以下三种会导致网络中断的写法会被拒绝：目的网段为 0.0.0.0/0（覆盖默认路由，所有公网 IP 立即失效）、目的网段为某个子网自身（覆盖直连路由）、下一跳为某个子网的网关（指回路由器自身）。
+// Three forms that would sever connectivity are rejected: a destination of `0.0.0.0/0`, which overrides the default route and takes every floating IP offline immediately; a destination equal to the CIDR of a subnet, which overrides its directly connected route; and a next hop equal to the gateway of a subnet, which points back at the router itself.
 //
 // Takes any type of body and a specified content type, and returns a wrapper object for the known response body format(s).
 //
@@ -14282,9 +14282,9 @@ func (c *ClientWithResponses) CreateRouteWithBodyWithResponse(ctx context.Contex
 	return ParseCreateRouteResponse(rsp)
 }
 
-// CreateRouteWithResponse 创建静态路由
+// CreateRouteWithResponse Create a static route
 //
-// 以下三种会导致网络中断的写法会被拒绝：目的网段为 0.0.0.0/0（覆盖默认路由，所有公网 IP 立即失效）、目的网段为某个子网自身（覆盖直连路由）、下一跳为某个子网的网关（指回路由器自身）。
+// Three forms that would sever connectivity are rejected: a destination of `0.0.0.0/0`, which overrides the default route and takes every floating IP offline immediately; a destination equal to the CIDR of a subnet, which overrides its directly connected route; and a next hop equal to the gateway of a subnet, which points back at the router itself.
 //
 // Takes a body of the `application/json` content type, and returns a wrapper object for the known response body format(s).
 //
@@ -14297,7 +14297,7 @@ func (c *ClientWithResponses) CreateRouteWithResponse(ctx context.Context, priva
 	return ParseCreateRouteResponse(rsp)
 }
 
-// DeleteRouteWithResponse 删除静态路由
+// DeleteRouteWithResponse Delete a static route
 //
 // Returns a wrapper object for the known response body format(s).
 //
@@ -14310,9 +14310,9 @@ func (c *ClientWithResponses) DeleteRouteWithResponse(ctx context.Context, priva
 	return ParseDeleteRouteResponse(rsp)
 }
 
-// ListSubnetsWithResponse 列出子网
+// ListSubnetsWithResponse List subnets
 //
-// IPv6 子网也在返回结果中，ip_version 为 6。它在启用 IPv6 时自动创建，不可单独删除。.
+// IPv6 subnets are included, with `ip_version` 6. They are created when IPv6 is enabled and cannot be deleted individually.
 //
 // Returns a wrapper object for the known response body format(s).
 //
@@ -14325,7 +14325,7 @@ func (c *ClientWithResponses) ListSubnetsWithResponse(ctx context.Context, priva
 	return ParseListSubnetsResponse(rsp)
 }
 
-// CreateSubnetWithBodyWithResponse 创建子网
+// CreateSubnetWithBodyWithResponse Create a subnet
 //
 // Takes any type of body and a specified content type, and returns a wrapper object for the known response body format(s).
 //
@@ -14338,7 +14338,7 @@ func (c *ClientWithResponses) CreateSubnetWithBodyWithResponse(ctx context.Conte
 	return ParseCreateSubnetResponse(rsp)
 }
 
-// CreateSubnetWithResponse 创建子网
+// CreateSubnetWithResponse Create a subnet
 //
 // Takes a body of the `application/json` content type, and returns a wrapper object for the known response body format(s).
 //
@@ -14351,9 +14351,9 @@ func (c *ClientWithResponses) CreateSubnetWithResponse(ctx context.Context, priv
 	return ParseCreateSubnetResponse(rsp)
 }
 
-// SuggestSubnetCidrWithResponse 推荐下一个空闲网段
+// SuggestSubnetCidrWithResponse Suggest the next free CIDR
 //
-// 返回的只是建议值，创建子网时仍会重新校验。用于避免手工计算下一个空闲网段时出错。.
+// The returned value is a suggestion and is validated again when the subnet is created. It exists to avoid errors when computing the next free CIDR by hand.
 //
 // Returns a wrapper object for the known response body format(s).
 //
@@ -14366,9 +14366,9 @@ func (c *ClientWithResponses) SuggestSubnetCidrWithResponse(ctx context.Context,
 	return ParseSuggestSubnetCidrResponse(rsp)
 }
 
-// DeleteSubnetWithResponse 删除子网
+// DeleteSubnetWithResponse Delete a subnet
 //
-// 该子网中仍有网卡，或仍有静态路由的下一跳落在该网段内时，删除会被拒绝。.
+// Deletion is rejected while network interfaces remain in the subnet, or while a static route has a next hop inside its CIDR.
 //
 // Returns a wrapper object for the known response body format(s).
 //
@@ -14381,7 +14381,7 @@ func (c *ClientWithResponses) DeleteSubnetWithResponse(ctx context.Context, priv
 	return ParseDeleteSubnetResponse(rsp)
 }
 
-// ListRegionsWithResponse 列出可用的地区
+// ListRegionsWithResponse List available regions
 //
 // Returns a wrapper object for the known response body format(s).
 //
@@ -14394,9 +14394,9 @@ func (c *ClientWithResponses) ListRegionsWithResponse(ctx context.Context, reqEd
 	return ParseListRegionsResponse(rsp)
 }
 
-// ListAvailabilityZonesWithResponse 列出一个地区的可用区
+// ListAvailabilityZonesWithResponse List the availability zones of a region
 //
-// 云硬盘与云服务器必须位于同一可用区才能挂载，创建前请确认所选可用区。.
+// A disk and an instance must reside in the same availability zone to be attached. Confirm the zone before creating either.
 //
 // Returns a wrapper object for the known response body format(s).
 //
@@ -14409,7 +14409,7 @@ func (c *ClientWithResponses) ListAvailabilityZonesWithResponse(ctx context.Cont
 	return ParseListAvailabilityZonesResponse(rsp)
 }
 
-// ListSecurityGroupsWithResponse 列出安全组
+// ListSecurityGroupsWithResponse List security groups
 //
 // Returns a wrapper object for the known response body format(s).
 //
@@ -14422,9 +14422,9 @@ func (c *ClientWithResponses) ListSecurityGroupsWithResponse(ctx context.Context
 	return ParseListSecurityGroupsResponse(rsp)
 }
 
-// CreateSecurityGroupWithBodyWithResponse 创建安全组
+// CreateSecurityGroupWithBodyWithResponse Create a security group
 //
-// 新建的安全组带有一条规则：放行 ICMP 需要分片（type 3 code 4）。缺少该规则会导致路径 MTU 发现失败，表现为连接建立后传输大数据包时卡住。.
+// A new security group carries one rule, permitting ICMP fragmentation-needed messages (type 3, code 4). Without it path MTU discovery fails, which presents as connections that establish and then stall on large packets.
 //
 // Takes any type of body and a specified content type, and returns a wrapper object for the known response body format(s).
 //
@@ -14437,9 +14437,9 @@ func (c *ClientWithResponses) CreateSecurityGroupWithBodyWithResponse(ctx contex
 	return ParseCreateSecurityGroupResponse(rsp)
 }
 
-// CreateSecurityGroupWithResponse 创建安全组
+// CreateSecurityGroupWithResponse Create a security group
 //
-// 新建的安全组带有一条规则：放行 ICMP 需要分片（type 3 code 4）。缺少该规则会导致路径 MTU 发现失败，表现为连接建立后传输大数据包时卡住。.
+// A new security group carries one rule, permitting ICMP fragmentation-needed messages (type 3, code 4). Without it path MTU discovery fails, which presents as connections that establish and then stall on large packets.
 //
 // Takes a body of the `application/json` content type, and returns a wrapper object for the known response body format(s).
 //
@@ -14452,9 +14452,9 @@ func (c *ClientWithResponses) CreateSecurityGroupWithResponse(ctx context.Contex
 	return ParseCreateSecurityGroupResponse(rsp)
 }
 
-// DeleteSecurityGroupWithResponse 删除安全组
+// DeleteSecurityGroupWithResponse Delete a security group
 //
-// 默认安全组不可删除，它随私有网络一并释放。仍被网卡引用的安全组也无法删除。.
+// The default security group cannot be deleted, as it is released with the private network. A security group still referenced by a network interface cannot be deleted either.
 //
 // Returns a wrapper object for the known response body format(s).
 //
@@ -14467,7 +14467,7 @@ func (c *ClientWithResponses) DeleteSecurityGroupWithResponse(ctx context.Contex
 	return ParseDeleteSecurityGroupResponse(rsp)
 }
 
-// GetSecurityGroupWithResponse 查看安全组
+// GetSecurityGroupWithResponse Retrieve a security group
 //
 // Returns a wrapper object for the known response body format(s).
 //
@@ -14480,9 +14480,9 @@ func (c *ClientWithResponses) GetSecurityGroupWithResponse(ctx context.Context, 
 	return ParseGetSecurityGroupResponse(rsp)
 }
 
-// RenameSecurityGroupWithBodyWithResponse 重命名安全组
+// RenameSecurityGroupWithBodyWithResponse Rename a security group
 //
-// 仅可修改名称，规则请用规则接口。.
+// Changes the name only. Use the rule endpoints to change rules.
 //
 // Takes any type of body and a specified content type, and returns a wrapper object for the known response body format(s).
 //
@@ -14495,9 +14495,9 @@ func (c *ClientWithResponses) RenameSecurityGroupWithBodyWithResponse(ctx contex
 	return ParseRenameSecurityGroupResponse(rsp)
 }
 
-// RenameSecurityGroupWithResponse 重命名安全组
+// RenameSecurityGroupWithResponse Rename a security group
 //
-// 仅可修改名称，规则请用规则接口。.
+// Changes the name only. Use the rule endpoints to change rules.
 //
 // Takes a body of the `application/json` content type, and returns a wrapper object for the known response body format(s).
 //
@@ -14510,7 +14510,7 @@ func (c *ClientWithResponses) RenameSecurityGroupWithResponse(ctx context.Contex
 	return ParseRenameSecurityGroupResponse(rsp)
 }
 
-// ListSecurityGroupRulesWithResponse 列出安全组规则
+// ListSecurityGroupRulesWithResponse List security group rules
 //
 // Returns a wrapper object for the known response body format(s).
 //
@@ -14523,9 +14523,9 @@ func (c *ClientWithResponses) ListSecurityGroupRulesWithResponse(ctx context.Con
 	return ParseListSecurityGroupRulesResponse(rsp)
 }
 
-// CreateSecurityGroupRuleWithBodyWithResponse 创建安全组规则
+// CreateSecurityGroupRuleWithBodyWithResponse Create a security group rule
 //
-// 重复添加同一条规则会被拒绝。判重时 `0.0.0.0/0`、`::/0` 与留空视为等同。
+// Adding an identical rule twice is rejected. For that comparison `0.0.0.0/0`, `::/0` and an omitted value are treated as equivalent.
 //
 // Takes any type of body and a specified content type, and returns a wrapper object for the known response body format(s).
 //
@@ -14538,9 +14538,9 @@ func (c *ClientWithResponses) CreateSecurityGroupRuleWithBodyWithResponse(ctx co
 	return ParseCreateSecurityGroupRuleResponse(rsp)
 }
 
-// CreateSecurityGroupRuleWithResponse 创建安全组规则
+// CreateSecurityGroupRuleWithResponse Create a security group rule
 //
-// 重复添加同一条规则会被拒绝。判重时 `0.0.0.0/0`、`::/0` 与留空视为等同。
+// Adding an identical rule twice is rejected. For that comparison `0.0.0.0/0`, `::/0` and an omitted value are treated as equivalent.
 //
 // Takes a body of the `application/json` content type, and returns a wrapper object for the known response body format(s).
 //
@@ -14553,7 +14553,7 @@ func (c *ClientWithResponses) CreateSecurityGroupRuleWithResponse(ctx context.Co
 	return ParseCreateSecurityGroupRuleResponse(rsp)
 }
 
-// DeleteSecurityGroupRuleWithResponse 删除安全组规则
+// DeleteSecurityGroupRuleWithResponse Delete a security group rule
 //
 // Returns a wrapper object for the known response body format(s).
 //
@@ -14566,7 +14566,7 @@ func (c *ClientWithResponses) DeleteSecurityGroupRuleWithResponse(ctx context.Co
 	return ParseDeleteSecurityGroupRuleResponse(rsp)
 }
 
-// ListSnapshotsWithResponse 列出快照
+// ListSnapshotsWithResponse List snapshots
 //
 // Returns a wrapper object for the known response body format(s).
 //
@@ -14579,11 +14579,11 @@ func (c *ClientWithResponses) ListSnapshotsWithResponse(ctx context.Context, par
 	return ParseListSnapshotsResponse(rsp)
 }
 
-// CreateSnapshotWithBodyWithResponse 创建快照
+// CreateSnapshotWithBodyWithResponse Create a snapshot
 //
-// 运行中云服务器上挂载的云硬盘同样可以创建快照。快照记录的是某一时刻的块设备状态，文件系统层面可能不一致，重要数据建议先在云服务器内执行 sync。
+// Disks attached to a running instance can be snapshotted. A snapshot records the state of the block device at a point in time and may be inconsistent at the file-system level, so run `sync` inside the instance first where the data matters.
 //
-// **系统盘的快照不能用于回滚该系统盘**：回滚要求先从云服务器上卸载，而系统盘不可卸载。它可用于创建一块新的数据盘。需要保留并恢复整个系统时，请使用自制镜像；需要可跨可用区、且在云硬盘删除后仍可恢复的副本时，请使用备份。
+// **A snapshot of a system disk cannot be used to revert that system disk**: reverting requires the disk to be detached, and a system disk cannot be detached. It can be used to create a new data disk. To preserve and restore an entire system, use a private image; for a copy that crosses availability zones and survives deletion of the disk, use a backup.
 //
 // Takes any type of body and a specified content type, and returns a wrapper object for the known response body format(s).
 //
@@ -14596,11 +14596,11 @@ func (c *ClientWithResponses) CreateSnapshotWithBodyWithResponse(ctx context.Con
 	return ParseCreateSnapshotResponse(rsp)
 }
 
-// CreateSnapshotWithResponse 创建快照
+// CreateSnapshotWithResponse Create a snapshot
 //
-// 运行中云服务器上挂载的云硬盘同样可以创建快照。快照记录的是某一时刻的块设备状态，文件系统层面可能不一致，重要数据建议先在云服务器内执行 sync。
+// Disks attached to a running instance can be snapshotted. A snapshot records the state of the block device at a point in time and may be inconsistent at the file-system level, so run `sync` inside the instance first where the data matters.
 //
-// **系统盘的快照不能用于回滚该系统盘**：回滚要求先从云服务器上卸载，而系统盘不可卸载。它可用于创建一块新的数据盘。需要保留并恢复整个系统时，请使用自制镜像；需要可跨可用区、且在云硬盘删除后仍可恢复的副本时，请使用备份。
+// **A snapshot of a system disk cannot be used to revert that system disk**: reverting requires the disk to be detached, and a system disk cannot be detached. It can be used to create a new data disk. To preserve and restore an entire system, use a private image; for a copy that crosses availability zones and survives deletion of the disk, use a backup.
 //
 // Takes a body of the `application/json` content type, and returns a wrapper object for the known response body format(s).
 //
@@ -14613,7 +14613,7 @@ func (c *ClientWithResponses) CreateSnapshotWithResponse(ctx context.Context, bo
 	return ParseCreateSnapshotResponse(rsp)
 }
 
-// DeleteSnapshotWithResponse 删除快照
+// DeleteSnapshotWithResponse Delete a snapshot
 //
 // Returns a wrapper object for the known response body format(s).
 //
@@ -14626,7 +14626,7 @@ func (c *ClientWithResponses) DeleteSnapshotWithResponse(ctx context.Context, sn
 	return ParseDeleteSnapshotResponse(rsp)
 }
 
-// GetSnapshotWithResponse 查看快照
+// GetSnapshotWithResponse Retrieve a snapshot
 //
 // Returns a wrapper object for the known response body format(s).
 //
@@ -14639,7 +14639,7 @@ func (c *ClientWithResponses) GetSnapshotWithResponse(ctx context.Context, snaps
 	return ParseGetSnapshotResponse(rsp)
 }
 
-// RenameSnapshotWithBodyWithResponse 重命名快照
+// RenameSnapshotWithBodyWithResponse Rename a snapshot
 //
 // Takes any type of body and a specified content type, and returns a wrapper object for the known response body format(s).
 //
@@ -14652,7 +14652,7 @@ func (c *ClientWithResponses) RenameSnapshotWithBodyWithResponse(ctx context.Con
 	return ParseRenameSnapshotResponse(rsp)
 }
 
-// RenameSnapshotWithResponse 重命名快照
+// RenameSnapshotWithResponse Rename a snapshot
 //
 // Takes a body of the `application/json` content type, and returns a wrapper object for the known response body format(s).
 //
