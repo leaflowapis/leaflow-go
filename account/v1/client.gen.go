@@ -178,6 +178,48 @@ func (e ProjectResourceStatus) Valid() bool {
 	}
 }
 
+// Defines values for SettingsResourceProjectCreationMode.
+const (
+	SettingsResourceProjectCreationModeCLOSED       SettingsResourceProjectCreationMode = "CLOSED"
+	SettingsResourceProjectCreationModeOPEN         SettingsResourceProjectCreationMode = "OPEN"
+	SettingsResourceProjectCreationModeVERIFIEDONLY SettingsResourceProjectCreationMode = "VERIFIED_ONLY"
+)
+
+// Valid indicates whether the value is a known member of the SettingsResourceProjectCreationMode enum.
+func (e SettingsResourceProjectCreationMode) Valid() bool {
+	switch e {
+	case SettingsResourceProjectCreationModeCLOSED:
+		return true
+	case SettingsResourceProjectCreationModeOPEN:
+		return true
+	case SettingsResourceProjectCreationModeVERIFIEDONLY:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for SettingsResourceRegistrationMode.
+const (
+	SettingsResourceRegistrationModeCLOSED     SettingsResourceRegistrationMode = "CLOSED"
+	SettingsResourceRegistrationModeINVITEONLY SettingsResourceRegistrationMode = "INVITE_ONLY"
+	SettingsResourceRegistrationModeOPEN       SettingsResourceRegistrationMode = "OPEN"
+)
+
+// Valid indicates whether the value is a known member of the SettingsResourceRegistrationMode enum.
+func (e SettingsResourceRegistrationMode) Valid() bool {
+	switch e {
+	case SettingsResourceRegistrationModeCLOSED:
+		return true
+	case SettingsResourceRegistrationModeINVITEONLY:
+		return true
+	case SettingsResourceRegistrationModeOPEN:
+		return true
+	default:
+		return false
+	}
+}
+
 // Defines values for ListProjectsParamsStatus.
 const (
 	ListProjectsParamsStatusACTIVE    ListProjectsParamsStatus = "ACTIVE"
@@ -425,6 +467,27 @@ type RegisterRequestBody struct {
 	// Consents 当前生效的必签文件全部要在里面，版本号要和 GET /api/v1/agreements 给的一致
 	Consents []ConsentBody `json:"consents"`
 }
+
+// SettingsResource defines model for SettingsResource.
+type SettingsResource struct {
+	// MaxMembersPerProject 一个项目最多几个成员，0 表示不限
+	MaxMembersPerProject int64 `json:"max_members_per_project"`
+
+	// MaxProjectsPerUser 你最多能当几个项目的所有者，0 表示不限。已删除的项目不算在内
+	MaxProjectsPerUser int64 `json:"max_projects_per_user"`
+
+	// ProjectCreationMode VERIFIED_ONLY 要求先过实名，审核中不算
+	ProjectCreationMode SettingsResourceProjectCreationMode `json:"project_creation_mode"`
+
+	// RegistrationMode INVITE_ONLY 是只收手上有项目邀请的邮箱
+	RegistrationMode SettingsResourceRegistrationMode `json:"registration_mode"`
+}
+
+// SettingsResourceProjectCreationMode VERIFIED_ONLY 要求先过实名，审核中不算
+type SettingsResourceProjectCreationMode string
+
+// SettingsResourceRegistrationMode INVITE_ONLY 是只收手上有项目邀请的邮箱
+type SettingsResourceRegistrationMode string
 
 // SubmitIdentityVerificationRequestBody defines model for SubmitIdentityVerificationRequestBody.
 type SubmitIdentityVerificationRequestBody struct {
@@ -714,6 +777,17 @@ type ClientInterface interface {
 	//
 	// Corresponds with POST /account/v1/register (the `Register` operationId).
 	Register(ctx context.Context, body RegisterJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// GetSettings 这个平台现在收不收人
+	//
+	// 注册页和「新建项目」按钮用它决定画什么。不需要令牌。
+	//
+	// `registration_mode` 不是 `OPEN` 时 `POST /account/v1/register` 会答 403：`CLOSED` 是整个关着，`INVITE_ONLY` 是只收手上有项目邀请的邮箱。`project_creation_mode` 同理，`VERIFIED_ONLY` 要先过实名。
+	//
+	// 两条配额是 0 表示不限。它们只用来提前提示，真正的判定在写入那一刻。
+	//
+	// Corresponds with GET /account/v1/settings (the `GetSettings` operationId).
+	GetSettings(ctx context.Context, reqEditors ...RequestEditorFn) (*http.Response, error)
 }
 
 // ListAgreements 列出注册必须同意的文件
@@ -1050,6 +1124,27 @@ func (c *Client) RegisterWithBody(ctx context.Context, contentType string, body 
 // Corresponds with POST /account/v1/register (the `Register` operationId).
 func (c *Client) Register(ctx context.Context, body RegisterJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
 	req, err := NewRegisterRequest(c.Server, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+// GetSettings 这个平台现在收不收人
+//
+// 注册页和「新建项目」按钮用它决定画什么。不需要令牌。
+//
+// `registration_mode` 不是 `OPEN` 时 `POST /account/v1/register` 会答 403：`CLOSED` 是整个关着，`INVITE_ONLY` 是只收手上有项目邀请的邮箱。`project_creation_mode` 同理，`VERIFIED_ONLY` 要先过实名。
+//
+// 两条配额是 0 表示不限。它们只用来提前提示，真正的判定在写入那一刻。
+//
+// Corresponds with GET /account/v1/settings (the `GetSettings` operationId).
+func (c *Client) GetSettings(ctx context.Context, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewGetSettingsRequest(c.Server)
 	if err != nil {
 		return nil, err
 	}
@@ -1592,6 +1687,33 @@ func NewRegisterRequestWithBody(server string, contentType string, body io.Reade
 	return req, nil
 }
 
+// NewGetSettingsRequest constructs an http.Request for the GetSettings method
+func NewGetSettingsRequest(server string) (*http.Request, error) {
+	var err error
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/account/v1/settings")
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest(http.MethodGet, queryURL.String(), nil)
+	if err != nil {
+		return nil, err
+	}
+
+	return req, nil
+}
+
 func (c *Client) applyEditors(ctx context.Context, req *http.Request, additionalEditors []RequestEditorFn) error {
 	for _, r := range c.RequestEditors {
 		if err := r(ctx, req); err != nil {
@@ -1815,6 +1937,19 @@ type ClientWithResponsesInterface interface {
 	//
 	// Corresponds with POST /account/v1/register (the `Register` operationId).
 	RegisterWithResponse(ctx context.Context, body RegisterJSONRequestBody, reqEditors ...RequestEditorFn) (*RegisterResponse, error)
+
+	// GetSettingsWithResponse 这个平台现在收不收人
+	//
+	// 注册页和「新建项目」按钮用它决定画什么。不需要令牌。
+	//
+	// `registration_mode` 不是 `OPEN` 时 `POST /account/v1/register` 会答 403：`CLOSED` 是整个关着，`INVITE_ONLY` 是只收手上有项目邀请的邮箱。`project_creation_mode` 同理，`VERIFIED_ONLY` 要先过实名。
+	//
+	// 两条配额是 0 表示不限。它们只用来提前提示，真正的判定在写入那一刻。
+	//
+	// Returns a wrapper object for the known response body format(s).
+	//
+	// Corresponds with GET /account/v1/settings (the `GetSettings` operationId).
+	GetSettingsWithResponse(ctx context.Context, reqEditors ...RequestEditorFn) (*GetSettingsResponse, error)
 }
 
 type ListAgreementsResponse struct {
@@ -2441,6 +2576,54 @@ func (r RegisterResponse) ContentType() string {
 	return ""
 }
 
+type GetSettingsResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	// JSON200 the response for an HTTP 200 `application/json` response
+	JSON200 *SettingsResource
+	// JSONDefault the response for an HTTP default `application/json` response
+	JSONDefault *Error
+}
+
+// GetJSON200 returns the response for an HTTP 200 `application/json` response
+func (r GetSettingsResponse) GetJSON200() *SettingsResource {
+	return r.JSON200
+}
+
+// GetJSONDefault returns the response for an HTTP default `application/json` response
+func (r GetSettingsResponse) GetJSONDefault() *Error {
+	return r.JSONDefault
+}
+
+// GetBody returns the raw response body bytes
+func (r GetSettingsResponse) GetBody() []byte {
+	return r.Body
+}
+
+// Status returns HTTPResponse.Status
+func (r GetSettingsResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r GetSettingsResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+// ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
+func (r GetSettingsResponse) ContentType() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Header.Get("Content-Type")
+	}
+	return ""
+}
+
 // ListAgreementsWithResponse 列出注册必须同意的文件
 //
 // 注册页显示它，用户同意之后把每一项的 `type` 和 `version` 原样回传给 `POST /api/v1/register`。
@@ -2727,6 +2910,25 @@ func (c *ClientWithResponses) RegisterWithResponse(ctx context.Context, body Reg
 		return nil, err
 	}
 	return ParseRegisterResponse(rsp)
+}
+
+// GetSettingsWithResponse 这个平台现在收不收人
+//
+// 注册页和「新建项目」按钮用它决定画什么。不需要令牌。
+//
+// `registration_mode` 不是 `OPEN` 时 `POST /account/v1/register` 会答 403：`CLOSED` 是整个关着，`INVITE_ONLY` 是只收手上有项目邀请的邮箱。`project_creation_mode` 同理，`VERIFIED_ONLY` 要先过实名。
+//
+// 两条配额是 0 表示不限。它们只用来提前提示，真正的判定在写入那一刻。
+//
+// Returns a wrapper object for the known response body format(s).
+//
+// Corresponds with GET /account/v1/settings (the `GetSettings` operationId).
+func (c *ClientWithResponses) GetSettingsWithResponse(ctx context.Context, reqEditors ...RequestEditorFn) (*GetSettingsResponse, error) {
+	rsp, err := c.GetSettings(ctx, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseGetSettingsResponse(rsp)
 }
 
 // ParseListAgreementsResponse parses an HTTP response from a ListAgreementsWithResponse call
@@ -3145,6 +3347,39 @@ func ParseRegisterResponse(rsp *http.Response) (*RegisterResponse, error) {
 			return nil, err
 		}
 		response.JSON201 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && true:
+		var dest Error
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSONDefault = &dest
+
+	}
+
+	return response, nil
+}
+
+// ParseGetSettingsResponse parses an HTTP response from a GetSettingsWithResponse call
+func ParseGetSettingsResponse(rsp *http.Response) (*GetSettingsResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &GetSettingsResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest SettingsResource
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
 
 	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && true:
 		var dest Error

@@ -702,6 +702,66 @@ func (s *RegisterRequestBody) Validate() error {
 	return nil
 }
 
+func (s *SettingsResource) Validate() error {
+	if s == nil {
+		return validate.ErrNilPointer
+	}
+
+	var failures []validate.FieldError
+	if err := func() error {
+		if err := s.ProjectCreationMode.Validate(); err != nil {
+			return err
+		}
+		return nil
+	}(); err != nil {
+		failures = append(failures, validate.FieldError{
+			Name:  "project_creation_mode",
+			Error: err,
+		})
+	}
+	if err := func() error {
+		if err := s.RegistrationMode.Validate(); err != nil {
+			return err
+		}
+		return nil
+	}(); err != nil {
+		failures = append(failures, validate.FieldError{
+			Name:  "registration_mode",
+			Error: err,
+		})
+	}
+	if len(failures) > 0 {
+		return &validate.Error{Fields: failures}
+	}
+	return nil
+}
+
+func (s SettingsResourceProjectCreationMode) Validate() error {
+	switch s {
+	case "OPEN":
+		return nil
+	case "VERIFIED_ONLY":
+		return nil
+	case "CLOSED":
+		return nil
+	default:
+		return errors.Errorf("invalid value: %v", s)
+	}
+}
+
+func (s SettingsResourceRegistrationMode) Validate() error {
+	switch s {
+	case "OPEN":
+		return nil
+	case "INVITE_ONLY":
+		return nil
+	case "CLOSED":
+		return nil
+	default:
+		return errors.Errorf("invalid value: %v", s)
+	}
+}
+
 func (s *SubmitIdentityVerificationRequestBody) Validate() error {
 	if s == nil {
 		return validate.ErrNilPointer

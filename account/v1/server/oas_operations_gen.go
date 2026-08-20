@@ -13,6 +13,7 @@ const (
 	ExchangeProjectTokenOperation       OperationName = "ExchangeProjectToken"
 	GetAccountOperation                 OperationName = "GetAccount"
 	GetIdentityVerificationOperation    OperationName = "GetIdentityVerification"
+	GetSettingsOperation                OperationName = "GetSettings"
 	ListAgreementsOperation             OperationName = "ListAgreements"
 	ListConsentsOperation               OperationName = "ListConsents"
 	ListMyInvitationsOperation          OperationName = "ListMyInvitations"

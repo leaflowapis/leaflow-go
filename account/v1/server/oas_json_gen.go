@@ -3454,6 +3454,233 @@ func (s *RegisterRequestBody) UnmarshalJSON(data []byte) error {
 }
 
 // Encode implements json.Marshaler.
+func (s *SettingsResource) Encode(e *jx.Encoder) {
+	e.ObjStart()
+	s.encodeFields(e)
+	e.ObjEnd()
+}
+
+// encodeFields encodes fields.
+func (s *SettingsResource) encodeFields(e *jx.Encoder) {
+	{
+		e.FieldStart("max_members_per_project")
+		e.Int64(s.MaxMembersPerProject)
+	}
+	{
+		e.FieldStart("max_projects_per_user")
+		e.Int64(s.MaxProjectsPerUser)
+	}
+	{
+		e.FieldStart("project_creation_mode")
+		s.ProjectCreationMode.Encode(e)
+	}
+	{
+		e.FieldStart("registration_mode")
+		s.RegistrationMode.Encode(e)
+	}
+}
+
+var jsonFieldsNameOfSettingsResource = [4]string{
+	0: "max_members_per_project",
+	1: "max_projects_per_user",
+	2: "project_creation_mode",
+	3: "registration_mode",
+}
+
+// Decode decodes SettingsResource from json.
+func (s *SettingsResource) Decode(d *jx.Decoder) error {
+	if s == nil {
+		return errors.New("invalid: unable to decode SettingsResource to nil")
+	}
+	var requiredBitSet [1]uint8
+
+	if err := d.ObjBytes(func(d *jx.Decoder, k []byte) error {
+		switch string(k) {
+		case "max_members_per_project":
+			requiredBitSet[0] |= 1 << 0
+			if err := func() error {
+				v, err := d.Int64()
+				s.MaxMembersPerProject = int64(v)
+				if err != nil {
+					return err
+				}
+				return nil
+			}(); err != nil {
+				return errors.Wrap(err, "decode field \"max_members_per_project\"")
+			}
+		case "max_projects_per_user":
+			requiredBitSet[0] |= 1 << 1
+			if err := func() error {
+				v, err := d.Int64()
+				s.MaxProjectsPerUser = int64(v)
+				if err != nil {
+					return err
+				}
+				return nil
+			}(); err != nil {
+				return errors.Wrap(err, "decode field \"max_projects_per_user\"")
+			}
+		case "project_creation_mode":
+			requiredBitSet[0] |= 1 << 2
+			if err := func() error {
+				if err := s.ProjectCreationMode.Decode(d); err != nil {
+					return err
+				}
+				return nil
+			}(); err != nil {
+				return errors.Wrap(err, "decode field \"project_creation_mode\"")
+			}
+		case "registration_mode":
+			requiredBitSet[0] |= 1 << 3
+			if err := func() error {
+				if err := s.RegistrationMode.Decode(d); err != nil {
+					return err
+				}
+				return nil
+			}(); err != nil {
+				return errors.Wrap(err, "decode field \"registration_mode\"")
+			}
+		default:
+			return errors.Errorf("unexpected field %q", k)
+		}
+		return nil
+	}); err != nil {
+		return errors.Wrap(err, "decode SettingsResource")
+	}
+	// Validate required fields.
+	var failures []validate.FieldError
+	for i, mask := range [1]uint8{
+		0b00001111,
+	} {
+		if result := (requiredBitSet[i] & mask) ^ mask; result != 0 {
+			// Mask only required fields and check equality to mask using XOR.
+			//
+			// If XOR result is not zero, result is not equal to expected, so some fields are missed.
+			// Bits of fields which would be set are actually bits of missed fields.
+			missed := bits.OnesCount8(result)
+			for bitN := 0; bitN < missed; bitN++ {
+				bitIdx := bits.TrailingZeros8(result)
+				fieldIdx := i*8 + bitIdx
+				var name string
+				if fieldIdx < len(jsonFieldsNameOfSettingsResource) {
+					name = jsonFieldsNameOfSettingsResource[fieldIdx]
+				} else {
+					name = strconv.Itoa(fieldIdx)
+				}
+				failures = append(failures, validate.FieldError{
+					Name:  name,
+					Error: validate.ErrFieldRequired,
+				})
+				// Reset bit.
+				result &^= 1 << bitIdx
+			}
+		}
+	}
+	if len(failures) > 0 {
+		return &validate.Error{Fields: failures}
+	}
+
+	return nil
+}
+
+// MarshalJSON implements stdjson.Marshaler.
+func (s *SettingsResource) MarshalJSON() ([]byte, error) {
+	e := jx.Encoder{}
+	s.Encode(&e)
+	return e.Bytes(), nil
+}
+
+// UnmarshalJSON implements stdjson.Unmarshaler.
+func (s *SettingsResource) UnmarshalJSON(data []byte) error {
+	d := jx.DecodeBytes(data)
+	return s.Decode(d)
+}
+
+// Encode encodes SettingsResourceProjectCreationMode as json.
+func (s SettingsResourceProjectCreationMode) Encode(e *jx.Encoder) {
+	e.Str(string(s))
+}
+
+// Decode decodes SettingsResourceProjectCreationMode from json.
+func (s *SettingsResourceProjectCreationMode) Decode(d *jx.Decoder) error {
+	if s == nil {
+		return errors.New("invalid: unable to decode SettingsResourceProjectCreationMode to nil")
+	}
+	v, err := d.StrBytes()
+	if err != nil {
+		return err
+	}
+	// Try to use constant string.
+	switch SettingsResourceProjectCreationMode(v) {
+	case SettingsResourceProjectCreationModeOPEN:
+		*s = SettingsResourceProjectCreationModeOPEN
+	case SettingsResourceProjectCreationModeVERIFIEDONLY:
+		*s = SettingsResourceProjectCreationModeVERIFIEDONLY
+	case SettingsResourceProjectCreationModeCLOSED:
+		*s = SettingsResourceProjectCreationModeCLOSED
+	default:
+		*s = SettingsResourceProjectCreationMode(v)
+	}
+
+	return nil
+}
+
+// MarshalJSON implements stdjson.Marshaler.
+func (s SettingsResourceProjectCreationMode) MarshalJSON() ([]byte, error) {
+	e := jx.Encoder{}
+	s.Encode(&e)
+	return e.Bytes(), nil
+}
+
+// UnmarshalJSON implements stdjson.Unmarshaler.
+func (s *SettingsResourceProjectCreationMode) UnmarshalJSON(data []byte) error {
+	d := jx.DecodeBytes(data)
+	return s.Decode(d)
+}
+
+// Encode encodes SettingsResourceRegistrationMode as json.
+func (s SettingsResourceRegistrationMode) Encode(e *jx.Encoder) {
+	e.Str(string(s))
+}
+
+// Decode decodes SettingsResourceRegistrationMode from json.
+func (s *SettingsResourceRegistrationMode) Decode(d *jx.Decoder) error {
+	if s == nil {
+		return errors.New("invalid: unable to decode SettingsResourceRegistrationMode to nil")
+	}
+	v, err := d.StrBytes()
+	if err != nil {
+		return err
+	}
+	// Try to use constant string.
+	switch SettingsResourceRegistrationMode(v) {
+	case SettingsResourceRegistrationModeOPEN:
+		*s = SettingsResourceRegistrationModeOPEN
+	case SettingsResourceRegistrationModeINVITEONLY:
+		*s = SettingsResourceRegistrationModeINVITEONLY
+	case SettingsResourceRegistrationModeCLOSED:
+		*s = SettingsResourceRegistrationModeCLOSED
+	default:
+		*s = SettingsResourceRegistrationMode(v)
+	}
+
+	return nil
+}
+
+// MarshalJSON implements stdjson.Marshaler.
+func (s SettingsResourceRegistrationMode) MarshalJSON() ([]byte, error) {
+	e := jx.Encoder{}
+	s.Encode(&e)
+	return e.Bytes(), nil
+}
+
+// UnmarshalJSON implements stdjson.Unmarshaler.
+func (s *SettingsResourceRegistrationMode) UnmarshalJSON(data []byte) error {
+	d := jx.DecodeBytes(data)
+	return s.Decode(d)
+}
+
+// Encode implements json.Marshaler.
 func (s *SubmitIdentityVerificationRequestBody) Encode(e *jx.Encoder) {
 	e.ObjStart()
 	s.encodeFields(e)
