@@ -89,7 +89,9 @@ def _request_objects(source: str) -> dict[str, str]:
     aliases = dict(re.findall(r"^type (\w+JSONRequestBody) = (\w+)$", source, re.M))
     objects: dict[str, str] = {}
     for match in re.finditer(r"^type (\w+RequestObject) struct \{\n(.*?)^\}", source, re.S | re.M):
-        field = re.search(r"\s+Body \*(\w+)", match.group(2))
+        # gofmt 会把字段对齐，所以 Body 和它的类型之间可能不止一个空格——带路径参数的请求对象
+        # 就是这样（HubId 比 Body 长）。写死一个空格的话，那些接口静静地没有校验。
+        field = re.search(r"\bBody\s+\*(\w+)", match.group(2))
         if field:
             objects[match.group(1)] = aliases.get(field.group(1), field.group(1))
     return objects

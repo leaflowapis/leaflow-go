@@ -6,6 +6,8 @@
 package computev1server
 
 import (
+	"slices"
+
 	typev1 "github.com/leaflowapis/leaflow-go/type/v1"
 )
 
@@ -15,6 +17,23 @@ import (
 // 而一个各服务各定义一遍的形状没人能可靠地处理。
 func violation(field, rule string) typev1.Violation {
 	return typev1.Violation{Field: field, Rule: rule}
+}
+
+// Validate 照契约查这个请求，并补上契约里声明的默认值。
+//
+// 值接收者够用：Body 是指针，改的是它指向的那个结构体。
+func (request ActOnInstanceRequestObject) Validate() []typev1.Violation {
+	if request.Body == nil {
+		return nil
+	}
+	var failed []typev1.Violation
+	if len(request.Body.Action) < 1 {
+		failed = append(failed, violation("action", "minLength"))
+	}
+	if !slices.Contains([]string{"start", "stop", "reboot"}, string(request.Body.Action)) {
+		failed = append(failed, violation("action", "enum"))
+	}
+	return failed
 }
 
 // Validate 照契约查这个请求，并补上契约里声明的默认值。
@@ -146,6 +165,34 @@ func (request CreatePrivateNetworkRequestObject) Validate() []typev1.Violation {
 // Validate 照契约查这个请求，并补上契约里声明的默认值。
 //
 // 值接收者够用：Body 是指针，改的是它指向的那个结构体。
+func (request CreateRouteRequestObject) Validate() []typev1.Violation {
+	if request.Body == nil {
+		return nil
+	}
+	var failed []typev1.Violation
+	if request.Body.Description != nil {
+		if len(*request.Body.Description) > 255 {
+			failed = append(failed, violation("description", "maxLength"))
+		}
+	}
+	if len(request.Body.Destination) < 1 {
+		failed = append(failed, violation("destination", "minLength"))
+	}
+	if len(request.Body.Destination) > 32 {
+		failed = append(failed, violation("destination", "maxLength"))
+	}
+	if len(request.Body.Nexthop) < 1 {
+		failed = append(failed, violation("nexthop", "minLength"))
+	}
+	if len(request.Body.Nexthop) > 64 {
+		failed = append(failed, violation("nexthop", "maxLength"))
+	}
+	return failed
+}
+
+// Validate 照契约查这个请求，并补上契约里声明的默认值。
+//
+// 值接收者够用：Body 是指针，改的是它指向的那个结构体。
 func (request CreateSecurityGroupRequestObject) Validate() []typev1.Violation {
 	if request.Body == nil {
 		return nil
@@ -168,11 +215,66 @@ func (request CreateSecurityGroupRequestObject) Validate() []typev1.Violation {
 // Validate 照契约查这个请求，并补上契约里声明的默认值。
 //
 // 值接收者够用：Body 是指针，改的是它指向的那个结构体。
+func (request CreateSecurityGroupRuleRequestObject) Validate() []typev1.Violation {
+	if request.Body == nil {
+		return nil
+	}
+	var failed []typev1.Violation
+	if request.Body.Description != nil {
+		if len(*request.Body.Description) > 255 {
+			failed = append(failed, violation("description", "maxLength"))
+		}
+	}
+	if !slices.Contains([]string{"ingress", "egress"}, string(request.Body.Direction)) {
+		failed = append(failed, violation("direction", "enum"))
+	}
+	if !slices.Contains([]string{"IPv4", "IPv6"}, string(request.Body.Ethertype)) {
+		failed = append(failed, violation("ethertype", "enum"))
+	}
+	if request.Body.Protocol != nil {
+		if len(*request.Body.Protocol) > 16 {
+			failed = append(failed, violation("protocol", "maxLength"))
+		}
+	}
+	if request.Body.RemoteIpPrefix != nil {
+		if len(*request.Body.RemoteIpPrefix) > 64 {
+			failed = append(failed, violation("remote_ip_prefix", "maxLength"))
+		}
+	}
+	return failed
+}
+
+// Validate 照契约查这个请求，并补上契约里声明的默认值。
+//
+// 值接收者够用：Body 是指针，改的是它指向的那个结构体。
 func (request CreateSnapshotRequestObject) Validate() []typev1.Violation {
 	if request.Body == nil {
 		return nil
 	}
 	var failed []typev1.Violation
+	if len(request.Body.Name) < 1 {
+		failed = append(failed, violation("name", "minLength"))
+	}
+	if len(request.Body.Name) > 128 {
+		failed = append(failed, violation("name", "maxLength"))
+	}
+	return failed
+}
+
+// Validate 照契约查这个请求，并补上契约里声明的默认值。
+//
+// 值接收者够用：Body 是指针，改的是它指向的那个结构体。
+func (request CreateSubnetRequestObject) Validate() []typev1.Violation {
+	if request.Body == nil {
+		return nil
+	}
+	var failed []typev1.Violation
+	if len(request.Body.Cidr) < 1 {
+		failed = append(failed, violation("cidr", "minLength"))
+	}
+	if len(request.Body.Cidr) > 32 {
+		failed = append(failed, violation("cidr", "maxLength"))
+	}
 	if len(request.Body.Name) < 1 {
 		failed = append(failed, violation("name", "minLength"))
 	}
@@ -227,6 +329,212 @@ func (request LaunchInstanceRequestObject) Validate() []typev1.Violation {
 	}
 	if len(request.Body.SecurityGroupIds) < 1 {
 		failed = append(failed, violation("security_group_ids", "minItems"))
+	}
+	return failed
+}
+
+// Validate 照契约查这个请求，并补上契约里声明的默认值。
+//
+// 值接收者够用：Body 是指针，改的是它指向的那个结构体。
+func (request RebuildInstanceRequestObject) Validate() []typev1.Violation {
+	if request.Body == nil {
+		return nil
+	}
+	var failed []typev1.Violation
+	if request.Body.ImageId != nil {
+		if len(*request.Body.ImageId) > 64 {
+			failed = append(failed, violation("image_id", "maxLength"))
+		}
+	}
+	if request.Body.Password != nil {
+		if len(*request.Body.Password) > 128 {
+			failed = append(failed, violation("password", "maxLength"))
+		}
+	}
+	return failed
+}
+
+// Validate 照契约查这个请求，并补上契约里声明的默认值。
+//
+// 值接收者够用：Body 是指针，改的是它指向的那个结构体。
+func (request RenameBackupRequestObject) Validate() []typev1.Violation {
+	if request.Body == nil {
+		return nil
+	}
+	var failed []typev1.Violation
+	if len(request.Body.Name) < 1 {
+		failed = append(failed, violation("name", "minLength"))
+	}
+	if len(request.Body.Name) > 128 {
+		failed = append(failed, violation("name", "maxLength"))
+	}
+	return failed
+}
+
+// Validate 照契约查这个请求，并补上契约里声明的默认值。
+//
+// 值接收者够用：Body 是指针，改的是它指向的那个结构体。
+func (request RenameDiskRequestObject) Validate() []typev1.Violation {
+	if request.Body == nil {
+		return nil
+	}
+	var failed []typev1.Violation
+	if len(request.Body.Name) < 1 {
+		failed = append(failed, violation("name", "minLength"))
+	}
+	if len(request.Body.Name) > 128 {
+		failed = append(failed, violation("name", "maxLength"))
+	}
+	return failed
+}
+
+// Validate 照契约查这个请求，并补上契约里声明的默认值。
+//
+// 值接收者够用：Body 是指针，改的是它指向的那个结构体。
+func (request RenameInstanceRequestObject) Validate() []typev1.Violation {
+	if request.Body == nil {
+		return nil
+	}
+	var failed []typev1.Violation
+	if len(request.Body.Name) < 1 {
+		failed = append(failed, violation("name", "minLength"))
+	}
+	if len(request.Body.Name) > 128 {
+		failed = append(failed, violation("name", "maxLength"))
+	}
+	return failed
+}
+
+// Validate 照契约查这个请求，并补上契约里声明的默认值。
+//
+// 值接收者够用：Body 是指针，改的是它指向的那个结构体。
+func (request RenamePrivateImageRequestObject) Validate() []typev1.Violation {
+	if request.Body == nil {
+		return nil
+	}
+	var failed []typev1.Violation
+	if len(request.Body.Name) < 1 {
+		failed = append(failed, violation("name", "minLength"))
+	}
+	if len(request.Body.Name) > 128 {
+		failed = append(failed, violation("name", "maxLength"))
+	}
+	return failed
+}
+
+// Validate 照契约查这个请求，并补上契约里声明的默认值。
+//
+// 值接收者够用：Body 是指针，改的是它指向的那个结构体。
+func (request RenamePrivateNetworkRequestObject) Validate() []typev1.Violation {
+	if request.Body == nil {
+		return nil
+	}
+	var failed []typev1.Violation
+	if len(request.Body.Name) < 1 {
+		failed = append(failed, violation("name", "minLength"))
+	}
+	if len(request.Body.Name) > 128 {
+		failed = append(failed, violation("name", "maxLength"))
+	}
+	return failed
+}
+
+// Validate 照契约查这个请求，并补上契约里声明的默认值。
+//
+// 值接收者够用：Body 是指针，改的是它指向的那个结构体。
+func (request RenameSnapshotRequestObject) Validate() []typev1.Violation {
+	if request.Body == nil {
+		return nil
+	}
+	var failed []typev1.Violation
+	if len(request.Body.Name) < 1 {
+		failed = append(failed, violation("name", "minLength"))
+	}
+	if len(request.Body.Name) > 128 {
+		failed = append(failed, violation("name", "maxLength"))
+	}
+	return failed
+}
+
+// Validate 照契约查这个请求，并补上契约里声明的默认值。
+//
+// 值接收者够用：Body 是指针，改的是它指向的那个结构体。
+func (request ResetInstancePasswordRequestObject) Validate() []typev1.Violation {
+	if request.Body == nil {
+		return nil
+	}
+	var failed []typev1.Violation
+	if request.Body.Password != nil {
+		if len(*request.Body.Password) > 128 {
+			failed = append(failed, violation("password", "maxLength"))
+		}
+	}
+	return failed
+}
+
+// Validate 照契约查这个请求，并补上契约里声明的默认值。
+//
+// 值接收者够用：Body 是指针，改的是它指向的那个结构体。
+func (request ResizeDiskRequestObject) Validate() []typev1.Violation {
+	if request.Body == nil {
+		return nil
+	}
+	var failed []typev1.Violation
+	if request.Body.SizeGb < 1 {
+		failed = append(failed, violation("size_gb", "minimum"))
+	}
+	return failed
+}
+
+// Validate 照契约查这个请求，并补上契约里声明的默认值。
+//
+// 值接收者够用：Body 是指针，改的是它指向的那个结构体。
+func (request ResizeInstanceRequestObject) Validate() []typev1.Violation {
+	if request.Body == nil {
+		return nil
+	}
+	var failed []typev1.Violation
+	if len(request.Body.InstanceTypeId) > 64 {
+		failed = append(failed, violation("instance_type_id", "maxLength"))
+	}
+	return failed
+}
+
+// Validate 照契约查这个请求，并补上契约里声明的默认值。
+//
+// 值接收者够用：Body 是指针，改的是它指向的那个结构体。
+func (request RestoreBackupRequestObject) Validate() []typev1.Violation {
+	if request.Body == nil {
+		return nil
+	}
+	var failed []typev1.Violation
+	if len(request.Body.DiskTypeId) > 64 {
+		failed = append(failed, violation("disk_type_id", "maxLength"))
+	}
+	if len(request.Body.Name) < 1 {
+		failed = append(failed, violation("name", "minLength"))
+	}
+	if len(request.Body.Name) > 128 {
+		failed = append(failed, violation("name", "maxLength"))
+	}
+	if request.Body.SizeGb != nil {
+		if *request.Body.SizeGb < 0 {
+			failed = append(failed, violation("size_gb", "minimum"))
+		}
+	}
+	return failed
+}
+
+// Validate 照契约查这个请求，并补上契约里声明的默认值。
+//
+// 值接收者够用：Body 是指针，改的是它指向的那个结构体。
+func (request SetFloatingIpBandwidthRequestObject) Validate() []typev1.Violation {
+	if request.Body == nil {
+		return nil
+	}
+	var failed []typev1.Violation
+	if request.Body.Mbps < 1 {
+		failed = append(failed, violation("mbps", "minimum"))
 	}
 	return failed
 }

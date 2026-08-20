@@ -53,3 +53,40 @@ func (request CreateThreadRequestObject) Validate() []typev1.Violation {
 	}
 	return failed
 }
+
+// Validate 照契约查这个请求，并补上契约里声明的默认值。
+//
+// 值接收者够用：Body 是指针，改的是它指向的那个结构体。
+func (request UpdateChannelRequestObject) Validate() []typev1.Violation {
+	if request.Body == nil {
+		return nil
+	}
+	var failed []typev1.Violation
+	if request.Body.Name != nil {
+		if len(*request.Body.Name) > 128 {
+			failed = append(failed, violation("name", "maxLength"))
+		}
+	}
+	if request.Body.SenderPolicy != nil {
+		if !slices.Contains([]string{"bound_only", "open"}, string(*request.Body.SenderPolicy)) {
+			failed = append(failed, violation("senderPolicy", "enum"))
+		}
+	}
+	return failed
+}
+
+// Validate 照契约查这个请求，并补上契约里声明的默认值。
+//
+// 值接收者够用：Body 是指针，改的是它指向的那个结构体。
+func (request UpdateThreadRequestObject) Validate() []typev1.Violation {
+	if request.Body == nil {
+		return nil
+	}
+	var failed []typev1.Violation
+	if request.Body.ApprovalMode != nil {
+		if !slices.Contains([]string{"guardian", "manual", "yolo"}, string(*request.Body.ApprovalMode)) {
+			failed = append(failed, violation("approvalMode", "enum"))
+		}
+	}
+	return failed
+}

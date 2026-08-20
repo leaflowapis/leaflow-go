@@ -30,3 +30,19 @@ func (request CreateApiKeyRequestObject) Validate() []typev1.Violation {
 	}
 	return failed
 }
+
+// Validate 照契约查这个请求，并补上契约里声明的默认值。
+//
+// 值接收者够用：Body 是指针，改的是它指向的那个结构体。
+func (request UpdateApiKeyRequestObject) Validate() []typev1.Violation {
+	if request.Body == nil {
+		return nil
+	}
+	var failed []typev1.Violation
+	if request.Body.Name != nil {
+		if len(*request.Body.Name) > 128 {
+			failed = append(failed, violation("name", "maxLength"))
+		}
+	}
+	return failed
+}

@@ -22,6 +22,147 @@ func violation(field, rule string) typev1.Violation {
 // Validate 照契约查这个请求，并补上契约里声明的默认值。
 //
 // 值接收者够用：Body 是指针，改的是它指向的那个结构体。
+func (request AcknowledgeIncidentRequestObject) Validate() []typev1.Violation {
+	if request.Body == nil {
+		return nil
+	}
+	var failed []typev1.Violation
+	if request.Body.Message != nil {
+		if len(*request.Body.Message) > 2000 {
+			failed = append(failed, violation("message", "maxLength"))
+		}
+	}
+	return failed
+}
+
+// Validate 照契约查这个请求，并补上契约里声明的默认值。
+//
+// 值接收者够用：Body 是指针，改的是它指向的那个结构体。
+func (request AddIncidentCommentRequestObject) Validate() []typev1.Violation {
+	if request.Body == nil {
+		return nil
+	}
+	var failed []typev1.Violation
+	if len(request.Body.Message) < 1 {
+		failed = append(failed, violation("message", "minLength"))
+	}
+	if len(request.Body.Message) > 2000 {
+		failed = append(failed, violation("message", "maxLength"))
+	}
+	return failed
+}
+
+// Validate 照契约查这个请求，并补上契约里声明的默认值。
+//
+// 值接收者够用：Body 是指针，改的是它指向的那个结构体。
+func (request AssignIncidentRequestObject) Validate() []typev1.Violation {
+	if request.Body == nil {
+		return nil
+	}
+	var failed []typev1.Violation
+	if request.Body.AssigneeDisplayName != nil {
+		if len(*request.Body.AssigneeDisplayName) > 255 {
+			failed = append(failed, violation("assignee_display_name", "maxLength"))
+		}
+	}
+	if request.Body.AssigneeUserId != nil {
+		if len(*request.Body.AssigneeUserId) > 255 {
+			failed = append(failed, violation("assignee_user_id", "maxLength"))
+		}
+	}
+	return failed
+}
+
+// Validate 照契约查这个请求，并补上契约里声明的默认值。
+//
+// 值接收者够用：Body 是指针，改的是它指向的那个结构体。
+func (request CloseIncidentRequestObject) Validate() []typev1.Violation {
+	if request.Body == nil {
+		return nil
+	}
+	var failed []typev1.Violation
+	if request.Body.Message != nil {
+		if len(*request.Body.Message) > 2000 {
+			failed = append(failed, violation("message", "maxLength"))
+		}
+	}
+	if !slices.Contains([]string{"RECOVERED", "FIXED", "FALSE_POSITIVE", "DUPLICATE", "NO_ACTION_REQUIRED", "ACCEPTED_RISK", "OTHER"}, string(request.Body.Reason)) {
+		failed = append(failed, violation("reason", "enum"))
+	}
+	return failed
+}
+
+// Validate 照契约查这个请求，并补上契约里声明的默认值。
+//
+// 值接收者够用：Body 是指针，改的是它指向的那个结构体。
+func (request EnableServerMonitoringRequestObject) Validate() []typev1.Violation {
+	if request.Body == nil {
+		return nil
+	}
+	var failed []typev1.Violation
+	if len(request.Body.Address) > 255 {
+		failed = append(failed, violation("address", "maxLength"))
+	}
+	if !slices.Contains([]string{"ip", "dns"}, string(request.Body.AddressKind)) {
+		failed = append(failed, violation("address_kind", "enum"))
+	}
+	if request.Body.AgentMode != nil {
+		if !slices.Contains([]string{"PASSIVE", "ACTIVE"}, string(*request.Body.AgentMode)) {
+			failed = append(failed, violation("agent_mode", "enum"))
+		}
+	}
+	if request.Body.AgentPort != nil {
+		if *request.Body.AgentPort < 0 {
+			failed = append(failed, violation("agent_port", "minimum"))
+		}
+		if *request.Body.AgentPort > 65535 {
+			failed = append(failed, violation("agent_port", "maximum"))
+		}
+	}
+	if request.Body.Description != nil {
+		if len(*request.Body.Description) > 2000 {
+			failed = append(failed, violation("description", "maxLength"))
+		}
+	}
+	if len(request.Body.Name) < 1 {
+		failed = append(failed, violation("name", "minLength"))
+	}
+	if len(request.Body.Name) > 128 {
+		failed = append(failed, violation("name", "maxLength"))
+	}
+	return failed
+}
+
+// Validate 照契约查这个请求，并补上契约里声明的默认值。
+//
+// 值接收者够用：Body 是指针，改的是它指向的那个结构体。
+func (request PutMaintenanceWindowRequestObject) Validate() []typev1.Violation {
+	if request.Body == nil {
+		return nil
+	}
+	var failed []typev1.Violation
+	if request.Body.Description != nil {
+		if len(*request.Body.Description) > 2000 {
+			failed = append(failed, violation("description", "maxLength"))
+		}
+	}
+	if len(request.Body.Name) < 1 {
+		failed = append(failed, violation("name", "minLength"))
+	}
+	if len(request.Body.Name) > 128 {
+		failed = append(failed, violation("name", "maxLength"))
+	}
+	if request.Body.Timezone != nil {
+		if len(*request.Body.Timezone) > 64 {
+			failed = append(failed, violation("timezone", "maxLength"))
+		}
+	}
+	return failed
+}
+
+// Validate 照契约查这个请求，并补上契约里声明的默认值。
+//
+// 值接收者够用：Body 是指针，改的是它指向的那个结构体。
 func (request PutSloRequestObject) Validate() []typev1.Violation {
 	if request.Body == nil {
 		return nil
@@ -50,6 +191,87 @@ func (request PutSloRequestObject) Validate() []typev1.Violation {
 	if request.Body.Timezone != nil {
 		if len(*request.Body.Timezone) > 64 {
 			failed = append(failed, violation("timezone", "maxLength"))
+		}
+	}
+	return failed
+}
+
+// Validate 照契约查这个请求，并补上契约里声明的默认值。
+//
+// 值接收者够用：Body 是指针，改的是它指向的那个结构体。
+func (request PutWebCheckRequestObject) Validate() []typev1.Violation {
+	if request.Body == nil {
+		return nil
+	}
+	var failed []typev1.Violation
+	if request.Body.IntervalSeconds != nil {
+		if *request.Body.IntervalSeconds < 0 {
+			failed = append(failed, violation("interval_seconds", "minimum"))
+		}
+	}
+	if request.Body.ResponseTimeThresholdSeconds != nil {
+		if *request.Body.ResponseTimeThresholdSeconds < 0 {
+			failed = append(failed, violation("response_time_threshold_seconds", "minimum"))
+		}
+	}
+	if request.Body.Retries != nil {
+		if *request.Body.Retries < 0 {
+			failed = append(failed, violation("retries", "minimum"))
+		}
+	}
+	if len(request.Body.Steps) < 1 {
+		failed = append(failed, violation("steps", "minItems"))
+	}
+	if request.Body.TimeoutSeconds != nil {
+		if *request.Body.TimeoutSeconds < 0 {
+			failed = append(failed, violation("timeout_seconds", "minimum"))
+		}
+	}
+	return failed
+}
+
+// Validate 照契约查这个请求，并补上契约里声明的默认值。
+//
+// 值接收者够用：Body 是指针，改的是它指向的那个结构体。
+func (request UpdateServerRequestObject) Validate() []typev1.Violation {
+	if request.Body == nil {
+		return nil
+	}
+	var failed []typev1.Violation
+	if request.Body.Address != nil {
+		if len(*request.Body.Address) > 255 {
+			failed = append(failed, violation("address", "maxLength"))
+		}
+	}
+	if request.Body.AddressKind != nil {
+		if !slices.Contains([]string{"ip", "dns"}, string(*request.Body.AddressKind)) {
+			failed = append(failed, violation("address_kind", "enum"))
+		}
+	}
+	if request.Body.AgentMode != nil {
+		if !slices.Contains([]string{"PASSIVE", "ACTIVE"}, string(*request.Body.AgentMode)) {
+			failed = append(failed, violation("agent_mode", "enum"))
+		}
+	}
+	if request.Body.AgentPort != nil {
+		if *request.Body.AgentPort < 1 {
+			failed = append(failed, violation("agent_port", "minimum"))
+		}
+		if *request.Body.AgentPort > 65535 {
+			failed = append(failed, violation("agent_port", "maximum"))
+		}
+	}
+	if request.Body.Description != nil {
+		if len(*request.Body.Description) > 2000 {
+			failed = append(failed, violation("description", "maxLength"))
+		}
+	}
+	if request.Body.Name != nil {
+		if len(*request.Body.Name) < 1 {
+			failed = append(failed, violation("name", "minLength"))
+		}
+		if len(*request.Body.Name) > 128 {
+			failed = append(failed, violation("name", "maxLength"))
 		}
 	}
 	return failed
