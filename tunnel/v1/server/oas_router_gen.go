@@ -11,34 +11,20 @@ import (
 )
 
 var (
-	rn8AllowedHeaders = map[string]string{
-		"GET": "Authorization",
-	}
-	rn9AllowedHeaders = map[string]string{
-		"GET": "Authorization",
-	}
-	rn4AllowedHeaders = map[string]string{
-		"DELETE": "Authorization",
-		"GET":    "Authorization",
-		"PATCH":  "Authorization,Content-Type",
-		"POST":   "Authorization,Content-Type",
-	}
 	rn1AllowedHeaders = map[string]string{
-		"POST": "Authorization,Content-Type",
-	}
-	rn3AllowedHeaders = map[string]string{
-		"PUT": "Authorization,Content-Type",
-	}
-	rn5AllowedHeaders = map[string]string{
-		"GET": "Authorization",
-	}
-	rn11AllowedHeaders = map[string]string{
+		"GET":  "Authorization",
 		"POST": "Authorization",
 	}
-	rn6AllowedHeaders = map[string]string{
+	rn2AllowedHeaders = map[string]string{
 		"GET": "Authorization",
 	}
-	rn10AllowedHeaders = map[string]string{
+	rn6AllowedHeaders = map[string]string{
+		"POST": "Authorization",
+	}
+	rn4AllowedHeaders = map[string]string{
+		"GET": "Authorization",
+	}
+	rn5AllowedHeaders = map[string]string{
 		"GET": "Authorization",
 	}
 )
@@ -81,113 +67,71 @@ func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 			break
 		}
 		switch elem[0] {
-		case '/': // Prefix: "/api/v1/"
+		case '/': // Prefix: "/api/v1/tunnel/l4"
 
-			if l := len("/api/v1/"); len(elem) >= l && elem[0:l] == "/api/v1/" {
+			if l := len("/api/v1/tunnel/l4"); len(elem) >= l && elem[0:l] == "/api/v1/tunnel/l4" {
 				elem = elem[l:]
 			} else {
 				break
 			}
 
 			if len(elem) == 0 {
-				break
+				switch r.Method {
+				case "GET":
+					s.handleGetL4TunnelRequest([0]string{}, elemIsEscaped, w, r)
+				case "POST":
+					s.handleGenerateL4TunnelRequest([0]string{}, elemIsEscaped, w, r)
+				default:
+					s.notAllowed(w, r, notAllowedParams{
+						allowedMethods: "GET,POST",
+						allowedHeaders: rn1AllowedHeaders,
+						acceptPost:     "",
+						acceptPatch:    "",
+					})
+				}
+
+				return
 			}
 			switch elem[0] {
-			case 'o': // Prefix: "operation-logs"
+			case '/': // Prefix: "/"
 
-				if l := len("operation-logs"); len(elem) >= l && elem[0:l] == "operation-logs" {
+				if l := len("/"); len(elem) >= l && elem[0:l] == "/" {
 					elem = elem[l:]
 				} else {
 					break
 				}
 
 				if len(elem) == 0 {
-					// Leaf node.
-					switch r.Method {
-					case "GET":
-						s.handleListTunnelOperationLogsRequest([0]string{}, elemIsEscaped, w, r)
-					default:
-						s.notAllowed(w, r, notAllowedParams{
-							allowedMethods: "GET",
-							allowedHeaders: rn8AllowedHeaders,
-							acceptPost:     "",
-							acceptPatch:    "",
-						})
-					}
-
-					return
-				}
-
-			case 'p': // Prefix: "plans"
-
-				if l := len("plans"); len(elem) >= l && elem[0:l] == "plans" {
-					elem = elem[l:]
-				} else {
 					break
-				}
-
-				if len(elem) == 0 {
-					// Leaf node.
-					switch r.Method {
-					case "GET":
-						s.handleListTunnelPlansRequest([0]string{}, elemIsEscaped, w, r)
-					default:
-						s.notAllowed(w, r, notAllowedParams{
-							allowedMethods: "GET",
-							allowedHeaders: rn9AllowedHeaders,
-							acceptPost:     "",
-							acceptPatch:    "",
-						})
-					}
-
-					return
-				}
-
-			case 't': // Prefix: "tunnel"
-
-				if l := len("tunnel"); len(elem) >= l && elem[0:l] == "tunnel" {
-					elem = elem[l:]
-				} else {
-					break
-				}
-
-				if len(elem) == 0 {
-					switch r.Method {
-					case "DELETE":
-						s.handleCloseTunnelRequest([0]string{}, elemIsEscaped, w, r)
-					case "GET":
-						s.handleGetTunnelRequest([0]string{}, elemIsEscaped, w, r)
-					case "PATCH":
-						s.handleUpdateTunnelProfileRequest([0]string{}, elemIsEscaped, w, r)
-					case "POST":
-						s.handleOpenTunnelRequest([0]string{}, elemIsEscaped, w, r)
-					default:
-						s.notAllowed(w, r, notAllowedParams{
-							allowedMethods: "DELETE,GET,PATCH,POST",
-							allowedHeaders: rn4AllowedHeaders,
-							acceptPost:     "application/json",
-							acceptPatch:    "application/json",
-						})
-					}
-
-					return
 				}
 				switch elem[0] {
-				case '/': // Prefix: "/"
+				case 's': // Prefix: "subscription"
 
-					if l := len("/"); len(elem) >= l && elem[0:l] == "/" {
+					if l := len("subscription"); len(elem) >= l && elem[0:l] == "subscription" {
 						elem = elem[l:]
 					} else {
 						break
 					}
 
 					if len(elem) == 0 {
-						break
+						switch r.Method {
+						case "GET":
+							s.handleGetL4TunnelSubscriptionRequest([0]string{}, elemIsEscaped, w, r)
+						default:
+							s.notAllowed(w, r, notAllowedParams{
+								allowedMethods: "GET",
+								allowedHeaders: rn2AllowedHeaders,
+								acceptPost:     "",
+								acceptPatch:    "",
+							})
+						}
+
+						return
 					}
 					switch elem[0] {
-					case 'a': // Prefix: "actions"
+					case '/': // Prefix: "/rotate"
 
-						if l := len("actions"); len(elem) >= l && elem[0:l] == "actions" {
+						if l := len("/rotate"); len(elem) >= l && elem[0:l] == "/rotate" {
 							elem = elem[l:]
 						} else {
 							break
@@ -197,36 +141,11 @@ func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 							// Leaf node.
 							switch r.Method {
 							case "POST":
-								s.handleActOnTunnelRequest([0]string{}, elemIsEscaped, w, r)
+								s.handleRotateL4TunnelSubscriptionRequest([0]string{}, elemIsEscaped, w, r)
 							default:
 								s.notAllowed(w, r, notAllowedParams{
 									allowedMethods: "POST",
-									allowedHeaders: rn1AllowedHeaders,
-									acceptPost:     "application/json",
-									acceptPatch:    "",
-								})
-							}
-
-							return
-						}
-
-					case 'p': // Prefix: "plan"
-
-						if l := len("plan"); len(elem) >= l && elem[0:l] == "plan" {
-							elem = elem[l:]
-						} else {
-							break
-						}
-
-						if len(elem) == 0 {
-							// Leaf node.
-							switch r.Method {
-							case "PUT":
-								s.handleChangeTunnelPlanRequest([0]string{}, elemIsEscaped, w, r)
-							default:
-								s.notAllowed(w, r, notAllowedParams{
-									allowedMethods: "PUT",
-									allowedHeaders: rn3AllowedHeaders,
+									allowedHeaders: rn6AllowedHeaders,
 									acceptPost:     "",
 									acceptPatch:    "",
 								})
@@ -235,18 +154,45 @@ func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 							return
 						}
 
-					case 's': // Prefix: "subscription"
+					}
 
-						if l := len("subscription"); len(elem) >= l && elem[0:l] == "subscription" {
+				case 'u': // Prefix: "usage"
+
+					if l := len("usage"); len(elem) >= l && elem[0:l] == "usage" {
+						elem = elem[l:]
+					} else {
+						break
+					}
+
+					if len(elem) == 0 {
+						switch r.Method {
+						case "GET":
+							s.handleGetL4TunnelUsageRequest([0]string{}, elemIsEscaped, w, r)
+						default:
+							s.notAllowed(w, r, notAllowedParams{
+								allowedMethods: "GET",
+								allowedHeaders: rn4AllowedHeaders,
+								acceptPost:     "",
+								acceptPatch:    "",
+							})
+						}
+
+						return
+					}
+					switch elem[0] {
+					case '/': // Prefix: "/series"
+
+						if l := len("/series"); len(elem) >= l && elem[0:l] == "/series" {
 							elem = elem[l:]
 						} else {
 							break
 						}
 
 						if len(elem) == 0 {
+							// Leaf node.
 							switch r.Method {
 							case "GET":
-								s.handleGetTunnelSubscriptionRequest([0]string{}, elemIsEscaped, w, r)
+								s.handleListL4TunnelUsageSeriesRequest([0]string{}, elemIsEscaped, w, r)
 							default:
 								s.notAllowed(w, r, notAllowedParams{
 									allowedMethods: "GET",
@@ -257,84 +203,6 @@ func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 							}
 
 							return
-						}
-						switch elem[0] {
-						case '/': // Prefix: "/rotate"
-
-							if l := len("/rotate"); len(elem) >= l && elem[0:l] == "/rotate" {
-								elem = elem[l:]
-							} else {
-								break
-							}
-
-							if len(elem) == 0 {
-								// Leaf node.
-								switch r.Method {
-								case "POST":
-									s.handleRotateTunnelSubscriptionRequest([0]string{}, elemIsEscaped, w, r)
-								default:
-									s.notAllowed(w, r, notAllowedParams{
-										allowedMethods: "POST",
-										allowedHeaders: rn11AllowedHeaders,
-										acceptPost:     "",
-										acceptPatch:    "",
-									})
-								}
-
-								return
-							}
-
-						}
-
-					case 'u': // Prefix: "usage"
-
-						if l := len("usage"); len(elem) >= l && elem[0:l] == "usage" {
-							elem = elem[l:]
-						} else {
-							break
-						}
-
-						if len(elem) == 0 {
-							switch r.Method {
-							case "GET":
-								s.handleGetTunnelUsageRequest([0]string{}, elemIsEscaped, w, r)
-							default:
-								s.notAllowed(w, r, notAllowedParams{
-									allowedMethods: "GET",
-									allowedHeaders: rn6AllowedHeaders,
-									acceptPost:     "",
-									acceptPatch:    "",
-								})
-							}
-
-							return
-						}
-						switch elem[0] {
-						case '/': // Prefix: "/series"
-
-							if l := len("/series"); len(elem) >= l && elem[0:l] == "/series" {
-								elem = elem[l:]
-							} else {
-								break
-							}
-
-							if len(elem) == 0 {
-								// Leaf node.
-								switch r.Method {
-								case "GET":
-									s.handleListTunnelUsageSeriesRequest([0]string{}, elemIsEscaped, w, r)
-								default:
-									s.notAllowed(w, r, notAllowedParams{
-										allowedMethods: "GET",
-										allowedHeaders: rn10AllowedHeaders,
-										acceptPost:     "",
-										acceptPatch:    "",
-									})
-								}
-
-								return
-							}
-
 						}
 
 					}
@@ -429,134 +297,78 @@ func (s *Server) FindPath(method string, u *url.URL) (r Route, _ bool) {
 			break
 		}
 		switch elem[0] {
-		case '/': // Prefix: "/api/v1/"
+		case '/': // Prefix: "/api/v1/tunnel/l4"
 
-			if l := len("/api/v1/"); len(elem) >= l && elem[0:l] == "/api/v1/" {
+			if l := len("/api/v1/tunnel/l4"); len(elem) >= l && elem[0:l] == "/api/v1/tunnel/l4" {
 				elem = elem[l:]
 			} else {
 				break
 			}
 
 			if len(elem) == 0 {
-				break
+				switch method {
+				case "GET":
+					r.name = GetL4TunnelOperation
+					r.summary = "查看本项目的四层隧道"
+					r.operationID = "get-l4-tunnel"
+					r.operationGroup = ""
+					r.pathPattern = "/api/v1/tunnel/l4"
+					r.args = args
+					r.count = 0
+					return r, true
+				case "POST":
+					r.name = GenerateL4TunnelOperation
+					r.summary = "生成四层隧道"
+					r.operationID = "generate-l4-tunnel"
+					r.operationGroup = ""
+					r.pathPattern = "/api/v1/tunnel/l4"
+					r.args = args
+					r.count = 0
+					return r, true
+				default:
+					return
+				}
 			}
 			switch elem[0] {
-			case 'o': // Prefix: "operation-logs"
+			case '/': // Prefix: "/"
 
-				if l := len("operation-logs"); len(elem) >= l && elem[0:l] == "operation-logs" {
+				if l := len("/"); len(elem) >= l && elem[0:l] == "/" {
 					elem = elem[l:]
 				} else {
 					break
 				}
 
 				if len(elem) == 0 {
-					// Leaf node.
-					switch method {
-					case "GET":
-						r.name = ListTunnelOperationLogsOperation
-						r.summary = "查看本项目的操作日志"
-						r.operationID = "list-tunnel-operation-logs"
-						r.operationGroup = ""
-						r.pathPattern = "/api/v1/operation-logs"
-						r.args = args
-						r.count = 0
-						return r, true
-					default:
-						return
-					}
-				}
-
-			case 'p': // Prefix: "plans"
-
-				if l := len("plans"); len(elem) >= l && elem[0:l] == "plans" {
-					elem = elem[l:]
-				} else {
 					break
-				}
-
-				if len(elem) == 0 {
-					// Leaf node.
-					switch method {
-					case "GET":
-						r.name = ListTunnelPlansOperation
-						r.summary = "列出可开通的套餐"
-						r.operationID = "list-tunnel-plans"
-						r.operationGroup = ""
-						r.pathPattern = "/api/v1/plans"
-						r.args = args
-						r.count = 0
-						return r, true
-					default:
-						return
-					}
-				}
-
-			case 't': // Prefix: "tunnel"
-
-				if l := len("tunnel"); len(elem) >= l && elem[0:l] == "tunnel" {
-					elem = elem[l:]
-				} else {
-					break
-				}
-
-				if len(elem) == 0 {
-					switch method {
-					case "DELETE":
-						r.name = CloseTunnelOperation
-						r.summary = "退订隧道"
-						r.operationID = "close-tunnel"
-						r.operationGroup = ""
-						r.pathPattern = "/api/v1/tunnel"
-						r.args = args
-						r.count = 0
-						return r, true
-					case "GET":
-						r.name = GetTunnelOperation
-						r.summary = "查看本项目的隧道"
-						r.operationID = "get-tunnel"
-						r.operationGroup = ""
-						r.pathPattern = "/api/v1/tunnel"
-						r.args = args
-						r.count = 0
-						return r, true
-					case "PATCH":
-						r.name = UpdateTunnelProfileOperation
-						r.summary = "修改隧道的显示信息"
-						r.operationID = "update-tunnel-profile"
-						r.operationGroup = ""
-						r.pathPattern = "/api/v1/tunnel"
-						r.args = args
-						r.count = 0
-						return r, true
-					case "POST":
-						r.name = OpenTunnelOperation
-						r.summary = "开通隧道"
-						r.operationID = "open-tunnel"
-						r.operationGroup = ""
-						r.pathPattern = "/api/v1/tunnel"
-						r.args = args
-						r.count = 0
-						return r, true
-					default:
-						return
-					}
 				}
 				switch elem[0] {
-				case '/': // Prefix: "/"
+				case 's': // Prefix: "subscription"
 
-					if l := len("/"); len(elem) >= l && elem[0:l] == "/" {
+					if l := len("subscription"); len(elem) >= l && elem[0:l] == "subscription" {
 						elem = elem[l:]
 					} else {
 						break
 					}
 
 					if len(elem) == 0 {
-						break
+						switch method {
+						case "GET":
+							r.name = GetL4TunnelSubscriptionOperation
+							r.summary = "获取订阅地址"
+							r.operationID = "get-l4-tunnel-subscription"
+							r.operationGroup = ""
+							r.pathPattern = "/api/v1/tunnel/l4/subscription"
+							r.args = args
+							r.count = 0
+							return r, true
+						default:
+							return
+						}
 					}
 					switch elem[0] {
-					case 'a': // Prefix: "actions"
+					case '/': // Prefix: "/rotate"
 
-						if l := len("actions"); len(elem) >= l && elem[0:l] == "actions" {
+						if l := len("/rotate"); len(elem) >= l && elem[0:l] == "/rotate" {
 							elem = elem[l:]
 						} else {
 							break
@@ -566,11 +378,11 @@ func (s *Server) FindPath(method string, u *url.URL) (r Route, _ bool) {
 							// Leaf node.
 							switch method {
 							case "POST":
-								r.name = ActOnTunnelOperation
-								r.summary = "启用或停用隧道"
-								r.operationID = "act-on-tunnel"
+								r.name = RotateL4TunnelSubscriptionOperation
+								r.summary = "重置订阅地址与节点密码"
+								r.operationID = "rotate-l4-tunnel-subscription"
 								r.operationGroup = ""
-								r.pathPattern = "/api/v1/tunnel/actions"
+								r.pathPattern = "/api/v1/tunnel/l4/subscription/rotate"
 								r.args = args
 								r.count = 0
 								return r, true
@@ -579,9 +391,35 @@ func (s *Server) FindPath(method string, u *url.URL) (r Route, _ bool) {
 							}
 						}
 
-					case 'p': // Prefix: "plan"
+					}
 
-						if l := len("plan"); len(elem) >= l && elem[0:l] == "plan" {
+				case 'u': // Prefix: "usage"
+
+					if l := len("usage"); len(elem) >= l && elem[0:l] == "usage" {
+						elem = elem[l:]
+					} else {
+						break
+					}
+
+					if len(elem) == 0 {
+						switch method {
+						case "GET":
+							r.name = GetL4TunnelUsageOperation
+							r.summary = "查看本期用量"
+							r.operationID = "get-l4-tunnel-usage"
+							r.operationGroup = ""
+							r.pathPattern = "/api/v1/tunnel/l4/usage"
+							r.args = args
+							r.count = 0
+							return r, true
+						default:
+							return
+						}
+					}
+					switch elem[0] {
+					case '/': // Prefix: "/series"
+
+						if l := len("/series"); len(elem) >= l && elem[0:l] == "/series" {
 							elem = elem[l:]
 						} else {
 							break
@@ -590,120 +428,18 @@ func (s *Server) FindPath(method string, u *url.URL) (r Route, _ bool) {
 						if len(elem) == 0 {
 							// Leaf node.
 							switch method {
-							case "PUT":
-								r.name = ChangeTunnelPlanOperation
-								r.summary = "更换套餐"
-								r.operationID = "change-tunnel-plan"
-								r.operationGroup = ""
-								r.pathPattern = "/api/v1/tunnel/plan"
-								r.args = args
-								r.count = 0
-								return r, true
-							default:
-								return
-							}
-						}
-
-					case 's': // Prefix: "subscription"
-
-						if l := len("subscription"); len(elem) >= l && elem[0:l] == "subscription" {
-							elem = elem[l:]
-						} else {
-							break
-						}
-
-						if len(elem) == 0 {
-							switch method {
 							case "GET":
-								r.name = GetTunnelSubscriptionOperation
-								r.summary = "获取订阅地址"
-								r.operationID = "get-tunnel-subscription"
+								r.name = ListL4TunnelUsageSeriesOperation
+								r.summary = "查看按天用量"
+								r.operationID = "list-l4-tunnel-usage-series"
 								r.operationGroup = ""
-								r.pathPattern = "/api/v1/tunnel/subscription"
+								r.pathPattern = "/api/v1/tunnel/l4/usage/series"
 								r.args = args
 								r.count = 0
 								return r, true
 							default:
 								return
 							}
-						}
-						switch elem[0] {
-						case '/': // Prefix: "/rotate"
-
-							if l := len("/rotate"); len(elem) >= l && elem[0:l] == "/rotate" {
-								elem = elem[l:]
-							} else {
-								break
-							}
-
-							if len(elem) == 0 {
-								// Leaf node.
-								switch method {
-								case "POST":
-									r.name = RotateTunnelSubscriptionOperation
-									r.summary = "重置订阅地址与节点密码"
-									r.operationID = "rotate-tunnel-subscription"
-									r.operationGroup = ""
-									r.pathPattern = "/api/v1/tunnel/subscription/rotate"
-									r.args = args
-									r.count = 0
-									return r, true
-								default:
-									return
-								}
-							}
-
-						}
-
-					case 'u': // Prefix: "usage"
-
-						if l := len("usage"); len(elem) >= l && elem[0:l] == "usage" {
-							elem = elem[l:]
-						} else {
-							break
-						}
-
-						if len(elem) == 0 {
-							switch method {
-							case "GET":
-								r.name = GetTunnelUsageOperation
-								r.summary = "查看本期用量"
-								r.operationID = "get-tunnel-usage"
-								r.operationGroup = ""
-								r.pathPattern = "/api/v1/tunnel/usage"
-								r.args = args
-								r.count = 0
-								return r, true
-							default:
-								return
-							}
-						}
-						switch elem[0] {
-						case '/': // Prefix: "/series"
-
-							if l := len("/series"); len(elem) >= l && elem[0:l] == "/series" {
-								elem = elem[l:]
-							} else {
-								break
-							}
-
-							if len(elem) == 0 {
-								// Leaf node.
-								switch method {
-								case "GET":
-									r.name = ListTunnelUsageSeriesOperation
-									r.summary = "查看按天用量"
-									r.operationID = "list-tunnel-usage-series"
-									r.operationGroup = ""
-									r.pathPattern = "/api/v1/tunnel/usage/series"
-									r.args = args
-									r.count = 0
-									return r, true
-								default:
-									return
-								}
-							}
-
 						}
 
 					}

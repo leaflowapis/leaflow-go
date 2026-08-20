@@ -33,28 +33,26 @@ func (c *codeRecorder) Unwrap() http.ResponseWriter {
 	return c.ResponseWriter
 }
 
-// handleActOnTunnelRequest handles act-on-tunnel operation.
+// handleGenerateL4TunnelRequest handles generate-l4-tunnel operation.
 //
-// 停用不是退订。
-// 停用会把这条隧道的实例从上游调度器撤下，但端口保留，重新启用后原样回来，订阅地址也不变。适合「这段时间不用」。
+// 幂等：已经有了再调一次返回同一条，不报错。按钮被点两次是安全的。
 //
-// 被平台停用的隧道（`suspended` 为 true）无法自行启用，会返回
-// `TUNNEL_SUSPENDED`——那通常是欠费或违规，需要先处理对应的问题。.
+// 生成之后请调订阅接口取地址，本接口不返回它。.
 //
-// POST /api/v1/tunnel/actions
-func (s *Server) handleActOnTunnelRequest(args [0]string, argsEscaped bool, w http.ResponseWriter, r *http.Request) {
+// POST /api/v1/tunnel/l4
+func (s *Server) handleGenerateL4TunnelRequest(args [0]string, argsEscaped bool, w http.ResponseWriter, r *http.Request) {
 	statusWriter := &codeRecorder{ResponseWriter: w}
 	w = statusWriter
 	otelAttrs := []attribute.KeyValue{
-		otelogen.OperationID("act-on-tunnel"),
+		otelogen.OperationID("generate-l4-tunnel"),
 		semconv.HTTPRequestMethodKey.String("POST"),
-		semconv.HTTPRouteKey.String("/api/v1/tunnel/actions"),
+		semconv.HTTPRouteKey.String("/api/v1/tunnel/l4"),
 	}
 	// Add attributes from config.
 	otelAttrs = append(otelAttrs, s.cfg.Attributes...)
 
 	// Start a span for this request.
-	ctx, span := s.cfg.Tracer.Start(r.Context(), ActOnTunnelOperation,
+	ctx, span := s.cfg.Tracer.Start(r.Context(), GenerateL4TunnelOperation,
 		trace.WithAttributes(otelAttrs...),
 		serverSpanKind,
 	)
@@ -109,423 +107,15 @@ func (s *Server) handleActOnTunnelRequest(args [0]string, argsEscaped bool, w ht
 		}
 		err          error
 		opErrContext = ogenerrors.OperationContext{
-			Name: ActOnTunnelOperation,
-			ID:   "act-on-tunnel",
+			Name: GenerateL4TunnelOperation,
+			ID:   "generate-l4-tunnel",
 		}
 	)
 	{
 		type bitset = [1]uint8
 		var satisfied bitset
 		{
-			sctx, ok, err := s.securityBearerAuth(ctx, ActOnTunnelOperation, r)
-			if err != nil {
-				err = &ogenerrors.SecurityError{
-					OperationContext: opErrContext,
-					Security:         "BearerAuth",
-					Err:              err,
-				}
-				if encodeErr := encodeErrorResponse(s.h.NewError(ctx, err), w, span); encodeErr != nil {
-					defer recordError("Security:BearerAuth", err)
-				}
-				return
-			}
-			if ok {
-				satisfied[0] |= 1 << 0
-				ctx = sctx
-			}
-		}
-
-		if ok := func() bool {
-		nextRequirement:
-			for _, requirement := range []bitset{
-				{0b00000001},
-			} {
-				for i, mask := range requirement {
-					if satisfied[i]&mask != mask {
-						continue nextRequirement
-					}
-				}
-				return true
-			}
-			return false
-		}(); !ok {
-			err = &ogenerrors.SecurityError{
-				OperationContext: opErrContext,
-				Err:              ogenerrors.ErrSecurityRequirementIsNotSatisfied,
-			}
-			if encodeErr := encodeErrorResponse(s.h.NewError(ctx, err), w, span); encodeErr != nil {
-				defer recordError("Security", err)
-			}
-			return
-		}
-	}
-
-	var rawBody []byte
-	request, rawBody, close, err := s.decodeActOnTunnelRequest(r)
-	if err != nil {
-		err = &ogenerrors.DecodeRequestError{
-			OperationContext: opErrContext,
-			Err:              err,
-		}
-		defer recordError("DecodeRequest", err)
-		s.cfg.ErrorHandler(ctx, w, r, err)
-		return
-	}
-	defer func() {
-		if err := close(); err != nil {
-			recordError("CloseRequest", err)
-		}
-	}()
-
-	var response *TunnelResource
-	if m := s.cfg.Middleware; m != nil {
-		mreq := middleware.Request{
-			Context:          ctx,
-			OperationName:    ActOnTunnelOperation,
-			OperationSummary: "启用或停用隧道",
-			OperationID:      "act-on-tunnel",
-			Body:             request,
-			RawBody:          rawBody,
-			Params:           middleware.Parameters{},
-			Raw:              r,
-		}
-
-		type (
-			Request  = *ActOnTunnelRequestBody
-			Params   = struct{}
-			Response = *TunnelResource
-		)
-		response, err = middleware.HookMiddleware[
-			Request,
-			Params,
-			Response,
-		](
-			m,
-			mreq,
-			nil,
-			func(ctx context.Context, request Request, params Params) (response Response, err error) {
-				response, err = s.h.ActOnTunnel(ctx, request)
-				return response, err
-			},
-		)
-	} else {
-		response, err = s.h.ActOnTunnel(ctx, request)
-	}
-	if err != nil {
-		if errRes, ok := errors.Into[*ErrorStatusCode](err); ok {
-			if err := encodeErrorResponse(errRes, w, span); err != nil {
-				defer recordError("Internal", err)
-			}
-			return
-		}
-		if errors.Is(err, ht.ErrNotImplemented) {
-			s.cfg.ErrorHandler(ctx, w, r, err)
-			return
-		}
-		if err := encodeErrorResponse(s.h.NewError(ctx, err), w, span); err != nil {
-			defer recordError("Internal", err)
-		}
-		return
-	}
-
-	if err := encodeActOnTunnelResponse(response, w, span); err != nil {
-		defer recordError("EncodeResponse", err)
-		if !errors.Is(err, ht.ErrInternalServerErrorResponse) {
-			s.cfg.ErrorHandler(ctx, w, r, err)
-		}
-		return
-	}
-}
-
-// handleChangeTunnelPlanRequest handles change-tunnel-plan operation.
-//
-// 换套餐会立刻重判线路资格：多出来的线路马上可用，少掉的那些进入删除队列——宽限期内照常可用，到期才真正释放。所以换套餐不是一次瞬时切换，订阅内容会在接下来一段时间内变化。
-//
-// 换完之后建议重新拉取一次订阅。.
-//
-// PUT /api/v1/tunnel/plan
-func (s *Server) handleChangeTunnelPlanRequest(args [0]string, argsEscaped bool, w http.ResponseWriter, r *http.Request) {
-	statusWriter := &codeRecorder{ResponseWriter: w}
-	w = statusWriter
-	otelAttrs := []attribute.KeyValue{
-		otelogen.OperationID("change-tunnel-plan"),
-		semconv.HTTPRequestMethodKey.String("PUT"),
-		semconv.HTTPRouteKey.String("/api/v1/tunnel/plan"),
-	}
-	// Add attributes from config.
-	otelAttrs = append(otelAttrs, s.cfg.Attributes...)
-
-	// Start a span for this request.
-	ctx, span := s.cfg.Tracer.Start(r.Context(), ChangeTunnelPlanOperation,
-		trace.WithAttributes(otelAttrs...),
-		serverSpanKind,
-	)
-	defer span.End()
-
-	// Add Labeler to context.
-	labeler := &Labeler{attrs: otelAttrs}
-	ctx = contextWithLabeler(ctx, labeler)
-
-	// Run stopwatch.
-	startTime := time.Now()
-	defer func() {
-		elapsedDuration := time.Since(startTime)
-
-		attrSet := labeler.AttributeSet()
-		attrs := attrSet.ToSlice()
-		code := statusWriter.status
-		if code != 0 {
-			codeAttr := semconv.HTTPResponseStatusCode(code)
-			attrs = append(attrs, codeAttr)
-			span.SetAttributes(attrs...)
-		}
-		attrOpt := metric.WithAttributes(attrs...)
-
-		// Increment request counter.
-		s.requests.Add(ctx, 1, attrOpt)
-
-		// Use floating point division here for higher precision (instead of Millisecond method).
-		s.duration.Record(ctx, float64(elapsedDuration)/float64(time.Millisecond), attrOpt)
-	}()
-
-	var (
-		recordError = func(stage string, err error) {
-			span.RecordError(err)
-
-			// https://opentelemetry.io/docs/specs/semconv/http/http-spans/#status
-			// Span Status MUST be left unset if HTTP status code was in the 1xx, 2xx or 3xx ranges,
-			// unless there was another error (e.g., network error receiving the response body; or 3xx codes with
-			// max redirects exceeded), in which case status MUST be set to Error.
-			code := statusWriter.status
-			if code < 100 || code >= 500 {
-				span.SetStatus(codes.Error, stage)
-			}
-
-			attrSet := labeler.AttributeSet()
-			attrs := attrSet.ToSlice()
-			if code != 0 {
-				attrs = append(attrs, semconv.HTTPResponseStatusCode(code))
-			}
-
-			s.errors.Add(ctx, 1, metric.WithAttributes(attrs...))
-		}
-		err          error
-		opErrContext = ogenerrors.OperationContext{
-			Name: ChangeTunnelPlanOperation,
-			ID:   "change-tunnel-plan",
-		}
-	)
-	{
-		type bitset = [1]uint8
-		var satisfied bitset
-		{
-			sctx, ok, err := s.securityBearerAuth(ctx, ChangeTunnelPlanOperation, r)
-			if err != nil {
-				err = &ogenerrors.SecurityError{
-					OperationContext: opErrContext,
-					Security:         "BearerAuth",
-					Err:              err,
-				}
-				if encodeErr := encodeErrorResponse(s.h.NewError(ctx, err), w, span); encodeErr != nil {
-					defer recordError("Security:BearerAuth", err)
-				}
-				return
-			}
-			if ok {
-				satisfied[0] |= 1 << 0
-				ctx = sctx
-			}
-		}
-
-		if ok := func() bool {
-		nextRequirement:
-			for _, requirement := range []bitset{
-				{0b00000001},
-			} {
-				for i, mask := range requirement {
-					if satisfied[i]&mask != mask {
-						continue nextRequirement
-					}
-				}
-				return true
-			}
-			return false
-		}(); !ok {
-			err = &ogenerrors.SecurityError{
-				OperationContext: opErrContext,
-				Err:              ogenerrors.ErrSecurityRequirementIsNotSatisfied,
-			}
-			if encodeErr := encodeErrorResponse(s.h.NewError(ctx, err), w, span); encodeErr != nil {
-				defer recordError("Security", err)
-			}
-			return
-		}
-	}
-
-	var rawBody []byte
-	request, rawBody, close, err := s.decodeChangeTunnelPlanRequest(r)
-	if err != nil {
-		err = &ogenerrors.DecodeRequestError{
-			OperationContext: opErrContext,
-			Err:              err,
-		}
-		defer recordError("DecodeRequest", err)
-		s.cfg.ErrorHandler(ctx, w, r, err)
-		return
-	}
-	defer func() {
-		if err := close(); err != nil {
-			recordError("CloseRequest", err)
-		}
-	}()
-
-	var response *TunnelResource
-	if m := s.cfg.Middleware; m != nil {
-		mreq := middleware.Request{
-			Context:          ctx,
-			OperationName:    ChangeTunnelPlanOperation,
-			OperationSummary: "更换套餐",
-			OperationID:      "change-tunnel-plan",
-			Body:             request,
-			RawBody:          rawBody,
-			Params:           middleware.Parameters{},
-			Raw:              r,
-		}
-
-		type (
-			Request  = *ChangeTunnelPlanRequestBody
-			Params   = struct{}
-			Response = *TunnelResource
-		)
-		response, err = middleware.HookMiddleware[
-			Request,
-			Params,
-			Response,
-		](
-			m,
-			mreq,
-			nil,
-			func(ctx context.Context, request Request, params Params) (response Response, err error) {
-				response, err = s.h.ChangeTunnelPlan(ctx, request)
-				return response, err
-			},
-		)
-	} else {
-		response, err = s.h.ChangeTunnelPlan(ctx, request)
-	}
-	if err != nil {
-		if errRes, ok := errors.Into[*ErrorStatusCode](err); ok {
-			if err := encodeErrorResponse(errRes, w, span); err != nil {
-				defer recordError("Internal", err)
-			}
-			return
-		}
-		if errors.Is(err, ht.ErrNotImplemented) {
-			s.cfg.ErrorHandler(ctx, w, r, err)
-			return
-		}
-		if err := encodeErrorResponse(s.h.NewError(ctx, err), w, span); err != nil {
-			defer recordError("Internal", err)
-		}
-		return
-	}
-
-	if err := encodeChangeTunnelPlanResponse(response, w, span); err != nil {
-		defer recordError("EncodeResponse", err)
-		if !errors.Is(err, ht.ErrInternalServerErrorResponse) {
-			s.cfg.ErrorHandler(ctx, w, r, err)
-		}
-		return
-	}
-}
-
-// handleCloseTunnelRequest handles close-tunnel operation.
-//
-// 不可逆。
-// 上游账户会被删除，订阅地址立刻失效，重新开通得到的是一条全新的隧道和一条全新的订阅地址。
-//
-// 删除是异步的：返回时 `status` 可能仍是
-// `deleting`，表示上游还没删干净（通常是某台服务器暂时连不上）。平台会自动重试，期间这条隧道仍然出现在查询接口里。退订完成前无法重新开通。
-//
-// 只是暂时不用的话请用停用，它保留端口和订阅地址。.
-//
-// DELETE /api/v1/tunnel
-func (s *Server) handleCloseTunnelRequest(args [0]string, argsEscaped bool, w http.ResponseWriter, r *http.Request) {
-	statusWriter := &codeRecorder{ResponseWriter: w}
-	w = statusWriter
-	otelAttrs := []attribute.KeyValue{
-		otelogen.OperationID("close-tunnel"),
-		semconv.HTTPRequestMethodKey.String("DELETE"),
-		semconv.HTTPRouteKey.String("/api/v1/tunnel"),
-	}
-	// Add attributes from config.
-	otelAttrs = append(otelAttrs, s.cfg.Attributes...)
-
-	// Start a span for this request.
-	ctx, span := s.cfg.Tracer.Start(r.Context(), CloseTunnelOperation,
-		trace.WithAttributes(otelAttrs...),
-		serverSpanKind,
-	)
-	defer span.End()
-
-	// Add Labeler to context.
-	labeler := &Labeler{attrs: otelAttrs}
-	ctx = contextWithLabeler(ctx, labeler)
-
-	// Run stopwatch.
-	startTime := time.Now()
-	defer func() {
-		elapsedDuration := time.Since(startTime)
-
-		attrSet := labeler.AttributeSet()
-		attrs := attrSet.ToSlice()
-		code := statusWriter.status
-		if code != 0 {
-			codeAttr := semconv.HTTPResponseStatusCode(code)
-			attrs = append(attrs, codeAttr)
-			span.SetAttributes(attrs...)
-		}
-		attrOpt := metric.WithAttributes(attrs...)
-
-		// Increment request counter.
-		s.requests.Add(ctx, 1, attrOpt)
-
-		// Use floating point division here for higher precision (instead of Millisecond method).
-		s.duration.Record(ctx, float64(elapsedDuration)/float64(time.Millisecond), attrOpt)
-	}()
-
-	var (
-		recordError = func(stage string, err error) {
-			span.RecordError(err)
-
-			// https://opentelemetry.io/docs/specs/semconv/http/http-spans/#status
-			// Span Status MUST be left unset if HTTP status code was in the 1xx, 2xx or 3xx ranges,
-			// unless there was another error (e.g., network error receiving the response body; or 3xx codes with
-			// max redirects exceeded), in which case status MUST be set to Error.
-			code := statusWriter.status
-			if code < 100 || code >= 500 {
-				span.SetStatus(codes.Error, stage)
-			}
-
-			attrSet := labeler.AttributeSet()
-			attrs := attrSet.ToSlice()
-			if code != 0 {
-				attrs = append(attrs, semconv.HTTPResponseStatusCode(code))
-			}
-
-			s.errors.Add(ctx, 1, metric.WithAttributes(attrs...))
-		}
-		err          error
-		opErrContext = ogenerrors.OperationContext{
-			Name: CloseTunnelOperation,
-			ID:   "close-tunnel",
-		}
-	)
-	{
-		type bitset = [1]uint8
-		var satisfied bitset
-		{
-			sctx, ok, err := s.securityBearerAuth(ctx, CloseTunnelOperation, r)
+			sctx, ok, err := s.securityBearerAuth(ctx, GenerateL4TunnelOperation, r)
 			if err != nil {
 				err = &ogenerrors.SecurityError{
 					OperationContext: opErrContext,
@@ -574,9 +164,9 @@ func (s *Server) handleCloseTunnelRequest(args [0]string, argsEscaped bool, w ht
 	if m := s.cfg.Middleware; m != nil {
 		mreq := middleware.Request{
 			Context:          ctx,
-			OperationName:    CloseTunnelOperation,
-			OperationSummary: "退订隧道",
-			OperationID:      "close-tunnel",
+			OperationName:    GenerateL4TunnelOperation,
+			OperationSummary: "生成四层隧道",
+			OperationID:      "generate-l4-tunnel",
 			Body:             nil,
 			RawBody:          rawBody,
 			Params:           middleware.Parameters{},
@@ -597,12 +187,12 @@ func (s *Server) handleCloseTunnelRequest(args [0]string, argsEscaped bool, w ht
 			mreq,
 			nil,
 			func(ctx context.Context, request Request, params Params) (response Response, err error) {
-				response, err = s.h.CloseTunnel(ctx)
+				response, err = s.h.GenerateL4Tunnel(ctx)
 				return response, err
 			},
 		)
 	} else {
-		response, err = s.h.CloseTunnel(ctx)
+		response, err = s.h.GenerateL4Tunnel(ctx)
 	}
 	if err != nil {
 		if errRes, ok := errors.Into[*ErrorStatusCode](err); ok {
@@ -621,7 +211,7 @@ func (s *Server) handleCloseTunnelRequest(args [0]string, argsEscaped bool, w ht
 		return
 	}
 
-	if err := encodeCloseTunnelResponse(response, w, span); err != nil {
+	if err := encodeGenerateL4TunnelResponse(response, w, span); err != nil {
 		defer recordError("EncodeResponse", err)
 		if !errors.Is(err, ht.ErrInternalServerErrorResponse) {
 			s.cfg.ErrorHandler(ctx, w, r, err)
@@ -630,29 +220,27 @@ func (s *Server) handleCloseTunnelRequest(args [0]string, argsEscaped bool, w ht
 	}
 }
 
-// handleGetTunnelRequest handles get-tunnel operation.
+// handleGetL4TunnelRequest handles get-l4-tunnel operation.
 //
-// 每个项目最多一条隧道。尚未开通时返回 404（`TUNNEL_NOT_FOUND`）。
+// 还没生成过时返回
+// `TUNNEL_NOT_FOUND`——首屏据此决定画「生成订阅链接」那个按钮还是画结果。
 //
-// 响应里的 `usage` 是缓存的用量，`usage.synced_at` 说明它是什么时候采集的；为
-// null 表示尚未采集过，而不是用量为零。需要当前值请调用量接口。
+// 订阅地址、用量、配额各有自己的接口，这里不重复返回。.
 //
-// 订阅地址不在这里，它是一条长期有效的凭据，只由订阅接口单独返回。.
-//
-// GET /api/v1/tunnel
-func (s *Server) handleGetTunnelRequest(args [0]string, argsEscaped bool, w http.ResponseWriter, r *http.Request) {
+// GET /api/v1/tunnel/l4
+func (s *Server) handleGetL4TunnelRequest(args [0]string, argsEscaped bool, w http.ResponseWriter, r *http.Request) {
 	statusWriter := &codeRecorder{ResponseWriter: w}
 	w = statusWriter
 	otelAttrs := []attribute.KeyValue{
-		otelogen.OperationID("get-tunnel"),
+		otelogen.OperationID("get-l4-tunnel"),
 		semconv.HTTPRequestMethodKey.String("GET"),
-		semconv.HTTPRouteKey.String("/api/v1/tunnel"),
+		semconv.HTTPRouteKey.String("/api/v1/tunnel/l4"),
 	}
 	// Add attributes from config.
 	otelAttrs = append(otelAttrs, s.cfg.Attributes...)
 
 	// Start a span for this request.
-	ctx, span := s.cfg.Tracer.Start(r.Context(), GetTunnelOperation,
+	ctx, span := s.cfg.Tracer.Start(r.Context(), GetL4TunnelOperation,
 		trace.WithAttributes(otelAttrs...),
 		serverSpanKind,
 	)
@@ -707,15 +295,15 @@ func (s *Server) handleGetTunnelRequest(args [0]string, argsEscaped bool, w http
 		}
 		err          error
 		opErrContext = ogenerrors.OperationContext{
-			Name: GetTunnelOperation,
-			ID:   "get-tunnel",
+			Name: GetL4TunnelOperation,
+			ID:   "get-l4-tunnel",
 		}
 	)
 	{
 		type bitset = [1]uint8
 		var satisfied bitset
 		{
-			sctx, ok, err := s.securityBearerAuth(ctx, GetTunnelOperation, r)
+			sctx, ok, err := s.securityBearerAuth(ctx, GetL4TunnelOperation, r)
 			if err != nil {
 				err = &ogenerrors.SecurityError{
 					OperationContext: opErrContext,
@@ -764,9 +352,9 @@ func (s *Server) handleGetTunnelRequest(args [0]string, argsEscaped bool, w http
 	if m := s.cfg.Middleware; m != nil {
 		mreq := middleware.Request{
 			Context:          ctx,
-			OperationName:    GetTunnelOperation,
-			OperationSummary: "查看本项目的隧道",
-			OperationID:      "get-tunnel",
+			OperationName:    GetL4TunnelOperation,
+			OperationSummary: "查看本项目的四层隧道",
+			OperationID:      "get-l4-tunnel",
 			Body:             nil,
 			RawBody:          rawBody,
 			Params:           middleware.Parameters{},
@@ -787,12 +375,12 @@ func (s *Server) handleGetTunnelRequest(args [0]string, argsEscaped bool, w http
 			mreq,
 			nil,
 			func(ctx context.Context, request Request, params Params) (response Response, err error) {
-				response, err = s.h.GetTunnel(ctx)
+				response, err = s.h.GetL4Tunnel(ctx)
 				return response, err
 			},
 		)
 	} else {
-		response, err = s.h.GetTunnel(ctx)
+		response, err = s.h.GetL4Tunnel(ctx)
 	}
 	if err != nil {
 		if errRes, ok := errors.Into[*ErrorStatusCode](err); ok {
@@ -811,7 +399,7 @@ func (s *Server) handleGetTunnelRequest(args [0]string, argsEscaped bool, w http
 		return
 	}
 
-	if err := encodeGetTunnelResponse(response, w, span); err != nil {
+	if err := encodeGetL4TunnelResponse(response, w, span); err != nil {
 		defer recordError("EncodeResponse", err)
 		if !errors.Is(err, ht.ErrInternalServerErrorResponse) {
 			s.cfg.ErrorHandler(ctx, w, r, err)
@@ -820,32 +408,30 @@ func (s *Server) handleGetTunnelRequest(args [0]string, argsEscaped bool, w http
 	}
 }
 
-// handleGetTunnelSubscriptionRequest handles get-tunnel-subscription operation.
+// handleGetL4TunnelSubscriptionRequest handles get-l4-tunnel-subscription operation.
 //
-// 返回的是一条长期有效的凭据，等同于密码。
-// 拿到它就能取得本项目全部节点与密码，请勿转发、截图或提交到工单。
+// 这条 URL 是凭据，等同于密码。
+// 拿着它就能取到这个项目的全部节点和密码，所以它只在这一个接口里出现，一次一条——不进任何列表，也不在隧道详情里。
 //
-// 它不会出现在隧道详情或任何列表里，只由这个接口返回。
+// 客户端不应在用户主动请求之前调用它：这个接口的每一次调用都会被记进操作日志。
 //
 // `status` 为 `preparing`
-// 时链接照样可用，内容会在拉取那一刻按当时的状态重新派生。
+// 时链接照样有效，内容会在拉取那一刻重新派生。它只该影响页面上说什么。.
 //
-// 怀疑泄露时请调用重置接口。.
-//
-// GET /api/v1/tunnel/subscription
-func (s *Server) handleGetTunnelSubscriptionRequest(args [0]string, argsEscaped bool, w http.ResponseWriter, r *http.Request) {
+// GET /api/v1/tunnel/l4/subscription
+func (s *Server) handleGetL4TunnelSubscriptionRequest(args [0]string, argsEscaped bool, w http.ResponseWriter, r *http.Request) {
 	statusWriter := &codeRecorder{ResponseWriter: w}
 	w = statusWriter
 	otelAttrs := []attribute.KeyValue{
-		otelogen.OperationID("get-tunnel-subscription"),
+		otelogen.OperationID("get-l4-tunnel-subscription"),
 		semconv.HTTPRequestMethodKey.String("GET"),
-		semconv.HTTPRouteKey.String("/api/v1/tunnel/subscription"),
+		semconv.HTTPRouteKey.String("/api/v1/tunnel/l4/subscription"),
 	}
 	// Add attributes from config.
 	otelAttrs = append(otelAttrs, s.cfg.Attributes...)
 
 	// Start a span for this request.
-	ctx, span := s.cfg.Tracer.Start(r.Context(), GetTunnelSubscriptionOperation,
+	ctx, span := s.cfg.Tracer.Start(r.Context(), GetL4TunnelSubscriptionOperation,
 		trace.WithAttributes(otelAttrs...),
 		serverSpanKind,
 	)
@@ -900,15 +486,15 @@ func (s *Server) handleGetTunnelSubscriptionRequest(args [0]string, argsEscaped 
 		}
 		err          error
 		opErrContext = ogenerrors.OperationContext{
-			Name: GetTunnelSubscriptionOperation,
-			ID:   "get-tunnel-subscription",
+			Name: GetL4TunnelSubscriptionOperation,
+			ID:   "get-l4-tunnel-subscription",
 		}
 	)
 	{
 		type bitset = [1]uint8
 		var satisfied bitset
 		{
-			sctx, ok, err := s.securityBearerAuth(ctx, GetTunnelSubscriptionOperation, r)
+			sctx, ok, err := s.securityBearerAuth(ctx, GetL4TunnelSubscriptionOperation, r)
 			if err != nil {
 				err = &ogenerrors.SecurityError{
 					OperationContext: opErrContext,
@@ -957,9 +543,9 @@ func (s *Server) handleGetTunnelSubscriptionRequest(args [0]string, argsEscaped 
 	if m := s.cfg.Middleware; m != nil {
 		mreq := middleware.Request{
 			Context:          ctx,
-			OperationName:    GetTunnelSubscriptionOperation,
+			OperationName:    GetL4TunnelSubscriptionOperation,
 			OperationSummary: "获取订阅地址",
-			OperationID:      "get-tunnel-subscription",
+			OperationID:      "get-l4-tunnel-subscription",
 			Body:             nil,
 			RawBody:          rawBody,
 			Params:           middleware.Parameters{},
@@ -980,12 +566,12 @@ func (s *Server) handleGetTunnelSubscriptionRequest(args [0]string, argsEscaped 
 			mreq,
 			nil,
 			func(ctx context.Context, request Request, params Params) (response Response, err error) {
-				response, err = s.h.GetTunnelSubscription(ctx)
+				response, err = s.h.GetL4TunnelSubscription(ctx)
 				return response, err
 			},
 		)
 	} else {
-		response, err = s.h.GetTunnelSubscription(ctx)
+		response, err = s.h.GetL4TunnelSubscription(ctx)
 	}
 	if err != nil {
 		if errRes, ok := errors.Into[*ErrorStatusCode](err); ok {
@@ -1004,7 +590,7 @@ func (s *Server) handleGetTunnelSubscriptionRequest(args [0]string, argsEscaped 
 		return
 	}
 
-	if err := encodeGetTunnelSubscriptionResponse(response, w, span); err != nil {
+	if err := encodeGetL4TunnelSubscriptionResponse(response, w, span); err != nil {
 		defer recordError("EncodeResponse", err)
 		if !errors.Is(err, ht.ErrInternalServerErrorResponse) {
 			s.cfg.ErrorHandler(ctx, w, r, err)
@@ -1013,29 +599,28 @@ func (s *Server) handleGetTunnelSubscriptionRequest(args [0]string, argsEscaped 
 	}
 }
 
-// handleGetTunnelUsageRequest handles get-tunnel-usage operation.
+// handleGetL4TunnelUsageRequest handles get-l4-tunnel-usage operation.
 //
-// 现场向上游查询，比隧道详情里那份缓存新。
+// 实时查询，不经过缓存。
 //
 // 判断是否超额只看 `billed_bytes`：线路可以设置倍率（如 1.5× 或
-// 0×），`raw_bytes` 是实际传输量，两者不一定相等。`over_quota` 已经算好。
+// 0×），`raw_bytes` 是实际传输量，两者不一定相等。`quota_bytes` 为 0
+// 表示不限量。.
 //
-// 用量由上游定期采集，最多滞后一个采集周期，适合用量管控，不适合作为计费结算依据。.
-//
-// GET /api/v1/tunnel/usage
-func (s *Server) handleGetTunnelUsageRequest(args [0]string, argsEscaped bool, w http.ResponseWriter, r *http.Request) {
+// GET /api/v1/tunnel/l4/usage
+func (s *Server) handleGetL4TunnelUsageRequest(args [0]string, argsEscaped bool, w http.ResponseWriter, r *http.Request) {
 	statusWriter := &codeRecorder{ResponseWriter: w}
 	w = statusWriter
 	otelAttrs := []attribute.KeyValue{
-		otelogen.OperationID("get-tunnel-usage"),
+		otelogen.OperationID("get-l4-tunnel-usage"),
 		semconv.HTTPRequestMethodKey.String("GET"),
-		semconv.HTTPRouteKey.String("/api/v1/tunnel/usage"),
+		semconv.HTTPRouteKey.String("/api/v1/tunnel/l4/usage"),
 	}
 	// Add attributes from config.
 	otelAttrs = append(otelAttrs, s.cfg.Attributes...)
 
 	// Start a span for this request.
-	ctx, span := s.cfg.Tracer.Start(r.Context(), GetTunnelUsageOperation,
+	ctx, span := s.cfg.Tracer.Start(r.Context(), GetL4TunnelUsageOperation,
 		trace.WithAttributes(otelAttrs...),
 		serverSpanKind,
 	)
@@ -1090,15 +675,15 @@ func (s *Server) handleGetTunnelUsageRequest(args [0]string, argsEscaped bool, w
 		}
 		err          error
 		opErrContext = ogenerrors.OperationContext{
-			Name: GetTunnelUsageOperation,
-			ID:   "get-tunnel-usage",
+			Name: GetL4TunnelUsageOperation,
+			ID:   "get-l4-tunnel-usage",
 		}
 	)
 	{
 		type bitset = [1]uint8
 		var satisfied bitset
 		{
-			sctx, ok, err := s.securityBearerAuth(ctx, GetTunnelUsageOperation, r)
+			sctx, ok, err := s.securityBearerAuth(ctx, GetL4TunnelUsageOperation, r)
 			if err != nil {
 				err = &ogenerrors.SecurityError{
 					OperationContext: opErrContext,
@@ -1147,9 +732,9 @@ func (s *Server) handleGetTunnelUsageRequest(args [0]string, argsEscaped bool, w
 	if m := s.cfg.Middleware; m != nil {
 		mreq := middleware.Request{
 			Context:          ctx,
-			OperationName:    GetTunnelUsageOperation,
+			OperationName:    GetL4TunnelUsageOperation,
 			OperationSummary: "查看本期用量",
-			OperationID:      "get-tunnel-usage",
+			OperationID:      "get-l4-tunnel-usage",
 			Body:             nil,
 			RawBody:          rawBody,
 			Params:           middleware.Parameters{},
@@ -1170,12 +755,12 @@ func (s *Server) handleGetTunnelUsageRequest(args [0]string, argsEscaped bool, w
 			mreq,
 			nil,
 			func(ctx context.Context, request Request, params Params) (response Response, err error) {
-				response, err = s.h.GetTunnelUsage(ctx)
+				response, err = s.h.GetL4TunnelUsage(ctx)
 				return response, err
 			},
 		)
 	} else {
-		response, err = s.h.GetTunnelUsage(ctx)
+		response, err = s.h.GetL4TunnelUsage(ctx)
 	}
 	if err != nil {
 		if errRes, ok := errors.Into[*ErrorStatusCode](err); ok {
@@ -1194,7 +779,7 @@ func (s *Server) handleGetTunnelUsageRequest(args [0]string, argsEscaped bool, w
 		return
 	}
 
-	if err := encodeGetTunnelUsageResponse(response, w, span); err != nil {
+	if err := encodeGetL4TunnelUsageResponse(response, w, span); err != nil {
 		defer recordError("EncodeResponse", err)
 		if !errors.Is(err, ht.ErrInternalServerErrorResponse) {
 			s.cfg.ErrorHandler(ctx, w, r, err)
@@ -1203,29 +788,26 @@ func (s *Server) handleGetTunnelUsageRequest(args [0]string, argsEscaped bool, w
 	}
 }
 
-// handleListTunnelOperationLogsRequest handles list-tunnel-operation-logs operation.
+// handleListL4TunnelUsageSeriesRequest handles list-l4-tunnel-usage-series operation.
 //
-// 记录每一次写操作：谁、什么时候、做了什么、成功还是失败。读操作不记录。
+// 按自然日切分。没有流量的日子不会出现在结果里（不补零），画图那一侧要自己补齐日期轴——否则一段没人用的日子会被画成一条直接连过去的线，看起来像那几天一直在匀速跑流量。
 //
-// `actor` 为 null
-// 表示该操作由平台执行（例如自动重试删除、项目停服）——平台做了什么是看得到的，但具体是哪位运营人员不会展示。
+// 把这里的天加起来不等于本期用量，这是有意的：本期按计费周期切，而且「重置本期用量」只作用于本期，日汇总一行都不删。.
 //
-// `payload` 只包含路径参数与查询串，且其中像凭据的字段已被替换为占位符。.
-//
-// GET /api/v1/operation-logs
-func (s *Server) handleListTunnelOperationLogsRequest(args [0]string, argsEscaped bool, w http.ResponseWriter, r *http.Request) {
+// GET /api/v1/tunnel/l4/usage/series
+func (s *Server) handleListL4TunnelUsageSeriesRequest(args [0]string, argsEscaped bool, w http.ResponseWriter, r *http.Request) {
 	statusWriter := &codeRecorder{ResponseWriter: w}
 	w = statusWriter
 	otelAttrs := []attribute.KeyValue{
-		otelogen.OperationID("list-tunnel-operation-logs"),
+		otelogen.OperationID("list-l4-tunnel-usage-series"),
 		semconv.HTTPRequestMethodKey.String("GET"),
-		semconv.HTTPRouteKey.String("/api/v1/operation-logs"),
+		semconv.HTTPRouteKey.String("/api/v1/tunnel/l4/usage/series"),
 	}
 	// Add attributes from config.
 	otelAttrs = append(otelAttrs, s.cfg.Attributes...)
 
 	// Start a span for this request.
-	ctx, span := s.cfg.Tracer.Start(r.Context(), ListTunnelOperationLogsOperation,
+	ctx, span := s.cfg.Tracer.Start(r.Context(), ListL4TunnelUsageSeriesOperation,
 		trace.WithAttributes(otelAttrs...),
 		serverSpanKind,
 	)
@@ -1280,15 +862,15 @@ func (s *Server) handleListTunnelOperationLogsRequest(args [0]string, argsEscape
 		}
 		err          error
 		opErrContext = ogenerrors.OperationContext{
-			Name: ListTunnelOperationLogsOperation,
-			ID:   "list-tunnel-operation-logs",
+			Name: ListL4TunnelUsageSeriesOperation,
+			ID:   "list-l4-tunnel-usage-series",
 		}
 	)
 	{
 		type bitset = [1]uint8
 		var satisfied bitset
 		{
-			sctx, ok, err := s.securityBearerAuth(ctx, ListTunnelOperationLogsOperation, r)
+			sctx, ok, err := s.securityBearerAuth(ctx, ListL4TunnelUsageSeriesOperation, r)
 			if err != nil {
 				err = &ogenerrors.SecurityError{
 					OperationContext: opErrContext,
@@ -1330,409 +912,7 @@ func (s *Server) handleListTunnelOperationLogsRequest(args [0]string, argsEscape
 			return
 		}
 	}
-	params, err := decodeListTunnelOperationLogsParams(args, argsEscaped, r)
-	if err != nil {
-		err = &ogenerrors.DecodeParamsError{
-			OperationContext: opErrContext,
-			Err:              err,
-		}
-		defer recordError("DecodeParams", err)
-		s.cfg.ErrorHandler(ctx, w, r, err)
-		return
-	}
-
-	var rawBody []byte
-
-	var response *LengthAwarePageOperationLogResource
-	if m := s.cfg.Middleware; m != nil {
-		mreq := middleware.Request{
-			Context:          ctx,
-			OperationName:    ListTunnelOperationLogsOperation,
-			OperationSummary: "查看本项目的操作日志",
-			OperationID:      "list-tunnel-operation-logs",
-			Body:             nil,
-			RawBody:          rawBody,
-			Params: middleware.Parameters{
-				{
-					Name: "limit",
-					In:   "query",
-				}: params.Limit,
-				{
-					Name: "offset",
-					In:   "query",
-				}: params.Offset,
-				{
-					Name: "action",
-					In:   "query",
-				}: params.Action,
-			},
-			Raw: r,
-		}
-
-		type (
-			Request  = struct{}
-			Params   = ListTunnelOperationLogsParams
-			Response = *LengthAwarePageOperationLogResource
-		)
-		response, err = middleware.HookMiddleware[
-			Request,
-			Params,
-			Response,
-		](
-			m,
-			mreq,
-			unpackListTunnelOperationLogsParams,
-			func(ctx context.Context, request Request, params Params) (response Response, err error) {
-				response, err = s.h.ListTunnelOperationLogs(ctx, params)
-				return response, err
-			},
-		)
-	} else {
-		response, err = s.h.ListTunnelOperationLogs(ctx, params)
-	}
-	if err != nil {
-		if errRes, ok := errors.Into[*ErrorStatusCode](err); ok {
-			if err := encodeErrorResponse(errRes, w, span); err != nil {
-				defer recordError("Internal", err)
-			}
-			return
-		}
-		if errors.Is(err, ht.ErrNotImplemented) {
-			s.cfg.ErrorHandler(ctx, w, r, err)
-			return
-		}
-		if err := encodeErrorResponse(s.h.NewError(ctx, err), w, span); err != nil {
-			defer recordError("Internal", err)
-		}
-		return
-	}
-
-	if err := encodeListTunnelOperationLogsResponse(response, w, span); err != nil {
-		defer recordError("EncodeResponse", err)
-		if !errors.Is(err, ht.ErrInternalServerErrorResponse) {
-			s.cfg.ErrorHandler(ctx, w, r, err)
-		}
-		return
-	}
-}
-
-// handleListTunnelPlansRequest handles list-tunnel-plans operation.
-//
-// 只返回在售的套餐，按 `sort`
-// 升序。已下架的不在其中——但正在用它的隧道仍然正常，下架只是不再接新单。
-//
-// `quota_bytes`
-// 是套餐标称的额度，仅供比较；实际额度由上游按线路分组决定，以隧道用量接口返回的
-// `quota_bytes` 为准。.
-//
-// GET /api/v1/plans
-func (s *Server) handleListTunnelPlansRequest(args [0]string, argsEscaped bool, w http.ResponseWriter, r *http.Request) {
-	statusWriter := &codeRecorder{ResponseWriter: w}
-	w = statusWriter
-	otelAttrs := []attribute.KeyValue{
-		otelogen.OperationID("list-tunnel-plans"),
-		semconv.HTTPRequestMethodKey.String("GET"),
-		semconv.HTTPRouteKey.String("/api/v1/plans"),
-	}
-	// Add attributes from config.
-	otelAttrs = append(otelAttrs, s.cfg.Attributes...)
-
-	// Start a span for this request.
-	ctx, span := s.cfg.Tracer.Start(r.Context(), ListTunnelPlansOperation,
-		trace.WithAttributes(otelAttrs...),
-		serverSpanKind,
-	)
-	defer span.End()
-
-	// Add Labeler to context.
-	labeler := &Labeler{attrs: otelAttrs}
-	ctx = contextWithLabeler(ctx, labeler)
-
-	// Run stopwatch.
-	startTime := time.Now()
-	defer func() {
-		elapsedDuration := time.Since(startTime)
-
-		attrSet := labeler.AttributeSet()
-		attrs := attrSet.ToSlice()
-		code := statusWriter.status
-		if code != 0 {
-			codeAttr := semconv.HTTPResponseStatusCode(code)
-			attrs = append(attrs, codeAttr)
-			span.SetAttributes(attrs...)
-		}
-		attrOpt := metric.WithAttributes(attrs...)
-
-		// Increment request counter.
-		s.requests.Add(ctx, 1, attrOpt)
-
-		// Use floating point division here for higher precision (instead of Millisecond method).
-		s.duration.Record(ctx, float64(elapsedDuration)/float64(time.Millisecond), attrOpt)
-	}()
-
-	var (
-		recordError = func(stage string, err error) {
-			span.RecordError(err)
-
-			// https://opentelemetry.io/docs/specs/semconv/http/http-spans/#status
-			// Span Status MUST be left unset if HTTP status code was in the 1xx, 2xx or 3xx ranges,
-			// unless there was another error (e.g., network error receiving the response body; or 3xx codes with
-			// max redirects exceeded), in which case status MUST be set to Error.
-			code := statusWriter.status
-			if code < 100 || code >= 500 {
-				span.SetStatus(codes.Error, stage)
-			}
-
-			attrSet := labeler.AttributeSet()
-			attrs := attrSet.ToSlice()
-			if code != 0 {
-				attrs = append(attrs, semconv.HTTPResponseStatusCode(code))
-			}
-
-			s.errors.Add(ctx, 1, metric.WithAttributes(attrs...))
-		}
-		err          error
-		opErrContext = ogenerrors.OperationContext{
-			Name: ListTunnelPlansOperation,
-			ID:   "list-tunnel-plans",
-		}
-	)
-	{
-		type bitset = [1]uint8
-		var satisfied bitset
-		{
-			sctx, ok, err := s.securityBearerAuth(ctx, ListTunnelPlansOperation, r)
-			if err != nil {
-				err = &ogenerrors.SecurityError{
-					OperationContext: opErrContext,
-					Security:         "BearerAuth",
-					Err:              err,
-				}
-				if encodeErr := encodeErrorResponse(s.h.NewError(ctx, err), w, span); encodeErr != nil {
-					defer recordError("Security:BearerAuth", err)
-				}
-				return
-			}
-			if ok {
-				satisfied[0] |= 1 << 0
-				ctx = sctx
-			}
-		}
-
-		if ok := func() bool {
-		nextRequirement:
-			for _, requirement := range []bitset{
-				{0b00000001},
-			} {
-				for i, mask := range requirement {
-					if satisfied[i]&mask != mask {
-						continue nextRequirement
-					}
-				}
-				return true
-			}
-			return false
-		}(); !ok {
-			err = &ogenerrors.SecurityError{
-				OperationContext: opErrContext,
-				Err:              ogenerrors.ErrSecurityRequirementIsNotSatisfied,
-			}
-			if encodeErr := encodeErrorResponse(s.h.NewError(ctx, err), w, span); encodeErr != nil {
-				defer recordError("Security", err)
-			}
-			return
-		}
-	}
-
-	var rawBody []byte
-
-	var response *TunnelPlanListResponseBody
-	if m := s.cfg.Middleware; m != nil {
-		mreq := middleware.Request{
-			Context:          ctx,
-			OperationName:    ListTunnelPlansOperation,
-			OperationSummary: "列出可开通的套餐",
-			OperationID:      "list-tunnel-plans",
-			Body:             nil,
-			RawBody:          rawBody,
-			Params:           middleware.Parameters{},
-			Raw:              r,
-		}
-
-		type (
-			Request  = struct{}
-			Params   = struct{}
-			Response = *TunnelPlanListResponseBody
-		)
-		response, err = middleware.HookMiddleware[
-			Request,
-			Params,
-			Response,
-		](
-			m,
-			mreq,
-			nil,
-			func(ctx context.Context, request Request, params Params) (response Response, err error) {
-				response, err = s.h.ListTunnelPlans(ctx)
-				return response, err
-			},
-		)
-	} else {
-		response, err = s.h.ListTunnelPlans(ctx)
-	}
-	if err != nil {
-		if errRes, ok := errors.Into[*ErrorStatusCode](err); ok {
-			if err := encodeErrorResponse(errRes, w, span); err != nil {
-				defer recordError("Internal", err)
-			}
-			return
-		}
-		if errors.Is(err, ht.ErrNotImplemented) {
-			s.cfg.ErrorHandler(ctx, w, r, err)
-			return
-		}
-		if err := encodeErrorResponse(s.h.NewError(ctx, err), w, span); err != nil {
-			defer recordError("Internal", err)
-		}
-		return
-	}
-
-	if err := encodeListTunnelPlansResponse(response, w, span); err != nil {
-		defer recordError("EncodeResponse", err)
-		if !errors.Is(err, ht.ErrInternalServerErrorResponse) {
-			s.cfg.ErrorHandler(ctx, w, r, err)
-		}
-		return
-	}
-}
-
-// handleListTunnelUsageSeriesRequest handles list-tunnel-usage-series operation.
-//
-// 按自然日切分，用于画趋势图。
-//
-// 没有流量的日子不会出现在结果里（不补零），画图前需要自行补齐日期轴，否则空档会被连成一条斜线。
-//
-// 把这里的天加起来不等于本期用量，这是有意的：本期用量按计费周期切，而且「重置本期用量」只作用于本期，日汇总一行都不删。两者回答的是不同的问题。.
-//
-// GET /api/v1/tunnel/usage/series
-func (s *Server) handleListTunnelUsageSeriesRequest(args [0]string, argsEscaped bool, w http.ResponseWriter, r *http.Request) {
-	statusWriter := &codeRecorder{ResponseWriter: w}
-	w = statusWriter
-	otelAttrs := []attribute.KeyValue{
-		otelogen.OperationID("list-tunnel-usage-series"),
-		semconv.HTTPRequestMethodKey.String("GET"),
-		semconv.HTTPRouteKey.String("/api/v1/tunnel/usage/series"),
-	}
-	// Add attributes from config.
-	otelAttrs = append(otelAttrs, s.cfg.Attributes...)
-
-	// Start a span for this request.
-	ctx, span := s.cfg.Tracer.Start(r.Context(), ListTunnelUsageSeriesOperation,
-		trace.WithAttributes(otelAttrs...),
-		serverSpanKind,
-	)
-	defer span.End()
-
-	// Add Labeler to context.
-	labeler := &Labeler{attrs: otelAttrs}
-	ctx = contextWithLabeler(ctx, labeler)
-
-	// Run stopwatch.
-	startTime := time.Now()
-	defer func() {
-		elapsedDuration := time.Since(startTime)
-
-		attrSet := labeler.AttributeSet()
-		attrs := attrSet.ToSlice()
-		code := statusWriter.status
-		if code != 0 {
-			codeAttr := semconv.HTTPResponseStatusCode(code)
-			attrs = append(attrs, codeAttr)
-			span.SetAttributes(attrs...)
-		}
-		attrOpt := metric.WithAttributes(attrs...)
-
-		// Increment request counter.
-		s.requests.Add(ctx, 1, attrOpt)
-
-		// Use floating point division here for higher precision (instead of Millisecond method).
-		s.duration.Record(ctx, float64(elapsedDuration)/float64(time.Millisecond), attrOpt)
-	}()
-
-	var (
-		recordError = func(stage string, err error) {
-			span.RecordError(err)
-
-			// https://opentelemetry.io/docs/specs/semconv/http/http-spans/#status
-			// Span Status MUST be left unset if HTTP status code was in the 1xx, 2xx or 3xx ranges,
-			// unless there was another error (e.g., network error receiving the response body; or 3xx codes with
-			// max redirects exceeded), in which case status MUST be set to Error.
-			code := statusWriter.status
-			if code < 100 || code >= 500 {
-				span.SetStatus(codes.Error, stage)
-			}
-
-			attrSet := labeler.AttributeSet()
-			attrs := attrSet.ToSlice()
-			if code != 0 {
-				attrs = append(attrs, semconv.HTTPResponseStatusCode(code))
-			}
-
-			s.errors.Add(ctx, 1, metric.WithAttributes(attrs...))
-		}
-		err          error
-		opErrContext = ogenerrors.OperationContext{
-			Name: ListTunnelUsageSeriesOperation,
-			ID:   "list-tunnel-usage-series",
-		}
-	)
-	{
-		type bitset = [1]uint8
-		var satisfied bitset
-		{
-			sctx, ok, err := s.securityBearerAuth(ctx, ListTunnelUsageSeriesOperation, r)
-			if err != nil {
-				err = &ogenerrors.SecurityError{
-					OperationContext: opErrContext,
-					Security:         "BearerAuth",
-					Err:              err,
-				}
-				if encodeErr := encodeErrorResponse(s.h.NewError(ctx, err), w, span); encodeErr != nil {
-					defer recordError("Security:BearerAuth", err)
-				}
-				return
-			}
-			if ok {
-				satisfied[0] |= 1 << 0
-				ctx = sctx
-			}
-		}
-
-		if ok := func() bool {
-		nextRequirement:
-			for _, requirement := range []bitset{
-				{0b00000001},
-			} {
-				for i, mask := range requirement {
-					if satisfied[i]&mask != mask {
-						continue nextRequirement
-					}
-				}
-				return true
-			}
-			return false
-		}(); !ok {
-			err = &ogenerrors.SecurityError{
-				OperationContext: opErrContext,
-				Err:              ogenerrors.ErrSecurityRequirementIsNotSatisfied,
-			}
-			if encodeErr := encodeErrorResponse(s.h.NewError(ctx, err), w, span); encodeErr != nil {
-				defer recordError("Security", err)
-			}
-			return
-		}
-	}
-	params, err := decodeListTunnelUsageSeriesParams(args, argsEscaped, r)
+	params, err := decodeListL4TunnelUsageSeriesParams(args, argsEscaped, r)
 	if err != nil {
 		err = &ogenerrors.DecodeParamsError{
 			OperationContext: opErrContext,
@@ -1749,9 +929,9 @@ func (s *Server) handleListTunnelUsageSeriesRequest(args [0]string, argsEscaped 
 	if m := s.cfg.Middleware; m != nil {
 		mreq := middleware.Request{
 			Context:          ctx,
-			OperationName:    ListTunnelUsageSeriesOperation,
+			OperationName:    ListL4TunnelUsageSeriesOperation,
 			OperationSummary: "查看按天用量",
-			OperationID:      "list-tunnel-usage-series",
+			OperationID:      "list-l4-tunnel-usage-series",
 			Body:             nil,
 			RawBody:          rawBody,
 			Params: middleware.Parameters{
@@ -1765,7 +945,7 @@ func (s *Server) handleListTunnelUsageSeriesRequest(args [0]string, argsEscaped 
 
 		type (
 			Request  = struct{}
-			Params   = ListTunnelUsageSeriesParams
+			Params   = ListL4TunnelUsageSeriesParams
 			Response = *UsageSeriesResource
 		)
 		response, err = middleware.HookMiddleware[
@@ -1775,14 +955,14 @@ func (s *Server) handleListTunnelUsageSeriesRequest(args [0]string, argsEscaped 
 		](
 			m,
 			mreq,
-			unpackListTunnelUsageSeriesParams,
+			unpackListL4TunnelUsageSeriesParams,
 			func(ctx context.Context, request Request, params Params) (response Response, err error) {
-				response, err = s.h.ListTunnelUsageSeries(ctx, params)
+				response, err = s.h.ListL4TunnelUsageSeries(ctx, params)
 				return response, err
 			},
 		)
 	} else {
-		response, err = s.h.ListTunnelUsageSeries(ctx, params)
+		response, err = s.h.ListL4TunnelUsageSeries(ctx, params)
 	}
 	if err != nil {
 		if errRes, ok := errors.Into[*ErrorStatusCode](err); ok {
@@ -1801,7 +981,7 @@ func (s *Server) handleListTunnelUsageSeriesRequest(args [0]string, argsEscaped 
 		return
 	}
 
-	if err := encodeListTunnelUsageSeriesResponse(response, w, span); err != nil {
+	if err := encodeListL4TunnelUsageSeriesResponse(response, w, span); err != nil {
 		defer recordError("EncodeResponse", err)
 		if !errors.Is(err, ht.ErrInternalServerErrorResponse) {
 			s.cfg.ErrorHandler(ctx, w, r, err)
@@ -1810,236 +990,31 @@ func (s *Server) handleListTunnelUsageSeriesRequest(args [0]string, argsEscaped 
 	}
 }
 
-// handleOpenTunnelRequest handles open-tunnel operation.
-//
-// 为当前项目开通一条隧道，返回时订阅通常处于
-// `preparing`——节点仍在下发，但订阅地址此时已经可用，内容会在拉取那一刻按当时的状态重新派生。
-//
-// 一个项目只能有一条。已经有了返回
-// `TUNNEL_ALREADY_OPEN`；上一条还在退订中返回 `TUNNEL_CLOSING`，稍后重试即可。
-//
-// 套餐必须处于在售状态，已下架的返回 `TUNNEL_PLAN_RETIRED`。若返回
-// `TUNNEL_PLAN_GROUPS_MISSING`，说明该套餐在上游对应的线路分组不存在——这是一个配置问题，请联系运营，换一款套餐或稍后重试都不会有帮助。.
-//
-// POST /api/v1/tunnel
-func (s *Server) handleOpenTunnelRequest(args [0]string, argsEscaped bool, w http.ResponseWriter, r *http.Request) {
-	statusWriter := &codeRecorder{ResponseWriter: w}
-	w = statusWriter
-	otelAttrs := []attribute.KeyValue{
-		otelogen.OperationID("open-tunnel"),
-		semconv.HTTPRequestMethodKey.String("POST"),
-		semconv.HTTPRouteKey.String("/api/v1/tunnel"),
-	}
-	// Add attributes from config.
-	otelAttrs = append(otelAttrs, s.cfg.Attributes...)
-
-	// Start a span for this request.
-	ctx, span := s.cfg.Tracer.Start(r.Context(), OpenTunnelOperation,
-		trace.WithAttributes(otelAttrs...),
-		serverSpanKind,
-	)
-	defer span.End()
-
-	// Add Labeler to context.
-	labeler := &Labeler{attrs: otelAttrs}
-	ctx = contextWithLabeler(ctx, labeler)
-
-	// Run stopwatch.
-	startTime := time.Now()
-	defer func() {
-		elapsedDuration := time.Since(startTime)
-
-		attrSet := labeler.AttributeSet()
-		attrs := attrSet.ToSlice()
-		code := statusWriter.status
-		if code != 0 {
-			codeAttr := semconv.HTTPResponseStatusCode(code)
-			attrs = append(attrs, codeAttr)
-			span.SetAttributes(attrs...)
-		}
-		attrOpt := metric.WithAttributes(attrs...)
-
-		// Increment request counter.
-		s.requests.Add(ctx, 1, attrOpt)
-
-		// Use floating point division here for higher precision (instead of Millisecond method).
-		s.duration.Record(ctx, float64(elapsedDuration)/float64(time.Millisecond), attrOpt)
-	}()
-
-	var (
-		recordError = func(stage string, err error) {
-			span.RecordError(err)
-
-			// https://opentelemetry.io/docs/specs/semconv/http/http-spans/#status
-			// Span Status MUST be left unset if HTTP status code was in the 1xx, 2xx or 3xx ranges,
-			// unless there was another error (e.g., network error receiving the response body; or 3xx codes with
-			// max redirects exceeded), in which case status MUST be set to Error.
-			code := statusWriter.status
-			if code < 100 || code >= 500 {
-				span.SetStatus(codes.Error, stage)
-			}
-
-			attrSet := labeler.AttributeSet()
-			attrs := attrSet.ToSlice()
-			if code != 0 {
-				attrs = append(attrs, semconv.HTTPResponseStatusCode(code))
-			}
-
-			s.errors.Add(ctx, 1, metric.WithAttributes(attrs...))
-		}
-		err          error
-		opErrContext = ogenerrors.OperationContext{
-			Name: OpenTunnelOperation,
-			ID:   "open-tunnel",
-		}
-	)
-	{
-		type bitset = [1]uint8
-		var satisfied bitset
-		{
-			sctx, ok, err := s.securityBearerAuth(ctx, OpenTunnelOperation, r)
-			if err != nil {
-				err = &ogenerrors.SecurityError{
-					OperationContext: opErrContext,
-					Security:         "BearerAuth",
-					Err:              err,
-				}
-				if encodeErr := encodeErrorResponse(s.h.NewError(ctx, err), w, span); encodeErr != nil {
-					defer recordError("Security:BearerAuth", err)
-				}
-				return
-			}
-			if ok {
-				satisfied[0] |= 1 << 0
-				ctx = sctx
-			}
-		}
-
-		if ok := func() bool {
-		nextRequirement:
-			for _, requirement := range []bitset{
-				{0b00000001},
-			} {
-				for i, mask := range requirement {
-					if satisfied[i]&mask != mask {
-						continue nextRequirement
-					}
-				}
-				return true
-			}
-			return false
-		}(); !ok {
-			err = &ogenerrors.SecurityError{
-				OperationContext: opErrContext,
-				Err:              ogenerrors.ErrSecurityRequirementIsNotSatisfied,
-			}
-			if encodeErr := encodeErrorResponse(s.h.NewError(ctx, err), w, span); encodeErr != nil {
-				defer recordError("Security", err)
-			}
-			return
-		}
-	}
-
-	var rawBody []byte
-	request, rawBody, close, err := s.decodeOpenTunnelRequest(r)
-	if err != nil {
-		err = &ogenerrors.DecodeRequestError{
-			OperationContext: opErrContext,
-			Err:              err,
-		}
-		defer recordError("DecodeRequest", err)
-		s.cfg.ErrorHandler(ctx, w, r, err)
-		return
-	}
-	defer func() {
-		if err := close(); err != nil {
-			recordError("CloseRequest", err)
-		}
-	}()
-
-	var response *TunnelResource
-	if m := s.cfg.Middleware; m != nil {
-		mreq := middleware.Request{
-			Context:          ctx,
-			OperationName:    OpenTunnelOperation,
-			OperationSummary: "开通隧道",
-			OperationID:      "open-tunnel",
-			Body:             request,
-			RawBody:          rawBody,
-			Params:           middleware.Parameters{},
-			Raw:              r,
-		}
-
-		type (
-			Request  = *OpenTunnelRequestBody
-			Params   = struct{}
-			Response = *TunnelResource
-		)
-		response, err = middleware.HookMiddleware[
-			Request,
-			Params,
-			Response,
-		](
-			m,
-			mreq,
-			nil,
-			func(ctx context.Context, request Request, params Params) (response Response, err error) {
-				response, err = s.h.OpenTunnel(ctx, request)
-				return response, err
-			},
-		)
-	} else {
-		response, err = s.h.OpenTunnel(ctx, request)
-	}
-	if err != nil {
-		if errRes, ok := errors.Into[*ErrorStatusCode](err); ok {
-			if err := encodeErrorResponse(errRes, w, span); err != nil {
-				defer recordError("Internal", err)
-			}
-			return
-		}
-		if errors.Is(err, ht.ErrNotImplemented) {
-			s.cfg.ErrorHandler(ctx, w, r, err)
-			return
-		}
-		if err := encodeErrorResponse(s.h.NewError(ctx, err), w, span); err != nil {
-			defer recordError("Internal", err)
-		}
-		return
-	}
-
-	if err := encodeOpenTunnelResponse(response, w, span); err != nil {
-		defer recordError("EncodeResponse", err)
-		if !errors.Is(err, ht.ErrInternalServerErrorResponse) {
-			s.cfg.ErrorHandler(ctx, w, r, err)
-		}
-		return
-	}
-}
-
-// handleRotateTunnelSubscriptionRequest handles rotate-tunnel-subscription operation.
+// handleRotateL4TunnelSubscriptionRequest handles rotate-l4-tunnel-subscription operation.
 //
 // 这是凭据泄露时的处置手段，会让已分发出去的每一份订阅立即失效。
 //
 // 订阅 token
 // 和节点密码同时更换，所有客户端都必须重新拉取一次订阅才能继续使用。调用前请确认这确实是想要的结果。
 //
-// 重置后再调订阅接口取新地址。.
+// 隧道被平台停用时无法重置（`TUNNEL_DISABLED_FOR_ROTATE`），需要先处理停用的原因。
 //
-// POST /api/v1/tunnel/subscription/rotate
-func (s *Server) handleRotateTunnelSubscriptionRequest(args [0]string, argsEscaped bool, w http.ResponseWriter, r *http.Request) {
+// 重置后请调订阅接口取新地址，本接口不返回它。.
+//
+// POST /api/v1/tunnel/l4/subscription/rotate
+func (s *Server) handleRotateL4TunnelSubscriptionRequest(args [0]string, argsEscaped bool, w http.ResponseWriter, r *http.Request) {
 	statusWriter := &codeRecorder{ResponseWriter: w}
 	w = statusWriter
 	otelAttrs := []attribute.KeyValue{
-		otelogen.OperationID("rotate-tunnel-subscription"),
+		otelogen.OperationID("rotate-l4-tunnel-subscription"),
 		semconv.HTTPRequestMethodKey.String("POST"),
-		semconv.HTTPRouteKey.String("/api/v1/tunnel/subscription/rotate"),
+		semconv.HTTPRouteKey.String("/api/v1/tunnel/l4/subscription/rotate"),
 	}
 	// Add attributes from config.
 	otelAttrs = append(otelAttrs, s.cfg.Attributes...)
 
 	// Start a span for this request.
-	ctx, span := s.cfg.Tracer.Start(r.Context(), RotateTunnelSubscriptionOperation,
+	ctx, span := s.cfg.Tracer.Start(r.Context(), RotateL4TunnelSubscriptionOperation,
 		trace.WithAttributes(otelAttrs...),
 		serverSpanKind,
 	)
@@ -2094,15 +1069,15 @@ func (s *Server) handleRotateTunnelSubscriptionRequest(args [0]string, argsEscap
 		}
 		err          error
 		opErrContext = ogenerrors.OperationContext{
-			Name: RotateTunnelSubscriptionOperation,
-			ID:   "rotate-tunnel-subscription",
+			Name: RotateL4TunnelSubscriptionOperation,
+			ID:   "rotate-l4-tunnel-subscription",
 		}
 	)
 	{
 		type bitset = [1]uint8
 		var satisfied bitset
 		{
-			sctx, ok, err := s.securityBearerAuth(ctx, RotateTunnelSubscriptionOperation, r)
+			sctx, ok, err := s.securityBearerAuth(ctx, RotateL4TunnelSubscriptionOperation, r)
 			if err != nil {
 				err = &ogenerrors.SecurityError{
 					OperationContext: opErrContext,
@@ -2151,9 +1126,9 @@ func (s *Server) handleRotateTunnelSubscriptionRequest(args [0]string, argsEscap
 	if m := s.cfg.Middleware; m != nil {
 		mreq := middleware.Request{
 			Context:          ctx,
-			OperationName:    RotateTunnelSubscriptionOperation,
+			OperationName:    RotateL4TunnelSubscriptionOperation,
 			OperationSummary: "重置订阅地址与节点密码",
-			OperationID:      "rotate-tunnel-subscription",
+			OperationID:      "rotate-l4-tunnel-subscription",
 			Body:             nil,
 			RawBody:          rawBody,
 			Params:           middleware.Parameters{},
@@ -2174,12 +1149,12 @@ func (s *Server) handleRotateTunnelSubscriptionRequest(args [0]string, argsEscap
 			mreq,
 			nil,
 			func(ctx context.Context, request Request, params Params) (response Response, err error) {
-				response, err = s.h.RotateTunnelSubscription(ctx)
+				response, err = s.h.RotateL4TunnelSubscription(ctx)
 				return response, err
 			},
 		)
 	} else {
-		response, err = s.h.RotateTunnelSubscription(ctx)
+		response, err = s.h.RotateL4TunnelSubscription(ctx)
 	}
 	if err != nil {
 		if errRes, ok := errors.Into[*ErrorStatusCode](err); ok {
@@ -2198,210 +1173,7 @@ func (s *Server) handleRotateTunnelSubscriptionRequest(args [0]string, argsEscap
 		return
 	}
 
-	if err := encodeRotateTunnelSubscriptionResponse(response, w, span); err != nil {
-		defer recordError("EncodeResponse", err)
-		if !errors.Is(err, ht.ErrInternalServerErrorResponse) {
-			s.cfg.ErrorHandler(ctx, w, r, err)
-		}
-		return
-	}
-}
-
-// handleUpdateTunnelProfileRequest handles update-tunnel-profile operation.
-//
-// 改显示名和联系邮箱，不影响订阅、用量或线路。
-//
-// `email`
-// 不传表示不改动，传空字符串表示清空。它会被转发给上游面板——上游拿它做什么由面板决定，平台不使用它。.
-//
-// PATCH /api/v1/tunnel
-func (s *Server) handleUpdateTunnelProfileRequest(args [0]string, argsEscaped bool, w http.ResponseWriter, r *http.Request) {
-	statusWriter := &codeRecorder{ResponseWriter: w}
-	w = statusWriter
-	otelAttrs := []attribute.KeyValue{
-		otelogen.OperationID("update-tunnel-profile"),
-		semconv.HTTPRequestMethodKey.String("PATCH"),
-		semconv.HTTPRouteKey.String("/api/v1/tunnel"),
-	}
-	// Add attributes from config.
-	otelAttrs = append(otelAttrs, s.cfg.Attributes...)
-
-	// Start a span for this request.
-	ctx, span := s.cfg.Tracer.Start(r.Context(), UpdateTunnelProfileOperation,
-		trace.WithAttributes(otelAttrs...),
-		serverSpanKind,
-	)
-	defer span.End()
-
-	// Add Labeler to context.
-	labeler := &Labeler{attrs: otelAttrs}
-	ctx = contextWithLabeler(ctx, labeler)
-
-	// Run stopwatch.
-	startTime := time.Now()
-	defer func() {
-		elapsedDuration := time.Since(startTime)
-
-		attrSet := labeler.AttributeSet()
-		attrs := attrSet.ToSlice()
-		code := statusWriter.status
-		if code != 0 {
-			codeAttr := semconv.HTTPResponseStatusCode(code)
-			attrs = append(attrs, codeAttr)
-			span.SetAttributes(attrs...)
-		}
-		attrOpt := metric.WithAttributes(attrs...)
-
-		// Increment request counter.
-		s.requests.Add(ctx, 1, attrOpt)
-
-		// Use floating point division here for higher precision (instead of Millisecond method).
-		s.duration.Record(ctx, float64(elapsedDuration)/float64(time.Millisecond), attrOpt)
-	}()
-
-	var (
-		recordError = func(stage string, err error) {
-			span.RecordError(err)
-
-			// https://opentelemetry.io/docs/specs/semconv/http/http-spans/#status
-			// Span Status MUST be left unset if HTTP status code was in the 1xx, 2xx or 3xx ranges,
-			// unless there was another error (e.g., network error receiving the response body; or 3xx codes with
-			// max redirects exceeded), in which case status MUST be set to Error.
-			code := statusWriter.status
-			if code < 100 || code >= 500 {
-				span.SetStatus(codes.Error, stage)
-			}
-
-			attrSet := labeler.AttributeSet()
-			attrs := attrSet.ToSlice()
-			if code != 0 {
-				attrs = append(attrs, semconv.HTTPResponseStatusCode(code))
-			}
-
-			s.errors.Add(ctx, 1, metric.WithAttributes(attrs...))
-		}
-		err          error
-		opErrContext = ogenerrors.OperationContext{
-			Name: UpdateTunnelProfileOperation,
-			ID:   "update-tunnel-profile",
-		}
-	)
-	{
-		type bitset = [1]uint8
-		var satisfied bitset
-		{
-			sctx, ok, err := s.securityBearerAuth(ctx, UpdateTunnelProfileOperation, r)
-			if err != nil {
-				err = &ogenerrors.SecurityError{
-					OperationContext: opErrContext,
-					Security:         "BearerAuth",
-					Err:              err,
-				}
-				if encodeErr := encodeErrorResponse(s.h.NewError(ctx, err), w, span); encodeErr != nil {
-					defer recordError("Security:BearerAuth", err)
-				}
-				return
-			}
-			if ok {
-				satisfied[0] |= 1 << 0
-				ctx = sctx
-			}
-		}
-
-		if ok := func() bool {
-		nextRequirement:
-			for _, requirement := range []bitset{
-				{0b00000001},
-			} {
-				for i, mask := range requirement {
-					if satisfied[i]&mask != mask {
-						continue nextRequirement
-					}
-				}
-				return true
-			}
-			return false
-		}(); !ok {
-			err = &ogenerrors.SecurityError{
-				OperationContext: opErrContext,
-				Err:              ogenerrors.ErrSecurityRequirementIsNotSatisfied,
-			}
-			if encodeErr := encodeErrorResponse(s.h.NewError(ctx, err), w, span); encodeErr != nil {
-				defer recordError("Security", err)
-			}
-			return
-		}
-	}
-
-	var rawBody []byte
-	request, rawBody, close, err := s.decodeUpdateTunnelProfileRequest(r)
-	if err != nil {
-		err = &ogenerrors.DecodeRequestError{
-			OperationContext: opErrContext,
-			Err:              err,
-		}
-		defer recordError("DecodeRequest", err)
-		s.cfg.ErrorHandler(ctx, w, r, err)
-		return
-	}
-	defer func() {
-		if err := close(); err != nil {
-			recordError("CloseRequest", err)
-		}
-	}()
-
-	var response *TunnelResource
-	if m := s.cfg.Middleware; m != nil {
-		mreq := middleware.Request{
-			Context:          ctx,
-			OperationName:    UpdateTunnelProfileOperation,
-			OperationSummary: "修改隧道的显示信息",
-			OperationID:      "update-tunnel-profile",
-			Body:             request,
-			RawBody:          rawBody,
-			Params:           middleware.Parameters{},
-			Raw:              r,
-		}
-
-		type (
-			Request  = *UpdateTunnelProfileRequestBody
-			Params   = struct{}
-			Response = *TunnelResource
-		)
-		response, err = middleware.HookMiddleware[
-			Request,
-			Params,
-			Response,
-		](
-			m,
-			mreq,
-			nil,
-			func(ctx context.Context, request Request, params Params) (response Response, err error) {
-				response, err = s.h.UpdateTunnelProfile(ctx, request)
-				return response, err
-			},
-		)
-	} else {
-		response, err = s.h.UpdateTunnelProfile(ctx, request)
-	}
-	if err != nil {
-		if errRes, ok := errors.Into[*ErrorStatusCode](err); ok {
-			if err := encodeErrorResponse(errRes, w, span); err != nil {
-				defer recordError("Internal", err)
-			}
-			return
-		}
-		if errors.Is(err, ht.ErrNotImplemented) {
-			s.cfg.ErrorHandler(ctx, w, r, err)
-			return
-		}
-		if err := encodeErrorResponse(s.h.NewError(ctx, err), w, span); err != nil {
-			defer recordError("Internal", err)
-		}
-		return
-	}
-
-	if err := encodeUpdateTunnelProfileResponse(response, w, span); err != nil {
+	if err := encodeRotateL4TunnelSubscriptionResponse(response, w, span); err != nil {
 		defer recordError("EncodeResponse", err)
 		if !errors.Is(err, ht.ErrInternalServerErrorResponse) {
 			s.cfg.ErrorHandler(ctx, w, r, err)

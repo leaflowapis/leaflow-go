@@ -12,7 +12,7 @@ import (
 	"go.opentelemetry.io/otel/trace"
 )
 
-func encodeActOnTunnelResponse(response *TunnelResource, w http.ResponseWriter, span trace.Span) error {
+func encodeGenerateL4TunnelResponse(response *TunnelResource, w http.ResponseWriter, span trace.Span) error {
 	w.Header().Set("Content-Type", "application/json; charset=utf-8")
 	w.WriteHeader(200)
 
@@ -25,7 +25,7 @@ func encodeActOnTunnelResponse(response *TunnelResource, w http.ResponseWriter, 
 	return nil
 }
 
-func encodeChangeTunnelPlanResponse(response *TunnelResource, w http.ResponseWriter, span trace.Span) error {
+func encodeGetL4TunnelResponse(response *TunnelResource, w http.ResponseWriter, span trace.Span) error {
 	w.Header().Set("Content-Type", "application/json; charset=utf-8")
 	w.WriteHeader(200)
 
@@ -38,7 +38,7 @@ func encodeChangeTunnelPlanResponse(response *TunnelResource, w http.ResponseWri
 	return nil
 }
 
-func encodeCloseTunnelResponse(response *TunnelResource, w http.ResponseWriter, span trace.Span) error {
+func encodeGetL4TunnelSubscriptionResponse(response *SubscriptionResource, w http.ResponseWriter, span trace.Span) error {
 	w.Header().Set("Content-Type", "application/json; charset=utf-8")
 	w.WriteHeader(200)
 
@@ -51,7 +51,7 @@ func encodeCloseTunnelResponse(response *TunnelResource, w http.ResponseWriter, 
 	return nil
 }
 
-func encodeGetTunnelResponse(response *TunnelResource, w http.ResponseWriter, span trace.Span) error {
+func encodeGetL4TunnelUsageResponse(response *UsageResource, w http.ResponseWriter, span trace.Span) error {
 	w.Header().Set("Content-Type", "application/json; charset=utf-8")
 	w.WriteHeader(200)
 
@@ -64,7 +64,7 @@ func encodeGetTunnelResponse(response *TunnelResource, w http.ResponseWriter, sp
 	return nil
 }
 
-func encodeGetTunnelSubscriptionResponse(response *SubscriptionResource, w http.ResponseWriter, span trace.Span) error {
+func encodeListL4TunnelUsageSeriesResponse(response *UsageSeriesResource, w http.ResponseWriter, span trace.Span) error {
 	w.Header().Set("Content-Type", "application/json; charset=utf-8")
 	w.WriteHeader(200)
 
@@ -77,85 +77,7 @@ func encodeGetTunnelSubscriptionResponse(response *SubscriptionResource, w http.
 	return nil
 }
 
-func encodeGetTunnelUsageResponse(response *UsageResource, w http.ResponseWriter, span trace.Span) error {
-	w.Header().Set("Content-Type", "application/json; charset=utf-8")
-	w.WriteHeader(200)
-
-	e := new(jx.Encoder)
-	response.Encode(e)
-	if _, err := e.WriteTo(w); err != nil {
-		return errors.Wrap(err, "write")
-	}
-
-	return nil
-}
-
-func encodeListTunnelOperationLogsResponse(response *LengthAwarePageOperationLogResource, w http.ResponseWriter, span trace.Span) error {
-	w.Header().Set("Content-Type", "application/json; charset=utf-8")
-	w.WriteHeader(200)
-
-	e := new(jx.Encoder)
-	response.Encode(e)
-	if _, err := e.WriteTo(w); err != nil {
-		return errors.Wrap(err, "write")
-	}
-
-	return nil
-}
-
-func encodeListTunnelPlansResponse(response *TunnelPlanListResponseBody, w http.ResponseWriter, span trace.Span) error {
-	w.Header().Set("Content-Type", "application/json; charset=utf-8")
-	w.WriteHeader(200)
-
-	e := new(jx.Encoder)
-	response.Encode(e)
-	if _, err := e.WriteTo(w); err != nil {
-		return errors.Wrap(err, "write")
-	}
-
-	return nil
-}
-
-func encodeListTunnelUsageSeriesResponse(response *UsageSeriesResource, w http.ResponseWriter, span trace.Span) error {
-	w.Header().Set("Content-Type", "application/json; charset=utf-8")
-	w.WriteHeader(200)
-
-	e := new(jx.Encoder)
-	response.Encode(e)
-	if _, err := e.WriteTo(w); err != nil {
-		return errors.Wrap(err, "write")
-	}
-
-	return nil
-}
-
-func encodeOpenTunnelResponse(response *TunnelResource, w http.ResponseWriter, span trace.Span) error {
-	w.Header().Set("Content-Type", "application/json; charset=utf-8")
-	w.WriteHeader(201)
-
-	e := new(jx.Encoder)
-	response.Encode(e)
-	if _, err := e.WriteTo(w); err != nil {
-		return errors.Wrap(err, "write")
-	}
-
-	return nil
-}
-
-func encodeRotateTunnelSubscriptionResponse(response *TunnelResource, w http.ResponseWriter, span trace.Span) error {
-	w.Header().Set("Content-Type", "application/json; charset=utf-8")
-	w.WriteHeader(200)
-
-	e := new(jx.Encoder)
-	response.Encode(e)
-	if _, err := e.WriteTo(w); err != nil {
-		return errors.Wrap(err, "write")
-	}
-
-	return nil
-}
-
-func encodeUpdateTunnelProfileResponse(response *TunnelResource, w http.ResponseWriter, span trace.Span) error {
+func encodeRotateL4TunnelSubscriptionResponse(response *TunnelResource, w http.ResponseWriter, span trace.Span) error {
 	w.Header().Set("Content-Type", "application/json; charset=utf-8")
 	w.WriteHeader(200)
 

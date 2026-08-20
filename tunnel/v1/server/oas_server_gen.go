@@ -8,137 +8,66 @@ import (
 
 // Handler handles operations described by OpenAPI v3 specification.
 type Handler interface {
-	// ActOnTunnel implements act-on-tunnel operation.
+	// GenerateL4Tunnel implements generate-l4-tunnel operation.
 	//
-	// 停用不是退订。
-	// 停用会把这条隧道的实例从上游调度器撤下，但端口保留，重新启用后原样回来，订阅地址也不变。适合「这段时间不用」。
+	// 幂等：已经有了再调一次返回同一条，不报错。按钮被点两次是安全的。
 	//
-	// 被平台停用的隧道（`suspended` 为 true）无法自行启用，会返回
-	// `TUNNEL_SUSPENDED`——那通常是欠费或违规，需要先处理对应的问题。.
+	// 生成之后请调订阅接口取地址，本接口不返回它。.
 	//
-	// POST /api/v1/tunnel/actions
-	ActOnTunnel(ctx context.Context, req *ActOnTunnelRequestBody) (*TunnelResource, error)
-	// ChangeTunnelPlan implements change-tunnel-plan operation.
+	// POST /api/v1/tunnel/l4
+	GenerateL4Tunnel(ctx context.Context) (*TunnelResource, error)
+	// GetL4Tunnel implements get-l4-tunnel operation.
 	//
-	// 换套餐会立刻重判线路资格：多出来的线路马上可用，少掉的那些进入删除队列——宽限期内照常可用，到期才真正释放。所以换套餐不是一次瞬时切换，订阅内容会在接下来一段时间内变化。
+	// 还没生成过时返回
+	// `TUNNEL_NOT_FOUND`——首屏据此决定画「生成订阅链接」那个按钮还是画结果。
 	//
-	// 换完之后建议重新拉取一次订阅。.
+	// 订阅地址、用量、配额各有自己的接口，这里不重复返回。.
 	//
-	// PUT /api/v1/tunnel/plan
-	ChangeTunnelPlan(ctx context.Context, req *ChangeTunnelPlanRequestBody) (*TunnelResource, error)
-	// CloseTunnel implements close-tunnel operation.
+	// GET /api/v1/tunnel/l4
+	GetL4Tunnel(ctx context.Context) (*TunnelResource, error)
+	// GetL4TunnelSubscription implements get-l4-tunnel-subscription operation.
 	//
-	// 不可逆。
-	// 上游账户会被删除，订阅地址立刻失效，重新开通得到的是一条全新的隧道和一条全新的订阅地址。
+	// 这条 URL 是凭据，等同于密码。
+	// 拿着它就能取到这个项目的全部节点和密码，所以它只在这一个接口里出现，一次一条——不进任何列表，也不在隧道详情里。
 	//
-	// 删除是异步的：返回时 `status` 可能仍是
-	// `deleting`，表示上游还没删干净（通常是某台服务器暂时连不上）。平台会自动重试，期间这条隧道仍然出现在查询接口里。退订完成前无法重新开通。
-	//
-	// 只是暂时不用的话请用停用，它保留端口和订阅地址。.
-	//
-	// DELETE /api/v1/tunnel
-	CloseTunnel(ctx context.Context) (*TunnelResource, error)
-	// GetTunnel implements get-tunnel operation.
-	//
-	// 每个项目最多一条隧道。尚未开通时返回 404（`TUNNEL_NOT_FOUND`）。
-	//
-	// 响应里的 `usage` 是缓存的用量，`usage.synced_at` 说明它是什么时候采集的；为
-	// null 表示尚未采集过，而不是用量为零。需要当前值请调用量接口。
-	//
-	// 订阅地址不在这里，它是一条长期有效的凭据，只由订阅接口单独返回。.
-	//
-	// GET /api/v1/tunnel
-	GetTunnel(ctx context.Context) (*TunnelResource, error)
-	// GetTunnelSubscription implements get-tunnel-subscription operation.
-	//
-	// 返回的是一条长期有效的凭据，等同于密码。
-	// 拿到它就能取得本项目全部节点与密码，请勿转发、截图或提交到工单。
-	//
-	// 它不会出现在隧道详情或任何列表里，只由这个接口返回。
+	// 客户端不应在用户主动请求之前调用它：这个接口的每一次调用都会被记进操作日志。
 	//
 	// `status` 为 `preparing`
-	// 时链接照样可用，内容会在拉取那一刻按当时的状态重新派生。
+	// 时链接照样有效，内容会在拉取那一刻重新派生。它只该影响页面上说什么。.
 	//
-	// 怀疑泄露时请调用重置接口。.
+	// GET /api/v1/tunnel/l4/subscription
+	GetL4TunnelSubscription(ctx context.Context) (*SubscriptionResource, error)
+	// GetL4TunnelUsage implements get-l4-tunnel-usage operation.
 	//
-	// GET /api/v1/tunnel/subscription
-	GetTunnelSubscription(ctx context.Context) (*SubscriptionResource, error)
-	// GetTunnelUsage implements get-tunnel-usage operation.
-	//
-	// 现场向上游查询，比隧道详情里那份缓存新。
+	// 实时查询，不经过缓存。
 	//
 	// 判断是否超额只看 `billed_bytes`：线路可以设置倍率（如 1.5× 或
-	// 0×），`raw_bytes` 是实际传输量，两者不一定相等。`over_quota` 已经算好。
+	// 0×），`raw_bytes` 是实际传输量，两者不一定相等。`quota_bytes` 为 0
+	// 表示不限量。.
 	//
-	// 用量由上游定期采集，最多滞后一个采集周期，适合用量管控，不适合作为计费结算依据。.
+	// GET /api/v1/tunnel/l4/usage
+	GetL4TunnelUsage(ctx context.Context) (*UsageResource, error)
+	// ListL4TunnelUsageSeries implements list-l4-tunnel-usage-series operation.
 	//
-	// GET /api/v1/tunnel/usage
-	GetTunnelUsage(ctx context.Context) (*UsageResource, error)
-	// ListTunnelOperationLogs implements list-tunnel-operation-logs operation.
+	// 按自然日切分。没有流量的日子不会出现在结果里（不补零），画图那一侧要自己补齐日期轴——否则一段没人用的日子会被画成一条直接连过去的线，看起来像那几天一直在匀速跑流量。
 	//
-	// 记录每一次写操作：谁、什么时候、做了什么、成功还是失败。读操作不记录。
+	// 把这里的天加起来不等于本期用量，这是有意的：本期按计费周期切，而且「重置本期用量」只作用于本期，日汇总一行都不删。.
 	//
-	// `actor` 为 null
-	// 表示该操作由平台执行（例如自动重试删除、项目停服）——平台做了什么是看得到的，但具体是哪位运营人员不会展示。
-	//
-	// `payload` 只包含路径参数与查询串，且其中像凭据的字段已被替换为占位符。.
-	//
-	// GET /api/v1/operation-logs
-	ListTunnelOperationLogs(ctx context.Context, params ListTunnelOperationLogsParams) (*LengthAwarePageOperationLogResource, error)
-	// ListTunnelPlans implements list-tunnel-plans operation.
-	//
-	// 只返回在售的套餐，按 `sort`
-	// 升序。已下架的不在其中——但正在用它的隧道仍然正常，下架只是不再接新单。
-	//
-	// `quota_bytes`
-	// 是套餐标称的额度，仅供比较；实际额度由上游按线路分组决定，以隧道用量接口返回的
-	// `quota_bytes` 为准。.
-	//
-	// GET /api/v1/plans
-	ListTunnelPlans(ctx context.Context) (*TunnelPlanListResponseBody, error)
-	// ListTunnelUsageSeries implements list-tunnel-usage-series operation.
-	//
-	// 按自然日切分，用于画趋势图。
-	//
-	// 没有流量的日子不会出现在结果里（不补零），画图前需要自行补齐日期轴，否则空档会被连成一条斜线。
-	//
-	// 把这里的天加起来不等于本期用量，这是有意的：本期用量按计费周期切，而且「重置本期用量」只作用于本期，日汇总一行都不删。两者回答的是不同的问题。.
-	//
-	// GET /api/v1/tunnel/usage/series
-	ListTunnelUsageSeries(ctx context.Context, params ListTunnelUsageSeriesParams) (*UsageSeriesResource, error)
-	// OpenTunnel implements open-tunnel operation.
-	//
-	// 为当前项目开通一条隧道，返回时订阅通常处于
-	// `preparing`——节点仍在下发，但订阅地址此时已经可用，内容会在拉取那一刻按当时的状态重新派生。
-	//
-	// 一个项目只能有一条。已经有了返回
-	// `TUNNEL_ALREADY_OPEN`；上一条还在退订中返回 `TUNNEL_CLOSING`，稍后重试即可。
-	//
-	// 套餐必须处于在售状态，已下架的返回 `TUNNEL_PLAN_RETIRED`。若返回
-	// `TUNNEL_PLAN_GROUPS_MISSING`，说明该套餐在上游对应的线路分组不存在——这是一个配置问题，请联系运营，换一款套餐或稍后重试都不会有帮助。.
-	//
-	// POST /api/v1/tunnel
-	OpenTunnel(ctx context.Context, req *OpenTunnelRequestBody) (*TunnelResource, error)
-	// RotateTunnelSubscription implements rotate-tunnel-subscription operation.
+	// GET /api/v1/tunnel/l4/usage/series
+	ListL4TunnelUsageSeries(ctx context.Context, params ListL4TunnelUsageSeriesParams) (*UsageSeriesResource, error)
+	// RotateL4TunnelSubscription implements rotate-l4-tunnel-subscription operation.
 	//
 	// 这是凭据泄露时的处置手段，会让已分发出去的每一份订阅立即失效。
 	//
 	// 订阅 token
 	// 和节点密码同时更换，所有客户端都必须重新拉取一次订阅才能继续使用。调用前请确认这确实是想要的结果。
 	//
-	// 重置后再调订阅接口取新地址。.
+	// 隧道被平台停用时无法重置（`TUNNEL_DISABLED_FOR_ROTATE`），需要先处理停用的原因。
 	//
-	// POST /api/v1/tunnel/subscription/rotate
-	RotateTunnelSubscription(ctx context.Context) (*TunnelResource, error)
-	// UpdateTunnelProfile implements update-tunnel-profile operation.
+	// 重置后请调订阅接口取新地址，本接口不返回它。.
 	//
-	// 改显示名和联系邮箱，不影响订阅、用量或线路。
-	//
-	// `email`
-	// 不传表示不改动，传空字符串表示清空。它会被转发给上游面板——上游拿它做什么由面板决定，平台不使用它。.
-	//
-	// PATCH /api/v1/tunnel
-	UpdateTunnelProfile(ctx context.Context, req *UpdateTunnelProfileRequestBody) (*TunnelResource, error)
+	// POST /api/v1/tunnel/l4/subscription/rotate
+	RotateL4TunnelSubscription(ctx context.Context) (*TunnelResource, error)
 	// NewError creates *ErrorStatusCode from error returned by handler.
 	//
 	// Used for common default response.
