@@ -42,6 +42,7 @@ import yaml
 
 sys.path.insert(0, str(pathlib.Path(__file__).resolve().parent))
 import contracts  # noqa: E402
+import ogen  # noqa: E402
 
 ROOT = pathlib.Path(__file__).resolve().parent.parent
 
@@ -80,6 +81,17 @@ SHARED_GENERATE = {"models": True}
 #
 # 服务那边保持裁剪：那边的未引用 schema 是真的没人要。
 SHARED_OUTPUT_OPTIONS = {**{"skip-prune": True}}
+
+# 已经迁到 ogen 的面。
+#
+# 两套并存是有意的：一次换掉十二个面要改三百多个 handler，中途出问题分不清是哪一面的事。这份
+# 名单每加一项就是一个面迁完并跑过 e2e，**名单清空的反面——十三份契约全在里面——是迁移完成的
+# 标志**，那时这个常量和 oapi-codegen 那条路一起删掉。
+#
+# 为什么迁：oapi-codegen 只把 schema 翻成 Go 类型，一条约束都不生成。契约上写着 minLength: 1
+# 的字段生成出来是 `Name string`，而不执行**不报错**——空名字一路走到数据库层，报出来的是一句
+# ent 的 validator failed 包成的 500，那次调用早已在后端建好了资源。理由写全在 scripts/ogen.py。
+OGEN_SERVICES = {"tunnel"}
 
 # SHARED 是那份共用类型在契约里的相对路径，以及它生成出来的 Go 包。
 #
@@ -190,13 +202,20 @@ def main():
 
             # 相对路径按契约文件自己的位置算：<服务>/<版本>/openapi.yaml 到共用类型是 ../../
             mapping = {f"../../{SHARED_SPEC}": SHARED_PACKAGE}
+            # 客户端两套都由 oapi-codegen 出：外部用户装的是它，而 ogen 的客户端形状不同——
+            # 换掉是对下游的破坏性改动，和服务端那件事无关，不该被它捎带着做。
             codegen(contract, package, out / "client.gen.go", CLIENT_GENERATE, scratch, mapping)
-            codegen(contract, f"{package}server", out / "server" / "server.gen.go",
-                    SERVER_GENERATE, scratch, mapping)
 
+            if service in OGEN_SERVICES:
+                ogen.generate(contract, f"{package}server", out / "server")
+                how = "ogen"
+            else:
+                codegen(contract, f"{package}server", out / "server" / "server.gen.go",
+                        SERVER_GENERATE, scratch, mapping)
+                how = "oapi-codegen"
 
             write_module(service)
-            print(f"{service}/{version:8} → {service}/{version}")
+            print(f"{service}/{version:8} → {service}/{version}  服务端={how}")
 
 
 if __name__ == "__main__":
