@@ -6,16 +6,10 @@ package tunnelv1server
 type OperationName = string
 
 const (
-	ActOnTunnelOperation              OperationName = "ActOnTunnel"
-	ChangeTunnelPlanOperation         OperationName = "ChangeTunnelPlan"
-	CloseTunnelOperation              OperationName = "CloseTunnel"
-	GetTunnelOperation                OperationName = "GetTunnel"
-	GetTunnelSubscriptionOperation    OperationName = "GetTunnelSubscription"
-	GetTunnelUsageOperation           OperationName = "GetTunnelUsage"
-	ListTunnelOperationLogsOperation  OperationName = "ListTunnelOperationLogs"
-	ListTunnelPlansOperation          OperationName = "ListTunnelPlans"
-	ListTunnelUsageSeriesOperation    OperationName = "ListTunnelUsageSeries"
-	OpenTunnelOperation               OperationName = "OpenTunnel"
-	RotateTunnelSubscriptionOperation OperationName = "RotateTunnelSubscription"
-	UpdateTunnelProfileOperation      OperationName = "UpdateTunnelProfile"
+	GenerateL4TunnelOperation           OperationName = "GenerateL4Tunnel"
+	GetL4TunnelOperation                OperationName = "GetL4Tunnel"
+	GetL4TunnelSubscriptionOperation    OperationName = "GetL4TunnelSubscription"
+	GetL4TunnelUsageOperation           OperationName = "GetL4TunnelUsage"
+	ListL4TunnelUsageSeriesOperation    OperationName = "ListL4TunnelUsageSeries"
+	RotateL4TunnelSubscriptionOperation OperationName = "RotateL4TunnelSubscription"
 )

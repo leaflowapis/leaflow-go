@@ -37,18 +37,12 @@ func findAuthorization(h http.Header, prefix string) (string, bool) {
 
 // operationRolesBearerAuth is a private map storing roles per operation.
 var operationRolesBearerAuth = map[string][]string{
-	ActOnTunnelOperation:              []string{},
-	ChangeTunnelPlanOperation:         []string{},
-	CloseTunnelOperation:              []string{},
-	GetTunnelOperation:                []string{},
-	GetTunnelSubscriptionOperation:    []string{},
-	GetTunnelUsageOperation:           []string{},
-	ListTunnelOperationLogsOperation:  []string{},
-	ListTunnelPlansOperation:          []string{},
-	ListTunnelUsageSeriesOperation:    []string{},
-	OpenTunnelOperation:               []string{},
-	RotateTunnelSubscriptionOperation: []string{},
-	UpdateTunnelProfileOperation:      []string{},
+	GenerateL4TunnelOperation:           []string{},
+	GetL4TunnelOperation:                []string{},
+	GetL4TunnelSubscriptionOperation:    []string{},
+	GetL4TunnelUsageOperation:           []string{},
+	ListL4TunnelUsageSeriesOperation:    []string{},
+	RotateL4TunnelSubscriptionOperation: []string{},
 }
 
 // GetRolesForBearerAuth returns the required roles for the given operation.

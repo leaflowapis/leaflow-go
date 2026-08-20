@@ -4,7 +4,6 @@
 package tunnelv1
 
 import (
-	"bytes"
 	"context"
 	"encoding/json"
 	"fmt"
@@ -19,135 +18,26 @@ import (
 	openapi_types "github.com/oapi-codegen/runtime/types"
 )
 
-// Defines values for ActOnTunnelRequestBodyAction.
-const (
-	Disable ActOnTunnelRequestBodyAction = "disable"
-	Enable  ActOnTunnelRequestBodyAction = "enable"
-)
-
-// Valid indicates whether the value is a known member of the ActOnTunnelRequestBodyAction enum.
-func (e ActOnTunnelRequestBodyAction) Valid() bool {
-	switch e {
-	case Disable:
-		return true
-	case Enable:
-		return true
-	default:
-		return false
-	}
-}
-
 // Defines values for SubscriptionResourceStatus.
 const (
-	SubscriptionResourceStatusPreparing SubscriptionResourceStatus = "preparing"
-	SubscriptionResourceStatusReady     SubscriptionResourceStatus = "ready"
+	Preparing SubscriptionResourceStatus = "preparing"
+	Ready     SubscriptionResourceStatus = "ready"
 )
 
 // Valid indicates whether the value is a known member of the SubscriptionResourceStatus enum.
 func (e SubscriptionResourceStatus) Valid() bool {
 	switch e {
-	case SubscriptionResourceStatusPreparing:
+	case Preparing:
 		return true
-	case SubscriptionResourceStatusReady:
-		return true
-	default:
-		return false
-	}
-}
-
-// Defines values for TunnelResourceStatus.
-const (
-	Active   TunnelResourceStatus = "active"
-	Deleting TunnelResourceStatus = "deleting"
-)
-
-// Valid indicates whether the value is a known member of the TunnelResourceStatus enum.
-func (e TunnelResourceStatus) Valid() bool {
-	switch e {
-	case Active:
-		return true
-	case Deleting:
+	case Ready:
 		return true
 	default:
 		return false
 	}
-}
-
-// Defines values for TunnelResourceSubscriptionStatus.
-const (
-	TunnelResourceSubscriptionStatusPreparing TunnelResourceSubscriptionStatus = "preparing"
-	TunnelResourceSubscriptionStatusReady     TunnelResourceSubscriptionStatus = "ready"
-)
-
-// Valid indicates whether the value is a known member of the TunnelResourceSubscriptionStatus enum.
-func (e TunnelResourceSubscriptionStatus) Valid() bool {
-	switch e {
-	case TunnelResourceSubscriptionStatusPreparing:
-		return true
-	case TunnelResourceSubscriptionStatusReady:
-		return true
-	default:
-		return false
-	}
-}
-
-// ActOnTunnelRequestBody defines model for ActOnTunnelRequestBody.
-type ActOnTunnelRequestBody struct {
-	Action ActOnTunnelRequestBodyAction `json:"action"`
-}
-
-// ActOnTunnelRequestBodyAction defines model for ActOnTunnelRequestBody.Action.
-type ActOnTunnelRequestBodyAction string
-
-// ChangeTunnelPlanRequestBody defines model for ChangeTunnelPlanRequestBody.
-type ChangeTunnelPlanRequestBody struct {
-	PlanId openapi_types.UUID `json:"plan_id"`
 }
 
 // Error defines model for Error.
 type Error = externalRef0.Error
-
-// LengthAwarePageOperationLogResource defines model for LengthAwarePageOperationLogResource.
-type LengthAwarePageOperationLogResource struct {
-	// Items 这一页的内容
-	Items []OperationLogResource `json:"items"`
-
-	// Limit 这一页最多几条，回显请求里的值
-	Limit int64 `json:"limit"`
-
-	// Offset 跳过了多少条，回显请求里的值
-	Offset int64 `json:"offset"`
-
-	// Total 命中的总条数，不只是这一页
-	Total int64 `json:"total"`
-}
-
-// OpenTunnelRequestBody defines model for OpenTunnelRequestBody.
-type OpenTunnelRequestBody struct {
-	// DisplayName 这条隧道的名字，只影响显示
-	DisplayName string `json:"display_name"`
-
-	// Email 转发给上游面板的联系邮箱，可留空
-	Email *openapi_types.Email `json:"email,omitempty"`
-
-	// PlanId 套餐 id，取自 GET /plans
-	PlanId openapi_types.UUID `json:"plan_id"`
-}
-
-// OperationLogResource defines model for OperationLogResource.
-type OperationLogResource struct {
-	Action string `json:"action"`
-
-	// Actor 操作者的用户 id；null 表示由平台执行
-	Actor       *string                `json:"actor"`
-	CreatedAt   time.Time              `json:"created_at"`
-	Failure     string                 `json:"failure"`
-	Id          openapi_types.UUID     `json:"id"`
-	Payload     map[string]interface{} `json:"payload"`
-	SubjectId   string                 `json:"subject_id"`
-	SubjectType string                 `json:"subject_type"`
-	Succeeded   bool                   `json:"succeeded"`
-}
 
 // SubscriptionResource defines model for SubscriptionResource.
 type SubscriptionResource struct {
@@ -163,89 +53,13 @@ type SubscriptionResource struct {
 // SubscriptionResourceStatus ready 表示节点已全部下发；preparing 表示仍在下发——此时链接照样可用
 type SubscriptionResourceStatus string
 
-// TunnelPlanListResponseBody defines model for TunnelPlanListResponseBody.
-type TunnelPlanListResponseBody struct {
-	Items []TunnelPlanResource `json:"items"`
-}
-
-// TunnelPlanResource defines model for TunnelPlanResource.
-type TunnelPlanResource struct {
-	Description string             `json:"description"`
-	Id          openapi_types.UUID `json:"id"`
-	Name        string             `json:"name"`
-
-	// QuotaBytes 套餐标称的流量额度，仅供比较。实际额度以隧道用量接口返回的 quota_bytes 为准
-	QuotaBytes int64 `json:"quota_bytes"`
-
-	// Sort 货架上的排列顺序，越小越靠前
-	Sort int64 `json:"sort"`
-}
-
-// TunnelResource defines model for TunnelResource.
+// TunnelResource 当前项目那条四层隧道。它只回答一个问题：生成过没有。
 type TunnelResource struct {
-	CreatedAt   time.Time `json:"created_at"`
-	DisplayName string    `json:"display_name"`
+	CreatedAt time.Time `json:"created_at"`
 
-	// Email 转发给上游面板的联系邮箱；平台不使用它
-	Email *string `json:"email"`
-
-	// Enabled 用户自己的开关。停用会把实例从调度器撤下，但端口保留，启用后原样回来
-	Enabled bool `json:"enabled"`
-
-	// Failure 最近一次上游拒绝的说明，仅在存在时非空
-	Failure  *string            `json:"failure"`
-	Id       openapi_types.UUID `json:"id"`
-	PlanId   openapi_types.UUID `json:"plan_id"`
-	PlanName string             `json:"plan_name"`
-
-	// Status deleting 表示已退订但上游尚未删除完成
-	Status TunnelResourceStatus `json:"status"`
-
-	// SubscriptionStatus preparing 表示节点仍在下发；订阅链接此时照样可用
-	SubscriptionStatus TunnelResourceSubscriptionStatus `json:"subscription_status"`
-
-	// SubscriptionVersion 每次重置订阅后递增
-	SubscriptionVersion int64 `json:"subscription_version"`
-
-	// Suspended 被平台停用（欠费、违规或项目停服）。为 true 时无法自行启用
-	Suspended bool `json:"suspended"`
-
-	// SuspendedAt 被平台停用的时刻
-	SuspendedAt *time.Time          `json:"suspended_at"`
-	Usage       TunnelUsageSnapshot `json:"usage"`
-}
-
-// TunnelResourceStatus deleting 表示已退订但上游尚未删除完成
-type TunnelResourceStatus string
-
-// TunnelResourceSubscriptionStatus preparing 表示节点仍在下发；订阅链接此时照样可用
-type TunnelResourceSubscriptionStatus string
-
-// TunnelUsageSnapshot defines model for TunnelUsageSnapshot.
-type TunnelUsageSnapshot struct {
-	// BilledBytes 按线路倍率折算后的用量，配额比对以此为准
-	BilledBytes int64 `json:"billed_bytes"`
-
-	// OverQuota billed_bytes 是否已超过 quota_bytes；配额为 0 时恒为 false
-	OverQuota bool `json:"over_quota"`
-
-	// QuotaBytes 上游给出的真实配额，0 表示不限量
-	QuotaBytes int64 `json:"quota_bytes"`
-
-	// RawBytes 实际传输的字节，不用于配额比对
-	RawBytes int64 `json:"raw_bytes"`
-
-	// SyncedAt 这份用量是什么时候采集的；null 表示尚未采集
-	SyncedAt    *time.Time `json:"synced_at"`
-	UploadBytes int64      `json:"upload_bytes"`
-}
-
-// UpdateTunnelProfileRequestBody defines model for UpdateTunnelProfileRequestBody.
-type UpdateTunnelProfileRequestBody struct {
-	DisplayName string `json:"display_name"`
-
-	// Email 联系邮箱。不传表示不改动，传空字符串表示清空
-	Email *string `json:"email,omitempty"`
+	// Enabled 隧道当前是否可用。为 false 表示被平台停用（欠费、违规或项目停服），需要先处理停用的原因
+	Enabled bool               `json:"enabled"`
+	Id      openapi_types.UUID `json:"id"`
 }
 
 // UsageDayResource defines model for UsageDayResource.
@@ -290,35 +104,11 @@ type UsageSeriesResource struct {
 	Points []UsageDayResource `json:"points"`
 }
 
-// ListTunnelOperationLogsParams defines parameters for ListTunnelOperationLogs.
-type ListTunnelOperationLogsParams struct {
-	// Limit 这一页最多返回多少条
-	Limit *int64 `form:"limit,omitempty" json:"limit,omitempty"`
-
-	// Offset 跳过多少条。要翻得更深请改用游标翻页的接口
-	Offset *int64 `form:"offset,omitempty" json:"offset,omitempty"`
-
-	// Action 只看某一种操作，取值是接口的 operation id，比如 open-tunnel
-	Action *string `form:"action,omitempty" json:"action,omitempty"`
-}
-
-// ListTunnelUsageSeriesParams defines parameters for ListTunnelUsageSeries.
-type ListTunnelUsageSeriesParams struct {
-	// Days 取最近多少天，0 表示用上游的默认值（30）。上游只接受 1–365，超出会被它夹住
+// ListL4TunnelUsageSeriesParams defines parameters for ListL4TunnelUsageSeries.
+type ListL4TunnelUsageSeriesParams struct {
+	// Days 取最近多少天。0 表示用上游的默认值（30）——上游只接受 1–365，超出会被它夹住
 	Days *int64 `form:"days,omitempty" json:"days,omitempty"`
 }
-
-// UpdateTunnelProfileJSONRequestBody defines body for UpdateTunnelProfile for application/json ContentType.
-type UpdateTunnelProfileJSONRequestBody = UpdateTunnelProfileRequestBody
-
-// OpenTunnelJSONRequestBody defines body for OpenTunnel for application/json ContentType.
-type OpenTunnelJSONRequestBody = OpenTunnelRequestBody
-
-// ActOnTunnelJSONRequestBody defines body for ActOnTunnel for application/json ContentType.
-type ActOnTunnelJSONRequestBody = ActOnTunnelRequestBody
-
-// ChangeTunnelPlanJSONRequestBody defines body for ChangeTunnelPlan for application/json ContentType.
-type ChangeTunnelPlanJSONRequestBody = ChangeTunnelPlanRequestBody
 
 // RequestEditorFn is the function signature for the RequestEditor callback function
 type RequestEditorFn func(ctx context.Context, req *http.Request) error
@@ -394,198 +184,76 @@ func WithRequestEditorFn(fn RequestEditorFn) ClientOption {
 // The interface specification for the client above.
 type ClientInterface interface {
 
-	// ListTunnelOperationLogs 查看本项目的操作日志
+	// GetL4Tunnel 查看本项目的四层隧道
 	//
-	// 记录每一次**写**操作：谁、什么时候、做了什么、成功还是失败。读操作不记录。
+	// 还没生成过时返回 `TUNNEL_NOT_FOUND`——首屏据此决定画「生成订阅链接」那个按钮还是画结果。
 	//
-	// `actor` 为 null 表示该操作由平台执行（例如自动重试删除、项目停服）——平台做了什么是看得到的，但具体是哪位运营人员不会展示。
+	// 订阅地址、用量、配额各有自己的接口，这里不重复返回。
 	//
-	// `payload` 只包含路径参数与查询串，且其中像凭据的字段已被替换为占位符。
-	//
-	// Corresponds with GET /api/v1/operation-logs (the `ListTunnelOperationLogs` operationId).
-	ListTunnelOperationLogs(ctx context.Context, params *ListTunnelOperationLogsParams, reqEditors ...RequestEditorFn) (*http.Response, error)
+	// Corresponds with GET /api/v1/tunnel/l4 (the `GetL4Tunnel` operationId).
+	GetL4Tunnel(ctx context.Context, reqEditors ...RequestEditorFn) (*http.Response, error)
 
-	// ListTunnelPlans 列出可开通的套餐
+	// GenerateL4Tunnel 生成四层隧道
 	//
-	// 只返回在售的套餐，按 `sort` 升序。已下架的不在其中——但正在用它的隧道仍然正常，下架只是不再接新单。
+	// **幂等**：已经有了再调一次返回同一条，不报错。按钮被点两次是安全的。
 	//
-	// `quota_bytes` 是套餐**标称**的额度，仅供比较；实际额度由上游按线路分组决定，以隧道用量接口返回的 `quota_bytes` 为准。
+	// 生成之后请调订阅接口取地址，本接口不返回它。
 	//
-	// Corresponds with GET /api/v1/plans (the `ListTunnelPlans` operationId).
-	ListTunnelPlans(ctx context.Context, reqEditors ...RequestEditorFn) (*http.Response, error)
+	// Corresponds with POST /api/v1/tunnel/l4 (the `GenerateL4Tunnel` operationId).
+	GenerateL4Tunnel(ctx context.Context, reqEditors ...RequestEditorFn) (*http.Response, error)
 
-	// CloseTunnel 退订隧道
+	// GetL4TunnelSubscription 获取订阅地址
 	//
-	// **不可逆。** 上游账户会被删除，订阅地址立刻失效，重新开通得到的是一条全新的隧道和一条全新的订阅地址。
+	// **这条 URL 是凭据，等同于密码。** 拿着它就能取到这个项目的全部节点和密码，所以它只在这一个接口里出现，一次一条——不进任何列表，也不在隧道详情里。
 	//
-	// 删除是异步的：返回时 `status` 可能仍是 `deleting`，表示上游还没删干净（通常是某台服务器暂时连不上）。平台会自动重试，期间这条隧道仍然出现在查询接口里。退订完成前无法重新开通。
+	// 客户端不应在用户主动请求之前调用它：这个接口的每一次调用都会被记进操作日志。
 	//
-	// 只是暂时不用的话请用停用，它保留端口和订阅地址。
+	// `status` 为 `preparing` 时链接**照样有效**，内容会在拉取那一刻重新派生。它只该影响页面上说什么。
 	//
-	// Corresponds with DELETE /api/v1/tunnel (the `CloseTunnel` operationId).
-	CloseTunnel(ctx context.Context, reqEditors ...RequestEditorFn) (*http.Response, error)
+	// Corresponds with GET /api/v1/tunnel/l4/subscription (the `GetL4TunnelSubscription` operationId).
+	GetL4TunnelSubscription(ctx context.Context, reqEditors ...RequestEditorFn) (*http.Response, error)
 
-	// GetTunnel 查看本项目的隧道
-	//
-	// 每个项目最多一条隧道。尚未开通时返回 404（`TUNNEL_NOT_FOUND`）。
-	//
-	// 响应里的 `usage` 是**缓存**的用量，`usage.synced_at` 说明它是什么时候采集的；为 null 表示尚未采集过，而不是用量为零。需要当前值请调用量接口。
-	//
-	// **订阅地址不在这里**，它是一条长期有效的凭据，只由订阅接口单独返回。
-	//
-	// Corresponds with GET /api/v1/tunnel (the `GetTunnel` operationId).
-	GetTunnel(ctx context.Context, reqEditors ...RequestEditorFn) (*http.Response, error)
-
-	// UpdateTunnelProfileWithBody 修改隧道的显示信息
-	//
-	// 改显示名和联系邮箱，**不影响订阅、用量或线路**。
-	//
-	// `email` 不传表示不改动，传空字符串表示清空。它会被转发给上游面板——上游拿它做什么由面板决定，平台不使用它。
-	//
-	// Takes any type of body and a specified content type.
-	//
-	// Corresponds with PATCH /api/v1/tunnel (the `UpdateTunnelProfile` operationId).
-	UpdateTunnelProfileWithBody(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
-
-	// UpdateTunnelProfile 修改隧道的显示信息
-	//
-	// 改显示名和联系邮箱，**不影响订阅、用量或线路**。
-	//
-	// `email` 不传表示不改动，传空字符串表示清空。它会被转发给上游面板——上游拿它做什么由面板决定，平台不使用它。
-	//
-	// Takes a body of the `application/json` content type.
-	//
-	// Corresponds with PATCH /api/v1/tunnel (the `UpdateTunnelProfile` operationId).
-	UpdateTunnelProfile(ctx context.Context, body UpdateTunnelProfileJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
-
-	// OpenTunnelWithBody 开通隧道
-	//
-	// 为当前项目开通一条隧道，返回时订阅通常处于 `preparing`——节点仍在下发，但**订阅地址此时已经可用**，内容会在拉取那一刻按当时的状态重新派生。
-	//
-	// 一个项目只能有一条。已经有了返回 `TUNNEL_ALREADY_OPEN`；上一条还在退订中返回 `TUNNEL_CLOSING`，稍后重试即可。
-	//
-	// 套餐必须处于在售状态，已下架的返回 `TUNNEL_PLAN_RETIRED`。若返回 `TUNNEL_PLAN_GROUPS_MISSING`，说明该套餐在上游对应的线路分组不存在——这是一个配置问题，请联系运营，换一款套餐或稍后重试都不会有帮助。
-	//
-	// Takes any type of body and a specified content type.
-	//
-	// Corresponds with POST /api/v1/tunnel (the `OpenTunnel` operationId).
-	OpenTunnelWithBody(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
-
-	// OpenTunnel 开通隧道
-	//
-	// 为当前项目开通一条隧道，返回时订阅通常处于 `preparing`——节点仍在下发，但**订阅地址此时已经可用**，内容会在拉取那一刻按当时的状态重新派生。
-	//
-	// 一个项目只能有一条。已经有了返回 `TUNNEL_ALREADY_OPEN`；上一条还在退订中返回 `TUNNEL_CLOSING`，稍后重试即可。
-	//
-	// 套餐必须处于在售状态，已下架的返回 `TUNNEL_PLAN_RETIRED`。若返回 `TUNNEL_PLAN_GROUPS_MISSING`，说明该套餐在上游对应的线路分组不存在——这是一个配置问题，请联系运营，换一款套餐或稍后重试都不会有帮助。
-	//
-	// Takes a body of the `application/json` content type.
-	//
-	// Corresponds with POST /api/v1/tunnel (the `OpenTunnel` operationId).
-	OpenTunnel(ctx context.Context, body OpenTunnelJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
-
-	// ActOnTunnelWithBody 启用或停用隧道
-	//
-	// **停用不是退订。** 停用会把这条隧道的实例从上游调度器撤下，但端口保留，重新启用后原样回来，订阅地址也不变。适合「这段时间不用」。
-	//
-	// 被平台停用的隧道（`suspended` 为 true）无法自行启用，会返回 `TUNNEL_SUSPENDED`——那通常是欠费或违规，需要先处理对应的问题。
-	//
-	// Takes any type of body and a specified content type.
-	//
-	// Corresponds with POST /api/v1/tunnel/actions (the `ActOnTunnel` operationId).
-	ActOnTunnelWithBody(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
-
-	// ActOnTunnel 启用或停用隧道
-	//
-	// **停用不是退订。** 停用会把这条隧道的实例从上游调度器撤下，但端口保留，重新启用后原样回来，订阅地址也不变。适合「这段时间不用」。
-	//
-	// 被平台停用的隧道（`suspended` 为 true）无法自行启用，会返回 `TUNNEL_SUSPENDED`——那通常是欠费或违规，需要先处理对应的问题。
-	//
-	// Takes a body of the `application/json` content type.
-	//
-	// Corresponds with POST /api/v1/tunnel/actions (the `ActOnTunnel` operationId).
-	ActOnTunnel(ctx context.Context, body ActOnTunnelJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
-
-	// ChangeTunnelPlanWithBody 更换套餐
-	//
-	// 换套餐会立刻重判线路资格：多出来的线路马上可用，**少掉的那些进入删除队列——宽限期内照常可用，到期才真正释放**。所以换套餐不是一次瞬时切换，订阅内容会在接下来一段时间内变化。
-	//
-	// 换完之后建议重新拉取一次订阅。
-	//
-	// Takes any type of body and a specified content type.
-	//
-	// Corresponds with PUT /api/v1/tunnel/plan (the `ChangeTunnelPlan` operationId).
-	ChangeTunnelPlanWithBody(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
-
-	// ChangeTunnelPlan 更换套餐
-	//
-	// 换套餐会立刻重判线路资格：多出来的线路马上可用，**少掉的那些进入删除队列——宽限期内照常可用，到期才真正释放**。所以换套餐不是一次瞬时切换，订阅内容会在接下来一段时间内变化。
-	//
-	// 换完之后建议重新拉取一次订阅。
-	//
-	// Takes a body of the `application/json` content type.
-	//
-	// Corresponds with PUT /api/v1/tunnel/plan (the `ChangeTunnelPlan` operationId).
-	ChangeTunnelPlan(ctx context.Context, body ChangeTunnelPlanJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
-
-	// GetTunnelSubscription 获取订阅地址
-	//
-	// **返回的是一条长期有效的凭据，等同于密码。** 拿到它就能取得本项目全部节点与密码，请勿转发、截图或提交到工单。
-	//
-	// 它不会出现在隧道详情或任何列表里，只由这个接口返回。
-	//
-	// `status` 为 `preparing` 时链接**照样可用**，内容会在拉取那一刻按当时的状态重新派生。
-	//
-	// 怀疑泄露时请调用重置接口。
-	//
-	// Corresponds with GET /api/v1/tunnel/subscription (the `GetTunnelSubscription` operationId).
-	GetTunnelSubscription(ctx context.Context, reqEditors ...RequestEditorFn) (*http.Response, error)
-
-	// RotateTunnelSubscription 重置订阅地址与节点密码
+	// RotateL4TunnelSubscription 重置订阅地址与节点密码
 	//
 	// **这是凭据泄露时的处置手段，会让已分发出去的每一份订阅立即失效。**
 	//
 	// 订阅 token 和节点密码同时更换，所有客户端都必须重新拉取一次订阅才能继续使用。调用前请确认这确实是想要的结果。
 	//
-	// 重置后再调订阅接口取新地址。
+	// 隧道被平台停用时无法重置（`TUNNEL_DISABLED_FOR_ROTATE`），需要先处理停用的原因。
 	//
-	// Corresponds with POST /api/v1/tunnel/subscription/rotate (the `RotateTunnelSubscription` operationId).
-	RotateTunnelSubscription(ctx context.Context, reqEditors ...RequestEditorFn) (*http.Response, error)
-
-	// GetTunnelUsage 查看本期用量
+	// 重置后请调订阅接口取新地址，**本接口不返回它**。
 	//
-	// 现场向上游查询，比隧道详情里那份缓存新。
+	// Corresponds with POST /api/v1/tunnel/l4/subscription/rotate (the `RotateL4TunnelSubscription` operationId).
+	RotateL4TunnelSubscription(ctx context.Context, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// GetL4TunnelUsage 查看本期用量
 	//
-	// **判断是否超额只看 `billed_bytes`**：线路可以设置倍率（如 1.5× 或 0×），`raw_bytes` 是实际传输量，两者不一定相等。`over_quota` 已经算好。
+	// 实时查询，不经过缓存。
 	//
-	// 用量由上游定期采集，**最多滞后一个采集周期**，适合用量管控，不适合作为计费结算依据。
+	// 判断是否超额只看 `billed_bytes`：线路可以设置倍率（如 1.5× 或 0×），`raw_bytes` 是实际传输量，两者不一定相等。`quota_bytes` 为 0 表示不限量。
 	//
-	// Corresponds with GET /api/v1/tunnel/usage (the `GetTunnelUsage` operationId).
-	GetTunnelUsage(ctx context.Context, reqEditors ...RequestEditorFn) (*http.Response, error)
+	// Corresponds with GET /api/v1/tunnel/l4/usage (the `GetL4TunnelUsage` operationId).
+	GetL4TunnelUsage(ctx context.Context, reqEditors ...RequestEditorFn) (*http.Response, error)
 
-	// ListTunnelUsageSeries 查看按天用量
+	// ListL4TunnelUsageSeries 查看按天用量
 	//
-	// 按**自然日**切分，用于画趋势图。
+	// 按自然日切分。没有流量的日子不会出现在结果里（不补零），画图那一侧要自己补齐日期轴——否则一段没人用的日子会被画成一条直接连过去的线，看起来像那几天一直在匀速跑流量。
 	//
-	// **没有流量的日子不会出现在结果里**（不补零），画图前需要自行补齐日期轴，否则空档会被连成一条斜线。
+	// 把这里的天加起来**不等于**本期用量，这是有意的：本期按计费周期切，而且「重置本期用量」只作用于本期，日汇总一行都不删。
 	//
-	// **把这里的天加起来不等于本期用量**，这是有意的：本期用量按计费周期切，而且「重置本期用量」只作用于本期，日汇总一行都不删。两者回答的是不同的问题。
-	//
-	// Corresponds with GET /api/v1/tunnel/usage/series (the `ListTunnelUsageSeries` operationId).
-	ListTunnelUsageSeries(ctx context.Context, params *ListTunnelUsageSeriesParams, reqEditors ...RequestEditorFn) (*http.Response, error)
+	// Corresponds with GET /api/v1/tunnel/l4/usage/series (the `ListL4TunnelUsageSeries` operationId).
+	ListL4TunnelUsageSeries(ctx context.Context, params *ListL4TunnelUsageSeriesParams, reqEditors ...RequestEditorFn) (*http.Response, error)
 }
 
-// ListTunnelOperationLogs 查看本项目的操作日志
+// GetL4Tunnel 查看本项目的四层隧道
 //
-// 记录每一次**写**操作：谁、什么时候、做了什么、成功还是失败。读操作不记录。
+// 还没生成过时返回 `TUNNEL_NOT_FOUND`——首屏据此决定画「生成订阅链接」那个按钮还是画结果。
 //
-// `actor` 为 null 表示该操作由平台执行（例如自动重试删除、项目停服）——平台做了什么是看得到的，但具体是哪位运营人员不会展示。
+// 订阅地址、用量、配额各有自己的接口，这里不重复返回。
 //
-// `payload` 只包含路径参数与查询串，且其中像凭据的字段已被替换为占位符。
-//
-// Corresponds with GET /api/v1/operation-logs (the `ListTunnelOperationLogs` operationId).
-func (c *Client) ListTunnelOperationLogs(ctx context.Context, params *ListTunnelOperationLogsParams, reqEditors ...RequestEditorFn) (*http.Response, error) {
-	req, err := NewListTunnelOperationLogsRequest(c.Server, params)
+// Corresponds with GET /api/v1/tunnel/l4 (the `GetL4Tunnel` operationId).
+func (c *Client) GetL4Tunnel(ctx context.Context, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewGetL4TunnelRequest(c.Server)
 	if err != nil {
 		return nil, err
 	}
@@ -596,15 +264,15 @@ func (c *Client) ListTunnelOperationLogs(ctx context.Context, params *ListTunnel
 	return c.Client.Do(req)
 }
 
-// ListTunnelPlans 列出可开通的套餐
+// GenerateL4Tunnel 生成四层隧道
 //
-// 只返回在售的套餐，按 `sort` 升序。已下架的不在其中——但正在用它的隧道仍然正常，下架只是不再接新单。
+// **幂等**：已经有了再调一次返回同一条，不报错。按钮被点两次是安全的。
 //
-// `quota_bytes` 是套餐**标称**的额度，仅供比较；实际额度由上游按线路分组决定，以隧道用量接口返回的 `quota_bytes` 为准。
+// 生成之后请调订阅接口取地址，本接口不返回它。
 //
-// Corresponds with GET /api/v1/plans (the `ListTunnelPlans` operationId).
-func (c *Client) ListTunnelPlans(ctx context.Context, reqEditors ...RequestEditorFn) (*http.Response, error) {
-	req, err := NewListTunnelPlansRequest(c.Server)
+// Corresponds with POST /api/v1/tunnel/l4 (the `GenerateL4Tunnel` operationId).
+func (c *Client) GenerateL4Tunnel(ctx context.Context, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewGenerateL4TunnelRequest(c.Server)
 	if err != nil {
 		return nil, err
 	}
@@ -615,17 +283,17 @@ func (c *Client) ListTunnelPlans(ctx context.Context, reqEditors ...RequestEdito
 	return c.Client.Do(req)
 }
 
-// CloseTunnel 退订隧道
+// GetL4TunnelSubscription 获取订阅地址
 //
-// **不可逆。** 上游账户会被删除，订阅地址立刻失效，重新开通得到的是一条全新的隧道和一条全新的订阅地址。
+// **这条 URL 是凭据，等同于密码。** 拿着它就能取到这个项目的全部节点和密码，所以它只在这一个接口里出现，一次一条——不进任何列表，也不在隧道详情里。
 //
-// 删除是异步的：返回时 `status` 可能仍是 `deleting`，表示上游还没删干净（通常是某台服务器暂时连不上）。平台会自动重试，期间这条隧道仍然出现在查询接口里。退订完成前无法重新开通。
+// 客户端不应在用户主动请求之前调用它：这个接口的每一次调用都会被记进操作日志。
 //
-// 只是暂时不用的话请用停用，它保留端口和订阅地址。
+// `status` 为 `preparing` 时链接**照样有效**，内容会在拉取那一刻重新派生。它只该影响页面上说什么。
 //
-// Corresponds with DELETE /api/v1/tunnel (the `CloseTunnel` operationId).
-func (c *Client) CloseTunnel(ctx context.Context, reqEditors ...RequestEditorFn) (*http.Response, error) {
-	req, err := NewCloseTunnelRequest(c.Server)
+// Corresponds with GET /api/v1/tunnel/l4/subscription (the `GetL4TunnelSubscription` operationId).
+func (c *Client) GetL4TunnelSubscription(ctx context.Context, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewGetL4TunnelSubscriptionRequest(c.Server)
 	if err != nil {
 		return nil, err
 	}
@@ -636,233 +304,19 @@ func (c *Client) CloseTunnel(ctx context.Context, reqEditors ...RequestEditorFn)
 	return c.Client.Do(req)
 }
 
-// GetTunnel 查看本项目的隧道
-//
-// 每个项目最多一条隧道。尚未开通时返回 404（`TUNNEL_NOT_FOUND`）。
-//
-// 响应里的 `usage` 是**缓存**的用量，`usage.synced_at` 说明它是什么时候采集的；为 null 表示尚未采集过，而不是用量为零。需要当前值请调用量接口。
-//
-// **订阅地址不在这里**，它是一条长期有效的凭据，只由订阅接口单独返回。
-//
-// Corresponds with GET /api/v1/tunnel (the `GetTunnel` operationId).
-func (c *Client) GetTunnel(ctx context.Context, reqEditors ...RequestEditorFn) (*http.Response, error) {
-	req, err := NewGetTunnelRequest(c.Server)
-	if err != nil {
-		return nil, err
-	}
-	req = req.WithContext(ctx)
-	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
-		return nil, err
-	}
-	return c.Client.Do(req)
-}
-
-// UpdateTunnelProfileWithBody 修改隧道的显示信息
-//
-// 改显示名和联系邮箱，**不影响订阅、用量或线路**。
-//
-// `email` 不传表示不改动，传空字符串表示清空。它会被转发给上游面板——上游拿它做什么由面板决定，平台不使用它。
-//
-// Takes any type of body and a specified content type.
-//
-// Corresponds with PATCH /api/v1/tunnel (the `UpdateTunnelProfile` operationId).
-func (c *Client) UpdateTunnelProfileWithBody(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
-	req, err := NewUpdateTunnelProfileRequestWithBody(c.Server, contentType, body)
-	if err != nil {
-		return nil, err
-	}
-	req = req.WithContext(ctx)
-	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
-		return nil, err
-	}
-	return c.Client.Do(req)
-}
-
-// UpdateTunnelProfile 修改隧道的显示信息
-//
-// 改显示名和联系邮箱，**不影响订阅、用量或线路**。
-//
-// `email` 不传表示不改动，传空字符串表示清空。它会被转发给上游面板——上游拿它做什么由面板决定，平台不使用它。
-//
-// Takes a body of the `application/json` content type.
-//
-// Corresponds with PATCH /api/v1/tunnel (the `UpdateTunnelProfile` operationId).
-func (c *Client) UpdateTunnelProfile(ctx context.Context, body UpdateTunnelProfileJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
-	req, err := NewUpdateTunnelProfileRequest(c.Server, body)
-	if err != nil {
-		return nil, err
-	}
-	req = req.WithContext(ctx)
-	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
-		return nil, err
-	}
-	return c.Client.Do(req)
-}
-
-// OpenTunnelWithBody 开通隧道
-//
-// 为当前项目开通一条隧道，返回时订阅通常处于 `preparing`——节点仍在下发，但**订阅地址此时已经可用**，内容会在拉取那一刻按当时的状态重新派生。
-//
-// 一个项目只能有一条。已经有了返回 `TUNNEL_ALREADY_OPEN`；上一条还在退订中返回 `TUNNEL_CLOSING`，稍后重试即可。
-//
-// 套餐必须处于在售状态，已下架的返回 `TUNNEL_PLAN_RETIRED`。若返回 `TUNNEL_PLAN_GROUPS_MISSING`，说明该套餐在上游对应的线路分组不存在——这是一个配置问题，请联系运营，换一款套餐或稍后重试都不会有帮助。
-//
-// Takes any type of body and a specified content type.
-//
-// Corresponds with POST /api/v1/tunnel (the `OpenTunnel` operationId).
-func (c *Client) OpenTunnelWithBody(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
-	req, err := NewOpenTunnelRequestWithBody(c.Server, contentType, body)
-	if err != nil {
-		return nil, err
-	}
-	req = req.WithContext(ctx)
-	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
-		return nil, err
-	}
-	return c.Client.Do(req)
-}
-
-// OpenTunnel 开通隧道
-//
-// 为当前项目开通一条隧道，返回时订阅通常处于 `preparing`——节点仍在下发，但**订阅地址此时已经可用**，内容会在拉取那一刻按当时的状态重新派生。
-//
-// 一个项目只能有一条。已经有了返回 `TUNNEL_ALREADY_OPEN`；上一条还在退订中返回 `TUNNEL_CLOSING`，稍后重试即可。
-//
-// 套餐必须处于在售状态，已下架的返回 `TUNNEL_PLAN_RETIRED`。若返回 `TUNNEL_PLAN_GROUPS_MISSING`，说明该套餐在上游对应的线路分组不存在——这是一个配置问题，请联系运营，换一款套餐或稍后重试都不会有帮助。
-//
-// Takes a body of the `application/json` content type.
-//
-// Corresponds with POST /api/v1/tunnel (the `OpenTunnel` operationId).
-func (c *Client) OpenTunnel(ctx context.Context, body OpenTunnelJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
-	req, err := NewOpenTunnelRequest(c.Server, body)
-	if err != nil {
-		return nil, err
-	}
-	req = req.WithContext(ctx)
-	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
-		return nil, err
-	}
-	return c.Client.Do(req)
-}
-
-// ActOnTunnelWithBody 启用或停用隧道
-//
-// **停用不是退订。** 停用会把这条隧道的实例从上游调度器撤下，但端口保留，重新启用后原样回来，订阅地址也不变。适合「这段时间不用」。
-//
-// 被平台停用的隧道（`suspended` 为 true）无法自行启用，会返回 `TUNNEL_SUSPENDED`——那通常是欠费或违规，需要先处理对应的问题。
-//
-// Takes any type of body and a specified content type.
-//
-// Corresponds with POST /api/v1/tunnel/actions (the `ActOnTunnel` operationId).
-func (c *Client) ActOnTunnelWithBody(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
-	req, err := NewActOnTunnelRequestWithBody(c.Server, contentType, body)
-	if err != nil {
-		return nil, err
-	}
-	req = req.WithContext(ctx)
-	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
-		return nil, err
-	}
-	return c.Client.Do(req)
-}
-
-// ActOnTunnel 启用或停用隧道
-//
-// **停用不是退订。** 停用会把这条隧道的实例从上游调度器撤下，但端口保留，重新启用后原样回来，订阅地址也不变。适合「这段时间不用」。
-//
-// 被平台停用的隧道（`suspended` 为 true）无法自行启用，会返回 `TUNNEL_SUSPENDED`——那通常是欠费或违规，需要先处理对应的问题。
-//
-// Takes a body of the `application/json` content type.
-//
-// Corresponds with POST /api/v1/tunnel/actions (the `ActOnTunnel` operationId).
-func (c *Client) ActOnTunnel(ctx context.Context, body ActOnTunnelJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
-	req, err := NewActOnTunnelRequest(c.Server, body)
-	if err != nil {
-		return nil, err
-	}
-	req = req.WithContext(ctx)
-	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
-		return nil, err
-	}
-	return c.Client.Do(req)
-}
-
-// ChangeTunnelPlanWithBody 更换套餐
-//
-// 换套餐会立刻重判线路资格：多出来的线路马上可用，**少掉的那些进入删除队列——宽限期内照常可用，到期才真正释放**。所以换套餐不是一次瞬时切换，订阅内容会在接下来一段时间内变化。
-//
-// 换完之后建议重新拉取一次订阅。
-//
-// Takes any type of body and a specified content type.
-//
-// Corresponds with PUT /api/v1/tunnel/plan (the `ChangeTunnelPlan` operationId).
-func (c *Client) ChangeTunnelPlanWithBody(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
-	req, err := NewChangeTunnelPlanRequestWithBody(c.Server, contentType, body)
-	if err != nil {
-		return nil, err
-	}
-	req = req.WithContext(ctx)
-	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
-		return nil, err
-	}
-	return c.Client.Do(req)
-}
-
-// ChangeTunnelPlan 更换套餐
-//
-// 换套餐会立刻重判线路资格：多出来的线路马上可用，**少掉的那些进入删除队列——宽限期内照常可用，到期才真正释放**。所以换套餐不是一次瞬时切换，订阅内容会在接下来一段时间内变化。
-//
-// 换完之后建议重新拉取一次订阅。
-//
-// Takes a body of the `application/json` content type.
-//
-// Corresponds with PUT /api/v1/tunnel/plan (the `ChangeTunnelPlan` operationId).
-func (c *Client) ChangeTunnelPlan(ctx context.Context, body ChangeTunnelPlanJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
-	req, err := NewChangeTunnelPlanRequest(c.Server, body)
-	if err != nil {
-		return nil, err
-	}
-	req = req.WithContext(ctx)
-	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
-		return nil, err
-	}
-	return c.Client.Do(req)
-}
-
-// GetTunnelSubscription 获取订阅地址
-//
-// **返回的是一条长期有效的凭据，等同于密码。** 拿到它就能取得本项目全部节点与密码，请勿转发、截图或提交到工单。
-//
-// 它不会出现在隧道详情或任何列表里，只由这个接口返回。
-//
-// `status` 为 `preparing` 时链接**照样可用**，内容会在拉取那一刻按当时的状态重新派生。
-//
-// 怀疑泄露时请调用重置接口。
-//
-// Corresponds with GET /api/v1/tunnel/subscription (the `GetTunnelSubscription` operationId).
-func (c *Client) GetTunnelSubscription(ctx context.Context, reqEditors ...RequestEditorFn) (*http.Response, error) {
-	req, err := NewGetTunnelSubscriptionRequest(c.Server)
-	if err != nil {
-		return nil, err
-	}
-	req = req.WithContext(ctx)
-	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
-		return nil, err
-	}
-	return c.Client.Do(req)
-}
-
-// RotateTunnelSubscription 重置订阅地址与节点密码
+// RotateL4TunnelSubscription 重置订阅地址与节点密码
 //
 // **这是凭据泄露时的处置手段，会让已分发出去的每一份订阅立即失效。**
 //
 // 订阅 token 和节点密码同时更换，所有客户端都必须重新拉取一次订阅才能继续使用。调用前请确认这确实是想要的结果。
 //
-// 重置后再调订阅接口取新地址。
+// 隧道被平台停用时无法重置（`TUNNEL_DISABLED_FOR_ROTATE`），需要先处理停用的原因。
 //
-// Corresponds with POST /api/v1/tunnel/subscription/rotate (the `RotateTunnelSubscription` operationId).
-func (c *Client) RotateTunnelSubscription(ctx context.Context, reqEditors ...RequestEditorFn) (*http.Response, error) {
-	req, err := NewRotateTunnelSubscriptionRequest(c.Server)
+// 重置后请调订阅接口取新地址，**本接口不返回它**。
+//
+// Corresponds with POST /api/v1/tunnel/l4/subscription/rotate (the `RotateL4TunnelSubscription` operationId).
+func (c *Client) RotateL4TunnelSubscription(ctx context.Context, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewRotateL4TunnelSubscriptionRequest(c.Server)
 	if err != nil {
 		return nil, err
 	}
@@ -873,17 +327,15 @@ func (c *Client) RotateTunnelSubscription(ctx context.Context, reqEditors ...Req
 	return c.Client.Do(req)
 }
 
-// GetTunnelUsage 查看本期用量
+// GetL4TunnelUsage 查看本期用量
 //
-// 现场向上游查询，比隧道详情里那份缓存新。
+// 实时查询，不经过缓存。
 //
-// **判断是否超额只看 `billed_bytes`**：线路可以设置倍率（如 1.5× 或 0×），`raw_bytes` 是实际传输量，两者不一定相等。`over_quota` 已经算好。
+// 判断是否超额只看 `billed_bytes`：线路可以设置倍率（如 1.5× 或 0×），`raw_bytes` 是实际传输量，两者不一定相等。`quota_bytes` 为 0 表示不限量。
 //
-// 用量由上游定期采集，**最多滞后一个采集周期**，适合用量管控，不适合作为计费结算依据。
-//
-// Corresponds with GET /api/v1/tunnel/usage (the `GetTunnelUsage` operationId).
-func (c *Client) GetTunnelUsage(ctx context.Context, reqEditors ...RequestEditorFn) (*http.Response, error) {
-	req, err := NewGetTunnelUsageRequest(c.Server)
+// Corresponds with GET /api/v1/tunnel/l4/usage (the `GetL4TunnelUsage` operationId).
+func (c *Client) GetL4TunnelUsage(ctx context.Context, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewGetL4TunnelUsageRequest(c.Server)
 	if err != nil {
 		return nil, err
 	}
@@ -894,17 +346,15 @@ func (c *Client) GetTunnelUsage(ctx context.Context, reqEditors ...RequestEditor
 	return c.Client.Do(req)
 }
 
-// ListTunnelUsageSeries 查看按天用量
+// ListL4TunnelUsageSeries 查看按天用量
 //
-// 按**自然日**切分，用于画趋势图。
+// 按自然日切分。没有流量的日子不会出现在结果里（不补零），画图那一侧要自己补齐日期轴——否则一段没人用的日子会被画成一条直接连过去的线，看起来像那几天一直在匀速跑流量。
 //
-// **没有流量的日子不会出现在结果里**（不补零），画图前需要自行补齐日期轴，否则空档会被连成一条斜线。
+// 把这里的天加起来**不等于**本期用量，这是有意的：本期按计费周期切，而且「重置本期用量」只作用于本期，日汇总一行都不删。
 //
-// **把这里的天加起来不等于本期用量**，这是有意的：本期用量按计费周期切，而且「重置本期用量」只作用于本期，日汇总一行都不删。两者回答的是不同的问题。
-//
-// Corresponds with GET /api/v1/tunnel/usage/series (the `ListTunnelUsageSeries` operationId).
-func (c *Client) ListTunnelUsageSeries(ctx context.Context, params *ListTunnelUsageSeriesParams, reqEditors ...RequestEditorFn) (*http.Response, error) {
-	req, err := NewListTunnelUsageSeriesRequest(c.Server, params)
+// Corresponds with GET /api/v1/tunnel/l4/usage/series (the `ListL4TunnelUsageSeries` operationId).
+func (c *Client) ListL4TunnelUsageSeries(ctx context.Context, params *ListL4TunnelUsageSeriesParams, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewListL4TunnelUsageSeriesRequest(c.Server, params)
 	if err != nil {
 		return nil, err
 	}
@@ -915,8 +365,8 @@ func (c *Client) ListTunnelUsageSeries(ctx context.Context, params *ListTunnelUs
 	return c.Client.Do(req)
 }
 
-// NewListTunnelOperationLogsRequest constructs an http.Request for the ListTunnelOperationLogs method
-func NewListTunnelOperationLogsRequest(server string, params *ListTunnelOperationLogsParams) (*http.Request, error) {
+// NewGetL4TunnelRequest constructs an http.Request for the GetL4Tunnel method
+func NewGetL4TunnelRequest(server string) (*http.Request, error) {
 	var err error
 
 	serverURL, err := url.Parse(server)
@@ -924,85 +374,7 @@ func NewListTunnelOperationLogsRequest(server string, params *ListTunnelOperatio
 		return nil, err
 	}
 
-	operationPath := fmt.Sprintf("/api/v1/operation-logs")
-	if operationPath[0] == '/' {
-		operationPath = "." + operationPath
-	}
-
-	queryURL, err := serverURL.Parse(operationPath)
-	if err != nil {
-		return nil, err
-	}
-
-	if params != nil {
-		// queryValues collects non-styled parameters (passthrough, JSON)
-		// that are safe to round-trip through url.Values.Encode().
-		queryValues := queryURL.Query()
-		// rawQueryFragments collects pre-encoded query fragments from
-		// styled parameters, preserving literal commas as delimiters
-		// per the OpenAPI spec (e.g. "color=blue,black,brown").
-		var rawQueryFragments []string
-
-		if params.Limit != nil {
-
-			if queryFrag, err := runtime.StyleParamWithOptions("form", false, "limit", *params.Limit, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "integer", Format: "int64"}); err != nil {
-				return nil, err
-			} else {
-				for _, qp := range strings.Split(queryFrag, "&") {
-					rawQueryFragments = append(rawQueryFragments, qp)
-				}
-			}
-
-		}
-
-		if params.Offset != nil {
-
-			if queryFrag, err := runtime.StyleParamWithOptions("form", false, "offset", *params.Offset, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "integer", Format: "int64"}); err != nil {
-				return nil, err
-			} else {
-				for _, qp := range strings.Split(queryFrag, "&") {
-					rawQueryFragments = append(rawQueryFragments, qp)
-				}
-			}
-
-		}
-
-		if params.Action != nil {
-
-			if queryFrag, err := runtime.StyleParamWithOptions("form", false, "action", *params.Action, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "string", Format: ""}); err != nil {
-				return nil, err
-			} else {
-				for _, qp := range strings.Split(queryFrag, "&") {
-					rawQueryFragments = append(rawQueryFragments, qp)
-				}
-			}
-
-		}
-
-		if encoded := queryValues.Encode(); encoded != "" {
-			rawQueryFragments = append(rawQueryFragments, encoded)
-		}
-		queryURL.RawQuery = strings.Join(rawQueryFragments, "&")
-	}
-
-	req, err := http.NewRequest(http.MethodGet, queryURL.String(), nil)
-	if err != nil {
-		return nil, err
-	}
-
-	return req, nil
-}
-
-// NewListTunnelPlansRequest constructs an http.Request for the ListTunnelPlans method
-func NewListTunnelPlansRequest(server string) (*http.Request, error) {
-	var err error
-
-	serverURL, err := url.Parse(server)
-	if err != nil {
-		return nil, err
-	}
-
-	operationPath := fmt.Sprintf("/api/v1/plans")
+	operationPath := fmt.Sprintf("/api/v1/tunnel/l4")
 	if operationPath[0] == '/' {
 		operationPath = "." + operationPath
 	}
@@ -1020,8 +392,8 @@ func NewListTunnelPlansRequest(server string) (*http.Request, error) {
 	return req, nil
 }
 
-// NewCloseTunnelRequest constructs an http.Request for the CloseTunnel method
-func NewCloseTunnelRequest(server string) (*http.Request, error) {
+// NewGenerateL4TunnelRequest constructs an http.Request for the GenerateL4Tunnel method
+func NewGenerateL4TunnelRequest(server string) (*http.Request, error) {
 	var err error
 
 	serverURL, err := url.Parse(server)
@@ -1029,248 +401,7 @@ func NewCloseTunnelRequest(server string) (*http.Request, error) {
 		return nil, err
 	}
 
-	operationPath := fmt.Sprintf("/api/v1/tunnel")
-	if operationPath[0] == '/' {
-		operationPath = "." + operationPath
-	}
-
-	queryURL, err := serverURL.Parse(operationPath)
-	if err != nil {
-		return nil, err
-	}
-
-	req, err := http.NewRequest(http.MethodDelete, queryURL.String(), nil)
-	if err != nil {
-		return nil, err
-	}
-
-	return req, nil
-}
-
-// NewGetTunnelRequest constructs an http.Request for the GetTunnel method
-func NewGetTunnelRequest(server string) (*http.Request, error) {
-	var err error
-
-	serverURL, err := url.Parse(server)
-	if err != nil {
-		return nil, err
-	}
-
-	operationPath := fmt.Sprintf("/api/v1/tunnel")
-	if operationPath[0] == '/' {
-		operationPath = "." + operationPath
-	}
-
-	queryURL, err := serverURL.Parse(operationPath)
-	if err != nil {
-		return nil, err
-	}
-
-	req, err := http.NewRequest(http.MethodGet, queryURL.String(), nil)
-	if err != nil {
-		return nil, err
-	}
-
-	return req, nil
-}
-
-// NewUpdateTunnelProfileRequest calls the generic UpdateTunnelProfile builder with application/json body
-func NewUpdateTunnelProfileRequest(server string, body UpdateTunnelProfileJSONRequestBody) (*http.Request, error) {
-	var bodyReader io.Reader
-	buf, err := json.Marshal(body)
-	if err != nil {
-		return nil, err
-	}
-	bodyReader = bytes.NewReader(buf)
-	return NewUpdateTunnelProfileRequestWithBody(server, "application/json", bodyReader)
-}
-
-// NewUpdateTunnelProfileRequestWithBody constructs an http.Request for the UpdateTunnelProfile method, with any body, and a specified content type
-func NewUpdateTunnelProfileRequestWithBody(server string, contentType string, body io.Reader) (*http.Request, error) {
-	var err error
-
-	serverURL, err := url.Parse(server)
-	if err != nil {
-		return nil, err
-	}
-
-	operationPath := fmt.Sprintf("/api/v1/tunnel")
-	if operationPath[0] == '/' {
-		operationPath = "." + operationPath
-	}
-
-	queryURL, err := serverURL.Parse(operationPath)
-	if err != nil {
-		return nil, err
-	}
-
-	req, err := http.NewRequest(http.MethodPatch, queryURL.String(), body)
-	if err != nil {
-		return nil, err
-	}
-
-	req.Header.Add("Content-Type", contentType)
-
-	return req, nil
-}
-
-// NewOpenTunnelRequest calls the generic OpenTunnel builder with application/json body
-func NewOpenTunnelRequest(server string, body OpenTunnelJSONRequestBody) (*http.Request, error) {
-	var bodyReader io.Reader
-	buf, err := json.Marshal(body)
-	if err != nil {
-		return nil, err
-	}
-	bodyReader = bytes.NewReader(buf)
-	return NewOpenTunnelRequestWithBody(server, "application/json", bodyReader)
-}
-
-// NewOpenTunnelRequestWithBody constructs an http.Request for the OpenTunnel method, with any body, and a specified content type
-func NewOpenTunnelRequestWithBody(server string, contentType string, body io.Reader) (*http.Request, error) {
-	var err error
-
-	serverURL, err := url.Parse(server)
-	if err != nil {
-		return nil, err
-	}
-
-	operationPath := fmt.Sprintf("/api/v1/tunnel")
-	if operationPath[0] == '/' {
-		operationPath = "." + operationPath
-	}
-
-	queryURL, err := serverURL.Parse(operationPath)
-	if err != nil {
-		return nil, err
-	}
-
-	req, err := http.NewRequest(http.MethodPost, queryURL.String(), body)
-	if err != nil {
-		return nil, err
-	}
-
-	req.Header.Add("Content-Type", contentType)
-
-	return req, nil
-}
-
-// NewActOnTunnelRequest calls the generic ActOnTunnel builder with application/json body
-func NewActOnTunnelRequest(server string, body ActOnTunnelJSONRequestBody) (*http.Request, error) {
-	var bodyReader io.Reader
-	buf, err := json.Marshal(body)
-	if err != nil {
-		return nil, err
-	}
-	bodyReader = bytes.NewReader(buf)
-	return NewActOnTunnelRequestWithBody(server, "application/json", bodyReader)
-}
-
-// NewActOnTunnelRequestWithBody constructs an http.Request for the ActOnTunnel method, with any body, and a specified content type
-func NewActOnTunnelRequestWithBody(server string, contentType string, body io.Reader) (*http.Request, error) {
-	var err error
-
-	serverURL, err := url.Parse(server)
-	if err != nil {
-		return nil, err
-	}
-
-	operationPath := fmt.Sprintf("/api/v1/tunnel/actions")
-	if operationPath[0] == '/' {
-		operationPath = "." + operationPath
-	}
-
-	queryURL, err := serverURL.Parse(operationPath)
-	if err != nil {
-		return nil, err
-	}
-
-	req, err := http.NewRequest(http.MethodPost, queryURL.String(), body)
-	if err != nil {
-		return nil, err
-	}
-
-	req.Header.Add("Content-Type", contentType)
-
-	return req, nil
-}
-
-// NewChangeTunnelPlanRequest calls the generic ChangeTunnelPlan builder with application/json body
-func NewChangeTunnelPlanRequest(server string, body ChangeTunnelPlanJSONRequestBody) (*http.Request, error) {
-	var bodyReader io.Reader
-	buf, err := json.Marshal(body)
-	if err != nil {
-		return nil, err
-	}
-	bodyReader = bytes.NewReader(buf)
-	return NewChangeTunnelPlanRequestWithBody(server, "application/json", bodyReader)
-}
-
-// NewChangeTunnelPlanRequestWithBody constructs an http.Request for the ChangeTunnelPlan method, with any body, and a specified content type
-func NewChangeTunnelPlanRequestWithBody(server string, contentType string, body io.Reader) (*http.Request, error) {
-	var err error
-
-	serverURL, err := url.Parse(server)
-	if err != nil {
-		return nil, err
-	}
-
-	operationPath := fmt.Sprintf("/api/v1/tunnel/plan")
-	if operationPath[0] == '/' {
-		operationPath = "." + operationPath
-	}
-
-	queryURL, err := serverURL.Parse(operationPath)
-	if err != nil {
-		return nil, err
-	}
-
-	req, err := http.NewRequest(http.MethodPut, queryURL.String(), body)
-	if err != nil {
-		return nil, err
-	}
-
-	req.Header.Add("Content-Type", contentType)
-
-	return req, nil
-}
-
-// NewGetTunnelSubscriptionRequest constructs an http.Request for the GetTunnelSubscription method
-func NewGetTunnelSubscriptionRequest(server string) (*http.Request, error) {
-	var err error
-
-	serverURL, err := url.Parse(server)
-	if err != nil {
-		return nil, err
-	}
-
-	operationPath := fmt.Sprintf("/api/v1/tunnel/subscription")
-	if operationPath[0] == '/' {
-		operationPath = "." + operationPath
-	}
-
-	queryURL, err := serverURL.Parse(operationPath)
-	if err != nil {
-		return nil, err
-	}
-
-	req, err := http.NewRequest(http.MethodGet, queryURL.String(), nil)
-	if err != nil {
-		return nil, err
-	}
-
-	return req, nil
-}
-
-// NewRotateTunnelSubscriptionRequest constructs an http.Request for the RotateTunnelSubscription method
-func NewRotateTunnelSubscriptionRequest(server string) (*http.Request, error) {
-	var err error
-
-	serverURL, err := url.Parse(server)
-	if err != nil {
-		return nil, err
-	}
-
-	operationPath := fmt.Sprintf("/api/v1/tunnel/subscription/rotate")
+	operationPath := fmt.Sprintf("/api/v1/tunnel/l4")
 	if operationPath[0] == '/' {
 		operationPath = "." + operationPath
 	}
@@ -1288,8 +419,8 @@ func NewRotateTunnelSubscriptionRequest(server string) (*http.Request, error) {
 	return req, nil
 }
 
-// NewGetTunnelUsageRequest constructs an http.Request for the GetTunnelUsage method
-func NewGetTunnelUsageRequest(server string) (*http.Request, error) {
+// NewGetL4TunnelSubscriptionRequest constructs an http.Request for the GetL4TunnelSubscription method
+func NewGetL4TunnelSubscriptionRequest(server string) (*http.Request, error) {
 	var err error
 
 	serverURL, err := url.Parse(server)
@@ -1297,7 +428,7 @@ func NewGetTunnelUsageRequest(server string) (*http.Request, error) {
 		return nil, err
 	}
 
-	operationPath := fmt.Sprintf("/api/v1/tunnel/usage")
+	operationPath := fmt.Sprintf("/api/v1/tunnel/l4/subscription")
 	if operationPath[0] == '/' {
 		operationPath = "." + operationPath
 	}
@@ -1315,8 +446,8 @@ func NewGetTunnelUsageRequest(server string) (*http.Request, error) {
 	return req, nil
 }
 
-// NewListTunnelUsageSeriesRequest constructs an http.Request for the ListTunnelUsageSeries method
-func NewListTunnelUsageSeriesRequest(server string, params *ListTunnelUsageSeriesParams) (*http.Request, error) {
+// NewRotateL4TunnelSubscriptionRequest constructs an http.Request for the RotateL4TunnelSubscription method
+func NewRotateL4TunnelSubscriptionRequest(server string) (*http.Request, error) {
 	var err error
 
 	serverURL, err := url.Parse(server)
@@ -1324,7 +455,61 @@ func NewListTunnelUsageSeriesRequest(server string, params *ListTunnelUsageSerie
 		return nil, err
 	}
 
-	operationPath := fmt.Sprintf("/api/v1/tunnel/usage/series")
+	operationPath := fmt.Sprintf("/api/v1/tunnel/l4/subscription/rotate")
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest(http.MethodPost, queryURL.String(), nil)
+	if err != nil {
+		return nil, err
+	}
+
+	return req, nil
+}
+
+// NewGetL4TunnelUsageRequest constructs an http.Request for the GetL4TunnelUsage method
+func NewGetL4TunnelUsageRequest(server string) (*http.Request, error) {
+	var err error
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/api/v1/tunnel/l4/usage")
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest(http.MethodGet, queryURL.String(), nil)
+	if err != nil {
+		return nil, err
+	}
+
+	return req, nil
+}
+
+// NewListL4TunnelUsageSeriesRequest constructs an http.Request for the ListL4TunnelUsageSeries method
+func NewListL4TunnelUsageSeriesRequest(server string, params *ListL4TunnelUsageSeriesParams) (*http.Request, error) {
+	var err error
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/api/v1/tunnel/l4/usage/series")
 	if operationPath[0] == '/' {
 		operationPath = "." + operationPath
 	}
@@ -1345,7 +530,7 @@ func NewListTunnelUsageSeriesRequest(server string, params *ListTunnelUsageSerie
 
 		if params.Days != nil {
 
-			if queryFrag, err := runtime.StyleParamWithOptions("form", false, "days", *params.Days, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "integer", Format: "int64"}); err != nil {
+			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "days", *params.Days, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "integer", Format: "int64"}); err != nil {
 				return nil, err
 			} else {
 				for _, qp := range strings.Split(queryFrag, "&") {
@@ -1413,300 +598,80 @@ func WithBaseURL(baseURL string) ClientOption {
 // ClientWithResponsesInterface is the interface specification for the client with responses above.
 type ClientWithResponsesInterface interface {
 
-	// ListTunnelOperationLogsWithResponse 查看本项目的操作日志
+	// GetL4TunnelWithResponse 查看本项目的四层隧道
 	//
-	// 记录每一次**写**操作：谁、什么时候、做了什么、成功还是失败。读操作不记录。
+	// 还没生成过时返回 `TUNNEL_NOT_FOUND`——首屏据此决定画「生成订阅链接」那个按钮还是画结果。
 	//
-	// `actor` 为 null 表示该操作由平台执行（例如自动重试删除、项目停服）——平台做了什么是看得到的，但具体是哪位运营人员不会展示。
-	//
-	// `payload` 只包含路径参数与查询串，且其中像凭据的字段已被替换为占位符。
+	// 订阅地址、用量、配额各有自己的接口，这里不重复返回。
 	//
 	// Returns a wrapper object for the known response body format(s).
 	//
-	// Corresponds with GET /api/v1/operation-logs (the `ListTunnelOperationLogs` operationId).
-	ListTunnelOperationLogsWithResponse(ctx context.Context, params *ListTunnelOperationLogsParams, reqEditors ...RequestEditorFn) (*ListTunnelOperationLogsResponse, error)
+	// Corresponds with GET /api/v1/tunnel/l4 (the `GetL4Tunnel` operationId).
+	GetL4TunnelWithResponse(ctx context.Context, reqEditors ...RequestEditorFn) (*GetL4TunnelResponse, error)
 
-	// ListTunnelPlansWithResponse 列出可开通的套餐
+	// GenerateL4TunnelWithResponse 生成四层隧道
 	//
-	// 只返回在售的套餐，按 `sort` 升序。已下架的不在其中——但正在用它的隧道仍然正常，下架只是不再接新单。
+	// **幂等**：已经有了再调一次返回同一条，不报错。按钮被点两次是安全的。
 	//
-	// `quota_bytes` 是套餐**标称**的额度，仅供比较；实际额度由上游按线路分组决定，以隧道用量接口返回的 `quota_bytes` 为准。
+	// 生成之后请调订阅接口取地址，本接口不返回它。
 	//
 	// Returns a wrapper object for the known response body format(s).
 	//
-	// Corresponds with GET /api/v1/plans (the `ListTunnelPlans` operationId).
-	ListTunnelPlansWithResponse(ctx context.Context, reqEditors ...RequestEditorFn) (*ListTunnelPlansResponse, error)
+	// Corresponds with POST /api/v1/tunnel/l4 (the `GenerateL4Tunnel` operationId).
+	GenerateL4TunnelWithResponse(ctx context.Context, reqEditors ...RequestEditorFn) (*GenerateL4TunnelResponse, error)
 
-	// CloseTunnelWithResponse 退订隧道
+	// GetL4TunnelSubscriptionWithResponse 获取订阅地址
 	//
-	// **不可逆。** 上游账户会被删除，订阅地址立刻失效，重新开通得到的是一条全新的隧道和一条全新的订阅地址。
+	// **这条 URL 是凭据，等同于密码。** 拿着它就能取到这个项目的全部节点和密码，所以它只在这一个接口里出现，一次一条——不进任何列表，也不在隧道详情里。
 	//
-	// 删除是异步的：返回时 `status` 可能仍是 `deleting`，表示上游还没删干净（通常是某台服务器暂时连不上）。平台会自动重试，期间这条隧道仍然出现在查询接口里。退订完成前无法重新开通。
+	// 客户端不应在用户主动请求之前调用它：这个接口的每一次调用都会被记进操作日志。
 	//
-	// 只是暂时不用的话请用停用，它保留端口和订阅地址。
+	// `status` 为 `preparing` 时链接**照样有效**，内容会在拉取那一刻重新派生。它只该影响页面上说什么。
 	//
 	// Returns a wrapper object for the known response body format(s).
 	//
-	// Corresponds with DELETE /api/v1/tunnel (the `CloseTunnel` operationId).
-	CloseTunnelWithResponse(ctx context.Context, reqEditors ...RequestEditorFn) (*CloseTunnelResponse, error)
+	// Corresponds with GET /api/v1/tunnel/l4/subscription (the `GetL4TunnelSubscription` operationId).
+	GetL4TunnelSubscriptionWithResponse(ctx context.Context, reqEditors ...RequestEditorFn) (*GetL4TunnelSubscriptionResponse, error)
 
-	// GetTunnelWithResponse 查看本项目的隧道
-	//
-	// 每个项目最多一条隧道。尚未开通时返回 404（`TUNNEL_NOT_FOUND`）。
-	//
-	// 响应里的 `usage` 是**缓存**的用量，`usage.synced_at` 说明它是什么时候采集的；为 null 表示尚未采集过，而不是用量为零。需要当前值请调用量接口。
-	//
-	// **订阅地址不在这里**，它是一条长期有效的凭据，只由订阅接口单独返回。
-	//
-	// Returns a wrapper object for the known response body format(s).
-	//
-	// Corresponds with GET /api/v1/tunnel (the `GetTunnel` operationId).
-	GetTunnelWithResponse(ctx context.Context, reqEditors ...RequestEditorFn) (*GetTunnelResponse, error)
-
-	// UpdateTunnelProfileWithBodyWithResponse 修改隧道的显示信息
-	//
-	// 改显示名和联系邮箱，**不影响订阅、用量或线路**。
-	//
-	// `email` 不传表示不改动，传空字符串表示清空。它会被转发给上游面板——上游拿它做什么由面板决定，平台不使用它。
-	//
-	// Takes any type of body and a specified content type, and returns a wrapper object for the known response body format(s).
-	//
-	// Corresponds with PATCH /api/v1/tunnel (the `UpdateTunnelProfile` operationId).
-	UpdateTunnelProfileWithBodyWithResponse(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*UpdateTunnelProfileResponse, error)
-
-	// UpdateTunnelProfileWithResponse 修改隧道的显示信息
-	//
-	// 改显示名和联系邮箱，**不影响订阅、用量或线路**。
-	//
-	// `email` 不传表示不改动，传空字符串表示清空。它会被转发给上游面板——上游拿它做什么由面板决定，平台不使用它。
-	//
-	// Takes a body of the `application/json` content type, and returns a wrapper object for the known response body format(s).
-	//
-	// Corresponds with PATCH /api/v1/tunnel (the `UpdateTunnelProfile` operationId).
-	UpdateTunnelProfileWithResponse(ctx context.Context, body UpdateTunnelProfileJSONRequestBody, reqEditors ...RequestEditorFn) (*UpdateTunnelProfileResponse, error)
-
-	// OpenTunnelWithBodyWithResponse 开通隧道
-	//
-	// 为当前项目开通一条隧道，返回时订阅通常处于 `preparing`——节点仍在下发，但**订阅地址此时已经可用**，内容会在拉取那一刻按当时的状态重新派生。
-	//
-	// 一个项目只能有一条。已经有了返回 `TUNNEL_ALREADY_OPEN`；上一条还在退订中返回 `TUNNEL_CLOSING`，稍后重试即可。
-	//
-	// 套餐必须处于在售状态，已下架的返回 `TUNNEL_PLAN_RETIRED`。若返回 `TUNNEL_PLAN_GROUPS_MISSING`，说明该套餐在上游对应的线路分组不存在——这是一个配置问题，请联系运营，换一款套餐或稍后重试都不会有帮助。
-	//
-	// Takes any type of body and a specified content type, and returns a wrapper object for the known response body format(s).
-	//
-	// Corresponds with POST /api/v1/tunnel (the `OpenTunnel` operationId).
-	OpenTunnelWithBodyWithResponse(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*OpenTunnelResponse, error)
-
-	// OpenTunnelWithResponse 开通隧道
-	//
-	// 为当前项目开通一条隧道，返回时订阅通常处于 `preparing`——节点仍在下发，但**订阅地址此时已经可用**，内容会在拉取那一刻按当时的状态重新派生。
-	//
-	// 一个项目只能有一条。已经有了返回 `TUNNEL_ALREADY_OPEN`；上一条还在退订中返回 `TUNNEL_CLOSING`，稍后重试即可。
-	//
-	// 套餐必须处于在售状态，已下架的返回 `TUNNEL_PLAN_RETIRED`。若返回 `TUNNEL_PLAN_GROUPS_MISSING`，说明该套餐在上游对应的线路分组不存在——这是一个配置问题，请联系运营，换一款套餐或稍后重试都不会有帮助。
-	//
-	// Takes a body of the `application/json` content type, and returns a wrapper object for the known response body format(s).
-	//
-	// Corresponds with POST /api/v1/tunnel (the `OpenTunnel` operationId).
-	OpenTunnelWithResponse(ctx context.Context, body OpenTunnelJSONRequestBody, reqEditors ...RequestEditorFn) (*OpenTunnelResponse, error)
-
-	// ActOnTunnelWithBodyWithResponse 启用或停用隧道
-	//
-	// **停用不是退订。** 停用会把这条隧道的实例从上游调度器撤下，但端口保留，重新启用后原样回来，订阅地址也不变。适合「这段时间不用」。
-	//
-	// 被平台停用的隧道（`suspended` 为 true）无法自行启用，会返回 `TUNNEL_SUSPENDED`——那通常是欠费或违规，需要先处理对应的问题。
-	//
-	// Takes any type of body and a specified content type, and returns a wrapper object for the known response body format(s).
-	//
-	// Corresponds with POST /api/v1/tunnel/actions (the `ActOnTunnel` operationId).
-	ActOnTunnelWithBodyWithResponse(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*ActOnTunnelResponse, error)
-
-	// ActOnTunnelWithResponse 启用或停用隧道
-	//
-	// **停用不是退订。** 停用会把这条隧道的实例从上游调度器撤下，但端口保留，重新启用后原样回来，订阅地址也不变。适合「这段时间不用」。
-	//
-	// 被平台停用的隧道（`suspended` 为 true）无法自行启用，会返回 `TUNNEL_SUSPENDED`——那通常是欠费或违规，需要先处理对应的问题。
-	//
-	// Takes a body of the `application/json` content type, and returns a wrapper object for the known response body format(s).
-	//
-	// Corresponds with POST /api/v1/tunnel/actions (the `ActOnTunnel` operationId).
-	ActOnTunnelWithResponse(ctx context.Context, body ActOnTunnelJSONRequestBody, reqEditors ...RequestEditorFn) (*ActOnTunnelResponse, error)
-
-	// ChangeTunnelPlanWithBodyWithResponse 更换套餐
-	//
-	// 换套餐会立刻重判线路资格：多出来的线路马上可用，**少掉的那些进入删除队列——宽限期内照常可用，到期才真正释放**。所以换套餐不是一次瞬时切换，订阅内容会在接下来一段时间内变化。
-	//
-	// 换完之后建议重新拉取一次订阅。
-	//
-	// Takes any type of body and a specified content type, and returns a wrapper object for the known response body format(s).
-	//
-	// Corresponds with PUT /api/v1/tunnel/plan (the `ChangeTunnelPlan` operationId).
-	ChangeTunnelPlanWithBodyWithResponse(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*ChangeTunnelPlanResponse, error)
-
-	// ChangeTunnelPlanWithResponse 更换套餐
-	//
-	// 换套餐会立刻重判线路资格：多出来的线路马上可用，**少掉的那些进入删除队列——宽限期内照常可用，到期才真正释放**。所以换套餐不是一次瞬时切换，订阅内容会在接下来一段时间内变化。
-	//
-	// 换完之后建议重新拉取一次订阅。
-	//
-	// Takes a body of the `application/json` content type, and returns a wrapper object for the known response body format(s).
-	//
-	// Corresponds with PUT /api/v1/tunnel/plan (the `ChangeTunnelPlan` operationId).
-	ChangeTunnelPlanWithResponse(ctx context.Context, body ChangeTunnelPlanJSONRequestBody, reqEditors ...RequestEditorFn) (*ChangeTunnelPlanResponse, error)
-
-	// GetTunnelSubscriptionWithResponse 获取订阅地址
-	//
-	// **返回的是一条长期有效的凭据，等同于密码。** 拿到它就能取得本项目全部节点与密码，请勿转发、截图或提交到工单。
-	//
-	// 它不会出现在隧道详情或任何列表里，只由这个接口返回。
-	//
-	// `status` 为 `preparing` 时链接**照样可用**，内容会在拉取那一刻按当时的状态重新派生。
-	//
-	// 怀疑泄露时请调用重置接口。
-	//
-	// Returns a wrapper object for the known response body format(s).
-	//
-	// Corresponds with GET /api/v1/tunnel/subscription (the `GetTunnelSubscription` operationId).
-	GetTunnelSubscriptionWithResponse(ctx context.Context, reqEditors ...RequestEditorFn) (*GetTunnelSubscriptionResponse, error)
-
-	// RotateTunnelSubscriptionWithResponse 重置订阅地址与节点密码
+	// RotateL4TunnelSubscriptionWithResponse 重置订阅地址与节点密码
 	//
 	// **这是凭据泄露时的处置手段，会让已分发出去的每一份订阅立即失效。**
 	//
 	// 订阅 token 和节点密码同时更换，所有客户端都必须重新拉取一次订阅才能继续使用。调用前请确认这确实是想要的结果。
 	//
-	// 重置后再调订阅接口取新地址。
+	// 隧道被平台停用时无法重置（`TUNNEL_DISABLED_FOR_ROTATE`），需要先处理停用的原因。
+	//
+	// 重置后请调订阅接口取新地址，**本接口不返回它**。
 	//
 	// Returns a wrapper object for the known response body format(s).
 	//
-	// Corresponds with POST /api/v1/tunnel/subscription/rotate (the `RotateTunnelSubscription` operationId).
-	RotateTunnelSubscriptionWithResponse(ctx context.Context, reqEditors ...RequestEditorFn) (*RotateTunnelSubscriptionResponse, error)
+	// Corresponds with POST /api/v1/tunnel/l4/subscription/rotate (the `RotateL4TunnelSubscription` operationId).
+	RotateL4TunnelSubscriptionWithResponse(ctx context.Context, reqEditors ...RequestEditorFn) (*RotateL4TunnelSubscriptionResponse, error)
 
-	// GetTunnelUsageWithResponse 查看本期用量
+	// GetL4TunnelUsageWithResponse 查看本期用量
 	//
-	// 现场向上游查询，比隧道详情里那份缓存新。
+	// 实时查询，不经过缓存。
 	//
-	// **判断是否超额只看 `billed_bytes`**：线路可以设置倍率（如 1.5× 或 0×），`raw_bytes` 是实际传输量，两者不一定相等。`over_quota` 已经算好。
-	//
-	// 用量由上游定期采集，**最多滞后一个采集周期**，适合用量管控，不适合作为计费结算依据。
+	// 判断是否超额只看 `billed_bytes`：线路可以设置倍率（如 1.5× 或 0×），`raw_bytes` 是实际传输量，两者不一定相等。`quota_bytes` 为 0 表示不限量。
 	//
 	// Returns a wrapper object for the known response body format(s).
 	//
-	// Corresponds with GET /api/v1/tunnel/usage (the `GetTunnelUsage` operationId).
-	GetTunnelUsageWithResponse(ctx context.Context, reqEditors ...RequestEditorFn) (*GetTunnelUsageResponse, error)
+	// Corresponds with GET /api/v1/tunnel/l4/usage (the `GetL4TunnelUsage` operationId).
+	GetL4TunnelUsageWithResponse(ctx context.Context, reqEditors ...RequestEditorFn) (*GetL4TunnelUsageResponse, error)
 
-	// ListTunnelUsageSeriesWithResponse 查看按天用量
+	// ListL4TunnelUsageSeriesWithResponse 查看按天用量
 	//
-	// 按**自然日**切分，用于画趋势图。
+	// 按自然日切分。没有流量的日子不会出现在结果里（不补零），画图那一侧要自己补齐日期轴——否则一段没人用的日子会被画成一条直接连过去的线，看起来像那几天一直在匀速跑流量。
 	//
-	// **没有流量的日子不会出现在结果里**（不补零），画图前需要自行补齐日期轴，否则空档会被连成一条斜线。
-	//
-	// **把这里的天加起来不等于本期用量**，这是有意的：本期用量按计费周期切，而且「重置本期用量」只作用于本期，日汇总一行都不删。两者回答的是不同的问题。
+	// 把这里的天加起来**不等于**本期用量，这是有意的：本期按计费周期切，而且「重置本期用量」只作用于本期，日汇总一行都不删。
 	//
 	// Returns a wrapper object for the known response body format(s).
 	//
-	// Corresponds with GET /api/v1/tunnel/usage/series (the `ListTunnelUsageSeries` operationId).
-	ListTunnelUsageSeriesWithResponse(ctx context.Context, params *ListTunnelUsageSeriesParams, reqEditors ...RequestEditorFn) (*ListTunnelUsageSeriesResponse, error)
+	// Corresponds with GET /api/v1/tunnel/l4/usage/series (the `ListL4TunnelUsageSeries` operationId).
+	ListL4TunnelUsageSeriesWithResponse(ctx context.Context, params *ListL4TunnelUsageSeriesParams, reqEditors ...RequestEditorFn) (*ListL4TunnelUsageSeriesResponse, error)
 }
 
-type ListTunnelOperationLogsResponse struct {
-	Body         []byte
-	HTTPResponse *http.Response
-	// JSON200 the response for an HTTP 200 `application/json` response
-	JSON200 *LengthAwarePageOperationLogResource
-	// JSONDefault the response for an HTTP default `application/json` response
-	JSONDefault *Error
-}
-
-// GetJSON200 returns the response for an HTTP 200 `application/json` response
-func (r ListTunnelOperationLogsResponse) GetJSON200() *LengthAwarePageOperationLogResource {
-	return r.JSON200
-}
-
-// GetJSONDefault returns the response for an HTTP default `application/json` response
-func (r ListTunnelOperationLogsResponse) GetJSONDefault() *Error {
-	return r.JSONDefault
-}
-
-// GetBody returns the raw response body bytes
-func (r ListTunnelOperationLogsResponse) GetBody() []byte {
-	return r.Body
-}
-
-// Status returns HTTPResponse.Status
-func (r ListTunnelOperationLogsResponse) Status() string {
-	if r.HTTPResponse != nil {
-		return r.HTTPResponse.Status
-	}
-	return http.StatusText(0)
-}
-
-// StatusCode returns HTTPResponse.StatusCode
-func (r ListTunnelOperationLogsResponse) StatusCode() int {
-	if r.HTTPResponse != nil {
-		return r.HTTPResponse.StatusCode
-	}
-	return 0
-}
-
-// ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
-func (r ListTunnelOperationLogsResponse) ContentType() string {
-	if r.HTTPResponse != nil {
-		return r.HTTPResponse.Header.Get("Content-Type")
-	}
-	return ""
-}
-
-type ListTunnelPlansResponse struct {
-	Body         []byte
-	HTTPResponse *http.Response
-	// JSON200 the response for an HTTP 200 `application/json` response
-	JSON200 *TunnelPlanListResponseBody
-	// JSONDefault the response for an HTTP default `application/json` response
-	JSONDefault *Error
-}
-
-// GetJSON200 returns the response for an HTTP 200 `application/json` response
-func (r ListTunnelPlansResponse) GetJSON200() *TunnelPlanListResponseBody {
-	return r.JSON200
-}
-
-// GetJSONDefault returns the response for an HTTP default `application/json` response
-func (r ListTunnelPlansResponse) GetJSONDefault() *Error {
-	return r.JSONDefault
-}
-
-// GetBody returns the raw response body bytes
-func (r ListTunnelPlansResponse) GetBody() []byte {
-	return r.Body
-}
-
-// Status returns HTTPResponse.Status
-func (r ListTunnelPlansResponse) Status() string {
-	if r.HTTPResponse != nil {
-		return r.HTTPResponse.Status
-	}
-	return http.StatusText(0)
-}
-
-// StatusCode returns HTTPResponse.StatusCode
-func (r ListTunnelPlansResponse) StatusCode() int {
-	if r.HTTPResponse != nil {
-		return r.HTTPResponse.StatusCode
-	}
-	return 0
-}
-
-// ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
-func (r ListTunnelPlansResponse) ContentType() string {
-	if r.HTTPResponse != nil {
-		return r.HTTPResponse.Header.Get("Content-Type")
-	}
-	return ""
-}
-
-type CloseTunnelResponse struct {
+type GetL4TunnelResponse struct {
 	Body         []byte
 	HTTPResponse *http.Response
 	// JSON200 the response for an HTTP 200 `application/json` response
@@ -1716,22 +681,22 @@ type CloseTunnelResponse struct {
 }
 
 // GetJSON200 returns the response for an HTTP 200 `application/json` response
-func (r CloseTunnelResponse) GetJSON200() *TunnelResource {
+func (r GetL4TunnelResponse) GetJSON200() *TunnelResource {
 	return r.JSON200
 }
 
 // GetJSONDefault returns the response for an HTTP default `application/json` response
-func (r CloseTunnelResponse) GetJSONDefault() *Error {
+func (r GetL4TunnelResponse) GetJSONDefault() *Error {
 	return r.JSONDefault
 }
 
 // GetBody returns the raw response body bytes
-func (r CloseTunnelResponse) GetBody() []byte {
+func (r GetL4TunnelResponse) GetBody() []byte {
 	return r.Body
 }
 
 // Status returns HTTPResponse.Status
-func (r CloseTunnelResponse) Status() string {
+func (r GetL4TunnelResponse) Status() string {
 	if r.HTTPResponse != nil {
 		return r.HTTPResponse.Status
 	}
@@ -1739,7 +704,7 @@ func (r CloseTunnelResponse) Status() string {
 }
 
 // StatusCode returns HTTPResponse.StatusCode
-func (r CloseTunnelResponse) StatusCode() int {
+func (r GetL4TunnelResponse) StatusCode() int {
 	if r.HTTPResponse != nil {
 		return r.HTTPResponse.StatusCode
 	}
@@ -1747,14 +712,14 @@ func (r CloseTunnelResponse) StatusCode() int {
 }
 
 // ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
-func (r CloseTunnelResponse) ContentType() string {
+func (r GetL4TunnelResponse) ContentType() string {
 	if r.HTTPResponse != nil {
 		return r.HTTPResponse.Header.Get("Content-Type")
 	}
 	return ""
 }
 
-type GetTunnelResponse struct {
+type GenerateL4TunnelResponse struct {
 	Body         []byte
 	HTTPResponse *http.Response
 	// JSON200 the response for an HTTP 200 `application/json` response
@@ -1764,22 +729,22 @@ type GetTunnelResponse struct {
 }
 
 // GetJSON200 returns the response for an HTTP 200 `application/json` response
-func (r GetTunnelResponse) GetJSON200() *TunnelResource {
+func (r GenerateL4TunnelResponse) GetJSON200() *TunnelResource {
 	return r.JSON200
 }
 
 // GetJSONDefault returns the response for an HTTP default `application/json` response
-func (r GetTunnelResponse) GetJSONDefault() *Error {
+func (r GenerateL4TunnelResponse) GetJSONDefault() *Error {
 	return r.JSONDefault
 }
 
 // GetBody returns the raw response body bytes
-func (r GetTunnelResponse) GetBody() []byte {
+func (r GenerateL4TunnelResponse) GetBody() []byte {
 	return r.Body
 }
 
 // Status returns HTTPResponse.Status
-func (r GetTunnelResponse) Status() string {
+func (r GenerateL4TunnelResponse) Status() string {
 	if r.HTTPResponse != nil {
 		return r.HTTPResponse.Status
 	}
@@ -1787,7 +752,7 @@ func (r GetTunnelResponse) Status() string {
 }
 
 // StatusCode returns HTTPResponse.StatusCode
-func (r GetTunnelResponse) StatusCode() int {
+func (r GenerateL4TunnelResponse) StatusCode() int {
 	if r.HTTPResponse != nil {
 		return r.HTTPResponse.StatusCode
 	}
@@ -1795,206 +760,14 @@ func (r GetTunnelResponse) StatusCode() int {
 }
 
 // ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
-func (r GetTunnelResponse) ContentType() string {
+func (r GenerateL4TunnelResponse) ContentType() string {
 	if r.HTTPResponse != nil {
 		return r.HTTPResponse.Header.Get("Content-Type")
 	}
 	return ""
 }
 
-type UpdateTunnelProfileResponse struct {
-	Body         []byte
-	HTTPResponse *http.Response
-	// JSON200 the response for an HTTP 200 `application/json` response
-	JSON200 *TunnelResource
-	// JSONDefault the response for an HTTP default `application/json` response
-	JSONDefault *Error
-}
-
-// GetJSON200 returns the response for an HTTP 200 `application/json` response
-func (r UpdateTunnelProfileResponse) GetJSON200() *TunnelResource {
-	return r.JSON200
-}
-
-// GetJSONDefault returns the response for an HTTP default `application/json` response
-func (r UpdateTunnelProfileResponse) GetJSONDefault() *Error {
-	return r.JSONDefault
-}
-
-// GetBody returns the raw response body bytes
-func (r UpdateTunnelProfileResponse) GetBody() []byte {
-	return r.Body
-}
-
-// Status returns HTTPResponse.Status
-func (r UpdateTunnelProfileResponse) Status() string {
-	if r.HTTPResponse != nil {
-		return r.HTTPResponse.Status
-	}
-	return http.StatusText(0)
-}
-
-// StatusCode returns HTTPResponse.StatusCode
-func (r UpdateTunnelProfileResponse) StatusCode() int {
-	if r.HTTPResponse != nil {
-		return r.HTTPResponse.StatusCode
-	}
-	return 0
-}
-
-// ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
-func (r UpdateTunnelProfileResponse) ContentType() string {
-	if r.HTTPResponse != nil {
-		return r.HTTPResponse.Header.Get("Content-Type")
-	}
-	return ""
-}
-
-type OpenTunnelResponse struct {
-	Body         []byte
-	HTTPResponse *http.Response
-	// JSON201 the response for an HTTP 201 `application/json` response
-	JSON201 *TunnelResource
-	// JSONDefault the response for an HTTP default `application/json` response
-	JSONDefault *Error
-}
-
-// GetJSON201 returns the response for an HTTP 201 `application/json` response
-func (r OpenTunnelResponse) GetJSON201() *TunnelResource {
-	return r.JSON201
-}
-
-// GetJSONDefault returns the response for an HTTP default `application/json` response
-func (r OpenTunnelResponse) GetJSONDefault() *Error {
-	return r.JSONDefault
-}
-
-// GetBody returns the raw response body bytes
-func (r OpenTunnelResponse) GetBody() []byte {
-	return r.Body
-}
-
-// Status returns HTTPResponse.Status
-func (r OpenTunnelResponse) Status() string {
-	if r.HTTPResponse != nil {
-		return r.HTTPResponse.Status
-	}
-	return http.StatusText(0)
-}
-
-// StatusCode returns HTTPResponse.StatusCode
-func (r OpenTunnelResponse) StatusCode() int {
-	if r.HTTPResponse != nil {
-		return r.HTTPResponse.StatusCode
-	}
-	return 0
-}
-
-// ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
-func (r OpenTunnelResponse) ContentType() string {
-	if r.HTTPResponse != nil {
-		return r.HTTPResponse.Header.Get("Content-Type")
-	}
-	return ""
-}
-
-type ActOnTunnelResponse struct {
-	Body         []byte
-	HTTPResponse *http.Response
-	// JSON200 the response for an HTTP 200 `application/json` response
-	JSON200 *TunnelResource
-	// JSONDefault the response for an HTTP default `application/json` response
-	JSONDefault *Error
-}
-
-// GetJSON200 returns the response for an HTTP 200 `application/json` response
-func (r ActOnTunnelResponse) GetJSON200() *TunnelResource {
-	return r.JSON200
-}
-
-// GetJSONDefault returns the response for an HTTP default `application/json` response
-func (r ActOnTunnelResponse) GetJSONDefault() *Error {
-	return r.JSONDefault
-}
-
-// GetBody returns the raw response body bytes
-func (r ActOnTunnelResponse) GetBody() []byte {
-	return r.Body
-}
-
-// Status returns HTTPResponse.Status
-func (r ActOnTunnelResponse) Status() string {
-	if r.HTTPResponse != nil {
-		return r.HTTPResponse.Status
-	}
-	return http.StatusText(0)
-}
-
-// StatusCode returns HTTPResponse.StatusCode
-func (r ActOnTunnelResponse) StatusCode() int {
-	if r.HTTPResponse != nil {
-		return r.HTTPResponse.StatusCode
-	}
-	return 0
-}
-
-// ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
-func (r ActOnTunnelResponse) ContentType() string {
-	if r.HTTPResponse != nil {
-		return r.HTTPResponse.Header.Get("Content-Type")
-	}
-	return ""
-}
-
-type ChangeTunnelPlanResponse struct {
-	Body         []byte
-	HTTPResponse *http.Response
-	// JSON200 the response for an HTTP 200 `application/json` response
-	JSON200 *TunnelResource
-	// JSONDefault the response for an HTTP default `application/json` response
-	JSONDefault *Error
-}
-
-// GetJSON200 returns the response for an HTTP 200 `application/json` response
-func (r ChangeTunnelPlanResponse) GetJSON200() *TunnelResource {
-	return r.JSON200
-}
-
-// GetJSONDefault returns the response for an HTTP default `application/json` response
-func (r ChangeTunnelPlanResponse) GetJSONDefault() *Error {
-	return r.JSONDefault
-}
-
-// GetBody returns the raw response body bytes
-func (r ChangeTunnelPlanResponse) GetBody() []byte {
-	return r.Body
-}
-
-// Status returns HTTPResponse.Status
-func (r ChangeTunnelPlanResponse) Status() string {
-	if r.HTTPResponse != nil {
-		return r.HTTPResponse.Status
-	}
-	return http.StatusText(0)
-}
-
-// StatusCode returns HTTPResponse.StatusCode
-func (r ChangeTunnelPlanResponse) StatusCode() int {
-	if r.HTTPResponse != nil {
-		return r.HTTPResponse.StatusCode
-	}
-	return 0
-}
-
-// ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
-func (r ChangeTunnelPlanResponse) ContentType() string {
-	if r.HTTPResponse != nil {
-		return r.HTTPResponse.Header.Get("Content-Type")
-	}
-	return ""
-}
-
-type GetTunnelSubscriptionResponse struct {
+type GetL4TunnelSubscriptionResponse struct {
 	Body         []byte
 	HTTPResponse *http.Response
 	// JSON200 the response for an HTTP 200 `application/json` response
@@ -2004,22 +777,22 @@ type GetTunnelSubscriptionResponse struct {
 }
 
 // GetJSON200 returns the response for an HTTP 200 `application/json` response
-func (r GetTunnelSubscriptionResponse) GetJSON200() *SubscriptionResource {
+func (r GetL4TunnelSubscriptionResponse) GetJSON200() *SubscriptionResource {
 	return r.JSON200
 }
 
 // GetJSONDefault returns the response for an HTTP default `application/json` response
-func (r GetTunnelSubscriptionResponse) GetJSONDefault() *Error {
+func (r GetL4TunnelSubscriptionResponse) GetJSONDefault() *Error {
 	return r.JSONDefault
 }
 
 // GetBody returns the raw response body bytes
-func (r GetTunnelSubscriptionResponse) GetBody() []byte {
+func (r GetL4TunnelSubscriptionResponse) GetBody() []byte {
 	return r.Body
 }
 
 // Status returns HTTPResponse.Status
-func (r GetTunnelSubscriptionResponse) Status() string {
+func (r GetL4TunnelSubscriptionResponse) Status() string {
 	if r.HTTPResponse != nil {
 		return r.HTTPResponse.Status
 	}
@@ -2027,7 +800,7 @@ func (r GetTunnelSubscriptionResponse) Status() string {
 }
 
 // StatusCode returns HTTPResponse.StatusCode
-func (r GetTunnelSubscriptionResponse) StatusCode() int {
+func (r GetL4TunnelSubscriptionResponse) StatusCode() int {
 	if r.HTTPResponse != nil {
 		return r.HTTPResponse.StatusCode
 	}
@@ -2035,14 +808,14 @@ func (r GetTunnelSubscriptionResponse) StatusCode() int {
 }
 
 // ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
-func (r GetTunnelSubscriptionResponse) ContentType() string {
+func (r GetL4TunnelSubscriptionResponse) ContentType() string {
 	if r.HTTPResponse != nil {
 		return r.HTTPResponse.Header.Get("Content-Type")
 	}
 	return ""
 }
 
-type RotateTunnelSubscriptionResponse struct {
+type RotateL4TunnelSubscriptionResponse struct {
 	Body         []byte
 	HTTPResponse *http.Response
 	// JSON200 the response for an HTTP 200 `application/json` response
@@ -2052,22 +825,22 @@ type RotateTunnelSubscriptionResponse struct {
 }
 
 // GetJSON200 returns the response for an HTTP 200 `application/json` response
-func (r RotateTunnelSubscriptionResponse) GetJSON200() *TunnelResource {
+func (r RotateL4TunnelSubscriptionResponse) GetJSON200() *TunnelResource {
 	return r.JSON200
 }
 
 // GetJSONDefault returns the response for an HTTP default `application/json` response
-func (r RotateTunnelSubscriptionResponse) GetJSONDefault() *Error {
+func (r RotateL4TunnelSubscriptionResponse) GetJSONDefault() *Error {
 	return r.JSONDefault
 }
 
 // GetBody returns the raw response body bytes
-func (r RotateTunnelSubscriptionResponse) GetBody() []byte {
+func (r RotateL4TunnelSubscriptionResponse) GetBody() []byte {
 	return r.Body
 }
 
 // Status returns HTTPResponse.Status
-func (r RotateTunnelSubscriptionResponse) Status() string {
+func (r RotateL4TunnelSubscriptionResponse) Status() string {
 	if r.HTTPResponse != nil {
 		return r.HTTPResponse.Status
 	}
@@ -2075,7 +848,7 @@ func (r RotateTunnelSubscriptionResponse) Status() string {
 }
 
 // StatusCode returns HTTPResponse.StatusCode
-func (r RotateTunnelSubscriptionResponse) StatusCode() int {
+func (r RotateL4TunnelSubscriptionResponse) StatusCode() int {
 	if r.HTTPResponse != nil {
 		return r.HTTPResponse.StatusCode
 	}
@@ -2083,14 +856,14 @@ func (r RotateTunnelSubscriptionResponse) StatusCode() int {
 }
 
 // ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
-func (r RotateTunnelSubscriptionResponse) ContentType() string {
+func (r RotateL4TunnelSubscriptionResponse) ContentType() string {
 	if r.HTTPResponse != nil {
 		return r.HTTPResponse.Header.Get("Content-Type")
 	}
 	return ""
 }
 
-type GetTunnelUsageResponse struct {
+type GetL4TunnelUsageResponse struct {
 	Body         []byte
 	HTTPResponse *http.Response
 	// JSON200 the response for an HTTP 200 `application/json` response
@@ -2100,22 +873,22 @@ type GetTunnelUsageResponse struct {
 }
 
 // GetJSON200 returns the response for an HTTP 200 `application/json` response
-func (r GetTunnelUsageResponse) GetJSON200() *UsageResource {
+func (r GetL4TunnelUsageResponse) GetJSON200() *UsageResource {
 	return r.JSON200
 }
 
 // GetJSONDefault returns the response for an HTTP default `application/json` response
-func (r GetTunnelUsageResponse) GetJSONDefault() *Error {
+func (r GetL4TunnelUsageResponse) GetJSONDefault() *Error {
 	return r.JSONDefault
 }
 
 // GetBody returns the raw response body bytes
-func (r GetTunnelUsageResponse) GetBody() []byte {
+func (r GetL4TunnelUsageResponse) GetBody() []byte {
 	return r.Body
 }
 
 // Status returns HTTPResponse.Status
-func (r GetTunnelUsageResponse) Status() string {
+func (r GetL4TunnelUsageResponse) Status() string {
 	if r.HTTPResponse != nil {
 		return r.HTTPResponse.Status
 	}
@@ -2123,7 +896,7 @@ func (r GetTunnelUsageResponse) Status() string {
 }
 
 // StatusCode returns HTTPResponse.StatusCode
-func (r GetTunnelUsageResponse) StatusCode() int {
+func (r GetL4TunnelUsageResponse) StatusCode() int {
 	if r.HTTPResponse != nil {
 		return r.HTTPResponse.StatusCode
 	}
@@ -2131,14 +904,14 @@ func (r GetTunnelUsageResponse) StatusCode() int {
 }
 
 // ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
-func (r GetTunnelUsageResponse) ContentType() string {
+func (r GetL4TunnelUsageResponse) ContentType() string {
 	if r.HTTPResponse != nil {
 		return r.HTTPResponse.Header.Get("Content-Type")
 	}
 	return ""
 }
 
-type ListTunnelUsageSeriesResponse struct {
+type ListL4TunnelUsageSeriesResponse struct {
 	Body         []byte
 	HTTPResponse *http.Response
 	// JSON200 the response for an HTTP 200 `application/json` response
@@ -2148,22 +921,22 @@ type ListTunnelUsageSeriesResponse struct {
 }
 
 // GetJSON200 returns the response for an HTTP 200 `application/json` response
-func (r ListTunnelUsageSeriesResponse) GetJSON200() *UsageSeriesResource {
+func (r ListL4TunnelUsageSeriesResponse) GetJSON200() *UsageSeriesResource {
 	return r.JSON200
 }
 
 // GetJSONDefault returns the response for an HTTP default `application/json` response
-func (r ListTunnelUsageSeriesResponse) GetJSONDefault() *Error {
+func (r ListL4TunnelUsageSeriesResponse) GetJSONDefault() *Error {
 	return r.JSONDefault
 }
 
 // GetBody returns the raw response body bytes
-func (r ListTunnelUsageSeriesResponse) GetBody() []byte {
+func (r ListL4TunnelUsageSeriesResponse) GetBody() []byte {
 	return r.Body
 }
 
 // Status returns HTTPResponse.Status
-func (r ListTunnelUsageSeriesResponse) Status() string {
+func (r ListL4TunnelUsageSeriesResponse) Status() string {
 	if r.HTTPResponse != nil {
 		return r.HTTPResponse.Status
 	}
@@ -2171,7 +944,7 @@ func (r ListTunnelUsageSeriesResponse) Status() string {
 }
 
 // StatusCode returns HTTPResponse.StatusCode
-func (r ListTunnelUsageSeriesResponse) StatusCode() int {
+func (r ListL4TunnelUsageSeriesResponse) StatusCode() int {
 	if r.HTTPResponse != nil {
 		return r.HTTPResponse.StatusCode
 	}
@@ -2179,380 +952,130 @@ func (r ListTunnelUsageSeriesResponse) StatusCode() int {
 }
 
 // ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
-func (r ListTunnelUsageSeriesResponse) ContentType() string {
+func (r ListL4TunnelUsageSeriesResponse) ContentType() string {
 	if r.HTTPResponse != nil {
 		return r.HTTPResponse.Header.Get("Content-Type")
 	}
 	return ""
 }
 
-// ListTunnelOperationLogsWithResponse 查看本项目的操作日志
+// GetL4TunnelWithResponse 查看本项目的四层隧道
 //
-// 记录每一次**写**操作：谁、什么时候、做了什么、成功还是失败。读操作不记录。
+// 还没生成过时返回 `TUNNEL_NOT_FOUND`——首屏据此决定画「生成订阅链接」那个按钮还是画结果。
 //
-// `actor` 为 null 表示该操作由平台执行（例如自动重试删除、项目停服）——平台做了什么是看得到的，但具体是哪位运营人员不会展示。
-//
-// `payload` 只包含路径参数与查询串，且其中像凭据的字段已被替换为占位符。
+// 订阅地址、用量、配额各有自己的接口，这里不重复返回。
 //
 // Returns a wrapper object for the known response body format(s).
 //
-// Corresponds with GET /api/v1/operation-logs (the `ListTunnelOperationLogs` operationId).
-func (c *ClientWithResponses) ListTunnelOperationLogsWithResponse(ctx context.Context, params *ListTunnelOperationLogsParams, reqEditors ...RequestEditorFn) (*ListTunnelOperationLogsResponse, error) {
-	rsp, err := c.ListTunnelOperationLogs(ctx, params, reqEditors...)
+// Corresponds with GET /api/v1/tunnel/l4 (the `GetL4Tunnel` operationId).
+func (c *ClientWithResponses) GetL4TunnelWithResponse(ctx context.Context, reqEditors ...RequestEditorFn) (*GetL4TunnelResponse, error) {
+	rsp, err := c.GetL4Tunnel(ctx, reqEditors...)
 	if err != nil {
 		return nil, err
 	}
-	return ParseListTunnelOperationLogsResponse(rsp)
+	return ParseGetL4TunnelResponse(rsp)
 }
 
-// ListTunnelPlansWithResponse 列出可开通的套餐
+// GenerateL4TunnelWithResponse 生成四层隧道
 //
-// 只返回在售的套餐，按 `sort` 升序。已下架的不在其中——但正在用它的隧道仍然正常，下架只是不再接新单。
+// **幂等**：已经有了再调一次返回同一条，不报错。按钮被点两次是安全的。
 //
-// `quota_bytes` 是套餐**标称**的额度，仅供比较；实际额度由上游按线路分组决定，以隧道用量接口返回的 `quota_bytes` 为准。
+// 生成之后请调订阅接口取地址，本接口不返回它。
 //
 // Returns a wrapper object for the known response body format(s).
 //
-// Corresponds with GET /api/v1/plans (the `ListTunnelPlans` operationId).
-func (c *ClientWithResponses) ListTunnelPlansWithResponse(ctx context.Context, reqEditors ...RequestEditorFn) (*ListTunnelPlansResponse, error) {
-	rsp, err := c.ListTunnelPlans(ctx, reqEditors...)
+// Corresponds with POST /api/v1/tunnel/l4 (the `GenerateL4Tunnel` operationId).
+func (c *ClientWithResponses) GenerateL4TunnelWithResponse(ctx context.Context, reqEditors ...RequestEditorFn) (*GenerateL4TunnelResponse, error) {
+	rsp, err := c.GenerateL4Tunnel(ctx, reqEditors...)
 	if err != nil {
 		return nil, err
 	}
-	return ParseListTunnelPlansResponse(rsp)
+	return ParseGenerateL4TunnelResponse(rsp)
 }
 
-// CloseTunnelWithResponse 退订隧道
+// GetL4TunnelSubscriptionWithResponse 获取订阅地址
 //
-// **不可逆。** 上游账户会被删除，订阅地址立刻失效，重新开通得到的是一条全新的隧道和一条全新的订阅地址。
+// **这条 URL 是凭据，等同于密码。** 拿着它就能取到这个项目的全部节点和密码，所以它只在这一个接口里出现，一次一条——不进任何列表，也不在隧道详情里。
 //
-// 删除是异步的：返回时 `status` 可能仍是 `deleting`，表示上游还没删干净（通常是某台服务器暂时连不上）。平台会自动重试，期间这条隧道仍然出现在查询接口里。退订完成前无法重新开通。
+// 客户端不应在用户主动请求之前调用它：这个接口的每一次调用都会被记进操作日志。
 //
-// 只是暂时不用的话请用停用，它保留端口和订阅地址。
+// `status` 为 `preparing` 时链接**照样有效**，内容会在拉取那一刻重新派生。它只该影响页面上说什么。
 //
 // Returns a wrapper object for the known response body format(s).
 //
-// Corresponds with DELETE /api/v1/tunnel (the `CloseTunnel` operationId).
-func (c *ClientWithResponses) CloseTunnelWithResponse(ctx context.Context, reqEditors ...RequestEditorFn) (*CloseTunnelResponse, error) {
-	rsp, err := c.CloseTunnel(ctx, reqEditors...)
+// Corresponds with GET /api/v1/tunnel/l4/subscription (the `GetL4TunnelSubscription` operationId).
+func (c *ClientWithResponses) GetL4TunnelSubscriptionWithResponse(ctx context.Context, reqEditors ...RequestEditorFn) (*GetL4TunnelSubscriptionResponse, error) {
+	rsp, err := c.GetL4TunnelSubscription(ctx, reqEditors...)
 	if err != nil {
 		return nil, err
 	}
-	return ParseCloseTunnelResponse(rsp)
+	return ParseGetL4TunnelSubscriptionResponse(rsp)
 }
 
-// GetTunnelWithResponse 查看本项目的隧道
-//
-// 每个项目最多一条隧道。尚未开通时返回 404（`TUNNEL_NOT_FOUND`）。
-//
-// 响应里的 `usage` 是**缓存**的用量，`usage.synced_at` 说明它是什么时候采集的；为 null 表示尚未采集过，而不是用量为零。需要当前值请调用量接口。
-//
-// **订阅地址不在这里**，它是一条长期有效的凭据，只由订阅接口单独返回。
-//
-// Returns a wrapper object for the known response body format(s).
-//
-// Corresponds with GET /api/v1/tunnel (the `GetTunnel` operationId).
-func (c *ClientWithResponses) GetTunnelWithResponse(ctx context.Context, reqEditors ...RequestEditorFn) (*GetTunnelResponse, error) {
-	rsp, err := c.GetTunnel(ctx, reqEditors...)
-	if err != nil {
-		return nil, err
-	}
-	return ParseGetTunnelResponse(rsp)
-}
-
-// UpdateTunnelProfileWithBodyWithResponse 修改隧道的显示信息
-//
-// 改显示名和联系邮箱，**不影响订阅、用量或线路**。
-//
-// `email` 不传表示不改动，传空字符串表示清空。它会被转发给上游面板——上游拿它做什么由面板决定，平台不使用它。
-//
-// Takes any type of body and a specified content type, and returns a wrapper object for the known response body format(s).
-//
-// Corresponds with PATCH /api/v1/tunnel (the `UpdateTunnelProfile` operationId).
-func (c *ClientWithResponses) UpdateTunnelProfileWithBodyWithResponse(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*UpdateTunnelProfileResponse, error) {
-	rsp, err := c.UpdateTunnelProfileWithBody(ctx, contentType, body, reqEditors...)
-	if err != nil {
-		return nil, err
-	}
-	return ParseUpdateTunnelProfileResponse(rsp)
-}
-
-// UpdateTunnelProfileWithResponse 修改隧道的显示信息
-//
-// 改显示名和联系邮箱，**不影响订阅、用量或线路**。
-//
-// `email` 不传表示不改动，传空字符串表示清空。它会被转发给上游面板——上游拿它做什么由面板决定，平台不使用它。
-//
-// Takes a body of the `application/json` content type, and returns a wrapper object for the known response body format(s).
-//
-// Corresponds with PATCH /api/v1/tunnel (the `UpdateTunnelProfile` operationId).
-func (c *ClientWithResponses) UpdateTunnelProfileWithResponse(ctx context.Context, body UpdateTunnelProfileJSONRequestBody, reqEditors ...RequestEditorFn) (*UpdateTunnelProfileResponse, error) {
-	rsp, err := c.UpdateTunnelProfile(ctx, body, reqEditors...)
-	if err != nil {
-		return nil, err
-	}
-	return ParseUpdateTunnelProfileResponse(rsp)
-}
-
-// OpenTunnelWithBodyWithResponse 开通隧道
-//
-// 为当前项目开通一条隧道，返回时订阅通常处于 `preparing`——节点仍在下发，但**订阅地址此时已经可用**，内容会在拉取那一刻按当时的状态重新派生。
-//
-// 一个项目只能有一条。已经有了返回 `TUNNEL_ALREADY_OPEN`；上一条还在退订中返回 `TUNNEL_CLOSING`，稍后重试即可。
-//
-// 套餐必须处于在售状态，已下架的返回 `TUNNEL_PLAN_RETIRED`。若返回 `TUNNEL_PLAN_GROUPS_MISSING`，说明该套餐在上游对应的线路分组不存在——这是一个配置问题，请联系运营，换一款套餐或稍后重试都不会有帮助。
-//
-// Takes any type of body and a specified content type, and returns a wrapper object for the known response body format(s).
-//
-// Corresponds with POST /api/v1/tunnel (the `OpenTunnel` operationId).
-func (c *ClientWithResponses) OpenTunnelWithBodyWithResponse(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*OpenTunnelResponse, error) {
-	rsp, err := c.OpenTunnelWithBody(ctx, contentType, body, reqEditors...)
-	if err != nil {
-		return nil, err
-	}
-	return ParseOpenTunnelResponse(rsp)
-}
-
-// OpenTunnelWithResponse 开通隧道
-//
-// 为当前项目开通一条隧道，返回时订阅通常处于 `preparing`——节点仍在下发，但**订阅地址此时已经可用**，内容会在拉取那一刻按当时的状态重新派生。
-//
-// 一个项目只能有一条。已经有了返回 `TUNNEL_ALREADY_OPEN`；上一条还在退订中返回 `TUNNEL_CLOSING`，稍后重试即可。
-//
-// 套餐必须处于在售状态，已下架的返回 `TUNNEL_PLAN_RETIRED`。若返回 `TUNNEL_PLAN_GROUPS_MISSING`，说明该套餐在上游对应的线路分组不存在——这是一个配置问题，请联系运营，换一款套餐或稍后重试都不会有帮助。
-//
-// Takes a body of the `application/json` content type, and returns a wrapper object for the known response body format(s).
-//
-// Corresponds with POST /api/v1/tunnel (the `OpenTunnel` operationId).
-func (c *ClientWithResponses) OpenTunnelWithResponse(ctx context.Context, body OpenTunnelJSONRequestBody, reqEditors ...RequestEditorFn) (*OpenTunnelResponse, error) {
-	rsp, err := c.OpenTunnel(ctx, body, reqEditors...)
-	if err != nil {
-		return nil, err
-	}
-	return ParseOpenTunnelResponse(rsp)
-}
-
-// ActOnTunnelWithBodyWithResponse 启用或停用隧道
-//
-// **停用不是退订。** 停用会把这条隧道的实例从上游调度器撤下，但端口保留，重新启用后原样回来，订阅地址也不变。适合「这段时间不用」。
-//
-// 被平台停用的隧道（`suspended` 为 true）无法自行启用，会返回 `TUNNEL_SUSPENDED`——那通常是欠费或违规，需要先处理对应的问题。
-//
-// Takes any type of body and a specified content type, and returns a wrapper object for the known response body format(s).
-//
-// Corresponds with POST /api/v1/tunnel/actions (the `ActOnTunnel` operationId).
-func (c *ClientWithResponses) ActOnTunnelWithBodyWithResponse(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*ActOnTunnelResponse, error) {
-	rsp, err := c.ActOnTunnelWithBody(ctx, contentType, body, reqEditors...)
-	if err != nil {
-		return nil, err
-	}
-	return ParseActOnTunnelResponse(rsp)
-}
-
-// ActOnTunnelWithResponse 启用或停用隧道
-//
-// **停用不是退订。** 停用会把这条隧道的实例从上游调度器撤下，但端口保留，重新启用后原样回来，订阅地址也不变。适合「这段时间不用」。
-//
-// 被平台停用的隧道（`suspended` 为 true）无法自行启用，会返回 `TUNNEL_SUSPENDED`——那通常是欠费或违规，需要先处理对应的问题。
-//
-// Takes a body of the `application/json` content type, and returns a wrapper object for the known response body format(s).
-//
-// Corresponds with POST /api/v1/tunnel/actions (the `ActOnTunnel` operationId).
-func (c *ClientWithResponses) ActOnTunnelWithResponse(ctx context.Context, body ActOnTunnelJSONRequestBody, reqEditors ...RequestEditorFn) (*ActOnTunnelResponse, error) {
-	rsp, err := c.ActOnTunnel(ctx, body, reqEditors...)
-	if err != nil {
-		return nil, err
-	}
-	return ParseActOnTunnelResponse(rsp)
-}
-
-// ChangeTunnelPlanWithBodyWithResponse 更换套餐
-//
-// 换套餐会立刻重判线路资格：多出来的线路马上可用，**少掉的那些进入删除队列——宽限期内照常可用，到期才真正释放**。所以换套餐不是一次瞬时切换，订阅内容会在接下来一段时间内变化。
-//
-// 换完之后建议重新拉取一次订阅。
-//
-// Takes any type of body and a specified content type, and returns a wrapper object for the known response body format(s).
-//
-// Corresponds with PUT /api/v1/tunnel/plan (the `ChangeTunnelPlan` operationId).
-func (c *ClientWithResponses) ChangeTunnelPlanWithBodyWithResponse(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*ChangeTunnelPlanResponse, error) {
-	rsp, err := c.ChangeTunnelPlanWithBody(ctx, contentType, body, reqEditors...)
-	if err != nil {
-		return nil, err
-	}
-	return ParseChangeTunnelPlanResponse(rsp)
-}
-
-// ChangeTunnelPlanWithResponse 更换套餐
-//
-// 换套餐会立刻重判线路资格：多出来的线路马上可用，**少掉的那些进入删除队列——宽限期内照常可用，到期才真正释放**。所以换套餐不是一次瞬时切换，订阅内容会在接下来一段时间内变化。
-//
-// 换完之后建议重新拉取一次订阅。
-//
-// Takes a body of the `application/json` content type, and returns a wrapper object for the known response body format(s).
-//
-// Corresponds with PUT /api/v1/tunnel/plan (the `ChangeTunnelPlan` operationId).
-func (c *ClientWithResponses) ChangeTunnelPlanWithResponse(ctx context.Context, body ChangeTunnelPlanJSONRequestBody, reqEditors ...RequestEditorFn) (*ChangeTunnelPlanResponse, error) {
-	rsp, err := c.ChangeTunnelPlan(ctx, body, reqEditors...)
-	if err != nil {
-		return nil, err
-	}
-	return ParseChangeTunnelPlanResponse(rsp)
-}
-
-// GetTunnelSubscriptionWithResponse 获取订阅地址
-//
-// **返回的是一条长期有效的凭据，等同于密码。** 拿到它就能取得本项目全部节点与密码，请勿转发、截图或提交到工单。
-//
-// 它不会出现在隧道详情或任何列表里，只由这个接口返回。
-//
-// `status` 为 `preparing` 时链接**照样可用**，内容会在拉取那一刻按当时的状态重新派生。
-//
-// 怀疑泄露时请调用重置接口。
-//
-// Returns a wrapper object for the known response body format(s).
-//
-// Corresponds with GET /api/v1/tunnel/subscription (the `GetTunnelSubscription` operationId).
-func (c *ClientWithResponses) GetTunnelSubscriptionWithResponse(ctx context.Context, reqEditors ...RequestEditorFn) (*GetTunnelSubscriptionResponse, error) {
-	rsp, err := c.GetTunnelSubscription(ctx, reqEditors...)
-	if err != nil {
-		return nil, err
-	}
-	return ParseGetTunnelSubscriptionResponse(rsp)
-}
-
-// RotateTunnelSubscriptionWithResponse 重置订阅地址与节点密码
+// RotateL4TunnelSubscriptionWithResponse 重置订阅地址与节点密码
 //
 // **这是凭据泄露时的处置手段，会让已分发出去的每一份订阅立即失效。**
 //
 // 订阅 token 和节点密码同时更换，所有客户端都必须重新拉取一次订阅才能继续使用。调用前请确认这确实是想要的结果。
 //
-// 重置后再调订阅接口取新地址。
+// 隧道被平台停用时无法重置（`TUNNEL_DISABLED_FOR_ROTATE`），需要先处理停用的原因。
+//
+// 重置后请调订阅接口取新地址，**本接口不返回它**。
 //
 // Returns a wrapper object for the known response body format(s).
 //
-// Corresponds with POST /api/v1/tunnel/subscription/rotate (the `RotateTunnelSubscription` operationId).
-func (c *ClientWithResponses) RotateTunnelSubscriptionWithResponse(ctx context.Context, reqEditors ...RequestEditorFn) (*RotateTunnelSubscriptionResponse, error) {
-	rsp, err := c.RotateTunnelSubscription(ctx, reqEditors...)
+// Corresponds with POST /api/v1/tunnel/l4/subscription/rotate (the `RotateL4TunnelSubscription` operationId).
+func (c *ClientWithResponses) RotateL4TunnelSubscriptionWithResponse(ctx context.Context, reqEditors ...RequestEditorFn) (*RotateL4TunnelSubscriptionResponse, error) {
+	rsp, err := c.RotateL4TunnelSubscription(ctx, reqEditors...)
 	if err != nil {
 		return nil, err
 	}
-	return ParseRotateTunnelSubscriptionResponse(rsp)
+	return ParseRotateL4TunnelSubscriptionResponse(rsp)
 }
 
-// GetTunnelUsageWithResponse 查看本期用量
+// GetL4TunnelUsageWithResponse 查看本期用量
 //
-// 现场向上游查询，比隧道详情里那份缓存新。
+// 实时查询，不经过缓存。
 //
-// **判断是否超额只看 `billed_bytes`**：线路可以设置倍率（如 1.5× 或 0×），`raw_bytes` 是实际传输量，两者不一定相等。`over_quota` 已经算好。
-//
-// 用量由上游定期采集，**最多滞后一个采集周期**，适合用量管控，不适合作为计费结算依据。
+// 判断是否超额只看 `billed_bytes`：线路可以设置倍率（如 1.5× 或 0×），`raw_bytes` 是实际传输量，两者不一定相等。`quota_bytes` 为 0 表示不限量。
 //
 // Returns a wrapper object for the known response body format(s).
 //
-// Corresponds with GET /api/v1/tunnel/usage (the `GetTunnelUsage` operationId).
-func (c *ClientWithResponses) GetTunnelUsageWithResponse(ctx context.Context, reqEditors ...RequestEditorFn) (*GetTunnelUsageResponse, error) {
-	rsp, err := c.GetTunnelUsage(ctx, reqEditors...)
+// Corresponds with GET /api/v1/tunnel/l4/usage (the `GetL4TunnelUsage` operationId).
+func (c *ClientWithResponses) GetL4TunnelUsageWithResponse(ctx context.Context, reqEditors ...RequestEditorFn) (*GetL4TunnelUsageResponse, error) {
+	rsp, err := c.GetL4TunnelUsage(ctx, reqEditors...)
 	if err != nil {
 		return nil, err
 	}
-	return ParseGetTunnelUsageResponse(rsp)
+	return ParseGetL4TunnelUsageResponse(rsp)
 }
 
-// ListTunnelUsageSeriesWithResponse 查看按天用量
+// ListL4TunnelUsageSeriesWithResponse 查看按天用量
 //
-// 按**自然日**切分，用于画趋势图。
+// 按自然日切分。没有流量的日子不会出现在结果里（不补零），画图那一侧要自己补齐日期轴——否则一段没人用的日子会被画成一条直接连过去的线，看起来像那几天一直在匀速跑流量。
 //
-// **没有流量的日子不会出现在结果里**（不补零），画图前需要自行补齐日期轴，否则空档会被连成一条斜线。
-//
-// **把这里的天加起来不等于本期用量**，这是有意的：本期用量按计费周期切，而且「重置本期用量」只作用于本期，日汇总一行都不删。两者回答的是不同的问题。
+// 把这里的天加起来**不等于**本期用量，这是有意的：本期按计费周期切，而且「重置本期用量」只作用于本期，日汇总一行都不删。
 //
 // Returns a wrapper object for the known response body format(s).
 //
-// Corresponds with GET /api/v1/tunnel/usage/series (the `ListTunnelUsageSeries` operationId).
-func (c *ClientWithResponses) ListTunnelUsageSeriesWithResponse(ctx context.Context, params *ListTunnelUsageSeriesParams, reqEditors ...RequestEditorFn) (*ListTunnelUsageSeriesResponse, error) {
-	rsp, err := c.ListTunnelUsageSeries(ctx, params, reqEditors...)
+// Corresponds with GET /api/v1/tunnel/l4/usage/series (the `ListL4TunnelUsageSeries` operationId).
+func (c *ClientWithResponses) ListL4TunnelUsageSeriesWithResponse(ctx context.Context, params *ListL4TunnelUsageSeriesParams, reqEditors ...RequestEditorFn) (*ListL4TunnelUsageSeriesResponse, error) {
+	rsp, err := c.ListL4TunnelUsageSeries(ctx, params, reqEditors...)
 	if err != nil {
 		return nil, err
 	}
-	return ParseListTunnelUsageSeriesResponse(rsp)
+	return ParseListL4TunnelUsageSeriesResponse(rsp)
 }
 
-// ParseListTunnelOperationLogsResponse parses an HTTP response from a ListTunnelOperationLogsWithResponse call
-func ParseListTunnelOperationLogsResponse(rsp *http.Response) (*ListTunnelOperationLogsResponse, error) {
+// ParseGetL4TunnelResponse parses an HTTP response from a GetL4TunnelWithResponse call
+func ParseGetL4TunnelResponse(rsp *http.Response) (*GetL4TunnelResponse, error) {
 	bodyBytes, err := io.ReadAll(rsp.Body)
 	defer func() { _ = rsp.Body.Close() }()
 	if err != nil {
 		return nil, err
 	}
 
-	response := &ListTunnelOperationLogsResponse{
-		Body:         bodyBytes,
-		HTTPResponse: rsp,
-	}
-
-	switch {
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
-		var dest LengthAwarePageOperationLogResource
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSON200 = &dest
-
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && true:
-		var dest Error
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSONDefault = &dest
-
-	}
-
-	return response, nil
-}
-
-// ParseListTunnelPlansResponse parses an HTTP response from a ListTunnelPlansWithResponse call
-func ParseListTunnelPlansResponse(rsp *http.Response) (*ListTunnelPlansResponse, error) {
-	bodyBytes, err := io.ReadAll(rsp.Body)
-	defer func() { _ = rsp.Body.Close() }()
-	if err != nil {
-		return nil, err
-	}
-
-	response := &ListTunnelPlansResponse{
-		Body:         bodyBytes,
-		HTTPResponse: rsp,
-	}
-
-	switch {
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
-		var dest TunnelPlanListResponseBody
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSON200 = &dest
-
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && true:
-		var dest Error
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSONDefault = &dest
-
-	}
-
-	return response, nil
-}
-
-// ParseCloseTunnelResponse parses an HTTP response from a CloseTunnelWithResponse call
-func ParseCloseTunnelResponse(rsp *http.Response) (*CloseTunnelResponse, error) {
-	bodyBytes, err := io.ReadAll(rsp.Body)
-	defer func() { _ = rsp.Body.Close() }()
-	if err != nil {
-		return nil, err
-	}
-
-	response := &CloseTunnelResponse{
+	response := &GetL4TunnelResponse{
 		Body:         bodyBytes,
 		HTTPResponse: rsp,
 	}
@@ -2577,15 +1100,15 @@ func ParseCloseTunnelResponse(rsp *http.Response) (*CloseTunnelResponse, error) 
 	return response, nil
 }
 
-// ParseGetTunnelResponse parses an HTTP response from a GetTunnelWithResponse call
-func ParseGetTunnelResponse(rsp *http.Response) (*GetTunnelResponse, error) {
+// ParseGenerateL4TunnelResponse parses an HTTP response from a GenerateL4TunnelWithResponse call
+func ParseGenerateL4TunnelResponse(rsp *http.Response) (*GenerateL4TunnelResponse, error) {
 	bodyBytes, err := io.ReadAll(rsp.Body)
 	defer func() { _ = rsp.Body.Close() }()
 	if err != nil {
 		return nil, err
 	}
 
-	response := &GetTunnelResponse{
+	response := &GenerateL4TunnelResponse{
 		Body:         bodyBytes,
 		HTTPResponse: rsp,
 	}
@@ -2610,147 +1133,15 @@ func ParseGetTunnelResponse(rsp *http.Response) (*GetTunnelResponse, error) {
 	return response, nil
 }
 
-// ParseUpdateTunnelProfileResponse parses an HTTP response from a UpdateTunnelProfileWithResponse call
-func ParseUpdateTunnelProfileResponse(rsp *http.Response) (*UpdateTunnelProfileResponse, error) {
+// ParseGetL4TunnelSubscriptionResponse parses an HTTP response from a GetL4TunnelSubscriptionWithResponse call
+func ParseGetL4TunnelSubscriptionResponse(rsp *http.Response) (*GetL4TunnelSubscriptionResponse, error) {
 	bodyBytes, err := io.ReadAll(rsp.Body)
 	defer func() { _ = rsp.Body.Close() }()
 	if err != nil {
 		return nil, err
 	}
 
-	response := &UpdateTunnelProfileResponse{
-		Body:         bodyBytes,
-		HTTPResponse: rsp,
-	}
-
-	switch {
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
-		var dest TunnelResource
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSON200 = &dest
-
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && true:
-		var dest Error
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSONDefault = &dest
-
-	}
-
-	return response, nil
-}
-
-// ParseOpenTunnelResponse parses an HTTP response from a OpenTunnelWithResponse call
-func ParseOpenTunnelResponse(rsp *http.Response) (*OpenTunnelResponse, error) {
-	bodyBytes, err := io.ReadAll(rsp.Body)
-	defer func() { _ = rsp.Body.Close() }()
-	if err != nil {
-		return nil, err
-	}
-
-	response := &OpenTunnelResponse{
-		Body:         bodyBytes,
-		HTTPResponse: rsp,
-	}
-
-	switch {
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 201:
-		var dest TunnelResource
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSON201 = &dest
-
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && true:
-		var dest Error
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSONDefault = &dest
-
-	}
-
-	return response, nil
-}
-
-// ParseActOnTunnelResponse parses an HTTP response from a ActOnTunnelWithResponse call
-func ParseActOnTunnelResponse(rsp *http.Response) (*ActOnTunnelResponse, error) {
-	bodyBytes, err := io.ReadAll(rsp.Body)
-	defer func() { _ = rsp.Body.Close() }()
-	if err != nil {
-		return nil, err
-	}
-
-	response := &ActOnTunnelResponse{
-		Body:         bodyBytes,
-		HTTPResponse: rsp,
-	}
-
-	switch {
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
-		var dest TunnelResource
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSON200 = &dest
-
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && true:
-		var dest Error
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSONDefault = &dest
-
-	}
-
-	return response, nil
-}
-
-// ParseChangeTunnelPlanResponse parses an HTTP response from a ChangeTunnelPlanWithResponse call
-func ParseChangeTunnelPlanResponse(rsp *http.Response) (*ChangeTunnelPlanResponse, error) {
-	bodyBytes, err := io.ReadAll(rsp.Body)
-	defer func() { _ = rsp.Body.Close() }()
-	if err != nil {
-		return nil, err
-	}
-
-	response := &ChangeTunnelPlanResponse{
-		Body:         bodyBytes,
-		HTTPResponse: rsp,
-	}
-
-	switch {
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
-		var dest TunnelResource
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSON200 = &dest
-
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && true:
-		var dest Error
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSONDefault = &dest
-
-	}
-
-	return response, nil
-}
-
-// ParseGetTunnelSubscriptionResponse parses an HTTP response from a GetTunnelSubscriptionWithResponse call
-func ParseGetTunnelSubscriptionResponse(rsp *http.Response) (*GetTunnelSubscriptionResponse, error) {
-	bodyBytes, err := io.ReadAll(rsp.Body)
-	defer func() { _ = rsp.Body.Close() }()
-	if err != nil {
-		return nil, err
-	}
-
-	response := &GetTunnelSubscriptionResponse{
+	response := &GetL4TunnelSubscriptionResponse{
 		Body:         bodyBytes,
 		HTTPResponse: rsp,
 	}
@@ -2775,15 +1166,15 @@ func ParseGetTunnelSubscriptionResponse(rsp *http.Response) (*GetTunnelSubscript
 	return response, nil
 }
 
-// ParseRotateTunnelSubscriptionResponse parses an HTTP response from a RotateTunnelSubscriptionWithResponse call
-func ParseRotateTunnelSubscriptionResponse(rsp *http.Response) (*RotateTunnelSubscriptionResponse, error) {
+// ParseRotateL4TunnelSubscriptionResponse parses an HTTP response from a RotateL4TunnelSubscriptionWithResponse call
+func ParseRotateL4TunnelSubscriptionResponse(rsp *http.Response) (*RotateL4TunnelSubscriptionResponse, error) {
 	bodyBytes, err := io.ReadAll(rsp.Body)
 	defer func() { _ = rsp.Body.Close() }()
 	if err != nil {
 		return nil, err
 	}
 
-	response := &RotateTunnelSubscriptionResponse{
+	response := &RotateL4TunnelSubscriptionResponse{
 		Body:         bodyBytes,
 		HTTPResponse: rsp,
 	}
@@ -2808,15 +1199,15 @@ func ParseRotateTunnelSubscriptionResponse(rsp *http.Response) (*RotateTunnelSub
 	return response, nil
 }
 
-// ParseGetTunnelUsageResponse parses an HTTP response from a GetTunnelUsageWithResponse call
-func ParseGetTunnelUsageResponse(rsp *http.Response) (*GetTunnelUsageResponse, error) {
+// ParseGetL4TunnelUsageResponse parses an HTTP response from a GetL4TunnelUsageWithResponse call
+func ParseGetL4TunnelUsageResponse(rsp *http.Response) (*GetL4TunnelUsageResponse, error) {
 	bodyBytes, err := io.ReadAll(rsp.Body)
 	defer func() { _ = rsp.Body.Close() }()
 	if err != nil {
 		return nil, err
 	}
 
-	response := &GetTunnelUsageResponse{
+	response := &GetL4TunnelUsageResponse{
 		Body:         bodyBytes,
 		HTTPResponse: rsp,
 	}
@@ -2841,15 +1232,15 @@ func ParseGetTunnelUsageResponse(rsp *http.Response) (*GetTunnelUsageResponse, e
 	return response, nil
 }
 
-// ParseListTunnelUsageSeriesResponse parses an HTTP response from a ListTunnelUsageSeriesWithResponse call
-func ParseListTunnelUsageSeriesResponse(rsp *http.Response) (*ListTunnelUsageSeriesResponse, error) {
+// ParseListL4TunnelUsageSeriesResponse parses an HTTP response from a ListL4TunnelUsageSeriesWithResponse call
+func ParseListL4TunnelUsageSeriesResponse(rsp *http.Response) (*ListL4TunnelUsageSeriesResponse, error) {
 	bodyBytes, err := io.ReadAll(rsp.Body)
 	defer func() { _ = rsp.Body.Close() }()
 	if err != nil {
 		return nil, err
 	}
 
-	response := &ListTunnelUsageSeriesResponse{
+	response := &ListL4TunnelUsageSeriesResponse{
 		Body:         bodyBytes,
 		HTTPResponse: rsp,
 	}
