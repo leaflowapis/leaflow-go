@@ -1191,7 +1191,13 @@ func (s InstanceResourceStatus) Validate() error {
 		return nil
 	case "stopped":
 		return nil
+	case "starting":
+		return nil
+	case "stopping":
+		return nil
 	case "rebooting":
+		return nil
+	case "transitioning":
 		return nil
 	case "resizing":
 		return nil

@@ -1844,9 +1844,17 @@ type InstanceResource struct {
 	// 云服务器主网卡所在的私有网络.
 	PrivateNetworkID NilString `json:"private_network_id"`
 	// 云服务器主网卡上绑定的公网 IPv4，未绑定时为空数组.
-	PublicIps  []string               `json:"public_ips"`
-	RegionCode string                 `json:"region_code"`
-	Status     InstanceResourceStatus `json:"status"`
+	PublicIps  []string `json:"public_ips"`
+	RegionCode string   `json:"region_code"`
+	// 只有 running 和 stopped
+	// 可以下命令，其余取值都表示云服务器正在变更中，此时开机、关机、重启、变配、重装、重置密码都会被拒绝。
+	//
+	// `transitioning`
+	// 是「正在执行某项变更，但不属于上面任何一类」的兜底取值，见到它继续轮询即可，不代表出错。
+	//
+	// `resize_verifying`
+	// 不是瞬态：变配已在新规格上启动，会一直停在这里直到确认或回滚，期间新旧两份规格同时计费。.
+	Status InstanceResourceStatus `json:"status"`
 	// 云服务器主网卡所在的子网.
 	SubnetID NilString `json:"subnet_id"`
 	// 非空表示已被平台停服，需先解除后才能操作.
@@ -2034,13 +2042,24 @@ func (s *InstanceResource) SetUpdatedAt(val time.Time) {
 	s.UpdatedAt = val
 }
 
+// 只有 running 和 stopped
+// 可以下命令，其余取值都表示云服务器正在变更中，此时开机、关机、重启、变配、重装、重置密码都会被拒绝。
+//
+// `transitioning`
+// 是「正在执行某项变更，但不属于上面任何一类」的兜底取值，见到它继续轮询即可，不代表出错。
+//
+// `resize_verifying`
+// 不是瞬态：变配已在新规格上启动，会一直停在这里直到确认或回滚，期间新旧两份规格同时计费。.
 type InstanceResourceStatus string
 
 const (
 	InstanceResourceStatusProvisioning    InstanceResourceStatus = "provisioning"
 	InstanceResourceStatusRunning         InstanceResourceStatus = "running"
 	InstanceResourceStatusStopped         InstanceResourceStatus = "stopped"
+	InstanceResourceStatusStarting        InstanceResourceStatus = "starting"
+	InstanceResourceStatusStopping        InstanceResourceStatus = "stopping"
 	InstanceResourceStatusRebooting       InstanceResourceStatus = "rebooting"
+	InstanceResourceStatusTransitioning   InstanceResourceStatus = "transitioning"
 	InstanceResourceStatusResizing        InstanceResourceStatus = "resizing"
 	InstanceResourceStatusResizeVerifying InstanceResourceStatus = "resize_verifying"
 	InstanceResourceStatusError           InstanceResourceStatus = "error"
@@ -2054,7 +2073,10 @@ func (InstanceResourceStatus) AllValues() []InstanceResourceStatus {
 		InstanceResourceStatusProvisioning,
 		InstanceResourceStatusRunning,
 		InstanceResourceStatusStopped,
+		InstanceResourceStatusStarting,
+		InstanceResourceStatusStopping,
 		InstanceResourceStatusRebooting,
+		InstanceResourceStatusTransitioning,
 		InstanceResourceStatusResizing,
 		InstanceResourceStatusResizeVerifying,
 		InstanceResourceStatusError,
@@ -2072,7 +2094,13 @@ func (s InstanceResourceStatus) MarshalText() ([]byte, error) {
 		return []byte(s), nil
 	case InstanceResourceStatusStopped:
 		return []byte(s), nil
+	case InstanceResourceStatusStarting:
+		return []byte(s), nil
+	case InstanceResourceStatusStopping:
+		return []byte(s), nil
 	case InstanceResourceStatusRebooting:
+		return []byte(s), nil
+	case InstanceResourceStatusTransitioning:
 		return []byte(s), nil
 	case InstanceResourceStatusResizing:
 		return []byte(s), nil
@@ -2101,8 +2129,17 @@ func (s *InstanceResourceStatus) UnmarshalText(data []byte) error {
 	case InstanceResourceStatusStopped:
 		*s = InstanceResourceStatusStopped
 		return nil
+	case InstanceResourceStatusStarting:
+		*s = InstanceResourceStatusStarting
+		return nil
+	case InstanceResourceStatusStopping:
+		*s = InstanceResourceStatusStopping
+		return nil
 	case InstanceResourceStatusRebooting:
 		*s = InstanceResourceStatusRebooting
+		return nil
+	case InstanceResourceStatusTransitioning:
+		*s = InstanceResourceStatusTransitioning
 		return nil
 	case InstanceResourceStatusResizing:
 		*s = InstanceResourceStatusResizing
