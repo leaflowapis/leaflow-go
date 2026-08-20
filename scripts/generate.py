@@ -42,6 +42,7 @@ import yaml
 
 sys.path.insert(0, str(pathlib.Path(__file__).resolve().parent))
 import contracts  # noqa: E402
+import validate  # noqa: E402
 
 ROOT = pathlib.Path(__file__).resolve().parent.parent
 
@@ -67,23 +68,10 @@ CODEGEN = "github.com/oapi-codegen/oapi-codegen/v2/cmd/oapi-codegen@v2.8.0"
 # strict-server 给的是 (ctx, request) (response, error)——和 huma 那套形状一致，所以迁移时
 # handler 里那层业务代码几乎不用动。std-http-server 是把它接到标准库 ServeMux 上的胶水：
 # Go 1.22 之后 http.ServeMux 自己就认 method 和路径参数，不需要第三方路由。
-# embedded-spec 把契约本身编进去，GetSwagger() 取得到。
-#
-# 校验要它：kit/oapiserver 的 Validate 中间件拿这份 spec 在运行时逐条对照请求——而 oapi-codegen
-# 生成的类型里一条约束都没有（minLength: 1 出来就是 `Name string`）。少了它，契约上那些约束在
-# 服务端全都不执行，而不执行**不报错**：空名字一路走到数据库层。
-SERVER_GENERATE = {
-    "models": True,
-    "strict-server": True,
-    "std-http-server": True,
-    "embedded-spec": True,
-}
+SERVER_GENERATE = {"models": True, "strict-server": True, "std-http-server": True}
 CLIENT_GENERATE = {"models": True, "client": True}
 # 共用类型那份只出类型：它没有 paths，生成 client 会得到一个空壳。
-# embedded-spec 这一份也要开：各服务的契约用 import-mapping 指过来，而 oapi-codegen 生成的
-# 内嵌 spec 会去被指向的那个包取 PathToRawSpec——那边不开的话，服务那侧编译不过，报的是一句
-# undefined: externalRef0.PathToRawSpec，看不出和 import-mapping 有关。
-SHARED_GENERATE = {"models": True, "embedded-spec": True}
+SHARED_GENERATE = {"models": True}
 
 # skip-prune 只给共用类型那份开。
 #
@@ -207,8 +195,14 @@ def main():
             codegen(contract, f"{package}server", out / "server" / "server.gen.go",
                     SERVER_GENERATE, scratch, mapping)
 
+            # 契约里的约束和默认值编译成代码。oapi-codegen 只翻类型不翻约束，而漏了不报错：
+            # 空名字一路走到数据库层。理由写全在 scripts/validate.py 顶部。
+            spec = yaml.safe_load(contract.read_text(encoding="utf-8"))
+            checked = validate.write(out / "server", f"{package}server", spec, SHARED_PACKAGE)
+
             write_module(service)
-            print(f"{service}/{version:8} → {service}/{version}")
+            note = "，含校验" if checked else ""
+            print(f"{service}/{version:8} → {service}/{version}{note}")
 
 
 if __name__ == "__main__":
