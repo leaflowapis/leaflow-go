@@ -42,7 +42,6 @@ import yaml
 
 sys.path.insert(0, str(pathlib.Path(__file__).resolve().parent))
 import contracts  # noqa: E402
-import validate  # noqa: E402
 
 ROOT = pathlib.Path(__file__).resolve().parent.parent
 
@@ -195,14 +194,9 @@ def main():
             codegen(contract, f"{package}server", out / "server" / "server.gen.go",
                     SERVER_GENERATE, scratch, mapping)
 
-            # 契约里的约束和默认值编译成代码。oapi-codegen 只翻类型不翻约束，而漏了不报错：
-            # 空名字一路走到数据库层。理由写全在 scripts/validate.py 顶部。
-            spec = yaml.safe_load(contract.read_text(encoding="utf-8"))
-            checked = validate.write(out / "server", f"{package}server", spec, SHARED_PACKAGE)
 
             write_module(service)
-            note = "，含校验" if checked else ""
-            print(f"{service}/{version:8} → {service}/{version}{note}")
+            print(f"{service}/{version:8} → {service}/{version}")
 
 
 if __name__ == "__main__":
