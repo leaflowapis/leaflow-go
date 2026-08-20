@@ -42,6 +42,7 @@ import yaml
 
 sys.path.insert(0, str(pathlib.Path(__file__).resolve().parent))
 import contracts  # noqa: E402
+import defaults  # noqa: E402
 
 ROOT = pathlib.Path(__file__).resolve().parent.parent
 
@@ -194,8 +195,14 @@ def main():
             codegen(contract, f"{package}server", out / "server" / "server.gen.go",
                     SERVER_GENERATE, scratch, mapping)
 
+            # 契约里的 default 由这一步兑现——oapi-codegen 不做，而漏了不报错，只是那个字段在
+            # 服务端永远是零值。理由写全在 scripts/defaults.py 顶部。
+            spec = yaml.safe_load(contract.read_text(encoding="utf-8"))
+            wrote = defaults.write(out / "server", f"{package}server", spec)
+
             write_module(service)
-            print(f"{service}/{version:8} → {service}/{version}")
+            note = "，含 defaults" if wrote else ""
+            print(f"{service}/{version:8} → {service}/{version}{note}")
 
 
 if __name__ == "__main__":
