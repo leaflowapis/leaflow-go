@@ -91,7 +91,7 @@ SHARED_OUTPUT_OPTIONS = {**{"skip-prune": True}}
 # 为什么迁：oapi-codegen 只把 schema 翻成 Go 类型，一条约束都不生成。契约上写着 minLength: 1
 # 的字段生成出来是 `Name string`，而不执行**不报错**——空名字一路走到数据库层，报出来的是一句
 # ent 的 validator failed 包成的 500，那次调用早已在后端建好了资源。理由写全在 scripts/ogen.py。
-OGEN_SERVICES = {"tunnel"}
+OGEN_SERVICES = {"tunnel", "iam", "account", "canopy", "assistant", "monitoring", "compute"}
 
 # SHARED 是那份共用类型在契约里的相对路径，以及它生成出来的 Go 包。
 #
