@@ -1,9 +1,9 @@
-module github.com/LeaflowNET/leaflow-go/monitoring
+module github.com/leaflowapis/leaflow-go/monitoring
 
 go 1.26.0
 
 require (
-	github.com/LeaflowNET/leaflow-go/type v0.2.0
+	github.com/leaflowapis/leaflow-go/type v0.2.0
 	github.com/oapi-codegen/runtime v1.7.0
 )
 
