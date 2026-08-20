@@ -178,6 +178,7 @@ var (
 	rn26AllowedHeaders = map[string]string{
 		"DELETE": "Authorization",
 		"GET":    "Authorization",
+		"PATCH":  "Authorization,Content-Type",
 	}
 	rn27AllowedHeaders = map[string]string{
 		"GET":  "Authorization",
@@ -1920,12 +1921,16 @@ func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 								s.handleGetSecurityGroupRequest([1]string{
 									args[0],
 								}, elemIsEscaped, w, r)
+							case "PATCH":
+								s.handleRenameSecurityGroupRequest([1]string{
+									args[0],
+								}, elemIsEscaped, w, r)
 							default:
 								s.notAllowed(w, r, notAllowedParams{
-									allowedMethods: "DELETE,GET",
+									allowedMethods: "DELETE,GET,PATCH",
 									allowedHeaders: rn26AllowedHeaders,
 									acceptPost:     "",
-									acceptPatch:    "",
+									acceptPatch:    "application/json",
 								})
 							}
 
@@ -3931,6 +3936,15 @@ func (s *Server) FindPath(method string, u *url.URL) (r Route, _ bool) {
 								r.name = GetSecurityGroupOperation
 								r.summary = "查看安全组"
 								r.operationID = "get-security-group"
+								r.operationGroup = ""
+								r.pathPattern = "/api/v1/security-groups/{securityGroupId}"
+								r.args = args
+								r.count = 1
+								return r, true
+							case "PATCH":
+								r.name = RenameSecurityGroupOperation
+								r.summary = "重命名安全组"
+								r.operationID = "rename-security-group"
 								r.operationGroup = ""
 								r.pathPattern = "/api/v1/security-groups/{securityGroupId}"
 								r.args = args

@@ -3878,6 +3878,21 @@ func (s *RenamePrivateNetworkRequestBody) SetName(val string) {
 	s.Name = val
 }
 
+// Ref: #/components/schemas/RenameSecurityGroupRequestBody
+type RenameSecurityGroupRequestBody struct {
+	Name string `json:"name"`
+}
+
+// GetName returns the value of Name.
+func (s *RenameSecurityGroupRequestBody) GetName() string {
+	return s.Name
+}
+
+// SetName sets the value of Name.
+func (s *RenameSecurityGroupRequestBody) SetName(val string) {
+	s.Name = val
+}
+
 // Ref: #/components/schemas/RenameSnapshotRequestBody
 type RenameSnapshotRequestBody struct {
 	Name string `json:"name"`

@@ -78,6 +78,7 @@ const (
 	RenameInstanceOperation            OperationName = "RenameInstance"
 	RenamePrivateImageOperation        OperationName = "RenamePrivateImage"
 	RenamePrivateNetworkOperation      OperationName = "RenamePrivateNetwork"
+	RenameSecurityGroupOperation       OperationName = "RenameSecurityGroup"
 	RenameSnapshotOperation            OperationName = "RenameSnapshot"
 	ResetInstancePasswordOperation     OperationName = "ResetInstancePassword"
 	ResizeDiskOperation                OperationName = "ResizeDisk"

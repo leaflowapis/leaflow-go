@@ -732,6 +732,18 @@ func (UnimplementedHandler) RenamePrivateNetwork(ctx context.Context, req *Renam
 	return r, ht.ErrNotImplemented
 }
 
+// RenameSecurityGroup implements rename-security-group operation.
+//
+// 仅可修改名称，规则请用规则接口。
+//
+// 改的是平台上这个安全组的名字，网络后端那一侧不动——后端那个安全组的名字是它的
+// id， 排障时按 id 找，不按名字找。.
+//
+// PATCH /api/v1/security-groups/{securityGroupId}
+func (UnimplementedHandler) RenameSecurityGroup(ctx context.Context, req *RenameSecurityGroupRequestBody, params RenameSecurityGroupParams) (r *SecurityGroupResource, _ error) {
+	return r, ht.ErrNotImplemented
+}
+
 // RenameSnapshot implements rename-snapshot operation.
 //
 // 重命名快照.
