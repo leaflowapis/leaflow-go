@@ -1637,6 +1637,156 @@ func (s *RegisterRequestBody) SetConsents(val []ConsentBody) {
 	s.Consents = val
 }
 
+// Ref: #/components/schemas/SettingsResource
+type SettingsResource struct {
+	// 一个项目最多几个成员，0 表示不限.
+	MaxMembersPerProject int64 `json:"max_members_per_project"`
+	// 你最多能当几个项目的所有者，0 表示不限。已删除的项目不算在内.
+	MaxProjectsPerUser int64 `json:"max_projects_per_user"`
+	// VERIFIED_ONLY 要求先过实名，审核中不算.
+	ProjectCreationMode SettingsResourceProjectCreationMode `json:"project_creation_mode"`
+	// INVITE_ONLY 是只收手上有项目邀请的邮箱.
+	RegistrationMode SettingsResourceRegistrationMode `json:"registration_mode"`
+}
+
+// GetMaxMembersPerProject returns the value of MaxMembersPerProject.
+func (s *SettingsResource) GetMaxMembersPerProject() int64 {
+	return s.MaxMembersPerProject
+}
+
+// GetMaxProjectsPerUser returns the value of MaxProjectsPerUser.
+func (s *SettingsResource) GetMaxProjectsPerUser() int64 {
+	return s.MaxProjectsPerUser
+}
+
+// GetProjectCreationMode returns the value of ProjectCreationMode.
+func (s *SettingsResource) GetProjectCreationMode() SettingsResourceProjectCreationMode {
+	return s.ProjectCreationMode
+}
+
+// GetRegistrationMode returns the value of RegistrationMode.
+func (s *SettingsResource) GetRegistrationMode() SettingsResourceRegistrationMode {
+	return s.RegistrationMode
+}
+
+// SetMaxMembersPerProject sets the value of MaxMembersPerProject.
+func (s *SettingsResource) SetMaxMembersPerProject(val int64) {
+	s.MaxMembersPerProject = val
+}
+
+// SetMaxProjectsPerUser sets the value of MaxProjectsPerUser.
+func (s *SettingsResource) SetMaxProjectsPerUser(val int64) {
+	s.MaxProjectsPerUser = val
+}
+
+// SetProjectCreationMode sets the value of ProjectCreationMode.
+func (s *SettingsResource) SetProjectCreationMode(val SettingsResourceProjectCreationMode) {
+	s.ProjectCreationMode = val
+}
+
+// SetRegistrationMode sets the value of RegistrationMode.
+func (s *SettingsResource) SetRegistrationMode(val SettingsResourceRegistrationMode) {
+	s.RegistrationMode = val
+}
+
+// VERIFIED_ONLY 要求先过实名，审核中不算.
+type SettingsResourceProjectCreationMode string
+
+const (
+	SettingsResourceProjectCreationModeOPEN         SettingsResourceProjectCreationMode = "OPEN"
+	SettingsResourceProjectCreationModeVERIFIEDONLY SettingsResourceProjectCreationMode = "VERIFIED_ONLY"
+	SettingsResourceProjectCreationModeCLOSED       SettingsResourceProjectCreationMode = "CLOSED"
+)
+
+// AllValues returns all SettingsResourceProjectCreationMode values.
+func (SettingsResourceProjectCreationMode) AllValues() []SettingsResourceProjectCreationMode {
+	return []SettingsResourceProjectCreationMode{
+		SettingsResourceProjectCreationModeOPEN,
+		SettingsResourceProjectCreationModeVERIFIEDONLY,
+		SettingsResourceProjectCreationModeCLOSED,
+	}
+}
+
+// MarshalText implements encoding.TextMarshaler.
+func (s SettingsResourceProjectCreationMode) MarshalText() ([]byte, error) {
+	switch s {
+	case SettingsResourceProjectCreationModeOPEN:
+		return []byte(s), nil
+	case SettingsResourceProjectCreationModeVERIFIEDONLY:
+		return []byte(s), nil
+	case SettingsResourceProjectCreationModeCLOSED:
+		return []byte(s), nil
+	default:
+		return nil, errors.Errorf("invalid value: %q", s)
+	}
+}
+
+// UnmarshalText implements encoding.TextUnmarshaler.
+func (s *SettingsResourceProjectCreationMode) UnmarshalText(data []byte) error {
+	switch SettingsResourceProjectCreationMode(data) {
+	case SettingsResourceProjectCreationModeOPEN:
+		*s = SettingsResourceProjectCreationModeOPEN
+		return nil
+	case SettingsResourceProjectCreationModeVERIFIEDONLY:
+		*s = SettingsResourceProjectCreationModeVERIFIEDONLY
+		return nil
+	case SettingsResourceProjectCreationModeCLOSED:
+		*s = SettingsResourceProjectCreationModeCLOSED
+		return nil
+	default:
+		return errors.Errorf("invalid value: %q", data)
+	}
+}
+
+// INVITE_ONLY 是只收手上有项目邀请的邮箱.
+type SettingsResourceRegistrationMode string
+
+const (
+	SettingsResourceRegistrationModeOPEN       SettingsResourceRegistrationMode = "OPEN"
+	SettingsResourceRegistrationModeINVITEONLY SettingsResourceRegistrationMode = "INVITE_ONLY"
+	SettingsResourceRegistrationModeCLOSED     SettingsResourceRegistrationMode = "CLOSED"
+)
+
+// AllValues returns all SettingsResourceRegistrationMode values.
+func (SettingsResourceRegistrationMode) AllValues() []SettingsResourceRegistrationMode {
+	return []SettingsResourceRegistrationMode{
+		SettingsResourceRegistrationModeOPEN,
+		SettingsResourceRegistrationModeINVITEONLY,
+		SettingsResourceRegistrationModeCLOSED,
+	}
+}
+
+// MarshalText implements encoding.TextMarshaler.
+func (s SettingsResourceRegistrationMode) MarshalText() ([]byte, error) {
+	switch s {
+	case SettingsResourceRegistrationModeOPEN:
+		return []byte(s), nil
+	case SettingsResourceRegistrationModeINVITEONLY:
+		return []byte(s), nil
+	case SettingsResourceRegistrationModeCLOSED:
+		return []byte(s), nil
+	default:
+		return nil, errors.Errorf("invalid value: %q", s)
+	}
+}
+
+// UnmarshalText implements encoding.TextUnmarshaler.
+func (s *SettingsResourceRegistrationMode) UnmarshalText(data []byte) error {
+	switch SettingsResourceRegistrationMode(data) {
+	case SettingsResourceRegistrationModeOPEN:
+		*s = SettingsResourceRegistrationModeOPEN
+		return nil
+	case SettingsResourceRegistrationModeINVITEONLY:
+		*s = SettingsResourceRegistrationModeINVITEONLY
+		return nil
+	case SettingsResourceRegistrationModeCLOSED:
+		*s = SettingsResourceRegistrationModeCLOSED
+		return nil
+	default:
+		return errors.Errorf("invalid value: %q", data)
+	}
+}
+
 // Ref: #/components/schemas/SubmitIdentityVerificationRequestBody
 type SubmitIdentityVerificationRequestBody struct {
 	// 证件号码。同上，而且同一个号码不能挂在两个账号上.

@@ -68,6 +68,18 @@ type Handler interface {
 	//
 	// GET /account/v1/me/identity-verification
 	GetIdentityVerification(ctx context.Context) (*IdentityVerificationResource, error)
+	// GetSettings implements get-settings operation.
+	//
+	// 注册页和「新建项目」按钮用它决定画什么。不需要令牌。
+	//
+	// `registration_mode` 不是 `OPEN` 时 `POST /account/v1/register` 会答 403：`CLOSED`
+	// 是整个关着，`INVITE_ONLY` 是只收手上有项目邀请的邮箱。`project_creation_mode`
+	// 同理，`VERIFIED_ONLY` 要先过实名。
+	//
+	// 两条配额是 0 表示不限。它们只用来提前提示，真正的判定在写入那一刻。.
+	//
+	// GET /account/v1/settings
+	GetSettings(ctx context.Context) (*SettingsResource, error)
 	// ListAgreements implements list-agreements operation.
 	//
 	// 注册页显示它，用户同意之后把每一项的 `type` 和 `version` 原样回传给

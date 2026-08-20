@@ -89,6 +89,18 @@ type Invoker interface {
 	//
 	// GET /account/v1/me/identity-verification
 	GetIdentityVerification(ctx context.Context) (*IdentityVerificationResource, error)
+	// GetSettings invokes get-settings operation.
+	//
+	// 注册页和「新建项目」按钮用它决定画什么。不需要令牌。
+	//
+	// `registration_mode` 不是 `OPEN` 时 `POST /account/v1/register` 会答 403：`CLOSED`
+	// 是整个关着，`INVITE_ONLY` 是只收手上有项目邀请的邮箱。`project_creation_mode`
+	// 同理，`VERIFIED_ONLY` 要先过实名。
+	//
+	// 两条配额是 0 表示不限。它们只用来提前提示，真正的判定在写入那一刻。.
+	//
+	// GET /account/v1/settings
+	GetSettings(ctx context.Context) (*SettingsResource, error)
 	// ListAgreements invokes list-agreements operation.
 	//
 	// 注册页显示它，用户同意之后把每一项的 `type` 和 `version` 原样回传给
@@ -1028,6 +1040,92 @@ func (c *Client) sendGetIdentityVerification(ctx context.Context) (res *Identity
 
 	stage = "DecodeResponse"
 	result, err := decodeGetIdentityVerificationResponse(resp)
+	if err != nil {
+		return res, errors.Wrap(err, "decode response")
+	}
+
+	return result, nil
+}
+
+// GetSettings invokes get-settings operation.
+//
+// 注册页和「新建项目」按钮用它决定画什么。不需要令牌。
+//
+// `registration_mode` 不是 `OPEN` 时 `POST /account/v1/register` 会答 403：`CLOSED`
+// 是整个关着，`INVITE_ONLY` 是只收手上有项目邀请的邮箱。`project_creation_mode`
+// 同理，`VERIFIED_ONLY` 要先过实名。
+//
+// 两条配额是 0 表示不限。它们只用来提前提示，真正的判定在写入那一刻。.
+//
+// GET /account/v1/settings
+func (c *Client) GetSettings(ctx context.Context) (*SettingsResource, error) {
+	res, err := c.sendGetSettings(ctx)
+	return res, err
+}
+
+func (c *Client) sendGetSettings(ctx context.Context) (res *SettingsResource, err error) {
+	otelAttrs := []attribute.KeyValue{
+		otelogen.OperationID("get-settings"),
+		semconv.HTTPRequestMethodKey.String("GET"),
+		semconv.URLTemplateKey.String("/account/v1/settings"),
+	}
+	otelAttrs = append(otelAttrs, c.cfg.Attributes...)
+
+	// Run stopwatch.
+	startTime := time.Now()
+	defer func() {
+		// Use floating point division here for higher precision (instead of Millisecond method).
+		elapsedDuration := time.Since(startTime)
+		c.duration.Record(ctx, float64(elapsedDuration)/float64(time.Millisecond), metric.WithAttributes(otelAttrs...))
+	}()
+
+	// Increment request counter.
+	c.requests.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
+
+	// Start a span for this request.
+	ctx, span := c.cfg.Tracer.Start(ctx, GetSettingsOperation,
+		trace.WithAttributes(otelAttrs...),
+		clientSpanKind,
+	)
+	// Track stage for error reporting.
+	var stage string
+	defer func() {
+		if err != nil {
+			span.RecordError(err)
+			span.SetStatus(codes.Error, stage)
+			c.errors.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
+		}
+		span.End()
+	}()
+
+	stage = "BuildURL"
+	u := uri.Clone(c.requestURL(ctx))
+	var pathParts [1]string
+	pathParts[0] = "/account/v1/settings"
+	uri.AddPathParts(u, pathParts[:]...)
+
+	stage = "EncodeRequest"
+	r, err := ht.NewRequest(ctx, "GET", u)
+	if err != nil {
+		return res, errors.Wrap(err, "create request")
+	}
+
+	stage = "SendRequest"
+	resp, err := c.cfg.Client.Do(r)
+	if err != nil {
+		return res, errors.Wrap(err, "do request")
+	}
+	body := resp.Body
+	defer func() {
+		// Drain the body to EOF before closing, so the underlying
+		// connection can be reused by the Transport regardless of the
+		// response status code. See https://github.com/ogen-go/ogen/issues/1670.
+		_, _ = io.Copy(io.Discard, body)
+		_ = body.Close()
+	}()
+
+	stage = "DecodeResponse"
+	result, err := decodeGetSettingsResponse(resp)
 	if err != nil {
 		return res, errors.Wrap(err, "decode response")
 	}
