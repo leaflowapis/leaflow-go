@@ -51,7 +51,9 @@ ROOT = pathlib.Path(__file__).resolve().parent.parent
 # 而它换来四类只在 CI 上出现的失败，报出的都不是「submodule 配置有误」。
 #
 # leaflow/ 是命名空间层，与 googleapis 的 google/ 对应。
-CONTRACTS_REMOTE = "https://github.com/leaflowapis/leaflowapis.git"
+# 默认 HTTPS：CI 里没有 ssh，SSH URL 会以一句 exit status 128 失败，不提认证。
+# 私有契约在 CI 中由 job token 经 gitconfig 提供凭据。
+CONTRACTS_REMOTE = os.environ.get("CONTRACTS_REMOTE", "https://github.com/leaflowapis/leaflowapis.git")
 CONTRACTS_ROOT = ROOT / "leaflowapis"
 CONTRACTS = CONTRACTS_ROOT / "leaflow"
 
