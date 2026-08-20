@@ -5144,8 +5144,14 @@ func (s *InstanceResourceStatus) Decode(d *jx.Decoder) error {
 		*s = InstanceResourceStatusRunning
 	case InstanceResourceStatusStopped:
 		*s = InstanceResourceStatusStopped
+	case InstanceResourceStatusStarting:
+		*s = InstanceResourceStatusStarting
+	case InstanceResourceStatusStopping:
+		*s = InstanceResourceStatusStopping
 	case InstanceResourceStatusRebooting:
 		*s = InstanceResourceStatusRebooting
+	case InstanceResourceStatusTransitioning:
+		*s = InstanceResourceStatusTransitioning
 	case InstanceResourceStatusResizing:
 		*s = InstanceResourceStatusResizing
 	case InstanceResourceStatusResizeVerifying:

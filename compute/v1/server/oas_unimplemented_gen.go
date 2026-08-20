@@ -21,7 +21,11 @@ var _ Handler = UnimplementedHandler{}
 // 强制重启。强制重启不等待操作系统关闭，未落盘的数据会丢失。`force`
 // 仅适用于 reboot。
 //
-// 已被平台停服的云服务器需先解除停服。.
+// 已被平台停服的云服务器需先解除停服。
+//
+// 本接口立即返回，返回的 `status` 是变更中的瞬态：start 为 `starting`、stop 为
+// `stopping`、reboot 为 `rebooting`。轮询云服务器详情直至落定为 `running` 或
+// `stopped`。.
 //
 // POST /api/v1/instances/{instanceId}/actions
 func (UnimplementedHandler) ActOnInstance(ctx context.Context, req *ActOnInstanceRequestBody, params ActOnInstanceParams) (r *InstanceResource, _ error) {
