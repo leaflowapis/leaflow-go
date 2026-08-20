@@ -40,14 +40,20 @@ import tempfile
 
 import yaml
 
+sys.path.insert(0, str(pathlib.Path(__file__).resolve().parent))
+import contracts  # noqa: E402
+
 ROOT = pathlib.Path(__file__).resolve().parent.parent
 
-# 契约是一个 submodule，钉在某一个 commit 上。
+# 契约由 scripts/contracts.py 拉到本地，版本记在 CONTRACTS_REF 里。
 #
-# 钉着而不是跟着 main 走，是因为那个指针同时回答了「这版 SDK 出自哪版契约」——它出现在 git
-# diff 里，review 看得见，出事时答得出。跟 main 走的话，同一个 tag 在两台机器上能生成出不同的
-# 代码，而那件事不报错。
-CONTRACTS = ROOT / "leaflowapis"
+# 语言仓库是契约的**产物**，产物不该反过来持有源的一个 git 指针——那正是 submodule 干的事，
+# 而它换来四类只在 CI 上出现的失败，报出的都不是「submodule 配置有误」。
+#
+# leaflow/ 是命名空间层，与 googleapis 的 google/ 对应。
+CONTRACTS_REMOTE = "https://github.com/leaflowapis/leaflowapis.git"
+CONTRACTS_ROOT = ROOT / "leaflowapis"
+CONTRACTS = CONTRACTS_ROOT / "leaflow"
 
 # 生成器版本钉死，不用 latest：换一版会改字段名和可选性，而那种改动在服务仓库的 diff 里看起来
 # 和「契约改了」一模一样，一次 review 分不出谁改了 API、谁升了工具。
@@ -79,7 +85,7 @@ SHARED_OUTPUT_OPTIONS = {**{"skip-prune": True}}
 # 内联的话十三份契约会得到十三个长得一样的 Go 类型，调用方拿 compute 的 Error 去喂一个收 iam
 # Error 的函数会编译不过——而它们本来就是同一个东西。
 SHARED_SPEC = "type/v1/error.yaml"
-SHARED_PACKAGE = "github.com/LeaflowNET/leaflow-go/type/v1"
+SHARED_PACKAGE = "github.com/leaflowapis/leaflow-go/type/v1"
 
 # prefer-skip-optional-pointer-on-container-types
 #   可选的数组和 map 生成成值，不是指针。`*[]string` 除了逼每个调用点写一次解引用之外没有任何
@@ -120,7 +126,7 @@ def codegen(spec, package, output, generate, scratch, mapping=None, options=None
 # 以为自己漏了什么。google-cloud-go 是同一个形状（compute/go.mod = cloud.google.com/go/compute）。
 #
 # 代价是 tag 要带服务名前缀（iam/v0.1.0），忘了打前缀的表现是「发了但 go get 拿不到」。
-GO_MOD = """module github.com/LeaflowNET/leaflow-go/{service}
+GO_MOD = """module github.com/leaflowapis/leaflow-go/{service}
 
 go 1.26.0
 
@@ -153,8 +159,9 @@ def write_module(service):
 
 
 def main():
-    contracts = sorted(CONTRACTS.glob("*/*/openapi.yaml"))
-    if not contracts:
+    contracts.fetch(CONTRACTS_REMOTE, CONTRACTS_ROOT)
+    specs = sorted(CONTRACTS.glob("*/*/openapi.yaml"))
+    if not specs:
         sys.exit(f"{CONTRACTS} 下一份契约都没有")
 
     with tempfile.TemporaryDirectory(prefix="leaflow-go-") as raw:
@@ -168,7 +175,7 @@ def main():
         write_module("type")
         print(f"{SHARED_SPEC:24} → type/v1")
 
-        for contract in contracts:
+        for contract in specs:
             version = contract.parent.name
             service = contract.parent.parent.name
             package = f"{service}{version}"
