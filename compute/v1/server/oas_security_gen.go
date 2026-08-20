@@ -14,9 +14,9 @@ import (
 // SecurityHandler is handler for security parameters.
 type SecurityHandler interface {
 	// HandleBearerAuth handles bearerAuth security.
-	// 项目令牌。先在 auth.leaflow.net 登录拿到账号令牌，再用它向 IAM
-	// 换取项目令牌（POST
-	// /account/v1/projects/{projectId}/token）——一张项目令牌同时说明当前用户和当前项目。.
+	// Project token. Sign in at auth.leaflow.net to obtain an account token, then exchange it with IAM for
+	// a project token (POST /account/v1/projects/{projectId}/token). A project token identifies both the
+	// current user and the current project.
 	HandleBearerAuth(ctx context.Context, operationName OperationName, t BearerAuth) (context.Context, error)
 }
 
@@ -163,9 +163,9 @@ func (s *Server) securityBearerAuth(ctx context.Context, operationName Operation
 // SecuritySource is provider of security values (tokens, passwords, etc.).
 type SecuritySource interface {
 	// BearerAuth provides bearerAuth security value.
-	// 项目令牌。先在 auth.leaflow.net 登录拿到账号令牌，再用它向 IAM
-	// 换取项目令牌（POST
-	// /account/v1/projects/{projectId}/token）——一张项目令牌同时说明当前用户和当前项目。.
+	// Project token. Sign in at auth.leaflow.net to obtain an account token, then exchange it with IAM for
+	// a project token (POST /account/v1/projects/{projectId}/token). A project token identifies both the
+	// current user and the current project.
 	BearerAuth(ctx context.Context, operationName OperationName) (BearerAuth, error)
 }
 

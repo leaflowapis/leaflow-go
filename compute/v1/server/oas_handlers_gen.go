@@ -35,17 +35,18 @@ func (c *codeRecorder) Unwrap() http.ResponseWriter {
 
 // handleActOnInstanceRequest handles act-on-instance operation.
 //
-// 重启默认为软重启，由操作系统正常关闭后重新启动。
+// Reboot defaults to a soft reboot, in which the operating system shuts down normally before starting
+// again.
 //
-// 系统已无响应时软重启不会生效，此时可设置 `force`
-// 强制重启。强制重启不等待操作系统关闭，未落盘的数据会丢失。`force`
-// 仅适用于 reboot。
+// A soft reboot has no effect once the system is unresponsive. Set `force` to reboot forcibly: a
+// forced reboot does not wait for the operating system to shut down, so unwritten data is lost.
+// `force` applies to `reboot` only.
 //
-// 已被平台停服的云服务器需先解除停服。
+// An instance suspended by the platform must be unsuspended first.
 //
-// 本接口立即返回，返回的 `status` 是变更中的瞬态：start 为 `starting`、stop 为
-// `stopping`、reboot 为 `rebooting`。轮询云服务器详情直至落定为 `running` 或
-// `stopped`。.
+// This endpoint returns immediately and the `status` it returns is a transient state: `starting` for
+// start, `stopping` for stop, `rebooting` for reboot. Poll the instance until it settles at `running`
+// or `stopped`.
 //
 // POST /api/v1/instances/{instanceId}/actions
 func (s *Server) handleActOnInstanceRequest(args [1]string, argsEscaped bool, w http.ResponseWriter, r *http.Request) {
@@ -198,7 +199,7 @@ func (s *Server) handleActOnInstanceRequest(args [1]string, argsEscaped bool, w 
 		mreq := middleware.Request{
 			Context:          ctx,
 			OperationName:    ActOnInstanceOperation,
-			OperationSummary: "开机、关机、重启",
+			OperationSummary: "Start, stop or reboot an instance",
 			OperationID:      "act-on-instance",
 			Body:             request,
 			RawBody:          rawBody,
@@ -260,10 +261,11 @@ func (s *Server) handleActOnInstanceRequest(args [1]string, argsEscaped bool, w 
 
 // handleAllocateFloatingIPRequest handles allocate-floating-ip operation.
 //
-// 若该私有网络尚未连通外网，会一并为其接入外网。
+// If the private network is not yet connected to the internet, connectivity is established as part of
+// this call.
 //
-// IPv6 不通过本接口申请。IPv6
-// 地址由私有网络自动下发至云服务器，在私有网络上启用即可。.
+// IPv6 is not requested through this endpoint. IPv6 addresses are assigned to instances by the private
+// network; enable IPv6 on that network instead.
 //
 // POST /api/v1/floating-ips
 func (s *Server) handleAllocateFloatingIPRequest(args [0]string, argsEscaped bool, w http.ResponseWriter, r *http.Request) {
@@ -406,7 +408,7 @@ func (s *Server) handleAllocateFloatingIPRequest(args [0]string, argsEscaped boo
 		mreq := middleware.Request{
 			Context:          ctx,
 			OperationName:    AllocateFloatingIPOperation,
-			OperationSummary: "申领公网 IP",
+			OperationSummary: "Allocate a floating IP",
 			OperationID:      "allocate-floating-ip",
 			Body:             request,
 			RawBody:          rawBody,
@@ -463,7 +465,8 @@ func (s *Server) handleAllocateFloatingIPRequest(args [0]string, argsEscaped boo
 
 // handleAttachDiskRequest handles attach-disk operation.
 //
-// 云硬盘必须与云服务器位于同一地区和可用区。挂载后需在云服务器内自行分区并挂载文件系统。.
+// The disk must be in the same region and availability zone as the instance. Partition it and mount
+// the file system inside the instance once it is attached.
 //
 // POST /api/v1/instances/{instanceId}/disks
 func (s *Server) handleAttachDiskRequest(args [1]string, argsEscaped bool, w http.ResponseWriter, r *http.Request) {
@@ -616,7 +619,7 @@ func (s *Server) handleAttachDiskRequest(args [1]string, argsEscaped bool, w htt
 		mreq := middleware.Request{
 			Context:          ctx,
 			OperationName:    AttachDiskOperation,
-			OperationSummary: "挂载云硬盘",
+			OperationSummary: "Attach a disk",
 			OperationID:      "attach-disk",
 			Body:             request,
 			RawBody:          rawBody,
@@ -678,7 +681,7 @@ func (s *Server) handleAttachDiskRequest(args [1]string, argsEscaped bool, w htt
 
 // handleAttachInstanceFloatingIPRequest handles attach-instance-floating-ip operation.
 //
-// 公网 IP 绑定在云服务器的主网卡上。.
+// The floating IP is bound to the primary network interface of the instance.
 //
 // POST /api/v1/instances/{instanceId}/floating-ips
 func (s *Server) handleAttachInstanceFloatingIPRequest(args [1]string, argsEscaped bool, w http.ResponseWriter, r *http.Request) {
@@ -831,7 +834,7 @@ func (s *Server) handleAttachInstanceFloatingIPRequest(args [1]string, argsEscap
 		mreq := middleware.Request{
 			Context:          ctx,
 			OperationName:    AttachInstanceFloatingIPOperation,
-			OperationSummary: "为云服务器绑定公网 IP",
+			OperationSummary: "Bind a floating IP to an instance",
 			OperationID:      "attach-instance-floating-ip",
 			Body:             request,
 			RawBody:          rawBody,
@@ -893,7 +896,7 @@ func (s *Server) handleAttachInstanceFloatingIPRequest(args [1]string, argsEscap
 
 // handleAttachPortRequest handles attach-port operation.
 //
-// 挂载网卡.
+// Attach a network interface.
 //
 // POST /api/v1/instances/{instanceId}/ports
 func (s *Server) handleAttachPortRequest(args [1]string, argsEscaped bool, w http.ResponseWriter, r *http.Request) {
@@ -1046,7 +1049,7 @@ func (s *Server) handleAttachPortRequest(args [1]string, argsEscaped bool, w htt
 		mreq := middleware.Request{
 			Context:          ctx,
 			OperationName:    AttachPortOperation,
-			OperationSummary: "挂载网卡",
+			OperationSummary: "Attach a network interface",
 			OperationID:      "attach-port",
 			Body:             request,
 			RawBody:          rawBody,
@@ -1108,7 +1111,7 @@ func (s *Server) handleAttachPortRequest(args [1]string, argsEscaped bool, w htt
 
 // handleBindFloatingIPRequest handles bind-floating-ip operation.
 //
-// 将公网 IP 绑定到网卡.
+// Bind a floating IP to a network interface.
 //
 // PUT /api/v1/floating-ips/{floatingIpId}/binding
 func (s *Server) handleBindFloatingIPRequest(args [1]string, argsEscaped bool, w http.ResponseWriter, r *http.Request) {
@@ -1261,7 +1264,7 @@ func (s *Server) handleBindFloatingIPRequest(args [1]string, argsEscaped bool, w
 		mreq := middleware.Request{
 			Context:          ctx,
 			OperationName:    BindFloatingIPOperation,
-			OperationSummary: "将公网 IP 绑定到网卡",
+			OperationSummary: "Bind a floating IP to a network interface",
 			OperationID:      "bind-floating-ip",
 			Body:             request,
 			RawBody:          rawBody,
@@ -1323,8 +1326,8 @@ func (s *Server) handleBindFloatingIPRequest(args [1]string, argsEscaped bool, w
 
 // handleConfirmInstanceResizeRequest handles confirm-instance-resize operation.
 //
-// 释放原规格占用的资源，`pending_instance_type_id`
-// 成为生效机型并从此按它计费。.
+// Releases the resources held by the previous size. `pending_instance_type_id` becomes the type in
+// effect and is billed from then on.
 //
 // POST /api/v1/instances/{instanceId}/resize/confirm
 func (s *Server) handleConfirmInstanceResizeRequest(args [1]string, argsEscaped bool, w http.ResponseWriter, r *http.Request) {
@@ -1462,7 +1465,7 @@ func (s *Server) handleConfirmInstanceResizeRequest(args [1]string, argsEscaped 
 		mreq := middleware.Request{
 			Context:          ctx,
 			OperationName:    ConfirmInstanceResizeOperation,
-			OperationSummary: "确认变配",
+			OperationSummary: "Confirm a resize",
 			OperationID:      "confirm-instance-resize",
 			Body:             nil,
 			RawBody:          rawBody,
@@ -1524,11 +1527,15 @@ func (s *Server) handleConfirmInstanceResizeRequest(args [1]string, argsEscaped 
 
 // handleCreateBackupRequest handles create-backup operation.
 //
-// 备份是云硬盘在独立存储中的一份完整副本：**源云硬盘删除后仍可恢复，且可恢复到本地区的其他可用区。**快照不具备这两项能力，它与源云硬盘位于同一存储，且源云硬盘存在快照时无法删除。
+// A backup is a complete copy of a disk held in separate storage: it remains restorable after the
+// source disk is deleted, and can be restored to another availability zone in the same region. A
+// snapshot offers neither capability, as it resides in the same storage as the source disk and
+// prevents that disk from being deleted while it exists.
 //
-// 运行中云服务器上挂载的云硬盘、以及系统盘，均可创建备份。
+// Disks attached to a running instance, including system disks, can be backed up.
 //
-// 备份耗时取决于数据量。接口返回时尚未完成，请轮询查看接口。.
+// The duration depends on the amount of data. The backup is not complete when this endpoint returns;
+// poll the retrieve endpoint.
 //
 // POST /api/v1/backups
 func (s *Server) handleCreateBackupRequest(args [0]string, argsEscaped bool, w http.ResponseWriter, r *http.Request) {
@@ -1671,7 +1678,7 @@ func (s *Server) handleCreateBackupRequest(args [0]string, argsEscaped bool, w h
 		mreq := middleware.Request{
 			Context:          ctx,
 			OperationName:    CreateBackupOperation,
-			OperationSummary: "创建备份",
+			OperationSummary: "Create a backup",
 			OperationID:      "create-backup",
 			Body:             request,
 			RawBody:          rawBody,
@@ -1728,7 +1735,8 @@ func (s *Server) handleCreateBackupRequest(args [0]string, argsEscaped bool, w h
 
 // handleCreateDiskRequest handles create-disk operation.
 //
-// 云硬盘创建在所选硬盘类型所属的可用区，云服务器必须位于同一可用区才能挂载。因此选定硬盘类型即确定了可用区。.
+// The disk is created in the availability zone of the selected disk type, and an instance must reside
+// in the same zone to attach it. Choosing the disk type therefore determines the zone.
 //
 // POST /api/v1/disks
 func (s *Server) handleCreateDiskRequest(args [0]string, argsEscaped bool, w http.ResponseWriter, r *http.Request) {
@@ -1871,7 +1879,7 @@ func (s *Server) handleCreateDiskRequest(args [0]string, argsEscaped bool, w htt
 		mreq := middleware.Request{
 			Context:          ctx,
 			OperationName:    CreateDiskOperation,
-			OperationSummary: "创建云硬盘",
+			OperationSummary: "Create a disk",
 			OperationID:      "create-disk",
 			Body:             request,
 			RawBody:          rawBody,
@@ -1928,7 +1936,8 @@ func (s *Server) handleCreateDiskRequest(args [0]string, argsEscaped bool, w htt
 
 // handleCreatePortRequest handles create-port operation.
 //
-// 创建出的网卡尚未挂载到任何云服务器。主网卡不由本接口创建，它随云服务器一并创建。.
+// The new network interface is not attached to any instance. Primary network interfaces are not
+// created here; they are created with the instance.
 //
 // POST /api/v1/ports
 func (s *Server) handleCreatePortRequest(args [0]string, argsEscaped bool, w http.ResponseWriter, r *http.Request) {
@@ -2071,7 +2080,7 @@ func (s *Server) handleCreatePortRequest(args [0]string, argsEscaped bool, w htt
 		mreq := middleware.Request{
 			Context:          ctx,
 			OperationName:    CreatePortOperation,
-			OperationSummary: "创建网卡",
+			OperationSummary: "Create a network interface",
 			OperationID:      "create-port",
 			Body:             request,
 			RawBody:          rawBody,
@@ -2128,22 +2137,24 @@ func (s *Server) handleCreatePortRequest(args [0]string, argsEscaped bool, w htt
 
 // handleCreatePrivateImageRequest handles create-private-image operation.
 //
-// 依据云服务器的系统盘制作，数据盘不包含在内。制作出的镜像可用于创建云服务器或重装系统，并在源云服务器释放后继续可用。
+// Captured from the system disk of the instance; data disks are not included. The resulting image can
+// create instances and rebuild them, and remains usable after the source instance is released.
 //
-// 镜像内容取自开始制作的那一刻，此后对云服务器的改动不会包含在内。
+// The image reflects the moment the capture started. Later changes to the instance are not included.
 //
-// 制作分两个阶段，请轮询查看接口：
+// The capture has two phases. Poll the retrieve endpoint:
 //
-//   - `provisioning`
-//     正在读取系统盘，通常数十秒。此阶段云服务器可以继续使用，但为保证一致性建议先关机。
-//   - `uploading`
-//     已与系统盘无关，此时即可开机，无需等待制作完成。该阶段耗时与系统盘容量成正比，20
-//     GB 约需 3 分钟。
+//   - `provisioning` — the system disk is being read, usually for tens of seconds. The instance
+//     remains usable during this phase, although stopping it first is recommended for consistency.
+//   - `uploading` — no longer tied to the system disk. The instance may be started at this point;
+//     there is no need to wait for the capture to finish. The duration of this phase is proportional to
+//     the size of the system disk, roughly 3 minutes for 20 GB.
 //
-// 运行中的云服务器其文件系统可能处于写入中间状态，制作出的镜像等同于一次断电后的磁盘内容。对一致性有要求时，请在开始制作前关机，并在状态变为
-// `uploading` 后开机。
+// The file system of a running instance may be captured mid-write, in which case the image is
+// equivalent to the disk contents after a power loss. Where consistency matters, stop the instance
+// before starting the capture and start it again once the status becomes `uploading`.
 //
-// 制作期间该云服务器可以正常启停与使用，但无法释放。.
+// The instance can be started, stopped and used normally during the capture, but cannot be released.
 //
 // POST /api/v1/private-images
 func (s *Server) handleCreatePrivateImageRequest(args [0]string, argsEscaped bool, w http.ResponseWriter, r *http.Request) {
@@ -2286,7 +2297,7 @@ func (s *Server) handleCreatePrivateImageRequest(args [0]string, argsEscaped boo
 		mreq := middleware.Request{
 			Context:          ctx,
 			OperationName:    CreatePrivateImageOperation,
-			OperationSummary: "将云服务器制作为镜像",
+			OperationSummary: "Capture an instance as a private image",
 			OperationID:      "create-private-image",
 			Body:             request,
 			RawBody:          rawBody,
@@ -2343,7 +2354,8 @@ func (s *Server) handleCreatePrivateImageRequest(args [0]string, argsEscaped boo
 
 // handleCreatePrivateNetworkRequest handles create-private-network operation.
 //
-// 同时创建一张网络、一台路由器和一个默认安全组。默认安全组拒绝全部入站流量、放行全部出站流量。.
+// Creates a network, a router and a default security group in one call. The default security group
+// denies all inbound traffic and permits all outbound traffic.
 //
 // POST /api/v1/private-networks
 func (s *Server) handleCreatePrivateNetworkRequest(args [0]string, argsEscaped bool, w http.ResponseWriter, r *http.Request) {
@@ -2486,7 +2498,7 @@ func (s *Server) handleCreatePrivateNetworkRequest(args [0]string, argsEscaped b
 		mreq := middleware.Request{
 			Context:          ctx,
 			OperationName:    CreatePrivateNetworkOperation,
-			OperationSummary: "创建私有网络",
+			OperationSummary: "Create a private network",
 			OperationID:      "create-private-network",
 			Body:             request,
 			RawBody:          rawBody,
@@ -2543,9 +2555,10 @@ func (s *Server) handleCreatePrivateNetworkRequest(args [0]string, argsEscaped b
 
 // handleCreateRouteRequest handles create-route operation.
 //
-// 以下三种会导致网络中断的写法会被拒绝：目的网段为
-// 0.0.0.0/0（覆盖默认路由，所有公网 IP
-// 立即失效）、目的网段为某个子网自身（覆盖直连路由）、下一跳为某个子网的网关（指回路由器自身）。.
+// Three forms that would sever connectivity are rejected: a destination of `0.0.0.0/0`, which
+// overrides the default route and takes every floating IP offline immediately; a destination equal to
+// the CIDR of a subnet, which overrides its directly connected route; and a next hop equal to the
+// gateway of a subnet, which points back at the router itself.
 //
 // POST /api/v1/private-networks/{privateNetworkId}/routes
 func (s *Server) handleCreateRouteRequest(args [1]string, argsEscaped bool, w http.ResponseWriter, r *http.Request) {
@@ -2698,7 +2711,7 @@ func (s *Server) handleCreateRouteRequest(args [1]string, argsEscaped bool, w ht
 		mreq := middleware.Request{
 			Context:          ctx,
 			OperationName:    CreateRouteOperation,
-			OperationSummary: "创建静态路由",
+			OperationSummary: "Create a static route",
 			OperationID:      "create-route",
 			Body:             request,
 			RawBody:          rawBody,
@@ -2760,9 +2773,9 @@ func (s *Server) handleCreateRouteRequest(args [1]string, argsEscaped bool, w ht
 
 // handleCreateSecurityGroupRequest handles create-security-group operation.
 //
-// 新建的安全组带有一条规则：放行 ICMP 需要分片（type 3 code
-// 4）。缺少该规则会导致路径 MTU
-// 发现失败，表现为连接建立后传输大数据包时卡住。.
+// A new security group carries one rule, permitting ICMP fragmentation-needed messages (type 3, code
+// 4). Without it path MTU discovery fails, which presents as connections that establish and then stall
+// on large packets.
 //
 // POST /api/v1/security-groups
 func (s *Server) handleCreateSecurityGroupRequest(args [0]string, argsEscaped bool, w http.ResponseWriter, r *http.Request) {
@@ -2905,7 +2918,7 @@ func (s *Server) handleCreateSecurityGroupRequest(args [0]string, argsEscaped bo
 		mreq := middleware.Request{
 			Context:          ctx,
 			OperationName:    CreateSecurityGroupOperation,
-			OperationSummary: "创建安全组",
+			OperationSummary: "Create a security group",
 			OperationID:      "create-security-group",
 			Body:             request,
 			RawBody:          rawBody,
@@ -2962,7 +2975,8 @@ func (s *Server) handleCreateSecurityGroupRequest(args [0]string, argsEscaped bo
 
 // handleCreateSecurityGroupRuleRequest handles create-security-group-rule operation.
 //
-// 重复添加同一条规则会被拒绝。判重时 `0.0.0.0/0`、`::/0` 与留空视为等同。.
+// Adding an identical rule twice is rejected. For that comparison `0.0.0.0/0`, `::/0` and an omitted
+// value are treated as equivalent.
 //
 // POST /api/v1/security-groups/{securityGroupId}/rules
 func (s *Server) handleCreateSecurityGroupRuleRequest(args [1]string, argsEscaped bool, w http.ResponseWriter, r *http.Request) {
@@ -3115,7 +3129,7 @@ func (s *Server) handleCreateSecurityGroupRuleRequest(args [1]string, argsEscape
 		mreq := middleware.Request{
 			Context:          ctx,
 			OperationName:    CreateSecurityGroupRuleOperation,
-			OperationSummary: "创建安全组规则",
+			OperationSummary: "Create a security group rule",
 			OperationID:      "create-security-group-rule",
 			Body:             request,
 			RawBody:          rawBody,
@@ -3177,10 +3191,14 @@ func (s *Server) handleCreateSecurityGroupRuleRequest(args [1]string, argsEscape
 
 // handleCreateSnapshotRequest handles create-snapshot operation.
 //
-// 运行中云服务器上挂载的云硬盘同样可以创建快照。快照记录的是某一时刻的块设备状态，文件系统层面可能不一致，重要数据建议先在云服务器内执行
-// sync。
+// Disks attached to a running instance can be snapshotted. A snapshot records the state of the block
+// device at a point in time and may be inconsistent at the file-system level, so run `sync` inside the
+// instance first where the data matters.
 //
-// 系统盘的快照不能用于回滚该系统盘：回滚要求先从云服务器上卸载，而系统盘不可卸载。它可用于创建一块新的数据盘。需要保留并恢复整个系统时，请使用自制镜像；需要可跨可用区、且在云硬盘删除后仍可恢复的副本时，请使用备份。.
+// A snapshot of a system disk cannot be used to revert that system disk: reverting requires the disk
+// to be detached, and a system disk cannot be detached. It can be used to create a new data disk. To
+// preserve and restore an entire system, use a private image; for a copy that crosses availability
+// zones and survives deletion of the disk, use a backup.
 //
 // POST /api/v1/snapshots
 func (s *Server) handleCreateSnapshotRequest(args [0]string, argsEscaped bool, w http.ResponseWriter, r *http.Request) {
@@ -3323,7 +3341,7 @@ func (s *Server) handleCreateSnapshotRequest(args [0]string, argsEscaped bool, w
 		mreq := middleware.Request{
 			Context:          ctx,
 			OperationName:    CreateSnapshotOperation,
-			OperationSummary: "创建快照",
+			OperationSummary: "Create a snapshot",
 			OperationID:      "create-snapshot",
 			Body:             request,
 			RawBody:          rawBody,
@@ -3380,7 +3398,7 @@ func (s *Server) handleCreateSnapshotRequest(args [0]string, argsEscaped bool, w
 
 // handleCreateSubnetRequest handles create-subnet operation.
 //
-// 创建子网.
+// Create a subnet.
 //
 // POST /api/v1/private-networks/{privateNetworkId}/subnets
 func (s *Server) handleCreateSubnetRequest(args [1]string, argsEscaped bool, w http.ResponseWriter, r *http.Request) {
@@ -3533,7 +3551,7 @@ func (s *Server) handleCreateSubnetRequest(args [1]string, argsEscaped bool, w h
 		mreq := middleware.Request{
 			Context:          ctx,
 			OperationName:    CreateSubnetOperation,
-			OperationSummary: "创建子网",
+			OperationSummary: "Create a subnet",
 			OperationID:      "create-subnet",
 			Body:             request,
 			RawBody:          rawBody,
@@ -3595,7 +3613,7 @@ func (s *Server) handleCreateSubnetRequest(args [1]string, argsEscaped bool, w h
 
 // handleDeleteBackupRequest handles delete-backup operation.
 //
-// 与源云硬盘无关，源云硬盘是否存在都不影响删除。.
+// Independent of the source disk: deletion succeeds whether or not that disk still exists.
 //
 // DELETE /api/v1/backups/{backupId}
 func (s *Server) handleDeleteBackupRequest(args [1]string, argsEscaped bool, w http.ResponseWriter, r *http.Request) {
@@ -3733,7 +3751,7 @@ func (s *Server) handleDeleteBackupRequest(args [1]string, argsEscaped bool, w h
 		mreq := middleware.Request{
 			Context:          ctx,
 			OperationName:    DeleteBackupOperation,
-			OperationSummary: "删除备份",
+			OperationSummary: "Delete a backup",
 			OperationID:      "delete-backup",
 			Body:             nil,
 			RawBody:          rawBody,
@@ -3795,7 +3813,7 @@ func (s *Server) handleDeleteBackupRequest(args [1]string, argsEscaped bool, w h
 
 // handleDeleteDiskRequest handles delete-disk operation.
 //
-// 云硬盘处于挂载状态，或仍存在基于它创建的快照时，删除会被拒绝。.
+// Deletion is rejected while the disk is attached, or while snapshots created from it still exist.
 //
 // DELETE /api/v1/disks/{diskId}
 func (s *Server) handleDeleteDiskRequest(args [1]string, argsEscaped bool, w http.ResponseWriter, r *http.Request) {
@@ -3933,7 +3951,7 @@ func (s *Server) handleDeleteDiskRequest(args [1]string, argsEscaped bool, w htt
 		mreq := middleware.Request{
 			Context:          ctx,
 			OperationName:    DeleteDiskOperation,
-			OperationSummary: "删除云硬盘",
+			OperationSummary: "Delete a disk",
 			OperationID:      "delete-disk",
 			Body:             nil,
 			RawBody:          rawBody,
@@ -3995,9 +4013,12 @@ func (s *Server) handleDeleteDiskRequest(args [1]string, argsEscaped bool, w htt
 
 // handleDeleteInstanceRequest handles delete-instance operation.
 //
-// 系统盘随云服务器一并删除，基于系统盘创建的快照也会一并删除。数据盘会被卸载并保留，其快照与备份不受影响。主网卡随云服务器一并释放。
+// The system disk is deleted with the instance, and snapshots created from the system disk are deleted
+// with it. Data disks are detached and kept, and their snapshots and backups are unaffected. The
+// primary network interface is released with the instance.
 //
-// 正在制作镜像的云服务器无法释放，请等待制作完成或先删除该镜像。.
+// An instance being captured as a private image cannot be released. Wait for the capture to finish, or
+// delete that image first.
 //
 // DELETE /api/v1/instances/{instanceId}
 func (s *Server) handleDeleteInstanceRequest(args [1]string, argsEscaped bool, w http.ResponseWriter, r *http.Request) {
@@ -4135,7 +4156,7 @@ func (s *Server) handleDeleteInstanceRequest(args [1]string, argsEscaped bool, w
 		mreq := middleware.Request{
 			Context:          ctx,
 			OperationName:    DeleteInstanceOperation,
-			OperationSummary: "释放云服务器",
+			OperationSummary: "Release an instance",
 			OperationID:      "delete-instance",
 			Body:             nil,
 			RawBody:          rawBody,
@@ -4197,7 +4218,8 @@ func (s *Server) handleDeleteInstanceRequest(args [1]string, argsEscaped bool, w
 
 // handleDeletePortRequest handles delete-port operation.
 //
-// 主网卡不可单独删除，它随云服务器一并释放。仍挂载在云服务器上的网卡也无法删除。.
+// The primary network interface cannot be deleted on its own, as it is released with the instance. A
+// network interface still attached to an instance cannot be deleted either.
 //
 // DELETE /api/v1/ports/{portId}
 func (s *Server) handleDeletePortRequest(args [1]string, argsEscaped bool, w http.ResponseWriter, r *http.Request) {
@@ -4335,7 +4357,7 @@ func (s *Server) handleDeletePortRequest(args [1]string, argsEscaped bool, w htt
 		mreq := middleware.Request{
 			Context:          ctx,
 			OperationName:    DeletePortOperation,
-			OperationSummary: "删除网卡",
+			OperationSummary: "Delete a network interface",
 			OperationID:      "delete-port",
 			Body:             nil,
 			RawBody:          rawBody,
@@ -4397,9 +4419,10 @@ func (s *Server) handleDeletePortRequest(args [1]string, argsEscaped bool, w htt
 
 // handleDeletePrivateImageRequest handles delete-private-image operation.
 //
-// 仍有云服务器由该镜像创建时，删除会被拒绝：这些云服务器需要它才能重装系统。
+// Deletion is rejected while instances created from the image still exist, as they need it in order to
+// be rebuilt.
 //
-// 制作尚未完成的镜像也可以删除，制作会被终止。.
+// An image whose capture has not finished can be deleted; the capture is aborted.
 //
 // DELETE /api/v1/private-images/{privateImageId}
 func (s *Server) handleDeletePrivateImageRequest(args [1]string, argsEscaped bool, w http.ResponseWriter, r *http.Request) {
@@ -4537,7 +4560,7 @@ func (s *Server) handleDeletePrivateImageRequest(args [1]string, argsEscaped boo
 		mreq := middleware.Request{
 			Context:          ctx,
 			OperationName:    DeletePrivateImageOperation,
-			OperationSummary: "删除自制镜像",
+			OperationSummary: "Delete a private image",
 			OperationID:      "delete-private-image",
 			Body:             nil,
 			RawBody:          rawBody,
@@ -4599,7 +4622,8 @@ func (s *Server) handleDeletePrivateImageRequest(args [1]string, argsEscaped boo
 
 // handleDeletePrivateNetworkRequest handles delete-private-network operation.
 //
-// 其中仍有云服务器或网卡时，释放会被拒绝。IPv6、路由器与安全组随之一并释放。.
+// Release is rejected while instances or network interfaces remain in the network. IPv6, the router
+// and the security groups are released with it.
 //
 // DELETE /api/v1/private-networks/{privateNetworkId}
 func (s *Server) handleDeletePrivateNetworkRequest(args [1]string, argsEscaped bool, w http.ResponseWriter, r *http.Request) {
@@ -4737,7 +4761,7 @@ func (s *Server) handleDeletePrivateNetworkRequest(args [1]string, argsEscaped b
 		mreq := middleware.Request{
 			Context:          ctx,
 			OperationName:    DeletePrivateNetworkOperation,
-			OperationSummary: "释放私有网络",
+			OperationSummary: "Release a private network",
 			OperationID:      "delete-private-network",
 			Body:             nil,
 			RawBody:          rawBody,
@@ -4799,7 +4823,7 @@ func (s *Server) handleDeletePrivateNetworkRequest(args [1]string, argsEscaped b
 
 // handleDeleteRouteRequest handles delete-route operation.
 //
-// 删除静态路由.
+// Delete a static route.
 //
 // DELETE /api/v1/private-networks/{privateNetworkId}/routes/{routeId}
 func (s *Server) handleDeleteRouteRequest(args [2]string, argsEscaped bool, w http.ResponseWriter, r *http.Request) {
@@ -4937,7 +4961,7 @@ func (s *Server) handleDeleteRouteRequest(args [2]string, argsEscaped bool, w ht
 		mreq := middleware.Request{
 			Context:          ctx,
 			OperationName:    DeleteRouteOperation,
-			OperationSummary: "删除静态路由",
+			OperationSummary: "Delete a static route",
 			OperationID:      "delete-route",
 			Body:             nil,
 			RawBody:          rawBody,
@@ -5003,7 +5027,8 @@ func (s *Server) handleDeleteRouteRequest(args [2]string, argsEscaped bool, w ht
 
 // handleDeleteSecurityGroupRequest handles delete-security-group operation.
 //
-// 默认安全组不可删除，它随私有网络一并释放。仍被网卡引用的安全组也无法删除。.
+// The default security group cannot be deleted, as it is released with the private network. A security
+// group still referenced by a network interface cannot be deleted either.
 //
 // DELETE /api/v1/security-groups/{securityGroupId}
 func (s *Server) handleDeleteSecurityGroupRequest(args [1]string, argsEscaped bool, w http.ResponseWriter, r *http.Request) {
@@ -5141,7 +5166,7 @@ func (s *Server) handleDeleteSecurityGroupRequest(args [1]string, argsEscaped bo
 		mreq := middleware.Request{
 			Context:          ctx,
 			OperationName:    DeleteSecurityGroupOperation,
-			OperationSummary: "删除安全组",
+			OperationSummary: "Delete a security group",
 			OperationID:      "delete-security-group",
 			Body:             nil,
 			RawBody:          rawBody,
@@ -5203,7 +5228,7 @@ func (s *Server) handleDeleteSecurityGroupRequest(args [1]string, argsEscaped bo
 
 // handleDeleteSecurityGroupRuleRequest handles delete-security-group-rule operation.
 //
-// 删除安全组规则.
+// Delete a security group rule.
 //
 // DELETE /api/v1/security-groups/{securityGroupId}/rules/{ruleId}
 func (s *Server) handleDeleteSecurityGroupRuleRequest(args [2]string, argsEscaped bool, w http.ResponseWriter, r *http.Request) {
@@ -5341,7 +5366,7 @@ func (s *Server) handleDeleteSecurityGroupRuleRequest(args [2]string, argsEscape
 		mreq := middleware.Request{
 			Context:          ctx,
 			OperationName:    DeleteSecurityGroupRuleOperation,
-			OperationSummary: "删除安全组规则",
+			OperationSummary: "Delete a security group rule",
 			OperationID:      "delete-security-group-rule",
 			Body:             nil,
 			RawBody:          rawBody,
@@ -5407,7 +5432,7 @@ func (s *Server) handleDeleteSecurityGroupRuleRequest(args [2]string, argsEscape
 
 // handleDeleteSnapshotRequest handles delete-snapshot operation.
 //
-// 删除快照.
+// Delete a snapshot.
 //
 // DELETE /api/v1/snapshots/{snapshotId}
 func (s *Server) handleDeleteSnapshotRequest(args [1]string, argsEscaped bool, w http.ResponseWriter, r *http.Request) {
@@ -5545,7 +5570,7 @@ func (s *Server) handleDeleteSnapshotRequest(args [1]string, argsEscaped bool, w
 		mreq := middleware.Request{
 			Context:          ctx,
 			OperationName:    DeleteSnapshotOperation,
-			OperationSummary: "删除快照",
+			OperationSummary: "Delete a snapshot",
 			OperationID:      "delete-snapshot",
 			Body:             nil,
 			RawBody:          rawBody,
@@ -5607,7 +5632,8 @@ func (s *Server) handleDeleteSnapshotRequest(args [1]string, argsEscaped bool, w
 
 // handleDeleteSubnetRequest handles delete-subnet operation.
 //
-// 该子网中仍有网卡，或仍有静态路由的下一跳落在该网段内时，删除会被拒绝。.
+// Deletion is rejected while network interfaces remain in the subnet, or while a static route has a
+// next hop inside its CIDR.
 //
 // DELETE /api/v1/private-networks/{privateNetworkId}/subnets/{subnetId}
 func (s *Server) handleDeleteSubnetRequest(args [2]string, argsEscaped bool, w http.ResponseWriter, r *http.Request) {
@@ -5745,7 +5771,7 @@ func (s *Server) handleDeleteSubnetRequest(args [2]string, argsEscaped bool, w h
 		mreq := middleware.Request{
 			Context:          ctx,
 			OperationName:    DeleteSubnetOperation,
-			OperationSummary: "删除子网",
+			OperationSummary: "Delete a subnet",
 			OperationID:      "delete-subnet",
 			Body:             nil,
 			RawBody:          rawBody,
@@ -5811,7 +5837,8 @@ func (s *Server) handleDeleteSubnetRequest(args [2]string, argsEscaped bool, w h
 
 // handleDetachDiskRequest handles detach-disk operation.
 //
-// 请先在云服务器内卸载（umount）该设备再调用本接口，正在写入的文件系统被强制卸载会损坏数据。.
+// Unmount the device inside the instance before calling this endpoint. Forcibly detaching a file
+// system that is being written to corrupts data.
 //
 // DELETE /api/v1/instances/{instanceId}/disks/{diskId}
 func (s *Server) handleDetachDiskRequest(args [2]string, argsEscaped bool, w http.ResponseWriter, r *http.Request) {
@@ -5949,7 +5976,7 @@ func (s *Server) handleDetachDiskRequest(args [2]string, argsEscaped bool, w htt
 		mreq := middleware.Request{
 			Context:          ctx,
 			OperationName:    DetachDiskOperation,
-			OperationSummary: "卸载云硬盘",
+			OperationSummary: "Detach a disk",
 			OperationID:      "detach-disk",
 			Body:             nil,
 			RawBody:          rawBody,
@@ -6015,7 +6042,7 @@ func (s *Server) handleDetachDiskRequest(args [2]string, argsEscaped bool, w htt
 
 // handleDetachInstanceFloatingIPRequest handles detach-instance-floating-ip operation.
 //
-// 解绑云服务器的公网 IP.
+// Unbind the floating IP of an instance.
 //
 // DELETE /api/v1/instances/{instanceId}/floating-ips/{floatingIpId}
 func (s *Server) handleDetachInstanceFloatingIPRequest(args [2]string, argsEscaped bool, w http.ResponseWriter, r *http.Request) {
@@ -6153,7 +6180,7 @@ func (s *Server) handleDetachInstanceFloatingIPRequest(args [2]string, argsEscap
 		mreq := middleware.Request{
 			Context:          ctx,
 			OperationName:    DetachInstanceFloatingIPOperation,
-			OperationSummary: "解绑云服务器的公网 IP",
+			OperationSummary: "Unbind the floating IP of an instance",
 			OperationID:      "detach-instance-floating-ip",
 			Body:             nil,
 			RawBody:          rawBody,
@@ -6219,7 +6246,7 @@ func (s *Server) handleDetachInstanceFloatingIPRequest(args [2]string, argsEscap
 
 // handleDetachPortRequest handles detach-port operation.
 //
-// 主网卡不可卸载，卸载后云服务器将失去网络地址。.
+// The primary network interface cannot be detached; the instance would lose its network address.
 //
 // DELETE /api/v1/instances/{instanceId}/ports/{portId}
 func (s *Server) handleDetachPortRequest(args [2]string, argsEscaped bool, w http.ResponseWriter, r *http.Request) {
@@ -6357,7 +6384,7 @@ func (s *Server) handleDetachPortRequest(args [2]string, argsEscaped bool, w htt
 		mreq := middleware.Request{
 			Context:          ctx,
 			OperationName:    DetachPortOperation,
-			OperationSummary: "卸载网卡",
+			OperationSummary: "Detach a network interface",
 			OperationID:      "detach-port",
 			Body:             nil,
 			RawBody:          rawBody,
@@ -6423,7 +6450,7 @@ func (s *Server) handleDetachPortRequest(args [2]string, argsEscaped bool, w htt
 
 // handleDisablePrivateNetworkIpv6Request handles disable-private-network-ipv6 operation.
 //
-// 释放的前缀不会立即重新分配。.
+// A released prefix is not re-allocated immediately.
 //
 // DELETE /api/v1/private-networks/{privateNetworkId}/ipv6
 func (s *Server) handleDisablePrivateNetworkIpv6Request(args [1]string, argsEscaped bool, w http.ResponseWriter, r *http.Request) {
@@ -6561,7 +6588,7 @@ func (s *Server) handleDisablePrivateNetworkIpv6Request(args [1]string, argsEsca
 		mreq := middleware.Request{
 			Context:          ctx,
 			OperationName:    DisablePrivateNetworkIpv6Operation,
-			OperationSummary: "关闭私有网络的 IPv6",
+			OperationSummary: "Disable IPv6 on a private network",
 			OperationID:      "disable-private-network-ipv6",
 			Body:             nil,
 			RawBody:          rawBody,
@@ -6623,11 +6650,11 @@ func (s *Server) handleDisablePrivateNetworkIpv6Request(args [1]string, argsEsca
 
 // handleEnablePrivateNetworkIpv6Request handles enable-private-network-ipv6 operation.
 //
-// 为该私有网络分配一段 IPv6
-// 地址。地址由私有网络自动下发至云服务器，无需也无法单独申领，也不占用公网
-// IPv4。
+// Allocates an IPv6 prefix to the private network. Addresses are assigned to instances by the network
+// itself, can be neither requested nor released individually, and consume no public IPv4 address.
 //
-// 该私有网络尚未接入外网时会自动接入，无需单独操作。.
+// If the private network is not yet connected to the internet, connectivity is established as part of
+// this call.
 //
 // POST /api/v1/private-networks/{privateNetworkId}/ipv6
 func (s *Server) handleEnablePrivateNetworkIpv6Request(args [1]string, argsEscaped bool, w http.ResponseWriter, r *http.Request) {
@@ -6765,7 +6792,7 @@ func (s *Server) handleEnablePrivateNetworkIpv6Request(args [1]string, argsEscap
 		mreq := middleware.Request{
 			Context:          ctx,
 			OperationName:    EnablePrivateNetworkIpv6Operation,
-			OperationSummary: "为私有网络启用 IPv6",
+			OperationSummary: "Enable IPv6 on a private network",
 			OperationID:      "enable-private-network-ipv6",
 			Body:             nil,
 			RawBody:          rawBody,
@@ -6827,7 +6854,8 @@ func (s *Server) handleEnablePrivateNetworkIpv6Request(args [1]string, argsEscap
 
 // handleGetBackupRequest handles get-backup operation.
 //
-// 会实时查询备份的当前状态，因此比列表接口慢但更准确。轮询创建进度请使用本接口。.
+// Queries the current state of the backup, which makes it slower but more accurate than the list
+// endpoint. Use it to poll creation progress.
 //
 // GET /api/v1/backups/{backupId}
 func (s *Server) handleGetBackupRequest(args [1]string, argsEscaped bool, w http.ResponseWriter, r *http.Request) {
@@ -6965,7 +6993,7 @@ func (s *Server) handleGetBackupRequest(args [1]string, argsEscaped bool, w http
 		mreq := middleware.Request{
 			Context:          ctx,
 			OperationName:    GetBackupOperation,
-			OperationSummary: "查看备份",
+			OperationSummary: "Retrieve a backup",
 			OperationID:      "get-backup",
 			Body:             nil,
 			RawBody:          rawBody,
@@ -7027,7 +7055,8 @@ func (s *Server) handleGetBackupRequest(args [1]string, argsEscaped bool, w http
 
 // handleGetDiskRequest handles get-disk operation.
 //
-// 会实时查询云硬盘的当前状态，因此比列表接口慢但更准确。.
+// Queries the current state of the disk, which makes it slower but more accurate than the list
+// endpoint.
 //
 // GET /api/v1/disks/{diskId}
 func (s *Server) handleGetDiskRequest(args [1]string, argsEscaped bool, w http.ResponseWriter, r *http.Request) {
@@ -7165,7 +7194,7 @@ func (s *Server) handleGetDiskRequest(args [1]string, argsEscaped bool, w http.R
 		mreq := middleware.Request{
 			Context:          ctx,
 			OperationName:    GetDiskOperation,
-			OperationSummary: "查看云硬盘",
+			OperationSummary: "Retrieve a disk",
 			OperationID:      "get-disk",
 			Body:             nil,
 			RawBody:          rawBody,
@@ -7227,7 +7256,7 @@ func (s *Server) handleGetDiskRequest(args [1]string, argsEscaped bool, w http.R
 
 // handleGetFloatingIPRequest handles get-floating-ip operation.
 //
-// 查看公网 IP.
+// Retrieve a floating IP.
 //
 // GET /api/v1/floating-ips/{floatingIpId}
 func (s *Server) handleGetFloatingIPRequest(args [1]string, argsEscaped bool, w http.ResponseWriter, r *http.Request) {
@@ -7365,7 +7394,7 @@ func (s *Server) handleGetFloatingIPRequest(args [1]string, argsEscaped bool, w 
 		mreq := middleware.Request{
 			Context:          ctx,
 			OperationName:    GetFloatingIPOperation,
-			OperationSummary: "查看公网 IP",
+			OperationSummary: "Retrieve a floating IP",
 			OperationID:      "get-floating-ip",
 			Body:             nil,
 			RawBody:          rawBody,
@@ -7427,7 +7456,8 @@ func (s *Server) handleGetFloatingIPRequest(args [1]string, argsEscaped bool, w 
 
 // handleGetInstanceRequest handles get-instance operation.
 //
-// 会实时查询云服务器的当前状态，因此比列表接口慢但更准确。轮询创建进度请使用本接口。.
+// Queries the current state of the instance, which makes it slower but more accurate than the list
+// endpoint. Use it to poll creation progress.
 //
 // GET /api/v1/instances/{instanceId}
 func (s *Server) handleGetInstanceRequest(args [1]string, argsEscaped bool, w http.ResponseWriter, r *http.Request) {
@@ -7565,7 +7595,7 @@ func (s *Server) handleGetInstanceRequest(args [1]string, argsEscaped bool, w ht
 		mreq := middleware.Request{
 			Context:          ctx,
 			OperationName:    GetInstanceOperation,
-			OperationSummary: "查看云服务器",
+			OperationSummary: "Retrieve an instance",
 			OperationID:      "get-instance",
 			Body:             nil,
 			RawBody:          rawBody,
@@ -7627,9 +7657,11 @@ func (s *Server) handleGetInstanceRequest(args [1]string, argsEscaped bool, w ht
 
 // handleGetInstanceConsoleOutputRequest handles get-instance-console-output operation.
 //
-// 云服务器启动过程与内核输出的原始文本。无法登录或远程控制台无输出时，应首先查看本接口。其中可查看启动停止于哪一步、系统盘是否正常挂载、初始化过程是否报错。
+// The raw text produced by the instance during boot and by the kernel. Consult it first when login
+// fails or the remote console shows no output: it reveals where boot stopped, whether the system disk
+// was mounted, and whether initialisation reported errors.
 //
-// 处于错误状态或已被平台停服的云服务器同样可以读取。.
+// Instances in an error state, and instances suspended by the platform, can be read as well.
 //
 // GET /api/v1/instances/{instanceId}/console-output
 func (s *Server) handleGetInstanceConsoleOutputRequest(args [1]string, argsEscaped bool, w http.ResponseWriter, r *http.Request) {
@@ -7767,7 +7799,7 @@ func (s *Server) handleGetInstanceConsoleOutputRequest(args [1]string, argsEscap
 		mreq := middleware.Request{
 			Context:          ctx,
 			OperationName:    GetInstanceConsoleOutputOperation,
-			OperationSummary: "读取串口输出",
+			OperationSummary: "Read the console output",
 			OperationID:      "get-instance-console-output",
 			Body:             nil,
 			RawBody:          rawBody,
@@ -7833,7 +7865,7 @@ func (s *Server) handleGetInstanceConsoleOutputRequest(args [1]string, argsEscap
 
 // handleGetPrivateImageRequest handles get-private-image operation.
 //
-// 轮询制作进度请使用本接口。status 为 error 时，failure 给出失败原因。.
+// Use this endpoint to poll capture progress. When `status` is `error`, `failure` states the reason.
 //
 // GET /api/v1/private-images/{privateImageId}
 func (s *Server) handleGetPrivateImageRequest(args [1]string, argsEscaped bool, w http.ResponseWriter, r *http.Request) {
@@ -7971,7 +8003,7 @@ func (s *Server) handleGetPrivateImageRequest(args [1]string, argsEscaped bool, 
 		mreq := middleware.Request{
 			Context:          ctx,
 			OperationName:    GetPrivateImageOperation,
-			OperationSummary: "查看自制镜像",
+			OperationSummary: "Retrieve a private image",
 			OperationID:      "get-private-image",
 			Body:             nil,
 			RawBody:          rawBody,
@@ -8033,7 +8065,7 @@ func (s *Server) handleGetPrivateImageRequest(args [1]string, argsEscaped bool, 
 
 // handleGetPrivateNetworkRequest handles get-private-network operation.
 //
-// 查看私有网络.
+// Retrieve a private network.
 //
 // GET /api/v1/private-networks/{privateNetworkId}
 func (s *Server) handleGetPrivateNetworkRequest(args [1]string, argsEscaped bool, w http.ResponseWriter, r *http.Request) {
@@ -8171,7 +8203,7 @@ func (s *Server) handleGetPrivateNetworkRequest(args [1]string, argsEscaped bool
 		mreq := middleware.Request{
 			Context:          ctx,
 			OperationName:    GetPrivateNetworkOperation,
-			OperationSummary: "查看私有网络",
+			OperationSummary: "Retrieve a private network",
 			OperationID:      "get-private-network",
 			Body:             nil,
 			RawBody:          rawBody,
@@ -8233,7 +8265,7 @@ func (s *Server) handleGetPrivateNetworkRequest(args [1]string, argsEscaped bool
 
 // handleGetPrivateNetworkIpv6Request handles get-private-network-ipv6 operation.
 //
-// 查看私有网络的 IPv6.
+// Retrieve the IPv6 configuration of a private network.
 //
 // GET /api/v1/private-networks/{privateNetworkId}/ipv6
 func (s *Server) handleGetPrivateNetworkIpv6Request(args [1]string, argsEscaped bool, w http.ResponseWriter, r *http.Request) {
@@ -8371,7 +8403,7 @@ func (s *Server) handleGetPrivateNetworkIpv6Request(args [1]string, argsEscaped 
 		mreq := middleware.Request{
 			Context:          ctx,
 			OperationName:    GetPrivateNetworkIpv6Operation,
-			OperationSummary: "查看私有网络的 IPv6",
+			OperationSummary: "Retrieve the IPv6 configuration of a private network",
 			OperationID:      "get-private-network-ipv6",
 			Body:             nil,
 			RawBody:          rawBody,
@@ -8433,7 +8465,7 @@ func (s *Server) handleGetPrivateNetworkIpv6Request(args [1]string, argsEscaped 
 
 // handleGetSecurityGroupRequest handles get-security-group operation.
 //
-// 查看安全组.
+// Retrieve a security group.
 //
 // GET /api/v1/security-groups/{securityGroupId}
 func (s *Server) handleGetSecurityGroupRequest(args [1]string, argsEscaped bool, w http.ResponseWriter, r *http.Request) {
@@ -8571,7 +8603,7 @@ func (s *Server) handleGetSecurityGroupRequest(args [1]string, argsEscaped bool,
 		mreq := middleware.Request{
 			Context:          ctx,
 			OperationName:    GetSecurityGroupOperation,
-			OperationSummary: "查看安全组",
+			OperationSummary: "Retrieve a security group",
 			OperationID:      "get-security-group",
 			Body:             nil,
 			RawBody:          rawBody,
@@ -8633,7 +8665,7 @@ func (s *Server) handleGetSecurityGroupRequest(args [1]string, argsEscaped bool,
 
 // handleGetSnapshotRequest handles get-snapshot operation.
 //
-// 查看快照.
+// Retrieve a snapshot.
 //
 // GET /api/v1/snapshots/{snapshotId}
 func (s *Server) handleGetSnapshotRequest(args [1]string, argsEscaped bool, w http.ResponseWriter, r *http.Request) {
@@ -8771,7 +8803,7 @@ func (s *Server) handleGetSnapshotRequest(args [1]string, argsEscaped bool, w ht
 		mreq := middleware.Request{
 			Context:          ctx,
 			OperationName:    GetSnapshotOperation,
-			OperationSummary: "查看快照",
+			OperationSummary: "Retrieve a snapshot",
 			OperationID:      "get-snapshot",
 			Body:             nil,
 			RawBody:          rawBody,
@@ -8833,22 +8865,27 @@ func (s *Server) handleGetSnapshotRequest(args [1]string, argsEscaped bool, w ht
 
 // handleLaunchInstanceRequest handles launch-instance operation.
 //
-// 必须在请求中设置密码：不设置时请求会被拒绝，否则创建出的云服务器将无法登录。密码可由平台生成，此时仅在本次响应中返回一次。
+// A password must be set in the request. The request is rejected otherwise, since the resulting
+// instance would be unreachable. The platform can generate one, in which case it is returned only in
+// this response.
 //
-// `count` 可一次创建多台（最多 20 台），名称自动加 `-1`、`-2`
-// 编号，所有云服务器共用同一个密码。响应中的 `instances`
-// 始终是数组，单台创建时也是。
+// `count` creates several instances at once, 20 at most. Names are numbered `-1`, `-2` automatically
+// and all instances share one password. `instances` in the response is always an array, including for
+// a single instance.
 //
-// 批量创建按顺序逐台进行。若中途失败（例如配额不足），已创建的云服务器会保留，响应中的
-// `failure`
-// 给出中止原因；第一台就失败时视为整次请求失败，不会创建任何云服务器。
+// Instances are created one by one in order. If the sequence stops part way through, because of a
+// quota limit for example, the instances already created are kept and `failure` states why it stopped.
+// A failure on the first instance is treated as a failure of the whole request and no instance is
+// created.
 //
-// 镜像二选一：`image_id` 使用平台提供的镜像，`private_image_id`
-// 使用自制镜像。两者都给或都不给都会被拒绝。
+// Exactly one image source must be given: `image_id` for a platform image, `private_image_id` for a
+// private image. Supplying both or neither is rejected.
 //
-// 云服务器创建在机型所属的可用区。后续要挂载的云硬盘必须位于同一可用区。
+// Instances are created in the availability zone of the instance type. Disks to be attached later must
+// reside in the same zone.
 //
-// 接口返回时创建尚未完成（status 为 provisioning），请轮询 GET 确认结果。.
+// Creation is not complete when this endpoint returns and `status` is `provisioning`. Poll GET to
+// observe the outcome.
 //
 // POST /api/v1/instances
 func (s *Server) handleLaunchInstanceRequest(args [0]string, argsEscaped bool, w http.ResponseWriter, r *http.Request) {
@@ -8991,7 +9028,7 @@ func (s *Server) handleLaunchInstanceRequest(args [0]string, argsEscaped bool, w
 		mreq := middleware.Request{
 			Context:          ctx,
 			OperationName:    LaunchInstanceOperation,
-			OperationSummary: "创建云服务器",
+			OperationSummary: "Create instances",
 			OperationID:      "launch-instance",
 			Body:             request,
 			RawBody:          rawBody,
@@ -9048,7 +9085,8 @@ func (s *Server) handleLaunchInstanceRequest(args [0]string, argsEscaped bool, w
 
 // handleListAvailabilityZonesRequest handles list-availability-zones operation.
 //
-// 云硬盘与云服务器必须位于同一可用区才能挂载，创建前请确认所选可用区。.
+// A disk and an instance must reside in the same availability zone to be attached. Confirm the zone
+// before creating either.
 //
 // GET /api/v1/regions/{regionCode}/availability-zones
 func (s *Server) handleListAvailabilityZonesRequest(args [1]string, argsEscaped bool, w http.ResponseWriter, r *http.Request) {
@@ -9186,7 +9224,7 @@ func (s *Server) handleListAvailabilityZonesRequest(args [1]string, argsEscaped 
 		mreq := middleware.Request{
 			Context:          ctx,
 			OperationName:    ListAvailabilityZonesOperation,
-			OperationSummary: "列出一个地区的可用区",
+			OperationSummary: "List the availability zones of a region",
 			OperationID:      "list-availability-zones",
 			Body:             nil,
 			RawBody:          rawBody,
@@ -9248,7 +9286,7 @@ func (s *Server) handleListAvailabilityZonesRequest(args [1]string, argsEscaped 
 
 // handleListBackupsRequest handles list-backups operation.
 //
-// 列出备份.
+// List backups.
 //
 // GET /api/v1/backups
 func (s *Server) handleListBackupsRequest(args [0]string, argsEscaped bool, w http.ResponseWriter, r *http.Request) {
@@ -9386,7 +9424,7 @@ func (s *Server) handleListBackupsRequest(args [0]string, argsEscaped bool, w ht
 		mreq := middleware.Request{
 			Context:          ctx,
 			OperationName:    ListBackupsOperation,
-			OperationSummary: "列出备份",
+			OperationSummary: "List backups",
 			OperationID:      "list-backups",
 			Body:             nil,
 			RawBody:          rawBody,
@@ -9448,7 +9486,7 @@ func (s *Server) handleListBackupsRequest(args [0]string, argsEscaped bool, w ht
 
 // handleListDiskTypesRequest handles list-disk-types operation.
 //
-// 列出在售硬盘类型.
+// List disk types on sale.
 //
 // GET /api/v1/disk-types
 func (s *Server) handleListDiskTypesRequest(args [0]string, argsEscaped bool, w http.ResponseWriter, r *http.Request) {
@@ -9586,7 +9624,7 @@ func (s *Server) handleListDiskTypesRequest(args [0]string, argsEscaped bool, w 
 		mreq := middleware.Request{
 			Context:          ctx,
 			OperationName:    ListDiskTypesOperation,
-			OperationSummary: "列出在售硬盘类型",
+			OperationSummary: "List disk types on sale",
 			OperationID:      "list-disk-types",
 			Body:             nil,
 			RawBody:          rawBody,
@@ -9648,8 +9686,8 @@ func (s *Server) handleListDiskTypesRequest(args [0]string, argsEscaped bool, w 
 
 // handleListDisksRequest handles list-disks operation.
 //
-// 同时提供 region_code 与 availability_zone
-// 时，只返回可挂载到该位置云服务器的云硬盘。.
+// When both `region_code` and `availability_zone` are supplied, only disks attachable to an instance
+// at that location are returned.
 //
 // GET /api/v1/disks
 func (s *Server) handleListDisksRequest(args [0]string, argsEscaped bool, w http.ResponseWriter, r *http.Request) {
@@ -9787,7 +9825,7 @@ func (s *Server) handleListDisksRequest(args [0]string, argsEscaped bool, w http
 		mreq := middleware.Request{
 			Context:          ctx,
 			OperationName:    ListDisksOperation,
-			OperationSummary: "列出云硬盘",
+			OperationSummary: "List disks",
 			OperationID:      "list-disks",
 			Body:             nil,
 			RawBody:          rawBody,
@@ -9853,7 +9891,7 @@ func (s *Server) handleListDisksRequest(args [0]string, argsEscaped bool, w http
 
 // handleListFloatingIpsRequest handles list-floating-ips operation.
 //
-// 列出公网 IP.
+// List floating IPs.
 //
 // GET /api/v1/floating-ips
 func (s *Server) handleListFloatingIpsRequest(args [0]string, argsEscaped bool, w http.ResponseWriter, r *http.Request) {
@@ -9981,7 +10019,7 @@ func (s *Server) handleListFloatingIpsRequest(args [0]string, argsEscaped bool, 
 		mreq := middleware.Request{
 			Context:          ctx,
 			OperationName:    ListFloatingIpsOperation,
-			OperationSummary: "列出公网 IP",
+			OperationSummary: "List floating IPs",
 			OperationID:      "list-floating-ips",
 			Body:             nil,
 			RawBody:          rawBody,
@@ -10038,7 +10076,8 @@ func (s *Server) handleListFloatingIpsRequest(args [0]string, argsEscaped bool, 
 
 // handleListImagesRequest handles list-images operation.
 //
-// Min_ram_mb 超过所选机型内存的镜像无法启动，请据此过滤可选项。.
+// An image whose `min_ram_mb` exceeds the memory of the selected instance type cannot boot. Filter the
+// options accordingly.
 //
 // GET /api/v1/images
 func (s *Server) handleListImagesRequest(args [0]string, argsEscaped bool, w http.ResponseWriter, r *http.Request) {
@@ -10176,7 +10215,7 @@ func (s *Server) handleListImagesRequest(args [0]string, argsEscaped bool, w htt
 		mreq := middleware.Request{
 			Context:          ctx,
 			OperationName:    ListImagesOperation,
-			OperationSummary: "列出在售镜像",
+			OperationSummary: "List images on sale",
 			OperationID:      "list-images",
 			Body:             nil,
 			RawBody:          rawBody,
@@ -10238,7 +10277,7 @@ func (s *Server) handleListImagesRequest(args [0]string, argsEscaped bool, w htt
 
 // handleListInstanceDisksRequest handles list-instance-disks operation.
 //
-// 列出云服务器已挂载的云硬盘.
+// List the disks attached to an instance.
 //
 // GET /api/v1/instances/{instanceId}/disks
 func (s *Server) handleListInstanceDisksRequest(args [1]string, argsEscaped bool, w http.ResponseWriter, r *http.Request) {
@@ -10376,7 +10415,7 @@ func (s *Server) handleListInstanceDisksRequest(args [1]string, argsEscaped bool
 		mreq := middleware.Request{
 			Context:          ctx,
 			OperationName:    ListInstanceDisksOperation,
-			OperationSummary: "列出云服务器已挂载的云硬盘",
+			OperationSummary: "List the disks attached to an instance",
 			OperationID:      "list-instance-disks",
 			Body:             nil,
 			RawBody:          rawBody,
@@ -10438,7 +10477,7 @@ func (s *Server) handleListInstanceDisksRequest(args [1]string, argsEscaped bool
 
 // handleListInstancePortsRequest handles list-instance-ports operation.
 //
-// 列出云服务器的网卡.
+// List the network interfaces of an instance.
 //
 // GET /api/v1/instances/{instanceId}/ports
 func (s *Server) handleListInstancePortsRequest(args [1]string, argsEscaped bool, w http.ResponseWriter, r *http.Request) {
@@ -10576,7 +10615,7 @@ func (s *Server) handleListInstancePortsRequest(args [1]string, argsEscaped bool
 		mreq := middleware.Request{
 			Context:          ctx,
 			OperationName:    ListInstancePortsOperation,
-			OperationSummary: "列出云服务器的网卡",
+			OperationSummary: "List the network interfaces of an instance",
 			OperationID:      "list-instance-ports",
 			Body:             nil,
 			RawBody:          rawBody,
@@ -10638,7 +10677,7 @@ func (s *Server) handleListInstancePortsRequest(args [1]string, argsEscaped bool
 
 // handleListInstanceTypesRequest handles list-instance-types operation.
 //
-// 列出在售机型.
+// List instance types on sale.
 //
 // GET /api/v1/instance-types
 func (s *Server) handleListInstanceTypesRequest(args [0]string, argsEscaped bool, w http.ResponseWriter, r *http.Request) {
@@ -10776,7 +10815,7 @@ func (s *Server) handleListInstanceTypesRequest(args [0]string, argsEscaped bool
 		mreq := middleware.Request{
 			Context:          ctx,
 			OperationName:    ListInstanceTypesOperation,
-			OperationSummary: "列出在售机型",
+			OperationSummary: "List instance types on sale",
 			OperationID:      "list-instance-types",
 			Body:             nil,
 			RawBody:          rawBody,
@@ -10838,7 +10877,7 @@ func (s *Server) handleListInstanceTypesRequest(args [0]string, argsEscaped bool
 
 // handleListInstancesRequest handles list-instances operation.
 //
-// 列出云服务器.
+// List instances.
 //
 // GET /api/v1/instances
 func (s *Server) handleListInstancesRequest(args [0]string, argsEscaped bool, w http.ResponseWriter, r *http.Request) {
@@ -10966,7 +11005,7 @@ func (s *Server) handleListInstancesRequest(args [0]string, argsEscaped bool, w 
 		mreq := middleware.Request{
 			Context:          ctx,
 			OperationName:    ListInstancesOperation,
-			OperationSummary: "列出云服务器",
+			OperationSummary: "List instances",
 			OperationID:      "list-instances",
 			Body:             nil,
 			RawBody:          rawBody,
@@ -11023,12 +11062,15 @@ func (s *Server) handleListInstancesRequest(args [0]string, argsEscaped bool, w 
 
 // handleListOperationLogsRequest handles list-operation-logs operation.
 //
-// 记录本项目内的每一次写操作：谁、在什么时候、对什么做了什么、成功还是失败。读取操作不记录。
+// Records every write operation in the project: who performed it, when, on what, and whether it
+// succeeded. Read operations are not recorded.
 //
-// 平台代为执行的操作也在其中，但不显示具体执行人，`by_platform` 为
-// true。例如欠费停机、违规封禁：需要知道机器何时被平台停止，但执行人属于平台内部信息。
+// Operations performed by the platform are included, but the individual operator is not disclosed and
+// `by_platform` is true. Suspension for non-payment and bans for abuse are examples: the time at which
+// an instance was stopped by the platform is needed, whereas the operator is internal information.
 //
-// 密码一类的字段在写入时即被替换为占位符，不会出现在 `payload` 中。.
+// Fields such as passwords are replaced with a placeholder as the record is written and never appear
+// in `payload`.
 //
 // GET /api/v1/operation-logs
 func (s *Server) handleListOperationLogsRequest(args [0]string, argsEscaped bool, w http.ResponseWriter, r *http.Request) {
@@ -11166,7 +11208,7 @@ func (s *Server) handleListOperationLogsRequest(args [0]string, argsEscaped bool
 		mreq := middleware.Request{
 			Context:          ctx,
 			OperationName:    ListOperationLogsOperation,
-			OperationSummary: "列出本项目的操作记录",
+			OperationSummary: "List the operation log of the project",
 			OperationID:      "list-operation-logs",
 			Body:             nil,
 			RawBody:          rawBody,
@@ -11236,7 +11278,7 @@ func (s *Server) handleListOperationLogsRequest(args [0]string, argsEscaped bool
 
 // handleListPortsRequest handles list-ports operation.
 //
-// 列出网卡.
+// List network interfaces.
 //
 // GET /api/v1/ports
 func (s *Server) handleListPortsRequest(args [0]string, argsEscaped bool, w http.ResponseWriter, r *http.Request) {
@@ -11364,7 +11406,7 @@ func (s *Server) handleListPortsRequest(args [0]string, argsEscaped bool, w http
 		mreq := middleware.Request{
 			Context:          ctx,
 			OperationName:    ListPortsOperation,
-			OperationSummary: "列出网卡",
+			OperationSummary: "List network interfaces",
 			OperationID:      "list-ports",
 			Body:             nil,
 			RawBody:          rawBody,
@@ -11421,7 +11463,7 @@ func (s *Server) handleListPortsRequest(args [0]string, argsEscaped bool, w http
 
 // handleListPrivateImagesRequest handles list-private-images operation.
 //
-// 列出自制镜像.
+// List private images.
 //
 // GET /api/v1/private-images
 func (s *Server) handleListPrivateImagesRequest(args [0]string, argsEscaped bool, w http.ResponseWriter, r *http.Request) {
@@ -11559,7 +11601,7 @@ func (s *Server) handleListPrivateImagesRequest(args [0]string, argsEscaped bool
 		mreq := middleware.Request{
 			Context:          ctx,
 			OperationName:    ListPrivateImagesOperation,
-			OperationSummary: "列出自制镜像",
+			OperationSummary: "List private images",
 			OperationID:      "list-private-images",
 			Body:             nil,
 			RawBody:          rawBody,
@@ -11621,7 +11663,7 @@ func (s *Server) handleListPrivateImagesRequest(args [0]string, argsEscaped bool
 
 // handleListPrivateNetworksRequest handles list-private-networks operation.
 //
-// 列出私有网络.
+// List private networks.
 //
 // GET /api/v1/private-networks
 func (s *Server) handleListPrivateNetworksRequest(args [0]string, argsEscaped bool, w http.ResponseWriter, r *http.Request) {
@@ -11759,7 +11801,7 @@ func (s *Server) handleListPrivateNetworksRequest(args [0]string, argsEscaped bo
 		mreq := middleware.Request{
 			Context:          ctx,
 			OperationName:    ListPrivateNetworksOperation,
-			OperationSummary: "列出私有网络",
+			OperationSummary: "List private networks",
 			OperationID:      "list-private-networks",
 			Body:             nil,
 			RawBody:          rawBody,
@@ -11821,7 +11863,7 @@ func (s *Server) handleListPrivateNetworksRequest(args [0]string, argsEscaped bo
 
 // handleListRegionsRequest handles list-regions operation.
 //
-// 列出可用的地区.
+// List available regions.
 //
 // GET /api/v1/regions
 func (s *Server) handleListRegionsRequest(args [0]string, argsEscaped bool, w http.ResponseWriter, r *http.Request) {
@@ -11949,7 +11991,7 @@ func (s *Server) handleListRegionsRequest(args [0]string, argsEscaped bool, w ht
 		mreq := middleware.Request{
 			Context:          ctx,
 			OperationName:    ListRegionsOperation,
-			OperationSummary: "列出可用的地区",
+			OperationSummary: "List available regions",
 			OperationID:      "list-regions",
 			Body:             nil,
 			RawBody:          rawBody,
@@ -12006,7 +12048,7 @@ func (s *Server) handleListRegionsRequest(args [0]string, argsEscaped bool, w ht
 
 // handleListRoutesRequest handles list-routes operation.
 //
-// 列出静态路由.
+// List static routes.
 //
 // GET /api/v1/private-networks/{privateNetworkId}/routes
 func (s *Server) handleListRoutesRequest(args [1]string, argsEscaped bool, w http.ResponseWriter, r *http.Request) {
@@ -12144,7 +12186,7 @@ func (s *Server) handleListRoutesRequest(args [1]string, argsEscaped bool, w htt
 		mreq := middleware.Request{
 			Context:          ctx,
 			OperationName:    ListRoutesOperation,
-			OperationSummary: "列出静态路由",
+			OperationSummary: "List static routes",
 			OperationID:      "list-routes",
 			Body:             nil,
 			RawBody:          rawBody,
@@ -12206,7 +12248,7 @@ func (s *Server) handleListRoutesRequest(args [1]string, argsEscaped bool, w htt
 
 // handleListSecurityGroupRulesRequest handles list-security-group-rules operation.
 //
-// 列出安全组规则.
+// List security group rules.
 //
 // GET /api/v1/security-groups/{securityGroupId}/rules
 func (s *Server) handleListSecurityGroupRulesRequest(args [1]string, argsEscaped bool, w http.ResponseWriter, r *http.Request) {
@@ -12344,7 +12386,7 @@ func (s *Server) handleListSecurityGroupRulesRequest(args [1]string, argsEscaped
 		mreq := middleware.Request{
 			Context:          ctx,
 			OperationName:    ListSecurityGroupRulesOperation,
-			OperationSummary: "列出安全组规则",
+			OperationSummary: "List security group rules",
 			OperationID:      "list-security-group-rules",
 			Body:             nil,
 			RawBody:          rawBody,
@@ -12406,7 +12448,7 @@ func (s *Server) handleListSecurityGroupRulesRequest(args [1]string, argsEscaped
 
 // handleListSecurityGroupsRequest handles list-security-groups operation.
 //
-// 列出安全组.
+// List security groups.
 //
 // GET /api/v1/security-groups
 func (s *Server) handleListSecurityGroupsRequest(args [0]string, argsEscaped bool, w http.ResponseWriter, r *http.Request) {
@@ -12544,7 +12586,7 @@ func (s *Server) handleListSecurityGroupsRequest(args [0]string, argsEscaped boo
 		mreq := middleware.Request{
 			Context:          ctx,
 			OperationName:    ListSecurityGroupsOperation,
-			OperationSummary: "列出安全组",
+			OperationSummary: "List security groups",
 			OperationID:      "list-security-groups",
 			Body:             nil,
 			RawBody:          rawBody,
@@ -12610,7 +12652,7 @@ func (s *Server) handleListSecurityGroupsRequest(args [0]string, argsEscaped boo
 
 // handleListSnapshotsRequest handles list-snapshots operation.
 //
-// 列出快照.
+// List snapshots.
 //
 // GET /api/v1/snapshots
 func (s *Server) handleListSnapshotsRequest(args [0]string, argsEscaped bool, w http.ResponseWriter, r *http.Request) {
@@ -12748,7 +12790,7 @@ func (s *Server) handleListSnapshotsRequest(args [0]string, argsEscaped bool, w 
 		mreq := middleware.Request{
 			Context:          ctx,
 			OperationName:    ListSnapshotsOperation,
-			OperationSummary: "列出快照",
+			OperationSummary: "List snapshots",
 			OperationID:      "list-snapshots",
 			Body:             nil,
 			RawBody:          rawBody,
@@ -12810,8 +12852,8 @@ func (s *Server) handleListSnapshotsRequest(args [0]string, argsEscaped bool, w 
 
 // handleListSubnetsRequest handles list-subnets operation.
 //
-// IPv6 子网也在返回结果中，ip_version 为 6。它在启用 IPv6
-// 时自动创建，不可单独删除。.
+// IPv6 subnets are included, with `ip_version` 6. They are created when IPv6 is enabled and cannot be
+// deleted individually.
 //
 // GET /api/v1/private-networks/{privateNetworkId}/subnets
 func (s *Server) handleListSubnetsRequest(args [1]string, argsEscaped bool, w http.ResponseWriter, r *http.Request) {
@@ -12949,7 +12991,7 @@ func (s *Server) handleListSubnetsRequest(args [1]string, argsEscaped bool, w ht
 		mreq := middleware.Request{
 			Context:          ctx,
 			OperationName:    ListSubnetsOperation,
-			OperationSummary: "列出子网",
+			OperationSummary: "List subnets",
 			OperationID:      "list-subnets",
 			Body:             nil,
 			RawBody:          rawBody,
@@ -13011,9 +13053,11 @@ func (s *Server) handleListSubnetsRequest(args [1]string, argsEscaped bool, w ht
 
 // handleOpenInstanceConsoleRequest handles open-instance-console operation.
 //
-// 在浏览器中直接操作云服务器，无需网络可达，适用于网络配置失误导致无法登录的情况。
+// Operates the instance directly from a browser and does not require the instance to be reachable over
+// the network, which makes it usable when a network misconfiguration prevents login.
 //
-// 返回的地址一次性使用，数分钟后失效。请勿缓存，每次使用前重新获取。.
+// The returned address is single-use and expires within minutes. Do not cache it; request a new one
+// before each use.
 //
 // POST /api/v1/instances/{instanceId}/console
 func (s *Server) handleOpenInstanceConsoleRequest(args [1]string, argsEscaped bool, w http.ResponseWriter, r *http.Request) {
@@ -13151,7 +13195,7 @@ func (s *Server) handleOpenInstanceConsoleRequest(args [1]string, argsEscaped bo
 		mreq := middleware.Request{
 			Context:          ctx,
 			OperationName:    OpenInstanceConsoleOperation,
-			OperationSummary: "打开远程控制台",
+			OperationSummary: "Open a remote console",
 			OperationID:      "open-instance-console",
 			Body:             nil,
 			RawBody:          rawBody,
@@ -13213,7 +13257,7 @@ func (s *Server) handleOpenInstanceConsoleRequest(args [1]string, argsEscaped bo
 
 // handleRebuildInstanceRequest handles rebuild-instance operation.
 //
-// 系统盘数据将被清除且无法恢复。 已挂载的数据盘不受影响。.
+// All data on the system disk is erased and cannot be recovered. Attached data disks are unaffected.
 //
 // POST /api/v1/instances/{instanceId}/rebuild
 func (s *Server) handleRebuildInstanceRequest(args [1]string, argsEscaped bool, w http.ResponseWriter, r *http.Request) {
@@ -13366,7 +13410,7 @@ func (s *Server) handleRebuildInstanceRequest(args [1]string, argsEscaped bool, 
 		mreq := middleware.Request{
 			Context:          ctx,
 			OperationName:    RebuildInstanceOperation,
-			OperationSummary: "重装系统",
+			OperationSummary: "Rebuild an instance",
 			OperationID:      "rebuild-instance",
 			Body:             request,
 			RawBody:          rawBody,
@@ -13428,8 +13472,9 @@ func (s *Server) handleRebuildInstanceRequest(args [1]string, argsEscaped bool, 
 
 // handleReleaseFloatingIPRequest handles release-floating-ip operation.
 //
-// 地址释放后进入冷却期才会重新分配，以免仍指向它的 DNS
-// 记录和访问白名单立即失效。因此释放后的短时间内无法重新申领同一个地址，请谨慎操作。.
+// A released address enters a cooldown period before it is allocated again, so that DNS records and
+// allow-lists still pointing at it do not break immediately. The same address therefore cannot be
+// re-allocated for some time after release. Proceed with care.
 //
 // DELETE /api/v1/floating-ips/{floatingIpId}
 func (s *Server) handleReleaseFloatingIPRequest(args [1]string, argsEscaped bool, w http.ResponseWriter, r *http.Request) {
@@ -13567,7 +13612,7 @@ func (s *Server) handleReleaseFloatingIPRequest(args [1]string, argsEscaped bool
 		mreq := middleware.Request{
 			Context:          ctx,
 			OperationName:    ReleaseFloatingIPOperation,
-			OperationSummary: "释放公网 IP",
+			OperationSummary: "Release a floating IP",
 			OperationID:      "release-floating-ip",
 			Body:             nil,
 			RawBody:          rawBody,
@@ -13629,7 +13674,7 @@ func (s *Server) handleReleaseFloatingIPRequest(args [1]string, argsEscaped bool
 
 // handleRenameBackupRequest handles rename-backup operation.
 //
-// 重命名备份.
+// Rename a backup.
 //
 // PATCH /api/v1/backups/{backupId}
 func (s *Server) handleRenameBackupRequest(args [1]string, argsEscaped bool, w http.ResponseWriter, r *http.Request) {
@@ -13782,7 +13827,7 @@ func (s *Server) handleRenameBackupRequest(args [1]string, argsEscaped bool, w h
 		mreq := middleware.Request{
 			Context:          ctx,
 			OperationName:    RenameBackupOperation,
-			OperationSummary: "重命名备份",
+			OperationSummary: "Rename a backup",
 			OperationID:      "rename-backup",
 			Body:             request,
 			RawBody:          rawBody,
@@ -13844,7 +13889,8 @@ func (s *Server) handleRenameBackupRequest(args [1]string, argsEscaped bool, w h
 
 // handleRenameDiskRequest handles rename-disk operation.
 //
-// 仅可修改名称。容量请使用扩容接口，类型与可用区不可修改。.
+// Changes the name only. Use the resize endpoint for capacity; type and availability zone are
+// immutable.
 //
 // PATCH /api/v1/disks/{diskId}
 func (s *Server) handleRenameDiskRequest(args [1]string, argsEscaped bool, w http.ResponseWriter, r *http.Request) {
@@ -13997,7 +14043,7 @@ func (s *Server) handleRenameDiskRequest(args [1]string, argsEscaped bool, w htt
 		mreq := middleware.Request{
 			Context:          ctx,
 			OperationName:    RenameDiskOperation,
-			OperationSummary: "重命名云硬盘",
+			OperationSummary: "Rename a disk",
 			OperationID:      "rename-disk",
 			Body:             request,
 			RawBody:          rawBody,
@@ -14059,7 +14105,8 @@ func (s *Server) handleRenameDiskRequest(args [1]string, argsEscaped bool, w htt
 
 // handleRenameInstanceRequest handles rename-instance operation.
 //
-// 仅修改显示名称。云服务器内的主机名不变，它等于云服务器 id。.
+// Changes the display name only. The hostname inside the instance is unchanged; it equals the instance
+// id.
 //
 // PATCH /api/v1/instances/{instanceId}
 func (s *Server) handleRenameInstanceRequest(args [1]string, argsEscaped bool, w http.ResponseWriter, r *http.Request) {
@@ -14212,7 +14259,7 @@ func (s *Server) handleRenameInstanceRequest(args [1]string, argsEscaped bool, w
 		mreq := middleware.Request{
 			Context:          ctx,
 			OperationName:    RenameInstanceOperation,
-			OperationSummary: "重命名云服务器",
+			OperationSummary: "Rename an instance",
 			OperationID:      "rename-instance",
 			Body:             request,
 			RawBody:          rawBody,
@@ -14274,7 +14321,7 @@ func (s *Server) handleRenameInstanceRequest(args [1]string, argsEscaped bool, w
 
 // handleRenamePrivateImageRequest handles rename-private-image operation.
 //
-// 重命名自制镜像.
+// Rename a private image.
 //
 // PATCH /api/v1/private-images/{privateImageId}
 func (s *Server) handleRenamePrivateImageRequest(args [1]string, argsEscaped bool, w http.ResponseWriter, r *http.Request) {
@@ -14427,7 +14474,7 @@ func (s *Server) handleRenamePrivateImageRequest(args [1]string, argsEscaped boo
 		mreq := middleware.Request{
 			Context:          ctx,
 			OperationName:    RenamePrivateImageOperation,
-			OperationSummary: "重命名自制镜像",
+			OperationSummary: "Rename a private image",
 			OperationID:      "rename-private-image",
 			Body:             request,
 			RawBody:          rawBody,
@@ -14489,7 +14536,7 @@ func (s *Server) handleRenamePrivateImageRequest(args [1]string, argsEscaped boo
 
 // handleRenamePrivateNetworkRequest handles rename-private-network operation.
 //
-// 仅修改显示名称。网段、路由与外网网关均不可修改。.
+// Changes the display name only. The CIDR, the routes and the internet gateway are immutable.
 //
 // PATCH /api/v1/private-networks/{privateNetworkId}
 func (s *Server) handleRenamePrivateNetworkRequest(args [1]string, argsEscaped bool, w http.ResponseWriter, r *http.Request) {
@@ -14642,7 +14689,7 @@ func (s *Server) handleRenamePrivateNetworkRequest(args [1]string, argsEscaped b
 		mreq := middleware.Request{
 			Context:          ctx,
 			OperationName:    RenamePrivateNetworkOperation,
-			OperationSummary: "重命名私有网络",
+			OperationSummary: "Rename a private network",
 			OperationID:      "rename-private-network",
 			Body:             request,
 			RawBody:          rawBody,
@@ -14704,7 +14751,7 @@ func (s *Server) handleRenamePrivateNetworkRequest(args [1]string, argsEscaped b
 
 // handleRenameSecurityGroupRequest handles rename-security-group operation.
 //
-// 仅可修改名称，规则请用规则接口。.
+// Changes the name only. Use the rule endpoints to change rules.
 //
 // PATCH /api/v1/security-groups/{securityGroupId}
 func (s *Server) handleRenameSecurityGroupRequest(args [1]string, argsEscaped bool, w http.ResponseWriter, r *http.Request) {
@@ -14857,7 +14904,7 @@ func (s *Server) handleRenameSecurityGroupRequest(args [1]string, argsEscaped bo
 		mreq := middleware.Request{
 			Context:          ctx,
 			OperationName:    RenameSecurityGroupOperation,
-			OperationSummary: "重命名安全组",
+			OperationSummary: "Rename a security group",
 			OperationID:      "rename-security-group",
 			Body:             request,
 			RawBody:          rawBody,
@@ -14919,7 +14966,7 @@ func (s *Server) handleRenameSecurityGroupRequest(args [1]string, argsEscaped bo
 
 // handleRenameSnapshotRequest handles rename-snapshot operation.
 //
-// 重命名快照.
+// Rename a snapshot.
 //
 // PATCH /api/v1/snapshots/{snapshotId}
 func (s *Server) handleRenameSnapshotRequest(args [1]string, argsEscaped bool, w http.ResponseWriter, r *http.Request) {
@@ -15072,7 +15119,7 @@ func (s *Server) handleRenameSnapshotRequest(args [1]string, argsEscaped bool, w
 		mreq := middleware.Request{
 			Context:          ctx,
 			OperationName:    RenameSnapshotOperation,
-			OperationSummary: "重命名快照",
+			OperationSummary: "Rename a snapshot",
 			OperationID:      "rename-snapshot",
 			Body:             request,
 			RawBody:          rawBody,
@@ -15134,12 +15181,13 @@ func (s *Server) handleRenameSnapshotRequest(args [1]string, argsEscaped bool, w
 
 // handleResetInstancePasswordRequest handles reset-instance-password operation.
 //
-// 在不重启的情况下改掉 root 的密码，云服务器必须处于运行中。
+// Changes the root password without a reboot. The instance must be running.
 //
-// 并非所有镜像都支持：镜像列表中 `supports_password_reset` 为 false
-// 的镜像做不到，此时只能通过重装系统设置新密码，而重装会清除系统盘上的全部数据。
+// Not every image supports this. Images whose `supports_password_reset` is false cannot, and a new
+// password can then only be set by rebuilding the instance, which erases all data on the system disk.
 //
-// 镜像标记为支持、但云服务器内相应组件已被卸载或停止时，本接口同样会被拒绝。.
+// The request is also rejected when the image is marked as supported but the corresponding component
+// has been removed or stopped inside the instance.
 //
 // POST /api/v1/instances/{instanceId}/password
 func (s *Server) handleResetInstancePasswordRequest(args [1]string, argsEscaped bool, w http.ResponseWriter, r *http.Request) {
@@ -15292,7 +15340,7 @@ func (s *Server) handleResetInstancePasswordRequest(args [1]string, argsEscaped 
 		mreq := middleware.Request{
 			Context:          ctx,
 			OperationName:    ResetInstancePasswordOperation,
-			OperationSummary: "重置登录密码",
+			OperationSummary: "Reset the login password",
 			OperationID:      "reset-instance-password",
 			Body:             request,
 			RawBody:          rawBody,
@@ -15354,7 +15402,8 @@ func (s *Server) handleResetInstancePasswordRequest(args [1]string, argsEscaped 
 
 // handleResizeDiskRequest handles resize-disk operation.
 //
-// 容量只能增加，不支持缩容。扩容完成后需在云服务器内自行扩展文件系统。.
+// Capacity can only be increased; shrinking is not supported. Extend the file system inside the
+// instance once the resize completes.
 //
 // POST /api/v1/disks/{diskId}/resize
 func (s *Server) handleResizeDiskRequest(args [1]string, argsEscaped bool, w http.ResponseWriter, r *http.Request) {
@@ -15507,7 +15556,7 @@ func (s *Server) handleResizeDiskRequest(args [1]string, argsEscaped bool, w htt
 		mreq := middleware.Request{
 			Context:          ctx,
 			OperationName:    ResizeDiskOperation,
-			OperationSummary: "扩容",
+			OperationSummary: "Resize a disk",
 			OperationID:      "resize-disk",
 			Body:             request,
 			RawBody:          rawBody,
@@ -15569,14 +15618,16 @@ func (s *Server) handleResizeDiskRequest(args [1]string, argsEscaped bool, w htt
 
 // handleResizeInstanceRequest handles resize-instance operation.
 //
-// 只能变更为同一地区、同一可用区的机型，否则已挂载的云硬盘无法随之迁移。
+// Only an instance type in the same region and availability zone can be selected, as attached disks
+// cannot follow the instance elsewhere.
 //
-// 变配分两步：本接口下发后云服务器会在新规格上重新启动，状态变为
-// `resize_verifying`，此时必须调用确认或回滚接口。目标机型在确认前记在
-// `pending_instance_type_id` 上，`instance_type_id` 仍为当前生效并计费的机型。
+// A resize has two steps. This endpoint restarts the instance on the new size and the status becomes
+// `resize_verifying`, at which point the confirm or revert endpoint must be called. Until confirmation
+// the target type is recorded in `pending_instance_type_id`, while `instance_type_id` remains the type
+// in effect and billed.
 //
-// 未确认期间新旧两份规格同时占用资源。 请在状态变为 `resize_verifying`
-// 后尽快确认。.
+// Both sizes hold resources while the resize is unconfirmed. Confirm promptly once the status becomes
+// `resize_verifying`.
 //
 // POST /api/v1/instances/{instanceId}/resize
 func (s *Server) handleResizeInstanceRequest(args [1]string, argsEscaped bool, w http.ResponseWriter, r *http.Request) {
@@ -15729,7 +15780,7 @@ func (s *Server) handleResizeInstanceRequest(args [1]string, argsEscaped bool, w
 		mreq := middleware.Request{
 			Context:          ctx,
 			OperationName:    ResizeInstanceOperation,
-			OperationSummary: "变配",
+			OperationSummary: "Resize an instance",
 			OperationID:      "resize-instance",
 			Body:             request,
 			RawBody:          rawBody,
@@ -15791,9 +15842,11 @@ func (s *Server) handleResizeInstanceRequest(args [1]string, argsEscaped bool, w
 
 // handleRestoreBackupRequest handles restore-backup operation.
 //
-// 恢复到一块新建的云硬盘上，源云硬盘不受影响，也不要求它仍然存在。
+// Restores onto a newly created disk. The source disk is unaffected and need not still exist.
 //
-// 目标硬盘类型可位于本地区的其他可用区，容量不能小于备份。恢复完成前该云硬盘不可挂载，请轮询云硬盘查看接口。.
+// The target disk type may belong to another availability zone of the same region, and its capacity
+// must not be smaller than the backup. The disk cannot be attached until the restore completes; poll
+// the disk retrieve endpoint.
 //
 // POST /api/v1/backups/{backupId}/restore
 func (s *Server) handleRestoreBackupRequest(args [1]string, argsEscaped bool, w http.ResponseWriter, r *http.Request) {
@@ -15946,7 +15999,7 @@ func (s *Server) handleRestoreBackupRequest(args [1]string, argsEscaped bool, w 
 		mreq := middleware.Request{
 			Context:          ctx,
 			OperationName:    RestoreBackupOperation,
-			OperationSummary: "由备份恢复",
+			OperationSummary: "Restore from a backup",
 			OperationID:      "restore-backup",
 			Body:             request,
 			RawBody:          rawBody,
@@ -16008,11 +16061,15 @@ func (s *Server) handleRestoreBackupRequest(args [1]string, argsEscaped bool, w 
 
 // handleRevertDiskRequest handles revert-disk operation.
 //
-// 将云硬盘的内容恢复到创建该快照的时刻。该时刻之后写入的数据全部丢失，且无法撤销。
+// Restores the contents of the disk to the moment the snapshot was taken. All data written after that
+// moment is lost and cannot be recovered.
 //
-// 三项限制：只能回滚到该云硬盘最新的一个快照；云硬盘必须先从云服务器上卸载；创建快照后扩容过的云硬盘不能回滚。需要回到更早的时刻，或需要保留现有云硬盘时，请改用由快照创建一块新的云硬盘。
+// Three restrictions apply: only the most recent snapshot of the disk can be reverted to; the disk
+// must be detached from its instance first; and a disk resized since the snapshot was taken cannot be
+// reverted. To return to an earlier point in time, or to keep the existing disk, create a new disk
+// from the snapshot instead.
 //
-// 接口返回时回滚尚未完成，请轮询查看接口。.
+// The revert is not complete when this endpoint returns; poll the retrieve endpoint.
 //
 // POST /api/v1/disks/{diskId}/revert
 func (s *Server) handleRevertDiskRequest(args [1]string, argsEscaped bool, w http.ResponseWriter, r *http.Request) {
@@ -16165,7 +16222,7 @@ func (s *Server) handleRevertDiskRequest(args [1]string, argsEscaped bool, w htt
 		mreq := middleware.Request{
 			Context:          ctx,
 			OperationName:    RevertDiskOperation,
-			OperationSummary: "回滚到快照",
+			OperationSummary: "Revert to a snapshot",
 			OperationID:      "revert-disk",
 			Body:             request,
 			RawBody:          rawBody,
@@ -16227,8 +16284,8 @@ func (s *Server) handleRevertDiskRequest(args [1]string, argsEscaped bool, w htt
 
 // handleRevertInstanceResizeRequest handles revert-instance-resize operation.
 //
-// 云服务器回到原规格，`pending_instance_type_id`
-// 被丢弃，计费不受本次变配影响。.
+// The instance returns to its previous size, `pending_instance_type_id` is discarded, and billing is
+// unaffected by the resize.
 //
 // POST /api/v1/instances/{instanceId}/resize/revert
 func (s *Server) handleRevertInstanceResizeRequest(args [1]string, argsEscaped bool, w http.ResponseWriter, r *http.Request) {
@@ -16366,7 +16423,7 @@ func (s *Server) handleRevertInstanceResizeRequest(args [1]string, argsEscaped b
 		mreq := middleware.Request{
 			Context:          ctx,
 			OperationName:    RevertInstanceResizeOperation,
-			OperationSummary: "回滚变配",
+			OperationSummary: "Revert a resize",
 			OperationID:      "revert-instance-resize",
 			Body:             nil,
 			RawBody:          rawBody,
@@ -16428,7 +16485,8 @@ func (s *Server) handleRevertInstanceResizeRequest(args [1]string, argsEscaped b
 
 // handleSetFloatingIPBandwidthRequest handles set-floating-ip-bandwidth operation.
 //
-// 出入两个方向同时限速。仅限制出方向无法防止入方向流量打满上联带宽。.
+// Limits both directions at once. Limiting egress alone does not prevent ingress traffic from
+// saturating the uplink.
 //
 // PUT /api/v1/floating-ips/{floatingIpId}/bandwidth
 func (s *Server) handleSetFloatingIPBandwidthRequest(args [1]string, argsEscaped bool, w http.ResponseWriter, r *http.Request) {
@@ -16581,7 +16639,7 @@ func (s *Server) handleSetFloatingIPBandwidthRequest(args [1]string, argsEscaped
 		mreq := middleware.Request{
 			Context:          ctx,
 			OperationName:    SetFloatingIPBandwidthOperation,
-			OperationSummary: "设带宽上限",
+			OperationSummary: "Set the bandwidth limit",
 			OperationID:      "set-floating-ip-bandwidth",
 			Body:             request,
 			RawBody:          rawBody,
@@ -16643,7 +16701,8 @@ func (s *Server) handleSetFloatingIPBandwidthRequest(args [1]string, argsEscaped
 
 // handleSuggestSubnetCidrRequest handles suggest-subnet-cidr operation.
 //
-// 返回的只是建议值，创建子网时仍会重新校验。用于避免手工计算下一个空闲网段时出错。.
+// The returned value is a suggestion and is validated again when the subnet is created. It exists to
+// avoid errors when computing the next free CIDR by hand.
 //
 // GET /api/v1/private-networks/{privateNetworkId}/subnets/next-free-cidr
 func (s *Server) handleSuggestSubnetCidrRequest(args [1]string, argsEscaped bool, w http.ResponseWriter, r *http.Request) {
@@ -16781,7 +16840,7 @@ func (s *Server) handleSuggestSubnetCidrRequest(args [1]string, argsEscaped bool
 		mreq := middleware.Request{
 			Context:          ctx,
 			OperationName:    SuggestSubnetCidrOperation,
-			OperationSummary: "推荐下一个空闲网段",
+			OperationSummary: "Suggest the next free CIDR",
 			OperationID:      "suggest-subnet-cidr",
 			Body:             nil,
 			RawBody:          rawBody,
@@ -16847,7 +16906,7 @@ func (s *Server) handleSuggestSubnetCidrRequest(args [1]string, argsEscaped bool
 
 // handleUnbindFloatingIPRequest handles unbind-floating-ip operation.
 //
-// 地址仍归本项目持有，只是不再指向任何网卡。.
+// The address remains held by the project and simply no longer points at any network interface.
 //
 // DELETE /api/v1/floating-ips/{floatingIpId}/binding
 func (s *Server) handleUnbindFloatingIPRequest(args [1]string, argsEscaped bool, w http.ResponseWriter, r *http.Request) {
@@ -16985,7 +17044,7 @@ func (s *Server) handleUnbindFloatingIPRequest(args [1]string, argsEscaped bool,
 		mreq := middleware.Request{
 			Context:          ctx,
 			OperationName:    UnbindFloatingIPOperation,
-			OperationSummary: "解绑公网 IP",
+			OperationSummary: "Unbind a floating IP",
 			OperationID:      "unbind-floating-ip",
 			Body:             nil,
 			RawBody:          rawBody,

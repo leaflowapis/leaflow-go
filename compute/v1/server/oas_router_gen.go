@@ -2196,7 +2196,7 @@ func (s *Server) FindPath(method string, u *url.URL) (r Route, _ bool) {
 					switch method {
 					case "GET":
 						r.name = ListBackupsOperation
-						r.summary = "列出备份"
+						r.summary = "List backups"
 						r.operationID = "list-backups"
 						r.operationGroup = ""
 						r.pathPattern = "/api/v1/backups"
@@ -2205,7 +2205,7 @@ func (s *Server) FindPath(method string, u *url.URL) (r Route, _ bool) {
 						return r, true
 					case "POST":
 						r.name = CreateBackupOperation
-						r.summary = "创建备份"
+						r.summary = "Create a backup"
 						r.operationID = "create-backup"
 						r.operationGroup = ""
 						r.pathPattern = "/api/v1/backups"
@@ -2238,7 +2238,7 @@ func (s *Server) FindPath(method string, u *url.URL) (r Route, _ bool) {
 						switch method {
 						case "DELETE":
 							r.name = DeleteBackupOperation
-							r.summary = "删除备份"
+							r.summary = "Delete a backup"
 							r.operationID = "delete-backup"
 							r.operationGroup = ""
 							r.pathPattern = "/api/v1/backups/{backupId}"
@@ -2247,7 +2247,7 @@ func (s *Server) FindPath(method string, u *url.URL) (r Route, _ bool) {
 							return r, true
 						case "GET":
 							r.name = GetBackupOperation
-							r.summary = "查看备份"
+							r.summary = "Retrieve a backup"
 							r.operationID = "get-backup"
 							r.operationGroup = ""
 							r.pathPattern = "/api/v1/backups/{backupId}"
@@ -2256,7 +2256,7 @@ func (s *Server) FindPath(method string, u *url.URL) (r Route, _ bool) {
 							return r, true
 						case "PATCH":
 							r.name = RenameBackupOperation
-							r.summary = "重命名备份"
+							r.summary = "Rename a backup"
 							r.operationID = "rename-backup"
 							r.operationGroup = ""
 							r.pathPattern = "/api/v1/backups/{backupId}"
@@ -2281,7 +2281,7 @@ func (s *Server) FindPath(method string, u *url.URL) (r Route, _ bool) {
 							switch method {
 							case "POST":
 								r.name = RestoreBackupOperation
-								r.summary = "由备份恢复"
+								r.summary = "Restore from a backup"
 								r.operationID = "restore-backup"
 								r.operationGroup = ""
 								r.pathPattern = "/api/v1/backups/{backupId}/restore"
@@ -2322,7 +2322,7 @@ func (s *Server) FindPath(method string, u *url.URL) (r Route, _ bool) {
 						switch method {
 						case "GET":
 							r.name = ListDiskTypesOperation
-							r.summary = "列出在售硬盘类型"
+							r.summary = "List disk types on sale"
 							r.operationID = "list-disk-types"
 							r.operationGroup = ""
 							r.pathPattern = "/api/v1/disk-types"
@@ -2346,7 +2346,7 @@ func (s *Server) FindPath(method string, u *url.URL) (r Route, _ bool) {
 						switch method {
 						case "GET":
 							r.name = ListDisksOperation
-							r.summary = "列出云硬盘"
+							r.summary = "List disks"
 							r.operationID = "list-disks"
 							r.operationGroup = ""
 							r.pathPattern = "/api/v1/disks"
@@ -2355,7 +2355,7 @@ func (s *Server) FindPath(method string, u *url.URL) (r Route, _ bool) {
 							return r, true
 						case "POST":
 							r.name = CreateDiskOperation
-							r.summary = "创建云硬盘"
+							r.summary = "Create a disk"
 							r.operationID = "create-disk"
 							r.operationGroup = ""
 							r.pathPattern = "/api/v1/disks"
@@ -2388,7 +2388,7 @@ func (s *Server) FindPath(method string, u *url.URL) (r Route, _ bool) {
 							switch method {
 							case "DELETE":
 								r.name = DeleteDiskOperation
-								r.summary = "删除云硬盘"
+								r.summary = "Delete a disk"
 								r.operationID = "delete-disk"
 								r.operationGroup = ""
 								r.pathPattern = "/api/v1/disks/{diskId}"
@@ -2397,7 +2397,7 @@ func (s *Server) FindPath(method string, u *url.URL) (r Route, _ bool) {
 								return r, true
 							case "GET":
 								r.name = GetDiskOperation
-								r.summary = "查看云硬盘"
+								r.summary = "Retrieve a disk"
 								r.operationID = "get-disk"
 								r.operationGroup = ""
 								r.pathPattern = "/api/v1/disks/{diskId}"
@@ -2406,7 +2406,7 @@ func (s *Server) FindPath(method string, u *url.URL) (r Route, _ bool) {
 								return r, true
 							case "PATCH":
 								r.name = RenameDiskOperation
-								r.summary = "重命名云硬盘"
+								r.summary = "Rename a disk"
 								r.operationID = "rename-disk"
 								r.operationGroup = ""
 								r.pathPattern = "/api/v1/disks/{diskId}"
@@ -2443,7 +2443,7 @@ func (s *Server) FindPath(method string, u *url.URL) (r Route, _ bool) {
 									switch method {
 									case "POST":
 										r.name = ResizeDiskOperation
-										r.summary = "扩容"
+										r.summary = "Resize a disk"
 										r.operationID = "resize-disk"
 										r.operationGroup = ""
 										r.pathPattern = "/api/v1/disks/{diskId}/resize"
@@ -2468,7 +2468,7 @@ func (s *Server) FindPath(method string, u *url.URL) (r Route, _ bool) {
 									switch method {
 									case "POST":
 										r.name = RevertDiskOperation
-										r.summary = "回滚到快照"
+										r.summary = "Revert to a snapshot"
 										r.operationID = "revert-disk"
 										r.operationGroup = ""
 										r.pathPattern = "/api/v1/disks/{diskId}/revert"
@@ -2500,7 +2500,7 @@ func (s *Server) FindPath(method string, u *url.URL) (r Route, _ bool) {
 					switch method {
 					case "GET":
 						r.name = ListFloatingIpsOperation
-						r.summary = "列出公网 IP"
+						r.summary = "List floating IPs"
 						r.operationID = "list-floating-ips"
 						r.operationGroup = ""
 						r.pathPattern = "/api/v1/floating-ips"
@@ -2509,7 +2509,7 @@ func (s *Server) FindPath(method string, u *url.URL) (r Route, _ bool) {
 						return r, true
 					case "POST":
 						r.name = AllocateFloatingIPOperation
-						r.summary = "申领公网 IP"
+						r.summary = "Allocate a floating IP"
 						r.operationID = "allocate-floating-ip"
 						r.operationGroup = ""
 						r.pathPattern = "/api/v1/floating-ips"
@@ -2542,7 +2542,7 @@ func (s *Server) FindPath(method string, u *url.URL) (r Route, _ bool) {
 						switch method {
 						case "DELETE":
 							r.name = ReleaseFloatingIPOperation
-							r.summary = "释放公网 IP"
+							r.summary = "Release a floating IP"
 							r.operationID = "release-floating-ip"
 							r.operationGroup = ""
 							r.pathPattern = "/api/v1/floating-ips/{floatingIpId}"
@@ -2551,7 +2551,7 @@ func (s *Server) FindPath(method string, u *url.URL) (r Route, _ bool) {
 							return r, true
 						case "GET":
 							r.name = GetFloatingIPOperation
-							r.summary = "查看公网 IP"
+							r.summary = "Retrieve a floating IP"
 							r.operationID = "get-floating-ip"
 							r.operationGroup = ""
 							r.pathPattern = "/api/v1/floating-ips/{floatingIpId}"
@@ -2588,7 +2588,7 @@ func (s *Server) FindPath(method string, u *url.URL) (r Route, _ bool) {
 								switch method {
 								case "PUT":
 									r.name = SetFloatingIPBandwidthOperation
-									r.summary = "设带宽上限"
+									r.summary = "Set the bandwidth limit"
 									r.operationID = "set-floating-ip-bandwidth"
 									r.operationGroup = ""
 									r.pathPattern = "/api/v1/floating-ips/{floatingIpId}/bandwidth"
@@ -2613,7 +2613,7 @@ func (s *Server) FindPath(method string, u *url.URL) (r Route, _ bool) {
 								switch method {
 								case "DELETE":
 									r.name = UnbindFloatingIPOperation
-									r.summary = "解绑公网 IP"
+									r.summary = "Unbind a floating IP"
 									r.operationID = "unbind-floating-ip"
 									r.operationGroup = ""
 									r.pathPattern = "/api/v1/floating-ips/{floatingIpId}/binding"
@@ -2622,7 +2622,7 @@ func (s *Server) FindPath(method string, u *url.URL) (r Route, _ bool) {
 									return r, true
 								case "PUT":
 									r.name = BindFloatingIPOperation
-									r.summary = "将公网 IP 绑定到网卡"
+									r.summary = "Bind a floating IP to a network interface"
 									r.operationID = "bind-floating-ip"
 									r.operationGroup = ""
 									r.pathPattern = "/api/v1/floating-ips/{floatingIpId}/binding"
@@ -2665,7 +2665,7 @@ func (s *Server) FindPath(method string, u *url.URL) (r Route, _ bool) {
 						switch method {
 						case "GET":
 							r.name = ListImagesOperation
-							r.summary = "列出在售镜像"
+							r.summary = "List images on sale"
 							r.operationID = "list-images"
 							r.operationGroup = ""
 							r.pathPattern = "/api/v1/images"
@@ -2702,7 +2702,7 @@ func (s *Server) FindPath(method string, u *url.URL) (r Route, _ bool) {
 							switch method {
 							case "GET":
 								r.name = ListInstanceTypesOperation
-								r.summary = "列出在售机型"
+								r.summary = "List instance types on sale"
 								r.operationID = "list-instance-types"
 								r.operationGroup = ""
 								r.pathPattern = "/api/v1/instance-types"
@@ -2726,7 +2726,7 @@ func (s *Server) FindPath(method string, u *url.URL) (r Route, _ bool) {
 							switch method {
 							case "GET":
 								r.name = ListInstancesOperation
-								r.summary = "列出云服务器"
+								r.summary = "List instances"
 								r.operationID = "list-instances"
 								r.operationGroup = ""
 								r.pathPattern = "/api/v1/instances"
@@ -2735,7 +2735,7 @@ func (s *Server) FindPath(method string, u *url.URL) (r Route, _ bool) {
 								return r, true
 							case "POST":
 								r.name = LaunchInstanceOperation
-								r.summary = "创建云服务器"
+								r.summary = "Create instances"
 								r.operationID = "launch-instance"
 								r.operationGroup = ""
 								r.pathPattern = "/api/v1/instances"
@@ -2768,7 +2768,7 @@ func (s *Server) FindPath(method string, u *url.URL) (r Route, _ bool) {
 								switch method {
 								case "DELETE":
 									r.name = DeleteInstanceOperation
-									r.summary = "释放云服务器"
+									r.summary = "Release an instance"
 									r.operationID = "delete-instance"
 									r.operationGroup = ""
 									r.pathPattern = "/api/v1/instances/{instanceId}"
@@ -2777,7 +2777,7 @@ func (s *Server) FindPath(method string, u *url.URL) (r Route, _ bool) {
 									return r, true
 								case "GET":
 									r.name = GetInstanceOperation
-									r.summary = "查看云服务器"
+									r.summary = "Retrieve an instance"
 									r.operationID = "get-instance"
 									r.operationGroup = ""
 									r.pathPattern = "/api/v1/instances/{instanceId}"
@@ -2786,7 +2786,7 @@ func (s *Server) FindPath(method string, u *url.URL) (r Route, _ bool) {
 									return r, true
 								case "PATCH":
 									r.name = RenameInstanceOperation
-									r.summary = "重命名云服务器"
+									r.summary = "Rename an instance"
 									r.operationID = "rename-instance"
 									r.operationGroup = ""
 									r.pathPattern = "/api/v1/instances/{instanceId}"
@@ -2823,7 +2823,7 @@ func (s *Server) FindPath(method string, u *url.URL) (r Route, _ bool) {
 										switch method {
 										case "POST":
 											r.name = ActOnInstanceOperation
-											r.summary = "开机、关机、重启"
+											r.summary = "Start, stop or reboot an instance"
 											r.operationID = "act-on-instance"
 											r.operationGroup = ""
 											r.pathPattern = "/api/v1/instances/{instanceId}/actions"
@@ -2847,7 +2847,7 @@ func (s *Server) FindPath(method string, u *url.URL) (r Route, _ bool) {
 										switch method {
 										case "POST":
 											r.name = OpenInstanceConsoleOperation
-											r.summary = "打开远程控制台"
+											r.summary = "Open a remote console"
 											r.operationID = "open-instance-console"
 											r.operationGroup = ""
 											r.pathPattern = "/api/v1/instances/{instanceId}/console"
@@ -2872,7 +2872,7 @@ func (s *Server) FindPath(method string, u *url.URL) (r Route, _ bool) {
 											switch method {
 											case "GET":
 												r.name = GetInstanceConsoleOutputOperation
-												r.summary = "读取串口输出"
+												r.summary = "Read the console output"
 												r.operationID = "get-instance-console-output"
 												r.operationGroup = ""
 												r.pathPattern = "/api/v1/instances/{instanceId}/console-output"
@@ -2898,7 +2898,7 @@ func (s *Server) FindPath(method string, u *url.URL) (r Route, _ bool) {
 										switch method {
 										case "GET":
 											r.name = ListInstanceDisksOperation
-											r.summary = "列出云服务器已挂载的云硬盘"
+											r.summary = "List the disks attached to an instance"
 											r.operationID = "list-instance-disks"
 											r.operationGroup = ""
 											r.pathPattern = "/api/v1/instances/{instanceId}/disks"
@@ -2907,7 +2907,7 @@ func (s *Server) FindPath(method string, u *url.URL) (r Route, _ bool) {
 											return r, true
 										case "POST":
 											r.name = AttachDiskOperation
-											r.summary = "挂载云硬盘"
+											r.summary = "Attach a disk"
 											r.operationID = "attach-disk"
 											r.operationGroup = ""
 											r.pathPattern = "/api/v1/instances/{instanceId}/disks"
@@ -2941,7 +2941,7 @@ func (s *Server) FindPath(method string, u *url.URL) (r Route, _ bool) {
 											switch method {
 											case "DELETE":
 												r.name = DetachDiskOperation
-												r.summary = "卸载云硬盘"
+												r.summary = "Detach a disk"
 												r.operationID = "detach-disk"
 												r.operationGroup = ""
 												r.pathPattern = "/api/v1/instances/{instanceId}/disks/{diskId}"
@@ -2967,7 +2967,7 @@ func (s *Server) FindPath(method string, u *url.URL) (r Route, _ bool) {
 										switch method {
 										case "POST":
 											r.name = AttachInstanceFloatingIPOperation
-											r.summary = "为云服务器绑定公网 IP"
+											r.summary = "Bind a floating IP to an instance"
 											r.operationID = "attach-instance-floating-ip"
 											r.operationGroup = ""
 											r.pathPattern = "/api/v1/instances/{instanceId}/floating-ips"
@@ -3001,7 +3001,7 @@ func (s *Server) FindPath(method string, u *url.URL) (r Route, _ bool) {
 											switch method {
 											case "DELETE":
 												r.name = DetachInstanceFloatingIPOperation
-												r.summary = "解绑云服务器的公网 IP"
+												r.summary = "Unbind the floating IP of an instance"
 												r.operationID = "detach-instance-floating-ip"
 												r.operationGroup = ""
 												r.pathPattern = "/api/v1/instances/{instanceId}/floating-ips/{floatingIpId}"
@@ -3040,7 +3040,7 @@ func (s *Server) FindPath(method string, u *url.URL) (r Route, _ bool) {
 											switch method {
 											case "POST":
 												r.name = ResetInstancePasswordOperation
-												r.summary = "重置登录密码"
+												r.summary = "Reset the login password"
 												r.operationID = "reset-instance-password"
 												r.operationGroup = ""
 												r.pathPattern = "/api/v1/instances/{instanceId}/password"
@@ -3064,7 +3064,7 @@ func (s *Server) FindPath(method string, u *url.URL) (r Route, _ bool) {
 											switch method {
 											case "GET":
 												r.name = ListInstancePortsOperation
-												r.summary = "列出云服务器的网卡"
+												r.summary = "List the network interfaces of an instance"
 												r.operationID = "list-instance-ports"
 												r.operationGroup = ""
 												r.pathPattern = "/api/v1/instances/{instanceId}/ports"
@@ -3073,7 +3073,7 @@ func (s *Server) FindPath(method string, u *url.URL) (r Route, _ bool) {
 												return r, true
 											case "POST":
 												r.name = AttachPortOperation
-												r.summary = "挂载网卡"
+												r.summary = "Attach a network interface"
 												r.operationID = "attach-port"
 												r.operationGroup = ""
 												r.pathPattern = "/api/v1/instances/{instanceId}/ports"
@@ -3107,7 +3107,7 @@ func (s *Server) FindPath(method string, u *url.URL) (r Route, _ bool) {
 												switch method {
 												case "DELETE":
 													r.name = DetachPortOperation
-													r.summary = "卸载网卡"
+													r.summary = "Detach a network interface"
 													r.operationID = "detach-port"
 													r.operationGroup = ""
 													r.pathPattern = "/api/v1/instances/{instanceId}/ports/{portId}"
@@ -3148,7 +3148,7 @@ func (s *Server) FindPath(method string, u *url.URL) (r Route, _ bool) {
 											switch method {
 											case "POST":
 												r.name = RebuildInstanceOperation
-												r.summary = "重装系统"
+												r.summary = "Rebuild an instance"
 												r.operationID = "rebuild-instance"
 												r.operationGroup = ""
 												r.pathPattern = "/api/v1/instances/{instanceId}/rebuild"
@@ -3172,7 +3172,7 @@ func (s *Server) FindPath(method string, u *url.URL) (r Route, _ bool) {
 											switch method {
 											case "POST":
 												r.name = ResizeInstanceOperation
-												r.summary = "变配"
+												r.summary = "Resize an instance"
 												r.operationID = "resize-instance"
 												r.operationGroup = ""
 												r.pathPattern = "/api/v1/instances/{instanceId}/resize"
@@ -3209,7 +3209,7 @@ func (s *Server) FindPath(method string, u *url.URL) (r Route, _ bool) {
 													switch method {
 													case "POST":
 														r.name = ConfirmInstanceResizeOperation
-														r.summary = "确认变配"
+														r.summary = "Confirm a resize"
 														r.operationID = "confirm-instance-resize"
 														r.operationGroup = ""
 														r.pathPattern = "/api/v1/instances/{instanceId}/resize/confirm"
@@ -3234,7 +3234,7 @@ func (s *Server) FindPath(method string, u *url.URL) (r Route, _ bool) {
 													switch method {
 													case "POST":
 														r.name = RevertInstanceResizeOperation
-														r.summary = "回滚变配"
+														r.summary = "Revert a resize"
 														r.operationID = "revert-instance-resize"
 														r.operationGroup = ""
 														r.pathPattern = "/api/v1/instances/{instanceId}/resize/revert"
@@ -3275,7 +3275,7 @@ func (s *Server) FindPath(method string, u *url.URL) (r Route, _ bool) {
 					switch method {
 					case "GET":
 						r.name = ListOperationLogsOperation
-						r.summary = "列出本项目的操作记录"
+						r.summary = "List the operation log of the project"
 						r.operationID = "list-operation-logs"
 						r.operationGroup = ""
 						r.pathPattern = "/api/v1/operation-logs"
@@ -3311,7 +3311,7 @@ func (s *Server) FindPath(method string, u *url.URL) (r Route, _ bool) {
 						switch method {
 						case "GET":
 							r.name = ListPortsOperation
-							r.summary = "列出网卡"
+							r.summary = "List network interfaces"
 							r.operationID = "list-ports"
 							r.operationGroup = ""
 							r.pathPattern = "/api/v1/ports"
@@ -3320,7 +3320,7 @@ func (s *Server) FindPath(method string, u *url.URL) (r Route, _ bool) {
 							return r, true
 						case "POST":
 							r.name = CreatePortOperation
-							r.summary = "创建网卡"
+							r.summary = "Create a network interface"
 							r.operationID = "create-port"
 							r.operationGroup = ""
 							r.pathPattern = "/api/v1/ports"
@@ -3354,7 +3354,7 @@ func (s *Server) FindPath(method string, u *url.URL) (r Route, _ bool) {
 							switch method {
 							case "DELETE":
 								r.name = DeletePortOperation
-								r.summary = "删除网卡"
+								r.summary = "Delete a network interface"
 								r.operationID = "delete-port"
 								r.operationGroup = ""
 								r.pathPattern = "/api/v1/ports/{portId}"
@@ -3392,7 +3392,7 @@ func (s *Server) FindPath(method string, u *url.URL) (r Route, _ bool) {
 							switch method {
 							case "GET":
 								r.name = ListPrivateImagesOperation
-								r.summary = "列出自制镜像"
+								r.summary = "List private images"
 								r.operationID = "list-private-images"
 								r.operationGroup = ""
 								r.pathPattern = "/api/v1/private-images"
@@ -3401,7 +3401,7 @@ func (s *Server) FindPath(method string, u *url.URL) (r Route, _ bool) {
 								return r, true
 							case "POST":
 								r.name = CreatePrivateImageOperation
-								r.summary = "将云服务器制作为镜像"
+								r.summary = "Capture an instance as a private image"
 								r.operationID = "create-private-image"
 								r.operationGroup = ""
 								r.pathPattern = "/api/v1/private-images"
@@ -3435,7 +3435,7 @@ func (s *Server) FindPath(method string, u *url.URL) (r Route, _ bool) {
 								switch method {
 								case "DELETE":
 									r.name = DeletePrivateImageOperation
-									r.summary = "删除自制镜像"
+									r.summary = "Delete a private image"
 									r.operationID = "delete-private-image"
 									r.operationGroup = ""
 									r.pathPattern = "/api/v1/private-images/{privateImageId}"
@@ -3444,7 +3444,7 @@ func (s *Server) FindPath(method string, u *url.URL) (r Route, _ bool) {
 									return r, true
 								case "GET":
 									r.name = GetPrivateImageOperation
-									r.summary = "查看自制镜像"
+									r.summary = "Retrieve a private image"
 									r.operationID = "get-private-image"
 									r.operationGroup = ""
 									r.pathPattern = "/api/v1/private-images/{privateImageId}"
@@ -3453,7 +3453,7 @@ func (s *Server) FindPath(method string, u *url.URL) (r Route, _ bool) {
 									return r, true
 								case "PATCH":
 									r.name = RenamePrivateImageOperation
-									r.summary = "重命名自制镜像"
+									r.summary = "Rename a private image"
 									r.operationID = "rename-private-image"
 									r.operationGroup = ""
 									r.pathPattern = "/api/v1/private-images/{privateImageId}"
@@ -3479,7 +3479,7 @@ func (s *Server) FindPath(method string, u *url.URL) (r Route, _ bool) {
 							switch method {
 							case "GET":
 								r.name = ListPrivateNetworksOperation
-								r.summary = "列出私有网络"
+								r.summary = "List private networks"
 								r.operationID = "list-private-networks"
 								r.operationGroup = ""
 								r.pathPattern = "/api/v1/private-networks"
@@ -3488,7 +3488,7 @@ func (s *Server) FindPath(method string, u *url.URL) (r Route, _ bool) {
 								return r, true
 							case "POST":
 								r.name = CreatePrivateNetworkOperation
-								r.summary = "创建私有网络"
+								r.summary = "Create a private network"
 								r.operationID = "create-private-network"
 								r.operationGroup = ""
 								r.pathPattern = "/api/v1/private-networks"
@@ -3521,7 +3521,7 @@ func (s *Server) FindPath(method string, u *url.URL) (r Route, _ bool) {
 								switch method {
 								case "DELETE":
 									r.name = DeletePrivateNetworkOperation
-									r.summary = "释放私有网络"
+									r.summary = "Release a private network"
 									r.operationID = "delete-private-network"
 									r.operationGroup = ""
 									r.pathPattern = "/api/v1/private-networks/{privateNetworkId}"
@@ -3530,7 +3530,7 @@ func (s *Server) FindPath(method string, u *url.URL) (r Route, _ bool) {
 									return r, true
 								case "GET":
 									r.name = GetPrivateNetworkOperation
-									r.summary = "查看私有网络"
+									r.summary = "Retrieve a private network"
 									r.operationID = "get-private-network"
 									r.operationGroup = ""
 									r.pathPattern = "/api/v1/private-networks/{privateNetworkId}"
@@ -3539,7 +3539,7 @@ func (s *Server) FindPath(method string, u *url.URL) (r Route, _ bool) {
 									return r, true
 								case "PATCH":
 									r.name = RenamePrivateNetworkOperation
-									r.summary = "重命名私有网络"
+									r.summary = "Rename a private network"
 									r.operationID = "rename-private-network"
 									r.operationGroup = ""
 									r.pathPattern = "/api/v1/private-networks/{privateNetworkId}"
@@ -3576,7 +3576,7 @@ func (s *Server) FindPath(method string, u *url.URL) (r Route, _ bool) {
 										switch method {
 										case "DELETE":
 											r.name = DisablePrivateNetworkIpv6Operation
-											r.summary = "关闭私有网络的 IPv6"
+											r.summary = "Disable IPv6 on a private network"
 											r.operationID = "disable-private-network-ipv6"
 											r.operationGroup = ""
 											r.pathPattern = "/api/v1/private-networks/{privateNetworkId}/ipv6"
@@ -3585,7 +3585,7 @@ func (s *Server) FindPath(method string, u *url.URL) (r Route, _ bool) {
 											return r, true
 										case "GET":
 											r.name = GetPrivateNetworkIpv6Operation
-											r.summary = "查看私有网络的 IPv6"
+											r.summary = "Retrieve the IPv6 configuration of a private network"
 											r.operationID = "get-private-network-ipv6"
 											r.operationGroup = ""
 											r.pathPattern = "/api/v1/private-networks/{privateNetworkId}/ipv6"
@@ -3594,7 +3594,7 @@ func (s *Server) FindPath(method string, u *url.URL) (r Route, _ bool) {
 											return r, true
 										case "POST":
 											r.name = EnablePrivateNetworkIpv6Operation
-											r.summary = "为私有网络启用 IPv6"
+											r.summary = "Enable IPv6 on a private network"
 											r.operationID = "enable-private-network-ipv6"
 											r.operationGroup = ""
 											r.pathPattern = "/api/v1/private-networks/{privateNetworkId}/ipv6"
@@ -3618,7 +3618,7 @@ func (s *Server) FindPath(method string, u *url.URL) (r Route, _ bool) {
 										switch method {
 										case "GET":
 											r.name = ListRoutesOperation
-											r.summary = "列出静态路由"
+											r.summary = "List static routes"
 											r.operationID = "list-routes"
 											r.operationGroup = ""
 											r.pathPattern = "/api/v1/private-networks/{privateNetworkId}/routes"
@@ -3627,7 +3627,7 @@ func (s *Server) FindPath(method string, u *url.URL) (r Route, _ bool) {
 											return r, true
 										case "POST":
 											r.name = CreateRouteOperation
-											r.summary = "创建静态路由"
+											r.summary = "Create a static route"
 											r.operationID = "create-route"
 											r.operationGroup = ""
 											r.pathPattern = "/api/v1/private-networks/{privateNetworkId}/routes"
@@ -3661,7 +3661,7 @@ func (s *Server) FindPath(method string, u *url.URL) (r Route, _ bool) {
 											switch method {
 											case "DELETE":
 												r.name = DeleteRouteOperation
-												r.summary = "删除静态路由"
+												r.summary = "Delete a static route"
 												r.operationID = "delete-route"
 												r.operationGroup = ""
 												r.pathPattern = "/api/v1/private-networks/{privateNetworkId}/routes/{routeId}"
@@ -3687,7 +3687,7 @@ func (s *Server) FindPath(method string, u *url.URL) (r Route, _ bool) {
 										switch method {
 										case "GET":
 											r.name = ListSubnetsOperation
-											r.summary = "列出子网"
+											r.summary = "List subnets"
 											r.operationID = "list-subnets"
 											r.operationGroup = ""
 											r.pathPattern = "/api/v1/private-networks/{privateNetworkId}/subnets"
@@ -3696,7 +3696,7 @@ func (s *Server) FindPath(method string, u *url.URL) (r Route, _ bool) {
 											return r, true
 										case "POST":
 											r.name = CreateSubnetOperation
-											r.summary = "创建子网"
+											r.summary = "Create a subnet"
 											r.operationID = "create-subnet"
 											r.operationGroup = ""
 											r.pathPattern = "/api/v1/private-networks/{privateNetworkId}/subnets"
@@ -3733,7 +3733,7 @@ func (s *Server) FindPath(method string, u *url.URL) (r Route, _ bool) {
 												switch method {
 												case "GET":
 													r.name = SuggestSubnetCidrOperation
-													r.summary = "推荐下一个空闲网段"
+													r.summary = "Suggest the next free CIDR"
 													r.operationID = "suggest-subnet-cidr"
 													r.operationGroup = ""
 													r.pathPattern = "/api/v1/private-networks/{privateNetworkId}/subnets/next-free-cidr"
@@ -3761,7 +3761,7 @@ func (s *Server) FindPath(method string, u *url.URL) (r Route, _ bool) {
 											switch method {
 											case "DELETE":
 												r.name = DeleteSubnetOperation
-												r.summary = "删除子网"
+												r.summary = "Delete a subnet"
 												r.operationID = "delete-subnet"
 												r.operationGroup = ""
 												r.pathPattern = "/api/v1/private-networks/{privateNetworkId}/subnets/{subnetId}"
@@ -3797,7 +3797,7 @@ func (s *Server) FindPath(method string, u *url.URL) (r Route, _ bool) {
 					switch method {
 					case "GET":
 						r.name = ListRegionsOperation
-						r.summary = "列出可用的地区"
+						r.summary = "List available regions"
 						r.operationID = "list-regions"
 						r.operationGroup = ""
 						r.pathPattern = "/api/v1/regions"
@@ -3843,7 +3843,7 @@ func (s *Server) FindPath(method string, u *url.URL) (r Route, _ bool) {
 							switch method {
 							case "GET":
 								r.name = ListAvailabilityZonesOperation
-								r.summary = "列出一个地区的可用区"
+								r.summary = "List the availability zones of a region"
 								r.operationID = "list-availability-zones"
 								r.operationGroup = ""
 								r.pathPattern = "/api/v1/regions/{regionCode}/availability-zones"
@@ -3883,7 +3883,7 @@ func (s *Server) FindPath(method string, u *url.URL) (r Route, _ bool) {
 						switch method {
 						case "GET":
 							r.name = ListSecurityGroupsOperation
-							r.summary = "列出安全组"
+							r.summary = "List security groups"
 							r.operationID = "list-security-groups"
 							r.operationGroup = ""
 							r.pathPattern = "/api/v1/security-groups"
@@ -3892,7 +3892,7 @@ func (s *Server) FindPath(method string, u *url.URL) (r Route, _ bool) {
 							return r, true
 						case "POST":
 							r.name = CreateSecurityGroupOperation
-							r.summary = "创建安全组"
+							r.summary = "Create a security group"
 							r.operationID = "create-security-group"
 							r.operationGroup = ""
 							r.pathPattern = "/api/v1/security-groups"
@@ -3925,7 +3925,7 @@ func (s *Server) FindPath(method string, u *url.URL) (r Route, _ bool) {
 							switch method {
 							case "DELETE":
 								r.name = DeleteSecurityGroupOperation
-								r.summary = "删除安全组"
+								r.summary = "Delete a security group"
 								r.operationID = "delete-security-group"
 								r.operationGroup = ""
 								r.pathPattern = "/api/v1/security-groups/{securityGroupId}"
@@ -3934,7 +3934,7 @@ func (s *Server) FindPath(method string, u *url.URL) (r Route, _ bool) {
 								return r, true
 							case "GET":
 								r.name = GetSecurityGroupOperation
-								r.summary = "查看安全组"
+								r.summary = "Retrieve a security group"
 								r.operationID = "get-security-group"
 								r.operationGroup = ""
 								r.pathPattern = "/api/v1/security-groups/{securityGroupId}"
@@ -3943,7 +3943,7 @@ func (s *Server) FindPath(method string, u *url.URL) (r Route, _ bool) {
 								return r, true
 							case "PATCH":
 								r.name = RenameSecurityGroupOperation
-								r.summary = "重命名安全组"
+								r.summary = "Rename a security group"
 								r.operationID = "rename-security-group"
 								r.operationGroup = ""
 								r.pathPattern = "/api/v1/security-groups/{securityGroupId}"
@@ -3967,7 +3967,7 @@ func (s *Server) FindPath(method string, u *url.URL) (r Route, _ bool) {
 								switch method {
 								case "GET":
 									r.name = ListSecurityGroupRulesOperation
-									r.summary = "列出安全组规则"
+									r.summary = "List security group rules"
 									r.operationID = "list-security-group-rules"
 									r.operationGroup = ""
 									r.pathPattern = "/api/v1/security-groups/{securityGroupId}/rules"
@@ -3976,7 +3976,7 @@ func (s *Server) FindPath(method string, u *url.URL) (r Route, _ bool) {
 									return r, true
 								case "POST":
 									r.name = CreateSecurityGroupRuleOperation
-									r.summary = "创建安全组规则"
+									r.summary = "Create a security group rule"
 									r.operationID = "create-security-group-rule"
 									r.operationGroup = ""
 									r.pathPattern = "/api/v1/security-groups/{securityGroupId}/rules"
@@ -4010,7 +4010,7 @@ func (s *Server) FindPath(method string, u *url.URL) (r Route, _ bool) {
 									switch method {
 									case "DELETE":
 										r.name = DeleteSecurityGroupRuleOperation
-										r.summary = "删除安全组规则"
+										r.summary = "Delete a security group rule"
 										r.operationID = "delete-security-group-rule"
 										r.operationGroup = ""
 										r.pathPattern = "/api/v1/security-groups/{securityGroupId}/rules/{ruleId}"
@@ -4040,7 +4040,7 @@ func (s *Server) FindPath(method string, u *url.URL) (r Route, _ bool) {
 						switch method {
 						case "GET":
 							r.name = ListSnapshotsOperation
-							r.summary = "列出快照"
+							r.summary = "List snapshots"
 							r.operationID = "list-snapshots"
 							r.operationGroup = ""
 							r.pathPattern = "/api/v1/snapshots"
@@ -4049,7 +4049,7 @@ func (s *Server) FindPath(method string, u *url.URL) (r Route, _ bool) {
 							return r, true
 						case "POST":
 							r.name = CreateSnapshotOperation
-							r.summary = "创建快照"
+							r.summary = "Create a snapshot"
 							r.operationID = "create-snapshot"
 							r.operationGroup = ""
 							r.pathPattern = "/api/v1/snapshots"
@@ -4083,7 +4083,7 @@ func (s *Server) FindPath(method string, u *url.URL) (r Route, _ bool) {
 							switch method {
 							case "DELETE":
 								r.name = DeleteSnapshotOperation
-								r.summary = "删除快照"
+								r.summary = "Delete a snapshot"
 								r.operationID = "delete-snapshot"
 								r.operationGroup = ""
 								r.pathPattern = "/api/v1/snapshots/{snapshotId}"
@@ -4092,7 +4092,7 @@ func (s *Server) FindPath(method string, u *url.URL) (r Route, _ bool) {
 								return r, true
 							case "GET":
 								r.name = GetSnapshotOperation
-								r.summary = "查看快照"
+								r.summary = "Retrieve a snapshot"
 								r.operationID = "get-snapshot"
 								r.operationGroup = ""
 								r.pathPattern = "/api/v1/snapshots/{snapshotId}"
@@ -4101,7 +4101,7 @@ func (s *Server) FindPath(method string, u *url.URL) (r Route, _ bool) {
 								return r, true
 							case "PATCH":
 								r.name = RenameSnapshotOperation
-								r.summary = "重命名快照"
+								r.summary = "Rename a snapshot"
 								r.operationID = "rename-snapshot"
 								r.operationGroup = ""
 								r.pathPattern = "/api/v1/snapshots/{snapshotId}"
