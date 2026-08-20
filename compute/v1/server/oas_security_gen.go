@@ -109,6 +109,7 @@ var operationRolesBearerAuth = map[string][]string{
 	RenameInstanceOperation:            []string{},
 	RenamePrivateImageOperation:        []string{},
 	RenamePrivateNetworkOperation:      []string{},
+	RenameSecurityGroupOperation:       []string{},
 	RenameSnapshotOperation:            []string{},
 	ResetInstancePasswordOperation:     []string{},
 	ResizeDiskOperation:                []string{},

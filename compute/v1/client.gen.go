@@ -950,6 +950,11 @@ type RenamePrivateNetworkRequestBody struct {
 	Name string `json:"name"`
 }
 
+// RenameSecurityGroupRequestBody defines model for RenameSecurityGroupRequestBody.
+type RenameSecurityGroupRequestBody struct {
+	Name string `json:"name"`
+}
+
 // RenameSnapshotRequestBody defines model for RenameSnapshotRequestBody.
 type RenameSnapshotRequestBody struct {
 	Name string `json:"name"`
@@ -1269,6 +1274,9 @@ type CreateSubnetJSONRequestBody = CreateSubnetRequestBody
 
 // CreateSecurityGroupJSONRequestBody defines body for CreateSecurityGroup for application/json ContentType.
 type CreateSecurityGroupJSONRequestBody = CreateSecurityGroupRequestBody
+
+// RenameSecurityGroupJSONRequestBody defines body for RenameSecurityGroup for application/json ContentType.
+type RenameSecurityGroupJSONRequestBody = RenameSecurityGroupRequestBody
 
 // CreateSecurityGroupRuleJSONRequestBody defines body for CreateSecurityGroupRule for application/json ContentType.
 type CreateSecurityGroupRuleJSONRequestBody = CreateSecurityRuleRequestBody
@@ -2213,6 +2221,30 @@ type ClientInterface interface {
 	//
 	// Corresponds with GET /api/v1/security-groups/{securityGroupId} (the `GetSecurityGroup` operationId).
 	GetSecurityGroup(ctx context.Context, securityGroupId openapi_types.UUID, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// RenameSecurityGroupWithBody 重命名安全组
+	//
+	// 仅可修改名称，规则请用规则接口。
+	//
+	// 改的是**平台上这个安全组的名字**，网络后端那一侧不动——后端那个安全组的名字是它的 id，
+	// 排障时按 id 找，不按名字找。
+	//
+	// Takes any type of body and a specified content type.
+	//
+	// Corresponds with PATCH /api/v1/security-groups/{securityGroupId} (the `RenameSecurityGroup` operationId).
+	RenameSecurityGroupWithBody(ctx context.Context, securityGroupId openapi_types.UUID, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// RenameSecurityGroup 重命名安全组
+	//
+	// 仅可修改名称，规则请用规则接口。
+	//
+	// 改的是**平台上这个安全组的名字**，网络后端那一侧不动——后端那个安全组的名字是它的 id，
+	// 排障时按 id 找，不按名字找。
+	//
+	// Takes a body of the `application/json` content type.
+	//
+	// Corresponds with PATCH /api/v1/security-groups/{securityGroupId} (the `RenameSecurityGroup` operationId).
+	RenameSecurityGroup(ctx context.Context, securityGroupId openapi_types.UUID, body RenameSecurityGroupJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
 
 	// ListSecurityGroupRules 列出安全组规则
 	//
@@ -4155,6 +4187,50 @@ func (c *Client) DeleteSecurityGroup(ctx context.Context, securityGroupId openap
 // Corresponds with GET /api/v1/security-groups/{securityGroupId} (the `GetSecurityGroup` operationId).
 func (c *Client) GetSecurityGroup(ctx context.Context, securityGroupId openapi_types.UUID, reqEditors ...RequestEditorFn) (*http.Response, error) {
 	req, err := NewGetSecurityGroupRequest(c.Server, securityGroupId)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+// RenameSecurityGroupWithBody 重命名安全组
+//
+// 仅可修改名称，规则请用规则接口。
+//
+// 改的是**平台上这个安全组的名字**，网络后端那一侧不动——后端那个安全组的名字是它的 id，
+// 排障时按 id 找，不按名字找。
+//
+// Takes any type of body and a specified content type.
+//
+// Corresponds with PATCH /api/v1/security-groups/{securityGroupId} (the `RenameSecurityGroup` operationId).
+func (c *Client) RenameSecurityGroupWithBody(ctx context.Context, securityGroupId openapi_types.UUID, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewRenameSecurityGroupRequestWithBody(c.Server, securityGroupId, contentType, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+// RenameSecurityGroup 重命名安全组
+//
+// 仅可修改名称，规则请用规则接口。
+//
+// 改的是**平台上这个安全组的名字**，网络后端那一侧不动——后端那个安全组的名字是它的 id，
+// 排障时按 id 找，不按名字找。
+//
+// Takes a body of the `application/json` content type.
+//
+// Corresponds with PATCH /api/v1/security-groups/{securityGroupId} (the `RenameSecurityGroup` operationId).
+func (c *Client) RenameSecurityGroup(ctx context.Context, securityGroupId openapi_types.UUID, body RenameSecurityGroupJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewRenameSecurityGroupRequest(c.Server, securityGroupId, body)
 	if err != nil {
 		return nil, err
 	}
@@ -7442,6 +7518,53 @@ func NewGetSecurityGroupRequest(server string, securityGroupId openapi_types.UUI
 	return req, nil
 }
 
+// NewRenameSecurityGroupRequest calls the generic RenameSecurityGroup builder with application/json body
+func NewRenameSecurityGroupRequest(server string, securityGroupId openapi_types.UUID, body RenameSecurityGroupJSONRequestBody) (*http.Request, error) {
+	var bodyReader io.Reader
+	buf, err := json.Marshal(body)
+	if err != nil {
+		return nil, err
+	}
+	bodyReader = bytes.NewReader(buf)
+	return NewRenameSecurityGroupRequestWithBody(server, securityGroupId, "application/json", bodyReader)
+}
+
+// NewRenameSecurityGroupRequestWithBody constructs an http.Request for the RenameSecurityGroup method, with any body, and a specified content type
+func NewRenameSecurityGroupRequestWithBody(server string, securityGroupId openapi_types.UUID, contentType string, body io.Reader) (*http.Request, error) {
+	var err error
+
+	var pathParam0 string
+
+	pathParam0, err = runtime.StyleParamWithOptions("simple", false, "securityGroupId", securityGroupId, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: "uuid"})
+	if err != nil {
+		return nil, err
+	}
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/api/v1/security-groups/%s", pathParam0)
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest(http.MethodPatch, queryURL.String(), body)
+	if err != nil {
+		return nil, err
+	}
+
+	req.Header.Add("Content-Type", contentType)
+
+	return req, nil
+}
+
 // NewListSecurityGroupRulesRequest constructs an http.Request for the ListSecurityGroupRules method
 func NewListSecurityGroupRulesRequest(server string, securityGroupId openapi_types.UUID) (*http.Request, error) {
 	var err error
@@ -8771,6 +8894,30 @@ type ClientWithResponsesInterface interface {
 	//
 	// Corresponds with GET /api/v1/security-groups/{securityGroupId} (the `GetSecurityGroup` operationId).
 	GetSecurityGroupWithResponse(ctx context.Context, securityGroupId openapi_types.UUID, reqEditors ...RequestEditorFn) (*GetSecurityGroupResponse, error)
+
+	// RenameSecurityGroupWithBodyWithResponse 重命名安全组
+	//
+	// 仅可修改名称，规则请用规则接口。
+	//
+	// 改的是**平台上这个安全组的名字**，网络后端那一侧不动——后端那个安全组的名字是它的 id，
+	// 排障时按 id 找，不按名字找。
+	//
+	// Takes any type of body and a specified content type, and returns a wrapper object for the known response body format(s).
+	//
+	// Corresponds with PATCH /api/v1/security-groups/{securityGroupId} (the `RenameSecurityGroup` operationId).
+	RenameSecurityGroupWithBodyWithResponse(ctx context.Context, securityGroupId openapi_types.UUID, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*RenameSecurityGroupResponse, error)
+
+	// RenameSecurityGroupWithResponse 重命名安全组
+	//
+	// 仅可修改名称，规则请用规则接口。
+	//
+	// 改的是**平台上这个安全组的名字**，网络后端那一侧不动——后端那个安全组的名字是它的 id，
+	// 排障时按 id 找，不按名字找。
+	//
+	// Takes a body of the `application/json` content type, and returns a wrapper object for the known response body format(s).
+	//
+	// Corresponds with PATCH /api/v1/security-groups/{securityGroupId} (the `RenameSecurityGroup` operationId).
+	RenameSecurityGroupWithResponse(ctx context.Context, securityGroupId openapi_types.UUID, body RenameSecurityGroupJSONRequestBody, reqEditors ...RequestEditorFn) (*RenameSecurityGroupResponse, error)
 
 	// ListSecurityGroupRulesWithResponse 列出安全组规则
 	//
@@ -12337,6 +12484,54 @@ func (r GetSecurityGroupResponse) ContentType() string {
 	return ""
 }
 
+type RenameSecurityGroupResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	// JSON200 the response for an HTTP 200 `application/json` response
+	JSON200 *SecurityGroupResource
+	// JSONDefault the response for an HTTP default `application/json` response
+	JSONDefault *Error
+}
+
+// GetJSON200 returns the response for an HTTP 200 `application/json` response
+func (r RenameSecurityGroupResponse) GetJSON200() *SecurityGroupResource {
+	return r.JSON200
+}
+
+// GetJSONDefault returns the response for an HTTP default `application/json` response
+func (r RenameSecurityGroupResponse) GetJSONDefault() *Error {
+	return r.JSONDefault
+}
+
+// GetBody returns the raw response body bytes
+func (r RenameSecurityGroupResponse) GetBody() []byte {
+	return r.Body
+}
+
+// Status returns HTTPResponse.Status
+func (r RenameSecurityGroupResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r RenameSecurityGroupResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+// ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
+func (r RenameSecurityGroupResponse) ContentType() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Header.Get("Content-Type")
+	}
+	return ""
+}
+
 type ListSecurityGroupRulesResponse struct {
 	Body         []byte
 	HTTPResponse *http.Response
@@ -14266,6 +14461,42 @@ func (c *ClientWithResponses) GetSecurityGroupWithResponse(ctx context.Context, 
 		return nil, err
 	}
 	return ParseGetSecurityGroupResponse(rsp)
+}
+
+// RenameSecurityGroupWithBodyWithResponse 重命名安全组
+//
+// 仅可修改名称，规则请用规则接口。
+//
+// 改的是**平台上这个安全组的名字**，网络后端那一侧不动——后端那个安全组的名字是它的 id，
+// 排障时按 id 找，不按名字找。
+//
+// Takes any type of body and a specified content type, and returns a wrapper object for the known response body format(s).
+//
+// Corresponds with PATCH /api/v1/security-groups/{securityGroupId} (the `RenameSecurityGroup` operationId).
+func (c *ClientWithResponses) RenameSecurityGroupWithBodyWithResponse(ctx context.Context, securityGroupId openapi_types.UUID, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*RenameSecurityGroupResponse, error) {
+	rsp, err := c.RenameSecurityGroupWithBody(ctx, securityGroupId, contentType, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseRenameSecurityGroupResponse(rsp)
+}
+
+// RenameSecurityGroupWithResponse 重命名安全组
+//
+// 仅可修改名称，规则请用规则接口。
+//
+// 改的是**平台上这个安全组的名字**，网络后端那一侧不动——后端那个安全组的名字是它的 id，
+// 排障时按 id 找，不按名字找。
+//
+// Takes a body of the `application/json` content type, and returns a wrapper object for the known response body format(s).
+//
+// Corresponds with PATCH /api/v1/security-groups/{securityGroupId} (the `RenameSecurityGroup` operationId).
+func (c *ClientWithResponses) RenameSecurityGroupWithResponse(ctx context.Context, securityGroupId openapi_types.UUID, body RenameSecurityGroupJSONRequestBody, reqEditors ...RequestEditorFn) (*RenameSecurityGroupResponse, error) {
+	rsp, err := c.RenameSecurityGroup(ctx, securityGroupId, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseRenameSecurityGroupResponse(rsp)
 }
 
 // ListSecurityGroupRulesWithResponse 列出安全组规则
@@ -16797,6 +17028,39 @@ func ParseGetSecurityGroupResponse(rsp *http.Response) (*GetSecurityGroupRespons
 	}
 
 	response := &GetSecurityGroupResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest SecurityGroupResource
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && true:
+		var dest Error
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSONDefault = &dest
+
+	}
+
+	return response, nil
+}
+
+// ParseRenameSecurityGroupResponse parses an HTTP response from a RenameSecurityGroupWithResponse call
+func ParseRenameSecurityGroupResponse(rsp *http.Response) (*RenameSecurityGroupResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &RenameSecurityGroupResponse{
 		Body:         bodyBytes,
 		HTTPResponse: rsp,
 	}

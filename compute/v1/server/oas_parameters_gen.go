@@ -4733,6 +4733,71 @@ func decodeRenamePrivateNetworkParams(args [1]string, argsEscaped bool, r *http.
 	return params, nil
 }
 
+// RenameSecurityGroupParams is parameters of rename-security-group operation.
+type RenameSecurityGroupParams struct {
+	SecurityGroupId uuid.UUID
+}
+
+func unpackRenameSecurityGroupParams(packed middleware.Parameters) (params RenameSecurityGroupParams) {
+	{
+		key := middleware.ParameterKey{
+			Name: "securityGroupId",
+			In:   "path",
+		}
+		params.SecurityGroupId = packed[key].(uuid.UUID)
+	}
+	return params
+}
+
+func decodeRenameSecurityGroupParams(args [1]string, argsEscaped bool, r *http.Request) (params RenameSecurityGroupParams, _ error) {
+	// Decode path: securityGroupId.
+	if err := func() error {
+		param := args[0]
+		if argsEscaped {
+			unescaped, err := url.PathUnescape(args[0])
+			if err != nil {
+				return errors.Wrap(err, "unescape path")
+			}
+			param = unescaped
+		}
+		if len(param) > 0 {
+			d := uri.NewPathDecoder(uri.PathDecoderConfig{
+				Param:   "securityGroupId",
+				Value:   param,
+				Style:   uri.PathStyleSimple,
+				Explode: false,
+			})
+
+			if err := func() error {
+				val, err := d.DecodeValue()
+				if err != nil {
+					return err
+				}
+
+				c, err := conv.ToUUID(val)
+				if err != nil {
+					return err
+				}
+
+				params.SecurityGroupId = c
+				return nil
+			}(); err != nil {
+				return err
+			}
+		} else {
+			return validate.ErrFieldRequired
+		}
+		return nil
+	}(); err != nil {
+		return params, &ogenerrors.DecodeParamError{
+			Name: "securityGroupId",
+			In:   "path",
+			Err:  err,
+		}
+	}
+	return params, nil
+}
+
 // RenameSnapshotParams is parameters of rename-snapshot operation.
 type RenameSnapshotParams struct {
 	SnapshotId uuid.UUID
