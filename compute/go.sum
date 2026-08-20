@@ -1,5 +1,3 @@
-github.com/LeaflowNET/leaflow-go/type v0.2.0 h1:LLBOY4JhJza5cVDXkjehTn2sH3UN0ec7bUGiuPFWLEA=
-github.com/LeaflowNET/leaflow-go/type v0.2.0/go.mod h1:lahX3DWDJyPXOJfFJhxzbPXcBd5i0LSeCX2OJ1YPePA=
 github.com/RaveNoX/go-jsoncommentstrip v1.0.0/go.mod h1:78ihd09MekBnJnxpICcwzCMzGrKSKYe4AqU6PDYYpjk=
 github.com/apapsch/go-jsonmerge/v2 v2.0.0 h1:axGnT1gRIfimI7gJifB699GoE/oq+F2MU7Dml6nw9rQ=
 github.com/apapsch/go-jsonmerge/v2 v2.0.0/go.mod h1:lvDnEdqiQrp0O42VQGgmlKpxL1AP2+08jFMw88y4klk=
@@ -10,6 +8,8 @@ github.com/davecgh/go-spew v1.1.1/go.mod h1:J7Y8YcW2NihsgmVo/mv3lAwl/skON4iLHjSs
 github.com/google/uuid v1.6.0 h1:NIvaJDMOsjHA8n1jAhLSgzrAzy1Hgr+hNrb57e+94F0=
 github.com/google/uuid v1.6.0/go.mod h1:TIyPZe4MgqvfeYDBFedMoGGpEw/LqOeaOT+nhxU+yHo=
 github.com/juju/gnuflag v0.0.0-20171113085948-2ce1bb71843d/go.mod h1:2PavIy+JPciBPrBUjwbNvtwB6RQlve+hkpll6QSNmOE=
+github.com/leaflowapis/leaflow-go/type v0.3.0 h1:sIEnxgWH+QzJNVF7aWG6sYD8/+CSTdR5O0ZiXQf6z6Y=
+github.com/leaflowapis/leaflow-go/type v0.3.0/go.mod h1:udWtsIazi/TuFrhRdqqAV0uzuqmJ4x63FApdXk+wfqs=
 github.com/oapi-codegen/nullable v1.1.0 h1:eAh8JVc5430VtYVnq00Hrbpag9PFRGWLjxR1/3KntMs=
 github.com/oapi-codegen/nullable v1.1.0/go.mod h1:KUZ3vUzkmEKY90ksAmit2+5juDIhIZhfDl+0PwOQlFY=
 github.com/oapi-codegen/runtime v1.7.0 h1:t7358VYPvNbWJ9gdAkIK/smVeHpBf6yp8VTsaZsb/7k=
