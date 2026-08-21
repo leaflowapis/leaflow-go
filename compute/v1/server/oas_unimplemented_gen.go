@@ -703,6 +703,10 @@ func (UnimplementedHandler) OpenInstanceConsole(ctx context.Context, params Open
 // A soft reboot has no effect once the system is unresponsive. Set `force` to reboot forcibly: a
 // forced reboot does not wait for the operating system to shut down, so unwritten data is lost.
 //
+// A forced reboot is accepted while the instance is already `rebooting`, which is the way out of a
+// soft reboot the instance never carried out. Every other endpoint refuses an instance in a transient
+// state, and a second soft reboot is refused as well.
+//
 // An instance suspended by the platform must be unsuspended first.
 //
 // This endpoint returns immediately and the `status` it returns is the transient `rebooting`. Poll the
