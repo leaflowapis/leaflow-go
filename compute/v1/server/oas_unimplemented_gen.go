@@ -900,8 +900,8 @@ func (UnimplementedHandler) RevertInstanceResize(ctx context.Context, params Rev
 // be set up first. The instance must have applied that key at first boot, which images without a full
 // cloud-init do not do.
 //
-// The host key is not verified. Anyone in a position to intercept the connection can read the command
-// and all of its output, so do not pass credentials this way.
+// Do not pass secrets in the command. Read them from a file on the instance instead: neither the
+// command nor its output is a confidential channel.
 //
 // Each stream is capped at 1 MiB. Beyond that the rest is discarded and `truncated` is true.
 //
