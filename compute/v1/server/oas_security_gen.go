@@ -117,6 +117,7 @@ var operationRolesBearerAuth = map[string][]string{
 	RestoreBackupOperation:             []string{},
 	RevertDiskOperation:                []string{},
 	RevertInstanceResizeOperation:      []string{},
+	RunInstanceCommandOperation:        []string{},
 	SetFloatingIPBandwidthOperation:    []string{},
 	SuggestSubnetCidrOperation:         []string{},
 	UnbindFloatingIPOperation:          []string{},

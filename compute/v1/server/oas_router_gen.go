@@ -49,7 +49,7 @@ var (
 		"DELETE": "Authorization",
 		"GET":    "Authorization",
 	}
-	rn81AllowedHeaders = map[string]string{
+	rn83AllowedHeaders = map[string]string{
 		"PUT": "Authorization,Content-Type",
 	}
 	rn12AllowedHeaders = map[string]string{
@@ -72,6 +72,9 @@ var (
 		"PATCH":  "Authorization,Content-Type",
 	}
 	rn3AllowedHeaders = map[string]string{
+		"POST": "Authorization,Content-Type",
+	}
+	rn81AllowedHeaders = map[string]string{
 		"POST": "Authorization,Content-Type",
 	}
 	rn68AllowedHeaders = map[string]string{
@@ -159,7 +162,7 @@ var (
 		"GET":  "Authorization",
 		"POST": "Authorization,Content-Type",
 	}
-	rn82AllowedHeaders = map[string]string{
+	rn84AllowedHeaders = map[string]string{
 		"GET": "Authorization",
 	}
 	rn47AllowedHeaders = map[string]string{
@@ -624,7 +627,7 @@ func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 								default:
 									s.notAllowed(w, r, notAllowedParams{
 										allowedMethods: "PUT",
-										allowedHeaders: rn81AllowedHeaders,
+										allowedHeaders: rn83AllowedHeaders,
 										acceptPost:     "",
 										acceptPatch:    "",
 									})
@@ -852,35 +855,21 @@ func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 										return
 									}
 
-								case 'c': // Prefix: "console"
+								case 'c': // Prefix: "co"
 
-									if l := len("console"); len(elem) >= l && elem[0:l] == "console" {
+									if l := len("co"); len(elem) >= l && elem[0:l] == "co" {
 										elem = elem[l:]
 									} else {
 										break
 									}
 
 									if len(elem) == 0 {
-										switch r.Method {
-										case "POST":
-											s.handleOpenInstanceConsoleRequest([1]string{
-												args[0],
-											}, elemIsEscaped, w, r)
-										default:
-											s.notAllowed(w, r, notAllowedParams{
-												allowedMethods: "POST",
-												allowedHeaders: rn68AllowedHeaders,
-												acceptPost:     "",
-												acceptPatch:    "",
-											})
-										}
-
-										return
+										break
 									}
 									switch elem[0] {
-									case '-': // Prefix: "-output"
+									case 'm': // Prefix: "mmands"
 
-										if l := len("-output"); len(elem) >= l && elem[0:l] == "-output" {
+										if l := len("mmands"); len(elem) >= l && elem[0:l] == "mmands" {
 											elem = elem[l:]
 										} else {
 											break
@@ -889,20 +878,75 @@ func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 										if len(elem) == 0 {
 											// Leaf node.
 											switch r.Method {
-											case "GET":
-												s.handleGetInstanceConsoleOutputRequest([1]string{
+											case "POST":
+												s.handleRunInstanceCommandRequest([1]string{
 													args[0],
 												}, elemIsEscaped, w, r)
 											default:
 												s.notAllowed(w, r, notAllowedParams{
-													allowedMethods: "GET",
-													allowedHeaders: rn55AllowedHeaders,
+													allowedMethods: "POST",
+													allowedHeaders: rn81AllowedHeaders,
+													acceptPost:     "application/json",
+													acceptPatch:    "",
+												})
+											}
+
+											return
+										}
+
+									case 'n': // Prefix: "nsole"
+
+										if l := len("nsole"); len(elem) >= l && elem[0:l] == "nsole" {
+											elem = elem[l:]
+										} else {
+											break
+										}
+
+										if len(elem) == 0 {
+											switch r.Method {
+											case "POST":
+												s.handleOpenInstanceConsoleRequest([1]string{
+													args[0],
+												}, elemIsEscaped, w, r)
+											default:
+												s.notAllowed(w, r, notAllowedParams{
+													allowedMethods: "POST",
+													allowedHeaders: rn68AllowedHeaders,
 													acceptPost:     "",
 													acceptPatch:    "",
 												})
 											}
 
 											return
+										}
+										switch elem[0] {
+										case '-': // Prefix: "-output"
+
+											if l := len("-output"); len(elem) >= l && elem[0:l] == "-output" {
+												elem = elem[l:]
+											} else {
+												break
+											}
+
+											if len(elem) == 0 {
+												// Leaf node.
+												switch r.Method {
+												case "GET":
+													s.handleGetInstanceConsoleOutputRequest([1]string{
+														args[0],
+													}, elemIsEscaped, w, r)
+												default:
+													s.notAllowed(w, r, notAllowedParams{
+														allowedMethods: "GET",
+														allowedHeaders: rn55AllowedHeaders,
+														acceptPost:     "",
+														acceptPatch:    "",
+													})
+												}
+
+												return
+											}
+
 										}
 
 									}
@@ -1728,7 +1772,7 @@ func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 												default:
 													s.notAllowed(w, r, notAllowedParams{
 														allowedMethods: "GET",
-														allowedHeaders: rn82AllowedHeaders,
+														allowedHeaders: rn84AllowedHeaders,
 														acceptPost:     "",
 														acceptPatch:    "",
 													})
@@ -2835,33 +2879,21 @@ func (s *Server) FindPath(method string, u *url.URL) (r Route, _ bool) {
 										}
 									}
 
-								case 'c': // Prefix: "console"
+								case 'c': // Prefix: "co"
 
-									if l := len("console"); len(elem) >= l && elem[0:l] == "console" {
+									if l := len("co"); len(elem) >= l && elem[0:l] == "co" {
 										elem = elem[l:]
 									} else {
 										break
 									}
 
 									if len(elem) == 0 {
-										switch method {
-										case "POST":
-											r.name = OpenInstanceConsoleOperation
-											r.summary = "Open a remote console"
-											r.operationID = "open-instance-console"
-											r.operationGroup = ""
-											r.pathPattern = "/api/v1/instances/{instanceId}/console"
-											r.args = args
-											r.count = 1
-											return r, true
-										default:
-											return
-										}
+										break
 									}
 									switch elem[0] {
-									case '-': // Prefix: "-output"
+									case 'm': // Prefix: "mmands"
 
-										if l := len("-output"); len(elem) >= l && elem[0:l] == "-output" {
+										if l := len("mmands"); len(elem) >= l && elem[0:l] == "mmands" {
 											elem = elem[l:]
 										} else {
 											break
@@ -2870,18 +2902,69 @@ func (s *Server) FindPath(method string, u *url.URL) (r Route, _ bool) {
 										if len(elem) == 0 {
 											// Leaf node.
 											switch method {
-											case "GET":
-												r.name = GetInstanceConsoleOutputOperation
-												r.summary = "Read the console output"
-												r.operationID = "get-instance-console-output"
+											case "POST":
+												r.name = RunInstanceCommandOperation
+												r.summary = "Run a command on an instance"
+												r.operationID = "run-instance-command"
 												r.operationGroup = ""
-												r.pathPattern = "/api/v1/instances/{instanceId}/console-output"
+												r.pathPattern = "/api/v1/instances/{instanceId}/commands"
 												r.args = args
 												r.count = 1
 												return r, true
 											default:
 												return
 											}
+										}
+
+									case 'n': // Prefix: "nsole"
+
+										if l := len("nsole"); len(elem) >= l && elem[0:l] == "nsole" {
+											elem = elem[l:]
+										} else {
+											break
+										}
+
+										if len(elem) == 0 {
+											switch method {
+											case "POST":
+												r.name = OpenInstanceConsoleOperation
+												r.summary = "Open a remote console"
+												r.operationID = "open-instance-console"
+												r.operationGroup = ""
+												r.pathPattern = "/api/v1/instances/{instanceId}/console"
+												r.args = args
+												r.count = 1
+												return r, true
+											default:
+												return
+											}
+										}
+										switch elem[0] {
+										case '-': // Prefix: "-output"
+
+											if l := len("-output"); len(elem) >= l && elem[0:l] == "-output" {
+												elem = elem[l:]
+											} else {
+												break
+											}
+
+											if len(elem) == 0 {
+												// Leaf node.
+												switch method {
+												case "GET":
+													r.name = GetInstanceConsoleOutputOperation
+													r.summary = "Read the console output"
+													r.operationID = "get-instance-console-output"
+													r.operationGroup = ""
+													r.pathPattern = "/api/v1/instances/{instanceId}/console-output"
+													r.args = args
+													r.count = 1
+													return r, true
+												default:
+													return
+												}
+											}
+
 										}
 
 									}

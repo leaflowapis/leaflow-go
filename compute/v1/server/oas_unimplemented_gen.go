@@ -884,6 +884,32 @@ func (UnimplementedHandler) RevertInstanceResize(ctx context.Context, params Rev
 	return r, ht.ErrNotImplemented
 }
 
+// RunInstanceCommand implements run-instance-command operation.
+//
+// Runs one command over SSH and returns what it wrote. This is not a shell. There is no terminal, no
+// standard input and no way to answer a prompt: a command that waits for input produces nothing and is
+// killed at the timeout. Chain steps with `&&`, or write a script and run that.
+//
+// Three conditions must hold; the instance is unreachable otherwise:
+//
+//   - it is `running`
+//   - a floating IP is bound to it, since this endpoint connects over the public internet
+//   - its security group permits inbound TCP 22
+//
+// Authentication uses the key the platform attaches to every instance at creation, so nothing has to
+// be set up first. The instance must have applied that key at first boot, which images without a full
+// cloud-init do not do.
+//
+// The host key is not verified. Anyone in a position to intercept the connection can read the command
+// and all of its output, so do not pass credentials this way.
+//
+// Each stream is capped at 1 MiB. Beyond that the rest is discarded and `truncated` is true.
+//
+// POST /api/v1/instances/{instanceId}/commands
+func (UnimplementedHandler) RunInstanceCommand(ctx context.Context, req *RunCommandRequestBody, params RunInstanceCommandParams) (r *CommandResultResponseBody, _ error) {
+	return r, ht.ErrNotImplemented
+}
+
 // SetFloatingIPBandwidth implements set-floating-ip-bandwidth operation.
 //
 // Limits both directions at once. Limiting egress alone does not prevent ingress traffic from

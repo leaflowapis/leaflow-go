@@ -86,6 +86,7 @@ const (
 	RestoreBackupOperation             OperationName = "RestoreBackup"
 	RevertDiskOperation                OperationName = "RevertDisk"
 	RevertInstanceResizeOperation      OperationName = "RevertInstanceResize"
+	RunInstanceCommandOperation        OperationName = "RunInstanceCommand"
 	SetFloatingIPBandwidthOperation    OperationName = "SetFloatingIPBandwidth"
 	SuggestSubnetCidrOperation         OperationName = "SuggestSubnetCidr"
 	UnbindFloatingIPOperation          OperationName = "UnbindFloatingIP"
