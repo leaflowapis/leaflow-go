@@ -667,6 +667,15 @@ type Invoker interface {
 	// standard input and no way to answer a prompt: a command that waits for input produces nothing and is
 	// killed at the timeout. Chain steps with `&&`, or write a script and run that.
 	//
+	// A command that fails is still a 200. Its failure is its own result, not this endpoint's: read
+	// `exit_code` for what it exited with and `stderr` for what it said, and decide from those. A `grep`
+	// that matches nothing exits 1 and is a perfectly successful call.
+	//
+	// The status therefore answers a different question — did the command run at all. A non-2xx means it
+	// did not, and nothing about the instance was changed by this request: it was suspended, not running
+	// or had no floating IP; or it refused the platform key; or the connection could not be opened.
+	// Retrying is meaningful in those cases and is not for a non-zero `exit_code`.
+	//
 	// Three conditions must hold; the instance is unreachable otherwise:
 	//
 	//  - it is `running`
@@ -11513,6 +11522,15 @@ func (c *Client) sendRevertInstanceResize(ctx context.Context, params RevertInst
 // Runs one command over SSH and returns what it wrote. This is not a shell. There is no terminal, no
 // standard input and no way to answer a prompt: a command that waits for input produces nothing and is
 // killed at the timeout. Chain steps with `&&`, or write a script and run that.
+//
+// A command that fails is still a 200. Its failure is its own result, not this endpoint's: read
+// `exit_code` for what it exited with and `stderr` for what it said, and decide from those. A `grep`
+// that matches nothing exits 1 and is a perfectly successful call.
+//
+// The status therefore answers a different question — did the command run at all. A non-2xx means it
+// did not, and nothing about the instance was changed by this request: it was suspended, not running
+// or had no floating IP; or it refused the platform key; or the connection could not be opened.
+// Retrying is meaningful in those cases and is not for a non-zero `exit_code`.
 //
 // Three conditions must hold; the instance is unreachable otherwise:
 //

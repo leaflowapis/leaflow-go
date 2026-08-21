@@ -415,7 +415,7 @@ type BindFloatingIPRequestBody struct {
 
 // CommandResultResponseBody defines model for CommandResultResponseBody.
 type CommandResultResponseBody struct {
-	// ExitCode Null when the command was killed rather than finishing on its own, which includes the timeout
+	// ExitCode What the command exited with, 0 being success. Any other value is the command's own verdict and still arrives as a 200. Null when it was killed rather than exiting on its own, which includes the timeout — null is the absence of a verdict, not a successful one
 	ExitCode *int64 `json:"exit_code"`
 	Stderr   string `json:"stderr"`
 	Stdout   string `json:"stdout"`
@@ -1741,6 +1741,10 @@ type ClientInterface interface {
 	//
 	// Runs one command over SSH and returns what it wrote. **This is not a shell.** There is no terminal, no standard input and no way to answer a prompt: a command that waits for input produces nothing and is killed at the timeout. Chain steps with `&&`, or write a script and run that.
 	//
+	// **A command that fails is still a 200.** Its failure is its own result, not this endpoint's: read `exit_code` for what it exited with and `stderr` for what it said, and decide from those. A `grep` that matches nothing exits 1 and is a perfectly successful call.
+	//
+	// The status therefore answers a different question — did the command run at all. A non-2xx means it did not, and nothing about the instance was changed by this request: it was suspended, not running or had no floating IP; or it refused the platform key; or the connection could not be opened. Retrying is meaningful in those cases and is not for a non-zero `exit_code`.
+	//
 	// Three conditions must hold; the instance is unreachable otherwise:
 	//
 	// - it is `running`
@@ -1761,6 +1765,10 @@ type ClientInterface interface {
 	// RunInstanceCommand Run a command on an instance
 	//
 	// Runs one command over SSH and returns what it wrote. **This is not a shell.** There is no terminal, no standard input and no way to answer a prompt: a command that waits for input produces nothing and is killed at the timeout. Chain steps with `&&`, or write a script and run that.
+	//
+	// **A command that fails is still a 200.** Its failure is its own result, not this endpoint's: read `exit_code` for what it exited with and `stderr` for what it said, and decide from those. A `grep` that matches nothing exits 1 and is a perfectly successful call.
+	//
+	// The status therefore answers a different question — did the command run at all. A non-2xx means it did not, and nothing about the instance was changed by this request: it was suspended, not running or had no floating IP; or it refused the platform key; or the connection could not be opened. Retrying is meaningful in those cases and is not for a non-zero `exit_code`.
 	//
 	// Three conditions must hold; the instance is unreachable otherwise:
 	//
@@ -3170,6 +3178,10 @@ func (c *Client) RenameInstance(ctx context.Context, instanceId openapi_types.UU
 //
 // Runs one command over SSH and returns what it wrote. **This is not a shell.** There is no terminal, no standard input and no way to answer a prompt: a command that waits for input produces nothing and is killed at the timeout. Chain steps with `&&`, or write a script and run that.
 //
+// **A command that fails is still a 200.** Its failure is its own result, not this endpoint's: read `exit_code` for what it exited with and `stderr` for what it said, and decide from those. A `grep` that matches nothing exits 1 and is a perfectly successful call.
+//
+// The status therefore answers a different question — did the command run at all. A non-2xx means it did not, and nothing about the instance was changed by this request: it was suspended, not running or had no floating IP; or it refused the platform key; or the connection could not be opened. Retrying is meaningful in those cases and is not for a non-zero `exit_code`.
+//
 // Three conditions must hold; the instance is unreachable otherwise:
 //
 // - it is `running`
@@ -3200,6 +3212,10 @@ func (c *Client) RunInstanceCommandWithBody(ctx context.Context, instanceId open
 // RunInstanceCommand Run a command on an instance
 //
 // Runs one command over SSH and returns what it wrote. **This is not a shell.** There is no terminal, no standard input and no way to answer a prompt: a command that waits for input produces nothing and is killed at the timeout. Chain steps with `&&`, or write a script and run that.
+//
+// **A command that fails is still a 200.** Its failure is its own result, not this endpoint's: read `exit_code` for what it exited with and `stderr` for what it said, and decide from those. A `grep` that matches nothing exits 1 and is a perfectly successful call.
+//
+// The status therefore answers a different question — did the command run at all. A non-2xx means it did not, and nothing about the instance was changed by this request: it was suspended, not running or had no floating IP; or it refused the platform key; or the connection could not be opened. Retrying is meaningful in those cases and is not for a non-zero `exit_code`.
 //
 // Three conditions must hold; the instance is unreachable otherwise:
 //
@@ -8635,6 +8651,10 @@ type ClientWithResponsesInterface interface {
 	//
 	// Runs one command over SSH and returns what it wrote. **This is not a shell.** There is no terminal, no standard input and no way to answer a prompt: a command that waits for input produces nothing and is killed at the timeout. Chain steps with `&&`, or write a script and run that.
 	//
+	// **A command that fails is still a 200.** Its failure is its own result, not this endpoint's: read `exit_code` for what it exited with and `stderr` for what it said, and decide from those. A `grep` that matches nothing exits 1 and is a perfectly successful call.
+	//
+	// The status therefore answers a different question — did the command run at all. A non-2xx means it did not, and nothing about the instance was changed by this request: it was suspended, not running or had no floating IP; or it refused the platform key; or the connection could not be opened. Retrying is meaningful in those cases and is not for a non-zero `exit_code`.
+	//
 	// Three conditions must hold; the instance is unreachable otherwise:
 	//
 	// - it is `running`
@@ -8655,6 +8675,10 @@ type ClientWithResponsesInterface interface {
 	// RunInstanceCommandWithResponse Run a command on an instance
 	//
 	// Runs one command over SSH and returns what it wrote. **This is not a shell.** There is no terminal, no standard input and no way to answer a prompt: a command that waits for input produces nothing and is killed at the timeout. Chain steps with `&&`, or write a script and run that.
+	//
+	// **A command that fails is still a 200.** Its failure is its own result, not this endpoint's: read `exit_code` for what it exited with and `stderr` for what it said, and decide from those. A `grep` that matches nothing exits 1 and is a perfectly successful call.
+	//
+	// The status therefore answers a different question — did the command run at all. A non-2xx means it did not, and nothing about the instance was changed by this request: it was suspended, not running or had no floating IP; or it refused the platform key; or the connection could not be opened. Retrying is meaningful in those cases and is not for a non-zero `exit_code`.
 	//
 	// Three conditions must hold; the instance is unreachable otherwise:
 	//
@@ -14049,6 +14073,10 @@ func (c *ClientWithResponses) RenameInstanceWithResponse(ctx context.Context, in
 //
 // Runs one command over SSH and returns what it wrote. **This is not a shell.** There is no terminal, no standard input and no way to answer a prompt: a command that waits for input produces nothing and is killed at the timeout. Chain steps with `&&`, or write a script and run that.
 //
+// **A command that fails is still a 200.** Its failure is its own result, not this endpoint's: read `exit_code` for what it exited with and `stderr` for what it said, and decide from those. A `grep` that matches nothing exits 1 and is a perfectly successful call.
+//
+// The status therefore answers a different question — did the command run at all. A non-2xx means it did not, and nothing about the instance was changed by this request: it was suspended, not running or had no floating IP; or it refused the platform key; or the connection could not be opened. Retrying is meaningful in those cases and is not for a non-zero `exit_code`.
+//
 // Three conditions must hold; the instance is unreachable otherwise:
 //
 // - it is `running`
@@ -14075,6 +14103,10 @@ func (c *ClientWithResponses) RunInstanceCommandWithBodyWithResponse(ctx context
 // RunInstanceCommandWithResponse Run a command on an instance
 //
 // Runs one command over SSH and returns what it wrote. **This is not a shell.** There is no terminal, no standard input and no way to answer a prompt: a command that waits for input produces nothing and is killed at the timeout. Chain steps with `&&`, or write a script and run that.
+//
+// **A command that fails is still a 200.** Its failure is its own result, not this endpoint's: read `exit_code` for what it exited with and `stderr` for what it said, and decide from those. A `grep` that matches nothing exits 1 and is a perfectly successful call.
+//
+// The status therefore answers a different question — did the command run at all. A non-2xx means it did not, and nothing about the instance was changed by this request: it was suspended, not running or had no floating IP; or it refused the platform key; or the connection could not be opened. Retrying is meaningful in those cases and is not for a non-zero `exit_code`.
 //
 // Three conditions must hold; the instance is unreachable otherwise:
 //

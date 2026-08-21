@@ -301,7 +301,9 @@ func (s *BindFloatingIPRequestBody) SetPortID(val uuid.UUID) {
 
 // Ref: #/components/schemas/CommandResultResponseBody
 type CommandResultResponseBody struct {
-	// Null when the command was killed rather than finishing on its own, which includes the timeout.
+	// What the command exited with, 0 being success. Any other value is the command's own verdict and
+	// still arrives as a 200. Null when it was killed rather than exiting on its own, which includes the
+	// timeout — null is the absence of a verdict, not a successful one.
 	ExitCode NilInt64 `json:"exit_code"`
 	Stderr   string   `json:"stderr"`
 	Stdout   string   `json:"stdout"`
