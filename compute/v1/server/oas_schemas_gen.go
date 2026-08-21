@@ -15,82 +15,6 @@ func (s *ErrorStatusCode) Error() string {
 	return fmt.Sprintf("code %d: %+v", s.StatusCode, s.Response)
 }
 
-// Ref: #/components/schemas/ActOnInstanceRequestBody
-type ActOnInstanceRequestBody struct {
-	Action ActOnInstanceRequestBodyAction `json:"action"`
-	// Applies to `reboot` only. A forced reboot does not wait for the operating system to shut down and
-	// unwritten data is lost; use it when the system is unresponsive.
-	Force OptBool `json:"force"`
-}
-
-// GetAction returns the value of Action.
-func (s *ActOnInstanceRequestBody) GetAction() ActOnInstanceRequestBodyAction {
-	return s.Action
-}
-
-// GetForce returns the value of Force.
-func (s *ActOnInstanceRequestBody) GetForce() OptBool {
-	return s.Force
-}
-
-// SetAction sets the value of Action.
-func (s *ActOnInstanceRequestBody) SetAction(val ActOnInstanceRequestBodyAction) {
-	s.Action = val
-}
-
-// SetForce sets the value of Force.
-func (s *ActOnInstanceRequestBody) SetForce(val OptBool) {
-	s.Force = val
-}
-
-type ActOnInstanceRequestBodyAction string
-
-const (
-	ActOnInstanceRequestBodyActionStart  ActOnInstanceRequestBodyAction = "start"
-	ActOnInstanceRequestBodyActionStop   ActOnInstanceRequestBodyAction = "stop"
-	ActOnInstanceRequestBodyActionReboot ActOnInstanceRequestBodyAction = "reboot"
-)
-
-// AllValues returns all ActOnInstanceRequestBodyAction values.
-func (ActOnInstanceRequestBodyAction) AllValues() []ActOnInstanceRequestBodyAction {
-	return []ActOnInstanceRequestBodyAction{
-		ActOnInstanceRequestBodyActionStart,
-		ActOnInstanceRequestBodyActionStop,
-		ActOnInstanceRequestBodyActionReboot,
-	}
-}
-
-// MarshalText implements encoding.TextMarshaler.
-func (s ActOnInstanceRequestBodyAction) MarshalText() ([]byte, error) {
-	switch s {
-	case ActOnInstanceRequestBodyActionStart:
-		return []byte(s), nil
-	case ActOnInstanceRequestBodyActionStop:
-		return []byte(s), nil
-	case ActOnInstanceRequestBodyActionReboot:
-		return []byte(s), nil
-	default:
-		return nil, errors.Errorf("invalid value: %q", s)
-	}
-}
-
-// UnmarshalText implements encoding.TextUnmarshaler.
-func (s *ActOnInstanceRequestBodyAction) UnmarshalText(data []byte) error {
-	switch ActOnInstanceRequestBodyAction(data) {
-	case ActOnInstanceRequestBodyActionStart:
-		*s = ActOnInstanceRequestBodyActionStart
-		return nil
-	case ActOnInstanceRequestBodyActionStop:
-		*s = ActOnInstanceRequestBodyActionStop
-		return nil
-	case ActOnInstanceRequestBodyActionReboot:
-		*s = ActOnInstanceRequestBodyActionReboot
-		return nil
-	default:
-		return errors.Errorf("invalid value: %q", data)
-	}
-}
-
 // Ref: #/components/schemas/AllocateFloatingIPRequestBody
 type AllocateFloatingIPRequestBody struct {
 	// The address to allocate. Allocated by the platform when omitted.
@@ -3773,6 +3697,23 @@ func (s *PrivateNetworkResourceStatus) UnmarshalText(data []byte) error {
 	default:
 		return errors.Errorf("invalid value: %q", data)
 	}
+}
+
+// Ref: #/components/schemas/RebootInstanceRequestBody
+type RebootInstanceRequestBody struct {
+	// A forced reboot does not wait for the operating system to shut down and unwritten data is lost; use
+	// it when the system is unresponsive. False when omitted.
+	Force OptBool `json:"force"`
+}
+
+// GetForce returns the value of Force.
+func (s *RebootInstanceRequestBody) GetForce() OptBool {
+	return s.Force
+}
+
+// SetForce sets the value of Force.
+func (s *RebootInstanceRequestBody) SetForce(val OptBool) {
+	s.Force = val
 }
 
 // Ref: #/components/schemas/RebuildInstanceRequestBody

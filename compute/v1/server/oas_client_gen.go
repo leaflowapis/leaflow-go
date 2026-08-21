@@ -29,23 +29,6 @@ func trimTrailingSlashes(u *url.URL) {
 
 // Invoker invokes operations described by OpenAPI v3 specification.
 type Invoker interface {
-	// ActOnInstance invokes act-on-instance operation.
-	//
-	// Reboot defaults to a soft reboot, in which the operating system shuts down normally before starting
-	// again.
-	//
-	// A soft reboot has no effect once the system is unresponsive. Set `force` to reboot forcibly: a
-	// forced reboot does not wait for the operating system to shut down, so unwritten data is lost.
-	// `force` applies to `reboot` only.
-	//
-	// An instance suspended by the platform must be unsuspended first.
-	//
-	// This endpoint returns immediately and the `status` it returns is a transient state: `starting` for
-	// start, `stopping` for stop, `rebooting` for reboot. Poll the instance until it settles at `running`
-	// or `stopped`.
-	//
-	// POST /api/v1/instances/{instanceId}/actions
-	ActOnInstance(ctx context.Context, request *ActOnInstanceRequestBody, params ActOnInstanceParams) (*InstanceResource, error)
 	// AllocateFloatingIP invokes allocate-floating-ip operation.
 	//
 	// If the private network is not yet connected to the internet, connectivity is established as part of
@@ -537,6 +520,20 @@ type Invoker interface {
 	//
 	// POST /api/v1/instances/{instanceId}/console
 	OpenInstanceConsole(ctx context.Context, params OpenInstanceConsoleParams) (*ConsoleResponseBody, error)
+	// RebootInstance invokes reboot-instance operation.
+	//
+	// A reboot defaults to soft, in which the operating system shuts down normally before starting again.
+	//
+	// A soft reboot has no effect once the system is unresponsive. Set `force` to reboot forcibly: a
+	// forced reboot does not wait for the operating system to shut down, so unwritten data is lost.
+	//
+	// An instance suspended by the platform must be unsuspended first.
+	//
+	// This endpoint returns immediately and the `status` it returns is the transient `rebooting`. Poll the
+	// instance until it settles at `running`.
+	//
+	// POST /api/v1/instances/{instanceId}/reboot
+	RebootInstance(ctx context.Context, request *RebootInstanceRequestBody, params RebootInstanceParams) (*InstanceResource, error)
 	// RebuildInstance invokes rebuild-instance operation.
 	//
 	// All data on the system disk is erased and cannot be recovered. Attached data disks are unaffected.
@@ -690,6 +687,28 @@ type Invoker interface {
 	//
 	// PUT /api/v1/floating-ips/{floatingIpId}/bandwidth
 	SetFloatingIPBandwidth(ctx context.Context, request *SetBandwidthRequestBody, params SetFloatingIPBandwidthParams) (*FloatingIPResource, error)
+	// StartInstance invokes start-instance operation.
+	//
+	// An instance suspended by the platform must be unsuspended first.
+	//
+	// This endpoint returns immediately and the `status` it returns is the transient `starting`. Poll the
+	// instance until it settles at `running`.
+	//
+	// POST /api/v1/instances/{instanceId}/start
+	StartInstance(ctx context.Context, params StartInstanceParams) (*InstanceResource, error)
+	// StopInstance invokes stop-instance operation.
+	//
+	// The operating system is asked to shut down and is powered off once it does, or once it stops
+	// responding for long enough. Stopping does not release the instance: it keeps its disks, its
+	// addresses and its name, and starts again where it left off.
+	//
+	// An instance suspended by the platform must be unsuspended first.
+	//
+	// This endpoint returns immediately and the `status` it returns is the transient `stopping`. Poll the
+	// instance until it settles at `stopped`.
+	//
+	// POST /api/v1/instances/{instanceId}/stop
+	StopInstance(ctx context.Context, params StopInstanceParams) (*InstanceResource, error)
 	// SuggestSubnetCidr invokes suggest-subnet-cidr operation.
 	//
 	// The returned value is a suggestion and is validated again when the subnet is created. It exists to
@@ -744,152 +763,6 @@ func (c *Client) requestURL(ctx context.Context) *url.URL {
 		return c.serverURL
 	}
 	return u
-}
-
-// ActOnInstance invokes act-on-instance operation.
-//
-// Reboot defaults to a soft reboot, in which the operating system shuts down normally before starting
-// again.
-//
-// A soft reboot has no effect once the system is unresponsive. Set `force` to reboot forcibly: a
-// forced reboot does not wait for the operating system to shut down, so unwritten data is lost.
-// `force` applies to `reboot` only.
-//
-// An instance suspended by the platform must be unsuspended first.
-//
-// This endpoint returns immediately and the `status` it returns is a transient state: `starting` for
-// start, `stopping` for stop, `rebooting` for reboot. Poll the instance until it settles at `running`
-// or `stopped`.
-//
-// POST /api/v1/instances/{instanceId}/actions
-func (c *Client) ActOnInstance(ctx context.Context, request *ActOnInstanceRequestBody, params ActOnInstanceParams) (*InstanceResource, error) {
-	res, err := c.sendActOnInstance(ctx, request, params)
-	return res, err
-}
-
-func (c *Client) sendActOnInstance(ctx context.Context, request *ActOnInstanceRequestBody, params ActOnInstanceParams) (res *InstanceResource, err error) {
-	otelAttrs := []attribute.KeyValue{
-		otelogen.OperationID("act-on-instance"),
-		semconv.HTTPRequestMethodKey.String("POST"),
-		semconv.URLTemplateKey.String("/api/v1/instances/{instanceId}/actions"),
-	}
-	otelAttrs = append(otelAttrs, c.cfg.Attributes...)
-
-	// Run stopwatch.
-	startTime := time.Now()
-	defer func() {
-		// Use floating point division here for higher precision (instead of Millisecond method).
-		elapsedDuration := time.Since(startTime)
-		c.duration.Record(ctx, float64(elapsedDuration)/float64(time.Millisecond), metric.WithAttributes(otelAttrs...))
-	}()
-
-	// Increment request counter.
-	c.requests.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
-
-	// Start a span for this request.
-	ctx, span := c.cfg.Tracer.Start(ctx, ActOnInstanceOperation,
-		trace.WithAttributes(otelAttrs...),
-		clientSpanKind,
-	)
-	// Track stage for error reporting.
-	var stage string
-	defer func() {
-		if err != nil {
-			span.RecordError(err)
-			span.SetStatus(codes.Error, stage)
-			c.errors.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
-		}
-		span.End()
-	}()
-
-	stage = "BuildURL"
-	u := uri.Clone(c.requestURL(ctx))
-	var pathParts [3]string
-	pathParts[0] = "/api/v1/instances/"
-	{
-		// Encode "instanceId" parameter.
-		e := uri.NewPathEncoder(uri.PathEncoderConfig{
-			Param:   "instanceId",
-			Style:   uri.PathStyleSimple,
-			Explode: false,
-		})
-		if err := func() error {
-			return e.EncodeValue(conv.UUIDToString(params.InstanceId))
-		}(); err != nil {
-			return res, errors.Wrap(err, "encode path")
-		}
-		encoded, err := e.Result()
-		if err != nil {
-			return res, errors.Wrap(err, "encode path")
-		}
-		pathParts[1] = encoded
-	}
-	pathParts[2] = "/actions"
-	uri.AddPathParts(u, pathParts[:]...)
-
-	stage = "EncodeRequest"
-	r, err := ht.NewRequest(ctx, "POST", u)
-	if err != nil {
-		return res, errors.Wrap(err, "create request")
-	}
-	if err := encodeActOnInstanceRequest(request, r); err != nil {
-		return res, errors.Wrap(err, "encode request")
-	}
-
-	{
-		type bitset = [1]uint8
-		var satisfied bitset
-		{
-			stage = "Security:BearerAuth"
-			switch err := c.securityBearerAuth(ctx, ActOnInstanceOperation, r); {
-			case err == nil: // if NO error
-				satisfied[0] |= 1 << 0
-			case errors.Is(err, ogenerrors.ErrSkipClientSecurity):
-				// Skip this security.
-			default:
-				return res, errors.Wrap(err, "security \"BearerAuth\"")
-			}
-		}
-
-		if ok := func() bool {
-		nextRequirement:
-			for _, requirement := range []bitset{
-				{0b00000001},
-			} {
-				for i, mask := range requirement {
-					if satisfied[i]&mask != mask {
-						continue nextRequirement
-					}
-				}
-				return true
-			}
-			return false
-		}(); !ok {
-			return res, ogenerrors.ErrSecurityRequirementIsNotSatisfied
-		}
-	}
-
-	stage = "SendRequest"
-	resp, err := c.cfg.Client.Do(r)
-	if err != nil {
-		return res, errors.Wrap(err, "do request")
-	}
-	body := resp.Body
-	defer func() {
-		// Drain the body to EOF before closing, so the underlying
-		// connection can be reused by the Transport regardless of the
-		// response status code. See https://github.com/ogen-go/ogen/issues/1670.
-		_, _ = io.Copy(io.Discard, body)
-		_ = body.Close()
-	}()
-
-	stage = "DecodeResponse"
-	result, err := decodeActOnInstanceResponse(resp)
-	if err != nil {
-		return res, errors.Wrap(err, "decode response")
-	}
-
-	return result, nil
 }
 
 // AllocateFloatingIP invokes allocate-floating-ip operation.
@@ -9440,6 +9313,149 @@ func (c *Client) sendOpenInstanceConsole(ctx context.Context, params OpenInstanc
 	return result, nil
 }
 
+// RebootInstance invokes reboot-instance operation.
+//
+// A reboot defaults to soft, in which the operating system shuts down normally before starting again.
+//
+// A soft reboot has no effect once the system is unresponsive. Set `force` to reboot forcibly: a
+// forced reboot does not wait for the operating system to shut down, so unwritten data is lost.
+//
+// An instance suspended by the platform must be unsuspended first.
+//
+// This endpoint returns immediately and the `status` it returns is the transient `rebooting`. Poll the
+// instance until it settles at `running`.
+//
+// POST /api/v1/instances/{instanceId}/reboot
+func (c *Client) RebootInstance(ctx context.Context, request *RebootInstanceRequestBody, params RebootInstanceParams) (*InstanceResource, error) {
+	res, err := c.sendRebootInstance(ctx, request, params)
+	return res, err
+}
+
+func (c *Client) sendRebootInstance(ctx context.Context, request *RebootInstanceRequestBody, params RebootInstanceParams) (res *InstanceResource, err error) {
+	otelAttrs := []attribute.KeyValue{
+		otelogen.OperationID("reboot-instance"),
+		semconv.HTTPRequestMethodKey.String("POST"),
+		semconv.URLTemplateKey.String("/api/v1/instances/{instanceId}/reboot"),
+	}
+	otelAttrs = append(otelAttrs, c.cfg.Attributes...)
+
+	// Run stopwatch.
+	startTime := time.Now()
+	defer func() {
+		// Use floating point division here for higher precision (instead of Millisecond method).
+		elapsedDuration := time.Since(startTime)
+		c.duration.Record(ctx, float64(elapsedDuration)/float64(time.Millisecond), metric.WithAttributes(otelAttrs...))
+	}()
+
+	// Increment request counter.
+	c.requests.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
+
+	// Start a span for this request.
+	ctx, span := c.cfg.Tracer.Start(ctx, RebootInstanceOperation,
+		trace.WithAttributes(otelAttrs...),
+		clientSpanKind,
+	)
+	// Track stage for error reporting.
+	var stage string
+	defer func() {
+		if err != nil {
+			span.RecordError(err)
+			span.SetStatus(codes.Error, stage)
+			c.errors.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
+		}
+		span.End()
+	}()
+
+	stage = "BuildURL"
+	u := uri.Clone(c.requestURL(ctx))
+	var pathParts [3]string
+	pathParts[0] = "/api/v1/instances/"
+	{
+		// Encode "instanceId" parameter.
+		e := uri.NewPathEncoder(uri.PathEncoderConfig{
+			Param:   "instanceId",
+			Style:   uri.PathStyleSimple,
+			Explode: false,
+		})
+		if err := func() error {
+			return e.EncodeValue(conv.UUIDToString(params.InstanceId))
+		}(); err != nil {
+			return res, errors.Wrap(err, "encode path")
+		}
+		encoded, err := e.Result()
+		if err != nil {
+			return res, errors.Wrap(err, "encode path")
+		}
+		pathParts[1] = encoded
+	}
+	pathParts[2] = "/reboot"
+	uri.AddPathParts(u, pathParts[:]...)
+
+	stage = "EncodeRequest"
+	r, err := ht.NewRequest(ctx, "POST", u)
+	if err != nil {
+		return res, errors.Wrap(err, "create request")
+	}
+	if err := encodeRebootInstanceRequest(request, r); err != nil {
+		return res, errors.Wrap(err, "encode request")
+	}
+
+	{
+		type bitset = [1]uint8
+		var satisfied bitset
+		{
+			stage = "Security:BearerAuth"
+			switch err := c.securityBearerAuth(ctx, RebootInstanceOperation, r); {
+			case err == nil: // if NO error
+				satisfied[0] |= 1 << 0
+			case errors.Is(err, ogenerrors.ErrSkipClientSecurity):
+				// Skip this security.
+			default:
+				return res, errors.Wrap(err, "security \"BearerAuth\"")
+			}
+		}
+
+		if ok := func() bool {
+		nextRequirement:
+			for _, requirement := range []bitset{
+				{0b00000001},
+			} {
+				for i, mask := range requirement {
+					if satisfied[i]&mask != mask {
+						continue nextRequirement
+					}
+				}
+				return true
+			}
+			return false
+		}(); !ok {
+			return res, ogenerrors.ErrSecurityRequirementIsNotSatisfied
+		}
+	}
+
+	stage = "SendRequest"
+	resp, err := c.cfg.Client.Do(r)
+	if err != nil {
+		return res, errors.Wrap(err, "do request")
+	}
+	body := resp.Body
+	defer func() {
+		// Drain the body to EOF before closing, so the underlying
+		// connection can be reused by the Transport regardless of the
+		// response status code. See https://github.com/ogen-go/ogen/issues/1670.
+		_, _ = io.Copy(io.Discard, body)
+		_ = body.Close()
+	}()
+
+	stage = "DecodeResponse"
+	result, err := decodeRebootInstanceResponse(resp)
+	if err != nil {
+		return res, errors.Wrap(err, "decode response")
+	}
+
+	return result, nil
+}
+
 // RebuildInstance invokes rebuild-instance operation.
 //
 // All data on the system disk is erased and cannot be recovered. Attached data disks are unaffected.
@@ -11765,6 +11781,280 @@ func (c *Client) sendSetFloatingIPBandwidth(ctx context.Context, request *SetBan
 
 	stage = "DecodeResponse"
 	result, err := decodeSetFloatingIPBandwidthResponse(resp)
+	if err != nil {
+		return res, errors.Wrap(err, "decode response")
+	}
+
+	return result, nil
+}
+
+// StartInstance invokes start-instance operation.
+//
+// An instance suspended by the platform must be unsuspended first.
+//
+// This endpoint returns immediately and the `status` it returns is the transient `starting`. Poll the
+// instance until it settles at `running`.
+//
+// POST /api/v1/instances/{instanceId}/start
+func (c *Client) StartInstance(ctx context.Context, params StartInstanceParams) (*InstanceResource, error) {
+	res, err := c.sendStartInstance(ctx, params)
+	return res, err
+}
+
+func (c *Client) sendStartInstance(ctx context.Context, params StartInstanceParams) (res *InstanceResource, err error) {
+	otelAttrs := []attribute.KeyValue{
+		otelogen.OperationID("start-instance"),
+		semconv.HTTPRequestMethodKey.String("POST"),
+		semconv.URLTemplateKey.String("/api/v1/instances/{instanceId}/start"),
+	}
+	otelAttrs = append(otelAttrs, c.cfg.Attributes...)
+
+	// Run stopwatch.
+	startTime := time.Now()
+	defer func() {
+		// Use floating point division here for higher precision (instead of Millisecond method).
+		elapsedDuration := time.Since(startTime)
+		c.duration.Record(ctx, float64(elapsedDuration)/float64(time.Millisecond), metric.WithAttributes(otelAttrs...))
+	}()
+
+	// Increment request counter.
+	c.requests.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
+
+	// Start a span for this request.
+	ctx, span := c.cfg.Tracer.Start(ctx, StartInstanceOperation,
+		trace.WithAttributes(otelAttrs...),
+		clientSpanKind,
+	)
+	// Track stage for error reporting.
+	var stage string
+	defer func() {
+		if err != nil {
+			span.RecordError(err)
+			span.SetStatus(codes.Error, stage)
+			c.errors.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
+		}
+		span.End()
+	}()
+
+	stage = "BuildURL"
+	u := uri.Clone(c.requestURL(ctx))
+	var pathParts [3]string
+	pathParts[0] = "/api/v1/instances/"
+	{
+		// Encode "instanceId" parameter.
+		e := uri.NewPathEncoder(uri.PathEncoderConfig{
+			Param:   "instanceId",
+			Style:   uri.PathStyleSimple,
+			Explode: false,
+		})
+		if err := func() error {
+			return e.EncodeValue(conv.UUIDToString(params.InstanceId))
+		}(); err != nil {
+			return res, errors.Wrap(err, "encode path")
+		}
+		encoded, err := e.Result()
+		if err != nil {
+			return res, errors.Wrap(err, "encode path")
+		}
+		pathParts[1] = encoded
+	}
+	pathParts[2] = "/start"
+	uri.AddPathParts(u, pathParts[:]...)
+
+	stage = "EncodeRequest"
+	r, err := ht.NewRequest(ctx, "POST", u)
+	if err != nil {
+		return res, errors.Wrap(err, "create request")
+	}
+
+	{
+		type bitset = [1]uint8
+		var satisfied bitset
+		{
+			stage = "Security:BearerAuth"
+			switch err := c.securityBearerAuth(ctx, StartInstanceOperation, r); {
+			case err == nil: // if NO error
+				satisfied[0] |= 1 << 0
+			case errors.Is(err, ogenerrors.ErrSkipClientSecurity):
+				// Skip this security.
+			default:
+				return res, errors.Wrap(err, "security \"BearerAuth\"")
+			}
+		}
+
+		if ok := func() bool {
+		nextRequirement:
+			for _, requirement := range []bitset{
+				{0b00000001},
+			} {
+				for i, mask := range requirement {
+					if satisfied[i]&mask != mask {
+						continue nextRequirement
+					}
+				}
+				return true
+			}
+			return false
+		}(); !ok {
+			return res, ogenerrors.ErrSecurityRequirementIsNotSatisfied
+		}
+	}
+
+	stage = "SendRequest"
+	resp, err := c.cfg.Client.Do(r)
+	if err != nil {
+		return res, errors.Wrap(err, "do request")
+	}
+	body := resp.Body
+	defer func() {
+		// Drain the body to EOF before closing, so the underlying
+		// connection can be reused by the Transport regardless of the
+		// response status code. See https://github.com/ogen-go/ogen/issues/1670.
+		_, _ = io.Copy(io.Discard, body)
+		_ = body.Close()
+	}()
+
+	stage = "DecodeResponse"
+	result, err := decodeStartInstanceResponse(resp)
+	if err != nil {
+		return res, errors.Wrap(err, "decode response")
+	}
+
+	return result, nil
+}
+
+// StopInstance invokes stop-instance operation.
+//
+// The operating system is asked to shut down and is powered off once it does, or once it stops
+// responding for long enough. Stopping does not release the instance: it keeps its disks, its
+// addresses and its name, and starts again where it left off.
+//
+// An instance suspended by the platform must be unsuspended first.
+//
+// This endpoint returns immediately and the `status` it returns is the transient `stopping`. Poll the
+// instance until it settles at `stopped`.
+//
+// POST /api/v1/instances/{instanceId}/stop
+func (c *Client) StopInstance(ctx context.Context, params StopInstanceParams) (*InstanceResource, error) {
+	res, err := c.sendStopInstance(ctx, params)
+	return res, err
+}
+
+func (c *Client) sendStopInstance(ctx context.Context, params StopInstanceParams) (res *InstanceResource, err error) {
+	otelAttrs := []attribute.KeyValue{
+		otelogen.OperationID("stop-instance"),
+		semconv.HTTPRequestMethodKey.String("POST"),
+		semconv.URLTemplateKey.String("/api/v1/instances/{instanceId}/stop"),
+	}
+	otelAttrs = append(otelAttrs, c.cfg.Attributes...)
+
+	// Run stopwatch.
+	startTime := time.Now()
+	defer func() {
+		// Use floating point division here for higher precision (instead of Millisecond method).
+		elapsedDuration := time.Since(startTime)
+		c.duration.Record(ctx, float64(elapsedDuration)/float64(time.Millisecond), metric.WithAttributes(otelAttrs...))
+	}()
+
+	// Increment request counter.
+	c.requests.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
+
+	// Start a span for this request.
+	ctx, span := c.cfg.Tracer.Start(ctx, StopInstanceOperation,
+		trace.WithAttributes(otelAttrs...),
+		clientSpanKind,
+	)
+	// Track stage for error reporting.
+	var stage string
+	defer func() {
+		if err != nil {
+			span.RecordError(err)
+			span.SetStatus(codes.Error, stage)
+			c.errors.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
+		}
+		span.End()
+	}()
+
+	stage = "BuildURL"
+	u := uri.Clone(c.requestURL(ctx))
+	var pathParts [3]string
+	pathParts[0] = "/api/v1/instances/"
+	{
+		// Encode "instanceId" parameter.
+		e := uri.NewPathEncoder(uri.PathEncoderConfig{
+			Param:   "instanceId",
+			Style:   uri.PathStyleSimple,
+			Explode: false,
+		})
+		if err := func() error {
+			return e.EncodeValue(conv.UUIDToString(params.InstanceId))
+		}(); err != nil {
+			return res, errors.Wrap(err, "encode path")
+		}
+		encoded, err := e.Result()
+		if err != nil {
+			return res, errors.Wrap(err, "encode path")
+		}
+		pathParts[1] = encoded
+	}
+	pathParts[2] = "/stop"
+	uri.AddPathParts(u, pathParts[:]...)
+
+	stage = "EncodeRequest"
+	r, err := ht.NewRequest(ctx, "POST", u)
+	if err != nil {
+		return res, errors.Wrap(err, "create request")
+	}
+
+	{
+		type bitset = [1]uint8
+		var satisfied bitset
+		{
+			stage = "Security:BearerAuth"
+			switch err := c.securityBearerAuth(ctx, StopInstanceOperation, r); {
+			case err == nil: // if NO error
+				satisfied[0] |= 1 << 0
+			case errors.Is(err, ogenerrors.ErrSkipClientSecurity):
+				// Skip this security.
+			default:
+				return res, errors.Wrap(err, "security \"BearerAuth\"")
+			}
+		}
+
+		if ok := func() bool {
+		nextRequirement:
+			for _, requirement := range []bitset{
+				{0b00000001},
+			} {
+				for i, mask := range requirement {
+					if satisfied[i]&mask != mask {
+						continue nextRequirement
+					}
+				}
+				return true
+			}
+			return false
+		}(); !ok {
+			return res, ogenerrors.ErrSecurityRequirementIsNotSatisfied
+		}
+	}
+
+	stage = "SendRequest"
+	resp, err := c.cfg.Client.Do(r)
+	if err != nil {
+		return res, errors.Wrap(err, "do request")
+	}
+	body := resp.Body
+	defer func() {
+		// Drain the body to EOF before closing, so the underlying
+		// connection can be reused by the Transport regardless of the
+		// response status code. See https://github.com/ogen-go/ogen/issues/1670.
+		_, _ = io.Copy(io.Discard, body)
+		_ = body.Close()
+	}()
+
+	stage = "DecodeResponse"
+	result, err := decodeStopInstanceResponse(resp)
 	if err != nil {
 		return res, errors.Wrap(err, "decode response")
 	}

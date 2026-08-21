@@ -10,20 +10,6 @@ import (
 	ht "github.com/ogen-go/ogen/http"
 )
 
-func encodeActOnInstanceRequest(
-	req *ActOnInstanceRequestBody,
-	r *http.Request,
-) error {
-	const contentType = "application/json"
-	e := new(jx.Encoder)
-	{
-		req.Encode(e)
-	}
-	encoded := e.Bytes()
-	ht.SetBody(r, bytes.NewReader(encoded), contentType)
-	return nil
-}
-
 func encodeAllocateFloatingIPRequest(
 	req *AllocateFloatingIPRequestBody,
 	r *http.Request,
@@ -236,6 +222,20 @@ func encodeCreateSubnetRequest(
 
 func encodeLaunchInstanceRequest(
 	req *LaunchInstanceRequestBody,
+	r *http.Request,
+) error {
+	const contentType = "application/json"
+	e := new(jx.Encoder)
+	{
+		req.Encode(e)
+	}
+	encoded := e.Bytes()
+	ht.SetBody(r, bytes.NewReader(encoded), contentType)
+	return nil
+}
+
+func encodeRebootInstanceRequest(
+	req *RebootInstanceRequestBody,
 	r *http.Request,
 ) error {
 	const contentType = "application/json"
