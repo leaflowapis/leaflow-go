@@ -19,27 +19,6 @@ import (
 	openapi_types "github.com/oapi-codegen/runtime/types"
 )
 
-// Defines values for ActOnInstanceRequestBodyAction.
-const (
-	Reboot ActOnInstanceRequestBodyAction = "reboot"
-	Start  ActOnInstanceRequestBodyAction = "start"
-	Stop   ActOnInstanceRequestBodyAction = "stop"
-)
-
-// Valid indicates whether the value is a known member of the ActOnInstanceRequestBodyAction enum.
-func (e ActOnInstanceRequestBodyAction) Valid() bool {
-	switch e {
-	case Reboot:
-		return true
-	case Start:
-		return true
-	case Stop:
-		return true
-	default:
-		return false
-	}
-}
-
 // Defines values for BackupResourceStatus.
 const (
 	BackupResourceStatusAvailable    BackupResourceStatus = "available"
@@ -381,17 +360,6 @@ func (e SubnetResourceIpVersion) Valid() bool {
 		return false
 	}
 }
-
-// ActOnInstanceRequestBody defines model for ActOnInstanceRequestBody.
-type ActOnInstanceRequestBody struct {
-	Action ActOnInstanceRequestBodyAction `json:"action"`
-
-	// Force Applies to `reboot` only. A forced reboot does not wait for the operating system to shut down and unwritten data is lost; use it when the system is unresponsive
-	Force *bool `json:"force,omitempty"`
-}
-
-// ActOnInstanceRequestBodyAction defines model for ActOnInstanceRequestBody.Action.
-type ActOnInstanceRequestBodyAction string
 
 // AllocateFloatingIPRequestBody defines model for AllocateFloatingIPRequestBody.
 type AllocateFloatingIPRequestBody struct {
@@ -926,6 +894,12 @@ type PrivateNetworkResource struct {
 // PrivateNetworkResourceStatus defines model for PrivateNetworkResource.Status.
 type PrivateNetworkResourceStatus string
 
+// RebootInstanceRequestBody defines model for RebootInstanceRequestBody.
+type RebootInstanceRequestBody struct {
+	// Force A forced reboot does not wait for the operating system to shut down and unwritten data is lost; use it when the system is unresponsive. False when omitted
+	Force *bool `json:"force,omitempty"`
+}
+
 // RebuildInstanceRequestBody defines model for RebuildInstanceRequestBody.
 type RebuildInstanceRequestBody struct {
 	GeneratePassword *bool `json:"generate_password,omitempty"`
@@ -1275,9 +1249,6 @@ type LaunchInstanceJSONRequestBody = LaunchInstanceRequestBody
 // RenameInstanceJSONRequestBody defines body for RenameInstance for application/json ContentType.
 type RenameInstanceJSONRequestBody = RenameInstanceRequestBody
 
-// ActOnInstanceJSONRequestBody defines body for ActOnInstance for application/json ContentType.
-type ActOnInstanceJSONRequestBody = ActOnInstanceRequestBody
-
 // RunInstanceCommandJSONRequestBody defines body for RunInstanceCommand for application/json ContentType.
 type RunInstanceCommandJSONRequestBody = RunCommandRequestBody
 
@@ -1292,6 +1263,9 @@ type ResetInstancePasswordJSONRequestBody = ResetPasswordRequestBody
 
 // AttachPortJSONRequestBody defines body for AttachPort for application/json ContentType.
 type AttachPortJSONRequestBody = AttachPortRequestBody
+
+// RebootInstanceJSONRequestBody defines body for RebootInstance for application/json ContentType.
+type RebootInstanceJSONRequestBody = RebootInstanceRequestBody
 
 // RebuildInstanceJSONRequestBody defines body for RebuildInstance for application/json ContentType.
 type RebuildInstanceJSONRequestBody = RebuildInstanceRequestBody
@@ -1763,36 +1737,6 @@ type ClientInterface interface {
 	// Corresponds with PATCH /api/v1/instances/{instanceId} (the `RenameInstance` operationId).
 	RenameInstance(ctx context.Context, instanceId openapi_types.UUID, body RenameInstanceJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
 
-	// ActOnInstanceWithBody Start, stop or reboot an instance
-	//
-	// Reboot defaults to a soft reboot, in which the operating system shuts down normally before starting again.
-	//
-	// A soft reboot has no effect once the system is unresponsive. Set `force` to reboot forcibly: a forced reboot does not wait for the operating system to shut down, so **unwritten data is lost**. `force` applies to `reboot` only.
-	//
-	// An instance suspended by the platform must be unsuspended first.
-	//
-	// This endpoint returns immediately and the `status` it returns is a transient state: `starting` for start, `stopping` for stop, `rebooting` for reboot. Poll the instance until it settles at `running` or `stopped`.
-	//
-	// Takes any type of body and a specified content type.
-	//
-	// Corresponds with POST /api/v1/instances/{instanceId}/actions (the `ActOnInstance` operationId).
-	ActOnInstanceWithBody(ctx context.Context, instanceId openapi_types.UUID, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
-
-	// ActOnInstance Start, stop or reboot an instance
-	//
-	// Reboot defaults to a soft reboot, in which the operating system shuts down normally before starting again.
-	//
-	// A soft reboot has no effect once the system is unresponsive. Set `force` to reboot forcibly: a forced reboot does not wait for the operating system to shut down, so **unwritten data is lost**. `force` applies to `reboot` only.
-	//
-	// An instance suspended by the platform must be unsuspended first.
-	//
-	// This endpoint returns immediately and the `status` it returns is a transient state: `starting` for start, `stopping` for stop, `rebooting` for reboot. Poll the instance until it settles at `running` or `stopped`.
-	//
-	// Takes a body of the `application/json` content type.
-	//
-	// Corresponds with POST /api/v1/instances/{instanceId}/actions (the `ActOnInstance` operationId).
-	ActOnInstance(ctx context.Context, instanceId openapi_types.UUID, body ActOnInstanceJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
-
 	// RunInstanceCommandWithBody Run a command on an instance
 	//
 	// Runs one command over SSH and returns what it wrote. **This is not a shell.** There is no terminal, no standard input and no way to answer a prompt: a command that waits for input produces nothing and is killed at the timeout. Chain steps with `&&`, or write a script and run that.
@@ -1958,6 +1902,36 @@ type ClientInterface interface {
 	// Corresponds with DELETE /api/v1/instances/{instanceId}/ports/{portId} (the `DetachPort` operationId).
 	DetachPort(ctx context.Context, instanceId openapi_types.UUID, portId openapi_types.UUID, reqEditors ...RequestEditorFn) (*http.Response, error)
 
+	// RebootInstanceWithBody Reboot an instance
+	//
+	// A reboot defaults to soft, in which the operating system shuts down normally before starting again.
+	//
+	// A soft reboot has no effect once the system is unresponsive. Set `force` to reboot forcibly: a forced reboot does not wait for the operating system to shut down, so **unwritten data is lost**.
+	//
+	// An instance suspended by the platform must be unsuspended first.
+	//
+	// This endpoint returns immediately and the `status` it returns is the transient `rebooting`. Poll the instance until it settles at `running`.
+	//
+	// Takes any type of body and a specified content type.
+	//
+	// Corresponds with POST /api/v1/instances/{instanceId}/reboot (the `RebootInstance` operationId).
+	RebootInstanceWithBody(ctx context.Context, instanceId openapi_types.UUID, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// RebootInstance Reboot an instance
+	//
+	// A reboot defaults to soft, in which the operating system shuts down normally before starting again.
+	//
+	// A soft reboot has no effect once the system is unresponsive. Set `force` to reboot forcibly: a forced reboot does not wait for the operating system to shut down, so **unwritten data is lost**.
+	//
+	// An instance suspended by the platform must be unsuspended first.
+	//
+	// This endpoint returns immediately and the `status` it returns is the transient `rebooting`. Poll the instance until it settles at `running`.
+	//
+	// Takes a body of the `application/json` content type.
+	//
+	// Corresponds with POST /api/v1/instances/{instanceId}/reboot (the `RebootInstance` operationId).
+	RebootInstance(ctx context.Context, instanceId openapi_types.UUID, body RebootInstanceJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
+
 	// RebuildInstanceWithBody Rebuild an instance
 	//
 	// **All data on the system disk is erased and cannot be recovered.** Attached data disks are unaffected.
@@ -2015,6 +1989,26 @@ type ClientInterface interface {
 	//
 	// Corresponds with POST /api/v1/instances/{instanceId}/resize/revert (the `RevertInstanceResize` operationId).
 	RevertInstanceResize(ctx context.Context, instanceId openapi_types.UUID, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// StartInstance Start an instance
+	//
+	// An instance suspended by the platform must be unsuspended first.
+	//
+	// This endpoint returns immediately and the `status` it returns is the transient `starting`. Poll the instance until it settles at `running`.
+	//
+	// Corresponds with POST /api/v1/instances/{instanceId}/start (the `StartInstance` operationId).
+	StartInstance(ctx context.Context, instanceId openapi_types.UUID, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// StopInstance Stop an instance
+	//
+	// The operating system is asked to shut down and is powered off once it does, or once it stops responding for long enough. Stopping does not release the instance: it keeps its disks, its addresses and its name, and starts again where it left off.
+	//
+	// An instance suspended by the platform must be unsuspended first.
+	//
+	// This endpoint returns immediately and the `status` it returns is the transient `stopping`. Poll the instance until it settles at `stopped`.
+	//
+	// Corresponds with POST /api/v1/instances/{instanceId}/stop (the `StopInstance` operationId).
+	StopInstance(ctx context.Context, instanceId openapi_types.UUID, reqEditors ...RequestEditorFn) (*http.Response, error)
 
 	// ListOperationLogs List the operation log of the project
 	//
@@ -3168,56 +3162,6 @@ func (c *Client) RenameInstance(ctx context.Context, instanceId openapi_types.UU
 	return c.Client.Do(req)
 }
 
-// ActOnInstanceWithBody Start, stop or reboot an instance
-//
-// Reboot defaults to a soft reboot, in which the operating system shuts down normally before starting again.
-//
-// A soft reboot has no effect once the system is unresponsive. Set `force` to reboot forcibly: a forced reboot does not wait for the operating system to shut down, so **unwritten data is lost**. `force` applies to `reboot` only.
-//
-// An instance suspended by the platform must be unsuspended first.
-//
-// This endpoint returns immediately and the `status` it returns is a transient state: `starting` for start, `stopping` for stop, `rebooting` for reboot. Poll the instance until it settles at `running` or `stopped`.
-//
-// Takes any type of body and a specified content type.
-//
-// Corresponds with POST /api/v1/instances/{instanceId}/actions (the `ActOnInstance` operationId).
-func (c *Client) ActOnInstanceWithBody(ctx context.Context, instanceId openapi_types.UUID, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
-	req, err := NewActOnInstanceRequestWithBody(c.Server, instanceId, contentType, body)
-	if err != nil {
-		return nil, err
-	}
-	req = req.WithContext(ctx)
-	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
-		return nil, err
-	}
-	return c.Client.Do(req)
-}
-
-// ActOnInstance Start, stop or reboot an instance
-//
-// Reboot defaults to a soft reboot, in which the operating system shuts down normally before starting again.
-//
-// A soft reboot has no effect once the system is unresponsive. Set `force` to reboot forcibly: a forced reboot does not wait for the operating system to shut down, so **unwritten data is lost**. `force` applies to `reboot` only.
-//
-// An instance suspended by the platform must be unsuspended first.
-//
-// This endpoint returns immediately and the `status` it returns is a transient state: `starting` for start, `stopping` for stop, `rebooting` for reboot. Poll the instance until it settles at `running` or `stopped`.
-//
-// Takes a body of the `application/json` content type.
-//
-// Corresponds with POST /api/v1/instances/{instanceId}/actions (the `ActOnInstance` operationId).
-func (c *Client) ActOnInstance(ctx context.Context, instanceId openapi_types.UUID, body ActOnInstanceJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
-	req, err := NewActOnInstanceRequest(c.Server, instanceId, body)
-	if err != nil {
-		return nil, err
-	}
-	req = req.WithContext(ctx)
-	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
-		return nil, err
-	}
-	return c.Client.Do(req)
-}
-
 // RunInstanceCommandWithBody Run a command on an instance
 //
 // Runs one command over SSH and returns what it wrote. **This is not a shell.** There is no terminal, no standard input and no way to answer a prompt: a command that waits for input produces nothing and is killed at the timeout. Chain steps with `&&`, or write a script and run that.
@@ -3553,6 +3497,56 @@ func (c *Client) DetachPort(ctx context.Context, instanceId openapi_types.UUID, 
 	return c.Client.Do(req)
 }
 
+// RebootInstanceWithBody Reboot an instance
+//
+// A reboot defaults to soft, in which the operating system shuts down normally before starting again.
+//
+// A soft reboot has no effect once the system is unresponsive. Set `force` to reboot forcibly: a forced reboot does not wait for the operating system to shut down, so **unwritten data is lost**.
+//
+// An instance suspended by the platform must be unsuspended first.
+//
+// This endpoint returns immediately and the `status` it returns is the transient `rebooting`. Poll the instance until it settles at `running`.
+//
+// Takes any type of body and a specified content type.
+//
+// Corresponds with POST /api/v1/instances/{instanceId}/reboot (the `RebootInstance` operationId).
+func (c *Client) RebootInstanceWithBody(ctx context.Context, instanceId openapi_types.UUID, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewRebootInstanceRequestWithBody(c.Server, instanceId, contentType, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+// RebootInstance Reboot an instance
+//
+// A reboot defaults to soft, in which the operating system shuts down normally before starting again.
+//
+// A soft reboot has no effect once the system is unresponsive. Set `force` to reboot forcibly: a forced reboot does not wait for the operating system to shut down, so **unwritten data is lost**.
+//
+// An instance suspended by the platform must be unsuspended first.
+//
+// This endpoint returns immediately and the `status` it returns is the transient `rebooting`. Poll the instance until it settles at `running`.
+//
+// Takes a body of the `application/json` content type.
+//
+// Corresponds with POST /api/v1/instances/{instanceId}/reboot (the `RebootInstance` operationId).
+func (c *Client) RebootInstance(ctx context.Context, instanceId openapi_types.UUID, body RebootInstanceJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewRebootInstanceRequest(c.Server, instanceId, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
 // RebuildInstanceWithBody Rebuild an instance
 //
 // **All data on the system disk is erased and cannot be recovered.** Attached data disks are unaffected.
@@ -3661,6 +3655,46 @@ func (c *Client) ConfirmInstanceResize(ctx context.Context, instanceId openapi_t
 // Corresponds with POST /api/v1/instances/{instanceId}/resize/revert (the `RevertInstanceResize` operationId).
 func (c *Client) RevertInstanceResize(ctx context.Context, instanceId openapi_types.UUID, reqEditors ...RequestEditorFn) (*http.Response, error) {
 	req, err := NewRevertInstanceResizeRequest(c.Server, instanceId)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+// StartInstance Start an instance
+//
+// An instance suspended by the platform must be unsuspended first.
+//
+// This endpoint returns immediately and the `status` it returns is the transient `starting`. Poll the instance until it settles at `running`.
+//
+// Corresponds with POST /api/v1/instances/{instanceId}/start (the `StartInstance` operationId).
+func (c *Client) StartInstance(ctx context.Context, instanceId openapi_types.UUID, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewStartInstanceRequest(c.Server, instanceId)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+// StopInstance Stop an instance
+//
+// The operating system is asked to shut down and is powered off once it does, or once it stops responding for long enough. Stopping does not release the instance: it keeps its disks, its addresses and its name, and starts again where it left off.
+//
+// An instance suspended by the platform must be unsuspended first.
+//
+// This endpoint returns immediately and the `status` it returns is the transient `stopping`. Poll the instance until it settles at `stopped`.
+//
+// Corresponds with POST /api/v1/instances/{instanceId}/stop (the `StopInstance` operationId).
+func (c *Client) StopInstance(ctx context.Context, instanceId openapi_types.UUID, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewStopInstanceRequest(c.Server, instanceId)
 	if err != nil {
 		return nil, err
 	}
@@ -5744,53 +5778,6 @@ func NewRenameInstanceRequestWithBody(server string, instanceId openapi_types.UU
 	return req, nil
 }
 
-// NewActOnInstanceRequest calls the generic ActOnInstance builder with application/json body
-func NewActOnInstanceRequest(server string, instanceId openapi_types.UUID, body ActOnInstanceJSONRequestBody) (*http.Request, error) {
-	var bodyReader io.Reader
-	buf, err := json.Marshal(body)
-	if err != nil {
-		return nil, err
-	}
-	bodyReader = bytes.NewReader(buf)
-	return NewActOnInstanceRequestWithBody(server, instanceId, "application/json", bodyReader)
-}
-
-// NewActOnInstanceRequestWithBody constructs an http.Request for the ActOnInstance method, with any body, and a specified content type
-func NewActOnInstanceRequestWithBody(server string, instanceId openapi_types.UUID, contentType string, body io.Reader) (*http.Request, error) {
-	var err error
-
-	var pathParam0 string
-
-	pathParam0, err = runtime.StyleParamWithOptions("simple", false, "instanceId", instanceId, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: "uuid"})
-	if err != nil {
-		return nil, err
-	}
-
-	serverURL, err := url.Parse(server)
-	if err != nil {
-		return nil, err
-	}
-
-	operationPath := fmt.Sprintf("/api/v1/instances/%s/actions", pathParam0)
-	if operationPath[0] == '/' {
-		operationPath = "." + operationPath
-	}
-
-	queryURL, err := serverURL.Parse(operationPath)
-	if err != nil {
-		return nil, err
-	}
-
-	req, err := http.NewRequest(http.MethodPost, queryURL.String(), body)
-	if err != nil {
-		return nil, err
-	}
-
-	req.Header.Add("Content-Type", contentType)
-
-	return req, nil
-}
-
 // NewRunInstanceCommandRequest calls the generic RunInstanceCommand builder with application/json body
 func NewRunInstanceCommandRequest(server string, instanceId openapi_types.UUID, body RunInstanceCommandJSONRequestBody) (*http.Request, error) {
 	var bodyReader io.Reader
@@ -6312,6 +6299,53 @@ func NewDetachPortRequest(server string, instanceId openapi_types.UUID, portId o
 	return req, nil
 }
 
+// NewRebootInstanceRequest calls the generic RebootInstance builder with application/json body
+func NewRebootInstanceRequest(server string, instanceId openapi_types.UUID, body RebootInstanceJSONRequestBody) (*http.Request, error) {
+	var bodyReader io.Reader
+	buf, err := json.Marshal(body)
+	if err != nil {
+		return nil, err
+	}
+	bodyReader = bytes.NewReader(buf)
+	return NewRebootInstanceRequestWithBody(server, instanceId, "application/json", bodyReader)
+}
+
+// NewRebootInstanceRequestWithBody constructs an http.Request for the RebootInstance method, with any body, and a specified content type
+func NewRebootInstanceRequestWithBody(server string, instanceId openapi_types.UUID, contentType string, body io.Reader) (*http.Request, error) {
+	var err error
+
+	var pathParam0 string
+
+	pathParam0, err = runtime.StyleParamWithOptions("simple", false, "instanceId", instanceId, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: "uuid"})
+	if err != nil {
+		return nil, err
+	}
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/api/v1/instances/%s/reboot", pathParam0)
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest(http.MethodPost, queryURL.String(), body)
+	if err != nil {
+		return nil, err
+	}
+
+	req.Header.Add("Content-Type", contentType)
+
+	return req, nil
+}
+
 // NewRebuildInstanceRequest calls the generic RebuildInstance builder with application/json body
 func NewRebuildInstanceRequest(server string, instanceId openapi_types.UUID, body RebuildInstanceJSONRequestBody) (*http.Request, error) {
 	var bodyReader io.Reader
@@ -6457,6 +6491,74 @@ func NewRevertInstanceResizeRequest(server string, instanceId openapi_types.UUID
 	}
 
 	operationPath := fmt.Sprintf("/api/v1/instances/%s/resize/revert", pathParam0)
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest(http.MethodPost, queryURL.String(), nil)
+	if err != nil {
+		return nil, err
+	}
+
+	return req, nil
+}
+
+// NewStartInstanceRequest constructs an http.Request for the StartInstance method
+func NewStartInstanceRequest(server string, instanceId openapi_types.UUID) (*http.Request, error) {
+	var err error
+
+	var pathParam0 string
+
+	pathParam0, err = runtime.StyleParamWithOptions("simple", false, "instanceId", instanceId, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: "uuid"})
+	if err != nil {
+		return nil, err
+	}
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/api/v1/instances/%s/start", pathParam0)
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest(http.MethodPost, queryURL.String(), nil)
+	if err != nil {
+		return nil, err
+	}
+
+	return req, nil
+}
+
+// NewStopInstanceRequest constructs an http.Request for the StopInstance method
+func NewStopInstanceRequest(server string, instanceId openapi_types.UUID) (*http.Request, error) {
+	var err error
+
+	var pathParam0 string
+
+	pathParam0, err = runtime.StyleParamWithOptions("simple", false, "instanceId", instanceId, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: "uuid"})
+	if err != nil {
+		return nil, err
+	}
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/api/v1/instances/%s/stop", pathParam0)
 	if operationPath[0] == '/' {
 		operationPath = "." + operationPath
 	}
@@ -8521,36 +8623,6 @@ type ClientWithResponsesInterface interface {
 	// Corresponds with PATCH /api/v1/instances/{instanceId} (the `RenameInstance` operationId).
 	RenameInstanceWithResponse(ctx context.Context, instanceId openapi_types.UUID, body RenameInstanceJSONRequestBody, reqEditors ...RequestEditorFn) (*RenameInstanceResponse, error)
 
-	// ActOnInstanceWithBodyWithResponse Start, stop or reboot an instance
-	//
-	// Reboot defaults to a soft reboot, in which the operating system shuts down normally before starting again.
-	//
-	// A soft reboot has no effect once the system is unresponsive. Set `force` to reboot forcibly: a forced reboot does not wait for the operating system to shut down, so **unwritten data is lost**. `force` applies to `reboot` only.
-	//
-	// An instance suspended by the platform must be unsuspended first.
-	//
-	// This endpoint returns immediately and the `status` it returns is a transient state: `starting` for start, `stopping` for stop, `rebooting` for reboot. Poll the instance until it settles at `running` or `stopped`.
-	//
-	// Takes any type of body and a specified content type, and returns a wrapper object for the known response body format(s).
-	//
-	// Corresponds with POST /api/v1/instances/{instanceId}/actions (the `ActOnInstance` operationId).
-	ActOnInstanceWithBodyWithResponse(ctx context.Context, instanceId openapi_types.UUID, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*ActOnInstanceResponse, error)
-
-	// ActOnInstanceWithResponse Start, stop or reboot an instance
-	//
-	// Reboot defaults to a soft reboot, in which the operating system shuts down normally before starting again.
-	//
-	// A soft reboot has no effect once the system is unresponsive. Set `force` to reboot forcibly: a forced reboot does not wait for the operating system to shut down, so **unwritten data is lost**. `force` applies to `reboot` only.
-	//
-	// An instance suspended by the platform must be unsuspended first.
-	//
-	// This endpoint returns immediately and the `status` it returns is a transient state: `starting` for start, `stopping` for stop, `rebooting` for reboot. Poll the instance until it settles at `running` or `stopped`.
-	//
-	// Takes a body of the `application/json` content type, and returns a wrapper object for the known response body format(s).
-	//
-	// Corresponds with POST /api/v1/instances/{instanceId}/actions (the `ActOnInstance` operationId).
-	ActOnInstanceWithResponse(ctx context.Context, instanceId openapi_types.UUID, body ActOnInstanceJSONRequestBody, reqEditors ...RequestEditorFn) (*ActOnInstanceResponse, error)
-
 	// RunInstanceCommandWithBodyWithResponse Run a command on an instance
 	//
 	// Runs one command over SSH and returns what it wrote. **This is not a shell.** There is no terminal, no standard input and no way to answer a prompt: a command that waits for input produces nothing and is killed at the timeout. Chain steps with `&&`, or write a script and run that.
@@ -8730,6 +8802,36 @@ type ClientWithResponsesInterface interface {
 	// Corresponds with DELETE /api/v1/instances/{instanceId}/ports/{portId} (the `DetachPort` operationId).
 	DetachPortWithResponse(ctx context.Context, instanceId openapi_types.UUID, portId openapi_types.UUID, reqEditors ...RequestEditorFn) (*DetachPortResponse, error)
 
+	// RebootInstanceWithBodyWithResponse Reboot an instance
+	//
+	// A reboot defaults to soft, in which the operating system shuts down normally before starting again.
+	//
+	// A soft reboot has no effect once the system is unresponsive. Set `force` to reboot forcibly: a forced reboot does not wait for the operating system to shut down, so **unwritten data is lost**.
+	//
+	// An instance suspended by the platform must be unsuspended first.
+	//
+	// This endpoint returns immediately and the `status` it returns is the transient `rebooting`. Poll the instance until it settles at `running`.
+	//
+	// Takes any type of body and a specified content type, and returns a wrapper object for the known response body format(s).
+	//
+	// Corresponds with POST /api/v1/instances/{instanceId}/reboot (the `RebootInstance` operationId).
+	RebootInstanceWithBodyWithResponse(ctx context.Context, instanceId openapi_types.UUID, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*RebootInstanceResponse, error)
+
+	// RebootInstanceWithResponse Reboot an instance
+	//
+	// A reboot defaults to soft, in which the operating system shuts down normally before starting again.
+	//
+	// A soft reboot has no effect once the system is unresponsive. Set `force` to reboot forcibly: a forced reboot does not wait for the operating system to shut down, so **unwritten data is lost**.
+	//
+	// An instance suspended by the platform must be unsuspended first.
+	//
+	// This endpoint returns immediately and the `status` it returns is the transient `rebooting`. Poll the instance until it settles at `running`.
+	//
+	// Takes a body of the `application/json` content type, and returns a wrapper object for the known response body format(s).
+	//
+	// Corresponds with POST /api/v1/instances/{instanceId}/reboot (the `RebootInstance` operationId).
+	RebootInstanceWithResponse(ctx context.Context, instanceId openapi_types.UUID, body RebootInstanceJSONRequestBody, reqEditors ...RequestEditorFn) (*RebootInstanceResponse, error)
+
 	// RebuildInstanceWithBodyWithResponse Rebuild an instance
 	//
 	// **All data on the system disk is erased and cannot be recovered.** Attached data disks are unaffected.
@@ -8791,6 +8893,30 @@ type ClientWithResponsesInterface interface {
 	//
 	// Corresponds with POST /api/v1/instances/{instanceId}/resize/revert (the `RevertInstanceResize` operationId).
 	RevertInstanceResizeWithResponse(ctx context.Context, instanceId openapi_types.UUID, reqEditors ...RequestEditorFn) (*RevertInstanceResizeResponse, error)
+
+	// StartInstanceWithResponse Start an instance
+	//
+	// An instance suspended by the platform must be unsuspended first.
+	//
+	// This endpoint returns immediately and the `status` it returns is the transient `starting`. Poll the instance until it settles at `running`.
+	//
+	// Returns a wrapper object for the known response body format(s).
+	//
+	// Corresponds with POST /api/v1/instances/{instanceId}/start (the `StartInstance` operationId).
+	StartInstanceWithResponse(ctx context.Context, instanceId openapi_types.UUID, reqEditors ...RequestEditorFn) (*StartInstanceResponse, error)
+
+	// StopInstanceWithResponse Stop an instance
+	//
+	// The operating system is asked to shut down and is powered off once it does, or once it stops responding for long enough. Stopping does not release the instance: it keeps its disks, its addresses and its name, and starts again where it left off.
+	//
+	// An instance suspended by the platform must be unsuspended first.
+	//
+	// This endpoint returns immediately and the `status` it returns is the transient `stopping`. Poll the instance until it settles at `stopped`.
+	//
+	// Returns a wrapper object for the known response body format(s).
+	//
+	// Corresponds with POST /api/v1/instances/{instanceId}/stop (the `StopInstance` operationId).
+	StopInstanceWithResponse(ctx context.Context, instanceId openapi_types.UUID, reqEditors ...RequestEditorFn) (*StopInstanceResponse, error)
 
 	// ListOperationLogsWithResponse List the operation log of the project
 	//
@@ -10560,54 +10686,6 @@ func (r RenameInstanceResponse) ContentType() string {
 	return ""
 }
 
-type ActOnInstanceResponse struct {
-	Body         []byte
-	HTTPResponse *http.Response
-	// JSON200 the response for an HTTP 200 `application/json` response
-	JSON200 *InstanceResource
-	// JSONDefault the response for an HTTP default `application/json` response
-	JSONDefault *Error
-}
-
-// GetJSON200 returns the response for an HTTP 200 `application/json` response
-func (r ActOnInstanceResponse) GetJSON200() *InstanceResource {
-	return r.JSON200
-}
-
-// GetJSONDefault returns the response for an HTTP default `application/json` response
-func (r ActOnInstanceResponse) GetJSONDefault() *Error {
-	return r.JSONDefault
-}
-
-// GetBody returns the raw response body bytes
-func (r ActOnInstanceResponse) GetBody() []byte {
-	return r.Body
-}
-
-// Status returns HTTPResponse.Status
-func (r ActOnInstanceResponse) Status() string {
-	if r.HTTPResponse != nil {
-		return r.HTTPResponse.Status
-	}
-	return http.StatusText(0)
-}
-
-// StatusCode returns HTTPResponse.StatusCode
-func (r ActOnInstanceResponse) StatusCode() int {
-	if r.HTTPResponse != nil {
-		return r.HTTPResponse.StatusCode
-	}
-	return 0
-}
-
-// ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
-func (r ActOnInstanceResponse) ContentType() string {
-	if r.HTTPResponse != nil {
-		return r.HTTPResponse.Header.Get("Content-Type")
-	}
-	return ""
-}
-
 type RunInstanceCommandResponse struct {
 	Body         []byte
 	HTTPResponse *http.Response
@@ -11184,6 +11262,54 @@ func (r DetachPortResponse) ContentType() string {
 	return ""
 }
 
+type RebootInstanceResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	// JSON200 the response for an HTTP 200 `application/json` response
+	JSON200 *InstanceResource
+	// JSONDefault the response for an HTTP default `application/json` response
+	JSONDefault *Error
+}
+
+// GetJSON200 returns the response for an HTTP 200 `application/json` response
+func (r RebootInstanceResponse) GetJSON200() *InstanceResource {
+	return r.JSON200
+}
+
+// GetJSONDefault returns the response for an HTTP default `application/json` response
+func (r RebootInstanceResponse) GetJSONDefault() *Error {
+	return r.JSONDefault
+}
+
+// GetBody returns the raw response body bytes
+func (r RebootInstanceResponse) GetBody() []byte {
+	return r.Body
+}
+
+// Status returns HTTPResponse.Status
+func (r RebootInstanceResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r RebootInstanceResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+// ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
+func (r RebootInstanceResponse) ContentType() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Header.Get("Content-Type")
+	}
+	return ""
+}
+
 type RebuildInstanceResponse struct {
 	Body         []byte
 	HTTPResponse *http.Response
@@ -11370,6 +11496,102 @@ func (r RevertInstanceResizeResponse) StatusCode() int {
 
 // ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
 func (r RevertInstanceResizeResponse) ContentType() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Header.Get("Content-Type")
+	}
+	return ""
+}
+
+type StartInstanceResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	// JSON200 the response for an HTTP 200 `application/json` response
+	JSON200 *InstanceResource
+	// JSONDefault the response for an HTTP default `application/json` response
+	JSONDefault *Error
+}
+
+// GetJSON200 returns the response for an HTTP 200 `application/json` response
+func (r StartInstanceResponse) GetJSON200() *InstanceResource {
+	return r.JSON200
+}
+
+// GetJSONDefault returns the response for an HTTP default `application/json` response
+func (r StartInstanceResponse) GetJSONDefault() *Error {
+	return r.JSONDefault
+}
+
+// GetBody returns the raw response body bytes
+func (r StartInstanceResponse) GetBody() []byte {
+	return r.Body
+}
+
+// Status returns HTTPResponse.Status
+func (r StartInstanceResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r StartInstanceResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+// ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
+func (r StartInstanceResponse) ContentType() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Header.Get("Content-Type")
+	}
+	return ""
+}
+
+type StopInstanceResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	// JSON200 the response for an HTTP 200 `application/json` response
+	JSON200 *InstanceResource
+	// JSONDefault the response for an HTTP default `application/json` response
+	JSONDefault *Error
+}
+
+// GetJSON200 returns the response for an HTTP 200 `application/json` response
+func (r StopInstanceResponse) GetJSON200() *InstanceResource {
+	return r.JSON200
+}
+
+// GetJSONDefault returns the response for an HTTP default `application/json` response
+func (r StopInstanceResponse) GetJSONDefault() *Error {
+	return r.JSONDefault
+}
+
+// GetBody returns the raw response body bytes
+func (r StopInstanceResponse) GetBody() []byte {
+	return r.Body
+}
+
+// Status returns HTTPResponse.Status
+func (r StopInstanceResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r StopInstanceResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+// ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
+func (r StopInstanceResponse) ContentType() string {
 	if r.HTTPResponse != nil {
 		return r.HTTPResponse.Header.Get("Content-Type")
 	}
@@ -13811,48 +14033,6 @@ func (c *ClientWithResponses) RenameInstanceWithResponse(ctx context.Context, in
 	return ParseRenameInstanceResponse(rsp)
 }
 
-// ActOnInstanceWithBodyWithResponse Start, stop or reboot an instance
-//
-// Reboot defaults to a soft reboot, in which the operating system shuts down normally before starting again.
-//
-// A soft reboot has no effect once the system is unresponsive. Set `force` to reboot forcibly: a forced reboot does not wait for the operating system to shut down, so **unwritten data is lost**. `force` applies to `reboot` only.
-//
-// An instance suspended by the platform must be unsuspended first.
-//
-// This endpoint returns immediately and the `status` it returns is a transient state: `starting` for start, `stopping` for stop, `rebooting` for reboot. Poll the instance until it settles at `running` or `stopped`.
-//
-// Takes any type of body and a specified content type, and returns a wrapper object for the known response body format(s).
-//
-// Corresponds with POST /api/v1/instances/{instanceId}/actions (the `ActOnInstance` operationId).
-func (c *ClientWithResponses) ActOnInstanceWithBodyWithResponse(ctx context.Context, instanceId openapi_types.UUID, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*ActOnInstanceResponse, error) {
-	rsp, err := c.ActOnInstanceWithBody(ctx, instanceId, contentType, body, reqEditors...)
-	if err != nil {
-		return nil, err
-	}
-	return ParseActOnInstanceResponse(rsp)
-}
-
-// ActOnInstanceWithResponse Start, stop or reboot an instance
-//
-// Reboot defaults to a soft reboot, in which the operating system shuts down normally before starting again.
-//
-// A soft reboot has no effect once the system is unresponsive. Set `force` to reboot forcibly: a forced reboot does not wait for the operating system to shut down, so **unwritten data is lost**. `force` applies to `reboot` only.
-//
-// An instance suspended by the platform must be unsuspended first.
-//
-// This endpoint returns immediately and the `status` it returns is a transient state: `starting` for start, `stopping` for stop, `rebooting` for reboot. Poll the instance until it settles at `running` or `stopped`.
-//
-// Takes a body of the `application/json` content type, and returns a wrapper object for the known response body format(s).
-//
-// Corresponds with POST /api/v1/instances/{instanceId}/actions (the `ActOnInstance` operationId).
-func (c *ClientWithResponses) ActOnInstanceWithResponse(ctx context.Context, instanceId openapi_types.UUID, body ActOnInstanceJSONRequestBody, reqEditors ...RequestEditorFn) (*ActOnInstanceResponse, error) {
-	rsp, err := c.ActOnInstance(ctx, instanceId, body, reqEditors...)
-	if err != nil {
-		return nil, err
-	}
-	return ParseActOnInstanceResponse(rsp)
-}
-
 // RunInstanceCommandWithBodyWithResponse Run a command on an instance
 //
 // Runs one command over SSH and returns what it wrote. **This is not a shell.** There is no terminal, no standard input and no way to answer a prompt: a command that waits for input produces nothing and is killed at the timeout. Chain steps with `&&`, or write a script and run that.
@@ -14134,6 +14314,48 @@ func (c *ClientWithResponses) DetachPortWithResponse(ctx context.Context, instan
 	return ParseDetachPortResponse(rsp)
 }
 
+// RebootInstanceWithBodyWithResponse Reboot an instance
+//
+// A reboot defaults to soft, in which the operating system shuts down normally before starting again.
+//
+// A soft reboot has no effect once the system is unresponsive. Set `force` to reboot forcibly: a forced reboot does not wait for the operating system to shut down, so **unwritten data is lost**.
+//
+// An instance suspended by the platform must be unsuspended first.
+//
+// This endpoint returns immediately and the `status` it returns is the transient `rebooting`. Poll the instance until it settles at `running`.
+//
+// Takes any type of body and a specified content type, and returns a wrapper object for the known response body format(s).
+//
+// Corresponds with POST /api/v1/instances/{instanceId}/reboot (the `RebootInstance` operationId).
+func (c *ClientWithResponses) RebootInstanceWithBodyWithResponse(ctx context.Context, instanceId openapi_types.UUID, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*RebootInstanceResponse, error) {
+	rsp, err := c.RebootInstanceWithBody(ctx, instanceId, contentType, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseRebootInstanceResponse(rsp)
+}
+
+// RebootInstanceWithResponse Reboot an instance
+//
+// A reboot defaults to soft, in which the operating system shuts down normally before starting again.
+//
+// A soft reboot has no effect once the system is unresponsive. Set `force` to reboot forcibly: a forced reboot does not wait for the operating system to shut down, so **unwritten data is lost**.
+//
+// An instance suspended by the platform must be unsuspended first.
+//
+// This endpoint returns immediately and the `status` it returns is the transient `rebooting`. Poll the instance until it settles at `running`.
+//
+// Takes a body of the `application/json` content type, and returns a wrapper object for the known response body format(s).
+//
+// Corresponds with POST /api/v1/instances/{instanceId}/reboot (the `RebootInstance` operationId).
+func (c *ClientWithResponses) RebootInstanceWithResponse(ctx context.Context, instanceId openapi_types.UUID, body RebootInstanceJSONRequestBody, reqEditors ...RequestEditorFn) (*RebootInstanceResponse, error) {
+	rsp, err := c.RebootInstance(ctx, instanceId, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseRebootInstanceResponse(rsp)
+}
+
 // RebuildInstanceWithBodyWithResponse Rebuild an instance
 //
 // **All data on the system disk is erased and cannot be recovered.** Attached data disks are unaffected.
@@ -14230,6 +14452,42 @@ func (c *ClientWithResponses) RevertInstanceResizeWithResponse(ctx context.Conte
 		return nil, err
 	}
 	return ParseRevertInstanceResizeResponse(rsp)
+}
+
+// StartInstanceWithResponse Start an instance
+//
+// An instance suspended by the platform must be unsuspended first.
+//
+// This endpoint returns immediately and the `status` it returns is the transient `starting`. Poll the instance until it settles at `running`.
+//
+// Returns a wrapper object for the known response body format(s).
+//
+// Corresponds with POST /api/v1/instances/{instanceId}/start (the `StartInstance` operationId).
+func (c *ClientWithResponses) StartInstanceWithResponse(ctx context.Context, instanceId openapi_types.UUID, reqEditors ...RequestEditorFn) (*StartInstanceResponse, error) {
+	rsp, err := c.StartInstance(ctx, instanceId, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseStartInstanceResponse(rsp)
+}
+
+// StopInstanceWithResponse Stop an instance
+//
+// The operating system is asked to shut down and is powered off once it does, or once it stops responding for long enough. Stopping does not release the instance: it keeps its disks, its addresses and its name, and starts again where it left off.
+//
+// An instance suspended by the platform must be unsuspended first.
+//
+// This endpoint returns immediately and the `status` it returns is the transient `stopping`. Poll the instance until it settles at `stopped`.
+//
+// Returns a wrapper object for the known response body format(s).
+//
+// Corresponds with POST /api/v1/instances/{instanceId}/stop (the `StopInstance` operationId).
+func (c *ClientWithResponses) StopInstanceWithResponse(ctx context.Context, instanceId openapi_types.UUID, reqEditors ...RequestEditorFn) (*StopInstanceResponse, error) {
+	rsp, err := c.StopInstance(ctx, instanceId, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseStopInstanceResponse(rsp)
 }
 
 // ListOperationLogsWithResponse List the operation log of the project
@@ -15897,39 +16155,6 @@ func ParseRenameInstanceResponse(rsp *http.Response) (*RenameInstanceResponse, e
 	return response, nil
 }
 
-// ParseActOnInstanceResponse parses an HTTP response from a ActOnInstanceWithResponse call
-func ParseActOnInstanceResponse(rsp *http.Response) (*ActOnInstanceResponse, error) {
-	bodyBytes, err := io.ReadAll(rsp.Body)
-	defer func() { _ = rsp.Body.Close() }()
-	if err != nil {
-		return nil, err
-	}
-
-	response := &ActOnInstanceResponse{
-		Body:         bodyBytes,
-		HTTPResponse: rsp,
-	}
-
-	switch {
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
-		var dest InstanceResource
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSON200 = &dest
-
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && true:
-		var dest Error
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSONDefault = &dest
-
-	}
-
-	return response, nil
-}
-
 // ParseRunInstanceCommandResponse parses an HTTP response from a RunInstanceCommandWithResponse call
 func ParseRunInstanceCommandResponse(rsp *http.Response) (*RunInstanceCommandResponse, error) {
 	bodyBytes, err := io.ReadAll(rsp.Body)
@@ -16326,6 +16551,39 @@ func ParseDetachPortResponse(rsp *http.Response) (*DetachPortResponse, error) {
 	return response, nil
 }
 
+// ParseRebootInstanceResponse parses an HTTP response from a RebootInstanceWithResponse call
+func ParseRebootInstanceResponse(rsp *http.Response) (*RebootInstanceResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &RebootInstanceResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest InstanceResource
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && true:
+		var dest Error
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSONDefault = &dest
+
+	}
+
+	return response, nil
+}
+
 // ParseRebuildInstanceResponse parses an HTTP response from a RebuildInstanceWithResponse call
 func ParseRebuildInstanceResponse(rsp *http.Response) (*RebuildInstanceResponse, error) {
 	bodyBytes, err := io.ReadAll(rsp.Body)
@@ -16434,6 +16692,72 @@ func ParseRevertInstanceResizeResponse(rsp *http.Response) (*RevertInstanceResiz
 	}
 
 	response := &RevertInstanceResizeResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest InstanceResource
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && true:
+		var dest Error
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSONDefault = &dest
+
+	}
+
+	return response, nil
+}
+
+// ParseStartInstanceResponse parses an HTTP response from a StartInstanceWithResponse call
+func ParseStartInstanceResponse(rsp *http.Response) (*StartInstanceResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &StartInstanceResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest InstanceResource
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && true:
+		var dest Error
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSONDefault = &dest
+
+	}
+
+	return response, nil
+}
+
+// ParseStopInstanceResponse parses an HTTP response from a StopInstanceWithResponse call
+func ParseStopInstanceResponse(rsp *http.Response) (*StopInstanceResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &StopInstanceResponse{
 		Body:         bodyBytes,
 		HTTPResponse: rsp,
 	}

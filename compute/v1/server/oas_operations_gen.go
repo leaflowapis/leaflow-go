@@ -6,7 +6,6 @@ package computev1server
 type OperationName = string
 
 const (
-	ActOnInstanceOperation             OperationName = "ActOnInstance"
 	AllocateFloatingIPOperation        OperationName = "AllocateFloatingIP"
 	AttachDiskOperation                OperationName = "AttachDisk"
 	AttachInstanceFloatingIPOperation  OperationName = "AttachInstanceFloatingIP"
@@ -71,6 +70,7 @@ const (
 	ListSnapshotsOperation             OperationName = "ListSnapshots"
 	ListSubnetsOperation               OperationName = "ListSubnets"
 	OpenInstanceConsoleOperation       OperationName = "OpenInstanceConsole"
+	RebootInstanceOperation            OperationName = "RebootInstance"
 	RebuildInstanceOperation           OperationName = "RebuildInstance"
 	ReleaseFloatingIPOperation         OperationName = "ReleaseFloatingIP"
 	RenameBackupOperation              OperationName = "RenameBackup"
@@ -88,6 +88,8 @@ const (
 	RevertInstanceResizeOperation      OperationName = "RevertInstanceResize"
 	RunInstanceCommandOperation        OperationName = "RunInstanceCommand"
 	SetFloatingIPBandwidthOperation    OperationName = "SetFloatingIPBandwidth"
+	StartInstanceOperation             OperationName = "StartInstance"
+	StopInstanceOperation              OperationName = "StopInstance"
 	SuggestSubnetCidrOperation         OperationName = "SuggestSubnetCidr"
 	UnbindFloatingIPOperation          OperationName = "UnbindFloatingIP"
 )

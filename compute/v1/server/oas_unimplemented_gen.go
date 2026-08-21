@@ -13,26 +13,6 @@ type UnimplementedHandler struct{}
 
 var _ Handler = UnimplementedHandler{}
 
-// ActOnInstance implements act-on-instance operation.
-//
-// Reboot defaults to a soft reboot, in which the operating system shuts down normally before starting
-// again.
-//
-// A soft reboot has no effect once the system is unresponsive. Set `force` to reboot forcibly: a
-// forced reboot does not wait for the operating system to shut down, so unwritten data is lost.
-// `force` applies to `reboot` only.
-//
-// An instance suspended by the platform must be unsuspended first.
-//
-// This endpoint returns immediately and the `status` it returns is a transient state: `starting` for
-// start, `stopping` for stop, `rebooting` for reboot. Poll the instance until it settles at `running`
-// or `stopped`.
-//
-// POST /api/v1/instances/{instanceId}/actions
-func (UnimplementedHandler) ActOnInstance(ctx context.Context, req *ActOnInstanceRequestBody, params ActOnInstanceParams) (r *InstanceResource, _ error) {
-	return r, ht.ErrNotImplemented
-}
-
 // AllocateFloatingIP implements allocate-floating-ip operation.
 //
 // If the private network is not yet connected to the internet, connectivity is established as part of
@@ -716,6 +696,23 @@ func (UnimplementedHandler) OpenInstanceConsole(ctx context.Context, params Open
 	return r, ht.ErrNotImplemented
 }
 
+// RebootInstance implements reboot-instance operation.
+//
+// A reboot defaults to soft, in which the operating system shuts down normally before starting again.
+//
+// A soft reboot has no effect once the system is unresponsive. Set `force` to reboot forcibly: a
+// forced reboot does not wait for the operating system to shut down, so unwritten data is lost.
+//
+// An instance suspended by the platform must be unsuspended first.
+//
+// This endpoint returns immediately and the `status` it returns is the transient `rebooting`. Poll the
+// instance until it settles at `running`.
+//
+// POST /api/v1/instances/{instanceId}/reboot
+func (UnimplementedHandler) RebootInstance(ctx context.Context, req *RebootInstanceRequestBody, params RebootInstanceParams) (r *InstanceResource, _ error) {
+	return r, ht.ErrNotImplemented
+}
+
 // RebuildInstance implements rebuild-instance operation.
 //
 // All data on the system disk is erased and cannot be recovered. Attached data disks are unaffected.
@@ -917,6 +914,34 @@ func (UnimplementedHandler) RunInstanceCommand(ctx context.Context, req *RunComm
 //
 // PUT /api/v1/floating-ips/{floatingIpId}/bandwidth
 func (UnimplementedHandler) SetFloatingIPBandwidth(ctx context.Context, req *SetBandwidthRequestBody, params SetFloatingIPBandwidthParams) (r *FloatingIPResource, _ error) {
+	return r, ht.ErrNotImplemented
+}
+
+// StartInstance implements start-instance operation.
+//
+// An instance suspended by the platform must be unsuspended first.
+//
+// This endpoint returns immediately and the `status` it returns is the transient `starting`. Poll the
+// instance until it settles at `running`.
+//
+// POST /api/v1/instances/{instanceId}/start
+func (UnimplementedHandler) StartInstance(ctx context.Context, params StartInstanceParams) (r *InstanceResource, _ error) {
+	return r, ht.ErrNotImplemented
+}
+
+// StopInstance implements stop-instance operation.
+//
+// The operating system is asked to shut down and is powered off once it does, or once it stops
+// responding for long enough. Stopping does not release the instance: it keeps its disks, its
+// addresses and its name, and starts again where it left off.
+//
+// An instance suspended by the platform must be unsuspended first.
+//
+// This endpoint returns immediately and the `status` it returns is the transient `stopping`. Poll the
+// instance until it settles at `stopped`.
+//
+// POST /api/v1/instances/{instanceId}/stop
+func (UnimplementedHandler) StopInstance(ctx context.Context, params StopInstanceParams) (r *InstanceResource, _ error) {
 	return r, ht.ErrNotImplemented
 }
 

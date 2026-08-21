@@ -37,7 +37,6 @@ func findAuthorization(h http.Header, prefix string) (string, bool) {
 
 // operationRolesBearerAuth is a private map storing roles per operation.
 var operationRolesBearerAuth = map[string][]string{
-	ActOnInstanceOperation:             []string{},
 	AllocateFloatingIPOperation:        []string{},
 	AttachDiskOperation:                []string{},
 	AttachInstanceFloatingIPOperation:  []string{},
@@ -102,6 +101,7 @@ var operationRolesBearerAuth = map[string][]string{
 	ListSnapshotsOperation:             []string{},
 	ListSubnetsOperation:               []string{},
 	OpenInstanceConsoleOperation:       []string{},
+	RebootInstanceOperation:            []string{},
 	RebuildInstanceOperation:           []string{},
 	ReleaseFloatingIPOperation:         []string{},
 	RenameBackupOperation:              []string{},
@@ -119,6 +119,8 @@ var operationRolesBearerAuth = map[string][]string{
 	RevertInstanceResizeOperation:      []string{},
 	RunInstanceCommandOperation:        []string{},
 	SetFloatingIPBandwidthOperation:    []string{},
+	StartInstanceOperation:             []string{},
+	StopInstanceOperation:              []string{},
 	SuggestSubnetCidrOperation:         []string{},
 	UnbindFloatingIPOperation:          []string{},
 }

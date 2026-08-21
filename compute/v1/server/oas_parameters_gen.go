@@ -15,71 +15,6 @@ import (
 	"github.com/ogen-go/ogen/validate"
 )
 
-// ActOnInstanceParams is parameters of act-on-instance operation.
-type ActOnInstanceParams struct {
-	InstanceId uuid.UUID
-}
-
-func unpackActOnInstanceParams(packed middleware.Parameters) (params ActOnInstanceParams) {
-	{
-		key := middleware.ParameterKey{
-			Name: "instanceId",
-			In:   "path",
-		}
-		params.InstanceId = packed[key].(uuid.UUID)
-	}
-	return params
-}
-
-func decodeActOnInstanceParams(args [1]string, argsEscaped bool, r *http.Request) (params ActOnInstanceParams, _ error) {
-	// Decode path: instanceId.
-	if err := func() error {
-		param := args[0]
-		if argsEscaped {
-			unescaped, err := url.PathUnescape(args[0])
-			if err != nil {
-				return errors.Wrap(err, "unescape path")
-			}
-			param = unescaped
-		}
-		if len(param) > 0 {
-			d := uri.NewPathDecoder(uri.PathDecoderConfig{
-				Param:   "instanceId",
-				Value:   param,
-				Style:   uri.PathStyleSimple,
-				Explode: false,
-			})
-
-			if err := func() error {
-				val, err := d.DecodeValue()
-				if err != nil {
-					return err
-				}
-
-				c, err := conv.ToUUID(val)
-				if err != nil {
-					return err
-				}
-
-				params.InstanceId = c
-				return nil
-			}(); err != nil {
-				return err
-			}
-		} else {
-			return validate.ErrFieldRequired
-		}
-		return nil
-	}(); err != nil {
-		return params, &ogenerrors.DecodeParamError{
-			Name: "instanceId",
-			In:   "path",
-			Err:  err,
-		}
-	}
-	return params, nil
-}
-
 // AttachDiskParams is parameters of attach-disk operation.
 type AttachDiskParams struct {
 	InstanceId uuid.UUID
@@ -4278,6 +4213,71 @@ func decodeOpenInstanceConsoleParams(args [1]string, argsEscaped bool, r *http.R
 	return params, nil
 }
 
+// RebootInstanceParams is parameters of reboot-instance operation.
+type RebootInstanceParams struct {
+	InstanceId uuid.UUID
+}
+
+func unpackRebootInstanceParams(packed middleware.Parameters) (params RebootInstanceParams) {
+	{
+		key := middleware.ParameterKey{
+			Name: "instanceId",
+			In:   "path",
+		}
+		params.InstanceId = packed[key].(uuid.UUID)
+	}
+	return params
+}
+
+func decodeRebootInstanceParams(args [1]string, argsEscaped bool, r *http.Request) (params RebootInstanceParams, _ error) {
+	// Decode path: instanceId.
+	if err := func() error {
+		param := args[0]
+		if argsEscaped {
+			unescaped, err := url.PathUnescape(args[0])
+			if err != nil {
+				return errors.Wrap(err, "unescape path")
+			}
+			param = unescaped
+		}
+		if len(param) > 0 {
+			d := uri.NewPathDecoder(uri.PathDecoderConfig{
+				Param:   "instanceId",
+				Value:   param,
+				Style:   uri.PathStyleSimple,
+				Explode: false,
+			})
+
+			if err := func() error {
+				val, err := d.DecodeValue()
+				if err != nil {
+					return err
+				}
+
+				c, err := conv.ToUUID(val)
+				if err != nil {
+					return err
+				}
+
+				params.InstanceId = c
+				return nil
+			}(); err != nil {
+				return err
+			}
+		} else {
+			return validate.ErrFieldRequired
+		}
+		return nil
+	}(); err != nil {
+		return params, &ogenerrors.DecodeParamError{
+			Name: "instanceId",
+			In:   "path",
+			Err:  err,
+		}
+	}
+	return params, nil
+}
+
 // RebuildInstanceParams is parameters of rebuild-instance operation.
 type RebuildInstanceParams struct {
 	InstanceId uuid.UUID
@@ -5376,6 +5376,136 @@ func decodeSetFloatingIPBandwidthParams(args [1]string, argsEscaped bool, r *htt
 	}(); err != nil {
 		return params, &ogenerrors.DecodeParamError{
 			Name: "floatingIpId",
+			In:   "path",
+			Err:  err,
+		}
+	}
+	return params, nil
+}
+
+// StartInstanceParams is parameters of start-instance operation.
+type StartInstanceParams struct {
+	InstanceId uuid.UUID
+}
+
+func unpackStartInstanceParams(packed middleware.Parameters) (params StartInstanceParams) {
+	{
+		key := middleware.ParameterKey{
+			Name: "instanceId",
+			In:   "path",
+		}
+		params.InstanceId = packed[key].(uuid.UUID)
+	}
+	return params
+}
+
+func decodeStartInstanceParams(args [1]string, argsEscaped bool, r *http.Request) (params StartInstanceParams, _ error) {
+	// Decode path: instanceId.
+	if err := func() error {
+		param := args[0]
+		if argsEscaped {
+			unescaped, err := url.PathUnescape(args[0])
+			if err != nil {
+				return errors.Wrap(err, "unescape path")
+			}
+			param = unescaped
+		}
+		if len(param) > 0 {
+			d := uri.NewPathDecoder(uri.PathDecoderConfig{
+				Param:   "instanceId",
+				Value:   param,
+				Style:   uri.PathStyleSimple,
+				Explode: false,
+			})
+
+			if err := func() error {
+				val, err := d.DecodeValue()
+				if err != nil {
+					return err
+				}
+
+				c, err := conv.ToUUID(val)
+				if err != nil {
+					return err
+				}
+
+				params.InstanceId = c
+				return nil
+			}(); err != nil {
+				return err
+			}
+		} else {
+			return validate.ErrFieldRequired
+		}
+		return nil
+	}(); err != nil {
+		return params, &ogenerrors.DecodeParamError{
+			Name: "instanceId",
+			In:   "path",
+			Err:  err,
+		}
+	}
+	return params, nil
+}
+
+// StopInstanceParams is parameters of stop-instance operation.
+type StopInstanceParams struct {
+	InstanceId uuid.UUID
+}
+
+func unpackStopInstanceParams(packed middleware.Parameters) (params StopInstanceParams) {
+	{
+		key := middleware.ParameterKey{
+			Name: "instanceId",
+			In:   "path",
+		}
+		params.InstanceId = packed[key].(uuid.UUID)
+	}
+	return params
+}
+
+func decodeStopInstanceParams(args [1]string, argsEscaped bool, r *http.Request) (params StopInstanceParams, _ error) {
+	// Decode path: instanceId.
+	if err := func() error {
+		param := args[0]
+		if argsEscaped {
+			unescaped, err := url.PathUnescape(args[0])
+			if err != nil {
+				return errors.Wrap(err, "unescape path")
+			}
+			param = unescaped
+		}
+		if len(param) > 0 {
+			d := uri.NewPathDecoder(uri.PathDecoderConfig{
+				Param:   "instanceId",
+				Value:   param,
+				Style:   uri.PathStyleSimple,
+				Explode: false,
+			})
+
+			if err := func() error {
+				val, err := d.DecodeValue()
+				if err != nil {
+					return err
+				}
+
+				c, err := conv.ToUUID(val)
+				if err != nil {
+					return err
+				}
+
+				params.InstanceId = c
+				return nil
+			}(); err != nil {
+				return err
+			}
+		} else {
+			return validate.ErrFieldRequired
+		}
+		return nil
+	}(); err != nil {
+		return params, &ogenerrors.DecodeParamError{
+			Name: "instanceId",
 			In:   "path",
 			Err:  err,
 		}
