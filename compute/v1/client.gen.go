@@ -1805,7 +1805,7 @@ type ClientInterface interface {
 	//
 	// Authentication uses the key the platform attaches to every instance at creation, so nothing has to be set up first. The instance must have applied that key at first boot, which images without a full cloud-init do not do.
 	//
-	// **The host key is not verified.** Anyone in a position to intercept the connection can read the command and all of its output, so do not pass credentials this way.
+	// **Do not pass secrets in the command.** Read them from a file on the instance instead: neither the command nor its output is a confidential channel.
 	//
 	// Each stream is capped at 1 MiB. Beyond that the rest is discarded and `truncated` is true.
 	//
@@ -1826,7 +1826,7 @@ type ClientInterface interface {
 	//
 	// Authentication uses the key the platform attaches to every instance at creation, so nothing has to be set up first. The instance must have applied that key at first boot, which images without a full cloud-init do not do.
 	//
-	// **The host key is not verified.** Anyone in a position to intercept the connection can read the command and all of its output, so do not pass credentials this way.
+	// **Do not pass secrets in the command.** Read them from a file on the instance instead: neither the command nor its output is a confidential channel.
 	//
 	// Each stream is capped at 1 MiB. Beyond that the rest is discarded and `truncated` is true.
 	//
@@ -3230,7 +3230,7 @@ func (c *Client) ActOnInstance(ctx context.Context, instanceId openapi_types.UUI
 //
 // Authentication uses the key the platform attaches to every instance at creation, so nothing has to be set up first. The instance must have applied that key at first boot, which images without a full cloud-init do not do.
 //
-// **The host key is not verified.** Anyone in a position to intercept the connection can read the command and all of its output, so do not pass credentials this way.
+// **Do not pass secrets in the command.** Read them from a file on the instance instead: neither the command nor its output is a confidential channel.
 //
 // Each stream is capped at 1 MiB. Beyond that the rest is discarded and `truncated` is true.
 //
@@ -3261,7 +3261,7 @@ func (c *Client) RunInstanceCommandWithBody(ctx context.Context, instanceId open
 //
 // Authentication uses the key the platform attaches to every instance at creation, so nothing has to be set up first. The instance must have applied that key at first boot, which images without a full cloud-init do not do.
 //
-// **The host key is not verified.** Anyone in a position to intercept the connection can read the command and all of its output, so do not pass credentials this way.
+// **Do not pass secrets in the command.** Read them from a file on the instance instead: neither the command nor its output is a confidential channel.
 //
 // Each stream is capped at 1 MiB. Beyond that the rest is discarded and `truncated` is true.
 //
@@ -8563,7 +8563,7 @@ type ClientWithResponsesInterface interface {
 	//
 	// Authentication uses the key the platform attaches to every instance at creation, so nothing has to be set up first. The instance must have applied that key at first boot, which images without a full cloud-init do not do.
 	//
-	// **The host key is not verified.** Anyone in a position to intercept the connection can read the command and all of its output, so do not pass credentials this way.
+	// **Do not pass secrets in the command.** Read them from a file on the instance instead: neither the command nor its output is a confidential channel.
 	//
 	// Each stream is capped at 1 MiB. Beyond that the rest is discarded and `truncated` is true.
 	//
@@ -8584,7 +8584,7 @@ type ClientWithResponsesInterface interface {
 	//
 	// Authentication uses the key the platform attaches to every instance at creation, so nothing has to be set up first. The instance must have applied that key at first boot, which images without a full cloud-init do not do.
 	//
-	// **The host key is not verified.** Anyone in a position to intercept the connection can read the command and all of its output, so do not pass credentials this way.
+	// **Do not pass secrets in the command.** Read them from a file on the instance instead: neither the command nor its output is a confidential channel.
 	//
 	// Each stream is capped at 1 MiB. Beyond that the rest is discarded and `truncated` is true.
 	//
@@ -13865,7 +13865,7 @@ func (c *ClientWithResponses) ActOnInstanceWithResponse(ctx context.Context, ins
 //
 // Authentication uses the key the platform attaches to every instance at creation, so nothing has to be set up first. The instance must have applied that key at first boot, which images without a full cloud-init do not do.
 //
-// **The host key is not verified.** Anyone in a position to intercept the connection can read the command and all of its output, so do not pass credentials this way.
+// **Do not pass secrets in the command.** Read them from a file on the instance instead: neither the command nor its output is a confidential channel.
 //
 // Each stream is capped at 1 MiB. Beyond that the rest is discarded and `truncated` is true.
 //
@@ -13892,7 +13892,7 @@ func (c *ClientWithResponses) RunInstanceCommandWithBodyWithResponse(ctx context
 //
 // Authentication uses the key the platform attaches to every instance at creation, so nothing has to be set up first. The instance must have applied that key at first boot, which images without a full cloud-init do not do.
 //
-// **The host key is not verified.** Anyone in a position to intercept the connection can read the command and all of its output, so do not pass credentials this way.
+// **Do not pass secrets in the command.** Read them from a file on the instance instead: neither the command nor its output is a confidential channel.
 //
 // Each stream is capped at 1 MiB. Beyond that the rest is discarded and `truncated` is true.
 //
