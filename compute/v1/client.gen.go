@@ -445,6 +445,20 @@ type BindFloatingIPRequestBody struct {
 	PortId openapi_types.UUID `json:"port_id"`
 }
 
+// CommandResultResponseBody defines model for CommandResultResponseBody.
+type CommandResultResponseBody struct {
+	// ExitCode Null when the command was killed rather than finishing on its own, which includes the timeout
+	ExitCode *int64 `json:"exit_code"`
+	Stderr   string `json:"stderr"`
+	Stdout   string `json:"stdout"`
+
+	// TimedOut True when the command was still running at the timeout and was killed
+	TimedOut bool `json:"timed_out"`
+
+	// Truncated True when either stream hit the 1 MiB cap and the rest was discarded
+	Truncated bool `json:"truncated"`
+}
+
 // ConsoleOutputResponseBody defines model for ConsoleOutputResponseBody.
 type ConsoleOutputResponseBody struct {
 	// Output Raw text of the console output, in the same line order as inside the instance
@@ -1036,6 +1050,18 @@ type RouteResource struct {
 	Nexthop     string             `json:"nexthop"`
 }
 
+// RunCommandRequestBody defines model for RunCommandRequestBody.
+type RunCommandRequestBody struct {
+	// Command Run by the login shell, so pipes, redirection and `&&` work. It cannot read standard input
+	Command string `json:"command"`
+
+	// TimeoutSeconds Kill the command after this long. 60 when omitted
+	TimeoutSeconds *int64 `json:"timeout_seconds,omitempty"`
+
+	// Username The SSH user to log in as. It is the account the platform sets a password for at creation
+	Username *string `json:"username,omitempty"`
+}
+
 // SecurityGroupListResponseBody defines model for SecurityGroupListResponseBody.
 type SecurityGroupListResponseBody struct {
 	Items []SecurityGroupResource `json:"items"`
@@ -1251,6 +1277,9 @@ type RenameInstanceJSONRequestBody = RenameInstanceRequestBody
 
 // ActOnInstanceJSONRequestBody defines body for ActOnInstance for application/json ContentType.
 type ActOnInstanceJSONRequestBody = ActOnInstanceRequestBody
+
+// RunInstanceCommandJSONRequestBody defines body for RunInstanceCommand for application/json ContentType.
+type RunInstanceCommandJSONRequestBody = RunCommandRequestBody
 
 // AttachDiskJSONRequestBody defines body for AttachDisk for application/json ContentType.
 type AttachDiskJSONRequestBody = AttachDiskRequestBody
@@ -1763,6 +1792,48 @@ type ClientInterface interface {
 	//
 	// Corresponds with POST /api/v1/instances/{instanceId}/actions (the `ActOnInstance` operationId).
 	ActOnInstance(ctx context.Context, instanceId openapi_types.UUID, body ActOnInstanceJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// RunInstanceCommandWithBody Run a command on an instance
+	//
+	// Runs one command over SSH and returns what it wrote. **This is not a shell.** There is no terminal, no standard input and no way to answer a prompt: a command that waits for input produces nothing and is killed at the timeout. Chain steps with `&&`, or write a script and run that.
+	//
+	// Three conditions must hold; the instance is unreachable otherwise:
+	//
+	// - it is `running`
+	// - a floating IP is bound to it, since this endpoint connects over the public internet
+	// - its security group permits inbound TCP 22
+	//
+	// Authentication uses the key the platform attaches to every instance at creation, so nothing has to be set up first. The instance must have applied that key at first boot, which images without a full cloud-init do not do.
+	//
+	// **The host key is not verified.** Anyone in a position to intercept the connection can read the command and all of its output, so do not pass credentials this way.
+	//
+	// Each stream is capped at 1 MiB. Beyond that the rest is discarded and `truncated` is true.
+	//
+	// Takes any type of body and a specified content type.
+	//
+	// Corresponds with POST /api/v1/instances/{instanceId}/commands (the `RunInstanceCommand` operationId).
+	RunInstanceCommandWithBody(ctx context.Context, instanceId openapi_types.UUID, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// RunInstanceCommand Run a command on an instance
+	//
+	// Runs one command over SSH and returns what it wrote. **This is not a shell.** There is no terminal, no standard input and no way to answer a prompt: a command that waits for input produces nothing and is killed at the timeout. Chain steps with `&&`, or write a script and run that.
+	//
+	// Three conditions must hold; the instance is unreachable otherwise:
+	//
+	// - it is `running`
+	// - a floating IP is bound to it, since this endpoint connects over the public internet
+	// - its security group permits inbound TCP 22
+	//
+	// Authentication uses the key the platform attaches to every instance at creation, so nothing has to be set up first. The instance must have applied that key at first boot, which images without a full cloud-init do not do.
+	//
+	// **The host key is not verified.** Anyone in a position to intercept the connection can read the command and all of its output, so do not pass credentials this way.
+	//
+	// Each stream is capped at 1 MiB. Beyond that the rest is discarded and `truncated` is true.
+	//
+	// Takes a body of the `application/json` content type.
+	//
+	// Corresponds with POST /api/v1/instances/{instanceId}/commands (the `RunInstanceCommand` operationId).
+	RunInstanceCommand(ctx context.Context, instanceId openapi_types.UUID, body RunInstanceCommandJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
 
 	// OpenInstanceConsole Open a remote console
 	//
@@ -3137,6 +3208,68 @@ func (c *Client) ActOnInstanceWithBody(ctx context.Context, instanceId openapi_t
 // Corresponds with POST /api/v1/instances/{instanceId}/actions (the `ActOnInstance` operationId).
 func (c *Client) ActOnInstance(ctx context.Context, instanceId openapi_types.UUID, body ActOnInstanceJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
 	req, err := NewActOnInstanceRequest(c.Server, instanceId, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+// RunInstanceCommandWithBody Run a command on an instance
+//
+// Runs one command over SSH and returns what it wrote. **This is not a shell.** There is no terminal, no standard input and no way to answer a prompt: a command that waits for input produces nothing and is killed at the timeout. Chain steps with `&&`, or write a script and run that.
+//
+// Three conditions must hold; the instance is unreachable otherwise:
+//
+// - it is `running`
+// - a floating IP is bound to it, since this endpoint connects over the public internet
+// - its security group permits inbound TCP 22
+//
+// Authentication uses the key the platform attaches to every instance at creation, so nothing has to be set up first. The instance must have applied that key at first boot, which images without a full cloud-init do not do.
+//
+// **The host key is not verified.** Anyone in a position to intercept the connection can read the command and all of its output, so do not pass credentials this way.
+//
+// Each stream is capped at 1 MiB. Beyond that the rest is discarded and `truncated` is true.
+//
+// Takes any type of body and a specified content type.
+//
+// Corresponds with POST /api/v1/instances/{instanceId}/commands (the `RunInstanceCommand` operationId).
+func (c *Client) RunInstanceCommandWithBody(ctx context.Context, instanceId openapi_types.UUID, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewRunInstanceCommandRequestWithBody(c.Server, instanceId, contentType, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+// RunInstanceCommand Run a command on an instance
+//
+// Runs one command over SSH and returns what it wrote. **This is not a shell.** There is no terminal, no standard input and no way to answer a prompt: a command that waits for input produces nothing and is killed at the timeout. Chain steps with `&&`, or write a script and run that.
+//
+// Three conditions must hold; the instance is unreachable otherwise:
+//
+// - it is `running`
+// - a floating IP is bound to it, since this endpoint connects over the public internet
+// - its security group permits inbound TCP 22
+//
+// Authentication uses the key the platform attaches to every instance at creation, so nothing has to be set up first. The instance must have applied that key at first boot, which images without a full cloud-init do not do.
+//
+// **The host key is not verified.** Anyone in a position to intercept the connection can read the command and all of its output, so do not pass credentials this way.
+//
+// Each stream is capped at 1 MiB. Beyond that the rest is discarded and `truncated` is true.
+//
+// Takes a body of the `application/json` content type.
+//
+// Corresponds with POST /api/v1/instances/{instanceId}/commands (the `RunInstanceCommand` operationId).
+func (c *Client) RunInstanceCommand(ctx context.Context, instanceId openapi_types.UUID, body RunInstanceCommandJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewRunInstanceCommandRequest(c.Server, instanceId, body)
 	if err != nil {
 		return nil, err
 	}
@@ -5639,6 +5772,53 @@ func NewActOnInstanceRequestWithBody(server string, instanceId openapi_types.UUI
 	}
 
 	operationPath := fmt.Sprintf("/api/v1/instances/%s/actions", pathParam0)
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest(http.MethodPost, queryURL.String(), body)
+	if err != nil {
+		return nil, err
+	}
+
+	req.Header.Add("Content-Type", contentType)
+
+	return req, nil
+}
+
+// NewRunInstanceCommandRequest calls the generic RunInstanceCommand builder with application/json body
+func NewRunInstanceCommandRequest(server string, instanceId openapi_types.UUID, body RunInstanceCommandJSONRequestBody) (*http.Request, error) {
+	var bodyReader io.Reader
+	buf, err := json.Marshal(body)
+	if err != nil {
+		return nil, err
+	}
+	bodyReader = bytes.NewReader(buf)
+	return NewRunInstanceCommandRequestWithBody(server, instanceId, "application/json", bodyReader)
+}
+
+// NewRunInstanceCommandRequestWithBody constructs an http.Request for the RunInstanceCommand method, with any body, and a specified content type
+func NewRunInstanceCommandRequestWithBody(server string, instanceId openapi_types.UUID, contentType string, body io.Reader) (*http.Request, error) {
+	var err error
+
+	var pathParam0 string
+
+	pathParam0, err = runtime.StyleParamWithOptions("simple", false, "instanceId", instanceId, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: "uuid"})
+	if err != nil {
+		return nil, err
+	}
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/api/v1/instances/%s/commands", pathParam0)
 	if operationPath[0] == '/' {
 		operationPath = "." + operationPath
 	}
@@ -8371,6 +8551,48 @@ type ClientWithResponsesInterface interface {
 	// Corresponds with POST /api/v1/instances/{instanceId}/actions (the `ActOnInstance` operationId).
 	ActOnInstanceWithResponse(ctx context.Context, instanceId openapi_types.UUID, body ActOnInstanceJSONRequestBody, reqEditors ...RequestEditorFn) (*ActOnInstanceResponse, error)
 
+	// RunInstanceCommandWithBodyWithResponse Run a command on an instance
+	//
+	// Runs one command over SSH and returns what it wrote. **This is not a shell.** There is no terminal, no standard input and no way to answer a prompt: a command that waits for input produces nothing and is killed at the timeout. Chain steps with `&&`, or write a script and run that.
+	//
+	// Three conditions must hold; the instance is unreachable otherwise:
+	//
+	// - it is `running`
+	// - a floating IP is bound to it, since this endpoint connects over the public internet
+	// - its security group permits inbound TCP 22
+	//
+	// Authentication uses the key the platform attaches to every instance at creation, so nothing has to be set up first. The instance must have applied that key at first boot, which images without a full cloud-init do not do.
+	//
+	// **The host key is not verified.** Anyone in a position to intercept the connection can read the command and all of its output, so do not pass credentials this way.
+	//
+	// Each stream is capped at 1 MiB. Beyond that the rest is discarded and `truncated` is true.
+	//
+	// Takes any type of body and a specified content type, and returns a wrapper object for the known response body format(s).
+	//
+	// Corresponds with POST /api/v1/instances/{instanceId}/commands (the `RunInstanceCommand` operationId).
+	RunInstanceCommandWithBodyWithResponse(ctx context.Context, instanceId openapi_types.UUID, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*RunInstanceCommandResponse, error)
+
+	// RunInstanceCommandWithResponse Run a command on an instance
+	//
+	// Runs one command over SSH and returns what it wrote. **This is not a shell.** There is no terminal, no standard input and no way to answer a prompt: a command that waits for input produces nothing and is killed at the timeout. Chain steps with `&&`, or write a script and run that.
+	//
+	// Three conditions must hold; the instance is unreachable otherwise:
+	//
+	// - it is `running`
+	// - a floating IP is bound to it, since this endpoint connects over the public internet
+	// - its security group permits inbound TCP 22
+	//
+	// Authentication uses the key the platform attaches to every instance at creation, so nothing has to be set up first. The instance must have applied that key at first boot, which images without a full cloud-init do not do.
+	//
+	// **The host key is not verified.** Anyone in a position to intercept the connection can read the command and all of its output, so do not pass credentials this way.
+	//
+	// Each stream is capped at 1 MiB. Beyond that the rest is discarded and `truncated` is true.
+	//
+	// Takes a body of the `application/json` content type, and returns a wrapper object for the known response body format(s).
+	//
+	// Corresponds with POST /api/v1/instances/{instanceId}/commands (the `RunInstanceCommand` operationId).
+	RunInstanceCommandWithResponse(ctx context.Context, instanceId openapi_types.UUID, body RunInstanceCommandJSONRequestBody, reqEditors ...RequestEditorFn) (*RunInstanceCommandResponse, error)
+
 	// OpenInstanceConsoleWithResponse Open a remote console
 	//
 	// Operates the instance directly from a browser and does not require the instance to be reachable over the network, which makes it usable when a network misconfiguration prevents login.
@@ -10380,6 +10602,54 @@ func (r ActOnInstanceResponse) StatusCode() int {
 
 // ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
 func (r ActOnInstanceResponse) ContentType() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Header.Get("Content-Type")
+	}
+	return ""
+}
+
+type RunInstanceCommandResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	// JSON200 the response for an HTTP 200 `application/json` response
+	JSON200 *CommandResultResponseBody
+	// JSONDefault the response for an HTTP default `application/json` response
+	JSONDefault *Error
+}
+
+// GetJSON200 returns the response for an HTTP 200 `application/json` response
+func (r RunInstanceCommandResponse) GetJSON200() *CommandResultResponseBody {
+	return r.JSON200
+}
+
+// GetJSONDefault returns the response for an HTTP default `application/json` response
+func (r RunInstanceCommandResponse) GetJSONDefault() *Error {
+	return r.JSONDefault
+}
+
+// GetBody returns the raw response body bytes
+func (r RunInstanceCommandResponse) GetBody() []byte {
+	return r.Body
+}
+
+// Status returns HTTPResponse.Status
+func (r RunInstanceCommandResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r RunInstanceCommandResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+// ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
+func (r RunInstanceCommandResponse) ContentType() string {
 	if r.HTTPResponse != nil {
 		return r.HTTPResponse.Header.Get("Content-Type")
 	}
@@ -13583,6 +13853,60 @@ func (c *ClientWithResponses) ActOnInstanceWithResponse(ctx context.Context, ins
 	return ParseActOnInstanceResponse(rsp)
 }
 
+// RunInstanceCommandWithBodyWithResponse Run a command on an instance
+//
+// Runs one command over SSH and returns what it wrote. **This is not a shell.** There is no terminal, no standard input and no way to answer a prompt: a command that waits for input produces nothing and is killed at the timeout. Chain steps with `&&`, or write a script and run that.
+//
+// Three conditions must hold; the instance is unreachable otherwise:
+//
+// - it is `running`
+// - a floating IP is bound to it, since this endpoint connects over the public internet
+// - its security group permits inbound TCP 22
+//
+// Authentication uses the key the platform attaches to every instance at creation, so nothing has to be set up first. The instance must have applied that key at first boot, which images without a full cloud-init do not do.
+//
+// **The host key is not verified.** Anyone in a position to intercept the connection can read the command and all of its output, so do not pass credentials this way.
+//
+// Each stream is capped at 1 MiB. Beyond that the rest is discarded and `truncated` is true.
+//
+// Takes any type of body and a specified content type, and returns a wrapper object for the known response body format(s).
+//
+// Corresponds with POST /api/v1/instances/{instanceId}/commands (the `RunInstanceCommand` operationId).
+func (c *ClientWithResponses) RunInstanceCommandWithBodyWithResponse(ctx context.Context, instanceId openapi_types.UUID, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*RunInstanceCommandResponse, error) {
+	rsp, err := c.RunInstanceCommandWithBody(ctx, instanceId, contentType, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseRunInstanceCommandResponse(rsp)
+}
+
+// RunInstanceCommandWithResponse Run a command on an instance
+//
+// Runs one command over SSH and returns what it wrote. **This is not a shell.** There is no terminal, no standard input and no way to answer a prompt: a command that waits for input produces nothing and is killed at the timeout. Chain steps with `&&`, or write a script and run that.
+//
+// Three conditions must hold; the instance is unreachable otherwise:
+//
+// - it is `running`
+// - a floating IP is bound to it, since this endpoint connects over the public internet
+// - its security group permits inbound TCP 22
+//
+// Authentication uses the key the platform attaches to every instance at creation, so nothing has to be set up first. The instance must have applied that key at first boot, which images without a full cloud-init do not do.
+//
+// **The host key is not verified.** Anyone in a position to intercept the connection can read the command and all of its output, so do not pass credentials this way.
+//
+// Each stream is capped at 1 MiB. Beyond that the rest is discarded and `truncated` is true.
+//
+// Takes a body of the `application/json` content type, and returns a wrapper object for the known response body format(s).
+//
+// Corresponds with POST /api/v1/instances/{instanceId}/commands (the `RunInstanceCommand` operationId).
+func (c *ClientWithResponses) RunInstanceCommandWithResponse(ctx context.Context, instanceId openapi_types.UUID, body RunInstanceCommandJSONRequestBody, reqEditors ...RequestEditorFn) (*RunInstanceCommandResponse, error) {
+	rsp, err := c.RunInstanceCommand(ctx, instanceId, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseRunInstanceCommandResponse(rsp)
+}
+
 // OpenInstanceConsoleWithResponse Open a remote console
 //
 // Operates the instance directly from a browser and does not require the instance to be reachable over the network, which makes it usable when a network misconfiguration prevents login.
@@ -15589,6 +15913,39 @@ func ParseActOnInstanceResponse(rsp *http.Response) (*ActOnInstanceResponse, err
 	switch {
 	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
 		var dest InstanceResource
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && true:
+		var dest Error
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSONDefault = &dest
+
+	}
+
+	return response, nil
+}
+
+// ParseRunInstanceCommandResponse parses an HTTP response from a RunInstanceCommandWithResponse call
+func ParseRunInstanceCommandResponse(rsp *http.Response) (*RunInstanceCommandResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &RunInstanceCommandResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest CommandResultResponseBody
 		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
 			return nil, err
 		}

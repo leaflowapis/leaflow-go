@@ -660,6 +660,29 @@ type Invoker interface {
 	//
 	// POST /api/v1/instances/{instanceId}/resize/revert
 	RevertInstanceResize(ctx context.Context, params RevertInstanceResizeParams) (*InstanceResource, error)
+	// RunInstanceCommand invokes run-instance-command operation.
+	//
+	// Runs one command over SSH and returns what it wrote. This is not a shell. There is no terminal, no
+	// standard input and no way to answer a prompt: a command that waits for input produces nothing and is
+	// killed at the timeout. Chain steps with `&&`, or write a script and run that.
+	//
+	// Three conditions must hold; the instance is unreachable otherwise:
+	//
+	//  - it is `running`
+	//  - a floating IP is bound to it, since this endpoint connects over the public internet
+	//  - its security group permits inbound TCP 22
+	//
+	// Authentication uses the key the platform attaches to every instance at creation, so nothing has to
+	// be set up first. The instance must have applied that key at first boot, which images without a full
+	// cloud-init do not do.
+	//
+	// The host key is not verified. Anyone in a position to intercept the connection can read the command
+	// and all of its output, so do not pass credentials this way.
+	//
+	// Each stream is capped at 1 MiB. Beyond that the rest is discarded and `truncated` is true.
+	//
+	// POST /api/v1/instances/{instanceId}/commands
+	RunInstanceCommand(ctx context.Context, request *RunCommandRequestBody, params RunInstanceCommandParams) (*CommandResultResponseBody, error)
 	// SetFloatingIPBandwidth invokes set-floating-ip-bandwidth operation.
 	//
 	// Limits both directions at once. Limiting egress alone does not prevent ingress traffic from
@@ -11454,6 +11477,158 @@ func (c *Client) sendRevertInstanceResize(ctx context.Context, params RevertInst
 
 	stage = "DecodeResponse"
 	result, err := decodeRevertInstanceResizeResponse(resp)
+	if err != nil {
+		return res, errors.Wrap(err, "decode response")
+	}
+
+	return result, nil
+}
+
+// RunInstanceCommand invokes run-instance-command operation.
+//
+// Runs one command over SSH and returns what it wrote. This is not a shell. There is no terminal, no
+// standard input and no way to answer a prompt: a command that waits for input produces nothing and is
+// killed at the timeout. Chain steps with `&&`, or write a script and run that.
+//
+// Three conditions must hold; the instance is unreachable otherwise:
+//
+//   - it is `running`
+//   - a floating IP is bound to it, since this endpoint connects over the public internet
+//   - its security group permits inbound TCP 22
+//
+// Authentication uses the key the platform attaches to every instance at creation, so nothing has to
+// be set up first. The instance must have applied that key at first boot, which images without a full
+// cloud-init do not do.
+//
+// The host key is not verified. Anyone in a position to intercept the connection can read the command
+// and all of its output, so do not pass credentials this way.
+//
+// Each stream is capped at 1 MiB. Beyond that the rest is discarded and `truncated` is true.
+//
+// POST /api/v1/instances/{instanceId}/commands
+func (c *Client) RunInstanceCommand(ctx context.Context, request *RunCommandRequestBody, params RunInstanceCommandParams) (*CommandResultResponseBody, error) {
+	res, err := c.sendRunInstanceCommand(ctx, request, params)
+	return res, err
+}
+
+func (c *Client) sendRunInstanceCommand(ctx context.Context, request *RunCommandRequestBody, params RunInstanceCommandParams) (res *CommandResultResponseBody, err error) {
+	otelAttrs := []attribute.KeyValue{
+		otelogen.OperationID("run-instance-command"),
+		semconv.HTTPRequestMethodKey.String("POST"),
+		semconv.URLTemplateKey.String("/api/v1/instances/{instanceId}/commands"),
+	}
+	otelAttrs = append(otelAttrs, c.cfg.Attributes...)
+
+	// Run stopwatch.
+	startTime := time.Now()
+	defer func() {
+		// Use floating point division here for higher precision (instead of Millisecond method).
+		elapsedDuration := time.Since(startTime)
+		c.duration.Record(ctx, float64(elapsedDuration)/float64(time.Millisecond), metric.WithAttributes(otelAttrs...))
+	}()
+
+	// Increment request counter.
+	c.requests.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
+
+	// Start a span for this request.
+	ctx, span := c.cfg.Tracer.Start(ctx, RunInstanceCommandOperation,
+		trace.WithAttributes(otelAttrs...),
+		clientSpanKind,
+	)
+	// Track stage for error reporting.
+	var stage string
+	defer func() {
+		if err != nil {
+			span.RecordError(err)
+			span.SetStatus(codes.Error, stage)
+			c.errors.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
+		}
+		span.End()
+	}()
+
+	stage = "BuildURL"
+	u := uri.Clone(c.requestURL(ctx))
+	var pathParts [3]string
+	pathParts[0] = "/api/v1/instances/"
+	{
+		// Encode "instanceId" parameter.
+		e := uri.NewPathEncoder(uri.PathEncoderConfig{
+			Param:   "instanceId",
+			Style:   uri.PathStyleSimple,
+			Explode: false,
+		})
+		if err := func() error {
+			return e.EncodeValue(conv.UUIDToString(params.InstanceId))
+		}(); err != nil {
+			return res, errors.Wrap(err, "encode path")
+		}
+		encoded, err := e.Result()
+		if err != nil {
+			return res, errors.Wrap(err, "encode path")
+		}
+		pathParts[1] = encoded
+	}
+	pathParts[2] = "/commands"
+	uri.AddPathParts(u, pathParts[:]...)
+
+	stage = "EncodeRequest"
+	r, err := ht.NewRequest(ctx, "POST", u)
+	if err != nil {
+		return res, errors.Wrap(err, "create request")
+	}
+	if err := encodeRunInstanceCommandRequest(request, r); err != nil {
+		return res, errors.Wrap(err, "encode request")
+	}
+
+	{
+		type bitset = [1]uint8
+		var satisfied bitset
+		{
+			stage = "Security:BearerAuth"
+			switch err := c.securityBearerAuth(ctx, RunInstanceCommandOperation, r); {
+			case err == nil: // if NO error
+				satisfied[0] |= 1 << 0
+			case errors.Is(err, ogenerrors.ErrSkipClientSecurity):
+				// Skip this security.
+			default:
+				return res, errors.Wrap(err, "security \"BearerAuth\"")
+			}
+		}
+
+		if ok := func() bool {
+		nextRequirement:
+			for _, requirement := range []bitset{
+				{0b00000001},
+			} {
+				for i, mask := range requirement {
+					if satisfied[i]&mask != mask {
+						continue nextRequirement
+					}
+				}
+				return true
+			}
+			return false
+		}(); !ok {
+			return res, ogenerrors.ErrSecurityRequirementIsNotSatisfied
+		}
+	}
+
+	stage = "SendRequest"
+	resp, err := c.cfg.Client.Do(r)
+	if err != nil {
+		return res, errors.Wrap(err, "do request")
+	}
+	body := resp.Body
+	defer func() {
+		// Drain the body to EOF before closing, so the underlying
+		// connection can be reused by the Transport regardless of the
+		// response status code. See https://github.com/ogen-go/ogen/issues/1670.
+		_, _ = io.Copy(io.Discard, body)
+		_ = body.Close()
+	}()
+
+	stage = "DecodeResponse"
+	result, err := decodeRunInstanceCommandResponse(resp)
 	if err != nil {
 		return res, errors.Wrap(err, "decode response")
 	}

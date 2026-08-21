@@ -375,6 +375,68 @@ func (s *BindFloatingIPRequestBody) SetPortID(val uuid.UUID) {
 	s.PortID = val
 }
 
+// Ref: #/components/schemas/CommandResultResponseBody
+type CommandResultResponseBody struct {
+	// Null when the command was killed rather than finishing on its own, which includes the timeout.
+	ExitCode NilInt64 `json:"exit_code"`
+	Stderr   string   `json:"stderr"`
+	Stdout   string   `json:"stdout"`
+	// True when the command was still running at the timeout and was killed.
+	TimedOut bool `json:"timed_out"`
+	// True when either stream hit the 1 MiB cap and the rest was discarded.
+	Truncated bool `json:"truncated"`
+}
+
+// GetExitCode returns the value of ExitCode.
+func (s *CommandResultResponseBody) GetExitCode() NilInt64 {
+	return s.ExitCode
+}
+
+// GetStderr returns the value of Stderr.
+func (s *CommandResultResponseBody) GetStderr() string {
+	return s.Stderr
+}
+
+// GetStdout returns the value of Stdout.
+func (s *CommandResultResponseBody) GetStdout() string {
+	return s.Stdout
+}
+
+// GetTimedOut returns the value of TimedOut.
+func (s *CommandResultResponseBody) GetTimedOut() bool {
+	return s.TimedOut
+}
+
+// GetTruncated returns the value of Truncated.
+func (s *CommandResultResponseBody) GetTruncated() bool {
+	return s.Truncated
+}
+
+// SetExitCode sets the value of ExitCode.
+func (s *CommandResultResponseBody) SetExitCode(val NilInt64) {
+	s.ExitCode = val
+}
+
+// SetStderr sets the value of Stderr.
+func (s *CommandResultResponseBody) SetStderr(val string) {
+	s.Stderr = val
+}
+
+// SetStdout sets the value of Stdout.
+func (s *CommandResultResponseBody) SetStdout(val string) {
+	s.Stdout = val
+}
+
+// SetTimedOut sets the value of TimedOut.
+func (s *CommandResultResponseBody) SetTimedOut(val bool) {
+	s.TimedOut = val
+}
+
+// SetTruncated sets the value of Truncated.
+func (s *CommandResultResponseBody) SetTruncated(val bool) {
+	s.Truncated = val
+}
+
 // Ref: #/components/schemas/ConsoleOutputResponseBody
 type ConsoleOutputResponseBody struct {
 	// Raw text of the console output, in the same line order as inside the instance.
@@ -4154,6 +4216,46 @@ func (s *RouteResource) SetID(val uuid.UUID) {
 // SetNexthop sets the value of Nexthop.
 func (s *RouteResource) SetNexthop(val string) {
 	s.Nexthop = val
+}
+
+// Ref: #/components/schemas/RunCommandRequestBody
+type RunCommandRequestBody struct {
+	// Run by the login shell, so pipes, redirection and `&&` work. It cannot read standard input.
+	Command string `json:"command"`
+	// Kill the command after this long. 60 when omitted.
+	TimeoutSeconds OptInt64 `json:"timeout_seconds"`
+	// The SSH user to log in as. It is the account the platform sets a password for at creation.
+	Username OptString `json:"username"`
+}
+
+// GetCommand returns the value of Command.
+func (s *RunCommandRequestBody) GetCommand() string {
+	return s.Command
+}
+
+// GetTimeoutSeconds returns the value of TimeoutSeconds.
+func (s *RunCommandRequestBody) GetTimeoutSeconds() OptInt64 {
+	return s.TimeoutSeconds
+}
+
+// GetUsername returns the value of Username.
+func (s *RunCommandRequestBody) GetUsername() OptString {
+	return s.Username
+}
+
+// SetCommand sets the value of Command.
+func (s *RunCommandRequestBody) SetCommand(val string) {
+	s.Command = val
+}
+
+// SetTimeoutSeconds sets the value of TimeoutSeconds.
+func (s *RunCommandRequestBody) SetTimeoutSeconds(val OptInt64) {
+	s.TimeoutSeconds = val
+}
+
+// SetUsername sets the value of Username.
+func (s *RunCommandRequestBody) SetUsername(val OptString) {
+	s.Username = val
 }
 
 // Ref: #/components/schemas/SecurityGroupListResponseBody
