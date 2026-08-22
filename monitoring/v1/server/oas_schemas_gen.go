@@ -17,7 +17,7 @@ func (s *ErrorStatusCode) Error() string {
 
 // Ref: #/components/schemas/AcknowledgeIncidentRequestBody
 type AcknowledgeIncidentRequestBody struct {
-	// 会一并写入监控系统的确认记录.
+	// Also written to the acknowledgement record in the monitoring system.
 	Message OptString `json:"message"`
 }
 
@@ -48,7 +48,7 @@ func (s *AddCommentRequestBody) SetMessage(val string) {
 
 // Ref: #/components/schemas/AssignIncidentRequestBody
 type AssignIncidentRequestBody struct {
-	// 不给就用 user id：时间线上要留一个当时的人名副本.
+	// Defaults to the user id. The timeline keeps a copy of the name as it was at the time.
 	AssigneeDisplayName OptString `json:"assignee_display_name"`
 	AssigneeUserID      OptString `json:"assignee_user_id"`
 }
@@ -100,7 +100,7 @@ func (s *BearerAuth) SetRoles(val []string) {
 
 // Ref: #/components/schemas/CloseIncidentRequestBody
 type CloseIncidentRequestBody struct {
-	// Reason 为 OTHER 时必填，否则请求会被拒绝.
+	// Required when `reason` is OTHER; the request is rejected otherwise.
 	Message OptString                      `json:"message"`
 	Reason  CloseIncidentRequestBodyReason `json:"reason"`
 }
@@ -229,9 +229,9 @@ func (s *CountResource) SetKey(val string) {
 
 // Ref: #/components/schemas/CursorPageIncidentActivityResource
 type CursorPageIncidentActivityResource struct {
-	// 这一页的内容.
+	// The records in this page.
 	Items []IncidentActivityResource `json:"items"`
-	// 下一页的游标；为空表示已经到底.
+	// Cursor for the next page. Empty means the end has been reached.
 	NextCursor string `json:"next_cursor"`
 }
 
@@ -264,6 +264,15 @@ type DeleteServerNoContent struct{}
 // DeleteSloNoContent is response for DeleteSlo operation.
 type DeleteSloNoContent struct{}
 
+// DeleteStatusPageComponentNoContent is response for DeleteStatusPageComponent operation.
+type DeleteStatusPageComponentNoContent struct{}
+
+// DeleteStatusPageGroupNoContent is response for DeleteStatusPageGroup operation.
+type DeleteStatusPageGroupNoContent struct{}
+
+// DeleteStatusPageNoContent is response for DeleteStatusPage operation.
+type DeleteStatusPageNoContent struct{}
+
 // DeleteWebCheckNoContent is response for DeleteWebCheck operation.
 type DeleteWebCheckNoContent struct{}
 
@@ -274,9 +283,9 @@ type DisableServerMonitoringNoContent struct{}
 type EnableMonitoringRequestBody struct {
 	Address     string                                 `json:"address"`
 	AddressKind EnableMonitoringRequestBodyAddressKind `json:"address_kind"`
-	// 空即被动式：它对 agent 侧配置要求最少.
+	// Empty selects passive mode, which requires the least agent-side configuration.
 	AgentMode OptEnableMonitoringRequestBodyAgentMode `json:"agent_mode"`
-	// 0 表示用默认的 10050.
+	// 0 uses the default of 10050.
 	AgentPort        OptInt64                          `json:"agent_port"`
 	Description      OptString                         `json:"description"`
 	Name             string                            `json:"name"`
@@ -394,7 +403,7 @@ func (s *EnableMonitoringRequestBodyAddressKind) UnmarshalText(data []byte) erro
 	}
 }
 
-// 空即被动式：它对 agent 侧配置要求最少.
+// Empty selects passive mode, which requires the least agent-side configuration.
 type EnableMonitoringRequestBodyAgentMode string
 
 const (
@@ -438,14 +447,14 @@ func (s *EnableMonitoringRequestBodyAgentMode) UnmarshalText(data []byte) error 
 
 // Ref: #/components/schemas/EnrollmentResource
 type EnrollmentResource struct {
-	// 含 PSK，与 tls_psk 一样只出现这一次.
+	// Includes the PSK. Like `tls_psk`, it is returned only this once.
 	InstallCommand   string `json:"install_command"`
 	InstallScriptURL string `json:"install_script_url"`
-	// 只出现这一次.
+	// Returned only this once.
 	TLSPsk         string `json:"tls_psk"`
 	TLSPskIdentity string `json:"tls_psk_identity"`
 	ZabbixHostName string `json:"zabbix_host_name"`
-	// Agent 配置里的 Server / ServerActive.
+	// The Server and ServerActive values for the agent configuration.
 	ZabbixServerAddress string `json:"zabbix_server_address"`
 }
 
@@ -657,7 +666,7 @@ func (s *HostInterfaceResource) SetUseIP(val bool) {
 type IncidentActivityResource struct {
 	ActivityType     IncidentActivityResourceActivityType `json:"activity_type"`
 	ActorDisplayName string                               `json:"actor_display_name"`
-	// 操作者；来源为 SYSTEM 或 ZABBIX 时为空.
+	// The operator. Empty when the source is SYSTEM or ZABBIX.
 	ActorUserID        string                         `json:"actor_user_id"`
 	CloseReason        string                         `json:"close_reason"`
 	ID                 uuid.UUID                      `json:"id"`
@@ -666,7 +675,7 @@ type IncidentActivityResource struct {
 	OccurredAt         time.Time                      `json:"occurred_at"`
 	Source             IncidentActivityResourceSource `json:"source"`
 	SubjectDisplayName string                         `json:"subject_display_name"`
-	// 被指派 / 被取消关注的那个人.
+	// The user who was assigned, or removed from the followers.
 	SubjectUserID string `json:"subject_user_id"`
 }
 
@@ -982,11 +991,12 @@ type IncidentResource struct {
 	HostConnection            string                     `json:"host_connection"`
 	HostDisplayName           string                     `json:"host_display_name"`
 	ID                        uuid.UUID                  `json:"id"`
-	// 监控系统是否判定已恢复。它与是否有人了结这条告警是两件事.
+	// Whether monitoring considers the problem recovered. Independent of whether anyone has closed the
+	// incident.
 	IncidentStatus IncidentResourceIncidentStatus `json:"incident_status"`
 	Items          []MonitoringItemResource       `json:"items"`
 	Name           string                         `json:"name"`
-	// 触发器配的那行现场数据.
+	// The operational data line configured on the trigger.
 	OperationalData           string                   `json:"operational_data"`
 	ProjectID                 uuid.UUID                `json:"project_id"`
 	ResolvedAt                NilDateTime              `json:"resolved_at"`
@@ -1320,7 +1330,8 @@ func (s *IncidentResource) SetZabbixEventID(val string) {
 	s.ZabbixEventID = val
 }
 
-// 监控系统是否判定已恢复。它与是否有人了结这条告警是两件事.
+// Whether monitoring considers the problem recovered. Independent of whether anyone has closed the
+// incident.
 type IncidentResourceIncidentStatus string
 
 const (
@@ -1608,7 +1619,7 @@ type ItemThresholdResource struct {
 	Operator                string  `json:"operator"`
 	Severity                string  `json:"severity"`
 	Threshold               float64 `json:"threshold"`
-	// 图例上说明这条线是什么.
+	// Labels the line in the chart legend.
 	TriggerName string `json:"trigger_name"`
 }
 
@@ -1684,13 +1695,13 @@ func (s *ItemThresholdResource) SetTriggerName(val string) {
 
 // Ref: #/components/schemas/LengthAwarePageIncidentResource
 type LengthAwarePageIncidentResource struct {
-	// 这一页的内容.
+	// The records in this page.
 	Items []IncidentResource `json:"items"`
-	// 这一页最多几条，回显请求里的值.
+	// Maximum records per page, echoing the request.
 	Limit int64 `json:"limit"`
-	// 跳过了多少条，回显请求里的值.
+	// Number of records skipped, echoing the request.
 	Offset int64 `json:"offset"`
-	// 命中的总条数，不只是这一页.
+	// Total number of matches, not just this page.
 	Total int64 `json:"total"`
 }
 
@@ -1736,13 +1747,13 @@ func (s *LengthAwarePageIncidentResource) SetTotal(val int64) {
 
 // Ref: #/components/schemas/LengthAwarePageServerResource
 type LengthAwarePageServerResource struct {
-	// 这一页的内容.
+	// The records in this page.
 	Items []ServerResource `json:"items"`
-	// 这一页最多几条，回显请求里的值.
+	// Maximum records per page, echoing the request.
 	Limit int64 `json:"limit"`
-	// 跳过了多少条，回显请求里的值.
+	// Number of records skipped, echoing the request.
 	Offset int64 `json:"offset"`
-	// 命中的总条数，不只是这一页.
+	// Total number of matches, not just this page.
 	Total int64 `json:"total"`
 }
 
@@ -1783,6 +1794,102 @@ func (s *LengthAwarePageServerResource) SetOffset(val int64) {
 
 // SetTotal sets the value of Total.
 func (s *LengthAwarePageServerResource) SetTotal(val int64) {
+	s.Total = val
+}
+
+// Ref: #/components/schemas/LengthAwarePageStatusPageIncidentResource
+type LengthAwarePageStatusPageIncidentResource struct {
+	Data   []StatusPageIncidentResource `json:"data"`
+	Limit  int64                        `json:"limit"`
+	Offset int64                        `json:"offset"`
+	Total  int64                        `json:"total"`
+}
+
+// GetData returns the value of Data.
+func (s *LengthAwarePageStatusPageIncidentResource) GetData() []StatusPageIncidentResource {
+	return s.Data
+}
+
+// GetLimit returns the value of Limit.
+func (s *LengthAwarePageStatusPageIncidentResource) GetLimit() int64 {
+	return s.Limit
+}
+
+// GetOffset returns the value of Offset.
+func (s *LengthAwarePageStatusPageIncidentResource) GetOffset() int64 {
+	return s.Offset
+}
+
+// GetTotal returns the value of Total.
+func (s *LengthAwarePageStatusPageIncidentResource) GetTotal() int64 {
+	return s.Total
+}
+
+// SetData sets the value of Data.
+func (s *LengthAwarePageStatusPageIncidentResource) SetData(val []StatusPageIncidentResource) {
+	s.Data = val
+}
+
+// SetLimit sets the value of Limit.
+func (s *LengthAwarePageStatusPageIncidentResource) SetLimit(val int64) {
+	s.Limit = val
+}
+
+// SetOffset sets the value of Offset.
+func (s *LengthAwarePageStatusPageIncidentResource) SetOffset(val int64) {
+	s.Offset = val
+}
+
+// SetTotal sets the value of Total.
+func (s *LengthAwarePageStatusPageIncidentResource) SetTotal(val int64) {
+	s.Total = val
+}
+
+// Ref: #/components/schemas/LengthAwarePageStatusPageMaintenanceResource
+type LengthAwarePageStatusPageMaintenanceResource struct {
+	Data   []StatusPageMaintenanceResource `json:"data"`
+	Limit  int64                           `json:"limit"`
+	Offset int64                           `json:"offset"`
+	Total  int64                           `json:"total"`
+}
+
+// GetData returns the value of Data.
+func (s *LengthAwarePageStatusPageMaintenanceResource) GetData() []StatusPageMaintenanceResource {
+	return s.Data
+}
+
+// GetLimit returns the value of Limit.
+func (s *LengthAwarePageStatusPageMaintenanceResource) GetLimit() int64 {
+	return s.Limit
+}
+
+// GetOffset returns the value of Offset.
+func (s *LengthAwarePageStatusPageMaintenanceResource) GetOffset() int64 {
+	return s.Offset
+}
+
+// GetTotal returns the value of Total.
+func (s *LengthAwarePageStatusPageMaintenanceResource) GetTotal() int64 {
+	return s.Total
+}
+
+// SetData sets the value of Data.
+func (s *LengthAwarePageStatusPageMaintenanceResource) SetData(val []StatusPageMaintenanceResource) {
+	s.Data = val
+}
+
+// SetLimit sets the value of Limit.
+func (s *LengthAwarePageStatusPageMaintenanceResource) SetLimit(val int64) {
+	s.Limit = val
+}
+
+// SetOffset sets the value of Offset.
+func (s *LengthAwarePageStatusPageMaintenanceResource) SetOffset(val int64) {
+	s.Offset = val
+}
+
+// SetTotal sets the value of Total.
+func (s *LengthAwarePageStatusPageMaintenanceResource) SetTotal(val int64) {
 	s.Total = val
 }
 
@@ -1827,7 +1934,7 @@ func (s *ListIncidentsAcknowledged) UnmarshalText(data []byte) error {
 	}
 }
 
-// 有没有人在这边把它处理完，与 incident_status 无关.
+// Whether someone has finished handling it here. Independent of `incident_status`.
 type ListIncidentsClosed string
 
 const (
@@ -1910,7 +2017,7 @@ func (s *ListIncidentsIncidentStatus) UnmarshalText(data []byte) error {
 	}
 }
 
-// 按不低于该等级匹配，而非精确匹配.
+// Matches at or above this severity, not exactly this severity.
 type ListIncidentsMinSeverity string
 
 const (
@@ -2127,14 +2234,14 @@ func (s *ListServersMonitoringStatus) UnmarshalText(data []byte) error {
 // Ref: #/components/schemas/MaintenancePeriodRequest
 type MaintenancePeriodRequest struct {
 	DurationSeconds OptInt64 `json:"duration_seconds"`
-	// DAILY / WEEKLY：每 N 天 / 每 N 周.
+	// DAILY and WEEKLY: every N days or every N weeks.
 	Every OptInt64                     `json:"every"`
 	Kind  MaintenancePeriodRequestKind `json:"kind"`
-	// DAILY / WEEKLY：当天零点起的秒数，按窗口自己的时区算.
+	// DAILY and WEEKLY: seconds from midnight, in the timezone of the window.
 	StartTimeSeconds OptInt64 `json:"start_time_seconds"`
-	// 只有 ONCE 用得上.
+	// Used only by ONCE.
 	StartsAt OptDateTime `json:"starts_at"`
-	// WEEKLY：星期几的位图，周一是最低位.
+	// WEEKLY: bitmap of weekdays, Monday is the lowest bit.
 	Weekdays OptInt64 `json:"weekdays"`
 }
 
@@ -2249,14 +2356,14 @@ func (s *MaintenancePeriodRequestKind) UnmarshalText(data []byte) error {
 // Ref: #/components/schemas/MaintenancePeriodResource
 type MaintenancePeriodResource struct {
 	DurationSeconds int64 `json:"duration_seconds"`
-	// DAILY / WEEKLY：每 N 天 / 每 N 周.
+	// DAILY and WEEKLY: every N days or every N weeks.
 	Every int64                         `json:"every"`
 	Kind  MaintenancePeriodResourceKind `json:"kind"`
-	// DAILY / WEEKLY：当天零点起的秒数，按窗口自己的时区算.
+	// DAILY and WEEKLY: seconds from midnight, in the timezone of the window.
 	StartTimeSeconds int64 `json:"start_time_seconds"`
-	// 只有 ONCE 有.
+	// Present only for ONCE.
 	StartsAt NilDateTime `json:"starts_at"`
-	// WEEKLY：星期几的位图，周一是最低位.
+	// WEEKLY: bitmap of weekdays, Monday is the lowest bit.
 	Weekdays int64 `json:"weekdays"`
 }
 
@@ -2392,7 +2499,7 @@ type MaintenanceWindowResource struct {
 	Name        string                    `json:"name"`
 	Period      MaintenancePeriodResource `json:"period"`
 	ProjectID   uuid.UUID                 `json:"project_id"`
-	// 空表示整个项目.
+	// Empty covers the entire project.
 	ServerIds  []string                            `json:"server_ids"`
 	SyncStatus MaintenanceWindowResourceSyncStatus `json:"sync_status"`
 	Timezone   string                              `json:"timezone"`
@@ -2617,7 +2724,7 @@ type MetricResponseBody struct {
 	Downsampled   bool      `json:"downsampled"`
 	EffectiveFrom time.Time `json:"effective_from"`
 	EffectiveTo   time.Time `json:"effective_to"`
-	// 数据来自趋势表，每个点是一小时的聚合.
+	// Data comes from hourly aggregates, one point per hour.
 	FromTrends bool                    `json:"from_trends"`
 	Series     []MetricSeriesResource  `json:"series"`
 	Thresholds []ItemThresholdResource `json:"thresholds"`
@@ -2755,17 +2862,17 @@ func (s *MetricSeriesResource) SetUnits(val string) {
 
 // Ref: #/components/schemas/MonitoringItemResource
 type MonitoringItemResource struct {
-	// Last / avg / min / max 之类.
+	// Such as last, avg, min or max.
 	AggregationFunction     string `json:"aggregation_function"`
 	EvaluationWindowSeconds int64  `json:"evaluation_window_seconds"`
 	ItemID                  string `json:"item_id"`
 	Key                     string `json:"key"`
 	Name                    string `json:"name"`
 	Operator                string `json:"operator"`
-	// 只有 threshold_status 为 RESOLVED 时才有.
+	// Present only when `threshold_status` is RESOLVED.
 	Threshold       NilFloat64 `json:"threshold"`
 	ThresholdStatus string     `json:"threshold_status"`
-	// 触发那一刻的值，原样存下来的.
+	// The value at the moment of the trigger, stored as collected.
 	Value string `json:"value"`
 }
 
@@ -3704,6 +3811,144 @@ func (o OptNilTemplateBindingRequestArray) Or(d []TemplateBindingRequest) []Temp
 	return d
 }
 
+// NewOptPostStatusPageIncidentUpdateRequestBodyIncidentStatus returns new OptPostStatusPageIncidentUpdateRequestBodyIncidentStatus with value set to v.
+func NewOptPostStatusPageIncidentUpdateRequestBodyIncidentStatus(v PostStatusPageIncidentUpdateRequestBodyIncidentStatus) OptPostStatusPageIncidentUpdateRequestBodyIncidentStatus {
+	return OptPostStatusPageIncidentUpdateRequestBodyIncidentStatus{
+		Value: v,
+		Set:   true,
+	}
+}
+
+// OptPostStatusPageIncidentUpdateRequestBodyIncidentStatus is optional PostStatusPageIncidentUpdateRequestBodyIncidentStatus.
+type OptPostStatusPageIncidentUpdateRequestBodyIncidentStatus struct {
+	Value PostStatusPageIncidentUpdateRequestBodyIncidentStatus
+	Set   bool
+}
+
+// IsSet returns true if OptPostStatusPageIncidentUpdateRequestBodyIncidentStatus was set.
+func (o OptPostStatusPageIncidentUpdateRequestBodyIncidentStatus) IsSet() bool { return o.Set }
+
+// Reset unsets value.
+func (o *OptPostStatusPageIncidentUpdateRequestBodyIncidentStatus) Reset() {
+	var v PostStatusPageIncidentUpdateRequestBodyIncidentStatus
+	o.Value = v
+	o.Set = false
+}
+
+// SetTo sets value to v.
+func (o *OptPostStatusPageIncidentUpdateRequestBodyIncidentStatus) SetTo(v PostStatusPageIncidentUpdateRequestBodyIncidentStatus) {
+	o.Set = true
+	o.Value = v
+}
+
+// Get returns value and boolean that denotes whether value was set.
+func (o OptPostStatusPageIncidentUpdateRequestBodyIncidentStatus) Get() (v PostStatusPageIncidentUpdateRequestBodyIncidentStatus, ok bool) {
+	if !o.Set {
+		return v, false
+	}
+	return o.Value, true
+}
+
+// Or returns value if set, or given parameter if does not.
+func (o OptPostStatusPageIncidentUpdateRequestBodyIncidentStatus) Or(d PostStatusPageIncidentUpdateRequestBodyIncidentStatus) PostStatusPageIncidentUpdateRequestBodyIncidentStatus {
+	if v, ok := o.Get(); ok {
+		return v
+	}
+	return d
+}
+
+// NewOptPublishStatusPageIncidentRequestBodyImpact returns new OptPublishStatusPageIncidentRequestBodyImpact with value set to v.
+func NewOptPublishStatusPageIncidentRequestBodyImpact(v PublishStatusPageIncidentRequestBodyImpact) OptPublishStatusPageIncidentRequestBodyImpact {
+	return OptPublishStatusPageIncidentRequestBodyImpact{
+		Value: v,
+		Set:   true,
+	}
+}
+
+// OptPublishStatusPageIncidentRequestBodyImpact is optional PublishStatusPageIncidentRequestBodyImpact.
+type OptPublishStatusPageIncidentRequestBodyImpact struct {
+	Value PublishStatusPageIncidentRequestBodyImpact
+	Set   bool
+}
+
+// IsSet returns true if OptPublishStatusPageIncidentRequestBodyImpact was set.
+func (o OptPublishStatusPageIncidentRequestBodyImpact) IsSet() bool { return o.Set }
+
+// Reset unsets value.
+func (o *OptPublishStatusPageIncidentRequestBodyImpact) Reset() {
+	var v PublishStatusPageIncidentRequestBodyImpact
+	o.Value = v
+	o.Set = false
+}
+
+// SetTo sets value to v.
+func (o *OptPublishStatusPageIncidentRequestBodyImpact) SetTo(v PublishStatusPageIncidentRequestBodyImpact) {
+	o.Set = true
+	o.Value = v
+}
+
+// Get returns value and boolean that denotes whether value was set.
+func (o OptPublishStatusPageIncidentRequestBodyImpact) Get() (v PublishStatusPageIncidentRequestBodyImpact, ok bool) {
+	if !o.Set {
+		return v, false
+	}
+	return o.Value, true
+}
+
+// Or returns value if set, or given parameter if does not.
+func (o OptPublishStatusPageIncidentRequestBodyImpact) Or(d PublishStatusPageIncidentRequestBodyImpact) PublishStatusPageIncidentRequestBodyImpact {
+	if v, ok := o.Get(); ok {
+		return v
+	}
+	return d
+}
+
+// NewOptPublishStatusPageIncidentRequestBodyIncidentStatus returns new OptPublishStatusPageIncidentRequestBodyIncidentStatus with value set to v.
+func NewOptPublishStatusPageIncidentRequestBodyIncidentStatus(v PublishStatusPageIncidentRequestBodyIncidentStatus) OptPublishStatusPageIncidentRequestBodyIncidentStatus {
+	return OptPublishStatusPageIncidentRequestBodyIncidentStatus{
+		Value: v,
+		Set:   true,
+	}
+}
+
+// OptPublishStatusPageIncidentRequestBodyIncidentStatus is optional PublishStatusPageIncidentRequestBodyIncidentStatus.
+type OptPublishStatusPageIncidentRequestBodyIncidentStatus struct {
+	Value PublishStatusPageIncidentRequestBodyIncidentStatus
+	Set   bool
+}
+
+// IsSet returns true if OptPublishStatusPageIncidentRequestBodyIncidentStatus was set.
+func (o OptPublishStatusPageIncidentRequestBodyIncidentStatus) IsSet() bool { return o.Set }
+
+// Reset unsets value.
+func (o *OptPublishStatusPageIncidentRequestBodyIncidentStatus) Reset() {
+	var v PublishStatusPageIncidentRequestBodyIncidentStatus
+	o.Value = v
+	o.Set = false
+}
+
+// SetTo sets value to v.
+func (o *OptPublishStatusPageIncidentRequestBodyIncidentStatus) SetTo(v PublishStatusPageIncidentRequestBodyIncidentStatus) {
+	o.Set = true
+	o.Value = v
+}
+
+// Get returns value and boolean that denotes whether value was set.
+func (o OptPublishStatusPageIncidentRequestBodyIncidentStatus) Get() (v PublishStatusPageIncidentRequestBodyIncidentStatus, ok bool) {
+	if !o.Set {
+		return v, false
+	}
+	return o.Value, true
+}
+
+// Or returns value if set, or given parameter if does not.
+func (o OptPublishStatusPageIncidentRequestBodyIncidentStatus) Or(d PublishStatusPageIncidentRequestBodyIncidentStatus) PublishStatusPageIncidentRequestBodyIncidentStatus {
+	if v, ok := o.Get(); ok {
+		return v
+	}
+	return d
+}
+
 // NewOptPutSLORequestBodyPeriod returns new OptPutSLORequestBodyPeriod with value set to v.
 func NewOptPutSLORequestBodyPeriod(v PutSLORequestBodyPeriod) OptPutSLORequestBodyPeriod {
 	return OptPutSLORequestBodyPeriod{
@@ -3744,6 +3989,190 @@ func (o OptPutSLORequestBodyPeriod) Get() (v PutSLORequestBodyPeriod, ok bool) {
 
 // Or returns value if set, or given parameter if does not.
 func (o OptPutSLORequestBodyPeriod) Or(d PutSLORequestBodyPeriod) PutSLORequestBodyPeriod {
+	if v, ok := o.Get(); ok {
+		return v
+	}
+	return d
+}
+
+// NewOptPutStatusPageComponentRequestBodyAutoStatusMinSeverity returns new OptPutStatusPageComponentRequestBodyAutoStatusMinSeverity with value set to v.
+func NewOptPutStatusPageComponentRequestBodyAutoStatusMinSeverity(v PutStatusPageComponentRequestBodyAutoStatusMinSeverity) OptPutStatusPageComponentRequestBodyAutoStatusMinSeverity {
+	return OptPutStatusPageComponentRequestBodyAutoStatusMinSeverity{
+		Value: v,
+		Set:   true,
+	}
+}
+
+// OptPutStatusPageComponentRequestBodyAutoStatusMinSeverity is optional PutStatusPageComponentRequestBodyAutoStatusMinSeverity.
+type OptPutStatusPageComponentRequestBodyAutoStatusMinSeverity struct {
+	Value PutStatusPageComponentRequestBodyAutoStatusMinSeverity
+	Set   bool
+}
+
+// IsSet returns true if OptPutStatusPageComponentRequestBodyAutoStatusMinSeverity was set.
+func (o OptPutStatusPageComponentRequestBodyAutoStatusMinSeverity) IsSet() bool { return o.Set }
+
+// Reset unsets value.
+func (o *OptPutStatusPageComponentRequestBodyAutoStatusMinSeverity) Reset() {
+	var v PutStatusPageComponentRequestBodyAutoStatusMinSeverity
+	o.Value = v
+	o.Set = false
+}
+
+// SetTo sets value to v.
+func (o *OptPutStatusPageComponentRequestBodyAutoStatusMinSeverity) SetTo(v PutStatusPageComponentRequestBodyAutoStatusMinSeverity) {
+	o.Set = true
+	o.Value = v
+}
+
+// Get returns value and boolean that denotes whether value was set.
+func (o OptPutStatusPageComponentRequestBodyAutoStatusMinSeverity) Get() (v PutStatusPageComponentRequestBodyAutoStatusMinSeverity, ok bool) {
+	if !o.Set {
+		return v, false
+	}
+	return o.Value, true
+}
+
+// Or returns value if set, or given parameter if does not.
+func (o OptPutStatusPageComponentRequestBodyAutoStatusMinSeverity) Or(d PutStatusPageComponentRequestBodyAutoStatusMinSeverity) PutStatusPageComponentRequestBodyAutoStatusMinSeverity {
+	if v, ok := o.Get(); ok {
+		return v
+	}
+	return d
+}
+
+// NewOptPutStatusPageRequestBodyTheme returns new OptPutStatusPageRequestBodyTheme with value set to v.
+func NewOptPutStatusPageRequestBodyTheme(v PutStatusPageRequestBodyTheme) OptPutStatusPageRequestBodyTheme {
+	return OptPutStatusPageRequestBodyTheme{
+		Value: v,
+		Set:   true,
+	}
+}
+
+// OptPutStatusPageRequestBodyTheme is optional PutStatusPageRequestBodyTheme.
+type OptPutStatusPageRequestBodyTheme struct {
+	Value PutStatusPageRequestBodyTheme
+	Set   bool
+}
+
+// IsSet returns true if OptPutStatusPageRequestBodyTheme was set.
+func (o OptPutStatusPageRequestBodyTheme) IsSet() bool { return o.Set }
+
+// Reset unsets value.
+func (o *OptPutStatusPageRequestBodyTheme) Reset() {
+	var v PutStatusPageRequestBodyTheme
+	o.Value = v
+	o.Set = false
+}
+
+// SetTo sets value to v.
+func (o *OptPutStatusPageRequestBodyTheme) SetTo(v PutStatusPageRequestBodyTheme) {
+	o.Set = true
+	o.Value = v
+}
+
+// Get returns value and boolean that denotes whether value was set.
+func (o OptPutStatusPageRequestBodyTheme) Get() (v PutStatusPageRequestBodyTheme, ok bool) {
+	if !o.Set {
+		return v, false
+	}
+	return o.Value, true
+}
+
+// Or returns value if set, or given parameter if does not.
+func (o OptPutStatusPageRequestBodyTheme) Or(d PutStatusPageRequestBodyTheme) PutStatusPageRequestBodyTheme {
+	if v, ok := o.Get(); ok {
+		return v
+	}
+	return d
+}
+
+// NewOptStatusPageIncidentComponentRequestStatus returns new OptStatusPageIncidentComponentRequestStatus with value set to v.
+func NewOptStatusPageIncidentComponentRequestStatus(v StatusPageIncidentComponentRequestStatus) OptStatusPageIncidentComponentRequestStatus {
+	return OptStatusPageIncidentComponentRequestStatus{
+		Value: v,
+		Set:   true,
+	}
+}
+
+// OptStatusPageIncidentComponentRequestStatus is optional StatusPageIncidentComponentRequestStatus.
+type OptStatusPageIncidentComponentRequestStatus struct {
+	Value StatusPageIncidentComponentRequestStatus
+	Set   bool
+}
+
+// IsSet returns true if OptStatusPageIncidentComponentRequestStatus was set.
+func (o OptStatusPageIncidentComponentRequestStatus) IsSet() bool { return o.Set }
+
+// Reset unsets value.
+func (o *OptStatusPageIncidentComponentRequestStatus) Reset() {
+	var v StatusPageIncidentComponentRequestStatus
+	o.Value = v
+	o.Set = false
+}
+
+// SetTo sets value to v.
+func (o *OptStatusPageIncidentComponentRequestStatus) SetTo(v StatusPageIncidentComponentRequestStatus) {
+	o.Set = true
+	o.Value = v
+}
+
+// Get returns value and boolean that denotes whether value was set.
+func (o OptStatusPageIncidentComponentRequestStatus) Get() (v StatusPageIncidentComponentRequestStatus, ok bool) {
+	if !o.Set {
+		return v, false
+	}
+	return o.Value, true
+}
+
+// Or returns value if set, or given parameter if does not.
+func (o OptStatusPageIncidentComponentRequestStatus) Or(d StatusPageIncidentComponentRequestStatus) StatusPageIncidentComponentRequestStatus {
+	if v, ok := o.Get(); ok {
+		return v
+	}
+	return d
+}
+
+// NewOptStatusPageMaintenanceComponentRequestComponentStatus returns new OptStatusPageMaintenanceComponentRequestComponentStatus with value set to v.
+func NewOptStatusPageMaintenanceComponentRequestComponentStatus(v StatusPageMaintenanceComponentRequestComponentStatus) OptStatusPageMaintenanceComponentRequestComponentStatus {
+	return OptStatusPageMaintenanceComponentRequestComponentStatus{
+		Value: v,
+		Set:   true,
+	}
+}
+
+// OptStatusPageMaintenanceComponentRequestComponentStatus is optional StatusPageMaintenanceComponentRequestComponentStatus.
+type OptStatusPageMaintenanceComponentRequestComponentStatus struct {
+	Value StatusPageMaintenanceComponentRequestComponentStatus
+	Set   bool
+}
+
+// IsSet returns true if OptStatusPageMaintenanceComponentRequestComponentStatus was set.
+func (o OptStatusPageMaintenanceComponentRequestComponentStatus) IsSet() bool { return o.Set }
+
+// Reset unsets value.
+func (o *OptStatusPageMaintenanceComponentRequestComponentStatus) Reset() {
+	var v StatusPageMaintenanceComponentRequestComponentStatus
+	o.Value = v
+	o.Set = false
+}
+
+// SetTo sets value to v.
+func (o *OptStatusPageMaintenanceComponentRequestComponentStatus) SetTo(v StatusPageMaintenanceComponentRequestComponentStatus) {
+	o.Set = true
+	o.Value = v
+}
+
+// Get returns value and boolean that denotes whether value was set.
+func (o OptStatusPageMaintenanceComponentRequestComponentStatus) Get() (v StatusPageMaintenanceComponentRequestComponentStatus, ok bool) {
+	if !o.Set {
+		return v, false
+	}
+	return o.Value, true
+}
+
+// Or returns value if set, or given parameter if does not.
+func (o OptStatusPageMaintenanceComponentRequestComponentStatus) Or(d StatusPageMaintenanceComponentRequestComponentStatus) StatusPageMaintenanceComponentRequestComponentStatus {
 	if v, ok := o.Get(); ok {
 		return v
 	}
@@ -3842,6 +4271,52 @@ func (o OptTemplateBindingRequestParameters) Or(d TemplateBindingRequestParamete
 	return d
 }
 
+// NewOptUUID returns new OptUUID with value set to v.
+func NewOptUUID(v uuid.UUID) OptUUID {
+	return OptUUID{
+		Value: v,
+		Set:   true,
+	}
+}
+
+// OptUUID is optional uuid.UUID.
+type OptUUID struct {
+	Value uuid.UUID
+	Set   bool
+}
+
+// IsSet returns true if OptUUID was set.
+func (o OptUUID) IsSet() bool { return o.Set }
+
+// Reset unsets value.
+func (o *OptUUID) Reset() {
+	var v uuid.UUID
+	o.Value = v
+	o.Set = false
+}
+
+// SetTo sets value to v.
+func (o *OptUUID) SetTo(v uuid.UUID) {
+	o.Set = true
+	o.Value = v
+}
+
+// Get returns value and boolean that denotes whether value was set.
+func (o OptUUID) Get() (v uuid.UUID, ok bool) {
+	if !o.Set {
+		return v, false
+	}
+	return o.Value, true
+}
+
+// Or returns value if set, or given parameter if does not.
+func (o OptUUID) Or(d uuid.UUID) uuid.UUID {
+	if v, ok := o.Get(); ok {
+		return v
+	}
+	return d
+}
+
 // NewOptUpdateServerRequestBodyAddressKind returns new OptUpdateServerRequestBodyAddressKind with value set to v.
 func NewOptUpdateServerRequestBodyAddressKind(v UpdateServerRequestBodyAddressKind) OptUpdateServerRequestBodyAddressKind {
 	return OptUpdateServerRequestBodyAddressKind{
@@ -3934,6 +4409,115 @@ func (o OptUpdateServerRequestBodyAgentMode) Or(d UpdateServerRequestBodyAgentMo
 	return d
 }
 
+// Ref: #/components/schemas/PostStatusPageIncidentUpdateRequestBody
+type PostStatusPageIncidentUpdateRequestBody struct {
+	// Body text. Plain text.
+	Body string `json:"body"`
+	// Lists only the components being changed by this update; those not listed keep their current status.
+	Components []StatusPageIncidentComponentRequest `json:"components"`
+	// Empty keeps the current stage. RESOLVED closes the notice and returns every affected component to
+	// operational.
+	IncidentStatus OptPostStatusPageIncidentUpdateRequestBodyIncidentStatus `json:"incident_status"`
+	PublishedAt    OptDateTime                                              `json:"published_at"`
+}
+
+// GetBody returns the value of Body.
+func (s *PostStatusPageIncidentUpdateRequestBody) GetBody() string {
+	return s.Body
+}
+
+// GetComponents returns the value of Components.
+func (s *PostStatusPageIncidentUpdateRequestBody) GetComponents() []StatusPageIncidentComponentRequest {
+	return s.Components
+}
+
+// GetIncidentStatus returns the value of IncidentStatus.
+func (s *PostStatusPageIncidentUpdateRequestBody) GetIncidentStatus() OptPostStatusPageIncidentUpdateRequestBodyIncidentStatus {
+	return s.IncidentStatus
+}
+
+// GetPublishedAt returns the value of PublishedAt.
+func (s *PostStatusPageIncidentUpdateRequestBody) GetPublishedAt() OptDateTime {
+	return s.PublishedAt
+}
+
+// SetBody sets the value of Body.
+func (s *PostStatusPageIncidentUpdateRequestBody) SetBody(val string) {
+	s.Body = val
+}
+
+// SetComponents sets the value of Components.
+func (s *PostStatusPageIncidentUpdateRequestBody) SetComponents(val []StatusPageIncidentComponentRequest) {
+	s.Components = val
+}
+
+// SetIncidentStatus sets the value of IncidentStatus.
+func (s *PostStatusPageIncidentUpdateRequestBody) SetIncidentStatus(val OptPostStatusPageIncidentUpdateRequestBodyIncidentStatus) {
+	s.IncidentStatus = val
+}
+
+// SetPublishedAt sets the value of PublishedAt.
+func (s *PostStatusPageIncidentUpdateRequestBody) SetPublishedAt(val OptDateTime) {
+	s.PublishedAt = val
+}
+
+// Empty keeps the current stage. RESOLVED closes the notice and returns every affected component to
+// operational.
+type PostStatusPageIncidentUpdateRequestBodyIncidentStatus string
+
+const (
+	PostStatusPageIncidentUpdateRequestBodyIncidentStatusINVESTIGATING PostStatusPageIncidentUpdateRequestBodyIncidentStatus = "INVESTIGATING"
+	PostStatusPageIncidentUpdateRequestBodyIncidentStatusIDENTIFIED    PostStatusPageIncidentUpdateRequestBodyIncidentStatus = "IDENTIFIED"
+	PostStatusPageIncidentUpdateRequestBodyIncidentStatusMONITORING    PostStatusPageIncidentUpdateRequestBodyIncidentStatus = "MONITORING"
+	PostStatusPageIncidentUpdateRequestBodyIncidentStatusRESOLVED      PostStatusPageIncidentUpdateRequestBodyIncidentStatus = "RESOLVED"
+)
+
+// AllValues returns all PostStatusPageIncidentUpdateRequestBodyIncidentStatus values.
+func (PostStatusPageIncidentUpdateRequestBodyIncidentStatus) AllValues() []PostStatusPageIncidentUpdateRequestBodyIncidentStatus {
+	return []PostStatusPageIncidentUpdateRequestBodyIncidentStatus{
+		PostStatusPageIncidentUpdateRequestBodyIncidentStatusINVESTIGATING,
+		PostStatusPageIncidentUpdateRequestBodyIncidentStatusIDENTIFIED,
+		PostStatusPageIncidentUpdateRequestBodyIncidentStatusMONITORING,
+		PostStatusPageIncidentUpdateRequestBodyIncidentStatusRESOLVED,
+	}
+}
+
+// MarshalText implements encoding.TextMarshaler.
+func (s PostStatusPageIncidentUpdateRequestBodyIncidentStatus) MarshalText() ([]byte, error) {
+	switch s {
+	case PostStatusPageIncidentUpdateRequestBodyIncidentStatusINVESTIGATING:
+		return []byte(s), nil
+	case PostStatusPageIncidentUpdateRequestBodyIncidentStatusIDENTIFIED:
+		return []byte(s), nil
+	case PostStatusPageIncidentUpdateRequestBodyIncidentStatusMONITORING:
+		return []byte(s), nil
+	case PostStatusPageIncidentUpdateRequestBodyIncidentStatusRESOLVED:
+		return []byte(s), nil
+	default:
+		return nil, errors.Errorf("invalid value: %q", s)
+	}
+}
+
+// UnmarshalText implements encoding.TextUnmarshaler.
+func (s *PostStatusPageIncidentUpdateRequestBodyIncidentStatus) UnmarshalText(data []byte) error {
+	switch PostStatusPageIncidentUpdateRequestBodyIncidentStatus(data) {
+	case PostStatusPageIncidentUpdateRequestBodyIncidentStatusINVESTIGATING:
+		*s = PostStatusPageIncidentUpdateRequestBodyIncidentStatusINVESTIGATING
+		return nil
+	case PostStatusPageIncidentUpdateRequestBodyIncidentStatusIDENTIFIED:
+		*s = PostStatusPageIncidentUpdateRequestBodyIncidentStatusIDENTIFIED
+		return nil
+	case PostStatusPageIncidentUpdateRequestBodyIncidentStatusMONITORING:
+		*s = PostStatusPageIncidentUpdateRequestBodyIncidentStatusMONITORING
+		return nil
+	case PostStatusPageIncidentUpdateRequestBodyIncidentStatusRESOLVED:
+		*s = PostStatusPageIncidentUpdateRequestBodyIncidentStatusRESOLVED
+		return nil
+	default:
+		return errors.Errorf("invalid value: %q", data)
+	}
+}
+
 // Ref: #/components/schemas/ProjectOverviewResource
 type ProjectOverviewResource struct {
 	MonitoredServers   int64           `json:"monitored_servers"`
@@ -3982,16 +4566,213 @@ func (s *ProjectOverviewResource) SetTotalServers(val int64) {
 	s.TotalServers = val
 }
 
+// Ref: #/components/schemas/PublishStatusPageIncidentRequestBody
+type PublishStatusPageIncidentRequestBody struct {
+	// Body of the first update. Plain text.
+	Body       string                               `json:"body"`
+	Components []StatusPageIncidentComponentRequest `json:"components"`
+	// Empty derives the impact from the affected components.
+	Impact         OptPublishStatusPageIncidentRequestBodyImpact         `json:"impact"`
+	IncidentStatus OptPublishStatusPageIncidentRequestBodyIncidentStatus `json:"incident_status"`
+	// The public title.
+	Name string `json:"name"`
+	// Empty selects the current moment. Backfilling a past incident sets it in the past.
+	PublishedAt OptDateTime `json:"published_at"`
+	// When the incident began. Empty uses the publication time.
+	StartedAt OptDateTime `json:"started_at"`
+}
+
+// GetBody returns the value of Body.
+func (s *PublishStatusPageIncidentRequestBody) GetBody() string {
+	return s.Body
+}
+
+// GetComponents returns the value of Components.
+func (s *PublishStatusPageIncidentRequestBody) GetComponents() []StatusPageIncidentComponentRequest {
+	return s.Components
+}
+
+// GetImpact returns the value of Impact.
+func (s *PublishStatusPageIncidentRequestBody) GetImpact() OptPublishStatusPageIncidentRequestBodyImpact {
+	return s.Impact
+}
+
+// GetIncidentStatus returns the value of IncidentStatus.
+func (s *PublishStatusPageIncidentRequestBody) GetIncidentStatus() OptPublishStatusPageIncidentRequestBodyIncidentStatus {
+	return s.IncidentStatus
+}
+
+// GetName returns the value of Name.
+func (s *PublishStatusPageIncidentRequestBody) GetName() string {
+	return s.Name
+}
+
+// GetPublishedAt returns the value of PublishedAt.
+func (s *PublishStatusPageIncidentRequestBody) GetPublishedAt() OptDateTime {
+	return s.PublishedAt
+}
+
+// GetStartedAt returns the value of StartedAt.
+func (s *PublishStatusPageIncidentRequestBody) GetStartedAt() OptDateTime {
+	return s.StartedAt
+}
+
+// SetBody sets the value of Body.
+func (s *PublishStatusPageIncidentRequestBody) SetBody(val string) {
+	s.Body = val
+}
+
+// SetComponents sets the value of Components.
+func (s *PublishStatusPageIncidentRequestBody) SetComponents(val []StatusPageIncidentComponentRequest) {
+	s.Components = val
+}
+
+// SetImpact sets the value of Impact.
+func (s *PublishStatusPageIncidentRequestBody) SetImpact(val OptPublishStatusPageIncidentRequestBodyImpact) {
+	s.Impact = val
+}
+
+// SetIncidentStatus sets the value of IncidentStatus.
+func (s *PublishStatusPageIncidentRequestBody) SetIncidentStatus(val OptPublishStatusPageIncidentRequestBodyIncidentStatus) {
+	s.IncidentStatus = val
+}
+
+// SetName sets the value of Name.
+func (s *PublishStatusPageIncidentRequestBody) SetName(val string) {
+	s.Name = val
+}
+
+// SetPublishedAt sets the value of PublishedAt.
+func (s *PublishStatusPageIncidentRequestBody) SetPublishedAt(val OptDateTime) {
+	s.PublishedAt = val
+}
+
+// SetStartedAt sets the value of StartedAt.
+func (s *PublishStatusPageIncidentRequestBody) SetStartedAt(val OptDateTime) {
+	s.StartedAt = val
+}
+
+// Empty derives the impact from the affected components.
+type PublishStatusPageIncidentRequestBodyImpact string
+
+const (
+	PublishStatusPageIncidentRequestBodyImpactNONE     PublishStatusPageIncidentRequestBodyImpact = "NONE"
+	PublishStatusPageIncidentRequestBodyImpactMINOR    PublishStatusPageIncidentRequestBodyImpact = "MINOR"
+	PublishStatusPageIncidentRequestBodyImpactMAJOR    PublishStatusPageIncidentRequestBodyImpact = "MAJOR"
+	PublishStatusPageIncidentRequestBodyImpactCRITICAL PublishStatusPageIncidentRequestBodyImpact = "CRITICAL"
+)
+
+// AllValues returns all PublishStatusPageIncidentRequestBodyImpact values.
+func (PublishStatusPageIncidentRequestBodyImpact) AllValues() []PublishStatusPageIncidentRequestBodyImpact {
+	return []PublishStatusPageIncidentRequestBodyImpact{
+		PublishStatusPageIncidentRequestBodyImpactNONE,
+		PublishStatusPageIncidentRequestBodyImpactMINOR,
+		PublishStatusPageIncidentRequestBodyImpactMAJOR,
+		PublishStatusPageIncidentRequestBodyImpactCRITICAL,
+	}
+}
+
+// MarshalText implements encoding.TextMarshaler.
+func (s PublishStatusPageIncidentRequestBodyImpact) MarshalText() ([]byte, error) {
+	switch s {
+	case PublishStatusPageIncidentRequestBodyImpactNONE:
+		return []byte(s), nil
+	case PublishStatusPageIncidentRequestBodyImpactMINOR:
+		return []byte(s), nil
+	case PublishStatusPageIncidentRequestBodyImpactMAJOR:
+		return []byte(s), nil
+	case PublishStatusPageIncidentRequestBodyImpactCRITICAL:
+		return []byte(s), nil
+	default:
+		return nil, errors.Errorf("invalid value: %q", s)
+	}
+}
+
+// UnmarshalText implements encoding.TextUnmarshaler.
+func (s *PublishStatusPageIncidentRequestBodyImpact) UnmarshalText(data []byte) error {
+	switch PublishStatusPageIncidentRequestBodyImpact(data) {
+	case PublishStatusPageIncidentRequestBodyImpactNONE:
+		*s = PublishStatusPageIncidentRequestBodyImpactNONE
+		return nil
+	case PublishStatusPageIncidentRequestBodyImpactMINOR:
+		*s = PublishStatusPageIncidentRequestBodyImpactMINOR
+		return nil
+	case PublishStatusPageIncidentRequestBodyImpactMAJOR:
+		*s = PublishStatusPageIncidentRequestBodyImpactMAJOR
+		return nil
+	case PublishStatusPageIncidentRequestBodyImpactCRITICAL:
+		*s = PublishStatusPageIncidentRequestBodyImpactCRITICAL
+		return nil
+	default:
+		return errors.Errorf("invalid value: %q", data)
+	}
+}
+
+type PublishStatusPageIncidentRequestBodyIncidentStatus string
+
+const (
+	PublishStatusPageIncidentRequestBodyIncidentStatusINVESTIGATING PublishStatusPageIncidentRequestBodyIncidentStatus = "INVESTIGATING"
+	PublishStatusPageIncidentRequestBodyIncidentStatusIDENTIFIED    PublishStatusPageIncidentRequestBodyIncidentStatus = "IDENTIFIED"
+	PublishStatusPageIncidentRequestBodyIncidentStatusMONITORING    PublishStatusPageIncidentRequestBodyIncidentStatus = "MONITORING"
+	PublishStatusPageIncidentRequestBodyIncidentStatusRESOLVED      PublishStatusPageIncidentRequestBodyIncidentStatus = "RESOLVED"
+)
+
+// AllValues returns all PublishStatusPageIncidentRequestBodyIncidentStatus values.
+func (PublishStatusPageIncidentRequestBodyIncidentStatus) AllValues() []PublishStatusPageIncidentRequestBodyIncidentStatus {
+	return []PublishStatusPageIncidentRequestBodyIncidentStatus{
+		PublishStatusPageIncidentRequestBodyIncidentStatusINVESTIGATING,
+		PublishStatusPageIncidentRequestBodyIncidentStatusIDENTIFIED,
+		PublishStatusPageIncidentRequestBodyIncidentStatusMONITORING,
+		PublishStatusPageIncidentRequestBodyIncidentStatusRESOLVED,
+	}
+}
+
+// MarshalText implements encoding.TextMarshaler.
+func (s PublishStatusPageIncidentRequestBodyIncidentStatus) MarshalText() ([]byte, error) {
+	switch s {
+	case PublishStatusPageIncidentRequestBodyIncidentStatusINVESTIGATING:
+		return []byte(s), nil
+	case PublishStatusPageIncidentRequestBodyIncidentStatusIDENTIFIED:
+		return []byte(s), nil
+	case PublishStatusPageIncidentRequestBodyIncidentStatusMONITORING:
+		return []byte(s), nil
+	case PublishStatusPageIncidentRequestBodyIncidentStatusRESOLVED:
+		return []byte(s), nil
+	default:
+		return nil, errors.Errorf("invalid value: %q", s)
+	}
+}
+
+// UnmarshalText implements encoding.TextUnmarshaler.
+func (s *PublishStatusPageIncidentRequestBodyIncidentStatus) UnmarshalText(data []byte) error {
+	switch PublishStatusPageIncidentRequestBodyIncidentStatus(data) {
+	case PublishStatusPageIncidentRequestBodyIncidentStatusINVESTIGATING:
+		*s = PublishStatusPageIncidentRequestBodyIncidentStatusINVESTIGATING
+		return nil
+	case PublishStatusPageIncidentRequestBodyIncidentStatusIDENTIFIED:
+		*s = PublishStatusPageIncidentRequestBodyIncidentStatusIDENTIFIED
+		return nil
+	case PublishStatusPageIncidentRequestBodyIncidentStatusMONITORING:
+		*s = PublishStatusPageIncidentRequestBodyIncidentStatusMONITORING
+		return nil
+	case PublishStatusPageIncidentRequestBodyIncidentStatusRESOLVED:
+		*s = PublishStatusPageIncidentRequestBodyIncidentStatusRESOLVED
+		return nil
+	default:
+		return errors.Errorf("invalid value: %q", data)
+	}
+}
+
 // Ref: #/components/schemas/PutMaintenanceWindowRequestBody
 type PutMaintenanceWindowRequestBody struct {
-	// 整条规则的生效区间起点.
+	// Start of the period in which the rule is effective.
 	ActiveSince time.Time                `json:"active_since"`
 	ActiveTill  time.Time                `json:"active_till"`
 	Description OptString                `json:"description"`
 	Name        string                   `json:"name"`
 	Period      MaintenancePeriodRequest `json:"period"`
 	ServerIds   OptNilStringArray        `json:"server_ids"`
-	// IANA 名字，比如 Asia/Shanghai；空即用部署配的默认.
+	// IANA name such as Asia/Shanghai. Empty uses the configured default.
 	Timezone OptString `json:"timezone"`
 }
 
@@ -4070,13 +4851,13 @@ type PutSLORequestBody struct {
 	EffectiveFrom OptDateTime                  `json:"effective_from"`
 	MinSeverity   PutSLORequestBodyMinSeverity `json:"min_severity"`
 	Name          string                       `json:"name"`
-	// 空即按月.
+	// Empty selects monthly.
 	Period   OptPutSLORequestBodyPeriod       `json:"period"`
 	Schedule OptNilScheduleWindowRequestArray `json:"schedule"`
 	SloID    uuid.UUID                        `json:"slo_id"`
-	// 目标可用率，比如 99.9；最多四位小数.
+	// Target availability, such as 99.9. At most four decimal places.
 	SloPercent float64 `json:"slo_percent"`
-	// 决定统计周期的边界，即每个周期从哪一刻开始.
+	// Determines the boundaries of each reporting period, that is, the moment each period begins.
 	Timezone OptString `json:"timezone"`
 }
 
@@ -4229,7 +5010,7 @@ func (s *PutSLORequestBodyMinSeverity) UnmarshalText(data []byte) error {
 	}
 }
 
-// 空即按月.
+// Empty selects monthly.
 type PutSLORequestBodyPeriod string
 
 const (
@@ -4292,11 +5073,471 @@ func (s *PutSLORequestBodyPeriod) UnmarshalText(data []byte) error {
 	}
 }
 
+// Ref: #/components/schemas/PutStatusPageComponentRequestBody
+type PutStatusPageComponentRequestBody struct {
+	// Alerts below this severity do not change the status of this row.
+	AutoStatusMinSeverity OptPutStatusPageComponentRequestBodyAutoStatusMinSeverity `json:"auto_status_min_severity"`
+	Description           OptString                                                 `json:"description"`
+	// Empty leaves the component ungrouped.
+	GroupID OptUUID `json:"group_id"`
+	// Customer-facing copy; appears verbatim on the public page.
+	Name               string  `json:"name"`
+	OnlyShowIfDegraded OptBool `json:"only_show_if_degraded"`
+	ShowUptime         OptBool `json:"show_uptime"`
+	// Meaningful only at creation and immutable afterwards. Empty selects the current moment.
+	StartedOn OptDateTime `json:"started_on"`
+}
+
+// GetAutoStatusMinSeverity returns the value of AutoStatusMinSeverity.
+func (s *PutStatusPageComponentRequestBody) GetAutoStatusMinSeverity() OptPutStatusPageComponentRequestBodyAutoStatusMinSeverity {
+	return s.AutoStatusMinSeverity
+}
+
+// GetDescription returns the value of Description.
+func (s *PutStatusPageComponentRequestBody) GetDescription() OptString {
+	return s.Description
+}
+
+// GetGroupID returns the value of GroupID.
+func (s *PutStatusPageComponentRequestBody) GetGroupID() OptUUID {
+	return s.GroupID
+}
+
+// GetName returns the value of Name.
+func (s *PutStatusPageComponentRequestBody) GetName() string {
+	return s.Name
+}
+
+// GetOnlyShowIfDegraded returns the value of OnlyShowIfDegraded.
+func (s *PutStatusPageComponentRequestBody) GetOnlyShowIfDegraded() OptBool {
+	return s.OnlyShowIfDegraded
+}
+
+// GetShowUptime returns the value of ShowUptime.
+func (s *PutStatusPageComponentRequestBody) GetShowUptime() OptBool {
+	return s.ShowUptime
+}
+
+// GetStartedOn returns the value of StartedOn.
+func (s *PutStatusPageComponentRequestBody) GetStartedOn() OptDateTime {
+	return s.StartedOn
+}
+
+// SetAutoStatusMinSeverity sets the value of AutoStatusMinSeverity.
+func (s *PutStatusPageComponentRequestBody) SetAutoStatusMinSeverity(val OptPutStatusPageComponentRequestBodyAutoStatusMinSeverity) {
+	s.AutoStatusMinSeverity = val
+}
+
+// SetDescription sets the value of Description.
+func (s *PutStatusPageComponentRequestBody) SetDescription(val OptString) {
+	s.Description = val
+}
+
+// SetGroupID sets the value of GroupID.
+func (s *PutStatusPageComponentRequestBody) SetGroupID(val OptUUID) {
+	s.GroupID = val
+}
+
+// SetName sets the value of Name.
+func (s *PutStatusPageComponentRequestBody) SetName(val string) {
+	s.Name = val
+}
+
+// SetOnlyShowIfDegraded sets the value of OnlyShowIfDegraded.
+func (s *PutStatusPageComponentRequestBody) SetOnlyShowIfDegraded(val OptBool) {
+	s.OnlyShowIfDegraded = val
+}
+
+// SetShowUptime sets the value of ShowUptime.
+func (s *PutStatusPageComponentRequestBody) SetShowUptime(val OptBool) {
+	s.ShowUptime = val
+}
+
+// SetStartedOn sets the value of StartedOn.
+func (s *PutStatusPageComponentRequestBody) SetStartedOn(val OptDateTime) {
+	s.StartedOn = val
+}
+
+// Alerts below this severity do not change the status of this row.
+type PutStatusPageComponentRequestBodyAutoStatusMinSeverity string
+
+const (
+	PutStatusPageComponentRequestBodyAutoStatusMinSeverityANY         PutStatusPageComponentRequestBodyAutoStatusMinSeverity = "ANY"
+	PutStatusPageComponentRequestBodyAutoStatusMinSeverityINFORMATION PutStatusPageComponentRequestBodyAutoStatusMinSeverity = "INFORMATION"
+	PutStatusPageComponentRequestBodyAutoStatusMinSeverityWARNING     PutStatusPageComponentRequestBodyAutoStatusMinSeverity = "WARNING"
+	PutStatusPageComponentRequestBodyAutoStatusMinSeverityAVERAGE     PutStatusPageComponentRequestBodyAutoStatusMinSeverity = "AVERAGE"
+	PutStatusPageComponentRequestBodyAutoStatusMinSeverityHIGH        PutStatusPageComponentRequestBodyAutoStatusMinSeverity = "HIGH"
+	PutStatusPageComponentRequestBodyAutoStatusMinSeverityDISASTER    PutStatusPageComponentRequestBodyAutoStatusMinSeverity = "DISASTER"
+)
+
+// AllValues returns all PutStatusPageComponentRequestBodyAutoStatusMinSeverity values.
+func (PutStatusPageComponentRequestBodyAutoStatusMinSeverity) AllValues() []PutStatusPageComponentRequestBodyAutoStatusMinSeverity {
+	return []PutStatusPageComponentRequestBodyAutoStatusMinSeverity{
+		PutStatusPageComponentRequestBodyAutoStatusMinSeverityANY,
+		PutStatusPageComponentRequestBodyAutoStatusMinSeverityINFORMATION,
+		PutStatusPageComponentRequestBodyAutoStatusMinSeverityWARNING,
+		PutStatusPageComponentRequestBodyAutoStatusMinSeverityAVERAGE,
+		PutStatusPageComponentRequestBodyAutoStatusMinSeverityHIGH,
+		PutStatusPageComponentRequestBodyAutoStatusMinSeverityDISASTER,
+	}
+}
+
+// MarshalText implements encoding.TextMarshaler.
+func (s PutStatusPageComponentRequestBodyAutoStatusMinSeverity) MarshalText() ([]byte, error) {
+	switch s {
+	case PutStatusPageComponentRequestBodyAutoStatusMinSeverityANY:
+		return []byte(s), nil
+	case PutStatusPageComponentRequestBodyAutoStatusMinSeverityINFORMATION:
+		return []byte(s), nil
+	case PutStatusPageComponentRequestBodyAutoStatusMinSeverityWARNING:
+		return []byte(s), nil
+	case PutStatusPageComponentRequestBodyAutoStatusMinSeverityAVERAGE:
+		return []byte(s), nil
+	case PutStatusPageComponentRequestBodyAutoStatusMinSeverityHIGH:
+		return []byte(s), nil
+	case PutStatusPageComponentRequestBodyAutoStatusMinSeverityDISASTER:
+		return []byte(s), nil
+	default:
+		return nil, errors.Errorf("invalid value: %q", s)
+	}
+}
+
+// UnmarshalText implements encoding.TextUnmarshaler.
+func (s *PutStatusPageComponentRequestBodyAutoStatusMinSeverity) UnmarshalText(data []byte) error {
+	switch PutStatusPageComponentRequestBodyAutoStatusMinSeverity(data) {
+	case PutStatusPageComponentRequestBodyAutoStatusMinSeverityANY:
+		*s = PutStatusPageComponentRequestBodyAutoStatusMinSeverityANY
+		return nil
+	case PutStatusPageComponentRequestBodyAutoStatusMinSeverityINFORMATION:
+		*s = PutStatusPageComponentRequestBodyAutoStatusMinSeverityINFORMATION
+		return nil
+	case PutStatusPageComponentRequestBodyAutoStatusMinSeverityWARNING:
+		*s = PutStatusPageComponentRequestBodyAutoStatusMinSeverityWARNING
+		return nil
+	case PutStatusPageComponentRequestBodyAutoStatusMinSeverityAVERAGE:
+		*s = PutStatusPageComponentRequestBodyAutoStatusMinSeverityAVERAGE
+		return nil
+	case PutStatusPageComponentRequestBodyAutoStatusMinSeverityHIGH:
+		*s = PutStatusPageComponentRequestBodyAutoStatusMinSeverityHIGH
+		return nil
+	case PutStatusPageComponentRequestBodyAutoStatusMinSeverityDISASTER:
+		*s = PutStatusPageComponentRequestBodyAutoStatusMinSeverityDISASTER
+		return nil
+	default:
+		return errors.Errorf("invalid value: %q", data)
+	}
+}
+
+// Submits the complete set; anything not listed is unbound.
+// Ref: #/components/schemas/PutStatusPageComponentSourcesRequestBody
+type PutStatusPageComponentSourcesRequestBody struct {
+	Servers   []StatusPageComponentSourceServer   `json:"servers"`
+	WebChecks []StatusPageComponentSourceWebCheck `json:"web_checks"`
+}
+
+// GetServers returns the value of Servers.
+func (s *PutStatusPageComponentSourcesRequestBody) GetServers() []StatusPageComponentSourceServer {
+	return s.Servers
+}
+
+// GetWebChecks returns the value of WebChecks.
+func (s *PutStatusPageComponentSourcesRequestBody) GetWebChecks() []StatusPageComponentSourceWebCheck {
+	return s.WebChecks
+}
+
+// SetServers sets the value of Servers.
+func (s *PutStatusPageComponentSourcesRequestBody) SetServers(val []StatusPageComponentSourceServer) {
+	s.Servers = val
+}
+
+// SetWebChecks sets the value of WebChecks.
+func (s *PutStatusPageComponentSourcesRequestBody) SetWebChecks(val []StatusPageComponentSourceWebCheck) {
+	s.WebChecks = val
+}
+
+// PutStatusPageGroupOrderNoContent is response for PutStatusPageGroupOrder operation.
+type PutStatusPageGroupOrderNoContent struct{}
+
+// Ref: #/components/schemas/PutStatusPageGroupOrderRequestBody
+type PutStatusPageGroupOrderRequestBody struct {
+	ComponentIds []uuid.UUID `json:"component_ids"`
+}
+
+// GetComponentIds returns the value of ComponentIds.
+func (s *PutStatusPageGroupOrderRequestBody) GetComponentIds() []uuid.UUID {
+	return s.ComponentIds
+}
+
+// SetComponentIds sets the value of ComponentIds.
+func (s *PutStatusPageGroupOrderRequestBody) SetComponentIds(val []uuid.UUID) {
+	s.ComponentIds = val
+}
+
+// Ref: #/components/schemas/PutStatusPageGroupRequestBody
+type PutStatusPageGroupRequestBody struct {
+	Collapsed   OptBool   `json:"collapsed"`
+	Description OptString `json:"description"`
+	Name        string    `json:"name"`
+}
+
+// GetCollapsed returns the value of Collapsed.
+func (s *PutStatusPageGroupRequestBody) GetCollapsed() OptBool {
+	return s.Collapsed
+}
+
+// GetDescription returns the value of Description.
+func (s *PutStatusPageGroupRequestBody) GetDescription() OptString {
+	return s.Description
+}
+
+// GetName returns the value of Name.
+func (s *PutStatusPageGroupRequestBody) GetName() string {
+	return s.Name
+}
+
+// SetCollapsed sets the value of Collapsed.
+func (s *PutStatusPageGroupRequestBody) SetCollapsed(val OptBool) {
+	s.Collapsed = val
+}
+
+// SetDescription sets the value of Description.
+func (s *PutStatusPageGroupRequestBody) SetDescription(val OptString) {
+	s.Description = val
+}
+
+// SetName sets the value of Name.
+func (s *PutStatusPageGroupRequestBody) SetName(val string) {
+	s.Name = val
+}
+
+// PutStatusPageOrderNoContent is response for PutStatusPageOrder operation.
+type PutStatusPageOrderNoContent struct{}
+
+// Ref: #/components/schemas/PutStatusPageOrderRequestBody
+type PutStatusPageOrderRequestBody struct {
+	Items []StatusPageOrderItem `json:"items"`
+}
+
+// GetItems returns the value of Items.
+func (s *PutStatusPageOrderRequestBody) GetItems() []StatusPageOrderItem {
+	return s.Items
+}
+
+// SetItems sets the value of Items.
+func (s *PutStatusPageOrderRequestBody) SetItems(val []StatusPageOrderItem) {
+	s.Items = val
+}
+
+// Ref: #/components/schemas/PutStatusPageRequestBody
+type PutStatusPageRequestBody struct {
+	// #RRGGBB. Applied to the page styling; only a strict six-digit hexadecimal value is accepted.
+	BrandColor OptString `json:"brand_color"`
+	// Your own domain, such as status.acme.com. Empty binds none. Globally unique.
+	CustomDomain OptString `json:"custom_domain"`
+	// The line of free-form text in the page footer. Plain text.
+	FooterText OptString `json:"footer_text"`
+	// The line shown below the title.
+	Headline OptString `json:"headline"`
+	LogoURL  OptString `json:"logo_url"`
+	// Page title.
+	Name string `json:"name"`
+	// While false, the public address returns 404. Unpublished by default.
+	Published OptBool `json:"published"`
+	// Not indexed by default. Once a page has been crawled, switching back does not remove copies already
+	// held in third-party indexes.
+	SearchEngineIndex OptBool `json:"search_engine_index"`
+	// The address segment under the shared domain. Lowercase letters, digits and hyphens. Globally unique.
+	Slug       string                           `json:"slug"`
+	SupportURL OptString                        `json:"support_url"`
+	Theme      OptPutStatusPageRequestBodyTheme `json:"theme"`
+	// IANA name. Empty selects UTC.
+	Timezone   OptString `json:"timezone"`
+	UptimeDays OptInt64  `json:"uptime_days"`
+}
+
+// GetBrandColor returns the value of BrandColor.
+func (s *PutStatusPageRequestBody) GetBrandColor() OptString {
+	return s.BrandColor
+}
+
+// GetCustomDomain returns the value of CustomDomain.
+func (s *PutStatusPageRequestBody) GetCustomDomain() OptString {
+	return s.CustomDomain
+}
+
+// GetFooterText returns the value of FooterText.
+func (s *PutStatusPageRequestBody) GetFooterText() OptString {
+	return s.FooterText
+}
+
+// GetHeadline returns the value of Headline.
+func (s *PutStatusPageRequestBody) GetHeadline() OptString {
+	return s.Headline
+}
+
+// GetLogoURL returns the value of LogoURL.
+func (s *PutStatusPageRequestBody) GetLogoURL() OptString {
+	return s.LogoURL
+}
+
+// GetName returns the value of Name.
+func (s *PutStatusPageRequestBody) GetName() string {
+	return s.Name
+}
+
+// GetPublished returns the value of Published.
+func (s *PutStatusPageRequestBody) GetPublished() OptBool {
+	return s.Published
+}
+
+// GetSearchEngineIndex returns the value of SearchEngineIndex.
+func (s *PutStatusPageRequestBody) GetSearchEngineIndex() OptBool {
+	return s.SearchEngineIndex
+}
+
+// GetSlug returns the value of Slug.
+func (s *PutStatusPageRequestBody) GetSlug() string {
+	return s.Slug
+}
+
+// GetSupportURL returns the value of SupportURL.
+func (s *PutStatusPageRequestBody) GetSupportURL() OptString {
+	return s.SupportURL
+}
+
+// GetTheme returns the value of Theme.
+func (s *PutStatusPageRequestBody) GetTheme() OptPutStatusPageRequestBodyTheme {
+	return s.Theme
+}
+
+// GetTimezone returns the value of Timezone.
+func (s *PutStatusPageRequestBody) GetTimezone() OptString {
+	return s.Timezone
+}
+
+// GetUptimeDays returns the value of UptimeDays.
+func (s *PutStatusPageRequestBody) GetUptimeDays() OptInt64 {
+	return s.UptimeDays
+}
+
+// SetBrandColor sets the value of BrandColor.
+func (s *PutStatusPageRequestBody) SetBrandColor(val OptString) {
+	s.BrandColor = val
+}
+
+// SetCustomDomain sets the value of CustomDomain.
+func (s *PutStatusPageRequestBody) SetCustomDomain(val OptString) {
+	s.CustomDomain = val
+}
+
+// SetFooterText sets the value of FooterText.
+func (s *PutStatusPageRequestBody) SetFooterText(val OptString) {
+	s.FooterText = val
+}
+
+// SetHeadline sets the value of Headline.
+func (s *PutStatusPageRequestBody) SetHeadline(val OptString) {
+	s.Headline = val
+}
+
+// SetLogoURL sets the value of LogoURL.
+func (s *PutStatusPageRequestBody) SetLogoURL(val OptString) {
+	s.LogoURL = val
+}
+
+// SetName sets the value of Name.
+func (s *PutStatusPageRequestBody) SetName(val string) {
+	s.Name = val
+}
+
+// SetPublished sets the value of Published.
+func (s *PutStatusPageRequestBody) SetPublished(val OptBool) {
+	s.Published = val
+}
+
+// SetSearchEngineIndex sets the value of SearchEngineIndex.
+func (s *PutStatusPageRequestBody) SetSearchEngineIndex(val OptBool) {
+	s.SearchEngineIndex = val
+}
+
+// SetSlug sets the value of Slug.
+func (s *PutStatusPageRequestBody) SetSlug(val string) {
+	s.Slug = val
+}
+
+// SetSupportURL sets the value of SupportURL.
+func (s *PutStatusPageRequestBody) SetSupportURL(val OptString) {
+	s.SupportURL = val
+}
+
+// SetTheme sets the value of Theme.
+func (s *PutStatusPageRequestBody) SetTheme(val OptPutStatusPageRequestBodyTheme) {
+	s.Theme = val
+}
+
+// SetTimezone sets the value of Timezone.
+func (s *PutStatusPageRequestBody) SetTimezone(val OptString) {
+	s.Timezone = val
+}
+
+// SetUptimeDays sets the value of UptimeDays.
+func (s *PutStatusPageRequestBody) SetUptimeDays(val OptInt64) {
+	s.UptimeDays = val
+}
+
+type PutStatusPageRequestBodyTheme string
+
+const (
+	PutStatusPageRequestBodyThemeAUTO  PutStatusPageRequestBodyTheme = "AUTO"
+	PutStatusPageRequestBodyThemeLIGHT PutStatusPageRequestBodyTheme = "LIGHT"
+	PutStatusPageRequestBodyThemeDARK  PutStatusPageRequestBodyTheme = "DARK"
+)
+
+// AllValues returns all PutStatusPageRequestBodyTheme values.
+func (PutStatusPageRequestBodyTheme) AllValues() []PutStatusPageRequestBodyTheme {
+	return []PutStatusPageRequestBodyTheme{
+		PutStatusPageRequestBodyThemeAUTO,
+		PutStatusPageRequestBodyThemeLIGHT,
+		PutStatusPageRequestBodyThemeDARK,
+	}
+}
+
+// MarshalText implements encoding.TextMarshaler.
+func (s PutStatusPageRequestBodyTheme) MarshalText() ([]byte, error) {
+	switch s {
+	case PutStatusPageRequestBodyThemeAUTO:
+		return []byte(s), nil
+	case PutStatusPageRequestBodyThemeLIGHT:
+		return []byte(s), nil
+	case PutStatusPageRequestBodyThemeDARK:
+		return []byte(s), nil
+	default:
+		return nil, errors.Errorf("invalid value: %q", s)
+	}
+}
+
+// UnmarshalText implements encoding.TextUnmarshaler.
+func (s *PutStatusPageRequestBodyTheme) UnmarshalText(data []byte) error {
+	switch PutStatusPageRequestBodyTheme(data) {
+	case PutStatusPageRequestBodyThemeAUTO:
+		*s = PutStatusPageRequestBodyThemeAUTO
+		return nil
+	case PutStatusPageRequestBodyThemeLIGHT:
+		*s = PutStatusPageRequestBodyThemeLIGHT
+		return nil
+	case PutStatusPageRequestBodyThemeDARK:
+		*s = PutStatusPageRequestBodyThemeDARK
+		return nil
+	default:
+		return errors.Errorf("invalid value: %q", data)
+	}
+}
+
 // Ref: #/components/schemas/PutWebCheckRequestBody
 type PutWebCheckRequestBody struct {
-	// 0 表示用默认.
+	// 0 uses the default.
 	IntervalSeconds OptInt64 `json:"interval_seconds"`
-	// 超过它算慢，0 表示不看响应时间.
+	// Slower than this counts as slow. 0 disables the response time check.
 	ResponseTimeThresholdSeconds OptInt64              `json:"response_time_threshold_seconds"`
 	Retries                      OptInt64              `json:"retries"`
 	Steps                        []WebCheckStepRequest `json:"steps"`
@@ -4371,13 +5612,13 @@ func (s *SLIReportResponseBody) SetRows(val []SLIReportRowResource) {
 // Ref: #/components/schemas/SLIReportRowResource
 type SLIReportRowResource struct {
 	DowntimeSeconds int64 `json:"downtime_seconds"`
-	// 为负表示这个周期的额度已经超支.
+	// A negative value means the budget for this period is already exhausted.
 	ErrorBudgetSeconds int64 `json:"error_budget_seconds"`
-	// 被计划内维护排除掉的那部分.
+	// The portion excluded by planned maintenance.
 	ExcludedDowntimeSeconds int64     `json:"excluded_downtime_seconds"`
 	PeriodFrom              time.Time `json:"period_from"`
 	PeriodTo                time.Time `json:"period_to"`
-	// 空表示这一行是项目整体.
+	// Empty means this row covers the project as a whole.
 	ServerID      string  `json:"server_id"`
 	SliPercent    float64 `json:"sli_percent"`
 	UptimeSeconds int64   `json:"uptime_seconds"`
@@ -4471,10 +5712,10 @@ type SLOResource struct {
 	Name          string                 `json:"name"`
 	Period        SLOResourcePeriod      `json:"period"`
 	ProjectID     uuid.UUID              `json:"project_id"`
-	// 空表示 7×24 全天候承诺.
+	// Empty means a 24x7 commitment.
 	Schedule []ScheduleWindowResource `json:"schedule"`
 	SloID    uuid.UUID                `json:"slo_id"`
-	// 目标可用率，比如 99.9.
+	// Target availability, such as 99.9.
 	SloPercent float64               `json:"slo_percent"`
 	SyncStatus SLOResourceSyncStatus `json:"sync_status"`
 	Timezone   string                `json:"timezone"`
@@ -4769,11 +6010,74 @@ func (s *SLOResourceSyncStatus) UnmarshalText(data []byte) error {
 	}
 }
 
+// Ref: #/components/schemas/ScheduleStatusPageMaintenanceRequestBody
+type ScheduleStatusPageMaintenanceRequestBody struct {
+	// Maintenance description. Plain text.
+	Body string `json:"body"`
+	// At least one. Maintenance that affects no component reads on the page as an announcement with no
+	// subject.
+	Components   []StatusPageMaintenanceComponentRequest `json:"components"`
+	Name         string                                  `json:"name"`
+	ScheduledFor time.Time                               `json:"scheduled_for"`
+	// Must be later than `scheduled_for`.
+	ScheduledUntil time.Time `json:"scheduled_until"`
+}
+
+// GetBody returns the value of Body.
+func (s *ScheduleStatusPageMaintenanceRequestBody) GetBody() string {
+	return s.Body
+}
+
+// GetComponents returns the value of Components.
+func (s *ScheduleStatusPageMaintenanceRequestBody) GetComponents() []StatusPageMaintenanceComponentRequest {
+	return s.Components
+}
+
+// GetName returns the value of Name.
+func (s *ScheduleStatusPageMaintenanceRequestBody) GetName() string {
+	return s.Name
+}
+
+// GetScheduledFor returns the value of ScheduledFor.
+func (s *ScheduleStatusPageMaintenanceRequestBody) GetScheduledFor() time.Time {
+	return s.ScheduledFor
+}
+
+// GetScheduledUntil returns the value of ScheduledUntil.
+func (s *ScheduleStatusPageMaintenanceRequestBody) GetScheduledUntil() time.Time {
+	return s.ScheduledUntil
+}
+
+// SetBody sets the value of Body.
+func (s *ScheduleStatusPageMaintenanceRequestBody) SetBody(val string) {
+	s.Body = val
+}
+
+// SetComponents sets the value of Components.
+func (s *ScheduleStatusPageMaintenanceRequestBody) SetComponents(val []StatusPageMaintenanceComponentRequest) {
+	s.Components = val
+}
+
+// SetName sets the value of Name.
+func (s *ScheduleStatusPageMaintenanceRequestBody) SetName(val string) {
+	s.Name = val
+}
+
+// SetScheduledFor sets the value of ScheduledFor.
+func (s *ScheduleStatusPageMaintenanceRequestBody) SetScheduledFor(val time.Time) {
+	s.ScheduledFor = val
+}
+
+// SetScheduledUntil sets the value of ScheduledUntil.
+func (s *ScheduleStatusPageMaintenanceRequestBody) SetScheduledUntil(val time.Time) {
+	s.ScheduledUntil = val
+}
+
 // Ref: #/components/schemas/ScheduleWindowRequest
 type ScheduleWindowRequest struct {
 	EndTimeSeconds   OptInt64 `json:"end_time_seconds"`
 	StartTimeSeconds OptInt64 `json:"start_time_seconds"`
-	// 星期几的位图，周一是最低位（1=周一 … 64=周日）.
+	// Bitmap of weekdays, Monday is the lowest bit (1 = Monday … 64 = Sunday).
 	Weekdays int64 `json:"weekdays"`
 }
 
@@ -4811,7 +6115,7 @@ func (s *ScheduleWindowRequest) SetWeekdays(val int64) {
 type ScheduleWindowResource struct {
 	EndTimeSeconds   int64 `json:"end_time_seconds"`
 	StartTimeSeconds int64 `json:"start_time_seconds"`
-	// 星期几的位图，周一是最低位，与维护窗口同一套编码.
+	// Bitmap of weekdays, Monday is the lowest bit, using the same encoding as maintenance windows.
 	Weekdays int64 `json:"weekdays"`
 }
 
@@ -4881,13 +6185,14 @@ type ServerResource struct {
 	Description string                    `json:"description"`
 	ID          uuid.UUID                 `json:"id"`
 	LastError   string                    `json:"last_error"`
-	// FAILED 时看 last_error.
+	// Consult `last_error` when this is FAILED.
 	MonitoringStatus ServerResourceMonitoringStatus `json:"monitoring_status"`
 	Name             string                         `json:"name"`
 	ProjectID        uuid.UUID                      `json:"project_id"`
 	Templates        []ServerTemplateResource       `json:"templates"`
 	UpdatedAt        time.Time                      `json:"updated_at"`
-	// Agent 配置里的 Hostname 必须与它一致，主动式采集靠它认人.
+	// The Hostname in the agent configuration must match this value; active checks identify the machine by
+	// it.
 	ZabbixHostName string `json:"zabbix_host_name"`
 }
 
@@ -5113,7 +6418,7 @@ func (s *ServerResourceAgentMode) UnmarshalText(data []byte) error {
 	}
 }
 
-// FAILED 时看 last_error.
+// Consult `last_error` when this is FAILED.
 type ServerResourceMonitoringStatus string
 
 const (
@@ -5172,7 +6477,7 @@ func (s *ServerResourceMonitoringStatus) UnmarshalText(data []byte) error {
 // Ref: #/components/schemas/ServerResourcesResource
 type ServerResourcesResource struct {
 	Interfaces []HostInterfaceResource `json:"interfaces"`
-	// 自动采集的硬件与系统清单：CPU、内存、操作系统等.
+	// Hardware and system inventory collected automatically: CPU, memory, operating system and so on.
 	Inventory ServerResourcesResourceInventory `json:"inventory"`
 	Tags      []TagResource                    `json:"tags"`
 }
@@ -5207,7 +6512,7 @@ func (s *ServerResourcesResource) SetTags(val []TagResource) {
 	s.Tags = val
 }
 
-// 自动采集的硬件与系统清单：CPU、内存、操作系统等.
+// Hardware and system inventory collected automatically: CPU, memory, operating system and so on.
 type ServerResourcesResourceInventory map[string]string
 
 func (s *ServerResourcesResourceInventory) init() ServerResourcesResourceInventory {
@@ -5307,7 +6612,8 @@ func (s *SetFollowingRequestBody) SetFollowing(val bool) {
 // Ref: #/components/schemas/SnapshotResource
 type SnapshotResource struct {
 	AgentError string `json:"agent_error"`
-	// AGENT_DOWN 是 agent 不通但机器还活着；UNREACHABLE 是连这一点都说不上.
+	// AGENT_DOWN means the agent is unreachable while the machine is still alive; UNREACHABLE means
+	// neither can be established.
 	AgentReachability SnapshotResourceAgentReachability `json:"agent_reachability"`
 	LastCollectedAt   NilDateTime                       `json:"last_collected_at"`
 	MonitoringEnabled bool                              `json:"monitoring_enabled"`
@@ -5364,7 +6670,8 @@ func (s *SnapshotResource) SetProblemCounts(val []CountResource) {
 	s.ProblemCounts = val
 }
 
-// AGENT_DOWN 是 agent 不通但机器还活着；UNREACHABLE 是连这一点都说不上.
+// AGENT_DOWN means the agent is unreachable while the machine is still alive; UNREACHABLE means
+// neither can be established.
 type SnapshotResourceAgentReachability string
 
 const (
@@ -5420,6 +6727,1617 @@ func (s *SnapshotResourceAgentReachability) UnmarshalText(data []byte) error {
 	}
 }
 
+// Ref: #/components/schemas/StatusPageComponentListResponseBody
+type StatusPageComponentListResponseBody struct {
+	Data []StatusPageComponentResource `json:"data"`
+}
+
+// GetData returns the value of Data.
+func (s *StatusPageComponentListResponseBody) GetData() []StatusPageComponentResource {
+	return s.Data
+}
+
+// SetData sets the value of Data.
+func (s *StatusPageComponentListResponseBody) SetData(val []StatusPageComponentResource) {
+	s.Data = val
+}
+
+// Ref: #/components/schemas/StatusPageComponentResource
+type StatusPageComponentResource struct {
+	AutoStatusMinSeverity StatusPageComponentResourceAutoStatusMinSeverity `json:"auto_status_min_severity"`
+	ComponentID           uuid.UUID                                        `json:"component_id"`
+	CreatedAt             time.Time                                        `json:"created_at"`
+	// The status currently shown to the public. OPERATIONAL means normal.
+	CurrentStatus StatusPageComponentResourceCurrentStatus `json:"current_status"`
+	Description   string                                   `json:"description"`
+	// Empty means ungrouped, placed directly at the top level of the page.
+	GroupID string `json:"group_id"`
+	Name    string `json:"name"`
+	// Hide this row while everything is normal.
+	OnlyShowIfDegraded bool  `json:"only_show_if_degraded"`
+	Position           int64 `json:"position"`
+	// Whether the availability bar is shown. Components with this disabled are also excluded from the
+	// aggregate of their group.
+	ShowUptime bool `json:"show_uptime"`
+	// The moment this component started being covered. Earlier days are shown as unmeasured rather than
+	// operational.
+	StartedOn time.Time `json:"started_on"`
+	// Availability over the past `uptime_days` days.
+	UptimePercent float64 `json:"uptime_percent"`
+}
+
+// GetAutoStatusMinSeverity returns the value of AutoStatusMinSeverity.
+func (s *StatusPageComponentResource) GetAutoStatusMinSeverity() StatusPageComponentResourceAutoStatusMinSeverity {
+	return s.AutoStatusMinSeverity
+}
+
+// GetComponentID returns the value of ComponentID.
+func (s *StatusPageComponentResource) GetComponentID() uuid.UUID {
+	return s.ComponentID
+}
+
+// GetCreatedAt returns the value of CreatedAt.
+func (s *StatusPageComponentResource) GetCreatedAt() time.Time {
+	return s.CreatedAt
+}
+
+// GetCurrentStatus returns the value of CurrentStatus.
+func (s *StatusPageComponentResource) GetCurrentStatus() StatusPageComponentResourceCurrentStatus {
+	return s.CurrentStatus
+}
+
+// GetDescription returns the value of Description.
+func (s *StatusPageComponentResource) GetDescription() string {
+	return s.Description
+}
+
+// GetGroupID returns the value of GroupID.
+func (s *StatusPageComponentResource) GetGroupID() string {
+	return s.GroupID
+}
+
+// GetName returns the value of Name.
+func (s *StatusPageComponentResource) GetName() string {
+	return s.Name
+}
+
+// GetOnlyShowIfDegraded returns the value of OnlyShowIfDegraded.
+func (s *StatusPageComponentResource) GetOnlyShowIfDegraded() bool {
+	return s.OnlyShowIfDegraded
+}
+
+// GetPosition returns the value of Position.
+func (s *StatusPageComponentResource) GetPosition() int64 {
+	return s.Position
+}
+
+// GetShowUptime returns the value of ShowUptime.
+func (s *StatusPageComponentResource) GetShowUptime() bool {
+	return s.ShowUptime
+}
+
+// GetStartedOn returns the value of StartedOn.
+func (s *StatusPageComponentResource) GetStartedOn() time.Time {
+	return s.StartedOn
+}
+
+// GetUptimePercent returns the value of UptimePercent.
+func (s *StatusPageComponentResource) GetUptimePercent() float64 {
+	return s.UptimePercent
+}
+
+// SetAutoStatusMinSeverity sets the value of AutoStatusMinSeverity.
+func (s *StatusPageComponentResource) SetAutoStatusMinSeverity(val StatusPageComponentResourceAutoStatusMinSeverity) {
+	s.AutoStatusMinSeverity = val
+}
+
+// SetComponentID sets the value of ComponentID.
+func (s *StatusPageComponentResource) SetComponentID(val uuid.UUID) {
+	s.ComponentID = val
+}
+
+// SetCreatedAt sets the value of CreatedAt.
+func (s *StatusPageComponentResource) SetCreatedAt(val time.Time) {
+	s.CreatedAt = val
+}
+
+// SetCurrentStatus sets the value of CurrentStatus.
+func (s *StatusPageComponentResource) SetCurrentStatus(val StatusPageComponentResourceCurrentStatus) {
+	s.CurrentStatus = val
+}
+
+// SetDescription sets the value of Description.
+func (s *StatusPageComponentResource) SetDescription(val string) {
+	s.Description = val
+}
+
+// SetGroupID sets the value of GroupID.
+func (s *StatusPageComponentResource) SetGroupID(val string) {
+	s.GroupID = val
+}
+
+// SetName sets the value of Name.
+func (s *StatusPageComponentResource) SetName(val string) {
+	s.Name = val
+}
+
+// SetOnlyShowIfDegraded sets the value of OnlyShowIfDegraded.
+func (s *StatusPageComponentResource) SetOnlyShowIfDegraded(val bool) {
+	s.OnlyShowIfDegraded = val
+}
+
+// SetPosition sets the value of Position.
+func (s *StatusPageComponentResource) SetPosition(val int64) {
+	s.Position = val
+}
+
+// SetShowUptime sets the value of ShowUptime.
+func (s *StatusPageComponentResource) SetShowUptime(val bool) {
+	s.ShowUptime = val
+}
+
+// SetStartedOn sets the value of StartedOn.
+func (s *StatusPageComponentResource) SetStartedOn(val time.Time) {
+	s.StartedOn = val
+}
+
+// SetUptimePercent sets the value of UptimePercent.
+func (s *StatusPageComponentResource) SetUptimePercent(val float64) {
+	s.UptimePercent = val
+}
+
+type StatusPageComponentResourceAutoStatusMinSeverity string
+
+const (
+	StatusPageComponentResourceAutoStatusMinSeverityANY         StatusPageComponentResourceAutoStatusMinSeverity = "ANY"
+	StatusPageComponentResourceAutoStatusMinSeverityINFORMATION StatusPageComponentResourceAutoStatusMinSeverity = "INFORMATION"
+	StatusPageComponentResourceAutoStatusMinSeverityWARNING     StatusPageComponentResourceAutoStatusMinSeverity = "WARNING"
+	StatusPageComponentResourceAutoStatusMinSeverityAVERAGE     StatusPageComponentResourceAutoStatusMinSeverity = "AVERAGE"
+	StatusPageComponentResourceAutoStatusMinSeverityHIGH        StatusPageComponentResourceAutoStatusMinSeverity = "HIGH"
+	StatusPageComponentResourceAutoStatusMinSeverityDISASTER    StatusPageComponentResourceAutoStatusMinSeverity = "DISASTER"
+)
+
+// AllValues returns all StatusPageComponentResourceAutoStatusMinSeverity values.
+func (StatusPageComponentResourceAutoStatusMinSeverity) AllValues() []StatusPageComponentResourceAutoStatusMinSeverity {
+	return []StatusPageComponentResourceAutoStatusMinSeverity{
+		StatusPageComponentResourceAutoStatusMinSeverityANY,
+		StatusPageComponentResourceAutoStatusMinSeverityINFORMATION,
+		StatusPageComponentResourceAutoStatusMinSeverityWARNING,
+		StatusPageComponentResourceAutoStatusMinSeverityAVERAGE,
+		StatusPageComponentResourceAutoStatusMinSeverityHIGH,
+		StatusPageComponentResourceAutoStatusMinSeverityDISASTER,
+	}
+}
+
+// MarshalText implements encoding.TextMarshaler.
+func (s StatusPageComponentResourceAutoStatusMinSeverity) MarshalText() ([]byte, error) {
+	switch s {
+	case StatusPageComponentResourceAutoStatusMinSeverityANY:
+		return []byte(s), nil
+	case StatusPageComponentResourceAutoStatusMinSeverityINFORMATION:
+		return []byte(s), nil
+	case StatusPageComponentResourceAutoStatusMinSeverityWARNING:
+		return []byte(s), nil
+	case StatusPageComponentResourceAutoStatusMinSeverityAVERAGE:
+		return []byte(s), nil
+	case StatusPageComponentResourceAutoStatusMinSeverityHIGH:
+		return []byte(s), nil
+	case StatusPageComponentResourceAutoStatusMinSeverityDISASTER:
+		return []byte(s), nil
+	default:
+		return nil, errors.Errorf("invalid value: %q", s)
+	}
+}
+
+// UnmarshalText implements encoding.TextUnmarshaler.
+func (s *StatusPageComponentResourceAutoStatusMinSeverity) UnmarshalText(data []byte) error {
+	switch StatusPageComponentResourceAutoStatusMinSeverity(data) {
+	case StatusPageComponentResourceAutoStatusMinSeverityANY:
+		*s = StatusPageComponentResourceAutoStatusMinSeverityANY
+		return nil
+	case StatusPageComponentResourceAutoStatusMinSeverityINFORMATION:
+		*s = StatusPageComponentResourceAutoStatusMinSeverityINFORMATION
+		return nil
+	case StatusPageComponentResourceAutoStatusMinSeverityWARNING:
+		*s = StatusPageComponentResourceAutoStatusMinSeverityWARNING
+		return nil
+	case StatusPageComponentResourceAutoStatusMinSeverityAVERAGE:
+		*s = StatusPageComponentResourceAutoStatusMinSeverityAVERAGE
+		return nil
+	case StatusPageComponentResourceAutoStatusMinSeverityHIGH:
+		*s = StatusPageComponentResourceAutoStatusMinSeverityHIGH
+		return nil
+	case StatusPageComponentResourceAutoStatusMinSeverityDISASTER:
+		*s = StatusPageComponentResourceAutoStatusMinSeverityDISASTER
+		return nil
+	default:
+		return errors.Errorf("invalid value: %q", data)
+	}
+}
+
+// The status currently shown to the public. OPERATIONAL means normal.
+type StatusPageComponentResourceCurrentStatus string
+
+const (
+	StatusPageComponentResourceCurrentStatusOPERATIONAL         StatusPageComponentResourceCurrentStatus = "OPERATIONAL"
+	StatusPageComponentResourceCurrentStatusDEGRADEDPERFORMANCE StatusPageComponentResourceCurrentStatus = "DEGRADED_PERFORMANCE"
+	StatusPageComponentResourceCurrentStatusPARTIALOUTAGE       StatusPageComponentResourceCurrentStatus = "PARTIAL_OUTAGE"
+	StatusPageComponentResourceCurrentStatusMAJOROUTAGE         StatusPageComponentResourceCurrentStatus = "MAJOR_OUTAGE"
+	StatusPageComponentResourceCurrentStatusUNDERMAINTENANCE    StatusPageComponentResourceCurrentStatus = "UNDER_MAINTENANCE"
+)
+
+// AllValues returns all StatusPageComponentResourceCurrentStatus values.
+func (StatusPageComponentResourceCurrentStatus) AllValues() []StatusPageComponentResourceCurrentStatus {
+	return []StatusPageComponentResourceCurrentStatus{
+		StatusPageComponentResourceCurrentStatusOPERATIONAL,
+		StatusPageComponentResourceCurrentStatusDEGRADEDPERFORMANCE,
+		StatusPageComponentResourceCurrentStatusPARTIALOUTAGE,
+		StatusPageComponentResourceCurrentStatusMAJOROUTAGE,
+		StatusPageComponentResourceCurrentStatusUNDERMAINTENANCE,
+	}
+}
+
+// MarshalText implements encoding.TextMarshaler.
+func (s StatusPageComponentResourceCurrentStatus) MarshalText() ([]byte, error) {
+	switch s {
+	case StatusPageComponentResourceCurrentStatusOPERATIONAL:
+		return []byte(s), nil
+	case StatusPageComponentResourceCurrentStatusDEGRADEDPERFORMANCE:
+		return []byte(s), nil
+	case StatusPageComponentResourceCurrentStatusPARTIALOUTAGE:
+		return []byte(s), nil
+	case StatusPageComponentResourceCurrentStatusMAJOROUTAGE:
+		return []byte(s), nil
+	case StatusPageComponentResourceCurrentStatusUNDERMAINTENANCE:
+		return []byte(s), nil
+	default:
+		return nil, errors.Errorf("invalid value: %q", s)
+	}
+}
+
+// UnmarshalText implements encoding.TextUnmarshaler.
+func (s *StatusPageComponentResourceCurrentStatus) UnmarshalText(data []byte) error {
+	switch StatusPageComponentResourceCurrentStatus(data) {
+	case StatusPageComponentResourceCurrentStatusOPERATIONAL:
+		*s = StatusPageComponentResourceCurrentStatusOPERATIONAL
+		return nil
+	case StatusPageComponentResourceCurrentStatusDEGRADEDPERFORMANCE:
+		*s = StatusPageComponentResourceCurrentStatusDEGRADEDPERFORMANCE
+		return nil
+	case StatusPageComponentResourceCurrentStatusPARTIALOUTAGE:
+		*s = StatusPageComponentResourceCurrentStatusPARTIALOUTAGE
+		return nil
+	case StatusPageComponentResourceCurrentStatusMAJOROUTAGE:
+		*s = StatusPageComponentResourceCurrentStatusMAJOROUTAGE
+		return nil
+	case StatusPageComponentResourceCurrentStatusUNDERMAINTENANCE:
+		*s = StatusPageComponentResourceCurrentStatusUNDERMAINTENANCE
+		return nil
+	default:
+		return errors.Errorf("invalid value: %q", data)
+	}
+}
+
+// Ref: #/components/schemas/StatusPageComponentSourceServer
+type StatusPageComponentSourceServer struct {
+	ServerID uuid.UUID `json:"server_id"`
+}
+
+// GetServerID returns the value of ServerID.
+func (s *StatusPageComponentSourceServer) GetServerID() uuid.UUID {
+	return s.ServerID
+}
+
+// SetServerID sets the value of ServerID.
+func (s *StatusPageComponentSourceServer) SetServerID(val uuid.UUID) {
+	s.ServerID = val
+}
+
+// Ref: #/components/schemas/StatusPageComponentSourceWebCheck
+type StatusPageComponentSourceWebCheck struct {
+	// Whether the checked address is shown on the public page.
+	ShowURL    OptBool   `json:"show_url"`
+	WebCheckID uuid.UUID `json:"web_check_id"`
+}
+
+// GetShowURL returns the value of ShowURL.
+func (s *StatusPageComponentSourceWebCheck) GetShowURL() OptBool {
+	return s.ShowURL
+}
+
+// GetWebCheckID returns the value of WebCheckID.
+func (s *StatusPageComponentSourceWebCheck) GetWebCheckID() uuid.UUID {
+	return s.WebCheckID
+}
+
+// SetShowURL sets the value of ShowURL.
+func (s *StatusPageComponentSourceWebCheck) SetShowURL(val OptBool) {
+	s.ShowURL = val
+}
+
+// SetWebCheckID sets the value of WebCheckID.
+func (s *StatusPageComponentSourceWebCheck) SetWebCheckID(val uuid.UUID) {
+	s.WebCheckID = val
+}
+
+// Ref: #/components/schemas/StatusPageComponentSourcesResource
+type StatusPageComponentSourcesResource struct {
+	Servers   []StatusPageComponentSourceServer   `json:"servers"`
+	WebChecks []StatusPageComponentSourceWebCheck `json:"web_checks"`
+}
+
+// GetServers returns the value of Servers.
+func (s *StatusPageComponentSourcesResource) GetServers() []StatusPageComponentSourceServer {
+	return s.Servers
+}
+
+// GetWebChecks returns the value of WebChecks.
+func (s *StatusPageComponentSourcesResource) GetWebChecks() []StatusPageComponentSourceWebCheck {
+	return s.WebChecks
+}
+
+// SetServers sets the value of Servers.
+func (s *StatusPageComponentSourcesResource) SetServers(val []StatusPageComponentSourceServer) {
+	s.Servers = val
+}
+
+// SetWebChecks sets the value of WebChecks.
+func (s *StatusPageComponentSourcesResource) SetWebChecks(val []StatusPageComponentSourceWebCheck) {
+	s.WebChecks = val
+}
+
+// Ref: #/components/schemas/StatusPageGroupListResponseBody
+type StatusPageGroupListResponseBody struct {
+	Data []StatusPageGroupResource `json:"data"`
+}
+
+// GetData returns the value of Data.
+func (s *StatusPageGroupListResponseBody) GetData() []StatusPageGroupResource {
+	return s.Data
+}
+
+// SetData sets the value of Data.
+func (s *StatusPageGroupListResponseBody) SetData(val []StatusPageGroupResource) {
+	s.Data = val
+}
+
+// Ref: #/components/schemas/StatusPageGroupResource
+type StatusPageGroupResource struct {
+	// Whether the group is collapsed by default on the page.
+	Collapsed   bool      `json:"collapsed"`
+	CreatedAt   time.Time `json:"created_at"`
+	Description string    `json:"description"`
+	GroupID     uuid.UUID `json:"group_id"`
+	Name        string    `json:"name"`
+	Position    int64     `json:"position"`
+}
+
+// GetCollapsed returns the value of Collapsed.
+func (s *StatusPageGroupResource) GetCollapsed() bool {
+	return s.Collapsed
+}
+
+// GetCreatedAt returns the value of CreatedAt.
+func (s *StatusPageGroupResource) GetCreatedAt() time.Time {
+	return s.CreatedAt
+}
+
+// GetDescription returns the value of Description.
+func (s *StatusPageGroupResource) GetDescription() string {
+	return s.Description
+}
+
+// GetGroupID returns the value of GroupID.
+func (s *StatusPageGroupResource) GetGroupID() uuid.UUID {
+	return s.GroupID
+}
+
+// GetName returns the value of Name.
+func (s *StatusPageGroupResource) GetName() string {
+	return s.Name
+}
+
+// GetPosition returns the value of Position.
+func (s *StatusPageGroupResource) GetPosition() int64 {
+	return s.Position
+}
+
+// SetCollapsed sets the value of Collapsed.
+func (s *StatusPageGroupResource) SetCollapsed(val bool) {
+	s.Collapsed = val
+}
+
+// SetCreatedAt sets the value of CreatedAt.
+func (s *StatusPageGroupResource) SetCreatedAt(val time.Time) {
+	s.CreatedAt = val
+}
+
+// SetDescription sets the value of Description.
+func (s *StatusPageGroupResource) SetDescription(val string) {
+	s.Description = val
+}
+
+// SetGroupID sets the value of GroupID.
+func (s *StatusPageGroupResource) SetGroupID(val uuid.UUID) {
+	s.GroupID = val
+}
+
+// SetName sets the value of Name.
+func (s *StatusPageGroupResource) SetName(val string) {
+	s.Name = val
+}
+
+// SetPosition sets the value of Position.
+func (s *StatusPageGroupResource) SetPosition(val int64) {
+	s.Position = val
+}
+
+// Ref: #/components/schemas/StatusPageIncidentComponentRequest
+type StatusPageIncidentComponentRequest struct {
+	ComponentID uuid.UUID `json:"component_id"`
+	// Empty returns this component to operational.
+	Status OptStatusPageIncidentComponentRequestStatus `json:"status"`
+}
+
+// GetComponentID returns the value of ComponentID.
+func (s *StatusPageIncidentComponentRequest) GetComponentID() uuid.UUID {
+	return s.ComponentID
+}
+
+// GetStatus returns the value of Status.
+func (s *StatusPageIncidentComponentRequest) GetStatus() OptStatusPageIncidentComponentRequestStatus {
+	return s.Status
+}
+
+// SetComponentID sets the value of ComponentID.
+func (s *StatusPageIncidentComponentRequest) SetComponentID(val uuid.UUID) {
+	s.ComponentID = val
+}
+
+// SetStatus sets the value of Status.
+func (s *StatusPageIncidentComponentRequest) SetStatus(val OptStatusPageIncidentComponentRequestStatus) {
+	s.Status = val
+}
+
+// Empty returns this component to operational.
+type StatusPageIncidentComponentRequestStatus string
+
+const (
+	StatusPageIncidentComponentRequestStatusOPERATIONAL         StatusPageIncidentComponentRequestStatus = "OPERATIONAL"
+	StatusPageIncidentComponentRequestStatusDEGRADEDPERFORMANCE StatusPageIncidentComponentRequestStatus = "DEGRADED_PERFORMANCE"
+	StatusPageIncidentComponentRequestStatusPARTIALOUTAGE       StatusPageIncidentComponentRequestStatus = "PARTIAL_OUTAGE"
+	StatusPageIncidentComponentRequestStatusMAJOROUTAGE         StatusPageIncidentComponentRequestStatus = "MAJOR_OUTAGE"
+	StatusPageIncidentComponentRequestStatusUNDERMAINTENANCE    StatusPageIncidentComponentRequestStatus = "UNDER_MAINTENANCE"
+)
+
+// AllValues returns all StatusPageIncidentComponentRequestStatus values.
+func (StatusPageIncidentComponentRequestStatus) AllValues() []StatusPageIncidentComponentRequestStatus {
+	return []StatusPageIncidentComponentRequestStatus{
+		StatusPageIncidentComponentRequestStatusOPERATIONAL,
+		StatusPageIncidentComponentRequestStatusDEGRADEDPERFORMANCE,
+		StatusPageIncidentComponentRequestStatusPARTIALOUTAGE,
+		StatusPageIncidentComponentRequestStatusMAJOROUTAGE,
+		StatusPageIncidentComponentRequestStatusUNDERMAINTENANCE,
+	}
+}
+
+// MarshalText implements encoding.TextMarshaler.
+func (s StatusPageIncidentComponentRequestStatus) MarshalText() ([]byte, error) {
+	switch s {
+	case StatusPageIncidentComponentRequestStatusOPERATIONAL:
+		return []byte(s), nil
+	case StatusPageIncidentComponentRequestStatusDEGRADEDPERFORMANCE:
+		return []byte(s), nil
+	case StatusPageIncidentComponentRequestStatusPARTIALOUTAGE:
+		return []byte(s), nil
+	case StatusPageIncidentComponentRequestStatusMAJOROUTAGE:
+		return []byte(s), nil
+	case StatusPageIncidentComponentRequestStatusUNDERMAINTENANCE:
+		return []byte(s), nil
+	default:
+		return nil, errors.Errorf("invalid value: %q", s)
+	}
+}
+
+// UnmarshalText implements encoding.TextUnmarshaler.
+func (s *StatusPageIncidentComponentRequestStatus) UnmarshalText(data []byte) error {
+	switch StatusPageIncidentComponentRequestStatus(data) {
+	case StatusPageIncidentComponentRequestStatusOPERATIONAL:
+		*s = StatusPageIncidentComponentRequestStatusOPERATIONAL
+		return nil
+	case StatusPageIncidentComponentRequestStatusDEGRADEDPERFORMANCE:
+		*s = StatusPageIncidentComponentRequestStatusDEGRADEDPERFORMANCE
+		return nil
+	case StatusPageIncidentComponentRequestStatusPARTIALOUTAGE:
+		*s = StatusPageIncidentComponentRequestStatusPARTIALOUTAGE
+		return nil
+	case StatusPageIncidentComponentRequestStatusMAJOROUTAGE:
+		*s = StatusPageIncidentComponentRequestStatusMAJOROUTAGE
+		return nil
+	case StatusPageIncidentComponentRequestStatusUNDERMAINTENANCE:
+		*s = StatusPageIncidentComponentRequestStatusUNDERMAINTENANCE
+		return nil
+	default:
+		return errors.Errorf("invalid value: %q", data)
+	}
+}
+
+// A status transition of one component within one update. The component name is a snapshot taken at
+// the time.
+// Ref: #/components/schemas/StatusPageIncidentComponentResource
+type StatusPageIncidentComponentResource struct {
+	ComponentID   uuid.UUID                                    `json:"component_id"`
+	ComponentName string                                       `json:"component_name"`
+	NewStatus     StatusPageIncidentComponentResourceNewStatus `json:"new_status"`
+	OldStatus     StatusPageIncidentComponentResourceOldStatus `json:"old_status"`
+}
+
+// GetComponentID returns the value of ComponentID.
+func (s *StatusPageIncidentComponentResource) GetComponentID() uuid.UUID {
+	return s.ComponentID
+}
+
+// GetComponentName returns the value of ComponentName.
+func (s *StatusPageIncidentComponentResource) GetComponentName() string {
+	return s.ComponentName
+}
+
+// GetNewStatus returns the value of NewStatus.
+func (s *StatusPageIncidentComponentResource) GetNewStatus() StatusPageIncidentComponentResourceNewStatus {
+	return s.NewStatus
+}
+
+// GetOldStatus returns the value of OldStatus.
+func (s *StatusPageIncidentComponentResource) GetOldStatus() StatusPageIncidentComponentResourceOldStatus {
+	return s.OldStatus
+}
+
+// SetComponentID sets the value of ComponentID.
+func (s *StatusPageIncidentComponentResource) SetComponentID(val uuid.UUID) {
+	s.ComponentID = val
+}
+
+// SetComponentName sets the value of ComponentName.
+func (s *StatusPageIncidentComponentResource) SetComponentName(val string) {
+	s.ComponentName = val
+}
+
+// SetNewStatus sets the value of NewStatus.
+func (s *StatusPageIncidentComponentResource) SetNewStatus(val StatusPageIncidentComponentResourceNewStatus) {
+	s.NewStatus = val
+}
+
+// SetOldStatus sets the value of OldStatus.
+func (s *StatusPageIncidentComponentResource) SetOldStatus(val StatusPageIncidentComponentResourceOldStatus) {
+	s.OldStatus = val
+}
+
+type StatusPageIncidentComponentResourceNewStatus string
+
+const (
+	StatusPageIncidentComponentResourceNewStatusOPERATIONAL         StatusPageIncidentComponentResourceNewStatus = "OPERATIONAL"
+	StatusPageIncidentComponentResourceNewStatusDEGRADEDPERFORMANCE StatusPageIncidentComponentResourceNewStatus = "DEGRADED_PERFORMANCE"
+	StatusPageIncidentComponentResourceNewStatusPARTIALOUTAGE       StatusPageIncidentComponentResourceNewStatus = "PARTIAL_OUTAGE"
+	StatusPageIncidentComponentResourceNewStatusMAJOROUTAGE         StatusPageIncidentComponentResourceNewStatus = "MAJOR_OUTAGE"
+	StatusPageIncidentComponentResourceNewStatusUNDERMAINTENANCE    StatusPageIncidentComponentResourceNewStatus = "UNDER_MAINTENANCE"
+)
+
+// AllValues returns all StatusPageIncidentComponentResourceNewStatus values.
+func (StatusPageIncidentComponentResourceNewStatus) AllValues() []StatusPageIncidentComponentResourceNewStatus {
+	return []StatusPageIncidentComponentResourceNewStatus{
+		StatusPageIncidentComponentResourceNewStatusOPERATIONAL,
+		StatusPageIncidentComponentResourceNewStatusDEGRADEDPERFORMANCE,
+		StatusPageIncidentComponentResourceNewStatusPARTIALOUTAGE,
+		StatusPageIncidentComponentResourceNewStatusMAJOROUTAGE,
+		StatusPageIncidentComponentResourceNewStatusUNDERMAINTENANCE,
+	}
+}
+
+// MarshalText implements encoding.TextMarshaler.
+func (s StatusPageIncidentComponentResourceNewStatus) MarshalText() ([]byte, error) {
+	switch s {
+	case StatusPageIncidentComponentResourceNewStatusOPERATIONAL:
+		return []byte(s), nil
+	case StatusPageIncidentComponentResourceNewStatusDEGRADEDPERFORMANCE:
+		return []byte(s), nil
+	case StatusPageIncidentComponentResourceNewStatusPARTIALOUTAGE:
+		return []byte(s), nil
+	case StatusPageIncidentComponentResourceNewStatusMAJOROUTAGE:
+		return []byte(s), nil
+	case StatusPageIncidentComponentResourceNewStatusUNDERMAINTENANCE:
+		return []byte(s), nil
+	default:
+		return nil, errors.Errorf("invalid value: %q", s)
+	}
+}
+
+// UnmarshalText implements encoding.TextUnmarshaler.
+func (s *StatusPageIncidentComponentResourceNewStatus) UnmarshalText(data []byte) error {
+	switch StatusPageIncidentComponentResourceNewStatus(data) {
+	case StatusPageIncidentComponentResourceNewStatusOPERATIONAL:
+		*s = StatusPageIncidentComponentResourceNewStatusOPERATIONAL
+		return nil
+	case StatusPageIncidentComponentResourceNewStatusDEGRADEDPERFORMANCE:
+		*s = StatusPageIncidentComponentResourceNewStatusDEGRADEDPERFORMANCE
+		return nil
+	case StatusPageIncidentComponentResourceNewStatusPARTIALOUTAGE:
+		*s = StatusPageIncidentComponentResourceNewStatusPARTIALOUTAGE
+		return nil
+	case StatusPageIncidentComponentResourceNewStatusMAJOROUTAGE:
+		*s = StatusPageIncidentComponentResourceNewStatusMAJOROUTAGE
+		return nil
+	case StatusPageIncidentComponentResourceNewStatusUNDERMAINTENANCE:
+		*s = StatusPageIncidentComponentResourceNewStatusUNDERMAINTENANCE
+		return nil
+	default:
+		return errors.Errorf("invalid value: %q", data)
+	}
+}
+
+type StatusPageIncidentComponentResourceOldStatus string
+
+const (
+	StatusPageIncidentComponentResourceOldStatusOPERATIONAL         StatusPageIncidentComponentResourceOldStatus = "OPERATIONAL"
+	StatusPageIncidentComponentResourceOldStatusDEGRADEDPERFORMANCE StatusPageIncidentComponentResourceOldStatus = "DEGRADED_PERFORMANCE"
+	StatusPageIncidentComponentResourceOldStatusPARTIALOUTAGE       StatusPageIncidentComponentResourceOldStatus = "PARTIAL_OUTAGE"
+	StatusPageIncidentComponentResourceOldStatusMAJOROUTAGE         StatusPageIncidentComponentResourceOldStatus = "MAJOR_OUTAGE"
+	StatusPageIncidentComponentResourceOldStatusUNDERMAINTENANCE    StatusPageIncidentComponentResourceOldStatus = "UNDER_MAINTENANCE"
+)
+
+// AllValues returns all StatusPageIncidentComponentResourceOldStatus values.
+func (StatusPageIncidentComponentResourceOldStatus) AllValues() []StatusPageIncidentComponentResourceOldStatus {
+	return []StatusPageIncidentComponentResourceOldStatus{
+		StatusPageIncidentComponentResourceOldStatusOPERATIONAL,
+		StatusPageIncidentComponentResourceOldStatusDEGRADEDPERFORMANCE,
+		StatusPageIncidentComponentResourceOldStatusPARTIALOUTAGE,
+		StatusPageIncidentComponentResourceOldStatusMAJOROUTAGE,
+		StatusPageIncidentComponentResourceOldStatusUNDERMAINTENANCE,
+	}
+}
+
+// MarshalText implements encoding.TextMarshaler.
+func (s StatusPageIncidentComponentResourceOldStatus) MarshalText() ([]byte, error) {
+	switch s {
+	case StatusPageIncidentComponentResourceOldStatusOPERATIONAL:
+		return []byte(s), nil
+	case StatusPageIncidentComponentResourceOldStatusDEGRADEDPERFORMANCE:
+		return []byte(s), nil
+	case StatusPageIncidentComponentResourceOldStatusPARTIALOUTAGE:
+		return []byte(s), nil
+	case StatusPageIncidentComponentResourceOldStatusMAJOROUTAGE:
+		return []byte(s), nil
+	case StatusPageIncidentComponentResourceOldStatusUNDERMAINTENANCE:
+		return []byte(s), nil
+	default:
+		return nil, errors.Errorf("invalid value: %q", s)
+	}
+}
+
+// UnmarshalText implements encoding.TextUnmarshaler.
+func (s *StatusPageIncidentComponentResourceOldStatus) UnmarshalText(data []byte) error {
+	switch StatusPageIncidentComponentResourceOldStatus(data) {
+	case StatusPageIncidentComponentResourceOldStatusOPERATIONAL:
+		*s = StatusPageIncidentComponentResourceOldStatusOPERATIONAL
+		return nil
+	case StatusPageIncidentComponentResourceOldStatusDEGRADEDPERFORMANCE:
+		*s = StatusPageIncidentComponentResourceOldStatusDEGRADEDPERFORMANCE
+		return nil
+	case StatusPageIncidentComponentResourceOldStatusPARTIALOUTAGE:
+		*s = StatusPageIncidentComponentResourceOldStatusPARTIALOUTAGE
+		return nil
+	case StatusPageIncidentComponentResourceOldStatusMAJOROUTAGE:
+		*s = StatusPageIncidentComponentResourceOldStatusMAJOROUTAGE
+		return nil
+	case StatusPageIncidentComponentResourceOldStatusUNDERMAINTENANCE:
+		*s = StatusPageIncidentComponentResourceOldStatusUNDERMAINTENANCE
+		return nil
+	default:
+		return errors.Errorf("invalid value: %q", data)
+	}
+}
+
+// Ref: #/components/schemas/StatusPageIncidentResource
+type StatusPageIncidentResource struct {
+	Impact         StatusPageIncidentResourceImpact         `json:"impact"`
+	IncidentID     uuid.UUID                                `json:"incident_id"`
+	IncidentStatus StatusPageIncidentResourceIncidentStatus `json:"incident_status"`
+	Name           string                                   `json:"name"`
+	PublishedAt    time.Time                                `json:"published_at"`
+	ResolvedAt     NilDateTime                              `json:"resolved_at"`
+	// When the incident began, not when the notice was published.
+	StartedAt time.Time `json:"started_at"`
+	// Most recently published first.
+	Updates []StatusPageIncidentUpdateResource `json:"updates"`
+}
+
+// GetImpact returns the value of Impact.
+func (s *StatusPageIncidentResource) GetImpact() StatusPageIncidentResourceImpact {
+	return s.Impact
+}
+
+// GetIncidentID returns the value of IncidentID.
+func (s *StatusPageIncidentResource) GetIncidentID() uuid.UUID {
+	return s.IncidentID
+}
+
+// GetIncidentStatus returns the value of IncidentStatus.
+func (s *StatusPageIncidentResource) GetIncidentStatus() StatusPageIncidentResourceIncidentStatus {
+	return s.IncidentStatus
+}
+
+// GetName returns the value of Name.
+func (s *StatusPageIncidentResource) GetName() string {
+	return s.Name
+}
+
+// GetPublishedAt returns the value of PublishedAt.
+func (s *StatusPageIncidentResource) GetPublishedAt() time.Time {
+	return s.PublishedAt
+}
+
+// GetResolvedAt returns the value of ResolvedAt.
+func (s *StatusPageIncidentResource) GetResolvedAt() NilDateTime {
+	return s.ResolvedAt
+}
+
+// GetStartedAt returns the value of StartedAt.
+func (s *StatusPageIncidentResource) GetStartedAt() time.Time {
+	return s.StartedAt
+}
+
+// GetUpdates returns the value of Updates.
+func (s *StatusPageIncidentResource) GetUpdates() []StatusPageIncidentUpdateResource {
+	return s.Updates
+}
+
+// SetImpact sets the value of Impact.
+func (s *StatusPageIncidentResource) SetImpact(val StatusPageIncidentResourceImpact) {
+	s.Impact = val
+}
+
+// SetIncidentID sets the value of IncidentID.
+func (s *StatusPageIncidentResource) SetIncidentID(val uuid.UUID) {
+	s.IncidentID = val
+}
+
+// SetIncidentStatus sets the value of IncidentStatus.
+func (s *StatusPageIncidentResource) SetIncidentStatus(val StatusPageIncidentResourceIncidentStatus) {
+	s.IncidentStatus = val
+}
+
+// SetName sets the value of Name.
+func (s *StatusPageIncidentResource) SetName(val string) {
+	s.Name = val
+}
+
+// SetPublishedAt sets the value of PublishedAt.
+func (s *StatusPageIncidentResource) SetPublishedAt(val time.Time) {
+	s.PublishedAt = val
+}
+
+// SetResolvedAt sets the value of ResolvedAt.
+func (s *StatusPageIncidentResource) SetResolvedAt(val NilDateTime) {
+	s.ResolvedAt = val
+}
+
+// SetStartedAt sets the value of StartedAt.
+func (s *StatusPageIncidentResource) SetStartedAt(val time.Time) {
+	s.StartedAt = val
+}
+
+// SetUpdates sets the value of Updates.
+func (s *StatusPageIncidentResource) SetUpdates(val []StatusPageIncidentUpdateResource) {
+	s.Updates = val
+}
+
+type StatusPageIncidentResourceImpact string
+
+const (
+	StatusPageIncidentResourceImpactNONE     StatusPageIncidentResourceImpact = "NONE"
+	StatusPageIncidentResourceImpactMINOR    StatusPageIncidentResourceImpact = "MINOR"
+	StatusPageIncidentResourceImpactMAJOR    StatusPageIncidentResourceImpact = "MAJOR"
+	StatusPageIncidentResourceImpactCRITICAL StatusPageIncidentResourceImpact = "CRITICAL"
+)
+
+// AllValues returns all StatusPageIncidentResourceImpact values.
+func (StatusPageIncidentResourceImpact) AllValues() []StatusPageIncidentResourceImpact {
+	return []StatusPageIncidentResourceImpact{
+		StatusPageIncidentResourceImpactNONE,
+		StatusPageIncidentResourceImpactMINOR,
+		StatusPageIncidentResourceImpactMAJOR,
+		StatusPageIncidentResourceImpactCRITICAL,
+	}
+}
+
+// MarshalText implements encoding.TextMarshaler.
+func (s StatusPageIncidentResourceImpact) MarshalText() ([]byte, error) {
+	switch s {
+	case StatusPageIncidentResourceImpactNONE:
+		return []byte(s), nil
+	case StatusPageIncidentResourceImpactMINOR:
+		return []byte(s), nil
+	case StatusPageIncidentResourceImpactMAJOR:
+		return []byte(s), nil
+	case StatusPageIncidentResourceImpactCRITICAL:
+		return []byte(s), nil
+	default:
+		return nil, errors.Errorf("invalid value: %q", s)
+	}
+}
+
+// UnmarshalText implements encoding.TextUnmarshaler.
+func (s *StatusPageIncidentResourceImpact) UnmarshalText(data []byte) error {
+	switch StatusPageIncidentResourceImpact(data) {
+	case StatusPageIncidentResourceImpactNONE:
+		*s = StatusPageIncidentResourceImpactNONE
+		return nil
+	case StatusPageIncidentResourceImpactMINOR:
+		*s = StatusPageIncidentResourceImpactMINOR
+		return nil
+	case StatusPageIncidentResourceImpactMAJOR:
+		*s = StatusPageIncidentResourceImpactMAJOR
+		return nil
+	case StatusPageIncidentResourceImpactCRITICAL:
+		*s = StatusPageIncidentResourceImpactCRITICAL
+		return nil
+	default:
+		return errors.Errorf("invalid value: %q", data)
+	}
+}
+
+type StatusPageIncidentResourceIncidentStatus string
+
+const (
+	StatusPageIncidentResourceIncidentStatusINVESTIGATING StatusPageIncidentResourceIncidentStatus = "INVESTIGATING"
+	StatusPageIncidentResourceIncidentStatusIDENTIFIED    StatusPageIncidentResourceIncidentStatus = "IDENTIFIED"
+	StatusPageIncidentResourceIncidentStatusMONITORING    StatusPageIncidentResourceIncidentStatus = "MONITORING"
+	StatusPageIncidentResourceIncidentStatusRESOLVED      StatusPageIncidentResourceIncidentStatus = "RESOLVED"
+)
+
+// AllValues returns all StatusPageIncidentResourceIncidentStatus values.
+func (StatusPageIncidentResourceIncidentStatus) AllValues() []StatusPageIncidentResourceIncidentStatus {
+	return []StatusPageIncidentResourceIncidentStatus{
+		StatusPageIncidentResourceIncidentStatusINVESTIGATING,
+		StatusPageIncidentResourceIncidentStatusIDENTIFIED,
+		StatusPageIncidentResourceIncidentStatusMONITORING,
+		StatusPageIncidentResourceIncidentStatusRESOLVED,
+	}
+}
+
+// MarshalText implements encoding.TextMarshaler.
+func (s StatusPageIncidentResourceIncidentStatus) MarshalText() ([]byte, error) {
+	switch s {
+	case StatusPageIncidentResourceIncidentStatusINVESTIGATING:
+		return []byte(s), nil
+	case StatusPageIncidentResourceIncidentStatusIDENTIFIED:
+		return []byte(s), nil
+	case StatusPageIncidentResourceIncidentStatusMONITORING:
+		return []byte(s), nil
+	case StatusPageIncidentResourceIncidentStatusRESOLVED:
+		return []byte(s), nil
+	default:
+		return nil, errors.Errorf("invalid value: %q", s)
+	}
+}
+
+// UnmarshalText implements encoding.TextUnmarshaler.
+func (s *StatusPageIncidentResourceIncidentStatus) UnmarshalText(data []byte) error {
+	switch StatusPageIncidentResourceIncidentStatus(data) {
+	case StatusPageIncidentResourceIncidentStatusINVESTIGATING:
+		*s = StatusPageIncidentResourceIncidentStatusINVESTIGATING
+		return nil
+	case StatusPageIncidentResourceIncidentStatusIDENTIFIED:
+		*s = StatusPageIncidentResourceIncidentStatusIDENTIFIED
+		return nil
+	case StatusPageIncidentResourceIncidentStatusMONITORING:
+		*s = StatusPageIncidentResourceIncidentStatusMONITORING
+		return nil
+	case StatusPageIncidentResourceIncidentStatusRESOLVED:
+		*s = StatusPageIncidentResourceIncidentStatusRESOLVED
+		return nil
+	default:
+		return errors.Errorf("invalid value: %q", data)
+	}
+}
+
+// Ref: #/components/schemas/StatusPageIncidentUpdateResource
+type StatusPageIncidentUpdateResource struct {
+	AffectedComponents []StatusPageIncidentComponentResource `json:"affected_components"`
+	// Body text. Plain text.
+	Body           string                                         `json:"body"`
+	IncidentStatus StatusPageIncidentUpdateResourceIncidentStatus `json:"incident_status"`
+	PublishedAt    time.Time                                      `json:"published_at"`
+	UpdateID       uuid.UUID                                      `json:"update_id"`
+}
+
+// GetAffectedComponents returns the value of AffectedComponents.
+func (s *StatusPageIncidentUpdateResource) GetAffectedComponents() []StatusPageIncidentComponentResource {
+	return s.AffectedComponents
+}
+
+// GetBody returns the value of Body.
+func (s *StatusPageIncidentUpdateResource) GetBody() string {
+	return s.Body
+}
+
+// GetIncidentStatus returns the value of IncidentStatus.
+func (s *StatusPageIncidentUpdateResource) GetIncidentStatus() StatusPageIncidentUpdateResourceIncidentStatus {
+	return s.IncidentStatus
+}
+
+// GetPublishedAt returns the value of PublishedAt.
+func (s *StatusPageIncidentUpdateResource) GetPublishedAt() time.Time {
+	return s.PublishedAt
+}
+
+// GetUpdateID returns the value of UpdateID.
+func (s *StatusPageIncidentUpdateResource) GetUpdateID() uuid.UUID {
+	return s.UpdateID
+}
+
+// SetAffectedComponents sets the value of AffectedComponents.
+func (s *StatusPageIncidentUpdateResource) SetAffectedComponents(val []StatusPageIncidentComponentResource) {
+	s.AffectedComponents = val
+}
+
+// SetBody sets the value of Body.
+func (s *StatusPageIncidentUpdateResource) SetBody(val string) {
+	s.Body = val
+}
+
+// SetIncidentStatus sets the value of IncidentStatus.
+func (s *StatusPageIncidentUpdateResource) SetIncidentStatus(val StatusPageIncidentUpdateResourceIncidentStatus) {
+	s.IncidentStatus = val
+}
+
+// SetPublishedAt sets the value of PublishedAt.
+func (s *StatusPageIncidentUpdateResource) SetPublishedAt(val time.Time) {
+	s.PublishedAt = val
+}
+
+// SetUpdateID sets the value of UpdateID.
+func (s *StatusPageIncidentUpdateResource) SetUpdateID(val uuid.UUID) {
+	s.UpdateID = val
+}
+
+type StatusPageIncidentUpdateResourceIncidentStatus string
+
+const (
+	StatusPageIncidentUpdateResourceIncidentStatusINVESTIGATING StatusPageIncidentUpdateResourceIncidentStatus = "INVESTIGATING"
+	StatusPageIncidentUpdateResourceIncidentStatusIDENTIFIED    StatusPageIncidentUpdateResourceIncidentStatus = "IDENTIFIED"
+	StatusPageIncidentUpdateResourceIncidentStatusMONITORING    StatusPageIncidentUpdateResourceIncidentStatus = "MONITORING"
+	StatusPageIncidentUpdateResourceIncidentStatusRESOLVED      StatusPageIncidentUpdateResourceIncidentStatus = "RESOLVED"
+)
+
+// AllValues returns all StatusPageIncidentUpdateResourceIncidentStatus values.
+func (StatusPageIncidentUpdateResourceIncidentStatus) AllValues() []StatusPageIncidentUpdateResourceIncidentStatus {
+	return []StatusPageIncidentUpdateResourceIncidentStatus{
+		StatusPageIncidentUpdateResourceIncidentStatusINVESTIGATING,
+		StatusPageIncidentUpdateResourceIncidentStatusIDENTIFIED,
+		StatusPageIncidentUpdateResourceIncidentStatusMONITORING,
+		StatusPageIncidentUpdateResourceIncidentStatusRESOLVED,
+	}
+}
+
+// MarshalText implements encoding.TextMarshaler.
+func (s StatusPageIncidentUpdateResourceIncidentStatus) MarshalText() ([]byte, error) {
+	switch s {
+	case StatusPageIncidentUpdateResourceIncidentStatusINVESTIGATING:
+		return []byte(s), nil
+	case StatusPageIncidentUpdateResourceIncidentStatusIDENTIFIED:
+		return []byte(s), nil
+	case StatusPageIncidentUpdateResourceIncidentStatusMONITORING:
+		return []byte(s), nil
+	case StatusPageIncidentUpdateResourceIncidentStatusRESOLVED:
+		return []byte(s), nil
+	default:
+		return nil, errors.Errorf("invalid value: %q", s)
+	}
+}
+
+// UnmarshalText implements encoding.TextUnmarshaler.
+func (s *StatusPageIncidentUpdateResourceIncidentStatus) UnmarshalText(data []byte) error {
+	switch StatusPageIncidentUpdateResourceIncidentStatus(data) {
+	case StatusPageIncidentUpdateResourceIncidentStatusINVESTIGATING:
+		*s = StatusPageIncidentUpdateResourceIncidentStatusINVESTIGATING
+		return nil
+	case StatusPageIncidentUpdateResourceIncidentStatusIDENTIFIED:
+		*s = StatusPageIncidentUpdateResourceIncidentStatusIDENTIFIED
+		return nil
+	case StatusPageIncidentUpdateResourceIncidentStatusMONITORING:
+		*s = StatusPageIncidentUpdateResourceIncidentStatusMONITORING
+		return nil
+	case StatusPageIncidentUpdateResourceIncidentStatusRESOLVED:
+		*s = StatusPageIncidentUpdateResourceIncidentStatusRESOLVED
+		return nil
+	default:
+		return errors.Errorf("invalid value: %q", data)
+	}
+}
+
+// Ref: #/components/schemas/StatusPageMaintenanceComponentRequest
+type StatusPageMaintenanceComponentRequest struct {
+	ComponentID uuid.UUID `json:"component_id"`
+	// How this component is shown while the maintenance runs. Neither value reduces availability.
+	ComponentStatus OptStatusPageMaintenanceComponentRequestComponentStatus `json:"component_status"`
+}
+
+// GetComponentID returns the value of ComponentID.
+func (s *StatusPageMaintenanceComponentRequest) GetComponentID() uuid.UUID {
+	return s.ComponentID
+}
+
+// GetComponentStatus returns the value of ComponentStatus.
+func (s *StatusPageMaintenanceComponentRequest) GetComponentStatus() OptStatusPageMaintenanceComponentRequestComponentStatus {
+	return s.ComponentStatus
+}
+
+// SetComponentID sets the value of ComponentID.
+func (s *StatusPageMaintenanceComponentRequest) SetComponentID(val uuid.UUID) {
+	s.ComponentID = val
+}
+
+// SetComponentStatus sets the value of ComponentStatus.
+func (s *StatusPageMaintenanceComponentRequest) SetComponentStatus(val OptStatusPageMaintenanceComponentRequestComponentStatus) {
+	s.ComponentStatus = val
+}
+
+// How this component is shown while the maintenance runs. Neither value reduces availability.
+type StatusPageMaintenanceComponentRequestComponentStatus string
+
+const (
+	StatusPageMaintenanceComponentRequestComponentStatusUNDERMAINTENANCE    StatusPageMaintenanceComponentRequestComponentStatus = "UNDER_MAINTENANCE"
+	StatusPageMaintenanceComponentRequestComponentStatusDEGRADEDPERFORMANCE StatusPageMaintenanceComponentRequestComponentStatus = "DEGRADED_PERFORMANCE"
+)
+
+// AllValues returns all StatusPageMaintenanceComponentRequestComponentStatus values.
+func (StatusPageMaintenanceComponentRequestComponentStatus) AllValues() []StatusPageMaintenanceComponentRequestComponentStatus {
+	return []StatusPageMaintenanceComponentRequestComponentStatus{
+		StatusPageMaintenanceComponentRequestComponentStatusUNDERMAINTENANCE,
+		StatusPageMaintenanceComponentRequestComponentStatusDEGRADEDPERFORMANCE,
+	}
+}
+
+// MarshalText implements encoding.TextMarshaler.
+func (s StatusPageMaintenanceComponentRequestComponentStatus) MarshalText() ([]byte, error) {
+	switch s {
+	case StatusPageMaintenanceComponentRequestComponentStatusUNDERMAINTENANCE:
+		return []byte(s), nil
+	case StatusPageMaintenanceComponentRequestComponentStatusDEGRADEDPERFORMANCE:
+		return []byte(s), nil
+	default:
+		return nil, errors.Errorf("invalid value: %q", s)
+	}
+}
+
+// UnmarshalText implements encoding.TextUnmarshaler.
+func (s *StatusPageMaintenanceComponentRequestComponentStatus) UnmarshalText(data []byte) error {
+	switch StatusPageMaintenanceComponentRequestComponentStatus(data) {
+	case StatusPageMaintenanceComponentRequestComponentStatusUNDERMAINTENANCE:
+		*s = StatusPageMaintenanceComponentRequestComponentStatusUNDERMAINTENANCE
+		return nil
+	case StatusPageMaintenanceComponentRequestComponentStatusDEGRADEDPERFORMANCE:
+		*s = StatusPageMaintenanceComponentRequestComponentStatusDEGRADEDPERFORMANCE
+		return nil
+	default:
+		return errors.Errorf("invalid value: %q", data)
+	}
+}
+
+// Ref: #/components/schemas/StatusPageMaintenanceComponentResource
+type StatusPageMaintenanceComponentResource struct {
+	ComponentID     uuid.UUID                                             `json:"component_id"`
+	ComponentName   string                                                `json:"component_name"`
+	ComponentStatus StatusPageMaintenanceComponentResourceComponentStatus `json:"component_status"`
+}
+
+// GetComponentID returns the value of ComponentID.
+func (s *StatusPageMaintenanceComponentResource) GetComponentID() uuid.UUID {
+	return s.ComponentID
+}
+
+// GetComponentName returns the value of ComponentName.
+func (s *StatusPageMaintenanceComponentResource) GetComponentName() string {
+	return s.ComponentName
+}
+
+// GetComponentStatus returns the value of ComponentStatus.
+func (s *StatusPageMaintenanceComponentResource) GetComponentStatus() StatusPageMaintenanceComponentResourceComponentStatus {
+	return s.ComponentStatus
+}
+
+// SetComponentID sets the value of ComponentID.
+func (s *StatusPageMaintenanceComponentResource) SetComponentID(val uuid.UUID) {
+	s.ComponentID = val
+}
+
+// SetComponentName sets the value of ComponentName.
+func (s *StatusPageMaintenanceComponentResource) SetComponentName(val string) {
+	s.ComponentName = val
+}
+
+// SetComponentStatus sets the value of ComponentStatus.
+func (s *StatusPageMaintenanceComponentResource) SetComponentStatus(val StatusPageMaintenanceComponentResourceComponentStatus) {
+	s.ComponentStatus = val
+}
+
+type StatusPageMaintenanceComponentResourceComponentStatus string
+
+const (
+	StatusPageMaintenanceComponentResourceComponentStatusUNDERMAINTENANCE    StatusPageMaintenanceComponentResourceComponentStatus = "UNDER_MAINTENANCE"
+	StatusPageMaintenanceComponentResourceComponentStatusDEGRADEDPERFORMANCE StatusPageMaintenanceComponentResourceComponentStatus = "DEGRADED_PERFORMANCE"
+)
+
+// AllValues returns all StatusPageMaintenanceComponentResourceComponentStatus values.
+func (StatusPageMaintenanceComponentResourceComponentStatus) AllValues() []StatusPageMaintenanceComponentResourceComponentStatus {
+	return []StatusPageMaintenanceComponentResourceComponentStatus{
+		StatusPageMaintenanceComponentResourceComponentStatusUNDERMAINTENANCE,
+		StatusPageMaintenanceComponentResourceComponentStatusDEGRADEDPERFORMANCE,
+	}
+}
+
+// MarshalText implements encoding.TextMarshaler.
+func (s StatusPageMaintenanceComponentResourceComponentStatus) MarshalText() ([]byte, error) {
+	switch s {
+	case StatusPageMaintenanceComponentResourceComponentStatusUNDERMAINTENANCE:
+		return []byte(s), nil
+	case StatusPageMaintenanceComponentResourceComponentStatusDEGRADEDPERFORMANCE:
+		return []byte(s), nil
+	default:
+		return nil, errors.Errorf("invalid value: %q", s)
+	}
+}
+
+// UnmarshalText implements encoding.TextUnmarshaler.
+func (s *StatusPageMaintenanceComponentResourceComponentStatus) UnmarshalText(data []byte) error {
+	switch StatusPageMaintenanceComponentResourceComponentStatus(data) {
+	case StatusPageMaintenanceComponentResourceComponentStatusUNDERMAINTENANCE:
+		*s = StatusPageMaintenanceComponentResourceComponentStatusUNDERMAINTENANCE
+		return nil
+	case StatusPageMaintenanceComponentResourceComponentStatusDEGRADEDPERFORMANCE:
+		*s = StatusPageMaintenanceComponentResourceComponentStatusDEGRADEDPERFORMANCE
+		return nil
+	default:
+		return errors.Errorf("invalid value: %q", data)
+	}
+}
+
+// Ref: #/components/schemas/StatusPageMaintenanceResource
+type StatusPageMaintenanceResource struct {
+	AffectedComponents []StatusPageMaintenanceComponentResource `json:"affected_components"`
+	// Maintenance description. Plain text.
+	Body string `json:"body"`
+	// When the maintenance actually finished.
+	CompletedAt       NilDateTime                                    `json:"completed_at"`
+	MaintenanceID     uuid.UUID                                      `json:"maintenance_id"`
+	MaintenanceStatus StatusPageMaintenanceResourceMaintenanceStatus `json:"maintenance_status"`
+	Name              string                                         `json:"name"`
+	ScheduledFor      time.Time                                      `json:"scheduled_for"`
+	ScheduledUntil    time.Time                                      `json:"scheduled_until"`
+	// When the maintenance actually started, which may differ from the scheduled time.
+	StartedAt NilDateTime `json:"started_at"`
+}
+
+// GetAffectedComponents returns the value of AffectedComponents.
+func (s *StatusPageMaintenanceResource) GetAffectedComponents() []StatusPageMaintenanceComponentResource {
+	return s.AffectedComponents
+}
+
+// GetBody returns the value of Body.
+func (s *StatusPageMaintenanceResource) GetBody() string {
+	return s.Body
+}
+
+// GetCompletedAt returns the value of CompletedAt.
+func (s *StatusPageMaintenanceResource) GetCompletedAt() NilDateTime {
+	return s.CompletedAt
+}
+
+// GetMaintenanceID returns the value of MaintenanceID.
+func (s *StatusPageMaintenanceResource) GetMaintenanceID() uuid.UUID {
+	return s.MaintenanceID
+}
+
+// GetMaintenanceStatus returns the value of MaintenanceStatus.
+func (s *StatusPageMaintenanceResource) GetMaintenanceStatus() StatusPageMaintenanceResourceMaintenanceStatus {
+	return s.MaintenanceStatus
+}
+
+// GetName returns the value of Name.
+func (s *StatusPageMaintenanceResource) GetName() string {
+	return s.Name
+}
+
+// GetScheduledFor returns the value of ScheduledFor.
+func (s *StatusPageMaintenanceResource) GetScheduledFor() time.Time {
+	return s.ScheduledFor
+}
+
+// GetScheduledUntil returns the value of ScheduledUntil.
+func (s *StatusPageMaintenanceResource) GetScheduledUntil() time.Time {
+	return s.ScheduledUntil
+}
+
+// GetStartedAt returns the value of StartedAt.
+func (s *StatusPageMaintenanceResource) GetStartedAt() NilDateTime {
+	return s.StartedAt
+}
+
+// SetAffectedComponents sets the value of AffectedComponents.
+func (s *StatusPageMaintenanceResource) SetAffectedComponents(val []StatusPageMaintenanceComponentResource) {
+	s.AffectedComponents = val
+}
+
+// SetBody sets the value of Body.
+func (s *StatusPageMaintenanceResource) SetBody(val string) {
+	s.Body = val
+}
+
+// SetCompletedAt sets the value of CompletedAt.
+func (s *StatusPageMaintenanceResource) SetCompletedAt(val NilDateTime) {
+	s.CompletedAt = val
+}
+
+// SetMaintenanceID sets the value of MaintenanceID.
+func (s *StatusPageMaintenanceResource) SetMaintenanceID(val uuid.UUID) {
+	s.MaintenanceID = val
+}
+
+// SetMaintenanceStatus sets the value of MaintenanceStatus.
+func (s *StatusPageMaintenanceResource) SetMaintenanceStatus(val StatusPageMaintenanceResourceMaintenanceStatus) {
+	s.MaintenanceStatus = val
+}
+
+// SetName sets the value of Name.
+func (s *StatusPageMaintenanceResource) SetName(val string) {
+	s.Name = val
+}
+
+// SetScheduledFor sets the value of ScheduledFor.
+func (s *StatusPageMaintenanceResource) SetScheduledFor(val time.Time) {
+	s.ScheduledFor = val
+}
+
+// SetScheduledUntil sets the value of ScheduledUntil.
+func (s *StatusPageMaintenanceResource) SetScheduledUntil(val time.Time) {
+	s.ScheduledUntil = val
+}
+
+// SetStartedAt sets the value of StartedAt.
+func (s *StatusPageMaintenanceResource) SetStartedAt(val NilDateTime) {
+	s.StartedAt = val
+}
+
+type StatusPageMaintenanceResourceMaintenanceStatus string
+
+const (
+	StatusPageMaintenanceResourceMaintenanceStatusSCHEDULED  StatusPageMaintenanceResourceMaintenanceStatus = "SCHEDULED"
+	StatusPageMaintenanceResourceMaintenanceStatusINPROGRESS StatusPageMaintenanceResourceMaintenanceStatus = "IN_PROGRESS"
+	StatusPageMaintenanceResourceMaintenanceStatusCOMPLETED  StatusPageMaintenanceResourceMaintenanceStatus = "COMPLETED"
+	StatusPageMaintenanceResourceMaintenanceStatusCANCELLED  StatusPageMaintenanceResourceMaintenanceStatus = "CANCELLED"
+)
+
+// AllValues returns all StatusPageMaintenanceResourceMaintenanceStatus values.
+func (StatusPageMaintenanceResourceMaintenanceStatus) AllValues() []StatusPageMaintenanceResourceMaintenanceStatus {
+	return []StatusPageMaintenanceResourceMaintenanceStatus{
+		StatusPageMaintenanceResourceMaintenanceStatusSCHEDULED,
+		StatusPageMaintenanceResourceMaintenanceStatusINPROGRESS,
+		StatusPageMaintenanceResourceMaintenanceStatusCOMPLETED,
+		StatusPageMaintenanceResourceMaintenanceStatusCANCELLED,
+	}
+}
+
+// MarshalText implements encoding.TextMarshaler.
+func (s StatusPageMaintenanceResourceMaintenanceStatus) MarshalText() ([]byte, error) {
+	switch s {
+	case StatusPageMaintenanceResourceMaintenanceStatusSCHEDULED:
+		return []byte(s), nil
+	case StatusPageMaintenanceResourceMaintenanceStatusINPROGRESS:
+		return []byte(s), nil
+	case StatusPageMaintenanceResourceMaintenanceStatusCOMPLETED:
+		return []byte(s), nil
+	case StatusPageMaintenanceResourceMaintenanceStatusCANCELLED:
+		return []byte(s), nil
+	default:
+		return nil, errors.Errorf("invalid value: %q", s)
+	}
+}
+
+// UnmarshalText implements encoding.TextUnmarshaler.
+func (s *StatusPageMaintenanceResourceMaintenanceStatus) UnmarshalText(data []byte) error {
+	switch StatusPageMaintenanceResourceMaintenanceStatus(data) {
+	case StatusPageMaintenanceResourceMaintenanceStatusSCHEDULED:
+		*s = StatusPageMaintenanceResourceMaintenanceStatusSCHEDULED
+		return nil
+	case StatusPageMaintenanceResourceMaintenanceStatusINPROGRESS:
+		*s = StatusPageMaintenanceResourceMaintenanceStatusINPROGRESS
+		return nil
+	case StatusPageMaintenanceResourceMaintenanceStatusCOMPLETED:
+		*s = StatusPageMaintenanceResourceMaintenanceStatusCOMPLETED
+		return nil
+	case StatusPageMaintenanceResourceMaintenanceStatusCANCELLED:
+		*s = StatusPageMaintenanceResourceMaintenanceStatusCANCELLED
+		return nil
+	default:
+		return errors.Errorf("invalid value: %q", data)
+	}
+}
+
+// Exactly one of the two: `group_id` marks this position as a group, `component_id` as an ungrouped
+// component.
+// Ref: #/components/schemas/StatusPageOrderItem
+type StatusPageOrderItem struct {
+	ComponentID OptUUID `json:"component_id"`
+	GroupID     OptUUID `json:"group_id"`
+}
+
+// GetComponentID returns the value of ComponentID.
+func (s *StatusPageOrderItem) GetComponentID() OptUUID {
+	return s.ComponentID
+}
+
+// GetGroupID returns the value of GroupID.
+func (s *StatusPageOrderItem) GetGroupID() OptUUID {
+	return s.GroupID
+}
+
+// SetComponentID sets the value of ComponentID.
+func (s *StatusPageOrderItem) SetComponentID(val OptUUID) {
+	s.ComponentID = val
+}
+
+// SetGroupID sets the value of GroupID.
+func (s *StatusPageOrderItem) SetGroupID(val OptUUID) {
+	s.GroupID = val
+}
+
+// Ref: #/components/schemas/StatusPageResource
+type StatusPageResource struct {
+	// #RRGGBB.
+	BrandColor string    `json:"brand_color"`
+	CreatedAt  time.Time `json:"created_at"`
+	// The custom domain bound to this page. Empty means it is served only at /{slug} under the shared
+	// domain.
+	CustomDomain string `json:"custom_domain"`
+	FooterText   string `json:"footer_text"`
+	Headline     string `json:"headline"`
+	LogoURL      string `json:"logo_url"`
+	Name         string `json:"name"`
+	// The current public address of this page. It is returned even while unpublished, in which case
+	// opening it returns 404.
+	PublicURL string `json:"public_url"`
+	Published bool   `json:"published"`
+	// Whether search engines may index the page.
+	SearchEngineIndex bool                    `json:"search_engine_index"`
+	Slug              string                  `json:"slug"`
+	StatusPageID      uuid.UUID               `json:"status_page_id"`
+	SupportURL        string                  `json:"support_url"`
+	Theme             StatusPageResourceTheme `json:"theme"`
+	// Determines where the day boundary falls on the availability bar.
+	Timezone  string    `json:"timezone"`
+	UpdatedAt time.Time `json:"updated_at"`
+	// Number of days covered by the availability bar.
+	UptimeDays int64 `json:"uptime_days"`
+}
+
+// GetBrandColor returns the value of BrandColor.
+func (s *StatusPageResource) GetBrandColor() string {
+	return s.BrandColor
+}
+
+// GetCreatedAt returns the value of CreatedAt.
+func (s *StatusPageResource) GetCreatedAt() time.Time {
+	return s.CreatedAt
+}
+
+// GetCustomDomain returns the value of CustomDomain.
+func (s *StatusPageResource) GetCustomDomain() string {
+	return s.CustomDomain
+}
+
+// GetFooterText returns the value of FooterText.
+func (s *StatusPageResource) GetFooterText() string {
+	return s.FooterText
+}
+
+// GetHeadline returns the value of Headline.
+func (s *StatusPageResource) GetHeadline() string {
+	return s.Headline
+}
+
+// GetLogoURL returns the value of LogoURL.
+func (s *StatusPageResource) GetLogoURL() string {
+	return s.LogoURL
+}
+
+// GetName returns the value of Name.
+func (s *StatusPageResource) GetName() string {
+	return s.Name
+}
+
+// GetPublicURL returns the value of PublicURL.
+func (s *StatusPageResource) GetPublicURL() string {
+	return s.PublicURL
+}
+
+// GetPublished returns the value of Published.
+func (s *StatusPageResource) GetPublished() bool {
+	return s.Published
+}
+
+// GetSearchEngineIndex returns the value of SearchEngineIndex.
+func (s *StatusPageResource) GetSearchEngineIndex() bool {
+	return s.SearchEngineIndex
+}
+
+// GetSlug returns the value of Slug.
+func (s *StatusPageResource) GetSlug() string {
+	return s.Slug
+}
+
+// GetStatusPageID returns the value of StatusPageID.
+func (s *StatusPageResource) GetStatusPageID() uuid.UUID {
+	return s.StatusPageID
+}
+
+// GetSupportURL returns the value of SupportURL.
+func (s *StatusPageResource) GetSupportURL() string {
+	return s.SupportURL
+}
+
+// GetTheme returns the value of Theme.
+func (s *StatusPageResource) GetTheme() StatusPageResourceTheme {
+	return s.Theme
+}
+
+// GetTimezone returns the value of Timezone.
+func (s *StatusPageResource) GetTimezone() string {
+	return s.Timezone
+}
+
+// GetUpdatedAt returns the value of UpdatedAt.
+func (s *StatusPageResource) GetUpdatedAt() time.Time {
+	return s.UpdatedAt
+}
+
+// GetUptimeDays returns the value of UptimeDays.
+func (s *StatusPageResource) GetUptimeDays() int64 {
+	return s.UptimeDays
+}
+
+// SetBrandColor sets the value of BrandColor.
+func (s *StatusPageResource) SetBrandColor(val string) {
+	s.BrandColor = val
+}
+
+// SetCreatedAt sets the value of CreatedAt.
+func (s *StatusPageResource) SetCreatedAt(val time.Time) {
+	s.CreatedAt = val
+}
+
+// SetCustomDomain sets the value of CustomDomain.
+func (s *StatusPageResource) SetCustomDomain(val string) {
+	s.CustomDomain = val
+}
+
+// SetFooterText sets the value of FooterText.
+func (s *StatusPageResource) SetFooterText(val string) {
+	s.FooterText = val
+}
+
+// SetHeadline sets the value of Headline.
+func (s *StatusPageResource) SetHeadline(val string) {
+	s.Headline = val
+}
+
+// SetLogoURL sets the value of LogoURL.
+func (s *StatusPageResource) SetLogoURL(val string) {
+	s.LogoURL = val
+}
+
+// SetName sets the value of Name.
+func (s *StatusPageResource) SetName(val string) {
+	s.Name = val
+}
+
+// SetPublicURL sets the value of PublicURL.
+func (s *StatusPageResource) SetPublicURL(val string) {
+	s.PublicURL = val
+}
+
+// SetPublished sets the value of Published.
+func (s *StatusPageResource) SetPublished(val bool) {
+	s.Published = val
+}
+
+// SetSearchEngineIndex sets the value of SearchEngineIndex.
+func (s *StatusPageResource) SetSearchEngineIndex(val bool) {
+	s.SearchEngineIndex = val
+}
+
+// SetSlug sets the value of Slug.
+func (s *StatusPageResource) SetSlug(val string) {
+	s.Slug = val
+}
+
+// SetStatusPageID sets the value of StatusPageID.
+func (s *StatusPageResource) SetStatusPageID(val uuid.UUID) {
+	s.StatusPageID = val
+}
+
+// SetSupportURL sets the value of SupportURL.
+func (s *StatusPageResource) SetSupportURL(val string) {
+	s.SupportURL = val
+}
+
+// SetTheme sets the value of Theme.
+func (s *StatusPageResource) SetTheme(val StatusPageResourceTheme) {
+	s.Theme = val
+}
+
+// SetTimezone sets the value of Timezone.
+func (s *StatusPageResource) SetTimezone(val string) {
+	s.Timezone = val
+}
+
+// SetUpdatedAt sets the value of UpdatedAt.
+func (s *StatusPageResource) SetUpdatedAt(val time.Time) {
+	s.UpdatedAt = val
+}
+
+// SetUptimeDays sets the value of UptimeDays.
+func (s *StatusPageResource) SetUptimeDays(val int64) {
+	s.UptimeDays = val
+}
+
+type StatusPageResourceTheme string
+
+const (
+	StatusPageResourceThemeAUTO  StatusPageResourceTheme = "AUTO"
+	StatusPageResourceThemeLIGHT StatusPageResourceTheme = "LIGHT"
+	StatusPageResourceThemeDARK  StatusPageResourceTheme = "DARK"
+)
+
+// AllValues returns all StatusPageResourceTheme values.
+func (StatusPageResourceTheme) AllValues() []StatusPageResourceTheme {
+	return []StatusPageResourceTheme{
+		StatusPageResourceThemeAUTO,
+		StatusPageResourceThemeLIGHT,
+		StatusPageResourceThemeDARK,
+	}
+}
+
+// MarshalText implements encoding.TextMarshaler.
+func (s StatusPageResourceTheme) MarshalText() ([]byte, error) {
+	switch s {
+	case StatusPageResourceThemeAUTO:
+		return []byte(s), nil
+	case StatusPageResourceThemeLIGHT:
+		return []byte(s), nil
+	case StatusPageResourceThemeDARK:
+		return []byte(s), nil
+	default:
+		return nil, errors.Errorf("invalid value: %q", s)
+	}
+}
+
+// UnmarshalText implements encoding.TextUnmarshaler.
+func (s *StatusPageResourceTheme) UnmarshalText(data []byte) error {
+	switch StatusPageResourceTheme(data) {
+	case StatusPageResourceThemeAUTO:
+		*s = StatusPageResourceThemeAUTO
+		return nil
+	case StatusPageResourceThemeLIGHT:
+		*s = StatusPageResourceThemeLIGHT
+		return nil
+	case StatusPageResourceThemeDARK:
+		*s = StatusPageResourceThemeDARK
+		return nil
+	default:
+		return errors.Errorf("invalid value: %q", data)
+	}
+}
+
 // Ref: #/components/schemas/TagResource
 type TagResource struct {
 	Tag   string `json:"tag"`
@@ -5448,7 +8366,8 @@ func (s *TagResource) SetValue(val string) {
 
 // Ref: #/components/schemas/TemplateBindingRequest
 type TemplateBindingRequest struct {
-	// 模板自己声明的参数，密钥参数写明文，返回时只报名字.
+	// Parameters declared by the template. Secret parameters are supplied in clear text and returned by
+	// name only.
 	Parameters  OptTemplateBindingRequestParameters `json:"parameters"`
 	TemplateKey TemplateBindingRequestTemplateKey   `json:"template_key"`
 }
@@ -5473,7 +8392,8 @@ func (s *TemplateBindingRequest) SetTemplateKey(val TemplateBindingRequestTempla
 	s.TemplateKey = val
 }
 
-// 模板自己声明的参数，密钥参数写明文，返回时只报名字.
+// Parameters declared by the template. Secret parameters are supplied in clear text and returned by
+// name only.
 type TemplateBindingRequestParameters map[string]string
 
 func (s *TemplateBindingRequestParameters) init() TemplateBindingRequestParameters {
@@ -5655,9 +8575,9 @@ func (s *TopItemResource) SetValue(val float64) {
 // Ref: #/components/schemas/UpdateServerRequestBody
 type UpdateServerRequestBody struct {
 	Address OptString `json:"address"`
-	// 要改地址就必须和 address 一起给.
+	// Must be supplied together with `address` when changing the address.
 	AddressKind OptUpdateServerRequestBodyAddressKind `json:"address_kind"`
-	// 改采集模式会把全部模板换成另一个变体.
+	// Changing the collection mode rebinds every template to the corresponding variant.
 	AgentMode        OptUpdateServerRequestBodyAgentMode `json:"agent_mode"`
 	AgentPort        OptInt64                            `json:"agent_port"`
 	Description      OptString                           `json:"description"`
@@ -5735,7 +8655,7 @@ func (s *UpdateServerRequestBody) SetTemplateBindings(val []TemplateBindingReque
 	s.TemplateBindings = val
 }
 
-// 要改地址就必须和 address 一起给.
+// Must be supplied together with `address` when changing the address.
 type UpdateServerRequestBodyAddressKind string
 
 const (
@@ -5777,7 +8697,7 @@ func (s *UpdateServerRequestBodyAddressKind) UnmarshalText(data []byte) error {
 	}
 }
 
-// 改采集模式会把全部模板换成另一个变体.
+// Changing the collection mode rebinds every template to the corresponding variant.
 type UpdateServerRequestBodyAgentMode string
 
 const (
@@ -5840,8 +8760,8 @@ type WebCheckResource struct {
 	IntervalSeconds              int64     `json:"interval_seconds"`
 	LastError                    string    `json:"last_error"`
 	ResponseTimeThresholdSeconds int64     `json:"response_time_threshold_seconds"`
-	// Null 表示这个检查还一轮都没跑过。零值会把「还不知道」显示成「响应 0
-	// 秒、状态码 0」.
+	// Null means the check has not completed a round yet. A zero value would present "not yet known" as "0
+	// seconds, status code 0".
 	Result         NilWebCheckResultResource  `json:"result"`
 	Retries        int64                      `json:"retries"`
 	ServerID       uuid.UUID                  `json:"server_id"`
@@ -6002,7 +8922,7 @@ func (s *WebCheckResourceSyncStatus) UnmarshalText(data []byte) error {
 type WebCheckResultResource struct {
 	CheckedAt time.Time `json:"checked_at"`
 	Error     string    `json:"error"`
-	// 第几步失败的，从 1 数；healthy 时为 0.
+	// Index of the failed step, counting from 1. 0 when healthy.
 	FailedStep          int64   `json:"failed_step"`
 	Healthy             bool    `json:"healthy"`
 	ResponseCode        int64   `json:"response_code"`
@@ -6071,11 +8991,11 @@ func (s *WebCheckResultResource) SetResponseTimeSeconds(val float64) {
 
 // Ref: #/components/schemas/WebCheckStepRequest
 type WebCheckStepRequest struct {
-	// 状态码表达式，比如 200 或者 200,301-302；留空表示不检查状态码.
+	// Status code expression, such as 200 or 200,301-302. Empty disables status code checking.
 	ExpectedStatusCodes OptString `json:"expected_status_codes"`
 	FollowRedirects     OptBool   `json:"follow_redirects"`
 	Name                string    `json:"name"`
-	// 响应体里必须出现的字符串.
+	// A string that must appear in the response body.
 	RequiredPattern OptString `json:"required_pattern"`
 	URL             string    `json:"url"`
 }
@@ -6132,7 +9052,7 @@ func (s *WebCheckStepRequest) SetURL(val string) {
 
 // Ref: #/components/schemas/WebCheckStepResource
 type WebCheckStepResource struct {
-	// 状态码表达式，比如 200 或者 200,301-302.
+	// Status code expression, such as 200 or 200,301-302.
 	ExpectedStatusCodes string `json:"expected_status_codes"`
 	FollowRedirects     bool   `json:"follow_redirects"`
 	Name                string `json:"name"`

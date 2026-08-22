@@ -66,8 +66,64 @@ func encodeCloseIncidentRequest(
 	return nil
 }
 
+func encodeCreateStatusPageComponentRequest(
+	req *PutStatusPageComponentRequestBody,
+	r *http.Request,
+) error {
+	const contentType = "application/json"
+	e := new(jx.Encoder)
+	{
+		req.Encode(e)
+	}
+	encoded := e.Bytes()
+	ht.SetBody(r, bytes.NewReader(encoded), contentType)
+	return nil
+}
+
+func encodeCreateStatusPageGroupRequest(
+	req *PutStatusPageGroupRequestBody,
+	r *http.Request,
+) error {
+	const contentType = "application/json"
+	e := new(jx.Encoder)
+	{
+		req.Encode(e)
+	}
+	encoded := e.Bytes()
+	ht.SetBody(r, bytes.NewReader(encoded), contentType)
+	return nil
+}
+
 func encodeEnableServerMonitoringRequest(
 	req *EnableMonitoringRequestBody,
+	r *http.Request,
+) error {
+	const contentType = "application/json"
+	e := new(jx.Encoder)
+	{
+		req.Encode(e)
+	}
+	encoded := e.Bytes()
+	ht.SetBody(r, bytes.NewReader(encoded), contentType)
+	return nil
+}
+
+func encodePostStatusPageIncidentUpdateRequest(
+	req *PostStatusPageIncidentUpdateRequestBody,
+	r *http.Request,
+) error {
+	const contentType = "application/json"
+	e := new(jx.Encoder)
+	{
+		req.Encode(e)
+	}
+	encoded := e.Bytes()
+	ht.SetBody(r, bytes.NewReader(encoded), contentType)
+	return nil
+}
+
+func encodePublishStatusPageIncidentRequest(
+	req *PublishStatusPageIncidentRequestBody,
 	r *http.Request,
 ) error {
 	const contentType = "application/json"
@@ -108,8 +164,78 @@ func encodePutSloRequest(
 	return nil
 }
 
+func encodePutStatusPageRequest(
+	req *PutStatusPageRequestBody,
+	r *http.Request,
+) error {
+	const contentType = "application/json"
+	e := new(jx.Encoder)
+	{
+		req.Encode(e)
+	}
+	encoded := e.Bytes()
+	ht.SetBody(r, bytes.NewReader(encoded), contentType)
+	return nil
+}
+
+func encodePutStatusPageComponentSourcesRequest(
+	req *PutStatusPageComponentSourcesRequestBody,
+	r *http.Request,
+) error {
+	const contentType = "application/json"
+	e := new(jx.Encoder)
+	{
+		req.Encode(e)
+	}
+	encoded := e.Bytes()
+	ht.SetBody(r, bytes.NewReader(encoded), contentType)
+	return nil
+}
+
+func encodePutStatusPageGroupOrderRequest(
+	req *PutStatusPageGroupOrderRequestBody,
+	r *http.Request,
+) error {
+	const contentType = "application/json"
+	e := new(jx.Encoder)
+	{
+		req.Encode(e)
+	}
+	encoded := e.Bytes()
+	ht.SetBody(r, bytes.NewReader(encoded), contentType)
+	return nil
+}
+
+func encodePutStatusPageOrderRequest(
+	req *PutStatusPageOrderRequestBody,
+	r *http.Request,
+) error {
+	const contentType = "application/json"
+	e := new(jx.Encoder)
+	{
+		req.Encode(e)
+	}
+	encoded := e.Bytes()
+	ht.SetBody(r, bytes.NewReader(encoded), contentType)
+	return nil
+}
+
 func encodePutWebCheckRequest(
 	req *PutWebCheckRequestBody,
+	r *http.Request,
+) error {
+	const contentType = "application/json"
+	e := new(jx.Encoder)
+	{
+		req.Encode(e)
+	}
+	encoded := e.Bytes()
+	ht.SetBody(r, bytes.NewReader(encoded), contentType)
+	return nil
+}
+
+func encodeScheduleStatusPageMaintenanceRequest(
+	req *ScheduleStatusPageMaintenanceRequestBody,
 	r *http.Request,
 ) error {
 	const contentType = "application/json"
@@ -138,6 +264,34 @@ func encodeSetIncidentFollowingRequest(
 
 func encodeUpdateServerRequest(
 	req *UpdateServerRequestBody,
+	r *http.Request,
+) error {
+	const contentType = "application/json"
+	e := new(jx.Encoder)
+	{
+		req.Encode(e)
+	}
+	encoded := e.Bytes()
+	ht.SetBody(r, bytes.NewReader(encoded), contentType)
+	return nil
+}
+
+func encodeUpdateStatusPageComponentRequest(
+	req *PutStatusPageComponentRequestBody,
+	r *http.Request,
+) error {
+	const contentType = "application/json"
+	e := new(jx.Encoder)
+	{
+		req.Encode(e)
+	}
+	encoded := e.Bytes()
+	ht.SetBody(r, bytes.NewReader(encoded), contentType)
+	return nil
+}
+
+func encodeUpdateStatusPageGroupRequest(
+	req *PutStatusPageGroupRequestBody,
 	r *http.Request,
 ) error {
 	const contentType = "application/json"

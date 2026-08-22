@@ -9,6 +9,7 @@ import (
 
 	"github.com/go-faster/errors"
 	"github.com/go-faster/jx"
+	"github.com/google/uuid"
 	"github.com/ogen-go/ogen/json"
 	"github.com/ogen-go/ogen/validate"
 )
@@ -3639,6 +3640,320 @@ func (s *LengthAwarePageServerResource) UnmarshalJSON(data []byte) error {
 }
 
 // Encode implements json.Marshaler.
+func (s *LengthAwarePageStatusPageIncidentResource) Encode(e *jx.Encoder) {
+	e.ObjStart()
+	s.encodeFields(e)
+	e.ObjEnd()
+}
+
+// encodeFields encodes fields.
+func (s *LengthAwarePageStatusPageIncidentResource) encodeFields(e *jx.Encoder) {
+	{
+		e.FieldStart("data")
+		e.ArrStart()
+		for _, elem := range s.Data {
+			elem.Encode(e)
+		}
+		e.ArrEnd()
+	}
+	{
+		e.FieldStart("limit")
+		e.Int64(s.Limit)
+	}
+	{
+		e.FieldStart("offset")
+		e.Int64(s.Offset)
+	}
+	{
+		e.FieldStart("total")
+		e.Int64(s.Total)
+	}
+}
+
+var jsonFieldsNameOfLengthAwarePageStatusPageIncidentResource = [4]string{
+	0: "data",
+	1: "limit",
+	2: "offset",
+	3: "total",
+}
+
+// Decode decodes LengthAwarePageStatusPageIncidentResource from json.
+func (s *LengthAwarePageStatusPageIncidentResource) Decode(d *jx.Decoder) error {
+	if s == nil {
+		return errors.New("invalid: unable to decode LengthAwarePageStatusPageIncidentResource to nil")
+	}
+	var requiredBitSet [1]uint8
+
+	if err := d.ObjBytes(func(d *jx.Decoder, k []byte) error {
+		switch string(k) {
+		case "data":
+			requiredBitSet[0] |= 1 << 0
+			if err := func() error {
+				s.Data = make([]StatusPageIncidentResource, 0)
+				if err := d.Arr(func(d *jx.Decoder) error {
+					var elem StatusPageIncidentResource
+					if err := elem.Decode(d); err != nil {
+						return err
+					}
+					s.Data = append(s.Data, elem)
+					return nil
+				}); err != nil {
+					return err
+				}
+				return nil
+			}(); err != nil {
+				return errors.Wrap(err, "decode field \"data\"")
+			}
+		case "limit":
+			requiredBitSet[0] |= 1 << 1
+			if err := func() error {
+				v, err := d.Int64()
+				s.Limit = int64(v)
+				if err != nil {
+					return err
+				}
+				return nil
+			}(); err != nil {
+				return errors.Wrap(err, "decode field \"limit\"")
+			}
+		case "offset":
+			requiredBitSet[0] |= 1 << 2
+			if err := func() error {
+				v, err := d.Int64()
+				s.Offset = int64(v)
+				if err != nil {
+					return err
+				}
+				return nil
+			}(); err != nil {
+				return errors.Wrap(err, "decode field \"offset\"")
+			}
+		case "total":
+			requiredBitSet[0] |= 1 << 3
+			if err := func() error {
+				v, err := d.Int64()
+				s.Total = int64(v)
+				if err != nil {
+					return err
+				}
+				return nil
+			}(); err != nil {
+				return errors.Wrap(err, "decode field \"total\"")
+			}
+		default:
+			return errors.Errorf("unexpected field %q", k)
+		}
+		return nil
+	}); err != nil {
+		return errors.Wrap(err, "decode LengthAwarePageStatusPageIncidentResource")
+	}
+	// Validate required fields.
+	var failures []validate.FieldError
+	for i, mask := range [1]uint8{
+		0b00001111,
+	} {
+		if result := (requiredBitSet[i] & mask) ^ mask; result != 0 {
+			// Mask only required fields and check equality to mask using XOR.
+			//
+			// If XOR result is not zero, result is not equal to expected, so some fields are missed.
+			// Bits of fields which would be set are actually bits of missed fields.
+			missed := bits.OnesCount8(result)
+			for bitN := 0; bitN < missed; bitN++ {
+				bitIdx := bits.TrailingZeros8(result)
+				fieldIdx := i*8 + bitIdx
+				var name string
+				if fieldIdx < len(jsonFieldsNameOfLengthAwarePageStatusPageIncidentResource) {
+					name = jsonFieldsNameOfLengthAwarePageStatusPageIncidentResource[fieldIdx]
+				} else {
+					name = strconv.Itoa(fieldIdx)
+				}
+				failures = append(failures, validate.FieldError{
+					Name:  name,
+					Error: validate.ErrFieldRequired,
+				})
+				// Reset bit.
+				result &^= 1 << bitIdx
+			}
+		}
+	}
+	if len(failures) > 0 {
+		return &validate.Error{Fields: failures}
+	}
+
+	return nil
+}
+
+// MarshalJSON implements stdjson.Marshaler.
+func (s *LengthAwarePageStatusPageIncidentResource) MarshalJSON() ([]byte, error) {
+	e := jx.Encoder{}
+	s.Encode(&e)
+	return e.Bytes(), nil
+}
+
+// UnmarshalJSON implements stdjson.Unmarshaler.
+func (s *LengthAwarePageStatusPageIncidentResource) UnmarshalJSON(data []byte) error {
+	d := jx.DecodeBytes(data)
+	return s.Decode(d)
+}
+
+// Encode implements json.Marshaler.
+func (s *LengthAwarePageStatusPageMaintenanceResource) Encode(e *jx.Encoder) {
+	e.ObjStart()
+	s.encodeFields(e)
+	e.ObjEnd()
+}
+
+// encodeFields encodes fields.
+func (s *LengthAwarePageStatusPageMaintenanceResource) encodeFields(e *jx.Encoder) {
+	{
+		e.FieldStart("data")
+		e.ArrStart()
+		for _, elem := range s.Data {
+			elem.Encode(e)
+		}
+		e.ArrEnd()
+	}
+	{
+		e.FieldStart("limit")
+		e.Int64(s.Limit)
+	}
+	{
+		e.FieldStart("offset")
+		e.Int64(s.Offset)
+	}
+	{
+		e.FieldStart("total")
+		e.Int64(s.Total)
+	}
+}
+
+var jsonFieldsNameOfLengthAwarePageStatusPageMaintenanceResource = [4]string{
+	0: "data",
+	1: "limit",
+	2: "offset",
+	3: "total",
+}
+
+// Decode decodes LengthAwarePageStatusPageMaintenanceResource from json.
+func (s *LengthAwarePageStatusPageMaintenanceResource) Decode(d *jx.Decoder) error {
+	if s == nil {
+		return errors.New("invalid: unable to decode LengthAwarePageStatusPageMaintenanceResource to nil")
+	}
+	var requiredBitSet [1]uint8
+
+	if err := d.ObjBytes(func(d *jx.Decoder, k []byte) error {
+		switch string(k) {
+		case "data":
+			requiredBitSet[0] |= 1 << 0
+			if err := func() error {
+				s.Data = make([]StatusPageMaintenanceResource, 0)
+				if err := d.Arr(func(d *jx.Decoder) error {
+					var elem StatusPageMaintenanceResource
+					if err := elem.Decode(d); err != nil {
+						return err
+					}
+					s.Data = append(s.Data, elem)
+					return nil
+				}); err != nil {
+					return err
+				}
+				return nil
+			}(); err != nil {
+				return errors.Wrap(err, "decode field \"data\"")
+			}
+		case "limit":
+			requiredBitSet[0] |= 1 << 1
+			if err := func() error {
+				v, err := d.Int64()
+				s.Limit = int64(v)
+				if err != nil {
+					return err
+				}
+				return nil
+			}(); err != nil {
+				return errors.Wrap(err, "decode field \"limit\"")
+			}
+		case "offset":
+			requiredBitSet[0] |= 1 << 2
+			if err := func() error {
+				v, err := d.Int64()
+				s.Offset = int64(v)
+				if err != nil {
+					return err
+				}
+				return nil
+			}(); err != nil {
+				return errors.Wrap(err, "decode field \"offset\"")
+			}
+		case "total":
+			requiredBitSet[0] |= 1 << 3
+			if err := func() error {
+				v, err := d.Int64()
+				s.Total = int64(v)
+				if err != nil {
+					return err
+				}
+				return nil
+			}(); err != nil {
+				return errors.Wrap(err, "decode field \"total\"")
+			}
+		default:
+			return errors.Errorf("unexpected field %q", k)
+		}
+		return nil
+	}); err != nil {
+		return errors.Wrap(err, "decode LengthAwarePageStatusPageMaintenanceResource")
+	}
+	// Validate required fields.
+	var failures []validate.FieldError
+	for i, mask := range [1]uint8{
+		0b00001111,
+	} {
+		if result := (requiredBitSet[i] & mask) ^ mask; result != 0 {
+			// Mask only required fields and check equality to mask using XOR.
+			//
+			// If XOR result is not zero, result is not equal to expected, so some fields are missed.
+			// Bits of fields which would be set are actually bits of missed fields.
+			missed := bits.OnesCount8(result)
+			for bitN := 0; bitN < missed; bitN++ {
+				bitIdx := bits.TrailingZeros8(result)
+				fieldIdx := i*8 + bitIdx
+				var name string
+				if fieldIdx < len(jsonFieldsNameOfLengthAwarePageStatusPageMaintenanceResource) {
+					name = jsonFieldsNameOfLengthAwarePageStatusPageMaintenanceResource[fieldIdx]
+				} else {
+					name = strconv.Itoa(fieldIdx)
+				}
+				failures = append(failures, validate.FieldError{
+					Name:  name,
+					Error: validate.ErrFieldRequired,
+				})
+				// Reset bit.
+				result &^= 1 << bitIdx
+			}
+		}
+	}
+	if len(failures) > 0 {
+		return &validate.Error{Fields: failures}
+	}
+
+	return nil
+}
+
+// MarshalJSON implements stdjson.Marshaler.
+func (s *LengthAwarePageStatusPageMaintenanceResource) MarshalJSON() ([]byte, error) {
+	e := jx.Encoder{}
+	s.Encode(&e)
+	return e.Bytes(), nil
+}
+
+// UnmarshalJSON implements stdjson.Unmarshaler.
+func (s *LengthAwarePageStatusPageMaintenanceResource) UnmarshalJSON(data []byte) error {
+	d := jx.DecodeBytes(data)
+	return s.Decode(d)
+}
+
+// Encode implements json.Marshaler.
 func (s *MaintenancePeriodRequest) Encode(e *jx.Encoder) {
 	e.ObjStart()
 	s.encodeFields(e)
@@ -5821,6 +6136,105 @@ func (s *OptNilTemplateBindingRequestArray) UnmarshalJSON(data []byte) error {
 	return s.Decode(d)
 }
 
+// Encode encodes PostStatusPageIncidentUpdateRequestBodyIncidentStatus as json.
+func (o OptPostStatusPageIncidentUpdateRequestBodyIncidentStatus) Encode(e *jx.Encoder) {
+	if !o.Set {
+		return
+	}
+	e.Str(string(o.Value))
+}
+
+// Decode decodes PostStatusPageIncidentUpdateRequestBodyIncidentStatus from json.
+func (o *OptPostStatusPageIncidentUpdateRequestBodyIncidentStatus) Decode(d *jx.Decoder) error {
+	if o == nil {
+		return errors.New("invalid: unable to decode OptPostStatusPageIncidentUpdateRequestBodyIncidentStatus to nil")
+	}
+	o.Set = true
+	if err := o.Value.Decode(d); err != nil {
+		return err
+	}
+	return nil
+}
+
+// MarshalJSON implements stdjson.Marshaler.
+func (s OptPostStatusPageIncidentUpdateRequestBodyIncidentStatus) MarshalJSON() ([]byte, error) {
+	e := jx.Encoder{}
+	s.Encode(&e)
+	return e.Bytes(), nil
+}
+
+// UnmarshalJSON implements stdjson.Unmarshaler.
+func (s *OptPostStatusPageIncidentUpdateRequestBodyIncidentStatus) UnmarshalJSON(data []byte) error {
+	d := jx.DecodeBytes(data)
+	return s.Decode(d)
+}
+
+// Encode encodes PublishStatusPageIncidentRequestBodyImpact as json.
+func (o OptPublishStatusPageIncidentRequestBodyImpact) Encode(e *jx.Encoder) {
+	if !o.Set {
+		return
+	}
+	e.Str(string(o.Value))
+}
+
+// Decode decodes PublishStatusPageIncidentRequestBodyImpact from json.
+func (o *OptPublishStatusPageIncidentRequestBodyImpact) Decode(d *jx.Decoder) error {
+	if o == nil {
+		return errors.New("invalid: unable to decode OptPublishStatusPageIncidentRequestBodyImpact to nil")
+	}
+	o.Set = true
+	if err := o.Value.Decode(d); err != nil {
+		return err
+	}
+	return nil
+}
+
+// MarshalJSON implements stdjson.Marshaler.
+func (s OptPublishStatusPageIncidentRequestBodyImpact) MarshalJSON() ([]byte, error) {
+	e := jx.Encoder{}
+	s.Encode(&e)
+	return e.Bytes(), nil
+}
+
+// UnmarshalJSON implements stdjson.Unmarshaler.
+func (s *OptPublishStatusPageIncidentRequestBodyImpact) UnmarshalJSON(data []byte) error {
+	d := jx.DecodeBytes(data)
+	return s.Decode(d)
+}
+
+// Encode encodes PublishStatusPageIncidentRequestBodyIncidentStatus as json.
+func (o OptPublishStatusPageIncidentRequestBodyIncidentStatus) Encode(e *jx.Encoder) {
+	if !o.Set {
+		return
+	}
+	e.Str(string(o.Value))
+}
+
+// Decode decodes PublishStatusPageIncidentRequestBodyIncidentStatus from json.
+func (o *OptPublishStatusPageIncidentRequestBodyIncidentStatus) Decode(d *jx.Decoder) error {
+	if o == nil {
+		return errors.New("invalid: unable to decode OptPublishStatusPageIncidentRequestBodyIncidentStatus to nil")
+	}
+	o.Set = true
+	if err := o.Value.Decode(d); err != nil {
+		return err
+	}
+	return nil
+}
+
+// MarshalJSON implements stdjson.Marshaler.
+func (s OptPublishStatusPageIncidentRequestBodyIncidentStatus) MarshalJSON() ([]byte, error) {
+	e := jx.Encoder{}
+	s.Encode(&e)
+	return e.Bytes(), nil
+}
+
+// UnmarshalJSON implements stdjson.Unmarshaler.
+func (s *OptPublishStatusPageIncidentRequestBodyIncidentStatus) UnmarshalJSON(data []byte) error {
+	d := jx.DecodeBytes(data)
+	return s.Decode(d)
+}
+
 // Encode encodes PutSLORequestBodyPeriod as json.
 func (o OptPutSLORequestBodyPeriod) Encode(e *jx.Encoder) {
 	if !o.Set {
@@ -5850,6 +6264,138 @@ func (s OptPutSLORequestBodyPeriod) MarshalJSON() ([]byte, error) {
 
 // UnmarshalJSON implements stdjson.Unmarshaler.
 func (s *OptPutSLORequestBodyPeriod) UnmarshalJSON(data []byte) error {
+	d := jx.DecodeBytes(data)
+	return s.Decode(d)
+}
+
+// Encode encodes PutStatusPageComponentRequestBodyAutoStatusMinSeverity as json.
+func (o OptPutStatusPageComponentRequestBodyAutoStatusMinSeverity) Encode(e *jx.Encoder) {
+	if !o.Set {
+		return
+	}
+	e.Str(string(o.Value))
+}
+
+// Decode decodes PutStatusPageComponentRequestBodyAutoStatusMinSeverity from json.
+func (o *OptPutStatusPageComponentRequestBodyAutoStatusMinSeverity) Decode(d *jx.Decoder) error {
+	if o == nil {
+		return errors.New("invalid: unable to decode OptPutStatusPageComponentRequestBodyAutoStatusMinSeverity to nil")
+	}
+	o.Set = true
+	if err := o.Value.Decode(d); err != nil {
+		return err
+	}
+	return nil
+}
+
+// MarshalJSON implements stdjson.Marshaler.
+func (s OptPutStatusPageComponentRequestBodyAutoStatusMinSeverity) MarshalJSON() ([]byte, error) {
+	e := jx.Encoder{}
+	s.Encode(&e)
+	return e.Bytes(), nil
+}
+
+// UnmarshalJSON implements stdjson.Unmarshaler.
+func (s *OptPutStatusPageComponentRequestBodyAutoStatusMinSeverity) UnmarshalJSON(data []byte) error {
+	d := jx.DecodeBytes(data)
+	return s.Decode(d)
+}
+
+// Encode encodes PutStatusPageRequestBodyTheme as json.
+func (o OptPutStatusPageRequestBodyTheme) Encode(e *jx.Encoder) {
+	if !o.Set {
+		return
+	}
+	e.Str(string(o.Value))
+}
+
+// Decode decodes PutStatusPageRequestBodyTheme from json.
+func (o *OptPutStatusPageRequestBodyTheme) Decode(d *jx.Decoder) error {
+	if o == nil {
+		return errors.New("invalid: unable to decode OptPutStatusPageRequestBodyTheme to nil")
+	}
+	o.Set = true
+	if err := o.Value.Decode(d); err != nil {
+		return err
+	}
+	return nil
+}
+
+// MarshalJSON implements stdjson.Marshaler.
+func (s OptPutStatusPageRequestBodyTheme) MarshalJSON() ([]byte, error) {
+	e := jx.Encoder{}
+	s.Encode(&e)
+	return e.Bytes(), nil
+}
+
+// UnmarshalJSON implements stdjson.Unmarshaler.
+func (s *OptPutStatusPageRequestBodyTheme) UnmarshalJSON(data []byte) error {
+	d := jx.DecodeBytes(data)
+	return s.Decode(d)
+}
+
+// Encode encodes StatusPageIncidentComponentRequestStatus as json.
+func (o OptStatusPageIncidentComponentRequestStatus) Encode(e *jx.Encoder) {
+	if !o.Set {
+		return
+	}
+	e.Str(string(o.Value))
+}
+
+// Decode decodes StatusPageIncidentComponentRequestStatus from json.
+func (o *OptStatusPageIncidentComponentRequestStatus) Decode(d *jx.Decoder) error {
+	if o == nil {
+		return errors.New("invalid: unable to decode OptStatusPageIncidentComponentRequestStatus to nil")
+	}
+	o.Set = true
+	if err := o.Value.Decode(d); err != nil {
+		return err
+	}
+	return nil
+}
+
+// MarshalJSON implements stdjson.Marshaler.
+func (s OptStatusPageIncidentComponentRequestStatus) MarshalJSON() ([]byte, error) {
+	e := jx.Encoder{}
+	s.Encode(&e)
+	return e.Bytes(), nil
+}
+
+// UnmarshalJSON implements stdjson.Unmarshaler.
+func (s *OptStatusPageIncidentComponentRequestStatus) UnmarshalJSON(data []byte) error {
+	d := jx.DecodeBytes(data)
+	return s.Decode(d)
+}
+
+// Encode encodes StatusPageMaintenanceComponentRequestComponentStatus as json.
+func (o OptStatusPageMaintenanceComponentRequestComponentStatus) Encode(e *jx.Encoder) {
+	if !o.Set {
+		return
+	}
+	e.Str(string(o.Value))
+}
+
+// Decode decodes StatusPageMaintenanceComponentRequestComponentStatus from json.
+func (o *OptStatusPageMaintenanceComponentRequestComponentStatus) Decode(d *jx.Decoder) error {
+	if o == nil {
+		return errors.New("invalid: unable to decode OptStatusPageMaintenanceComponentRequestComponentStatus to nil")
+	}
+	o.Set = true
+	if err := o.Value.Decode(d); err != nil {
+		return err
+	}
+	return nil
+}
+
+// MarshalJSON implements stdjson.Marshaler.
+func (s OptStatusPageMaintenanceComponentRequestComponentStatus) MarshalJSON() ([]byte, error) {
+	e := jx.Encoder{}
+	s.Encode(&e)
+	return e.Bytes(), nil
+}
+
+// UnmarshalJSON implements stdjson.Unmarshaler.
+func (s *OptStatusPageMaintenanceComponentRequestComponentStatus) UnmarshalJSON(data []byte) error {
 	d := jx.DecodeBytes(data)
 	return s.Decode(d)
 }
@@ -5923,6 +6469,41 @@ func (s *OptTemplateBindingRequestParameters) UnmarshalJSON(data []byte) error {
 	return s.Decode(d)
 }
 
+// Encode encodes uuid.UUID as json.
+func (o OptUUID) Encode(e *jx.Encoder) {
+	if !o.Set {
+		return
+	}
+	json.EncodeUUID(e, o.Value)
+}
+
+// Decode decodes uuid.UUID from json.
+func (o *OptUUID) Decode(d *jx.Decoder) error {
+	if o == nil {
+		return errors.New("invalid: unable to decode OptUUID to nil")
+	}
+	o.Set = true
+	v, err := json.DecodeUUID(d)
+	if err != nil {
+		return err
+	}
+	o.Value = v
+	return nil
+}
+
+// MarshalJSON implements stdjson.Marshaler.
+func (s OptUUID) MarshalJSON() ([]byte, error) {
+	e := jx.Encoder{}
+	s.Encode(&e)
+	return e.Bytes(), nil
+}
+
+// UnmarshalJSON implements stdjson.Unmarshaler.
+func (s *OptUUID) UnmarshalJSON(data []byte) error {
+	d := jx.DecodeBytes(data)
+	return s.Decode(d)
+}
+
 // Encode encodes UpdateServerRequestBodyAddressKind as json.
 func (o OptUpdateServerRequestBodyAddressKind) Encode(e *jx.Encoder) {
 	if !o.Set {
@@ -5985,6 +6566,208 @@ func (s OptUpdateServerRequestBodyAgentMode) MarshalJSON() ([]byte, error) {
 
 // UnmarshalJSON implements stdjson.Unmarshaler.
 func (s *OptUpdateServerRequestBodyAgentMode) UnmarshalJSON(data []byte) error {
+	d := jx.DecodeBytes(data)
+	return s.Decode(d)
+}
+
+// Encode implements json.Marshaler.
+func (s *PostStatusPageIncidentUpdateRequestBody) Encode(e *jx.Encoder) {
+	e.ObjStart()
+	s.encodeFields(e)
+	e.ObjEnd()
+}
+
+// encodeFields encodes fields.
+func (s *PostStatusPageIncidentUpdateRequestBody) encodeFields(e *jx.Encoder) {
+	{
+		e.FieldStart("body")
+		e.Str(s.Body)
+	}
+	{
+		if s.Components != nil {
+			e.FieldStart("components")
+			e.ArrStart()
+			for _, elem := range s.Components {
+				elem.Encode(e)
+			}
+			e.ArrEnd()
+		}
+	}
+	{
+		if s.IncidentStatus.Set {
+			e.FieldStart("incident_status")
+			s.IncidentStatus.Encode(e)
+		}
+	}
+	{
+		if s.PublishedAt.Set {
+			e.FieldStart("published_at")
+			s.PublishedAt.Encode(e, json.EncodeDateTime)
+		}
+	}
+}
+
+var jsonFieldsNameOfPostStatusPageIncidentUpdateRequestBody = [4]string{
+	0: "body",
+	1: "components",
+	2: "incident_status",
+	3: "published_at",
+}
+
+// Decode decodes PostStatusPageIncidentUpdateRequestBody from json.
+func (s *PostStatusPageIncidentUpdateRequestBody) Decode(d *jx.Decoder) error {
+	if s == nil {
+		return errors.New("invalid: unable to decode PostStatusPageIncidentUpdateRequestBody to nil")
+	}
+	var requiredBitSet [1]uint8
+
+	if err := d.ObjBytes(func(d *jx.Decoder, k []byte) error {
+		switch string(k) {
+		case "body":
+			requiredBitSet[0] |= 1 << 0
+			if err := func() error {
+				v, err := d.Str()
+				s.Body = string(v)
+				if err != nil {
+					return err
+				}
+				return nil
+			}(); err != nil {
+				return errors.Wrap(err, "decode field \"body\"")
+			}
+		case "components":
+			if err := func() error {
+				s.Components = make([]StatusPageIncidentComponentRequest, 0)
+				if err := d.Arr(func(d *jx.Decoder) error {
+					var elem StatusPageIncidentComponentRequest
+					if err := elem.Decode(d); err != nil {
+						return err
+					}
+					s.Components = append(s.Components, elem)
+					return nil
+				}); err != nil {
+					return err
+				}
+				return nil
+			}(); err != nil {
+				return errors.Wrap(err, "decode field \"components\"")
+			}
+		case "incident_status":
+			if err := func() error {
+				s.IncidentStatus.Reset()
+				if err := s.IncidentStatus.Decode(d); err != nil {
+					return err
+				}
+				return nil
+			}(); err != nil {
+				return errors.Wrap(err, "decode field \"incident_status\"")
+			}
+		case "published_at":
+			if err := func() error {
+				s.PublishedAt.Reset()
+				if err := s.PublishedAt.Decode(d, json.DecodeDateTime); err != nil {
+					return err
+				}
+				return nil
+			}(); err != nil {
+				return errors.Wrap(err, "decode field \"published_at\"")
+			}
+		default:
+			return errors.Errorf("unexpected field %q", k)
+		}
+		return nil
+	}); err != nil {
+		return errors.Wrap(err, "decode PostStatusPageIncidentUpdateRequestBody")
+	}
+	// Validate required fields.
+	var failures []validate.FieldError
+	for i, mask := range [1]uint8{
+		0b00000001,
+	} {
+		if result := (requiredBitSet[i] & mask) ^ mask; result != 0 {
+			// Mask only required fields and check equality to mask using XOR.
+			//
+			// If XOR result is not zero, result is not equal to expected, so some fields are missed.
+			// Bits of fields which would be set are actually bits of missed fields.
+			missed := bits.OnesCount8(result)
+			for bitN := 0; bitN < missed; bitN++ {
+				bitIdx := bits.TrailingZeros8(result)
+				fieldIdx := i*8 + bitIdx
+				var name string
+				if fieldIdx < len(jsonFieldsNameOfPostStatusPageIncidentUpdateRequestBody) {
+					name = jsonFieldsNameOfPostStatusPageIncidentUpdateRequestBody[fieldIdx]
+				} else {
+					name = strconv.Itoa(fieldIdx)
+				}
+				failures = append(failures, validate.FieldError{
+					Name:  name,
+					Error: validate.ErrFieldRequired,
+				})
+				// Reset bit.
+				result &^= 1 << bitIdx
+			}
+		}
+	}
+	if len(failures) > 0 {
+		return &validate.Error{Fields: failures}
+	}
+
+	return nil
+}
+
+// MarshalJSON implements stdjson.Marshaler.
+func (s *PostStatusPageIncidentUpdateRequestBody) MarshalJSON() ([]byte, error) {
+	e := jx.Encoder{}
+	s.Encode(&e)
+	return e.Bytes(), nil
+}
+
+// UnmarshalJSON implements stdjson.Unmarshaler.
+func (s *PostStatusPageIncidentUpdateRequestBody) UnmarshalJSON(data []byte) error {
+	d := jx.DecodeBytes(data)
+	return s.Decode(d)
+}
+
+// Encode encodes PostStatusPageIncidentUpdateRequestBodyIncidentStatus as json.
+func (s PostStatusPageIncidentUpdateRequestBodyIncidentStatus) Encode(e *jx.Encoder) {
+	e.Str(string(s))
+}
+
+// Decode decodes PostStatusPageIncidentUpdateRequestBodyIncidentStatus from json.
+func (s *PostStatusPageIncidentUpdateRequestBodyIncidentStatus) Decode(d *jx.Decoder) error {
+	if s == nil {
+		return errors.New("invalid: unable to decode PostStatusPageIncidentUpdateRequestBodyIncidentStatus to nil")
+	}
+	v, err := d.StrBytes()
+	if err != nil {
+		return err
+	}
+	// Try to use constant string.
+	switch PostStatusPageIncidentUpdateRequestBodyIncidentStatus(v) {
+	case PostStatusPageIncidentUpdateRequestBodyIncidentStatusINVESTIGATING:
+		*s = PostStatusPageIncidentUpdateRequestBodyIncidentStatusINVESTIGATING
+	case PostStatusPageIncidentUpdateRequestBodyIncidentStatusIDENTIFIED:
+		*s = PostStatusPageIncidentUpdateRequestBodyIncidentStatusIDENTIFIED
+	case PostStatusPageIncidentUpdateRequestBodyIncidentStatusMONITORING:
+		*s = PostStatusPageIncidentUpdateRequestBodyIncidentStatusMONITORING
+	case PostStatusPageIncidentUpdateRequestBodyIncidentStatusRESOLVED:
+		*s = PostStatusPageIncidentUpdateRequestBodyIncidentStatusRESOLVED
+	default:
+		*s = PostStatusPageIncidentUpdateRequestBodyIncidentStatus(v)
+	}
+
+	return nil
+}
+
+// MarshalJSON implements stdjson.Marshaler.
+func (s PostStatusPageIncidentUpdateRequestBodyIncidentStatus) MarshalJSON() ([]byte, error) {
+	e := jx.Encoder{}
+	s.Encode(&e)
+	return e.Bytes(), nil
+}
+
+// UnmarshalJSON implements stdjson.Unmarshaler.
+func (s *PostStatusPageIncidentUpdateRequestBodyIncidentStatus) UnmarshalJSON(data []byte) error {
 	d := jx.DecodeBytes(data)
 	return s.Decode(d)
 }
@@ -6174,6 +6957,304 @@ func (s *ProjectOverviewResource) MarshalJSON() ([]byte, error) {
 
 // UnmarshalJSON implements stdjson.Unmarshaler.
 func (s *ProjectOverviewResource) UnmarshalJSON(data []byte) error {
+	d := jx.DecodeBytes(data)
+	return s.Decode(d)
+}
+
+// Encode implements json.Marshaler.
+func (s *PublishStatusPageIncidentRequestBody) Encode(e *jx.Encoder) {
+	e.ObjStart()
+	s.encodeFields(e)
+	e.ObjEnd()
+}
+
+// encodeFields encodes fields.
+func (s *PublishStatusPageIncidentRequestBody) encodeFields(e *jx.Encoder) {
+	{
+		e.FieldStart("body")
+		e.Str(s.Body)
+	}
+	{
+		if s.Components != nil {
+			e.FieldStart("components")
+			e.ArrStart()
+			for _, elem := range s.Components {
+				elem.Encode(e)
+			}
+			e.ArrEnd()
+		}
+	}
+	{
+		if s.Impact.Set {
+			e.FieldStart("impact")
+			s.Impact.Encode(e)
+		}
+	}
+	{
+		if s.IncidentStatus.Set {
+			e.FieldStart("incident_status")
+			s.IncidentStatus.Encode(e)
+		}
+	}
+	{
+		e.FieldStart("name")
+		e.Str(s.Name)
+	}
+	{
+		if s.PublishedAt.Set {
+			e.FieldStart("published_at")
+			s.PublishedAt.Encode(e, json.EncodeDateTime)
+		}
+	}
+	{
+		if s.StartedAt.Set {
+			e.FieldStart("started_at")
+			s.StartedAt.Encode(e, json.EncodeDateTime)
+		}
+	}
+}
+
+var jsonFieldsNameOfPublishStatusPageIncidentRequestBody = [7]string{
+	0: "body",
+	1: "components",
+	2: "impact",
+	3: "incident_status",
+	4: "name",
+	5: "published_at",
+	6: "started_at",
+}
+
+// Decode decodes PublishStatusPageIncidentRequestBody from json.
+func (s *PublishStatusPageIncidentRequestBody) Decode(d *jx.Decoder) error {
+	if s == nil {
+		return errors.New("invalid: unable to decode PublishStatusPageIncidentRequestBody to nil")
+	}
+	var requiredBitSet [1]uint8
+	s.setDefaults()
+
+	if err := d.ObjBytes(func(d *jx.Decoder, k []byte) error {
+		switch string(k) {
+		case "body":
+			requiredBitSet[0] |= 1 << 0
+			if err := func() error {
+				v, err := d.Str()
+				s.Body = string(v)
+				if err != nil {
+					return err
+				}
+				return nil
+			}(); err != nil {
+				return errors.Wrap(err, "decode field \"body\"")
+			}
+		case "components":
+			if err := func() error {
+				s.Components = make([]StatusPageIncidentComponentRequest, 0)
+				if err := d.Arr(func(d *jx.Decoder) error {
+					var elem StatusPageIncidentComponentRequest
+					if err := elem.Decode(d); err != nil {
+						return err
+					}
+					s.Components = append(s.Components, elem)
+					return nil
+				}); err != nil {
+					return err
+				}
+				return nil
+			}(); err != nil {
+				return errors.Wrap(err, "decode field \"components\"")
+			}
+		case "impact":
+			if err := func() error {
+				s.Impact.Reset()
+				if err := s.Impact.Decode(d); err != nil {
+					return err
+				}
+				return nil
+			}(); err != nil {
+				return errors.Wrap(err, "decode field \"impact\"")
+			}
+		case "incident_status":
+			if err := func() error {
+				s.IncidentStatus.Reset()
+				if err := s.IncidentStatus.Decode(d); err != nil {
+					return err
+				}
+				return nil
+			}(); err != nil {
+				return errors.Wrap(err, "decode field \"incident_status\"")
+			}
+		case "name":
+			requiredBitSet[0] |= 1 << 4
+			if err := func() error {
+				v, err := d.Str()
+				s.Name = string(v)
+				if err != nil {
+					return err
+				}
+				return nil
+			}(); err != nil {
+				return errors.Wrap(err, "decode field \"name\"")
+			}
+		case "published_at":
+			if err := func() error {
+				s.PublishedAt.Reset()
+				if err := s.PublishedAt.Decode(d, json.DecodeDateTime); err != nil {
+					return err
+				}
+				return nil
+			}(); err != nil {
+				return errors.Wrap(err, "decode field \"published_at\"")
+			}
+		case "started_at":
+			if err := func() error {
+				s.StartedAt.Reset()
+				if err := s.StartedAt.Decode(d, json.DecodeDateTime); err != nil {
+					return err
+				}
+				return nil
+			}(); err != nil {
+				return errors.Wrap(err, "decode field \"started_at\"")
+			}
+		default:
+			return errors.Errorf("unexpected field %q", k)
+		}
+		return nil
+	}); err != nil {
+		return errors.Wrap(err, "decode PublishStatusPageIncidentRequestBody")
+	}
+	// Validate required fields.
+	var failures []validate.FieldError
+	for i, mask := range [1]uint8{
+		0b00010001,
+	} {
+		if result := (requiredBitSet[i] & mask) ^ mask; result != 0 {
+			// Mask only required fields and check equality to mask using XOR.
+			//
+			// If XOR result is not zero, result is not equal to expected, so some fields are missed.
+			// Bits of fields which would be set are actually bits of missed fields.
+			missed := bits.OnesCount8(result)
+			for bitN := 0; bitN < missed; bitN++ {
+				bitIdx := bits.TrailingZeros8(result)
+				fieldIdx := i*8 + bitIdx
+				var name string
+				if fieldIdx < len(jsonFieldsNameOfPublishStatusPageIncidentRequestBody) {
+					name = jsonFieldsNameOfPublishStatusPageIncidentRequestBody[fieldIdx]
+				} else {
+					name = strconv.Itoa(fieldIdx)
+				}
+				failures = append(failures, validate.FieldError{
+					Name:  name,
+					Error: validate.ErrFieldRequired,
+				})
+				// Reset bit.
+				result &^= 1 << bitIdx
+			}
+		}
+	}
+	if len(failures) > 0 {
+		return &validate.Error{Fields: failures}
+	}
+
+	return nil
+}
+
+// MarshalJSON implements stdjson.Marshaler.
+func (s *PublishStatusPageIncidentRequestBody) MarshalJSON() ([]byte, error) {
+	e := jx.Encoder{}
+	s.Encode(&e)
+	return e.Bytes(), nil
+}
+
+// UnmarshalJSON implements stdjson.Unmarshaler.
+func (s *PublishStatusPageIncidentRequestBody) UnmarshalJSON(data []byte) error {
+	d := jx.DecodeBytes(data)
+	return s.Decode(d)
+}
+
+// Encode encodes PublishStatusPageIncidentRequestBodyImpact as json.
+func (s PublishStatusPageIncidentRequestBodyImpact) Encode(e *jx.Encoder) {
+	e.Str(string(s))
+}
+
+// Decode decodes PublishStatusPageIncidentRequestBodyImpact from json.
+func (s *PublishStatusPageIncidentRequestBodyImpact) Decode(d *jx.Decoder) error {
+	if s == nil {
+		return errors.New("invalid: unable to decode PublishStatusPageIncidentRequestBodyImpact to nil")
+	}
+	v, err := d.StrBytes()
+	if err != nil {
+		return err
+	}
+	// Try to use constant string.
+	switch PublishStatusPageIncidentRequestBodyImpact(v) {
+	case PublishStatusPageIncidentRequestBodyImpactNONE:
+		*s = PublishStatusPageIncidentRequestBodyImpactNONE
+	case PublishStatusPageIncidentRequestBodyImpactMINOR:
+		*s = PublishStatusPageIncidentRequestBodyImpactMINOR
+	case PublishStatusPageIncidentRequestBodyImpactMAJOR:
+		*s = PublishStatusPageIncidentRequestBodyImpactMAJOR
+	case PublishStatusPageIncidentRequestBodyImpactCRITICAL:
+		*s = PublishStatusPageIncidentRequestBodyImpactCRITICAL
+	default:
+		*s = PublishStatusPageIncidentRequestBodyImpact(v)
+	}
+
+	return nil
+}
+
+// MarshalJSON implements stdjson.Marshaler.
+func (s PublishStatusPageIncidentRequestBodyImpact) MarshalJSON() ([]byte, error) {
+	e := jx.Encoder{}
+	s.Encode(&e)
+	return e.Bytes(), nil
+}
+
+// UnmarshalJSON implements stdjson.Unmarshaler.
+func (s *PublishStatusPageIncidentRequestBodyImpact) UnmarshalJSON(data []byte) error {
+	d := jx.DecodeBytes(data)
+	return s.Decode(d)
+}
+
+// Encode encodes PublishStatusPageIncidentRequestBodyIncidentStatus as json.
+func (s PublishStatusPageIncidentRequestBodyIncidentStatus) Encode(e *jx.Encoder) {
+	e.Str(string(s))
+}
+
+// Decode decodes PublishStatusPageIncidentRequestBodyIncidentStatus from json.
+func (s *PublishStatusPageIncidentRequestBodyIncidentStatus) Decode(d *jx.Decoder) error {
+	if s == nil {
+		return errors.New("invalid: unable to decode PublishStatusPageIncidentRequestBodyIncidentStatus to nil")
+	}
+	v, err := d.StrBytes()
+	if err != nil {
+		return err
+	}
+	// Try to use constant string.
+	switch PublishStatusPageIncidentRequestBodyIncidentStatus(v) {
+	case PublishStatusPageIncidentRequestBodyIncidentStatusINVESTIGATING:
+		*s = PublishStatusPageIncidentRequestBodyIncidentStatusINVESTIGATING
+	case PublishStatusPageIncidentRequestBodyIncidentStatusIDENTIFIED:
+		*s = PublishStatusPageIncidentRequestBodyIncidentStatusIDENTIFIED
+	case PublishStatusPageIncidentRequestBodyIncidentStatusMONITORING:
+		*s = PublishStatusPageIncidentRequestBodyIncidentStatusMONITORING
+	case PublishStatusPageIncidentRequestBodyIncidentStatusRESOLVED:
+		*s = PublishStatusPageIncidentRequestBodyIncidentStatusRESOLVED
+	default:
+		*s = PublishStatusPageIncidentRequestBodyIncidentStatus(v)
+	}
+
+	return nil
+}
+
+// MarshalJSON implements stdjson.Marshaler.
+func (s PublishStatusPageIncidentRequestBodyIncidentStatus) MarshalJSON() ([]byte, error) {
+	e := jx.Encoder{}
+	s.Encode(&e)
+	return e.Bytes(), nil
+}
+
+// UnmarshalJSON implements stdjson.Unmarshaler.
+func (s *PublishStatusPageIncidentRequestBodyIncidentStatus) UnmarshalJSON(data []byte) error {
 	d := jx.DecodeBytes(data)
 	return s.Decode(d)
 }
@@ -6677,6 +7758,1044 @@ func (s PutSLORequestBodyPeriod) MarshalJSON() ([]byte, error) {
 
 // UnmarshalJSON implements stdjson.Unmarshaler.
 func (s *PutSLORequestBodyPeriod) UnmarshalJSON(data []byte) error {
+	d := jx.DecodeBytes(data)
+	return s.Decode(d)
+}
+
+// Encode implements json.Marshaler.
+func (s *PutStatusPageComponentRequestBody) Encode(e *jx.Encoder) {
+	e.ObjStart()
+	s.encodeFields(e)
+	e.ObjEnd()
+}
+
+// encodeFields encodes fields.
+func (s *PutStatusPageComponentRequestBody) encodeFields(e *jx.Encoder) {
+	{
+		if s.AutoStatusMinSeverity.Set {
+			e.FieldStart("auto_status_min_severity")
+			s.AutoStatusMinSeverity.Encode(e)
+		}
+	}
+	{
+		if s.Description.Set {
+			e.FieldStart("description")
+			s.Description.Encode(e)
+		}
+	}
+	{
+		if s.GroupID.Set {
+			e.FieldStart("group_id")
+			s.GroupID.Encode(e)
+		}
+	}
+	{
+		e.FieldStart("name")
+		e.Str(s.Name)
+	}
+	{
+		if s.OnlyShowIfDegraded.Set {
+			e.FieldStart("only_show_if_degraded")
+			s.OnlyShowIfDegraded.Encode(e)
+		}
+	}
+	{
+		if s.ShowUptime.Set {
+			e.FieldStart("show_uptime")
+			s.ShowUptime.Encode(e)
+		}
+	}
+	{
+		if s.StartedOn.Set {
+			e.FieldStart("started_on")
+			s.StartedOn.Encode(e, json.EncodeDateTime)
+		}
+	}
+}
+
+var jsonFieldsNameOfPutStatusPageComponentRequestBody = [7]string{
+	0: "auto_status_min_severity",
+	1: "description",
+	2: "group_id",
+	3: "name",
+	4: "only_show_if_degraded",
+	5: "show_uptime",
+	6: "started_on",
+}
+
+// Decode decodes PutStatusPageComponentRequestBody from json.
+func (s *PutStatusPageComponentRequestBody) Decode(d *jx.Decoder) error {
+	if s == nil {
+		return errors.New("invalid: unable to decode PutStatusPageComponentRequestBody to nil")
+	}
+	var requiredBitSet [1]uint8
+	s.setDefaults()
+
+	if err := d.ObjBytes(func(d *jx.Decoder, k []byte) error {
+		switch string(k) {
+		case "auto_status_min_severity":
+			if err := func() error {
+				s.AutoStatusMinSeverity.Reset()
+				if err := s.AutoStatusMinSeverity.Decode(d); err != nil {
+					return err
+				}
+				return nil
+			}(); err != nil {
+				return errors.Wrap(err, "decode field \"auto_status_min_severity\"")
+			}
+		case "description":
+			if err := func() error {
+				s.Description.Reset()
+				if err := s.Description.Decode(d); err != nil {
+					return err
+				}
+				return nil
+			}(); err != nil {
+				return errors.Wrap(err, "decode field \"description\"")
+			}
+		case "group_id":
+			if err := func() error {
+				s.GroupID.Reset()
+				if err := s.GroupID.Decode(d); err != nil {
+					return err
+				}
+				return nil
+			}(); err != nil {
+				return errors.Wrap(err, "decode field \"group_id\"")
+			}
+		case "name":
+			requiredBitSet[0] |= 1 << 3
+			if err := func() error {
+				v, err := d.Str()
+				s.Name = string(v)
+				if err != nil {
+					return err
+				}
+				return nil
+			}(); err != nil {
+				return errors.Wrap(err, "decode field \"name\"")
+			}
+		case "only_show_if_degraded":
+			if err := func() error {
+				s.OnlyShowIfDegraded.Reset()
+				if err := s.OnlyShowIfDegraded.Decode(d); err != nil {
+					return err
+				}
+				return nil
+			}(); err != nil {
+				return errors.Wrap(err, "decode field \"only_show_if_degraded\"")
+			}
+		case "show_uptime":
+			if err := func() error {
+				s.ShowUptime.Reset()
+				if err := s.ShowUptime.Decode(d); err != nil {
+					return err
+				}
+				return nil
+			}(); err != nil {
+				return errors.Wrap(err, "decode field \"show_uptime\"")
+			}
+		case "started_on":
+			if err := func() error {
+				s.StartedOn.Reset()
+				if err := s.StartedOn.Decode(d, json.DecodeDateTime); err != nil {
+					return err
+				}
+				return nil
+			}(); err != nil {
+				return errors.Wrap(err, "decode field \"started_on\"")
+			}
+		default:
+			return errors.Errorf("unexpected field %q", k)
+		}
+		return nil
+	}); err != nil {
+		return errors.Wrap(err, "decode PutStatusPageComponentRequestBody")
+	}
+	// Validate required fields.
+	var failures []validate.FieldError
+	for i, mask := range [1]uint8{
+		0b00001000,
+	} {
+		if result := (requiredBitSet[i] & mask) ^ mask; result != 0 {
+			// Mask only required fields and check equality to mask using XOR.
+			//
+			// If XOR result is not zero, result is not equal to expected, so some fields are missed.
+			// Bits of fields which would be set are actually bits of missed fields.
+			missed := bits.OnesCount8(result)
+			for bitN := 0; bitN < missed; bitN++ {
+				bitIdx := bits.TrailingZeros8(result)
+				fieldIdx := i*8 + bitIdx
+				var name string
+				if fieldIdx < len(jsonFieldsNameOfPutStatusPageComponentRequestBody) {
+					name = jsonFieldsNameOfPutStatusPageComponentRequestBody[fieldIdx]
+				} else {
+					name = strconv.Itoa(fieldIdx)
+				}
+				failures = append(failures, validate.FieldError{
+					Name:  name,
+					Error: validate.ErrFieldRequired,
+				})
+				// Reset bit.
+				result &^= 1 << bitIdx
+			}
+		}
+	}
+	if len(failures) > 0 {
+		return &validate.Error{Fields: failures}
+	}
+
+	return nil
+}
+
+// MarshalJSON implements stdjson.Marshaler.
+func (s *PutStatusPageComponentRequestBody) MarshalJSON() ([]byte, error) {
+	e := jx.Encoder{}
+	s.Encode(&e)
+	return e.Bytes(), nil
+}
+
+// UnmarshalJSON implements stdjson.Unmarshaler.
+func (s *PutStatusPageComponentRequestBody) UnmarshalJSON(data []byte) error {
+	d := jx.DecodeBytes(data)
+	return s.Decode(d)
+}
+
+// Encode encodes PutStatusPageComponentRequestBodyAutoStatusMinSeverity as json.
+func (s PutStatusPageComponentRequestBodyAutoStatusMinSeverity) Encode(e *jx.Encoder) {
+	e.Str(string(s))
+}
+
+// Decode decodes PutStatusPageComponentRequestBodyAutoStatusMinSeverity from json.
+func (s *PutStatusPageComponentRequestBodyAutoStatusMinSeverity) Decode(d *jx.Decoder) error {
+	if s == nil {
+		return errors.New("invalid: unable to decode PutStatusPageComponentRequestBodyAutoStatusMinSeverity to nil")
+	}
+	v, err := d.StrBytes()
+	if err != nil {
+		return err
+	}
+	// Try to use constant string.
+	switch PutStatusPageComponentRequestBodyAutoStatusMinSeverity(v) {
+	case PutStatusPageComponentRequestBodyAutoStatusMinSeverityANY:
+		*s = PutStatusPageComponentRequestBodyAutoStatusMinSeverityANY
+	case PutStatusPageComponentRequestBodyAutoStatusMinSeverityINFORMATION:
+		*s = PutStatusPageComponentRequestBodyAutoStatusMinSeverityINFORMATION
+	case PutStatusPageComponentRequestBodyAutoStatusMinSeverityWARNING:
+		*s = PutStatusPageComponentRequestBodyAutoStatusMinSeverityWARNING
+	case PutStatusPageComponentRequestBodyAutoStatusMinSeverityAVERAGE:
+		*s = PutStatusPageComponentRequestBodyAutoStatusMinSeverityAVERAGE
+	case PutStatusPageComponentRequestBodyAutoStatusMinSeverityHIGH:
+		*s = PutStatusPageComponentRequestBodyAutoStatusMinSeverityHIGH
+	case PutStatusPageComponentRequestBodyAutoStatusMinSeverityDISASTER:
+		*s = PutStatusPageComponentRequestBodyAutoStatusMinSeverityDISASTER
+	default:
+		*s = PutStatusPageComponentRequestBodyAutoStatusMinSeverity(v)
+	}
+
+	return nil
+}
+
+// MarshalJSON implements stdjson.Marshaler.
+func (s PutStatusPageComponentRequestBodyAutoStatusMinSeverity) MarshalJSON() ([]byte, error) {
+	e := jx.Encoder{}
+	s.Encode(&e)
+	return e.Bytes(), nil
+}
+
+// UnmarshalJSON implements stdjson.Unmarshaler.
+func (s *PutStatusPageComponentRequestBodyAutoStatusMinSeverity) UnmarshalJSON(data []byte) error {
+	d := jx.DecodeBytes(data)
+	return s.Decode(d)
+}
+
+// Encode implements json.Marshaler.
+func (s *PutStatusPageComponentSourcesRequestBody) Encode(e *jx.Encoder) {
+	e.ObjStart()
+	s.encodeFields(e)
+	e.ObjEnd()
+}
+
+// encodeFields encodes fields.
+func (s *PutStatusPageComponentSourcesRequestBody) encodeFields(e *jx.Encoder) {
+	{
+		if s.Servers != nil {
+			e.FieldStart("servers")
+			e.ArrStart()
+			for _, elem := range s.Servers {
+				elem.Encode(e)
+			}
+			e.ArrEnd()
+		}
+	}
+	{
+		if s.WebChecks != nil {
+			e.FieldStart("web_checks")
+			e.ArrStart()
+			for _, elem := range s.WebChecks {
+				elem.Encode(e)
+			}
+			e.ArrEnd()
+		}
+	}
+}
+
+var jsonFieldsNameOfPutStatusPageComponentSourcesRequestBody = [2]string{
+	0: "servers",
+	1: "web_checks",
+}
+
+// Decode decodes PutStatusPageComponentSourcesRequestBody from json.
+func (s *PutStatusPageComponentSourcesRequestBody) Decode(d *jx.Decoder) error {
+	if s == nil {
+		return errors.New("invalid: unable to decode PutStatusPageComponentSourcesRequestBody to nil")
+	}
+
+	if err := d.ObjBytes(func(d *jx.Decoder, k []byte) error {
+		switch string(k) {
+		case "servers":
+			if err := func() error {
+				s.Servers = make([]StatusPageComponentSourceServer, 0)
+				if err := d.Arr(func(d *jx.Decoder) error {
+					var elem StatusPageComponentSourceServer
+					if err := elem.Decode(d); err != nil {
+						return err
+					}
+					s.Servers = append(s.Servers, elem)
+					return nil
+				}); err != nil {
+					return err
+				}
+				return nil
+			}(); err != nil {
+				return errors.Wrap(err, "decode field \"servers\"")
+			}
+		case "web_checks":
+			if err := func() error {
+				s.WebChecks = make([]StatusPageComponentSourceWebCheck, 0)
+				if err := d.Arr(func(d *jx.Decoder) error {
+					var elem StatusPageComponentSourceWebCheck
+					if err := elem.Decode(d); err != nil {
+						return err
+					}
+					s.WebChecks = append(s.WebChecks, elem)
+					return nil
+				}); err != nil {
+					return err
+				}
+				return nil
+			}(); err != nil {
+				return errors.Wrap(err, "decode field \"web_checks\"")
+			}
+		default:
+			return errors.Errorf("unexpected field %q", k)
+		}
+		return nil
+	}); err != nil {
+		return errors.Wrap(err, "decode PutStatusPageComponentSourcesRequestBody")
+	}
+
+	return nil
+}
+
+// MarshalJSON implements stdjson.Marshaler.
+func (s *PutStatusPageComponentSourcesRequestBody) MarshalJSON() ([]byte, error) {
+	e := jx.Encoder{}
+	s.Encode(&e)
+	return e.Bytes(), nil
+}
+
+// UnmarshalJSON implements stdjson.Unmarshaler.
+func (s *PutStatusPageComponentSourcesRequestBody) UnmarshalJSON(data []byte) error {
+	d := jx.DecodeBytes(data)
+	return s.Decode(d)
+}
+
+// Encode implements json.Marshaler.
+func (s *PutStatusPageGroupOrderRequestBody) Encode(e *jx.Encoder) {
+	e.ObjStart()
+	s.encodeFields(e)
+	e.ObjEnd()
+}
+
+// encodeFields encodes fields.
+func (s *PutStatusPageGroupOrderRequestBody) encodeFields(e *jx.Encoder) {
+	{
+		e.FieldStart("component_ids")
+		e.ArrStart()
+		for _, elem := range s.ComponentIds {
+			json.EncodeUUID(e, elem)
+		}
+		e.ArrEnd()
+	}
+}
+
+var jsonFieldsNameOfPutStatusPageGroupOrderRequestBody = [1]string{
+	0: "component_ids",
+}
+
+// Decode decodes PutStatusPageGroupOrderRequestBody from json.
+func (s *PutStatusPageGroupOrderRequestBody) Decode(d *jx.Decoder) error {
+	if s == nil {
+		return errors.New("invalid: unable to decode PutStatusPageGroupOrderRequestBody to nil")
+	}
+	var requiredBitSet [1]uint8
+
+	if err := d.ObjBytes(func(d *jx.Decoder, k []byte) error {
+		switch string(k) {
+		case "component_ids":
+			requiredBitSet[0] |= 1 << 0
+			if err := func() error {
+				s.ComponentIds = make([]uuid.UUID, 0)
+				if err := d.Arr(func(d *jx.Decoder) error {
+					var elem uuid.UUID
+					v, err := json.DecodeUUID(d)
+					elem = v
+					if err != nil {
+						return err
+					}
+					s.ComponentIds = append(s.ComponentIds, elem)
+					return nil
+				}); err != nil {
+					return err
+				}
+				return nil
+			}(); err != nil {
+				return errors.Wrap(err, "decode field \"component_ids\"")
+			}
+		default:
+			return errors.Errorf("unexpected field %q", k)
+		}
+		return nil
+	}); err != nil {
+		return errors.Wrap(err, "decode PutStatusPageGroupOrderRequestBody")
+	}
+	// Validate required fields.
+	var failures []validate.FieldError
+	for i, mask := range [1]uint8{
+		0b00000001,
+	} {
+		if result := (requiredBitSet[i] & mask) ^ mask; result != 0 {
+			// Mask only required fields and check equality to mask using XOR.
+			//
+			// If XOR result is not zero, result is not equal to expected, so some fields are missed.
+			// Bits of fields which would be set are actually bits of missed fields.
+			missed := bits.OnesCount8(result)
+			for bitN := 0; bitN < missed; bitN++ {
+				bitIdx := bits.TrailingZeros8(result)
+				fieldIdx := i*8 + bitIdx
+				var name string
+				if fieldIdx < len(jsonFieldsNameOfPutStatusPageGroupOrderRequestBody) {
+					name = jsonFieldsNameOfPutStatusPageGroupOrderRequestBody[fieldIdx]
+				} else {
+					name = strconv.Itoa(fieldIdx)
+				}
+				failures = append(failures, validate.FieldError{
+					Name:  name,
+					Error: validate.ErrFieldRequired,
+				})
+				// Reset bit.
+				result &^= 1 << bitIdx
+			}
+		}
+	}
+	if len(failures) > 0 {
+		return &validate.Error{Fields: failures}
+	}
+
+	return nil
+}
+
+// MarshalJSON implements stdjson.Marshaler.
+func (s *PutStatusPageGroupOrderRequestBody) MarshalJSON() ([]byte, error) {
+	e := jx.Encoder{}
+	s.Encode(&e)
+	return e.Bytes(), nil
+}
+
+// UnmarshalJSON implements stdjson.Unmarshaler.
+func (s *PutStatusPageGroupOrderRequestBody) UnmarshalJSON(data []byte) error {
+	d := jx.DecodeBytes(data)
+	return s.Decode(d)
+}
+
+// Encode implements json.Marshaler.
+func (s *PutStatusPageGroupRequestBody) Encode(e *jx.Encoder) {
+	e.ObjStart()
+	s.encodeFields(e)
+	e.ObjEnd()
+}
+
+// encodeFields encodes fields.
+func (s *PutStatusPageGroupRequestBody) encodeFields(e *jx.Encoder) {
+	{
+		if s.Collapsed.Set {
+			e.FieldStart("collapsed")
+			s.Collapsed.Encode(e)
+		}
+	}
+	{
+		if s.Description.Set {
+			e.FieldStart("description")
+			s.Description.Encode(e)
+		}
+	}
+	{
+		e.FieldStart("name")
+		e.Str(s.Name)
+	}
+}
+
+var jsonFieldsNameOfPutStatusPageGroupRequestBody = [3]string{
+	0: "collapsed",
+	1: "description",
+	2: "name",
+}
+
+// Decode decodes PutStatusPageGroupRequestBody from json.
+func (s *PutStatusPageGroupRequestBody) Decode(d *jx.Decoder) error {
+	if s == nil {
+		return errors.New("invalid: unable to decode PutStatusPageGroupRequestBody to nil")
+	}
+	var requiredBitSet [1]uint8
+	s.setDefaults()
+
+	if err := d.ObjBytes(func(d *jx.Decoder, k []byte) error {
+		switch string(k) {
+		case "collapsed":
+			if err := func() error {
+				s.Collapsed.Reset()
+				if err := s.Collapsed.Decode(d); err != nil {
+					return err
+				}
+				return nil
+			}(); err != nil {
+				return errors.Wrap(err, "decode field \"collapsed\"")
+			}
+		case "description":
+			if err := func() error {
+				s.Description.Reset()
+				if err := s.Description.Decode(d); err != nil {
+					return err
+				}
+				return nil
+			}(); err != nil {
+				return errors.Wrap(err, "decode field \"description\"")
+			}
+		case "name":
+			requiredBitSet[0] |= 1 << 2
+			if err := func() error {
+				v, err := d.Str()
+				s.Name = string(v)
+				if err != nil {
+					return err
+				}
+				return nil
+			}(); err != nil {
+				return errors.Wrap(err, "decode field \"name\"")
+			}
+		default:
+			return errors.Errorf("unexpected field %q", k)
+		}
+		return nil
+	}); err != nil {
+		return errors.Wrap(err, "decode PutStatusPageGroupRequestBody")
+	}
+	// Validate required fields.
+	var failures []validate.FieldError
+	for i, mask := range [1]uint8{
+		0b00000100,
+	} {
+		if result := (requiredBitSet[i] & mask) ^ mask; result != 0 {
+			// Mask only required fields and check equality to mask using XOR.
+			//
+			// If XOR result is not zero, result is not equal to expected, so some fields are missed.
+			// Bits of fields which would be set are actually bits of missed fields.
+			missed := bits.OnesCount8(result)
+			for bitN := 0; bitN < missed; bitN++ {
+				bitIdx := bits.TrailingZeros8(result)
+				fieldIdx := i*8 + bitIdx
+				var name string
+				if fieldIdx < len(jsonFieldsNameOfPutStatusPageGroupRequestBody) {
+					name = jsonFieldsNameOfPutStatusPageGroupRequestBody[fieldIdx]
+				} else {
+					name = strconv.Itoa(fieldIdx)
+				}
+				failures = append(failures, validate.FieldError{
+					Name:  name,
+					Error: validate.ErrFieldRequired,
+				})
+				// Reset bit.
+				result &^= 1 << bitIdx
+			}
+		}
+	}
+	if len(failures) > 0 {
+		return &validate.Error{Fields: failures}
+	}
+
+	return nil
+}
+
+// MarshalJSON implements stdjson.Marshaler.
+func (s *PutStatusPageGroupRequestBody) MarshalJSON() ([]byte, error) {
+	e := jx.Encoder{}
+	s.Encode(&e)
+	return e.Bytes(), nil
+}
+
+// UnmarshalJSON implements stdjson.Unmarshaler.
+func (s *PutStatusPageGroupRequestBody) UnmarshalJSON(data []byte) error {
+	d := jx.DecodeBytes(data)
+	return s.Decode(d)
+}
+
+// Encode implements json.Marshaler.
+func (s *PutStatusPageOrderRequestBody) Encode(e *jx.Encoder) {
+	e.ObjStart()
+	s.encodeFields(e)
+	e.ObjEnd()
+}
+
+// encodeFields encodes fields.
+func (s *PutStatusPageOrderRequestBody) encodeFields(e *jx.Encoder) {
+	{
+		e.FieldStart("items")
+		e.ArrStart()
+		for _, elem := range s.Items {
+			elem.Encode(e)
+		}
+		e.ArrEnd()
+	}
+}
+
+var jsonFieldsNameOfPutStatusPageOrderRequestBody = [1]string{
+	0: "items",
+}
+
+// Decode decodes PutStatusPageOrderRequestBody from json.
+func (s *PutStatusPageOrderRequestBody) Decode(d *jx.Decoder) error {
+	if s == nil {
+		return errors.New("invalid: unable to decode PutStatusPageOrderRequestBody to nil")
+	}
+	var requiredBitSet [1]uint8
+
+	if err := d.ObjBytes(func(d *jx.Decoder, k []byte) error {
+		switch string(k) {
+		case "items":
+			requiredBitSet[0] |= 1 << 0
+			if err := func() error {
+				s.Items = make([]StatusPageOrderItem, 0)
+				if err := d.Arr(func(d *jx.Decoder) error {
+					var elem StatusPageOrderItem
+					if err := elem.Decode(d); err != nil {
+						return err
+					}
+					s.Items = append(s.Items, elem)
+					return nil
+				}); err != nil {
+					return err
+				}
+				return nil
+			}(); err != nil {
+				return errors.Wrap(err, "decode field \"items\"")
+			}
+		default:
+			return errors.Errorf("unexpected field %q", k)
+		}
+		return nil
+	}); err != nil {
+		return errors.Wrap(err, "decode PutStatusPageOrderRequestBody")
+	}
+	// Validate required fields.
+	var failures []validate.FieldError
+	for i, mask := range [1]uint8{
+		0b00000001,
+	} {
+		if result := (requiredBitSet[i] & mask) ^ mask; result != 0 {
+			// Mask only required fields and check equality to mask using XOR.
+			//
+			// If XOR result is not zero, result is not equal to expected, so some fields are missed.
+			// Bits of fields which would be set are actually bits of missed fields.
+			missed := bits.OnesCount8(result)
+			for bitN := 0; bitN < missed; bitN++ {
+				bitIdx := bits.TrailingZeros8(result)
+				fieldIdx := i*8 + bitIdx
+				var name string
+				if fieldIdx < len(jsonFieldsNameOfPutStatusPageOrderRequestBody) {
+					name = jsonFieldsNameOfPutStatusPageOrderRequestBody[fieldIdx]
+				} else {
+					name = strconv.Itoa(fieldIdx)
+				}
+				failures = append(failures, validate.FieldError{
+					Name:  name,
+					Error: validate.ErrFieldRequired,
+				})
+				// Reset bit.
+				result &^= 1 << bitIdx
+			}
+		}
+	}
+	if len(failures) > 0 {
+		return &validate.Error{Fields: failures}
+	}
+
+	return nil
+}
+
+// MarshalJSON implements stdjson.Marshaler.
+func (s *PutStatusPageOrderRequestBody) MarshalJSON() ([]byte, error) {
+	e := jx.Encoder{}
+	s.Encode(&e)
+	return e.Bytes(), nil
+}
+
+// UnmarshalJSON implements stdjson.Unmarshaler.
+func (s *PutStatusPageOrderRequestBody) UnmarshalJSON(data []byte) error {
+	d := jx.DecodeBytes(data)
+	return s.Decode(d)
+}
+
+// Encode implements json.Marshaler.
+func (s *PutStatusPageRequestBody) Encode(e *jx.Encoder) {
+	e.ObjStart()
+	s.encodeFields(e)
+	e.ObjEnd()
+}
+
+// encodeFields encodes fields.
+func (s *PutStatusPageRequestBody) encodeFields(e *jx.Encoder) {
+	{
+		if s.BrandColor.Set {
+			e.FieldStart("brand_color")
+			s.BrandColor.Encode(e)
+		}
+	}
+	{
+		if s.CustomDomain.Set {
+			e.FieldStart("custom_domain")
+			s.CustomDomain.Encode(e)
+		}
+	}
+	{
+		if s.FooterText.Set {
+			e.FieldStart("footer_text")
+			s.FooterText.Encode(e)
+		}
+	}
+	{
+		if s.Headline.Set {
+			e.FieldStart("headline")
+			s.Headline.Encode(e)
+		}
+	}
+	{
+		if s.LogoURL.Set {
+			e.FieldStart("logo_url")
+			s.LogoURL.Encode(e)
+		}
+	}
+	{
+		e.FieldStart("name")
+		e.Str(s.Name)
+	}
+	{
+		if s.Published.Set {
+			e.FieldStart("published")
+			s.Published.Encode(e)
+		}
+	}
+	{
+		if s.SearchEngineIndex.Set {
+			e.FieldStart("search_engine_index")
+			s.SearchEngineIndex.Encode(e)
+		}
+	}
+	{
+		e.FieldStart("slug")
+		e.Str(s.Slug)
+	}
+	{
+		if s.SupportURL.Set {
+			e.FieldStart("support_url")
+			s.SupportURL.Encode(e)
+		}
+	}
+	{
+		if s.Theme.Set {
+			e.FieldStart("theme")
+			s.Theme.Encode(e)
+		}
+	}
+	{
+		if s.Timezone.Set {
+			e.FieldStart("timezone")
+			s.Timezone.Encode(e)
+		}
+	}
+	{
+		if s.UptimeDays.Set {
+			e.FieldStart("uptime_days")
+			s.UptimeDays.Encode(e)
+		}
+	}
+}
+
+var jsonFieldsNameOfPutStatusPageRequestBody = [13]string{
+	0:  "brand_color",
+	1:  "custom_domain",
+	2:  "footer_text",
+	3:  "headline",
+	4:  "logo_url",
+	5:  "name",
+	6:  "published",
+	7:  "search_engine_index",
+	8:  "slug",
+	9:  "support_url",
+	10: "theme",
+	11: "timezone",
+	12: "uptime_days",
+}
+
+// Decode decodes PutStatusPageRequestBody from json.
+func (s *PutStatusPageRequestBody) Decode(d *jx.Decoder) error {
+	if s == nil {
+		return errors.New("invalid: unable to decode PutStatusPageRequestBody to nil")
+	}
+	var requiredBitSet [2]uint8
+	s.setDefaults()
+
+	if err := d.ObjBytes(func(d *jx.Decoder, k []byte) error {
+		switch string(k) {
+		case "brand_color":
+			if err := func() error {
+				s.BrandColor.Reset()
+				if err := s.BrandColor.Decode(d); err != nil {
+					return err
+				}
+				return nil
+			}(); err != nil {
+				return errors.Wrap(err, "decode field \"brand_color\"")
+			}
+		case "custom_domain":
+			if err := func() error {
+				s.CustomDomain.Reset()
+				if err := s.CustomDomain.Decode(d); err != nil {
+					return err
+				}
+				return nil
+			}(); err != nil {
+				return errors.Wrap(err, "decode field \"custom_domain\"")
+			}
+		case "footer_text":
+			if err := func() error {
+				s.FooterText.Reset()
+				if err := s.FooterText.Decode(d); err != nil {
+					return err
+				}
+				return nil
+			}(); err != nil {
+				return errors.Wrap(err, "decode field \"footer_text\"")
+			}
+		case "headline":
+			if err := func() error {
+				s.Headline.Reset()
+				if err := s.Headline.Decode(d); err != nil {
+					return err
+				}
+				return nil
+			}(); err != nil {
+				return errors.Wrap(err, "decode field \"headline\"")
+			}
+		case "logo_url":
+			if err := func() error {
+				s.LogoURL.Reset()
+				if err := s.LogoURL.Decode(d); err != nil {
+					return err
+				}
+				return nil
+			}(); err != nil {
+				return errors.Wrap(err, "decode field \"logo_url\"")
+			}
+		case "name":
+			requiredBitSet[0] |= 1 << 5
+			if err := func() error {
+				v, err := d.Str()
+				s.Name = string(v)
+				if err != nil {
+					return err
+				}
+				return nil
+			}(); err != nil {
+				return errors.Wrap(err, "decode field \"name\"")
+			}
+		case "published":
+			if err := func() error {
+				s.Published.Reset()
+				if err := s.Published.Decode(d); err != nil {
+					return err
+				}
+				return nil
+			}(); err != nil {
+				return errors.Wrap(err, "decode field \"published\"")
+			}
+		case "search_engine_index":
+			if err := func() error {
+				s.SearchEngineIndex.Reset()
+				if err := s.SearchEngineIndex.Decode(d); err != nil {
+					return err
+				}
+				return nil
+			}(); err != nil {
+				return errors.Wrap(err, "decode field \"search_engine_index\"")
+			}
+		case "slug":
+			requiredBitSet[1] |= 1 << 0
+			if err := func() error {
+				v, err := d.Str()
+				s.Slug = string(v)
+				if err != nil {
+					return err
+				}
+				return nil
+			}(); err != nil {
+				return errors.Wrap(err, "decode field \"slug\"")
+			}
+		case "support_url":
+			if err := func() error {
+				s.SupportURL.Reset()
+				if err := s.SupportURL.Decode(d); err != nil {
+					return err
+				}
+				return nil
+			}(); err != nil {
+				return errors.Wrap(err, "decode field \"support_url\"")
+			}
+		case "theme":
+			if err := func() error {
+				s.Theme.Reset()
+				if err := s.Theme.Decode(d); err != nil {
+					return err
+				}
+				return nil
+			}(); err != nil {
+				return errors.Wrap(err, "decode field \"theme\"")
+			}
+		case "timezone":
+			if err := func() error {
+				s.Timezone.Reset()
+				if err := s.Timezone.Decode(d); err != nil {
+					return err
+				}
+				return nil
+			}(); err != nil {
+				return errors.Wrap(err, "decode field \"timezone\"")
+			}
+		case "uptime_days":
+			if err := func() error {
+				s.UptimeDays.Reset()
+				if err := s.UptimeDays.Decode(d); err != nil {
+					return err
+				}
+				return nil
+			}(); err != nil {
+				return errors.Wrap(err, "decode field \"uptime_days\"")
+			}
+		default:
+			return errors.Errorf("unexpected field %q", k)
+		}
+		return nil
+	}); err != nil {
+		return errors.Wrap(err, "decode PutStatusPageRequestBody")
+	}
+	// Validate required fields.
+	var failures []validate.FieldError
+	for i, mask := range [2]uint8{
+		0b00100000,
+		0b00000001,
+	} {
+		if result := (requiredBitSet[i] & mask) ^ mask; result != 0 {
+			// Mask only required fields and check equality to mask using XOR.
+			//
+			// If XOR result is not zero, result is not equal to expected, so some fields are missed.
+			// Bits of fields which would be set are actually bits of missed fields.
+			missed := bits.OnesCount8(result)
+			for bitN := 0; bitN < missed; bitN++ {
+				bitIdx := bits.TrailingZeros8(result)
+				fieldIdx := i*8 + bitIdx
+				var name string
+				if fieldIdx < len(jsonFieldsNameOfPutStatusPageRequestBody) {
+					name = jsonFieldsNameOfPutStatusPageRequestBody[fieldIdx]
+				} else {
+					name = strconv.Itoa(fieldIdx)
+				}
+				failures = append(failures, validate.FieldError{
+					Name:  name,
+					Error: validate.ErrFieldRequired,
+				})
+				// Reset bit.
+				result &^= 1 << bitIdx
+			}
+		}
+	}
+	if len(failures) > 0 {
+		return &validate.Error{Fields: failures}
+	}
+
+	return nil
+}
+
+// MarshalJSON implements stdjson.Marshaler.
+func (s *PutStatusPageRequestBody) MarshalJSON() ([]byte, error) {
+	e := jx.Encoder{}
+	s.Encode(&e)
+	return e.Bytes(), nil
+}
+
+// UnmarshalJSON implements stdjson.Unmarshaler.
+func (s *PutStatusPageRequestBody) UnmarshalJSON(data []byte) error {
+	d := jx.DecodeBytes(data)
+	return s.Decode(d)
+}
+
+// Encode encodes PutStatusPageRequestBodyTheme as json.
+func (s PutStatusPageRequestBodyTheme) Encode(e *jx.Encoder) {
+	e.Str(string(s))
+}
+
+// Decode decodes PutStatusPageRequestBodyTheme from json.
+func (s *PutStatusPageRequestBodyTheme) Decode(d *jx.Decoder) error {
+	if s == nil {
+		return errors.New("invalid: unable to decode PutStatusPageRequestBodyTheme to nil")
+	}
+	v, err := d.StrBytes()
+	if err != nil {
+		return err
+	}
+	// Try to use constant string.
+	switch PutStatusPageRequestBodyTheme(v) {
+	case PutStatusPageRequestBodyThemeAUTO:
+		*s = PutStatusPageRequestBodyThemeAUTO
+	case PutStatusPageRequestBodyThemeLIGHT:
+		*s = PutStatusPageRequestBodyThemeLIGHT
+	case PutStatusPageRequestBodyThemeDARK:
+		*s = PutStatusPageRequestBodyThemeDARK
+	default:
+		*s = PutStatusPageRequestBodyTheme(v)
+	}
+
+	return nil
+}
+
+// MarshalJSON implements stdjson.Marshaler.
+func (s PutStatusPageRequestBodyTheme) MarshalJSON() ([]byte, error) {
+	e := jx.Encoder{}
+	s.Encode(&e)
+	return e.Bytes(), nil
+}
+
+// UnmarshalJSON implements stdjson.Unmarshaler.
+func (s *PutStatusPageRequestBodyTheme) UnmarshalJSON(data []byte) error {
 	d := jx.DecodeBytes(data)
 	return s.Decode(d)
 }
@@ -7612,6 +9731,180 @@ func (s SLOResourceSyncStatus) MarshalJSON() ([]byte, error) {
 
 // UnmarshalJSON implements stdjson.Unmarshaler.
 func (s *SLOResourceSyncStatus) UnmarshalJSON(data []byte) error {
+	d := jx.DecodeBytes(data)
+	return s.Decode(d)
+}
+
+// Encode implements json.Marshaler.
+func (s *ScheduleStatusPageMaintenanceRequestBody) Encode(e *jx.Encoder) {
+	e.ObjStart()
+	s.encodeFields(e)
+	e.ObjEnd()
+}
+
+// encodeFields encodes fields.
+func (s *ScheduleStatusPageMaintenanceRequestBody) encodeFields(e *jx.Encoder) {
+	{
+		e.FieldStart("body")
+		e.Str(s.Body)
+	}
+	{
+		e.FieldStart("components")
+		e.ArrStart()
+		for _, elem := range s.Components {
+			elem.Encode(e)
+		}
+		e.ArrEnd()
+	}
+	{
+		e.FieldStart("name")
+		e.Str(s.Name)
+	}
+	{
+		e.FieldStart("scheduled_for")
+		json.EncodeDateTime(e, s.ScheduledFor)
+	}
+	{
+		e.FieldStart("scheduled_until")
+		json.EncodeDateTime(e, s.ScheduledUntil)
+	}
+}
+
+var jsonFieldsNameOfScheduleStatusPageMaintenanceRequestBody = [5]string{
+	0: "body",
+	1: "components",
+	2: "name",
+	3: "scheduled_for",
+	4: "scheduled_until",
+}
+
+// Decode decodes ScheduleStatusPageMaintenanceRequestBody from json.
+func (s *ScheduleStatusPageMaintenanceRequestBody) Decode(d *jx.Decoder) error {
+	if s == nil {
+		return errors.New("invalid: unable to decode ScheduleStatusPageMaintenanceRequestBody to nil")
+	}
+	var requiredBitSet [1]uint8
+
+	if err := d.ObjBytes(func(d *jx.Decoder, k []byte) error {
+		switch string(k) {
+		case "body":
+			requiredBitSet[0] |= 1 << 0
+			if err := func() error {
+				v, err := d.Str()
+				s.Body = string(v)
+				if err != nil {
+					return err
+				}
+				return nil
+			}(); err != nil {
+				return errors.Wrap(err, "decode field \"body\"")
+			}
+		case "components":
+			requiredBitSet[0] |= 1 << 1
+			if err := func() error {
+				s.Components = make([]StatusPageMaintenanceComponentRequest, 0)
+				if err := d.Arr(func(d *jx.Decoder) error {
+					var elem StatusPageMaintenanceComponentRequest
+					if err := elem.Decode(d); err != nil {
+						return err
+					}
+					s.Components = append(s.Components, elem)
+					return nil
+				}); err != nil {
+					return err
+				}
+				return nil
+			}(); err != nil {
+				return errors.Wrap(err, "decode field \"components\"")
+			}
+		case "name":
+			requiredBitSet[0] |= 1 << 2
+			if err := func() error {
+				v, err := d.Str()
+				s.Name = string(v)
+				if err != nil {
+					return err
+				}
+				return nil
+			}(); err != nil {
+				return errors.Wrap(err, "decode field \"name\"")
+			}
+		case "scheduled_for":
+			requiredBitSet[0] |= 1 << 3
+			if err := func() error {
+				v, err := json.DecodeDateTime(d)
+				s.ScheduledFor = v
+				if err != nil {
+					return err
+				}
+				return nil
+			}(); err != nil {
+				return errors.Wrap(err, "decode field \"scheduled_for\"")
+			}
+		case "scheduled_until":
+			requiredBitSet[0] |= 1 << 4
+			if err := func() error {
+				v, err := json.DecodeDateTime(d)
+				s.ScheduledUntil = v
+				if err != nil {
+					return err
+				}
+				return nil
+			}(); err != nil {
+				return errors.Wrap(err, "decode field \"scheduled_until\"")
+			}
+		default:
+			return errors.Errorf("unexpected field %q", k)
+		}
+		return nil
+	}); err != nil {
+		return errors.Wrap(err, "decode ScheduleStatusPageMaintenanceRequestBody")
+	}
+	// Validate required fields.
+	var failures []validate.FieldError
+	for i, mask := range [1]uint8{
+		0b00011111,
+	} {
+		if result := (requiredBitSet[i] & mask) ^ mask; result != 0 {
+			// Mask only required fields and check equality to mask using XOR.
+			//
+			// If XOR result is not zero, result is not equal to expected, so some fields are missed.
+			// Bits of fields which would be set are actually bits of missed fields.
+			missed := bits.OnesCount8(result)
+			for bitN := 0; bitN < missed; bitN++ {
+				bitIdx := bits.TrailingZeros8(result)
+				fieldIdx := i*8 + bitIdx
+				var name string
+				if fieldIdx < len(jsonFieldsNameOfScheduleStatusPageMaintenanceRequestBody) {
+					name = jsonFieldsNameOfScheduleStatusPageMaintenanceRequestBody[fieldIdx]
+				} else {
+					name = strconv.Itoa(fieldIdx)
+				}
+				failures = append(failures, validate.FieldError{
+					Name:  name,
+					Error: validate.ErrFieldRequired,
+				})
+				// Reset bit.
+				result &^= 1 << bitIdx
+			}
+		}
+	}
+	if len(failures) > 0 {
+		return &validate.Error{Fields: failures}
+	}
+
+	return nil
+}
+
+// MarshalJSON implements stdjson.Marshaler.
+func (s *ScheduleStatusPageMaintenanceRequestBody) MarshalJSON() ([]byte, error) {
+	e := jx.Encoder{}
+	s.Encode(&e)
+	return e.Bytes(), nil
+}
+
+// UnmarshalJSON implements stdjson.Unmarshaler.
+func (s *ScheduleStatusPageMaintenanceRequestBody) UnmarshalJSON(data []byte) error {
 	d := jx.DecodeBytes(data)
 	return s.Decode(d)
 }
@@ -9226,6 +11519,3159 @@ func (s SnapshotResourceAgentReachability) MarshalJSON() ([]byte, error) {
 
 // UnmarshalJSON implements stdjson.Unmarshaler.
 func (s *SnapshotResourceAgentReachability) UnmarshalJSON(data []byte) error {
+	d := jx.DecodeBytes(data)
+	return s.Decode(d)
+}
+
+// Encode implements json.Marshaler.
+func (s *StatusPageComponentListResponseBody) Encode(e *jx.Encoder) {
+	e.ObjStart()
+	s.encodeFields(e)
+	e.ObjEnd()
+}
+
+// encodeFields encodes fields.
+func (s *StatusPageComponentListResponseBody) encodeFields(e *jx.Encoder) {
+	{
+		e.FieldStart("data")
+		e.ArrStart()
+		for _, elem := range s.Data {
+			elem.Encode(e)
+		}
+		e.ArrEnd()
+	}
+}
+
+var jsonFieldsNameOfStatusPageComponentListResponseBody = [1]string{
+	0: "data",
+}
+
+// Decode decodes StatusPageComponentListResponseBody from json.
+func (s *StatusPageComponentListResponseBody) Decode(d *jx.Decoder) error {
+	if s == nil {
+		return errors.New("invalid: unable to decode StatusPageComponentListResponseBody to nil")
+	}
+	var requiredBitSet [1]uint8
+
+	if err := d.ObjBytes(func(d *jx.Decoder, k []byte) error {
+		switch string(k) {
+		case "data":
+			requiredBitSet[0] |= 1 << 0
+			if err := func() error {
+				s.Data = make([]StatusPageComponentResource, 0)
+				if err := d.Arr(func(d *jx.Decoder) error {
+					var elem StatusPageComponentResource
+					if err := elem.Decode(d); err != nil {
+						return err
+					}
+					s.Data = append(s.Data, elem)
+					return nil
+				}); err != nil {
+					return err
+				}
+				return nil
+			}(); err != nil {
+				return errors.Wrap(err, "decode field \"data\"")
+			}
+		default:
+			return errors.Errorf("unexpected field %q", k)
+		}
+		return nil
+	}); err != nil {
+		return errors.Wrap(err, "decode StatusPageComponentListResponseBody")
+	}
+	// Validate required fields.
+	var failures []validate.FieldError
+	for i, mask := range [1]uint8{
+		0b00000001,
+	} {
+		if result := (requiredBitSet[i] & mask) ^ mask; result != 0 {
+			// Mask only required fields and check equality to mask using XOR.
+			//
+			// If XOR result is not zero, result is not equal to expected, so some fields are missed.
+			// Bits of fields which would be set are actually bits of missed fields.
+			missed := bits.OnesCount8(result)
+			for bitN := 0; bitN < missed; bitN++ {
+				bitIdx := bits.TrailingZeros8(result)
+				fieldIdx := i*8 + bitIdx
+				var name string
+				if fieldIdx < len(jsonFieldsNameOfStatusPageComponentListResponseBody) {
+					name = jsonFieldsNameOfStatusPageComponentListResponseBody[fieldIdx]
+				} else {
+					name = strconv.Itoa(fieldIdx)
+				}
+				failures = append(failures, validate.FieldError{
+					Name:  name,
+					Error: validate.ErrFieldRequired,
+				})
+				// Reset bit.
+				result &^= 1 << bitIdx
+			}
+		}
+	}
+	if len(failures) > 0 {
+		return &validate.Error{Fields: failures}
+	}
+
+	return nil
+}
+
+// MarshalJSON implements stdjson.Marshaler.
+func (s *StatusPageComponentListResponseBody) MarshalJSON() ([]byte, error) {
+	e := jx.Encoder{}
+	s.Encode(&e)
+	return e.Bytes(), nil
+}
+
+// UnmarshalJSON implements stdjson.Unmarshaler.
+func (s *StatusPageComponentListResponseBody) UnmarshalJSON(data []byte) error {
+	d := jx.DecodeBytes(data)
+	return s.Decode(d)
+}
+
+// Encode implements json.Marshaler.
+func (s *StatusPageComponentResource) Encode(e *jx.Encoder) {
+	e.ObjStart()
+	s.encodeFields(e)
+	e.ObjEnd()
+}
+
+// encodeFields encodes fields.
+func (s *StatusPageComponentResource) encodeFields(e *jx.Encoder) {
+	{
+		e.FieldStart("auto_status_min_severity")
+		s.AutoStatusMinSeverity.Encode(e)
+	}
+	{
+		e.FieldStart("component_id")
+		json.EncodeUUID(e, s.ComponentID)
+	}
+	{
+		e.FieldStart("created_at")
+		json.EncodeDateTime(e, s.CreatedAt)
+	}
+	{
+		e.FieldStart("current_status")
+		s.CurrentStatus.Encode(e)
+	}
+	{
+		e.FieldStart("description")
+		e.Str(s.Description)
+	}
+	{
+		e.FieldStart("group_id")
+		e.Str(s.GroupID)
+	}
+	{
+		e.FieldStart("name")
+		e.Str(s.Name)
+	}
+	{
+		e.FieldStart("only_show_if_degraded")
+		e.Bool(s.OnlyShowIfDegraded)
+	}
+	{
+		e.FieldStart("position")
+		e.Int64(s.Position)
+	}
+	{
+		e.FieldStart("show_uptime")
+		e.Bool(s.ShowUptime)
+	}
+	{
+		e.FieldStart("started_on")
+		json.EncodeDateTime(e, s.StartedOn)
+	}
+	{
+		e.FieldStart("uptime_percent")
+		e.Float64(s.UptimePercent)
+	}
+}
+
+var jsonFieldsNameOfStatusPageComponentResource = [12]string{
+	0:  "auto_status_min_severity",
+	1:  "component_id",
+	2:  "created_at",
+	3:  "current_status",
+	4:  "description",
+	5:  "group_id",
+	6:  "name",
+	7:  "only_show_if_degraded",
+	8:  "position",
+	9:  "show_uptime",
+	10: "started_on",
+	11: "uptime_percent",
+}
+
+// Decode decodes StatusPageComponentResource from json.
+func (s *StatusPageComponentResource) Decode(d *jx.Decoder) error {
+	if s == nil {
+		return errors.New("invalid: unable to decode StatusPageComponentResource to nil")
+	}
+	var requiredBitSet [2]uint8
+
+	if err := d.ObjBytes(func(d *jx.Decoder, k []byte) error {
+		switch string(k) {
+		case "auto_status_min_severity":
+			requiredBitSet[0] |= 1 << 0
+			if err := func() error {
+				if err := s.AutoStatusMinSeverity.Decode(d); err != nil {
+					return err
+				}
+				return nil
+			}(); err != nil {
+				return errors.Wrap(err, "decode field \"auto_status_min_severity\"")
+			}
+		case "component_id":
+			requiredBitSet[0] |= 1 << 1
+			if err := func() error {
+				v, err := json.DecodeUUID(d)
+				s.ComponentID = v
+				if err != nil {
+					return err
+				}
+				return nil
+			}(); err != nil {
+				return errors.Wrap(err, "decode field \"component_id\"")
+			}
+		case "created_at":
+			requiredBitSet[0] |= 1 << 2
+			if err := func() error {
+				v, err := json.DecodeDateTime(d)
+				s.CreatedAt = v
+				if err != nil {
+					return err
+				}
+				return nil
+			}(); err != nil {
+				return errors.Wrap(err, "decode field \"created_at\"")
+			}
+		case "current_status":
+			requiredBitSet[0] |= 1 << 3
+			if err := func() error {
+				if err := s.CurrentStatus.Decode(d); err != nil {
+					return err
+				}
+				return nil
+			}(); err != nil {
+				return errors.Wrap(err, "decode field \"current_status\"")
+			}
+		case "description":
+			requiredBitSet[0] |= 1 << 4
+			if err := func() error {
+				v, err := d.Str()
+				s.Description = string(v)
+				if err != nil {
+					return err
+				}
+				return nil
+			}(); err != nil {
+				return errors.Wrap(err, "decode field \"description\"")
+			}
+		case "group_id":
+			requiredBitSet[0] |= 1 << 5
+			if err := func() error {
+				v, err := d.Str()
+				s.GroupID = string(v)
+				if err != nil {
+					return err
+				}
+				return nil
+			}(); err != nil {
+				return errors.Wrap(err, "decode field \"group_id\"")
+			}
+		case "name":
+			requiredBitSet[0] |= 1 << 6
+			if err := func() error {
+				v, err := d.Str()
+				s.Name = string(v)
+				if err != nil {
+					return err
+				}
+				return nil
+			}(); err != nil {
+				return errors.Wrap(err, "decode field \"name\"")
+			}
+		case "only_show_if_degraded":
+			requiredBitSet[0] |= 1 << 7
+			if err := func() error {
+				v, err := d.Bool()
+				s.OnlyShowIfDegraded = bool(v)
+				if err != nil {
+					return err
+				}
+				return nil
+			}(); err != nil {
+				return errors.Wrap(err, "decode field \"only_show_if_degraded\"")
+			}
+		case "position":
+			requiredBitSet[1] |= 1 << 0
+			if err := func() error {
+				v, err := d.Int64()
+				s.Position = int64(v)
+				if err != nil {
+					return err
+				}
+				return nil
+			}(); err != nil {
+				return errors.Wrap(err, "decode field \"position\"")
+			}
+		case "show_uptime":
+			requiredBitSet[1] |= 1 << 1
+			if err := func() error {
+				v, err := d.Bool()
+				s.ShowUptime = bool(v)
+				if err != nil {
+					return err
+				}
+				return nil
+			}(); err != nil {
+				return errors.Wrap(err, "decode field \"show_uptime\"")
+			}
+		case "started_on":
+			requiredBitSet[1] |= 1 << 2
+			if err := func() error {
+				v, err := json.DecodeDateTime(d)
+				s.StartedOn = v
+				if err != nil {
+					return err
+				}
+				return nil
+			}(); err != nil {
+				return errors.Wrap(err, "decode field \"started_on\"")
+			}
+		case "uptime_percent":
+			requiredBitSet[1] |= 1 << 3
+			if err := func() error {
+				v, err := d.Float64()
+				s.UptimePercent = float64(v)
+				if err != nil {
+					return err
+				}
+				return nil
+			}(); err != nil {
+				return errors.Wrap(err, "decode field \"uptime_percent\"")
+			}
+		default:
+			return errors.Errorf("unexpected field %q", k)
+		}
+		return nil
+	}); err != nil {
+		return errors.Wrap(err, "decode StatusPageComponentResource")
+	}
+	// Validate required fields.
+	var failures []validate.FieldError
+	for i, mask := range [2]uint8{
+		0b11111111,
+		0b00001111,
+	} {
+		if result := (requiredBitSet[i] & mask) ^ mask; result != 0 {
+			// Mask only required fields and check equality to mask using XOR.
+			//
+			// If XOR result is not zero, result is not equal to expected, so some fields are missed.
+			// Bits of fields which would be set are actually bits of missed fields.
+			missed := bits.OnesCount8(result)
+			for bitN := 0; bitN < missed; bitN++ {
+				bitIdx := bits.TrailingZeros8(result)
+				fieldIdx := i*8 + bitIdx
+				var name string
+				if fieldIdx < len(jsonFieldsNameOfStatusPageComponentResource) {
+					name = jsonFieldsNameOfStatusPageComponentResource[fieldIdx]
+				} else {
+					name = strconv.Itoa(fieldIdx)
+				}
+				failures = append(failures, validate.FieldError{
+					Name:  name,
+					Error: validate.ErrFieldRequired,
+				})
+				// Reset bit.
+				result &^= 1 << bitIdx
+			}
+		}
+	}
+	if len(failures) > 0 {
+		return &validate.Error{Fields: failures}
+	}
+
+	return nil
+}
+
+// MarshalJSON implements stdjson.Marshaler.
+func (s *StatusPageComponentResource) MarshalJSON() ([]byte, error) {
+	e := jx.Encoder{}
+	s.Encode(&e)
+	return e.Bytes(), nil
+}
+
+// UnmarshalJSON implements stdjson.Unmarshaler.
+func (s *StatusPageComponentResource) UnmarshalJSON(data []byte) error {
+	d := jx.DecodeBytes(data)
+	return s.Decode(d)
+}
+
+// Encode encodes StatusPageComponentResourceAutoStatusMinSeverity as json.
+func (s StatusPageComponentResourceAutoStatusMinSeverity) Encode(e *jx.Encoder) {
+	e.Str(string(s))
+}
+
+// Decode decodes StatusPageComponentResourceAutoStatusMinSeverity from json.
+func (s *StatusPageComponentResourceAutoStatusMinSeverity) Decode(d *jx.Decoder) error {
+	if s == nil {
+		return errors.New("invalid: unable to decode StatusPageComponentResourceAutoStatusMinSeverity to nil")
+	}
+	v, err := d.StrBytes()
+	if err != nil {
+		return err
+	}
+	// Try to use constant string.
+	switch StatusPageComponentResourceAutoStatusMinSeverity(v) {
+	case StatusPageComponentResourceAutoStatusMinSeverityANY:
+		*s = StatusPageComponentResourceAutoStatusMinSeverityANY
+	case StatusPageComponentResourceAutoStatusMinSeverityINFORMATION:
+		*s = StatusPageComponentResourceAutoStatusMinSeverityINFORMATION
+	case StatusPageComponentResourceAutoStatusMinSeverityWARNING:
+		*s = StatusPageComponentResourceAutoStatusMinSeverityWARNING
+	case StatusPageComponentResourceAutoStatusMinSeverityAVERAGE:
+		*s = StatusPageComponentResourceAutoStatusMinSeverityAVERAGE
+	case StatusPageComponentResourceAutoStatusMinSeverityHIGH:
+		*s = StatusPageComponentResourceAutoStatusMinSeverityHIGH
+	case StatusPageComponentResourceAutoStatusMinSeverityDISASTER:
+		*s = StatusPageComponentResourceAutoStatusMinSeverityDISASTER
+	default:
+		*s = StatusPageComponentResourceAutoStatusMinSeverity(v)
+	}
+
+	return nil
+}
+
+// MarshalJSON implements stdjson.Marshaler.
+func (s StatusPageComponentResourceAutoStatusMinSeverity) MarshalJSON() ([]byte, error) {
+	e := jx.Encoder{}
+	s.Encode(&e)
+	return e.Bytes(), nil
+}
+
+// UnmarshalJSON implements stdjson.Unmarshaler.
+func (s *StatusPageComponentResourceAutoStatusMinSeverity) UnmarshalJSON(data []byte) error {
+	d := jx.DecodeBytes(data)
+	return s.Decode(d)
+}
+
+// Encode encodes StatusPageComponentResourceCurrentStatus as json.
+func (s StatusPageComponentResourceCurrentStatus) Encode(e *jx.Encoder) {
+	e.Str(string(s))
+}
+
+// Decode decodes StatusPageComponentResourceCurrentStatus from json.
+func (s *StatusPageComponentResourceCurrentStatus) Decode(d *jx.Decoder) error {
+	if s == nil {
+		return errors.New("invalid: unable to decode StatusPageComponentResourceCurrentStatus to nil")
+	}
+	v, err := d.StrBytes()
+	if err != nil {
+		return err
+	}
+	// Try to use constant string.
+	switch StatusPageComponentResourceCurrentStatus(v) {
+	case StatusPageComponentResourceCurrentStatusOPERATIONAL:
+		*s = StatusPageComponentResourceCurrentStatusOPERATIONAL
+	case StatusPageComponentResourceCurrentStatusDEGRADEDPERFORMANCE:
+		*s = StatusPageComponentResourceCurrentStatusDEGRADEDPERFORMANCE
+	case StatusPageComponentResourceCurrentStatusPARTIALOUTAGE:
+		*s = StatusPageComponentResourceCurrentStatusPARTIALOUTAGE
+	case StatusPageComponentResourceCurrentStatusMAJOROUTAGE:
+		*s = StatusPageComponentResourceCurrentStatusMAJOROUTAGE
+	case StatusPageComponentResourceCurrentStatusUNDERMAINTENANCE:
+		*s = StatusPageComponentResourceCurrentStatusUNDERMAINTENANCE
+	default:
+		*s = StatusPageComponentResourceCurrentStatus(v)
+	}
+
+	return nil
+}
+
+// MarshalJSON implements stdjson.Marshaler.
+func (s StatusPageComponentResourceCurrentStatus) MarshalJSON() ([]byte, error) {
+	e := jx.Encoder{}
+	s.Encode(&e)
+	return e.Bytes(), nil
+}
+
+// UnmarshalJSON implements stdjson.Unmarshaler.
+func (s *StatusPageComponentResourceCurrentStatus) UnmarshalJSON(data []byte) error {
+	d := jx.DecodeBytes(data)
+	return s.Decode(d)
+}
+
+// Encode implements json.Marshaler.
+func (s *StatusPageComponentSourceServer) Encode(e *jx.Encoder) {
+	e.ObjStart()
+	s.encodeFields(e)
+	e.ObjEnd()
+}
+
+// encodeFields encodes fields.
+func (s *StatusPageComponentSourceServer) encodeFields(e *jx.Encoder) {
+	{
+		e.FieldStart("server_id")
+		json.EncodeUUID(e, s.ServerID)
+	}
+}
+
+var jsonFieldsNameOfStatusPageComponentSourceServer = [1]string{
+	0: "server_id",
+}
+
+// Decode decodes StatusPageComponentSourceServer from json.
+func (s *StatusPageComponentSourceServer) Decode(d *jx.Decoder) error {
+	if s == nil {
+		return errors.New("invalid: unable to decode StatusPageComponentSourceServer to nil")
+	}
+	var requiredBitSet [1]uint8
+
+	if err := d.ObjBytes(func(d *jx.Decoder, k []byte) error {
+		switch string(k) {
+		case "server_id":
+			requiredBitSet[0] |= 1 << 0
+			if err := func() error {
+				v, err := json.DecodeUUID(d)
+				s.ServerID = v
+				if err != nil {
+					return err
+				}
+				return nil
+			}(); err != nil {
+				return errors.Wrap(err, "decode field \"server_id\"")
+			}
+		default:
+			return errors.Errorf("unexpected field %q", k)
+		}
+		return nil
+	}); err != nil {
+		return errors.Wrap(err, "decode StatusPageComponentSourceServer")
+	}
+	// Validate required fields.
+	var failures []validate.FieldError
+	for i, mask := range [1]uint8{
+		0b00000001,
+	} {
+		if result := (requiredBitSet[i] & mask) ^ mask; result != 0 {
+			// Mask only required fields and check equality to mask using XOR.
+			//
+			// If XOR result is not zero, result is not equal to expected, so some fields are missed.
+			// Bits of fields which would be set are actually bits of missed fields.
+			missed := bits.OnesCount8(result)
+			for bitN := 0; bitN < missed; bitN++ {
+				bitIdx := bits.TrailingZeros8(result)
+				fieldIdx := i*8 + bitIdx
+				var name string
+				if fieldIdx < len(jsonFieldsNameOfStatusPageComponentSourceServer) {
+					name = jsonFieldsNameOfStatusPageComponentSourceServer[fieldIdx]
+				} else {
+					name = strconv.Itoa(fieldIdx)
+				}
+				failures = append(failures, validate.FieldError{
+					Name:  name,
+					Error: validate.ErrFieldRequired,
+				})
+				// Reset bit.
+				result &^= 1 << bitIdx
+			}
+		}
+	}
+	if len(failures) > 0 {
+		return &validate.Error{Fields: failures}
+	}
+
+	return nil
+}
+
+// MarshalJSON implements stdjson.Marshaler.
+func (s *StatusPageComponentSourceServer) MarshalJSON() ([]byte, error) {
+	e := jx.Encoder{}
+	s.Encode(&e)
+	return e.Bytes(), nil
+}
+
+// UnmarshalJSON implements stdjson.Unmarshaler.
+func (s *StatusPageComponentSourceServer) UnmarshalJSON(data []byte) error {
+	d := jx.DecodeBytes(data)
+	return s.Decode(d)
+}
+
+// Encode implements json.Marshaler.
+func (s *StatusPageComponentSourceWebCheck) Encode(e *jx.Encoder) {
+	e.ObjStart()
+	s.encodeFields(e)
+	e.ObjEnd()
+}
+
+// encodeFields encodes fields.
+func (s *StatusPageComponentSourceWebCheck) encodeFields(e *jx.Encoder) {
+	{
+		if s.ShowURL.Set {
+			e.FieldStart("show_url")
+			s.ShowURL.Encode(e)
+		}
+	}
+	{
+		e.FieldStart("web_check_id")
+		json.EncodeUUID(e, s.WebCheckID)
+	}
+}
+
+var jsonFieldsNameOfStatusPageComponentSourceWebCheck = [2]string{
+	0: "show_url",
+	1: "web_check_id",
+}
+
+// Decode decodes StatusPageComponentSourceWebCheck from json.
+func (s *StatusPageComponentSourceWebCheck) Decode(d *jx.Decoder) error {
+	if s == nil {
+		return errors.New("invalid: unable to decode StatusPageComponentSourceWebCheck to nil")
+	}
+	var requiredBitSet [1]uint8
+	s.setDefaults()
+
+	if err := d.ObjBytes(func(d *jx.Decoder, k []byte) error {
+		switch string(k) {
+		case "show_url":
+			if err := func() error {
+				s.ShowURL.Reset()
+				if err := s.ShowURL.Decode(d); err != nil {
+					return err
+				}
+				return nil
+			}(); err != nil {
+				return errors.Wrap(err, "decode field \"show_url\"")
+			}
+		case "web_check_id":
+			requiredBitSet[0] |= 1 << 1
+			if err := func() error {
+				v, err := json.DecodeUUID(d)
+				s.WebCheckID = v
+				if err != nil {
+					return err
+				}
+				return nil
+			}(); err != nil {
+				return errors.Wrap(err, "decode field \"web_check_id\"")
+			}
+		default:
+			return errors.Errorf("unexpected field %q", k)
+		}
+		return nil
+	}); err != nil {
+		return errors.Wrap(err, "decode StatusPageComponentSourceWebCheck")
+	}
+	// Validate required fields.
+	var failures []validate.FieldError
+	for i, mask := range [1]uint8{
+		0b00000010,
+	} {
+		if result := (requiredBitSet[i] & mask) ^ mask; result != 0 {
+			// Mask only required fields and check equality to mask using XOR.
+			//
+			// If XOR result is not zero, result is not equal to expected, so some fields are missed.
+			// Bits of fields which would be set are actually bits of missed fields.
+			missed := bits.OnesCount8(result)
+			for bitN := 0; bitN < missed; bitN++ {
+				bitIdx := bits.TrailingZeros8(result)
+				fieldIdx := i*8 + bitIdx
+				var name string
+				if fieldIdx < len(jsonFieldsNameOfStatusPageComponentSourceWebCheck) {
+					name = jsonFieldsNameOfStatusPageComponentSourceWebCheck[fieldIdx]
+				} else {
+					name = strconv.Itoa(fieldIdx)
+				}
+				failures = append(failures, validate.FieldError{
+					Name:  name,
+					Error: validate.ErrFieldRequired,
+				})
+				// Reset bit.
+				result &^= 1 << bitIdx
+			}
+		}
+	}
+	if len(failures) > 0 {
+		return &validate.Error{Fields: failures}
+	}
+
+	return nil
+}
+
+// MarshalJSON implements stdjson.Marshaler.
+func (s *StatusPageComponentSourceWebCheck) MarshalJSON() ([]byte, error) {
+	e := jx.Encoder{}
+	s.Encode(&e)
+	return e.Bytes(), nil
+}
+
+// UnmarshalJSON implements stdjson.Unmarshaler.
+func (s *StatusPageComponentSourceWebCheck) UnmarshalJSON(data []byte) error {
+	d := jx.DecodeBytes(data)
+	return s.Decode(d)
+}
+
+// Encode implements json.Marshaler.
+func (s *StatusPageComponentSourcesResource) Encode(e *jx.Encoder) {
+	e.ObjStart()
+	s.encodeFields(e)
+	e.ObjEnd()
+}
+
+// encodeFields encodes fields.
+func (s *StatusPageComponentSourcesResource) encodeFields(e *jx.Encoder) {
+	{
+		e.FieldStart("servers")
+		e.ArrStart()
+		for _, elem := range s.Servers {
+			elem.Encode(e)
+		}
+		e.ArrEnd()
+	}
+	{
+		e.FieldStart("web_checks")
+		e.ArrStart()
+		for _, elem := range s.WebChecks {
+			elem.Encode(e)
+		}
+		e.ArrEnd()
+	}
+}
+
+var jsonFieldsNameOfStatusPageComponentSourcesResource = [2]string{
+	0: "servers",
+	1: "web_checks",
+}
+
+// Decode decodes StatusPageComponentSourcesResource from json.
+func (s *StatusPageComponentSourcesResource) Decode(d *jx.Decoder) error {
+	if s == nil {
+		return errors.New("invalid: unable to decode StatusPageComponentSourcesResource to nil")
+	}
+	var requiredBitSet [1]uint8
+
+	if err := d.ObjBytes(func(d *jx.Decoder, k []byte) error {
+		switch string(k) {
+		case "servers":
+			requiredBitSet[0] |= 1 << 0
+			if err := func() error {
+				s.Servers = make([]StatusPageComponentSourceServer, 0)
+				if err := d.Arr(func(d *jx.Decoder) error {
+					var elem StatusPageComponentSourceServer
+					if err := elem.Decode(d); err != nil {
+						return err
+					}
+					s.Servers = append(s.Servers, elem)
+					return nil
+				}); err != nil {
+					return err
+				}
+				return nil
+			}(); err != nil {
+				return errors.Wrap(err, "decode field \"servers\"")
+			}
+		case "web_checks":
+			requiredBitSet[0] |= 1 << 1
+			if err := func() error {
+				s.WebChecks = make([]StatusPageComponentSourceWebCheck, 0)
+				if err := d.Arr(func(d *jx.Decoder) error {
+					var elem StatusPageComponentSourceWebCheck
+					if err := elem.Decode(d); err != nil {
+						return err
+					}
+					s.WebChecks = append(s.WebChecks, elem)
+					return nil
+				}); err != nil {
+					return err
+				}
+				return nil
+			}(); err != nil {
+				return errors.Wrap(err, "decode field \"web_checks\"")
+			}
+		default:
+			return errors.Errorf("unexpected field %q", k)
+		}
+		return nil
+	}); err != nil {
+		return errors.Wrap(err, "decode StatusPageComponentSourcesResource")
+	}
+	// Validate required fields.
+	var failures []validate.FieldError
+	for i, mask := range [1]uint8{
+		0b00000011,
+	} {
+		if result := (requiredBitSet[i] & mask) ^ mask; result != 0 {
+			// Mask only required fields and check equality to mask using XOR.
+			//
+			// If XOR result is not zero, result is not equal to expected, so some fields are missed.
+			// Bits of fields which would be set are actually bits of missed fields.
+			missed := bits.OnesCount8(result)
+			for bitN := 0; bitN < missed; bitN++ {
+				bitIdx := bits.TrailingZeros8(result)
+				fieldIdx := i*8 + bitIdx
+				var name string
+				if fieldIdx < len(jsonFieldsNameOfStatusPageComponentSourcesResource) {
+					name = jsonFieldsNameOfStatusPageComponentSourcesResource[fieldIdx]
+				} else {
+					name = strconv.Itoa(fieldIdx)
+				}
+				failures = append(failures, validate.FieldError{
+					Name:  name,
+					Error: validate.ErrFieldRequired,
+				})
+				// Reset bit.
+				result &^= 1 << bitIdx
+			}
+		}
+	}
+	if len(failures) > 0 {
+		return &validate.Error{Fields: failures}
+	}
+
+	return nil
+}
+
+// MarshalJSON implements stdjson.Marshaler.
+func (s *StatusPageComponentSourcesResource) MarshalJSON() ([]byte, error) {
+	e := jx.Encoder{}
+	s.Encode(&e)
+	return e.Bytes(), nil
+}
+
+// UnmarshalJSON implements stdjson.Unmarshaler.
+func (s *StatusPageComponentSourcesResource) UnmarshalJSON(data []byte) error {
+	d := jx.DecodeBytes(data)
+	return s.Decode(d)
+}
+
+// Encode implements json.Marshaler.
+func (s *StatusPageGroupListResponseBody) Encode(e *jx.Encoder) {
+	e.ObjStart()
+	s.encodeFields(e)
+	e.ObjEnd()
+}
+
+// encodeFields encodes fields.
+func (s *StatusPageGroupListResponseBody) encodeFields(e *jx.Encoder) {
+	{
+		e.FieldStart("data")
+		e.ArrStart()
+		for _, elem := range s.Data {
+			elem.Encode(e)
+		}
+		e.ArrEnd()
+	}
+}
+
+var jsonFieldsNameOfStatusPageGroupListResponseBody = [1]string{
+	0: "data",
+}
+
+// Decode decodes StatusPageGroupListResponseBody from json.
+func (s *StatusPageGroupListResponseBody) Decode(d *jx.Decoder) error {
+	if s == nil {
+		return errors.New("invalid: unable to decode StatusPageGroupListResponseBody to nil")
+	}
+	var requiredBitSet [1]uint8
+
+	if err := d.ObjBytes(func(d *jx.Decoder, k []byte) error {
+		switch string(k) {
+		case "data":
+			requiredBitSet[0] |= 1 << 0
+			if err := func() error {
+				s.Data = make([]StatusPageGroupResource, 0)
+				if err := d.Arr(func(d *jx.Decoder) error {
+					var elem StatusPageGroupResource
+					if err := elem.Decode(d); err != nil {
+						return err
+					}
+					s.Data = append(s.Data, elem)
+					return nil
+				}); err != nil {
+					return err
+				}
+				return nil
+			}(); err != nil {
+				return errors.Wrap(err, "decode field \"data\"")
+			}
+		default:
+			return errors.Errorf("unexpected field %q", k)
+		}
+		return nil
+	}); err != nil {
+		return errors.Wrap(err, "decode StatusPageGroupListResponseBody")
+	}
+	// Validate required fields.
+	var failures []validate.FieldError
+	for i, mask := range [1]uint8{
+		0b00000001,
+	} {
+		if result := (requiredBitSet[i] & mask) ^ mask; result != 0 {
+			// Mask only required fields and check equality to mask using XOR.
+			//
+			// If XOR result is not zero, result is not equal to expected, so some fields are missed.
+			// Bits of fields which would be set are actually bits of missed fields.
+			missed := bits.OnesCount8(result)
+			for bitN := 0; bitN < missed; bitN++ {
+				bitIdx := bits.TrailingZeros8(result)
+				fieldIdx := i*8 + bitIdx
+				var name string
+				if fieldIdx < len(jsonFieldsNameOfStatusPageGroupListResponseBody) {
+					name = jsonFieldsNameOfStatusPageGroupListResponseBody[fieldIdx]
+				} else {
+					name = strconv.Itoa(fieldIdx)
+				}
+				failures = append(failures, validate.FieldError{
+					Name:  name,
+					Error: validate.ErrFieldRequired,
+				})
+				// Reset bit.
+				result &^= 1 << bitIdx
+			}
+		}
+	}
+	if len(failures) > 0 {
+		return &validate.Error{Fields: failures}
+	}
+
+	return nil
+}
+
+// MarshalJSON implements stdjson.Marshaler.
+func (s *StatusPageGroupListResponseBody) MarshalJSON() ([]byte, error) {
+	e := jx.Encoder{}
+	s.Encode(&e)
+	return e.Bytes(), nil
+}
+
+// UnmarshalJSON implements stdjson.Unmarshaler.
+func (s *StatusPageGroupListResponseBody) UnmarshalJSON(data []byte) error {
+	d := jx.DecodeBytes(data)
+	return s.Decode(d)
+}
+
+// Encode implements json.Marshaler.
+func (s *StatusPageGroupResource) Encode(e *jx.Encoder) {
+	e.ObjStart()
+	s.encodeFields(e)
+	e.ObjEnd()
+}
+
+// encodeFields encodes fields.
+func (s *StatusPageGroupResource) encodeFields(e *jx.Encoder) {
+	{
+		e.FieldStart("collapsed")
+		e.Bool(s.Collapsed)
+	}
+	{
+		e.FieldStart("created_at")
+		json.EncodeDateTime(e, s.CreatedAt)
+	}
+	{
+		e.FieldStart("description")
+		e.Str(s.Description)
+	}
+	{
+		e.FieldStart("group_id")
+		json.EncodeUUID(e, s.GroupID)
+	}
+	{
+		e.FieldStart("name")
+		e.Str(s.Name)
+	}
+	{
+		e.FieldStart("position")
+		e.Int64(s.Position)
+	}
+}
+
+var jsonFieldsNameOfStatusPageGroupResource = [6]string{
+	0: "collapsed",
+	1: "created_at",
+	2: "description",
+	3: "group_id",
+	4: "name",
+	5: "position",
+}
+
+// Decode decodes StatusPageGroupResource from json.
+func (s *StatusPageGroupResource) Decode(d *jx.Decoder) error {
+	if s == nil {
+		return errors.New("invalid: unable to decode StatusPageGroupResource to nil")
+	}
+	var requiredBitSet [1]uint8
+
+	if err := d.ObjBytes(func(d *jx.Decoder, k []byte) error {
+		switch string(k) {
+		case "collapsed":
+			requiredBitSet[0] |= 1 << 0
+			if err := func() error {
+				v, err := d.Bool()
+				s.Collapsed = bool(v)
+				if err != nil {
+					return err
+				}
+				return nil
+			}(); err != nil {
+				return errors.Wrap(err, "decode field \"collapsed\"")
+			}
+		case "created_at":
+			requiredBitSet[0] |= 1 << 1
+			if err := func() error {
+				v, err := json.DecodeDateTime(d)
+				s.CreatedAt = v
+				if err != nil {
+					return err
+				}
+				return nil
+			}(); err != nil {
+				return errors.Wrap(err, "decode field \"created_at\"")
+			}
+		case "description":
+			requiredBitSet[0] |= 1 << 2
+			if err := func() error {
+				v, err := d.Str()
+				s.Description = string(v)
+				if err != nil {
+					return err
+				}
+				return nil
+			}(); err != nil {
+				return errors.Wrap(err, "decode field \"description\"")
+			}
+		case "group_id":
+			requiredBitSet[0] |= 1 << 3
+			if err := func() error {
+				v, err := json.DecodeUUID(d)
+				s.GroupID = v
+				if err != nil {
+					return err
+				}
+				return nil
+			}(); err != nil {
+				return errors.Wrap(err, "decode field \"group_id\"")
+			}
+		case "name":
+			requiredBitSet[0] |= 1 << 4
+			if err := func() error {
+				v, err := d.Str()
+				s.Name = string(v)
+				if err != nil {
+					return err
+				}
+				return nil
+			}(); err != nil {
+				return errors.Wrap(err, "decode field \"name\"")
+			}
+		case "position":
+			requiredBitSet[0] |= 1 << 5
+			if err := func() error {
+				v, err := d.Int64()
+				s.Position = int64(v)
+				if err != nil {
+					return err
+				}
+				return nil
+			}(); err != nil {
+				return errors.Wrap(err, "decode field \"position\"")
+			}
+		default:
+			return errors.Errorf("unexpected field %q", k)
+		}
+		return nil
+	}); err != nil {
+		return errors.Wrap(err, "decode StatusPageGroupResource")
+	}
+	// Validate required fields.
+	var failures []validate.FieldError
+	for i, mask := range [1]uint8{
+		0b00111111,
+	} {
+		if result := (requiredBitSet[i] & mask) ^ mask; result != 0 {
+			// Mask only required fields and check equality to mask using XOR.
+			//
+			// If XOR result is not zero, result is not equal to expected, so some fields are missed.
+			// Bits of fields which would be set are actually bits of missed fields.
+			missed := bits.OnesCount8(result)
+			for bitN := 0; bitN < missed; bitN++ {
+				bitIdx := bits.TrailingZeros8(result)
+				fieldIdx := i*8 + bitIdx
+				var name string
+				if fieldIdx < len(jsonFieldsNameOfStatusPageGroupResource) {
+					name = jsonFieldsNameOfStatusPageGroupResource[fieldIdx]
+				} else {
+					name = strconv.Itoa(fieldIdx)
+				}
+				failures = append(failures, validate.FieldError{
+					Name:  name,
+					Error: validate.ErrFieldRequired,
+				})
+				// Reset bit.
+				result &^= 1 << bitIdx
+			}
+		}
+	}
+	if len(failures) > 0 {
+		return &validate.Error{Fields: failures}
+	}
+
+	return nil
+}
+
+// MarshalJSON implements stdjson.Marshaler.
+func (s *StatusPageGroupResource) MarshalJSON() ([]byte, error) {
+	e := jx.Encoder{}
+	s.Encode(&e)
+	return e.Bytes(), nil
+}
+
+// UnmarshalJSON implements stdjson.Unmarshaler.
+func (s *StatusPageGroupResource) UnmarshalJSON(data []byte) error {
+	d := jx.DecodeBytes(data)
+	return s.Decode(d)
+}
+
+// Encode implements json.Marshaler.
+func (s *StatusPageIncidentComponentRequest) Encode(e *jx.Encoder) {
+	e.ObjStart()
+	s.encodeFields(e)
+	e.ObjEnd()
+}
+
+// encodeFields encodes fields.
+func (s *StatusPageIncidentComponentRequest) encodeFields(e *jx.Encoder) {
+	{
+		e.FieldStart("component_id")
+		json.EncodeUUID(e, s.ComponentID)
+	}
+	{
+		if s.Status.Set {
+			e.FieldStart("status")
+			s.Status.Encode(e)
+		}
+	}
+}
+
+var jsonFieldsNameOfStatusPageIncidentComponentRequest = [2]string{
+	0: "component_id",
+	1: "status",
+}
+
+// Decode decodes StatusPageIncidentComponentRequest from json.
+func (s *StatusPageIncidentComponentRequest) Decode(d *jx.Decoder) error {
+	if s == nil {
+		return errors.New("invalid: unable to decode StatusPageIncidentComponentRequest to nil")
+	}
+	var requiredBitSet [1]uint8
+
+	if err := d.ObjBytes(func(d *jx.Decoder, k []byte) error {
+		switch string(k) {
+		case "component_id":
+			requiredBitSet[0] |= 1 << 0
+			if err := func() error {
+				v, err := json.DecodeUUID(d)
+				s.ComponentID = v
+				if err != nil {
+					return err
+				}
+				return nil
+			}(); err != nil {
+				return errors.Wrap(err, "decode field \"component_id\"")
+			}
+		case "status":
+			if err := func() error {
+				s.Status.Reset()
+				if err := s.Status.Decode(d); err != nil {
+					return err
+				}
+				return nil
+			}(); err != nil {
+				return errors.Wrap(err, "decode field \"status\"")
+			}
+		default:
+			return errors.Errorf("unexpected field %q", k)
+		}
+		return nil
+	}); err != nil {
+		return errors.Wrap(err, "decode StatusPageIncidentComponentRequest")
+	}
+	// Validate required fields.
+	var failures []validate.FieldError
+	for i, mask := range [1]uint8{
+		0b00000001,
+	} {
+		if result := (requiredBitSet[i] & mask) ^ mask; result != 0 {
+			// Mask only required fields and check equality to mask using XOR.
+			//
+			// If XOR result is not zero, result is not equal to expected, so some fields are missed.
+			// Bits of fields which would be set are actually bits of missed fields.
+			missed := bits.OnesCount8(result)
+			for bitN := 0; bitN < missed; bitN++ {
+				bitIdx := bits.TrailingZeros8(result)
+				fieldIdx := i*8 + bitIdx
+				var name string
+				if fieldIdx < len(jsonFieldsNameOfStatusPageIncidentComponentRequest) {
+					name = jsonFieldsNameOfStatusPageIncidentComponentRequest[fieldIdx]
+				} else {
+					name = strconv.Itoa(fieldIdx)
+				}
+				failures = append(failures, validate.FieldError{
+					Name:  name,
+					Error: validate.ErrFieldRequired,
+				})
+				// Reset bit.
+				result &^= 1 << bitIdx
+			}
+		}
+	}
+	if len(failures) > 0 {
+		return &validate.Error{Fields: failures}
+	}
+
+	return nil
+}
+
+// MarshalJSON implements stdjson.Marshaler.
+func (s *StatusPageIncidentComponentRequest) MarshalJSON() ([]byte, error) {
+	e := jx.Encoder{}
+	s.Encode(&e)
+	return e.Bytes(), nil
+}
+
+// UnmarshalJSON implements stdjson.Unmarshaler.
+func (s *StatusPageIncidentComponentRequest) UnmarshalJSON(data []byte) error {
+	d := jx.DecodeBytes(data)
+	return s.Decode(d)
+}
+
+// Encode encodes StatusPageIncidentComponentRequestStatus as json.
+func (s StatusPageIncidentComponentRequestStatus) Encode(e *jx.Encoder) {
+	e.Str(string(s))
+}
+
+// Decode decodes StatusPageIncidentComponentRequestStatus from json.
+func (s *StatusPageIncidentComponentRequestStatus) Decode(d *jx.Decoder) error {
+	if s == nil {
+		return errors.New("invalid: unable to decode StatusPageIncidentComponentRequestStatus to nil")
+	}
+	v, err := d.StrBytes()
+	if err != nil {
+		return err
+	}
+	// Try to use constant string.
+	switch StatusPageIncidentComponentRequestStatus(v) {
+	case StatusPageIncidentComponentRequestStatusOPERATIONAL:
+		*s = StatusPageIncidentComponentRequestStatusOPERATIONAL
+	case StatusPageIncidentComponentRequestStatusDEGRADEDPERFORMANCE:
+		*s = StatusPageIncidentComponentRequestStatusDEGRADEDPERFORMANCE
+	case StatusPageIncidentComponentRequestStatusPARTIALOUTAGE:
+		*s = StatusPageIncidentComponentRequestStatusPARTIALOUTAGE
+	case StatusPageIncidentComponentRequestStatusMAJOROUTAGE:
+		*s = StatusPageIncidentComponentRequestStatusMAJOROUTAGE
+	case StatusPageIncidentComponentRequestStatusUNDERMAINTENANCE:
+		*s = StatusPageIncidentComponentRequestStatusUNDERMAINTENANCE
+	default:
+		*s = StatusPageIncidentComponentRequestStatus(v)
+	}
+
+	return nil
+}
+
+// MarshalJSON implements stdjson.Marshaler.
+func (s StatusPageIncidentComponentRequestStatus) MarshalJSON() ([]byte, error) {
+	e := jx.Encoder{}
+	s.Encode(&e)
+	return e.Bytes(), nil
+}
+
+// UnmarshalJSON implements stdjson.Unmarshaler.
+func (s *StatusPageIncidentComponentRequestStatus) UnmarshalJSON(data []byte) error {
+	d := jx.DecodeBytes(data)
+	return s.Decode(d)
+}
+
+// Encode implements json.Marshaler.
+func (s *StatusPageIncidentComponentResource) Encode(e *jx.Encoder) {
+	e.ObjStart()
+	s.encodeFields(e)
+	e.ObjEnd()
+}
+
+// encodeFields encodes fields.
+func (s *StatusPageIncidentComponentResource) encodeFields(e *jx.Encoder) {
+	{
+		e.FieldStart("component_id")
+		json.EncodeUUID(e, s.ComponentID)
+	}
+	{
+		e.FieldStart("component_name")
+		e.Str(s.ComponentName)
+	}
+	{
+		e.FieldStart("new_status")
+		s.NewStatus.Encode(e)
+	}
+	{
+		e.FieldStart("old_status")
+		s.OldStatus.Encode(e)
+	}
+}
+
+var jsonFieldsNameOfStatusPageIncidentComponentResource = [4]string{
+	0: "component_id",
+	1: "component_name",
+	2: "new_status",
+	3: "old_status",
+}
+
+// Decode decodes StatusPageIncidentComponentResource from json.
+func (s *StatusPageIncidentComponentResource) Decode(d *jx.Decoder) error {
+	if s == nil {
+		return errors.New("invalid: unable to decode StatusPageIncidentComponentResource to nil")
+	}
+	var requiredBitSet [1]uint8
+
+	if err := d.ObjBytes(func(d *jx.Decoder, k []byte) error {
+		switch string(k) {
+		case "component_id":
+			requiredBitSet[0] |= 1 << 0
+			if err := func() error {
+				v, err := json.DecodeUUID(d)
+				s.ComponentID = v
+				if err != nil {
+					return err
+				}
+				return nil
+			}(); err != nil {
+				return errors.Wrap(err, "decode field \"component_id\"")
+			}
+		case "component_name":
+			requiredBitSet[0] |= 1 << 1
+			if err := func() error {
+				v, err := d.Str()
+				s.ComponentName = string(v)
+				if err != nil {
+					return err
+				}
+				return nil
+			}(); err != nil {
+				return errors.Wrap(err, "decode field \"component_name\"")
+			}
+		case "new_status":
+			requiredBitSet[0] |= 1 << 2
+			if err := func() error {
+				if err := s.NewStatus.Decode(d); err != nil {
+					return err
+				}
+				return nil
+			}(); err != nil {
+				return errors.Wrap(err, "decode field \"new_status\"")
+			}
+		case "old_status":
+			requiredBitSet[0] |= 1 << 3
+			if err := func() error {
+				if err := s.OldStatus.Decode(d); err != nil {
+					return err
+				}
+				return nil
+			}(); err != nil {
+				return errors.Wrap(err, "decode field \"old_status\"")
+			}
+		default:
+			return errors.Errorf("unexpected field %q", k)
+		}
+		return nil
+	}); err != nil {
+		return errors.Wrap(err, "decode StatusPageIncidentComponentResource")
+	}
+	// Validate required fields.
+	var failures []validate.FieldError
+	for i, mask := range [1]uint8{
+		0b00001111,
+	} {
+		if result := (requiredBitSet[i] & mask) ^ mask; result != 0 {
+			// Mask only required fields and check equality to mask using XOR.
+			//
+			// If XOR result is not zero, result is not equal to expected, so some fields are missed.
+			// Bits of fields which would be set are actually bits of missed fields.
+			missed := bits.OnesCount8(result)
+			for bitN := 0; bitN < missed; bitN++ {
+				bitIdx := bits.TrailingZeros8(result)
+				fieldIdx := i*8 + bitIdx
+				var name string
+				if fieldIdx < len(jsonFieldsNameOfStatusPageIncidentComponentResource) {
+					name = jsonFieldsNameOfStatusPageIncidentComponentResource[fieldIdx]
+				} else {
+					name = strconv.Itoa(fieldIdx)
+				}
+				failures = append(failures, validate.FieldError{
+					Name:  name,
+					Error: validate.ErrFieldRequired,
+				})
+				// Reset bit.
+				result &^= 1 << bitIdx
+			}
+		}
+	}
+	if len(failures) > 0 {
+		return &validate.Error{Fields: failures}
+	}
+
+	return nil
+}
+
+// MarshalJSON implements stdjson.Marshaler.
+func (s *StatusPageIncidentComponentResource) MarshalJSON() ([]byte, error) {
+	e := jx.Encoder{}
+	s.Encode(&e)
+	return e.Bytes(), nil
+}
+
+// UnmarshalJSON implements stdjson.Unmarshaler.
+func (s *StatusPageIncidentComponentResource) UnmarshalJSON(data []byte) error {
+	d := jx.DecodeBytes(data)
+	return s.Decode(d)
+}
+
+// Encode encodes StatusPageIncidentComponentResourceNewStatus as json.
+func (s StatusPageIncidentComponentResourceNewStatus) Encode(e *jx.Encoder) {
+	e.Str(string(s))
+}
+
+// Decode decodes StatusPageIncidentComponentResourceNewStatus from json.
+func (s *StatusPageIncidentComponentResourceNewStatus) Decode(d *jx.Decoder) error {
+	if s == nil {
+		return errors.New("invalid: unable to decode StatusPageIncidentComponentResourceNewStatus to nil")
+	}
+	v, err := d.StrBytes()
+	if err != nil {
+		return err
+	}
+	// Try to use constant string.
+	switch StatusPageIncidentComponentResourceNewStatus(v) {
+	case StatusPageIncidentComponentResourceNewStatusOPERATIONAL:
+		*s = StatusPageIncidentComponentResourceNewStatusOPERATIONAL
+	case StatusPageIncidentComponentResourceNewStatusDEGRADEDPERFORMANCE:
+		*s = StatusPageIncidentComponentResourceNewStatusDEGRADEDPERFORMANCE
+	case StatusPageIncidentComponentResourceNewStatusPARTIALOUTAGE:
+		*s = StatusPageIncidentComponentResourceNewStatusPARTIALOUTAGE
+	case StatusPageIncidentComponentResourceNewStatusMAJOROUTAGE:
+		*s = StatusPageIncidentComponentResourceNewStatusMAJOROUTAGE
+	case StatusPageIncidentComponentResourceNewStatusUNDERMAINTENANCE:
+		*s = StatusPageIncidentComponentResourceNewStatusUNDERMAINTENANCE
+	default:
+		*s = StatusPageIncidentComponentResourceNewStatus(v)
+	}
+
+	return nil
+}
+
+// MarshalJSON implements stdjson.Marshaler.
+func (s StatusPageIncidentComponentResourceNewStatus) MarshalJSON() ([]byte, error) {
+	e := jx.Encoder{}
+	s.Encode(&e)
+	return e.Bytes(), nil
+}
+
+// UnmarshalJSON implements stdjson.Unmarshaler.
+func (s *StatusPageIncidentComponentResourceNewStatus) UnmarshalJSON(data []byte) error {
+	d := jx.DecodeBytes(data)
+	return s.Decode(d)
+}
+
+// Encode encodes StatusPageIncidentComponentResourceOldStatus as json.
+func (s StatusPageIncidentComponentResourceOldStatus) Encode(e *jx.Encoder) {
+	e.Str(string(s))
+}
+
+// Decode decodes StatusPageIncidentComponentResourceOldStatus from json.
+func (s *StatusPageIncidentComponentResourceOldStatus) Decode(d *jx.Decoder) error {
+	if s == nil {
+		return errors.New("invalid: unable to decode StatusPageIncidentComponentResourceOldStatus to nil")
+	}
+	v, err := d.StrBytes()
+	if err != nil {
+		return err
+	}
+	// Try to use constant string.
+	switch StatusPageIncidentComponentResourceOldStatus(v) {
+	case StatusPageIncidentComponentResourceOldStatusOPERATIONAL:
+		*s = StatusPageIncidentComponentResourceOldStatusOPERATIONAL
+	case StatusPageIncidentComponentResourceOldStatusDEGRADEDPERFORMANCE:
+		*s = StatusPageIncidentComponentResourceOldStatusDEGRADEDPERFORMANCE
+	case StatusPageIncidentComponentResourceOldStatusPARTIALOUTAGE:
+		*s = StatusPageIncidentComponentResourceOldStatusPARTIALOUTAGE
+	case StatusPageIncidentComponentResourceOldStatusMAJOROUTAGE:
+		*s = StatusPageIncidentComponentResourceOldStatusMAJOROUTAGE
+	case StatusPageIncidentComponentResourceOldStatusUNDERMAINTENANCE:
+		*s = StatusPageIncidentComponentResourceOldStatusUNDERMAINTENANCE
+	default:
+		*s = StatusPageIncidentComponentResourceOldStatus(v)
+	}
+
+	return nil
+}
+
+// MarshalJSON implements stdjson.Marshaler.
+func (s StatusPageIncidentComponentResourceOldStatus) MarshalJSON() ([]byte, error) {
+	e := jx.Encoder{}
+	s.Encode(&e)
+	return e.Bytes(), nil
+}
+
+// UnmarshalJSON implements stdjson.Unmarshaler.
+func (s *StatusPageIncidentComponentResourceOldStatus) UnmarshalJSON(data []byte) error {
+	d := jx.DecodeBytes(data)
+	return s.Decode(d)
+}
+
+// Encode implements json.Marshaler.
+func (s *StatusPageIncidentResource) Encode(e *jx.Encoder) {
+	e.ObjStart()
+	s.encodeFields(e)
+	e.ObjEnd()
+}
+
+// encodeFields encodes fields.
+func (s *StatusPageIncidentResource) encodeFields(e *jx.Encoder) {
+	{
+		e.FieldStart("impact")
+		s.Impact.Encode(e)
+	}
+	{
+		e.FieldStart("incident_id")
+		json.EncodeUUID(e, s.IncidentID)
+	}
+	{
+		e.FieldStart("incident_status")
+		s.IncidentStatus.Encode(e)
+	}
+	{
+		e.FieldStart("name")
+		e.Str(s.Name)
+	}
+	{
+		e.FieldStart("published_at")
+		json.EncodeDateTime(e, s.PublishedAt)
+	}
+	{
+		e.FieldStart("resolved_at")
+		s.ResolvedAt.Encode(e, json.EncodeDateTime)
+	}
+	{
+		e.FieldStart("started_at")
+		json.EncodeDateTime(e, s.StartedAt)
+	}
+	{
+		e.FieldStart("updates")
+		if s.Updates == nil {
+			e.Null()
+		} else {
+			e.ArrStart()
+			for _, elem := range s.Updates {
+				elem.Encode(e)
+			}
+			e.ArrEnd()
+		}
+	}
+}
+
+var jsonFieldsNameOfStatusPageIncidentResource = [8]string{
+	0: "impact",
+	1: "incident_id",
+	2: "incident_status",
+	3: "name",
+	4: "published_at",
+	5: "resolved_at",
+	6: "started_at",
+	7: "updates",
+}
+
+// Decode decodes StatusPageIncidentResource from json.
+func (s *StatusPageIncidentResource) Decode(d *jx.Decoder) error {
+	if s == nil {
+		return errors.New("invalid: unable to decode StatusPageIncidentResource to nil")
+	}
+	var requiredBitSet [1]uint8
+
+	if err := d.ObjBytes(func(d *jx.Decoder, k []byte) error {
+		switch string(k) {
+		case "impact":
+			requiredBitSet[0] |= 1 << 0
+			if err := func() error {
+				if err := s.Impact.Decode(d); err != nil {
+					return err
+				}
+				return nil
+			}(); err != nil {
+				return errors.Wrap(err, "decode field \"impact\"")
+			}
+		case "incident_id":
+			requiredBitSet[0] |= 1 << 1
+			if err := func() error {
+				v, err := json.DecodeUUID(d)
+				s.IncidentID = v
+				if err != nil {
+					return err
+				}
+				return nil
+			}(); err != nil {
+				return errors.Wrap(err, "decode field \"incident_id\"")
+			}
+		case "incident_status":
+			requiredBitSet[0] |= 1 << 2
+			if err := func() error {
+				if err := s.IncidentStatus.Decode(d); err != nil {
+					return err
+				}
+				return nil
+			}(); err != nil {
+				return errors.Wrap(err, "decode field \"incident_status\"")
+			}
+		case "name":
+			requiredBitSet[0] |= 1 << 3
+			if err := func() error {
+				v, err := d.Str()
+				s.Name = string(v)
+				if err != nil {
+					return err
+				}
+				return nil
+			}(); err != nil {
+				return errors.Wrap(err, "decode field \"name\"")
+			}
+		case "published_at":
+			requiredBitSet[0] |= 1 << 4
+			if err := func() error {
+				v, err := json.DecodeDateTime(d)
+				s.PublishedAt = v
+				if err != nil {
+					return err
+				}
+				return nil
+			}(); err != nil {
+				return errors.Wrap(err, "decode field \"published_at\"")
+			}
+		case "resolved_at":
+			requiredBitSet[0] |= 1 << 5
+			if err := func() error {
+				if err := s.ResolvedAt.Decode(d, json.DecodeDateTime); err != nil {
+					return err
+				}
+				return nil
+			}(); err != nil {
+				return errors.Wrap(err, "decode field \"resolved_at\"")
+			}
+		case "started_at":
+			requiredBitSet[0] |= 1 << 6
+			if err := func() error {
+				v, err := json.DecodeDateTime(d)
+				s.StartedAt = v
+				if err != nil {
+					return err
+				}
+				return nil
+			}(); err != nil {
+				return errors.Wrap(err, "decode field \"started_at\"")
+			}
+		case "updates":
+			requiredBitSet[0] |= 1 << 7
+			if err := func() error {
+				switch tt := d.Next(); tt {
+				case jx.Null:
+					if err := d.Skip(); err != nil {
+						return err
+					}
+				default:
+					s.Updates = make([]StatusPageIncidentUpdateResource, 0)
+					if err := d.Arr(func(d *jx.Decoder) error {
+						var elem StatusPageIncidentUpdateResource
+						if err := elem.Decode(d); err != nil {
+							return err
+						}
+						s.Updates = append(s.Updates, elem)
+						return nil
+					}); err != nil {
+						return err
+					}
+				}
+				return nil
+			}(); err != nil {
+				return errors.Wrap(err, "decode field \"updates\"")
+			}
+		default:
+			return errors.Errorf("unexpected field %q", k)
+		}
+		return nil
+	}); err != nil {
+		return errors.Wrap(err, "decode StatusPageIncidentResource")
+	}
+	// Validate required fields.
+	var failures []validate.FieldError
+	for i, mask := range [1]uint8{
+		0b11111111,
+	} {
+		if result := (requiredBitSet[i] & mask) ^ mask; result != 0 {
+			// Mask only required fields and check equality to mask using XOR.
+			//
+			// If XOR result is not zero, result is not equal to expected, so some fields are missed.
+			// Bits of fields which would be set are actually bits of missed fields.
+			missed := bits.OnesCount8(result)
+			for bitN := 0; bitN < missed; bitN++ {
+				bitIdx := bits.TrailingZeros8(result)
+				fieldIdx := i*8 + bitIdx
+				var name string
+				if fieldIdx < len(jsonFieldsNameOfStatusPageIncidentResource) {
+					name = jsonFieldsNameOfStatusPageIncidentResource[fieldIdx]
+				} else {
+					name = strconv.Itoa(fieldIdx)
+				}
+				failures = append(failures, validate.FieldError{
+					Name:  name,
+					Error: validate.ErrFieldRequired,
+				})
+				// Reset bit.
+				result &^= 1 << bitIdx
+			}
+		}
+	}
+	if len(failures) > 0 {
+		return &validate.Error{Fields: failures}
+	}
+
+	return nil
+}
+
+// MarshalJSON implements stdjson.Marshaler.
+func (s *StatusPageIncidentResource) MarshalJSON() ([]byte, error) {
+	e := jx.Encoder{}
+	s.Encode(&e)
+	return e.Bytes(), nil
+}
+
+// UnmarshalJSON implements stdjson.Unmarshaler.
+func (s *StatusPageIncidentResource) UnmarshalJSON(data []byte) error {
+	d := jx.DecodeBytes(data)
+	return s.Decode(d)
+}
+
+// Encode encodes StatusPageIncidentResourceImpact as json.
+func (s StatusPageIncidentResourceImpact) Encode(e *jx.Encoder) {
+	e.Str(string(s))
+}
+
+// Decode decodes StatusPageIncidentResourceImpact from json.
+func (s *StatusPageIncidentResourceImpact) Decode(d *jx.Decoder) error {
+	if s == nil {
+		return errors.New("invalid: unable to decode StatusPageIncidentResourceImpact to nil")
+	}
+	v, err := d.StrBytes()
+	if err != nil {
+		return err
+	}
+	// Try to use constant string.
+	switch StatusPageIncidentResourceImpact(v) {
+	case StatusPageIncidentResourceImpactNONE:
+		*s = StatusPageIncidentResourceImpactNONE
+	case StatusPageIncidentResourceImpactMINOR:
+		*s = StatusPageIncidentResourceImpactMINOR
+	case StatusPageIncidentResourceImpactMAJOR:
+		*s = StatusPageIncidentResourceImpactMAJOR
+	case StatusPageIncidentResourceImpactCRITICAL:
+		*s = StatusPageIncidentResourceImpactCRITICAL
+	default:
+		*s = StatusPageIncidentResourceImpact(v)
+	}
+
+	return nil
+}
+
+// MarshalJSON implements stdjson.Marshaler.
+func (s StatusPageIncidentResourceImpact) MarshalJSON() ([]byte, error) {
+	e := jx.Encoder{}
+	s.Encode(&e)
+	return e.Bytes(), nil
+}
+
+// UnmarshalJSON implements stdjson.Unmarshaler.
+func (s *StatusPageIncidentResourceImpact) UnmarshalJSON(data []byte) error {
+	d := jx.DecodeBytes(data)
+	return s.Decode(d)
+}
+
+// Encode encodes StatusPageIncidentResourceIncidentStatus as json.
+func (s StatusPageIncidentResourceIncidentStatus) Encode(e *jx.Encoder) {
+	e.Str(string(s))
+}
+
+// Decode decodes StatusPageIncidentResourceIncidentStatus from json.
+func (s *StatusPageIncidentResourceIncidentStatus) Decode(d *jx.Decoder) error {
+	if s == nil {
+		return errors.New("invalid: unable to decode StatusPageIncidentResourceIncidentStatus to nil")
+	}
+	v, err := d.StrBytes()
+	if err != nil {
+		return err
+	}
+	// Try to use constant string.
+	switch StatusPageIncidentResourceIncidentStatus(v) {
+	case StatusPageIncidentResourceIncidentStatusINVESTIGATING:
+		*s = StatusPageIncidentResourceIncidentStatusINVESTIGATING
+	case StatusPageIncidentResourceIncidentStatusIDENTIFIED:
+		*s = StatusPageIncidentResourceIncidentStatusIDENTIFIED
+	case StatusPageIncidentResourceIncidentStatusMONITORING:
+		*s = StatusPageIncidentResourceIncidentStatusMONITORING
+	case StatusPageIncidentResourceIncidentStatusRESOLVED:
+		*s = StatusPageIncidentResourceIncidentStatusRESOLVED
+	default:
+		*s = StatusPageIncidentResourceIncidentStatus(v)
+	}
+
+	return nil
+}
+
+// MarshalJSON implements stdjson.Marshaler.
+func (s StatusPageIncidentResourceIncidentStatus) MarshalJSON() ([]byte, error) {
+	e := jx.Encoder{}
+	s.Encode(&e)
+	return e.Bytes(), nil
+}
+
+// UnmarshalJSON implements stdjson.Unmarshaler.
+func (s *StatusPageIncidentResourceIncidentStatus) UnmarshalJSON(data []byte) error {
+	d := jx.DecodeBytes(data)
+	return s.Decode(d)
+}
+
+// Encode implements json.Marshaler.
+func (s *StatusPageIncidentUpdateResource) Encode(e *jx.Encoder) {
+	e.ObjStart()
+	s.encodeFields(e)
+	e.ObjEnd()
+}
+
+// encodeFields encodes fields.
+func (s *StatusPageIncidentUpdateResource) encodeFields(e *jx.Encoder) {
+	{
+		e.FieldStart("affected_components")
+		if s.AffectedComponents == nil {
+			e.Null()
+		} else {
+			e.ArrStart()
+			for _, elem := range s.AffectedComponents {
+				elem.Encode(e)
+			}
+			e.ArrEnd()
+		}
+	}
+	{
+		e.FieldStart("body")
+		e.Str(s.Body)
+	}
+	{
+		e.FieldStart("incident_status")
+		s.IncidentStatus.Encode(e)
+	}
+	{
+		e.FieldStart("published_at")
+		json.EncodeDateTime(e, s.PublishedAt)
+	}
+	{
+		e.FieldStart("update_id")
+		json.EncodeUUID(e, s.UpdateID)
+	}
+}
+
+var jsonFieldsNameOfStatusPageIncidentUpdateResource = [5]string{
+	0: "affected_components",
+	1: "body",
+	2: "incident_status",
+	3: "published_at",
+	4: "update_id",
+}
+
+// Decode decodes StatusPageIncidentUpdateResource from json.
+func (s *StatusPageIncidentUpdateResource) Decode(d *jx.Decoder) error {
+	if s == nil {
+		return errors.New("invalid: unable to decode StatusPageIncidentUpdateResource to nil")
+	}
+	var requiredBitSet [1]uint8
+
+	if err := d.ObjBytes(func(d *jx.Decoder, k []byte) error {
+		switch string(k) {
+		case "affected_components":
+			requiredBitSet[0] |= 1 << 0
+			if err := func() error {
+				switch tt := d.Next(); tt {
+				case jx.Null:
+					if err := d.Skip(); err != nil {
+						return err
+					}
+				default:
+					s.AffectedComponents = make([]StatusPageIncidentComponentResource, 0)
+					if err := d.Arr(func(d *jx.Decoder) error {
+						var elem StatusPageIncidentComponentResource
+						if err := elem.Decode(d); err != nil {
+							return err
+						}
+						s.AffectedComponents = append(s.AffectedComponents, elem)
+						return nil
+					}); err != nil {
+						return err
+					}
+				}
+				return nil
+			}(); err != nil {
+				return errors.Wrap(err, "decode field \"affected_components\"")
+			}
+		case "body":
+			requiredBitSet[0] |= 1 << 1
+			if err := func() error {
+				v, err := d.Str()
+				s.Body = string(v)
+				if err != nil {
+					return err
+				}
+				return nil
+			}(); err != nil {
+				return errors.Wrap(err, "decode field \"body\"")
+			}
+		case "incident_status":
+			requiredBitSet[0] |= 1 << 2
+			if err := func() error {
+				if err := s.IncidentStatus.Decode(d); err != nil {
+					return err
+				}
+				return nil
+			}(); err != nil {
+				return errors.Wrap(err, "decode field \"incident_status\"")
+			}
+		case "published_at":
+			requiredBitSet[0] |= 1 << 3
+			if err := func() error {
+				v, err := json.DecodeDateTime(d)
+				s.PublishedAt = v
+				if err != nil {
+					return err
+				}
+				return nil
+			}(); err != nil {
+				return errors.Wrap(err, "decode field \"published_at\"")
+			}
+		case "update_id":
+			requiredBitSet[0] |= 1 << 4
+			if err := func() error {
+				v, err := json.DecodeUUID(d)
+				s.UpdateID = v
+				if err != nil {
+					return err
+				}
+				return nil
+			}(); err != nil {
+				return errors.Wrap(err, "decode field \"update_id\"")
+			}
+		default:
+			return errors.Errorf("unexpected field %q", k)
+		}
+		return nil
+	}); err != nil {
+		return errors.Wrap(err, "decode StatusPageIncidentUpdateResource")
+	}
+	// Validate required fields.
+	var failures []validate.FieldError
+	for i, mask := range [1]uint8{
+		0b00011111,
+	} {
+		if result := (requiredBitSet[i] & mask) ^ mask; result != 0 {
+			// Mask only required fields and check equality to mask using XOR.
+			//
+			// If XOR result is not zero, result is not equal to expected, so some fields are missed.
+			// Bits of fields which would be set are actually bits of missed fields.
+			missed := bits.OnesCount8(result)
+			for bitN := 0; bitN < missed; bitN++ {
+				bitIdx := bits.TrailingZeros8(result)
+				fieldIdx := i*8 + bitIdx
+				var name string
+				if fieldIdx < len(jsonFieldsNameOfStatusPageIncidentUpdateResource) {
+					name = jsonFieldsNameOfStatusPageIncidentUpdateResource[fieldIdx]
+				} else {
+					name = strconv.Itoa(fieldIdx)
+				}
+				failures = append(failures, validate.FieldError{
+					Name:  name,
+					Error: validate.ErrFieldRequired,
+				})
+				// Reset bit.
+				result &^= 1 << bitIdx
+			}
+		}
+	}
+	if len(failures) > 0 {
+		return &validate.Error{Fields: failures}
+	}
+
+	return nil
+}
+
+// MarshalJSON implements stdjson.Marshaler.
+func (s *StatusPageIncidentUpdateResource) MarshalJSON() ([]byte, error) {
+	e := jx.Encoder{}
+	s.Encode(&e)
+	return e.Bytes(), nil
+}
+
+// UnmarshalJSON implements stdjson.Unmarshaler.
+func (s *StatusPageIncidentUpdateResource) UnmarshalJSON(data []byte) error {
+	d := jx.DecodeBytes(data)
+	return s.Decode(d)
+}
+
+// Encode encodes StatusPageIncidentUpdateResourceIncidentStatus as json.
+func (s StatusPageIncidentUpdateResourceIncidentStatus) Encode(e *jx.Encoder) {
+	e.Str(string(s))
+}
+
+// Decode decodes StatusPageIncidentUpdateResourceIncidentStatus from json.
+func (s *StatusPageIncidentUpdateResourceIncidentStatus) Decode(d *jx.Decoder) error {
+	if s == nil {
+		return errors.New("invalid: unable to decode StatusPageIncidentUpdateResourceIncidentStatus to nil")
+	}
+	v, err := d.StrBytes()
+	if err != nil {
+		return err
+	}
+	// Try to use constant string.
+	switch StatusPageIncidentUpdateResourceIncidentStatus(v) {
+	case StatusPageIncidentUpdateResourceIncidentStatusINVESTIGATING:
+		*s = StatusPageIncidentUpdateResourceIncidentStatusINVESTIGATING
+	case StatusPageIncidentUpdateResourceIncidentStatusIDENTIFIED:
+		*s = StatusPageIncidentUpdateResourceIncidentStatusIDENTIFIED
+	case StatusPageIncidentUpdateResourceIncidentStatusMONITORING:
+		*s = StatusPageIncidentUpdateResourceIncidentStatusMONITORING
+	case StatusPageIncidentUpdateResourceIncidentStatusRESOLVED:
+		*s = StatusPageIncidentUpdateResourceIncidentStatusRESOLVED
+	default:
+		*s = StatusPageIncidentUpdateResourceIncidentStatus(v)
+	}
+
+	return nil
+}
+
+// MarshalJSON implements stdjson.Marshaler.
+func (s StatusPageIncidentUpdateResourceIncidentStatus) MarshalJSON() ([]byte, error) {
+	e := jx.Encoder{}
+	s.Encode(&e)
+	return e.Bytes(), nil
+}
+
+// UnmarshalJSON implements stdjson.Unmarshaler.
+func (s *StatusPageIncidentUpdateResourceIncidentStatus) UnmarshalJSON(data []byte) error {
+	d := jx.DecodeBytes(data)
+	return s.Decode(d)
+}
+
+// Encode implements json.Marshaler.
+func (s *StatusPageMaintenanceComponentRequest) Encode(e *jx.Encoder) {
+	e.ObjStart()
+	s.encodeFields(e)
+	e.ObjEnd()
+}
+
+// encodeFields encodes fields.
+func (s *StatusPageMaintenanceComponentRequest) encodeFields(e *jx.Encoder) {
+	{
+		e.FieldStart("component_id")
+		json.EncodeUUID(e, s.ComponentID)
+	}
+	{
+		if s.ComponentStatus.Set {
+			e.FieldStart("component_status")
+			s.ComponentStatus.Encode(e)
+		}
+	}
+}
+
+var jsonFieldsNameOfStatusPageMaintenanceComponentRequest = [2]string{
+	0: "component_id",
+	1: "component_status",
+}
+
+// Decode decodes StatusPageMaintenanceComponentRequest from json.
+func (s *StatusPageMaintenanceComponentRequest) Decode(d *jx.Decoder) error {
+	if s == nil {
+		return errors.New("invalid: unable to decode StatusPageMaintenanceComponentRequest to nil")
+	}
+	var requiredBitSet [1]uint8
+	s.setDefaults()
+
+	if err := d.ObjBytes(func(d *jx.Decoder, k []byte) error {
+		switch string(k) {
+		case "component_id":
+			requiredBitSet[0] |= 1 << 0
+			if err := func() error {
+				v, err := json.DecodeUUID(d)
+				s.ComponentID = v
+				if err != nil {
+					return err
+				}
+				return nil
+			}(); err != nil {
+				return errors.Wrap(err, "decode field \"component_id\"")
+			}
+		case "component_status":
+			if err := func() error {
+				s.ComponentStatus.Reset()
+				if err := s.ComponentStatus.Decode(d); err != nil {
+					return err
+				}
+				return nil
+			}(); err != nil {
+				return errors.Wrap(err, "decode field \"component_status\"")
+			}
+		default:
+			return errors.Errorf("unexpected field %q", k)
+		}
+		return nil
+	}); err != nil {
+		return errors.Wrap(err, "decode StatusPageMaintenanceComponentRequest")
+	}
+	// Validate required fields.
+	var failures []validate.FieldError
+	for i, mask := range [1]uint8{
+		0b00000001,
+	} {
+		if result := (requiredBitSet[i] & mask) ^ mask; result != 0 {
+			// Mask only required fields and check equality to mask using XOR.
+			//
+			// If XOR result is not zero, result is not equal to expected, so some fields are missed.
+			// Bits of fields which would be set are actually bits of missed fields.
+			missed := bits.OnesCount8(result)
+			for bitN := 0; bitN < missed; bitN++ {
+				bitIdx := bits.TrailingZeros8(result)
+				fieldIdx := i*8 + bitIdx
+				var name string
+				if fieldIdx < len(jsonFieldsNameOfStatusPageMaintenanceComponentRequest) {
+					name = jsonFieldsNameOfStatusPageMaintenanceComponentRequest[fieldIdx]
+				} else {
+					name = strconv.Itoa(fieldIdx)
+				}
+				failures = append(failures, validate.FieldError{
+					Name:  name,
+					Error: validate.ErrFieldRequired,
+				})
+				// Reset bit.
+				result &^= 1 << bitIdx
+			}
+		}
+	}
+	if len(failures) > 0 {
+		return &validate.Error{Fields: failures}
+	}
+
+	return nil
+}
+
+// MarshalJSON implements stdjson.Marshaler.
+func (s *StatusPageMaintenanceComponentRequest) MarshalJSON() ([]byte, error) {
+	e := jx.Encoder{}
+	s.Encode(&e)
+	return e.Bytes(), nil
+}
+
+// UnmarshalJSON implements stdjson.Unmarshaler.
+func (s *StatusPageMaintenanceComponentRequest) UnmarshalJSON(data []byte) error {
+	d := jx.DecodeBytes(data)
+	return s.Decode(d)
+}
+
+// Encode encodes StatusPageMaintenanceComponentRequestComponentStatus as json.
+func (s StatusPageMaintenanceComponentRequestComponentStatus) Encode(e *jx.Encoder) {
+	e.Str(string(s))
+}
+
+// Decode decodes StatusPageMaintenanceComponentRequestComponentStatus from json.
+func (s *StatusPageMaintenanceComponentRequestComponentStatus) Decode(d *jx.Decoder) error {
+	if s == nil {
+		return errors.New("invalid: unable to decode StatusPageMaintenanceComponentRequestComponentStatus to nil")
+	}
+	v, err := d.StrBytes()
+	if err != nil {
+		return err
+	}
+	// Try to use constant string.
+	switch StatusPageMaintenanceComponentRequestComponentStatus(v) {
+	case StatusPageMaintenanceComponentRequestComponentStatusUNDERMAINTENANCE:
+		*s = StatusPageMaintenanceComponentRequestComponentStatusUNDERMAINTENANCE
+	case StatusPageMaintenanceComponentRequestComponentStatusDEGRADEDPERFORMANCE:
+		*s = StatusPageMaintenanceComponentRequestComponentStatusDEGRADEDPERFORMANCE
+	default:
+		*s = StatusPageMaintenanceComponentRequestComponentStatus(v)
+	}
+
+	return nil
+}
+
+// MarshalJSON implements stdjson.Marshaler.
+func (s StatusPageMaintenanceComponentRequestComponentStatus) MarshalJSON() ([]byte, error) {
+	e := jx.Encoder{}
+	s.Encode(&e)
+	return e.Bytes(), nil
+}
+
+// UnmarshalJSON implements stdjson.Unmarshaler.
+func (s *StatusPageMaintenanceComponentRequestComponentStatus) UnmarshalJSON(data []byte) error {
+	d := jx.DecodeBytes(data)
+	return s.Decode(d)
+}
+
+// Encode implements json.Marshaler.
+func (s *StatusPageMaintenanceComponentResource) Encode(e *jx.Encoder) {
+	e.ObjStart()
+	s.encodeFields(e)
+	e.ObjEnd()
+}
+
+// encodeFields encodes fields.
+func (s *StatusPageMaintenanceComponentResource) encodeFields(e *jx.Encoder) {
+	{
+		e.FieldStart("component_id")
+		json.EncodeUUID(e, s.ComponentID)
+	}
+	{
+		e.FieldStart("component_name")
+		e.Str(s.ComponentName)
+	}
+	{
+		e.FieldStart("component_status")
+		s.ComponentStatus.Encode(e)
+	}
+}
+
+var jsonFieldsNameOfStatusPageMaintenanceComponentResource = [3]string{
+	0: "component_id",
+	1: "component_name",
+	2: "component_status",
+}
+
+// Decode decodes StatusPageMaintenanceComponentResource from json.
+func (s *StatusPageMaintenanceComponentResource) Decode(d *jx.Decoder) error {
+	if s == nil {
+		return errors.New("invalid: unable to decode StatusPageMaintenanceComponentResource to nil")
+	}
+	var requiredBitSet [1]uint8
+
+	if err := d.ObjBytes(func(d *jx.Decoder, k []byte) error {
+		switch string(k) {
+		case "component_id":
+			requiredBitSet[0] |= 1 << 0
+			if err := func() error {
+				v, err := json.DecodeUUID(d)
+				s.ComponentID = v
+				if err != nil {
+					return err
+				}
+				return nil
+			}(); err != nil {
+				return errors.Wrap(err, "decode field \"component_id\"")
+			}
+		case "component_name":
+			requiredBitSet[0] |= 1 << 1
+			if err := func() error {
+				v, err := d.Str()
+				s.ComponentName = string(v)
+				if err != nil {
+					return err
+				}
+				return nil
+			}(); err != nil {
+				return errors.Wrap(err, "decode field \"component_name\"")
+			}
+		case "component_status":
+			requiredBitSet[0] |= 1 << 2
+			if err := func() error {
+				if err := s.ComponentStatus.Decode(d); err != nil {
+					return err
+				}
+				return nil
+			}(); err != nil {
+				return errors.Wrap(err, "decode field \"component_status\"")
+			}
+		default:
+			return errors.Errorf("unexpected field %q", k)
+		}
+		return nil
+	}); err != nil {
+		return errors.Wrap(err, "decode StatusPageMaintenanceComponentResource")
+	}
+	// Validate required fields.
+	var failures []validate.FieldError
+	for i, mask := range [1]uint8{
+		0b00000111,
+	} {
+		if result := (requiredBitSet[i] & mask) ^ mask; result != 0 {
+			// Mask only required fields and check equality to mask using XOR.
+			//
+			// If XOR result is not zero, result is not equal to expected, so some fields are missed.
+			// Bits of fields which would be set are actually bits of missed fields.
+			missed := bits.OnesCount8(result)
+			for bitN := 0; bitN < missed; bitN++ {
+				bitIdx := bits.TrailingZeros8(result)
+				fieldIdx := i*8 + bitIdx
+				var name string
+				if fieldIdx < len(jsonFieldsNameOfStatusPageMaintenanceComponentResource) {
+					name = jsonFieldsNameOfStatusPageMaintenanceComponentResource[fieldIdx]
+				} else {
+					name = strconv.Itoa(fieldIdx)
+				}
+				failures = append(failures, validate.FieldError{
+					Name:  name,
+					Error: validate.ErrFieldRequired,
+				})
+				// Reset bit.
+				result &^= 1 << bitIdx
+			}
+		}
+	}
+	if len(failures) > 0 {
+		return &validate.Error{Fields: failures}
+	}
+
+	return nil
+}
+
+// MarshalJSON implements stdjson.Marshaler.
+func (s *StatusPageMaintenanceComponentResource) MarshalJSON() ([]byte, error) {
+	e := jx.Encoder{}
+	s.Encode(&e)
+	return e.Bytes(), nil
+}
+
+// UnmarshalJSON implements stdjson.Unmarshaler.
+func (s *StatusPageMaintenanceComponentResource) UnmarshalJSON(data []byte) error {
+	d := jx.DecodeBytes(data)
+	return s.Decode(d)
+}
+
+// Encode encodes StatusPageMaintenanceComponentResourceComponentStatus as json.
+func (s StatusPageMaintenanceComponentResourceComponentStatus) Encode(e *jx.Encoder) {
+	e.Str(string(s))
+}
+
+// Decode decodes StatusPageMaintenanceComponentResourceComponentStatus from json.
+func (s *StatusPageMaintenanceComponentResourceComponentStatus) Decode(d *jx.Decoder) error {
+	if s == nil {
+		return errors.New("invalid: unable to decode StatusPageMaintenanceComponentResourceComponentStatus to nil")
+	}
+	v, err := d.StrBytes()
+	if err != nil {
+		return err
+	}
+	// Try to use constant string.
+	switch StatusPageMaintenanceComponentResourceComponentStatus(v) {
+	case StatusPageMaintenanceComponentResourceComponentStatusUNDERMAINTENANCE:
+		*s = StatusPageMaintenanceComponentResourceComponentStatusUNDERMAINTENANCE
+	case StatusPageMaintenanceComponentResourceComponentStatusDEGRADEDPERFORMANCE:
+		*s = StatusPageMaintenanceComponentResourceComponentStatusDEGRADEDPERFORMANCE
+	default:
+		*s = StatusPageMaintenanceComponentResourceComponentStatus(v)
+	}
+
+	return nil
+}
+
+// MarshalJSON implements stdjson.Marshaler.
+func (s StatusPageMaintenanceComponentResourceComponentStatus) MarshalJSON() ([]byte, error) {
+	e := jx.Encoder{}
+	s.Encode(&e)
+	return e.Bytes(), nil
+}
+
+// UnmarshalJSON implements stdjson.Unmarshaler.
+func (s *StatusPageMaintenanceComponentResourceComponentStatus) UnmarshalJSON(data []byte) error {
+	d := jx.DecodeBytes(data)
+	return s.Decode(d)
+}
+
+// Encode implements json.Marshaler.
+func (s *StatusPageMaintenanceResource) Encode(e *jx.Encoder) {
+	e.ObjStart()
+	s.encodeFields(e)
+	e.ObjEnd()
+}
+
+// encodeFields encodes fields.
+func (s *StatusPageMaintenanceResource) encodeFields(e *jx.Encoder) {
+	{
+		e.FieldStart("affected_components")
+		if s.AffectedComponents == nil {
+			e.Null()
+		} else {
+			e.ArrStart()
+			for _, elem := range s.AffectedComponents {
+				elem.Encode(e)
+			}
+			e.ArrEnd()
+		}
+	}
+	{
+		e.FieldStart("body")
+		e.Str(s.Body)
+	}
+	{
+		e.FieldStart("completed_at")
+		s.CompletedAt.Encode(e, json.EncodeDateTime)
+	}
+	{
+		e.FieldStart("maintenance_id")
+		json.EncodeUUID(e, s.MaintenanceID)
+	}
+	{
+		e.FieldStart("maintenance_status")
+		s.MaintenanceStatus.Encode(e)
+	}
+	{
+		e.FieldStart("name")
+		e.Str(s.Name)
+	}
+	{
+		e.FieldStart("scheduled_for")
+		json.EncodeDateTime(e, s.ScheduledFor)
+	}
+	{
+		e.FieldStart("scheduled_until")
+		json.EncodeDateTime(e, s.ScheduledUntil)
+	}
+	{
+		e.FieldStart("started_at")
+		s.StartedAt.Encode(e, json.EncodeDateTime)
+	}
+}
+
+var jsonFieldsNameOfStatusPageMaintenanceResource = [9]string{
+	0: "affected_components",
+	1: "body",
+	2: "completed_at",
+	3: "maintenance_id",
+	4: "maintenance_status",
+	5: "name",
+	6: "scheduled_for",
+	7: "scheduled_until",
+	8: "started_at",
+}
+
+// Decode decodes StatusPageMaintenanceResource from json.
+func (s *StatusPageMaintenanceResource) Decode(d *jx.Decoder) error {
+	if s == nil {
+		return errors.New("invalid: unable to decode StatusPageMaintenanceResource to nil")
+	}
+	var requiredBitSet [2]uint8
+
+	if err := d.ObjBytes(func(d *jx.Decoder, k []byte) error {
+		switch string(k) {
+		case "affected_components":
+			requiredBitSet[0] |= 1 << 0
+			if err := func() error {
+				switch tt := d.Next(); tt {
+				case jx.Null:
+					if err := d.Skip(); err != nil {
+						return err
+					}
+				default:
+					s.AffectedComponents = make([]StatusPageMaintenanceComponentResource, 0)
+					if err := d.Arr(func(d *jx.Decoder) error {
+						var elem StatusPageMaintenanceComponentResource
+						if err := elem.Decode(d); err != nil {
+							return err
+						}
+						s.AffectedComponents = append(s.AffectedComponents, elem)
+						return nil
+					}); err != nil {
+						return err
+					}
+				}
+				return nil
+			}(); err != nil {
+				return errors.Wrap(err, "decode field \"affected_components\"")
+			}
+		case "body":
+			requiredBitSet[0] |= 1 << 1
+			if err := func() error {
+				v, err := d.Str()
+				s.Body = string(v)
+				if err != nil {
+					return err
+				}
+				return nil
+			}(); err != nil {
+				return errors.Wrap(err, "decode field \"body\"")
+			}
+		case "completed_at":
+			requiredBitSet[0] |= 1 << 2
+			if err := func() error {
+				if err := s.CompletedAt.Decode(d, json.DecodeDateTime); err != nil {
+					return err
+				}
+				return nil
+			}(); err != nil {
+				return errors.Wrap(err, "decode field \"completed_at\"")
+			}
+		case "maintenance_id":
+			requiredBitSet[0] |= 1 << 3
+			if err := func() error {
+				v, err := json.DecodeUUID(d)
+				s.MaintenanceID = v
+				if err != nil {
+					return err
+				}
+				return nil
+			}(); err != nil {
+				return errors.Wrap(err, "decode field \"maintenance_id\"")
+			}
+		case "maintenance_status":
+			requiredBitSet[0] |= 1 << 4
+			if err := func() error {
+				if err := s.MaintenanceStatus.Decode(d); err != nil {
+					return err
+				}
+				return nil
+			}(); err != nil {
+				return errors.Wrap(err, "decode field \"maintenance_status\"")
+			}
+		case "name":
+			requiredBitSet[0] |= 1 << 5
+			if err := func() error {
+				v, err := d.Str()
+				s.Name = string(v)
+				if err != nil {
+					return err
+				}
+				return nil
+			}(); err != nil {
+				return errors.Wrap(err, "decode field \"name\"")
+			}
+		case "scheduled_for":
+			requiredBitSet[0] |= 1 << 6
+			if err := func() error {
+				v, err := json.DecodeDateTime(d)
+				s.ScheduledFor = v
+				if err != nil {
+					return err
+				}
+				return nil
+			}(); err != nil {
+				return errors.Wrap(err, "decode field \"scheduled_for\"")
+			}
+		case "scheduled_until":
+			requiredBitSet[0] |= 1 << 7
+			if err := func() error {
+				v, err := json.DecodeDateTime(d)
+				s.ScheduledUntil = v
+				if err != nil {
+					return err
+				}
+				return nil
+			}(); err != nil {
+				return errors.Wrap(err, "decode field \"scheduled_until\"")
+			}
+		case "started_at":
+			requiredBitSet[1] |= 1 << 0
+			if err := func() error {
+				if err := s.StartedAt.Decode(d, json.DecodeDateTime); err != nil {
+					return err
+				}
+				return nil
+			}(); err != nil {
+				return errors.Wrap(err, "decode field \"started_at\"")
+			}
+		default:
+			return errors.Errorf("unexpected field %q", k)
+		}
+		return nil
+	}); err != nil {
+		return errors.Wrap(err, "decode StatusPageMaintenanceResource")
+	}
+	// Validate required fields.
+	var failures []validate.FieldError
+	for i, mask := range [2]uint8{
+		0b11111111,
+		0b00000001,
+	} {
+		if result := (requiredBitSet[i] & mask) ^ mask; result != 0 {
+			// Mask only required fields and check equality to mask using XOR.
+			//
+			// If XOR result is not zero, result is not equal to expected, so some fields are missed.
+			// Bits of fields which would be set are actually bits of missed fields.
+			missed := bits.OnesCount8(result)
+			for bitN := 0; bitN < missed; bitN++ {
+				bitIdx := bits.TrailingZeros8(result)
+				fieldIdx := i*8 + bitIdx
+				var name string
+				if fieldIdx < len(jsonFieldsNameOfStatusPageMaintenanceResource) {
+					name = jsonFieldsNameOfStatusPageMaintenanceResource[fieldIdx]
+				} else {
+					name = strconv.Itoa(fieldIdx)
+				}
+				failures = append(failures, validate.FieldError{
+					Name:  name,
+					Error: validate.ErrFieldRequired,
+				})
+				// Reset bit.
+				result &^= 1 << bitIdx
+			}
+		}
+	}
+	if len(failures) > 0 {
+		return &validate.Error{Fields: failures}
+	}
+
+	return nil
+}
+
+// MarshalJSON implements stdjson.Marshaler.
+func (s *StatusPageMaintenanceResource) MarshalJSON() ([]byte, error) {
+	e := jx.Encoder{}
+	s.Encode(&e)
+	return e.Bytes(), nil
+}
+
+// UnmarshalJSON implements stdjson.Unmarshaler.
+func (s *StatusPageMaintenanceResource) UnmarshalJSON(data []byte) error {
+	d := jx.DecodeBytes(data)
+	return s.Decode(d)
+}
+
+// Encode encodes StatusPageMaintenanceResourceMaintenanceStatus as json.
+func (s StatusPageMaintenanceResourceMaintenanceStatus) Encode(e *jx.Encoder) {
+	e.Str(string(s))
+}
+
+// Decode decodes StatusPageMaintenanceResourceMaintenanceStatus from json.
+func (s *StatusPageMaintenanceResourceMaintenanceStatus) Decode(d *jx.Decoder) error {
+	if s == nil {
+		return errors.New("invalid: unable to decode StatusPageMaintenanceResourceMaintenanceStatus to nil")
+	}
+	v, err := d.StrBytes()
+	if err != nil {
+		return err
+	}
+	// Try to use constant string.
+	switch StatusPageMaintenanceResourceMaintenanceStatus(v) {
+	case StatusPageMaintenanceResourceMaintenanceStatusSCHEDULED:
+		*s = StatusPageMaintenanceResourceMaintenanceStatusSCHEDULED
+	case StatusPageMaintenanceResourceMaintenanceStatusINPROGRESS:
+		*s = StatusPageMaintenanceResourceMaintenanceStatusINPROGRESS
+	case StatusPageMaintenanceResourceMaintenanceStatusCOMPLETED:
+		*s = StatusPageMaintenanceResourceMaintenanceStatusCOMPLETED
+	case StatusPageMaintenanceResourceMaintenanceStatusCANCELLED:
+		*s = StatusPageMaintenanceResourceMaintenanceStatusCANCELLED
+	default:
+		*s = StatusPageMaintenanceResourceMaintenanceStatus(v)
+	}
+
+	return nil
+}
+
+// MarshalJSON implements stdjson.Marshaler.
+func (s StatusPageMaintenanceResourceMaintenanceStatus) MarshalJSON() ([]byte, error) {
+	e := jx.Encoder{}
+	s.Encode(&e)
+	return e.Bytes(), nil
+}
+
+// UnmarshalJSON implements stdjson.Unmarshaler.
+func (s *StatusPageMaintenanceResourceMaintenanceStatus) UnmarshalJSON(data []byte) error {
+	d := jx.DecodeBytes(data)
+	return s.Decode(d)
+}
+
+// Encode implements json.Marshaler.
+func (s *StatusPageOrderItem) Encode(e *jx.Encoder) {
+	e.ObjStart()
+	s.encodeFields(e)
+	e.ObjEnd()
+}
+
+// encodeFields encodes fields.
+func (s *StatusPageOrderItem) encodeFields(e *jx.Encoder) {
+	{
+		if s.ComponentID.Set {
+			e.FieldStart("component_id")
+			s.ComponentID.Encode(e)
+		}
+	}
+	{
+		if s.GroupID.Set {
+			e.FieldStart("group_id")
+			s.GroupID.Encode(e)
+		}
+	}
+}
+
+var jsonFieldsNameOfStatusPageOrderItem = [2]string{
+	0: "component_id",
+	1: "group_id",
+}
+
+// Decode decodes StatusPageOrderItem from json.
+func (s *StatusPageOrderItem) Decode(d *jx.Decoder) error {
+	if s == nil {
+		return errors.New("invalid: unable to decode StatusPageOrderItem to nil")
+	}
+
+	if err := d.ObjBytes(func(d *jx.Decoder, k []byte) error {
+		switch string(k) {
+		case "component_id":
+			if err := func() error {
+				s.ComponentID.Reset()
+				if err := s.ComponentID.Decode(d); err != nil {
+					return err
+				}
+				return nil
+			}(); err != nil {
+				return errors.Wrap(err, "decode field \"component_id\"")
+			}
+		case "group_id":
+			if err := func() error {
+				s.GroupID.Reset()
+				if err := s.GroupID.Decode(d); err != nil {
+					return err
+				}
+				return nil
+			}(); err != nil {
+				return errors.Wrap(err, "decode field \"group_id\"")
+			}
+		default:
+			return errors.Errorf("unexpected field %q", k)
+		}
+		return nil
+	}); err != nil {
+		return errors.Wrap(err, "decode StatusPageOrderItem")
+	}
+
+	return nil
+}
+
+// MarshalJSON implements stdjson.Marshaler.
+func (s *StatusPageOrderItem) MarshalJSON() ([]byte, error) {
+	e := jx.Encoder{}
+	s.Encode(&e)
+	return e.Bytes(), nil
+}
+
+// UnmarshalJSON implements stdjson.Unmarshaler.
+func (s *StatusPageOrderItem) UnmarshalJSON(data []byte) error {
+	d := jx.DecodeBytes(data)
+	return s.Decode(d)
+}
+
+// Encode implements json.Marshaler.
+func (s *StatusPageResource) Encode(e *jx.Encoder) {
+	e.ObjStart()
+	s.encodeFields(e)
+	e.ObjEnd()
+}
+
+// encodeFields encodes fields.
+func (s *StatusPageResource) encodeFields(e *jx.Encoder) {
+	{
+		e.FieldStart("brand_color")
+		e.Str(s.BrandColor)
+	}
+	{
+		e.FieldStart("created_at")
+		json.EncodeDateTime(e, s.CreatedAt)
+	}
+	{
+		e.FieldStart("custom_domain")
+		e.Str(s.CustomDomain)
+	}
+	{
+		e.FieldStart("footer_text")
+		e.Str(s.FooterText)
+	}
+	{
+		e.FieldStart("headline")
+		e.Str(s.Headline)
+	}
+	{
+		e.FieldStart("logo_url")
+		e.Str(s.LogoURL)
+	}
+	{
+		e.FieldStart("name")
+		e.Str(s.Name)
+	}
+	{
+		e.FieldStart("public_url")
+		e.Str(s.PublicURL)
+	}
+	{
+		e.FieldStart("published")
+		e.Bool(s.Published)
+	}
+	{
+		e.FieldStart("search_engine_index")
+		e.Bool(s.SearchEngineIndex)
+	}
+	{
+		e.FieldStart("slug")
+		e.Str(s.Slug)
+	}
+	{
+		e.FieldStart("status_page_id")
+		json.EncodeUUID(e, s.StatusPageID)
+	}
+	{
+		e.FieldStart("support_url")
+		e.Str(s.SupportURL)
+	}
+	{
+		e.FieldStart("theme")
+		s.Theme.Encode(e)
+	}
+	{
+		e.FieldStart("timezone")
+		e.Str(s.Timezone)
+	}
+	{
+		e.FieldStart("updated_at")
+		json.EncodeDateTime(e, s.UpdatedAt)
+	}
+	{
+		e.FieldStart("uptime_days")
+		e.Int64(s.UptimeDays)
+	}
+}
+
+var jsonFieldsNameOfStatusPageResource = [17]string{
+	0:  "brand_color",
+	1:  "created_at",
+	2:  "custom_domain",
+	3:  "footer_text",
+	4:  "headline",
+	5:  "logo_url",
+	6:  "name",
+	7:  "public_url",
+	8:  "published",
+	9:  "search_engine_index",
+	10: "slug",
+	11: "status_page_id",
+	12: "support_url",
+	13: "theme",
+	14: "timezone",
+	15: "updated_at",
+	16: "uptime_days",
+}
+
+// Decode decodes StatusPageResource from json.
+func (s *StatusPageResource) Decode(d *jx.Decoder) error {
+	if s == nil {
+		return errors.New("invalid: unable to decode StatusPageResource to nil")
+	}
+	var requiredBitSet [3]uint8
+
+	if err := d.ObjBytes(func(d *jx.Decoder, k []byte) error {
+		switch string(k) {
+		case "brand_color":
+			requiredBitSet[0] |= 1 << 0
+			if err := func() error {
+				v, err := d.Str()
+				s.BrandColor = string(v)
+				if err != nil {
+					return err
+				}
+				return nil
+			}(); err != nil {
+				return errors.Wrap(err, "decode field \"brand_color\"")
+			}
+		case "created_at":
+			requiredBitSet[0] |= 1 << 1
+			if err := func() error {
+				v, err := json.DecodeDateTime(d)
+				s.CreatedAt = v
+				if err != nil {
+					return err
+				}
+				return nil
+			}(); err != nil {
+				return errors.Wrap(err, "decode field \"created_at\"")
+			}
+		case "custom_domain":
+			requiredBitSet[0] |= 1 << 2
+			if err := func() error {
+				v, err := d.Str()
+				s.CustomDomain = string(v)
+				if err != nil {
+					return err
+				}
+				return nil
+			}(); err != nil {
+				return errors.Wrap(err, "decode field \"custom_domain\"")
+			}
+		case "footer_text":
+			requiredBitSet[0] |= 1 << 3
+			if err := func() error {
+				v, err := d.Str()
+				s.FooterText = string(v)
+				if err != nil {
+					return err
+				}
+				return nil
+			}(); err != nil {
+				return errors.Wrap(err, "decode field \"footer_text\"")
+			}
+		case "headline":
+			requiredBitSet[0] |= 1 << 4
+			if err := func() error {
+				v, err := d.Str()
+				s.Headline = string(v)
+				if err != nil {
+					return err
+				}
+				return nil
+			}(); err != nil {
+				return errors.Wrap(err, "decode field \"headline\"")
+			}
+		case "logo_url":
+			requiredBitSet[0] |= 1 << 5
+			if err := func() error {
+				v, err := d.Str()
+				s.LogoURL = string(v)
+				if err != nil {
+					return err
+				}
+				return nil
+			}(); err != nil {
+				return errors.Wrap(err, "decode field \"logo_url\"")
+			}
+		case "name":
+			requiredBitSet[0] |= 1 << 6
+			if err := func() error {
+				v, err := d.Str()
+				s.Name = string(v)
+				if err != nil {
+					return err
+				}
+				return nil
+			}(); err != nil {
+				return errors.Wrap(err, "decode field \"name\"")
+			}
+		case "public_url":
+			requiredBitSet[0] |= 1 << 7
+			if err := func() error {
+				v, err := d.Str()
+				s.PublicURL = string(v)
+				if err != nil {
+					return err
+				}
+				return nil
+			}(); err != nil {
+				return errors.Wrap(err, "decode field \"public_url\"")
+			}
+		case "published":
+			requiredBitSet[1] |= 1 << 0
+			if err := func() error {
+				v, err := d.Bool()
+				s.Published = bool(v)
+				if err != nil {
+					return err
+				}
+				return nil
+			}(); err != nil {
+				return errors.Wrap(err, "decode field \"published\"")
+			}
+		case "search_engine_index":
+			requiredBitSet[1] |= 1 << 1
+			if err := func() error {
+				v, err := d.Bool()
+				s.SearchEngineIndex = bool(v)
+				if err != nil {
+					return err
+				}
+				return nil
+			}(); err != nil {
+				return errors.Wrap(err, "decode field \"search_engine_index\"")
+			}
+		case "slug":
+			requiredBitSet[1] |= 1 << 2
+			if err := func() error {
+				v, err := d.Str()
+				s.Slug = string(v)
+				if err != nil {
+					return err
+				}
+				return nil
+			}(); err != nil {
+				return errors.Wrap(err, "decode field \"slug\"")
+			}
+		case "status_page_id":
+			requiredBitSet[1] |= 1 << 3
+			if err := func() error {
+				v, err := json.DecodeUUID(d)
+				s.StatusPageID = v
+				if err != nil {
+					return err
+				}
+				return nil
+			}(); err != nil {
+				return errors.Wrap(err, "decode field \"status_page_id\"")
+			}
+		case "support_url":
+			requiredBitSet[1] |= 1 << 4
+			if err := func() error {
+				v, err := d.Str()
+				s.SupportURL = string(v)
+				if err != nil {
+					return err
+				}
+				return nil
+			}(); err != nil {
+				return errors.Wrap(err, "decode field \"support_url\"")
+			}
+		case "theme":
+			requiredBitSet[1] |= 1 << 5
+			if err := func() error {
+				if err := s.Theme.Decode(d); err != nil {
+					return err
+				}
+				return nil
+			}(); err != nil {
+				return errors.Wrap(err, "decode field \"theme\"")
+			}
+		case "timezone":
+			requiredBitSet[1] |= 1 << 6
+			if err := func() error {
+				v, err := d.Str()
+				s.Timezone = string(v)
+				if err != nil {
+					return err
+				}
+				return nil
+			}(); err != nil {
+				return errors.Wrap(err, "decode field \"timezone\"")
+			}
+		case "updated_at":
+			requiredBitSet[1] |= 1 << 7
+			if err := func() error {
+				v, err := json.DecodeDateTime(d)
+				s.UpdatedAt = v
+				if err != nil {
+					return err
+				}
+				return nil
+			}(); err != nil {
+				return errors.Wrap(err, "decode field \"updated_at\"")
+			}
+		case "uptime_days":
+			requiredBitSet[2] |= 1 << 0
+			if err := func() error {
+				v, err := d.Int64()
+				s.UptimeDays = int64(v)
+				if err != nil {
+					return err
+				}
+				return nil
+			}(); err != nil {
+				return errors.Wrap(err, "decode field \"uptime_days\"")
+			}
+		default:
+			return errors.Errorf("unexpected field %q", k)
+		}
+		return nil
+	}); err != nil {
+		return errors.Wrap(err, "decode StatusPageResource")
+	}
+	// Validate required fields.
+	var failures []validate.FieldError
+	for i, mask := range [3]uint8{
+		0b11111111,
+		0b11111111,
+		0b00000001,
+	} {
+		if result := (requiredBitSet[i] & mask) ^ mask; result != 0 {
+			// Mask only required fields and check equality to mask using XOR.
+			//
+			// If XOR result is not zero, result is not equal to expected, so some fields are missed.
+			// Bits of fields which would be set are actually bits of missed fields.
+			missed := bits.OnesCount8(result)
+			for bitN := 0; bitN < missed; bitN++ {
+				bitIdx := bits.TrailingZeros8(result)
+				fieldIdx := i*8 + bitIdx
+				var name string
+				if fieldIdx < len(jsonFieldsNameOfStatusPageResource) {
+					name = jsonFieldsNameOfStatusPageResource[fieldIdx]
+				} else {
+					name = strconv.Itoa(fieldIdx)
+				}
+				failures = append(failures, validate.FieldError{
+					Name:  name,
+					Error: validate.ErrFieldRequired,
+				})
+				// Reset bit.
+				result &^= 1 << bitIdx
+			}
+		}
+	}
+	if len(failures) > 0 {
+		return &validate.Error{Fields: failures}
+	}
+
+	return nil
+}
+
+// MarshalJSON implements stdjson.Marshaler.
+func (s *StatusPageResource) MarshalJSON() ([]byte, error) {
+	e := jx.Encoder{}
+	s.Encode(&e)
+	return e.Bytes(), nil
+}
+
+// UnmarshalJSON implements stdjson.Unmarshaler.
+func (s *StatusPageResource) UnmarshalJSON(data []byte) error {
+	d := jx.DecodeBytes(data)
+	return s.Decode(d)
+}
+
+// Encode encodes StatusPageResourceTheme as json.
+func (s StatusPageResourceTheme) Encode(e *jx.Encoder) {
+	e.Str(string(s))
+}
+
+// Decode decodes StatusPageResourceTheme from json.
+func (s *StatusPageResourceTheme) Decode(d *jx.Decoder) error {
+	if s == nil {
+		return errors.New("invalid: unable to decode StatusPageResourceTheme to nil")
+	}
+	v, err := d.StrBytes()
+	if err != nil {
+		return err
+	}
+	// Try to use constant string.
+	switch StatusPageResourceTheme(v) {
+	case StatusPageResourceThemeAUTO:
+		*s = StatusPageResourceThemeAUTO
+	case StatusPageResourceThemeLIGHT:
+		*s = StatusPageResourceThemeLIGHT
+	case StatusPageResourceThemeDARK:
+		*s = StatusPageResourceThemeDARK
+	default:
+		*s = StatusPageResourceTheme(v)
+	}
+
+	return nil
+}
+
+// MarshalJSON implements stdjson.Marshaler.
+func (s StatusPageResourceTheme) MarshalJSON() ([]byte, error) {
+	e := jx.Encoder{}
+	s.Encode(&e)
+	return e.Bytes(), nil
+}
+
+// UnmarshalJSON implements stdjson.Unmarshaler.
+func (s *StatusPageResourceTheme) UnmarshalJSON(data []byte) error {
 	d := jx.DecodeBytes(data)
 	return s.Decode(d)
 }

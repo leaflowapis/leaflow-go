@@ -15,7 +15,8 @@ var _ Handler = UnimplementedHandler{}
 
 // AcknowledgeIncident implements acknowledge-incident operation.
 //
-// 同时会在监控系统中标记为已确认，便于其他渠道也能看到该告警已有人处理。.
+// The incident is also marked as acknowledged in the monitoring system, so that other channels can see
+// it already has an owner.
 //
 // POST /api/v1/incidents/{incidentId}/acknowledge
 func (UnimplementedHandler) AcknowledgeIncident(ctx context.Context, req *AcknowledgeIncidentRequestBody, params AcknowledgeIncidentParams) (r *IncidentResource, _ error) {
@@ -24,7 +25,7 @@ func (UnimplementedHandler) AcknowledgeIncident(ctx context.Context, req *Acknow
 
 // AddIncidentComment implements add-incident-comment operation.
 //
-// 在时间线上写一条备注.
+// Add a note to the timeline.
 //
 // POST /api/v1/incidents/{incidentId}/comments
 func (UnimplementedHandler) AddIncidentComment(ctx context.Context, req *AddCommentRequestBody, params AddIncidentCommentParams) (r *IncidentActivityResource, _ error) {
@@ -33,28 +34,73 @@ func (UnimplementedHandler) AddIncidentComment(ctx context.Context, req *AddComm
 
 // AssignIncident implements assign-incident operation.
 //
-// `assignee_user_id` 留空即取消指派。
+// Leave `assignee_user_id` empty to clear the assignment.
 //
-// 这里不校验被指派的人在不在这个项目里——那要问
-// IAM，而这个服务的准入还没接。.
+// Project membership of the assignee is not verified. Any user identifier is accepted and recorded as
+// given.
 //
 // PUT /api/v1/incidents/{incidentId}/assignee
 func (UnimplementedHandler) AssignIncident(ctx context.Context, req *AssignIncidentRequestBody, params AssignIncidentParams) (r *IncidentResource, _ error) {
 	return r, ht.ErrNotImplemented
 }
 
+// CancelStatusPageMaintenance implements cancel-status-page-maintenance operation.
+//
+// Cancelled rather than deleted, so that readers who saw the announcement have an explanation.
+// Maintenance that has already started cannot be cancelled; finish it early instead.
+//
+// POST /api/v1/status-page/maintenances/{maintenanceId}/cancel
+func (UnimplementedHandler) CancelStatusPageMaintenance(ctx context.Context, params CancelStatusPageMaintenanceParams) (r *StatusPageMaintenanceResource, _ error) {
+	return r, ht.ErrNotImplemented
+}
+
 // CloseIncident implements close-incident operation.
 //
-// 了结的是平台上的处理流程，不是告警本身的状态：尚未恢复的告警也可以按「已接受的风险」了结，它在监控系统中仍为未恢复。.
+// Closing records that the handling process is finished on this platform; it does not change the state
+// of the incident itself. An incident that has not recovered may still be closed as an accepted risk,
+// and remains unrecovered in the monitoring system.
 //
 // POST /api/v1/incidents/{incidentId}/close
 func (UnimplementedHandler) CloseIncident(ctx context.Context, req *CloseIncidentRequestBody, params CloseIncidentParams) (r *IncidentResource, _ error) {
 	return r, ht.ErrNotImplemented
 }
 
+// CompleteStatusPageMaintenance implements complete-status-page-maintenance operation.
+//
+// Optional: maintenance finishes on its own at the scheduled end time. Use this endpoint when the work
+// is done ahead of schedule; the affected components return to operational immediately.
+//
+// POST /api/v1/status-page/maintenances/{maintenanceId}/complete
+func (UnimplementedHandler) CompleteStatusPageMaintenance(ctx context.Context, params CompleteStatusPageMaintenanceParams) (r *StatusPageMaintenanceResource, _ error) {
+	return r, ht.ErrNotImplemented
+}
+
+// CreateStatusPageComponent implements create-status-page-component operation.
+//
+// `name` is customer-facing copy and appears verbatim on the public page; do not use machine names.
+//
+// `auto_status_min_severity` sets how severe an alert must be before it changes the status of this
+// row; anything below it has no effect. The default is AVERAGE. Lower settings tend to keep the page
+// permanently off-green, at which point people stop reading it.
+//
+// POST /api/v1/status-page/components
+func (UnimplementedHandler) CreateStatusPageComponent(ctx context.Context, req *PutStatusPageComponentRequestBody) (r *StatusPageComponentResource, _ error) {
+	return r, ht.ErrNotImplemented
+}
+
+// CreateStatusPageGroup implements create-status-page-group operation.
+//
+// A group is one level of collapsing applied to components on the page. There is exactly one level;
+// groups cannot be nested.
+//
+// POST /api/v1/status-page/groups
+func (UnimplementedHandler) CreateStatusPageGroup(ctx context.Context, req *PutStatusPageGroupRequestBody) (r *StatusPageGroupResource, _ error) {
+	return r, ht.ErrNotImplemented
+}
+
 // DeleteMaintenanceWindow implements delete-maintenance-window operation.
 //
-// 立刻恢复告警，哪怕窗口还没到期。.
+// Alerting resumes immediately, even if the window has not yet expired.
 //
 // DELETE /api/v1/maintenance-windows/{windowId}
 func (UnimplementedHandler) DeleteMaintenanceWindow(ctx context.Context, params DeleteMaintenanceWindowParams) error {
@@ -63,8 +109,8 @@ func (UnimplementedHandler) DeleteMaintenanceWindow(ctx context.Context, params 
 
 // DeleteServer implements delete-server operation.
 //
-// 不可逆：监控主机、历史数据和这台机器名下的告警会一并删除。若只是想暂时停止采集，改用
-// /disable。.
+// Irreversible: the monitored host, its history and every incident recorded against this machine are
+// removed together. To stop collection temporarily, use `/disable` instead.
 //
 // DELETE /api/v1/servers/{serverId}
 func (UnimplementedHandler) DeleteServer(ctx context.Context, params DeleteServerParams) error {
@@ -73,16 +119,47 @@ func (UnimplementedHandler) DeleteServer(ctx context.Context, params DeleteServe
 
 // DeleteSlo implements delete-slo operation.
 //
-// 同时移除监控系统中对应的服务树，此后不再统计可用率。.
+// Availability is no longer tracked from this point on.
 //
 // DELETE /api/v1/slo
 func (UnimplementedHandler) DeleteSlo(ctx context.Context) error {
 	return ht.ErrNotImplemented
 }
 
+// DeleteStatusPage implements delete-status-page operation.
+//
+// Its groups, components, availability history, incident notices and scheduled maintenance are removed
+// together, and cannot be recovered. The slug and custom domain are released.
+//
+// DELETE /api/v1/status-page
+func (UnimplementedHandler) DeleteStatusPage(ctx context.Context) error {
+	return ht.ErrNotImplemented
+}
+
+// DeleteStatusPageComponent implements delete-status-page-component operation.
+//
+// Its availability history is removed along with it. Passages in already-published notices that refer
+// to it are retained, since customers may already have read them.
+//
+// DELETE /api/v1/status-page/components/{componentId}
+func (UnimplementedHandler) DeleteStatusPageComponent(ctx context.Context, params DeleteStatusPageComponentParams) error {
+	return ht.ErrNotImplemented
+}
+
+// DeleteStatusPageGroup implements delete-status-page-group operation.
+//
+// The components in it are not deleted. They return to the top level as ungrouped components, keeping
+// their availability history and the incident notices that reference them.
+//
+// DELETE /api/v1/status-page/groups/{groupId}
+func (UnimplementedHandler) DeleteStatusPageGroup(ctx context.Context, params DeleteStatusPageGroupParams) error {
+	return ht.ErrNotImplemented
+}
+
 // DeleteWebCheck implements delete-web-check operation.
 //
-// 同时删除监控系统中对应的检查任务和触发器，不会遗留永远无法恢复的告警。.
+// The corresponding check task and trigger are removed from the monitoring system as well, so no
+// permanently unrecoverable alert is left behind.
 //
 // DELETE /api/v1/servers/{serverId}/web-checks/{checkId}
 func (UnimplementedHandler) DeleteWebCheck(ctx context.Context, params DeleteWebCheckParams) error {
@@ -91,8 +168,8 @@ func (UnimplementedHandler) DeleteWebCheck(ctx context.Context, params DeleteWeb
 
 // DisableServerMonitoring implements disable-server-monitoring operation.
 //
-// 可逆操作：监控主机保留，仅停止采集，历史数据不受影响。重新接入即可恢复采集。如需连同历史数据一并删除，改用
-// DELETE。.
+// Reversible: the monitored host is retained, only collection stops, and history is unaffected.
+// Enrolling again resumes collection. To remove the history as well, use DELETE.
 //
 // POST /api/v1/servers/{serverId}/disable
 func (UnimplementedHandler) DisableServerMonitoring(ctx context.Context, params DisableServerMonitoringParams) error {
@@ -101,13 +178,15 @@ func (UnimplementedHandler) DisableServerMonitoring(ctx context.Context, params 
 
 // EnableServerMonitoring implements enable-server-monitoring operation.
 //
-// 同一个 server id
-// 重复调用是幂等的：参数一致时返回已接入的那台，不会重复创建监控主机，因此接入失败可以安全重试。
+// Repeated calls with the same server id are idempotent: given identical parameters, the
+// already-enrolled machine is returned and no duplicate host is created, so a failed enrollment is
+// safe to retry.
 //
-// 修改接入参数请改用
-// PATCH。本接口在参数不一致时会返回错误，不会更新已有配置。
+// To change enrollment settings, use PATCH. This endpoint returns an error when the parameters differ,
+// and does not update an existing configuration.
 //
-// 响应中的 `tls_psk` 只返回这一次，请及时保存；遗失后需要轮换。.
+// The `tls_psk` in the response is returned only this once; store it immediately. If it is lost, it
+// must be rotated.
 //
 // PUT /api/v1/servers/{serverId}
 func (UnimplementedHandler) EnableServerMonitoring(ctx context.Context, req *EnableMonitoringRequestBody, params EnableServerMonitoringParams) (r *ServerEnrollmentResponseBody, _ error) {
@@ -116,7 +195,7 @@ func (UnimplementedHandler) EnableServerMonitoring(ctx context.Context, req *Ena
 
 // GetIncident implements get-incident operation.
 //
-// 查一条告警.
+// Get an incident.
 //
 // GET /api/v1/incidents/{incidentId}
 func (UnimplementedHandler) GetIncident(ctx context.Context, params GetIncidentParams) (r *IncidentResource, _ error) {
@@ -125,7 +204,7 @@ func (UnimplementedHandler) GetIncident(ctx context.Context, params GetIncidentP
 
 // GetMaintenanceWindow implements get-maintenance-window operation.
 //
-// 查一个维护窗口.
+// Get a maintenance window.
 //
 // GET /api/v1/maintenance-windows/{windowId}
 func (UnimplementedHandler) GetMaintenanceWindow(ctx context.Context, params GetMaintenanceWindowParams) (r *MaintenanceWindowResource, _ error) {
@@ -134,8 +213,8 @@ func (UnimplementedHandler) GetMaintenanceWindow(ctx context.Context, params Get
 
 // GetProjectOverview implements get-project-overview operation.
 //
-// 项目下还没有任何机器时返回各项均为零的总览，而不是
-// 404——空项目是一个正常状态。.
+// A project with no machines yet returns an overview with every figure at zero rather than a 404 —
+// an empty project is a normal state.
 //
 // GET /api/v1/overview
 func (UnimplementedHandler) GetProjectOverview(ctx context.Context) (r *ProjectOverviewResource, _ error) {
@@ -144,7 +223,7 @@ func (UnimplementedHandler) GetProjectOverview(ctx context.Context) (r *ProjectO
 
 // GetServer implements get-server operation.
 //
-// 查一台机器的接入情况.
+// Get the enrollment state of a machine.
 //
 // GET /api/v1/servers/{serverId}
 func (UnimplementedHandler) GetServer(ctx context.Context, params GetServerParams) (r *ServerResource, _ error) {
@@ -153,9 +232,9 @@ func (UnimplementedHandler) GetServer(ctx context.Context, params GetServerParam
 
 // GetServerMetric implements get-server-metric operation.
 //
-// `item_key` 是前缀匹配：按分区、按网卡发现出来的监控项 key
-// 带参数（`vfs.fs.size[/var,pused]`），所以 `vfs.fs.size`
-// 这一个请求就能画出每个挂载点一条线。.
+// `item_key` is matched by prefix. Keys discovered per partition or per interface carry parameters
+// (`vfs.fs.size[/var,pused]`), so a single request for `vfs.fs.size` returns one series per mount
+// point.
 //
 // GET /api/v1/servers/{serverId}/metrics
 func (UnimplementedHandler) GetServerMetric(ctx context.Context, params GetServerMetricParams) (r *MetricResponseBody, _ error) {
@@ -164,7 +243,7 @@ func (UnimplementedHandler) GetServerMetric(ctx context.Context, params GetServe
 
 // GetServerResources implements get-server-resources operation.
 //
-// 一台机器的硬件与接口.
+// Hardware and interfaces of a machine.
 //
 // GET /api/v1/servers/{serverId}/resources
 func (UnimplementedHandler) GetServerResources(ctx context.Context, params GetServerResourcesParams) (r *ServerResourcesResource, _ error) {
@@ -173,7 +252,7 @@ func (UnimplementedHandler) GetServerResources(ctx context.Context, params GetSe
 
 // GetServerSnapshot implements get-server-snapshot operation.
 //
-// 一台机器此刻的状态.
+// Current state of a machine.
 //
 // GET /api/v1/servers/{serverId}/snapshot
 func (UnimplementedHandler) GetServerSnapshot(ctx context.Context, params GetServerSnapshotParams) (r *SnapshotResource, _ error) {
@@ -182,9 +261,9 @@ func (UnimplementedHandler) GetServerSnapshot(ctx context.Context, params GetSer
 
 // GetSliReport implements get-sli-report operation.
 //
-// SLI 是测出来的数，SLO 是定下来的目标——这里返回的是前者。
+// SLI is what was measured; SLO is what was promised — this endpoint returns the former.
 //
-// `server_id` 为空的那一行是项目整体。.
+// The row with an empty `server_id` covers the project as a whole.
 //
 // GET /api/v1/sli-report
 func (UnimplementedHandler) GetSliReport(ctx context.Context, params GetSliReportParams) (r *SLIReportResponseBody, _ error) {
@@ -193,16 +272,53 @@ func (UnimplementedHandler) GetSliReport(ctx context.Context, params GetSliRepor
 
 // GetSlo implements get-slo operation.
 //
-// 没定过就是 404，而不是一份默认目标：没承诺过和承诺了 99.9% 是两回事。.
+// A project that has never set one returns 404 rather than a default target: making no promise and
+// promising 99.9% are different things.
 //
 // GET /api/v1/slo
 func (UnimplementedHandler) GetSlo(ctx context.Context) (r *SLOResource, _ error) {
 	return r, ht.ErrNotImplemented
 }
 
+// GetStatusPage implements get-status-page operation.
+//
+// A project has at most one status page. A project that has never created one returns 404.
+//
+// GET /api/v1/status-page
+func (UnimplementedHandler) GetStatusPage(ctx context.Context) (r *StatusPageResource, _ error) {
+	return r, ht.ErrNotImplemented
+}
+
+// GetStatusPageComponent implements get-status-page-component operation.
+//
+// Get a component.
+//
+// GET /api/v1/status-page/components/{componentId}
+func (UnimplementedHandler) GetStatusPageComponent(ctx context.Context, params GetStatusPageComponentParams) (r *StatusPageComponentResource, _ error) {
+	return r, ht.ErrNotImplemented
+}
+
+// GetStatusPageIncident implements get-status-page-incident operation.
+//
+// Get an incident notice.
+//
+// GET /api/v1/status-page/incidents/{incidentId}
+func (UnimplementedHandler) GetStatusPageIncident(ctx context.Context, params GetStatusPageIncidentParams) (r *StatusPageIncidentResource, _ error) {
+	return r, ht.ErrNotImplemented
+}
+
+// GetStatusPageMaintenance implements get-status-page-maintenance operation.
+//
+// Get a scheduled maintenance.
+//
+// GET /api/v1/status-page/maintenances/{maintenanceId}
+func (UnimplementedHandler) GetStatusPageMaintenance(ctx context.Context, params GetStatusPageMaintenanceParams) (r *StatusPageMaintenanceResource, _ error) {
+	return r, ht.ErrNotImplemented
+}
+
 // GetWebCheck implements get-web-check operation.
 //
-// 查一个网页检查.
+// Get a web check.
 //
 // GET /api/v1/servers/{serverId}/web-checks/{checkId}
 func (UnimplementedHandler) GetWebCheck(ctx context.Context, params GetWebCheckParams) (r *WebCheckResource, _ error) {
@@ -211,7 +327,8 @@ func (UnimplementedHandler) GetWebCheck(ctx context.Context, params GetWebCheckP
 
 // ListIncidentTimeline implements list-incident-timeline operation.
 //
-// 游标翻页而不是偏移量：时间线是只增的，用偏移量翻页会在新记录写入时漏行和重行。.
+// Cursor paging rather than offset paging: the timeline is append-only, and offset paging would skip
+// or repeat entries whenever a new one is written.
 //
 // GET /api/v1/incidents/{incidentId}/timeline
 func (UnimplementedHandler) ListIncidentTimeline(ctx context.Context, params ListIncidentTimelineParams) (r *CursorPageIncidentActivityResource, _ error) {
@@ -220,8 +337,8 @@ func (UnimplementedHandler) ListIncidentTimeline(ctx context.Context, params Lis
 
 // ListIncidents implements list-incidents operation.
 //
-// `incident_status` 表示监控系统是否判定已恢复，`closed`
-// 表示是否有人完成了处理。两者相互独立，可分别筛选。.
+// `incident_status` reports whether monitoring considers the problem recovered; `closed` reports
+// whether someone has finished handling it. The two are independent and can be filtered separately.
 //
 // GET /api/v1/incidents
 func (UnimplementedHandler) ListIncidents(ctx context.Context, params ListIncidentsParams) (r *LengthAwarePageIncidentResource, _ error) {
@@ -230,7 +347,7 @@ func (UnimplementedHandler) ListIncidents(ctx context.Context, params ListIncide
 
 // ListMaintenanceWindows implements list-maintenance-windows operation.
 //
-// 列出维护窗口.
+// List maintenance windows.
 //
 // GET /api/v1/maintenance-windows
 func (UnimplementedHandler) ListMaintenanceWindows(ctx context.Context) (r *MaintenanceWindowListResponseBody, _ error) {
@@ -239,7 +356,7 @@ func (UnimplementedHandler) ListMaintenanceWindows(ctx context.Context) (r *Main
 
 // ListProjectTopItems implements list-project-top-items operation.
 //
-// 某个指标最高的前几台.
+// Machines ranked highest by a given metric.
 //
 // GET /api/v1/top-items
 func (UnimplementedHandler) ListProjectTopItems(ctx context.Context, params ListProjectTopItemsParams) (r *TopItemListResponseBody, _ error) {
@@ -248,7 +365,8 @@ func (UnimplementedHandler) ListProjectTopItems(ctx context.Context, params List
 
 // ListServerItems implements list-server-items operation.
 //
-// 原样返回采集到的监控项，不做筛选或重命名。哪些属于重要指标，由调用方依据监控项自带的标签自行判断。.
+// Items are returned exactly as collected, without filtering or renaming. Which of them count as
+// important is for the caller to decide from the tags carried by each item.
 //
 // GET /api/v1/servers/{serverId}/items
 func (UnimplementedHandler) ListServerItems(ctx context.Context, params ListServerItemsParams) (r *ItemListResponseBody, _ error) {
@@ -257,28 +375,109 @@ func (UnimplementedHandler) ListServerItems(ctx context.Context, params ListServ
 
 // ListServers implements list-servers operation.
 //
-// 列出项目里的机器.
+// List the machines in the project.
 //
 // GET /api/v1/servers
 func (UnimplementedHandler) ListServers(ctx context.Context, params ListServersParams) (r *LengthAwarePageServerResource, _ error) {
 	return r, ht.ErrNotImplemented
 }
 
+// ListStatusPageComponentSources implements list-status-page-component-sources operation.
+//
+// Monitored sources are internal information and never appear on the public page.
+//
+// GET /api/v1/status-page/components/{componentId}/sources
+func (UnimplementedHandler) ListStatusPageComponentSources(ctx context.Context, params ListStatusPageComponentSourcesParams) (r *StatusPageComponentSourcesResource, _ error) {
+	return r, ht.ErrNotImplemented
+}
+
+// ListStatusPageComponents implements list-status-page-components operation.
+//
+// A component is one row on the status page: an externally promised capability. It is not a machine
+// — a single component may be backed by several machines and several web checks.
+//
+// GET /api/v1/status-page/components
+func (UnimplementedHandler) ListStatusPageComponents(ctx context.Context) (r *StatusPageComponentListResponseBody, _ error) {
+	return r, ht.ErrNotImplemented
+}
+
+// ListStatusPageGroups implements list-status-page-groups operation.
+//
+// List groups.
+//
+// GET /api/v1/status-page/groups
+func (UnimplementedHandler) ListStatusPageGroups(ctx context.Context) (r *StatusPageGroupListResponseBody, _ error) {
+	return r, ht.ErrNotImplemented
+}
+
+// ListStatusPageIncidents implements list-status-page-incidents operation.
+//
+// These are customer-facing notices, distinct from the monitoring incidents under `/incidents`.
+// Nothing from the latter is carried over; the text here is written by your team.
+//
+// GET /api/v1/status-page/incidents
+func (UnimplementedHandler) ListStatusPageIncidents(ctx context.Context, params ListStatusPageIncidentsParams) (r *LengthAwarePageStatusPageIncidentResource, _ error) {
+	return r, ht.ErrNotImplemented
+}
+
+// ListStatusPageMaintenances implements list-status-page-maintenances operation.
+//
+// List scheduled maintenance.
+//
+// GET /api/v1/status-page/maintenances
+func (UnimplementedHandler) ListStatusPageMaintenances(ctx context.Context, params ListStatusPageMaintenancesParams) (r *LengthAwarePageStatusPageMaintenanceResource, _ error) {
+	return r, ht.ErrNotImplemented
+}
+
 // ListWebChecks implements list-web-checks operation.
 //
-// 列出网页检查.
+// List web checks.
 //
 // GET /api/v1/web-checks
 func (UnimplementedHandler) ListWebChecks(ctx context.Context, params ListWebChecksParams) (r *WebCheckListResponseBody, _ error) {
 	return r, ht.ErrNotImplemented
 }
 
+// PostStatusPageIncidentUpdate implements post-status-page-incident-update operation.
+//
+// Published updates are never modified; a correction is issued as a new update. Customers may already
+// have forwarded the original, and a silent rewrite would leave the two sides with different
+// histories.
+//
+// `components` lists only the components being changed by this update; those not listed keep their
+// current status. Setting `status` to `RESOLVED` returns every component this notice has affected to
+// operational and closes the notice. A closed notice accepts no further updates.
+//
+// POST /api/v1/status-page/incidents/{incidentId}/updates
+func (UnimplementedHandler) PostStatusPageIncidentUpdate(ctx context.Context, req *PostStatusPageIncidentUpdateRequestBody, params PostStatusPageIncidentUpdateParams) (r *StatusPageIncidentResource, _ error) {
+	return r, ht.ErrNotImplemented
+}
+
+// PublishStatusPageIncident implements publish-status-page-incident operation.
+//
+// Publishing a notice and writing its first update are a single operation: a notice with no updates
+// would appear as a bare title on a page that has already been delivered to readers.
+//
+// `started_at` is when the incident began, not when the notice was published. The two are usually
+// minutes to hours apart, and using the publication time would understate the impact window that
+// customers can compare against their own logs. Backfilling a past incident relies on the same field.
+//
+// The statuses given in `components` take effect on the public page immediately and count towards
+// availability.
+//
+// POST /api/v1/status-page/incidents
+func (UnimplementedHandler) PublishStatusPageIncident(ctx context.Context, req *PublishStatusPageIncidentRequestBody) (r *StatusPageIncidentResource, _ error) {
+	return r, ht.ErrNotImplemented
+}
+
 // PutMaintenanceWindow implements put-maintenance-window operation.
 //
-// 创建即覆盖：延长一个正在进行的窗口就是用同一个 id 再调一次。
+// Create or replace: extending a window that is already running means calling this endpoint again with
+// the same id.
 //
-// 窗口期内这些机器的问题不告警，也不扣 SLA 的可用率。`server_ids`
-// 留空表示整个项目，包括窗口开着的时候新接进来的机器。.
+// While the window is open, problems on these machines do not alert and do not count against SLA
+// availability. Leave `server_ids` empty to cover the entire project, including machines enrolled
+// after the window opens.
 //
 // PUT /api/v1/maintenance-windows/{windowId}
 func (UnimplementedHandler) PutMaintenanceWindow(ctx context.Context, req *PutMaintenanceWindowRequestBody, params PutMaintenanceWindowParams) (r *MaintenanceWindowResource, _ error) {
@@ -287,20 +486,76 @@ func (UnimplementedHandler) PutMaintenanceWindow(ctx context.Context, req *PutMa
 
 // PutSlo implements put-slo operation.
 //
-// 一个项目一条 SLO，创建即覆盖。
+// One SLO per project, create or replace.
 //
-// `min_severity`
-// 必须显式选：它决定什么算「不可用」，是这条承诺的一半内容。.
+// `min_severity` must be chosen explicitly: it defines what counts as unavailable, which is half of
+// what the target means.
 //
 // PUT /api/v1/slo
 func (UnimplementedHandler) PutSlo(ctx context.Context, req *PutSLORequestBody) (r *SLOResource, _ error) {
 	return r, ht.ErrNotImplemented
 }
 
+// PutStatusPage implements put-status-page operation.
+//
+// Create or replace: changing the title, switching the domain, publishing and unpublishing are all
+// done by sending the complete configuration again.
+//
+// While `published` is false the public address returns 404, including any custom domain already
+// bound. A newly created page is unpublished by default, so that a page still being configured has no
+// address that opens.
+//
+// `slug` and `custom_domain` are globally unique; a value already taken returns 409.
+//
+// PUT /api/v1/status-page
+func (UnimplementedHandler) PutStatusPage(ctx context.Context, req *PutStatusPageRequestBody) (r *StatusPageResource, _ error) {
+	return r, ht.ErrNotImplemented
+}
+
+// PutStatusPageComponentSources implements put-status-page-component-sources operation.
+//
+// Submits the complete set of sources; anything not listed is unbound.
+//
+// Once bound, alerts on these machines and web checks drive the status of the component automatically:
+// DISASTER and HIGH are reported as a major outage, AVERAGE as a partial outage, and WARNING as
+// degraded performance. Alerts below `auto_status_min_severity` have no effect.
+//
+// `show_url` controls whether the checked address is shown on the public page. It is off by default.
+//
+// PUT /api/v1/status-page/components/{componentId}/sources
+func (UnimplementedHandler) PutStatusPageComponentSources(ctx context.Context, req *PutStatusPageComponentSourcesRequestBody, params PutStatusPageComponentSourcesParams) (r *StatusPageComponentSourcesResource, _ error) {
+	return r, ht.ErrNotImplemented
+}
+
+// PutStatusPageGroupOrder implements put-status-page-group-order operation.
+//
+// Set the order of components within a group.
+//
+// PUT /api/v1/status-page/groups/{groupId}/order
+func (UnimplementedHandler) PutStatusPageGroupOrder(ctx context.Context, req *PutStatusPageGroupOrderRequestBody, params PutStatusPageGroupOrderParams) error {
+	return ht.ErrNotImplemented
+}
+
+// PutStatusPageOrder implements put-status-page-order operation.
+//
+// Submits the entire top-level order in one call rather than moving a single entry to a given
+// position.
+//
+// The top level interleaves groups and ungrouped components, so the order is expressed as one list
+// covering both.
+//
+// Each entry carries either `group_id` or `component_id`. Entries not listed are placed after those
+// that are.
+//
+// PUT /api/v1/status-page/order
+func (UnimplementedHandler) PutStatusPageOrder(ctx context.Context, req *PutStatusPageOrderRequestBody) error {
+	return ht.ErrNotImplemented
+}
+
 // PutWebCheck implements put-web-check operation.
 //
-// 创建即覆盖：修改一个检查即用同一个 id
-// 再次调用本接口，无需先判断它是否已存在。.
+// Create or replace: to modify a check, call this endpoint again with the same id. There is no need to
+// determine first whether it already exists.
 //
 // PUT /api/v1/servers/{serverId}/web-checks/{checkId}
 func (UnimplementedHandler) PutWebCheck(ctx context.Context, req *PutWebCheckRequestBody, params PutWebCheckParams) (r *WebCheckResource, _ error) {
@@ -309,7 +564,7 @@ func (UnimplementedHandler) PutWebCheck(ctx context.Context, req *PutWebCheckReq
 
 // ReopenIncident implements reopen-incident operation.
 //
-// 重新打开一条已经了结的告警.
+// Reopen a closed incident.
 //
 // POST /api/v1/incidents/{incidentId}/reopen
 func (UnimplementedHandler) ReopenIncident(ctx context.Context, params ReopenIncidentParams) (r *IncidentResource, _ error) {
@@ -318,17 +573,33 @@ func (UnimplementedHandler) ReopenIncident(ctx context.Context, params ReopenInc
 
 // RotateAgentPsk implements rotate-agent-psk operation.
 //
-// 换完要同步改 agent
-// 侧的配置，否则那台机器立刻失联。新密钥同样只在这个响应里明文出现一次。.
+// The agent configuration must be updated to match, otherwise the machine loses contact immediately.
+// The new key is likewise returned in clear text only in this response.
 //
 // POST /api/v1/servers/{serverId}/psk
 func (UnimplementedHandler) RotateAgentPsk(ctx context.Context, params RotateAgentPskParams) (r *EnrollmentResource, _ error) {
 	return r, ht.ErrNotImplemented
 }
 
+// ScheduleStatusPageMaintenance implements schedule-status-page-maintenance operation.
+//
+// Maintenance starts and finishes automatically at the scheduled times; nobody needs to be present.
+// While it runs, the affected components are shown as under maintenance and availability is not
+// reduced — planned work should not consume the availability you promise to customers, which is the
+// point of announcing it in advance.
+//
+// This is separate from `/maintenance-windows`, which suppresses alerting for a period. This endpoint
+// announces the work to your customers. The two are usually created together: without suppression,
+// restarts during the maintenance raise alerts and mark the components unavailable.
+//
+// POST /api/v1/status-page/maintenances
+func (UnimplementedHandler) ScheduleStatusPageMaintenance(ctx context.Context, req *ScheduleStatusPageMaintenanceRequestBody) (r *StatusPageMaintenanceResource, _ error) {
+	return r, ht.ErrNotImplemented
+}
+
 // SetIncidentFollowing implements set-incident-following operation.
 //
-// 关注的是自己：操作者就是被加进关注列表的那个人。.
+// You follow yourself: the caller is the user added to or removed from the follower list.
 //
 // PUT /api/v1/incidents/{incidentId}/following
 func (UnimplementedHandler) SetIncidentFollowing(ctx context.Context, req *SetFollowingRequestBody, params SetIncidentFollowingParams) (r *IncidentResource, _ error) {
@@ -337,12 +608,31 @@ func (UnimplementedHandler) SetIncidentFollowing(ctx context.Context, req *SetFo
 
 // UpdateServer implements update-server operation.
 //
-// 只更新请求体中出现的字段。`address` 与 `address_kind`
-// 必须一并提供：只改其中一个会得到互相矛盾的接入配置，该错误不会被报出，表现为
-// agent 连不上。.
+// Only the fields present in the request body are updated. `address` and `address_kind` must be
+// supplied together: changing one without the other produces a contradictory configuration that is not
+// reported as an error and shows up only as an agent that cannot connect.
 //
 // PATCH /api/v1/servers/{serverId}
 func (UnimplementedHandler) UpdateServer(ctx context.Context, req *UpdateServerRequestBody, params UpdateServerParams) (r *ServerResource, _ error) {
+	return r, ht.ErrNotImplemented
+}
+
+// UpdateStatusPageComponent implements update-status-page-component operation.
+//
+// `started_on` cannot be changed: it determines where the availability bar stops showing as
+// unmeasured, and changing it would rewrite history that has already been published.
+//
+// PUT /api/v1/status-page/components/{componentId}
+func (UnimplementedHandler) UpdateStatusPageComponent(ctx context.Context, req *PutStatusPageComponentRequestBody, params UpdateStatusPageComponentParams) (r *StatusPageComponentResource, _ error) {
+	return r, ht.ErrNotImplemented
+}
+
+// UpdateStatusPageGroup implements update-status-page-group operation.
+//
+// Update a group.
+//
+// PUT /api/v1/status-page/groups/{groupId}
+func (UnimplementedHandler) UpdateStatusPageGroup(ctx context.Context, req *PutStatusPageGroupRequestBody, params UpdateStatusPageGroupParams) (r *StatusPageGroupResource, _ error) {
 	return r, ht.ErrNotImplemented
 }
 

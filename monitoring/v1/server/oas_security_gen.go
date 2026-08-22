@@ -14,9 +14,9 @@ import (
 // SecurityHandler is handler for security parameters.
 type SecurityHandler interface {
 	// HandleBearerAuth handles bearerAuth security.
-	// 项目令牌。先在 auth.leaflow.net 登录拿到账号令牌，再用它向 IAM
-	// 换取项目令牌（POST
-	// /account/v1/projects/{projectId}/token）——一张项目令牌同时说明当前用户和当前项目。.
+	// Project token. Sign in at auth.leaflow.net to obtain an account token, then exchange it for a
+	// project token (POST /account/v1/projects/{projectId}/token). A project token identifies both the
+	// current user and the current project.
 	HandleBearerAuth(ctx context.Context, operationName OperationName, t BearerAuth) (context.Context, error)
 }
 
@@ -37,40 +37,65 @@ func findAuthorization(h http.Header, prefix string) (string, bool) {
 
 // operationRolesBearerAuth is a private map storing roles per operation.
 var operationRolesBearerAuth = map[string][]string{
-	AcknowledgeIncidentOperation:     []string{},
-	AddIncidentCommentOperation:      []string{},
-	AssignIncidentOperation:          []string{},
-	CloseIncidentOperation:           []string{},
-	DeleteMaintenanceWindowOperation: []string{},
-	DeleteServerOperation:            []string{},
-	DeleteSloOperation:               []string{},
-	DeleteWebCheckOperation:          []string{},
-	DisableServerMonitoringOperation: []string{},
-	EnableServerMonitoringOperation:  []string{},
-	GetIncidentOperation:             []string{},
-	GetMaintenanceWindowOperation:    []string{},
-	GetProjectOverviewOperation:      []string{},
-	GetServerOperation:               []string{},
-	GetServerMetricOperation:         []string{},
-	GetServerResourcesOperation:      []string{},
-	GetServerSnapshotOperation:       []string{},
-	GetSliReportOperation:            []string{},
-	GetSloOperation:                  []string{},
-	GetWebCheckOperation:             []string{},
-	ListIncidentTimelineOperation:    []string{},
-	ListIncidentsOperation:           []string{},
-	ListMaintenanceWindowsOperation:  []string{},
-	ListProjectTopItemsOperation:     []string{},
-	ListServerItemsOperation:         []string{},
-	ListServersOperation:             []string{},
-	ListWebChecksOperation:           []string{},
-	PutMaintenanceWindowOperation:    []string{},
-	PutSloOperation:                  []string{},
-	PutWebCheckOperation:             []string{},
-	ReopenIncidentOperation:          []string{},
-	RotateAgentPskOperation:          []string{},
-	SetIncidentFollowingOperation:    []string{},
-	UpdateServerOperation:            []string{},
+	AcknowledgeIncidentOperation:            []string{},
+	AddIncidentCommentOperation:             []string{},
+	AssignIncidentOperation:                 []string{},
+	CancelStatusPageMaintenanceOperation:    []string{},
+	CloseIncidentOperation:                  []string{},
+	CompleteStatusPageMaintenanceOperation:  []string{},
+	CreateStatusPageComponentOperation:      []string{},
+	CreateStatusPageGroupOperation:          []string{},
+	DeleteMaintenanceWindowOperation:        []string{},
+	DeleteServerOperation:                   []string{},
+	DeleteSloOperation:                      []string{},
+	DeleteStatusPageOperation:               []string{},
+	DeleteStatusPageComponentOperation:      []string{},
+	DeleteStatusPageGroupOperation:          []string{},
+	DeleteWebCheckOperation:                 []string{},
+	DisableServerMonitoringOperation:        []string{},
+	EnableServerMonitoringOperation:         []string{},
+	GetIncidentOperation:                    []string{},
+	GetMaintenanceWindowOperation:           []string{},
+	GetProjectOverviewOperation:             []string{},
+	GetServerOperation:                      []string{},
+	GetServerMetricOperation:                []string{},
+	GetServerResourcesOperation:             []string{},
+	GetServerSnapshotOperation:              []string{},
+	GetSliReportOperation:                   []string{},
+	GetSloOperation:                         []string{},
+	GetStatusPageOperation:                  []string{},
+	GetStatusPageComponentOperation:         []string{},
+	GetStatusPageIncidentOperation:          []string{},
+	GetStatusPageMaintenanceOperation:       []string{},
+	GetWebCheckOperation:                    []string{},
+	ListIncidentTimelineOperation:           []string{},
+	ListIncidentsOperation:                  []string{},
+	ListMaintenanceWindowsOperation:         []string{},
+	ListProjectTopItemsOperation:            []string{},
+	ListServerItemsOperation:                []string{},
+	ListServersOperation:                    []string{},
+	ListStatusPageComponentSourcesOperation: []string{},
+	ListStatusPageComponentsOperation:       []string{},
+	ListStatusPageGroupsOperation:           []string{},
+	ListStatusPageIncidentsOperation:        []string{},
+	ListStatusPageMaintenancesOperation:     []string{},
+	ListWebChecksOperation:                  []string{},
+	PostStatusPageIncidentUpdateOperation:   []string{},
+	PublishStatusPageIncidentOperation:      []string{},
+	PutMaintenanceWindowOperation:           []string{},
+	PutSloOperation:                         []string{},
+	PutStatusPageOperation:                  []string{},
+	PutStatusPageComponentSourcesOperation:  []string{},
+	PutStatusPageGroupOrderOperation:        []string{},
+	PutStatusPageOrderOperation:             []string{},
+	PutWebCheckOperation:                    []string{},
+	ReopenIncidentOperation:                 []string{},
+	RotateAgentPskOperation:                 []string{},
+	ScheduleStatusPageMaintenanceOperation:  []string{},
+	SetIncidentFollowingOperation:           []string{},
+	UpdateServerOperation:                   []string{},
+	UpdateStatusPageComponentOperation:      []string{},
+	UpdateStatusPageGroupOperation:          []string{},
 }
 
 // GetRolesForBearerAuth returns the required roles for the given operation.
@@ -114,9 +139,9 @@ func (s *Server) securityBearerAuth(ctx context.Context, operationName Operation
 // SecuritySource is provider of security values (tokens, passwords, etc.).
 type SecuritySource interface {
 	// BearerAuth provides bearerAuth security value.
-	// 项目令牌。先在 auth.leaflow.net 登录拿到账号令牌，再用它向 IAM
-	// 换取项目令牌（POST
-	// /account/v1/projects/{projectId}/token）——一张项目令牌同时说明当前用户和当前项目。.
+	// Project token. Sign in at auth.leaflow.net to obtain an account token, then exchange it for a
+	// project token (POST /account/v1/projects/{projectId}/token). A project token identifies both the
+	// current user and the current project.
 	BearerAuth(ctx context.Context, operationName OperationName) (BearerAuth, error)
 }
 
