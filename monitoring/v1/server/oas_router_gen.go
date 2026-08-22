@@ -11,7 +11,7 @@ import (
 )
 
 var (
-	rn28AllowedHeaders = map[string]string{
+	rn43AllowedHeaders = map[string]string{
 		"GET": "Authorization",
 	}
 	rn2AllowedHeaders = map[string]string{
@@ -23,76 +23,131 @@ var (
 	rn7AllowedHeaders = map[string]string{
 		"PUT": "Authorization,Content-Type",
 	}
-	rn9AllowedHeaders = map[string]string{
+	rn13AllowedHeaders = map[string]string{
 		"POST": "Authorization,Content-Type",
 	}
 	rn5AllowedHeaders = map[string]string{
 		"POST": "Authorization,Content-Type",
 	}
-	rn36AllowedHeaders = map[string]string{
+	rn57AllowedHeaders = map[string]string{
 		"PUT": "Authorization,Content-Type",
 	}
-	rn34AllowedHeaders = map[string]string{
+	rn55AllowedHeaders = map[string]string{
 		"POST": "Authorization",
 	}
-	rn27AllowedHeaders = map[string]string{
+	rn42AllowedHeaders = map[string]string{
 		"GET": "Authorization",
 	}
-	rn29AllowedHeaders = map[string]string{
+	rn44AllowedHeaders = map[string]string{
 		"GET": "Authorization",
 	}
-	rn12AllowedHeaders = map[string]string{
+	rn20AllowedHeaders = map[string]string{
 		"DELETE": "Authorization",
 		"GET":    "Authorization",
 		"PUT":    "Authorization,Content-Type",
 	}
-	rn21AllowedHeaders = map[string]string{
+	rn34AllowedHeaders = map[string]string{
 		"GET": "Authorization",
 	}
-	rn32AllowedHeaders = map[string]string{
+	rn47AllowedHeaders = map[string]string{
 		"GET": "Authorization",
 	}
-	rn14AllowedHeaders = map[string]string{
+	rn23AllowedHeaders = map[string]string{
 		"DELETE": "Authorization",
 		"GET":    "Authorization",
 		"PATCH":  "Authorization,Content-Type",
 		"PUT":    "Authorization,Content-Type",
 	}
-	rn20AllowedHeaders = map[string]string{
+	rn33AllowedHeaders = map[string]string{
 		"POST": "Authorization",
 	}
-	rn31AllowedHeaders = map[string]string{
-		"GET": "Authorization",
-	}
-	rn22AllowedHeaders = map[string]string{
+	rn46AllowedHeaders = map[string]string{
 		"GET": "Authorization",
 	}
 	rn35AllowedHeaders = map[string]string{
+		"GET": "Authorization",
+	}
+	rn56AllowedHeaders = map[string]string{
 		"POST": "Authorization",
 	}
-	rn23AllowedHeaders = map[string]string{
+	rn36AllowedHeaders = map[string]string{
+		"GET": "Authorization",
+	}
+	rn37AllowedHeaders = map[string]string{
+		"GET": "Authorization",
+	}
+	rn31AllowedHeaders = map[string]string{
+		"DELETE": "Authorization",
+		"GET":    "Authorization",
+		"PUT":    "Authorization,Content-Type",
+	}
+	rn39AllowedHeaders = map[string]string{
 		"GET": "Authorization",
 	}
 	rn24AllowedHeaders = map[string]string{
+		"DELETE": "Authorization",
+		"GET":    "Authorization",
+		"PUT":    "Authorization,Content-Type",
+	}
+	rn25AllowedHeaders = map[string]string{
+		"DELETE": "Authorization",
+		"GET":    "Authorization",
+		"PUT":    "Authorization,Content-Type",
+	}
+	rn17AllowedHeaders = map[string]string{
+		"GET":  "Authorization",
+		"POST": "Authorization,Content-Type",
+	}
+	rn27AllowedHeaders = map[string]string{
+		"DELETE": "Authorization",
+		"GET":    "Authorization",
+		"PUT":    "Authorization,Content-Type",
+	}
+	rn48AllowedHeaders = map[string]string{
 		"GET": "Authorization",
+		"PUT": "Authorization,Content-Type",
 	}
 	rn18AllowedHeaders = map[string]string{
+		"GET":  "Authorization",
+		"POST": "Authorization,Content-Type",
+	}
+	rn29AllowedHeaders = map[string]string{
 		"DELETE": "Authorization",
-		"GET":    "Authorization",
 		"PUT":    "Authorization,Content-Type",
 	}
-	rn26AllowedHeaders = map[string]string{
+	rn53AllowedHeaders = map[string]string{
+		"PUT": "Authorization,Content-Type",
+	}
+	rn49AllowedHeaders = map[string]string{
+		"GET":  "Authorization",
+		"POST": "Authorization,Content-Type",
+	}
+	rn41AllowedHeaders = map[string]string{
 		"GET": "Authorization",
 	}
-	rn16AllowedHeaders = map[string]string{
-		"DELETE": "Authorization",
-		"GET":    "Authorization",
-		"PUT":    "Authorization,Content-Type",
+	rn52AllowedHeaders = map[string]string{
+		"POST": "Authorization,Content-Type",
 	}
-	rn30AllowedHeaders = map[string]string{
+	rn50AllowedHeaders = map[string]string{
+		"GET":  "Authorization",
+		"POST": "Authorization,Content-Type",
+	}
+	rn10AllowedHeaders = map[string]string{
 		"GET": "Authorization",
 	}
-	rn33AllowedHeaders = map[string]string{
+	rn11AllowedHeaders = map[string]string{
+		"POST": "Authorization",
+	}
+	rn15AllowedHeaders = map[string]string{
+		"POST": "Authorization",
+	}
+	rn54AllowedHeaders = map[string]string{
+		"PUT": "Authorization,Content-Type",
+	}
+	rn45AllowedHeaders = map[string]string{
+		"GET": "Authorization",
+	}
+	rn51AllowedHeaders = map[string]string{
 		"GET": "Authorization",
 	}
 )
@@ -163,7 +218,7 @@ func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 					default:
 						s.notAllowed(w, r, notAllowedParams{
 							allowedMethods: "GET",
-							allowedHeaders: rn28AllowedHeaders,
+							allowedHeaders: rn43AllowedHeaders,
 							acceptPost:     "",
 							acceptPatch:    "",
 						})
@@ -317,7 +372,7 @@ func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 									default:
 										s.notAllowed(w, r, notAllowedParams{
 											allowedMethods: "POST",
-											allowedHeaders: rn9AllowedHeaders,
+											allowedHeaders: rn13AllowedHeaders,
 											acceptPost:     "application/json",
 											acceptPatch:    "",
 										})
@@ -373,7 +428,7 @@ func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 								default:
 									s.notAllowed(w, r, notAllowedParams{
 										allowedMethods: "PUT",
-										allowedHeaders: rn36AllowedHeaders,
+										allowedHeaders: rn57AllowedHeaders,
 										acceptPost:     "",
 										acceptPatch:    "",
 									})
@@ -400,7 +455,7 @@ func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 								default:
 									s.notAllowed(w, r, notAllowedParams{
 										allowedMethods: "POST",
-										allowedHeaders: rn34AllowedHeaders,
+										allowedHeaders: rn55AllowedHeaders,
 										acceptPost:     "",
 										acceptPatch:    "",
 									})
@@ -427,7 +482,7 @@ func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 								default:
 									s.notAllowed(w, r, notAllowedParams{
 										allowedMethods: "GET",
-										allowedHeaders: rn27AllowedHeaders,
+										allowedHeaders: rn42AllowedHeaders,
 										acceptPost:     "",
 										acceptPatch:    "",
 									})
@@ -457,7 +512,7 @@ func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 					default:
 						s.notAllowed(w, r, notAllowedParams{
 							allowedMethods: "GET",
-							allowedHeaders: rn29AllowedHeaders,
+							allowedHeaders: rn44AllowedHeaders,
 							acceptPost:     "",
 							acceptPatch:    "",
 						})
@@ -501,7 +556,7 @@ func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 						default:
 							s.notAllowed(w, r, notAllowedParams{
 								allowedMethods: "DELETE,GET,PUT",
-								allowedHeaders: rn12AllowedHeaders,
+								allowedHeaders: rn20AllowedHeaders,
 								acceptPost:     "",
 								acceptPatch:    "",
 							})
@@ -528,7 +583,7 @@ func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 					default:
 						s.notAllowed(w, r, notAllowedParams{
 							allowedMethods: "GET",
-							allowedHeaders: rn21AllowedHeaders,
+							allowedHeaders: rn34AllowedHeaders,
 							acceptPost:     "",
 							acceptPatch:    "",
 						})
@@ -564,7 +619,7 @@ func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 						default:
 							s.notAllowed(w, r, notAllowedParams{
 								allowedMethods: "GET",
-								allowedHeaders: rn32AllowedHeaders,
+								allowedHeaders: rn47AllowedHeaders,
 								acceptPost:     "",
 								acceptPatch:    "",
 							})
@@ -611,7 +666,7 @@ func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 							default:
 								s.notAllowed(w, r, notAllowedParams{
 									allowedMethods: "DELETE,GET,PATCH,PUT",
-									allowedHeaders: rn14AllowedHeaders,
+									allowedHeaders: rn23AllowedHeaders,
 									acceptPost:     "",
 									acceptPatch:    "application/json",
 								})
@@ -650,7 +705,7 @@ func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 									default:
 										s.notAllowed(w, r, notAllowedParams{
 											allowedMethods: "POST",
-											allowedHeaders: rn20AllowedHeaders,
+											allowedHeaders: rn33AllowedHeaders,
 											acceptPost:     "",
 											acceptPatch:    "",
 										})
@@ -677,7 +732,7 @@ func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 									default:
 										s.notAllowed(w, r, notAllowedParams{
 											allowedMethods: "GET",
-											allowedHeaders: rn31AllowedHeaders,
+											allowedHeaders: rn46AllowedHeaders,
 											acceptPost:     "",
 											acceptPatch:    "",
 										})
@@ -704,7 +759,7 @@ func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 									default:
 										s.notAllowed(w, r, notAllowedParams{
 											allowedMethods: "GET",
-											allowedHeaders: rn22AllowedHeaders,
+											allowedHeaders: rn35AllowedHeaders,
 											acceptPost:     "",
 											acceptPatch:    "",
 										})
@@ -731,7 +786,7 @@ func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 									default:
 										s.notAllowed(w, r, notAllowedParams{
 											allowedMethods: "POST",
-											allowedHeaders: rn35AllowedHeaders,
+											allowedHeaders: rn56AllowedHeaders,
 											acceptPost:     "",
 											acceptPatch:    "",
 										})
@@ -758,7 +813,7 @@ func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 									default:
 										s.notAllowed(w, r, notAllowedParams{
 											allowedMethods: "GET",
-											allowedHeaders: rn23AllowedHeaders,
+											allowedHeaders: rn36AllowedHeaders,
 											acceptPost:     "",
 											acceptPatch:    "",
 										})
@@ -785,7 +840,7 @@ func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 									default:
 										s.notAllowed(w, r, notAllowedParams{
 											allowedMethods: "GET",
-											allowedHeaders: rn24AllowedHeaders,
+											allowedHeaders: rn37AllowedHeaders,
 											acceptPost:     "",
 											acceptPatch:    "",
 										})
@@ -832,7 +887,7 @@ func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 									default:
 										s.notAllowed(w, r, notAllowedParams{
 											allowedMethods: "DELETE,GET,PUT",
-											allowedHeaders: rn18AllowedHeaders,
+											allowedHeaders: rn31AllowedHeaders,
 											acceptPost:     "",
 											acceptPatch:    "",
 										})
@@ -875,7 +930,7 @@ func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 							default:
 								s.notAllowed(w, r, notAllowedParams{
 									allowedMethods: "GET",
-									allowedHeaders: rn26AllowedHeaders,
+									allowedHeaders: rn39AllowedHeaders,
 									acceptPost:     "",
 									acceptPatch:    "",
 								})
@@ -904,13 +959,507 @@ func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 							default:
 								s.notAllowed(w, r, notAllowedParams{
 									allowedMethods: "DELETE,GET,PUT",
-									allowedHeaders: rn16AllowedHeaders,
+									allowedHeaders: rn24AllowedHeaders,
 									acceptPost:     "",
 									acceptPatch:    "",
 								})
 							}
 
 							return
+						}
+
+					}
+
+				case 't': // Prefix: "tatus-page"
+
+					if l := len("tatus-page"); len(elem) >= l && elem[0:l] == "tatus-page" {
+						elem = elem[l:]
+					} else {
+						break
+					}
+
+					if len(elem) == 0 {
+						switch r.Method {
+						case "DELETE":
+							s.handleDeleteStatusPageRequest([0]string{}, elemIsEscaped, w, r)
+						case "GET":
+							s.handleGetStatusPageRequest([0]string{}, elemIsEscaped, w, r)
+						case "PUT":
+							s.handlePutStatusPageRequest([0]string{}, elemIsEscaped, w, r)
+						default:
+							s.notAllowed(w, r, notAllowedParams{
+								allowedMethods: "DELETE,GET,PUT",
+								allowedHeaders: rn25AllowedHeaders,
+								acceptPost:     "",
+								acceptPatch:    "",
+							})
+						}
+
+						return
+					}
+					switch elem[0] {
+					case '/': // Prefix: "/"
+
+						if l := len("/"); len(elem) >= l && elem[0:l] == "/" {
+							elem = elem[l:]
+						} else {
+							break
+						}
+
+						if len(elem) == 0 {
+							break
+						}
+						switch elem[0] {
+						case 'c': // Prefix: "components"
+
+							if l := len("components"); len(elem) >= l && elem[0:l] == "components" {
+								elem = elem[l:]
+							} else {
+								break
+							}
+
+							if len(elem) == 0 {
+								switch r.Method {
+								case "GET":
+									s.handleListStatusPageComponentsRequest([0]string{}, elemIsEscaped, w, r)
+								case "POST":
+									s.handleCreateStatusPageComponentRequest([0]string{}, elemIsEscaped, w, r)
+								default:
+									s.notAllowed(w, r, notAllowedParams{
+										allowedMethods: "GET,POST",
+										allowedHeaders: rn17AllowedHeaders,
+										acceptPost:     "application/json",
+										acceptPatch:    "",
+									})
+								}
+
+								return
+							}
+							switch elem[0] {
+							case '/': // Prefix: "/"
+
+								if l := len("/"); len(elem) >= l && elem[0:l] == "/" {
+									elem = elem[l:]
+								} else {
+									break
+								}
+
+								// Param: "componentId"
+								// Match until "/"
+								idx := strings.IndexByte(elem, '/')
+								if idx < 0 {
+									idx = len(elem)
+								}
+								args[0] = elem[:idx]
+								elem = elem[idx:]
+
+								if len(elem) == 0 {
+									switch r.Method {
+									case "DELETE":
+										s.handleDeleteStatusPageComponentRequest([1]string{
+											args[0],
+										}, elemIsEscaped, w, r)
+									case "GET":
+										s.handleGetStatusPageComponentRequest([1]string{
+											args[0],
+										}, elemIsEscaped, w, r)
+									case "PUT":
+										s.handleUpdateStatusPageComponentRequest([1]string{
+											args[0],
+										}, elemIsEscaped, w, r)
+									default:
+										s.notAllowed(w, r, notAllowedParams{
+											allowedMethods: "DELETE,GET,PUT",
+											allowedHeaders: rn27AllowedHeaders,
+											acceptPost:     "",
+											acceptPatch:    "",
+										})
+									}
+
+									return
+								}
+								switch elem[0] {
+								case '/': // Prefix: "/sources"
+
+									if l := len("/sources"); len(elem) >= l && elem[0:l] == "/sources" {
+										elem = elem[l:]
+									} else {
+										break
+									}
+
+									if len(elem) == 0 {
+										// Leaf node.
+										switch r.Method {
+										case "GET":
+											s.handleListStatusPageComponentSourcesRequest([1]string{
+												args[0],
+											}, elemIsEscaped, w, r)
+										case "PUT":
+											s.handlePutStatusPageComponentSourcesRequest([1]string{
+												args[0],
+											}, elemIsEscaped, w, r)
+										default:
+											s.notAllowed(w, r, notAllowedParams{
+												allowedMethods: "GET,PUT",
+												allowedHeaders: rn48AllowedHeaders,
+												acceptPost:     "",
+												acceptPatch:    "",
+											})
+										}
+
+										return
+									}
+
+								}
+
+							}
+
+						case 'g': // Prefix: "groups"
+
+							if l := len("groups"); len(elem) >= l && elem[0:l] == "groups" {
+								elem = elem[l:]
+							} else {
+								break
+							}
+
+							if len(elem) == 0 {
+								switch r.Method {
+								case "GET":
+									s.handleListStatusPageGroupsRequest([0]string{}, elemIsEscaped, w, r)
+								case "POST":
+									s.handleCreateStatusPageGroupRequest([0]string{}, elemIsEscaped, w, r)
+								default:
+									s.notAllowed(w, r, notAllowedParams{
+										allowedMethods: "GET,POST",
+										allowedHeaders: rn18AllowedHeaders,
+										acceptPost:     "application/json",
+										acceptPatch:    "",
+									})
+								}
+
+								return
+							}
+							switch elem[0] {
+							case '/': // Prefix: "/"
+
+								if l := len("/"); len(elem) >= l && elem[0:l] == "/" {
+									elem = elem[l:]
+								} else {
+									break
+								}
+
+								// Param: "groupId"
+								// Match until "/"
+								idx := strings.IndexByte(elem, '/')
+								if idx < 0 {
+									idx = len(elem)
+								}
+								args[0] = elem[:idx]
+								elem = elem[idx:]
+
+								if len(elem) == 0 {
+									switch r.Method {
+									case "DELETE":
+										s.handleDeleteStatusPageGroupRequest([1]string{
+											args[0],
+										}, elemIsEscaped, w, r)
+									case "PUT":
+										s.handleUpdateStatusPageGroupRequest([1]string{
+											args[0],
+										}, elemIsEscaped, w, r)
+									default:
+										s.notAllowed(w, r, notAllowedParams{
+											allowedMethods: "DELETE,PUT",
+											allowedHeaders: rn29AllowedHeaders,
+											acceptPost:     "",
+											acceptPatch:    "",
+										})
+									}
+
+									return
+								}
+								switch elem[0] {
+								case '/': // Prefix: "/order"
+
+									if l := len("/order"); len(elem) >= l && elem[0:l] == "/order" {
+										elem = elem[l:]
+									} else {
+										break
+									}
+
+									if len(elem) == 0 {
+										// Leaf node.
+										switch r.Method {
+										case "PUT":
+											s.handlePutStatusPageGroupOrderRequest([1]string{
+												args[0],
+											}, elemIsEscaped, w, r)
+										default:
+											s.notAllowed(w, r, notAllowedParams{
+												allowedMethods: "PUT",
+												allowedHeaders: rn53AllowedHeaders,
+												acceptPost:     "",
+												acceptPatch:    "",
+											})
+										}
+
+										return
+									}
+
+								}
+
+							}
+
+						case 'i': // Prefix: "incidents"
+
+							if l := len("incidents"); len(elem) >= l && elem[0:l] == "incidents" {
+								elem = elem[l:]
+							} else {
+								break
+							}
+
+							if len(elem) == 0 {
+								switch r.Method {
+								case "GET":
+									s.handleListStatusPageIncidentsRequest([0]string{}, elemIsEscaped, w, r)
+								case "POST":
+									s.handlePublishStatusPageIncidentRequest([0]string{}, elemIsEscaped, w, r)
+								default:
+									s.notAllowed(w, r, notAllowedParams{
+										allowedMethods: "GET,POST",
+										allowedHeaders: rn49AllowedHeaders,
+										acceptPost:     "application/json",
+										acceptPatch:    "",
+									})
+								}
+
+								return
+							}
+							switch elem[0] {
+							case '/': // Prefix: "/"
+
+								if l := len("/"); len(elem) >= l && elem[0:l] == "/" {
+									elem = elem[l:]
+								} else {
+									break
+								}
+
+								// Param: "incidentId"
+								// Match until "/"
+								idx := strings.IndexByte(elem, '/')
+								if idx < 0 {
+									idx = len(elem)
+								}
+								args[0] = elem[:idx]
+								elem = elem[idx:]
+
+								if len(elem) == 0 {
+									switch r.Method {
+									case "GET":
+										s.handleGetStatusPageIncidentRequest([1]string{
+											args[0],
+										}, elemIsEscaped, w, r)
+									default:
+										s.notAllowed(w, r, notAllowedParams{
+											allowedMethods: "GET",
+											allowedHeaders: rn41AllowedHeaders,
+											acceptPost:     "",
+											acceptPatch:    "",
+										})
+									}
+
+									return
+								}
+								switch elem[0] {
+								case '/': // Prefix: "/updates"
+
+									if l := len("/updates"); len(elem) >= l && elem[0:l] == "/updates" {
+										elem = elem[l:]
+									} else {
+										break
+									}
+
+									if len(elem) == 0 {
+										// Leaf node.
+										switch r.Method {
+										case "POST":
+											s.handlePostStatusPageIncidentUpdateRequest([1]string{
+												args[0],
+											}, elemIsEscaped, w, r)
+										default:
+											s.notAllowed(w, r, notAllowedParams{
+												allowedMethods: "POST",
+												allowedHeaders: rn52AllowedHeaders,
+												acceptPost:     "application/json",
+												acceptPatch:    "",
+											})
+										}
+
+										return
+									}
+
+								}
+
+							}
+
+						case 'm': // Prefix: "maintenances"
+
+							if l := len("maintenances"); len(elem) >= l && elem[0:l] == "maintenances" {
+								elem = elem[l:]
+							} else {
+								break
+							}
+
+							if len(elem) == 0 {
+								switch r.Method {
+								case "GET":
+									s.handleListStatusPageMaintenancesRequest([0]string{}, elemIsEscaped, w, r)
+								case "POST":
+									s.handleScheduleStatusPageMaintenanceRequest([0]string{}, elemIsEscaped, w, r)
+								default:
+									s.notAllowed(w, r, notAllowedParams{
+										allowedMethods: "GET,POST",
+										allowedHeaders: rn50AllowedHeaders,
+										acceptPost:     "application/json",
+										acceptPatch:    "",
+									})
+								}
+
+								return
+							}
+							switch elem[0] {
+							case '/': // Prefix: "/"
+
+								if l := len("/"); len(elem) >= l && elem[0:l] == "/" {
+									elem = elem[l:]
+								} else {
+									break
+								}
+
+								// Param: "maintenanceId"
+								// Match until "/"
+								idx := strings.IndexByte(elem, '/')
+								if idx < 0 {
+									idx = len(elem)
+								}
+								args[0] = elem[:idx]
+								elem = elem[idx:]
+
+								if len(elem) == 0 {
+									switch r.Method {
+									case "GET":
+										s.handleGetStatusPageMaintenanceRequest([1]string{
+											args[0],
+										}, elemIsEscaped, w, r)
+									default:
+										s.notAllowed(w, r, notAllowedParams{
+											allowedMethods: "GET",
+											allowedHeaders: rn10AllowedHeaders,
+											acceptPost:     "",
+											acceptPatch:    "",
+										})
+									}
+
+									return
+								}
+								switch elem[0] {
+								case '/': // Prefix: "/c"
+
+									if l := len("/c"); len(elem) >= l && elem[0:l] == "/c" {
+										elem = elem[l:]
+									} else {
+										break
+									}
+
+									if len(elem) == 0 {
+										break
+									}
+									switch elem[0] {
+									case 'a': // Prefix: "ancel"
+
+										if l := len("ancel"); len(elem) >= l && elem[0:l] == "ancel" {
+											elem = elem[l:]
+										} else {
+											break
+										}
+
+										if len(elem) == 0 {
+											// Leaf node.
+											switch r.Method {
+											case "POST":
+												s.handleCancelStatusPageMaintenanceRequest([1]string{
+													args[0],
+												}, elemIsEscaped, w, r)
+											default:
+												s.notAllowed(w, r, notAllowedParams{
+													allowedMethods: "POST",
+													allowedHeaders: rn11AllowedHeaders,
+													acceptPost:     "",
+													acceptPatch:    "",
+												})
+											}
+
+											return
+										}
+
+									case 'o': // Prefix: "omplete"
+
+										if l := len("omplete"); len(elem) >= l && elem[0:l] == "omplete" {
+											elem = elem[l:]
+										} else {
+											break
+										}
+
+										if len(elem) == 0 {
+											// Leaf node.
+											switch r.Method {
+											case "POST":
+												s.handleCompleteStatusPageMaintenanceRequest([1]string{
+													args[0],
+												}, elemIsEscaped, w, r)
+											default:
+												s.notAllowed(w, r, notAllowedParams{
+													allowedMethods: "POST",
+													allowedHeaders: rn15AllowedHeaders,
+													acceptPost:     "",
+													acceptPatch:    "",
+												})
+											}
+
+											return
+										}
+
+									}
+
+								}
+
+							}
+
+						case 'o': // Prefix: "order"
+
+							if l := len("order"); len(elem) >= l && elem[0:l] == "order" {
+								elem = elem[l:]
+							} else {
+								break
+							}
+
+							if len(elem) == 0 {
+								// Leaf node.
+								switch r.Method {
+								case "PUT":
+									s.handlePutStatusPageOrderRequest([0]string{}, elemIsEscaped, w, r)
+								default:
+									s.notAllowed(w, r, notAllowedParams{
+										allowedMethods: "PUT",
+										allowedHeaders: rn54AllowedHeaders,
+										acceptPost:     "",
+										acceptPatch:    "",
+									})
+								}
+
+								return
+							}
+
 						}
 
 					}
@@ -933,7 +1482,7 @@ func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 					default:
 						s.notAllowed(w, r, notAllowedParams{
 							allowedMethods: "GET",
-							allowedHeaders: rn30AllowedHeaders,
+							allowedHeaders: rn45AllowedHeaders,
 							acceptPost:     "",
 							acceptPatch:    "",
 						})
@@ -958,7 +1507,7 @@ func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 					default:
 						s.notAllowed(w, r, notAllowedParams{
 							allowedMethods: "GET",
-							allowedHeaders: rn33AllowedHeaders,
+							allowedHeaders: rn51AllowedHeaders,
 							acceptPost:     "",
 							acceptPatch:    "",
 						})
@@ -1079,7 +1628,7 @@ func (s *Server) FindPath(method string, u *url.URL) (r Route, _ bool) {
 					switch method {
 					case "GET":
 						r.name = ListIncidentsOperation
-						r.summary = "列出告警"
+						r.summary = "List incidents"
 						r.operationID = "list-incidents"
 						r.operationGroup = ""
 						r.pathPattern = "/api/v1/incidents"
@@ -1112,7 +1661,7 @@ func (s *Server) FindPath(method string, u *url.URL) (r Route, _ bool) {
 						switch method {
 						case "GET":
 							r.name = GetIncidentOperation
-							r.summary = "查一条告警"
+							r.summary = "Get an incident"
 							r.operationID = "get-incident"
 							r.operationGroup = ""
 							r.pathPattern = "/api/v1/incidents/{incidentId}"
@@ -1161,7 +1710,7 @@ func (s *Server) FindPath(method string, u *url.URL) (r Route, _ bool) {
 									switch method {
 									case "POST":
 										r.name = AcknowledgeIncidentOperation
-										r.summary = "确认这条告警"
+										r.summary = "Acknowledge an incident"
 										r.operationID = "acknowledge-incident"
 										r.operationGroup = ""
 										r.pathPattern = "/api/v1/incidents/{incidentId}/acknowledge"
@@ -1186,7 +1735,7 @@ func (s *Server) FindPath(method string, u *url.URL) (r Route, _ bool) {
 									switch method {
 									case "PUT":
 										r.name = AssignIncidentOperation
-										r.summary = "把这条告警交给谁，或者收回来"
+										r.summary = "Assign an incident, or clear its assignee"
 										r.operationID = "assign-incident"
 										r.operationGroup = ""
 										r.pathPattern = "/api/v1/incidents/{incidentId}/assignee"
@@ -1225,7 +1774,7 @@ func (s *Server) FindPath(method string, u *url.URL) (r Route, _ bool) {
 									switch method {
 									case "POST":
 										r.name = CloseIncidentOperation
-										r.summary = "了结这条告警"
+										r.summary = "Close an incident"
 										r.operationID = "close-incident"
 										r.operationGroup = ""
 										r.pathPattern = "/api/v1/incidents/{incidentId}/close"
@@ -1250,7 +1799,7 @@ func (s *Server) FindPath(method string, u *url.URL) (r Route, _ bool) {
 									switch method {
 									case "POST":
 										r.name = AddIncidentCommentOperation
-										r.summary = "在时间线上写一条备注"
+										r.summary = "Add a note to the timeline"
 										r.operationID = "add-incident-comment"
 										r.operationGroup = ""
 										r.pathPattern = "/api/v1/incidents/{incidentId}/comments"
@@ -1277,7 +1826,7 @@ func (s *Server) FindPath(method string, u *url.URL) (r Route, _ bool) {
 								switch method {
 								case "PUT":
 									r.name = SetIncidentFollowingOperation
-									r.summary = "关注这条告警，或者取消关注"
+									r.summary = "Follow an incident, or stop following it"
 									r.operationID = "set-incident-following"
 									r.operationGroup = ""
 									r.pathPattern = "/api/v1/incidents/{incidentId}/following"
@@ -1302,7 +1851,7 @@ func (s *Server) FindPath(method string, u *url.URL) (r Route, _ bool) {
 								switch method {
 								case "POST":
 									r.name = ReopenIncidentOperation
-									r.summary = "重新打开一条已经了结的告警"
+									r.summary = "Reopen a closed incident"
 									r.operationID = "reopen-incident"
 									r.operationGroup = ""
 									r.pathPattern = "/api/v1/incidents/{incidentId}/reopen"
@@ -1327,7 +1876,7 @@ func (s *Server) FindPath(method string, u *url.URL) (r Route, _ bool) {
 								switch method {
 								case "GET":
 									r.name = ListIncidentTimelineOperation
-									r.summary = "列出这条告警的时间线"
+									r.summary = "List the timeline of an incident"
 									r.operationID = "list-incident-timeline"
 									r.operationGroup = ""
 									r.pathPattern = "/api/v1/incidents/{incidentId}/timeline"
@@ -1357,7 +1906,7 @@ func (s *Server) FindPath(method string, u *url.URL) (r Route, _ bool) {
 					switch method {
 					case "GET":
 						r.name = ListMaintenanceWindowsOperation
-						r.summary = "列出维护窗口"
+						r.summary = "List maintenance windows"
 						r.operationID = "list-maintenance-windows"
 						r.operationGroup = ""
 						r.pathPattern = "/api/v1/maintenance-windows"
@@ -1391,7 +1940,7 @@ func (s *Server) FindPath(method string, u *url.URL) (r Route, _ bool) {
 						switch method {
 						case "DELETE":
 							r.name = DeleteMaintenanceWindowOperation
-							r.summary = "撤掉一个维护窗口"
+							r.summary = "Cancel a maintenance window"
 							r.operationID = "delete-maintenance-window"
 							r.operationGroup = ""
 							r.pathPattern = "/api/v1/maintenance-windows/{windowId}"
@@ -1400,7 +1949,7 @@ func (s *Server) FindPath(method string, u *url.URL) (r Route, _ bool) {
 							return r, true
 						case "GET":
 							r.name = GetMaintenanceWindowOperation
-							r.summary = "查一个维护窗口"
+							r.summary = "Get a maintenance window"
 							r.operationID = "get-maintenance-window"
 							r.operationGroup = ""
 							r.pathPattern = "/api/v1/maintenance-windows/{windowId}"
@@ -1409,7 +1958,7 @@ func (s *Server) FindPath(method string, u *url.URL) (r Route, _ bool) {
 							return r, true
 						case "PUT":
 							r.name = PutMaintenanceWindowOperation
-							r.summary = "开一个维护窗口，或者按同一个 id 覆盖它"
+							r.summary = "Create a maintenance window, or replace it by the same id"
 							r.operationID = "put-maintenance-window"
 							r.operationGroup = ""
 							r.pathPattern = "/api/v1/maintenance-windows/{windowId}"
@@ -1436,7 +1985,7 @@ func (s *Server) FindPath(method string, u *url.URL) (r Route, _ bool) {
 					switch method {
 					case "GET":
 						r.name = GetProjectOverviewOperation
-						r.summary = "项目总览"
+						r.summary = "Project overview"
 						r.operationID = "get-project-overview"
 						r.operationGroup = ""
 						r.pathPattern = "/api/v1/overview"
@@ -1472,7 +2021,7 @@ func (s *Server) FindPath(method string, u *url.URL) (r Route, _ bool) {
 						switch method {
 						case "GET":
 							r.name = ListServersOperation
-							r.summary = "列出项目里的机器"
+							r.summary = "List the machines in the project"
 							r.operationID = "list-servers"
 							r.operationGroup = ""
 							r.pathPattern = "/api/v1/servers"
@@ -1505,7 +2054,7 @@ func (s *Server) FindPath(method string, u *url.URL) (r Route, _ bool) {
 							switch method {
 							case "DELETE":
 								r.name = DeleteServerOperation
-								r.summary = "删掉这台机器"
+								r.summary = "Delete a machine"
 								r.operationID = "delete-server"
 								r.operationGroup = ""
 								r.pathPattern = "/api/v1/servers/{serverId}"
@@ -1514,7 +2063,7 @@ func (s *Server) FindPath(method string, u *url.URL) (r Route, _ bool) {
 								return r, true
 							case "GET":
 								r.name = GetServerOperation
-								r.summary = "查一台机器的接入情况"
+								r.summary = "Get the enrollment state of a machine"
 								r.operationID = "get-server"
 								r.operationGroup = ""
 								r.pathPattern = "/api/v1/servers/{serverId}"
@@ -1523,7 +2072,7 @@ func (s *Server) FindPath(method string, u *url.URL) (r Route, _ bool) {
 								return r, true
 							case "PATCH":
 								r.name = UpdateServerOperation
-								r.summary = "改一台机器的接入参数"
+								r.summary = "Update the enrollment settings of a machine"
 								r.operationID = "update-server"
 								r.operationGroup = ""
 								r.pathPattern = "/api/v1/servers/{serverId}"
@@ -1532,7 +2081,7 @@ func (s *Server) FindPath(method string, u *url.URL) (r Route, _ bool) {
 								return r, true
 							case "PUT":
 								r.name = EnableServerMonitoringOperation
-								r.summary = "把一台机器接入监控"
+								r.summary = "Enroll a machine into monitoring"
 								r.operationID = "enable-server-monitoring"
 								r.operationGroup = ""
 								r.pathPattern = "/api/v1/servers/{serverId}"
@@ -1569,7 +2118,7 @@ func (s *Server) FindPath(method string, u *url.URL) (r Route, _ bool) {
 									switch method {
 									case "POST":
 										r.name = DisableServerMonitoringOperation
-										r.summary = "停止监控这台机器"
+										r.summary = "Stop monitoring a machine"
 										r.operationID = "disable-server-monitoring"
 										r.operationGroup = ""
 										r.pathPattern = "/api/v1/servers/{serverId}/disable"
@@ -1594,7 +2143,7 @@ func (s *Server) FindPath(method string, u *url.URL) (r Route, _ bool) {
 									switch method {
 									case "GET":
 										r.name = ListServerItemsOperation
-										r.summary = "列出一台机器的监控项"
+										r.summary = "List the monitoring items of a machine"
 										r.operationID = "list-server-items"
 										r.operationGroup = ""
 										r.pathPattern = "/api/v1/servers/{serverId}/items"
@@ -1619,7 +2168,7 @@ func (s *Server) FindPath(method string, u *url.URL) (r Route, _ bool) {
 									switch method {
 									case "GET":
 										r.name = GetServerMetricOperation
-										r.summary = "取一个监控项的时间序列"
+										r.summary = "Get the time series of a monitoring item"
 										r.operationID = "get-server-metric"
 										r.operationGroup = ""
 										r.pathPattern = "/api/v1/servers/{serverId}/metrics"
@@ -1644,7 +2193,7 @@ func (s *Server) FindPath(method string, u *url.URL) (r Route, _ bool) {
 									switch method {
 									case "POST":
 										r.name = RotateAgentPskOperation
-										r.summary = "换一把 agent 的 PSK"
+										r.summary = "Rotate the agent PSK"
 										r.operationID = "rotate-agent-psk"
 										r.operationGroup = ""
 										r.pathPattern = "/api/v1/servers/{serverId}/psk"
@@ -1669,7 +2218,7 @@ func (s *Server) FindPath(method string, u *url.URL) (r Route, _ bool) {
 									switch method {
 									case "GET":
 										r.name = GetServerResourcesOperation
-										r.summary = "一台机器的硬件与接口"
+										r.summary = "Hardware and interfaces of a machine"
 										r.operationID = "get-server-resources"
 										r.operationGroup = ""
 										r.pathPattern = "/api/v1/servers/{serverId}/resources"
@@ -1694,7 +2243,7 @@ func (s *Server) FindPath(method string, u *url.URL) (r Route, _ bool) {
 									switch method {
 									case "GET":
 										r.name = GetServerSnapshotOperation
-										r.summary = "一台机器此刻的状态"
+										r.summary = "Current state of a machine"
 										r.operationID = "get-server-snapshot"
 										r.operationGroup = ""
 										r.pathPattern = "/api/v1/servers/{serverId}/snapshot"
@@ -1728,7 +2277,7 @@ func (s *Server) FindPath(method string, u *url.URL) (r Route, _ bool) {
 									switch method {
 									case "DELETE":
 										r.name = DeleteWebCheckOperation
-										r.summary = "删掉一个网页检查"
+										r.summary = "Delete a web check"
 										r.operationID = "delete-web-check"
 										r.operationGroup = ""
 										r.pathPattern = "/api/v1/servers/{serverId}/web-checks/{checkId}"
@@ -1737,7 +2286,7 @@ func (s *Server) FindPath(method string, u *url.URL) (r Route, _ bool) {
 										return r, true
 									case "GET":
 										r.name = GetWebCheckOperation
-										r.summary = "查一个网页检查"
+										r.summary = "Get a web check"
 										r.operationID = "get-web-check"
 										r.operationGroup = ""
 										r.pathPattern = "/api/v1/servers/{serverId}/web-checks/{checkId}"
@@ -1746,7 +2295,7 @@ func (s *Server) FindPath(method string, u *url.URL) (r Route, _ bool) {
 										return r, true
 									case "PUT":
 										r.name = PutWebCheckOperation
-										r.summary = "建一个网页检查，或者按同一个 id 覆盖它"
+										r.summary = "Create a web check, or replace it by the same id"
 										r.operationID = "put-web-check"
 										r.operationGroup = ""
 										r.pathPattern = "/api/v1/servers/{serverId}/web-checks/{checkId}"
@@ -1789,7 +2338,7 @@ func (s *Server) FindPath(method string, u *url.URL) (r Route, _ bool) {
 							switch method {
 							case "GET":
 								r.name = GetSliReportOperation
-								r.summary = "查实测的达成情况"
+								r.summary = "Get measured availability"
 								r.operationID = "get-sli-report"
 								r.operationGroup = ""
 								r.pathPattern = "/api/v1/sli-report"
@@ -1814,7 +2363,7 @@ func (s *Server) FindPath(method string, u *url.URL) (r Route, _ bool) {
 							switch method {
 							case "DELETE":
 								r.name = DeleteSloOperation
-								r.summary = "撤掉这个项目的可用率目标"
+								r.summary = "Remove the availability target of this project"
 								r.operationID = "delete-slo"
 								r.operationGroup = ""
 								r.pathPattern = "/api/v1/slo"
@@ -1823,7 +2372,7 @@ func (s *Server) FindPath(method string, u *url.URL) (r Route, _ bool) {
 								return r, true
 							case "GET":
 								r.name = GetSloOperation
-								r.summary = "查这个项目的可用率目标"
+								r.summary = "Get the availability target of this project"
 								r.operationID = "get-slo"
 								r.operationGroup = ""
 								r.pathPattern = "/api/v1/slo"
@@ -1832,7 +2381,7 @@ func (s *Server) FindPath(method string, u *url.URL) (r Route, _ bool) {
 								return r, true
 							case "PUT":
 								r.name = PutSloOperation
-								r.summary = "定下这个项目的可用率目标，或者改它"
+								r.summary = "Set the availability target of this project, or change it"
 								r.operationID = "put-slo"
 								r.operationGroup = ""
 								r.pathPattern = "/api/v1/slo"
@@ -1842,6 +2391,544 @@ func (s *Server) FindPath(method string, u *url.URL) (r Route, _ bool) {
 							default:
 								return
 							}
+						}
+
+					}
+
+				case 't': // Prefix: "tatus-page"
+
+					if l := len("tatus-page"); len(elem) >= l && elem[0:l] == "tatus-page" {
+						elem = elem[l:]
+					} else {
+						break
+					}
+
+					if len(elem) == 0 {
+						switch method {
+						case "DELETE":
+							r.name = DeleteStatusPageOperation
+							r.summary = "Delete the status page"
+							r.operationID = "delete-status-page"
+							r.operationGroup = ""
+							r.pathPattern = "/api/v1/status-page"
+							r.args = args
+							r.count = 0
+							return r, true
+						case "GET":
+							r.name = GetStatusPageOperation
+							r.summary = "Get the status page of this project"
+							r.operationID = "get-status-page"
+							r.operationGroup = ""
+							r.pathPattern = "/api/v1/status-page"
+							r.args = args
+							r.count = 0
+							return r, true
+						case "PUT":
+							r.name = PutStatusPageOperation
+							r.summary = "Create the status page, or replace its configuration"
+							r.operationID = "put-status-page"
+							r.operationGroup = ""
+							r.pathPattern = "/api/v1/status-page"
+							r.args = args
+							r.count = 0
+							return r, true
+						default:
+							return
+						}
+					}
+					switch elem[0] {
+					case '/': // Prefix: "/"
+
+						if l := len("/"); len(elem) >= l && elem[0:l] == "/" {
+							elem = elem[l:]
+						} else {
+							break
+						}
+
+						if len(elem) == 0 {
+							break
+						}
+						switch elem[0] {
+						case 'c': // Prefix: "components"
+
+							if l := len("components"); len(elem) >= l && elem[0:l] == "components" {
+								elem = elem[l:]
+							} else {
+								break
+							}
+
+							if len(elem) == 0 {
+								switch method {
+								case "GET":
+									r.name = ListStatusPageComponentsOperation
+									r.summary = "List components"
+									r.operationID = "list-status-page-components"
+									r.operationGroup = ""
+									r.pathPattern = "/api/v1/status-page/components"
+									r.args = args
+									r.count = 0
+									return r, true
+								case "POST":
+									r.name = CreateStatusPageComponentOperation
+									r.summary = "Create a component"
+									r.operationID = "create-status-page-component"
+									r.operationGroup = ""
+									r.pathPattern = "/api/v1/status-page/components"
+									r.args = args
+									r.count = 0
+									return r, true
+								default:
+									return
+								}
+							}
+							switch elem[0] {
+							case '/': // Prefix: "/"
+
+								if l := len("/"); len(elem) >= l && elem[0:l] == "/" {
+									elem = elem[l:]
+								} else {
+									break
+								}
+
+								// Param: "componentId"
+								// Match until "/"
+								idx := strings.IndexByte(elem, '/')
+								if idx < 0 {
+									idx = len(elem)
+								}
+								args[0] = elem[:idx]
+								elem = elem[idx:]
+
+								if len(elem) == 0 {
+									switch method {
+									case "DELETE":
+										r.name = DeleteStatusPageComponentOperation
+										r.summary = "Delete a component"
+										r.operationID = "delete-status-page-component"
+										r.operationGroup = ""
+										r.pathPattern = "/api/v1/status-page/components/{componentId}"
+										r.args = args
+										r.count = 1
+										return r, true
+									case "GET":
+										r.name = GetStatusPageComponentOperation
+										r.summary = "Get a component"
+										r.operationID = "get-status-page-component"
+										r.operationGroup = ""
+										r.pathPattern = "/api/v1/status-page/components/{componentId}"
+										r.args = args
+										r.count = 1
+										return r, true
+									case "PUT":
+										r.name = UpdateStatusPageComponentOperation
+										r.summary = "Update a component"
+										r.operationID = "update-status-page-component"
+										r.operationGroup = ""
+										r.pathPattern = "/api/v1/status-page/components/{componentId}"
+										r.args = args
+										r.count = 1
+										return r, true
+									default:
+										return
+									}
+								}
+								switch elem[0] {
+								case '/': // Prefix: "/sources"
+
+									if l := len("/sources"); len(elem) >= l && elem[0:l] == "/sources" {
+										elem = elem[l:]
+									} else {
+										break
+									}
+
+									if len(elem) == 0 {
+										// Leaf node.
+										switch method {
+										case "GET":
+											r.name = ListStatusPageComponentSourcesOperation
+											r.summary = "List the monitored sources bound to a component"
+											r.operationID = "list-status-page-component-sources"
+											r.operationGroup = ""
+											r.pathPattern = "/api/v1/status-page/components/{componentId}/sources"
+											r.args = args
+											r.count = 1
+											return r, true
+										case "PUT":
+											r.name = PutStatusPageComponentSourcesOperation
+											r.summary = "Set the complete list of monitored sources for a component"
+											r.operationID = "put-status-page-component-sources"
+											r.operationGroup = ""
+											r.pathPattern = "/api/v1/status-page/components/{componentId}/sources"
+											r.args = args
+											r.count = 1
+											return r, true
+										default:
+											return
+										}
+									}
+
+								}
+
+							}
+
+						case 'g': // Prefix: "groups"
+
+							if l := len("groups"); len(elem) >= l && elem[0:l] == "groups" {
+								elem = elem[l:]
+							} else {
+								break
+							}
+
+							if len(elem) == 0 {
+								switch method {
+								case "GET":
+									r.name = ListStatusPageGroupsOperation
+									r.summary = "List groups"
+									r.operationID = "list-status-page-groups"
+									r.operationGroup = ""
+									r.pathPattern = "/api/v1/status-page/groups"
+									r.args = args
+									r.count = 0
+									return r, true
+								case "POST":
+									r.name = CreateStatusPageGroupOperation
+									r.summary = "Create a group"
+									r.operationID = "create-status-page-group"
+									r.operationGroup = ""
+									r.pathPattern = "/api/v1/status-page/groups"
+									r.args = args
+									r.count = 0
+									return r, true
+								default:
+									return
+								}
+							}
+							switch elem[0] {
+							case '/': // Prefix: "/"
+
+								if l := len("/"); len(elem) >= l && elem[0:l] == "/" {
+									elem = elem[l:]
+								} else {
+									break
+								}
+
+								// Param: "groupId"
+								// Match until "/"
+								idx := strings.IndexByte(elem, '/')
+								if idx < 0 {
+									idx = len(elem)
+								}
+								args[0] = elem[:idx]
+								elem = elem[idx:]
+
+								if len(elem) == 0 {
+									switch method {
+									case "DELETE":
+										r.name = DeleteStatusPageGroupOperation
+										r.summary = "Delete a group"
+										r.operationID = "delete-status-page-group"
+										r.operationGroup = ""
+										r.pathPattern = "/api/v1/status-page/groups/{groupId}"
+										r.args = args
+										r.count = 1
+										return r, true
+									case "PUT":
+										r.name = UpdateStatusPageGroupOperation
+										r.summary = "Update a group"
+										r.operationID = "update-status-page-group"
+										r.operationGroup = ""
+										r.pathPattern = "/api/v1/status-page/groups/{groupId}"
+										r.args = args
+										r.count = 1
+										return r, true
+									default:
+										return
+									}
+								}
+								switch elem[0] {
+								case '/': // Prefix: "/order"
+
+									if l := len("/order"); len(elem) >= l && elem[0:l] == "/order" {
+										elem = elem[l:]
+									} else {
+										break
+									}
+
+									if len(elem) == 0 {
+										// Leaf node.
+										switch method {
+										case "PUT":
+											r.name = PutStatusPageGroupOrderOperation
+											r.summary = "Set the order of components within a group"
+											r.operationID = "put-status-page-group-order"
+											r.operationGroup = ""
+											r.pathPattern = "/api/v1/status-page/groups/{groupId}/order"
+											r.args = args
+											r.count = 1
+											return r, true
+										default:
+											return
+										}
+									}
+
+								}
+
+							}
+
+						case 'i': // Prefix: "incidents"
+
+							if l := len("incidents"); len(elem) >= l && elem[0:l] == "incidents" {
+								elem = elem[l:]
+							} else {
+								break
+							}
+
+							if len(elem) == 0 {
+								switch method {
+								case "GET":
+									r.name = ListStatusPageIncidentsOperation
+									r.summary = "List the incident notices on the status page"
+									r.operationID = "list-status-page-incidents"
+									r.operationGroup = ""
+									r.pathPattern = "/api/v1/status-page/incidents"
+									r.args = args
+									r.count = 0
+									return r, true
+								case "POST":
+									r.name = PublishStatusPageIncidentOperation
+									r.summary = "Publish an incident notice"
+									r.operationID = "publish-status-page-incident"
+									r.operationGroup = ""
+									r.pathPattern = "/api/v1/status-page/incidents"
+									r.args = args
+									r.count = 0
+									return r, true
+								default:
+									return
+								}
+							}
+							switch elem[0] {
+							case '/': // Prefix: "/"
+
+								if l := len("/"); len(elem) >= l && elem[0:l] == "/" {
+									elem = elem[l:]
+								} else {
+									break
+								}
+
+								// Param: "incidentId"
+								// Match until "/"
+								idx := strings.IndexByte(elem, '/')
+								if idx < 0 {
+									idx = len(elem)
+								}
+								args[0] = elem[:idx]
+								elem = elem[idx:]
+
+								if len(elem) == 0 {
+									switch method {
+									case "GET":
+										r.name = GetStatusPageIncidentOperation
+										r.summary = "Get an incident notice"
+										r.operationID = "get-status-page-incident"
+										r.operationGroup = ""
+										r.pathPattern = "/api/v1/status-page/incidents/{incidentId}"
+										r.args = args
+										r.count = 1
+										return r, true
+									default:
+										return
+									}
+								}
+								switch elem[0] {
+								case '/': // Prefix: "/updates"
+
+									if l := len("/updates"); len(elem) >= l && elem[0:l] == "/updates" {
+										elem = elem[l:]
+									} else {
+										break
+									}
+
+									if len(elem) == 0 {
+										// Leaf node.
+										switch method {
+										case "POST":
+											r.name = PostStatusPageIncidentUpdateOperation
+											r.summary = "Append an update to an incident notice"
+											r.operationID = "post-status-page-incident-update"
+											r.operationGroup = ""
+											r.pathPattern = "/api/v1/status-page/incidents/{incidentId}/updates"
+											r.args = args
+											r.count = 1
+											return r, true
+										default:
+											return
+										}
+									}
+
+								}
+
+							}
+
+						case 'm': // Prefix: "maintenances"
+
+							if l := len("maintenances"); len(elem) >= l && elem[0:l] == "maintenances" {
+								elem = elem[l:]
+							} else {
+								break
+							}
+
+							if len(elem) == 0 {
+								switch method {
+								case "GET":
+									r.name = ListStatusPageMaintenancesOperation
+									r.summary = "List scheduled maintenance"
+									r.operationID = "list-status-page-maintenances"
+									r.operationGroup = ""
+									r.pathPattern = "/api/v1/status-page/maintenances"
+									r.args = args
+									r.count = 0
+									return r, true
+								case "POST":
+									r.name = ScheduleStatusPageMaintenanceOperation
+									r.summary = "Schedule maintenance"
+									r.operationID = "schedule-status-page-maintenance"
+									r.operationGroup = ""
+									r.pathPattern = "/api/v1/status-page/maintenances"
+									r.args = args
+									r.count = 0
+									return r, true
+								default:
+									return
+								}
+							}
+							switch elem[0] {
+							case '/': // Prefix: "/"
+
+								if l := len("/"); len(elem) >= l && elem[0:l] == "/" {
+									elem = elem[l:]
+								} else {
+									break
+								}
+
+								// Param: "maintenanceId"
+								// Match until "/"
+								idx := strings.IndexByte(elem, '/')
+								if idx < 0 {
+									idx = len(elem)
+								}
+								args[0] = elem[:idx]
+								elem = elem[idx:]
+
+								if len(elem) == 0 {
+									switch method {
+									case "GET":
+										r.name = GetStatusPageMaintenanceOperation
+										r.summary = "Get a scheduled maintenance"
+										r.operationID = "get-status-page-maintenance"
+										r.operationGroup = ""
+										r.pathPattern = "/api/v1/status-page/maintenances/{maintenanceId}"
+										r.args = args
+										r.count = 1
+										return r, true
+									default:
+										return
+									}
+								}
+								switch elem[0] {
+								case '/': // Prefix: "/c"
+
+									if l := len("/c"); len(elem) >= l && elem[0:l] == "/c" {
+										elem = elem[l:]
+									} else {
+										break
+									}
+
+									if len(elem) == 0 {
+										break
+									}
+									switch elem[0] {
+									case 'a': // Prefix: "ancel"
+
+										if l := len("ancel"); len(elem) >= l && elem[0:l] == "ancel" {
+											elem = elem[l:]
+										} else {
+											break
+										}
+
+										if len(elem) == 0 {
+											// Leaf node.
+											switch method {
+											case "POST":
+												r.name = CancelStatusPageMaintenanceOperation
+												r.summary = "Cancel a maintenance that has not started"
+												r.operationID = "cancel-status-page-maintenance"
+												r.operationGroup = ""
+												r.pathPattern = "/api/v1/status-page/maintenances/{maintenanceId}/cancel"
+												r.args = args
+												r.count = 1
+												return r, true
+											default:
+												return
+											}
+										}
+
+									case 'o': // Prefix: "omplete"
+
+										if l := len("omplete"); len(elem) >= l && elem[0:l] == "omplete" {
+											elem = elem[l:]
+										} else {
+											break
+										}
+
+										if len(elem) == 0 {
+											// Leaf node.
+											switch method {
+											case "POST":
+												r.name = CompleteStatusPageMaintenanceOperation
+												r.summary = "Finish a running maintenance early"
+												r.operationID = "complete-status-page-maintenance"
+												r.operationGroup = ""
+												r.pathPattern = "/api/v1/status-page/maintenances/{maintenanceId}/complete"
+												r.args = args
+												r.count = 1
+												return r, true
+											default:
+												return
+											}
+										}
+
+									}
+
+								}
+
+							}
+
+						case 'o': // Prefix: "order"
+
+							if l := len("order"); len(elem) >= l && elem[0:l] == "order" {
+								elem = elem[l:]
+							} else {
+								break
+							}
+
+							if len(elem) == 0 {
+								// Leaf node.
+								switch method {
+								case "PUT":
+									r.name = PutStatusPageOrderOperation
+									r.summary = "Set the order of the top level of the page"
+									r.operationID = "put-status-page-order"
+									r.operationGroup = ""
+									r.pathPattern = "/api/v1/status-page/order"
+									r.args = args
+									r.count = 0
+									return r, true
+								default:
+									return
+								}
+							}
+
 						}
 
 					}
@@ -1861,7 +2948,7 @@ func (s *Server) FindPath(method string, u *url.URL) (r Route, _ bool) {
 					switch method {
 					case "GET":
 						r.name = ListProjectTopItemsOperation
-						r.summary = "某个指标最高的前几台"
+						r.summary = "Machines ranked highest by a given metric"
 						r.operationID = "list-project-top-items"
 						r.operationGroup = ""
 						r.pathPattern = "/api/v1/top-items"
@@ -1886,7 +2973,7 @@ func (s *Server) FindPath(method string, u *url.URL) (r Route, _ bool) {
 					switch method {
 					case "GET":
 						r.name = ListWebChecksOperation
-						r.summary = "列出网页检查"
+						r.summary = "List web checks"
 						r.operationID = "list-web-checks"
 						r.operationGroup = ""
 						r.pathPattern = "/api/v1/web-checks"

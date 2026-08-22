@@ -211,6 +211,71 @@ func decodeAssignIncidentParams(args [1]string, argsEscaped bool, r *http.Reques
 	return params, nil
 }
 
+// CancelStatusPageMaintenanceParams is parameters of cancel-status-page-maintenance operation.
+type CancelStatusPageMaintenanceParams struct {
+	MaintenanceId uuid.UUID
+}
+
+func unpackCancelStatusPageMaintenanceParams(packed middleware.Parameters) (params CancelStatusPageMaintenanceParams) {
+	{
+		key := middleware.ParameterKey{
+			Name: "maintenanceId",
+			In:   "path",
+		}
+		params.MaintenanceId = packed[key].(uuid.UUID)
+	}
+	return params
+}
+
+func decodeCancelStatusPageMaintenanceParams(args [1]string, argsEscaped bool, r *http.Request) (params CancelStatusPageMaintenanceParams, _ error) {
+	// Decode path: maintenanceId.
+	if err := func() error {
+		param := args[0]
+		if argsEscaped {
+			unescaped, err := url.PathUnescape(args[0])
+			if err != nil {
+				return errors.Wrap(err, "unescape path")
+			}
+			param = unescaped
+		}
+		if len(param) > 0 {
+			d := uri.NewPathDecoder(uri.PathDecoderConfig{
+				Param:   "maintenanceId",
+				Value:   param,
+				Style:   uri.PathStyleSimple,
+				Explode: false,
+			})
+
+			if err := func() error {
+				val, err := d.DecodeValue()
+				if err != nil {
+					return err
+				}
+
+				c, err := conv.ToUUID(val)
+				if err != nil {
+					return err
+				}
+
+				params.MaintenanceId = c
+				return nil
+			}(); err != nil {
+				return err
+			}
+		} else {
+			return validate.ErrFieldRequired
+		}
+		return nil
+	}(); err != nil {
+		return params, &ogenerrors.DecodeParamError{
+			Name: "maintenanceId",
+			In:   "path",
+			Err:  err,
+		}
+	}
+	return params, nil
+}
+
 // CloseIncidentParams is parameters of close-incident operation.
 type CloseIncidentParams struct {
 	IncidentId uuid.UUID
@@ -269,6 +334,71 @@ func decodeCloseIncidentParams(args [1]string, argsEscaped bool, r *http.Request
 	}(); err != nil {
 		return params, &ogenerrors.DecodeParamError{
 			Name: "incidentId",
+			In:   "path",
+			Err:  err,
+		}
+	}
+	return params, nil
+}
+
+// CompleteStatusPageMaintenanceParams is parameters of complete-status-page-maintenance operation.
+type CompleteStatusPageMaintenanceParams struct {
+	MaintenanceId uuid.UUID
+}
+
+func unpackCompleteStatusPageMaintenanceParams(packed middleware.Parameters) (params CompleteStatusPageMaintenanceParams) {
+	{
+		key := middleware.ParameterKey{
+			Name: "maintenanceId",
+			In:   "path",
+		}
+		params.MaintenanceId = packed[key].(uuid.UUID)
+	}
+	return params
+}
+
+func decodeCompleteStatusPageMaintenanceParams(args [1]string, argsEscaped bool, r *http.Request) (params CompleteStatusPageMaintenanceParams, _ error) {
+	// Decode path: maintenanceId.
+	if err := func() error {
+		param := args[0]
+		if argsEscaped {
+			unescaped, err := url.PathUnescape(args[0])
+			if err != nil {
+				return errors.Wrap(err, "unescape path")
+			}
+			param = unescaped
+		}
+		if len(param) > 0 {
+			d := uri.NewPathDecoder(uri.PathDecoderConfig{
+				Param:   "maintenanceId",
+				Value:   param,
+				Style:   uri.PathStyleSimple,
+				Explode: false,
+			})
+
+			if err := func() error {
+				val, err := d.DecodeValue()
+				if err != nil {
+					return err
+				}
+
+				c, err := conv.ToUUID(val)
+				if err != nil {
+					return err
+				}
+
+				params.MaintenanceId = c
+				return nil
+			}(); err != nil {
+				return err
+			}
+		} else {
+			return validate.ErrFieldRequired
+		}
+		return nil
+	}(); err != nil {
+		return params, &ogenerrors.DecodeParamError{
+			Name: "maintenanceId",
 			In:   "path",
 			Err:  err,
 		}
@@ -399,6 +529,136 @@ func decodeDeleteServerParams(args [1]string, argsEscaped bool, r *http.Request)
 	}(); err != nil {
 		return params, &ogenerrors.DecodeParamError{
 			Name: "serverId",
+			In:   "path",
+			Err:  err,
+		}
+	}
+	return params, nil
+}
+
+// DeleteStatusPageComponentParams is parameters of delete-status-page-component operation.
+type DeleteStatusPageComponentParams struct {
+	ComponentId uuid.UUID
+}
+
+func unpackDeleteStatusPageComponentParams(packed middleware.Parameters) (params DeleteStatusPageComponentParams) {
+	{
+		key := middleware.ParameterKey{
+			Name: "componentId",
+			In:   "path",
+		}
+		params.ComponentId = packed[key].(uuid.UUID)
+	}
+	return params
+}
+
+func decodeDeleteStatusPageComponentParams(args [1]string, argsEscaped bool, r *http.Request) (params DeleteStatusPageComponentParams, _ error) {
+	// Decode path: componentId.
+	if err := func() error {
+		param := args[0]
+		if argsEscaped {
+			unescaped, err := url.PathUnescape(args[0])
+			if err != nil {
+				return errors.Wrap(err, "unescape path")
+			}
+			param = unescaped
+		}
+		if len(param) > 0 {
+			d := uri.NewPathDecoder(uri.PathDecoderConfig{
+				Param:   "componentId",
+				Value:   param,
+				Style:   uri.PathStyleSimple,
+				Explode: false,
+			})
+
+			if err := func() error {
+				val, err := d.DecodeValue()
+				if err != nil {
+					return err
+				}
+
+				c, err := conv.ToUUID(val)
+				if err != nil {
+					return err
+				}
+
+				params.ComponentId = c
+				return nil
+			}(); err != nil {
+				return err
+			}
+		} else {
+			return validate.ErrFieldRequired
+		}
+		return nil
+	}(); err != nil {
+		return params, &ogenerrors.DecodeParamError{
+			Name: "componentId",
+			In:   "path",
+			Err:  err,
+		}
+	}
+	return params, nil
+}
+
+// DeleteStatusPageGroupParams is parameters of delete-status-page-group operation.
+type DeleteStatusPageGroupParams struct {
+	GroupId uuid.UUID
+}
+
+func unpackDeleteStatusPageGroupParams(packed middleware.Parameters) (params DeleteStatusPageGroupParams) {
+	{
+		key := middleware.ParameterKey{
+			Name: "groupId",
+			In:   "path",
+		}
+		params.GroupId = packed[key].(uuid.UUID)
+	}
+	return params
+}
+
+func decodeDeleteStatusPageGroupParams(args [1]string, argsEscaped bool, r *http.Request) (params DeleteStatusPageGroupParams, _ error) {
+	// Decode path: groupId.
+	if err := func() error {
+		param := args[0]
+		if argsEscaped {
+			unescaped, err := url.PathUnescape(args[0])
+			if err != nil {
+				return errors.Wrap(err, "unescape path")
+			}
+			param = unescaped
+		}
+		if len(param) > 0 {
+			d := uri.NewPathDecoder(uri.PathDecoderConfig{
+				Param:   "groupId",
+				Value:   param,
+				Style:   uri.PathStyleSimple,
+				Explode: false,
+			})
+
+			if err := func() error {
+				val, err := d.DecodeValue()
+				if err != nil {
+					return err
+				}
+
+				c, err := conv.ToUUID(val)
+				if err != nil {
+					return err
+				}
+
+				params.GroupId = c
+				return nil
+			}(); err != nil {
+				return err
+			}
+		} else {
+			return validate.ErrFieldRequired
+		}
+		return nil
+	}(); err != nil {
+		return params, &ogenerrors.DecodeParamError{
+			Name: "groupId",
 			In:   "path",
 			Err:  err,
 		}
@@ -852,15 +1112,15 @@ func decodeGetServerParams(args [1]string, argsEscaped bool, r *http.Request) (p
 // GetServerMetricParams is parameters of get-server-metric operation.
 type GetServerMetricParams struct {
 	ServerId uuid.UUID
-	// 前缀匹配：vfs.fs.size 一次拿回每个挂载点一条线。与 item_id 至少给一个.
+	// Prefix match: `vfs.fs.size` returns one series per mount point. Supply this or `item_id`.
 	ItemKey OptString `json:",omitempty,omitzero"`
 	ItemID  OptString `json:",omitempty,omitzero"`
-	// 不给就是一小时前.
+	// Defaults to one hour ago.
 	From OptDateTime `json:",omitempty,omitzero"`
 	To   OptDateTime `json:",omitempty,omitzero"`
-	// 降采样的桶数，0 表示原样返回采集到的数据点.
+	// Number of downsampling buckets. 0 returns the collected data points unchanged.
 	MaxPoints OptInt64 `json:",omitempty,omitzero"`
-	// 顺带取这些监控项当前生效的阈值线.
+	// Also return the thresholds currently in effect for these items.
 	IncludeThresholds OptBool `json:",omitempty,omitzero"`
 }
 
@@ -1384,7 +1644,7 @@ func decodeGetServerSnapshotParams(args [1]string, argsEscaped bool, r *http.Req
 type GetSliReportParams struct {
 	From OptDateTime `json:",omitempty,omitzero"`
 	To   OptDateTime `json:",omitempty,omitzero"`
-	// 取最近 N 个完整周期，与 from/to 二选一.
+	// Return the most recent N complete periods. Use this or from/to, not both.
 	Periods OptInt64 `json:",omitempty,omitzero"`
 }
 
@@ -1572,6 +1832,201 @@ func decodeGetSliReportParams(args [0]string, argsEscaped bool, r *http.Request)
 	return params, nil
 }
 
+// GetStatusPageComponentParams is parameters of get-status-page-component operation.
+type GetStatusPageComponentParams struct {
+	ComponentId uuid.UUID
+}
+
+func unpackGetStatusPageComponentParams(packed middleware.Parameters) (params GetStatusPageComponentParams) {
+	{
+		key := middleware.ParameterKey{
+			Name: "componentId",
+			In:   "path",
+		}
+		params.ComponentId = packed[key].(uuid.UUID)
+	}
+	return params
+}
+
+func decodeGetStatusPageComponentParams(args [1]string, argsEscaped bool, r *http.Request) (params GetStatusPageComponentParams, _ error) {
+	// Decode path: componentId.
+	if err := func() error {
+		param := args[0]
+		if argsEscaped {
+			unescaped, err := url.PathUnescape(args[0])
+			if err != nil {
+				return errors.Wrap(err, "unescape path")
+			}
+			param = unescaped
+		}
+		if len(param) > 0 {
+			d := uri.NewPathDecoder(uri.PathDecoderConfig{
+				Param:   "componentId",
+				Value:   param,
+				Style:   uri.PathStyleSimple,
+				Explode: false,
+			})
+
+			if err := func() error {
+				val, err := d.DecodeValue()
+				if err != nil {
+					return err
+				}
+
+				c, err := conv.ToUUID(val)
+				if err != nil {
+					return err
+				}
+
+				params.ComponentId = c
+				return nil
+			}(); err != nil {
+				return err
+			}
+		} else {
+			return validate.ErrFieldRequired
+		}
+		return nil
+	}(); err != nil {
+		return params, &ogenerrors.DecodeParamError{
+			Name: "componentId",
+			In:   "path",
+			Err:  err,
+		}
+	}
+	return params, nil
+}
+
+// GetStatusPageIncidentParams is parameters of get-status-page-incident operation.
+type GetStatusPageIncidentParams struct {
+	IncidentId uuid.UUID
+}
+
+func unpackGetStatusPageIncidentParams(packed middleware.Parameters) (params GetStatusPageIncidentParams) {
+	{
+		key := middleware.ParameterKey{
+			Name: "incidentId",
+			In:   "path",
+		}
+		params.IncidentId = packed[key].(uuid.UUID)
+	}
+	return params
+}
+
+func decodeGetStatusPageIncidentParams(args [1]string, argsEscaped bool, r *http.Request) (params GetStatusPageIncidentParams, _ error) {
+	// Decode path: incidentId.
+	if err := func() error {
+		param := args[0]
+		if argsEscaped {
+			unescaped, err := url.PathUnescape(args[0])
+			if err != nil {
+				return errors.Wrap(err, "unescape path")
+			}
+			param = unescaped
+		}
+		if len(param) > 0 {
+			d := uri.NewPathDecoder(uri.PathDecoderConfig{
+				Param:   "incidentId",
+				Value:   param,
+				Style:   uri.PathStyleSimple,
+				Explode: false,
+			})
+
+			if err := func() error {
+				val, err := d.DecodeValue()
+				if err != nil {
+					return err
+				}
+
+				c, err := conv.ToUUID(val)
+				if err != nil {
+					return err
+				}
+
+				params.IncidentId = c
+				return nil
+			}(); err != nil {
+				return err
+			}
+		} else {
+			return validate.ErrFieldRequired
+		}
+		return nil
+	}(); err != nil {
+		return params, &ogenerrors.DecodeParamError{
+			Name: "incidentId",
+			In:   "path",
+			Err:  err,
+		}
+	}
+	return params, nil
+}
+
+// GetStatusPageMaintenanceParams is parameters of get-status-page-maintenance operation.
+type GetStatusPageMaintenanceParams struct {
+	MaintenanceId uuid.UUID
+}
+
+func unpackGetStatusPageMaintenanceParams(packed middleware.Parameters) (params GetStatusPageMaintenanceParams) {
+	{
+		key := middleware.ParameterKey{
+			Name: "maintenanceId",
+			In:   "path",
+		}
+		params.MaintenanceId = packed[key].(uuid.UUID)
+	}
+	return params
+}
+
+func decodeGetStatusPageMaintenanceParams(args [1]string, argsEscaped bool, r *http.Request) (params GetStatusPageMaintenanceParams, _ error) {
+	// Decode path: maintenanceId.
+	if err := func() error {
+		param := args[0]
+		if argsEscaped {
+			unescaped, err := url.PathUnescape(args[0])
+			if err != nil {
+				return errors.Wrap(err, "unescape path")
+			}
+			param = unescaped
+		}
+		if len(param) > 0 {
+			d := uri.NewPathDecoder(uri.PathDecoderConfig{
+				Param:   "maintenanceId",
+				Value:   param,
+				Style:   uri.PathStyleSimple,
+				Explode: false,
+			})
+
+			if err := func() error {
+				val, err := d.DecodeValue()
+				if err != nil {
+					return err
+				}
+
+				c, err := conv.ToUUID(val)
+				if err != nil {
+					return err
+				}
+
+				params.MaintenanceId = c
+				return nil
+			}(); err != nil {
+				return err
+			}
+		} else {
+			return validate.ErrFieldRequired
+		}
+		return nil
+	}(); err != nil {
+		return params, &ogenerrors.DecodeParamError{
+			Name: "maintenanceId",
+			In:   "path",
+			Err:  err,
+		}
+	}
+	return params, nil
+}
+
 // GetWebCheckParams is parameters of get-web-check operation.
 type GetWebCheckParams struct {
 	ServerId uuid.UUID
@@ -1694,7 +2149,7 @@ func decodeGetWebCheckParams(args [2]string, argsEscaped bool, r *http.Request) 
 type ListIncidentTimelineParams struct {
 	IncidentId uuid.UUID
 	Limit      OptInt64 `json:",omitempty,omitzero"`
-	// 上一页返回的 next_cursor，空即从头开始.
+	// The `next_cursor` returned by the previous page. Empty starts from the beginning.
 	Cursor OptString `json:",omitempty,omitzero"`
 }
 
@@ -1891,24 +2346,25 @@ func decodeListIncidentTimelineParams(args [1]string, argsEscaped bool, r *http.
 
 // ListIncidentsParams is parameters of list-incidents operation.
 type ListIncidentsParams struct {
-	// 这一页最多返回多少条.
+	// Maximum number of records in this page.
 	Limit OptInt64 `json:",omitempty,omitzero"`
-	// 跳过多少条。要翻得更深请改用游标翻页的接口.
+	// Number of records to skip. For deeper paging, use the cursor-paged endpoint instead.
 	Offset OptInt64 `json:",omitempty,omitzero"`
-	// 只看某一台机器的.
+	// Restrict to a single machine.
 	ServerID       OptString                      `json:",omitempty,omitzero"`
 	IncidentStatus OptListIncidentsIncidentStatus `json:",omitempty,omitzero"`
-	// 按不低于该等级匹配，而非精确匹配.
+	// Matches at or above this severity, not exactly this severity.
 	MinSeverity   OptListIncidentsMinSeverity `json:",omitempty,omitzero"`
 	StartedAfter  OptDateTime                 `json:",omitempty,omitzero"`
 	StartedBefore OptDateTime                 `json:",omitempty,omitzero"`
-	// 与 [active_from, active_to] 有交集的告警，给指标图叠加故障区间要的是这个.
+	// Incidents that overlap [active_from, active_to]. This is what you want when overlaying incident
+	// bands on a metric chart.
 	ActiveFrom OptDateTime `json:",omitempty,omitzero"`
 	ActiveTo   OptDateTime `json:",omitempty,omitzero"`
-	// 形如 key 或 key=value，可重复；多个标签之间是与关系.
+	// Given as `key` or `key=value`, repeatable. Multiple tags are combined with AND.
 	Tag            OptNilStringArray `json:",omitempty,omitzero"`
 	AssigneeUserID OptString         `json:",omitempty,omitzero"`
-	// 有没有人在这边把它处理完，与 incident_status 无关.
+	// Whether someone has finished handling it here. Independent of `incident_status`.
 	Closed       OptListIncidentsClosed       `json:",omitempty,omitzero"`
 	Acknowledged OptListIncidentsAcknowledged `json:",omitempty,omitzero"`
 	Unassigned   OptListIncidentsUnassigned   `json:",omitempty,omitzero"`
@@ -2859,7 +3315,7 @@ func decodeListIncidentsParams(args [0]string, argsEscaped bool, r *http.Request
 // ListProjectTopItemsParams is parameters of list-project-top-items operation.
 type ListProjectTopItemsParams struct {
 	Kind ListProjectTopItemsKind
-	// 0 表示用默认.
+	// 0 uses the default.
 	Limit OptInt64 `json:",omitempty,omitzero"`
 }
 
@@ -3001,10 +3457,10 @@ func decodeListProjectTopItemsParams(args [0]string, argsEscaped bool, r *http.R
 // ListServerItemsParams is parameters of list-server-items operation.
 type ListServerItemsParams struct {
 	ServerId uuid.UUID
-	// 按 key 或名字模糊匹配.
+	// Fuzzy match on key or name.
 	Keyword OptString `json:",omitempty,omitzero"`
-	// 形如 key 或 key=value，可重复。官方模板打好的 component 标签（cpu / memory /
-	// filesystem…）就是靠它筛.
+	// Given as `key` or `key=value`, repeatable. The `component` tags applied by the official templates
+	// (cpu, memory, filesystem and so on) are filtered through this.
 	Tag OptNilStringArray `json:",omitempty,omitzero"`
 }
 
@@ -3223,11 +3679,11 @@ func decodeListServerItemsParams(args [1]string, argsEscaped bool, r *http.Reque
 
 // ListServersParams is parameters of list-servers operation.
 type ListServersParams struct {
-	// 这一页最多返回多少条.
+	// Maximum number of records in this page.
 	Limit OptInt64 `json:",omitempty,omitzero"`
-	// 跳过多少条。要翻得更深请改用游标翻页的接口.
+	// Number of records to skip. For deeper paging, use the cursor-paged endpoint instead.
 	Offset OptInt64 `json:",omitempty,omitzero"`
-	// 按名字或地址模糊匹配.
+	// Fuzzy match on name or address.
 	Keyword          OptString                      `json:",omitempty,omitzero"`
 	MonitoringStatus OptListServersMonitoringStatus `json:",omitempty,omitzero"`
 }
@@ -3538,9 +3994,416 @@ func decodeListServersParams(args [0]string, argsEscaped bool, r *http.Request) 
 	return params, nil
 }
 
+// ListStatusPageComponentSourcesParams is parameters of list-status-page-component-sources operation.
+type ListStatusPageComponentSourcesParams struct {
+	ComponentId uuid.UUID
+}
+
+func unpackListStatusPageComponentSourcesParams(packed middleware.Parameters) (params ListStatusPageComponentSourcesParams) {
+	{
+		key := middleware.ParameterKey{
+			Name: "componentId",
+			In:   "path",
+		}
+		params.ComponentId = packed[key].(uuid.UUID)
+	}
+	return params
+}
+
+func decodeListStatusPageComponentSourcesParams(args [1]string, argsEscaped bool, r *http.Request) (params ListStatusPageComponentSourcesParams, _ error) {
+	// Decode path: componentId.
+	if err := func() error {
+		param := args[0]
+		if argsEscaped {
+			unescaped, err := url.PathUnescape(args[0])
+			if err != nil {
+				return errors.Wrap(err, "unescape path")
+			}
+			param = unescaped
+		}
+		if len(param) > 0 {
+			d := uri.NewPathDecoder(uri.PathDecoderConfig{
+				Param:   "componentId",
+				Value:   param,
+				Style:   uri.PathStyleSimple,
+				Explode: false,
+			})
+
+			if err := func() error {
+				val, err := d.DecodeValue()
+				if err != nil {
+					return err
+				}
+
+				c, err := conv.ToUUID(val)
+				if err != nil {
+					return err
+				}
+
+				params.ComponentId = c
+				return nil
+			}(); err != nil {
+				return err
+			}
+		} else {
+			return validate.ErrFieldRequired
+		}
+		return nil
+	}(); err != nil {
+		return params, &ogenerrors.DecodeParamError{
+			Name: "componentId",
+			In:   "path",
+			Err:  err,
+		}
+	}
+	return params, nil
+}
+
+// ListStatusPageIncidentsParams is parameters of list-status-page-incidents operation.
+type ListStatusPageIncidentsParams struct {
+	// Maximum number of records in this page.
+	Limit  OptInt64 `json:",omitempty,omitzero"`
+	Offset OptInt64 `json:",omitempty,omitzero"`
+}
+
+func unpackListStatusPageIncidentsParams(packed middleware.Parameters) (params ListStatusPageIncidentsParams) {
+	{
+		key := middleware.ParameterKey{
+			Name: "limit",
+			In:   "query",
+		}
+		if v, ok := packed[key]; ok {
+			params.Limit = v.(OptInt64)
+		}
+	}
+	{
+		key := middleware.ParameterKey{
+			Name: "offset",
+			In:   "query",
+		}
+		if v, ok := packed[key]; ok {
+			params.Offset = v.(OptInt64)
+		}
+	}
+	return params
+}
+
+func decodeListStatusPageIncidentsParams(args [0]string, argsEscaped bool, r *http.Request) (params ListStatusPageIncidentsParams, _ error) {
+	q := uri.NewQueryDecoder(r.URL.Query())
+	// Set default value for query: limit.
+	{
+		val := int64(50)
+		params.Limit.SetTo(val)
+	}
+	// Decode query: limit.
+	if err := func() error {
+		cfg := uri.QueryParameterDecodingConfig{
+			Name:    "limit",
+			Style:   uri.QueryStyleForm,
+			Explode: false,
+		}
+
+		if err := q.HasParam(cfg); err == nil {
+			if err := q.DecodeParam(cfg, func(d uri.Decoder) error {
+				var paramsDotLimitVal int64
+				if err := func() error {
+					val, err := d.DecodeValue()
+					if err != nil {
+						return err
+					}
+
+					c, err := conv.ToInt64(val)
+					if err != nil {
+						return err
+					}
+
+					paramsDotLimitVal = c
+					return nil
+				}(); err != nil {
+					return err
+				}
+				params.Limit.SetTo(paramsDotLimitVal)
+				return nil
+			}); err != nil {
+				return err
+			}
+			if err := func() error {
+				if value, ok := params.Limit.Get(); ok {
+					if err := func() error {
+						if err := (validate.Int{
+							MinSet:        true,
+							Min:           1,
+							MaxSet:        true,
+							Max:           200,
+							MinExclusive:  false,
+							MaxExclusive:  false,
+							MultipleOfSet: false,
+							MultipleOf:    0,
+							Pattern:       nil,
+						}).Validate(int64(value)); err != nil {
+							return errors.Wrap(err, "int")
+						}
+						return nil
+					}(); err != nil {
+						return err
+					}
+				}
+				return nil
+			}(); err != nil {
+				return err
+			}
+		}
+		return nil
+	}(); err != nil {
+		return params, &ogenerrors.DecodeParamError{
+			Name: "limit",
+			In:   "query",
+			Err:  err,
+		}
+	}
+	// Decode query: offset.
+	if err := func() error {
+		cfg := uri.QueryParameterDecodingConfig{
+			Name:    "offset",
+			Style:   uri.QueryStyleForm,
+			Explode: false,
+		}
+
+		if err := q.HasParam(cfg); err == nil {
+			if err := q.DecodeParam(cfg, func(d uri.Decoder) error {
+				var paramsDotOffsetVal int64
+				if err := func() error {
+					val, err := d.DecodeValue()
+					if err != nil {
+						return err
+					}
+
+					c, err := conv.ToInt64(val)
+					if err != nil {
+						return err
+					}
+
+					paramsDotOffsetVal = c
+					return nil
+				}(); err != nil {
+					return err
+				}
+				params.Offset.SetTo(paramsDotOffsetVal)
+				return nil
+			}); err != nil {
+				return err
+			}
+			if err := func() error {
+				if value, ok := params.Offset.Get(); ok {
+					if err := func() error {
+						if err := (validate.Int{
+							MinSet:        true,
+							Min:           0,
+							MaxSet:        true,
+							Max:           10000,
+							MinExclusive:  false,
+							MaxExclusive:  false,
+							MultipleOfSet: false,
+							MultipleOf:    0,
+							Pattern:       nil,
+						}).Validate(int64(value)); err != nil {
+							return errors.Wrap(err, "int")
+						}
+						return nil
+					}(); err != nil {
+						return err
+					}
+				}
+				return nil
+			}(); err != nil {
+				return err
+			}
+		}
+		return nil
+	}(); err != nil {
+		return params, &ogenerrors.DecodeParamError{
+			Name: "offset",
+			In:   "query",
+			Err:  err,
+		}
+	}
+	return params, nil
+}
+
+// ListStatusPageMaintenancesParams is parameters of list-status-page-maintenances operation.
+type ListStatusPageMaintenancesParams struct {
+	// Maximum number of records in this page.
+	Limit  OptInt64 `json:",omitempty,omitzero"`
+	Offset OptInt64 `json:",omitempty,omitzero"`
+}
+
+func unpackListStatusPageMaintenancesParams(packed middleware.Parameters) (params ListStatusPageMaintenancesParams) {
+	{
+		key := middleware.ParameterKey{
+			Name: "limit",
+			In:   "query",
+		}
+		if v, ok := packed[key]; ok {
+			params.Limit = v.(OptInt64)
+		}
+	}
+	{
+		key := middleware.ParameterKey{
+			Name: "offset",
+			In:   "query",
+		}
+		if v, ok := packed[key]; ok {
+			params.Offset = v.(OptInt64)
+		}
+	}
+	return params
+}
+
+func decodeListStatusPageMaintenancesParams(args [0]string, argsEscaped bool, r *http.Request) (params ListStatusPageMaintenancesParams, _ error) {
+	q := uri.NewQueryDecoder(r.URL.Query())
+	// Set default value for query: limit.
+	{
+		val := int64(50)
+		params.Limit.SetTo(val)
+	}
+	// Decode query: limit.
+	if err := func() error {
+		cfg := uri.QueryParameterDecodingConfig{
+			Name:    "limit",
+			Style:   uri.QueryStyleForm,
+			Explode: false,
+		}
+
+		if err := q.HasParam(cfg); err == nil {
+			if err := q.DecodeParam(cfg, func(d uri.Decoder) error {
+				var paramsDotLimitVal int64
+				if err := func() error {
+					val, err := d.DecodeValue()
+					if err != nil {
+						return err
+					}
+
+					c, err := conv.ToInt64(val)
+					if err != nil {
+						return err
+					}
+
+					paramsDotLimitVal = c
+					return nil
+				}(); err != nil {
+					return err
+				}
+				params.Limit.SetTo(paramsDotLimitVal)
+				return nil
+			}); err != nil {
+				return err
+			}
+			if err := func() error {
+				if value, ok := params.Limit.Get(); ok {
+					if err := func() error {
+						if err := (validate.Int{
+							MinSet:        true,
+							Min:           1,
+							MaxSet:        true,
+							Max:           200,
+							MinExclusive:  false,
+							MaxExclusive:  false,
+							MultipleOfSet: false,
+							MultipleOf:    0,
+							Pattern:       nil,
+						}).Validate(int64(value)); err != nil {
+							return errors.Wrap(err, "int")
+						}
+						return nil
+					}(); err != nil {
+						return err
+					}
+				}
+				return nil
+			}(); err != nil {
+				return err
+			}
+		}
+		return nil
+	}(); err != nil {
+		return params, &ogenerrors.DecodeParamError{
+			Name: "limit",
+			In:   "query",
+			Err:  err,
+		}
+	}
+	// Decode query: offset.
+	if err := func() error {
+		cfg := uri.QueryParameterDecodingConfig{
+			Name:    "offset",
+			Style:   uri.QueryStyleForm,
+			Explode: false,
+		}
+
+		if err := q.HasParam(cfg); err == nil {
+			if err := q.DecodeParam(cfg, func(d uri.Decoder) error {
+				var paramsDotOffsetVal int64
+				if err := func() error {
+					val, err := d.DecodeValue()
+					if err != nil {
+						return err
+					}
+
+					c, err := conv.ToInt64(val)
+					if err != nil {
+						return err
+					}
+
+					paramsDotOffsetVal = c
+					return nil
+				}(); err != nil {
+					return err
+				}
+				params.Offset.SetTo(paramsDotOffsetVal)
+				return nil
+			}); err != nil {
+				return err
+			}
+			if err := func() error {
+				if value, ok := params.Offset.Get(); ok {
+					if err := func() error {
+						if err := (validate.Int{
+							MinSet:        true,
+							Min:           0,
+							MaxSet:        true,
+							Max:           10000,
+							MinExclusive:  false,
+							MaxExclusive:  false,
+							MultipleOfSet: false,
+							MultipleOf:    0,
+							Pattern:       nil,
+						}).Validate(int64(value)); err != nil {
+							return errors.Wrap(err, "int")
+						}
+						return nil
+					}(); err != nil {
+						return err
+					}
+				}
+				return nil
+			}(); err != nil {
+				return err
+			}
+		}
+		return nil
+	}(); err != nil {
+		return params, &ogenerrors.DecodeParamError{
+			Name: "offset",
+			In:   "query",
+			Err:  err,
+		}
+	}
+	return params, nil
+}
+
 // ListWebChecksParams is parameters of list-web-checks operation.
 type ListWebChecksParams struct {
-	// 只看某一台机器的检查；不给就是整个项目的.
+	// Restrict to the checks of a single machine. Omit for the whole project.
 	ServerID OptString `json:",omitempty,omitzero"`
 }
 
@@ -3597,6 +4460,71 @@ func decodeListWebChecksParams(args [0]string, argsEscaped bool, r *http.Request
 		return params, &ogenerrors.DecodeParamError{
 			Name: "server_id",
 			In:   "query",
+			Err:  err,
+		}
+	}
+	return params, nil
+}
+
+// PostStatusPageIncidentUpdateParams is parameters of post-status-page-incident-update operation.
+type PostStatusPageIncidentUpdateParams struct {
+	IncidentId uuid.UUID
+}
+
+func unpackPostStatusPageIncidentUpdateParams(packed middleware.Parameters) (params PostStatusPageIncidentUpdateParams) {
+	{
+		key := middleware.ParameterKey{
+			Name: "incidentId",
+			In:   "path",
+		}
+		params.IncidentId = packed[key].(uuid.UUID)
+	}
+	return params
+}
+
+func decodePostStatusPageIncidentUpdateParams(args [1]string, argsEscaped bool, r *http.Request) (params PostStatusPageIncidentUpdateParams, _ error) {
+	// Decode path: incidentId.
+	if err := func() error {
+		param := args[0]
+		if argsEscaped {
+			unescaped, err := url.PathUnescape(args[0])
+			if err != nil {
+				return errors.Wrap(err, "unescape path")
+			}
+			param = unescaped
+		}
+		if len(param) > 0 {
+			d := uri.NewPathDecoder(uri.PathDecoderConfig{
+				Param:   "incidentId",
+				Value:   param,
+				Style:   uri.PathStyleSimple,
+				Explode: false,
+			})
+
+			if err := func() error {
+				val, err := d.DecodeValue()
+				if err != nil {
+					return err
+				}
+
+				c, err := conv.ToUUID(val)
+				if err != nil {
+					return err
+				}
+
+				params.IncidentId = c
+				return nil
+			}(); err != nil {
+				return err
+			}
+		} else {
+			return validate.ErrFieldRequired
+		}
+		return nil
+	}(); err != nil {
+		return params, &ogenerrors.DecodeParamError{
+			Name: "incidentId",
+			In:   "path",
 			Err:  err,
 		}
 	}
@@ -3661,6 +4589,136 @@ func decodePutMaintenanceWindowParams(args [1]string, argsEscaped bool, r *http.
 	}(); err != nil {
 		return params, &ogenerrors.DecodeParamError{
 			Name: "windowId",
+			In:   "path",
+			Err:  err,
+		}
+	}
+	return params, nil
+}
+
+// PutStatusPageComponentSourcesParams is parameters of put-status-page-component-sources operation.
+type PutStatusPageComponentSourcesParams struct {
+	ComponentId uuid.UUID
+}
+
+func unpackPutStatusPageComponentSourcesParams(packed middleware.Parameters) (params PutStatusPageComponentSourcesParams) {
+	{
+		key := middleware.ParameterKey{
+			Name: "componentId",
+			In:   "path",
+		}
+		params.ComponentId = packed[key].(uuid.UUID)
+	}
+	return params
+}
+
+func decodePutStatusPageComponentSourcesParams(args [1]string, argsEscaped bool, r *http.Request) (params PutStatusPageComponentSourcesParams, _ error) {
+	// Decode path: componentId.
+	if err := func() error {
+		param := args[0]
+		if argsEscaped {
+			unescaped, err := url.PathUnescape(args[0])
+			if err != nil {
+				return errors.Wrap(err, "unescape path")
+			}
+			param = unescaped
+		}
+		if len(param) > 0 {
+			d := uri.NewPathDecoder(uri.PathDecoderConfig{
+				Param:   "componentId",
+				Value:   param,
+				Style:   uri.PathStyleSimple,
+				Explode: false,
+			})
+
+			if err := func() error {
+				val, err := d.DecodeValue()
+				if err != nil {
+					return err
+				}
+
+				c, err := conv.ToUUID(val)
+				if err != nil {
+					return err
+				}
+
+				params.ComponentId = c
+				return nil
+			}(); err != nil {
+				return err
+			}
+		} else {
+			return validate.ErrFieldRequired
+		}
+		return nil
+	}(); err != nil {
+		return params, &ogenerrors.DecodeParamError{
+			Name: "componentId",
+			In:   "path",
+			Err:  err,
+		}
+	}
+	return params, nil
+}
+
+// PutStatusPageGroupOrderParams is parameters of put-status-page-group-order operation.
+type PutStatusPageGroupOrderParams struct {
+	GroupId uuid.UUID
+}
+
+func unpackPutStatusPageGroupOrderParams(packed middleware.Parameters) (params PutStatusPageGroupOrderParams) {
+	{
+		key := middleware.ParameterKey{
+			Name: "groupId",
+			In:   "path",
+		}
+		params.GroupId = packed[key].(uuid.UUID)
+	}
+	return params
+}
+
+func decodePutStatusPageGroupOrderParams(args [1]string, argsEscaped bool, r *http.Request) (params PutStatusPageGroupOrderParams, _ error) {
+	// Decode path: groupId.
+	if err := func() error {
+		param := args[0]
+		if argsEscaped {
+			unescaped, err := url.PathUnescape(args[0])
+			if err != nil {
+				return errors.Wrap(err, "unescape path")
+			}
+			param = unescaped
+		}
+		if len(param) > 0 {
+			d := uri.NewPathDecoder(uri.PathDecoderConfig{
+				Param:   "groupId",
+				Value:   param,
+				Style:   uri.PathStyleSimple,
+				Explode: false,
+			})
+
+			if err := func() error {
+				val, err := d.DecodeValue()
+				if err != nil {
+					return err
+				}
+
+				c, err := conv.ToUUID(val)
+				if err != nil {
+					return err
+				}
+
+				params.GroupId = c
+				return nil
+			}(); err != nil {
+				return err
+			}
+		} else {
+			return validate.ErrFieldRequired
+		}
+		return nil
+	}(); err != nil {
+		return params, &ogenerrors.DecodeParamError{
+			Name: "groupId",
 			In:   "path",
 			Err:  err,
 		}
@@ -4039,6 +5097,136 @@ func decodeUpdateServerParams(args [1]string, argsEscaped bool, r *http.Request)
 	}(); err != nil {
 		return params, &ogenerrors.DecodeParamError{
 			Name: "serverId",
+			In:   "path",
+			Err:  err,
+		}
+	}
+	return params, nil
+}
+
+// UpdateStatusPageComponentParams is parameters of update-status-page-component operation.
+type UpdateStatusPageComponentParams struct {
+	ComponentId uuid.UUID
+}
+
+func unpackUpdateStatusPageComponentParams(packed middleware.Parameters) (params UpdateStatusPageComponentParams) {
+	{
+		key := middleware.ParameterKey{
+			Name: "componentId",
+			In:   "path",
+		}
+		params.ComponentId = packed[key].(uuid.UUID)
+	}
+	return params
+}
+
+func decodeUpdateStatusPageComponentParams(args [1]string, argsEscaped bool, r *http.Request) (params UpdateStatusPageComponentParams, _ error) {
+	// Decode path: componentId.
+	if err := func() error {
+		param := args[0]
+		if argsEscaped {
+			unescaped, err := url.PathUnescape(args[0])
+			if err != nil {
+				return errors.Wrap(err, "unescape path")
+			}
+			param = unescaped
+		}
+		if len(param) > 0 {
+			d := uri.NewPathDecoder(uri.PathDecoderConfig{
+				Param:   "componentId",
+				Value:   param,
+				Style:   uri.PathStyleSimple,
+				Explode: false,
+			})
+
+			if err := func() error {
+				val, err := d.DecodeValue()
+				if err != nil {
+					return err
+				}
+
+				c, err := conv.ToUUID(val)
+				if err != nil {
+					return err
+				}
+
+				params.ComponentId = c
+				return nil
+			}(); err != nil {
+				return err
+			}
+		} else {
+			return validate.ErrFieldRequired
+		}
+		return nil
+	}(); err != nil {
+		return params, &ogenerrors.DecodeParamError{
+			Name: "componentId",
+			In:   "path",
+			Err:  err,
+		}
+	}
+	return params, nil
+}
+
+// UpdateStatusPageGroupParams is parameters of update-status-page-group operation.
+type UpdateStatusPageGroupParams struct {
+	GroupId uuid.UUID
+}
+
+func unpackUpdateStatusPageGroupParams(packed middleware.Parameters) (params UpdateStatusPageGroupParams) {
+	{
+		key := middleware.ParameterKey{
+			Name: "groupId",
+			In:   "path",
+		}
+		params.GroupId = packed[key].(uuid.UUID)
+	}
+	return params
+}
+
+func decodeUpdateStatusPageGroupParams(args [1]string, argsEscaped bool, r *http.Request) (params UpdateStatusPageGroupParams, _ error) {
+	// Decode path: groupId.
+	if err := func() error {
+		param := args[0]
+		if argsEscaped {
+			unescaped, err := url.PathUnescape(args[0])
+			if err != nil {
+				return errors.Wrap(err, "unescape path")
+			}
+			param = unescaped
+		}
+		if len(param) > 0 {
+			d := uri.NewPathDecoder(uri.PathDecoderConfig{
+				Param:   "groupId",
+				Value:   param,
+				Style:   uri.PathStyleSimple,
+				Explode: false,
+			})
+
+			if err := func() error {
+				val, err := d.DecodeValue()
+				if err != nil {
+					return err
+				}
+
+				c, err := conv.ToUUID(val)
+				if err != nil {
+					return err
+				}
+
+				params.GroupId = c
+				return nil
+			}(); err != nil {
+				return err
+			}
+		} else {
+			return validate.ErrFieldRequired
+		}
+		return nil
+	}(); err != nil {
+		return params, &ogenerrors.DecodeParamError{
+			Name: "groupId",
 			In:   "path",
 			Err:  err,
 		}

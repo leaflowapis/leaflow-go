@@ -292,6 +292,78 @@ func (e MaintenanceWindowResourceSyncStatus) Valid() bool {
 	}
 }
 
+// Defines values for PostStatusPageIncidentUpdateRequestBodyIncidentStatus.
+const (
+	PostStatusPageIncidentUpdateRequestBodyIncidentStatusIDENTIFIED    PostStatusPageIncidentUpdateRequestBodyIncidentStatus = "IDENTIFIED"
+	PostStatusPageIncidentUpdateRequestBodyIncidentStatusINVESTIGATING PostStatusPageIncidentUpdateRequestBodyIncidentStatus = "INVESTIGATING"
+	PostStatusPageIncidentUpdateRequestBodyIncidentStatusMONITORING    PostStatusPageIncidentUpdateRequestBodyIncidentStatus = "MONITORING"
+	PostStatusPageIncidentUpdateRequestBodyIncidentStatusRESOLVED      PostStatusPageIncidentUpdateRequestBodyIncidentStatus = "RESOLVED"
+)
+
+// Valid indicates whether the value is a known member of the PostStatusPageIncidentUpdateRequestBodyIncidentStatus enum.
+func (e PostStatusPageIncidentUpdateRequestBodyIncidentStatus) Valid() bool {
+	switch e {
+	case PostStatusPageIncidentUpdateRequestBodyIncidentStatusIDENTIFIED:
+		return true
+	case PostStatusPageIncidentUpdateRequestBodyIncidentStatusINVESTIGATING:
+		return true
+	case PostStatusPageIncidentUpdateRequestBodyIncidentStatusMONITORING:
+		return true
+	case PostStatusPageIncidentUpdateRequestBodyIncidentStatusRESOLVED:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for PublishStatusPageIncidentRequestBodyImpact.
+const (
+	PublishStatusPageIncidentRequestBodyImpactCRITICAL PublishStatusPageIncidentRequestBodyImpact = "CRITICAL"
+	PublishStatusPageIncidentRequestBodyImpactMAJOR    PublishStatusPageIncidentRequestBodyImpact = "MAJOR"
+	PublishStatusPageIncidentRequestBodyImpactMINOR    PublishStatusPageIncidentRequestBodyImpact = "MINOR"
+	PublishStatusPageIncidentRequestBodyImpactNONE     PublishStatusPageIncidentRequestBodyImpact = "NONE"
+)
+
+// Valid indicates whether the value is a known member of the PublishStatusPageIncidentRequestBodyImpact enum.
+func (e PublishStatusPageIncidentRequestBodyImpact) Valid() bool {
+	switch e {
+	case PublishStatusPageIncidentRequestBodyImpactCRITICAL:
+		return true
+	case PublishStatusPageIncidentRequestBodyImpactMAJOR:
+		return true
+	case PublishStatusPageIncidentRequestBodyImpactMINOR:
+		return true
+	case PublishStatusPageIncidentRequestBodyImpactNONE:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for PublishStatusPageIncidentRequestBodyIncidentStatus.
+const (
+	PublishStatusPageIncidentRequestBodyIncidentStatusIDENTIFIED    PublishStatusPageIncidentRequestBodyIncidentStatus = "IDENTIFIED"
+	PublishStatusPageIncidentRequestBodyIncidentStatusINVESTIGATING PublishStatusPageIncidentRequestBodyIncidentStatus = "INVESTIGATING"
+	PublishStatusPageIncidentRequestBodyIncidentStatusMONITORING    PublishStatusPageIncidentRequestBodyIncidentStatus = "MONITORING"
+	PublishStatusPageIncidentRequestBodyIncidentStatusRESOLVED      PublishStatusPageIncidentRequestBodyIncidentStatus = "RESOLVED"
+)
+
+// Valid indicates whether the value is a known member of the PublishStatusPageIncidentRequestBodyIncidentStatus enum.
+func (e PublishStatusPageIncidentRequestBodyIncidentStatus) Valid() bool {
+	switch e {
+	case PublishStatusPageIncidentRequestBodyIncidentStatusIDENTIFIED:
+		return true
+	case PublishStatusPageIncidentRequestBodyIncidentStatusINVESTIGATING:
+		return true
+	case PublishStatusPageIncidentRequestBodyIncidentStatusMONITORING:
+		return true
+	case PublishStatusPageIncidentRequestBodyIncidentStatusRESOLVED:
+		return true
+	default:
+		return false
+	}
+}
+
 // Defines values for PutSLORequestBodyMinSeverity.
 const (
 	PutSLORequestBodyMinSeverityANY         PutSLORequestBodyMinSeverity = "ANY"
@@ -343,6 +415,57 @@ func (e PutSLORequestBodyPeriod) Valid() bool {
 	case PutSLORequestBodyPeriodQUARTERLY:
 		return true
 	case PutSLORequestBodyPeriodWEEKLY:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for PutStatusPageComponentRequestBodyAutoStatusMinSeverity.
+const (
+	PutStatusPageComponentRequestBodyAutoStatusMinSeverityANY         PutStatusPageComponentRequestBodyAutoStatusMinSeverity = "ANY"
+	PutStatusPageComponentRequestBodyAutoStatusMinSeverityAVERAGE     PutStatusPageComponentRequestBodyAutoStatusMinSeverity = "AVERAGE"
+	PutStatusPageComponentRequestBodyAutoStatusMinSeverityDISASTER    PutStatusPageComponentRequestBodyAutoStatusMinSeverity = "DISASTER"
+	PutStatusPageComponentRequestBodyAutoStatusMinSeverityHIGH        PutStatusPageComponentRequestBodyAutoStatusMinSeverity = "HIGH"
+	PutStatusPageComponentRequestBodyAutoStatusMinSeverityINFORMATION PutStatusPageComponentRequestBodyAutoStatusMinSeverity = "INFORMATION"
+	PutStatusPageComponentRequestBodyAutoStatusMinSeverityWARNING     PutStatusPageComponentRequestBodyAutoStatusMinSeverity = "WARNING"
+)
+
+// Valid indicates whether the value is a known member of the PutStatusPageComponentRequestBodyAutoStatusMinSeverity enum.
+func (e PutStatusPageComponentRequestBodyAutoStatusMinSeverity) Valid() bool {
+	switch e {
+	case PutStatusPageComponentRequestBodyAutoStatusMinSeverityANY:
+		return true
+	case PutStatusPageComponentRequestBodyAutoStatusMinSeverityAVERAGE:
+		return true
+	case PutStatusPageComponentRequestBodyAutoStatusMinSeverityDISASTER:
+		return true
+	case PutStatusPageComponentRequestBodyAutoStatusMinSeverityHIGH:
+		return true
+	case PutStatusPageComponentRequestBodyAutoStatusMinSeverityINFORMATION:
+		return true
+	case PutStatusPageComponentRequestBodyAutoStatusMinSeverityWARNING:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for PutStatusPageRequestBodyTheme.
+const (
+	PutStatusPageRequestBodyThemeAUTO  PutStatusPageRequestBodyTheme = "AUTO"
+	PutStatusPageRequestBodyThemeDARK  PutStatusPageRequestBodyTheme = "DARK"
+	PutStatusPageRequestBodyThemeLIGHT PutStatusPageRequestBodyTheme = "LIGHT"
+)
+
+// Valid indicates whether the value is a known member of the PutStatusPageRequestBodyTheme enum.
+func (e PutStatusPageRequestBodyTheme) Valid() bool {
+	switch e {
+	case PutStatusPageRequestBodyThemeAUTO:
+		return true
+	case PutStatusPageRequestBodyThemeDARK:
+		return true
+	case PutStatusPageRequestBodyThemeLIGHT:
 		return true
 	default:
 		return false
@@ -505,6 +628,297 @@ func (e SnapshotResourceAgentReachability) Valid() bool {
 	case UNKNOWN:
 		return true
 	case UNREACHABLE:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for StatusPageComponentResourceAutoStatusMinSeverity.
+const (
+	StatusPageComponentResourceAutoStatusMinSeverityANY         StatusPageComponentResourceAutoStatusMinSeverity = "ANY"
+	StatusPageComponentResourceAutoStatusMinSeverityAVERAGE     StatusPageComponentResourceAutoStatusMinSeverity = "AVERAGE"
+	StatusPageComponentResourceAutoStatusMinSeverityDISASTER    StatusPageComponentResourceAutoStatusMinSeverity = "DISASTER"
+	StatusPageComponentResourceAutoStatusMinSeverityHIGH        StatusPageComponentResourceAutoStatusMinSeverity = "HIGH"
+	StatusPageComponentResourceAutoStatusMinSeverityINFORMATION StatusPageComponentResourceAutoStatusMinSeverity = "INFORMATION"
+	StatusPageComponentResourceAutoStatusMinSeverityWARNING     StatusPageComponentResourceAutoStatusMinSeverity = "WARNING"
+)
+
+// Valid indicates whether the value is a known member of the StatusPageComponentResourceAutoStatusMinSeverity enum.
+func (e StatusPageComponentResourceAutoStatusMinSeverity) Valid() bool {
+	switch e {
+	case StatusPageComponentResourceAutoStatusMinSeverityANY:
+		return true
+	case StatusPageComponentResourceAutoStatusMinSeverityAVERAGE:
+		return true
+	case StatusPageComponentResourceAutoStatusMinSeverityDISASTER:
+		return true
+	case StatusPageComponentResourceAutoStatusMinSeverityHIGH:
+		return true
+	case StatusPageComponentResourceAutoStatusMinSeverityINFORMATION:
+		return true
+	case StatusPageComponentResourceAutoStatusMinSeverityWARNING:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for StatusPageComponentResourceCurrentStatus.
+const (
+	StatusPageComponentResourceCurrentStatusDEGRADEDPERFORMANCE StatusPageComponentResourceCurrentStatus = "DEGRADED_PERFORMANCE"
+	StatusPageComponentResourceCurrentStatusMAJOROUTAGE         StatusPageComponentResourceCurrentStatus = "MAJOR_OUTAGE"
+	StatusPageComponentResourceCurrentStatusOPERATIONAL         StatusPageComponentResourceCurrentStatus = "OPERATIONAL"
+	StatusPageComponentResourceCurrentStatusPARTIALOUTAGE       StatusPageComponentResourceCurrentStatus = "PARTIAL_OUTAGE"
+	StatusPageComponentResourceCurrentStatusUNDERMAINTENANCE    StatusPageComponentResourceCurrentStatus = "UNDER_MAINTENANCE"
+)
+
+// Valid indicates whether the value is a known member of the StatusPageComponentResourceCurrentStatus enum.
+func (e StatusPageComponentResourceCurrentStatus) Valid() bool {
+	switch e {
+	case StatusPageComponentResourceCurrentStatusDEGRADEDPERFORMANCE:
+		return true
+	case StatusPageComponentResourceCurrentStatusMAJOROUTAGE:
+		return true
+	case StatusPageComponentResourceCurrentStatusOPERATIONAL:
+		return true
+	case StatusPageComponentResourceCurrentStatusPARTIALOUTAGE:
+		return true
+	case StatusPageComponentResourceCurrentStatusUNDERMAINTENANCE:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for StatusPageIncidentComponentRequestStatus.
+const (
+	StatusPageIncidentComponentRequestStatusDEGRADEDPERFORMANCE StatusPageIncidentComponentRequestStatus = "DEGRADED_PERFORMANCE"
+	StatusPageIncidentComponentRequestStatusMAJOROUTAGE         StatusPageIncidentComponentRequestStatus = "MAJOR_OUTAGE"
+	StatusPageIncidentComponentRequestStatusOPERATIONAL         StatusPageIncidentComponentRequestStatus = "OPERATIONAL"
+	StatusPageIncidentComponentRequestStatusPARTIALOUTAGE       StatusPageIncidentComponentRequestStatus = "PARTIAL_OUTAGE"
+	StatusPageIncidentComponentRequestStatusUNDERMAINTENANCE    StatusPageIncidentComponentRequestStatus = "UNDER_MAINTENANCE"
+)
+
+// Valid indicates whether the value is a known member of the StatusPageIncidentComponentRequestStatus enum.
+func (e StatusPageIncidentComponentRequestStatus) Valid() bool {
+	switch e {
+	case StatusPageIncidentComponentRequestStatusDEGRADEDPERFORMANCE:
+		return true
+	case StatusPageIncidentComponentRequestStatusMAJOROUTAGE:
+		return true
+	case StatusPageIncidentComponentRequestStatusOPERATIONAL:
+		return true
+	case StatusPageIncidentComponentRequestStatusPARTIALOUTAGE:
+		return true
+	case StatusPageIncidentComponentRequestStatusUNDERMAINTENANCE:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for StatusPageIncidentComponentResourceNewStatus.
+const (
+	StatusPageIncidentComponentResourceNewStatusDEGRADEDPERFORMANCE StatusPageIncidentComponentResourceNewStatus = "DEGRADED_PERFORMANCE"
+	StatusPageIncidentComponentResourceNewStatusMAJOROUTAGE         StatusPageIncidentComponentResourceNewStatus = "MAJOR_OUTAGE"
+	StatusPageIncidentComponentResourceNewStatusOPERATIONAL         StatusPageIncidentComponentResourceNewStatus = "OPERATIONAL"
+	StatusPageIncidentComponentResourceNewStatusPARTIALOUTAGE       StatusPageIncidentComponentResourceNewStatus = "PARTIAL_OUTAGE"
+	StatusPageIncidentComponentResourceNewStatusUNDERMAINTENANCE    StatusPageIncidentComponentResourceNewStatus = "UNDER_MAINTENANCE"
+)
+
+// Valid indicates whether the value is a known member of the StatusPageIncidentComponentResourceNewStatus enum.
+func (e StatusPageIncidentComponentResourceNewStatus) Valid() bool {
+	switch e {
+	case StatusPageIncidentComponentResourceNewStatusDEGRADEDPERFORMANCE:
+		return true
+	case StatusPageIncidentComponentResourceNewStatusMAJOROUTAGE:
+		return true
+	case StatusPageIncidentComponentResourceNewStatusOPERATIONAL:
+		return true
+	case StatusPageIncidentComponentResourceNewStatusPARTIALOUTAGE:
+		return true
+	case StatusPageIncidentComponentResourceNewStatusUNDERMAINTENANCE:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for StatusPageIncidentComponentResourceOldStatus.
+const (
+	StatusPageIncidentComponentResourceOldStatusDEGRADEDPERFORMANCE StatusPageIncidentComponentResourceOldStatus = "DEGRADED_PERFORMANCE"
+	StatusPageIncidentComponentResourceOldStatusMAJOROUTAGE         StatusPageIncidentComponentResourceOldStatus = "MAJOR_OUTAGE"
+	StatusPageIncidentComponentResourceOldStatusOPERATIONAL         StatusPageIncidentComponentResourceOldStatus = "OPERATIONAL"
+	StatusPageIncidentComponentResourceOldStatusPARTIALOUTAGE       StatusPageIncidentComponentResourceOldStatus = "PARTIAL_OUTAGE"
+	StatusPageIncidentComponentResourceOldStatusUNDERMAINTENANCE    StatusPageIncidentComponentResourceOldStatus = "UNDER_MAINTENANCE"
+)
+
+// Valid indicates whether the value is a known member of the StatusPageIncidentComponentResourceOldStatus enum.
+func (e StatusPageIncidentComponentResourceOldStatus) Valid() bool {
+	switch e {
+	case StatusPageIncidentComponentResourceOldStatusDEGRADEDPERFORMANCE:
+		return true
+	case StatusPageIncidentComponentResourceOldStatusMAJOROUTAGE:
+		return true
+	case StatusPageIncidentComponentResourceOldStatusOPERATIONAL:
+		return true
+	case StatusPageIncidentComponentResourceOldStatusPARTIALOUTAGE:
+		return true
+	case StatusPageIncidentComponentResourceOldStatusUNDERMAINTENANCE:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for StatusPageIncidentResourceImpact.
+const (
+	StatusPageIncidentResourceImpactCRITICAL StatusPageIncidentResourceImpact = "CRITICAL"
+	StatusPageIncidentResourceImpactMAJOR    StatusPageIncidentResourceImpact = "MAJOR"
+	StatusPageIncidentResourceImpactMINOR    StatusPageIncidentResourceImpact = "MINOR"
+	StatusPageIncidentResourceImpactNONE     StatusPageIncidentResourceImpact = "NONE"
+)
+
+// Valid indicates whether the value is a known member of the StatusPageIncidentResourceImpact enum.
+func (e StatusPageIncidentResourceImpact) Valid() bool {
+	switch e {
+	case StatusPageIncidentResourceImpactCRITICAL:
+		return true
+	case StatusPageIncidentResourceImpactMAJOR:
+		return true
+	case StatusPageIncidentResourceImpactMINOR:
+		return true
+	case StatusPageIncidentResourceImpactNONE:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for StatusPageIncidentResourceIncidentStatus.
+const (
+	StatusPageIncidentResourceIncidentStatusIDENTIFIED    StatusPageIncidentResourceIncidentStatus = "IDENTIFIED"
+	StatusPageIncidentResourceIncidentStatusINVESTIGATING StatusPageIncidentResourceIncidentStatus = "INVESTIGATING"
+	StatusPageIncidentResourceIncidentStatusMONITORING    StatusPageIncidentResourceIncidentStatus = "MONITORING"
+	StatusPageIncidentResourceIncidentStatusRESOLVED      StatusPageIncidentResourceIncidentStatus = "RESOLVED"
+)
+
+// Valid indicates whether the value is a known member of the StatusPageIncidentResourceIncidentStatus enum.
+func (e StatusPageIncidentResourceIncidentStatus) Valid() bool {
+	switch e {
+	case StatusPageIncidentResourceIncidentStatusIDENTIFIED:
+		return true
+	case StatusPageIncidentResourceIncidentStatusINVESTIGATING:
+		return true
+	case StatusPageIncidentResourceIncidentStatusMONITORING:
+		return true
+	case StatusPageIncidentResourceIncidentStatusRESOLVED:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for StatusPageIncidentUpdateResourceIncidentStatus.
+const (
+	StatusPageIncidentUpdateResourceIncidentStatusIDENTIFIED    StatusPageIncidentUpdateResourceIncidentStatus = "IDENTIFIED"
+	StatusPageIncidentUpdateResourceIncidentStatusINVESTIGATING StatusPageIncidentUpdateResourceIncidentStatus = "INVESTIGATING"
+	StatusPageIncidentUpdateResourceIncidentStatusMONITORING    StatusPageIncidentUpdateResourceIncidentStatus = "MONITORING"
+	StatusPageIncidentUpdateResourceIncidentStatusRESOLVED      StatusPageIncidentUpdateResourceIncidentStatus = "RESOLVED"
+)
+
+// Valid indicates whether the value is a known member of the StatusPageIncidentUpdateResourceIncidentStatus enum.
+func (e StatusPageIncidentUpdateResourceIncidentStatus) Valid() bool {
+	switch e {
+	case StatusPageIncidentUpdateResourceIncidentStatusIDENTIFIED:
+		return true
+	case StatusPageIncidentUpdateResourceIncidentStatusINVESTIGATING:
+		return true
+	case StatusPageIncidentUpdateResourceIncidentStatusMONITORING:
+		return true
+	case StatusPageIncidentUpdateResourceIncidentStatusRESOLVED:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for StatusPageMaintenanceComponentRequestComponentStatus.
+const (
+	StatusPageMaintenanceComponentRequestComponentStatusDEGRADEDPERFORMANCE StatusPageMaintenanceComponentRequestComponentStatus = "DEGRADED_PERFORMANCE"
+	StatusPageMaintenanceComponentRequestComponentStatusUNDERMAINTENANCE    StatusPageMaintenanceComponentRequestComponentStatus = "UNDER_MAINTENANCE"
+)
+
+// Valid indicates whether the value is a known member of the StatusPageMaintenanceComponentRequestComponentStatus enum.
+func (e StatusPageMaintenanceComponentRequestComponentStatus) Valid() bool {
+	switch e {
+	case StatusPageMaintenanceComponentRequestComponentStatusDEGRADEDPERFORMANCE:
+		return true
+	case StatusPageMaintenanceComponentRequestComponentStatusUNDERMAINTENANCE:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for StatusPageMaintenanceComponentResourceComponentStatus.
+const (
+	StatusPageMaintenanceComponentResourceComponentStatusDEGRADEDPERFORMANCE StatusPageMaintenanceComponentResourceComponentStatus = "DEGRADED_PERFORMANCE"
+	StatusPageMaintenanceComponentResourceComponentStatusUNDERMAINTENANCE    StatusPageMaintenanceComponentResourceComponentStatus = "UNDER_MAINTENANCE"
+)
+
+// Valid indicates whether the value is a known member of the StatusPageMaintenanceComponentResourceComponentStatus enum.
+func (e StatusPageMaintenanceComponentResourceComponentStatus) Valid() bool {
+	switch e {
+	case StatusPageMaintenanceComponentResourceComponentStatusDEGRADEDPERFORMANCE:
+		return true
+	case StatusPageMaintenanceComponentResourceComponentStatusUNDERMAINTENANCE:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for StatusPageMaintenanceResourceMaintenanceStatus.
+const (
+	CANCELLED  StatusPageMaintenanceResourceMaintenanceStatus = "CANCELLED"
+	COMPLETED  StatusPageMaintenanceResourceMaintenanceStatus = "COMPLETED"
+	INPROGRESS StatusPageMaintenanceResourceMaintenanceStatus = "IN_PROGRESS"
+	SCHEDULED  StatusPageMaintenanceResourceMaintenanceStatus = "SCHEDULED"
+)
+
+// Valid indicates whether the value is a known member of the StatusPageMaintenanceResourceMaintenanceStatus enum.
+func (e StatusPageMaintenanceResourceMaintenanceStatus) Valid() bool {
+	switch e {
+	case CANCELLED:
+		return true
+	case COMPLETED:
+		return true
+	case INPROGRESS:
+		return true
+	case SCHEDULED:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for StatusPageResourceTheme.
+const (
+	StatusPageResourceThemeAUTO  StatusPageResourceTheme = "AUTO"
+	StatusPageResourceThemeDARK  StatusPageResourceTheme = "DARK"
+	StatusPageResourceThemeLIGHT StatusPageResourceTheme = "LIGHT"
+)
+
+// Valid indicates whether the value is a known member of the StatusPageResourceTheme enum.
+func (e StatusPageResourceTheme) Valid() bool {
+	switch e {
+	case StatusPageResourceThemeAUTO:
+		return true
+	case StatusPageResourceThemeDARK:
+		return true
+	case StatusPageResourceThemeLIGHT:
 		return true
 	default:
 		return false
@@ -762,7 +1176,7 @@ func (e ListProjectTopItemsParamsKind) Valid() bool {
 
 // AcknowledgeIncidentRequestBody defines model for AcknowledgeIncidentRequestBody.
 type AcknowledgeIncidentRequestBody struct {
-	// Message 会一并写入监控系统的确认记录
+	// Message Also written to the acknowledgement record in the monitoring system
 	Message *string `json:"message,omitempty"`
 }
 
@@ -773,14 +1187,14 @@ type AddCommentRequestBody struct {
 
 // AssignIncidentRequestBody defines model for AssignIncidentRequestBody.
 type AssignIncidentRequestBody struct {
-	// AssigneeDisplayName 不给就用 user id：时间线上要留一个当时的人名副本
+	// AssigneeDisplayName Defaults to the user id. The timeline keeps a copy of the name as it was at the time
 	AssigneeDisplayName *string `json:"assignee_display_name,omitempty"`
 	AssigneeUserId      *string `json:"assignee_user_id,omitempty"`
 }
 
 // CloseIncidentRequestBody defines model for CloseIncidentRequestBody.
 type CloseIncidentRequestBody struct {
-	// Message reason 为 OTHER 时必填，否则请求会被拒绝
+	// Message Required when `reason` is OTHER; the request is rejected otherwise
 	Message *string                        `json:"message,omitempty"`
 	Reason  CloseIncidentRequestBodyReason `json:"reason"`
 }
@@ -796,10 +1210,10 @@ type CountResource struct {
 
 // CursorPageIncidentActivityResource defines model for CursorPageIncidentActivityResource.
 type CursorPageIncidentActivityResource struct {
-	// Items 这一页的内容
+	// Items The records in this page
 	Items []IncidentActivityResource `json:"items"`
 
-	// NextCursor 下一页的游标；为空表示已经到底
+	// NextCursor Cursor for the next page. Empty means the end has been reached
 	NextCursor string `json:"next_cursor"`
 }
 
@@ -808,10 +1222,10 @@ type EnableMonitoringRequestBody struct {
 	Address     string                                 `json:"address"`
 	AddressKind EnableMonitoringRequestBodyAddressKind `json:"address_kind"`
 
-	// AgentMode 空即被动式：它对 agent 侧配置要求最少
+	// AgentMode Empty selects passive mode, which requires the least agent-side configuration
 	AgentMode *EnableMonitoringRequestBodyAgentMode `json:"agent_mode,omitempty"`
 
-	// AgentPort 0 表示用默认的 10050
+	// AgentPort 0 uses the default of 10050
 	AgentPort        *int64                   `json:"agent_port,omitempty"`
 	Description      *string                  `json:"description,omitempty"`
 	Name             string                   `json:"name"`
@@ -821,21 +1235,21 @@ type EnableMonitoringRequestBody struct {
 // EnableMonitoringRequestBodyAddressKind defines model for EnableMonitoringRequestBody.AddressKind.
 type EnableMonitoringRequestBodyAddressKind string
 
-// EnableMonitoringRequestBodyAgentMode 空即被动式：它对 agent 侧配置要求最少
+// EnableMonitoringRequestBodyAgentMode Empty selects passive mode, which requires the least agent-side configuration
 type EnableMonitoringRequestBodyAgentMode string
 
 // EnrollmentResource defines model for EnrollmentResource.
 type EnrollmentResource struct {
-	// InstallCommand 含 PSK，与 tls_psk 一样只出现这一次
+	// InstallCommand Includes the PSK. Like `tls_psk`, it is returned only this once
 	InstallCommand   string `json:"install_command"`
 	InstallScriptUrl string `json:"install_script_url"`
 
-	// TlsPsk **只出现这一次**
+	// TlsPsk **Returned only this once**
 	TlsPsk         string `json:"tls_psk"`
 	TlsPskIdentity string `json:"tls_psk_identity"`
 	ZabbixHostName string `json:"zabbix_host_name"`
 
-	// ZabbixServerAddress agent 配置里的 Server / ServerActive
+	// ZabbixServerAddress The Server and ServerActive values for the agent configuration
 	ZabbixServerAddress string `json:"zabbix_server_address"`
 }
 
@@ -856,7 +1270,7 @@ type IncidentActivityResource struct {
 	ActivityType     IncidentActivityResourceActivityType `json:"activity_type"`
 	ActorDisplayName string                               `json:"actor_display_name"`
 
-	// ActorUserId 操作者；来源为 SYSTEM 或 ZABBIX 时为空
+	// ActorUserId The operator. Empty when the source is SYSTEM or ZABBIX
 	ActorUserId        string                         `json:"actor_user_id"`
 	CloseReason        string                         `json:"close_reason"`
 	Id                 openapi_types.UUID             `json:"id"`
@@ -866,7 +1280,7 @@ type IncidentActivityResource struct {
 	Source             IncidentActivityResourceSource `json:"source"`
 	SubjectDisplayName string                         `json:"subject_display_name"`
 
-	// SubjectUserId 被指派 / 被取消关注的那个人
+	// SubjectUserId The user who was assigned, or removed from the followers
 	SubjectUserId string `json:"subject_user_id"`
 }
 
@@ -904,12 +1318,12 @@ type IncidentResource struct {
 	HostDisplayName           string                     `json:"host_display_name"`
 	Id                        openapi_types.UUID         `json:"id"`
 
-	// IncidentStatus 监控系统是否判定已恢复。它与是否有人了结这条告警是两件事
+	// IncidentStatus Whether monitoring considers the problem recovered. Independent of whether anyone has closed the incident
 	IncidentStatus IncidentResourceIncidentStatus `json:"incident_status"`
 	Items          []MonitoringItemResource       `json:"items"`
 	Name           string                         `json:"name"`
 
-	// OperationalData 触发器配的那行现场数据
+	// OperationalData The operational data line configured on the trigger
 	OperationalData           string                   `json:"operational_data"`
 	ProjectId                 openapi_types.UUID       `json:"project_id"`
 	ResolvedAt                *time.Time               `json:"resolved_at"`
@@ -923,7 +1337,7 @@ type IncidentResource struct {
 	ZabbixEventId             string                   `json:"zabbix_event_id"`
 }
 
-// IncidentResourceIncidentStatus 监控系统是否判定已恢复。它与是否有人了结这条告警是两件事
+// IncidentResourceIncidentStatus Whether monitoring considers the problem recovered. Independent of whether anyone has closed the incident
 type IncidentResourceIncidentStatus string
 
 // IncidentResourceSeverity defines model for IncidentResource.Severity.
@@ -958,55 +1372,71 @@ type ItemThresholdResource struct {
 	Severity                string  `json:"severity"`
 	Threshold               float64 `json:"threshold"`
 
-	// TriggerName 图例上说明这条线是什么
+	// TriggerName Labels the line in the chart legend
 	TriggerName string `json:"trigger_name"`
 }
 
 // LengthAwarePageIncidentResource defines model for LengthAwarePageIncidentResource.
 type LengthAwarePageIncidentResource struct {
-	// Items 这一页的内容
+	// Items The records in this page
 	Items []IncidentResource `json:"items"`
 
-	// Limit 这一页最多几条，回显请求里的值
+	// Limit Maximum records per page, echoing the request
 	Limit int64 `json:"limit"`
 
-	// Offset 跳过了多少条，回显请求里的值
+	// Offset Number of records skipped, echoing the request
 	Offset int64 `json:"offset"`
 
-	// Total 命中的总条数，不只是这一页
+	// Total Total number of matches, not just this page
 	Total int64 `json:"total"`
 }
 
 // LengthAwarePageServerResource defines model for LengthAwarePageServerResource.
 type LengthAwarePageServerResource struct {
-	// Items 这一页的内容
+	// Items The records in this page
 	Items []ServerResource `json:"items"`
 
-	// Limit 这一页最多几条，回显请求里的值
+	// Limit Maximum records per page, echoing the request
 	Limit int64 `json:"limit"`
 
-	// Offset 跳过了多少条，回显请求里的值
+	// Offset Number of records skipped, echoing the request
 	Offset int64 `json:"offset"`
 
-	// Total 命中的总条数，不只是这一页
+	// Total Total number of matches, not just this page
 	Total int64 `json:"total"`
+}
+
+// LengthAwarePageStatusPageIncidentResource defines model for LengthAwarePageStatusPageIncidentResource.
+type LengthAwarePageStatusPageIncidentResource struct {
+	Data   []StatusPageIncidentResource `json:"data"`
+	Limit  int64                        `json:"limit"`
+	Offset int64                        `json:"offset"`
+	Total  int64                        `json:"total"`
+}
+
+// LengthAwarePageStatusPageMaintenanceResource defines model for LengthAwarePageStatusPageMaintenanceResource.
+type LengthAwarePageStatusPageMaintenanceResource struct {
+	Data   []StatusPageMaintenanceResource `json:"data"`
+	Limit  int64                           `json:"limit"`
+	Offset int64                           `json:"offset"`
+	Total  int64                           `json:"total"`
 }
 
 // MaintenancePeriodRequest defines model for MaintenancePeriodRequest.
 type MaintenancePeriodRequest struct {
 	DurationSeconds *int64 `json:"duration_seconds,omitempty"`
 
-	// Every DAILY / WEEKLY：每 N 天 / 每 N 周
+	// Every DAILY and WEEKLY: every N days or every N weeks
 	Every *int64                       `json:"every,omitempty"`
 	Kind  MaintenancePeriodRequestKind `json:"kind"`
 
-	// StartTimeSeconds DAILY / WEEKLY：当天零点起的秒数，按窗口自己的时区算
+	// StartTimeSeconds DAILY and WEEKLY: seconds from midnight, in the timezone of the window
 	StartTimeSeconds *int64 `json:"start_time_seconds,omitempty"`
 
-	// StartsAt 只有 ONCE 用得上
+	// StartsAt Used only by ONCE
 	StartsAt *time.Time `json:"starts_at,omitempty"`
 
-	// Weekdays WEEKLY：星期几的位图，**周一是最低位**
+	// Weekdays WEEKLY: bitmap of weekdays, **Monday is the lowest bit**
 	Weekdays *int64 `json:"weekdays,omitempty"`
 }
 
@@ -1017,17 +1447,17 @@ type MaintenancePeriodRequestKind string
 type MaintenancePeriodResource struct {
 	DurationSeconds int64 `json:"duration_seconds"`
 
-	// Every DAILY / WEEKLY：每 N 天 / 每 N 周
+	// Every DAILY and WEEKLY: every N days or every N weeks
 	Every int64                         `json:"every"`
 	Kind  MaintenancePeriodResourceKind `json:"kind"`
 
-	// StartTimeSeconds DAILY / WEEKLY：当天零点起的秒数，按窗口自己的时区算
+	// StartTimeSeconds DAILY and WEEKLY: seconds from midnight, in the timezone of the window
 	StartTimeSeconds int64 `json:"start_time_seconds"`
 
-	// StartsAt 只有 ONCE 有
+	// StartsAt Present only for ONCE
 	StartsAt *time.Time `json:"starts_at"`
 
-	// Weekdays WEEKLY：星期几的位图，**周一是最低位**
+	// Weekdays WEEKLY: bitmap of weekdays, **Monday is the lowest bit**
 	Weekdays int64 `json:"weekdays"`
 }
 
@@ -1049,7 +1479,7 @@ type MaintenanceWindowResource struct {
 	Period      MaintenancePeriodResource `json:"period"`
 	ProjectId   openapi_types.UUID        `json:"project_id"`
 
-	// ServerIds 空表示**整个项目**
+	// ServerIds Empty covers the **entire project**
 	ServerIds  []string                            `json:"server_ids"`
 	SyncStatus MaintenanceWindowResourceSyncStatus `json:"sync_status"`
 	Timezone   string                              `json:"timezone"`
@@ -1073,7 +1503,7 @@ type MetricResponseBody struct {
 	EffectiveFrom time.Time `json:"effective_from"`
 	EffectiveTo   time.Time `json:"effective_to"`
 
-	// FromTrends 数据来自趋势表，每个点是一小时的聚合
+	// FromTrends Data comes from hourly aggregates, one point per hour
 	FromTrends bool                    `json:"from_trends"`
 	Series     []MetricSeriesResource  `json:"series"`
 	Thresholds []ItemThresholdResource `json:"thresholds"`
@@ -1091,7 +1521,7 @@ type MetricSeriesResource struct {
 
 // MonitoringItemResource defines model for MonitoringItemResource.
 type MonitoringItemResource struct {
-	// AggregationFunction last / avg / min / max 之类
+	// AggregationFunction Such as last, avg, min or max
 	AggregationFunction     string `json:"aggregation_function"`
 	EvaluationWindowSeconds int64  `json:"evaluation_window_seconds"`
 	ItemId                  string `json:"item_id"`
@@ -1099,13 +1529,29 @@ type MonitoringItemResource struct {
 	Name                    string `json:"name"`
 	Operator                string `json:"operator"`
 
-	// Threshold 只有 threshold_status 为 RESOLVED 时才有
+	// Threshold Present only when `threshold_status` is RESOLVED
 	Threshold       *float64 `json:"threshold"`
 	ThresholdStatus string   `json:"threshold_status"`
 
-	// Value 触发那一刻的值，原样存下来的
+	// Value The value at the moment of the trigger, stored as collected
 	Value string `json:"value"`
 }
+
+// PostStatusPageIncidentUpdateRequestBody defines model for PostStatusPageIncidentUpdateRequestBody.
+type PostStatusPageIncidentUpdateRequestBody struct {
+	// Body Body text. Plain text
+	Body string `json:"body"`
+
+	// Components Lists only the components being changed by this update; those not listed keep their current status
+	Components []StatusPageIncidentComponentRequest `json:"components,omitempty"`
+
+	// IncidentStatus Empty keeps the current stage. RESOLVED closes the notice and returns every affected component to operational
+	IncidentStatus *PostStatusPageIncidentUpdateRequestBodyIncidentStatus `json:"incident_status,omitempty"`
+	PublishedAt    *time.Time                                             `json:"published_at,omitempty"`
+}
+
+// PostStatusPageIncidentUpdateRequestBodyIncidentStatus Empty keeps the current stage. RESOLVED closes the notice and returns every affected component to operational
+type PostStatusPageIncidentUpdateRequestBodyIncidentStatus string
 
 // ProjectOverviewResource defines model for ProjectOverviewResource.
 type ProjectOverviewResource struct {
@@ -1115,9 +1561,35 @@ type ProjectOverviewResource struct {
 	TotalServers       int64           `json:"total_servers"`
 }
 
+// PublishStatusPageIncidentRequestBody defines model for PublishStatusPageIncidentRequestBody.
+type PublishStatusPageIncidentRequestBody struct {
+	// Body Body of the first update. Plain text
+	Body       string                               `json:"body"`
+	Components []StatusPageIncidentComponentRequest `json:"components,omitempty"`
+
+	// Impact Empty derives the impact from the affected components
+	Impact         *PublishStatusPageIncidentRequestBodyImpact         `json:"impact,omitempty"`
+	IncidentStatus *PublishStatusPageIncidentRequestBodyIncidentStatus `json:"incident_status,omitempty"`
+
+	// Name The public title
+	Name string `json:"name"`
+
+	// PublishedAt Empty selects the current moment. Backfilling a past incident sets it in the past
+	PublishedAt *time.Time `json:"published_at,omitempty"`
+
+	// StartedAt When the incident began. Empty uses the publication time
+	StartedAt *time.Time `json:"started_at,omitempty"`
+}
+
+// PublishStatusPageIncidentRequestBodyImpact Empty derives the impact from the affected components
+type PublishStatusPageIncidentRequestBodyImpact string
+
+// PublishStatusPageIncidentRequestBodyIncidentStatus defines model for PublishStatusPageIncidentRequestBody.IncidentStatus.
+type PublishStatusPageIncidentRequestBodyIncidentStatus string
+
 // PutMaintenanceWindowRequestBody defines model for PutMaintenanceWindowRequestBody.
 type PutMaintenanceWindowRequestBody struct {
-	// ActiveSince 整条规则的生效区间起点
+	// ActiveSince Start of the period in which the rule is effective
 	ActiveSince time.Time                `json:"active_since"`
 	ActiveTill  time.Time                `json:"active_till"`
 	Description *string                  `json:"description,omitempty"`
@@ -1125,7 +1597,7 @@ type PutMaintenanceWindowRequestBody struct {
 	Period      MaintenancePeriodRequest `json:"period"`
 	ServerIds   []string                 `json:"server_ids,omitempty"`
 
-	// Timezone IANA 名字，比如 Asia/Shanghai；空即用部署配的默认
+	// Timezone IANA name such as Asia/Shanghai. Empty uses the configured default
 	Timezone *string `json:"timezone,omitempty"`
 }
 
@@ -1135,30 +1607,111 @@ type PutSLORequestBody struct {
 	MinSeverity   PutSLORequestBodyMinSeverity `json:"min_severity"`
 	Name          string                       `json:"name"`
 
-	// Period 空即按月
+	// Period Empty selects monthly
 	Period   *PutSLORequestBodyPeriod `json:"period,omitempty"`
 	Schedule []ScheduleWindowRequest  `json:"schedule,omitempty"`
 	SloId    openapi_types.UUID       `json:"slo_id"`
 
-	// SloPercent 目标可用率，比如 99.9；最多四位小数
+	// SloPercent Target availability, such as 99.9. At most four decimal places
 	SloPercent float64 `json:"slo_percent"`
 
-	// Timezone 决定统计周期的边界，即每个周期从哪一刻开始
+	// Timezone Determines the boundaries of each reporting period, that is, the moment each period begins
 	Timezone *string `json:"timezone,omitempty"`
 }
 
 // PutSLORequestBodyMinSeverity defines model for PutSLORequestBody.MinSeverity.
 type PutSLORequestBodyMinSeverity string
 
-// PutSLORequestBodyPeriod 空即按月
+// PutSLORequestBodyPeriod Empty selects monthly
 type PutSLORequestBodyPeriod string
+
+// PutStatusPageComponentRequestBody defines model for PutStatusPageComponentRequestBody.
+type PutStatusPageComponentRequestBody struct {
+	// AutoStatusMinSeverity Alerts below this severity do not change the status of this row
+	AutoStatusMinSeverity *PutStatusPageComponentRequestBodyAutoStatusMinSeverity `json:"auto_status_min_severity,omitempty"`
+	Description           *string                                                 `json:"description,omitempty"`
+
+	// GroupId Empty leaves the component ungrouped
+	GroupId *openapi_types.UUID `json:"group_id,omitempty"`
+
+	// Name Customer-facing copy; appears verbatim on the public page
+	Name               string `json:"name"`
+	OnlyShowIfDegraded *bool  `json:"only_show_if_degraded,omitempty"`
+	ShowUptime         *bool  `json:"show_uptime,omitempty"`
+
+	// StartedOn Meaningful only at creation and immutable afterwards. Empty selects the current moment
+	StartedOn *time.Time `json:"started_on,omitempty"`
+}
+
+// PutStatusPageComponentRequestBodyAutoStatusMinSeverity Alerts below this severity do not change the status of this row
+type PutStatusPageComponentRequestBodyAutoStatusMinSeverity string
+
+// PutStatusPageComponentSourcesRequestBody Submits the complete set; anything not listed is unbound
+type PutStatusPageComponentSourcesRequestBody struct {
+	Servers   []StatusPageComponentSourceServer   `json:"servers,omitempty"`
+	WebChecks []StatusPageComponentSourceWebCheck `json:"web_checks,omitempty"`
+}
+
+// PutStatusPageGroupOrderRequestBody defines model for PutStatusPageGroupOrderRequestBody.
+type PutStatusPageGroupOrderRequestBody struct {
+	ComponentIds []openapi_types.UUID `json:"component_ids"`
+}
+
+// PutStatusPageGroupRequestBody defines model for PutStatusPageGroupRequestBody.
+type PutStatusPageGroupRequestBody struct {
+	Collapsed   *bool   `json:"collapsed,omitempty"`
+	Description *string `json:"description,omitempty"`
+	Name        string  `json:"name"`
+}
+
+// PutStatusPageOrderRequestBody defines model for PutStatusPageOrderRequestBody.
+type PutStatusPageOrderRequestBody struct {
+	Items []StatusPageOrderItem `json:"items"`
+}
+
+// PutStatusPageRequestBody defines model for PutStatusPageRequestBody.
+type PutStatusPageRequestBody struct {
+	// BrandColor #RRGGBB. Applied to the page styling; only a strict six-digit hexadecimal value is accepted
+	BrandColor *string `json:"brand_color,omitempty"`
+
+	// CustomDomain Your own domain, such as status.acme.com. Empty binds none. Globally unique
+	CustomDomain *string `json:"custom_domain,omitempty"`
+
+	// FooterText The line of free-form text in the page footer. Plain text
+	FooterText *string `json:"footer_text,omitempty"`
+
+	// Headline The line shown below the title
+	Headline *string `json:"headline,omitempty"`
+	LogoUrl  *string `json:"logo_url,omitempty"`
+
+	// Name Page title
+	Name string `json:"name"`
+
+	// Published While false, the public address returns 404. Unpublished by default
+	Published *bool `json:"published,omitempty"`
+
+	// SearchEngineIndex Not indexed by default. Once a page has been crawled, switching back does not remove copies already held in third-party indexes
+	SearchEngineIndex *bool `json:"search_engine_index,omitempty"`
+
+	// Slug The address segment under the shared domain. Lowercase letters, digits and hyphens. Globally unique
+	Slug       string                         `json:"slug"`
+	SupportUrl *string                        `json:"support_url,omitempty"`
+	Theme      *PutStatusPageRequestBodyTheme `json:"theme,omitempty"`
+
+	// Timezone IANA name. Empty selects UTC
+	Timezone   *string `json:"timezone,omitempty"`
+	UptimeDays *int64  `json:"uptime_days,omitempty"`
+}
+
+// PutStatusPageRequestBodyTheme defines model for PutStatusPageRequestBody.Theme.
+type PutStatusPageRequestBodyTheme string
 
 // PutWebCheckRequestBody defines model for PutWebCheckRequestBody.
 type PutWebCheckRequestBody struct {
-	// IntervalSeconds 0 表示用默认
+	// IntervalSeconds 0 uses the default
 	IntervalSeconds *int64 `json:"interval_seconds,omitempty"`
 
-	// ResponseTimeThresholdSeconds 超过它算慢，0 表示不看响应时间
+	// ResponseTimeThresholdSeconds Slower than this counts as slow. 0 disables the response time check
 	ResponseTimeThresholdSeconds *int64                `json:"response_time_threshold_seconds,omitempty"`
 	Retries                      *int64                `json:"retries,omitempty"`
 	Steps                        []WebCheckStepRequest `json:"steps"`
@@ -1174,15 +1727,15 @@ type SLIReportResponseBody struct {
 type SLIReportRowResource struct {
 	DowntimeSeconds int64 `json:"downtime_seconds"`
 
-	// ErrorBudgetSeconds 为负表示这个周期的额度已经超支
+	// ErrorBudgetSeconds A negative value means the budget for this period is already exhausted
 	ErrorBudgetSeconds int64 `json:"error_budget_seconds"`
 
-	// ExcludedDowntimeSeconds 被计划内维护排除掉的那部分
+	// ExcludedDowntimeSeconds The portion excluded by planned maintenance
 	ExcludedDowntimeSeconds int64     `json:"excluded_downtime_seconds"`
 	PeriodFrom              time.Time `json:"period_from"`
 	PeriodTo                time.Time `json:"period_to"`
 
-	// ServerId 空表示这一行是项目整体
+	// ServerId Empty means this row covers the project as a whole
 	ServerId      string  `json:"server_id"`
 	SliPercent    float64 `json:"sli_percent"`
 	UptimeSeconds int64   `json:"uptime_seconds"`
@@ -1197,11 +1750,11 @@ type SLOResource struct {
 	Period        SLOResourcePeriod      `json:"period"`
 	ProjectId     openapi_types.UUID     `json:"project_id"`
 
-	// Schedule 空表示 7×24 全天候承诺
+	// Schedule Empty means a 24x7 commitment
 	Schedule []ScheduleWindowResource `json:"schedule"`
 	SloId    openapi_types.UUID       `json:"slo_id"`
 
-	// SloPercent 目标可用率，比如 99.9
+	// SloPercent Target availability, such as 99.9
 	SloPercent float64               `json:"slo_percent"`
 	SyncStatus SLOResourceSyncStatus `json:"sync_status"`
 	Timezone   string                `json:"timezone"`
@@ -1216,12 +1769,26 @@ type SLOResourcePeriod string
 // SLOResourceSyncStatus defines model for SLOResource.SyncStatus.
 type SLOResourceSyncStatus string
 
+// ScheduleStatusPageMaintenanceRequestBody defines model for ScheduleStatusPageMaintenanceRequestBody.
+type ScheduleStatusPageMaintenanceRequestBody struct {
+	// Body Maintenance description. Plain text
+	Body string `json:"body"`
+
+	// Components At least one. Maintenance that affects no component reads on the page as an announcement with no subject
+	Components   []StatusPageMaintenanceComponentRequest `json:"components"`
+	Name         string                                  `json:"name"`
+	ScheduledFor time.Time                               `json:"scheduled_for"`
+
+	// ScheduledUntil Must be later than `scheduled_for`
+	ScheduledUntil time.Time `json:"scheduled_until"`
+}
+
 // ScheduleWindowRequest defines model for ScheduleWindowRequest.
 type ScheduleWindowRequest struct {
 	EndTimeSeconds   *int64 `json:"end_time_seconds,omitempty"`
 	StartTimeSeconds *int64 `json:"start_time_seconds,omitempty"`
 
-	// Weekdays 星期几的位图，**周一是最低位**（1=周一 … 64=周日）
+	// Weekdays Bitmap of weekdays, **Monday is the lowest bit** (1 = Monday … 64 = Sunday)
 	Weekdays int64 `json:"weekdays"`
 }
 
@@ -1230,7 +1797,7 @@ type ScheduleWindowResource struct {
 	EndTimeSeconds   int64 `json:"end_time_seconds"`
 	StartTimeSeconds int64 `json:"start_time_seconds"`
 
-	// Weekdays 星期几的位图，**周一是最低位**，与维护窗口同一套编码
+	// Weekdays Bitmap of weekdays, **Monday is the lowest bit**, using the same encoding as maintenance windows
 	Weekdays int64 `json:"weekdays"`
 }
 
@@ -1251,14 +1818,14 @@ type ServerResource struct {
 	Id          openapi_types.UUID        `json:"id"`
 	LastError   string                    `json:"last_error"`
 
-	// MonitoringStatus FAILED 时看 last_error
+	// MonitoringStatus Consult `last_error` when this is FAILED
 	MonitoringStatus ServerResourceMonitoringStatus `json:"monitoring_status"`
 	Name             string                         `json:"name"`
 	ProjectId        openapi_types.UUID             `json:"project_id"`
 	Templates        []ServerTemplateResource       `json:"templates"`
 	UpdatedAt        time.Time                      `json:"updated_at"`
 
-	// ZabbixHostName agent 配置里的 Hostname 必须与它一致，主动式采集靠它认人
+	// ZabbixHostName The Hostname in the agent configuration must match this value; active checks identify the machine by it
 	ZabbixHostName string `json:"zabbix_host_name"`
 }
 
@@ -1268,14 +1835,14 @@ type ServerResourceAddressKind string
 // ServerResourceAgentMode defines model for ServerResource.AgentMode.
 type ServerResourceAgentMode string
 
-// ServerResourceMonitoringStatus FAILED 时看 last_error
+// ServerResourceMonitoringStatus Consult `last_error` when this is FAILED
 type ServerResourceMonitoringStatus string
 
 // ServerResourcesResource defines model for ServerResourcesResource.
 type ServerResourcesResource struct {
 	Interfaces []HostInterfaceResource `json:"interfaces"`
 
-	// Inventory 自动采集的硬件与系统清单：CPU、内存、操作系统等
+	// Inventory Hardware and system inventory collected automatically: CPU, memory, operating system and so on
 	Inventory map[string]string `json:"inventory"`
 	Tags      []TagResource     `json:"tags"`
 }
@@ -1298,15 +1865,233 @@ type SetFollowingRequestBody struct {
 type SnapshotResource struct {
 	AgentError string `json:"agent_error"`
 
-	// AgentReachability AGENT_DOWN 是 agent 不通但机器还活着；UNREACHABLE 是连这一点都说不上
+	// AgentReachability AGENT_DOWN means the agent is unreachable while the machine is still alive; UNREACHABLE means neither can be established
 	AgentReachability SnapshotResourceAgentReachability `json:"agent_reachability"`
 	LastCollectedAt   *time.Time                        `json:"last_collected_at"`
 	MonitoringEnabled bool                              `json:"monitoring_enabled"`
 	ProblemCounts     []CountResource                   `json:"problem_counts"`
 }
 
-// SnapshotResourceAgentReachability AGENT_DOWN 是 agent 不通但机器还活着；UNREACHABLE 是连这一点都说不上
+// SnapshotResourceAgentReachability AGENT_DOWN means the agent is unreachable while the machine is still alive; UNREACHABLE means neither can be established
 type SnapshotResourceAgentReachability string
+
+// StatusPageComponentListResponseBody defines model for StatusPageComponentListResponseBody.
+type StatusPageComponentListResponseBody struct {
+	Data []StatusPageComponentResource `json:"data"`
+}
+
+// StatusPageComponentResource defines model for StatusPageComponentResource.
+type StatusPageComponentResource struct {
+	AutoStatusMinSeverity StatusPageComponentResourceAutoStatusMinSeverity `json:"auto_status_min_severity"`
+	ComponentId           openapi_types.UUID                               `json:"component_id"`
+	CreatedAt             time.Time                                        `json:"created_at"`
+
+	// CurrentStatus The status currently shown to the public. OPERATIONAL means normal
+	CurrentStatus StatusPageComponentResourceCurrentStatus `json:"current_status"`
+	Description   string                                   `json:"description"`
+
+	// GroupId Empty means ungrouped, placed directly at the top level of the page
+	GroupId string `json:"group_id"`
+	Name    string `json:"name"`
+
+	// OnlyShowIfDegraded Hide this row while everything is normal
+	OnlyShowIfDegraded bool  `json:"only_show_if_degraded"`
+	Position           int64 `json:"position"`
+
+	// ShowUptime Whether the availability bar is shown. Components with this disabled are also excluded from the aggregate of their group
+	ShowUptime bool `json:"show_uptime"`
+
+	// StartedOn The moment this component started being covered. Earlier days are shown as unmeasured rather than operational
+	StartedOn time.Time `json:"started_on"`
+
+	// UptimePercent Availability over the past `uptime_days` days
+	UptimePercent float64 `json:"uptime_percent"`
+}
+
+// StatusPageComponentResourceAutoStatusMinSeverity defines model for StatusPageComponentResource.AutoStatusMinSeverity.
+type StatusPageComponentResourceAutoStatusMinSeverity string
+
+// StatusPageComponentResourceCurrentStatus The status currently shown to the public. OPERATIONAL means normal
+type StatusPageComponentResourceCurrentStatus string
+
+// StatusPageComponentSourceServer defines model for StatusPageComponentSourceServer.
+type StatusPageComponentSourceServer struct {
+	ServerId openapi_types.UUID `json:"server_id"`
+}
+
+// StatusPageComponentSourceWebCheck defines model for StatusPageComponentSourceWebCheck.
+type StatusPageComponentSourceWebCheck struct {
+	// ShowUrl Whether the checked address is shown on the public page
+	ShowUrl    *bool              `json:"show_url,omitempty"`
+	WebCheckId openapi_types.UUID `json:"web_check_id"`
+}
+
+// StatusPageComponentSourcesResource defines model for StatusPageComponentSourcesResource.
+type StatusPageComponentSourcesResource struct {
+	Servers   []StatusPageComponentSourceServer   `json:"servers"`
+	WebChecks []StatusPageComponentSourceWebCheck `json:"web_checks"`
+}
+
+// StatusPageGroupListResponseBody defines model for StatusPageGroupListResponseBody.
+type StatusPageGroupListResponseBody struct {
+	Data []StatusPageGroupResource `json:"data"`
+}
+
+// StatusPageGroupResource defines model for StatusPageGroupResource.
+type StatusPageGroupResource struct {
+	// Collapsed Whether the group is collapsed by default on the page
+	Collapsed   bool               `json:"collapsed"`
+	CreatedAt   time.Time          `json:"created_at"`
+	Description string             `json:"description"`
+	GroupId     openapi_types.UUID `json:"group_id"`
+	Name        string             `json:"name"`
+	Position    int64              `json:"position"`
+}
+
+// StatusPageIncidentComponentRequest defines model for StatusPageIncidentComponentRequest.
+type StatusPageIncidentComponentRequest struct {
+	ComponentId openapi_types.UUID `json:"component_id"`
+
+	// Status Empty returns this component to operational
+	Status *StatusPageIncidentComponentRequestStatus `json:"status,omitempty"`
+}
+
+// StatusPageIncidentComponentRequestStatus Empty returns this component to operational
+type StatusPageIncidentComponentRequestStatus string
+
+// StatusPageIncidentComponentResource A status transition of one component within one update. The component name is a snapshot taken at the time
+type StatusPageIncidentComponentResource struct {
+	ComponentId   openapi_types.UUID                           `json:"component_id"`
+	ComponentName string                                       `json:"component_name"`
+	NewStatus     StatusPageIncidentComponentResourceNewStatus `json:"new_status"`
+	OldStatus     StatusPageIncidentComponentResourceOldStatus `json:"old_status"`
+}
+
+// StatusPageIncidentComponentResourceNewStatus defines model for StatusPageIncidentComponentResource.NewStatus.
+type StatusPageIncidentComponentResourceNewStatus string
+
+// StatusPageIncidentComponentResourceOldStatus defines model for StatusPageIncidentComponentResource.OldStatus.
+type StatusPageIncidentComponentResourceOldStatus string
+
+// StatusPageIncidentResource defines model for StatusPageIncidentResource.
+type StatusPageIncidentResource struct {
+	Impact         StatusPageIncidentResourceImpact         `json:"impact"`
+	IncidentId     openapi_types.UUID                       `json:"incident_id"`
+	IncidentStatus StatusPageIncidentResourceIncidentStatus `json:"incident_status"`
+	Name           string                                   `json:"name"`
+	PublishedAt    time.Time                                `json:"published_at"`
+	ResolvedAt     *time.Time                               `json:"resolved_at"`
+
+	// StartedAt When the incident began, not when the notice was published
+	StartedAt time.Time `json:"started_at"`
+
+	// Updates Most recently published first
+	Updates []StatusPageIncidentUpdateResource `json:"updates"`
+}
+
+// StatusPageIncidentResourceImpact defines model for StatusPageIncidentResource.Impact.
+type StatusPageIncidentResourceImpact string
+
+// StatusPageIncidentResourceIncidentStatus defines model for StatusPageIncidentResource.IncidentStatus.
+type StatusPageIncidentResourceIncidentStatus string
+
+// StatusPageIncidentUpdateResource defines model for StatusPageIncidentUpdateResource.
+type StatusPageIncidentUpdateResource struct {
+	AffectedComponents []StatusPageIncidentComponentResource `json:"affected_components"`
+
+	// Body Body text. Plain text
+	Body           string                                         `json:"body"`
+	IncidentStatus StatusPageIncidentUpdateResourceIncidentStatus `json:"incident_status"`
+	PublishedAt    time.Time                                      `json:"published_at"`
+	UpdateId       openapi_types.UUID                             `json:"update_id"`
+}
+
+// StatusPageIncidentUpdateResourceIncidentStatus defines model for StatusPageIncidentUpdateResource.IncidentStatus.
+type StatusPageIncidentUpdateResourceIncidentStatus string
+
+// StatusPageMaintenanceComponentRequest defines model for StatusPageMaintenanceComponentRequest.
+type StatusPageMaintenanceComponentRequest struct {
+	ComponentId openapi_types.UUID `json:"component_id"`
+
+	// ComponentStatus How this component is shown while the maintenance runs. Neither value reduces availability
+	ComponentStatus *StatusPageMaintenanceComponentRequestComponentStatus `json:"component_status,omitempty"`
+}
+
+// StatusPageMaintenanceComponentRequestComponentStatus How this component is shown while the maintenance runs. Neither value reduces availability
+type StatusPageMaintenanceComponentRequestComponentStatus string
+
+// StatusPageMaintenanceComponentResource defines model for StatusPageMaintenanceComponentResource.
+type StatusPageMaintenanceComponentResource struct {
+	ComponentId     openapi_types.UUID                                    `json:"component_id"`
+	ComponentName   string                                                `json:"component_name"`
+	ComponentStatus StatusPageMaintenanceComponentResourceComponentStatus `json:"component_status"`
+}
+
+// StatusPageMaintenanceComponentResourceComponentStatus defines model for StatusPageMaintenanceComponentResource.ComponentStatus.
+type StatusPageMaintenanceComponentResourceComponentStatus string
+
+// StatusPageMaintenanceResource defines model for StatusPageMaintenanceResource.
+type StatusPageMaintenanceResource struct {
+	AffectedComponents []StatusPageMaintenanceComponentResource `json:"affected_components"`
+
+	// Body Maintenance description. Plain text
+	Body string `json:"body"`
+
+	// CompletedAt When the maintenance actually finished
+	CompletedAt       *time.Time                                     `json:"completed_at"`
+	MaintenanceId     openapi_types.UUID                             `json:"maintenance_id"`
+	MaintenanceStatus StatusPageMaintenanceResourceMaintenanceStatus `json:"maintenance_status"`
+	Name              string                                         `json:"name"`
+	ScheduledFor      time.Time                                      `json:"scheduled_for"`
+	ScheduledUntil    time.Time                                      `json:"scheduled_until"`
+
+	// StartedAt When the maintenance actually started, which may differ from the scheduled time
+	StartedAt *time.Time `json:"started_at"`
+}
+
+// StatusPageMaintenanceResourceMaintenanceStatus defines model for StatusPageMaintenanceResource.MaintenanceStatus.
+type StatusPageMaintenanceResourceMaintenanceStatus string
+
+// StatusPageOrderItem Exactly one of the two: `group_id` marks this position as a group, `component_id` as an ungrouped component
+type StatusPageOrderItem struct {
+	ComponentId *openapi_types.UUID `json:"component_id,omitempty"`
+	GroupId     *openapi_types.UUID `json:"group_id,omitempty"`
+}
+
+// StatusPageResource defines model for StatusPageResource.
+type StatusPageResource struct {
+	// BrandColor #RRGGBB
+	BrandColor string    `json:"brand_color"`
+	CreatedAt  time.Time `json:"created_at"`
+
+	// CustomDomain The custom domain bound to this page. Empty means it is served only at /{slug} under the shared domain
+	CustomDomain string `json:"custom_domain"`
+	FooterText   string `json:"footer_text"`
+	Headline     string `json:"headline"`
+	LogoUrl      string `json:"logo_url"`
+	Name         string `json:"name"`
+
+	// PublicUrl The current public address of this page. It is returned even while unpublished, in which case opening it returns 404
+	PublicUrl string `json:"public_url"`
+	Published bool   `json:"published"`
+
+	// SearchEngineIndex Whether search engines may index the page
+	SearchEngineIndex bool                    `json:"search_engine_index"`
+	Slug              string                  `json:"slug"`
+	StatusPageId      openapi_types.UUID      `json:"status_page_id"`
+	SupportUrl        string                  `json:"support_url"`
+	Theme             StatusPageResourceTheme `json:"theme"`
+
+	// Timezone Determines where the day boundary falls on the availability bar
+	Timezone  string    `json:"timezone"`
+	UpdatedAt time.Time `json:"updated_at"`
+
+	// UptimeDays Number of days covered by the availability bar
+	UptimeDays int64 `json:"uptime_days"`
+}
+
+// StatusPageResourceTheme defines model for StatusPageResource.Theme.
+type StatusPageResourceTheme string
 
 // TagResource defines model for TagResource.
 type TagResource struct {
@@ -1316,7 +2101,7 @@ type TagResource struct {
 
 // TemplateBindingRequest defines model for TemplateBindingRequest.
 type TemplateBindingRequest struct {
-	// Parameters 模板自己声明的参数，密钥参数写明文，返回时只报名字
+	// Parameters Parameters declared by the template. Secret parameters are supplied in clear text and returned by name only
 	Parameters  map[string]string                 `json:"parameters,omitempty"`
 	TemplateKey TemplateBindingRequestTemplateKey `json:"template_key"`
 }
@@ -1341,10 +2126,10 @@ type TopItemResource struct {
 type UpdateServerRequestBody struct {
 	Address *string `json:"address,omitempty"`
 
-	// AddressKind 要改地址就必须和 address 一起给
+	// AddressKind Must be supplied together with `address` when changing the address
 	AddressKind *UpdateServerRequestBodyAddressKind `json:"address_kind,omitempty"`
 
-	// AgentMode 改采集模式会把全部模板换成另一个变体
+	// AgentMode Changing the collection mode rebinds every template to the corresponding variant
 	AgentMode        *UpdateServerRequestBodyAgentMode `json:"agent_mode,omitempty"`
 	AgentPort        *int64                            `json:"agent_port,omitempty"`
 	Description      *string                           `json:"description,omitempty"`
@@ -1352,10 +2137,10 @@ type UpdateServerRequestBody struct {
 	TemplateBindings []TemplateBindingRequest          `json:"template_bindings,omitempty"`
 }
 
-// UpdateServerRequestBodyAddressKind 要改地址就必须和 address 一起给
+// UpdateServerRequestBodyAddressKind Must be supplied together with `address` when changing the address
 type UpdateServerRequestBodyAddressKind string
 
-// UpdateServerRequestBodyAgentMode 改采集模式会把全部模板换成另一个变体
+// UpdateServerRequestBodyAgentMode Changing the collection mode rebinds every template to the corresponding variant
 type UpdateServerRequestBodyAgentMode string
 
 // WebCheckListResponseBody defines model for WebCheckListResponseBody.
@@ -1370,7 +2155,7 @@ type WebCheckResource struct {
 	LastError                    string             `json:"last_error"`
 	ResponseTimeThresholdSeconds int64              `json:"response_time_threshold_seconds"`
 
-	// Result null 表示这个检查还一轮都没跑过。零值会把「还不知道」显示成「响应 0 秒、状态码 0」
+	// Result null means the check has not completed a round yet. A zero value would present "not yet known" as "0 seconds, status code 0"
 	Result         *WebCheckResultResource    `json:"result"`
 	Retries        int64                      `json:"retries"`
 	ServerId       openapi_types.UUID         `json:"server_id"`
@@ -1387,7 +2172,7 @@ type WebCheckResultResource struct {
 	CheckedAt time.Time `json:"checked_at"`
 	Error     string    `json:"error"`
 
-	// FailedStep 第几步失败的，从 1 数；healthy 时为 0
+	// FailedStep Index of the failed step, counting from 1. 0 when healthy
 	FailedStep          int64   `json:"failed_step"`
 	Healthy             bool    `json:"healthy"`
 	ResponseCode        int64   `json:"response_code"`
@@ -1396,19 +2181,19 @@ type WebCheckResultResource struct {
 
 // WebCheckStepRequest defines model for WebCheckStepRequest.
 type WebCheckStepRequest struct {
-	// ExpectedStatusCodes 状态码表达式，比如 200 或者 200,301-302；留空表示不检查状态码
+	// ExpectedStatusCodes Status code expression, such as 200 or 200,301-302. Empty disables status code checking
 	ExpectedStatusCodes *string `json:"expected_status_codes,omitempty"`
 	FollowRedirects     *bool   `json:"follow_redirects,omitempty"`
 	Name                string  `json:"name"`
 
-	// RequiredPattern 响应体里必须出现的字符串
+	// RequiredPattern A string that must appear in the response body
 	RequiredPattern *string `json:"required_pattern,omitempty"`
 	Url             string  `json:"url"`
 }
 
 // WebCheckStepResource defines model for WebCheckStepResource.
 type WebCheckStepResource struct {
-	// ExpectedStatusCodes 状态码表达式，比如 200 或者 200,301-302
+	// ExpectedStatusCodes Status code expression, such as 200 or 200,301-302
 	ExpectedStatusCodes string `json:"expected_status_codes"`
 	FollowRedirects     bool   `json:"follow_redirects"`
 	Name                string `json:"name"`
@@ -1418,30 +2203,30 @@ type WebCheckStepResource struct {
 
 // ListIncidentsParams defines parameters for ListIncidents.
 type ListIncidentsParams struct {
-	// Limit 这一页最多返回多少条
+	// Limit Maximum number of records in this page
 	Limit *int64 `form:"limit,omitempty" json:"limit,omitempty"`
 
-	// Offset 跳过多少条。要翻得更深请改用游标翻页的接口
+	// Offset Number of records to skip. For deeper paging, use the cursor-paged endpoint instead
 	Offset *int64 `form:"offset,omitempty" json:"offset,omitempty"`
 
-	// ServerId 只看某一台机器的
+	// ServerId Restrict to a single machine
 	ServerId       *string                            `form:"server_id,omitempty" json:"server_id,omitempty"`
 	IncidentStatus *ListIncidentsParamsIncidentStatus `form:"incident_status,omitempty" json:"incident_status,omitempty"`
 
-	// MinSeverity 按不低于该等级匹配，而非精确匹配
+	// MinSeverity Matches at or above this severity, not exactly this severity
 	MinSeverity   *ListIncidentsParamsMinSeverity `form:"min_severity,omitempty" json:"min_severity,omitempty"`
 	StartedAfter  *time.Time                      `form:"started_after,omitempty" json:"started_after,omitempty"`
 	StartedBefore *time.Time                      `form:"started_before,omitempty" json:"started_before,omitempty"`
 
-	// ActiveFrom 与 [active_from, active_to] **有交集**的告警，给指标图叠加故障区间要的是这个
+	// ActiveFrom Incidents that **overlap** [active_from, active_to]. This is what you want when overlaying incident bands on a metric chart
 	ActiveFrom *time.Time `form:"active_from,omitempty" json:"active_from,omitempty"`
 	ActiveTo   *time.Time `form:"active_to,omitempty" json:"active_to,omitempty"`
 
-	// Tag 形如 key 或 key=value，可重复；多个标签之间是与关系
+	// Tag Given as `key` or `key=value`, repeatable. Multiple tags are combined with AND
 	Tag            []string `form:"tag,omitempty" json:"tag,omitempty"`
 	AssigneeUserId *string  `form:"assignee_user_id,omitempty" json:"assignee_user_id,omitempty"`
 
-	// Closed 有没有人在这边把它处理完，与 incident_status 无关
+	// Closed Whether someone has finished handling it here. Independent of `incident_status`
 	Closed       *ListIncidentsParamsClosed       `form:"closed,omitempty" json:"closed,omitempty"`
 	Acknowledged *ListIncidentsParamsAcknowledged `form:"acknowledged,omitempty" json:"acknowledged,omitempty"`
 	Unassigned   *ListIncidentsParamsUnassigned   `form:"unassigned,omitempty" json:"unassigned,omitempty"`
@@ -1467,19 +2252,19 @@ type ListIncidentsParamsUnassigned string
 type ListIncidentTimelineParams struct {
 	Limit *int64 `form:"limit,omitempty" json:"limit,omitempty"`
 
-	// Cursor 上一页返回的 next_cursor，空即从头开始
+	// Cursor The `next_cursor` returned by the previous page. Empty starts from the beginning
 	Cursor *string `form:"cursor,omitempty" json:"cursor,omitempty"`
 }
 
 // ListServersParams defines parameters for ListServers.
 type ListServersParams struct {
-	// Limit 这一页最多返回多少条
+	// Limit Maximum number of records in this page
 	Limit *int64 `form:"limit,omitempty" json:"limit,omitempty"`
 
-	// Offset 跳过多少条。要翻得更深请改用游标翻页的接口
+	// Offset Number of records to skip. For deeper paging, use the cursor-paged endpoint instead
 	Offset *int64 `form:"offset,omitempty" json:"offset,omitempty"`
 
-	// Keyword 按名字或地址模糊匹配
+	// Keyword Fuzzy match on name or address
 	Keyword          *string                            `form:"keyword,omitempty" json:"keyword,omitempty"`
 	MonitoringStatus *ListServersParamsMonitoringStatus `form:"monitoring_status,omitempty" json:"monitoring_status,omitempty"`
 }
@@ -1489,27 +2274,27 @@ type ListServersParamsMonitoringStatus string
 
 // ListServerItemsParams defines parameters for ListServerItems.
 type ListServerItemsParams struct {
-	// Keyword 按 key 或名字模糊匹配
+	// Keyword Fuzzy match on key or name
 	Keyword *string `form:"keyword,omitempty" json:"keyword,omitempty"`
 
-	// Tag 形如 key 或 key=value，可重复。官方模板打好的 component 标签（cpu / memory / filesystem…）就是靠它筛
+	// Tag Given as `key` or `key=value`, repeatable. The `component` tags applied by the official templates (cpu, memory, filesystem and so on) are filtered through this
 	Tag []string `form:"tag,omitempty" json:"tag,omitempty"`
 }
 
 // GetServerMetricParams defines parameters for GetServerMetric.
 type GetServerMetricParams struct {
-	// ItemKey **前缀匹配**：vfs.fs.size 一次拿回每个挂载点一条线。与 item_id 至少给一个
+	// ItemKey **Prefix match**: `vfs.fs.size` returns one series per mount point. Supply this or `item_id`
 	ItemKey *string `form:"item_key,omitempty" json:"item_key,omitempty"`
 	ItemId  *string `form:"item_id,omitempty" json:"item_id,omitempty"`
 
-	// From 不给就是一小时前
+	// From Defaults to one hour ago
 	From *time.Time `form:"from,omitempty" json:"from,omitempty"`
 	To   *time.Time `form:"to,omitempty" json:"to,omitempty"`
 
-	// MaxPoints 降采样的桶数，0 表示原样返回采集到的数据点
+	// MaxPoints Number of downsampling buckets. 0 returns the collected data points unchanged
 	MaxPoints *int64 `form:"max_points,omitempty" json:"max_points,omitempty"`
 
-	// IncludeThresholds 顺带取这些监控项当前生效的阈值线
+	// IncludeThresholds Also return the thresholds currently in effect for these items
 	IncludeThresholds *bool `form:"include_thresholds,omitempty" json:"include_thresholds,omitempty"`
 }
 
@@ -1518,15 +2303,29 @@ type GetSliReportParams struct {
 	From *time.Time `form:"from,omitempty" json:"from,omitempty"`
 	To   *time.Time `form:"to,omitempty" json:"to,omitempty"`
 
-	// Periods 取最近 N 个完整周期，与 from/to 二选一
+	// Periods Return the most recent N complete periods. Use this or from/to, not both
 	Periods *int64 `form:"periods,omitempty" json:"periods,omitempty"`
+}
+
+// ListStatusPageIncidentsParams defines parameters for ListStatusPageIncidents.
+type ListStatusPageIncidentsParams struct {
+	// Limit Maximum number of records in this page
+	Limit  *int64 `form:"limit,omitempty" json:"limit,omitempty"`
+	Offset *int64 `form:"offset,omitempty" json:"offset,omitempty"`
+}
+
+// ListStatusPageMaintenancesParams defines parameters for ListStatusPageMaintenances.
+type ListStatusPageMaintenancesParams struct {
+	// Limit Maximum number of records in this page
+	Limit  *int64 `form:"limit,omitempty" json:"limit,omitempty"`
+	Offset *int64 `form:"offset,omitempty" json:"offset,omitempty"`
 }
 
 // ListProjectTopItemsParams defines parameters for ListProjectTopItems.
 type ListProjectTopItemsParams struct {
 	Kind ListProjectTopItemsParamsKind `form:"kind" json:"kind"`
 
-	// Limit 0 表示用默认
+	// Limit 0 uses the default
 	Limit *int64 `form:"limit,omitempty" json:"limit,omitempty"`
 }
 
@@ -1535,7 +2334,7 @@ type ListProjectTopItemsParamsKind string
 
 // ListWebChecksParams defines parameters for ListWebChecks.
 type ListWebChecksParams struct {
-	// ServerId 只看某一台机器的检查；不给就是整个项目的
+	// ServerId Restrict to the checks of a single machine. Omit for the whole project
 	ServerId *string `form:"server_id,omitempty" json:"server_id,omitempty"`
 }
 
@@ -1568,6 +2367,39 @@ type PutWebCheckJSONRequestBody = PutWebCheckRequestBody
 
 // PutSloJSONRequestBody defines body for PutSlo for application/json ContentType.
 type PutSloJSONRequestBody = PutSLORequestBody
+
+// PutStatusPageJSONRequestBody defines body for PutStatusPage for application/json ContentType.
+type PutStatusPageJSONRequestBody = PutStatusPageRequestBody
+
+// CreateStatusPageComponentJSONRequestBody defines body for CreateStatusPageComponent for application/json ContentType.
+type CreateStatusPageComponentJSONRequestBody = PutStatusPageComponentRequestBody
+
+// UpdateStatusPageComponentJSONRequestBody defines body for UpdateStatusPageComponent for application/json ContentType.
+type UpdateStatusPageComponentJSONRequestBody = PutStatusPageComponentRequestBody
+
+// PutStatusPageComponentSourcesJSONRequestBody defines body for PutStatusPageComponentSources for application/json ContentType.
+type PutStatusPageComponentSourcesJSONRequestBody = PutStatusPageComponentSourcesRequestBody
+
+// CreateStatusPageGroupJSONRequestBody defines body for CreateStatusPageGroup for application/json ContentType.
+type CreateStatusPageGroupJSONRequestBody = PutStatusPageGroupRequestBody
+
+// UpdateStatusPageGroupJSONRequestBody defines body for UpdateStatusPageGroup for application/json ContentType.
+type UpdateStatusPageGroupJSONRequestBody = PutStatusPageGroupRequestBody
+
+// PutStatusPageGroupOrderJSONRequestBody defines body for PutStatusPageGroupOrder for application/json ContentType.
+type PutStatusPageGroupOrderJSONRequestBody = PutStatusPageGroupOrderRequestBody
+
+// PublishStatusPageIncidentJSONRequestBody defines body for PublishStatusPageIncident for application/json ContentType.
+type PublishStatusPageIncidentJSONRequestBody = PublishStatusPageIncidentRequestBody
+
+// PostStatusPageIncidentUpdateJSONRequestBody defines body for PostStatusPageIncidentUpdate for application/json ContentType.
+type PostStatusPageIncidentUpdateJSONRequestBody = PostStatusPageIncidentUpdateRequestBody
+
+// ScheduleStatusPageMaintenanceJSONRequestBody defines body for ScheduleStatusPageMaintenance for application/json ContentType.
+type ScheduleStatusPageMaintenanceJSONRequestBody = ScheduleStatusPageMaintenanceRequestBody
+
+// PutStatusPageOrderJSONRequestBody defines body for PutStatusPageOrder for application/json ContentType.
+type PutStatusPageOrderJSONRequestBody = PutStatusPageOrderRequestBody
 
 // RequestEditorFn is the function signature for the RequestEditor callback function
 type RequestEditorFn func(ctx context.Context, req *http.Request) error
@@ -1643,354 +2475,676 @@ func WithRequestEditorFn(fn RequestEditorFn) ClientOption {
 // The interface specification for the client above.
 type ClientInterface interface {
 
-	// ListIncidents 列出告警
+	// ListIncidents List incidents
 	//
-	// `incident_status` 表示监控系统是否判定已恢复，`closed` 表示是否有人完成了处理。两者相互独立，可分别筛选。.
+	// `incident_status` reports whether monitoring considers the problem recovered; `closed` reports whether someone has finished handling it. The two are independent and can be filtered separately.
 	//
 	// Corresponds with GET /api/v1/incidents (the `ListIncidents` operationId).
 	ListIncidents(ctx context.Context, params *ListIncidentsParams, reqEditors ...RequestEditorFn) (*http.Response, error)
 
-	// GetIncident 查一条告警
+	// GetIncident Get an incident
 	//
 	// Corresponds with GET /api/v1/incidents/{incidentId} (the `GetIncident` operationId).
 	GetIncident(ctx context.Context, incidentId openapi_types.UUID, reqEditors ...RequestEditorFn) (*http.Response, error)
 
-	// AcknowledgeIncidentWithBody 确认这条告警
+	// AcknowledgeIncidentWithBody Acknowledge an incident
 	//
-	// 同时会在监控系统中标记为已确认，便于其他渠道也能看到该告警已有人处理。.
+	// The incident is also marked as acknowledged in the monitoring system, so that other channels can see it already has an owner.
 	//
 	// Takes any type of body and a specified content type.
 	//
 	// Corresponds with POST /api/v1/incidents/{incidentId}/acknowledge (the `AcknowledgeIncident` operationId).
 	AcknowledgeIncidentWithBody(ctx context.Context, incidentId openapi_types.UUID, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
 
-	// AcknowledgeIncident 确认这条告警
+	// AcknowledgeIncident Acknowledge an incident
 	//
-	// 同时会在监控系统中标记为已确认，便于其他渠道也能看到该告警已有人处理。.
+	// The incident is also marked as acknowledged in the monitoring system, so that other channels can see it already has an owner.
 	//
 	// Takes a body of the `application/json` content type.
 	//
 	// Corresponds with POST /api/v1/incidents/{incidentId}/acknowledge (the `AcknowledgeIncident` operationId).
 	AcknowledgeIncident(ctx context.Context, incidentId openapi_types.UUID, body AcknowledgeIncidentJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
 
-	// AssignIncidentWithBody 把这条告警交给谁，或者收回来
+	// AssignIncidentWithBody Assign an incident, or clear its assignee
 	//
-	// `assignee_user_id` 留空即取消指派。
+	// Leave `assignee_user_id` empty to clear the assignment.
 	//
-	// **这里不校验被指派的人在不在这个项目里**——那要问 IAM，而这个服务的准入还没接。
+	// **Project membership of the assignee is not verified.** Any user identifier is accepted and recorded as given.
 	//
 	// Takes any type of body and a specified content type.
 	//
 	// Corresponds with PUT /api/v1/incidents/{incidentId}/assignee (the `AssignIncident` operationId).
 	AssignIncidentWithBody(ctx context.Context, incidentId openapi_types.UUID, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
 
-	// AssignIncident 把这条告警交给谁，或者收回来
+	// AssignIncident Assign an incident, or clear its assignee
 	//
-	// `assignee_user_id` 留空即取消指派。
+	// Leave `assignee_user_id` empty to clear the assignment.
 	//
-	// **这里不校验被指派的人在不在这个项目里**——那要问 IAM，而这个服务的准入还没接。
+	// **Project membership of the assignee is not verified.** Any user identifier is accepted and recorded as given.
 	//
 	// Takes a body of the `application/json` content type.
 	//
 	// Corresponds with PUT /api/v1/incidents/{incidentId}/assignee (the `AssignIncident` operationId).
 	AssignIncident(ctx context.Context, incidentId openapi_types.UUID, body AssignIncidentJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
 
-	// CloseIncidentWithBody 了结这条告警
+	// CloseIncidentWithBody Close an incident
 	//
-	// 了结的是**平台上的处理流程**，不是告警本身的状态：尚未恢复的告警也可以按「已接受的风险」了结，它在监控系统中仍为未恢复。.
+	// Closing records **that the handling process is finished on this platform**; it does not change the state of the incident itself. An incident that has not recovered may still be closed as an accepted risk, and remains unrecovered in the monitoring system.
 	//
 	// Takes any type of body and a specified content type.
 	//
 	// Corresponds with POST /api/v1/incidents/{incidentId}/close (the `CloseIncident` operationId).
 	CloseIncidentWithBody(ctx context.Context, incidentId openapi_types.UUID, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
 
-	// CloseIncident 了结这条告警
+	// CloseIncident Close an incident
 	//
-	// 了结的是**平台上的处理流程**，不是告警本身的状态：尚未恢复的告警也可以按「已接受的风险」了结，它在监控系统中仍为未恢复。.
+	// Closing records **that the handling process is finished on this platform**; it does not change the state of the incident itself. An incident that has not recovered may still be closed as an accepted risk, and remains unrecovered in the monitoring system.
 	//
 	// Takes a body of the `application/json` content type.
 	//
 	// Corresponds with POST /api/v1/incidents/{incidentId}/close (the `CloseIncident` operationId).
 	CloseIncident(ctx context.Context, incidentId openapi_types.UUID, body CloseIncidentJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
 
-	// AddIncidentCommentWithBody 在时间线上写一条备注
+	// AddIncidentCommentWithBody Add a note to the timeline
 	//
 	// Takes any type of body and a specified content type.
 	//
 	// Corresponds with POST /api/v1/incidents/{incidentId}/comments (the `AddIncidentComment` operationId).
 	AddIncidentCommentWithBody(ctx context.Context, incidentId openapi_types.UUID, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
 
-	// AddIncidentComment 在时间线上写一条备注
+	// AddIncidentComment Add a note to the timeline
 	//
 	// Takes a body of the `application/json` content type.
 	//
 	// Corresponds with POST /api/v1/incidents/{incidentId}/comments (the `AddIncidentComment` operationId).
 	AddIncidentComment(ctx context.Context, incidentId openapi_types.UUID, body AddIncidentCommentJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
 
-	// SetIncidentFollowingWithBody 关注这条告警，或者取消关注
+	// SetIncidentFollowingWithBody Follow an incident, or stop following it
 	//
-	// 关注的是**自己**：操作者就是被加进关注列表的那个人。.
+	// You follow **yourself**: the caller is the user added to or removed from the follower list.
 	//
 	// Takes any type of body and a specified content type.
 	//
 	// Corresponds with PUT /api/v1/incidents/{incidentId}/following (the `SetIncidentFollowing` operationId).
 	SetIncidentFollowingWithBody(ctx context.Context, incidentId openapi_types.UUID, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
 
-	// SetIncidentFollowing 关注这条告警，或者取消关注
+	// SetIncidentFollowing Follow an incident, or stop following it
 	//
-	// 关注的是**自己**：操作者就是被加进关注列表的那个人。.
+	// You follow **yourself**: the caller is the user added to or removed from the follower list.
 	//
 	// Takes a body of the `application/json` content type.
 	//
 	// Corresponds with PUT /api/v1/incidents/{incidentId}/following (the `SetIncidentFollowing` operationId).
 	SetIncidentFollowing(ctx context.Context, incidentId openapi_types.UUID, body SetIncidentFollowingJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
 
-	// ReopenIncident 重新打开一条已经了结的告警
+	// ReopenIncident Reopen a closed incident
 	//
 	// Corresponds with POST /api/v1/incidents/{incidentId}/reopen (the `ReopenIncident` operationId).
 	ReopenIncident(ctx context.Context, incidentId openapi_types.UUID, reqEditors ...RequestEditorFn) (*http.Response, error)
 
-	// ListIncidentTimeline 列出这条告警的时间线
+	// ListIncidentTimeline List the timeline of an incident
 	//
-	// 游标翻页而不是偏移量：时间线是只增的，用偏移量翻页会在新记录写入时漏行和重行。.
+	// Cursor paging rather than offset paging: the timeline is append-only, and offset paging would skip or repeat entries whenever a new one is written.
 	//
 	// Corresponds with GET /api/v1/incidents/{incidentId}/timeline (the `ListIncidentTimeline` operationId).
 	ListIncidentTimeline(ctx context.Context, incidentId openapi_types.UUID, params *ListIncidentTimelineParams, reqEditors ...RequestEditorFn) (*http.Response, error)
 
-	// ListMaintenanceWindows 列出维护窗口
+	// ListMaintenanceWindows List maintenance windows
 	//
 	// Corresponds with GET /api/v1/maintenance-windows (the `ListMaintenanceWindows` operationId).
 	ListMaintenanceWindows(ctx context.Context, reqEditors ...RequestEditorFn) (*http.Response, error)
 
-	// DeleteMaintenanceWindow 撤掉一个维护窗口
+	// DeleteMaintenanceWindow Cancel a maintenance window
 	//
-	// 立刻恢复告警，哪怕窗口还没到期。.
+	// Alerting resumes immediately, even if the window has not yet expired.
 	//
 	// Corresponds with DELETE /api/v1/maintenance-windows/{windowId} (the `DeleteMaintenanceWindow` operationId).
 	DeleteMaintenanceWindow(ctx context.Context, windowId openapi_types.UUID, reqEditors ...RequestEditorFn) (*http.Response, error)
 
-	// GetMaintenanceWindow 查一个维护窗口
+	// GetMaintenanceWindow Get a maintenance window
 	//
 	// Corresponds with GET /api/v1/maintenance-windows/{windowId} (the `GetMaintenanceWindow` operationId).
 	GetMaintenanceWindow(ctx context.Context, windowId openapi_types.UUID, reqEditors ...RequestEditorFn) (*http.Response, error)
 
-	// PutMaintenanceWindowWithBody 开一个维护窗口，或者按同一个 id 覆盖它
+	// PutMaintenanceWindowWithBody Create a maintenance window, or replace it by the same id
 	//
-	// **创建即覆盖**：延长一个正在进行的窗口就是用同一个 id 再调一次。
+	// **Create or replace**: extending a window that is already running means calling this endpoint again with the same id.
 	//
-	// 窗口期内这些机器的问题不告警，也不扣 SLA 的可用率。`server_ids` 留空表示整个项目，包括窗口开着的时候新接进来的机器。
+	// While the window is open, problems on these machines do not alert and do not count against SLA availability. Leave `server_ids` empty to cover the entire project, including machines enrolled after the window opens.
 	//
 	// Takes any type of body and a specified content type.
 	//
 	// Corresponds with PUT /api/v1/maintenance-windows/{windowId} (the `PutMaintenanceWindow` operationId).
 	PutMaintenanceWindowWithBody(ctx context.Context, windowId openapi_types.UUID, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
 
-	// PutMaintenanceWindow 开一个维护窗口，或者按同一个 id 覆盖它
+	// PutMaintenanceWindow Create a maintenance window, or replace it by the same id
 	//
-	// **创建即覆盖**：延长一个正在进行的窗口就是用同一个 id 再调一次。
+	// **Create or replace**: extending a window that is already running means calling this endpoint again with the same id.
 	//
-	// 窗口期内这些机器的问题不告警，也不扣 SLA 的可用率。`server_ids` 留空表示整个项目，包括窗口开着的时候新接进来的机器。
+	// While the window is open, problems on these machines do not alert and do not count against SLA availability. Leave `server_ids` empty to cover the entire project, including machines enrolled after the window opens.
 	//
 	// Takes a body of the `application/json` content type.
 	//
 	// Corresponds with PUT /api/v1/maintenance-windows/{windowId} (the `PutMaintenanceWindow` operationId).
 	PutMaintenanceWindow(ctx context.Context, windowId openapi_types.UUID, body PutMaintenanceWindowJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
 
-	// GetProjectOverview 项目总览
+	// GetProjectOverview Project overview
 	//
-	// 项目下还没有任何机器时返回各项均为零的总览，而不是 404——空项目是一个正常状态。.
+	// A project with no machines yet returns an overview with every figure at zero rather than a 404 — an empty project is a normal state.
 	//
 	// Corresponds with GET /api/v1/overview (the `GetProjectOverview` operationId).
 	GetProjectOverview(ctx context.Context, reqEditors ...RequestEditorFn) (*http.Response, error)
 
-	// ListServers 列出项目里的机器
+	// ListServers List the machines in the project
 	//
 	// Corresponds with GET /api/v1/servers (the `ListServers` operationId).
 	ListServers(ctx context.Context, params *ListServersParams, reqEditors ...RequestEditorFn) (*http.Response, error)
 
-	// DeleteServer 删掉这台机器
+	// DeleteServer Delete a machine
 	//
-	// **不可逆**：监控主机、历史数据和这台机器名下的告警会一并删除。若只是想暂时停止采集，改用 /disable。.
+	// **Irreversible**: the monitored host, its history and every incident recorded against this machine are removed together. To stop collection temporarily, use `/disable` instead.
 	//
 	// Corresponds with DELETE /api/v1/servers/{serverId} (the `DeleteServer` operationId).
 	DeleteServer(ctx context.Context, serverId openapi_types.UUID, reqEditors ...RequestEditorFn) (*http.Response, error)
 
-	// GetServer 查一台机器的接入情况
+	// GetServer Get the enrollment state of a machine
 	//
 	// Corresponds with GET /api/v1/servers/{serverId} (the `GetServer` operationId).
 	GetServer(ctx context.Context, serverId openapi_types.UUID, reqEditors ...RequestEditorFn) (*http.Response, error)
 
-	// UpdateServerWithBody 改一台机器的接入参数
+	// UpdateServerWithBody Update the enrollment settings of a machine
 	//
-	// 只更新请求体中出现的字段。`address` 与 `address_kind` 必须一并提供：只改其中一个会得到互相矛盾的接入配置，该错误不会被报出，表现为 agent 连不上。.
+	// Only the fields present in the request body are updated. `address` and `address_kind` must be supplied together: changing one without the other produces a contradictory configuration that is not reported as an error and shows up only as an agent that cannot connect.
 	//
 	// Takes any type of body and a specified content type.
 	//
 	// Corresponds with PATCH /api/v1/servers/{serverId} (the `UpdateServer` operationId).
 	UpdateServerWithBody(ctx context.Context, serverId openapi_types.UUID, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
 
-	// UpdateServer 改一台机器的接入参数
+	// UpdateServer Update the enrollment settings of a machine
 	//
-	// 只更新请求体中出现的字段。`address` 与 `address_kind` 必须一并提供：只改其中一个会得到互相矛盾的接入配置，该错误不会被报出，表现为 agent 连不上。.
+	// Only the fields present in the request body are updated. `address` and `address_kind` must be supplied together: changing one without the other produces a contradictory configuration that is not reported as an error and shows up only as an agent that cannot connect.
 	//
 	// Takes a body of the `application/json` content type.
 	//
 	// Corresponds with PATCH /api/v1/servers/{serverId} (the `UpdateServer` operationId).
 	UpdateServer(ctx context.Context, serverId openapi_types.UUID, body UpdateServerJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
 
-	// EnableServerMonitoringWithBody 把一台机器接入监控
+	// EnableServerMonitoringWithBody Enroll a machine into monitoring
 	//
-	// **同一个 server id 重复调用是幂等的**：参数一致时返回已接入的那台，不会重复创建监控主机，因此接入失败可以安全重试。
+	// **Repeated calls with the same server id are idempotent**: given identical parameters, the already-enrolled machine is returned and no duplicate host is created, so a failed enrollment is safe to retry.
 	//
-	// 修改接入参数请改用 PATCH。本接口在参数不一致时会返回错误，不会更新已有配置。
+	// To change enrollment settings, use PATCH. This endpoint returns an error when the parameters differ, and does not update an existing configuration.
 	//
-	// 响应中的 `tls_psk` **只返回这一次**，请及时保存；遗失后需要轮换。
+	// The `tls_psk` in the response is **returned only this once**; store it immediately. If it is lost, it must be rotated.
 	//
 	// Takes any type of body and a specified content type.
 	//
 	// Corresponds with PUT /api/v1/servers/{serverId} (the `EnableServerMonitoring` operationId).
 	EnableServerMonitoringWithBody(ctx context.Context, serverId openapi_types.UUID, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
 
-	// EnableServerMonitoring 把一台机器接入监控
+	// EnableServerMonitoring Enroll a machine into monitoring
 	//
-	// **同一个 server id 重复调用是幂等的**：参数一致时返回已接入的那台，不会重复创建监控主机，因此接入失败可以安全重试。
+	// **Repeated calls with the same server id are idempotent**: given identical parameters, the already-enrolled machine is returned and no duplicate host is created, so a failed enrollment is safe to retry.
 	//
-	// 修改接入参数请改用 PATCH。本接口在参数不一致时会返回错误，不会更新已有配置。
+	// To change enrollment settings, use PATCH. This endpoint returns an error when the parameters differ, and does not update an existing configuration.
 	//
-	// 响应中的 `tls_psk` **只返回这一次**，请及时保存；遗失后需要轮换。
+	// The `tls_psk` in the response is **returned only this once**; store it immediately. If it is lost, it must be rotated.
 	//
 	// Takes a body of the `application/json` content type.
 	//
 	// Corresponds with PUT /api/v1/servers/{serverId} (the `EnableServerMonitoring` operationId).
 	EnableServerMonitoring(ctx context.Context, serverId openapi_types.UUID, body EnableServerMonitoringJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
 
-	// DisableServerMonitoring 停止监控这台机器
+	// DisableServerMonitoring Stop monitoring a machine
 	//
-	// 可逆操作：监控主机保留，仅停止采集，历史数据不受影响。重新接入即可恢复采集。如需连同历史数据一并删除，改用 DELETE。.
+	// Reversible: the monitored host is retained, only collection stops, and history is unaffected. Enrolling again resumes collection. To remove the history as well, use DELETE.
 	//
 	// Corresponds with POST /api/v1/servers/{serverId}/disable (the `DisableServerMonitoring` operationId).
 	DisableServerMonitoring(ctx context.Context, serverId openapi_types.UUID, reqEditors ...RequestEditorFn) (*http.Response, error)
 
-	// ListServerItems 列出一台机器的监控项
+	// ListServerItems List the monitoring items of a machine
 	//
-	// 原样返回采集到的监控项，不做筛选或重命名。哪些属于重要指标，由调用方依据监控项自带的标签自行判断。.
+	// Items are returned exactly as collected, without filtering or renaming. Which of them count as important is for the caller to decide from the tags carried by each item.
 	//
 	// Corresponds with GET /api/v1/servers/{serverId}/items (the `ListServerItems` operationId).
 	ListServerItems(ctx context.Context, serverId openapi_types.UUID, params *ListServerItemsParams, reqEditors ...RequestEditorFn) (*http.Response, error)
 
-	// GetServerMetric 取一个监控项的时间序列
+	// GetServerMetric Get the time series of a monitoring item
 	//
-	// `item_key` 是**前缀匹配**：按分区、按网卡发现出来的监控项 key 带参数（`vfs.fs.size[/var,pused]`），所以 `vfs.fs.size` 这一个请求就能画出每个挂载点一条线。
+	// `item_key` is matched **by prefix**. Keys discovered per partition or per interface carry parameters (`vfs.fs.size[/var,pused]`), so a single request for `vfs.fs.size` returns one series per mount point.
 	//
 	// Corresponds with GET /api/v1/servers/{serverId}/metrics (the `GetServerMetric` operationId).
 	GetServerMetric(ctx context.Context, serverId openapi_types.UUID, params *GetServerMetricParams, reqEditors ...RequestEditorFn) (*http.Response, error)
 
-	// RotateAgentPsk 换一把 agent 的 PSK
+	// RotateAgentPsk Rotate the agent PSK
 	//
-	// 换完要同步改 agent 侧的配置，否则那台机器立刻失联。新密钥同样**只在这个响应里明文出现一次**。.
+	// The agent configuration must be updated to match, otherwise the machine loses contact immediately. The new key is likewise **returned in clear text only in this response**.
 	//
 	// Corresponds with POST /api/v1/servers/{serverId}/psk (the `RotateAgentPsk` operationId).
 	RotateAgentPsk(ctx context.Context, serverId openapi_types.UUID, reqEditors ...RequestEditorFn) (*http.Response, error)
 
-	// GetServerResources 一台机器的硬件与接口
+	// GetServerResources Hardware and interfaces of a machine
 	//
 	// Corresponds with GET /api/v1/servers/{serverId}/resources (the `GetServerResources` operationId).
 	GetServerResources(ctx context.Context, serverId openapi_types.UUID, reqEditors ...RequestEditorFn) (*http.Response, error)
 
-	// GetServerSnapshot 一台机器此刻的状态
+	// GetServerSnapshot Current state of a machine
 	//
 	// Corresponds with GET /api/v1/servers/{serverId}/snapshot (the `GetServerSnapshot` operationId).
 	GetServerSnapshot(ctx context.Context, serverId openapi_types.UUID, reqEditors ...RequestEditorFn) (*http.Response, error)
 
-	// DeleteWebCheck 删掉一个网页检查
+	// DeleteWebCheck Delete a web check
 	//
-	// 同时删除监控系统中对应的检查任务和触发器，不会遗留永远无法恢复的告警。.
+	// The corresponding check task and trigger are removed from the monitoring system as well, so no permanently unrecoverable alert is left behind.
 	//
 	// Corresponds with DELETE /api/v1/servers/{serverId}/web-checks/{checkId} (the `DeleteWebCheck` operationId).
 	DeleteWebCheck(ctx context.Context, serverId openapi_types.UUID, checkId openapi_types.UUID, reqEditors ...RequestEditorFn) (*http.Response, error)
 
-	// GetWebCheck 查一个网页检查
+	// GetWebCheck Get a web check
 	//
 	// Corresponds with GET /api/v1/servers/{serverId}/web-checks/{checkId} (the `GetWebCheck` operationId).
 	GetWebCheck(ctx context.Context, serverId openapi_types.UUID, checkId openapi_types.UUID, reqEditors ...RequestEditorFn) (*http.Response, error)
 
-	// PutWebCheckWithBody 建一个网页检查，或者按同一个 id 覆盖它
+	// PutWebCheckWithBody Create a web check, or replace it by the same id
 	//
-	// **创建即覆盖**：修改一个检查即用同一个 id 再次调用本接口，无需先判断它是否已存在。.
+	// **Create or replace**: to modify a check, call this endpoint again with the same id. There is no need to determine first whether it already exists.
 	//
 	// Takes any type of body and a specified content type.
 	//
 	// Corresponds with PUT /api/v1/servers/{serverId}/web-checks/{checkId} (the `PutWebCheck` operationId).
 	PutWebCheckWithBody(ctx context.Context, serverId openapi_types.UUID, checkId openapi_types.UUID, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
 
-	// PutWebCheck 建一个网页检查，或者按同一个 id 覆盖它
+	// PutWebCheck Create a web check, or replace it by the same id
 	//
-	// **创建即覆盖**：修改一个检查即用同一个 id 再次调用本接口，无需先判断它是否已存在。.
+	// **Create or replace**: to modify a check, call this endpoint again with the same id. There is no need to determine first whether it already exists.
 	//
 	// Takes a body of the `application/json` content type.
 	//
 	// Corresponds with PUT /api/v1/servers/{serverId}/web-checks/{checkId} (the `PutWebCheck` operationId).
 	PutWebCheck(ctx context.Context, serverId openapi_types.UUID, checkId openapi_types.UUID, body PutWebCheckJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
 
-	// GetSliReport 查实测的达成情况
+	// GetSliReport Get measured availability
 	//
-	// SLI 是测出来的数，SLO 是定下来的目标——这里返回的是前者。
+	// SLI is what was measured; SLO is what was promised — this endpoint returns the former.
 	//
-	// `server_id` 为空的那一行是项目整体。
+	// The row with an empty `server_id` covers the project as a whole.
 	//
 	// Corresponds with GET /api/v1/sli-report (the `GetSliReport` operationId).
 	GetSliReport(ctx context.Context, params *GetSliReportParams, reqEditors ...RequestEditorFn) (*http.Response, error)
 
-	// DeleteSlo 撤掉这个项目的可用率目标
+	// DeleteSlo Remove the availability target of this project
 	//
-	// 同时移除监控系统中对应的服务树，此后不再统计可用率。.
+	// Availability is no longer tracked from this point on.
 	//
 	// Corresponds with DELETE /api/v1/slo (the `DeleteSlo` operationId).
 	DeleteSlo(ctx context.Context, reqEditors ...RequestEditorFn) (*http.Response, error)
 
-	// GetSlo 查这个项目的可用率目标
+	// GetSlo Get the availability target of this project
 	//
-	// 没定过就是 404，而不是一份默认目标：没承诺过和承诺了 99.9% 是两回事。
+	// A project that has never set one returns 404 rather than a default target: making no promise and promising 99.9% are different things.
 	//
 	// Corresponds with GET /api/v1/slo (the `GetSlo` operationId).
 	GetSlo(ctx context.Context, reqEditors ...RequestEditorFn) (*http.Response, error)
 
-	// PutSloWithBody 定下这个项目的可用率目标，或者改它
+	// PutSloWithBody Set the availability target of this project, or change it
 	//
-	// 一个项目一条 SLO，**创建即覆盖**。
+	// One SLO per project, **create or replace**.
 	//
-	// `min_severity` 必须显式选：它决定什么算「不可用」，是这条承诺的一半内容。
+	// `min_severity` must be chosen explicitly: it defines what counts as unavailable, which is half of what the target means.
 	//
 	// Takes any type of body and a specified content type.
 	//
 	// Corresponds with PUT /api/v1/slo (the `PutSlo` operationId).
 	PutSloWithBody(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
 
-	// PutSlo 定下这个项目的可用率目标，或者改它
+	// PutSlo Set the availability target of this project, or change it
 	//
-	// 一个项目一条 SLO，**创建即覆盖**。
+	// One SLO per project, **create or replace**.
 	//
-	// `min_severity` 必须显式选：它决定什么算「不可用」，是这条承诺的一半内容。
+	// `min_severity` must be chosen explicitly: it defines what counts as unavailable, which is half of what the target means.
 	//
 	// Takes a body of the `application/json` content type.
 	//
 	// Corresponds with PUT /api/v1/slo (the `PutSlo` operationId).
 	PutSlo(ctx context.Context, body PutSloJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
 
-	// ListProjectTopItems 某个指标最高的前几台
+	// DeleteStatusPage Delete the status page
+	//
+	// Its groups, components, availability history, incident notices and scheduled maintenance are removed together, and cannot be recovered. The slug and custom domain are released.
+	//
+	// Corresponds with DELETE /api/v1/status-page (the `DeleteStatusPage` operationId).
+	DeleteStatusPage(ctx context.Context, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// GetStatusPage Get the status page of this project
+	//
+	// A project has at most one status page. A project that has never created one returns 404.
+	//
+	// Corresponds with GET /api/v1/status-page (the `GetStatusPage` operationId).
+	GetStatusPage(ctx context.Context, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// PutStatusPageWithBody Create the status page, or replace its configuration
+	//
+	// **Create or replace**: changing the title, switching the domain, publishing and unpublishing are all done by sending the complete configuration again.
+	//
+	// While `published` is false the public address returns 404, including any custom domain already bound. A newly created page is unpublished by default, so that a page still being configured has no address that opens.
+	//
+	// `slug` and `custom_domain` are **globally unique**; a value already taken returns 409.
+	//
+	// Takes any type of body and a specified content type.
+	//
+	// Corresponds with PUT /api/v1/status-page (the `PutStatusPage` operationId).
+	PutStatusPageWithBody(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// PutStatusPage Create the status page, or replace its configuration
+	//
+	// **Create or replace**: changing the title, switching the domain, publishing and unpublishing are all done by sending the complete configuration again.
+	//
+	// While `published` is false the public address returns 404, including any custom domain already bound. A newly created page is unpublished by default, so that a page still being configured has no address that opens.
+	//
+	// `slug` and `custom_domain` are **globally unique**; a value already taken returns 409.
+	//
+	// Takes a body of the `application/json` content type.
+	//
+	// Corresponds with PUT /api/v1/status-page (the `PutStatusPage` operationId).
+	PutStatusPage(ctx context.Context, body PutStatusPageJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// ListStatusPageComponents List components
+	//
+	// A component is one row on the status page: an externally promised capability. It is not a machine — a single component may be backed by several machines and several web checks.
+	//
+	// Corresponds with GET /api/v1/status-page/components (the `ListStatusPageComponents` operationId).
+	ListStatusPageComponents(ctx context.Context, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// CreateStatusPageComponentWithBody Create a component
+	//
+	// `name` is **customer-facing copy** and appears verbatim on the public page; do not use machine names.
+	//
+	// `auto_status_min_severity` sets how severe an alert must be before it changes the status of this row; anything below it has no effect. The default is AVERAGE. Lower settings tend to keep the page permanently off-green, at which point people stop reading it.
+	//
+	// Takes any type of body and a specified content type.
+	//
+	// Corresponds with POST /api/v1/status-page/components (the `CreateStatusPageComponent` operationId).
+	CreateStatusPageComponentWithBody(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// CreateStatusPageComponent Create a component
+	//
+	// `name` is **customer-facing copy** and appears verbatim on the public page; do not use machine names.
+	//
+	// `auto_status_min_severity` sets how severe an alert must be before it changes the status of this row; anything below it has no effect. The default is AVERAGE. Lower settings tend to keep the page permanently off-green, at which point people stop reading it.
+	//
+	// Takes a body of the `application/json` content type.
+	//
+	// Corresponds with POST /api/v1/status-page/components (the `CreateStatusPageComponent` operationId).
+	CreateStatusPageComponent(ctx context.Context, body CreateStatusPageComponentJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// DeleteStatusPageComponent Delete a component
+	//
+	// Its availability history is removed along with it. Passages in already-published notices that refer to it are retained, since customers may already have read them.
+	//
+	// Corresponds with DELETE /api/v1/status-page/components/{componentId} (the `DeleteStatusPageComponent` operationId).
+	DeleteStatusPageComponent(ctx context.Context, componentId openapi_types.UUID, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// GetStatusPageComponent Get a component
+	//
+	// Corresponds with GET /api/v1/status-page/components/{componentId} (the `GetStatusPageComponent` operationId).
+	GetStatusPageComponent(ctx context.Context, componentId openapi_types.UUID, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// UpdateStatusPageComponentWithBody Update a component
+	//
+	// `started_on` cannot be changed: it determines where the availability bar stops showing as unmeasured, and changing it would rewrite history that has already been published.
+	//
+	// Takes any type of body and a specified content type.
+	//
+	// Corresponds with PUT /api/v1/status-page/components/{componentId} (the `UpdateStatusPageComponent` operationId).
+	UpdateStatusPageComponentWithBody(ctx context.Context, componentId openapi_types.UUID, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// UpdateStatusPageComponent Update a component
+	//
+	// `started_on` cannot be changed: it determines where the availability bar stops showing as unmeasured, and changing it would rewrite history that has already been published.
+	//
+	// Takes a body of the `application/json` content type.
+	//
+	// Corresponds with PUT /api/v1/status-page/components/{componentId} (the `UpdateStatusPageComponent` operationId).
+	UpdateStatusPageComponent(ctx context.Context, componentId openapi_types.UUID, body UpdateStatusPageComponentJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// ListStatusPageComponentSources List the monitored sources bound to a component
+	//
+	// Monitored sources are internal information and **never appear on the public page**.
+	//
+	// Corresponds with GET /api/v1/status-page/components/{componentId}/sources (the `ListStatusPageComponentSources` operationId).
+	ListStatusPageComponentSources(ctx context.Context, componentId openapi_types.UUID, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// PutStatusPageComponentSourcesWithBody Set the complete list of monitored sources for a component
+	//
+	// Submits the **complete** set of sources; anything not listed is unbound.
+	//
+	// Once bound, alerts on these machines and web checks drive the status of the component automatically: DISASTER and HIGH are reported as a major outage, AVERAGE as a partial outage, and WARNING as degraded performance. Alerts below `auto_status_min_severity` have no effect.
+	//
+	// `show_url` controls whether the checked address is shown on the public page. It is off by default.
+	//
+	// Takes any type of body and a specified content type.
+	//
+	// Corresponds with PUT /api/v1/status-page/components/{componentId}/sources (the `PutStatusPageComponentSources` operationId).
+	PutStatusPageComponentSourcesWithBody(ctx context.Context, componentId openapi_types.UUID, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// PutStatusPageComponentSources Set the complete list of monitored sources for a component
+	//
+	// Submits the **complete** set of sources; anything not listed is unbound.
+	//
+	// Once bound, alerts on these machines and web checks drive the status of the component automatically: DISASTER and HIGH are reported as a major outage, AVERAGE as a partial outage, and WARNING as degraded performance. Alerts below `auto_status_min_severity` have no effect.
+	//
+	// `show_url` controls whether the checked address is shown on the public page. It is off by default.
+	//
+	// Takes a body of the `application/json` content type.
+	//
+	// Corresponds with PUT /api/v1/status-page/components/{componentId}/sources (the `PutStatusPageComponentSources` operationId).
+	PutStatusPageComponentSources(ctx context.Context, componentId openapi_types.UUID, body PutStatusPageComponentSourcesJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// ListStatusPageGroups List groups
+	//
+	// Corresponds with GET /api/v1/status-page/groups (the `ListStatusPageGroups` operationId).
+	ListStatusPageGroups(ctx context.Context, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// CreateStatusPageGroupWithBody Create a group
+	//
+	// A group is one level of collapsing applied to components on the page. There is exactly one level; groups cannot be nested.
+	//
+	// Takes any type of body and a specified content type.
+	//
+	// Corresponds with POST /api/v1/status-page/groups (the `CreateStatusPageGroup` operationId).
+	CreateStatusPageGroupWithBody(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// CreateStatusPageGroup Create a group
+	//
+	// A group is one level of collapsing applied to components on the page. There is exactly one level; groups cannot be nested.
+	//
+	// Takes a body of the `application/json` content type.
+	//
+	// Corresponds with POST /api/v1/status-page/groups (the `CreateStatusPageGroup` operationId).
+	CreateStatusPageGroup(ctx context.Context, body CreateStatusPageGroupJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// DeleteStatusPageGroup Delete a group
+	//
+	// The components in it are **not deleted**. They return to the top level as ungrouped components, keeping their availability history and the incident notices that reference them.
+	//
+	// Corresponds with DELETE /api/v1/status-page/groups/{groupId} (the `DeleteStatusPageGroup` operationId).
+	DeleteStatusPageGroup(ctx context.Context, groupId openapi_types.UUID, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// UpdateStatusPageGroupWithBody Update a group
+	//
+	// Takes any type of body and a specified content type.
+	//
+	// Corresponds with PUT /api/v1/status-page/groups/{groupId} (the `UpdateStatusPageGroup` operationId).
+	UpdateStatusPageGroupWithBody(ctx context.Context, groupId openapi_types.UUID, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// UpdateStatusPageGroup Update a group
+	//
+	// Takes a body of the `application/json` content type.
+	//
+	// Corresponds with PUT /api/v1/status-page/groups/{groupId} (the `UpdateStatusPageGroup` operationId).
+	UpdateStatusPageGroup(ctx context.Context, groupId openapi_types.UUID, body UpdateStatusPageGroupJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// PutStatusPageGroupOrderWithBody Set the order of components within a group
+	//
+	// Takes any type of body and a specified content type.
+	//
+	// Corresponds with PUT /api/v1/status-page/groups/{groupId}/order (the `PutStatusPageGroupOrder` operationId).
+	PutStatusPageGroupOrderWithBody(ctx context.Context, groupId openapi_types.UUID, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// PutStatusPageGroupOrder Set the order of components within a group
+	//
+	// Takes a body of the `application/json` content type.
+	//
+	// Corresponds with PUT /api/v1/status-page/groups/{groupId}/order (the `PutStatusPageGroupOrder` operationId).
+	PutStatusPageGroupOrder(ctx context.Context, groupId openapi_types.UUID, body PutStatusPageGroupOrderJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// ListStatusPageIncidents List the incident notices on the status page
+	//
+	// These are **customer-facing notices**, distinct from the monitoring incidents under `/incidents`. Nothing from the latter is carried over; the text here is written by your team.
+	//
+	// Corresponds with GET /api/v1/status-page/incidents (the `ListStatusPageIncidents` operationId).
+	ListStatusPageIncidents(ctx context.Context, params *ListStatusPageIncidentsParams, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// PublishStatusPageIncidentWithBody Publish an incident notice
+	//
+	// Publishing a notice and writing its first update are a single operation: a notice with no updates would appear as a bare title on a page that has already been delivered to readers.
+	//
+	// `started_at` is when the **incident began**, not when the notice was published. The two are usually minutes to hours apart, and using the publication time would understate the impact window that customers can compare against their own logs. Backfilling a past incident relies on the same field.
+	//
+	// The statuses given in `components` take effect on the public page immediately and count towards availability.
+	//
+	// Takes any type of body and a specified content type.
+	//
+	// Corresponds with POST /api/v1/status-page/incidents (the `PublishStatusPageIncident` operationId).
+	PublishStatusPageIncidentWithBody(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// PublishStatusPageIncident Publish an incident notice
+	//
+	// Publishing a notice and writing its first update are a single operation: a notice with no updates would appear as a bare title on a page that has already been delivered to readers.
+	//
+	// `started_at` is when the **incident began**, not when the notice was published. The two are usually minutes to hours apart, and using the publication time would understate the impact window that customers can compare against their own logs. Backfilling a past incident relies on the same field.
+	//
+	// The statuses given in `components` take effect on the public page immediately and count towards availability.
+	//
+	// Takes a body of the `application/json` content type.
+	//
+	// Corresponds with POST /api/v1/status-page/incidents (the `PublishStatusPageIncident` operationId).
+	PublishStatusPageIncident(ctx context.Context, body PublishStatusPageIncidentJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// GetStatusPageIncident Get an incident notice
+	//
+	// Corresponds with GET /api/v1/status-page/incidents/{incidentId} (the `GetStatusPageIncident` operationId).
+	GetStatusPageIncident(ctx context.Context, incidentId openapi_types.UUID, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// PostStatusPageIncidentUpdateWithBody Append an update to an incident notice
+	//
+	// Published updates are never modified; a correction is issued as a new update. Customers may already have forwarded the original, and a silent rewrite would leave the two sides with different histories.
+	//
+	// `components` lists only the components **being changed** by this update; those not listed keep their current status. Setting `status` to `RESOLVED` returns every component this notice has affected to operational and closes the notice. A closed notice accepts no further updates.
+	//
+	// Takes any type of body and a specified content type.
+	//
+	// Corresponds with POST /api/v1/status-page/incidents/{incidentId}/updates (the `PostStatusPageIncidentUpdate` operationId).
+	PostStatusPageIncidentUpdateWithBody(ctx context.Context, incidentId openapi_types.UUID, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// PostStatusPageIncidentUpdate Append an update to an incident notice
+	//
+	// Published updates are never modified; a correction is issued as a new update. Customers may already have forwarded the original, and a silent rewrite would leave the two sides with different histories.
+	//
+	// `components` lists only the components **being changed** by this update; those not listed keep their current status. Setting `status` to `RESOLVED` returns every component this notice has affected to operational and closes the notice. A closed notice accepts no further updates.
+	//
+	// Takes a body of the `application/json` content type.
+	//
+	// Corresponds with POST /api/v1/status-page/incidents/{incidentId}/updates (the `PostStatusPageIncidentUpdate` operationId).
+	PostStatusPageIncidentUpdate(ctx context.Context, incidentId openapi_types.UUID, body PostStatusPageIncidentUpdateJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// ListStatusPageMaintenances List scheduled maintenance
+	//
+	// Corresponds with GET /api/v1/status-page/maintenances (the `ListStatusPageMaintenances` operationId).
+	ListStatusPageMaintenances(ctx context.Context, params *ListStatusPageMaintenancesParams, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// ScheduleStatusPageMaintenanceWithBody Schedule maintenance
+	//
+	// Maintenance starts and finishes automatically at the scheduled times; nobody needs to be present. While it runs, the affected components are shown as under maintenance and **availability is not reduced** — planned work should not consume the availability you promise to customers, which is the point of announcing it in advance.
+	//
+	// This is separate from `/maintenance-windows`, which suppresses alerting for a period. This endpoint announces the work to your customers. The two are usually created together: without suppression, restarts during the maintenance raise alerts and mark the components unavailable.
+	//
+	// Takes any type of body and a specified content type.
+	//
+	// Corresponds with POST /api/v1/status-page/maintenances (the `ScheduleStatusPageMaintenance` operationId).
+	ScheduleStatusPageMaintenanceWithBody(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// ScheduleStatusPageMaintenance Schedule maintenance
+	//
+	// Maintenance starts and finishes automatically at the scheduled times; nobody needs to be present. While it runs, the affected components are shown as under maintenance and **availability is not reduced** — planned work should not consume the availability you promise to customers, which is the point of announcing it in advance.
+	//
+	// This is separate from `/maintenance-windows`, which suppresses alerting for a period. This endpoint announces the work to your customers. The two are usually created together: without suppression, restarts during the maintenance raise alerts and mark the components unavailable.
+	//
+	// Takes a body of the `application/json` content type.
+	//
+	// Corresponds with POST /api/v1/status-page/maintenances (the `ScheduleStatusPageMaintenance` operationId).
+	ScheduleStatusPageMaintenance(ctx context.Context, body ScheduleStatusPageMaintenanceJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// GetStatusPageMaintenance Get a scheduled maintenance
+	//
+	// Corresponds with GET /api/v1/status-page/maintenances/{maintenanceId} (the `GetStatusPageMaintenance` operationId).
+	GetStatusPageMaintenance(ctx context.Context, maintenanceId openapi_types.UUID, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// CancelStatusPageMaintenance Cancel a maintenance that has not started
+	//
+	// Cancelled rather than deleted, so that readers who saw the announcement have an explanation. Maintenance that has already started cannot be cancelled; finish it early instead.
+	//
+	// Corresponds with POST /api/v1/status-page/maintenances/{maintenanceId}/cancel (the `CancelStatusPageMaintenance` operationId).
+	CancelStatusPageMaintenance(ctx context.Context, maintenanceId openapi_types.UUID, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// CompleteStatusPageMaintenance Finish a running maintenance early
+	//
+	// Optional: maintenance finishes on its own at the scheduled end time. Use this endpoint when the work is done ahead of schedule; the affected components return to operational immediately.
+	//
+	// Corresponds with POST /api/v1/status-page/maintenances/{maintenanceId}/complete (the `CompleteStatusPageMaintenance` operationId).
+	CompleteStatusPageMaintenance(ctx context.Context, maintenanceId openapi_types.UUID, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// PutStatusPageOrderWithBody Set the order of the top level of the page
+	//
+	// Submits the **entire** top-level order in one call rather than moving a single entry to a given position.
+	//
+	// The top level interleaves groups and ungrouped components, so the order is expressed as one list covering both.
+	//
+	// Each entry carries either `group_id` or `component_id`. Entries not listed are placed after those that are.
+	//
+	// Takes any type of body and a specified content type.
+	//
+	// Corresponds with PUT /api/v1/status-page/order (the `PutStatusPageOrder` operationId).
+	PutStatusPageOrderWithBody(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// PutStatusPageOrder Set the order of the top level of the page
+	//
+	// Submits the **entire** top-level order in one call rather than moving a single entry to a given position.
+	//
+	// The top level interleaves groups and ungrouped components, so the order is expressed as one list covering both.
+	//
+	// Each entry carries either `group_id` or `component_id`. Entries not listed are placed after those that are.
+	//
+	// Takes a body of the `application/json` content type.
+	//
+	// Corresponds with PUT /api/v1/status-page/order (the `PutStatusPageOrder` operationId).
+	PutStatusPageOrder(ctx context.Context, body PutStatusPageOrderJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// ListProjectTopItems Machines ranked highest by a given metric
 	//
 	// Corresponds with GET /api/v1/top-items (the `ListProjectTopItems` operationId).
 	ListProjectTopItems(ctx context.Context, params *ListProjectTopItemsParams, reqEditors ...RequestEditorFn) (*http.Response, error)
 
-	// ListWebChecks 列出网页检查
+	// ListWebChecks List web checks
 	//
 	// Corresponds with GET /api/v1/web-checks (the `ListWebChecks` operationId).
 	ListWebChecks(ctx context.Context, params *ListWebChecksParams, reqEditors ...RequestEditorFn) (*http.Response, error)
 }
 
-// ListIncidents 列出告警
+// ListIncidents List incidents
 //
-// `incident_status` 表示监控系统是否判定已恢复，`closed` 表示是否有人完成了处理。两者相互独立，可分别筛选。.
+// `incident_status` reports whether monitoring considers the problem recovered; `closed` reports whether someone has finished handling it. The two are independent and can be filtered separately.
 //
 // Corresponds with GET /api/v1/incidents (the `ListIncidents` operationId).
 func (c *Client) ListIncidents(ctx context.Context, params *ListIncidentsParams, reqEditors ...RequestEditorFn) (*http.Response, error) {
@@ -2005,7 +3159,7 @@ func (c *Client) ListIncidents(ctx context.Context, params *ListIncidentsParams,
 	return c.Client.Do(req)
 }
 
-// GetIncident 查一条告警
+// GetIncident Get an incident
 //
 // Corresponds with GET /api/v1/incidents/{incidentId} (the `GetIncident` operationId).
 func (c *Client) GetIncident(ctx context.Context, incidentId openapi_types.UUID, reqEditors ...RequestEditorFn) (*http.Response, error) {
@@ -2020,9 +3174,9 @@ func (c *Client) GetIncident(ctx context.Context, incidentId openapi_types.UUID,
 	return c.Client.Do(req)
 }
 
-// AcknowledgeIncidentWithBody 确认这条告警
+// AcknowledgeIncidentWithBody Acknowledge an incident
 //
-// 同时会在监控系统中标记为已确认，便于其他渠道也能看到该告警已有人处理。.
+// The incident is also marked as acknowledged in the monitoring system, so that other channels can see it already has an owner.
 //
 // Takes any type of body and a specified content type.
 //
@@ -2039,9 +3193,9 @@ func (c *Client) AcknowledgeIncidentWithBody(ctx context.Context, incidentId ope
 	return c.Client.Do(req)
 }
 
-// AcknowledgeIncident 确认这条告警
+// AcknowledgeIncident Acknowledge an incident
 //
-// 同时会在监控系统中标记为已确认，便于其他渠道也能看到该告警已有人处理。.
+// The incident is also marked as acknowledged in the monitoring system, so that other channels can see it already has an owner.
 //
 // Takes a body of the `application/json` content type.
 //
@@ -2058,11 +3212,11 @@ func (c *Client) AcknowledgeIncident(ctx context.Context, incidentId openapi_typ
 	return c.Client.Do(req)
 }
 
-// AssignIncidentWithBody 把这条告警交给谁，或者收回来
+// AssignIncidentWithBody Assign an incident, or clear its assignee
 //
-// `assignee_user_id` 留空即取消指派。
+// Leave `assignee_user_id` empty to clear the assignment.
 //
-// **这里不校验被指派的人在不在这个项目里**——那要问 IAM，而这个服务的准入还没接。
+// **Project membership of the assignee is not verified.** Any user identifier is accepted and recorded as given.
 //
 // Takes any type of body and a specified content type.
 //
@@ -2079,11 +3233,11 @@ func (c *Client) AssignIncidentWithBody(ctx context.Context, incidentId openapi_
 	return c.Client.Do(req)
 }
 
-// AssignIncident 把这条告警交给谁，或者收回来
+// AssignIncident Assign an incident, or clear its assignee
 //
-// `assignee_user_id` 留空即取消指派。
+// Leave `assignee_user_id` empty to clear the assignment.
 //
-// **这里不校验被指派的人在不在这个项目里**——那要问 IAM，而这个服务的准入还没接。
+// **Project membership of the assignee is not verified.** Any user identifier is accepted and recorded as given.
 //
 // Takes a body of the `application/json` content type.
 //
@@ -2100,9 +3254,9 @@ func (c *Client) AssignIncident(ctx context.Context, incidentId openapi_types.UU
 	return c.Client.Do(req)
 }
 
-// CloseIncidentWithBody 了结这条告警
+// CloseIncidentWithBody Close an incident
 //
-// 了结的是**平台上的处理流程**，不是告警本身的状态：尚未恢复的告警也可以按「已接受的风险」了结，它在监控系统中仍为未恢复。.
+// Closing records **that the handling process is finished on this platform**; it does not change the state of the incident itself. An incident that has not recovered may still be closed as an accepted risk, and remains unrecovered in the monitoring system.
 //
 // Takes any type of body and a specified content type.
 //
@@ -2119,9 +3273,9 @@ func (c *Client) CloseIncidentWithBody(ctx context.Context, incidentId openapi_t
 	return c.Client.Do(req)
 }
 
-// CloseIncident 了结这条告警
+// CloseIncident Close an incident
 //
-// 了结的是**平台上的处理流程**，不是告警本身的状态：尚未恢复的告警也可以按「已接受的风险」了结，它在监控系统中仍为未恢复。.
+// Closing records **that the handling process is finished on this platform**; it does not change the state of the incident itself. An incident that has not recovered may still be closed as an accepted risk, and remains unrecovered in the monitoring system.
 //
 // Takes a body of the `application/json` content type.
 //
@@ -2138,7 +3292,7 @@ func (c *Client) CloseIncident(ctx context.Context, incidentId openapi_types.UUI
 	return c.Client.Do(req)
 }
 
-// AddIncidentCommentWithBody 在时间线上写一条备注
+// AddIncidentCommentWithBody Add a note to the timeline
 //
 // Takes any type of body and a specified content type.
 //
@@ -2155,7 +3309,7 @@ func (c *Client) AddIncidentCommentWithBody(ctx context.Context, incidentId open
 	return c.Client.Do(req)
 }
 
-// AddIncidentComment 在时间线上写一条备注
+// AddIncidentComment Add a note to the timeline
 //
 // Takes a body of the `application/json` content type.
 //
@@ -2172,9 +3326,9 @@ func (c *Client) AddIncidentComment(ctx context.Context, incidentId openapi_type
 	return c.Client.Do(req)
 }
 
-// SetIncidentFollowingWithBody 关注这条告警，或者取消关注
+// SetIncidentFollowingWithBody Follow an incident, or stop following it
 //
-// 关注的是**自己**：操作者就是被加进关注列表的那个人。.
+// You follow **yourself**: the caller is the user added to or removed from the follower list.
 //
 // Takes any type of body and a specified content type.
 //
@@ -2191,9 +3345,9 @@ func (c *Client) SetIncidentFollowingWithBody(ctx context.Context, incidentId op
 	return c.Client.Do(req)
 }
 
-// SetIncidentFollowing 关注这条告警，或者取消关注
+// SetIncidentFollowing Follow an incident, or stop following it
 //
-// 关注的是**自己**：操作者就是被加进关注列表的那个人。.
+// You follow **yourself**: the caller is the user added to or removed from the follower list.
 //
 // Takes a body of the `application/json` content type.
 //
@@ -2210,7 +3364,7 @@ func (c *Client) SetIncidentFollowing(ctx context.Context, incidentId openapi_ty
 	return c.Client.Do(req)
 }
 
-// ReopenIncident 重新打开一条已经了结的告警
+// ReopenIncident Reopen a closed incident
 //
 // Corresponds with POST /api/v1/incidents/{incidentId}/reopen (the `ReopenIncident` operationId).
 func (c *Client) ReopenIncident(ctx context.Context, incidentId openapi_types.UUID, reqEditors ...RequestEditorFn) (*http.Response, error) {
@@ -2225,9 +3379,9 @@ func (c *Client) ReopenIncident(ctx context.Context, incidentId openapi_types.UU
 	return c.Client.Do(req)
 }
 
-// ListIncidentTimeline 列出这条告警的时间线
+// ListIncidentTimeline List the timeline of an incident
 //
-// 游标翻页而不是偏移量：时间线是只增的，用偏移量翻页会在新记录写入时漏行和重行。.
+// Cursor paging rather than offset paging: the timeline is append-only, and offset paging would skip or repeat entries whenever a new one is written.
 //
 // Corresponds with GET /api/v1/incidents/{incidentId}/timeline (the `ListIncidentTimeline` operationId).
 func (c *Client) ListIncidentTimeline(ctx context.Context, incidentId openapi_types.UUID, params *ListIncidentTimelineParams, reqEditors ...RequestEditorFn) (*http.Response, error) {
@@ -2242,7 +3396,7 @@ func (c *Client) ListIncidentTimeline(ctx context.Context, incidentId openapi_ty
 	return c.Client.Do(req)
 }
 
-// ListMaintenanceWindows 列出维护窗口
+// ListMaintenanceWindows List maintenance windows
 //
 // Corresponds with GET /api/v1/maintenance-windows (the `ListMaintenanceWindows` operationId).
 func (c *Client) ListMaintenanceWindows(ctx context.Context, reqEditors ...RequestEditorFn) (*http.Response, error) {
@@ -2257,9 +3411,9 @@ func (c *Client) ListMaintenanceWindows(ctx context.Context, reqEditors ...Reque
 	return c.Client.Do(req)
 }
 
-// DeleteMaintenanceWindow 撤掉一个维护窗口
+// DeleteMaintenanceWindow Cancel a maintenance window
 //
-// 立刻恢复告警，哪怕窗口还没到期。.
+// Alerting resumes immediately, even if the window has not yet expired.
 //
 // Corresponds with DELETE /api/v1/maintenance-windows/{windowId} (the `DeleteMaintenanceWindow` operationId).
 func (c *Client) DeleteMaintenanceWindow(ctx context.Context, windowId openapi_types.UUID, reqEditors ...RequestEditorFn) (*http.Response, error) {
@@ -2274,7 +3428,7 @@ func (c *Client) DeleteMaintenanceWindow(ctx context.Context, windowId openapi_t
 	return c.Client.Do(req)
 }
 
-// GetMaintenanceWindow 查一个维护窗口
+// GetMaintenanceWindow Get a maintenance window
 //
 // Corresponds with GET /api/v1/maintenance-windows/{windowId} (the `GetMaintenanceWindow` operationId).
 func (c *Client) GetMaintenanceWindow(ctx context.Context, windowId openapi_types.UUID, reqEditors ...RequestEditorFn) (*http.Response, error) {
@@ -2289,11 +3443,11 @@ func (c *Client) GetMaintenanceWindow(ctx context.Context, windowId openapi_type
 	return c.Client.Do(req)
 }
 
-// PutMaintenanceWindowWithBody 开一个维护窗口，或者按同一个 id 覆盖它
+// PutMaintenanceWindowWithBody Create a maintenance window, or replace it by the same id
 //
-// **创建即覆盖**：延长一个正在进行的窗口就是用同一个 id 再调一次。
+// **Create or replace**: extending a window that is already running means calling this endpoint again with the same id.
 //
-// 窗口期内这些机器的问题不告警，也不扣 SLA 的可用率。`server_ids` 留空表示整个项目，包括窗口开着的时候新接进来的机器。
+// While the window is open, problems on these machines do not alert and do not count against SLA availability. Leave `server_ids` empty to cover the entire project, including machines enrolled after the window opens.
 //
 // Takes any type of body and a specified content type.
 //
@@ -2310,11 +3464,11 @@ func (c *Client) PutMaintenanceWindowWithBody(ctx context.Context, windowId open
 	return c.Client.Do(req)
 }
 
-// PutMaintenanceWindow 开一个维护窗口，或者按同一个 id 覆盖它
+// PutMaintenanceWindow Create a maintenance window, or replace it by the same id
 //
-// **创建即覆盖**：延长一个正在进行的窗口就是用同一个 id 再调一次。
+// **Create or replace**: extending a window that is already running means calling this endpoint again with the same id.
 //
-// 窗口期内这些机器的问题不告警，也不扣 SLA 的可用率。`server_ids` 留空表示整个项目，包括窗口开着的时候新接进来的机器。
+// While the window is open, problems on these machines do not alert and do not count against SLA availability. Leave `server_ids` empty to cover the entire project, including machines enrolled after the window opens.
 //
 // Takes a body of the `application/json` content type.
 //
@@ -2331,9 +3485,9 @@ func (c *Client) PutMaintenanceWindow(ctx context.Context, windowId openapi_type
 	return c.Client.Do(req)
 }
 
-// GetProjectOverview 项目总览
+// GetProjectOverview Project overview
 //
-// 项目下还没有任何机器时返回各项均为零的总览，而不是 404——空项目是一个正常状态。.
+// A project with no machines yet returns an overview with every figure at zero rather than a 404 — an empty project is a normal state.
 //
 // Corresponds with GET /api/v1/overview (the `GetProjectOverview` operationId).
 func (c *Client) GetProjectOverview(ctx context.Context, reqEditors ...RequestEditorFn) (*http.Response, error) {
@@ -2348,7 +3502,7 @@ func (c *Client) GetProjectOverview(ctx context.Context, reqEditors ...RequestEd
 	return c.Client.Do(req)
 }
 
-// ListServers 列出项目里的机器
+// ListServers List the machines in the project
 //
 // Corresponds with GET /api/v1/servers (the `ListServers` operationId).
 func (c *Client) ListServers(ctx context.Context, params *ListServersParams, reqEditors ...RequestEditorFn) (*http.Response, error) {
@@ -2363,9 +3517,9 @@ func (c *Client) ListServers(ctx context.Context, params *ListServersParams, req
 	return c.Client.Do(req)
 }
 
-// DeleteServer 删掉这台机器
+// DeleteServer Delete a machine
 //
-// **不可逆**：监控主机、历史数据和这台机器名下的告警会一并删除。若只是想暂时停止采集，改用 /disable。.
+// **Irreversible**: the monitored host, its history and every incident recorded against this machine are removed together. To stop collection temporarily, use `/disable` instead.
 //
 // Corresponds with DELETE /api/v1/servers/{serverId} (the `DeleteServer` operationId).
 func (c *Client) DeleteServer(ctx context.Context, serverId openapi_types.UUID, reqEditors ...RequestEditorFn) (*http.Response, error) {
@@ -2380,7 +3534,7 @@ func (c *Client) DeleteServer(ctx context.Context, serverId openapi_types.UUID, 
 	return c.Client.Do(req)
 }
 
-// GetServer 查一台机器的接入情况
+// GetServer Get the enrollment state of a machine
 //
 // Corresponds with GET /api/v1/servers/{serverId} (the `GetServer` operationId).
 func (c *Client) GetServer(ctx context.Context, serverId openapi_types.UUID, reqEditors ...RequestEditorFn) (*http.Response, error) {
@@ -2395,9 +3549,9 @@ func (c *Client) GetServer(ctx context.Context, serverId openapi_types.UUID, req
 	return c.Client.Do(req)
 }
 
-// UpdateServerWithBody 改一台机器的接入参数
+// UpdateServerWithBody Update the enrollment settings of a machine
 //
-// 只更新请求体中出现的字段。`address` 与 `address_kind` 必须一并提供：只改其中一个会得到互相矛盾的接入配置，该错误不会被报出，表现为 agent 连不上。.
+// Only the fields present in the request body are updated. `address` and `address_kind` must be supplied together: changing one without the other produces a contradictory configuration that is not reported as an error and shows up only as an agent that cannot connect.
 //
 // Takes any type of body and a specified content type.
 //
@@ -2414,9 +3568,9 @@ func (c *Client) UpdateServerWithBody(ctx context.Context, serverId openapi_type
 	return c.Client.Do(req)
 }
 
-// UpdateServer 改一台机器的接入参数
+// UpdateServer Update the enrollment settings of a machine
 //
-// 只更新请求体中出现的字段。`address` 与 `address_kind` 必须一并提供：只改其中一个会得到互相矛盾的接入配置，该错误不会被报出，表现为 agent 连不上。.
+// Only the fields present in the request body are updated. `address` and `address_kind` must be supplied together: changing one without the other produces a contradictory configuration that is not reported as an error and shows up only as an agent that cannot connect.
 //
 // Takes a body of the `application/json` content type.
 //
@@ -2433,13 +3587,13 @@ func (c *Client) UpdateServer(ctx context.Context, serverId openapi_types.UUID, 
 	return c.Client.Do(req)
 }
 
-// EnableServerMonitoringWithBody 把一台机器接入监控
+// EnableServerMonitoringWithBody Enroll a machine into monitoring
 //
-// **同一个 server id 重复调用是幂等的**：参数一致时返回已接入的那台，不会重复创建监控主机，因此接入失败可以安全重试。
+// **Repeated calls with the same server id are idempotent**: given identical parameters, the already-enrolled machine is returned and no duplicate host is created, so a failed enrollment is safe to retry.
 //
-// 修改接入参数请改用 PATCH。本接口在参数不一致时会返回错误，不会更新已有配置。
+// To change enrollment settings, use PATCH. This endpoint returns an error when the parameters differ, and does not update an existing configuration.
 //
-// 响应中的 `tls_psk` **只返回这一次**，请及时保存；遗失后需要轮换。
+// The `tls_psk` in the response is **returned only this once**; store it immediately. If it is lost, it must be rotated.
 //
 // Takes any type of body and a specified content type.
 //
@@ -2456,13 +3610,13 @@ func (c *Client) EnableServerMonitoringWithBody(ctx context.Context, serverId op
 	return c.Client.Do(req)
 }
 
-// EnableServerMonitoring 把一台机器接入监控
+// EnableServerMonitoring Enroll a machine into monitoring
 //
-// **同一个 server id 重复调用是幂等的**：参数一致时返回已接入的那台，不会重复创建监控主机，因此接入失败可以安全重试。
+// **Repeated calls with the same server id are idempotent**: given identical parameters, the already-enrolled machine is returned and no duplicate host is created, so a failed enrollment is safe to retry.
 //
-// 修改接入参数请改用 PATCH。本接口在参数不一致时会返回错误，不会更新已有配置。
+// To change enrollment settings, use PATCH. This endpoint returns an error when the parameters differ, and does not update an existing configuration.
 //
-// 响应中的 `tls_psk` **只返回这一次**，请及时保存；遗失后需要轮换。
+// The `tls_psk` in the response is **returned only this once**; store it immediately. If it is lost, it must be rotated.
 //
 // Takes a body of the `application/json` content type.
 //
@@ -2479,9 +3633,9 @@ func (c *Client) EnableServerMonitoring(ctx context.Context, serverId openapi_ty
 	return c.Client.Do(req)
 }
 
-// DisableServerMonitoring 停止监控这台机器
+// DisableServerMonitoring Stop monitoring a machine
 //
-// 可逆操作：监控主机保留，仅停止采集，历史数据不受影响。重新接入即可恢复采集。如需连同历史数据一并删除，改用 DELETE。.
+// Reversible: the monitored host is retained, only collection stops, and history is unaffected. Enrolling again resumes collection. To remove the history as well, use DELETE.
 //
 // Corresponds with POST /api/v1/servers/{serverId}/disable (the `DisableServerMonitoring` operationId).
 func (c *Client) DisableServerMonitoring(ctx context.Context, serverId openapi_types.UUID, reqEditors ...RequestEditorFn) (*http.Response, error) {
@@ -2496,9 +3650,9 @@ func (c *Client) DisableServerMonitoring(ctx context.Context, serverId openapi_t
 	return c.Client.Do(req)
 }
 
-// ListServerItems 列出一台机器的监控项
+// ListServerItems List the monitoring items of a machine
 //
-// 原样返回采集到的监控项，不做筛选或重命名。哪些属于重要指标，由调用方依据监控项自带的标签自行判断。.
+// Items are returned exactly as collected, without filtering or renaming. Which of them count as important is for the caller to decide from the tags carried by each item.
 //
 // Corresponds with GET /api/v1/servers/{serverId}/items (the `ListServerItems` operationId).
 func (c *Client) ListServerItems(ctx context.Context, serverId openapi_types.UUID, params *ListServerItemsParams, reqEditors ...RequestEditorFn) (*http.Response, error) {
@@ -2513,9 +3667,9 @@ func (c *Client) ListServerItems(ctx context.Context, serverId openapi_types.UUI
 	return c.Client.Do(req)
 }
 
-// GetServerMetric 取一个监控项的时间序列
+// GetServerMetric Get the time series of a monitoring item
 //
-// `item_key` 是**前缀匹配**：按分区、按网卡发现出来的监控项 key 带参数（`vfs.fs.size[/var,pused]`），所以 `vfs.fs.size` 这一个请求就能画出每个挂载点一条线。
+// `item_key` is matched **by prefix**. Keys discovered per partition or per interface carry parameters (`vfs.fs.size[/var,pused]`), so a single request for `vfs.fs.size` returns one series per mount point.
 //
 // Corresponds with GET /api/v1/servers/{serverId}/metrics (the `GetServerMetric` operationId).
 func (c *Client) GetServerMetric(ctx context.Context, serverId openapi_types.UUID, params *GetServerMetricParams, reqEditors ...RequestEditorFn) (*http.Response, error) {
@@ -2530,9 +3684,9 @@ func (c *Client) GetServerMetric(ctx context.Context, serverId openapi_types.UUI
 	return c.Client.Do(req)
 }
 
-// RotateAgentPsk 换一把 agent 的 PSK
+// RotateAgentPsk Rotate the agent PSK
 //
-// 换完要同步改 agent 侧的配置，否则那台机器立刻失联。新密钥同样**只在这个响应里明文出现一次**。.
+// The agent configuration must be updated to match, otherwise the machine loses contact immediately. The new key is likewise **returned in clear text only in this response**.
 //
 // Corresponds with POST /api/v1/servers/{serverId}/psk (the `RotateAgentPsk` operationId).
 func (c *Client) RotateAgentPsk(ctx context.Context, serverId openapi_types.UUID, reqEditors ...RequestEditorFn) (*http.Response, error) {
@@ -2547,7 +3701,7 @@ func (c *Client) RotateAgentPsk(ctx context.Context, serverId openapi_types.UUID
 	return c.Client.Do(req)
 }
 
-// GetServerResources 一台机器的硬件与接口
+// GetServerResources Hardware and interfaces of a machine
 //
 // Corresponds with GET /api/v1/servers/{serverId}/resources (the `GetServerResources` operationId).
 func (c *Client) GetServerResources(ctx context.Context, serverId openapi_types.UUID, reqEditors ...RequestEditorFn) (*http.Response, error) {
@@ -2562,7 +3716,7 @@ func (c *Client) GetServerResources(ctx context.Context, serverId openapi_types.
 	return c.Client.Do(req)
 }
 
-// GetServerSnapshot 一台机器此刻的状态
+// GetServerSnapshot Current state of a machine
 //
 // Corresponds with GET /api/v1/servers/{serverId}/snapshot (the `GetServerSnapshot` operationId).
 func (c *Client) GetServerSnapshot(ctx context.Context, serverId openapi_types.UUID, reqEditors ...RequestEditorFn) (*http.Response, error) {
@@ -2577,9 +3731,9 @@ func (c *Client) GetServerSnapshot(ctx context.Context, serverId openapi_types.U
 	return c.Client.Do(req)
 }
 
-// DeleteWebCheck 删掉一个网页检查
+// DeleteWebCheck Delete a web check
 //
-// 同时删除监控系统中对应的检查任务和触发器，不会遗留永远无法恢复的告警。.
+// The corresponding check task and trigger are removed from the monitoring system as well, so no permanently unrecoverable alert is left behind.
 //
 // Corresponds with DELETE /api/v1/servers/{serverId}/web-checks/{checkId} (the `DeleteWebCheck` operationId).
 func (c *Client) DeleteWebCheck(ctx context.Context, serverId openapi_types.UUID, checkId openapi_types.UUID, reqEditors ...RequestEditorFn) (*http.Response, error) {
@@ -2594,7 +3748,7 @@ func (c *Client) DeleteWebCheck(ctx context.Context, serverId openapi_types.UUID
 	return c.Client.Do(req)
 }
 
-// GetWebCheck 查一个网页检查
+// GetWebCheck Get a web check
 //
 // Corresponds with GET /api/v1/servers/{serverId}/web-checks/{checkId} (the `GetWebCheck` operationId).
 func (c *Client) GetWebCheck(ctx context.Context, serverId openapi_types.UUID, checkId openapi_types.UUID, reqEditors ...RequestEditorFn) (*http.Response, error) {
@@ -2609,9 +3763,9 @@ func (c *Client) GetWebCheck(ctx context.Context, serverId openapi_types.UUID, c
 	return c.Client.Do(req)
 }
 
-// PutWebCheckWithBody 建一个网页检查，或者按同一个 id 覆盖它
+// PutWebCheckWithBody Create a web check, or replace it by the same id
 //
-// **创建即覆盖**：修改一个检查即用同一个 id 再次调用本接口，无需先判断它是否已存在。.
+// **Create or replace**: to modify a check, call this endpoint again with the same id. There is no need to determine first whether it already exists.
 //
 // Takes any type of body and a specified content type.
 //
@@ -2628,9 +3782,9 @@ func (c *Client) PutWebCheckWithBody(ctx context.Context, serverId openapi_types
 	return c.Client.Do(req)
 }
 
-// PutWebCheck 建一个网页检查，或者按同一个 id 覆盖它
+// PutWebCheck Create a web check, or replace it by the same id
 //
-// **创建即覆盖**：修改一个检查即用同一个 id 再次调用本接口，无需先判断它是否已存在。.
+// **Create or replace**: to modify a check, call this endpoint again with the same id. There is no need to determine first whether it already exists.
 //
 // Takes a body of the `application/json` content type.
 //
@@ -2647,11 +3801,11 @@ func (c *Client) PutWebCheck(ctx context.Context, serverId openapi_types.UUID, c
 	return c.Client.Do(req)
 }
 
-// GetSliReport 查实测的达成情况
+// GetSliReport Get measured availability
 //
-// SLI 是测出来的数，SLO 是定下来的目标——这里返回的是前者。
+// SLI is what was measured; SLO is what was promised — this endpoint returns the former.
 //
-// `server_id` 为空的那一行是项目整体。
+// The row with an empty `server_id` covers the project as a whole.
 //
 // Corresponds with GET /api/v1/sli-report (the `GetSliReport` operationId).
 func (c *Client) GetSliReport(ctx context.Context, params *GetSliReportParams, reqEditors ...RequestEditorFn) (*http.Response, error) {
@@ -2666,9 +3820,9 @@ func (c *Client) GetSliReport(ctx context.Context, params *GetSliReportParams, r
 	return c.Client.Do(req)
 }
 
-// DeleteSlo 撤掉这个项目的可用率目标
+// DeleteSlo Remove the availability target of this project
 //
-// 同时移除监控系统中对应的服务树，此后不再统计可用率。.
+// Availability is no longer tracked from this point on.
 //
 // Corresponds with DELETE /api/v1/slo (the `DeleteSlo` operationId).
 func (c *Client) DeleteSlo(ctx context.Context, reqEditors ...RequestEditorFn) (*http.Response, error) {
@@ -2683,9 +3837,9 @@ func (c *Client) DeleteSlo(ctx context.Context, reqEditors ...RequestEditorFn) (
 	return c.Client.Do(req)
 }
 
-// GetSlo 查这个项目的可用率目标
+// GetSlo Get the availability target of this project
 //
-// 没定过就是 404，而不是一份默认目标：没承诺过和承诺了 99.9% 是两回事。
+// A project that has never set one returns 404 rather than a default target: making no promise and promising 99.9% are different things.
 //
 // Corresponds with GET /api/v1/slo (the `GetSlo` operationId).
 func (c *Client) GetSlo(ctx context.Context, reqEditors ...RequestEditorFn) (*http.Response, error) {
@@ -2700,11 +3854,11 @@ func (c *Client) GetSlo(ctx context.Context, reqEditors ...RequestEditorFn) (*ht
 	return c.Client.Do(req)
 }
 
-// PutSloWithBody 定下这个项目的可用率目标，或者改它
+// PutSloWithBody Set the availability target of this project, or change it
 //
-// 一个项目一条 SLO，**创建即覆盖**。
+// One SLO per project, **create or replace**.
 //
-// `min_severity` 必须显式选：它决定什么算「不可用」，是这条承诺的一半内容。
+// `min_severity` must be chosen explicitly: it defines what counts as unavailable, which is half of what the target means.
 //
 // Takes any type of body and a specified content type.
 //
@@ -2721,11 +3875,11 @@ func (c *Client) PutSloWithBody(ctx context.Context, contentType string, body io
 	return c.Client.Do(req)
 }
 
-// PutSlo 定下这个项目的可用率目标，或者改它
+// PutSlo Set the availability target of this project, or change it
 //
-// 一个项目一条 SLO，**创建即覆盖**。
+// One SLO per project, **create or replace**.
 //
-// `min_severity` 必须显式选：它决定什么算「不可用」，是这条承诺的一半内容。
+// `min_severity` must be chosen explicitly: it defines what counts as unavailable, which is half of what the target means.
 //
 // Takes a body of the `application/json` content type.
 //
@@ -2742,7 +3896,689 @@ func (c *Client) PutSlo(ctx context.Context, body PutSloJSONRequestBody, reqEdit
 	return c.Client.Do(req)
 }
 
-// ListProjectTopItems 某个指标最高的前几台
+// DeleteStatusPage Delete the status page
+//
+// Its groups, components, availability history, incident notices and scheduled maintenance are removed together, and cannot be recovered. The slug and custom domain are released.
+//
+// Corresponds with DELETE /api/v1/status-page (the `DeleteStatusPage` operationId).
+func (c *Client) DeleteStatusPage(ctx context.Context, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewDeleteStatusPageRequest(c.Server)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+// GetStatusPage Get the status page of this project
+//
+// A project has at most one status page. A project that has never created one returns 404.
+//
+// Corresponds with GET /api/v1/status-page (the `GetStatusPage` operationId).
+func (c *Client) GetStatusPage(ctx context.Context, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewGetStatusPageRequest(c.Server)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+// PutStatusPageWithBody Create the status page, or replace its configuration
+//
+// **Create or replace**: changing the title, switching the domain, publishing and unpublishing are all done by sending the complete configuration again.
+//
+// While `published` is false the public address returns 404, including any custom domain already bound. A newly created page is unpublished by default, so that a page still being configured has no address that opens.
+//
+// `slug` and `custom_domain` are **globally unique**; a value already taken returns 409.
+//
+// Takes any type of body and a specified content type.
+//
+// Corresponds with PUT /api/v1/status-page (the `PutStatusPage` operationId).
+func (c *Client) PutStatusPageWithBody(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewPutStatusPageRequestWithBody(c.Server, contentType, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+// PutStatusPage Create the status page, or replace its configuration
+//
+// **Create or replace**: changing the title, switching the domain, publishing and unpublishing are all done by sending the complete configuration again.
+//
+// While `published` is false the public address returns 404, including any custom domain already bound. A newly created page is unpublished by default, so that a page still being configured has no address that opens.
+//
+// `slug` and `custom_domain` are **globally unique**; a value already taken returns 409.
+//
+// Takes a body of the `application/json` content type.
+//
+// Corresponds with PUT /api/v1/status-page (the `PutStatusPage` operationId).
+func (c *Client) PutStatusPage(ctx context.Context, body PutStatusPageJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewPutStatusPageRequest(c.Server, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+// ListStatusPageComponents List components
+//
+// A component is one row on the status page: an externally promised capability. It is not a machine — a single component may be backed by several machines and several web checks.
+//
+// Corresponds with GET /api/v1/status-page/components (the `ListStatusPageComponents` operationId).
+func (c *Client) ListStatusPageComponents(ctx context.Context, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewListStatusPageComponentsRequest(c.Server)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+// CreateStatusPageComponentWithBody Create a component
+//
+// `name` is **customer-facing copy** and appears verbatim on the public page; do not use machine names.
+//
+// `auto_status_min_severity` sets how severe an alert must be before it changes the status of this row; anything below it has no effect. The default is AVERAGE. Lower settings tend to keep the page permanently off-green, at which point people stop reading it.
+//
+// Takes any type of body and a specified content type.
+//
+// Corresponds with POST /api/v1/status-page/components (the `CreateStatusPageComponent` operationId).
+func (c *Client) CreateStatusPageComponentWithBody(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewCreateStatusPageComponentRequestWithBody(c.Server, contentType, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+// CreateStatusPageComponent Create a component
+//
+// `name` is **customer-facing copy** and appears verbatim on the public page; do not use machine names.
+//
+// `auto_status_min_severity` sets how severe an alert must be before it changes the status of this row; anything below it has no effect. The default is AVERAGE. Lower settings tend to keep the page permanently off-green, at which point people stop reading it.
+//
+// Takes a body of the `application/json` content type.
+//
+// Corresponds with POST /api/v1/status-page/components (the `CreateStatusPageComponent` operationId).
+func (c *Client) CreateStatusPageComponent(ctx context.Context, body CreateStatusPageComponentJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewCreateStatusPageComponentRequest(c.Server, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+// DeleteStatusPageComponent Delete a component
+//
+// Its availability history is removed along with it. Passages in already-published notices that refer to it are retained, since customers may already have read them.
+//
+// Corresponds with DELETE /api/v1/status-page/components/{componentId} (the `DeleteStatusPageComponent` operationId).
+func (c *Client) DeleteStatusPageComponent(ctx context.Context, componentId openapi_types.UUID, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewDeleteStatusPageComponentRequest(c.Server, componentId)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+// GetStatusPageComponent Get a component
+//
+// Corresponds with GET /api/v1/status-page/components/{componentId} (the `GetStatusPageComponent` operationId).
+func (c *Client) GetStatusPageComponent(ctx context.Context, componentId openapi_types.UUID, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewGetStatusPageComponentRequest(c.Server, componentId)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+// UpdateStatusPageComponentWithBody Update a component
+//
+// `started_on` cannot be changed: it determines where the availability bar stops showing as unmeasured, and changing it would rewrite history that has already been published.
+//
+// Takes any type of body and a specified content type.
+//
+// Corresponds with PUT /api/v1/status-page/components/{componentId} (the `UpdateStatusPageComponent` operationId).
+func (c *Client) UpdateStatusPageComponentWithBody(ctx context.Context, componentId openapi_types.UUID, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewUpdateStatusPageComponentRequestWithBody(c.Server, componentId, contentType, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+// UpdateStatusPageComponent Update a component
+//
+// `started_on` cannot be changed: it determines where the availability bar stops showing as unmeasured, and changing it would rewrite history that has already been published.
+//
+// Takes a body of the `application/json` content type.
+//
+// Corresponds with PUT /api/v1/status-page/components/{componentId} (the `UpdateStatusPageComponent` operationId).
+func (c *Client) UpdateStatusPageComponent(ctx context.Context, componentId openapi_types.UUID, body UpdateStatusPageComponentJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewUpdateStatusPageComponentRequest(c.Server, componentId, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+// ListStatusPageComponentSources List the monitored sources bound to a component
+//
+// Monitored sources are internal information and **never appear on the public page**.
+//
+// Corresponds with GET /api/v1/status-page/components/{componentId}/sources (the `ListStatusPageComponentSources` operationId).
+func (c *Client) ListStatusPageComponentSources(ctx context.Context, componentId openapi_types.UUID, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewListStatusPageComponentSourcesRequest(c.Server, componentId)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+// PutStatusPageComponentSourcesWithBody Set the complete list of monitored sources for a component
+//
+// Submits the **complete** set of sources; anything not listed is unbound.
+//
+// Once bound, alerts on these machines and web checks drive the status of the component automatically: DISASTER and HIGH are reported as a major outage, AVERAGE as a partial outage, and WARNING as degraded performance. Alerts below `auto_status_min_severity` have no effect.
+//
+// `show_url` controls whether the checked address is shown on the public page. It is off by default.
+//
+// Takes any type of body and a specified content type.
+//
+// Corresponds with PUT /api/v1/status-page/components/{componentId}/sources (the `PutStatusPageComponentSources` operationId).
+func (c *Client) PutStatusPageComponentSourcesWithBody(ctx context.Context, componentId openapi_types.UUID, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewPutStatusPageComponentSourcesRequestWithBody(c.Server, componentId, contentType, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+// PutStatusPageComponentSources Set the complete list of monitored sources for a component
+//
+// Submits the **complete** set of sources; anything not listed is unbound.
+//
+// Once bound, alerts on these machines and web checks drive the status of the component automatically: DISASTER and HIGH are reported as a major outage, AVERAGE as a partial outage, and WARNING as degraded performance. Alerts below `auto_status_min_severity` have no effect.
+//
+// `show_url` controls whether the checked address is shown on the public page. It is off by default.
+//
+// Takes a body of the `application/json` content type.
+//
+// Corresponds with PUT /api/v1/status-page/components/{componentId}/sources (the `PutStatusPageComponentSources` operationId).
+func (c *Client) PutStatusPageComponentSources(ctx context.Context, componentId openapi_types.UUID, body PutStatusPageComponentSourcesJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewPutStatusPageComponentSourcesRequest(c.Server, componentId, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+// ListStatusPageGroups List groups
+//
+// Corresponds with GET /api/v1/status-page/groups (the `ListStatusPageGroups` operationId).
+func (c *Client) ListStatusPageGroups(ctx context.Context, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewListStatusPageGroupsRequest(c.Server)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+// CreateStatusPageGroupWithBody Create a group
+//
+// A group is one level of collapsing applied to components on the page. There is exactly one level; groups cannot be nested.
+//
+// Takes any type of body and a specified content type.
+//
+// Corresponds with POST /api/v1/status-page/groups (the `CreateStatusPageGroup` operationId).
+func (c *Client) CreateStatusPageGroupWithBody(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewCreateStatusPageGroupRequestWithBody(c.Server, contentType, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+// CreateStatusPageGroup Create a group
+//
+// A group is one level of collapsing applied to components on the page. There is exactly one level; groups cannot be nested.
+//
+// Takes a body of the `application/json` content type.
+//
+// Corresponds with POST /api/v1/status-page/groups (the `CreateStatusPageGroup` operationId).
+func (c *Client) CreateStatusPageGroup(ctx context.Context, body CreateStatusPageGroupJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewCreateStatusPageGroupRequest(c.Server, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+// DeleteStatusPageGroup Delete a group
+//
+// The components in it are **not deleted**. They return to the top level as ungrouped components, keeping their availability history and the incident notices that reference them.
+//
+// Corresponds with DELETE /api/v1/status-page/groups/{groupId} (the `DeleteStatusPageGroup` operationId).
+func (c *Client) DeleteStatusPageGroup(ctx context.Context, groupId openapi_types.UUID, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewDeleteStatusPageGroupRequest(c.Server, groupId)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+// UpdateStatusPageGroupWithBody Update a group
+//
+// Takes any type of body and a specified content type.
+//
+// Corresponds with PUT /api/v1/status-page/groups/{groupId} (the `UpdateStatusPageGroup` operationId).
+func (c *Client) UpdateStatusPageGroupWithBody(ctx context.Context, groupId openapi_types.UUID, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewUpdateStatusPageGroupRequestWithBody(c.Server, groupId, contentType, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+// UpdateStatusPageGroup Update a group
+//
+// Takes a body of the `application/json` content type.
+//
+// Corresponds with PUT /api/v1/status-page/groups/{groupId} (the `UpdateStatusPageGroup` operationId).
+func (c *Client) UpdateStatusPageGroup(ctx context.Context, groupId openapi_types.UUID, body UpdateStatusPageGroupJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewUpdateStatusPageGroupRequest(c.Server, groupId, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+// PutStatusPageGroupOrderWithBody Set the order of components within a group
+//
+// Takes any type of body and a specified content type.
+//
+// Corresponds with PUT /api/v1/status-page/groups/{groupId}/order (the `PutStatusPageGroupOrder` operationId).
+func (c *Client) PutStatusPageGroupOrderWithBody(ctx context.Context, groupId openapi_types.UUID, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewPutStatusPageGroupOrderRequestWithBody(c.Server, groupId, contentType, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+// PutStatusPageGroupOrder Set the order of components within a group
+//
+// Takes a body of the `application/json` content type.
+//
+// Corresponds with PUT /api/v1/status-page/groups/{groupId}/order (the `PutStatusPageGroupOrder` operationId).
+func (c *Client) PutStatusPageGroupOrder(ctx context.Context, groupId openapi_types.UUID, body PutStatusPageGroupOrderJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewPutStatusPageGroupOrderRequest(c.Server, groupId, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+// ListStatusPageIncidents List the incident notices on the status page
+//
+// These are **customer-facing notices**, distinct from the monitoring incidents under `/incidents`. Nothing from the latter is carried over; the text here is written by your team.
+//
+// Corresponds with GET /api/v1/status-page/incidents (the `ListStatusPageIncidents` operationId).
+func (c *Client) ListStatusPageIncidents(ctx context.Context, params *ListStatusPageIncidentsParams, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewListStatusPageIncidentsRequest(c.Server, params)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+// PublishStatusPageIncidentWithBody Publish an incident notice
+//
+// Publishing a notice and writing its first update are a single operation: a notice with no updates would appear as a bare title on a page that has already been delivered to readers.
+//
+// `started_at` is when the **incident began**, not when the notice was published. The two are usually minutes to hours apart, and using the publication time would understate the impact window that customers can compare against their own logs. Backfilling a past incident relies on the same field.
+//
+// The statuses given in `components` take effect on the public page immediately and count towards availability.
+//
+// Takes any type of body and a specified content type.
+//
+// Corresponds with POST /api/v1/status-page/incidents (the `PublishStatusPageIncident` operationId).
+func (c *Client) PublishStatusPageIncidentWithBody(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewPublishStatusPageIncidentRequestWithBody(c.Server, contentType, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+// PublishStatusPageIncident Publish an incident notice
+//
+// Publishing a notice and writing its first update are a single operation: a notice with no updates would appear as a bare title on a page that has already been delivered to readers.
+//
+// `started_at` is when the **incident began**, not when the notice was published. The two are usually minutes to hours apart, and using the publication time would understate the impact window that customers can compare against their own logs. Backfilling a past incident relies on the same field.
+//
+// The statuses given in `components` take effect on the public page immediately and count towards availability.
+//
+// Takes a body of the `application/json` content type.
+//
+// Corresponds with POST /api/v1/status-page/incidents (the `PublishStatusPageIncident` operationId).
+func (c *Client) PublishStatusPageIncident(ctx context.Context, body PublishStatusPageIncidentJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewPublishStatusPageIncidentRequest(c.Server, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+// GetStatusPageIncident Get an incident notice
+//
+// Corresponds with GET /api/v1/status-page/incidents/{incidentId} (the `GetStatusPageIncident` operationId).
+func (c *Client) GetStatusPageIncident(ctx context.Context, incidentId openapi_types.UUID, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewGetStatusPageIncidentRequest(c.Server, incidentId)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+// PostStatusPageIncidentUpdateWithBody Append an update to an incident notice
+//
+// Published updates are never modified; a correction is issued as a new update. Customers may already have forwarded the original, and a silent rewrite would leave the two sides with different histories.
+//
+// `components` lists only the components **being changed** by this update; those not listed keep their current status. Setting `status` to `RESOLVED` returns every component this notice has affected to operational and closes the notice. A closed notice accepts no further updates.
+//
+// Takes any type of body and a specified content type.
+//
+// Corresponds with POST /api/v1/status-page/incidents/{incidentId}/updates (the `PostStatusPageIncidentUpdate` operationId).
+func (c *Client) PostStatusPageIncidentUpdateWithBody(ctx context.Context, incidentId openapi_types.UUID, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewPostStatusPageIncidentUpdateRequestWithBody(c.Server, incidentId, contentType, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+// PostStatusPageIncidentUpdate Append an update to an incident notice
+//
+// Published updates are never modified; a correction is issued as a new update. Customers may already have forwarded the original, and a silent rewrite would leave the two sides with different histories.
+//
+// `components` lists only the components **being changed** by this update; those not listed keep their current status. Setting `status` to `RESOLVED` returns every component this notice has affected to operational and closes the notice. A closed notice accepts no further updates.
+//
+// Takes a body of the `application/json` content type.
+//
+// Corresponds with POST /api/v1/status-page/incidents/{incidentId}/updates (the `PostStatusPageIncidentUpdate` operationId).
+func (c *Client) PostStatusPageIncidentUpdate(ctx context.Context, incidentId openapi_types.UUID, body PostStatusPageIncidentUpdateJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewPostStatusPageIncidentUpdateRequest(c.Server, incidentId, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+// ListStatusPageMaintenances List scheduled maintenance
+//
+// Corresponds with GET /api/v1/status-page/maintenances (the `ListStatusPageMaintenances` operationId).
+func (c *Client) ListStatusPageMaintenances(ctx context.Context, params *ListStatusPageMaintenancesParams, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewListStatusPageMaintenancesRequest(c.Server, params)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+// ScheduleStatusPageMaintenanceWithBody Schedule maintenance
+//
+// Maintenance starts and finishes automatically at the scheduled times; nobody needs to be present. While it runs, the affected components are shown as under maintenance and **availability is not reduced** — planned work should not consume the availability you promise to customers, which is the point of announcing it in advance.
+//
+// This is separate from `/maintenance-windows`, which suppresses alerting for a period. This endpoint announces the work to your customers. The two are usually created together: without suppression, restarts during the maintenance raise alerts and mark the components unavailable.
+//
+// Takes any type of body and a specified content type.
+//
+// Corresponds with POST /api/v1/status-page/maintenances (the `ScheduleStatusPageMaintenance` operationId).
+func (c *Client) ScheduleStatusPageMaintenanceWithBody(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewScheduleStatusPageMaintenanceRequestWithBody(c.Server, contentType, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+// ScheduleStatusPageMaintenance Schedule maintenance
+//
+// Maintenance starts and finishes automatically at the scheduled times; nobody needs to be present. While it runs, the affected components are shown as under maintenance and **availability is not reduced** — planned work should not consume the availability you promise to customers, which is the point of announcing it in advance.
+//
+// This is separate from `/maintenance-windows`, which suppresses alerting for a period. This endpoint announces the work to your customers. The two are usually created together: without suppression, restarts during the maintenance raise alerts and mark the components unavailable.
+//
+// Takes a body of the `application/json` content type.
+//
+// Corresponds with POST /api/v1/status-page/maintenances (the `ScheduleStatusPageMaintenance` operationId).
+func (c *Client) ScheduleStatusPageMaintenance(ctx context.Context, body ScheduleStatusPageMaintenanceJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewScheduleStatusPageMaintenanceRequest(c.Server, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+// GetStatusPageMaintenance Get a scheduled maintenance
+//
+// Corresponds with GET /api/v1/status-page/maintenances/{maintenanceId} (the `GetStatusPageMaintenance` operationId).
+func (c *Client) GetStatusPageMaintenance(ctx context.Context, maintenanceId openapi_types.UUID, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewGetStatusPageMaintenanceRequest(c.Server, maintenanceId)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+// CancelStatusPageMaintenance Cancel a maintenance that has not started
+//
+// Cancelled rather than deleted, so that readers who saw the announcement have an explanation. Maintenance that has already started cannot be cancelled; finish it early instead.
+//
+// Corresponds with POST /api/v1/status-page/maintenances/{maintenanceId}/cancel (the `CancelStatusPageMaintenance` operationId).
+func (c *Client) CancelStatusPageMaintenance(ctx context.Context, maintenanceId openapi_types.UUID, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewCancelStatusPageMaintenanceRequest(c.Server, maintenanceId)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+// CompleteStatusPageMaintenance Finish a running maintenance early
+//
+// Optional: maintenance finishes on its own at the scheduled end time. Use this endpoint when the work is done ahead of schedule; the affected components return to operational immediately.
+//
+// Corresponds with POST /api/v1/status-page/maintenances/{maintenanceId}/complete (the `CompleteStatusPageMaintenance` operationId).
+func (c *Client) CompleteStatusPageMaintenance(ctx context.Context, maintenanceId openapi_types.UUID, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewCompleteStatusPageMaintenanceRequest(c.Server, maintenanceId)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+// PutStatusPageOrderWithBody Set the order of the top level of the page
+//
+// Submits the **entire** top-level order in one call rather than moving a single entry to a given position.
+//
+// The top level interleaves groups and ungrouped components, so the order is expressed as one list covering both.
+//
+// Each entry carries either `group_id` or `component_id`. Entries not listed are placed after those that are.
+//
+// Takes any type of body and a specified content type.
+//
+// Corresponds with PUT /api/v1/status-page/order (the `PutStatusPageOrder` operationId).
+func (c *Client) PutStatusPageOrderWithBody(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewPutStatusPageOrderRequestWithBody(c.Server, contentType, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+// PutStatusPageOrder Set the order of the top level of the page
+//
+// Submits the **entire** top-level order in one call rather than moving a single entry to a given position.
+//
+// The top level interleaves groups and ungrouped components, so the order is expressed as one list covering both.
+//
+// Each entry carries either `group_id` or `component_id`. Entries not listed are placed after those that are.
+//
+// Takes a body of the `application/json` content type.
+//
+// Corresponds with PUT /api/v1/status-page/order (the `PutStatusPageOrder` operationId).
+func (c *Client) PutStatusPageOrder(ctx context.Context, body PutStatusPageOrderJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewPutStatusPageOrderRequest(c.Server, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+// ListProjectTopItems Machines ranked highest by a given metric
 //
 // Corresponds with GET /api/v1/top-items (the `ListProjectTopItems` operationId).
 func (c *Client) ListProjectTopItems(ctx context.Context, params *ListProjectTopItemsParams, reqEditors ...RequestEditorFn) (*http.Response, error) {
@@ -2757,7 +4593,7 @@ func (c *Client) ListProjectTopItems(ctx context.Context, params *ListProjectTop
 	return c.Client.Do(req)
 }
 
-// ListWebChecks 列出网页检查
+// ListWebChecks List web checks
 //
 // Corresponds with GET /api/v1/web-checks (the `ListWebChecks` operationId).
 func (c *Client) ListWebChecks(ctx context.Context, params *ListWebChecksParams, reqEditors ...RequestEditorFn) (*http.Response, error) {
@@ -4429,6 +6265,993 @@ func NewPutSloRequestWithBody(server string, contentType string, body io.Reader)
 	return req, nil
 }
 
+// NewDeleteStatusPageRequest constructs an http.Request for the DeleteStatusPage method
+func NewDeleteStatusPageRequest(server string) (*http.Request, error) {
+	var err error
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/api/v1/status-page")
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest(http.MethodDelete, queryURL.String(), nil)
+	if err != nil {
+		return nil, err
+	}
+
+	return req, nil
+}
+
+// NewGetStatusPageRequest constructs an http.Request for the GetStatusPage method
+func NewGetStatusPageRequest(server string) (*http.Request, error) {
+	var err error
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/api/v1/status-page")
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest(http.MethodGet, queryURL.String(), nil)
+	if err != nil {
+		return nil, err
+	}
+
+	return req, nil
+}
+
+// NewPutStatusPageRequest calls the generic PutStatusPage builder with application/json body
+func NewPutStatusPageRequest(server string, body PutStatusPageJSONRequestBody) (*http.Request, error) {
+	var bodyReader io.Reader
+	buf, err := json.Marshal(body)
+	if err != nil {
+		return nil, err
+	}
+	bodyReader = bytes.NewReader(buf)
+	return NewPutStatusPageRequestWithBody(server, "application/json", bodyReader)
+}
+
+// NewPutStatusPageRequestWithBody constructs an http.Request for the PutStatusPage method, with any body, and a specified content type
+func NewPutStatusPageRequestWithBody(server string, contentType string, body io.Reader) (*http.Request, error) {
+	var err error
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/api/v1/status-page")
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest(http.MethodPut, queryURL.String(), body)
+	if err != nil {
+		return nil, err
+	}
+
+	req.Header.Add("Content-Type", contentType)
+
+	return req, nil
+}
+
+// NewListStatusPageComponentsRequest constructs an http.Request for the ListStatusPageComponents method
+func NewListStatusPageComponentsRequest(server string) (*http.Request, error) {
+	var err error
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/api/v1/status-page/components")
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest(http.MethodGet, queryURL.String(), nil)
+	if err != nil {
+		return nil, err
+	}
+
+	return req, nil
+}
+
+// NewCreateStatusPageComponentRequest calls the generic CreateStatusPageComponent builder with application/json body
+func NewCreateStatusPageComponentRequest(server string, body CreateStatusPageComponentJSONRequestBody) (*http.Request, error) {
+	var bodyReader io.Reader
+	buf, err := json.Marshal(body)
+	if err != nil {
+		return nil, err
+	}
+	bodyReader = bytes.NewReader(buf)
+	return NewCreateStatusPageComponentRequestWithBody(server, "application/json", bodyReader)
+}
+
+// NewCreateStatusPageComponentRequestWithBody constructs an http.Request for the CreateStatusPageComponent method, with any body, and a specified content type
+func NewCreateStatusPageComponentRequestWithBody(server string, contentType string, body io.Reader) (*http.Request, error) {
+	var err error
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/api/v1/status-page/components")
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest(http.MethodPost, queryURL.String(), body)
+	if err != nil {
+		return nil, err
+	}
+
+	req.Header.Add("Content-Type", contentType)
+
+	return req, nil
+}
+
+// NewDeleteStatusPageComponentRequest constructs an http.Request for the DeleteStatusPageComponent method
+func NewDeleteStatusPageComponentRequest(server string, componentId openapi_types.UUID) (*http.Request, error) {
+	var err error
+
+	var pathParam0 string
+
+	pathParam0, err = runtime.StyleParamWithOptions("simple", false, "componentId", componentId, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: "uuid"})
+	if err != nil {
+		return nil, err
+	}
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/api/v1/status-page/components/%s", pathParam0)
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest(http.MethodDelete, queryURL.String(), nil)
+	if err != nil {
+		return nil, err
+	}
+
+	return req, nil
+}
+
+// NewGetStatusPageComponentRequest constructs an http.Request for the GetStatusPageComponent method
+func NewGetStatusPageComponentRequest(server string, componentId openapi_types.UUID) (*http.Request, error) {
+	var err error
+
+	var pathParam0 string
+
+	pathParam0, err = runtime.StyleParamWithOptions("simple", false, "componentId", componentId, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: "uuid"})
+	if err != nil {
+		return nil, err
+	}
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/api/v1/status-page/components/%s", pathParam0)
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest(http.MethodGet, queryURL.String(), nil)
+	if err != nil {
+		return nil, err
+	}
+
+	return req, nil
+}
+
+// NewUpdateStatusPageComponentRequest calls the generic UpdateStatusPageComponent builder with application/json body
+func NewUpdateStatusPageComponentRequest(server string, componentId openapi_types.UUID, body UpdateStatusPageComponentJSONRequestBody) (*http.Request, error) {
+	var bodyReader io.Reader
+	buf, err := json.Marshal(body)
+	if err != nil {
+		return nil, err
+	}
+	bodyReader = bytes.NewReader(buf)
+	return NewUpdateStatusPageComponentRequestWithBody(server, componentId, "application/json", bodyReader)
+}
+
+// NewUpdateStatusPageComponentRequestWithBody constructs an http.Request for the UpdateStatusPageComponent method, with any body, and a specified content type
+func NewUpdateStatusPageComponentRequestWithBody(server string, componentId openapi_types.UUID, contentType string, body io.Reader) (*http.Request, error) {
+	var err error
+
+	var pathParam0 string
+
+	pathParam0, err = runtime.StyleParamWithOptions("simple", false, "componentId", componentId, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: "uuid"})
+	if err != nil {
+		return nil, err
+	}
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/api/v1/status-page/components/%s", pathParam0)
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest(http.MethodPut, queryURL.String(), body)
+	if err != nil {
+		return nil, err
+	}
+
+	req.Header.Add("Content-Type", contentType)
+
+	return req, nil
+}
+
+// NewListStatusPageComponentSourcesRequest constructs an http.Request for the ListStatusPageComponentSources method
+func NewListStatusPageComponentSourcesRequest(server string, componentId openapi_types.UUID) (*http.Request, error) {
+	var err error
+
+	var pathParam0 string
+
+	pathParam0, err = runtime.StyleParamWithOptions("simple", false, "componentId", componentId, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: "uuid"})
+	if err != nil {
+		return nil, err
+	}
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/api/v1/status-page/components/%s/sources", pathParam0)
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest(http.MethodGet, queryURL.String(), nil)
+	if err != nil {
+		return nil, err
+	}
+
+	return req, nil
+}
+
+// NewPutStatusPageComponentSourcesRequest calls the generic PutStatusPageComponentSources builder with application/json body
+func NewPutStatusPageComponentSourcesRequest(server string, componentId openapi_types.UUID, body PutStatusPageComponentSourcesJSONRequestBody) (*http.Request, error) {
+	var bodyReader io.Reader
+	buf, err := json.Marshal(body)
+	if err != nil {
+		return nil, err
+	}
+	bodyReader = bytes.NewReader(buf)
+	return NewPutStatusPageComponentSourcesRequestWithBody(server, componentId, "application/json", bodyReader)
+}
+
+// NewPutStatusPageComponentSourcesRequestWithBody constructs an http.Request for the PutStatusPageComponentSources method, with any body, and a specified content type
+func NewPutStatusPageComponentSourcesRequestWithBody(server string, componentId openapi_types.UUID, contentType string, body io.Reader) (*http.Request, error) {
+	var err error
+
+	var pathParam0 string
+
+	pathParam0, err = runtime.StyleParamWithOptions("simple", false, "componentId", componentId, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: "uuid"})
+	if err != nil {
+		return nil, err
+	}
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/api/v1/status-page/components/%s/sources", pathParam0)
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest(http.MethodPut, queryURL.String(), body)
+	if err != nil {
+		return nil, err
+	}
+
+	req.Header.Add("Content-Type", contentType)
+
+	return req, nil
+}
+
+// NewListStatusPageGroupsRequest constructs an http.Request for the ListStatusPageGroups method
+func NewListStatusPageGroupsRequest(server string) (*http.Request, error) {
+	var err error
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/api/v1/status-page/groups")
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest(http.MethodGet, queryURL.String(), nil)
+	if err != nil {
+		return nil, err
+	}
+
+	return req, nil
+}
+
+// NewCreateStatusPageGroupRequest calls the generic CreateStatusPageGroup builder with application/json body
+func NewCreateStatusPageGroupRequest(server string, body CreateStatusPageGroupJSONRequestBody) (*http.Request, error) {
+	var bodyReader io.Reader
+	buf, err := json.Marshal(body)
+	if err != nil {
+		return nil, err
+	}
+	bodyReader = bytes.NewReader(buf)
+	return NewCreateStatusPageGroupRequestWithBody(server, "application/json", bodyReader)
+}
+
+// NewCreateStatusPageGroupRequestWithBody constructs an http.Request for the CreateStatusPageGroup method, with any body, and a specified content type
+func NewCreateStatusPageGroupRequestWithBody(server string, contentType string, body io.Reader) (*http.Request, error) {
+	var err error
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/api/v1/status-page/groups")
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest(http.MethodPost, queryURL.String(), body)
+	if err != nil {
+		return nil, err
+	}
+
+	req.Header.Add("Content-Type", contentType)
+
+	return req, nil
+}
+
+// NewDeleteStatusPageGroupRequest constructs an http.Request for the DeleteStatusPageGroup method
+func NewDeleteStatusPageGroupRequest(server string, groupId openapi_types.UUID) (*http.Request, error) {
+	var err error
+
+	var pathParam0 string
+
+	pathParam0, err = runtime.StyleParamWithOptions("simple", false, "groupId", groupId, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: "uuid"})
+	if err != nil {
+		return nil, err
+	}
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/api/v1/status-page/groups/%s", pathParam0)
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest(http.MethodDelete, queryURL.String(), nil)
+	if err != nil {
+		return nil, err
+	}
+
+	return req, nil
+}
+
+// NewUpdateStatusPageGroupRequest calls the generic UpdateStatusPageGroup builder with application/json body
+func NewUpdateStatusPageGroupRequest(server string, groupId openapi_types.UUID, body UpdateStatusPageGroupJSONRequestBody) (*http.Request, error) {
+	var bodyReader io.Reader
+	buf, err := json.Marshal(body)
+	if err != nil {
+		return nil, err
+	}
+	bodyReader = bytes.NewReader(buf)
+	return NewUpdateStatusPageGroupRequestWithBody(server, groupId, "application/json", bodyReader)
+}
+
+// NewUpdateStatusPageGroupRequestWithBody constructs an http.Request for the UpdateStatusPageGroup method, with any body, and a specified content type
+func NewUpdateStatusPageGroupRequestWithBody(server string, groupId openapi_types.UUID, contentType string, body io.Reader) (*http.Request, error) {
+	var err error
+
+	var pathParam0 string
+
+	pathParam0, err = runtime.StyleParamWithOptions("simple", false, "groupId", groupId, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: "uuid"})
+	if err != nil {
+		return nil, err
+	}
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/api/v1/status-page/groups/%s", pathParam0)
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest(http.MethodPut, queryURL.String(), body)
+	if err != nil {
+		return nil, err
+	}
+
+	req.Header.Add("Content-Type", contentType)
+
+	return req, nil
+}
+
+// NewPutStatusPageGroupOrderRequest calls the generic PutStatusPageGroupOrder builder with application/json body
+func NewPutStatusPageGroupOrderRequest(server string, groupId openapi_types.UUID, body PutStatusPageGroupOrderJSONRequestBody) (*http.Request, error) {
+	var bodyReader io.Reader
+	buf, err := json.Marshal(body)
+	if err != nil {
+		return nil, err
+	}
+	bodyReader = bytes.NewReader(buf)
+	return NewPutStatusPageGroupOrderRequestWithBody(server, groupId, "application/json", bodyReader)
+}
+
+// NewPutStatusPageGroupOrderRequestWithBody constructs an http.Request for the PutStatusPageGroupOrder method, with any body, and a specified content type
+func NewPutStatusPageGroupOrderRequestWithBody(server string, groupId openapi_types.UUID, contentType string, body io.Reader) (*http.Request, error) {
+	var err error
+
+	var pathParam0 string
+
+	pathParam0, err = runtime.StyleParamWithOptions("simple", false, "groupId", groupId, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: "uuid"})
+	if err != nil {
+		return nil, err
+	}
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/api/v1/status-page/groups/%s/order", pathParam0)
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest(http.MethodPut, queryURL.String(), body)
+	if err != nil {
+		return nil, err
+	}
+
+	req.Header.Add("Content-Type", contentType)
+
+	return req, nil
+}
+
+// NewListStatusPageIncidentsRequest constructs an http.Request for the ListStatusPageIncidents method
+func NewListStatusPageIncidentsRequest(server string, params *ListStatusPageIncidentsParams) (*http.Request, error) {
+	var err error
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/api/v1/status-page/incidents")
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	if params != nil {
+		// queryValues collects non-styled parameters (passthrough, JSON)
+		// that are safe to round-trip through url.Values.Encode().
+		queryValues := queryURL.Query()
+		// rawQueryFragments collects pre-encoded query fragments from
+		// styled parameters, preserving literal commas as delimiters
+		// per the OpenAPI spec (e.g. "color=blue,black,brown").
+		var rawQueryFragments []string
+
+		if params.Limit != nil {
+
+			if queryFrag, err := runtime.StyleParamWithOptions("form", false, "limit", *params.Limit, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "integer", Format: "int64"}); err != nil {
+				return nil, err
+			} else {
+				for _, qp := range strings.Split(queryFrag, "&") {
+					rawQueryFragments = append(rawQueryFragments, qp)
+				}
+			}
+
+		}
+
+		if params.Offset != nil {
+
+			if queryFrag, err := runtime.StyleParamWithOptions("form", false, "offset", *params.Offset, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "integer", Format: "int64"}); err != nil {
+				return nil, err
+			} else {
+				for _, qp := range strings.Split(queryFrag, "&") {
+					rawQueryFragments = append(rawQueryFragments, qp)
+				}
+			}
+
+		}
+
+		if encoded := queryValues.Encode(); encoded != "" {
+			rawQueryFragments = append(rawQueryFragments, encoded)
+		}
+		queryURL.RawQuery = strings.Join(rawQueryFragments, "&")
+	}
+
+	req, err := http.NewRequest(http.MethodGet, queryURL.String(), nil)
+	if err != nil {
+		return nil, err
+	}
+
+	return req, nil
+}
+
+// NewPublishStatusPageIncidentRequest calls the generic PublishStatusPageIncident builder with application/json body
+func NewPublishStatusPageIncidentRequest(server string, body PublishStatusPageIncidentJSONRequestBody) (*http.Request, error) {
+	var bodyReader io.Reader
+	buf, err := json.Marshal(body)
+	if err != nil {
+		return nil, err
+	}
+	bodyReader = bytes.NewReader(buf)
+	return NewPublishStatusPageIncidentRequestWithBody(server, "application/json", bodyReader)
+}
+
+// NewPublishStatusPageIncidentRequestWithBody constructs an http.Request for the PublishStatusPageIncident method, with any body, and a specified content type
+func NewPublishStatusPageIncidentRequestWithBody(server string, contentType string, body io.Reader) (*http.Request, error) {
+	var err error
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/api/v1/status-page/incidents")
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest(http.MethodPost, queryURL.String(), body)
+	if err != nil {
+		return nil, err
+	}
+
+	req.Header.Add("Content-Type", contentType)
+
+	return req, nil
+}
+
+// NewGetStatusPageIncidentRequest constructs an http.Request for the GetStatusPageIncident method
+func NewGetStatusPageIncidentRequest(server string, incidentId openapi_types.UUID) (*http.Request, error) {
+	var err error
+
+	var pathParam0 string
+
+	pathParam0, err = runtime.StyleParamWithOptions("simple", false, "incidentId", incidentId, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: "uuid"})
+	if err != nil {
+		return nil, err
+	}
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/api/v1/status-page/incidents/%s", pathParam0)
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest(http.MethodGet, queryURL.String(), nil)
+	if err != nil {
+		return nil, err
+	}
+
+	return req, nil
+}
+
+// NewPostStatusPageIncidentUpdateRequest calls the generic PostStatusPageIncidentUpdate builder with application/json body
+func NewPostStatusPageIncidentUpdateRequest(server string, incidentId openapi_types.UUID, body PostStatusPageIncidentUpdateJSONRequestBody) (*http.Request, error) {
+	var bodyReader io.Reader
+	buf, err := json.Marshal(body)
+	if err != nil {
+		return nil, err
+	}
+	bodyReader = bytes.NewReader(buf)
+	return NewPostStatusPageIncidentUpdateRequestWithBody(server, incidentId, "application/json", bodyReader)
+}
+
+// NewPostStatusPageIncidentUpdateRequestWithBody constructs an http.Request for the PostStatusPageIncidentUpdate method, with any body, and a specified content type
+func NewPostStatusPageIncidentUpdateRequestWithBody(server string, incidentId openapi_types.UUID, contentType string, body io.Reader) (*http.Request, error) {
+	var err error
+
+	var pathParam0 string
+
+	pathParam0, err = runtime.StyleParamWithOptions("simple", false, "incidentId", incidentId, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: "uuid"})
+	if err != nil {
+		return nil, err
+	}
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/api/v1/status-page/incidents/%s/updates", pathParam0)
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest(http.MethodPost, queryURL.String(), body)
+	if err != nil {
+		return nil, err
+	}
+
+	req.Header.Add("Content-Type", contentType)
+
+	return req, nil
+}
+
+// NewListStatusPageMaintenancesRequest constructs an http.Request for the ListStatusPageMaintenances method
+func NewListStatusPageMaintenancesRequest(server string, params *ListStatusPageMaintenancesParams) (*http.Request, error) {
+	var err error
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/api/v1/status-page/maintenances")
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	if params != nil {
+		// queryValues collects non-styled parameters (passthrough, JSON)
+		// that are safe to round-trip through url.Values.Encode().
+		queryValues := queryURL.Query()
+		// rawQueryFragments collects pre-encoded query fragments from
+		// styled parameters, preserving literal commas as delimiters
+		// per the OpenAPI spec (e.g. "color=blue,black,brown").
+		var rawQueryFragments []string
+
+		if params.Limit != nil {
+
+			if queryFrag, err := runtime.StyleParamWithOptions("form", false, "limit", *params.Limit, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "integer", Format: "int64"}); err != nil {
+				return nil, err
+			} else {
+				for _, qp := range strings.Split(queryFrag, "&") {
+					rawQueryFragments = append(rawQueryFragments, qp)
+				}
+			}
+
+		}
+
+		if params.Offset != nil {
+
+			if queryFrag, err := runtime.StyleParamWithOptions("form", false, "offset", *params.Offset, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "integer", Format: "int64"}); err != nil {
+				return nil, err
+			} else {
+				for _, qp := range strings.Split(queryFrag, "&") {
+					rawQueryFragments = append(rawQueryFragments, qp)
+				}
+			}
+
+		}
+
+		if encoded := queryValues.Encode(); encoded != "" {
+			rawQueryFragments = append(rawQueryFragments, encoded)
+		}
+		queryURL.RawQuery = strings.Join(rawQueryFragments, "&")
+	}
+
+	req, err := http.NewRequest(http.MethodGet, queryURL.String(), nil)
+	if err != nil {
+		return nil, err
+	}
+
+	return req, nil
+}
+
+// NewScheduleStatusPageMaintenanceRequest calls the generic ScheduleStatusPageMaintenance builder with application/json body
+func NewScheduleStatusPageMaintenanceRequest(server string, body ScheduleStatusPageMaintenanceJSONRequestBody) (*http.Request, error) {
+	var bodyReader io.Reader
+	buf, err := json.Marshal(body)
+	if err != nil {
+		return nil, err
+	}
+	bodyReader = bytes.NewReader(buf)
+	return NewScheduleStatusPageMaintenanceRequestWithBody(server, "application/json", bodyReader)
+}
+
+// NewScheduleStatusPageMaintenanceRequestWithBody constructs an http.Request for the ScheduleStatusPageMaintenance method, with any body, and a specified content type
+func NewScheduleStatusPageMaintenanceRequestWithBody(server string, contentType string, body io.Reader) (*http.Request, error) {
+	var err error
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/api/v1/status-page/maintenances")
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest(http.MethodPost, queryURL.String(), body)
+	if err != nil {
+		return nil, err
+	}
+
+	req.Header.Add("Content-Type", contentType)
+
+	return req, nil
+}
+
+// NewGetStatusPageMaintenanceRequest constructs an http.Request for the GetStatusPageMaintenance method
+func NewGetStatusPageMaintenanceRequest(server string, maintenanceId openapi_types.UUID) (*http.Request, error) {
+	var err error
+
+	var pathParam0 string
+
+	pathParam0, err = runtime.StyleParamWithOptions("simple", false, "maintenanceId", maintenanceId, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: "uuid"})
+	if err != nil {
+		return nil, err
+	}
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/api/v1/status-page/maintenances/%s", pathParam0)
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest(http.MethodGet, queryURL.String(), nil)
+	if err != nil {
+		return nil, err
+	}
+
+	return req, nil
+}
+
+// NewCancelStatusPageMaintenanceRequest constructs an http.Request for the CancelStatusPageMaintenance method
+func NewCancelStatusPageMaintenanceRequest(server string, maintenanceId openapi_types.UUID) (*http.Request, error) {
+	var err error
+
+	var pathParam0 string
+
+	pathParam0, err = runtime.StyleParamWithOptions("simple", false, "maintenanceId", maintenanceId, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: "uuid"})
+	if err != nil {
+		return nil, err
+	}
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/api/v1/status-page/maintenances/%s/cancel", pathParam0)
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest(http.MethodPost, queryURL.String(), nil)
+	if err != nil {
+		return nil, err
+	}
+
+	return req, nil
+}
+
+// NewCompleteStatusPageMaintenanceRequest constructs an http.Request for the CompleteStatusPageMaintenance method
+func NewCompleteStatusPageMaintenanceRequest(server string, maintenanceId openapi_types.UUID) (*http.Request, error) {
+	var err error
+
+	var pathParam0 string
+
+	pathParam0, err = runtime.StyleParamWithOptions("simple", false, "maintenanceId", maintenanceId, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: "uuid"})
+	if err != nil {
+		return nil, err
+	}
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/api/v1/status-page/maintenances/%s/complete", pathParam0)
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest(http.MethodPost, queryURL.String(), nil)
+	if err != nil {
+		return nil, err
+	}
+
+	return req, nil
+}
+
+// NewPutStatusPageOrderRequest calls the generic PutStatusPageOrder builder with application/json body
+func NewPutStatusPageOrderRequest(server string, body PutStatusPageOrderJSONRequestBody) (*http.Request, error) {
+	var bodyReader io.Reader
+	buf, err := json.Marshal(body)
+	if err != nil {
+		return nil, err
+	}
+	bodyReader = bytes.NewReader(buf)
+	return NewPutStatusPageOrderRequestWithBody(server, "application/json", bodyReader)
+}
+
+// NewPutStatusPageOrderRequestWithBody constructs an http.Request for the PutStatusPageOrder method, with any body, and a specified content type
+func NewPutStatusPageOrderRequestWithBody(server string, contentType string, body io.Reader) (*http.Request, error) {
+	var err error
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/api/v1/status-page/order")
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest(http.MethodPut, queryURL.String(), body)
+	if err != nil {
+		return nil, err
+	}
+
+	req.Header.Add("Content-Type", contentType)
+
+	return req, nil
+}
+
 // NewListProjectTopItemsRequest constructs an http.Request for the ListProjectTopItems method
 func NewListProjectTopItemsRequest(server string, params *ListProjectTopItemsParams) (*http.Request, error) {
 	var err error
@@ -4589,392 +7412,742 @@ func WithBaseURL(baseURL string) ClientOption {
 // ClientWithResponsesInterface is the interface specification for the client with responses above.
 type ClientWithResponsesInterface interface {
 
-	// ListIncidentsWithResponse 列出告警
+	// ListIncidentsWithResponse List incidents
 	//
-	// `incident_status` 表示监控系统是否判定已恢复，`closed` 表示是否有人完成了处理。两者相互独立，可分别筛选。.
+	// `incident_status` reports whether monitoring considers the problem recovered; `closed` reports whether someone has finished handling it. The two are independent and can be filtered separately.
 	//
 	// Returns a wrapper object for the known response body format(s).
 	//
 	// Corresponds with GET /api/v1/incidents (the `ListIncidents` operationId).
 	ListIncidentsWithResponse(ctx context.Context, params *ListIncidentsParams, reqEditors ...RequestEditorFn) (*ListIncidentsResponse, error)
 
-	// GetIncidentWithResponse 查一条告警
+	// GetIncidentWithResponse Get an incident
 	//
 	// Returns a wrapper object for the known response body format(s).
 	//
 	// Corresponds with GET /api/v1/incidents/{incidentId} (the `GetIncident` operationId).
 	GetIncidentWithResponse(ctx context.Context, incidentId openapi_types.UUID, reqEditors ...RequestEditorFn) (*GetIncidentResponse, error)
 
-	// AcknowledgeIncidentWithBodyWithResponse 确认这条告警
+	// AcknowledgeIncidentWithBodyWithResponse Acknowledge an incident
 	//
-	// 同时会在监控系统中标记为已确认，便于其他渠道也能看到该告警已有人处理。.
+	// The incident is also marked as acknowledged in the monitoring system, so that other channels can see it already has an owner.
 	//
 	// Takes any type of body and a specified content type, and returns a wrapper object for the known response body format(s).
 	//
 	// Corresponds with POST /api/v1/incidents/{incidentId}/acknowledge (the `AcknowledgeIncident` operationId).
 	AcknowledgeIncidentWithBodyWithResponse(ctx context.Context, incidentId openapi_types.UUID, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*AcknowledgeIncidentResponse, error)
 
-	// AcknowledgeIncidentWithResponse 确认这条告警
+	// AcknowledgeIncidentWithResponse Acknowledge an incident
 	//
-	// 同时会在监控系统中标记为已确认，便于其他渠道也能看到该告警已有人处理。.
+	// The incident is also marked as acknowledged in the monitoring system, so that other channels can see it already has an owner.
 	//
 	// Takes a body of the `application/json` content type, and returns a wrapper object for the known response body format(s).
 	//
 	// Corresponds with POST /api/v1/incidents/{incidentId}/acknowledge (the `AcknowledgeIncident` operationId).
 	AcknowledgeIncidentWithResponse(ctx context.Context, incidentId openapi_types.UUID, body AcknowledgeIncidentJSONRequestBody, reqEditors ...RequestEditorFn) (*AcknowledgeIncidentResponse, error)
 
-	// AssignIncidentWithBodyWithResponse 把这条告警交给谁，或者收回来
+	// AssignIncidentWithBodyWithResponse Assign an incident, or clear its assignee
 	//
-	// `assignee_user_id` 留空即取消指派。
+	// Leave `assignee_user_id` empty to clear the assignment.
 	//
-	// **这里不校验被指派的人在不在这个项目里**——那要问 IAM，而这个服务的准入还没接。
+	// **Project membership of the assignee is not verified.** Any user identifier is accepted and recorded as given.
 	//
 	// Takes any type of body and a specified content type, and returns a wrapper object for the known response body format(s).
 	//
 	// Corresponds with PUT /api/v1/incidents/{incidentId}/assignee (the `AssignIncident` operationId).
 	AssignIncidentWithBodyWithResponse(ctx context.Context, incidentId openapi_types.UUID, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*AssignIncidentResponse, error)
 
-	// AssignIncidentWithResponse 把这条告警交给谁，或者收回来
+	// AssignIncidentWithResponse Assign an incident, or clear its assignee
 	//
-	// `assignee_user_id` 留空即取消指派。
+	// Leave `assignee_user_id` empty to clear the assignment.
 	//
-	// **这里不校验被指派的人在不在这个项目里**——那要问 IAM，而这个服务的准入还没接。
+	// **Project membership of the assignee is not verified.** Any user identifier is accepted and recorded as given.
 	//
 	// Takes a body of the `application/json` content type, and returns a wrapper object for the known response body format(s).
 	//
 	// Corresponds with PUT /api/v1/incidents/{incidentId}/assignee (the `AssignIncident` operationId).
 	AssignIncidentWithResponse(ctx context.Context, incidentId openapi_types.UUID, body AssignIncidentJSONRequestBody, reqEditors ...RequestEditorFn) (*AssignIncidentResponse, error)
 
-	// CloseIncidentWithBodyWithResponse 了结这条告警
+	// CloseIncidentWithBodyWithResponse Close an incident
 	//
-	// 了结的是**平台上的处理流程**，不是告警本身的状态：尚未恢复的告警也可以按「已接受的风险」了结，它在监控系统中仍为未恢复。.
+	// Closing records **that the handling process is finished on this platform**; it does not change the state of the incident itself. An incident that has not recovered may still be closed as an accepted risk, and remains unrecovered in the monitoring system.
 	//
 	// Takes any type of body and a specified content type, and returns a wrapper object for the known response body format(s).
 	//
 	// Corresponds with POST /api/v1/incidents/{incidentId}/close (the `CloseIncident` operationId).
 	CloseIncidentWithBodyWithResponse(ctx context.Context, incidentId openapi_types.UUID, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*CloseIncidentResponse, error)
 
-	// CloseIncidentWithResponse 了结这条告警
+	// CloseIncidentWithResponse Close an incident
 	//
-	// 了结的是**平台上的处理流程**，不是告警本身的状态：尚未恢复的告警也可以按「已接受的风险」了结，它在监控系统中仍为未恢复。.
+	// Closing records **that the handling process is finished on this platform**; it does not change the state of the incident itself. An incident that has not recovered may still be closed as an accepted risk, and remains unrecovered in the monitoring system.
 	//
 	// Takes a body of the `application/json` content type, and returns a wrapper object for the known response body format(s).
 	//
 	// Corresponds with POST /api/v1/incidents/{incidentId}/close (the `CloseIncident` operationId).
 	CloseIncidentWithResponse(ctx context.Context, incidentId openapi_types.UUID, body CloseIncidentJSONRequestBody, reqEditors ...RequestEditorFn) (*CloseIncidentResponse, error)
 
-	// AddIncidentCommentWithBodyWithResponse 在时间线上写一条备注
+	// AddIncidentCommentWithBodyWithResponse Add a note to the timeline
 	//
 	// Takes any type of body and a specified content type, and returns a wrapper object for the known response body format(s).
 	//
 	// Corresponds with POST /api/v1/incidents/{incidentId}/comments (the `AddIncidentComment` operationId).
 	AddIncidentCommentWithBodyWithResponse(ctx context.Context, incidentId openapi_types.UUID, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*AddIncidentCommentResponse, error)
 
-	// AddIncidentCommentWithResponse 在时间线上写一条备注
+	// AddIncidentCommentWithResponse Add a note to the timeline
 	//
 	// Takes a body of the `application/json` content type, and returns a wrapper object for the known response body format(s).
 	//
 	// Corresponds with POST /api/v1/incidents/{incidentId}/comments (the `AddIncidentComment` operationId).
 	AddIncidentCommentWithResponse(ctx context.Context, incidentId openapi_types.UUID, body AddIncidentCommentJSONRequestBody, reqEditors ...RequestEditorFn) (*AddIncidentCommentResponse, error)
 
-	// SetIncidentFollowingWithBodyWithResponse 关注这条告警，或者取消关注
+	// SetIncidentFollowingWithBodyWithResponse Follow an incident, or stop following it
 	//
-	// 关注的是**自己**：操作者就是被加进关注列表的那个人。.
+	// You follow **yourself**: the caller is the user added to or removed from the follower list.
 	//
 	// Takes any type of body and a specified content type, and returns a wrapper object for the known response body format(s).
 	//
 	// Corresponds with PUT /api/v1/incidents/{incidentId}/following (the `SetIncidentFollowing` operationId).
 	SetIncidentFollowingWithBodyWithResponse(ctx context.Context, incidentId openapi_types.UUID, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*SetIncidentFollowingResponse, error)
 
-	// SetIncidentFollowingWithResponse 关注这条告警，或者取消关注
+	// SetIncidentFollowingWithResponse Follow an incident, or stop following it
 	//
-	// 关注的是**自己**：操作者就是被加进关注列表的那个人。.
+	// You follow **yourself**: the caller is the user added to or removed from the follower list.
 	//
 	// Takes a body of the `application/json` content type, and returns a wrapper object for the known response body format(s).
 	//
 	// Corresponds with PUT /api/v1/incidents/{incidentId}/following (the `SetIncidentFollowing` operationId).
 	SetIncidentFollowingWithResponse(ctx context.Context, incidentId openapi_types.UUID, body SetIncidentFollowingJSONRequestBody, reqEditors ...RequestEditorFn) (*SetIncidentFollowingResponse, error)
 
-	// ReopenIncidentWithResponse 重新打开一条已经了结的告警
+	// ReopenIncidentWithResponse Reopen a closed incident
 	//
 	// Returns a wrapper object for the known response body format(s).
 	//
 	// Corresponds with POST /api/v1/incidents/{incidentId}/reopen (the `ReopenIncident` operationId).
 	ReopenIncidentWithResponse(ctx context.Context, incidentId openapi_types.UUID, reqEditors ...RequestEditorFn) (*ReopenIncidentResponse, error)
 
-	// ListIncidentTimelineWithResponse 列出这条告警的时间线
+	// ListIncidentTimelineWithResponse List the timeline of an incident
 	//
-	// 游标翻页而不是偏移量：时间线是只增的，用偏移量翻页会在新记录写入时漏行和重行。.
+	// Cursor paging rather than offset paging: the timeline is append-only, and offset paging would skip or repeat entries whenever a new one is written.
 	//
 	// Returns a wrapper object for the known response body format(s).
 	//
 	// Corresponds with GET /api/v1/incidents/{incidentId}/timeline (the `ListIncidentTimeline` operationId).
 	ListIncidentTimelineWithResponse(ctx context.Context, incidentId openapi_types.UUID, params *ListIncidentTimelineParams, reqEditors ...RequestEditorFn) (*ListIncidentTimelineResponse, error)
 
-	// ListMaintenanceWindowsWithResponse 列出维护窗口
+	// ListMaintenanceWindowsWithResponse List maintenance windows
 	//
 	// Returns a wrapper object for the known response body format(s).
 	//
 	// Corresponds with GET /api/v1/maintenance-windows (the `ListMaintenanceWindows` operationId).
 	ListMaintenanceWindowsWithResponse(ctx context.Context, reqEditors ...RequestEditorFn) (*ListMaintenanceWindowsResponse, error)
 
-	// DeleteMaintenanceWindowWithResponse 撤掉一个维护窗口
+	// DeleteMaintenanceWindowWithResponse Cancel a maintenance window
 	//
-	// 立刻恢复告警，哪怕窗口还没到期。.
+	// Alerting resumes immediately, even if the window has not yet expired.
 	//
 	// Returns a wrapper object for the known response body format(s).
 	//
 	// Corresponds with DELETE /api/v1/maintenance-windows/{windowId} (the `DeleteMaintenanceWindow` operationId).
 	DeleteMaintenanceWindowWithResponse(ctx context.Context, windowId openapi_types.UUID, reqEditors ...RequestEditorFn) (*DeleteMaintenanceWindowResponse, error)
 
-	// GetMaintenanceWindowWithResponse 查一个维护窗口
+	// GetMaintenanceWindowWithResponse Get a maintenance window
 	//
 	// Returns a wrapper object for the known response body format(s).
 	//
 	// Corresponds with GET /api/v1/maintenance-windows/{windowId} (the `GetMaintenanceWindow` operationId).
 	GetMaintenanceWindowWithResponse(ctx context.Context, windowId openapi_types.UUID, reqEditors ...RequestEditorFn) (*GetMaintenanceWindowResponse, error)
 
-	// PutMaintenanceWindowWithBodyWithResponse 开一个维护窗口，或者按同一个 id 覆盖它
+	// PutMaintenanceWindowWithBodyWithResponse Create a maintenance window, or replace it by the same id
 	//
-	// **创建即覆盖**：延长一个正在进行的窗口就是用同一个 id 再调一次。
+	// **Create or replace**: extending a window that is already running means calling this endpoint again with the same id.
 	//
-	// 窗口期内这些机器的问题不告警，也不扣 SLA 的可用率。`server_ids` 留空表示整个项目，包括窗口开着的时候新接进来的机器。
+	// While the window is open, problems on these machines do not alert and do not count against SLA availability. Leave `server_ids` empty to cover the entire project, including machines enrolled after the window opens.
 	//
 	// Takes any type of body and a specified content type, and returns a wrapper object for the known response body format(s).
 	//
 	// Corresponds with PUT /api/v1/maintenance-windows/{windowId} (the `PutMaintenanceWindow` operationId).
 	PutMaintenanceWindowWithBodyWithResponse(ctx context.Context, windowId openapi_types.UUID, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*PutMaintenanceWindowResponse, error)
 
-	// PutMaintenanceWindowWithResponse 开一个维护窗口，或者按同一个 id 覆盖它
+	// PutMaintenanceWindowWithResponse Create a maintenance window, or replace it by the same id
 	//
-	// **创建即覆盖**：延长一个正在进行的窗口就是用同一个 id 再调一次。
+	// **Create or replace**: extending a window that is already running means calling this endpoint again with the same id.
 	//
-	// 窗口期内这些机器的问题不告警，也不扣 SLA 的可用率。`server_ids` 留空表示整个项目，包括窗口开着的时候新接进来的机器。
+	// While the window is open, problems on these machines do not alert and do not count against SLA availability. Leave `server_ids` empty to cover the entire project, including machines enrolled after the window opens.
 	//
 	// Takes a body of the `application/json` content type, and returns a wrapper object for the known response body format(s).
 	//
 	// Corresponds with PUT /api/v1/maintenance-windows/{windowId} (the `PutMaintenanceWindow` operationId).
 	PutMaintenanceWindowWithResponse(ctx context.Context, windowId openapi_types.UUID, body PutMaintenanceWindowJSONRequestBody, reqEditors ...RequestEditorFn) (*PutMaintenanceWindowResponse, error)
 
-	// GetProjectOverviewWithResponse 项目总览
+	// GetProjectOverviewWithResponse Project overview
 	//
-	// 项目下还没有任何机器时返回各项均为零的总览，而不是 404——空项目是一个正常状态。.
+	// A project with no machines yet returns an overview with every figure at zero rather than a 404 — an empty project is a normal state.
 	//
 	// Returns a wrapper object for the known response body format(s).
 	//
 	// Corresponds with GET /api/v1/overview (the `GetProjectOverview` operationId).
 	GetProjectOverviewWithResponse(ctx context.Context, reqEditors ...RequestEditorFn) (*GetProjectOverviewResponse, error)
 
-	// ListServersWithResponse 列出项目里的机器
+	// ListServersWithResponse List the machines in the project
 	//
 	// Returns a wrapper object for the known response body format(s).
 	//
 	// Corresponds with GET /api/v1/servers (the `ListServers` operationId).
 	ListServersWithResponse(ctx context.Context, params *ListServersParams, reqEditors ...RequestEditorFn) (*ListServersResponse, error)
 
-	// DeleteServerWithResponse 删掉这台机器
+	// DeleteServerWithResponse Delete a machine
 	//
-	// **不可逆**：监控主机、历史数据和这台机器名下的告警会一并删除。若只是想暂时停止采集，改用 /disable。.
+	// **Irreversible**: the monitored host, its history and every incident recorded against this machine are removed together. To stop collection temporarily, use `/disable` instead.
 	//
 	// Returns a wrapper object for the known response body format(s).
 	//
 	// Corresponds with DELETE /api/v1/servers/{serverId} (the `DeleteServer` operationId).
 	DeleteServerWithResponse(ctx context.Context, serverId openapi_types.UUID, reqEditors ...RequestEditorFn) (*DeleteServerResponse, error)
 
-	// GetServerWithResponse 查一台机器的接入情况
+	// GetServerWithResponse Get the enrollment state of a machine
 	//
 	// Returns a wrapper object for the known response body format(s).
 	//
 	// Corresponds with GET /api/v1/servers/{serverId} (the `GetServer` operationId).
 	GetServerWithResponse(ctx context.Context, serverId openapi_types.UUID, reqEditors ...RequestEditorFn) (*GetServerResponse, error)
 
-	// UpdateServerWithBodyWithResponse 改一台机器的接入参数
+	// UpdateServerWithBodyWithResponse Update the enrollment settings of a machine
 	//
-	// 只更新请求体中出现的字段。`address` 与 `address_kind` 必须一并提供：只改其中一个会得到互相矛盾的接入配置，该错误不会被报出，表现为 agent 连不上。.
+	// Only the fields present in the request body are updated. `address` and `address_kind` must be supplied together: changing one without the other produces a contradictory configuration that is not reported as an error and shows up only as an agent that cannot connect.
 	//
 	// Takes any type of body and a specified content type, and returns a wrapper object for the known response body format(s).
 	//
 	// Corresponds with PATCH /api/v1/servers/{serverId} (the `UpdateServer` operationId).
 	UpdateServerWithBodyWithResponse(ctx context.Context, serverId openapi_types.UUID, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*UpdateServerResponse, error)
 
-	// UpdateServerWithResponse 改一台机器的接入参数
+	// UpdateServerWithResponse Update the enrollment settings of a machine
 	//
-	// 只更新请求体中出现的字段。`address` 与 `address_kind` 必须一并提供：只改其中一个会得到互相矛盾的接入配置，该错误不会被报出，表现为 agent 连不上。.
+	// Only the fields present in the request body are updated. `address` and `address_kind` must be supplied together: changing one without the other produces a contradictory configuration that is not reported as an error and shows up only as an agent that cannot connect.
 	//
 	// Takes a body of the `application/json` content type, and returns a wrapper object for the known response body format(s).
 	//
 	// Corresponds with PATCH /api/v1/servers/{serverId} (the `UpdateServer` operationId).
 	UpdateServerWithResponse(ctx context.Context, serverId openapi_types.UUID, body UpdateServerJSONRequestBody, reqEditors ...RequestEditorFn) (*UpdateServerResponse, error)
 
-	// EnableServerMonitoringWithBodyWithResponse 把一台机器接入监控
+	// EnableServerMonitoringWithBodyWithResponse Enroll a machine into monitoring
 	//
-	// **同一个 server id 重复调用是幂等的**：参数一致时返回已接入的那台，不会重复创建监控主机，因此接入失败可以安全重试。
+	// **Repeated calls with the same server id are idempotent**: given identical parameters, the already-enrolled machine is returned and no duplicate host is created, so a failed enrollment is safe to retry.
 	//
-	// 修改接入参数请改用 PATCH。本接口在参数不一致时会返回错误，不会更新已有配置。
+	// To change enrollment settings, use PATCH. This endpoint returns an error when the parameters differ, and does not update an existing configuration.
 	//
-	// 响应中的 `tls_psk` **只返回这一次**，请及时保存；遗失后需要轮换。
+	// The `tls_psk` in the response is **returned only this once**; store it immediately. If it is lost, it must be rotated.
 	//
 	// Takes any type of body and a specified content type, and returns a wrapper object for the known response body format(s).
 	//
 	// Corresponds with PUT /api/v1/servers/{serverId} (the `EnableServerMonitoring` operationId).
 	EnableServerMonitoringWithBodyWithResponse(ctx context.Context, serverId openapi_types.UUID, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*EnableServerMonitoringResponse, error)
 
-	// EnableServerMonitoringWithResponse 把一台机器接入监控
+	// EnableServerMonitoringWithResponse Enroll a machine into monitoring
 	//
-	// **同一个 server id 重复调用是幂等的**：参数一致时返回已接入的那台，不会重复创建监控主机，因此接入失败可以安全重试。
+	// **Repeated calls with the same server id are idempotent**: given identical parameters, the already-enrolled machine is returned and no duplicate host is created, so a failed enrollment is safe to retry.
 	//
-	// 修改接入参数请改用 PATCH。本接口在参数不一致时会返回错误，不会更新已有配置。
+	// To change enrollment settings, use PATCH. This endpoint returns an error when the parameters differ, and does not update an existing configuration.
 	//
-	// 响应中的 `tls_psk` **只返回这一次**，请及时保存；遗失后需要轮换。
+	// The `tls_psk` in the response is **returned only this once**; store it immediately. If it is lost, it must be rotated.
 	//
 	// Takes a body of the `application/json` content type, and returns a wrapper object for the known response body format(s).
 	//
 	// Corresponds with PUT /api/v1/servers/{serverId} (the `EnableServerMonitoring` operationId).
 	EnableServerMonitoringWithResponse(ctx context.Context, serverId openapi_types.UUID, body EnableServerMonitoringJSONRequestBody, reqEditors ...RequestEditorFn) (*EnableServerMonitoringResponse, error)
 
-	// DisableServerMonitoringWithResponse 停止监控这台机器
+	// DisableServerMonitoringWithResponse Stop monitoring a machine
 	//
-	// 可逆操作：监控主机保留，仅停止采集，历史数据不受影响。重新接入即可恢复采集。如需连同历史数据一并删除，改用 DELETE。.
+	// Reversible: the monitored host is retained, only collection stops, and history is unaffected. Enrolling again resumes collection. To remove the history as well, use DELETE.
 	//
 	// Returns a wrapper object for the known response body format(s).
 	//
 	// Corresponds with POST /api/v1/servers/{serverId}/disable (the `DisableServerMonitoring` operationId).
 	DisableServerMonitoringWithResponse(ctx context.Context, serverId openapi_types.UUID, reqEditors ...RequestEditorFn) (*DisableServerMonitoringResponse, error)
 
-	// ListServerItemsWithResponse 列出一台机器的监控项
+	// ListServerItemsWithResponse List the monitoring items of a machine
 	//
-	// 原样返回采集到的监控项，不做筛选或重命名。哪些属于重要指标，由调用方依据监控项自带的标签自行判断。.
+	// Items are returned exactly as collected, without filtering or renaming. Which of them count as important is for the caller to decide from the tags carried by each item.
 	//
 	// Returns a wrapper object for the known response body format(s).
 	//
 	// Corresponds with GET /api/v1/servers/{serverId}/items (the `ListServerItems` operationId).
 	ListServerItemsWithResponse(ctx context.Context, serverId openapi_types.UUID, params *ListServerItemsParams, reqEditors ...RequestEditorFn) (*ListServerItemsResponse, error)
 
-	// GetServerMetricWithResponse 取一个监控项的时间序列
+	// GetServerMetricWithResponse Get the time series of a monitoring item
 	//
-	// `item_key` 是**前缀匹配**：按分区、按网卡发现出来的监控项 key 带参数（`vfs.fs.size[/var,pused]`），所以 `vfs.fs.size` 这一个请求就能画出每个挂载点一条线。
+	// `item_key` is matched **by prefix**. Keys discovered per partition or per interface carry parameters (`vfs.fs.size[/var,pused]`), so a single request for `vfs.fs.size` returns one series per mount point.
 	//
 	// Returns a wrapper object for the known response body format(s).
 	//
 	// Corresponds with GET /api/v1/servers/{serverId}/metrics (the `GetServerMetric` operationId).
 	GetServerMetricWithResponse(ctx context.Context, serverId openapi_types.UUID, params *GetServerMetricParams, reqEditors ...RequestEditorFn) (*GetServerMetricResponse, error)
 
-	// RotateAgentPskWithResponse 换一把 agent 的 PSK
+	// RotateAgentPskWithResponse Rotate the agent PSK
 	//
-	// 换完要同步改 agent 侧的配置，否则那台机器立刻失联。新密钥同样**只在这个响应里明文出现一次**。.
+	// The agent configuration must be updated to match, otherwise the machine loses contact immediately. The new key is likewise **returned in clear text only in this response**.
 	//
 	// Returns a wrapper object for the known response body format(s).
 	//
 	// Corresponds with POST /api/v1/servers/{serverId}/psk (the `RotateAgentPsk` operationId).
 	RotateAgentPskWithResponse(ctx context.Context, serverId openapi_types.UUID, reqEditors ...RequestEditorFn) (*RotateAgentPskResponse, error)
 
-	// GetServerResourcesWithResponse 一台机器的硬件与接口
+	// GetServerResourcesWithResponse Hardware and interfaces of a machine
 	//
 	// Returns a wrapper object for the known response body format(s).
 	//
 	// Corresponds with GET /api/v1/servers/{serverId}/resources (the `GetServerResources` operationId).
 	GetServerResourcesWithResponse(ctx context.Context, serverId openapi_types.UUID, reqEditors ...RequestEditorFn) (*GetServerResourcesResponse, error)
 
-	// GetServerSnapshotWithResponse 一台机器此刻的状态
+	// GetServerSnapshotWithResponse Current state of a machine
 	//
 	// Returns a wrapper object for the known response body format(s).
 	//
 	// Corresponds with GET /api/v1/servers/{serverId}/snapshot (the `GetServerSnapshot` operationId).
 	GetServerSnapshotWithResponse(ctx context.Context, serverId openapi_types.UUID, reqEditors ...RequestEditorFn) (*GetServerSnapshotResponse, error)
 
-	// DeleteWebCheckWithResponse 删掉一个网页检查
+	// DeleteWebCheckWithResponse Delete a web check
 	//
-	// 同时删除监控系统中对应的检查任务和触发器，不会遗留永远无法恢复的告警。.
+	// The corresponding check task and trigger are removed from the monitoring system as well, so no permanently unrecoverable alert is left behind.
 	//
 	// Returns a wrapper object for the known response body format(s).
 	//
 	// Corresponds with DELETE /api/v1/servers/{serverId}/web-checks/{checkId} (the `DeleteWebCheck` operationId).
 	DeleteWebCheckWithResponse(ctx context.Context, serverId openapi_types.UUID, checkId openapi_types.UUID, reqEditors ...RequestEditorFn) (*DeleteWebCheckResponse, error)
 
-	// GetWebCheckWithResponse 查一个网页检查
+	// GetWebCheckWithResponse Get a web check
 	//
 	// Returns a wrapper object for the known response body format(s).
 	//
 	// Corresponds with GET /api/v1/servers/{serverId}/web-checks/{checkId} (the `GetWebCheck` operationId).
 	GetWebCheckWithResponse(ctx context.Context, serverId openapi_types.UUID, checkId openapi_types.UUID, reqEditors ...RequestEditorFn) (*GetWebCheckResponse, error)
 
-	// PutWebCheckWithBodyWithResponse 建一个网页检查，或者按同一个 id 覆盖它
+	// PutWebCheckWithBodyWithResponse Create a web check, or replace it by the same id
 	//
-	// **创建即覆盖**：修改一个检查即用同一个 id 再次调用本接口，无需先判断它是否已存在。.
+	// **Create or replace**: to modify a check, call this endpoint again with the same id. There is no need to determine first whether it already exists.
 	//
 	// Takes any type of body and a specified content type, and returns a wrapper object for the known response body format(s).
 	//
 	// Corresponds with PUT /api/v1/servers/{serverId}/web-checks/{checkId} (the `PutWebCheck` operationId).
 	PutWebCheckWithBodyWithResponse(ctx context.Context, serverId openapi_types.UUID, checkId openapi_types.UUID, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*PutWebCheckResponse, error)
 
-	// PutWebCheckWithResponse 建一个网页检查，或者按同一个 id 覆盖它
+	// PutWebCheckWithResponse Create a web check, or replace it by the same id
 	//
-	// **创建即覆盖**：修改一个检查即用同一个 id 再次调用本接口，无需先判断它是否已存在。.
+	// **Create or replace**: to modify a check, call this endpoint again with the same id. There is no need to determine first whether it already exists.
 	//
 	// Takes a body of the `application/json` content type, and returns a wrapper object for the known response body format(s).
 	//
 	// Corresponds with PUT /api/v1/servers/{serverId}/web-checks/{checkId} (the `PutWebCheck` operationId).
 	PutWebCheckWithResponse(ctx context.Context, serverId openapi_types.UUID, checkId openapi_types.UUID, body PutWebCheckJSONRequestBody, reqEditors ...RequestEditorFn) (*PutWebCheckResponse, error)
 
-	// GetSliReportWithResponse 查实测的达成情况
+	// GetSliReportWithResponse Get measured availability
 	//
-	// SLI 是测出来的数，SLO 是定下来的目标——这里返回的是前者。
+	// SLI is what was measured; SLO is what was promised — this endpoint returns the former.
 	//
-	// `server_id` 为空的那一行是项目整体。
+	// The row with an empty `server_id` covers the project as a whole.
 	//
 	// Returns a wrapper object for the known response body format(s).
 	//
 	// Corresponds with GET /api/v1/sli-report (the `GetSliReport` operationId).
 	GetSliReportWithResponse(ctx context.Context, params *GetSliReportParams, reqEditors ...RequestEditorFn) (*GetSliReportResponse, error)
 
-	// DeleteSloWithResponse 撤掉这个项目的可用率目标
+	// DeleteSloWithResponse Remove the availability target of this project
 	//
-	// 同时移除监控系统中对应的服务树，此后不再统计可用率。.
+	// Availability is no longer tracked from this point on.
 	//
 	// Returns a wrapper object for the known response body format(s).
 	//
 	// Corresponds with DELETE /api/v1/slo (the `DeleteSlo` operationId).
 	DeleteSloWithResponse(ctx context.Context, reqEditors ...RequestEditorFn) (*DeleteSloResponse, error)
 
-	// GetSloWithResponse 查这个项目的可用率目标
+	// GetSloWithResponse Get the availability target of this project
 	//
-	// 没定过就是 404，而不是一份默认目标：没承诺过和承诺了 99.9% 是两回事。
+	// A project that has never set one returns 404 rather than a default target: making no promise and promising 99.9% are different things.
 	//
 	// Returns a wrapper object for the known response body format(s).
 	//
 	// Corresponds with GET /api/v1/slo (the `GetSlo` operationId).
 	GetSloWithResponse(ctx context.Context, reqEditors ...RequestEditorFn) (*GetSloResponse, error)
 
-	// PutSloWithBodyWithResponse 定下这个项目的可用率目标，或者改它
+	// PutSloWithBodyWithResponse Set the availability target of this project, or change it
 	//
-	// 一个项目一条 SLO，**创建即覆盖**。
+	// One SLO per project, **create or replace**.
 	//
-	// `min_severity` 必须显式选：它决定什么算「不可用」，是这条承诺的一半内容。
+	// `min_severity` must be chosen explicitly: it defines what counts as unavailable, which is half of what the target means.
 	//
 	// Takes any type of body and a specified content type, and returns a wrapper object for the known response body format(s).
 	//
 	// Corresponds with PUT /api/v1/slo (the `PutSlo` operationId).
 	PutSloWithBodyWithResponse(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*PutSloResponse, error)
 
-	// PutSloWithResponse 定下这个项目的可用率目标，或者改它
+	// PutSloWithResponse Set the availability target of this project, or change it
 	//
-	// 一个项目一条 SLO，**创建即覆盖**。
+	// One SLO per project, **create or replace**.
 	//
-	// `min_severity` 必须显式选：它决定什么算「不可用」，是这条承诺的一半内容。
+	// `min_severity` must be chosen explicitly: it defines what counts as unavailable, which is half of what the target means.
 	//
 	// Takes a body of the `application/json` content type, and returns a wrapper object for the known response body format(s).
 	//
 	// Corresponds with PUT /api/v1/slo (the `PutSlo` operationId).
 	PutSloWithResponse(ctx context.Context, body PutSloJSONRequestBody, reqEditors ...RequestEditorFn) (*PutSloResponse, error)
 
-	// ListProjectTopItemsWithResponse 某个指标最高的前几台
+	// DeleteStatusPageWithResponse Delete the status page
+	//
+	// Its groups, components, availability history, incident notices and scheduled maintenance are removed together, and cannot be recovered. The slug and custom domain are released.
+	//
+	// Returns a wrapper object for the known response body format(s).
+	//
+	// Corresponds with DELETE /api/v1/status-page (the `DeleteStatusPage` operationId).
+	DeleteStatusPageWithResponse(ctx context.Context, reqEditors ...RequestEditorFn) (*DeleteStatusPageResponse, error)
+
+	// GetStatusPageWithResponse Get the status page of this project
+	//
+	// A project has at most one status page. A project that has never created one returns 404.
+	//
+	// Returns a wrapper object for the known response body format(s).
+	//
+	// Corresponds with GET /api/v1/status-page (the `GetStatusPage` operationId).
+	GetStatusPageWithResponse(ctx context.Context, reqEditors ...RequestEditorFn) (*GetStatusPageResponse, error)
+
+	// PutStatusPageWithBodyWithResponse Create the status page, or replace its configuration
+	//
+	// **Create or replace**: changing the title, switching the domain, publishing and unpublishing are all done by sending the complete configuration again.
+	//
+	// While `published` is false the public address returns 404, including any custom domain already bound. A newly created page is unpublished by default, so that a page still being configured has no address that opens.
+	//
+	// `slug` and `custom_domain` are **globally unique**; a value already taken returns 409.
+	//
+	// Takes any type of body and a specified content type, and returns a wrapper object for the known response body format(s).
+	//
+	// Corresponds with PUT /api/v1/status-page (the `PutStatusPage` operationId).
+	PutStatusPageWithBodyWithResponse(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*PutStatusPageResponse, error)
+
+	// PutStatusPageWithResponse Create the status page, or replace its configuration
+	//
+	// **Create or replace**: changing the title, switching the domain, publishing and unpublishing are all done by sending the complete configuration again.
+	//
+	// While `published` is false the public address returns 404, including any custom domain already bound. A newly created page is unpublished by default, so that a page still being configured has no address that opens.
+	//
+	// `slug` and `custom_domain` are **globally unique**; a value already taken returns 409.
+	//
+	// Takes a body of the `application/json` content type, and returns a wrapper object for the known response body format(s).
+	//
+	// Corresponds with PUT /api/v1/status-page (the `PutStatusPage` operationId).
+	PutStatusPageWithResponse(ctx context.Context, body PutStatusPageJSONRequestBody, reqEditors ...RequestEditorFn) (*PutStatusPageResponse, error)
+
+	// ListStatusPageComponentsWithResponse List components
+	//
+	// A component is one row on the status page: an externally promised capability. It is not a machine — a single component may be backed by several machines and several web checks.
+	//
+	// Returns a wrapper object for the known response body format(s).
+	//
+	// Corresponds with GET /api/v1/status-page/components (the `ListStatusPageComponents` operationId).
+	ListStatusPageComponentsWithResponse(ctx context.Context, reqEditors ...RequestEditorFn) (*ListStatusPageComponentsResponse, error)
+
+	// CreateStatusPageComponentWithBodyWithResponse Create a component
+	//
+	// `name` is **customer-facing copy** and appears verbatim on the public page; do not use machine names.
+	//
+	// `auto_status_min_severity` sets how severe an alert must be before it changes the status of this row; anything below it has no effect. The default is AVERAGE. Lower settings tend to keep the page permanently off-green, at which point people stop reading it.
+	//
+	// Takes any type of body and a specified content type, and returns a wrapper object for the known response body format(s).
+	//
+	// Corresponds with POST /api/v1/status-page/components (the `CreateStatusPageComponent` operationId).
+	CreateStatusPageComponentWithBodyWithResponse(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*CreateStatusPageComponentResponse, error)
+
+	// CreateStatusPageComponentWithResponse Create a component
+	//
+	// `name` is **customer-facing copy** and appears verbatim on the public page; do not use machine names.
+	//
+	// `auto_status_min_severity` sets how severe an alert must be before it changes the status of this row; anything below it has no effect. The default is AVERAGE. Lower settings tend to keep the page permanently off-green, at which point people stop reading it.
+	//
+	// Takes a body of the `application/json` content type, and returns a wrapper object for the known response body format(s).
+	//
+	// Corresponds with POST /api/v1/status-page/components (the `CreateStatusPageComponent` operationId).
+	CreateStatusPageComponentWithResponse(ctx context.Context, body CreateStatusPageComponentJSONRequestBody, reqEditors ...RequestEditorFn) (*CreateStatusPageComponentResponse, error)
+
+	// DeleteStatusPageComponentWithResponse Delete a component
+	//
+	// Its availability history is removed along with it. Passages in already-published notices that refer to it are retained, since customers may already have read them.
+	//
+	// Returns a wrapper object for the known response body format(s).
+	//
+	// Corresponds with DELETE /api/v1/status-page/components/{componentId} (the `DeleteStatusPageComponent` operationId).
+	DeleteStatusPageComponentWithResponse(ctx context.Context, componentId openapi_types.UUID, reqEditors ...RequestEditorFn) (*DeleteStatusPageComponentResponse, error)
+
+	// GetStatusPageComponentWithResponse Get a component
+	//
+	// Returns a wrapper object for the known response body format(s).
+	//
+	// Corresponds with GET /api/v1/status-page/components/{componentId} (the `GetStatusPageComponent` operationId).
+	GetStatusPageComponentWithResponse(ctx context.Context, componentId openapi_types.UUID, reqEditors ...RequestEditorFn) (*GetStatusPageComponentResponse, error)
+
+	// UpdateStatusPageComponentWithBodyWithResponse Update a component
+	//
+	// `started_on` cannot be changed: it determines where the availability bar stops showing as unmeasured, and changing it would rewrite history that has already been published.
+	//
+	// Takes any type of body and a specified content type, and returns a wrapper object for the known response body format(s).
+	//
+	// Corresponds with PUT /api/v1/status-page/components/{componentId} (the `UpdateStatusPageComponent` operationId).
+	UpdateStatusPageComponentWithBodyWithResponse(ctx context.Context, componentId openapi_types.UUID, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*UpdateStatusPageComponentResponse, error)
+
+	// UpdateStatusPageComponentWithResponse Update a component
+	//
+	// `started_on` cannot be changed: it determines where the availability bar stops showing as unmeasured, and changing it would rewrite history that has already been published.
+	//
+	// Takes a body of the `application/json` content type, and returns a wrapper object for the known response body format(s).
+	//
+	// Corresponds with PUT /api/v1/status-page/components/{componentId} (the `UpdateStatusPageComponent` operationId).
+	UpdateStatusPageComponentWithResponse(ctx context.Context, componentId openapi_types.UUID, body UpdateStatusPageComponentJSONRequestBody, reqEditors ...RequestEditorFn) (*UpdateStatusPageComponentResponse, error)
+
+	// ListStatusPageComponentSourcesWithResponse List the monitored sources bound to a component
+	//
+	// Monitored sources are internal information and **never appear on the public page**.
+	//
+	// Returns a wrapper object for the known response body format(s).
+	//
+	// Corresponds with GET /api/v1/status-page/components/{componentId}/sources (the `ListStatusPageComponentSources` operationId).
+	ListStatusPageComponentSourcesWithResponse(ctx context.Context, componentId openapi_types.UUID, reqEditors ...RequestEditorFn) (*ListStatusPageComponentSourcesResponse, error)
+
+	// PutStatusPageComponentSourcesWithBodyWithResponse Set the complete list of monitored sources for a component
+	//
+	// Submits the **complete** set of sources; anything not listed is unbound.
+	//
+	// Once bound, alerts on these machines and web checks drive the status of the component automatically: DISASTER and HIGH are reported as a major outage, AVERAGE as a partial outage, and WARNING as degraded performance. Alerts below `auto_status_min_severity` have no effect.
+	//
+	// `show_url` controls whether the checked address is shown on the public page. It is off by default.
+	//
+	// Takes any type of body and a specified content type, and returns a wrapper object for the known response body format(s).
+	//
+	// Corresponds with PUT /api/v1/status-page/components/{componentId}/sources (the `PutStatusPageComponentSources` operationId).
+	PutStatusPageComponentSourcesWithBodyWithResponse(ctx context.Context, componentId openapi_types.UUID, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*PutStatusPageComponentSourcesResponse, error)
+
+	// PutStatusPageComponentSourcesWithResponse Set the complete list of monitored sources for a component
+	//
+	// Submits the **complete** set of sources; anything not listed is unbound.
+	//
+	// Once bound, alerts on these machines and web checks drive the status of the component automatically: DISASTER and HIGH are reported as a major outage, AVERAGE as a partial outage, and WARNING as degraded performance. Alerts below `auto_status_min_severity` have no effect.
+	//
+	// `show_url` controls whether the checked address is shown on the public page. It is off by default.
+	//
+	// Takes a body of the `application/json` content type, and returns a wrapper object for the known response body format(s).
+	//
+	// Corresponds with PUT /api/v1/status-page/components/{componentId}/sources (the `PutStatusPageComponentSources` operationId).
+	PutStatusPageComponentSourcesWithResponse(ctx context.Context, componentId openapi_types.UUID, body PutStatusPageComponentSourcesJSONRequestBody, reqEditors ...RequestEditorFn) (*PutStatusPageComponentSourcesResponse, error)
+
+	// ListStatusPageGroupsWithResponse List groups
+	//
+	// Returns a wrapper object for the known response body format(s).
+	//
+	// Corresponds with GET /api/v1/status-page/groups (the `ListStatusPageGroups` operationId).
+	ListStatusPageGroupsWithResponse(ctx context.Context, reqEditors ...RequestEditorFn) (*ListStatusPageGroupsResponse, error)
+
+	// CreateStatusPageGroupWithBodyWithResponse Create a group
+	//
+	// A group is one level of collapsing applied to components on the page. There is exactly one level; groups cannot be nested.
+	//
+	// Takes any type of body and a specified content type, and returns a wrapper object for the known response body format(s).
+	//
+	// Corresponds with POST /api/v1/status-page/groups (the `CreateStatusPageGroup` operationId).
+	CreateStatusPageGroupWithBodyWithResponse(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*CreateStatusPageGroupResponse, error)
+
+	// CreateStatusPageGroupWithResponse Create a group
+	//
+	// A group is one level of collapsing applied to components on the page. There is exactly one level; groups cannot be nested.
+	//
+	// Takes a body of the `application/json` content type, and returns a wrapper object for the known response body format(s).
+	//
+	// Corresponds with POST /api/v1/status-page/groups (the `CreateStatusPageGroup` operationId).
+	CreateStatusPageGroupWithResponse(ctx context.Context, body CreateStatusPageGroupJSONRequestBody, reqEditors ...RequestEditorFn) (*CreateStatusPageGroupResponse, error)
+
+	// DeleteStatusPageGroupWithResponse Delete a group
+	//
+	// The components in it are **not deleted**. They return to the top level as ungrouped components, keeping their availability history and the incident notices that reference them.
+	//
+	// Returns a wrapper object for the known response body format(s).
+	//
+	// Corresponds with DELETE /api/v1/status-page/groups/{groupId} (the `DeleteStatusPageGroup` operationId).
+	DeleteStatusPageGroupWithResponse(ctx context.Context, groupId openapi_types.UUID, reqEditors ...RequestEditorFn) (*DeleteStatusPageGroupResponse, error)
+
+	// UpdateStatusPageGroupWithBodyWithResponse Update a group
+	//
+	// Takes any type of body and a specified content type, and returns a wrapper object for the known response body format(s).
+	//
+	// Corresponds with PUT /api/v1/status-page/groups/{groupId} (the `UpdateStatusPageGroup` operationId).
+	UpdateStatusPageGroupWithBodyWithResponse(ctx context.Context, groupId openapi_types.UUID, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*UpdateStatusPageGroupResponse, error)
+
+	// UpdateStatusPageGroupWithResponse Update a group
+	//
+	// Takes a body of the `application/json` content type, and returns a wrapper object for the known response body format(s).
+	//
+	// Corresponds with PUT /api/v1/status-page/groups/{groupId} (the `UpdateStatusPageGroup` operationId).
+	UpdateStatusPageGroupWithResponse(ctx context.Context, groupId openapi_types.UUID, body UpdateStatusPageGroupJSONRequestBody, reqEditors ...RequestEditorFn) (*UpdateStatusPageGroupResponse, error)
+
+	// PutStatusPageGroupOrderWithBodyWithResponse Set the order of components within a group
+	//
+	// Takes any type of body and a specified content type, and returns a wrapper object for the known response body format(s).
+	//
+	// Corresponds with PUT /api/v1/status-page/groups/{groupId}/order (the `PutStatusPageGroupOrder` operationId).
+	PutStatusPageGroupOrderWithBodyWithResponse(ctx context.Context, groupId openapi_types.UUID, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*PutStatusPageGroupOrderResponse, error)
+
+	// PutStatusPageGroupOrderWithResponse Set the order of components within a group
+	//
+	// Takes a body of the `application/json` content type, and returns a wrapper object for the known response body format(s).
+	//
+	// Corresponds with PUT /api/v1/status-page/groups/{groupId}/order (the `PutStatusPageGroupOrder` operationId).
+	PutStatusPageGroupOrderWithResponse(ctx context.Context, groupId openapi_types.UUID, body PutStatusPageGroupOrderJSONRequestBody, reqEditors ...RequestEditorFn) (*PutStatusPageGroupOrderResponse, error)
+
+	// ListStatusPageIncidentsWithResponse List the incident notices on the status page
+	//
+	// These are **customer-facing notices**, distinct from the monitoring incidents under `/incidents`. Nothing from the latter is carried over; the text here is written by your team.
+	//
+	// Returns a wrapper object for the known response body format(s).
+	//
+	// Corresponds with GET /api/v1/status-page/incidents (the `ListStatusPageIncidents` operationId).
+	ListStatusPageIncidentsWithResponse(ctx context.Context, params *ListStatusPageIncidentsParams, reqEditors ...RequestEditorFn) (*ListStatusPageIncidentsResponse, error)
+
+	// PublishStatusPageIncidentWithBodyWithResponse Publish an incident notice
+	//
+	// Publishing a notice and writing its first update are a single operation: a notice with no updates would appear as a bare title on a page that has already been delivered to readers.
+	//
+	// `started_at` is when the **incident began**, not when the notice was published. The two are usually minutes to hours apart, and using the publication time would understate the impact window that customers can compare against their own logs. Backfilling a past incident relies on the same field.
+	//
+	// The statuses given in `components` take effect on the public page immediately and count towards availability.
+	//
+	// Takes any type of body and a specified content type, and returns a wrapper object for the known response body format(s).
+	//
+	// Corresponds with POST /api/v1/status-page/incidents (the `PublishStatusPageIncident` operationId).
+	PublishStatusPageIncidentWithBodyWithResponse(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*PublishStatusPageIncidentResponse, error)
+
+	// PublishStatusPageIncidentWithResponse Publish an incident notice
+	//
+	// Publishing a notice and writing its first update are a single operation: a notice with no updates would appear as a bare title on a page that has already been delivered to readers.
+	//
+	// `started_at` is when the **incident began**, not when the notice was published. The two are usually minutes to hours apart, and using the publication time would understate the impact window that customers can compare against their own logs. Backfilling a past incident relies on the same field.
+	//
+	// The statuses given in `components` take effect on the public page immediately and count towards availability.
+	//
+	// Takes a body of the `application/json` content type, and returns a wrapper object for the known response body format(s).
+	//
+	// Corresponds with POST /api/v1/status-page/incidents (the `PublishStatusPageIncident` operationId).
+	PublishStatusPageIncidentWithResponse(ctx context.Context, body PublishStatusPageIncidentJSONRequestBody, reqEditors ...RequestEditorFn) (*PublishStatusPageIncidentResponse, error)
+
+	// GetStatusPageIncidentWithResponse Get an incident notice
+	//
+	// Returns a wrapper object for the known response body format(s).
+	//
+	// Corresponds with GET /api/v1/status-page/incidents/{incidentId} (the `GetStatusPageIncident` operationId).
+	GetStatusPageIncidentWithResponse(ctx context.Context, incidentId openapi_types.UUID, reqEditors ...RequestEditorFn) (*GetStatusPageIncidentResponse, error)
+
+	// PostStatusPageIncidentUpdateWithBodyWithResponse Append an update to an incident notice
+	//
+	// Published updates are never modified; a correction is issued as a new update. Customers may already have forwarded the original, and a silent rewrite would leave the two sides with different histories.
+	//
+	// `components` lists only the components **being changed** by this update; those not listed keep their current status. Setting `status` to `RESOLVED` returns every component this notice has affected to operational and closes the notice. A closed notice accepts no further updates.
+	//
+	// Takes any type of body and a specified content type, and returns a wrapper object for the known response body format(s).
+	//
+	// Corresponds with POST /api/v1/status-page/incidents/{incidentId}/updates (the `PostStatusPageIncidentUpdate` operationId).
+	PostStatusPageIncidentUpdateWithBodyWithResponse(ctx context.Context, incidentId openapi_types.UUID, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*PostStatusPageIncidentUpdateResponse, error)
+
+	// PostStatusPageIncidentUpdateWithResponse Append an update to an incident notice
+	//
+	// Published updates are never modified; a correction is issued as a new update. Customers may already have forwarded the original, and a silent rewrite would leave the two sides with different histories.
+	//
+	// `components` lists only the components **being changed** by this update; those not listed keep their current status. Setting `status` to `RESOLVED` returns every component this notice has affected to operational and closes the notice. A closed notice accepts no further updates.
+	//
+	// Takes a body of the `application/json` content type, and returns a wrapper object for the known response body format(s).
+	//
+	// Corresponds with POST /api/v1/status-page/incidents/{incidentId}/updates (the `PostStatusPageIncidentUpdate` operationId).
+	PostStatusPageIncidentUpdateWithResponse(ctx context.Context, incidentId openapi_types.UUID, body PostStatusPageIncidentUpdateJSONRequestBody, reqEditors ...RequestEditorFn) (*PostStatusPageIncidentUpdateResponse, error)
+
+	// ListStatusPageMaintenancesWithResponse List scheduled maintenance
+	//
+	// Returns a wrapper object for the known response body format(s).
+	//
+	// Corresponds with GET /api/v1/status-page/maintenances (the `ListStatusPageMaintenances` operationId).
+	ListStatusPageMaintenancesWithResponse(ctx context.Context, params *ListStatusPageMaintenancesParams, reqEditors ...RequestEditorFn) (*ListStatusPageMaintenancesResponse, error)
+
+	// ScheduleStatusPageMaintenanceWithBodyWithResponse Schedule maintenance
+	//
+	// Maintenance starts and finishes automatically at the scheduled times; nobody needs to be present. While it runs, the affected components are shown as under maintenance and **availability is not reduced** — planned work should not consume the availability you promise to customers, which is the point of announcing it in advance.
+	//
+	// This is separate from `/maintenance-windows`, which suppresses alerting for a period. This endpoint announces the work to your customers. The two are usually created together: without suppression, restarts during the maintenance raise alerts and mark the components unavailable.
+	//
+	// Takes any type of body and a specified content type, and returns a wrapper object for the known response body format(s).
+	//
+	// Corresponds with POST /api/v1/status-page/maintenances (the `ScheduleStatusPageMaintenance` operationId).
+	ScheduleStatusPageMaintenanceWithBodyWithResponse(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*ScheduleStatusPageMaintenanceResponse, error)
+
+	// ScheduleStatusPageMaintenanceWithResponse Schedule maintenance
+	//
+	// Maintenance starts and finishes automatically at the scheduled times; nobody needs to be present. While it runs, the affected components are shown as under maintenance and **availability is not reduced** — planned work should not consume the availability you promise to customers, which is the point of announcing it in advance.
+	//
+	// This is separate from `/maintenance-windows`, which suppresses alerting for a period. This endpoint announces the work to your customers. The two are usually created together: without suppression, restarts during the maintenance raise alerts and mark the components unavailable.
+	//
+	// Takes a body of the `application/json` content type, and returns a wrapper object for the known response body format(s).
+	//
+	// Corresponds with POST /api/v1/status-page/maintenances (the `ScheduleStatusPageMaintenance` operationId).
+	ScheduleStatusPageMaintenanceWithResponse(ctx context.Context, body ScheduleStatusPageMaintenanceJSONRequestBody, reqEditors ...RequestEditorFn) (*ScheduleStatusPageMaintenanceResponse, error)
+
+	// GetStatusPageMaintenanceWithResponse Get a scheduled maintenance
+	//
+	// Returns a wrapper object for the known response body format(s).
+	//
+	// Corresponds with GET /api/v1/status-page/maintenances/{maintenanceId} (the `GetStatusPageMaintenance` operationId).
+	GetStatusPageMaintenanceWithResponse(ctx context.Context, maintenanceId openapi_types.UUID, reqEditors ...RequestEditorFn) (*GetStatusPageMaintenanceResponse, error)
+
+	// CancelStatusPageMaintenanceWithResponse Cancel a maintenance that has not started
+	//
+	// Cancelled rather than deleted, so that readers who saw the announcement have an explanation. Maintenance that has already started cannot be cancelled; finish it early instead.
+	//
+	// Returns a wrapper object for the known response body format(s).
+	//
+	// Corresponds with POST /api/v1/status-page/maintenances/{maintenanceId}/cancel (the `CancelStatusPageMaintenance` operationId).
+	CancelStatusPageMaintenanceWithResponse(ctx context.Context, maintenanceId openapi_types.UUID, reqEditors ...RequestEditorFn) (*CancelStatusPageMaintenanceResponse, error)
+
+	// CompleteStatusPageMaintenanceWithResponse Finish a running maintenance early
+	//
+	// Optional: maintenance finishes on its own at the scheduled end time. Use this endpoint when the work is done ahead of schedule; the affected components return to operational immediately.
+	//
+	// Returns a wrapper object for the known response body format(s).
+	//
+	// Corresponds with POST /api/v1/status-page/maintenances/{maintenanceId}/complete (the `CompleteStatusPageMaintenance` operationId).
+	CompleteStatusPageMaintenanceWithResponse(ctx context.Context, maintenanceId openapi_types.UUID, reqEditors ...RequestEditorFn) (*CompleteStatusPageMaintenanceResponse, error)
+
+	// PutStatusPageOrderWithBodyWithResponse Set the order of the top level of the page
+	//
+	// Submits the **entire** top-level order in one call rather than moving a single entry to a given position.
+	//
+	// The top level interleaves groups and ungrouped components, so the order is expressed as one list covering both.
+	//
+	// Each entry carries either `group_id` or `component_id`. Entries not listed are placed after those that are.
+	//
+	// Takes any type of body and a specified content type, and returns a wrapper object for the known response body format(s).
+	//
+	// Corresponds with PUT /api/v1/status-page/order (the `PutStatusPageOrder` operationId).
+	PutStatusPageOrderWithBodyWithResponse(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*PutStatusPageOrderResponse, error)
+
+	// PutStatusPageOrderWithResponse Set the order of the top level of the page
+	//
+	// Submits the **entire** top-level order in one call rather than moving a single entry to a given position.
+	//
+	// The top level interleaves groups and ungrouped components, so the order is expressed as one list covering both.
+	//
+	// Each entry carries either `group_id` or `component_id`. Entries not listed are placed after those that are.
+	//
+	// Takes a body of the `application/json` content type, and returns a wrapper object for the known response body format(s).
+	//
+	// Corresponds with PUT /api/v1/status-page/order (the `PutStatusPageOrder` operationId).
+	PutStatusPageOrderWithResponse(ctx context.Context, body PutStatusPageOrderJSONRequestBody, reqEditors ...RequestEditorFn) (*PutStatusPageOrderResponse, error)
+
+	// ListProjectTopItemsWithResponse Machines ranked highest by a given metric
 	//
 	// Returns a wrapper object for the known response body format(s).
 	//
 	// Corresponds with GET /api/v1/top-items (the `ListProjectTopItems` operationId).
 	ListProjectTopItemsWithResponse(ctx context.Context, params *ListProjectTopItemsParams, reqEditors ...RequestEditorFn) (*ListProjectTopItemsResponse, error)
 
-	// ListWebChecksWithResponse 列出网页检查
+	// ListWebChecksWithResponse List web checks
 	//
 	// Returns a wrapper object for the known response body format(s).
 	//
@@ -6483,6 +9656,1171 @@ func (r PutSloResponse) ContentType() string {
 	return ""
 }
 
+type DeleteStatusPageResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	// JSONDefault the response for an HTTP default `application/json` response
+	JSONDefault *Error
+}
+
+// GetJSONDefault returns the response for an HTTP default `application/json` response
+func (r DeleteStatusPageResponse) GetJSONDefault() *Error {
+	return r.JSONDefault
+}
+
+// GetBody returns the raw response body bytes
+func (r DeleteStatusPageResponse) GetBody() []byte {
+	return r.Body
+}
+
+// Status returns HTTPResponse.Status
+func (r DeleteStatusPageResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r DeleteStatusPageResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+// ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
+func (r DeleteStatusPageResponse) ContentType() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Header.Get("Content-Type")
+	}
+	return ""
+}
+
+type GetStatusPageResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	// JSON200 the response for an HTTP 200 `application/json` response
+	JSON200 *StatusPageResource
+	// JSONDefault the response for an HTTP default `application/json` response
+	JSONDefault *Error
+}
+
+// GetJSON200 returns the response for an HTTP 200 `application/json` response
+func (r GetStatusPageResponse) GetJSON200() *StatusPageResource {
+	return r.JSON200
+}
+
+// GetJSONDefault returns the response for an HTTP default `application/json` response
+func (r GetStatusPageResponse) GetJSONDefault() *Error {
+	return r.JSONDefault
+}
+
+// GetBody returns the raw response body bytes
+func (r GetStatusPageResponse) GetBody() []byte {
+	return r.Body
+}
+
+// Status returns HTTPResponse.Status
+func (r GetStatusPageResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r GetStatusPageResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+// ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
+func (r GetStatusPageResponse) ContentType() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Header.Get("Content-Type")
+	}
+	return ""
+}
+
+type PutStatusPageResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	// JSON200 the response for an HTTP 200 `application/json` response
+	JSON200 *StatusPageResource
+	// JSONDefault the response for an HTTP default `application/json` response
+	JSONDefault *Error
+}
+
+// GetJSON200 returns the response for an HTTP 200 `application/json` response
+func (r PutStatusPageResponse) GetJSON200() *StatusPageResource {
+	return r.JSON200
+}
+
+// GetJSONDefault returns the response for an HTTP default `application/json` response
+func (r PutStatusPageResponse) GetJSONDefault() *Error {
+	return r.JSONDefault
+}
+
+// GetBody returns the raw response body bytes
+func (r PutStatusPageResponse) GetBody() []byte {
+	return r.Body
+}
+
+// Status returns HTTPResponse.Status
+func (r PutStatusPageResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r PutStatusPageResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+// ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
+func (r PutStatusPageResponse) ContentType() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Header.Get("Content-Type")
+	}
+	return ""
+}
+
+type ListStatusPageComponentsResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	// JSON200 the response for an HTTP 200 `application/json` response
+	JSON200 *StatusPageComponentListResponseBody
+	// JSONDefault the response for an HTTP default `application/json` response
+	JSONDefault *Error
+}
+
+// GetJSON200 returns the response for an HTTP 200 `application/json` response
+func (r ListStatusPageComponentsResponse) GetJSON200() *StatusPageComponentListResponseBody {
+	return r.JSON200
+}
+
+// GetJSONDefault returns the response for an HTTP default `application/json` response
+func (r ListStatusPageComponentsResponse) GetJSONDefault() *Error {
+	return r.JSONDefault
+}
+
+// GetBody returns the raw response body bytes
+func (r ListStatusPageComponentsResponse) GetBody() []byte {
+	return r.Body
+}
+
+// Status returns HTTPResponse.Status
+func (r ListStatusPageComponentsResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r ListStatusPageComponentsResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+// ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
+func (r ListStatusPageComponentsResponse) ContentType() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Header.Get("Content-Type")
+	}
+	return ""
+}
+
+type CreateStatusPageComponentResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	// JSON201 the response for an HTTP 201 `application/json` response
+	JSON201 *StatusPageComponentResource
+	// JSONDefault the response for an HTTP default `application/json` response
+	JSONDefault *Error
+}
+
+// GetJSON201 returns the response for an HTTP 201 `application/json` response
+func (r CreateStatusPageComponentResponse) GetJSON201() *StatusPageComponentResource {
+	return r.JSON201
+}
+
+// GetJSONDefault returns the response for an HTTP default `application/json` response
+func (r CreateStatusPageComponentResponse) GetJSONDefault() *Error {
+	return r.JSONDefault
+}
+
+// GetBody returns the raw response body bytes
+func (r CreateStatusPageComponentResponse) GetBody() []byte {
+	return r.Body
+}
+
+// Status returns HTTPResponse.Status
+func (r CreateStatusPageComponentResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r CreateStatusPageComponentResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+// ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
+func (r CreateStatusPageComponentResponse) ContentType() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Header.Get("Content-Type")
+	}
+	return ""
+}
+
+type DeleteStatusPageComponentResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	// JSONDefault the response for an HTTP default `application/json` response
+	JSONDefault *Error
+}
+
+// GetJSONDefault returns the response for an HTTP default `application/json` response
+func (r DeleteStatusPageComponentResponse) GetJSONDefault() *Error {
+	return r.JSONDefault
+}
+
+// GetBody returns the raw response body bytes
+func (r DeleteStatusPageComponentResponse) GetBody() []byte {
+	return r.Body
+}
+
+// Status returns HTTPResponse.Status
+func (r DeleteStatusPageComponentResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r DeleteStatusPageComponentResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+// ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
+func (r DeleteStatusPageComponentResponse) ContentType() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Header.Get("Content-Type")
+	}
+	return ""
+}
+
+type GetStatusPageComponentResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	// JSON200 the response for an HTTP 200 `application/json` response
+	JSON200 *StatusPageComponentResource
+	// JSONDefault the response for an HTTP default `application/json` response
+	JSONDefault *Error
+}
+
+// GetJSON200 returns the response for an HTTP 200 `application/json` response
+func (r GetStatusPageComponentResponse) GetJSON200() *StatusPageComponentResource {
+	return r.JSON200
+}
+
+// GetJSONDefault returns the response for an HTTP default `application/json` response
+func (r GetStatusPageComponentResponse) GetJSONDefault() *Error {
+	return r.JSONDefault
+}
+
+// GetBody returns the raw response body bytes
+func (r GetStatusPageComponentResponse) GetBody() []byte {
+	return r.Body
+}
+
+// Status returns HTTPResponse.Status
+func (r GetStatusPageComponentResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r GetStatusPageComponentResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+// ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
+func (r GetStatusPageComponentResponse) ContentType() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Header.Get("Content-Type")
+	}
+	return ""
+}
+
+type UpdateStatusPageComponentResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	// JSON200 the response for an HTTP 200 `application/json` response
+	JSON200 *StatusPageComponentResource
+	// JSONDefault the response for an HTTP default `application/json` response
+	JSONDefault *Error
+}
+
+// GetJSON200 returns the response for an HTTP 200 `application/json` response
+func (r UpdateStatusPageComponentResponse) GetJSON200() *StatusPageComponentResource {
+	return r.JSON200
+}
+
+// GetJSONDefault returns the response for an HTTP default `application/json` response
+func (r UpdateStatusPageComponentResponse) GetJSONDefault() *Error {
+	return r.JSONDefault
+}
+
+// GetBody returns the raw response body bytes
+func (r UpdateStatusPageComponentResponse) GetBody() []byte {
+	return r.Body
+}
+
+// Status returns HTTPResponse.Status
+func (r UpdateStatusPageComponentResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r UpdateStatusPageComponentResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+// ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
+func (r UpdateStatusPageComponentResponse) ContentType() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Header.Get("Content-Type")
+	}
+	return ""
+}
+
+type ListStatusPageComponentSourcesResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	// JSON200 the response for an HTTP 200 `application/json` response
+	JSON200 *StatusPageComponentSourcesResource
+	// JSONDefault the response for an HTTP default `application/json` response
+	JSONDefault *Error
+}
+
+// GetJSON200 returns the response for an HTTP 200 `application/json` response
+func (r ListStatusPageComponentSourcesResponse) GetJSON200() *StatusPageComponentSourcesResource {
+	return r.JSON200
+}
+
+// GetJSONDefault returns the response for an HTTP default `application/json` response
+func (r ListStatusPageComponentSourcesResponse) GetJSONDefault() *Error {
+	return r.JSONDefault
+}
+
+// GetBody returns the raw response body bytes
+func (r ListStatusPageComponentSourcesResponse) GetBody() []byte {
+	return r.Body
+}
+
+// Status returns HTTPResponse.Status
+func (r ListStatusPageComponentSourcesResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r ListStatusPageComponentSourcesResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+// ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
+func (r ListStatusPageComponentSourcesResponse) ContentType() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Header.Get("Content-Type")
+	}
+	return ""
+}
+
+type PutStatusPageComponentSourcesResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	// JSON200 the response for an HTTP 200 `application/json` response
+	JSON200 *StatusPageComponentSourcesResource
+	// JSONDefault the response for an HTTP default `application/json` response
+	JSONDefault *Error
+}
+
+// GetJSON200 returns the response for an HTTP 200 `application/json` response
+func (r PutStatusPageComponentSourcesResponse) GetJSON200() *StatusPageComponentSourcesResource {
+	return r.JSON200
+}
+
+// GetJSONDefault returns the response for an HTTP default `application/json` response
+func (r PutStatusPageComponentSourcesResponse) GetJSONDefault() *Error {
+	return r.JSONDefault
+}
+
+// GetBody returns the raw response body bytes
+func (r PutStatusPageComponentSourcesResponse) GetBody() []byte {
+	return r.Body
+}
+
+// Status returns HTTPResponse.Status
+func (r PutStatusPageComponentSourcesResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r PutStatusPageComponentSourcesResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+// ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
+func (r PutStatusPageComponentSourcesResponse) ContentType() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Header.Get("Content-Type")
+	}
+	return ""
+}
+
+type ListStatusPageGroupsResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	// JSON200 the response for an HTTP 200 `application/json` response
+	JSON200 *StatusPageGroupListResponseBody
+	// JSONDefault the response for an HTTP default `application/json` response
+	JSONDefault *Error
+}
+
+// GetJSON200 returns the response for an HTTP 200 `application/json` response
+func (r ListStatusPageGroupsResponse) GetJSON200() *StatusPageGroupListResponseBody {
+	return r.JSON200
+}
+
+// GetJSONDefault returns the response for an HTTP default `application/json` response
+func (r ListStatusPageGroupsResponse) GetJSONDefault() *Error {
+	return r.JSONDefault
+}
+
+// GetBody returns the raw response body bytes
+func (r ListStatusPageGroupsResponse) GetBody() []byte {
+	return r.Body
+}
+
+// Status returns HTTPResponse.Status
+func (r ListStatusPageGroupsResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r ListStatusPageGroupsResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+// ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
+func (r ListStatusPageGroupsResponse) ContentType() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Header.Get("Content-Type")
+	}
+	return ""
+}
+
+type CreateStatusPageGroupResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	// JSON201 the response for an HTTP 201 `application/json` response
+	JSON201 *StatusPageGroupResource
+	// JSONDefault the response for an HTTP default `application/json` response
+	JSONDefault *Error
+}
+
+// GetJSON201 returns the response for an HTTP 201 `application/json` response
+func (r CreateStatusPageGroupResponse) GetJSON201() *StatusPageGroupResource {
+	return r.JSON201
+}
+
+// GetJSONDefault returns the response for an HTTP default `application/json` response
+func (r CreateStatusPageGroupResponse) GetJSONDefault() *Error {
+	return r.JSONDefault
+}
+
+// GetBody returns the raw response body bytes
+func (r CreateStatusPageGroupResponse) GetBody() []byte {
+	return r.Body
+}
+
+// Status returns HTTPResponse.Status
+func (r CreateStatusPageGroupResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r CreateStatusPageGroupResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+// ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
+func (r CreateStatusPageGroupResponse) ContentType() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Header.Get("Content-Type")
+	}
+	return ""
+}
+
+type DeleteStatusPageGroupResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	// JSONDefault the response for an HTTP default `application/json` response
+	JSONDefault *Error
+}
+
+// GetJSONDefault returns the response for an HTTP default `application/json` response
+func (r DeleteStatusPageGroupResponse) GetJSONDefault() *Error {
+	return r.JSONDefault
+}
+
+// GetBody returns the raw response body bytes
+func (r DeleteStatusPageGroupResponse) GetBody() []byte {
+	return r.Body
+}
+
+// Status returns HTTPResponse.Status
+func (r DeleteStatusPageGroupResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r DeleteStatusPageGroupResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+// ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
+func (r DeleteStatusPageGroupResponse) ContentType() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Header.Get("Content-Type")
+	}
+	return ""
+}
+
+type UpdateStatusPageGroupResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	// JSON200 the response for an HTTP 200 `application/json` response
+	JSON200 *StatusPageGroupResource
+	// JSONDefault the response for an HTTP default `application/json` response
+	JSONDefault *Error
+}
+
+// GetJSON200 returns the response for an HTTP 200 `application/json` response
+func (r UpdateStatusPageGroupResponse) GetJSON200() *StatusPageGroupResource {
+	return r.JSON200
+}
+
+// GetJSONDefault returns the response for an HTTP default `application/json` response
+func (r UpdateStatusPageGroupResponse) GetJSONDefault() *Error {
+	return r.JSONDefault
+}
+
+// GetBody returns the raw response body bytes
+func (r UpdateStatusPageGroupResponse) GetBody() []byte {
+	return r.Body
+}
+
+// Status returns HTTPResponse.Status
+func (r UpdateStatusPageGroupResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r UpdateStatusPageGroupResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+// ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
+func (r UpdateStatusPageGroupResponse) ContentType() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Header.Get("Content-Type")
+	}
+	return ""
+}
+
+type PutStatusPageGroupOrderResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	// JSONDefault the response for an HTTP default `application/json` response
+	JSONDefault *Error
+}
+
+// GetJSONDefault returns the response for an HTTP default `application/json` response
+func (r PutStatusPageGroupOrderResponse) GetJSONDefault() *Error {
+	return r.JSONDefault
+}
+
+// GetBody returns the raw response body bytes
+func (r PutStatusPageGroupOrderResponse) GetBody() []byte {
+	return r.Body
+}
+
+// Status returns HTTPResponse.Status
+func (r PutStatusPageGroupOrderResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r PutStatusPageGroupOrderResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+// ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
+func (r PutStatusPageGroupOrderResponse) ContentType() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Header.Get("Content-Type")
+	}
+	return ""
+}
+
+type ListStatusPageIncidentsResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	// JSON200 the response for an HTTP 200 `application/json` response
+	JSON200 *LengthAwarePageStatusPageIncidentResource
+	// JSONDefault the response for an HTTP default `application/json` response
+	JSONDefault *Error
+}
+
+// GetJSON200 returns the response for an HTTP 200 `application/json` response
+func (r ListStatusPageIncidentsResponse) GetJSON200() *LengthAwarePageStatusPageIncidentResource {
+	return r.JSON200
+}
+
+// GetJSONDefault returns the response for an HTTP default `application/json` response
+func (r ListStatusPageIncidentsResponse) GetJSONDefault() *Error {
+	return r.JSONDefault
+}
+
+// GetBody returns the raw response body bytes
+func (r ListStatusPageIncidentsResponse) GetBody() []byte {
+	return r.Body
+}
+
+// Status returns HTTPResponse.Status
+func (r ListStatusPageIncidentsResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r ListStatusPageIncidentsResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+// ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
+func (r ListStatusPageIncidentsResponse) ContentType() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Header.Get("Content-Type")
+	}
+	return ""
+}
+
+type PublishStatusPageIncidentResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	// JSON201 the response for an HTTP 201 `application/json` response
+	JSON201 *StatusPageIncidentResource
+	// JSONDefault the response for an HTTP default `application/json` response
+	JSONDefault *Error
+}
+
+// GetJSON201 returns the response for an HTTP 201 `application/json` response
+func (r PublishStatusPageIncidentResponse) GetJSON201() *StatusPageIncidentResource {
+	return r.JSON201
+}
+
+// GetJSONDefault returns the response for an HTTP default `application/json` response
+func (r PublishStatusPageIncidentResponse) GetJSONDefault() *Error {
+	return r.JSONDefault
+}
+
+// GetBody returns the raw response body bytes
+func (r PublishStatusPageIncidentResponse) GetBody() []byte {
+	return r.Body
+}
+
+// Status returns HTTPResponse.Status
+func (r PublishStatusPageIncidentResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r PublishStatusPageIncidentResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+// ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
+func (r PublishStatusPageIncidentResponse) ContentType() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Header.Get("Content-Type")
+	}
+	return ""
+}
+
+type GetStatusPageIncidentResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	// JSON200 the response for an HTTP 200 `application/json` response
+	JSON200 *StatusPageIncidentResource
+	// JSONDefault the response for an HTTP default `application/json` response
+	JSONDefault *Error
+}
+
+// GetJSON200 returns the response for an HTTP 200 `application/json` response
+func (r GetStatusPageIncidentResponse) GetJSON200() *StatusPageIncidentResource {
+	return r.JSON200
+}
+
+// GetJSONDefault returns the response for an HTTP default `application/json` response
+func (r GetStatusPageIncidentResponse) GetJSONDefault() *Error {
+	return r.JSONDefault
+}
+
+// GetBody returns the raw response body bytes
+func (r GetStatusPageIncidentResponse) GetBody() []byte {
+	return r.Body
+}
+
+// Status returns HTTPResponse.Status
+func (r GetStatusPageIncidentResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r GetStatusPageIncidentResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+// ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
+func (r GetStatusPageIncidentResponse) ContentType() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Header.Get("Content-Type")
+	}
+	return ""
+}
+
+type PostStatusPageIncidentUpdateResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	// JSON200 the response for an HTTP 200 `application/json` response
+	JSON200 *StatusPageIncidentResource
+	// JSONDefault the response for an HTTP default `application/json` response
+	JSONDefault *Error
+}
+
+// GetJSON200 returns the response for an HTTP 200 `application/json` response
+func (r PostStatusPageIncidentUpdateResponse) GetJSON200() *StatusPageIncidentResource {
+	return r.JSON200
+}
+
+// GetJSONDefault returns the response for an HTTP default `application/json` response
+func (r PostStatusPageIncidentUpdateResponse) GetJSONDefault() *Error {
+	return r.JSONDefault
+}
+
+// GetBody returns the raw response body bytes
+func (r PostStatusPageIncidentUpdateResponse) GetBody() []byte {
+	return r.Body
+}
+
+// Status returns HTTPResponse.Status
+func (r PostStatusPageIncidentUpdateResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r PostStatusPageIncidentUpdateResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+// ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
+func (r PostStatusPageIncidentUpdateResponse) ContentType() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Header.Get("Content-Type")
+	}
+	return ""
+}
+
+type ListStatusPageMaintenancesResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	// JSON200 the response for an HTTP 200 `application/json` response
+	JSON200 *LengthAwarePageStatusPageMaintenanceResource
+	// JSONDefault the response for an HTTP default `application/json` response
+	JSONDefault *Error
+}
+
+// GetJSON200 returns the response for an HTTP 200 `application/json` response
+func (r ListStatusPageMaintenancesResponse) GetJSON200() *LengthAwarePageStatusPageMaintenanceResource {
+	return r.JSON200
+}
+
+// GetJSONDefault returns the response for an HTTP default `application/json` response
+func (r ListStatusPageMaintenancesResponse) GetJSONDefault() *Error {
+	return r.JSONDefault
+}
+
+// GetBody returns the raw response body bytes
+func (r ListStatusPageMaintenancesResponse) GetBody() []byte {
+	return r.Body
+}
+
+// Status returns HTTPResponse.Status
+func (r ListStatusPageMaintenancesResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r ListStatusPageMaintenancesResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+// ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
+func (r ListStatusPageMaintenancesResponse) ContentType() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Header.Get("Content-Type")
+	}
+	return ""
+}
+
+type ScheduleStatusPageMaintenanceResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	// JSON201 the response for an HTTP 201 `application/json` response
+	JSON201 *StatusPageMaintenanceResource
+	// JSONDefault the response for an HTTP default `application/json` response
+	JSONDefault *Error
+}
+
+// GetJSON201 returns the response for an HTTP 201 `application/json` response
+func (r ScheduleStatusPageMaintenanceResponse) GetJSON201() *StatusPageMaintenanceResource {
+	return r.JSON201
+}
+
+// GetJSONDefault returns the response for an HTTP default `application/json` response
+func (r ScheduleStatusPageMaintenanceResponse) GetJSONDefault() *Error {
+	return r.JSONDefault
+}
+
+// GetBody returns the raw response body bytes
+func (r ScheduleStatusPageMaintenanceResponse) GetBody() []byte {
+	return r.Body
+}
+
+// Status returns HTTPResponse.Status
+func (r ScheduleStatusPageMaintenanceResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r ScheduleStatusPageMaintenanceResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+// ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
+func (r ScheduleStatusPageMaintenanceResponse) ContentType() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Header.Get("Content-Type")
+	}
+	return ""
+}
+
+type GetStatusPageMaintenanceResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	// JSON200 the response for an HTTP 200 `application/json` response
+	JSON200 *StatusPageMaintenanceResource
+	// JSONDefault the response for an HTTP default `application/json` response
+	JSONDefault *Error
+}
+
+// GetJSON200 returns the response for an HTTP 200 `application/json` response
+func (r GetStatusPageMaintenanceResponse) GetJSON200() *StatusPageMaintenanceResource {
+	return r.JSON200
+}
+
+// GetJSONDefault returns the response for an HTTP default `application/json` response
+func (r GetStatusPageMaintenanceResponse) GetJSONDefault() *Error {
+	return r.JSONDefault
+}
+
+// GetBody returns the raw response body bytes
+func (r GetStatusPageMaintenanceResponse) GetBody() []byte {
+	return r.Body
+}
+
+// Status returns HTTPResponse.Status
+func (r GetStatusPageMaintenanceResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r GetStatusPageMaintenanceResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+// ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
+func (r GetStatusPageMaintenanceResponse) ContentType() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Header.Get("Content-Type")
+	}
+	return ""
+}
+
+type CancelStatusPageMaintenanceResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	// JSON200 the response for an HTTP 200 `application/json` response
+	JSON200 *StatusPageMaintenanceResource
+	// JSONDefault the response for an HTTP default `application/json` response
+	JSONDefault *Error
+}
+
+// GetJSON200 returns the response for an HTTP 200 `application/json` response
+func (r CancelStatusPageMaintenanceResponse) GetJSON200() *StatusPageMaintenanceResource {
+	return r.JSON200
+}
+
+// GetJSONDefault returns the response for an HTTP default `application/json` response
+func (r CancelStatusPageMaintenanceResponse) GetJSONDefault() *Error {
+	return r.JSONDefault
+}
+
+// GetBody returns the raw response body bytes
+func (r CancelStatusPageMaintenanceResponse) GetBody() []byte {
+	return r.Body
+}
+
+// Status returns HTTPResponse.Status
+func (r CancelStatusPageMaintenanceResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r CancelStatusPageMaintenanceResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+// ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
+func (r CancelStatusPageMaintenanceResponse) ContentType() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Header.Get("Content-Type")
+	}
+	return ""
+}
+
+type CompleteStatusPageMaintenanceResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	// JSON200 the response for an HTTP 200 `application/json` response
+	JSON200 *StatusPageMaintenanceResource
+	// JSONDefault the response for an HTTP default `application/json` response
+	JSONDefault *Error
+}
+
+// GetJSON200 returns the response for an HTTP 200 `application/json` response
+func (r CompleteStatusPageMaintenanceResponse) GetJSON200() *StatusPageMaintenanceResource {
+	return r.JSON200
+}
+
+// GetJSONDefault returns the response for an HTTP default `application/json` response
+func (r CompleteStatusPageMaintenanceResponse) GetJSONDefault() *Error {
+	return r.JSONDefault
+}
+
+// GetBody returns the raw response body bytes
+func (r CompleteStatusPageMaintenanceResponse) GetBody() []byte {
+	return r.Body
+}
+
+// Status returns HTTPResponse.Status
+func (r CompleteStatusPageMaintenanceResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r CompleteStatusPageMaintenanceResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+// ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
+func (r CompleteStatusPageMaintenanceResponse) ContentType() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Header.Get("Content-Type")
+	}
+	return ""
+}
+
+type PutStatusPageOrderResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	// JSONDefault the response for an HTTP default `application/json` response
+	JSONDefault *Error
+}
+
+// GetJSONDefault returns the response for an HTTP default `application/json` response
+func (r PutStatusPageOrderResponse) GetJSONDefault() *Error {
+	return r.JSONDefault
+}
+
+// GetBody returns the raw response body bytes
+func (r PutStatusPageOrderResponse) GetBody() []byte {
+	return r.Body
+}
+
+// Status returns HTTPResponse.Status
+func (r PutStatusPageOrderResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r PutStatusPageOrderResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+// ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
+func (r PutStatusPageOrderResponse) ContentType() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Header.Get("Content-Type")
+	}
+	return ""
+}
+
 type ListProjectTopItemsResponse struct {
 	Body         []byte
 	HTTPResponse *http.Response
@@ -6579,9 +10917,9 @@ func (r ListWebChecksResponse) ContentType() string {
 	return ""
 }
 
-// ListIncidentsWithResponse 列出告警
+// ListIncidentsWithResponse List incidents
 //
-// `incident_status` 表示监控系统是否判定已恢复，`closed` 表示是否有人完成了处理。两者相互独立，可分别筛选。.
+// `incident_status` reports whether monitoring considers the problem recovered; `closed` reports whether someone has finished handling it. The two are independent and can be filtered separately.
 //
 // Returns a wrapper object for the known response body format(s).
 //
@@ -6594,7 +10932,7 @@ func (c *ClientWithResponses) ListIncidentsWithResponse(ctx context.Context, par
 	return ParseListIncidentsResponse(rsp)
 }
 
-// GetIncidentWithResponse 查一条告警
+// GetIncidentWithResponse Get an incident
 //
 // Returns a wrapper object for the known response body format(s).
 //
@@ -6607,9 +10945,9 @@ func (c *ClientWithResponses) GetIncidentWithResponse(ctx context.Context, incid
 	return ParseGetIncidentResponse(rsp)
 }
 
-// AcknowledgeIncidentWithBodyWithResponse 确认这条告警
+// AcknowledgeIncidentWithBodyWithResponse Acknowledge an incident
 //
-// 同时会在监控系统中标记为已确认，便于其他渠道也能看到该告警已有人处理。.
+// The incident is also marked as acknowledged in the monitoring system, so that other channels can see it already has an owner.
 //
 // Takes any type of body and a specified content type, and returns a wrapper object for the known response body format(s).
 //
@@ -6622,9 +10960,9 @@ func (c *ClientWithResponses) AcknowledgeIncidentWithBodyWithResponse(ctx contex
 	return ParseAcknowledgeIncidentResponse(rsp)
 }
 
-// AcknowledgeIncidentWithResponse 确认这条告警
+// AcknowledgeIncidentWithResponse Acknowledge an incident
 //
-// 同时会在监控系统中标记为已确认，便于其他渠道也能看到该告警已有人处理。.
+// The incident is also marked as acknowledged in the monitoring system, so that other channels can see it already has an owner.
 //
 // Takes a body of the `application/json` content type, and returns a wrapper object for the known response body format(s).
 //
@@ -6637,11 +10975,11 @@ func (c *ClientWithResponses) AcknowledgeIncidentWithResponse(ctx context.Contex
 	return ParseAcknowledgeIncidentResponse(rsp)
 }
 
-// AssignIncidentWithBodyWithResponse 把这条告警交给谁，或者收回来
+// AssignIncidentWithBodyWithResponse Assign an incident, or clear its assignee
 //
-// `assignee_user_id` 留空即取消指派。
+// Leave `assignee_user_id` empty to clear the assignment.
 //
-// **这里不校验被指派的人在不在这个项目里**——那要问 IAM，而这个服务的准入还没接。
+// **Project membership of the assignee is not verified.** Any user identifier is accepted and recorded as given.
 //
 // Takes any type of body and a specified content type, and returns a wrapper object for the known response body format(s).
 //
@@ -6654,11 +10992,11 @@ func (c *ClientWithResponses) AssignIncidentWithBodyWithResponse(ctx context.Con
 	return ParseAssignIncidentResponse(rsp)
 }
 
-// AssignIncidentWithResponse 把这条告警交给谁，或者收回来
+// AssignIncidentWithResponse Assign an incident, or clear its assignee
 //
-// `assignee_user_id` 留空即取消指派。
+// Leave `assignee_user_id` empty to clear the assignment.
 //
-// **这里不校验被指派的人在不在这个项目里**——那要问 IAM，而这个服务的准入还没接。
+// **Project membership of the assignee is not verified.** Any user identifier is accepted and recorded as given.
 //
 // Takes a body of the `application/json` content type, and returns a wrapper object for the known response body format(s).
 //
@@ -6671,9 +11009,9 @@ func (c *ClientWithResponses) AssignIncidentWithResponse(ctx context.Context, in
 	return ParseAssignIncidentResponse(rsp)
 }
 
-// CloseIncidentWithBodyWithResponse 了结这条告警
+// CloseIncidentWithBodyWithResponse Close an incident
 //
-// 了结的是**平台上的处理流程**，不是告警本身的状态：尚未恢复的告警也可以按「已接受的风险」了结，它在监控系统中仍为未恢复。.
+// Closing records **that the handling process is finished on this platform**; it does not change the state of the incident itself. An incident that has not recovered may still be closed as an accepted risk, and remains unrecovered in the monitoring system.
 //
 // Takes any type of body and a specified content type, and returns a wrapper object for the known response body format(s).
 //
@@ -6686,9 +11024,9 @@ func (c *ClientWithResponses) CloseIncidentWithBodyWithResponse(ctx context.Cont
 	return ParseCloseIncidentResponse(rsp)
 }
 
-// CloseIncidentWithResponse 了结这条告警
+// CloseIncidentWithResponse Close an incident
 //
-// 了结的是**平台上的处理流程**，不是告警本身的状态：尚未恢复的告警也可以按「已接受的风险」了结，它在监控系统中仍为未恢复。.
+// Closing records **that the handling process is finished on this platform**; it does not change the state of the incident itself. An incident that has not recovered may still be closed as an accepted risk, and remains unrecovered in the monitoring system.
 //
 // Takes a body of the `application/json` content type, and returns a wrapper object for the known response body format(s).
 //
@@ -6701,7 +11039,7 @@ func (c *ClientWithResponses) CloseIncidentWithResponse(ctx context.Context, inc
 	return ParseCloseIncidentResponse(rsp)
 }
 
-// AddIncidentCommentWithBodyWithResponse 在时间线上写一条备注
+// AddIncidentCommentWithBodyWithResponse Add a note to the timeline
 //
 // Takes any type of body and a specified content type, and returns a wrapper object for the known response body format(s).
 //
@@ -6714,7 +11052,7 @@ func (c *ClientWithResponses) AddIncidentCommentWithBodyWithResponse(ctx context
 	return ParseAddIncidentCommentResponse(rsp)
 }
 
-// AddIncidentCommentWithResponse 在时间线上写一条备注
+// AddIncidentCommentWithResponse Add a note to the timeline
 //
 // Takes a body of the `application/json` content type, and returns a wrapper object for the known response body format(s).
 //
@@ -6727,9 +11065,9 @@ func (c *ClientWithResponses) AddIncidentCommentWithResponse(ctx context.Context
 	return ParseAddIncidentCommentResponse(rsp)
 }
 
-// SetIncidentFollowingWithBodyWithResponse 关注这条告警，或者取消关注
+// SetIncidentFollowingWithBodyWithResponse Follow an incident, or stop following it
 //
-// 关注的是**自己**：操作者就是被加进关注列表的那个人。.
+// You follow **yourself**: the caller is the user added to or removed from the follower list.
 //
 // Takes any type of body and a specified content type, and returns a wrapper object for the known response body format(s).
 //
@@ -6742,9 +11080,9 @@ func (c *ClientWithResponses) SetIncidentFollowingWithBodyWithResponse(ctx conte
 	return ParseSetIncidentFollowingResponse(rsp)
 }
 
-// SetIncidentFollowingWithResponse 关注这条告警，或者取消关注
+// SetIncidentFollowingWithResponse Follow an incident, or stop following it
 //
-// 关注的是**自己**：操作者就是被加进关注列表的那个人。.
+// You follow **yourself**: the caller is the user added to or removed from the follower list.
 //
 // Takes a body of the `application/json` content type, and returns a wrapper object for the known response body format(s).
 //
@@ -6757,7 +11095,7 @@ func (c *ClientWithResponses) SetIncidentFollowingWithResponse(ctx context.Conte
 	return ParseSetIncidentFollowingResponse(rsp)
 }
 
-// ReopenIncidentWithResponse 重新打开一条已经了结的告警
+// ReopenIncidentWithResponse Reopen a closed incident
 //
 // Returns a wrapper object for the known response body format(s).
 //
@@ -6770,9 +11108,9 @@ func (c *ClientWithResponses) ReopenIncidentWithResponse(ctx context.Context, in
 	return ParseReopenIncidentResponse(rsp)
 }
 
-// ListIncidentTimelineWithResponse 列出这条告警的时间线
+// ListIncidentTimelineWithResponse List the timeline of an incident
 //
-// 游标翻页而不是偏移量：时间线是只增的，用偏移量翻页会在新记录写入时漏行和重行。.
+// Cursor paging rather than offset paging: the timeline is append-only, and offset paging would skip or repeat entries whenever a new one is written.
 //
 // Returns a wrapper object for the known response body format(s).
 //
@@ -6785,7 +11123,7 @@ func (c *ClientWithResponses) ListIncidentTimelineWithResponse(ctx context.Conte
 	return ParseListIncidentTimelineResponse(rsp)
 }
 
-// ListMaintenanceWindowsWithResponse 列出维护窗口
+// ListMaintenanceWindowsWithResponse List maintenance windows
 //
 // Returns a wrapper object for the known response body format(s).
 //
@@ -6798,9 +11136,9 @@ func (c *ClientWithResponses) ListMaintenanceWindowsWithResponse(ctx context.Con
 	return ParseListMaintenanceWindowsResponse(rsp)
 }
 
-// DeleteMaintenanceWindowWithResponse 撤掉一个维护窗口
+// DeleteMaintenanceWindowWithResponse Cancel a maintenance window
 //
-// 立刻恢复告警，哪怕窗口还没到期。.
+// Alerting resumes immediately, even if the window has not yet expired.
 //
 // Returns a wrapper object for the known response body format(s).
 //
@@ -6813,7 +11151,7 @@ func (c *ClientWithResponses) DeleteMaintenanceWindowWithResponse(ctx context.Co
 	return ParseDeleteMaintenanceWindowResponse(rsp)
 }
 
-// GetMaintenanceWindowWithResponse 查一个维护窗口
+// GetMaintenanceWindowWithResponse Get a maintenance window
 //
 // Returns a wrapper object for the known response body format(s).
 //
@@ -6826,11 +11164,11 @@ func (c *ClientWithResponses) GetMaintenanceWindowWithResponse(ctx context.Conte
 	return ParseGetMaintenanceWindowResponse(rsp)
 }
 
-// PutMaintenanceWindowWithBodyWithResponse 开一个维护窗口，或者按同一个 id 覆盖它
+// PutMaintenanceWindowWithBodyWithResponse Create a maintenance window, or replace it by the same id
 //
-// **创建即覆盖**：延长一个正在进行的窗口就是用同一个 id 再调一次。
+// **Create or replace**: extending a window that is already running means calling this endpoint again with the same id.
 //
-// 窗口期内这些机器的问题不告警，也不扣 SLA 的可用率。`server_ids` 留空表示整个项目，包括窗口开着的时候新接进来的机器。
+// While the window is open, problems on these machines do not alert and do not count against SLA availability. Leave `server_ids` empty to cover the entire project, including machines enrolled after the window opens.
 //
 // Takes any type of body and a specified content type, and returns a wrapper object for the known response body format(s).
 //
@@ -6843,11 +11181,11 @@ func (c *ClientWithResponses) PutMaintenanceWindowWithBodyWithResponse(ctx conte
 	return ParsePutMaintenanceWindowResponse(rsp)
 }
 
-// PutMaintenanceWindowWithResponse 开一个维护窗口，或者按同一个 id 覆盖它
+// PutMaintenanceWindowWithResponse Create a maintenance window, or replace it by the same id
 //
-// **创建即覆盖**：延长一个正在进行的窗口就是用同一个 id 再调一次。
+// **Create or replace**: extending a window that is already running means calling this endpoint again with the same id.
 //
-// 窗口期内这些机器的问题不告警，也不扣 SLA 的可用率。`server_ids` 留空表示整个项目，包括窗口开着的时候新接进来的机器。
+// While the window is open, problems on these machines do not alert and do not count against SLA availability. Leave `server_ids` empty to cover the entire project, including machines enrolled after the window opens.
 //
 // Takes a body of the `application/json` content type, and returns a wrapper object for the known response body format(s).
 //
@@ -6860,9 +11198,9 @@ func (c *ClientWithResponses) PutMaintenanceWindowWithResponse(ctx context.Conte
 	return ParsePutMaintenanceWindowResponse(rsp)
 }
 
-// GetProjectOverviewWithResponse 项目总览
+// GetProjectOverviewWithResponse Project overview
 //
-// 项目下还没有任何机器时返回各项均为零的总览，而不是 404——空项目是一个正常状态。.
+// A project with no machines yet returns an overview with every figure at zero rather than a 404 — an empty project is a normal state.
 //
 // Returns a wrapper object for the known response body format(s).
 //
@@ -6875,7 +11213,7 @@ func (c *ClientWithResponses) GetProjectOverviewWithResponse(ctx context.Context
 	return ParseGetProjectOverviewResponse(rsp)
 }
 
-// ListServersWithResponse 列出项目里的机器
+// ListServersWithResponse List the machines in the project
 //
 // Returns a wrapper object for the known response body format(s).
 //
@@ -6888,9 +11226,9 @@ func (c *ClientWithResponses) ListServersWithResponse(ctx context.Context, param
 	return ParseListServersResponse(rsp)
 }
 
-// DeleteServerWithResponse 删掉这台机器
+// DeleteServerWithResponse Delete a machine
 //
-// **不可逆**：监控主机、历史数据和这台机器名下的告警会一并删除。若只是想暂时停止采集，改用 /disable。.
+// **Irreversible**: the monitored host, its history and every incident recorded against this machine are removed together. To stop collection temporarily, use `/disable` instead.
 //
 // Returns a wrapper object for the known response body format(s).
 //
@@ -6903,7 +11241,7 @@ func (c *ClientWithResponses) DeleteServerWithResponse(ctx context.Context, serv
 	return ParseDeleteServerResponse(rsp)
 }
 
-// GetServerWithResponse 查一台机器的接入情况
+// GetServerWithResponse Get the enrollment state of a machine
 //
 // Returns a wrapper object for the known response body format(s).
 //
@@ -6916,9 +11254,9 @@ func (c *ClientWithResponses) GetServerWithResponse(ctx context.Context, serverI
 	return ParseGetServerResponse(rsp)
 }
 
-// UpdateServerWithBodyWithResponse 改一台机器的接入参数
+// UpdateServerWithBodyWithResponse Update the enrollment settings of a machine
 //
-// 只更新请求体中出现的字段。`address` 与 `address_kind` 必须一并提供：只改其中一个会得到互相矛盾的接入配置，该错误不会被报出，表现为 agent 连不上。.
+// Only the fields present in the request body are updated. `address` and `address_kind` must be supplied together: changing one without the other produces a contradictory configuration that is not reported as an error and shows up only as an agent that cannot connect.
 //
 // Takes any type of body and a specified content type, and returns a wrapper object for the known response body format(s).
 //
@@ -6931,9 +11269,9 @@ func (c *ClientWithResponses) UpdateServerWithBodyWithResponse(ctx context.Conte
 	return ParseUpdateServerResponse(rsp)
 }
 
-// UpdateServerWithResponse 改一台机器的接入参数
+// UpdateServerWithResponse Update the enrollment settings of a machine
 //
-// 只更新请求体中出现的字段。`address` 与 `address_kind` 必须一并提供：只改其中一个会得到互相矛盾的接入配置，该错误不会被报出，表现为 agent 连不上。.
+// Only the fields present in the request body are updated. `address` and `address_kind` must be supplied together: changing one without the other produces a contradictory configuration that is not reported as an error and shows up only as an agent that cannot connect.
 //
 // Takes a body of the `application/json` content type, and returns a wrapper object for the known response body format(s).
 //
@@ -6946,13 +11284,13 @@ func (c *ClientWithResponses) UpdateServerWithResponse(ctx context.Context, serv
 	return ParseUpdateServerResponse(rsp)
 }
 
-// EnableServerMonitoringWithBodyWithResponse 把一台机器接入监控
+// EnableServerMonitoringWithBodyWithResponse Enroll a machine into monitoring
 //
-// **同一个 server id 重复调用是幂等的**：参数一致时返回已接入的那台，不会重复创建监控主机，因此接入失败可以安全重试。
+// **Repeated calls with the same server id are idempotent**: given identical parameters, the already-enrolled machine is returned and no duplicate host is created, so a failed enrollment is safe to retry.
 //
-// 修改接入参数请改用 PATCH。本接口在参数不一致时会返回错误，不会更新已有配置。
+// To change enrollment settings, use PATCH. This endpoint returns an error when the parameters differ, and does not update an existing configuration.
 //
-// 响应中的 `tls_psk` **只返回这一次**，请及时保存；遗失后需要轮换。
+// The `tls_psk` in the response is **returned only this once**; store it immediately. If it is lost, it must be rotated.
 //
 // Takes any type of body and a specified content type, and returns a wrapper object for the known response body format(s).
 //
@@ -6965,13 +11303,13 @@ func (c *ClientWithResponses) EnableServerMonitoringWithBodyWithResponse(ctx con
 	return ParseEnableServerMonitoringResponse(rsp)
 }
 
-// EnableServerMonitoringWithResponse 把一台机器接入监控
+// EnableServerMonitoringWithResponse Enroll a machine into monitoring
 //
-// **同一个 server id 重复调用是幂等的**：参数一致时返回已接入的那台，不会重复创建监控主机，因此接入失败可以安全重试。
+// **Repeated calls with the same server id are idempotent**: given identical parameters, the already-enrolled machine is returned and no duplicate host is created, so a failed enrollment is safe to retry.
 //
-// 修改接入参数请改用 PATCH。本接口在参数不一致时会返回错误，不会更新已有配置。
+// To change enrollment settings, use PATCH. This endpoint returns an error when the parameters differ, and does not update an existing configuration.
 //
-// 响应中的 `tls_psk` **只返回这一次**，请及时保存；遗失后需要轮换。
+// The `tls_psk` in the response is **returned only this once**; store it immediately. If it is lost, it must be rotated.
 //
 // Takes a body of the `application/json` content type, and returns a wrapper object for the known response body format(s).
 //
@@ -6984,9 +11322,9 @@ func (c *ClientWithResponses) EnableServerMonitoringWithResponse(ctx context.Con
 	return ParseEnableServerMonitoringResponse(rsp)
 }
 
-// DisableServerMonitoringWithResponse 停止监控这台机器
+// DisableServerMonitoringWithResponse Stop monitoring a machine
 //
-// 可逆操作：监控主机保留，仅停止采集，历史数据不受影响。重新接入即可恢复采集。如需连同历史数据一并删除，改用 DELETE。.
+// Reversible: the monitored host is retained, only collection stops, and history is unaffected. Enrolling again resumes collection. To remove the history as well, use DELETE.
 //
 // Returns a wrapper object for the known response body format(s).
 //
@@ -6999,9 +11337,9 @@ func (c *ClientWithResponses) DisableServerMonitoringWithResponse(ctx context.Co
 	return ParseDisableServerMonitoringResponse(rsp)
 }
 
-// ListServerItemsWithResponse 列出一台机器的监控项
+// ListServerItemsWithResponse List the monitoring items of a machine
 //
-// 原样返回采集到的监控项，不做筛选或重命名。哪些属于重要指标，由调用方依据监控项自带的标签自行判断。.
+// Items are returned exactly as collected, without filtering or renaming. Which of them count as important is for the caller to decide from the tags carried by each item.
 //
 // Returns a wrapper object for the known response body format(s).
 //
@@ -7014,9 +11352,9 @@ func (c *ClientWithResponses) ListServerItemsWithResponse(ctx context.Context, s
 	return ParseListServerItemsResponse(rsp)
 }
 
-// GetServerMetricWithResponse 取一个监控项的时间序列
+// GetServerMetricWithResponse Get the time series of a monitoring item
 //
-// `item_key` 是**前缀匹配**：按分区、按网卡发现出来的监控项 key 带参数（`vfs.fs.size[/var,pused]`），所以 `vfs.fs.size` 这一个请求就能画出每个挂载点一条线。
+// `item_key` is matched **by prefix**. Keys discovered per partition or per interface carry parameters (`vfs.fs.size[/var,pused]`), so a single request for `vfs.fs.size` returns one series per mount point.
 //
 // Returns a wrapper object for the known response body format(s).
 //
@@ -7029,9 +11367,9 @@ func (c *ClientWithResponses) GetServerMetricWithResponse(ctx context.Context, s
 	return ParseGetServerMetricResponse(rsp)
 }
 
-// RotateAgentPskWithResponse 换一把 agent 的 PSK
+// RotateAgentPskWithResponse Rotate the agent PSK
 //
-// 换完要同步改 agent 侧的配置，否则那台机器立刻失联。新密钥同样**只在这个响应里明文出现一次**。.
+// The agent configuration must be updated to match, otherwise the machine loses contact immediately. The new key is likewise **returned in clear text only in this response**.
 //
 // Returns a wrapper object for the known response body format(s).
 //
@@ -7044,7 +11382,7 @@ func (c *ClientWithResponses) RotateAgentPskWithResponse(ctx context.Context, se
 	return ParseRotateAgentPskResponse(rsp)
 }
 
-// GetServerResourcesWithResponse 一台机器的硬件与接口
+// GetServerResourcesWithResponse Hardware and interfaces of a machine
 //
 // Returns a wrapper object for the known response body format(s).
 //
@@ -7057,7 +11395,7 @@ func (c *ClientWithResponses) GetServerResourcesWithResponse(ctx context.Context
 	return ParseGetServerResourcesResponse(rsp)
 }
 
-// GetServerSnapshotWithResponse 一台机器此刻的状态
+// GetServerSnapshotWithResponse Current state of a machine
 //
 // Returns a wrapper object for the known response body format(s).
 //
@@ -7070,9 +11408,9 @@ func (c *ClientWithResponses) GetServerSnapshotWithResponse(ctx context.Context,
 	return ParseGetServerSnapshotResponse(rsp)
 }
 
-// DeleteWebCheckWithResponse 删掉一个网页检查
+// DeleteWebCheckWithResponse Delete a web check
 //
-// 同时删除监控系统中对应的检查任务和触发器，不会遗留永远无法恢复的告警。.
+// The corresponding check task and trigger are removed from the monitoring system as well, so no permanently unrecoverable alert is left behind.
 //
 // Returns a wrapper object for the known response body format(s).
 //
@@ -7085,7 +11423,7 @@ func (c *ClientWithResponses) DeleteWebCheckWithResponse(ctx context.Context, se
 	return ParseDeleteWebCheckResponse(rsp)
 }
 
-// GetWebCheckWithResponse 查一个网页检查
+// GetWebCheckWithResponse Get a web check
 //
 // Returns a wrapper object for the known response body format(s).
 //
@@ -7098,9 +11436,9 @@ func (c *ClientWithResponses) GetWebCheckWithResponse(ctx context.Context, serve
 	return ParseGetWebCheckResponse(rsp)
 }
 
-// PutWebCheckWithBodyWithResponse 建一个网页检查，或者按同一个 id 覆盖它
+// PutWebCheckWithBodyWithResponse Create a web check, or replace it by the same id
 //
-// **创建即覆盖**：修改一个检查即用同一个 id 再次调用本接口，无需先判断它是否已存在。.
+// **Create or replace**: to modify a check, call this endpoint again with the same id. There is no need to determine first whether it already exists.
 //
 // Takes any type of body and a specified content type, and returns a wrapper object for the known response body format(s).
 //
@@ -7113,9 +11451,9 @@ func (c *ClientWithResponses) PutWebCheckWithBodyWithResponse(ctx context.Contex
 	return ParsePutWebCheckResponse(rsp)
 }
 
-// PutWebCheckWithResponse 建一个网页检查，或者按同一个 id 覆盖它
+// PutWebCheckWithResponse Create a web check, or replace it by the same id
 //
-// **创建即覆盖**：修改一个检查即用同一个 id 再次调用本接口，无需先判断它是否已存在。.
+// **Create or replace**: to modify a check, call this endpoint again with the same id. There is no need to determine first whether it already exists.
 //
 // Takes a body of the `application/json` content type, and returns a wrapper object for the known response body format(s).
 //
@@ -7128,11 +11466,11 @@ func (c *ClientWithResponses) PutWebCheckWithResponse(ctx context.Context, serve
 	return ParsePutWebCheckResponse(rsp)
 }
 
-// GetSliReportWithResponse 查实测的达成情况
+// GetSliReportWithResponse Get measured availability
 //
-// SLI 是测出来的数，SLO 是定下来的目标——这里返回的是前者。
+// SLI is what was measured; SLO is what was promised — this endpoint returns the former.
 //
-// `server_id` 为空的那一行是项目整体。
+// The row with an empty `server_id` covers the project as a whole.
 //
 // Returns a wrapper object for the known response body format(s).
 //
@@ -7145,9 +11483,9 @@ func (c *ClientWithResponses) GetSliReportWithResponse(ctx context.Context, para
 	return ParseGetSliReportResponse(rsp)
 }
 
-// DeleteSloWithResponse 撤掉这个项目的可用率目标
+// DeleteSloWithResponse Remove the availability target of this project
 //
-// 同时移除监控系统中对应的服务树，此后不再统计可用率。.
+// Availability is no longer tracked from this point on.
 //
 // Returns a wrapper object for the known response body format(s).
 //
@@ -7160,9 +11498,9 @@ func (c *ClientWithResponses) DeleteSloWithResponse(ctx context.Context, reqEdit
 	return ParseDeleteSloResponse(rsp)
 }
 
-// GetSloWithResponse 查这个项目的可用率目标
+// GetSloWithResponse Get the availability target of this project
 //
-// 没定过就是 404，而不是一份默认目标：没承诺过和承诺了 99.9% 是两回事。
+// A project that has never set one returns 404 rather than a default target: making no promise and promising 99.9% are different things.
 //
 // Returns a wrapper object for the known response body format(s).
 //
@@ -7175,11 +11513,11 @@ func (c *ClientWithResponses) GetSloWithResponse(ctx context.Context, reqEditors
 	return ParseGetSloResponse(rsp)
 }
 
-// PutSloWithBodyWithResponse 定下这个项目的可用率目标，或者改它
+// PutSloWithBodyWithResponse Set the availability target of this project, or change it
 //
-// 一个项目一条 SLO，**创建即覆盖**。
+// One SLO per project, **create or replace**.
 //
-// `min_severity` 必须显式选：它决定什么算「不可用」，是这条承诺的一半内容。
+// `min_severity` must be chosen explicitly: it defines what counts as unavailable, which is half of what the target means.
 //
 // Takes any type of body and a specified content type, and returns a wrapper object for the known response body format(s).
 //
@@ -7192,11 +11530,11 @@ func (c *ClientWithResponses) PutSloWithBodyWithResponse(ctx context.Context, co
 	return ParsePutSloResponse(rsp)
 }
 
-// PutSloWithResponse 定下这个项目的可用率目标，或者改它
+// PutSloWithResponse Set the availability target of this project, or change it
 //
-// 一个项目一条 SLO，**创建即覆盖**。
+// One SLO per project, **create or replace**.
 //
-// `min_severity` 必须显式选：它决定什么算「不可用」，是这条承诺的一半内容。
+// `min_severity` must be chosen explicitly: it defines what counts as unavailable, which is half of what the target means.
 //
 // Takes a body of the `application/json` content type, and returns a wrapper object for the known response body format(s).
 //
@@ -7209,7 +11547,573 @@ func (c *ClientWithResponses) PutSloWithResponse(ctx context.Context, body PutSl
 	return ParsePutSloResponse(rsp)
 }
 
-// ListProjectTopItemsWithResponse 某个指标最高的前几台
+// DeleteStatusPageWithResponse Delete the status page
+//
+// Its groups, components, availability history, incident notices and scheduled maintenance are removed together, and cannot be recovered. The slug and custom domain are released.
+//
+// Returns a wrapper object for the known response body format(s).
+//
+// Corresponds with DELETE /api/v1/status-page (the `DeleteStatusPage` operationId).
+func (c *ClientWithResponses) DeleteStatusPageWithResponse(ctx context.Context, reqEditors ...RequestEditorFn) (*DeleteStatusPageResponse, error) {
+	rsp, err := c.DeleteStatusPage(ctx, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseDeleteStatusPageResponse(rsp)
+}
+
+// GetStatusPageWithResponse Get the status page of this project
+//
+// A project has at most one status page. A project that has never created one returns 404.
+//
+// Returns a wrapper object for the known response body format(s).
+//
+// Corresponds with GET /api/v1/status-page (the `GetStatusPage` operationId).
+func (c *ClientWithResponses) GetStatusPageWithResponse(ctx context.Context, reqEditors ...RequestEditorFn) (*GetStatusPageResponse, error) {
+	rsp, err := c.GetStatusPage(ctx, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseGetStatusPageResponse(rsp)
+}
+
+// PutStatusPageWithBodyWithResponse Create the status page, or replace its configuration
+//
+// **Create or replace**: changing the title, switching the domain, publishing and unpublishing are all done by sending the complete configuration again.
+//
+// While `published` is false the public address returns 404, including any custom domain already bound. A newly created page is unpublished by default, so that a page still being configured has no address that opens.
+//
+// `slug` and `custom_domain` are **globally unique**; a value already taken returns 409.
+//
+// Takes any type of body and a specified content type, and returns a wrapper object for the known response body format(s).
+//
+// Corresponds with PUT /api/v1/status-page (the `PutStatusPage` operationId).
+func (c *ClientWithResponses) PutStatusPageWithBodyWithResponse(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*PutStatusPageResponse, error) {
+	rsp, err := c.PutStatusPageWithBody(ctx, contentType, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParsePutStatusPageResponse(rsp)
+}
+
+// PutStatusPageWithResponse Create the status page, or replace its configuration
+//
+// **Create or replace**: changing the title, switching the domain, publishing and unpublishing are all done by sending the complete configuration again.
+//
+// While `published` is false the public address returns 404, including any custom domain already bound. A newly created page is unpublished by default, so that a page still being configured has no address that opens.
+//
+// `slug` and `custom_domain` are **globally unique**; a value already taken returns 409.
+//
+// Takes a body of the `application/json` content type, and returns a wrapper object for the known response body format(s).
+//
+// Corresponds with PUT /api/v1/status-page (the `PutStatusPage` operationId).
+func (c *ClientWithResponses) PutStatusPageWithResponse(ctx context.Context, body PutStatusPageJSONRequestBody, reqEditors ...RequestEditorFn) (*PutStatusPageResponse, error) {
+	rsp, err := c.PutStatusPage(ctx, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParsePutStatusPageResponse(rsp)
+}
+
+// ListStatusPageComponentsWithResponse List components
+//
+// A component is one row on the status page: an externally promised capability. It is not a machine — a single component may be backed by several machines and several web checks.
+//
+// Returns a wrapper object for the known response body format(s).
+//
+// Corresponds with GET /api/v1/status-page/components (the `ListStatusPageComponents` operationId).
+func (c *ClientWithResponses) ListStatusPageComponentsWithResponse(ctx context.Context, reqEditors ...RequestEditorFn) (*ListStatusPageComponentsResponse, error) {
+	rsp, err := c.ListStatusPageComponents(ctx, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseListStatusPageComponentsResponse(rsp)
+}
+
+// CreateStatusPageComponentWithBodyWithResponse Create a component
+//
+// `name` is **customer-facing copy** and appears verbatim on the public page; do not use machine names.
+//
+// `auto_status_min_severity` sets how severe an alert must be before it changes the status of this row; anything below it has no effect. The default is AVERAGE. Lower settings tend to keep the page permanently off-green, at which point people stop reading it.
+//
+// Takes any type of body and a specified content type, and returns a wrapper object for the known response body format(s).
+//
+// Corresponds with POST /api/v1/status-page/components (the `CreateStatusPageComponent` operationId).
+func (c *ClientWithResponses) CreateStatusPageComponentWithBodyWithResponse(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*CreateStatusPageComponentResponse, error) {
+	rsp, err := c.CreateStatusPageComponentWithBody(ctx, contentType, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseCreateStatusPageComponentResponse(rsp)
+}
+
+// CreateStatusPageComponentWithResponse Create a component
+//
+// `name` is **customer-facing copy** and appears verbatim on the public page; do not use machine names.
+//
+// `auto_status_min_severity` sets how severe an alert must be before it changes the status of this row; anything below it has no effect. The default is AVERAGE. Lower settings tend to keep the page permanently off-green, at which point people stop reading it.
+//
+// Takes a body of the `application/json` content type, and returns a wrapper object for the known response body format(s).
+//
+// Corresponds with POST /api/v1/status-page/components (the `CreateStatusPageComponent` operationId).
+func (c *ClientWithResponses) CreateStatusPageComponentWithResponse(ctx context.Context, body CreateStatusPageComponentJSONRequestBody, reqEditors ...RequestEditorFn) (*CreateStatusPageComponentResponse, error) {
+	rsp, err := c.CreateStatusPageComponent(ctx, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseCreateStatusPageComponentResponse(rsp)
+}
+
+// DeleteStatusPageComponentWithResponse Delete a component
+//
+// Its availability history is removed along with it. Passages in already-published notices that refer to it are retained, since customers may already have read them.
+//
+// Returns a wrapper object for the known response body format(s).
+//
+// Corresponds with DELETE /api/v1/status-page/components/{componentId} (the `DeleteStatusPageComponent` operationId).
+func (c *ClientWithResponses) DeleteStatusPageComponentWithResponse(ctx context.Context, componentId openapi_types.UUID, reqEditors ...RequestEditorFn) (*DeleteStatusPageComponentResponse, error) {
+	rsp, err := c.DeleteStatusPageComponent(ctx, componentId, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseDeleteStatusPageComponentResponse(rsp)
+}
+
+// GetStatusPageComponentWithResponse Get a component
+//
+// Returns a wrapper object for the known response body format(s).
+//
+// Corresponds with GET /api/v1/status-page/components/{componentId} (the `GetStatusPageComponent` operationId).
+func (c *ClientWithResponses) GetStatusPageComponentWithResponse(ctx context.Context, componentId openapi_types.UUID, reqEditors ...RequestEditorFn) (*GetStatusPageComponentResponse, error) {
+	rsp, err := c.GetStatusPageComponent(ctx, componentId, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseGetStatusPageComponentResponse(rsp)
+}
+
+// UpdateStatusPageComponentWithBodyWithResponse Update a component
+//
+// `started_on` cannot be changed: it determines where the availability bar stops showing as unmeasured, and changing it would rewrite history that has already been published.
+//
+// Takes any type of body and a specified content type, and returns a wrapper object for the known response body format(s).
+//
+// Corresponds with PUT /api/v1/status-page/components/{componentId} (the `UpdateStatusPageComponent` operationId).
+func (c *ClientWithResponses) UpdateStatusPageComponentWithBodyWithResponse(ctx context.Context, componentId openapi_types.UUID, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*UpdateStatusPageComponentResponse, error) {
+	rsp, err := c.UpdateStatusPageComponentWithBody(ctx, componentId, contentType, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseUpdateStatusPageComponentResponse(rsp)
+}
+
+// UpdateStatusPageComponentWithResponse Update a component
+//
+// `started_on` cannot be changed: it determines where the availability bar stops showing as unmeasured, and changing it would rewrite history that has already been published.
+//
+// Takes a body of the `application/json` content type, and returns a wrapper object for the known response body format(s).
+//
+// Corresponds with PUT /api/v1/status-page/components/{componentId} (the `UpdateStatusPageComponent` operationId).
+func (c *ClientWithResponses) UpdateStatusPageComponentWithResponse(ctx context.Context, componentId openapi_types.UUID, body UpdateStatusPageComponentJSONRequestBody, reqEditors ...RequestEditorFn) (*UpdateStatusPageComponentResponse, error) {
+	rsp, err := c.UpdateStatusPageComponent(ctx, componentId, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseUpdateStatusPageComponentResponse(rsp)
+}
+
+// ListStatusPageComponentSourcesWithResponse List the monitored sources bound to a component
+//
+// Monitored sources are internal information and **never appear on the public page**.
+//
+// Returns a wrapper object for the known response body format(s).
+//
+// Corresponds with GET /api/v1/status-page/components/{componentId}/sources (the `ListStatusPageComponentSources` operationId).
+func (c *ClientWithResponses) ListStatusPageComponentSourcesWithResponse(ctx context.Context, componentId openapi_types.UUID, reqEditors ...RequestEditorFn) (*ListStatusPageComponentSourcesResponse, error) {
+	rsp, err := c.ListStatusPageComponentSources(ctx, componentId, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseListStatusPageComponentSourcesResponse(rsp)
+}
+
+// PutStatusPageComponentSourcesWithBodyWithResponse Set the complete list of monitored sources for a component
+//
+// Submits the **complete** set of sources; anything not listed is unbound.
+//
+// Once bound, alerts on these machines and web checks drive the status of the component automatically: DISASTER and HIGH are reported as a major outage, AVERAGE as a partial outage, and WARNING as degraded performance. Alerts below `auto_status_min_severity` have no effect.
+//
+// `show_url` controls whether the checked address is shown on the public page. It is off by default.
+//
+// Takes any type of body and a specified content type, and returns a wrapper object for the known response body format(s).
+//
+// Corresponds with PUT /api/v1/status-page/components/{componentId}/sources (the `PutStatusPageComponentSources` operationId).
+func (c *ClientWithResponses) PutStatusPageComponentSourcesWithBodyWithResponse(ctx context.Context, componentId openapi_types.UUID, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*PutStatusPageComponentSourcesResponse, error) {
+	rsp, err := c.PutStatusPageComponentSourcesWithBody(ctx, componentId, contentType, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParsePutStatusPageComponentSourcesResponse(rsp)
+}
+
+// PutStatusPageComponentSourcesWithResponse Set the complete list of monitored sources for a component
+//
+// Submits the **complete** set of sources; anything not listed is unbound.
+//
+// Once bound, alerts on these machines and web checks drive the status of the component automatically: DISASTER and HIGH are reported as a major outage, AVERAGE as a partial outage, and WARNING as degraded performance. Alerts below `auto_status_min_severity` have no effect.
+//
+// `show_url` controls whether the checked address is shown on the public page. It is off by default.
+//
+// Takes a body of the `application/json` content type, and returns a wrapper object for the known response body format(s).
+//
+// Corresponds with PUT /api/v1/status-page/components/{componentId}/sources (the `PutStatusPageComponentSources` operationId).
+func (c *ClientWithResponses) PutStatusPageComponentSourcesWithResponse(ctx context.Context, componentId openapi_types.UUID, body PutStatusPageComponentSourcesJSONRequestBody, reqEditors ...RequestEditorFn) (*PutStatusPageComponentSourcesResponse, error) {
+	rsp, err := c.PutStatusPageComponentSources(ctx, componentId, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParsePutStatusPageComponentSourcesResponse(rsp)
+}
+
+// ListStatusPageGroupsWithResponse List groups
+//
+// Returns a wrapper object for the known response body format(s).
+//
+// Corresponds with GET /api/v1/status-page/groups (the `ListStatusPageGroups` operationId).
+func (c *ClientWithResponses) ListStatusPageGroupsWithResponse(ctx context.Context, reqEditors ...RequestEditorFn) (*ListStatusPageGroupsResponse, error) {
+	rsp, err := c.ListStatusPageGroups(ctx, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseListStatusPageGroupsResponse(rsp)
+}
+
+// CreateStatusPageGroupWithBodyWithResponse Create a group
+//
+// A group is one level of collapsing applied to components on the page. There is exactly one level; groups cannot be nested.
+//
+// Takes any type of body and a specified content type, and returns a wrapper object for the known response body format(s).
+//
+// Corresponds with POST /api/v1/status-page/groups (the `CreateStatusPageGroup` operationId).
+func (c *ClientWithResponses) CreateStatusPageGroupWithBodyWithResponse(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*CreateStatusPageGroupResponse, error) {
+	rsp, err := c.CreateStatusPageGroupWithBody(ctx, contentType, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseCreateStatusPageGroupResponse(rsp)
+}
+
+// CreateStatusPageGroupWithResponse Create a group
+//
+// A group is one level of collapsing applied to components on the page. There is exactly one level; groups cannot be nested.
+//
+// Takes a body of the `application/json` content type, and returns a wrapper object for the known response body format(s).
+//
+// Corresponds with POST /api/v1/status-page/groups (the `CreateStatusPageGroup` operationId).
+func (c *ClientWithResponses) CreateStatusPageGroupWithResponse(ctx context.Context, body CreateStatusPageGroupJSONRequestBody, reqEditors ...RequestEditorFn) (*CreateStatusPageGroupResponse, error) {
+	rsp, err := c.CreateStatusPageGroup(ctx, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseCreateStatusPageGroupResponse(rsp)
+}
+
+// DeleteStatusPageGroupWithResponse Delete a group
+//
+// The components in it are **not deleted**. They return to the top level as ungrouped components, keeping their availability history and the incident notices that reference them.
+//
+// Returns a wrapper object for the known response body format(s).
+//
+// Corresponds with DELETE /api/v1/status-page/groups/{groupId} (the `DeleteStatusPageGroup` operationId).
+func (c *ClientWithResponses) DeleteStatusPageGroupWithResponse(ctx context.Context, groupId openapi_types.UUID, reqEditors ...RequestEditorFn) (*DeleteStatusPageGroupResponse, error) {
+	rsp, err := c.DeleteStatusPageGroup(ctx, groupId, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseDeleteStatusPageGroupResponse(rsp)
+}
+
+// UpdateStatusPageGroupWithBodyWithResponse Update a group
+//
+// Takes any type of body and a specified content type, and returns a wrapper object for the known response body format(s).
+//
+// Corresponds with PUT /api/v1/status-page/groups/{groupId} (the `UpdateStatusPageGroup` operationId).
+func (c *ClientWithResponses) UpdateStatusPageGroupWithBodyWithResponse(ctx context.Context, groupId openapi_types.UUID, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*UpdateStatusPageGroupResponse, error) {
+	rsp, err := c.UpdateStatusPageGroupWithBody(ctx, groupId, contentType, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseUpdateStatusPageGroupResponse(rsp)
+}
+
+// UpdateStatusPageGroupWithResponse Update a group
+//
+// Takes a body of the `application/json` content type, and returns a wrapper object for the known response body format(s).
+//
+// Corresponds with PUT /api/v1/status-page/groups/{groupId} (the `UpdateStatusPageGroup` operationId).
+func (c *ClientWithResponses) UpdateStatusPageGroupWithResponse(ctx context.Context, groupId openapi_types.UUID, body UpdateStatusPageGroupJSONRequestBody, reqEditors ...RequestEditorFn) (*UpdateStatusPageGroupResponse, error) {
+	rsp, err := c.UpdateStatusPageGroup(ctx, groupId, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseUpdateStatusPageGroupResponse(rsp)
+}
+
+// PutStatusPageGroupOrderWithBodyWithResponse Set the order of components within a group
+//
+// Takes any type of body and a specified content type, and returns a wrapper object for the known response body format(s).
+//
+// Corresponds with PUT /api/v1/status-page/groups/{groupId}/order (the `PutStatusPageGroupOrder` operationId).
+func (c *ClientWithResponses) PutStatusPageGroupOrderWithBodyWithResponse(ctx context.Context, groupId openapi_types.UUID, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*PutStatusPageGroupOrderResponse, error) {
+	rsp, err := c.PutStatusPageGroupOrderWithBody(ctx, groupId, contentType, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParsePutStatusPageGroupOrderResponse(rsp)
+}
+
+// PutStatusPageGroupOrderWithResponse Set the order of components within a group
+//
+// Takes a body of the `application/json` content type, and returns a wrapper object for the known response body format(s).
+//
+// Corresponds with PUT /api/v1/status-page/groups/{groupId}/order (the `PutStatusPageGroupOrder` operationId).
+func (c *ClientWithResponses) PutStatusPageGroupOrderWithResponse(ctx context.Context, groupId openapi_types.UUID, body PutStatusPageGroupOrderJSONRequestBody, reqEditors ...RequestEditorFn) (*PutStatusPageGroupOrderResponse, error) {
+	rsp, err := c.PutStatusPageGroupOrder(ctx, groupId, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParsePutStatusPageGroupOrderResponse(rsp)
+}
+
+// ListStatusPageIncidentsWithResponse List the incident notices on the status page
+//
+// These are **customer-facing notices**, distinct from the monitoring incidents under `/incidents`. Nothing from the latter is carried over; the text here is written by your team.
+//
+// Returns a wrapper object for the known response body format(s).
+//
+// Corresponds with GET /api/v1/status-page/incidents (the `ListStatusPageIncidents` operationId).
+func (c *ClientWithResponses) ListStatusPageIncidentsWithResponse(ctx context.Context, params *ListStatusPageIncidentsParams, reqEditors ...RequestEditorFn) (*ListStatusPageIncidentsResponse, error) {
+	rsp, err := c.ListStatusPageIncidents(ctx, params, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseListStatusPageIncidentsResponse(rsp)
+}
+
+// PublishStatusPageIncidentWithBodyWithResponse Publish an incident notice
+//
+// Publishing a notice and writing its first update are a single operation: a notice with no updates would appear as a bare title on a page that has already been delivered to readers.
+//
+// `started_at` is when the **incident began**, not when the notice was published. The two are usually minutes to hours apart, and using the publication time would understate the impact window that customers can compare against their own logs. Backfilling a past incident relies on the same field.
+//
+// The statuses given in `components` take effect on the public page immediately and count towards availability.
+//
+// Takes any type of body and a specified content type, and returns a wrapper object for the known response body format(s).
+//
+// Corresponds with POST /api/v1/status-page/incidents (the `PublishStatusPageIncident` operationId).
+func (c *ClientWithResponses) PublishStatusPageIncidentWithBodyWithResponse(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*PublishStatusPageIncidentResponse, error) {
+	rsp, err := c.PublishStatusPageIncidentWithBody(ctx, contentType, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParsePublishStatusPageIncidentResponse(rsp)
+}
+
+// PublishStatusPageIncidentWithResponse Publish an incident notice
+//
+// Publishing a notice and writing its first update are a single operation: a notice with no updates would appear as a bare title on a page that has already been delivered to readers.
+//
+// `started_at` is when the **incident began**, not when the notice was published. The two are usually minutes to hours apart, and using the publication time would understate the impact window that customers can compare against their own logs. Backfilling a past incident relies on the same field.
+//
+// The statuses given in `components` take effect on the public page immediately and count towards availability.
+//
+// Takes a body of the `application/json` content type, and returns a wrapper object for the known response body format(s).
+//
+// Corresponds with POST /api/v1/status-page/incidents (the `PublishStatusPageIncident` operationId).
+func (c *ClientWithResponses) PublishStatusPageIncidentWithResponse(ctx context.Context, body PublishStatusPageIncidentJSONRequestBody, reqEditors ...RequestEditorFn) (*PublishStatusPageIncidentResponse, error) {
+	rsp, err := c.PublishStatusPageIncident(ctx, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParsePublishStatusPageIncidentResponse(rsp)
+}
+
+// GetStatusPageIncidentWithResponse Get an incident notice
+//
+// Returns a wrapper object for the known response body format(s).
+//
+// Corresponds with GET /api/v1/status-page/incidents/{incidentId} (the `GetStatusPageIncident` operationId).
+func (c *ClientWithResponses) GetStatusPageIncidentWithResponse(ctx context.Context, incidentId openapi_types.UUID, reqEditors ...RequestEditorFn) (*GetStatusPageIncidentResponse, error) {
+	rsp, err := c.GetStatusPageIncident(ctx, incidentId, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseGetStatusPageIncidentResponse(rsp)
+}
+
+// PostStatusPageIncidentUpdateWithBodyWithResponse Append an update to an incident notice
+//
+// Published updates are never modified; a correction is issued as a new update. Customers may already have forwarded the original, and a silent rewrite would leave the two sides with different histories.
+//
+// `components` lists only the components **being changed** by this update; those not listed keep their current status. Setting `status` to `RESOLVED` returns every component this notice has affected to operational and closes the notice. A closed notice accepts no further updates.
+//
+// Takes any type of body and a specified content type, and returns a wrapper object for the known response body format(s).
+//
+// Corresponds with POST /api/v1/status-page/incidents/{incidentId}/updates (the `PostStatusPageIncidentUpdate` operationId).
+func (c *ClientWithResponses) PostStatusPageIncidentUpdateWithBodyWithResponse(ctx context.Context, incidentId openapi_types.UUID, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*PostStatusPageIncidentUpdateResponse, error) {
+	rsp, err := c.PostStatusPageIncidentUpdateWithBody(ctx, incidentId, contentType, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParsePostStatusPageIncidentUpdateResponse(rsp)
+}
+
+// PostStatusPageIncidentUpdateWithResponse Append an update to an incident notice
+//
+// Published updates are never modified; a correction is issued as a new update. Customers may already have forwarded the original, and a silent rewrite would leave the two sides with different histories.
+//
+// `components` lists only the components **being changed** by this update; those not listed keep their current status. Setting `status` to `RESOLVED` returns every component this notice has affected to operational and closes the notice. A closed notice accepts no further updates.
+//
+// Takes a body of the `application/json` content type, and returns a wrapper object for the known response body format(s).
+//
+// Corresponds with POST /api/v1/status-page/incidents/{incidentId}/updates (the `PostStatusPageIncidentUpdate` operationId).
+func (c *ClientWithResponses) PostStatusPageIncidentUpdateWithResponse(ctx context.Context, incidentId openapi_types.UUID, body PostStatusPageIncidentUpdateJSONRequestBody, reqEditors ...RequestEditorFn) (*PostStatusPageIncidentUpdateResponse, error) {
+	rsp, err := c.PostStatusPageIncidentUpdate(ctx, incidentId, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParsePostStatusPageIncidentUpdateResponse(rsp)
+}
+
+// ListStatusPageMaintenancesWithResponse List scheduled maintenance
+//
+// Returns a wrapper object for the known response body format(s).
+//
+// Corresponds with GET /api/v1/status-page/maintenances (the `ListStatusPageMaintenances` operationId).
+func (c *ClientWithResponses) ListStatusPageMaintenancesWithResponse(ctx context.Context, params *ListStatusPageMaintenancesParams, reqEditors ...RequestEditorFn) (*ListStatusPageMaintenancesResponse, error) {
+	rsp, err := c.ListStatusPageMaintenances(ctx, params, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseListStatusPageMaintenancesResponse(rsp)
+}
+
+// ScheduleStatusPageMaintenanceWithBodyWithResponse Schedule maintenance
+//
+// Maintenance starts and finishes automatically at the scheduled times; nobody needs to be present. While it runs, the affected components are shown as under maintenance and **availability is not reduced** — planned work should not consume the availability you promise to customers, which is the point of announcing it in advance.
+//
+// This is separate from `/maintenance-windows`, which suppresses alerting for a period. This endpoint announces the work to your customers. The two are usually created together: without suppression, restarts during the maintenance raise alerts and mark the components unavailable.
+//
+// Takes any type of body and a specified content type, and returns a wrapper object for the known response body format(s).
+//
+// Corresponds with POST /api/v1/status-page/maintenances (the `ScheduleStatusPageMaintenance` operationId).
+func (c *ClientWithResponses) ScheduleStatusPageMaintenanceWithBodyWithResponse(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*ScheduleStatusPageMaintenanceResponse, error) {
+	rsp, err := c.ScheduleStatusPageMaintenanceWithBody(ctx, contentType, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseScheduleStatusPageMaintenanceResponse(rsp)
+}
+
+// ScheduleStatusPageMaintenanceWithResponse Schedule maintenance
+//
+// Maintenance starts and finishes automatically at the scheduled times; nobody needs to be present. While it runs, the affected components are shown as under maintenance and **availability is not reduced** — planned work should not consume the availability you promise to customers, which is the point of announcing it in advance.
+//
+// This is separate from `/maintenance-windows`, which suppresses alerting for a period. This endpoint announces the work to your customers. The two are usually created together: without suppression, restarts during the maintenance raise alerts and mark the components unavailable.
+//
+// Takes a body of the `application/json` content type, and returns a wrapper object for the known response body format(s).
+//
+// Corresponds with POST /api/v1/status-page/maintenances (the `ScheduleStatusPageMaintenance` operationId).
+func (c *ClientWithResponses) ScheduleStatusPageMaintenanceWithResponse(ctx context.Context, body ScheduleStatusPageMaintenanceJSONRequestBody, reqEditors ...RequestEditorFn) (*ScheduleStatusPageMaintenanceResponse, error) {
+	rsp, err := c.ScheduleStatusPageMaintenance(ctx, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseScheduleStatusPageMaintenanceResponse(rsp)
+}
+
+// GetStatusPageMaintenanceWithResponse Get a scheduled maintenance
+//
+// Returns a wrapper object for the known response body format(s).
+//
+// Corresponds with GET /api/v1/status-page/maintenances/{maintenanceId} (the `GetStatusPageMaintenance` operationId).
+func (c *ClientWithResponses) GetStatusPageMaintenanceWithResponse(ctx context.Context, maintenanceId openapi_types.UUID, reqEditors ...RequestEditorFn) (*GetStatusPageMaintenanceResponse, error) {
+	rsp, err := c.GetStatusPageMaintenance(ctx, maintenanceId, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseGetStatusPageMaintenanceResponse(rsp)
+}
+
+// CancelStatusPageMaintenanceWithResponse Cancel a maintenance that has not started
+//
+// Cancelled rather than deleted, so that readers who saw the announcement have an explanation. Maintenance that has already started cannot be cancelled; finish it early instead.
+//
+// Returns a wrapper object for the known response body format(s).
+//
+// Corresponds with POST /api/v1/status-page/maintenances/{maintenanceId}/cancel (the `CancelStatusPageMaintenance` operationId).
+func (c *ClientWithResponses) CancelStatusPageMaintenanceWithResponse(ctx context.Context, maintenanceId openapi_types.UUID, reqEditors ...RequestEditorFn) (*CancelStatusPageMaintenanceResponse, error) {
+	rsp, err := c.CancelStatusPageMaintenance(ctx, maintenanceId, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseCancelStatusPageMaintenanceResponse(rsp)
+}
+
+// CompleteStatusPageMaintenanceWithResponse Finish a running maintenance early
+//
+// Optional: maintenance finishes on its own at the scheduled end time. Use this endpoint when the work is done ahead of schedule; the affected components return to operational immediately.
+//
+// Returns a wrapper object for the known response body format(s).
+//
+// Corresponds with POST /api/v1/status-page/maintenances/{maintenanceId}/complete (the `CompleteStatusPageMaintenance` operationId).
+func (c *ClientWithResponses) CompleteStatusPageMaintenanceWithResponse(ctx context.Context, maintenanceId openapi_types.UUID, reqEditors ...RequestEditorFn) (*CompleteStatusPageMaintenanceResponse, error) {
+	rsp, err := c.CompleteStatusPageMaintenance(ctx, maintenanceId, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseCompleteStatusPageMaintenanceResponse(rsp)
+}
+
+// PutStatusPageOrderWithBodyWithResponse Set the order of the top level of the page
+//
+// Submits the **entire** top-level order in one call rather than moving a single entry to a given position.
+//
+// The top level interleaves groups and ungrouped components, so the order is expressed as one list covering both.
+//
+// Each entry carries either `group_id` or `component_id`. Entries not listed are placed after those that are.
+//
+// Takes any type of body and a specified content type, and returns a wrapper object for the known response body format(s).
+//
+// Corresponds with PUT /api/v1/status-page/order (the `PutStatusPageOrder` operationId).
+func (c *ClientWithResponses) PutStatusPageOrderWithBodyWithResponse(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*PutStatusPageOrderResponse, error) {
+	rsp, err := c.PutStatusPageOrderWithBody(ctx, contentType, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParsePutStatusPageOrderResponse(rsp)
+}
+
+// PutStatusPageOrderWithResponse Set the order of the top level of the page
+//
+// Submits the **entire** top-level order in one call rather than moving a single entry to a given position.
+//
+// The top level interleaves groups and ungrouped components, so the order is expressed as one list covering both.
+//
+// Each entry carries either `group_id` or `component_id`. Entries not listed are placed after those that are.
+//
+// Takes a body of the `application/json` content type, and returns a wrapper object for the known response body format(s).
+//
+// Corresponds with PUT /api/v1/status-page/order (the `PutStatusPageOrder` operationId).
+func (c *ClientWithResponses) PutStatusPageOrderWithResponse(ctx context.Context, body PutStatusPageOrderJSONRequestBody, reqEditors ...RequestEditorFn) (*PutStatusPageOrderResponse, error) {
+	rsp, err := c.PutStatusPageOrder(ctx, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParsePutStatusPageOrderResponse(rsp)
+}
+
+// ListProjectTopItemsWithResponse Machines ranked highest by a given metric
 //
 // Returns a wrapper object for the known response body format(s).
 //
@@ -7222,7 +12126,7 @@ func (c *ClientWithResponses) ListProjectTopItemsWithResponse(ctx context.Contex
 	return ParseListProjectTopItemsResponse(rsp)
 }
 
-// ListWebChecksWithResponse 列出网页检查
+// ListWebChecksWithResponse List web checks
 //
 // Returns a wrapper object for the known response body format(s).
 //
@@ -8258,6 +13162,811 @@ func ParsePutSloResponse(rsp *http.Response) (*PutSloResponse, error) {
 			return nil, err
 		}
 		response.JSON200 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && true:
+		var dest Error
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSONDefault = &dest
+
+	}
+
+	return response, nil
+}
+
+// ParseDeleteStatusPageResponse parses an HTTP response from a DeleteStatusPageWithResponse call
+func ParseDeleteStatusPageResponse(rsp *http.Response) (*DeleteStatusPageResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &DeleteStatusPageResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case rsp.StatusCode == 204:
+		break // No content-type
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && true:
+		var dest Error
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSONDefault = &dest
+
+	}
+
+	return response, nil
+}
+
+// ParseGetStatusPageResponse parses an HTTP response from a GetStatusPageWithResponse call
+func ParseGetStatusPageResponse(rsp *http.Response) (*GetStatusPageResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &GetStatusPageResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest StatusPageResource
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && true:
+		var dest Error
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSONDefault = &dest
+
+	}
+
+	return response, nil
+}
+
+// ParsePutStatusPageResponse parses an HTTP response from a PutStatusPageWithResponse call
+func ParsePutStatusPageResponse(rsp *http.Response) (*PutStatusPageResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &PutStatusPageResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest StatusPageResource
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && true:
+		var dest Error
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSONDefault = &dest
+
+	}
+
+	return response, nil
+}
+
+// ParseListStatusPageComponentsResponse parses an HTTP response from a ListStatusPageComponentsWithResponse call
+func ParseListStatusPageComponentsResponse(rsp *http.Response) (*ListStatusPageComponentsResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &ListStatusPageComponentsResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest StatusPageComponentListResponseBody
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && true:
+		var dest Error
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSONDefault = &dest
+
+	}
+
+	return response, nil
+}
+
+// ParseCreateStatusPageComponentResponse parses an HTTP response from a CreateStatusPageComponentWithResponse call
+func ParseCreateStatusPageComponentResponse(rsp *http.Response) (*CreateStatusPageComponentResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &CreateStatusPageComponentResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 201:
+		var dest StatusPageComponentResource
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON201 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && true:
+		var dest Error
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSONDefault = &dest
+
+	}
+
+	return response, nil
+}
+
+// ParseDeleteStatusPageComponentResponse parses an HTTP response from a DeleteStatusPageComponentWithResponse call
+func ParseDeleteStatusPageComponentResponse(rsp *http.Response) (*DeleteStatusPageComponentResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &DeleteStatusPageComponentResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case rsp.StatusCode == 204:
+		break // No content-type
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && true:
+		var dest Error
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSONDefault = &dest
+
+	}
+
+	return response, nil
+}
+
+// ParseGetStatusPageComponentResponse parses an HTTP response from a GetStatusPageComponentWithResponse call
+func ParseGetStatusPageComponentResponse(rsp *http.Response) (*GetStatusPageComponentResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &GetStatusPageComponentResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest StatusPageComponentResource
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && true:
+		var dest Error
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSONDefault = &dest
+
+	}
+
+	return response, nil
+}
+
+// ParseUpdateStatusPageComponentResponse parses an HTTP response from a UpdateStatusPageComponentWithResponse call
+func ParseUpdateStatusPageComponentResponse(rsp *http.Response) (*UpdateStatusPageComponentResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &UpdateStatusPageComponentResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest StatusPageComponentResource
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && true:
+		var dest Error
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSONDefault = &dest
+
+	}
+
+	return response, nil
+}
+
+// ParseListStatusPageComponentSourcesResponse parses an HTTP response from a ListStatusPageComponentSourcesWithResponse call
+func ParseListStatusPageComponentSourcesResponse(rsp *http.Response) (*ListStatusPageComponentSourcesResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &ListStatusPageComponentSourcesResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest StatusPageComponentSourcesResource
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && true:
+		var dest Error
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSONDefault = &dest
+
+	}
+
+	return response, nil
+}
+
+// ParsePutStatusPageComponentSourcesResponse parses an HTTP response from a PutStatusPageComponentSourcesWithResponse call
+func ParsePutStatusPageComponentSourcesResponse(rsp *http.Response) (*PutStatusPageComponentSourcesResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &PutStatusPageComponentSourcesResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest StatusPageComponentSourcesResource
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && true:
+		var dest Error
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSONDefault = &dest
+
+	}
+
+	return response, nil
+}
+
+// ParseListStatusPageGroupsResponse parses an HTTP response from a ListStatusPageGroupsWithResponse call
+func ParseListStatusPageGroupsResponse(rsp *http.Response) (*ListStatusPageGroupsResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &ListStatusPageGroupsResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest StatusPageGroupListResponseBody
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && true:
+		var dest Error
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSONDefault = &dest
+
+	}
+
+	return response, nil
+}
+
+// ParseCreateStatusPageGroupResponse parses an HTTP response from a CreateStatusPageGroupWithResponse call
+func ParseCreateStatusPageGroupResponse(rsp *http.Response) (*CreateStatusPageGroupResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &CreateStatusPageGroupResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 201:
+		var dest StatusPageGroupResource
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON201 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && true:
+		var dest Error
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSONDefault = &dest
+
+	}
+
+	return response, nil
+}
+
+// ParseDeleteStatusPageGroupResponse parses an HTTP response from a DeleteStatusPageGroupWithResponse call
+func ParseDeleteStatusPageGroupResponse(rsp *http.Response) (*DeleteStatusPageGroupResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &DeleteStatusPageGroupResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case rsp.StatusCode == 204:
+		break // No content-type
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && true:
+		var dest Error
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSONDefault = &dest
+
+	}
+
+	return response, nil
+}
+
+// ParseUpdateStatusPageGroupResponse parses an HTTP response from a UpdateStatusPageGroupWithResponse call
+func ParseUpdateStatusPageGroupResponse(rsp *http.Response) (*UpdateStatusPageGroupResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &UpdateStatusPageGroupResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest StatusPageGroupResource
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && true:
+		var dest Error
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSONDefault = &dest
+
+	}
+
+	return response, nil
+}
+
+// ParsePutStatusPageGroupOrderResponse parses an HTTP response from a PutStatusPageGroupOrderWithResponse call
+func ParsePutStatusPageGroupOrderResponse(rsp *http.Response) (*PutStatusPageGroupOrderResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &PutStatusPageGroupOrderResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case rsp.StatusCode == 204:
+		break // No content-type
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && true:
+		var dest Error
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSONDefault = &dest
+
+	}
+
+	return response, nil
+}
+
+// ParseListStatusPageIncidentsResponse parses an HTTP response from a ListStatusPageIncidentsWithResponse call
+func ParseListStatusPageIncidentsResponse(rsp *http.Response) (*ListStatusPageIncidentsResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &ListStatusPageIncidentsResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest LengthAwarePageStatusPageIncidentResource
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && true:
+		var dest Error
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSONDefault = &dest
+
+	}
+
+	return response, nil
+}
+
+// ParsePublishStatusPageIncidentResponse parses an HTTP response from a PublishStatusPageIncidentWithResponse call
+func ParsePublishStatusPageIncidentResponse(rsp *http.Response) (*PublishStatusPageIncidentResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &PublishStatusPageIncidentResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 201:
+		var dest StatusPageIncidentResource
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON201 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && true:
+		var dest Error
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSONDefault = &dest
+
+	}
+
+	return response, nil
+}
+
+// ParseGetStatusPageIncidentResponse parses an HTTP response from a GetStatusPageIncidentWithResponse call
+func ParseGetStatusPageIncidentResponse(rsp *http.Response) (*GetStatusPageIncidentResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &GetStatusPageIncidentResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest StatusPageIncidentResource
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && true:
+		var dest Error
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSONDefault = &dest
+
+	}
+
+	return response, nil
+}
+
+// ParsePostStatusPageIncidentUpdateResponse parses an HTTP response from a PostStatusPageIncidentUpdateWithResponse call
+func ParsePostStatusPageIncidentUpdateResponse(rsp *http.Response) (*PostStatusPageIncidentUpdateResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &PostStatusPageIncidentUpdateResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest StatusPageIncidentResource
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && true:
+		var dest Error
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSONDefault = &dest
+
+	}
+
+	return response, nil
+}
+
+// ParseListStatusPageMaintenancesResponse parses an HTTP response from a ListStatusPageMaintenancesWithResponse call
+func ParseListStatusPageMaintenancesResponse(rsp *http.Response) (*ListStatusPageMaintenancesResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &ListStatusPageMaintenancesResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest LengthAwarePageStatusPageMaintenanceResource
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && true:
+		var dest Error
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSONDefault = &dest
+
+	}
+
+	return response, nil
+}
+
+// ParseScheduleStatusPageMaintenanceResponse parses an HTTP response from a ScheduleStatusPageMaintenanceWithResponse call
+func ParseScheduleStatusPageMaintenanceResponse(rsp *http.Response) (*ScheduleStatusPageMaintenanceResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &ScheduleStatusPageMaintenanceResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 201:
+		var dest StatusPageMaintenanceResource
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON201 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && true:
+		var dest Error
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSONDefault = &dest
+
+	}
+
+	return response, nil
+}
+
+// ParseGetStatusPageMaintenanceResponse parses an HTTP response from a GetStatusPageMaintenanceWithResponse call
+func ParseGetStatusPageMaintenanceResponse(rsp *http.Response) (*GetStatusPageMaintenanceResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &GetStatusPageMaintenanceResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest StatusPageMaintenanceResource
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && true:
+		var dest Error
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSONDefault = &dest
+
+	}
+
+	return response, nil
+}
+
+// ParseCancelStatusPageMaintenanceResponse parses an HTTP response from a CancelStatusPageMaintenanceWithResponse call
+func ParseCancelStatusPageMaintenanceResponse(rsp *http.Response) (*CancelStatusPageMaintenanceResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &CancelStatusPageMaintenanceResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest StatusPageMaintenanceResource
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && true:
+		var dest Error
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSONDefault = &dest
+
+	}
+
+	return response, nil
+}
+
+// ParseCompleteStatusPageMaintenanceResponse parses an HTTP response from a CompleteStatusPageMaintenanceWithResponse call
+func ParseCompleteStatusPageMaintenanceResponse(rsp *http.Response) (*CompleteStatusPageMaintenanceResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &CompleteStatusPageMaintenanceResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest StatusPageMaintenanceResource
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && true:
+		var dest Error
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSONDefault = &dest
+
+	}
+
+	return response, nil
+}
+
+// ParsePutStatusPageOrderResponse parses an HTTP response from a PutStatusPageOrderWithResponse call
+func ParsePutStatusPageOrderResponse(rsp *http.Response) (*PutStatusPageOrderResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &PutStatusPageOrderResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case rsp.StatusCode == 204:
+		break // No content-type
 
 	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && true:
 		var dest Error
