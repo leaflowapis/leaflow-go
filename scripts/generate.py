@@ -64,11 +64,6 @@ CODEGEN = "github.com/oapi-codegen/oapi-codegen/v2/cmd/oapi-codegen@v2.8.0"
 
 # 配置文件里的键名和命令行 flag 不一样：-generate types 在配置里叫 models。写错的话它不报错，
 # 只是那一项没生成——而「少了一半类型」要等到调用方编译不过才发现。
-#
-# strict-server 给的是 (ctx, request) (response, error)——和 huma 那套形状一致，所以迁移时
-# handler 里那层业务代码几乎不用动。std-http-server 是把它接到标准库 ServeMux 上的胶水：
-# Go 1.22 之后 http.ServeMux 自己就认 method 和路径参数，不需要第三方路由。
-SERVER_GENERATE = {"models": True, "strict-server": True, "std-http-server": True}
 CLIENT_GENERATE = {"models": True, "client": True}
 # 共用类型那份只出类型：它没有 paths，生成 client 会得到一个空壳。
 SHARED_GENERATE = {"models": True}
@@ -82,16 +77,15 @@ SHARED_GENERATE = {"models": True}
 # 服务那边保持裁剪：那边的未引用 schema 是真的没人要。
 SHARED_OUTPUT_OPTIONS = {**{"skip-prune": True}}
 
-# 已经迁到 ogen 的面。
+# 服务端**一律走 ogen**。曾经有一个 OGEN_SERVICES 名单，因为迁移是一个面一个面做的；
+# 名单装满之后它连同 oapi-codegen 那条服务端路径一起删掉了。
 #
-# 两套并存是有意的：一次换掉十二个面要改三百多个 handler，中途出问题分不清是哪一面的事。这份
-# 名单每加一项就是一个面迁完并跑过 e2e，**名单清空的反面——十三份契约全在里面——是迁移完成的
-# 标志**，那时这个常量和 oapi-codegen 那条路一起删掉。
+# **客户端仍然是 oapi-codegen 出的**，那是另一件事：外部用户装的是它，而 ogen 的客户端形状不同，
+# 换掉是对下游的破坏性改动。
 #
-# 为什么迁：oapi-codegen 只把 schema 翻成 Go 类型，一条约束都不生成。契约上写着 minLength: 1
+# 为什么当初要迁：oapi-codegen 只把 schema 翻成 Go 类型，一条约束都不生成。契约上写着 minLength: 1
 # 的字段生成出来是 `Name string`，而不执行**不报错**——空名字一路走到数据库层，报出来的是一句
 # ent 的 validator failed 包成的 500，那次调用早已在后端建好了资源。理由写全在 scripts/ogen.py。
-OGEN_SERVICES = {"tunnel", "iam", "account", "canopy", "assistant", "monitoring", "compute", "dns"}
 
 # SHARED 是那份共用类型在契约里的相对路径，以及它生成出来的 Go 包。
 #
@@ -206,16 +200,10 @@ def main():
             # 换掉是对下游的破坏性改动，和服务端那件事无关，不该被它捎带着做。
             codegen(contract, package, out / "client.gen.go", CLIENT_GENERATE, scratch, mapping)
 
-            if service in OGEN_SERVICES:
-                ogen.generate(contract, f"{package}server", out / "server")
-                how = "ogen"
-            else:
-                codegen(contract, f"{package}server", out / "server" / "server.gen.go",
-                        SERVER_GENERATE, scratch, mapping)
-                how = "oapi-codegen"
+            ogen.generate(contract, f"{package}server", out / "server")
 
             write_module(service)
-            print(f"{service}/{version:8} → {service}/{version}  服务端={how}")
+            print(f"{service}/{version:8} → {service}/{version}")
 
 
 if __name__ == "__main__":
