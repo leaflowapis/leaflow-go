@@ -12,19 +12,6 @@ import (
 	"go.opentelemetry.io/otel/trace"
 )
 
-func encodeAppendRecordsResponse(response *RecordSetResource, w http.ResponseWriter, span trace.Span) error {
-	w.Header().Set("Content-Type", "application/json; charset=utf-8")
-	w.WriteHeader(201)
-
-	e := new(jx.Encoder)
-	response.Encode(e)
-	if _, err := e.WriteTo(w); err != nil {
-		return errors.Wrap(err, "write")
-	}
-
-	return nil
-}
-
 func encodeCreateCredentialResponse(response *CredentialResource, w http.ResponseWriter, span trace.Span) error {
 	w.Header().Set("Content-Type", "application/json; charset=utf-8")
 	w.WriteHeader(201)
@@ -103,6 +90,19 @@ func encodeListRecordsResponse(response *LengthAwarePageRecordSetResource, w htt
 }
 
 func encodeListZonesResponse(response *ZoneListResponseBody, w http.ResponseWriter, span trace.Span) error {
+	w.Header().Set("Content-Type", "application/json; charset=utf-8")
+	w.WriteHeader(200)
+
+	e := new(jx.Encoder)
+	response.Encode(e)
+	if _, err := e.WriteTo(w); err != nil {
+		return errors.Wrap(err, "write")
+	}
+
+	return nil
+}
+
+func encodeModifyRecordSetResponse(response *RecordSetResource, w http.ResponseWriter, span trace.Span) error {
 	w.Header().Set("Content-Type", "application/json; charset=utf-8")
 	w.WriteHeader(200)
 

@@ -15,146 +15,6 @@ import (
 	"github.com/ogen-go/ogen/validate"
 )
 
-// AppendRecordsParams is parameters of append-records operation.
-type AppendRecordsParams struct {
-	// The domain. A trailing dot is optional.
-	Zone string
-	// Which credential to use. When omitted, the credential is determined from the domain; see
-	// ZONE_AMBIGUOUS.
-	CredentialID OptUUID `json:",omitempty,omitzero"`
-}
-
-func unpackAppendRecordsParams(packed middleware.Parameters) (params AppendRecordsParams) {
-	{
-		key := middleware.ParameterKey{
-			Name: "zone",
-			In:   "path",
-		}
-		params.Zone = packed[key].(string)
-	}
-	{
-		key := middleware.ParameterKey{
-			Name: "credential_id",
-			In:   "query",
-		}
-		if v, ok := packed[key]; ok {
-			params.CredentialID = v.(OptUUID)
-		}
-	}
-	return params
-}
-
-func decodeAppendRecordsParams(args [1]string, argsEscaped bool, r *http.Request) (params AppendRecordsParams, _ error) {
-	q := uri.NewQueryDecoder(r.URL.Query())
-	// Decode path: zone.
-	if err := func() error {
-		param := args[0]
-		if argsEscaped {
-			unescaped, err := url.PathUnescape(args[0])
-			if err != nil {
-				return errors.Wrap(err, "unescape path")
-			}
-			param = unescaped
-		}
-		if len(param) > 0 {
-			d := uri.NewPathDecoder(uri.PathDecoderConfig{
-				Param:   "zone",
-				Value:   param,
-				Style:   uri.PathStyleSimple,
-				Explode: false,
-			})
-
-			if err := func() error {
-				val, err := d.DecodeValue()
-				if err != nil {
-					return err
-				}
-
-				c, err := conv.ToString(val)
-				if err != nil {
-					return err
-				}
-
-				params.Zone = c
-				return nil
-			}(); err != nil {
-				return err
-			}
-			if err := func() error {
-				if err := (validate.String{
-					MinLength:     1,
-					MinLengthSet:  true,
-					MaxLength:     253,
-					MaxLengthSet:  true,
-					Email:         false,
-					Hostname:      false,
-					Regex:         nil,
-					MinNumeric:    0,
-					MinNumericSet: false,
-					MaxNumeric:    0,
-					MaxNumericSet: false,
-				}).Validate(string(params.Zone)); err != nil {
-					return errors.Wrap(err, "string")
-				}
-				return nil
-			}(); err != nil {
-				return err
-			}
-		} else {
-			return validate.ErrFieldRequired
-		}
-		return nil
-	}(); err != nil {
-		return params, &ogenerrors.DecodeParamError{
-			Name: "zone",
-			In:   "path",
-			Err:  err,
-		}
-	}
-	// Decode query: credential_id.
-	if err := func() error {
-		cfg := uri.QueryParameterDecodingConfig{
-			Name:    "credential_id",
-			Style:   uri.QueryStyleForm,
-			Explode: false,
-		}
-
-		if err := q.HasParam(cfg); err == nil {
-			if err := q.DecodeParam(cfg, func(d uri.Decoder) error {
-				var paramsDotCredentialIDVal uuid.UUID
-				if err := func() error {
-					val, err := d.DecodeValue()
-					if err != nil {
-						return err
-					}
-
-					c, err := conv.ToUUID(val)
-					if err != nil {
-						return err
-					}
-
-					paramsDotCredentialIDVal = c
-					return nil
-				}(); err != nil {
-					return err
-				}
-				params.CredentialID.SetTo(paramsDotCredentialIDVal)
-				return nil
-			}); err != nil {
-				return err
-			}
-		}
-		return nil
-	}(); err != nil {
-		return params, &ogenerrors.DecodeParamError{
-			Name: "credential_id",
-			In:   "query",
-			Err:  err,
-		}
-	}
-	return params, nil
-}
-
 // DeleteCredentialParams is parameters of delete-credential operation.
 type DeleteCredentialParams struct {
 	CredentialId uuid.UUID
@@ -1581,6 +1441,281 @@ func decodeListZonesParams(args [0]string, argsEscaped bool, r *http.Request) (p
 	}(); err != nil {
 		return params, &ogenerrors.DecodeParamError{
 			Name: "refresh",
+			In:   "query",
+			Err:  err,
+		}
+	}
+	return params, nil
+}
+
+// ModifyRecordSetParams is parameters of modify-record-set operation.
+type ModifyRecordSetParams struct {
+	// The domain. A trailing dot is optional.
+	Zone string
+	// The name, given relative to the domain. `@` denotes the domain itself and `*` a wildcard.
+	Name string
+	Type RecordType
+	// Which credential to use. When omitted, the credential is determined from the domain; see
+	// ZONE_AMBIGUOUS.
+	CredentialID OptUUID `json:",omitempty,omitzero"`
+}
+
+func unpackModifyRecordSetParams(packed middleware.Parameters) (params ModifyRecordSetParams) {
+	{
+		key := middleware.ParameterKey{
+			Name: "zone",
+			In:   "path",
+		}
+		params.Zone = packed[key].(string)
+	}
+	{
+		key := middleware.ParameterKey{
+			Name: "name",
+			In:   "path",
+		}
+		params.Name = packed[key].(string)
+	}
+	{
+		key := middleware.ParameterKey{
+			Name: "type",
+			In:   "path",
+		}
+		params.Type = packed[key].(RecordType)
+	}
+	{
+		key := middleware.ParameterKey{
+			Name: "credential_id",
+			In:   "query",
+		}
+		if v, ok := packed[key]; ok {
+			params.CredentialID = v.(OptUUID)
+		}
+	}
+	return params
+}
+
+func decodeModifyRecordSetParams(args [3]string, argsEscaped bool, r *http.Request) (params ModifyRecordSetParams, _ error) {
+	q := uri.NewQueryDecoder(r.URL.Query())
+	// Decode path: zone.
+	if err := func() error {
+		param := args[0]
+		if argsEscaped {
+			unescaped, err := url.PathUnescape(args[0])
+			if err != nil {
+				return errors.Wrap(err, "unescape path")
+			}
+			param = unescaped
+		}
+		if len(param) > 0 {
+			d := uri.NewPathDecoder(uri.PathDecoderConfig{
+				Param:   "zone",
+				Value:   param,
+				Style:   uri.PathStyleSimple,
+				Explode: false,
+			})
+
+			if err := func() error {
+				val, err := d.DecodeValue()
+				if err != nil {
+					return err
+				}
+
+				c, err := conv.ToString(val)
+				if err != nil {
+					return err
+				}
+
+				params.Zone = c
+				return nil
+			}(); err != nil {
+				return err
+			}
+			if err := func() error {
+				if err := (validate.String{
+					MinLength:     1,
+					MinLengthSet:  true,
+					MaxLength:     253,
+					MaxLengthSet:  true,
+					Email:         false,
+					Hostname:      false,
+					Regex:         nil,
+					MinNumeric:    0,
+					MinNumericSet: false,
+					MaxNumeric:    0,
+					MaxNumericSet: false,
+				}).Validate(string(params.Zone)); err != nil {
+					return errors.Wrap(err, "string")
+				}
+				return nil
+			}(); err != nil {
+				return err
+			}
+		} else {
+			return validate.ErrFieldRequired
+		}
+		return nil
+	}(); err != nil {
+		return params, &ogenerrors.DecodeParamError{
+			Name: "zone",
+			In:   "path",
+			Err:  err,
+		}
+	}
+	// Decode path: name.
+	if err := func() error {
+		param := args[1]
+		if argsEscaped {
+			unescaped, err := url.PathUnescape(args[1])
+			if err != nil {
+				return errors.Wrap(err, "unescape path")
+			}
+			param = unescaped
+		}
+		if len(param) > 0 {
+			d := uri.NewPathDecoder(uri.PathDecoderConfig{
+				Param:   "name",
+				Value:   param,
+				Style:   uri.PathStyleSimple,
+				Explode: false,
+			})
+
+			if err := func() error {
+				val, err := d.DecodeValue()
+				if err != nil {
+					return err
+				}
+
+				c, err := conv.ToString(val)
+				if err != nil {
+					return err
+				}
+
+				params.Name = c
+				return nil
+			}(); err != nil {
+				return err
+			}
+			if err := func() error {
+				if err := (validate.String{
+					MinLength:     1,
+					MinLengthSet:  true,
+					MaxLength:     253,
+					MaxLengthSet:  true,
+					Email:         false,
+					Hostname:      false,
+					Regex:         nil,
+					MinNumeric:    0,
+					MinNumericSet: false,
+					MaxNumeric:    0,
+					MaxNumericSet: false,
+				}).Validate(string(params.Name)); err != nil {
+					return errors.Wrap(err, "string")
+				}
+				return nil
+			}(); err != nil {
+				return err
+			}
+		} else {
+			return validate.ErrFieldRequired
+		}
+		return nil
+	}(); err != nil {
+		return params, &ogenerrors.DecodeParamError{
+			Name: "name",
+			In:   "path",
+			Err:  err,
+		}
+	}
+	// Decode path: type.
+	if err := func() error {
+		param := args[2]
+		if argsEscaped {
+			unescaped, err := url.PathUnescape(args[2])
+			if err != nil {
+				return errors.Wrap(err, "unescape path")
+			}
+			param = unescaped
+		}
+		if len(param) > 0 {
+			d := uri.NewPathDecoder(uri.PathDecoderConfig{
+				Param:   "type",
+				Value:   param,
+				Style:   uri.PathStyleSimple,
+				Explode: false,
+			})
+
+			if err := func() error {
+				val, err := d.DecodeValue()
+				if err != nil {
+					return err
+				}
+
+				c, err := conv.ToString(val)
+				if err != nil {
+					return err
+				}
+
+				params.Type = RecordType(c)
+				return nil
+			}(); err != nil {
+				return err
+			}
+			if err := func() error {
+				if err := params.Type.Validate(); err != nil {
+					return err
+				}
+				return nil
+			}(); err != nil {
+				return err
+			}
+		} else {
+			return validate.ErrFieldRequired
+		}
+		return nil
+	}(); err != nil {
+		return params, &ogenerrors.DecodeParamError{
+			Name: "type",
+			In:   "path",
+			Err:  err,
+		}
+	}
+	// Decode query: credential_id.
+	if err := func() error {
+		cfg := uri.QueryParameterDecodingConfig{
+			Name:    "credential_id",
+			Style:   uri.QueryStyleForm,
+			Explode: false,
+		}
+
+		if err := q.HasParam(cfg); err == nil {
+			if err := q.DecodeParam(cfg, func(d uri.Decoder) error {
+				var paramsDotCredentialIDVal uuid.UUID
+				if err := func() error {
+					val, err := d.DecodeValue()
+					if err != nil {
+						return err
+					}
+
+					c, err := conv.ToUUID(val)
+					if err != nil {
+						return err
+					}
+
+					paramsDotCredentialIDVal = c
+					return nil
+				}(); err != nil {
+					return err
+				}
+				params.CredentialID.SetTo(paramsDotCredentialIDVal)
+				return nil
+			}); err != nil {
+				return err
+			}
+		}
+		return nil
+	}(); err != nil {
+		return params, &ogenerrors.DecodeParamError{
+			Name: "credential_id",
 			In:   "query",
 			Err:  err,
 		}

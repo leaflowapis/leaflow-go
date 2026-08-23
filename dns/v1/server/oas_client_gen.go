@@ -29,22 +29,6 @@ func trimTrailingSlashes(u *url.URL) {
 
 // Invoker invokes operations described by OpenAPI v3 specification.
 type Invoker interface {
-	// AppendRecords invokes append-records operation.
-	//
-	// Adds values only. Records already present under the same name and type are left in place, and the
-	// submitted values are added alongside them.
-	//
-	// `PUT` states the final contents of a record set, so two concurrent `PUT` requests against the same
-	// set can discard one another's changes. This operation only adds, and is therefore safe to issue
-	// concurrently. Certificate issuance, which places several TXT records under `_acme-challenge` at
-	// once, must use this operation: issuing two certificates concurrently with `PUT` causes one challenge
-	// record to displace the other.
-	//
-	// The cost is that duplicate values can be created. Use `PUT` to state what a record set should
-	// contain.
-	//
-	// POST /api/v1/zones/{zone}/records
-	AppendRecords(ctx context.Context, request *AppendRecordsRequestBody, params AppendRecordsParams) (*RecordSetResource, error)
 	// CreateCredential invokes create-credential operation.
 	//
 	// The credential is validated against the provider before it is accepted. A credential that cannot
@@ -73,8 +57,8 @@ type Invoker interface {
 	DeleteCredential(ctx context.Context, params DeleteCredentialParams) error
 	// DeleteRecordSet invokes delete-record-set operation.
 	//
-	// Removes every record under this name and type. To remove one value from a set, `PUT` the values that
-	// should remain.
+	// Removes every record under this name and type. To remove part of a set, use `PATCH`, which is safe
+	// to issue concurrently; this operation and `PUT` are not.
 	//
 	// Providers reject removal of the last NS record set at the apex of a domain, which would withdraw the
 	// domain from DNS entirely.
@@ -132,6 +116,32 @@ type Invoker interface {
 	//
 	// GET /api/v1/zones
 	ListZones(ctx context.Context, params ListZonesParams) (*ZoneListResponseBody, error)
+	// ModifyRecordSet invokes modify-record-set operation.
+	//
+	// Names values to add and remove; anything not named is left in place. Nothing is read first, so this
+	// is the only operation on a record set safe to issue concurrently. The set is created if it does not
+	// exist.
+	//
+	// Certificate issuance must use this operation for both the challenge record and its cleanup. `PUT`
+	// and `DELETE` state or remove the whole set, so a concurrent issuance's challenge record is discarded
+	// — with every request returning 2xx, and the failure surfacing as the second certificate failing
+	// validation.
+	//
+	// `add` is applied before `remove`, so a request carrying both changes a value without the name ever
+	// resolving without it: the set briefly holds one value too many rather than one too few. The reverse
+	// order, as two requests, leaves a window in which the value is absent — for a single-valued set,
+	// the name does not resolve at all — and an addition that then fails leaves it gone.
+	//
+	// A value appearing in both `add` and `remove` is rejected rather than resolved in one direction.
+	//
+	// Values in `remove` that are absent are skipped, so a retried cleanup reaches the same result. Values
+	// in `add` that are already present are rejected by the provider: a record set cannot hold the same
+	// value twice.
+	//
+	// Removing every value leaves an empty set, reported as `values: []`, not `RECORD_SET_NOT_FOUND`.
+	//
+	// PATCH /api/v1/zones/{zone}/records/{name}/{type}
+	ModifyRecordSet(ctx context.Context, request *ModifyRecordSetRequestBody, params ModifyRecordSetParams) (*RecordSetResource, error)
 	// RenameCredential invokes rename-credential operation.
 	//
 	// Only the display name can be changed. To use different credential material, delete this credential
@@ -144,14 +154,15 @@ type Invoker interface {
 	// This replaces the entire record set. After this request, the only records under this name and type
 	// are the ones listed in `values`; any value present beforehand and absent here is removed.
 	//
-	// To add a value, retrieve the set with `GET`, append to the values it returns, and submit the
-	// complete list. Submitting only the new value removes the others; both forms return 200.
-	//
-	// The record set is created if it does not yet exist, so this operation both creates and replaces, and
-	// is idempotent.
+	// The record set is created if it does not exist, so this operation both creates and replaces, and is
+	// idempotent.
 	//
 	// Two concurrent requests against the same domain conflict; the second receives `ZONE_BUSY` and may be
-	// retried. To add values concurrently, use `POST /records`.
+	// retried.
+	//
+	// Use `PATCH` to add or remove individual values. Reading the set and submitting a modified list is a
+	// read-modify-write: values added by anything else between those two steps are stated to be absent,
+	// and are therefore removed, with both requests returning 200.
 	//
 	// PUT /api/v1/zones/{zone}/records/{name}/{type}
 	SetRecordSet(ctx context.Context, request *SetRecordSetRequestBody, params SetRecordSetParams) (*RecordSetResource, error)
@@ -210,172 +221,6 @@ func (c *Client) requestURL(ctx context.Context) *url.URL {
 		return c.serverURL
 	}
 	return u
-}
-
-// AppendRecords invokes append-records operation.
-//
-// Adds values only. Records already present under the same name and type are left in place, and the
-// submitted values are added alongside them.
-//
-// `PUT` states the final contents of a record set, so two concurrent `PUT` requests against the same
-// set can discard one another's changes. This operation only adds, and is therefore safe to issue
-// concurrently. Certificate issuance, which places several TXT records under `_acme-challenge` at
-// once, must use this operation: issuing two certificates concurrently with `PUT` causes one challenge
-// record to displace the other.
-//
-// The cost is that duplicate values can be created. Use `PUT` to state what a record set should
-// contain.
-//
-// POST /api/v1/zones/{zone}/records
-func (c *Client) AppendRecords(ctx context.Context, request *AppendRecordsRequestBody, params AppendRecordsParams) (*RecordSetResource, error) {
-	res, err := c.sendAppendRecords(ctx, request, params)
-	return res, err
-}
-
-func (c *Client) sendAppendRecords(ctx context.Context, request *AppendRecordsRequestBody, params AppendRecordsParams) (res *RecordSetResource, err error) {
-	otelAttrs := []attribute.KeyValue{
-		otelogen.OperationID("append-records"),
-		semconv.HTTPRequestMethodKey.String("POST"),
-		semconv.URLTemplateKey.String("/api/v1/zones/{zone}/records"),
-	}
-	otelAttrs = append(otelAttrs, c.cfg.Attributes...)
-
-	// Run stopwatch.
-	startTime := time.Now()
-	defer func() {
-		// Use floating point division here for higher precision (instead of Millisecond method).
-		elapsedDuration := time.Since(startTime)
-		c.duration.Record(ctx, float64(elapsedDuration)/float64(time.Millisecond), metric.WithAttributes(otelAttrs...))
-	}()
-
-	// Increment request counter.
-	c.requests.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
-
-	// Start a span for this request.
-	ctx, span := c.cfg.Tracer.Start(ctx, AppendRecordsOperation,
-		trace.WithAttributes(otelAttrs...),
-		clientSpanKind,
-	)
-	// Track stage for error reporting.
-	var stage string
-	defer func() {
-		if err != nil {
-			span.RecordError(err)
-			span.SetStatus(codes.Error, stage)
-			c.errors.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
-		}
-		span.End()
-	}()
-
-	stage = "BuildURL"
-	u := uri.Clone(c.requestURL(ctx))
-	var pathParts [3]string
-	pathParts[0] = "/api/v1/zones/"
-	{
-		// Encode "zone" parameter.
-		e := uri.NewPathEncoder(uri.PathEncoderConfig{
-			Param:   "zone",
-			Style:   uri.PathStyleSimple,
-			Explode: false,
-		})
-		if err := func() error {
-			return e.EncodeValue(conv.StringToString(params.Zone))
-		}(); err != nil {
-			return res, errors.Wrap(err, "encode path")
-		}
-		encoded, err := e.Result()
-		if err != nil {
-			return res, errors.Wrap(err, "encode path")
-		}
-		pathParts[1] = encoded
-	}
-	pathParts[2] = "/records"
-	uri.AddPathParts(u, pathParts[:]...)
-
-	stage = "EncodeQueryParams"
-	q := uri.NewQueryEncoder()
-	{
-		// Encode "credential_id" parameter.
-		cfg := uri.QueryParameterEncodingConfig{
-			Name:    "credential_id",
-			Style:   uri.QueryStyleForm,
-			Explode: false,
-		}
-
-		if err := q.EncodeParam(cfg, func(e uri.Encoder) error {
-			if val, ok := params.CredentialID.Get(); ok {
-				return e.EncodeValue(conv.UUIDToString(val))
-			}
-			return nil
-		}); err != nil {
-			return res, errors.Wrap(err, "encode query")
-		}
-	}
-	u.RawQuery = q.Values().Encode()
-
-	stage = "EncodeRequest"
-	r, err := ht.NewRequest(ctx, "POST", u)
-	if err != nil {
-		return res, errors.Wrap(err, "create request")
-	}
-	if err := encodeAppendRecordsRequest(request, r); err != nil {
-		return res, errors.Wrap(err, "encode request")
-	}
-
-	{
-		type bitset = [1]uint8
-		var satisfied bitset
-		{
-			stage = "Security:BearerAuth"
-			switch err := c.securityBearerAuth(ctx, AppendRecordsOperation, r); {
-			case err == nil: // if NO error
-				satisfied[0] |= 1 << 0
-			case errors.Is(err, ogenerrors.ErrSkipClientSecurity):
-				// Skip this security.
-			default:
-				return res, errors.Wrap(err, "security \"BearerAuth\"")
-			}
-		}
-
-		if ok := func() bool {
-		nextRequirement:
-			for _, requirement := range []bitset{
-				{0b00000001},
-			} {
-				for i, mask := range requirement {
-					if satisfied[i]&mask != mask {
-						continue nextRequirement
-					}
-				}
-				return true
-			}
-			return false
-		}(); !ok {
-			return res, ogenerrors.ErrSecurityRequirementIsNotSatisfied
-		}
-	}
-
-	stage = "SendRequest"
-	resp, err := c.cfg.Client.Do(r)
-	if err != nil {
-		return res, errors.Wrap(err, "do request")
-	}
-	body := resp.Body
-	defer func() {
-		// Drain the body to EOF before closing, so the underlying
-		// connection can be reused by the Transport regardless of the
-		// response status code. See https://github.com/ogen-go/ogen/issues/1670.
-		_, _ = io.Copy(io.Discard, body)
-		_ = body.Close()
-	}()
-
-	stage = "DecodeResponse"
-	result, err := decodeAppendRecordsResponse(resp)
-	if err != nil {
-		return res, errors.Wrap(err, "decode response")
-	}
-
-	return result, nil
 }
 
 // CreateCredential invokes create-credential operation.
@@ -641,8 +486,8 @@ func (c *Client) sendDeleteCredential(ctx context.Context, params DeleteCredenti
 
 // DeleteRecordSet invokes delete-record-set operation.
 //
-// Removes every record under this name and type. To remove one value from a set, `PUT` the values that
-// should remain.
+// Removes every record under this name and type. To remove part of a set, use `PATCH`, which is safe
+// to issue concurrently; this operation and `PUT` are not.
 //
 // Providers reject removal of the last NS record set at the apex of a domain, which would withdraw the
 // domain from DNS entirely.
@@ -1694,6 +1539,219 @@ func (c *Client) sendListZones(ctx context.Context, params ListZonesParams) (res
 	return result, nil
 }
 
+// ModifyRecordSet invokes modify-record-set operation.
+//
+// Names values to add and remove; anything not named is left in place. Nothing is read first, so this
+// is the only operation on a record set safe to issue concurrently. The set is created if it does not
+// exist.
+//
+// Certificate issuance must use this operation for both the challenge record and its cleanup. `PUT`
+// and `DELETE` state or remove the whole set, so a concurrent issuance's challenge record is discarded
+// — with every request returning 2xx, and the failure surfacing as the second certificate failing
+// validation.
+//
+// `add` is applied before `remove`, so a request carrying both changes a value without the name ever
+// resolving without it: the set briefly holds one value too many rather than one too few. The reverse
+// order, as two requests, leaves a window in which the value is absent — for a single-valued set,
+// the name does not resolve at all — and an addition that then fails leaves it gone.
+//
+// A value appearing in both `add` and `remove` is rejected rather than resolved in one direction.
+//
+// Values in `remove` that are absent are skipped, so a retried cleanup reaches the same result. Values
+// in `add` that are already present are rejected by the provider: a record set cannot hold the same
+// value twice.
+//
+// Removing every value leaves an empty set, reported as `values: []`, not `RECORD_SET_NOT_FOUND`.
+//
+// PATCH /api/v1/zones/{zone}/records/{name}/{type}
+func (c *Client) ModifyRecordSet(ctx context.Context, request *ModifyRecordSetRequestBody, params ModifyRecordSetParams) (*RecordSetResource, error) {
+	res, err := c.sendModifyRecordSet(ctx, request, params)
+	return res, err
+}
+
+func (c *Client) sendModifyRecordSet(ctx context.Context, request *ModifyRecordSetRequestBody, params ModifyRecordSetParams) (res *RecordSetResource, err error) {
+	otelAttrs := []attribute.KeyValue{
+		otelogen.OperationID("modify-record-set"),
+		semconv.HTTPRequestMethodKey.String("PATCH"),
+		semconv.URLTemplateKey.String("/api/v1/zones/{zone}/records/{name}/{type}"),
+	}
+	otelAttrs = append(otelAttrs, c.cfg.Attributes...)
+
+	// Run stopwatch.
+	startTime := time.Now()
+	defer func() {
+		// Use floating point division here for higher precision (instead of Millisecond method).
+		elapsedDuration := time.Since(startTime)
+		c.duration.Record(ctx, float64(elapsedDuration)/float64(time.Millisecond), metric.WithAttributes(otelAttrs...))
+	}()
+
+	// Increment request counter.
+	c.requests.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
+
+	// Start a span for this request.
+	ctx, span := c.cfg.Tracer.Start(ctx, ModifyRecordSetOperation,
+		trace.WithAttributes(otelAttrs...),
+		clientSpanKind,
+	)
+	// Track stage for error reporting.
+	var stage string
+	defer func() {
+		if err != nil {
+			span.RecordError(err)
+			span.SetStatus(codes.Error, stage)
+			c.errors.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
+		}
+		span.End()
+	}()
+
+	stage = "BuildURL"
+	u := uri.Clone(c.requestURL(ctx))
+	var pathParts [6]string
+	pathParts[0] = "/api/v1/zones/"
+	{
+		// Encode "zone" parameter.
+		e := uri.NewPathEncoder(uri.PathEncoderConfig{
+			Param:   "zone",
+			Style:   uri.PathStyleSimple,
+			Explode: false,
+		})
+		if err := func() error {
+			return e.EncodeValue(conv.StringToString(params.Zone))
+		}(); err != nil {
+			return res, errors.Wrap(err, "encode path")
+		}
+		encoded, err := e.Result()
+		if err != nil {
+			return res, errors.Wrap(err, "encode path")
+		}
+		pathParts[1] = encoded
+	}
+	pathParts[2] = "/records/"
+	{
+		// Encode "name" parameter.
+		e := uri.NewPathEncoder(uri.PathEncoderConfig{
+			Param:   "name",
+			Style:   uri.PathStyleSimple,
+			Explode: false,
+		})
+		if err := func() error {
+			return e.EncodeValue(conv.StringToString(params.Name))
+		}(); err != nil {
+			return res, errors.Wrap(err, "encode path")
+		}
+		encoded, err := e.Result()
+		if err != nil {
+			return res, errors.Wrap(err, "encode path")
+		}
+		pathParts[3] = encoded
+	}
+	pathParts[4] = "/"
+	{
+		// Encode "type" parameter.
+		e := uri.NewPathEncoder(uri.PathEncoderConfig{
+			Param:   "type",
+			Style:   uri.PathStyleSimple,
+			Explode: false,
+		})
+		if err := func() error {
+			return e.EncodeValue(conv.StringToString(string(params.Type)))
+		}(); err != nil {
+			return res, errors.Wrap(err, "encode path")
+		}
+		encoded, err := e.Result()
+		if err != nil {
+			return res, errors.Wrap(err, "encode path")
+		}
+		pathParts[5] = encoded
+	}
+	uri.AddPathParts(u, pathParts[:]...)
+
+	stage = "EncodeQueryParams"
+	q := uri.NewQueryEncoder()
+	{
+		// Encode "credential_id" parameter.
+		cfg := uri.QueryParameterEncodingConfig{
+			Name:    "credential_id",
+			Style:   uri.QueryStyleForm,
+			Explode: false,
+		}
+
+		if err := q.EncodeParam(cfg, func(e uri.Encoder) error {
+			if val, ok := params.CredentialID.Get(); ok {
+				return e.EncodeValue(conv.UUIDToString(val))
+			}
+			return nil
+		}); err != nil {
+			return res, errors.Wrap(err, "encode query")
+		}
+	}
+	u.RawQuery = q.Values().Encode()
+
+	stage = "EncodeRequest"
+	r, err := ht.NewRequest(ctx, "PATCH", u)
+	if err != nil {
+		return res, errors.Wrap(err, "create request")
+	}
+	if err := encodeModifyRecordSetRequest(request, r); err != nil {
+		return res, errors.Wrap(err, "encode request")
+	}
+
+	{
+		type bitset = [1]uint8
+		var satisfied bitset
+		{
+			stage = "Security:BearerAuth"
+			switch err := c.securityBearerAuth(ctx, ModifyRecordSetOperation, r); {
+			case err == nil: // if NO error
+				satisfied[0] |= 1 << 0
+			case errors.Is(err, ogenerrors.ErrSkipClientSecurity):
+				// Skip this security.
+			default:
+				return res, errors.Wrap(err, "security \"BearerAuth\"")
+			}
+		}
+
+		if ok := func() bool {
+		nextRequirement:
+			for _, requirement := range []bitset{
+				{0b00000001},
+			} {
+				for i, mask := range requirement {
+					if satisfied[i]&mask != mask {
+						continue nextRequirement
+					}
+				}
+				return true
+			}
+			return false
+		}(); !ok {
+			return res, ogenerrors.ErrSecurityRequirementIsNotSatisfied
+		}
+	}
+
+	stage = "SendRequest"
+	resp, err := c.cfg.Client.Do(r)
+	if err != nil {
+		return res, errors.Wrap(err, "do request")
+	}
+	body := resp.Body
+	defer func() {
+		// Drain the body to EOF before closing, so the underlying
+		// connection can be reused by the Transport regardless of the
+		// response status code. See https://github.com/ogen-go/ogen/issues/1670.
+		_, _ = io.Copy(io.Discard, body)
+		_ = body.Close()
+	}()
+
+	stage = "DecodeResponse"
+	result, err := decodeModifyRecordSetResponse(resp)
+	if err != nil {
+		return res, errors.Wrap(err, "decode response")
+	}
+
+	return result, nil
+}
+
 // RenameCredential invokes rename-credential operation.
 //
 // Only the display name can be changed. To use different credential material, delete this credential
@@ -1834,14 +1892,15 @@ func (c *Client) sendRenameCredential(ctx context.Context, request *RenameCreden
 // This replaces the entire record set. After this request, the only records under this name and type
 // are the ones listed in `values`; any value present beforehand and absent here is removed.
 //
-// To add a value, retrieve the set with `GET`, append to the values it returns, and submit the
-// complete list. Submitting only the new value removes the others; both forms return 200.
-//
-// The record set is created if it does not yet exist, so this operation both creates and replaces, and
-// is idempotent.
+// The record set is created if it does not exist, so this operation both creates and replaces, and is
+// idempotent.
 //
 // Two concurrent requests against the same domain conflict; the second receives `ZONE_BUSY` and may be
-// retried. To add values concurrently, use `POST /records`.
+// retried.
+//
+// Use `PATCH` to add or remove individual values. Reading the set and submitting a modified list is a
+// read-modify-write: values added by anything else between those two steps are stated to be absent,
+// and are therefore removed, with both requests returning 200.
 //
 // PUT /api/v1/zones/{zone}/records/{name}/{type}
 func (c *Client) SetRecordSet(ctx context.Context, request *SetRecordSetRequestBody, params SetRecordSetParams) (*RecordSetResource, error) {

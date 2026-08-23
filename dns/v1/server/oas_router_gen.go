@@ -11,11 +11,11 @@ import (
 )
 
 var (
-	rn5AllowedHeaders = map[string]string{
+	rn1AllowedHeaders = map[string]string{
 		"GET":  "Authorization",
 		"POST": "Authorization,Content-Type",
 	}
-	rn7AllowedHeaders = map[string]string{
+	rn3AllowedHeaders = map[string]string{
 		"DELETE": "Authorization",
 		"GET":    "Authorization",
 		"PATCH":  "Authorization,Content-Type",
@@ -26,13 +26,13 @@ var (
 	rn12AllowedHeaders = map[string]string{
 		"GET": "Authorization",
 	}
-	rn3AllowedHeaders = map[string]string{
-		"GET":  "Authorization",
-		"POST": "Authorization,Content-Type",
-	}
 	rn11AllowedHeaders = map[string]string{
+		"GET": "Authorization",
+	}
+	rn10AllowedHeaders = map[string]string{
 		"DELETE": "Authorization",
 		"GET":    "Authorization",
+		"PATCH":  "Authorization,Content-Type",
 		"PUT":    "Authorization,Content-Type",
 	}
 )
@@ -105,7 +105,7 @@ func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 					default:
 						s.notAllowed(w, r, notAllowedParams{
 							allowedMethods: "GET,POST",
-							allowedHeaders: rn5AllowedHeaders,
+							allowedHeaders: rn1AllowedHeaders,
 							acceptPost:     "application/json",
 							acceptPatch:    "",
 						})
@@ -148,7 +148,7 @@ func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 						default:
 							s.notAllowed(w, r, notAllowedParams{
 								allowedMethods: "DELETE,GET,PATCH",
-								allowedHeaders: rn7AllowedHeaders,
+								allowedHeaders: rn3AllowedHeaders,
 								acceptPost:     "",
 								acceptPatch:    "application/json",
 							})
@@ -247,15 +247,11 @@ func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 								s.handleListRecordsRequest([1]string{
 									args[0],
 								}, elemIsEscaped, w, r)
-							case "POST":
-								s.handleAppendRecordsRequest([1]string{
-									args[0],
-								}, elemIsEscaped, w, r)
 							default:
 								s.notAllowed(w, r, notAllowedParams{
-									allowedMethods: "GET,POST",
-									allowedHeaders: rn3AllowedHeaders,
-									acceptPost:     "application/json",
+									allowedMethods: "GET",
+									allowedHeaders: rn11AllowedHeaders,
+									acceptPost:     "",
 									acceptPatch:    "",
 								})
 							}
@@ -316,6 +312,12 @@ func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 											args[1],
 											args[2],
 										}, elemIsEscaped, w, r)
+									case "PATCH":
+										s.handleModifyRecordSetRequest([3]string{
+											args[0],
+											args[1],
+											args[2],
+										}, elemIsEscaped, w, r)
 									case "PUT":
 										s.handleSetRecordSetRequest([3]string{
 											args[0],
@@ -324,10 +326,10 @@ func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 										}, elemIsEscaped, w, r)
 									default:
 										s.notAllowed(w, r, notAllowedParams{
-											allowedMethods: "DELETE,GET,PUT",
-											allowedHeaders: rn11AllowedHeaders,
+											allowedMethods: "DELETE,GET,PATCH,PUT",
+											allowedHeaders: rn10AllowedHeaders,
 											acceptPost:     "",
-											acceptPatch:    "",
+											acceptPatch:    "application/json",
 										})
 									}
 
@@ -619,15 +621,6 @@ func (s *Server) FindPath(method string, u *url.URL) (r Route, _ bool) {
 								r.args = args
 								r.count = 1
 								return r, true
-							case "POST":
-								r.name = AppendRecordsOperation
-								r.summary = "Add records to a record set"
-								r.operationID = "append-records"
-								r.operationGroup = ""
-								r.pathPattern = "/api/v1/zones/{zone}/records"
-								r.args = args
-								r.count = 1
-								return r, true
 							default:
 								return
 							}
@@ -687,6 +680,15 @@ func (s *Server) FindPath(method string, u *url.URL) (r Route, _ bool) {
 										r.name = GetRecordSetOperation
 										r.summary = "Get a record set"
 										r.operationID = "get-record-set"
+										r.operationGroup = ""
+										r.pathPattern = "/api/v1/zones/{zone}/records/{name}/{type}"
+										r.args = args
+										r.count = 3
+										return r, true
+									case "PATCH":
+										r.name = ModifyRecordSetOperation
+										r.summary = "Add or remove values in a record set"
+										r.operationID = "modify-record-set"
 										r.operationGroup = ""
 										r.pathPattern = "/api/v1/zones/{zone}/records/{name}/{type}"
 										r.args = args

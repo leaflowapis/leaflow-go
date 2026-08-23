@@ -54,57 +54,6 @@ func (s *AliDNSConfig) SetRegionID(val OptString) {
 	s.RegionID = val
 }
 
-// Ref: #/components/schemas/AppendRecordsRequestBody
-type AppendRecordsRequestBody struct {
-	// The name relative to the domain. `@` denotes the domain itself.
-	Name string `json:"name"`
-	// Time to live, in seconds. 0 leaves the choice to the provider.
-	TTL  OptInt64   `json:"ttl"`
-	Type RecordType `json:"type"`
-	// The values to add. Syntax as described on RecordSetResource.values.
-	Values []string `json:"values"`
-}
-
-// GetName returns the value of Name.
-func (s *AppendRecordsRequestBody) GetName() string {
-	return s.Name
-}
-
-// GetTTL returns the value of TTL.
-func (s *AppendRecordsRequestBody) GetTTL() OptInt64 {
-	return s.TTL
-}
-
-// GetType returns the value of Type.
-func (s *AppendRecordsRequestBody) GetType() RecordType {
-	return s.Type
-}
-
-// GetValues returns the value of Values.
-func (s *AppendRecordsRequestBody) GetValues() []string {
-	return s.Values
-}
-
-// SetName sets the value of Name.
-func (s *AppendRecordsRequestBody) SetName(val string) {
-	s.Name = val
-}
-
-// SetTTL sets the value of TTL.
-func (s *AppendRecordsRequestBody) SetTTL(val OptInt64) {
-	s.TTL = val
-}
-
-// SetType sets the value of Type.
-func (s *AppendRecordsRequestBody) SetType(val RecordType) {
-	s.Type = val
-}
-
-// SetValues sets the value of Values.
-func (s *AppendRecordsRequestBody) SetValues(val []string) {
-	s.Values = val
-}
-
 type BearerAuth struct {
 	Token string
 	Roles []string
@@ -603,6 +552,51 @@ func (s *LengthAwarePageRecordSetResource) SetOffset(val int64) {
 // SetTotal sets the value of Total.
 func (s *LengthAwarePageRecordSetResource) SetTotal(val int64) {
 	s.Total = val
+}
+
+// Names the values to add and to remove. Anything not named is left in place. At least one of `add`
+// and `remove` is required, and no value may appear in both.
+// Ref: #/components/schemas/ModifyRecordSetRequestBody
+type ModifyRecordSetRequestBody struct {
+	// The values to add. Values already present are rejected by the provider. Syntax as described on
+	// RecordSetResource.values.
+	Add []string `json:"add"`
+	// The values to remove. Values that are not present are skipped. Syntax as described on
+	// RecordSetResource.values.
+	Remove []string `json:"remove"`
+	// Time to live, in seconds, applied to the values in `add`. 0 leaves the choice to the provider. The
+	// time to live of values already in the set is not changed; use `PUT` for that.
+	TTL OptInt64 `json:"ttl"`
+}
+
+// GetAdd returns the value of Add.
+func (s *ModifyRecordSetRequestBody) GetAdd() []string {
+	return s.Add
+}
+
+// GetRemove returns the value of Remove.
+func (s *ModifyRecordSetRequestBody) GetRemove() []string {
+	return s.Remove
+}
+
+// GetTTL returns the value of TTL.
+func (s *ModifyRecordSetRequestBody) GetTTL() OptInt64 {
+	return s.TTL
+}
+
+// SetAdd sets the value of Add.
+func (s *ModifyRecordSetRequestBody) SetAdd(val []string) {
+	s.Add = val
+}
+
+// SetRemove sets the value of Remove.
+func (s *ModifyRecordSetRequestBody) SetRemove(val []string) {
+	s.Remove = val
+}
+
+// SetTTL sets the value of TTL.
+func (s *ModifyRecordSetRequestBody) SetTTL(val OptInt64) {
+	s.TTL = val
 }
 
 // NewNilBool returns new NilBool with value set to v.

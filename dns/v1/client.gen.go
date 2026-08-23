@@ -106,24 +106,6 @@ type AliDNSConfig struct {
 	RegionId *string `json:"region_id,omitempty"`
 }
 
-// AppendRecordsRequestBody defines model for AppendRecordsRequestBody.
-type AppendRecordsRequestBody struct {
-	// Name The name relative to the domain. `@` denotes the domain itself
-	Name string `json:"name"`
-
-	// Ttl Time to live, in seconds. 0 leaves the choice to the provider
-	Ttl *int64 `json:"ttl,omitempty"`
-
-	// Type A DNS record type.
-	//
-	// The listed types are those this API supports uniformly across every provider. HTTPS and
-	// SVCB are not yet available.
-	Type RecordType `json:"type"`
-
-	// Values The values to add. Syntax as described on RecordSetResource.values
-	Values []string `json:"values"`
-}
-
 // CloudflareConfig Cloudflare credentials, created under My Profile then API Tokens
 type CloudflareConfig struct {
 	// ApiToken An API token with the Zone.DNS edit permission
@@ -223,6 +205,18 @@ type LengthAwarePageRecordSetResource struct {
 
 	// Total Total number of matching items, not only those in this page
 	Total int64 `json:"total"`
+}
+
+// ModifyRecordSetRequestBody Names the values to add and to remove. Anything not named is left in place. At least one of `add` and `remove` is required, and no value may appear in both.
+type ModifyRecordSetRequestBody struct {
+	// Add The values to add. Values already present are rejected by the provider. Syntax as described on RecordSetResource.values
+	Add []string `json:"add,omitempty"`
+
+	// Remove The values to remove. Values that are not present are skipped. Syntax as described on RecordSetResource.values
+	Remove []string `json:"remove,omitempty"`
+
+	// Ttl Time to live, in seconds, applied to the values in `add`. 0 leaves the choice to the provider. The time to live of values already in the set is not changed; use `PUT` for that
+	Ttl *int64 `json:"ttl,omitempty"`
 }
 
 // Provider A supported DNS provider.
@@ -363,14 +357,14 @@ type ListRecordsParams struct {
 	Offset *int64 `form:"offset,omitempty" json:"offset,omitempty"`
 }
 
-// AppendRecordsParams defines parameters for AppendRecords.
-type AppendRecordsParams struct {
+// DeleteRecordSetParams defines parameters for DeleteRecordSet.
+type DeleteRecordSetParams struct {
 	// CredentialId Which credential to use. When omitted, the credential is determined from the domain; see ZONE_AMBIGUOUS
 	CredentialId *openapi_types.UUID `form:"credential_id,omitempty" json:"credential_id,omitempty"`
 }
 
-// DeleteRecordSetParams defines parameters for DeleteRecordSet.
-type DeleteRecordSetParams struct {
+// ModifyRecordSetParams defines parameters for ModifyRecordSet.
+type ModifyRecordSetParams struct {
 	// CredentialId Which credential to use. When omitted, the credential is determined from the domain; see ZONE_AMBIGUOUS
 	CredentialId *openapi_types.UUID `form:"credential_id,omitempty" json:"credential_id,omitempty"`
 }
@@ -387,8 +381,8 @@ type CreateCredentialJSONRequestBody = CreateCredentialRequestBody
 // RenameCredentialJSONRequestBody defines body for RenameCredential for application/json ContentType.
 type RenameCredentialJSONRequestBody = RenameCredentialRequestBody
 
-// AppendRecordsJSONRequestBody defines body for AppendRecords for application/json ContentType.
-type AppendRecordsJSONRequestBody = AppendRecordsRequestBody
+// ModifyRecordSetJSONRequestBody defines body for ModifyRecordSet for application/json ContentType.
+type ModifyRecordSetJSONRequestBody = ModifyRecordSetRequestBody
 
 // SetRecordSetJSONRequestBody defines body for SetRecordSet for application/json ContentType.
 type SetRecordSetJSONRequestBody = SetRecordSetRequestBody
@@ -602,48 +596,10 @@ type ClientInterface interface {
 	// Corresponds with GET /api/v1/zones/{zone}/records (the `ListRecords` operationId).
 	ListRecords(ctx context.Context, zone string, params *ListRecordsParams, reqEditors ...RequestEditorFn) (*http.Response, error)
 
-	// AppendRecordsWithBody Add records to a record set
-	//
-	// **Adds values only.** Records already present under the same name and type are left in
-	// place, and the submitted values are added alongside them.
-	//
-	// `PUT` states the final contents of a record set, so two concurrent `PUT` requests against
-	// the same set can discard one another's changes. This operation only adds, and is therefore
-	// safe to issue concurrently. **Certificate issuance, which places several TXT records under
-	// `_acme-challenge` at once, must use this operation**: issuing two certificates concurrently
-	// with `PUT` causes one challenge record to displace the other.
-	//
-	// The cost is that duplicate values can be created. Use `PUT` to state what a record set
-	// should contain.
-	//
-	// Takes any type of body and a specified content type.
-	//
-	// Corresponds with POST /api/v1/zones/{zone}/records (the `AppendRecords` operationId).
-	AppendRecordsWithBody(ctx context.Context, zone string, params *AppendRecordsParams, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
-
-	// AppendRecords Add records to a record set
-	//
-	// **Adds values only.** Records already present under the same name and type are left in
-	// place, and the submitted values are added alongside them.
-	//
-	// `PUT` states the final contents of a record set, so two concurrent `PUT` requests against
-	// the same set can discard one another's changes. This operation only adds, and is therefore
-	// safe to issue concurrently. **Certificate issuance, which places several TXT records under
-	// `_acme-challenge` at once, must use this operation**: issuing two certificates concurrently
-	// with `PUT` causes one challenge record to displace the other.
-	//
-	// The cost is that duplicate values can be created. Use `PUT` to state what a record set
-	// should contain.
-	//
-	// Takes a body of the `application/json` content type.
-	//
-	// Corresponds with POST /api/v1/zones/{zone}/records (the `AppendRecords` operationId).
-	AppendRecords(ctx context.Context, zone string, params *AppendRecordsParams, body AppendRecordsJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
-
 	// DeleteRecordSet Delete a record set
 	//
-	// Removes every record under this name and type. To remove one value from a set, `PUT` the
-	// values that should remain.
+	// Removes every record under this name and type. **To remove part of a set, use `PATCH`**,
+	// which is safe to issue concurrently; this operation and `PUT` are not.
 	//
 	// Providers reject removal of the last NS record set at the apex of a domain, which would
 	// withdraw the domain from DNS entirely.
@@ -658,20 +614,83 @@ type ClientInterface interface {
 	// Corresponds with GET /api/v1/zones/{zone}/records/{name}/{type} (the `GetRecordSet` operationId).
 	GetRecordSet(ctx context.Context, zone string, name string, pType RecordType, reqEditors ...RequestEditorFn) (*http.Response, error)
 
+	// ModifyRecordSetWithBody Add or remove values in a record set
+	//
+	// **Names values to add and remove; anything not named is left in place.** Nothing is read
+	// first, so this is the only operation on a record set safe to issue concurrently. The set is
+	// created if it does not exist.
+	//
+	// Certificate issuance must use this operation for both the challenge record and its cleanup.
+	// `PUT` and `DELETE` state or remove the whole set, so a concurrent issuance's challenge
+	// record is discarded — with every request returning 2xx, and the failure surfacing as the
+	// second certificate failing validation.
+	//
+	// `add` is applied before `remove`, so a request carrying both changes a value without the
+	// name ever resolving without it: the set briefly holds one value too many rather than one too
+	// few. The reverse order, as two requests, leaves a window in which the value is absent — for
+	// a single-valued set, the name does not resolve at all — and an addition that then fails
+	// leaves it gone.
+	//
+	// A value appearing in both `add` and `remove` is rejected rather than resolved in one
+	// direction.
+	//
+	// Values in `remove` that are absent are skipped, so a retried cleanup reaches the same
+	// result. Values in `add` that are already present are rejected by the provider: a record set
+	// cannot hold the same value twice.
+	//
+	// Removing every value leaves an empty set, reported as `values: []`, not `RECORD_SET_NOT_FOUND`.
+	//
+	// Takes any type of body and a specified content type.
+	//
+	// Corresponds with PATCH /api/v1/zones/{zone}/records/{name}/{type} (the `ModifyRecordSet` operationId).
+	ModifyRecordSetWithBody(ctx context.Context, zone string, name string, pType RecordType, params *ModifyRecordSetParams, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// ModifyRecordSet Add or remove values in a record set
+	//
+	// **Names values to add and remove; anything not named is left in place.** Nothing is read
+	// first, so this is the only operation on a record set safe to issue concurrently. The set is
+	// created if it does not exist.
+	//
+	// Certificate issuance must use this operation for both the challenge record and its cleanup.
+	// `PUT` and `DELETE` state or remove the whole set, so a concurrent issuance's challenge
+	// record is discarded — with every request returning 2xx, and the failure surfacing as the
+	// second certificate failing validation.
+	//
+	// `add` is applied before `remove`, so a request carrying both changes a value without the
+	// name ever resolving without it: the set briefly holds one value too many rather than one too
+	// few. The reverse order, as two requests, leaves a window in which the value is absent — for
+	// a single-valued set, the name does not resolve at all — and an addition that then fails
+	// leaves it gone.
+	//
+	// A value appearing in both `add` and `remove` is rejected rather than resolved in one
+	// direction.
+	//
+	// Values in `remove` that are absent are skipped, so a retried cleanup reaches the same
+	// result. Values in `add` that are already present are rejected by the provider: a record set
+	// cannot hold the same value twice.
+	//
+	// Removing every value leaves an empty set, reported as `values: []`, not `RECORD_SET_NOT_FOUND`.
+	//
+	// Takes a body of the `application/json` content type.
+	//
+	// Corresponds with PATCH /api/v1/zones/{zone}/records/{name}/{type} (the `ModifyRecordSet` operationId).
+	ModifyRecordSet(ctx context.Context, zone string, name string, pType RecordType, params *ModifyRecordSetParams, body ModifyRecordSetJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
+
 	// SetRecordSetWithBody Replace a record set
 	//
 	// **This replaces the entire record set.** After this request, the only records under this
 	// name and type are the ones listed in `values`; any value present beforehand and absent here
 	// is removed.
 	//
-	// To add a value, retrieve the set with `GET`, append to the values it returns, and submit the
-	// complete list. Submitting only the new value removes the others; both forms return 200.
-	//
-	// The record set is created if it does not yet exist, so this operation both creates and
-	// replaces, and is idempotent.
+	// The record set is created if it does not exist, so this operation both creates and replaces,
+	// and is idempotent.
 	//
 	// Two concurrent requests against the same domain conflict; the second receives `ZONE_BUSY`
-	// and may be retried. To add values concurrently, use `POST /records`.
+	// and may be retried.
+	//
+	// **Use `PATCH` to add or remove individual values.** Reading the set and submitting a
+	// modified list is a read-modify-write: values added by anything else between those two steps
+	// are stated to be absent, and are therefore removed, with both requests returning 200.
 	//
 	// Takes any type of body and a specified content type.
 	//
@@ -684,14 +703,15 @@ type ClientInterface interface {
 	// name and type are the ones listed in `values`; any value present beforehand and absent here
 	// is removed.
 	//
-	// To add a value, retrieve the set with `GET`, append to the values it returns, and submit the
-	// complete list. Submitting only the new value removes the others; both forms return 200.
-	//
-	// The record set is created if it does not yet exist, so this operation both creates and
-	// replaces, and is idempotent.
+	// The record set is created if it does not exist, so this operation both creates and replaces,
+	// and is idempotent.
 	//
 	// Two concurrent requests against the same domain conflict; the second receives `ZONE_BUSY`
-	// and may be retried. To add values concurrently, use `POST /records`.
+	// and may be retried.
+	//
+	// **Use `PATCH` to add or remove individual values.** Reading the set and submitting a
+	// modified list is a read-modify-write: values added by anything else between those two steps
+	// are stated to be absent, and are therefore removed, with both requests returning 200.
 	//
 	// Takes a body of the `application/json` content type.
 	//
@@ -934,68 +954,10 @@ func (c *Client) ListRecords(ctx context.Context, zone string, params *ListRecor
 	return c.Client.Do(req)
 }
 
-// AppendRecordsWithBody Add records to a record set
-//
-// **Adds values only.** Records already present under the same name and type are left in
-// place, and the submitted values are added alongside them.
-//
-// `PUT` states the final contents of a record set, so two concurrent `PUT` requests against
-// the same set can discard one another's changes. This operation only adds, and is therefore
-// safe to issue concurrently. **Certificate issuance, which places several TXT records under
-// `_acme-challenge` at once, must use this operation**: issuing two certificates concurrently
-// with `PUT` causes one challenge record to displace the other.
-//
-// The cost is that duplicate values can be created. Use `PUT` to state what a record set
-// should contain.
-//
-// Takes any type of body and a specified content type.
-//
-// Corresponds with POST /api/v1/zones/{zone}/records (the `AppendRecords` operationId).
-func (c *Client) AppendRecordsWithBody(ctx context.Context, zone string, params *AppendRecordsParams, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
-	req, err := NewAppendRecordsRequestWithBody(c.Server, zone, params, contentType, body)
-	if err != nil {
-		return nil, err
-	}
-	req = req.WithContext(ctx)
-	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
-		return nil, err
-	}
-	return c.Client.Do(req)
-}
-
-// AppendRecords Add records to a record set
-//
-// **Adds values only.** Records already present under the same name and type are left in
-// place, and the submitted values are added alongside them.
-//
-// `PUT` states the final contents of a record set, so two concurrent `PUT` requests against
-// the same set can discard one another's changes. This operation only adds, and is therefore
-// safe to issue concurrently. **Certificate issuance, which places several TXT records under
-// `_acme-challenge` at once, must use this operation**: issuing two certificates concurrently
-// with `PUT` causes one challenge record to displace the other.
-//
-// The cost is that duplicate values can be created. Use `PUT` to state what a record set
-// should contain.
-//
-// Takes a body of the `application/json` content type.
-//
-// Corresponds with POST /api/v1/zones/{zone}/records (the `AppendRecords` operationId).
-func (c *Client) AppendRecords(ctx context.Context, zone string, params *AppendRecordsParams, body AppendRecordsJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
-	req, err := NewAppendRecordsRequest(c.Server, zone, params, body)
-	if err != nil {
-		return nil, err
-	}
-	req = req.WithContext(ctx)
-	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
-		return nil, err
-	}
-	return c.Client.Do(req)
-}
-
 // DeleteRecordSet Delete a record set
 //
-// Removes every record under this name and type. To remove one value from a set, `PUT` the
-// values that should remain.
+// Removes every record under this name and type. **To remove part of a set, use `PATCH`**,
+// which is safe to issue concurrently; this operation and `PUT` are not.
 //
 // Providers reject removal of the last NS record set at the apex of a domain, which would
 // withdraw the domain from DNS entirely.
@@ -1030,20 +992,103 @@ func (c *Client) GetRecordSet(ctx context.Context, zone string, name string, pTy
 	return c.Client.Do(req)
 }
 
+// ModifyRecordSetWithBody Add or remove values in a record set
+//
+// **Names values to add and remove; anything not named is left in place.** Nothing is read
+// first, so this is the only operation on a record set safe to issue concurrently. The set is
+// created if it does not exist.
+//
+// Certificate issuance must use this operation for both the challenge record and its cleanup.
+// `PUT` and `DELETE` state or remove the whole set, so a concurrent issuance's challenge
+// record is discarded — with every request returning 2xx, and the failure surfacing as the
+// second certificate failing validation.
+//
+// `add` is applied before `remove`, so a request carrying both changes a value without the
+// name ever resolving without it: the set briefly holds one value too many rather than one too
+// few. The reverse order, as two requests, leaves a window in which the value is absent — for
+// a single-valued set, the name does not resolve at all — and an addition that then fails
+// leaves it gone.
+//
+// A value appearing in both `add` and `remove` is rejected rather than resolved in one
+// direction.
+//
+// Values in `remove` that are absent are skipped, so a retried cleanup reaches the same
+// result. Values in `add` that are already present are rejected by the provider: a record set
+// cannot hold the same value twice.
+//
+// Removing every value leaves an empty set, reported as `values: []`, not `RECORD_SET_NOT_FOUND`.
+//
+// Takes any type of body and a specified content type.
+//
+// Corresponds with PATCH /api/v1/zones/{zone}/records/{name}/{type} (the `ModifyRecordSet` operationId).
+func (c *Client) ModifyRecordSetWithBody(ctx context.Context, zone string, name string, pType RecordType, params *ModifyRecordSetParams, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewModifyRecordSetRequestWithBody(c.Server, zone, name, pType, params, contentType, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+// ModifyRecordSet Add or remove values in a record set
+//
+// **Names values to add and remove; anything not named is left in place.** Nothing is read
+// first, so this is the only operation on a record set safe to issue concurrently. The set is
+// created if it does not exist.
+//
+// Certificate issuance must use this operation for both the challenge record and its cleanup.
+// `PUT` and `DELETE` state or remove the whole set, so a concurrent issuance's challenge
+// record is discarded — with every request returning 2xx, and the failure surfacing as the
+// second certificate failing validation.
+//
+// `add` is applied before `remove`, so a request carrying both changes a value without the
+// name ever resolving without it: the set briefly holds one value too many rather than one too
+// few. The reverse order, as two requests, leaves a window in which the value is absent — for
+// a single-valued set, the name does not resolve at all — and an addition that then fails
+// leaves it gone.
+//
+// A value appearing in both `add` and `remove` is rejected rather than resolved in one
+// direction.
+//
+// Values in `remove` that are absent are skipped, so a retried cleanup reaches the same
+// result. Values in `add` that are already present are rejected by the provider: a record set
+// cannot hold the same value twice.
+//
+// Removing every value leaves an empty set, reported as `values: []`, not `RECORD_SET_NOT_FOUND`.
+//
+// Takes a body of the `application/json` content type.
+//
+// Corresponds with PATCH /api/v1/zones/{zone}/records/{name}/{type} (the `ModifyRecordSet` operationId).
+func (c *Client) ModifyRecordSet(ctx context.Context, zone string, name string, pType RecordType, params *ModifyRecordSetParams, body ModifyRecordSetJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewModifyRecordSetRequest(c.Server, zone, name, pType, params, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
 // SetRecordSetWithBody Replace a record set
 //
 // **This replaces the entire record set.** After this request, the only records under this
 // name and type are the ones listed in `values`; any value present beforehand and absent here
 // is removed.
 //
-// To add a value, retrieve the set with `GET`, append to the values it returns, and submit the
-// complete list. Submitting only the new value removes the others; both forms return 200.
-//
-// The record set is created if it does not yet exist, so this operation both creates and
-// replaces, and is idempotent.
+// The record set is created if it does not exist, so this operation both creates and replaces,
+// and is idempotent.
 //
 // Two concurrent requests against the same domain conflict; the second receives `ZONE_BUSY`
-// and may be retried. To add values concurrently, use `POST /records`.
+// and may be retried.
+//
+// **Use `PATCH` to add or remove individual values.** Reading the set and submitting a
+// modified list is a read-modify-write: values added by anything else between those two steps
+// are stated to be absent, and are therefore removed, with both requests returning 200.
 //
 // Takes any type of body and a specified content type.
 //
@@ -1066,14 +1111,15 @@ func (c *Client) SetRecordSetWithBody(ctx context.Context, zone string, name str
 // name and type are the ones listed in `values`; any value present beforehand and absent here
 // is removed.
 //
-// To add a value, retrieve the set with `GET`, append to the values it returns, and submit the
-// complete list. Submitting only the new value removes the others; both forms return 200.
-//
-// The record set is created if it does not yet exist, so this operation both creates and
-// replaces, and is idempotent.
+// The record set is created if it does not exist, so this operation both creates and replaces,
+// and is idempotent.
 //
 // Two concurrent requests against the same domain conflict; the second receives `ZONE_BUSY`
-// and may be retried. To add values concurrently, use `POST /records`.
+// and may be retried.
+//
+// **Use `PATCH` to add or remove individual values.** Reading the set and submitting a
+// modified list is a read-modify-write: values added by anything else between those two steps
+// are stated to be absent, and are therefore removed, with both requests returning 200.
 //
 // Takes a body of the `application/json` content type.
 //
@@ -1532,80 +1578,6 @@ func NewListRecordsRequest(server string, zone string, params *ListRecordsParams
 	return req, nil
 }
 
-// NewAppendRecordsRequest calls the generic AppendRecords builder with application/json body
-func NewAppendRecordsRequest(server string, zone string, params *AppendRecordsParams, body AppendRecordsJSONRequestBody) (*http.Request, error) {
-	var bodyReader io.Reader
-	buf, err := json.Marshal(body)
-	if err != nil {
-		return nil, err
-	}
-	bodyReader = bytes.NewReader(buf)
-	return NewAppendRecordsRequestWithBody(server, zone, params, "application/json", bodyReader)
-}
-
-// NewAppendRecordsRequestWithBody constructs an http.Request for the AppendRecords method, with any body, and a specified content type
-func NewAppendRecordsRequestWithBody(server string, zone string, params *AppendRecordsParams, contentType string, body io.Reader) (*http.Request, error) {
-	var err error
-
-	var pathParam0 string
-
-	pathParam0, err = runtime.StyleParamWithOptions("simple", false, "zone", zone, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: ""})
-	if err != nil {
-		return nil, err
-	}
-
-	serverURL, err := url.Parse(server)
-	if err != nil {
-		return nil, err
-	}
-
-	operationPath := fmt.Sprintf("/api/v1/zones/%s/records", pathParam0)
-	if operationPath[0] == '/' {
-		operationPath = "." + operationPath
-	}
-
-	queryURL, err := serverURL.Parse(operationPath)
-	if err != nil {
-		return nil, err
-	}
-
-	if params != nil {
-		// queryValues collects non-styled parameters (passthrough, JSON)
-		// that are safe to round-trip through url.Values.Encode().
-		queryValues := queryURL.Query()
-		// rawQueryFragments collects pre-encoded query fragments from
-		// styled parameters, preserving literal commas as delimiters
-		// per the OpenAPI spec (e.g. "color=blue,black,brown").
-		var rawQueryFragments []string
-
-		if params.CredentialId != nil {
-
-			if queryFrag, err := runtime.StyleParamWithOptions("form", false, "credential_id", *params.CredentialId, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "string", Format: "uuid"}); err != nil {
-				return nil, err
-			} else {
-				for _, qp := range strings.Split(queryFrag, "&") {
-					rawQueryFragments = append(rawQueryFragments, qp)
-				}
-			}
-
-		}
-
-		if encoded := queryValues.Encode(); encoded != "" {
-			rawQueryFragments = append(rawQueryFragments, encoded)
-		}
-		queryURL.RawQuery = strings.Join(rawQueryFragments, "&")
-	}
-
-	req, err := http.NewRequest(http.MethodPost, queryURL.String(), body)
-	if err != nil {
-		return nil, err
-	}
-
-	req.Header.Add("Content-Type", contentType)
-
-	return req, nil
-}
-
 // NewDeleteRecordSetRequest constructs an http.Request for the DeleteRecordSet method
 func NewDeleteRecordSetRequest(server string, zone string, name string, pType RecordType, params *DeleteRecordSetParams) (*http.Request, error) {
 	var err error
@@ -1725,6 +1697,94 @@ func NewGetRecordSetRequest(server string, zone string, name string, pType Recor
 	if err != nil {
 		return nil, err
 	}
+
+	return req, nil
+}
+
+// NewModifyRecordSetRequest calls the generic ModifyRecordSet builder with application/json body
+func NewModifyRecordSetRequest(server string, zone string, name string, pType RecordType, params *ModifyRecordSetParams, body ModifyRecordSetJSONRequestBody) (*http.Request, error) {
+	var bodyReader io.Reader
+	buf, err := json.Marshal(body)
+	if err != nil {
+		return nil, err
+	}
+	bodyReader = bytes.NewReader(buf)
+	return NewModifyRecordSetRequestWithBody(server, zone, name, pType, params, "application/json", bodyReader)
+}
+
+// NewModifyRecordSetRequestWithBody constructs an http.Request for the ModifyRecordSet method, with any body, and a specified content type
+func NewModifyRecordSetRequestWithBody(server string, zone string, name string, pType RecordType, params *ModifyRecordSetParams, contentType string, body io.Reader) (*http.Request, error) {
+	var err error
+
+	var pathParam0 string
+
+	pathParam0, err = runtime.StyleParamWithOptions("simple", false, "zone", zone, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: ""})
+	if err != nil {
+		return nil, err
+	}
+
+	var pathParam1 string
+
+	pathParam1, err = runtime.StyleParamWithOptions("simple", false, "name", name, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: ""})
+	if err != nil {
+		return nil, err
+	}
+
+	var pathParam2 string
+
+	pathParam2, err = runtime.StyleParamWithOptions("simple", false, "type", pType, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: ""})
+	if err != nil {
+		return nil, err
+	}
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/api/v1/zones/%s/records/%s/%s", pathParam0, pathParam1, pathParam2)
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	if params != nil {
+		// queryValues collects non-styled parameters (passthrough, JSON)
+		// that are safe to round-trip through url.Values.Encode().
+		queryValues := queryURL.Query()
+		// rawQueryFragments collects pre-encoded query fragments from
+		// styled parameters, preserving literal commas as delimiters
+		// per the OpenAPI spec (e.g. "color=blue,black,brown").
+		var rawQueryFragments []string
+
+		if params.CredentialId != nil {
+
+			if queryFrag, err := runtime.StyleParamWithOptions("form", false, "credential_id", *params.CredentialId, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "string", Format: "uuid"}); err != nil {
+				return nil, err
+			} else {
+				for _, qp := range strings.Split(queryFrag, "&") {
+					rawQueryFragments = append(rawQueryFragments, qp)
+				}
+			}
+
+		}
+
+		if encoded := queryValues.Encode(); encoded != "" {
+			rawQueryFragments = append(rawQueryFragments, encoded)
+		}
+		queryURL.RawQuery = strings.Join(rawQueryFragments, "&")
+	}
+
+	req, err := http.NewRequest(http.MethodPatch, queryURL.String(), body)
+	if err != nil {
+		return nil, err
+	}
+
+	req.Header.Add("Content-Type", contentType)
 
 	return req, nil
 }
@@ -2008,48 +2068,10 @@ type ClientWithResponsesInterface interface {
 	// Corresponds with GET /api/v1/zones/{zone}/records (the `ListRecords` operationId).
 	ListRecordsWithResponse(ctx context.Context, zone string, params *ListRecordsParams, reqEditors ...RequestEditorFn) (*ListRecordsResponse, error)
 
-	// AppendRecordsWithBodyWithResponse Add records to a record set
-	//
-	// **Adds values only.** Records already present under the same name and type are left in
-	// place, and the submitted values are added alongside them.
-	//
-	// `PUT` states the final contents of a record set, so two concurrent `PUT` requests against
-	// the same set can discard one another's changes. This operation only adds, and is therefore
-	// safe to issue concurrently. **Certificate issuance, which places several TXT records under
-	// `_acme-challenge` at once, must use this operation**: issuing two certificates concurrently
-	// with `PUT` causes one challenge record to displace the other.
-	//
-	// The cost is that duplicate values can be created. Use `PUT` to state what a record set
-	// should contain.
-	//
-	// Takes any type of body and a specified content type, and returns a wrapper object for the known response body format(s).
-	//
-	// Corresponds with POST /api/v1/zones/{zone}/records (the `AppendRecords` operationId).
-	AppendRecordsWithBodyWithResponse(ctx context.Context, zone string, params *AppendRecordsParams, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*AppendRecordsResponse, error)
-
-	// AppendRecordsWithResponse Add records to a record set
-	//
-	// **Adds values only.** Records already present under the same name and type are left in
-	// place, and the submitted values are added alongside them.
-	//
-	// `PUT` states the final contents of a record set, so two concurrent `PUT` requests against
-	// the same set can discard one another's changes. This operation only adds, and is therefore
-	// safe to issue concurrently. **Certificate issuance, which places several TXT records under
-	// `_acme-challenge` at once, must use this operation**: issuing two certificates concurrently
-	// with `PUT` causes one challenge record to displace the other.
-	//
-	// The cost is that duplicate values can be created. Use `PUT` to state what a record set
-	// should contain.
-	//
-	// Takes a body of the `application/json` content type, and returns a wrapper object for the known response body format(s).
-	//
-	// Corresponds with POST /api/v1/zones/{zone}/records (the `AppendRecords` operationId).
-	AppendRecordsWithResponse(ctx context.Context, zone string, params *AppendRecordsParams, body AppendRecordsJSONRequestBody, reqEditors ...RequestEditorFn) (*AppendRecordsResponse, error)
-
 	// DeleteRecordSetWithResponse Delete a record set
 	//
-	// Removes every record under this name and type. To remove one value from a set, `PUT` the
-	// values that should remain.
+	// Removes every record under this name and type. **To remove part of a set, use `PATCH`**,
+	// which is safe to issue concurrently; this operation and `PUT` are not.
 	//
 	// Providers reject removal of the last NS record set at the apex of a domain, which would
 	// withdraw the domain from DNS entirely.
@@ -2068,20 +2090,83 @@ type ClientWithResponsesInterface interface {
 	// Corresponds with GET /api/v1/zones/{zone}/records/{name}/{type} (the `GetRecordSet` operationId).
 	GetRecordSetWithResponse(ctx context.Context, zone string, name string, pType RecordType, reqEditors ...RequestEditorFn) (*GetRecordSetResponse, error)
 
+	// ModifyRecordSetWithBodyWithResponse Add or remove values in a record set
+	//
+	// **Names values to add and remove; anything not named is left in place.** Nothing is read
+	// first, so this is the only operation on a record set safe to issue concurrently. The set is
+	// created if it does not exist.
+	//
+	// Certificate issuance must use this operation for both the challenge record and its cleanup.
+	// `PUT` and `DELETE` state or remove the whole set, so a concurrent issuance's challenge
+	// record is discarded — with every request returning 2xx, and the failure surfacing as the
+	// second certificate failing validation.
+	//
+	// `add` is applied before `remove`, so a request carrying both changes a value without the
+	// name ever resolving without it: the set briefly holds one value too many rather than one too
+	// few. The reverse order, as two requests, leaves a window in which the value is absent — for
+	// a single-valued set, the name does not resolve at all — and an addition that then fails
+	// leaves it gone.
+	//
+	// A value appearing in both `add` and `remove` is rejected rather than resolved in one
+	// direction.
+	//
+	// Values in `remove` that are absent are skipped, so a retried cleanup reaches the same
+	// result. Values in `add` that are already present are rejected by the provider: a record set
+	// cannot hold the same value twice.
+	//
+	// Removing every value leaves an empty set, reported as `values: []`, not `RECORD_SET_NOT_FOUND`.
+	//
+	// Takes any type of body and a specified content type, and returns a wrapper object for the known response body format(s).
+	//
+	// Corresponds with PATCH /api/v1/zones/{zone}/records/{name}/{type} (the `ModifyRecordSet` operationId).
+	ModifyRecordSetWithBodyWithResponse(ctx context.Context, zone string, name string, pType RecordType, params *ModifyRecordSetParams, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*ModifyRecordSetResponse, error)
+
+	// ModifyRecordSetWithResponse Add or remove values in a record set
+	//
+	// **Names values to add and remove; anything not named is left in place.** Nothing is read
+	// first, so this is the only operation on a record set safe to issue concurrently. The set is
+	// created if it does not exist.
+	//
+	// Certificate issuance must use this operation for both the challenge record and its cleanup.
+	// `PUT` and `DELETE` state or remove the whole set, so a concurrent issuance's challenge
+	// record is discarded — with every request returning 2xx, and the failure surfacing as the
+	// second certificate failing validation.
+	//
+	// `add` is applied before `remove`, so a request carrying both changes a value without the
+	// name ever resolving without it: the set briefly holds one value too many rather than one too
+	// few. The reverse order, as two requests, leaves a window in which the value is absent — for
+	// a single-valued set, the name does not resolve at all — and an addition that then fails
+	// leaves it gone.
+	//
+	// A value appearing in both `add` and `remove` is rejected rather than resolved in one
+	// direction.
+	//
+	// Values in `remove` that are absent are skipped, so a retried cleanup reaches the same
+	// result. Values in `add` that are already present are rejected by the provider: a record set
+	// cannot hold the same value twice.
+	//
+	// Removing every value leaves an empty set, reported as `values: []`, not `RECORD_SET_NOT_FOUND`.
+	//
+	// Takes a body of the `application/json` content type, and returns a wrapper object for the known response body format(s).
+	//
+	// Corresponds with PATCH /api/v1/zones/{zone}/records/{name}/{type} (the `ModifyRecordSet` operationId).
+	ModifyRecordSetWithResponse(ctx context.Context, zone string, name string, pType RecordType, params *ModifyRecordSetParams, body ModifyRecordSetJSONRequestBody, reqEditors ...RequestEditorFn) (*ModifyRecordSetResponse, error)
+
 	// SetRecordSetWithBodyWithResponse Replace a record set
 	//
 	// **This replaces the entire record set.** After this request, the only records under this
 	// name and type are the ones listed in `values`; any value present beforehand and absent here
 	// is removed.
 	//
-	// To add a value, retrieve the set with `GET`, append to the values it returns, and submit the
-	// complete list. Submitting only the new value removes the others; both forms return 200.
-	//
-	// The record set is created if it does not yet exist, so this operation both creates and
-	// replaces, and is idempotent.
+	// The record set is created if it does not exist, so this operation both creates and replaces,
+	// and is idempotent.
 	//
 	// Two concurrent requests against the same domain conflict; the second receives `ZONE_BUSY`
-	// and may be retried. To add values concurrently, use `POST /records`.
+	// and may be retried.
+	//
+	// **Use `PATCH` to add or remove individual values.** Reading the set and submitting a
+	// modified list is a read-modify-write: values added by anything else between those two steps
+	// are stated to be absent, and are therefore removed, with both requests returning 200.
 	//
 	// Takes any type of body and a specified content type, and returns a wrapper object for the known response body format(s).
 	//
@@ -2094,14 +2179,15 @@ type ClientWithResponsesInterface interface {
 	// name and type are the ones listed in `values`; any value present beforehand and absent here
 	// is removed.
 	//
-	// To add a value, retrieve the set with `GET`, append to the values it returns, and submit the
-	// complete list. Submitting only the new value removes the others; both forms return 200.
-	//
-	// The record set is created if it does not yet exist, so this operation both creates and
-	// replaces, and is idempotent.
+	// The record set is created if it does not exist, so this operation both creates and replaces,
+	// and is idempotent.
 	//
 	// Two concurrent requests against the same domain conflict; the second receives `ZONE_BUSY`
-	// and may be retried. To add values concurrently, use `POST /records`.
+	// and may be retried.
+	//
+	// **Use `PATCH` to add or remove individual values.** Reading the set and submitting a
+	// modified list is a read-modify-write: values added by anything else between those two steps
+	// are stated to be absent, and are therefore removed, with both requests returning 200.
 	//
 	// Takes a body of the `application/json` content type, and returns a wrapper object for the known response body format(s).
 	//
@@ -2486,54 +2572,6 @@ func (r ListRecordsResponse) ContentType() string {
 	return ""
 }
 
-type AppendRecordsResponse struct {
-	Body         []byte
-	HTTPResponse *http.Response
-	// JSON201 the response for an HTTP 201 `application/json` response
-	JSON201 *RecordSetResource
-	// JSONDefault the response for an HTTP default `application/json` response
-	JSONDefault *Error
-}
-
-// GetJSON201 returns the response for an HTTP 201 `application/json` response
-func (r AppendRecordsResponse) GetJSON201() *RecordSetResource {
-	return r.JSON201
-}
-
-// GetJSONDefault returns the response for an HTTP default `application/json` response
-func (r AppendRecordsResponse) GetJSONDefault() *Error {
-	return r.JSONDefault
-}
-
-// GetBody returns the raw response body bytes
-func (r AppendRecordsResponse) GetBody() []byte {
-	return r.Body
-}
-
-// Status returns HTTPResponse.Status
-func (r AppendRecordsResponse) Status() string {
-	if r.HTTPResponse != nil {
-		return r.HTTPResponse.Status
-	}
-	return http.StatusText(0)
-}
-
-// StatusCode returns HTTPResponse.StatusCode
-func (r AppendRecordsResponse) StatusCode() int {
-	if r.HTTPResponse != nil {
-		return r.HTTPResponse.StatusCode
-	}
-	return 0
-}
-
-// ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
-func (r AppendRecordsResponse) ContentType() string {
-	if r.HTTPResponse != nil {
-		return r.HTTPResponse.Header.Get("Content-Type")
-	}
-	return ""
-}
-
 type DeleteRecordSetResponse struct {
 	Body         []byte
 	HTTPResponse *http.Response
@@ -2617,6 +2655,54 @@ func (r GetRecordSetResponse) StatusCode() int {
 
 // ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
 func (r GetRecordSetResponse) ContentType() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Header.Get("Content-Type")
+	}
+	return ""
+}
+
+type ModifyRecordSetResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	// JSON200 the response for an HTTP 200 `application/json` response
+	JSON200 *RecordSetResource
+	// JSONDefault the response for an HTTP default `application/json` response
+	JSONDefault *Error
+}
+
+// GetJSON200 returns the response for an HTTP 200 `application/json` response
+func (r ModifyRecordSetResponse) GetJSON200() *RecordSetResource {
+	return r.JSON200
+}
+
+// GetJSONDefault returns the response for an HTTP default `application/json` response
+func (r ModifyRecordSetResponse) GetJSONDefault() *Error {
+	return r.JSONDefault
+}
+
+// GetBody returns the raw response body bytes
+func (r ModifyRecordSetResponse) GetBody() []byte {
+	return r.Body
+}
+
+// Status returns HTTPResponse.Status
+func (r ModifyRecordSetResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r ModifyRecordSetResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+// ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
+func (r ModifyRecordSetResponse) ContentType() string {
 	if r.HTTPResponse != nil {
 		return r.HTTPResponse.Header.Get("Content-Type")
 	}
@@ -2878,60 +2964,10 @@ func (c *ClientWithResponses) ListRecordsWithResponse(ctx context.Context, zone 
 	return ParseListRecordsResponse(rsp)
 }
 
-// AppendRecordsWithBodyWithResponse Add records to a record set
-//
-// **Adds values only.** Records already present under the same name and type are left in
-// place, and the submitted values are added alongside them.
-//
-// `PUT` states the final contents of a record set, so two concurrent `PUT` requests against
-// the same set can discard one another's changes. This operation only adds, and is therefore
-// safe to issue concurrently. **Certificate issuance, which places several TXT records under
-// `_acme-challenge` at once, must use this operation**: issuing two certificates concurrently
-// with `PUT` causes one challenge record to displace the other.
-//
-// The cost is that duplicate values can be created. Use `PUT` to state what a record set
-// should contain.
-//
-// Takes any type of body and a specified content type, and returns a wrapper object for the known response body format(s).
-//
-// Corresponds with POST /api/v1/zones/{zone}/records (the `AppendRecords` operationId).
-func (c *ClientWithResponses) AppendRecordsWithBodyWithResponse(ctx context.Context, zone string, params *AppendRecordsParams, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*AppendRecordsResponse, error) {
-	rsp, err := c.AppendRecordsWithBody(ctx, zone, params, contentType, body, reqEditors...)
-	if err != nil {
-		return nil, err
-	}
-	return ParseAppendRecordsResponse(rsp)
-}
-
-// AppendRecordsWithResponse Add records to a record set
-//
-// **Adds values only.** Records already present under the same name and type are left in
-// place, and the submitted values are added alongside them.
-//
-// `PUT` states the final contents of a record set, so two concurrent `PUT` requests against
-// the same set can discard one another's changes. This operation only adds, and is therefore
-// safe to issue concurrently. **Certificate issuance, which places several TXT records under
-// `_acme-challenge` at once, must use this operation**: issuing two certificates concurrently
-// with `PUT` causes one challenge record to displace the other.
-//
-// The cost is that duplicate values can be created. Use `PUT` to state what a record set
-// should contain.
-//
-// Takes a body of the `application/json` content type, and returns a wrapper object for the known response body format(s).
-//
-// Corresponds with POST /api/v1/zones/{zone}/records (the `AppendRecords` operationId).
-func (c *ClientWithResponses) AppendRecordsWithResponse(ctx context.Context, zone string, params *AppendRecordsParams, body AppendRecordsJSONRequestBody, reqEditors ...RequestEditorFn) (*AppendRecordsResponse, error) {
-	rsp, err := c.AppendRecords(ctx, zone, params, body, reqEditors...)
-	if err != nil {
-		return nil, err
-	}
-	return ParseAppendRecordsResponse(rsp)
-}
-
 // DeleteRecordSetWithResponse Delete a record set
 //
-// Removes every record under this name and type. To remove one value from a set, `PUT` the
-// values that should remain.
+// Removes every record under this name and type. **To remove part of a set, use `PATCH`**,
+// which is safe to issue concurrently; this operation and `PUT` are not.
 //
 // Providers reject removal of the last NS record set at the apex of a domain, which would
 // withdraw the domain from DNS entirely.
@@ -2962,20 +2998,95 @@ func (c *ClientWithResponses) GetRecordSetWithResponse(ctx context.Context, zone
 	return ParseGetRecordSetResponse(rsp)
 }
 
+// ModifyRecordSetWithBodyWithResponse Add or remove values in a record set
+//
+// **Names values to add and remove; anything not named is left in place.** Nothing is read
+// first, so this is the only operation on a record set safe to issue concurrently. The set is
+// created if it does not exist.
+//
+// Certificate issuance must use this operation for both the challenge record and its cleanup.
+// `PUT` and `DELETE` state or remove the whole set, so a concurrent issuance's challenge
+// record is discarded — with every request returning 2xx, and the failure surfacing as the
+// second certificate failing validation.
+//
+// `add` is applied before `remove`, so a request carrying both changes a value without the
+// name ever resolving without it: the set briefly holds one value too many rather than one too
+// few. The reverse order, as two requests, leaves a window in which the value is absent — for
+// a single-valued set, the name does not resolve at all — and an addition that then fails
+// leaves it gone.
+//
+// A value appearing in both `add` and `remove` is rejected rather than resolved in one
+// direction.
+//
+// Values in `remove` that are absent are skipped, so a retried cleanup reaches the same
+// result. Values in `add` that are already present are rejected by the provider: a record set
+// cannot hold the same value twice.
+//
+// Removing every value leaves an empty set, reported as `values: []`, not `RECORD_SET_NOT_FOUND`.
+//
+// Takes any type of body and a specified content type, and returns a wrapper object for the known response body format(s).
+//
+// Corresponds with PATCH /api/v1/zones/{zone}/records/{name}/{type} (the `ModifyRecordSet` operationId).
+func (c *ClientWithResponses) ModifyRecordSetWithBodyWithResponse(ctx context.Context, zone string, name string, pType RecordType, params *ModifyRecordSetParams, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*ModifyRecordSetResponse, error) {
+	rsp, err := c.ModifyRecordSetWithBody(ctx, zone, name, pType, params, contentType, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseModifyRecordSetResponse(rsp)
+}
+
+// ModifyRecordSetWithResponse Add or remove values in a record set
+//
+// **Names values to add and remove; anything not named is left in place.** Nothing is read
+// first, so this is the only operation on a record set safe to issue concurrently. The set is
+// created if it does not exist.
+//
+// Certificate issuance must use this operation for both the challenge record and its cleanup.
+// `PUT` and `DELETE` state or remove the whole set, so a concurrent issuance's challenge
+// record is discarded — with every request returning 2xx, and the failure surfacing as the
+// second certificate failing validation.
+//
+// `add` is applied before `remove`, so a request carrying both changes a value without the
+// name ever resolving without it: the set briefly holds one value too many rather than one too
+// few. The reverse order, as two requests, leaves a window in which the value is absent — for
+// a single-valued set, the name does not resolve at all — and an addition that then fails
+// leaves it gone.
+//
+// A value appearing in both `add` and `remove` is rejected rather than resolved in one
+// direction.
+//
+// Values in `remove` that are absent are skipped, so a retried cleanup reaches the same
+// result. Values in `add` that are already present are rejected by the provider: a record set
+// cannot hold the same value twice.
+//
+// Removing every value leaves an empty set, reported as `values: []`, not `RECORD_SET_NOT_FOUND`.
+//
+// Takes a body of the `application/json` content type, and returns a wrapper object for the known response body format(s).
+//
+// Corresponds with PATCH /api/v1/zones/{zone}/records/{name}/{type} (the `ModifyRecordSet` operationId).
+func (c *ClientWithResponses) ModifyRecordSetWithResponse(ctx context.Context, zone string, name string, pType RecordType, params *ModifyRecordSetParams, body ModifyRecordSetJSONRequestBody, reqEditors ...RequestEditorFn) (*ModifyRecordSetResponse, error) {
+	rsp, err := c.ModifyRecordSet(ctx, zone, name, pType, params, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseModifyRecordSetResponse(rsp)
+}
+
 // SetRecordSetWithBodyWithResponse Replace a record set
 //
 // **This replaces the entire record set.** After this request, the only records under this
 // name and type are the ones listed in `values`; any value present beforehand and absent here
 // is removed.
 //
-// To add a value, retrieve the set with `GET`, append to the values it returns, and submit the
-// complete list. Submitting only the new value removes the others; both forms return 200.
-//
-// The record set is created if it does not yet exist, so this operation both creates and
-// replaces, and is idempotent.
+// The record set is created if it does not exist, so this operation both creates and replaces,
+// and is idempotent.
 //
 // Two concurrent requests against the same domain conflict; the second receives `ZONE_BUSY`
-// and may be retried. To add values concurrently, use `POST /records`.
+// and may be retried.
+//
+// **Use `PATCH` to add or remove individual values.** Reading the set and submitting a
+// modified list is a read-modify-write: values added by anything else between those two steps
+// are stated to be absent, and are therefore removed, with both requests returning 200.
 //
 // Takes any type of body and a specified content type, and returns a wrapper object for the known response body format(s).
 //
@@ -2994,14 +3105,15 @@ func (c *ClientWithResponses) SetRecordSetWithBodyWithResponse(ctx context.Conte
 // name and type are the ones listed in `values`; any value present beforehand and absent here
 // is removed.
 //
-// To add a value, retrieve the set with `GET`, append to the values it returns, and submit the
-// complete list. Submitting only the new value removes the others; both forms return 200.
-//
-// The record set is created if it does not yet exist, so this operation both creates and
-// replaces, and is idempotent.
+// The record set is created if it does not exist, so this operation both creates and replaces,
+// and is idempotent.
 //
 // Two concurrent requests against the same domain conflict; the second receives `ZONE_BUSY`
-// and may be retried. To add values concurrently, use `POST /records`.
+// and may be retried.
+//
+// **Use `PATCH` to add or remove individual values.** Reading the set and submitting a
+// modified list is a read-modify-write: values added by anything else between those two steps
+// are stated to be absent, and are therefore removed, with both requests returning 200.
 //
 // Takes a body of the `application/json` content type, and returns a wrapper object for the known response body format(s).
 //
@@ -3274,39 +3386,6 @@ func ParseListRecordsResponse(rsp *http.Response) (*ListRecordsResponse, error) 
 	return response, nil
 }
 
-// ParseAppendRecordsResponse parses an HTTP response from a AppendRecordsWithResponse call
-func ParseAppendRecordsResponse(rsp *http.Response) (*AppendRecordsResponse, error) {
-	bodyBytes, err := io.ReadAll(rsp.Body)
-	defer func() { _ = rsp.Body.Close() }()
-	if err != nil {
-		return nil, err
-	}
-
-	response := &AppendRecordsResponse{
-		Body:         bodyBytes,
-		HTTPResponse: rsp,
-	}
-
-	switch {
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 201:
-		var dest RecordSetResource
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSON201 = &dest
-
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && true:
-		var dest Error
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSONDefault = &dest
-
-	}
-
-	return response, nil
-}
-
 // ParseDeleteRecordSetResponse parses an HTTP response from a DeleteRecordSetWithResponse call
 func ParseDeleteRecordSetResponse(rsp *http.Response) (*DeleteRecordSetResponse, error) {
 	bodyBytes, err := io.ReadAll(rsp.Body)
@@ -3345,6 +3424,39 @@ func ParseGetRecordSetResponse(rsp *http.Response) (*GetRecordSetResponse, error
 	}
 
 	response := &GetRecordSetResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest RecordSetResource
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && true:
+		var dest Error
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSONDefault = &dest
+
+	}
+
+	return response, nil
+}
+
+// ParseModifyRecordSetResponse parses an HTTP response from a ModifyRecordSetWithResponse call
+func ParseModifyRecordSetResponse(rsp *http.Response) (*ModifyRecordSetResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &ModifyRecordSetResponse{
 		Body:         bodyBytes,
 		HTTPResponse: rsp,
 	}

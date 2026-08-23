@@ -13,25 +13,6 @@ type UnimplementedHandler struct{}
 
 var _ Handler = UnimplementedHandler{}
 
-// AppendRecords implements append-records operation.
-//
-// Adds values only. Records already present under the same name and type are left in place, and the
-// submitted values are added alongside them.
-//
-// `PUT` states the final contents of a record set, so two concurrent `PUT` requests against the same
-// set can discard one another's changes. This operation only adds, and is therefore safe to issue
-// concurrently. Certificate issuance, which places several TXT records under `_acme-challenge` at
-// once, must use this operation: issuing two certificates concurrently with `PUT` causes one challenge
-// record to displace the other.
-//
-// The cost is that duplicate values can be created. Use `PUT` to state what a record set should
-// contain.
-//
-// POST /api/v1/zones/{zone}/records
-func (UnimplementedHandler) AppendRecords(ctx context.Context, req *AppendRecordsRequestBody, params AppendRecordsParams) (r *RecordSetResource, _ error) {
-	return r, ht.ErrNotImplemented
-}
-
 // CreateCredential implements create-credential operation.
 //
 // The credential is validated against the provider before it is accepted. A credential that cannot
@@ -66,8 +47,8 @@ func (UnimplementedHandler) DeleteCredential(ctx context.Context, params DeleteC
 
 // DeleteRecordSet implements delete-record-set operation.
 //
-// Removes every record under this name and type. To remove one value from a set, `PUT` the values that
-// should remain.
+// Removes every record under this name and type. To remove part of a set, use `PATCH`, which is safe
+// to issue concurrently; this operation and `PUT` are not.
 //
 // Providers reject removal of the last NS record set at the apex of a domain, which would withdraw the
 // domain from DNS entirely.
@@ -143,6 +124,35 @@ func (UnimplementedHandler) ListZones(ctx context.Context, params ListZonesParam
 	return r, ht.ErrNotImplemented
 }
 
+// ModifyRecordSet implements modify-record-set operation.
+//
+// Names values to add and remove; anything not named is left in place. Nothing is read first, so this
+// is the only operation on a record set safe to issue concurrently. The set is created if it does not
+// exist.
+//
+// Certificate issuance must use this operation for both the challenge record and its cleanup. `PUT`
+// and `DELETE` state or remove the whole set, so a concurrent issuance's challenge record is discarded
+// — with every request returning 2xx, and the failure surfacing as the second certificate failing
+// validation.
+//
+// `add` is applied before `remove`, so a request carrying both changes a value without the name ever
+// resolving without it: the set briefly holds one value too many rather than one too few. The reverse
+// order, as two requests, leaves a window in which the value is absent — for a single-valued set,
+// the name does not resolve at all — and an addition that then fails leaves it gone.
+//
+// A value appearing in both `add` and `remove` is rejected rather than resolved in one direction.
+//
+// Values in `remove` that are absent are skipped, so a retried cleanup reaches the same result. Values
+// in `add` that are already present are rejected by the provider: a record set cannot hold the same
+// value twice.
+//
+// Removing every value leaves an empty set, reported as `values: []`, not `RECORD_SET_NOT_FOUND`.
+//
+// PATCH /api/v1/zones/{zone}/records/{name}/{type}
+func (UnimplementedHandler) ModifyRecordSet(ctx context.Context, req *ModifyRecordSetRequestBody, params ModifyRecordSetParams) (r *RecordSetResource, _ error) {
+	return r, ht.ErrNotImplemented
+}
+
 // RenameCredential implements rename-credential operation.
 //
 // Only the display name can be changed. To use different credential material, delete this credential
@@ -158,14 +168,15 @@ func (UnimplementedHandler) RenameCredential(ctx context.Context, req *RenameCre
 // This replaces the entire record set. After this request, the only records under this name and type
 // are the ones listed in `values`; any value present beforehand and absent here is removed.
 //
-// To add a value, retrieve the set with `GET`, append to the values it returns, and submit the
-// complete list. Submitting only the new value removes the others; both forms return 200.
-//
-// The record set is created if it does not yet exist, so this operation both creates and replaces, and
-// is idempotent.
+// The record set is created if it does not exist, so this operation both creates and replaces, and is
+// idempotent.
 //
 // Two concurrent requests against the same domain conflict; the second receives `ZONE_BUSY` and may be
-// retried. To add values concurrently, use `POST /records`.
+// retried.
+//
+// Use `PATCH` to add or remove individual values. Reading the set and submitting a modified list is a
+// read-modify-write: values added by anything else between those two steps are stated to be absent,
+// and are therefore removed, with both requests returning 200.
 //
 // PUT /api/v1/zones/{zone}/records/{name}/{type}
 func (UnimplementedHandler) SetRecordSet(ctx context.Context, req *SetRecordSetRequestBody, params SetRecordSetParams) (r *RecordSetResource, _ error) {

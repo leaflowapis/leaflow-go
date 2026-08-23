@@ -6,7 +6,6 @@ package dnsv1server
 type OperationName = string
 
 const (
-	AppendRecordsOperation    OperationName = "AppendRecords"
 	CreateCredentialOperation OperationName = "CreateCredential"
 	DeleteCredentialOperation OperationName = "DeleteCredential"
 	DeleteRecordSetOperation  OperationName = "DeleteRecordSet"
@@ -15,6 +14,7 @@ const (
 	ListCredentialsOperation  OperationName = "ListCredentials"
 	ListRecordsOperation      OperationName = "ListRecords"
 	ListZonesOperation        OperationName = "ListZones"
+	ModifyRecordSetOperation  OperationName = "ModifyRecordSet"
 	RenameCredentialOperation OperationName = "RenameCredential"
 	SetRecordSetOperation     OperationName = "SetRecordSet"
 	VerifyCredentialOperation OperationName = "VerifyCredential"
