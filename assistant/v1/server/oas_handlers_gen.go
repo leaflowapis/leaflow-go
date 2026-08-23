@@ -35,9 +35,9 @@ func (c *codeRecorder) Unwrap() http.ResponseWriter {
 
 // handleAnswerQuestionRequest handles answer-question operation.
 //
-// 问题 id 来自对话文档的 wait 字段。已被回答过的问题同样返回
-// 204——可能是另一个页面提交在先，也可能是自动应答窗口已到期，两种情况下
-// turn 都已带着答案继续执行。.
+// The question id comes from the conversation document's `wait`. An already-answered question also
+// returns 204 — another tab may have submitted first, or the auto-answer window may have expired,
+// and in both cases the turn has already continued with an answer.
 //
 // POST /api/v1/threads/{thread}/questions/{item}
 func (s *Server) handleAnswerQuestionRequest(args [2]string, argsEscaped bool, w http.ResponseWriter, r *http.Request) {
@@ -190,7 +190,7 @@ func (s *Server) handleAnswerQuestionRequest(args [2]string, argsEscaped bool, w
 		mreq := middleware.Request{
 			Context:          ctx,
 			OperationName:    AnswerQuestionOperation,
-			OperationSummary: "回答助手提出的问题",
+			OperationSummary: "Answer the assistant's questions",
 			OperationID:      "answer-question",
 			Body:             request,
 			RawBody:          rawBody,
@@ -256,9 +256,9 @@ func (s *Server) handleAnswerQuestionRequest(args [2]string, argsEscaped bool, w
 
 // handleBeginWeixinLoginRequest handles begin-weixin-login operation.
 //
-// 微信个人号通道需要本人扫码登录后才能收发消息。本接口返回二维码，之后轮询
-// `GET /v1/weixin-logins/{login}` 获取进度；状态提示需要验证码时，调用
-// `POST /v1/weixin-logins/{login}/verify-code` 补交。.
+// A personal WeChat channel can only send and receive once its owner has signed in by scanning a QR
+// code. This returns that code; poll `GET /v1/weixin-logins/{login}` for progress, and when the status
+// asks for a verification code, submit it with `POST /v1/weixin-logins/{login}/verify-code`.
 //
 // POST /api/v1/channels/{channel}/weixin-logins
 func (s *Server) handleBeginWeixinLoginRequest(args [1]string, argsEscaped bool, w http.ResponseWriter, r *http.Request) {
@@ -396,7 +396,7 @@ func (s *Server) handleBeginWeixinLoginRequest(args [1]string, argsEscaped bool,
 		mreq := middleware.Request{
 			Context:          ctx,
 			OperationName:    BeginWeixinLoginOperation,
-			OperationSummary: "发起微信扫码登录",
+			OperationSummary: "Begin a WeChat QR login",
 			OperationID:      "begin-weixin-login",
 			Body:             nil,
 			RawBody:          rawBody,
@@ -458,7 +458,10 @@ func (s *Server) handleBeginWeixinLoginRequest(args [1]string, argsEscaped bool,
 
 // handleCheckSenderRequest handles check-sender operation.
 //
-// 改完发件人策略之后用来自查，不发送任何消息、也不改变任何状态：它走的是和真实入站完全相同的那份判定，并说明结论由哪一条规则得出。无法推演绑定码那一条——是否是绑定码取决于对方发来的内容。.
+// For checking a sender policy after changing it. Sends nothing and changes nothing: it runs exactly
+// the same decision a real inbound message goes through, and says which rule produced the answer. The
+// binding-code rule cannot be tested this way — whether something is a binding code depends on what
+// the sender actually wrote.
 //
 // GET /api/v1/channels/{channel}/sender-check
 func (s *Server) handleCheckSenderRequest(args [1]string, argsEscaped bool, w http.ResponseWriter, r *http.Request) {
@@ -596,7 +599,7 @@ func (s *Server) handleCheckSenderRequest(args [1]string, argsEscaped bool, w ht
 		mreq := middleware.Request{
 			Context:          ctx,
 			OperationName:    CheckSenderOperation,
-			OperationSummary: "推演一个发件人会不会被放行",
+			OperationSummary: "Test whether a sender would be let through",
 			OperationID:      "check-sender",
 			Body:             nil,
 			RawBody:          rawBody,
@@ -666,7 +669,10 @@ func (s *Server) handleCheckSenderRequest(args [1]string, argsEscaped bool, w ht
 
 // handleCreateBindingCodeRequest handles create-binding-code operation.
 //
-// 生成一个一次性绑定码交给待绑定的人，他在该平台上用自己的账号把这个码发给助手即完成绑定。绑定只能由本人以这种方式建立，不能直接指定平台账号。绑定码有有效期，过期后需重新签发。.
+// Produces a single-use code to hand to the person being bound. They send that code to the assistant
+// from their own account on that platform, which completes the binding. A binding can only be
+// established this way, by the person themselves — a platform account cannot be named directly.
+// Codes expire and have to be reissued.
 //
 // POST /api/v1/channels/{channel}/binding-codes
 func (s *Server) handleCreateBindingCodeRequest(args [1]string, argsEscaped bool, w http.ResponseWriter, r *http.Request) {
@@ -804,7 +810,7 @@ func (s *Server) handleCreateBindingCodeRequest(args [1]string, argsEscaped bool
 		mreq := middleware.Request{
 			Context:          ctx,
 			OperationName:    CreateBindingCodeOperation,
-			OperationSummary: "签发绑定码",
+			OperationSummary: "Issue a binding code",
 			OperationID:      "create-binding-code",
 			Body:             nil,
 			RawBody:          rawBody,
@@ -866,10 +872,11 @@ func (s *Server) handleCreateBindingCodeRequest(args [1]string, argsEscaped bool
 
 // handleCreateChannelRequest handles create-channel operation.
 //
-// 回调密钥归谁定由平台决定，见 list-platforms 的 secretSource：generated
-// 的平台不要传
-// webhookSecret，我们生成的那把仅在本次响应中返回一次、之后无法再次取回，错过了只能调轮换接口换一把新的；supplied
-// 的平台必须把平台后台那把传进来，此时响应里的webhookSecret 为 null。.
+// Which side owns the webhook secret is decided by the platform; see secretSource on list-platforms.
+// For a `generated` platform, do not send webhookSecret — the one we generate is returned exactly
+// once in this response and cannot be retrieved again; miss it and the only way forward is rotating to
+// a new one. For a `supplied` platform you must pass the secret from that platform's own console, and
+// webhookSecret in the response is null.
 //
 // POST /api/v1/channels
 func (s *Server) handleCreateChannelRequest(args [0]string, argsEscaped bool, w http.ResponseWriter, r *http.Request) {
@@ -1012,7 +1019,7 @@ func (s *Server) handleCreateChannelRequest(args [0]string, argsEscaped bool, w 
 		mreq := middleware.Request{
 			Context:          ctx,
 			OperationName:    CreateChannelOperation,
-			OperationSummary: "创建通道",
+			OperationSummary: "Create a channel",
 			OperationID:      "create-channel",
 			Body:             request,
 			RawBody:          rawBody,
@@ -1069,7 +1076,7 @@ func (s *Server) handleCreateChannelRequest(args [0]string, argsEscaped bool, w 
 
 // handleCreateThreadRequest handles create-thread operation.
 //
-// 创建对话.
+// Create a conversation.
 //
 // POST /api/v1/threads
 func (s *Server) handleCreateThreadRequest(args [0]string, argsEscaped bool, w http.ResponseWriter, r *http.Request) {
@@ -1212,7 +1219,7 @@ func (s *Server) handleCreateThreadRequest(args [0]string, argsEscaped bool, w h
 		mreq := middleware.Request{
 			Context:          ctx,
 			OperationName:    CreateThreadOperation,
-			OperationSummary: "创建对话",
+			OperationSummary: "Create a conversation",
 			OperationID:      "create-thread",
 			Body:             request,
 			RawBody:          rawBody,
@@ -1269,9 +1276,9 @@ func (s *Server) handleCreateThreadRequest(args [0]string, argsEscaped bool, w h
 
 // handleDecideApprovalRequest handles decide-approval operation.
 //
-// 批次 id 来自对话文档的 wait
-// 字段。本接口是幂等的：重复提交同一批次不会改变已经生效的决定，也不会报错。批次不属于该对话时返回
-// 404。.
+// The batch id comes from the conversation document's `wait`. This is idempotent: submitting the same
+// batch again neither changes a decision already in effect nor reports an error. Returns 404 when the
+// batch does not belong to that conversation.
 //
 // POST /api/v1/threads/{thread}/approvals/{batch}
 func (s *Server) handleDecideApprovalRequest(args [2]string, argsEscaped bool, w http.ResponseWriter, r *http.Request) {
@@ -1424,7 +1431,7 @@ func (s *Server) handleDecideApprovalRequest(args [2]string, argsEscaped bool, w
 		mreq := middleware.Request{
 			Context:          ctx,
 			OperationName:    DecideApprovalOperation,
-			OperationSummary: "批准或拒绝一批工具调用",
+			OperationSummary: "Approve or decline a batch of tool calls",
 			OperationID:      "decide-approval",
 			Body:             request,
 			RawBody:          rawBody,
@@ -1490,7 +1497,7 @@ func (s *Server) handleDecideApprovalRequest(args [2]string, argsEscaped bool, w
 
 // handleDeleteBindingRequest handles delete-binding operation.
 //
-// 解除绑定.
+// Remove a binding.
 //
 // DELETE /api/v1/bindings/{binding}
 func (s *Server) handleDeleteBindingRequest(args [1]string, argsEscaped bool, w http.ResponseWriter, r *http.Request) {
@@ -1628,7 +1635,7 @@ func (s *Server) handleDeleteBindingRequest(args [1]string, argsEscaped bool, w 
 		mreq := middleware.Request{
 			Context:          ctx,
 			OperationName:    DeleteBindingOperation,
-			OperationSummary: "解除绑定",
+			OperationSummary: "Remove a binding",
 			OperationID:      "delete-binding",
 			Body:             nil,
 			RawBody:          rawBody,
@@ -1690,7 +1697,8 @@ func (s *Server) handleDeleteBindingRequest(args [1]string, argsEscaped bool, w 
 
 // handleDeleteChannelRequest handles delete-channel operation.
 //
-// 删除后该通道不再接收入站消息，其上的绑定一并失效。项目处于停服或清理状态时本接口仍然可用。.
+// The channel stops accepting inbound messages and every binding on it stops working. This operation
+// remains available while the project is suspended or being cleaned up.
 //
 // DELETE /api/v1/channels/{channel}
 func (s *Server) handleDeleteChannelRequest(args [1]string, argsEscaped bool, w http.ResponseWriter, r *http.Request) {
@@ -1828,7 +1836,7 @@ func (s *Server) handleDeleteChannelRequest(args [1]string, argsEscaped bool, w 
 		mreq := middleware.Request{
 			Context:          ctx,
 			OperationName:    DeleteChannelOperation,
-			OperationSummary: "删除通道",
+			OperationSummary: "Delete a channel",
 			OperationID:      "delete-channel",
 			Body:             nil,
 			RawBody:          rawBody,
@@ -1890,7 +1898,8 @@ func (s *Server) handleDeleteChannelRequest(args [1]string, argsEscaped bool, w 
 
 // handleDeleteMemoryRequest handles delete-memory operation.
 //
-// 助手不再记得这件事。删除立即生效，下一次对话就不会再带上它。助手可能会重新学到同一件事。.
+// The assistant stops remembering this. It takes effect at once, so the next conversation will not
+// carry it. The assistant may well learn the same thing again.
 //
 // DELETE /api/v1/memories/{memory}
 func (s *Server) handleDeleteMemoryRequest(args [1]string, argsEscaped bool, w http.ResponseWriter, r *http.Request) {
@@ -2028,7 +2037,7 @@ func (s *Server) handleDeleteMemoryRequest(args [1]string, argsEscaped bool, w h
 		mreq := middleware.Request{
 			Context:          ctx,
 			OperationName:    DeleteMemoryOperation,
-			OperationSummary: "删掉一条记忆",
+			OperationSummary: "Delete one memory",
 			OperationID:      "delete-memory",
 			Body:             nil,
 			RawBody:          rawBody,
@@ -2090,9 +2099,9 @@ func (s *Server) handleDeleteMemoryRequest(args [1]string, argsEscaped bool, w h
 
 // handleDownloadAttachmentRequest handles download-attachment operation.
 //
-// 按附件 id 取回原始字节，可直接作为
-// 的地址使用。响应带长期缓存头，附件内容不会变化。附件不存在或不属于当前用户时返回
-// 404。.
+// Returns the original bytes for an attachment id, usable directly as the address of an . The response
+// carries long-lived cache headers because the content never changes. Returns 404 when the attachment
+// does not exist or does not belong to the current user.
 //
 // GET /api/v1/attachments/{attachment}
 func (s *Server) handleDownloadAttachmentRequest(args [1]string, argsEscaped bool, w http.ResponseWriter, r *http.Request) {
@@ -2230,7 +2239,7 @@ func (s *Server) handleDownloadAttachmentRequest(args [1]string, argsEscaped boo
 		mreq := middleware.Request{
 			Context:          ctx,
 			OperationName:    DownloadAttachmentOperation,
-			OperationSummary: "取回图片",
+			OperationSummary: "Fetch an image",
 			OperationID:      "download-attachment",
 			Body:             nil,
 			RawBody:          rawBody,
@@ -2292,7 +2301,7 @@ func (s *Server) handleDownloadAttachmentRequest(args [1]string, argsEscaped boo
 
 // handleGetBindingRequest handles get-binding operation.
 //
-// 查看绑定.
+// Get a binding.
 //
 // GET /api/v1/bindings/{binding}
 func (s *Server) handleGetBindingRequest(args [1]string, argsEscaped bool, w http.ResponseWriter, r *http.Request) {
@@ -2430,7 +2439,7 @@ func (s *Server) handleGetBindingRequest(args [1]string, argsEscaped bool, w htt
 		mreq := middleware.Request{
 			Context:          ctx,
 			OperationName:    GetBindingOperation,
-			OperationSummary: "查看绑定",
+			OperationSummary: "Get a binding",
 			OperationID:      "get-binding",
 			Body:             nil,
 			RawBody:          rawBody,
@@ -2492,7 +2501,7 @@ func (s *Server) handleGetBindingRequest(args [1]string, argsEscaped bool, w htt
 
 // handleGetChannelRequest handles get-channel operation.
 //
-// 查看通道.
+// Get a channel.
 //
 // GET /api/v1/channels/{channel}
 func (s *Server) handleGetChannelRequest(args [1]string, argsEscaped bool, w http.ResponseWriter, r *http.Request) {
@@ -2630,7 +2639,7 @@ func (s *Server) handleGetChannelRequest(args [1]string, argsEscaped bool, w htt
 		mreq := middleware.Request{
 			Context:          ctx,
 			OperationName:    GetChannelOperation,
-			OperationSummary: "查看通道",
+			OperationSummary: "Get a channel",
 			OperationID:      "get-channel",
 			Body:             nil,
 			RawBody:          rawBody,
@@ -2692,8 +2701,9 @@ func (s *Server) handleGetChannelRequest(args [1]string, argsEscaped bool, w htt
 
 // handleGetThreadRequest handles get-thread operation.
 //
-// 对话的完整当前状态，用于首屏渲染。文档中的 stream
-// 给出实时输出地址和入场票据，流推送的是对这份文档的增量编辑，可直接套用同一套渲染逻辑。.
+// The complete current state of a conversation, for the first render. Its `stream` gives the address
+// and admission ticket for live output, and what that stream pushes are incremental edits to this same
+// document, so the same rendering logic applies.
 //
 // GET /api/v1/threads/{thread}
 func (s *Server) handleGetThreadRequest(args [1]string, argsEscaped bool, w http.ResponseWriter, r *http.Request) {
@@ -2831,7 +2841,7 @@ func (s *Server) handleGetThreadRequest(args [1]string, argsEscaped bool, w http
 		mreq := middleware.Request{
 			Context:          ctx,
 			OperationName:    GetThreadOperation,
-			OperationSummary: "取回对话文档",
+			OperationSummary: "Fetch the conversation document",
 			OperationID:      "get-thread",
 			Body:             nil,
 			RawBody:          rawBody,
@@ -2893,7 +2903,8 @@ func (s *Server) handleGetThreadRequest(args [1]string, argsEscaped bool, w http
 
 // handleGetWeixinLoginRequest handles get-weixin-login operation.
 //
-// 轮询本接口直到状态变为成功或失败。状态提示需要验证码时，调用补交验证码接口。.
+// Poll this until the status is success or failure. When the status asks for a verification code,
+// submit it with the verification-code operation.
 //
 // GET /api/v1/weixin-logins/{login}
 func (s *Server) handleGetWeixinLoginRequest(args [1]string, argsEscaped bool, w http.ResponseWriter, r *http.Request) {
@@ -3031,7 +3042,7 @@ func (s *Server) handleGetWeixinLoginRequest(args [1]string, argsEscaped bool, w
 		mreq := middleware.Request{
 			Context:          ctx,
 			OperationName:    GetWeixinLoginOperation,
-			OperationSummary: "查询扫码登录状态",
+			OperationSummary: "Get the state of a QR login",
 			OperationID:      "get-weixin-login",
 			Body:             nil,
 			RawBody:          rawBody,
@@ -3093,9 +3104,9 @@ func (s *Server) handleGetWeixinLoginRequest(args [1]string, argsEscaped bool, w
 
 // handleInterruptThreadRequest handles interrupt-thread operation.
 //
-// 对没有正在执行的 turn 的对话调用同样返回
-// 204，不视为错误——用户点击停止与 turn
-// 自然结束之间存在竞争，两种结果一致。项目处于停服或清理状态时本接口仍然可用。.
+// Calling this on a conversation with no running turn also returns 204 rather than an error — the
+// user pressing stop races with the turn finishing on its own, and both outcomes are the same. This
+// operation remains available while the project is suspended or being cleaned up.
 //
 // POST /api/v1/threads/{thread}/interrupt
 func (s *Server) handleInterruptThreadRequest(args [1]string, argsEscaped bool, w http.ResponseWriter, r *http.Request) {
@@ -3233,7 +3244,7 @@ func (s *Server) handleInterruptThreadRequest(args [1]string, argsEscaped bool, 
 		mreq := middleware.Request{
 			Context:          ctx,
 			OperationName:    InterruptThreadOperation,
-			OperationSummary: "中断正在执行的 turn",
+			OperationSummary: "Interrupt a running turn",
 			OperationID:      "interrupt-thread",
 			Body:             nil,
 			RawBody:          rawBody,
@@ -3295,7 +3306,7 @@ func (s *Server) handleInterruptThreadRequest(args [1]string, argsEscaped bool, 
 
 // handleListBindingsRequest handles list-bindings operation.
 //
-// 接入面那张表按通道列出各自绑了谁时用 channelId 过滤。.
+// Filter by channelId to show, per channel, who is bound to it.
 //
 // GET /api/v1/bindings
 func (s *Server) handleListBindingsRequest(args [0]string, argsEscaped bool, w http.ResponseWriter, r *http.Request) {
@@ -3433,7 +3444,7 @@ func (s *Server) handleListBindingsRequest(args [0]string, argsEscaped bool, w h
 		mreq := middleware.Request{
 			Context:          ctx,
 			OperationName:    ListBindingsOperation,
-			OperationSummary: "列出绑定",
+			OperationSummary: "List bindings",
 			OperationID:      "list-bindings",
 			Body:             nil,
 			RawBody:          rawBody,
@@ -3511,7 +3522,9 @@ func (s *Server) handleListBindingsRequest(args [0]string, argsEscaped bool, w h
 
 // handleListChannelRejectionsRequest handles list-channel-rejections operation.
 //
-// 排查「发了消息但助手没有响应」时使用。按时间倒序返回最近被这条通道拒绝的入站消息及其拒绝原因，最常见的原因是发送方尚未绑定。.
+// For diagnosing "I sent a message and the assistant never answered". Returns the inbound messages
+// this channel rejected most recently, newest first, each with its reason. The most common reason is
+// that the sender is not bound yet.
 //
 // GET /api/v1/channels/{channel}/rejections
 func (s *Server) handleListChannelRejectionsRequest(args [1]string, argsEscaped bool, w http.ResponseWriter, r *http.Request) {
@@ -3649,7 +3662,7 @@ func (s *Server) handleListChannelRejectionsRequest(args [1]string, argsEscaped 
 		mreq := middleware.Request{
 			Context:          ctx,
 			OperationName:    ListChannelRejectionsOperation,
-			OperationSummary: "查看最近被拒绝的入站消息",
+			OperationSummary: "List recently rejected inbound messages",
 			OperationID:      "list-channel-rejections",
 			Body:             nil,
 			RawBody:          rawBody,
@@ -3715,7 +3728,7 @@ func (s *Server) handleListChannelRejectionsRequest(args [1]string, argsEscaped 
 
 // handleListChannelsRequest handles list-channels operation.
 //
-// 列出通道.
+// List channels.
 //
 // GET /api/v1/channels
 func (s *Server) handleListChannelsRequest(args [0]string, argsEscaped bool, w http.ResponseWriter, r *http.Request) {
@@ -3853,7 +3866,7 @@ func (s *Server) handleListChannelsRequest(args [0]string, argsEscaped bool, w h
 		mreq := middleware.Request{
 			Context:          ctx,
 			OperationName:    ListChannelsOperation,
-			OperationSummary: "列出通道",
+			OperationSummary: "List channels",
 			OperationID:      "list-channels",
 			Body:             nil,
 			RawBody:          rawBody,
@@ -3927,10 +3940,11 @@ func (s *Server) handleListChannelsRequest(args [0]string, argsEscaped bool, w h
 
 // handleListEarlierItemsRequest handles list-earlier-items operation.
 //
-// 首屏只给对话最新的那一段，再往上的内容用本接口按需取回，一次一段。before
-// 用文档里的 earlier.before，响应里的 earlier 是再往上那一段的游标，为 null
-// 表示已经到顶。返回的条目和文档里的 items
-// 是同一种形状，顺序也一样（由旧到新），直接接在现有内容前面即可。.
+// The first render only carries the latest stretch of a conversation; anything above it is fetched
+// here, one stretch at a time. Pass the document's earlier.before as `before`; the `earlier` in the
+// response is the cursor for the stretch above that, and null means the top has been reached. The
+// entries have the same shape and the same order (oldest first) as `items` in the document, so they
+// can be prepended as they are.
 //
 // GET /api/v1/threads/{thread}/earlier
 func (s *Server) handleListEarlierItemsRequest(args [1]string, argsEscaped bool, w http.ResponseWriter, r *http.Request) {
@@ -4068,7 +4082,7 @@ func (s *Server) handleListEarlierItemsRequest(args [1]string, argsEscaped bool,
 		mreq := middleware.Request{
 			Context:          ctx,
 			OperationName:    ListEarlierItemsOperation,
-			OperationSummary: "取回更早的对话内容",
+			OperationSummary: "Fetch earlier parts of a conversation",
 			OperationID:      "list-earlier-items",
 			Body:             nil,
 			RawBody:          rawBody,
@@ -4134,7 +4148,10 @@ func (s *Server) handleListEarlierItemsRequest(args [1]string, argsEscaped bool,
 
 // handleListMemoriesRequest handles list-memories operation.
 //
-// 助手在这个项目里为当前账号记下的事实，它们会出现在之后每一次对话的开头。同一个项目里的不同成员各记各的，这里只返回当前账号的那些。不分页：条数有上限，一次全部返回。.
+// Facts the assistant has written down for the current account in this project. They appear at the
+// start of every later conversation. Members of the same project each have their own, and this returns
+// only the current account's. Not paginated: there is a cap on how many there can be, and all of them
+// come back at once.
 //
 // GET /api/v1/memories
 func (s *Server) handleListMemoriesRequest(args [0]string, argsEscaped bool, w http.ResponseWriter, r *http.Request) {
@@ -4262,7 +4279,7 @@ func (s *Server) handleListMemoriesRequest(args [0]string, argsEscaped bool, w h
 		mreq := middleware.Request{
 			Context:          ctx,
 			OperationName:    ListMemoriesOperation,
-			OperationSummary: "列出助手记住的事",
+			OperationSummary: "List what the assistant remembers",
 			OperationID:      "list-memories",
 			Body:             nil,
 			RawBody:          rawBody,
@@ -4319,7 +4336,8 @@ func (s *Server) handleListMemoriesRequest(args [0]string, argsEscaped bool, w h
 
 // handleListModelsRequest handles list-models operation.
 //
-// 返回本平台当前提供的模型及其上下文窗口、推理档位和支持的输入类型。用于填充对话设置里的模型选择。.
+// The models currently offered, with their context window, reasoning levels and supported input types.
+// Use it to populate the model picker in conversation settings.
 //
 // GET /api/v1/models
 func (s *Server) handleListModelsRequest(args [0]string, argsEscaped bool, w http.ResponseWriter, r *http.Request) {
@@ -4447,7 +4465,7 @@ func (s *Server) handleListModelsRequest(args [0]string, argsEscaped bool, w htt
 		mreq := middleware.Request{
 			Context:          ctx,
 			OperationName:    ListModelsOperation,
-			OperationSummary: "列出可用模型",
+			OperationSummary: "List available models",
 			OperationID:      "list-models",
 			Body:             nil,
 			RawBody:          rawBody,
@@ -4504,9 +4522,10 @@ func (s *Server) handleListModelsRequest(args [0]string, argsEscaped bool, w htt
 
 // handleListPlatformsRequest handles list-platforms operation.
 //
-// 返回本平台当前支持接入的即时通讯平台，以及各自建通道时要走的流程和要填的凭据字段。新建通道表单完全由这份响应驱动：setupMethod
-// 决定展示录入表单还是扫码流程，credentialFields 是要填的字段，secretSource
-// 决定要不要有回调密钥那一栏。.
+// The instant messaging platforms that can currently be connected, along with the flow and the
+// credential fields each one needs. The create-channel form is driven entirely by this response:
+// setupMethod decides between a credential form and a QR flow, credentialFields is what to ask for,
+// and secretSource decides whether there is a webhook secret field at all.
 //
 // GET /api/v1/platforms
 func (s *Server) handleListPlatformsRequest(args [0]string, argsEscaped bool, w http.ResponseWriter, r *http.Request) {
@@ -4634,7 +4653,7 @@ func (s *Server) handleListPlatformsRequest(args [0]string, argsEscaped bool, w 
 		mreq := middleware.Request{
 			Context:          ctx,
 			OperationName:    ListPlatformsOperation,
-			OperationSummary: "列出可接入的平台",
+			OperationSummary: "List platforms that can be connected",
 			OperationID:      "list-platforms",
 			Body:             nil,
 			RawBody:          rawBody,
@@ -4691,8 +4710,9 @@ func (s *Server) handleListPlatformsRequest(args [0]string, argsEscaped bool, w 
 
 // handleListThreadsRequest handles list-threads operation.
 //
-// 按最近活动排序，只返回当前账号在当前项目里的对话。archived
-// 是一个二选一的开关而不是「包含归档」：归档的对话不出现在默认列表里，要看它们就把这个参数打开。.
+// Ordered by most recent activity, limited to the current account's conversations in the current
+// project. `archived` selects between two sets rather than widening one: archived conversations are
+// absent from the default list, and turning the flag on shows those instead.
 //
 // GET /api/v1/threads
 func (s *Server) handleListThreadsRequest(args [0]string, argsEscaped bool, w http.ResponseWriter, r *http.Request) {
@@ -4830,7 +4850,7 @@ func (s *Server) handleListThreadsRequest(args [0]string, argsEscaped bool, w ht
 		mreq := middleware.Request{
 			Context:          ctx,
 			OperationName:    ListThreadsOperation,
-			OperationSummary: "列出对话",
+			OperationSummary: "List conversations",
 			OperationID:      "list-threads",
 			Body:             nil,
 			RawBody:          rawBody,
@@ -4900,7 +4920,7 @@ func (s *Server) handleListThreadsRequest(args [0]string, argsEscaped bool, w ht
 
 // handleMarkThreadReadRequest handles mark-thread-read operation.
 //
-// 标记对话已读.
+// Mark a conversation as read.
 //
 // POST /api/v1/threads/{thread}/read
 func (s *Server) handleMarkThreadReadRequest(args [1]string, argsEscaped bool, w http.ResponseWriter, r *http.Request) {
@@ -5038,7 +5058,7 @@ func (s *Server) handleMarkThreadReadRequest(args [1]string, argsEscaped bool, w
 		mreq := middleware.Request{
 			Context:          ctx,
 			OperationName:    MarkThreadReadOperation,
-			OperationSummary: "标记对话已读",
+			OperationSummary: "Mark a conversation as read",
 			OperationID:      "mark-thread-read",
 			Body:             nil,
 			RawBody:          rawBody,
@@ -5100,8 +5120,8 @@ func (s *Server) handleMarkThreadReadRequest(args [1]string, argsEscaped bool, w
 
 // handleRevertThreadRequest handles revert-thread operation.
 //
-// 撤回 ordinal 及其之后的全部条目。被撤回的条目仍留在逐字稿中并标记
-// reverted，序号不会重排。返回实际撤回的条目数。.
+// Reverts the entry at `ordinal` and everything after it. Reverted entries stay in the transcript
+// marked `reverted`, and ordinals are not renumbered. Returns how many were actually reverted.
 //
 // POST /api/v1/threads/{thread}/revert
 func (s *Server) handleRevertThreadRequest(args [1]string, argsEscaped bool, w http.ResponseWriter, r *http.Request) {
@@ -5254,7 +5274,7 @@ func (s *Server) handleRevertThreadRequest(args [1]string, argsEscaped bool, w h
 		mreq := middleware.Request{
 			Context:          ctx,
 			OperationName:    RevertThreadOperation,
-			OperationSummary: "从指定位置起撤回",
+			OperationSummary: "Revert from a given point",
 			OperationID:      "revert-thread",
 			Body:             request,
 			RawBody:          rawBody,
@@ -5316,10 +5336,11 @@ func (s *Server) handleRevertThreadRequest(args [1]string, argsEscaped bool, w h
 
 // handleRotateChannelSecretRequest handles rotate-channel-secret operation.
 //
-// 换一把新的回调密钥，旧的立即失效，通道降回待平台确认状态。密钥归谁定由平台决定，见
-// list-platforms 的 secretSource：generated
-// 的平台不要传请求体，新密钥仅在本次响应中返回、之后无法再次取回；supplied
-// 的平台必须把平台后台那把新密钥传进来。.
+// Replaces the webhook secret. The old one stops working immediately and the channel drops back to
+// awaiting confirmation from the platform. Which side owns the secret is decided by the platform; see
+// secretSource on list-platforms. For a `generated` platform, send no body — the new secret is
+// returned in this response only and cannot be retrieved again. For a `supplied` platform you must
+// pass the new secret from that platform's own console.
 //
 // POST /api/v1/channels/{channel}/secret
 func (s *Server) handleRotateChannelSecretRequest(args [1]string, argsEscaped bool, w http.ResponseWriter, r *http.Request) {
@@ -5472,7 +5493,7 @@ func (s *Server) handleRotateChannelSecretRequest(args [1]string, argsEscaped bo
 		mreq := middleware.Request{
 			Context:          ctx,
 			OperationName:    RotateChannelSecretOperation,
-			OperationSummary: "轮换回调密钥",
+			OperationSummary: "Rotate the webhook secret",
 			OperationID:      "rotate-channel-secret",
 			Body:             request,
 			RawBody:          rawBody,
@@ -5534,9 +5555,9 @@ func (s *Server) handleRotateChannelSecretRequest(args [1]string, argsEscaped bo
 
 // handleSendMessageRequest handles send-message operation.
 //
-// 立即返回 turnId，不等待执行完成——一次 turn
-// 可能持续数十分钟。执行进度通过对话文档中 stream
-// 指向的实时流获取，不在本响应里。.
+// Returns a turnId immediately without waiting for execution — a turn can run for tens of minutes.
+// Progress arrives on the live stream the conversation document's `stream` points at, not in this
+// response.
 //
 // POST /api/v1/threads/{thread}/messages
 func (s *Server) handleSendMessageRequest(args [1]string, argsEscaped bool, w http.ResponseWriter, r *http.Request) {
@@ -5689,7 +5710,7 @@ func (s *Server) handleSendMessageRequest(args [1]string, argsEscaped bool, w ht
 		mreq := middleware.Request{
 			Context:          ctx,
 			OperationName:    SendMessageOperation,
-			OperationSummary: "发送消息并触发一次 turn",
+			OperationSummary: "Send a message and start a turn",
 			OperationID:      "send-message",
 			Body:             request,
 			RawBody:          rawBody,
@@ -5751,7 +5772,8 @@ func (s *Server) handleSendMessageRequest(args [1]string, argsEscaped bool, w ht
 
 // handleSubmitWeixinVerifyCodeRequest handles submit-weixin-verify-code operation.
 //
-// 微信在扫码后要求短信或设备验证码时使用。验证码由登录发起人在自己手机上获取。.
+// For when WeChat asks for an SMS or device code after the scan. The person who started the login gets
+// that code on their own phone.
 //
 // POST /api/v1/weixin-logins/{login}/verify-code
 func (s *Server) handleSubmitWeixinVerifyCodeRequest(args [1]string, argsEscaped bool, w http.ResponseWriter, r *http.Request) {
@@ -5904,7 +5926,7 @@ func (s *Server) handleSubmitWeixinVerifyCodeRequest(args [1]string, argsEscaped
 		mreq := middleware.Request{
 			Context:          ctx,
 			OperationName:    SubmitWeixinVerifyCodeOperation,
-			OperationSummary: "补交登录验证码",
+			OperationSummary: "Submit a login verification code",
 			OperationID:      "submit-weixin-verify-code",
 			Body:             request,
 			RawBody:          rawBody,
@@ -5966,8 +5988,9 @@ func (s *Server) handleSubmitWeixinVerifyCodeRequest(args [1]string, argsEscaped
 
 // handleUpdateChannelRequest handles update-channel operation.
 //
-// 只修改传了的字段。senderPolicy 与 allowFrom 是一对，由 senderPolicy
-// 决定是否替换；改动对常驻连接要等连接重建后才生效，回调型平台立即生效。.
+// Only the fields present are changed. senderPolicy and allowFrom go together, and senderPolicy
+// decides whether they are replaced. For platforms held open by a long-lived connection the change
+// applies once that connection is rebuilt; for webhook platforms it applies at once.
 //
 // PATCH /api/v1/channels/{channel}
 func (s *Server) handleUpdateChannelRequest(args [1]string, argsEscaped bool, w http.ResponseWriter, r *http.Request) {
@@ -6120,7 +6143,7 @@ func (s *Server) handleUpdateChannelRequest(args [1]string, argsEscaped bool, w 
 		mreq := middleware.Request{
 			Context:          ctx,
 			OperationName:    UpdateChannelOperation,
-			OperationSummary: "修改通道",
+			OperationSummary: "Update a channel",
 			OperationID:      "update-channel",
 			Body:             request,
 			RawBody:          rawBody,
@@ -6182,9 +6205,9 @@ func (s *Server) handleUpdateChannelRequest(args [1]string, argsEscaped bool, w 
 
 // handleUpdateThreadRequest handles update-thread operation.
 //
-// 可修改模型、推理档位、审批模式和归档状态。改动从下一次 turn
-// 起生效，正在执行的 turn 沿用它启动时的设置。reasoningEffort 仅在同时提供
-// model 时生效。.
+// Changes the model, reasoning level, approval mode and archived state. A change takes effect from the
+// next turn; a turn already running keeps the settings it started with. reasoningEffort only applies
+// when model is given as well.
 //
 // PATCH /api/v1/threads/{thread}
 func (s *Server) handleUpdateThreadRequest(args [1]string, argsEscaped bool, w http.ResponseWriter, r *http.Request) {
@@ -6337,7 +6360,7 @@ func (s *Server) handleUpdateThreadRequest(args [1]string, argsEscaped bool, w h
 		mreq := middleware.Request{
 			Context:          ctx,
 			OperationName:    UpdateThreadOperation,
-			OperationSummary: "修改对话设置",
+			OperationSummary: "Update conversation settings",
 			OperationID:      "update-thread",
 			Body:             request,
 			RawBody:          rawBody,
@@ -6399,9 +6422,9 @@ func (s *Server) handleUpdateThreadRequest(args [1]string, argsEscaped bool, w h
 
 // handleUploadAttachmentRequest handles upload-attachment operation.
 //
-// 请求体直接是文件字节，不使用 multipart
-// 封装，一次上传一个文件。类型由内容判定，与 Content-Type 无关。返回的 id
-// 在发送消息时放进 attachmentIds；从未被任何消息引用的附件会被定期清除。.
+// The body is the file bytes themselves, not multipart, one file per request. The type is determined
+// from the content, not from Content-Type. Put the returned id in attachmentIds when sending a
+// message; attachments never referenced by any message are cleared periodically.
 //
 // POST /api/v1/attachments
 func (s *Server) handleUploadAttachmentRequest(args [0]string, argsEscaped bool, w http.ResponseWriter, r *http.Request) {
@@ -6544,7 +6567,7 @@ func (s *Server) handleUploadAttachmentRequest(args [0]string, argsEscaped bool,
 		mreq := middleware.Request{
 			Context:          ctx,
 			OperationName:    UploadAttachmentOperation,
-			OperationSummary: "上传图片",
+			OperationSummary: "Upload an image",
 			OperationID:      "upload-attachment",
 			Body:             request,
 			RawBody:          rawBody,

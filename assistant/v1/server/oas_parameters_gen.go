@@ -201,9 +201,10 @@ func decodeBeginWeixinLoginParams(args [1]string, argsEscaped bool, r *http.Requ
 // CheckSenderParams is parameters of check-sender operation.
 type CheckSenderParams struct {
 	Channel uuid.UUID
-	// 平台上那个人的 id，和绑定、被拒记录里的是同一个值.
+	// That person's id on the platform, the same value that appears in bindings and rejections.
 	PeerId string
-	// 仅 Telegram 这类有用户名的平台填得出来，不带 @。留空即当作没有用户名.
+	// Only platforms with usernames, such as Telegram, can supply this. Without the @. Leave it empty to
+	// mean there is no username.
 	Username OptString `json:",omitempty,omitzero"`
 }
 
@@ -1131,13 +1132,13 @@ func decodeInterruptThreadParams(args [1]string, argsEscaped bool, r *http.Reque
 
 // ListBindingsParams is parameters of list-bindings operation.
 type ListBindingsParams struct {
-	// 这一页最多返回多少条.
+	// How many entries this page returns at most.
 	Limit OptInt64 `json:",omitempty,omitzero"`
-	// 跳过多少条。要翻得更深请改用游标翻页的接口.
+	// How many to skip. To page deeper, use the cursor-paged operation instead.
 	Offset    OptInt64  `json:",omitempty,omitzero"`
 	Platform  OptString `json:",omitempty,omitzero"`
 	ChannelId OptUUID   `json:",omitempty,omitzero"`
-	// 仅返回处于活跃状态的绑定.
+	// Return only bindings that are active.
 	Active OptBool `json:",omitempty,omitzero"`
 }
 
@@ -1604,12 +1605,12 @@ func decodeListChannelRejectionsParams(args [1]string, argsEscaped bool, r *http
 
 // ListChannelsParams is parameters of list-channels operation.
 type ListChannelsParams struct {
-	// 这一页最多返回多少条.
+	// How many entries this page returns at most.
 	Limit OptInt64 `json:",omitempty,omitzero"`
-	// 跳过多少条。要翻得更深请改用游标翻页的接口.
+	// How many to skip. To page deeper, use the cursor-paged operation instead.
 	Offset   OptInt64  `json:",omitempty,omitzero"`
 	Platform OptString `json:",omitempty,omitzero"`
-	// 仅返回处于启用状态的通道.
+	// Return only channels that are enabled.
 	Active OptBool `json:",omitempty,omitzero"`
 }
 
@@ -1880,7 +1881,7 @@ func decodeListChannelsParams(args [0]string, argsEscaped bool, r *http.Request)
 // ListEarlierItemsParams is parameters of list-earlier-items operation.
 type ListEarlierItemsParams struct {
 	Thread string
-	// 来自文档里的 earlier.before，取这个序号之前的条目.
+	// From the document's earlier.before; returns entries before this ordinal.
 	Before int64
 }
 
@@ -2008,9 +2009,9 @@ func decodeListEarlierItemsParams(args [1]string, argsEscaped bool, r *http.Requ
 
 // ListThreadsParams is parameters of list-threads operation.
 type ListThreadsParams struct {
-	// 按标题搜索，大小写不敏感。留空则返回最近的对话.
+	// Search titles, case-insensitively. Leave it empty for the most recent conversations.
 	Q OptString `json:",omitempty,omitzero"`
-	// 为真时只返回已归档的对话，否则只返回未归档的.
+	// When true, returns only archived conversations; otherwise only unarchived ones.
 	Archived OptBool  `json:",omitempty,omitzero"`
 	Limit    OptInt64 `json:",omitempty,omitzero"`
 }
