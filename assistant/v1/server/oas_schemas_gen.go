@@ -1367,6 +1367,9 @@ type DeleteBindingNoContent struct{}
 // DeleteChannelNoContent is response for DeleteChannel operation.
 type DeleteChannelNoContent struct{}
 
+// DeleteMemoryNoContent is response for DeleteMemory operation.
+type DeleteMemoryNoContent struct{}
+
 // Ref: #/components/schemas/DocumentResource
 type DocumentResource struct {
 	Context ContextResource    `json:"context"`
@@ -2294,6 +2297,94 @@ func (s *LoginResourceStatus) UnmarshalText(data []byte) error {
 
 // MarkThreadReadNoContent is response for MarkThreadRead operation.
 type MarkThreadReadNoContent struct{}
+
+// Ref: #/components/schemas/MemoryListResponseBody
+type MemoryListResponseBody struct {
+	Items []MemoryResource `json:"items"`
+}
+
+// GetItems returns the value of Items.
+func (s *MemoryListResponseBody) GetItems() []MemoryResource {
+	return s.Items
+}
+
+// SetItems sets the value of Items.
+func (s *MemoryListResponseBody) SetItems(val []MemoryResource) {
+	s.Items = val
+}
+
+// Ref: #/components/schemas/MemoryResource
+type MemoryResource struct {
+	// 记住的那件事.
+	Body      string    `json:"body"`
+	CreatedAt time.Time `json:"createdAt"`
+	ID        string    `json:"id"`
+	// 助手给这件事起的名字，它用这个名字覆盖或者删掉自己写过的东西.
+	Name string `json:"name"`
+	// 助手是在哪次对话里记下它的。那次对话可能已经被删掉了.
+	SourceThreadId OptString `json:"sourceThreadId"`
+	UpdatedAt      time.Time `json:"updatedAt"`
+}
+
+// GetBody returns the value of Body.
+func (s *MemoryResource) GetBody() string {
+	return s.Body
+}
+
+// GetCreatedAt returns the value of CreatedAt.
+func (s *MemoryResource) GetCreatedAt() time.Time {
+	return s.CreatedAt
+}
+
+// GetID returns the value of ID.
+func (s *MemoryResource) GetID() string {
+	return s.ID
+}
+
+// GetName returns the value of Name.
+func (s *MemoryResource) GetName() string {
+	return s.Name
+}
+
+// GetSourceThreadId returns the value of SourceThreadId.
+func (s *MemoryResource) GetSourceThreadId() OptString {
+	return s.SourceThreadId
+}
+
+// GetUpdatedAt returns the value of UpdatedAt.
+func (s *MemoryResource) GetUpdatedAt() time.Time {
+	return s.UpdatedAt
+}
+
+// SetBody sets the value of Body.
+func (s *MemoryResource) SetBody(val string) {
+	s.Body = val
+}
+
+// SetCreatedAt sets the value of CreatedAt.
+func (s *MemoryResource) SetCreatedAt(val time.Time) {
+	s.CreatedAt = val
+}
+
+// SetID sets the value of ID.
+func (s *MemoryResource) SetID(val string) {
+	s.ID = val
+}
+
+// SetName sets the value of Name.
+func (s *MemoryResource) SetName(val string) {
+	s.Name = val
+}
+
+// SetSourceThreadId sets the value of SourceThreadId.
+func (s *MemoryResource) SetSourceThreadId(val OptString) {
+	s.SourceThreadId = val
+}
+
+// SetUpdatedAt sets the value of UpdatedAt.
+func (s *MemoryResource) SetUpdatedAt(val time.Time) {
+	s.UpdatedAt = val
+}
 
 // Ref: #/components/schemas/ModelListResponseBody
 type ModelListResponseBody struct {

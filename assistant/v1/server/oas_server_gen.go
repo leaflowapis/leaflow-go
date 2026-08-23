@@ -71,6 +71,12 @@ type Handler interface {
 	//
 	// DELETE /api/v1/channels/{channel}
 	DeleteChannel(ctx context.Context, params DeleteChannelParams) error
+	// DeleteMemory implements delete-memory operation.
+	//
+	// 助手不再记得这件事。删除立即生效，下一次对话就不会再带上它。助手可能会重新学到同一件事。.
+	//
+	// DELETE /api/v1/memories/{memory}
+	DeleteMemory(ctx context.Context, params DeleteMemoryParams) error
 	// DownloadAttachment implements download-attachment operation.
 	//
 	// 按附件 id 取回原始字节，可直接作为
@@ -139,6 +145,12 @@ type Handler interface {
 	//
 	// GET /api/v1/threads/{thread}/earlier
 	ListEarlierItems(ctx context.Context, params ListEarlierItemsParams) (*EarlierResponseBody, error)
+	// ListMemories implements list-memories operation.
+	//
+	// 助手在这个项目里为当前账号记下的事实，它们会出现在之后每一次对话的开头。同一个项目里的不同成员各记各的，这里只返回当前账号的那些。不分页：条数有上限，一次全部返回。.
+	//
+	// GET /api/v1/memories
+	ListMemories(ctx context.Context) (*MemoryListResponseBody, error)
 	// ListModels implements list-models operation.
 	//
 	// 返回本平台当前提供的模型及其上下文窗口、推理档位和支持的输入类型。用于填充对话设置里的模型选择。.
