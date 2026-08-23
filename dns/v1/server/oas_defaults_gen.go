@@ -3,7 +3,7 @@
 package dnsv1server
 
 // setDefaults set default value of fields.
-func (s *AppendRecordsRequestBody) setDefaults() {
+func (s *ModifyRecordSetRequestBody) setDefaults() {
 	{
 		val := int64(300)
 		s.TTL.SetTo(val)

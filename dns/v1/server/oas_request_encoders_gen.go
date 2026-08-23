@@ -10,8 +10,8 @@ import (
 	ht "github.com/ogen-go/ogen/http"
 )
 
-func encodeAppendRecordsRequest(
-	req *AppendRecordsRequestBody,
+func encodeCreateCredentialRequest(
+	req *CreateCredentialRequestBody,
 	r *http.Request,
 ) error {
 	const contentType = "application/json"
@@ -24,8 +24,8 @@ func encodeAppendRecordsRequest(
 	return nil
 }
 
-func encodeCreateCredentialRequest(
-	req *CreateCredentialRequestBody,
+func encodeModifyRecordSetRequest(
+	req *ModifyRecordSetRequestBody,
 	r *http.Request,
 ) error {
 	const contentType = "application/json"

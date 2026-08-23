@@ -33,235 +33,6 @@ func (c *codeRecorder) Unwrap() http.ResponseWriter {
 	return c.ResponseWriter
 }
 
-// handleAppendRecordsRequest handles append-records operation.
-//
-// Adds values only. Records already present under the same name and type are left in place, and the
-// submitted values are added alongside them.
-//
-// `PUT` states the final contents of a record set, so two concurrent `PUT` requests against the same
-// set can discard one another's changes. This operation only adds, and is therefore safe to issue
-// concurrently. Certificate issuance, which places several TXT records under `_acme-challenge` at
-// once, must use this operation: issuing two certificates concurrently with `PUT` causes one challenge
-// record to displace the other.
-//
-// The cost is that duplicate values can be created. Use `PUT` to state what a record set should
-// contain.
-//
-// POST /api/v1/zones/{zone}/records
-func (s *Server) handleAppendRecordsRequest(args [1]string, argsEscaped bool, w http.ResponseWriter, r *http.Request) {
-	statusWriter := &codeRecorder{ResponseWriter: w}
-	w = statusWriter
-	otelAttrs := []attribute.KeyValue{
-		otelogen.OperationID("append-records"),
-		semconv.HTTPRequestMethodKey.String("POST"),
-		semconv.HTTPRouteKey.String("/api/v1/zones/{zone}/records"),
-	}
-	// Add attributes from config.
-	otelAttrs = append(otelAttrs, s.cfg.Attributes...)
-
-	// Start a span for this request.
-	ctx, span := s.cfg.Tracer.Start(r.Context(), AppendRecordsOperation,
-		trace.WithAttributes(otelAttrs...),
-		serverSpanKind,
-	)
-	defer span.End()
-
-	// Add Labeler to context.
-	labeler := &Labeler{attrs: otelAttrs}
-	ctx = contextWithLabeler(ctx, labeler)
-
-	// Run stopwatch.
-	startTime := time.Now()
-	defer func() {
-		elapsedDuration := time.Since(startTime)
-
-		attrSet := labeler.AttributeSet()
-		attrs := attrSet.ToSlice()
-		code := statusWriter.status
-		if code != 0 {
-			codeAttr := semconv.HTTPResponseStatusCode(code)
-			attrs = append(attrs, codeAttr)
-			span.SetAttributes(attrs...)
-		}
-		attrOpt := metric.WithAttributes(attrs...)
-
-		// Increment request counter.
-		s.requests.Add(ctx, 1, attrOpt)
-
-		// Use floating point division here for higher precision (instead of Millisecond method).
-		s.duration.Record(ctx, float64(elapsedDuration)/float64(time.Millisecond), attrOpt)
-	}()
-
-	var (
-		recordError = func(stage string, err error) {
-			span.RecordError(err)
-
-			// https://opentelemetry.io/docs/specs/semconv/http/http-spans/#status
-			// Span Status MUST be left unset if HTTP status code was in the 1xx, 2xx or 3xx ranges,
-			// unless there was another error (e.g., network error receiving the response body; or 3xx codes with
-			// max redirects exceeded), in which case status MUST be set to Error.
-			code := statusWriter.status
-			if code < 100 || code >= 500 {
-				span.SetStatus(codes.Error, stage)
-			}
-
-			attrSet := labeler.AttributeSet()
-			attrs := attrSet.ToSlice()
-			if code != 0 {
-				attrs = append(attrs, semconv.HTTPResponseStatusCode(code))
-			}
-
-			s.errors.Add(ctx, 1, metric.WithAttributes(attrs...))
-		}
-		err          error
-		opErrContext = ogenerrors.OperationContext{
-			Name: AppendRecordsOperation,
-			ID:   "append-records",
-		}
-	)
-	{
-		type bitset = [1]uint8
-		var satisfied bitset
-		{
-			sctx, ok, err := s.securityBearerAuth(ctx, AppendRecordsOperation, r)
-			if err != nil {
-				err = &ogenerrors.SecurityError{
-					OperationContext: opErrContext,
-					Security:         "BearerAuth",
-					Err:              err,
-				}
-				if encodeErr := encodeErrorResponse(s.h.NewError(ctx, err), w, span); encodeErr != nil {
-					defer recordError("Security:BearerAuth", err)
-				}
-				return
-			}
-			if ok {
-				satisfied[0] |= 1 << 0
-				ctx = sctx
-			}
-		}
-
-		if ok := func() bool {
-		nextRequirement:
-			for _, requirement := range []bitset{
-				{0b00000001},
-			} {
-				for i, mask := range requirement {
-					if satisfied[i]&mask != mask {
-						continue nextRequirement
-					}
-				}
-				return true
-			}
-			return false
-		}(); !ok {
-			err = &ogenerrors.SecurityError{
-				OperationContext: opErrContext,
-				Err:              ogenerrors.ErrSecurityRequirementIsNotSatisfied,
-			}
-			if encodeErr := encodeErrorResponse(s.h.NewError(ctx, err), w, span); encodeErr != nil {
-				defer recordError("Security", err)
-			}
-			return
-		}
-	}
-	params, err := decodeAppendRecordsParams(args, argsEscaped, r)
-	if err != nil {
-		err = &ogenerrors.DecodeParamsError{
-			OperationContext: opErrContext,
-			Err:              err,
-		}
-		defer recordError("DecodeParams", err)
-		s.cfg.ErrorHandler(ctx, w, r, err)
-		return
-	}
-
-	var rawBody []byte
-	request, rawBody, close, err := s.decodeAppendRecordsRequest(r)
-	if err != nil {
-		err = &ogenerrors.DecodeRequestError{
-			OperationContext: opErrContext,
-			Err:              err,
-		}
-		defer recordError("DecodeRequest", err)
-		s.cfg.ErrorHandler(ctx, w, r, err)
-		return
-	}
-	defer func() {
-		if err := close(); err != nil {
-			recordError("CloseRequest", err)
-		}
-	}()
-
-	var response *RecordSetResource
-	if m := s.cfg.Middleware; m != nil {
-		mreq := middleware.Request{
-			Context:          ctx,
-			OperationName:    AppendRecordsOperation,
-			OperationSummary: "Add records to a record set",
-			OperationID:      "append-records",
-			Body:             request,
-			RawBody:          rawBody,
-			Params: middleware.Parameters{
-				{
-					Name: "zone",
-					In:   "path",
-				}: params.Zone,
-				{
-					Name: "credential_id",
-					In:   "query",
-				}: params.CredentialID,
-			},
-			Raw: r,
-		}
-
-		type (
-			Request  = *AppendRecordsRequestBody
-			Params   = AppendRecordsParams
-			Response = *RecordSetResource
-		)
-		response, err = middleware.HookMiddleware[
-			Request,
-			Params,
-			Response,
-		](
-			m,
-			mreq,
-			unpackAppendRecordsParams,
-			func(ctx context.Context, request Request, params Params) (response Response, err error) {
-				response, err = s.h.AppendRecords(ctx, request, params)
-				return response, err
-			},
-		)
-	} else {
-		response, err = s.h.AppendRecords(ctx, request, params)
-	}
-	if err != nil {
-		if errRes, ok := errors.Into[*ErrorStatusCode](err); ok {
-			if err := encodeErrorResponse(errRes, w, span); err != nil {
-				defer recordError("Internal", err)
-			}
-			return
-		}
-		if errors.Is(err, ht.ErrNotImplemented) {
-			s.cfg.ErrorHandler(ctx, w, r, err)
-			return
-		}
-		if err := encodeErrorResponse(s.h.NewError(ctx, err), w, span); err != nil {
-			defer recordError("Internal", err)
-		}
-		return
-	}
-
-	if err := encodeAppendRecordsResponse(response, w, span); err != nil {
-		defer recordError("EncodeResponse", err)
-		if !errors.Is(err, ht.ErrInternalServerErrorResponse) {
-			s.cfg.ErrorHandler(ctx, w, r, err)
-		}
-		return
-	}
-}
-
 // handleCreateCredentialRequest handles create-credential operation.
 //
 // The credential is validated against the provider before it is accepted. A credential that cannot
@@ -678,8 +449,8 @@ func (s *Server) handleDeleteCredentialRequest(args [1]string, argsEscaped bool,
 
 // handleDeleteRecordSetRequest handles delete-record-set operation.
 //
-// Removes every record under this name and type. To remove one value from a set, `PUT` the values that
-// should remain.
+// Removes every record under this name and type. To remove part of a set, use `PATCH`, which is safe
+// to issue concurrently; this operation and `PUT` are not.
 //
 // Providers reject removal of the last NS record set at the apex of a domain, which would withdraw the
 // domain from DNS entirely.
@@ -1953,6 +1724,253 @@ func (s *Server) handleListZonesRequest(args [0]string, argsEscaped bool, w http
 	}
 }
 
+// handleModifyRecordSetRequest handles modify-record-set operation.
+//
+// Names values to add and remove; anything not named is left in place. Nothing is read first, so this
+// is the only operation on a record set safe to issue concurrently. The set is created if it does not
+// exist.
+//
+// Certificate issuance must use this operation for both the challenge record and its cleanup. `PUT`
+// and `DELETE` state or remove the whole set, so a concurrent issuance's challenge record is discarded
+// — with every request returning 2xx, and the failure surfacing as the second certificate failing
+// validation.
+//
+// `add` is applied before `remove`, so a request carrying both changes a value without the name ever
+// resolving without it: the set briefly holds one value too many rather than one too few. The reverse
+// order, as two requests, leaves a window in which the value is absent — for a single-valued set,
+// the name does not resolve at all — and an addition that then fails leaves it gone.
+//
+// A value appearing in both `add` and `remove` is rejected rather than resolved in one direction.
+//
+// Values in `remove` that are absent are skipped, so a retried cleanup reaches the same result. Values
+// in `add` that are already present are rejected by the provider: a record set cannot hold the same
+// value twice.
+//
+// Removing every value leaves an empty set, reported as `values: []`, not `RECORD_SET_NOT_FOUND`.
+//
+// PATCH /api/v1/zones/{zone}/records/{name}/{type}
+func (s *Server) handleModifyRecordSetRequest(args [3]string, argsEscaped bool, w http.ResponseWriter, r *http.Request) {
+	statusWriter := &codeRecorder{ResponseWriter: w}
+	w = statusWriter
+	otelAttrs := []attribute.KeyValue{
+		otelogen.OperationID("modify-record-set"),
+		semconv.HTTPRequestMethodKey.String("PATCH"),
+		semconv.HTTPRouteKey.String("/api/v1/zones/{zone}/records/{name}/{type}"),
+	}
+	// Add attributes from config.
+	otelAttrs = append(otelAttrs, s.cfg.Attributes...)
+
+	// Start a span for this request.
+	ctx, span := s.cfg.Tracer.Start(r.Context(), ModifyRecordSetOperation,
+		trace.WithAttributes(otelAttrs...),
+		serverSpanKind,
+	)
+	defer span.End()
+
+	// Add Labeler to context.
+	labeler := &Labeler{attrs: otelAttrs}
+	ctx = contextWithLabeler(ctx, labeler)
+
+	// Run stopwatch.
+	startTime := time.Now()
+	defer func() {
+		elapsedDuration := time.Since(startTime)
+
+		attrSet := labeler.AttributeSet()
+		attrs := attrSet.ToSlice()
+		code := statusWriter.status
+		if code != 0 {
+			codeAttr := semconv.HTTPResponseStatusCode(code)
+			attrs = append(attrs, codeAttr)
+			span.SetAttributes(attrs...)
+		}
+		attrOpt := metric.WithAttributes(attrs...)
+
+		// Increment request counter.
+		s.requests.Add(ctx, 1, attrOpt)
+
+		// Use floating point division here for higher precision (instead of Millisecond method).
+		s.duration.Record(ctx, float64(elapsedDuration)/float64(time.Millisecond), attrOpt)
+	}()
+
+	var (
+		recordError = func(stage string, err error) {
+			span.RecordError(err)
+
+			// https://opentelemetry.io/docs/specs/semconv/http/http-spans/#status
+			// Span Status MUST be left unset if HTTP status code was in the 1xx, 2xx or 3xx ranges,
+			// unless there was another error (e.g., network error receiving the response body; or 3xx codes with
+			// max redirects exceeded), in which case status MUST be set to Error.
+			code := statusWriter.status
+			if code < 100 || code >= 500 {
+				span.SetStatus(codes.Error, stage)
+			}
+
+			attrSet := labeler.AttributeSet()
+			attrs := attrSet.ToSlice()
+			if code != 0 {
+				attrs = append(attrs, semconv.HTTPResponseStatusCode(code))
+			}
+
+			s.errors.Add(ctx, 1, metric.WithAttributes(attrs...))
+		}
+		err          error
+		opErrContext = ogenerrors.OperationContext{
+			Name: ModifyRecordSetOperation,
+			ID:   "modify-record-set",
+		}
+	)
+	{
+		type bitset = [1]uint8
+		var satisfied bitset
+		{
+			sctx, ok, err := s.securityBearerAuth(ctx, ModifyRecordSetOperation, r)
+			if err != nil {
+				err = &ogenerrors.SecurityError{
+					OperationContext: opErrContext,
+					Security:         "BearerAuth",
+					Err:              err,
+				}
+				if encodeErr := encodeErrorResponse(s.h.NewError(ctx, err), w, span); encodeErr != nil {
+					defer recordError("Security:BearerAuth", err)
+				}
+				return
+			}
+			if ok {
+				satisfied[0] |= 1 << 0
+				ctx = sctx
+			}
+		}
+
+		if ok := func() bool {
+		nextRequirement:
+			for _, requirement := range []bitset{
+				{0b00000001},
+			} {
+				for i, mask := range requirement {
+					if satisfied[i]&mask != mask {
+						continue nextRequirement
+					}
+				}
+				return true
+			}
+			return false
+		}(); !ok {
+			err = &ogenerrors.SecurityError{
+				OperationContext: opErrContext,
+				Err:              ogenerrors.ErrSecurityRequirementIsNotSatisfied,
+			}
+			if encodeErr := encodeErrorResponse(s.h.NewError(ctx, err), w, span); encodeErr != nil {
+				defer recordError("Security", err)
+			}
+			return
+		}
+	}
+	params, err := decodeModifyRecordSetParams(args, argsEscaped, r)
+	if err != nil {
+		err = &ogenerrors.DecodeParamsError{
+			OperationContext: opErrContext,
+			Err:              err,
+		}
+		defer recordError("DecodeParams", err)
+		s.cfg.ErrorHandler(ctx, w, r, err)
+		return
+	}
+
+	var rawBody []byte
+	request, rawBody, close, err := s.decodeModifyRecordSetRequest(r)
+	if err != nil {
+		err = &ogenerrors.DecodeRequestError{
+			OperationContext: opErrContext,
+			Err:              err,
+		}
+		defer recordError("DecodeRequest", err)
+		s.cfg.ErrorHandler(ctx, w, r, err)
+		return
+	}
+	defer func() {
+		if err := close(); err != nil {
+			recordError("CloseRequest", err)
+		}
+	}()
+
+	var response *RecordSetResource
+	if m := s.cfg.Middleware; m != nil {
+		mreq := middleware.Request{
+			Context:          ctx,
+			OperationName:    ModifyRecordSetOperation,
+			OperationSummary: "Add or remove values in a record set",
+			OperationID:      "modify-record-set",
+			Body:             request,
+			RawBody:          rawBody,
+			Params: middleware.Parameters{
+				{
+					Name: "zone",
+					In:   "path",
+				}: params.Zone,
+				{
+					Name: "name",
+					In:   "path",
+				}: params.Name,
+				{
+					Name: "type",
+					In:   "path",
+				}: params.Type,
+				{
+					Name: "credential_id",
+					In:   "query",
+				}: params.CredentialID,
+			},
+			Raw: r,
+		}
+
+		type (
+			Request  = *ModifyRecordSetRequestBody
+			Params   = ModifyRecordSetParams
+			Response = *RecordSetResource
+		)
+		response, err = middleware.HookMiddleware[
+			Request,
+			Params,
+			Response,
+		](
+			m,
+			mreq,
+			unpackModifyRecordSetParams,
+			func(ctx context.Context, request Request, params Params) (response Response, err error) {
+				response, err = s.h.ModifyRecordSet(ctx, request, params)
+				return response, err
+			},
+		)
+	} else {
+		response, err = s.h.ModifyRecordSet(ctx, request, params)
+	}
+	if err != nil {
+		if errRes, ok := errors.Into[*ErrorStatusCode](err); ok {
+			if err := encodeErrorResponse(errRes, w, span); err != nil {
+				defer recordError("Internal", err)
+			}
+			return
+		}
+		if errors.Is(err, ht.ErrNotImplemented) {
+			s.cfg.ErrorHandler(ctx, w, r, err)
+			return
+		}
+		if err := encodeErrorResponse(s.h.NewError(ctx, err), w, span); err != nil {
+			defer recordError("Internal", err)
+		}
+		return
+	}
+
+	if err := encodeModifyRecordSetResponse(response, w, span); err != nil {
+		defer recordError("EncodeResponse", err)
+		if !errors.Is(err, ht.ErrInternalServerErrorResponse) {
+			s.cfg.ErrorHandler(ctx, w, r, err)
+		}
+		return
+	}
+}
+
 // handleRenameCredentialRequest handles rename-credential operation.
 //
 // Only the display name can be changed. To use different credential material, delete this credential
@@ -2174,14 +2192,15 @@ func (s *Server) handleRenameCredentialRequest(args [1]string, argsEscaped bool,
 // This replaces the entire record set. After this request, the only records under this name and type
 // are the ones listed in `values`; any value present beforehand and absent here is removed.
 //
-// To add a value, retrieve the set with `GET`, append to the values it returns, and submit the
-// complete list. Submitting only the new value removes the others; both forms return 200.
-//
-// The record set is created if it does not yet exist, so this operation both creates and replaces, and
-// is idempotent.
+// The record set is created if it does not exist, so this operation both creates and replaces, and is
+// idempotent.
 //
 // Two concurrent requests against the same domain conflict; the second receives `ZONE_BUSY` and may be
-// retried. To add values concurrently, use `POST /records`.
+// retried.
+//
+// Use `PATCH` to add or remove individual values. Reading the set and submitting a modified list is a
+// read-modify-write: values added by anything else between those two steps are stated to be absent,
+// and are therefore removed, with both requests returning 200.
 //
 // PUT /api/v1/zones/{zone}/records/{name}/{type}
 func (s *Server) handleSetRecordSetRequest(args [3]string, argsEscaped bool, w http.ResponseWriter, r *http.Request) {
