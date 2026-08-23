@@ -1823,7 +1823,14 @@ type InstanceResource struct {
 	// IPv6 address of the primary network interface. Assigned automatically once IPv6 is enabled on the
 	// private network.
 	Ipv6Address NilString `json:"ipv6_address"`
-	Name        string    `json:"name"`
+	// Your own classification of this instance, as key-value pairs. Nothing on the platform reads these
+	// — they are recorded so that a person, or an assistant acting on your behalf, can tell what an
+	// instance is for. Empty when never set.
+	Labels InstanceResourceLabels `json:"labels"`
+	Name   string                 `json:"name"`
+	// A free-text note about this instance — what it runs, and what to be careful about before touching
+	// it. Empty when never set.
+	Notes string `json:"notes"`
 	// Non-empty while a resize awaits confirmation. Confirming puts this type into effect, reverting
 	// discards it.
 	PendingInstanceTypeID NilUUID `json:"pending_instance_type_id"`
@@ -1887,9 +1894,19 @@ func (s *InstanceResource) GetIpv6Address() NilString {
 	return s.Ipv6Address
 }
 
+// GetLabels returns the value of Labels.
+func (s *InstanceResource) GetLabels() InstanceResourceLabels {
+	return s.Labels
+}
+
 // GetName returns the value of Name.
 func (s *InstanceResource) GetName() string {
 	return s.Name
+}
+
+// GetNotes returns the value of Notes.
+func (s *InstanceResource) GetNotes() string {
+	return s.Notes
 }
 
 // GetPendingInstanceTypeID returns the value of PendingInstanceTypeID.
@@ -1977,9 +1994,19 @@ func (s *InstanceResource) SetIpv6Address(val NilString) {
 	s.Ipv6Address = val
 }
 
+// SetLabels sets the value of Labels.
+func (s *InstanceResource) SetLabels(val InstanceResourceLabels) {
+	s.Labels = val
+}
+
 // SetName sets the value of Name.
 func (s *InstanceResource) SetName(val string) {
 	s.Name = val
+}
+
+// SetNotes sets the value of Notes.
+func (s *InstanceResource) SetNotes(val string) {
+	s.Notes = val
 }
 
 // SetPendingInstanceTypeID sets the value of PendingInstanceTypeID.
@@ -2030,6 +2057,20 @@ func (s *InstanceResource) SetSuspendedAt(val NilDateTime) {
 // SetUpdatedAt sets the value of UpdatedAt.
 func (s *InstanceResource) SetUpdatedAt(val time.Time) {
 	s.UpdatedAt = val
+}
+
+// Your own classification of this instance, as key-value pairs. Nothing on the platform reads these
+// — they are recorded so that a person, or an assistant acting on your behalf, can tell what an
+// instance is for. Empty when never set.
+type InstanceResourceLabels map[string]string
+
+func (s *InstanceResourceLabels) init() InstanceResourceLabels {
+	m := *s
+	if m == nil {
+		m = map[string]string{}
+		*s = m
+	}
+	return m
 }
 
 // Only `running` and `stopped` accept commands. Every other value means the instance is changing, and
@@ -4503,6 +4544,54 @@ func (s *SetBandwidthRequestBody) GetMbps() int64 {
 // SetMbps sets the value of Mbps.
 func (s *SetBandwidthRequestBody) SetMbps(val int64) {
 	s.Mbps = val
+}
+
+// Ref: #/components/schemas/SetInstanceLabelsRequestBody
+type SetInstanceLabelsRequestBody struct {
+	// The complete set of labels. Whatever is absent here is removed, so this is also how one is deleted;
+	// send an empty object to clear them all. A key may not contain a colon, whitespace or control
+	// characters — the colon because it separates key from value in the `label` filter.
+	Labels SetInstanceLabelsRequestBodyLabels `json:"labels"`
+}
+
+// GetLabels returns the value of Labels.
+func (s *SetInstanceLabelsRequestBody) GetLabels() SetInstanceLabelsRequestBodyLabels {
+	return s.Labels
+}
+
+// SetLabels sets the value of Labels.
+func (s *SetInstanceLabelsRequestBody) SetLabels(val SetInstanceLabelsRequestBodyLabels) {
+	s.Labels = val
+}
+
+// The complete set of labels. Whatever is absent here is removed, so this is also how one is deleted;
+// send an empty object to clear them all. A key may not contain a colon, whitespace or control
+// characters — the colon because it separates key from value in the `label` filter.
+type SetInstanceLabelsRequestBodyLabels map[string]string
+
+func (s *SetInstanceLabelsRequestBodyLabels) init() SetInstanceLabelsRequestBodyLabels {
+	m := *s
+	if m == nil {
+		m = map[string]string{}
+		*s = m
+	}
+	return m
+}
+
+// Ref: #/components/schemas/SetInstanceNotesRequestBody
+type SetInstanceNotesRequestBody struct {
+	// The complete note. Send an empty string to clear it.
+	Notes string `json:"notes"`
+}
+
+// GetNotes returns the value of Notes.
+func (s *SetInstanceNotesRequestBody) GetNotes() string {
+	return s.Notes
+}
+
+// SetNotes sets the value of Notes.
+func (s *SetInstanceNotesRequestBody) SetNotes(val string) {
+	s.Notes = val
 }
 
 // Ref: #/components/schemas/SnapshotListResponseBody

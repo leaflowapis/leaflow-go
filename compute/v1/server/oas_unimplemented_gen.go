@@ -577,10 +577,11 @@ func (UnimplementedHandler) ListInstanceTypes(ctx context.Context, params ListIn
 
 // ListInstances implements list-instances operation.
 //
-// List instances.
+// Every instance in the project, newest first. This endpoint does not query backend state; for the
+// accurate state of one instance, use the retrieve endpoint.
 //
 // GET /api/v1/instances
-func (UnimplementedHandler) ListInstances(ctx context.Context) (r *InstanceListResponseBody, _ error) {
+func (UnimplementedHandler) ListInstances(ctx context.Context, params ListInstancesParams) (r *InstanceListResponseBody, _ error) {
 	return r, ht.ErrNotImplemented
 }
 
@@ -927,6 +928,38 @@ func (UnimplementedHandler) RunInstanceCommand(ctx context.Context, req *RunComm
 //
 // PUT /api/v1/floating-ips/{floatingIpId}/bandwidth
 func (UnimplementedHandler) SetFloatingIPBandwidth(ctx context.Context, req *SetBandwidthRequestBody, params SetFloatingIPBandwidthParams) (r *FloatingIPResource, _ error) {
+	return r, ht.ErrNotImplemented
+}
+
+// SetInstanceLabels implements set-instance-labels operation.
+//
+// Records what this instance is for, as key-value pairs, so that a person or an assistant can tell
+// later. Nothing on the platform reads them: no scheduling, quota or billing decision keys off a
+// label, which is what makes editing one safe.
+//
+// The whole set is replaced. Whatever is absent from the request is removed — a merge could not
+// express deleting a key, and it makes retrying the same request produce a different result each time.
+//
+// Do not put credentials here. Labels appear in listings, in support tickets and in the operator
+// console.
+//
+// PUT /api/v1/instances/{instanceId}/labels
+func (UnimplementedHandler) SetInstanceLabels(ctx context.Context, req *SetInstanceLabelsRequestBody, params SetInstanceLabelsParams) (r *InstanceResource, _ error) {
+	return r, ht.ErrNotImplemented
+}
+
+// SetInstanceNotes implements set-instance-notes operation.
+//
+// A free-text note: what this instance runs, and what to be careful about before touching it —
+// "primary database, fail over before rebooting". It is read by whoever opens the instance next,
+// including an assistant acting on your behalf.
+//
+// The whole note is replaced; send an empty string to clear it.
+//
+// Do not put credentials here. The note appears in the operator console.
+//
+// PUT /api/v1/instances/{instanceId}/notes
+func (UnimplementedHandler) SetInstanceNotes(ctx context.Context, req *SetInstanceNotesRequestBody, params SetInstanceNotesParams) (r *InstanceResource, _ error) {
 	return r, ht.ErrNotImplemented
 }
 

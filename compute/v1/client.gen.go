@@ -670,7 +670,13 @@ type InstanceResource struct {
 
 	// Ipv6Address IPv6 address of the primary network interface. Assigned automatically once IPv6 is enabled on the private network
 	Ipv6Address *string `json:"ipv6_address"`
-	Name        string  `json:"name"`
+
+	// Labels Your own classification of this instance, as key-value pairs. Nothing on the platform reads these — they are recorded so that a person, or an assistant acting on your behalf, can tell what an instance is for. Empty when never set
+	Labels map[string]string `json:"labels"`
+	Name   string            `json:"name"`
+
+	// Notes A free-text note about this instance — what it runs, and what to be careful about before touching it. Empty when never set
+	Notes string `json:"notes"`
 
 	// PendingInstanceTypeId Non-empty while a resize awaits confirmation. Confirming puts this type into effect, reverting discards it
 	PendingInstanceTypeId *openapi_types.UUID `json:"pending_instance_type_id"`
@@ -1087,6 +1093,18 @@ type SetBandwidthRequestBody struct {
 	Mbps int64 `json:"mbps"`
 }
 
+// SetInstanceLabelsRequestBody defines model for SetInstanceLabelsRequestBody.
+type SetInstanceLabelsRequestBody struct {
+	// Labels The complete set of labels. Whatever is absent here is removed, so this is also how one is deleted; send an empty object to clear them all. A key may not contain a colon, whitespace or control characters — the colon because it separates key from value in the `label` filter
+	Labels map[string]string `json:"labels"`
+}
+
+// SetInstanceNotesRequestBody defines model for SetInstanceNotesRequestBody.
+type SetInstanceNotesRequestBody struct {
+	// Notes The complete note. Send an empty string to clear it
+	Notes string `json:"notes"`
+}
+
 // SnapshotListResponseBody defines model for SnapshotListResponseBody.
 type SnapshotListResponseBody struct {
 	Items []SnapshotResource `json:"items"`
@@ -1166,6 +1184,12 @@ type ListImagesParams struct {
 // ListInstanceTypesParams defines parameters for ListInstanceTypes.
 type ListInstanceTypesParams struct {
 	RegionCode string `form:"region_code" json:"region_code"`
+}
+
+// ListInstancesParams defines parameters for ListInstances.
+type ListInstancesParams struct {
+	// Label Only instances carrying this label, written as `key:value` — for example `env:prod`. Matched exactly on both halves. A key never contains a colon, so the split is at the first one; anything after it is the value, and `env:` means the key `env` with an empty value rather than "any value"
+	Label *string `form:"label,omitempty" json:"label,omitempty"`
 }
 
 // GetInstanceConsoleOutputParams defines parameters for GetInstanceConsoleOutput.
@@ -1257,6 +1281,12 @@ type AttachDiskJSONRequestBody = AttachDiskRequestBody
 
 // AttachInstanceFloatingIpJSONRequestBody defines body for AttachInstanceFloatingIp for application/json ContentType.
 type AttachInstanceFloatingIpJSONRequestBody = AttachFloatingIPRequestBody
+
+// SetInstanceLabelsJSONRequestBody defines body for SetInstanceLabels for application/json ContentType.
+type SetInstanceLabelsJSONRequestBody = SetInstanceLabelsRequestBody
+
+// SetInstanceNotesJSONRequestBody defines body for SetInstanceNotes for application/json ContentType.
+type SetInstanceNotesJSONRequestBody = SetInstanceNotesRequestBody
 
 // ResetInstancePasswordJSONRequestBody defines body for ResetInstancePassword for application/json ContentType.
 type ResetInstancePasswordJSONRequestBody = ResetPasswordRequestBody
@@ -1662,8 +1692,10 @@ type ClientInterface interface {
 
 	// ListInstances List instances
 	//
+	// Every instance in the project, newest first. This endpoint does not query backend state; for the accurate state of one instance, use the retrieve endpoint.
+	//
 	// Corresponds with GET /api/v1/instances (the `ListInstances` operationId).
-	ListInstances(ctx context.Context, reqEditors ...RequestEditorFn) (*http.Response, error)
+	ListInstances(ctx context.Context, params *ListInstancesParams, reqEditors ...RequestEditorFn) (*http.Response, error)
 
 	// LaunchInstanceWithBody Create instances
 	//
@@ -1857,6 +1889,58 @@ type ClientInterface interface {
 	//
 	// Corresponds with DELETE /api/v1/instances/{instanceId}/floating-ips/{floatingIpId} (the `DetachInstanceFloatingIp` operationId).
 	DetachInstanceFloatingIp(ctx context.Context, instanceId openapi_types.UUID, floatingIpId openapi_types.UUID, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// SetInstanceLabelsWithBody Replace an instance's labels
+	//
+	// Records what this instance is for, as key-value pairs, so that a person or an assistant can tell later. Nothing on the platform reads them: no scheduling, quota or billing decision keys off a label, which is what makes editing one safe.
+	//
+	// **The whole set is replaced.** Whatever is absent from the request is removed — a merge could not express deleting a key, and it makes retrying the same request produce a different result each time.
+	//
+	// Do not put credentials here. Labels appear in listings, in support tickets and in the operator console.
+	//
+	// Takes any type of body and a specified content type.
+	//
+	// Corresponds with PUT /api/v1/instances/{instanceId}/labels (the `SetInstanceLabels` operationId).
+	SetInstanceLabelsWithBody(ctx context.Context, instanceId openapi_types.UUID, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// SetInstanceLabels Replace an instance's labels
+	//
+	// Records what this instance is for, as key-value pairs, so that a person or an assistant can tell later. Nothing on the platform reads them: no scheduling, quota or billing decision keys off a label, which is what makes editing one safe.
+	//
+	// **The whole set is replaced.** Whatever is absent from the request is removed — a merge could not express deleting a key, and it makes retrying the same request produce a different result each time.
+	//
+	// Do not put credentials here. Labels appear in listings, in support tickets and in the operator console.
+	//
+	// Takes a body of the `application/json` content type.
+	//
+	// Corresponds with PUT /api/v1/instances/{instanceId}/labels (the `SetInstanceLabels` operationId).
+	SetInstanceLabels(ctx context.Context, instanceId openapi_types.UUID, body SetInstanceLabelsJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// SetInstanceNotesWithBody Replace an instance's note
+	//
+	// A free-text note: what this instance runs, and what to be careful about before touching it — "primary database, fail over before rebooting". It is read by whoever opens the instance next, including an assistant acting on your behalf.
+	//
+	// **The whole note is replaced**; send an empty string to clear it.
+	//
+	// Do not put credentials here. The note appears in the operator console.
+	//
+	// Takes any type of body and a specified content type.
+	//
+	// Corresponds with PUT /api/v1/instances/{instanceId}/notes (the `SetInstanceNotes` operationId).
+	SetInstanceNotesWithBody(ctx context.Context, instanceId openapi_types.UUID, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// SetInstanceNotes Replace an instance's note
+	//
+	// A free-text note: what this instance runs, and what to be careful about before touching it — "primary database, fail over before rebooting". It is read by whoever opens the instance next, including an assistant acting on your behalf.
+	//
+	// **The whole note is replaced**; send an empty string to clear it.
+	//
+	// Do not put credentials here. The note appears in the operator console.
+	//
+	// Takes a body of the `application/json` content type.
+	//
+	// Corresponds with PUT /api/v1/instances/{instanceId}/notes (the `SetInstanceNotes` operationId).
+	SetInstanceNotes(ctx context.Context, instanceId openapi_types.UUID, body SetInstanceNotesJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
 
 	// ResetInstancePasswordWithBody Reset the login password
 	//
@@ -3029,9 +3113,11 @@ func (c *Client) ListInstanceTypes(ctx context.Context, params *ListInstanceType
 
 // ListInstances List instances
 //
+// Every instance in the project, newest first. This endpoint does not query backend state; for the accurate state of one instance, use the retrieve endpoint.
+//
 // Corresponds with GET /api/v1/instances (the `ListInstances` operationId).
-func (c *Client) ListInstances(ctx context.Context, reqEditors ...RequestEditorFn) (*http.Response, error) {
-	req, err := NewListInstancesRequest(c.Server)
+func (c *Client) ListInstances(ctx context.Context, params *ListInstancesParams, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewListInstancesRequest(c.Server, params)
 	if err != nil {
 		return nil, err
 	}
@@ -3395,6 +3481,98 @@ func (c *Client) AttachInstanceFloatingIp(ctx context.Context, instanceId openap
 // Corresponds with DELETE /api/v1/instances/{instanceId}/floating-ips/{floatingIpId} (the `DetachInstanceFloatingIp` operationId).
 func (c *Client) DetachInstanceFloatingIp(ctx context.Context, instanceId openapi_types.UUID, floatingIpId openapi_types.UUID, reqEditors ...RequestEditorFn) (*http.Response, error) {
 	req, err := NewDetachInstanceFloatingIpRequest(c.Server, instanceId, floatingIpId)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+// SetInstanceLabelsWithBody Replace an instance's labels
+//
+// Records what this instance is for, as key-value pairs, so that a person or an assistant can tell later. Nothing on the platform reads them: no scheduling, quota or billing decision keys off a label, which is what makes editing one safe.
+//
+// **The whole set is replaced.** Whatever is absent from the request is removed — a merge could not express deleting a key, and it makes retrying the same request produce a different result each time.
+//
+// Do not put credentials here. Labels appear in listings, in support tickets and in the operator console.
+//
+// Takes any type of body and a specified content type.
+//
+// Corresponds with PUT /api/v1/instances/{instanceId}/labels (the `SetInstanceLabels` operationId).
+func (c *Client) SetInstanceLabelsWithBody(ctx context.Context, instanceId openapi_types.UUID, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewSetInstanceLabelsRequestWithBody(c.Server, instanceId, contentType, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+// SetInstanceLabels Replace an instance's labels
+//
+// Records what this instance is for, as key-value pairs, so that a person or an assistant can tell later. Nothing on the platform reads them: no scheduling, quota or billing decision keys off a label, which is what makes editing one safe.
+//
+// **The whole set is replaced.** Whatever is absent from the request is removed — a merge could not express deleting a key, and it makes retrying the same request produce a different result each time.
+//
+// Do not put credentials here. Labels appear in listings, in support tickets and in the operator console.
+//
+// Takes a body of the `application/json` content type.
+//
+// Corresponds with PUT /api/v1/instances/{instanceId}/labels (the `SetInstanceLabels` operationId).
+func (c *Client) SetInstanceLabels(ctx context.Context, instanceId openapi_types.UUID, body SetInstanceLabelsJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewSetInstanceLabelsRequest(c.Server, instanceId, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+// SetInstanceNotesWithBody Replace an instance's note
+//
+// A free-text note: what this instance runs, and what to be careful about before touching it — "primary database, fail over before rebooting". It is read by whoever opens the instance next, including an assistant acting on your behalf.
+//
+// **The whole note is replaced**; send an empty string to clear it.
+//
+// Do not put credentials here. The note appears in the operator console.
+//
+// Takes any type of body and a specified content type.
+//
+// Corresponds with PUT /api/v1/instances/{instanceId}/notes (the `SetInstanceNotes` operationId).
+func (c *Client) SetInstanceNotesWithBody(ctx context.Context, instanceId openapi_types.UUID, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewSetInstanceNotesRequestWithBody(c.Server, instanceId, contentType, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+// SetInstanceNotes Replace an instance's note
+//
+// A free-text note: what this instance runs, and what to be careful about before touching it — "primary database, fail over before rebooting". It is read by whoever opens the instance next, including an assistant acting on your behalf.
+//
+// **The whole note is replaced**; send an empty string to clear it.
+//
+// Do not put credentials here. The note appears in the operator console.
+//
+// Takes a body of the `application/json` content type.
+//
+// Corresponds with PUT /api/v1/instances/{instanceId}/notes (the `SetInstanceNotes` operationId).
+func (c *Client) SetInstanceNotes(ctx context.Context, instanceId openapi_types.UUID, body SetInstanceNotesJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewSetInstanceNotesRequest(c.Server, instanceId, body)
 	if err != nil {
 		return nil, err
 	}
@@ -5621,7 +5799,7 @@ func NewListInstanceTypesRequest(server string, params *ListInstanceTypesParams)
 }
 
 // NewListInstancesRequest constructs an http.Request for the ListInstances method
-func NewListInstancesRequest(server string) (*http.Request, error) {
+func NewListInstancesRequest(server string, params *ListInstancesParams) (*http.Request, error) {
 	var err error
 
 	serverURL, err := url.Parse(server)
@@ -5637,6 +5815,33 @@ func NewListInstancesRequest(server string) (*http.Request, error) {
 	queryURL, err := serverURL.Parse(operationPath)
 	if err != nil {
 		return nil, err
+	}
+
+	if params != nil {
+		// queryValues collects non-styled parameters (passthrough, JSON)
+		// that are safe to round-trip through url.Values.Encode().
+		queryValues := queryURL.Query()
+		// rawQueryFragments collects pre-encoded query fragments from
+		// styled parameters, preserving literal commas as delimiters
+		// per the OpenAPI spec (e.g. "color=blue,black,brown").
+		var rawQueryFragments []string
+
+		if params.Label != nil {
+
+			if queryFrag, err := runtime.StyleParamWithOptions("form", false, "label", *params.Label, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			} else {
+				for _, qp := range strings.Split(queryFrag, "&") {
+					rawQueryFragments = append(rawQueryFragments, qp)
+				}
+			}
+
+		}
+
+		if encoded := queryValues.Encode(); encoded != "" {
+			rawQueryFragments = append(rawQueryFragments, encoded)
+		}
+		queryURL.RawQuery = strings.Join(rawQueryFragments, "&")
 	}
 
 	req, err := http.NewRequest(http.MethodGet, queryURL.String(), nil)
@@ -6150,6 +6355,100 @@ func NewDetachInstanceFloatingIpRequest(server string, instanceId openapi_types.
 	if err != nil {
 		return nil, err
 	}
+
+	return req, nil
+}
+
+// NewSetInstanceLabelsRequest calls the generic SetInstanceLabels builder with application/json body
+func NewSetInstanceLabelsRequest(server string, instanceId openapi_types.UUID, body SetInstanceLabelsJSONRequestBody) (*http.Request, error) {
+	var bodyReader io.Reader
+	buf, err := json.Marshal(body)
+	if err != nil {
+		return nil, err
+	}
+	bodyReader = bytes.NewReader(buf)
+	return NewSetInstanceLabelsRequestWithBody(server, instanceId, "application/json", bodyReader)
+}
+
+// NewSetInstanceLabelsRequestWithBody constructs an http.Request for the SetInstanceLabels method, with any body, and a specified content type
+func NewSetInstanceLabelsRequestWithBody(server string, instanceId openapi_types.UUID, contentType string, body io.Reader) (*http.Request, error) {
+	var err error
+
+	var pathParam0 string
+
+	pathParam0, err = runtime.StyleParamWithOptions("simple", false, "instanceId", instanceId, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: "uuid"})
+	if err != nil {
+		return nil, err
+	}
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/api/v1/instances/%s/labels", pathParam0)
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest(http.MethodPut, queryURL.String(), body)
+	if err != nil {
+		return nil, err
+	}
+
+	req.Header.Add("Content-Type", contentType)
+
+	return req, nil
+}
+
+// NewSetInstanceNotesRequest calls the generic SetInstanceNotes builder with application/json body
+func NewSetInstanceNotesRequest(server string, instanceId openapi_types.UUID, body SetInstanceNotesJSONRequestBody) (*http.Request, error) {
+	var bodyReader io.Reader
+	buf, err := json.Marshal(body)
+	if err != nil {
+		return nil, err
+	}
+	bodyReader = bytes.NewReader(buf)
+	return NewSetInstanceNotesRequestWithBody(server, instanceId, "application/json", bodyReader)
+}
+
+// NewSetInstanceNotesRequestWithBody constructs an http.Request for the SetInstanceNotes method, with any body, and a specified content type
+func NewSetInstanceNotesRequestWithBody(server string, instanceId openapi_types.UUID, contentType string, body io.Reader) (*http.Request, error) {
+	var err error
+
+	var pathParam0 string
+
+	pathParam0, err = runtime.StyleParamWithOptions("simple", false, "instanceId", instanceId, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: "uuid"})
+	if err != nil {
+		return nil, err
+	}
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/api/v1/instances/%s/notes", pathParam0)
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest(http.MethodPut, queryURL.String(), body)
+	if err != nil {
+		return nil, err
+	}
+
+	req.Header.Add("Content-Type", contentType)
 
 	return req, nil
 }
@@ -8566,10 +8865,12 @@ type ClientWithResponsesInterface interface {
 
 	// ListInstancesWithResponse List instances
 	//
+	// Every instance in the project, newest first. This endpoint does not query backend state; for the accurate state of one instance, use the retrieve endpoint.
+	//
 	// Returns a wrapper object for the known response body format(s).
 	//
 	// Corresponds with GET /api/v1/instances (the `ListInstances` operationId).
-	ListInstancesWithResponse(ctx context.Context, reqEditors ...RequestEditorFn) (*ListInstancesResponse, error)
+	ListInstancesWithResponse(ctx context.Context, params *ListInstancesParams, reqEditors ...RequestEditorFn) (*ListInstancesResponse, error)
 
 	// LaunchInstanceWithBodyWithResponse Create instances
 	//
@@ -8777,6 +9078,58 @@ type ClientWithResponsesInterface interface {
 	//
 	// Corresponds with DELETE /api/v1/instances/{instanceId}/floating-ips/{floatingIpId} (the `DetachInstanceFloatingIp` operationId).
 	DetachInstanceFloatingIpWithResponse(ctx context.Context, instanceId openapi_types.UUID, floatingIpId openapi_types.UUID, reqEditors ...RequestEditorFn) (*DetachInstanceFloatingIpResponse, error)
+
+	// SetInstanceLabelsWithBodyWithResponse Replace an instance's labels
+	//
+	// Records what this instance is for, as key-value pairs, so that a person or an assistant can tell later. Nothing on the platform reads them: no scheduling, quota or billing decision keys off a label, which is what makes editing one safe.
+	//
+	// **The whole set is replaced.** Whatever is absent from the request is removed — a merge could not express deleting a key, and it makes retrying the same request produce a different result each time.
+	//
+	// Do not put credentials here. Labels appear in listings, in support tickets and in the operator console.
+	//
+	// Takes any type of body and a specified content type, and returns a wrapper object for the known response body format(s).
+	//
+	// Corresponds with PUT /api/v1/instances/{instanceId}/labels (the `SetInstanceLabels` operationId).
+	SetInstanceLabelsWithBodyWithResponse(ctx context.Context, instanceId openapi_types.UUID, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*SetInstanceLabelsResponse, error)
+
+	// SetInstanceLabelsWithResponse Replace an instance's labels
+	//
+	// Records what this instance is for, as key-value pairs, so that a person or an assistant can tell later. Nothing on the platform reads them: no scheduling, quota or billing decision keys off a label, which is what makes editing one safe.
+	//
+	// **The whole set is replaced.** Whatever is absent from the request is removed — a merge could not express deleting a key, and it makes retrying the same request produce a different result each time.
+	//
+	// Do not put credentials here. Labels appear in listings, in support tickets and in the operator console.
+	//
+	// Takes a body of the `application/json` content type, and returns a wrapper object for the known response body format(s).
+	//
+	// Corresponds with PUT /api/v1/instances/{instanceId}/labels (the `SetInstanceLabels` operationId).
+	SetInstanceLabelsWithResponse(ctx context.Context, instanceId openapi_types.UUID, body SetInstanceLabelsJSONRequestBody, reqEditors ...RequestEditorFn) (*SetInstanceLabelsResponse, error)
+
+	// SetInstanceNotesWithBodyWithResponse Replace an instance's note
+	//
+	// A free-text note: what this instance runs, and what to be careful about before touching it — "primary database, fail over before rebooting". It is read by whoever opens the instance next, including an assistant acting on your behalf.
+	//
+	// **The whole note is replaced**; send an empty string to clear it.
+	//
+	// Do not put credentials here. The note appears in the operator console.
+	//
+	// Takes any type of body and a specified content type, and returns a wrapper object for the known response body format(s).
+	//
+	// Corresponds with PUT /api/v1/instances/{instanceId}/notes (the `SetInstanceNotes` operationId).
+	SetInstanceNotesWithBodyWithResponse(ctx context.Context, instanceId openapi_types.UUID, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*SetInstanceNotesResponse, error)
+
+	// SetInstanceNotesWithResponse Replace an instance's note
+	//
+	// A free-text note: what this instance runs, and what to be careful about before touching it — "primary database, fail over before rebooting". It is read by whoever opens the instance next, including an assistant acting on your behalf.
+	//
+	// **The whole note is replaced**; send an empty string to clear it.
+	//
+	// Do not put credentials here. The note appears in the operator console.
+	//
+	// Takes a body of the `application/json` content type, and returns a wrapper object for the known response body format(s).
+	//
+	// Corresponds with PUT /api/v1/instances/{instanceId}/notes (the `SetInstanceNotes` operationId).
+	SetInstanceNotesWithResponse(ctx context.Context, instanceId openapi_types.UUID, body SetInstanceNotesJSONRequestBody, reqEditors ...RequestEditorFn) (*SetInstanceNotesResponse, error)
 
 	// ResetInstancePasswordWithBodyWithResponse Reset the login password
 	//
@@ -11100,6 +11453,102 @@ func (r DetachInstanceFloatingIpResponse) StatusCode() int {
 
 // ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
 func (r DetachInstanceFloatingIpResponse) ContentType() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Header.Get("Content-Type")
+	}
+	return ""
+}
+
+type SetInstanceLabelsResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	// JSON200 the response for an HTTP 200 `application/json` response
+	JSON200 *InstanceResource
+	// JSONDefault the response for an HTTP default `application/json` response
+	JSONDefault *Error
+}
+
+// GetJSON200 returns the response for an HTTP 200 `application/json` response
+func (r SetInstanceLabelsResponse) GetJSON200() *InstanceResource {
+	return r.JSON200
+}
+
+// GetJSONDefault returns the response for an HTTP default `application/json` response
+func (r SetInstanceLabelsResponse) GetJSONDefault() *Error {
+	return r.JSONDefault
+}
+
+// GetBody returns the raw response body bytes
+func (r SetInstanceLabelsResponse) GetBody() []byte {
+	return r.Body
+}
+
+// Status returns HTTPResponse.Status
+func (r SetInstanceLabelsResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r SetInstanceLabelsResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+// ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
+func (r SetInstanceLabelsResponse) ContentType() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Header.Get("Content-Type")
+	}
+	return ""
+}
+
+type SetInstanceNotesResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	// JSON200 the response for an HTTP 200 `application/json` response
+	JSON200 *InstanceResource
+	// JSONDefault the response for an HTTP default `application/json` response
+	JSONDefault *Error
+}
+
+// GetJSON200 returns the response for an HTTP 200 `application/json` response
+func (r SetInstanceNotesResponse) GetJSON200() *InstanceResource {
+	return r.JSON200
+}
+
+// GetJSONDefault returns the response for an HTTP default `application/json` response
+func (r SetInstanceNotesResponse) GetJSONDefault() *Error {
+	return r.JSONDefault
+}
+
+// GetBody returns the raw response body bytes
+func (r SetInstanceNotesResponse) GetBody() []byte {
+	return r.Body
+}
+
+// Status returns HTTPResponse.Status
+func (r SetInstanceNotesResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r SetInstanceNotesResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+// ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
+func (r SetInstanceNotesResponse) ContentType() string {
 	if r.HTTPResponse != nil {
 		return r.HTTPResponse.Header.Get("Content-Type")
 	}
@@ -13946,11 +14395,13 @@ func (c *ClientWithResponses) ListInstanceTypesWithResponse(ctx context.Context,
 
 // ListInstancesWithResponse List instances
 //
+// Every instance in the project, newest first. This endpoint does not query backend state; for the accurate state of one instance, use the retrieve endpoint.
+//
 // Returns a wrapper object for the known response body format(s).
 //
 // Corresponds with GET /api/v1/instances (the `ListInstances` operationId).
-func (c *ClientWithResponses) ListInstancesWithResponse(ctx context.Context, reqEditors ...RequestEditorFn) (*ListInstancesResponse, error) {
-	rsp, err := c.ListInstances(ctx, reqEditors...)
+func (c *ClientWithResponses) ListInstancesWithResponse(ctx context.Context, params *ListInstancesParams, reqEditors ...RequestEditorFn) (*ListInstancesResponse, error) {
+	rsp, err := c.ListInstances(ctx, params, reqEditors...)
 	if err != nil {
 		return nil, err
 	}
@@ -14264,6 +14715,82 @@ func (c *ClientWithResponses) DetachInstanceFloatingIpWithResponse(ctx context.C
 		return nil, err
 	}
 	return ParseDetachInstanceFloatingIpResponse(rsp)
+}
+
+// SetInstanceLabelsWithBodyWithResponse Replace an instance's labels
+//
+// Records what this instance is for, as key-value pairs, so that a person or an assistant can tell later. Nothing on the platform reads them: no scheduling, quota or billing decision keys off a label, which is what makes editing one safe.
+//
+// **The whole set is replaced.** Whatever is absent from the request is removed — a merge could not express deleting a key, and it makes retrying the same request produce a different result each time.
+//
+// Do not put credentials here. Labels appear in listings, in support tickets and in the operator console.
+//
+// Takes any type of body and a specified content type, and returns a wrapper object for the known response body format(s).
+//
+// Corresponds with PUT /api/v1/instances/{instanceId}/labels (the `SetInstanceLabels` operationId).
+func (c *ClientWithResponses) SetInstanceLabelsWithBodyWithResponse(ctx context.Context, instanceId openapi_types.UUID, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*SetInstanceLabelsResponse, error) {
+	rsp, err := c.SetInstanceLabelsWithBody(ctx, instanceId, contentType, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseSetInstanceLabelsResponse(rsp)
+}
+
+// SetInstanceLabelsWithResponse Replace an instance's labels
+//
+// Records what this instance is for, as key-value pairs, so that a person or an assistant can tell later. Nothing on the platform reads them: no scheduling, quota or billing decision keys off a label, which is what makes editing one safe.
+//
+// **The whole set is replaced.** Whatever is absent from the request is removed — a merge could not express deleting a key, and it makes retrying the same request produce a different result each time.
+//
+// Do not put credentials here. Labels appear in listings, in support tickets and in the operator console.
+//
+// Takes a body of the `application/json` content type, and returns a wrapper object for the known response body format(s).
+//
+// Corresponds with PUT /api/v1/instances/{instanceId}/labels (the `SetInstanceLabels` operationId).
+func (c *ClientWithResponses) SetInstanceLabelsWithResponse(ctx context.Context, instanceId openapi_types.UUID, body SetInstanceLabelsJSONRequestBody, reqEditors ...RequestEditorFn) (*SetInstanceLabelsResponse, error) {
+	rsp, err := c.SetInstanceLabels(ctx, instanceId, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseSetInstanceLabelsResponse(rsp)
+}
+
+// SetInstanceNotesWithBodyWithResponse Replace an instance's note
+//
+// A free-text note: what this instance runs, and what to be careful about before touching it — "primary database, fail over before rebooting". It is read by whoever opens the instance next, including an assistant acting on your behalf.
+//
+// **The whole note is replaced**; send an empty string to clear it.
+//
+// Do not put credentials here. The note appears in the operator console.
+//
+// Takes any type of body and a specified content type, and returns a wrapper object for the known response body format(s).
+//
+// Corresponds with PUT /api/v1/instances/{instanceId}/notes (the `SetInstanceNotes` operationId).
+func (c *ClientWithResponses) SetInstanceNotesWithBodyWithResponse(ctx context.Context, instanceId openapi_types.UUID, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*SetInstanceNotesResponse, error) {
+	rsp, err := c.SetInstanceNotesWithBody(ctx, instanceId, contentType, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseSetInstanceNotesResponse(rsp)
+}
+
+// SetInstanceNotesWithResponse Replace an instance's note
+//
+// A free-text note: what this instance runs, and what to be careful about before touching it — "primary database, fail over before rebooting". It is read by whoever opens the instance next, including an assistant acting on your behalf.
+//
+// **The whole note is replaced**; send an empty string to clear it.
+//
+// Do not put credentials here. The note appears in the operator console.
+//
+// Takes a body of the `application/json` content type, and returns a wrapper object for the known response body format(s).
+//
+// Corresponds with PUT /api/v1/instances/{instanceId}/notes (the `SetInstanceNotes` operationId).
+func (c *ClientWithResponses) SetInstanceNotesWithResponse(ctx context.Context, instanceId openapi_types.UUID, body SetInstanceNotesJSONRequestBody, reqEditors ...RequestEditorFn) (*SetInstanceNotesResponse, error) {
+	rsp, err := c.SetInstanceNotes(ctx, instanceId, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseSetInstanceNotesResponse(rsp)
 }
 
 // ResetInstancePasswordWithBodyWithResponse Reset the login password
@@ -16450,6 +16977,72 @@ func ParseDetachInstanceFloatingIpResponse(rsp *http.Response) (*DetachInstanceF
 	switch {
 	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
 		var dest FloatingIPResource
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && true:
+		var dest Error
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSONDefault = &dest
+
+	}
+
+	return response, nil
+}
+
+// ParseSetInstanceLabelsResponse parses an HTTP response from a SetInstanceLabelsWithResponse call
+func ParseSetInstanceLabelsResponse(rsp *http.Response) (*SetInstanceLabelsResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &SetInstanceLabelsResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest InstanceResource
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && true:
+		var dest Error
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSONDefault = &dest
+
+	}
+
+	return response, nil
+}
+
+// ParseSetInstanceNotesResponse parses an HTTP response from a SetInstanceNotesWithResponse call
+func ParseSetInstanceNotesResponse(rsp *http.Response) (*SetInstanceNotesResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &SetInstanceNotesResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest InstanceResource
 		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
 			return nil, err
 		}

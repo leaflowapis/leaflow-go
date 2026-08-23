@@ -88,6 +88,8 @@ const (
 	RevertInstanceResizeOperation      OperationName = "RevertInstanceResize"
 	RunInstanceCommandOperation        OperationName = "RunInstanceCommand"
 	SetFloatingIPBandwidthOperation    OperationName = "SetFloatingIPBandwidth"
+	SetInstanceLabelsOperation         OperationName = "SetInstanceLabels"
+	SetInstanceNotesOperation          OperationName = "SetInstanceNotes"
 	StartInstanceOperation             OperationName = "StartInstance"
 	StopInstanceOperation              OperationName = "StopInstance"
 	SuggestSubnetCidrOperation         OperationName = "SuggestSubnetCidr"

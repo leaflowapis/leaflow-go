@@ -416,10 +416,11 @@ type Handler interface {
 	ListInstanceTypes(ctx context.Context, params ListInstanceTypesParams) (*InstanceTypeListResponseBody, error)
 	// ListInstances implements list-instances operation.
 	//
-	// List instances.
+	// Every instance in the project, newest first. This endpoint does not query backend state; for the
+	// accurate state of one instance, use the retrieve endpoint.
 	//
 	// GET /api/v1/instances
-	ListInstances(ctx context.Context) (*InstanceListResponseBody, error)
+	ListInstances(ctx context.Context, params ListInstancesParams) (*InstanceListResponseBody, error)
 	// ListOperationLogs implements list-operation-logs operation.
 	//
 	// Records every write operation in the project: who performed it, when, on what, and whether it
@@ -679,6 +680,32 @@ type Handler interface {
 	//
 	// PUT /api/v1/floating-ips/{floatingIpId}/bandwidth
 	SetFloatingIPBandwidth(ctx context.Context, req *SetBandwidthRequestBody, params SetFloatingIPBandwidthParams) (*FloatingIPResource, error)
+	// SetInstanceLabels implements set-instance-labels operation.
+	//
+	// Records what this instance is for, as key-value pairs, so that a person or an assistant can tell
+	// later. Nothing on the platform reads them: no scheduling, quota or billing decision keys off a
+	// label, which is what makes editing one safe.
+	//
+	// The whole set is replaced. Whatever is absent from the request is removed — a merge could not
+	// express deleting a key, and it makes retrying the same request produce a different result each time.
+	//
+	// Do not put credentials here. Labels appear in listings, in support tickets and in the operator
+	// console.
+	//
+	// PUT /api/v1/instances/{instanceId}/labels
+	SetInstanceLabels(ctx context.Context, req *SetInstanceLabelsRequestBody, params SetInstanceLabelsParams) (*InstanceResource, error)
+	// SetInstanceNotes implements set-instance-notes operation.
+	//
+	// A free-text note: what this instance runs, and what to be careful about before touching it —
+	// "primary database, fail over before rebooting". It is read by whoever opens the instance next,
+	// including an assistant acting on your behalf.
+	//
+	// The whole note is replaced; send an empty string to clear it.
+	//
+	// Do not put credentials here. The note appears in the operator console.
+	//
+	// PUT /api/v1/instances/{instanceId}/notes
+	SetInstanceNotes(ctx context.Context, req *SetInstanceNotesRequestBody, params SetInstanceNotesParams) (*InstanceResource, error)
 	// StartInstance implements start-instance operation.
 	//
 	// An instance suspended by the platform must be unsuspended first.
