@@ -145,6 +145,9 @@ type Handler interface {
 	// To change enrollment settings, use PATCH. This endpoint returns an error when the parameters differ,
 	// and does not update an existing configuration.
 	//
+	// A failed call leaves the machine recorded with `monitoring_status: FAILED`; the reason is reported
+	// in `last_error` via `GET /servers/{serverId}`.
+	//
 	// The `tls_psk` in the response is returned only this once; store it immediately. If it is lost, it
 	// must be rotated.
 	//

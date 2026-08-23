@@ -916,6 +916,10 @@ func decodeDisableServerMonitoringParams(args [1]string, argsEscaped bool, r *ht
 
 // EnableServerMonitoringParams is parameters of enable-server-monitoring operation.
 type EnableServerMonitoringParams struct {
+	// Supplied by the caller; no operation issues one. Reuse the identifier the machine already carries in
+	// the originating system — a Leaflow Compute instance id, or the caller's own inventory identifier
+	// — or allocate a UUID and persist it before the first call. It is the idempotency key of the
+	// enrollment.
 	ServerId uuid.UUID
 }
 
