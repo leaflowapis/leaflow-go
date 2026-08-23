@@ -776,9 +776,12 @@ type ClientFunctionRequest struct {
 type ContextResource struct {
 	CompactAt *int64 `json:"compactAt"`
 	Model     string `json:"model"`
-	Used      *int64 `json:"used"`
-	WarnAt    int64  `json:"warnAt"`
-	Window    *int64 `json:"window"`
+
+	// ReasoningEffort The tier this conversation runs at, or null when it follows the model's own default.
+	ReasoningEffort *string `json:"reasoningEffort"`
+	Used            *int64  `json:"used"`
+	WarnAt          int64   `json:"warnAt"`
+	Window          *int64  `json:"window"`
 }
 
 // CreateChannelRequestBody defines model for CreateChannelRequestBody.
@@ -1128,9 +1131,12 @@ type ThreadSummaryResource struct {
 	CreatedAt    time.Time                         `json:"createdAt"`
 	Id           string                            `json:"id"`
 	Model        string                            `json:"model"`
-	Title        *string                           `json:"title"`
-	Unread       bool                              `json:"unread"`
-	UpdatedAt    time.Time                         `json:"updatedAt"`
+
+	// ReasoningEffort The tier this conversation runs at, or null when it follows the model's own default.
+	ReasoningEffort *string   `json:"reasoningEffort"`
+	Title           *string   `json:"title"`
+	Unread          bool      `json:"unread"`
+	UpdatedAt       time.Time `json:"updatedAt"`
 }
 
 // ThreadSummaryResourceApprovalMode defines model for ThreadSummaryResource.ApprovalMode.
@@ -1190,10 +1196,15 @@ type UpdateChannelRequestBodySenderPolicy string
 
 // UpdateThreadRequestBody defines model for UpdateThreadRequestBody.
 type UpdateThreadRequestBody struct {
-	ApprovalMode    *UpdateThreadRequestBodyApprovalMode `json:"approvalMode,omitempty"`
-	Archived        *bool                                `json:"archived,omitempty"`
-	Model           *string                              `json:"model,omitempty"`
-	ReasoningEffort *string                              `json:"reasoningEffort,omitempty"`
+	ApprovalMode *UpdateThreadRequestBodyApprovalMode `json:"approvalMode,omitempty"`
+	Archived     *bool                                `json:"archived,omitempty"`
+	Model        *string                              `json:"model,omitempty"`
+
+	// ReasoningEffort Which reasoning tier to run at, from the model's `reasoningTiers`. Null puts it back to
+	// the model's own default; leaving it out keeps whatever is set.
+	//
+	// Independent of `model` — sending one does not touch the other.
+	ReasoningEffort *string `json:"reasoningEffort,omitempty"`
 }
 
 // UpdateThreadRequestBodyApprovalMode defines model for UpdateThreadRequestBody.ApprovalMode.

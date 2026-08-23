@@ -188,6 +188,8 @@ type ClientInterface interface {
 	//
 	// 还没生成过时返回 `TUNNEL_NOT_FOUND`——首屏据此决定画「生成订阅链接」那个按钮还是画结果。
 	//
+	// 项目未获开放时返回 403 `TUNNEL_NOT_ENTITLED`，那是另一件事：控制台据此把四层隧道的入口整个收起来，而不是画那个按钮。
+	//
 	// 订阅地址、用量、配额各有自己的接口，这里不重复返回。
 	//
 	// Corresponds with GET /api/v1/tunnel/l4 (the `GetL4Tunnel` operationId).
@@ -248,6 +250,8 @@ type ClientInterface interface {
 // GetL4Tunnel 查看本项目的四层隧道
 //
 // 还没生成过时返回 `TUNNEL_NOT_FOUND`——首屏据此决定画「生成订阅链接」那个按钮还是画结果。
+//
+// 项目未获开放时返回 403 `TUNNEL_NOT_ENTITLED`，那是另一件事：控制台据此把四层隧道的入口整个收起来，而不是画那个按钮。
 //
 // 订阅地址、用量、配额各有自己的接口，这里不重复返回。
 //
@@ -601,6 +605,8 @@ type ClientWithResponsesInterface interface {
 	// GetL4TunnelWithResponse 查看本项目的四层隧道
 	//
 	// 还没生成过时返回 `TUNNEL_NOT_FOUND`——首屏据此决定画「生成订阅链接」那个按钮还是画结果。
+	//
+	// 项目未获开放时返回 403 `TUNNEL_NOT_ENTITLED`，那是另一件事：控制台据此把四层隧道的入口整个收起来，而不是画那个按钮。
 	//
 	// 订阅地址、用量、配额各有自己的接口，这里不重复返回。
 	//
@@ -962,6 +968,8 @@ func (r ListL4TunnelUsageSeriesResponse) ContentType() string {
 // GetL4TunnelWithResponse 查看本项目的四层隧道
 //
 // 还没生成过时返回 `TUNNEL_NOT_FOUND`——首屏据此决定画「生成订阅链接」那个按钮还是画结果。
+//
+// 项目未获开放时返回 403 `TUNNEL_NOT_ENTITLED`，那是另一件事：控制台据此把四层隧道的入口整个收起来，而不是画那个按钮。
 //
 // 订阅地址、用量、配额各有自己的接口，这里不重复返回。
 //
