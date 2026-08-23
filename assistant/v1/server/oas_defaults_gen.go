@@ -9,3 +9,11 @@ func (s *ClientActionRequest) setDefaults() {
 		s.Type.SetTo(val)
 	}
 }
+
+// setDefaults set default value of fields.
+func (s *SkillRequestBody) setDefaults() {
+	{
+		val := bool(true)
+		s.Enabled.SetTo(val)
+	}
+}

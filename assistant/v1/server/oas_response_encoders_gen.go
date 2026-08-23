@@ -110,6 +110,12 @@ func encodeDeleteMemoryResponse(response *DeleteMemoryNoContent, w http.Response
 	return nil
 }
 
+func encodeDeleteSkillResponse(response *DeleteSkillNoContent, w http.ResponseWriter, span trace.Span) error {
+	w.WriteHeader(204)
+
+	return nil
+}
+
 func encodeDownloadAttachmentResponse(response *DownloadAttachmentOKHeaders, w http.ResponseWriter, span trace.Span) error {
 	// Encoding response headers.
 	{
@@ -169,6 +175,19 @@ func encodeGetBindingResponse(response *BindingResource, w http.ResponseWriter, 
 }
 
 func encodeGetChannelResponse(response *ChannelResource, w http.ResponseWriter, span trace.Span) error {
+	w.Header().Set("Content-Type", "application/json; charset=utf-8")
+	w.WriteHeader(200)
+
+	e := new(jx.Encoder)
+	response.Encode(e)
+	if _, err := e.WriteTo(w); err != nil {
+		return errors.Wrap(err, "write")
+	}
+
+	return nil
+}
+
+func encodeGetSkillResponse(response *SkillResource, w http.ResponseWriter, span trace.Span) error {
 	w.Header().Set("Content-Type", "application/json; charset=utf-8")
 	w.WriteHeader(200)
 
@@ -304,6 +323,19 @@ func encodeListPlatformsResponse(response *PlatformListResponseBody, w http.Resp
 	return nil
 }
 
+func encodeListSkillsResponse(response *SkillListResponseBody, w http.ResponseWriter, span trace.Span) error {
+	w.Header().Set("Content-Type", "application/json; charset=utf-8")
+	w.WriteHeader(200)
+
+	e := new(jx.Encoder)
+	response.Encode(e)
+	if _, err := e.WriteTo(w); err != nil {
+		return errors.Wrap(err, "write")
+	}
+
+	return nil
+}
+
 func encodeListThreadsResponse(response *ThreadListResponseBody, w http.ResponseWriter, span trace.Span) error {
 	w.Header().Set("Content-Type", "application/json; charset=utf-8")
 	w.WriteHeader(200)
@@ -319,6 +351,19 @@ func encodeListThreadsResponse(response *ThreadListResponseBody, w http.Response
 
 func encodeMarkThreadReadResponse(response *MarkThreadReadNoContent, w http.ResponseWriter, span trace.Span) error {
 	w.WriteHeader(204)
+
+	return nil
+}
+
+func encodePutSkillResponse(response *SkillResource, w http.ResponseWriter, span trace.Span) error {
+	w.Header().Set("Content-Type", "application/json; charset=utf-8")
+	w.WriteHeader(200)
+
+	e := new(jx.Encoder)
+	response.Encode(e)
+	if _, err := e.WriteTo(w); err != nil {
+		return errors.Wrap(err, "write")
+	}
 
 	return nil
 }
@@ -352,6 +397,19 @@ func encodeRotateChannelSecretResponse(response *WebhookSecretResponseBody, w ht
 func encodeSendMessageResponse(response *TurnIDResponseBody, w http.ResponseWriter, span trace.Span) error {
 	w.Header().Set("Content-Type", "application/json; charset=utf-8")
 	w.WriteHeader(202)
+
+	e := new(jx.Encoder)
+	response.Encode(e)
+	if _, err := e.WriteTo(w); err != nil {
+		return errors.Wrap(err, "write")
+	}
+
+	return nil
+}
+
+func encodeSetSkillEnabledResponse(response *SkillResource, w http.ResponseWriter, span trace.Span) error {
+	w.Header().Set("Content-Type", "application/json; charset=utf-8")
+	w.WriteHeader(200)
 
 	e := new(jx.Encoder)
 	response.Encode(e)

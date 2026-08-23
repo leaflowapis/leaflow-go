@@ -107,6 +107,12 @@ type Invoker interface {
 	//
 	// DELETE /api/v1/memories/{memory}
 	DeleteMemory(ctx context.Context, params DeleteMemoryParams) error
+	// DeleteSkill invokes delete-skill operation.
+	//
+	// A built-in skill of the same name, if there was one, becomes visible again.
+	//
+	// DELETE /api/v1/skills/{skill}
+	DeleteSkill(ctx context.Context, params DeleteSkillParams) error
 	// DownloadAttachment invokes download-attachment operation.
 	//
 	// Returns the original bytes for an attachment id, usable directly as the address of an . The response
@@ -127,6 +133,12 @@ type Invoker interface {
 	//
 	// GET /api/v1/channels/{channel}
 	GetChannel(ctx context.Context, params GetChannelParams) (*ChannelResource, error)
+	// GetSkill invokes get-skill operation.
+	//
+	// Works for built-in skills too; they simply cannot be written.
+	//
+	// GET /api/v1/skills/{skill}
+	GetSkill(ctx context.Context, params GetSkillParams) (*SkillResource, error)
 	// GetThread invokes get-thread operation.
 	//
 	// The complete current state of a conversation, for the first render. Its `stream` gives the address
@@ -205,6 +217,16 @@ type Invoker interface {
 	//
 	// GET /api/v1/platforms
 	ListPlatforms(ctx context.Context) (*PlatformListResponseBody, error)
+	// ListSkills invokes list-skills operation.
+	//
+	// Everything the assistant can reach in this project, including the ones that are turned off — an
+	// entry that disappeared once it was switched off could not be switched back on.
+	//
+	// `origin` says whether a skill can be edited here. Skills belonging to the project are visible to
+	// everyone in it, whoever wrote them.
+	//
+	// GET /api/v1/skills
+	ListSkills(ctx context.Context) (*SkillListResponseBody, error)
 	// ListThreads invokes list-threads operation.
 	//
 	// Ordered by most recent activity, limited to the current account's conversations in the current
@@ -219,6 +241,16 @@ type Invoker interface {
 	//
 	// POST /api/v1/threads/{thread}/read
 	MarkThreadRead(ctx context.Context, params MarkThreadReadParams) error
+	// PutSkill invokes put-skill operation.
+	//
+	// Creates it, or replaces the project's skill of that name. The whole package goes in each time: files
+	// left out of a write are removed, so the stored skill is what was sent and not what accumulated.
+	//
+	// A project skill takes precedence over a built-in one of the same name for this project only. The
+	// built-in is untouched and reappears if the project's is deleted.
+	//
+	// POST /api/v1/skills
+	PutSkill(ctx context.Context, request *SkillRequestBody) (*SkillResource, error)
 	// RevertThread invokes revert-thread operation.
 	//
 	// Reverts the entry at `ordinal` and everything after it. Reverted entries stay in the transcript
@@ -246,6 +278,16 @@ type Invoker interface {
 	//
 	// POST /api/v1/threads/{thread}/messages
 	SendMessage(ctx context.Context, request *SendMessageRequestBody, params SendMessageParams) (*TurnIDResponseBody, error)
+	// SetSkillEnabled invokes set-skill-enabled operation.
+	//
+	// Separate from writing it, because this is the frequent one: a skill that is off costs nothing and
+	// stays where it is.
+	//
+	// Only skills belonging to the project can be switched. To keep a built-in one out of the way, write a
+	// project skill of the same name and turn that off.
+	//
+	// PATCH /api/v1/skills/{skill}
+	SetSkillEnabled(ctx context.Context, request *SkillEnabledRequestBody, params SetSkillEnabledParams) (*SkillResource, error)
 	// SubmitDynamicCallResult invokes submit-dynamic-call-result operation.
 	//
 	// The assistant asks the client to run an action by adding a tool call to the conversation with the
@@ -273,8 +315,8 @@ type Invoker interface {
 	// UpdateThread invokes update-thread operation.
 	//
 	// Changes the model, reasoning level, approval mode and archived state. A change takes effect from the
-	// next turn; a turn already running keeps the settings it started with. reasoningEffort only applies
-	// when model is given as well.
+	// next turn; a turn already running keeps the settings it started with. Model and reasoning level
+	// change independently: sending one leaves the other alone.
 	//
 	// PATCH /api/v1/threads/{thread}
 	UpdateThread(ctx context.Context, request *UpdateThreadRequestBody, params UpdateThreadParams) (*ThreadSummaryResource, error)
@@ -1709,6 +1751,137 @@ func (c *Client) sendDeleteMemory(ctx context.Context, params DeleteMemoryParams
 	return result, nil
 }
 
+// DeleteSkill invokes delete-skill operation.
+//
+// A built-in skill of the same name, if there was one, becomes visible again.
+//
+// DELETE /api/v1/skills/{skill}
+func (c *Client) DeleteSkill(ctx context.Context, params DeleteSkillParams) error {
+	_, err := c.sendDeleteSkill(ctx, params)
+	return err
+}
+
+func (c *Client) sendDeleteSkill(ctx context.Context, params DeleteSkillParams) (res *DeleteSkillNoContent, err error) {
+	otelAttrs := []attribute.KeyValue{
+		otelogen.OperationID("delete-skill"),
+		semconv.HTTPRequestMethodKey.String("DELETE"),
+		semconv.URLTemplateKey.String("/api/v1/skills/{skill}"),
+	}
+	otelAttrs = append(otelAttrs, c.cfg.Attributes...)
+
+	// Run stopwatch.
+	startTime := time.Now()
+	defer func() {
+		// Use floating point division here for higher precision (instead of Millisecond method).
+		elapsedDuration := time.Since(startTime)
+		c.duration.Record(ctx, float64(elapsedDuration)/float64(time.Millisecond), metric.WithAttributes(otelAttrs...))
+	}()
+
+	// Increment request counter.
+	c.requests.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
+
+	// Start a span for this request.
+	ctx, span := c.cfg.Tracer.Start(ctx, DeleteSkillOperation,
+		trace.WithAttributes(otelAttrs...),
+		clientSpanKind,
+	)
+	// Track stage for error reporting.
+	var stage string
+	defer func() {
+		if err != nil {
+			span.RecordError(err)
+			span.SetStatus(codes.Error, stage)
+			c.errors.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
+		}
+		span.End()
+	}()
+
+	stage = "BuildURL"
+	u := uri.Clone(c.requestURL(ctx))
+	var pathParts [2]string
+	pathParts[0] = "/api/v1/skills/"
+	{
+		// Encode "skill" parameter.
+		e := uri.NewPathEncoder(uri.PathEncoderConfig{
+			Param:   "skill",
+			Style:   uri.PathStyleSimple,
+			Explode: false,
+		})
+		if err := func() error {
+			return e.EncodeValue(conv.StringToString(params.Skill))
+		}(); err != nil {
+			return res, errors.Wrap(err, "encode path")
+		}
+		encoded, err := e.Result()
+		if err != nil {
+			return res, errors.Wrap(err, "encode path")
+		}
+		pathParts[1] = encoded
+	}
+	uri.AddPathParts(u, pathParts[:]...)
+
+	stage = "EncodeRequest"
+	r, err := ht.NewRequest(ctx, "DELETE", u)
+	if err != nil {
+		return res, errors.Wrap(err, "create request")
+	}
+
+	{
+		type bitset = [1]uint8
+		var satisfied bitset
+		{
+			stage = "Security:BearerAuth"
+			switch err := c.securityBearerAuth(ctx, DeleteSkillOperation, r); {
+			case err == nil: // if NO error
+				satisfied[0] |= 1 << 0
+			case errors.Is(err, ogenerrors.ErrSkipClientSecurity):
+				// Skip this security.
+			default:
+				return res, errors.Wrap(err, "security \"BearerAuth\"")
+			}
+		}
+
+		if ok := func() bool {
+		nextRequirement:
+			for _, requirement := range []bitset{
+				{0b00000001},
+			} {
+				for i, mask := range requirement {
+					if satisfied[i]&mask != mask {
+						continue nextRequirement
+					}
+				}
+				return true
+			}
+			return false
+		}(); !ok {
+			return res, ogenerrors.ErrSecurityRequirementIsNotSatisfied
+		}
+	}
+
+	stage = "SendRequest"
+	resp, err := c.cfg.Client.Do(r)
+	if err != nil {
+		return res, errors.Wrap(err, "do request")
+	}
+	body := resp.Body
+	defer func() {
+		// Drain the body to EOF before closing, so the underlying
+		// connection can be reused by the Transport regardless of the
+		// response status code. See https://github.com/ogen-go/ogen/issues/1670.
+		_, _ = io.Copy(io.Discard, body)
+		_ = body.Close()
+	}()
+
+	stage = "DecodeResponse"
+	result, err := decodeDeleteSkillResponse(resp)
+	if err != nil {
+		return res, errors.Wrap(err, "decode response")
+	}
+
+	return result, nil
+}
+
 // DownloadAttachment invokes download-attachment operation.
 //
 // Returns the original bytes for an attachment id, usable directly as the address of an . The response
@@ -2097,6 +2270,137 @@ func (c *Client) sendGetChannel(ctx context.Context, params GetChannelParams) (r
 
 	stage = "DecodeResponse"
 	result, err := decodeGetChannelResponse(resp)
+	if err != nil {
+		return res, errors.Wrap(err, "decode response")
+	}
+
+	return result, nil
+}
+
+// GetSkill invokes get-skill operation.
+//
+// Works for built-in skills too; they simply cannot be written.
+//
+// GET /api/v1/skills/{skill}
+func (c *Client) GetSkill(ctx context.Context, params GetSkillParams) (*SkillResource, error) {
+	res, err := c.sendGetSkill(ctx, params)
+	return res, err
+}
+
+func (c *Client) sendGetSkill(ctx context.Context, params GetSkillParams) (res *SkillResource, err error) {
+	otelAttrs := []attribute.KeyValue{
+		otelogen.OperationID("get-skill"),
+		semconv.HTTPRequestMethodKey.String("GET"),
+		semconv.URLTemplateKey.String("/api/v1/skills/{skill}"),
+	}
+	otelAttrs = append(otelAttrs, c.cfg.Attributes...)
+
+	// Run stopwatch.
+	startTime := time.Now()
+	defer func() {
+		// Use floating point division here for higher precision (instead of Millisecond method).
+		elapsedDuration := time.Since(startTime)
+		c.duration.Record(ctx, float64(elapsedDuration)/float64(time.Millisecond), metric.WithAttributes(otelAttrs...))
+	}()
+
+	// Increment request counter.
+	c.requests.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
+
+	// Start a span for this request.
+	ctx, span := c.cfg.Tracer.Start(ctx, GetSkillOperation,
+		trace.WithAttributes(otelAttrs...),
+		clientSpanKind,
+	)
+	// Track stage for error reporting.
+	var stage string
+	defer func() {
+		if err != nil {
+			span.RecordError(err)
+			span.SetStatus(codes.Error, stage)
+			c.errors.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
+		}
+		span.End()
+	}()
+
+	stage = "BuildURL"
+	u := uri.Clone(c.requestURL(ctx))
+	var pathParts [2]string
+	pathParts[0] = "/api/v1/skills/"
+	{
+		// Encode "skill" parameter.
+		e := uri.NewPathEncoder(uri.PathEncoderConfig{
+			Param:   "skill",
+			Style:   uri.PathStyleSimple,
+			Explode: false,
+		})
+		if err := func() error {
+			return e.EncodeValue(conv.StringToString(params.Skill))
+		}(); err != nil {
+			return res, errors.Wrap(err, "encode path")
+		}
+		encoded, err := e.Result()
+		if err != nil {
+			return res, errors.Wrap(err, "encode path")
+		}
+		pathParts[1] = encoded
+	}
+	uri.AddPathParts(u, pathParts[:]...)
+
+	stage = "EncodeRequest"
+	r, err := ht.NewRequest(ctx, "GET", u)
+	if err != nil {
+		return res, errors.Wrap(err, "create request")
+	}
+
+	{
+		type bitset = [1]uint8
+		var satisfied bitset
+		{
+			stage = "Security:BearerAuth"
+			switch err := c.securityBearerAuth(ctx, GetSkillOperation, r); {
+			case err == nil: // if NO error
+				satisfied[0] |= 1 << 0
+			case errors.Is(err, ogenerrors.ErrSkipClientSecurity):
+				// Skip this security.
+			default:
+				return res, errors.Wrap(err, "security \"BearerAuth\"")
+			}
+		}
+
+		if ok := func() bool {
+		nextRequirement:
+			for _, requirement := range []bitset{
+				{0b00000001},
+			} {
+				for i, mask := range requirement {
+					if satisfied[i]&mask != mask {
+						continue nextRequirement
+					}
+				}
+				return true
+			}
+			return false
+		}(); !ok {
+			return res, ogenerrors.ErrSecurityRequirementIsNotSatisfied
+		}
+	}
+
+	stage = "SendRequest"
+	resp, err := c.cfg.Client.Do(r)
+	if err != nil {
+		return res, errors.Wrap(err, "do request")
+	}
+	body := resp.Body
+	defer func() {
+		// Drain the body to EOF before closing, so the underlying
+		// connection can be reused by the Transport regardless of the
+		// response status code. See https://github.com/ogen-go/ogen/issues/1670.
+		_, _ = io.Copy(io.Discard, body)
+		_ = body.Close()
+	}()
+
+	stage = "DecodeResponse"
+	result, err := decodeGetSkillResponse(resp)
 	if err != nil {
 		return res, errors.Wrap(err, "decode response")
 	}
@@ -3545,6 +3849,123 @@ func (c *Client) sendListPlatforms(ctx context.Context) (res *PlatformListRespon
 	return result, nil
 }
 
+// ListSkills invokes list-skills operation.
+//
+// Everything the assistant can reach in this project, including the ones that are turned off — an
+// entry that disappeared once it was switched off could not be switched back on.
+//
+// `origin` says whether a skill can be edited here. Skills belonging to the project are visible to
+// everyone in it, whoever wrote them.
+//
+// GET /api/v1/skills
+func (c *Client) ListSkills(ctx context.Context) (*SkillListResponseBody, error) {
+	res, err := c.sendListSkills(ctx)
+	return res, err
+}
+
+func (c *Client) sendListSkills(ctx context.Context) (res *SkillListResponseBody, err error) {
+	otelAttrs := []attribute.KeyValue{
+		otelogen.OperationID("list-skills"),
+		semconv.HTTPRequestMethodKey.String("GET"),
+		semconv.URLTemplateKey.String("/api/v1/skills"),
+	}
+	otelAttrs = append(otelAttrs, c.cfg.Attributes...)
+
+	// Run stopwatch.
+	startTime := time.Now()
+	defer func() {
+		// Use floating point division here for higher precision (instead of Millisecond method).
+		elapsedDuration := time.Since(startTime)
+		c.duration.Record(ctx, float64(elapsedDuration)/float64(time.Millisecond), metric.WithAttributes(otelAttrs...))
+	}()
+
+	// Increment request counter.
+	c.requests.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
+
+	// Start a span for this request.
+	ctx, span := c.cfg.Tracer.Start(ctx, ListSkillsOperation,
+		trace.WithAttributes(otelAttrs...),
+		clientSpanKind,
+	)
+	// Track stage for error reporting.
+	var stage string
+	defer func() {
+		if err != nil {
+			span.RecordError(err)
+			span.SetStatus(codes.Error, stage)
+			c.errors.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
+		}
+		span.End()
+	}()
+
+	stage = "BuildURL"
+	u := uri.Clone(c.requestURL(ctx))
+	var pathParts [1]string
+	pathParts[0] = "/api/v1/skills"
+	uri.AddPathParts(u, pathParts[:]...)
+
+	stage = "EncodeRequest"
+	r, err := ht.NewRequest(ctx, "GET", u)
+	if err != nil {
+		return res, errors.Wrap(err, "create request")
+	}
+
+	{
+		type bitset = [1]uint8
+		var satisfied bitset
+		{
+			stage = "Security:BearerAuth"
+			switch err := c.securityBearerAuth(ctx, ListSkillsOperation, r); {
+			case err == nil: // if NO error
+				satisfied[0] |= 1 << 0
+			case errors.Is(err, ogenerrors.ErrSkipClientSecurity):
+				// Skip this security.
+			default:
+				return res, errors.Wrap(err, "security \"BearerAuth\"")
+			}
+		}
+
+		if ok := func() bool {
+		nextRequirement:
+			for _, requirement := range []bitset{
+				{0b00000001},
+			} {
+				for i, mask := range requirement {
+					if satisfied[i]&mask != mask {
+						continue nextRequirement
+					}
+				}
+				return true
+			}
+			return false
+		}(); !ok {
+			return res, ogenerrors.ErrSecurityRequirementIsNotSatisfied
+		}
+	}
+
+	stage = "SendRequest"
+	resp, err := c.cfg.Client.Do(r)
+	if err != nil {
+		return res, errors.Wrap(err, "do request")
+	}
+	body := resp.Body
+	defer func() {
+		// Drain the body to EOF before closing, so the underlying
+		// connection can be reused by the Transport regardless of the
+		// response status code. See https://github.com/ogen-go/ogen/issues/1670.
+		_, _ = io.Copy(io.Discard, body)
+		_ = body.Close()
+	}()
+
+	stage = "DecodeResponse"
+	result, err := decodeListSkillsResponse(resp)
+	if err != nil {
+		return res, errors.Wrap(err, "decode response")
+	}
+
+	return result, nil
+}
+
 // ListThreads invokes list-threads operation.
 //
 // Ordered by most recent activity, limited to the current account's conversations in the current
@@ -3840,6 +4261,126 @@ func (c *Client) sendMarkThreadRead(ctx context.Context, params MarkThreadReadPa
 
 	stage = "DecodeResponse"
 	result, err := decodeMarkThreadReadResponse(resp)
+	if err != nil {
+		return res, errors.Wrap(err, "decode response")
+	}
+
+	return result, nil
+}
+
+// PutSkill invokes put-skill operation.
+//
+// Creates it, or replaces the project's skill of that name. The whole package goes in each time: files
+// left out of a write are removed, so the stored skill is what was sent and not what accumulated.
+//
+// A project skill takes precedence over a built-in one of the same name for this project only. The
+// built-in is untouched and reappears if the project's is deleted.
+//
+// POST /api/v1/skills
+func (c *Client) PutSkill(ctx context.Context, request *SkillRequestBody) (*SkillResource, error) {
+	res, err := c.sendPutSkill(ctx, request)
+	return res, err
+}
+
+func (c *Client) sendPutSkill(ctx context.Context, request *SkillRequestBody) (res *SkillResource, err error) {
+	otelAttrs := []attribute.KeyValue{
+		otelogen.OperationID("put-skill"),
+		semconv.HTTPRequestMethodKey.String("POST"),
+		semconv.URLTemplateKey.String("/api/v1/skills"),
+	}
+	otelAttrs = append(otelAttrs, c.cfg.Attributes...)
+
+	// Run stopwatch.
+	startTime := time.Now()
+	defer func() {
+		// Use floating point division here for higher precision (instead of Millisecond method).
+		elapsedDuration := time.Since(startTime)
+		c.duration.Record(ctx, float64(elapsedDuration)/float64(time.Millisecond), metric.WithAttributes(otelAttrs...))
+	}()
+
+	// Increment request counter.
+	c.requests.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
+
+	// Start a span for this request.
+	ctx, span := c.cfg.Tracer.Start(ctx, PutSkillOperation,
+		trace.WithAttributes(otelAttrs...),
+		clientSpanKind,
+	)
+	// Track stage for error reporting.
+	var stage string
+	defer func() {
+		if err != nil {
+			span.RecordError(err)
+			span.SetStatus(codes.Error, stage)
+			c.errors.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
+		}
+		span.End()
+	}()
+
+	stage = "BuildURL"
+	u := uri.Clone(c.requestURL(ctx))
+	var pathParts [1]string
+	pathParts[0] = "/api/v1/skills"
+	uri.AddPathParts(u, pathParts[:]...)
+
+	stage = "EncodeRequest"
+	r, err := ht.NewRequest(ctx, "POST", u)
+	if err != nil {
+		return res, errors.Wrap(err, "create request")
+	}
+	if err := encodePutSkillRequest(request, r); err != nil {
+		return res, errors.Wrap(err, "encode request")
+	}
+
+	{
+		type bitset = [1]uint8
+		var satisfied bitset
+		{
+			stage = "Security:BearerAuth"
+			switch err := c.securityBearerAuth(ctx, PutSkillOperation, r); {
+			case err == nil: // if NO error
+				satisfied[0] |= 1 << 0
+			case errors.Is(err, ogenerrors.ErrSkipClientSecurity):
+				// Skip this security.
+			default:
+				return res, errors.Wrap(err, "security \"BearerAuth\"")
+			}
+		}
+
+		if ok := func() bool {
+		nextRequirement:
+			for _, requirement := range []bitset{
+				{0b00000001},
+			} {
+				for i, mask := range requirement {
+					if satisfied[i]&mask != mask {
+						continue nextRequirement
+					}
+				}
+				return true
+			}
+			return false
+		}(); !ok {
+			return res, ogenerrors.ErrSecurityRequirementIsNotSatisfied
+		}
+	}
+
+	stage = "SendRequest"
+	resp, err := c.cfg.Client.Do(r)
+	if err != nil {
+		return res, errors.Wrap(err, "do request")
+	}
+	body := resp.Body
+	defer func() {
+		// Drain the body to EOF before closing, so the underlying
+		// connection can be reused by the Transport regardless of the
+		// response status code. See https://github.com/ogen-go/ogen/issues/1670.
+		_, _ = io.Copy(io.Discard, body)
+		_ = body.Close()
+	}()
+
+	stage = "DecodeResponse"
+	result, err := decodePutSkillResponse(resp)
 	if err != nil {
 		return res, errors.Wrap(err, "decode response")
 	}
@@ -4261,6 +4802,144 @@ func (c *Client) sendSendMessage(ctx context.Context, request *SendMessageReques
 	return result, nil
 }
 
+// SetSkillEnabled invokes set-skill-enabled operation.
+//
+// Separate from writing it, because this is the frequent one: a skill that is off costs nothing and
+// stays where it is.
+//
+// Only skills belonging to the project can be switched. To keep a built-in one out of the way, write a
+// project skill of the same name and turn that off.
+//
+// PATCH /api/v1/skills/{skill}
+func (c *Client) SetSkillEnabled(ctx context.Context, request *SkillEnabledRequestBody, params SetSkillEnabledParams) (*SkillResource, error) {
+	res, err := c.sendSetSkillEnabled(ctx, request, params)
+	return res, err
+}
+
+func (c *Client) sendSetSkillEnabled(ctx context.Context, request *SkillEnabledRequestBody, params SetSkillEnabledParams) (res *SkillResource, err error) {
+	otelAttrs := []attribute.KeyValue{
+		otelogen.OperationID("set-skill-enabled"),
+		semconv.HTTPRequestMethodKey.String("PATCH"),
+		semconv.URLTemplateKey.String("/api/v1/skills/{skill}"),
+	}
+	otelAttrs = append(otelAttrs, c.cfg.Attributes...)
+
+	// Run stopwatch.
+	startTime := time.Now()
+	defer func() {
+		// Use floating point division here for higher precision (instead of Millisecond method).
+		elapsedDuration := time.Since(startTime)
+		c.duration.Record(ctx, float64(elapsedDuration)/float64(time.Millisecond), metric.WithAttributes(otelAttrs...))
+	}()
+
+	// Increment request counter.
+	c.requests.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
+
+	// Start a span for this request.
+	ctx, span := c.cfg.Tracer.Start(ctx, SetSkillEnabledOperation,
+		trace.WithAttributes(otelAttrs...),
+		clientSpanKind,
+	)
+	// Track stage for error reporting.
+	var stage string
+	defer func() {
+		if err != nil {
+			span.RecordError(err)
+			span.SetStatus(codes.Error, stage)
+			c.errors.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
+		}
+		span.End()
+	}()
+
+	stage = "BuildURL"
+	u := uri.Clone(c.requestURL(ctx))
+	var pathParts [2]string
+	pathParts[0] = "/api/v1/skills/"
+	{
+		// Encode "skill" parameter.
+		e := uri.NewPathEncoder(uri.PathEncoderConfig{
+			Param:   "skill",
+			Style:   uri.PathStyleSimple,
+			Explode: false,
+		})
+		if err := func() error {
+			return e.EncodeValue(conv.StringToString(params.Skill))
+		}(); err != nil {
+			return res, errors.Wrap(err, "encode path")
+		}
+		encoded, err := e.Result()
+		if err != nil {
+			return res, errors.Wrap(err, "encode path")
+		}
+		pathParts[1] = encoded
+	}
+	uri.AddPathParts(u, pathParts[:]...)
+
+	stage = "EncodeRequest"
+	r, err := ht.NewRequest(ctx, "PATCH", u)
+	if err != nil {
+		return res, errors.Wrap(err, "create request")
+	}
+	if err := encodeSetSkillEnabledRequest(request, r); err != nil {
+		return res, errors.Wrap(err, "encode request")
+	}
+
+	{
+		type bitset = [1]uint8
+		var satisfied bitset
+		{
+			stage = "Security:BearerAuth"
+			switch err := c.securityBearerAuth(ctx, SetSkillEnabledOperation, r); {
+			case err == nil: // if NO error
+				satisfied[0] |= 1 << 0
+			case errors.Is(err, ogenerrors.ErrSkipClientSecurity):
+				// Skip this security.
+			default:
+				return res, errors.Wrap(err, "security \"BearerAuth\"")
+			}
+		}
+
+		if ok := func() bool {
+		nextRequirement:
+			for _, requirement := range []bitset{
+				{0b00000001},
+			} {
+				for i, mask := range requirement {
+					if satisfied[i]&mask != mask {
+						continue nextRequirement
+					}
+				}
+				return true
+			}
+			return false
+		}(); !ok {
+			return res, ogenerrors.ErrSecurityRequirementIsNotSatisfied
+		}
+	}
+
+	stage = "SendRequest"
+	resp, err := c.cfg.Client.Do(r)
+	if err != nil {
+		return res, errors.Wrap(err, "do request")
+	}
+	body := resp.Body
+	defer func() {
+		// Drain the body to EOF before closing, so the underlying
+		// connection can be reused by the Transport regardless of the
+		// response status code. See https://github.com/ogen-go/ogen/issues/1670.
+		_, _ = io.Copy(io.Discard, body)
+		_ = body.Close()
+	}()
+
+	stage = "DecodeResponse"
+	result, err := decodeSetSkillEnabledResponse(resp)
+	if err != nil {
+		return res, errors.Wrap(err, "decode response")
+	}
+
+	return result, nil
+}
+
 // SubmitDynamicCallResult invokes submit-dynamic-call-result operation.
 //
 // The assistant asks the client to run an action by adding a tool call to the conversation with the
@@ -4674,8 +5353,8 @@ func (c *Client) sendUpdateChannel(ctx context.Context, request *UpdateChannelRe
 // UpdateThread invokes update-thread operation.
 //
 // Changes the model, reasoning level, approval mode and archived state. A change takes effect from the
-// next turn; a turn already running keeps the settings it started with. reasoningEffort only applies
-// when model is given as well.
+// next turn; a turn already running keeps the settings it started with. Model and reasoning level
+// change independently: sending one leaves the other alone.
 //
 // PATCH /api/v1/threads/{thread}
 func (c *Client) UpdateThread(ctx context.Context, request *UpdateThreadRequestBody, params UpdateThreadParams) (*ThreadSummaryResource, error) {

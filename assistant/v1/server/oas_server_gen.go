@@ -86,6 +86,12 @@ type Handler interface {
 	//
 	// DELETE /api/v1/memories/{memory}
 	DeleteMemory(ctx context.Context, params DeleteMemoryParams) error
+	// DeleteSkill implements delete-skill operation.
+	//
+	// A built-in skill of the same name, if there was one, becomes visible again.
+	//
+	// DELETE /api/v1/skills/{skill}
+	DeleteSkill(ctx context.Context, params DeleteSkillParams) error
 	// DownloadAttachment implements download-attachment operation.
 	//
 	// Returns the original bytes for an attachment id, usable directly as the address of an . The response
@@ -106,6 +112,12 @@ type Handler interface {
 	//
 	// GET /api/v1/channels/{channel}
 	GetChannel(ctx context.Context, params GetChannelParams) (*ChannelResource, error)
+	// GetSkill implements get-skill operation.
+	//
+	// Works for built-in skills too; they simply cannot be written.
+	//
+	// GET /api/v1/skills/{skill}
+	GetSkill(ctx context.Context, params GetSkillParams) (*SkillResource, error)
 	// GetThread implements get-thread operation.
 	//
 	// The complete current state of a conversation, for the first render. Its `stream` gives the address
@@ -184,6 +196,16 @@ type Handler interface {
 	//
 	// GET /api/v1/platforms
 	ListPlatforms(ctx context.Context) (*PlatformListResponseBody, error)
+	// ListSkills implements list-skills operation.
+	//
+	// Everything the assistant can reach in this project, including the ones that are turned off — an
+	// entry that disappeared once it was switched off could not be switched back on.
+	//
+	// `origin` says whether a skill can be edited here. Skills belonging to the project are visible to
+	// everyone in it, whoever wrote them.
+	//
+	// GET /api/v1/skills
+	ListSkills(ctx context.Context) (*SkillListResponseBody, error)
 	// ListThreads implements list-threads operation.
 	//
 	// Ordered by most recent activity, limited to the current account's conversations in the current
@@ -198,6 +220,16 @@ type Handler interface {
 	//
 	// POST /api/v1/threads/{thread}/read
 	MarkThreadRead(ctx context.Context, params MarkThreadReadParams) error
+	// PutSkill implements put-skill operation.
+	//
+	// Creates it, or replaces the project's skill of that name. The whole package goes in each time: files
+	// left out of a write are removed, so the stored skill is what was sent and not what accumulated.
+	//
+	// A project skill takes precedence over a built-in one of the same name for this project only. The
+	// built-in is untouched and reappears if the project's is deleted.
+	//
+	// POST /api/v1/skills
+	PutSkill(ctx context.Context, req *SkillRequestBody) (*SkillResource, error)
 	// RevertThread implements revert-thread operation.
 	//
 	// Reverts the entry at `ordinal` and everything after it. Reverted entries stay in the transcript
@@ -225,6 +257,16 @@ type Handler interface {
 	//
 	// POST /api/v1/threads/{thread}/messages
 	SendMessage(ctx context.Context, req *SendMessageRequestBody, params SendMessageParams) (*TurnIDResponseBody, error)
+	// SetSkillEnabled implements set-skill-enabled operation.
+	//
+	// Separate from writing it, because this is the frequent one: a skill that is off costs nothing and
+	// stays where it is.
+	//
+	// Only skills belonging to the project can be switched. To keep a built-in one out of the way, write a
+	// project skill of the same name and turn that off.
+	//
+	// PATCH /api/v1/skills/{skill}
+	SetSkillEnabled(ctx context.Context, req *SkillEnabledRequestBody, params SetSkillEnabledParams) (*SkillResource, error)
 	// SubmitDynamicCallResult implements submit-dynamic-call-result operation.
 	//
 	// The assistant asks the client to run an action by adding a tool call to the conversation with the
@@ -252,8 +294,8 @@ type Handler interface {
 	// UpdateThread implements update-thread operation.
 	//
 	// Changes the model, reasoning level, approval mode and archived state. A change takes effect from the
-	// next turn; a turn already running keeps the settings it started with. reasoningEffort only applies
-	// when model is given as well.
+	// next turn; a turn already running keeps the settings it started with. Model and reasoning level
+	// change independently: sending one leaves the other alone.
 	//
 	// PATCH /api/v1/threads/{thread}
 	UpdateThread(ctx context.Context, req *UpdateThreadRequestBody, params UpdateThreadParams) (*ThreadSummaryResource, error)

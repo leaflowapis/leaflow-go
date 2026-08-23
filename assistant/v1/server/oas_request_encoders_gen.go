@@ -66,6 +66,20 @@ func encodeDecideApprovalRequest(
 	return nil
 }
 
+func encodePutSkillRequest(
+	req *SkillRequestBody,
+	r *http.Request,
+) error {
+	const contentType = "application/json"
+	e := new(jx.Encoder)
+	{
+		req.Encode(e)
+	}
+	encoded := e.Bytes()
+	ht.SetBody(r, bytes.NewReader(encoded), contentType)
+	return nil
+}
+
 func encodeRevertThreadRequest(
 	req *RevertRequestBody,
 	r *http.Request,
@@ -102,6 +116,20 @@ func encodeRotateChannelSecretRequest(
 
 func encodeSendMessageRequest(
 	req *SendMessageRequestBody,
+	r *http.Request,
+) error {
+	const contentType = "application/json"
+	e := new(jx.Encoder)
+	{
+		req.Encode(e)
+	}
+	encoded := e.Bytes()
+	ht.SetBody(r, bytes.NewReader(encoded), contentType)
+	return nil
+}
+
+func encodeSetSkillEnabledRequest(
+	req *SkillEnabledRequestBody,
 	r *http.Request,
 ) error {
 	const contentType = "application/json"
