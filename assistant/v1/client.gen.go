@@ -487,6 +487,27 @@ func (e ThreadSummaryResourceApprovalMode) Valid() bool {
 	}
 }
 
+// Defines values for TodoResourceStatus.
+const (
+	TodoResourceStatusCompleted  TodoResourceStatus = "completed"
+	TodoResourceStatusInProgress TodoResourceStatus = "in_progress"
+	TodoResourceStatusPending    TodoResourceStatus = "pending"
+)
+
+// Valid indicates whether the value is a known member of the TodoResourceStatus enum.
+func (e TodoResourceStatus) Valid() bool {
+	switch e {
+	case TodoResourceStatusCompleted:
+		return true
+	case TodoResourceStatusInProgress:
+		return true
+	case TodoResourceStatusPending:
+		return true
+	default:
+		return false
+	}
+}
+
 // Defines values for TurnResourceApprovalMode.
 const (
 	TurnResourceApprovalModeGuardian TurnResourceApprovalMode = "guardian"
@@ -741,9 +762,12 @@ type DocumentResource struct {
 	Items   []ItemResource   `json:"items"`
 	Status  string           `json:"status"`
 	Stream  *StreamResource  `json:"stream"`
-	Turn    *TurnResource    `json:"turn"`
-	TurnId  *string          `json:"turnId"`
-	Wait    *WaitResource    `json:"wait"`
+
+	// Todos The assistant's checklist for the work in this conversation, in the order it intends to do it. Empty when it has not written one — short tasks do not get a list. It is rewritten in full each time, so what is here is the current state.
+	Todos  []TodoResource `json:"todos,omitempty"`
+	Turn   *TurnResource  `json:"turn"`
+	TurnId *string        `json:"turnId"`
+	Wait   *WaitResource  `json:"wait"`
 }
 
 // EarlierResource defines model for EarlierResource.
@@ -990,6 +1014,21 @@ type ThreadSummaryResource struct {
 
 // ThreadSummaryResourceApprovalMode defines model for ThreadSummaryResource.ApprovalMode.
 type ThreadSummaryResourceApprovalMode string
+
+// TodoResource defines model for TodoResource.
+type TodoResource struct {
+	// ActiveForm The same step phrased as happening now — "Installing nginx". Show this one while the item is in progress.
+	ActiveForm string `json:"activeForm"`
+
+	// Content The step as an instruction — "Install nginx".
+	Content string `json:"content"`
+
+	// Status Where this step stands. At most one item is in_progress at any time.
+	Status TodoResourceStatus `json:"status"`
+}
+
+// TodoResourceStatus Where this step stands. At most one item is in_progress at any time.
+type TodoResourceStatus string
 
 // TurnIDResponseBody defines model for TurnIDResponseBody.
 type TurnIDResponseBody struct {

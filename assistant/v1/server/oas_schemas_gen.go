@@ -1382,8 +1382,12 @@ type DocumentResource struct {
 	Status  string             `json:"status"`
 	Stream  NilStreamResource  `json:"stream"`
 	Turn    NilTurnResource    `json:"turn"`
-	TurnId  NilString          `json:"turnId"`
-	Wait    NilWaitResource    `json:"wait"`
+	// The assistant's checklist for the work in this conversation, in the order it intends to do it. Empty
+	// when it has not written one — short tasks do not get a list. It is rewritten in full each time, so
+	// what is here is the current state.
+	Todos  []TodoResource  `json:"todos"`
+	TurnId NilString       `json:"turnId"`
+	Wait   NilWaitResource `json:"wait"`
 }
 
 // GetContext returns the value of Context.
@@ -1419,6 +1423,11 @@ func (s *DocumentResource) GetStream() NilStreamResource {
 // GetTurn returns the value of Turn.
 func (s *DocumentResource) GetTurn() NilTurnResource {
 	return s.Turn
+}
+
+// GetTodos returns the value of Todos.
+func (s *DocumentResource) GetTodos() []TodoResource {
+	return s.Todos
 }
 
 // GetTurnId returns the value of TurnId.
@@ -1464,6 +1473,11 @@ func (s *DocumentResource) SetStream(val NilStreamResource) {
 // SetTurn sets the value of Turn.
 func (s *DocumentResource) SetTurn(val NilTurnResource) {
 	s.Turn = val
+}
+
+// SetTodos sets the value of Todos.
+func (s *DocumentResource) SetTodos(val []TodoResource) {
+	s.Todos = val
 }
 
 // SetTurnId sets the value of TurnId.
@@ -4481,6 +4495,96 @@ func (s *ThreadSummaryResourceApprovalMode) UnmarshalText(data []byte) error {
 		return nil
 	case ThreadSummaryResourceApprovalModeYolo:
 		*s = ThreadSummaryResourceApprovalModeYolo
+		return nil
+	default:
+		return errors.Errorf("invalid value: %q", data)
+	}
+}
+
+// Ref: #/components/schemas/TodoResource
+type TodoResource struct {
+	// The same step phrased as happening now — "Installing nginx". Show this one while the item is in
+	// progress.
+	ActiveForm string `json:"activeForm"`
+	// The step as an instruction — "Install nginx".
+	Content string `json:"content"`
+	// Where this step stands. At most one item is in_progress at any time.
+	Status TodoResourceStatus `json:"status"`
+}
+
+// GetActiveForm returns the value of ActiveForm.
+func (s *TodoResource) GetActiveForm() string {
+	return s.ActiveForm
+}
+
+// GetContent returns the value of Content.
+func (s *TodoResource) GetContent() string {
+	return s.Content
+}
+
+// GetStatus returns the value of Status.
+func (s *TodoResource) GetStatus() TodoResourceStatus {
+	return s.Status
+}
+
+// SetActiveForm sets the value of ActiveForm.
+func (s *TodoResource) SetActiveForm(val string) {
+	s.ActiveForm = val
+}
+
+// SetContent sets the value of Content.
+func (s *TodoResource) SetContent(val string) {
+	s.Content = val
+}
+
+// SetStatus sets the value of Status.
+func (s *TodoResource) SetStatus(val TodoResourceStatus) {
+	s.Status = val
+}
+
+// Where this step stands. At most one item is in_progress at any time.
+type TodoResourceStatus string
+
+const (
+	TodoResourceStatusPending    TodoResourceStatus = "pending"
+	TodoResourceStatusInProgress TodoResourceStatus = "in_progress"
+	TodoResourceStatusCompleted  TodoResourceStatus = "completed"
+)
+
+// AllValues returns all TodoResourceStatus values.
+func (TodoResourceStatus) AllValues() []TodoResourceStatus {
+	return []TodoResourceStatus{
+		TodoResourceStatusPending,
+		TodoResourceStatusInProgress,
+		TodoResourceStatusCompleted,
+	}
+}
+
+// MarshalText implements encoding.TextMarshaler.
+func (s TodoResourceStatus) MarshalText() ([]byte, error) {
+	switch s {
+	case TodoResourceStatusPending:
+		return []byte(s), nil
+	case TodoResourceStatusInProgress:
+		return []byte(s), nil
+	case TodoResourceStatusCompleted:
+		return []byte(s), nil
+	default:
+		return nil, errors.Errorf("invalid value: %q", s)
+	}
+}
+
+// UnmarshalText implements encoding.TextUnmarshaler.
+func (s *TodoResourceStatus) UnmarshalText(data []byte) error {
+	switch TodoResourceStatus(data) {
+	case TodoResourceStatusPending:
+		*s = TodoResourceStatusPending
+		return nil
+	case TodoResourceStatusInProgress:
+		*s = TodoResourceStatusInProgress
+		return nil
+	case TodoResourceStatusCompleted:
+		*s = TodoResourceStatusCompleted
 		return nil
 	default:
 		return errors.Errorf("invalid value: %q", data)
