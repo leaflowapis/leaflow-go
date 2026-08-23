@@ -1114,7 +1114,49 @@ func (s *ClientActionRequestType) UnmarshalText(data []byte) error {
 	}
 }
 
-// What this client can do, so the assistant can ask it to do those things while it answers.
+// One block of context. `type` names what it is so the assistant can tell blocks apart — `page`,
+// `selection`, `open_file`, `working_directory`, whatever this client has.
+// Ref: #/components/schemas/ClientContextPart
+type ClientContextPart struct {
+	// The block itself. Any object; its keys are shown to the assistant as they are.
+	Data ClientContextPartData `json:"data"`
+	Type string                `json:"type"`
+}
+
+// GetData returns the value of Data.
+func (s *ClientContextPart) GetData() ClientContextPartData {
+	return s.Data
+}
+
+// GetType returns the value of Type.
+func (s *ClientContextPart) GetType() string {
+	return s.Type
+}
+
+// SetData sets the value of Data.
+func (s *ClientContextPart) SetData(val ClientContextPartData) {
+	s.Data = val
+}
+
+// SetType sets the value of Type.
+func (s *ClientContextPart) SetType(val string) {
+	s.Type = val
+}
+
+// The block itself. Any object; its keys are shown to the assistant as they are.
+type ClientContextPartData map[string]jx.Raw
+
+func (s *ClientContextPartData) init() ClientContextPartData {
+	m := *s
+	if m == nil {
+		m = map[string]jx.Raw{}
+		*s = m
+	}
+	return m
+}
+
+// What this client is and what it can do, so the assistant can ask it to do those things while it
+// answers.
 //
 // Send `actions` only when they differ from the last message on this conversation. Sending the block
 // without `actions` keeps whatever was declared before.
@@ -1122,11 +1164,16 @@ func (s *ClientActionRequestType) UnmarshalText(data []byte) error {
 type ClientContextRequest struct {
 	// The actions on offer right now. Omit when unchanged since the last message.
 	Actions OptNilClientActionRequestArray `json:"actions"`
-	// Identifies this client while it stays open. Any stable string; one per tab.
+	// Identifies this client while it stays open. Any stable string; one per tab or process.
 	ClientId string `json:"clientId"`
+	// What the operator is looking at or working on, as typed blocks. Each one is shown to the assistant
+	// as it was sent.
+	//
+	// These travel with this message only and stay in the conversation, so they add up: send what the
+	// assistant needs to answer, not everything on hand. At most 64 KiB in total.
+	Context OptNilClientContextPartArray `json:"context"`
 	// How the client calls itself, for example "Leaflow console (web)".
-	Label OptString            `json:"label"`
-	Page  OptClientPageRequest `json:"page"`
+	Label OptString `json:"label"`
 }
 
 // GetActions returns the value of Actions.
@@ -1139,14 +1186,14 @@ func (s *ClientContextRequest) GetClientId() string {
 	return s.ClientId
 }
 
+// GetContext returns the value of Context.
+func (s *ClientContextRequest) GetContext() OptNilClientContextPartArray {
+	return s.Context
+}
+
 // GetLabel returns the value of Label.
 func (s *ClientContextRequest) GetLabel() OptString {
 	return s.Label
-}
-
-// GetPage returns the value of Page.
-func (s *ClientContextRequest) GetPage() OptClientPageRequest {
-	return s.Page
 }
 
 // SetActions sets the value of Actions.
@@ -1159,14 +1206,14 @@ func (s *ClientContextRequest) SetClientId(val string) {
 	s.ClientId = val
 }
 
+// SetContext sets the value of Context.
+func (s *ClientContextRequest) SetContext(val OptNilClientContextPartArray) {
+	s.Context = val
+}
+
 // SetLabel sets the value of Label.
 func (s *ClientContextRequest) SetLabel(val OptString) {
 	s.Label = val
-}
-
-// SetPage sets the value of Page.
-func (s *ClientContextRequest) SetPage(val OptClientPageRequest) {
-	s.Page = val
 }
 
 // The function object from the OpenAI tools format.
@@ -1244,33 +1291,6 @@ func (s *ClientFunctionRequestParameters) init() ClientFunctionRequestParameters
 		*s = m
 	}
 	return m
-}
-
-// What the operator is looking at.
-// Ref: #/components/schemas/ClientPageRequest
-type ClientPageRequest struct {
-	Title OptString `json:"title"`
-	URL   OptString `json:"url"`
-}
-
-// GetTitle returns the value of Title.
-func (s *ClientPageRequest) GetTitle() OptString {
-	return s.Title
-}
-
-// GetURL returns the value of URL.
-func (s *ClientPageRequest) GetURL() OptString {
-	return s.URL
-}
-
-// SetTitle sets the value of Title.
-func (s *ClientPageRequest) SetTitle(val OptString) {
-	s.Title = val
-}
-
-// SetURL sets the value of URL.
-func (s *ClientPageRequest) SetURL(val OptString) {
-	s.URL = val
 }
 
 // Ref: #/components/schemas/ContextResource
@@ -3230,52 +3250,6 @@ func (o OptClientContextRequest) Or(d ClientContextRequest) ClientContextRequest
 	return d
 }
 
-// NewOptClientPageRequest returns new OptClientPageRequest with value set to v.
-func NewOptClientPageRequest(v ClientPageRequest) OptClientPageRequest {
-	return OptClientPageRequest{
-		Value: v,
-		Set:   true,
-	}
-}
-
-// OptClientPageRequest is optional ClientPageRequest.
-type OptClientPageRequest struct {
-	Value ClientPageRequest
-	Set   bool
-}
-
-// IsSet returns true if OptClientPageRequest was set.
-func (o OptClientPageRequest) IsSet() bool { return o.Set }
-
-// Reset unsets value.
-func (o *OptClientPageRequest) Reset() {
-	var v ClientPageRequest
-	o.Value = v
-	o.Set = false
-}
-
-// SetTo sets value to v.
-func (o *OptClientPageRequest) SetTo(v ClientPageRequest) {
-	o.Set = true
-	o.Value = v
-}
-
-// Get returns value and boolean that denotes whether value was set.
-func (o OptClientPageRequest) Get() (v ClientPageRequest, ok bool) {
-	if !o.Set {
-		return v, false
-	}
-	return o.Value, true
-}
-
-// Or returns value if set, or given parameter if does not.
-func (o OptClientPageRequest) Or(d ClientPageRequest) ClientPageRequest {
-	if v, ok := o.Get(); ok {
-		return v
-	}
-	return d
-}
-
 // NewOptCreateChannelRequestBodyCredentials returns new OptCreateChannelRequestBodyCredentials with value set to v.
 func NewOptCreateChannelRequestBodyCredentials(v CreateChannelRequestBodyCredentials) OptCreateChannelRequestBodyCredentials {
 	return OptCreateChannelRequestBodyCredentials{
@@ -3636,6 +3610,74 @@ func (o OptNilClientActionRequestArray) Get() (v []ClientActionRequest, ok bool)
 
 // Or returns value if set, or given parameter if does not.
 func (o OptNilClientActionRequestArray) Or(d []ClientActionRequest) []ClientActionRequest {
+	if v, ok := o.Get(); ok {
+		return v
+	}
+	return d
+}
+
+// NewOptNilClientContextPartArray returns new OptNilClientContextPartArray with value set to v.
+func NewOptNilClientContextPartArray(v []ClientContextPart) OptNilClientContextPartArray {
+	return OptNilClientContextPartArray{
+		Value: v,
+		Set:   true,
+	}
+}
+
+// OptNilClientContextPartArray is optional nullable []ClientContextPart.
+type OptNilClientContextPartArray struct {
+	Value []ClientContextPart
+	Set   bool
+	Null  bool
+}
+
+// IsSet returns true if OptNilClientContextPartArray was set.
+func (o OptNilClientContextPartArray) IsSet() bool { return o.Set }
+
+// Reset unsets value.
+func (o *OptNilClientContextPartArray) Reset() {
+	var v []ClientContextPart
+	o.Value = v
+	o.Set = false
+	o.Null = false
+}
+
+// SetTo sets value to v.
+func (o *OptNilClientContextPartArray) SetTo(v []ClientContextPart) {
+	o.Set = true
+	o.Null = false
+	o.Value = v
+}
+
+// IsNull returns true if value is Null.
+func (o OptNilClientContextPartArray) IsNull() bool { return o.Null }
+
+// SetToNull sets value to null.
+func (o *OptNilClientContextPartArray) SetToNull() {
+	o.Set = true
+	o.Null = true
+	var v []ClientContextPart
+	o.Value = v
+}
+
+// IsEmpty returns true if the field was omitted from the payload (not Set and not Null).
+func (o OptNilClientContextPartArray) IsEmpty() bool {
+	return !o.Set && !o.Null
+}
+
+// Get returns value and boolean that denotes whether value was set.
+func (o OptNilClientContextPartArray) Get() (v []ClientContextPart, ok bool) {
+	if o.Null {
+		return v, false
+	}
+	if !o.Set {
+		return v, false
+	}
+	return o.Value, true
+}
+
+// Or returns value if set, or given parameter if does not.
+func (o OptNilClientContextPartArray) Or(d []ClientContextPart) []ClientContextPart {
 	if v, ok := o.Get(); ok {
 		return v
 	}
