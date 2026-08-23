@@ -7951,13 +7951,25 @@ func (s *TurnIDResponseBody) Encode(e *jx.Encoder) {
 // encodeFields encodes fields.
 func (s *TurnIDResponseBody) encodeFields(e *jx.Encoder) {
 	{
+		e.FieldStart("queued")
+		e.Bool(s.Queued)
+	}
+	{
+		if s.QueuedAhead.Set {
+			e.FieldStart("queuedAhead")
+			s.QueuedAhead.Encode(e)
+		}
+	}
+	{
 		e.FieldStart("turnId")
 		e.Str(s.TurnId)
 	}
 }
 
-var jsonFieldsNameOfTurnIDResponseBody = [1]string{
-	0: "turnId",
+var jsonFieldsNameOfTurnIDResponseBody = [3]string{
+	0: "queued",
+	1: "queuedAhead",
+	2: "turnId",
 }
 
 // Decode decodes TurnIDResponseBody from json.
@@ -7969,8 +7981,30 @@ func (s *TurnIDResponseBody) Decode(d *jx.Decoder) error {
 
 	if err := d.ObjBytes(func(d *jx.Decoder, k []byte) error {
 		switch string(k) {
-		case "turnId":
+		case "queued":
 			requiredBitSet[0] |= 1 << 0
+			if err := func() error {
+				v, err := d.Bool()
+				s.Queued = bool(v)
+				if err != nil {
+					return err
+				}
+				return nil
+			}(); err != nil {
+				return errors.Wrap(err, "decode field \"queued\"")
+			}
+		case "queuedAhead":
+			if err := func() error {
+				s.QueuedAhead.Reset()
+				if err := s.QueuedAhead.Decode(d); err != nil {
+					return err
+				}
+				return nil
+			}(); err != nil {
+				return errors.Wrap(err, "decode field \"queuedAhead\"")
+			}
+		case "turnId":
+			requiredBitSet[0] |= 1 << 2
 			if err := func() error {
 				v, err := d.Str()
 				s.TurnId = string(v)
@@ -7991,7 +8025,7 @@ func (s *TurnIDResponseBody) Decode(d *jx.Decoder) error {
 	// Validate required fields.
 	var failures []validate.FieldError
 	for i, mask := range [1]uint8{
-		0b00000001,
+		0b00000101,
 	} {
 		if result := (requiredBitSet[i] & mask) ^ mask; result != 0 {
 			// Mask only required fields and check equality to mask using XOR.

@@ -993,6 +993,13 @@ type ThreadSummaryResourceApprovalMode string
 
 // TurnIDResponseBody defines model for TurnIDResponseBody.
 type TurnIDResponseBody struct {
+	// Queued True when the assistant was already busy and this message was put in line instead of starting a turn. It is read at the next step of the turn already running, so there is nothing further to do — and turnId is empty in this case.
+	Queued bool `json:"queued"`
+
+	// QueuedAhead How many messages were already waiting ahead of this one. Only meaningful when queued is true.
+	QueuedAhead *int64 `json:"queuedAhead,omitempty"`
+
+	// TurnId The turn this message started. Empty when the message was queued instead.
 	TurnId string `json:"turnId"`
 }
 
@@ -1464,7 +1471,7 @@ type ClientInterface interface {
 
 	// SendMessageWithBody Send a message and start a turn
 	//
-	// Returns a turnId immediately without waiting for execution — a turn can run for tens of minutes. Progress arrives on the live stream the conversation document's `stream` points at, not in this response.
+	// Returns a turnId immediately without waiting for execution — a turn can run for tens of minutes. Progress arrives on the live stream the conversation document's `stream` points at, not in this response. Sending while the assistant is still working is allowed: the message is put in line and `queued` comes back true, to be read at the next step of the turn already running — so the editor should stay open rather than blocking on a busy conversation.
 	//
 	// Takes any type of body and a specified content type.
 	//
@@ -1473,7 +1480,7 @@ type ClientInterface interface {
 
 	// SendMessage Send a message and start a turn
 	//
-	// Returns a turnId immediately without waiting for execution — a turn can run for tens of minutes. Progress arrives on the live stream the conversation document's `stream` points at, not in this response.
+	// Returns a turnId immediately without waiting for execution — a turn can run for tens of minutes. Progress arrives on the live stream the conversation document's `stream` points at, not in this response. Sending while the assistant is still working is allowed: the message is put in line and `queued` comes back true, to be read at the next step of the turn already running — so the editor should stay open rather than blocking on a busy conversation.
 	//
 	// Takes a body of the `application/json` content type.
 	//
@@ -2107,7 +2114,7 @@ func (c *Client) InterruptThread(ctx context.Context, thread string, reqEditors 
 
 // SendMessageWithBody Send a message and start a turn
 //
-// Returns a turnId immediately without waiting for execution — a turn can run for tens of minutes. Progress arrives on the live stream the conversation document's `stream` points at, not in this response.
+// Returns a turnId immediately without waiting for execution — a turn can run for tens of minutes. Progress arrives on the live stream the conversation document's `stream` points at, not in this response. Sending while the assistant is still working is allowed: the message is put in line and `queued` comes back true, to be read at the next step of the turn already running — so the editor should stay open rather than blocking on a busy conversation.
 //
 // Takes any type of body and a specified content type.
 //
@@ -2126,7 +2133,7 @@ func (c *Client) SendMessageWithBody(ctx context.Context, thread string, content
 
 // SendMessage Send a message and start a turn
 //
-// Returns a turnId immediately without waiting for execution — a turn can run for tens of minutes. Progress arrives on the live stream the conversation document's `stream` points at, not in this response.
+// Returns a turnId immediately without waiting for execution — a turn can run for tens of minutes. Progress arrives on the live stream the conversation document's `stream` points at, not in this response. Sending while the assistant is still working is allowed: the message is put in line and `queued` comes back true, to be read at the next step of the turn already running — so the editor should stay open rather than blocking on a busy conversation.
 //
 // Takes a body of the `application/json` content type.
 //
@@ -4056,7 +4063,7 @@ type ClientWithResponsesInterface interface {
 
 	// SendMessageWithBodyWithResponse Send a message and start a turn
 	//
-	// Returns a turnId immediately without waiting for execution — a turn can run for tens of minutes. Progress arrives on the live stream the conversation document's `stream` points at, not in this response.
+	// Returns a turnId immediately without waiting for execution — a turn can run for tens of minutes. Progress arrives on the live stream the conversation document's `stream` points at, not in this response. Sending while the assistant is still working is allowed: the message is put in line and `queued` comes back true, to be read at the next step of the turn already running — so the editor should stay open rather than blocking on a busy conversation.
 	//
 	// Takes any type of body and a specified content type, and returns a wrapper object for the known response body format(s).
 	//
@@ -4065,7 +4072,7 @@ type ClientWithResponsesInterface interface {
 
 	// SendMessageWithResponse Send a message and start a turn
 	//
-	// Returns a turnId immediately without waiting for execution — a turn can run for tens of minutes. Progress arrives on the live stream the conversation document's `stream` points at, not in this response.
+	// Returns a turnId immediately without waiting for execution — a turn can run for tens of minutes. Progress arrives on the live stream the conversation document's `stream` points at, not in this response. Sending while the assistant is still working is allowed: the message is put in line and `queued` comes back true, to be read at the next step of the turn already running — so the editor should stay open rather than blocking on a busy conversation.
 	//
 	// Takes a body of the `application/json` content type, and returns a wrapper object for the known response body format(s).
 	//
@@ -6100,7 +6107,7 @@ func (c *ClientWithResponses) InterruptThreadWithResponse(ctx context.Context, t
 
 // SendMessageWithBodyWithResponse Send a message and start a turn
 //
-// Returns a turnId immediately without waiting for execution — a turn can run for tens of minutes. Progress arrives on the live stream the conversation document's `stream` points at, not in this response.
+// Returns a turnId immediately without waiting for execution — a turn can run for tens of minutes. Progress arrives on the live stream the conversation document's `stream` points at, not in this response. Sending while the assistant is still working is allowed: the message is put in line and `queued` comes back true, to be read at the next step of the turn already running — so the editor should stay open rather than blocking on a busy conversation.
 //
 // Takes any type of body and a specified content type, and returns a wrapper object for the known response body format(s).
 //
@@ -6115,7 +6122,7 @@ func (c *ClientWithResponses) SendMessageWithBodyWithResponse(ctx context.Contex
 
 // SendMessageWithResponse Send a message and start a turn
 //
-// Returns a turnId immediately without waiting for execution — a turn can run for tens of minutes. Progress arrives on the live stream the conversation document's `stream` points at, not in this response.
+// Returns a turnId immediately without waiting for execution — a turn can run for tens of minutes. Progress arrives on the live stream the conversation document's `stream` points at, not in this response. Sending while the assistant is still working is allowed: the message is put in line and `queued` comes back true, to be read at the next step of the turn already running — so the editor should stay open rather than blocking on a busy conversation.
 //
 // Takes a body of the `application/json` content type, and returns a wrapper object for the known response body format(s).
 //

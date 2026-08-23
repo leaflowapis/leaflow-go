@@ -1388,8 +1388,8 @@ type NotificationTypeDescriptor struct {
 	AvailableChannels []NotificationChannel `json:"available_channels"`
 	// The channels this type is delivered on when nothing has been configured.
 	DefaultChannels []NotificationChannel `json:"default_channels"`
-	// True when this type cannot be configured or turned off. Such types announce something irreversible,
-	// or carry the only route to something that cannot be obtained again.
+	// True when this type must reach you: it cannot be muted, and email cannot be removed from its
+	// channels. Everything else about it is still configurable.
 	Mandatory bool `json:"mandatory"`
 	// The names of the facts this type carries, as they appear on NotificationResource.params.
 	Params []string `json:"params"`
@@ -2324,7 +2324,7 @@ type TypePreferenceResource struct {
 	Channels []NotificationChannel `json:"channels"`
 	// True when nothing has been configured and these are the defaults from the catalogue.
 	Inherited bool `json:"inherited"`
-	// True when this type cannot be configured; muting it is rejected.
+	// True when this type cannot be muted and email cannot be removed from it.
 	Mandatory bool `json:"mandatory"`
 	// Deliver only at or above this severity. Null delivers every severity. It applies to the channels
 	// named here and not to the inbox, which always holds everything.
@@ -2495,7 +2495,8 @@ func (s *UpdatePreferencesRequestBody) SetTimezone(val OptString) {
 // States how this type should be delivered, replacing whatever was configured before.
 // Ref: #/components/schemas/UpdateTypePreferenceRequestBody
 type UpdateTypePreferenceRequestBody struct {
-	// Where to deliver this type. An empty list delivers to the inbox only.
+	// Where to deliver this type, beyond the inbox. An empty list delivers to the inbox only. `inbox` may
+	// be listed and is accepted, but has no effect: every notification is in the inbox whatever this says.
 	Channels []NotificationChannel `json:"channels"`
 	// Deliver only at or above this severity. Null delivers every severity.
 	MinSeverity OptNilNotificationSeverity `json:"min_severity"`

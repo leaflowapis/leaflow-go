@@ -214,8 +214,12 @@ type Invoker interface {
 	// Omitting `project_id` configures every project. Naming one configures that project alone and takes
 	// precedence there.
 	//
-	// Configuring a type marked `mandatory` returns `NOTIFICATION_TYPE_MANDATORY`. Naming a channel the
-	// type does not support returns `NOTIFICATION_CHANNEL_UNSUPPORTED`.
+	// On a type marked `mandatory`, setting `muted` or omitting `email` from `channels` returns
+	// `NOTIFICATION_TYPE_MANDATORY`. Everything else about such a type is configurable, including adding
+	// channels and raising `min_severity`.
+	//
+	// Naming a channel the type does not support returns `NOTIFICATION_CHANNEL_UNSUPPORTED`. `inbox` is
+	// accepted but has no effect: every notification is in the inbox regardless.
 	//
 	// PUT /api/v1/preferences/types/{type}
 	UpdateTypePreference(ctx context.Context, request *UpdateTypePreferenceRequestBody, params UpdateTypePreferenceParams) (*TypePreferenceResource, error)
@@ -2730,8 +2734,12 @@ func (c *Client) sendUpdateNotificationPreferences(ctx context.Context, request 
 // Omitting `project_id` configures every project. Naming one configures that project alone and takes
 // precedence there.
 //
-// Configuring a type marked `mandatory` returns `NOTIFICATION_TYPE_MANDATORY`. Naming a channel the
-// type does not support returns `NOTIFICATION_CHANNEL_UNSUPPORTED`.
+// On a type marked `mandatory`, setting `muted` or omitting `email` from `channels` returns
+// `NOTIFICATION_TYPE_MANDATORY`. Everything else about such a type is configurable, including adding
+// channels and raising `min_severity`.
+//
+// Naming a channel the type does not support returns `NOTIFICATION_CHANNEL_UNSUPPORTED`. `inbox` is
+// accepted but has no effect: every notification is in the inbox regardless.
 //
 // PUT /api/v1/preferences/types/{type}
 func (c *Client) UpdateTypePreference(ctx context.Context, request *UpdateTypePreferenceRequestBody, params UpdateTypePreferenceParams) (*TypePreferenceResource, error) {
