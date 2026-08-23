@@ -2511,6 +2511,10 @@ func (s *ContextResource) Encode(e *jx.Encoder) {
 // encodeFields encodes fields.
 func (s *ContextResource) encodeFields(e *jx.Encoder) {
 	{
+		e.FieldStart("reasoningEffort")
+		s.ReasoningEffort.Encode(e)
+	}
+	{
 		e.FieldStart("compactAt")
 		s.CompactAt.Encode(e)
 	}
@@ -2532,12 +2536,13 @@ func (s *ContextResource) encodeFields(e *jx.Encoder) {
 	}
 }
 
-var jsonFieldsNameOfContextResource = [5]string{
-	0: "compactAt",
-	1: "model",
-	2: "used",
-	3: "warnAt",
-	4: "window",
+var jsonFieldsNameOfContextResource = [6]string{
+	0: "reasoningEffort",
+	1: "compactAt",
+	2: "model",
+	3: "used",
+	4: "warnAt",
+	5: "window",
 }
 
 // Decode decodes ContextResource from json.
@@ -2549,8 +2554,18 @@ func (s *ContextResource) Decode(d *jx.Decoder) error {
 
 	if err := d.ObjBytes(func(d *jx.Decoder, k []byte) error {
 		switch string(k) {
-		case "compactAt":
+		case "reasoningEffort":
 			requiredBitSet[0] |= 1 << 0
+			if err := func() error {
+				if err := s.ReasoningEffort.Decode(d); err != nil {
+					return err
+				}
+				return nil
+			}(); err != nil {
+				return errors.Wrap(err, "decode field \"reasoningEffort\"")
+			}
+		case "compactAt":
+			requiredBitSet[0] |= 1 << 1
 			if err := func() error {
 				if err := s.CompactAt.Decode(d); err != nil {
 					return err
@@ -2560,7 +2575,7 @@ func (s *ContextResource) Decode(d *jx.Decoder) error {
 				return errors.Wrap(err, "decode field \"compactAt\"")
 			}
 		case "model":
-			requiredBitSet[0] |= 1 << 1
+			requiredBitSet[0] |= 1 << 2
 			if err := func() error {
 				v, err := d.Str()
 				s.Model = string(v)
@@ -2572,7 +2587,7 @@ func (s *ContextResource) Decode(d *jx.Decoder) error {
 				return errors.Wrap(err, "decode field \"model\"")
 			}
 		case "used":
-			requiredBitSet[0] |= 1 << 2
+			requiredBitSet[0] |= 1 << 3
 			if err := func() error {
 				if err := s.Used.Decode(d); err != nil {
 					return err
@@ -2582,7 +2597,7 @@ func (s *ContextResource) Decode(d *jx.Decoder) error {
 				return errors.Wrap(err, "decode field \"used\"")
 			}
 		case "warnAt":
-			requiredBitSet[0] |= 1 << 3
+			requiredBitSet[0] |= 1 << 4
 			if err := func() error {
 				v, err := d.Int64()
 				s.WarnAt = int64(v)
@@ -2594,7 +2609,7 @@ func (s *ContextResource) Decode(d *jx.Decoder) error {
 				return errors.Wrap(err, "decode field \"warnAt\"")
 			}
 		case "window":
-			requiredBitSet[0] |= 1 << 4
+			requiredBitSet[0] |= 1 << 5
 			if err := func() error {
 				if err := s.Window.Decode(d); err != nil {
 					return err
@@ -2613,7 +2628,7 @@ func (s *ContextResource) Decode(d *jx.Decoder) error {
 	// Validate required fields.
 	var failures []validate.FieldError
 	for i, mask := range [1]uint8{
-		0b00011111,
+		0b00111111,
 	} {
 		if result := (requiredBitSet[i] & mask) ^ mask; result != 0 {
 			// Mask only required fields and check equality to mask using XOR.
@@ -9206,6 +9221,10 @@ func (s *ThreadSummaryResource) Encode(e *jx.Encoder) {
 // encodeFields encodes fields.
 func (s *ThreadSummaryResource) encodeFields(e *jx.Encoder) {
 	{
+		e.FieldStart("reasoningEffort")
+		s.ReasoningEffort.Encode(e)
+	}
+	{
 		e.FieldStart("approvalMode")
 		s.ApprovalMode.Encode(e)
 	}
@@ -9239,15 +9258,16 @@ func (s *ThreadSummaryResource) encodeFields(e *jx.Encoder) {
 	}
 }
 
-var jsonFieldsNameOfThreadSummaryResource = [8]string{
-	0: "approvalMode",
-	1: "archived",
-	2: "createdAt",
-	3: "id",
-	4: "model",
-	5: "title",
-	6: "unread",
-	7: "updatedAt",
+var jsonFieldsNameOfThreadSummaryResource = [9]string{
+	0: "reasoningEffort",
+	1: "approvalMode",
+	2: "archived",
+	3: "createdAt",
+	4: "id",
+	5: "model",
+	6: "title",
+	7: "unread",
+	8: "updatedAt",
 }
 
 // Decode decodes ThreadSummaryResource from json.
@@ -9255,12 +9275,22 @@ func (s *ThreadSummaryResource) Decode(d *jx.Decoder) error {
 	if s == nil {
 		return errors.New("invalid: unable to decode ThreadSummaryResource to nil")
 	}
-	var requiredBitSet [1]uint8
+	var requiredBitSet [2]uint8
 
 	if err := d.ObjBytes(func(d *jx.Decoder, k []byte) error {
 		switch string(k) {
-		case "approvalMode":
+		case "reasoningEffort":
 			requiredBitSet[0] |= 1 << 0
+			if err := func() error {
+				if err := s.ReasoningEffort.Decode(d); err != nil {
+					return err
+				}
+				return nil
+			}(); err != nil {
+				return errors.Wrap(err, "decode field \"reasoningEffort\"")
+			}
+		case "approvalMode":
+			requiredBitSet[0] |= 1 << 1
 			if err := func() error {
 				if err := s.ApprovalMode.Decode(d); err != nil {
 					return err
@@ -9270,7 +9300,7 @@ func (s *ThreadSummaryResource) Decode(d *jx.Decoder) error {
 				return errors.Wrap(err, "decode field \"approvalMode\"")
 			}
 		case "archived":
-			requiredBitSet[0] |= 1 << 1
+			requiredBitSet[0] |= 1 << 2
 			if err := func() error {
 				v, err := d.Bool()
 				s.Archived = bool(v)
@@ -9282,7 +9312,7 @@ func (s *ThreadSummaryResource) Decode(d *jx.Decoder) error {
 				return errors.Wrap(err, "decode field \"archived\"")
 			}
 		case "createdAt":
-			requiredBitSet[0] |= 1 << 2
+			requiredBitSet[0] |= 1 << 3
 			if err := func() error {
 				v, err := json.DecodeDateTime(d)
 				s.CreatedAt = v
@@ -9294,7 +9324,7 @@ func (s *ThreadSummaryResource) Decode(d *jx.Decoder) error {
 				return errors.Wrap(err, "decode field \"createdAt\"")
 			}
 		case "id":
-			requiredBitSet[0] |= 1 << 3
+			requiredBitSet[0] |= 1 << 4
 			if err := func() error {
 				v, err := d.Str()
 				s.ID = string(v)
@@ -9306,7 +9336,7 @@ func (s *ThreadSummaryResource) Decode(d *jx.Decoder) error {
 				return errors.Wrap(err, "decode field \"id\"")
 			}
 		case "model":
-			requiredBitSet[0] |= 1 << 4
+			requiredBitSet[0] |= 1 << 5
 			if err := func() error {
 				v, err := d.Str()
 				s.Model = string(v)
@@ -9318,7 +9348,7 @@ func (s *ThreadSummaryResource) Decode(d *jx.Decoder) error {
 				return errors.Wrap(err, "decode field \"model\"")
 			}
 		case "title":
-			requiredBitSet[0] |= 1 << 5
+			requiredBitSet[0] |= 1 << 6
 			if err := func() error {
 				if err := s.Title.Decode(d); err != nil {
 					return err
@@ -9328,7 +9358,7 @@ func (s *ThreadSummaryResource) Decode(d *jx.Decoder) error {
 				return errors.Wrap(err, "decode field \"title\"")
 			}
 		case "unread":
-			requiredBitSet[0] |= 1 << 6
+			requiredBitSet[0] |= 1 << 7
 			if err := func() error {
 				v, err := d.Bool()
 				s.Unread = bool(v)
@@ -9340,7 +9370,7 @@ func (s *ThreadSummaryResource) Decode(d *jx.Decoder) error {
 				return errors.Wrap(err, "decode field \"unread\"")
 			}
 		case "updatedAt":
-			requiredBitSet[0] |= 1 << 7
+			requiredBitSet[1] |= 1 << 0
 			if err := func() error {
 				v, err := json.DecodeDateTime(d)
 				s.UpdatedAt = v
@@ -9360,8 +9390,9 @@ func (s *ThreadSummaryResource) Decode(d *jx.Decoder) error {
 	}
 	// Validate required fields.
 	var failures []validate.FieldError
-	for i, mask := range [1]uint8{
+	for i, mask := range [2]uint8{
 		0b11111111,
+		0b00000001,
 	} {
 		if result := (requiredBitSet[i] & mask) ^ mask; result != 0 {
 			// Mask only required fields and check equality to mask using XOR.

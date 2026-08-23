@@ -1276,11 +1276,18 @@ func (s *ClientFunctionRequestParameters) init() ClientFunctionRequestParameters
 
 // Ref: #/components/schemas/ContextResource
 type ContextResource struct {
-	CompactAt NilInt64 `json:"compactAt"`
-	Model     string   `json:"model"`
-	Used      NilInt64 `json:"used"`
-	WarnAt    int64    `json:"warnAt"`
-	Window    NilInt64 `json:"window"`
+	// The tier this conversation runs at, or null when it follows the model's own default.
+	ReasoningEffort NilString `json:"reasoningEffort"`
+	CompactAt       NilInt64  `json:"compactAt"`
+	Model           string    `json:"model"`
+	Used            NilInt64  `json:"used"`
+	WarnAt          int64     `json:"warnAt"`
+	Window          NilInt64  `json:"window"`
+}
+
+// GetReasoningEffort returns the value of ReasoningEffort.
+func (s *ContextResource) GetReasoningEffort() NilString {
+	return s.ReasoningEffort
 }
 
 // GetCompactAt returns the value of CompactAt.
@@ -1306,6 +1313,11 @@ func (s *ContextResource) GetWarnAt() int64 {
 // GetWindow returns the value of Window.
 func (s *ContextResource) GetWindow() NilInt64 {
 	return s.Window
+}
+
+// SetReasoningEffort sets the value of ReasoningEffort.
+func (s *ContextResource) SetReasoningEffort(val NilString) {
+	s.ReasoningEffort = val
 }
 
 // SetCompactAt sets the value of CompactAt.
@@ -5201,14 +5213,21 @@ func (s *ThreadListResponseBody) SetThreads(val []ThreadSummaryResource) {
 
 // Ref: #/components/schemas/ThreadSummaryResource
 type ThreadSummaryResource struct {
-	ApprovalMode ThreadSummaryResourceApprovalMode `json:"approvalMode"`
-	Archived     bool                              `json:"archived"`
-	CreatedAt    time.Time                         `json:"createdAt"`
-	ID           string                            `json:"id"`
-	Model        string                            `json:"model"`
-	Title        NilString                         `json:"title"`
-	Unread       bool                              `json:"unread"`
-	UpdatedAt    time.Time                         `json:"updatedAt"`
+	// The tier this conversation runs at, or null when it follows the model's own default.
+	ReasoningEffort NilString                         `json:"reasoningEffort"`
+	ApprovalMode    ThreadSummaryResourceApprovalMode `json:"approvalMode"`
+	Archived        bool                              `json:"archived"`
+	CreatedAt       time.Time                         `json:"createdAt"`
+	ID              string                            `json:"id"`
+	Model           string                            `json:"model"`
+	Title           NilString                         `json:"title"`
+	Unread          bool                              `json:"unread"`
+	UpdatedAt       time.Time                         `json:"updatedAt"`
+}
+
+// GetReasoningEffort returns the value of ReasoningEffort.
+func (s *ThreadSummaryResource) GetReasoningEffort() NilString {
+	return s.ReasoningEffort
 }
 
 // GetApprovalMode returns the value of ApprovalMode.
@@ -5249,6 +5268,11 @@ func (s *ThreadSummaryResource) GetUnread() bool {
 // GetUpdatedAt returns the value of UpdatedAt.
 func (s *ThreadSummaryResource) GetUpdatedAt() time.Time {
 	return s.UpdatedAt
+}
+
+// SetReasoningEffort sets the value of ReasoningEffort.
+func (s *ThreadSummaryResource) SetReasoningEffort(val NilString) {
+	s.ReasoningEffort = val
 }
 
 // SetApprovalMode sets the value of ApprovalMode.
@@ -5652,10 +5676,14 @@ func (s *UpdateChannelRequestBodySenderPolicy) UnmarshalText(data []byte) error 
 
 // Ref: #/components/schemas/UpdateThreadRequestBody
 type UpdateThreadRequestBody struct {
-	ApprovalMode    OptUpdateThreadRequestBodyApprovalMode `json:"approvalMode"`
-	Archived        OptBool                                `json:"archived"`
-	Model           OptString                              `json:"model"`
-	ReasoningEffort OptString                              `json:"reasoningEffort"`
+	ApprovalMode OptUpdateThreadRequestBodyApprovalMode `json:"approvalMode"`
+	Archived     OptBool                                `json:"archived"`
+	Model        OptString                              `json:"model"`
+	// Which reasoning tier to run at, from the model's `reasoningTiers`. Null puts it back to the model's
+	// own default; leaving it out keeps whatever is set.
+	//
+	// Independent of `model` — sending one does not touch the other.
+	ReasoningEffort OptNilString `json:"reasoningEffort"`
 }
 
 // GetApprovalMode returns the value of ApprovalMode.
@@ -5674,7 +5702,7 @@ func (s *UpdateThreadRequestBody) GetModel() OptString {
 }
 
 // GetReasoningEffort returns the value of ReasoningEffort.
-func (s *UpdateThreadRequestBody) GetReasoningEffort() OptString {
+func (s *UpdateThreadRequestBody) GetReasoningEffort() OptNilString {
 	return s.ReasoningEffort
 }
 
@@ -5694,7 +5722,7 @@ func (s *UpdateThreadRequestBody) SetModel(val OptString) {
 }
 
 // SetReasoningEffort sets the value of ReasoningEffort.
-func (s *UpdateThreadRequestBody) SetReasoningEffort(val OptString) {
+func (s *UpdateThreadRequestBody) SetReasoningEffort(val OptNilString) {
 	s.ReasoningEffort = val
 }
 
