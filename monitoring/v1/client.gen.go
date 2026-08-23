@@ -2755,6 +2755,8 @@ type ClientInterface interface {
 	//
 	// To change enrollment settings, use PATCH. This endpoint returns an error when the parameters differ, and does not update an existing configuration.
 	//
+	// A failed call leaves the machine recorded with `monitoring_status: FAILED`; the reason is reported in `last_error` via `GET /servers/{serverId}`.
+	//
 	// The `tls_psk` in the response is **returned only this once**; store it immediately. If it is lost, it must be rotated.
 	//
 	// Takes any type of body and a specified content type.
@@ -2767,6 +2769,8 @@ type ClientInterface interface {
 	// **Repeated calls with the same server id are idempotent**: given identical parameters, the already-enrolled machine is returned and no duplicate host is created, so a failed enrollment is safe to retry.
 	//
 	// To change enrollment settings, use PATCH. This endpoint returns an error when the parameters differ, and does not update an existing configuration.
+	//
+	// A failed call leaves the machine recorded with `monitoring_status: FAILED`; the reason is reported in `last_error` via `GET /servers/{serverId}`.
 	//
 	// The `tls_psk` in the response is **returned only this once**; store it immediately. If it is lost, it must be rotated.
 	//
@@ -3752,6 +3756,8 @@ func (c *Client) UpdateServer(ctx context.Context, serverId openapi_types.UUID, 
 //
 // To change enrollment settings, use PATCH. This endpoint returns an error when the parameters differ, and does not update an existing configuration.
 //
+// A failed call leaves the machine recorded with `monitoring_status: FAILED`; the reason is reported in `last_error` via `GET /servers/{serverId}`.
+//
 // The `tls_psk` in the response is **returned only this once**; store it immediately. If it is lost, it must be rotated.
 //
 // Takes any type of body and a specified content type.
@@ -3774,6 +3780,8 @@ func (c *Client) EnableServerMonitoringWithBody(ctx context.Context, serverId op
 // **Repeated calls with the same server id are idempotent**: given identical parameters, the already-enrolled machine is returned and no duplicate host is created, so a failed enrollment is safe to retry.
 //
 // To change enrollment settings, use PATCH. This endpoint returns an error when the parameters differ, and does not update an existing configuration.
+//
+// A failed call leaves the machine recorded with `monitoring_status: FAILED`; the reason is reported in `last_error` via `GET /servers/{serverId}`.
 //
 // The `tls_psk` in the response is **returned only this once**; store it immediately. If it is lost, it must be rotated.
 //
@@ -8163,6 +8171,8 @@ type ClientWithResponsesInterface interface {
 	//
 	// To change enrollment settings, use PATCH. This endpoint returns an error when the parameters differ, and does not update an existing configuration.
 	//
+	// A failed call leaves the machine recorded with `monitoring_status: FAILED`; the reason is reported in `last_error` via `GET /servers/{serverId}`.
+	//
 	// The `tls_psk` in the response is **returned only this once**; store it immediately. If it is lost, it must be rotated.
 	//
 	// Takes any type of body and a specified content type, and returns a wrapper object for the known response body format(s).
@@ -8175,6 +8185,8 @@ type ClientWithResponsesInterface interface {
 	// **Repeated calls with the same server id are idempotent**: given identical parameters, the already-enrolled machine is returned and no duplicate host is created, so a failed enrollment is safe to retry.
 	//
 	// To change enrollment settings, use PATCH. This endpoint returns an error when the parameters differ, and does not update an existing configuration.
+	//
+	// A failed call leaves the machine recorded with `monitoring_status: FAILED`; the reason is reported in `last_error` via `GET /servers/{serverId}`.
 	//
 	// The `tls_psk` in the response is **returned only this once**; store it immediately. If it is lost, it must be rotated.
 	//
@@ -12180,6 +12192,8 @@ func (c *ClientWithResponses) UpdateServerWithResponse(ctx context.Context, serv
 //
 // To change enrollment settings, use PATCH. This endpoint returns an error when the parameters differ, and does not update an existing configuration.
 //
+// A failed call leaves the machine recorded with `monitoring_status: FAILED`; the reason is reported in `last_error` via `GET /servers/{serverId}`.
+//
 // The `tls_psk` in the response is **returned only this once**; store it immediately. If it is lost, it must be rotated.
 //
 // Takes any type of body and a specified content type, and returns a wrapper object for the known response body format(s).
@@ -12198,6 +12212,8 @@ func (c *ClientWithResponses) EnableServerMonitoringWithBodyWithResponse(ctx con
 // **Repeated calls with the same server id are idempotent**: given identical parameters, the already-enrolled machine is returned and no duplicate host is created, so a failed enrollment is safe to retry.
 //
 // To change enrollment settings, use PATCH. This endpoint returns an error when the parameters differ, and does not update an existing configuration.
+//
+// A failed call leaves the machine recorded with `monitoring_status: FAILED`; the reason is reported in `last_error` via `GET /servers/{serverId}`.
 //
 // The `tls_psk` in the response is **returned only this once**; store it immediately. If it is lost, it must be rotated.
 //
