@@ -842,6 +842,26 @@ type LoginResource struct {
 // LoginResourceStatus defines model for LoginResource.Status.
 type LoginResourceStatus string
 
+// MemoryListResponseBody defines model for MemoryListResponseBody.
+type MemoryListResponseBody struct {
+	Items []MemoryResource `json:"items"`
+}
+
+// MemoryResource defines model for MemoryResource.
+type MemoryResource struct {
+	// Body 记住的那件事
+	Body      string    `json:"body"`
+	CreatedAt time.Time `json:"createdAt"`
+	Id        string    `json:"id"`
+
+	// Name 助手给这件事起的名字，它用这个名字覆盖或者删掉自己写过的东西
+	Name string `json:"name"`
+
+	// SourceThreadId 助手是在哪次对话里记下它的。那次对话可能已经被删掉了
+	SourceThreadId *string   `json:"sourceThreadId,omitempty"`
+	UpdatedAt      time.Time `json:"updatedAt"`
+}
+
 // ModelListResponseBody defines model for ModelListResponseBody.
 type ModelListResponseBody struct {
 	Models []ModelResource `json:"models"`
@@ -1336,6 +1356,20 @@ type ClientInterface interface {
 	// Corresponds with POST /api/v1/channels/{channel}/weixin-logins (the `BeginWeixinLogin` operationId).
 	BeginWeixinLogin(ctx context.Context, channel openapi_types.UUID, reqEditors ...RequestEditorFn) (*http.Response, error)
 
+	// ListMemories 列出助手记住的事
+	//
+	// 助手在这个项目里为当前账号记下的事实，它们会出现在之后每一次对话的开头。同一个项目里的不同成员各记各的，这里只返回当前账号的那些。不分页：条数有上限，一次全部返回。.
+	//
+	// Corresponds with GET /api/v1/memories (the `ListMemories` operationId).
+	ListMemories(ctx context.Context, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// DeleteMemory 删掉一条记忆
+	//
+	// 助手不再记得这件事。删除立即生效，下一次对话就不会再带上它。助手可能会重新学到同一件事。.
+	//
+	// Corresponds with DELETE /api/v1/memories/{memory} (the `DeleteMemory` operationId).
+	DeleteMemory(ctx context.Context, memory string, reqEditors ...RequestEditorFn) (*http.Response, error)
+
 	// ListModels 列出可用模型
 	//
 	// 返回本平台当前提供的模型及其上下文窗口、推理档位和支持的输入类型。用于填充对话设置里的模型选择。.
@@ -1815,6 +1849,40 @@ func (c *Client) CheckSender(ctx context.Context, channel openapi_types.UUID, pa
 // Corresponds with POST /api/v1/channels/{channel}/weixin-logins (the `BeginWeixinLogin` operationId).
 func (c *Client) BeginWeixinLogin(ctx context.Context, channel openapi_types.UUID, reqEditors ...RequestEditorFn) (*http.Response, error) {
 	req, err := NewBeginWeixinLoginRequest(c.Server, channel)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+// ListMemories 列出助手记住的事
+//
+// 助手在这个项目里为当前账号记下的事实，它们会出现在之后每一次对话的开头。同一个项目里的不同成员各记各的，这里只返回当前账号的那些。不分页：条数有上限，一次全部返回。.
+//
+// Corresponds with GET /api/v1/memories (the `ListMemories` operationId).
+func (c *Client) ListMemories(ctx context.Context, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewListMemoriesRequest(c.Server)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+// DeleteMemory 删掉一条记忆
+//
+// 助手不再记得这件事。删除立即生效，下一次对话就不会再带上它。助手可能会重新学到同一件事。.
+//
+// Corresponds with DELETE /api/v1/memories/{memory} (the `DeleteMemory` operationId).
+func (c *Client) DeleteMemory(ctx context.Context, memory string, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewDeleteMemoryRequest(c.Server, memory)
 	if err != nil {
 		return nil, err
 	}
@@ -2944,6 +3012,67 @@ func NewBeginWeixinLoginRequest(server string, channel openapi_types.UUID) (*htt
 	return req, nil
 }
 
+// NewListMemoriesRequest constructs an http.Request for the ListMemories method
+func NewListMemoriesRequest(server string) (*http.Request, error) {
+	var err error
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/api/v1/memories")
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest(http.MethodGet, queryURL.String(), nil)
+	if err != nil {
+		return nil, err
+	}
+
+	return req, nil
+}
+
+// NewDeleteMemoryRequest constructs an http.Request for the DeleteMemory method
+func NewDeleteMemoryRequest(server string, memory string) (*http.Request, error) {
+	var err error
+
+	var pathParam0 string
+
+	pathParam0, err = runtime.StyleParamWithOptions("simple", false, "memory", memory, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: ""})
+	if err != nil {
+		return nil, err
+	}
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/api/v1/memories/%s", pathParam0)
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest(http.MethodDelete, queryURL.String(), nil)
+	if err != nil {
+		return nil, err
+	}
+
+	return req, nil
+}
+
 // NewListModelsRequest constructs an http.Request for the ListModels method
 func NewListModelsRequest(server string) (*http.Request, error) {
 	var err error
@@ -3802,6 +3931,24 @@ type ClientWithResponsesInterface interface {
 	//
 	// Corresponds with POST /api/v1/channels/{channel}/weixin-logins (the `BeginWeixinLogin` operationId).
 	BeginWeixinLoginWithResponse(ctx context.Context, channel openapi_types.UUID, reqEditors ...RequestEditorFn) (*BeginWeixinLoginResponse, error)
+
+	// ListMemoriesWithResponse 列出助手记住的事
+	//
+	// 助手在这个项目里为当前账号记下的事实，它们会出现在之后每一次对话的开头。同一个项目里的不同成员各记各的，这里只返回当前账号的那些。不分页：条数有上限，一次全部返回。.
+	//
+	// Returns a wrapper object for the known response body format(s).
+	//
+	// Corresponds with GET /api/v1/memories (the `ListMemories` operationId).
+	ListMemoriesWithResponse(ctx context.Context, reqEditors ...RequestEditorFn) (*ListMemoriesResponse, error)
+
+	// DeleteMemoryWithResponse 删掉一条记忆
+	//
+	// 助手不再记得这件事。删除立即生效，下一次对话就不会再带上它。助手可能会重新学到同一件事。.
+	//
+	// Returns a wrapper object for the known response body format(s).
+	//
+	// Corresponds with DELETE /api/v1/memories/{memory} (the `DeleteMemory` operationId).
+	DeleteMemoryWithResponse(ctx context.Context, memory string, reqEditors ...RequestEditorFn) (*DeleteMemoryResponse, error)
 
 	// ListModelsWithResponse 列出可用模型
 	//
@@ -4696,6 +4843,95 @@ func (r BeginWeixinLoginResponse) StatusCode() int {
 
 // ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
 func (r BeginWeixinLoginResponse) ContentType() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Header.Get("Content-Type")
+	}
+	return ""
+}
+
+type ListMemoriesResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	// JSON200 the response for an HTTP 200 `application/json` response
+	JSON200 *MemoryListResponseBody
+	// JSONDefault the response for an HTTP default `application/json` response
+	JSONDefault *Error
+}
+
+// GetJSON200 returns the response for an HTTP 200 `application/json` response
+func (r ListMemoriesResponse) GetJSON200() *MemoryListResponseBody {
+	return r.JSON200
+}
+
+// GetJSONDefault returns the response for an HTTP default `application/json` response
+func (r ListMemoriesResponse) GetJSONDefault() *Error {
+	return r.JSONDefault
+}
+
+// GetBody returns the raw response body bytes
+func (r ListMemoriesResponse) GetBody() []byte {
+	return r.Body
+}
+
+// Status returns HTTPResponse.Status
+func (r ListMemoriesResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r ListMemoriesResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+// ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
+func (r ListMemoriesResponse) ContentType() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Header.Get("Content-Type")
+	}
+	return ""
+}
+
+type DeleteMemoryResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	// JSONDefault the response for an HTTP default `application/json` response
+	JSONDefault *Error
+}
+
+// GetJSONDefault returns the response for an HTTP default `application/json` response
+func (r DeleteMemoryResponse) GetJSONDefault() *Error {
+	return r.JSONDefault
+}
+
+// GetBody returns the raw response body bytes
+func (r DeleteMemoryResponse) GetBody() []byte {
+	return r.Body
+}
+
+// Status returns HTTPResponse.Status
+func (r DeleteMemoryResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r DeleteMemoryResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+// ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
+func (r DeleteMemoryResponse) ContentType() string {
 	if r.HTTPResponse != nil {
 		return r.HTTPResponse.Header.Get("Content-Type")
 	}
@@ -5656,6 +5892,36 @@ func (c *ClientWithResponses) BeginWeixinLoginWithResponse(ctx context.Context, 
 	return ParseBeginWeixinLoginResponse(rsp)
 }
 
+// ListMemoriesWithResponse 列出助手记住的事
+//
+// 助手在这个项目里为当前账号记下的事实，它们会出现在之后每一次对话的开头。同一个项目里的不同成员各记各的，这里只返回当前账号的那些。不分页：条数有上限，一次全部返回。.
+//
+// Returns a wrapper object for the known response body format(s).
+//
+// Corresponds with GET /api/v1/memories (the `ListMemories` operationId).
+func (c *ClientWithResponses) ListMemoriesWithResponse(ctx context.Context, reqEditors ...RequestEditorFn) (*ListMemoriesResponse, error) {
+	rsp, err := c.ListMemories(ctx, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseListMemoriesResponse(rsp)
+}
+
+// DeleteMemoryWithResponse 删掉一条记忆
+//
+// 助手不再记得这件事。删除立即生效，下一次对话就不会再带上它。助手可能会重新学到同一件事。.
+//
+// Returns a wrapper object for the known response body format(s).
+//
+// Corresponds with DELETE /api/v1/memories/{memory} (the `DeleteMemory` operationId).
+func (c *ClientWithResponses) DeleteMemoryWithResponse(ctx context.Context, memory string, reqEditors ...RequestEditorFn) (*DeleteMemoryResponse, error) {
+	rsp, err := c.DeleteMemory(ctx, memory, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseDeleteMemoryResponse(rsp)
+}
+
 // ListModelsWithResponse 列出可用模型
 //
 // 返回本平台当前提供的模型及其上下文窗口、推理档位和支持的输入类型。用于填充对话设置里的模型选择。.
@@ -6460,6 +6726,68 @@ func ParseBeginWeixinLoginResponse(rsp *http.Response) (*BeginWeixinLoginRespons
 			return nil, err
 		}
 		response.JSON201 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && true:
+		var dest Error
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSONDefault = &dest
+
+	}
+
+	return response, nil
+}
+
+// ParseListMemoriesResponse parses an HTTP response from a ListMemoriesWithResponse call
+func ParseListMemoriesResponse(rsp *http.Response) (*ListMemoriesResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &ListMemoriesResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest MemoryListResponseBody
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && true:
+		var dest Error
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSONDefault = &dest
+
+	}
+
+	return response, nil
+}
+
+// ParseDeleteMemoryResponse parses an HTTP response from a DeleteMemoryWithResponse call
+func ParseDeleteMemoryResponse(rsp *http.Response) (*DeleteMemoryResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &DeleteMemoryResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case rsp.StatusCode == 204:
+		break // No content-type
 
 	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && true:
 		var dest Error

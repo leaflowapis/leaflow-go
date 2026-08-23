@@ -674,6 +674,71 @@ func decodeDeleteChannelParams(args [1]string, argsEscaped bool, r *http.Request
 	return params, nil
 }
 
+// DeleteMemoryParams is parameters of delete-memory operation.
+type DeleteMemoryParams struct {
+	Memory string
+}
+
+func unpackDeleteMemoryParams(packed middleware.Parameters) (params DeleteMemoryParams) {
+	{
+		key := middleware.ParameterKey{
+			Name: "memory",
+			In:   "path",
+		}
+		params.Memory = packed[key].(string)
+	}
+	return params
+}
+
+func decodeDeleteMemoryParams(args [1]string, argsEscaped bool, r *http.Request) (params DeleteMemoryParams, _ error) {
+	// Decode path: memory.
+	if err := func() error {
+		param := args[0]
+		if argsEscaped {
+			unescaped, err := url.PathUnescape(args[0])
+			if err != nil {
+				return errors.Wrap(err, "unescape path")
+			}
+			param = unescaped
+		}
+		if len(param) > 0 {
+			d := uri.NewPathDecoder(uri.PathDecoderConfig{
+				Param:   "memory",
+				Value:   param,
+				Style:   uri.PathStyleSimple,
+				Explode: false,
+			})
+
+			if err := func() error {
+				val, err := d.DecodeValue()
+				if err != nil {
+					return err
+				}
+
+				c, err := conv.ToString(val)
+				if err != nil {
+					return err
+				}
+
+				params.Memory = c
+				return nil
+			}(); err != nil {
+				return err
+			}
+		} else {
+			return validate.ErrFieldRequired
+		}
+		return nil
+	}(); err != nil {
+		return params, &ogenerrors.DecodeParamError{
+			Name: "memory",
+			In:   "path",
+			Err:  err,
+		}
+	}
+	return params, nil
+}
+
 // DownloadAttachmentParams is parameters of download-attachment operation.
 type DownloadAttachmentParams struct {
 	Attachment string

@@ -103,6 +103,15 @@ func (UnimplementedHandler) DeleteChannel(ctx context.Context, params DeleteChan
 	return ht.ErrNotImplemented
 }
 
+// DeleteMemory implements delete-memory operation.
+//
+// 助手不再记得这件事。删除立即生效，下一次对话就不会再带上它。助手可能会重新学到同一件事。.
+//
+// DELETE /api/v1/memories/{memory}
+func (UnimplementedHandler) DeleteMemory(ctx context.Context, params DeleteMemoryParams) error {
+	return ht.ErrNotImplemented
+}
+
 // DownloadAttachment implements download-attachment operation.
 //
 // 按附件 id 取回原始字节，可直接作为
@@ -198,6 +207,15 @@ func (UnimplementedHandler) ListChannels(ctx context.Context, params ListChannel
 //
 // GET /api/v1/threads/{thread}/earlier
 func (UnimplementedHandler) ListEarlierItems(ctx context.Context, params ListEarlierItemsParams) (r *EarlierResponseBody, _ error) {
+	return r, ht.ErrNotImplemented
+}
+
+// ListMemories implements list-memories operation.
+//
+// 助手在这个项目里为当前账号记下的事实，它们会出现在之后每一次对话的开头。同一个项目里的不同成员各记各的，这里只返回当前账号的那些。不分页：条数有上限，一次全部返回。.
+//
+// GET /api/v1/memories
+func (UnimplementedHandler) ListMemories(ctx context.Context) (r *MemoryListResponseBody, _ error) {
 	return r, ht.ErrNotImplemented
 }
 
