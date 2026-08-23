@@ -11,7 +11,7 @@ import (
 )
 
 var (
-	rn40AllowedHeaders = map[string]string{
+	rn43AllowedHeaders = map[string]string{
 		"POST": "Authorization,Content-Type",
 	}
 	rn22AllowedHeaders = map[string]string{
@@ -47,6 +47,9 @@ var (
 	}
 	rn8AllowedHeaders = map[string]string{
 		"POST": "Authorization",
+	}
+	rn41AllowedHeaders = map[string]string{
+		"POST": "Authorization,Content-Type",
 	}
 	rn29AllowedHeaders = map[string]string{
 		"GET": "Authorization",
@@ -92,7 +95,7 @@ var (
 	rn24AllowedHeaders = map[string]string{
 		"GET": "Authorization",
 	}
-	rn39AllowedHeaders = map[string]string{
+	rn42AllowedHeaders = map[string]string{
 		"POST": "Authorization,Content-Type",
 	}
 )
@@ -163,7 +166,7 @@ func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 					default:
 						s.notAllowed(w, r, notAllowedParams{
 							allowedMethods: "POST",
-							allowedHeaders: rn40AllowedHeaders,
+							allowedHeaders: rn43AllowedHeaders,
 							acceptPost:     "application/octet-stream",
 							acceptPatch:    "",
 						})
@@ -508,6 +511,56 @@ func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 
 						}
 
+					}
+
+				}
+
+			case 'd': // Prefix: "dynamic-calls/"
+
+				if l := len("dynamic-calls/"); len(elem) >= l && elem[0:l] == "dynamic-calls/" {
+					elem = elem[l:]
+				} else {
+					break
+				}
+
+				// Param: "call"
+				// Match until "/"
+				idx := strings.IndexByte(elem, '/')
+				if idx < 0 {
+					idx = len(elem)
+				}
+				args[0] = elem[:idx]
+				elem = elem[idx:]
+
+				if len(elem) == 0 {
+					break
+				}
+				switch elem[0] {
+				case '/': // Prefix: "/result"
+
+					if l := len("/result"); len(elem) >= l && elem[0:l] == "/result" {
+						elem = elem[l:]
+					} else {
+						break
+					}
+
+					if len(elem) == 0 {
+						// Leaf node.
+						switch r.Method {
+						case "POST":
+							s.handleSubmitDynamicCallResultRequest([1]string{
+								args[0],
+							}, elemIsEscaped, w, r)
+						default:
+							s.notAllowed(w, r, notAllowedParams{
+								allowedMethods: "POST",
+								allowedHeaders: rn41AllowedHeaders,
+								acceptPost:     "application/json",
+								acceptPatch:    "",
+							})
+						}
+
+						return
 					}
 
 				}
@@ -997,7 +1050,7 @@ func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 						default:
 							s.notAllowed(w, r, notAllowedParams{
 								allowedMethods: "POST",
-								allowedHeaders: rn39AllowedHeaders,
+								allowedHeaders: rn42AllowedHeaders,
 								acceptPost:     "application/json",
 								acceptPatch:    "",
 							})
@@ -1474,6 +1527,54 @@ func (s *Server) FindPath(method string, u *url.URL) (r Route, _ bool) {
 
 						}
 
+					}
+
+				}
+
+			case 'd': // Prefix: "dynamic-calls/"
+
+				if l := len("dynamic-calls/"); len(elem) >= l && elem[0:l] == "dynamic-calls/" {
+					elem = elem[l:]
+				} else {
+					break
+				}
+
+				// Param: "call"
+				// Match until "/"
+				idx := strings.IndexByte(elem, '/')
+				if idx < 0 {
+					idx = len(elem)
+				}
+				args[0] = elem[:idx]
+				elem = elem[idx:]
+
+				if len(elem) == 0 {
+					break
+				}
+				switch elem[0] {
+				case '/': // Prefix: "/result"
+
+					if l := len("/result"); len(elem) >= l && elem[0:l] == "/result" {
+						elem = elem[l:]
+					} else {
+						break
+					}
+
+					if len(elem) == 0 {
+						// Leaf node.
+						switch method {
+						case "POST":
+							r.name = SubmitDynamicCallResultOperation
+							r.summary = "Report what an action produced"
+							r.operationID = "submit-dynamic-call-result"
+							r.operationGroup = ""
+							r.pathPattern = "/api/v1/dynamic-calls/{call}/result"
+							r.args = args
+							r.count = 1
+							return r, true
+						default:
+							return
+						}
 					}
 
 				}
