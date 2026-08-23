@@ -2844,18 +2844,13 @@ func (s *PreferencesResource) encodeFields(e *jx.Encoder) {
 		e.FieldStart("locale")
 		e.Str(s.Locale)
 	}
-	{
-		e.FieldStart("timezone")
-		e.Str(s.Timezone)
-	}
 }
 
-var jsonFieldsNameOfPreferencesResource = [5]string{
+var jsonFieldsNameOfPreferencesResource = [4]string{
 	0: "email_address",
 	1: "email_override",
 	2: "email_override_verified_at",
 	3: "locale",
-	4: "timezone",
 }
 
 // Decode decodes PreferencesResource from json.
@@ -2911,18 +2906,6 @@ func (s *PreferencesResource) Decode(d *jx.Decoder) error {
 			}(); err != nil {
 				return errors.Wrap(err, "decode field \"locale\"")
 			}
-		case "timezone":
-			requiredBitSet[0] |= 1 << 4
-			if err := func() error {
-				v, err := d.Str()
-				s.Timezone = string(v)
-				if err != nil {
-					return err
-				}
-				return nil
-			}(); err != nil {
-				return errors.Wrap(err, "decode field \"timezone\"")
-			}
 		default:
 			return errors.Errorf("unexpected field %q", k)
 		}
@@ -2933,7 +2916,7 @@ func (s *PreferencesResource) Decode(d *jx.Decoder) error {
 	// Validate required fields.
 	var failures []validate.FieldError
 	for i, mask := range [1]uint8{
-		0b00011111,
+		0b00001111,
 	} {
 		if result := (requiredBitSet[i] & mask) ^ mask; result != 0 {
 			// Mask only required fields and check equality to mask using XOR.
@@ -3975,18 +3958,11 @@ func (s *UpdatePreferencesRequestBody) encodeFields(e *jx.Encoder) {
 			s.Locale.Encode(e)
 		}
 	}
-	{
-		if s.Timezone.Set {
-			e.FieldStart("timezone")
-			s.Timezone.Encode(e)
-		}
-	}
 }
 
-var jsonFieldsNameOfUpdatePreferencesRequestBody = [3]string{
+var jsonFieldsNameOfUpdatePreferencesRequestBody = [2]string{
 	0: "email_override",
 	1: "locale",
-	2: "timezone",
 }
 
 // Decode decodes UpdatePreferencesRequestBody from json.
@@ -4016,16 +3992,6 @@ func (s *UpdatePreferencesRequestBody) Decode(d *jx.Decoder) error {
 				return nil
 			}(); err != nil {
 				return errors.Wrap(err, "decode field \"locale\"")
-			}
-		case "timezone":
-			if err := func() error {
-				s.Timezone.Reset()
-				if err := s.Timezone.Decode(d); err != nil {
-					return err
-				}
-				return nil
-			}(); err != nil {
-				return errors.Wrap(err, "decode field \"timezone\"")
 			}
 		default:
 			return errors.Errorf("unexpected field %q", k)

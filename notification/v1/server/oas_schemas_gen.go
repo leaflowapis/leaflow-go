@@ -2056,8 +2056,6 @@ type PreferencesResource struct {
 	EmailOverrideVerifiedAt NilDateTime `json:"email_override_verified_at"`
 	// The language notifications are written in, as an IETF language tag.
 	Locale string `json:"locale"`
-	// The IANA time zone times in notifications are stated in.
-	Timezone string `json:"timezone"`
 }
 
 // GetEmailAddress returns the value of EmailAddress.
@@ -2080,11 +2078,6 @@ func (s *PreferencesResource) GetLocale() string {
 	return s.Locale
 }
 
-// GetTimezone returns the value of Timezone.
-func (s *PreferencesResource) GetTimezone() string {
-	return s.Timezone
-}
-
 // SetEmailAddress sets the value of EmailAddress.
 func (s *PreferencesResource) SetEmailAddress(val string) {
 	s.EmailAddress = val
@@ -2103,11 +2096,6 @@ func (s *PreferencesResource) SetEmailOverrideVerifiedAt(val NilDateTime) {
 // SetLocale sets the value of Locale.
 func (s *PreferencesResource) SetLocale(val string) {
 	s.Locale = val
-}
-
-// SetTimezone sets the value of Timezone.
-func (s *PreferencesResource) SetTimezone(val string) {
-	s.Timezone = val
 }
 
 // Ref: #/components/schemas/RealtimeAuthResource
@@ -2458,8 +2446,6 @@ type UpdatePreferencesRequestBody struct {
 	EmailOverride OptNilString `json:"email_override"`
 	// An IETF language tag. A language that is not supported is rejected rather than approximated.
 	Locale OptString `json:"locale"`
-	// An IANA time zone name, such as Asia/Shanghai.
-	Timezone OptString `json:"timezone"`
 }
 
 // GetEmailOverride returns the value of EmailOverride.
@@ -2472,11 +2458,6 @@ func (s *UpdatePreferencesRequestBody) GetLocale() OptString {
 	return s.Locale
 }
 
-// GetTimezone returns the value of Timezone.
-func (s *UpdatePreferencesRequestBody) GetTimezone() OptString {
-	return s.Timezone
-}
-
 // SetEmailOverride sets the value of EmailOverride.
 func (s *UpdatePreferencesRequestBody) SetEmailOverride(val OptNilString) {
 	s.EmailOverride = val
@@ -2485,11 +2466,6 @@ func (s *UpdatePreferencesRequestBody) SetEmailOverride(val OptNilString) {
 // SetLocale sets the value of Locale.
 func (s *UpdatePreferencesRequestBody) SetLocale(val OptString) {
 	s.Locale = val
-}
-
-// SetTimezone sets the value of Timezone.
-func (s *UpdatePreferencesRequestBody) SetTimezone(val OptString) {
-	s.Timezone = val
 }
 
 // States how this type should be delivered, replacing whatever was configured before.
