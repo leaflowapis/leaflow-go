@@ -1026,6 +1026,253 @@ func (s *Choice) SetLabel(val string) {
 	s.Label = val
 }
 
+// The shape of a tool in the OpenAI Chat Completions API, plus `readOnly` and `timeoutMs`.
+// Ref: #/components/schemas/ClientActionRequest
+type ClientActionRequest struct {
+	Function ClientFunctionRequest `json:"function"`
+	// True when the action changes nothing outside the client. Anything else goes through this
+	// conversation's approval before it runs.
+	ReadOnly bool `json:"readOnly"`
+	// How long the assistant should wait for this action. Omit for the default; longer values are capped.
+	TimeoutMs OptInt64 `json:"timeoutMs"`
+	// Only functions are supported.
+	Type OptClientActionRequestType `json:"type"`
+}
+
+// GetFunction returns the value of Function.
+func (s *ClientActionRequest) GetFunction() ClientFunctionRequest {
+	return s.Function
+}
+
+// GetReadOnly returns the value of ReadOnly.
+func (s *ClientActionRequest) GetReadOnly() bool {
+	return s.ReadOnly
+}
+
+// GetTimeoutMs returns the value of TimeoutMs.
+func (s *ClientActionRequest) GetTimeoutMs() OptInt64 {
+	return s.TimeoutMs
+}
+
+// GetType returns the value of Type.
+func (s *ClientActionRequest) GetType() OptClientActionRequestType {
+	return s.Type
+}
+
+// SetFunction sets the value of Function.
+func (s *ClientActionRequest) SetFunction(val ClientFunctionRequest) {
+	s.Function = val
+}
+
+// SetReadOnly sets the value of ReadOnly.
+func (s *ClientActionRequest) SetReadOnly(val bool) {
+	s.ReadOnly = val
+}
+
+// SetTimeoutMs sets the value of TimeoutMs.
+func (s *ClientActionRequest) SetTimeoutMs(val OptInt64) {
+	s.TimeoutMs = val
+}
+
+// SetType sets the value of Type.
+func (s *ClientActionRequest) SetType(val OptClientActionRequestType) {
+	s.Type = val
+}
+
+// Only functions are supported.
+type ClientActionRequestType string
+
+const (
+	ClientActionRequestTypeFunction ClientActionRequestType = "function"
+)
+
+// AllValues returns all ClientActionRequestType values.
+func (ClientActionRequestType) AllValues() []ClientActionRequestType {
+	return []ClientActionRequestType{
+		ClientActionRequestTypeFunction,
+	}
+}
+
+// MarshalText implements encoding.TextMarshaler.
+func (s ClientActionRequestType) MarshalText() ([]byte, error) {
+	switch s {
+	case ClientActionRequestTypeFunction:
+		return []byte(s), nil
+	default:
+		return nil, errors.Errorf("invalid value: %q", s)
+	}
+}
+
+// UnmarshalText implements encoding.TextUnmarshaler.
+func (s *ClientActionRequestType) UnmarshalText(data []byte) error {
+	switch ClientActionRequestType(data) {
+	case ClientActionRequestTypeFunction:
+		*s = ClientActionRequestTypeFunction
+		return nil
+	default:
+		return errors.Errorf("invalid value: %q", data)
+	}
+}
+
+// What this client can do, so the assistant can ask it to do those things while it answers.
+//
+// Send `actions` only when they differ from the last message on this conversation. Sending the block
+// without `actions` keeps whatever was declared before.
+// Ref: #/components/schemas/ClientContextRequest
+type ClientContextRequest struct {
+	// The actions on offer right now. Omit when unchanged since the last message.
+	Actions OptNilClientActionRequestArray `json:"actions"`
+	// Identifies this client while it stays open. Any stable string; one per tab.
+	ClientId string `json:"clientId"`
+	// How the client calls itself, for example "Leaflow console (web)".
+	Label OptString            `json:"label"`
+	Page  OptClientPageRequest `json:"page"`
+}
+
+// GetActions returns the value of Actions.
+func (s *ClientContextRequest) GetActions() OptNilClientActionRequestArray {
+	return s.Actions
+}
+
+// GetClientId returns the value of ClientId.
+func (s *ClientContextRequest) GetClientId() string {
+	return s.ClientId
+}
+
+// GetLabel returns the value of Label.
+func (s *ClientContextRequest) GetLabel() OptString {
+	return s.Label
+}
+
+// GetPage returns the value of Page.
+func (s *ClientContextRequest) GetPage() OptClientPageRequest {
+	return s.Page
+}
+
+// SetActions sets the value of Actions.
+func (s *ClientContextRequest) SetActions(val OptNilClientActionRequestArray) {
+	s.Actions = val
+}
+
+// SetClientId sets the value of ClientId.
+func (s *ClientContextRequest) SetClientId(val string) {
+	s.ClientId = val
+}
+
+// SetLabel sets the value of Label.
+func (s *ClientContextRequest) SetLabel(val OptString) {
+	s.Label = val
+}
+
+// SetPage sets the value of Page.
+func (s *ClientContextRequest) SetPage(val OptClientPageRequest) {
+	s.Page = val
+}
+
+// The function object from the OpenAI tools format.
+// Ref: #/components/schemas/ClientFunctionRequest
+type ClientFunctionRequest struct {
+	// What the action does, written for the model. An action without one can only be guessed at from its
+	// name.
+	Description string `json:"description"`
+	// The MCP and Anthropic spelling of `parameters`. Give one or the other, not both.
+	InputSchema OptNilClientFunctionRequestInputSchema `json:"inputSchema"`
+	Name        string                                 `json:"name"`
+	// JSON Schema for the arguments. Omit for an action that takes none.
+	Parameters OptNilClientFunctionRequestParameters `json:"parameters"`
+}
+
+// GetDescription returns the value of Description.
+func (s *ClientFunctionRequest) GetDescription() string {
+	return s.Description
+}
+
+// GetInputSchema returns the value of InputSchema.
+func (s *ClientFunctionRequest) GetInputSchema() OptNilClientFunctionRequestInputSchema {
+	return s.InputSchema
+}
+
+// GetName returns the value of Name.
+func (s *ClientFunctionRequest) GetName() string {
+	return s.Name
+}
+
+// GetParameters returns the value of Parameters.
+func (s *ClientFunctionRequest) GetParameters() OptNilClientFunctionRequestParameters {
+	return s.Parameters
+}
+
+// SetDescription sets the value of Description.
+func (s *ClientFunctionRequest) SetDescription(val string) {
+	s.Description = val
+}
+
+// SetInputSchema sets the value of InputSchema.
+func (s *ClientFunctionRequest) SetInputSchema(val OptNilClientFunctionRequestInputSchema) {
+	s.InputSchema = val
+}
+
+// SetName sets the value of Name.
+func (s *ClientFunctionRequest) SetName(val string) {
+	s.Name = val
+}
+
+// SetParameters sets the value of Parameters.
+func (s *ClientFunctionRequest) SetParameters(val OptNilClientFunctionRequestParameters) {
+	s.Parameters = val
+}
+
+// The MCP and Anthropic spelling of `parameters`. Give one or the other, not both.
+type ClientFunctionRequestInputSchema map[string]jx.Raw
+
+func (s *ClientFunctionRequestInputSchema) init() ClientFunctionRequestInputSchema {
+	m := *s
+	if m == nil {
+		m = map[string]jx.Raw{}
+		*s = m
+	}
+	return m
+}
+
+// JSON Schema for the arguments. Omit for an action that takes none.
+type ClientFunctionRequestParameters map[string]jx.Raw
+
+func (s *ClientFunctionRequestParameters) init() ClientFunctionRequestParameters {
+	m := *s
+	if m == nil {
+		m = map[string]jx.Raw{}
+		*s = m
+	}
+	return m
+}
+
+// What the operator is looking at.
+// Ref: #/components/schemas/ClientPageRequest
+type ClientPageRequest struct {
+	Title OptString `json:"title"`
+	URL   OptString `json:"url"`
+}
+
+// GetTitle returns the value of Title.
+func (s *ClientPageRequest) GetTitle() OptString {
+	return s.Title
+}
+
+// GetURL returns the value of URL.
+func (s *ClientPageRequest) GetURL() OptString {
+	return s.URL
+}
+
+// SetTitle sets the value of Title.
+func (s *ClientPageRequest) SetTitle(val OptString) {
+	s.Title = val
+}
+
+// SetURL sets the value of URL.
+func (s *ClientPageRequest) SetURL(val OptString) {
+	s.URL = val
+}
+
 // Ref: #/components/schemas/ContextResource
 type ContextResource struct {
 	CompactAt NilInt64 `json:"compactAt"`
@@ -1539,6 +1786,70 @@ func (s *DownloadAttachmentOKHeaders) SetContentType(val string) {
 // SetResponse sets the value of Response.
 func (s *DownloadAttachmentOKHeaders) SetResponse(val DownloadAttachmentOK) {
 	s.Response = val
+}
+
+// Ref: #/components/schemas/DynamicCallResultRequestBody
+type DynamicCallResultRequestBody struct {
+	// The same value sent with the message. A result from a different client is refused.
+	ClientId string `json:"clientId"`
+	// Why it failed, when `ok` is false. It reaches the assistant, so write it for a reader who cannot see
+	// the screen.
+	Error OptString `json:"error"`
+	// Pass back when there is more to read. The assistant will call again with it.
+	NextCursor OptString `json:"nextCursor"`
+	Ok         bool      `json:"ok"`
+	// What the action produced. At most 64 KiB; use `nextCursor` for anything larger.
+	Output OptString `json:"output"`
+}
+
+// GetClientId returns the value of ClientId.
+func (s *DynamicCallResultRequestBody) GetClientId() string {
+	return s.ClientId
+}
+
+// GetError returns the value of Error.
+func (s *DynamicCallResultRequestBody) GetError() OptString {
+	return s.Error
+}
+
+// GetNextCursor returns the value of NextCursor.
+func (s *DynamicCallResultRequestBody) GetNextCursor() OptString {
+	return s.NextCursor
+}
+
+// GetOk returns the value of Ok.
+func (s *DynamicCallResultRequestBody) GetOk() bool {
+	return s.Ok
+}
+
+// GetOutput returns the value of Output.
+func (s *DynamicCallResultRequestBody) GetOutput() OptString {
+	return s.Output
+}
+
+// SetClientId sets the value of ClientId.
+func (s *DynamicCallResultRequestBody) SetClientId(val string) {
+	s.ClientId = val
+}
+
+// SetError sets the value of Error.
+func (s *DynamicCallResultRequestBody) SetError(val OptString) {
+	s.Error = val
+}
+
+// SetNextCursor sets the value of NextCursor.
+func (s *DynamicCallResultRequestBody) SetNextCursor(val OptString) {
+	s.NextCursor = val
+}
+
+// SetOk sets the value of Ok.
+func (s *DynamicCallResultRequestBody) SetOk(val bool) {
+	s.Ok = val
+}
+
+// SetOutput sets the value of Output.
+func (s *DynamicCallResultRequestBody) SetOutput(val OptString) {
+	s.Output = val
 }
 
 // Ref: #/components/schemas/EarlierResource
@@ -2827,6 +3138,144 @@ func (o OptBool) Or(d bool) bool {
 	return d
 }
 
+// NewOptClientActionRequestType returns new OptClientActionRequestType with value set to v.
+func NewOptClientActionRequestType(v ClientActionRequestType) OptClientActionRequestType {
+	return OptClientActionRequestType{
+		Value: v,
+		Set:   true,
+	}
+}
+
+// OptClientActionRequestType is optional ClientActionRequestType.
+type OptClientActionRequestType struct {
+	Value ClientActionRequestType
+	Set   bool
+}
+
+// IsSet returns true if OptClientActionRequestType was set.
+func (o OptClientActionRequestType) IsSet() bool { return o.Set }
+
+// Reset unsets value.
+func (o *OptClientActionRequestType) Reset() {
+	var v ClientActionRequestType
+	o.Value = v
+	o.Set = false
+}
+
+// SetTo sets value to v.
+func (o *OptClientActionRequestType) SetTo(v ClientActionRequestType) {
+	o.Set = true
+	o.Value = v
+}
+
+// Get returns value and boolean that denotes whether value was set.
+func (o OptClientActionRequestType) Get() (v ClientActionRequestType, ok bool) {
+	if !o.Set {
+		return v, false
+	}
+	return o.Value, true
+}
+
+// Or returns value if set, or given parameter if does not.
+func (o OptClientActionRequestType) Or(d ClientActionRequestType) ClientActionRequestType {
+	if v, ok := o.Get(); ok {
+		return v
+	}
+	return d
+}
+
+// NewOptClientContextRequest returns new OptClientContextRequest with value set to v.
+func NewOptClientContextRequest(v ClientContextRequest) OptClientContextRequest {
+	return OptClientContextRequest{
+		Value: v,
+		Set:   true,
+	}
+}
+
+// OptClientContextRequest is optional ClientContextRequest.
+type OptClientContextRequest struct {
+	Value ClientContextRequest
+	Set   bool
+}
+
+// IsSet returns true if OptClientContextRequest was set.
+func (o OptClientContextRequest) IsSet() bool { return o.Set }
+
+// Reset unsets value.
+func (o *OptClientContextRequest) Reset() {
+	var v ClientContextRequest
+	o.Value = v
+	o.Set = false
+}
+
+// SetTo sets value to v.
+func (o *OptClientContextRequest) SetTo(v ClientContextRequest) {
+	o.Set = true
+	o.Value = v
+}
+
+// Get returns value and boolean that denotes whether value was set.
+func (o OptClientContextRequest) Get() (v ClientContextRequest, ok bool) {
+	if !o.Set {
+		return v, false
+	}
+	return o.Value, true
+}
+
+// Or returns value if set, or given parameter if does not.
+func (o OptClientContextRequest) Or(d ClientContextRequest) ClientContextRequest {
+	if v, ok := o.Get(); ok {
+		return v
+	}
+	return d
+}
+
+// NewOptClientPageRequest returns new OptClientPageRequest with value set to v.
+func NewOptClientPageRequest(v ClientPageRequest) OptClientPageRequest {
+	return OptClientPageRequest{
+		Value: v,
+		Set:   true,
+	}
+}
+
+// OptClientPageRequest is optional ClientPageRequest.
+type OptClientPageRequest struct {
+	Value ClientPageRequest
+	Set   bool
+}
+
+// IsSet returns true if OptClientPageRequest was set.
+func (o OptClientPageRequest) IsSet() bool { return o.Set }
+
+// Reset unsets value.
+func (o *OptClientPageRequest) Reset() {
+	var v ClientPageRequest
+	o.Value = v
+	o.Set = false
+}
+
+// SetTo sets value to v.
+func (o *OptClientPageRequest) SetTo(v ClientPageRequest) {
+	o.Set = true
+	o.Value = v
+}
+
+// Get returns value and boolean that denotes whether value was set.
+func (o OptClientPageRequest) Get() (v ClientPageRequest, ok bool) {
+	if !o.Set {
+		return v, false
+	}
+	return o.Value, true
+}
+
+// Or returns value if set, or given parameter if does not.
+func (o OptClientPageRequest) Or(d ClientPageRequest) ClientPageRequest {
+	if v, ok := o.Get(); ok {
+		return v
+	}
+	return d
+}
+
 // NewOptCreateChannelRequestBodyCredentials returns new OptCreateChannelRequestBodyCredentials with value set to v.
 func NewOptCreateChannelRequestBodyCredentials(v CreateChannelRequestBodyCredentials) OptCreateChannelRequestBodyCredentials {
 	return OptCreateChannelRequestBodyCredentials{
@@ -3119,6 +3568,210 @@ func (o OptNilAttachmentResourceArray) Get() (v []AttachmentResource, ok bool) {
 
 // Or returns value if set, or given parameter if does not.
 func (o OptNilAttachmentResourceArray) Or(d []AttachmentResource) []AttachmentResource {
+	if v, ok := o.Get(); ok {
+		return v
+	}
+	return d
+}
+
+// NewOptNilClientActionRequestArray returns new OptNilClientActionRequestArray with value set to v.
+func NewOptNilClientActionRequestArray(v []ClientActionRequest) OptNilClientActionRequestArray {
+	return OptNilClientActionRequestArray{
+		Value: v,
+		Set:   true,
+	}
+}
+
+// OptNilClientActionRequestArray is optional nullable []ClientActionRequest.
+type OptNilClientActionRequestArray struct {
+	Value []ClientActionRequest
+	Set   bool
+	Null  bool
+}
+
+// IsSet returns true if OptNilClientActionRequestArray was set.
+func (o OptNilClientActionRequestArray) IsSet() bool { return o.Set }
+
+// Reset unsets value.
+func (o *OptNilClientActionRequestArray) Reset() {
+	var v []ClientActionRequest
+	o.Value = v
+	o.Set = false
+	o.Null = false
+}
+
+// SetTo sets value to v.
+func (o *OptNilClientActionRequestArray) SetTo(v []ClientActionRequest) {
+	o.Set = true
+	o.Null = false
+	o.Value = v
+}
+
+// IsNull returns true if value is Null.
+func (o OptNilClientActionRequestArray) IsNull() bool { return o.Null }
+
+// SetToNull sets value to null.
+func (o *OptNilClientActionRequestArray) SetToNull() {
+	o.Set = true
+	o.Null = true
+	var v []ClientActionRequest
+	o.Value = v
+}
+
+// IsEmpty returns true if the field was omitted from the payload (not Set and not Null).
+func (o OptNilClientActionRequestArray) IsEmpty() bool {
+	return !o.Set && !o.Null
+}
+
+// Get returns value and boolean that denotes whether value was set.
+func (o OptNilClientActionRequestArray) Get() (v []ClientActionRequest, ok bool) {
+	if o.Null {
+		return v, false
+	}
+	if !o.Set {
+		return v, false
+	}
+	return o.Value, true
+}
+
+// Or returns value if set, or given parameter if does not.
+func (o OptNilClientActionRequestArray) Or(d []ClientActionRequest) []ClientActionRequest {
+	if v, ok := o.Get(); ok {
+		return v
+	}
+	return d
+}
+
+// NewOptNilClientFunctionRequestInputSchema returns new OptNilClientFunctionRequestInputSchema with value set to v.
+func NewOptNilClientFunctionRequestInputSchema(v ClientFunctionRequestInputSchema) OptNilClientFunctionRequestInputSchema {
+	return OptNilClientFunctionRequestInputSchema{
+		Value: v,
+		Set:   true,
+	}
+}
+
+// OptNilClientFunctionRequestInputSchema is optional nullable ClientFunctionRequestInputSchema.
+type OptNilClientFunctionRequestInputSchema struct {
+	Value ClientFunctionRequestInputSchema
+	Set   bool
+	Null  bool
+}
+
+// IsSet returns true if OptNilClientFunctionRequestInputSchema was set.
+func (o OptNilClientFunctionRequestInputSchema) IsSet() bool { return o.Set }
+
+// Reset unsets value.
+func (o *OptNilClientFunctionRequestInputSchema) Reset() {
+	var v ClientFunctionRequestInputSchema
+	o.Value = v
+	o.Set = false
+	o.Null = false
+}
+
+// SetTo sets value to v.
+func (o *OptNilClientFunctionRequestInputSchema) SetTo(v ClientFunctionRequestInputSchema) {
+	o.Set = true
+	o.Null = false
+	o.Value = v
+}
+
+// IsNull returns true if value is Null.
+func (o OptNilClientFunctionRequestInputSchema) IsNull() bool { return o.Null }
+
+// SetToNull sets value to null.
+func (o *OptNilClientFunctionRequestInputSchema) SetToNull() {
+	o.Set = true
+	o.Null = true
+	var v ClientFunctionRequestInputSchema
+	o.Value = v
+}
+
+// IsEmpty returns true if the field was omitted from the payload (not Set and not Null).
+func (o OptNilClientFunctionRequestInputSchema) IsEmpty() bool {
+	return !o.Set && !o.Null
+}
+
+// Get returns value and boolean that denotes whether value was set.
+func (o OptNilClientFunctionRequestInputSchema) Get() (v ClientFunctionRequestInputSchema, ok bool) {
+	if o.Null {
+		return v, false
+	}
+	if !o.Set {
+		return v, false
+	}
+	return o.Value, true
+}
+
+// Or returns value if set, or given parameter if does not.
+func (o OptNilClientFunctionRequestInputSchema) Or(d ClientFunctionRequestInputSchema) ClientFunctionRequestInputSchema {
+	if v, ok := o.Get(); ok {
+		return v
+	}
+	return d
+}
+
+// NewOptNilClientFunctionRequestParameters returns new OptNilClientFunctionRequestParameters with value set to v.
+func NewOptNilClientFunctionRequestParameters(v ClientFunctionRequestParameters) OptNilClientFunctionRequestParameters {
+	return OptNilClientFunctionRequestParameters{
+		Value: v,
+		Set:   true,
+	}
+}
+
+// OptNilClientFunctionRequestParameters is optional nullable ClientFunctionRequestParameters.
+type OptNilClientFunctionRequestParameters struct {
+	Value ClientFunctionRequestParameters
+	Set   bool
+	Null  bool
+}
+
+// IsSet returns true if OptNilClientFunctionRequestParameters was set.
+func (o OptNilClientFunctionRequestParameters) IsSet() bool { return o.Set }
+
+// Reset unsets value.
+func (o *OptNilClientFunctionRequestParameters) Reset() {
+	var v ClientFunctionRequestParameters
+	o.Value = v
+	o.Set = false
+	o.Null = false
+}
+
+// SetTo sets value to v.
+func (o *OptNilClientFunctionRequestParameters) SetTo(v ClientFunctionRequestParameters) {
+	o.Set = true
+	o.Null = false
+	o.Value = v
+}
+
+// IsNull returns true if value is Null.
+func (o OptNilClientFunctionRequestParameters) IsNull() bool { return o.Null }
+
+// SetToNull sets value to null.
+func (o *OptNilClientFunctionRequestParameters) SetToNull() {
+	o.Set = true
+	o.Null = true
+	var v ClientFunctionRequestParameters
+	o.Value = v
+}
+
+// IsEmpty returns true if the field was omitted from the payload (not Set and not Null).
+func (o OptNilClientFunctionRequestParameters) IsEmpty() bool {
+	return !o.Set && !o.Null
+}
+
+// Get returns value and boolean that denotes whether value was set.
+func (o OptNilClientFunctionRequestParameters) Get() (v ClientFunctionRequestParameters, ok bool) {
+	if o.Null {
+		return v, false
+	}
+	if !o.Set {
+		return v, false
+	}
+	return o.Value, true
+}
+
+// Or returns value if set, or given parameter if does not.
+func (o OptNilClientFunctionRequestParameters) Or(d ClientFunctionRequestParameters) ClientFunctionRequestParameters {
 	if v, ok := o.Get(); ok {
 		return v
 	}
@@ -4182,13 +4835,19 @@ func (s *RotateSecretRequestBody) SetWebhookSecret(val OptString) {
 // Ref: #/components/schemas/SendMessageRequestBody
 type SendMessageRequestBody struct {
 	// Ids of attachments uploaded earlier that are not yet bound to any message.
-	AttachmentIds OptNilStringArray `json:"attachmentIds"`
-	Text          string            `json:"text"`
+	AttachmentIds OptNilStringArray       `json:"attachmentIds"`
+	Client        OptClientContextRequest `json:"client"`
+	Text          string                  `json:"text"`
 }
 
 // GetAttachmentIds returns the value of AttachmentIds.
 func (s *SendMessageRequestBody) GetAttachmentIds() OptNilStringArray {
 	return s.AttachmentIds
+}
+
+// GetClient returns the value of Client.
+func (s *SendMessageRequestBody) GetClient() OptClientContextRequest {
+	return s.Client
 }
 
 // GetText returns the value of Text.
@@ -4199,6 +4858,11 @@ func (s *SendMessageRequestBody) GetText() string {
 // SetAttachmentIds sets the value of AttachmentIds.
 func (s *SendMessageRequestBody) SetAttachmentIds(val OptNilStringArray) {
 	s.AttachmentIds = val
+}
+
+// SetClient sets the value of Client.
+func (s *SendMessageRequestBody) SetClient(val OptClientContextRequest) {
+	s.Client = val
 }
 
 // SetText sets the value of Text.
@@ -4345,6 +5009,9 @@ func (s *StreamResource) SetPath(val string) {
 func (s *StreamResource) SetTicket(val string) {
 	s.Ticket = val
 }
+
+// SubmitDynamicCallResultNoContent is response for SubmitDynamicCallResult operation.
+type SubmitDynamicCallResultNoContent struct{}
 
 // Ref: #/components/schemas/ThreadListResponseBody
 type ThreadListResponseBody struct {

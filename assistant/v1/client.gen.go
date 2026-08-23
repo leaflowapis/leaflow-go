@@ -226,6 +226,21 @@ func (e ChannelWithSecretResponseBodyStatus) Valid() bool {
 	}
 }
 
+// Defines values for ClientActionRequestType.
+const (
+	Function ClientActionRequestType = "function"
+)
+
+// Valid indicates whether the value is a known member of the ClientActionRequestType enum.
+func (e ClientActionRequestType) Valid() bool {
+	switch e {
+	case Function:
+		return true
+	default:
+		return false
+	}
+}
+
 // Defines values for CreateChannelRequestBodySenderPolicy.
 const (
 	CreateChannelRequestBodySenderPolicyBoundOnly CreateChannelRequestBodySenderPolicy = "bound_only"
@@ -704,6 +719,61 @@ type Choice struct {
 	Label       string `json:"label"`
 }
 
+// ClientActionRequest The shape of a tool in the OpenAI Chat Completions API, plus `readOnly` and `timeoutMs`.
+type ClientActionRequest struct {
+	// Function The function object from the OpenAI tools format.
+	Function ClientFunctionRequest `json:"function"`
+
+	// ReadOnly True when the action changes nothing outside the client. Anything else goes through this conversation's approval before it runs.
+	ReadOnly bool `json:"readOnly"`
+
+	// TimeoutMs How long the assistant should wait for this action. Omit for the default; longer values are capped.
+	TimeoutMs *int64 `json:"timeoutMs,omitempty"`
+
+	// Type Only functions are supported.
+	Type *ClientActionRequestType `json:"type,omitempty"`
+}
+
+// ClientActionRequestType Only functions are supported.
+type ClientActionRequestType string
+
+// ClientContextRequest What this client can do, so the assistant can ask it to do those things while it answers.
+//
+// Send `actions` only when they differ from the last message on this conversation. Sending the
+// block without `actions` keeps whatever was declared before.
+type ClientContextRequest struct {
+	// Actions The actions on offer right now. Omit when unchanged since the last message.
+	Actions []ClientActionRequest `json:"actions,omitempty"`
+
+	// ClientId Identifies this client while it stays open. Any stable string; one per tab.
+	ClientId string `json:"clientId"`
+
+	// Label How the client calls itself, for example "Leaflow console (web)".
+	Label *string `json:"label,omitempty"`
+
+	// Page What the operator is looking at.
+	Page *ClientPageRequest `json:"page,omitempty"`
+}
+
+// ClientFunctionRequest The function object from the OpenAI tools format.
+type ClientFunctionRequest struct {
+	// Description What the action does, written for the model. An action without one can only be guessed at from its name.
+	Description string `json:"description"`
+
+	// InputSchema The MCP and Anthropic spelling of `parameters`. Give one or the other, not both.
+	InputSchema map[string]interface{} `json:"inputSchema,omitempty"`
+	Name        string                 `json:"name"`
+
+	// Parameters JSON Schema for the arguments. Omit for an action that takes none.
+	Parameters map[string]interface{} `json:"parameters,omitempty"`
+}
+
+// ClientPageRequest What the operator is looking at.
+type ClientPageRequest struct {
+	Title *string `json:"title,omitempty"`
+	Url   *string `json:"url,omitempty"`
+}
+
 // ContextResource defines model for ContextResource.
 type ContextResource struct {
 	CompactAt *int64 `json:"compactAt"`
@@ -768,6 +838,22 @@ type DocumentResource struct {
 	Turn   *TurnResource  `json:"turn"`
 	TurnId *string        `json:"turnId"`
 	Wait   *WaitResource  `json:"wait"`
+}
+
+// DynamicCallResultRequestBody defines model for DynamicCallResultRequestBody.
+type DynamicCallResultRequestBody struct {
+	// ClientId The same value sent with the message. A result from a different client is refused.
+	ClientId string `json:"clientId"`
+
+	// Error Why it failed, when `ok` is false. It reaches the assistant, so write it for a reader who cannot see the screen.
+	Error *string `json:"error,omitempty"`
+
+	// NextCursor Pass back when there is more to read. The assistant will call again with it.
+	NextCursor *string `json:"nextCursor,omitempty"`
+	Ok         bool    `json:"ok"`
+
+	// Output What the action produced. At most 64 KiB; use `nextCursor` for anything larger.
+	Output *string `json:"output,omitempty"`
 }
 
 // EarlierResource defines model for EarlierResource.
@@ -974,7 +1060,13 @@ type RotateSecretRequestBody struct {
 type SendMessageRequestBody struct {
 	// AttachmentIds Ids of attachments uploaded earlier that are not yet bound to any message
 	AttachmentIds []string `json:"attachmentIds,omitempty"`
-	Text          string   `json:"text"`
+
+	// Client What this client can do, so the assistant can ask it to do those things while it answers.
+	//
+	// Send `actions` only when they differ from the last message on this conversation. Sending the
+	// block without `actions` keeps whatever was declared before.
+	Client *ClientContextRequest `json:"client,omitempty"`
+	Text   string                `json:"text"`
 }
 
 // SenderCheckResource defines model for SenderCheckResource.
@@ -1174,6 +1266,9 @@ type UpdateChannelJSONRequestBody = UpdateChannelRequestBody
 
 // RotateChannelSecretJSONRequestBody defines body for RotateChannelSecret for application/json ContentType.
 type RotateChannelSecretJSONRequestBody = RotateSecretRequestBody
+
+// SubmitDynamicCallResultJSONRequestBody defines body for SubmitDynamicCallResult for application/json ContentType.
+type SubmitDynamicCallResultJSONRequestBody = DynamicCallResultRequestBody
 
 // CreateThreadJSONRequestBody defines body for CreateThread for application/json ContentType.
 type CreateThreadJSONRequestBody = CreateThreadRequestBody
@@ -1401,6 +1496,32 @@ type ClientInterface interface {
 	//
 	// Corresponds with POST /api/v1/channels/{channel}/weixin-logins (the `BeginWeixinLogin` operationId).
 	BeginWeixinLogin(ctx context.Context, channel openapi_types.UUID, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// SubmitDynamicCallResultWithBody Report what an action produced
+	//
+	// The assistant asks the client to run an action by adding a tool call to the conversation
+	// with the namespace `dynamic`; the client acts when that entry turns in_progress and reports
+	// back here.
+	//
+	// The first result is the one that counts. A later one is refused rather than replacing it.
+	//
+	// Takes any type of body and a specified content type.
+	//
+	// Corresponds with POST /api/v1/dynamic-calls/{call}/result (the `SubmitDynamicCallResult` operationId).
+	SubmitDynamicCallResultWithBody(ctx context.Context, call string, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// SubmitDynamicCallResult Report what an action produced
+	//
+	// The assistant asks the client to run an action by adding a tool call to the conversation
+	// with the namespace `dynamic`; the client acts when that entry turns in_progress and reports
+	// back here.
+	//
+	// The first result is the one that counts. A later one is refused rather than replacing it.
+	//
+	// Takes a body of the `application/json` content type.
+	//
+	// Corresponds with POST /api/v1/dynamic-calls/{call}/result (the `SubmitDynamicCallResult` operationId).
+	SubmitDynamicCallResult(ctx context.Context, call string, body SubmitDynamicCallResultJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
 
 	// ListMemories List what the assistant remembers
 	//
@@ -1895,6 +2016,52 @@ func (c *Client) CheckSender(ctx context.Context, channel openapi_types.UUID, pa
 // Corresponds with POST /api/v1/channels/{channel}/weixin-logins (the `BeginWeixinLogin` operationId).
 func (c *Client) BeginWeixinLogin(ctx context.Context, channel openapi_types.UUID, reqEditors ...RequestEditorFn) (*http.Response, error) {
 	req, err := NewBeginWeixinLoginRequest(c.Server, channel)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+// SubmitDynamicCallResultWithBody Report what an action produced
+//
+// The assistant asks the client to run an action by adding a tool call to the conversation
+// with the namespace `dynamic`; the client acts when that entry turns in_progress and reports
+// back here.
+//
+// The first result is the one that counts. A later one is refused rather than replacing it.
+//
+// Takes any type of body and a specified content type.
+//
+// Corresponds with POST /api/v1/dynamic-calls/{call}/result (the `SubmitDynamicCallResult` operationId).
+func (c *Client) SubmitDynamicCallResultWithBody(ctx context.Context, call string, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewSubmitDynamicCallResultRequestWithBody(c.Server, call, contentType, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+// SubmitDynamicCallResult Report what an action produced
+//
+// The assistant asks the client to run an action by adding a tool call to the conversation
+// with the namespace `dynamic`; the client acts when that entry turns in_progress and reports
+// back here.
+//
+// The first result is the one that counts. A later one is refused rather than replacing it.
+//
+// Takes a body of the `application/json` content type.
+//
+// Corresponds with POST /api/v1/dynamic-calls/{call}/result (the `SubmitDynamicCallResult` operationId).
+func (c *Client) SubmitDynamicCallResult(ctx context.Context, call string, body SubmitDynamicCallResultJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewSubmitDynamicCallResultRequest(c.Server, call, body)
 	if err != nil {
 		return nil, err
 	}
@@ -3058,6 +3225,53 @@ func NewBeginWeixinLoginRequest(server string, channel openapi_types.UUID) (*htt
 	return req, nil
 }
 
+// NewSubmitDynamicCallResultRequest calls the generic SubmitDynamicCallResult builder with application/json body
+func NewSubmitDynamicCallResultRequest(server string, call string, body SubmitDynamicCallResultJSONRequestBody) (*http.Request, error) {
+	var bodyReader io.Reader
+	buf, err := json.Marshal(body)
+	if err != nil {
+		return nil, err
+	}
+	bodyReader = bytes.NewReader(buf)
+	return NewSubmitDynamicCallResultRequestWithBody(server, call, "application/json", bodyReader)
+}
+
+// NewSubmitDynamicCallResultRequestWithBody constructs an http.Request for the SubmitDynamicCallResult method, with any body, and a specified content type
+func NewSubmitDynamicCallResultRequestWithBody(server string, call string, contentType string, body io.Reader) (*http.Request, error) {
+	var err error
+
+	var pathParam0 string
+
+	pathParam0, err = runtime.StyleParamWithOptions("simple", false, "call", call, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: ""})
+	if err != nil {
+		return nil, err
+	}
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/api/v1/dynamic-calls/%s/result", pathParam0)
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest(http.MethodPost, queryURL.String(), body)
+	if err != nil {
+		return nil, err
+	}
+
+	req.Header.Add("Content-Type", contentType)
+
+	return req, nil
+}
+
 // NewListMemoriesRequest constructs an http.Request for the ListMemories method
 func NewListMemoriesRequest(server string) (*http.Request, error) {
 	var err error
@@ -3978,6 +4192,32 @@ type ClientWithResponsesInterface interface {
 	// Corresponds with POST /api/v1/channels/{channel}/weixin-logins (the `BeginWeixinLogin` operationId).
 	BeginWeixinLoginWithResponse(ctx context.Context, channel openapi_types.UUID, reqEditors ...RequestEditorFn) (*BeginWeixinLoginResponse, error)
 
+	// SubmitDynamicCallResultWithBodyWithResponse Report what an action produced
+	//
+	// The assistant asks the client to run an action by adding a tool call to the conversation
+	// with the namespace `dynamic`; the client acts when that entry turns in_progress and reports
+	// back here.
+	//
+	// The first result is the one that counts. A later one is refused rather than replacing it.
+	//
+	// Takes any type of body and a specified content type, and returns a wrapper object for the known response body format(s).
+	//
+	// Corresponds with POST /api/v1/dynamic-calls/{call}/result (the `SubmitDynamicCallResult` operationId).
+	SubmitDynamicCallResultWithBodyWithResponse(ctx context.Context, call string, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*SubmitDynamicCallResultResponse, error)
+
+	// SubmitDynamicCallResultWithResponse Report what an action produced
+	//
+	// The assistant asks the client to run an action by adding a tool call to the conversation
+	// with the namespace `dynamic`; the client acts when that entry turns in_progress and reports
+	// back here.
+	//
+	// The first result is the one that counts. A later one is refused rather than replacing it.
+	//
+	// Takes a body of the `application/json` content type, and returns a wrapper object for the known response body format(s).
+	//
+	// Corresponds with POST /api/v1/dynamic-calls/{call}/result (the `SubmitDynamicCallResult` operationId).
+	SubmitDynamicCallResultWithResponse(ctx context.Context, call string, body SubmitDynamicCallResultJSONRequestBody, reqEditors ...RequestEditorFn) (*SubmitDynamicCallResultResponse, error)
+
 	// ListMemoriesWithResponse List what the assistant remembers
 	//
 	// Facts the assistant has written down for the current account in this project. They appear at the start of every later conversation. Members of the same project each have their own, and this returns only the current account's. Not paginated: there is a cap on how many there can be, and all of them come back at once.
@@ -4889,6 +5129,47 @@ func (r BeginWeixinLoginResponse) StatusCode() int {
 
 // ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
 func (r BeginWeixinLoginResponse) ContentType() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Header.Get("Content-Type")
+	}
+	return ""
+}
+
+type SubmitDynamicCallResultResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	// JSONDefault the response for an HTTP default `application/json` response
+	JSONDefault *Error
+}
+
+// GetJSONDefault returns the response for an HTTP default `application/json` response
+func (r SubmitDynamicCallResultResponse) GetJSONDefault() *Error {
+	return r.JSONDefault
+}
+
+// GetBody returns the raw response body bytes
+func (r SubmitDynamicCallResultResponse) GetBody() []byte {
+	return r.Body
+}
+
+// Status returns HTTPResponse.Status
+func (r SubmitDynamicCallResultResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r SubmitDynamicCallResultResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+// ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
+func (r SubmitDynamicCallResultResponse) ContentType() string {
 	if r.HTTPResponse != nil {
 		return r.HTTPResponse.Header.Get("Content-Type")
 	}
@@ -5938,6 +6219,44 @@ func (c *ClientWithResponses) BeginWeixinLoginWithResponse(ctx context.Context, 
 	return ParseBeginWeixinLoginResponse(rsp)
 }
 
+// SubmitDynamicCallResultWithBodyWithResponse Report what an action produced
+//
+// The assistant asks the client to run an action by adding a tool call to the conversation
+// with the namespace `dynamic`; the client acts when that entry turns in_progress and reports
+// back here.
+//
+// The first result is the one that counts. A later one is refused rather than replacing it.
+//
+// Takes any type of body and a specified content type, and returns a wrapper object for the known response body format(s).
+//
+// Corresponds with POST /api/v1/dynamic-calls/{call}/result (the `SubmitDynamicCallResult` operationId).
+func (c *ClientWithResponses) SubmitDynamicCallResultWithBodyWithResponse(ctx context.Context, call string, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*SubmitDynamicCallResultResponse, error) {
+	rsp, err := c.SubmitDynamicCallResultWithBody(ctx, call, contentType, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseSubmitDynamicCallResultResponse(rsp)
+}
+
+// SubmitDynamicCallResultWithResponse Report what an action produced
+//
+// The assistant asks the client to run an action by adding a tool call to the conversation
+// with the namespace `dynamic`; the client acts when that entry turns in_progress and reports
+// back here.
+//
+// The first result is the one that counts. A later one is refused rather than replacing it.
+//
+// Takes a body of the `application/json` content type, and returns a wrapper object for the known response body format(s).
+//
+// Corresponds with POST /api/v1/dynamic-calls/{call}/result (the `SubmitDynamicCallResult` operationId).
+func (c *ClientWithResponses) SubmitDynamicCallResultWithResponse(ctx context.Context, call string, body SubmitDynamicCallResultJSONRequestBody, reqEditors ...RequestEditorFn) (*SubmitDynamicCallResultResponse, error) {
+	rsp, err := c.SubmitDynamicCallResult(ctx, call, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseSubmitDynamicCallResultResponse(rsp)
+}
+
 // ListMemoriesWithResponse List what the assistant remembers
 //
 // Facts the assistant has written down for the current account in this project. They appear at the start of every later conversation. Members of the same project each have their own, and this returns only the current account's. Not paginated: there is a cap on how many there can be, and all of them come back at once.
@@ -6772,6 +7091,35 @@ func ParseBeginWeixinLoginResponse(rsp *http.Response) (*BeginWeixinLoginRespons
 			return nil, err
 		}
 		response.JSON201 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && true:
+		var dest Error
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSONDefault = &dest
+
+	}
+
+	return response, nil
+}
+
+// ParseSubmitDynamicCallResultResponse parses an HTTP response from a SubmitDynamicCallResultWithResponse call
+func ParseSubmitDynamicCallResultResponse(rsp *http.Response) (*SubmitDynamicCallResultResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &SubmitDynamicCallResultResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case rsp.StatusCode == 204:
+		break // No content-type
 
 	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && true:
 		var dest Error

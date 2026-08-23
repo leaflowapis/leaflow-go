@@ -225,6 +225,15 @@ type Handler interface {
 	//
 	// POST /api/v1/threads/{thread}/messages
 	SendMessage(ctx context.Context, req *SendMessageRequestBody, params SendMessageParams) (*TurnIDResponseBody, error)
+	// SubmitDynamicCallResult implements submit-dynamic-call-result operation.
+	//
+	// The assistant asks the client to run an action by adding a tool call to the conversation with the
+	// namespace `dynamic`; the client acts when that entry turns in_progress and reports back here.
+	//
+	// The first result is the one that counts. A later one is refused rather than replacing it.
+	//
+	// POST /api/v1/dynamic-calls/{call}/result
+	SubmitDynamicCallResult(ctx context.Context, req *DynamicCallResultRequestBody, params SubmitDynamicCallResultParams) error
 	// SubmitWeixinVerifyCode implements submit-weixin-verify-code operation.
 	//
 	// For when WeChat asks for an SMS or device code after the scan. The person who started the login gets
