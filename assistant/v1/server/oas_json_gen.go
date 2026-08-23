@@ -9462,6 +9462,10 @@ func (s *SkillResource) Encode(e *jx.Encoder) {
 // encodeFields encodes fields.
 func (s *SkillResource) encodeFields(e *jx.Encoder) {
 	{
+		e.FieldStart("authoredByAssistant")
+		e.Bool(s.AuthoredByAssistant)
+	}
+	{
 		e.FieldStart("description")
 		e.Str(s.Description)
 	}
@@ -9493,14 +9497,15 @@ func (s *SkillResource) encodeFields(e *jx.Encoder) {
 	}
 }
 
-var jsonFieldsNameOfSkillResource = [7]string{
-	0: "description",
-	1: "enabled",
-	2: "files",
-	3: "name",
-	4: "origin",
-	5: "shortDescription",
-	6: "updatedAt",
+var jsonFieldsNameOfSkillResource = [8]string{
+	0: "authoredByAssistant",
+	1: "description",
+	2: "enabled",
+	3: "files",
+	4: "name",
+	5: "origin",
+	6: "shortDescription",
+	7: "updatedAt",
 }
 
 // Decode decodes SkillResource from json.
@@ -9512,8 +9517,20 @@ func (s *SkillResource) Decode(d *jx.Decoder) error {
 
 	if err := d.ObjBytes(func(d *jx.Decoder, k []byte) error {
 		switch string(k) {
-		case "description":
+		case "authoredByAssistant":
 			requiredBitSet[0] |= 1 << 0
+			if err := func() error {
+				v, err := d.Bool()
+				s.AuthoredByAssistant = bool(v)
+				if err != nil {
+					return err
+				}
+				return nil
+			}(); err != nil {
+				return errors.Wrap(err, "decode field \"authoredByAssistant\"")
+			}
+		case "description":
+			requiredBitSet[0] |= 1 << 1
 			if err := func() error {
 				v, err := d.Str()
 				s.Description = string(v)
@@ -9525,7 +9542,7 @@ func (s *SkillResource) Decode(d *jx.Decoder) error {
 				return errors.Wrap(err, "decode field \"description\"")
 			}
 		case "enabled":
-			requiredBitSet[0] |= 1 << 1
+			requiredBitSet[0] |= 1 << 2
 			if err := func() error {
 				v, err := d.Bool()
 				s.Enabled = bool(v)
@@ -9547,7 +9564,7 @@ func (s *SkillResource) Decode(d *jx.Decoder) error {
 				return errors.Wrap(err, "decode field \"files\"")
 			}
 		case "name":
-			requiredBitSet[0] |= 1 << 3
+			requiredBitSet[0] |= 1 << 4
 			if err := func() error {
 				v, err := d.Str()
 				s.Name = string(v)
@@ -9559,7 +9576,7 @@ func (s *SkillResource) Decode(d *jx.Decoder) error {
 				return errors.Wrap(err, "decode field \"name\"")
 			}
 		case "origin":
-			requiredBitSet[0] |= 1 << 4
+			requiredBitSet[0] |= 1 << 5
 			if err := func() error {
 				if err := s.Origin.Decode(d); err != nil {
 					return err
@@ -9569,7 +9586,7 @@ func (s *SkillResource) Decode(d *jx.Decoder) error {
 				return errors.Wrap(err, "decode field \"origin\"")
 			}
 		case "shortDescription":
-			requiredBitSet[0] |= 1 << 5
+			requiredBitSet[0] |= 1 << 6
 			if err := func() error {
 				if err := s.ShortDescription.Decode(d); err != nil {
 					return err
@@ -9579,7 +9596,7 @@ func (s *SkillResource) Decode(d *jx.Decoder) error {
 				return errors.Wrap(err, "decode field \"shortDescription\"")
 			}
 		case "updatedAt":
-			requiredBitSet[0] |= 1 << 6
+			requiredBitSet[0] |= 1 << 7
 			if err := func() error {
 				if err := s.UpdatedAt.Decode(d, json.DecodeDateTime); err != nil {
 					return err
@@ -9598,7 +9615,7 @@ func (s *SkillResource) Decode(d *jx.Decoder) error {
 	// Validate required fields.
 	var failures []validate.FieldError
 	for i, mask := range [1]uint8{
-		0b01111011,
+		0b11110111,
 	} {
 		if result := (requiredBitSet[i] & mask) ^ mask; result != 0 {
 			// Mask only required fields and check equality to mask using XOR.

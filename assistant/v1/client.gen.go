@@ -1160,6 +1160,14 @@ type SkillRequestBody struct {
 
 // SkillResource defines model for SkillResource.
 type SkillResource struct {
+	// AuthoredByAssistant True when the assistant wrote this skill during a conversation rather than a person
+	// writing it here.
+	//
+	// Which conversation is deliberately not returned: skills are shared across the project
+	// while conversations belong to one person, so naming one would tell everybody in the
+	// project that a particular colleague had it.
+	AuthoredByAssistant bool `json:"authoredByAssistant"`
+
 	// Description Why the assistant would open this skill. It sits in every request, so it is the one field worth writing carefully.
 	Description string `json:"description"`
 	Enabled     bool   `json:"enabled"`
