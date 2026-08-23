@@ -471,6 +471,71 @@ func decodeDeleteMaintenanceWindowParams(args [1]string, argsEscaped bool, r *ht
 	return params, nil
 }
 
+// DeleteProjectWebCheckParams is parameters of delete-project-web-check operation.
+type DeleteProjectWebCheckParams struct {
+	CheckId uuid.UUID
+}
+
+func unpackDeleteProjectWebCheckParams(packed middleware.Parameters) (params DeleteProjectWebCheckParams) {
+	{
+		key := middleware.ParameterKey{
+			Name: "checkId",
+			In:   "path",
+		}
+		params.CheckId = packed[key].(uuid.UUID)
+	}
+	return params
+}
+
+func decodeDeleteProjectWebCheckParams(args [1]string, argsEscaped bool, r *http.Request) (params DeleteProjectWebCheckParams, _ error) {
+	// Decode path: checkId.
+	if err := func() error {
+		param := args[0]
+		if argsEscaped {
+			unescaped, err := url.PathUnescape(args[0])
+			if err != nil {
+				return errors.Wrap(err, "unescape path")
+			}
+			param = unescaped
+		}
+		if len(param) > 0 {
+			d := uri.NewPathDecoder(uri.PathDecoderConfig{
+				Param:   "checkId",
+				Value:   param,
+				Style:   uri.PathStyleSimple,
+				Explode: false,
+			})
+
+			if err := func() error {
+				val, err := d.DecodeValue()
+				if err != nil {
+					return err
+				}
+
+				c, err := conv.ToUUID(val)
+				if err != nil {
+					return err
+				}
+
+				params.CheckId = c
+				return nil
+			}(); err != nil {
+				return err
+			}
+		} else {
+			return validate.ErrFieldRequired
+		}
+		return nil
+	}(); err != nil {
+		return params, &ogenerrors.DecodeParamError{
+			Name: "checkId",
+			In:   "path",
+			Err:  err,
+		}
+	}
+	return params, nil
+}
+
 // DeleteServerParams is parameters of delete-server operation.
 type DeleteServerParams struct {
 	ServerId uuid.UUID
@@ -1037,6 +1102,71 @@ func decodeGetMaintenanceWindowParams(args [1]string, argsEscaped bool, r *http.
 	}(); err != nil {
 		return params, &ogenerrors.DecodeParamError{
 			Name: "windowId",
+			In:   "path",
+			Err:  err,
+		}
+	}
+	return params, nil
+}
+
+// GetProjectWebCheckParams is parameters of get-project-web-check operation.
+type GetProjectWebCheckParams struct {
+	CheckId uuid.UUID
+}
+
+func unpackGetProjectWebCheckParams(packed middleware.Parameters) (params GetProjectWebCheckParams) {
+	{
+		key := middleware.ParameterKey{
+			Name: "checkId",
+			In:   "path",
+		}
+		params.CheckId = packed[key].(uuid.UUID)
+	}
+	return params
+}
+
+func decodeGetProjectWebCheckParams(args [1]string, argsEscaped bool, r *http.Request) (params GetProjectWebCheckParams, _ error) {
+	// Decode path: checkId.
+	if err := func() error {
+		param := args[0]
+		if argsEscaped {
+			unescaped, err := url.PathUnescape(args[0])
+			if err != nil {
+				return errors.Wrap(err, "unescape path")
+			}
+			param = unescaped
+		}
+		if len(param) > 0 {
+			d := uri.NewPathDecoder(uri.PathDecoderConfig{
+				Param:   "checkId",
+				Value:   param,
+				Style:   uri.PathStyleSimple,
+				Explode: false,
+			})
+
+			if err := func() error {
+				val, err := d.DecodeValue()
+				if err != nil {
+					return err
+				}
+
+				c, err := conv.ToUUID(val)
+				if err != nil {
+					return err
+				}
+
+				params.CheckId = c
+				return nil
+			}(); err != nil {
+				return err
+			}
+		} else {
+			return validate.ErrFieldRequired
+		}
+		return nil
+	}(); err != nil {
+		return params, &ogenerrors.DecodeParamError{
+			Name: "checkId",
 			In:   "path",
 			Err:  err,
 		}
@@ -4589,6 +4719,71 @@ func decodePutMaintenanceWindowParams(args [1]string, argsEscaped bool, r *http.
 	}(); err != nil {
 		return params, &ogenerrors.DecodeParamError{
 			Name: "windowId",
+			In:   "path",
+			Err:  err,
+		}
+	}
+	return params, nil
+}
+
+// PutProjectWebCheckParams is parameters of put-project-web-check operation.
+type PutProjectWebCheckParams struct {
+	CheckId uuid.UUID
+}
+
+func unpackPutProjectWebCheckParams(packed middleware.Parameters) (params PutProjectWebCheckParams) {
+	{
+		key := middleware.ParameterKey{
+			Name: "checkId",
+			In:   "path",
+		}
+		params.CheckId = packed[key].(uuid.UUID)
+	}
+	return params
+}
+
+func decodePutProjectWebCheckParams(args [1]string, argsEscaped bool, r *http.Request) (params PutProjectWebCheckParams, _ error) {
+	// Decode path: checkId.
+	if err := func() error {
+		param := args[0]
+		if argsEscaped {
+			unescaped, err := url.PathUnescape(args[0])
+			if err != nil {
+				return errors.Wrap(err, "unescape path")
+			}
+			param = unescaped
+		}
+		if len(param) > 0 {
+			d := uri.NewPathDecoder(uri.PathDecoderConfig{
+				Param:   "checkId",
+				Value:   param,
+				Style:   uri.PathStyleSimple,
+				Explode: false,
+			})
+
+			if err := func() error {
+				val, err := d.DecodeValue()
+				if err != nil {
+					return err
+				}
+
+				c, err := conv.ToUUID(val)
+				if err != nil {
+					return err
+				}
+
+				params.CheckId = c
+				return nil
+			}(); err != nil {
+				return err
+			}
+		} else {
+			return validate.ErrFieldRequired
+		}
+		return nil
+	}(); err != nil {
+		return params, &ogenerrors.DecodeParamError{
+			Name: "checkId",
 			In:   "path",
 			Err:  err,
 		}

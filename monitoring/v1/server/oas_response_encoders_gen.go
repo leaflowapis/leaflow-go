@@ -122,6 +122,12 @@ func encodeDeleteMaintenanceWindowResponse(response *DeleteMaintenanceWindowNoCo
 	return nil
 }
 
+func encodeDeleteProjectWebCheckResponse(response *DeleteProjectWebCheckNoContent, w http.ResponseWriter, span trace.Span) error {
+	w.WriteHeader(204)
+
+	return nil
+}
+
 func encodeDeleteServerResponse(response *DeleteServerNoContent, w http.ResponseWriter, span trace.Span) error {
 	w.WriteHeader(204)
 
@@ -141,6 +147,12 @@ func encodeDeleteStatusPageResponse(response *DeleteStatusPageNoContent, w http.
 }
 
 func encodeDeleteStatusPageComponentResponse(response *DeleteStatusPageComponentNoContent, w http.ResponseWriter, span trace.Span) error {
+	w.WriteHeader(204)
+
+	return nil
+}
+
+func encodeDeleteStatusPageDomainResponse(response *DeleteStatusPageDomainNoContent, w http.ResponseWriter, span trace.Span) error {
 	w.WriteHeader(204)
 
 	return nil
@@ -204,6 +216,19 @@ func encodeGetMaintenanceWindowResponse(response *MaintenanceWindowResource, w h
 }
 
 func encodeGetProjectOverviewResponse(response *ProjectOverviewResource, w http.ResponseWriter, span trace.Span) error {
+	w.Header().Set("Content-Type", "application/json; charset=utf-8")
+	w.WriteHeader(200)
+
+	e := new(jx.Encoder)
+	response.Encode(e)
+	if _, err := e.WriteTo(w); err != nil {
+		return errors.Wrap(err, "write")
+	}
+
+	return nil
+}
+
+func encodeGetProjectWebCheckResponse(response *WebCheckResource, w http.ResponseWriter, span trace.Span) error {
 	w.Header().Set("Content-Type", "application/json; charset=utf-8")
 	w.WriteHeader(200)
 
@@ -308,6 +333,19 @@ func encodeGetStatusPageResponse(response *StatusPageResource, w http.ResponseWr
 }
 
 func encodeGetStatusPageComponentResponse(response *StatusPageComponentResource, w http.ResponseWriter, span trace.Span) error {
+	w.Header().Set("Content-Type", "application/json; charset=utf-8")
+	w.WriteHeader(200)
+
+	e := new(jx.Encoder)
+	response.Encode(e)
+	if _, err := e.WriteTo(w); err != nil {
+		return errors.Wrap(err, "write")
+	}
+
+	return nil
+}
+
+func encodeGetStatusPageDomainResponse(response *StatusPageDomainResource, w http.ResponseWriter, span trace.Span) error {
 	w.Header().Set("Content-Type", "application/json; charset=utf-8")
 	w.WriteHeader(200)
 
@@ -554,6 +592,19 @@ func encodePutMaintenanceWindowResponse(response *MaintenanceWindowResource, w h
 	return nil
 }
 
+func encodePutProjectWebCheckResponse(response *WebCheckResource, w http.ResponseWriter, span trace.Span) error {
+	w.Header().Set("Content-Type", "application/json; charset=utf-8")
+	w.WriteHeader(200)
+
+	e := new(jx.Encoder)
+	response.Encode(e)
+	if _, err := e.WriteTo(w); err != nil {
+		return errors.Wrap(err, "write")
+	}
+
+	return nil
+}
+
 func encodePutSloResponse(response *SLOResource, w http.ResponseWriter, span trace.Span) error {
 	w.Header().Set("Content-Type", "application/json; charset=utf-8")
 	w.WriteHeader(200)
@@ -581,6 +632,19 @@ func encodePutStatusPageResponse(response *StatusPageResource, w http.ResponseWr
 }
 
 func encodePutStatusPageComponentSourcesResponse(response *StatusPageComponentSourcesResource, w http.ResponseWriter, span trace.Span) error {
+	w.Header().Set("Content-Type", "application/json; charset=utf-8")
+	w.WriteHeader(200)
+
+	e := new(jx.Encoder)
+	response.Encode(e)
+	if _, err := e.WriteTo(w); err != nil {
+		return errors.Wrap(err, "write")
+	}
+
+	return nil
+}
+
+func encodePutStatusPageDomainResponse(response *StatusPageDomainResource, w http.ResponseWriter, span trace.Span) error {
 	w.Header().Set("Content-Type", "application/json; charset=utf-8")
 	w.WriteHeader(200)
 

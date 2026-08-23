@@ -107,6 +107,15 @@ func (UnimplementedHandler) DeleteMaintenanceWindow(ctx context.Context, params 
 	return ht.ErrNotImplemented
 }
 
+// DeleteProjectWebCheck implements delete-project-web-check operation.
+//
+// The corresponding check task and trigger are removed from the monitoring system as well.
+//
+// DELETE /api/v1/web-checks/{checkId}
+func (UnimplementedHandler) DeleteProjectWebCheck(ctx context.Context, params DeleteProjectWebCheckParams) error {
+	return ht.ErrNotImplemented
+}
+
 // DeleteServer implements delete-server operation.
 //
 // Irreversible: the monitored host, its history and every incident recorded against this machine are
@@ -143,6 +152,16 @@ func (UnimplementedHandler) DeleteStatusPage(ctx context.Context) error {
 //
 // DELETE /api/v1/status-page/components/{componentId}
 func (UnimplementedHandler) DeleteStatusPageComponent(ctx context.Context, params DeleteStatusPageComponentParams) error {
+	return ht.ErrNotImplemented
+}
+
+// DeleteStatusPageDomain implements delete-status-page-domain operation.
+//
+// The page stays reachable at its shared address. Certificate renewal for the domain stops; the
+// certificate already issued is left to expire.
+//
+// DELETE /api/v1/status-page/domain
+func (UnimplementedHandler) DeleteStatusPageDomain(ctx context.Context) error {
 	return ht.ErrNotImplemented
 }
 
@@ -221,6 +240,15 @@ func (UnimplementedHandler) GetProjectOverview(ctx context.Context) (r *ProjectO
 	return r, ht.ErrNotImplemented
 }
 
+// GetProjectWebCheck implements get-project-web-check operation.
+//
+// Get a project-level web check.
+//
+// GET /api/v1/web-checks/{checkId}
+func (UnimplementedHandler) GetProjectWebCheck(ctx context.Context, params GetProjectWebCheckParams) (r *WebCheckResource, _ error) {
+	return r, ht.ErrNotImplemented
+}
+
 // GetServer implements get-server operation.
 //
 // Get the enrollment state of a machine.
@@ -295,6 +323,19 @@ func (UnimplementedHandler) GetStatusPage(ctx context.Context) (r *StatusPageRes
 //
 // GET /api/v1/status-page/components/{componentId}
 func (UnimplementedHandler) GetStatusPageComponent(ctx context.Context, params GetStatusPageComponentParams) (r *StatusPageComponentResource, _ error) {
+	return r, ht.ErrNotImplemented
+}
+
+// GetStatusPageDomain implements get-status-page-domain operation.
+//
+// Reports whether the domain currently resolves to the status page and where its certificate stands.
+//
+// `expected_cname` is the value the domain must point at. `observed_cname` is what it currently
+// resolves to, which is what to show the user when verification fails — "verification failed" on its
+// own tells them nothing about what to fix.
+//
+// GET /api/v1/status-page/domain
+func (UnimplementedHandler) GetStatusPageDomain(ctx context.Context) (r *StatusPageDomainResource, _ error) {
 	return r, ht.ErrNotImplemented
 }
 
@@ -484,6 +525,21 @@ func (UnimplementedHandler) PutMaintenanceWindow(ctx context.Context, req *PutMa
 	return r, ht.ErrNotImplemented
 }
 
+// PutProjectWebCheck implements put-project-web-check operation.
+//
+// Create or replace: to modify a check, call this endpoint again with the same id.
+//
+// Unlike `/servers/{serverId}/web-checks/{checkId}`, this check does not belong to any machine — use
+// it when the target is simply a URL. Nothing needs to be enrolled first.
+//
+// A check bound to a machine is removed together with that machine; a project-level check is not.
+// Where a check belongs cannot be changed afterwards: move it by deleting and recreating it.
+//
+// PUT /api/v1/web-checks/{checkId}
+func (UnimplementedHandler) PutProjectWebCheck(ctx context.Context, req *PutWebCheckRequestBody, params PutProjectWebCheckParams) (r *WebCheckResource, _ error) {
+	return r, ht.ErrNotImplemented
+}
+
 // PutSlo implements put-slo operation.
 //
 // One SLO per project, create or replace.
@@ -524,6 +580,23 @@ func (UnimplementedHandler) PutStatusPage(ctx context.Context, req *PutStatusPag
 //
 // PUT /api/v1/status-page/components/{componentId}/sources
 func (UnimplementedHandler) PutStatusPageComponentSources(ctx context.Context, req *PutStatusPageComponentSourcesRequestBody, params PutStatusPageComponentSourcesParams) (r *StatusPageComponentSourcesResource, _ error) {
+	return r, ht.ErrNotImplemented
+}
+
+// PutStatusPageDomain implements put-status-page-domain operation.
+//
+// The domain must already point at the status page by CNAME. Binding is rejected until it does, and
+// the error carries both the expected and the observed target.
+//
+// Ownership is verified before the domain is stored, and it is verified again before each certificate
+// is issued: a domain whose CNAME is later removed stops being served.
+//
+// A certificate is requested in the background — this call does not wait for it. Poll GET on this
+// endpoint to follow its progress; until a certificate is active, the domain does not serve HTTPS
+// while the page remains reachable at its shared address.
+//
+// PUT /api/v1/status-page/domain
+func (UnimplementedHandler) PutStatusPageDomain(ctx context.Context, req *PutStatusPageDomainRequestBody) (r *StatusPageDomainResource, _ error) {
 	return r, ht.ErrNotImplemented
 }
 
