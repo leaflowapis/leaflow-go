@@ -119,6 +119,8 @@ var operationRolesBearerAuth = map[string][]string{
 	RevertInstanceResizeOperation:      []string{},
 	RunInstanceCommandOperation:        []string{},
 	SetFloatingIPBandwidthOperation:    []string{},
+	SetInstanceLabelsOperation:         []string{},
+	SetInstanceNotesOperation:          []string{},
 	StartInstanceOperation:             []string{},
 	StopInstanceOperation:              []string{},
 	SuggestSubnetCidrOperation:         []string{},

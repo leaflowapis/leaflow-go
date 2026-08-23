@@ -437,10 +437,11 @@ type Invoker interface {
 	ListInstanceTypes(ctx context.Context, params ListInstanceTypesParams) (*InstanceTypeListResponseBody, error)
 	// ListInstances invokes list-instances operation.
 	//
-	// List instances.
+	// Every instance in the project, newest first. This endpoint does not query backend state; for the
+	// accurate state of one instance, use the retrieve endpoint.
 	//
 	// GET /api/v1/instances
-	ListInstances(ctx context.Context) (*InstanceListResponseBody, error)
+	ListInstances(ctx context.Context, params ListInstancesParams) (*InstanceListResponseBody, error)
 	// ListOperationLogs invokes list-operation-logs operation.
 	//
 	// Records every write operation in the project: who performed it, when, on what, and whether it
@@ -700,6 +701,32 @@ type Invoker interface {
 	//
 	// PUT /api/v1/floating-ips/{floatingIpId}/bandwidth
 	SetFloatingIPBandwidth(ctx context.Context, request *SetBandwidthRequestBody, params SetFloatingIPBandwidthParams) (*FloatingIPResource, error)
+	// SetInstanceLabels invokes set-instance-labels operation.
+	//
+	// Records what this instance is for, as key-value pairs, so that a person or an assistant can tell
+	// later. Nothing on the platform reads them: no scheduling, quota or billing decision keys off a
+	// label, which is what makes editing one safe.
+	//
+	// The whole set is replaced. Whatever is absent from the request is removed — a merge could not
+	// express deleting a key, and it makes retrying the same request produce a different result each time.
+	//
+	// Do not put credentials here. Labels appear in listings, in support tickets and in the operator
+	// console.
+	//
+	// PUT /api/v1/instances/{instanceId}/labels
+	SetInstanceLabels(ctx context.Context, request *SetInstanceLabelsRequestBody, params SetInstanceLabelsParams) (*InstanceResource, error)
+	// SetInstanceNotes invokes set-instance-notes operation.
+	//
+	// A free-text note: what this instance runs, and what to be careful about before touching it —
+	// "primary database, fail over before rebooting". It is read by whoever opens the instance next,
+	// including an assistant acting on your behalf.
+	//
+	// The whole note is replaced; send an empty string to clear it.
+	//
+	// Do not put credentials here. The note appears in the operator console.
+	//
+	// PUT /api/v1/instances/{instanceId}/notes
+	SetInstanceNotes(ctx context.Context, request *SetInstanceNotesRequestBody, params SetInstanceNotesParams) (*InstanceResource, error)
 	// StartInstance invokes start-instance operation.
 	//
 	// An instance suspended by the platform must be unsuspended first.
@@ -7727,15 +7754,16 @@ func (c *Client) sendListInstanceTypes(ctx context.Context, params ListInstanceT
 
 // ListInstances invokes list-instances operation.
 //
-// List instances.
+// Every instance in the project, newest first. This endpoint does not query backend state; for the
+// accurate state of one instance, use the retrieve endpoint.
 //
 // GET /api/v1/instances
-func (c *Client) ListInstances(ctx context.Context) (*InstanceListResponseBody, error) {
-	res, err := c.sendListInstances(ctx)
+func (c *Client) ListInstances(ctx context.Context, params ListInstancesParams) (*InstanceListResponseBody, error) {
+	res, err := c.sendListInstances(ctx, params)
 	return res, err
 }
 
-func (c *Client) sendListInstances(ctx context.Context) (res *InstanceListResponseBody, err error) {
+func (c *Client) sendListInstances(ctx context.Context, params ListInstancesParams) (res *InstanceListResponseBody, err error) {
 	otelAttrs := []attribute.KeyValue{
 		otelogen.OperationID("list-instances"),
 		semconv.HTTPRequestMethodKey.String("GET"),
@@ -7775,6 +7803,27 @@ func (c *Client) sendListInstances(ctx context.Context) (res *InstanceListRespon
 	var pathParts [1]string
 	pathParts[0] = "/api/v1/instances"
 	uri.AddPathParts(u, pathParts[:]...)
+
+	stage = "EncodeQueryParams"
+	q := uri.NewQueryEncoder()
+	{
+		// Encode "label" parameter.
+		cfg := uri.QueryParameterEncodingConfig{
+			Name:    "label",
+			Style:   uri.QueryStyleForm,
+			Explode: false,
+		}
+
+		if err := q.EncodeParam(cfg, func(e uri.Encoder) error {
+			if val, ok := params.Label.Get(); ok {
+				return e.EncodeValue(conv.StringToString(val))
+			}
+			return nil
+		}); err != nil {
+			return res, errors.Wrap(err, "encode query")
+		}
+	}
+	u.RawQuery = q.Values().Encode()
 
 	stage = "EncodeRequest"
 	r, err := ht.NewRequest(ctx, "GET", u)
@@ -11807,6 +11856,290 @@ func (c *Client) sendSetFloatingIPBandwidth(ctx context.Context, request *SetBan
 
 	stage = "DecodeResponse"
 	result, err := decodeSetFloatingIPBandwidthResponse(resp)
+	if err != nil {
+		return res, errors.Wrap(err, "decode response")
+	}
+
+	return result, nil
+}
+
+// SetInstanceLabels invokes set-instance-labels operation.
+//
+// Records what this instance is for, as key-value pairs, so that a person or an assistant can tell
+// later. Nothing on the platform reads them: no scheduling, quota or billing decision keys off a
+// label, which is what makes editing one safe.
+//
+// The whole set is replaced. Whatever is absent from the request is removed — a merge could not
+// express deleting a key, and it makes retrying the same request produce a different result each time.
+//
+// Do not put credentials here. Labels appear in listings, in support tickets and in the operator
+// console.
+//
+// PUT /api/v1/instances/{instanceId}/labels
+func (c *Client) SetInstanceLabels(ctx context.Context, request *SetInstanceLabelsRequestBody, params SetInstanceLabelsParams) (*InstanceResource, error) {
+	res, err := c.sendSetInstanceLabels(ctx, request, params)
+	return res, err
+}
+
+func (c *Client) sendSetInstanceLabels(ctx context.Context, request *SetInstanceLabelsRequestBody, params SetInstanceLabelsParams) (res *InstanceResource, err error) {
+	otelAttrs := []attribute.KeyValue{
+		otelogen.OperationID("set-instance-labels"),
+		semconv.HTTPRequestMethodKey.String("PUT"),
+		semconv.URLTemplateKey.String("/api/v1/instances/{instanceId}/labels"),
+	}
+	otelAttrs = append(otelAttrs, c.cfg.Attributes...)
+
+	// Run stopwatch.
+	startTime := time.Now()
+	defer func() {
+		// Use floating point division here for higher precision (instead of Millisecond method).
+		elapsedDuration := time.Since(startTime)
+		c.duration.Record(ctx, float64(elapsedDuration)/float64(time.Millisecond), metric.WithAttributes(otelAttrs...))
+	}()
+
+	// Increment request counter.
+	c.requests.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
+
+	// Start a span for this request.
+	ctx, span := c.cfg.Tracer.Start(ctx, SetInstanceLabelsOperation,
+		trace.WithAttributes(otelAttrs...),
+		clientSpanKind,
+	)
+	// Track stage for error reporting.
+	var stage string
+	defer func() {
+		if err != nil {
+			span.RecordError(err)
+			span.SetStatus(codes.Error, stage)
+			c.errors.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
+		}
+		span.End()
+	}()
+
+	stage = "BuildURL"
+	u := uri.Clone(c.requestURL(ctx))
+	var pathParts [3]string
+	pathParts[0] = "/api/v1/instances/"
+	{
+		// Encode "instanceId" parameter.
+		e := uri.NewPathEncoder(uri.PathEncoderConfig{
+			Param:   "instanceId",
+			Style:   uri.PathStyleSimple,
+			Explode: false,
+		})
+		if err := func() error {
+			return e.EncodeValue(conv.UUIDToString(params.InstanceId))
+		}(); err != nil {
+			return res, errors.Wrap(err, "encode path")
+		}
+		encoded, err := e.Result()
+		if err != nil {
+			return res, errors.Wrap(err, "encode path")
+		}
+		pathParts[1] = encoded
+	}
+	pathParts[2] = "/labels"
+	uri.AddPathParts(u, pathParts[:]...)
+
+	stage = "EncodeRequest"
+	r, err := ht.NewRequest(ctx, "PUT", u)
+	if err != nil {
+		return res, errors.Wrap(err, "create request")
+	}
+	if err := encodeSetInstanceLabelsRequest(request, r); err != nil {
+		return res, errors.Wrap(err, "encode request")
+	}
+
+	{
+		type bitset = [1]uint8
+		var satisfied bitset
+		{
+			stage = "Security:BearerAuth"
+			switch err := c.securityBearerAuth(ctx, SetInstanceLabelsOperation, r); {
+			case err == nil: // if NO error
+				satisfied[0] |= 1 << 0
+			case errors.Is(err, ogenerrors.ErrSkipClientSecurity):
+				// Skip this security.
+			default:
+				return res, errors.Wrap(err, "security \"BearerAuth\"")
+			}
+		}
+
+		if ok := func() bool {
+		nextRequirement:
+			for _, requirement := range []bitset{
+				{0b00000001},
+			} {
+				for i, mask := range requirement {
+					if satisfied[i]&mask != mask {
+						continue nextRequirement
+					}
+				}
+				return true
+			}
+			return false
+		}(); !ok {
+			return res, ogenerrors.ErrSecurityRequirementIsNotSatisfied
+		}
+	}
+
+	stage = "SendRequest"
+	resp, err := c.cfg.Client.Do(r)
+	if err != nil {
+		return res, errors.Wrap(err, "do request")
+	}
+	body := resp.Body
+	defer func() {
+		// Drain the body to EOF before closing, so the underlying
+		// connection can be reused by the Transport regardless of the
+		// response status code. See https://github.com/ogen-go/ogen/issues/1670.
+		_, _ = io.Copy(io.Discard, body)
+		_ = body.Close()
+	}()
+
+	stage = "DecodeResponse"
+	result, err := decodeSetInstanceLabelsResponse(resp)
+	if err != nil {
+		return res, errors.Wrap(err, "decode response")
+	}
+
+	return result, nil
+}
+
+// SetInstanceNotes invokes set-instance-notes operation.
+//
+// A free-text note: what this instance runs, and what to be careful about before touching it —
+// "primary database, fail over before rebooting". It is read by whoever opens the instance next,
+// including an assistant acting on your behalf.
+//
+// The whole note is replaced; send an empty string to clear it.
+//
+// Do not put credentials here. The note appears in the operator console.
+//
+// PUT /api/v1/instances/{instanceId}/notes
+func (c *Client) SetInstanceNotes(ctx context.Context, request *SetInstanceNotesRequestBody, params SetInstanceNotesParams) (*InstanceResource, error) {
+	res, err := c.sendSetInstanceNotes(ctx, request, params)
+	return res, err
+}
+
+func (c *Client) sendSetInstanceNotes(ctx context.Context, request *SetInstanceNotesRequestBody, params SetInstanceNotesParams) (res *InstanceResource, err error) {
+	otelAttrs := []attribute.KeyValue{
+		otelogen.OperationID("set-instance-notes"),
+		semconv.HTTPRequestMethodKey.String("PUT"),
+		semconv.URLTemplateKey.String("/api/v1/instances/{instanceId}/notes"),
+	}
+	otelAttrs = append(otelAttrs, c.cfg.Attributes...)
+
+	// Run stopwatch.
+	startTime := time.Now()
+	defer func() {
+		// Use floating point division here for higher precision (instead of Millisecond method).
+		elapsedDuration := time.Since(startTime)
+		c.duration.Record(ctx, float64(elapsedDuration)/float64(time.Millisecond), metric.WithAttributes(otelAttrs...))
+	}()
+
+	// Increment request counter.
+	c.requests.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
+
+	// Start a span for this request.
+	ctx, span := c.cfg.Tracer.Start(ctx, SetInstanceNotesOperation,
+		trace.WithAttributes(otelAttrs...),
+		clientSpanKind,
+	)
+	// Track stage for error reporting.
+	var stage string
+	defer func() {
+		if err != nil {
+			span.RecordError(err)
+			span.SetStatus(codes.Error, stage)
+			c.errors.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
+		}
+		span.End()
+	}()
+
+	stage = "BuildURL"
+	u := uri.Clone(c.requestURL(ctx))
+	var pathParts [3]string
+	pathParts[0] = "/api/v1/instances/"
+	{
+		// Encode "instanceId" parameter.
+		e := uri.NewPathEncoder(uri.PathEncoderConfig{
+			Param:   "instanceId",
+			Style:   uri.PathStyleSimple,
+			Explode: false,
+		})
+		if err := func() error {
+			return e.EncodeValue(conv.UUIDToString(params.InstanceId))
+		}(); err != nil {
+			return res, errors.Wrap(err, "encode path")
+		}
+		encoded, err := e.Result()
+		if err != nil {
+			return res, errors.Wrap(err, "encode path")
+		}
+		pathParts[1] = encoded
+	}
+	pathParts[2] = "/notes"
+	uri.AddPathParts(u, pathParts[:]...)
+
+	stage = "EncodeRequest"
+	r, err := ht.NewRequest(ctx, "PUT", u)
+	if err != nil {
+		return res, errors.Wrap(err, "create request")
+	}
+	if err := encodeSetInstanceNotesRequest(request, r); err != nil {
+		return res, errors.Wrap(err, "encode request")
+	}
+
+	{
+		type bitset = [1]uint8
+		var satisfied bitset
+		{
+			stage = "Security:BearerAuth"
+			switch err := c.securityBearerAuth(ctx, SetInstanceNotesOperation, r); {
+			case err == nil: // if NO error
+				satisfied[0] |= 1 << 0
+			case errors.Is(err, ogenerrors.ErrSkipClientSecurity):
+				// Skip this security.
+			default:
+				return res, errors.Wrap(err, "security \"BearerAuth\"")
+			}
+		}
+
+		if ok := func() bool {
+		nextRequirement:
+			for _, requirement := range []bitset{
+				{0b00000001},
+			} {
+				for i, mask := range requirement {
+					if satisfied[i]&mask != mask {
+						continue nextRequirement
+					}
+				}
+				return true
+			}
+			return false
+		}(); !ok {
+			return res, ogenerrors.ErrSecurityRequirementIsNotSatisfied
+		}
+	}
+
+	stage = "SendRequest"
+	resp, err := c.cfg.Client.Do(r)
+	if err != nil {
+		return res, errors.Wrap(err, "do request")
+	}
+	body := resp.Body
+	defer func() {
+		// Drain the body to EOF before closing, so the underlying
+		// connection can be reused by the Transport regardless of the
+		// response status code. See https://github.com/ogen-go/ogen/issues/1670.
+		_, _ = io.Copy(io.Discard, body)
+		_ = body.Close()
+	}()
+
+	stage = "DecodeResponse"
+	result, err := decodeSetInstanceNotesResponse(resp)
 	if err != nil {
 		return res, errors.Wrap(err, "decode response")
 	}

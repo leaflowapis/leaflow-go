@@ -3307,6 +3307,100 @@ func decodeListInstanceTypesParams(args [0]string, argsEscaped bool, r *http.Req
 	return params, nil
 }
 
+// ListInstancesParams is parameters of list-instances operation.
+type ListInstancesParams struct {
+	// Only instances carrying this label, written as `key:value` — for example `env:prod`. Matched
+	// exactly on both halves. A key never contains a colon, so the split is at the first one; anything
+	// after it is the value, and `env:` means the key `env` with an empty value rather than "any value".
+	Label OptString `json:",omitempty,omitzero"`
+}
+
+func unpackListInstancesParams(packed middleware.Parameters) (params ListInstancesParams) {
+	{
+		key := middleware.ParameterKey{
+			Name: "label",
+			In:   "query",
+		}
+		if v, ok := packed[key]; ok {
+			params.Label = v.(OptString)
+		}
+	}
+	return params
+}
+
+func decodeListInstancesParams(args [0]string, argsEscaped bool, r *http.Request) (params ListInstancesParams, _ error) {
+	q := uri.NewQueryDecoder(r.URL.Query())
+	// Decode query: label.
+	if err := func() error {
+		cfg := uri.QueryParameterDecodingConfig{
+			Name:    "label",
+			Style:   uri.QueryStyleForm,
+			Explode: false,
+		}
+
+		if err := q.HasParam(cfg); err == nil {
+			if err := q.DecodeParam(cfg, func(d uri.Decoder) error {
+				var paramsDotLabelVal string
+				if err := func() error {
+					val, err := d.DecodeValue()
+					if err != nil {
+						return err
+					}
+
+					c, err := conv.ToString(val)
+					if err != nil {
+						return err
+					}
+
+					paramsDotLabelVal = c
+					return nil
+				}(); err != nil {
+					return err
+				}
+				params.Label.SetTo(paramsDotLabelVal)
+				return nil
+			}); err != nil {
+				return err
+			}
+			if err := func() error {
+				if value, ok := params.Label.Get(); ok {
+					if err := func() error {
+						if err := (validate.String{
+							MinLength:     0,
+							MinLengthSet:  false,
+							MaxLength:     128,
+							MaxLengthSet:  true,
+							Email:         false,
+							Hostname:      false,
+							Regex:         nil,
+							MinNumeric:    0,
+							MinNumericSet: false,
+							MaxNumeric:    0,
+							MaxNumericSet: false,
+						}).Validate(string(value)); err != nil {
+							return errors.Wrap(err, "string")
+						}
+						return nil
+					}(); err != nil {
+						return err
+					}
+				}
+				return nil
+			}(); err != nil {
+				return err
+			}
+		}
+		return nil
+	}(); err != nil {
+		return params, &ogenerrors.DecodeParamError{
+			Name: "label",
+			In:   "query",
+			Err:  err,
+		}
+	}
+	return params, nil
+}
+
 // ListOperationLogsParams is parameters of list-operation-logs operation.
 type ListOperationLogsParams struct {
 	// Return a single kind of operation; the value matches the operation id of the endpoint.
@@ -5376,6 +5470,136 @@ func decodeSetFloatingIPBandwidthParams(args [1]string, argsEscaped bool, r *htt
 	}(); err != nil {
 		return params, &ogenerrors.DecodeParamError{
 			Name: "floatingIpId",
+			In:   "path",
+			Err:  err,
+		}
+	}
+	return params, nil
+}
+
+// SetInstanceLabelsParams is parameters of set-instance-labels operation.
+type SetInstanceLabelsParams struct {
+	InstanceId uuid.UUID
+}
+
+func unpackSetInstanceLabelsParams(packed middleware.Parameters) (params SetInstanceLabelsParams) {
+	{
+		key := middleware.ParameterKey{
+			Name: "instanceId",
+			In:   "path",
+		}
+		params.InstanceId = packed[key].(uuid.UUID)
+	}
+	return params
+}
+
+func decodeSetInstanceLabelsParams(args [1]string, argsEscaped bool, r *http.Request) (params SetInstanceLabelsParams, _ error) {
+	// Decode path: instanceId.
+	if err := func() error {
+		param := args[0]
+		if argsEscaped {
+			unescaped, err := url.PathUnescape(args[0])
+			if err != nil {
+				return errors.Wrap(err, "unescape path")
+			}
+			param = unescaped
+		}
+		if len(param) > 0 {
+			d := uri.NewPathDecoder(uri.PathDecoderConfig{
+				Param:   "instanceId",
+				Value:   param,
+				Style:   uri.PathStyleSimple,
+				Explode: false,
+			})
+
+			if err := func() error {
+				val, err := d.DecodeValue()
+				if err != nil {
+					return err
+				}
+
+				c, err := conv.ToUUID(val)
+				if err != nil {
+					return err
+				}
+
+				params.InstanceId = c
+				return nil
+			}(); err != nil {
+				return err
+			}
+		} else {
+			return validate.ErrFieldRequired
+		}
+		return nil
+	}(); err != nil {
+		return params, &ogenerrors.DecodeParamError{
+			Name: "instanceId",
+			In:   "path",
+			Err:  err,
+		}
+	}
+	return params, nil
+}
+
+// SetInstanceNotesParams is parameters of set-instance-notes operation.
+type SetInstanceNotesParams struct {
+	InstanceId uuid.UUID
+}
+
+func unpackSetInstanceNotesParams(packed middleware.Parameters) (params SetInstanceNotesParams) {
+	{
+		key := middleware.ParameterKey{
+			Name: "instanceId",
+			In:   "path",
+		}
+		params.InstanceId = packed[key].(uuid.UUID)
+	}
+	return params
+}
+
+func decodeSetInstanceNotesParams(args [1]string, argsEscaped bool, r *http.Request) (params SetInstanceNotesParams, _ error) {
+	// Decode path: instanceId.
+	if err := func() error {
+		param := args[0]
+		if argsEscaped {
+			unescaped, err := url.PathUnescape(args[0])
+			if err != nil {
+				return errors.Wrap(err, "unescape path")
+			}
+			param = unescaped
+		}
+		if len(param) > 0 {
+			d := uri.NewPathDecoder(uri.PathDecoderConfig{
+				Param:   "instanceId",
+				Value:   param,
+				Style:   uri.PathStyleSimple,
+				Explode: false,
+			})
+
+			if err := func() error {
+				val, err := d.DecodeValue()
+				if err != nil {
+					return err
+				}
+
+				c, err := conv.ToUUID(val)
+				if err != nil {
+					return err
+				}
+
+				params.InstanceId = c
+				return nil
+			}(); err != nil {
+				return err
+			}
+		} else {
+			return validate.ErrFieldRequired
+		}
+		return nil
+	}(); err != nil {
+		return params, &ogenerrors.DecodeParamError{
+			Name: "instanceId",
 			In:   "path",
 			Err:  err,
 		}
