@@ -638,7 +638,7 @@ type ImageResource struct {
 	Architecture string             `json:"architecture"`
 	Id           openapi_types.UUID `json:"id"`
 
-	// LoginUsername The account to log in as. The platform sets the password for this account at creation, and it is the account `run-instance-command` uses — trying a different one is the usual reason a login is refused
+	// LoginUsername The account this image lets you log in as. The password set at creation belongs to this account
 	LoginUsername string `json:"login_username"`
 	MinDiskGb     int64  `json:"min_disk_gb"`
 	MinRamMb      int64  `json:"min_ram_mb"`
@@ -674,14 +674,14 @@ type InstanceResource struct {
 	// Ipv6Address IPv6 address of the primary network interface. Assigned automatically once IPv6 is enabled on the private network
 	Ipv6Address *string `json:"ipv6_address"`
 
-	// Labels Your own classification of this instance, as key-value pairs. Nothing on the platform reads these — they are recorded so that a person, or an assistant acting on your behalf, can tell what an instance is for. Empty when never set
+	// Labels Your own classification of this instance, as key-value pairs. Empty when never set
 	Labels map[string]string `json:"labels"`
 
-	// LoginUsername The account to log in as over SSH, taken from the image this instance was created from. The password set at creation belongs to this account
+	// LoginUsername The account to log in as over SSH. The password set at creation belongs to this account
 	LoginUsername string `json:"login_username"`
 	Name          string `json:"name"`
 
-	// Notes A free-text note about this instance — what it runs, and what to be careful about before touching it. Empty when never set
+	// Notes A free-text note about this instance. Empty when never set
 	Notes string `json:"notes"`
 
 	// PendingInstanceTypeId Non-empty while a resize awaits confirmation. Confirming puts this type into effect, reverting discards it
@@ -860,7 +860,7 @@ type PrivateImageResource struct {
 	Failure *string            `json:"failure"`
 	Id      openapi_types.UUID `json:"id"`
 
-	// LoginUsername The account to log in as. The platform sets the password for this account at creation, and it is the account `run-instance-command` uses — trying a different one is the usual reason a login is refused
+	// LoginUsername The account this image lets you log in as. The password set at creation belongs to this account
 	LoginUsername string `json:"login_username"`
 
 	// MinDiskGb The system disk of an instance created from this image cannot be smaller than this
@@ -1101,7 +1101,7 @@ type SetBandwidthRequestBody struct {
 
 // SetInstanceLabelsRequestBody defines model for SetInstanceLabelsRequestBody.
 type SetInstanceLabelsRequestBody struct {
-	// Labels The complete set of labels. Whatever is absent here is removed, so this is also how one is deleted; send an empty object to clear them all. A key may not contain a colon, whitespace or control characters — the colon because it separates key from value in the `label` filter
+	// Labels The complete set of labels. Whatever is absent here is removed; send an empty object to clear them all. A key may not contain a colon, whitespace or control characters
 	Labels map[string]string `json:"labels"`
 }
 
@@ -1194,7 +1194,7 @@ type ListInstanceTypesParams struct {
 
 // ListInstancesParams defines parameters for ListInstances.
 type ListInstancesParams struct {
-	// Label Only instances carrying this label, written as `key:value` — for example `env:prod`. Matched exactly on both halves. A key never contains a colon, so the split is at the first one; anything after it is the value, and `env:` means the key `env` with an empty value rather than "any value"
+	// Label Only instances carrying this label, written as `key:value` — for example `env:prod`. Both halves are matched exactly
 	Label *string `form:"label,omitempty" json:"label,omitempty"`
 }
 
@@ -1898,11 +1898,11 @@ type ClientInterface interface {
 
 	// SetInstanceLabelsWithBody Replace an instance's labels
 	//
-	// Records what this instance is for, as key-value pairs, so that a person or an assistant can tell later. Nothing on the platform reads them: no scheduling, quota or billing decision keys off a label, which is what makes editing one safe.
+	// Records what this instance is for, as key-value pairs. Nothing on the platform reads them.
 	//
-	// **The whole set is replaced.** Whatever is absent from the request is removed — a merge could not express deleting a key, and it makes retrying the same request produce a different result each time.
+	// **The whole set is replaced**: whatever is absent from the request is removed.
 	//
-	// Do not put credentials here. Labels appear in listings, in support tickets and in the operator console.
+	// Do not put credentials here. Labels are visible to platform operators.
 	//
 	// Takes any type of body and a specified content type.
 	//
@@ -1911,11 +1911,11 @@ type ClientInterface interface {
 
 	// SetInstanceLabels Replace an instance's labels
 	//
-	// Records what this instance is for, as key-value pairs, so that a person or an assistant can tell later. Nothing on the platform reads them: no scheduling, quota or billing decision keys off a label, which is what makes editing one safe.
+	// Records what this instance is for, as key-value pairs. Nothing on the platform reads them.
 	//
-	// **The whole set is replaced.** Whatever is absent from the request is removed — a merge could not express deleting a key, and it makes retrying the same request produce a different result each time.
+	// **The whole set is replaced**: whatever is absent from the request is removed.
 	//
-	// Do not put credentials here. Labels appear in listings, in support tickets and in the operator console.
+	// Do not put credentials here. Labels are visible to platform operators.
 	//
 	// Takes a body of the `application/json` content type.
 	//
@@ -1924,11 +1924,11 @@ type ClientInterface interface {
 
 	// SetInstanceNotesWithBody Replace an instance's note
 	//
-	// A free-text note: what this instance runs, and what to be careful about before touching it — "primary database, fail over before rebooting". It is read by whoever opens the instance next, including an assistant acting on your behalf.
+	// A free-text note about this instance — what it runs, and what to be careful about before touching it.
 	//
 	// **The whole note is replaced**; send an empty string to clear it.
 	//
-	// Do not put credentials here. The note appears in the operator console.
+	// Do not put credentials here. The note is visible to platform operators.
 	//
 	// Takes any type of body and a specified content type.
 	//
@@ -1937,11 +1937,11 @@ type ClientInterface interface {
 
 	// SetInstanceNotes Replace an instance's note
 	//
-	// A free-text note: what this instance runs, and what to be careful about before touching it — "primary database, fail over before rebooting". It is read by whoever opens the instance next, including an assistant acting on your behalf.
+	// A free-text note about this instance — what it runs, and what to be careful about before touching it.
 	//
 	// **The whole note is replaced**; send an empty string to clear it.
 	//
-	// Do not put credentials here. The note appears in the operator console.
+	// Do not put credentials here. The note is visible to platform operators.
 	//
 	// Takes a body of the `application/json` content type.
 	//
@@ -3499,11 +3499,11 @@ func (c *Client) DetachInstanceFloatingIp(ctx context.Context, instanceId openap
 
 // SetInstanceLabelsWithBody Replace an instance's labels
 //
-// Records what this instance is for, as key-value pairs, so that a person or an assistant can tell later. Nothing on the platform reads them: no scheduling, quota or billing decision keys off a label, which is what makes editing one safe.
+// Records what this instance is for, as key-value pairs. Nothing on the platform reads them.
 //
-// **The whole set is replaced.** Whatever is absent from the request is removed — a merge could not express deleting a key, and it makes retrying the same request produce a different result each time.
+// **The whole set is replaced**: whatever is absent from the request is removed.
 //
-// Do not put credentials here. Labels appear in listings, in support tickets and in the operator console.
+// Do not put credentials here. Labels are visible to platform operators.
 //
 // Takes any type of body and a specified content type.
 //
@@ -3522,11 +3522,11 @@ func (c *Client) SetInstanceLabelsWithBody(ctx context.Context, instanceId opena
 
 // SetInstanceLabels Replace an instance's labels
 //
-// Records what this instance is for, as key-value pairs, so that a person or an assistant can tell later. Nothing on the platform reads them: no scheduling, quota or billing decision keys off a label, which is what makes editing one safe.
+// Records what this instance is for, as key-value pairs. Nothing on the platform reads them.
 //
-// **The whole set is replaced.** Whatever is absent from the request is removed — a merge could not express deleting a key, and it makes retrying the same request produce a different result each time.
+// **The whole set is replaced**: whatever is absent from the request is removed.
 //
-// Do not put credentials here. Labels appear in listings, in support tickets and in the operator console.
+// Do not put credentials here. Labels are visible to platform operators.
 //
 // Takes a body of the `application/json` content type.
 //
@@ -3545,11 +3545,11 @@ func (c *Client) SetInstanceLabels(ctx context.Context, instanceId openapi_types
 
 // SetInstanceNotesWithBody Replace an instance's note
 //
-// A free-text note: what this instance runs, and what to be careful about before touching it — "primary database, fail over before rebooting". It is read by whoever opens the instance next, including an assistant acting on your behalf.
+// A free-text note about this instance — what it runs, and what to be careful about before touching it.
 //
 // **The whole note is replaced**; send an empty string to clear it.
 //
-// Do not put credentials here. The note appears in the operator console.
+// Do not put credentials here. The note is visible to platform operators.
 //
 // Takes any type of body and a specified content type.
 //
@@ -3568,11 +3568,11 @@ func (c *Client) SetInstanceNotesWithBody(ctx context.Context, instanceId openap
 
 // SetInstanceNotes Replace an instance's note
 //
-// A free-text note: what this instance runs, and what to be careful about before touching it — "primary database, fail over before rebooting". It is read by whoever opens the instance next, including an assistant acting on your behalf.
+// A free-text note about this instance — what it runs, and what to be careful about before touching it.
 //
 // **The whole note is replaced**; send an empty string to clear it.
 //
-// Do not put credentials here. The note appears in the operator console.
+// Do not put credentials here. The note is visible to platform operators.
 //
 // Takes a body of the `application/json` content type.
 //
@@ -9087,11 +9087,11 @@ type ClientWithResponsesInterface interface {
 
 	// SetInstanceLabelsWithBodyWithResponse Replace an instance's labels
 	//
-	// Records what this instance is for, as key-value pairs, so that a person or an assistant can tell later. Nothing on the platform reads them: no scheduling, quota or billing decision keys off a label, which is what makes editing one safe.
+	// Records what this instance is for, as key-value pairs. Nothing on the platform reads them.
 	//
-	// **The whole set is replaced.** Whatever is absent from the request is removed — a merge could not express deleting a key, and it makes retrying the same request produce a different result each time.
+	// **The whole set is replaced**: whatever is absent from the request is removed.
 	//
-	// Do not put credentials here. Labels appear in listings, in support tickets and in the operator console.
+	// Do not put credentials here. Labels are visible to platform operators.
 	//
 	// Takes any type of body and a specified content type, and returns a wrapper object for the known response body format(s).
 	//
@@ -9100,11 +9100,11 @@ type ClientWithResponsesInterface interface {
 
 	// SetInstanceLabelsWithResponse Replace an instance's labels
 	//
-	// Records what this instance is for, as key-value pairs, so that a person or an assistant can tell later. Nothing on the platform reads them: no scheduling, quota or billing decision keys off a label, which is what makes editing one safe.
+	// Records what this instance is for, as key-value pairs. Nothing on the platform reads them.
 	//
-	// **The whole set is replaced.** Whatever is absent from the request is removed — a merge could not express deleting a key, and it makes retrying the same request produce a different result each time.
+	// **The whole set is replaced**: whatever is absent from the request is removed.
 	//
-	// Do not put credentials here. Labels appear in listings, in support tickets and in the operator console.
+	// Do not put credentials here. Labels are visible to platform operators.
 	//
 	// Takes a body of the `application/json` content type, and returns a wrapper object for the known response body format(s).
 	//
@@ -9113,11 +9113,11 @@ type ClientWithResponsesInterface interface {
 
 	// SetInstanceNotesWithBodyWithResponse Replace an instance's note
 	//
-	// A free-text note: what this instance runs, and what to be careful about before touching it — "primary database, fail over before rebooting". It is read by whoever opens the instance next, including an assistant acting on your behalf.
+	// A free-text note about this instance — what it runs, and what to be careful about before touching it.
 	//
 	// **The whole note is replaced**; send an empty string to clear it.
 	//
-	// Do not put credentials here. The note appears in the operator console.
+	// Do not put credentials here. The note is visible to platform operators.
 	//
 	// Takes any type of body and a specified content type, and returns a wrapper object for the known response body format(s).
 	//
@@ -9126,11 +9126,11 @@ type ClientWithResponsesInterface interface {
 
 	// SetInstanceNotesWithResponse Replace an instance's note
 	//
-	// A free-text note: what this instance runs, and what to be careful about before touching it — "primary database, fail over before rebooting". It is read by whoever opens the instance next, including an assistant acting on your behalf.
+	// A free-text note about this instance — what it runs, and what to be careful about before touching it.
 	//
 	// **The whole note is replaced**; send an empty string to clear it.
 	//
-	// Do not put credentials here. The note appears in the operator console.
+	// Do not put credentials here. The note is visible to platform operators.
 	//
 	// Takes a body of the `application/json` content type, and returns a wrapper object for the known response body format(s).
 	//
@@ -14725,11 +14725,11 @@ func (c *ClientWithResponses) DetachInstanceFloatingIpWithResponse(ctx context.C
 
 // SetInstanceLabelsWithBodyWithResponse Replace an instance's labels
 //
-// Records what this instance is for, as key-value pairs, so that a person or an assistant can tell later. Nothing on the platform reads them: no scheduling, quota or billing decision keys off a label, which is what makes editing one safe.
+// Records what this instance is for, as key-value pairs. Nothing on the platform reads them.
 //
-// **The whole set is replaced.** Whatever is absent from the request is removed — a merge could not express deleting a key, and it makes retrying the same request produce a different result each time.
+// **The whole set is replaced**: whatever is absent from the request is removed.
 //
-// Do not put credentials here. Labels appear in listings, in support tickets and in the operator console.
+// Do not put credentials here. Labels are visible to platform operators.
 //
 // Takes any type of body and a specified content type, and returns a wrapper object for the known response body format(s).
 //
@@ -14744,11 +14744,11 @@ func (c *ClientWithResponses) SetInstanceLabelsWithBodyWithResponse(ctx context.
 
 // SetInstanceLabelsWithResponse Replace an instance's labels
 //
-// Records what this instance is for, as key-value pairs, so that a person or an assistant can tell later. Nothing on the platform reads them: no scheduling, quota or billing decision keys off a label, which is what makes editing one safe.
+// Records what this instance is for, as key-value pairs. Nothing on the platform reads them.
 //
-// **The whole set is replaced.** Whatever is absent from the request is removed — a merge could not express deleting a key, and it makes retrying the same request produce a different result each time.
+// **The whole set is replaced**: whatever is absent from the request is removed.
 //
-// Do not put credentials here. Labels appear in listings, in support tickets and in the operator console.
+// Do not put credentials here. Labels are visible to platform operators.
 //
 // Takes a body of the `application/json` content type, and returns a wrapper object for the known response body format(s).
 //
@@ -14763,11 +14763,11 @@ func (c *ClientWithResponses) SetInstanceLabelsWithResponse(ctx context.Context,
 
 // SetInstanceNotesWithBodyWithResponse Replace an instance's note
 //
-// A free-text note: what this instance runs, and what to be careful about before touching it — "primary database, fail over before rebooting". It is read by whoever opens the instance next, including an assistant acting on your behalf.
+// A free-text note about this instance — what it runs, and what to be careful about before touching it.
 //
 // **The whole note is replaced**; send an empty string to clear it.
 //
-// Do not put credentials here. The note appears in the operator console.
+// Do not put credentials here. The note is visible to platform operators.
 //
 // Takes any type of body and a specified content type, and returns a wrapper object for the known response body format(s).
 //
@@ -14782,11 +14782,11 @@ func (c *ClientWithResponses) SetInstanceNotesWithBodyWithResponse(ctx context.C
 
 // SetInstanceNotesWithResponse Replace an instance's note
 //
-// A free-text note: what this instance runs, and what to be careful about before touching it — "primary database, fail over before rebooting". It is read by whoever opens the instance next, including an assistant acting on your behalf.
+// A free-text note about this instance — what it runs, and what to be careful about before touching it.
 //
 // **The whole note is replaced**; send an empty string to clear it.
 //
-// Do not put credentials here. The note appears in the operator console.
+// Do not put credentials here. The note is visible to platform operators.
 //
 // Takes a body of the `application/json` content type, and returns a wrapper object for the known response body format(s).
 //
