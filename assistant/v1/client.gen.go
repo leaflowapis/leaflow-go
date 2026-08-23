@@ -737,16 +737,14 @@ type ClientActionRequest struct {
 // ClientActionRequestType Only functions are supported.
 type ClientActionRequestType string
 
-// ClientContextPart One block of context. `type` names what it is so the assistant can tell blocks apart —
-// `page`, `selection`, `open_file`, `working_directory`, whatever this client has.
+// ClientContextPart A `data-*` part as it was sent.
 type ClientContextPart struct {
-	// Data The block itself. Any object; its keys are shown to the assistant as they are.
 	Data map[string]interface{} `json:"data"`
 	Type string                 `json:"type"`
 }
 
-// ClientContextRequest What this client is and what it can do, so the assistant can ask it to do those things while
-// it answers.
+// ClientContextRequest Which client this is and what it can do, so the assistant can ask it to do those things
+// while it answers. What the operator is looking at travels as `data-*` parts on the message.
 //
 // Send `actions` only when they differ from the last message on this conversation. Sending the
 // block without `actions` keeps whatever was declared before.
@@ -756,13 +754,6 @@ type ClientContextRequest struct {
 
 	// ClientId Identifies this client while it stays open. Any stable string; one per tab or process.
 	ClientId string `json:"clientId"`
-
-	// Context What the operator is looking at or working on, as typed blocks. Each one is shown to the
-	// assistant as it was sent.
-	//
-	// These travel with this message only and stay in the conversation, so they add up: send
-	// what the assistant needs to answer, not everything on hand. At most 64 KiB in total.
-	Context []ClientContextPart `json:"context,omitempty"`
 
 	// Label How the client calls itself, for example "Leaflow console (web)".
 	Label *string `json:"label,omitempty"`
@@ -884,10 +875,20 @@ type ItemResource struct {
 	ApprovalReason *string               `json:"approvalReason,omitempty"`
 	Arguments      *string               `json:"arguments,omitempty"`
 	Attachments    []AttachmentResource  `json:"attachments,omitempty"`
-	CreatedAt      time.Time             `json:"createdAt"`
-	Detail         *string               `json:"detail,omitempty"`
-	DurationMs     *int64                `json:"durationMs,omitempty"`
-	Id             string                `json:"id"`
+
+	// ClientContext The context blocks the client attached to this message.
+	//
+	// **Not part of what the operator wrote** — `text` is. Render the message from `text` and
+	// leave these out of the bubble; they are here so a client that did not send them, or one
+	// that reloaded, can still read what the assistant was given.
+	//
+	// The actions declared alongside them are not returned: they are re-declared as they
+	// change and would make every fetch of the conversation carry them again.
+	ClientContext []ClientContextPart `json:"clientContext,omitempty"`
+	CreatedAt     time.Time           `json:"createdAt"`
+	Detail        *string             `json:"detail,omitempty"`
+	DurationMs    *int64              `json:"durationMs,omitempty"`
+	Id            string              `json:"id"`
 
 	// Model The model that produced this entry. Null for messages the user sent
 	Model     *string            `json:"model"`
@@ -979,6 +980,26 @@ type MemoryResource struct {
 	UpdatedAt      time.Time `json:"updatedAt"`
 }
 
+// MessagePart One piece of a message. `type` says which of the fields below carries it:
+//
+//   - `text` — the words, in `text`
+//   - `file` — an attachment uploaded earlier, by id in `attachmentId`
+//   - `data-<something>` — context from the client, in `data`. The name after `data-` is yours;
+//     it is shown to the assistant so it can tell one kind of block from another.
+//
+// Order matters: an image belongs where it was written, not at the end.
+type MessagePart struct {
+	// AttachmentId For `file` parts. The attachment must have been uploaded and not yet bound to another message.
+	AttachmentId *string `json:"attachmentId,omitempty"`
+
+	// Data For `data-*` parts. Any object; its keys reach the assistant as they are.
+	Data map[string]interface{} `json:"data,omitempty"`
+
+	// Text For `text` parts.
+	Text *string `json:"text,omitempty"`
+	Type string  `json:"type"`
+}
+
 // ModelListResponseBody defines model for ModelListResponseBody.
 type ModelListResponseBody struct {
 	Models []ModelResource `json:"models"`
@@ -1065,16 +1086,16 @@ type RotateSecretRequestBody struct {
 
 // SendMessageRequestBody defines model for SendMessageRequestBody.
 type SendMessageRequestBody struct {
-	// AttachmentIds Ids of attachments uploaded earlier that are not yet bound to any message
-	AttachmentIds []string `json:"attachmentIds,omitempty"`
-
-	// Client What this client is and what it can do, so the assistant can ask it to do those things while
-	// it answers.
+	// Client Which client this is and what it can do, so the assistant can ask it to do those things
+	// while it answers. What the operator is looking at travels as `data-*` parts on the message.
 	//
 	// Send `actions` only when they differ from the last message on this conversation. Sending the
 	// block without `actions` keeps whatever was declared before.
 	Client *ClientContextRequest `json:"client,omitempty"`
-	Text   string                `json:"text"`
+
+	// Parts The message, in the order it was written. A message with nothing but text is a single
+	// text part; that is the ordinary case and nothing else is required.
+	Parts []MessagePart `json:"parts"`
 }
 
 // SenderCheckResource defines model for SenderCheckResource.

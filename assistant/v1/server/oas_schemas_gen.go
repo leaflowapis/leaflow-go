@@ -1114,11 +1114,9 @@ func (s *ClientActionRequestType) UnmarshalText(data []byte) error {
 	}
 }
 
-// One block of context. `type` names what it is so the assistant can tell blocks apart — `page`,
-// `selection`, `open_file`, `working_directory`, whatever this client has.
+// A `data-*` part as it was sent.
 // Ref: #/components/schemas/ClientContextPart
 type ClientContextPart struct {
-	// The block itself. Any object; its keys are shown to the assistant as they are.
 	Data ClientContextPartData `json:"data"`
 	Type string                `json:"type"`
 }
@@ -1143,7 +1141,6 @@ func (s *ClientContextPart) SetType(val string) {
 	s.Type = val
 }
 
-// The block itself. Any object; its keys are shown to the assistant as they are.
 type ClientContextPartData map[string]jx.Raw
 
 func (s *ClientContextPartData) init() ClientContextPartData {
@@ -1155,8 +1152,8 @@ func (s *ClientContextPartData) init() ClientContextPartData {
 	return m
 }
 
-// What this client is and what it can do, so the assistant can ask it to do those things while it
-// answers.
+// Which client this is and what it can do, so the assistant can ask it to do those things while it
+// answers. What the operator is looking at travels as `data-*` parts on the message.
 //
 // Send `actions` only when they differ from the last message on this conversation. Sending the block
 // without `actions` keeps whatever was declared before.
@@ -1166,12 +1163,6 @@ type ClientContextRequest struct {
 	Actions OptNilClientActionRequestArray `json:"actions"`
 	// Identifies this client while it stays open. Any stable string; one per tab or process.
 	ClientId string `json:"clientId"`
-	// What the operator is looking at or working on, as typed blocks. Each one is shown to the assistant
-	// as it was sent.
-	//
-	// These travel with this message only and stay in the conversation, so they add up: send what the
-	// assistant needs to answer, not everything on hand. At most 64 KiB in total.
-	Context OptNilClientContextPartArray `json:"context"`
 	// How the client calls itself, for example "Leaflow console (web)".
 	Label OptString `json:"label"`
 }
@@ -1184,11 +1175,6 @@ func (s *ClientContextRequest) GetActions() OptNilClientActionRequestArray {
 // GetClientId returns the value of ClientId.
 func (s *ClientContextRequest) GetClientId() string {
 	return s.ClientId
-}
-
-// GetContext returns the value of Context.
-func (s *ClientContextRequest) GetContext() OptNilClientContextPartArray {
-	return s.Context
 }
 
 // GetLabel returns the value of Label.
@@ -1204,11 +1190,6 @@ func (s *ClientContextRequest) SetActions(val OptNilClientActionRequestArray) {
 // SetClientId sets the value of ClientId.
 func (s *ClientContextRequest) SetClientId(val string) {
 	s.ClientId = val
-}
-
-// SetContext sets the value of Context.
-func (s *ClientContextRequest) SetContext(val OptNilClientContextPartArray) {
-	s.Context = val
 }
 
 // SetLabel sets the value of Label.
@@ -2018,10 +1999,19 @@ type ItemResource struct {
 	ApprovalReason OptNilString                  `json:"approvalReason"`
 	Arguments      OptString                     `json:"arguments"`
 	Attachments    OptNilAttachmentResourceArray `json:"attachments"`
-	CreatedAt      time.Time                     `json:"createdAt"`
-	Detail         OptNilString                  `json:"detail"`
-	DurationMs     OptNilInt64                   `json:"durationMs"`
-	ID             string                        `json:"id"`
+	// The context blocks the client attached to this message.
+	//
+	// Not part of what the operator wrote — `text` is. Render the message from `text` and leave these
+	// out of the bubble; they are here so a client that did not send them, or one that reloaded, can still
+	// read what the assistant was given.
+	//
+	// The actions declared alongside them are not returned: they are re-declared as they change and would
+	// make every fetch of the conversation carry them again.
+	ClientContext OptNilClientContextPartArray `json:"clientContext"`
+	CreatedAt     time.Time                    `json:"createdAt"`
+	Detail        OptNilString                 `json:"detail"`
+	DurationMs    OptNilInt64                  `json:"durationMs"`
+	ID            string                       `json:"id"`
 	// The model that produced this entry. Null for messages the user sent.
 	Model     NilString          `json:"model"`
 	Namespace OptNilString       `json:"namespace"`
@@ -2053,6 +2043,11 @@ func (s *ItemResource) GetArguments() OptString {
 // GetAttachments returns the value of Attachments.
 func (s *ItemResource) GetAttachments() OptNilAttachmentResourceArray {
 	return s.Attachments
+}
+
+// GetClientContext returns the value of ClientContext.
+func (s *ItemResource) GetClientContext() OptNilClientContextPartArray {
+	return s.ClientContext
 }
 
 // GetCreatedAt returns the value of CreatedAt.
@@ -2138,6 +2133,11 @@ func (s *ItemResource) SetArguments(val OptString) {
 // SetAttachments sets the value of Attachments.
 func (s *ItemResource) SetAttachments(val OptNilAttachmentResourceArray) {
 	s.Attachments = val
+}
+
+// SetClientContext sets the value of ClientContext.
+func (s *ItemResource) SetClientContext(val OptNilClientContextPartArray) {
+	s.ClientContext = val
 }
 
 // SetCreatedAt sets the value of CreatedAt.
@@ -2732,6 +2732,77 @@ func (s *MemoryResource) SetSourceThreadId(val OptString) {
 // SetUpdatedAt sets the value of UpdatedAt.
 func (s *MemoryResource) SetUpdatedAt(val time.Time) {
 	s.UpdatedAt = val
+}
+
+// One piece of a message. `type` says which of the fields below carries it:
+//
+//   - `text` — the words, in `text`
+//   - `file` — an attachment uploaded earlier, by id in `attachmentId`
+//   - `data-<something>` — context from the client, in `data`. The name after `data-` is yours; it is
+//     shown to the assistant so it can tell one kind of block from another.
+//
+// Order matters: an image belongs where it was written, not at the end.
+// Ref: #/components/schemas/MessagePart
+type MessagePart struct {
+	// For `file` parts. The attachment must have been uploaded and not yet bound to another message.
+	AttachmentId OptNilString `json:"attachmentId"`
+	// For `data-*` parts. Any object; its keys reach the assistant as they are.
+	Data OptNilMessagePartData `json:"data"`
+	// For `text` parts.
+	Text OptNilString `json:"text"`
+	Type string       `json:"type"`
+}
+
+// GetAttachmentId returns the value of AttachmentId.
+func (s *MessagePart) GetAttachmentId() OptNilString {
+	return s.AttachmentId
+}
+
+// GetData returns the value of Data.
+func (s *MessagePart) GetData() OptNilMessagePartData {
+	return s.Data
+}
+
+// GetText returns the value of Text.
+func (s *MessagePart) GetText() OptNilString {
+	return s.Text
+}
+
+// GetType returns the value of Type.
+func (s *MessagePart) GetType() string {
+	return s.Type
+}
+
+// SetAttachmentId sets the value of AttachmentId.
+func (s *MessagePart) SetAttachmentId(val OptNilString) {
+	s.AttachmentId = val
+}
+
+// SetData sets the value of Data.
+func (s *MessagePart) SetData(val OptNilMessagePartData) {
+	s.Data = val
+}
+
+// SetText sets the value of Text.
+func (s *MessagePart) SetText(val OptNilString) {
+	s.Text = val
+}
+
+// SetType sets the value of Type.
+func (s *MessagePart) SetType(val string) {
+	s.Type = val
+}
+
+// For `data-*` parts. Any object; its keys reach the assistant as they are.
+type MessagePartData map[string]jx.Raw
+
+func (s *MessagePartData) init() MessagePartData {
+	m := *s
+	if m == nil {
+		m = map[string]jx.Raw{}
+		*s = m
+	}
+	return m
 }
 
 // Ref: #/components/schemas/ModelListResponseBody
@@ -3956,6 +4027,74 @@ func (o OptNilItemResourceApproval) Or(d ItemResourceApproval) ItemResourceAppro
 	return d
 }
 
+// NewOptNilMessagePartData returns new OptNilMessagePartData with value set to v.
+func NewOptNilMessagePartData(v MessagePartData) OptNilMessagePartData {
+	return OptNilMessagePartData{
+		Value: v,
+		Set:   true,
+	}
+}
+
+// OptNilMessagePartData is optional nullable MessagePartData.
+type OptNilMessagePartData struct {
+	Value MessagePartData
+	Set   bool
+	Null  bool
+}
+
+// IsSet returns true if OptNilMessagePartData was set.
+func (o OptNilMessagePartData) IsSet() bool { return o.Set }
+
+// Reset unsets value.
+func (o *OptNilMessagePartData) Reset() {
+	var v MessagePartData
+	o.Value = v
+	o.Set = false
+	o.Null = false
+}
+
+// SetTo sets value to v.
+func (o *OptNilMessagePartData) SetTo(v MessagePartData) {
+	o.Set = true
+	o.Null = false
+	o.Value = v
+}
+
+// IsNull returns true if value is Null.
+func (o OptNilMessagePartData) IsNull() bool { return o.Null }
+
+// SetToNull sets value to null.
+func (o *OptNilMessagePartData) SetToNull() {
+	o.Set = true
+	o.Null = true
+	var v MessagePartData
+	o.Value = v
+}
+
+// IsEmpty returns true if the field was omitted from the payload (not Set and not Null).
+func (o OptNilMessagePartData) IsEmpty() bool {
+	return !o.Set && !o.Null
+}
+
+// Get returns value and boolean that denotes whether value was set.
+func (o OptNilMessagePartData) Get() (v MessagePartData, ok bool) {
+	if o.Null {
+		return v, false
+	}
+	if !o.Set {
+		return v, false
+	}
+	return o.Value, true
+}
+
+// Or returns value if set, or given parameter if does not.
+func (o OptNilMessagePartData) Or(d MessagePartData) MessagePartData {
+	if v, ok := o.Get(); ok {
+		return v
+	}
+	return d
+}
+
 // NewOptNilQuestionArray returns new OptNilQuestionArray with value set to v.
 func NewOptNilQuestionArray(v []Question) OptNilQuestionArray {
 	return OptNilQuestionArray{
@@ -4876,15 +5015,10 @@ func (s *RotateSecretRequestBody) SetWebhookSecret(val OptString) {
 
 // Ref: #/components/schemas/SendMessageRequestBody
 type SendMessageRequestBody struct {
-	// Ids of attachments uploaded earlier that are not yet bound to any message.
-	AttachmentIds OptNilStringArray       `json:"attachmentIds"`
-	Client        OptClientContextRequest `json:"client"`
-	Text          string                  `json:"text"`
-}
-
-// GetAttachmentIds returns the value of AttachmentIds.
-func (s *SendMessageRequestBody) GetAttachmentIds() OptNilStringArray {
-	return s.AttachmentIds
+	Client OptClientContextRequest `json:"client"`
+	// The message, in the order it was written. A message with nothing but text is a single text part;
+	// that is the ordinary case and nothing else is required.
+	Parts []MessagePart `json:"parts"`
 }
 
 // GetClient returns the value of Client.
@@ -4892,14 +5026,9 @@ func (s *SendMessageRequestBody) GetClient() OptClientContextRequest {
 	return s.Client
 }
 
-// GetText returns the value of Text.
-func (s *SendMessageRequestBody) GetText() string {
-	return s.Text
-}
-
-// SetAttachmentIds sets the value of AttachmentIds.
-func (s *SendMessageRequestBody) SetAttachmentIds(val OptNilStringArray) {
-	s.AttachmentIds = val
+// GetParts returns the value of Parts.
+func (s *SendMessageRequestBody) GetParts() []MessagePart {
+	return s.Parts
 }
 
 // SetClient sets the value of Client.
@@ -4907,9 +5036,9 @@ func (s *SendMessageRequestBody) SetClient(val OptClientContextRequest) {
 	s.Client = val
 }
 
-// SetText sets the value of Text.
-func (s *SendMessageRequestBody) SetText(val string) {
-	s.Text = val
+// SetParts sets the value of Parts.
+func (s *SendMessageRequestBody) SetParts(val []MessagePart) {
+	s.Parts = val
 }
 
 // Ref: #/components/schemas/SenderCheckResource
