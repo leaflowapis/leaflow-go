@@ -1694,9 +1694,7 @@ func (s *ImageListResponseBody) SetItems(val []ImageResource) {
 type ImageResource struct {
 	Architecture string    `json:"architecture"`
 	ID           uuid.UUID `json:"id"`
-	// The account to log in as. The platform sets the password for this account at creation, and it is the
-	// account `run-instance-command` uses — trying a different one is the usual reason a login is
-	// refused.
+	// The account this image lets you log in as. The password set at creation belongs to this account.
 	LoginUsername string `json:"login_username"`
 	MinDiskGB     int64  `json:"min_disk_gb"`
 	MinRAMMB      int64  `json:"min_ram_mb"`
@@ -1837,16 +1835,12 @@ type InstanceResource struct {
 	// IPv6 address of the primary network interface. Assigned automatically once IPv6 is enabled on the
 	// private network.
 	Ipv6Address NilString `json:"ipv6_address"`
-	// Your own classification of this instance, as key-value pairs. Nothing on the platform reads these
-	// — they are recorded so that a person, or an assistant acting on your behalf, can tell what an
-	// instance is for. Empty when never set.
+	// Your own classification of this instance, as key-value pairs. Empty when never set.
 	Labels InstanceResourceLabels `json:"labels"`
-	// The account to log in as over SSH, taken from the image this instance was created from. The password
-	// set at creation belongs to this account.
+	// The account to log in as over SSH. The password set at creation belongs to this account.
 	LoginUsername string `json:"login_username"`
 	Name          string `json:"name"`
-	// A free-text note about this instance — what it runs, and what to be careful about before touching
-	// it. Empty when never set.
+	// A free-text note about this instance. Empty when never set.
 	Notes string `json:"notes"`
 	// Non-empty while a resize awaits confirmation. Confirming puts this type into effect, reverting
 	// discards it.
@@ -2086,9 +2080,7 @@ func (s *InstanceResource) SetUpdatedAt(val time.Time) {
 	s.UpdatedAt = val
 }
 
-// Your own classification of this instance, as key-value pairs. Nothing on the platform reads these
-// — they are recorded so that a person, or an assistant acting on your behalf, can tell what an
-// instance is for. Empty when never set.
+// Your own classification of this instance, as key-value pairs. Empty when never set.
 type InstanceResourceLabels map[string]string
 
 func (s *InstanceResourceLabels) init() InstanceResourceLabels {
@@ -3401,9 +3393,7 @@ type PrivateImageResource struct {
 	// Reason the capture failed; non-empty only when `status` is `error`.
 	Failure NilString `json:"failure"`
 	ID      uuid.UUID `json:"id"`
-	// The account to log in as. The platform sets the password for this account at creation, and it is the
-	// account `run-instance-command` uses — trying a different one is the usual reason a login is
-	// refused.
+	// The account this image lets you log in as. The password set at creation belongs to this account.
 	LoginUsername string `json:"login_username"`
 	// The system disk of an instance created from this image cannot be smaller than this.
 	MinDiskGB int64 `json:"min_disk_gb"`
@@ -4577,9 +4567,8 @@ func (s *SetBandwidthRequestBody) SetMbps(val int64) {
 
 // Ref: #/components/schemas/SetInstanceLabelsRequestBody
 type SetInstanceLabelsRequestBody struct {
-	// The complete set of labels. Whatever is absent here is removed, so this is also how one is deleted;
-	// send an empty object to clear them all. A key may not contain a colon, whitespace or control
-	// characters — the colon because it separates key from value in the `label` filter.
+	// The complete set of labels. Whatever is absent here is removed; send an empty object to clear them
+	// all. A key may not contain a colon, whitespace or control characters.
 	Labels SetInstanceLabelsRequestBodyLabels `json:"labels"`
 }
 
@@ -4593,9 +4582,8 @@ func (s *SetInstanceLabelsRequestBody) SetLabels(val SetInstanceLabelsRequestBod
 	s.Labels = val
 }
 
-// The complete set of labels. Whatever is absent here is removed, so this is also how one is deleted;
-// send an empty object to clear them all. A key may not contain a colon, whitespace or control
-// characters — the colon because it separates key from value in the `label` filter.
+// The complete set of labels. Whatever is absent here is removed; send an empty object to clear them
+// all. A key may not contain a colon, whitespace or control characters.
 type SetInstanceLabelsRequestBodyLabels map[string]string
 
 func (s *SetInstanceLabelsRequestBodyLabels) init() SetInstanceLabelsRequestBodyLabels {

@@ -3309,9 +3309,8 @@ func decodeListInstanceTypesParams(args [0]string, argsEscaped bool, r *http.Req
 
 // ListInstancesParams is parameters of list-instances operation.
 type ListInstancesParams struct {
-	// Only instances carrying this label, written as `key:value` — for example `env:prod`. Matched
-	// exactly on both halves. A key never contains a colon, so the split is at the first one; anything
-	// after it is the value, and `env:` means the key `env` with an empty value rather than "any value".
+	// Only instances carrying this label, written as `key:value` — for example `env:prod`. Both halves
+	// are matched exactly.
 	Label OptString `json:",omitempty,omitzero"`
 }
 

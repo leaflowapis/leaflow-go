@@ -703,27 +703,22 @@ type Invoker interface {
 	SetFloatingIPBandwidth(ctx context.Context, request *SetBandwidthRequestBody, params SetFloatingIPBandwidthParams) (*FloatingIPResource, error)
 	// SetInstanceLabels invokes set-instance-labels operation.
 	//
-	// Records what this instance is for, as key-value pairs, so that a person or an assistant can tell
-	// later. Nothing on the platform reads them: no scheduling, quota or billing decision keys off a
-	// label, which is what makes editing one safe.
+	// Records what this instance is for, as key-value pairs. Nothing on the platform reads them.
 	//
-	// The whole set is replaced. Whatever is absent from the request is removed — a merge could not
-	// express deleting a key, and it makes retrying the same request produce a different result each time.
+	// The whole set is replaced: whatever is absent from the request is removed.
 	//
-	// Do not put credentials here. Labels appear in listings, in support tickets and in the operator
-	// console.
+	// Do not put credentials here. Labels are visible to platform operators.
 	//
 	// PUT /api/v1/instances/{instanceId}/labels
 	SetInstanceLabels(ctx context.Context, request *SetInstanceLabelsRequestBody, params SetInstanceLabelsParams) (*InstanceResource, error)
 	// SetInstanceNotes invokes set-instance-notes operation.
 	//
-	// A free-text note: what this instance runs, and what to be careful about before touching it —
-	// "primary database, fail over before rebooting". It is read by whoever opens the instance next,
-	// including an assistant acting on your behalf.
+	// A free-text note about this instance — what it runs, and what to be careful about before touching
+	// it.
 	//
 	// The whole note is replaced; send an empty string to clear it.
 	//
-	// Do not put credentials here. The note appears in the operator console.
+	// Do not put credentials here. The note is visible to platform operators.
 	//
 	// PUT /api/v1/instances/{instanceId}/notes
 	SetInstanceNotes(ctx context.Context, request *SetInstanceNotesRequestBody, params SetInstanceNotesParams) (*InstanceResource, error)
@@ -11865,15 +11860,11 @@ func (c *Client) sendSetFloatingIPBandwidth(ctx context.Context, request *SetBan
 
 // SetInstanceLabels invokes set-instance-labels operation.
 //
-// Records what this instance is for, as key-value pairs, so that a person or an assistant can tell
-// later. Nothing on the platform reads them: no scheduling, quota or billing decision keys off a
-// label, which is what makes editing one safe.
+// Records what this instance is for, as key-value pairs. Nothing on the platform reads them.
 //
-// The whole set is replaced. Whatever is absent from the request is removed — a merge could not
-// express deleting a key, and it makes retrying the same request produce a different result each time.
+// The whole set is replaced: whatever is absent from the request is removed.
 //
-// Do not put credentials here. Labels appear in listings, in support tickets and in the operator
-// console.
+// Do not put credentials here. Labels are visible to platform operators.
 //
 // PUT /api/v1/instances/{instanceId}/labels
 func (c *Client) SetInstanceLabels(ctx context.Context, request *SetInstanceLabelsRequestBody, params SetInstanceLabelsParams) (*InstanceResource, error) {
@@ -12008,13 +11999,12 @@ func (c *Client) sendSetInstanceLabels(ctx context.Context, request *SetInstance
 
 // SetInstanceNotes invokes set-instance-notes operation.
 //
-// A free-text note: what this instance runs, and what to be careful about before touching it —
-// "primary database, fail over before rebooting". It is read by whoever opens the instance next,
-// including an assistant acting on your behalf.
+// A free-text note about this instance — what it runs, and what to be careful about before touching
+// it.
 //
 // The whole note is replaced; send an empty string to clear it.
 //
-// Do not put credentials here. The note appears in the operator console.
+// Do not put credentials here. The note is visible to platform operators.
 //
 // PUT /api/v1/instances/{instanceId}/notes
 func (c *Client) SetInstanceNotes(ctx context.Context, request *SetInstanceNotesRequestBody, params SetInstanceNotesParams) (*InstanceResource, error) {
