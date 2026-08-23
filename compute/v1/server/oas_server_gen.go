@@ -346,8 +346,14 @@ type Handler interface {
 	// A failure on the first instance is treated as a failure of the whole request and no instance is
 	// created.
 	//
-	// Exactly one image source must be given: `image_id` for a platform image, `private_image_id` for a
-	// private image. Supplying both or neither is rejected.
+	// Exactly one source must be given: `image_id` for a platform image, `private_image_id` for a private
+	// image, or `boot_disk_id` to boot a disk you already have. Supplying more than one, or none, is
+	// rejected.
+	//
+	// `boot_disk_id` recovers an instance that can no longer be repaired from the inside. Snapshot its
+	// disk, restore that snapshot into a new disk, attach the new disk to another instance and repair it
+	// there, then create an instance from it. That disk is not deleted when the instance is released; it
+	// is detached and returned to you.
 	//
 	// Instances are created in the availability zone of the instance type. Disks to be attached later must
 	// reside in the same zone.

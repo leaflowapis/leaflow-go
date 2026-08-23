@@ -4782,6 +4782,10 @@ func (s *InstanceResource) encodeFields(e *jx.Encoder) {
 		json.EncodeUUID(e, s.ID)
 	}
 	{
+		e.FieldStart("boot_disk_id")
+		s.BootDiskID.Encode(e)
+	}
+	{
 		e.FieldStart("image_id")
 		s.ImageID.Encode(e)
 	}
@@ -4859,28 +4863,29 @@ func (s *InstanceResource) encodeFields(e *jx.Encoder) {
 	}
 }
 
-var jsonFieldsNameOfInstanceResource = [21]string{
+var jsonFieldsNameOfInstanceResource = [22]string{
 	0:  "availability_zone",
 	1:  "created_at",
 	2:  "hostname",
 	3:  "id",
-	4:  "image_id",
-	5:  "instance_type_id",
-	6:  "ipv6_address",
-	7:  "labels",
-	8:  "login_username",
-	9:  "name",
-	10: "notes",
-	11: "pending_instance_type_id",
-	12: "private_image_id",
-	13: "private_ip",
-	14: "private_network_id",
-	15: "public_ips",
-	16: "region_code",
-	17: "status",
-	18: "subnet_id",
-	19: "suspended_at",
-	20: "updated_at",
+	4:  "boot_disk_id",
+	5:  "image_id",
+	6:  "instance_type_id",
+	7:  "ipv6_address",
+	8:  "labels",
+	9:  "login_username",
+	10: "name",
+	11: "notes",
+	12: "pending_instance_type_id",
+	13: "private_image_id",
+	14: "private_ip",
+	15: "private_network_id",
+	16: "public_ips",
+	17: "region_code",
+	18: "status",
+	19: "subnet_id",
+	20: "suspended_at",
+	21: "updated_at",
 }
 
 // Decode decodes InstanceResource from json.
@@ -4940,8 +4945,18 @@ func (s *InstanceResource) Decode(d *jx.Decoder) error {
 			}(); err != nil {
 				return errors.Wrap(err, "decode field \"id\"")
 			}
-		case "image_id":
+		case "boot_disk_id":
 			requiredBitSet[0] |= 1 << 4
+			if err := func() error {
+				if err := s.BootDiskID.Decode(d); err != nil {
+					return err
+				}
+				return nil
+			}(); err != nil {
+				return errors.Wrap(err, "decode field \"boot_disk_id\"")
+			}
+		case "image_id":
+			requiredBitSet[0] |= 1 << 5
 			if err := func() error {
 				if err := s.ImageID.Decode(d); err != nil {
 					return err
@@ -4951,7 +4966,7 @@ func (s *InstanceResource) Decode(d *jx.Decoder) error {
 				return errors.Wrap(err, "decode field \"image_id\"")
 			}
 		case "instance_type_id":
-			requiredBitSet[0] |= 1 << 5
+			requiredBitSet[0] |= 1 << 6
 			if err := func() error {
 				v, err := json.DecodeUUID(d)
 				s.InstanceTypeID = v
@@ -4963,7 +4978,7 @@ func (s *InstanceResource) Decode(d *jx.Decoder) error {
 				return errors.Wrap(err, "decode field \"instance_type_id\"")
 			}
 		case "ipv6_address":
-			requiredBitSet[0] |= 1 << 6
+			requiredBitSet[0] |= 1 << 7
 			if err := func() error {
 				if err := s.Ipv6Address.Decode(d); err != nil {
 					return err
@@ -4973,7 +4988,7 @@ func (s *InstanceResource) Decode(d *jx.Decoder) error {
 				return errors.Wrap(err, "decode field \"ipv6_address\"")
 			}
 		case "labels":
-			requiredBitSet[0] |= 1 << 7
+			requiredBitSet[1] |= 1 << 0
 			if err := func() error {
 				if err := s.Labels.Decode(d); err != nil {
 					return err
@@ -4983,7 +4998,7 @@ func (s *InstanceResource) Decode(d *jx.Decoder) error {
 				return errors.Wrap(err, "decode field \"labels\"")
 			}
 		case "login_username":
-			requiredBitSet[1] |= 1 << 0
+			requiredBitSet[1] |= 1 << 1
 			if err := func() error {
 				v, err := d.Str()
 				s.LoginUsername = string(v)
@@ -4995,7 +5010,7 @@ func (s *InstanceResource) Decode(d *jx.Decoder) error {
 				return errors.Wrap(err, "decode field \"login_username\"")
 			}
 		case "name":
-			requiredBitSet[1] |= 1 << 1
+			requiredBitSet[1] |= 1 << 2
 			if err := func() error {
 				v, err := d.Str()
 				s.Name = string(v)
@@ -5007,7 +5022,7 @@ func (s *InstanceResource) Decode(d *jx.Decoder) error {
 				return errors.Wrap(err, "decode field \"name\"")
 			}
 		case "notes":
-			requiredBitSet[1] |= 1 << 2
+			requiredBitSet[1] |= 1 << 3
 			if err := func() error {
 				v, err := d.Str()
 				s.Notes = string(v)
@@ -5019,7 +5034,7 @@ func (s *InstanceResource) Decode(d *jx.Decoder) error {
 				return errors.Wrap(err, "decode field \"notes\"")
 			}
 		case "pending_instance_type_id":
-			requiredBitSet[1] |= 1 << 3
+			requiredBitSet[1] |= 1 << 4
 			if err := func() error {
 				if err := s.PendingInstanceTypeID.Decode(d); err != nil {
 					return err
@@ -5029,7 +5044,7 @@ func (s *InstanceResource) Decode(d *jx.Decoder) error {
 				return errors.Wrap(err, "decode field \"pending_instance_type_id\"")
 			}
 		case "private_image_id":
-			requiredBitSet[1] |= 1 << 4
+			requiredBitSet[1] |= 1 << 5
 			if err := func() error {
 				if err := s.PrivateImageID.Decode(d); err != nil {
 					return err
@@ -5039,7 +5054,7 @@ func (s *InstanceResource) Decode(d *jx.Decoder) error {
 				return errors.Wrap(err, "decode field \"private_image_id\"")
 			}
 		case "private_ip":
-			requiredBitSet[1] |= 1 << 5
+			requiredBitSet[1] |= 1 << 6
 			if err := func() error {
 				if err := s.PrivateIP.Decode(d); err != nil {
 					return err
@@ -5049,7 +5064,7 @@ func (s *InstanceResource) Decode(d *jx.Decoder) error {
 				return errors.Wrap(err, "decode field \"private_ip\"")
 			}
 		case "private_network_id":
-			requiredBitSet[1] |= 1 << 6
+			requiredBitSet[1] |= 1 << 7
 			if err := func() error {
 				if err := s.PrivateNetworkID.Decode(d); err != nil {
 					return err
@@ -5059,7 +5074,7 @@ func (s *InstanceResource) Decode(d *jx.Decoder) error {
 				return errors.Wrap(err, "decode field \"private_network_id\"")
 			}
 		case "public_ips":
-			requiredBitSet[1] |= 1 << 7
+			requiredBitSet[2] |= 1 << 0
 			if err := func() error {
 				switch tt := d.Next(); tt {
 				case jx.Null:
@@ -5086,7 +5101,7 @@ func (s *InstanceResource) Decode(d *jx.Decoder) error {
 				return errors.Wrap(err, "decode field \"public_ips\"")
 			}
 		case "region_code":
-			requiredBitSet[2] |= 1 << 0
+			requiredBitSet[2] |= 1 << 1
 			if err := func() error {
 				v, err := d.Str()
 				s.RegionCode = string(v)
@@ -5098,7 +5113,7 @@ func (s *InstanceResource) Decode(d *jx.Decoder) error {
 				return errors.Wrap(err, "decode field \"region_code\"")
 			}
 		case "status":
-			requiredBitSet[2] |= 1 << 1
+			requiredBitSet[2] |= 1 << 2
 			if err := func() error {
 				if err := s.Status.Decode(d); err != nil {
 					return err
@@ -5108,7 +5123,7 @@ func (s *InstanceResource) Decode(d *jx.Decoder) error {
 				return errors.Wrap(err, "decode field \"status\"")
 			}
 		case "subnet_id":
-			requiredBitSet[2] |= 1 << 2
+			requiredBitSet[2] |= 1 << 3
 			if err := func() error {
 				if err := s.SubnetID.Decode(d); err != nil {
 					return err
@@ -5118,7 +5133,7 @@ func (s *InstanceResource) Decode(d *jx.Decoder) error {
 				return errors.Wrap(err, "decode field \"subnet_id\"")
 			}
 		case "suspended_at":
-			requiredBitSet[2] |= 1 << 3
+			requiredBitSet[2] |= 1 << 4
 			if err := func() error {
 				if err := s.SuspendedAt.Decode(d, json.DecodeDateTime); err != nil {
 					return err
@@ -5128,7 +5143,7 @@ func (s *InstanceResource) Decode(d *jx.Decoder) error {
 				return errors.Wrap(err, "decode field \"suspended_at\"")
 			}
 		case "updated_at":
-			requiredBitSet[2] |= 1 << 4
+			requiredBitSet[2] |= 1 << 5
 			if err := func() error {
 				v, err := json.DecodeDateTime(d)
 				s.UpdatedAt = v
@@ -5151,7 +5166,7 @@ func (s *InstanceResource) Decode(d *jx.Decoder) error {
 	for i, mask := range [3]uint8{
 		0b11111111,
 		0b11111111,
-		0b00011111,
+		0b00111111,
 	} {
 		if result := (requiredBitSet[i] & mask) ^ mask; result != 0 {
 			// Mask only required fields and check equality to mask using XOR.
@@ -5696,6 +5711,12 @@ func (s *LaunchInstanceRequestBody) encodeFields(e *jx.Encoder) {
 		}
 	}
 	{
+		if s.BootDiskID.Set {
+			e.FieldStart("boot_disk_id")
+			s.BootDiskID.Encode(e)
+		}
+	}
+	{
 		if s.ImageID.Set {
 			e.FieldStart("image_id")
 			s.ImageID.Encode(e)
@@ -5704,6 +5725,12 @@ func (s *LaunchInstanceRequestBody) encodeFields(e *jx.Encoder) {
 	{
 		e.FieldStart("instance_type_id")
 		json.EncodeUUID(e, s.InstanceTypeID)
+	}
+	{
+		if s.LoginUsername.Set {
+			e.FieldStart("login_username")
+			s.LoginUsername.Encode(e)
+		}
 	}
 	{
 		e.FieldStart("name")
@@ -5747,18 +5774,20 @@ func (s *LaunchInstanceRequestBody) encodeFields(e *jx.Encoder) {
 	}
 }
 
-var jsonFieldsNameOfLaunchInstanceRequestBody = [11]string{
+var jsonFieldsNameOfLaunchInstanceRequestBody = [13]string{
 	0:  "count",
 	1:  "generate_password",
-	2:  "image_id",
-	3:  "instance_type_id",
-	4:  "name",
-	5:  "password",
-	6:  "port_id",
-	7:  "private_image_id",
-	8:  "root_disk_gb",
-	9:  "security_group_ids",
-	10: "subnet_id",
+	2:  "boot_disk_id",
+	3:  "image_id",
+	4:  "instance_type_id",
+	5:  "login_username",
+	6:  "name",
+	7:  "password",
+	8:  "port_id",
+	9:  "private_image_id",
+	10: "root_disk_gb",
+	11: "security_group_ids",
+	12: "subnet_id",
 }
 
 // Decode decodes LaunchInstanceRequestBody from json.
@@ -5790,6 +5819,16 @@ func (s *LaunchInstanceRequestBody) Decode(d *jx.Decoder) error {
 			}(); err != nil {
 				return errors.Wrap(err, "decode field \"generate_password\"")
 			}
+		case "boot_disk_id":
+			if err := func() error {
+				s.BootDiskID.Reset()
+				if err := s.BootDiskID.Decode(d); err != nil {
+					return err
+				}
+				return nil
+			}(); err != nil {
+				return errors.Wrap(err, "decode field \"boot_disk_id\"")
+			}
 		case "image_id":
 			if err := func() error {
 				s.ImageID.Reset()
@@ -5801,7 +5840,7 @@ func (s *LaunchInstanceRequestBody) Decode(d *jx.Decoder) error {
 				return errors.Wrap(err, "decode field \"image_id\"")
 			}
 		case "instance_type_id":
-			requiredBitSet[0] |= 1 << 3
+			requiredBitSet[0] |= 1 << 4
 			if err := func() error {
 				v, err := json.DecodeUUID(d)
 				s.InstanceTypeID = v
@@ -5812,8 +5851,18 @@ func (s *LaunchInstanceRequestBody) Decode(d *jx.Decoder) error {
 			}(); err != nil {
 				return errors.Wrap(err, "decode field \"instance_type_id\"")
 			}
+		case "login_username":
+			if err := func() error {
+				s.LoginUsername.Reset()
+				if err := s.LoginUsername.Decode(d); err != nil {
+					return err
+				}
+				return nil
+			}(); err != nil {
+				return errors.Wrap(err, "decode field \"login_username\"")
+			}
 		case "name":
-			requiredBitSet[0] |= 1 << 4
+			requiredBitSet[0] |= 1 << 6
 			if err := func() error {
 				v, err := d.Str()
 				s.Name = string(v)
@@ -5894,7 +5943,7 @@ func (s *LaunchInstanceRequestBody) Decode(d *jx.Decoder) error {
 	// Validate required fields.
 	var failures []validate.FieldError
 	for i, mask := range [2]uint8{
-		0b00011000,
+		0b01010000,
 		0b00000000,
 	} {
 		if result := (requiredBitSet[i] & mask) ^ mask; result != 0 {

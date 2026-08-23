@@ -658,8 +658,11 @@ type InstanceListResponseBody struct {
 
 // InstanceResource defines model for InstanceResource.
 type InstanceResource struct {
-	AvailabilityZone string    `json:"availability_zone"`
-	CreatedAt        time.Time `json:"created_at"`
+	AvailabilityZone string `json:"availability_zone"`
+
+	// BootDiskId Non-empty when the instance was created from a disk you already had, instead of from an image
+	BootDiskId *openapi_types.UUID `json:"boot_disk_id"`
+	CreatedAt  time.Time           `json:"created_at"`
 
 	// Hostname Hostname inside the instance; equals the instance id
 	Hostname string             `json:"hostname"`
@@ -743,27 +746,33 @@ type InstanceTypeResource struct {
 
 // LaunchInstanceRequestBody defines model for LaunchInstanceRequestBody.
 type LaunchInstanceRequestBody struct {
+	// BootDiskId Boot a disk you already have instead of installing an image. The disk must be available, unattached, and in the same availability zone as the instance type. Exactly one of this, `image_id` and `private_image_id`
+	BootDiskId *openapi_types.UUID `json:"boot_disk_id,omitempty"`
+
 	// Count Number of instances to create; 1 when omitted. Names are numbered automatically for several
 	Count *int64 `json:"count,omitempty"`
 
 	// GeneratePassword Have the platform generate a random password, returned only in this response
 	GeneratePassword *bool `json:"generate_password,omitempty"`
 
-	// ImageId A platform image. Exactly one of this and `private_image_id`
+	// ImageId A platform image. Exactly one of this, `private_image_id` and `boot_disk_id`
 	ImageId        *openapi_types.UUID `json:"image_id,omitempty"`
 	InstanceTypeId openapi_types.UUID  `json:"instance_type_id"`
-	Name           string              `json:"name"`
 
-	// Password Root password. Only the SSH public keys of the project are used when omitted
+	// LoginUsername The account the disk lets you log in as. Required with `boot_disk_id`, and rejected without it since an image states its own
+	LoginUsername *string `json:"login_username,omitempty"`
+	Name          string  `json:"name"`
+
+	// Password The password to set, on the login account and on root. Only the SSH public keys of the project are used when omitted
 	Password *string `json:"password,omitempty"`
 
 	// PortId Use an existing network interface, which may already have a floating IP bound. Exactly one of this and `subnet_id`; only one instance can be created when it is used
 	PortId *openapi_types.UUID `json:"port_id,omitempty"`
 
-	// PrivateImageId A private image. Exactly one of this and `image_id`
+	// PrivateImageId A private image. Exactly one of this, `image_id` and `boot_disk_id`
 	PrivateImageId *openapi_types.UUID `json:"private_image_id,omitempty"`
 
-	// RootDiskGb System disk capacity in GB. Chosen automatically from the requirement of the image and the platform minimum when omitted
+	// RootDiskGb System disk capacity in GB. Chosen automatically from the requirement of the image and the platform minimum when omitted. Ignored with `boot_disk_id`, since that disk already has its capacity
 	RootDiskGb *int64 `json:"root_disk_gb,omitempty"`
 
 	// SecurityGroupIds Required when a primary network interface is created, at least one; the default security group is not applied automatically. Ignored together with `port_id`, as the security groups of that interface were fixed when it was created
@@ -1711,7 +1720,9 @@ type ClientInterface interface {
 	//
 	// Instances are created one by one in order. If the sequence stops part way through, because of a quota limit for example, **the instances already created are kept** and `failure` states why it stopped. A failure on the first instance is treated as a failure of the whole request and no instance is created.
 	//
-	// Exactly one image source must be given: `image_id` for a platform image, `private_image_id` for a private image. Supplying both or neither is rejected.
+	// Exactly one source must be given: `image_id` for a platform image, `private_image_id` for a private image, or `boot_disk_id` to boot a disk you already have. Supplying more than one, or none, is rejected.
+	//
+	// `boot_disk_id` recovers an instance that can no longer be repaired from the inside. Snapshot its disk, restore that snapshot into a new disk, attach the new disk to another instance and repair it there, then create an instance from it. That disk is not deleted when the instance is released; it is detached and returned to you.
 	//
 	// Instances are created in the availability zone of the instance type. Disks to be attached later must reside in the same zone.
 	//
@@ -1730,7 +1741,9 @@ type ClientInterface interface {
 	//
 	// Instances are created one by one in order. If the sequence stops part way through, because of a quota limit for example, **the instances already created are kept** and `failure` states why it stopped. A failure on the first instance is treated as a failure of the whole request and no instance is created.
 	//
-	// Exactly one image source must be given: `image_id` for a platform image, `private_image_id` for a private image. Supplying both or neither is rejected.
+	// Exactly one source must be given: `image_id` for a platform image, `private_image_id` for a private image, or `boot_disk_id` to boot a disk you already have. Supplying more than one, or none, is rejected.
+	//
+	// `boot_disk_id` recovers an instance that can no longer be repaired from the inside. Snapshot its disk, restore that snapshot into a new disk, attach the new disk to another instance and repair it there, then create an instance from it. That disk is not deleted when the instance is released; it is detached and returned to you.
 	//
 	// Instances are created in the availability zone of the instance type. Disks to be attached later must reside in the same zone.
 	//
@@ -3142,7 +3155,9 @@ func (c *Client) ListInstances(ctx context.Context, params *ListInstancesParams,
 //
 // Instances are created one by one in order. If the sequence stops part way through, because of a quota limit for example, **the instances already created are kept** and `failure` states why it stopped. A failure on the first instance is treated as a failure of the whole request and no instance is created.
 //
-// Exactly one image source must be given: `image_id` for a platform image, `private_image_id` for a private image. Supplying both or neither is rejected.
+// Exactly one source must be given: `image_id` for a platform image, `private_image_id` for a private image, or `boot_disk_id` to boot a disk you already have. Supplying more than one, or none, is rejected.
+//
+// `boot_disk_id` recovers an instance that can no longer be repaired from the inside. Snapshot its disk, restore that snapshot into a new disk, attach the new disk to another instance and repair it there, then create an instance from it. That disk is not deleted when the instance is released; it is detached and returned to you.
 //
 // Instances are created in the availability zone of the instance type. Disks to be attached later must reside in the same zone.
 //
@@ -3171,7 +3186,9 @@ func (c *Client) LaunchInstanceWithBody(ctx context.Context, contentType string,
 //
 // Instances are created one by one in order. If the sequence stops part way through, because of a quota limit for example, **the instances already created are kept** and `failure` states why it stopped. A failure on the first instance is treated as a failure of the whole request and no instance is created.
 //
-// Exactly one image source must be given: `image_id` for a platform image, `private_image_id` for a private image. Supplying both or neither is rejected.
+// Exactly one source must be given: `image_id` for a platform image, `private_image_id` for a private image, or `boot_disk_id` to boot a disk you already have. Supplying more than one, or none, is rejected.
+//
+// `boot_disk_id` recovers an instance that can no longer be repaired from the inside. Snapshot its disk, restore that snapshot into a new disk, attach the new disk to another instance and repair it there, then create an instance from it. That disk is not deleted when the instance is released; it is detached and returned to you.
 //
 // Instances are created in the availability zone of the instance type. Disks to be attached later must reside in the same zone.
 //
@@ -8886,7 +8903,9 @@ type ClientWithResponsesInterface interface {
 	//
 	// Instances are created one by one in order. If the sequence stops part way through, because of a quota limit for example, **the instances already created are kept** and `failure` states why it stopped. A failure on the first instance is treated as a failure of the whole request and no instance is created.
 	//
-	// Exactly one image source must be given: `image_id` for a platform image, `private_image_id` for a private image. Supplying both or neither is rejected.
+	// Exactly one source must be given: `image_id` for a platform image, `private_image_id` for a private image, or `boot_disk_id` to boot a disk you already have. Supplying more than one, or none, is rejected.
+	//
+	// `boot_disk_id` recovers an instance that can no longer be repaired from the inside. Snapshot its disk, restore that snapshot into a new disk, attach the new disk to another instance and repair it there, then create an instance from it. That disk is not deleted when the instance is released; it is detached and returned to you.
 	//
 	// Instances are created in the availability zone of the instance type. Disks to be attached later must reside in the same zone.
 	//
@@ -8905,7 +8924,9 @@ type ClientWithResponsesInterface interface {
 	//
 	// Instances are created one by one in order. If the sequence stops part way through, because of a quota limit for example, **the instances already created are kept** and `failure` states why it stopped. A failure on the first instance is treated as a failure of the whole request and no instance is created.
 	//
-	// Exactly one image source must be given: `image_id` for a platform image, `private_image_id` for a private image. Supplying both or neither is rejected.
+	// Exactly one source must be given: `image_id` for a platform image, `private_image_id` for a private image, or `boot_disk_id` to boot a disk you already have. Supplying more than one, or none, is rejected.
+	//
+	// `boot_disk_id` recovers an instance that can no longer be repaired from the inside. Snapshot its disk, restore that snapshot into a new disk, attach the new disk to another instance and repair it there, then create an instance from it. That disk is not deleted when the instance is released; it is detached and returned to you.
 	//
 	// Instances are created in the availability zone of the instance type. Disks to be attached later must reside in the same zone.
 	//
@@ -14422,7 +14443,9 @@ func (c *ClientWithResponses) ListInstancesWithResponse(ctx context.Context, par
 //
 // Instances are created one by one in order. If the sequence stops part way through, because of a quota limit for example, **the instances already created are kept** and `failure` states why it stopped. A failure on the first instance is treated as a failure of the whole request and no instance is created.
 //
-// Exactly one image source must be given: `image_id` for a platform image, `private_image_id` for a private image. Supplying both or neither is rejected.
+// Exactly one source must be given: `image_id` for a platform image, `private_image_id` for a private image, or `boot_disk_id` to boot a disk you already have. Supplying more than one, or none, is rejected.
+//
+// `boot_disk_id` recovers an instance that can no longer be repaired from the inside. Snapshot its disk, restore that snapshot into a new disk, attach the new disk to another instance and repair it there, then create an instance from it. That disk is not deleted when the instance is released; it is detached and returned to you.
 //
 // Instances are created in the availability zone of the instance type. Disks to be attached later must reside in the same zone.
 //
@@ -14447,7 +14470,9 @@ func (c *ClientWithResponses) LaunchInstanceWithBodyWithResponse(ctx context.Con
 //
 // Instances are created one by one in order. If the sequence stops part way through, because of a quota limit for example, **the instances already created are kept** and `failure` states why it stopped. A failure on the first instance is treated as a failure of the whole request and no instance is created.
 //
-// Exactly one image source must be given: `image_id` for a platform image, `private_image_id` for a private image. Supplying both or neither is rejected.
+// Exactly one source must be given: `image_id` for a platform image, `private_image_id` for a private image, or `boot_disk_id` to boot a disk you already have. Supplying more than one, or none, is rejected.
+//
+// `boot_disk_id` recovers an instance that can no longer be repaired from the inside. Snapshot its disk, restore that snapshot into a new disk, attach the new disk to another instance and repair it there, then create an instance from it. That disk is not deleted when the instance is released; it is detached and returned to you.
 //
 // Instances are created in the availability zone of the instance type. Disks to be attached later must reside in the same zone.
 //
