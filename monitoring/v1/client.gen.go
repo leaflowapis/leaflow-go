@@ -691,6 +691,30 @@ func (e StatusPageComponentResourceCurrentStatus) Valid() bool {
 	}
 }
 
+// Defines values for StatusPageDomainResourceCertificateStatus.
+const (
+	StatusPageDomainResourceCertificateStatusACTIVE  StatusPageDomainResourceCertificateStatus = "ACTIVE"
+	StatusPageDomainResourceCertificateStatusFAILED  StatusPageDomainResourceCertificateStatus = "FAILED"
+	StatusPageDomainResourceCertificateStatusNONE    StatusPageDomainResourceCertificateStatus = "NONE"
+	StatusPageDomainResourceCertificateStatusPENDING StatusPageDomainResourceCertificateStatus = "PENDING"
+)
+
+// Valid indicates whether the value is a known member of the StatusPageDomainResourceCertificateStatus enum.
+func (e StatusPageDomainResourceCertificateStatus) Valid() bool {
+	switch e {
+	case StatusPageDomainResourceCertificateStatusACTIVE:
+		return true
+	case StatusPageDomainResourceCertificateStatusFAILED:
+		return true
+	case StatusPageDomainResourceCertificateStatusNONE:
+		return true
+	case StatusPageDomainResourceCertificateStatusPENDING:
+		return true
+	default:
+		return false
+	}
+}
+
 // Defines values for StatusPageIncidentComponentRequestStatus.
 const (
 	StatusPageIncidentComponentRequestStatusDEGRADEDPERFORMANCE StatusPageIncidentComponentRequestStatus = "DEGRADED_PERFORMANCE"
@@ -1652,6 +1676,12 @@ type PutStatusPageComponentSourcesRequestBody struct {
 	WebChecks []StatusPageComponentSourceWebCheck `json:"web_checks,omitempty"`
 }
 
+// PutStatusPageDomainRequestBody defines model for PutStatusPageDomainRequestBody.
+type PutStatusPageDomainRequestBody struct {
+	// Domain Your own domain, such as status.acme.com. It must already point at the status page by CNAME
+	Domain string `json:"domain"`
+}
+
 // PutStatusPageGroupOrderRequestBody defines model for PutStatusPageGroupOrderRequestBody.
 type PutStatusPageGroupOrderRequestBody struct {
 	ComponentIds []openapi_types.UUID `json:"component_ids"`
@@ -1674,7 +1704,7 @@ type PutStatusPageRequestBody struct {
 	// BrandColor #RRGGBB. Applied to the page styling; only a strict six-digit hexadecimal value is accepted
 	BrandColor *string `json:"brand_color,omitempty"`
 
-	// CustomDomain Your own domain, such as status.acme.com. Empty binds none. Globally unique
+	// CustomDomain Read-only here. Bind a custom domain through PUT /status-page/domain, which verifies ownership first; a value sent here is ignored
 	CustomDomain *string `json:"custom_domain,omitempty"`
 
 	// FooterText The line of free-form text in the page footer. Plain text
@@ -1693,10 +1723,13 @@ type PutStatusPageRequestBody struct {
 	// SearchEngineIndex Not indexed by default. Once a page has been crawled, switching back does not remove copies already held in third-party indexes
 	SearchEngineIndex *bool `json:"search_engine_index,omitempty"`
 
-	// Slug The address segment under the shared domain. Lowercase letters, digits and hyphens. Globally unique
-	Slug       string                         `json:"slug"`
-	SupportUrl *string                        `json:"support_url,omitempty"`
-	Theme      *PutStatusPageRequestBodyTheme `json:"theme,omitempty"`
+	// Slug An optional readable address segment under the shared domain. Lowercase letters, digits and hyphens; globally unique. Leave it empty and the page is served at /<project id>, which needs no configuration and cannot be taken by anyone else
+	Slug *string `json:"slug,omitempty"`
+
+	// SupportLabel The text shown on the support link. Empty uses the page default. Different products call this different things — help centre, submit a ticket, support
+	SupportLabel *string                        `json:"support_label,omitempty"`
+	SupportUrl   *string                        `json:"support_url,omitempty"`
+	Theme        *PutStatusPageRequestBodyTheme `json:"theme,omitempty"`
 
 	// Timezone IANA name. Empty selects UTC
 	Timezone   *string `json:"timezone,omitempty"`
@@ -1932,6 +1965,39 @@ type StatusPageComponentSourcesResource struct {
 	WebChecks []StatusPageComponentSourceWebCheck `json:"web_checks"`
 }
 
+// StatusPageDomainResource defines model for StatusPageDomainResource.
+type StatusPageDomainResource struct {
+	// CertificateNotAfter When the current certificate expires
+	CertificateNotAfter *time.Time `json:"certificate_not_after"`
+
+	// CertificateStatus NONE means no certificate has been requested for this domain yet
+	CertificateStatus StatusPageDomainResourceCertificateStatus `json:"certificate_status"`
+
+	// Domain The bound custom domain. Empty means none is bound
+	Domain string `json:"domain"`
+
+	// ExpectedCname The value the domain must point at
+	ExpectedCname string `json:"expected_cname"`
+
+	// LastError Why the most recent issuance attempt failed. Empty when it did not
+	LastError string `json:"last_error"`
+
+	// ObservedCname What the domain currently resolves to. Empty when it resolves to nothing
+	ObservedCname string `json:"observed_cname"`
+
+	// PublicUrl The address this page is served at, taking the custom domain into account
+	PublicUrl string `json:"public_url"`
+
+	// Verified Whether the domain currently points at the status page
+	Verified bool `json:"verified"`
+
+	// VerifiedAt When ownership was last confirmed
+	VerifiedAt *time.Time `json:"verified_at"`
+}
+
+// StatusPageDomainResourceCertificateStatus NONE means no certificate has been requested for this domain yet
+type StatusPageDomainResourceCertificateStatus string
+
 // StatusPageGroupListResponseBody defines model for StatusPageGroupListResponseBody.
 type StatusPageGroupListResponseBody struct {
 	Data []StatusPageGroupResource `json:"data"`
@@ -2071,16 +2137,21 @@ type StatusPageResource struct {
 	LogoUrl      string `json:"logo_url"`
 	Name         string `json:"name"`
 
-	// PublicUrl The current public address of this page. It is returned even while unpublished, in which case opening it returns 404
+	// PublicUrl The address this page is served at: the custom domain if one is bound, otherwise the shared domain with the slug, otherwise the shared domain with the project id
 	PublicUrl string `json:"public_url"`
 	Published bool   `json:"published"`
 
 	// SearchEngineIndex Whether search engines may index the page
-	SearchEngineIndex bool                    `json:"search_engine_index"`
-	Slug              string                  `json:"slug"`
-	StatusPageId      openapi_types.UUID      `json:"status_page_id"`
-	SupportUrl        string                  `json:"support_url"`
-	Theme             StatusPageResourceTheme `json:"theme"`
+	SearchEngineIndex bool `json:"search_engine_index"`
+
+	// Slug The readable address segment, empty when none is set. The page is always reachable at /<project id> regardless
+	Slug         string             `json:"slug"`
+	StatusPageId openapi_types.UUID `json:"status_page_id"`
+
+	// SupportLabel The text shown on the support link. Empty means the page default is used
+	SupportLabel string                  `json:"support_label"`
+	SupportUrl   string                  `json:"support_url"`
+	Theme        StatusPageResourceTheme `json:"theme"`
 
 	// Timezone Determines where the day boundary falls on the availability bar
 	Timezone  string    `json:"timezone"`
@@ -2156,8 +2227,10 @@ type WebCheckResource struct {
 	ResponseTimeThresholdSeconds int64              `json:"response_time_threshold_seconds"`
 
 	// Result null means the check has not completed a round yet. A zero value would present "not yet known" as "0 seconds, status code 0"
-	Result         *WebCheckResultResource    `json:"result"`
-	Retries        int64                      `json:"retries"`
+	Result  *WebCheckResultResource `json:"result"`
+	Retries int64                   `json:"retries"`
+
+	// ServerId The machine this check is attached to. Empty for a project-level check, which is not tied to any machine
 	ServerId       openapi_types.UUID         `json:"server_id"`
 	Steps          []WebCheckStepResource     `json:"steps"`
 	SyncStatus     WebCheckResourceSyncStatus `json:"sync_status"`
@@ -2380,6 +2453,9 @@ type UpdateStatusPageComponentJSONRequestBody = PutStatusPageComponentRequestBod
 // PutStatusPageComponentSourcesJSONRequestBody defines body for PutStatusPageComponentSources for application/json ContentType.
 type PutStatusPageComponentSourcesJSONRequestBody = PutStatusPageComponentSourcesRequestBody
 
+// PutStatusPageDomainJSONRequestBody defines body for PutStatusPageDomain for application/json ContentType.
+type PutStatusPageDomainJSONRequestBody = PutStatusPageDomainRequestBody
+
 // CreateStatusPageGroupJSONRequestBody defines body for CreateStatusPageGroup for application/json ContentType.
 type CreateStatusPageGroupJSONRequestBody = PutStatusPageGroupRequestBody
 
@@ -2400,6 +2476,9 @@ type ScheduleStatusPageMaintenanceJSONRequestBody = ScheduleStatusPageMaintenanc
 
 // PutStatusPageOrderJSONRequestBody defines body for PutStatusPageOrder for application/json ContentType.
 type PutStatusPageOrderJSONRequestBody = PutStatusPageOrderRequestBody
+
+// PutProjectWebCheckJSONRequestBody defines body for PutProjectWebCheck for application/json ContentType.
+type PutProjectWebCheckJSONRequestBody = PutWebCheckRequestBody
 
 // RequestEditorFn is the function signature for the RequestEditor callback function
 type RequestEditorFn func(ctx context.Context, req *http.Request) error
@@ -2941,6 +3020,48 @@ type ClientInterface interface {
 	// Corresponds with PUT /api/v1/status-page/components/{componentId}/sources (the `PutStatusPageComponentSources` operationId).
 	PutStatusPageComponentSources(ctx context.Context, componentId openapi_types.UUID, body PutStatusPageComponentSourcesJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
 
+	// DeleteStatusPageDomain Unbind the custom domain
+	//
+	// The page stays reachable at its shared address. Certificate renewal for the domain stops; the certificate already issued is left to expire.
+	//
+	// Corresponds with DELETE /api/v1/status-page/domain (the `DeleteStatusPageDomain` operationId).
+	DeleteStatusPageDomain(ctx context.Context, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// GetStatusPageDomain Get the custom domain and its certificate state
+	//
+	// Reports whether the domain currently resolves to the status page and where its certificate stands.
+	//
+	// `expected_cname` is the value the domain must point at. `observed_cname` is what it currently resolves to, which is what to show the user when verification fails — "verification failed" on its own tells them nothing about what to fix.
+	//
+	// Corresponds with GET /api/v1/status-page/domain (the `GetStatusPageDomain` operationId).
+	GetStatusPageDomain(ctx context.Context, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// PutStatusPageDomainWithBody Bind a custom domain to this status page
+	//
+	// The domain must already point at the status page by CNAME. Binding is rejected until it does, and the error carries both the expected and the observed target.
+	//
+	// Ownership is verified before the domain is stored, and it is verified again before each certificate is issued: a domain whose CNAME is later removed stops being served.
+	//
+	// A certificate is requested in the background — this call does not wait for it. Poll GET on this endpoint to follow its progress; until a certificate is active, the domain does not serve HTTPS while the page remains reachable at its shared address.
+	//
+	// Takes any type of body and a specified content type.
+	//
+	// Corresponds with PUT /api/v1/status-page/domain (the `PutStatusPageDomain` operationId).
+	PutStatusPageDomainWithBody(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// PutStatusPageDomain Bind a custom domain to this status page
+	//
+	// The domain must already point at the status page by CNAME. Binding is rejected until it does, and the error carries both the expected and the observed target.
+	//
+	// Ownership is verified before the domain is stored, and it is verified again before each certificate is issued: a domain whose CNAME is later removed stops being served.
+	//
+	// A certificate is requested in the background — this call does not wait for it. Poll GET on this endpoint to follow its progress; until a certificate is active, the domain does not serve HTTPS while the page remains reachable at its shared address.
+	//
+	// Takes a body of the `application/json` content type.
+	//
+	// Corresponds with PUT /api/v1/status-page/domain (the `PutStatusPageDomain` operationId).
+	PutStatusPageDomain(ctx context.Context, body PutStatusPageDomainJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
+
 	// ListStatusPageGroups List groups
 	//
 	// Corresponds with GET /api/v1/status-page/groups (the `ListStatusPageGroups` operationId).
@@ -3140,6 +3261,44 @@ type ClientInterface interface {
 	//
 	// Corresponds with GET /api/v1/web-checks (the `ListWebChecks` operationId).
 	ListWebChecks(ctx context.Context, params *ListWebChecksParams, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// DeleteProjectWebCheck Delete a project-level web check
+	//
+	// The corresponding check task and trigger are removed from the monitoring system as well.
+	//
+	// Corresponds with DELETE /api/v1/web-checks/{checkId} (the `DeleteProjectWebCheck` operationId).
+	DeleteProjectWebCheck(ctx context.Context, checkId openapi_types.UUID, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// GetProjectWebCheck Get a project-level web check
+	//
+	// Corresponds with GET /api/v1/web-checks/{checkId} (the `GetProjectWebCheck` operationId).
+	GetProjectWebCheck(ctx context.Context, checkId openapi_types.UUID, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// PutProjectWebCheckWithBody Create a web check that is not tied to a machine, or replace it by the same id
+	//
+	// **Create or replace**: to modify a check, call this endpoint again with the same id.
+	//
+	// Unlike `/servers/{serverId}/web-checks/{checkId}`, this check does not belong to any machine — use it when the target is simply a URL. Nothing needs to be enrolled first.
+	//
+	// A check bound to a machine is removed together with that machine; a project-level check is not. Where a check belongs cannot be changed afterwards: move it by deleting and recreating it.
+	//
+	// Takes any type of body and a specified content type.
+	//
+	// Corresponds with PUT /api/v1/web-checks/{checkId} (the `PutProjectWebCheck` operationId).
+	PutProjectWebCheckWithBody(ctx context.Context, checkId openapi_types.UUID, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// PutProjectWebCheck Create a web check that is not tied to a machine, or replace it by the same id
+	//
+	// **Create or replace**: to modify a check, call this endpoint again with the same id.
+	//
+	// Unlike `/servers/{serverId}/web-checks/{checkId}`, this check does not belong to any machine — use it when the target is simply a URL. Nothing needs to be enrolled first.
+	//
+	// A check bound to a machine is removed together with that machine; a project-level check is not. Where a check belongs cannot be changed afterwards: move it by deleting and recreating it.
+	//
+	// Takes a body of the `application/json` content type.
+	//
+	// Corresponds with PUT /api/v1/web-checks/{checkId} (the `PutProjectWebCheck` operationId).
+	PutProjectWebCheck(ctx context.Context, checkId openapi_types.UUID, body PutProjectWebCheckJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
 }
 
 // ListIncidents List incidents
@@ -4168,6 +4327,88 @@ func (c *Client) PutStatusPageComponentSources(ctx context.Context, componentId 
 	return c.Client.Do(req)
 }
 
+// DeleteStatusPageDomain Unbind the custom domain
+//
+// The page stays reachable at its shared address. Certificate renewal for the domain stops; the certificate already issued is left to expire.
+//
+// Corresponds with DELETE /api/v1/status-page/domain (the `DeleteStatusPageDomain` operationId).
+func (c *Client) DeleteStatusPageDomain(ctx context.Context, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewDeleteStatusPageDomainRequest(c.Server)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+// GetStatusPageDomain Get the custom domain and its certificate state
+//
+// Reports whether the domain currently resolves to the status page and where its certificate stands.
+//
+// `expected_cname` is the value the domain must point at. `observed_cname` is what it currently resolves to, which is what to show the user when verification fails — "verification failed" on its own tells them nothing about what to fix.
+//
+// Corresponds with GET /api/v1/status-page/domain (the `GetStatusPageDomain` operationId).
+func (c *Client) GetStatusPageDomain(ctx context.Context, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewGetStatusPageDomainRequest(c.Server)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+// PutStatusPageDomainWithBody Bind a custom domain to this status page
+//
+// The domain must already point at the status page by CNAME. Binding is rejected until it does, and the error carries both the expected and the observed target.
+//
+// Ownership is verified before the domain is stored, and it is verified again before each certificate is issued: a domain whose CNAME is later removed stops being served.
+//
+// A certificate is requested in the background — this call does not wait for it. Poll GET on this endpoint to follow its progress; until a certificate is active, the domain does not serve HTTPS while the page remains reachable at its shared address.
+//
+// Takes any type of body and a specified content type.
+//
+// Corresponds with PUT /api/v1/status-page/domain (the `PutStatusPageDomain` operationId).
+func (c *Client) PutStatusPageDomainWithBody(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewPutStatusPageDomainRequestWithBody(c.Server, contentType, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+// PutStatusPageDomain Bind a custom domain to this status page
+//
+// The domain must already point at the status page by CNAME. Binding is rejected until it does, and the error carries both the expected and the observed target.
+//
+// Ownership is verified before the domain is stored, and it is verified again before each certificate is issued: a domain whose CNAME is later removed stops being served.
+//
+// A certificate is requested in the background — this call does not wait for it. Poll GET on this endpoint to follow its progress; until a certificate is active, the domain does not serve HTTPS while the page remains reachable at its shared address.
+//
+// Takes a body of the `application/json` content type.
+//
+// Corresponds with PUT /api/v1/status-page/domain (the `PutStatusPageDomain` operationId).
+func (c *Client) PutStatusPageDomain(ctx context.Context, body PutStatusPageDomainJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewPutStatusPageDomainRequest(c.Server, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
 // ListStatusPageGroups List groups
 //
 // Corresponds with GET /api/v1/status-page/groups (the `ListStatusPageGroups` operationId).
@@ -4598,6 +4839,84 @@ func (c *Client) ListProjectTopItems(ctx context.Context, params *ListProjectTop
 // Corresponds with GET /api/v1/web-checks (the `ListWebChecks` operationId).
 func (c *Client) ListWebChecks(ctx context.Context, params *ListWebChecksParams, reqEditors ...RequestEditorFn) (*http.Response, error) {
 	req, err := NewListWebChecksRequest(c.Server, params)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+// DeleteProjectWebCheck Delete a project-level web check
+//
+// The corresponding check task and trigger are removed from the monitoring system as well.
+//
+// Corresponds with DELETE /api/v1/web-checks/{checkId} (the `DeleteProjectWebCheck` operationId).
+func (c *Client) DeleteProjectWebCheck(ctx context.Context, checkId openapi_types.UUID, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewDeleteProjectWebCheckRequest(c.Server, checkId)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+// GetProjectWebCheck Get a project-level web check
+//
+// Corresponds with GET /api/v1/web-checks/{checkId} (the `GetProjectWebCheck` operationId).
+func (c *Client) GetProjectWebCheck(ctx context.Context, checkId openapi_types.UUID, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewGetProjectWebCheckRequest(c.Server, checkId)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+// PutProjectWebCheckWithBody Create a web check that is not tied to a machine, or replace it by the same id
+//
+// **Create or replace**: to modify a check, call this endpoint again with the same id.
+//
+// Unlike `/servers/{serverId}/web-checks/{checkId}`, this check does not belong to any machine — use it when the target is simply a URL. Nothing needs to be enrolled first.
+//
+// A check bound to a machine is removed together with that machine; a project-level check is not. Where a check belongs cannot be changed afterwards: move it by deleting and recreating it.
+//
+// Takes any type of body and a specified content type.
+//
+// Corresponds with PUT /api/v1/web-checks/{checkId} (the `PutProjectWebCheck` operationId).
+func (c *Client) PutProjectWebCheckWithBody(ctx context.Context, checkId openapi_types.UUID, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewPutProjectWebCheckRequestWithBody(c.Server, checkId, contentType, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+// PutProjectWebCheck Create a web check that is not tied to a machine, or replace it by the same id
+//
+// **Create or replace**: to modify a check, call this endpoint again with the same id.
+//
+// Unlike `/servers/{serverId}/web-checks/{checkId}`, this check does not belong to any machine — use it when the target is simply a URL. Nothing needs to be enrolled first.
+//
+// A check bound to a machine is removed together with that machine; a project-level check is not. Where a check belongs cannot be changed afterwards: move it by deleting and recreating it.
+//
+// Takes a body of the `application/json` content type.
+//
+// Corresponds with PUT /api/v1/web-checks/{checkId} (the `PutProjectWebCheck` operationId).
+func (c *Client) PutProjectWebCheck(ctx context.Context, checkId openapi_types.UUID, body PutProjectWebCheckJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewPutProjectWebCheckRequest(c.Server, checkId, body)
 	if err != nil {
 		return nil, err
 	}
@@ -6622,6 +6941,100 @@ func NewPutStatusPageComponentSourcesRequestWithBody(server string, componentId 
 	return req, nil
 }
 
+// NewDeleteStatusPageDomainRequest constructs an http.Request for the DeleteStatusPageDomain method
+func NewDeleteStatusPageDomainRequest(server string) (*http.Request, error) {
+	var err error
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/api/v1/status-page/domain")
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest(http.MethodDelete, queryURL.String(), nil)
+	if err != nil {
+		return nil, err
+	}
+
+	return req, nil
+}
+
+// NewGetStatusPageDomainRequest constructs an http.Request for the GetStatusPageDomain method
+func NewGetStatusPageDomainRequest(server string) (*http.Request, error) {
+	var err error
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/api/v1/status-page/domain")
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest(http.MethodGet, queryURL.String(), nil)
+	if err != nil {
+		return nil, err
+	}
+
+	return req, nil
+}
+
+// NewPutStatusPageDomainRequest calls the generic PutStatusPageDomain builder with application/json body
+func NewPutStatusPageDomainRequest(server string, body PutStatusPageDomainJSONRequestBody) (*http.Request, error) {
+	var bodyReader io.Reader
+	buf, err := json.Marshal(body)
+	if err != nil {
+		return nil, err
+	}
+	bodyReader = bytes.NewReader(buf)
+	return NewPutStatusPageDomainRequestWithBody(server, "application/json", bodyReader)
+}
+
+// NewPutStatusPageDomainRequestWithBody constructs an http.Request for the PutStatusPageDomain method, with any body, and a specified content type
+func NewPutStatusPageDomainRequestWithBody(server string, contentType string, body io.Reader) (*http.Request, error) {
+	var err error
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/api/v1/status-page/domain")
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest(http.MethodPut, queryURL.String(), body)
+	if err != nil {
+		return nil, err
+	}
+
+	req.Header.Add("Content-Type", contentType)
+
+	return req, nil
+}
+
 // NewListStatusPageGroupsRequest constructs an http.Request for the ListStatusPageGroups method
 func NewListStatusPageGroupsRequest(server string) (*http.Request, error) {
 	var err error
@@ -7368,6 +7781,121 @@ func NewListWebChecksRequest(server string, params *ListWebChecksParams) (*http.
 	return req, nil
 }
 
+// NewDeleteProjectWebCheckRequest constructs an http.Request for the DeleteProjectWebCheck method
+func NewDeleteProjectWebCheckRequest(server string, checkId openapi_types.UUID) (*http.Request, error) {
+	var err error
+
+	var pathParam0 string
+
+	pathParam0, err = runtime.StyleParamWithOptions("simple", false, "checkId", checkId, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: "uuid"})
+	if err != nil {
+		return nil, err
+	}
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/api/v1/web-checks/%s", pathParam0)
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest(http.MethodDelete, queryURL.String(), nil)
+	if err != nil {
+		return nil, err
+	}
+
+	return req, nil
+}
+
+// NewGetProjectWebCheckRequest constructs an http.Request for the GetProjectWebCheck method
+func NewGetProjectWebCheckRequest(server string, checkId openapi_types.UUID) (*http.Request, error) {
+	var err error
+
+	var pathParam0 string
+
+	pathParam0, err = runtime.StyleParamWithOptions("simple", false, "checkId", checkId, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: "uuid"})
+	if err != nil {
+		return nil, err
+	}
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/api/v1/web-checks/%s", pathParam0)
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest(http.MethodGet, queryURL.String(), nil)
+	if err != nil {
+		return nil, err
+	}
+
+	return req, nil
+}
+
+// NewPutProjectWebCheckRequest calls the generic PutProjectWebCheck builder with application/json body
+func NewPutProjectWebCheckRequest(server string, checkId openapi_types.UUID, body PutProjectWebCheckJSONRequestBody) (*http.Request, error) {
+	var bodyReader io.Reader
+	buf, err := json.Marshal(body)
+	if err != nil {
+		return nil, err
+	}
+	bodyReader = bytes.NewReader(buf)
+	return NewPutProjectWebCheckRequestWithBody(server, checkId, "application/json", bodyReader)
+}
+
+// NewPutProjectWebCheckRequestWithBody constructs an http.Request for the PutProjectWebCheck method, with any body, and a specified content type
+func NewPutProjectWebCheckRequestWithBody(server string, checkId openapi_types.UUID, contentType string, body io.Reader) (*http.Request, error) {
+	var err error
+
+	var pathParam0 string
+
+	pathParam0, err = runtime.StyleParamWithOptions("simple", false, "checkId", checkId, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: "uuid"})
+	if err != nil {
+		return nil, err
+	}
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/api/v1/web-checks/%s", pathParam0)
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest(http.MethodPut, queryURL.String(), body)
+	if err != nil {
+		return nil, err
+	}
+
+	req.Header.Add("Content-Type", contentType)
+
+	return req, nil
+}
+
 func (c *Client) applyEditors(ctx context.Context, req *http.Request, additionalEditors []RequestEditorFn) error {
 	for _, r := range c.RequestEditors {
 		if err := r(ctx, req); err != nil {
@@ -7934,6 +8462,52 @@ type ClientWithResponsesInterface interface {
 	// Corresponds with PUT /api/v1/status-page/components/{componentId}/sources (the `PutStatusPageComponentSources` operationId).
 	PutStatusPageComponentSourcesWithResponse(ctx context.Context, componentId openapi_types.UUID, body PutStatusPageComponentSourcesJSONRequestBody, reqEditors ...RequestEditorFn) (*PutStatusPageComponentSourcesResponse, error)
 
+	// DeleteStatusPageDomainWithResponse Unbind the custom domain
+	//
+	// The page stays reachable at its shared address. Certificate renewal for the domain stops; the certificate already issued is left to expire.
+	//
+	// Returns a wrapper object for the known response body format(s).
+	//
+	// Corresponds with DELETE /api/v1/status-page/domain (the `DeleteStatusPageDomain` operationId).
+	DeleteStatusPageDomainWithResponse(ctx context.Context, reqEditors ...RequestEditorFn) (*DeleteStatusPageDomainResponse, error)
+
+	// GetStatusPageDomainWithResponse Get the custom domain and its certificate state
+	//
+	// Reports whether the domain currently resolves to the status page and where its certificate stands.
+	//
+	// `expected_cname` is the value the domain must point at. `observed_cname` is what it currently resolves to, which is what to show the user when verification fails — "verification failed" on its own tells them nothing about what to fix.
+	//
+	// Returns a wrapper object for the known response body format(s).
+	//
+	// Corresponds with GET /api/v1/status-page/domain (the `GetStatusPageDomain` operationId).
+	GetStatusPageDomainWithResponse(ctx context.Context, reqEditors ...RequestEditorFn) (*GetStatusPageDomainResponse, error)
+
+	// PutStatusPageDomainWithBodyWithResponse Bind a custom domain to this status page
+	//
+	// The domain must already point at the status page by CNAME. Binding is rejected until it does, and the error carries both the expected and the observed target.
+	//
+	// Ownership is verified before the domain is stored, and it is verified again before each certificate is issued: a domain whose CNAME is later removed stops being served.
+	//
+	// A certificate is requested in the background — this call does not wait for it. Poll GET on this endpoint to follow its progress; until a certificate is active, the domain does not serve HTTPS while the page remains reachable at its shared address.
+	//
+	// Takes any type of body and a specified content type, and returns a wrapper object for the known response body format(s).
+	//
+	// Corresponds with PUT /api/v1/status-page/domain (the `PutStatusPageDomain` operationId).
+	PutStatusPageDomainWithBodyWithResponse(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*PutStatusPageDomainResponse, error)
+
+	// PutStatusPageDomainWithResponse Bind a custom domain to this status page
+	//
+	// The domain must already point at the status page by CNAME. Binding is rejected until it does, and the error carries both the expected and the observed target.
+	//
+	// Ownership is verified before the domain is stored, and it is verified again before each certificate is issued: a domain whose CNAME is later removed stops being served.
+	//
+	// A certificate is requested in the background — this call does not wait for it. Poll GET on this endpoint to follow its progress; until a certificate is active, the domain does not serve HTTPS while the page remains reachable at its shared address.
+	//
+	// Takes a body of the `application/json` content type, and returns a wrapper object for the known response body format(s).
+	//
+	// Corresponds with PUT /api/v1/status-page/domain (the `PutStatusPageDomain` operationId).
+	PutStatusPageDomainWithResponse(ctx context.Context, body PutStatusPageDomainJSONRequestBody, reqEditors ...RequestEditorFn) (*PutStatusPageDomainResponse, error)
+
 	// ListStatusPageGroupsWithResponse List groups
 	//
 	// Returns a wrapper object for the known response body format(s).
@@ -8153,6 +8727,48 @@ type ClientWithResponsesInterface interface {
 	//
 	// Corresponds with GET /api/v1/web-checks (the `ListWebChecks` operationId).
 	ListWebChecksWithResponse(ctx context.Context, params *ListWebChecksParams, reqEditors ...RequestEditorFn) (*ListWebChecksResponse, error)
+
+	// DeleteProjectWebCheckWithResponse Delete a project-level web check
+	//
+	// The corresponding check task and trigger are removed from the monitoring system as well.
+	//
+	// Returns a wrapper object for the known response body format(s).
+	//
+	// Corresponds with DELETE /api/v1/web-checks/{checkId} (the `DeleteProjectWebCheck` operationId).
+	DeleteProjectWebCheckWithResponse(ctx context.Context, checkId openapi_types.UUID, reqEditors ...RequestEditorFn) (*DeleteProjectWebCheckResponse, error)
+
+	// GetProjectWebCheckWithResponse Get a project-level web check
+	//
+	// Returns a wrapper object for the known response body format(s).
+	//
+	// Corresponds with GET /api/v1/web-checks/{checkId} (the `GetProjectWebCheck` operationId).
+	GetProjectWebCheckWithResponse(ctx context.Context, checkId openapi_types.UUID, reqEditors ...RequestEditorFn) (*GetProjectWebCheckResponse, error)
+
+	// PutProjectWebCheckWithBodyWithResponse Create a web check that is not tied to a machine, or replace it by the same id
+	//
+	// **Create or replace**: to modify a check, call this endpoint again with the same id.
+	//
+	// Unlike `/servers/{serverId}/web-checks/{checkId}`, this check does not belong to any machine — use it when the target is simply a URL. Nothing needs to be enrolled first.
+	//
+	// A check bound to a machine is removed together with that machine; a project-level check is not. Where a check belongs cannot be changed afterwards: move it by deleting and recreating it.
+	//
+	// Takes any type of body and a specified content type, and returns a wrapper object for the known response body format(s).
+	//
+	// Corresponds with PUT /api/v1/web-checks/{checkId} (the `PutProjectWebCheck` operationId).
+	PutProjectWebCheckWithBodyWithResponse(ctx context.Context, checkId openapi_types.UUID, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*PutProjectWebCheckResponse, error)
+
+	// PutProjectWebCheckWithResponse Create a web check that is not tied to a machine, or replace it by the same id
+	//
+	// **Create or replace**: to modify a check, call this endpoint again with the same id.
+	//
+	// Unlike `/servers/{serverId}/web-checks/{checkId}`, this check does not belong to any machine — use it when the target is simply a URL. Nothing needs to be enrolled first.
+	//
+	// A check bound to a machine is removed together with that machine; a project-level check is not. Where a check belongs cannot be changed afterwards: move it by deleting and recreating it.
+	//
+	// Takes a body of the `application/json` content type, and returns a wrapper object for the known response body format(s).
+	//
+	// Corresponds with PUT /api/v1/web-checks/{checkId} (the `PutProjectWebCheck` operationId).
+	PutProjectWebCheckWithResponse(ctx context.Context, checkId openapi_types.UUID, body PutProjectWebCheckJSONRequestBody, reqEditors ...RequestEditorFn) (*PutProjectWebCheckResponse, error)
 }
 
 type ListIncidentsResponse struct {
@@ -10122,6 +10738,143 @@ func (r PutStatusPageComponentSourcesResponse) ContentType() string {
 	return ""
 }
 
+type DeleteStatusPageDomainResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	// JSONDefault the response for an HTTP default `application/json` response
+	JSONDefault *Error
+}
+
+// GetJSONDefault returns the response for an HTTP default `application/json` response
+func (r DeleteStatusPageDomainResponse) GetJSONDefault() *Error {
+	return r.JSONDefault
+}
+
+// GetBody returns the raw response body bytes
+func (r DeleteStatusPageDomainResponse) GetBody() []byte {
+	return r.Body
+}
+
+// Status returns HTTPResponse.Status
+func (r DeleteStatusPageDomainResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r DeleteStatusPageDomainResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+// ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
+func (r DeleteStatusPageDomainResponse) ContentType() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Header.Get("Content-Type")
+	}
+	return ""
+}
+
+type GetStatusPageDomainResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	// JSON200 the response for an HTTP 200 `application/json` response
+	JSON200 *StatusPageDomainResource
+	// JSONDefault the response for an HTTP default `application/json` response
+	JSONDefault *Error
+}
+
+// GetJSON200 returns the response for an HTTP 200 `application/json` response
+func (r GetStatusPageDomainResponse) GetJSON200() *StatusPageDomainResource {
+	return r.JSON200
+}
+
+// GetJSONDefault returns the response for an HTTP default `application/json` response
+func (r GetStatusPageDomainResponse) GetJSONDefault() *Error {
+	return r.JSONDefault
+}
+
+// GetBody returns the raw response body bytes
+func (r GetStatusPageDomainResponse) GetBody() []byte {
+	return r.Body
+}
+
+// Status returns HTTPResponse.Status
+func (r GetStatusPageDomainResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r GetStatusPageDomainResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+// ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
+func (r GetStatusPageDomainResponse) ContentType() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Header.Get("Content-Type")
+	}
+	return ""
+}
+
+type PutStatusPageDomainResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	// JSON200 the response for an HTTP 200 `application/json` response
+	JSON200 *StatusPageDomainResource
+	// JSONDefault the response for an HTTP default `application/json` response
+	JSONDefault *Error
+}
+
+// GetJSON200 returns the response for an HTTP 200 `application/json` response
+func (r PutStatusPageDomainResponse) GetJSON200() *StatusPageDomainResource {
+	return r.JSON200
+}
+
+// GetJSONDefault returns the response for an HTTP default `application/json` response
+func (r PutStatusPageDomainResponse) GetJSONDefault() *Error {
+	return r.JSONDefault
+}
+
+// GetBody returns the raw response body bytes
+func (r PutStatusPageDomainResponse) GetBody() []byte {
+	return r.Body
+}
+
+// Status returns HTTPResponse.Status
+func (r PutStatusPageDomainResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r PutStatusPageDomainResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+// ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
+func (r PutStatusPageDomainResponse) ContentType() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Header.Get("Content-Type")
+	}
+	return ""
+}
+
 type ListStatusPageGroupsResponse struct {
 	Body         []byte
 	HTTPResponse *http.Response
@@ -10911,6 +11664,143 @@ func (r ListWebChecksResponse) StatusCode() int {
 
 // ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
 func (r ListWebChecksResponse) ContentType() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Header.Get("Content-Type")
+	}
+	return ""
+}
+
+type DeleteProjectWebCheckResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	// JSONDefault the response for an HTTP default `application/json` response
+	JSONDefault *Error
+}
+
+// GetJSONDefault returns the response for an HTTP default `application/json` response
+func (r DeleteProjectWebCheckResponse) GetJSONDefault() *Error {
+	return r.JSONDefault
+}
+
+// GetBody returns the raw response body bytes
+func (r DeleteProjectWebCheckResponse) GetBody() []byte {
+	return r.Body
+}
+
+// Status returns HTTPResponse.Status
+func (r DeleteProjectWebCheckResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r DeleteProjectWebCheckResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+// ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
+func (r DeleteProjectWebCheckResponse) ContentType() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Header.Get("Content-Type")
+	}
+	return ""
+}
+
+type GetProjectWebCheckResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	// JSON200 the response for an HTTP 200 `application/json` response
+	JSON200 *WebCheckResource
+	// JSONDefault the response for an HTTP default `application/json` response
+	JSONDefault *Error
+}
+
+// GetJSON200 returns the response for an HTTP 200 `application/json` response
+func (r GetProjectWebCheckResponse) GetJSON200() *WebCheckResource {
+	return r.JSON200
+}
+
+// GetJSONDefault returns the response for an HTTP default `application/json` response
+func (r GetProjectWebCheckResponse) GetJSONDefault() *Error {
+	return r.JSONDefault
+}
+
+// GetBody returns the raw response body bytes
+func (r GetProjectWebCheckResponse) GetBody() []byte {
+	return r.Body
+}
+
+// Status returns HTTPResponse.Status
+func (r GetProjectWebCheckResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r GetProjectWebCheckResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+// ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
+func (r GetProjectWebCheckResponse) ContentType() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Header.Get("Content-Type")
+	}
+	return ""
+}
+
+type PutProjectWebCheckResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	// JSON200 the response for an HTTP 200 `application/json` response
+	JSON200 *WebCheckResource
+	// JSONDefault the response for an HTTP default `application/json` response
+	JSONDefault *Error
+}
+
+// GetJSON200 returns the response for an HTTP 200 `application/json` response
+func (r PutProjectWebCheckResponse) GetJSON200() *WebCheckResource {
+	return r.JSON200
+}
+
+// GetJSONDefault returns the response for an HTTP default `application/json` response
+func (r PutProjectWebCheckResponse) GetJSONDefault() *Error {
+	return r.JSONDefault
+}
+
+// GetBody returns the raw response body bytes
+func (r PutProjectWebCheckResponse) GetBody() []byte {
+	return r.Body
+}
+
+// Status returns HTTPResponse.Status
+func (r PutProjectWebCheckResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r PutProjectWebCheckResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+// ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
+func (r PutProjectWebCheckResponse) ContentType() string {
 	if r.HTTPResponse != nil {
 		return r.HTTPResponse.Header.Get("Content-Type")
 	}
@@ -11775,6 +12665,76 @@ func (c *ClientWithResponses) PutStatusPageComponentSourcesWithResponse(ctx cont
 	return ParsePutStatusPageComponentSourcesResponse(rsp)
 }
 
+// DeleteStatusPageDomainWithResponse Unbind the custom domain
+//
+// The page stays reachable at its shared address. Certificate renewal for the domain stops; the certificate already issued is left to expire.
+//
+// Returns a wrapper object for the known response body format(s).
+//
+// Corresponds with DELETE /api/v1/status-page/domain (the `DeleteStatusPageDomain` operationId).
+func (c *ClientWithResponses) DeleteStatusPageDomainWithResponse(ctx context.Context, reqEditors ...RequestEditorFn) (*DeleteStatusPageDomainResponse, error) {
+	rsp, err := c.DeleteStatusPageDomain(ctx, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseDeleteStatusPageDomainResponse(rsp)
+}
+
+// GetStatusPageDomainWithResponse Get the custom domain and its certificate state
+//
+// Reports whether the domain currently resolves to the status page and where its certificate stands.
+//
+// `expected_cname` is the value the domain must point at. `observed_cname` is what it currently resolves to, which is what to show the user when verification fails — "verification failed" on its own tells them nothing about what to fix.
+//
+// Returns a wrapper object for the known response body format(s).
+//
+// Corresponds with GET /api/v1/status-page/domain (the `GetStatusPageDomain` operationId).
+func (c *ClientWithResponses) GetStatusPageDomainWithResponse(ctx context.Context, reqEditors ...RequestEditorFn) (*GetStatusPageDomainResponse, error) {
+	rsp, err := c.GetStatusPageDomain(ctx, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseGetStatusPageDomainResponse(rsp)
+}
+
+// PutStatusPageDomainWithBodyWithResponse Bind a custom domain to this status page
+//
+// The domain must already point at the status page by CNAME. Binding is rejected until it does, and the error carries both the expected and the observed target.
+//
+// Ownership is verified before the domain is stored, and it is verified again before each certificate is issued: a domain whose CNAME is later removed stops being served.
+//
+// A certificate is requested in the background — this call does not wait for it. Poll GET on this endpoint to follow its progress; until a certificate is active, the domain does not serve HTTPS while the page remains reachable at its shared address.
+//
+// Takes any type of body and a specified content type, and returns a wrapper object for the known response body format(s).
+//
+// Corresponds with PUT /api/v1/status-page/domain (the `PutStatusPageDomain` operationId).
+func (c *ClientWithResponses) PutStatusPageDomainWithBodyWithResponse(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*PutStatusPageDomainResponse, error) {
+	rsp, err := c.PutStatusPageDomainWithBody(ctx, contentType, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParsePutStatusPageDomainResponse(rsp)
+}
+
+// PutStatusPageDomainWithResponse Bind a custom domain to this status page
+//
+// The domain must already point at the status page by CNAME. Binding is rejected until it does, and the error carries both the expected and the observed target.
+//
+// Ownership is verified before the domain is stored, and it is verified again before each certificate is issued: a domain whose CNAME is later removed stops being served.
+//
+// A certificate is requested in the background — this call does not wait for it. Poll GET on this endpoint to follow its progress; until a certificate is active, the domain does not serve HTTPS while the page remains reachable at its shared address.
+//
+// Takes a body of the `application/json` content type, and returns a wrapper object for the known response body format(s).
+//
+// Corresponds with PUT /api/v1/status-page/domain (the `PutStatusPageDomain` operationId).
+func (c *ClientWithResponses) PutStatusPageDomainWithResponse(ctx context.Context, body PutStatusPageDomainJSONRequestBody, reqEditors ...RequestEditorFn) (*PutStatusPageDomainResponse, error) {
+	rsp, err := c.PutStatusPageDomain(ctx, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParsePutStatusPageDomainResponse(rsp)
+}
+
 // ListStatusPageGroupsWithResponse List groups
 //
 // Returns a wrapper object for the known response body format(s).
@@ -12137,6 +13097,72 @@ func (c *ClientWithResponses) ListWebChecksWithResponse(ctx context.Context, par
 		return nil, err
 	}
 	return ParseListWebChecksResponse(rsp)
+}
+
+// DeleteProjectWebCheckWithResponse Delete a project-level web check
+//
+// The corresponding check task and trigger are removed from the monitoring system as well.
+//
+// Returns a wrapper object for the known response body format(s).
+//
+// Corresponds with DELETE /api/v1/web-checks/{checkId} (the `DeleteProjectWebCheck` operationId).
+func (c *ClientWithResponses) DeleteProjectWebCheckWithResponse(ctx context.Context, checkId openapi_types.UUID, reqEditors ...RequestEditorFn) (*DeleteProjectWebCheckResponse, error) {
+	rsp, err := c.DeleteProjectWebCheck(ctx, checkId, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseDeleteProjectWebCheckResponse(rsp)
+}
+
+// GetProjectWebCheckWithResponse Get a project-level web check
+//
+// Returns a wrapper object for the known response body format(s).
+//
+// Corresponds with GET /api/v1/web-checks/{checkId} (the `GetProjectWebCheck` operationId).
+func (c *ClientWithResponses) GetProjectWebCheckWithResponse(ctx context.Context, checkId openapi_types.UUID, reqEditors ...RequestEditorFn) (*GetProjectWebCheckResponse, error) {
+	rsp, err := c.GetProjectWebCheck(ctx, checkId, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseGetProjectWebCheckResponse(rsp)
+}
+
+// PutProjectWebCheckWithBodyWithResponse Create a web check that is not tied to a machine, or replace it by the same id
+//
+// **Create or replace**: to modify a check, call this endpoint again with the same id.
+//
+// Unlike `/servers/{serverId}/web-checks/{checkId}`, this check does not belong to any machine — use it when the target is simply a URL. Nothing needs to be enrolled first.
+//
+// A check bound to a machine is removed together with that machine; a project-level check is not. Where a check belongs cannot be changed afterwards: move it by deleting and recreating it.
+//
+// Takes any type of body and a specified content type, and returns a wrapper object for the known response body format(s).
+//
+// Corresponds with PUT /api/v1/web-checks/{checkId} (the `PutProjectWebCheck` operationId).
+func (c *ClientWithResponses) PutProjectWebCheckWithBodyWithResponse(ctx context.Context, checkId openapi_types.UUID, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*PutProjectWebCheckResponse, error) {
+	rsp, err := c.PutProjectWebCheckWithBody(ctx, checkId, contentType, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParsePutProjectWebCheckResponse(rsp)
+}
+
+// PutProjectWebCheckWithResponse Create a web check that is not tied to a machine, or replace it by the same id
+//
+// **Create or replace**: to modify a check, call this endpoint again with the same id.
+//
+// Unlike `/servers/{serverId}/web-checks/{checkId}`, this check does not belong to any machine — use it when the target is simply a URL. Nothing needs to be enrolled first.
+//
+// A check bound to a machine is removed together with that machine; a project-level check is not. Where a check belongs cannot be changed afterwards: move it by deleting and recreating it.
+//
+// Takes a body of the `application/json` content type, and returns a wrapper object for the known response body format(s).
+//
+// Corresponds with PUT /api/v1/web-checks/{checkId} (the `PutProjectWebCheck` operationId).
+func (c *ClientWithResponses) PutProjectWebCheckWithResponse(ctx context.Context, checkId openapi_types.UUID, body PutProjectWebCheckJSONRequestBody, reqEditors ...RequestEditorFn) (*PutProjectWebCheckResponse, error) {
+	rsp, err := c.PutProjectWebCheck(ctx, checkId, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParsePutProjectWebCheckResponse(rsp)
 }
 
 // ParseListIncidentsResponse parses an HTTP response from a ListIncidentsWithResponse call
@@ -13497,6 +14523,101 @@ func ParsePutStatusPageComponentSourcesResponse(rsp *http.Response) (*PutStatusP
 	return response, nil
 }
 
+// ParseDeleteStatusPageDomainResponse parses an HTTP response from a DeleteStatusPageDomainWithResponse call
+func ParseDeleteStatusPageDomainResponse(rsp *http.Response) (*DeleteStatusPageDomainResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &DeleteStatusPageDomainResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case rsp.StatusCode == 204:
+		break // No content-type
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && true:
+		var dest Error
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSONDefault = &dest
+
+	}
+
+	return response, nil
+}
+
+// ParseGetStatusPageDomainResponse parses an HTTP response from a GetStatusPageDomainWithResponse call
+func ParseGetStatusPageDomainResponse(rsp *http.Response) (*GetStatusPageDomainResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &GetStatusPageDomainResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest StatusPageDomainResource
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && true:
+		var dest Error
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSONDefault = &dest
+
+	}
+
+	return response, nil
+}
+
+// ParsePutStatusPageDomainResponse parses an HTTP response from a PutStatusPageDomainWithResponse call
+func ParsePutStatusPageDomainResponse(rsp *http.Response) (*PutStatusPageDomainResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &PutStatusPageDomainResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest StatusPageDomainResource
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && true:
+		var dest Error
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSONDefault = &dest
+
+	}
+
+	return response, nil
+}
+
 // ParseListStatusPageGroupsResponse parses an HTTP response from a ListStatusPageGroupsWithResponse call
 func ParseListStatusPageGroupsResponse(rsp *http.Response) (*ListStatusPageGroupsResponse, error) {
 	bodyBytes, err := io.ReadAll(rsp.Body)
@@ -14029,6 +15150,101 @@ func ParseListWebChecksResponse(rsp *http.Response) (*ListWebChecksResponse, err
 	switch {
 	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
 		var dest WebCheckListResponseBody
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && true:
+		var dest Error
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSONDefault = &dest
+
+	}
+
+	return response, nil
+}
+
+// ParseDeleteProjectWebCheckResponse parses an HTTP response from a DeleteProjectWebCheckWithResponse call
+func ParseDeleteProjectWebCheckResponse(rsp *http.Response) (*DeleteProjectWebCheckResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &DeleteProjectWebCheckResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case rsp.StatusCode == 204:
+		break // No content-type
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && true:
+		var dest Error
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSONDefault = &dest
+
+	}
+
+	return response, nil
+}
+
+// ParseGetProjectWebCheckResponse parses an HTTP response from a GetProjectWebCheckWithResponse call
+func ParseGetProjectWebCheckResponse(rsp *http.Response) (*GetProjectWebCheckResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &GetProjectWebCheckResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest WebCheckResource
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && true:
+		var dest Error
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSONDefault = &dest
+
+	}
+
+	return response, nil
+}
+
+// ParsePutProjectWebCheckResponse parses an HTTP response from a PutProjectWebCheckWithResponse call
+func ParsePutProjectWebCheckResponse(rsp *http.Response) (*PutProjectWebCheckResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &PutProjectWebCheckResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest WebCheckResource
 		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
 			return nil, err
 		}

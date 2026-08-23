@@ -75,6 +75,12 @@ type Handler interface {
 	//
 	// DELETE /api/v1/maintenance-windows/{windowId}
 	DeleteMaintenanceWindow(ctx context.Context, params DeleteMaintenanceWindowParams) error
+	// DeleteProjectWebCheck implements delete-project-web-check operation.
+	//
+	// The corresponding check task and trigger are removed from the monitoring system as well.
+	//
+	// DELETE /api/v1/web-checks/{checkId}
+	DeleteProjectWebCheck(ctx context.Context, params DeleteProjectWebCheckParams) error
 	// DeleteServer implements delete-server operation.
 	//
 	// Irreversible: the monitored host, its history and every incident recorded against this machine are
@@ -102,6 +108,13 @@ type Handler interface {
 	//
 	// DELETE /api/v1/status-page/components/{componentId}
 	DeleteStatusPageComponent(ctx context.Context, params DeleteStatusPageComponentParams) error
+	// DeleteStatusPageDomain implements delete-status-page-domain operation.
+	//
+	// The page stays reachable at its shared address. Certificate renewal for the domain stops; the
+	// certificate already issued is left to expire.
+	//
+	// DELETE /api/v1/status-page/domain
+	DeleteStatusPageDomain(ctx context.Context) error
 	// DeleteStatusPageGroup implements delete-status-page-group operation.
 	//
 	// The components in it are not deleted. They return to the top level as ungrouped components, keeping
@@ -156,6 +169,12 @@ type Handler interface {
 	//
 	// GET /api/v1/overview
 	GetProjectOverview(ctx context.Context) (*ProjectOverviewResource, error)
+	// GetProjectWebCheck implements get-project-web-check operation.
+	//
+	// Get a project-level web check.
+	//
+	// GET /api/v1/web-checks/{checkId}
+	GetProjectWebCheck(ctx context.Context, params GetProjectWebCheckParams) (*WebCheckResource, error)
 	// GetServer implements get-server operation.
 	//
 	// Get the enrollment state of a machine.
@@ -209,6 +228,16 @@ type Handler interface {
 	//
 	// GET /api/v1/status-page/components/{componentId}
 	GetStatusPageComponent(ctx context.Context, params GetStatusPageComponentParams) (*StatusPageComponentResource, error)
+	// GetStatusPageDomain implements get-status-page-domain operation.
+	//
+	// Reports whether the domain currently resolves to the status page and where its certificate stands.
+	//
+	// `expected_cname` is the value the domain must point at. `observed_cname` is what it currently
+	// resolves to, which is what to show the user when verification fails — "verification failed" on its
+	// own tells them nothing about what to fix.
+	//
+	// GET /api/v1/status-page/domain
+	GetStatusPageDomain(ctx context.Context) (*StatusPageDomainResource, error)
 	// GetStatusPageIncident implements get-status-page-incident operation.
 	//
 	// Get an incident notice.
@@ -341,6 +370,18 @@ type Handler interface {
 	//
 	// PUT /api/v1/maintenance-windows/{windowId}
 	PutMaintenanceWindow(ctx context.Context, req *PutMaintenanceWindowRequestBody, params PutMaintenanceWindowParams) (*MaintenanceWindowResource, error)
+	// PutProjectWebCheck implements put-project-web-check operation.
+	//
+	// Create or replace: to modify a check, call this endpoint again with the same id.
+	//
+	// Unlike `/servers/{serverId}/web-checks/{checkId}`, this check does not belong to any machine — use
+	// it when the target is simply a URL. Nothing needs to be enrolled first.
+	//
+	// A check bound to a machine is removed together with that machine; a project-level check is not.
+	// Where a check belongs cannot be changed afterwards: move it by deleting and recreating it.
+	//
+	// PUT /api/v1/web-checks/{checkId}
+	PutProjectWebCheck(ctx context.Context, req *PutWebCheckRequestBody, params PutProjectWebCheckParams) (*WebCheckResource, error)
 	// PutSlo implements put-slo operation.
 	//
 	// One SLO per project, create or replace.
@@ -375,6 +416,20 @@ type Handler interface {
 	//
 	// PUT /api/v1/status-page/components/{componentId}/sources
 	PutStatusPageComponentSources(ctx context.Context, req *PutStatusPageComponentSourcesRequestBody, params PutStatusPageComponentSourcesParams) (*StatusPageComponentSourcesResource, error)
+	// PutStatusPageDomain implements put-status-page-domain operation.
+	//
+	// The domain must already point at the status page by CNAME. Binding is rejected until it does, and
+	// the error carries both the expected and the observed target.
+	//
+	// Ownership is verified before the domain is stored, and it is verified again before each certificate
+	// is issued: a domain whose CNAME is later removed stops being served.
+	//
+	// A certificate is requested in the background — this call does not wait for it. Poll GET on this
+	// endpoint to follow its progress; until a certificate is active, the domain does not serve HTTPS
+	// while the page remains reachable at its shared address.
+	//
+	// PUT /api/v1/status-page/domain
+	PutStatusPageDomain(ctx context.Context, req *PutStatusPageDomainRequestBody) (*StatusPageDomainResource, error)
 	// PutStatusPageGroupOrder implements put-status-page-group-order operation.
 	//
 	// Set the order of components within a group.

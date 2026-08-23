@@ -96,6 +96,12 @@ type Invoker interface {
 	//
 	// DELETE /api/v1/maintenance-windows/{windowId}
 	DeleteMaintenanceWindow(ctx context.Context, params DeleteMaintenanceWindowParams) error
+	// DeleteProjectWebCheck invokes delete-project-web-check operation.
+	//
+	// The corresponding check task and trigger are removed from the monitoring system as well.
+	//
+	// DELETE /api/v1/web-checks/{checkId}
+	DeleteProjectWebCheck(ctx context.Context, params DeleteProjectWebCheckParams) error
 	// DeleteServer invokes delete-server operation.
 	//
 	// Irreversible: the monitored host, its history and every incident recorded against this machine are
@@ -123,6 +129,13 @@ type Invoker interface {
 	//
 	// DELETE /api/v1/status-page/components/{componentId}
 	DeleteStatusPageComponent(ctx context.Context, params DeleteStatusPageComponentParams) error
+	// DeleteStatusPageDomain invokes delete-status-page-domain operation.
+	//
+	// The page stays reachable at its shared address. Certificate renewal for the domain stops; the
+	// certificate already issued is left to expire.
+	//
+	// DELETE /api/v1/status-page/domain
+	DeleteStatusPageDomain(ctx context.Context) error
 	// DeleteStatusPageGroup invokes delete-status-page-group operation.
 	//
 	// The components in it are not deleted. They return to the top level as ungrouped components, keeping
@@ -177,6 +190,12 @@ type Invoker interface {
 	//
 	// GET /api/v1/overview
 	GetProjectOverview(ctx context.Context) (*ProjectOverviewResource, error)
+	// GetProjectWebCheck invokes get-project-web-check operation.
+	//
+	// Get a project-level web check.
+	//
+	// GET /api/v1/web-checks/{checkId}
+	GetProjectWebCheck(ctx context.Context, params GetProjectWebCheckParams) (*WebCheckResource, error)
 	// GetServer invokes get-server operation.
 	//
 	// Get the enrollment state of a machine.
@@ -230,6 +249,16 @@ type Invoker interface {
 	//
 	// GET /api/v1/status-page/components/{componentId}
 	GetStatusPageComponent(ctx context.Context, params GetStatusPageComponentParams) (*StatusPageComponentResource, error)
+	// GetStatusPageDomain invokes get-status-page-domain operation.
+	//
+	// Reports whether the domain currently resolves to the status page and where its certificate stands.
+	//
+	// `expected_cname` is the value the domain must point at. `observed_cname` is what it currently
+	// resolves to, which is what to show the user when verification fails — "verification failed" on its
+	// own tells them nothing about what to fix.
+	//
+	// GET /api/v1/status-page/domain
+	GetStatusPageDomain(ctx context.Context) (*StatusPageDomainResource, error)
 	// GetStatusPageIncident invokes get-status-page-incident operation.
 	//
 	// Get an incident notice.
@@ -362,6 +391,18 @@ type Invoker interface {
 	//
 	// PUT /api/v1/maintenance-windows/{windowId}
 	PutMaintenanceWindow(ctx context.Context, request *PutMaintenanceWindowRequestBody, params PutMaintenanceWindowParams) (*MaintenanceWindowResource, error)
+	// PutProjectWebCheck invokes put-project-web-check operation.
+	//
+	// Create or replace: to modify a check, call this endpoint again with the same id.
+	//
+	// Unlike `/servers/{serverId}/web-checks/{checkId}`, this check does not belong to any machine — use
+	// it when the target is simply a URL. Nothing needs to be enrolled first.
+	//
+	// A check bound to a machine is removed together with that machine; a project-level check is not.
+	// Where a check belongs cannot be changed afterwards: move it by deleting and recreating it.
+	//
+	// PUT /api/v1/web-checks/{checkId}
+	PutProjectWebCheck(ctx context.Context, request *PutWebCheckRequestBody, params PutProjectWebCheckParams) (*WebCheckResource, error)
 	// PutSlo invokes put-slo operation.
 	//
 	// One SLO per project, create or replace.
@@ -396,6 +437,20 @@ type Invoker interface {
 	//
 	// PUT /api/v1/status-page/components/{componentId}/sources
 	PutStatusPageComponentSources(ctx context.Context, request *PutStatusPageComponentSourcesRequestBody, params PutStatusPageComponentSourcesParams) (*StatusPageComponentSourcesResource, error)
+	// PutStatusPageDomain invokes put-status-page-domain operation.
+	//
+	// The domain must already point at the status page by CNAME. Binding is rejected until it does, and
+	// the error carries both the expected and the observed target.
+	//
+	// Ownership is verified before the domain is stored, and it is verified again before each certificate
+	// is issued: a domain whose CNAME is later removed stops being served.
+	//
+	// A certificate is requested in the background — this call does not wait for it. Poll GET on this
+	// endpoint to follow its progress; until a certificate is active, the domain does not serve HTTPS
+	// while the page remains reachable at its shared address.
+	//
+	// PUT /api/v1/status-page/domain
+	PutStatusPageDomain(ctx context.Context, request *PutStatusPageDomainRequestBody) (*StatusPageDomainResource, error)
 	// PutStatusPageGroupOrder invokes put-status-page-group-order operation.
 	//
 	// Set the order of components within a group.
@@ -1698,6 +1753,137 @@ func (c *Client) sendDeleteMaintenanceWindow(ctx context.Context, params DeleteM
 	return result, nil
 }
 
+// DeleteProjectWebCheck invokes delete-project-web-check operation.
+//
+// The corresponding check task and trigger are removed from the monitoring system as well.
+//
+// DELETE /api/v1/web-checks/{checkId}
+func (c *Client) DeleteProjectWebCheck(ctx context.Context, params DeleteProjectWebCheckParams) error {
+	_, err := c.sendDeleteProjectWebCheck(ctx, params)
+	return err
+}
+
+func (c *Client) sendDeleteProjectWebCheck(ctx context.Context, params DeleteProjectWebCheckParams) (res *DeleteProjectWebCheckNoContent, err error) {
+	otelAttrs := []attribute.KeyValue{
+		otelogen.OperationID("delete-project-web-check"),
+		semconv.HTTPRequestMethodKey.String("DELETE"),
+		semconv.URLTemplateKey.String("/api/v1/web-checks/{checkId}"),
+	}
+	otelAttrs = append(otelAttrs, c.cfg.Attributes...)
+
+	// Run stopwatch.
+	startTime := time.Now()
+	defer func() {
+		// Use floating point division here for higher precision (instead of Millisecond method).
+		elapsedDuration := time.Since(startTime)
+		c.duration.Record(ctx, float64(elapsedDuration)/float64(time.Millisecond), metric.WithAttributes(otelAttrs...))
+	}()
+
+	// Increment request counter.
+	c.requests.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
+
+	// Start a span for this request.
+	ctx, span := c.cfg.Tracer.Start(ctx, DeleteProjectWebCheckOperation,
+		trace.WithAttributes(otelAttrs...),
+		clientSpanKind,
+	)
+	// Track stage for error reporting.
+	var stage string
+	defer func() {
+		if err != nil {
+			span.RecordError(err)
+			span.SetStatus(codes.Error, stage)
+			c.errors.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
+		}
+		span.End()
+	}()
+
+	stage = "BuildURL"
+	u := uri.Clone(c.requestURL(ctx))
+	var pathParts [2]string
+	pathParts[0] = "/api/v1/web-checks/"
+	{
+		// Encode "checkId" parameter.
+		e := uri.NewPathEncoder(uri.PathEncoderConfig{
+			Param:   "checkId",
+			Style:   uri.PathStyleSimple,
+			Explode: false,
+		})
+		if err := func() error {
+			return e.EncodeValue(conv.UUIDToString(params.CheckId))
+		}(); err != nil {
+			return res, errors.Wrap(err, "encode path")
+		}
+		encoded, err := e.Result()
+		if err != nil {
+			return res, errors.Wrap(err, "encode path")
+		}
+		pathParts[1] = encoded
+	}
+	uri.AddPathParts(u, pathParts[:]...)
+
+	stage = "EncodeRequest"
+	r, err := ht.NewRequest(ctx, "DELETE", u)
+	if err != nil {
+		return res, errors.Wrap(err, "create request")
+	}
+
+	{
+		type bitset = [1]uint8
+		var satisfied bitset
+		{
+			stage = "Security:BearerAuth"
+			switch err := c.securityBearerAuth(ctx, DeleteProjectWebCheckOperation, r); {
+			case err == nil: // if NO error
+				satisfied[0] |= 1 << 0
+			case errors.Is(err, ogenerrors.ErrSkipClientSecurity):
+				// Skip this security.
+			default:
+				return res, errors.Wrap(err, "security \"BearerAuth\"")
+			}
+		}
+
+		if ok := func() bool {
+		nextRequirement:
+			for _, requirement := range []bitset{
+				{0b00000001},
+			} {
+				for i, mask := range requirement {
+					if satisfied[i]&mask != mask {
+						continue nextRequirement
+					}
+				}
+				return true
+			}
+			return false
+		}(); !ok {
+			return res, ogenerrors.ErrSecurityRequirementIsNotSatisfied
+		}
+	}
+
+	stage = "SendRequest"
+	resp, err := c.cfg.Client.Do(r)
+	if err != nil {
+		return res, errors.Wrap(err, "do request")
+	}
+	body := resp.Body
+	defer func() {
+		// Drain the body to EOF before closing, so the underlying
+		// connection can be reused by the Transport regardless of the
+		// response status code. See https://github.com/ogen-go/ogen/issues/1670.
+		_, _ = io.Copy(io.Discard, body)
+		_ = body.Close()
+	}()
+
+	stage = "DecodeResponse"
+	result, err := decodeDeleteProjectWebCheckResponse(resp)
+	if err != nil {
+		return res, errors.Wrap(err, "decode response")
+	}
+
+	return result, nil
+}
+
 // DeleteServer invokes delete-server operation.
 //
 // Irreversible: the monitored host, its history and every incident recorded against this machine are
@@ -2182,6 +2368,120 @@ func (c *Client) sendDeleteStatusPageComponent(ctx context.Context, params Delet
 
 	stage = "DecodeResponse"
 	result, err := decodeDeleteStatusPageComponentResponse(resp)
+	if err != nil {
+		return res, errors.Wrap(err, "decode response")
+	}
+
+	return result, nil
+}
+
+// DeleteStatusPageDomain invokes delete-status-page-domain operation.
+//
+// The page stays reachable at its shared address. Certificate renewal for the domain stops; the
+// certificate already issued is left to expire.
+//
+// DELETE /api/v1/status-page/domain
+func (c *Client) DeleteStatusPageDomain(ctx context.Context) error {
+	_, err := c.sendDeleteStatusPageDomain(ctx)
+	return err
+}
+
+func (c *Client) sendDeleteStatusPageDomain(ctx context.Context) (res *DeleteStatusPageDomainNoContent, err error) {
+	otelAttrs := []attribute.KeyValue{
+		otelogen.OperationID("delete-status-page-domain"),
+		semconv.HTTPRequestMethodKey.String("DELETE"),
+		semconv.URLTemplateKey.String("/api/v1/status-page/domain"),
+	}
+	otelAttrs = append(otelAttrs, c.cfg.Attributes...)
+
+	// Run stopwatch.
+	startTime := time.Now()
+	defer func() {
+		// Use floating point division here for higher precision (instead of Millisecond method).
+		elapsedDuration := time.Since(startTime)
+		c.duration.Record(ctx, float64(elapsedDuration)/float64(time.Millisecond), metric.WithAttributes(otelAttrs...))
+	}()
+
+	// Increment request counter.
+	c.requests.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
+
+	// Start a span for this request.
+	ctx, span := c.cfg.Tracer.Start(ctx, DeleteStatusPageDomainOperation,
+		trace.WithAttributes(otelAttrs...),
+		clientSpanKind,
+	)
+	// Track stage for error reporting.
+	var stage string
+	defer func() {
+		if err != nil {
+			span.RecordError(err)
+			span.SetStatus(codes.Error, stage)
+			c.errors.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
+		}
+		span.End()
+	}()
+
+	stage = "BuildURL"
+	u := uri.Clone(c.requestURL(ctx))
+	var pathParts [1]string
+	pathParts[0] = "/api/v1/status-page/domain"
+	uri.AddPathParts(u, pathParts[:]...)
+
+	stage = "EncodeRequest"
+	r, err := ht.NewRequest(ctx, "DELETE", u)
+	if err != nil {
+		return res, errors.Wrap(err, "create request")
+	}
+
+	{
+		type bitset = [1]uint8
+		var satisfied bitset
+		{
+			stage = "Security:BearerAuth"
+			switch err := c.securityBearerAuth(ctx, DeleteStatusPageDomainOperation, r); {
+			case err == nil: // if NO error
+				satisfied[0] |= 1 << 0
+			case errors.Is(err, ogenerrors.ErrSkipClientSecurity):
+				// Skip this security.
+			default:
+				return res, errors.Wrap(err, "security \"BearerAuth\"")
+			}
+		}
+
+		if ok := func() bool {
+		nextRequirement:
+			for _, requirement := range []bitset{
+				{0b00000001},
+			} {
+				for i, mask := range requirement {
+					if satisfied[i]&mask != mask {
+						continue nextRequirement
+					}
+				}
+				return true
+			}
+			return false
+		}(); !ok {
+			return res, ogenerrors.ErrSecurityRequirementIsNotSatisfied
+		}
+	}
+
+	stage = "SendRequest"
+	resp, err := c.cfg.Client.Do(r)
+	if err != nil {
+		return res, errors.Wrap(err, "do request")
+	}
+	body := resp.Body
+	defer func() {
+		// Drain the body to EOF before closing, so the underlying
+		// connection can be reused by the Transport regardless of the
+		// response status code. See https://github.com/ogen-go/ogen/issues/1670.
+		_, _ = io.Copy(io.Discard, body)
+		_ = body.Close()
+	}()
+
+	stage = "DecodeResponse"
+	result, err := decodeDeleteStatusPageDomainResponse(resp)
 	if err != nil {
 		return res, errors.Wrap(err, "decode response")
 	}
@@ -3116,6 +3416,137 @@ func (c *Client) sendGetProjectOverview(ctx context.Context) (res *ProjectOvervi
 
 	stage = "DecodeResponse"
 	result, err := decodeGetProjectOverviewResponse(resp)
+	if err != nil {
+		return res, errors.Wrap(err, "decode response")
+	}
+
+	return result, nil
+}
+
+// GetProjectWebCheck invokes get-project-web-check operation.
+//
+// Get a project-level web check.
+//
+// GET /api/v1/web-checks/{checkId}
+func (c *Client) GetProjectWebCheck(ctx context.Context, params GetProjectWebCheckParams) (*WebCheckResource, error) {
+	res, err := c.sendGetProjectWebCheck(ctx, params)
+	return res, err
+}
+
+func (c *Client) sendGetProjectWebCheck(ctx context.Context, params GetProjectWebCheckParams) (res *WebCheckResource, err error) {
+	otelAttrs := []attribute.KeyValue{
+		otelogen.OperationID("get-project-web-check"),
+		semconv.HTTPRequestMethodKey.String("GET"),
+		semconv.URLTemplateKey.String("/api/v1/web-checks/{checkId}"),
+	}
+	otelAttrs = append(otelAttrs, c.cfg.Attributes...)
+
+	// Run stopwatch.
+	startTime := time.Now()
+	defer func() {
+		// Use floating point division here for higher precision (instead of Millisecond method).
+		elapsedDuration := time.Since(startTime)
+		c.duration.Record(ctx, float64(elapsedDuration)/float64(time.Millisecond), metric.WithAttributes(otelAttrs...))
+	}()
+
+	// Increment request counter.
+	c.requests.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
+
+	// Start a span for this request.
+	ctx, span := c.cfg.Tracer.Start(ctx, GetProjectWebCheckOperation,
+		trace.WithAttributes(otelAttrs...),
+		clientSpanKind,
+	)
+	// Track stage for error reporting.
+	var stage string
+	defer func() {
+		if err != nil {
+			span.RecordError(err)
+			span.SetStatus(codes.Error, stage)
+			c.errors.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
+		}
+		span.End()
+	}()
+
+	stage = "BuildURL"
+	u := uri.Clone(c.requestURL(ctx))
+	var pathParts [2]string
+	pathParts[0] = "/api/v1/web-checks/"
+	{
+		// Encode "checkId" parameter.
+		e := uri.NewPathEncoder(uri.PathEncoderConfig{
+			Param:   "checkId",
+			Style:   uri.PathStyleSimple,
+			Explode: false,
+		})
+		if err := func() error {
+			return e.EncodeValue(conv.UUIDToString(params.CheckId))
+		}(); err != nil {
+			return res, errors.Wrap(err, "encode path")
+		}
+		encoded, err := e.Result()
+		if err != nil {
+			return res, errors.Wrap(err, "encode path")
+		}
+		pathParts[1] = encoded
+	}
+	uri.AddPathParts(u, pathParts[:]...)
+
+	stage = "EncodeRequest"
+	r, err := ht.NewRequest(ctx, "GET", u)
+	if err != nil {
+		return res, errors.Wrap(err, "create request")
+	}
+
+	{
+		type bitset = [1]uint8
+		var satisfied bitset
+		{
+			stage = "Security:BearerAuth"
+			switch err := c.securityBearerAuth(ctx, GetProjectWebCheckOperation, r); {
+			case err == nil: // if NO error
+				satisfied[0] |= 1 << 0
+			case errors.Is(err, ogenerrors.ErrSkipClientSecurity):
+				// Skip this security.
+			default:
+				return res, errors.Wrap(err, "security \"BearerAuth\"")
+			}
+		}
+
+		if ok := func() bool {
+		nextRequirement:
+			for _, requirement := range []bitset{
+				{0b00000001},
+			} {
+				for i, mask := range requirement {
+					if satisfied[i]&mask != mask {
+						continue nextRequirement
+					}
+				}
+				return true
+			}
+			return false
+		}(); !ok {
+			return res, ogenerrors.ErrSecurityRequirementIsNotSatisfied
+		}
+	}
+
+	stage = "SendRequest"
+	resp, err := c.cfg.Client.Do(r)
+	if err != nil {
+		return res, errors.Wrap(err, "do request")
+	}
+	body := resp.Body
+	defer func() {
+		// Drain the body to EOF before closing, so the underlying
+		// connection can be reused by the Transport regardless of the
+		// response status code. See https://github.com/ogen-go/ogen/issues/1670.
+		_, _ = io.Copy(io.Discard, body)
+		_ = body.Close()
+	}()
+
+	stage = "DecodeResponse"
+	result, err := decodeGetProjectWebCheckResponse(resp)
 	if err != nil {
 		return res, errors.Wrap(err, "decode response")
 	}
@@ -4279,6 +4710,123 @@ func (c *Client) sendGetStatusPageComponent(ctx context.Context, params GetStatu
 
 	stage = "DecodeResponse"
 	result, err := decodeGetStatusPageComponentResponse(resp)
+	if err != nil {
+		return res, errors.Wrap(err, "decode response")
+	}
+
+	return result, nil
+}
+
+// GetStatusPageDomain invokes get-status-page-domain operation.
+//
+// Reports whether the domain currently resolves to the status page and where its certificate stands.
+//
+// `expected_cname` is the value the domain must point at. `observed_cname` is what it currently
+// resolves to, which is what to show the user when verification fails — "verification failed" on its
+// own tells them nothing about what to fix.
+//
+// GET /api/v1/status-page/domain
+func (c *Client) GetStatusPageDomain(ctx context.Context) (*StatusPageDomainResource, error) {
+	res, err := c.sendGetStatusPageDomain(ctx)
+	return res, err
+}
+
+func (c *Client) sendGetStatusPageDomain(ctx context.Context) (res *StatusPageDomainResource, err error) {
+	otelAttrs := []attribute.KeyValue{
+		otelogen.OperationID("get-status-page-domain"),
+		semconv.HTTPRequestMethodKey.String("GET"),
+		semconv.URLTemplateKey.String("/api/v1/status-page/domain"),
+	}
+	otelAttrs = append(otelAttrs, c.cfg.Attributes...)
+
+	// Run stopwatch.
+	startTime := time.Now()
+	defer func() {
+		// Use floating point division here for higher precision (instead of Millisecond method).
+		elapsedDuration := time.Since(startTime)
+		c.duration.Record(ctx, float64(elapsedDuration)/float64(time.Millisecond), metric.WithAttributes(otelAttrs...))
+	}()
+
+	// Increment request counter.
+	c.requests.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
+
+	// Start a span for this request.
+	ctx, span := c.cfg.Tracer.Start(ctx, GetStatusPageDomainOperation,
+		trace.WithAttributes(otelAttrs...),
+		clientSpanKind,
+	)
+	// Track stage for error reporting.
+	var stage string
+	defer func() {
+		if err != nil {
+			span.RecordError(err)
+			span.SetStatus(codes.Error, stage)
+			c.errors.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
+		}
+		span.End()
+	}()
+
+	stage = "BuildURL"
+	u := uri.Clone(c.requestURL(ctx))
+	var pathParts [1]string
+	pathParts[0] = "/api/v1/status-page/domain"
+	uri.AddPathParts(u, pathParts[:]...)
+
+	stage = "EncodeRequest"
+	r, err := ht.NewRequest(ctx, "GET", u)
+	if err != nil {
+		return res, errors.Wrap(err, "create request")
+	}
+
+	{
+		type bitset = [1]uint8
+		var satisfied bitset
+		{
+			stage = "Security:BearerAuth"
+			switch err := c.securityBearerAuth(ctx, GetStatusPageDomainOperation, r); {
+			case err == nil: // if NO error
+				satisfied[0] |= 1 << 0
+			case errors.Is(err, ogenerrors.ErrSkipClientSecurity):
+				// Skip this security.
+			default:
+				return res, errors.Wrap(err, "security \"BearerAuth\"")
+			}
+		}
+
+		if ok := func() bool {
+		nextRequirement:
+			for _, requirement := range []bitset{
+				{0b00000001},
+			} {
+				for i, mask := range requirement {
+					if satisfied[i]&mask != mask {
+						continue nextRequirement
+					}
+				}
+				return true
+			}
+			return false
+		}(); !ok {
+			return res, ogenerrors.ErrSecurityRequirementIsNotSatisfied
+		}
+	}
+
+	stage = "SendRequest"
+	resp, err := c.cfg.Client.Do(r)
+	if err != nil {
+		return res, errors.Wrap(err, "do request")
+	}
+	body := resp.Body
+	defer func() {
+		// Drain the body to EOF before closing, so the underlying
+		// connection can be reused by the Transport regardless of the
+		// response status code. See https://github.com/ogen-go/ogen/issues/1670.
+		_, _ = io.Copy(io.Discard, body)
+		_ = body.Close()
+	}()
+
+	stage = "DecodeResponse"
+	result, err := decodeGetStatusPageDomainResponse(resp)
 	if err != nil {
 		return res, errors.Wrap(err, "decode response")
 	}
@@ -7077,6 +7625,146 @@ func (c *Client) sendPutMaintenanceWindow(ctx context.Context, request *PutMaint
 	return result, nil
 }
 
+// PutProjectWebCheck invokes put-project-web-check operation.
+//
+// Create or replace: to modify a check, call this endpoint again with the same id.
+//
+// Unlike `/servers/{serverId}/web-checks/{checkId}`, this check does not belong to any machine — use
+// it when the target is simply a URL. Nothing needs to be enrolled first.
+//
+// A check bound to a machine is removed together with that machine; a project-level check is not.
+// Where a check belongs cannot be changed afterwards: move it by deleting and recreating it.
+//
+// PUT /api/v1/web-checks/{checkId}
+func (c *Client) PutProjectWebCheck(ctx context.Context, request *PutWebCheckRequestBody, params PutProjectWebCheckParams) (*WebCheckResource, error) {
+	res, err := c.sendPutProjectWebCheck(ctx, request, params)
+	return res, err
+}
+
+func (c *Client) sendPutProjectWebCheck(ctx context.Context, request *PutWebCheckRequestBody, params PutProjectWebCheckParams) (res *WebCheckResource, err error) {
+	otelAttrs := []attribute.KeyValue{
+		otelogen.OperationID("put-project-web-check"),
+		semconv.HTTPRequestMethodKey.String("PUT"),
+		semconv.URLTemplateKey.String("/api/v1/web-checks/{checkId}"),
+	}
+	otelAttrs = append(otelAttrs, c.cfg.Attributes...)
+
+	// Run stopwatch.
+	startTime := time.Now()
+	defer func() {
+		// Use floating point division here for higher precision (instead of Millisecond method).
+		elapsedDuration := time.Since(startTime)
+		c.duration.Record(ctx, float64(elapsedDuration)/float64(time.Millisecond), metric.WithAttributes(otelAttrs...))
+	}()
+
+	// Increment request counter.
+	c.requests.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
+
+	// Start a span for this request.
+	ctx, span := c.cfg.Tracer.Start(ctx, PutProjectWebCheckOperation,
+		trace.WithAttributes(otelAttrs...),
+		clientSpanKind,
+	)
+	// Track stage for error reporting.
+	var stage string
+	defer func() {
+		if err != nil {
+			span.RecordError(err)
+			span.SetStatus(codes.Error, stage)
+			c.errors.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
+		}
+		span.End()
+	}()
+
+	stage = "BuildURL"
+	u := uri.Clone(c.requestURL(ctx))
+	var pathParts [2]string
+	pathParts[0] = "/api/v1/web-checks/"
+	{
+		// Encode "checkId" parameter.
+		e := uri.NewPathEncoder(uri.PathEncoderConfig{
+			Param:   "checkId",
+			Style:   uri.PathStyleSimple,
+			Explode: false,
+		})
+		if err := func() error {
+			return e.EncodeValue(conv.UUIDToString(params.CheckId))
+		}(); err != nil {
+			return res, errors.Wrap(err, "encode path")
+		}
+		encoded, err := e.Result()
+		if err != nil {
+			return res, errors.Wrap(err, "encode path")
+		}
+		pathParts[1] = encoded
+	}
+	uri.AddPathParts(u, pathParts[:]...)
+
+	stage = "EncodeRequest"
+	r, err := ht.NewRequest(ctx, "PUT", u)
+	if err != nil {
+		return res, errors.Wrap(err, "create request")
+	}
+	if err := encodePutProjectWebCheckRequest(request, r); err != nil {
+		return res, errors.Wrap(err, "encode request")
+	}
+
+	{
+		type bitset = [1]uint8
+		var satisfied bitset
+		{
+			stage = "Security:BearerAuth"
+			switch err := c.securityBearerAuth(ctx, PutProjectWebCheckOperation, r); {
+			case err == nil: // if NO error
+				satisfied[0] |= 1 << 0
+			case errors.Is(err, ogenerrors.ErrSkipClientSecurity):
+				// Skip this security.
+			default:
+				return res, errors.Wrap(err, "security \"BearerAuth\"")
+			}
+		}
+
+		if ok := func() bool {
+		nextRequirement:
+			for _, requirement := range []bitset{
+				{0b00000001},
+			} {
+				for i, mask := range requirement {
+					if satisfied[i]&mask != mask {
+						continue nextRequirement
+					}
+				}
+				return true
+			}
+			return false
+		}(); !ok {
+			return res, ogenerrors.ErrSecurityRequirementIsNotSatisfied
+		}
+	}
+
+	stage = "SendRequest"
+	resp, err := c.cfg.Client.Do(r)
+	if err != nil {
+		return res, errors.Wrap(err, "do request")
+	}
+	body := resp.Body
+	defer func() {
+		// Drain the body to EOF before closing, so the underlying
+		// connection can be reused by the Transport regardless of the
+		// response status code. See https://github.com/ogen-go/ogen/issues/1670.
+		_, _ = io.Copy(io.Discard, body)
+		_ = body.Close()
+	}()
+
+	stage = "DecodeResponse"
+	result, err := decodePutProjectWebCheckResponse(resp)
+	if err != nil {
+		return res, errors.Wrap(err, "decode response")
+	}
+
+	return result, nil
+}
+
 // PutSlo invokes put-slo operation.
 //
 // One SLO per project, create or replace.
@@ -7453,6 +8141,130 @@ func (c *Client) sendPutStatusPageComponentSources(ctx context.Context, request 
 
 	stage = "DecodeResponse"
 	result, err := decodePutStatusPageComponentSourcesResponse(resp)
+	if err != nil {
+		return res, errors.Wrap(err, "decode response")
+	}
+
+	return result, nil
+}
+
+// PutStatusPageDomain invokes put-status-page-domain operation.
+//
+// The domain must already point at the status page by CNAME. Binding is rejected until it does, and
+// the error carries both the expected and the observed target.
+//
+// Ownership is verified before the domain is stored, and it is verified again before each certificate
+// is issued: a domain whose CNAME is later removed stops being served.
+//
+// A certificate is requested in the background — this call does not wait for it. Poll GET on this
+// endpoint to follow its progress; until a certificate is active, the domain does not serve HTTPS
+// while the page remains reachable at its shared address.
+//
+// PUT /api/v1/status-page/domain
+func (c *Client) PutStatusPageDomain(ctx context.Context, request *PutStatusPageDomainRequestBody) (*StatusPageDomainResource, error) {
+	res, err := c.sendPutStatusPageDomain(ctx, request)
+	return res, err
+}
+
+func (c *Client) sendPutStatusPageDomain(ctx context.Context, request *PutStatusPageDomainRequestBody) (res *StatusPageDomainResource, err error) {
+	otelAttrs := []attribute.KeyValue{
+		otelogen.OperationID("put-status-page-domain"),
+		semconv.HTTPRequestMethodKey.String("PUT"),
+		semconv.URLTemplateKey.String("/api/v1/status-page/domain"),
+	}
+	otelAttrs = append(otelAttrs, c.cfg.Attributes...)
+
+	// Run stopwatch.
+	startTime := time.Now()
+	defer func() {
+		// Use floating point division here for higher precision (instead of Millisecond method).
+		elapsedDuration := time.Since(startTime)
+		c.duration.Record(ctx, float64(elapsedDuration)/float64(time.Millisecond), metric.WithAttributes(otelAttrs...))
+	}()
+
+	// Increment request counter.
+	c.requests.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
+
+	// Start a span for this request.
+	ctx, span := c.cfg.Tracer.Start(ctx, PutStatusPageDomainOperation,
+		trace.WithAttributes(otelAttrs...),
+		clientSpanKind,
+	)
+	// Track stage for error reporting.
+	var stage string
+	defer func() {
+		if err != nil {
+			span.RecordError(err)
+			span.SetStatus(codes.Error, stage)
+			c.errors.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
+		}
+		span.End()
+	}()
+
+	stage = "BuildURL"
+	u := uri.Clone(c.requestURL(ctx))
+	var pathParts [1]string
+	pathParts[0] = "/api/v1/status-page/domain"
+	uri.AddPathParts(u, pathParts[:]...)
+
+	stage = "EncodeRequest"
+	r, err := ht.NewRequest(ctx, "PUT", u)
+	if err != nil {
+		return res, errors.Wrap(err, "create request")
+	}
+	if err := encodePutStatusPageDomainRequest(request, r); err != nil {
+		return res, errors.Wrap(err, "encode request")
+	}
+
+	{
+		type bitset = [1]uint8
+		var satisfied bitset
+		{
+			stage = "Security:BearerAuth"
+			switch err := c.securityBearerAuth(ctx, PutStatusPageDomainOperation, r); {
+			case err == nil: // if NO error
+				satisfied[0] |= 1 << 0
+			case errors.Is(err, ogenerrors.ErrSkipClientSecurity):
+				// Skip this security.
+			default:
+				return res, errors.Wrap(err, "security \"BearerAuth\"")
+			}
+		}
+
+		if ok := func() bool {
+		nextRequirement:
+			for _, requirement := range []bitset{
+				{0b00000001},
+			} {
+				for i, mask := range requirement {
+					if satisfied[i]&mask != mask {
+						continue nextRequirement
+					}
+				}
+				return true
+			}
+			return false
+		}(); !ok {
+			return res, ogenerrors.ErrSecurityRequirementIsNotSatisfied
+		}
+	}
+
+	stage = "SendRequest"
+	resp, err := c.cfg.Client.Do(r)
+	if err != nil {
+		return res, errors.Wrap(err, "do request")
+	}
+	body := resp.Body
+	defer func() {
+		// Drain the body to EOF before closing, so the underlying
+		// connection can be reused by the Transport regardless of the
+		// response status code. See https://github.com/ogen-go/ogen/issues/1670.
+		_, _ = io.Copy(io.Discard, body)
+		_ = body.Close()
+	}()
+
+	stage = "DecodeResponse"
+	result, err := decodePutStatusPageDomainResponse(resp)
 	if err != nil {
 		return res, errors.Wrap(err, "decode response")
 	}

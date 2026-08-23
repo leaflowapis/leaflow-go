@@ -258,6 +258,9 @@ func (s *CursorPageIncidentActivityResource) SetNextCursor(val string) {
 // DeleteMaintenanceWindowNoContent is response for DeleteMaintenanceWindow operation.
 type DeleteMaintenanceWindowNoContent struct{}
 
+// DeleteProjectWebCheckNoContent is response for DeleteProjectWebCheck operation.
+type DeleteProjectWebCheckNoContent struct{}
+
 // DeleteServerNoContent is response for DeleteServer operation.
 type DeleteServerNoContent struct{}
 
@@ -266,6 +269,9 @@ type DeleteSloNoContent struct{}
 
 // DeleteStatusPageComponentNoContent is response for DeleteStatusPageComponent operation.
 type DeleteStatusPageComponentNoContent struct{}
+
+// DeleteStatusPageDomainNoContent is response for DeleteStatusPageDomain operation.
+type DeleteStatusPageDomainNoContent struct{}
 
 // DeleteStatusPageGroupNoContent is response for DeleteStatusPageGroup operation.
 type DeleteStatusPageGroupNoContent struct{}
@@ -5255,6 +5261,22 @@ func (s *PutStatusPageComponentSourcesRequestBody) SetWebChecks(val []StatusPage
 	s.WebChecks = val
 }
 
+// Ref: #/components/schemas/PutStatusPageDomainRequestBody
+type PutStatusPageDomainRequestBody struct {
+	// Your own domain, such as status.acme.com. It must already point at the status page by CNAME.
+	Domain string `json:"domain"`
+}
+
+// GetDomain returns the value of Domain.
+func (s *PutStatusPageDomainRequestBody) GetDomain() string {
+	return s.Domain
+}
+
+// SetDomain sets the value of Domain.
+func (s *PutStatusPageDomainRequestBody) SetDomain(val string) {
+	s.Domain = val
+}
+
 // PutStatusPageGroupOrderNoContent is response for PutStatusPageGroupOrder operation.
 type PutStatusPageGroupOrderNoContent struct{}
 
@@ -5332,7 +5354,8 @@ func (s *PutStatusPageOrderRequestBody) SetItems(val []StatusPageOrderItem) {
 type PutStatusPageRequestBody struct {
 	// #RRGGBB. Applied to the page styling; only a strict six-digit hexadecimal value is accepted.
 	BrandColor OptString `json:"brand_color"`
-	// Your own domain, such as status.acme.com. Empty binds none. Globally unique.
+	// Read-only here. Bind a custom domain through PUT /status-page/domain, which verifies ownership
+	// first; a value sent here is ignored.
 	CustomDomain OptString `json:"custom_domain"`
 	// The line of free-form text in the page footer. Plain text.
 	FooterText OptString `json:"footer_text"`
@@ -5346,13 +5369,18 @@ type PutStatusPageRequestBody struct {
 	// Not indexed by default. Once a page has been crawled, switching back does not remove copies already
 	// held in third-party indexes.
 	SearchEngineIndex OptBool `json:"search_engine_index"`
-	// The address segment under the shared domain. Lowercase letters, digits and hyphens. Globally unique.
-	Slug       string                           `json:"slug"`
+	// An optional readable address segment under the shared domain. Lowercase letters, digits and hyphens;
+	// globally unique. Leave it empty and the page is served at /, which needs no configuration and cannot
+	// be taken by anyone else.
+	Slug       OptString                        `json:"slug"`
 	SupportURL OptString                        `json:"support_url"`
 	Theme      OptPutStatusPageRequestBodyTheme `json:"theme"`
 	// IANA name. Empty selects UTC.
 	Timezone   OptString `json:"timezone"`
 	UptimeDays OptInt64  `json:"uptime_days"`
+	// The text shown on the support link. Empty uses the page default. Different products call this
+	// different things — help centre, submit a ticket, support.
+	SupportLabel OptString `json:"support_label"`
 }
 
 // GetBrandColor returns the value of BrandColor.
@@ -5396,7 +5424,7 @@ func (s *PutStatusPageRequestBody) GetSearchEngineIndex() OptBool {
 }
 
 // GetSlug returns the value of Slug.
-func (s *PutStatusPageRequestBody) GetSlug() string {
+func (s *PutStatusPageRequestBody) GetSlug() OptString {
 	return s.Slug
 }
 
@@ -5418,6 +5446,11 @@ func (s *PutStatusPageRequestBody) GetTimezone() OptString {
 // GetUptimeDays returns the value of UptimeDays.
 func (s *PutStatusPageRequestBody) GetUptimeDays() OptInt64 {
 	return s.UptimeDays
+}
+
+// GetSupportLabel returns the value of SupportLabel.
+func (s *PutStatusPageRequestBody) GetSupportLabel() OptString {
+	return s.SupportLabel
 }
 
 // SetBrandColor sets the value of BrandColor.
@@ -5461,7 +5494,7 @@ func (s *PutStatusPageRequestBody) SetSearchEngineIndex(val OptBool) {
 }
 
 // SetSlug sets the value of Slug.
-func (s *PutStatusPageRequestBody) SetSlug(val string) {
+func (s *PutStatusPageRequestBody) SetSlug(val OptString) {
 	s.Slug = val
 }
 
@@ -5483,6 +5516,11 @@ func (s *PutStatusPageRequestBody) SetTimezone(val OptString) {
 // SetUptimeDays sets the value of UptimeDays.
 func (s *PutStatusPageRequestBody) SetUptimeDays(val OptInt64) {
 	s.UptimeDays = val
+}
+
+// SetSupportLabel sets the value of SupportLabel.
+func (s *PutStatusPageRequestBody) SetSupportLabel(val OptString) {
+	s.SupportLabel = val
 }
 
 type PutStatusPageRequestBodyTheme string
@@ -7086,6 +7124,174 @@ func (s *StatusPageComponentSourcesResource) SetWebChecks(val []StatusPageCompon
 	s.WebChecks = val
 }
 
+// Ref: #/components/schemas/StatusPageDomainResource
+type StatusPageDomainResource struct {
+	// When the current certificate expires.
+	CertificateNotAfter NilDateTime `json:"certificate_not_after"`
+	// NONE means no certificate has been requested for this domain yet.
+	CertificateStatus StatusPageDomainResourceCertificateStatus `json:"certificate_status"`
+	// The bound custom domain. Empty means none is bound.
+	Domain string `json:"domain"`
+	// The value the domain must point at.
+	ExpectedCname string `json:"expected_cname"`
+	// Why the most recent issuance attempt failed. Empty when it did not.
+	LastError string `json:"last_error"`
+	// What the domain currently resolves to. Empty when it resolves to nothing.
+	ObservedCname string `json:"observed_cname"`
+	// The address this page is served at, taking the custom domain into account.
+	PublicURL string `json:"public_url"`
+	// Whether the domain currently points at the status page.
+	Verified bool `json:"verified"`
+	// When ownership was last confirmed.
+	VerifiedAt NilDateTime `json:"verified_at"`
+}
+
+// GetCertificateNotAfter returns the value of CertificateNotAfter.
+func (s *StatusPageDomainResource) GetCertificateNotAfter() NilDateTime {
+	return s.CertificateNotAfter
+}
+
+// GetCertificateStatus returns the value of CertificateStatus.
+func (s *StatusPageDomainResource) GetCertificateStatus() StatusPageDomainResourceCertificateStatus {
+	return s.CertificateStatus
+}
+
+// GetDomain returns the value of Domain.
+func (s *StatusPageDomainResource) GetDomain() string {
+	return s.Domain
+}
+
+// GetExpectedCname returns the value of ExpectedCname.
+func (s *StatusPageDomainResource) GetExpectedCname() string {
+	return s.ExpectedCname
+}
+
+// GetLastError returns the value of LastError.
+func (s *StatusPageDomainResource) GetLastError() string {
+	return s.LastError
+}
+
+// GetObservedCname returns the value of ObservedCname.
+func (s *StatusPageDomainResource) GetObservedCname() string {
+	return s.ObservedCname
+}
+
+// GetPublicURL returns the value of PublicURL.
+func (s *StatusPageDomainResource) GetPublicURL() string {
+	return s.PublicURL
+}
+
+// GetVerified returns the value of Verified.
+func (s *StatusPageDomainResource) GetVerified() bool {
+	return s.Verified
+}
+
+// GetVerifiedAt returns the value of VerifiedAt.
+func (s *StatusPageDomainResource) GetVerifiedAt() NilDateTime {
+	return s.VerifiedAt
+}
+
+// SetCertificateNotAfter sets the value of CertificateNotAfter.
+func (s *StatusPageDomainResource) SetCertificateNotAfter(val NilDateTime) {
+	s.CertificateNotAfter = val
+}
+
+// SetCertificateStatus sets the value of CertificateStatus.
+func (s *StatusPageDomainResource) SetCertificateStatus(val StatusPageDomainResourceCertificateStatus) {
+	s.CertificateStatus = val
+}
+
+// SetDomain sets the value of Domain.
+func (s *StatusPageDomainResource) SetDomain(val string) {
+	s.Domain = val
+}
+
+// SetExpectedCname sets the value of ExpectedCname.
+func (s *StatusPageDomainResource) SetExpectedCname(val string) {
+	s.ExpectedCname = val
+}
+
+// SetLastError sets the value of LastError.
+func (s *StatusPageDomainResource) SetLastError(val string) {
+	s.LastError = val
+}
+
+// SetObservedCname sets the value of ObservedCname.
+func (s *StatusPageDomainResource) SetObservedCname(val string) {
+	s.ObservedCname = val
+}
+
+// SetPublicURL sets the value of PublicURL.
+func (s *StatusPageDomainResource) SetPublicURL(val string) {
+	s.PublicURL = val
+}
+
+// SetVerified sets the value of Verified.
+func (s *StatusPageDomainResource) SetVerified(val bool) {
+	s.Verified = val
+}
+
+// SetVerifiedAt sets the value of VerifiedAt.
+func (s *StatusPageDomainResource) SetVerifiedAt(val NilDateTime) {
+	s.VerifiedAt = val
+}
+
+// NONE means no certificate has been requested for this domain yet.
+type StatusPageDomainResourceCertificateStatus string
+
+const (
+	StatusPageDomainResourceCertificateStatusNONE    StatusPageDomainResourceCertificateStatus = "NONE"
+	StatusPageDomainResourceCertificateStatusPENDING StatusPageDomainResourceCertificateStatus = "PENDING"
+	StatusPageDomainResourceCertificateStatusACTIVE  StatusPageDomainResourceCertificateStatus = "ACTIVE"
+	StatusPageDomainResourceCertificateStatusFAILED  StatusPageDomainResourceCertificateStatus = "FAILED"
+)
+
+// AllValues returns all StatusPageDomainResourceCertificateStatus values.
+func (StatusPageDomainResourceCertificateStatus) AllValues() []StatusPageDomainResourceCertificateStatus {
+	return []StatusPageDomainResourceCertificateStatus{
+		StatusPageDomainResourceCertificateStatusNONE,
+		StatusPageDomainResourceCertificateStatusPENDING,
+		StatusPageDomainResourceCertificateStatusACTIVE,
+		StatusPageDomainResourceCertificateStatusFAILED,
+	}
+}
+
+// MarshalText implements encoding.TextMarshaler.
+func (s StatusPageDomainResourceCertificateStatus) MarshalText() ([]byte, error) {
+	switch s {
+	case StatusPageDomainResourceCertificateStatusNONE:
+		return []byte(s), nil
+	case StatusPageDomainResourceCertificateStatusPENDING:
+		return []byte(s), nil
+	case StatusPageDomainResourceCertificateStatusACTIVE:
+		return []byte(s), nil
+	case StatusPageDomainResourceCertificateStatusFAILED:
+		return []byte(s), nil
+	default:
+		return nil, errors.Errorf("invalid value: %q", s)
+	}
+}
+
+// UnmarshalText implements encoding.TextUnmarshaler.
+func (s *StatusPageDomainResourceCertificateStatus) UnmarshalText(data []byte) error {
+	switch StatusPageDomainResourceCertificateStatus(data) {
+	case StatusPageDomainResourceCertificateStatusNONE:
+		*s = StatusPageDomainResourceCertificateStatusNONE
+		return nil
+	case StatusPageDomainResourceCertificateStatusPENDING:
+		*s = StatusPageDomainResourceCertificateStatusPENDING
+		return nil
+	case StatusPageDomainResourceCertificateStatusACTIVE:
+		*s = StatusPageDomainResourceCertificateStatusACTIVE
+		return nil
+	case StatusPageDomainResourceCertificateStatusFAILED:
+		*s = StatusPageDomainResourceCertificateStatusFAILED
+		return nil
+	default:
+		return errors.Errorf("invalid value: %q", data)
+	}
+}
+
 // Ref: #/components/schemas/StatusPageGroupListResponseBody
 type StatusPageGroupListResponseBody struct {
 	Data []StatusPageGroupResource `json:"data"`
@@ -8103,21 +8309,24 @@ type StatusPageResource struct {
 	Headline     string `json:"headline"`
 	LogoURL      string `json:"logo_url"`
 	Name         string `json:"name"`
-	// The current public address of this page. It is returned even while unpublished, in which case
-	// opening it returns 404.
+	// The address this page is served at: the custom domain if one is bound, otherwise the shared domain
+	// with the slug, otherwise the shared domain with the project id.
 	PublicURL string `json:"public_url"`
 	Published bool   `json:"published"`
 	// Whether search engines may index the page.
-	SearchEngineIndex bool                    `json:"search_engine_index"`
-	Slug              string                  `json:"slug"`
-	StatusPageID      uuid.UUID               `json:"status_page_id"`
-	SupportURL        string                  `json:"support_url"`
-	Theme             StatusPageResourceTheme `json:"theme"`
+	SearchEngineIndex bool `json:"search_engine_index"`
+	// The readable address segment, empty when none is set. The page is always reachable at / regardless.
+	Slug         string                  `json:"slug"`
+	StatusPageID uuid.UUID               `json:"status_page_id"`
+	SupportURL   string                  `json:"support_url"`
+	Theme        StatusPageResourceTheme `json:"theme"`
 	// Determines where the day boundary falls on the availability bar.
 	Timezone  string    `json:"timezone"`
 	UpdatedAt time.Time `json:"updated_at"`
 	// Number of days covered by the availability bar.
 	UptimeDays int64 `json:"uptime_days"`
+	// The text shown on the support link. Empty means the page default is used.
+	SupportLabel string `json:"support_label"`
 }
 
 // GetBrandColor returns the value of BrandColor.
@@ -8205,6 +8414,11 @@ func (s *StatusPageResource) GetUptimeDays() int64 {
 	return s.UptimeDays
 }
 
+// GetSupportLabel returns the value of SupportLabel.
+func (s *StatusPageResource) GetSupportLabel() string {
+	return s.SupportLabel
+}
+
 // SetBrandColor sets the value of BrandColor.
 func (s *StatusPageResource) SetBrandColor(val string) {
 	s.BrandColor = val
@@ -8288,6 +8502,11 @@ func (s *StatusPageResource) SetUpdatedAt(val time.Time) {
 // SetUptimeDays sets the value of UptimeDays.
 func (s *StatusPageResource) SetUptimeDays(val int64) {
 	s.UptimeDays = val
+}
+
+// SetSupportLabel sets the value of SupportLabel.
+func (s *StatusPageResource) SetSupportLabel(val string) {
+	s.SupportLabel = val
 }
 
 type StatusPageResourceTheme string
@@ -8762,8 +8981,10 @@ type WebCheckResource struct {
 	ResponseTimeThresholdSeconds int64     `json:"response_time_threshold_seconds"`
 	// Null means the check has not completed a round yet. A zero value would present "not yet known" as "0
 	// seconds, status code 0".
-	Result         NilWebCheckResultResource  `json:"result"`
-	Retries        int64                      `json:"retries"`
+	Result  NilWebCheckResultResource `json:"result"`
+	Retries int64                     `json:"retries"`
+	// The machine this check is attached to. Empty for a project-level check, which is not tied to any
+	// machine.
 	ServerID       uuid.UUID                  `json:"server_id"`
 	Steps          []WebCheckStepResource     `json:"steps"`
 	SyncStatus     WebCheckResourceSyncStatus `json:"sync_status"`

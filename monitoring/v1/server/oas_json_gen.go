@@ -8112,6 +8112,102 @@ func (s *PutStatusPageComponentSourcesRequestBody) UnmarshalJSON(data []byte) er
 }
 
 // Encode implements json.Marshaler.
+func (s *PutStatusPageDomainRequestBody) Encode(e *jx.Encoder) {
+	e.ObjStart()
+	s.encodeFields(e)
+	e.ObjEnd()
+}
+
+// encodeFields encodes fields.
+func (s *PutStatusPageDomainRequestBody) encodeFields(e *jx.Encoder) {
+	{
+		e.FieldStart("domain")
+		e.Str(s.Domain)
+	}
+}
+
+var jsonFieldsNameOfPutStatusPageDomainRequestBody = [1]string{
+	0: "domain",
+}
+
+// Decode decodes PutStatusPageDomainRequestBody from json.
+func (s *PutStatusPageDomainRequestBody) Decode(d *jx.Decoder) error {
+	if s == nil {
+		return errors.New("invalid: unable to decode PutStatusPageDomainRequestBody to nil")
+	}
+	var requiredBitSet [1]uint8
+
+	if err := d.ObjBytes(func(d *jx.Decoder, k []byte) error {
+		switch string(k) {
+		case "domain":
+			requiredBitSet[0] |= 1 << 0
+			if err := func() error {
+				v, err := d.Str()
+				s.Domain = string(v)
+				if err != nil {
+					return err
+				}
+				return nil
+			}(); err != nil {
+				return errors.Wrap(err, "decode field \"domain\"")
+			}
+		default:
+			return errors.Errorf("unexpected field %q", k)
+		}
+		return nil
+	}); err != nil {
+		return errors.Wrap(err, "decode PutStatusPageDomainRequestBody")
+	}
+	// Validate required fields.
+	var failures []validate.FieldError
+	for i, mask := range [1]uint8{
+		0b00000001,
+	} {
+		if result := (requiredBitSet[i] & mask) ^ mask; result != 0 {
+			// Mask only required fields and check equality to mask using XOR.
+			//
+			// If XOR result is not zero, result is not equal to expected, so some fields are missed.
+			// Bits of fields which would be set are actually bits of missed fields.
+			missed := bits.OnesCount8(result)
+			for bitN := 0; bitN < missed; bitN++ {
+				bitIdx := bits.TrailingZeros8(result)
+				fieldIdx := i*8 + bitIdx
+				var name string
+				if fieldIdx < len(jsonFieldsNameOfPutStatusPageDomainRequestBody) {
+					name = jsonFieldsNameOfPutStatusPageDomainRequestBody[fieldIdx]
+				} else {
+					name = strconv.Itoa(fieldIdx)
+				}
+				failures = append(failures, validate.FieldError{
+					Name:  name,
+					Error: validate.ErrFieldRequired,
+				})
+				// Reset bit.
+				result &^= 1 << bitIdx
+			}
+		}
+	}
+	if len(failures) > 0 {
+		return &validate.Error{Fields: failures}
+	}
+
+	return nil
+}
+
+// MarshalJSON implements stdjson.Marshaler.
+func (s *PutStatusPageDomainRequestBody) MarshalJSON() ([]byte, error) {
+	e := jx.Encoder{}
+	s.Encode(&e)
+	return e.Bytes(), nil
+}
+
+// UnmarshalJSON implements stdjson.Unmarshaler.
+func (s *PutStatusPageDomainRequestBody) UnmarshalJSON(data []byte) error {
+	d := jx.DecodeBytes(data)
+	return s.Decode(d)
+}
+
+// Encode implements json.Marshaler.
 func (s *PutStatusPageGroupOrderRequestBody) Encode(e *jx.Encoder) {
 	e.ObjStart()
 	s.encodeFields(e)
@@ -8512,8 +8608,10 @@ func (s *PutStatusPageRequestBody) encodeFields(e *jx.Encoder) {
 		}
 	}
 	{
-		e.FieldStart("slug")
-		e.Str(s.Slug)
+		if s.Slug.Set {
+			e.FieldStart("slug")
+			s.Slug.Encode(e)
+		}
 	}
 	{
 		if s.SupportURL.Set {
@@ -8539,9 +8637,15 @@ func (s *PutStatusPageRequestBody) encodeFields(e *jx.Encoder) {
 			s.UptimeDays.Encode(e)
 		}
 	}
+	{
+		if s.SupportLabel.Set {
+			e.FieldStart("support_label")
+			s.SupportLabel.Encode(e)
+		}
+	}
 }
 
-var jsonFieldsNameOfPutStatusPageRequestBody = [13]string{
+var jsonFieldsNameOfPutStatusPageRequestBody = [14]string{
 	0:  "brand_color",
 	1:  "custom_domain",
 	2:  "footer_text",
@@ -8555,6 +8659,7 @@ var jsonFieldsNameOfPutStatusPageRequestBody = [13]string{
 	10: "theme",
 	11: "timezone",
 	12: "uptime_days",
+	13: "support_label",
 }
 
 // Decode decodes PutStatusPageRequestBody from json.
@@ -8650,11 +8755,9 @@ func (s *PutStatusPageRequestBody) Decode(d *jx.Decoder) error {
 				return errors.Wrap(err, "decode field \"search_engine_index\"")
 			}
 		case "slug":
-			requiredBitSet[1] |= 1 << 0
 			if err := func() error {
-				v, err := d.Str()
-				s.Slug = string(v)
-				if err != nil {
+				s.Slug.Reset()
+				if err := s.Slug.Decode(d); err != nil {
 					return err
 				}
 				return nil
@@ -8701,6 +8804,16 @@ func (s *PutStatusPageRequestBody) Decode(d *jx.Decoder) error {
 			}(); err != nil {
 				return errors.Wrap(err, "decode field \"uptime_days\"")
 			}
+		case "support_label":
+			if err := func() error {
+				s.SupportLabel.Reset()
+				if err := s.SupportLabel.Decode(d); err != nil {
+					return err
+				}
+				return nil
+			}(); err != nil {
+				return errors.Wrap(err, "decode field \"support_label\"")
+			}
 		default:
 			return errors.Errorf("unexpected field %q", k)
 		}
@@ -8712,7 +8825,7 @@ func (s *PutStatusPageRequestBody) Decode(d *jx.Decoder) error {
 	var failures []validate.FieldError
 	for i, mask := range [2]uint8{
 		0b00100000,
-		0b00000001,
+		0b00000000,
 	} {
 		if result := (requiredBitSet[i] & mask) ^ mask; result != 0 {
 			// Mask only required fields and check equality to mask using XOR.
@@ -12347,6 +12460,277 @@ func (s *StatusPageComponentSourcesResource) UnmarshalJSON(data []byte) error {
 }
 
 // Encode implements json.Marshaler.
+func (s *StatusPageDomainResource) Encode(e *jx.Encoder) {
+	e.ObjStart()
+	s.encodeFields(e)
+	e.ObjEnd()
+}
+
+// encodeFields encodes fields.
+func (s *StatusPageDomainResource) encodeFields(e *jx.Encoder) {
+	{
+		e.FieldStart("certificate_not_after")
+		s.CertificateNotAfter.Encode(e, json.EncodeDateTime)
+	}
+	{
+		e.FieldStart("certificate_status")
+		s.CertificateStatus.Encode(e)
+	}
+	{
+		e.FieldStart("domain")
+		e.Str(s.Domain)
+	}
+	{
+		e.FieldStart("expected_cname")
+		e.Str(s.ExpectedCname)
+	}
+	{
+		e.FieldStart("last_error")
+		e.Str(s.LastError)
+	}
+	{
+		e.FieldStart("observed_cname")
+		e.Str(s.ObservedCname)
+	}
+	{
+		e.FieldStart("public_url")
+		e.Str(s.PublicURL)
+	}
+	{
+		e.FieldStart("verified")
+		e.Bool(s.Verified)
+	}
+	{
+		e.FieldStart("verified_at")
+		s.VerifiedAt.Encode(e, json.EncodeDateTime)
+	}
+}
+
+var jsonFieldsNameOfStatusPageDomainResource = [9]string{
+	0: "certificate_not_after",
+	1: "certificate_status",
+	2: "domain",
+	3: "expected_cname",
+	4: "last_error",
+	5: "observed_cname",
+	6: "public_url",
+	7: "verified",
+	8: "verified_at",
+}
+
+// Decode decodes StatusPageDomainResource from json.
+func (s *StatusPageDomainResource) Decode(d *jx.Decoder) error {
+	if s == nil {
+		return errors.New("invalid: unable to decode StatusPageDomainResource to nil")
+	}
+	var requiredBitSet [2]uint8
+
+	if err := d.ObjBytes(func(d *jx.Decoder, k []byte) error {
+		switch string(k) {
+		case "certificate_not_after":
+			requiredBitSet[0] |= 1 << 0
+			if err := func() error {
+				if err := s.CertificateNotAfter.Decode(d, json.DecodeDateTime); err != nil {
+					return err
+				}
+				return nil
+			}(); err != nil {
+				return errors.Wrap(err, "decode field \"certificate_not_after\"")
+			}
+		case "certificate_status":
+			requiredBitSet[0] |= 1 << 1
+			if err := func() error {
+				if err := s.CertificateStatus.Decode(d); err != nil {
+					return err
+				}
+				return nil
+			}(); err != nil {
+				return errors.Wrap(err, "decode field \"certificate_status\"")
+			}
+		case "domain":
+			requiredBitSet[0] |= 1 << 2
+			if err := func() error {
+				v, err := d.Str()
+				s.Domain = string(v)
+				if err != nil {
+					return err
+				}
+				return nil
+			}(); err != nil {
+				return errors.Wrap(err, "decode field \"domain\"")
+			}
+		case "expected_cname":
+			requiredBitSet[0] |= 1 << 3
+			if err := func() error {
+				v, err := d.Str()
+				s.ExpectedCname = string(v)
+				if err != nil {
+					return err
+				}
+				return nil
+			}(); err != nil {
+				return errors.Wrap(err, "decode field \"expected_cname\"")
+			}
+		case "last_error":
+			requiredBitSet[0] |= 1 << 4
+			if err := func() error {
+				v, err := d.Str()
+				s.LastError = string(v)
+				if err != nil {
+					return err
+				}
+				return nil
+			}(); err != nil {
+				return errors.Wrap(err, "decode field \"last_error\"")
+			}
+		case "observed_cname":
+			requiredBitSet[0] |= 1 << 5
+			if err := func() error {
+				v, err := d.Str()
+				s.ObservedCname = string(v)
+				if err != nil {
+					return err
+				}
+				return nil
+			}(); err != nil {
+				return errors.Wrap(err, "decode field \"observed_cname\"")
+			}
+		case "public_url":
+			requiredBitSet[0] |= 1 << 6
+			if err := func() error {
+				v, err := d.Str()
+				s.PublicURL = string(v)
+				if err != nil {
+					return err
+				}
+				return nil
+			}(); err != nil {
+				return errors.Wrap(err, "decode field \"public_url\"")
+			}
+		case "verified":
+			requiredBitSet[0] |= 1 << 7
+			if err := func() error {
+				v, err := d.Bool()
+				s.Verified = bool(v)
+				if err != nil {
+					return err
+				}
+				return nil
+			}(); err != nil {
+				return errors.Wrap(err, "decode field \"verified\"")
+			}
+		case "verified_at":
+			requiredBitSet[1] |= 1 << 0
+			if err := func() error {
+				if err := s.VerifiedAt.Decode(d, json.DecodeDateTime); err != nil {
+					return err
+				}
+				return nil
+			}(); err != nil {
+				return errors.Wrap(err, "decode field \"verified_at\"")
+			}
+		default:
+			return errors.Errorf("unexpected field %q", k)
+		}
+		return nil
+	}); err != nil {
+		return errors.Wrap(err, "decode StatusPageDomainResource")
+	}
+	// Validate required fields.
+	var failures []validate.FieldError
+	for i, mask := range [2]uint8{
+		0b11111111,
+		0b00000001,
+	} {
+		if result := (requiredBitSet[i] & mask) ^ mask; result != 0 {
+			// Mask only required fields and check equality to mask using XOR.
+			//
+			// If XOR result is not zero, result is not equal to expected, so some fields are missed.
+			// Bits of fields which would be set are actually bits of missed fields.
+			missed := bits.OnesCount8(result)
+			for bitN := 0; bitN < missed; bitN++ {
+				bitIdx := bits.TrailingZeros8(result)
+				fieldIdx := i*8 + bitIdx
+				var name string
+				if fieldIdx < len(jsonFieldsNameOfStatusPageDomainResource) {
+					name = jsonFieldsNameOfStatusPageDomainResource[fieldIdx]
+				} else {
+					name = strconv.Itoa(fieldIdx)
+				}
+				failures = append(failures, validate.FieldError{
+					Name:  name,
+					Error: validate.ErrFieldRequired,
+				})
+				// Reset bit.
+				result &^= 1 << bitIdx
+			}
+		}
+	}
+	if len(failures) > 0 {
+		return &validate.Error{Fields: failures}
+	}
+
+	return nil
+}
+
+// MarshalJSON implements stdjson.Marshaler.
+func (s *StatusPageDomainResource) MarshalJSON() ([]byte, error) {
+	e := jx.Encoder{}
+	s.Encode(&e)
+	return e.Bytes(), nil
+}
+
+// UnmarshalJSON implements stdjson.Unmarshaler.
+func (s *StatusPageDomainResource) UnmarshalJSON(data []byte) error {
+	d := jx.DecodeBytes(data)
+	return s.Decode(d)
+}
+
+// Encode encodes StatusPageDomainResourceCertificateStatus as json.
+func (s StatusPageDomainResourceCertificateStatus) Encode(e *jx.Encoder) {
+	e.Str(string(s))
+}
+
+// Decode decodes StatusPageDomainResourceCertificateStatus from json.
+func (s *StatusPageDomainResourceCertificateStatus) Decode(d *jx.Decoder) error {
+	if s == nil {
+		return errors.New("invalid: unable to decode StatusPageDomainResourceCertificateStatus to nil")
+	}
+	v, err := d.StrBytes()
+	if err != nil {
+		return err
+	}
+	// Try to use constant string.
+	switch StatusPageDomainResourceCertificateStatus(v) {
+	case StatusPageDomainResourceCertificateStatusNONE:
+		*s = StatusPageDomainResourceCertificateStatusNONE
+	case StatusPageDomainResourceCertificateStatusPENDING:
+		*s = StatusPageDomainResourceCertificateStatusPENDING
+	case StatusPageDomainResourceCertificateStatusACTIVE:
+		*s = StatusPageDomainResourceCertificateStatusACTIVE
+	case StatusPageDomainResourceCertificateStatusFAILED:
+		*s = StatusPageDomainResourceCertificateStatusFAILED
+	default:
+		*s = StatusPageDomainResourceCertificateStatus(v)
+	}
+
+	return nil
+}
+
+// MarshalJSON implements stdjson.Marshaler.
+func (s StatusPageDomainResourceCertificateStatus) MarshalJSON() ([]byte, error) {
+	e := jx.Encoder{}
+	s.Encode(&e)
+	return e.Bytes(), nil
+}
+
+// UnmarshalJSON implements stdjson.Unmarshaler.
+func (s *StatusPageDomainResourceCertificateStatus) UnmarshalJSON(data []byte) error {
+	d := jx.DecodeBytes(data)
+	return s.Decode(d)
+}
+
+// Encode implements json.Marshaler.
 func (s *StatusPageGroupListResponseBody) Encode(e *jx.Encoder) {
 	e.ObjStart()
 	s.encodeFields(e)
@@ -14343,9 +14727,13 @@ func (s *StatusPageResource) encodeFields(e *jx.Encoder) {
 		e.FieldStart("uptime_days")
 		e.Int64(s.UptimeDays)
 	}
+	{
+		e.FieldStart("support_label")
+		e.Str(s.SupportLabel)
+	}
 }
 
-var jsonFieldsNameOfStatusPageResource = [17]string{
+var jsonFieldsNameOfStatusPageResource = [18]string{
 	0:  "brand_color",
 	1:  "created_at",
 	2:  "custom_domain",
@@ -14363,6 +14751,7 @@ var jsonFieldsNameOfStatusPageResource = [17]string{
 	14: "timezone",
 	15: "updated_at",
 	16: "uptime_days",
+	17: "support_label",
 }
 
 // Decode decodes StatusPageResource from json.
@@ -14576,6 +14965,18 @@ func (s *StatusPageResource) Decode(d *jx.Decoder) error {
 			}(); err != nil {
 				return errors.Wrap(err, "decode field \"uptime_days\"")
 			}
+		case "support_label":
+			requiredBitSet[2] |= 1 << 1
+			if err := func() error {
+				v, err := d.Str()
+				s.SupportLabel = string(v)
+				if err != nil {
+					return err
+				}
+				return nil
+			}(); err != nil {
+				return errors.Wrap(err, "decode field \"support_label\"")
+			}
 		default:
 			return errors.Errorf("unexpected field %q", k)
 		}
@@ -14588,7 +14989,7 @@ func (s *StatusPageResource) Decode(d *jx.Decoder) error {
 	for i, mask := range [3]uint8{
 		0b11111111,
 		0b11111111,
-		0b00000001,
+		0b00000011,
 	} {
 		if result := (requiredBitSet[i] & mask) ^ mask; result != 0 {
 			// Mask only required fields and check equality to mask using XOR.

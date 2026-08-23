@@ -150,6 +150,20 @@ func encodePutMaintenanceWindowRequest(
 	return nil
 }
 
+func encodePutProjectWebCheckRequest(
+	req *PutWebCheckRequestBody,
+	r *http.Request,
+) error {
+	const contentType = "application/json"
+	e := new(jx.Encoder)
+	{
+		req.Encode(e)
+	}
+	encoded := e.Bytes()
+	ht.SetBody(r, bytes.NewReader(encoded), contentType)
+	return nil
+}
+
 func encodePutSloRequest(
 	req *PutSLORequestBody,
 	r *http.Request,
@@ -180,6 +194,20 @@ func encodePutStatusPageRequest(
 
 func encodePutStatusPageComponentSourcesRequest(
 	req *PutStatusPageComponentSourcesRequestBody,
+	r *http.Request,
+) error {
+	const contentType = "application/json"
+	e := new(jx.Encoder)
+	{
+		req.Encode(e)
+	}
+	encoded := e.Bytes()
+	ht.SetBody(r, bytes.NewReader(encoded), contentType)
+	return nil
+}
+
+func encodePutStatusPageDomainRequest(
+	req *PutStatusPageDomainRequestBody,
 	r *http.Request,
 ) error {
 	const contentType = "application/json"
