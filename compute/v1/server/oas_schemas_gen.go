@@ -1828,6 +1828,8 @@ type InstanceResource struct {
 	// Hostname inside the instance; equals the instance id.
 	Hostname string    `json:"hostname"`
 	ID       uuid.UUID `json:"id"`
+	// Non-empty when the instance was created from a disk you already had, instead of from an image.
+	BootDiskID NilUUID `json:"boot_disk_id"`
 	// Non-empty when the instance was created from a platform image.
 	ImageID NilUUID `json:"image_id"`
 	// The instance type in effect, and the basis for billing.
@@ -1888,6 +1890,11 @@ func (s *InstanceResource) GetHostname() string {
 // GetID returns the value of ID.
 func (s *InstanceResource) GetID() uuid.UUID {
 	return s.ID
+}
+
+// GetBootDiskID returns the value of BootDiskID.
+func (s *InstanceResource) GetBootDiskID() NilUUID {
+	return s.BootDiskID
 }
 
 // GetImageID returns the value of ImageID.
@@ -1993,6 +2000,11 @@ func (s *InstanceResource) SetHostname(val string) {
 // SetID sets the value of ID.
 func (s *InstanceResource) SetID(val uuid.UUID) {
 	s.ID = val
+}
+
+// SetBootDiskID sets the value of BootDiskID.
+func (s *InstanceResource) SetBootDiskID(val NilUUID) {
+	s.BootDiskID = val
 }
 
 // SetImageID sets the value of ImageID.
@@ -2336,19 +2348,27 @@ type LaunchInstanceRequestBody struct {
 	Count OptInt64 `json:"count"`
 	// Have the platform generate a random password, returned only in this response.
 	GeneratePassword OptBool `json:"generate_password"`
-	// A platform image. Exactly one of this and `private_image_id`.
+	// Boot a disk you already have instead of installing an image. The disk must be available, unattached,
+	// and in the same availability zone as the instance type. Exactly one of this, `image_id` and
+	// `private_image_id`.
+	BootDiskID OptUUID `json:"boot_disk_id"`
+	// A platform image. Exactly one of this, `private_image_id` and `boot_disk_id`.
 	ImageID        OptUUID   `json:"image_id"`
 	InstanceTypeID uuid.UUID `json:"instance_type_id"`
-	Name           string    `json:"name"`
-	// Root password. Only the SSH public keys of the project are used when omitted.
+	// The account the disk lets you log in as. Required with `boot_disk_id`, and rejected without it since
+	// an image states its own.
+	LoginUsername OptString `json:"login_username"`
+	Name          string    `json:"name"`
+	// The password to set, on the login account and on root. Only the SSH public keys of the project are
+	// used when omitted.
 	Password OptString `json:"password"`
 	// Use an existing network interface, which may already have a floating IP bound. Exactly one of this
 	// and `subnet_id`; only one instance can be created when it is used.
 	PortID OptUUID `json:"port_id"`
-	// A private image. Exactly one of this and `image_id`.
+	// A private image. Exactly one of this, `image_id` and `boot_disk_id`.
 	PrivateImageID OptUUID `json:"private_image_id"`
 	// System disk capacity in GB. Chosen automatically from the requirement of the image and the platform
-	// minimum when omitted.
+	// minimum when omitted. Ignored with `boot_disk_id`, since that disk already has its capacity.
 	RootDiskGB OptInt64 `json:"root_disk_gb"`
 	// Required when a primary network interface is created, at least one; the default security group is
 	// not applied automatically. Ignored together with `port_id`, as the security groups of that interface
@@ -2368,6 +2388,11 @@ func (s *LaunchInstanceRequestBody) GetGeneratePassword() OptBool {
 	return s.GeneratePassword
 }
 
+// GetBootDiskID returns the value of BootDiskID.
+func (s *LaunchInstanceRequestBody) GetBootDiskID() OptUUID {
+	return s.BootDiskID
+}
+
 // GetImageID returns the value of ImageID.
 func (s *LaunchInstanceRequestBody) GetImageID() OptUUID {
 	return s.ImageID
@@ -2376,6 +2401,11 @@ func (s *LaunchInstanceRequestBody) GetImageID() OptUUID {
 // GetInstanceTypeID returns the value of InstanceTypeID.
 func (s *LaunchInstanceRequestBody) GetInstanceTypeID() uuid.UUID {
 	return s.InstanceTypeID
+}
+
+// GetLoginUsername returns the value of LoginUsername.
+func (s *LaunchInstanceRequestBody) GetLoginUsername() OptString {
+	return s.LoginUsername
 }
 
 // GetName returns the value of Name.
@@ -2423,6 +2453,11 @@ func (s *LaunchInstanceRequestBody) SetGeneratePassword(val OptBool) {
 	s.GeneratePassword = val
 }
 
+// SetBootDiskID sets the value of BootDiskID.
+func (s *LaunchInstanceRequestBody) SetBootDiskID(val OptUUID) {
+	s.BootDiskID = val
+}
+
 // SetImageID sets the value of ImageID.
 func (s *LaunchInstanceRequestBody) SetImageID(val OptUUID) {
 	s.ImageID = val
@@ -2431,6 +2466,11 @@ func (s *LaunchInstanceRequestBody) SetImageID(val OptUUID) {
 // SetInstanceTypeID sets the value of InstanceTypeID.
 func (s *LaunchInstanceRequestBody) SetInstanceTypeID(val uuid.UUID) {
 	s.InstanceTypeID = val
+}
+
+// SetLoginUsername sets the value of LoginUsername.
+func (s *LaunchInstanceRequestBody) SetLoginUsername(val OptString) {
+	s.LoginUsername = val
 }
 
 // SetName sets the value of Name.
