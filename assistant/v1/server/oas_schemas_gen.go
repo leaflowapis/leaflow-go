@@ -5351,6 +5351,12 @@ func (s *SkillRequestBodyFiles) init() SkillRequestBodyFiles {
 
 // Ref: #/components/schemas/SkillResource
 type SkillResource struct {
+	// True when the assistant wrote this skill during a conversation rather than a person writing it here.
+	//
+	// Which conversation is deliberately not returned: skills are shared across the project while
+	// conversations belong to one person, so naming one would tell everybody in the project that a
+	// particular colleague had it.
+	AuthoredByAssistant bool `json:"authoredByAssistant"`
 	// Why the assistant would open this skill. It sits in every request, so it is the one field worth
 	// writing carefully.
 	Description string `json:"description"`
@@ -5364,6 +5370,11 @@ type SkillResource struct {
 	ShortDescription NilString           `json:"shortDescription"`
 	// Null for built-in skills, which have no edit history here.
 	UpdatedAt NilDateTime `json:"updatedAt"`
+}
+
+// GetAuthoredByAssistant returns the value of AuthoredByAssistant.
+func (s *SkillResource) GetAuthoredByAssistant() bool {
+	return s.AuthoredByAssistant
 }
 
 // GetDescription returns the value of Description.
@@ -5399,6 +5410,11 @@ func (s *SkillResource) GetShortDescription() NilString {
 // GetUpdatedAt returns the value of UpdatedAt.
 func (s *SkillResource) GetUpdatedAt() NilDateTime {
 	return s.UpdatedAt
+}
+
+// SetAuthoredByAssistant sets the value of AuthoredByAssistant.
+func (s *SkillResource) SetAuthoredByAssistant(val bool) {
+	s.AuthoredByAssistant = val
 }
 
 // SetDescription sets the value of Description.
