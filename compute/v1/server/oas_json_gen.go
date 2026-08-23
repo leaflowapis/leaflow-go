@@ -4407,6 +4407,10 @@ func (s *ImageResource) encodeFields(e *jx.Encoder) {
 		json.EncodeUUID(e, s.ID)
 	}
 	{
+		e.FieldStart("login_username")
+		e.Str(s.LoginUsername)
+	}
+	{
 		e.FieldStart("min_disk_gb")
 		e.Int64(s.MinDiskGB)
 	}
@@ -4436,16 +4440,17 @@ func (s *ImageResource) encodeFields(e *jx.Encoder) {
 	}
 }
 
-var jsonFieldsNameOfImageResource = [9]string{
+var jsonFieldsNameOfImageResource = [10]string{
 	0: "architecture",
 	1: "id",
-	2: "min_disk_gb",
-	3: "min_ram_mb",
-	4: "name",
-	5: "os_family",
-	6: "os_version",
-	7: "region_code",
-	8: "supports_password_reset",
+	2: "login_username",
+	3: "min_disk_gb",
+	4: "min_ram_mb",
+	5: "name",
+	6: "os_family",
+	7: "os_version",
+	8: "region_code",
+	9: "supports_password_reset",
 }
 
 // Decode decodes ImageResource from json.
@@ -4481,8 +4486,20 @@ func (s *ImageResource) Decode(d *jx.Decoder) error {
 			}(); err != nil {
 				return errors.Wrap(err, "decode field \"id\"")
 			}
-		case "min_disk_gb":
+		case "login_username":
 			requiredBitSet[0] |= 1 << 2
+			if err := func() error {
+				v, err := d.Str()
+				s.LoginUsername = string(v)
+				if err != nil {
+					return err
+				}
+				return nil
+			}(); err != nil {
+				return errors.Wrap(err, "decode field \"login_username\"")
+			}
+		case "min_disk_gb":
+			requiredBitSet[0] |= 1 << 3
 			if err := func() error {
 				v, err := d.Int64()
 				s.MinDiskGB = int64(v)
@@ -4494,7 +4511,7 @@ func (s *ImageResource) Decode(d *jx.Decoder) error {
 				return errors.Wrap(err, "decode field \"min_disk_gb\"")
 			}
 		case "min_ram_mb":
-			requiredBitSet[0] |= 1 << 3
+			requiredBitSet[0] |= 1 << 4
 			if err := func() error {
 				v, err := d.Int64()
 				s.MinRAMMB = int64(v)
@@ -4506,7 +4523,7 @@ func (s *ImageResource) Decode(d *jx.Decoder) error {
 				return errors.Wrap(err, "decode field \"min_ram_mb\"")
 			}
 		case "name":
-			requiredBitSet[0] |= 1 << 4
+			requiredBitSet[0] |= 1 << 5
 			if err := func() error {
 				v, err := d.Str()
 				s.Name = string(v)
@@ -4518,7 +4535,7 @@ func (s *ImageResource) Decode(d *jx.Decoder) error {
 				return errors.Wrap(err, "decode field \"name\"")
 			}
 		case "os_family":
-			requiredBitSet[0] |= 1 << 5
+			requiredBitSet[0] |= 1 << 6
 			if err := func() error {
 				v, err := d.Str()
 				s.OsFamily = string(v)
@@ -4530,7 +4547,7 @@ func (s *ImageResource) Decode(d *jx.Decoder) error {
 				return errors.Wrap(err, "decode field \"os_family\"")
 			}
 		case "os_version":
-			requiredBitSet[0] |= 1 << 6
+			requiredBitSet[0] |= 1 << 7
 			if err := func() error {
 				v, err := d.Str()
 				s.OsVersion = string(v)
@@ -4542,7 +4559,7 @@ func (s *ImageResource) Decode(d *jx.Decoder) error {
 				return errors.Wrap(err, "decode field \"os_version\"")
 			}
 		case "region_code":
-			requiredBitSet[0] |= 1 << 7
+			requiredBitSet[1] |= 1 << 0
 			if err := func() error {
 				v, err := d.Str()
 				s.RegionCode = string(v)
@@ -4554,7 +4571,7 @@ func (s *ImageResource) Decode(d *jx.Decoder) error {
 				return errors.Wrap(err, "decode field \"region_code\"")
 			}
 		case "supports_password_reset":
-			requiredBitSet[1] |= 1 << 0
+			requiredBitSet[1] |= 1 << 1
 			if err := func() error {
 				v, err := d.Bool()
 				s.SupportsPasswordReset = bool(v)
@@ -4576,7 +4593,7 @@ func (s *ImageResource) Decode(d *jx.Decoder) error {
 	var failures []validate.FieldError
 	for i, mask := range [2]uint8{
 		0b11111111,
-		0b00000001,
+		0b00000011,
 	} {
 		if result := (requiredBitSet[i] & mask) ^ mask; result != 0 {
 			// Mask only required fields and check equality to mask using XOR.
@@ -4781,6 +4798,10 @@ func (s *InstanceResource) encodeFields(e *jx.Encoder) {
 		s.Labels.Encode(e)
 	}
 	{
+		e.FieldStart("login_username")
+		e.Str(s.LoginUsername)
+	}
+	{
 		e.FieldStart("name")
 		e.Str(s.Name)
 	}
@@ -4838,7 +4859,7 @@ func (s *InstanceResource) encodeFields(e *jx.Encoder) {
 	}
 }
 
-var jsonFieldsNameOfInstanceResource = [20]string{
+var jsonFieldsNameOfInstanceResource = [21]string{
 	0:  "availability_zone",
 	1:  "created_at",
 	2:  "hostname",
@@ -4847,18 +4868,19 @@ var jsonFieldsNameOfInstanceResource = [20]string{
 	5:  "instance_type_id",
 	6:  "ipv6_address",
 	7:  "labels",
-	8:  "name",
-	9:  "notes",
-	10: "pending_instance_type_id",
-	11: "private_image_id",
-	12: "private_ip",
-	13: "private_network_id",
-	14: "public_ips",
-	15: "region_code",
-	16: "status",
-	17: "subnet_id",
-	18: "suspended_at",
-	19: "updated_at",
+	8:  "login_username",
+	9:  "name",
+	10: "notes",
+	11: "pending_instance_type_id",
+	12: "private_image_id",
+	13: "private_ip",
+	14: "private_network_id",
+	15: "public_ips",
+	16: "region_code",
+	17: "status",
+	18: "subnet_id",
+	19: "suspended_at",
+	20: "updated_at",
 }
 
 // Decode decodes InstanceResource from json.
@@ -4960,8 +4982,20 @@ func (s *InstanceResource) Decode(d *jx.Decoder) error {
 			}(); err != nil {
 				return errors.Wrap(err, "decode field \"labels\"")
 			}
-		case "name":
+		case "login_username":
 			requiredBitSet[1] |= 1 << 0
+			if err := func() error {
+				v, err := d.Str()
+				s.LoginUsername = string(v)
+				if err != nil {
+					return err
+				}
+				return nil
+			}(); err != nil {
+				return errors.Wrap(err, "decode field \"login_username\"")
+			}
+		case "name":
+			requiredBitSet[1] |= 1 << 1
 			if err := func() error {
 				v, err := d.Str()
 				s.Name = string(v)
@@ -4973,7 +5007,7 @@ func (s *InstanceResource) Decode(d *jx.Decoder) error {
 				return errors.Wrap(err, "decode field \"name\"")
 			}
 		case "notes":
-			requiredBitSet[1] |= 1 << 1
+			requiredBitSet[1] |= 1 << 2
 			if err := func() error {
 				v, err := d.Str()
 				s.Notes = string(v)
@@ -4985,7 +5019,7 @@ func (s *InstanceResource) Decode(d *jx.Decoder) error {
 				return errors.Wrap(err, "decode field \"notes\"")
 			}
 		case "pending_instance_type_id":
-			requiredBitSet[1] |= 1 << 2
+			requiredBitSet[1] |= 1 << 3
 			if err := func() error {
 				if err := s.PendingInstanceTypeID.Decode(d); err != nil {
 					return err
@@ -4995,7 +5029,7 @@ func (s *InstanceResource) Decode(d *jx.Decoder) error {
 				return errors.Wrap(err, "decode field \"pending_instance_type_id\"")
 			}
 		case "private_image_id":
-			requiredBitSet[1] |= 1 << 3
+			requiredBitSet[1] |= 1 << 4
 			if err := func() error {
 				if err := s.PrivateImageID.Decode(d); err != nil {
 					return err
@@ -5005,7 +5039,7 @@ func (s *InstanceResource) Decode(d *jx.Decoder) error {
 				return errors.Wrap(err, "decode field \"private_image_id\"")
 			}
 		case "private_ip":
-			requiredBitSet[1] |= 1 << 4
+			requiredBitSet[1] |= 1 << 5
 			if err := func() error {
 				if err := s.PrivateIP.Decode(d); err != nil {
 					return err
@@ -5015,7 +5049,7 @@ func (s *InstanceResource) Decode(d *jx.Decoder) error {
 				return errors.Wrap(err, "decode field \"private_ip\"")
 			}
 		case "private_network_id":
-			requiredBitSet[1] |= 1 << 5
+			requiredBitSet[1] |= 1 << 6
 			if err := func() error {
 				if err := s.PrivateNetworkID.Decode(d); err != nil {
 					return err
@@ -5025,7 +5059,7 @@ func (s *InstanceResource) Decode(d *jx.Decoder) error {
 				return errors.Wrap(err, "decode field \"private_network_id\"")
 			}
 		case "public_ips":
-			requiredBitSet[1] |= 1 << 6
+			requiredBitSet[1] |= 1 << 7
 			if err := func() error {
 				switch tt := d.Next(); tt {
 				case jx.Null:
@@ -5052,7 +5086,7 @@ func (s *InstanceResource) Decode(d *jx.Decoder) error {
 				return errors.Wrap(err, "decode field \"public_ips\"")
 			}
 		case "region_code":
-			requiredBitSet[1] |= 1 << 7
+			requiredBitSet[2] |= 1 << 0
 			if err := func() error {
 				v, err := d.Str()
 				s.RegionCode = string(v)
@@ -5064,7 +5098,7 @@ func (s *InstanceResource) Decode(d *jx.Decoder) error {
 				return errors.Wrap(err, "decode field \"region_code\"")
 			}
 		case "status":
-			requiredBitSet[2] |= 1 << 0
+			requiredBitSet[2] |= 1 << 1
 			if err := func() error {
 				if err := s.Status.Decode(d); err != nil {
 					return err
@@ -5074,7 +5108,7 @@ func (s *InstanceResource) Decode(d *jx.Decoder) error {
 				return errors.Wrap(err, "decode field \"status\"")
 			}
 		case "subnet_id":
-			requiredBitSet[2] |= 1 << 1
+			requiredBitSet[2] |= 1 << 2
 			if err := func() error {
 				if err := s.SubnetID.Decode(d); err != nil {
 					return err
@@ -5084,7 +5118,7 @@ func (s *InstanceResource) Decode(d *jx.Decoder) error {
 				return errors.Wrap(err, "decode field \"subnet_id\"")
 			}
 		case "suspended_at":
-			requiredBitSet[2] |= 1 << 2
+			requiredBitSet[2] |= 1 << 3
 			if err := func() error {
 				if err := s.SuspendedAt.Decode(d, json.DecodeDateTime); err != nil {
 					return err
@@ -5094,7 +5128,7 @@ func (s *InstanceResource) Decode(d *jx.Decoder) error {
 				return errors.Wrap(err, "decode field \"suspended_at\"")
 			}
 		case "updated_at":
-			requiredBitSet[2] |= 1 << 3
+			requiredBitSet[2] |= 1 << 4
 			if err := func() error {
 				v, err := json.DecodeDateTime(d)
 				s.UpdatedAt = v
@@ -5117,7 +5151,7 @@ func (s *InstanceResource) Decode(d *jx.Decoder) error {
 	for i, mask := range [3]uint8{
 		0b11111111,
 		0b11111111,
-		0b00001111,
+		0b00011111,
 	} {
 		if result := (requiredBitSet[i] & mask) ^ mask; result != 0 {
 			// Mask only required fields and check equality to mask using XOR.
@@ -7600,6 +7634,10 @@ func (s *PrivateImageResource) encodeFields(e *jx.Encoder) {
 		json.EncodeUUID(e, s.ID)
 	}
 	{
+		e.FieldStart("login_username")
+		e.Str(s.LoginUsername)
+	}
+	{
 		e.FieldStart("min_disk_gb")
 		e.Int64(s.MinDiskGB)
 	}
@@ -7641,21 +7679,22 @@ func (s *PrivateImageResource) encodeFields(e *jx.Encoder) {
 	}
 }
 
-var jsonFieldsNameOfPrivateImageResource = [14]string{
+var jsonFieldsNameOfPrivateImageResource = [15]string{
 	0:  "architecture",
 	1:  "created_at",
 	2:  "failure",
 	3:  "id",
-	4:  "min_disk_gb",
-	5:  "min_ram_mb",
-	6:  "name",
-	7:  "os_family",
-	8:  "os_version",
-	9:  "region_code",
-	10: "size_bytes",
-	11: "source_instance_id",
-	12: "status",
-	13: "supports_password_reset",
+	4:  "login_username",
+	5:  "min_disk_gb",
+	6:  "min_ram_mb",
+	7:  "name",
+	8:  "os_family",
+	9:  "os_version",
+	10: "region_code",
+	11: "size_bytes",
+	12: "source_instance_id",
+	13: "status",
+	14: "supports_password_reset",
 }
 
 // Decode decodes PrivateImageResource from json.
@@ -7713,8 +7752,20 @@ func (s *PrivateImageResource) Decode(d *jx.Decoder) error {
 			}(); err != nil {
 				return errors.Wrap(err, "decode field \"id\"")
 			}
-		case "min_disk_gb":
+		case "login_username":
 			requiredBitSet[0] |= 1 << 4
+			if err := func() error {
+				v, err := d.Str()
+				s.LoginUsername = string(v)
+				if err != nil {
+					return err
+				}
+				return nil
+			}(); err != nil {
+				return errors.Wrap(err, "decode field \"login_username\"")
+			}
+		case "min_disk_gb":
+			requiredBitSet[0] |= 1 << 5
 			if err := func() error {
 				v, err := d.Int64()
 				s.MinDiskGB = int64(v)
@@ -7726,7 +7777,7 @@ func (s *PrivateImageResource) Decode(d *jx.Decoder) error {
 				return errors.Wrap(err, "decode field \"min_disk_gb\"")
 			}
 		case "min_ram_mb":
-			requiredBitSet[0] |= 1 << 5
+			requiredBitSet[0] |= 1 << 6
 			if err := func() error {
 				v, err := d.Int64()
 				s.MinRAMMB = int64(v)
@@ -7738,7 +7789,7 @@ func (s *PrivateImageResource) Decode(d *jx.Decoder) error {
 				return errors.Wrap(err, "decode field \"min_ram_mb\"")
 			}
 		case "name":
-			requiredBitSet[0] |= 1 << 6
+			requiredBitSet[0] |= 1 << 7
 			if err := func() error {
 				v, err := d.Str()
 				s.Name = string(v)
@@ -7750,7 +7801,7 @@ func (s *PrivateImageResource) Decode(d *jx.Decoder) error {
 				return errors.Wrap(err, "decode field \"name\"")
 			}
 		case "os_family":
-			requiredBitSet[0] |= 1 << 7
+			requiredBitSet[1] |= 1 << 0
 			if err := func() error {
 				v, err := d.Str()
 				s.OsFamily = string(v)
@@ -7762,7 +7813,7 @@ func (s *PrivateImageResource) Decode(d *jx.Decoder) error {
 				return errors.Wrap(err, "decode field \"os_family\"")
 			}
 		case "os_version":
-			requiredBitSet[1] |= 1 << 0
+			requiredBitSet[1] |= 1 << 1
 			if err := func() error {
 				v, err := d.Str()
 				s.OsVersion = string(v)
@@ -7774,7 +7825,7 @@ func (s *PrivateImageResource) Decode(d *jx.Decoder) error {
 				return errors.Wrap(err, "decode field \"os_version\"")
 			}
 		case "region_code":
-			requiredBitSet[1] |= 1 << 1
+			requiredBitSet[1] |= 1 << 2
 			if err := func() error {
 				v, err := d.Str()
 				s.RegionCode = string(v)
@@ -7786,7 +7837,7 @@ func (s *PrivateImageResource) Decode(d *jx.Decoder) error {
 				return errors.Wrap(err, "decode field \"region_code\"")
 			}
 		case "size_bytes":
-			requiredBitSet[1] |= 1 << 2
+			requiredBitSet[1] |= 1 << 3
 			if err := func() error {
 				v, err := d.Int64()
 				s.SizeBytes = int64(v)
@@ -7798,7 +7849,7 @@ func (s *PrivateImageResource) Decode(d *jx.Decoder) error {
 				return errors.Wrap(err, "decode field \"size_bytes\"")
 			}
 		case "source_instance_id":
-			requiredBitSet[1] |= 1 << 3
+			requiredBitSet[1] |= 1 << 4
 			if err := func() error {
 				if err := s.SourceInstanceID.Decode(d); err != nil {
 					return err
@@ -7808,7 +7859,7 @@ func (s *PrivateImageResource) Decode(d *jx.Decoder) error {
 				return errors.Wrap(err, "decode field \"source_instance_id\"")
 			}
 		case "status":
-			requiredBitSet[1] |= 1 << 4
+			requiredBitSet[1] |= 1 << 5
 			if err := func() error {
 				if err := s.Status.Decode(d); err != nil {
 					return err
@@ -7818,7 +7869,7 @@ func (s *PrivateImageResource) Decode(d *jx.Decoder) error {
 				return errors.Wrap(err, "decode field \"status\"")
 			}
 		case "supports_password_reset":
-			requiredBitSet[1] |= 1 << 5
+			requiredBitSet[1] |= 1 << 6
 			if err := func() error {
 				v, err := d.Bool()
 				s.SupportsPasswordReset = bool(v)
@@ -7840,7 +7891,7 @@ func (s *PrivateImageResource) Decode(d *jx.Decoder) error {
 	var failures []validate.FieldError
 	for i, mask := range [2]uint8{
 		0b11111111,
-		0b00111111,
+		0b01111111,
 	} {
 		if result := (requiredBitSet[i] & mask) ^ mask; result != 0 {
 			// Mask only required fields and check equality to mask using XOR.
@@ -10403,18 +10454,11 @@ func (s *RunCommandRequestBody) encodeFields(e *jx.Encoder) {
 			s.TimeoutSeconds.Encode(e)
 		}
 	}
-	{
-		if s.Username.Set {
-			e.FieldStart("username")
-			s.Username.Encode(e)
-		}
-	}
 }
 
-var jsonFieldsNameOfRunCommandRequestBody = [3]string{
+var jsonFieldsNameOfRunCommandRequestBody = [2]string{
 	0: "command",
 	1: "timeout_seconds",
-	2: "username",
 }
 
 // Decode decodes RunCommandRequestBody from json.
@@ -10423,7 +10467,6 @@ func (s *RunCommandRequestBody) Decode(d *jx.Decoder) error {
 		return errors.New("invalid: unable to decode RunCommandRequestBody to nil")
 	}
 	var requiredBitSet [1]uint8
-	s.setDefaults()
 
 	if err := d.ObjBytes(func(d *jx.Decoder, k []byte) error {
 		switch string(k) {
@@ -10448,16 +10491,6 @@ func (s *RunCommandRequestBody) Decode(d *jx.Decoder) error {
 				return nil
 			}(); err != nil {
 				return errors.Wrap(err, "decode field \"timeout_seconds\"")
-			}
-		case "username":
-			if err := func() error {
-				s.Username.Reset()
-				if err := s.Username.Decode(d); err != nil {
-					return err
-				}
-				return nil
-			}(); err != nil {
-				return errors.Wrap(err, "decode field \"username\"")
 			}
 		default:
 			return errors.Errorf("unexpected field %q", k)
