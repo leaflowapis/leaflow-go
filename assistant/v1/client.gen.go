@@ -567,7 +567,7 @@ func (e WaitResourceKind) Valid() bool {
 
 // AnswerRequestBody defines model for AnswerRequestBody.
 type AnswerRequestBody struct {
-	// Answers 问题 id 到所选答案的映射
+	// Answers A map from question id to the answer chosen
 	Answers map[string]string `json:"answers"`
 }
 
@@ -606,30 +606,30 @@ type BindingResourceStatus string
 type ChannelResource struct {
 	AllowFrom []string `json:"allowFrom"`
 
-	// ConnState 平台接入状态。只有 online 才收得到消息、也才签得出绑定码
+	// ConnState How far this channel is from working. Only `online` receives messages and can issue binding codes
 	ConnState ChannelResourceConnState `json:"connState"`
 	CreatedAt time.Time                `json:"createdAt"`
 	Id        openapi_types.UUID       `json:"id"`
 	Name      string                   `json:"name"`
 	Platform  string                   `json:"platform"`
 
-	// RuntimeState 常驻连接此刻的状态。回调型平台恒为 stopped
+	// RuntimeState The state of the long-lived connection right now. Always `stopped` for webhook platforms
 	RuntimeState ChannelResourceRuntimeState `json:"runtimeState"`
 	SenderPolicy ChannelResourceSenderPolicy `json:"senderPolicy"`
 	Status       ChannelResourceStatus       `json:"status"`
 	UpdatedAt    time.Time                   `json:"updatedAt"`
 
-	// WebhookPath 回调路径，网关配置和排查时用
+	// WebhookPath The webhook path, for gateway configuration and for diagnosis
 	WebhookPath string `json:"webhookPath"`
 
-	// WebhookUrl 填到平台后台的回调地址。部署未声明公网入口时为 null
+	// WebhookUrl The webhook address to paste into that platform's console. Null when the deployment declares no public entry point
 	WebhookUrl *string `json:"webhookUrl"`
 }
 
-// ChannelResourceConnState 平台接入状态。只有 online 才收得到消息、也才签得出绑定码
+// ChannelResourceConnState How far this channel is from working. Only `online` receives messages and can issue binding codes
 type ChannelResourceConnState string
 
-// ChannelResourceRuntimeState 常驻连接此刻的状态。回调型平台恒为 stopped
+// ChannelResourceRuntimeState The state of the long-lived connection right now. Always `stopped` for webhook platforms
 type ChannelResourceRuntimeState string
 
 // ChannelResourceSenderPolicy defines model for ChannelResource.SenderPolicy.
@@ -642,33 +642,33 @@ type ChannelResourceStatus string
 type ChannelWithSecretResponseBody struct {
 	AllowFrom []string `json:"allowFrom"`
 
-	// ConnState 平台接入状态。只有 online 才收得到消息、也才签得出绑定码
+	// ConnState How far this channel is from working. Only `online` receives messages and can issue binding codes
 	ConnState ChannelWithSecretResponseBodyConnState `json:"connState"`
 	CreatedAt time.Time                              `json:"createdAt"`
 	Id        openapi_types.UUID                     `json:"id"`
 	Name      string                                 `json:"name"`
 	Platform  string                                 `json:"platform"`
 
-	// RuntimeState 常驻连接此刻的状态。回调型平台恒为 stopped
+	// RuntimeState The state of the long-lived connection right now. Always `stopped` for webhook platforms
 	RuntimeState ChannelWithSecretResponseBodyRuntimeState `json:"runtimeState"`
 	SenderPolicy ChannelWithSecretResponseBodySenderPolicy `json:"senderPolicy"`
 	Status       ChannelWithSecretResponseBodyStatus       `json:"status"`
 	UpdatedAt    time.Time                                 `json:"updatedAt"`
 
-	// WebhookPath 回调路径，网关配置和排查时用
+	// WebhookPath The webhook path, for gateway configuration and for diagnosis
 	WebhookPath string `json:"webhookPath"`
 
-	// WebhookSecret 我们生成的那把回调密钥，拿去粘到平台后台。**之后无法再次取回**，只能轮换出新的一把。密钥由平台生成（secretSource=supplied）或该平台不走回调时为 null
+	// WebhookSecret The webhook secret we generated, to paste into that platform's console. **It cannot be retrieved again** — the only way forward is rotating to a new one. Null when the platform generates the secret (secretSource=supplied) or does not use webhooks at all
 	WebhookSecret *string `json:"webhookSecret"`
 
-	// WebhookUrl 填到平台后台的回调地址。部署未声明公网入口时为 null
+	// WebhookUrl The webhook address to paste into that platform's console. Null when the deployment declares no public entry point
 	WebhookUrl *string `json:"webhookUrl"`
 }
 
-// ChannelWithSecretResponseBodyConnState 平台接入状态。只有 online 才收得到消息、也才签得出绑定码
+// ChannelWithSecretResponseBodyConnState How far this channel is from working. Only `online` receives messages and can issue binding codes
 type ChannelWithSecretResponseBodyConnState string
 
-// ChannelWithSecretResponseBodyRuntimeState 常驻连接此刻的状态。回调型平台恒为 stopped
+// ChannelWithSecretResponseBodyRuntimeState The state of the long-lived connection right now. Always `stopped` for webhook platforms
 type ChannelWithSecretResponseBodyRuntimeState string
 
 // ChannelWithSecretResponseBodySenderPolicy defines model for ChannelWithSecretResponseBody.SenderPolicy.
@@ -696,13 +696,13 @@ type ContextResource struct {
 type CreateChannelRequestBody struct {
 	AllowFrom []string `json:"allowFrom,omitempty"`
 
-	// Credentials 平台侧凭据。只写不读，创建后无法取回
+	// Credentials Credentials for that platform. Write-only: they cannot be read back after creation
 	Credentials  map[string]string                     `json:"credentials,omitempty"`
 	Name         string                                `json:"name"`
 	Platform     string                                `json:"platform"`
 	SenderPolicy *CreateChannelRequestBodySenderPolicy `json:"senderPolicy,omitempty"`
 
-	// WebhookSecret 平台生成密钥的平台（secretSource=supplied）必须传；我们生成的（generated）不能传，那把会在本次响应的 webhookSecret 里返回一次
+	// WebhookSecret Required for platforms that generate the secret themselves (secretSource=supplied). Must be absent for `generated` ones, where the secret we make is returned once in webhookSecret on this response
 	WebhookSecret *string `json:"webhookSecret,omitempty"`
 }
 
@@ -711,11 +711,11 @@ type CreateChannelRequestBodySenderPolicy string
 
 // CreateThreadRequestBody defines model for CreateThreadRequestBody.
 type CreateThreadRequestBody struct {
-	// ApprovalMode 不传则使用平台默认审批模式
+	// ApprovalMode Absent uses the platform's default approval mode
 	ApprovalMode *CreateThreadRequestBodyApprovalMode `json:"approvalMode,omitempty"`
 }
 
-// CreateThreadRequestBodyApprovalMode 不传则使用平台默认审批模式
+// CreateThreadRequestBodyApprovalMode Absent uses the platform's default approval mode
 type CreateThreadRequestBodyApprovalMode string
 
 // CredentialFieldResource defines model for CredentialFieldResource.
@@ -772,7 +772,7 @@ type ItemResource struct {
 	DurationMs     *int64                `json:"durationMs,omitempty"`
 	Id             string                `json:"id"`
 
-	// Model 产出这一条的模型。用户自己发的消息为 null
+	// Model The model that produced this entry. Null for messages the user sent
 	Model     *string            `json:"model"`
 	Namespace *string            `json:"namespace,omitempty"`
 	Ordinal   int64              `json:"ordinal"`
@@ -782,7 +782,7 @@ type ItemResource struct {
 	Text      *string            `json:"text,omitempty"`
 	Tool      *string            `json:"tool,omitempty"`
 
-	// Type 决定这一条包含哪些字段
+	// Type Determines which fields this entry carries
 	Type ItemResourceType `json:"type"`
 }
 
@@ -792,49 +792,49 @@ type ItemResourceApproval string
 // ItemResourceStatus defines model for ItemResource.Status.
 type ItemResourceStatus string
 
-// ItemResourceType 决定这一条包含哪些字段
+// ItemResourceType Determines which fields this entry carries
 type ItemResourceType string
 
 // LengthAwarePageBindingResource defines model for LengthAwarePageBindingResource.
 type LengthAwarePageBindingResource struct {
-	// Items 这一页的内容
+	// Items The entries on this page
 	Items []BindingResource `json:"items"`
 
-	// Limit 这一页最多几条，回显请求里的值
+	// Limit The page size, echoing what was requested
 	Limit int64 `json:"limit"`
 
-	// Offset 跳过了多少条，回显请求里的值
+	// Offset How many were skipped, echoing what was requested
 	Offset int64 `json:"offset"`
 
-	// Total 命中的总条数，不只是这一页
+	// Total How many match in total, not just on this page
 	Total int64 `json:"total"`
 }
 
 // LengthAwarePageChannelResource defines model for LengthAwarePageChannelResource.
 type LengthAwarePageChannelResource struct {
-	// Items 这一页的内容
+	// Items The entries on this page
 	Items []ChannelResource `json:"items"`
 
-	// Limit 这一页最多几条，回显请求里的值
+	// Limit The page size, echoing what was requested
 	Limit int64 `json:"limit"`
 
-	// Offset 跳过了多少条，回显请求里的值
+	// Offset How many were skipped, echoing what was requested
 	Offset int64 `json:"offset"`
 
-	// Total 命中的总条数，不只是这一页
+	// Total How many match in total, not just on this page
 	Total int64 `json:"total"`
 }
 
 // LoginResource defines model for LoginResource.
 type LoginResource struct {
-	// ExpiresAt 这条登录流的截止时间。到点之后不要再轮询，重新发起一次
+	// ExpiresAt When this login flow expires. Past that, stop polling and start a new one
 	ExpiresAt time.Time          `json:"expiresAt"`
 	Id        openapi_types.UUID `json:"id"`
 
-	// QrcodeData 二维码的内容，由客户端编码成二维码图形渲染（不是图片地址，也不是 data URI）。码过期时这条流会自己换一张接着等，所以每次轮询拿到的可能是新的一串
+	// QrcodeData The text to encode and render as a QR code by the client — not an image address and not a data URI. When a code expires this flow issues another and keeps waiting, so each poll may return a new string
 	QrcodeData string `json:"qrcodeData"`
 
-	// Reason 失败原因。仅在 status 为 error 或 expired 时有内容
+	// Reason Why it failed. Present only when status is error or expired
 	Reason string              `json:"reason"`
 	Status LoginResourceStatus `json:"status"`
 }
@@ -849,15 +849,15 @@ type MemoryListResponseBody struct {
 
 // MemoryResource defines model for MemoryResource.
 type MemoryResource struct {
-	// Body 记住的那件事
+	// Body The fact itself
 	Body      string    `json:"body"`
 	CreatedAt time.Time `json:"createdAt"`
 	Id        string    `json:"id"`
 
-	// Name 助手给这件事起的名字，它用这个名字覆盖或者删掉自己写过的东西
+	// Name The name the assistant gave this fact; it overwrites or deletes its own entries by that name
 	Name string `json:"name"`
 
-	// SourceThreadId 助手是在哪次对话里记下它的。那次对话可能已经被删掉了
+	// SourceThreadId Which conversation the assistant learned it in. That conversation may since have been deleted
 	SourceThreadId *string   `json:"sourceThreadId,omitempty"`
 	UpdatedAt      time.Time `json:"updatedAt"`
 }
@@ -889,10 +889,10 @@ type PlatformResource struct {
 	SetupChallenge   PlatformResourceSetupChallenge `json:"setupChallenge"`
 	SetupMethod      PlatformResourceSetupMethod    `json:"setupMethod"`
 
-	// WebhookPath 回调路径模板，{channel} 处替换为通道 id
+	// WebhookPath The webhook path template; {channel} is replaced with the channel id
 	WebhookPath string `json:"webhookPath"`
 
-	// WebhookUrlTemplate 完整回调地址模板。部署未声明公网入口时为 null
+	// WebhookUrlTemplate The full webhook address template. Null when the deployment declares no public entry point
 	WebhookUrlTemplate *string `json:"webhookUrlTemplate"`
 }
 
@@ -931,7 +931,7 @@ type RejectionResource struct {
 
 // RevertRequestBody defines model for RevertRequestBody.
 type RevertRequestBody struct {
-	// Ordinal 起始序号，该条及其之后的全部条目都会被撤回
+	// Ordinal The starting ordinal; that entry and everything after it is reverted
 	Ordinal int64 `json:"ordinal"`
 }
 
@@ -942,13 +942,13 @@ type RevertedCountResponseBody struct {
 
 // RotateSecretRequestBody defines model for RotateSecretRequestBody.
 type RotateSecretRequestBody struct {
-	// WebhookSecret 平台生成密钥的平台（secretSource=supplied）必须传新的那把；我们生成的（generated）不能传
+	// WebhookSecret Required for platforms that generate the secret themselves (secretSource=supplied). Must be absent for `generated` ones
 	WebhookSecret *string `json:"webhookSecret,omitempty"`
 }
 
 // SendMessageRequestBody defines model for SendMessageRequestBody.
 type SendMessageRequestBody struct {
-	// AttachmentIds 此前上传、尚未绑定到任何消息的附件 id
+	// AttachmentIds Ids of attachments uploaded earlier that are not yet bound to any message
 	AttachmentIds []string `json:"attachmentIds,omitempty"`
 	Text          string   `json:"text"`
 }
@@ -1006,19 +1006,19 @@ type TurnResourceApprovalMode string
 
 // UpdateChannelRequestBody defines model for UpdateChannelRequestBody.
 type UpdateChannelRequestBody struct {
-	// AllowFrom 放行名单。仅在同时传了 senderPolicy 时生效
+	// AllowFrom The allow list. Only applied when senderPolicy is sent as well
 	AllowFrom []string `json:"allowFrom,omitempty"`
 
-	// Credentials 整份替换而不是逐键合并。不传表示不动
+	// Credentials Replaced wholesale rather than merged key by key. Absent means unchanged
 	Credentials map[string]string `json:"credentials,omitempty"`
 	Enabled     *bool             `json:"enabled,omitempty"`
 	Name        *string           `json:"name,omitempty"`
 
-	// SenderPolicy 传了才会连同 allowFrom 一起替换
+	// SenderPolicy Only when this is sent is allowFrom replaced along with it
 	SenderPolicy *UpdateChannelRequestBodySenderPolicy `json:"senderPolicy,omitempty"`
 }
 
-// UpdateChannelRequestBodySenderPolicy 传了才会连同 allowFrom 一起替换
+// UpdateChannelRequestBodySenderPolicy Only when this is sent is allowFrom replaced along with it
 type UpdateChannelRequestBodySenderPolicy string
 
 // UpdateThreadRequestBody defines model for UpdateThreadRequestBody.
@@ -1065,28 +1065,28 @@ type WebhookSecretResponseBody struct {
 
 // ListBindingsParams defines parameters for ListBindings.
 type ListBindingsParams struct {
-	// Limit 这一页最多返回多少条
+	// Limit How many entries this page returns at most
 	Limit *int64 `form:"limit,omitempty" json:"limit,omitempty"`
 
-	// Offset 跳过多少条。要翻得更深请改用游标翻页的接口
+	// Offset How many to skip. To page deeper, use the cursor-paged operation instead
 	Offset    *int64              `form:"offset,omitempty" json:"offset,omitempty"`
 	Platform  *string             `form:"platform,omitempty" json:"platform,omitempty"`
 	ChannelId *openapi_types.UUID `form:"channelId,omitempty" json:"channelId,omitempty"`
 
-	// Active 仅返回处于活跃状态的绑定
+	// Active Return only bindings that are active
 	Active *bool `form:"active,omitempty" json:"active,omitempty"`
 }
 
 // ListChannelsParams defines parameters for ListChannels.
 type ListChannelsParams struct {
-	// Limit 这一页最多返回多少条
+	// Limit How many entries this page returns at most
 	Limit *int64 `form:"limit,omitempty" json:"limit,omitempty"`
 
-	// Offset 跳过多少条。要翻得更深请改用游标翻页的接口
+	// Offset How many to skip. To page deeper, use the cursor-paged operation instead
 	Offset   *int64  `form:"offset,omitempty" json:"offset,omitempty"`
 	Platform *string `form:"platform,omitempty" json:"platform,omitempty"`
 
-	// Active 仅返回处于启用状态的通道
+	// Active Return only channels that are enabled
 	Active *bool `form:"active,omitempty" json:"active,omitempty"`
 }
 
@@ -1097,26 +1097,26 @@ type ListChannelRejectionsParams struct {
 
 // CheckSenderParams defines parameters for CheckSender.
 type CheckSenderParams struct {
-	// PeerId 平台上那个人的 id，和绑定、被拒记录里的是同一个值
+	// PeerId That person's id on the platform, the same value that appears in bindings and rejections
 	PeerId string `form:"peerId" json:"peerId"`
 
-	// Username 仅 Telegram 这类有用户名的平台填得出来，不带 @。留空即当作没有用户名
+	// Username Only platforms with usernames, such as Telegram, can supply this. Without the @. Leave it empty to mean there is no username
 	Username *string `form:"username,omitempty" json:"username,omitempty"`
 }
 
 // ListThreadsParams defines parameters for ListThreads.
 type ListThreadsParams struct {
-	// Q 按标题搜索，大小写不敏感。留空则返回最近的对话
+	// Q Search titles, case-insensitively. Leave it empty for the most recent conversations
 	Q *string `form:"q,omitempty" json:"q,omitempty"`
 
-	// Archived 为真时**只**返回已归档的对话，否则只返回未归档的
+	// Archived When true, returns **only** archived conversations; otherwise only unarchived ones
 	Archived *bool  `form:"archived,omitempty" json:"archived,omitempty"`
 	Limit    *int64 `form:"limit,omitempty" json:"limit,omitempty"`
 }
 
 // ListEarlierItemsParams defines parameters for ListEarlierItems.
 type ListEarlierItemsParams struct {
-	// Before 来自文档里的 earlier.before，取这个序号之前的条目
+	// Before From the document's earlier.before; returns entries before this ordinal
 	Before int64 `form:"before" json:"before"`
 }
 
@@ -1224,322 +1224,322 @@ func WithRequestEditorFn(fn RequestEditorFn) ClientOption {
 // The interface specification for the client above.
 type ClientInterface interface {
 
-	// UploadAttachmentWithBody 上传图片
+	// UploadAttachmentWithBody Upload an image
 	//
-	// 请求体直接是文件字节，不使用 multipart 封装，一次上传一个文件。类型由内容判定，与 Content-Type 无关。返回的 id 在发送消息时放进 attachmentIds；从未被任何消息引用的附件会被定期清除。.
+	// The body is the file bytes themselves, not multipart, one file per request. The type is determined from the content, not from Content-Type. Put the returned id in attachmentIds when sending a message; attachments never referenced by any message are cleared periodically.
 	//
 	// Takes any type of body and a specified content type.
 	//
 	// Corresponds with POST /api/v1/attachments (the `UploadAttachment` operationId).
 	UploadAttachmentWithBody(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
 
-	// DownloadAttachment 取回图片
+	// DownloadAttachment Fetch an image
 	//
-	// 按附件 id 取回原始字节，可直接作为 <img> 的地址使用。响应带长期缓存头，附件内容不会变化。附件不存在或不属于当前用户时返回 404。.
+	// Returns the original bytes for an attachment id, usable directly as the address of an <img>. The response carries long-lived cache headers because the content never changes. Returns 404 when the attachment does not exist or does not belong to the current user.
 	//
 	// Corresponds with GET /api/v1/attachments/{attachment} (the `DownloadAttachment` operationId).
 	DownloadAttachment(ctx context.Context, attachment string, reqEditors ...RequestEditorFn) (*http.Response, error)
 
-	// ListBindings 列出绑定
+	// ListBindings List bindings
 	//
-	// 接入面那张表按通道列出各自绑了谁时用 channelId 过滤。.
+	// Filter by channelId to show, per channel, who is bound to it.
 	//
 	// Corresponds with GET /api/v1/bindings (the `ListBindings` operationId).
 	ListBindings(ctx context.Context, params *ListBindingsParams, reqEditors ...RequestEditorFn) (*http.Response, error)
 
-	// DeleteBinding 解除绑定
+	// DeleteBinding Remove a binding
 	//
 	// Corresponds with DELETE /api/v1/bindings/{binding} (the `DeleteBinding` operationId).
 	DeleteBinding(ctx context.Context, binding openapi_types.UUID, reqEditors ...RequestEditorFn) (*http.Response, error)
 
-	// GetBinding 查看绑定
+	// GetBinding Get a binding
 	//
 	// Corresponds with GET /api/v1/bindings/{binding} (the `GetBinding` operationId).
 	GetBinding(ctx context.Context, binding openapi_types.UUID, reqEditors ...RequestEditorFn) (*http.Response, error)
 
-	// ListChannels 列出通道
+	// ListChannels List channels
 	//
 	// Corresponds with GET /api/v1/channels (the `ListChannels` operationId).
 	ListChannels(ctx context.Context, params *ListChannelsParams, reqEditors ...RequestEditorFn) (*http.Response, error)
 
-	// CreateChannelWithBody 创建通道
+	// CreateChannelWithBody Create a channel
 	//
-	// 回调密钥归谁定由平台决定，见 list-platforms 的 secretSource：generated 的平台不要传 webhookSecret，我们生成的那把仅在本次响应中返回一次、之后无法再次取回，错过了只能调轮换接口换一把新的；supplied 的平台必须把平台后台那把传进来，此时响应里的webhookSecret 为 null。.
+	// Which side owns the webhook secret is decided by the platform; see secretSource on list-platforms. For a `generated` platform, do not send webhookSecret — the one we generate is returned exactly once in this response and cannot be retrieved again; miss it and the only way forward is rotating to a new one. For a `supplied` platform you must pass the secret from that platform's own console, and webhookSecret in the response is null.
 	//
 	// Takes any type of body and a specified content type.
 	//
 	// Corresponds with POST /api/v1/channels (the `CreateChannel` operationId).
 	CreateChannelWithBody(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
 
-	// CreateChannel 创建通道
+	// CreateChannel Create a channel
 	//
-	// 回调密钥归谁定由平台决定，见 list-platforms 的 secretSource：generated 的平台不要传 webhookSecret，我们生成的那把仅在本次响应中返回一次、之后无法再次取回，错过了只能调轮换接口换一把新的；supplied 的平台必须把平台后台那把传进来，此时响应里的webhookSecret 为 null。.
+	// Which side owns the webhook secret is decided by the platform; see secretSource on list-platforms. For a `generated` platform, do not send webhookSecret — the one we generate is returned exactly once in this response and cannot be retrieved again; miss it and the only way forward is rotating to a new one. For a `supplied` platform you must pass the secret from that platform's own console, and webhookSecret in the response is null.
 	//
 	// Takes a body of the `application/json` content type.
 	//
 	// Corresponds with POST /api/v1/channels (the `CreateChannel` operationId).
 	CreateChannel(ctx context.Context, body CreateChannelJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
 
-	// DeleteChannel 删除通道
+	// DeleteChannel Delete a channel
 	//
-	// 删除后该通道不再接收入站消息，其上的绑定一并失效。项目处于停服或清理状态时本接口仍然可用。.
+	// The channel stops accepting inbound messages and every binding on it stops working. This operation remains available while the project is suspended or being cleaned up.
 	//
 	// Corresponds with DELETE /api/v1/channels/{channel} (the `DeleteChannel` operationId).
 	DeleteChannel(ctx context.Context, channel openapi_types.UUID, reqEditors ...RequestEditorFn) (*http.Response, error)
 
-	// GetChannel 查看通道
+	// GetChannel Get a channel
 	//
 	// Corresponds with GET /api/v1/channels/{channel} (the `GetChannel` operationId).
 	GetChannel(ctx context.Context, channel openapi_types.UUID, reqEditors ...RequestEditorFn) (*http.Response, error)
 
-	// UpdateChannelWithBody 修改通道
+	// UpdateChannelWithBody Update a channel
 	//
-	// 只修改传了的字段。senderPolicy 与 allowFrom 是一对，由 senderPolicy 决定是否替换；改动对常驻连接要等连接重建后才生效，回调型平台立即生效。.
+	// Only the fields present are changed. senderPolicy and allowFrom go together, and senderPolicy decides whether they are replaced. For platforms held open by a long-lived connection the change applies once that connection is rebuilt; for webhook platforms it applies at once.
 	//
 	// Takes any type of body and a specified content type.
 	//
 	// Corresponds with PATCH /api/v1/channels/{channel} (the `UpdateChannel` operationId).
 	UpdateChannelWithBody(ctx context.Context, channel openapi_types.UUID, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
 
-	// UpdateChannel 修改通道
+	// UpdateChannel Update a channel
 	//
-	// 只修改传了的字段。senderPolicy 与 allowFrom 是一对，由 senderPolicy 决定是否替换；改动对常驻连接要等连接重建后才生效，回调型平台立即生效。.
+	// Only the fields present are changed. senderPolicy and allowFrom go together, and senderPolicy decides whether they are replaced. For platforms held open by a long-lived connection the change applies once that connection is rebuilt; for webhook platforms it applies at once.
 	//
 	// Takes a body of the `application/json` content type.
 	//
 	// Corresponds with PATCH /api/v1/channels/{channel} (the `UpdateChannel` operationId).
 	UpdateChannel(ctx context.Context, channel openapi_types.UUID, body UpdateChannelJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
 
-	// CreateBindingCode 签发绑定码
+	// CreateBindingCode Issue a binding code
 	//
-	// 生成一个一次性绑定码交给待绑定的人，他在该平台上用自己的账号把这个码发给助手即完成绑定。绑定只能由本人以这种方式建立，不能直接指定平台账号。绑定码有有效期，过期后需重新签发。.
+	// Produces a single-use code to hand to the person being bound. They send that code to the assistant from their own account on that platform, which completes the binding. A binding can only be established this way, by the person themselves — a platform account cannot be named directly. Codes expire and have to be reissued.
 	//
 	// Corresponds with POST /api/v1/channels/{channel}/binding-codes (the `CreateBindingCode` operationId).
 	CreateBindingCode(ctx context.Context, channel openapi_types.UUID, reqEditors ...RequestEditorFn) (*http.Response, error)
 
-	// ListChannelRejections 查看最近被拒绝的入站消息
+	// ListChannelRejections List recently rejected inbound messages
 	//
-	// 排查「发了消息但助手没有响应」时使用。按时间倒序返回最近被这条通道拒绝的入站消息及其拒绝原因，最常见的原因是发送方尚未绑定。.
+	// For diagnosing "I sent a message and the assistant never answered". Returns the inbound messages this channel rejected most recently, newest first, each with its reason. The most common reason is that the sender is not bound yet.
 	//
 	// Corresponds with GET /api/v1/channels/{channel}/rejections (the `ListChannelRejections` operationId).
 	ListChannelRejections(ctx context.Context, channel openapi_types.UUID, params *ListChannelRejectionsParams, reqEditors ...RequestEditorFn) (*http.Response, error)
 
-	// RotateChannelSecretWithBody 轮换回调密钥
+	// RotateChannelSecretWithBody Rotate the webhook secret
 	//
-	// 换一把新的回调密钥，旧的立即失效，通道降回待平台确认状态。密钥归谁定由平台决定，见 list-platforms 的 secretSource：generated 的平台不要传请求体，新密钥仅在本次响应中返回、之后无法再次取回；supplied 的平台必须把平台后台那把新密钥传进来。.
+	// Replaces the webhook secret. The old one stops working immediately and the channel drops back to awaiting confirmation from the platform. Which side owns the secret is decided by the platform; see secretSource on list-platforms. For a `generated` platform, send no body — the new secret is returned in this response only and cannot be retrieved again. For a `supplied` platform you must pass the new secret from that platform's own console.
 	//
 	// Takes any type of body and a specified content type.
 	//
 	// Corresponds with POST /api/v1/channels/{channel}/secret (the `RotateChannelSecret` operationId).
 	RotateChannelSecretWithBody(ctx context.Context, channel openapi_types.UUID, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
 
-	// RotateChannelSecret 轮换回调密钥
+	// RotateChannelSecret Rotate the webhook secret
 	//
-	// 换一把新的回调密钥，旧的立即失效，通道降回待平台确认状态。密钥归谁定由平台决定，见 list-platforms 的 secretSource：generated 的平台不要传请求体，新密钥仅在本次响应中返回、之后无法再次取回；supplied 的平台必须把平台后台那把新密钥传进来。.
+	// Replaces the webhook secret. The old one stops working immediately and the channel drops back to awaiting confirmation from the platform. Which side owns the secret is decided by the platform; see secretSource on list-platforms. For a `generated` platform, send no body — the new secret is returned in this response only and cannot be retrieved again. For a `supplied` platform you must pass the new secret from that platform's own console.
 	//
 	// Takes a body of the `application/json` content type.
 	//
 	// Corresponds with POST /api/v1/channels/{channel}/secret (the `RotateChannelSecret` operationId).
 	RotateChannelSecret(ctx context.Context, channel openapi_types.UUID, body RotateChannelSecretJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
 
-	// CheckSender 推演一个发件人会不会被放行
+	// CheckSender Test whether a sender would be let through
 	//
-	// 改完发件人策略之后用来自查，不发送任何消息、也不改变任何状态：它走的是和真实入站完全相同的那份判定，并说明结论由哪一条规则得出。无法推演绑定码那一条——是否是绑定码取决于对方发来的内容。.
+	// For checking a sender policy after changing it. Sends nothing and changes nothing: it runs exactly the same decision a real inbound message goes through, and says which rule produced the answer. The binding-code rule cannot be tested this way — whether something is a binding code depends on what the sender actually wrote.
 	//
 	// Corresponds with GET /api/v1/channels/{channel}/sender-check (the `CheckSender` operationId).
 	CheckSender(ctx context.Context, channel openapi_types.UUID, params *CheckSenderParams, reqEditors ...RequestEditorFn) (*http.Response, error)
 
-	// BeginWeixinLogin 发起微信扫码登录
+	// BeginWeixinLogin Begin a WeChat QR login
 	//
-	// 微信个人号通道需要本人扫码登录后才能收发消息。本接口返回二维码，之后轮询 `GET /v1/weixin-logins/{login}` 获取进度；状态提示需要验证码时，调用 `POST /v1/weixin-logins/{login}/verify-code` 补交。.
+	// A personal WeChat channel can only send and receive once its owner has signed in by scanning a QR code. This returns that code; poll `GET /v1/weixin-logins/{login}` for progress, and when the status asks for a verification code, submit it with `POST /v1/weixin-logins/{login}/verify-code`.
 	//
 	// Corresponds with POST /api/v1/channels/{channel}/weixin-logins (the `BeginWeixinLogin` operationId).
 	BeginWeixinLogin(ctx context.Context, channel openapi_types.UUID, reqEditors ...RequestEditorFn) (*http.Response, error)
 
-	// ListMemories 列出助手记住的事
+	// ListMemories List what the assistant remembers
 	//
-	// 助手在这个项目里为当前账号记下的事实，它们会出现在之后每一次对话的开头。同一个项目里的不同成员各记各的，这里只返回当前账号的那些。不分页：条数有上限，一次全部返回。.
+	// Facts the assistant has written down for the current account in this project. They appear at the start of every later conversation. Members of the same project each have their own, and this returns only the current account's. Not paginated: there is a cap on how many there can be, and all of them come back at once.
 	//
 	// Corresponds with GET /api/v1/memories (the `ListMemories` operationId).
 	ListMemories(ctx context.Context, reqEditors ...RequestEditorFn) (*http.Response, error)
 
-	// DeleteMemory 删掉一条记忆
+	// DeleteMemory Delete one memory
 	//
-	// 助手不再记得这件事。删除立即生效，下一次对话就不会再带上它。助手可能会重新学到同一件事。.
+	// The assistant stops remembering this. It takes effect at once, so the next conversation will not carry it. The assistant may well learn the same thing again.
 	//
 	// Corresponds with DELETE /api/v1/memories/{memory} (the `DeleteMemory` operationId).
 	DeleteMemory(ctx context.Context, memory string, reqEditors ...RequestEditorFn) (*http.Response, error)
 
-	// ListModels 列出可用模型
+	// ListModels List available models
 	//
-	// 返回本平台当前提供的模型及其上下文窗口、推理档位和支持的输入类型。用于填充对话设置里的模型选择。.
+	// The models currently offered, with their context window, reasoning levels and supported input types. Use it to populate the model picker in conversation settings.
 	//
 	// Corresponds with GET /api/v1/models (the `ListModels` operationId).
 	ListModels(ctx context.Context, reqEditors ...RequestEditorFn) (*http.Response, error)
 
-	// ListPlatforms 列出可接入的平台
+	// ListPlatforms List platforms that can be connected
 	//
-	// 返回本平台当前支持接入的即时通讯平台，以及各自建通道时要走的流程和要填的凭据字段。新建通道表单完全由这份响应驱动：setupMethod 决定展示录入表单还是扫码流程，credentialFields 是要填的字段，secretSource 决定要不要有回调密钥那一栏。.
+	// The instant messaging platforms that can currently be connected, along with the flow and the credential fields each one needs. The create-channel form is driven entirely by this response: setupMethod decides between a credential form and a QR flow, credentialFields is what to ask for, and secretSource decides whether there is a webhook secret field at all.
 	//
 	// Corresponds with GET /api/v1/platforms (the `ListPlatforms` operationId).
 	ListPlatforms(ctx context.Context, reqEditors ...RequestEditorFn) (*http.Response, error)
 
-	// ListThreads 列出对话
+	// ListThreads List conversations
 	//
-	// 按最近活动排序，只返回当前账号在当前项目里的对话。archived 是一个二选一的开关而不是「包含归档」：归档的对话不出现在默认列表里，要看它们就把这个参数打开。.
+	// Ordered by most recent activity, limited to the current account's conversations in the current project. `archived` selects between two sets rather than widening one: archived conversations are absent from the default list, and turning the flag on shows those instead.
 	//
 	// Corresponds with GET /api/v1/threads (the `ListThreads` operationId).
 	ListThreads(ctx context.Context, params *ListThreadsParams, reqEditors ...RequestEditorFn) (*http.Response, error)
 
-	// CreateThreadWithBody 创建对话
+	// CreateThreadWithBody Create a conversation
 	//
 	// Takes any type of body and a specified content type.
 	//
 	// Corresponds with POST /api/v1/threads (the `CreateThread` operationId).
 	CreateThreadWithBody(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
 
-	// CreateThread 创建对话
+	// CreateThread Create a conversation
 	//
 	// Takes a body of the `application/json` content type.
 	//
 	// Corresponds with POST /api/v1/threads (the `CreateThread` operationId).
 	CreateThread(ctx context.Context, body CreateThreadJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
 
-	// GetThread 取回对话文档
+	// GetThread Fetch the conversation document
 	//
-	// 对话的完整当前状态，用于首屏渲染。文档中的 stream 给出实时输出地址和入场票据，流推送的是对这份文档的增量编辑，可直接套用同一套渲染逻辑。.
+	// The complete current state of a conversation, for the first render. Its `stream` gives the address and admission ticket for live output, and what that stream pushes are incremental edits to this same document, so the same rendering logic applies.
 	//
 	// Corresponds with GET /api/v1/threads/{thread} (the `GetThread` operationId).
 	GetThread(ctx context.Context, thread string, reqEditors ...RequestEditorFn) (*http.Response, error)
 
-	// UpdateThreadWithBody 修改对话设置
+	// UpdateThreadWithBody Update conversation settings
 	//
-	// 可修改模型、推理档位、审批模式和归档状态。改动从下一次 turn 起生效，正在执行的 turn 沿用它启动时的设置。reasoningEffort 仅在同时提供 model 时生效。.
+	// Changes the model, reasoning level, approval mode and archived state. A change takes effect from the next turn; a turn already running keeps the settings it started with. reasoningEffort only applies when model is given as well.
 	//
 	// Takes any type of body and a specified content type.
 	//
 	// Corresponds with PATCH /api/v1/threads/{thread} (the `UpdateThread` operationId).
 	UpdateThreadWithBody(ctx context.Context, thread string, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
 
-	// UpdateThread 修改对话设置
+	// UpdateThread Update conversation settings
 	//
-	// 可修改模型、推理档位、审批模式和归档状态。改动从下一次 turn 起生效，正在执行的 turn 沿用它启动时的设置。reasoningEffort 仅在同时提供 model 时生效。.
+	// Changes the model, reasoning level, approval mode and archived state. A change takes effect from the next turn; a turn already running keeps the settings it started with. reasoningEffort only applies when model is given as well.
 	//
 	// Takes a body of the `application/json` content type.
 	//
 	// Corresponds with PATCH /api/v1/threads/{thread} (the `UpdateThread` operationId).
 	UpdateThread(ctx context.Context, thread string, body UpdateThreadJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
 
-	// DecideApprovalWithBody 批准或拒绝一批工具调用
+	// DecideApprovalWithBody Approve or decline a batch of tool calls
 	//
-	// 批次 id 来自对话文档的 wait 字段。本接口是幂等的：重复提交同一批次不会改变已经生效的决定，也不会报错。批次不属于该对话时返回 404。.
+	// The batch id comes from the conversation document's `wait`. This is idempotent: submitting the same batch again neither changes a decision already in effect nor reports an error. Returns 404 when the batch does not belong to that conversation.
 	//
 	// Takes any type of body and a specified content type.
 	//
 	// Corresponds with POST /api/v1/threads/{thread}/approvals/{batch} (the `DecideApproval` operationId).
 	DecideApprovalWithBody(ctx context.Context, thread string, batch string, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
 
-	// DecideApproval 批准或拒绝一批工具调用
+	// DecideApproval Approve or decline a batch of tool calls
 	//
-	// 批次 id 来自对话文档的 wait 字段。本接口是幂等的：重复提交同一批次不会改变已经生效的决定，也不会报错。批次不属于该对话时返回 404。.
+	// The batch id comes from the conversation document's `wait`. This is idempotent: submitting the same batch again neither changes a decision already in effect nor reports an error. Returns 404 when the batch does not belong to that conversation.
 	//
 	// Takes a body of the `application/json` content type.
 	//
 	// Corresponds with POST /api/v1/threads/{thread}/approvals/{batch} (the `DecideApproval` operationId).
 	DecideApproval(ctx context.Context, thread string, batch string, body DecideApprovalJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
 
-	// ListEarlierItems 取回更早的对话内容
+	// ListEarlierItems Fetch earlier parts of a conversation
 	//
-	// 首屏只给对话最新的那一段，再往上的内容用本接口按需取回，一次一段。before 用文档里的 earlier.before，响应里的 earlier 是再往上那一段的游标，为 null 表示已经到顶。返回的条目和文档里的 items 是同一种形状，顺序也一样（由旧到新），直接接在现有内容前面即可。
+	// The first render only carries the latest stretch of a conversation; anything above it is fetched here, one stretch at a time. Pass the document's earlier.before as `before`; the `earlier` in the response is the cursor for the stretch above that, and null means the top has been reached. The entries have the same shape and the same order (oldest first) as `items` in the document, so they can be prepended as they are.
 	//
 	// Corresponds with GET /api/v1/threads/{thread}/earlier (the `ListEarlierItems` operationId).
 	ListEarlierItems(ctx context.Context, thread string, params *ListEarlierItemsParams, reqEditors ...RequestEditorFn) (*http.Response, error)
 
-	// InterruptThread 中断正在执行的 turn
+	// InterruptThread Interrupt a running turn
 	//
-	// 对没有正在执行的 turn 的对话调用同样返回 204，不视为错误——用户点击停止与 turn 自然结束之间存在竞争，两种结果一致。项目处于停服或清理状态时本接口仍然可用。.
+	// Calling this on a conversation with no running turn also returns 204 rather than an error — the user pressing stop races with the turn finishing on its own, and both outcomes are the same. This operation remains available while the project is suspended or being cleaned up.
 	//
 	// Corresponds with POST /api/v1/threads/{thread}/interrupt (the `InterruptThread` operationId).
 	InterruptThread(ctx context.Context, thread string, reqEditors ...RequestEditorFn) (*http.Response, error)
 
-	// SendMessageWithBody 发送消息并触发一次 turn
+	// SendMessageWithBody Send a message and start a turn
 	//
-	// 立即返回 turnId，不等待执行完成——一次 turn 可能持续数十分钟。执行进度通过对话文档中 stream 指向的实时流获取，不在本响应里。.
+	// Returns a turnId immediately without waiting for execution — a turn can run for tens of minutes. Progress arrives on the live stream the conversation document's `stream` points at, not in this response.
 	//
 	// Takes any type of body and a specified content type.
 	//
 	// Corresponds with POST /api/v1/threads/{thread}/messages (the `SendMessage` operationId).
 	SendMessageWithBody(ctx context.Context, thread string, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
 
-	// SendMessage 发送消息并触发一次 turn
+	// SendMessage Send a message and start a turn
 	//
-	// 立即返回 turnId，不等待执行完成——一次 turn 可能持续数十分钟。执行进度通过对话文档中 stream 指向的实时流获取，不在本响应里。.
+	// Returns a turnId immediately without waiting for execution — a turn can run for tens of minutes. Progress arrives on the live stream the conversation document's `stream` points at, not in this response.
 	//
 	// Takes a body of the `application/json` content type.
 	//
 	// Corresponds with POST /api/v1/threads/{thread}/messages (the `SendMessage` operationId).
 	SendMessage(ctx context.Context, thread string, body SendMessageJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
 
-	// AnswerQuestionWithBody 回答助手提出的问题
+	// AnswerQuestionWithBody Answer the assistant's questions
 	//
-	// 问题 id 来自对话文档的 wait 字段。已被回答过的问题同样返回 204——可能是另一个页面提交在先，也可能是自动应答窗口已到期，两种情况下 turn 都已带着答案继续执行。.
+	// The question id comes from the conversation document's `wait`. An already-answered question also returns 204 — another tab may have submitted first, or the auto-answer window may have expired, and in both cases the turn has already continued with an answer.
 	//
 	// Takes any type of body and a specified content type.
 	//
 	// Corresponds with POST /api/v1/threads/{thread}/questions/{item} (the `AnswerQuestion` operationId).
 	AnswerQuestionWithBody(ctx context.Context, thread string, item string, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
 
-	// AnswerQuestion 回答助手提出的问题
+	// AnswerQuestion Answer the assistant's questions
 	//
-	// 问题 id 来自对话文档的 wait 字段。已被回答过的问题同样返回 204——可能是另一个页面提交在先，也可能是自动应答窗口已到期，两种情况下 turn 都已带着答案继续执行。.
+	// The question id comes from the conversation document's `wait`. An already-answered question also returns 204 — another tab may have submitted first, or the auto-answer window may have expired, and in both cases the turn has already continued with an answer.
 	//
 	// Takes a body of the `application/json` content type.
 	//
 	// Corresponds with POST /api/v1/threads/{thread}/questions/{item} (the `AnswerQuestion` operationId).
 	AnswerQuestion(ctx context.Context, thread string, item string, body AnswerQuestionJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
 
-	// MarkThreadRead 标记对话已读
+	// MarkThreadRead Mark a conversation as read
 	//
 	// Corresponds with POST /api/v1/threads/{thread}/read (the `MarkThreadRead` operationId).
 	MarkThreadRead(ctx context.Context, thread string, reqEditors ...RequestEditorFn) (*http.Response, error)
 
-	// RevertThreadWithBody 从指定位置起撤回
+	// RevertThreadWithBody Revert from a given point
 	//
-	// 撤回 ordinal 及其之后的全部条目。被撤回的条目仍留在逐字稿中并标记 reverted，序号不会重排。返回实际撤回的条目数。.
+	// Reverts the entry at `ordinal` and everything after it. Reverted entries stay in the transcript marked `reverted`, and ordinals are not renumbered. Returns how many were actually reverted.
 	//
 	// Takes any type of body and a specified content type.
 	//
 	// Corresponds with POST /api/v1/threads/{thread}/revert (the `RevertThread` operationId).
 	RevertThreadWithBody(ctx context.Context, thread string, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
 
-	// RevertThread 从指定位置起撤回
+	// RevertThread Revert from a given point
 	//
-	// 撤回 ordinal 及其之后的全部条目。被撤回的条目仍留在逐字稿中并标记 reverted，序号不会重排。返回实际撤回的条目数。.
+	// Reverts the entry at `ordinal` and everything after it. Reverted entries stay in the transcript marked `reverted`, and ordinals are not renumbered. Returns how many were actually reverted.
 	//
 	// Takes a body of the `application/json` content type.
 	//
 	// Corresponds with POST /api/v1/threads/{thread}/revert (the `RevertThread` operationId).
 	RevertThread(ctx context.Context, thread string, body RevertThreadJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
 
-	// GetWeixinLogin 查询扫码登录状态
+	// GetWeixinLogin Get the state of a QR login
 	//
-	// 轮询本接口直到状态变为成功或失败。状态提示需要验证码时，调用补交验证码接口。.
+	// Poll this until the status is success or failure. When the status asks for a verification code, submit it with the verification-code operation.
 	//
 	// Corresponds with GET /api/v1/weixin-logins/{login} (the `GetWeixinLogin` operationId).
 	GetWeixinLogin(ctx context.Context, login openapi_types.UUID, reqEditors ...RequestEditorFn) (*http.Response, error)
 
-	// SubmitWeixinVerifyCodeWithBody 补交登录验证码
+	// SubmitWeixinVerifyCodeWithBody Submit a login verification code
 	//
-	// 微信在扫码后要求短信或设备验证码时使用。验证码由登录发起人在自己手机上获取。.
+	// For when WeChat asks for an SMS or device code after the scan. The person who started the login gets that code on their own phone.
 	//
 	// Takes any type of body and a specified content type.
 	//
 	// Corresponds with POST /api/v1/weixin-logins/{login}/verify-code (the `SubmitWeixinVerifyCode` operationId).
 	SubmitWeixinVerifyCodeWithBody(ctx context.Context, login openapi_types.UUID, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
 
-	// SubmitWeixinVerifyCode 补交登录验证码
+	// SubmitWeixinVerifyCode Submit a login verification code
 	//
-	// 微信在扫码后要求短信或设备验证码时使用。验证码由登录发起人在自己手机上获取。.
+	// For when WeChat asks for an SMS or device code after the scan. The person who started the login gets that code on their own phone.
 	//
 	// Takes a body of the `application/json` content type.
 	//
@@ -1547,9 +1547,9 @@ type ClientInterface interface {
 	SubmitWeixinVerifyCode(ctx context.Context, login openapi_types.UUID, body SubmitWeixinVerifyCodeJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
 }
 
-// UploadAttachmentWithBody 上传图片
+// UploadAttachmentWithBody Upload an image
 //
-// 请求体直接是文件字节，不使用 multipart 封装，一次上传一个文件。类型由内容判定，与 Content-Type 无关。返回的 id 在发送消息时放进 attachmentIds；从未被任何消息引用的附件会被定期清除。.
+// The body is the file bytes themselves, not multipart, one file per request. The type is determined from the content, not from Content-Type. Put the returned id in attachmentIds when sending a message; attachments never referenced by any message are cleared periodically.
 //
 // Takes any type of body and a specified content type.
 //
@@ -1566,9 +1566,9 @@ func (c *Client) UploadAttachmentWithBody(ctx context.Context, contentType strin
 	return c.Client.Do(req)
 }
 
-// DownloadAttachment 取回图片
+// DownloadAttachment Fetch an image
 //
-// 按附件 id 取回原始字节，可直接作为 <img> 的地址使用。响应带长期缓存头，附件内容不会变化。附件不存在或不属于当前用户时返回 404。.
+// Returns the original bytes for an attachment id, usable directly as the address of an <img>. The response carries long-lived cache headers because the content never changes. Returns 404 when the attachment does not exist or does not belong to the current user.
 //
 // Corresponds with GET /api/v1/attachments/{attachment} (the `DownloadAttachment` operationId).
 func (c *Client) DownloadAttachment(ctx context.Context, attachment string, reqEditors ...RequestEditorFn) (*http.Response, error) {
@@ -1583,9 +1583,9 @@ func (c *Client) DownloadAttachment(ctx context.Context, attachment string, reqE
 	return c.Client.Do(req)
 }
 
-// ListBindings 列出绑定
+// ListBindings List bindings
 //
-// 接入面那张表按通道列出各自绑了谁时用 channelId 过滤。.
+// Filter by channelId to show, per channel, who is bound to it.
 //
 // Corresponds with GET /api/v1/bindings (the `ListBindings` operationId).
 func (c *Client) ListBindings(ctx context.Context, params *ListBindingsParams, reqEditors ...RequestEditorFn) (*http.Response, error) {
@@ -1600,7 +1600,7 @@ func (c *Client) ListBindings(ctx context.Context, params *ListBindingsParams, r
 	return c.Client.Do(req)
 }
 
-// DeleteBinding 解除绑定
+// DeleteBinding Remove a binding
 //
 // Corresponds with DELETE /api/v1/bindings/{binding} (the `DeleteBinding` operationId).
 func (c *Client) DeleteBinding(ctx context.Context, binding openapi_types.UUID, reqEditors ...RequestEditorFn) (*http.Response, error) {
@@ -1615,7 +1615,7 @@ func (c *Client) DeleteBinding(ctx context.Context, binding openapi_types.UUID, 
 	return c.Client.Do(req)
 }
 
-// GetBinding 查看绑定
+// GetBinding Get a binding
 //
 // Corresponds with GET /api/v1/bindings/{binding} (the `GetBinding` operationId).
 func (c *Client) GetBinding(ctx context.Context, binding openapi_types.UUID, reqEditors ...RequestEditorFn) (*http.Response, error) {
@@ -1630,7 +1630,7 @@ func (c *Client) GetBinding(ctx context.Context, binding openapi_types.UUID, req
 	return c.Client.Do(req)
 }
 
-// ListChannels 列出通道
+// ListChannels List channels
 //
 // Corresponds with GET /api/v1/channels (the `ListChannels` operationId).
 func (c *Client) ListChannels(ctx context.Context, params *ListChannelsParams, reqEditors ...RequestEditorFn) (*http.Response, error) {
@@ -1645,9 +1645,9 @@ func (c *Client) ListChannels(ctx context.Context, params *ListChannelsParams, r
 	return c.Client.Do(req)
 }
 
-// CreateChannelWithBody 创建通道
+// CreateChannelWithBody Create a channel
 //
-// 回调密钥归谁定由平台决定，见 list-platforms 的 secretSource：generated 的平台不要传 webhookSecret，我们生成的那把仅在本次响应中返回一次、之后无法再次取回，错过了只能调轮换接口换一把新的；supplied 的平台必须把平台后台那把传进来，此时响应里的webhookSecret 为 null。.
+// Which side owns the webhook secret is decided by the platform; see secretSource on list-platforms. For a `generated` platform, do not send webhookSecret — the one we generate is returned exactly once in this response and cannot be retrieved again; miss it and the only way forward is rotating to a new one. For a `supplied` platform you must pass the secret from that platform's own console, and webhookSecret in the response is null.
 //
 // Takes any type of body and a specified content type.
 //
@@ -1664,9 +1664,9 @@ func (c *Client) CreateChannelWithBody(ctx context.Context, contentType string, 
 	return c.Client.Do(req)
 }
 
-// CreateChannel 创建通道
+// CreateChannel Create a channel
 //
-// 回调密钥归谁定由平台决定，见 list-platforms 的 secretSource：generated 的平台不要传 webhookSecret，我们生成的那把仅在本次响应中返回一次、之后无法再次取回，错过了只能调轮换接口换一把新的；supplied 的平台必须把平台后台那把传进来，此时响应里的webhookSecret 为 null。.
+// Which side owns the webhook secret is decided by the platform; see secretSource on list-platforms. For a `generated` platform, do not send webhookSecret — the one we generate is returned exactly once in this response and cannot be retrieved again; miss it and the only way forward is rotating to a new one. For a `supplied` platform you must pass the secret from that platform's own console, and webhookSecret in the response is null.
 //
 // Takes a body of the `application/json` content type.
 //
@@ -1683,9 +1683,9 @@ func (c *Client) CreateChannel(ctx context.Context, body CreateChannelJSONReques
 	return c.Client.Do(req)
 }
 
-// DeleteChannel 删除通道
+// DeleteChannel Delete a channel
 //
-// 删除后该通道不再接收入站消息，其上的绑定一并失效。项目处于停服或清理状态时本接口仍然可用。.
+// The channel stops accepting inbound messages and every binding on it stops working. This operation remains available while the project is suspended or being cleaned up.
 //
 // Corresponds with DELETE /api/v1/channels/{channel} (the `DeleteChannel` operationId).
 func (c *Client) DeleteChannel(ctx context.Context, channel openapi_types.UUID, reqEditors ...RequestEditorFn) (*http.Response, error) {
@@ -1700,7 +1700,7 @@ func (c *Client) DeleteChannel(ctx context.Context, channel openapi_types.UUID, 
 	return c.Client.Do(req)
 }
 
-// GetChannel 查看通道
+// GetChannel Get a channel
 //
 // Corresponds with GET /api/v1/channels/{channel} (the `GetChannel` operationId).
 func (c *Client) GetChannel(ctx context.Context, channel openapi_types.UUID, reqEditors ...RequestEditorFn) (*http.Response, error) {
@@ -1715,9 +1715,9 @@ func (c *Client) GetChannel(ctx context.Context, channel openapi_types.UUID, req
 	return c.Client.Do(req)
 }
 
-// UpdateChannelWithBody 修改通道
+// UpdateChannelWithBody Update a channel
 //
-// 只修改传了的字段。senderPolicy 与 allowFrom 是一对，由 senderPolicy 决定是否替换；改动对常驻连接要等连接重建后才生效，回调型平台立即生效。.
+// Only the fields present are changed. senderPolicy and allowFrom go together, and senderPolicy decides whether they are replaced. For platforms held open by a long-lived connection the change applies once that connection is rebuilt; for webhook platforms it applies at once.
 //
 // Takes any type of body and a specified content type.
 //
@@ -1734,9 +1734,9 @@ func (c *Client) UpdateChannelWithBody(ctx context.Context, channel openapi_type
 	return c.Client.Do(req)
 }
 
-// UpdateChannel 修改通道
+// UpdateChannel Update a channel
 //
-// 只修改传了的字段。senderPolicy 与 allowFrom 是一对，由 senderPolicy 决定是否替换；改动对常驻连接要等连接重建后才生效，回调型平台立即生效。.
+// Only the fields present are changed. senderPolicy and allowFrom go together, and senderPolicy decides whether they are replaced. For platforms held open by a long-lived connection the change applies once that connection is rebuilt; for webhook platforms it applies at once.
 //
 // Takes a body of the `application/json` content type.
 //
@@ -1753,9 +1753,9 @@ func (c *Client) UpdateChannel(ctx context.Context, channel openapi_types.UUID, 
 	return c.Client.Do(req)
 }
 
-// CreateBindingCode 签发绑定码
+// CreateBindingCode Issue a binding code
 //
-// 生成一个一次性绑定码交给待绑定的人，他在该平台上用自己的账号把这个码发给助手即完成绑定。绑定只能由本人以这种方式建立，不能直接指定平台账号。绑定码有有效期，过期后需重新签发。.
+// Produces a single-use code to hand to the person being bound. They send that code to the assistant from their own account on that platform, which completes the binding. A binding can only be established this way, by the person themselves — a platform account cannot be named directly. Codes expire and have to be reissued.
 //
 // Corresponds with POST /api/v1/channels/{channel}/binding-codes (the `CreateBindingCode` operationId).
 func (c *Client) CreateBindingCode(ctx context.Context, channel openapi_types.UUID, reqEditors ...RequestEditorFn) (*http.Response, error) {
@@ -1770,9 +1770,9 @@ func (c *Client) CreateBindingCode(ctx context.Context, channel openapi_types.UU
 	return c.Client.Do(req)
 }
 
-// ListChannelRejections 查看最近被拒绝的入站消息
+// ListChannelRejections List recently rejected inbound messages
 //
-// 排查「发了消息但助手没有响应」时使用。按时间倒序返回最近被这条通道拒绝的入站消息及其拒绝原因，最常见的原因是发送方尚未绑定。.
+// For diagnosing "I sent a message and the assistant never answered". Returns the inbound messages this channel rejected most recently, newest first, each with its reason. The most common reason is that the sender is not bound yet.
 //
 // Corresponds with GET /api/v1/channels/{channel}/rejections (the `ListChannelRejections` operationId).
 func (c *Client) ListChannelRejections(ctx context.Context, channel openapi_types.UUID, params *ListChannelRejectionsParams, reqEditors ...RequestEditorFn) (*http.Response, error) {
@@ -1787,9 +1787,9 @@ func (c *Client) ListChannelRejections(ctx context.Context, channel openapi_type
 	return c.Client.Do(req)
 }
 
-// RotateChannelSecretWithBody 轮换回调密钥
+// RotateChannelSecretWithBody Rotate the webhook secret
 //
-// 换一把新的回调密钥，旧的立即失效，通道降回待平台确认状态。密钥归谁定由平台决定，见 list-platforms 的 secretSource：generated 的平台不要传请求体，新密钥仅在本次响应中返回、之后无法再次取回；supplied 的平台必须把平台后台那把新密钥传进来。.
+// Replaces the webhook secret. The old one stops working immediately and the channel drops back to awaiting confirmation from the platform. Which side owns the secret is decided by the platform; see secretSource on list-platforms. For a `generated` platform, send no body — the new secret is returned in this response only and cannot be retrieved again. For a `supplied` platform you must pass the new secret from that platform's own console.
 //
 // Takes any type of body and a specified content type.
 //
@@ -1806,9 +1806,9 @@ func (c *Client) RotateChannelSecretWithBody(ctx context.Context, channel openap
 	return c.Client.Do(req)
 }
 
-// RotateChannelSecret 轮换回调密钥
+// RotateChannelSecret Rotate the webhook secret
 //
-// 换一把新的回调密钥，旧的立即失效，通道降回待平台确认状态。密钥归谁定由平台决定，见 list-platforms 的 secretSource：generated 的平台不要传请求体，新密钥仅在本次响应中返回、之后无法再次取回；supplied 的平台必须把平台后台那把新密钥传进来。.
+// Replaces the webhook secret. The old one stops working immediately and the channel drops back to awaiting confirmation from the platform. Which side owns the secret is decided by the platform; see secretSource on list-platforms. For a `generated` platform, send no body — the new secret is returned in this response only and cannot be retrieved again. For a `supplied` platform you must pass the new secret from that platform's own console.
 //
 // Takes a body of the `application/json` content type.
 //
@@ -1825,9 +1825,9 @@ func (c *Client) RotateChannelSecret(ctx context.Context, channel openapi_types.
 	return c.Client.Do(req)
 }
 
-// CheckSender 推演一个发件人会不会被放行
+// CheckSender Test whether a sender would be let through
 //
-// 改完发件人策略之后用来自查，不发送任何消息、也不改变任何状态：它走的是和真实入站完全相同的那份判定，并说明结论由哪一条规则得出。无法推演绑定码那一条——是否是绑定码取决于对方发来的内容。.
+// For checking a sender policy after changing it. Sends nothing and changes nothing: it runs exactly the same decision a real inbound message goes through, and says which rule produced the answer. The binding-code rule cannot be tested this way — whether something is a binding code depends on what the sender actually wrote.
 //
 // Corresponds with GET /api/v1/channels/{channel}/sender-check (the `CheckSender` operationId).
 func (c *Client) CheckSender(ctx context.Context, channel openapi_types.UUID, params *CheckSenderParams, reqEditors ...RequestEditorFn) (*http.Response, error) {
@@ -1842,9 +1842,9 @@ func (c *Client) CheckSender(ctx context.Context, channel openapi_types.UUID, pa
 	return c.Client.Do(req)
 }
 
-// BeginWeixinLogin 发起微信扫码登录
+// BeginWeixinLogin Begin a WeChat QR login
 //
-// 微信个人号通道需要本人扫码登录后才能收发消息。本接口返回二维码，之后轮询 `GET /v1/weixin-logins/{login}` 获取进度；状态提示需要验证码时，调用 `POST /v1/weixin-logins/{login}/verify-code` 补交。.
+// A personal WeChat channel can only send and receive once its owner has signed in by scanning a QR code. This returns that code; poll `GET /v1/weixin-logins/{login}` for progress, and when the status asks for a verification code, submit it with `POST /v1/weixin-logins/{login}/verify-code`.
 //
 // Corresponds with POST /api/v1/channels/{channel}/weixin-logins (the `BeginWeixinLogin` operationId).
 func (c *Client) BeginWeixinLogin(ctx context.Context, channel openapi_types.UUID, reqEditors ...RequestEditorFn) (*http.Response, error) {
@@ -1859,9 +1859,9 @@ func (c *Client) BeginWeixinLogin(ctx context.Context, channel openapi_types.UUI
 	return c.Client.Do(req)
 }
 
-// ListMemories 列出助手记住的事
+// ListMemories List what the assistant remembers
 //
-// 助手在这个项目里为当前账号记下的事实，它们会出现在之后每一次对话的开头。同一个项目里的不同成员各记各的，这里只返回当前账号的那些。不分页：条数有上限，一次全部返回。.
+// Facts the assistant has written down for the current account in this project. They appear at the start of every later conversation. Members of the same project each have their own, and this returns only the current account's. Not paginated: there is a cap on how many there can be, and all of them come back at once.
 //
 // Corresponds with GET /api/v1/memories (the `ListMemories` operationId).
 func (c *Client) ListMemories(ctx context.Context, reqEditors ...RequestEditorFn) (*http.Response, error) {
@@ -1876,9 +1876,9 @@ func (c *Client) ListMemories(ctx context.Context, reqEditors ...RequestEditorFn
 	return c.Client.Do(req)
 }
 
-// DeleteMemory 删掉一条记忆
+// DeleteMemory Delete one memory
 //
-// 助手不再记得这件事。删除立即生效，下一次对话就不会再带上它。助手可能会重新学到同一件事。.
+// The assistant stops remembering this. It takes effect at once, so the next conversation will not carry it. The assistant may well learn the same thing again.
 //
 // Corresponds with DELETE /api/v1/memories/{memory} (the `DeleteMemory` operationId).
 func (c *Client) DeleteMemory(ctx context.Context, memory string, reqEditors ...RequestEditorFn) (*http.Response, error) {
@@ -1893,9 +1893,9 @@ func (c *Client) DeleteMemory(ctx context.Context, memory string, reqEditors ...
 	return c.Client.Do(req)
 }
 
-// ListModels 列出可用模型
+// ListModels List available models
 //
-// 返回本平台当前提供的模型及其上下文窗口、推理档位和支持的输入类型。用于填充对话设置里的模型选择。.
+// The models currently offered, with their context window, reasoning levels and supported input types. Use it to populate the model picker in conversation settings.
 //
 // Corresponds with GET /api/v1/models (the `ListModels` operationId).
 func (c *Client) ListModels(ctx context.Context, reqEditors ...RequestEditorFn) (*http.Response, error) {
@@ -1910,9 +1910,9 @@ func (c *Client) ListModels(ctx context.Context, reqEditors ...RequestEditorFn) 
 	return c.Client.Do(req)
 }
 
-// ListPlatforms 列出可接入的平台
+// ListPlatforms List platforms that can be connected
 //
-// 返回本平台当前支持接入的即时通讯平台，以及各自建通道时要走的流程和要填的凭据字段。新建通道表单完全由这份响应驱动：setupMethod 决定展示录入表单还是扫码流程，credentialFields 是要填的字段，secretSource 决定要不要有回调密钥那一栏。.
+// The instant messaging platforms that can currently be connected, along with the flow and the credential fields each one needs. The create-channel form is driven entirely by this response: setupMethod decides between a credential form and a QR flow, credentialFields is what to ask for, and secretSource decides whether there is a webhook secret field at all.
 //
 // Corresponds with GET /api/v1/platforms (the `ListPlatforms` operationId).
 func (c *Client) ListPlatforms(ctx context.Context, reqEditors ...RequestEditorFn) (*http.Response, error) {
@@ -1927,9 +1927,9 @@ func (c *Client) ListPlatforms(ctx context.Context, reqEditors ...RequestEditorF
 	return c.Client.Do(req)
 }
 
-// ListThreads 列出对话
+// ListThreads List conversations
 //
-// 按最近活动排序，只返回当前账号在当前项目里的对话。archived 是一个二选一的开关而不是「包含归档」：归档的对话不出现在默认列表里，要看它们就把这个参数打开。.
+// Ordered by most recent activity, limited to the current account's conversations in the current project. `archived` selects between two sets rather than widening one: archived conversations are absent from the default list, and turning the flag on shows those instead.
 //
 // Corresponds with GET /api/v1/threads (the `ListThreads` operationId).
 func (c *Client) ListThreads(ctx context.Context, params *ListThreadsParams, reqEditors ...RequestEditorFn) (*http.Response, error) {
@@ -1944,7 +1944,7 @@ func (c *Client) ListThreads(ctx context.Context, params *ListThreadsParams, req
 	return c.Client.Do(req)
 }
 
-// CreateThreadWithBody 创建对话
+// CreateThreadWithBody Create a conversation
 //
 // Takes any type of body and a specified content type.
 //
@@ -1961,7 +1961,7 @@ func (c *Client) CreateThreadWithBody(ctx context.Context, contentType string, b
 	return c.Client.Do(req)
 }
 
-// CreateThread 创建对话
+// CreateThread Create a conversation
 //
 // Takes a body of the `application/json` content type.
 //
@@ -1978,9 +1978,9 @@ func (c *Client) CreateThread(ctx context.Context, body CreateThreadJSONRequestB
 	return c.Client.Do(req)
 }
 
-// GetThread 取回对话文档
+// GetThread Fetch the conversation document
 //
-// 对话的完整当前状态，用于首屏渲染。文档中的 stream 给出实时输出地址和入场票据，流推送的是对这份文档的增量编辑，可直接套用同一套渲染逻辑。.
+// The complete current state of a conversation, for the first render. Its `stream` gives the address and admission ticket for live output, and what that stream pushes are incremental edits to this same document, so the same rendering logic applies.
 //
 // Corresponds with GET /api/v1/threads/{thread} (the `GetThread` operationId).
 func (c *Client) GetThread(ctx context.Context, thread string, reqEditors ...RequestEditorFn) (*http.Response, error) {
@@ -1995,9 +1995,9 @@ func (c *Client) GetThread(ctx context.Context, thread string, reqEditors ...Req
 	return c.Client.Do(req)
 }
 
-// UpdateThreadWithBody 修改对话设置
+// UpdateThreadWithBody Update conversation settings
 //
-// 可修改模型、推理档位、审批模式和归档状态。改动从下一次 turn 起生效，正在执行的 turn 沿用它启动时的设置。reasoningEffort 仅在同时提供 model 时生效。.
+// Changes the model, reasoning level, approval mode and archived state. A change takes effect from the next turn; a turn already running keeps the settings it started with. reasoningEffort only applies when model is given as well.
 //
 // Takes any type of body and a specified content type.
 //
@@ -2014,9 +2014,9 @@ func (c *Client) UpdateThreadWithBody(ctx context.Context, thread string, conten
 	return c.Client.Do(req)
 }
 
-// UpdateThread 修改对话设置
+// UpdateThread Update conversation settings
 //
-// 可修改模型、推理档位、审批模式和归档状态。改动从下一次 turn 起生效，正在执行的 turn 沿用它启动时的设置。reasoningEffort 仅在同时提供 model 时生效。.
+// Changes the model, reasoning level, approval mode and archived state. A change takes effect from the next turn; a turn already running keeps the settings it started with. reasoningEffort only applies when model is given as well.
 //
 // Takes a body of the `application/json` content type.
 //
@@ -2033,9 +2033,9 @@ func (c *Client) UpdateThread(ctx context.Context, thread string, body UpdateThr
 	return c.Client.Do(req)
 }
 
-// DecideApprovalWithBody 批准或拒绝一批工具调用
+// DecideApprovalWithBody Approve or decline a batch of tool calls
 //
-// 批次 id 来自对话文档的 wait 字段。本接口是幂等的：重复提交同一批次不会改变已经生效的决定，也不会报错。批次不属于该对话时返回 404。.
+// The batch id comes from the conversation document's `wait`. This is idempotent: submitting the same batch again neither changes a decision already in effect nor reports an error. Returns 404 when the batch does not belong to that conversation.
 //
 // Takes any type of body and a specified content type.
 //
@@ -2052,9 +2052,9 @@ func (c *Client) DecideApprovalWithBody(ctx context.Context, thread string, batc
 	return c.Client.Do(req)
 }
 
-// DecideApproval 批准或拒绝一批工具调用
+// DecideApproval Approve or decline a batch of tool calls
 //
-// 批次 id 来自对话文档的 wait 字段。本接口是幂等的：重复提交同一批次不会改变已经生效的决定，也不会报错。批次不属于该对话时返回 404。.
+// The batch id comes from the conversation document's `wait`. This is idempotent: submitting the same batch again neither changes a decision already in effect nor reports an error. Returns 404 when the batch does not belong to that conversation.
 //
 // Takes a body of the `application/json` content type.
 //
@@ -2071,9 +2071,9 @@ func (c *Client) DecideApproval(ctx context.Context, thread string, batch string
 	return c.Client.Do(req)
 }
 
-// ListEarlierItems 取回更早的对话内容
+// ListEarlierItems Fetch earlier parts of a conversation
 //
-// 首屏只给对话最新的那一段，再往上的内容用本接口按需取回，一次一段。before 用文档里的 earlier.before，响应里的 earlier 是再往上那一段的游标，为 null 表示已经到顶。返回的条目和文档里的 items 是同一种形状，顺序也一样（由旧到新），直接接在现有内容前面即可。
+// The first render only carries the latest stretch of a conversation; anything above it is fetched here, one stretch at a time. Pass the document's earlier.before as `before`; the `earlier` in the response is the cursor for the stretch above that, and null means the top has been reached. The entries have the same shape and the same order (oldest first) as `items` in the document, so they can be prepended as they are.
 //
 // Corresponds with GET /api/v1/threads/{thread}/earlier (the `ListEarlierItems` operationId).
 func (c *Client) ListEarlierItems(ctx context.Context, thread string, params *ListEarlierItemsParams, reqEditors ...RequestEditorFn) (*http.Response, error) {
@@ -2088,9 +2088,9 @@ func (c *Client) ListEarlierItems(ctx context.Context, thread string, params *Li
 	return c.Client.Do(req)
 }
 
-// InterruptThread 中断正在执行的 turn
+// InterruptThread Interrupt a running turn
 //
-// 对没有正在执行的 turn 的对话调用同样返回 204，不视为错误——用户点击停止与 turn 自然结束之间存在竞争，两种结果一致。项目处于停服或清理状态时本接口仍然可用。.
+// Calling this on a conversation with no running turn also returns 204 rather than an error — the user pressing stop races with the turn finishing on its own, and both outcomes are the same. This operation remains available while the project is suspended or being cleaned up.
 //
 // Corresponds with POST /api/v1/threads/{thread}/interrupt (the `InterruptThread` operationId).
 func (c *Client) InterruptThread(ctx context.Context, thread string, reqEditors ...RequestEditorFn) (*http.Response, error) {
@@ -2105,9 +2105,9 @@ func (c *Client) InterruptThread(ctx context.Context, thread string, reqEditors 
 	return c.Client.Do(req)
 }
 
-// SendMessageWithBody 发送消息并触发一次 turn
+// SendMessageWithBody Send a message and start a turn
 //
-// 立即返回 turnId，不等待执行完成——一次 turn 可能持续数十分钟。执行进度通过对话文档中 stream 指向的实时流获取，不在本响应里。.
+// Returns a turnId immediately without waiting for execution — a turn can run for tens of minutes. Progress arrives on the live stream the conversation document's `stream` points at, not in this response.
 //
 // Takes any type of body and a specified content type.
 //
@@ -2124,9 +2124,9 @@ func (c *Client) SendMessageWithBody(ctx context.Context, thread string, content
 	return c.Client.Do(req)
 }
 
-// SendMessage 发送消息并触发一次 turn
+// SendMessage Send a message and start a turn
 //
-// 立即返回 turnId，不等待执行完成——一次 turn 可能持续数十分钟。执行进度通过对话文档中 stream 指向的实时流获取，不在本响应里。.
+// Returns a turnId immediately without waiting for execution — a turn can run for tens of minutes. Progress arrives on the live stream the conversation document's `stream` points at, not in this response.
 //
 // Takes a body of the `application/json` content type.
 //
@@ -2143,9 +2143,9 @@ func (c *Client) SendMessage(ctx context.Context, thread string, body SendMessag
 	return c.Client.Do(req)
 }
 
-// AnswerQuestionWithBody 回答助手提出的问题
+// AnswerQuestionWithBody Answer the assistant's questions
 //
-// 问题 id 来自对话文档的 wait 字段。已被回答过的问题同样返回 204——可能是另一个页面提交在先，也可能是自动应答窗口已到期，两种情况下 turn 都已带着答案继续执行。.
+// The question id comes from the conversation document's `wait`. An already-answered question also returns 204 — another tab may have submitted first, or the auto-answer window may have expired, and in both cases the turn has already continued with an answer.
 //
 // Takes any type of body and a specified content type.
 //
@@ -2162,9 +2162,9 @@ func (c *Client) AnswerQuestionWithBody(ctx context.Context, thread string, item
 	return c.Client.Do(req)
 }
 
-// AnswerQuestion 回答助手提出的问题
+// AnswerQuestion Answer the assistant's questions
 //
-// 问题 id 来自对话文档的 wait 字段。已被回答过的问题同样返回 204——可能是另一个页面提交在先，也可能是自动应答窗口已到期，两种情况下 turn 都已带着答案继续执行。.
+// The question id comes from the conversation document's `wait`. An already-answered question also returns 204 — another tab may have submitted first, or the auto-answer window may have expired, and in both cases the turn has already continued with an answer.
 //
 // Takes a body of the `application/json` content type.
 //
@@ -2181,7 +2181,7 @@ func (c *Client) AnswerQuestion(ctx context.Context, thread string, item string,
 	return c.Client.Do(req)
 }
 
-// MarkThreadRead 标记对话已读
+// MarkThreadRead Mark a conversation as read
 //
 // Corresponds with POST /api/v1/threads/{thread}/read (the `MarkThreadRead` operationId).
 func (c *Client) MarkThreadRead(ctx context.Context, thread string, reqEditors ...RequestEditorFn) (*http.Response, error) {
@@ -2196,9 +2196,9 @@ func (c *Client) MarkThreadRead(ctx context.Context, thread string, reqEditors .
 	return c.Client.Do(req)
 }
 
-// RevertThreadWithBody 从指定位置起撤回
+// RevertThreadWithBody Revert from a given point
 //
-// 撤回 ordinal 及其之后的全部条目。被撤回的条目仍留在逐字稿中并标记 reverted，序号不会重排。返回实际撤回的条目数。.
+// Reverts the entry at `ordinal` and everything after it. Reverted entries stay in the transcript marked `reverted`, and ordinals are not renumbered. Returns how many were actually reverted.
 //
 // Takes any type of body and a specified content type.
 //
@@ -2215,9 +2215,9 @@ func (c *Client) RevertThreadWithBody(ctx context.Context, thread string, conten
 	return c.Client.Do(req)
 }
 
-// RevertThread 从指定位置起撤回
+// RevertThread Revert from a given point
 //
-// 撤回 ordinal 及其之后的全部条目。被撤回的条目仍留在逐字稿中并标记 reverted，序号不会重排。返回实际撤回的条目数。.
+// Reverts the entry at `ordinal` and everything after it. Reverted entries stay in the transcript marked `reverted`, and ordinals are not renumbered. Returns how many were actually reverted.
 //
 // Takes a body of the `application/json` content type.
 //
@@ -2234,9 +2234,9 @@ func (c *Client) RevertThread(ctx context.Context, thread string, body RevertThr
 	return c.Client.Do(req)
 }
 
-// GetWeixinLogin 查询扫码登录状态
+// GetWeixinLogin Get the state of a QR login
 //
-// 轮询本接口直到状态变为成功或失败。状态提示需要验证码时，调用补交验证码接口。.
+// Poll this until the status is success or failure. When the status asks for a verification code, submit it with the verification-code operation.
 //
 // Corresponds with GET /api/v1/weixin-logins/{login} (the `GetWeixinLogin` operationId).
 func (c *Client) GetWeixinLogin(ctx context.Context, login openapi_types.UUID, reqEditors ...RequestEditorFn) (*http.Response, error) {
@@ -2251,9 +2251,9 @@ func (c *Client) GetWeixinLogin(ctx context.Context, login openapi_types.UUID, r
 	return c.Client.Do(req)
 }
 
-// SubmitWeixinVerifyCodeWithBody 补交登录验证码
+// SubmitWeixinVerifyCodeWithBody Submit a login verification code
 //
-// 微信在扫码后要求短信或设备验证码时使用。验证码由登录发起人在自己手机上获取。.
+// For when WeChat asks for an SMS or device code after the scan. The person who started the login gets that code on their own phone.
 //
 // Takes any type of body and a specified content type.
 //
@@ -2270,9 +2270,9 @@ func (c *Client) SubmitWeixinVerifyCodeWithBody(ctx context.Context, login opena
 	return c.Client.Do(req)
 }
 
-// SubmitWeixinVerifyCode 补交登录验证码
+// SubmitWeixinVerifyCode Submit a login verification code
 //
-// 微信在扫码后要求短信或设备验证码时使用。验证码由登录发起人在自己手机上获取。.
+// For when WeChat asks for an SMS or device code after the scan. The person who started the login gets that code on their own phone.
 //
 // Takes a body of the `application/json` content type.
 //
@@ -3778,364 +3778,364 @@ func WithBaseURL(baseURL string) ClientOption {
 // ClientWithResponsesInterface is the interface specification for the client with responses above.
 type ClientWithResponsesInterface interface {
 
-	// UploadAttachmentWithBodyWithResponse 上传图片
+	// UploadAttachmentWithBodyWithResponse Upload an image
 	//
-	// 请求体直接是文件字节，不使用 multipart 封装，一次上传一个文件。类型由内容判定，与 Content-Type 无关。返回的 id 在发送消息时放进 attachmentIds；从未被任何消息引用的附件会被定期清除。.
+	// The body is the file bytes themselves, not multipart, one file per request. The type is determined from the content, not from Content-Type. Put the returned id in attachmentIds when sending a message; attachments never referenced by any message are cleared periodically.
 	//
 	// Takes any type of body and a specified content type, and returns a wrapper object for the known response body format(s).
 	//
 	// Corresponds with POST /api/v1/attachments (the `UploadAttachment` operationId).
 	UploadAttachmentWithBodyWithResponse(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*UploadAttachmentResponse, error)
 
-	// DownloadAttachmentWithResponse 取回图片
+	// DownloadAttachmentWithResponse Fetch an image
 	//
-	// 按附件 id 取回原始字节，可直接作为 <img> 的地址使用。响应带长期缓存头，附件内容不会变化。附件不存在或不属于当前用户时返回 404。.
+	// Returns the original bytes for an attachment id, usable directly as the address of an <img>. The response carries long-lived cache headers because the content never changes. Returns 404 when the attachment does not exist or does not belong to the current user.
 	//
 	// Returns a wrapper object for the known response body format(s).
 	//
 	// Corresponds with GET /api/v1/attachments/{attachment} (the `DownloadAttachment` operationId).
 	DownloadAttachmentWithResponse(ctx context.Context, attachment string, reqEditors ...RequestEditorFn) (*DownloadAttachmentResponse, error)
 
-	// ListBindingsWithResponse 列出绑定
+	// ListBindingsWithResponse List bindings
 	//
-	// 接入面那张表按通道列出各自绑了谁时用 channelId 过滤。.
+	// Filter by channelId to show, per channel, who is bound to it.
 	//
 	// Returns a wrapper object for the known response body format(s).
 	//
 	// Corresponds with GET /api/v1/bindings (the `ListBindings` operationId).
 	ListBindingsWithResponse(ctx context.Context, params *ListBindingsParams, reqEditors ...RequestEditorFn) (*ListBindingsResponse, error)
 
-	// DeleteBindingWithResponse 解除绑定
+	// DeleteBindingWithResponse Remove a binding
 	//
 	// Returns a wrapper object for the known response body format(s).
 	//
 	// Corresponds with DELETE /api/v1/bindings/{binding} (the `DeleteBinding` operationId).
 	DeleteBindingWithResponse(ctx context.Context, binding openapi_types.UUID, reqEditors ...RequestEditorFn) (*DeleteBindingResponse, error)
 
-	// GetBindingWithResponse 查看绑定
+	// GetBindingWithResponse Get a binding
 	//
 	// Returns a wrapper object for the known response body format(s).
 	//
 	// Corresponds with GET /api/v1/bindings/{binding} (the `GetBinding` operationId).
 	GetBindingWithResponse(ctx context.Context, binding openapi_types.UUID, reqEditors ...RequestEditorFn) (*GetBindingResponse, error)
 
-	// ListChannelsWithResponse 列出通道
+	// ListChannelsWithResponse List channels
 	//
 	// Returns a wrapper object for the known response body format(s).
 	//
 	// Corresponds with GET /api/v1/channels (the `ListChannels` operationId).
 	ListChannelsWithResponse(ctx context.Context, params *ListChannelsParams, reqEditors ...RequestEditorFn) (*ListChannelsResponse, error)
 
-	// CreateChannelWithBodyWithResponse 创建通道
+	// CreateChannelWithBodyWithResponse Create a channel
 	//
-	// 回调密钥归谁定由平台决定，见 list-platforms 的 secretSource：generated 的平台不要传 webhookSecret，我们生成的那把仅在本次响应中返回一次、之后无法再次取回，错过了只能调轮换接口换一把新的；supplied 的平台必须把平台后台那把传进来，此时响应里的webhookSecret 为 null。.
+	// Which side owns the webhook secret is decided by the platform; see secretSource on list-platforms. For a `generated` platform, do not send webhookSecret — the one we generate is returned exactly once in this response and cannot be retrieved again; miss it and the only way forward is rotating to a new one. For a `supplied` platform you must pass the secret from that platform's own console, and webhookSecret in the response is null.
 	//
 	// Takes any type of body and a specified content type, and returns a wrapper object for the known response body format(s).
 	//
 	// Corresponds with POST /api/v1/channels (the `CreateChannel` operationId).
 	CreateChannelWithBodyWithResponse(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*CreateChannelResponse, error)
 
-	// CreateChannelWithResponse 创建通道
+	// CreateChannelWithResponse Create a channel
 	//
-	// 回调密钥归谁定由平台决定，见 list-platforms 的 secretSource：generated 的平台不要传 webhookSecret，我们生成的那把仅在本次响应中返回一次、之后无法再次取回，错过了只能调轮换接口换一把新的；supplied 的平台必须把平台后台那把传进来，此时响应里的webhookSecret 为 null。.
+	// Which side owns the webhook secret is decided by the platform; see secretSource on list-platforms. For a `generated` platform, do not send webhookSecret — the one we generate is returned exactly once in this response and cannot be retrieved again; miss it and the only way forward is rotating to a new one. For a `supplied` platform you must pass the secret from that platform's own console, and webhookSecret in the response is null.
 	//
 	// Takes a body of the `application/json` content type, and returns a wrapper object for the known response body format(s).
 	//
 	// Corresponds with POST /api/v1/channels (the `CreateChannel` operationId).
 	CreateChannelWithResponse(ctx context.Context, body CreateChannelJSONRequestBody, reqEditors ...RequestEditorFn) (*CreateChannelResponse, error)
 
-	// DeleteChannelWithResponse 删除通道
+	// DeleteChannelWithResponse Delete a channel
 	//
-	// 删除后该通道不再接收入站消息，其上的绑定一并失效。项目处于停服或清理状态时本接口仍然可用。.
+	// The channel stops accepting inbound messages and every binding on it stops working. This operation remains available while the project is suspended or being cleaned up.
 	//
 	// Returns a wrapper object for the known response body format(s).
 	//
 	// Corresponds with DELETE /api/v1/channels/{channel} (the `DeleteChannel` operationId).
 	DeleteChannelWithResponse(ctx context.Context, channel openapi_types.UUID, reqEditors ...RequestEditorFn) (*DeleteChannelResponse, error)
 
-	// GetChannelWithResponse 查看通道
+	// GetChannelWithResponse Get a channel
 	//
 	// Returns a wrapper object for the known response body format(s).
 	//
 	// Corresponds with GET /api/v1/channels/{channel} (the `GetChannel` operationId).
 	GetChannelWithResponse(ctx context.Context, channel openapi_types.UUID, reqEditors ...RequestEditorFn) (*GetChannelResponse, error)
 
-	// UpdateChannelWithBodyWithResponse 修改通道
+	// UpdateChannelWithBodyWithResponse Update a channel
 	//
-	// 只修改传了的字段。senderPolicy 与 allowFrom 是一对，由 senderPolicy 决定是否替换；改动对常驻连接要等连接重建后才生效，回调型平台立即生效。.
+	// Only the fields present are changed. senderPolicy and allowFrom go together, and senderPolicy decides whether they are replaced. For platforms held open by a long-lived connection the change applies once that connection is rebuilt; for webhook platforms it applies at once.
 	//
 	// Takes any type of body and a specified content type, and returns a wrapper object for the known response body format(s).
 	//
 	// Corresponds with PATCH /api/v1/channels/{channel} (the `UpdateChannel` operationId).
 	UpdateChannelWithBodyWithResponse(ctx context.Context, channel openapi_types.UUID, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*UpdateChannelResponse, error)
 
-	// UpdateChannelWithResponse 修改通道
+	// UpdateChannelWithResponse Update a channel
 	//
-	// 只修改传了的字段。senderPolicy 与 allowFrom 是一对，由 senderPolicy 决定是否替换；改动对常驻连接要等连接重建后才生效，回调型平台立即生效。.
+	// Only the fields present are changed. senderPolicy and allowFrom go together, and senderPolicy decides whether they are replaced. For platforms held open by a long-lived connection the change applies once that connection is rebuilt; for webhook platforms it applies at once.
 	//
 	// Takes a body of the `application/json` content type, and returns a wrapper object for the known response body format(s).
 	//
 	// Corresponds with PATCH /api/v1/channels/{channel} (the `UpdateChannel` operationId).
 	UpdateChannelWithResponse(ctx context.Context, channel openapi_types.UUID, body UpdateChannelJSONRequestBody, reqEditors ...RequestEditorFn) (*UpdateChannelResponse, error)
 
-	// CreateBindingCodeWithResponse 签发绑定码
+	// CreateBindingCodeWithResponse Issue a binding code
 	//
-	// 生成一个一次性绑定码交给待绑定的人，他在该平台上用自己的账号把这个码发给助手即完成绑定。绑定只能由本人以这种方式建立，不能直接指定平台账号。绑定码有有效期，过期后需重新签发。.
+	// Produces a single-use code to hand to the person being bound. They send that code to the assistant from their own account on that platform, which completes the binding. A binding can only be established this way, by the person themselves — a platform account cannot be named directly. Codes expire and have to be reissued.
 	//
 	// Returns a wrapper object for the known response body format(s).
 	//
 	// Corresponds with POST /api/v1/channels/{channel}/binding-codes (the `CreateBindingCode` operationId).
 	CreateBindingCodeWithResponse(ctx context.Context, channel openapi_types.UUID, reqEditors ...RequestEditorFn) (*CreateBindingCodeResponse, error)
 
-	// ListChannelRejectionsWithResponse 查看最近被拒绝的入站消息
+	// ListChannelRejectionsWithResponse List recently rejected inbound messages
 	//
-	// 排查「发了消息但助手没有响应」时使用。按时间倒序返回最近被这条通道拒绝的入站消息及其拒绝原因，最常见的原因是发送方尚未绑定。.
+	// For diagnosing "I sent a message and the assistant never answered". Returns the inbound messages this channel rejected most recently, newest first, each with its reason. The most common reason is that the sender is not bound yet.
 	//
 	// Returns a wrapper object for the known response body format(s).
 	//
 	// Corresponds with GET /api/v1/channels/{channel}/rejections (the `ListChannelRejections` operationId).
 	ListChannelRejectionsWithResponse(ctx context.Context, channel openapi_types.UUID, params *ListChannelRejectionsParams, reqEditors ...RequestEditorFn) (*ListChannelRejectionsResponse, error)
 
-	// RotateChannelSecretWithBodyWithResponse 轮换回调密钥
+	// RotateChannelSecretWithBodyWithResponse Rotate the webhook secret
 	//
-	// 换一把新的回调密钥，旧的立即失效，通道降回待平台确认状态。密钥归谁定由平台决定，见 list-platforms 的 secretSource：generated 的平台不要传请求体，新密钥仅在本次响应中返回、之后无法再次取回；supplied 的平台必须把平台后台那把新密钥传进来。.
+	// Replaces the webhook secret. The old one stops working immediately and the channel drops back to awaiting confirmation from the platform. Which side owns the secret is decided by the platform; see secretSource on list-platforms. For a `generated` platform, send no body — the new secret is returned in this response only and cannot be retrieved again. For a `supplied` platform you must pass the new secret from that platform's own console.
 	//
 	// Takes any type of body and a specified content type, and returns a wrapper object for the known response body format(s).
 	//
 	// Corresponds with POST /api/v1/channels/{channel}/secret (the `RotateChannelSecret` operationId).
 	RotateChannelSecretWithBodyWithResponse(ctx context.Context, channel openapi_types.UUID, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*RotateChannelSecretResponse, error)
 
-	// RotateChannelSecretWithResponse 轮换回调密钥
+	// RotateChannelSecretWithResponse Rotate the webhook secret
 	//
-	// 换一把新的回调密钥，旧的立即失效，通道降回待平台确认状态。密钥归谁定由平台决定，见 list-platforms 的 secretSource：generated 的平台不要传请求体，新密钥仅在本次响应中返回、之后无法再次取回；supplied 的平台必须把平台后台那把新密钥传进来。.
+	// Replaces the webhook secret. The old one stops working immediately and the channel drops back to awaiting confirmation from the platform. Which side owns the secret is decided by the platform; see secretSource on list-platforms. For a `generated` platform, send no body — the new secret is returned in this response only and cannot be retrieved again. For a `supplied` platform you must pass the new secret from that platform's own console.
 	//
 	// Takes a body of the `application/json` content type, and returns a wrapper object for the known response body format(s).
 	//
 	// Corresponds with POST /api/v1/channels/{channel}/secret (the `RotateChannelSecret` operationId).
 	RotateChannelSecretWithResponse(ctx context.Context, channel openapi_types.UUID, body RotateChannelSecretJSONRequestBody, reqEditors ...RequestEditorFn) (*RotateChannelSecretResponse, error)
 
-	// CheckSenderWithResponse 推演一个发件人会不会被放行
+	// CheckSenderWithResponse Test whether a sender would be let through
 	//
-	// 改完发件人策略之后用来自查，不发送任何消息、也不改变任何状态：它走的是和真实入站完全相同的那份判定，并说明结论由哪一条规则得出。无法推演绑定码那一条——是否是绑定码取决于对方发来的内容。.
+	// For checking a sender policy after changing it. Sends nothing and changes nothing: it runs exactly the same decision a real inbound message goes through, and says which rule produced the answer. The binding-code rule cannot be tested this way — whether something is a binding code depends on what the sender actually wrote.
 	//
 	// Returns a wrapper object for the known response body format(s).
 	//
 	// Corresponds with GET /api/v1/channels/{channel}/sender-check (the `CheckSender` operationId).
 	CheckSenderWithResponse(ctx context.Context, channel openapi_types.UUID, params *CheckSenderParams, reqEditors ...RequestEditorFn) (*CheckSenderResponse, error)
 
-	// BeginWeixinLoginWithResponse 发起微信扫码登录
+	// BeginWeixinLoginWithResponse Begin a WeChat QR login
 	//
-	// 微信个人号通道需要本人扫码登录后才能收发消息。本接口返回二维码，之后轮询 `GET /v1/weixin-logins/{login}` 获取进度；状态提示需要验证码时，调用 `POST /v1/weixin-logins/{login}/verify-code` 补交。.
+	// A personal WeChat channel can only send and receive once its owner has signed in by scanning a QR code. This returns that code; poll `GET /v1/weixin-logins/{login}` for progress, and when the status asks for a verification code, submit it with `POST /v1/weixin-logins/{login}/verify-code`.
 	//
 	// Returns a wrapper object for the known response body format(s).
 	//
 	// Corresponds with POST /api/v1/channels/{channel}/weixin-logins (the `BeginWeixinLogin` operationId).
 	BeginWeixinLoginWithResponse(ctx context.Context, channel openapi_types.UUID, reqEditors ...RequestEditorFn) (*BeginWeixinLoginResponse, error)
 
-	// ListMemoriesWithResponse 列出助手记住的事
+	// ListMemoriesWithResponse List what the assistant remembers
 	//
-	// 助手在这个项目里为当前账号记下的事实，它们会出现在之后每一次对话的开头。同一个项目里的不同成员各记各的，这里只返回当前账号的那些。不分页：条数有上限，一次全部返回。.
+	// Facts the assistant has written down for the current account in this project. They appear at the start of every later conversation. Members of the same project each have their own, and this returns only the current account's. Not paginated: there is a cap on how many there can be, and all of them come back at once.
 	//
 	// Returns a wrapper object for the known response body format(s).
 	//
 	// Corresponds with GET /api/v1/memories (the `ListMemories` operationId).
 	ListMemoriesWithResponse(ctx context.Context, reqEditors ...RequestEditorFn) (*ListMemoriesResponse, error)
 
-	// DeleteMemoryWithResponse 删掉一条记忆
+	// DeleteMemoryWithResponse Delete one memory
 	//
-	// 助手不再记得这件事。删除立即生效，下一次对话就不会再带上它。助手可能会重新学到同一件事。.
+	// The assistant stops remembering this. It takes effect at once, so the next conversation will not carry it. The assistant may well learn the same thing again.
 	//
 	// Returns a wrapper object for the known response body format(s).
 	//
 	// Corresponds with DELETE /api/v1/memories/{memory} (the `DeleteMemory` operationId).
 	DeleteMemoryWithResponse(ctx context.Context, memory string, reqEditors ...RequestEditorFn) (*DeleteMemoryResponse, error)
 
-	// ListModelsWithResponse 列出可用模型
+	// ListModelsWithResponse List available models
 	//
-	// 返回本平台当前提供的模型及其上下文窗口、推理档位和支持的输入类型。用于填充对话设置里的模型选择。.
+	// The models currently offered, with their context window, reasoning levels and supported input types. Use it to populate the model picker in conversation settings.
 	//
 	// Returns a wrapper object for the known response body format(s).
 	//
 	// Corresponds with GET /api/v1/models (the `ListModels` operationId).
 	ListModelsWithResponse(ctx context.Context, reqEditors ...RequestEditorFn) (*ListModelsResponse, error)
 
-	// ListPlatformsWithResponse 列出可接入的平台
+	// ListPlatformsWithResponse List platforms that can be connected
 	//
-	// 返回本平台当前支持接入的即时通讯平台，以及各自建通道时要走的流程和要填的凭据字段。新建通道表单完全由这份响应驱动：setupMethod 决定展示录入表单还是扫码流程，credentialFields 是要填的字段，secretSource 决定要不要有回调密钥那一栏。.
+	// The instant messaging platforms that can currently be connected, along with the flow and the credential fields each one needs. The create-channel form is driven entirely by this response: setupMethod decides between a credential form and a QR flow, credentialFields is what to ask for, and secretSource decides whether there is a webhook secret field at all.
 	//
 	// Returns a wrapper object for the known response body format(s).
 	//
 	// Corresponds with GET /api/v1/platforms (the `ListPlatforms` operationId).
 	ListPlatformsWithResponse(ctx context.Context, reqEditors ...RequestEditorFn) (*ListPlatformsResponse, error)
 
-	// ListThreadsWithResponse 列出对话
+	// ListThreadsWithResponse List conversations
 	//
-	// 按最近活动排序，只返回当前账号在当前项目里的对话。archived 是一个二选一的开关而不是「包含归档」：归档的对话不出现在默认列表里，要看它们就把这个参数打开。.
+	// Ordered by most recent activity, limited to the current account's conversations in the current project. `archived` selects between two sets rather than widening one: archived conversations are absent from the default list, and turning the flag on shows those instead.
 	//
 	// Returns a wrapper object for the known response body format(s).
 	//
 	// Corresponds with GET /api/v1/threads (the `ListThreads` operationId).
 	ListThreadsWithResponse(ctx context.Context, params *ListThreadsParams, reqEditors ...RequestEditorFn) (*ListThreadsResponse, error)
 
-	// CreateThreadWithBodyWithResponse 创建对话
+	// CreateThreadWithBodyWithResponse Create a conversation
 	//
 	// Takes any type of body and a specified content type, and returns a wrapper object for the known response body format(s).
 	//
 	// Corresponds with POST /api/v1/threads (the `CreateThread` operationId).
 	CreateThreadWithBodyWithResponse(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*CreateThreadResponse, error)
 
-	// CreateThreadWithResponse 创建对话
+	// CreateThreadWithResponse Create a conversation
 	//
 	// Takes a body of the `application/json` content type, and returns a wrapper object for the known response body format(s).
 	//
 	// Corresponds with POST /api/v1/threads (the `CreateThread` operationId).
 	CreateThreadWithResponse(ctx context.Context, body CreateThreadJSONRequestBody, reqEditors ...RequestEditorFn) (*CreateThreadResponse, error)
 
-	// GetThreadWithResponse 取回对话文档
+	// GetThreadWithResponse Fetch the conversation document
 	//
-	// 对话的完整当前状态，用于首屏渲染。文档中的 stream 给出实时输出地址和入场票据，流推送的是对这份文档的增量编辑，可直接套用同一套渲染逻辑。.
+	// The complete current state of a conversation, for the first render. Its `stream` gives the address and admission ticket for live output, and what that stream pushes are incremental edits to this same document, so the same rendering logic applies.
 	//
 	// Returns a wrapper object for the known response body format(s).
 	//
 	// Corresponds with GET /api/v1/threads/{thread} (the `GetThread` operationId).
 	GetThreadWithResponse(ctx context.Context, thread string, reqEditors ...RequestEditorFn) (*GetThreadResponse, error)
 
-	// UpdateThreadWithBodyWithResponse 修改对话设置
+	// UpdateThreadWithBodyWithResponse Update conversation settings
 	//
-	// 可修改模型、推理档位、审批模式和归档状态。改动从下一次 turn 起生效，正在执行的 turn 沿用它启动时的设置。reasoningEffort 仅在同时提供 model 时生效。.
+	// Changes the model, reasoning level, approval mode and archived state. A change takes effect from the next turn; a turn already running keeps the settings it started with. reasoningEffort only applies when model is given as well.
 	//
 	// Takes any type of body and a specified content type, and returns a wrapper object for the known response body format(s).
 	//
 	// Corresponds with PATCH /api/v1/threads/{thread} (the `UpdateThread` operationId).
 	UpdateThreadWithBodyWithResponse(ctx context.Context, thread string, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*UpdateThreadResponse, error)
 
-	// UpdateThreadWithResponse 修改对话设置
+	// UpdateThreadWithResponse Update conversation settings
 	//
-	// 可修改模型、推理档位、审批模式和归档状态。改动从下一次 turn 起生效，正在执行的 turn 沿用它启动时的设置。reasoningEffort 仅在同时提供 model 时生效。.
+	// Changes the model, reasoning level, approval mode and archived state. A change takes effect from the next turn; a turn already running keeps the settings it started with. reasoningEffort only applies when model is given as well.
 	//
 	// Takes a body of the `application/json` content type, and returns a wrapper object for the known response body format(s).
 	//
 	// Corresponds with PATCH /api/v1/threads/{thread} (the `UpdateThread` operationId).
 	UpdateThreadWithResponse(ctx context.Context, thread string, body UpdateThreadJSONRequestBody, reqEditors ...RequestEditorFn) (*UpdateThreadResponse, error)
 
-	// DecideApprovalWithBodyWithResponse 批准或拒绝一批工具调用
+	// DecideApprovalWithBodyWithResponse Approve or decline a batch of tool calls
 	//
-	// 批次 id 来自对话文档的 wait 字段。本接口是幂等的：重复提交同一批次不会改变已经生效的决定，也不会报错。批次不属于该对话时返回 404。.
+	// The batch id comes from the conversation document's `wait`. This is idempotent: submitting the same batch again neither changes a decision already in effect nor reports an error. Returns 404 when the batch does not belong to that conversation.
 	//
 	// Takes any type of body and a specified content type, and returns a wrapper object for the known response body format(s).
 	//
 	// Corresponds with POST /api/v1/threads/{thread}/approvals/{batch} (the `DecideApproval` operationId).
 	DecideApprovalWithBodyWithResponse(ctx context.Context, thread string, batch string, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*DecideApprovalResponse, error)
 
-	// DecideApprovalWithResponse 批准或拒绝一批工具调用
+	// DecideApprovalWithResponse Approve or decline a batch of tool calls
 	//
-	// 批次 id 来自对话文档的 wait 字段。本接口是幂等的：重复提交同一批次不会改变已经生效的决定，也不会报错。批次不属于该对话时返回 404。.
+	// The batch id comes from the conversation document's `wait`. This is idempotent: submitting the same batch again neither changes a decision already in effect nor reports an error. Returns 404 when the batch does not belong to that conversation.
 	//
 	// Takes a body of the `application/json` content type, and returns a wrapper object for the known response body format(s).
 	//
 	// Corresponds with POST /api/v1/threads/{thread}/approvals/{batch} (the `DecideApproval` operationId).
 	DecideApprovalWithResponse(ctx context.Context, thread string, batch string, body DecideApprovalJSONRequestBody, reqEditors ...RequestEditorFn) (*DecideApprovalResponse, error)
 
-	// ListEarlierItemsWithResponse 取回更早的对话内容
+	// ListEarlierItemsWithResponse Fetch earlier parts of a conversation
 	//
-	// 首屏只给对话最新的那一段，再往上的内容用本接口按需取回，一次一段。before 用文档里的 earlier.before，响应里的 earlier 是再往上那一段的游标，为 null 表示已经到顶。返回的条目和文档里的 items 是同一种形状，顺序也一样（由旧到新），直接接在现有内容前面即可。
+	// The first render only carries the latest stretch of a conversation; anything above it is fetched here, one stretch at a time. Pass the document's earlier.before as `before`; the `earlier` in the response is the cursor for the stretch above that, and null means the top has been reached. The entries have the same shape and the same order (oldest first) as `items` in the document, so they can be prepended as they are.
 	//
 	// Returns a wrapper object for the known response body format(s).
 	//
 	// Corresponds with GET /api/v1/threads/{thread}/earlier (the `ListEarlierItems` operationId).
 	ListEarlierItemsWithResponse(ctx context.Context, thread string, params *ListEarlierItemsParams, reqEditors ...RequestEditorFn) (*ListEarlierItemsResponse, error)
 
-	// InterruptThreadWithResponse 中断正在执行的 turn
+	// InterruptThreadWithResponse Interrupt a running turn
 	//
-	// 对没有正在执行的 turn 的对话调用同样返回 204，不视为错误——用户点击停止与 turn 自然结束之间存在竞争，两种结果一致。项目处于停服或清理状态时本接口仍然可用。.
+	// Calling this on a conversation with no running turn also returns 204 rather than an error — the user pressing stop races with the turn finishing on its own, and both outcomes are the same. This operation remains available while the project is suspended or being cleaned up.
 	//
 	// Returns a wrapper object for the known response body format(s).
 	//
 	// Corresponds with POST /api/v1/threads/{thread}/interrupt (the `InterruptThread` operationId).
 	InterruptThreadWithResponse(ctx context.Context, thread string, reqEditors ...RequestEditorFn) (*InterruptThreadResponse, error)
 
-	// SendMessageWithBodyWithResponse 发送消息并触发一次 turn
+	// SendMessageWithBodyWithResponse Send a message and start a turn
 	//
-	// 立即返回 turnId，不等待执行完成——一次 turn 可能持续数十分钟。执行进度通过对话文档中 stream 指向的实时流获取，不在本响应里。.
+	// Returns a turnId immediately without waiting for execution — a turn can run for tens of minutes. Progress arrives on the live stream the conversation document's `stream` points at, not in this response.
 	//
 	// Takes any type of body and a specified content type, and returns a wrapper object for the known response body format(s).
 	//
 	// Corresponds with POST /api/v1/threads/{thread}/messages (the `SendMessage` operationId).
 	SendMessageWithBodyWithResponse(ctx context.Context, thread string, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*SendMessageResponse, error)
 
-	// SendMessageWithResponse 发送消息并触发一次 turn
+	// SendMessageWithResponse Send a message and start a turn
 	//
-	// 立即返回 turnId，不等待执行完成——一次 turn 可能持续数十分钟。执行进度通过对话文档中 stream 指向的实时流获取，不在本响应里。.
+	// Returns a turnId immediately without waiting for execution — a turn can run for tens of minutes. Progress arrives on the live stream the conversation document's `stream` points at, not in this response.
 	//
 	// Takes a body of the `application/json` content type, and returns a wrapper object for the known response body format(s).
 	//
 	// Corresponds with POST /api/v1/threads/{thread}/messages (the `SendMessage` operationId).
 	SendMessageWithResponse(ctx context.Context, thread string, body SendMessageJSONRequestBody, reqEditors ...RequestEditorFn) (*SendMessageResponse, error)
 
-	// AnswerQuestionWithBodyWithResponse 回答助手提出的问题
+	// AnswerQuestionWithBodyWithResponse Answer the assistant's questions
 	//
-	// 问题 id 来自对话文档的 wait 字段。已被回答过的问题同样返回 204——可能是另一个页面提交在先，也可能是自动应答窗口已到期，两种情况下 turn 都已带着答案继续执行。.
+	// The question id comes from the conversation document's `wait`. An already-answered question also returns 204 — another tab may have submitted first, or the auto-answer window may have expired, and in both cases the turn has already continued with an answer.
 	//
 	// Takes any type of body and a specified content type, and returns a wrapper object for the known response body format(s).
 	//
 	// Corresponds with POST /api/v1/threads/{thread}/questions/{item} (the `AnswerQuestion` operationId).
 	AnswerQuestionWithBodyWithResponse(ctx context.Context, thread string, item string, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*AnswerQuestionResponse, error)
 
-	// AnswerQuestionWithResponse 回答助手提出的问题
+	// AnswerQuestionWithResponse Answer the assistant's questions
 	//
-	// 问题 id 来自对话文档的 wait 字段。已被回答过的问题同样返回 204——可能是另一个页面提交在先，也可能是自动应答窗口已到期，两种情况下 turn 都已带着答案继续执行。.
+	// The question id comes from the conversation document's `wait`. An already-answered question also returns 204 — another tab may have submitted first, or the auto-answer window may have expired, and in both cases the turn has already continued with an answer.
 	//
 	// Takes a body of the `application/json` content type, and returns a wrapper object for the known response body format(s).
 	//
 	// Corresponds with POST /api/v1/threads/{thread}/questions/{item} (the `AnswerQuestion` operationId).
 	AnswerQuestionWithResponse(ctx context.Context, thread string, item string, body AnswerQuestionJSONRequestBody, reqEditors ...RequestEditorFn) (*AnswerQuestionResponse, error)
 
-	// MarkThreadReadWithResponse 标记对话已读
+	// MarkThreadReadWithResponse Mark a conversation as read
 	//
 	// Returns a wrapper object for the known response body format(s).
 	//
 	// Corresponds with POST /api/v1/threads/{thread}/read (the `MarkThreadRead` operationId).
 	MarkThreadReadWithResponse(ctx context.Context, thread string, reqEditors ...RequestEditorFn) (*MarkThreadReadResponse, error)
 
-	// RevertThreadWithBodyWithResponse 从指定位置起撤回
+	// RevertThreadWithBodyWithResponse Revert from a given point
 	//
-	// 撤回 ordinal 及其之后的全部条目。被撤回的条目仍留在逐字稿中并标记 reverted，序号不会重排。返回实际撤回的条目数。.
+	// Reverts the entry at `ordinal` and everything after it. Reverted entries stay in the transcript marked `reverted`, and ordinals are not renumbered. Returns how many were actually reverted.
 	//
 	// Takes any type of body and a specified content type, and returns a wrapper object for the known response body format(s).
 	//
 	// Corresponds with POST /api/v1/threads/{thread}/revert (the `RevertThread` operationId).
 	RevertThreadWithBodyWithResponse(ctx context.Context, thread string, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*RevertThreadResponse, error)
 
-	// RevertThreadWithResponse 从指定位置起撤回
+	// RevertThreadWithResponse Revert from a given point
 	//
-	// 撤回 ordinal 及其之后的全部条目。被撤回的条目仍留在逐字稿中并标记 reverted，序号不会重排。返回实际撤回的条目数。.
+	// Reverts the entry at `ordinal` and everything after it. Reverted entries stay in the transcript marked `reverted`, and ordinals are not renumbered. Returns how many were actually reverted.
 	//
 	// Takes a body of the `application/json` content type, and returns a wrapper object for the known response body format(s).
 	//
 	// Corresponds with POST /api/v1/threads/{thread}/revert (the `RevertThread` operationId).
 	RevertThreadWithResponse(ctx context.Context, thread string, body RevertThreadJSONRequestBody, reqEditors ...RequestEditorFn) (*RevertThreadResponse, error)
 
-	// GetWeixinLoginWithResponse 查询扫码登录状态
+	// GetWeixinLoginWithResponse Get the state of a QR login
 	//
-	// 轮询本接口直到状态变为成功或失败。状态提示需要验证码时，调用补交验证码接口。.
+	// Poll this until the status is success or failure. When the status asks for a verification code, submit it with the verification-code operation.
 	//
 	// Returns a wrapper object for the known response body format(s).
 	//
 	// Corresponds with GET /api/v1/weixin-logins/{login} (the `GetWeixinLogin` operationId).
 	GetWeixinLoginWithResponse(ctx context.Context, login openapi_types.UUID, reqEditors ...RequestEditorFn) (*GetWeixinLoginResponse, error)
 
-	// SubmitWeixinVerifyCodeWithBodyWithResponse 补交登录验证码
+	// SubmitWeixinVerifyCodeWithBodyWithResponse Submit a login verification code
 	//
-	// 微信在扫码后要求短信或设备验证码时使用。验证码由登录发起人在自己手机上获取。.
+	// For when WeChat asks for an SMS or device code after the scan. The person who started the login gets that code on their own phone.
 	//
 	// Takes any type of body and a specified content type, and returns a wrapper object for the known response body format(s).
 	//
 	// Corresponds with POST /api/v1/weixin-logins/{login}/verify-code (the `SubmitWeixinVerifyCode` operationId).
 	SubmitWeixinVerifyCodeWithBodyWithResponse(ctx context.Context, login openapi_types.UUID, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*SubmitWeixinVerifyCodeResponse, error)
 
-	// SubmitWeixinVerifyCodeWithResponse 补交登录验证码
+	// SubmitWeixinVerifyCodeWithResponse Submit a login verification code
 	//
-	// 微信在扫码后要求短信或设备验证码时使用。验证码由登录发起人在自己手机上获取。.
+	// For when WeChat asks for an SMS or device code after the scan. The person who started the login gets that code on their own phone.
 	//
 	// Takes a body of the `application/json` content type, and returns a wrapper object for the known response body format(s).
 	//
@@ -5630,9 +5630,9 @@ func (r SubmitWeixinVerifyCodeResponse) ContentType() string {
 	return ""
 }
 
-// UploadAttachmentWithBodyWithResponse 上传图片
+// UploadAttachmentWithBodyWithResponse Upload an image
 //
-// 请求体直接是文件字节，不使用 multipart 封装，一次上传一个文件。类型由内容判定，与 Content-Type 无关。返回的 id 在发送消息时放进 attachmentIds；从未被任何消息引用的附件会被定期清除。.
+// The body is the file bytes themselves, not multipart, one file per request. The type is determined from the content, not from Content-Type. Put the returned id in attachmentIds when sending a message; attachments never referenced by any message are cleared periodically.
 //
 // Takes any type of body and a specified content type, and returns a wrapper object for the known response body format(s).
 //
@@ -5645,9 +5645,9 @@ func (c *ClientWithResponses) UploadAttachmentWithBodyWithResponse(ctx context.C
 	return ParseUploadAttachmentResponse(rsp)
 }
 
-// DownloadAttachmentWithResponse 取回图片
+// DownloadAttachmentWithResponse Fetch an image
 //
-// 按附件 id 取回原始字节，可直接作为 <img> 的地址使用。响应带长期缓存头，附件内容不会变化。附件不存在或不属于当前用户时返回 404。.
+// Returns the original bytes for an attachment id, usable directly as the address of an <img>. The response carries long-lived cache headers because the content never changes. Returns 404 when the attachment does not exist or does not belong to the current user.
 //
 // Returns a wrapper object for the known response body format(s).
 //
@@ -5660,9 +5660,9 @@ func (c *ClientWithResponses) DownloadAttachmentWithResponse(ctx context.Context
 	return ParseDownloadAttachmentResponse(rsp)
 }
 
-// ListBindingsWithResponse 列出绑定
+// ListBindingsWithResponse List bindings
 //
-// 接入面那张表按通道列出各自绑了谁时用 channelId 过滤。.
+// Filter by channelId to show, per channel, who is bound to it.
 //
 // Returns a wrapper object for the known response body format(s).
 //
@@ -5675,7 +5675,7 @@ func (c *ClientWithResponses) ListBindingsWithResponse(ctx context.Context, para
 	return ParseListBindingsResponse(rsp)
 }
 
-// DeleteBindingWithResponse 解除绑定
+// DeleteBindingWithResponse Remove a binding
 //
 // Returns a wrapper object for the known response body format(s).
 //
@@ -5688,7 +5688,7 @@ func (c *ClientWithResponses) DeleteBindingWithResponse(ctx context.Context, bin
 	return ParseDeleteBindingResponse(rsp)
 }
 
-// GetBindingWithResponse 查看绑定
+// GetBindingWithResponse Get a binding
 //
 // Returns a wrapper object for the known response body format(s).
 //
@@ -5701,7 +5701,7 @@ func (c *ClientWithResponses) GetBindingWithResponse(ctx context.Context, bindin
 	return ParseGetBindingResponse(rsp)
 }
 
-// ListChannelsWithResponse 列出通道
+// ListChannelsWithResponse List channels
 //
 // Returns a wrapper object for the known response body format(s).
 //
@@ -5714,9 +5714,9 @@ func (c *ClientWithResponses) ListChannelsWithResponse(ctx context.Context, para
 	return ParseListChannelsResponse(rsp)
 }
 
-// CreateChannelWithBodyWithResponse 创建通道
+// CreateChannelWithBodyWithResponse Create a channel
 //
-// 回调密钥归谁定由平台决定，见 list-platforms 的 secretSource：generated 的平台不要传 webhookSecret，我们生成的那把仅在本次响应中返回一次、之后无法再次取回，错过了只能调轮换接口换一把新的；supplied 的平台必须把平台后台那把传进来，此时响应里的webhookSecret 为 null。.
+// Which side owns the webhook secret is decided by the platform; see secretSource on list-platforms. For a `generated` platform, do not send webhookSecret — the one we generate is returned exactly once in this response and cannot be retrieved again; miss it and the only way forward is rotating to a new one. For a `supplied` platform you must pass the secret from that platform's own console, and webhookSecret in the response is null.
 //
 // Takes any type of body and a specified content type, and returns a wrapper object for the known response body format(s).
 //
@@ -5729,9 +5729,9 @@ func (c *ClientWithResponses) CreateChannelWithBodyWithResponse(ctx context.Cont
 	return ParseCreateChannelResponse(rsp)
 }
 
-// CreateChannelWithResponse 创建通道
+// CreateChannelWithResponse Create a channel
 //
-// 回调密钥归谁定由平台决定，见 list-platforms 的 secretSource：generated 的平台不要传 webhookSecret，我们生成的那把仅在本次响应中返回一次、之后无法再次取回，错过了只能调轮换接口换一把新的；supplied 的平台必须把平台后台那把传进来，此时响应里的webhookSecret 为 null。.
+// Which side owns the webhook secret is decided by the platform; see secretSource on list-platforms. For a `generated` platform, do not send webhookSecret — the one we generate is returned exactly once in this response and cannot be retrieved again; miss it and the only way forward is rotating to a new one. For a `supplied` platform you must pass the secret from that platform's own console, and webhookSecret in the response is null.
 //
 // Takes a body of the `application/json` content type, and returns a wrapper object for the known response body format(s).
 //
@@ -5744,9 +5744,9 @@ func (c *ClientWithResponses) CreateChannelWithResponse(ctx context.Context, bod
 	return ParseCreateChannelResponse(rsp)
 }
 
-// DeleteChannelWithResponse 删除通道
+// DeleteChannelWithResponse Delete a channel
 //
-// 删除后该通道不再接收入站消息，其上的绑定一并失效。项目处于停服或清理状态时本接口仍然可用。.
+// The channel stops accepting inbound messages and every binding on it stops working. This operation remains available while the project is suspended or being cleaned up.
 //
 // Returns a wrapper object for the known response body format(s).
 //
@@ -5759,7 +5759,7 @@ func (c *ClientWithResponses) DeleteChannelWithResponse(ctx context.Context, cha
 	return ParseDeleteChannelResponse(rsp)
 }
 
-// GetChannelWithResponse 查看通道
+// GetChannelWithResponse Get a channel
 //
 // Returns a wrapper object for the known response body format(s).
 //
@@ -5772,9 +5772,9 @@ func (c *ClientWithResponses) GetChannelWithResponse(ctx context.Context, channe
 	return ParseGetChannelResponse(rsp)
 }
 
-// UpdateChannelWithBodyWithResponse 修改通道
+// UpdateChannelWithBodyWithResponse Update a channel
 //
-// 只修改传了的字段。senderPolicy 与 allowFrom 是一对，由 senderPolicy 决定是否替换；改动对常驻连接要等连接重建后才生效，回调型平台立即生效。.
+// Only the fields present are changed. senderPolicy and allowFrom go together, and senderPolicy decides whether they are replaced. For platforms held open by a long-lived connection the change applies once that connection is rebuilt; for webhook platforms it applies at once.
 //
 // Takes any type of body and a specified content type, and returns a wrapper object for the known response body format(s).
 //
@@ -5787,9 +5787,9 @@ func (c *ClientWithResponses) UpdateChannelWithBodyWithResponse(ctx context.Cont
 	return ParseUpdateChannelResponse(rsp)
 }
 
-// UpdateChannelWithResponse 修改通道
+// UpdateChannelWithResponse Update a channel
 //
-// 只修改传了的字段。senderPolicy 与 allowFrom 是一对，由 senderPolicy 决定是否替换；改动对常驻连接要等连接重建后才生效，回调型平台立即生效。.
+// Only the fields present are changed. senderPolicy and allowFrom go together, and senderPolicy decides whether they are replaced. For platforms held open by a long-lived connection the change applies once that connection is rebuilt; for webhook platforms it applies at once.
 //
 // Takes a body of the `application/json` content type, and returns a wrapper object for the known response body format(s).
 //
@@ -5802,9 +5802,9 @@ func (c *ClientWithResponses) UpdateChannelWithResponse(ctx context.Context, cha
 	return ParseUpdateChannelResponse(rsp)
 }
 
-// CreateBindingCodeWithResponse 签发绑定码
+// CreateBindingCodeWithResponse Issue a binding code
 //
-// 生成一个一次性绑定码交给待绑定的人，他在该平台上用自己的账号把这个码发给助手即完成绑定。绑定只能由本人以这种方式建立，不能直接指定平台账号。绑定码有有效期，过期后需重新签发。.
+// Produces a single-use code to hand to the person being bound. They send that code to the assistant from their own account on that platform, which completes the binding. A binding can only be established this way, by the person themselves — a platform account cannot be named directly. Codes expire and have to be reissued.
 //
 // Returns a wrapper object for the known response body format(s).
 //
@@ -5817,9 +5817,9 @@ func (c *ClientWithResponses) CreateBindingCodeWithResponse(ctx context.Context,
 	return ParseCreateBindingCodeResponse(rsp)
 }
 
-// ListChannelRejectionsWithResponse 查看最近被拒绝的入站消息
+// ListChannelRejectionsWithResponse List recently rejected inbound messages
 //
-// 排查「发了消息但助手没有响应」时使用。按时间倒序返回最近被这条通道拒绝的入站消息及其拒绝原因，最常见的原因是发送方尚未绑定。.
+// For diagnosing "I sent a message and the assistant never answered". Returns the inbound messages this channel rejected most recently, newest first, each with its reason. The most common reason is that the sender is not bound yet.
 //
 // Returns a wrapper object for the known response body format(s).
 //
@@ -5832,9 +5832,9 @@ func (c *ClientWithResponses) ListChannelRejectionsWithResponse(ctx context.Cont
 	return ParseListChannelRejectionsResponse(rsp)
 }
 
-// RotateChannelSecretWithBodyWithResponse 轮换回调密钥
+// RotateChannelSecretWithBodyWithResponse Rotate the webhook secret
 //
-// 换一把新的回调密钥，旧的立即失效，通道降回待平台确认状态。密钥归谁定由平台决定，见 list-platforms 的 secretSource：generated 的平台不要传请求体，新密钥仅在本次响应中返回、之后无法再次取回；supplied 的平台必须把平台后台那把新密钥传进来。.
+// Replaces the webhook secret. The old one stops working immediately and the channel drops back to awaiting confirmation from the platform. Which side owns the secret is decided by the platform; see secretSource on list-platforms. For a `generated` platform, send no body — the new secret is returned in this response only and cannot be retrieved again. For a `supplied` platform you must pass the new secret from that platform's own console.
 //
 // Takes any type of body and a specified content type, and returns a wrapper object for the known response body format(s).
 //
@@ -5847,9 +5847,9 @@ func (c *ClientWithResponses) RotateChannelSecretWithBodyWithResponse(ctx contex
 	return ParseRotateChannelSecretResponse(rsp)
 }
 
-// RotateChannelSecretWithResponse 轮换回调密钥
+// RotateChannelSecretWithResponse Rotate the webhook secret
 //
-// 换一把新的回调密钥，旧的立即失效，通道降回待平台确认状态。密钥归谁定由平台决定，见 list-platforms 的 secretSource：generated 的平台不要传请求体，新密钥仅在本次响应中返回、之后无法再次取回；supplied 的平台必须把平台后台那把新密钥传进来。.
+// Replaces the webhook secret. The old one stops working immediately and the channel drops back to awaiting confirmation from the platform. Which side owns the secret is decided by the platform; see secretSource on list-platforms. For a `generated` platform, send no body — the new secret is returned in this response only and cannot be retrieved again. For a `supplied` platform you must pass the new secret from that platform's own console.
 //
 // Takes a body of the `application/json` content type, and returns a wrapper object for the known response body format(s).
 //
@@ -5862,9 +5862,9 @@ func (c *ClientWithResponses) RotateChannelSecretWithResponse(ctx context.Contex
 	return ParseRotateChannelSecretResponse(rsp)
 }
 
-// CheckSenderWithResponse 推演一个发件人会不会被放行
+// CheckSenderWithResponse Test whether a sender would be let through
 //
-// 改完发件人策略之后用来自查，不发送任何消息、也不改变任何状态：它走的是和真实入站完全相同的那份判定，并说明结论由哪一条规则得出。无法推演绑定码那一条——是否是绑定码取决于对方发来的内容。.
+// For checking a sender policy after changing it. Sends nothing and changes nothing: it runs exactly the same decision a real inbound message goes through, and says which rule produced the answer. The binding-code rule cannot be tested this way — whether something is a binding code depends on what the sender actually wrote.
 //
 // Returns a wrapper object for the known response body format(s).
 //
@@ -5877,9 +5877,9 @@ func (c *ClientWithResponses) CheckSenderWithResponse(ctx context.Context, chann
 	return ParseCheckSenderResponse(rsp)
 }
 
-// BeginWeixinLoginWithResponse 发起微信扫码登录
+// BeginWeixinLoginWithResponse Begin a WeChat QR login
 //
-// 微信个人号通道需要本人扫码登录后才能收发消息。本接口返回二维码，之后轮询 `GET /v1/weixin-logins/{login}` 获取进度；状态提示需要验证码时，调用 `POST /v1/weixin-logins/{login}/verify-code` 补交。.
+// A personal WeChat channel can only send and receive once its owner has signed in by scanning a QR code. This returns that code; poll `GET /v1/weixin-logins/{login}` for progress, and when the status asks for a verification code, submit it with `POST /v1/weixin-logins/{login}/verify-code`.
 //
 // Returns a wrapper object for the known response body format(s).
 //
@@ -5892,9 +5892,9 @@ func (c *ClientWithResponses) BeginWeixinLoginWithResponse(ctx context.Context, 
 	return ParseBeginWeixinLoginResponse(rsp)
 }
 
-// ListMemoriesWithResponse 列出助手记住的事
+// ListMemoriesWithResponse List what the assistant remembers
 //
-// 助手在这个项目里为当前账号记下的事实，它们会出现在之后每一次对话的开头。同一个项目里的不同成员各记各的，这里只返回当前账号的那些。不分页：条数有上限，一次全部返回。.
+// Facts the assistant has written down for the current account in this project. They appear at the start of every later conversation. Members of the same project each have their own, and this returns only the current account's. Not paginated: there is a cap on how many there can be, and all of them come back at once.
 //
 // Returns a wrapper object for the known response body format(s).
 //
@@ -5907,9 +5907,9 @@ func (c *ClientWithResponses) ListMemoriesWithResponse(ctx context.Context, reqE
 	return ParseListMemoriesResponse(rsp)
 }
 
-// DeleteMemoryWithResponse 删掉一条记忆
+// DeleteMemoryWithResponse Delete one memory
 //
-// 助手不再记得这件事。删除立即生效，下一次对话就不会再带上它。助手可能会重新学到同一件事。.
+// The assistant stops remembering this. It takes effect at once, so the next conversation will not carry it. The assistant may well learn the same thing again.
 //
 // Returns a wrapper object for the known response body format(s).
 //
@@ -5922,9 +5922,9 @@ func (c *ClientWithResponses) DeleteMemoryWithResponse(ctx context.Context, memo
 	return ParseDeleteMemoryResponse(rsp)
 }
 
-// ListModelsWithResponse 列出可用模型
+// ListModelsWithResponse List available models
 //
-// 返回本平台当前提供的模型及其上下文窗口、推理档位和支持的输入类型。用于填充对话设置里的模型选择。.
+// The models currently offered, with their context window, reasoning levels and supported input types. Use it to populate the model picker in conversation settings.
 //
 // Returns a wrapper object for the known response body format(s).
 //
@@ -5937,9 +5937,9 @@ func (c *ClientWithResponses) ListModelsWithResponse(ctx context.Context, reqEdi
 	return ParseListModelsResponse(rsp)
 }
 
-// ListPlatformsWithResponse 列出可接入的平台
+// ListPlatformsWithResponse List platforms that can be connected
 //
-// 返回本平台当前支持接入的即时通讯平台，以及各自建通道时要走的流程和要填的凭据字段。新建通道表单完全由这份响应驱动：setupMethod 决定展示录入表单还是扫码流程，credentialFields 是要填的字段，secretSource 决定要不要有回调密钥那一栏。.
+// The instant messaging platforms that can currently be connected, along with the flow and the credential fields each one needs. The create-channel form is driven entirely by this response: setupMethod decides between a credential form and a QR flow, credentialFields is what to ask for, and secretSource decides whether there is a webhook secret field at all.
 //
 // Returns a wrapper object for the known response body format(s).
 //
@@ -5952,9 +5952,9 @@ func (c *ClientWithResponses) ListPlatformsWithResponse(ctx context.Context, req
 	return ParseListPlatformsResponse(rsp)
 }
 
-// ListThreadsWithResponse 列出对话
+// ListThreadsWithResponse List conversations
 //
-// 按最近活动排序，只返回当前账号在当前项目里的对话。archived 是一个二选一的开关而不是「包含归档」：归档的对话不出现在默认列表里，要看它们就把这个参数打开。.
+// Ordered by most recent activity, limited to the current account's conversations in the current project. `archived` selects between two sets rather than widening one: archived conversations are absent from the default list, and turning the flag on shows those instead.
 //
 // Returns a wrapper object for the known response body format(s).
 //
@@ -5967,7 +5967,7 @@ func (c *ClientWithResponses) ListThreadsWithResponse(ctx context.Context, param
 	return ParseListThreadsResponse(rsp)
 }
 
-// CreateThreadWithBodyWithResponse 创建对话
+// CreateThreadWithBodyWithResponse Create a conversation
 //
 // Takes any type of body and a specified content type, and returns a wrapper object for the known response body format(s).
 //
@@ -5980,7 +5980,7 @@ func (c *ClientWithResponses) CreateThreadWithBodyWithResponse(ctx context.Conte
 	return ParseCreateThreadResponse(rsp)
 }
 
-// CreateThreadWithResponse 创建对话
+// CreateThreadWithResponse Create a conversation
 //
 // Takes a body of the `application/json` content type, and returns a wrapper object for the known response body format(s).
 //
@@ -5993,9 +5993,9 @@ func (c *ClientWithResponses) CreateThreadWithResponse(ctx context.Context, body
 	return ParseCreateThreadResponse(rsp)
 }
 
-// GetThreadWithResponse 取回对话文档
+// GetThreadWithResponse Fetch the conversation document
 //
-// 对话的完整当前状态，用于首屏渲染。文档中的 stream 给出实时输出地址和入场票据，流推送的是对这份文档的增量编辑，可直接套用同一套渲染逻辑。.
+// The complete current state of a conversation, for the first render. Its `stream` gives the address and admission ticket for live output, and what that stream pushes are incremental edits to this same document, so the same rendering logic applies.
 //
 // Returns a wrapper object for the known response body format(s).
 //
@@ -6008,9 +6008,9 @@ func (c *ClientWithResponses) GetThreadWithResponse(ctx context.Context, thread 
 	return ParseGetThreadResponse(rsp)
 }
 
-// UpdateThreadWithBodyWithResponse 修改对话设置
+// UpdateThreadWithBodyWithResponse Update conversation settings
 //
-// 可修改模型、推理档位、审批模式和归档状态。改动从下一次 turn 起生效，正在执行的 turn 沿用它启动时的设置。reasoningEffort 仅在同时提供 model 时生效。.
+// Changes the model, reasoning level, approval mode and archived state. A change takes effect from the next turn; a turn already running keeps the settings it started with. reasoningEffort only applies when model is given as well.
 //
 // Takes any type of body and a specified content type, and returns a wrapper object for the known response body format(s).
 //
@@ -6023,9 +6023,9 @@ func (c *ClientWithResponses) UpdateThreadWithBodyWithResponse(ctx context.Conte
 	return ParseUpdateThreadResponse(rsp)
 }
 
-// UpdateThreadWithResponse 修改对话设置
+// UpdateThreadWithResponse Update conversation settings
 //
-// 可修改模型、推理档位、审批模式和归档状态。改动从下一次 turn 起生效，正在执行的 turn 沿用它启动时的设置。reasoningEffort 仅在同时提供 model 时生效。.
+// Changes the model, reasoning level, approval mode and archived state. A change takes effect from the next turn; a turn already running keeps the settings it started with. reasoningEffort only applies when model is given as well.
 //
 // Takes a body of the `application/json` content type, and returns a wrapper object for the known response body format(s).
 //
@@ -6038,9 +6038,9 @@ func (c *ClientWithResponses) UpdateThreadWithResponse(ctx context.Context, thre
 	return ParseUpdateThreadResponse(rsp)
 }
 
-// DecideApprovalWithBodyWithResponse 批准或拒绝一批工具调用
+// DecideApprovalWithBodyWithResponse Approve or decline a batch of tool calls
 //
-// 批次 id 来自对话文档的 wait 字段。本接口是幂等的：重复提交同一批次不会改变已经生效的决定，也不会报错。批次不属于该对话时返回 404。.
+// The batch id comes from the conversation document's `wait`. This is idempotent: submitting the same batch again neither changes a decision already in effect nor reports an error. Returns 404 when the batch does not belong to that conversation.
 //
 // Takes any type of body and a specified content type, and returns a wrapper object for the known response body format(s).
 //
@@ -6053,9 +6053,9 @@ func (c *ClientWithResponses) DecideApprovalWithBodyWithResponse(ctx context.Con
 	return ParseDecideApprovalResponse(rsp)
 }
 
-// DecideApprovalWithResponse 批准或拒绝一批工具调用
+// DecideApprovalWithResponse Approve or decline a batch of tool calls
 //
-// 批次 id 来自对话文档的 wait 字段。本接口是幂等的：重复提交同一批次不会改变已经生效的决定，也不会报错。批次不属于该对话时返回 404。.
+// The batch id comes from the conversation document's `wait`. This is idempotent: submitting the same batch again neither changes a decision already in effect nor reports an error. Returns 404 when the batch does not belong to that conversation.
 //
 // Takes a body of the `application/json` content type, and returns a wrapper object for the known response body format(s).
 //
@@ -6068,9 +6068,9 @@ func (c *ClientWithResponses) DecideApprovalWithResponse(ctx context.Context, th
 	return ParseDecideApprovalResponse(rsp)
 }
 
-// ListEarlierItemsWithResponse 取回更早的对话内容
+// ListEarlierItemsWithResponse Fetch earlier parts of a conversation
 //
-// 首屏只给对话最新的那一段，再往上的内容用本接口按需取回，一次一段。before 用文档里的 earlier.before，响应里的 earlier 是再往上那一段的游标，为 null 表示已经到顶。返回的条目和文档里的 items 是同一种形状，顺序也一样（由旧到新），直接接在现有内容前面即可。
+// The first render only carries the latest stretch of a conversation; anything above it is fetched here, one stretch at a time. Pass the document's earlier.before as `before`; the `earlier` in the response is the cursor for the stretch above that, and null means the top has been reached. The entries have the same shape and the same order (oldest first) as `items` in the document, so they can be prepended as they are.
 //
 // Returns a wrapper object for the known response body format(s).
 //
@@ -6083,9 +6083,9 @@ func (c *ClientWithResponses) ListEarlierItemsWithResponse(ctx context.Context, 
 	return ParseListEarlierItemsResponse(rsp)
 }
 
-// InterruptThreadWithResponse 中断正在执行的 turn
+// InterruptThreadWithResponse Interrupt a running turn
 //
-// 对没有正在执行的 turn 的对话调用同样返回 204，不视为错误——用户点击停止与 turn 自然结束之间存在竞争，两种结果一致。项目处于停服或清理状态时本接口仍然可用。.
+// Calling this on a conversation with no running turn also returns 204 rather than an error — the user pressing stop races with the turn finishing on its own, and both outcomes are the same. This operation remains available while the project is suspended or being cleaned up.
 //
 // Returns a wrapper object for the known response body format(s).
 //
@@ -6098,9 +6098,9 @@ func (c *ClientWithResponses) InterruptThreadWithResponse(ctx context.Context, t
 	return ParseInterruptThreadResponse(rsp)
 }
 
-// SendMessageWithBodyWithResponse 发送消息并触发一次 turn
+// SendMessageWithBodyWithResponse Send a message and start a turn
 //
-// 立即返回 turnId，不等待执行完成——一次 turn 可能持续数十分钟。执行进度通过对话文档中 stream 指向的实时流获取，不在本响应里。.
+// Returns a turnId immediately without waiting for execution — a turn can run for tens of minutes. Progress arrives on the live stream the conversation document's `stream` points at, not in this response.
 //
 // Takes any type of body and a specified content type, and returns a wrapper object for the known response body format(s).
 //
@@ -6113,9 +6113,9 @@ func (c *ClientWithResponses) SendMessageWithBodyWithResponse(ctx context.Contex
 	return ParseSendMessageResponse(rsp)
 }
 
-// SendMessageWithResponse 发送消息并触发一次 turn
+// SendMessageWithResponse Send a message and start a turn
 //
-// 立即返回 turnId，不等待执行完成——一次 turn 可能持续数十分钟。执行进度通过对话文档中 stream 指向的实时流获取，不在本响应里。.
+// Returns a turnId immediately without waiting for execution — a turn can run for tens of minutes. Progress arrives on the live stream the conversation document's `stream` points at, not in this response.
 //
 // Takes a body of the `application/json` content type, and returns a wrapper object for the known response body format(s).
 //
@@ -6128,9 +6128,9 @@ func (c *ClientWithResponses) SendMessageWithResponse(ctx context.Context, threa
 	return ParseSendMessageResponse(rsp)
 }
 
-// AnswerQuestionWithBodyWithResponse 回答助手提出的问题
+// AnswerQuestionWithBodyWithResponse Answer the assistant's questions
 //
-// 问题 id 来自对话文档的 wait 字段。已被回答过的问题同样返回 204——可能是另一个页面提交在先，也可能是自动应答窗口已到期，两种情况下 turn 都已带着答案继续执行。.
+// The question id comes from the conversation document's `wait`. An already-answered question also returns 204 — another tab may have submitted first, or the auto-answer window may have expired, and in both cases the turn has already continued with an answer.
 //
 // Takes any type of body and a specified content type, and returns a wrapper object for the known response body format(s).
 //
@@ -6143,9 +6143,9 @@ func (c *ClientWithResponses) AnswerQuestionWithBodyWithResponse(ctx context.Con
 	return ParseAnswerQuestionResponse(rsp)
 }
 
-// AnswerQuestionWithResponse 回答助手提出的问题
+// AnswerQuestionWithResponse Answer the assistant's questions
 //
-// 问题 id 来自对话文档的 wait 字段。已被回答过的问题同样返回 204——可能是另一个页面提交在先，也可能是自动应答窗口已到期，两种情况下 turn 都已带着答案继续执行。.
+// The question id comes from the conversation document's `wait`. An already-answered question also returns 204 — another tab may have submitted first, or the auto-answer window may have expired, and in both cases the turn has already continued with an answer.
 //
 // Takes a body of the `application/json` content type, and returns a wrapper object for the known response body format(s).
 //
@@ -6158,7 +6158,7 @@ func (c *ClientWithResponses) AnswerQuestionWithResponse(ctx context.Context, th
 	return ParseAnswerQuestionResponse(rsp)
 }
 
-// MarkThreadReadWithResponse 标记对话已读
+// MarkThreadReadWithResponse Mark a conversation as read
 //
 // Returns a wrapper object for the known response body format(s).
 //
@@ -6171,9 +6171,9 @@ func (c *ClientWithResponses) MarkThreadReadWithResponse(ctx context.Context, th
 	return ParseMarkThreadReadResponse(rsp)
 }
 
-// RevertThreadWithBodyWithResponse 从指定位置起撤回
+// RevertThreadWithBodyWithResponse Revert from a given point
 //
-// 撤回 ordinal 及其之后的全部条目。被撤回的条目仍留在逐字稿中并标记 reverted，序号不会重排。返回实际撤回的条目数。.
+// Reverts the entry at `ordinal` and everything after it. Reverted entries stay in the transcript marked `reverted`, and ordinals are not renumbered. Returns how many were actually reverted.
 //
 // Takes any type of body and a specified content type, and returns a wrapper object for the known response body format(s).
 //
@@ -6186,9 +6186,9 @@ func (c *ClientWithResponses) RevertThreadWithBodyWithResponse(ctx context.Conte
 	return ParseRevertThreadResponse(rsp)
 }
 
-// RevertThreadWithResponse 从指定位置起撤回
+// RevertThreadWithResponse Revert from a given point
 //
-// 撤回 ordinal 及其之后的全部条目。被撤回的条目仍留在逐字稿中并标记 reverted，序号不会重排。返回实际撤回的条目数。.
+// Reverts the entry at `ordinal` and everything after it. Reverted entries stay in the transcript marked `reverted`, and ordinals are not renumbered. Returns how many were actually reverted.
 //
 // Takes a body of the `application/json` content type, and returns a wrapper object for the known response body format(s).
 //
@@ -6201,9 +6201,9 @@ func (c *ClientWithResponses) RevertThreadWithResponse(ctx context.Context, thre
 	return ParseRevertThreadResponse(rsp)
 }
 
-// GetWeixinLoginWithResponse 查询扫码登录状态
+// GetWeixinLoginWithResponse Get the state of a QR login
 //
-// 轮询本接口直到状态变为成功或失败。状态提示需要验证码时，调用补交验证码接口。.
+// Poll this until the status is success or failure. When the status asks for a verification code, submit it with the verification-code operation.
 //
 // Returns a wrapper object for the known response body format(s).
 //
@@ -6216,9 +6216,9 @@ func (c *ClientWithResponses) GetWeixinLoginWithResponse(ctx context.Context, lo
 	return ParseGetWeixinLoginResponse(rsp)
 }
 
-// SubmitWeixinVerifyCodeWithBodyWithResponse 补交登录验证码
+// SubmitWeixinVerifyCodeWithBodyWithResponse Submit a login verification code
 //
-// 微信在扫码后要求短信或设备验证码时使用。验证码由登录发起人在自己手机上获取。.
+// For when WeChat asks for an SMS or device code after the scan. The person who started the login gets that code on their own phone.
 //
 // Takes any type of body and a specified content type, and returns a wrapper object for the known response body format(s).
 //
@@ -6231,9 +6231,9 @@ func (c *ClientWithResponses) SubmitWeixinVerifyCodeWithBodyWithResponse(ctx con
 	return ParseSubmitWeixinVerifyCodeResponse(rsp)
 }
 
-// SubmitWeixinVerifyCodeWithResponse 补交登录验证码
+// SubmitWeixinVerifyCodeWithResponse Submit a login verification code
 //
-// 微信在扫码后要求短信或设备验证码时使用。验证码由登录发起人在自己手机上获取。.
+// For when WeChat asks for an SMS or device code after the scan. The person who started the login gets that code on their own phone.
 //
 // Takes a body of the `application/json` content type, and returns a wrapper object for the known response body format(s).
 //

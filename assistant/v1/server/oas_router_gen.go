@@ -1120,7 +1120,7 @@ func (s *Server) FindPath(method string, u *url.URL) (r Route, _ bool) {
 					switch method {
 					case "POST":
 						r.name = UploadAttachmentOperation
-						r.summary = "上传图片"
+						r.summary = "Upload an image"
 						r.operationID = "upload-attachment"
 						r.operationGroup = ""
 						r.pathPattern = "/api/v1/attachments"
@@ -1154,7 +1154,7 @@ func (s *Server) FindPath(method string, u *url.URL) (r Route, _ bool) {
 						switch method {
 						case "GET":
 							r.name = DownloadAttachmentOperation
-							r.summary = "取回图片"
+							r.summary = "Fetch an image"
 							r.operationID = "download-attachment"
 							r.operationGroup = ""
 							r.pathPattern = "/api/v1/attachments/{attachment}"
@@ -1180,7 +1180,7 @@ func (s *Server) FindPath(method string, u *url.URL) (r Route, _ bool) {
 					switch method {
 					case "GET":
 						r.name = ListBindingsOperation
-						r.summary = "列出绑定"
+						r.summary = "List bindings"
 						r.operationID = "list-bindings"
 						r.operationGroup = ""
 						r.pathPattern = "/api/v1/bindings"
@@ -1214,7 +1214,7 @@ func (s *Server) FindPath(method string, u *url.URL) (r Route, _ bool) {
 						switch method {
 						case "DELETE":
 							r.name = DeleteBindingOperation
-							r.summary = "解除绑定"
+							r.summary = "Remove a binding"
 							r.operationID = "delete-binding"
 							r.operationGroup = ""
 							r.pathPattern = "/api/v1/bindings/{binding}"
@@ -1223,7 +1223,7 @@ func (s *Server) FindPath(method string, u *url.URL) (r Route, _ bool) {
 							return r, true
 						case "GET":
 							r.name = GetBindingOperation
-							r.summary = "查看绑定"
+							r.summary = "Get a binding"
 							r.operationID = "get-binding"
 							r.operationGroup = ""
 							r.pathPattern = "/api/v1/bindings/{binding}"
@@ -1249,7 +1249,7 @@ func (s *Server) FindPath(method string, u *url.URL) (r Route, _ bool) {
 					switch method {
 					case "GET":
 						r.name = ListChannelsOperation
-						r.summary = "列出通道"
+						r.summary = "List channels"
 						r.operationID = "list-channels"
 						r.operationGroup = ""
 						r.pathPattern = "/api/v1/channels"
@@ -1258,7 +1258,7 @@ func (s *Server) FindPath(method string, u *url.URL) (r Route, _ bool) {
 						return r, true
 					case "POST":
 						r.name = CreateChannelOperation
-						r.summary = "创建通道"
+						r.summary = "Create a channel"
 						r.operationID = "create-channel"
 						r.operationGroup = ""
 						r.pathPattern = "/api/v1/channels"
@@ -1291,7 +1291,7 @@ func (s *Server) FindPath(method string, u *url.URL) (r Route, _ bool) {
 						switch method {
 						case "DELETE":
 							r.name = DeleteChannelOperation
-							r.summary = "删除通道"
+							r.summary = "Delete a channel"
 							r.operationID = "delete-channel"
 							r.operationGroup = ""
 							r.pathPattern = "/api/v1/channels/{channel}"
@@ -1300,7 +1300,7 @@ func (s *Server) FindPath(method string, u *url.URL) (r Route, _ bool) {
 							return r, true
 						case "GET":
 							r.name = GetChannelOperation
-							r.summary = "查看通道"
+							r.summary = "Get a channel"
 							r.operationID = "get-channel"
 							r.operationGroup = ""
 							r.pathPattern = "/api/v1/channels/{channel}"
@@ -1309,7 +1309,7 @@ func (s *Server) FindPath(method string, u *url.URL) (r Route, _ bool) {
 							return r, true
 						case "PATCH":
 							r.name = UpdateChannelOperation
-							r.summary = "修改通道"
+							r.summary = "Update a channel"
 							r.operationID = "update-channel"
 							r.operationGroup = ""
 							r.pathPattern = "/api/v1/channels/{channel}"
@@ -1346,7 +1346,7 @@ func (s *Server) FindPath(method string, u *url.URL) (r Route, _ bool) {
 								switch method {
 								case "POST":
 									r.name = CreateBindingCodeOperation
-									r.summary = "签发绑定码"
+									r.summary = "Issue a binding code"
 									r.operationID = "create-binding-code"
 									r.operationGroup = ""
 									r.pathPattern = "/api/v1/channels/{channel}/binding-codes"
@@ -1371,7 +1371,7 @@ func (s *Server) FindPath(method string, u *url.URL) (r Route, _ bool) {
 								switch method {
 								case "GET":
 									r.name = ListChannelRejectionsOperation
-									r.summary = "查看最近被拒绝的入站消息"
+									r.summary = "List recently rejected inbound messages"
 									r.operationID = "list-channel-rejections"
 									r.operationGroup = ""
 									r.pathPattern = "/api/v1/channels/{channel}/rejections"
@@ -1408,7 +1408,7 @@ func (s *Server) FindPath(method string, u *url.URL) (r Route, _ bool) {
 									switch method {
 									case "POST":
 										r.name = RotateChannelSecretOperation
-										r.summary = "轮换回调密钥"
+										r.summary = "Rotate the webhook secret"
 										r.operationID = "rotate-channel-secret"
 										r.operationGroup = ""
 										r.pathPattern = "/api/v1/channels/{channel}/secret"
@@ -1433,7 +1433,7 @@ func (s *Server) FindPath(method string, u *url.URL) (r Route, _ bool) {
 									switch method {
 									case "GET":
 										r.name = CheckSenderOperation
-										r.summary = "推演一个发件人会不会被放行"
+										r.summary = "Test whether a sender would be let through"
 										r.operationID = "check-sender"
 										r.operationGroup = ""
 										r.pathPattern = "/api/v1/channels/{channel}/sender-check"
@@ -1460,7 +1460,7 @@ func (s *Server) FindPath(method string, u *url.URL) (r Route, _ bool) {
 								switch method {
 								case "POST":
 									r.name = BeginWeixinLoginOperation
-									r.summary = "发起微信扫码登录"
+									r.summary = "Begin a WeChat QR login"
 									r.operationID = "begin-weixin-login"
 									r.operationGroup = ""
 									r.pathPattern = "/api/v1/channels/{channel}/weixin-logins"
@@ -1502,7 +1502,7 @@ func (s *Server) FindPath(method string, u *url.URL) (r Route, _ bool) {
 						switch method {
 						case "GET":
 							r.name = ListMemoriesOperation
-							r.summary = "列出助手记住的事"
+							r.summary = "List what the assistant remembers"
 							r.operationID = "list-memories"
 							r.operationGroup = ""
 							r.pathPattern = "/api/v1/memories"
@@ -1536,7 +1536,7 @@ func (s *Server) FindPath(method string, u *url.URL) (r Route, _ bool) {
 							switch method {
 							case "DELETE":
 								r.name = DeleteMemoryOperation
-								r.summary = "删掉一条记忆"
+								r.summary = "Delete one memory"
 								r.operationID = "delete-memory"
 								r.operationGroup = ""
 								r.pathPattern = "/api/v1/memories/{memory}"
@@ -1563,7 +1563,7 @@ func (s *Server) FindPath(method string, u *url.URL) (r Route, _ bool) {
 						switch method {
 						case "GET":
 							r.name = ListModelsOperation
-							r.summary = "列出可用模型"
+							r.summary = "List available models"
 							r.operationID = "list-models"
 							r.operationGroup = ""
 							r.pathPattern = "/api/v1/models"
@@ -1590,7 +1590,7 @@ func (s *Server) FindPath(method string, u *url.URL) (r Route, _ bool) {
 					switch method {
 					case "GET":
 						r.name = ListPlatformsOperation
-						r.summary = "列出可接入的平台"
+						r.summary = "List platforms that can be connected"
 						r.operationID = "list-platforms"
 						r.operationGroup = ""
 						r.pathPattern = "/api/v1/platforms"
@@ -1614,7 +1614,7 @@ func (s *Server) FindPath(method string, u *url.URL) (r Route, _ bool) {
 					switch method {
 					case "GET":
 						r.name = ListThreadsOperation
-						r.summary = "列出对话"
+						r.summary = "List conversations"
 						r.operationID = "list-threads"
 						r.operationGroup = ""
 						r.pathPattern = "/api/v1/threads"
@@ -1623,7 +1623,7 @@ func (s *Server) FindPath(method string, u *url.URL) (r Route, _ bool) {
 						return r, true
 					case "POST":
 						r.name = CreateThreadOperation
-						r.summary = "创建对话"
+						r.summary = "Create a conversation"
 						r.operationID = "create-thread"
 						r.operationGroup = ""
 						r.pathPattern = "/api/v1/threads"
@@ -1656,7 +1656,7 @@ func (s *Server) FindPath(method string, u *url.URL) (r Route, _ bool) {
 						switch method {
 						case "GET":
 							r.name = GetThreadOperation
-							r.summary = "取回对话文档"
+							r.summary = "Fetch the conversation document"
 							r.operationID = "get-thread"
 							r.operationGroup = ""
 							r.pathPattern = "/api/v1/threads/{thread}"
@@ -1665,7 +1665,7 @@ func (s *Server) FindPath(method string, u *url.URL) (r Route, _ bool) {
 							return r, true
 						case "PATCH":
 							r.name = UpdateThreadOperation
-							r.summary = "修改对话设置"
+							r.summary = "Update conversation settings"
 							r.operationID = "update-thread"
 							r.operationGroup = ""
 							r.pathPattern = "/api/v1/threads/{thread}"
@@ -1711,7 +1711,7 @@ func (s *Server) FindPath(method string, u *url.URL) (r Route, _ bool) {
 								switch method {
 								case "POST":
 									r.name = DecideApprovalOperation
-									r.summary = "批准或拒绝一批工具调用"
+									r.summary = "Approve or decline a batch of tool calls"
 									r.operationID = "decide-approval"
 									r.operationGroup = ""
 									r.pathPattern = "/api/v1/threads/{thread}/approvals/{batch}"
@@ -1736,7 +1736,7 @@ func (s *Server) FindPath(method string, u *url.URL) (r Route, _ bool) {
 								switch method {
 								case "GET":
 									r.name = ListEarlierItemsOperation
-									r.summary = "取回更早的对话内容"
+									r.summary = "Fetch earlier parts of a conversation"
 									r.operationID = "list-earlier-items"
 									r.operationGroup = ""
 									r.pathPattern = "/api/v1/threads/{thread}/earlier"
@@ -1761,7 +1761,7 @@ func (s *Server) FindPath(method string, u *url.URL) (r Route, _ bool) {
 								switch method {
 								case "POST":
 									r.name = InterruptThreadOperation
-									r.summary = "中断正在执行的 turn"
+									r.summary = "Interrupt a running turn"
 									r.operationID = "interrupt-thread"
 									r.operationGroup = ""
 									r.pathPattern = "/api/v1/threads/{thread}/interrupt"
@@ -1786,7 +1786,7 @@ func (s *Server) FindPath(method string, u *url.URL) (r Route, _ bool) {
 								switch method {
 								case "POST":
 									r.name = SendMessageOperation
-									r.summary = "发送消息并触发一次 turn"
+									r.summary = "Send a message and start a turn"
 									r.operationID = "send-message"
 									r.operationGroup = ""
 									r.pathPattern = "/api/v1/threads/{thread}/messages"
@@ -1820,7 +1820,7 @@ func (s *Server) FindPath(method string, u *url.URL) (r Route, _ bool) {
 								switch method {
 								case "POST":
 									r.name = AnswerQuestionOperation
-									r.summary = "回答助手提出的问题"
+									r.summary = "Answer the assistant's questions"
 									r.operationID = "answer-question"
 									r.operationGroup = ""
 									r.pathPattern = "/api/v1/threads/{thread}/questions/{item}"
@@ -1857,7 +1857,7 @@ func (s *Server) FindPath(method string, u *url.URL) (r Route, _ bool) {
 									switch method {
 									case "POST":
 										r.name = MarkThreadReadOperation
-										r.summary = "标记对话已读"
+										r.summary = "Mark a conversation as read"
 										r.operationID = "mark-thread-read"
 										r.operationGroup = ""
 										r.pathPattern = "/api/v1/threads/{thread}/read"
@@ -1882,7 +1882,7 @@ func (s *Server) FindPath(method string, u *url.URL) (r Route, _ bool) {
 									switch method {
 									case "POST":
 										r.name = RevertThreadOperation
-										r.summary = "从指定位置起撤回"
+										r.summary = "Revert from a given point"
 										r.operationID = "revert-thread"
 										r.operationGroup = ""
 										r.pathPattern = "/api/v1/threads/{thread}/revert"
@@ -1923,7 +1923,7 @@ func (s *Server) FindPath(method string, u *url.URL) (r Route, _ bool) {
 					switch method {
 					case "GET":
 						r.name = GetWeixinLoginOperation
-						r.summary = "查询扫码登录状态"
+						r.summary = "Get the state of a QR login"
 						r.operationID = "get-weixin-login"
 						r.operationGroup = ""
 						r.pathPattern = "/api/v1/weixin-logins/{login}"
@@ -1948,7 +1948,7 @@ func (s *Server) FindPath(method string, u *url.URL) (r Route, _ bool) {
 						switch method {
 						case "POST":
 							r.name = SubmitWeixinVerifyCodeOperation
-							r.summary = "补交登录验证码"
+							r.summary = "Submit a login verification code"
 							r.operationID = "submit-weixin-verify-code"
 							r.operationGroup = ""
 							r.pathPattern = "/api/v1/weixin-logins/{login}/verify-code"

@@ -21,7 +21,7 @@ type AnswerQuestionNoContent struct{}
 
 // Ref: #/components/schemas/AnswerRequestBody
 type AnswerRequestBody struct {
-	// 问题 id 到所选答案的映射.
+	// A map from question id to the answer chosen.
 	Answers AnswerRequestBodyAnswers `json:"answers"`
 }
 
@@ -35,7 +35,7 @@ func (s *AnswerRequestBody) SetAnswers(val AnswerRequestBodyAnswers) {
 	s.Answers = val
 }
 
-// 问题 id 到所选答案的映射.
+// A map from question id to the answer chosen.
 type AnswerRequestBodyAnswers map[string]string
 
 func (s *AnswerRequestBodyAnswers) init() AnswerRequestBodyAnswers {
@@ -333,20 +333,21 @@ func (s *BindingResourceStatus) UnmarshalText(data []byte) error {
 // Ref: #/components/schemas/ChannelResource
 type ChannelResource struct {
 	AllowFrom []string `json:"allowFrom"`
-	// 平台接入状态。只有 online 才收得到消息、也才签得出绑定码.
+	// How far this channel is from working. Only `online` receives messages and can issue binding codes.
 	ConnState ChannelResourceConnState `json:"connState"`
 	CreatedAt time.Time                `json:"createdAt"`
 	ID        uuid.UUID                `json:"id"`
 	Name      string                   `json:"name"`
 	Platform  string                   `json:"platform"`
-	// 常驻连接此刻的状态。回调型平台恒为 stopped.
+	// The state of the long-lived connection right now. Always `stopped` for webhook platforms.
 	RuntimeState ChannelResourceRuntimeState `json:"runtimeState"`
 	SenderPolicy ChannelResourceSenderPolicy `json:"senderPolicy"`
 	Status       ChannelResourceStatus       `json:"status"`
 	UpdatedAt    time.Time                   `json:"updatedAt"`
-	// 回调路径，网关配置和排查时用.
+	// The webhook path, for gateway configuration and for diagnosis.
 	WebhookPath string `json:"webhookPath"`
-	// 填到平台后台的回调地址。部署未声明公网入口时为 null.
+	// The webhook address to paste into that platform's console. Null when the deployment declares no
+	// public entry point.
 	WebhookUrl NilString `json:"webhookUrl"`
 }
 
@@ -470,7 +471,7 @@ func (s *ChannelResource) SetWebhookUrl(val NilString) {
 	s.WebhookUrl = val
 }
 
-// 平台接入状态。只有 online 才收得到消息、也才签得出绑定码.
+// How far this channel is from working. Only `online` receives messages and can issue binding codes.
 type ChannelResourceConnState string
 
 const (
@@ -526,7 +527,7 @@ func (s *ChannelResourceConnState) UnmarshalText(data []byte) error {
 	}
 }
 
-// 常驻连接此刻的状态。回调型平台恒为 stopped.
+// The state of the long-lived connection right now. Always `stopped` for webhook platforms.
 type ChannelResourceRuntimeState string
 
 const (
@@ -660,23 +661,25 @@ func (s *ChannelResourceStatus) UnmarshalText(data []byte) error {
 // Ref: #/components/schemas/ChannelWithSecretResponseBody
 type ChannelWithSecretResponseBody struct {
 	AllowFrom []string `json:"allowFrom"`
-	// 平台接入状态。只有 online 才收得到消息、也才签得出绑定码.
+	// How far this channel is from working. Only `online` receives messages and can issue binding codes.
 	ConnState ChannelWithSecretResponseBodyConnState `json:"connState"`
 	CreatedAt time.Time                              `json:"createdAt"`
 	ID        uuid.UUID                              `json:"id"`
 	Name      string                                 `json:"name"`
 	Platform  string                                 `json:"platform"`
-	// 常驻连接此刻的状态。回调型平台恒为 stopped.
+	// The state of the long-lived connection right now. Always `stopped` for webhook platforms.
 	RuntimeState ChannelWithSecretResponseBodyRuntimeState `json:"runtimeState"`
 	SenderPolicy ChannelWithSecretResponseBodySenderPolicy `json:"senderPolicy"`
 	Status       ChannelWithSecretResponseBodyStatus       `json:"status"`
 	UpdatedAt    time.Time                                 `json:"updatedAt"`
-	// 回调路径，网关配置和排查时用.
+	// The webhook path, for gateway configuration and for diagnosis.
 	WebhookPath string `json:"webhookPath"`
-	// 我们生成的那把回调密钥，拿去粘到平台后台。之后无法再次取回，只能轮换出新的一把。密钥由平台生成（secretSource=supplied）或该平台不走回调时为
-	// null.
+	// The webhook secret we generated, to paste into that platform's console. It cannot be retrieved again
+	// — the only way forward is rotating to a new one. Null when the platform generates the secret
+	// (secretSource=supplied) or does not use webhooks at all.
 	WebhookSecret NilString `json:"webhookSecret"`
-	// 填到平台后台的回调地址。部署未声明公网入口时为 null.
+	// The webhook address to paste into that platform's console. Null when the deployment declares no
+	// public entry point.
 	WebhookUrl NilString `json:"webhookUrl"`
 }
 
@@ -810,7 +813,7 @@ func (s *ChannelWithSecretResponseBody) SetWebhookUrl(val NilString) {
 	s.WebhookUrl = val
 }
 
-// 平台接入状态。只有 online 才收得到消息、也才签得出绑定码.
+// How far this channel is from working. Only `online` receives messages and can issue binding codes.
 type ChannelWithSecretResponseBodyConnState string
 
 const (
@@ -866,7 +869,7 @@ func (s *ChannelWithSecretResponseBodyConnState) UnmarshalText(data []byte) erro
 	}
 }
 
-// 常驻连接此刻的状态。回调型平台恒为 stopped.
+// The state of the long-lived connection right now. Always `stopped` for webhook platforms.
 type ChannelWithSecretResponseBodyRuntimeState string
 
 const (
@@ -1085,13 +1088,13 @@ func (s *ContextResource) SetWindow(val NilInt64) {
 // Ref: #/components/schemas/CreateChannelRequestBody
 type CreateChannelRequestBody struct {
 	AllowFrom OptNilStringArray `json:"allowFrom"`
-	// 平台侧凭据。只写不读，创建后无法取回.
+	// Credentials for that platform. Write-only: they cannot be read back after creation.
 	Credentials  OptCreateChannelRequestBodyCredentials  `json:"credentials"`
 	Name         string                                  `json:"name"`
 	Platform     string                                  `json:"platform"`
 	SenderPolicy OptCreateChannelRequestBodySenderPolicy `json:"senderPolicy"`
-	// 平台生成密钥的平台（secretSource=supplied）必须传；我们生成的（generated）不能传，那把会在本次响应的
-	// webhookSecret 里返回一次.
+	// Required for platforms that generate the secret themselves (secretSource=supplied). Must be absent
+	// for `generated` ones, where the secret we make is returned once in webhookSecret on this response.
 	WebhookSecret OptString `json:"webhookSecret"`
 }
 
@@ -1155,7 +1158,7 @@ func (s *CreateChannelRequestBody) SetWebhookSecret(val OptString) {
 	s.WebhookSecret = val
 }
 
-// 平台侧凭据。只写不读，创建后无法取回.
+// Credentials for that platform. Write-only: they cannot be read back after creation.
 type CreateChannelRequestBodyCredentials map[string]string
 
 func (s *CreateChannelRequestBodyCredentials) init() CreateChannelRequestBodyCredentials {
@@ -1210,7 +1213,7 @@ func (s *CreateChannelRequestBodySenderPolicy) UnmarshalText(data []byte) error 
 
 // Ref: #/components/schemas/CreateThreadRequestBody
 type CreateThreadRequestBody struct {
-	// 不传则使用平台默认审批模式.
+	// Absent uses the platform's default approval mode.
 	ApprovalMode OptCreateThreadRequestBodyApprovalMode `json:"approvalMode"`
 }
 
@@ -1224,7 +1227,7 @@ func (s *CreateThreadRequestBody) SetApprovalMode(val OptCreateThreadRequestBody
 	s.ApprovalMode = val
 }
 
-// 不传则使用平台默认审批模式.
+// Absent uses the platform's default approval mode.
 type CreateThreadRequestBodyApprovalMode string
 
 const (
@@ -1674,7 +1677,7 @@ type ItemResource struct {
 	Detail         OptNilString                  `json:"detail"`
 	DurationMs     OptNilInt64                   `json:"durationMs"`
 	ID             string                        `json:"id"`
-	// 产出这一条的模型。用户自己发的消息为 null.
+	// The model that produced this entry. Null for messages the user sent.
 	Model     NilString          `json:"model"`
 	Namespace OptNilString       `json:"namespace"`
 	Ordinal   int64              `json:"ordinal"`
@@ -1683,7 +1686,7 @@ type ItemResource struct {
 	Target    OptNilString       `json:"target"`
 	Text      OptString          `json:"text"`
 	Tool      OptNilString       `json:"tool"`
-	// 决定这一条包含哪些字段.
+	// Determines which fields this entry carries.
 	Type ItemResourceType `json:"type"`
 }
 
@@ -1981,7 +1984,7 @@ func (s *ItemResourceStatus) UnmarshalText(data []byte) error {
 	}
 }
 
-// 决定这一条包含哪些字段.
+// Determines which fields this entry carries.
 type ItemResourceType string
 
 const (
@@ -2060,13 +2063,13 @@ func (s *ItemResourceType) UnmarshalText(data []byte) error {
 
 // Ref: #/components/schemas/LengthAwarePageBindingResource
 type LengthAwarePageBindingResource struct {
-	// 这一页的内容.
+	// The entries on this page.
 	Items []BindingResource `json:"items"`
-	// 这一页最多几条，回显请求里的值.
+	// The page size, echoing what was requested.
 	Limit int64 `json:"limit"`
-	// 跳过了多少条，回显请求里的值.
+	// How many were skipped, echoing what was requested.
 	Offset int64 `json:"offset"`
-	// 命中的总条数，不只是这一页.
+	// How many match in total, not just on this page.
 	Total int64 `json:"total"`
 }
 
@@ -2112,13 +2115,13 @@ func (s *LengthAwarePageBindingResource) SetTotal(val int64) {
 
 // Ref: #/components/schemas/LengthAwarePageChannelResource
 type LengthAwarePageChannelResource struct {
-	// 这一页的内容.
+	// The entries on this page.
 	Items []ChannelResource `json:"items"`
-	// 这一页最多几条，回显请求里的值.
+	// The page size, echoing what was requested.
 	Limit int64 `json:"limit"`
-	// 跳过了多少条，回显请求里的值.
+	// How many were skipped, echoing what was requested.
 	Offset int64 `json:"offset"`
-	// 命中的总条数，不只是这一页.
+	// How many match in total, not just on this page.
 	Total int64 `json:"total"`
 }
 
@@ -2164,14 +2167,14 @@ func (s *LengthAwarePageChannelResource) SetTotal(val int64) {
 
 // Ref: #/components/schemas/LoginResource
 type LoginResource struct {
-	// 这条登录流的截止时间。到点之后不要再轮询，重新发起一次.
+	// When this login flow expires. Past that, stop polling and start a new one.
 	ExpiresAt time.Time `json:"expiresAt"`
 	ID        uuid.UUID `json:"id"`
-	// 二维码的内容，由客户端编码成二维码图形渲染（不是图片地址，也不是
-	// data
-	// URI）。码过期时这条流会自己换一张接着等，所以每次轮询拿到的可能是新的一串.
+	// The text to encode and render as a QR code by the client — not an image address and not a data
+	// URI. When a code expires this flow issues another and keeps waiting, so each poll may return a new
+	// string.
 	QrcodeData string `json:"qrcodeData"`
-	// 失败原因。仅在 status 为 error 或 expired 时有内容.
+	// Why it failed. Present only when status is error or expired.
 	Reason string              `json:"reason"`
 	Status LoginResourceStatus `json:"status"`
 }
@@ -2315,13 +2318,13 @@ func (s *MemoryListResponseBody) SetItems(val []MemoryResource) {
 
 // Ref: #/components/schemas/MemoryResource
 type MemoryResource struct {
-	// 记住的那件事.
+	// The fact itself.
 	Body      string    `json:"body"`
 	CreatedAt time.Time `json:"createdAt"`
 	ID        string    `json:"id"`
-	// 助手给这件事起的名字，它用这个名字覆盖或者删掉自己写过的东西.
+	// The name the assistant gave this fact; it overwrites or deletes its own entries by that name.
 	Name string `json:"name"`
-	// 助手是在哪次对话里记下它的。那次对话可能已经被删掉了.
+	// Which conversation the assistant learned it in. That conversation may since have been deleted.
 	SourceThreadId OptString `json:"sourceThreadId"`
 	UpdatedAt      time.Time `json:"updatedAt"`
 }
@@ -3747,9 +3750,9 @@ type PlatformResource struct {
 	SecretSource     PlatformResourceSecretSource   `json:"secretSource"`
 	SetupChallenge   PlatformResourceSetupChallenge `json:"setupChallenge"`
 	SetupMethod      PlatformResourceSetupMethod    `json:"setupMethod"`
-	// 回调路径模板，{channel} 处替换为通道 id.
+	// The webhook path template; {channel} is replaced with the channel id.
 	WebhookPath string `json:"webhookPath"`
-	// 完整回调地址模板。部署未声明公网入口时为 null.
+	// The full webhook address template. Null when the deployment declares no public entry point.
 	WebhookUrlTemplate NilString `json:"webhookUrlTemplate"`
 }
 
@@ -4116,7 +4119,7 @@ func (s *RejectionResource) SetVerdict(val string) {
 
 // Ref: #/components/schemas/RevertRequestBody
 type RevertRequestBody struct {
-	// 起始序号，该条及其之后的全部条目都会被撤回.
+	// The starting ordinal; that entry and everything after it is reverted.
 	Ordinal int64 `json:"ordinal"`
 }
 
@@ -4147,7 +4150,8 @@ func (s *RevertedCountResponseBody) SetReverted(val int64) {
 
 // Ref: #/components/schemas/RotateSecretRequestBody
 type RotateSecretRequestBody struct {
-	// 平台生成密钥的平台（secretSource=supplied）必须传新的那把；我们生成的（generated）不能传.
+	// Required for platforms that generate the secret themselves (secretSource=supplied). Must be absent
+	// for `generated` ones.
 	WebhookSecret OptString `json:"webhookSecret"`
 }
 
@@ -4163,7 +4167,7 @@ func (s *RotateSecretRequestBody) SetWebhookSecret(val OptString) {
 
 // Ref: #/components/schemas/SendMessageRequestBody
 type SendMessageRequestBody struct {
-	// 此前上传、尚未绑定到任何消息的附件 id.
+	// Ids of attachments uploaded earlier that are not yet bound to any message.
 	AttachmentIds OptNilStringArray `json:"attachmentIds"`
 	Text          string            `json:"text"`
 }
@@ -4563,13 +4567,13 @@ func (s *TurnResourceApprovalMode) UnmarshalText(data []byte) error {
 
 // Ref: #/components/schemas/UpdateChannelRequestBody
 type UpdateChannelRequestBody struct {
-	// 放行名单。仅在同时传了 senderPolicy 时生效.
+	// The allow list. Only applied when senderPolicy is sent as well.
 	AllowFrom OptNilStringArray `json:"allowFrom"`
-	// 整份替换而不是逐键合并。不传表示不动.
+	// Replaced wholesale rather than merged key by key. Absent means unchanged.
 	Credentials OptUpdateChannelRequestBodyCredentials `json:"credentials"`
 	Enabled     OptBool                                `json:"enabled"`
 	Name        OptString                              `json:"name"`
-	// 传了才会连同 allowFrom 一起替换.
+	// Only when this is sent is allowFrom replaced along with it.
 	SenderPolicy OptUpdateChannelRequestBodySenderPolicy `json:"senderPolicy"`
 }
 
@@ -4623,7 +4627,7 @@ func (s *UpdateChannelRequestBody) SetSenderPolicy(val OptUpdateChannelRequestBo
 	s.SenderPolicy = val
 }
 
-// 整份替换而不是逐键合并。不传表示不动.
+// Replaced wholesale rather than merged key by key. Absent means unchanged.
 type UpdateChannelRequestBodyCredentials map[string]string
 
 func (s *UpdateChannelRequestBodyCredentials) init() UpdateChannelRequestBodyCredentials {
@@ -4635,7 +4639,7 @@ func (s *UpdateChannelRequestBodyCredentials) init() UpdateChannelRequestBodyCre
 	return m
 }
 
-// 传了才会连同 allowFrom 一起替换.
+// Only when this is sent is allowFrom replaced along with it.
 type UpdateChannelRequestBodySenderPolicy string
 
 const (
