@@ -737,7 +737,16 @@ type ClientActionRequest struct {
 // ClientActionRequestType Only functions are supported.
 type ClientActionRequestType string
 
-// ClientContextRequest What this client can do, so the assistant can ask it to do those things while it answers.
+// ClientContextPart One block of context. `type` names what it is so the assistant can tell blocks apart —
+// `page`, `selection`, `open_file`, `working_directory`, whatever this client has.
+type ClientContextPart struct {
+	// Data The block itself. Any object; its keys are shown to the assistant as they are.
+	Data map[string]interface{} `json:"data"`
+	Type string                 `json:"type"`
+}
+
+// ClientContextRequest What this client is and what it can do, so the assistant can ask it to do those things while
+// it answers.
 //
 // Send `actions` only when they differ from the last message on this conversation. Sending the
 // block without `actions` keeps whatever was declared before.
@@ -745,14 +754,18 @@ type ClientContextRequest struct {
 	// Actions The actions on offer right now. Omit when unchanged since the last message.
 	Actions []ClientActionRequest `json:"actions,omitempty"`
 
-	// ClientId Identifies this client while it stays open. Any stable string; one per tab.
+	// ClientId Identifies this client while it stays open. Any stable string; one per tab or process.
 	ClientId string `json:"clientId"`
+
+	// Context What the operator is looking at or working on, as typed blocks. Each one is shown to the
+	// assistant as it was sent.
+	//
+	// These travel with this message only and stay in the conversation, so they add up: send
+	// what the assistant needs to answer, not everything on hand. At most 64 KiB in total.
+	Context []ClientContextPart `json:"context,omitempty"`
 
 	// Label How the client calls itself, for example "Leaflow console (web)".
 	Label *string `json:"label,omitempty"`
-
-	// Page What the operator is looking at.
-	Page *ClientPageRequest `json:"page,omitempty"`
 }
 
 // ClientFunctionRequest The function object from the OpenAI tools format.
@@ -766,12 +779,6 @@ type ClientFunctionRequest struct {
 
 	// Parameters JSON Schema for the arguments. Omit for an action that takes none.
 	Parameters map[string]interface{} `json:"parameters,omitempty"`
-}
-
-// ClientPageRequest What the operator is looking at.
-type ClientPageRequest struct {
-	Title *string `json:"title,omitempty"`
-	Url   *string `json:"url,omitempty"`
 }
 
 // ContextResource defines model for ContextResource.
@@ -1061,7 +1068,8 @@ type SendMessageRequestBody struct {
 	// AttachmentIds Ids of attachments uploaded earlier that are not yet bound to any message
 	AttachmentIds []string `json:"attachmentIds,omitempty"`
 
-	// Client What this client can do, so the assistant can ask it to do those things while it answers.
+	// Client What this client is and what it can do, so the assistant can ask it to do those things while
+	// it answers.
 	//
 	// Send `actions` only when they differ from the last message on this conversation. Sending the
 	// block without `actions` keeps whatever was declared before.
