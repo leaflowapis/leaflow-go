@@ -474,9 +474,6 @@ type PreferencesResource struct {
 
 	// Locale The language notifications are written in, as an IETF language tag
 	Locale string `json:"locale"`
-
-	// Timezone The IANA time zone times in notifications are stated in
-	Timezone string `json:"timezone"`
 }
 
 // RealtimeAuthResource defines model for RealtimeAuthResource.
@@ -575,9 +572,6 @@ type UpdatePreferencesRequestBody struct {
 
 	// Locale An IETF language tag. A language that is not supported is rejected rather than approximated
 	Locale *string `json:"locale,omitempty"`
-
-	// Timezone An IANA time zone name, such as Asia/Shanghai
-	Timezone *string `json:"timezone,omitempty"`
 }
 
 // UpdateTypePreferenceRequestBody States how this type should be delivered, replacing whatever was configured before.
