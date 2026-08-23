@@ -740,6 +740,71 @@ func decodeDeleteMemoryParams(args [1]string, argsEscaped bool, r *http.Request)
 	return params, nil
 }
 
+// DeleteSkillParams is parameters of delete-skill operation.
+type DeleteSkillParams struct {
+	Skill string
+}
+
+func unpackDeleteSkillParams(packed middleware.Parameters) (params DeleteSkillParams) {
+	{
+		key := middleware.ParameterKey{
+			Name: "skill",
+			In:   "path",
+		}
+		params.Skill = packed[key].(string)
+	}
+	return params
+}
+
+func decodeDeleteSkillParams(args [1]string, argsEscaped bool, r *http.Request) (params DeleteSkillParams, _ error) {
+	// Decode path: skill.
+	if err := func() error {
+		param := args[0]
+		if argsEscaped {
+			unescaped, err := url.PathUnescape(args[0])
+			if err != nil {
+				return errors.Wrap(err, "unescape path")
+			}
+			param = unescaped
+		}
+		if len(param) > 0 {
+			d := uri.NewPathDecoder(uri.PathDecoderConfig{
+				Param:   "skill",
+				Value:   param,
+				Style:   uri.PathStyleSimple,
+				Explode: false,
+			})
+
+			if err := func() error {
+				val, err := d.DecodeValue()
+				if err != nil {
+					return err
+				}
+
+				c, err := conv.ToString(val)
+				if err != nil {
+					return err
+				}
+
+				params.Skill = c
+				return nil
+			}(); err != nil {
+				return err
+			}
+		} else {
+			return validate.ErrFieldRequired
+		}
+		return nil
+	}(); err != nil {
+		return params, &ogenerrors.DecodeParamError{
+			Name: "skill",
+			In:   "path",
+			Err:  err,
+		}
+	}
+	return params, nil
+}
+
 // DownloadAttachmentParams is parameters of download-attachment operation.
 type DownloadAttachmentParams struct {
 	Attachment string
@@ -928,6 +993,72 @@ func decodeGetChannelParams(args [1]string, argsEscaped bool, r *http.Request) (
 	}(); err != nil {
 		return params, &ogenerrors.DecodeParamError{
 			Name: "channel",
+			In:   "path",
+			Err:  err,
+		}
+	}
+	return params, nil
+}
+
+// GetSkillParams is parameters of get-skill operation.
+type GetSkillParams struct {
+	// The skill's name, as `list-skills` returned it.
+	Skill string
+}
+
+func unpackGetSkillParams(packed middleware.Parameters) (params GetSkillParams) {
+	{
+		key := middleware.ParameterKey{
+			Name: "skill",
+			In:   "path",
+		}
+		params.Skill = packed[key].(string)
+	}
+	return params
+}
+
+func decodeGetSkillParams(args [1]string, argsEscaped bool, r *http.Request) (params GetSkillParams, _ error) {
+	// Decode path: skill.
+	if err := func() error {
+		param := args[0]
+		if argsEscaped {
+			unescaped, err := url.PathUnescape(args[0])
+			if err != nil {
+				return errors.Wrap(err, "unescape path")
+			}
+			param = unescaped
+		}
+		if len(param) > 0 {
+			d := uri.NewPathDecoder(uri.PathDecoderConfig{
+				Param:   "skill",
+				Value:   param,
+				Style:   uri.PathStyleSimple,
+				Explode: false,
+			})
+
+			if err := func() error {
+				val, err := d.DecodeValue()
+				if err != nil {
+					return err
+				}
+
+				c, err := conv.ToString(val)
+				if err != nil {
+					return err
+				}
+
+				params.Skill = c
+				return nil
+			}(); err != nil {
+				return err
+			}
+		} else {
+			return validate.ErrFieldRequired
+		}
+		return nil
+	}(); err != nil {
+		return params, &ogenerrors.DecodeParamError{
+			Name: "skill",
 			In:   "path",
 			Err:  err,
 		}
@@ -2480,6 +2611,71 @@ func decodeSendMessageParams(args [1]string, argsEscaped bool, r *http.Request) 
 	}(); err != nil {
 		return params, &ogenerrors.DecodeParamError{
 			Name: "thread",
+			In:   "path",
+			Err:  err,
+		}
+	}
+	return params, nil
+}
+
+// SetSkillEnabledParams is parameters of set-skill-enabled operation.
+type SetSkillEnabledParams struct {
+	Skill string
+}
+
+func unpackSetSkillEnabledParams(packed middleware.Parameters) (params SetSkillEnabledParams) {
+	{
+		key := middleware.ParameterKey{
+			Name: "skill",
+			In:   "path",
+		}
+		params.Skill = packed[key].(string)
+	}
+	return params
+}
+
+func decodeSetSkillEnabledParams(args [1]string, argsEscaped bool, r *http.Request) (params SetSkillEnabledParams, _ error) {
+	// Decode path: skill.
+	if err := func() error {
+		param := args[0]
+		if argsEscaped {
+			unescaped, err := url.PathUnescape(args[0])
+			if err != nil {
+				return errors.Wrap(err, "unescape path")
+			}
+			param = unescaped
+		}
+		if len(param) > 0 {
+			d := uri.NewPathDecoder(uri.PathDecoderConfig{
+				Param:   "skill",
+				Value:   param,
+				Style:   uri.PathStyleSimple,
+				Explode: false,
+			})
+
+			if err := func() error {
+				val, err := d.DecodeValue()
+				if err != nil {
+					return err
+				}
+
+				c, err := conv.ToString(val)
+				if err != nil {
+					return err
+				}
+
+				params.Skill = c
+				return nil
+			}(); err != nil {
+				return err
+			}
+		} else {
+			return validate.ErrFieldRequired
+		}
+		return nil
+	}(); err != nil {
+		return params, &ogenerrors.DecodeParamError{
+			Name: "skill",
 			In:   "path",
 			Err:  err,
 		}

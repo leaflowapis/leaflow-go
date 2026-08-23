@@ -121,6 +121,15 @@ func (UnimplementedHandler) DeleteMemory(ctx context.Context, params DeleteMemor
 	return ht.ErrNotImplemented
 }
 
+// DeleteSkill implements delete-skill operation.
+//
+// A built-in skill of the same name, if there was one, becomes visible again.
+//
+// DELETE /api/v1/skills/{skill}
+func (UnimplementedHandler) DeleteSkill(ctx context.Context, params DeleteSkillParams) error {
+	return ht.ErrNotImplemented
+}
+
 // DownloadAttachment implements download-attachment operation.
 //
 // Returns the original bytes for an attachment id, usable directly as the address of an . The response
@@ -147,6 +156,15 @@ func (UnimplementedHandler) GetBinding(ctx context.Context, params GetBindingPar
 //
 // GET /api/v1/channels/{channel}
 func (UnimplementedHandler) GetChannel(ctx context.Context, params GetChannelParams) (r *ChannelResource, _ error) {
+	return r, ht.ErrNotImplemented
+}
+
+// GetSkill implements get-skill operation.
+//
+// Works for built-in skills too; they simply cannot be written.
+//
+// GET /api/v1/skills/{skill}
+func (UnimplementedHandler) GetSkill(ctx context.Context, params GetSkillParams) (r *SkillResource, _ error) {
 	return r, ht.ErrNotImplemented
 }
 
@@ -258,6 +276,19 @@ func (UnimplementedHandler) ListPlatforms(ctx context.Context) (r *PlatformListR
 	return r, ht.ErrNotImplemented
 }
 
+// ListSkills implements list-skills operation.
+//
+// Everything the assistant can reach in this project, including the ones that are turned off — an
+// entry that disappeared once it was switched off could not be switched back on.
+//
+// `origin` says whether a skill can be edited here. Skills belonging to the project are visible to
+// everyone in it, whoever wrote them.
+//
+// GET /api/v1/skills
+func (UnimplementedHandler) ListSkills(ctx context.Context) (r *SkillListResponseBody, _ error) {
+	return r, ht.ErrNotImplemented
+}
+
 // ListThreads implements list-threads operation.
 //
 // Ordered by most recent activity, limited to the current account's conversations in the current
@@ -276,6 +307,19 @@ func (UnimplementedHandler) ListThreads(ctx context.Context, params ListThreadsP
 // POST /api/v1/threads/{thread}/read
 func (UnimplementedHandler) MarkThreadRead(ctx context.Context, params MarkThreadReadParams) error {
 	return ht.ErrNotImplemented
+}
+
+// PutSkill implements put-skill operation.
+//
+// Creates it, or replaces the project's skill of that name. The whole package goes in each time: files
+// left out of a write are removed, so the stored skill is what was sent and not what accumulated.
+//
+// A project skill takes precedence over a built-in one of the same name for this project only. The
+// built-in is untouched and reappears if the project's is deleted.
+//
+// POST /api/v1/skills
+func (UnimplementedHandler) PutSkill(ctx context.Context, req *SkillRequestBody) (r *SkillResource, _ error) {
+	return r, ht.ErrNotImplemented
 }
 
 // RevertThread implements revert-thread operation.
@@ -311,6 +355,19 @@ func (UnimplementedHandler) RotateChannelSecret(ctx context.Context, req OptRota
 //
 // POST /api/v1/threads/{thread}/messages
 func (UnimplementedHandler) SendMessage(ctx context.Context, req *SendMessageRequestBody, params SendMessageParams) (r *TurnIDResponseBody, _ error) {
+	return r, ht.ErrNotImplemented
+}
+
+// SetSkillEnabled implements set-skill-enabled operation.
+//
+// Separate from writing it, because this is the frequent one: a skill that is off costs nothing and
+// stays where it is.
+//
+// Only skills belonging to the project can be switched. To keep a built-in one out of the way, write a
+// project skill of the same name and turn that off.
+//
+// PATCH /api/v1/skills/{skill}
+func (UnimplementedHandler) SetSkillEnabled(ctx context.Context, req *SkillEnabledRequestBody, params SetSkillEnabledParams) (r *SkillResource, _ error) {
 	return r, ht.ErrNotImplemented
 }
 
@@ -350,8 +407,8 @@ func (UnimplementedHandler) UpdateChannel(ctx context.Context, req *UpdateChanne
 // UpdateThread implements update-thread operation.
 //
 // Changes the model, reasoning level, approval mode and archived state. A change takes effect from the
-// next turn; a turn already running keeps the settings it started with. reasoningEffort only applies
-// when model is given as well.
+// next turn; a turn already running keeps the settings it started with. Model and reasoning level
+// change independently: sending one leaves the other alone.
 //
 // PATCH /api/v1/threads/{thread}
 func (UnimplementedHandler) UpdateThread(ctx context.Context, req *UpdateThreadRequestBody, params UpdateThreadParams) (r *ThreadSummaryResource, _ error) {

@@ -481,6 +481,24 @@ func (e SenderCheckResourceVerdict) Valid() bool {
 	}
 }
 
+// Defines values for SkillResourceOrigin.
+const (
+	Builtin SkillResourceOrigin = "builtin"
+	Project SkillResourceOrigin = "project"
+)
+
+// Valid indicates whether the value is a known member of the SkillResourceOrigin enum.
+func (e SkillResourceOrigin) Valid() bool {
+	switch e {
+	case Builtin:
+		return true
+	case Project:
+		return true
+	default:
+		return false
+	}
+}
+
 // Defines values for ThreadSummaryResourceApprovalMode.
 const (
 	ThreadSummaryResourceApprovalModeGuardian ThreadSummaryResourceApprovalMode = "guardian"
@@ -1113,6 +1131,56 @@ type SenderCheckResource struct {
 // SenderCheckResourceVerdict defines model for SenderCheckResource.Verdict.
 type SenderCheckResourceVerdict string
 
+// SkillEnabledRequestBody defines model for SkillEnabledRequestBody.
+type SkillEnabledRequestBody struct {
+	Enabled bool `json:"enabled"`
+}
+
+// SkillListResponseBody defines model for SkillListResponseBody.
+type SkillListResponseBody struct {
+	Skills []SkillResource `json:"skills"`
+}
+
+// SkillRequestBody defines model for SkillRequestBody.
+type SkillRequestBody struct {
+	// Description Why the assistant would open this skill. It sits in every request; write it as the answer to "when do I need this", not "what does it contain".
+	Description string `json:"description"`
+	Enabled     *bool  `json:"enabled,omitempty"`
+
+	// Files Path to contents. `SKILL.md` is required; anything else it references goes alongside it.
+	//
+	// Paths are relative to the skill and cannot leave it. At most 32 files, 256 KiB each and
+	// 1 MiB in total.
+	Files map[string]string `json:"files"`
+
+	// Name Also how the assistant refers to it, so renaming is deleting and writing again.
+	Name             string  `json:"name"`
+	ShortDescription *string `json:"shortDescription,omitempty"`
+}
+
+// SkillResource defines model for SkillResource.
+type SkillResource struct {
+	// Description Why the assistant would open this skill. It sits in every request, so it is the one field worth writing carefully.
+	Description string `json:"description"`
+	Enabled     bool   `json:"enabled"`
+
+	// Files Path to contents, `SKILL.md` among them. Only returned by `get-skill`; the list leaves it out.
+	Files map[string]string `json:"files,omitempty"`
+	Name  string            `json:"name"`
+
+	// Origin `builtin` — provided by the platform and read-only here.
+	// `project` — written for this project and editable by anyone in it.
+	Origin           SkillResourceOrigin `json:"origin"`
+	ShortDescription *string             `json:"shortDescription"`
+
+	// UpdatedAt Null for built-in skills, which have no edit history here.
+	UpdatedAt *time.Time `json:"updatedAt"`
+}
+
+// SkillResourceOrigin `builtin` — provided by the platform and read-only here.
+// `project` — written for this project and editable by anyone in it.
+type SkillResourceOrigin string
+
 // StreamResource defines model for StreamResource.
 type StreamResource struct {
 	Path   string `json:"path"`
@@ -1309,6 +1377,12 @@ type RotateChannelSecretJSONRequestBody = RotateSecretRequestBody
 
 // SubmitDynamicCallResultJSONRequestBody defines body for SubmitDynamicCallResult for application/json ContentType.
 type SubmitDynamicCallResultJSONRequestBody = DynamicCallResultRequestBody
+
+// PutSkillJSONRequestBody defines body for PutSkill for application/json ContentType.
+type PutSkillJSONRequestBody = SkillRequestBody
+
+// SetSkillEnabledJSONRequestBody defines body for SetSkillEnabled for application/json ContentType.
+type SetSkillEnabledJSONRequestBody = SkillEnabledRequestBody
 
 // CreateThreadJSONRequestBody defines body for CreateThread for application/json ContentType.
 type CreateThreadJSONRequestBody = CreateThreadRequestBody
@@ -1591,6 +1665,85 @@ type ClientInterface interface {
 	// Corresponds with GET /api/v1/platforms (the `ListPlatforms` operationId).
 	ListPlatforms(ctx context.Context, reqEditors ...RequestEditorFn) (*http.Response, error)
 
+	// ListSkills List the skills this project can use
+	//
+	// Everything the assistant can reach in this project, including the ones that are turned off —
+	// an entry that disappeared once it was switched off could not be switched back on.
+	//
+	// `origin` says whether a skill can be edited here. Skills belonging to the project are
+	// visible to everyone in it, whoever wrote them.
+	//
+	// Corresponds with GET /api/v1/skills (the `ListSkills` operationId).
+	ListSkills(ctx context.Context, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// PutSkillWithBody Write a skill for this project
+	//
+	// Creates it, or replaces the project's skill of that name. The whole package goes in each
+	// time: files left out of a write are removed, so the stored skill is what was sent and not
+	// what accumulated.
+	//
+	// A project skill takes precedence over a built-in one of the same name for this project only.
+	// The built-in is untouched and reappears if the project's is deleted.
+	//
+	// Takes any type of body and a specified content type.
+	//
+	// Corresponds with POST /api/v1/skills (the `PutSkill` operationId).
+	PutSkillWithBody(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// PutSkill Write a skill for this project
+	//
+	// Creates it, or replaces the project's skill of that name. The whole package goes in each
+	// time: files left out of a write are removed, so the stored skill is what was sent and not
+	// what accumulated.
+	//
+	// A project skill takes precedence over a built-in one of the same name for this project only.
+	// The built-in is untouched and reappears if the project's is deleted.
+	//
+	// Takes a body of the `application/json` content type.
+	//
+	// Corresponds with POST /api/v1/skills (the `PutSkill` operationId).
+	PutSkill(ctx context.Context, body PutSkillJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// DeleteSkill Delete this project's skill
+	//
+	// A built-in skill of the same name, if there was one, becomes visible again.
+	//
+	// Corresponds with DELETE /api/v1/skills/{skill} (the `DeleteSkill` operationId).
+	DeleteSkill(ctx context.Context, skill string, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// GetSkill Read one skill, with its files
+	//
+	// Works for built-in skills too; they simply cannot be written.
+	//
+	// Corresponds with GET /api/v1/skills/{skill} (the `GetSkill` operationId).
+	GetSkill(ctx context.Context, skill string, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// SetSkillEnabledWithBody Turn a skill on or off
+	//
+	// Separate from writing it, because this is the frequent one: a skill that is off costs
+	// nothing and stays where it is.
+	//
+	// Only skills belonging to the project can be switched. To keep a built-in one out of the
+	// way, write a project skill of the same name and turn that off.
+	//
+	// Takes any type of body and a specified content type.
+	//
+	// Corresponds with PATCH /api/v1/skills/{skill} (the `SetSkillEnabled` operationId).
+	SetSkillEnabledWithBody(ctx context.Context, skill string, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// SetSkillEnabled Turn a skill on or off
+	//
+	// Separate from writing it, because this is the frequent one: a skill that is off costs
+	// nothing and stays where it is.
+	//
+	// Only skills belonging to the project can be switched. To keep a built-in one out of the
+	// way, write a project skill of the same name and turn that off.
+	//
+	// Takes a body of the `application/json` content type.
+	//
+	// Corresponds with PATCH /api/v1/skills/{skill} (the `SetSkillEnabled` operationId).
+	SetSkillEnabled(ctx context.Context, skill string, body SetSkillEnabledJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
+
 	// ListThreads List conversations
 	//
 	// Ordered by most recent activity, limited to the current account's conversations in the current project. `archived` selects between two sets rather than widening one: archived conversations are absent from the default list, and turning the flag on shows those instead.
@@ -1621,7 +1774,7 @@ type ClientInterface interface {
 
 	// UpdateThreadWithBody Update conversation settings
 	//
-	// Changes the model, reasoning level, approval mode and archived state. A change takes effect from the next turn; a turn already running keeps the settings it started with. reasoningEffort only applies when model is given as well.
+	// Changes the model, reasoning level, approval mode and archived state. A change takes effect from the next turn; a turn already running keeps the settings it started with. Model and reasoning level change independently: sending one leaves the other alone.
 	//
 	// Takes any type of body and a specified content type.
 	//
@@ -1630,7 +1783,7 @@ type ClientInterface interface {
 
 	// UpdateThread Update conversation settings
 	//
-	// Changes the model, reasoning level, approval mode and archived state. A change takes effect from the next turn; a turn already running keeps the settings it started with. reasoningEffort only applies when model is given as well.
+	// Changes the model, reasoning level, approval mode and archived state. A change takes effect from the next turn; a turn already running keeps the settings it started with. Model and reasoning level change independently: sending one leaves the other alone.
 	//
 	// Takes a body of the `application/json` content type.
 	//
@@ -2180,6 +2333,155 @@ func (c *Client) ListPlatforms(ctx context.Context, reqEditors ...RequestEditorF
 	return c.Client.Do(req)
 }
 
+// ListSkills List the skills this project can use
+//
+// Everything the assistant can reach in this project, including the ones that are turned off —
+// an entry that disappeared once it was switched off could not be switched back on.
+//
+// `origin` says whether a skill can be edited here. Skills belonging to the project are
+// visible to everyone in it, whoever wrote them.
+//
+// Corresponds with GET /api/v1/skills (the `ListSkills` operationId).
+func (c *Client) ListSkills(ctx context.Context, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewListSkillsRequest(c.Server)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+// PutSkillWithBody Write a skill for this project
+//
+// Creates it, or replaces the project's skill of that name. The whole package goes in each
+// time: files left out of a write are removed, so the stored skill is what was sent and not
+// what accumulated.
+//
+// A project skill takes precedence over a built-in one of the same name for this project only.
+// The built-in is untouched and reappears if the project's is deleted.
+//
+// Takes any type of body and a specified content type.
+//
+// Corresponds with POST /api/v1/skills (the `PutSkill` operationId).
+func (c *Client) PutSkillWithBody(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewPutSkillRequestWithBody(c.Server, contentType, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+// PutSkill Write a skill for this project
+//
+// Creates it, or replaces the project's skill of that name. The whole package goes in each
+// time: files left out of a write are removed, so the stored skill is what was sent and not
+// what accumulated.
+//
+// A project skill takes precedence over a built-in one of the same name for this project only.
+// The built-in is untouched and reappears if the project's is deleted.
+//
+// Takes a body of the `application/json` content type.
+//
+// Corresponds with POST /api/v1/skills (the `PutSkill` operationId).
+func (c *Client) PutSkill(ctx context.Context, body PutSkillJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewPutSkillRequest(c.Server, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+// DeleteSkill Delete this project's skill
+//
+// A built-in skill of the same name, if there was one, becomes visible again.
+//
+// Corresponds with DELETE /api/v1/skills/{skill} (the `DeleteSkill` operationId).
+func (c *Client) DeleteSkill(ctx context.Context, skill string, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewDeleteSkillRequest(c.Server, skill)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+// GetSkill Read one skill, with its files
+//
+// Works for built-in skills too; they simply cannot be written.
+//
+// Corresponds with GET /api/v1/skills/{skill} (the `GetSkill` operationId).
+func (c *Client) GetSkill(ctx context.Context, skill string, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewGetSkillRequest(c.Server, skill)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+// SetSkillEnabledWithBody Turn a skill on or off
+//
+// Separate from writing it, because this is the frequent one: a skill that is off costs
+// nothing and stays where it is.
+//
+// Only skills belonging to the project can be switched. To keep a built-in one out of the
+// way, write a project skill of the same name and turn that off.
+//
+// Takes any type of body and a specified content type.
+//
+// Corresponds with PATCH /api/v1/skills/{skill} (the `SetSkillEnabled` operationId).
+func (c *Client) SetSkillEnabledWithBody(ctx context.Context, skill string, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewSetSkillEnabledRequestWithBody(c.Server, skill, contentType, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+// SetSkillEnabled Turn a skill on or off
+//
+// Separate from writing it, because this is the frequent one: a skill that is off costs
+// nothing and stays where it is.
+//
+// Only skills belonging to the project can be switched. To keep a built-in one out of the
+// way, write a project skill of the same name and turn that off.
+//
+// Takes a body of the `application/json` content type.
+//
+// Corresponds with PATCH /api/v1/skills/{skill} (the `SetSkillEnabled` operationId).
+func (c *Client) SetSkillEnabled(ctx context.Context, skill string, body SetSkillEnabledJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewSetSkillEnabledRequest(c.Server, skill, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
 // ListThreads List conversations
 //
 // Ordered by most recent activity, limited to the current account's conversations in the current project. `archived` selects between two sets rather than widening one: archived conversations are absent from the default list, and turning the flag on shows those instead.
@@ -2250,7 +2552,7 @@ func (c *Client) GetThread(ctx context.Context, thread string, reqEditors ...Req
 
 // UpdateThreadWithBody Update conversation settings
 //
-// Changes the model, reasoning level, approval mode and archived state. A change takes effect from the next turn; a turn already running keeps the settings it started with. reasoningEffort only applies when model is given as well.
+// Changes the model, reasoning level, approval mode and archived state. A change takes effect from the next turn; a turn already running keeps the settings it started with. Model and reasoning level change independently: sending one leaves the other alone.
 //
 // Takes any type of body and a specified content type.
 //
@@ -2269,7 +2571,7 @@ func (c *Client) UpdateThreadWithBody(ctx context.Context, thread string, conten
 
 // UpdateThread Update conversation settings
 //
-// Changes the model, reasoning level, approval mode and archived state. A change takes effect from the next turn; a turn already running keeps the settings it started with. reasoningEffort only applies when model is given as well.
+// Changes the model, reasoning level, approval mode and archived state. A change takes effect from the next turn; a turn already running keeps the settings it started with. Model and reasoning level change independently: sending one leaves the other alone.
 //
 // Takes a body of the `application/json` content type.
 //
@@ -3427,6 +3729,188 @@ func NewListPlatformsRequest(server string) (*http.Request, error) {
 	return req, nil
 }
 
+// NewListSkillsRequest constructs an http.Request for the ListSkills method
+func NewListSkillsRequest(server string) (*http.Request, error) {
+	var err error
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/api/v1/skills")
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest(http.MethodGet, queryURL.String(), nil)
+	if err != nil {
+		return nil, err
+	}
+
+	return req, nil
+}
+
+// NewPutSkillRequest calls the generic PutSkill builder with application/json body
+func NewPutSkillRequest(server string, body PutSkillJSONRequestBody) (*http.Request, error) {
+	var bodyReader io.Reader
+	buf, err := json.Marshal(body)
+	if err != nil {
+		return nil, err
+	}
+	bodyReader = bytes.NewReader(buf)
+	return NewPutSkillRequestWithBody(server, "application/json", bodyReader)
+}
+
+// NewPutSkillRequestWithBody constructs an http.Request for the PutSkill method, with any body, and a specified content type
+func NewPutSkillRequestWithBody(server string, contentType string, body io.Reader) (*http.Request, error) {
+	var err error
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/api/v1/skills")
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest(http.MethodPost, queryURL.String(), body)
+	if err != nil {
+		return nil, err
+	}
+
+	req.Header.Add("Content-Type", contentType)
+
+	return req, nil
+}
+
+// NewDeleteSkillRequest constructs an http.Request for the DeleteSkill method
+func NewDeleteSkillRequest(server string, skill string) (*http.Request, error) {
+	var err error
+
+	var pathParam0 string
+
+	pathParam0, err = runtime.StyleParamWithOptions("simple", false, "skill", skill, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: ""})
+	if err != nil {
+		return nil, err
+	}
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/api/v1/skills/%s", pathParam0)
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest(http.MethodDelete, queryURL.String(), nil)
+	if err != nil {
+		return nil, err
+	}
+
+	return req, nil
+}
+
+// NewGetSkillRequest constructs an http.Request for the GetSkill method
+func NewGetSkillRequest(server string, skill string) (*http.Request, error) {
+	var err error
+
+	var pathParam0 string
+
+	pathParam0, err = runtime.StyleParamWithOptions("simple", false, "skill", skill, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: ""})
+	if err != nil {
+		return nil, err
+	}
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/api/v1/skills/%s", pathParam0)
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest(http.MethodGet, queryURL.String(), nil)
+	if err != nil {
+		return nil, err
+	}
+
+	return req, nil
+}
+
+// NewSetSkillEnabledRequest calls the generic SetSkillEnabled builder with application/json body
+func NewSetSkillEnabledRequest(server string, skill string, body SetSkillEnabledJSONRequestBody) (*http.Request, error) {
+	var bodyReader io.Reader
+	buf, err := json.Marshal(body)
+	if err != nil {
+		return nil, err
+	}
+	bodyReader = bytes.NewReader(buf)
+	return NewSetSkillEnabledRequestWithBody(server, skill, "application/json", bodyReader)
+}
+
+// NewSetSkillEnabledRequestWithBody constructs an http.Request for the SetSkillEnabled method, with any body, and a specified content type
+func NewSetSkillEnabledRequestWithBody(server string, skill string, contentType string, body io.Reader) (*http.Request, error) {
+	var err error
+
+	var pathParam0 string
+
+	pathParam0, err = runtime.StyleParamWithOptions("simple", false, "skill", skill, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: ""})
+	if err != nil {
+		return nil, err
+	}
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/api/v1/skills/%s", pathParam0)
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest(http.MethodPatch, queryURL.String(), body)
+	if err != nil {
+		return nil, err
+	}
+
+	req.Header.Add("Content-Type", contentType)
+
+	return req, nil
+}
+
 // NewListThreadsRequest constructs an http.Request for the ListThreads method
 func NewListThreadsRequest(server string, params *ListThreadsParams) (*http.Request, error) {
 	var err error
@@ -4294,6 +4778,91 @@ type ClientWithResponsesInterface interface {
 	// Corresponds with GET /api/v1/platforms (the `ListPlatforms` operationId).
 	ListPlatformsWithResponse(ctx context.Context, reqEditors ...RequestEditorFn) (*ListPlatformsResponse, error)
 
+	// ListSkillsWithResponse List the skills this project can use
+	//
+	// Everything the assistant can reach in this project, including the ones that are turned off —
+	// an entry that disappeared once it was switched off could not be switched back on.
+	//
+	// `origin` says whether a skill can be edited here. Skills belonging to the project are
+	// visible to everyone in it, whoever wrote them.
+	//
+	// Returns a wrapper object for the known response body format(s).
+	//
+	// Corresponds with GET /api/v1/skills (the `ListSkills` operationId).
+	ListSkillsWithResponse(ctx context.Context, reqEditors ...RequestEditorFn) (*ListSkillsResponse, error)
+
+	// PutSkillWithBodyWithResponse Write a skill for this project
+	//
+	// Creates it, or replaces the project's skill of that name. The whole package goes in each
+	// time: files left out of a write are removed, so the stored skill is what was sent and not
+	// what accumulated.
+	//
+	// A project skill takes precedence over a built-in one of the same name for this project only.
+	// The built-in is untouched and reappears if the project's is deleted.
+	//
+	// Takes any type of body and a specified content type, and returns a wrapper object for the known response body format(s).
+	//
+	// Corresponds with POST /api/v1/skills (the `PutSkill` operationId).
+	PutSkillWithBodyWithResponse(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*PutSkillResponse, error)
+
+	// PutSkillWithResponse Write a skill for this project
+	//
+	// Creates it, or replaces the project's skill of that name. The whole package goes in each
+	// time: files left out of a write are removed, so the stored skill is what was sent and not
+	// what accumulated.
+	//
+	// A project skill takes precedence over a built-in one of the same name for this project only.
+	// The built-in is untouched and reappears if the project's is deleted.
+	//
+	// Takes a body of the `application/json` content type, and returns a wrapper object for the known response body format(s).
+	//
+	// Corresponds with POST /api/v1/skills (the `PutSkill` operationId).
+	PutSkillWithResponse(ctx context.Context, body PutSkillJSONRequestBody, reqEditors ...RequestEditorFn) (*PutSkillResponse, error)
+
+	// DeleteSkillWithResponse Delete this project's skill
+	//
+	// A built-in skill of the same name, if there was one, becomes visible again.
+	//
+	// Returns a wrapper object for the known response body format(s).
+	//
+	// Corresponds with DELETE /api/v1/skills/{skill} (the `DeleteSkill` operationId).
+	DeleteSkillWithResponse(ctx context.Context, skill string, reqEditors ...RequestEditorFn) (*DeleteSkillResponse, error)
+
+	// GetSkillWithResponse Read one skill, with its files
+	//
+	// Works for built-in skills too; they simply cannot be written.
+	//
+	// Returns a wrapper object for the known response body format(s).
+	//
+	// Corresponds with GET /api/v1/skills/{skill} (the `GetSkill` operationId).
+	GetSkillWithResponse(ctx context.Context, skill string, reqEditors ...RequestEditorFn) (*GetSkillResponse, error)
+
+	// SetSkillEnabledWithBodyWithResponse Turn a skill on or off
+	//
+	// Separate from writing it, because this is the frequent one: a skill that is off costs
+	// nothing and stays where it is.
+	//
+	// Only skills belonging to the project can be switched. To keep a built-in one out of the
+	// way, write a project skill of the same name and turn that off.
+	//
+	// Takes any type of body and a specified content type, and returns a wrapper object for the known response body format(s).
+	//
+	// Corresponds with PATCH /api/v1/skills/{skill} (the `SetSkillEnabled` operationId).
+	SetSkillEnabledWithBodyWithResponse(ctx context.Context, skill string, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*SetSkillEnabledResponse, error)
+
+	// SetSkillEnabledWithResponse Turn a skill on or off
+	//
+	// Separate from writing it, because this is the frequent one: a skill that is off costs
+	// nothing and stays where it is.
+	//
+	// Only skills belonging to the project can be switched. To keep a built-in one out of the
+	// way, write a project skill of the same name and turn that off.
+	//
+	// Takes a body of the `application/json` content type, and returns a wrapper object for the known response body format(s).
+	//
+	// Corresponds with PATCH /api/v1/skills/{skill} (the `SetSkillEnabled` operationId).
+	SetSkillEnabledWithResponse(ctx context.Context, skill string, body SetSkillEnabledJSONRequestBody, reqEditors ...RequestEditorFn) (*SetSkillEnabledResponse, error)
+
 	// ListThreadsWithResponse List conversations
 	//
 	// Ordered by most recent activity, limited to the current account's conversations in the current project. `archived` selects between two sets rather than widening one: archived conversations are absent from the default list, and turning the flag on shows those instead.
@@ -4328,7 +4897,7 @@ type ClientWithResponsesInterface interface {
 
 	// UpdateThreadWithBodyWithResponse Update conversation settings
 	//
-	// Changes the model, reasoning level, approval mode and archived state. A change takes effect from the next turn; a turn already running keeps the settings it started with. reasoningEffort only applies when model is given as well.
+	// Changes the model, reasoning level, approval mode and archived state. A change takes effect from the next turn; a turn already running keeps the settings it started with. Model and reasoning level change independently: sending one leaves the other alone.
 	//
 	// Takes any type of body and a specified content type, and returns a wrapper object for the known response body format(s).
 	//
@@ -4337,7 +4906,7 @@ type ClientWithResponsesInterface interface {
 
 	// UpdateThreadWithResponse Update conversation settings
 	//
-	// Changes the model, reasoning level, approval mode and archived state. A change takes effect from the next turn; a turn already running keeps the settings it started with. reasoningEffort only applies when model is given as well.
+	// Changes the model, reasoning level, approval mode and archived state. A change takes effect from the next turn; a turn already running keeps the settings it started with. Model and reasoning level change independently: sending one leaves the other alone.
 	//
 	// Takes a body of the `application/json` content type, and returns a wrapper object for the known response body format(s).
 	//
@@ -5401,6 +5970,239 @@ func (r ListPlatformsResponse) ContentType() string {
 	return ""
 }
 
+type ListSkillsResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	// JSON200 the response for an HTTP 200 `application/json` response
+	JSON200 *SkillListResponseBody
+	// JSONDefault the response for an HTTP default `application/json` response
+	JSONDefault *Error
+}
+
+// GetJSON200 returns the response for an HTTP 200 `application/json` response
+func (r ListSkillsResponse) GetJSON200() *SkillListResponseBody {
+	return r.JSON200
+}
+
+// GetJSONDefault returns the response for an HTTP default `application/json` response
+func (r ListSkillsResponse) GetJSONDefault() *Error {
+	return r.JSONDefault
+}
+
+// GetBody returns the raw response body bytes
+func (r ListSkillsResponse) GetBody() []byte {
+	return r.Body
+}
+
+// Status returns HTTPResponse.Status
+func (r ListSkillsResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r ListSkillsResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+// ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
+func (r ListSkillsResponse) ContentType() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Header.Get("Content-Type")
+	}
+	return ""
+}
+
+type PutSkillResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	// JSON200 the response for an HTTP 200 `application/json` response
+	JSON200 *SkillResource
+	// JSONDefault the response for an HTTP default `application/json` response
+	JSONDefault *Error
+}
+
+// GetJSON200 returns the response for an HTTP 200 `application/json` response
+func (r PutSkillResponse) GetJSON200() *SkillResource {
+	return r.JSON200
+}
+
+// GetJSONDefault returns the response for an HTTP default `application/json` response
+func (r PutSkillResponse) GetJSONDefault() *Error {
+	return r.JSONDefault
+}
+
+// GetBody returns the raw response body bytes
+func (r PutSkillResponse) GetBody() []byte {
+	return r.Body
+}
+
+// Status returns HTTPResponse.Status
+func (r PutSkillResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r PutSkillResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+// ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
+func (r PutSkillResponse) ContentType() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Header.Get("Content-Type")
+	}
+	return ""
+}
+
+type DeleteSkillResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	// JSONDefault the response for an HTTP default `application/json` response
+	JSONDefault *Error
+}
+
+// GetJSONDefault returns the response for an HTTP default `application/json` response
+func (r DeleteSkillResponse) GetJSONDefault() *Error {
+	return r.JSONDefault
+}
+
+// GetBody returns the raw response body bytes
+func (r DeleteSkillResponse) GetBody() []byte {
+	return r.Body
+}
+
+// Status returns HTTPResponse.Status
+func (r DeleteSkillResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r DeleteSkillResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+// ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
+func (r DeleteSkillResponse) ContentType() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Header.Get("Content-Type")
+	}
+	return ""
+}
+
+type GetSkillResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	// JSON200 the response for an HTTP 200 `application/json` response
+	JSON200 *SkillResource
+	// JSONDefault the response for an HTTP default `application/json` response
+	JSONDefault *Error
+}
+
+// GetJSON200 returns the response for an HTTP 200 `application/json` response
+func (r GetSkillResponse) GetJSON200() *SkillResource {
+	return r.JSON200
+}
+
+// GetJSONDefault returns the response for an HTTP default `application/json` response
+func (r GetSkillResponse) GetJSONDefault() *Error {
+	return r.JSONDefault
+}
+
+// GetBody returns the raw response body bytes
+func (r GetSkillResponse) GetBody() []byte {
+	return r.Body
+}
+
+// Status returns HTTPResponse.Status
+func (r GetSkillResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r GetSkillResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+// ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
+func (r GetSkillResponse) ContentType() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Header.Get("Content-Type")
+	}
+	return ""
+}
+
+type SetSkillEnabledResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	// JSON200 the response for an HTTP 200 `application/json` response
+	JSON200 *SkillResource
+	// JSONDefault the response for an HTTP default `application/json` response
+	JSONDefault *Error
+}
+
+// GetJSON200 returns the response for an HTTP 200 `application/json` response
+func (r SetSkillEnabledResponse) GetJSON200() *SkillResource {
+	return r.JSON200
+}
+
+// GetJSONDefault returns the response for an HTTP default `application/json` response
+func (r SetSkillEnabledResponse) GetJSONDefault() *Error {
+	return r.JSONDefault
+}
+
+// GetBody returns the raw response body bytes
+func (r SetSkillEnabledResponse) GetBody() []byte {
+	return r.Body
+}
+
+// Status returns HTTPResponse.Status
+func (r SetSkillEnabledResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r SetSkillEnabledResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+// ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
+func (r SetSkillEnabledResponse) ContentType() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Header.Get("Content-Type")
+	}
+	return ""
+}
+
 type ListThreadsResponse struct {
 	Body         []byte
 	HTTPResponse *http.Response
@@ -6357,6 +7159,133 @@ func (c *ClientWithResponses) ListPlatformsWithResponse(ctx context.Context, req
 	return ParseListPlatformsResponse(rsp)
 }
 
+// ListSkillsWithResponse List the skills this project can use
+//
+// Everything the assistant can reach in this project, including the ones that are turned off —
+// an entry that disappeared once it was switched off could not be switched back on.
+//
+// `origin` says whether a skill can be edited here. Skills belonging to the project are
+// visible to everyone in it, whoever wrote them.
+//
+// Returns a wrapper object for the known response body format(s).
+//
+// Corresponds with GET /api/v1/skills (the `ListSkills` operationId).
+func (c *ClientWithResponses) ListSkillsWithResponse(ctx context.Context, reqEditors ...RequestEditorFn) (*ListSkillsResponse, error) {
+	rsp, err := c.ListSkills(ctx, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseListSkillsResponse(rsp)
+}
+
+// PutSkillWithBodyWithResponse Write a skill for this project
+//
+// Creates it, or replaces the project's skill of that name. The whole package goes in each
+// time: files left out of a write are removed, so the stored skill is what was sent and not
+// what accumulated.
+//
+// A project skill takes precedence over a built-in one of the same name for this project only.
+// The built-in is untouched and reappears if the project's is deleted.
+//
+// Takes any type of body and a specified content type, and returns a wrapper object for the known response body format(s).
+//
+// Corresponds with POST /api/v1/skills (the `PutSkill` operationId).
+func (c *ClientWithResponses) PutSkillWithBodyWithResponse(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*PutSkillResponse, error) {
+	rsp, err := c.PutSkillWithBody(ctx, contentType, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParsePutSkillResponse(rsp)
+}
+
+// PutSkillWithResponse Write a skill for this project
+//
+// Creates it, or replaces the project's skill of that name. The whole package goes in each
+// time: files left out of a write are removed, so the stored skill is what was sent and not
+// what accumulated.
+//
+// A project skill takes precedence over a built-in one of the same name for this project only.
+// The built-in is untouched and reappears if the project's is deleted.
+//
+// Takes a body of the `application/json` content type, and returns a wrapper object for the known response body format(s).
+//
+// Corresponds with POST /api/v1/skills (the `PutSkill` operationId).
+func (c *ClientWithResponses) PutSkillWithResponse(ctx context.Context, body PutSkillJSONRequestBody, reqEditors ...RequestEditorFn) (*PutSkillResponse, error) {
+	rsp, err := c.PutSkill(ctx, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParsePutSkillResponse(rsp)
+}
+
+// DeleteSkillWithResponse Delete this project's skill
+//
+// A built-in skill of the same name, if there was one, becomes visible again.
+//
+// Returns a wrapper object for the known response body format(s).
+//
+// Corresponds with DELETE /api/v1/skills/{skill} (the `DeleteSkill` operationId).
+func (c *ClientWithResponses) DeleteSkillWithResponse(ctx context.Context, skill string, reqEditors ...RequestEditorFn) (*DeleteSkillResponse, error) {
+	rsp, err := c.DeleteSkill(ctx, skill, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseDeleteSkillResponse(rsp)
+}
+
+// GetSkillWithResponse Read one skill, with its files
+//
+// Works for built-in skills too; they simply cannot be written.
+//
+// Returns a wrapper object for the known response body format(s).
+//
+// Corresponds with GET /api/v1/skills/{skill} (the `GetSkill` operationId).
+func (c *ClientWithResponses) GetSkillWithResponse(ctx context.Context, skill string, reqEditors ...RequestEditorFn) (*GetSkillResponse, error) {
+	rsp, err := c.GetSkill(ctx, skill, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseGetSkillResponse(rsp)
+}
+
+// SetSkillEnabledWithBodyWithResponse Turn a skill on or off
+//
+// Separate from writing it, because this is the frequent one: a skill that is off costs
+// nothing and stays where it is.
+//
+// Only skills belonging to the project can be switched. To keep a built-in one out of the
+// way, write a project skill of the same name and turn that off.
+//
+// Takes any type of body and a specified content type, and returns a wrapper object for the known response body format(s).
+//
+// Corresponds with PATCH /api/v1/skills/{skill} (the `SetSkillEnabled` operationId).
+func (c *ClientWithResponses) SetSkillEnabledWithBodyWithResponse(ctx context.Context, skill string, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*SetSkillEnabledResponse, error) {
+	rsp, err := c.SetSkillEnabledWithBody(ctx, skill, contentType, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseSetSkillEnabledResponse(rsp)
+}
+
+// SetSkillEnabledWithResponse Turn a skill on or off
+//
+// Separate from writing it, because this is the frequent one: a skill that is off costs
+// nothing and stays where it is.
+//
+// Only skills belonging to the project can be switched. To keep a built-in one out of the
+// way, write a project skill of the same name and turn that off.
+//
+// Takes a body of the `application/json` content type, and returns a wrapper object for the known response body format(s).
+//
+// Corresponds with PATCH /api/v1/skills/{skill} (the `SetSkillEnabled` operationId).
+func (c *ClientWithResponses) SetSkillEnabledWithResponse(ctx context.Context, skill string, body SetSkillEnabledJSONRequestBody, reqEditors ...RequestEditorFn) (*SetSkillEnabledResponse, error) {
+	rsp, err := c.SetSkillEnabled(ctx, skill, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseSetSkillEnabledResponse(rsp)
+}
+
 // ListThreadsWithResponse List conversations
 //
 // Ordered by most recent activity, limited to the current account's conversations in the current project. `archived` selects between two sets rather than widening one: archived conversations are absent from the default list, and turning the flag on shows those instead.
@@ -6415,7 +7344,7 @@ func (c *ClientWithResponses) GetThreadWithResponse(ctx context.Context, thread 
 
 // UpdateThreadWithBodyWithResponse Update conversation settings
 //
-// Changes the model, reasoning level, approval mode and archived state. A change takes effect from the next turn; a turn already running keeps the settings it started with. reasoningEffort only applies when model is given as well.
+// Changes the model, reasoning level, approval mode and archived state. A change takes effect from the next turn; a turn already running keeps the settings it started with. Model and reasoning level change independently: sending one leaves the other alone.
 //
 // Takes any type of body and a specified content type, and returns a wrapper object for the known response body format(s).
 //
@@ -6430,7 +7359,7 @@ func (c *ClientWithResponses) UpdateThreadWithBodyWithResponse(ctx context.Conte
 
 // UpdateThreadWithResponse Update conversation settings
 //
-// Changes the model, reasoning level, approval mode and archived state. A change takes effect from the next turn; a turn already running keeps the settings it started with. reasoningEffort only applies when model is given as well.
+// Changes the model, reasoning level, approval mode and archived state. A change takes effect from the next turn; a turn already running keeps the settings it started with. Model and reasoning level change independently: sending one leaves the other alone.
 //
 // Takes a body of the `application/json` content type, and returns a wrapper object for the known response body format(s).
 //
@@ -7284,6 +8213,167 @@ func ParseListPlatformsResponse(rsp *http.Response) (*ListPlatformsResponse, err
 	switch {
 	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
 		var dest PlatformListResponseBody
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && true:
+		var dest Error
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSONDefault = &dest
+
+	}
+
+	return response, nil
+}
+
+// ParseListSkillsResponse parses an HTTP response from a ListSkillsWithResponse call
+func ParseListSkillsResponse(rsp *http.Response) (*ListSkillsResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &ListSkillsResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest SkillListResponseBody
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && true:
+		var dest Error
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSONDefault = &dest
+
+	}
+
+	return response, nil
+}
+
+// ParsePutSkillResponse parses an HTTP response from a PutSkillWithResponse call
+func ParsePutSkillResponse(rsp *http.Response) (*PutSkillResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &PutSkillResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest SkillResource
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && true:
+		var dest Error
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSONDefault = &dest
+
+	}
+
+	return response, nil
+}
+
+// ParseDeleteSkillResponse parses an HTTP response from a DeleteSkillWithResponse call
+func ParseDeleteSkillResponse(rsp *http.Response) (*DeleteSkillResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &DeleteSkillResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case rsp.StatusCode == 204:
+		break // No content-type
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && true:
+		var dest Error
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSONDefault = &dest
+
+	}
+
+	return response, nil
+}
+
+// ParseGetSkillResponse parses an HTTP response from a GetSkillWithResponse call
+func ParseGetSkillResponse(rsp *http.Response) (*GetSkillResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &GetSkillResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest SkillResource
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && true:
+		var dest Error
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSONDefault = &dest
+
+	}
+
+	return response, nil
+}
+
+// ParseSetSkillEnabledResponse parses an HTTP response from a SetSkillEnabledWithResponse call
+func ParseSetSkillEnabledResponse(rsp *http.Response) (*SetSkillEnabledResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &SetSkillEnabledResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest SkillResource
 		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
 			return nil, err
 		}

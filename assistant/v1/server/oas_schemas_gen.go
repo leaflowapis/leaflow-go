@@ -1633,6 +1633,9 @@ type DeleteChannelNoContent struct{}
 // DeleteMemoryNoContent is response for DeleteMemory operation.
 type DeleteMemoryNoContent struct{}
 
+// DeleteSkillNoContent is response for DeleteSkill operation.
+type DeleteSkillNoContent struct{}
+
 // Ref: #/components/schemas/DocumentResource
 type DocumentResource struct {
 	Context ContextResource    `json:"context"`
@@ -4175,6 +4178,74 @@ func (o OptNilQuestionArray) Or(d []Question) []Question {
 	return d
 }
 
+// NewOptNilSkillResourceFiles returns new OptNilSkillResourceFiles with value set to v.
+func NewOptNilSkillResourceFiles(v SkillResourceFiles) OptNilSkillResourceFiles {
+	return OptNilSkillResourceFiles{
+		Value: v,
+		Set:   true,
+	}
+}
+
+// OptNilSkillResourceFiles is optional nullable SkillResourceFiles.
+type OptNilSkillResourceFiles struct {
+	Value SkillResourceFiles
+	Set   bool
+	Null  bool
+}
+
+// IsSet returns true if OptNilSkillResourceFiles was set.
+func (o OptNilSkillResourceFiles) IsSet() bool { return o.Set }
+
+// Reset unsets value.
+func (o *OptNilSkillResourceFiles) Reset() {
+	var v SkillResourceFiles
+	o.Value = v
+	o.Set = false
+	o.Null = false
+}
+
+// SetTo sets value to v.
+func (o *OptNilSkillResourceFiles) SetTo(v SkillResourceFiles) {
+	o.Set = true
+	o.Null = false
+	o.Value = v
+}
+
+// IsNull returns true if value is Null.
+func (o OptNilSkillResourceFiles) IsNull() bool { return o.Null }
+
+// SetToNull sets value to null.
+func (o *OptNilSkillResourceFiles) SetToNull() {
+	o.Set = true
+	o.Null = true
+	var v SkillResourceFiles
+	o.Value = v
+}
+
+// IsEmpty returns true if the field was omitted from the payload (not Set and not Null).
+func (o OptNilSkillResourceFiles) IsEmpty() bool {
+	return !o.Set && !o.Null
+}
+
+// Get returns value and boolean that denotes whether value was set.
+func (o OptNilSkillResourceFiles) Get() (v SkillResourceFiles, ok bool) {
+	if o.Null {
+		return v, false
+	}
+	if !o.Set {
+		return v, false
+	}
+	return o.Value, true
+}
+
+// Or returns value if set, or given parameter if does not.
+func (o OptNilSkillResourceFiles) Or(d SkillResourceFiles) SkillResourceFiles {
+	if v, ok := o.Get(); ok {
+		return v
+	}
+	return d
+}
+
 // NewOptNilString returns new OptNilString with value set to v.
 func NewOptNilString(v string) OptNilString {
 	return OptNilString{
@@ -5161,6 +5232,259 @@ func (s *SenderCheckResourceVerdict) UnmarshalText(data []byte) error {
 		return nil
 	case SenderCheckResourceVerdictREJECTEDNOTALLOWED:
 		*s = SenderCheckResourceVerdictREJECTEDNOTALLOWED
+		return nil
+	default:
+		return errors.Errorf("invalid value: %q", data)
+	}
+}
+
+// Ref: #/components/schemas/SkillEnabledRequestBody
+type SkillEnabledRequestBody struct {
+	Enabled bool `json:"enabled"`
+}
+
+// GetEnabled returns the value of Enabled.
+func (s *SkillEnabledRequestBody) GetEnabled() bool {
+	return s.Enabled
+}
+
+// SetEnabled sets the value of Enabled.
+func (s *SkillEnabledRequestBody) SetEnabled(val bool) {
+	s.Enabled = val
+}
+
+// Ref: #/components/schemas/SkillListResponseBody
+type SkillListResponseBody struct {
+	Skills []SkillResource `json:"skills"`
+}
+
+// GetSkills returns the value of Skills.
+func (s *SkillListResponseBody) GetSkills() []SkillResource {
+	return s.Skills
+}
+
+// SetSkills sets the value of Skills.
+func (s *SkillListResponseBody) SetSkills(val []SkillResource) {
+	s.Skills = val
+}
+
+// Ref: #/components/schemas/SkillRequestBody
+type SkillRequestBody struct {
+	// Why the assistant would open this skill. It sits in every request; write it as the answer to "when
+	// do I need this", not "what does it contain".
+	Description string  `json:"description"`
+	Enabled     OptBool `json:"enabled"`
+	// Path to contents. `SKILL.md` is required; anything else it references goes alongside it.
+	//
+	// Paths are relative to the skill and cannot leave it. At most 32 files, 256 KiB each and 1 MiB in
+	// total.
+	Files SkillRequestBodyFiles `json:"files"`
+	// Also how the assistant refers to it, so renaming is deleting and writing again.
+	Name             string    `json:"name"`
+	ShortDescription OptString `json:"shortDescription"`
+}
+
+// GetDescription returns the value of Description.
+func (s *SkillRequestBody) GetDescription() string {
+	return s.Description
+}
+
+// GetEnabled returns the value of Enabled.
+func (s *SkillRequestBody) GetEnabled() OptBool {
+	return s.Enabled
+}
+
+// GetFiles returns the value of Files.
+func (s *SkillRequestBody) GetFiles() SkillRequestBodyFiles {
+	return s.Files
+}
+
+// GetName returns the value of Name.
+func (s *SkillRequestBody) GetName() string {
+	return s.Name
+}
+
+// GetShortDescription returns the value of ShortDescription.
+func (s *SkillRequestBody) GetShortDescription() OptString {
+	return s.ShortDescription
+}
+
+// SetDescription sets the value of Description.
+func (s *SkillRequestBody) SetDescription(val string) {
+	s.Description = val
+}
+
+// SetEnabled sets the value of Enabled.
+func (s *SkillRequestBody) SetEnabled(val OptBool) {
+	s.Enabled = val
+}
+
+// SetFiles sets the value of Files.
+func (s *SkillRequestBody) SetFiles(val SkillRequestBodyFiles) {
+	s.Files = val
+}
+
+// SetName sets the value of Name.
+func (s *SkillRequestBody) SetName(val string) {
+	s.Name = val
+}
+
+// SetShortDescription sets the value of ShortDescription.
+func (s *SkillRequestBody) SetShortDescription(val OptString) {
+	s.ShortDescription = val
+}
+
+// Path to contents. `SKILL.md` is required; anything else it references goes alongside it.
+//
+// Paths are relative to the skill and cannot leave it. At most 32 files, 256 KiB each and 1 MiB in
+// total.
+type SkillRequestBodyFiles map[string]string
+
+func (s *SkillRequestBodyFiles) init() SkillRequestBodyFiles {
+	m := *s
+	if m == nil {
+		m = map[string]string{}
+		*s = m
+	}
+	return m
+}
+
+// Ref: #/components/schemas/SkillResource
+type SkillResource struct {
+	// Why the assistant would open this skill. It sits in every request, so it is the one field worth
+	// writing carefully.
+	Description string `json:"description"`
+	Enabled     bool   `json:"enabled"`
+	// Path to contents, `SKILL.md` among them. Only returned by `get-skill`; the list leaves it out.
+	Files OptNilSkillResourceFiles `json:"files"`
+	Name  string                   `json:"name"`
+	// `builtin` — provided by the platform and read-only here. `project` — written for this project
+	// and editable by anyone in it.
+	Origin           SkillResourceOrigin `json:"origin"`
+	ShortDescription NilString           `json:"shortDescription"`
+	// Null for built-in skills, which have no edit history here.
+	UpdatedAt NilDateTime `json:"updatedAt"`
+}
+
+// GetDescription returns the value of Description.
+func (s *SkillResource) GetDescription() string {
+	return s.Description
+}
+
+// GetEnabled returns the value of Enabled.
+func (s *SkillResource) GetEnabled() bool {
+	return s.Enabled
+}
+
+// GetFiles returns the value of Files.
+func (s *SkillResource) GetFiles() OptNilSkillResourceFiles {
+	return s.Files
+}
+
+// GetName returns the value of Name.
+func (s *SkillResource) GetName() string {
+	return s.Name
+}
+
+// GetOrigin returns the value of Origin.
+func (s *SkillResource) GetOrigin() SkillResourceOrigin {
+	return s.Origin
+}
+
+// GetShortDescription returns the value of ShortDescription.
+func (s *SkillResource) GetShortDescription() NilString {
+	return s.ShortDescription
+}
+
+// GetUpdatedAt returns the value of UpdatedAt.
+func (s *SkillResource) GetUpdatedAt() NilDateTime {
+	return s.UpdatedAt
+}
+
+// SetDescription sets the value of Description.
+func (s *SkillResource) SetDescription(val string) {
+	s.Description = val
+}
+
+// SetEnabled sets the value of Enabled.
+func (s *SkillResource) SetEnabled(val bool) {
+	s.Enabled = val
+}
+
+// SetFiles sets the value of Files.
+func (s *SkillResource) SetFiles(val OptNilSkillResourceFiles) {
+	s.Files = val
+}
+
+// SetName sets the value of Name.
+func (s *SkillResource) SetName(val string) {
+	s.Name = val
+}
+
+// SetOrigin sets the value of Origin.
+func (s *SkillResource) SetOrigin(val SkillResourceOrigin) {
+	s.Origin = val
+}
+
+// SetShortDescription sets the value of ShortDescription.
+func (s *SkillResource) SetShortDescription(val NilString) {
+	s.ShortDescription = val
+}
+
+// SetUpdatedAt sets the value of UpdatedAt.
+func (s *SkillResource) SetUpdatedAt(val NilDateTime) {
+	s.UpdatedAt = val
+}
+
+// Path to contents, `SKILL.md` among them. Only returned by `get-skill`; the list leaves it out.
+type SkillResourceFiles map[string]string
+
+func (s *SkillResourceFiles) init() SkillResourceFiles {
+	m := *s
+	if m == nil {
+		m = map[string]string{}
+		*s = m
+	}
+	return m
+}
+
+// `builtin` — provided by the platform and read-only here. `project` — written for this project
+// and editable by anyone in it.
+type SkillResourceOrigin string
+
+const (
+	SkillResourceOriginBuiltin SkillResourceOrigin = "builtin"
+	SkillResourceOriginProject SkillResourceOrigin = "project"
+)
+
+// AllValues returns all SkillResourceOrigin values.
+func (SkillResourceOrigin) AllValues() []SkillResourceOrigin {
+	return []SkillResourceOrigin{
+		SkillResourceOriginBuiltin,
+		SkillResourceOriginProject,
+	}
+}
+
+// MarshalText implements encoding.TextMarshaler.
+func (s SkillResourceOrigin) MarshalText() ([]byte, error) {
+	switch s {
+	case SkillResourceOriginBuiltin:
+		return []byte(s), nil
+	case SkillResourceOriginProject:
+		return []byte(s), nil
+	default:
+		return nil, errors.Errorf("invalid value: %q", s)
+	}
+}
+
+// UnmarshalText implements encoding.TextUnmarshaler.
+func (s *SkillResourceOrigin) UnmarshalText(data []byte) error {
+	switch SkillResourceOrigin(data) {
+	case SkillResourceOriginBuiltin:
+		*s = SkillResourceOriginBuiltin
+		return nil
+	case SkillResourceOriginProject:
+		*s = SkillResourceOriginProject
 		return nil
 	default:
 		return errors.Errorf("invalid value: %q", data)
