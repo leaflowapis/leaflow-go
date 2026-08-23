@@ -637,12 +637,15 @@ type ImageListResponseBody struct {
 type ImageResource struct {
 	Architecture string             `json:"architecture"`
 	Id           openapi_types.UUID `json:"id"`
-	MinDiskGb    int64              `json:"min_disk_gb"`
-	MinRamMb     int64              `json:"min_ram_mb"`
-	Name         string             `json:"name"`
-	OsFamily     string             `json:"os_family"`
-	OsVersion    string             `json:"os_version"`
-	RegionCode   string             `json:"region_code"`
+
+	// LoginUsername The account to log in as. The platform sets the password for this account at creation, and it is the account `run-instance-command` uses — trying a different one is the usual reason a login is refused
+	LoginUsername string `json:"login_username"`
+	MinDiskGb     int64  `json:"min_disk_gb"`
+	MinRamMb      int64  `json:"min_ram_mb"`
+	Name          string `json:"name"`
+	OsFamily      string `json:"os_family"`
+	OsVersion     string `json:"os_version"`
+	RegionCode    string `json:"region_code"`
 
 	// SupportsPasswordReset False means a new password can only be set by rebuilding an instance created from this image
 	SupportsPasswordReset bool `json:"supports_password_reset"`
@@ -673,7 +676,10 @@ type InstanceResource struct {
 
 	// Labels Your own classification of this instance, as key-value pairs. Nothing on the platform reads these — they are recorded so that a person, or an assistant acting on your behalf, can tell what an instance is for. Empty when never set
 	Labels map[string]string `json:"labels"`
-	Name   string            `json:"name"`
+
+	// LoginUsername The account to log in as over SSH, taken from the image this instance was created from. The password set at creation belongs to this account
+	LoginUsername string `json:"login_username"`
+	Name          string `json:"name"`
 
 	// Notes A free-text note about this instance — what it runs, and what to be careful about before touching it. Empty when never set
 	Notes string `json:"notes"`
@@ -853,6 +859,9 @@ type PrivateImageResource struct {
 	// Failure Reason the capture failed; non-empty only when `status` is `error`
 	Failure *string            `json:"failure"`
 	Id      openapi_types.UUID `json:"id"`
+
+	// LoginUsername The account to log in as. The platform sets the password for this account at creation, and it is the account `run-instance-command` uses — trying a different one is the usual reason a login is refused
+	LoginUsername string `json:"login_username"`
 
 	// MinDiskGb The system disk of an instance created from this image cannot be smaller than this
 	MinDiskGb int64 `json:"min_disk_gb"`
@@ -1037,9 +1046,6 @@ type RunCommandRequestBody struct {
 
 	// TimeoutSeconds Kill the command after this long. 60 when omitted
 	TimeoutSeconds *int64 `json:"timeout_seconds,omitempty"`
-
-	// Username The SSH user to log in as. It is the account the platform sets a password for at creation
-	Username *string `json:"username,omitempty"`
 }
 
 // SecurityGroupListResponseBody defines model for SecurityGroupListResponseBody.

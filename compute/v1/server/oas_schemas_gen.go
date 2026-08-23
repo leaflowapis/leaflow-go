@@ -1694,12 +1694,16 @@ func (s *ImageListResponseBody) SetItems(val []ImageResource) {
 type ImageResource struct {
 	Architecture string    `json:"architecture"`
 	ID           uuid.UUID `json:"id"`
-	MinDiskGB    int64     `json:"min_disk_gb"`
-	MinRAMMB     int64     `json:"min_ram_mb"`
-	Name         string    `json:"name"`
-	OsFamily     string    `json:"os_family"`
-	OsVersion    string    `json:"os_version"`
-	RegionCode   string    `json:"region_code"`
+	// The account to log in as. The platform sets the password for this account at creation, and it is the
+	// account `run-instance-command` uses — trying a different one is the usual reason a login is
+	// refused.
+	LoginUsername string `json:"login_username"`
+	MinDiskGB     int64  `json:"min_disk_gb"`
+	MinRAMMB      int64  `json:"min_ram_mb"`
+	Name          string `json:"name"`
+	OsFamily      string `json:"os_family"`
+	OsVersion     string `json:"os_version"`
+	RegionCode    string `json:"region_code"`
 	// False means a new password can only be set by rebuilding an instance created from this image.
 	SupportsPasswordReset bool `json:"supports_password_reset"`
 }
@@ -1712,6 +1716,11 @@ func (s *ImageResource) GetArchitecture() string {
 // GetID returns the value of ID.
 func (s *ImageResource) GetID() uuid.UUID {
 	return s.ID
+}
+
+// GetLoginUsername returns the value of LoginUsername.
+func (s *ImageResource) GetLoginUsername() string {
+	return s.LoginUsername
 }
 
 // GetMinDiskGB returns the value of MinDiskGB.
@@ -1757,6 +1766,11 @@ func (s *ImageResource) SetArchitecture(val string) {
 // SetID sets the value of ID.
 func (s *ImageResource) SetID(val uuid.UUID) {
 	s.ID = val
+}
+
+// SetLoginUsername sets the value of LoginUsername.
+func (s *ImageResource) SetLoginUsername(val string) {
+	s.LoginUsername = val
 }
 
 // SetMinDiskGB sets the value of MinDiskGB.
@@ -1827,7 +1841,10 @@ type InstanceResource struct {
 	// — they are recorded so that a person, or an assistant acting on your behalf, can tell what an
 	// instance is for. Empty when never set.
 	Labels InstanceResourceLabels `json:"labels"`
-	Name   string                 `json:"name"`
+	// The account to log in as over SSH, taken from the image this instance was created from. The password
+	// set at creation belongs to this account.
+	LoginUsername string `json:"login_username"`
+	Name          string `json:"name"`
 	// A free-text note about this instance — what it runs, and what to be careful about before touching
 	// it. Empty when never set.
 	Notes string `json:"notes"`
@@ -1897,6 +1914,11 @@ func (s *InstanceResource) GetIpv6Address() NilString {
 // GetLabels returns the value of Labels.
 func (s *InstanceResource) GetLabels() InstanceResourceLabels {
 	return s.Labels
+}
+
+// GetLoginUsername returns the value of LoginUsername.
+func (s *InstanceResource) GetLoginUsername() string {
+	return s.LoginUsername
 }
 
 // GetName returns the value of Name.
@@ -1997,6 +2019,11 @@ func (s *InstanceResource) SetIpv6Address(val NilString) {
 // SetLabels sets the value of Labels.
 func (s *InstanceResource) SetLabels(val InstanceResourceLabels) {
 	s.Labels = val
+}
+
+// SetLoginUsername sets the value of LoginUsername.
+func (s *InstanceResource) SetLoginUsername(val string) {
+	s.LoginUsername = val
 }
 
 // SetName sets the value of Name.
@@ -3374,6 +3401,10 @@ type PrivateImageResource struct {
 	// Reason the capture failed; non-empty only when `status` is `error`.
 	Failure NilString `json:"failure"`
 	ID      uuid.UUID `json:"id"`
+	// The account to log in as. The platform sets the password for this account at creation, and it is the
+	// account `run-instance-command` uses — trying a different one is the usual reason a login is
+	// refused.
+	LoginUsername string `json:"login_username"`
 	// The system disk of an instance created from this image cannot be smaller than this.
 	MinDiskGB int64 `json:"min_disk_gb"`
 	// The instance type of an instance created from this image must have at least this much memory.
@@ -3410,6 +3441,11 @@ func (s *PrivateImageResource) GetFailure() NilString {
 // GetID returns the value of ID.
 func (s *PrivateImageResource) GetID() uuid.UUID {
 	return s.ID
+}
+
+// GetLoginUsername returns the value of LoginUsername.
+func (s *PrivateImageResource) GetLoginUsername() string {
+	return s.LoginUsername
 }
 
 // GetMinDiskGB returns the value of MinDiskGB.
@@ -3480,6 +3516,11 @@ func (s *PrivateImageResource) SetFailure(val NilString) {
 // SetID sets the value of ID.
 func (s *PrivateImageResource) SetID(val uuid.UUID) {
 	s.ID = val
+}
+
+// SetLoginUsername sets the value of LoginUsername.
+func (s *PrivateImageResource) SetLoginUsername(val string) {
+	s.LoginUsername = val
 }
 
 // SetMinDiskGB sets the value of MinDiskGB.
@@ -4208,8 +4249,6 @@ type RunCommandRequestBody struct {
 	Command string `json:"command"`
 	// Kill the command after this long. 60 when omitted.
 	TimeoutSeconds OptInt64 `json:"timeout_seconds"`
-	// The SSH user to log in as. It is the account the platform sets a password for at creation.
-	Username OptString `json:"username"`
 }
 
 // GetCommand returns the value of Command.
@@ -4222,11 +4261,6 @@ func (s *RunCommandRequestBody) GetTimeoutSeconds() OptInt64 {
 	return s.TimeoutSeconds
 }
 
-// GetUsername returns the value of Username.
-func (s *RunCommandRequestBody) GetUsername() OptString {
-	return s.Username
-}
-
 // SetCommand sets the value of Command.
 func (s *RunCommandRequestBody) SetCommand(val string) {
 	s.Command = val
@@ -4235,11 +4269,6 @@ func (s *RunCommandRequestBody) SetCommand(val string) {
 // SetTimeoutSeconds sets the value of TimeoutSeconds.
 func (s *RunCommandRequestBody) SetTimeoutSeconds(val OptInt64) {
 	s.TimeoutSeconds = val
-}
-
-// SetUsername sets the value of Username.
-func (s *RunCommandRequestBody) SetUsername(val OptString) {
-	s.Username = val
 }
 
 // Ref: #/components/schemas/SecurityGroupListResponseBody
