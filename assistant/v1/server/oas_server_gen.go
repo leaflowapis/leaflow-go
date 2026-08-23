@@ -219,7 +219,9 @@ type Handler interface {
 	//
 	// Returns a turnId immediately without waiting for execution — a turn can run for tens of minutes.
 	// Progress arrives on the live stream the conversation document's `stream` points at, not in this
-	// response.
+	// response. Sending while the assistant is still working is allowed: the message is put in line and
+	// `queued` comes back true, to be read at the next step of the turn already running — so the editor
+	// should stay open rather than blocking on a busy conversation.
 	//
 	// POST /api/v1/threads/{thread}/messages
 	SendMessage(ctx context.Context, req *SendMessageRequestBody, params SendMessageParams) (*TurnIDResponseBody, error)

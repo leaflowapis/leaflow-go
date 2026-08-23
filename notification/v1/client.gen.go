@@ -437,8 +437,8 @@ type NotificationTypeDescriptor struct {
 	// DefaultChannels The channels this type is delivered on when nothing has been configured
 	DefaultChannels []NotificationChannel `json:"default_channels"`
 
-	// Mandatory True when this type cannot be configured or turned off. Such types announce something
-	// irreversible, or carry the only route to something that cannot be obtained again
+	// Mandatory True when this type must reach you: it cannot be muted, and email cannot be removed
+	// from its channels. Everything else about it is still configurable
 	Mandatory bool `json:"mandatory"`
 
 	// Params The names of the facts this type carries, as they appear on NotificationResource.params
@@ -541,7 +541,7 @@ type TypePreferenceResource struct {
 	// Inherited True when nothing has been configured and these are the defaults from the catalogue
 	Inherited bool `json:"inherited"`
 
-	// Mandatory True when this type cannot be configured; muting it is rejected
+	// Mandatory True when this type cannot be muted and email cannot be removed from it
 	Mandatory bool `json:"mandatory"`
 
 	// MinSeverity Deliver only at or above this severity. Null delivers every severity. It applies to the
@@ -582,7 +582,9 @@ type UpdatePreferencesRequestBody struct {
 
 // UpdateTypePreferenceRequestBody States how this type should be delivered, replacing whatever was configured before.
 type UpdateTypePreferenceRequestBody struct {
-	// Channels Where to deliver this type. An empty list delivers to the inbox only
+	// Channels Where to deliver this type, beyond the inbox. An empty list delivers to the inbox only.
+	// `inbox` may be listed and is accepted, but has no effect: every notification is in the
+	// inbox whatever this says
 	Channels []NotificationChannel `json:"channels"`
 
 	// MinSeverity Deliver only at or above this severity. Null delivers every severity
@@ -1032,8 +1034,12 @@ type ClientInterface interface {
 	// Omitting `project_id` configures every project. Naming one configures that project alone
 	// and takes precedence there.
 	//
-	// Configuring a type marked `mandatory` returns `NOTIFICATION_TYPE_MANDATORY`. Naming a
-	// channel the type does not support returns `NOTIFICATION_CHANNEL_UNSUPPORTED`.
+	// On a type marked `mandatory`, setting `muted` or omitting `email` from `channels` returns
+	// `NOTIFICATION_TYPE_MANDATORY`. Everything else about such a type is configurable, including
+	// adding channels and raising `min_severity`.
+	//
+	// Naming a channel the type does not support returns `NOTIFICATION_CHANNEL_UNSUPPORTED`.
+	// `inbox` is accepted but has no effect: every notification is in the inbox regardless.
 	//
 	// Takes any type of body and a specified content type.
 	//
@@ -1047,8 +1053,12 @@ type ClientInterface interface {
 	// Omitting `project_id` configures every project. Naming one configures that project alone
 	// and takes precedence there.
 	//
-	// Configuring a type marked `mandatory` returns `NOTIFICATION_TYPE_MANDATORY`. Naming a
-	// channel the type does not support returns `NOTIFICATION_CHANNEL_UNSUPPORTED`.
+	// On a type marked `mandatory`, setting `muted` or omitting `email` from `channels` returns
+	// `NOTIFICATION_TYPE_MANDATORY`. Everything else about such a type is configurable, including
+	// adding channels and raising `min_severity`.
+	//
+	// Naming a channel the type does not support returns `NOTIFICATION_CHANNEL_UNSUPPORTED`.
+	// `inbox` is accepted but has no effect: every notification is in the inbox regardless.
 	//
 	// Takes a body of the `application/json` content type.
 	//
@@ -1599,8 +1609,12 @@ func (c *Client) DeleteTypePreference(ctx context.Context, pType NotificationTyp
 // Omitting `project_id` configures every project. Naming one configures that project alone
 // and takes precedence there.
 //
-// Configuring a type marked `mandatory` returns `NOTIFICATION_TYPE_MANDATORY`. Naming a
-// channel the type does not support returns `NOTIFICATION_CHANNEL_UNSUPPORTED`.
+// On a type marked `mandatory`, setting `muted` or omitting `email` from `channels` returns
+// `NOTIFICATION_TYPE_MANDATORY`. Everything else about such a type is configurable, including
+// adding channels and raising `min_severity`.
+//
+// Naming a channel the type does not support returns `NOTIFICATION_CHANNEL_UNSUPPORTED`.
+// `inbox` is accepted but has no effect: every notification is in the inbox regardless.
 //
 // Takes any type of body and a specified content type.
 //
@@ -1624,8 +1638,12 @@ func (c *Client) UpdateTypePreferenceWithBody(ctx context.Context, pType Notific
 // Omitting `project_id` configures every project. Naming one configures that project alone
 // and takes precedence there.
 //
-// Configuring a type marked `mandatory` returns `NOTIFICATION_TYPE_MANDATORY`. Naming a
-// channel the type does not support returns `NOTIFICATION_CHANNEL_UNSUPPORTED`.
+// On a type marked `mandatory`, setting `muted` or omitting `email` from `channels` returns
+// `NOTIFICATION_TYPE_MANDATORY`. Everything else about such a type is configurable, including
+// adding channels and raising `min_severity`.
+//
+// Naming a channel the type does not support returns `NOTIFICATION_CHANNEL_UNSUPPORTED`.
+// `inbox` is accepted but has no effect: every notification is in the inbox regardless.
 //
 // Takes a body of the `application/json` content type.
 //
@@ -3028,8 +3046,12 @@ type ClientWithResponsesInterface interface {
 	// Omitting `project_id` configures every project. Naming one configures that project alone
 	// and takes precedence there.
 	//
-	// Configuring a type marked `mandatory` returns `NOTIFICATION_TYPE_MANDATORY`. Naming a
-	// channel the type does not support returns `NOTIFICATION_CHANNEL_UNSUPPORTED`.
+	// On a type marked `mandatory`, setting `muted` or omitting `email` from `channels` returns
+	// `NOTIFICATION_TYPE_MANDATORY`. Everything else about such a type is configurable, including
+	// adding channels and raising `min_severity`.
+	//
+	// Naming a channel the type does not support returns `NOTIFICATION_CHANNEL_UNSUPPORTED`.
+	// `inbox` is accepted but has no effect: every notification is in the inbox regardless.
 	//
 	// Takes any type of body and a specified content type, and returns a wrapper object for the known response body format(s).
 	//
@@ -3043,8 +3065,12 @@ type ClientWithResponsesInterface interface {
 	// Omitting `project_id` configures every project. Naming one configures that project alone
 	// and takes precedence there.
 	//
-	// Configuring a type marked `mandatory` returns `NOTIFICATION_TYPE_MANDATORY`. Naming a
-	// channel the type does not support returns `NOTIFICATION_CHANNEL_UNSUPPORTED`.
+	// On a type marked `mandatory`, setting `muted` or omitting `email` from `channels` returns
+	// `NOTIFICATION_TYPE_MANDATORY`. Everything else about such a type is configurable, including
+	// adding channels and raising `min_severity`.
+	//
+	// Naming a channel the type does not support returns `NOTIFICATION_CHANNEL_UNSUPPORTED`.
+	// `inbox` is accepted but has no effect: every notification is in the inbox regardless.
 	//
 	// Takes a body of the `application/json` content type, and returns a wrapper object for the known response body format(s).
 	//
@@ -4531,8 +4557,12 @@ func (c *ClientWithResponses) DeleteTypePreferenceWithResponse(ctx context.Conte
 // Omitting `project_id` configures every project. Naming one configures that project alone
 // and takes precedence there.
 //
-// Configuring a type marked `mandatory` returns `NOTIFICATION_TYPE_MANDATORY`. Naming a
-// channel the type does not support returns `NOTIFICATION_CHANNEL_UNSUPPORTED`.
+// On a type marked `mandatory`, setting `muted` or omitting `email` from `channels` returns
+// `NOTIFICATION_TYPE_MANDATORY`. Everything else about such a type is configurable, including
+// adding channels and raising `min_severity`.
+//
+// Naming a channel the type does not support returns `NOTIFICATION_CHANNEL_UNSUPPORTED`.
+// `inbox` is accepted but has no effect: every notification is in the inbox regardless.
 //
 // Takes any type of body and a specified content type, and returns a wrapper object for the known response body format(s).
 //
@@ -4552,8 +4582,12 @@ func (c *ClientWithResponses) UpdateTypePreferenceWithBodyWithResponse(ctx conte
 // Omitting `project_id` configures every project. Naming one configures that project alone
 // and takes precedence there.
 //
-// Configuring a type marked `mandatory` returns `NOTIFICATION_TYPE_MANDATORY`. Naming a
-// channel the type does not support returns `NOTIFICATION_CHANNEL_UNSUPPORTED`.
+// On a type marked `mandatory`, setting `muted` or omitting `email` from `channels` returns
+// `NOTIFICATION_TYPE_MANDATORY`. Everything else about such a type is configurable, including
+// adding channels and raising `min_severity`.
+//
+// Naming a channel the type does not support returns `NOTIFICATION_CHANNEL_UNSUPPORTED`.
+// `inbox` is accepted but has no effect: every notification is in the inbox regardless.
 //
 // Takes a body of the `application/json` content type, and returns a wrapper object for the known response body format(s).
 //

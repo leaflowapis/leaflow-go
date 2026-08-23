@@ -4489,12 +4489,39 @@ func (s *ThreadSummaryResourceApprovalMode) UnmarshalText(data []byte) error {
 
 // Ref: #/components/schemas/TurnIDResponseBody
 type TurnIDResponseBody struct {
+	// True when the assistant was already busy and this message was put in line instead of starting a
+	// turn. It is read at the next step of the turn already running, so there is nothing further to do —
+	// and turnId is empty in this case.
+	Queued bool `json:"queued"`
+	// How many messages were already waiting ahead of this one. Only meaningful when queued is true.
+	QueuedAhead OptInt64 `json:"queuedAhead"`
+	// The turn this message started. Empty when the message was queued instead.
 	TurnId string `json:"turnId"`
+}
+
+// GetQueued returns the value of Queued.
+func (s *TurnIDResponseBody) GetQueued() bool {
+	return s.Queued
+}
+
+// GetQueuedAhead returns the value of QueuedAhead.
+func (s *TurnIDResponseBody) GetQueuedAhead() OptInt64 {
+	return s.QueuedAhead
 }
 
 // GetTurnId returns the value of TurnId.
 func (s *TurnIDResponseBody) GetTurnId() string {
 	return s.TurnId
+}
+
+// SetQueued sets the value of Queued.
+func (s *TurnIDResponseBody) SetQueued(val bool) {
+	s.Queued = val
+}
+
+// SetQueuedAhead sets the value of QueuedAhead.
+func (s *TurnIDResponseBody) SetQueuedAhead(val OptInt64) {
+	s.QueuedAhead = val
 }
 
 // SetTurnId sets the value of TurnId.
