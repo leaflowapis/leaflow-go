@@ -4288,9 +4288,9 @@ func (s *ItemResource) encodeFields(e *jx.Encoder) {
 		}
 	}
 	{
-		if s.Text.Set {
-			e.FieldStart("text")
-			s.Text.Encode(e)
+		if s.Parts.Set {
+			e.FieldStart("parts")
+			s.Parts.Encode(e)
 		}
 	}
 	{
@@ -4321,7 +4321,7 @@ var jsonFieldsNameOfItemResource = [18]string{
 	12: "reverted",
 	13: "status",
 	14: "target",
-	15: "text",
+	15: "parts",
 	16: "tool",
 	17: "type",
 }
@@ -4493,15 +4493,15 @@ func (s *ItemResource) Decode(d *jx.Decoder) error {
 			}(); err != nil {
 				return errors.Wrap(err, "decode field \"target\"")
 			}
-		case "text":
+		case "parts":
 			if err := func() error {
-				s.Text.Reset()
-				if err := s.Text.Decode(d); err != nil {
+				s.Parts.Reset()
+				if err := s.Parts.Decode(d); err != nil {
 					return err
 				}
 				return nil
 			}(); err != nil {
-				return errors.Wrap(err, "decode field \"text\"")
+				return errors.Wrap(err, "decode field \"parts\"")
 			}
 		case "tool":
 			if err := func() error {
@@ -6756,6 +6756,67 @@ func (s *OptNilMessagePartData) UnmarshalJSON(data []byte) error {
 	return s.Decode(d)
 }
 
+// Encode encodes []PartResource as json.
+func (o OptNilPartResourceArray) Encode(e *jx.Encoder) {
+	if !o.Set {
+		return
+	}
+	if o.Null {
+		e.Null()
+		return
+	}
+	e.ArrStart()
+	for _, elem := range o.Value {
+		elem.Encode(e)
+	}
+	e.ArrEnd()
+}
+
+// Decode decodes []PartResource from json.
+func (o *OptNilPartResourceArray) Decode(d *jx.Decoder) error {
+	if o == nil {
+		return errors.New("invalid: unable to decode OptNilPartResourceArray to nil")
+	}
+	if d.Next() == jx.Null {
+		if err := d.Null(); err != nil {
+			return err
+		}
+
+		var v []PartResource
+		o.Value = v
+		o.Set = true
+		o.Null = true
+		return nil
+	}
+	o.Set = true
+	o.Null = false
+	o.Value = make([]PartResource, 0)
+	if err := d.Arr(func(d *jx.Decoder) error {
+		var elem PartResource
+		if err := elem.Decode(d); err != nil {
+			return err
+		}
+		o.Value = append(o.Value, elem)
+		return nil
+	}); err != nil {
+		return err
+	}
+	return nil
+}
+
+// MarshalJSON implements stdjson.Marshaler.
+func (s OptNilPartResourceArray) MarshalJSON() ([]byte, error) {
+	e := jx.Encoder{}
+	s.Encode(&e)
+	return e.Bytes(), nil
+}
+
+// UnmarshalJSON implements stdjson.Unmarshaler.
+func (s *OptNilPartResourceArray) UnmarshalJSON(data []byte) error {
+	d := jx.DecodeBytes(data)
+	return s.Decode(d)
+}
+
 // Encode encodes []Question as json.
 func (o OptNilQuestionArray) Encode(e *jx.Encoder) {
 	if !o.Set {
@@ -7145,6 +7206,191 @@ func (s OptUpdateThreadRequestBodyApprovalMode) MarshalJSON() ([]byte, error) {
 
 // UnmarshalJSON implements stdjson.Unmarshaler.
 func (s *OptUpdateThreadRequestBodyApprovalMode) UnmarshalJSON(data []byte) error {
+	d := jx.DecodeBytes(data)
+	return s.Decode(d)
+}
+
+// Encode implements json.Marshaler.
+func (s *PartResource) Encode(e *jx.Encoder) {
+	e.ObjStart()
+	s.encodeFields(e)
+	e.ObjEnd()
+}
+
+// encodeFields encodes fields.
+func (s *PartResource) encodeFields(e *jx.Encoder) {
+	{
+		if s.AttachmentId.Set {
+			e.FieldStart("attachmentId")
+			s.AttachmentId.Encode(e)
+		}
+	}
+	{
+		e.FieldStart("id")
+		e.Str(s.ID)
+	}
+	{
+		if s.Text.Set {
+			e.FieldStart("text")
+			s.Text.Encode(e)
+		}
+	}
+	{
+		e.FieldStart("type")
+		s.Type.Encode(e)
+	}
+}
+
+var jsonFieldsNameOfPartResource = [4]string{
+	0: "attachmentId",
+	1: "id",
+	2: "text",
+	3: "type",
+}
+
+// Decode decodes PartResource from json.
+func (s *PartResource) Decode(d *jx.Decoder) error {
+	if s == nil {
+		return errors.New("invalid: unable to decode PartResource to nil")
+	}
+	var requiredBitSet [1]uint8
+
+	if err := d.ObjBytes(func(d *jx.Decoder, k []byte) error {
+		switch string(k) {
+		case "attachmentId":
+			if err := func() error {
+				s.AttachmentId.Reset()
+				if err := s.AttachmentId.Decode(d); err != nil {
+					return err
+				}
+				return nil
+			}(); err != nil {
+				return errors.Wrap(err, "decode field \"attachmentId\"")
+			}
+		case "id":
+			requiredBitSet[0] |= 1 << 1
+			if err := func() error {
+				v, err := d.Str()
+				s.ID = string(v)
+				if err != nil {
+					return err
+				}
+				return nil
+			}(); err != nil {
+				return errors.Wrap(err, "decode field \"id\"")
+			}
+		case "text":
+			if err := func() error {
+				s.Text.Reset()
+				if err := s.Text.Decode(d); err != nil {
+					return err
+				}
+				return nil
+			}(); err != nil {
+				return errors.Wrap(err, "decode field \"text\"")
+			}
+		case "type":
+			requiredBitSet[0] |= 1 << 3
+			if err := func() error {
+				if err := s.Type.Decode(d); err != nil {
+					return err
+				}
+				return nil
+			}(); err != nil {
+				return errors.Wrap(err, "decode field \"type\"")
+			}
+		default:
+			return errors.Errorf("unexpected field %q", k)
+		}
+		return nil
+	}); err != nil {
+		return errors.Wrap(err, "decode PartResource")
+	}
+	// Validate required fields.
+	var failures []validate.FieldError
+	for i, mask := range [1]uint8{
+		0b00001010,
+	} {
+		if result := (requiredBitSet[i] & mask) ^ mask; result != 0 {
+			// Mask only required fields and check equality to mask using XOR.
+			//
+			// If XOR result is not zero, result is not equal to expected, so some fields are missed.
+			// Bits of fields which would be set are actually bits of missed fields.
+			missed := bits.OnesCount8(result)
+			for bitN := 0; bitN < missed; bitN++ {
+				bitIdx := bits.TrailingZeros8(result)
+				fieldIdx := i*8 + bitIdx
+				var name string
+				if fieldIdx < len(jsonFieldsNameOfPartResource) {
+					name = jsonFieldsNameOfPartResource[fieldIdx]
+				} else {
+					name = strconv.Itoa(fieldIdx)
+				}
+				failures = append(failures, validate.FieldError{
+					Name:  name,
+					Error: validate.ErrFieldRequired,
+				})
+				// Reset bit.
+				result &^= 1 << bitIdx
+			}
+		}
+	}
+	if len(failures) > 0 {
+		return &validate.Error{Fields: failures}
+	}
+
+	return nil
+}
+
+// MarshalJSON implements stdjson.Marshaler.
+func (s *PartResource) MarshalJSON() ([]byte, error) {
+	e := jx.Encoder{}
+	s.Encode(&e)
+	return e.Bytes(), nil
+}
+
+// UnmarshalJSON implements stdjson.Unmarshaler.
+func (s *PartResource) UnmarshalJSON(data []byte) error {
+	d := jx.DecodeBytes(data)
+	return s.Decode(d)
+}
+
+// Encode encodes PartResourceType as json.
+func (s PartResourceType) Encode(e *jx.Encoder) {
+	e.Str(string(s))
+}
+
+// Decode decodes PartResourceType from json.
+func (s *PartResourceType) Decode(d *jx.Decoder) error {
+	if s == nil {
+		return errors.New("invalid: unable to decode PartResourceType to nil")
+	}
+	v, err := d.StrBytes()
+	if err != nil {
+		return err
+	}
+	// Try to use constant string.
+	switch PartResourceType(v) {
+	case PartResourceTypeText:
+		*s = PartResourceTypeText
+	case PartResourceTypeFile:
+		*s = PartResourceTypeFile
+	default:
+		*s = PartResourceType(v)
+	}
+
+	return nil
+}
+
+// MarshalJSON implements stdjson.Marshaler.
+func (s PartResourceType) MarshalJSON() ([]byte, error) {
+	e := jx.Encoder{}
+	s.Encode(&e)
+	return e.Bytes(), nil
+}
+
+// UnmarshalJSON implements stdjson.Unmarshaler.
+func (s *PartResourceType) UnmarshalJSON(data []byte) error {
 	d := jx.DecodeBytes(data)
 	return s.Decode(d)
 }

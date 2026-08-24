@@ -1159,7 +1159,11 @@ func (s *ClientContextPartData) init() ClientContextPartData {
 // without `actions` keeps whatever was declared before.
 // Ref: #/components/schemas/ClientContextRequest
 type ClientContextRequest struct {
-	// The actions on offer right now. Omit when unchanged since the last message.
+	// The actions on offer right now.
+	//
+	// Omit it when nothing changed since the last message. Send `[]` to say there is nothing on offer —
+	// those are different: a client that moves off the page it was attached to has to be able to say so,
+	// or the assistant keeps calling actions that no longer make sense.
 	Actions OptNilClientActionRequestArray `json:"actions"`
 	// Identifies this client while it stays open. Any stable string; one per tab or process.
 	ClientId string `json:"clientId"`
@@ -2022,8 +2026,13 @@ type ItemResource struct {
 	Reverted  bool               `json:"reverted"`
 	Status    ItemResourceStatus `json:"status"`
 	Target    OptNilString       `json:"target"`
-	Text      OptString          `json:"text"`
-	Tool      OptNilString       `json:"tool"`
+	// The content of this entry, in the order it was written. A message that is only text is a single
+	// part, which is most of them.
+	//
+	// An image belongs where it was written, so render these in order rather than putting attachments at
+	// the end.
+	Parts OptNilPartResourceArray `json:"parts"`
+	Tool  OptNilString            `json:"tool"`
 	// Determines which fields this entry carries.
 	Type ItemResourceType `json:"type"`
 }
@@ -2103,9 +2112,9 @@ func (s *ItemResource) GetTarget() OptNilString {
 	return s.Target
 }
 
-// GetText returns the value of Text.
-func (s *ItemResource) GetText() OptString {
-	return s.Text
+// GetParts returns the value of Parts.
+func (s *ItemResource) GetParts() OptNilPartResourceArray {
+	return s.Parts
 }
 
 // GetTool returns the value of Tool.
@@ -2193,9 +2202,9 @@ func (s *ItemResource) SetTarget(val OptNilString) {
 	s.Target = val
 }
 
-// SetText sets the value of Text.
-func (s *ItemResource) SetText(val OptString) {
-	s.Text = val
+// SetParts sets the value of Parts.
+func (s *ItemResource) SetParts(val OptNilPartResourceArray) {
+	s.Parts = val
 }
 
 // SetTool sets the value of Tool.
@@ -4035,6 +4044,74 @@ func (o OptNilMessagePartData) Or(d MessagePartData) MessagePartData {
 	return d
 }
 
+// NewOptNilPartResourceArray returns new OptNilPartResourceArray with value set to v.
+func NewOptNilPartResourceArray(v []PartResource) OptNilPartResourceArray {
+	return OptNilPartResourceArray{
+		Value: v,
+		Set:   true,
+	}
+}
+
+// OptNilPartResourceArray is optional nullable []PartResource.
+type OptNilPartResourceArray struct {
+	Value []PartResource
+	Set   bool
+	Null  bool
+}
+
+// IsSet returns true if OptNilPartResourceArray was set.
+func (o OptNilPartResourceArray) IsSet() bool { return o.Set }
+
+// Reset unsets value.
+func (o *OptNilPartResourceArray) Reset() {
+	var v []PartResource
+	o.Value = v
+	o.Set = false
+	o.Null = false
+}
+
+// SetTo sets value to v.
+func (o *OptNilPartResourceArray) SetTo(v []PartResource) {
+	o.Set = true
+	o.Null = false
+	o.Value = v
+}
+
+// IsNull returns true if value is Null.
+func (o OptNilPartResourceArray) IsNull() bool { return o.Null }
+
+// SetToNull sets value to null.
+func (o *OptNilPartResourceArray) SetToNull() {
+	o.Set = true
+	o.Null = true
+	var v []PartResource
+	o.Value = v
+}
+
+// IsEmpty returns true if the field was omitted from the payload (not Set and not Null).
+func (o OptNilPartResourceArray) IsEmpty() bool {
+	return !o.Set && !o.Null
+}
+
+// Get returns value and boolean that denotes whether value was set.
+func (o OptNilPartResourceArray) Get() (v []PartResource, ok bool) {
+	if o.Null {
+		return v, false
+	}
+	if !o.Set {
+		return v, false
+	}
+	return o.Value, true
+}
+
+// Or returns value if set, or given parameter if does not.
+func (o OptNilPartResourceArray) Or(d []PartResource) []PartResource {
+	if v, ok := o.Get(); ok {
+		return v
+	}
+	return d
+}
+
 // NewOptNilQuestionArray returns new OptNilQuestionArray with value set to v.
 func NewOptNilQuestionArray(v []Question) OptNilQuestionArray {
 	return OptNilQuestionArray{
@@ -4581,6 +4658,102 @@ func (o OptUpdateThreadRequestBodyApprovalMode) Or(d UpdateThreadRequestBodyAppr
 		return v
 	}
 	return d
+}
+
+// Ref: #/components/schemas/PartResource
+type PartResource struct {
+	// For `file` parts. Points at one of this entry's `attachments`.
+	AttachmentId OptNilString `json:"attachmentId"`
+	// Addresses this part in the live stream — text arrives as `append` frames pointing at
+	// `/items/{item}/parts/{id}/text`.
+	//
+	// Not an array index. It looks like one today because parts are only ever appended, and a client that
+	// treats it as one keeps working right up until that stops being true.
+	ID string `json:"id"`
+	// For `text` parts. Grows as the answer is written.
+	Text OptNilString     `json:"text"`
+	Type PartResourceType `json:"type"`
+}
+
+// GetAttachmentId returns the value of AttachmentId.
+func (s *PartResource) GetAttachmentId() OptNilString {
+	return s.AttachmentId
+}
+
+// GetID returns the value of ID.
+func (s *PartResource) GetID() string {
+	return s.ID
+}
+
+// GetText returns the value of Text.
+func (s *PartResource) GetText() OptNilString {
+	return s.Text
+}
+
+// GetType returns the value of Type.
+func (s *PartResource) GetType() PartResourceType {
+	return s.Type
+}
+
+// SetAttachmentId sets the value of AttachmentId.
+func (s *PartResource) SetAttachmentId(val OptNilString) {
+	s.AttachmentId = val
+}
+
+// SetID sets the value of ID.
+func (s *PartResource) SetID(val string) {
+	s.ID = val
+}
+
+// SetText sets the value of Text.
+func (s *PartResource) SetText(val OptNilString) {
+	s.Text = val
+}
+
+// SetType sets the value of Type.
+func (s *PartResource) SetType(val PartResourceType) {
+	s.Type = val
+}
+
+type PartResourceType string
+
+const (
+	PartResourceTypeText PartResourceType = "text"
+	PartResourceTypeFile PartResourceType = "file"
+)
+
+// AllValues returns all PartResourceType values.
+func (PartResourceType) AllValues() []PartResourceType {
+	return []PartResourceType{
+		PartResourceTypeText,
+		PartResourceTypeFile,
+	}
+}
+
+// MarshalText implements encoding.TextMarshaler.
+func (s PartResourceType) MarshalText() ([]byte, error) {
+	switch s {
+	case PartResourceTypeText:
+		return []byte(s), nil
+	case PartResourceTypeFile:
+		return []byte(s), nil
+	default:
+		return nil, errors.Errorf("invalid value: %q", s)
+	}
+}
+
+// UnmarshalText implements encoding.TextUnmarshaler.
+func (s *PartResourceType) UnmarshalText(data []byte) error {
+	switch PartResourceType(data) {
+	case PartResourceTypeText:
+		*s = PartResourceTypeText
+		return nil
+	case PartResourceTypeFile:
+		*s = PartResourceTypeFile
+		return nil
+	default:
+		return errors.Errorf("invalid value: %q", data)
+	}
 }
 
 // Ref: #/components/schemas/PlatformListResponseBody
