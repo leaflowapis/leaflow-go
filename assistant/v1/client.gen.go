@@ -397,6 +397,24 @@ func (e LoginResourceStatus) Valid() bool {
 	}
 }
 
+// Defines values for PartResourceType.
+const (
+	File PartResourceType = "file"
+	Text PartResourceType = "text"
+)
+
+// Valid indicates whether the value is a known member of the PartResourceType enum.
+func (e PartResourceType) Valid() bool {
+	switch e {
+	case File:
+		return true
+	case Text:
+		return true
+	default:
+		return false
+	}
+}
+
 // Defines values for PlatformResourceSecretSource.
 const (
 	PlatformResourceSecretSourceGenerated PlatformResourceSecretSource = "generated"
@@ -767,7 +785,11 @@ type ClientContextPart struct {
 // Send `actions` only when they differ from the last message on this conversation. Sending the
 // block without `actions` keeps whatever was declared before.
 type ClientContextRequest struct {
-	// Actions The actions on offer right now. Omit when unchanged since the last message.
+	// Actions The actions on offer right now.
+	//
+	// Omit it when nothing changed since the last message. Send `[]` to say there is nothing
+	// on offer — those are different: a client that moves off the page it was attached to has
+	// to be able to say so, or the assistant keeps calling actions that no longer make sense.
 	Actions []ClientActionRequest `json:"actions,omitempty"`
 
 	// ClientId Identifies this client while it stays open. Any stable string; one per tab or process.
@@ -909,14 +931,20 @@ type ItemResource struct {
 	Id            string              `json:"id"`
 
 	// Model The model that produced this entry. Null for messages the user sent
-	Model     *string            `json:"model"`
-	Namespace *string            `json:"namespace,omitempty"`
-	Ordinal   int64              `json:"ordinal"`
-	Reverted  bool               `json:"reverted"`
-	Status    ItemResourceStatus `json:"status"`
-	Target    *string            `json:"target,omitempty"`
-	Text      *string            `json:"text,omitempty"`
-	Tool      *string            `json:"tool,omitempty"`
+	Model     *string `json:"model"`
+	Namespace *string `json:"namespace,omitempty"`
+	Ordinal   int64   `json:"ordinal"`
+
+	// Parts The content of this entry, in the order it was written. A message that is only text is a
+	// single part, which is most of them.
+	//
+	// An image belongs where it was written, so render these in order rather than putting
+	// attachments at the end.
+	Parts    []PartResource     `json:"parts,omitempty"`
+	Reverted bool               `json:"reverted"`
+	Status   ItemResourceStatus `json:"status"`
+	Target   *string            `json:"target,omitempty"`
+	Tool     *string            `json:"tool,omitempty"`
 
 	// Type Determines which fields this entry carries
 	Type ItemResourceType `json:"type"`
@@ -1017,6 +1045,26 @@ type MessagePart struct {
 	Text *string `json:"text,omitempty"`
 	Type string  `json:"type"`
 }
+
+// PartResource defines model for PartResource.
+type PartResource struct {
+	// AttachmentId For `file` parts. Points at one of this entry's `attachments`.
+	AttachmentId *string `json:"attachmentId,omitempty"`
+
+	// Id Addresses this part in the live stream — text arrives as `append` frames pointing at
+	// `/items/{item}/parts/{id}/text`.
+	//
+	// Not an array index. It looks like one today because parts are only ever appended, and a
+	// client that treats it as one keeps working right up until that stops being true.
+	Id string `json:"id"`
+
+	// Text For `text` parts. Grows as the answer is written.
+	Text *string          `json:"text,omitempty"`
+	Type PartResourceType `json:"type"`
+}
+
+// PartResourceType defines model for PartResource.Type.
+type PartResourceType string
 
 // PlatformListResponseBody defines model for PlatformListResponseBody.
 type PlatformListResponseBody struct {
