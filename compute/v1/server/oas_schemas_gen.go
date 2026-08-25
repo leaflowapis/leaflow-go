@@ -2776,6 +2776,13 @@ type OperationLogResource struct {
 	Action string `json:"action"`
 	// The user who initiated the operation. Empty when the platform performed it.
 	Actor NilString `json:"actor"`
+	// The name this user went by at the time of the operation, recorded alongside the operation itself. It
+	// is not refreshed afterwards: the record states who acted then, and a name read today is a statement
+	// about a different moment.
+	//
+	// Null on entries recorded before this field existed, and on entries performed by the platform. An
+	// empty string means the account had no name recorded.
+	ActorName NilString `json:"actor_name"`
 	// True when the operation was performed by the platform.
 	ByPlatform bool      `json:"by_platform"`
 	CreatedAt  time.Time `json:"created_at"`
@@ -2799,6 +2806,11 @@ func (s *OperationLogResource) GetAction() string {
 // GetActor returns the value of Actor.
 func (s *OperationLogResource) GetActor() NilString {
 	return s.Actor
+}
+
+// GetActorName returns the value of ActorName.
+func (s *OperationLogResource) GetActorName() NilString {
+	return s.ActorName
 }
 
 // GetByPlatform returns the value of ByPlatform.
@@ -2854,6 +2866,11 @@ func (s *OperationLogResource) SetAction(val string) {
 // SetActor sets the value of Actor.
 func (s *OperationLogResource) SetActor(val NilString) {
 	s.Actor = val
+}
+
+// SetActorName sets the value of ActorName.
+func (s *OperationLogResource) SetActorName(val NilString) {
+	s.ActorName = val
 }
 
 // SetByPlatform sets the value of ByPlatform.
