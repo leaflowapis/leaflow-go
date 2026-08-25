@@ -1997,6 +1997,128 @@ func (s *ErrorStatusCode) SetResponse(val Error) {
 	s.Response = val
 }
 
+// The change a tool call applied to a single file.
+//
+// Populated once the call has completed successfully. It is absent while the call is pending or
+// awaiting approval, as the file's prior contents are read during execution. To preview an edit
+// awaiting approval, derive it from the call's `old_string` and `new_string` arguments.
+// Ref: #/components/schemas/FileDiffResource
+type FileDiffResource struct {
+	// Lines added. Complete even when `unified` is null.
+	Added int64 `json:"added"`
+	// Absolute path of the file on the instance.
+	Path string `json:"path"`
+	// Lines removed. Complete even when `unified` is null.
+	Removed int64 `json:"removed"`
+	// What the call did to the file.
+	Status FileDiffResourceStatus `json:"status"`
+	// The change as a unified diff with three lines of context. A file created by the call is diffed
+	// against `/dev/null`.
+	//
+	// Null when the change exceeds the service's size limit. The diff is omitted in full rather than
+	// truncated; `added` and `removed` remain complete.
+	Unified OptNilString `json:"unified"`
+}
+
+// GetAdded returns the value of Added.
+func (s *FileDiffResource) GetAdded() int64 {
+	return s.Added
+}
+
+// GetPath returns the value of Path.
+func (s *FileDiffResource) GetPath() string {
+	return s.Path
+}
+
+// GetRemoved returns the value of Removed.
+func (s *FileDiffResource) GetRemoved() int64 {
+	return s.Removed
+}
+
+// GetStatus returns the value of Status.
+func (s *FileDiffResource) GetStatus() FileDiffResourceStatus {
+	return s.Status
+}
+
+// GetUnified returns the value of Unified.
+func (s *FileDiffResource) GetUnified() OptNilString {
+	return s.Unified
+}
+
+// SetAdded sets the value of Added.
+func (s *FileDiffResource) SetAdded(val int64) {
+	s.Added = val
+}
+
+// SetPath sets the value of Path.
+func (s *FileDiffResource) SetPath(val string) {
+	s.Path = val
+}
+
+// SetRemoved sets the value of Removed.
+func (s *FileDiffResource) SetRemoved(val int64) {
+	s.Removed = val
+}
+
+// SetStatus sets the value of Status.
+func (s *FileDiffResource) SetStatus(val FileDiffResourceStatus) {
+	s.Status = val
+}
+
+// SetUnified sets the value of Unified.
+func (s *FileDiffResource) SetUnified(val OptNilString) {
+	s.Unified = val
+}
+
+// What the call did to the file.
+type FileDiffResourceStatus string
+
+const (
+	FileDiffResourceStatusAdded    FileDiffResourceStatus = "added"
+	FileDiffResourceStatusModified FileDiffResourceStatus = "modified"
+	FileDiffResourceStatusDeleted  FileDiffResourceStatus = "deleted"
+)
+
+// AllValues returns all FileDiffResourceStatus values.
+func (FileDiffResourceStatus) AllValues() []FileDiffResourceStatus {
+	return []FileDiffResourceStatus{
+		FileDiffResourceStatusAdded,
+		FileDiffResourceStatusModified,
+		FileDiffResourceStatusDeleted,
+	}
+}
+
+// MarshalText implements encoding.TextMarshaler.
+func (s FileDiffResourceStatus) MarshalText() ([]byte, error) {
+	switch s {
+	case FileDiffResourceStatusAdded:
+		return []byte(s), nil
+	case FileDiffResourceStatusModified:
+		return []byte(s), nil
+	case FileDiffResourceStatusDeleted:
+		return []byte(s), nil
+	default:
+		return nil, errors.Errorf("invalid value: %q", s)
+	}
+}
+
+// UnmarshalText implements encoding.TextUnmarshaler.
+func (s *FileDiffResourceStatus) UnmarshalText(data []byte) error {
+	switch FileDiffResourceStatus(data) {
+	case FileDiffResourceStatusAdded:
+		*s = FileDiffResourceStatusAdded
+		return nil
+	case FileDiffResourceStatusModified:
+		*s = FileDiffResourceStatusModified
+		return nil
+	case FileDiffResourceStatusDeleted:
+		*s = FileDiffResourceStatusDeleted
+		return nil
+	default:
+		return errors.Errorf("invalid value: %q", data)
+	}
+}
+
 // InterruptThreadNoContent is response for InterruptThread operation.
 type InterruptThreadNoContent struct{}
 
@@ -2017,6 +2139,7 @@ type ItemResource struct {
 	ClientContext OptNilClientContextPartArray `json:"clientContext"`
 	CreatedAt     time.Time                    `json:"createdAt"`
 	Detail        OptNilString                 `json:"detail"`
+	Presentation  OptNilPresentationResource   `json:"presentation"`
 	DurationMs    OptNilInt64                  `json:"durationMs"`
 	ID            string                       `json:"id"`
 	// The model that produced this entry. Null for messages the user sent.
@@ -2070,6 +2193,11 @@ func (s *ItemResource) GetCreatedAt() time.Time {
 // GetDetail returns the value of Detail.
 func (s *ItemResource) GetDetail() OptNilString {
 	return s.Detail
+}
+
+// GetPresentation returns the value of Presentation.
+func (s *ItemResource) GetPresentation() OptNilPresentationResource {
+	return s.Presentation
 }
 
 // GetDurationMs returns the value of DurationMs.
@@ -2160,6 +2288,11 @@ func (s *ItemResource) SetCreatedAt(val time.Time) {
 // SetDetail sets the value of Detail.
 func (s *ItemResource) SetDetail(val OptNilString) {
 	s.Detail = val
+}
+
+// SetPresentation sets the value of Presentation.
+func (s *ItemResource) SetPresentation(val OptNilPresentationResource) {
+	s.Presentation = val
 }
 
 // SetDurationMs sets the value of DurationMs.
@@ -3840,6 +3973,74 @@ func (o OptNilClientFunctionRequestParameters) Or(d ClientFunctionRequestParamet
 	return d
 }
 
+// NewOptNilFileDiffResource returns new OptNilFileDiffResource with value set to v.
+func NewOptNilFileDiffResource(v FileDiffResource) OptNilFileDiffResource {
+	return OptNilFileDiffResource{
+		Value: v,
+		Set:   true,
+	}
+}
+
+// OptNilFileDiffResource is optional nullable FileDiffResource.
+type OptNilFileDiffResource struct {
+	Value FileDiffResource
+	Set   bool
+	Null  bool
+}
+
+// IsSet returns true if OptNilFileDiffResource was set.
+func (o OptNilFileDiffResource) IsSet() bool { return o.Set }
+
+// Reset unsets value.
+func (o *OptNilFileDiffResource) Reset() {
+	var v FileDiffResource
+	o.Value = v
+	o.Set = false
+	o.Null = false
+}
+
+// SetTo sets value to v.
+func (o *OptNilFileDiffResource) SetTo(v FileDiffResource) {
+	o.Set = true
+	o.Null = false
+	o.Value = v
+}
+
+// IsNull returns true if value is Null.
+func (o OptNilFileDiffResource) IsNull() bool { return o.Null }
+
+// SetToNull sets value to null.
+func (o *OptNilFileDiffResource) SetToNull() {
+	o.Set = true
+	o.Null = true
+	var v FileDiffResource
+	o.Value = v
+}
+
+// IsEmpty returns true if the field was omitted from the payload (not Set and not Null).
+func (o OptNilFileDiffResource) IsEmpty() bool {
+	return !o.Set && !o.Null
+}
+
+// Get returns value and boolean that denotes whether value was set.
+func (o OptNilFileDiffResource) Get() (v FileDiffResource, ok bool) {
+	if o.Null {
+		return v, false
+	}
+	if !o.Set {
+		return v, false
+	}
+	return o.Value, true
+}
+
+// Or returns value if set, or given parameter if does not.
+func (o OptNilFileDiffResource) Or(d FileDiffResource) FileDiffResource {
+	if v, ok := o.Get(); ok {
+		return v
+	}
+	return d
+}
+
 // NewOptNilInt64 returns new OptNilInt64 with value set to v.
 func NewOptNilInt64(v int64) OptNilInt64 {
 	return OptNilInt64{
@@ -4106,6 +4307,74 @@ func (o OptNilPartResourceArray) Get() (v []PartResource, ok bool) {
 
 // Or returns value if set, or given parameter if does not.
 func (o OptNilPartResourceArray) Or(d []PartResource) []PartResource {
+	if v, ok := o.Get(); ok {
+		return v
+	}
+	return d
+}
+
+// NewOptNilPresentationResource returns new OptNilPresentationResource with value set to v.
+func NewOptNilPresentationResource(v PresentationResource) OptNilPresentationResource {
+	return OptNilPresentationResource{
+		Value: v,
+		Set:   true,
+	}
+}
+
+// OptNilPresentationResource is optional nullable PresentationResource.
+type OptNilPresentationResource struct {
+	Value PresentationResource
+	Set   bool
+	Null  bool
+}
+
+// IsSet returns true if OptNilPresentationResource was set.
+func (o OptNilPresentationResource) IsSet() bool { return o.Set }
+
+// Reset unsets value.
+func (o *OptNilPresentationResource) Reset() {
+	var v PresentationResource
+	o.Value = v
+	o.Set = false
+	o.Null = false
+}
+
+// SetTo sets value to v.
+func (o *OptNilPresentationResource) SetTo(v PresentationResource) {
+	o.Set = true
+	o.Null = false
+	o.Value = v
+}
+
+// IsNull returns true if value is Null.
+func (o OptNilPresentationResource) IsNull() bool { return o.Null }
+
+// SetToNull sets value to null.
+func (o *OptNilPresentationResource) SetToNull() {
+	o.Set = true
+	o.Null = true
+	var v PresentationResource
+	o.Value = v
+}
+
+// IsEmpty returns true if the field was omitted from the payload (not Set and not Null).
+func (o OptNilPresentationResource) IsEmpty() bool {
+	return !o.Set && !o.Null
+}
+
+// Get returns value and boolean that denotes whether value was set.
+func (o OptNilPresentationResource) Get() (v PresentationResource, ok bool) {
+	if o.Null {
+		return v, false
+	}
+	if !o.Set {
+		return v, false
+	}
+	return o.Value, true
+}
+
+// Or returns value if set, or given parameter if does not.
+func (o OptNilPresentationResource) Or(d PresentationResource) PresentationResource {
 	if v, ok := o.Get(); ok {
 		return v
 	}
@@ -4996,6 +5265,72 @@ func (s *PlatformResourceSetupMethod) UnmarshalText(data []byte) error {
 		return nil
 	case PlatformResourceSetupMethodScan:
 		*s = PlatformResourceSetupMethodScan
+		return nil
+	default:
+		return errors.Errorf("invalid value: %q", data)
+	}
+}
+
+// Structured detail produced by a tool call, in addition to the single-line `detail`. Null when the
+// call produced none.
+//
+// `kind` determines which of the remaining fields is populated.
+// Ref: #/components/schemas/PresentationResource
+type PresentationResource struct {
+	FileDiff OptNilFileDiffResource `json:"fileDiff"`
+	// Determines which of the remaining fields is populated.
+	Kind PresentationResourceKind `json:"kind"`
+}
+
+// GetFileDiff returns the value of FileDiff.
+func (s *PresentationResource) GetFileDiff() OptNilFileDiffResource {
+	return s.FileDiff
+}
+
+// GetKind returns the value of Kind.
+func (s *PresentationResource) GetKind() PresentationResourceKind {
+	return s.Kind
+}
+
+// SetFileDiff sets the value of FileDiff.
+func (s *PresentationResource) SetFileDiff(val OptNilFileDiffResource) {
+	s.FileDiff = val
+}
+
+// SetKind sets the value of Kind.
+func (s *PresentationResource) SetKind(val PresentationResourceKind) {
+	s.Kind = val
+}
+
+// Determines which of the remaining fields is populated.
+type PresentationResourceKind string
+
+const (
+	PresentationResourceKindFileDiff PresentationResourceKind = "file_diff"
+)
+
+// AllValues returns all PresentationResourceKind values.
+func (PresentationResourceKind) AllValues() []PresentationResourceKind {
+	return []PresentationResourceKind{
+		PresentationResourceKindFileDiff,
+	}
+}
+
+// MarshalText implements encoding.TextMarshaler.
+func (s PresentationResourceKind) MarshalText() ([]byte, error) {
+	switch s {
+	case PresentationResourceKindFileDiff:
+		return []byte(s), nil
+	default:
+		return nil, errors.Errorf("invalid value: %q", s)
+	}
+}
+
+// UnmarshalText implements encoding.TextUnmarshaler.
+func (s *PresentationResourceKind) UnmarshalText(data []byte) error {
+	switch PresentationResourceKind(data) {
+	case PresentationResourceKindFileDiff:
+		*s = PresentationResourceKindFileDiff
 		return nil
 	default:
 		return errors.Errorf("invalid value: %q", data)
