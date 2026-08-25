@@ -219,13 +219,15 @@ type LengthAwarePageSSHKeyResource struct {
 
 // MemberResource defines model for MemberResource.
 type MemberResource struct {
-	CreatedAt time.Time     `json:"created_at"`
-	CreatedBy string        `json:"created_by"`
-	Email     string        `json:"email"`
-	FirstName string        `json:"first_name"`
-	Grant     GrantResource `json:"grant"`
-	LastName  string        `json:"last_name"`
-	UserId    string        `json:"user_id"`
+	// AvatarHash MD5 hash of the lowercased, trimmed email address, for use with Gravatar-compatible avatar services. Empty if the account has no email address.
+	AvatarHash string        `json:"avatar_hash"`
+	CreatedAt  time.Time     `json:"created_at"`
+	CreatedBy  string        `json:"created_by"`
+	Email      string        `json:"email"`
+	FirstName  string        `json:"first_name"`
+	Grant      GrantResource `json:"grant"`
+	LastName   string        `json:"last_name"`
+	UserId     string        `json:"user_id"`
 }
 
 // MembershipResource defines model for MembershipResource.
