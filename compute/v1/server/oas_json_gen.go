@@ -6571,6 +6571,10 @@ func (s *OperationLogResource) encodeFields(e *jx.Encoder) {
 		s.Actor.Encode(e)
 	}
 	{
+		e.FieldStart("actor_name")
+		s.ActorName.Encode(e)
+	}
+	{
 		e.FieldStart("by_platform")
 		e.Bool(s.ByPlatform)
 	}
@@ -6608,18 +6612,19 @@ func (s *OperationLogResource) encodeFields(e *jx.Encoder) {
 	}
 }
 
-var jsonFieldsNameOfOperationLogResource = [11]string{
+var jsonFieldsNameOfOperationLogResource = [12]string{
 	0:  "action",
 	1:  "actor",
-	2:  "by_platform",
-	3:  "created_at",
-	4:  "failure",
-	5:  "id",
-	6:  "payload",
-	7:  "region_code",
-	8:  "subject_id",
-	9:  "subject_type",
-	10: "succeeded",
+	2:  "actor_name",
+	3:  "by_platform",
+	4:  "created_at",
+	5:  "failure",
+	6:  "id",
+	7:  "payload",
+	8:  "region_code",
+	9:  "subject_id",
+	10: "subject_type",
+	11: "succeeded",
 }
 
 // Decode decodes OperationLogResource from json.
@@ -6653,8 +6658,18 @@ func (s *OperationLogResource) Decode(d *jx.Decoder) error {
 			}(); err != nil {
 				return errors.Wrap(err, "decode field \"actor\"")
 			}
-		case "by_platform":
+		case "actor_name":
 			requiredBitSet[0] |= 1 << 2
+			if err := func() error {
+				if err := s.ActorName.Decode(d); err != nil {
+					return err
+				}
+				return nil
+			}(); err != nil {
+				return errors.Wrap(err, "decode field \"actor_name\"")
+			}
+		case "by_platform":
+			requiredBitSet[0] |= 1 << 3
 			if err := func() error {
 				v, err := d.Bool()
 				s.ByPlatform = bool(v)
@@ -6666,7 +6681,7 @@ func (s *OperationLogResource) Decode(d *jx.Decoder) error {
 				return errors.Wrap(err, "decode field \"by_platform\"")
 			}
 		case "created_at":
-			requiredBitSet[0] |= 1 << 3
+			requiredBitSet[0] |= 1 << 4
 			if err := func() error {
 				v, err := json.DecodeDateTime(d)
 				s.CreatedAt = v
@@ -6678,7 +6693,7 @@ func (s *OperationLogResource) Decode(d *jx.Decoder) error {
 				return errors.Wrap(err, "decode field \"created_at\"")
 			}
 		case "failure":
-			requiredBitSet[0] |= 1 << 4
+			requiredBitSet[0] |= 1 << 5
 			if err := func() error {
 				if err := s.Failure.Decode(d); err != nil {
 					return err
@@ -6688,7 +6703,7 @@ func (s *OperationLogResource) Decode(d *jx.Decoder) error {
 				return errors.Wrap(err, "decode field \"failure\"")
 			}
 		case "id":
-			requiredBitSet[0] |= 1 << 5
+			requiredBitSet[0] |= 1 << 6
 			if err := func() error {
 				v, err := json.DecodeUUID(d)
 				s.ID = v
@@ -6700,7 +6715,7 @@ func (s *OperationLogResource) Decode(d *jx.Decoder) error {
 				return errors.Wrap(err, "decode field \"id\"")
 			}
 		case "payload":
-			requiredBitSet[0] |= 1 << 6
+			requiredBitSet[0] |= 1 << 7
 			if err := func() error {
 				if err := s.Payload.Decode(d); err != nil {
 					return err
@@ -6710,7 +6725,7 @@ func (s *OperationLogResource) Decode(d *jx.Decoder) error {
 				return errors.Wrap(err, "decode field \"payload\"")
 			}
 		case "region_code":
-			requiredBitSet[0] |= 1 << 7
+			requiredBitSet[1] |= 1 << 0
 			if err := func() error {
 				if err := s.RegionCode.Decode(d); err != nil {
 					return err
@@ -6720,7 +6735,7 @@ func (s *OperationLogResource) Decode(d *jx.Decoder) error {
 				return errors.Wrap(err, "decode field \"region_code\"")
 			}
 		case "subject_id":
-			requiredBitSet[1] |= 1 << 0
+			requiredBitSet[1] |= 1 << 1
 			if err := func() error {
 				v, err := d.Str()
 				s.SubjectID = string(v)
@@ -6732,7 +6747,7 @@ func (s *OperationLogResource) Decode(d *jx.Decoder) error {
 				return errors.Wrap(err, "decode field \"subject_id\"")
 			}
 		case "subject_type":
-			requiredBitSet[1] |= 1 << 1
+			requiredBitSet[1] |= 1 << 2
 			if err := func() error {
 				v, err := d.Str()
 				s.SubjectType = string(v)
@@ -6744,7 +6759,7 @@ func (s *OperationLogResource) Decode(d *jx.Decoder) error {
 				return errors.Wrap(err, "decode field \"subject_type\"")
 			}
 		case "succeeded":
-			requiredBitSet[1] |= 1 << 2
+			requiredBitSet[1] |= 1 << 3
 			if err := func() error {
 				v, err := d.Bool()
 				s.Succeeded = bool(v)
@@ -6766,7 +6781,7 @@ func (s *OperationLogResource) Decode(d *jx.Decoder) error {
 	var failures []validate.FieldError
 	for i, mask := range [2]uint8{
 		0b11111111,
-		0b00000111,
+		0b00001111,
 	} {
 		if result := (requiredBitSet[i] & mask) ^ mask; result != 0 {
 			// Mask only required fields and check equality to mask using XOR.
