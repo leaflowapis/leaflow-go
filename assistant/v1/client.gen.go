@@ -280,6 +280,27 @@ func (e CreateThreadRequestBodyApprovalMode) Valid() bool {
 	}
 }
 
+// Defines values for FileDiffResourceStatus.
+const (
+	Added    FileDiffResourceStatus = "added"
+	Deleted  FileDiffResourceStatus = "deleted"
+	Modified FileDiffResourceStatus = "modified"
+)
+
+// Valid indicates whether the value is a known member of the FileDiffResourceStatus enum.
+func (e FileDiffResourceStatus) Valid() bool {
+	switch e {
+	case Added:
+		return true
+	case Deleted:
+		return true
+	case Modified:
+		return true
+	default:
+		return false
+	}
+}
+
 // Defines values for ItemResourceApproval.
 const (
 	ItemResourceApprovalApproved     ItemResourceApproval = "approved"
@@ -469,6 +490,21 @@ func (e PlatformResourceSetupMethod) Valid() bool {
 	case PlatformResourceSetupMethodCredentials:
 		return true
 	case PlatformResourceSetupMethodScan:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for PresentationResourceKind.
+const (
+	FileDiff PresentationResourceKind = "file_diff"
+)
+
+// Valid indicates whether the value is a known member of the PresentationResourceKind enum.
+func (e PresentationResourceKind) Valid() bool {
+	switch e {
+	case FileDiff:
 		return true
 	default:
 		return false
@@ -909,6 +945,35 @@ type EarlierResponseBody struct {
 // Error defines model for Error.
 type Error = externalRef0.Error
 
+// FileDiffResource The change a tool call applied to a single file.
+//
+// Populated once the call has completed successfully. It is absent while the call is pending
+// or awaiting approval, as the file's prior contents are read during execution. To preview an
+// edit awaiting approval, derive it from the call's `old_string` and `new_string` arguments.
+type FileDiffResource struct {
+	// Added Lines added. Complete even when `unified` is null
+	Added int64 `json:"added"`
+
+	// Path Absolute path of the file on the instance
+	Path string `json:"path"`
+
+	// Removed Lines removed. Complete even when `unified` is null
+	Removed int64 `json:"removed"`
+
+	// Status What the call did to the file
+	Status FileDiffResourceStatus `json:"status"`
+
+	// Unified The change as a unified diff with three lines of context. A file created by the call is
+	// diffed against `/dev/null`.
+	//
+	// Null when the change exceeds the service's size limit. The diff is omitted in full
+	// rather than truncated; `added` and `removed` remain complete.
+	Unified *string `json:"unified,omitempty"`
+}
+
+// FileDiffResourceStatus What the call did to the file
+type FileDiffResourceStatus string
+
 // ItemResource defines model for ItemResource.
 type ItemResource struct {
 	Approval       *ItemResourceApproval `json:"approval,omitempty"`
@@ -940,11 +1005,12 @@ type ItemResource struct {
 	//
 	// An image belongs where it was written, so render these in order rather than putting
 	// attachments at the end.
-	Parts    []PartResource     `json:"parts,omitempty"`
-	Reverted bool               `json:"reverted"`
-	Status   ItemResourceStatus `json:"status"`
-	Target   *string            `json:"target,omitempty"`
-	Tool     *string            `json:"tool,omitempty"`
+	Parts        []PartResource        `json:"parts,omitempty"`
+	Presentation *PresentationResource `json:"presentation,omitempty"`
+	Reverted     bool                  `json:"reverted"`
+	Status       ItemResourceStatus    `json:"status"`
+	Target       *string               `json:"target,omitempty"`
+	Tool         *string               `json:"tool,omitempty"`
 
 	// Type Determines which fields this entry carries
 	Type ItemResourceType `json:"type"`
@@ -1095,6 +1161,20 @@ type PlatformResourceSetupChallenge string
 
 // PlatformResourceSetupMethod defines model for PlatformResource.SetupMethod.
 type PlatformResourceSetupMethod string
+
+// PresentationResource Structured detail produced by a tool call, in addition to the single-line `detail`. Null
+// when the call produced none.
+//
+// `kind` determines which of the remaining fields is populated.
+type PresentationResource struct {
+	FileDiff *FileDiffResource `json:"fileDiff,omitempty"`
+
+	// Kind Determines which of the remaining fields is populated
+	Kind PresentationResourceKind `json:"kind"`
+}
+
+// PresentationResourceKind Determines which of the remaining fields is populated
+type PresentationResourceKind string
 
 // Question defines model for Question.
 type Question struct {
