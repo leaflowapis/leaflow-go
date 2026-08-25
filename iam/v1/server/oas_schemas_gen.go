@@ -657,13 +657,21 @@ func (s *ListSSHKeysStatus) UnmarshalText(data []byte) error {
 
 // Ref: #/components/schemas/MemberResource
 type MemberResource struct {
-	CreatedAt time.Time     `json:"created_at"`
-	CreatedBy string        `json:"created_by"`
-	Email     string        `json:"email"`
-	FirstName string        `json:"first_name"`
-	Grant     GrantResource `json:"grant"`
-	LastName  string        `json:"last_name"`
-	UserID    string        `json:"user_id"`
+	// MD5 hash of the lowercased, trimmed email address, for use with Gravatar-compatible avatar services.
+	// Empty if the account has no email address.
+	AvatarHash string        `json:"avatar_hash"`
+	CreatedAt  time.Time     `json:"created_at"`
+	CreatedBy  string        `json:"created_by"`
+	Email      string        `json:"email"`
+	FirstName  string        `json:"first_name"`
+	Grant      GrantResource `json:"grant"`
+	LastName   string        `json:"last_name"`
+	UserID     string        `json:"user_id"`
+}
+
+// GetAvatarHash returns the value of AvatarHash.
+func (s *MemberResource) GetAvatarHash() string {
+	return s.AvatarHash
 }
 
 // GetCreatedAt returns the value of CreatedAt.
@@ -699,6 +707,11 @@ func (s *MemberResource) GetLastName() string {
 // GetUserID returns the value of UserID.
 func (s *MemberResource) GetUserID() string {
 	return s.UserID
+}
+
+// SetAvatarHash sets the value of AvatarHash.
+func (s *MemberResource) SetAvatarHash(val string) {
+	s.AvatarHash = val
 }
 
 // SetCreatedAt sets the value of CreatedAt.

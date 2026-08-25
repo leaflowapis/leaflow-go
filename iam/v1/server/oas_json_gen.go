@@ -1695,6 +1695,10 @@ func (s *MemberResource) Encode(e *jx.Encoder) {
 // encodeFields encodes fields.
 func (s *MemberResource) encodeFields(e *jx.Encoder) {
 	{
+		e.FieldStart("avatar_hash")
+		e.Str(s.AvatarHash)
+	}
+	{
 		e.FieldStart("created_at")
 		json.EncodeDateTime(e, s.CreatedAt)
 	}
@@ -1724,14 +1728,15 @@ func (s *MemberResource) encodeFields(e *jx.Encoder) {
 	}
 }
 
-var jsonFieldsNameOfMemberResource = [7]string{
-	0: "created_at",
-	1: "created_by",
-	2: "email",
-	3: "first_name",
-	4: "grant",
-	5: "last_name",
-	6: "user_id",
+var jsonFieldsNameOfMemberResource = [8]string{
+	0: "avatar_hash",
+	1: "created_at",
+	2: "created_by",
+	3: "email",
+	4: "first_name",
+	5: "grant",
+	6: "last_name",
+	7: "user_id",
 }
 
 // Decode decodes MemberResource from json.
@@ -1743,8 +1748,20 @@ func (s *MemberResource) Decode(d *jx.Decoder) error {
 
 	if err := d.ObjBytes(func(d *jx.Decoder, k []byte) error {
 		switch string(k) {
-		case "created_at":
+		case "avatar_hash":
 			requiredBitSet[0] |= 1 << 0
+			if err := func() error {
+				v, err := d.Str()
+				s.AvatarHash = string(v)
+				if err != nil {
+					return err
+				}
+				return nil
+			}(); err != nil {
+				return errors.Wrap(err, "decode field \"avatar_hash\"")
+			}
+		case "created_at":
+			requiredBitSet[0] |= 1 << 1
 			if err := func() error {
 				v, err := json.DecodeDateTime(d)
 				s.CreatedAt = v
@@ -1756,7 +1773,7 @@ func (s *MemberResource) Decode(d *jx.Decoder) error {
 				return errors.Wrap(err, "decode field \"created_at\"")
 			}
 		case "created_by":
-			requiredBitSet[0] |= 1 << 1
+			requiredBitSet[0] |= 1 << 2
 			if err := func() error {
 				v, err := d.Str()
 				s.CreatedBy = string(v)
@@ -1768,7 +1785,7 @@ func (s *MemberResource) Decode(d *jx.Decoder) error {
 				return errors.Wrap(err, "decode field \"created_by\"")
 			}
 		case "email":
-			requiredBitSet[0] |= 1 << 2
+			requiredBitSet[0] |= 1 << 3
 			if err := func() error {
 				v, err := d.Str()
 				s.Email = string(v)
@@ -1780,7 +1797,7 @@ func (s *MemberResource) Decode(d *jx.Decoder) error {
 				return errors.Wrap(err, "decode field \"email\"")
 			}
 		case "first_name":
-			requiredBitSet[0] |= 1 << 3
+			requiredBitSet[0] |= 1 << 4
 			if err := func() error {
 				v, err := d.Str()
 				s.FirstName = string(v)
@@ -1792,7 +1809,7 @@ func (s *MemberResource) Decode(d *jx.Decoder) error {
 				return errors.Wrap(err, "decode field \"first_name\"")
 			}
 		case "grant":
-			requiredBitSet[0] |= 1 << 4
+			requiredBitSet[0] |= 1 << 5
 			if err := func() error {
 				if err := s.Grant.Decode(d); err != nil {
 					return err
@@ -1802,7 +1819,7 @@ func (s *MemberResource) Decode(d *jx.Decoder) error {
 				return errors.Wrap(err, "decode field \"grant\"")
 			}
 		case "last_name":
-			requiredBitSet[0] |= 1 << 5
+			requiredBitSet[0] |= 1 << 6
 			if err := func() error {
 				v, err := d.Str()
 				s.LastName = string(v)
@@ -1814,7 +1831,7 @@ func (s *MemberResource) Decode(d *jx.Decoder) error {
 				return errors.Wrap(err, "decode field \"last_name\"")
 			}
 		case "user_id":
-			requiredBitSet[0] |= 1 << 6
+			requiredBitSet[0] |= 1 << 7
 			if err := func() error {
 				v, err := d.Str()
 				s.UserID = string(v)
@@ -1835,7 +1852,7 @@ func (s *MemberResource) Decode(d *jx.Decoder) error {
 	// Validate required fields.
 	var failures []validate.FieldError
 	for i, mask := range [1]uint8{
-		0b01111111,
+		0b11111111,
 	} {
 		if result := (requiredBitSet[i] & mask) ^ mask; result != 0 {
 			// Mask only required fields and check equality to mask using XOR.
