@@ -7452,6 +7452,10 @@ func (s *Server) handleListIncidentsRequest(args [0]string, argsEscaped bool, w 
 					In:   "query",
 				}: params.ServerID,
 				{
+					Name: "web_check_id",
+					In:   "query",
+				}: params.WebCheckID,
+				{
 					Name: "incident_status",
 					In:   "query",
 				}: params.IncidentStatus,

@@ -2094,7 +2094,7 @@ func (s *IncidentResource) encodeFields(e *jx.Encoder) {
 	}
 	{
 		e.FieldStart("server_id")
-		json.EncodeUUID(e, s.ServerID)
+		s.ServerID.Encode(e)
 	}
 	{
 		e.FieldStart("server_name")
@@ -2125,12 +2125,16 @@ func (s *IncidentResource) encodeFields(e *jx.Encoder) {
 		e.Str(s.TriggerExpression)
 	}
 	{
+		e.FieldStart("web_check_id")
+		s.WebCheckID.Encode(e)
+	}
+	{
 		e.FieldStart("zabbix_event_id")
 		e.Str(s.ZabbixEventID)
 	}
 }
 
-var jsonFieldsNameOfIncidentResource = [32]string{
+var jsonFieldsNameOfIncidentResource = [33]string{
 	0:  "acknowledge_message",
 	1:  "acknowledged",
 	2:  "acknowledged_at",
@@ -2162,7 +2166,8 @@ var jsonFieldsNameOfIncidentResource = [32]string{
 	28: "started_at",
 	29: "tags",
 	30: "trigger_expression",
-	31: "zabbix_event_id",
+	31: "web_check_id",
+	32: "zabbix_event_id",
 }
 
 // Decode decodes IncidentResource from json.
@@ -2170,7 +2175,7 @@ func (s *IncidentResource) Decode(d *jx.Decoder) error {
 	if s == nil {
 		return errors.New("invalid: unable to decode IncidentResource to nil")
 	}
-	var requiredBitSet [4]uint8
+	var requiredBitSet [5]uint8
 
 	if err := d.ObjBytes(func(d *jx.Decoder, k []byte) error {
 		switch string(k) {
@@ -2493,9 +2498,7 @@ func (s *IncidentResource) Decode(d *jx.Decoder) error {
 		case "server_id":
 			requiredBitSet[3] |= 1 << 1
 			if err := func() error {
-				v, err := json.DecodeUUID(d)
-				s.ServerID = v
-				if err != nil {
+				if err := s.ServerID.Decode(d); err != nil {
 					return err
 				}
 				return nil
@@ -2573,8 +2576,18 @@ func (s *IncidentResource) Decode(d *jx.Decoder) error {
 			}(); err != nil {
 				return errors.Wrap(err, "decode field \"trigger_expression\"")
 			}
-		case "zabbix_event_id":
+		case "web_check_id":
 			requiredBitSet[3] |= 1 << 7
+			if err := func() error {
+				if err := s.WebCheckID.Decode(d); err != nil {
+					return err
+				}
+				return nil
+			}(); err != nil {
+				return errors.Wrap(err, "decode field \"web_check_id\"")
+			}
+		case "zabbix_event_id":
+			requiredBitSet[4] |= 1 << 0
 			if err := func() error {
 				v, err := d.Str()
 				s.ZabbixEventID = string(v)
@@ -2594,11 +2607,12 @@ func (s *IncidentResource) Decode(d *jx.Decoder) error {
 	}
 	// Validate required fields.
 	var failures []validate.FieldError
-	for i, mask := range [4]uint8{
+	for i, mask := range [5]uint8{
 		0b11111111,
 		0b11111111,
 		0b11111111,
 		0b11111111,
+		0b00000001,
 	} {
 		if result := (requiredBitSet[i] & mask) ^ mask; result != 0 {
 			// Mask only required fields and check equality to mask using XOR.
@@ -5731,6 +5745,52 @@ func (s NilFloat64) MarshalJSON() ([]byte, error) {
 
 // UnmarshalJSON implements stdjson.Unmarshaler.
 func (s *NilFloat64) UnmarshalJSON(data []byte) error {
+	d := jx.DecodeBytes(data)
+	return s.Decode(d)
+}
+
+// Encode encodes uuid.UUID as json.
+func (o NilUUID) Encode(e *jx.Encoder) {
+	if o.Null {
+		e.Null()
+		return
+	}
+	json.EncodeUUID(e, o.Value)
+}
+
+// Decode decodes uuid.UUID from json.
+func (o *NilUUID) Decode(d *jx.Decoder) error {
+	if o == nil {
+		return errors.New("invalid: unable to decode NilUUID to nil")
+	}
+	if d.Next() == jx.Null {
+		if err := d.Null(); err != nil {
+			return err
+		}
+
+		var v uuid.UUID
+		o.Value = v
+		o.Null = true
+		return nil
+	}
+	o.Null = false
+	v, err := json.DecodeUUID(d)
+	if err != nil {
+		return err
+	}
+	o.Value = v
+	return nil
+}
+
+// MarshalJSON implements stdjson.Marshaler.
+func (s NilUUID) MarshalJSON() ([]byte, error) {
+	e := jx.Encoder{}
+	s.Encode(&e)
+	return e.Bytes(), nil
+}
+
+// UnmarshalJSON implements stdjson.Unmarshaler.
+func (s *NilUUID) UnmarshalJSON(data []byte) error {
 	d := jx.DecodeBytes(data)
 	return s.Decode(d)
 }

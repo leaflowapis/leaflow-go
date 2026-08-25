@@ -2485,7 +2485,9 @@ type ListIncidentsParams struct {
 	// Number of records to skip. For deeper paging, use the cursor-paged endpoint instead.
 	Offset OptInt64 `json:",omitempty,omitzero"`
 	// Restrict to a single machine.
-	ServerID       OptString                      `json:",omitempty,omitzero"`
+	ServerID OptString `json:",omitempty,omitzero"`
+	// Restrict to a single web check.
+	WebCheckID     OptString                      `json:",omitempty,omitzero"`
 	IncidentStatus OptListIncidentsIncidentStatus `json:",omitempty,omitzero"`
 	// Matches at or above this severity, not exactly this severity.
 	MinSeverity   OptListIncidentsMinSeverity `json:",omitempty,omitzero"`
@@ -2531,6 +2533,15 @@ func unpackListIncidentsParams(packed middleware.Parameters) (params ListInciden
 		}
 		if v, ok := packed[key]; ok {
 			params.ServerID = v.(OptString)
+		}
+	}
+	{
+		key := middleware.ParameterKey{
+			Name: "web_check_id",
+			In:   "query",
+		}
+		if v, ok := packed[key]; ok {
+			params.WebCheckID = v.(OptString)
 		}
 	}
 	{
@@ -2820,6 +2831,47 @@ func decodeListIncidentsParams(args [0]string, argsEscaped bool, r *http.Request
 	}(); err != nil {
 		return params, &ogenerrors.DecodeParamError{
 			Name: "server_id",
+			In:   "query",
+			Err:  err,
+		}
+	}
+	// Decode query: web_check_id.
+	if err := func() error {
+		cfg := uri.QueryParameterDecodingConfig{
+			Name:    "web_check_id",
+			Style:   uri.QueryStyleForm,
+			Explode: false,
+		}
+
+		if err := q.HasParam(cfg); err == nil {
+			if err := q.DecodeParam(cfg, func(d uri.Decoder) error {
+				var paramsDotWebCheckIDVal string
+				if err := func() error {
+					val, err := d.DecodeValue()
+					if err != nil {
+						return err
+					}
+
+					c, err := conv.ToString(val)
+					if err != nil {
+						return err
+					}
+
+					paramsDotWebCheckIDVal = c
+					return nil
+				}(); err != nil {
+					return err
+				}
+				params.WebCheckID.SetTo(paramsDotWebCheckIDVal)
+				return nil
+			}); err != nil {
+				return err
+			}
+		}
+		return nil
+	}(); err != nil {
+		return params, &ogenerrors.DecodeParamError{
+			Name: "web_check_id",
 			In:   "query",
 			Err:  err,
 		}

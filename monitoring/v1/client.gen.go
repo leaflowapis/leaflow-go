@@ -1348,17 +1348,24 @@ type IncidentResource struct {
 	Name           string                         `json:"name"`
 
 	// OperationalData The operational data line configured on the trigger
-	OperationalData           string                   `json:"operational_data"`
-	ProjectId                 openapi_types.UUID       `json:"project_id"`
-	ResolvedAt                *time.Time               `json:"resolved_at"`
-	ResolvedTriggerExpression string                   `json:"resolved_trigger_expression"`
-	ServerId                  openapi_types.UUID       `json:"server_id"`
-	ServerName                string                   `json:"server_name"`
-	Severity                  IncidentResourceSeverity `json:"severity"`
-	StartedAt                 time.Time                `json:"started_at"`
-	Tags                      []TagResource            `json:"tags"`
-	TriggerExpression         string                   `json:"trigger_expression"`
-	ZabbixEventId             string                   `json:"zabbix_event_id"`
+	OperationalData           string             `json:"operational_data"`
+	ProjectId                 openapi_types.UUID `json:"project_id"`
+	ResolvedAt                *time.Time         `json:"resolved_at"`
+	ResolvedTriggerExpression string             `json:"resolved_trigger_expression"`
+
+	// ServerId The machine this alert is about. Null when the alert is not about a machine
+	ServerId *openapi_types.UUID `json:"server_id"`
+
+	// ServerName Empty when server_id is null
+	ServerName        string                   `json:"server_name"`
+	Severity          IncidentResourceSeverity `json:"severity"`
+	StartedAt         time.Time                `json:"started_at"`
+	Tags              []TagResource            `json:"tags"`
+	TriggerExpression string                   `json:"trigger_expression"`
+
+	// WebCheckId The web check that reported this alert. Null when the alert did not come from a web check. Both this and server_id are set when the check runs on one of your machines
+	WebCheckId    *openapi_types.UUID `json:"web_check_id"`
+	ZabbixEventId string              `json:"zabbix_event_id"`
 }
 
 // IncidentResourceIncidentStatus Whether monitoring considers the problem recovered. Independent of whether anyone has closed the incident
@@ -2283,7 +2290,10 @@ type ListIncidentsParams struct {
 	Offset *int64 `form:"offset,omitempty" json:"offset,omitempty"`
 
 	// ServerId Restrict to a single machine
-	ServerId       *string                            `form:"server_id,omitempty" json:"server_id,omitempty"`
+	ServerId *string `form:"server_id,omitempty" json:"server_id,omitempty"`
+
+	// WebCheckId Restrict to a single web check
+	WebCheckId     *string                            `form:"web_check_id,omitempty" json:"web_check_id,omitempty"`
 	IncidentStatus *ListIncidentsParamsIncidentStatus `form:"incident_status,omitempty" json:"incident_status,omitempty"`
 
 	// MinSeverity Matches at or above this severity, not exactly this severity
@@ -4990,6 +5000,18 @@ func NewListIncidentsRequest(server string, params *ListIncidentsParams) (*http.
 		if params.ServerId != nil {
 
 			if queryFrag, err := runtime.StyleParamWithOptions("form", false, "server_id", *params.ServerId, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			} else {
+				for _, qp := range strings.Split(queryFrag, "&") {
+					rawQueryFragments = append(rawQueryFragments, qp)
+				}
+			}
+
+		}
+
+		if params.WebCheckId != nil {
+
+			if queryFrag, err := runtime.StyleParamWithOptions("form", false, "web_check_id", *params.WebCheckId, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "string", Format: ""}); err != nil {
 				return nil, err
 			} else {
 				for _, qp := range strings.Split(queryFrag, "&") {

@@ -1003,17 +1003,22 @@ type IncidentResource struct {
 	Items          []MonitoringItemResource       `json:"items"`
 	Name           string                         `json:"name"`
 	// The operational data line configured on the trigger.
-	OperationalData           string                   `json:"operational_data"`
-	ProjectID                 uuid.UUID                `json:"project_id"`
-	ResolvedAt                NilDateTime              `json:"resolved_at"`
-	ResolvedTriggerExpression string                   `json:"resolved_trigger_expression"`
-	ServerID                  uuid.UUID                `json:"server_id"`
-	ServerName                string                   `json:"server_name"`
-	Severity                  IncidentResourceSeverity `json:"severity"`
-	StartedAt                 time.Time                `json:"started_at"`
-	Tags                      []TagResource            `json:"tags"`
-	TriggerExpression         string                   `json:"trigger_expression"`
-	ZabbixEventID             string                   `json:"zabbix_event_id"`
+	OperationalData           string      `json:"operational_data"`
+	ProjectID                 uuid.UUID   `json:"project_id"`
+	ResolvedAt                NilDateTime `json:"resolved_at"`
+	ResolvedTriggerExpression string      `json:"resolved_trigger_expression"`
+	// The machine this alert is about. Null when the alert is not about a machine.
+	ServerID NilUUID `json:"server_id"`
+	// Empty when server_id is null.
+	ServerName        string                   `json:"server_name"`
+	Severity          IncidentResourceSeverity `json:"severity"`
+	StartedAt         time.Time                `json:"started_at"`
+	Tags              []TagResource            `json:"tags"`
+	TriggerExpression string                   `json:"trigger_expression"`
+	// The web check that reported this alert. Null when the alert did not come from a web check. Both this
+	// and server_id are set when the check runs on one of your machines.
+	WebCheckID    NilUUID `json:"web_check_id"`
+	ZabbixEventID string  `json:"zabbix_event_id"`
 }
 
 // GetAcknowledgeMessage returns the value of AcknowledgeMessage.
@@ -1142,7 +1147,7 @@ func (s *IncidentResource) GetResolvedTriggerExpression() string {
 }
 
 // GetServerID returns the value of ServerID.
-func (s *IncidentResource) GetServerID() uuid.UUID {
+func (s *IncidentResource) GetServerID() NilUUID {
 	return s.ServerID
 }
 
@@ -1169,6 +1174,11 @@ func (s *IncidentResource) GetTags() []TagResource {
 // GetTriggerExpression returns the value of TriggerExpression.
 func (s *IncidentResource) GetTriggerExpression() string {
 	return s.TriggerExpression
+}
+
+// GetWebCheckID returns the value of WebCheckID.
+func (s *IncidentResource) GetWebCheckID() NilUUID {
+	return s.WebCheckID
 }
 
 // GetZabbixEventID returns the value of ZabbixEventID.
@@ -1302,7 +1312,7 @@ func (s *IncidentResource) SetResolvedTriggerExpression(val string) {
 }
 
 // SetServerID sets the value of ServerID.
-func (s *IncidentResource) SetServerID(val uuid.UUID) {
+func (s *IncidentResource) SetServerID(val NilUUID) {
 	s.ServerID = val
 }
 
@@ -1329,6 +1339,11 @@ func (s *IncidentResource) SetTags(val []TagResource) {
 // SetTriggerExpression sets the value of TriggerExpression.
 func (s *IncidentResource) SetTriggerExpression(val string) {
 	s.TriggerExpression = val
+}
+
+// SetWebCheckID sets the value of WebCheckID.
+func (s *IncidentResource) SetWebCheckID(val NilUUID) {
+	s.WebCheckID = val
 }
 
 // SetZabbixEventID sets the value of ZabbixEventID.
@@ -3056,6 +3071,51 @@ func (o NilFloat64) Get() (v float64, ok bool) {
 
 // Or returns value if set, or given parameter if does not.
 func (o NilFloat64) Or(d float64) float64 {
+	if v, ok := o.Get(); ok {
+		return v
+	}
+	return d
+}
+
+// NewNilUUID returns new NilUUID with value set to v.
+func NewNilUUID(v uuid.UUID) NilUUID {
+	return NilUUID{
+		Value: v,
+	}
+}
+
+// NilUUID is nullable uuid.UUID.
+type NilUUID struct {
+	Value uuid.UUID
+	Null  bool
+}
+
+// SetTo sets value to v.
+func (o *NilUUID) SetTo(v uuid.UUID) {
+	o.Null = false
+	o.Value = v
+}
+
+// IsNull returns true if value is Null.
+func (o NilUUID) IsNull() bool { return o.Null }
+
+// SetToNull sets value to null.
+func (o *NilUUID) SetToNull() {
+	o.Null = true
+	var v uuid.UUID
+	o.Value = v
+}
+
+// Get returns value and boolean that denotes whether value was set.
+func (o NilUUID) Get() (v uuid.UUID, ok bool) {
+	if o.Null {
+		return v, false
+	}
+	return o.Value, true
+}
+
+// Or returns value if set, or given parameter if does not.
+func (o NilUUID) Or(d uuid.UUID) uuid.UUID {
 	if v, ok := o.Get(); ok {
 		return v
 	}
