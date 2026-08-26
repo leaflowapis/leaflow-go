@@ -1205,7 +1205,10 @@ func (s *ClientContextRequest) SetLabel(val OptString) {
 // Ref: #/components/schemas/ClientFunctionRequest
 type ClientFunctionRequest struct {
 	// What the action does, written for the model. An action without one can only be guessed at from its
-	// name.
+	// name. The 1024 ceiling is OpenAI's own limit on `tools[].function.description`, not a number chosen
+	// here: over it the upstream call fails with `string_above_max_length`, and refusing at submission is
+	// the clearer of the two places to refuse. It was 500, which ran out at about six enumerated entries
+	// — an action that must list what it accepts had nowhere to put the list.
 	Description string `json:"description"`
 	// The MCP and Anthropic spelling of `parameters`. Give one or the other, not both.
 	InputSchema OptNilClientFunctionRequestInputSchema `json:"inputSchema"`
