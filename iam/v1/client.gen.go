@@ -100,6 +100,18 @@ func (e ListSshKeysParamsStatus) Valid() bool {
 	}
 }
 
+// BatchGetMembersRequestBody defines model for BatchGetMembersRequestBody.
+type BatchGetMembersRequestBody struct {
+	// Ids The account ids to resolve. Blank entries are ignored.
+	Ids []string `json:"ids"`
+}
+
+// BatchGetMembersResponseBody defines model for BatchGetMembersResponseBody.
+type BatchGetMembersResponseBody struct {
+	// Items The people that resolved. Ids that never belonged to this project are absent, as are ids that do not resolve at all.
+	Items []ResolvedMemberResource `json:"items"`
+}
+
 // CreateRoleRequestBody defines model for CreateRoleRequestBody.
 type CreateRoleRequestBody struct {
 	// Code 小写字母开头，可含数字和下划线。建好之后不能改——成员绑定和邀请都指着它
@@ -294,6 +306,19 @@ type RenameSSHKeyRequestBody struct {
 	Name string `json:"name"`
 }
 
+// ResolvedMemberResource A person referred to by an id held elsewhere in the project. Carries who they are, not what they may do — a member who has left holds nothing, and this shape has no grant to say so.
+type ResolvedMemberResource struct {
+	// AvatarHash MD5 hash of the lowercased, trimmed email address, for use with Gravatar-compatible avatar services. Empty if the account has no email address.
+	AvatarHash string `json:"avatar_hash"`
+	Email      string `json:"email"`
+	FirstName  string `json:"first_name"`
+	LastName   string `json:"last_name"`
+
+	// Left True when this person is no longer a member of the project.
+	Left   bool   `json:"left"`
+	UserId string `json:"user_id"`
+}
+
 // RoleListResponseBody defines model for RoleListResponseBody.
 type RoleListResponseBody struct {
 	Items []RoleResource `json:"items"`
@@ -403,6 +428,9 @@ type IssueInvitationJSONRequestBody = IssueInvitationRequestBody
 
 // SetMemberRolesJSONRequestBody defines body for SetMemberRoles for application/json ContentType.
 type SetMemberRolesJSONRequestBody = SetMemberRolesRequestBody
+
+// BatchGetMembersJSONRequestBody defines body for BatchGetMembers for application/json ContentType.
+type BatchGetMembersJSONRequestBody = BatchGetMembersRequestBody
 
 // UpdateProjectJSONRequestBody defines body for UpdateProject for application/json ContentType.
 type UpdateProjectJSONRequestBody = UpdateProjectRequestBody
@@ -555,6 +583,32 @@ type ClientInterface interface {
 	//
 	// Corresponds with PUT /api/v1/members/{userId}/roles (the `SetMemberRoles` operationId).
 	SetMemberRoles(ctx context.Context, userId string, body SetMemberRolesJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// BatchGetMembersWithBody Resolve members by id, including those who have left
+	//
+	// Resolves a set of account ids to the people behind them, scoped to the current project and **including members who have since left it**.
+	//
+	// This is what turns the ids held elsewhere in the product — who created a machine, who performed a logged operation — into names. The current member list cannot answer for somebody who has left, and those rows are exactly the ones a reader most often needs explained.
+	//
+	// Only ids that have belonged to the current project resolve; anything else is omitted, as are ids that do not resolve at all. Match the response against the request by id; the order is not significant.
+	//
+	// Takes any type of body and a specified content type.
+	//
+	// Corresponds with POST /api/v1/members:batchGet (the `BatchGetMembers` operationId).
+	BatchGetMembersWithBody(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// BatchGetMembers Resolve members by id, including those who have left
+	//
+	// Resolves a set of account ids to the people behind them, scoped to the current project and **including members who have since left it**.
+	//
+	// This is what turns the ids held elsewhere in the product — who created a machine, who performed a logged operation — into names. The current member list cannot answer for somebody who has left, and those rows are exactly the ones a reader most often needs explained.
+	//
+	// Only ids that have belonged to the current project resolve; anything else is omitted, as are ids that do not resolve at all. Match the response against the request by id; the order is not significant.
+	//
+	// Takes a body of the `application/json` content type.
+	//
+	// Corresponds with POST /api/v1/members:batchGet (the `BatchGetMembers` operationId).
+	BatchGetMembers(ctx context.Context, body BatchGetMembersJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
 
 	// GetProjectMembership 查看我在这个项目里的身份
 	//
@@ -851,6 +905,52 @@ func (c *Client) SetMemberRolesWithBody(ctx context.Context, userId string, cont
 // Corresponds with PUT /api/v1/members/{userId}/roles (the `SetMemberRoles` operationId).
 func (c *Client) SetMemberRoles(ctx context.Context, userId string, body SetMemberRolesJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
 	req, err := NewSetMemberRolesRequest(c.Server, userId, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+// BatchGetMembersWithBody Resolve members by id, including those who have left
+//
+// Resolves a set of account ids to the people behind them, scoped to the current project and **including members who have since left it**.
+//
+// This is what turns the ids held elsewhere in the product — who created a machine, who performed a logged operation — into names. The current member list cannot answer for somebody who has left, and those rows are exactly the ones a reader most often needs explained.
+//
+// Only ids that have belonged to the current project resolve; anything else is omitted, as are ids that do not resolve at all. Match the response against the request by id; the order is not significant.
+//
+// Takes any type of body and a specified content type.
+//
+// Corresponds with POST /api/v1/members:batchGet (the `BatchGetMembers` operationId).
+func (c *Client) BatchGetMembersWithBody(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewBatchGetMembersRequestWithBody(c.Server, contentType, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+// BatchGetMembers Resolve members by id, including those who have left
+//
+// Resolves a set of account ids to the people behind them, scoped to the current project and **including members who have since left it**.
+//
+// This is what turns the ids held elsewhere in the product — who created a machine, who performed a logged operation — into names. The current member list cannot answer for somebody who has left, and those rows are exactly the ones a reader most often needs explained.
+//
+// Only ids that have belonged to the current project resolve; anything else is omitted, as are ids that do not resolve at all. Match the response against the request by id; the order is not significant.
+//
+// Takes a body of the `application/json` content type.
+//
+// Corresponds with POST /api/v1/members:batchGet (the `BatchGetMembers` operationId).
+func (c *Client) BatchGetMembers(ctx context.Context, body BatchGetMembersJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewBatchGetMembersRequest(c.Server, body)
 	if err != nil {
 		return nil, err
 	}
@@ -1535,6 +1635,46 @@ func NewSetMemberRolesRequestWithBody(server string, userId string, contentType 
 	}
 
 	req, err := http.NewRequest(http.MethodPut, queryURL.String(), body)
+	if err != nil {
+		return nil, err
+	}
+
+	req.Header.Add("Content-Type", contentType)
+
+	return req, nil
+}
+
+// NewBatchGetMembersRequest calls the generic BatchGetMembers builder with application/json body
+func NewBatchGetMembersRequest(server string, body BatchGetMembersJSONRequestBody) (*http.Request, error) {
+	var bodyReader io.Reader
+	buf, err := json.Marshal(body)
+	if err != nil {
+		return nil, err
+	}
+	bodyReader = bytes.NewReader(buf)
+	return NewBatchGetMembersRequestWithBody(server, "application/json", bodyReader)
+}
+
+// NewBatchGetMembersRequestWithBody constructs an http.Request for the BatchGetMembers method, with any body, and a specified content type
+func NewBatchGetMembersRequestWithBody(server string, contentType string, body io.Reader) (*http.Request, error) {
+	var err error
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/api/v1/members:batchGet")
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest(http.MethodPost, queryURL.String(), body)
 	if err != nil {
 		return nil, err
 	}
@@ -2271,6 +2411,32 @@ type ClientWithResponsesInterface interface {
 	// Corresponds with PUT /api/v1/members/{userId}/roles (the `SetMemberRoles` operationId).
 	SetMemberRolesWithResponse(ctx context.Context, userId string, body SetMemberRolesJSONRequestBody, reqEditors ...RequestEditorFn) (*SetMemberRolesResponse, error)
 
+	// BatchGetMembersWithBodyWithResponse Resolve members by id, including those who have left
+	//
+	// Resolves a set of account ids to the people behind them, scoped to the current project and **including members who have since left it**.
+	//
+	// This is what turns the ids held elsewhere in the product — who created a machine, who performed a logged operation — into names. The current member list cannot answer for somebody who has left, and those rows are exactly the ones a reader most often needs explained.
+	//
+	// Only ids that have belonged to the current project resolve; anything else is omitted, as are ids that do not resolve at all. Match the response against the request by id; the order is not significant.
+	//
+	// Takes any type of body and a specified content type, and returns a wrapper object for the known response body format(s).
+	//
+	// Corresponds with POST /api/v1/members:batchGet (the `BatchGetMembers` operationId).
+	BatchGetMembersWithBodyWithResponse(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*BatchGetMembersResponse, error)
+
+	// BatchGetMembersWithResponse Resolve members by id, including those who have left
+	//
+	// Resolves a set of account ids to the people behind them, scoped to the current project and **including members who have since left it**.
+	//
+	// This is what turns the ids held elsewhere in the product — who created a machine, who performed a logged operation — into names. The current member list cannot answer for somebody who has left, and those rows are exactly the ones a reader most often needs explained.
+	//
+	// Only ids that have belonged to the current project resolve; anything else is omitted, as are ids that do not resolve at all. Match the response against the request by id; the order is not significant.
+	//
+	// Takes a body of the `application/json` content type, and returns a wrapper object for the known response body format(s).
+	//
+	// Corresponds with POST /api/v1/members:batchGet (the `BatchGetMembers` operationId).
+	BatchGetMembersWithResponse(ctx context.Context, body BatchGetMembersJSONRequestBody, reqEditors ...RequestEditorFn) (*BatchGetMembersResponse, error)
+
 	// GetProjectMembershipWithResponse 查看我在这个项目里的身份
 	//
 	// 只给事实，不给结论：这里没有 allowed，因为 IAM 不知道你要做的是哪个操作——哪个操作需要哪条权限那份目录属于各个服务，判断在它们那边。.
@@ -2724,6 +2890,54 @@ func (r SetMemberRolesResponse) StatusCode() int {
 
 // ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
 func (r SetMemberRolesResponse) ContentType() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Header.Get("Content-Type")
+	}
+	return ""
+}
+
+type BatchGetMembersResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	// JSON200 the response for an HTTP 200 `application/json` response
+	JSON200 *BatchGetMembersResponseBody
+	// JSONDefault the response for an HTTP default `application/json` response
+	JSONDefault *Error
+}
+
+// GetJSON200 returns the response for an HTTP 200 `application/json` response
+func (r BatchGetMembersResponse) GetJSON200() *BatchGetMembersResponseBody {
+	return r.JSON200
+}
+
+// GetJSONDefault returns the response for an HTTP default `application/json` response
+func (r BatchGetMembersResponse) GetJSONDefault() *Error {
+	return r.JSONDefault
+}
+
+// GetBody returns the raw response body bytes
+func (r BatchGetMembersResponse) GetBody() []byte {
+	return r.Body
+}
+
+// Status returns HTTPResponse.Status
+func (r BatchGetMembersResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r BatchGetMembersResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+// ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
+func (r BatchGetMembersResponse) ContentType() string {
 	if r.HTTPResponse != nil {
 		return r.HTTPResponse.Header.Get("Content-Type")
 	}
@@ -3607,6 +3821,44 @@ func (c *ClientWithResponses) SetMemberRolesWithResponse(ctx context.Context, us
 	return ParseSetMemberRolesResponse(rsp)
 }
 
+// BatchGetMembersWithBodyWithResponse Resolve members by id, including those who have left
+//
+// Resolves a set of account ids to the people behind them, scoped to the current project and **including members who have since left it**.
+//
+// This is what turns the ids held elsewhere in the product — who created a machine, who performed a logged operation — into names. The current member list cannot answer for somebody who has left, and those rows are exactly the ones a reader most often needs explained.
+//
+// Only ids that have belonged to the current project resolve; anything else is omitted, as are ids that do not resolve at all. Match the response against the request by id; the order is not significant.
+//
+// Takes any type of body and a specified content type, and returns a wrapper object for the known response body format(s).
+//
+// Corresponds with POST /api/v1/members:batchGet (the `BatchGetMembers` operationId).
+func (c *ClientWithResponses) BatchGetMembersWithBodyWithResponse(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*BatchGetMembersResponse, error) {
+	rsp, err := c.BatchGetMembersWithBody(ctx, contentType, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseBatchGetMembersResponse(rsp)
+}
+
+// BatchGetMembersWithResponse Resolve members by id, including those who have left
+//
+// Resolves a set of account ids to the people behind them, scoped to the current project and **including members who have since left it**.
+//
+// This is what turns the ids held elsewhere in the product — who created a machine, who performed a logged operation — into names. The current member list cannot answer for somebody who has left, and those rows are exactly the ones a reader most often needs explained.
+//
+// Only ids that have belonged to the current project resolve; anything else is omitted, as are ids that do not resolve at all. Match the response against the request by id; the order is not significant.
+//
+// Takes a body of the `application/json` content type, and returns a wrapper object for the known response body format(s).
+//
+// Corresponds with POST /api/v1/members:batchGet (the `BatchGetMembers` operationId).
+func (c *ClientWithResponses) BatchGetMembersWithResponse(ctx context.Context, body BatchGetMembersJSONRequestBody, reqEditors ...RequestEditorFn) (*BatchGetMembersResponse, error) {
+	rsp, err := c.BatchGetMembers(ctx, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseBatchGetMembersResponse(rsp)
+}
+
 // GetProjectMembershipWithResponse 查看我在这个项目里的身份
 //
 // 只给事实，不给结论：这里没有 allowed，因为 IAM 不知道你要做的是哪个操作——哪个操作需要哪条权限那份目录属于各个服务，判断在它们那边。.
@@ -4096,6 +4348,39 @@ func ParseSetMemberRolesResponse(rsp *http.Response) (*SetMemberRolesResponse, e
 	switch {
 	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
 		var dest MemberResource
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && true:
+		var dest Error
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSONDefault = &dest
+
+	}
+
+	return response, nil
+}
+
+// ParseBatchGetMembersResponse parses an HTTP response from a BatchGetMembersWithResponse call
+func ParseBatchGetMembersResponse(rsp *http.Response) (*BatchGetMembersResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &BatchGetMembersResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest BatchGetMembersResponseBody
 		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
 			return nil, err
 		}

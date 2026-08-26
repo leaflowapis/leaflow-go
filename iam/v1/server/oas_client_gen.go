@@ -29,6 +29,21 @@ func trimTrailingSlashes(u *url.URL) {
 
 // Invoker invokes operations described by OpenAPI v3 specification.
 type Invoker interface {
+	// BatchGetMembers invokes batch-get-members operation.
+	//
+	// Resolves a set of account ids to the people behind them, scoped to the current project and including
+	// members who have since left it.
+	//
+	// This is what turns the ids held elsewhere in the product — who created a machine, who performed a
+	// logged operation — into names. The current member list cannot answer for somebody who has left,
+	// and those rows are exactly the ones a reader most often needs explained.
+	//
+	// Only ids that have belonged to the current project resolve; anything else is omitted, as are ids
+	// that do not resolve at all. Match the response against the request by id; the order is not
+	// significant.
+	//
+	// POST /api/v1/members:batchGet
+	BatchGetMembers(ctx context.Context, request *BatchGetMembersRequestBody) (*BatchGetMembersResponseBody, error)
 	// CreateRole invokes create-role operation.
 	//
 	// 建一个角色.
@@ -212,6 +227,131 @@ func (c *Client) requestURL(ctx context.Context) *url.URL {
 		return c.serverURL
 	}
 	return u
+}
+
+// BatchGetMembers invokes batch-get-members operation.
+//
+// Resolves a set of account ids to the people behind them, scoped to the current project and including
+// members who have since left it.
+//
+// This is what turns the ids held elsewhere in the product — who created a machine, who performed a
+// logged operation — into names. The current member list cannot answer for somebody who has left,
+// and those rows are exactly the ones a reader most often needs explained.
+//
+// Only ids that have belonged to the current project resolve; anything else is omitted, as are ids
+// that do not resolve at all. Match the response against the request by id; the order is not
+// significant.
+//
+// POST /api/v1/members:batchGet
+func (c *Client) BatchGetMembers(ctx context.Context, request *BatchGetMembersRequestBody) (*BatchGetMembersResponseBody, error) {
+	res, err := c.sendBatchGetMembers(ctx, request)
+	return res, err
+}
+
+func (c *Client) sendBatchGetMembers(ctx context.Context, request *BatchGetMembersRequestBody) (res *BatchGetMembersResponseBody, err error) {
+	otelAttrs := []attribute.KeyValue{
+		otelogen.OperationID("batch-get-members"),
+		semconv.HTTPRequestMethodKey.String("POST"),
+		semconv.URLTemplateKey.String("/api/v1/members:batchGet"),
+	}
+	otelAttrs = append(otelAttrs, c.cfg.Attributes...)
+
+	// Run stopwatch.
+	startTime := time.Now()
+	defer func() {
+		// Use floating point division here for higher precision (instead of Millisecond method).
+		elapsedDuration := time.Since(startTime)
+		c.duration.Record(ctx, float64(elapsedDuration)/float64(time.Millisecond), metric.WithAttributes(otelAttrs...))
+	}()
+
+	// Increment request counter.
+	c.requests.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
+
+	// Start a span for this request.
+	ctx, span := c.cfg.Tracer.Start(ctx, BatchGetMembersOperation,
+		trace.WithAttributes(otelAttrs...),
+		clientSpanKind,
+	)
+	// Track stage for error reporting.
+	var stage string
+	defer func() {
+		if err != nil {
+			span.RecordError(err)
+			span.SetStatus(codes.Error, stage)
+			c.errors.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
+		}
+		span.End()
+	}()
+
+	stage = "BuildURL"
+	u := uri.Clone(c.requestURL(ctx))
+	var pathParts [1]string
+	pathParts[0] = "/api/v1/members:batchGet"
+	uri.AddPathParts(u, pathParts[:]...)
+
+	stage = "EncodeRequest"
+	r, err := ht.NewRequest(ctx, "POST", u)
+	if err != nil {
+		return res, errors.Wrap(err, "create request")
+	}
+	if err := encodeBatchGetMembersRequest(request, r); err != nil {
+		return res, errors.Wrap(err, "encode request")
+	}
+
+	{
+		type bitset = [1]uint8
+		var satisfied bitset
+		{
+			stage = "Security:BearerAuth"
+			switch err := c.securityBearerAuth(ctx, BatchGetMembersOperation, r); {
+			case err == nil: // if NO error
+				satisfied[0] |= 1 << 0
+			case errors.Is(err, ogenerrors.ErrSkipClientSecurity):
+				// Skip this security.
+			default:
+				return res, errors.Wrap(err, "security \"BearerAuth\"")
+			}
+		}
+
+		if ok := func() bool {
+		nextRequirement:
+			for _, requirement := range []bitset{
+				{0b00000001},
+			} {
+				for i, mask := range requirement {
+					if satisfied[i]&mask != mask {
+						continue nextRequirement
+					}
+				}
+				return true
+			}
+			return false
+		}(); !ok {
+			return res, ogenerrors.ErrSecurityRequirementIsNotSatisfied
+		}
+	}
+
+	stage = "SendRequest"
+	resp, err := c.cfg.Client.Do(r)
+	if err != nil {
+		return res, errors.Wrap(err, "do request")
+	}
+	body := resp.Body
+	defer func() {
+		// Drain the body to EOF before closing, so the underlying
+		// connection can be reused by the Transport regardless of the
+		// response status code. See https://github.com/ogen-go/ogen/issues/1670.
+		_, _ = io.Copy(io.Discard, body)
+		_ = body.Close()
+	}()
+
+	stage = "DecodeResponse"
+	result, err := decodeBatchGetMembersResponse(resp)
+	if err != nil {
+		return res, errors.Wrap(err, "decode response")
+	}
+
+	return result, nil
 }
 
 // CreateRole invokes create-role operation.

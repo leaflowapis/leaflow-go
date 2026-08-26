@@ -13,6 +13,24 @@ type UnimplementedHandler struct{}
 
 var _ Handler = UnimplementedHandler{}
 
+// BatchGetMembers implements batch-get-members operation.
+//
+// Resolves a set of account ids to the people behind them, scoped to the current project and including
+// members who have since left it.
+//
+// This is what turns the ids held elsewhere in the product — who created a machine, who performed a
+// logged operation — into names. The current member list cannot answer for somebody who has left,
+// and those rows are exactly the ones a reader most often needs explained.
+//
+// Only ids that have belonged to the current project resolve; anything else is omitted, as are ids
+// that do not resolve at all. Match the response against the request by id; the order is not
+// significant.
+//
+// POST /api/v1/members:batchGet
+func (UnimplementedHandler) BatchGetMembers(ctx context.Context, req *BatchGetMembersRequestBody) (r *BatchGetMembersResponseBody, _ error) {
+	return r, ht.ErrNotImplemented
+}
+
 // CreateRole implements create-role operation.
 //
 // 建一个角色.
