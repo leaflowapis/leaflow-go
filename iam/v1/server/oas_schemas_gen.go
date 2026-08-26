@@ -15,6 +15,39 @@ func (s *ErrorStatusCode) Error() string {
 	return fmt.Sprintf("code %d: %+v", s.StatusCode, s.Response)
 }
 
+// Ref: #/components/schemas/BatchGetMembersRequestBody
+type BatchGetMembersRequestBody struct {
+	// The account ids to resolve. Blank entries are ignored.
+	Ids []string `json:"ids"`
+}
+
+// GetIds returns the value of Ids.
+func (s *BatchGetMembersRequestBody) GetIds() []string {
+	return s.Ids
+}
+
+// SetIds sets the value of Ids.
+func (s *BatchGetMembersRequestBody) SetIds(val []string) {
+	s.Ids = val
+}
+
+// Ref: #/components/schemas/BatchGetMembersResponseBody
+type BatchGetMembersResponseBody struct {
+	// The people that resolved. Ids that never belonged to this project are absent, as are ids that do not
+	// resolve at all.
+	Items []ResolvedMemberResource `json:"items"`
+}
+
+// GetItems returns the value of Items.
+func (s *BatchGetMembersResponseBody) GetItems() []ResolvedMemberResource {
+	return s.Items
+}
+
+// SetItems sets the value of Items.
+func (s *BatchGetMembersResponseBody) SetItems(val []ResolvedMemberResource) {
+	s.Items = val
+}
+
 type BearerAuth struct {
 	Token string
 	Roles []string
@@ -1452,6 +1485,81 @@ func (s *RenameSSHKeyRequestBody) GetName() string {
 // SetName sets the value of Name.
 func (s *RenameSSHKeyRequestBody) SetName(val string) {
 	s.Name = val
+}
+
+// A person referred to by an id held elsewhere in the project. Carries who they are, not what they may
+// do — a member who has left holds nothing, and this shape has no grant to say so.
+// Ref: #/components/schemas/ResolvedMemberResource
+type ResolvedMemberResource struct {
+	// MD5 hash of the lowercased, trimmed email address, for use with Gravatar-compatible avatar services.
+	// Empty if the account has no email address.
+	AvatarHash string `json:"avatar_hash"`
+	Email      string `json:"email"`
+	FirstName  string `json:"first_name"`
+	LastName   string `json:"last_name"`
+	// True when this person is no longer a member of the project.
+	Left   bool   `json:"left"`
+	UserID string `json:"user_id"`
+}
+
+// GetAvatarHash returns the value of AvatarHash.
+func (s *ResolvedMemberResource) GetAvatarHash() string {
+	return s.AvatarHash
+}
+
+// GetEmail returns the value of Email.
+func (s *ResolvedMemberResource) GetEmail() string {
+	return s.Email
+}
+
+// GetFirstName returns the value of FirstName.
+func (s *ResolvedMemberResource) GetFirstName() string {
+	return s.FirstName
+}
+
+// GetLastName returns the value of LastName.
+func (s *ResolvedMemberResource) GetLastName() string {
+	return s.LastName
+}
+
+// GetLeft returns the value of Left.
+func (s *ResolvedMemberResource) GetLeft() bool {
+	return s.Left
+}
+
+// GetUserID returns the value of UserID.
+func (s *ResolvedMemberResource) GetUserID() string {
+	return s.UserID
+}
+
+// SetAvatarHash sets the value of AvatarHash.
+func (s *ResolvedMemberResource) SetAvatarHash(val string) {
+	s.AvatarHash = val
+}
+
+// SetEmail sets the value of Email.
+func (s *ResolvedMemberResource) SetEmail(val string) {
+	s.Email = val
+}
+
+// SetFirstName sets the value of FirstName.
+func (s *ResolvedMemberResource) SetFirstName(val string) {
+	s.FirstName = val
+}
+
+// SetLastName sets the value of LastName.
+func (s *ResolvedMemberResource) SetLastName(val string) {
+	s.LastName = val
+}
+
+// SetLeft sets the value of Left.
+func (s *ResolvedMemberResource) SetLeft(val bool) {
+	s.Left = val
+}
+
+// SetUserID sets the value of UserID.
+func (s *ResolvedMemberResource) SetUserID(val string) {
+	s.UserID = val
 }
 
 // RevokeInvitationNoContent is response for RevokeInvitation operation.

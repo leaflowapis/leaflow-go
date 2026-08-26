@@ -6,6 +6,7 @@ package iamv1server
 type OperationName = string
 
 const (
+	BatchGetMembersOperation          OperationName = "BatchGetMembers"
 	CreateRoleOperation               OperationName = "CreateRole"
 	CreateSSHKeyOperation             OperationName = "CreateSSHKey"
 	DeleteProjectOperation            OperationName = "DeleteProject"
