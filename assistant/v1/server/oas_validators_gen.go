@@ -479,7 +479,7 @@ func (s *ClientFunctionRequest) Validate() error {
 		if err := (validate.String{
 			MinLength:     1,
 			MinLengthSet:  true,
-			MaxLength:     500,
+			MaxLength:     1024,
 			MaxLengthSet:  true,
 			Email:         false,
 			Hostname:      false,
