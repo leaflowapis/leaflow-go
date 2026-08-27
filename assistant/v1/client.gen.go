@@ -851,10 +851,13 @@ type ClientFunctionRequest struct {
 // ContextResource defines model for ContextResource.
 type ContextResource struct {
 	CompactAt *int64 `json:"compactAt"`
-	Model     string `json:"model"`
-	Used      *int64 `json:"used"`
-	WarnAt    int64  `json:"warnAt"`
-	Window    *int64 `json:"window"`
+
+	// InputModalities What kinds of input the model behind this conversation accepts, as modality names: text, image. A client uses this to decide whether a control exists — an attach button on a model that cannot read pictures is a control whose only outcome is a refusal, and the refusal arrives after somebody has chosen a file. An empty list is not a claim that the model reads nothing: it means this deployment has not stated the modalities, or the conversation names a model that has since been retired. Treat empty as unknown and keep the control, because hiding one for a reason nobody can see is worse than a refusal that says why.
+	InputModalities []string `json:"inputModalities"`
+	Model           string   `json:"model"`
+	Used            *int64   `json:"used"`
+	WarnAt          int64    `json:"warnAt"`
+	Window          *int64   `json:"window"`
 }
 
 // CreateChannelRequestBody defines model for CreateChannelRequestBody.

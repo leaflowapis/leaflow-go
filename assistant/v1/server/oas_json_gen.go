@@ -2515,6 +2515,14 @@ func (s *ContextResource) encodeFields(e *jx.Encoder) {
 		s.CompactAt.Encode(e)
 	}
 	{
+		e.FieldStart("inputModalities")
+		e.ArrStart()
+		for _, elem := range s.InputModalities {
+			e.Str(elem)
+		}
+		e.ArrEnd()
+	}
+	{
 		e.FieldStart("model")
 		e.Str(s.Model)
 	}
@@ -2532,12 +2540,13 @@ func (s *ContextResource) encodeFields(e *jx.Encoder) {
 	}
 }
 
-var jsonFieldsNameOfContextResource = [5]string{
+var jsonFieldsNameOfContextResource = [6]string{
 	0: "compactAt",
-	1: "model",
-	2: "used",
-	3: "warnAt",
-	4: "window",
+	1: "inputModalities",
+	2: "model",
+	3: "used",
+	4: "warnAt",
+	5: "window",
 }
 
 // Decode decodes ContextResource from json.
@@ -2559,8 +2568,28 @@ func (s *ContextResource) Decode(d *jx.Decoder) error {
 			}(); err != nil {
 				return errors.Wrap(err, "decode field \"compactAt\"")
 			}
-		case "model":
+		case "inputModalities":
 			requiredBitSet[0] |= 1 << 1
+			if err := func() error {
+				s.InputModalities = make([]string, 0)
+				if err := d.Arr(func(d *jx.Decoder) error {
+					var elem string
+					v, err := d.Str()
+					elem = string(v)
+					if err != nil {
+						return err
+					}
+					s.InputModalities = append(s.InputModalities, elem)
+					return nil
+				}); err != nil {
+					return err
+				}
+				return nil
+			}(); err != nil {
+				return errors.Wrap(err, "decode field \"inputModalities\"")
+			}
+		case "model":
+			requiredBitSet[0] |= 1 << 2
 			if err := func() error {
 				v, err := d.Str()
 				s.Model = string(v)
@@ -2572,7 +2601,7 @@ func (s *ContextResource) Decode(d *jx.Decoder) error {
 				return errors.Wrap(err, "decode field \"model\"")
 			}
 		case "used":
-			requiredBitSet[0] |= 1 << 2
+			requiredBitSet[0] |= 1 << 3
 			if err := func() error {
 				if err := s.Used.Decode(d); err != nil {
 					return err
@@ -2582,7 +2611,7 @@ func (s *ContextResource) Decode(d *jx.Decoder) error {
 				return errors.Wrap(err, "decode field \"used\"")
 			}
 		case "warnAt":
-			requiredBitSet[0] |= 1 << 3
+			requiredBitSet[0] |= 1 << 4
 			if err := func() error {
 				v, err := d.Int64()
 				s.WarnAt = int64(v)
@@ -2594,7 +2623,7 @@ func (s *ContextResource) Decode(d *jx.Decoder) error {
 				return errors.Wrap(err, "decode field \"warnAt\"")
 			}
 		case "window":
-			requiredBitSet[0] |= 1 << 4
+			requiredBitSet[0] |= 1 << 5
 			if err := func() error {
 				if err := s.Window.Decode(d); err != nil {
 					return err
@@ -2613,7 +2642,7 @@ func (s *ContextResource) Decode(d *jx.Decoder) error {
 	// Validate required fields.
 	var failures []validate.FieldError
 	for i, mask := range [1]uint8{
-		0b00011111,
+		0b00111111,
 	} {
 		if result := (requiredBitSet[i] & mask) ^ mask; result != 0 {
 			// Mask only required fields and check equality to mask using XOR.
