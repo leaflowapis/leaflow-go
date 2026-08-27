@@ -527,6 +527,29 @@ func (s *ClientFunctionRequest) Validate() error {
 	return nil
 }
 
+func (s *ContextResource) Validate() error {
+	if s == nil {
+		return validate.ErrNilPointer
+	}
+
+	var failures []validate.FieldError
+	if err := func() error {
+		if s.InputModalities == nil {
+			return errors.New("nil is invalid value")
+		}
+		return nil
+	}(); err != nil {
+		failures = append(failures, validate.FieldError{
+			Name:  "inputModalities",
+			Error: err,
+		})
+	}
+	if len(failures) > 0 {
+		return &validate.Error{Fields: failures}
+	}
+	return nil
+}
+
 func (s *CreateChannelRequestBody) Validate() error {
 	if s == nil {
 		return validate.ErrNilPointer
@@ -681,6 +704,17 @@ func (s *DocumentResource) Validate() error {
 	}
 
 	var failures []validate.FieldError
+	if err := func() error {
+		if err := s.Context.Validate(); err != nil {
+			return err
+		}
+		return nil
+	}(); err != nil {
+		failures = append(failures, validate.FieldError{
+			Name:  "context",
+			Error: err,
+		})
+	}
 	if err := func() error {
 		var failures []validate.FieldError
 		for i, elem := range s.Items {

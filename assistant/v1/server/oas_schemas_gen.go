@@ -1284,15 +1284,28 @@ func (s *ClientFunctionRequestParameters) init() ClientFunctionRequestParameters
 // Ref: #/components/schemas/ContextResource
 type ContextResource struct {
 	CompactAt NilInt64 `json:"compactAt"`
-	Model     string   `json:"model"`
-	Used      NilInt64 `json:"used"`
-	WarnAt    int64    `json:"warnAt"`
-	Window    NilInt64 `json:"window"`
+	// What kinds of input the model behind this conversation accepts, as modality names: text, image. A
+	// client uses this to decide whether a control exists — an attach button on a model that cannot read
+	// pictures is a control whose only outcome is a refusal, and the refusal arrives after somebody has
+	// chosen a file. An empty list is not a claim that the model reads nothing: it means this deployment
+	// has not stated the modalities, or the conversation names a model that has since been retired. Treat
+	// empty as unknown and keep the control, because hiding one for a reason nobody can see is worse than
+	// a refusal that says why.
+	InputModalities []string `json:"inputModalities"`
+	Model           string   `json:"model"`
+	Used            NilInt64 `json:"used"`
+	WarnAt          int64    `json:"warnAt"`
+	Window          NilInt64 `json:"window"`
 }
 
 // GetCompactAt returns the value of CompactAt.
 func (s *ContextResource) GetCompactAt() NilInt64 {
 	return s.CompactAt
+}
+
+// GetInputModalities returns the value of InputModalities.
+func (s *ContextResource) GetInputModalities() []string {
+	return s.InputModalities
 }
 
 // GetModel returns the value of Model.
@@ -1318,6 +1331,11 @@ func (s *ContextResource) GetWindow() NilInt64 {
 // SetCompactAt sets the value of CompactAt.
 func (s *ContextResource) SetCompactAt(val NilInt64) {
 	s.CompactAt = val
+}
+
+// SetInputModalities sets the value of InputModalities.
+func (s *ContextResource) SetInputModalities(val []string) {
+	s.InputModalities = val
 }
 
 // SetModel sets the value of Model.
