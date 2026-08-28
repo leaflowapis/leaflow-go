@@ -187,27 +187,35 @@ type Handler interface {
 	ReadBillingAccountBalance(ctx context.Context, params ReadBillingAccountBalanceParams) (*Balance, error)
 	// ReadPaymentMethod implements read-payment-method operation.
 	//
-	// Answers whether a card is on file, and nothing else.
+	// Answers whether a payment method is on file, and nothing else.
+	//
+	// # It is a payment method, not a card
+	//
+	// A card is one kind. Direct debit and the recurring-payment mandates offered by regional wallets are
+	// others, and they occupy the same slot: something the provider can charge later without the account
+	// holder present. Naming the slot after cards would put an assumption into the contract that stops
+	// being true the day a second kind is accepted.
 	//
 	// # Why there is no brand, no last four digits, no expiry
 	//
-	// Those would have to be read from the payment provider, and the two answers can disagree: a card
+	// Those would have to be read from the payment provider, and the two answers can disagree: a method
 	// present at the provider that the billing engine has not recorded as the default is exactly the state
 	// in which money cannot be collected — while a page built on the provider's answer would be showing
-	// a card. What matters here is whether the party that will run the charge believes it can, so the
-	// answer comes from that party alone.
+	// one. What matters here is whether the party that will run the charge believes it can, so the answer
+	// comes from that party alone.
 	//
-	// To see the card, replace it, or remove it, open the billing portal.
+	// To see it, replace it, or remove it, open the billing portal.
 	//
 	// # Read this before offering a paid plan, not after
 	//
 	// `ready` being false is why the engine refuses to start a paid subscription. Discovering it at
-	// purchase time turns a missing card into a rejection whose wording is about something else entirely.
+	// purchase time turns a missing payment method into a rejection whose wording is about something else
+	// entirely.
 	//
-	// An account that has never had a card returns `ready: false`. That is the normal state of a new
-	// account, not an error.
+	// An account that has never had one returns `ready: false`. That is the normal state of a new account,
+	// not an error.
 	//
-	// GET /account/v1/billing-accounts/{accountKey}/card
+	// GET /account/v1/billing-accounts/{accountKey}/payment-method
 	ReadPaymentMethod(ctx context.Context, params ReadPaymentMethodParams) (*PaymentMethod, error)
 	// ReadSubscription implements read-subscription operation.
 	//
@@ -252,24 +260,28 @@ type Handler interface {
 	//
 	// POST /account/v1/billing-accounts/{accountKey}/billing-portal
 	StartBillingPortal(ctx context.Context, params StartBillingPortalParams) (*BillingPortalSession, error)
-	// StartCardSetup implements start-card-setup operation.
+	// StartPaymentMethodSetup implements start-payment-method-setup operation.
 	//
-	// Begins adding a card. Returns a URL to send the browser to; the card is entered there, on the
-	// payment provider's own page, and no card data ever reaches this platform.
+	// Begins adding a payment method. Returns a URL to send the browser to; the details are entered there,
+	// on the payment provider's own page, and no card data ever reaches this platform.
+	//
+	// Which kinds are offered is the provider's decision, not this API's — a card today, a wallet
+	// mandate or a direct debit wherever the provider supports charging one later without the account
+	// holder present.
 	//
 	// # This is a prerequisite for buying a plan, not a convenience
 	//
-	// A plan is charged by invoice, and the invoice is collected from the card on file. The billing a
-	// subscription cannot start for an account that has none — so "add a card, then buy" is the order
-	// the system requires, not a flow that was chosen.
+	// A plan is charged by invoice, and the invoice is collected from the method on file. A subscription
+	// cannot start for an account that has none — so "add a payment method, then buy" is the order the
+	// system requires, not a flow that was chosen.
 	//
 	// It is not a prerequisite for topping up: a top-up collects the money there and then.
 	//
-	// Replacing the card uses the same operation. The new card becomes the default and the old one stops
-	// being used; nothing else about the account changes.
+	// Replacing uses the same operation. The new method becomes the default and the old one stops being
+	// used; nothing else about the account changes.
 	//
-	// POST /account/v1/billing-accounts/{accountKey}/card
-	StartCardSetup(ctx context.Context, params StartCardSetupParams) (*CardSetupSession, error)
+	// POST /account/v1/billing-accounts/{accountKey}/payment-method
+	StartPaymentMethodSetup(ctx context.Context, params StartPaymentMethodSetupParams) (*PaymentMethodSetupSession, error)
 	// StartTopUp implements start-top-up operation.
 	//
 	// Begins adding money to this account. Returns a URL to send the browser to; the card is entered

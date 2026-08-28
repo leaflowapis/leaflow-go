@@ -233,7 +233,7 @@ func encodeStartBillingPortalResponse(response *BillingPortalSession, w http.Res
 	return nil
 }
 
-func encodeStartCardSetupResponse(response *CardSetupSession, w http.ResponseWriter, span trace.Span) error {
+func encodeStartPaymentMethodSetupResponse(response *PaymentMethodSetupSession, w http.ResponseWriter, span trace.Span) error {
 	w.Header().Set("Content-Type", "application/json; charset=utf-8")
 	w.WriteHeader(200)
 
