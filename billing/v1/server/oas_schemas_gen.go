@@ -188,6 +188,22 @@ func (s *BillingAccountList) SetAccounts(val []BillingAccount) {
 	s.Accounts = val
 }
 
+// Ref: #/components/schemas/BillingPortalSession
+type BillingPortalSession struct {
+	// Send the browser here. It expires, so do not store it.
+	URL url.URL `json:"url"`
+}
+
+// GetURL returns the value of URL.
+func (s *BillingPortalSession) GetURL() url.URL {
+	return s.URL
+}
+
+// SetURL sets the value of URL.
+func (s *BillingPortalSession) SetURL(val url.URL) {
+	s.URL = val
+}
+
 type CancelSubscriptionTiming string
 
 const (
@@ -1636,6 +1652,31 @@ func (o OptTopUpPricing) Or(d TopUpPricing) TopUpPricing {
 		return v
 	}
 	return d
+}
+
+// Whether money can be collected from this account.
+// Ref: #/components/schemas/PaymentMethod
+type PaymentMethod struct {
+	// True when the billing engine holds a default payment method for this account and can therefore
+	// collect an invoice.
+	//
+	// This is the precondition for a paid plan. While it is false, starting a paid subscription is
+	// refused, and the refusal is about billing setup rather than about the plan — so check this first
+	// and say what is actually missing.
+	//
+	// A free plan does not require it, which is what allows a new account to be placed on the default tier
+	// before anyone has entered a card.
+	Ready bool `json:"ready"`
+}
+
+// GetReady returns the value of Ready.
+func (s *PaymentMethod) GetReady() bool {
+	return s.Ready
+}
+
+// SetReady sets the value of Ready.
+func (s *PaymentMethod) SetReady(val bool) {
+	s.Ready = val
 }
 
 // When a plan change takes effect. There is no default: an upgrade and a downgrade want opposite
