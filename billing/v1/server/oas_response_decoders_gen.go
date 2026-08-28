@@ -1523,7 +1523,7 @@ func decodeStartBillingPortalResponse(resp *http.Response) (res *BillingPortalSe
 	return res, errors.Wrap(defRes, "error")
 }
 
-func decodeStartCardSetupResponse(resp *http.Response) (res *CardSetupSession, _ error) {
+func decodeStartPaymentMethodSetupResponse(resp *http.Response) (res *PaymentMethodSetupSession, _ error) {
 	switch resp.StatusCode {
 	case 200:
 		// Code 200.
@@ -1539,7 +1539,7 @@ func decodeStartCardSetupResponse(resp *http.Response) (res *CardSetupSession, _
 			}
 			d := jx.DecodeBytes(buf)
 
-			var response CardSetupSession
+			var response PaymentMethodSetupSession
 			if err := func() error {
 				if err := response.Decode(d); err != nil {
 					return err

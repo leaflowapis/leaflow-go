@@ -2739,34 +2739,42 @@ func (s *Server) handleReadBillingAccountBalanceRequest(args [1]string, argsEsca
 
 // handleReadPaymentMethodRequest handles read-payment-method operation.
 //
-// Answers whether a card is on file, and nothing else.
+// Answers whether a payment method is on file, and nothing else.
+//
+// # It is a payment method, not a card
+//
+// A card is one kind. Direct debit and the recurring-payment mandates offered by regional wallets are
+// others, and they occupy the same slot: something the provider can charge later without the account
+// holder present. Naming the slot after cards would put an assumption into the contract that stops
+// being true the day a second kind is accepted.
 //
 // # Why there is no brand, no last four digits, no expiry
 //
-// Those would have to be read from the payment provider, and the two answers can disagree: a card
+// Those would have to be read from the payment provider, and the two answers can disagree: a method
 // present at the provider that the billing engine has not recorded as the default is exactly the state
 // in which money cannot be collected — while a page built on the provider's answer would be showing
-// a card. What matters here is whether the party that will run the charge believes it can, so the
-// answer comes from that party alone.
+// one. What matters here is whether the party that will run the charge believes it can, so the answer
+// comes from that party alone.
 //
-// To see the card, replace it, or remove it, open the billing portal.
+// To see it, replace it, or remove it, open the billing portal.
 //
 // # Read this before offering a paid plan, not after
 //
 // `ready` being false is why the engine refuses to start a paid subscription. Discovering it at
-// purchase time turns a missing card into a rejection whose wording is about something else entirely.
+// purchase time turns a missing payment method into a rejection whose wording is about something else
+// entirely.
 //
-// An account that has never had a card returns `ready: false`. That is the normal state of a new
-// account, not an error.
+// An account that has never had one returns `ready: false`. That is the normal state of a new account,
+// not an error.
 //
-// GET /account/v1/billing-accounts/{accountKey}/card
+// GET /account/v1/billing-accounts/{accountKey}/payment-method
 func (s *Server) handleReadPaymentMethodRequest(args [1]string, argsEscaped bool, w http.ResponseWriter, r *http.Request) {
 	statusWriter := &codeRecorder{ResponseWriter: w}
 	w = statusWriter
 	otelAttrs := []attribute.KeyValue{
 		otelogen.OperationID("read-payment-method"),
 		semconv.HTTPRequestMethodKey.String("GET"),
-		semconv.HTTPRouteKey.String("/account/v1/billing-accounts/{accountKey}/card"),
+		semconv.HTTPRouteKey.String("/account/v1/billing-accounts/{accountKey}/payment-method"),
 	}
 	// Add attributes from config.
 	otelAttrs = append(otelAttrs, s.cfg.Attributes...)
@@ -3584,36 +3592,40 @@ func (s *Server) handleStartBillingPortalRequest(args [1]string, argsEscaped boo
 	}
 }
 
-// handleStartCardSetupRequest handles start-card-setup operation.
+// handleStartPaymentMethodSetupRequest handles start-payment-method-setup operation.
 //
-// Begins adding a card. Returns a URL to send the browser to; the card is entered there, on the
-// payment provider's own page, and no card data ever reaches this platform.
+// Begins adding a payment method. Returns a URL to send the browser to; the details are entered there,
+// on the payment provider's own page, and no card data ever reaches this platform.
+//
+// Which kinds are offered is the provider's decision, not this API's — a card today, a wallet
+// mandate or a direct debit wherever the provider supports charging one later without the account
+// holder present.
 //
 // # This is a prerequisite for buying a plan, not a convenience
 //
-// A plan is charged by invoice, and the invoice is collected from the card on file. The billing a
-// subscription cannot start for an account that has none — so "add a card, then buy" is the order
-// the system requires, not a flow that was chosen.
+// A plan is charged by invoice, and the invoice is collected from the method on file. A subscription
+// cannot start for an account that has none — so "add a payment method, then buy" is the order the
+// system requires, not a flow that was chosen.
 //
 // It is not a prerequisite for topping up: a top-up collects the money there and then.
 //
-// Replacing the card uses the same operation. The new card becomes the default and the old one stops
-// being used; nothing else about the account changes.
+// Replacing uses the same operation. The new method becomes the default and the old one stops being
+// used; nothing else about the account changes.
 //
-// POST /account/v1/billing-accounts/{accountKey}/card
-func (s *Server) handleStartCardSetupRequest(args [1]string, argsEscaped bool, w http.ResponseWriter, r *http.Request) {
+// POST /account/v1/billing-accounts/{accountKey}/payment-method
+func (s *Server) handleStartPaymentMethodSetupRequest(args [1]string, argsEscaped bool, w http.ResponseWriter, r *http.Request) {
 	statusWriter := &codeRecorder{ResponseWriter: w}
 	w = statusWriter
 	otelAttrs := []attribute.KeyValue{
-		otelogen.OperationID("start-card-setup"),
+		otelogen.OperationID("start-payment-method-setup"),
 		semconv.HTTPRequestMethodKey.String("POST"),
-		semconv.HTTPRouteKey.String("/account/v1/billing-accounts/{accountKey}/card"),
+		semconv.HTTPRouteKey.String("/account/v1/billing-accounts/{accountKey}/payment-method"),
 	}
 	// Add attributes from config.
 	otelAttrs = append(otelAttrs, s.cfg.Attributes...)
 
 	// Start a span for this request.
-	ctx, span := s.cfg.Tracer.Start(r.Context(), StartCardSetupOperation,
+	ctx, span := s.cfg.Tracer.Start(r.Context(), StartPaymentMethodSetupOperation,
 		trace.WithAttributes(otelAttrs...),
 		serverSpanKind,
 	)
@@ -3668,15 +3680,15 @@ func (s *Server) handleStartCardSetupRequest(args [1]string, argsEscaped bool, w
 		}
 		err          error
 		opErrContext = ogenerrors.OperationContext{
-			Name: StartCardSetupOperation,
-			ID:   "start-card-setup",
+			Name: StartPaymentMethodSetupOperation,
+			ID:   "start-payment-method-setup",
 		}
 	)
 	{
 		type bitset = [1]uint8
 		var satisfied bitset
 		{
-			sctx, ok, err := s.securityBearerAuth(ctx, StartCardSetupOperation, r)
+			sctx, ok, err := s.securityBearerAuth(ctx, StartPaymentMethodSetupOperation, r)
 			if err != nil {
 				err = &ogenerrors.SecurityError{
 					OperationContext: opErrContext,
@@ -3718,7 +3730,7 @@ func (s *Server) handleStartCardSetupRequest(args [1]string, argsEscaped bool, w
 			return
 		}
 	}
-	params, err := decodeStartCardSetupParams(args, argsEscaped, r)
+	params, err := decodeStartPaymentMethodSetupParams(args, argsEscaped, r)
 	if err != nil {
 		err = &ogenerrors.DecodeParamsError{
 			OperationContext: opErrContext,
@@ -3731,13 +3743,13 @@ func (s *Server) handleStartCardSetupRequest(args [1]string, argsEscaped bool, w
 
 	var rawBody []byte
 
-	var response *CardSetupSession
+	var response *PaymentMethodSetupSession
 	if m := s.cfg.Middleware; m != nil {
 		mreq := middleware.Request{
 			Context:          ctx,
-			OperationName:    StartCardSetupOperation,
-			OperationSummary: "Add or replace the card on file",
-			OperationID:      "start-card-setup",
+			OperationName:    StartPaymentMethodSetupOperation,
+			OperationSummary: "Add or replace the payment method on file",
+			OperationID:      "start-payment-method-setup",
 			Body:             nil,
 			RawBody:          rawBody,
 			Params: middleware.Parameters{
@@ -3751,8 +3763,8 @@ func (s *Server) handleStartCardSetupRequest(args [1]string, argsEscaped bool, w
 
 		type (
 			Request  = struct{}
-			Params   = StartCardSetupParams
-			Response = *CardSetupSession
+			Params   = StartPaymentMethodSetupParams
+			Response = *PaymentMethodSetupSession
 		)
 		response, err = middleware.HookMiddleware[
 			Request,
@@ -3761,14 +3773,14 @@ func (s *Server) handleStartCardSetupRequest(args [1]string, argsEscaped bool, w
 		](
 			m,
 			mreq,
-			unpackStartCardSetupParams,
+			unpackStartPaymentMethodSetupParams,
 			func(ctx context.Context, request Request, params Params) (response Response, err error) {
-				response, err = s.h.StartCardSetup(ctx, params)
+				response, err = s.h.StartPaymentMethodSetup(ctx, params)
 				return response, err
 			},
 		)
 	} else {
-		response, err = s.h.StartCardSetup(ctx, params)
+		response, err = s.h.StartPaymentMethodSetup(ctx, params)
 	}
 	if err != nil {
 		if errRes, ok := errors.Into[*ErrorStatusCode](err); ok {
@@ -3787,7 +3799,7 @@ func (s *Server) handleStartCardSetupRequest(args [1]string, argsEscaped bool, w
 		return
 	}
 
-	if err := encodeStartCardSetupResponse(response, w, span); err != nil {
+	if err := encodeStartPaymentMethodSetupResponse(response, w, span); err != nil {
 		defer recordError("EncodeResponse", err)
 		if !errors.Is(err, ht.ErrInternalServerErrorResponse) {
 			s.cfg.ErrorHandler(ctx, w, r, err)

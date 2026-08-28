@@ -1717,14 +1717,14 @@ func decodeStartBillingPortalParams(args [1]string, argsEscaped bool, r *http.Re
 	return params, nil
 }
 
-// StartCardSetupParams is parameters of start-card-setup operation.
-type StartCardSetupParams struct {
+// StartPaymentMethodSetupParams is parameters of start-payment-method-setup operation.
+type StartPaymentMethodSetupParams struct {
 	// The account's key, of the form `u_<user_id>_<seq>`. Ownership is stated by the key itself, which is
 	// why the key is what addresses the account.
 	AccountKey string
 }
 
-func unpackStartCardSetupParams(packed middleware.Parameters) (params StartCardSetupParams) {
+func unpackStartPaymentMethodSetupParams(packed middleware.Parameters) (params StartPaymentMethodSetupParams) {
 	{
 		key := middleware.ParameterKey{
 			Name: "accountKey",
@@ -1735,7 +1735,7 @@ func unpackStartCardSetupParams(packed middleware.Parameters) (params StartCardS
 	return params
 }
 
-func decodeStartCardSetupParams(args [1]string, argsEscaped bool, r *http.Request) (params StartCardSetupParams, _ error) {
+func decodeStartPaymentMethodSetupParams(args [1]string, argsEscaped bool, r *http.Request) (params StartPaymentMethodSetupParams, _ error) {
 	// Decode path: accountKey.
 	if err := func() error {
 		param := args[0]

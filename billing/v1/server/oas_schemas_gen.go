@@ -245,22 +245,6 @@ func (s *CancelSubscriptionTiming) UnmarshalText(data []byte) error {
 	}
 }
 
-// Ref: #/components/schemas/CardSetupSession
-type CardSetupSession struct {
-	// Send the browser here. It expires, so do not store it.
-	URL url.URL `json:"url"`
-}
-
-// GetURL returns the value of URL.
-func (s *CardSetupSession) GetURL() url.URL {
-	return s.URL
-}
-
-// SetURL sets the value of URL.
-func (s *CardSetupSession) SetURL(val url.URL) {
-	s.URL = val
-}
-
 // One thing this period has been charged for.
 // Ref: #/components/schemas/Charge
 type Charge struct {
@@ -1654,7 +1638,10 @@ func (o OptTopUpPricing) Or(d TopUpPricing) TopUpPricing {
 	return d
 }
 
-// Whether money can be collected from this account.
+// Whether money can be collected from this account later, without the account holder present.
+//
+// Deliberately not called a card: a card is one kind of payment method, and direct debit and the
+// recurring mandates offered by regional wallets occupy the same slot.
 // Ref: #/components/schemas/PaymentMethod
 type PaymentMethod struct {
 	// True when the billing engine holds a default payment method for this account and can therefore
@@ -1663,6 +1650,9 @@ type PaymentMethod struct {
 	// This is the precondition for a paid plan. While it is false, starting a paid subscription is
 	// refused, and the refusal is about billing setup rather than about the plan — so check this first
 	// and say what is actually missing.
+	//
+	// It says nothing about which kind is on file. To show or change that, send the account holder to the
+	// billing portal.
 	//
 	// A free plan does not require it, which is what allows a new account to be placed on the default tier
 	// before anyone has entered a card.
@@ -1677,6 +1667,22 @@ func (s *PaymentMethod) GetReady() bool {
 // SetReady sets the value of Ready.
 func (s *PaymentMethod) SetReady(val bool) {
 	s.Ready = val
+}
+
+// Ref: #/components/schemas/PaymentMethodSetupSession
+type PaymentMethodSetupSession struct {
+	// Send the browser here. It expires, so do not store it.
+	URL url.URL `json:"url"`
+}
+
+// GetURL returns the value of URL.
+func (s *PaymentMethodSetupSession) GetURL() url.URL {
+	return s.URL
+}
+
+// SetURL sets the value of URL.
+func (s *PaymentMethodSetupSession) SetURL(val url.URL) {
+	s.URL = val
 }
 
 // When a plan change takes effect. There is no default: an upgrade and a downgrade want opposite

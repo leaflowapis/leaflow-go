@@ -23,7 +23,7 @@ const (
 	ReadSubscriptionOperation                OperationName = "ReadSubscription"
 	ReadTopUpOperation                       OperationName = "ReadTopUp"
 	StartBillingPortalOperation              OperationName = "StartBillingPortal"
-	StartCardSetupOperation                  OperationName = "StartCardSetup"
+	StartPaymentMethodSetupOperation         OperationName = "StartPaymentMethodSetup"
 	StartTopUpOperation                      OperationName = "StartTopUp"
 	UnbindProjectFromBillingAccountOperation OperationName = "UnbindProjectFromBillingAccount"
 	UpdateBillingAccountOperation            OperationName = "UpdateBillingAccount"

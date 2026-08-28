@@ -228,12 +228,6 @@ type BillingPortalSession struct {
 	Url string `json:"url"`
 }
 
-// CardSetupSession defines model for CardSetupSession.
-type CardSetupSession struct {
-	// Url Send the browser here. It expires, so do not store it
-	Url string `json:"url"`
-}
-
 // Charge One thing this period has been charged for
 type Charge struct {
 	Id   string `json:"id"`
@@ -437,7 +431,10 @@ type OfferList struct {
 	Offers []Offer `json:"offers"`
 }
 
-// PaymentMethod Whether money can be collected from this account
+// PaymentMethod Whether money can be collected from this account later, without the account holder present.
+//
+// Deliberately not called a card: a card is one kind of payment method, and direct debit and
+// the recurring mandates offered by regional wallets occupy the same slot.
 type PaymentMethod struct {
 	// Ready True when the billing engine holds a default payment method for this account and can
 	// therefore collect an invoice.
@@ -446,9 +443,18 @@ type PaymentMethod struct {
 	// subscription is refused, and the refusal is about billing setup rather than about the
 	// plan — so check this first and say what is actually missing.
 	//
+	// It says nothing about which kind is on file. To show or change that, send the account
+	// holder to the billing portal.
+	//
 	// A free plan does not require it, which is what allows a new account to be placed on the
 	// default tier before anyone has entered a card.
 	Ready bool `json:"ready"`
+}
+
+// PaymentMethodSetupSession defines model for PaymentMethodSetupSession.
+type PaymentMethodSetupSession struct {
+	// Url Send the browser here. It expires, so do not store it
+	Url string `json:"url"`
 }
 
 // PlanChangeTiming When a plan change takes effect. There is no default: an upgrade and a downgrade want opposite
@@ -856,51 +862,6 @@ type ClientInterface interface {
 	// Corresponds with POST /account/v1/billing-accounts/{accountKey}/billing-portal (the `StartBillingPortal` operationId).
 	StartBillingPortal(ctx context.Context, accountKey AccountKey, reqEditors ...RequestEditorFn) (*http.Response, error)
 
-	// ReadPaymentMethod Whether this account can be charged
-	//
-	// Answers whether a card is on file, and nothing else.
-	//
-	// ## Why there is no brand, no last four digits, no expiry
-	//
-	// Those would have to be read from the payment provider, and the two answers can disagree: a
-	// card present at the provider that the billing engine has not recorded as the default is
-	// exactly the state in which money cannot be collected — while a page built on the provider's
-	// answer would be showing a card. What matters here is whether the party that will run the
-	// charge believes it can, so the answer comes from that party alone.
-	//
-	// To see the card, replace it, or remove it, open the billing portal.
-	//
-	// ## Read this before offering a paid plan, not after
-	//
-	// `ready` being false is why the engine refuses to start a paid subscription. Discovering it
-	// at purchase time turns a missing card into a rejection whose wording is about something
-	// else entirely.
-	//
-	// An account that has never had a card returns `ready: false`. That is the normal state of a
-	// new account, not an error.
-	//
-	// Corresponds with GET /account/v1/billing-accounts/{accountKey}/card (the `ReadPaymentMethod` operationId).
-	ReadPaymentMethod(ctx context.Context, accountKey AccountKey, reqEditors ...RequestEditorFn) (*http.Response, error)
-
-	// StartCardSetup Add or replace the card on file
-	//
-	// Begins adding a card. Returns a URL to send the browser to; the card is entered there, on the
-	// payment provider's own page, and **no card data ever reaches this platform**.
-	//
-	// ## This is a prerequisite for buying a plan, not a convenience
-	//
-	// A plan is charged by invoice, and the invoice is collected from the card on file. The billing
-	// a subscription cannot start for an account that has none — so "add a card, then
-	// buy" is the order the system requires, not a flow that was chosen.
-	//
-	// It is *not* a prerequisite for topping up: a top-up collects the money there and then.
-	//
-	// Replacing the card uses the same operation. The new card becomes the default and the old one
-	// stops being used; nothing else about the account changes.
-	//
-	// Corresponds with POST /account/v1/billing-accounts/{accountKey}/card (the `StartCardSetup` operationId).
-	StartCardSetup(ctx context.Context, accountKey AccountKey, reqEditors ...RequestEditorFn) (*http.Response, error)
-
 	// ListCharges What this period has run up so far
 	//
 	// The itemised version of `unsettled`: what has been used this period and not yet billed.
@@ -991,6 +952,63 @@ type ClientInterface interface {
 	//
 	// Corresponds with POST /account/v1/billing-accounts/{accountKey}/offers/{offerKey}/purchase (the `PurchaseOffer` operationId).
 	PurchaseOffer(ctx context.Context, accountKey AccountKey, offerKey string, params *PurchaseOfferParams, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// ReadPaymentMethod Whether this account can be charged
+	//
+	// Answers whether a payment method is on file, and nothing else.
+	//
+	// ## It is a payment method, not a card
+	//
+	// A card is one kind. Direct debit and the recurring-payment mandates offered by regional
+	// wallets are others, and they occupy the same slot: something the provider can charge later
+	// without the account holder present. Naming the slot after cards would put an assumption
+	// into the contract that stops being true the day a second kind is accepted.
+	//
+	// ## Why there is no brand, no last four digits, no expiry
+	//
+	// Those would have to be read from the payment provider, and the two answers can disagree: a
+	// method present at the provider that the billing engine has not recorded as the default is
+	// exactly the state in which money cannot be collected — while a page built on the provider's
+	// answer would be showing one. What matters here is whether the party that will run the
+	// charge believes it can, so the answer comes from that party alone.
+	//
+	// To see it, replace it, or remove it, open the billing portal.
+	//
+	// ## Read this before offering a paid plan, not after
+	//
+	// `ready` being false is why the engine refuses to start a paid subscription. Discovering it
+	// at purchase time turns a missing payment method into a rejection whose wording is about
+	// something else entirely.
+	//
+	// An account that has never had one returns `ready: false`. That is the normal state of a
+	// new account, not an error.
+	//
+	// Corresponds with GET /account/v1/billing-accounts/{accountKey}/payment-method (the `ReadPaymentMethod` operationId).
+	ReadPaymentMethod(ctx context.Context, accountKey AccountKey, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// StartPaymentMethodSetup Add or replace the payment method on file
+	//
+	// Begins adding a payment method. Returns a URL to send the browser to; the details are
+	// entered there, on the payment provider's own page, and **no card data ever reaches this
+	// platform**.
+	//
+	// Which kinds are offered is the provider's decision, not this API's — a card today, a
+	// wallet mandate or a direct debit wherever the provider supports charging one later without
+	// the account holder present.
+	//
+	// ## This is a prerequisite for buying a plan, not a convenience
+	//
+	// A plan is charged by invoice, and the invoice is collected from the method on file. A
+	// subscription cannot start for an account that has none — so "add a payment method, then
+	// buy" is the order the system requires, not a flow that was chosen.
+	//
+	// It is *not* a prerequisite for topping up: a top-up collects the money there and then.
+	//
+	// Replacing uses the same operation. The new method becomes the default and the old one stops
+	// being used; nothing else about the account changes.
+	//
+	// Corresponds with POST /account/v1/billing-accounts/{accountKey}/payment-method (the `StartPaymentMethodSetup` operationId).
+	StartPaymentMethodSetup(ctx context.Context, accountKey AccountKey, reqEditors ...RequestEditorFn) (*http.Response, error)
 
 	// UnbindProjectFromBillingAccount Stop paying for a project
 	//
@@ -1327,71 +1345,6 @@ func (c *Client) StartBillingPortal(ctx context.Context, accountKey AccountKey, 
 	return c.Client.Do(req)
 }
 
-// ReadPaymentMethod Whether this account can be charged
-//
-// Answers whether a card is on file, and nothing else.
-//
-// ## Why there is no brand, no last four digits, no expiry
-//
-// Those would have to be read from the payment provider, and the two answers can disagree: a
-// card present at the provider that the billing engine has not recorded as the default is
-// exactly the state in which money cannot be collected — while a page built on the provider's
-// answer would be showing a card. What matters here is whether the party that will run the
-// charge believes it can, so the answer comes from that party alone.
-//
-// To see the card, replace it, or remove it, open the billing portal.
-//
-// ## Read this before offering a paid plan, not after
-//
-// `ready` being false is why the engine refuses to start a paid subscription. Discovering it
-// at purchase time turns a missing card into a rejection whose wording is about something
-// else entirely.
-//
-// An account that has never had a card returns `ready: false`. That is the normal state of a
-// new account, not an error.
-//
-// Corresponds with GET /account/v1/billing-accounts/{accountKey}/card (the `ReadPaymentMethod` operationId).
-func (c *Client) ReadPaymentMethod(ctx context.Context, accountKey AccountKey, reqEditors ...RequestEditorFn) (*http.Response, error) {
-	req, err := NewReadPaymentMethodRequest(c.Server, accountKey)
-	if err != nil {
-		return nil, err
-	}
-	req = req.WithContext(ctx)
-	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
-		return nil, err
-	}
-	return c.Client.Do(req)
-}
-
-// StartCardSetup Add or replace the card on file
-//
-// Begins adding a card. Returns a URL to send the browser to; the card is entered there, on the
-// payment provider's own page, and **no card data ever reaches this platform**.
-//
-// ## This is a prerequisite for buying a plan, not a convenience
-//
-// A plan is charged by invoice, and the invoice is collected from the card on file. The billing
-// a subscription cannot start for an account that has none — so "add a card, then
-// buy" is the order the system requires, not a flow that was chosen.
-//
-// It is *not* a prerequisite for topping up: a top-up collects the money there and then.
-//
-// Replacing the card uses the same operation. The new card becomes the default and the old one
-// stops being used; nothing else about the account changes.
-//
-// Corresponds with POST /account/v1/billing-accounts/{accountKey}/card (the `StartCardSetup` operationId).
-func (c *Client) StartCardSetup(ctx context.Context, accountKey AccountKey, reqEditors ...RequestEditorFn) (*http.Response, error) {
-	req, err := NewStartCardSetupRequest(c.Server, accountKey)
-	if err != nil {
-		return nil, err
-	}
-	req = req.WithContext(ctx)
-	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
-		return nil, err
-	}
-	return c.Client.Do(req)
-}
-
 // ListCharges What this period has run up so far
 //
 // The itemised version of `unsettled`: what has been used this period and not yet billed.
@@ -1533,6 +1486,83 @@ func (c *Client) ListOffers(ctx context.Context, accountKey AccountKey, reqEdito
 // Corresponds with POST /account/v1/billing-accounts/{accountKey}/offers/{offerKey}/purchase (the `PurchaseOffer` operationId).
 func (c *Client) PurchaseOffer(ctx context.Context, accountKey AccountKey, offerKey string, params *PurchaseOfferParams, reqEditors ...RequestEditorFn) (*http.Response, error) {
 	req, err := NewPurchaseOfferRequest(c.Server, accountKey, offerKey, params)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+// ReadPaymentMethod Whether this account can be charged
+//
+// Answers whether a payment method is on file, and nothing else.
+//
+// ## It is a payment method, not a card
+//
+// A card is one kind. Direct debit and the recurring-payment mandates offered by regional
+// wallets are others, and they occupy the same slot: something the provider can charge later
+// without the account holder present. Naming the slot after cards would put an assumption
+// into the contract that stops being true the day a second kind is accepted.
+//
+// ## Why there is no brand, no last four digits, no expiry
+//
+// Those would have to be read from the payment provider, and the two answers can disagree: a
+// method present at the provider that the billing engine has not recorded as the default is
+// exactly the state in which money cannot be collected — while a page built on the provider's
+// answer would be showing one. What matters here is whether the party that will run the
+// charge believes it can, so the answer comes from that party alone.
+//
+// To see it, replace it, or remove it, open the billing portal.
+//
+// ## Read this before offering a paid plan, not after
+//
+// `ready` being false is why the engine refuses to start a paid subscription. Discovering it
+// at purchase time turns a missing payment method into a rejection whose wording is about
+// something else entirely.
+//
+// An account that has never had one returns `ready: false`. That is the normal state of a
+// new account, not an error.
+//
+// Corresponds with GET /account/v1/billing-accounts/{accountKey}/payment-method (the `ReadPaymentMethod` operationId).
+func (c *Client) ReadPaymentMethod(ctx context.Context, accountKey AccountKey, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewReadPaymentMethodRequest(c.Server, accountKey)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+// StartPaymentMethodSetup Add or replace the payment method on file
+//
+// Begins adding a payment method. Returns a URL to send the browser to; the details are
+// entered there, on the payment provider's own page, and **no card data ever reaches this
+// platform**.
+//
+// Which kinds are offered is the provider's decision, not this API's — a card today, a
+// wallet mandate or a direct debit wherever the provider supports charging one later without
+// the account holder present.
+//
+// ## This is a prerequisite for buying a plan, not a convenience
+//
+// A plan is charged by invoice, and the invoice is collected from the method on file. A
+// subscription cannot start for an account that has none — so "add a payment method, then
+// buy" is the order the system requires, not a flow that was chosen.
+//
+// It is *not* a prerequisite for topping up: a top-up collects the money there and then.
+//
+// Replacing uses the same operation. The new method becomes the default and the old one stops
+// being used; nothing else about the account changes.
+//
+// Corresponds with POST /account/v1/billing-accounts/{accountKey}/payment-method (the `StartPaymentMethodSetup` operationId).
+func (c *Client) StartPaymentMethodSetup(ctx context.Context, accountKey AccountKey, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewStartPaymentMethodSetupRequest(c.Server, accountKey)
 	if err != nil {
 		return nil, err
 	}
@@ -1975,74 +2005,6 @@ func NewStartBillingPortalRequest(server string, accountKey AccountKey) (*http.R
 	return req, nil
 }
 
-// NewReadPaymentMethodRequest constructs an http.Request for the ReadPaymentMethod method
-func NewReadPaymentMethodRequest(server string, accountKey AccountKey) (*http.Request, error) {
-	var err error
-
-	var pathParam0 string
-
-	pathParam0, err = runtime.StyleParamWithOptions("simple", false, "accountKey", accountKey, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: ""})
-	if err != nil {
-		return nil, err
-	}
-
-	serverURL, err := url.Parse(server)
-	if err != nil {
-		return nil, err
-	}
-
-	operationPath := fmt.Sprintf("/account/v1/billing-accounts/%s/card", pathParam0)
-	if operationPath[0] == '/' {
-		operationPath = "." + operationPath
-	}
-
-	queryURL, err := serverURL.Parse(operationPath)
-	if err != nil {
-		return nil, err
-	}
-
-	req, err := http.NewRequest(http.MethodGet, queryURL.String(), nil)
-	if err != nil {
-		return nil, err
-	}
-
-	return req, nil
-}
-
-// NewStartCardSetupRequest constructs an http.Request for the StartCardSetup method
-func NewStartCardSetupRequest(server string, accountKey AccountKey) (*http.Request, error) {
-	var err error
-
-	var pathParam0 string
-
-	pathParam0, err = runtime.StyleParamWithOptions("simple", false, "accountKey", accountKey, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: ""})
-	if err != nil {
-		return nil, err
-	}
-
-	serverURL, err := url.Parse(server)
-	if err != nil {
-		return nil, err
-	}
-
-	operationPath := fmt.Sprintf("/account/v1/billing-accounts/%s/card", pathParam0)
-	if operationPath[0] == '/' {
-		operationPath = "." + operationPath
-	}
-
-	queryURL, err := serverURL.Parse(operationPath)
-	if err != nil {
-		return nil, err
-	}
-
-	req, err := http.NewRequest(http.MethodPost, queryURL.String(), nil)
-	if err != nil {
-		return nil, err
-	}
-
-	return req, nil
-}
-
 // NewListChargesRequest constructs an http.Request for the ListCharges method
 func NewListChargesRequest(server string, accountKey AccountKey) (*http.Request, error) {
 	var err error
@@ -2278,6 +2240,74 @@ func NewPurchaseOfferRequest(server string, accountKey AccountKey, offerKey stri
 			rawQueryFragments = append(rawQueryFragments, encoded)
 		}
 		queryURL.RawQuery = strings.Join(rawQueryFragments, "&")
+	}
+
+	req, err := http.NewRequest(http.MethodPost, queryURL.String(), nil)
+	if err != nil {
+		return nil, err
+	}
+
+	return req, nil
+}
+
+// NewReadPaymentMethodRequest constructs an http.Request for the ReadPaymentMethod method
+func NewReadPaymentMethodRequest(server string, accountKey AccountKey) (*http.Request, error) {
+	var err error
+
+	var pathParam0 string
+
+	pathParam0, err = runtime.StyleParamWithOptions("simple", false, "accountKey", accountKey, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: ""})
+	if err != nil {
+		return nil, err
+	}
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/account/v1/billing-accounts/%s/payment-method", pathParam0)
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest(http.MethodGet, queryURL.String(), nil)
+	if err != nil {
+		return nil, err
+	}
+
+	return req, nil
+}
+
+// NewStartPaymentMethodSetupRequest constructs an http.Request for the StartPaymentMethodSetup method
+func NewStartPaymentMethodSetupRequest(server string, accountKey AccountKey) (*http.Request, error) {
+	var err error
+
+	var pathParam0 string
+
+	pathParam0, err = runtime.StyleParamWithOptions("simple", false, "accountKey", accountKey, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: ""})
+	if err != nil {
+		return nil, err
+	}
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/account/v1/billing-accounts/%s/payment-method", pathParam0)
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
 	}
 
 	req, err := http.NewRequest(http.MethodPost, queryURL.String(), nil)
@@ -2753,55 +2783,6 @@ type ClientWithResponsesInterface interface {
 	// Corresponds with POST /account/v1/billing-accounts/{accountKey}/billing-portal (the `StartBillingPortal` operationId).
 	StartBillingPortalWithResponse(ctx context.Context, accountKey AccountKey, reqEditors ...RequestEditorFn) (*StartBillingPortalResponse, error)
 
-	// ReadPaymentMethodWithResponse Whether this account can be charged
-	//
-	// Answers whether a card is on file, and nothing else.
-	//
-	// ## Why there is no brand, no last four digits, no expiry
-	//
-	// Those would have to be read from the payment provider, and the two answers can disagree: a
-	// card present at the provider that the billing engine has not recorded as the default is
-	// exactly the state in which money cannot be collected — while a page built on the provider's
-	// answer would be showing a card. What matters here is whether the party that will run the
-	// charge believes it can, so the answer comes from that party alone.
-	//
-	// To see the card, replace it, or remove it, open the billing portal.
-	//
-	// ## Read this before offering a paid plan, not after
-	//
-	// `ready` being false is why the engine refuses to start a paid subscription. Discovering it
-	// at purchase time turns a missing card into a rejection whose wording is about something
-	// else entirely.
-	//
-	// An account that has never had a card returns `ready: false`. That is the normal state of a
-	// new account, not an error.
-	//
-	// Returns a wrapper object for the known response body format(s).
-	//
-	// Corresponds with GET /account/v1/billing-accounts/{accountKey}/card (the `ReadPaymentMethod` operationId).
-	ReadPaymentMethodWithResponse(ctx context.Context, accountKey AccountKey, reqEditors ...RequestEditorFn) (*ReadPaymentMethodResponse, error)
-
-	// StartCardSetupWithResponse Add or replace the card on file
-	//
-	// Begins adding a card. Returns a URL to send the browser to; the card is entered there, on the
-	// payment provider's own page, and **no card data ever reaches this platform**.
-	//
-	// ## This is a prerequisite for buying a plan, not a convenience
-	//
-	// A plan is charged by invoice, and the invoice is collected from the card on file. The billing
-	// a subscription cannot start for an account that has none — so "add a card, then
-	// buy" is the order the system requires, not a flow that was chosen.
-	//
-	// It is *not* a prerequisite for topping up: a top-up collects the money there and then.
-	//
-	// Replacing the card uses the same operation. The new card becomes the default and the old one
-	// stops being used; nothing else about the account changes.
-	//
-	// Returns a wrapper object for the known response body format(s).
-	//
-	// Corresponds with POST /account/v1/billing-accounts/{accountKey}/card (the `StartCardSetup` operationId).
-	StartCardSetupWithResponse(ctx context.Context, accountKey AccountKey, reqEditors ...RequestEditorFn) (*StartCardSetupResponse, error)
-
 	// ListChargesWithResponse What this period has run up so far
 	//
 	// The itemised version of `unsettled`: what has been used this period and not yet billed.
@@ -2904,6 +2885,67 @@ type ClientWithResponsesInterface interface {
 	//
 	// Corresponds with POST /account/v1/billing-accounts/{accountKey}/offers/{offerKey}/purchase (the `PurchaseOffer` operationId).
 	PurchaseOfferWithResponse(ctx context.Context, accountKey AccountKey, offerKey string, params *PurchaseOfferParams, reqEditors ...RequestEditorFn) (*PurchaseOfferResponse, error)
+
+	// ReadPaymentMethodWithResponse Whether this account can be charged
+	//
+	// Answers whether a payment method is on file, and nothing else.
+	//
+	// ## It is a payment method, not a card
+	//
+	// A card is one kind. Direct debit and the recurring-payment mandates offered by regional
+	// wallets are others, and they occupy the same slot: something the provider can charge later
+	// without the account holder present. Naming the slot after cards would put an assumption
+	// into the contract that stops being true the day a second kind is accepted.
+	//
+	// ## Why there is no brand, no last four digits, no expiry
+	//
+	// Those would have to be read from the payment provider, and the two answers can disagree: a
+	// method present at the provider that the billing engine has not recorded as the default is
+	// exactly the state in which money cannot be collected — while a page built on the provider's
+	// answer would be showing one. What matters here is whether the party that will run the
+	// charge believes it can, so the answer comes from that party alone.
+	//
+	// To see it, replace it, or remove it, open the billing portal.
+	//
+	// ## Read this before offering a paid plan, not after
+	//
+	// `ready` being false is why the engine refuses to start a paid subscription. Discovering it
+	// at purchase time turns a missing payment method into a rejection whose wording is about
+	// something else entirely.
+	//
+	// An account that has never had one returns `ready: false`. That is the normal state of a
+	// new account, not an error.
+	//
+	// Returns a wrapper object for the known response body format(s).
+	//
+	// Corresponds with GET /account/v1/billing-accounts/{accountKey}/payment-method (the `ReadPaymentMethod` operationId).
+	ReadPaymentMethodWithResponse(ctx context.Context, accountKey AccountKey, reqEditors ...RequestEditorFn) (*ReadPaymentMethodResponse, error)
+
+	// StartPaymentMethodSetupWithResponse Add or replace the payment method on file
+	//
+	// Begins adding a payment method. Returns a URL to send the browser to; the details are
+	// entered there, on the payment provider's own page, and **no card data ever reaches this
+	// platform**.
+	//
+	// Which kinds are offered is the provider's decision, not this API's — a card today, a
+	// wallet mandate or a direct debit wherever the provider supports charging one later without
+	// the account holder present.
+	//
+	// ## This is a prerequisite for buying a plan, not a convenience
+	//
+	// A plan is charged by invoice, and the invoice is collected from the method on file. A
+	// subscription cannot start for an account that has none — so "add a payment method, then
+	// buy" is the order the system requires, not a flow that was chosen.
+	//
+	// It is *not* a prerequisite for topping up: a top-up collects the money there and then.
+	//
+	// Replacing uses the same operation. The new method becomes the default and the old one stops
+	// being used; nothing else about the account changes.
+	//
+	// Returns a wrapper object for the known response body format(s).
+	//
+	// Corresponds with POST /account/v1/billing-accounts/{accountKey}/payment-method (the `StartPaymentMethodSetup` operationId).
+	StartPaymentMethodSetupWithResponse(ctx context.Context, accountKey AccountKey, reqEditors ...RequestEditorFn) (*StartPaymentMethodSetupResponse, error)
 
 	// UnbindProjectFromBillingAccountWithResponse Stop paying for a project
 	//
@@ -3342,102 +3384,6 @@ func (r StartBillingPortalResponse) ContentType() string {
 	return ""
 }
 
-type ReadPaymentMethodResponse struct {
-	Body         []byte
-	HTTPResponse *http.Response
-	// JSON200 the response for an HTTP 200 `application/json` response
-	JSON200 *PaymentMethod
-	// JSONDefault the response for an HTTP default `application/json` response
-	JSONDefault *Error
-}
-
-// GetJSON200 returns the response for an HTTP 200 `application/json` response
-func (r ReadPaymentMethodResponse) GetJSON200() *PaymentMethod {
-	return r.JSON200
-}
-
-// GetJSONDefault returns the response for an HTTP default `application/json` response
-func (r ReadPaymentMethodResponse) GetJSONDefault() *Error {
-	return r.JSONDefault
-}
-
-// GetBody returns the raw response body bytes
-func (r ReadPaymentMethodResponse) GetBody() []byte {
-	return r.Body
-}
-
-// Status returns HTTPResponse.Status
-func (r ReadPaymentMethodResponse) Status() string {
-	if r.HTTPResponse != nil {
-		return r.HTTPResponse.Status
-	}
-	return http.StatusText(0)
-}
-
-// StatusCode returns HTTPResponse.StatusCode
-func (r ReadPaymentMethodResponse) StatusCode() int {
-	if r.HTTPResponse != nil {
-		return r.HTTPResponse.StatusCode
-	}
-	return 0
-}
-
-// ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
-func (r ReadPaymentMethodResponse) ContentType() string {
-	if r.HTTPResponse != nil {
-		return r.HTTPResponse.Header.Get("Content-Type")
-	}
-	return ""
-}
-
-type StartCardSetupResponse struct {
-	Body         []byte
-	HTTPResponse *http.Response
-	// JSON200 the response for an HTTP 200 `application/json` response
-	JSON200 *CardSetupSession
-	// JSONDefault the response for an HTTP default `application/json` response
-	JSONDefault *Error
-}
-
-// GetJSON200 returns the response for an HTTP 200 `application/json` response
-func (r StartCardSetupResponse) GetJSON200() *CardSetupSession {
-	return r.JSON200
-}
-
-// GetJSONDefault returns the response for an HTTP default `application/json` response
-func (r StartCardSetupResponse) GetJSONDefault() *Error {
-	return r.JSONDefault
-}
-
-// GetBody returns the raw response body bytes
-func (r StartCardSetupResponse) GetBody() []byte {
-	return r.Body
-}
-
-// Status returns HTTPResponse.Status
-func (r StartCardSetupResponse) Status() string {
-	if r.HTTPResponse != nil {
-		return r.HTTPResponse.Status
-	}
-	return http.StatusText(0)
-}
-
-// StatusCode returns HTTPResponse.StatusCode
-func (r StartCardSetupResponse) StatusCode() int {
-	if r.HTTPResponse != nil {
-		return r.HTTPResponse.StatusCode
-	}
-	return 0
-}
-
-// ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
-func (r StartCardSetupResponse) ContentType() string {
-	if r.HTTPResponse != nil {
-		return r.HTTPResponse.Header.Get("Content-Type")
-	}
-	return ""
-}
-
 type ListChargesResponse struct {
 	Body         []byte
 	HTTPResponse *http.Response
@@ -3720,6 +3666,102 @@ func (r PurchaseOfferResponse) StatusCode() int {
 
 // ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
 func (r PurchaseOfferResponse) ContentType() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Header.Get("Content-Type")
+	}
+	return ""
+}
+
+type ReadPaymentMethodResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	// JSON200 the response for an HTTP 200 `application/json` response
+	JSON200 *PaymentMethod
+	// JSONDefault the response for an HTTP default `application/json` response
+	JSONDefault *Error
+}
+
+// GetJSON200 returns the response for an HTTP 200 `application/json` response
+func (r ReadPaymentMethodResponse) GetJSON200() *PaymentMethod {
+	return r.JSON200
+}
+
+// GetJSONDefault returns the response for an HTTP default `application/json` response
+func (r ReadPaymentMethodResponse) GetJSONDefault() *Error {
+	return r.JSONDefault
+}
+
+// GetBody returns the raw response body bytes
+func (r ReadPaymentMethodResponse) GetBody() []byte {
+	return r.Body
+}
+
+// Status returns HTTPResponse.Status
+func (r ReadPaymentMethodResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r ReadPaymentMethodResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+// ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
+func (r ReadPaymentMethodResponse) ContentType() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Header.Get("Content-Type")
+	}
+	return ""
+}
+
+type StartPaymentMethodSetupResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	// JSON200 the response for an HTTP 200 `application/json` response
+	JSON200 *PaymentMethodSetupSession
+	// JSONDefault the response for an HTTP default `application/json` response
+	JSONDefault *Error
+}
+
+// GetJSON200 returns the response for an HTTP 200 `application/json` response
+func (r StartPaymentMethodSetupResponse) GetJSON200() *PaymentMethodSetupSession {
+	return r.JSON200
+}
+
+// GetJSONDefault returns the response for an HTTP default `application/json` response
+func (r StartPaymentMethodSetupResponse) GetJSONDefault() *Error {
+	return r.JSONDefault
+}
+
+// GetBody returns the raw response body bytes
+func (r StartPaymentMethodSetupResponse) GetBody() []byte {
+	return r.Body
+}
+
+// Status returns HTTPResponse.Status
+func (r StartPaymentMethodSetupResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r StartPaymentMethodSetupResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+// ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
+func (r StartPaymentMethodSetupResponse) ContentType() string {
 	if r.HTTPResponse != nil {
 		return r.HTTPResponse.Header.Get("Content-Type")
 	}
@@ -4229,67 +4271,6 @@ func (c *ClientWithResponses) StartBillingPortalWithResponse(ctx context.Context
 	return ParseStartBillingPortalResponse(rsp)
 }
 
-// ReadPaymentMethodWithResponse Whether this account can be charged
-//
-// Answers whether a card is on file, and nothing else.
-//
-// ## Why there is no brand, no last four digits, no expiry
-//
-// Those would have to be read from the payment provider, and the two answers can disagree: a
-// card present at the provider that the billing engine has not recorded as the default is
-// exactly the state in which money cannot be collected — while a page built on the provider's
-// answer would be showing a card. What matters here is whether the party that will run the
-// charge believes it can, so the answer comes from that party alone.
-//
-// To see the card, replace it, or remove it, open the billing portal.
-//
-// ## Read this before offering a paid plan, not after
-//
-// `ready` being false is why the engine refuses to start a paid subscription. Discovering it
-// at purchase time turns a missing card into a rejection whose wording is about something
-// else entirely.
-//
-// An account that has never had a card returns `ready: false`. That is the normal state of a
-// new account, not an error.
-//
-// Returns a wrapper object for the known response body format(s).
-//
-// Corresponds with GET /account/v1/billing-accounts/{accountKey}/card (the `ReadPaymentMethod` operationId).
-func (c *ClientWithResponses) ReadPaymentMethodWithResponse(ctx context.Context, accountKey AccountKey, reqEditors ...RequestEditorFn) (*ReadPaymentMethodResponse, error) {
-	rsp, err := c.ReadPaymentMethod(ctx, accountKey, reqEditors...)
-	if err != nil {
-		return nil, err
-	}
-	return ParseReadPaymentMethodResponse(rsp)
-}
-
-// StartCardSetupWithResponse Add or replace the card on file
-//
-// Begins adding a card. Returns a URL to send the browser to; the card is entered there, on the
-// payment provider's own page, and **no card data ever reaches this platform**.
-//
-// ## This is a prerequisite for buying a plan, not a convenience
-//
-// A plan is charged by invoice, and the invoice is collected from the card on file. The billing
-// a subscription cannot start for an account that has none — so "add a card, then
-// buy" is the order the system requires, not a flow that was chosen.
-//
-// It is *not* a prerequisite for topping up: a top-up collects the money there and then.
-//
-// Replacing the card uses the same operation. The new card becomes the default and the old one
-// stops being used; nothing else about the account changes.
-//
-// Returns a wrapper object for the known response body format(s).
-//
-// Corresponds with POST /account/v1/billing-accounts/{accountKey}/card (the `StartCardSetup` operationId).
-func (c *ClientWithResponses) StartCardSetupWithResponse(ctx context.Context, accountKey AccountKey, reqEditors ...RequestEditorFn) (*StartCardSetupResponse, error) {
-	rsp, err := c.StartCardSetup(ctx, accountKey, reqEditors...)
-	if err != nil {
-		return nil, err
-	}
-	return ParseStartCardSetupResponse(rsp)
-}
-
 // ListChargesWithResponse What this period has run up so far
 //
 // The itemised version of `unsettled`: what has been used this period and not yet billed.
@@ -4427,6 +4408,79 @@ func (c *ClientWithResponses) PurchaseOfferWithResponse(ctx context.Context, acc
 		return nil, err
 	}
 	return ParsePurchaseOfferResponse(rsp)
+}
+
+// ReadPaymentMethodWithResponse Whether this account can be charged
+//
+// Answers whether a payment method is on file, and nothing else.
+//
+// ## It is a payment method, not a card
+//
+// A card is one kind. Direct debit and the recurring-payment mandates offered by regional
+// wallets are others, and they occupy the same slot: something the provider can charge later
+// without the account holder present. Naming the slot after cards would put an assumption
+// into the contract that stops being true the day a second kind is accepted.
+//
+// ## Why there is no brand, no last four digits, no expiry
+//
+// Those would have to be read from the payment provider, and the two answers can disagree: a
+// method present at the provider that the billing engine has not recorded as the default is
+// exactly the state in which money cannot be collected — while a page built on the provider's
+// answer would be showing one. What matters here is whether the party that will run the
+// charge believes it can, so the answer comes from that party alone.
+//
+// To see it, replace it, or remove it, open the billing portal.
+//
+// ## Read this before offering a paid plan, not after
+//
+// `ready` being false is why the engine refuses to start a paid subscription. Discovering it
+// at purchase time turns a missing payment method into a rejection whose wording is about
+// something else entirely.
+//
+// An account that has never had one returns `ready: false`. That is the normal state of a
+// new account, not an error.
+//
+// Returns a wrapper object for the known response body format(s).
+//
+// Corresponds with GET /account/v1/billing-accounts/{accountKey}/payment-method (the `ReadPaymentMethod` operationId).
+func (c *ClientWithResponses) ReadPaymentMethodWithResponse(ctx context.Context, accountKey AccountKey, reqEditors ...RequestEditorFn) (*ReadPaymentMethodResponse, error) {
+	rsp, err := c.ReadPaymentMethod(ctx, accountKey, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseReadPaymentMethodResponse(rsp)
+}
+
+// StartPaymentMethodSetupWithResponse Add or replace the payment method on file
+//
+// Begins adding a payment method. Returns a URL to send the browser to; the details are
+// entered there, on the payment provider's own page, and **no card data ever reaches this
+// platform**.
+//
+// Which kinds are offered is the provider's decision, not this API's — a card today, a
+// wallet mandate or a direct debit wherever the provider supports charging one later without
+// the account holder present.
+//
+// ## This is a prerequisite for buying a plan, not a convenience
+//
+// A plan is charged by invoice, and the invoice is collected from the method on file. A
+// subscription cannot start for an account that has none — so "add a payment method, then
+// buy" is the order the system requires, not a flow that was chosen.
+//
+// It is *not* a prerequisite for topping up: a top-up collects the money there and then.
+//
+// Replacing uses the same operation. The new method becomes the default and the old one stops
+// being used; nothing else about the account changes.
+//
+// Returns a wrapper object for the known response body format(s).
+//
+// Corresponds with POST /account/v1/billing-accounts/{accountKey}/payment-method (the `StartPaymentMethodSetup` operationId).
+func (c *ClientWithResponses) StartPaymentMethodSetupWithResponse(ctx context.Context, accountKey AccountKey, reqEditors ...RequestEditorFn) (*StartPaymentMethodSetupResponse, error) {
+	rsp, err := c.StartPaymentMethodSetup(ctx, accountKey, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseStartPaymentMethodSetupResponse(rsp)
 }
 
 // UnbindProjectFromBillingAccountWithResponse Stop paying for a project
@@ -4823,72 +4877,6 @@ func ParseStartBillingPortalResponse(rsp *http.Response) (*StartBillingPortalRes
 	return response, nil
 }
 
-// ParseReadPaymentMethodResponse parses an HTTP response from a ReadPaymentMethodWithResponse call
-func ParseReadPaymentMethodResponse(rsp *http.Response) (*ReadPaymentMethodResponse, error) {
-	bodyBytes, err := io.ReadAll(rsp.Body)
-	defer func() { _ = rsp.Body.Close() }()
-	if err != nil {
-		return nil, err
-	}
-
-	response := &ReadPaymentMethodResponse{
-		Body:         bodyBytes,
-		HTTPResponse: rsp,
-	}
-
-	switch {
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
-		var dest PaymentMethod
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSON200 = &dest
-
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && true:
-		var dest Error
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSONDefault = &dest
-
-	}
-
-	return response, nil
-}
-
-// ParseStartCardSetupResponse parses an HTTP response from a StartCardSetupWithResponse call
-func ParseStartCardSetupResponse(rsp *http.Response) (*StartCardSetupResponse, error) {
-	bodyBytes, err := io.ReadAll(rsp.Body)
-	defer func() { _ = rsp.Body.Close() }()
-	if err != nil {
-		return nil, err
-	}
-
-	response := &StartCardSetupResponse{
-		Body:         bodyBytes,
-		HTTPResponse: rsp,
-	}
-
-	switch {
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
-		var dest CardSetupSession
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSON200 = &dest
-
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && true:
-		var dest Error
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSONDefault = &dest
-
-	}
-
-	return response, nil
-}
-
 // ParseListChargesResponse parses an HTTP response from a ListChargesWithResponse call
 func ParseListChargesResponse(rsp *http.Response) (*ListChargesResponse, error) {
 	bodyBytes, err := io.ReadAll(rsp.Body)
@@ -5070,6 +5058,72 @@ func ParsePurchaseOfferResponse(rsp *http.Response) (*PurchaseOfferResponse, err
 	switch {
 	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
 		var dest Purchase
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && true:
+		var dest Error
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSONDefault = &dest
+
+	}
+
+	return response, nil
+}
+
+// ParseReadPaymentMethodResponse parses an HTTP response from a ReadPaymentMethodWithResponse call
+func ParseReadPaymentMethodResponse(rsp *http.Response) (*ReadPaymentMethodResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &ReadPaymentMethodResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest PaymentMethod
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && true:
+		var dest Error
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSONDefault = &dest
+
+	}
+
+	return response, nil
+}
+
+// ParseStartPaymentMethodSetupResponse parses an HTTP response from a StartPaymentMethodSetupWithResponse call
+func ParseStartPaymentMethodSetupResponse(rsp *http.Response) (*StartPaymentMethodSetupResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &StartPaymentMethodSetupResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest PaymentMethodSetupSession
 		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
 			return nil, err
 		}
