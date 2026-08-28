@@ -229,6 +229,33 @@ func (UnimplementedHandler) ReadBillingAccountBalance(ctx context.Context, param
 	return r, ht.ErrNotImplemented
 }
 
+// ReadPaymentMethod implements read-payment-method operation.
+//
+// Answers whether a card is on file, and nothing else.
+//
+// # Why there is no brand, no last four digits, no expiry
+//
+// Those would have to be read from the payment provider, and the two answers can disagree: a card
+// present at the provider that the billing engine has not recorded as the default is exactly the state
+// in which money cannot be collected — while a page built on the provider's answer would be showing
+// a card. What matters here is whether the party that will run the charge believes it can, so the
+// answer comes from that party alone.
+//
+// To see the card, replace it, or remove it, open the billing portal.
+//
+// # Read this before offering a paid plan, not after
+//
+// `ready` being false is why the engine refuses to start a paid subscription. Discovering it at
+// purchase time turns a missing card into a rejection whose wording is about something else entirely.
+//
+// An account that has never had a card returns `ready: false`. That is the normal state of a new
+// account, not an error.
+//
+// GET /account/v1/billing-accounts/{accountKey}/card
+func (UnimplementedHandler) ReadPaymentMethod(ctx context.Context, params ReadPaymentMethodParams) (r *PaymentMethod, _ error) {
+	return r, ht.ErrNotImplemented
+}
+
 // ReadSubscription implements read-subscription operation.
 //
 // `404` means no plan, which is worth showing rather than hiding: an account without one is refused
@@ -254,6 +281,30 @@ func (UnimplementedHandler) ReadSubscription(ctx context.Context, params ReadSub
 //
 // GET /account/v1/billing-accounts/{accountKey}/top-ups/{paymentId}
 func (UnimplementedHandler) ReadTopUp(ctx context.Context, params ReadTopUpParams) (r *TopUpStatus, _ error) {
+	return r, ht.ErrNotImplemented
+}
+
+// StartBillingPortal implements start-billing-portal operation.
+//
+// Returns a URL to the payment provider's own portal, where the card can be replaced or removed, the
+// billing address changed, and past invoices downloaded.
+//
+// # Why replacing a card is not a form on this platform
+//
+// A form would mean a card number field, and no card data ever reaches this platform. The portal moves
+// the whole interaction to the provider; only a session URL comes back.
+//
+// # Something has to be able to replace an expiring card
+//
+// Cards expire. Once one does, the invoices for a plan stop being collectable, dunning runs out, and
+// the projects paid for by this account are suspended for non-payment. Without this operation the
+// account holder watches that happen with nowhere to fix it — adding a card does not help, since
+// that operation only makes sense when there is none.
+//
+// The URL is single-use and expires. Do not store it.
+//
+// POST /account/v1/billing-accounts/{accountKey}/billing-portal
+func (UnimplementedHandler) StartBillingPortal(ctx context.Context, params StartBillingPortalParams) (r *BillingPortalSession, _ error) {
 	return r, ht.ErrNotImplemented
 }
 

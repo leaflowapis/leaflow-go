@@ -206,6 +206,30 @@ type Invoker interface {
 	//
 	// GET /account/v1/billing-accounts/{accountKey}/balance
 	ReadBillingAccountBalance(ctx context.Context, params ReadBillingAccountBalanceParams) (*Balance, error)
+	// ReadPaymentMethod invokes read-payment-method operation.
+	//
+	// Answers whether a card is on file, and nothing else.
+	//
+	// # Why there is no brand, no last four digits, no expiry
+	//
+	// Those would have to be read from the payment provider, and the two answers can disagree: a card
+	// present at the provider that the billing engine has not recorded as the default is exactly the state
+	// in which money cannot be collected — while a page built on the provider's answer would be showing
+	// a card. What matters here is whether the party that will run the charge believes it can, so the
+	// answer comes from that party alone.
+	//
+	// To see the card, replace it, or remove it, open the billing portal.
+	//
+	// # Read this before offering a paid plan, not after
+	//
+	// `ready` being false is why the engine refuses to start a paid subscription. Discovering it at
+	// purchase time turns a missing card into a rejection whose wording is about something else entirely.
+	//
+	// An account that has never had a card returns `ready: false`. That is the normal state of a new
+	// account, not an error.
+	//
+	// GET /account/v1/billing-accounts/{accountKey}/card
+	ReadPaymentMethod(ctx context.Context, params ReadPaymentMethodParams) (*PaymentMethod, error)
 	// ReadSubscription invokes read-subscription operation.
 	//
 	// `404` means no plan, which is worth showing rather than hiding: an account without one is refused
@@ -228,6 +252,27 @@ type Invoker interface {
 	//
 	// GET /account/v1/billing-accounts/{accountKey}/top-ups/{paymentId}
 	ReadTopUp(ctx context.Context, params ReadTopUpParams) (*TopUpStatus, error)
+	// StartBillingPortal invokes start-billing-portal operation.
+	//
+	// Returns a URL to the payment provider's own portal, where the card can be replaced or removed, the
+	// billing address changed, and past invoices downloaded.
+	//
+	// # Why replacing a card is not a form on this platform
+	//
+	// A form would mean a card number field, and no card data ever reaches this platform. The portal moves
+	// the whole interaction to the provider; only a session URL comes back.
+	//
+	// # Something has to be able to replace an expiring card
+	//
+	// Cards expire. Once one does, the invoices for a plan stop being collectable, dunning runs out, and
+	// the projects paid for by this account are suspended for non-payment. Without this operation the
+	// account holder watches that happen with nowhere to fix it — adding a card does not help, since
+	// that operation only makes sense when there is none.
+	//
+	// The URL is single-use and expires. Do not store it.
+	//
+	// POST /account/v1/billing-accounts/{accountKey}/billing-portal
+	StartBillingPortal(ctx context.Context, params StartBillingPortalParams) (*BillingPortalSession, error)
 	// StartCardSetup invokes start-card-setup operation.
 	//
 	// Begins adding a card. Returns a URL to send the browser to; the card is entered there, on the
@@ -2205,6 +2250,156 @@ func (c *Client) sendReadBillingAccountBalance(ctx context.Context, params ReadB
 	return result, nil
 }
 
+// ReadPaymentMethod invokes read-payment-method operation.
+//
+// Answers whether a card is on file, and nothing else.
+//
+// # Why there is no brand, no last four digits, no expiry
+//
+// Those would have to be read from the payment provider, and the two answers can disagree: a card
+// present at the provider that the billing engine has not recorded as the default is exactly the state
+// in which money cannot be collected — while a page built on the provider's answer would be showing
+// a card. What matters here is whether the party that will run the charge believes it can, so the
+// answer comes from that party alone.
+//
+// To see the card, replace it, or remove it, open the billing portal.
+//
+// # Read this before offering a paid plan, not after
+//
+// `ready` being false is why the engine refuses to start a paid subscription. Discovering it at
+// purchase time turns a missing card into a rejection whose wording is about something else entirely.
+//
+// An account that has never had a card returns `ready: false`. That is the normal state of a new
+// account, not an error.
+//
+// GET /account/v1/billing-accounts/{accountKey}/card
+func (c *Client) ReadPaymentMethod(ctx context.Context, params ReadPaymentMethodParams) (*PaymentMethod, error) {
+	res, err := c.sendReadPaymentMethod(ctx, params)
+	return res, err
+}
+
+func (c *Client) sendReadPaymentMethod(ctx context.Context, params ReadPaymentMethodParams) (res *PaymentMethod, err error) {
+	otelAttrs := []attribute.KeyValue{
+		otelogen.OperationID("read-payment-method"),
+		semconv.HTTPRequestMethodKey.String("GET"),
+		semconv.URLTemplateKey.String("/account/v1/billing-accounts/{accountKey}/card"),
+	}
+	otelAttrs = append(otelAttrs, c.cfg.Attributes...)
+
+	// Run stopwatch.
+	startTime := time.Now()
+	defer func() {
+		// Use floating point division here for higher precision (instead of Millisecond method).
+		elapsedDuration := time.Since(startTime)
+		c.duration.Record(ctx, float64(elapsedDuration)/float64(time.Millisecond), metric.WithAttributes(otelAttrs...))
+	}()
+
+	// Increment request counter.
+	c.requests.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
+
+	// Start a span for this request.
+	ctx, span := c.cfg.Tracer.Start(ctx, ReadPaymentMethodOperation,
+		trace.WithAttributes(otelAttrs...),
+		clientSpanKind,
+	)
+	// Track stage for error reporting.
+	var stage string
+	defer func() {
+		if err != nil {
+			span.RecordError(err)
+			span.SetStatus(codes.Error, stage)
+			c.errors.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
+		}
+		span.End()
+	}()
+
+	stage = "BuildURL"
+	u := uri.Clone(c.requestURL(ctx))
+	var pathParts [3]string
+	pathParts[0] = "/account/v1/billing-accounts/"
+	{
+		// Encode "accountKey" parameter.
+		e := uri.NewPathEncoder(uri.PathEncoderConfig{
+			Param:   "accountKey",
+			Style:   uri.PathStyleSimple,
+			Explode: false,
+		})
+		if err := func() error {
+			return e.EncodeValue(conv.StringToString(params.AccountKey))
+		}(); err != nil {
+			return res, errors.Wrap(err, "encode path")
+		}
+		encoded, err := e.Result()
+		if err != nil {
+			return res, errors.Wrap(err, "encode path")
+		}
+		pathParts[1] = encoded
+	}
+	pathParts[2] = "/card"
+	uri.AddPathParts(u, pathParts[:]...)
+
+	stage = "EncodeRequest"
+	r, err := ht.NewRequest(ctx, "GET", u)
+	if err != nil {
+		return res, errors.Wrap(err, "create request")
+	}
+
+	{
+		type bitset = [1]uint8
+		var satisfied bitset
+		{
+			stage = "Security:BearerAuth"
+			switch err := c.securityBearerAuth(ctx, ReadPaymentMethodOperation, r); {
+			case err == nil: // if NO error
+				satisfied[0] |= 1 << 0
+			case errors.Is(err, ogenerrors.ErrSkipClientSecurity):
+				// Skip this security.
+			default:
+				return res, errors.Wrap(err, "security \"BearerAuth\"")
+			}
+		}
+
+		if ok := func() bool {
+		nextRequirement:
+			for _, requirement := range []bitset{
+				{0b00000001},
+			} {
+				for i, mask := range requirement {
+					if satisfied[i]&mask != mask {
+						continue nextRequirement
+					}
+				}
+				return true
+			}
+			return false
+		}(); !ok {
+			return res, ogenerrors.ErrSecurityRequirementIsNotSatisfied
+		}
+	}
+
+	stage = "SendRequest"
+	resp, err := c.cfg.Client.Do(r)
+	if err != nil {
+		return res, errors.Wrap(err, "do request")
+	}
+	body := resp.Body
+	defer func() {
+		// Drain the body to EOF before closing, so the underlying
+		// connection can be reused by the Transport regardless of the
+		// response status code. See https://github.com/ogen-go/ogen/issues/1670.
+		_, _ = io.Copy(io.Discard, body)
+		_ = body.Close()
+	}()
+
+	stage = "DecodeResponse"
+	result, err := decodeReadPaymentMethodResponse(resp)
+	if err != nil {
+		return res, errors.Wrap(err, "decode response")
+	}
+
+	return result, nil
+}
+
 // ReadSubscription invokes read-subscription operation.
 //
 // `404` means no plan, which is worth showing rather than hiding: an account without one is refused
@@ -2490,6 +2685,153 @@ func (c *Client) sendReadTopUp(ctx context.Context, params ReadTopUpParams) (res
 
 	stage = "DecodeResponse"
 	result, err := decodeReadTopUpResponse(resp)
+	if err != nil {
+		return res, errors.Wrap(err, "decode response")
+	}
+
+	return result, nil
+}
+
+// StartBillingPortal invokes start-billing-portal operation.
+//
+// Returns a URL to the payment provider's own portal, where the card can be replaced or removed, the
+// billing address changed, and past invoices downloaded.
+//
+// # Why replacing a card is not a form on this platform
+//
+// A form would mean a card number field, and no card data ever reaches this platform. The portal moves
+// the whole interaction to the provider; only a session URL comes back.
+//
+// # Something has to be able to replace an expiring card
+//
+// Cards expire. Once one does, the invoices for a plan stop being collectable, dunning runs out, and
+// the projects paid for by this account are suspended for non-payment. Without this operation the
+// account holder watches that happen with nowhere to fix it — adding a card does not help, since
+// that operation only makes sense when there is none.
+//
+// The URL is single-use and expires. Do not store it.
+//
+// POST /account/v1/billing-accounts/{accountKey}/billing-portal
+func (c *Client) StartBillingPortal(ctx context.Context, params StartBillingPortalParams) (*BillingPortalSession, error) {
+	res, err := c.sendStartBillingPortal(ctx, params)
+	return res, err
+}
+
+func (c *Client) sendStartBillingPortal(ctx context.Context, params StartBillingPortalParams) (res *BillingPortalSession, err error) {
+	otelAttrs := []attribute.KeyValue{
+		otelogen.OperationID("start-billing-portal"),
+		semconv.HTTPRequestMethodKey.String("POST"),
+		semconv.URLTemplateKey.String("/account/v1/billing-accounts/{accountKey}/billing-portal"),
+	}
+	otelAttrs = append(otelAttrs, c.cfg.Attributes...)
+
+	// Run stopwatch.
+	startTime := time.Now()
+	defer func() {
+		// Use floating point division here for higher precision (instead of Millisecond method).
+		elapsedDuration := time.Since(startTime)
+		c.duration.Record(ctx, float64(elapsedDuration)/float64(time.Millisecond), metric.WithAttributes(otelAttrs...))
+	}()
+
+	// Increment request counter.
+	c.requests.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
+
+	// Start a span for this request.
+	ctx, span := c.cfg.Tracer.Start(ctx, StartBillingPortalOperation,
+		trace.WithAttributes(otelAttrs...),
+		clientSpanKind,
+	)
+	// Track stage for error reporting.
+	var stage string
+	defer func() {
+		if err != nil {
+			span.RecordError(err)
+			span.SetStatus(codes.Error, stage)
+			c.errors.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
+		}
+		span.End()
+	}()
+
+	stage = "BuildURL"
+	u := uri.Clone(c.requestURL(ctx))
+	var pathParts [3]string
+	pathParts[0] = "/account/v1/billing-accounts/"
+	{
+		// Encode "accountKey" parameter.
+		e := uri.NewPathEncoder(uri.PathEncoderConfig{
+			Param:   "accountKey",
+			Style:   uri.PathStyleSimple,
+			Explode: false,
+		})
+		if err := func() error {
+			return e.EncodeValue(conv.StringToString(params.AccountKey))
+		}(); err != nil {
+			return res, errors.Wrap(err, "encode path")
+		}
+		encoded, err := e.Result()
+		if err != nil {
+			return res, errors.Wrap(err, "encode path")
+		}
+		pathParts[1] = encoded
+	}
+	pathParts[2] = "/billing-portal"
+	uri.AddPathParts(u, pathParts[:]...)
+
+	stage = "EncodeRequest"
+	r, err := ht.NewRequest(ctx, "POST", u)
+	if err != nil {
+		return res, errors.Wrap(err, "create request")
+	}
+
+	{
+		type bitset = [1]uint8
+		var satisfied bitset
+		{
+			stage = "Security:BearerAuth"
+			switch err := c.securityBearerAuth(ctx, StartBillingPortalOperation, r); {
+			case err == nil: // if NO error
+				satisfied[0] |= 1 << 0
+			case errors.Is(err, ogenerrors.ErrSkipClientSecurity):
+				// Skip this security.
+			default:
+				return res, errors.Wrap(err, "security \"BearerAuth\"")
+			}
+		}
+
+		if ok := func() bool {
+		nextRequirement:
+			for _, requirement := range []bitset{
+				{0b00000001},
+			} {
+				for i, mask := range requirement {
+					if satisfied[i]&mask != mask {
+						continue nextRequirement
+					}
+				}
+				return true
+			}
+			return false
+		}(); !ok {
+			return res, ogenerrors.ErrSecurityRequirementIsNotSatisfied
+		}
+	}
+
+	stage = "SendRequest"
+	resp, err := c.cfg.Client.Do(r)
+	if err != nil {
+		return res, errors.Wrap(err, "do request")
+	}
+	body := resp.Body
+	defer func() {
+		// Drain the body to EOF before closing, so the underlying
+		// connection can be reused by the Transport regardless of the
+		// response status code. See https://github.com/ogen-go/ogen/issues/1670.
+		_, _ = io.Copy(io.Discard, body)
+		_ = body.Close()
+	}()
+
+	stage = "DecodeResponse"
+	result, err := decodeStartBillingPortalResponse(resp)
 	if err != nil {
 		return res, errors.Wrap(err, "decode response")
 	}
