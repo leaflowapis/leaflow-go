@@ -172,6 +172,11 @@ type Invoker interface {
 	// The `tls_psk` in the response is returned only this once; store it immediately. If it is lost, it
 	// must be rotated.
 	//
+	// It is also how collection is resumed after `/disable`. On a machine that already exists, omitting
+	// `template_bindings` keeps the bindings it already has; it does not fall back to the default of Linux
+	// alone, which would silently drop every other template together with its parameters. Secret
+	// parameters are likewise carried over — see `parameters` on the binding.
+	//
 	// PUT /api/v1/servers/{serverId}
 	EnableServerMonitoring(ctx context.Context, request *EnableMonitoringRequestBody, params EnableServerMonitoringParams) (*ServerEnrollmentResponseBody, error)
 	// GetIncident invokes get-incident operation.
@@ -351,6 +356,16 @@ type Invoker interface {
 	//
 	// GET /api/v1/status-page/maintenances
 	ListStatusPageMaintenances(ctx context.Context, params ListStatusPageMaintenancesParams) (*LengthAwarePageStatusPageMaintenanceResource, error)
+	// ListTemplates invokes list-templates operation.
+	//
+	// The catalog every template binding is validated against — which templates exist, which parameters
+	// each of them accepts, and what each parameter defaults to. It is identical for every project and
+	// changes only when this deployment is upgraded. Read it rather than keeping a copy. A copy drifts,
+	// and only one of the ways it drifts fails loudly — an unknown parameter name is rejected, but a
+	// stale `default` and a stale `required` both look correct on screen.
+	//
+	// GET /api/v1/templates
+	ListTemplates(ctx context.Context) (*TemplateCatalogResponseBody, error)
 	// ListWebChecks invokes list-web-checks operation.
 	//
 	// List web checks.
@@ -2922,6 +2937,11 @@ func (c *Client) sendDisableServerMonitoring(ctx context.Context, params Disable
 //
 // The `tls_psk` in the response is returned only this once; store it immediately. If it is lost, it
 // must be rotated.
+//
+// It is also how collection is resumed after `/disable`. On a machine that already exists, omitting
+// `template_bindings` keeps the bindings it already has; it does not fall back to the default of Linux
+// alone, which would silently drop every other template together with its parameters. Secret
+// parameters are likewise carried over — see `parameters` on the binding.
 //
 // PUT /api/v1/servers/{serverId}
 func (c *Client) EnableServerMonitoring(ctx context.Context, request *EnableMonitoringRequestBody, params EnableServerMonitoringParams) (*ServerEnrollmentResponseBody, error) {
@@ -7103,6 +7123,123 @@ func (c *Client) sendListStatusPageMaintenances(ctx context.Context, params List
 
 	stage = "DecodeResponse"
 	result, err := decodeListStatusPageMaintenancesResponse(resp)
+	if err != nil {
+		return res, errors.Wrap(err, "decode response")
+	}
+
+	return result, nil
+}
+
+// ListTemplates invokes list-templates operation.
+//
+// The catalog every template binding is validated against — which templates exist, which parameters
+// each of them accepts, and what each parameter defaults to. It is identical for every project and
+// changes only when this deployment is upgraded. Read it rather than keeping a copy. A copy drifts,
+// and only one of the ways it drifts fails loudly — an unknown parameter name is rejected, but a
+// stale `default` and a stale `required` both look correct on screen.
+//
+// GET /api/v1/templates
+func (c *Client) ListTemplates(ctx context.Context) (*TemplateCatalogResponseBody, error) {
+	res, err := c.sendListTemplates(ctx)
+	return res, err
+}
+
+func (c *Client) sendListTemplates(ctx context.Context) (res *TemplateCatalogResponseBody, err error) {
+	otelAttrs := []attribute.KeyValue{
+		otelogen.OperationID("list-templates"),
+		semconv.HTTPRequestMethodKey.String("GET"),
+		semconv.URLTemplateKey.String("/api/v1/templates"),
+	}
+	otelAttrs = append(otelAttrs, c.cfg.Attributes...)
+
+	// Run stopwatch.
+	startTime := time.Now()
+	defer func() {
+		// Use floating point division here for higher precision (instead of Millisecond method).
+		elapsedDuration := time.Since(startTime)
+		c.duration.Record(ctx, float64(elapsedDuration)/float64(time.Millisecond), metric.WithAttributes(otelAttrs...))
+	}()
+
+	// Increment request counter.
+	c.requests.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
+
+	// Start a span for this request.
+	ctx, span := c.cfg.Tracer.Start(ctx, ListTemplatesOperation,
+		trace.WithAttributes(otelAttrs...),
+		clientSpanKind,
+	)
+	// Track stage for error reporting.
+	var stage string
+	defer func() {
+		if err != nil {
+			span.RecordError(err)
+			span.SetStatus(codes.Error, stage)
+			c.errors.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
+		}
+		span.End()
+	}()
+
+	stage = "BuildURL"
+	u := uri.Clone(c.requestURL(ctx))
+	var pathParts [1]string
+	pathParts[0] = "/api/v1/templates"
+	uri.AddPathParts(u, pathParts[:]...)
+
+	stage = "EncodeRequest"
+	r, err := ht.NewRequest(ctx, "GET", u)
+	if err != nil {
+		return res, errors.Wrap(err, "create request")
+	}
+
+	{
+		type bitset = [1]uint8
+		var satisfied bitset
+		{
+			stage = "Security:BearerAuth"
+			switch err := c.securityBearerAuth(ctx, ListTemplatesOperation, r); {
+			case err == nil: // if NO error
+				satisfied[0] |= 1 << 0
+			case errors.Is(err, ogenerrors.ErrSkipClientSecurity):
+				// Skip this security.
+			default:
+				return res, errors.Wrap(err, "security \"BearerAuth\"")
+			}
+		}
+
+		if ok := func() bool {
+		nextRequirement:
+			for _, requirement := range []bitset{
+				{0b00000001},
+			} {
+				for i, mask := range requirement {
+					if satisfied[i]&mask != mask {
+						continue nextRequirement
+					}
+				}
+				return true
+			}
+			return false
+		}(); !ok {
+			return res, ogenerrors.ErrSecurityRequirementIsNotSatisfied
+		}
+	}
+
+	stage = "SendRequest"
+	resp, err := c.cfg.Client.Do(r)
+	if err != nil {
+		return res, errors.Wrap(err, "do request")
+	}
+	body := resp.Body
+	defer func() {
+		// Drain the body to EOF before closing, so the underlying
+		// connection can be reused by the Transport regardless of the
+		// response status code. See https://github.com/ogen-go/ogen/issues/1670.
+		_, _ = io.Copy(io.Discard, body)
+		_ = body.Close()
+	}()
+
+	stage = "DecodeResponse"
+	result, err := decodeListTemplatesResponse(resp)
 	if err != nil {
 		return res, errors.Wrap(err, "decode response")
 	}

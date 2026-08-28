@@ -8645,8 +8645,13 @@ func (s *TagResource) SetValue(val string) {
 
 // Ref: #/components/schemas/TemplateBindingRequest
 type TemplateBindingRequest struct {
-	// Parameters declared by the template. Secret parameters are supplied in clear text and returned by
-	// name only.
+	// Parameters declared by the template, keyed by `name` from `GET /templates`. This is a full
+	// replacement: a parameter that is omitted takes the `default` reported there, so send back the whole
+	// `parameters` map read from the machine rather than only the field being changed.
+	//
+	// Secret parameters are the one exception, because they are never returned and so cannot be sent back.
+	// Omit one to keep the value already stored, and supply it only to replace it. An empty or blank value
+	// counts as omitted.
 	Parameters  OptTemplateBindingRequestParameters `json:"parameters"`
 	TemplateKey TemplateBindingRequestTemplateKey   `json:"template_key"`
 }
@@ -8671,8 +8676,13 @@ func (s *TemplateBindingRequest) SetTemplateKey(val TemplateBindingRequestTempla
 	s.TemplateKey = val
 }
 
-// Parameters declared by the template. Secret parameters are supplied in clear text and returned by
-// name only.
+// Parameters declared by the template, keyed by `name` from `GET /templates`. This is a full
+// replacement: a parameter that is omitted takes the `default` reported there, so send back the whole
+// `parameters` map read from the machine rather than only the field being changed.
+//
+// Secret parameters are the one exception, because they are never returned and so cannot be sent back.
+// Omit one to keep the value already stored, and supply it only to replace it. An empty or blank value
+// counts as omitted.
 type TemplateBindingRequestParameters map[string]string
 
 func (s *TemplateBindingRequestParameters) init() TemplateBindingRequestParameters {
@@ -8786,6 +8796,285 @@ func (s *TemplateBindingRequestTemplateKey) UnmarshalText(data []byte) error {
 	default:
 		return errors.Errorf("invalid value: %q", data)
 	}
+}
+
+// Ref: #/components/schemas/TemplateCatalogEntryResource
+type TemplateCatalogEntryResource struct {
+	// Exactly one template with this set must be bound to every machine. Binding none enrolls a machine
+	// that can never alert; binding both loads the Linux and Windows items onto one machine, half of which
+	// must fail.
+	IsBase bool `json:"is_base"`
+	// False means the template collects without an agent on the machine — ICMP_PING is pinged by the
+	// Zabbix server, PROXMOX_VE is polled over the PVE API.
+	NeedsAgent bool `json:"needs_agent"`
+	// In declaration order — connection parameters first, thresholds after — and meant to be rendered
+	// in that order. It is deliberately not alphabetical, which would split a template's connection
+	// parameters apart with thresholds between them even though they only make sense filled in together.
+	Parameters []TemplateCatalogParameterResource `json:"parameters"`
+	// Templates that must be bound alongside this one. Values are `template_key`s.
+	Requires []string `json:"requires"`
+	// Whether this template may be bound when `agent_mode` is ACTIVE. It already combines both reasons it
+	// may not be — no active variant exists, or this deployment does not have one installed — because
+	// the two are rejected identically and call for the same fix.
+	SupportsActiveMode bool   `json:"supports_active_mode"`
+	TemplateKey        string `json:"template_key"`
+}
+
+// GetIsBase returns the value of IsBase.
+func (s *TemplateCatalogEntryResource) GetIsBase() bool {
+	return s.IsBase
+}
+
+// GetNeedsAgent returns the value of NeedsAgent.
+func (s *TemplateCatalogEntryResource) GetNeedsAgent() bool {
+	return s.NeedsAgent
+}
+
+// GetParameters returns the value of Parameters.
+func (s *TemplateCatalogEntryResource) GetParameters() []TemplateCatalogParameterResource {
+	return s.Parameters
+}
+
+// GetRequires returns the value of Requires.
+func (s *TemplateCatalogEntryResource) GetRequires() []string {
+	return s.Requires
+}
+
+// GetSupportsActiveMode returns the value of SupportsActiveMode.
+func (s *TemplateCatalogEntryResource) GetSupportsActiveMode() bool {
+	return s.SupportsActiveMode
+}
+
+// GetTemplateKey returns the value of TemplateKey.
+func (s *TemplateCatalogEntryResource) GetTemplateKey() string {
+	return s.TemplateKey
+}
+
+// SetIsBase sets the value of IsBase.
+func (s *TemplateCatalogEntryResource) SetIsBase(val bool) {
+	s.IsBase = val
+}
+
+// SetNeedsAgent sets the value of NeedsAgent.
+func (s *TemplateCatalogEntryResource) SetNeedsAgent(val bool) {
+	s.NeedsAgent = val
+}
+
+// SetParameters sets the value of Parameters.
+func (s *TemplateCatalogEntryResource) SetParameters(val []TemplateCatalogParameterResource) {
+	s.Parameters = val
+}
+
+// SetRequires sets the value of Requires.
+func (s *TemplateCatalogEntryResource) SetRequires(val []string) {
+	s.Requires = val
+}
+
+// SetSupportsActiveMode sets the value of SupportsActiveMode.
+func (s *TemplateCatalogEntryResource) SetSupportsActiveMode(val bool) {
+	s.SupportsActiveMode = val
+}
+
+// SetTemplateKey sets the value of TemplateKey.
+func (s *TemplateCatalogEntryResource) SetTemplateKey(val string) {
+	s.TemplateKey = val
+}
+
+// Ref: #/components/schemas/TemplateCatalogParameterResource
+type TemplateCatalogParameterResource struct {
+	// The value that takes effect when the parameter is omitted. An empty string is a real default, not an
+	// absent one.
+	Default string `json:"default"`
+	// The shape of the accepted value. Surrounding whitespace is trimmed before the value is checked, and
+	// an omitted or empty value is replaced by `default` and not checked at all.
+	//
+	//  - `string` — no constraint; empty is accepted
+	//  - `non_empty_string` — must not be empty once trimmed
+	//  - `percent` — a number in the closed interval 0 to 100; fractions are accepted
+	//  - `positive_number` — a number strictly greater than 0; fractions are accepted
+	//  - `port` — an integer from 1 to 65535 inclusive; `8080/tcp` is not a port
+	//  - `host` — an IP address, or a hostname of at most 255 characters whose dot-separated labels are
+	//    at most 63 characters of `A-Z a-z 0-9 - _` and neither begin nor end with `-`. A single label
+	//    such as `localhost` is accepted, as is a trailing dot
+	//  - `ip_or_empty` — an IP address, or empty to mean "not specified"
+	//  - `regexp` — must compile as a Go RE2 pattern. RE2 has no backreferences and no lookaround, so a
+	//    pattern that a browser's `new RegExp()` accepts may still be rejected here. Validating
+	//    client-side narrows the gap but does not close it
+	Kind TemplateCatalogParameterResourceKind `json:"kind"`
+	// The key to use in `template_bindings[].parameters`. It is not the Zabbix macro name, which is
+	// internal and changes between Zabbix versions.
+	Name string `json:"name"`
+	// Independent of `default`. The three NGINX connection parameters carry a default and are still
+	// required, because the template's own default (localhost:80/basic_status) is almost never right.
+	Required bool `json:"required"`
+	// Supplied in clear text and never returned. A configured one is reported by name only, through
+	// `configured_secret_parameters` on the bound template. When updating a machine that already has one
+	// stored, omit it to keep the stored value and supply it only to replace it — a caller cannot read
+	// it back, so requiring it on every write would make resuming collection impossible.
+	Secret bool `json:"secret"`
+}
+
+// GetDefault returns the value of Default.
+func (s *TemplateCatalogParameterResource) GetDefault() string {
+	return s.Default
+}
+
+// GetKind returns the value of Kind.
+func (s *TemplateCatalogParameterResource) GetKind() TemplateCatalogParameterResourceKind {
+	return s.Kind
+}
+
+// GetName returns the value of Name.
+func (s *TemplateCatalogParameterResource) GetName() string {
+	return s.Name
+}
+
+// GetRequired returns the value of Required.
+func (s *TemplateCatalogParameterResource) GetRequired() bool {
+	return s.Required
+}
+
+// GetSecret returns the value of Secret.
+func (s *TemplateCatalogParameterResource) GetSecret() bool {
+	return s.Secret
+}
+
+// SetDefault sets the value of Default.
+func (s *TemplateCatalogParameterResource) SetDefault(val string) {
+	s.Default = val
+}
+
+// SetKind sets the value of Kind.
+func (s *TemplateCatalogParameterResource) SetKind(val TemplateCatalogParameterResourceKind) {
+	s.Kind = val
+}
+
+// SetName sets the value of Name.
+func (s *TemplateCatalogParameterResource) SetName(val string) {
+	s.Name = val
+}
+
+// SetRequired sets the value of Required.
+func (s *TemplateCatalogParameterResource) SetRequired(val bool) {
+	s.Required = val
+}
+
+// SetSecret sets the value of Secret.
+func (s *TemplateCatalogParameterResource) SetSecret(val bool) {
+	s.Secret = val
+}
+
+// The shape of the accepted value. Surrounding whitespace is trimmed before the value is checked, and
+// an omitted or empty value is replaced by `default` and not checked at all.
+//
+//   - `string` — no constraint; empty is accepted
+//   - `non_empty_string` — must not be empty once trimmed
+//   - `percent` — a number in the closed interval 0 to 100; fractions are accepted
+//   - `positive_number` — a number strictly greater than 0; fractions are accepted
+//   - `port` — an integer from 1 to 65535 inclusive; `8080/tcp` is not a port
+//   - `host` — an IP address, or a hostname of at most 255 characters whose dot-separated labels are
+//     at most 63 characters of `A-Z a-z 0-9 - _` and neither begin nor end with `-`. A single label
+//     such as `localhost` is accepted, as is a trailing dot
+//   - `ip_or_empty` — an IP address, or empty to mean "not specified"
+//   - `regexp` — must compile as a Go RE2 pattern. RE2 has no backreferences and no lookaround, so a
+//     pattern that a browser's `new RegExp()` accepts may still be rejected here. Validating
+//     client-side narrows the gap but does not close it
+type TemplateCatalogParameterResourceKind string
+
+const (
+	TemplateCatalogParameterResourceKindString         TemplateCatalogParameterResourceKind = "string"
+	TemplateCatalogParameterResourceKindNonEmptyString TemplateCatalogParameterResourceKind = "non_empty_string"
+	TemplateCatalogParameterResourceKindPercent        TemplateCatalogParameterResourceKind = "percent"
+	TemplateCatalogParameterResourceKindPositiveNumber TemplateCatalogParameterResourceKind = "positive_number"
+	TemplateCatalogParameterResourceKindPort           TemplateCatalogParameterResourceKind = "port"
+	TemplateCatalogParameterResourceKindHost           TemplateCatalogParameterResourceKind = "host"
+	TemplateCatalogParameterResourceKindIPOrEmpty      TemplateCatalogParameterResourceKind = "ip_or_empty"
+	TemplateCatalogParameterResourceKindRegexp         TemplateCatalogParameterResourceKind = "regexp"
+)
+
+// AllValues returns all TemplateCatalogParameterResourceKind values.
+func (TemplateCatalogParameterResourceKind) AllValues() []TemplateCatalogParameterResourceKind {
+	return []TemplateCatalogParameterResourceKind{
+		TemplateCatalogParameterResourceKindString,
+		TemplateCatalogParameterResourceKindNonEmptyString,
+		TemplateCatalogParameterResourceKindPercent,
+		TemplateCatalogParameterResourceKindPositiveNumber,
+		TemplateCatalogParameterResourceKindPort,
+		TemplateCatalogParameterResourceKindHost,
+		TemplateCatalogParameterResourceKindIPOrEmpty,
+		TemplateCatalogParameterResourceKindRegexp,
+	}
+}
+
+// MarshalText implements encoding.TextMarshaler.
+func (s TemplateCatalogParameterResourceKind) MarshalText() ([]byte, error) {
+	switch s {
+	case TemplateCatalogParameterResourceKindString:
+		return []byte(s), nil
+	case TemplateCatalogParameterResourceKindNonEmptyString:
+		return []byte(s), nil
+	case TemplateCatalogParameterResourceKindPercent:
+		return []byte(s), nil
+	case TemplateCatalogParameterResourceKindPositiveNumber:
+		return []byte(s), nil
+	case TemplateCatalogParameterResourceKindPort:
+		return []byte(s), nil
+	case TemplateCatalogParameterResourceKindHost:
+		return []byte(s), nil
+	case TemplateCatalogParameterResourceKindIPOrEmpty:
+		return []byte(s), nil
+	case TemplateCatalogParameterResourceKindRegexp:
+		return []byte(s), nil
+	default:
+		return nil, errors.Errorf("invalid value: %q", s)
+	}
+}
+
+// UnmarshalText implements encoding.TextUnmarshaler.
+func (s *TemplateCatalogParameterResourceKind) UnmarshalText(data []byte) error {
+	switch TemplateCatalogParameterResourceKind(data) {
+	case TemplateCatalogParameterResourceKindString:
+		*s = TemplateCatalogParameterResourceKindString
+		return nil
+	case TemplateCatalogParameterResourceKindNonEmptyString:
+		*s = TemplateCatalogParameterResourceKindNonEmptyString
+		return nil
+	case TemplateCatalogParameterResourceKindPercent:
+		*s = TemplateCatalogParameterResourceKindPercent
+		return nil
+	case TemplateCatalogParameterResourceKindPositiveNumber:
+		*s = TemplateCatalogParameterResourceKindPositiveNumber
+		return nil
+	case TemplateCatalogParameterResourceKindPort:
+		*s = TemplateCatalogParameterResourceKindPort
+		return nil
+	case TemplateCatalogParameterResourceKindHost:
+		*s = TemplateCatalogParameterResourceKindHost
+		return nil
+	case TemplateCatalogParameterResourceKindIPOrEmpty:
+		*s = TemplateCatalogParameterResourceKindIPOrEmpty
+		return nil
+	case TemplateCatalogParameterResourceKindRegexp:
+		*s = TemplateCatalogParameterResourceKindRegexp
+		return nil
+	default:
+		return errors.Errorf("invalid value: %q", data)
+	}
+}
+
+// Ref: #/components/schemas/TemplateCatalogResponseBody
+type TemplateCatalogResponseBody struct {
+	Items []TemplateCatalogEntryResource `json:"items"`
+}
+
+// GetItems returns the value of Items.
+func (s *TemplateCatalogResponseBody) GetItems() []TemplateCatalogEntryResource {
+	return s.Items
+}
+
+// SetItems sets the value of Items.
+func (s *TemplateCatalogResponseBody) SetItems(val []TemplateCatalogEntryResource) {
+	s.Items = val
 }
 
 // Ref: #/components/schemas/TopItemListResponseBody

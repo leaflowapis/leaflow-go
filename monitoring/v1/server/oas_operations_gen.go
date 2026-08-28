@@ -52,6 +52,7 @@ const (
 	ListStatusPageGroupsOperation           OperationName = "ListStatusPageGroups"
 	ListStatusPageIncidentsOperation        OperationName = "ListStatusPageIncidents"
 	ListStatusPageMaintenancesOperation     OperationName = "ListStatusPageMaintenances"
+	ListTemplatesOperation                  OperationName = "ListTemplates"
 	ListWebChecksOperation                  OperationName = "ListWebChecks"
 	PostStatusPageIncidentUpdateOperation   OperationName = "PostStatusPageIncidentUpdate"
 	PublishStatusPageIncidentOperation      OperationName = "PublishStatusPageIncident"
