@@ -71,6 +71,19 @@ func (UnimplementedHandler) CreateBillingAccount(ctx context.Context, req *Creat
 	return r, ht.ErrNotImplemented
 }
 
+// GetBillingAccount implements get-billing-account operation.
+//
+// One account, with the projects it currently pays for.
+//
+// The list returns the same objects, so this exists for the case the list cannot serve: a link
+// straight to one account. Making the caller fetch every account and filter turns a bookmarked page
+// into a request whose cost grows with how many accounts they hold.
+//
+// GET /account/v1/billing-accounts/{accountKey}
+func (UnimplementedHandler) GetBillingAccount(ctx context.Context, params GetBillingAccountParams) (r *BillingAccount, _ error) {
+	return r, ht.ErrNotImplemented
+}
+
 // GetInvoice implements get-invoice operation.
 //
 // A total does not answer "why is it this much", and that is the question a bill provokes. Each line
@@ -109,6 +122,20 @@ func (UnimplementedHandler) ListCharges(ctx context.Context, params ListChargesP
 	return r, ht.ErrNotImplemented
 }
 
+// ListCreditTransactions implements list-credit-transactions operation.
+//
+// Every movement of credit on this account: what was added, what was spent, what expired, what was
+// voided. Newest first.
+//
+// The balance on its own is a number with no account of itself. Asked why it is lower than expected,
+// it cannot answer, and the holder is left to guess between "I was charged" and "something expired"
+// — which lead to different next steps.
+//
+// GET /account/v1/billing-accounts/{accountKey}/credit-transactions
+func (UnimplementedHandler) ListCreditTransactions(ctx context.Context, params ListCreditTransactionsParams) (r *CreditTransactionList, _ error) {
+	return r, ht.ErrNotImplemented
+}
+
 // ListInvoices implements list-invoices operation.
 //
 // Past periods, most recent first. The period in progress is not here — see the charges endpoint for
@@ -135,6 +162,20 @@ func (UnimplementedHandler) ListInvoices(ctx context.Context, params ListInvoice
 //
 // GET /account/v1/billing-accounts/{accountKey}/offers
 func (UnimplementedHandler) ListOffers(ctx context.Context, params ListOffersParams) (r *OfferList, _ error) {
+	return r, ht.ErrNotImplemented
+}
+
+// ListTopUps implements list-top-ups operation.
+//
+// Every top-up this account has made, newest first.
+//
+// Reading one top-up requires already holding its identifier, and the only place that identifier
+// appears is the redirect that started it — so without this list a top-up becomes unfindable the
+// moment the browser tab is closed, which is exactly when somebody wants to check whether their money
+// arrived.
+//
+// GET /account/v1/billing-accounts/{accountKey}/top-ups
+func (UnimplementedHandler) ListTopUps(ctx context.Context, params ListTopUpsParams) (r *TopUpList, _ error) {
 	return r, ht.ErrNotImplemented
 }
 
@@ -256,6 +297,36 @@ func (UnimplementedHandler) StartCardSetup(ctx context.Context, params StartCard
 //
 // POST /account/v1/billing-accounts/{accountKey}/top-ups
 func (UnimplementedHandler) StartTopUp(ctx context.Context, req *StartTopUpRequestBody, params StartTopUpParams) (r *TopUpSession, _ error) {
+	return r, ht.ErrNotImplemented
+}
+
+// UnbindProjectFromBillingAccount implements unbind-project-from-billing-account operation.
+//
+// Unbinds the project from this account. Nothing pays for it afterwards, and everything in it is
+// refused admission until some account takes it on — no new machines, no forwarded requests.
+//
+// That consequence is the reason this exists rather than an argument against it: a project bound to
+// the wrong account has no other way out, and moving it to another of the caller's accounts is not a
+// correction when the answer is that this account should not be paying for it at all.
+//
+// Charges already accrued stay where they are. They were incurred while this account held the project,
+// and an invoice has to keep pointing at what it was based on.
+//
+// DELETE /account/v1/billing-accounts/{accountKey}/projects/{projectId}
+func (UnimplementedHandler) UnbindProjectFromBillingAccount(ctx context.Context, params UnbindProjectFromBillingAccountParams) error {
+	return ht.ErrNotImplemented
+}
+
+// UpdateBillingAccount implements update-billing-account operation.
+//
+// Changes the display name. Nothing else about the account can be changed here.
+//
+// The key is not among the fields and never will be: ownership is stated by the key, and invoices
+// already issued refer to it. The name is what tells two accounts apart in a list, so a mistake made
+// while creating one is otherwise permanent.
+//
+// PUT /account/v1/billing-accounts/{accountKey}
+func (UnimplementedHandler) UpdateBillingAccount(ctx context.Context, req *UpdateBillingAccountRequestBody, params UpdateBillingAccountParams) (r *BillingAccount, _ error) {
 	return r, ht.ErrNotImplemented
 }
 
