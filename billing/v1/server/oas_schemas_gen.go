@@ -383,6 +383,155 @@ func (s *CreateBillingAccountRequestBody) SetOfferKey(val OptString) {
 	s.OfferKey = val
 }
 
+// One movement of credit. Immutable — a correction is another movement, never an edit of this one,
+// which is what lets the balance be recomputed from the list at any time.
+// Ref: #/components/schemas/CreditTransaction
+type CreditTransaction struct {
+	ID   string                `json:"id"`
+	Type CreditTransactionType `json:"type"`
+	// A decimal string. Never a float — a balance that rounds is a balance that drifts.
+	Amount   string `json:"amount"`
+	Currency string `json:"currency"`
+	// When it landed on the ledger, which is not always when it was requested.
+	BookedAt time.Time `json:"booked_at"`
+	// What the balance became. Recorded by the metering engine rather than recomputed here — recomputing
+	// assumes our understanding of the burn-down order matches its own, and this is its own account of it.
+	BalanceAfter string `json:"balance_after"`
+}
+
+// GetID returns the value of ID.
+func (s *CreditTransaction) GetID() string {
+	return s.ID
+}
+
+// GetType returns the value of Type.
+func (s *CreditTransaction) GetType() CreditTransactionType {
+	return s.Type
+}
+
+// GetAmount returns the value of Amount.
+func (s *CreditTransaction) GetAmount() string {
+	return s.Amount
+}
+
+// GetCurrency returns the value of Currency.
+func (s *CreditTransaction) GetCurrency() string {
+	return s.Currency
+}
+
+// GetBookedAt returns the value of BookedAt.
+func (s *CreditTransaction) GetBookedAt() time.Time {
+	return s.BookedAt
+}
+
+// GetBalanceAfter returns the value of BalanceAfter.
+func (s *CreditTransaction) GetBalanceAfter() string {
+	return s.BalanceAfter
+}
+
+// SetID sets the value of ID.
+func (s *CreditTransaction) SetID(val string) {
+	s.ID = val
+}
+
+// SetType sets the value of Type.
+func (s *CreditTransaction) SetType(val CreditTransactionType) {
+	s.Type = val
+}
+
+// SetAmount sets the value of Amount.
+func (s *CreditTransaction) SetAmount(val string) {
+	s.Amount = val
+}
+
+// SetCurrency sets the value of Currency.
+func (s *CreditTransaction) SetCurrency(val string) {
+	s.Currency = val
+}
+
+// SetBookedAt sets the value of BookedAt.
+func (s *CreditTransaction) SetBookedAt(val time.Time) {
+	s.BookedAt = val
+}
+
+// SetBalanceAfter sets the value of BalanceAfter.
+func (s *CreditTransaction) SetBalanceAfter(val string) {
+	s.BalanceAfter = val
+}
+
+// Ref: #/components/schemas/CreditTransactionList
+type CreditTransactionList struct {
+	Transactions []CreditTransaction `json:"transactions"`
+}
+
+// GetTransactions returns the value of Transactions.
+func (s *CreditTransactionList) GetTransactions() []CreditTransaction {
+	return s.Transactions
+}
+
+// SetTransactions sets the value of Transactions.
+func (s *CreditTransactionList) SetTransactions(val []CreditTransaction) {
+	s.Transactions = val
+}
+
+// `funded` is credit arriving, `consumed` is it being spent, `expired` is a grant reaching the end of
+// its life unspent, and `voided` is one cancelled — a refund, or a correction.
+// Ref: #/components/schemas/CreditTransactionType
+type CreditTransactionType string
+
+const (
+	CreditTransactionTypeFunded   CreditTransactionType = "funded"
+	CreditTransactionTypeConsumed CreditTransactionType = "consumed"
+	CreditTransactionTypeExpired  CreditTransactionType = "expired"
+	CreditTransactionTypeVoided   CreditTransactionType = "voided"
+)
+
+// AllValues returns all CreditTransactionType values.
+func (CreditTransactionType) AllValues() []CreditTransactionType {
+	return []CreditTransactionType{
+		CreditTransactionTypeFunded,
+		CreditTransactionTypeConsumed,
+		CreditTransactionTypeExpired,
+		CreditTransactionTypeVoided,
+	}
+}
+
+// MarshalText implements encoding.TextMarshaler.
+func (s CreditTransactionType) MarshalText() ([]byte, error) {
+	switch s {
+	case CreditTransactionTypeFunded:
+		return []byte(s), nil
+	case CreditTransactionTypeConsumed:
+		return []byte(s), nil
+	case CreditTransactionTypeExpired:
+		return []byte(s), nil
+	case CreditTransactionTypeVoided:
+		return []byte(s), nil
+	default:
+		return nil, errors.Errorf("invalid value: %q", s)
+	}
+}
+
+// UnmarshalText implements encoding.TextUnmarshaler.
+func (s *CreditTransactionType) UnmarshalText(data []byte) error {
+	switch CreditTransactionType(data) {
+	case CreditTransactionTypeFunded:
+		*s = CreditTransactionTypeFunded
+		return nil
+	case CreditTransactionTypeConsumed:
+		*s = CreditTransactionTypeConsumed
+		return nil
+	case CreditTransactionTypeExpired:
+		*s = CreditTransactionTypeExpired
+		return nil
+	case CreditTransactionTypeVoided:
+		*s = CreditTransactionTypeVoided
+		return nil
+	default:
+		return errors.Errorf("invalid value: %q", data)
+	}
+}
+
 type Currency string
 
 // Ref: #/components/schemas/Error
@@ -1918,6 +2067,21 @@ func (s *Subscription) SetStatus(val string) {
 	s.Status = val
 }
 
+// Ref: #/components/schemas/TopUpList
+type TopUpList struct {
+	TopUps []TopUpStatus `json:"top_ups"`
+}
+
+// GetTopUps returns the value of TopUps.
+func (s *TopUpList) GetTopUps() []TopUpStatus {
+	return s.TopUps
+}
+
+// SetTopUps sets the value of TopUps.
+func (s *TopUpList) SetTopUps(val []TopUpStatus) {
+	s.TopUps = val
+}
+
 // What a top-up bundle costs and what it grants. Present only on offers that sell credit.
 //
 // Unlike a plan price, this is stated on the bundle itself: credit is granted per transaction and has
@@ -2072,4 +2236,22 @@ func (s *TopUpStatusState) UnmarshalText(data []byte) error {
 	default:
 		return errors.Errorf("invalid value: %q", data)
 	}
+}
+
+// UnbindProjectFromBillingAccountNoContent is response for UnbindProjectFromBillingAccount operation.
+type UnbindProjectFromBillingAccountNoContent struct{}
+
+// Ref: #/components/schemas/UpdateBillingAccountRequestBody
+type UpdateBillingAccountRequestBody struct {
+	DisplayName string `json:"display_name"`
+}
+
+// GetDisplayName returns the value of DisplayName.
+func (s *UpdateBillingAccountRequestBody) GetDisplayName() string {
+	return s.DisplayName
+}
+
+// SetDisplayName sets the value of DisplayName.
+func (s *UpdateBillingAccountRequestBody) SetDisplayName(val string) {
+	s.DisplayName = val
 }

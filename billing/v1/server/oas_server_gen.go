@@ -57,6 +57,16 @@ type Handler interface {
 	//
 	// POST /account/v1/billing-accounts
 	CreateBillingAccount(ctx context.Context, req *CreateBillingAccountRequestBody) (*BillingAccount, error)
+	// GetBillingAccount implements get-billing-account operation.
+	//
+	// One account, with the projects it currently pays for.
+	//
+	// The list returns the same objects, so this exists for the case the list cannot serve: a link
+	// straight to one account. Making the caller fetch every account and filter turns a bookmarked page
+	// into a request whose cost grows with how many accounts they hold.
+	//
+	// GET /account/v1/billing-accounts/{accountKey}
+	GetBillingAccount(ctx context.Context, params GetBillingAccountParams) (*BillingAccount, error)
 	// GetInvoice implements get-invoice operation.
 	//
 	// A total does not answer "why is it this much", and that is the question a bill provokes. Each line
@@ -86,6 +96,17 @@ type Handler interface {
 	//
 	// GET /account/v1/billing-accounts/{accountKey}/charges
 	ListCharges(ctx context.Context, params ListChargesParams) (*ChargeList, error)
+	// ListCreditTransactions implements list-credit-transactions operation.
+	//
+	// Every movement of credit on this account: what was added, what was spent, what expired, what was
+	// voided. Newest first.
+	//
+	// The balance on its own is a number with no account of itself. Asked why it is lower than expected,
+	// it cannot answer, and the holder is left to guess between "I was charged" and "something expired"
+	// — which lead to different next steps.
+	//
+	// GET /account/v1/billing-accounts/{accountKey}/credit-transactions
+	ListCreditTransactions(ctx context.Context, params ListCreditTransactionsParams) (*CreditTransactionList, error)
 	// ListInvoices implements list-invoices operation.
 	//
 	// Past periods, most recent first. The period in progress is not here — see the charges endpoint for
@@ -109,6 +130,17 @@ type Handler interface {
 	//
 	// GET /account/v1/billing-accounts/{accountKey}/offers
 	ListOffers(ctx context.Context, params ListOffersParams) (*OfferList, error)
+	// ListTopUps implements list-top-ups operation.
+	//
+	// Every top-up this account has made, newest first.
+	//
+	// Reading one top-up requires already holding its identifier, and the only place that identifier
+	// appears is the redirect that started it — so without this list a top-up becomes unfindable the
+	// moment the browser tab is closed, which is exactly when somebody wants to check whether their money
+	// arrived.
+	//
+	// GET /account/v1/billing-accounts/{accountKey}/top-ups
+	ListTopUps(ctx context.Context, params ListTopUpsParams) (*TopUpList, error)
 	// PurchaseOffer implements purchase-offer operation.
 	//
 	// Puts the account on the plan this offer points at, taking one of its places if it has a limit.
@@ -212,6 +244,30 @@ type Handler interface {
 	//
 	// POST /account/v1/billing-accounts/{accountKey}/top-ups
 	StartTopUp(ctx context.Context, req *StartTopUpRequestBody, params StartTopUpParams) (*TopUpSession, error)
+	// UnbindProjectFromBillingAccount implements unbind-project-from-billing-account operation.
+	//
+	// Unbinds the project from this account. Nothing pays for it afterwards, and everything in it is
+	// refused admission until some account takes it on — no new machines, no forwarded requests.
+	//
+	// That consequence is the reason this exists rather than an argument against it: a project bound to
+	// the wrong account has no other way out, and moving it to another of the caller's accounts is not a
+	// correction when the answer is that this account should not be paying for it at all.
+	//
+	// Charges already accrued stay where they are. They were incurred while this account held the project,
+	// and an invoice has to keep pointing at what it was based on.
+	//
+	// DELETE /account/v1/billing-accounts/{accountKey}/projects/{projectId}
+	UnbindProjectFromBillingAccount(ctx context.Context, params UnbindProjectFromBillingAccountParams) error
+	// UpdateBillingAccount implements update-billing-account operation.
+	//
+	// Changes the display name. Nothing else about the account can be changed here.
+	//
+	// The key is not among the fields and never will be: ownership is stated by the key, and invoices
+	// already issued refer to it. The name is what tells two accounts apart in a list, so a mistake made
+	// while creating one is otherwise permanent.
+	//
+	// PUT /account/v1/billing-accounts/{accountKey}
+	UpdateBillingAccount(ctx context.Context, req *UpdateBillingAccountRequestBody, params UpdateBillingAccountParams) (*BillingAccount, error)
 	// NewError creates *ErrorStatusCode from error returned by handler.
 	//
 	// Used for common default response.

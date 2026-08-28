@@ -19,36 +19,60 @@ import (
 	openapi_types "github.com/oapi-codegen/runtime/types"
 )
 
+// Defines values for CreditTransactionType.
+const (
+	CreditTransactionTypeConsumed CreditTransactionType = "consumed"
+	CreditTransactionTypeExpired  CreditTransactionType = "expired"
+	CreditTransactionTypeFunded   CreditTransactionType = "funded"
+	CreditTransactionTypeVoided   CreditTransactionType = "voided"
+)
+
+// Valid indicates whether the value is a known member of the CreditTransactionType enum.
+func (e CreditTransactionType) Valid() bool {
+	switch e {
+	case CreditTransactionTypeConsumed:
+		return true
+	case CreditTransactionTypeExpired:
+		return true
+	case CreditTransactionTypeFunded:
+		return true
+	case CreditTransactionTypeVoided:
+		return true
+	default:
+		return false
+	}
+}
+
 // Defines values for InvoiceStatus.
 const (
-	Draft             InvoiceStatus = "draft"
-	Issued            InvoiceStatus = "issued"
-	Issuing           InvoiceStatus = "issuing"
-	Overdue           InvoiceStatus = "overdue"
-	Paid              InvoiceStatus = "paid"
-	PaymentProcessing InvoiceStatus = "payment_processing"
-	Uncollectible     InvoiceStatus = "uncollectible"
-	Voided            InvoiceStatus = "voided"
+	InvoiceStatusDraft             InvoiceStatus = "draft"
+	InvoiceStatusIssued            InvoiceStatus = "issued"
+	InvoiceStatusIssuing           InvoiceStatus = "issuing"
+	InvoiceStatusOverdue           InvoiceStatus = "overdue"
+	InvoiceStatusPaid              InvoiceStatus = "paid"
+	InvoiceStatusPaymentProcessing InvoiceStatus = "payment_processing"
+	InvoiceStatusUncollectible     InvoiceStatus = "uncollectible"
+	InvoiceStatusVoided            InvoiceStatus = "voided"
 )
 
 // Valid indicates whether the value is a known member of the InvoiceStatus enum.
 func (e InvoiceStatus) Valid() bool {
 	switch e {
-	case Draft:
+	case InvoiceStatusDraft:
 		return true
-	case Issued:
+	case InvoiceStatusIssued:
 		return true
-	case Issuing:
+	case InvoiceStatusIssuing:
 		return true
-	case Overdue:
+	case InvoiceStatusOverdue:
 		return true
-	case Paid:
+	case InvoiceStatusPaid:
 		return true
-	case PaymentProcessing:
+	case InvoiceStatusPaymentProcessing:
 		return true
-	case Uncollectible:
+	case InvoiceStatusUncollectible:
 		return true
-	case Voided:
+	case InvoiceStatusVoided:
 		return true
 	default:
 		return false
@@ -262,6 +286,36 @@ type CreateBillingAccountRequestBody struct {
 	// silently receives the account it already had, and reads that as a successful creation.
 	Seq int32 `json:"seq"`
 }
+
+// CreditTransaction One movement of credit. Immutable — a correction is another movement, never an edit of this
+// one, which is what lets the balance be recomputed from the list at any time
+type CreditTransaction struct {
+	// Amount A decimal string. Never a float — a balance that rounds is a balance that drifts
+	Amount string `json:"amount"`
+
+	// BalanceAfter What the balance became. Recorded by the metering engine rather than recomputed here —
+	// recomputing assumes our understanding of the burn-down order matches its own, and this
+	// is its own account of it
+	BalanceAfter string `json:"balance_after"`
+
+	// BookedAt When it landed on the ledger, which is not always when it was requested
+	BookedAt time.Time `json:"booked_at"`
+	Currency string    `json:"currency"`
+	Id       string    `json:"id"`
+
+	// Type `funded` is credit arriving, `consumed` is it being spent, `expired` is a grant reaching the
+	// end of its life unspent, and `voided` is one cancelled — a refund, or a correction
+	Type CreditTransactionType `json:"type"`
+}
+
+// CreditTransactionList defines model for CreditTransactionList.
+type CreditTransactionList struct {
+	Transactions []CreditTransaction `json:"transactions"`
+}
+
+// CreditTransactionType `funded` is credit arriving, `consumed` is it being spent, `expired` is a grant reaching the
+// end of its life unspent, and `voided` is one cancelled — a refund, or a correction
+type CreditTransactionType string
 
 // Currency ISO 4217, uppercase. `USD` is the only value the platform issues today, and a request
 // naming any other is refused with `BILLING_CURRENCY_UNSUPPORTED`.
@@ -505,6 +559,11 @@ type Subscription struct {
 	Status string `json:"status"`
 }
 
+// TopUpList defines model for TopUpList.
+type TopUpList struct {
+	TopUps []TopUpStatus `json:"top_ups"`
+}
+
 // TopUpPricing What a top-up bundle costs and what it grants. Present only on offers that sell credit.
 //
 // Unlike a plan price, this is stated on the bundle itself: credit is granted per
@@ -553,6 +612,11 @@ type TopUpStatus struct {
 // still being confirmed, or the money itself is still in transit
 type TopUpStatusState string
 
+// UpdateBillingAccountRequestBody defines model for UpdateBillingAccountRequestBody.
+type UpdateBillingAccountRequestBody struct {
+	DisplayName string `json:"display_name"`
+}
+
 // AccountKey defines model for AccountKey.
 type AccountKey = string
 
@@ -573,6 +637,9 @@ type CancelSubscriptionParamsTiming string
 
 // CreateBillingAccountJSONRequestBody defines body for CreateBillingAccount for application/json ContentType.
 type CreateBillingAccountJSONRequestBody = CreateBillingAccountRequestBody
+
+// UpdateBillingAccountJSONRequestBody defines body for UpdateBillingAccount for application/json ContentType.
+type UpdateBillingAccountJSONRequestBody = UpdateBillingAccountRequestBody
 
 // StartTopUpJSONRequestBody defines body for StartTopUp for application/json ContentType.
 type StartTopUpJSONRequestBody = StartTopUpRequestBody
@@ -695,6 +762,43 @@ type ClientInterface interface {
 	// Corresponds with POST /account/v1/billing-accounts (the `CreateBillingAccount` operationId).
 	CreateBillingAccount(ctx context.Context, body CreateBillingAccountJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
 
+	// GetBillingAccount Read one of my billing accounts
+	//
+	// One account, with the projects it currently pays for.
+	//
+	// The list returns the same objects, so this exists for the case the list cannot serve: a link
+	// straight to one account. Making the caller fetch every account and filter turns a bookmarked
+	// page into a request whose cost grows with how many accounts they hold.
+	//
+	// Corresponds with GET /account/v1/billing-accounts/{accountKey} (the `GetBillingAccount` operationId).
+	GetBillingAccount(ctx context.Context, accountKey AccountKey, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// UpdateBillingAccountWithBody Rename a billing account
+	//
+	// Changes the display name. Nothing else about the account can be changed here.
+	//
+	// The key is not among the fields and never will be: ownership is stated by the key, and
+	// invoices already issued refer to it. The name is what tells two accounts apart in a list, so
+	// a mistake made while creating one is otherwise permanent.
+	//
+	// Takes any type of body and a specified content type.
+	//
+	// Corresponds with PUT /account/v1/billing-accounts/{accountKey} (the `UpdateBillingAccount` operationId).
+	UpdateBillingAccountWithBody(ctx context.Context, accountKey AccountKey, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// UpdateBillingAccount Rename a billing account
+	//
+	// Changes the display name. Nothing else about the account can be changed here.
+	//
+	// The key is not among the fields and never will be: ownership is stated by the key, and
+	// invoices already issued refer to it. The name is what tells two accounts apart in a list, so
+	// a mistake made while creating one is otherwise permanent.
+	//
+	// Takes a body of the `application/json` content type.
+	//
+	// Corresponds with PUT /account/v1/billing-accounts/{accountKey} (the `UpdateBillingAccount` operationId).
+	UpdateBillingAccount(ctx context.Context, accountKey AccountKey, body UpdateBillingAccountJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
+
 	// ReadBillingAccountBalance Read an account's balance
 	//
 	// What is left on the account.
@@ -740,6 +844,18 @@ type ClientInterface interface {
 	//
 	// Corresponds with GET /account/v1/billing-accounts/{accountKey}/charges (the `ListCharges` operationId).
 	ListCharges(ctx context.Context, accountKey AccountKey, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// ListCreditTransactions How the balance got to where it is
+	//
+	// Every movement of credit on this account: what was added, what was spent, what expired, what
+	// was voided. Newest first.
+	//
+	// The balance on its own is a number with no account of itself. Asked why it is lower than
+	// expected, it cannot answer, and the holder is left to guess between "I was charged" and
+	// "something expired" — which lead to different next steps.
+	//
+	// Corresponds with GET /account/v1/billing-accounts/{accountKey}/credit-transactions (the `ListCreditTransactions` operationId).
+	ListCreditTransactions(ctx context.Context, accountKey AccountKey, reqEditors ...RequestEditorFn) (*http.Response, error)
 
 	// ListInvoices List this account's invoices
 	//
@@ -808,6 +924,23 @@ type ClientInterface interface {
 	// Corresponds with POST /account/v1/billing-accounts/{accountKey}/offers/{offerKey}/purchase (the `PurchaseOffer` operationId).
 	PurchaseOffer(ctx context.Context, accountKey AccountKey, offerKey string, params *PurchaseOfferParams, reqEditors ...RequestEditorFn) (*http.Response, error)
 
+	// UnbindProjectFromBillingAccount Stop paying for a project
+	//
+	// Unbinds the project from this account. Nothing pays for it afterwards, and **everything in it
+	// is refused admission** until some account takes it on — no new machines, no forwarded
+	// requests.
+	//
+	// That consequence is the reason this exists rather than an argument against it: a project
+	// bound to the wrong account has no other way out, and moving it to another of the caller's
+	// accounts is not a correction when the answer is that this account should not be paying for
+	// it at all.
+	//
+	// Charges already accrued stay where they are. They were incurred while this account held the
+	// project, and an invoice has to keep pointing at what it was based on.
+	//
+	// Corresponds with DELETE /account/v1/billing-accounts/{accountKey}/projects/{projectId} (the `UnbindProjectFromBillingAccount` operationId).
+	UnbindProjectFromBillingAccount(ctx context.Context, accountKey AccountKey, projectId openapi_types.UUID, reqEditors ...RequestEditorFn) (*http.Response, error)
+
 	// BindProjectToBillingAccount Make this account pay for a project
 	//
 	// Binds a project to this account. A project bound to another account is moved.
@@ -856,6 +989,18 @@ type ClientInterface interface {
 	//
 	// Corresponds with POST /account/v1/billing-accounts/{accountKey}/subscription/cancel (the `CancelSubscription` operationId).
 	CancelSubscription(ctx context.Context, accountKey AccountKey, params *CancelSubscriptionParams, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// ListTopUps My top-ups
+	//
+	// Every top-up this account has made, newest first.
+	//
+	// Reading one top-up requires already holding its identifier, and the only place that
+	// identifier appears is the redirect that started it — so without this list a top-up becomes
+	// unfindable the moment the browser tab is closed, which is exactly when somebody wants to
+	// check whether their money arrived.
+	//
+	// Corresponds with GET /account/v1/billing-accounts/{accountKey}/top-ups (the `ListTopUps` operationId).
+	ListTopUps(ctx context.Context, accountKey AccountKey, reqEditors ...RequestEditorFn) (*http.Response, error)
 
 	// StartTopUpWithBody Start a top-up
 	//
@@ -990,6 +1135,73 @@ func (c *Client) CreateBillingAccount(ctx context.Context, body CreateBillingAcc
 	return c.Client.Do(req)
 }
 
+// GetBillingAccount Read one of my billing accounts
+//
+// One account, with the projects it currently pays for.
+//
+// The list returns the same objects, so this exists for the case the list cannot serve: a link
+// straight to one account. Making the caller fetch every account and filter turns a bookmarked
+// page into a request whose cost grows with how many accounts they hold.
+//
+// Corresponds with GET /account/v1/billing-accounts/{accountKey} (the `GetBillingAccount` operationId).
+func (c *Client) GetBillingAccount(ctx context.Context, accountKey AccountKey, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewGetBillingAccountRequest(c.Server, accountKey)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+// UpdateBillingAccountWithBody Rename a billing account
+//
+// Changes the display name. Nothing else about the account can be changed here.
+//
+// The key is not among the fields and never will be: ownership is stated by the key, and
+// invoices already issued refer to it. The name is what tells two accounts apart in a list, so
+// a mistake made while creating one is otherwise permanent.
+//
+// Takes any type of body and a specified content type.
+//
+// Corresponds with PUT /account/v1/billing-accounts/{accountKey} (the `UpdateBillingAccount` operationId).
+func (c *Client) UpdateBillingAccountWithBody(ctx context.Context, accountKey AccountKey, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewUpdateBillingAccountRequestWithBody(c.Server, accountKey, contentType, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+// UpdateBillingAccount Rename a billing account
+//
+// Changes the display name. Nothing else about the account can be changed here.
+//
+// The key is not among the fields and never will be: ownership is stated by the key, and
+// invoices already issued refer to it. The name is what tells two accounts apart in a list, so
+// a mistake made while creating one is otherwise permanent.
+//
+// Takes a body of the `application/json` content type.
+//
+// Corresponds with PUT /account/v1/billing-accounts/{accountKey} (the `UpdateBillingAccount` operationId).
+func (c *Client) UpdateBillingAccount(ctx context.Context, accountKey AccountKey, body UpdateBillingAccountJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewUpdateBillingAccountRequest(c.Server, accountKey, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
 // ReadBillingAccountBalance Read an account's balance
 //
 // What is left on the account.
@@ -1056,6 +1268,28 @@ func (c *Client) StartCardSetup(ctx context.Context, accountKey AccountKey, reqE
 // Corresponds with GET /account/v1/billing-accounts/{accountKey}/charges (the `ListCharges` operationId).
 func (c *Client) ListCharges(ctx context.Context, accountKey AccountKey, reqEditors ...RequestEditorFn) (*http.Response, error) {
 	req, err := NewListChargesRequest(c.Server, accountKey)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+// ListCreditTransactions How the balance got to where it is
+//
+// Every movement of credit on this account: what was added, what was spent, what expired, what
+// was voided. Newest first.
+//
+// The balance on its own is a number with no account of itself. Asked why it is lower than
+// expected, it cannot answer, and the holder is left to guess between "I was charged" and
+// "something expired" — which lead to different next steps.
+//
+// Corresponds with GET /account/v1/billing-accounts/{accountKey}/credit-transactions (the `ListCreditTransactions` operationId).
+func (c *Client) ListCreditTransactions(ctx context.Context, accountKey AccountKey, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewListCreditTransactionsRequest(c.Server, accountKey)
 	if err != nil {
 		return nil, err
 	}
@@ -1173,6 +1407,33 @@ func (c *Client) PurchaseOffer(ctx context.Context, accountKey AccountKey, offer
 	return c.Client.Do(req)
 }
 
+// UnbindProjectFromBillingAccount Stop paying for a project
+//
+// Unbinds the project from this account. Nothing pays for it afterwards, and **everything in it
+// is refused admission** until some account takes it on — no new machines, no forwarded
+// requests.
+//
+// That consequence is the reason this exists rather than an argument against it: a project
+// bound to the wrong account has no other way out, and moving it to another of the caller's
+// accounts is not a correction when the answer is that this account should not be paying for
+// it at all.
+//
+// Charges already accrued stay where they are. They were incurred while this account held the
+// project, and an invoice has to keep pointing at what it was based on.
+//
+// Corresponds with DELETE /account/v1/billing-accounts/{accountKey}/projects/{projectId} (the `UnbindProjectFromBillingAccount` operationId).
+func (c *Client) UnbindProjectFromBillingAccount(ctx context.Context, accountKey AccountKey, projectId openapi_types.UUID, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewUnbindProjectFromBillingAccountRequest(c.Server, accountKey, projectId)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
 // BindProjectToBillingAccount Make this account pay for a project
 //
 // Binds a project to this account. A project bound to another account is moved.
@@ -1242,6 +1503,28 @@ func (c *Client) ReadSubscription(ctx context.Context, accountKey AccountKey, re
 // Corresponds with POST /account/v1/billing-accounts/{accountKey}/subscription/cancel (the `CancelSubscription` operationId).
 func (c *Client) CancelSubscription(ctx context.Context, accountKey AccountKey, params *CancelSubscriptionParams, reqEditors ...RequestEditorFn) (*http.Response, error) {
 	req, err := NewCancelSubscriptionRequest(c.Server, accountKey, params)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+// ListTopUps My top-ups
+//
+// Every top-up this account has made, newest first.
+//
+// Reading one top-up requires already holding its identifier, and the only place that
+// identifier appears is the redirect that started it — so without this list a top-up becomes
+// unfindable the moment the browser tab is closed, which is exactly when somebody wants to
+// check whether their money arrived.
+//
+// Corresponds with GET /account/v1/billing-accounts/{accountKey}/top-ups (the `ListTopUps` operationId).
+func (c *Client) ListTopUps(ctx context.Context, accountKey AccountKey, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewListTopUpsRequest(c.Server, accountKey)
 	if err != nil {
 		return nil, err
 	}
@@ -1407,6 +1690,87 @@ func NewCreateBillingAccountRequestWithBody(server string, contentType string, b
 	return req, nil
 }
 
+// NewGetBillingAccountRequest constructs an http.Request for the GetBillingAccount method
+func NewGetBillingAccountRequest(server string, accountKey AccountKey) (*http.Request, error) {
+	var err error
+
+	var pathParam0 string
+
+	pathParam0, err = runtime.StyleParamWithOptions("simple", false, "accountKey", accountKey, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: ""})
+	if err != nil {
+		return nil, err
+	}
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/account/v1/billing-accounts/%s", pathParam0)
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest(http.MethodGet, queryURL.String(), nil)
+	if err != nil {
+		return nil, err
+	}
+
+	return req, nil
+}
+
+// NewUpdateBillingAccountRequest calls the generic UpdateBillingAccount builder with application/json body
+func NewUpdateBillingAccountRequest(server string, accountKey AccountKey, body UpdateBillingAccountJSONRequestBody) (*http.Request, error) {
+	var bodyReader io.Reader
+	buf, err := json.Marshal(body)
+	if err != nil {
+		return nil, err
+	}
+	bodyReader = bytes.NewReader(buf)
+	return NewUpdateBillingAccountRequestWithBody(server, accountKey, "application/json", bodyReader)
+}
+
+// NewUpdateBillingAccountRequestWithBody constructs an http.Request for the UpdateBillingAccount method, with any body, and a specified content type
+func NewUpdateBillingAccountRequestWithBody(server string, accountKey AccountKey, contentType string, body io.Reader) (*http.Request, error) {
+	var err error
+
+	var pathParam0 string
+
+	pathParam0, err = runtime.StyleParamWithOptions("simple", false, "accountKey", accountKey, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: ""})
+	if err != nil {
+		return nil, err
+	}
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/account/v1/billing-accounts/%s", pathParam0)
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest(http.MethodPut, queryURL.String(), body)
+	if err != nil {
+		return nil, err
+	}
+
+	req.Header.Add("Content-Type", contentType)
+
+	return req, nil
+}
+
 // NewReadBillingAccountBalanceRequest constructs an http.Request for the ReadBillingAccountBalance method
 func NewReadBillingAccountBalanceRequest(server string, accountKey AccountKey) (*http.Request, error) {
 	var err error
@@ -1492,6 +1856,40 @@ func NewListChargesRequest(server string, accountKey AccountKey) (*http.Request,
 	}
 
 	operationPath := fmt.Sprintf("/account/v1/billing-accounts/%s/charges", pathParam0)
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest(http.MethodGet, queryURL.String(), nil)
+	if err != nil {
+		return nil, err
+	}
+
+	return req, nil
+}
+
+// NewListCreditTransactionsRequest constructs an http.Request for the ListCreditTransactions method
+func NewListCreditTransactionsRequest(server string, accountKey AccountKey) (*http.Request, error) {
+	var err error
+
+	var pathParam0 string
+
+	pathParam0, err = runtime.StyleParamWithOptions("simple", false, "accountKey", accountKey, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: ""})
+	if err != nil {
+		return nil, err
+	}
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/account/v1/billing-accounts/%s/credit-transactions", pathParam0)
 	if operationPath[0] == '/' {
 		operationPath = "." + operationPath
 	}
@@ -1686,6 +2084,47 @@ func NewPurchaseOfferRequest(server string, accountKey AccountKey, offerKey stri
 	return req, nil
 }
 
+// NewUnbindProjectFromBillingAccountRequest constructs an http.Request for the UnbindProjectFromBillingAccount method
+func NewUnbindProjectFromBillingAccountRequest(server string, accountKey AccountKey, projectId openapi_types.UUID) (*http.Request, error) {
+	var err error
+
+	var pathParam0 string
+
+	pathParam0, err = runtime.StyleParamWithOptions("simple", false, "accountKey", accountKey, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: ""})
+	if err != nil {
+		return nil, err
+	}
+
+	var pathParam1 string
+
+	pathParam1, err = runtime.StyleParamWithOptions("simple", false, "projectId", projectId, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: "uuid"})
+	if err != nil {
+		return nil, err
+	}
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/account/v1/billing-accounts/%s/projects/%s", pathParam0, pathParam1)
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest(http.MethodDelete, queryURL.String(), nil)
+	if err != nil {
+		return nil, err
+	}
+
+	return req, nil
+}
+
 // NewBindProjectToBillingAccountRequest constructs an http.Request for the BindProjectToBillingAccount method
 func NewBindProjectToBillingAccountRequest(server string, accountKey AccountKey, projectId openapi_types.UUID) (*http.Request, error) {
 	var err error
@@ -1811,6 +2250,40 @@ func NewCancelSubscriptionRequest(server string, accountKey AccountKey, params *
 	}
 
 	req, err := http.NewRequest(http.MethodPost, queryURL.String(), nil)
+	if err != nil {
+		return nil, err
+	}
+
+	return req, nil
+}
+
+// NewListTopUpsRequest constructs an http.Request for the ListTopUps method
+func NewListTopUpsRequest(server string, accountKey AccountKey) (*http.Request, error) {
+	var err error
+
+	var pathParam0 string
+
+	pathParam0, err = runtime.StyleParamWithOptions("simple", false, "accountKey", accountKey, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: ""})
+	if err != nil {
+		return nil, err
+	}
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/account/v1/billing-accounts/%s/top-ups", pathParam0)
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest(http.MethodGet, queryURL.String(), nil)
 	if err != nil {
 		return nil, err
 	}
@@ -1996,6 +2469,45 @@ type ClientWithResponsesInterface interface {
 	// Corresponds with POST /account/v1/billing-accounts (the `CreateBillingAccount` operationId).
 	CreateBillingAccountWithResponse(ctx context.Context, body CreateBillingAccountJSONRequestBody, reqEditors ...RequestEditorFn) (*CreateBillingAccountResponse, error)
 
+	// GetBillingAccountWithResponse Read one of my billing accounts
+	//
+	// One account, with the projects it currently pays for.
+	//
+	// The list returns the same objects, so this exists for the case the list cannot serve: a link
+	// straight to one account. Making the caller fetch every account and filter turns a bookmarked
+	// page into a request whose cost grows with how many accounts they hold.
+	//
+	// Returns a wrapper object for the known response body format(s).
+	//
+	// Corresponds with GET /account/v1/billing-accounts/{accountKey} (the `GetBillingAccount` operationId).
+	GetBillingAccountWithResponse(ctx context.Context, accountKey AccountKey, reqEditors ...RequestEditorFn) (*GetBillingAccountResponse, error)
+
+	// UpdateBillingAccountWithBodyWithResponse Rename a billing account
+	//
+	// Changes the display name. Nothing else about the account can be changed here.
+	//
+	// The key is not among the fields and never will be: ownership is stated by the key, and
+	// invoices already issued refer to it. The name is what tells two accounts apart in a list, so
+	// a mistake made while creating one is otherwise permanent.
+	//
+	// Takes any type of body and a specified content type, and returns a wrapper object for the known response body format(s).
+	//
+	// Corresponds with PUT /account/v1/billing-accounts/{accountKey} (the `UpdateBillingAccount` operationId).
+	UpdateBillingAccountWithBodyWithResponse(ctx context.Context, accountKey AccountKey, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*UpdateBillingAccountResponse, error)
+
+	// UpdateBillingAccountWithResponse Rename a billing account
+	//
+	// Changes the display name. Nothing else about the account can be changed here.
+	//
+	// The key is not among the fields and never will be: ownership is stated by the key, and
+	// invoices already issued refer to it. The name is what tells two accounts apart in a list, so
+	// a mistake made while creating one is otherwise permanent.
+	//
+	// Takes a body of the `application/json` content type, and returns a wrapper object for the known response body format(s).
+	//
+	// Corresponds with PUT /account/v1/billing-accounts/{accountKey} (the `UpdateBillingAccount` operationId).
+	UpdateBillingAccountWithResponse(ctx context.Context, accountKey AccountKey, body UpdateBillingAccountJSONRequestBody, reqEditors ...RequestEditorFn) (*UpdateBillingAccountResponse, error)
+
 	// ReadBillingAccountBalanceWithResponse Read an account's balance
 	//
 	// What is left on the account.
@@ -2047,6 +2559,20 @@ type ClientWithResponsesInterface interface {
 	//
 	// Corresponds with GET /account/v1/billing-accounts/{accountKey}/charges (the `ListCharges` operationId).
 	ListChargesWithResponse(ctx context.Context, accountKey AccountKey, reqEditors ...RequestEditorFn) (*ListChargesResponse, error)
+
+	// ListCreditTransactionsWithResponse How the balance got to where it is
+	//
+	// Every movement of credit on this account: what was added, what was spent, what expired, what
+	// was voided. Newest first.
+	//
+	// The balance on its own is a number with no account of itself. Asked why it is lower than
+	// expected, it cannot answer, and the holder is left to guess between "I was charged" and
+	// "something expired" — which lead to different next steps.
+	//
+	// Returns a wrapper object for the known response body format(s).
+	//
+	// Corresponds with GET /account/v1/billing-accounts/{accountKey}/credit-transactions (the `ListCreditTransactions` operationId).
+	ListCreditTransactionsWithResponse(ctx context.Context, accountKey AccountKey, reqEditors ...RequestEditorFn) (*ListCreditTransactionsResponse, error)
 
 	// ListInvoicesWithResponse List this account's invoices
 	//
@@ -2123,6 +2649,25 @@ type ClientWithResponsesInterface interface {
 	// Corresponds with POST /account/v1/billing-accounts/{accountKey}/offers/{offerKey}/purchase (the `PurchaseOffer` operationId).
 	PurchaseOfferWithResponse(ctx context.Context, accountKey AccountKey, offerKey string, params *PurchaseOfferParams, reqEditors ...RequestEditorFn) (*PurchaseOfferResponse, error)
 
+	// UnbindProjectFromBillingAccountWithResponse Stop paying for a project
+	//
+	// Unbinds the project from this account. Nothing pays for it afterwards, and **everything in it
+	// is refused admission** until some account takes it on — no new machines, no forwarded
+	// requests.
+	//
+	// That consequence is the reason this exists rather than an argument against it: a project
+	// bound to the wrong account has no other way out, and moving it to another of the caller's
+	// accounts is not a correction when the answer is that this account should not be paying for
+	// it at all.
+	//
+	// Charges already accrued stay where they are. They were incurred while this account held the
+	// project, and an invoice has to keep pointing at what it was based on.
+	//
+	// Returns a wrapper object for the known response body format(s).
+	//
+	// Corresponds with DELETE /account/v1/billing-accounts/{accountKey}/projects/{projectId} (the `UnbindProjectFromBillingAccount` operationId).
+	UnbindProjectFromBillingAccountWithResponse(ctx context.Context, accountKey AccountKey, projectId openapi_types.UUID, reqEditors ...RequestEditorFn) (*UnbindProjectFromBillingAccountResponse, error)
+
 	// BindProjectToBillingAccountWithResponse Make this account pay for a project
 	//
 	// Binds a project to this account. A project bound to another account is moved.
@@ -2177,6 +2722,20 @@ type ClientWithResponsesInterface interface {
 	//
 	// Corresponds with POST /account/v1/billing-accounts/{accountKey}/subscription/cancel (the `CancelSubscription` operationId).
 	CancelSubscriptionWithResponse(ctx context.Context, accountKey AccountKey, params *CancelSubscriptionParams, reqEditors ...RequestEditorFn) (*CancelSubscriptionResponse, error)
+
+	// ListTopUpsWithResponse My top-ups
+	//
+	// Every top-up this account has made, newest first.
+	//
+	// Reading one top-up requires already holding its identifier, and the only place that
+	// identifier appears is the redirect that started it — so without this list a top-up becomes
+	// unfindable the moment the browser tab is closed, which is exactly when somebody wants to
+	// check whether their money arrived.
+	//
+	// Returns a wrapper object for the known response body format(s).
+	//
+	// Corresponds with GET /account/v1/billing-accounts/{accountKey}/top-ups (the `ListTopUps` operationId).
+	ListTopUpsWithResponse(ctx context.Context, accountKey AccountKey, reqEditors ...RequestEditorFn) (*ListTopUpsResponse, error)
 
 	// StartTopUpWithBodyWithResponse Start a top-up
 	//
@@ -2335,6 +2894,102 @@ func (r CreateBillingAccountResponse) ContentType() string {
 	return ""
 }
 
+type GetBillingAccountResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	// JSON200 the response for an HTTP 200 `application/json` response
+	JSON200 *BillingAccount
+	// JSONDefault the response for an HTTP default `application/json` response
+	JSONDefault *Error
+}
+
+// GetJSON200 returns the response for an HTTP 200 `application/json` response
+func (r GetBillingAccountResponse) GetJSON200() *BillingAccount {
+	return r.JSON200
+}
+
+// GetJSONDefault returns the response for an HTTP default `application/json` response
+func (r GetBillingAccountResponse) GetJSONDefault() *Error {
+	return r.JSONDefault
+}
+
+// GetBody returns the raw response body bytes
+func (r GetBillingAccountResponse) GetBody() []byte {
+	return r.Body
+}
+
+// Status returns HTTPResponse.Status
+func (r GetBillingAccountResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r GetBillingAccountResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+// ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
+func (r GetBillingAccountResponse) ContentType() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Header.Get("Content-Type")
+	}
+	return ""
+}
+
+type UpdateBillingAccountResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	// JSON200 the response for an HTTP 200 `application/json` response
+	JSON200 *BillingAccount
+	// JSONDefault the response for an HTTP default `application/json` response
+	JSONDefault *Error
+}
+
+// GetJSON200 returns the response for an HTTP 200 `application/json` response
+func (r UpdateBillingAccountResponse) GetJSON200() *BillingAccount {
+	return r.JSON200
+}
+
+// GetJSONDefault returns the response for an HTTP default `application/json` response
+func (r UpdateBillingAccountResponse) GetJSONDefault() *Error {
+	return r.JSONDefault
+}
+
+// GetBody returns the raw response body bytes
+func (r UpdateBillingAccountResponse) GetBody() []byte {
+	return r.Body
+}
+
+// Status returns HTTPResponse.Status
+func (r UpdateBillingAccountResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r UpdateBillingAccountResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+// ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
+func (r UpdateBillingAccountResponse) ContentType() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Header.Get("Content-Type")
+	}
+	return ""
+}
+
 type ReadBillingAccountBalanceResponse struct {
 	Body         []byte
 	HTTPResponse *http.Response
@@ -2473,6 +3128,54 @@ func (r ListChargesResponse) StatusCode() int {
 
 // ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
 func (r ListChargesResponse) ContentType() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Header.Get("Content-Type")
+	}
+	return ""
+}
+
+type ListCreditTransactionsResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	// JSON200 the response for an HTTP 200 `application/json` response
+	JSON200 *CreditTransactionList
+	// JSONDefault the response for an HTTP default `application/json` response
+	JSONDefault *Error
+}
+
+// GetJSON200 returns the response for an HTTP 200 `application/json` response
+func (r ListCreditTransactionsResponse) GetJSON200() *CreditTransactionList {
+	return r.JSON200
+}
+
+// GetJSONDefault returns the response for an HTTP default `application/json` response
+func (r ListCreditTransactionsResponse) GetJSONDefault() *Error {
+	return r.JSONDefault
+}
+
+// GetBody returns the raw response body bytes
+func (r ListCreditTransactionsResponse) GetBody() []byte {
+	return r.Body
+}
+
+// Status returns HTTPResponse.Status
+func (r ListCreditTransactionsResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r ListCreditTransactionsResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+// ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
+func (r ListCreditTransactionsResponse) ContentType() string {
 	if r.HTTPResponse != nil {
 		return r.HTTPResponse.Header.Get("Content-Type")
 	}
@@ -2671,6 +3374,47 @@ func (r PurchaseOfferResponse) ContentType() string {
 	return ""
 }
 
+type UnbindProjectFromBillingAccountResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	// JSONDefault the response for an HTTP default `application/json` response
+	JSONDefault *Error
+}
+
+// GetJSONDefault returns the response for an HTTP default `application/json` response
+func (r UnbindProjectFromBillingAccountResponse) GetJSONDefault() *Error {
+	return r.JSONDefault
+}
+
+// GetBody returns the raw response body bytes
+func (r UnbindProjectFromBillingAccountResponse) GetBody() []byte {
+	return r.Body
+}
+
+// Status returns HTTPResponse.Status
+func (r UnbindProjectFromBillingAccountResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r UnbindProjectFromBillingAccountResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+// ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
+func (r UnbindProjectFromBillingAccountResponse) ContentType() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Header.Get("Content-Type")
+	}
+	return ""
+}
+
 type BindProjectToBillingAccountResponse struct {
 	Body         []byte
 	HTTPResponse *http.Response
@@ -2809,6 +3553,54 @@ func (r CancelSubscriptionResponse) StatusCode() int {
 
 // ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
 func (r CancelSubscriptionResponse) ContentType() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Header.Get("Content-Type")
+	}
+	return ""
+}
+
+type ListTopUpsResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	// JSON200 the response for an HTTP 200 `application/json` response
+	JSON200 *TopUpList
+	// JSONDefault the response for an HTTP default `application/json` response
+	JSONDefault *Error
+}
+
+// GetJSON200 returns the response for an HTTP 200 `application/json` response
+func (r ListTopUpsResponse) GetJSON200() *TopUpList {
+	return r.JSON200
+}
+
+// GetJSONDefault returns the response for an HTTP default `application/json` response
+func (r ListTopUpsResponse) GetJSONDefault() *Error {
+	return r.JSONDefault
+}
+
+// GetBody returns the raw response body bytes
+func (r ListTopUpsResponse) GetBody() []byte {
+	return r.Body
+}
+
+// Status returns HTTPResponse.Status
+func (r ListTopUpsResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r ListTopUpsResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+// ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
+func (r ListTopUpsResponse) ContentType() string {
 	if r.HTTPResponse != nil {
 		return r.HTTPResponse.Header.Get("Content-Type")
 	}
@@ -2975,6 +3767,63 @@ func (c *ClientWithResponses) CreateBillingAccountWithResponse(ctx context.Conte
 	return ParseCreateBillingAccountResponse(rsp)
 }
 
+// GetBillingAccountWithResponse Read one of my billing accounts
+//
+// One account, with the projects it currently pays for.
+//
+// The list returns the same objects, so this exists for the case the list cannot serve: a link
+// straight to one account. Making the caller fetch every account and filter turns a bookmarked
+// page into a request whose cost grows with how many accounts they hold.
+//
+// Returns a wrapper object for the known response body format(s).
+//
+// Corresponds with GET /account/v1/billing-accounts/{accountKey} (the `GetBillingAccount` operationId).
+func (c *ClientWithResponses) GetBillingAccountWithResponse(ctx context.Context, accountKey AccountKey, reqEditors ...RequestEditorFn) (*GetBillingAccountResponse, error) {
+	rsp, err := c.GetBillingAccount(ctx, accountKey, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseGetBillingAccountResponse(rsp)
+}
+
+// UpdateBillingAccountWithBodyWithResponse Rename a billing account
+//
+// Changes the display name. Nothing else about the account can be changed here.
+//
+// The key is not among the fields and never will be: ownership is stated by the key, and
+// invoices already issued refer to it. The name is what tells two accounts apart in a list, so
+// a mistake made while creating one is otherwise permanent.
+//
+// Takes any type of body and a specified content type, and returns a wrapper object for the known response body format(s).
+//
+// Corresponds with PUT /account/v1/billing-accounts/{accountKey} (the `UpdateBillingAccount` operationId).
+func (c *ClientWithResponses) UpdateBillingAccountWithBodyWithResponse(ctx context.Context, accountKey AccountKey, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*UpdateBillingAccountResponse, error) {
+	rsp, err := c.UpdateBillingAccountWithBody(ctx, accountKey, contentType, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseUpdateBillingAccountResponse(rsp)
+}
+
+// UpdateBillingAccountWithResponse Rename a billing account
+//
+// Changes the display name. Nothing else about the account can be changed here.
+//
+// The key is not among the fields and never will be: ownership is stated by the key, and
+// invoices already issued refer to it. The name is what tells two accounts apart in a list, so
+// a mistake made while creating one is otherwise permanent.
+//
+// Takes a body of the `application/json` content type, and returns a wrapper object for the known response body format(s).
+//
+// Corresponds with PUT /account/v1/billing-accounts/{accountKey} (the `UpdateBillingAccount` operationId).
+func (c *ClientWithResponses) UpdateBillingAccountWithResponse(ctx context.Context, accountKey AccountKey, body UpdateBillingAccountJSONRequestBody, reqEditors ...RequestEditorFn) (*UpdateBillingAccountResponse, error) {
+	rsp, err := c.UpdateBillingAccount(ctx, accountKey, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseUpdateBillingAccountResponse(rsp)
+}
+
 // ReadBillingAccountBalanceWithResponse Read an account's balance
 //
 // What is left on the account.
@@ -3043,6 +3892,26 @@ func (c *ClientWithResponses) ListChargesWithResponse(ctx context.Context, accou
 		return nil, err
 	}
 	return ParseListChargesResponse(rsp)
+}
+
+// ListCreditTransactionsWithResponse How the balance got to where it is
+//
+// Every movement of credit on this account: what was added, what was spent, what expired, what
+// was voided. Newest first.
+//
+// The balance on its own is a number with no account of itself. Asked why it is lower than
+// expected, it cannot answer, and the holder is left to guess between "I was charged" and
+// "something expired" — which lead to different next steps.
+//
+// Returns a wrapper object for the known response body format(s).
+//
+// Corresponds with GET /account/v1/billing-accounts/{accountKey}/credit-transactions (the `ListCreditTransactions` operationId).
+func (c *ClientWithResponses) ListCreditTransactionsWithResponse(ctx context.Context, accountKey AccountKey, reqEditors ...RequestEditorFn) (*ListCreditTransactionsResponse, error) {
+	rsp, err := c.ListCreditTransactions(ctx, accountKey, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseListCreditTransactionsResponse(rsp)
 }
 
 // ListInvoicesWithResponse List this account's invoices
@@ -3144,6 +4013,31 @@ func (c *ClientWithResponses) PurchaseOfferWithResponse(ctx context.Context, acc
 	return ParsePurchaseOfferResponse(rsp)
 }
 
+// UnbindProjectFromBillingAccountWithResponse Stop paying for a project
+//
+// Unbinds the project from this account. Nothing pays for it afterwards, and **everything in it
+// is refused admission** until some account takes it on — no new machines, no forwarded
+// requests.
+//
+// That consequence is the reason this exists rather than an argument against it: a project
+// bound to the wrong account has no other way out, and moving it to another of the caller's
+// accounts is not a correction when the answer is that this account should not be paying for
+// it at all.
+//
+// Charges already accrued stay where they are. They were incurred while this account held the
+// project, and an invoice has to keep pointing at what it was based on.
+//
+// Returns a wrapper object for the known response body format(s).
+//
+// Corresponds with DELETE /account/v1/billing-accounts/{accountKey}/projects/{projectId} (the `UnbindProjectFromBillingAccount` operationId).
+func (c *ClientWithResponses) UnbindProjectFromBillingAccountWithResponse(ctx context.Context, accountKey AccountKey, projectId openapi_types.UUID, reqEditors ...RequestEditorFn) (*UnbindProjectFromBillingAccountResponse, error) {
+	rsp, err := c.UnbindProjectFromBillingAccount(ctx, accountKey, projectId, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseUnbindProjectFromBillingAccountResponse(rsp)
+}
+
 // BindProjectToBillingAccountWithResponse Make this account pay for a project
 //
 // Binds a project to this account. A project bound to another account is moved.
@@ -3215,6 +4109,26 @@ func (c *ClientWithResponses) CancelSubscriptionWithResponse(ctx context.Context
 		return nil, err
 	}
 	return ParseCancelSubscriptionResponse(rsp)
+}
+
+// ListTopUpsWithResponse My top-ups
+//
+// Every top-up this account has made, newest first.
+//
+// Reading one top-up requires already holding its identifier, and the only place that
+// identifier appears is the redirect that started it — so without this list a top-up becomes
+// unfindable the moment the browser tab is closed, which is exactly when somebody wants to
+// check whether their money arrived.
+//
+// Returns a wrapper object for the known response body format(s).
+//
+// Corresponds with GET /account/v1/billing-accounts/{accountKey}/top-ups (the `ListTopUps` operationId).
+func (c *ClientWithResponses) ListTopUpsWithResponse(ctx context.Context, accountKey AccountKey, reqEditors ...RequestEditorFn) (*ListTopUpsResponse, error) {
+	rsp, err := c.ListTopUps(ctx, accountKey, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseListTopUpsResponse(rsp)
 }
 
 // StartTopUpWithBodyWithResponse Start a top-up
@@ -3361,6 +4275,72 @@ func ParseCreateBillingAccountResponse(rsp *http.Response) (*CreateBillingAccoun
 	return response, nil
 }
 
+// ParseGetBillingAccountResponse parses an HTTP response from a GetBillingAccountWithResponse call
+func ParseGetBillingAccountResponse(rsp *http.Response) (*GetBillingAccountResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &GetBillingAccountResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest BillingAccount
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && true:
+		var dest Error
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSONDefault = &dest
+
+	}
+
+	return response, nil
+}
+
+// ParseUpdateBillingAccountResponse parses an HTTP response from a UpdateBillingAccountWithResponse call
+func ParseUpdateBillingAccountResponse(rsp *http.Response) (*UpdateBillingAccountResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &UpdateBillingAccountResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest BillingAccount
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && true:
+		var dest Error
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSONDefault = &dest
+
+	}
+
+	return response, nil
+}
+
 // ParseReadBillingAccountBalanceResponse parses an HTTP response from a ReadBillingAccountBalanceWithResponse call
 func ParseReadBillingAccountBalanceResponse(rsp *http.Response) (*ReadBillingAccountBalanceResponse, error) {
 	bodyBytes, err := io.ReadAll(rsp.Body)
@@ -3443,6 +4423,39 @@ func ParseListChargesResponse(rsp *http.Response) (*ListChargesResponse, error) 
 	switch {
 	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
 		var dest ChargeList
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && true:
+		var dest Error
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSONDefault = &dest
+
+	}
+
+	return response, nil
+}
+
+// ParseListCreditTransactionsResponse parses an HTTP response from a ListCreditTransactionsWithResponse call
+func ParseListCreditTransactionsResponse(rsp *http.Response) (*ListCreditTransactionsResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &ListCreditTransactionsResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest CreditTransactionList
 		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
 			return nil, err
 		}
@@ -3592,6 +4605,35 @@ func ParsePurchaseOfferResponse(rsp *http.Response) (*PurchaseOfferResponse, err
 	return response, nil
 }
 
+// ParseUnbindProjectFromBillingAccountResponse parses an HTTP response from a UnbindProjectFromBillingAccountWithResponse call
+func ParseUnbindProjectFromBillingAccountResponse(rsp *http.Response) (*UnbindProjectFromBillingAccountResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &UnbindProjectFromBillingAccountResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case rsp.StatusCode == 204:
+		break // No content-type
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && true:
+		var dest Error
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSONDefault = &dest
+
+	}
+
+	return response, nil
+}
+
 // ParseBindProjectToBillingAccountResponse parses an HTTP response from a BindProjectToBillingAccountWithResponse call
 func ParseBindProjectToBillingAccountResponse(rsp *http.Response) (*BindProjectToBillingAccountResponse, error) {
 	bodyBytes, err := io.ReadAll(rsp.Body)
@@ -3674,6 +4716,39 @@ func ParseCancelSubscriptionResponse(rsp *http.Response) (*CancelSubscriptionRes
 	switch {
 	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
 		var dest Subscription
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && true:
+		var dest Error
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSONDefault = &dest
+
+	}
+
+	return response, nil
+}
+
+// ParseListTopUpsResponse parses an HTTP response from a ListTopUpsWithResponse call
+func ParseListTopUpsResponse(rsp *http.Response) (*ListTopUpsResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &ListTopUpsResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest TopUpList
 		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
 			return nil, err
 		}
