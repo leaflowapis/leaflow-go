@@ -994,6 +994,42 @@ func (e TemplateBindingRequestTemplateKey) Valid() bool {
 	}
 }
 
+// Defines values for TemplateCatalogParameterResourceKind.
+const (
+	Host           TemplateCatalogParameterResourceKind = "host"
+	IpOrEmpty      TemplateCatalogParameterResourceKind = "ip_or_empty"
+	NonEmptyString TemplateCatalogParameterResourceKind = "non_empty_string"
+	Percent        TemplateCatalogParameterResourceKind = "percent"
+	Port           TemplateCatalogParameterResourceKind = "port"
+	PositiveNumber TemplateCatalogParameterResourceKind = "positive_number"
+	Regexp         TemplateCatalogParameterResourceKind = "regexp"
+	String         TemplateCatalogParameterResourceKind = "string"
+)
+
+// Valid indicates whether the value is a known member of the TemplateCatalogParameterResourceKind enum.
+func (e TemplateCatalogParameterResourceKind) Valid() bool {
+	switch e {
+	case Host:
+		return true
+	case IpOrEmpty:
+		return true
+	case NonEmptyString:
+		return true
+	case Percent:
+		return true
+	case Port:
+		return true
+	case PositiveNumber:
+		return true
+	case Regexp:
+		return true
+	case String:
+		return true
+	default:
+		return false
+	}
+}
+
 // Defines values for UpdateServerRequestBodyAddressKind.
 const (
 	UpdateServerRequestBodyAddressKindDns UpdateServerRequestBodyAddressKind = "dns"
@@ -2179,13 +2215,78 @@ type TagResource struct {
 
 // TemplateBindingRequest defines model for TemplateBindingRequest.
 type TemplateBindingRequest struct {
-	// Parameters Parameters declared by the template. Secret parameters are supplied in clear text and returned by name only
+	// Parameters Parameters declared by the template, keyed by `name` from `GET /templates`. This is a full replacement: a parameter that is omitted takes the `default` reported there, so send back the whole `parameters` map read from the machine rather than only the field being changed.
+	//
+	// Secret parameters are the one exception, because they are never returned and so cannot be sent back. Omit one to keep the value already stored, and supply it only to replace it. An empty or blank value counts as omitted.
 	Parameters  map[string]string                 `json:"parameters,omitempty"`
 	TemplateKey TemplateBindingRequestTemplateKey `json:"template_key"`
 }
 
 // TemplateBindingRequestTemplateKey defines model for TemplateBindingRequest.TemplateKey.
 type TemplateBindingRequestTemplateKey string
+
+// TemplateCatalogEntryResource defines model for TemplateCatalogEntryResource.
+type TemplateCatalogEntryResource struct {
+	// IsBase Exactly one template with this set must be bound to every machine. Binding none enrolls a machine that can never alert; binding both loads the Linux and Windows items onto one machine, half of which must fail
+	IsBase bool `json:"is_base"`
+
+	// NeedsAgent False means the template collects without an agent on the machine — ICMP_PING is pinged by the Zabbix server, PROXMOX_VE is polled over the PVE API
+	NeedsAgent bool `json:"needs_agent"`
+
+	// Parameters In declaration order — connection parameters first, thresholds after — and meant to be rendered in that order. It is deliberately not alphabetical, which would split a template's connection parameters apart with thresholds between them even though they only make sense filled in together
+	Parameters []TemplateCatalogParameterResource `json:"parameters"`
+
+	// Requires Templates that must be bound alongside this one. Values are `template_key`s
+	Requires []string `json:"requires"`
+
+	// SupportsActiveMode Whether this template may be bound when `agent_mode` is ACTIVE. It already combines both reasons it may not be — no active variant exists, or this deployment does not have one installed — because the two are rejected identically and call for the same fix
+	SupportsActiveMode bool   `json:"supports_active_mode"`
+	TemplateKey        string `json:"template_key"`
+}
+
+// TemplateCatalogParameterResource defines model for TemplateCatalogParameterResource.
+type TemplateCatalogParameterResource struct {
+	// Default The value that takes effect when the parameter is omitted. An empty string is a real default, not an absent one
+	Default string `json:"default"`
+
+	// Kind The shape of the accepted value. Surrounding whitespace is trimmed before the value is checked, and an omitted or empty value is replaced by `default` and not checked at all.
+	//
+	// - `string` — no constraint; empty is accepted
+	// - `non_empty_string` — must not be empty once trimmed
+	// - `percent` — a number in the **closed** interval 0 to 100; fractions are accepted
+	// - `positive_number` — a number **strictly** greater than 0; fractions are accepted
+	// - `port` — an integer from 1 to 65535 inclusive; `8080/tcp` is not a port
+	// - `host` — an IP address, or a hostname of at most 255 characters whose dot-separated labels are at most 63 characters of `A-Z a-z 0-9 - _` and neither begin nor end with `-`. A single label such as `localhost` is accepted, as is a trailing dot
+	// - `ip_or_empty` — an IP address, or empty to mean "not specified"
+	// - `regexp` — must compile as a **Go RE2** pattern. RE2 has no backreferences and no lookaround, so a pattern that a browser's `new RegExp()` accepts may still be rejected here. Validating client-side narrows the gap but does not close it
+	Kind TemplateCatalogParameterResourceKind `json:"kind"`
+
+	// Name The key to use in `template_bindings[].parameters`. It is not the Zabbix macro name, which is internal and changes between Zabbix versions
+	Name string `json:"name"`
+
+	// Required Independent of `default`. The three NGINX connection parameters carry a default and are still required, because the template's own default (localhost:80/basic_status) is almost never right
+	Required bool `json:"required"`
+
+	// Secret Supplied in clear text and never returned. A configured one is reported by name only, through `configured_secret_parameters` on the bound template. When updating a machine that already has one stored, omit it to keep the stored value and supply it only to replace it — a caller cannot read it back, so requiring it on every write would make resuming collection impossible
+	Secret bool `json:"secret"`
+}
+
+// TemplateCatalogParameterResourceKind The shape of the accepted value. Surrounding whitespace is trimmed before the value is checked, and an omitted or empty value is replaced by `default` and not checked at all.
+//
+// - `string` — no constraint; empty is accepted
+// - `non_empty_string` — must not be empty once trimmed
+// - `percent` — a number in the **closed** interval 0 to 100; fractions are accepted
+// - `positive_number` — a number **strictly** greater than 0; fractions are accepted
+// - `port` — an integer from 1 to 65535 inclusive; `8080/tcp` is not a port
+// - `host` — an IP address, or a hostname of at most 255 characters whose dot-separated labels are at most 63 characters of `A-Z a-z 0-9 - _` and neither begin nor end with `-`. A single label such as `localhost` is accepted, as is a trailing dot
+// - `ip_or_empty` — an IP address, or empty to mean "not specified"
+// - `regexp` — must compile as a **Go RE2** pattern. RE2 has no backreferences and no lookaround, so a pattern that a browser's `new RegExp()` accepts may still be rejected here. Validating client-side narrows the gap but does not close it
+type TemplateCatalogParameterResourceKind string
+
+// TemplateCatalogResponseBody defines model for TemplateCatalogResponseBody.
+type TemplateCatalogResponseBody struct {
+	Items []TemplateCatalogEntryResource `json:"items"`
+}
 
 // TopItemListResponseBody defines model for TopItemListResponseBody.
 type TopItemListResponseBody struct {
@@ -2769,6 +2870,8 @@ type ClientInterface interface {
 	//
 	// The `tls_psk` in the response is **returned only this once**; store it immediately. If it is lost, it must be rotated.
 	//
+	// It is also how collection is resumed after `/disable`. On a machine that already exists, **omitting `template_bindings` keeps the bindings it already has**; it does not fall back to the default of Linux alone, which would silently drop every other template together with its parameters. Secret parameters are likewise carried over — see `parameters` on the binding.
+	//
 	// Takes any type of body and a specified content type.
 	//
 	// Corresponds with PUT /api/v1/servers/{serverId} (the `EnableServerMonitoring` operationId).
@@ -2783,6 +2886,8 @@ type ClientInterface interface {
 	// A failed call leaves the machine recorded with `monitoring_status: FAILED`; the reason is reported in `last_error` via `GET /servers/{serverId}`.
 	//
 	// The `tls_psk` in the response is **returned only this once**; store it immediately. If it is lost, it must be rotated.
+	//
+	// It is also how collection is resumed after `/disable`. On a machine that already exists, **omitting `template_bindings` keeps the bindings it already has**; it does not fall back to the default of Linux alone, which would silently drop every other template together with its parameters. Secret parameters are likewise carried over — see `parameters` on the binding.
 	//
 	// Takes a body of the `application/json` content type.
 	//
@@ -3265,6 +3370,13 @@ type ClientInterface interface {
 	//
 	// Corresponds with PUT /api/v1/status-page/order (the `PutStatusPageOrder` operationId).
 	PutStatusPageOrder(ctx context.Context, body PutStatusPageOrderJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// ListTemplates List the monitoring templates that can be bound to a machine
+	//
+	// The catalog every template binding is validated against — which templates exist, which parameters each of them accepts, and what each parameter defaults to. It is identical for every project and changes only when this deployment is upgraded. Read it rather than keeping a copy. A copy drifts, and only one of the ways it drifts fails loudly — an unknown parameter name is rejected, but a stale `default` and a stale `required` both look correct on screen.
+	//
+	// Corresponds with GET /api/v1/templates (the `ListTemplates` operationId).
+	ListTemplates(ctx context.Context, reqEditors ...RequestEditorFn) (*http.Response, error)
 
 	// ListProjectTopItems Machines ranked highest by a given metric
 	//
@@ -3770,6 +3882,8 @@ func (c *Client) UpdateServer(ctx context.Context, serverId openapi_types.UUID, 
 //
 // The `tls_psk` in the response is **returned only this once**; store it immediately. If it is lost, it must be rotated.
 //
+// It is also how collection is resumed after `/disable`. On a machine that already exists, **omitting `template_bindings` keeps the bindings it already has**; it does not fall back to the default of Linux alone, which would silently drop every other template together with its parameters. Secret parameters are likewise carried over — see `parameters` on the binding.
+//
 // Takes any type of body and a specified content type.
 //
 // Corresponds with PUT /api/v1/servers/{serverId} (the `EnableServerMonitoring` operationId).
@@ -3794,6 +3908,8 @@ func (c *Client) EnableServerMonitoringWithBody(ctx context.Context, serverId op
 // A failed call leaves the machine recorded with `monitoring_status: FAILED`; the reason is reported in `last_error` via `GET /servers/{serverId}`.
 //
 // The `tls_psk` in the response is **returned only this once**; store it immediately. If it is lost, it must be rotated.
+//
+// It is also how collection is resumed after `/disable`. On a machine that already exists, **omitting `template_bindings` keeps the bindings it already has**; it does not fall back to the default of Linux alone, which would silently drop every other template together with its parameters. Secret parameters are likewise carried over — see `parameters` on the binding.
 //
 // Takes a body of the `application/json` content type.
 //
@@ -4827,6 +4943,23 @@ func (c *Client) PutStatusPageOrderWithBody(ctx context.Context, contentType str
 // Corresponds with PUT /api/v1/status-page/order (the `PutStatusPageOrder` operationId).
 func (c *Client) PutStatusPageOrder(ctx context.Context, body PutStatusPageOrderJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
 	req, err := NewPutStatusPageOrderRequest(c.Server, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+// ListTemplates List the monitoring templates that can be bound to a machine
+//
+// The catalog every template binding is validated against — which templates exist, which parameters each of them accepts, and what each parameter defaults to. It is identical for every project and changes only when this deployment is upgraded. Read it rather than keeping a copy. A copy drifts, and only one of the ways it drifts fails loudly — an unknown parameter name is rejected, but a stale `default` and a stale `required` both look correct on screen.
+//
+// Corresponds with GET /api/v1/templates (the `ListTemplates` operationId).
+func (c *Client) ListTemplates(ctx context.Context, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewListTemplatesRequest(c.Server)
 	if err != nil {
 		return nil, err
 	}
@@ -7695,6 +7828,33 @@ func NewPutStatusPageOrderRequestWithBody(server string, contentType string, bod
 	return req, nil
 }
 
+// NewListTemplatesRequest constructs an http.Request for the ListTemplates method
+func NewListTemplatesRequest(server string) (*http.Request, error) {
+	var err error
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/api/v1/templates")
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest(http.MethodGet, queryURL.String(), nil)
+	if err != nil {
+		return nil, err
+	}
+
+	return req, nil
+}
+
 // NewListProjectTopItemsRequest constructs an http.Request for the ListProjectTopItems method
 func NewListProjectTopItemsRequest(server string, params *ListProjectTopItemsParams) (*http.Request, error) {
 	var err error
@@ -8197,6 +8357,8 @@ type ClientWithResponsesInterface interface {
 	//
 	// The `tls_psk` in the response is **returned only this once**; store it immediately. If it is lost, it must be rotated.
 	//
+	// It is also how collection is resumed after `/disable`. On a machine that already exists, **omitting `template_bindings` keeps the bindings it already has**; it does not fall back to the default of Linux alone, which would silently drop every other template together with its parameters. Secret parameters are likewise carried over — see `parameters` on the binding.
+	//
 	// Takes any type of body and a specified content type, and returns a wrapper object for the known response body format(s).
 	//
 	// Corresponds with PUT /api/v1/servers/{serverId} (the `EnableServerMonitoring` operationId).
@@ -8211,6 +8373,8 @@ type ClientWithResponsesInterface interface {
 	// A failed call leaves the machine recorded with `monitoring_status: FAILED`; the reason is reported in `last_error` via `GET /servers/{serverId}`.
 	//
 	// The `tls_psk` in the response is **returned only this once**; store it immediately. If it is lost, it must be rotated.
+	//
+	// It is also how collection is resumed after `/disable`. On a machine that already exists, **omitting `template_bindings` keeps the bindings it already has**; it does not fall back to the default of Linux alone, which would silently drop every other template together with its parameters. Secret parameters are likewise carried over — see `parameters` on the binding.
 	//
 	// Takes a body of the `application/json` content type, and returns a wrapper object for the known response body format(s).
 	//
@@ -8747,6 +8911,15 @@ type ClientWithResponsesInterface interface {
 	//
 	// Corresponds with PUT /api/v1/status-page/order (the `PutStatusPageOrder` operationId).
 	PutStatusPageOrderWithResponse(ctx context.Context, body PutStatusPageOrderJSONRequestBody, reqEditors ...RequestEditorFn) (*PutStatusPageOrderResponse, error)
+
+	// ListTemplatesWithResponse List the monitoring templates that can be bound to a machine
+	//
+	// The catalog every template binding is validated against — which templates exist, which parameters each of them accepts, and what each parameter defaults to. It is identical for every project and changes only when this deployment is upgraded. Read it rather than keeping a copy. A copy drifts, and only one of the ways it drifts fails loudly — an unknown parameter name is rejected, but a stale `default` and a stale `required` both look correct on screen.
+	//
+	// Returns a wrapper object for the known response body format(s).
+	//
+	// Corresponds with GET /api/v1/templates (the `ListTemplates` operationId).
+	ListTemplatesWithResponse(ctx context.Context, reqEditors ...RequestEditorFn) (*ListTemplatesResponse, error)
 
 	// ListProjectTopItemsWithResponse Machines ranked highest by a given metric
 	//
@@ -11608,6 +11781,54 @@ func (r PutStatusPageOrderResponse) ContentType() string {
 	return ""
 }
 
+type ListTemplatesResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	// JSON200 the response for an HTTP 200 `application/json` response
+	JSON200 *TemplateCatalogResponseBody
+	// JSONDefault the response for an HTTP default `application/json` response
+	JSONDefault *Error
+}
+
+// GetJSON200 returns the response for an HTTP 200 `application/json` response
+func (r ListTemplatesResponse) GetJSON200() *TemplateCatalogResponseBody {
+	return r.JSON200
+}
+
+// GetJSONDefault returns the response for an HTTP default `application/json` response
+func (r ListTemplatesResponse) GetJSONDefault() *Error {
+	return r.JSONDefault
+}
+
+// GetBody returns the raw response body bytes
+func (r ListTemplatesResponse) GetBody() []byte {
+	return r.Body
+}
+
+// Status returns HTTPResponse.Status
+func (r ListTemplatesResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r ListTemplatesResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+// ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
+func (r ListTemplatesResponse) ContentType() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Header.Get("Content-Type")
+	}
+	return ""
+}
+
 type ListProjectTopItemsResponse struct {
 	Body         []byte
 	HTTPResponse *http.Response
@@ -12218,6 +12439,8 @@ func (c *ClientWithResponses) UpdateServerWithResponse(ctx context.Context, serv
 //
 // The `tls_psk` in the response is **returned only this once**; store it immediately. If it is lost, it must be rotated.
 //
+// It is also how collection is resumed after `/disable`. On a machine that already exists, **omitting `template_bindings` keeps the bindings it already has**; it does not fall back to the default of Linux alone, which would silently drop every other template together with its parameters. Secret parameters are likewise carried over — see `parameters` on the binding.
+//
 // Takes any type of body and a specified content type, and returns a wrapper object for the known response body format(s).
 //
 // Corresponds with PUT /api/v1/servers/{serverId} (the `EnableServerMonitoring` operationId).
@@ -12238,6 +12461,8 @@ func (c *ClientWithResponses) EnableServerMonitoringWithBodyWithResponse(ctx con
 // A failed call leaves the machine recorded with `monitoring_status: FAILED`; the reason is reported in `last_error` via `GET /servers/{serverId}`.
 //
 // The `tls_psk` in the response is **returned only this once**; store it immediately. If it is lost, it must be rotated.
+//
+// It is also how collection is resumed after `/disable`. On a machine that already exists, **omitting `template_bindings` keeps the bindings it already has**; it does not fall back to the default of Linux alone, which would silently drop every other template together with its parameters. Secret parameters are likewise carried over — see `parameters` on the binding.
 //
 // Takes a body of the `application/json` content type, and returns a wrapper object for the known response body format(s).
 //
@@ -13109,6 +13334,21 @@ func (c *ClientWithResponses) PutStatusPageOrderWithResponse(ctx context.Context
 		return nil, err
 	}
 	return ParsePutStatusPageOrderResponse(rsp)
+}
+
+// ListTemplatesWithResponse List the monitoring templates that can be bound to a machine
+//
+// The catalog every template binding is validated against — which templates exist, which parameters each of them accepts, and what each parameter defaults to. It is identical for every project and changes only when this deployment is upgraded. Read it rather than keeping a copy. A copy drifts, and only one of the ways it drifts fails loudly — an unknown parameter name is rejected, but a stale `default` and a stale `required` both look correct on screen.
+//
+// Returns a wrapper object for the known response body format(s).
+//
+// Corresponds with GET /api/v1/templates (the `ListTemplates` operationId).
+func (c *ClientWithResponses) ListTemplatesWithResponse(ctx context.Context, reqEditors ...RequestEditorFn) (*ListTemplatesResponse, error) {
+	rsp, err := c.ListTemplates(ctx, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseListTemplatesResponse(rsp)
 }
 
 // ListProjectTopItemsWithResponse Machines ranked highest by a given metric
@@ -15126,6 +15366,39 @@ func ParsePutStatusPageOrderResponse(rsp *http.Response) (*PutStatusPageOrderRes
 	switch {
 	case rsp.StatusCode == 204:
 		break // No content-type
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && true:
+		var dest Error
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSONDefault = &dest
+
+	}
+
+	return response, nil
+}
+
+// ParseListTemplatesResponse parses an HTTP response from a ListTemplatesWithResponse call
+func ParseListTemplatesResponse(rsp *http.Response) (*ListTemplatesResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &ListTemplatesResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest TemplateCatalogResponseBody
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
 
 	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && true:
 		var dest Error

@@ -83,6 +83,7 @@ var operationRolesBearerAuth = map[string][]string{
 	ListStatusPageGroupsOperation:           []string{},
 	ListStatusPageIncidentsOperation:        []string{},
 	ListStatusPageMaintenancesOperation:     []string{},
+	ListTemplatesOperation:                  []string{},
 	ListWebChecksOperation:                  []string{},
 	PostStatusPageIncidentUpdateOperation:   []string{},
 	PublishStatusPageIncidentOperation:      []string{},

@@ -210,6 +210,11 @@ func (UnimplementedHandler) DisableServerMonitoring(ctx context.Context, params 
 // The `tls_psk` in the response is returned only this once; store it immediately. If it is lost, it
 // must be rotated.
 //
+// It is also how collection is resumed after `/disable`. On a machine that already exists, omitting
+// `template_bindings` keeps the bindings it already has; it does not fall back to the default of Linux
+// alone, which would silently drop every other template together with its parameters. Secret
+// parameters are likewise carried over — see `parameters` on the binding.
+//
 // PUT /api/v1/servers/{serverId}
 func (UnimplementedHandler) EnableServerMonitoring(ctx context.Context, req *EnableMonitoringRequestBody, params EnableServerMonitoringParams) (r *ServerEnrollmentResponseBody, _ error) {
 	return r, ht.ErrNotImplemented
@@ -470,6 +475,19 @@ func (UnimplementedHandler) ListStatusPageIncidents(ctx context.Context, params 
 //
 // GET /api/v1/status-page/maintenances
 func (UnimplementedHandler) ListStatusPageMaintenances(ctx context.Context, params ListStatusPageMaintenancesParams) (r *LengthAwarePageStatusPageMaintenanceResource, _ error) {
+	return r, ht.ErrNotImplemented
+}
+
+// ListTemplates implements list-templates operation.
+//
+// The catalog every template binding is validated against — which templates exist, which parameters
+// each of them accepts, and what each parameter defaults to. It is identical for every project and
+// changes only when this deployment is upgraded. Read it rather than keeping a copy. A copy drifts,
+// and only one of the ways it drifts fails loudly — an unknown parameter name is rejected, but a
+// stale `default` and a stale `required` both look correct on screen.
+//
+// GET /api/v1/templates
+func (UnimplementedHandler) ListTemplates(ctx context.Context) (r *TemplateCatalogResponseBody, _ error) {
 	return r, ht.ErrNotImplemented
 }
 
