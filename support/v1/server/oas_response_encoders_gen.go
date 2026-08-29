@@ -25,19 +25,6 @@ func encodeCloseTicketResponse(response *TicketResource, w http.ResponseWriter, 
 	return nil
 }
 
-func encodeCountUnreadAnnouncementsResponse(response *UnreadCountResource, w http.ResponseWriter, span trace.Span) error {
-	w.Header().Set("Content-Type", "application/json; charset=utf-8")
-	w.WriteHeader(200)
-
-	e := new(jx.Encoder)
-	response.Encode(e)
-	if _, err := e.WriteTo(w); err != nil {
-		return errors.Wrap(err, "write")
-	}
-
-	return nil
-}
-
 func encodeCreateTicketResponse(response *TicketResource, w http.ResponseWriter, span trace.Span) error {
 	w.Header().Set("Content-Type", "application/json; charset=utf-8")
 	w.WriteHeader(201)
@@ -90,19 +77,6 @@ func encodeDescribeAttachmentDownloadResponse(response *AttachmentDownloadResour
 	return nil
 }
 
-func encodeGetAnnouncementResponse(response *AnnouncementResource, w http.ResponseWriter, span trace.Span) error {
-	w.Header().Set("Content-Type", "application/json; charset=utf-8")
-	w.WriteHeader(200)
-
-	e := new(jx.Encoder)
-	response.Encode(e)
-	if _, err := e.WriteTo(w); err != nil {
-		return errors.Wrap(err, "write")
-	}
-
-	return nil
-}
-
 func encodeGetMaintenanceResponse(response *MaintenanceResource, w http.ResponseWriter, span trace.Span) error {
 	w.Header().Set("Content-Type", "application/json; charset=utf-8")
 	w.WriteHeader(200)
@@ -130,19 +104,6 @@ func encodeGetTicketResponse(response *TicketResource, w http.ResponseWriter, sp
 }
 
 func encodeGetTicketSatisfactionResponse(response *TicketSatisfactionResource, w http.ResponseWriter, span trace.Span) error {
-	w.Header().Set("Content-Type", "application/json; charset=utf-8")
-	w.WriteHeader(200)
-
-	e := new(jx.Encoder)
-	response.Encode(e)
-	if _, err := e.WriteTo(w); err != nil {
-		return errors.Wrap(err, "write")
-	}
-
-	return nil
-}
-
-func encodeListAnnouncementsResponse(response *LengthAwarePageAnnouncementResource, w http.ResponseWriter, span trace.Span) error {
 	w.Header().Set("Content-Type", "application/json; charset=utf-8")
 	w.WriteHeader(200)
 
@@ -221,19 +182,6 @@ func encodeListTicketMessagesResponse(response *LengthAwarePageTicketMessageReso
 }
 
 func encodeListTicketsResponse(response *LengthAwarePageTicketResource, w http.ResponseWriter, span trace.Span) error {
-	w.Header().Set("Content-Type", "application/json; charset=utf-8")
-	w.WriteHeader(200)
-
-	e := new(jx.Encoder)
-	response.Encode(e)
-	if _, err := e.WriteTo(w); err != nil {
-		return errors.Wrap(err, "write")
-	}
-
-	return nil
-}
-
-func encodeMarkAnnouncementReadResponse(response *AnnouncementResource, w http.ResponseWriter, span trace.Span) error {
 	w.Header().Set("Content-Type", "application/json; charset=utf-8")
 	w.WriteHeader(200)
 

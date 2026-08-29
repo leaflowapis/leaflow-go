@@ -16,129 +16,6 @@ func (s *ErrorStatusCode) Error() string {
 	return fmt.Sprintf("code %d: %+v", s.StatusCode, s.Response)
 }
 
-// A platform announcement.
-// Ref: #/components/schemas/AnnouncementResource
-type AnnouncementResource struct {
-	// Markdown.
-	Body        string    `json:"body"`
-	ID          uuid.UUID `json:"id"`
-	PublishedAt time.Time `json:"published_at"`
-	// When this user marked the announcement as read; null when they have not.
-	ReadAt   NilDateTime          `json:"read_at"`
-	Severity AnnouncementSeverity `json:"severity"`
-	Title    string               `json:"title"`
-}
-
-// GetBody returns the value of Body.
-func (s *AnnouncementResource) GetBody() string {
-	return s.Body
-}
-
-// GetID returns the value of ID.
-func (s *AnnouncementResource) GetID() uuid.UUID {
-	return s.ID
-}
-
-// GetPublishedAt returns the value of PublishedAt.
-func (s *AnnouncementResource) GetPublishedAt() time.Time {
-	return s.PublishedAt
-}
-
-// GetReadAt returns the value of ReadAt.
-func (s *AnnouncementResource) GetReadAt() NilDateTime {
-	return s.ReadAt
-}
-
-// GetSeverity returns the value of Severity.
-func (s *AnnouncementResource) GetSeverity() AnnouncementSeverity {
-	return s.Severity
-}
-
-// GetTitle returns the value of Title.
-func (s *AnnouncementResource) GetTitle() string {
-	return s.Title
-}
-
-// SetBody sets the value of Body.
-func (s *AnnouncementResource) SetBody(val string) {
-	s.Body = val
-}
-
-// SetID sets the value of ID.
-func (s *AnnouncementResource) SetID(val uuid.UUID) {
-	s.ID = val
-}
-
-// SetPublishedAt sets the value of PublishedAt.
-func (s *AnnouncementResource) SetPublishedAt(val time.Time) {
-	s.PublishedAt = val
-}
-
-// SetReadAt sets the value of ReadAt.
-func (s *AnnouncementResource) SetReadAt(val NilDateTime) {
-	s.ReadAt = val
-}
-
-// SetSeverity sets the value of Severity.
-func (s *AnnouncementResource) SetSeverity(val AnnouncementSeverity) {
-	s.Severity = val
-}
-
-// SetTitle sets the value of Title.
-func (s *AnnouncementResource) SetTitle(val string) {
-	s.Title = val
-}
-
-// How prominently an announcement should be presented.
-// Ref: #/components/schemas/AnnouncementSeverity
-type AnnouncementSeverity string
-
-const (
-	AnnouncementSeverityINFO     AnnouncementSeverity = "INFO"
-	AnnouncementSeverityWARNING  AnnouncementSeverity = "WARNING"
-	AnnouncementSeverityCRITICAL AnnouncementSeverity = "CRITICAL"
-)
-
-// AllValues returns all AnnouncementSeverity values.
-func (AnnouncementSeverity) AllValues() []AnnouncementSeverity {
-	return []AnnouncementSeverity{
-		AnnouncementSeverityINFO,
-		AnnouncementSeverityWARNING,
-		AnnouncementSeverityCRITICAL,
-	}
-}
-
-// MarshalText implements encoding.TextMarshaler.
-func (s AnnouncementSeverity) MarshalText() ([]byte, error) {
-	switch s {
-	case AnnouncementSeverityINFO:
-		return []byte(s), nil
-	case AnnouncementSeverityWARNING:
-		return []byte(s), nil
-	case AnnouncementSeverityCRITICAL:
-		return []byte(s), nil
-	default:
-		return nil, errors.Errorf("invalid value: %q", s)
-	}
-}
-
-// UnmarshalText implements encoding.TextUnmarshaler.
-func (s *AnnouncementSeverity) UnmarshalText(data []byte) error {
-	switch AnnouncementSeverity(data) {
-	case AnnouncementSeverityINFO:
-		*s = AnnouncementSeverityINFO
-		return nil
-	case AnnouncementSeverityWARNING:
-		*s = AnnouncementSeverityWARNING
-		return nil
-	case AnnouncementSeverityCRITICAL:
-		*s = AnnouncementSeverityCRITICAL
-		return nil
-	default:
-		return errors.Errorf("invalid value: %q", data)
-	}
-}
-
 // Ref: #/components/schemas/AttachmentDownloadResource
 type AttachmentDownloadResource struct {
 	// After this moment the address stops working; request a new one.
@@ -391,55 +268,6 @@ func (s *ErrorStatusCode) SetStatusCode(val int) {
 // SetResponse sets the value of Response.
 func (s *ErrorStatusCode) SetResponse(val Error) {
 	s.Response = val
-}
-
-// Ref: #/components/schemas/LengthAwarePageAnnouncementResource
-type LengthAwarePageAnnouncementResource struct {
-	// The contents of this page.
-	Items  []AnnouncementResource `json:"items"`
-	Limit  int64                  `json:"limit"`
-	Offset int64                  `json:"offset"`
-	Total  int64                  `json:"total"`
-}
-
-// GetItems returns the value of Items.
-func (s *LengthAwarePageAnnouncementResource) GetItems() []AnnouncementResource {
-	return s.Items
-}
-
-// GetLimit returns the value of Limit.
-func (s *LengthAwarePageAnnouncementResource) GetLimit() int64 {
-	return s.Limit
-}
-
-// GetOffset returns the value of Offset.
-func (s *LengthAwarePageAnnouncementResource) GetOffset() int64 {
-	return s.Offset
-}
-
-// GetTotal returns the value of Total.
-func (s *LengthAwarePageAnnouncementResource) GetTotal() int64 {
-	return s.Total
-}
-
-// SetItems sets the value of Items.
-func (s *LengthAwarePageAnnouncementResource) SetItems(val []AnnouncementResource) {
-	s.Items = val
-}
-
-// SetLimit sets the value of Limit.
-func (s *LengthAwarePageAnnouncementResource) SetLimit(val int64) {
-	s.Limit = val
-}
-
-// SetOffset sets the value of Offset.
-func (s *LengthAwarePageAnnouncementResource) SetOffset(val int64) {
-	s.Offset = val
-}
-
-// SetTotal sets the value of Total.
-func (s *LengthAwarePageAnnouncementResource) SetTotal(val int64) {
-	s.Total = val
 }
 
 // Ref: #/components/schemas/LengthAwarePageMaintenanceResource
@@ -1258,66 +1086,6 @@ func (o NilTicketSatisfactionResource) Or(d TicketSatisfactionResource) TicketSa
 	return d
 }
 
-// Ref: #/components/schemas/NoticeAnnouncementResource
-type NoticeAnnouncementResource struct {
-	// Markdown.
-	Body        string               `json:"body"`
-	ID          uuid.UUID            `json:"id"`
-	PublishedAt time.Time            `json:"published_at"`
-	Severity    AnnouncementSeverity `json:"severity"`
-	Title       string               `json:"title"`
-}
-
-// GetBody returns the value of Body.
-func (s *NoticeAnnouncementResource) GetBody() string {
-	return s.Body
-}
-
-// GetID returns the value of ID.
-func (s *NoticeAnnouncementResource) GetID() uuid.UUID {
-	return s.ID
-}
-
-// GetPublishedAt returns the value of PublishedAt.
-func (s *NoticeAnnouncementResource) GetPublishedAt() time.Time {
-	return s.PublishedAt
-}
-
-// GetSeverity returns the value of Severity.
-func (s *NoticeAnnouncementResource) GetSeverity() AnnouncementSeverity {
-	return s.Severity
-}
-
-// GetTitle returns the value of Title.
-func (s *NoticeAnnouncementResource) GetTitle() string {
-	return s.Title
-}
-
-// SetBody sets the value of Body.
-func (s *NoticeAnnouncementResource) SetBody(val string) {
-	s.Body = val
-}
-
-// SetID sets the value of ID.
-func (s *NoticeAnnouncementResource) SetID(val uuid.UUID) {
-	s.ID = val
-}
-
-// SetPublishedAt sets the value of PublishedAt.
-func (s *NoticeAnnouncementResource) SetPublishedAt(val time.Time) {
-	s.PublishedAt = val
-}
-
-// SetSeverity sets the value of Severity.
-func (s *NoticeAnnouncementResource) SetSeverity(val AnnouncementSeverity) {
-	s.Severity = val
-}
-
-// SetTitle sets the value of Title.
-func (s *NoticeAnnouncementResource) SetTitle(val string) {
-	s.Title = val
-}
-
 // Ref: #/components/schemas/NoticeMaintenanceResource
 type NoticeMaintenanceResource struct {
 	// Markdown.
@@ -1427,23 +1195,12 @@ func (s *NoticeMaintenanceResource) SetTitle(val string) {
 // This shape is deliberately narrower than the authenticated resources and carries no read state.
 // Ref: #/components/schemas/NoticeResource
 type NoticeResource struct {
-	Announcements []NoticeAnnouncementResource `json:"announcements"`
-	Maintenances  []NoticeMaintenanceResource  `json:"maintenances"`
-}
-
-// GetAnnouncements returns the value of Announcements.
-func (s *NoticeResource) GetAnnouncements() []NoticeAnnouncementResource {
-	return s.Announcements
+	Maintenances []NoticeMaintenanceResource `json:"maintenances"`
 }
 
 // GetMaintenances returns the value of Maintenances.
 func (s *NoticeResource) GetMaintenances() []NoticeMaintenanceResource {
 	return s.Maintenances
-}
-
-// SetAnnouncements sets the value of Announcements.
-func (s *NoticeResource) SetAnnouncements(val []NoticeAnnouncementResource) {
-	s.Announcements = val
 }
 
 // SetMaintenances sets the value of Maintenances.
@@ -2287,21 +2044,6 @@ func (s *TicketStatus) UnmarshalText(data []byte) error {
 	default:
 		return errors.Errorf("invalid value: %q", data)
 	}
-}
-
-// Ref: #/components/schemas/UnreadCountResource
-type UnreadCountResource struct {
-	Count int64 `json:"count"`
-}
-
-// GetCount returns the value of Count.
-func (s *UnreadCountResource) GetCount() int64 {
-	return s.Count
-}
-
-// SetCount sets the value of Count.
-func (s *UnreadCountResource) SetCount(val int64) {
-	s.Count = val
 }
 
 type UploadAttachmentReq struct {
