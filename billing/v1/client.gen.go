@@ -688,14 +688,36 @@ type QuoteRequest struct {
 	Lines []QuoteUsage `json:"lines"`
 }
 
-// QuoteUsage defines model for QuoteUsage.
+// QuoteUsage One usage to price. Name the thing **either** by its rate card key **or** by the service and
+// product it belongs to — exactly one of the two.
+//
+// # Why the second form exists
+//
+// A meter's key is a hash of `(service, product_id, variant)`, computed by a function that lives in
+// one place on purpose: get it wrong and usage lands in the wrong bucket, or in none, and nothing
+// reports it. A caller that derived the key itself would be a second copy of that convention.
+//
+// So callers that know what they are buying — a machine of a given type, a model's input tokens —
+// give the service and product, and this side derives the key.
 type QuoteUsage struct {
 	// Key The rate card's key. For a card tied to a meter that is the meter's key, because the engine
-	// requires the two to be identical
-	Key string `json:"key"`
+	// requires the two to be identical.
+	//
+	// Leave it out when giving `service` and `product_id` instead
+	Key *string `json:"key,omitempty"`
+
+	// ProductId That service's own catalogue id for the thing being bought
+	ProductId *string `json:"product_id,omitempty"`
 
 	// Quantity The raw amount, before any conversion. A decimal string
 	Quantity string `json:"quantity"`
+
+	// Service The service that owns the product, as it appears in its usage events
+	Service *string `json:"service,omitempty"`
+
+	// Variant The fixed dimension values that split one product into several meters — canopy's token kind,
+	// for instance. Part of the key, so leaving it out names a different meter
+	Variant map[string]string `json:"variant,omitempty"`
 }
 
 // StartTopUpRequestBody defines model for StartTopUpRequestBody.

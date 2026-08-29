@@ -1546,6 +1546,52 @@ func (o OptPricing) Or(d Pricing) Pricing {
 	return d
 }
 
+// NewOptQuoteUsageVariant returns new OptQuoteUsageVariant with value set to v.
+func NewOptQuoteUsageVariant(v QuoteUsageVariant) OptQuoteUsageVariant {
+	return OptQuoteUsageVariant{
+		Value: v,
+		Set:   true,
+	}
+}
+
+// OptQuoteUsageVariant is optional QuoteUsageVariant.
+type OptQuoteUsageVariant struct {
+	Value QuoteUsageVariant
+	Set   bool
+}
+
+// IsSet returns true if OptQuoteUsageVariant was set.
+func (o OptQuoteUsageVariant) IsSet() bool { return o.Set }
+
+// Reset unsets value.
+func (o *OptQuoteUsageVariant) Reset() {
+	var v QuoteUsageVariant
+	o.Value = v
+	o.Set = false
+}
+
+// SetTo sets value to v.
+func (o *OptQuoteUsageVariant) SetTo(v QuoteUsageVariant) {
+	o.Set = true
+	o.Value = v
+}
+
+// Get returns value and boolean that denotes whether value was set.
+func (o OptQuoteUsageVariant) Get() (v QuoteUsageVariant, ok bool) {
+	if !o.Set {
+		return v, false
+	}
+	return o.Value, true
+}
+
+// Or returns value if set, or given parameter if does not.
+func (o OptQuoteUsageVariant) Or(d QuoteUsageVariant) QuoteUsageVariant {
+	if v, ok := o.Get(); ok {
+		return v
+	}
+	return d
+}
+
 // NewOptString returns new OptString with value set to v.
 func NewOptString(v string) OptString {
 	return OptString{
@@ -2491,18 +2537,53 @@ func (s *QuoteRequest) SetLines(val []QuoteUsage) {
 	s.Lines = val
 }
 
+// One usage to price. Name the thing either by its rate card key or by the service and product it
+// belongs to — exactly one of the two.
+//
+// # Why the second form exists
+//
+// A meter's key is a hash of `(service, product_id, variant)`, computed by a function that lives in
+// one place on purpose: get it wrong and usage lands in the wrong bucket, or in none, and nothing
+// reports it. A caller that derived the key itself would be a second copy of that convention.
+//
+// So callers that know what they are buying — a machine of a given type, a model's input tokens —
+// give the service and product, and this side derives the key.
 // Ref: #/components/schemas/QuoteUsage
 type QuoteUsage struct {
 	// The rate card's key. For a card tied to a meter that is the meter's key, because the engine requires
 	// the two to be identical.
-	Key string `json:"key"`
+	//
+	// Leave it out when giving `service` and `product_id` instead.
+	Key OptString `json:"key"`
+	// The service that owns the product, as it appears in its usage events.
+	Service OptString `json:"service"`
+	// That service's own catalogue id for the thing being bought.
+	ProductID OptString `json:"product_id"`
+	// The fixed dimension values that split one product into several meters — canopy's token kind, for
+	// instance. Part of the key, so leaving it out names a different meter.
+	Variant OptQuoteUsageVariant `json:"variant"`
 	// The raw amount, before any conversion. A decimal string.
 	Quantity string `json:"quantity"`
 }
 
 // GetKey returns the value of Key.
-func (s *QuoteUsage) GetKey() string {
+func (s *QuoteUsage) GetKey() OptString {
 	return s.Key
+}
+
+// GetService returns the value of Service.
+func (s *QuoteUsage) GetService() OptString {
+	return s.Service
+}
+
+// GetProductID returns the value of ProductID.
+func (s *QuoteUsage) GetProductID() OptString {
+	return s.ProductID
+}
+
+// GetVariant returns the value of Variant.
+func (s *QuoteUsage) GetVariant() OptQuoteUsageVariant {
+	return s.Variant
 }
 
 // GetQuantity returns the value of Quantity.
@@ -2511,13 +2592,41 @@ func (s *QuoteUsage) GetQuantity() string {
 }
 
 // SetKey sets the value of Key.
-func (s *QuoteUsage) SetKey(val string) {
+func (s *QuoteUsage) SetKey(val OptString) {
 	s.Key = val
+}
+
+// SetService sets the value of Service.
+func (s *QuoteUsage) SetService(val OptString) {
+	s.Service = val
+}
+
+// SetProductID sets the value of ProductID.
+func (s *QuoteUsage) SetProductID(val OptString) {
+	s.ProductID = val
+}
+
+// SetVariant sets the value of Variant.
+func (s *QuoteUsage) SetVariant(val OptQuoteUsageVariant) {
+	s.Variant = val
 }
 
 // SetQuantity sets the value of Quantity.
 func (s *QuoteUsage) SetQuantity(val string) {
 	s.Quantity = val
+}
+
+// The fixed dimension values that split one product into several meters — canopy's token kind, for
+// instance. Part of the key, so leaving it out names a different meter.
+type QuoteUsageVariant map[string]string
+
+func (s *QuoteUsageVariant) init() QuoteUsageVariant {
+	m := *s
+	if m == nil {
+		m = map[string]string{}
+		*s = m
+	}
+	return m
 }
 
 // Ref: #/components/schemas/StartTopUpRequestBody
