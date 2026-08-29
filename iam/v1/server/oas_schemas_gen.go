@@ -1446,8 +1446,9 @@ func (s *OwnershipTransferResponseBody) SetTo(val MemberResource) {
 
 // Ref: #/components/schemas/PermissionResource
 type PermissionResource struct {
-	Description string `json:"description"`
-	Name        string `json:"name"`
+	// 权限的代码，形如
+	// compute:instance.delete。这里没有展示名：一条权限对人显示成什么字是本地化的，服务端存一份的话那一份只会是某一种语言，而读它的人可能读别的语言。译名归渲染它的那一层；它没跟上时界面显示的就是这个代码——一个自解释的降级，而且看得见.
+	Name string `json:"name"`
 	// 只有项目所有者能做，绑到自定义角色上也不会生效.
 	OwnerOnly bool `json:"owner_only"`
 	// 这条权限的判定对象是哪类资源，空表示它是项目级的。它不必等于操作对象本身——compute
@@ -1456,11 +1457,6 @@ type PermissionResource struct {
 	// compute:private_network。非空同时意味着这条权限可以被限定到具体实例；create
 	// 和 list 一律留空.
 	ResourceType string `json:"resource_type"`
-}
-
-// GetDescription returns the value of Description.
-func (s *PermissionResource) GetDescription() string {
-	return s.Description
 }
 
 // GetName returns the value of Name.
@@ -1476,11 +1472,6 @@ func (s *PermissionResource) GetOwnerOnly() bool {
 // GetResourceType returns the value of ResourceType.
 func (s *PermissionResource) GetResourceType() string {
 	return s.ResourceType
-}
-
-// SetDescription sets the value of Description.
-func (s *PermissionResource) SetDescription(val string) {
-	s.Description = val
 }
 
 // SetName sets the value of Name.
@@ -2016,23 +2007,14 @@ func (s *ResourceRefResource) SetType(val string) {
 
 // Ref: #/components/schemas/ResourceTypeResource
 type ResourceTypeResource struct {
-	Description string `json:"description"`
-	Name        string `json:"name"`
-}
-
-// GetDescription returns the value of Description.
-func (s *ResourceTypeResource) GetDescription() string {
-	return s.Description
+	// 资源类型的代码，形如
+	// dns:zone。同样没有展示名：它该显示成「托管域名」还是「Zone」由渲染它的那一层按读者的语言决定.
+	Name string `json:"name"`
 }
 
 // GetName returns the value of Name.
 func (s *ResourceTypeResource) GetName() string {
 	return s.Name
-}
-
-// SetDescription sets the value of Description.
-func (s *ResourceTypeResource) SetDescription(val string) {
-	s.Description = val
 }
 
 // SetName sets the value of Name.
