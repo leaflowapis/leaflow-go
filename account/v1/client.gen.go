@@ -360,6 +360,15 @@ type ConsentResourceMethod string
 // ConsentResourceType defines model for ConsentResource.Type.
 type ConsentResourceType string
 
+// CountryOption defines model for CountryOption.
+type CountryOption struct {
+	// Code ISO 3166-1 alpha-2，注册时原样回传
+	Code string `json:"code"`
+
+	// Name 按 Accept-Language 渲染的名字
+	Name string `json:"name"`
+}
+
 // CreateProjectRequestBody defines model for CreateProjectRequestBody.
 type CreateProjectRequestBody struct {
 	Description *string `json:"description,omitempty"`
@@ -407,6 +416,15 @@ type InvitationResource struct {
 	Roles []string `json:"roles"`
 }
 
+// LanguageOption defines model for LanguageOption.
+type LanguageOption struct {
+	// Code 界面和邮件用哪种语言。它和 country 是两件事，不能互相推——一个在香港的人可能读简体， 一个在美国的人可能读繁体。
+	Code Locale `json:"code"`
+
+	// Name 这种语言的自称，用它自己写（「简体中文」「繁體中文（香港）」「English」）。不跟着 Accept-Language 变——一个只看得懂繁体的人，在一个全简体的列表里找不到自己那一项。
+	Name string `json:"name"`
+}
+
 // LengthAwarePageInvitationResource defines model for LengthAwarePageInvitationResource.
 type LengthAwarePageInvitationResource struct {
 	// Items 这一页的内容
@@ -439,6 +457,12 @@ type LengthAwarePageProjectAccessResource struct {
 
 // Locale 界面和邮件用哪种语言。它和 country 是两件事，不能互相推——一个在香港的人可能读简体， 一个在美国的人可能读繁体。
 type Locale string
+
+// LocaleOptionsResource defines model for LocaleOptionsResource.
+type LocaleOptionsResource struct {
+	Countries []CountryOption  `json:"countries"`
+	Languages []LanguageOption `json:"languages"`
+}
 
 // ProjectAccessResource defines model for ProjectAccessResource.
 type ProjectAccessResource struct {
@@ -670,6 +694,15 @@ type ClientInterface interface {
 	// Corresponds with GET /account/v1/agreements (the `ListAgreements` operationId).
 	ListAgreements(ctx context.Context, reqEditors ...RequestEditorFn) (*http.Response, error)
 
+	// ListLocales 注册页要用的国家/地区和语言清单
+	//
+	// 免认证：注册页在还没有账号的时候就要画出这两个下拉框。
+	// 国家名和排序都跟着 `Accept-Language` 走——一个英文用户看到的是 China 而不是「中国」， 而顺序按那种语言自己的规则（中文按拼音，英文按字母），不是按码点。头缺失时用简体中文。
+	// 清单来自 CLDR，不是我们自己维护的一份：ISO 3166 每年都改，而抄下来的那份不会跟着改。 已经退役的代码（苏联、南斯拉夫）和不是地方的代码（欧盟、联合国）都不在里面。
+	//
+	// Corresponds with GET /account/v1/locales (the `ListLocales` operationId).
+	ListLocales(ctx context.Context, reqEditors ...RequestEditorFn) (*http.Response, error)
+
 	// GetAccount 查看当前账号
 	//
 	// `pending_agreements` 是还没同意的文件，非空就要先引导用户同意，再调 `POST /api/v1/me/consents`。.
@@ -864,6 +897,25 @@ type ClientInterface interface {
 // Corresponds with GET /account/v1/agreements (the `ListAgreements` operationId).
 func (c *Client) ListAgreements(ctx context.Context, reqEditors ...RequestEditorFn) (*http.Response, error) {
 	req, err := NewListAgreementsRequest(c.Server)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+// ListLocales 注册页要用的国家/地区和语言清单
+//
+// 免认证：注册页在还没有账号的时候就要画出这两个下拉框。
+// 国家名和排序都跟着 `Accept-Language` 走——一个英文用户看到的是 China 而不是「中国」， 而顺序按那种语言自己的规则（中文按拼音，英文按字母），不是按码点。头缺失时用简体中文。
+// 清单来自 CLDR，不是我们自己维护的一份：ISO 3166 每年都改，而抄下来的那份不会跟着改。 已经退役的代码（苏联、南斯拉夫）和不是地方的代码（欧盟、联合国）都不在里面。
+//
+// Corresponds with GET /account/v1/locales (the `ListLocales` operationId).
+func (c *Client) ListLocales(ctx context.Context, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewListLocalesRequest(c.Server)
 	if err != nil {
 		return nil, err
 	}
@@ -1268,6 +1320,33 @@ func NewListAgreementsRequest(server string) (*http.Request, error) {
 	}
 
 	operationPath := fmt.Sprintf("/account/v1/agreements")
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest(http.MethodGet, queryURL.String(), nil)
+	if err != nil {
+		return nil, err
+	}
+
+	return req, nil
+}
+
+// NewListLocalesRequest constructs an http.Request for the ListLocales method
+func NewListLocalesRequest(server string) (*http.Request, error) {
+	var err error
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/account/v1/locales")
 	if operationPath[0] == '/' {
 		operationPath = "." + operationPath
 	}
@@ -1912,6 +1991,17 @@ type ClientWithResponsesInterface interface {
 	// Corresponds with GET /account/v1/agreements (the `ListAgreements` operationId).
 	ListAgreementsWithResponse(ctx context.Context, reqEditors ...RequestEditorFn) (*ListAgreementsResponse, error)
 
+	// ListLocalesWithResponse 注册页要用的国家/地区和语言清单
+	//
+	// 免认证：注册页在还没有账号的时候就要画出这两个下拉框。
+	// 国家名和排序都跟着 `Accept-Language` 走——一个英文用户看到的是 China 而不是「中国」， 而顺序按那种语言自己的规则（中文按拼音，英文按字母），不是按码点。头缺失时用简体中文。
+	// 清单来自 CLDR，不是我们自己维护的一份：ISO 3166 每年都改，而抄下来的那份不会跟着改。 已经退役的代码（苏联、南斯拉夫）和不是地方的代码（欧盟、联合国）都不在里面。
+	//
+	// Returns a wrapper object for the known response body format(s).
+	//
+	// Corresponds with GET /account/v1/locales (the `ListLocales` operationId).
+	ListLocalesWithResponse(ctx context.Context, reqEditors ...RequestEditorFn) (*ListLocalesResponse, error)
+
 	// GetAccountWithResponse 查看当前账号
 	//
 	// `pending_agreements` 是还没同意的文件，非空就要先引导用户同意，再调 `POST /api/v1/me/consents`。.
@@ -2155,6 +2245,54 @@ func (r ListAgreementsResponse) StatusCode() int {
 
 // ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
 func (r ListAgreementsResponse) ContentType() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Header.Get("Content-Type")
+	}
+	return ""
+}
+
+type ListLocalesResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	// JSON200 the response for an HTTP 200 `application/json` response
+	JSON200 *LocaleOptionsResource
+	// JSONDefault the response for an HTTP default `application/json` response
+	JSONDefault *Error
+}
+
+// GetJSON200 returns the response for an HTTP 200 `application/json` response
+func (r ListLocalesResponse) GetJSON200() *LocaleOptionsResource {
+	return r.JSON200
+}
+
+// GetJSONDefault returns the response for an HTTP default `application/json` response
+func (r ListLocalesResponse) GetJSONDefault() *Error {
+	return r.JSONDefault
+}
+
+// GetBody returns the raw response body bytes
+func (r ListLocalesResponse) GetBody() []byte {
+	return r.Body
+}
+
+// Status returns HTTPResponse.Status
+func (r ListLocalesResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r ListLocalesResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+// ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
+func (r ListLocalesResponse) ContentType() string {
 	if r.HTTPResponse != nil {
 		return r.HTTPResponse.Header.Get("Content-Type")
 	}
@@ -2850,6 +2988,23 @@ func (c *ClientWithResponses) ListAgreementsWithResponse(ctx context.Context, re
 	return ParseListAgreementsResponse(rsp)
 }
 
+// ListLocalesWithResponse 注册页要用的国家/地区和语言清单
+//
+// 免认证：注册页在还没有账号的时候就要画出这两个下拉框。
+// 国家名和排序都跟着 `Accept-Language` 走——一个英文用户看到的是 China 而不是「中国」， 而顺序按那种语言自己的规则（中文按拼音，英文按字母），不是按码点。头缺失时用简体中文。
+// 清单来自 CLDR，不是我们自己维护的一份：ISO 3166 每年都改，而抄下来的那份不会跟着改。 已经退役的代码（苏联、南斯拉夫）和不是地方的代码（欧盟、联合国）都不在里面。
+//
+// Returns a wrapper object for the known response body format(s).
+//
+// Corresponds with GET /account/v1/locales (the `ListLocales` operationId).
+func (c *ClientWithResponses) ListLocalesWithResponse(ctx context.Context, reqEditors ...RequestEditorFn) (*ListLocalesResponse, error) {
+	rsp, err := c.ListLocales(ctx, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseListLocalesResponse(rsp)
+}
+
 // GetAccountWithResponse 查看当前账号
 //
 // `pending_agreements` 是还没同意的文件，非空就要先引导用户同意，再调 `POST /api/v1/me/consents`。.
@@ -3186,6 +3341,39 @@ func ParseListAgreementsResponse(rsp *http.Response) (*ListAgreementsResponse, e
 	switch {
 	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
 		var dest AgreementListResponseBody
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && true:
+		var dest Error
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSONDefault = &dest
+
+	}
+
+	return response, nil
+}
+
+// ParseListLocalesResponse parses an HTTP response from a ListLocalesWithResponse call
+func ParseListLocalesResponse(rsp *http.Response) (*ListLocalesResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &ListLocalesResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest LocaleOptionsResource
 		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
 			return nil, err
 		}

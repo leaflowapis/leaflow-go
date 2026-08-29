@@ -96,6 +96,18 @@ type Handler interface {
 	//
 	// GET /account/v1/me/consents
 	ListConsents(ctx context.Context) (*ConsentListResponseBody, error)
+	// ListLocales implements list-locales operation.
+	//
+	// 免认证：注册页在还没有账号的时候就要画出这两个下拉框。
+	// 国家名和排序都跟着 `Accept-Language` 走——一个英文用户看到的是 China
+	// 而不是「中国」，
+	// 而顺序按那种语言自己的规则（中文按拼音，英文按字母），不是按码点。头缺失时用简体中文。
+	// 清单来自 CLDR，不是我们自己维护的一份：ISO 3166
+	// 每年都改，而抄下来的那份不会跟着改。
+	// 已经退役的代码（苏联、南斯拉夫）和不是地方的代码（欧盟、联合国）都不在里面。.
+	//
+	// GET /account/v1/locales
+	ListLocales(ctx context.Context) (*LocaleOptionsResource, error)
 	// ListMyInvitations implements list-my-invitations operation.
 	//
 	// 按当前账号的邮箱查，因为要约是寄给一个地址的——被邀请的人当时可能还没注册。.

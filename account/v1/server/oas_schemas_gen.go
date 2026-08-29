@@ -603,6 +603,34 @@ func (s *ConsentResourceType) UnmarshalText(data []byte) error {
 	}
 }
 
+// Ref: #/components/schemas/CountryOption
+type CountryOption struct {
+	// ISO 3166-1 alpha-2，注册时原样回传.
+	Code string `json:"code"`
+	// 按 Accept-Language 渲染的名字.
+	Name string `json:"name"`
+}
+
+// GetCode returns the value of Code.
+func (s *CountryOption) GetCode() string {
+	return s.Code
+}
+
+// GetName returns the value of Name.
+func (s *CountryOption) GetName() string {
+	return s.Name
+}
+
+// SetCode sets the value of Code.
+func (s *CountryOption) SetCode(val string) {
+	s.Code = val
+}
+
+// SetName sets the value of Name.
+func (s *CountryOption) SetName(val string) {
+	s.Name = val
+}
+
 // Ref: #/components/schemas/CreateProjectRequestBody
 type CreateProjectRequestBody struct {
 	Description OptString `json:"description"`
@@ -958,6 +986,35 @@ func (s *InvitationResource) SetRoles(val []string) {
 	s.Roles = val
 }
 
+// Ref: #/components/schemas/LanguageOption
+type LanguageOption struct {
+	Code Locale `json:"code"`
+	// 这种语言的自称，用它自己写（「简体中文」「繁體中文（香港）」「English」）。不跟着
+	// Accept-Language
+	// 变——一个只看得懂繁体的人，在一个全简体的列表里找不到自己那一项。.
+	Name string `json:"name"`
+}
+
+// GetCode returns the value of Code.
+func (s *LanguageOption) GetCode() Locale {
+	return s.Code
+}
+
+// GetName returns the value of Name.
+func (s *LanguageOption) GetName() string {
+	return s.Name
+}
+
+// SetCode sets the value of Code.
+func (s *LanguageOption) SetCode(val Locale) {
+	s.Code = val
+}
+
+// SetName sets the value of Name.
+func (s *LanguageOption) SetName(val string) {
+	s.Name = val
+}
+
 // Ref: #/components/schemas/LengthAwarePageInvitationResource
 type LengthAwarePageInvitationResource struct {
 	// 这一页的内容.
@@ -1175,6 +1232,32 @@ func (s *Locale) UnmarshalText(data []byte) error {
 	default:
 		return errors.Errorf("invalid value: %q", data)
 	}
+}
+
+// Ref: #/components/schemas/LocaleOptionsResource
+type LocaleOptionsResource struct {
+	Countries []CountryOption  `json:"countries"`
+	Languages []LanguageOption `json:"languages"`
+}
+
+// GetCountries returns the value of Countries.
+func (s *LocaleOptionsResource) GetCountries() []CountryOption {
+	return s.Countries
+}
+
+// GetLanguages returns the value of Languages.
+func (s *LocaleOptionsResource) GetLanguages() []LanguageOption {
+	return s.Languages
+}
+
+// SetCountries sets the value of Countries.
+func (s *LocaleOptionsResource) SetCountries(val []CountryOption) {
+	s.Countries = val
+}
+
+// SetLanguages sets the value of Languages.
+func (s *LocaleOptionsResource) SetLanguages(val []LanguageOption) {
+	s.Languages = val
 }
 
 // NewNilDateTime returns new NilDateTime with value set to v.
