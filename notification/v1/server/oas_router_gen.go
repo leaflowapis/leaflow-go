@@ -50,10 +50,12 @@ var (
 		"GET": "Authorization",
 	}
 	rn3AllowedHeaders = map[string]string{
-		"POST": "Authorization",
+		"DELETE": "Authorization",
+		"POST":   "Authorization",
 	}
 	rn23AllowedHeaders = map[string]string{
-		"POST": "Authorization",
+		"DELETE": "Authorization",
+		"POST":   "Authorization",
 	}
 	rn16AllowedHeaders = map[string]string{
 		"GET":   "Authorization",
@@ -582,13 +584,17 @@ func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 								if len(elem) == 0 {
 									// Leaf node.
 									switch r.Method {
+									case "DELETE":
+										s.handleUnarchiveNotificationRequest([1]string{
+											args[0],
+										}, elemIsEscaped, w, r)
 									case "POST":
 										s.handleArchiveNotificationRequest([1]string{
 											args[0],
 										}, elemIsEscaped, w, r)
 									default:
 										s.notAllowed(w, r, notAllowedParams{
-											allowedMethods: "POST",
+											allowedMethods: "DELETE,POST",
 											allowedHeaders: rn3AllowedHeaders,
 											acceptPost:     "",
 											acceptPatch:    "",
@@ -609,13 +615,17 @@ func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 								if len(elem) == 0 {
 									// Leaf node.
 									switch r.Method {
+									case "DELETE":
+										s.handleMarkNotificationUnreadRequest([1]string{
+											args[0],
+										}, elemIsEscaped, w, r)
 									case "POST":
 										s.handleMarkNotificationReadRequest([1]string{
 											args[0],
 										}, elemIsEscaped, w, r)
 									default:
 										s.notAllowed(w, r, notAllowedParams{
-											allowedMethods: "POST",
+											allowedMethods: "DELETE,POST",
 											allowedHeaders: rn23AllowedHeaders,
 											acceptPost:     "",
 											acceptPatch:    "",
@@ -1335,6 +1345,15 @@ func (s *Server) FindPath(method string, u *url.URL) (r Route, _ bool) {
 								if len(elem) == 0 {
 									// Leaf node.
 									switch method {
+									case "DELETE":
+										r.name = UnarchiveNotificationOperation
+										r.summary = "Take one notification out of the archive"
+										r.operationID = "unarchive-notification"
+										r.operationGroup = ""
+										r.pathPattern = "/api/v1/notifications/{notificationId}/archive"
+										r.args = args
+										r.count = 1
+										return r, true
 									case "POST":
 										r.name = ArchiveNotificationOperation
 										r.summary = "Archive one notification"
@@ -1360,6 +1379,15 @@ func (s *Server) FindPath(method string, u *url.URL) (r Route, _ bool) {
 								if len(elem) == 0 {
 									// Leaf node.
 									switch method {
+									case "DELETE":
+										r.name = MarkNotificationUnreadOperation
+										r.summary = "Mark one notification as unread"
+										r.operationID = "mark-notification-unread"
+										r.operationGroup = ""
+										r.pathPattern = "/api/v1/notifications/{notificationId}/read"
+										r.args = args
+										r.count = 1
+										return r, true
 									case "POST":
 										r.name = MarkNotificationReadOperation
 										r.summary = "Mark one notification as read"

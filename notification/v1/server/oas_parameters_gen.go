@@ -1271,6 +1271,72 @@ func decodeMarkNotificationReadParams(args [1]string, argsEscaped bool, r *http.
 	return params, nil
 }
 
+// MarkNotificationUnreadParams is parameters of mark-notification-unread operation.
+type MarkNotificationUnreadParams struct {
+	// The notification, or the announcement when kind is announcement.
+	NotificationId uuid.UUID
+}
+
+func unpackMarkNotificationUnreadParams(packed middleware.Parameters) (params MarkNotificationUnreadParams) {
+	{
+		key := middleware.ParameterKey{
+			Name: "notificationId",
+			In:   "path",
+		}
+		params.NotificationId = packed[key].(uuid.UUID)
+	}
+	return params
+}
+
+func decodeMarkNotificationUnreadParams(args [1]string, argsEscaped bool, r *http.Request) (params MarkNotificationUnreadParams, _ error) {
+	// Decode path: notificationId.
+	if err := func() error {
+		param := args[0]
+		if argsEscaped {
+			unescaped, err := url.PathUnescape(args[0])
+			if err != nil {
+				return errors.Wrap(err, "unescape path")
+			}
+			param = unescaped
+		}
+		if len(param) > 0 {
+			d := uri.NewPathDecoder(uri.PathDecoderConfig{
+				Param:   "notificationId",
+				Value:   param,
+				Style:   uri.PathStyleSimple,
+				Explode: false,
+			})
+
+			if err := func() error {
+				val, err := d.DecodeValue()
+				if err != nil {
+					return err
+				}
+
+				c, err := conv.ToUUID(val)
+				if err != nil {
+					return err
+				}
+
+				params.NotificationId = c
+				return nil
+			}(); err != nil {
+				return err
+			}
+		} else {
+			return validate.ErrFieldRequired
+		}
+		return nil
+	}(); err != nil {
+		return params, &ogenerrors.DecodeParamError{
+			Name: "notificationId",
+			In:   "path",
+			Err:  err,
+		}
+	}
+	return params, nil
+}
+
 // ReadAnnouncementParams is parameters of read-announcement operation.
 type ReadAnnouncementParams struct {
 	AnnouncementId uuid.UUID
@@ -1395,6 +1461,72 @@ func decodeRevealCredentialParams(args [1]string, argsEscaped bool, r *http.Requ
 	}(); err != nil {
 		return params, &ogenerrors.DecodeParamError{
 			Name: "ticketId",
+			In:   "path",
+			Err:  err,
+		}
+	}
+	return params, nil
+}
+
+// UnarchiveNotificationParams is parameters of unarchive-notification operation.
+type UnarchiveNotificationParams struct {
+	// The notification, or the announcement when kind is announcement.
+	NotificationId uuid.UUID
+}
+
+func unpackUnarchiveNotificationParams(packed middleware.Parameters) (params UnarchiveNotificationParams) {
+	{
+		key := middleware.ParameterKey{
+			Name: "notificationId",
+			In:   "path",
+		}
+		params.NotificationId = packed[key].(uuid.UUID)
+	}
+	return params
+}
+
+func decodeUnarchiveNotificationParams(args [1]string, argsEscaped bool, r *http.Request) (params UnarchiveNotificationParams, _ error) {
+	// Decode path: notificationId.
+	if err := func() error {
+		param := args[0]
+		if argsEscaped {
+			unescaped, err := url.PathUnescape(args[0])
+			if err != nil {
+				return errors.Wrap(err, "unescape path")
+			}
+			param = unescaped
+		}
+		if len(param) > 0 {
+			d := uri.NewPathDecoder(uri.PathDecoderConfig{
+				Param:   "notificationId",
+				Value:   param,
+				Style:   uri.PathStyleSimple,
+				Explode: false,
+			})
+
+			if err := func() error {
+				val, err := d.DecodeValue()
+				if err != nil {
+					return err
+				}
+
+				c, err := conv.ToUUID(val)
+				if err != nil {
+					return err
+				}
+
+				params.NotificationId = c
+				return nil
+			}(); err != nil {
+				return err
+			}
+		} else {
+			return validate.ErrFieldRequired
+		}
+		return nil
+	}(); err != nil {
+		return params, &ogenerrors.DecodeParamError{
+			Name: "notificationId",
 			In:   "path",
 			Err:  err,
 		}

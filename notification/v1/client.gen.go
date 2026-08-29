@@ -974,9 +974,10 @@ type ClientInterface interface {
 	//
 	// Returns notifications in reverse chronological order, newest first.
 	//
-	// Announcements published to the whole platform appear here alongside notifications
-	// addressed to you individually and are distinguished by `kind`. They are read and archived
-	// through the same operations.
+	// Announcements are not in this list. They are one row for the whole platform rather than
+	// one per reader, so they are listed, read and counted by their own operations under
+	// `/api/v1/announcements`. `kind` is on every item here for clients that merge the two lists
+	// themselves, and it is `notification` for everything this operation returns.
 	//
 	// Corresponds with GET /api/v1/notifications (the `ListNotifications` operationId).
 	ListNotifications(ctx context.Context, params *ListNotificationsParams, reqEditors ...RequestEditorFn) (*http.Response, error)
@@ -1022,6 +1023,20 @@ type ClientInterface interface {
 	// Corresponds with GET /api/v1/notifications/{notificationId} (the `GetNotification` operationId).
 	GetNotification(ctx context.Context, notificationId NotificationId, reqEditors ...RequestEditorFn) (*http.Response, error)
 
+	// UnarchiveNotification Take one notification out of the archive
+	//
+	// Returns it to the default listing. Archiving is one click away from anything in the list,
+	// so undoing it has to be too; without this operation a mistaken archive is permanent, and
+	// the notification stays reachable only by asking for archived ones.
+	//
+	// It does not mark it unread again: archiving marked it read, and that it was read is still
+	// true. Use `mark-notification-unread` for that.
+	//
+	// Unarchiving one that is not archived succeeds and changes nothing.
+	//
+	// Corresponds with DELETE /api/v1/notifications/{notificationId}/archive (the `UnarchiveNotification` operationId).
+	UnarchiveNotification(ctx context.Context, notificationId NotificationId, reqEditors ...RequestEditorFn) (*http.Response, error)
+
 	// ArchiveNotification Archive one notification
 	//
 	// Archiving removes a notification from the default listing without deleting it; pass
@@ -1029,6 +1044,16 @@ type ClientInterface interface {
 	//
 	// Corresponds with POST /api/v1/notifications/{notificationId}/archive (the `ArchiveNotification` operationId).
 	ArchiveNotification(ctx context.Context, notificationId NotificationId, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// MarkNotificationUnread Mark one notification as unread
+	//
+	// Puts it back in the unread count, which is what somebody wants after opening a thing by
+	// accident and needing it to stay in front of them.
+	//
+	// Marking one that is already unread succeeds and changes nothing.
+	//
+	// Corresponds with DELETE /api/v1/notifications/{notificationId}/read (the `MarkNotificationUnread` operationId).
+	MarkNotificationUnread(ctx context.Context, notificationId NotificationId, reqEditors ...RequestEditorFn) (*http.Response, error)
 
 	// MarkNotificationRead Mark one notification as read
 	//
@@ -1494,9 +1519,10 @@ func (c *Client) ListNotificationTypes(ctx context.Context, reqEditors ...Reques
 //
 // Returns notifications in reverse chronological order, newest first.
 //
-// Announcements published to the whole platform appear here alongside notifications
-// addressed to you individually and are distinguished by `kind`. They are read and archived
-// through the same operations.
+// Announcements are not in this list. They are one row for the whole platform rather than
+// one per reader, so they are listed, read and counted by their own operations under
+// `/api/v1/announcements`. `kind` is on every item here for clients that merge the two lists
+// themselves, and it is `notification` for everything this operation returns.
 //
 // Corresponds with GET /api/v1/notifications (the `ListNotifications` operationId).
 func (c *Client) ListNotifications(ctx context.Context, params *ListNotificationsParams, reqEditors ...RequestEditorFn) (*http.Response, error) {
@@ -1592,6 +1618,30 @@ func (c *Client) GetNotification(ctx context.Context, notificationId Notificatio
 	return c.Client.Do(req)
 }
 
+// UnarchiveNotification Take one notification out of the archive
+//
+// Returns it to the default listing. Archiving is one click away from anything in the list,
+// so undoing it has to be too; without this operation a mistaken archive is permanent, and
+// the notification stays reachable only by asking for archived ones.
+//
+// It does not mark it unread again: archiving marked it read, and that it was read is still
+// true. Use `mark-notification-unread` for that.
+//
+// Unarchiving one that is not archived succeeds and changes nothing.
+//
+// Corresponds with DELETE /api/v1/notifications/{notificationId}/archive (the `UnarchiveNotification` operationId).
+func (c *Client) UnarchiveNotification(ctx context.Context, notificationId NotificationId, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewUnarchiveNotificationRequest(c.Server, notificationId)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
 // ArchiveNotification Archive one notification
 //
 // Archiving removes a notification from the default listing without deleting it; pass
@@ -1600,6 +1650,26 @@ func (c *Client) GetNotification(ctx context.Context, notificationId Notificatio
 // Corresponds with POST /api/v1/notifications/{notificationId}/archive (the `ArchiveNotification` operationId).
 func (c *Client) ArchiveNotification(ctx context.Context, notificationId NotificationId, reqEditors ...RequestEditorFn) (*http.Response, error) {
 	req, err := NewArchiveNotificationRequest(c.Server, notificationId)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+// MarkNotificationUnread Mark one notification as unread
+//
+// Puts it back in the unread count, which is what somebody wants after opening a thing by
+// accident and needing it to stay in front of them.
+//
+// Marking one that is already unread succeeds and changes nothing.
+//
+// Corresponds with DELETE /api/v1/notifications/{notificationId}/read (the `MarkNotificationUnread` operationId).
+func (c *Client) MarkNotificationUnread(ctx context.Context, notificationId NotificationId, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewMarkNotificationUnreadRequest(c.Server, notificationId)
 	if err != nil {
 		return nil, err
 	}
@@ -2528,6 +2598,40 @@ func NewGetNotificationRequest(server string, notificationId NotificationId) (*h
 	return req, nil
 }
 
+// NewUnarchiveNotificationRequest constructs an http.Request for the UnarchiveNotification method
+func NewUnarchiveNotificationRequest(server string, notificationId NotificationId) (*http.Request, error) {
+	var err error
+
+	var pathParam0 string
+
+	pathParam0, err = runtime.StyleParamWithOptions("simple", false, "notificationId", notificationId, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: "uuid"})
+	if err != nil {
+		return nil, err
+	}
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/api/v1/notifications/%s/archive", pathParam0)
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest(http.MethodDelete, queryURL.String(), nil)
+	if err != nil {
+		return nil, err
+	}
+
+	return req, nil
+}
+
 // NewArchiveNotificationRequest constructs an http.Request for the ArchiveNotification method
 func NewArchiveNotificationRequest(server string, notificationId NotificationId) (*http.Request, error) {
 	var err error
@@ -2555,6 +2659,40 @@ func NewArchiveNotificationRequest(server string, notificationId NotificationId)
 	}
 
 	req, err := http.NewRequest(http.MethodPost, queryURL.String(), nil)
+	if err != nil {
+		return nil, err
+	}
+
+	return req, nil
+}
+
+// NewMarkNotificationUnreadRequest constructs an http.Request for the MarkNotificationUnread method
+func NewMarkNotificationUnreadRequest(server string, notificationId NotificationId) (*http.Request, error) {
+	var err error
+
+	var pathParam0 string
+
+	pathParam0, err = runtime.StyleParamWithOptions("simple", false, "notificationId", notificationId, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: "uuid"})
+	if err != nil {
+		return nil, err
+	}
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/api/v1/notifications/%s/read", pathParam0)
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest(http.MethodDelete, queryURL.String(), nil)
 	if err != nil {
 		return nil, err
 	}
@@ -3164,9 +3302,10 @@ type ClientWithResponsesInterface interface {
 	//
 	// Returns notifications in reverse chronological order, newest first.
 	//
-	// Announcements published to the whole platform appear here alongside notifications
-	// addressed to you individually and are distinguished by `kind`. They are read and archived
-	// through the same operations.
+	// Announcements are not in this list. They are one row for the whole platform rather than
+	// one per reader, so they are listed, read and counted by their own operations under
+	// `/api/v1/announcements`. `kind` is on every item here for clients that merge the two lists
+	// themselves, and it is `notification` for everything this operation returns.
 	//
 	// Returns a wrapper object for the known response body format(s).
 	//
@@ -3218,6 +3357,22 @@ type ClientWithResponsesInterface interface {
 	// Corresponds with GET /api/v1/notifications/{notificationId} (the `GetNotification` operationId).
 	GetNotificationWithResponse(ctx context.Context, notificationId NotificationId, reqEditors ...RequestEditorFn) (*GetNotificationResponse, error)
 
+	// UnarchiveNotificationWithResponse Take one notification out of the archive
+	//
+	// Returns it to the default listing. Archiving is one click away from anything in the list,
+	// so undoing it has to be too; without this operation a mistaken archive is permanent, and
+	// the notification stays reachable only by asking for archived ones.
+	//
+	// It does not mark it unread again: archiving marked it read, and that it was read is still
+	// true. Use `mark-notification-unread` for that.
+	//
+	// Unarchiving one that is not archived succeeds and changes nothing.
+	//
+	// Returns a wrapper object for the known response body format(s).
+	//
+	// Corresponds with DELETE /api/v1/notifications/{notificationId}/archive (the `UnarchiveNotification` operationId).
+	UnarchiveNotificationWithResponse(ctx context.Context, notificationId NotificationId, reqEditors ...RequestEditorFn) (*UnarchiveNotificationResponse, error)
+
 	// ArchiveNotificationWithResponse Archive one notification
 	//
 	// Archiving removes a notification from the default listing without deleting it; pass
@@ -3227,6 +3382,18 @@ type ClientWithResponsesInterface interface {
 	//
 	// Corresponds with POST /api/v1/notifications/{notificationId}/archive (the `ArchiveNotification` operationId).
 	ArchiveNotificationWithResponse(ctx context.Context, notificationId NotificationId, reqEditors ...RequestEditorFn) (*ArchiveNotificationResponse, error)
+
+	// MarkNotificationUnreadWithResponse Mark one notification as unread
+	//
+	// Puts it back in the unread count, which is what somebody wants after opening a thing by
+	// accident and needing it to stay in front of them.
+	//
+	// Marking one that is already unread succeeds and changes nothing.
+	//
+	// Returns a wrapper object for the known response body format(s).
+	//
+	// Corresponds with DELETE /api/v1/notifications/{notificationId}/read (the `MarkNotificationUnread` operationId).
+	MarkNotificationUnreadWithResponse(ctx context.Context, notificationId NotificationId, reqEditors ...RequestEditorFn) (*MarkNotificationUnreadResponse, error)
 
 	// MarkNotificationReadWithResponse Mark one notification as read
 	//
@@ -4095,6 +4262,54 @@ func (r GetNotificationResponse) ContentType() string {
 	return ""
 }
 
+type UnarchiveNotificationResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	// JSON200 the response for an HTTP 200 `application/json` response
+	JSON200 *NotificationResource
+	// JSONDefault the response for an HTTP default `application/json` response
+	JSONDefault *Error
+}
+
+// GetJSON200 returns the response for an HTTP 200 `application/json` response
+func (r UnarchiveNotificationResponse) GetJSON200() *NotificationResource {
+	return r.JSON200
+}
+
+// GetJSONDefault returns the response for an HTTP default `application/json` response
+func (r UnarchiveNotificationResponse) GetJSONDefault() *Error {
+	return r.JSONDefault
+}
+
+// GetBody returns the raw response body bytes
+func (r UnarchiveNotificationResponse) GetBody() []byte {
+	return r.Body
+}
+
+// Status returns HTTPResponse.Status
+func (r UnarchiveNotificationResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r UnarchiveNotificationResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+// ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
+func (r UnarchiveNotificationResponse) ContentType() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Header.Get("Content-Type")
+	}
+	return ""
+}
+
 type ArchiveNotificationResponse struct {
 	Body         []byte
 	HTTPResponse *http.Response
@@ -4137,6 +4352,54 @@ func (r ArchiveNotificationResponse) StatusCode() int {
 
 // ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
 func (r ArchiveNotificationResponse) ContentType() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Header.Get("Content-Type")
+	}
+	return ""
+}
+
+type MarkNotificationUnreadResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	// JSON200 the response for an HTTP 200 `application/json` response
+	JSON200 *NotificationResource
+	// JSONDefault the response for an HTTP default `application/json` response
+	JSONDefault *Error
+}
+
+// GetJSON200 returns the response for an HTTP 200 `application/json` response
+func (r MarkNotificationUnreadResponse) GetJSON200() *NotificationResource {
+	return r.JSON200
+}
+
+// GetJSONDefault returns the response for an HTTP default `application/json` response
+func (r MarkNotificationUnreadResponse) GetJSONDefault() *Error {
+	return r.JSONDefault
+}
+
+// GetBody returns the raw response body bytes
+func (r MarkNotificationUnreadResponse) GetBody() []byte {
+	return r.Body
+}
+
+// Status returns HTTPResponse.Status
+func (r MarkNotificationUnreadResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r MarkNotificationUnreadResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+// ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
+func (r MarkNotificationUnreadResponse) ContentType() string {
 	if r.HTTPResponse != nil {
 		return r.HTTPResponse.Header.Get("Content-Type")
 	}
@@ -4799,9 +5062,10 @@ func (c *ClientWithResponses) ListNotificationTypesWithResponse(ctx context.Cont
 //
 // Returns notifications in reverse chronological order, newest first.
 //
-// Announcements published to the whole platform appear here alongside notifications
-// addressed to you individually and are distinguished by `kind`. They are read and archived
-// through the same operations.
+// Announcements are not in this list. They are one row for the whole platform rather than
+// one per reader, so they are listed, read and counted by their own operations under
+// `/api/v1/announcements`. `kind` is on every item here for clients that merge the two lists
+// themselves, and it is `notification` for everything this operation returns.
 //
 // Returns a wrapper object for the known response body format(s).
 //
@@ -4883,6 +5147,28 @@ func (c *ClientWithResponses) GetNotificationWithResponse(ctx context.Context, n
 	return ParseGetNotificationResponse(rsp)
 }
 
+// UnarchiveNotificationWithResponse Take one notification out of the archive
+//
+// Returns it to the default listing. Archiving is one click away from anything in the list,
+// so undoing it has to be too; without this operation a mistaken archive is permanent, and
+// the notification stays reachable only by asking for archived ones.
+//
+// It does not mark it unread again: archiving marked it read, and that it was read is still
+// true. Use `mark-notification-unread` for that.
+//
+// Unarchiving one that is not archived succeeds and changes nothing.
+//
+// Returns a wrapper object for the known response body format(s).
+//
+// Corresponds with DELETE /api/v1/notifications/{notificationId}/archive (the `UnarchiveNotification` operationId).
+func (c *ClientWithResponses) UnarchiveNotificationWithResponse(ctx context.Context, notificationId NotificationId, reqEditors ...RequestEditorFn) (*UnarchiveNotificationResponse, error) {
+	rsp, err := c.UnarchiveNotification(ctx, notificationId, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseUnarchiveNotificationResponse(rsp)
+}
+
 // ArchiveNotificationWithResponse Archive one notification
 //
 // Archiving removes a notification from the default listing without deleting it; pass
@@ -4897,6 +5183,24 @@ func (c *ClientWithResponses) ArchiveNotificationWithResponse(ctx context.Contex
 		return nil, err
 	}
 	return ParseArchiveNotificationResponse(rsp)
+}
+
+// MarkNotificationUnreadWithResponse Mark one notification as unread
+//
+// Puts it back in the unread count, which is what somebody wants after opening a thing by
+// accident and needing it to stay in front of them.
+//
+// Marking one that is already unread succeeds and changes nothing.
+//
+// Returns a wrapper object for the known response body format(s).
+//
+// Corresponds with DELETE /api/v1/notifications/{notificationId}/read (the `MarkNotificationUnread` operationId).
+func (c *ClientWithResponses) MarkNotificationUnreadWithResponse(ctx context.Context, notificationId NotificationId, reqEditors ...RequestEditorFn) (*MarkNotificationUnreadResponse, error) {
+	rsp, err := c.MarkNotificationUnread(ctx, notificationId, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseMarkNotificationUnreadResponse(rsp)
 }
 
 // MarkNotificationReadWithResponse Mark one notification as read
@@ -5612,6 +5916,39 @@ func ParseGetNotificationResponse(rsp *http.Response) (*GetNotificationResponse,
 	return response, nil
 }
 
+// ParseUnarchiveNotificationResponse parses an HTTP response from a UnarchiveNotificationWithResponse call
+func ParseUnarchiveNotificationResponse(rsp *http.Response) (*UnarchiveNotificationResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &UnarchiveNotificationResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest NotificationResource
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && true:
+		var dest Error
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSONDefault = &dest
+
+	}
+
+	return response, nil
+}
+
 // ParseArchiveNotificationResponse parses an HTTP response from a ArchiveNotificationWithResponse call
 func ParseArchiveNotificationResponse(rsp *http.Response) (*ArchiveNotificationResponse, error) {
 	bodyBytes, err := io.ReadAll(rsp.Body)
@@ -5621,6 +5958,39 @@ func ParseArchiveNotificationResponse(rsp *http.Response) (*ArchiveNotificationR
 	}
 
 	response := &ArchiveNotificationResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest NotificationResource
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && true:
+		var dest Error
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSONDefault = &dest
+
+	}
+
+	return response, nil
+}
+
+// ParseMarkNotificationUnreadResponse parses an HTTP response from a MarkNotificationUnreadWithResponse call
+func ParseMarkNotificationUnreadResponse(rsp *http.Response) (*MarkNotificationUnreadResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &MarkNotificationUnreadResponse{
 		Body:         bodyBytes,
 		HTTPResponse: rsp,
 	}

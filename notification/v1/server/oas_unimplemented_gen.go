@@ -180,9 +180,10 @@ func (UnimplementedHandler) ListNotificationTypes(ctx context.Context) (r *Notif
 //
 // Returns notifications in reverse chronological order, newest first.
 //
-// Announcements published to the whole platform appear here alongside notifications addressed to you
-// individually and are distinguished by `kind`. They are read and archived through the same
-// operations.
+// Announcements are not in this list. They are one row for the whole platform rather than one per
+// reader, so they are listed, read and counted by their own operations under `/api/v1/announcements`.
+// `kind` is on every item here for clients that merge the two lists themselves, and it is
+// `notification` for everything this operation returns.
 //
 // GET /api/v1/notifications
 func (UnimplementedHandler) ListNotifications(ctx context.Context, params ListNotificationsParams) (r *LengthAwarePageNotificationResource, _ error) {
@@ -218,6 +219,18 @@ func (UnimplementedHandler) ListUserChannels(ctx context.Context, params ListUse
 //
 // POST /api/v1/notifications/{notificationId}/read
 func (UnimplementedHandler) MarkNotificationRead(ctx context.Context, params MarkNotificationReadParams) (r *NotificationResource, _ error) {
+	return r, ht.ErrNotImplemented
+}
+
+// MarkNotificationUnread implements mark-notification-unread operation.
+//
+// Puts it back in the unread count, which is what somebody wants after opening a thing by accident and
+// needing it to stay in front of them.
+//
+// Marking one that is already unread succeeds and changes nothing.
+//
+// DELETE /api/v1/notifications/{notificationId}/read
+func (UnimplementedHandler) MarkNotificationUnread(ctx context.Context, params MarkNotificationUnreadParams) (r *NotificationResource, _ error) {
 	return r, ht.ErrNotImplemented
 }
 
@@ -271,6 +284,22 @@ func (UnimplementedHandler) ReadAnnouncement(ctx context.Context, params ReadAnn
 //
 // POST /api/v1/credentials/{ticketId}/reveal
 func (UnimplementedHandler) RevealCredential(ctx context.Context, params RevealCredentialParams) (r *RevealedCredentialResource, _ error) {
+	return r, ht.ErrNotImplemented
+}
+
+// UnarchiveNotification implements unarchive-notification operation.
+//
+// Returns it to the default listing. Archiving is one click away from anything in the list, so undoing
+// it has to be too; without this operation a mistaken archive is permanent, and the notification stays
+// reachable only by asking for archived ones.
+//
+// It does not mark it unread again: archiving marked it read, and that it was read is still true. Use
+// `mark-notification-unread` for that.
+//
+// Unarchiving one that is not archived succeeds and changes nothing.
+//
+// DELETE /api/v1/notifications/{notificationId}/archive
+func (UnimplementedHandler) UnarchiveNotification(ctx context.Context, params UnarchiveNotificationParams) (r *NotificationResource, _ error) {
 	return r, ht.ErrNotImplemented
 }
 
