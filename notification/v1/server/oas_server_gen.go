@@ -29,6 +29,27 @@ type Handler interface {
 	//
 	// POST /api/v1/realtime/auth
 	AuthorizeRealtimeChannel(ctx context.Context, req *AuthorizeRealtimeChannelRequestBody) (*RealtimeAuthResource, error)
+	// CancelEmailOverride implements cancel-email-override operation.
+	//
+	// Drops the pending address and the code that was sent to it. Nothing else changes: an address that
+	// was already confirmed keeps receiving email.
+	//
+	// It exists because starting this and then changing your mind is ordinary, and the alternative is a
+	// settings page that shows an address waiting to be confirmed forever.
+	//
+	// DELETE /api/v1/preferences/email-override/code
+	CancelEmailOverride(ctx context.Context) (*PreferencesResource, error)
+	// ConfirmEmailOverride implements confirm-email-override operation.
+	//
+	// A correct code moves the pending address into use: email starts going there instead of the account
+	// address, and the pending slot is emptied.
+	//
+	// A wrong code counts against the attempts on that code. Running out of attempts throws the code away,
+	// and a new one has to be sent; the pending address itself is kept, so nobody loses their place by
+	// mistyping.
+	//
+	// POST /api/v1/preferences/email-override/code/confirm
+	ConfirmEmailOverride(ctx context.Context, req *ConfirmEmailOverrideRequestBody) (*PreferencesResource, error)
 	// CountUnreadNotifications implements count-unread-notifications operation.
 	//
 	// Returns the number of unread notifications. This is the value behind the badge in the console, and
@@ -219,6 +240,21 @@ type Handler interface {
 	//
 	// POST /api/v1/credentials/{ticketId}/reveal
 	RevealCredential(ctx context.Context, params RevealCredentialParams) (*RevealedCredentialResource, error)
+	// SendEmailOverrideCode implements send-email-override-code operation.
+	//
+	// Emails a short code to the address waiting to be confirmed. That address receives this and nothing
+	// else; every other notification keeps going where it went before.
+	//
+	// The code stops working after a few minutes, and a wrong one can only be tried a handful of times
+	// before it is thrown away and a new one has to be sent. Both limits exist for the same reason: a six
+	// digit code is guessable if it lives forever and can be tried forever.
+	//
+	// Sending is rate limited per account and per destination address. The second limit is the one that
+	// matters to somebody who never asked to be involved: without it, this operation is a way to make the
+	// platform mail a stranger repeatedly.
+	//
+	// POST /api/v1/preferences/email-override/code
+	SendEmailOverrideCode(ctx context.Context) (*EmailOverrideCodeResource, error)
 	// UnarchiveNotification implements unarchive-notification operation.
 	//
 	// Returns it to the default listing. Archiving is one click away from anything in the list, so undoing
@@ -236,9 +272,13 @@ type Handler interface {
 	//
 	// Fields that are omitted are left alone.
 	//
-	// Setting `email_override` starts verification of that address: email continues to be delivered to the
-	// address on the account until the new one is confirmed. Setting it to null returns delivery to the
-	// account address.
+	// Setting `email_override` records it as the pending address; nothing is sent to it until
+	// `send-email-override-code` is called, and email keeps going where it went before. Setting it to null
+	// clears the pending address and any address in use, returning delivery to the account address.
+	//
+	// An address is never used until somebody proves they can read it. Without that, anybody could point
+	// their own notifications at a stranger's mailbox, and the stranger would get mail about an account
+	// they have never heard of.
 	//
 	// PATCH /api/v1/preferences
 	UpdateNotificationPreferences(ctx context.Context, req *UpdatePreferencesRequestBody) (*PreferencesResource, error)

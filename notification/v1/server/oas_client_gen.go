@@ -50,6 +50,27 @@ type Invoker interface {
 	//
 	// POST /api/v1/realtime/auth
 	AuthorizeRealtimeChannel(ctx context.Context, request *AuthorizeRealtimeChannelRequestBody) (*RealtimeAuthResource, error)
+	// CancelEmailOverride invokes cancel-email-override operation.
+	//
+	// Drops the pending address and the code that was sent to it. Nothing else changes: an address that
+	// was already confirmed keeps receiving email.
+	//
+	// It exists because starting this and then changing your mind is ordinary, and the alternative is a
+	// settings page that shows an address waiting to be confirmed forever.
+	//
+	// DELETE /api/v1/preferences/email-override/code
+	CancelEmailOverride(ctx context.Context) (*PreferencesResource, error)
+	// ConfirmEmailOverride invokes confirm-email-override operation.
+	//
+	// A correct code moves the pending address into use: email starts going there instead of the account
+	// address, and the pending slot is emptied.
+	//
+	// A wrong code counts against the attempts on that code. Running out of attempts throws the code away,
+	// and a new one has to be sent; the pending address itself is kept, so nobody loses their place by
+	// mistyping.
+	//
+	// POST /api/v1/preferences/email-override/code/confirm
+	ConfirmEmailOverride(ctx context.Context, request *ConfirmEmailOverrideRequestBody) (*PreferencesResource, error)
 	// CountUnreadNotifications invokes count-unread-notifications operation.
 	//
 	// Returns the number of unread notifications. This is the value behind the badge in the console, and
@@ -240,6 +261,21 @@ type Invoker interface {
 	//
 	// POST /api/v1/credentials/{ticketId}/reveal
 	RevealCredential(ctx context.Context, params RevealCredentialParams) (*RevealedCredentialResource, error)
+	// SendEmailOverrideCode invokes send-email-override-code operation.
+	//
+	// Emails a short code to the address waiting to be confirmed. That address receives this and nothing
+	// else; every other notification keeps going where it went before.
+	//
+	// The code stops working after a few minutes, and a wrong one can only be tried a handful of times
+	// before it is thrown away and a new one has to be sent. Both limits exist for the same reason: a six
+	// digit code is guessable if it lives forever and can be tried forever.
+	//
+	// Sending is rate limited per account and per destination address. The second limit is the one that
+	// matters to somebody who never asked to be involved: without it, this operation is a way to make the
+	// platform mail a stranger repeatedly.
+	//
+	// POST /api/v1/preferences/email-override/code
+	SendEmailOverrideCode(ctx context.Context) (*EmailOverrideCodeResource, error)
 	// UnarchiveNotification invokes unarchive-notification operation.
 	//
 	// Returns it to the default listing. Archiving is one click away from anything in the list, so undoing
@@ -257,9 +293,13 @@ type Invoker interface {
 	//
 	// Fields that are omitted are left alone.
 	//
-	// Setting `email_override` starts verification of that address: email continues to be delivered to the
-	// address on the account until the new one is confirmed. Setting it to null returns delivery to the
-	// account address.
+	// Setting `email_override` records it as the pending address; nothing is sent to it until
+	// `send-email-override-code` is called, and email keeps going where it went before. Setting it to null
+	// clears the pending address and any address in use, returning delivery to the account address.
+	//
+	// An address is never used until somebody proves they can read it. Without that, anybody could point
+	// their own notifications at a stranger's mailbox, and the stranger would get mail about an account
+	// they have never heard of.
 	//
 	// PATCH /api/v1/preferences
 	UpdateNotificationPreferences(ctx context.Context, request *UpdatePreferencesRequestBody) (*PreferencesResource, error)
@@ -597,6 +637,244 @@ func (c *Client) sendAuthorizeRealtimeChannel(ctx context.Context, request *Auth
 
 	stage = "DecodeResponse"
 	result, err := decodeAuthorizeRealtimeChannelResponse(resp)
+	if err != nil {
+		return res, errors.Wrap(err, "decode response")
+	}
+
+	return result, nil
+}
+
+// CancelEmailOverride invokes cancel-email-override operation.
+//
+// Drops the pending address and the code that was sent to it. Nothing else changes: an address that
+// was already confirmed keeps receiving email.
+//
+// It exists because starting this and then changing your mind is ordinary, and the alternative is a
+// settings page that shows an address waiting to be confirmed forever.
+//
+// DELETE /api/v1/preferences/email-override/code
+func (c *Client) CancelEmailOverride(ctx context.Context) (*PreferencesResource, error) {
+	res, err := c.sendCancelEmailOverride(ctx)
+	return res, err
+}
+
+func (c *Client) sendCancelEmailOverride(ctx context.Context) (res *PreferencesResource, err error) {
+	otelAttrs := []attribute.KeyValue{
+		otelogen.OperationID("cancel-email-override"),
+		semconv.HTTPRequestMethodKey.String("DELETE"),
+		semconv.URLTemplateKey.String("/api/v1/preferences/email-override/code"),
+	}
+	otelAttrs = append(otelAttrs, c.cfg.Attributes...)
+
+	// Run stopwatch.
+	startTime := time.Now()
+	defer func() {
+		// Use floating point division here for higher precision (instead of Millisecond method).
+		elapsedDuration := time.Since(startTime)
+		c.duration.Record(ctx, float64(elapsedDuration)/float64(time.Millisecond), metric.WithAttributes(otelAttrs...))
+	}()
+
+	// Increment request counter.
+	c.requests.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
+
+	// Start a span for this request.
+	ctx, span := c.cfg.Tracer.Start(ctx, CancelEmailOverrideOperation,
+		trace.WithAttributes(otelAttrs...),
+		clientSpanKind,
+	)
+	// Track stage for error reporting.
+	var stage string
+	defer func() {
+		if err != nil {
+			span.RecordError(err)
+			span.SetStatus(codes.Error, stage)
+			c.errors.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
+		}
+		span.End()
+	}()
+
+	stage = "BuildURL"
+	u := uri.Clone(c.requestURL(ctx))
+	var pathParts [1]string
+	pathParts[0] = "/api/v1/preferences/email-override/code"
+	uri.AddPathParts(u, pathParts[:]...)
+
+	stage = "EncodeRequest"
+	r, err := ht.NewRequest(ctx, "DELETE", u)
+	if err != nil {
+		return res, errors.Wrap(err, "create request")
+	}
+
+	{
+		type bitset = [1]uint8
+		var satisfied bitset
+		{
+			stage = "Security:BearerAuth"
+			switch err := c.securityBearerAuth(ctx, CancelEmailOverrideOperation, r); {
+			case err == nil: // if NO error
+				satisfied[0] |= 1 << 0
+			case errors.Is(err, ogenerrors.ErrSkipClientSecurity):
+				// Skip this security.
+			default:
+				return res, errors.Wrap(err, "security \"BearerAuth\"")
+			}
+		}
+
+		if ok := func() bool {
+		nextRequirement:
+			for _, requirement := range []bitset{
+				{0b00000001},
+			} {
+				for i, mask := range requirement {
+					if satisfied[i]&mask != mask {
+						continue nextRequirement
+					}
+				}
+				return true
+			}
+			return false
+		}(); !ok {
+			return res, ogenerrors.ErrSecurityRequirementIsNotSatisfied
+		}
+	}
+
+	stage = "SendRequest"
+	resp, err := c.cfg.Client.Do(r)
+	if err != nil {
+		return res, errors.Wrap(err, "do request")
+	}
+	body := resp.Body
+	defer func() {
+		// Drain the body to EOF before closing, so the underlying
+		// connection can be reused by the Transport regardless of the
+		// response status code. See https://github.com/ogen-go/ogen/issues/1670.
+		_, _ = io.Copy(io.Discard, body)
+		_ = body.Close()
+	}()
+
+	stage = "DecodeResponse"
+	result, err := decodeCancelEmailOverrideResponse(resp)
+	if err != nil {
+		return res, errors.Wrap(err, "decode response")
+	}
+
+	return result, nil
+}
+
+// ConfirmEmailOverride invokes confirm-email-override operation.
+//
+// A correct code moves the pending address into use: email starts going there instead of the account
+// address, and the pending slot is emptied.
+//
+// A wrong code counts against the attempts on that code. Running out of attempts throws the code away,
+// and a new one has to be sent; the pending address itself is kept, so nobody loses their place by
+// mistyping.
+//
+// POST /api/v1/preferences/email-override/code/confirm
+func (c *Client) ConfirmEmailOverride(ctx context.Context, request *ConfirmEmailOverrideRequestBody) (*PreferencesResource, error) {
+	res, err := c.sendConfirmEmailOverride(ctx, request)
+	return res, err
+}
+
+func (c *Client) sendConfirmEmailOverride(ctx context.Context, request *ConfirmEmailOverrideRequestBody) (res *PreferencesResource, err error) {
+	otelAttrs := []attribute.KeyValue{
+		otelogen.OperationID("confirm-email-override"),
+		semconv.HTTPRequestMethodKey.String("POST"),
+		semconv.URLTemplateKey.String("/api/v1/preferences/email-override/code/confirm"),
+	}
+	otelAttrs = append(otelAttrs, c.cfg.Attributes...)
+
+	// Run stopwatch.
+	startTime := time.Now()
+	defer func() {
+		// Use floating point division here for higher precision (instead of Millisecond method).
+		elapsedDuration := time.Since(startTime)
+		c.duration.Record(ctx, float64(elapsedDuration)/float64(time.Millisecond), metric.WithAttributes(otelAttrs...))
+	}()
+
+	// Increment request counter.
+	c.requests.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
+
+	// Start a span for this request.
+	ctx, span := c.cfg.Tracer.Start(ctx, ConfirmEmailOverrideOperation,
+		trace.WithAttributes(otelAttrs...),
+		clientSpanKind,
+	)
+	// Track stage for error reporting.
+	var stage string
+	defer func() {
+		if err != nil {
+			span.RecordError(err)
+			span.SetStatus(codes.Error, stage)
+			c.errors.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
+		}
+		span.End()
+	}()
+
+	stage = "BuildURL"
+	u := uri.Clone(c.requestURL(ctx))
+	var pathParts [1]string
+	pathParts[0] = "/api/v1/preferences/email-override/code/confirm"
+	uri.AddPathParts(u, pathParts[:]...)
+
+	stage = "EncodeRequest"
+	r, err := ht.NewRequest(ctx, "POST", u)
+	if err != nil {
+		return res, errors.Wrap(err, "create request")
+	}
+	if err := encodeConfirmEmailOverrideRequest(request, r); err != nil {
+		return res, errors.Wrap(err, "encode request")
+	}
+
+	{
+		type bitset = [1]uint8
+		var satisfied bitset
+		{
+			stage = "Security:BearerAuth"
+			switch err := c.securityBearerAuth(ctx, ConfirmEmailOverrideOperation, r); {
+			case err == nil: // if NO error
+				satisfied[0] |= 1 << 0
+			case errors.Is(err, ogenerrors.ErrSkipClientSecurity):
+				// Skip this security.
+			default:
+				return res, errors.Wrap(err, "security \"BearerAuth\"")
+			}
+		}
+
+		if ok := func() bool {
+		nextRequirement:
+			for _, requirement := range []bitset{
+				{0b00000001},
+			} {
+				for i, mask := range requirement {
+					if satisfied[i]&mask != mask {
+						continue nextRequirement
+					}
+				}
+				return true
+			}
+			return false
+		}(); !ok {
+			return res, ogenerrors.ErrSecurityRequirementIsNotSatisfied
+		}
+	}
+
+	stage = "SendRequest"
+	resp, err := c.cfg.Client.Do(r)
+	if err != nil {
+		return res, errors.Wrap(err, "do request")
+	}
+	body := resp.Body
+	defer func() {
+		// Drain the body to EOF before closing, so the underlying
+		// connection can be reused by the Transport regardless of the
+		// response status code. See https://github.com/ogen-go/ogen/issues/1670.
+		_, _ = io.Copy(io.Discard, body)
+		_ = body.Close()
+	}()
+
+	stage = "DecodeResponse"
+	result, err := decodeConfirmEmailOverrideResponse(resp)
 	if err != nil {
 		return res, errors.Wrap(err, "decode response")
 	}
@@ -3172,6 +3450,128 @@ func (c *Client) sendRevealCredential(ctx context.Context, params RevealCredenti
 	return result, nil
 }
 
+// SendEmailOverrideCode invokes send-email-override-code operation.
+//
+// Emails a short code to the address waiting to be confirmed. That address receives this and nothing
+// else; every other notification keeps going where it went before.
+//
+// The code stops working after a few minutes, and a wrong one can only be tried a handful of times
+// before it is thrown away and a new one has to be sent. Both limits exist for the same reason: a six
+// digit code is guessable if it lives forever and can be tried forever.
+//
+// Sending is rate limited per account and per destination address. The second limit is the one that
+// matters to somebody who never asked to be involved: without it, this operation is a way to make the
+// platform mail a stranger repeatedly.
+//
+// POST /api/v1/preferences/email-override/code
+func (c *Client) SendEmailOverrideCode(ctx context.Context) (*EmailOverrideCodeResource, error) {
+	res, err := c.sendSendEmailOverrideCode(ctx)
+	return res, err
+}
+
+func (c *Client) sendSendEmailOverrideCode(ctx context.Context) (res *EmailOverrideCodeResource, err error) {
+	otelAttrs := []attribute.KeyValue{
+		otelogen.OperationID("send-email-override-code"),
+		semconv.HTTPRequestMethodKey.String("POST"),
+		semconv.URLTemplateKey.String("/api/v1/preferences/email-override/code"),
+	}
+	otelAttrs = append(otelAttrs, c.cfg.Attributes...)
+
+	// Run stopwatch.
+	startTime := time.Now()
+	defer func() {
+		// Use floating point division here for higher precision (instead of Millisecond method).
+		elapsedDuration := time.Since(startTime)
+		c.duration.Record(ctx, float64(elapsedDuration)/float64(time.Millisecond), metric.WithAttributes(otelAttrs...))
+	}()
+
+	// Increment request counter.
+	c.requests.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
+
+	// Start a span for this request.
+	ctx, span := c.cfg.Tracer.Start(ctx, SendEmailOverrideCodeOperation,
+		trace.WithAttributes(otelAttrs...),
+		clientSpanKind,
+	)
+	// Track stage for error reporting.
+	var stage string
+	defer func() {
+		if err != nil {
+			span.RecordError(err)
+			span.SetStatus(codes.Error, stage)
+			c.errors.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
+		}
+		span.End()
+	}()
+
+	stage = "BuildURL"
+	u := uri.Clone(c.requestURL(ctx))
+	var pathParts [1]string
+	pathParts[0] = "/api/v1/preferences/email-override/code"
+	uri.AddPathParts(u, pathParts[:]...)
+
+	stage = "EncodeRequest"
+	r, err := ht.NewRequest(ctx, "POST", u)
+	if err != nil {
+		return res, errors.Wrap(err, "create request")
+	}
+
+	{
+		type bitset = [1]uint8
+		var satisfied bitset
+		{
+			stage = "Security:BearerAuth"
+			switch err := c.securityBearerAuth(ctx, SendEmailOverrideCodeOperation, r); {
+			case err == nil: // if NO error
+				satisfied[0] |= 1 << 0
+			case errors.Is(err, ogenerrors.ErrSkipClientSecurity):
+				// Skip this security.
+			default:
+				return res, errors.Wrap(err, "security \"BearerAuth\"")
+			}
+		}
+
+		if ok := func() bool {
+		nextRequirement:
+			for _, requirement := range []bitset{
+				{0b00000001},
+			} {
+				for i, mask := range requirement {
+					if satisfied[i]&mask != mask {
+						continue nextRequirement
+					}
+				}
+				return true
+			}
+			return false
+		}(); !ok {
+			return res, ogenerrors.ErrSecurityRequirementIsNotSatisfied
+		}
+	}
+
+	stage = "SendRequest"
+	resp, err := c.cfg.Client.Do(r)
+	if err != nil {
+		return res, errors.Wrap(err, "do request")
+	}
+	body := resp.Body
+	defer func() {
+		// Drain the body to EOF before closing, so the underlying
+		// connection can be reused by the Transport regardless of the
+		// response status code. See https://github.com/ogen-go/ogen/issues/1670.
+		_, _ = io.Copy(io.Discard, body)
+		_ = body.Close()
+	}()
+
+	stage = "DecodeResponse"
+	result, err := decodeSendEmailOverrideCodeResponse(resp)
+	if err != nil {
+		return res, errors.Wrap(err, "decode response")
+	}
+
+	return result, nil
+}
+
 // UnarchiveNotification invokes unarchive-notification operation.
 //
 // Returns it to the default listing. Archiving is one click away from anything in the list, so undoing
@@ -3315,9 +3715,13 @@ func (c *Client) sendUnarchiveNotification(ctx context.Context, params Unarchive
 //
 // Fields that are omitted are left alone.
 //
-// Setting `email_override` starts verification of that address: email continues to be delivered to the
-// address on the account until the new one is confirmed. Setting it to null returns delivery to the
-// account address.
+// Setting `email_override` records it as the pending address; nothing is sent to it until
+// `send-email-override-code` is called, and email keeps going where it went before. Setting it to null
+// clears the pending address and any address in use, returning delivery to the account address.
+//
+// An address is never used until somebody proves they can read it. Without that, anybody could point
+// their own notifications at a stranger's mailbox, and the stranger would get mail about an account
+// they have never heard of.
 //
 // PATCH /api/v1/preferences
 func (c *Client) UpdateNotificationPreferences(ctx context.Context, request *UpdatePreferencesRequestBody) (*PreferencesResource, error) {

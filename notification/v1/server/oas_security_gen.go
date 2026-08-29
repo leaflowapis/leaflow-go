@@ -39,6 +39,8 @@ func findAuthorization(h http.Header, prefix string) (string, bool) {
 var operationRolesBearerAuth = map[string][]string{
 	ArchiveNotificationOperation:           []string{},
 	AuthorizeRealtimeChannelOperation:      []string{},
+	CancelEmailOverrideOperation:           []string{},
+	ConfirmEmailOverrideOperation:          []string{},
 	CountUnreadNotificationsOperation:      []string{},
 	CreateUserChannelOperation:             []string{},
 	DeleteTypePreferenceOperation:          []string{},
@@ -57,6 +59,7 @@ var operationRolesBearerAuth = map[string][]string{
 	ReadAllAnnouncementsOperation:          []string{},
 	ReadAnnouncementOperation:              []string{},
 	RevealCredentialOperation:              []string{},
+	SendEmailOverrideCodeOperation:         []string{},
 	UnarchiveNotificationOperation:         []string{},
 	UpdateNotificationPreferencesOperation: []string{},
 	UpdateTypePreferenceOperation:          []string{},

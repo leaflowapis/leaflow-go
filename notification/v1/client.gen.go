@@ -297,6 +297,12 @@ type ChannelResource struct {
 // `notification:channels.manage` to register or delete.
 type ChannelScope string
 
+// ConfirmEmailOverrideRequestBody defines model for ConfirmEmailOverrideRequestBody.
+type ConfirmEmailOverrideRequestBody struct {
+	// Code The code from the email, exactly as it appears there
+	Code string `json:"code"`
+}
+
 // CreateChannelRequestBody defines model for CreateChannelRequestBody.
 type CreateChannelRequestBody struct {
 	// ChannelScope `user` is yours alone. `project` is shared with everyone in the project and requires
@@ -355,6 +361,19 @@ type CredentialTicketResource struct {
 
 	// SubjectKind What the credential belongs to.
 	SubjectKind CredentialSubjectKind `json:"subject_kind"`
+}
+
+// EmailOverrideCodeResource What was sent, and when the next one may be asked for.
+type EmailOverrideCodeResource struct {
+	// Address Where the code went. It is the pending address, echoed so a client can show it
+	Address string `json:"address"`
+
+	// ExpiresAt When this code stops working
+	ExpiresAt time.Time `json:"expires_at"`
+
+	// ResendAvailableAt The earliest another code may be asked for. Asking sooner is refused rather than
+	// silently ignored, so a client can show the wait instead of a failure
+	ResendAvailableAt time.Time `json:"resend_available_at"`
 }
 
 // Error defines model for Error.
@@ -505,10 +524,20 @@ type PreferencesResource struct {
 	// EmailAddress Where email is delivered right now, which is the account address unless a verified override replaces it
 	EmailAddress string `json:"email_address"`
 
-	// EmailOverride An address to receive email instead of the account address; null when the account address is used
+	// EmailOverride The address email goes to instead of the account address; null when the account address
+	// is used. Only ever an address that was confirmed by code
 	EmailOverride *string `json:"email_override"`
 
-	// EmailOverrideVerifiedAt When the override was confirmed; null while it is pending, during which email still goes to the account address
+	// EmailOverridePending An address waiting to be confirmed; null when nothing is waiting. It receives nothing but
+	// the code, and the address in `email_override` keeps being used until this one is
+	// confirmed
+	EmailOverridePending *string `json:"email_override_pending"`
+
+	// EmailOverridePendingExpiresAt When the code last sent to the pending address stops working; null when no code is
+	// outstanding, in which case a new one has to be sent before it can be confirmed
+	EmailOverridePendingExpiresAt *time.Time `json:"email_override_pending_expires_at"`
+
+	// EmailOverrideVerifiedAt When the address in `email_override` was confirmed; null when there is no override
 	EmailOverrideVerifiedAt *time.Time `json:"email_override_verified_at"`
 
 	// Locale The language notifications are written in, as an IETF language tag
@@ -606,7 +635,10 @@ type UpdateChannelRequestBody struct {
 
 // UpdatePreferencesRequestBody Fields that are omitted are left alone.
 type UpdatePreferencesRequestBody struct {
-	// EmailOverride An address to receive email instead of the account address. Null returns delivery to the account address
+	// EmailOverride An address to receive email instead of the account address. It is stored as pending and
+	// receives nothing until it is confirmed by code, so the address in use does not change
+	// here. Null clears both the pending address and the one in use, returning delivery to
+	// the account address
 	EmailOverride *string `json:"email_override,omitempty"`
 
 	// Locale An IETF language tag. A language that is not supported is rejected rather than approximated
@@ -710,6 +742,9 @@ type MarkNotificationsReadJSONRequestBody = MarkNotificationsReadRequestBody
 
 // UpdateNotificationPreferencesJSONRequestBody defines body for UpdateNotificationPreferences for application/json ContentType.
 type UpdateNotificationPreferencesJSONRequestBody = UpdatePreferencesRequestBody
+
+// ConfirmEmailOverrideJSONRequestBody defines body for ConfirmEmailOverride for application/json ContentType.
+type ConfirmEmailOverrideJSONRequestBody = ConfirmEmailOverrideRequestBody
 
 // UpdateTypePreferenceJSONRequestBody defines body for UpdateTypePreference for application/json ContentType.
 type UpdateTypePreferenceJSONRequestBody = UpdateTypePreferenceRequestBody
@@ -1076,9 +1111,14 @@ type ClientInterface interface {
 	//
 	// Fields that are omitted are left alone.
 	//
-	// Setting `email_override` starts verification of that address: email continues to be
-	// delivered to the address on the account until the new one is confirmed. Setting it to null
-	// returns delivery to the account address.
+	// Setting `email_override` records it as the pending address; nothing is sent to it until
+	// `send-email-override-code` is called, and email keeps going where it went before. Setting
+	// it to null clears the pending address and any address in use, returning delivery to the
+	// account address.
+	//
+	// An address is never used until somebody proves they can read it. Without that, anybody
+	// could point their own notifications at a stranger's mailbox, and the stranger would get
+	// mail about an account they have never heard of.
 	//
 	// Takes any type of body and a specified content type.
 	//
@@ -1089,14 +1129,74 @@ type ClientInterface interface {
 	//
 	// Fields that are omitted are left alone.
 	//
-	// Setting `email_override` starts verification of that address: email continues to be
-	// delivered to the address on the account until the new one is confirmed. Setting it to null
-	// returns delivery to the account address.
+	// Setting `email_override` records it as the pending address; nothing is sent to it until
+	// `send-email-override-code` is called, and email keeps going where it went before. Setting
+	// it to null clears the pending address and any address in use, returning delivery to the
+	// account address.
+	//
+	// An address is never used until somebody proves they can read it. Without that, anybody
+	// could point their own notifications at a stranger's mailbox, and the stranger would get
+	// mail about an account they have never heard of.
 	//
 	// Takes a body of the `application/json` content type.
 	//
 	// Corresponds with PATCH /api/v1/preferences (the `UpdateNotificationPreferences` operationId).
 	UpdateNotificationPreferences(ctx context.Context, body UpdateNotificationPreferencesJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// CancelEmailOverride Give up on the pending address
+	//
+	// Drops the pending address and the code that was sent to it. Nothing else changes: an address
+	// that was already confirmed keeps receiving email.
+	//
+	// It exists because starting this and then changing your mind is ordinary, and the alternative
+	// is a settings page that shows an address waiting to be confirmed forever.
+	//
+	// Corresponds with DELETE /api/v1/preferences/email-override/code (the `CancelEmailOverride` operationId).
+	CancelEmailOverride(ctx context.Context, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// SendEmailOverrideCode Send a code to the pending address
+	//
+	// Emails a short code to the address waiting to be confirmed. That address receives this and
+	// nothing else; every other notification keeps going where it went before.
+	//
+	// The code stops working after a few minutes, and a wrong one can only be tried a handful of
+	// times before it is thrown away and a new one has to be sent. Both limits exist for the same
+	// reason: a six digit code is guessable if it lives forever and can be tried forever.
+	//
+	// Sending is rate limited per account and per destination address. The second limit is the one
+	// that matters to somebody who never asked to be involved: without it, this operation is a way
+	// to make the platform mail a stranger repeatedly.
+	//
+	// Corresponds with POST /api/v1/preferences/email-override/code (the `SendEmailOverrideCode` operationId).
+	SendEmailOverrideCode(ctx context.Context, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// ConfirmEmailOverrideWithBody Confirm the pending address with its code
+	//
+	// A correct code moves the pending address into use: email starts going there instead of the
+	// account address, and the pending slot is emptied.
+	//
+	// A wrong code counts against the attempts on that code. Running out of attempts throws the
+	// code away, and a new one has to be sent; the pending address itself is kept, so nobody
+	// loses their place by mistyping.
+	//
+	// Takes any type of body and a specified content type.
+	//
+	// Corresponds with POST /api/v1/preferences/email-override/code/confirm (the `ConfirmEmailOverride` operationId).
+	ConfirmEmailOverrideWithBody(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// ConfirmEmailOverride Confirm the pending address with its code
+	//
+	// A correct code moves the pending address into use: email starts going there instead of the
+	// account address, and the pending slot is emptied.
+	//
+	// A wrong code counts against the attempts on that code. Running out of attempts throws the
+	// code away, and a new one has to be sent; the pending address itself is kept, so nobody
+	// loses their place by mistyping.
+	//
+	// Takes a body of the `application/json` content type.
+	//
+	// Corresponds with POST /api/v1/preferences/email-override/code/confirm (the `ConfirmEmailOverride` operationId).
+	ConfirmEmailOverride(ctx context.Context, body ConfirmEmailOverrideJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
 
 	// ListTypePreferences List your per-type preferences
 	//
@@ -1721,9 +1821,14 @@ func (c *Client) GetNotificationPreferences(ctx context.Context, reqEditors ...R
 //
 // Fields that are omitted are left alone.
 //
-// Setting `email_override` starts verification of that address: email continues to be
-// delivered to the address on the account until the new one is confirmed. Setting it to null
-// returns delivery to the account address.
+// Setting `email_override` records it as the pending address; nothing is sent to it until
+// `send-email-override-code` is called, and email keeps going where it went before. Setting
+// it to null clears the pending address and any address in use, returning delivery to the
+// account address.
+//
+// An address is never used until somebody proves they can read it. Without that, anybody
+// could point their own notifications at a stranger's mailbox, and the stranger would get
+// mail about an account they have never heard of.
 //
 // Takes any type of body and a specified content type.
 //
@@ -1744,15 +1849,115 @@ func (c *Client) UpdateNotificationPreferencesWithBody(ctx context.Context, cont
 //
 // Fields that are omitted are left alone.
 //
-// Setting `email_override` starts verification of that address: email continues to be
-// delivered to the address on the account until the new one is confirmed. Setting it to null
-// returns delivery to the account address.
+// Setting `email_override` records it as the pending address; nothing is sent to it until
+// `send-email-override-code` is called, and email keeps going where it went before. Setting
+// it to null clears the pending address and any address in use, returning delivery to the
+// account address.
+//
+// An address is never used until somebody proves they can read it. Without that, anybody
+// could point their own notifications at a stranger's mailbox, and the stranger would get
+// mail about an account they have never heard of.
 //
 // Takes a body of the `application/json` content type.
 //
 // Corresponds with PATCH /api/v1/preferences (the `UpdateNotificationPreferences` operationId).
 func (c *Client) UpdateNotificationPreferences(ctx context.Context, body UpdateNotificationPreferencesJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
 	req, err := NewUpdateNotificationPreferencesRequest(c.Server, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+// CancelEmailOverride Give up on the pending address
+//
+// Drops the pending address and the code that was sent to it. Nothing else changes: an address
+// that was already confirmed keeps receiving email.
+//
+// It exists because starting this and then changing your mind is ordinary, and the alternative
+// is a settings page that shows an address waiting to be confirmed forever.
+//
+// Corresponds with DELETE /api/v1/preferences/email-override/code (the `CancelEmailOverride` operationId).
+func (c *Client) CancelEmailOverride(ctx context.Context, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewCancelEmailOverrideRequest(c.Server)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+// SendEmailOverrideCode Send a code to the pending address
+//
+// Emails a short code to the address waiting to be confirmed. That address receives this and
+// nothing else; every other notification keeps going where it went before.
+//
+// The code stops working after a few minutes, and a wrong one can only be tried a handful of
+// times before it is thrown away and a new one has to be sent. Both limits exist for the same
+// reason: a six digit code is guessable if it lives forever and can be tried forever.
+//
+// Sending is rate limited per account and per destination address. The second limit is the one
+// that matters to somebody who never asked to be involved: without it, this operation is a way
+// to make the platform mail a stranger repeatedly.
+//
+// Corresponds with POST /api/v1/preferences/email-override/code (the `SendEmailOverrideCode` operationId).
+func (c *Client) SendEmailOverrideCode(ctx context.Context, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewSendEmailOverrideCodeRequest(c.Server)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+// ConfirmEmailOverrideWithBody Confirm the pending address with its code
+//
+// A correct code moves the pending address into use: email starts going there instead of the
+// account address, and the pending slot is emptied.
+//
+// A wrong code counts against the attempts on that code. Running out of attempts throws the
+// code away, and a new one has to be sent; the pending address itself is kept, so nobody
+// loses their place by mistyping.
+//
+// Takes any type of body and a specified content type.
+//
+// Corresponds with POST /api/v1/preferences/email-override/code/confirm (the `ConfirmEmailOverride` operationId).
+func (c *Client) ConfirmEmailOverrideWithBody(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewConfirmEmailOverrideRequestWithBody(c.Server, contentType, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+// ConfirmEmailOverride Confirm the pending address with its code
+//
+// A correct code moves the pending address into use: email starts going there instead of the
+// account address, and the pending slot is emptied.
+//
+// A wrong code counts against the attempts on that code. Running out of attempts throws the
+// code away, and a new one has to be sent; the pending address itself is kept, so nobody
+// loses their place by mistyping.
+//
+// Takes a body of the `application/json` content type.
+//
+// Corresponds with POST /api/v1/preferences/email-override/code/confirm (the `ConfirmEmailOverride` operationId).
+func (c *Client) ConfirmEmailOverride(ctx context.Context, body ConfirmEmailOverrideJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewConfirmEmailOverrideRequest(c.Server, body)
 	if err != nil {
 		return nil, err
 	}
@@ -2801,6 +3006,100 @@ func NewUpdateNotificationPreferencesRequestWithBody(server string, contentType 
 	return req, nil
 }
 
+// NewCancelEmailOverrideRequest constructs an http.Request for the CancelEmailOverride method
+func NewCancelEmailOverrideRequest(server string) (*http.Request, error) {
+	var err error
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/api/v1/preferences/email-override/code")
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest(http.MethodDelete, queryURL.String(), nil)
+	if err != nil {
+		return nil, err
+	}
+
+	return req, nil
+}
+
+// NewSendEmailOverrideCodeRequest constructs an http.Request for the SendEmailOverrideCode method
+func NewSendEmailOverrideCodeRequest(server string) (*http.Request, error) {
+	var err error
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/api/v1/preferences/email-override/code")
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest(http.MethodPost, queryURL.String(), nil)
+	if err != nil {
+		return nil, err
+	}
+
+	return req, nil
+}
+
+// NewConfirmEmailOverrideRequest calls the generic ConfirmEmailOverride builder with application/json body
+func NewConfirmEmailOverrideRequest(server string, body ConfirmEmailOverrideJSONRequestBody) (*http.Request, error) {
+	var bodyReader io.Reader
+	buf, err := json.Marshal(body)
+	if err != nil {
+		return nil, err
+	}
+	bodyReader = bytes.NewReader(buf)
+	return NewConfirmEmailOverrideRequestWithBody(server, "application/json", bodyReader)
+}
+
+// NewConfirmEmailOverrideRequestWithBody constructs an http.Request for the ConfirmEmailOverride method, with any body, and a specified content type
+func NewConfirmEmailOverrideRequestWithBody(server string, contentType string, body io.Reader) (*http.Request, error) {
+	var err error
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/api/v1/preferences/email-override/code/confirm")
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest(http.MethodPost, queryURL.String(), body)
+	if err != nil {
+		return nil, err
+	}
+
+	req.Header.Add("Content-Type", contentType)
+
+	return req, nil
+}
+
 // NewListTypePreferencesRequest constructs an http.Request for the ListTypePreferences method
 func NewListTypePreferencesRequest(server string, params *ListTypePreferencesParams) (*http.Request, error) {
 	var err error
@@ -3420,9 +3719,14 @@ type ClientWithResponsesInterface interface {
 	//
 	// Fields that are omitted are left alone.
 	//
-	// Setting `email_override` starts verification of that address: email continues to be
-	// delivered to the address on the account until the new one is confirmed. Setting it to null
-	// returns delivery to the account address.
+	// Setting `email_override` records it as the pending address; nothing is sent to it until
+	// `send-email-override-code` is called, and email keeps going where it went before. Setting
+	// it to null clears the pending address and any address in use, returning delivery to the
+	// account address.
+	//
+	// An address is never used until somebody proves they can read it. Without that, anybody
+	// could point their own notifications at a stranger's mailbox, and the stranger would get
+	// mail about an account they have never heard of.
 	//
 	// Takes any type of body and a specified content type, and returns a wrapper object for the known response body format(s).
 	//
@@ -3433,14 +3737,78 @@ type ClientWithResponsesInterface interface {
 	//
 	// Fields that are omitted are left alone.
 	//
-	// Setting `email_override` starts verification of that address: email continues to be
-	// delivered to the address on the account until the new one is confirmed. Setting it to null
-	// returns delivery to the account address.
+	// Setting `email_override` records it as the pending address; nothing is sent to it until
+	// `send-email-override-code` is called, and email keeps going where it went before. Setting
+	// it to null clears the pending address and any address in use, returning delivery to the
+	// account address.
+	//
+	// An address is never used until somebody proves they can read it. Without that, anybody
+	// could point their own notifications at a stranger's mailbox, and the stranger would get
+	// mail about an account they have never heard of.
 	//
 	// Takes a body of the `application/json` content type, and returns a wrapper object for the known response body format(s).
 	//
 	// Corresponds with PATCH /api/v1/preferences (the `UpdateNotificationPreferences` operationId).
 	UpdateNotificationPreferencesWithResponse(ctx context.Context, body UpdateNotificationPreferencesJSONRequestBody, reqEditors ...RequestEditorFn) (*UpdateNotificationPreferencesResponse, error)
+
+	// CancelEmailOverrideWithResponse Give up on the pending address
+	//
+	// Drops the pending address and the code that was sent to it. Nothing else changes: an address
+	// that was already confirmed keeps receiving email.
+	//
+	// It exists because starting this and then changing your mind is ordinary, and the alternative
+	// is a settings page that shows an address waiting to be confirmed forever.
+	//
+	// Returns a wrapper object for the known response body format(s).
+	//
+	// Corresponds with DELETE /api/v1/preferences/email-override/code (the `CancelEmailOverride` operationId).
+	CancelEmailOverrideWithResponse(ctx context.Context, reqEditors ...RequestEditorFn) (*CancelEmailOverrideResponse, error)
+
+	// SendEmailOverrideCodeWithResponse Send a code to the pending address
+	//
+	// Emails a short code to the address waiting to be confirmed. That address receives this and
+	// nothing else; every other notification keeps going where it went before.
+	//
+	// The code stops working after a few minutes, and a wrong one can only be tried a handful of
+	// times before it is thrown away and a new one has to be sent. Both limits exist for the same
+	// reason: a six digit code is guessable if it lives forever and can be tried forever.
+	//
+	// Sending is rate limited per account and per destination address. The second limit is the one
+	// that matters to somebody who never asked to be involved: without it, this operation is a way
+	// to make the platform mail a stranger repeatedly.
+	//
+	// Returns a wrapper object for the known response body format(s).
+	//
+	// Corresponds with POST /api/v1/preferences/email-override/code (the `SendEmailOverrideCode` operationId).
+	SendEmailOverrideCodeWithResponse(ctx context.Context, reqEditors ...RequestEditorFn) (*SendEmailOverrideCodeResponse, error)
+
+	// ConfirmEmailOverrideWithBodyWithResponse Confirm the pending address with its code
+	//
+	// A correct code moves the pending address into use: email starts going there instead of the
+	// account address, and the pending slot is emptied.
+	//
+	// A wrong code counts against the attempts on that code. Running out of attempts throws the
+	// code away, and a new one has to be sent; the pending address itself is kept, so nobody
+	// loses their place by mistyping.
+	//
+	// Takes any type of body and a specified content type, and returns a wrapper object for the known response body format(s).
+	//
+	// Corresponds with POST /api/v1/preferences/email-override/code/confirm (the `ConfirmEmailOverride` operationId).
+	ConfirmEmailOverrideWithBodyWithResponse(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*ConfirmEmailOverrideResponse, error)
+
+	// ConfirmEmailOverrideWithResponse Confirm the pending address with its code
+	//
+	// A correct code moves the pending address into use: email starts going there instead of the
+	// account address, and the pending slot is emptied.
+	//
+	// A wrong code counts against the attempts on that code. Running out of attempts throws the
+	// code away, and a new one has to be sent; the pending address itself is kept, so nobody
+	// loses their place by mistyping.
+	//
+	// Takes a body of the `application/json` content type, and returns a wrapper object for the known response body format(s).
+	//
+	// Corresponds with POST /api/v1/preferences/email-override/code/confirm (the `ConfirmEmailOverride` operationId).
+	ConfirmEmailOverrideWithResponse(ctx context.Context, body ConfirmEmailOverrideJSONRequestBody, reqEditors ...RequestEditorFn) (*ConfirmEmailOverrideResponse, error)
 
 	// ListTypePreferencesWithResponse List your per-type preferences
 	//
@@ -4550,6 +4918,150 @@ func (r UpdateNotificationPreferencesResponse) ContentType() string {
 	return ""
 }
 
+type CancelEmailOverrideResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	// JSON200 the response for an HTTP 200 `application/json` response
+	JSON200 *PreferencesResource
+	// JSONDefault the response for an HTTP default `application/json` response
+	JSONDefault *Error
+}
+
+// GetJSON200 returns the response for an HTTP 200 `application/json` response
+func (r CancelEmailOverrideResponse) GetJSON200() *PreferencesResource {
+	return r.JSON200
+}
+
+// GetJSONDefault returns the response for an HTTP default `application/json` response
+func (r CancelEmailOverrideResponse) GetJSONDefault() *Error {
+	return r.JSONDefault
+}
+
+// GetBody returns the raw response body bytes
+func (r CancelEmailOverrideResponse) GetBody() []byte {
+	return r.Body
+}
+
+// Status returns HTTPResponse.Status
+func (r CancelEmailOverrideResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r CancelEmailOverrideResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+// ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
+func (r CancelEmailOverrideResponse) ContentType() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Header.Get("Content-Type")
+	}
+	return ""
+}
+
+type SendEmailOverrideCodeResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	// JSON200 the response for an HTTP 200 `application/json` response
+	JSON200 *EmailOverrideCodeResource
+	// JSONDefault the response for an HTTP default `application/json` response
+	JSONDefault *Error
+}
+
+// GetJSON200 returns the response for an HTTP 200 `application/json` response
+func (r SendEmailOverrideCodeResponse) GetJSON200() *EmailOverrideCodeResource {
+	return r.JSON200
+}
+
+// GetJSONDefault returns the response for an HTTP default `application/json` response
+func (r SendEmailOverrideCodeResponse) GetJSONDefault() *Error {
+	return r.JSONDefault
+}
+
+// GetBody returns the raw response body bytes
+func (r SendEmailOverrideCodeResponse) GetBody() []byte {
+	return r.Body
+}
+
+// Status returns HTTPResponse.Status
+func (r SendEmailOverrideCodeResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r SendEmailOverrideCodeResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+// ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
+func (r SendEmailOverrideCodeResponse) ContentType() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Header.Get("Content-Type")
+	}
+	return ""
+}
+
+type ConfirmEmailOverrideResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	// JSON200 the response for an HTTP 200 `application/json` response
+	JSON200 *PreferencesResource
+	// JSONDefault the response for an HTTP default `application/json` response
+	JSONDefault *Error
+}
+
+// GetJSON200 returns the response for an HTTP 200 `application/json` response
+func (r ConfirmEmailOverrideResponse) GetJSON200() *PreferencesResource {
+	return r.JSON200
+}
+
+// GetJSONDefault returns the response for an HTTP default `application/json` response
+func (r ConfirmEmailOverrideResponse) GetJSONDefault() *Error {
+	return r.JSONDefault
+}
+
+// GetBody returns the raw response body bytes
+func (r ConfirmEmailOverrideResponse) GetBody() []byte {
+	return r.Body
+}
+
+// Status returns HTTPResponse.Status
+func (r ConfirmEmailOverrideResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r ConfirmEmailOverrideResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+// ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
+func (r ConfirmEmailOverrideResponse) ContentType() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Header.Get("Content-Type")
+	}
+	return ""
+}
+
 type ListTypePreferencesResponse struct {
 	Body         []byte
 	HTTPResponse *http.Response
@@ -5240,9 +5752,14 @@ func (c *ClientWithResponses) GetNotificationPreferencesWithResponse(ctx context
 //
 // Fields that are omitted are left alone.
 //
-// Setting `email_override` starts verification of that address: email continues to be
-// delivered to the address on the account until the new one is confirmed. Setting it to null
-// returns delivery to the account address.
+// Setting `email_override` records it as the pending address; nothing is sent to it until
+// `send-email-override-code` is called, and email keeps going where it went before. Setting
+// it to null clears the pending address and any address in use, returning delivery to the
+// account address.
+//
+// An address is never used until somebody proves they can read it. Without that, anybody
+// could point their own notifications at a stranger's mailbox, and the stranger would get
+// mail about an account they have never heard of.
 //
 // Takes any type of body and a specified content type, and returns a wrapper object for the known response body format(s).
 //
@@ -5259,9 +5776,14 @@ func (c *ClientWithResponses) UpdateNotificationPreferencesWithBodyWithResponse(
 //
 // Fields that are omitted are left alone.
 //
-// Setting `email_override` starts verification of that address: email continues to be
-// delivered to the address on the account until the new one is confirmed. Setting it to null
-// returns delivery to the account address.
+// Setting `email_override` records it as the pending address; nothing is sent to it until
+// `send-email-override-code` is called, and email keeps going where it went before. Setting
+// it to null clears the pending address and any address in use, returning delivery to the
+// account address.
+//
+// An address is never used until somebody proves they can read it. Without that, anybody
+// could point their own notifications at a stranger's mailbox, and the stranger would get
+// mail about an account they have never heard of.
 //
 // Takes a body of the `application/json` content type, and returns a wrapper object for the known response body format(s).
 //
@@ -5272,6 +5794,89 @@ func (c *ClientWithResponses) UpdateNotificationPreferencesWithResponse(ctx cont
 		return nil, err
 	}
 	return ParseUpdateNotificationPreferencesResponse(rsp)
+}
+
+// CancelEmailOverrideWithResponse Give up on the pending address
+//
+// Drops the pending address and the code that was sent to it. Nothing else changes: an address
+// that was already confirmed keeps receiving email.
+//
+// It exists because starting this and then changing your mind is ordinary, and the alternative
+// is a settings page that shows an address waiting to be confirmed forever.
+//
+// Returns a wrapper object for the known response body format(s).
+//
+// Corresponds with DELETE /api/v1/preferences/email-override/code (the `CancelEmailOverride` operationId).
+func (c *ClientWithResponses) CancelEmailOverrideWithResponse(ctx context.Context, reqEditors ...RequestEditorFn) (*CancelEmailOverrideResponse, error) {
+	rsp, err := c.CancelEmailOverride(ctx, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseCancelEmailOverrideResponse(rsp)
+}
+
+// SendEmailOverrideCodeWithResponse Send a code to the pending address
+//
+// Emails a short code to the address waiting to be confirmed. That address receives this and
+// nothing else; every other notification keeps going where it went before.
+//
+// The code stops working after a few minutes, and a wrong one can only be tried a handful of
+// times before it is thrown away and a new one has to be sent. Both limits exist for the same
+// reason: a six digit code is guessable if it lives forever and can be tried forever.
+//
+// Sending is rate limited per account and per destination address. The second limit is the one
+// that matters to somebody who never asked to be involved: without it, this operation is a way
+// to make the platform mail a stranger repeatedly.
+//
+// Returns a wrapper object for the known response body format(s).
+//
+// Corresponds with POST /api/v1/preferences/email-override/code (the `SendEmailOverrideCode` operationId).
+func (c *ClientWithResponses) SendEmailOverrideCodeWithResponse(ctx context.Context, reqEditors ...RequestEditorFn) (*SendEmailOverrideCodeResponse, error) {
+	rsp, err := c.SendEmailOverrideCode(ctx, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseSendEmailOverrideCodeResponse(rsp)
+}
+
+// ConfirmEmailOverrideWithBodyWithResponse Confirm the pending address with its code
+//
+// A correct code moves the pending address into use: email starts going there instead of the
+// account address, and the pending slot is emptied.
+//
+// A wrong code counts against the attempts on that code. Running out of attempts throws the
+// code away, and a new one has to be sent; the pending address itself is kept, so nobody
+// loses their place by mistyping.
+//
+// Takes any type of body and a specified content type, and returns a wrapper object for the known response body format(s).
+//
+// Corresponds with POST /api/v1/preferences/email-override/code/confirm (the `ConfirmEmailOverride` operationId).
+func (c *ClientWithResponses) ConfirmEmailOverrideWithBodyWithResponse(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*ConfirmEmailOverrideResponse, error) {
+	rsp, err := c.ConfirmEmailOverrideWithBody(ctx, contentType, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseConfirmEmailOverrideResponse(rsp)
+}
+
+// ConfirmEmailOverrideWithResponse Confirm the pending address with its code
+//
+// A correct code moves the pending address into use: email starts going there instead of the
+// account address, and the pending slot is emptied.
+//
+// A wrong code counts against the attempts on that code. Running out of attempts throws the
+// code away, and a new one has to be sent; the pending address itself is kept, so nobody
+// loses their place by mistyping.
+//
+// Takes a body of the `application/json` content type, and returns a wrapper object for the known response body format(s).
+//
+// Corresponds with POST /api/v1/preferences/email-override/code/confirm (the `ConfirmEmailOverride` operationId).
+func (c *ClientWithResponses) ConfirmEmailOverrideWithResponse(ctx context.Context, body ConfirmEmailOverrideJSONRequestBody, reqEditors ...RequestEditorFn) (*ConfirmEmailOverrideResponse, error) {
+	rsp, err := c.ConfirmEmailOverride(ctx, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseConfirmEmailOverrideResponse(rsp)
 }
 
 // ListTypePreferencesWithResponse List your per-type preferences
@@ -6090,6 +6695,105 @@ func ParseUpdateNotificationPreferencesResponse(rsp *http.Response) (*UpdateNoti
 	}
 
 	response := &UpdateNotificationPreferencesResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest PreferencesResource
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && true:
+		var dest Error
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSONDefault = &dest
+
+	}
+
+	return response, nil
+}
+
+// ParseCancelEmailOverrideResponse parses an HTTP response from a CancelEmailOverrideWithResponse call
+func ParseCancelEmailOverrideResponse(rsp *http.Response) (*CancelEmailOverrideResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &CancelEmailOverrideResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest PreferencesResource
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && true:
+		var dest Error
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSONDefault = &dest
+
+	}
+
+	return response, nil
+}
+
+// ParseSendEmailOverrideCodeResponse parses an HTTP response from a SendEmailOverrideCodeWithResponse call
+func ParseSendEmailOverrideCodeResponse(rsp *http.Response) (*SendEmailOverrideCodeResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &SendEmailOverrideCodeResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest EmailOverrideCodeResource
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && true:
+		var dest Error
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSONDefault = &dest
+
+	}
+
+	return response, nil
+}
+
+// ParseConfirmEmailOverrideResponse parses an HTTP response from a ConfirmEmailOverrideWithResponse call
+func ParseConfirmEmailOverrideResponse(rsp *http.Response) (*ConfirmEmailOverrideResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &ConfirmEmailOverrideResponse{
 		Body:         bodyBytes,
 		HTTPResponse: rsp,
 	}

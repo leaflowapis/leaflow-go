@@ -509,6 +509,22 @@ func (s *ChannelScope) UnmarshalText(data []byte) error {
 	}
 }
 
+// Ref: #/components/schemas/ConfirmEmailOverrideRequestBody
+type ConfirmEmailOverrideRequestBody struct {
+	// The code from the email, exactly as it appears there.
+	Code string `json:"code"`
+}
+
+// GetCode returns the value of Code.
+func (s *ConfirmEmailOverrideRequestBody) GetCode() string {
+	return s.Code
+}
+
+// SetCode sets the value of Code.
+func (s *ConfirmEmailOverrideRequestBody) SetCode(val string) {
+	s.Code = val
+}
+
 // Ref: #/components/schemas/CreateChannelRequestBody
 type CreateChannelRequestBody struct {
 	ChannelScope ChannelScope `json:"channel_scope"`
@@ -708,6 +724,48 @@ type DeleteTypePreferenceNoContent struct{}
 
 // DeleteUserChannelNoContent is response for DeleteUserChannel operation.
 type DeleteUserChannelNoContent struct{}
+
+// What was sent, and when the next one may be asked for.
+// Ref: #/components/schemas/EmailOverrideCodeResource
+type EmailOverrideCodeResource struct {
+	// Where the code went. It is the pending address, echoed so a client can show it.
+	Address string `json:"address"`
+	// When this code stops working.
+	ExpiresAt time.Time `json:"expires_at"`
+	// The earliest another code may be asked for. Asking sooner is refused rather than silently ignored,
+	// so a client can show the wait instead of a failure.
+	ResendAvailableAt time.Time `json:"resend_available_at"`
+}
+
+// GetAddress returns the value of Address.
+func (s *EmailOverrideCodeResource) GetAddress() string {
+	return s.Address
+}
+
+// GetExpiresAt returns the value of ExpiresAt.
+func (s *EmailOverrideCodeResource) GetExpiresAt() time.Time {
+	return s.ExpiresAt
+}
+
+// GetResendAvailableAt returns the value of ResendAvailableAt.
+func (s *EmailOverrideCodeResource) GetResendAvailableAt() time.Time {
+	return s.ResendAvailableAt
+}
+
+// SetAddress sets the value of Address.
+func (s *EmailOverrideCodeResource) SetAddress(val string) {
+	s.Address = val
+}
+
+// SetExpiresAt sets the value of ExpiresAt.
+func (s *EmailOverrideCodeResource) SetExpiresAt(val time.Time) {
+	s.ExpiresAt = val
+}
+
+// SetResendAvailableAt sets the value of ResendAvailableAt.
+func (s *EmailOverrideCodeResource) SetResendAvailableAt(val time.Time) {
+	s.ResendAvailableAt = val
+}
 
 // Ref: #/components/schemas/Error
 type Error struct {
@@ -2259,10 +2317,16 @@ type PreferencesResource struct {
 	// Where email is delivered right now, which is the account address unless a verified override replaces
 	// it.
 	EmailAddress string `json:"email_address"`
-	// An address to receive email instead of the account address; null when the account address is used.
+	// The address email goes to instead of the account address; null when the account address is used.
+	// Only ever an address that was confirmed by code.
 	EmailOverride NilString `json:"email_override"`
-	// When the override was confirmed; null while it is pending, during which email still goes to the
-	// account address.
+	// An address waiting to be confirmed; null when nothing is waiting. It receives nothing but the code,
+	// and the address in `email_override` keeps being used until this one is confirmed.
+	EmailOverridePending NilString `json:"email_override_pending"`
+	// When the code last sent to the pending address stops working; null when no code is outstanding, in
+	// which case a new one has to be sent before it can be confirmed.
+	EmailOverridePendingExpiresAt NilDateTime `json:"email_override_pending_expires_at"`
+	// When the address in `email_override` was confirmed; null when there is no override.
 	EmailOverrideVerifiedAt NilDateTime `json:"email_override_verified_at"`
 	// The language notifications are written in, as an IETF language tag.
 	Locale string `json:"locale"`
@@ -2276,6 +2340,16 @@ func (s *PreferencesResource) GetEmailAddress() string {
 // GetEmailOverride returns the value of EmailOverride.
 func (s *PreferencesResource) GetEmailOverride() NilString {
 	return s.EmailOverride
+}
+
+// GetEmailOverridePending returns the value of EmailOverridePending.
+func (s *PreferencesResource) GetEmailOverridePending() NilString {
+	return s.EmailOverridePending
+}
+
+// GetEmailOverridePendingExpiresAt returns the value of EmailOverridePendingExpiresAt.
+func (s *PreferencesResource) GetEmailOverridePendingExpiresAt() NilDateTime {
+	return s.EmailOverridePendingExpiresAt
 }
 
 // GetEmailOverrideVerifiedAt returns the value of EmailOverrideVerifiedAt.
@@ -2296,6 +2370,16 @@ func (s *PreferencesResource) SetEmailAddress(val string) {
 // SetEmailOverride sets the value of EmailOverride.
 func (s *PreferencesResource) SetEmailOverride(val NilString) {
 	s.EmailOverride = val
+}
+
+// SetEmailOverridePending sets the value of EmailOverridePending.
+func (s *PreferencesResource) SetEmailOverridePending(val NilString) {
+	s.EmailOverridePending = val
+}
+
+// SetEmailOverridePendingExpiresAt sets the value of EmailOverridePendingExpiresAt.
+func (s *PreferencesResource) SetEmailOverridePendingExpiresAt(val NilDateTime) {
+	s.EmailOverridePendingExpiresAt = val
 }
 
 // SetEmailOverrideVerifiedAt sets the value of EmailOverrideVerifiedAt.
@@ -2654,8 +2738,9 @@ func (s *UpdateChannelRequestBody) SetName(val OptString) {
 // Fields that are omitted are left alone.
 // Ref: #/components/schemas/UpdatePreferencesRequestBody
 type UpdatePreferencesRequestBody struct {
-	// An address to receive email instead of the account address. Null returns delivery to the account
-	// address.
+	// An address to receive email instead of the account address. It is stored as pending and receives
+	// nothing until it is confirmed by code, so the address in use does not change here. Null clears both
+	// the pending address and the one in use, returning delivery to the account address.
 	EmailOverride OptNilString `json:"email_override"`
 	// An IETF language tag. A language that is not supported is rejected rather than approximated.
 	Locale OptString `json:"locale"`

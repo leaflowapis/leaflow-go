@@ -8,6 +8,8 @@ type OperationName = string
 const (
 	ArchiveNotificationOperation           OperationName = "ArchiveNotification"
 	AuthorizeRealtimeChannelOperation      OperationName = "AuthorizeRealtimeChannel"
+	CancelEmailOverrideOperation           OperationName = "CancelEmailOverride"
+	ConfirmEmailOverrideOperation          OperationName = "ConfirmEmailOverride"
 	CountUnreadNotificationsOperation      OperationName = "CountUnreadNotifications"
 	CreateUserChannelOperation             OperationName = "CreateUserChannel"
 	DeleteTypePreferenceOperation          OperationName = "DeleteTypePreference"
@@ -27,6 +29,7 @@ const (
 	ReadAllAnnouncementsOperation          OperationName = "ReadAllAnnouncements"
 	ReadAnnouncementOperation              OperationName = "ReadAnnouncement"
 	RevealCredentialOperation              OperationName = "RevealCredential"
+	SendEmailOverrideCodeOperation         OperationName = "SendEmailOverrideCode"
 	UnarchiveNotificationOperation         OperationName = "UnarchiveNotification"
 	UpdateNotificationPreferencesOperation OperationName = "UpdateNotificationPreferences"
 	UpdateTypePreferenceOperation          OperationName = "UpdateTypePreference"
