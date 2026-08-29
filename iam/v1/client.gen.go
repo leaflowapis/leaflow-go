@@ -367,8 +367,8 @@ type OwnershipTransferResponseBody struct {
 
 // PermissionResource defines model for PermissionResource.
 type PermissionResource struct {
-	Description string `json:"description"`
-	Name        string `json:"name"`
+	// Name 权限的代码，形如 compute:instance.delete。**这里没有展示名**：一条权限对人显示成什么字是本地化的，服务端存一份的话那一份只会是某一种语言，而读它的人可能读别的语言。译名归渲染它的那一层；它没跟上时界面显示的就是这个代码——一个自解释的降级，而且看得见
+	Name string `json:"name"`
 
 	// OwnerOnly 只有项目所有者能做，绑到自定义角色上也不会生效
 	OwnerOnly bool `json:"owner_only"`
@@ -467,8 +467,8 @@ type ResourceRefResource struct {
 
 // ResourceTypeResource defines model for ResourceTypeResource.
 type ResourceTypeResource struct {
-	Description string `json:"description"`
-	Name        string `json:"name"`
+	// Name 资源类型的代码，形如 dns:zone。同样没有展示名：它该显示成「托管域名」还是「Zone」由渲染它的那一层按读者的语言决定
+	Name string `json:"name"`
 }
 
 // RoleListResponseBody defines model for RoleListResponseBody.

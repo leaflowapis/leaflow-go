@@ -3154,10 +3154,6 @@ func (s *PermissionResource) Encode(e *jx.Encoder) {
 // encodeFields encodes fields.
 func (s *PermissionResource) encodeFields(e *jx.Encoder) {
 	{
-		e.FieldStart("description")
-		e.Str(s.Description)
-	}
-	{
 		e.FieldStart("name")
 		e.Str(s.Name)
 	}
@@ -3171,11 +3167,10 @@ func (s *PermissionResource) encodeFields(e *jx.Encoder) {
 	}
 }
 
-var jsonFieldsNameOfPermissionResource = [4]string{
-	0: "description",
-	1: "name",
-	2: "owner_only",
-	3: "resource_type",
+var jsonFieldsNameOfPermissionResource = [3]string{
+	0: "name",
+	1: "owner_only",
+	2: "resource_type",
 }
 
 // Decode decodes PermissionResource from json.
@@ -3187,20 +3182,8 @@ func (s *PermissionResource) Decode(d *jx.Decoder) error {
 
 	if err := d.ObjBytes(func(d *jx.Decoder, k []byte) error {
 		switch string(k) {
-		case "description":
-			requiredBitSet[0] |= 1 << 0
-			if err := func() error {
-				v, err := d.Str()
-				s.Description = string(v)
-				if err != nil {
-					return err
-				}
-				return nil
-			}(); err != nil {
-				return errors.Wrap(err, "decode field \"description\"")
-			}
 		case "name":
-			requiredBitSet[0] |= 1 << 1
+			requiredBitSet[0] |= 1 << 0
 			if err := func() error {
 				v, err := d.Str()
 				s.Name = string(v)
@@ -3212,7 +3195,7 @@ func (s *PermissionResource) Decode(d *jx.Decoder) error {
 				return errors.Wrap(err, "decode field \"name\"")
 			}
 		case "owner_only":
-			requiredBitSet[0] |= 1 << 2
+			requiredBitSet[0] |= 1 << 1
 			if err := func() error {
 				v, err := d.Bool()
 				s.OwnerOnly = bool(v)
@@ -3224,7 +3207,7 @@ func (s *PermissionResource) Decode(d *jx.Decoder) error {
 				return errors.Wrap(err, "decode field \"owner_only\"")
 			}
 		case "resource_type":
-			requiredBitSet[0] |= 1 << 3
+			requiredBitSet[0] |= 1 << 2
 			if err := func() error {
 				v, err := d.Str()
 				s.ResourceType = string(v)
@@ -3245,7 +3228,7 @@ func (s *PermissionResource) Decode(d *jx.Decoder) error {
 	// Validate required fields.
 	var failures []validate.FieldError
 	for i, mask := range [1]uint8{
-		0b00001111,
+		0b00000111,
 	} {
 		if result := (requiredBitSet[i] & mask) ^ mask; result != 0 {
 			// Mask only required fields and check equality to mask using XOR.
@@ -4579,18 +4562,13 @@ func (s *ResourceTypeResource) Encode(e *jx.Encoder) {
 // encodeFields encodes fields.
 func (s *ResourceTypeResource) encodeFields(e *jx.Encoder) {
 	{
-		e.FieldStart("description")
-		e.Str(s.Description)
-	}
-	{
 		e.FieldStart("name")
 		e.Str(s.Name)
 	}
 }
 
-var jsonFieldsNameOfResourceTypeResource = [2]string{
-	0: "description",
-	1: "name",
+var jsonFieldsNameOfResourceTypeResource = [1]string{
+	0: "name",
 }
 
 // Decode decodes ResourceTypeResource from json.
@@ -4602,20 +4580,8 @@ func (s *ResourceTypeResource) Decode(d *jx.Decoder) error {
 
 	if err := d.ObjBytes(func(d *jx.Decoder, k []byte) error {
 		switch string(k) {
-		case "description":
-			requiredBitSet[0] |= 1 << 0
-			if err := func() error {
-				v, err := d.Str()
-				s.Description = string(v)
-				if err != nil {
-					return err
-				}
-				return nil
-			}(); err != nil {
-				return errors.Wrap(err, "decode field \"description\"")
-			}
 		case "name":
-			requiredBitSet[0] |= 1 << 1
+			requiredBitSet[0] |= 1 << 0
 			if err := func() error {
 				v, err := d.Str()
 				s.Name = string(v)
@@ -4636,7 +4602,7 @@ func (s *ResourceTypeResource) Decode(d *jx.Decoder) error {
 	// Validate required fields.
 	var failures []validate.FieldError
 	for i, mask := range [1]uint8{
-		0b00000011,
+		0b00000001,
 	} {
 		if result := (requiredBitSet[i] & mask) ^ mask; result != 0 {
 			// Mask only required fields and check equality to mask using XOR.
