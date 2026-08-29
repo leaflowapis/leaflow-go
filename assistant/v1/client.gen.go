@@ -19,6 +19,27 @@ import (
 	openapi_types "github.com/oapi-codegen/runtime/types"
 )
 
+// Defines values for AttachmentResourceKind.
+const (
+	AttachmentResourceKindBinary AttachmentResourceKind = "binary"
+	AttachmentResourceKindImage  AttachmentResourceKind = "image"
+	AttachmentResourceKindText   AttachmentResourceKind = "text"
+)
+
+// Valid indicates whether the value is a known member of the AttachmentResourceKind enum.
+func (e AttachmentResourceKind) Valid() bool {
+	switch e {
+	case AttachmentResourceKindBinary:
+		return true
+	case AttachmentResourceKindImage:
+		return true
+	case AttachmentResourceKindText:
+		return true
+	default:
+		return false
+	}
+}
+
 // Defines values for BindingResourceConnState.
 const (
 	BindingResourceConnStateExpired   BindingResourceConnState = "expired"
@@ -420,16 +441,16 @@ func (e LoginResourceStatus) Valid() bool {
 
 // Defines values for PartResourceType.
 const (
-	File PartResourceType = "file"
-	Text PartResourceType = "text"
+	PartResourceTypeFile PartResourceType = "file"
+	PartResourceTypeText PartResourceType = "text"
 )
 
 // Valid indicates whether the value is a known member of the PartResourceType enum.
 func (e PartResourceType) Valid() bool {
 	switch e {
-	case File:
+	case PartResourceTypeFile:
 		return true
-	case Text:
+	case PartResourceTypeText:
 		return true
 	default:
 		return false
@@ -655,6 +676,27 @@ func (e UpdateThreadRequestBodyApprovalMode) Valid() bool {
 	}
 }
 
+// Defines values for UploadedResourceKind.
+const (
+	UploadedResourceKindBinary UploadedResourceKind = "binary"
+	UploadedResourceKindImage  UploadedResourceKind = "image"
+	UploadedResourceKindText   UploadedResourceKind = "text"
+)
+
+// Valid indicates whether the value is a known member of the UploadedResourceKind enum.
+func (e UploadedResourceKind) Valid() bool {
+	switch e {
+	case UploadedResourceKindBinary:
+		return true
+	case UploadedResourceKindImage:
+		return true
+	case UploadedResourceKindText:
+		return true
+	default:
+		return false
+	}
+}
+
 // Defines values for WaitResourceKind.
 const (
 	ToolApproval WaitResourceKind = "tool_approval"
@@ -681,10 +723,22 @@ type AnswerRequestBody struct {
 
 // AttachmentResource defines model for AttachmentResource.
 type AttachmentResource struct {
-	Height int64  `json:"height"`
+	ByteSize int64  `json:"byteSize"`
+	Filename string `json:"filename"`
+
+	// Height Null unless kind is image. Width and height are here so a client can hold the space before the image itself has loaded.
+	Height *int64 `json:"height"`
 	Id     string `json:"id"`
-	Width  int64  `json:"width"`
+
+	// Kind What this attachment is. A client renders an image in place and everything else as a file to download.
+	Kind AttachmentResourceKind `json:"kind"`
+
+	// Width Null unless kind is image.
+	Width *int64 `json:"width"`
 }
+
+// AttachmentResourceKind What this attachment is. A client renders an image in place and everything else as a file to download.
+type AttachmentResourceKind string
 
 // BindingCodeResponseBody defines model for BindingCodeResponseBody.
 type BindingCodeResponseBody struct {
@@ -852,7 +906,11 @@ type ClientFunctionRequest struct {
 type ContextResource struct {
 	CompactAt *int64 `json:"compactAt"`
 
-	// InputModalities What kinds of input the model behind this conversation accepts, as modality names: text, image. A client uses this to decide whether a control exists — an attach button on a model that cannot read pictures is a control whose only outcome is a refusal, and the refusal arrives after somebody has chosen a file. An empty list is not a claim that the model reads nothing: it means this deployment has not stated the modalities, or the conversation names a model that has since been retired. Treat empty as unknown and keep the control, because hiding one for a reason nobody can see is worse than a refusal that says why.
+	// InputModalities What kinds of input the model behind this conversation accepts, as modality names: text, image.
+	//
+	// This governs images and nothing else. Text and binary attachments reach every model: a small text file is placed inline, a large one is read on demand, and a binary is downloaded onto a cloud instance — none of which asks the model to see a picture. So this decides whether pasting a screenshot does anything, not whether the attach control exists. Hiding file upload on a text-only model takes away something that would have worked.
+	//
+	// An empty list is not a claim that the model reads nothing: it means this deployment has not stated the modalities, or the conversation names a model that has since been retired. Treat empty as unknown and keep the control, because hiding one for a reason nobody can see is worse than a refusal that says why.
 	InputModalities []string `json:"inputModalities"`
 	Model           string   `json:"model"`
 	Used            *int64   `json:"used"`
@@ -1006,8 +1064,8 @@ type ItemResource struct {
 	// Parts The content of this entry, in the order it was written. A message that is only text is a
 	// single part, which is most of them.
 	//
-	// An image belongs where it was written, so render these in order rather than putting
-	// attachments at the end.
+	// An attachment belongs where it was written, so render these in order rather than putting
+	// them all at the end.
 	Parts        []PartResource        `json:"parts,omitempty"`
 	Presentation *PresentationResource `json:"presentation,omitempty"`
 	Reverted     bool                  `json:"reverted"`
@@ -1102,7 +1160,7 @@ type MemoryResource struct {
 //   - `data-<something>` — context from the client, in `data`. The name after `data-` is yours;
 //     it is shown to the assistant so it can tell one kind of block from another.
 //
-// Order matters: an image belongs where it was written, not at the end.
+// Order matters: an attachment belongs where it was written, not at the end.
 type MessagePart struct {
 	// AttachmentId For `file` parts. The attachment must have been uploaded and not yet bound to another message.
 	AttachmentId *string `json:"attachmentId,omitempty"`
@@ -1393,10 +1451,31 @@ type UpdateThreadRequestBodyApprovalMode string
 
 // UploadedResource defines model for UploadedResource.
 type UploadedResource struct {
-	Height int64  `json:"height"`
+	// ByteSize Size of what was stored. For an image that has been resized, this is the resized size, not what was uploaded.
+	ByteSize int64  `json:"byteSize"`
+	Filename string `json:"filename"`
+
+	// Height Null unless kind is image.
+	Height *int64 `json:"height"`
 	Id     string `json:"id"`
-	Width  int64  `json:"width"`
+
+	// Kind How the assistant will see this file.
+	//
+	// - `image` — read directly, and only by models that accept image input
+	// - `text` — placed inline in the message when small enough, otherwise read on demand
+	// - `binary` — never read directly; the assistant downloads it onto a cloud instance to work with it
+	Kind UploadedResourceKind `json:"kind"`
+
+	// Width Null unless kind is image.
+	Width *int64 `json:"width"`
 }
+
+// UploadedResourceKind How the assistant will see this file.
+//
+// - `image` — read directly, and only by models that accept image input
+// - `text` — placed inline in the message when small enough, otherwise read on demand
+// - `binary` — never read directly; the assistant downloads it onto a cloud instance to work with it
+type UploadedResourceKind string
 
 // VerifyCodeRequestBody defines model for VerifyCodeRequestBody.
 type VerifyCodeRequestBody struct {
@@ -1420,6 +1499,12 @@ type WaitResourceKind string
 // WebhookSecretResponseBody defines model for WebhookSecretResponseBody.
 type WebhookSecretResponseBody struct {
 	WebhookSecret string `json:"webhookSecret"`
+}
+
+// UploadAttachmentParams defines parameters for UploadAttachment.
+type UploadAttachmentParams struct {
+	// Filename The name to show and to give the assistant. Images do not need one; anything else does, because the name is most of what says what the file is. Falls back to a generated name.
+	Filename *string `form:"filename,omitempty" json:"filename,omitempty"`
 }
 
 // ListBindingsParams defines parameters for ListBindings.
@@ -1592,18 +1677,22 @@ func WithRequestEditorFn(fn RequestEditorFn) ClientOption {
 // The interface specification for the client above.
 type ClientInterface interface {
 
-	// UploadAttachmentWithBody Upload an image
+	// UploadAttachmentWithBody Upload a file
 	//
-	// The body is the file bytes themselves, not multipart, one file per request. The type is determined from the content, not from Content-Type. Put the returned id in attachmentIds when sending a message; attachments never referenced by any message are cleared periodically.
+	// The body is the file bytes themselves, not multipart, one file per request. The kind is determined from the content, not from Content-Type or from the name. Put the returned id in attachmentIds when sending a message; attachments never referenced by any message are cleared periodically.
+	//
+	// The returned `kind` says how the assistant will see it. An `image` is read directly, and only by models that accept image input. A small `text` file is placed inline in the message. A large `text` file, and anything `binary`, arrives as a reference the assistant reads on demand — for a binary that usually means downloading it onto one of the project's cloud instances.
 	//
 	// Takes any type of body and a specified content type.
 	//
 	// Corresponds with POST /api/v1/attachments (the `UploadAttachment` operationId).
-	UploadAttachmentWithBody(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
+	UploadAttachmentWithBody(ctx context.Context, params *UploadAttachmentParams, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
 
-	// DownloadAttachment Fetch an image
+	// DownloadAttachment Download a file
 	//
-	// Returns the original bytes for an attachment id, usable directly as the address of an <img>. The response carries long-lived cache headers because the content never changes. Returns 404 when the attachment does not exist or does not belong to the current user.
+	// Returns the original bytes for an attachment id. The response carries long-lived cache headers because the content never changes. Returns 404 when the attachment does not exist or does not belong to the current user.
+	//
+	// Only an attachment whose `kind` is `image` comes back with its own image type and is usable as the address of an `<img>`. Everything else is served as `application/octet-stream` with `Content-Disposition: attachment`, deliberately: an uploaded file is arbitrary bytes under a name its uploader chose, and serving it back inline would run it on this origin.
 	//
 	// Corresponds with GET /api/v1/attachments/{attachment} (the `DownloadAttachment` operationId).
 	DownloadAttachment(ctx context.Context, attachment string, reqEditors ...RequestEditorFn) (*http.Response, error)
@@ -2013,15 +2102,17 @@ type ClientInterface interface {
 	SubmitWeixinVerifyCode(ctx context.Context, login openapi_types.UUID, body SubmitWeixinVerifyCodeJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
 }
 
-// UploadAttachmentWithBody Upload an image
+// UploadAttachmentWithBody Upload a file
 //
-// The body is the file bytes themselves, not multipart, one file per request. The type is determined from the content, not from Content-Type. Put the returned id in attachmentIds when sending a message; attachments never referenced by any message are cleared periodically.
+// The body is the file bytes themselves, not multipart, one file per request. The kind is determined from the content, not from Content-Type or from the name. Put the returned id in attachmentIds when sending a message; attachments never referenced by any message are cleared periodically.
+//
+// The returned `kind` says how the assistant will see it. An `image` is read directly, and only by models that accept image input. A small `text` file is placed inline in the message. A large `text` file, and anything `binary`, arrives as a reference the assistant reads on demand — for a binary that usually means downloading it onto one of the project's cloud instances.
 //
 // Takes any type of body and a specified content type.
 //
 // Corresponds with POST /api/v1/attachments (the `UploadAttachment` operationId).
-func (c *Client) UploadAttachmentWithBody(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
-	req, err := NewUploadAttachmentRequestWithBody(c.Server, contentType, body)
+func (c *Client) UploadAttachmentWithBody(ctx context.Context, params *UploadAttachmentParams, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewUploadAttachmentRequestWithBody(c.Server, params, contentType, body)
 	if err != nil {
 		return nil, err
 	}
@@ -2032,9 +2123,11 @@ func (c *Client) UploadAttachmentWithBody(ctx context.Context, contentType strin
 	return c.Client.Do(req)
 }
 
-// DownloadAttachment Fetch an image
+// DownloadAttachment Download a file
 //
-// Returns the original bytes for an attachment id, usable directly as the address of an <img>. The response carries long-lived cache headers because the content never changes. Returns 404 when the attachment does not exist or does not belong to the current user.
+// Returns the original bytes for an attachment id. The response carries long-lived cache headers because the content never changes. Returns 404 when the attachment does not exist or does not belong to the current user.
+//
+// Only an attachment whose `kind` is `image` comes back with its own image type and is usable as the address of an `<img>`. Everything else is served as `application/octet-stream` with `Content-Disposition: attachment`, deliberately: an uploaded file is arbitrary bytes under a name its uploader chose, and serving it back inline would run it on this origin.
 //
 // Corresponds with GET /api/v1/attachments/{attachment} (the `DownloadAttachment` operationId).
 func (c *Client) DownloadAttachment(ctx context.Context, attachment string, reqEditors ...RequestEditorFn) (*http.Response, error) {
@@ -2934,7 +3027,7 @@ func (c *Client) SubmitWeixinVerifyCode(ctx context.Context, login openapi_types
 }
 
 // NewUploadAttachmentRequestWithBody constructs an http.Request for the UploadAttachment method, with any body, and a specified content type
-func NewUploadAttachmentRequestWithBody(server string, contentType string, body io.Reader) (*http.Request, error) {
+func NewUploadAttachmentRequestWithBody(server string, params *UploadAttachmentParams, contentType string, body io.Reader) (*http.Request, error) {
 	var err error
 
 	serverURL, err := url.Parse(server)
@@ -2950,6 +3043,33 @@ func NewUploadAttachmentRequestWithBody(server string, contentType string, body 
 	queryURL, err := serverURL.Parse(operationPath)
 	if err != nil {
 		return nil, err
+	}
+
+	if params != nil {
+		// queryValues collects non-styled parameters (passthrough, JSON)
+		// that are safe to round-trip through url.Values.Encode().
+		queryValues := queryURL.Query()
+		// rawQueryFragments collects pre-encoded query fragments from
+		// styled parameters, preserving literal commas as delimiters
+		// per the OpenAPI spec (e.g. "color=blue,black,brown").
+		var rawQueryFragments []string
+
+		if params.Filename != nil {
+
+			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "filename", *params.Filename, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			} else {
+				for _, qp := range strings.Split(queryFrag, "&") {
+					rawQueryFragments = append(rawQueryFragments, qp)
+				}
+			}
+
+		}
+
+		if encoded := queryValues.Encode(); encoded != "" {
+			rawQueryFragments = append(rawQueryFragments, encoded)
+		}
+		queryURL.RawQuery = strings.Join(rawQueryFragments, "&")
 	}
 
 	req, err := http.NewRequest(http.MethodPost, queryURL.String(), body)
@@ -4624,18 +4744,22 @@ func WithBaseURL(baseURL string) ClientOption {
 // ClientWithResponsesInterface is the interface specification for the client with responses above.
 type ClientWithResponsesInterface interface {
 
-	// UploadAttachmentWithBodyWithResponse Upload an image
+	// UploadAttachmentWithBodyWithResponse Upload a file
 	//
-	// The body is the file bytes themselves, not multipart, one file per request. The type is determined from the content, not from Content-Type. Put the returned id in attachmentIds when sending a message; attachments never referenced by any message are cleared periodically.
+	// The body is the file bytes themselves, not multipart, one file per request. The kind is determined from the content, not from Content-Type or from the name. Put the returned id in attachmentIds when sending a message; attachments never referenced by any message are cleared periodically.
+	//
+	// The returned `kind` says how the assistant will see it. An `image` is read directly, and only by models that accept image input. A small `text` file is placed inline in the message. A large `text` file, and anything `binary`, arrives as a reference the assistant reads on demand — for a binary that usually means downloading it onto one of the project's cloud instances.
 	//
 	// Takes any type of body and a specified content type, and returns a wrapper object for the known response body format(s).
 	//
 	// Corresponds with POST /api/v1/attachments (the `UploadAttachment` operationId).
-	UploadAttachmentWithBodyWithResponse(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*UploadAttachmentResponse, error)
+	UploadAttachmentWithBodyWithResponse(ctx context.Context, params *UploadAttachmentParams, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*UploadAttachmentResponse, error)
 
-	// DownloadAttachmentWithResponse Fetch an image
+	// DownloadAttachmentWithResponse Download a file
 	//
-	// Returns the original bytes for an attachment id, usable directly as the address of an <img>. The response carries long-lived cache headers because the content never changes. Returns 404 when the attachment does not exist or does not belong to the current user.
+	// Returns the original bytes for an attachment id. The response carries long-lived cache headers because the content never changes. Returns 404 when the attachment does not exist or does not belong to the current user.
+	//
+	// Only an attachment whose `kind` is `image` comes back with its own image type and is usable as the address of an `<img>`. Everything else is served as `application/octet-stream` with `Content-Disposition: attachment`, deliberately: an uploaded file is arbitrary bytes under a name its uploader chose, and serving it back inline would run it on this origin.
 	//
 	// Returns a wrapper object for the known response body format(s).
 	//
@@ -5141,7 +5265,8 @@ func (r UploadAttachmentResponse) ContentType() string {
 
 // DownloadAttachmentResponse200Headers the declared response headers of an HTTP 200 response for DownloadAttachment
 type DownloadAttachmentResponse200Headers struct {
-	CacheControl *string
+	CacheControl       *string
+	ContentDisposition *string
 }
 
 type DownloadAttachmentResponse struct {
@@ -6804,24 +6929,28 @@ func (r SubmitWeixinVerifyCodeResponse) ContentType() string {
 	return ""
 }
 
-// UploadAttachmentWithBodyWithResponse Upload an image
+// UploadAttachmentWithBodyWithResponse Upload a file
 //
-// The body is the file bytes themselves, not multipart, one file per request. The type is determined from the content, not from Content-Type. Put the returned id in attachmentIds when sending a message; attachments never referenced by any message are cleared periodically.
+// The body is the file bytes themselves, not multipart, one file per request. The kind is determined from the content, not from Content-Type or from the name. Put the returned id in attachmentIds when sending a message; attachments never referenced by any message are cleared periodically.
+//
+// The returned `kind` says how the assistant will see it. An `image` is read directly, and only by models that accept image input. A small `text` file is placed inline in the message. A large `text` file, and anything `binary`, arrives as a reference the assistant reads on demand — for a binary that usually means downloading it onto one of the project's cloud instances.
 //
 // Takes any type of body and a specified content type, and returns a wrapper object for the known response body format(s).
 //
 // Corresponds with POST /api/v1/attachments (the `UploadAttachment` operationId).
-func (c *ClientWithResponses) UploadAttachmentWithBodyWithResponse(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*UploadAttachmentResponse, error) {
-	rsp, err := c.UploadAttachmentWithBody(ctx, contentType, body, reqEditors...)
+func (c *ClientWithResponses) UploadAttachmentWithBodyWithResponse(ctx context.Context, params *UploadAttachmentParams, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*UploadAttachmentResponse, error) {
+	rsp, err := c.UploadAttachmentWithBody(ctx, params, contentType, body, reqEditors...)
 	if err != nil {
 		return nil, err
 	}
 	return ParseUploadAttachmentResponse(rsp)
 }
 
-// DownloadAttachmentWithResponse Fetch an image
+// DownloadAttachmentWithResponse Download a file
 //
-// Returns the original bytes for an attachment id, usable directly as the address of an <img>. The response carries long-lived cache headers because the content never changes. Returns 404 when the attachment does not exist or does not belong to the current user.
+// Returns the original bytes for an attachment id. The response carries long-lived cache headers because the content never changes. Returns 404 when the attachment does not exist or does not belong to the current user.
+//
+// Only an attachment whose `kind` is `image` comes back with its own image type and is usable as the address of an `<img>`. Everything else is served as `application/octet-stream` with `Content-Disposition: attachment`, deliberately: an uploaded file is arbitrary bytes under a name its uploader chose, and serving it back inline would run it on this origin.
 //
 // Returns a wrapper object for the known response body format(s).
 //
@@ -7635,6 +7764,13 @@ func ParseDownloadAttachmentResponse(rsp *http.Response) (*DownloadAttachmentRes
 				return nil, err
 			}
 			headers.CacheControl = &value
+		}
+		if values := rsp.Header.Values("Content-Disposition"); len(values) > 0 {
+			var value string
+			if err := runtime.BindStyledParameterWithOptions("simple", "Content-Disposition", values[0], &value, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			}
+			headers.ContentDisposition = &value
 		}
 		response.Headers200 = &headers
 	}

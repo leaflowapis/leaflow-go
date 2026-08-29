@@ -2943,3 +2943,96 @@ func decodeUpdateThreadParams(args [1]string, argsEscaped bool, r *http.Request)
 	}
 	return params, nil
 }
+
+// UploadAttachmentParams is parameters of upload-attachment operation.
+type UploadAttachmentParams struct {
+	// The name to show and to give the assistant. Images do not need one; anything else does, because the
+	// name is most of what says what the file is. Falls back to a generated name.
+	Filename OptString `json:",omitempty,omitzero"`
+}
+
+func unpackUploadAttachmentParams(packed middleware.Parameters) (params UploadAttachmentParams) {
+	{
+		key := middleware.ParameterKey{
+			Name: "filename",
+			In:   "query",
+		}
+		if v, ok := packed[key]; ok {
+			params.Filename = v.(OptString)
+		}
+	}
+	return params
+}
+
+func decodeUploadAttachmentParams(args [0]string, argsEscaped bool, r *http.Request) (params UploadAttachmentParams, _ error) {
+	q := uri.NewQueryDecoder(r.URL.Query())
+	// Decode query: filename.
+	if err := func() error {
+		cfg := uri.QueryParameterDecodingConfig{
+			Name:    "filename",
+			Style:   uri.QueryStyleForm,
+			Explode: true,
+		}
+
+		if err := q.HasParam(cfg); err == nil {
+			if err := q.DecodeParam(cfg, func(d uri.Decoder) error {
+				var paramsDotFilenameVal string
+				if err := func() error {
+					val, err := d.DecodeValue()
+					if err != nil {
+						return err
+					}
+
+					c, err := conv.ToString(val)
+					if err != nil {
+						return err
+					}
+
+					paramsDotFilenameVal = c
+					return nil
+				}(); err != nil {
+					return err
+				}
+				params.Filename.SetTo(paramsDotFilenameVal)
+				return nil
+			}); err != nil {
+				return err
+			}
+			if err := func() error {
+				if value, ok := params.Filename.Get(); ok {
+					if err := func() error {
+						if err := (validate.String{
+							MinLength:     0,
+							MinLengthSet:  false,
+							MaxLength:     255,
+							MaxLengthSet:  true,
+							Email:         false,
+							Hostname:      false,
+							Regex:         nil,
+							MinNumeric:    0,
+							MinNumericSet: false,
+							MaxNumeric:    0,
+							MaxNumericSet: false,
+						}).Validate(string(value)); err != nil {
+							return errors.Wrap(err, "string")
+						}
+						return nil
+					}(); err != nil {
+						return err
+					}
+				}
+				return nil
+			}(); err != nil {
+				return err
+			}
+		}
+		return nil
+	}(); err != nil {
+		return params, &ogenerrors.DecodeParamError{
+			Name: "filename",
+			In:   "query",
+			Err:  err,
+		}
+	}
+	return params, nil
+}

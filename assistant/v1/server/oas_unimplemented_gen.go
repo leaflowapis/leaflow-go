@@ -132,9 +132,14 @@ func (UnimplementedHandler) DeleteSkill(ctx context.Context, params DeleteSkillP
 
 // DownloadAttachment implements download-attachment operation.
 //
-// Returns the original bytes for an attachment id, usable directly as the address of an . The response
-// carries long-lived cache headers because the content never changes. Returns 404 when the attachment
-// does not exist or does not belong to the current user.
+// Returns the original bytes for an attachment id. The response carries long-lived cache headers
+// because the content never changes. Returns 404 when the attachment does not exist or does not belong
+// to the current user.
+//
+// Only an attachment whose `kind` is `image` comes back with its own image type and is usable as the
+// address of an `<img>`. Everything else is served as `application/octet-stream` with
+// `Content-Disposition: attachment`, deliberately: an uploaded file is arbitrary bytes under a name
+// its uploader chose, and serving it back inline would run it on this origin.
 //
 // GET /api/v1/attachments/{attachment}
 func (UnimplementedHandler) DownloadAttachment(ctx context.Context, params DownloadAttachmentParams) (r *DownloadAttachmentOKHeaders, _ error) {
@@ -406,12 +411,17 @@ func (UnimplementedHandler) UpdateThread(ctx context.Context, req *UpdateThreadR
 
 // UploadAttachment implements upload-attachment operation.
 //
-// The body is the file bytes themselves, not multipart, one file per request. The type is determined
-// from the content, not from Content-Type. Put the returned id in attachmentIds when sending a
-// message; attachments never referenced by any message are cleared periodically.
+// The body is the file bytes themselves, not multipart, one file per request. The kind is determined
+// from the content, not from Content-Type or from the name. Put the returned id in attachmentIds when
+// sending a message; attachments never referenced by any message are cleared periodically.
+//
+// The returned `kind` says how the assistant will see it. An `image` is read directly, and only by
+// models that accept image input. A small `text` file is placed inline in the message. A large `text`
+// file, and anything `binary`, arrives as a reference the assistant reads on demand — for a binary
+// that usually means downloading it onto one of the project's cloud instances.
 //
 // POST /api/v1/attachments
-func (UnimplementedHandler) UploadAttachment(ctx context.Context, req UploadAttachmentReq) (r *UploadedResource, _ error) {
+func (UnimplementedHandler) UploadAttachment(ctx context.Context, req UploadAttachmentReq, params UploadAttachmentParams) (r *UploadedResource, _ error) {
 	return r, ht.ErrNotImplemented
 }
 

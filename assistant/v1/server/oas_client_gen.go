@@ -115,9 +115,14 @@ type Invoker interface {
 	DeleteSkill(ctx context.Context, params DeleteSkillParams) error
 	// DownloadAttachment invokes download-attachment operation.
 	//
-	// Returns the original bytes for an attachment id, usable directly as the address of an . The response
-	// carries long-lived cache headers because the content never changes. Returns 404 when the attachment
-	// does not exist or does not belong to the current user.
+	// Returns the original bytes for an attachment id. The response carries long-lived cache headers
+	// because the content never changes. Returns 404 when the attachment does not exist or does not belong
+	// to the current user.
+	//
+	// Only an attachment whose `kind` is `image` comes back with its own image type and is usable as the
+	// address of an `<img>`. Everything else is served as `application/octet-stream` with
+	// `Content-Disposition: attachment`, deliberately: an uploaded file is arbitrary bytes under a name
+	// its uploader chose, and serving it back inline would run it on this origin.
 	//
 	// GET /api/v1/attachments/{attachment}
 	DownloadAttachment(ctx context.Context, params DownloadAttachmentParams) (*DownloadAttachmentOKHeaders, error)
@@ -314,12 +319,17 @@ type Invoker interface {
 	UpdateThread(ctx context.Context, request *UpdateThreadRequestBody, params UpdateThreadParams) (*ThreadSummaryResource, error)
 	// UploadAttachment invokes upload-attachment operation.
 	//
-	// The body is the file bytes themselves, not multipart, one file per request. The type is determined
-	// from the content, not from Content-Type. Put the returned id in attachmentIds when sending a
-	// message; attachments never referenced by any message are cleared periodically.
+	// The body is the file bytes themselves, not multipart, one file per request. The kind is determined
+	// from the content, not from Content-Type or from the name. Put the returned id in attachmentIds when
+	// sending a message; attachments never referenced by any message are cleared periodically.
+	//
+	// The returned `kind` says how the assistant will see it. An `image` is read directly, and only by
+	// models that accept image input. A small `text` file is placed inline in the message. A large `text`
+	// file, and anything `binary`, arrives as a reference the assistant reads on demand — for a binary
+	// that usually means downloading it onto one of the project's cloud instances.
 	//
 	// POST /api/v1/attachments
-	UploadAttachment(ctx context.Context, request UploadAttachmentReq) (*UploadedResource, error)
+	UploadAttachment(ctx context.Context, request UploadAttachmentReq, params UploadAttachmentParams) (*UploadedResource, error)
 }
 
 // Client implements OAS client.
@@ -1876,9 +1886,14 @@ func (c *Client) sendDeleteSkill(ctx context.Context, params DeleteSkillParams) 
 
 // DownloadAttachment invokes download-attachment operation.
 //
-// Returns the original bytes for an attachment id, usable directly as the address of an . The response
-// carries long-lived cache headers because the content never changes. Returns 404 when the attachment
-// does not exist or does not belong to the current user.
+// Returns the original bytes for an attachment id. The response carries long-lived cache headers
+// because the content never changes. Returns 404 when the attachment does not exist or does not belong
+// to the current user.
+//
+// Only an attachment whose `kind` is `image` comes back with its own image type and is usable as the
+// address of an `<img>`. Everything else is served as `application/octet-stream` with
+// `Content-Disposition: attachment`, deliberately: an uploaded file is arbitrary bytes under a name
+// its uploader chose, and serving it back inline would run it on this origin.
 //
 // GET /api/v1/attachments/{attachment}
 func (c *Client) DownloadAttachment(ctx context.Context, params DownloadAttachmentParams) (*DownloadAttachmentOKHeaders, error) {
@@ -5365,17 +5380,22 @@ func (c *Client) sendUpdateThread(ctx context.Context, request *UpdateThreadRequ
 
 // UploadAttachment invokes upload-attachment operation.
 //
-// The body is the file bytes themselves, not multipart, one file per request. The type is determined
-// from the content, not from Content-Type. Put the returned id in attachmentIds when sending a
-// message; attachments never referenced by any message are cleared periodically.
+// The body is the file bytes themselves, not multipart, one file per request. The kind is determined
+// from the content, not from Content-Type or from the name. Put the returned id in attachmentIds when
+// sending a message; attachments never referenced by any message are cleared periodically.
+//
+// The returned `kind` says how the assistant will see it. An `image` is read directly, and only by
+// models that accept image input. A small `text` file is placed inline in the message. A large `text`
+// file, and anything `binary`, arrives as a reference the assistant reads on demand — for a binary
+// that usually means downloading it onto one of the project's cloud instances.
 //
 // POST /api/v1/attachments
-func (c *Client) UploadAttachment(ctx context.Context, request UploadAttachmentReq) (*UploadedResource, error) {
-	res, err := c.sendUploadAttachment(ctx, request)
+func (c *Client) UploadAttachment(ctx context.Context, request UploadAttachmentReq, params UploadAttachmentParams) (*UploadedResource, error) {
+	res, err := c.sendUploadAttachment(ctx, request, params)
 	return res, err
 }
 
-func (c *Client) sendUploadAttachment(ctx context.Context, request UploadAttachmentReq) (res *UploadedResource, err error) {
+func (c *Client) sendUploadAttachment(ctx context.Context, request UploadAttachmentReq, params UploadAttachmentParams) (res *UploadedResource, err error) {
 	otelAttrs := []attribute.KeyValue{
 		otelogen.OperationID("upload-attachment"),
 		semconv.HTTPRequestMethodKey.String("POST"),
@@ -5415,6 +5435,27 @@ func (c *Client) sendUploadAttachment(ctx context.Context, request UploadAttachm
 	var pathParts [1]string
 	pathParts[0] = "/api/v1/attachments"
 	uri.AddPathParts(u, pathParts[:]...)
+
+	stage = "EncodeQueryParams"
+	q := uri.NewQueryEncoder()
+	{
+		// Encode "filename" parameter.
+		cfg := uri.QueryParameterEncodingConfig{
+			Name:    "filename",
+			Style:   uri.QueryStyleForm,
+			Explode: true,
+		}
+
+		if err := q.EncodeParam(cfg, func(e uri.Encoder) error {
+			if val, ok := params.Filename.Get(); ok {
+				return e.EncodeValue(conv.StringToString(val))
+			}
+			return nil
+		}); err != nil {
+			return res, errors.Wrap(err, "encode query")
+		}
+	}
+	u.RawQuery = q.Values().Encode()
 
 	stage = "EncodeRequest"
 	r, err := ht.NewRequest(ctx, "POST", u)

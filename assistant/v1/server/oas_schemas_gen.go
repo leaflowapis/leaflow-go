@@ -49,13 +49,31 @@ func (s *AnswerRequestBodyAnswers) init() AnswerRequestBodyAnswers {
 
 // Ref: #/components/schemas/AttachmentResource
 type AttachmentResource struct {
-	Height int64  `json:"height"`
-	ID     string `json:"id"`
-	Width  int64  `json:"width"`
+	ByteSize int64  `json:"byteSize"`
+	Filename string `json:"filename"`
+	// Null unless kind is image. Width and height are here so a client can hold the space before the image
+	// itself has loaded.
+	Height NilInt64 `json:"height"`
+	ID     string   `json:"id"`
+	// What this attachment is. A client renders an image in place and everything else as a file to
+	// download.
+	Kind AttachmentResourceKind `json:"kind"`
+	// Null unless kind is image.
+	Width NilInt64 `json:"width"`
+}
+
+// GetByteSize returns the value of ByteSize.
+func (s *AttachmentResource) GetByteSize() int64 {
+	return s.ByteSize
+}
+
+// GetFilename returns the value of Filename.
+func (s *AttachmentResource) GetFilename() string {
+	return s.Filename
 }
 
 // GetHeight returns the value of Height.
-func (s *AttachmentResource) GetHeight() int64 {
+func (s *AttachmentResource) GetHeight() NilInt64 {
 	return s.Height
 }
 
@@ -64,13 +82,28 @@ func (s *AttachmentResource) GetID() string {
 	return s.ID
 }
 
+// GetKind returns the value of Kind.
+func (s *AttachmentResource) GetKind() AttachmentResourceKind {
+	return s.Kind
+}
+
 // GetWidth returns the value of Width.
-func (s *AttachmentResource) GetWidth() int64 {
+func (s *AttachmentResource) GetWidth() NilInt64 {
 	return s.Width
 }
 
+// SetByteSize sets the value of ByteSize.
+func (s *AttachmentResource) SetByteSize(val int64) {
+	s.ByteSize = val
+}
+
+// SetFilename sets the value of Filename.
+func (s *AttachmentResource) SetFilename(val string) {
+	s.Filename = val
+}
+
 // SetHeight sets the value of Height.
-func (s *AttachmentResource) SetHeight(val int64) {
+func (s *AttachmentResource) SetHeight(val NilInt64) {
 	s.Height = val
 }
 
@@ -79,9 +112,64 @@ func (s *AttachmentResource) SetID(val string) {
 	s.ID = val
 }
 
+// SetKind sets the value of Kind.
+func (s *AttachmentResource) SetKind(val AttachmentResourceKind) {
+	s.Kind = val
+}
+
 // SetWidth sets the value of Width.
-func (s *AttachmentResource) SetWidth(val int64) {
+func (s *AttachmentResource) SetWidth(val NilInt64) {
 	s.Width = val
+}
+
+// What this attachment is. A client renders an image in place and everything else as a file to
+// download.
+type AttachmentResourceKind string
+
+const (
+	AttachmentResourceKindImage  AttachmentResourceKind = "image"
+	AttachmentResourceKindText   AttachmentResourceKind = "text"
+	AttachmentResourceKindBinary AttachmentResourceKind = "binary"
+)
+
+// AllValues returns all AttachmentResourceKind values.
+func (AttachmentResourceKind) AllValues() []AttachmentResourceKind {
+	return []AttachmentResourceKind{
+		AttachmentResourceKindImage,
+		AttachmentResourceKindText,
+		AttachmentResourceKindBinary,
+	}
+}
+
+// MarshalText implements encoding.TextMarshaler.
+func (s AttachmentResourceKind) MarshalText() ([]byte, error) {
+	switch s {
+	case AttachmentResourceKindImage:
+		return []byte(s), nil
+	case AttachmentResourceKindText:
+		return []byte(s), nil
+	case AttachmentResourceKindBinary:
+		return []byte(s), nil
+	default:
+		return nil, errors.Errorf("invalid value: %q", s)
+	}
+}
+
+// UnmarshalText implements encoding.TextUnmarshaler.
+func (s *AttachmentResourceKind) UnmarshalText(data []byte) error {
+	switch AttachmentResourceKind(data) {
+	case AttachmentResourceKindImage:
+		*s = AttachmentResourceKindImage
+		return nil
+	case AttachmentResourceKindText:
+		*s = AttachmentResourceKindText
+		return nil
+	case AttachmentResourceKindBinary:
+		*s = AttachmentResourceKindBinary
+		return nil
+	default:
+		return errors.Errorf("invalid value: %q", data)
+	}
 }
 
 type BearerAuth struct {
@@ -1284,13 +1372,18 @@ func (s *ClientFunctionRequestParameters) init() ClientFunctionRequestParameters
 // Ref: #/components/schemas/ContextResource
 type ContextResource struct {
 	CompactAt NilInt64 `json:"compactAt"`
-	// What kinds of input the model behind this conversation accepts, as modality names: text, image. A
-	// client uses this to decide whether a control exists — an attach button on a model that cannot read
-	// pictures is a control whose only outcome is a refusal, and the refusal arrives after somebody has
-	// chosen a file. An empty list is not a claim that the model reads nothing: it means this deployment
-	// has not stated the modalities, or the conversation names a model that has since been retired. Treat
-	// empty as unknown and keep the control, because hiding one for a reason nobody can see is worse than
-	// a refusal that says why.
+	// What kinds of input the model behind this conversation accepts, as modality names: text, image.
+	//
+	// This governs images and nothing else. Text and binary attachments reach every model: a small text
+	// file is placed inline, a large one is read on demand, and a binary is downloaded onto a cloud
+	// instance — none of which asks the model to see a picture. So this decides whether pasting a
+	// screenshot does anything, not whether the attach control exists. Hiding file upload on a text-only
+	// model takes away something that would have worked.
+	//
+	// An empty list is not a claim that the model reads nothing: it means this deployment has not stated
+	// the modalities, or the conversation names a model that has since been retired. Treat empty as
+	// unknown and keep the control, because hiding one for a reason nobody can see is worse than a refusal
+	// that says why.
 	InputModalities []string `json:"inputModalities"`
 	Model           string   `json:"model"`
 	Used            NilInt64 `json:"used"`
@@ -1782,14 +1875,20 @@ func (s DownloadAttachmentOK) Read(p []byte) (n int, err error) {
 
 // DownloadAttachmentOKHeaders wraps DownloadAttachmentOK with response headers.
 type DownloadAttachmentOKHeaders struct {
-	CacheControl OptString
-	ContentType  string
-	Response     DownloadAttachmentOK
+	CacheControl       OptString
+	ContentDisposition OptString
+	ContentType        string
+	Response           DownloadAttachmentOK
 }
 
 // GetCacheControl returns the value of CacheControl.
 func (s *DownloadAttachmentOKHeaders) GetCacheControl() OptString {
 	return s.CacheControl
+}
+
+// GetContentDisposition returns the value of ContentDisposition.
+func (s *DownloadAttachmentOKHeaders) GetContentDisposition() OptString {
+	return s.ContentDisposition
 }
 
 // GetContentType returns the value of ContentType.
@@ -1805,6 +1904,11 @@ func (s *DownloadAttachmentOKHeaders) GetResponse() DownloadAttachmentOK {
 // SetCacheControl sets the value of CacheControl.
 func (s *DownloadAttachmentOKHeaders) SetCacheControl(val OptString) {
 	s.CacheControl = val
+}
+
+// SetContentDisposition sets the value of ContentDisposition.
+func (s *DownloadAttachmentOKHeaders) SetContentDisposition(val OptString) {
+	s.ContentDisposition = val
 }
 
 // SetContentType sets the value of ContentType.
@@ -2173,7 +2277,7 @@ type ItemResource struct {
 	// The content of this entry, in the order it was written. A message that is only text is a single
 	// part, which is most of them.
 	//
-	// An image belongs where it was written, so render these in order rather than putting attachments at
+	// An attachment belongs where it was written, so render these in order rather than putting them all at
 	// the end.
 	Parts OptNilPartResourceArray `json:"parts"`
 	Tool  OptNilString            `json:"tool"`
@@ -2907,7 +3011,7 @@ func (s *MemoryResource) SetUpdatedAt(val time.Time) {
 //   - `data-<something>` — context from the client, in `data`. The name after `data-` is yours; it is
 //     shown to the assistant so it can tell one kind of block from another.
 //
-// Order matters: an image belongs where it was written, not at the end.
+// Order matters: an attachment belongs where it was written, not at the end.
 // Ref: #/components/schemas/MessagePart
 type MessagePart struct {
 	// For `file` parts. The attachment must have been uploaded and not yet bound to another message.
@@ -6546,13 +6650,36 @@ func (s UploadAttachmentReq) Read(p []byte) (n int, err error) {
 
 // Ref: #/components/schemas/UploadedResource
 type UploadedResource struct {
-	Height int64  `json:"height"`
-	ID     string `json:"id"`
-	Width  int64  `json:"width"`
+	// Size of what was stored. For an image that has been resized, this is the resized size, not what was
+	// uploaded.
+	ByteSize int64  `json:"byteSize"`
+	Filename string `json:"filename"`
+	// Null unless kind is image.
+	Height NilInt64 `json:"height"`
+	ID     string   `json:"id"`
+	// How the assistant will see this file.
+	//
+	//  - `image` — read directly, and only by models that accept image input
+	//  - `text` — placed inline in the message when small enough, otherwise read on demand
+	//  - `binary` — never read directly; the assistant downloads it onto a cloud instance to work with
+	//    it
+	Kind UploadedResourceKind `json:"kind"`
+	// Null unless kind is image.
+	Width NilInt64 `json:"width"`
+}
+
+// GetByteSize returns the value of ByteSize.
+func (s *UploadedResource) GetByteSize() int64 {
+	return s.ByteSize
+}
+
+// GetFilename returns the value of Filename.
+func (s *UploadedResource) GetFilename() string {
+	return s.Filename
 }
 
 // GetHeight returns the value of Height.
-func (s *UploadedResource) GetHeight() int64 {
+func (s *UploadedResource) GetHeight() NilInt64 {
 	return s.Height
 }
 
@@ -6561,13 +6688,28 @@ func (s *UploadedResource) GetID() string {
 	return s.ID
 }
 
+// GetKind returns the value of Kind.
+func (s *UploadedResource) GetKind() UploadedResourceKind {
+	return s.Kind
+}
+
 // GetWidth returns the value of Width.
-func (s *UploadedResource) GetWidth() int64 {
+func (s *UploadedResource) GetWidth() NilInt64 {
 	return s.Width
 }
 
+// SetByteSize sets the value of ByteSize.
+func (s *UploadedResource) SetByteSize(val int64) {
+	s.ByteSize = val
+}
+
+// SetFilename sets the value of Filename.
+func (s *UploadedResource) SetFilename(val string) {
+	s.Filename = val
+}
+
 // SetHeight sets the value of Height.
-func (s *UploadedResource) SetHeight(val int64) {
+func (s *UploadedResource) SetHeight(val NilInt64) {
 	s.Height = val
 }
 
@@ -6576,9 +6718,68 @@ func (s *UploadedResource) SetID(val string) {
 	s.ID = val
 }
 
+// SetKind sets the value of Kind.
+func (s *UploadedResource) SetKind(val UploadedResourceKind) {
+	s.Kind = val
+}
+
 // SetWidth sets the value of Width.
-func (s *UploadedResource) SetWidth(val int64) {
+func (s *UploadedResource) SetWidth(val NilInt64) {
 	s.Width = val
+}
+
+// How the assistant will see this file.
+//
+//   - `image` — read directly, and only by models that accept image input
+//   - `text` — placed inline in the message when small enough, otherwise read on demand
+//   - `binary` — never read directly; the assistant downloads it onto a cloud instance to work with
+//     it
+type UploadedResourceKind string
+
+const (
+	UploadedResourceKindImage  UploadedResourceKind = "image"
+	UploadedResourceKindText   UploadedResourceKind = "text"
+	UploadedResourceKindBinary UploadedResourceKind = "binary"
+)
+
+// AllValues returns all UploadedResourceKind values.
+func (UploadedResourceKind) AllValues() []UploadedResourceKind {
+	return []UploadedResourceKind{
+		UploadedResourceKindImage,
+		UploadedResourceKindText,
+		UploadedResourceKindBinary,
+	}
+}
+
+// MarshalText implements encoding.TextMarshaler.
+func (s UploadedResourceKind) MarshalText() ([]byte, error) {
+	switch s {
+	case UploadedResourceKindImage:
+		return []byte(s), nil
+	case UploadedResourceKindText:
+		return []byte(s), nil
+	case UploadedResourceKindBinary:
+		return []byte(s), nil
+	default:
+		return nil, errors.Errorf("invalid value: %q", s)
+	}
+}
+
+// UnmarshalText implements encoding.TextUnmarshaler.
+func (s *UploadedResourceKind) UnmarshalText(data []byte) error {
+	switch UploadedResourceKind(data) {
+	case UploadedResourceKindImage:
+		*s = UploadedResourceKindImage
+		return nil
+	case UploadedResourceKindText:
+		*s = UploadedResourceKindText
+		return nil
+	case UploadedResourceKindBinary:
+		*s = UploadedResourceKindBinary
+		return nil
+	default:
+		return errors.Errorf("invalid value: %q", data)
+	}
 }
 
 // Ref: #/components/schemas/VerifyCodeRequestBody

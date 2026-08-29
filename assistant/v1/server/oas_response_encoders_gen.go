@@ -117,6 +117,7 @@ func encodeDeleteSkillResponse(response *DeleteSkillNoContent, w http.ResponseWr
 }
 
 func encodeDownloadAttachmentResponse(response *DownloadAttachmentOKHeaders, w http.ResponseWriter, span trace.Span) error {
+	w.Header().Set("Access-Control-Expose-Headers", "Content-Disposition")
 	// Encoding response headers.
 	{
 		h := uri.NewHeaderEncoder(w.Header())
@@ -133,6 +134,21 @@ func encodeDownloadAttachmentResponse(response *DownloadAttachmentOKHeaders, w h
 				return nil
 			}); err != nil {
 				return errors.Wrap(err, "encode Cache-Control header")
+			}
+		}
+		// Encode "Content-Disposition" header.
+		{
+			cfg := uri.HeaderParameterEncodingConfig{
+				Name:    "Content-Disposition",
+				Explode: false,
+			}
+			if err := h.EncodeParam(cfg, func(e uri.Encoder) error {
+				if val, ok := response.ContentDisposition.Get(); ok {
+					return e.EncodeValue(conv.StringToString(val))
+				}
+				return nil
+			}); err != nil {
+				return errors.Wrap(err, "encode Content-Disposition header")
 			}
 		}
 		// Encode "Content-Type" header.

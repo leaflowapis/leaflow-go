@@ -1212,7 +1212,7 @@ func (s *Server) FindPath(method string, u *url.URL) (r Route, _ bool) {
 					switch method {
 					case "POST":
 						r.name = UploadAttachmentOperation
-						r.summary = "Upload an image"
+						r.summary = "Upload a file"
 						r.operationID = "upload-attachment"
 						r.operationGroup = ""
 						r.pathPattern = "/api/v1/attachments"
@@ -1246,7 +1246,7 @@ func (s *Server) FindPath(method string, u *url.URL) (r Route, _ bool) {
 						switch method {
 						case "GET":
 							r.name = DownloadAttachmentOperation
-							r.summary = "Fetch an image"
+							r.summary = "Download a file"
 							r.operationID = "download-attachment"
 							r.operationGroup = ""
 							r.pathPattern = "/api/v1/attachments/{attachment}"

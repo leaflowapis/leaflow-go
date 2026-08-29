@@ -2299,9 +2299,14 @@ func (s *Server) handleDeleteSkillRequest(args [1]string, argsEscaped bool, w ht
 
 // handleDownloadAttachmentRequest handles download-attachment operation.
 //
-// Returns the original bytes for an attachment id, usable directly as the address of an . The response
-// carries long-lived cache headers because the content never changes. Returns 404 when the attachment
-// does not exist or does not belong to the current user.
+// Returns the original bytes for an attachment id. The response carries long-lived cache headers
+// because the content never changes. Returns 404 when the attachment does not exist or does not belong
+// to the current user.
+//
+// Only an attachment whose `kind` is `image` comes back with its own image type and is usable as the
+// address of an `<img>`. Everything else is served as `application/octet-stream` with
+// `Content-Disposition: attachment`, deliberately: an uploaded file is arbitrary bytes under a name
+// its uploader chose, and serving it back inline would run it on this origin.
 //
 // GET /api/v1/attachments/{attachment}
 func (s *Server) handleDownloadAttachmentRequest(args [1]string, argsEscaped bool, w http.ResponseWriter, r *http.Request) {
@@ -2439,7 +2444,7 @@ func (s *Server) handleDownloadAttachmentRequest(args [1]string, argsEscaped boo
 		mreq := middleware.Request{
 			Context:          ctx,
 			OperationName:    DownloadAttachmentOperation,
-			OperationSummary: "Fetch an image",
+			OperationSummary: "Download a file",
 			OperationID:      "download-attachment",
 			Body:             nil,
 			RawBody:          rawBody,
@@ -7467,9 +7472,14 @@ func (s *Server) handleUpdateThreadRequest(args [1]string, argsEscaped bool, w h
 
 // handleUploadAttachmentRequest handles upload-attachment operation.
 //
-// The body is the file bytes themselves, not multipart, one file per request. The type is determined
-// from the content, not from Content-Type. Put the returned id in attachmentIds when sending a
-// message; attachments never referenced by any message are cleared periodically.
+// The body is the file bytes themselves, not multipart, one file per request. The kind is determined
+// from the content, not from Content-Type or from the name. Put the returned id in attachmentIds when
+// sending a message; attachments never referenced by any message are cleared periodically.
+//
+// The returned `kind` says how the assistant will see it. An `image` is read directly, and only by
+// models that accept image input. A small `text` file is placed inline in the message. A large `text`
+// file, and anything `binary`, arrives as a reference the assistant reads on demand — for a binary
+// that usually means downloading it onto one of the project's cloud instances.
 //
 // POST /api/v1/attachments
 func (s *Server) handleUploadAttachmentRequest(args [0]string, argsEscaped bool, w http.ResponseWriter, r *http.Request) {
@@ -7589,6 +7599,16 @@ func (s *Server) handleUploadAttachmentRequest(args [0]string, argsEscaped bool,
 			return
 		}
 	}
+	params, err := decodeUploadAttachmentParams(args, argsEscaped, r)
+	if err != nil {
+		err = &ogenerrors.DecodeParamsError{
+			OperationContext: opErrContext,
+			Err:              err,
+		}
+		defer recordError("DecodeParams", err)
+		s.cfg.ErrorHandler(ctx, w, r, err)
+		return
+	}
 
 	var rawBody []byte
 	request, rawBody, close, err := s.decodeUploadAttachmentRequest(r)
@@ -7612,17 +7632,22 @@ func (s *Server) handleUploadAttachmentRequest(args [0]string, argsEscaped bool,
 		mreq := middleware.Request{
 			Context:          ctx,
 			OperationName:    UploadAttachmentOperation,
-			OperationSummary: "Upload an image",
+			OperationSummary: "Upload a file",
 			OperationID:      "upload-attachment",
 			Body:             request,
 			RawBody:          rawBody,
-			Params:           middleware.Parameters{},
-			Raw:              r,
+			Params: middleware.Parameters{
+				{
+					Name: "filename",
+					In:   "query",
+				}: params.Filename,
+			},
+			Raw: r,
 		}
 
 		type (
 			Request  = UploadAttachmentReq
-			Params   = struct{}
+			Params   = UploadAttachmentParams
 			Response = *UploadedResource
 		)
 		response, err = middleware.HookMiddleware[
@@ -7632,14 +7657,14 @@ func (s *Server) handleUploadAttachmentRequest(args [0]string, argsEscaped bool,
 		](
 			m,
 			mreq,
-			nil,
+			unpackUploadAttachmentParams,
 			func(ctx context.Context, request Request, params Params) (response Response, err error) {
-				response, err = s.h.UploadAttachment(ctx, request)
+				response, err = s.h.UploadAttachment(ctx, request, params)
 				return response, err
 			},
 		)
 	} else {
-		response, err = s.h.UploadAttachment(ctx, request)
+		response, err = s.h.UploadAttachment(ctx, request, params)
 	}
 	if err != nil {
 		if errRes, ok := errors.Into[*ErrorStatusCode](err); ok {
