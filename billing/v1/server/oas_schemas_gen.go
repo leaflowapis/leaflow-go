@@ -1638,6 +1638,271 @@ func (o OptTopUpPricing) Or(d TopUpPricing) TopUpPricing {
 	return d
 }
 
+// Ref: #/components/schemas/Order
+type Order struct {
+	ID        string `json:"id"`
+	ProjectID string `json:"project_id"`
+	PlacedBy  string `json:"placed_by"`
+	// Whether the request went through. It is not the state of what was provisioned: that belongs to each
+	// resource and outlives the order.
+	State         OrderState `json:"state"`
+	FailureReason OptString  `json:"failure_reason"`
+	CreatedAt     time.Time  `json:"created_at"`
+	// Only present on the single-order route.
+	Lines []OrderLine `json:"lines"`
+}
+
+// GetID returns the value of ID.
+func (s *Order) GetID() string {
+	return s.ID
+}
+
+// GetProjectID returns the value of ProjectID.
+func (s *Order) GetProjectID() string {
+	return s.ProjectID
+}
+
+// GetPlacedBy returns the value of PlacedBy.
+func (s *Order) GetPlacedBy() string {
+	return s.PlacedBy
+}
+
+// GetState returns the value of State.
+func (s *Order) GetState() OrderState {
+	return s.State
+}
+
+// GetFailureReason returns the value of FailureReason.
+func (s *Order) GetFailureReason() OptString {
+	return s.FailureReason
+}
+
+// GetCreatedAt returns the value of CreatedAt.
+func (s *Order) GetCreatedAt() time.Time {
+	return s.CreatedAt
+}
+
+// GetLines returns the value of Lines.
+func (s *Order) GetLines() []OrderLine {
+	return s.Lines
+}
+
+// SetID sets the value of ID.
+func (s *Order) SetID(val string) {
+	s.ID = val
+}
+
+// SetProjectID sets the value of ProjectID.
+func (s *Order) SetProjectID(val string) {
+	s.ProjectID = val
+}
+
+// SetPlacedBy sets the value of PlacedBy.
+func (s *Order) SetPlacedBy(val string) {
+	s.PlacedBy = val
+}
+
+// SetState sets the value of State.
+func (s *Order) SetState(val OrderState) {
+	s.State = val
+}
+
+// SetFailureReason sets the value of FailureReason.
+func (s *Order) SetFailureReason(val OptString) {
+	s.FailureReason = val
+}
+
+// SetCreatedAt sets the value of CreatedAt.
+func (s *Order) SetCreatedAt(val time.Time) {
+	s.CreatedAt = val
+}
+
+// SetLines sets the value of Lines.
+func (s *Order) SetLines(val []OrderLine) {
+	s.Lines = val
+}
+
+// Ref: #/components/schemas/OrderLine
+type OrderLine struct {
+	ID     string          `json:"id"`
+	Action OrderLineAction `json:"action"`
+	// Which service holds the thing, for example `compute`.
+	Service string `json:"service"`
+	// That service's own catalogue identifier for what was asked for.
+	ProductID string `json:"product_id"`
+	Quantity  int64  `json:"quantity"`
+}
+
+// GetID returns the value of ID.
+func (s *OrderLine) GetID() string {
+	return s.ID
+}
+
+// GetAction returns the value of Action.
+func (s *OrderLine) GetAction() OrderLineAction {
+	return s.Action
+}
+
+// GetService returns the value of Service.
+func (s *OrderLine) GetService() string {
+	return s.Service
+}
+
+// GetProductID returns the value of ProductID.
+func (s *OrderLine) GetProductID() string {
+	return s.ProductID
+}
+
+// GetQuantity returns the value of Quantity.
+func (s *OrderLine) GetQuantity() int64 {
+	return s.Quantity
+}
+
+// SetID sets the value of ID.
+func (s *OrderLine) SetID(val string) {
+	s.ID = val
+}
+
+// SetAction sets the value of Action.
+func (s *OrderLine) SetAction(val OrderLineAction) {
+	s.Action = val
+}
+
+// SetService sets the value of Service.
+func (s *OrderLine) SetService(val string) {
+	s.Service = val
+}
+
+// SetProductID sets the value of ProductID.
+func (s *OrderLine) SetProductID(val string) {
+	s.ProductID = val
+}
+
+// SetQuantity sets the value of Quantity.
+func (s *OrderLine) SetQuantity(val int64) {
+	s.Quantity = val
+}
+
+type OrderLineAction string
+
+const (
+	OrderLineActionAdd    OrderLineAction = "add"
+	OrderLineActionRenew  OrderLineAction = "renew"
+	OrderLineActionModify OrderLineAction = "modify"
+	OrderLineActionRemove OrderLineAction = "remove"
+)
+
+// AllValues returns all OrderLineAction values.
+func (OrderLineAction) AllValues() []OrderLineAction {
+	return []OrderLineAction{
+		OrderLineActionAdd,
+		OrderLineActionRenew,
+		OrderLineActionModify,
+		OrderLineActionRemove,
+	}
+}
+
+// MarshalText implements encoding.TextMarshaler.
+func (s OrderLineAction) MarshalText() ([]byte, error) {
+	switch s {
+	case OrderLineActionAdd:
+		return []byte(s), nil
+	case OrderLineActionRenew:
+		return []byte(s), nil
+	case OrderLineActionModify:
+		return []byte(s), nil
+	case OrderLineActionRemove:
+		return []byte(s), nil
+	default:
+		return nil, errors.Errorf("invalid value: %q", s)
+	}
+}
+
+// UnmarshalText implements encoding.TextUnmarshaler.
+func (s *OrderLineAction) UnmarshalText(data []byte) error {
+	switch OrderLineAction(data) {
+	case OrderLineActionAdd:
+		*s = OrderLineActionAdd
+		return nil
+	case OrderLineActionRenew:
+		*s = OrderLineActionRenew
+		return nil
+	case OrderLineActionModify:
+		*s = OrderLineActionModify
+		return nil
+	case OrderLineActionRemove:
+		*s = OrderLineActionRemove
+		return nil
+	default:
+		return errors.Errorf("invalid value: %q", data)
+	}
+}
+
+// Ref: #/components/schemas/OrderList
+type OrderList struct {
+	Orders []Order `json:"orders"`
+}
+
+// GetOrders returns the value of Orders.
+func (s *OrderList) GetOrders() []Order {
+	return s.Orders
+}
+
+// SetOrders sets the value of Orders.
+func (s *OrderList) SetOrders(val []Order) {
+	s.Orders = val
+}
+
+// Whether the request went through. It is not the state of what was provisioned: that belongs to each
+// resource and outlives the order.
+type OrderState string
+
+const (
+	OrderStatePending   OrderState = "pending"
+	OrderStateFulfilled OrderState = "fulfilled"
+	OrderStateFailed    OrderState = "failed"
+)
+
+// AllValues returns all OrderState values.
+func (OrderState) AllValues() []OrderState {
+	return []OrderState{
+		OrderStatePending,
+		OrderStateFulfilled,
+		OrderStateFailed,
+	}
+}
+
+// MarshalText implements encoding.TextMarshaler.
+func (s OrderState) MarshalText() ([]byte, error) {
+	switch s {
+	case OrderStatePending:
+		return []byte(s), nil
+	case OrderStateFulfilled:
+		return []byte(s), nil
+	case OrderStateFailed:
+		return []byte(s), nil
+	default:
+		return nil, errors.Errorf("invalid value: %q", s)
+	}
+}
+
+// UnmarshalText implements encoding.TextUnmarshaler.
+func (s *OrderState) UnmarshalText(data []byte) error {
+	switch OrderState(data) {
+	case OrderStatePending:
+		*s = OrderStatePending
+		return nil
+	case OrderStateFulfilled:
+		*s = OrderStateFulfilled
+		return nil
+	case OrderStateFailed:
+		*s = OrderStateFailed
+		return nil
+	default:
+		return errors.Errorf("invalid value: %q", data)
+	}
+}
+
 // Whether money can be collected from this account later, without the account holder present.
 //
 // Deliberately not called a card: a card is one kind of payment method, and direct debit and the

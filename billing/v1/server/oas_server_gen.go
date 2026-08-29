@@ -76,6 +76,12 @@ type Handler interface {
 	//
 	// GET /account/v1/billing-accounts/{accountKey}/invoices/{invoiceId}
 	GetInvoice(ctx context.Context, params GetInvoiceParams) (*InvoiceDetail, error)
+	// GetOrder implements get-order operation.
+	//
+	// Each line names what was asked for and how much of it. This is the only route that carries them.
+	//
+	// GET /account/v1/billing-accounts/{accountKey}/orders/{orderId}
+	GetOrder(ctx context.Context, params GetOrderParams) (*Order, error)
 	// ListBillingAccounts implements list-billing-accounts operation.
 	//
 	// Every billing account belonging to the caller, with the projects each one currently pays for.
@@ -130,6 +136,19 @@ type Handler interface {
 	//
 	// GET /account/v1/billing-accounts/{accountKey}/offers
 	ListOffers(ctx context.Context, params ListOffersParams) (*OfferList, error)
+	// ListOrders implements list-orders operation.
+	//
+	// Every provisioning request made against the projects this account pays for, newest first.
+	//
+	// An order that never went through stays here on purpose. Removing it would leave nothing to look at
+	// in exactly the case someone wants to look: a resource was asked for, was not delivered, and the
+	// question is what happened.
+	//
+	// The list carries no lines. An order has only a handful, but shipping them on every page means
+	// carrying data no column shows.
+	//
+	// GET /account/v1/billing-accounts/{accountKey}/orders
+	ListOrders(ctx context.Context, params ListOrdersParams) (*OrderList, error)
 	// ListTopUps implements list-top-ups operation.
 	//
 	// Every top-up this account has made, newest first.

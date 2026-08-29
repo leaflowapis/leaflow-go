@@ -79,6 +79,51 @@ func (e InvoiceStatus) Valid() bool {
 	}
 }
 
+// Defines values for OrderState.
+const (
+	OrderStateFailed    OrderState = "failed"
+	OrderStateFulfilled OrderState = "fulfilled"
+	OrderStatePending   OrderState = "pending"
+)
+
+// Valid indicates whether the value is a known member of the OrderState enum.
+func (e OrderState) Valid() bool {
+	switch e {
+	case OrderStateFailed:
+		return true
+	case OrderStateFulfilled:
+		return true
+	case OrderStatePending:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for OrderLineAction.
+const (
+	Add    OrderLineAction = "add"
+	Modify OrderLineAction = "modify"
+	Remove OrderLineAction = "remove"
+	Renew  OrderLineAction = "renew"
+)
+
+// Valid indicates whether the value is a known member of the OrderLineAction enum.
+func (e OrderLineAction) Valid() bool {
+	switch e {
+	case Add:
+		return true
+	case Modify:
+		return true
+	case Remove:
+		return true
+	case Renew:
+		return true
+	default:
+		return false
+	}
+}
+
 // Defines values for PlanChangeTiming.
 const (
 	PlanChangeTimingImmediate        PlanChangeTiming = "immediate"
@@ -120,16 +165,16 @@ func (e PricingLineType) Valid() bool {
 
 // Defines values for TopUpStatusState.
 const (
-	Pending TopUpStatusState = "pending"
-	Settled TopUpStatusState = "settled"
+	TopUpStatusStatePending TopUpStatusState = "pending"
+	TopUpStatusStateSettled TopUpStatusState = "settled"
 )
 
 // Valid indicates whether the value is a known member of the TopUpStatusState enum.
 func (e TopUpStatusState) Valid() bool {
 	switch e {
-	case Pending:
+	case TopUpStatusStatePending:
 		return true
-	case Settled:
+	case TopUpStatusStateSettled:
 		return true
 	default:
 		return false
@@ -429,6 +474,47 @@ type Offer struct {
 // OfferList defines model for OfferList.
 type OfferList struct {
 	Offers []Offer `json:"offers"`
+}
+
+// Order defines model for Order.
+type Order struct {
+	CreatedAt     time.Time `json:"created_at"`
+	FailureReason *string   `json:"failure_reason,omitempty"`
+	Id            string    `json:"id"`
+
+	// Lines Only present on the single-order route.
+	Lines     []OrderLine `json:"lines,omitempty"`
+	PlacedBy  string      `json:"placed_by"`
+	ProjectId string      `json:"project_id"`
+
+	// State Whether the request went through. It is not the state of what was provisioned: that
+	// belongs to each resource and outlives the order.
+	State OrderState `json:"state"`
+}
+
+// OrderState Whether the request went through. It is not the state of what was provisioned: that
+// belongs to each resource and outlives the order.
+type OrderState string
+
+// OrderLine defines model for OrderLine.
+type OrderLine struct {
+	Action OrderLineAction `json:"action"`
+	Id     string          `json:"id"`
+
+	// ProductId That service's own catalogue identifier for what was asked for.
+	ProductId string `json:"product_id"`
+	Quantity  int64  `json:"quantity"`
+
+	// Service Which service holds the thing, for example `compute`.
+	Service string `json:"service"`
+}
+
+// OrderLineAction defines model for OrderLine.Action.
+type OrderLineAction string
+
+// OrderList defines model for OrderList.
+type OrderList struct {
+	Orders []Order `json:"orders"`
 }
 
 // PaymentMethod Whether money can be collected from this account later, without the account holder present.
@@ -952,6 +1038,28 @@ type ClientInterface interface {
 	//
 	// Corresponds with POST /account/v1/billing-accounts/{accountKey}/offers/{offerKey}/purchase (the `PurchaseOffer` operationId).
 	PurchaseOffer(ctx context.Context, accountKey AccountKey, offerKey string, params *PurchaseOfferParams, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// ListOrders My orders
+	//
+	// Every provisioning request made against the projects this account pays for, newest first.
+	//
+	// An order that never went through stays here on purpose. Removing it would leave nothing to
+	// look at in exactly the case someone wants to look: a resource was asked for, was not
+	// delivered, and the question is what happened.
+	//
+	// The list carries no lines. An order has only a handful, but shipping them on every page
+	// means carrying data no column shows.
+	//
+	// Corresponds with GET /account/v1/billing-accounts/{accountKey}/orders (the `ListOrders` operationId).
+	ListOrders(ctx context.Context, accountKey AccountKey, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// GetOrder One order, with its lines
+	//
+	// Each line names what was asked for and how much of it. This is the only route that carries
+	// them.
+	//
+	// Corresponds with GET /account/v1/billing-accounts/{accountKey}/orders/{orderId} (the `GetOrder` operationId).
+	GetOrder(ctx context.Context, accountKey AccountKey, orderId openapi_types.UUID, reqEditors ...RequestEditorFn) (*http.Response, error)
 
 	// ReadPaymentMethod Whether this account can be charged
 	//
@@ -1486,6 +1594,48 @@ func (c *Client) ListOffers(ctx context.Context, accountKey AccountKey, reqEdito
 // Corresponds with POST /account/v1/billing-accounts/{accountKey}/offers/{offerKey}/purchase (the `PurchaseOffer` operationId).
 func (c *Client) PurchaseOffer(ctx context.Context, accountKey AccountKey, offerKey string, params *PurchaseOfferParams, reqEditors ...RequestEditorFn) (*http.Response, error) {
 	req, err := NewPurchaseOfferRequest(c.Server, accountKey, offerKey, params)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+// ListOrders My orders
+//
+// Every provisioning request made against the projects this account pays for, newest first.
+//
+// An order that never went through stays here on purpose. Removing it would leave nothing to
+// look at in exactly the case someone wants to look: a resource was asked for, was not
+// delivered, and the question is what happened.
+//
+// The list carries no lines. An order has only a handful, but shipping them on every page
+// means carrying data no column shows.
+//
+// Corresponds with GET /account/v1/billing-accounts/{accountKey}/orders (the `ListOrders` operationId).
+func (c *Client) ListOrders(ctx context.Context, accountKey AccountKey, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewListOrdersRequest(c.Server, accountKey)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+// GetOrder One order, with its lines
+//
+// Each line names what was asked for and how much of it. This is the only route that carries
+// them.
+//
+// Corresponds with GET /account/v1/billing-accounts/{accountKey}/orders/{orderId} (the `GetOrder` operationId).
+func (c *Client) GetOrder(ctx context.Context, accountKey AccountKey, orderId openapi_types.UUID, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewGetOrderRequest(c.Server, accountKey, orderId)
 	if err != nil {
 		return nil, err
 	}
@@ -2250,6 +2400,81 @@ func NewPurchaseOfferRequest(server string, accountKey AccountKey, offerKey stri
 	return req, nil
 }
 
+// NewListOrdersRequest constructs an http.Request for the ListOrders method
+func NewListOrdersRequest(server string, accountKey AccountKey) (*http.Request, error) {
+	var err error
+
+	var pathParam0 string
+
+	pathParam0, err = runtime.StyleParamWithOptions("simple", false, "accountKey", accountKey, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: ""})
+	if err != nil {
+		return nil, err
+	}
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/account/v1/billing-accounts/%s/orders", pathParam0)
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest(http.MethodGet, queryURL.String(), nil)
+	if err != nil {
+		return nil, err
+	}
+
+	return req, nil
+}
+
+// NewGetOrderRequest constructs an http.Request for the GetOrder method
+func NewGetOrderRequest(server string, accountKey AccountKey, orderId openapi_types.UUID) (*http.Request, error) {
+	var err error
+
+	var pathParam0 string
+
+	pathParam0, err = runtime.StyleParamWithOptions("simple", false, "accountKey", accountKey, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: ""})
+	if err != nil {
+		return nil, err
+	}
+
+	var pathParam1 string
+
+	pathParam1, err = runtime.StyleParamWithOptions("simple", false, "orderId", orderId, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: "uuid"})
+	if err != nil {
+		return nil, err
+	}
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/account/v1/billing-accounts/%s/orders/%s", pathParam0, pathParam1)
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest(http.MethodGet, queryURL.String(), nil)
+	if err != nil {
+		return nil, err
+	}
+
+	return req, nil
+}
+
 // NewReadPaymentMethodRequest constructs an http.Request for the ReadPaymentMethod method
 func NewReadPaymentMethodRequest(server string, accountKey AccountKey) (*http.Request, error) {
 	var err error
@@ -2885,6 +3110,32 @@ type ClientWithResponsesInterface interface {
 	//
 	// Corresponds with POST /account/v1/billing-accounts/{accountKey}/offers/{offerKey}/purchase (the `PurchaseOffer` operationId).
 	PurchaseOfferWithResponse(ctx context.Context, accountKey AccountKey, offerKey string, params *PurchaseOfferParams, reqEditors ...RequestEditorFn) (*PurchaseOfferResponse, error)
+
+	// ListOrdersWithResponse My orders
+	//
+	// Every provisioning request made against the projects this account pays for, newest first.
+	//
+	// An order that never went through stays here on purpose. Removing it would leave nothing to
+	// look at in exactly the case someone wants to look: a resource was asked for, was not
+	// delivered, and the question is what happened.
+	//
+	// The list carries no lines. An order has only a handful, but shipping them on every page
+	// means carrying data no column shows.
+	//
+	// Returns a wrapper object for the known response body format(s).
+	//
+	// Corresponds with GET /account/v1/billing-accounts/{accountKey}/orders (the `ListOrders` operationId).
+	ListOrdersWithResponse(ctx context.Context, accountKey AccountKey, reqEditors ...RequestEditorFn) (*ListOrdersResponse, error)
+
+	// GetOrderWithResponse One order, with its lines
+	//
+	// Each line names what was asked for and how much of it. This is the only route that carries
+	// them.
+	//
+	// Returns a wrapper object for the known response body format(s).
+	//
+	// Corresponds with GET /account/v1/billing-accounts/{accountKey}/orders/{orderId} (the `GetOrder` operationId).
+	GetOrderWithResponse(ctx context.Context, accountKey AccountKey, orderId openapi_types.UUID, reqEditors ...RequestEditorFn) (*GetOrderResponse, error)
 
 	// ReadPaymentMethodWithResponse Whether this account can be charged
 	//
@@ -3672,6 +3923,102 @@ func (r PurchaseOfferResponse) ContentType() string {
 	return ""
 }
 
+type ListOrdersResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	// JSON200 the response for an HTTP 200 `application/json` response
+	JSON200 *OrderList
+	// JSONDefault the response for an HTTP default `application/json` response
+	JSONDefault *Error
+}
+
+// GetJSON200 returns the response for an HTTP 200 `application/json` response
+func (r ListOrdersResponse) GetJSON200() *OrderList {
+	return r.JSON200
+}
+
+// GetJSONDefault returns the response for an HTTP default `application/json` response
+func (r ListOrdersResponse) GetJSONDefault() *Error {
+	return r.JSONDefault
+}
+
+// GetBody returns the raw response body bytes
+func (r ListOrdersResponse) GetBody() []byte {
+	return r.Body
+}
+
+// Status returns HTTPResponse.Status
+func (r ListOrdersResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r ListOrdersResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+// ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
+func (r ListOrdersResponse) ContentType() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Header.Get("Content-Type")
+	}
+	return ""
+}
+
+type GetOrderResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	// JSON200 the response for an HTTP 200 `application/json` response
+	JSON200 *Order
+	// JSONDefault the response for an HTTP default `application/json` response
+	JSONDefault *Error
+}
+
+// GetJSON200 returns the response for an HTTP 200 `application/json` response
+func (r GetOrderResponse) GetJSON200() *Order {
+	return r.JSON200
+}
+
+// GetJSONDefault returns the response for an HTTP default `application/json` response
+func (r GetOrderResponse) GetJSONDefault() *Error {
+	return r.JSONDefault
+}
+
+// GetBody returns the raw response body bytes
+func (r GetOrderResponse) GetBody() []byte {
+	return r.Body
+}
+
+// Status returns HTTPResponse.Status
+func (r GetOrderResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r GetOrderResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+// ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
+func (r GetOrderResponse) ContentType() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Header.Get("Content-Type")
+	}
+	return ""
+}
+
 type ReadPaymentMethodResponse struct {
 	Body         []byte
 	HTTPResponse *http.Response
@@ -4410,6 +4757,44 @@ func (c *ClientWithResponses) PurchaseOfferWithResponse(ctx context.Context, acc
 	return ParsePurchaseOfferResponse(rsp)
 }
 
+// ListOrdersWithResponse My orders
+//
+// Every provisioning request made against the projects this account pays for, newest first.
+//
+// An order that never went through stays here on purpose. Removing it would leave nothing to
+// look at in exactly the case someone wants to look: a resource was asked for, was not
+// delivered, and the question is what happened.
+//
+// The list carries no lines. An order has only a handful, but shipping them on every page
+// means carrying data no column shows.
+//
+// Returns a wrapper object for the known response body format(s).
+//
+// Corresponds with GET /account/v1/billing-accounts/{accountKey}/orders (the `ListOrders` operationId).
+func (c *ClientWithResponses) ListOrdersWithResponse(ctx context.Context, accountKey AccountKey, reqEditors ...RequestEditorFn) (*ListOrdersResponse, error) {
+	rsp, err := c.ListOrders(ctx, accountKey, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseListOrdersResponse(rsp)
+}
+
+// GetOrderWithResponse One order, with its lines
+//
+// Each line names what was asked for and how much of it. This is the only route that carries
+// them.
+//
+// Returns a wrapper object for the known response body format(s).
+//
+// Corresponds with GET /account/v1/billing-accounts/{accountKey}/orders/{orderId} (the `GetOrder` operationId).
+func (c *ClientWithResponses) GetOrderWithResponse(ctx context.Context, accountKey AccountKey, orderId openapi_types.UUID, reqEditors ...RequestEditorFn) (*GetOrderResponse, error) {
+	rsp, err := c.GetOrder(ctx, accountKey, orderId, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseGetOrderResponse(rsp)
+}
+
 // ReadPaymentMethodWithResponse Whether this account can be charged
 //
 // Answers whether a payment method is on file, and nothing else.
@@ -5058,6 +5443,72 @@ func ParsePurchaseOfferResponse(rsp *http.Response) (*PurchaseOfferResponse, err
 	switch {
 	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
 		var dest Purchase
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && true:
+		var dest Error
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSONDefault = &dest
+
+	}
+
+	return response, nil
+}
+
+// ParseListOrdersResponse parses an HTTP response from a ListOrdersWithResponse call
+func ParseListOrdersResponse(rsp *http.Response) (*ListOrdersResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &ListOrdersResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest OrderList
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && true:
+		var dest Error
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSONDefault = &dest
+
+	}
+
+	return response, nil
+}
+
+// ParseGetOrderResponse parses an HTTP response from a GetOrderWithResponse call
+func ParseGetOrderResponse(rsp *http.Response) (*GetOrderResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &GetOrderResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest Order
 		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
 			return nil, err
 		}

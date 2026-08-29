@@ -589,8 +589,8 @@ type ClientInterface interface {
 	// pages, which are reached before a project has been selected. It returns a narrower shape
 	// than the authenticated operations and is not paginated.
 	//
-	// Platform announcements are not served here. They belong to the notification service, which
-	// owns announcements for the whole platform.
+	// Platform announcements are not part of this API. They are served by the notification
+	// service, which owns platform-wide announcements.
 	//
 	// Corresponds with GET /api/v1/notices (the `ListNotices` operationId).
 	ListNotices(ctx context.Context, reqEditors ...RequestEditorFn) (*http.Response, error)
@@ -830,8 +830,8 @@ func (c *Client) ListMaintenanceTimeline(ctx context.Context, maintenanceId open
 // pages, which are reached before a project has been selected. It returns a narrower shape
 // than the authenticated operations and is not paginated.
 //
-// Platform announcements are not served here. They belong to the notification service, which
-// owns announcements for the whole platform.
+// Platform announcements are not part of this API. They are served by the notification
+// service, which owns platform-wide announcements.
 //
 // Corresponds with GET /api/v1/notices (the `ListNotices` operationId).
 func (c *Client) ListNotices(ctx context.Context, reqEditors ...RequestEditorFn) (*http.Response, error) {
@@ -2001,8 +2001,8 @@ type ClientWithResponsesInterface interface {
 	// pages, which are reached before a project has been selected. It returns a narrower shape
 	// than the authenticated operations and is not paginated.
 	//
-	// Platform announcements are not served here. They belong to the notification service, which
-	// owns announcements for the whole platform.
+	// Platform announcements are not part of this API. They are served by the notification
+	// service, which owns platform-wide announcements.
 	//
 	// Returns a wrapper object for the known response body format(s).
 	//
@@ -2964,8 +2964,8 @@ func (c *ClientWithResponses) ListMaintenanceTimelineWithResponse(ctx context.Co
 // pages, which are reached before a project has been selected. It returns a narrower shape
 // than the authenticated operations and is not paginated.
 //
-// Platform announcements are not served here. They belong to the notification service, which
-// owns announcements for the whole platform.
+// Platform announcements are not part of this API. They are served by the notification
+// service, which owns platform-wide announcements.
 //
 // Returns a wrapper object for the known response body format(s).
 //

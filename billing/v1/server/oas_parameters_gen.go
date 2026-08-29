@@ -544,6 +544,146 @@ func decodeGetInvoiceParams(args [2]string, argsEscaped bool, r *http.Request) (
 	return params, nil
 }
 
+// GetOrderParams is parameters of get-order operation.
+type GetOrderParams struct {
+	// The account's key, of the form `u_<user_id>_<seq>`. Ownership is stated by the key itself, which is
+	// why the key is what addresses the account.
+	AccountKey string
+	OrderId    uuid.UUID
+}
+
+func unpackGetOrderParams(packed middleware.Parameters) (params GetOrderParams) {
+	{
+		key := middleware.ParameterKey{
+			Name: "accountKey",
+			In:   "path",
+		}
+		params.AccountKey = packed[key].(string)
+	}
+	{
+		key := middleware.ParameterKey{
+			Name: "orderId",
+			In:   "path",
+		}
+		params.OrderId = packed[key].(uuid.UUID)
+	}
+	return params
+}
+
+func decodeGetOrderParams(args [2]string, argsEscaped bool, r *http.Request) (params GetOrderParams, _ error) {
+	// Decode path: accountKey.
+	if err := func() error {
+		param := args[0]
+		if argsEscaped {
+			unescaped, err := url.PathUnescape(args[0])
+			if err != nil {
+				return errors.Wrap(err, "unescape path")
+			}
+			param = unescaped
+		}
+		if len(param) > 0 {
+			d := uri.NewPathDecoder(uri.PathDecoderConfig{
+				Param:   "accountKey",
+				Value:   param,
+				Style:   uri.PathStyleSimple,
+				Explode: false,
+			})
+
+			if err := func() error {
+				val, err := d.DecodeValue()
+				if err != nil {
+					return err
+				}
+
+				c, err := conv.ToString(val)
+				if err != nil {
+					return err
+				}
+
+				params.AccountKey = c
+				return nil
+			}(); err != nil {
+				return err
+			}
+			if err := func() error {
+				if err := (validate.String{
+					MinLength:     3,
+					MinLengthSet:  true,
+					MaxLength:     128,
+					MaxLengthSet:  true,
+					Email:         false,
+					Hostname:      false,
+					Regex:         regexMap["^u_.+_[0-9]+$"],
+					MinNumeric:    0,
+					MinNumericSet: false,
+					MaxNumeric:    0,
+					MaxNumericSet: false,
+				}).Validate(string(params.AccountKey)); err != nil {
+					return errors.Wrap(err, "string")
+				}
+				return nil
+			}(); err != nil {
+				return err
+			}
+		} else {
+			return validate.ErrFieldRequired
+		}
+		return nil
+	}(); err != nil {
+		return params, &ogenerrors.DecodeParamError{
+			Name: "accountKey",
+			In:   "path",
+			Err:  err,
+		}
+	}
+	// Decode path: orderId.
+	if err := func() error {
+		param := args[1]
+		if argsEscaped {
+			unescaped, err := url.PathUnescape(args[1])
+			if err != nil {
+				return errors.Wrap(err, "unescape path")
+			}
+			param = unescaped
+		}
+		if len(param) > 0 {
+			d := uri.NewPathDecoder(uri.PathDecoderConfig{
+				Param:   "orderId",
+				Value:   param,
+				Style:   uri.PathStyleSimple,
+				Explode: false,
+			})
+
+			if err := func() error {
+				val, err := d.DecodeValue()
+				if err != nil {
+					return err
+				}
+
+				c, err := conv.ToUUID(val)
+				if err != nil {
+					return err
+				}
+
+				params.OrderId = c
+				return nil
+			}(); err != nil {
+				return err
+			}
+		} else {
+			return validate.ErrFieldRequired
+		}
+		return nil
+	}(); err != nil {
+		return params, &ogenerrors.DecodeParamError{
+			Name: "orderId",
+			In:   "path",
+			Err:  err,
+		}
+	}
+	return params, nil
+}
+
 // ListChargesParams is parameters of list-charges operation.
 type ListChargesParams struct {
 	// The account's key, of the form `u_<user_id>_<seq>`. Ownership is stated by the key itself, which is
@@ -824,6 +964,93 @@ func unpackListOffersParams(packed middleware.Parameters) (params ListOffersPara
 }
 
 func decodeListOffersParams(args [1]string, argsEscaped bool, r *http.Request) (params ListOffersParams, _ error) {
+	// Decode path: accountKey.
+	if err := func() error {
+		param := args[0]
+		if argsEscaped {
+			unescaped, err := url.PathUnescape(args[0])
+			if err != nil {
+				return errors.Wrap(err, "unescape path")
+			}
+			param = unescaped
+		}
+		if len(param) > 0 {
+			d := uri.NewPathDecoder(uri.PathDecoderConfig{
+				Param:   "accountKey",
+				Value:   param,
+				Style:   uri.PathStyleSimple,
+				Explode: false,
+			})
+
+			if err := func() error {
+				val, err := d.DecodeValue()
+				if err != nil {
+					return err
+				}
+
+				c, err := conv.ToString(val)
+				if err != nil {
+					return err
+				}
+
+				params.AccountKey = c
+				return nil
+			}(); err != nil {
+				return err
+			}
+			if err := func() error {
+				if err := (validate.String{
+					MinLength:     3,
+					MinLengthSet:  true,
+					MaxLength:     128,
+					MaxLengthSet:  true,
+					Email:         false,
+					Hostname:      false,
+					Regex:         regexMap["^u_.+_[0-9]+$"],
+					MinNumeric:    0,
+					MinNumericSet: false,
+					MaxNumeric:    0,
+					MaxNumericSet: false,
+				}).Validate(string(params.AccountKey)); err != nil {
+					return errors.Wrap(err, "string")
+				}
+				return nil
+			}(); err != nil {
+				return err
+			}
+		} else {
+			return validate.ErrFieldRequired
+		}
+		return nil
+	}(); err != nil {
+		return params, &ogenerrors.DecodeParamError{
+			Name: "accountKey",
+			In:   "path",
+			Err:  err,
+		}
+	}
+	return params, nil
+}
+
+// ListOrdersParams is parameters of list-orders operation.
+type ListOrdersParams struct {
+	// The account's key, of the form `u_<user_id>_<seq>`. Ownership is stated by the key itself, which is
+	// why the key is what addresses the account.
+	AccountKey string
+}
+
+func unpackListOrdersParams(packed middleware.Parameters) (params ListOrdersParams) {
+	{
+		key := middleware.ParameterKey{
+			Name: "accountKey",
+			In:   "path",
+		}
+		params.AccountKey = packed[key].(string)
+	}
+	return params
+}
+
+func decodeListOrdersParams(args [1]string, argsEscaped bool, r *http.Request) (params ListOrdersParams, _ error) {
 	// Decode path: accountKey.
 	if err := func() error {
 		param := args[0]
