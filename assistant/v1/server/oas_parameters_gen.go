@@ -805,6 +805,71 @@ func decodeDeleteSkillParams(args [1]string, argsEscaped bool, r *http.Request) 
 	return params, nil
 }
 
+// DeleteThreadParams is parameters of delete-thread operation.
+type DeleteThreadParams struct {
+	Thread string
+}
+
+func unpackDeleteThreadParams(packed middleware.Parameters) (params DeleteThreadParams) {
+	{
+		key := middleware.ParameterKey{
+			Name: "thread",
+			In:   "path",
+		}
+		params.Thread = packed[key].(string)
+	}
+	return params
+}
+
+func decodeDeleteThreadParams(args [1]string, argsEscaped bool, r *http.Request) (params DeleteThreadParams, _ error) {
+	// Decode path: thread.
+	if err := func() error {
+		param := args[0]
+		if argsEscaped {
+			unescaped, err := url.PathUnescape(args[0])
+			if err != nil {
+				return errors.Wrap(err, "unescape path")
+			}
+			param = unescaped
+		}
+		if len(param) > 0 {
+			d := uri.NewPathDecoder(uri.PathDecoderConfig{
+				Param:   "thread",
+				Value:   param,
+				Style:   uri.PathStyleSimple,
+				Explode: false,
+			})
+
+			if err := func() error {
+				val, err := d.DecodeValue()
+				if err != nil {
+					return err
+				}
+
+				c, err := conv.ToString(val)
+				if err != nil {
+					return err
+				}
+
+				params.Thread = c
+				return nil
+			}(); err != nil {
+				return err
+			}
+		} else {
+			return validate.ErrFieldRequired
+		}
+		return nil
+	}(); err != nil {
+		return params, &ogenerrors.DecodeParamError{
+			Name: "thread",
+			In:   "path",
+			Err:  err,
+		}
+	}
+	return params, nil
+}
+
 // DownloadAttachmentParams is parameters of download-attachment operation.
 type DownloadAttachmentParams struct {
 	Attachment string

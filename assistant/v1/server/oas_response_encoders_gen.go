@@ -116,6 +116,12 @@ func encodeDeleteSkillResponse(response *DeleteSkillNoContent, w http.ResponseWr
 	return nil
 }
 
+func encodeDeleteThreadResponse(response *DeleteThreadNoContent, w http.ResponseWriter, span trace.Span) error {
+	w.WriteHeader(204)
+
+	return nil
+}
+
 func encodeDownloadAttachmentResponse(response *DownloadAttachmentOKHeaders, w http.ResponseWriter, span trace.Span) error {
 	w.Header().Set("Access-Control-Expose-Headers", "Content-Disposition")
 	// Encoding response headers.

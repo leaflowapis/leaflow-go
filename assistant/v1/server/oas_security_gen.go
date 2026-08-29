@@ -48,6 +48,7 @@ var operationRolesBearerAuth = map[string][]string{
 	DeleteChannelOperation:           []string{},
 	DeleteMemoryOperation:            []string{},
 	DeleteSkillOperation:             []string{},
+	DeleteThreadOperation:            []string{},
 	DownloadAttachmentOperation:      []string{},
 	GetBindingOperation:              []string{},
 	GetChannelOperation:              []string{},
