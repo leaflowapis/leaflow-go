@@ -117,6 +117,18 @@ type Invoker interface {
 	//
 	// GET /account/v1/me/consents
 	ListConsents(ctx context.Context) (*ConsentListResponseBody, error)
+	// ListLocales invokes list-locales operation.
+	//
+	// 免认证：注册页在还没有账号的时候就要画出这两个下拉框。
+	// 国家名和排序都跟着 `Accept-Language` 走——一个英文用户看到的是 China
+	// 而不是「中国」，
+	// 而顺序按那种语言自己的规则（中文按拼音，英文按字母），不是按码点。头缺失时用简体中文。
+	// 清单来自 CLDR，不是我们自己维护的一份：ISO 3166
+	// 每年都改，而抄下来的那份不会跟着改。
+	// 已经退役的代码（苏联、南斯拉夫）和不是地方的代码（欧盟、联合国）都不在里面。.
+	//
+	// GET /account/v1/locales
+	ListLocales(ctx context.Context) (*LocaleOptionsResource, error)
 	// ListMyInvitations invokes list-my-invitations operation.
 	//
 	// 按当前账号的邮箱查，因为要约是寄给一个地址的——被邀请的人当时可能还没注册。.
@@ -1329,6 +1341,125 @@ func (c *Client) sendListConsents(ctx context.Context) (res *ConsentListResponse
 
 	stage = "DecodeResponse"
 	result, err := decodeListConsentsResponse(resp)
+	if err != nil {
+		return res, errors.Wrap(err, "decode response")
+	}
+
+	return result, nil
+}
+
+// ListLocales invokes list-locales operation.
+//
+// 免认证：注册页在还没有账号的时候就要画出这两个下拉框。
+// 国家名和排序都跟着 `Accept-Language` 走——一个英文用户看到的是 China
+// 而不是「中国」，
+// 而顺序按那种语言自己的规则（中文按拼音，英文按字母），不是按码点。头缺失时用简体中文。
+// 清单来自 CLDR，不是我们自己维护的一份：ISO 3166
+// 每年都改，而抄下来的那份不会跟着改。
+// 已经退役的代码（苏联、南斯拉夫）和不是地方的代码（欧盟、联合国）都不在里面。.
+//
+// GET /account/v1/locales
+func (c *Client) ListLocales(ctx context.Context) (*LocaleOptionsResource, error) {
+	res, err := c.sendListLocales(ctx)
+	return res, err
+}
+
+func (c *Client) sendListLocales(ctx context.Context) (res *LocaleOptionsResource, err error) {
+	otelAttrs := []attribute.KeyValue{
+		otelogen.OperationID("list-locales"),
+		semconv.HTTPRequestMethodKey.String("GET"),
+		semconv.URLTemplateKey.String("/account/v1/locales"),
+	}
+	otelAttrs = append(otelAttrs, c.cfg.Attributes...)
+
+	// Run stopwatch.
+	startTime := time.Now()
+	defer func() {
+		// Use floating point division here for higher precision (instead of Millisecond method).
+		elapsedDuration := time.Since(startTime)
+		c.duration.Record(ctx, float64(elapsedDuration)/float64(time.Millisecond), metric.WithAttributes(otelAttrs...))
+	}()
+
+	// Increment request counter.
+	c.requests.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
+
+	// Start a span for this request.
+	ctx, span := c.cfg.Tracer.Start(ctx, ListLocalesOperation,
+		trace.WithAttributes(otelAttrs...),
+		clientSpanKind,
+	)
+	// Track stage for error reporting.
+	var stage string
+	defer func() {
+		if err != nil {
+			span.RecordError(err)
+			span.SetStatus(codes.Error, stage)
+			c.errors.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
+		}
+		span.End()
+	}()
+
+	stage = "BuildURL"
+	u := uri.Clone(c.requestURL(ctx))
+	var pathParts [1]string
+	pathParts[0] = "/account/v1/locales"
+	uri.AddPathParts(u, pathParts[:]...)
+
+	stage = "EncodeRequest"
+	r, err := ht.NewRequest(ctx, "GET", u)
+	if err != nil {
+		return res, errors.Wrap(err, "create request")
+	}
+
+	{
+		type bitset = [1]uint8
+		var satisfied bitset
+		{
+			stage = "Security:BearerAuth"
+			switch err := c.securityBearerAuth(ctx, ListLocalesOperation, r); {
+			case err == nil: // if NO error
+				satisfied[0] |= 1 << 0
+			case errors.Is(err, ogenerrors.ErrSkipClientSecurity):
+				// Skip this security.
+			default:
+				return res, errors.Wrap(err, "security \"BearerAuth\"")
+			}
+		}
+
+		if ok := func() bool {
+		nextRequirement:
+			for _, requirement := range []bitset{
+				{0b00000001},
+			} {
+				for i, mask := range requirement {
+					if satisfied[i]&mask != mask {
+						continue nextRequirement
+					}
+				}
+				return true
+			}
+			return false
+		}(); !ok {
+			return res, ogenerrors.ErrSecurityRequirementIsNotSatisfied
+		}
+	}
+
+	stage = "SendRequest"
+	resp, err := c.cfg.Client.Do(r)
+	if err != nil {
+		return res, errors.Wrap(err, "do request")
+	}
+	body := resp.Body
+	defer func() {
+		// Drain the body to EOF before closing, so the underlying
+		// connection can be reused by the Transport regardless of the
+		// response status code. See https://github.com/ogen-go/ogen/issues/1670.
+		_, _ = io.Copy(io.Discard, body)
+		_ = body.Close()
+	}()
+
+	stage = "DecodeResponse"
+	result, err := decodeListLocalesResponse(resp)
 	if err != nil {
 		return res, errors.Wrap(err, "decode response")
 	}

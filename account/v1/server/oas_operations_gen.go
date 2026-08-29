@@ -16,6 +16,7 @@ const (
 	GetSettingsOperation                OperationName = "GetSettings"
 	ListAgreementsOperation             OperationName = "ListAgreements"
 	ListConsentsOperation               OperationName = "ListConsents"
+	ListLocalesOperation                OperationName = "ListLocales"
 	ListMyInvitationsOperation          OperationName = "ListMyInvitations"
 	ListProjectsOperation               OperationName = "ListProjects"
 	RegisterOperation                   OperationName = "Register"
