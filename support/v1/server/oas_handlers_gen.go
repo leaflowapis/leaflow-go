@@ -880,27 +880,30 @@ func (s *Server) handleCreateTicketSatisfactionRequest(args [1]string, argsEscap
 	}
 }
 
-// handleDescribeAttachmentDownloadRequest handles describe-attachment-download operation.
+// handleDownloadAttachmentRequest handles download-attachment operation.
 //
-// Returns a temporary address that serves the file. The address expires; request a new one rather than
-// storing it.
+// Serves the file itself. The bytes are proxied by this API; the object store is not reachable from
+// outside, and no address to it is ever handed out.
 //
-// Returns 404 for an attachment uploaded in another project.
+// `Content-Type` is the type determined from the content at upload time, not the one the client
+// claimed. `Content-Disposition` is `attachment` unless `inline` is requested and the content type is
+// one that can be rendered safely, in which case it is `inline`. Asking for `inline` on anything else
+// still yields a download.
 //
-// GET /api/v1/attachments/{attachmentId}/download-url
-func (s *Server) handleDescribeAttachmentDownloadRequest(args [1]string, argsEscaped bool, w http.ResponseWriter, r *http.Request) {
+// GET /api/v1/attachments/{attachmentId}/content
+func (s *Server) handleDownloadAttachmentRequest(args [1]string, argsEscaped bool, w http.ResponseWriter, r *http.Request) {
 	statusWriter := &codeRecorder{ResponseWriter: w}
 	w = statusWriter
 	otelAttrs := []attribute.KeyValue{
-		otelogen.OperationID("describe-attachment-download"),
+		otelogen.OperationID("download-attachment"),
 		semconv.HTTPRequestMethodKey.String("GET"),
-		semconv.HTTPRouteKey.String("/api/v1/attachments/{attachmentId}/download-url"),
+		semconv.HTTPRouteKey.String("/api/v1/attachments/{attachmentId}/content"),
 	}
 	// Add attributes from config.
 	otelAttrs = append(otelAttrs, s.cfg.Attributes...)
 
 	// Start a span for this request.
-	ctx, span := s.cfg.Tracer.Start(r.Context(), DescribeAttachmentDownloadOperation,
+	ctx, span := s.cfg.Tracer.Start(r.Context(), DownloadAttachmentOperation,
 		trace.WithAttributes(otelAttrs...),
 		serverSpanKind,
 	)
@@ -955,15 +958,15 @@ func (s *Server) handleDescribeAttachmentDownloadRequest(args [1]string, argsEsc
 		}
 		err          error
 		opErrContext = ogenerrors.OperationContext{
-			Name: DescribeAttachmentDownloadOperation,
-			ID:   "describe-attachment-download",
+			Name: DownloadAttachmentOperation,
+			ID:   "download-attachment",
 		}
 	)
 	{
 		type bitset = [1]uint8
 		var satisfied bitset
 		{
-			sctx, ok, err := s.securityBearerAuth(ctx, DescribeAttachmentDownloadOperation, r)
+			sctx, ok, err := s.securityBearerAuth(ctx, DownloadAttachmentOperation, r)
 			if err != nil {
 				err = &ogenerrors.SecurityError{
 					OperationContext: opErrContext,
@@ -1005,7 +1008,7 @@ func (s *Server) handleDescribeAttachmentDownloadRequest(args [1]string, argsEsc
 			return
 		}
 	}
-	params, err := decodeDescribeAttachmentDownloadParams(args, argsEscaped, r)
+	params, err := decodeDownloadAttachmentParams(args, argsEscaped, r)
 	if err != nil {
 		err = &ogenerrors.DecodeParamsError{
 			OperationContext: opErrContext,
@@ -1018,13 +1021,13 @@ func (s *Server) handleDescribeAttachmentDownloadRequest(args [1]string, argsEsc
 
 	var rawBody []byte
 
-	var response *AttachmentDownloadResource
+	var response *DownloadAttachmentOKHeaders
 	if m := s.cfg.Middleware; m != nil {
 		mreq := middleware.Request{
 			Context:          ctx,
-			OperationName:    DescribeAttachmentDownloadOperation,
-			OperationSummary: "Get a download address for an attachment",
-			OperationID:      "describe-attachment-download",
+			OperationName:    DownloadAttachmentOperation,
+			OperationSummary: "Download an attachment",
+			OperationID:      "download-attachment",
 			Body:             nil,
 			RawBody:          rawBody,
 			Params: middleware.Parameters{
@@ -1032,14 +1035,18 @@ func (s *Server) handleDescribeAttachmentDownloadRequest(args [1]string, argsEsc
 					Name: "attachmentId",
 					In:   "path",
 				}: params.AttachmentId,
+				{
+					Name: "inline",
+					In:   "query",
+				}: params.Inline,
 			},
 			Raw: r,
 		}
 
 		type (
 			Request  = struct{}
-			Params   = DescribeAttachmentDownloadParams
-			Response = *AttachmentDownloadResource
+			Params   = DownloadAttachmentParams
+			Response = *DownloadAttachmentOKHeaders
 		)
 		response, err = middleware.HookMiddleware[
 			Request,
@@ -1048,14 +1055,14 @@ func (s *Server) handleDescribeAttachmentDownloadRequest(args [1]string, argsEsc
 		](
 			m,
 			mreq,
-			unpackDescribeAttachmentDownloadParams,
+			unpackDownloadAttachmentParams,
 			func(ctx context.Context, request Request, params Params) (response Response, err error) {
-				response, err = s.h.DescribeAttachmentDownload(ctx, params)
+				response, err = s.h.DownloadAttachment(ctx, params)
 				return response, err
 			},
 		)
 	} else {
-		response, err = s.h.DescribeAttachmentDownload(ctx, params)
+		response, err = s.h.DownloadAttachment(ctx, params)
 	}
 	if err != nil {
 		if errRes, ok := errors.Into[*ErrorStatusCode](err); ok {
@@ -1074,7 +1081,7 @@ func (s *Server) handleDescribeAttachmentDownloadRequest(args [1]string, argsEsc
 		return
 	}
 
-	if err := encodeDescribeAttachmentDownloadResponse(response, w, span); err != nil {
+	if err := encodeDownloadAttachmentResponse(response, w, span); err != nil {
 		defer recordError("EncodeResponse", err)
 		if !errors.Is(err, ht.ErrInternalServerErrorResponse) {
 			s.cfg.ErrorHandler(ctx, w, r, err)

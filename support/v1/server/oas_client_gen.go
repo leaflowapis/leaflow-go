@@ -70,15 +70,18 @@ type Invoker interface {
 	//
 	// POST /api/v1/tickets/{ticketId}/satisfaction
 	CreateTicketSatisfaction(ctx context.Context, request *CreateTicketSatisfactionRequestBody, params CreateTicketSatisfactionParams) (*TicketSatisfactionResource, error)
-	// DescribeAttachmentDownload invokes describe-attachment-download operation.
+	// DownloadAttachment invokes download-attachment operation.
 	//
-	// Returns a temporary address that serves the file. The address expires; request a new one rather than
-	// storing it.
+	// Serves the file itself. The bytes are proxied by this API; the object store is not reachable from
+	// outside, and no address to it is ever handed out.
 	//
-	// Returns 404 for an attachment uploaded in another project.
+	// `Content-Type` is the type determined from the content at upload time, not the one the client
+	// claimed. `Content-Disposition` is `attachment` unless `inline` is requested and the content type is
+	// one that can be rendered safely, in which case it is `inline`. Asking for `inline` on anything else
+	// still yields a download.
 	//
-	// GET /api/v1/attachments/{attachmentId}/download-url
-	DescribeAttachmentDownload(ctx context.Context, params DescribeAttachmentDownloadParams) (*AttachmentDownloadResource, error)
+	// GET /api/v1/attachments/{attachmentId}/content
+	DownloadAttachment(ctx context.Context, params DownloadAttachmentParams) (*DownloadAttachmentOKHeaders, error)
 	// GetMaintenance invokes get-maintenance operation.
 	//
 	// Returns 404 for cancelled maintenance.
@@ -732,24 +735,27 @@ func (c *Client) sendCreateTicketSatisfaction(ctx context.Context, request *Crea
 	return result, nil
 }
 
-// DescribeAttachmentDownload invokes describe-attachment-download operation.
+// DownloadAttachment invokes download-attachment operation.
 //
-// Returns a temporary address that serves the file. The address expires; request a new one rather than
-// storing it.
+// Serves the file itself. The bytes are proxied by this API; the object store is not reachable from
+// outside, and no address to it is ever handed out.
 //
-// Returns 404 for an attachment uploaded in another project.
+// `Content-Type` is the type determined from the content at upload time, not the one the client
+// claimed. `Content-Disposition` is `attachment` unless `inline` is requested and the content type is
+// one that can be rendered safely, in which case it is `inline`. Asking for `inline` on anything else
+// still yields a download.
 //
-// GET /api/v1/attachments/{attachmentId}/download-url
-func (c *Client) DescribeAttachmentDownload(ctx context.Context, params DescribeAttachmentDownloadParams) (*AttachmentDownloadResource, error) {
-	res, err := c.sendDescribeAttachmentDownload(ctx, params)
+// GET /api/v1/attachments/{attachmentId}/content
+func (c *Client) DownloadAttachment(ctx context.Context, params DownloadAttachmentParams) (*DownloadAttachmentOKHeaders, error) {
+	res, err := c.sendDownloadAttachment(ctx, params)
 	return res, err
 }
 
-func (c *Client) sendDescribeAttachmentDownload(ctx context.Context, params DescribeAttachmentDownloadParams) (res *AttachmentDownloadResource, err error) {
+func (c *Client) sendDownloadAttachment(ctx context.Context, params DownloadAttachmentParams) (res *DownloadAttachmentOKHeaders, err error) {
 	otelAttrs := []attribute.KeyValue{
-		otelogen.OperationID("describe-attachment-download"),
+		otelogen.OperationID("download-attachment"),
 		semconv.HTTPRequestMethodKey.String("GET"),
-		semconv.URLTemplateKey.String("/api/v1/attachments/{attachmentId}/download-url"),
+		semconv.URLTemplateKey.String("/api/v1/attachments/{attachmentId}/content"),
 	}
 	otelAttrs = append(otelAttrs, c.cfg.Attributes...)
 
@@ -765,7 +771,7 @@ func (c *Client) sendDescribeAttachmentDownload(ctx context.Context, params Desc
 	c.requests.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
 
 	// Start a span for this request.
-	ctx, span := c.cfg.Tracer.Start(ctx, DescribeAttachmentDownloadOperation,
+	ctx, span := c.cfg.Tracer.Start(ctx, DownloadAttachmentOperation,
 		trace.WithAttributes(otelAttrs...),
 		clientSpanKind,
 	)
@@ -802,8 +808,29 @@ func (c *Client) sendDescribeAttachmentDownload(ctx context.Context, params Desc
 		}
 		pathParts[1] = encoded
 	}
-	pathParts[2] = "/download-url"
+	pathParts[2] = "/content"
 	uri.AddPathParts(u, pathParts[:]...)
+
+	stage = "EncodeQueryParams"
+	q := uri.NewQueryEncoder()
+	{
+		// Encode "inline" parameter.
+		cfg := uri.QueryParameterEncodingConfig{
+			Name:    "inline",
+			Style:   uri.QueryStyleForm,
+			Explode: false,
+		}
+
+		if err := q.EncodeParam(cfg, func(e uri.Encoder) error {
+			if val, ok := params.Inline.Get(); ok {
+				return e.EncodeValue(conv.BoolToString(val))
+			}
+			return nil
+		}); err != nil {
+			return res, errors.Wrap(err, "encode query")
+		}
+	}
+	u.RawQuery = q.Values().Encode()
 
 	stage = "EncodeRequest"
 	r, err := ht.NewRequest(ctx, "GET", u)
@@ -816,7 +843,7 @@ func (c *Client) sendDescribeAttachmentDownload(ctx context.Context, params Desc
 		var satisfied bitset
 		{
 			stage = "Security:BearerAuth"
-			switch err := c.securityBearerAuth(ctx, DescribeAttachmentDownloadOperation, r); {
+			switch err := c.securityBearerAuth(ctx, DownloadAttachmentOperation, r); {
 			case err == nil: // if NO error
 				satisfied[0] |= 1 << 0
 			case errors.Is(err, ogenerrors.ErrSkipClientSecurity):
@@ -859,7 +886,7 @@ func (c *Client) sendDescribeAttachmentDownload(ctx context.Context, params Desc
 	}()
 
 	stage = "DecodeResponse"
-	result, err := decodeDescribeAttachmentDownloadResponse(resp)
+	result, err := decodeDownloadAttachmentResponse(resp)
 	if err != nil {
 		return res, errors.Wrap(err, "decode response")
 	}

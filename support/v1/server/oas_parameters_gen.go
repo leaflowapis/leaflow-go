@@ -210,12 +210,14 @@ func decodeCreateTicketSatisfactionParams(args [1]string, argsEscaped bool, r *h
 	return params, nil
 }
 
-// DescribeAttachmentDownloadParams is parameters of describe-attachment-download operation.
-type DescribeAttachmentDownloadParams struct {
+// DownloadAttachmentParams is parameters of download-attachment operation.
+type DownloadAttachmentParams struct {
 	AttachmentId uuid.UUID
+	// Render in the browser instead of downloading, where the content type allows it.
+	Inline OptBool `json:",omitempty,omitzero"`
 }
 
-func unpackDescribeAttachmentDownloadParams(packed middleware.Parameters) (params DescribeAttachmentDownloadParams) {
+func unpackDownloadAttachmentParams(packed middleware.Parameters) (params DownloadAttachmentParams) {
 	{
 		key := middleware.ParameterKey{
 			Name: "attachmentId",
@@ -223,10 +225,20 @@ func unpackDescribeAttachmentDownloadParams(packed middleware.Parameters) (param
 		}
 		params.AttachmentId = packed[key].(uuid.UUID)
 	}
+	{
+		key := middleware.ParameterKey{
+			Name: "inline",
+			In:   "query",
+		}
+		if v, ok := packed[key]; ok {
+			params.Inline = v.(OptBool)
+		}
+	}
 	return params
 }
 
-func decodeDescribeAttachmentDownloadParams(args [1]string, argsEscaped bool, r *http.Request) (params DescribeAttachmentDownloadParams, _ error) {
+func decodeDownloadAttachmentParams(args [1]string, argsEscaped bool, r *http.Request) (params DownloadAttachmentParams, _ error) {
+	q := uri.NewQueryDecoder(r.URL.Query())
 	// Decode path: attachmentId.
 	if err := func() error {
 		param := args[0]
@@ -269,6 +281,47 @@ func decodeDescribeAttachmentDownloadParams(args [1]string, argsEscaped bool, r 
 		return params, &ogenerrors.DecodeParamError{
 			Name: "attachmentId",
 			In:   "path",
+			Err:  err,
+		}
+	}
+	// Decode query: inline.
+	if err := func() error {
+		cfg := uri.QueryParameterDecodingConfig{
+			Name:    "inline",
+			Style:   uri.QueryStyleForm,
+			Explode: false,
+		}
+
+		if err := q.HasParam(cfg); err == nil {
+			if err := q.DecodeParam(cfg, func(d uri.Decoder) error {
+				var paramsDotInlineVal bool
+				if err := func() error {
+					val, err := d.DecodeValue()
+					if err != nil {
+						return err
+					}
+
+					c, err := conv.ToBool(val)
+					if err != nil {
+						return err
+					}
+
+					paramsDotInlineVal = c
+					return nil
+				}(); err != nil {
+					return err
+				}
+				params.Inline.SetTo(paramsDotInlineVal)
+				return nil
+			}); err != nil {
+				return err
+			}
+		}
+		return nil
+	}(); err != nil {
+		return params, &ogenerrors.DecodeParamError{
+			Name: "inline",
+			In:   "query",
 			Err:  err,
 		}
 	}

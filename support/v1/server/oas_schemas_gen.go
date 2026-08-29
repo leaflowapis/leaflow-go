@@ -16,34 +16,6 @@ func (s *ErrorStatusCode) Error() string {
 	return fmt.Sprintf("code %d: %+v", s.StatusCode, s.Response)
 }
 
-// Ref: #/components/schemas/AttachmentDownloadResource
-type AttachmentDownloadResource struct {
-	// After this moment the address stops working; request a new one.
-	ExpiresAt time.Time `json:"expires_at"`
-	// A temporary address serving the file.
-	URL string `json:"url"`
-}
-
-// GetExpiresAt returns the value of ExpiresAt.
-func (s *AttachmentDownloadResource) GetExpiresAt() time.Time {
-	return s.ExpiresAt
-}
-
-// GetURL returns the value of URL.
-func (s *AttachmentDownloadResource) GetURL() string {
-	return s.URL
-}
-
-// SetExpiresAt sets the value of ExpiresAt.
-func (s *AttachmentDownloadResource) SetExpiresAt(val time.Time) {
-	s.ExpiresAt = val
-}
-
-// SetURL sets the value of URL.
-func (s *AttachmentDownloadResource) SetURL(val string) {
-	s.URL = val
-}
-
 type BearerAuth struct {
 	Token string
 	Roles []string
@@ -183,6 +155,57 @@ func (s *CreateTicketSatisfactionRequestBody) SetComment(val OptString) {
 // SetScore sets the value of Score.
 func (s *CreateTicketSatisfactionRequestBody) SetScore(val int64) {
 	s.Score = val
+}
+
+type DownloadAttachmentOK struct {
+	Data io.Reader
+}
+
+// Read reads data from the Data reader.
+//
+// Kept to satisfy the io.Reader interface.
+func (s DownloadAttachmentOK) Read(p []byte) (n int, err error) {
+	if s.Data == nil {
+		return 0, io.EOF
+	}
+	return s.Data.Read(p)
+}
+
+// DownloadAttachmentOKHeaders wraps DownloadAttachmentOK with response headers.
+type DownloadAttachmentOKHeaders struct {
+	ContentDisposition OptString
+	ContentType        string
+	Response           DownloadAttachmentOK
+}
+
+// GetContentDisposition returns the value of ContentDisposition.
+func (s *DownloadAttachmentOKHeaders) GetContentDisposition() OptString {
+	return s.ContentDisposition
+}
+
+// GetContentType returns the value of ContentType.
+func (s *DownloadAttachmentOKHeaders) GetContentType() string {
+	return s.ContentType
+}
+
+// GetResponse returns the value of Response.
+func (s *DownloadAttachmentOKHeaders) GetResponse() DownloadAttachmentOK {
+	return s.Response
+}
+
+// SetContentDisposition sets the value of ContentDisposition.
+func (s *DownloadAttachmentOKHeaders) SetContentDisposition(val OptString) {
+	s.ContentDisposition = val
+}
+
+// SetContentType sets the value of ContentType.
+func (s *DownloadAttachmentOKHeaders) SetContentType(val string) {
+	s.ContentType = val
+}
+
+// SetResponse sets the value of Response.
+func (s *DownloadAttachmentOKHeaders) SetResponse(val DownloadAttachmentOK) {
+	s.Response = val
 }
 
 // Ref: #/components/schemas/Error
@@ -1206,6 +1229,52 @@ func (s *NoticeResource) GetMaintenances() []NoticeMaintenanceResource {
 // SetMaintenances sets the value of Maintenances.
 func (s *NoticeResource) SetMaintenances(val []NoticeMaintenanceResource) {
 	s.Maintenances = val
+}
+
+// NewOptBool returns new OptBool with value set to v.
+func NewOptBool(v bool) OptBool {
+	return OptBool{
+		Value: v,
+		Set:   true,
+	}
+}
+
+// OptBool is optional bool.
+type OptBool struct {
+	Value bool
+	Set   bool
+}
+
+// IsSet returns true if OptBool was set.
+func (o OptBool) IsSet() bool { return o.Set }
+
+// Reset unsets value.
+func (o *OptBool) Reset() {
+	var v bool
+	o.Value = v
+	o.Set = false
+}
+
+// SetTo sets value to v.
+func (o *OptBool) SetTo(v bool) {
+	o.Set = true
+	o.Value = v
+}
+
+// Get returns value and boolean that denotes whether value was set.
+func (o OptBool) Get() (v bool, ok bool) {
+	if !o.Set {
+		return v, false
+	}
+	return o.Value, true
+}
+
+// Or returns value if set, or given parameter if does not.
+func (o OptBool) Or(d bool) bool {
+	if v, ok := o.Get(); ok {
+		return v
+	}
+	return d
 }
 
 // NewOptErrorMeta returns new OptErrorMeta with value set to v.

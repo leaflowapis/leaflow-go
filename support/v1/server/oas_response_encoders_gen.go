@@ -3,11 +3,14 @@
 package supportv1server
 
 import (
+	"io"
 	"net/http"
 
 	"github.com/go-faster/errors"
 	"github.com/go-faster/jx"
+	"github.com/ogen-go/ogen/conv"
 	ht "github.com/ogen-go/ogen/http"
+	"github.com/ogen-go/ogen/uri"
 	"go.opentelemetry.io/otel/codes"
 	"go.opentelemetry.io/otel/trace"
 )
@@ -64,13 +67,46 @@ func encodeCreateTicketSatisfactionResponse(response *TicketSatisfactionResource
 	return nil
 }
 
-func encodeDescribeAttachmentDownloadResponse(response *AttachmentDownloadResource, w http.ResponseWriter, span trace.Span) error {
-	w.Header().Set("Content-Type", "application/json; charset=utf-8")
+func encodeDownloadAttachmentResponse(response *DownloadAttachmentOKHeaders, w http.ResponseWriter, span trace.Span) error {
+	w.Header().Set("Access-Control-Expose-Headers", "Content-Disposition")
+	// Encoding response headers.
+	{
+		h := uri.NewHeaderEncoder(w.Header())
+		// Encode "Content-Disposition" header.
+		{
+			cfg := uri.HeaderParameterEncodingConfig{
+				Name:    "Content-Disposition",
+				Explode: false,
+			}
+			if err := h.EncodeParam(cfg, func(e uri.Encoder) error {
+				if val, ok := response.ContentDisposition.Get(); ok {
+					return e.EncodeValue(conv.StringToString(val))
+				}
+				return nil
+			}); err != nil {
+				return errors.Wrap(err, "encode Content-Disposition header")
+			}
+		}
+		// Encode "Content-Type" header.
+		{
+			cfg := uri.HeaderParameterEncodingConfig{
+				Name:    "Content-Type",
+				Explode: false,
+			}
+			if err := h.EncodeParam(cfg, func(e uri.Encoder) error {
+				return e.EncodeValue(conv.StringToString(response.ContentType))
+			}); err != nil {
+				return errors.Wrap(err, "encode Content-Type header")
+			}
+		}
+	}
 	w.WriteHeader(200)
 
-	e := new(jx.Encoder)
-	response.Encode(e)
-	if _, err := e.WriteTo(w); err != nil {
+	writer := w
+	if closer, ok := response.Response.Data.(io.Closer); ok {
+		defer closer.Close()
+	}
+	if _, err := io.Copy(writer, response.Response); err != nil {
 		return errors.Wrap(err, "write")
 	}
 
