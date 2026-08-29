@@ -130,15 +130,6 @@ func (e TicketStatus) Valid() bool {
 	}
 }
 
-// AttachmentDownloadResource defines model for AttachmentDownloadResource.
-type AttachmentDownloadResource struct {
-	// ExpiresAt After this moment the address stops working; request a new one
-	ExpiresAt time.Time `json:"expires_at"`
-
-	// Url A temporary address serving the file
-	Url string `json:"url"`
-}
-
 // CreateTicketMessageRequestBody defines model for CreateTicketMessageRequestBody.
 type CreateTicketMessageRequestBody struct {
 	// AttachmentIds Attachments to reference. Each must have been uploaded in this project and not yet referenced
@@ -388,6 +379,12 @@ type UploadAttachmentParams struct {
 	Filename string `form:"filename" json:"filename"`
 }
 
+// DownloadAttachmentParams defines parameters for DownloadAttachment.
+type DownloadAttachmentParams struct {
+	// Inline Render in the browser instead of downloading, where the content type allows it
+	Inline *bool `form:"inline,omitempty" json:"inline,omitempty"`
+}
+
 // ListMaintenancesParams defines parameters for ListMaintenances.
 type ListMaintenancesParams struct {
 	// Limit Maximum number of items to return in this page
@@ -547,15 +544,18 @@ type ClientInterface interface {
 	// Corresponds with POST /api/v1/attachments (the `UploadAttachment` operationId).
 	UploadAttachmentWithBody(ctx context.Context, params *UploadAttachmentParams, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
 
-	// DescribeAttachmentDownload Get a download address for an attachment
+	// DownloadAttachment Download an attachment
 	//
-	// Returns a temporary address that serves the file. The address expires; request a new one
-	// rather than storing it.
+	// Serves the file itself. The bytes are proxied by this API; the object store is not reachable
+	// from outside, and no address to it is ever handed out.
 	//
-	// Returns 404 for an attachment uploaded in another project.
+	// `Content-Type` is the type determined from the content at upload time, not the one the
+	// client claimed. `Content-Disposition` is `attachment` unless `inline` is requested **and**
+	// the content type is one that can be rendered safely, in which case it is `inline`. Asking
+	// for `inline` on anything else still yields a download.
 	//
-	// Corresponds with GET /api/v1/attachments/{attachmentId}/download-url (the `DescribeAttachmentDownload` operationId).
-	DescribeAttachmentDownload(ctx context.Context, attachmentId openapi_types.UUID, reqEditors ...RequestEditorFn) (*http.Response, error)
+	// Corresponds with GET /api/v1/attachments/{attachmentId}/content (the `DownloadAttachment` operationId).
+	DownloadAttachment(ctx context.Context, attachmentId openapi_types.UUID, params *DownloadAttachmentParams, reqEditors ...RequestEditorFn) (*http.Response, error)
 
 	// ListMaintenances List maintenance notices
 	//
@@ -748,16 +748,19 @@ func (c *Client) UploadAttachmentWithBody(ctx context.Context, params *UploadAtt
 	return c.Client.Do(req)
 }
 
-// DescribeAttachmentDownload Get a download address for an attachment
+// DownloadAttachment Download an attachment
 //
-// Returns a temporary address that serves the file. The address expires; request a new one
-// rather than storing it.
+// Serves the file itself. The bytes are proxied by this API; the object store is not reachable
+// from outside, and no address to it is ever handed out.
 //
-// Returns 404 for an attachment uploaded in another project.
+// `Content-Type` is the type determined from the content at upload time, not the one the
+// client claimed. `Content-Disposition` is `attachment` unless `inline` is requested **and**
+// the content type is one that can be rendered safely, in which case it is `inline`. Asking
+// for `inline` on anything else still yields a download.
 //
-// Corresponds with GET /api/v1/attachments/{attachmentId}/download-url (the `DescribeAttachmentDownload` operationId).
-func (c *Client) DescribeAttachmentDownload(ctx context.Context, attachmentId openapi_types.UUID, reqEditors ...RequestEditorFn) (*http.Response, error) {
-	req, err := NewDescribeAttachmentDownloadRequest(c.Server, attachmentId)
+// Corresponds with GET /api/v1/attachments/{attachmentId}/content (the `DownloadAttachment` operationId).
+func (c *Client) DownloadAttachment(ctx context.Context, attachmentId openapi_types.UUID, params *DownloadAttachmentParams, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewDownloadAttachmentRequest(c.Server, attachmentId, params)
 	if err != nil {
 		return nil, err
 	}
@@ -1147,8 +1150,8 @@ func NewUploadAttachmentRequestWithBody(server string, params *UploadAttachmentP
 	return req, nil
 }
 
-// NewDescribeAttachmentDownloadRequest constructs an http.Request for the DescribeAttachmentDownload method
-func NewDescribeAttachmentDownloadRequest(server string, attachmentId openapi_types.UUID) (*http.Request, error) {
+// NewDownloadAttachmentRequest constructs an http.Request for the DownloadAttachment method
+func NewDownloadAttachmentRequest(server string, attachmentId openapi_types.UUID, params *DownloadAttachmentParams) (*http.Request, error) {
 	var err error
 
 	var pathParam0 string
@@ -1163,7 +1166,7 @@ func NewDescribeAttachmentDownloadRequest(server string, attachmentId openapi_ty
 		return nil, err
 	}
 
-	operationPath := fmt.Sprintf("/api/v1/attachments/%s/download-url", pathParam0)
+	operationPath := fmt.Sprintf("/api/v1/attachments/%s/content", pathParam0)
 	if operationPath[0] == '/' {
 		operationPath = "." + operationPath
 	}
@@ -1171,6 +1174,33 @@ func NewDescribeAttachmentDownloadRequest(server string, attachmentId openapi_ty
 	queryURL, err := serverURL.Parse(operationPath)
 	if err != nil {
 		return nil, err
+	}
+
+	if params != nil {
+		// queryValues collects non-styled parameters (passthrough, JSON)
+		// that are safe to round-trip through url.Values.Encode().
+		queryValues := queryURL.Query()
+		// rawQueryFragments collects pre-encoded query fragments from
+		// styled parameters, preserving literal commas as delimiters
+		// per the OpenAPI spec (e.g. "color=blue,black,brown").
+		var rawQueryFragments []string
+
+		if params.Inline != nil {
+
+			if queryFrag, err := runtime.StyleParamWithOptions("form", false, "inline", *params.Inline, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "boolean", Format: ""}); err != nil {
+				return nil, err
+			} else {
+				for _, qp := range strings.Split(queryFrag, "&") {
+					rawQueryFragments = append(rawQueryFragments, qp)
+				}
+			}
+
+		}
+
+		if encoded := queryValues.Encode(); encoded != "" {
+			rawQueryFragments = append(rawQueryFragments, encoded)
+		}
+		queryURL.RawQuery = strings.Join(rawQueryFragments, "&")
 	}
 
 	req, err := http.NewRequest(http.MethodGet, queryURL.String(), nil)
@@ -1951,17 +1981,20 @@ type ClientWithResponsesInterface interface {
 	// Corresponds with POST /api/v1/attachments (the `UploadAttachment` operationId).
 	UploadAttachmentWithBodyWithResponse(ctx context.Context, params *UploadAttachmentParams, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*UploadAttachmentResponse, error)
 
-	// DescribeAttachmentDownloadWithResponse Get a download address for an attachment
+	// DownloadAttachmentWithResponse Download an attachment
 	//
-	// Returns a temporary address that serves the file. The address expires; request a new one
-	// rather than storing it.
+	// Serves the file itself. The bytes are proxied by this API; the object store is not reachable
+	// from outside, and no address to it is ever handed out.
 	//
-	// Returns 404 for an attachment uploaded in another project.
+	// `Content-Type` is the type determined from the content at upload time, not the one the
+	// client claimed. `Content-Disposition` is `attachment` unless `inline` is requested **and**
+	// the content type is one that can be rendered safely, in which case it is `inline`. Asking
+	// for `inline` on anything else still yields a download.
 	//
 	// Returns a wrapper object for the known response body format(s).
 	//
-	// Corresponds with GET /api/v1/attachments/{attachmentId}/download-url (the `DescribeAttachmentDownload` operationId).
-	DescribeAttachmentDownloadWithResponse(ctx context.Context, attachmentId openapi_types.UUID, reqEditors ...RequestEditorFn) (*DescribeAttachmentDownloadResponse, error)
+	// Corresponds with GET /api/v1/attachments/{attachmentId}/content (the `DownloadAttachment` operationId).
+	DownloadAttachmentWithResponse(ctx context.Context, attachmentId openapi_types.UUID, params *DownloadAttachmentParams, reqEditors ...RequestEditorFn) (*DownloadAttachmentResponse, error)
 
 	// ListMaintenancesWithResponse List maintenance notices
 	//
@@ -2199,32 +2232,32 @@ func (r UploadAttachmentResponse) ContentType() string {
 	return ""
 }
 
-type DescribeAttachmentDownloadResponse struct {
-	Body         []byte
-	HTTPResponse *http.Response
-	// JSON200 the response for an HTTP 200 `application/json` response
-	JSON200 *AttachmentDownloadResource
-	// JSONDefault the response for an HTTP default `application/json` response
-	JSONDefault *Error
+// DownloadAttachmentResponse200Headers the declared response headers of an HTTP 200 response for DownloadAttachment
+type DownloadAttachmentResponse200Headers struct {
+	ContentDisposition *string
 }
 
-// GetJSON200 returns the response for an HTTP 200 `application/json` response
-func (r DescribeAttachmentDownloadResponse) GetJSON200() *AttachmentDownloadResource {
-	return r.JSON200
+type DownloadAttachmentResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	// JSONDefault the response for an HTTP default `application/json` response
+	JSONDefault *Error
+	// Headers200 the parsed response headers for an HTTP 200 response
+	Headers200 *DownloadAttachmentResponse200Headers
 }
 
 // GetJSONDefault returns the response for an HTTP default `application/json` response
-func (r DescribeAttachmentDownloadResponse) GetJSONDefault() *Error {
+func (r DownloadAttachmentResponse) GetJSONDefault() *Error {
 	return r.JSONDefault
 }
 
 // GetBody returns the raw response body bytes
-func (r DescribeAttachmentDownloadResponse) GetBody() []byte {
+func (r DownloadAttachmentResponse) GetBody() []byte {
 	return r.Body
 }
 
 // Status returns HTTPResponse.Status
-func (r DescribeAttachmentDownloadResponse) Status() string {
+func (r DownloadAttachmentResponse) Status() string {
 	if r.HTTPResponse != nil {
 		return r.HTTPResponse.Status
 	}
@@ -2232,7 +2265,7 @@ func (r DescribeAttachmentDownloadResponse) Status() string {
 }
 
 // StatusCode returns HTTPResponse.StatusCode
-func (r DescribeAttachmentDownloadResponse) StatusCode() int {
+func (r DownloadAttachmentResponse) StatusCode() int {
 	if r.HTTPResponse != nil {
 		return r.HTTPResponse.StatusCode
 	}
@@ -2240,7 +2273,7 @@ func (r DescribeAttachmentDownloadResponse) StatusCode() int {
 }
 
 // ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
-func (r DescribeAttachmentDownloadResponse) ContentType() string {
+func (r DownloadAttachmentResponse) ContentType() string {
 	if r.HTTPResponse != nil {
 		return r.HTTPResponse.Header.Get("Content-Type")
 	}
@@ -2890,22 +2923,25 @@ func (c *ClientWithResponses) UploadAttachmentWithBodyWithResponse(ctx context.C
 	return ParseUploadAttachmentResponse(rsp)
 }
 
-// DescribeAttachmentDownloadWithResponse Get a download address for an attachment
+// DownloadAttachmentWithResponse Download an attachment
 //
-// Returns a temporary address that serves the file. The address expires; request a new one
-// rather than storing it.
+// Serves the file itself. The bytes are proxied by this API; the object store is not reachable
+// from outside, and no address to it is ever handed out.
 //
-// Returns 404 for an attachment uploaded in another project.
+// `Content-Type` is the type determined from the content at upload time, not the one the
+// client claimed. `Content-Disposition` is `attachment` unless `inline` is requested **and**
+// the content type is one that can be rendered safely, in which case it is `inline`. Asking
+// for `inline` on anything else still yields a download.
 //
 // Returns a wrapper object for the known response body format(s).
 //
-// Corresponds with GET /api/v1/attachments/{attachmentId}/download-url (the `DescribeAttachmentDownload` operationId).
-func (c *ClientWithResponses) DescribeAttachmentDownloadWithResponse(ctx context.Context, attachmentId openapi_types.UUID, reqEditors ...RequestEditorFn) (*DescribeAttachmentDownloadResponse, error) {
-	rsp, err := c.DescribeAttachmentDownload(ctx, attachmentId, reqEditors...)
+// Corresponds with GET /api/v1/attachments/{attachmentId}/content (the `DownloadAttachment` operationId).
+func (c *ClientWithResponses) DownloadAttachmentWithResponse(ctx context.Context, attachmentId openapi_types.UUID, params *DownloadAttachmentParams, reqEditors ...RequestEditorFn) (*DownloadAttachmentResponse, error) {
+	rsp, err := c.DownloadAttachment(ctx, attachmentId, params, reqEditors...)
 	if err != nil {
 		return nil, err
 	}
-	return ParseDescribeAttachmentDownloadResponse(rsp)
+	return ParseDownloadAttachmentResponse(rsp)
 }
 
 // ListMaintenancesWithResponse List maintenance notices
@@ -3224,27 +3260,20 @@ func ParseUploadAttachmentResponse(rsp *http.Response) (*UploadAttachmentRespons
 	return response, nil
 }
 
-// ParseDescribeAttachmentDownloadResponse parses an HTTP response from a DescribeAttachmentDownloadWithResponse call
-func ParseDescribeAttachmentDownloadResponse(rsp *http.Response) (*DescribeAttachmentDownloadResponse, error) {
+// ParseDownloadAttachmentResponse parses an HTTP response from a DownloadAttachmentWithResponse call
+func ParseDownloadAttachmentResponse(rsp *http.Response) (*DownloadAttachmentResponse, error) {
 	bodyBytes, err := io.ReadAll(rsp.Body)
 	defer func() { _ = rsp.Body.Close() }()
 	if err != nil {
 		return nil, err
 	}
 
-	response := &DescribeAttachmentDownloadResponse{
+	response := &DownloadAttachmentResponse{
 		Body:         bodyBytes,
 		HTTPResponse: rsp,
 	}
 
 	switch {
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
-		var dest AttachmentDownloadResource
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSON200 = &dest
-
 	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && true:
 		var dest Error
 		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
@@ -3252,6 +3281,19 @@ func ParseDescribeAttachmentDownloadResponse(rsp *http.Response) (*DescribeAttac
 		}
 		response.JSONDefault = &dest
 
+	}
+
+	switch {
+	case rsp.StatusCode == 200:
+		var headers DownloadAttachmentResponse200Headers
+		if values := rsp.Header.Values("Content-Disposition"); len(values) > 0 {
+			var value string
+			if err := runtime.BindStyledParameterWithOptions("simple", "Content-Disposition", values[0], &value, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			}
+			headers.ContentDisposition = &value
+		}
+		response.Headers200 = &headers
 	}
 
 	return response, nil

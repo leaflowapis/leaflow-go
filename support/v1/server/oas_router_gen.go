@@ -145,9 +145,9 @@ func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 						break
 					}
 					switch elem[0] {
-					case '/': // Prefix: "/download-url"
+					case '/': // Prefix: "/content"
 
-						if l := len("/download-url"); len(elem) >= l && elem[0:l] == "/download-url" {
+						if l := len("/content"); len(elem) >= l && elem[0:l] == "/content" {
 							elem = elem[l:]
 						} else {
 							break
@@ -157,7 +157,7 @@ func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 							// Leaf node.
 							switch r.Method {
 							case "GET":
-								s.handleDescribeAttachmentDownloadRequest([1]string{
+								s.handleDownloadAttachmentRequest([1]string{
 									args[0],
 								}, elemIsEscaped, w, r)
 							default:
@@ -643,9 +643,9 @@ func (s *Server) FindPath(method string, u *url.URL) (r Route, _ bool) {
 						break
 					}
 					switch elem[0] {
-					case '/': // Prefix: "/download-url"
+					case '/': // Prefix: "/content"
 
-						if l := len("/download-url"); len(elem) >= l && elem[0:l] == "/download-url" {
+						if l := len("/content"); len(elem) >= l && elem[0:l] == "/content" {
 							elem = elem[l:]
 						} else {
 							break
@@ -655,11 +655,11 @@ func (s *Server) FindPath(method string, u *url.URL) (r Route, _ bool) {
 							// Leaf node.
 							switch method {
 							case "GET":
-								r.name = DescribeAttachmentDownloadOperation
-								r.summary = "Get a download address for an attachment"
-								r.operationID = "describe-attachment-download"
+								r.name = DownloadAttachmentOperation
+								r.summary = "Download an attachment"
+								r.operationID = "download-attachment"
 								r.operationGroup = ""
-								r.pathPattern = "/api/v1/attachments/{attachmentId}/download-url"
+								r.pathPattern = "/api/v1/attachments/{attachmentId}/content"
 								r.args = args
 								r.count = 1
 								return r, true

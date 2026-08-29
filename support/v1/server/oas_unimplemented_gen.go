@@ -66,15 +66,18 @@ func (UnimplementedHandler) CreateTicketSatisfaction(ctx context.Context, req *C
 	return r, ht.ErrNotImplemented
 }
 
-// DescribeAttachmentDownload implements describe-attachment-download operation.
+// DownloadAttachment implements download-attachment operation.
 //
-// Returns a temporary address that serves the file. The address expires; request a new one rather than
-// storing it.
+// Serves the file itself. The bytes are proxied by this API; the object store is not reachable from
+// outside, and no address to it is ever handed out.
 //
-// Returns 404 for an attachment uploaded in another project.
+// `Content-Type` is the type determined from the content at upload time, not the one the client
+// claimed. `Content-Disposition` is `attachment` unless `inline` is requested and the content type is
+// one that can be rendered safely, in which case it is `inline`. Asking for `inline` on anything else
+// still yields a download.
 //
-// GET /api/v1/attachments/{attachmentId}/download-url
-func (UnimplementedHandler) DescribeAttachmentDownload(ctx context.Context, params DescribeAttachmentDownloadParams) (r *AttachmentDownloadResource, _ error) {
+// GET /api/v1/attachments/{attachmentId}/content
+func (UnimplementedHandler) DownloadAttachment(ctx context.Context, params DownloadAttachmentParams) (r *DownloadAttachmentOKHeaders, _ error) {
 	return r, ht.ErrNotImplemented
 }
 
