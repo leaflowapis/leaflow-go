@@ -212,6 +212,32 @@ type Invoker interface {
 	//
 	// POST /account/v1/billing-accounts/{accountKey}/offers/{offerKey}/purchase
 	PurchaseOffer(ctx context.Context, params PurchaseOfferParams) (*Purchase, error)
+	// QuoteUsage invokes quote-usage operation.
+	//
+	// Prices a set of usages against whatever plan this account is currently on, and returns every
+	// intermediate step rather than a single number.
+	//
+	// # What it is for
+	//
+	// Showing someone what a machine will cost before they create it. The console asks for the usage a
+	// machine of that shape produces in an hour, and gets back what that hour costs them — on their
+	// plan, with their discounts.
+	//
+	// # Quantities are raw
+	//
+	// Seconds, token counts, GiB-seconds: the amount a service reports. Conversion happens here, which is
+	// why services keep no conversion tables of their own and why the console must not do the arithmetic
+	// itself.
+	//
+	// # It is an estimate
+	//
+	// The engine computes the real amount; this reproduces the same rules. Every step comes back for that
+	// reason — a single number that disagrees with the bill says nothing about which step was wrong.
+	//
+	// `404` means this account is not on any plan, and there is therefore nothing to price against.
+	//
+	// POST /account/v1/billing-accounts/{accountKey}/quote
+	QuoteUsage(ctx context.Context, request *QuoteRequest, params QuoteUsageParams) (*Quote, error)
 	// ReadBillingAccountBalance invokes read-billing-account-balance operation.
 	//
 	// What is left on the account.
@@ -2424,6 +2450,161 @@ func (c *Client) sendPurchaseOffer(ctx context.Context, params PurchaseOfferPara
 
 	stage = "DecodeResponse"
 	result, err := decodePurchaseOfferResponse(resp)
+	if err != nil {
+		return res, errors.Wrap(err, "decode response")
+	}
+
+	return result, nil
+}
+
+// QuoteUsage invokes quote-usage operation.
+//
+// Prices a set of usages against whatever plan this account is currently on, and returns every
+// intermediate step rather than a single number.
+//
+// # What it is for
+//
+// Showing someone what a machine will cost before they create it. The console asks for the usage a
+// machine of that shape produces in an hour, and gets back what that hour costs them — on their
+// plan, with their discounts.
+//
+// # Quantities are raw
+//
+// Seconds, token counts, GiB-seconds: the amount a service reports. Conversion happens here, which is
+// why services keep no conversion tables of their own and why the console must not do the arithmetic
+// itself.
+//
+// # It is an estimate
+//
+// The engine computes the real amount; this reproduces the same rules. Every step comes back for that
+// reason — a single number that disagrees with the bill says nothing about which step was wrong.
+//
+// `404` means this account is not on any plan, and there is therefore nothing to price against.
+//
+// POST /account/v1/billing-accounts/{accountKey}/quote
+func (c *Client) QuoteUsage(ctx context.Context, request *QuoteRequest, params QuoteUsageParams) (*Quote, error) {
+	res, err := c.sendQuoteUsage(ctx, request, params)
+	return res, err
+}
+
+func (c *Client) sendQuoteUsage(ctx context.Context, request *QuoteRequest, params QuoteUsageParams) (res *Quote, err error) {
+	otelAttrs := []attribute.KeyValue{
+		otelogen.OperationID("quote-usage"),
+		semconv.HTTPRequestMethodKey.String("POST"),
+		semconv.URLTemplateKey.String("/account/v1/billing-accounts/{accountKey}/quote"),
+	}
+	otelAttrs = append(otelAttrs, c.cfg.Attributes...)
+
+	// Run stopwatch.
+	startTime := time.Now()
+	defer func() {
+		// Use floating point division here for higher precision (instead of Millisecond method).
+		elapsedDuration := time.Since(startTime)
+		c.duration.Record(ctx, float64(elapsedDuration)/float64(time.Millisecond), metric.WithAttributes(otelAttrs...))
+	}()
+
+	// Increment request counter.
+	c.requests.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
+
+	// Start a span for this request.
+	ctx, span := c.cfg.Tracer.Start(ctx, QuoteUsageOperation,
+		trace.WithAttributes(otelAttrs...),
+		clientSpanKind,
+	)
+	// Track stage for error reporting.
+	var stage string
+	defer func() {
+		if err != nil {
+			span.RecordError(err)
+			span.SetStatus(codes.Error, stage)
+			c.errors.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
+		}
+		span.End()
+	}()
+
+	stage = "BuildURL"
+	u := uri.Clone(c.requestURL(ctx))
+	var pathParts [3]string
+	pathParts[0] = "/account/v1/billing-accounts/"
+	{
+		// Encode "accountKey" parameter.
+		e := uri.NewPathEncoder(uri.PathEncoderConfig{
+			Param:   "accountKey",
+			Style:   uri.PathStyleSimple,
+			Explode: false,
+		})
+		if err := func() error {
+			return e.EncodeValue(conv.StringToString(params.AccountKey))
+		}(); err != nil {
+			return res, errors.Wrap(err, "encode path")
+		}
+		encoded, err := e.Result()
+		if err != nil {
+			return res, errors.Wrap(err, "encode path")
+		}
+		pathParts[1] = encoded
+	}
+	pathParts[2] = "/quote"
+	uri.AddPathParts(u, pathParts[:]...)
+
+	stage = "EncodeRequest"
+	r, err := ht.NewRequest(ctx, "POST", u)
+	if err != nil {
+		return res, errors.Wrap(err, "create request")
+	}
+	if err := encodeQuoteUsageRequest(request, r); err != nil {
+		return res, errors.Wrap(err, "encode request")
+	}
+
+	{
+		type bitset = [1]uint8
+		var satisfied bitset
+		{
+			stage = "Security:BearerAuth"
+			switch err := c.securityBearerAuth(ctx, QuoteUsageOperation, r); {
+			case err == nil: // if NO error
+				satisfied[0] |= 1 << 0
+			case errors.Is(err, ogenerrors.ErrSkipClientSecurity):
+				// Skip this security.
+			default:
+				return res, errors.Wrap(err, "security \"BearerAuth\"")
+			}
+		}
+
+		if ok := func() bool {
+		nextRequirement:
+			for _, requirement := range []bitset{
+				{0b00000001},
+			} {
+				for i, mask := range requirement {
+					if satisfied[i]&mask != mask {
+						continue nextRequirement
+					}
+				}
+				return true
+			}
+			return false
+		}(); !ok {
+			return res, ogenerrors.ErrSecurityRequirementIsNotSatisfied
+		}
+	}
+
+	stage = "SendRequest"
+	resp, err := c.cfg.Client.Do(r)
+	if err != nil {
+		return res, errors.Wrap(err, "do request")
+	}
+	body := resp.Body
+	defer func() {
+		// Drain the body to EOF before closing, so the underlying
+		// connection can be reused by the Transport regardless of the
+		// response status code. See https://github.com/ogen-go/ogen/issues/1670.
+		_, _ = io.Copy(io.Discard, body)
+		_ = body.Close()
+	}()
+
+	stage = "DecodeResponse"
+	result, err := decodeQuoteUsageResponse(resp)
 	if err != nil {
 		return res, errors.Wrap(err, "decode response")
 	}

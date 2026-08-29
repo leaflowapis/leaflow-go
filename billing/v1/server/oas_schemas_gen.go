@@ -2281,6 +2281,245 @@ func (s *Purchase) SetSubscriptionID(val string) {
 	s.SubscriptionID = val
 }
 
+// Ref: #/components/schemas/Quote
+type Quote struct {
+	Lines []QuoteLine `json:"lines"`
+	// The sum of the already-rounded lines.
+	Total string `json:"total"`
+	// Keys that were given a usage but have no rate card on this plan.
+	//
+	// Reported rather than ignored, because ignoring them yields a smaller but entirely normal-looking
+	// number — and that is the most expensive misconfiguration there is: usage lands, the usage chart
+	// shows it, and the bill has no line for it.
+	Unpriced []string `json:"unpriced"`
+}
+
+// GetLines returns the value of Lines.
+func (s *Quote) GetLines() []QuoteLine {
+	return s.Lines
+}
+
+// GetTotal returns the value of Total.
+func (s *Quote) GetTotal() string {
+	return s.Total
+}
+
+// GetUnpriced returns the value of Unpriced.
+func (s *Quote) GetUnpriced() []string {
+	return s.Unpriced
+}
+
+// SetLines sets the value of Lines.
+func (s *Quote) SetLines(val []QuoteLine) {
+	s.Lines = val
+}
+
+// SetTotal sets the value of Total.
+func (s *Quote) SetTotal(val string) {
+	s.Total = val
+}
+
+// SetUnpriced sets the value of Unpriced.
+func (s *Quote) SetUnpriced(val []string) {
+	s.Unpriced = val
+}
+
+// One rate card priced, with every intermediate step.
+//
+// Each step is here on purpose: a single total that disagrees with the bill says nothing about which
+// step went wrong, and this is a second implementation of the engine's rules.
+// Ref: #/components/schemas/QuoteLine
+type QuoteLine struct {
+	Key  string `json:"key"`
+	Name string `json:"name"`
+	// False for a flat fee, which ignores usage entirely.
+	Metered bool `json:"metered"`
+	// The quantity as given.
+	Raw string `json:"raw"`
+	// After unit conversion, before rounding.
+	Converted string `json:"converted"`
+	// After rounding. `unit_config.rounding` applies to this step only — entitlement uses the exact
+	// converted value, which is the engine's documented behaviour.
+	Billable string `json:"billable"`
+	// Units covered by the usage discount.
+	FreeUnits string `json:"free_units"`
+	Charged   string `json:"charged"`
+	UnitPrice string `json:"unit_price"`
+	// Before the percentage discount.
+	Gross    string `json:"gross"`
+	Discount string `json:"discount"`
+	// Rounded to the currency's minor unit, per line. Not by rounding the sum: the engine rounds each
+	// line, and the difference grows with the number of lines.
+	Total string `json:"total"`
+}
+
+// GetKey returns the value of Key.
+func (s *QuoteLine) GetKey() string {
+	return s.Key
+}
+
+// GetName returns the value of Name.
+func (s *QuoteLine) GetName() string {
+	return s.Name
+}
+
+// GetMetered returns the value of Metered.
+func (s *QuoteLine) GetMetered() bool {
+	return s.Metered
+}
+
+// GetRaw returns the value of Raw.
+func (s *QuoteLine) GetRaw() string {
+	return s.Raw
+}
+
+// GetConverted returns the value of Converted.
+func (s *QuoteLine) GetConverted() string {
+	return s.Converted
+}
+
+// GetBillable returns the value of Billable.
+func (s *QuoteLine) GetBillable() string {
+	return s.Billable
+}
+
+// GetFreeUnits returns the value of FreeUnits.
+func (s *QuoteLine) GetFreeUnits() string {
+	return s.FreeUnits
+}
+
+// GetCharged returns the value of Charged.
+func (s *QuoteLine) GetCharged() string {
+	return s.Charged
+}
+
+// GetUnitPrice returns the value of UnitPrice.
+func (s *QuoteLine) GetUnitPrice() string {
+	return s.UnitPrice
+}
+
+// GetGross returns the value of Gross.
+func (s *QuoteLine) GetGross() string {
+	return s.Gross
+}
+
+// GetDiscount returns the value of Discount.
+func (s *QuoteLine) GetDiscount() string {
+	return s.Discount
+}
+
+// GetTotal returns the value of Total.
+func (s *QuoteLine) GetTotal() string {
+	return s.Total
+}
+
+// SetKey sets the value of Key.
+func (s *QuoteLine) SetKey(val string) {
+	s.Key = val
+}
+
+// SetName sets the value of Name.
+func (s *QuoteLine) SetName(val string) {
+	s.Name = val
+}
+
+// SetMetered sets the value of Metered.
+func (s *QuoteLine) SetMetered(val bool) {
+	s.Metered = val
+}
+
+// SetRaw sets the value of Raw.
+func (s *QuoteLine) SetRaw(val string) {
+	s.Raw = val
+}
+
+// SetConverted sets the value of Converted.
+func (s *QuoteLine) SetConverted(val string) {
+	s.Converted = val
+}
+
+// SetBillable sets the value of Billable.
+func (s *QuoteLine) SetBillable(val string) {
+	s.Billable = val
+}
+
+// SetFreeUnits sets the value of FreeUnits.
+func (s *QuoteLine) SetFreeUnits(val string) {
+	s.FreeUnits = val
+}
+
+// SetCharged sets the value of Charged.
+func (s *QuoteLine) SetCharged(val string) {
+	s.Charged = val
+}
+
+// SetUnitPrice sets the value of UnitPrice.
+func (s *QuoteLine) SetUnitPrice(val string) {
+	s.UnitPrice = val
+}
+
+// SetGross sets the value of Gross.
+func (s *QuoteLine) SetGross(val string) {
+	s.Gross = val
+}
+
+// SetDiscount sets the value of Discount.
+func (s *QuoteLine) SetDiscount(val string) {
+	s.Discount = val
+}
+
+// SetTotal sets the value of Total.
+func (s *QuoteLine) SetTotal(val string) {
+	s.Total = val
+}
+
+// The usages to price. Quantities are the raw amounts a service reports — seconds, token counts,
+// GiB-seconds. Conversion happens on the billing side, which is why services keep no conversion tables
+// of their own.
+// Ref: #/components/schemas/QuoteRequest
+type QuoteRequest struct {
+	Lines []QuoteUsage `json:"lines"`
+}
+
+// GetLines returns the value of Lines.
+func (s *QuoteRequest) GetLines() []QuoteUsage {
+	return s.Lines
+}
+
+// SetLines sets the value of Lines.
+func (s *QuoteRequest) SetLines(val []QuoteUsage) {
+	s.Lines = val
+}
+
+// Ref: #/components/schemas/QuoteUsage
+type QuoteUsage struct {
+	// The rate card's key. For a card tied to a meter that is the meter's key, because the engine requires
+	// the two to be identical.
+	Key string `json:"key"`
+	// The raw amount, before any conversion. A decimal string.
+	Quantity string `json:"quantity"`
+}
+
+// GetKey returns the value of Key.
+func (s *QuoteUsage) GetKey() string {
+	return s.Key
+}
+
+// GetQuantity returns the value of Quantity.
+func (s *QuoteUsage) GetQuantity() string {
+	return s.Quantity
+}
+
+// SetKey sets the value of Key.
+func (s *QuoteUsage) SetKey(val string) {
+	s.Key = val
+}
+
+// SetQuantity sets the value of Quantity.
+func (s *QuoteUsage) SetQuantity(val string) {
+	s.Quantity = val
+}
+
 // Ref: #/components/schemas/StartTopUpRequestBody
 type StartTopUpRequestBody struct {
 	// How much to add, as a decimal string — `"20"`, `"19.99"`.

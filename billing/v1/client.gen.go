@@ -632,6 +632,72 @@ type Purchase struct {
 	SubscriptionId string `json:"subscription_id"`
 }
 
+// Quote defines model for Quote.
+type Quote struct {
+	Lines []QuoteLine `json:"lines"`
+
+	// Total The sum of the already-rounded lines
+	Total string `json:"total"`
+
+	// Unpriced Keys that were given a usage but have no rate card on this plan.
+	//
+	// **Reported rather than ignored**, because ignoring them yields a smaller but entirely
+	// normal-looking number — and that is the most expensive misconfiguration there is: usage
+	// lands, the usage chart shows it, and the bill has no line for it
+	Unpriced []string `json:"unpriced,omitempty"`
+}
+
+// QuoteLine One rate card priced, with every intermediate step.
+//
+// Each step is here on purpose: a single total that disagrees with the bill says nothing about
+// which step went wrong, and this is a second implementation of the engine's rules
+type QuoteLine struct {
+	// Billable After rounding. `unit_config.rounding` applies to this step only — entitlement uses the
+	// exact converted value, which is the engine's documented behaviour
+	Billable string `json:"billable"`
+	Charged  string `json:"charged"`
+
+	// Converted After unit conversion, before rounding
+	Converted string `json:"converted"`
+	Discount  string `json:"discount"`
+
+	// FreeUnits Units covered by the usage discount
+	FreeUnits string `json:"free_units"`
+
+	// Gross Before the percentage discount
+	Gross string `json:"gross"`
+	Key   string `json:"key"`
+
+	// Metered False for a flat fee, which ignores usage entirely
+	Metered bool   `json:"metered"`
+	Name    string `json:"name"`
+
+	// Raw The quantity as given
+	Raw string `json:"raw"`
+
+	// Total Rounded to the currency's minor unit, **per line**. Not by rounding the sum: the engine
+	// rounds each line, and the difference grows with the number of lines
+	Total     string `json:"total"`
+	UnitPrice string `json:"unit_price"`
+}
+
+// QuoteRequest The usages to price. Quantities are the **raw amounts a service reports** — seconds, token
+// counts, GiB-seconds. Conversion happens on the billing side, which is why services keep no
+// conversion tables of their own.
+type QuoteRequest struct {
+	Lines []QuoteUsage `json:"lines"`
+}
+
+// QuoteUsage defines model for QuoteUsage.
+type QuoteUsage struct {
+	// Key The rate card's key. For a card tied to a meter that is the meter's key, because the engine
+	// requires the two to be identical
+	Key string `json:"key"`
+
+	// Quantity The raw amount, before any conversion. A decimal string
+	Quantity string `json:"quantity"`
+}
+
 // StartTopUpRequestBody defines model for StartTopUpRequestBody.
 type StartTopUpRequestBody struct {
 	// Amount How much to add, as a decimal string — `"20"`, `"19.99"`.
@@ -752,6 +818,9 @@ type CreateBillingAccountJSONRequestBody = CreateBillingAccountRequestBody
 
 // UpdateBillingAccountJSONRequestBody defines body for UpdateBillingAccount for application/json ContentType.
 type UpdateBillingAccountJSONRequestBody = UpdateBillingAccountRequestBody
+
+// QuoteUsageJSONRequestBody defines body for QuoteUsage for application/json ContentType.
+type QuoteUsageJSONRequestBody = QuoteRequest
 
 // StartTopUpJSONRequestBody defines body for StartTopUp for application/json ContentType.
 type StartTopUpJSONRequestBody = StartTopUpRequestBody
@@ -1151,6 +1220,66 @@ type ClientInterface interface {
 	//
 	// Corresponds with PUT /account/v1/billing-accounts/{accountKey}/projects/{projectId} (the `BindProjectToBillingAccount` operationId).
 	BindProjectToBillingAccount(ctx context.Context, accountKey AccountKey, projectId openapi_types.UUID, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// QuoteUsageWithBody What a usage would cost on this account's plan
+	//
+	// Prices a set of usages against whatever plan this account is currently on, and returns **every
+	// intermediate step** rather than a single number.
+	//
+	// # What it is for
+	//
+	// Showing someone what a machine will cost before they create it. The console asks for the usage a
+	// machine of that shape produces in an hour, and gets back what that hour costs them — on their
+	// plan, with their discounts.
+	//
+	// # Quantities are raw
+	//
+	// Seconds, token counts, GiB-seconds: the amount a service reports. Conversion happens here, which
+	// is why services keep no conversion tables of their own and why the console must not do the
+	// arithmetic itself.
+	//
+	// # It is an estimate
+	//
+	// The engine computes the real amount; this reproduces the same rules. Every step comes back for
+	// that reason — a single number that disagrees with the bill says nothing about which step was
+	// wrong.
+	//
+	// `404` means this account is not on any plan, and there is therefore nothing to price against.
+	//
+	// Takes any type of body and a specified content type.
+	//
+	// Corresponds with POST /account/v1/billing-accounts/{accountKey}/quote (the `QuoteUsage` operationId).
+	QuoteUsageWithBody(ctx context.Context, accountKey AccountKey, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// QuoteUsage What a usage would cost on this account's plan
+	//
+	// Prices a set of usages against whatever plan this account is currently on, and returns **every
+	// intermediate step** rather than a single number.
+	//
+	// # What it is for
+	//
+	// Showing someone what a machine will cost before they create it. The console asks for the usage a
+	// machine of that shape produces in an hour, and gets back what that hour costs them — on their
+	// plan, with their discounts.
+	//
+	// # Quantities are raw
+	//
+	// Seconds, token counts, GiB-seconds: the amount a service reports. Conversion happens here, which
+	// is why services keep no conversion tables of their own and why the console must not do the
+	// arithmetic itself.
+	//
+	// # It is an estimate
+	//
+	// The engine computes the real amount; this reproduces the same rules. Every step comes back for
+	// that reason — a single number that disagrees with the bill says nothing about which step was
+	// wrong.
+	//
+	// `404` means this account is not on any plan, and there is therefore nothing to price against.
+	//
+	// Takes a body of the `application/json` content type.
+	//
+	// Corresponds with POST /account/v1/billing-accounts/{accountKey}/quote (the `QuoteUsage` operationId).
+	QuoteUsage(ctx context.Context, accountKey AccountKey, body QuoteUsageJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
 
 	// ReadSubscription Which plan this account is on
 	//
@@ -1767,6 +1896,86 @@ func (c *Client) UnbindProjectFromBillingAccount(ctx context.Context, accountKey
 // Corresponds with PUT /account/v1/billing-accounts/{accountKey}/projects/{projectId} (the `BindProjectToBillingAccount` operationId).
 func (c *Client) BindProjectToBillingAccount(ctx context.Context, accountKey AccountKey, projectId openapi_types.UUID, reqEditors ...RequestEditorFn) (*http.Response, error) {
 	req, err := NewBindProjectToBillingAccountRequest(c.Server, accountKey, projectId)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+// QuoteUsageWithBody What a usage would cost on this account's plan
+//
+// Prices a set of usages against whatever plan this account is currently on, and returns **every
+// intermediate step** rather than a single number.
+//
+// # What it is for
+//
+// Showing someone what a machine will cost before they create it. The console asks for the usage a
+// machine of that shape produces in an hour, and gets back what that hour costs them — on their
+// plan, with their discounts.
+//
+// # Quantities are raw
+//
+// Seconds, token counts, GiB-seconds: the amount a service reports. Conversion happens here, which
+// is why services keep no conversion tables of their own and why the console must not do the
+// arithmetic itself.
+//
+// # It is an estimate
+//
+// The engine computes the real amount; this reproduces the same rules. Every step comes back for
+// that reason — a single number that disagrees with the bill says nothing about which step was
+// wrong.
+//
+// `404` means this account is not on any plan, and there is therefore nothing to price against.
+//
+// Takes any type of body and a specified content type.
+//
+// Corresponds with POST /account/v1/billing-accounts/{accountKey}/quote (the `QuoteUsage` operationId).
+func (c *Client) QuoteUsageWithBody(ctx context.Context, accountKey AccountKey, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewQuoteUsageRequestWithBody(c.Server, accountKey, contentType, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+// QuoteUsage What a usage would cost on this account's plan
+//
+// Prices a set of usages against whatever plan this account is currently on, and returns **every
+// intermediate step** rather than a single number.
+//
+// # What it is for
+//
+// Showing someone what a machine will cost before they create it. The console asks for the usage a
+// machine of that shape produces in an hour, and gets back what that hour costs them — on their
+// plan, with their discounts.
+//
+// # Quantities are raw
+//
+// Seconds, token counts, GiB-seconds: the amount a service reports. Conversion happens here, which
+// is why services keep no conversion tables of their own and why the console must not do the
+// arithmetic itself.
+//
+// # It is an estimate
+//
+// The engine computes the real amount; this reproduces the same rules. Every step comes back for
+// that reason — a single number that disagrees with the bill says nothing about which step was
+// wrong.
+//
+// `404` means this account is not on any plan, and there is therefore nothing to price against.
+//
+// Takes a body of the `application/json` content type.
+//
+// Corresponds with POST /account/v1/billing-accounts/{accountKey}/quote (the `QuoteUsage` operationId).
+func (c *Client) QuoteUsage(ctx context.Context, accountKey AccountKey, body QuoteUsageJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewQuoteUsageRequest(c.Server, accountKey, body)
 	if err != nil {
 		return nil, err
 	}
@@ -2625,6 +2834,53 @@ func NewBindProjectToBillingAccountRequest(server string, accountKey AccountKey,
 	return req, nil
 }
 
+// NewQuoteUsageRequest calls the generic QuoteUsage builder with application/json body
+func NewQuoteUsageRequest(server string, accountKey AccountKey, body QuoteUsageJSONRequestBody) (*http.Request, error) {
+	var bodyReader io.Reader
+	buf, err := json.Marshal(body)
+	if err != nil {
+		return nil, err
+	}
+	bodyReader = bytes.NewReader(buf)
+	return NewQuoteUsageRequestWithBody(server, accountKey, "application/json", bodyReader)
+}
+
+// NewQuoteUsageRequestWithBody constructs an http.Request for the QuoteUsage method, with any body, and a specified content type
+func NewQuoteUsageRequestWithBody(server string, accountKey AccountKey, contentType string, body io.Reader) (*http.Request, error) {
+	var err error
+
+	var pathParam0 string
+
+	pathParam0, err = runtime.StyleParamWithOptions("simple", false, "accountKey", accountKey, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: ""})
+	if err != nil {
+		return nil, err
+	}
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/account/v1/billing-accounts/%s/quote", pathParam0)
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest(http.MethodPost, queryURL.String(), body)
+	if err != nil {
+		return nil, err
+	}
+
+	req.Header.Add("Content-Type", contentType)
+
+	return req, nil
+}
+
 // NewReadSubscriptionRequest constructs an http.Request for the ReadSubscription method
 func NewReadSubscriptionRequest(server string, accountKey AccountKey) (*http.Request, error) {
 	var err error
@@ -3235,6 +3491,66 @@ type ClientWithResponsesInterface interface {
 	//
 	// Corresponds with PUT /account/v1/billing-accounts/{accountKey}/projects/{projectId} (the `BindProjectToBillingAccount` operationId).
 	BindProjectToBillingAccountWithResponse(ctx context.Context, accountKey AccountKey, projectId openapi_types.UUID, reqEditors ...RequestEditorFn) (*BindProjectToBillingAccountResponse, error)
+
+	// QuoteUsageWithBodyWithResponse What a usage would cost on this account's plan
+	//
+	// Prices a set of usages against whatever plan this account is currently on, and returns **every
+	// intermediate step** rather than a single number.
+	//
+	// # What it is for
+	//
+	// Showing someone what a machine will cost before they create it. The console asks for the usage a
+	// machine of that shape produces in an hour, and gets back what that hour costs them — on their
+	// plan, with their discounts.
+	//
+	// # Quantities are raw
+	//
+	// Seconds, token counts, GiB-seconds: the amount a service reports. Conversion happens here, which
+	// is why services keep no conversion tables of their own and why the console must not do the
+	// arithmetic itself.
+	//
+	// # It is an estimate
+	//
+	// The engine computes the real amount; this reproduces the same rules. Every step comes back for
+	// that reason — a single number that disagrees with the bill says nothing about which step was
+	// wrong.
+	//
+	// `404` means this account is not on any plan, and there is therefore nothing to price against.
+	//
+	// Takes any type of body and a specified content type, and returns a wrapper object for the known response body format(s).
+	//
+	// Corresponds with POST /account/v1/billing-accounts/{accountKey}/quote (the `QuoteUsage` operationId).
+	QuoteUsageWithBodyWithResponse(ctx context.Context, accountKey AccountKey, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*QuoteUsageResponse, error)
+
+	// QuoteUsageWithResponse What a usage would cost on this account's plan
+	//
+	// Prices a set of usages against whatever plan this account is currently on, and returns **every
+	// intermediate step** rather than a single number.
+	//
+	// # What it is for
+	//
+	// Showing someone what a machine will cost before they create it. The console asks for the usage a
+	// machine of that shape produces in an hour, and gets back what that hour costs them — on their
+	// plan, with their discounts.
+	//
+	// # Quantities are raw
+	//
+	// Seconds, token counts, GiB-seconds: the amount a service reports. Conversion happens here, which
+	// is why services keep no conversion tables of their own and why the console must not do the
+	// arithmetic itself.
+	//
+	// # It is an estimate
+	//
+	// The engine computes the real amount; this reproduces the same rules. Every step comes back for
+	// that reason — a single number that disagrees with the bill says nothing about which step was
+	// wrong.
+	//
+	// `404` means this account is not on any plan, and there is therefore nothing to price against.
+	//
+	// Takes a body of the `application/json` content type, and returns a wrapper object for the known response body format(s).
+	//
+	// Corresponds with POST /account/v1/billing-accounts/{accountKey}/quote (the `QuoteUsage` operationId).
+	QuoteUsageWithResponse(ctx context.Context, accountKey AccountKey, body QuoteUsageJSONRequestBody, reqEditors ...RequestEditorFn) (*QuoteUsageResponse, error)
 
 	// ReadSubscriptionWithResponse Which plan this account is on
 	//
@@ -4204,6 +4520,54 @@ func (r BindProjectToBillingAccountResponse) ContentType() string {
 	return ""
 }
 
+type QuoteUsageResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	// JSON200 the response for an HTTP 200 `application/json` response
+	JSON200 *Quote
+	// JSONDefault the response for an HTTP default `application/json` response
+	JSONDefault *Error
+}
+
+// GetJSON200 returns the response for an HTTP 200 `application/json` response
+func (r QuoteUsageResponse) GetJSON200() *Quote {
+	return r.JSON200
+}
+
+// GetJSONDefault returns the response for an HTTP default `application/json` response
+func (r QuoteUsageResponse) GetJSONDefault() *Error {
+	return r.JSONDefault
+}
+
+// GetBody returns the raw response body bytes
+func (r QuoteUsageResponse) GetBody() []byte {
+	return r.Body
+}
+
+// Status returns HTTPResponse.Status
+func (r QuoteUsageResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r QuoteUsageResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+// ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
+func (r QuoteUsageResponse) ContentType() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Header.Get("Content-Type")
+	}
+	return ""
+}
+
 type ReadSubscriptionResponse struct {
 	Body         []byte
 	HTTPResponse *http.Response
@@ -4916,6 +5280,78 @@ func (c *ClientWithResponses) BindProjectToBillingAccountWithResponse(ctx contex
 		return nil, err
 	}
 	return ParseBindProjectToBillingAccountResponse(rsp)
+}
+
+// QuoteUsageWithBodyWithResponse What a usage would cost on this account's plan
+//
+// Prices a set of usages against whatever plan this account is currently on, and returns **every
+// intermediate step** rather than a single number.
+//
+// # What it is for
+//
+// Showing someone what a machine will cost before they create it. The console asks for the usage a
+// machine of that shape produces in an hour, and gets back what that hour costs them — on their
+// plan, with their discounts.
+//
+// # Quantities are raw
+//
+// Seconds, token counts, GiB-seconds: the amount a service reports. Conversion happens here, which
+// is why services keep no conversion tables of their own and why the console must not do the
+// arithmetic itself.
+//
+// # It is an estimate
+//
+// The engine computes the real amount; this reproduces the same rules. Every step comes back for
+// that reason — a single number that disagrees with the bill says nothing about which step was
+// wrong.
+//
+// `404` means this account is not on any plan, and there is therefore nothing to price against.
+//
+// Takes any type of body and a specified content type, and returns a wrapper object for the known response body format(s).
+//
+// Corresponds with POST /account/v1/billing-accounts/{accountKey}/quote (the `QuoteUsage` operationId).
+func (c *ClientWithResponses) QuoteUsageWithBodyWithResponse(ctx context.Context, accountKey AccountKey, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*QuoteUsageResponse, error) {
+	rsp, err := c.QuoteUsageWithBody(ctx, accountKey, contentType, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseQuoteUsageResponse(rsp)
+}
+
+// QuoteUsageWithResponse What a usage would cost on this account's plan
+//
+// Prices a set of usages against whatever plan this account is currently on, and returns **every
+// intermediate step** rather than a single number.
+//
+// # What it is for
+//
+// Showing someone what a machine will cost before they create it. The console asks for the usage a
+// machine of that shape produces in an hour, and gets back what that hour costs them — on their
+// plan, with their discounts.
+//
+// # Quantities are raw
+//
+// Seconds, token counts, GiB-seconds: the amount a service reports. Conversion happens here, which
+// is why services keep no conversion tables of their own and why the console must not do the
+// arithmetic itself.
+//
+// # It is an estimate
+//
+// The engine computes the real amount; this reproduces the same rules. Every step comes back for
+// that reason — a single number that disagrees with the bill says nothing about which step was
+// wrong.
+//
+// `404` means this account is not on any plan, and there is therefore nothing to price against.
+//
+// Takes a body of the `application/json` content type, and returns a wrapper object for the known response body format(s).
+//
+// Corresponds with POST /account/v1/billing-accounts/{accountKey}/quote (the `QuoteUsage` operationId).
+func (c *ClientWithResponses) QuoteUsageWithResponse(ctx context.Context, accountKey AccountKey, body QuoteUsageJSONRequestBody, reqEditors ...RequestEditorFn) (*QuoteUsageResponse, error) {
+	rsp, err := c.QuoteUsage(ctx, accountKey, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseQuoteUsageResponse(rsp)
 }
 
 // ReadSubscriptionWithResponse Which plan this account is on
@@ -5637,6 +6073,39 @@ func ParseBindProjectToBillingAccountResponse(rsp *http.Response) (*BindProjectT
 	switch {
 	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
 		var dest ProjectBinding
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && true:
+		var dest Error
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSONDefault = &dest
+
+	}
+
+	return response, nil
+}
+
+// ParseQuoteUsageResponse parses an HTTP response from a QuoteUsageWithResponse call
+func ParseQuoteUsageResponse(rsp *http.Response) (*QuoteUsageResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &QuoteUsageResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest Quote
 		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
 			return nil, err
 		}
