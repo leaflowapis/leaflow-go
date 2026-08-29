@@ -308,7 +308,7 @@ type Handler interface {
 	// that usually means downloading it onto one of the project's cloud instances.
 	//
 	// POST /api/v1/attachments
-	UploadAttachment(ctx context.Context, req UploadAttachmentReq, params UploadAttachmentParams) (*UploadedResource, error)
+	UploadAttachment(ctx context.Context, req *UploadAttachmentReqWithContentType, params UploadAttachmentParams) (*UploadedResource, error)
 	// NewError creates *ErrorStatusCode from error returned by handler.
 	//
 	// Used for common default response.

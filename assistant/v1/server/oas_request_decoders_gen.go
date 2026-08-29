@@ -10,6 +10,7 @@ import (
 
 	"github.com/go-faster/errors"
 	"github.com/go-faster/jx"
+	ht "github.com/ogen-go/ogen/http"
 	"github.com/ogen-go/ogen/ogenerrors"
 	"github.com/ogen-go/ogen/validate"
 )
@@ -1006,7 +1007,7 @@ func (s *Server) decodeUpdateThreadRequest(r *http.Request) (
 }
 
 func (s *Server) decodeUploadAttachmentRequest(r *http.Request) (
-	req UploadAttachmentReq,
+	req *UploadAttachmentReqWithContentType,
 	rawBody []byte,
 	close func() error,
 	rerr error,
@@ -1031,10 +1032,14 @@ func (s *Server) decodeUploadAttachmentRequest(r *http.Request) (
 		return req, rawBody, close, errors.Wrap(err, "parse media type")
 	}
 	switch {
-	case ct == "application/octet-stream":
+	case ht.MatchContentType("*/*", ct):
 		reader := r.Body
 		request := UploadAttachmentReq{Data: reader}
-		return request, rawBody, close, nil
+		wrapped := UploadAttachmentReqWithContentType{
+			ContentType: ct,
+			Content:     request,
+		}
+		return &wrapped, rawBody, close, nil
 	default:
 		return req, rawBody, close, validate.InvalidContentType(ct)
 	}

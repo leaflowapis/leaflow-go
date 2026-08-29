@@ -173,7 +173,7 @@ func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 						s.notAllowed(w, r, notAllowedParams{
 							allowedMethods: "POST",
 							allowedHeaders: rn44AllowedHeaders,
-							acceptPost:     "application/octet-stream",
+							acceptPost:     "*/*",
 							acceptPatch:    "",
 						})
 					}

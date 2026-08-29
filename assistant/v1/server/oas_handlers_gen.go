@@ -7646,7 +7646,7 @@ func (s *Server) handleUploadAttachmentRequest(args [0]string, argsEscaped bool,
 		}
 
 		type (
-			Request  = UploadAttachmentReq
+			Request  = *UploadAttachmentReqWithContentType
 			Params   = UploadAttachmentParams
 			Response = *UploadedResource
 		)
