@@ -553,6 +553,12 @@ type RealtimeAuthResource struct {
 // RealtimeConnectionResource Everything needed to open a realtime connection. The connection speaks the Pusher channels
 // protocol, so any client library for it works.
 type RealtimeConnectionResource struct {
+	// AnnouncementsChannel The channel carrying announcements. It is public: subscribing to it needs no
+	// authorization, because an announcement is addressed to everybody. The events on it
+	// carry an identifier and nothing else, so a client fetches the list and sees the
+	// announcements it is entitled to
+	AnnouncementsChannel string `json:"announcements_channel"`
+
 	// AuthPath The path a client posts to while subscribing, relative to this API
 	AuthPath string `json:"auth_path"`
 
