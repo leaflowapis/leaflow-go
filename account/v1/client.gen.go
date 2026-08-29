@@ -151,6 +151,27 @@ func (e IdentityVerificationResourceStatus) Valid() bool {
 	}
 }
 
+// Defines values for Locale.
+const (
+	En       Locale = "en"
+	ZhHans   Locale = "zh-Hans"
+	ZhHantHK Locale = "zh-Hant-HK"
+)
+
+// Valid indicates whether the value is a known member of the Locale enum.
+func (e Locale) Valid() bool {
+	switch e {
+	case En:
+		return true
+	case ZhHans:
+		return true
+	case ZhHantHK:
+		return true
+	default:
+		return false
+	}
+}
+
 // Defines values for ProjectResourceStatus.
 const (
 	ProjectResourceStatusACTIVE    ProjectResourceStatus = "ACTIVE"
@@ -264,6 +285,8 @@ type AcceptedInvitationResponseBody struct {
 
 // AccountResource defines model for AccountResource.
 type AccountResource struct {
+	// Country ISO 3166-1 alpha-2。这两个字段是后加的，注册时才开始要求填——已经注册过的人这里 是空串，让他们在设置里补，补之前一切照常。
+	Country         *string    `json:"country,omitempty"`
 	CreatedAt       time.Time  `json:"created_at"`
 	Email           string     `json:"email"`
 	EmailVerifiedAt *time.Time `json:"email_verified_at"`
@@ -275,7 +298,10 @@ type AccountResource struct {
 	Id string `json:"id"`
 
 	// LastName 来自登录信息，可能为空
-	LastName          string                `json:"last_name"`
+	LastName string `json:"last_name"`
+
+	// Locale 为空表示没设过，那时按请求头（Accept-Language）走，两者都没有才用平台默认
+	Locale            *string               `json:"locale,omitempty"`
 	PendingAgreements []AgreementResource   `json:"pending_agreements"`
 	Status            AccountResourceStatus `json:"status"`
 }
@@ -411,6 +437,9 @@ type LengthAwarePageProjectAccessResource struct {
 	Total int64 `json:"total"`
 }
 
+// Locale 界面和邮件用哪种语言。它和 country 是两件事，不能互相推——一个在香港的人可能读简体， 一个在美国的人可能读繁体。
+type Locale string
+
 // ProjectAccessResource defines model for ProjectAccessResource.
 type ProjectAccessResource struct {
 	Grant   GrantResource   `json:"grant"`
@@ -466,6 +495,12 @@ type ProjectTokenResponseBody struct {
 type RegisterRequestBody struct {
 	// Consents 当前生效的必签文件全部要在里面，版本号要和 GET /api/v1/agreements 给的一致
 	Consents []ConsentBody `json:"consents"`
+
+	// Country ISO 3166-1 alpha-2（CN、HK、US）。必须是现实世界里真实存在的国家或地区——EU、ZZ 这类在标准里有位置但不是国家的代码会被拒。存代码不存名字：名字是本地化的，存下来 的那份只会是某一种语言的。
+	Country string `json:"country"`
+
+	// Locale 界面和邮件用哪种语言。它和 country 是两件事，不能互相推——一个在香港的人可能读简体， 一个在美国的人可能读繁体。
+	Locale Locale `json:"locale"`
 }
 
 // SettingsResource defines model for SettingsResource.
@@ -498,6 +533,15 @@ type SubmitIdentityVerificationRequestBody struct {
 	RealName string `json:"real_name"`
 }
 
+// UpdateAccountRequestBody 两个字段都是「不传就不动」。设置页上它们是两个独立的控件，用户可能只改其中一个；做成 整体替换的话，一次只想改语言的提交会把国家清掉，而那种丢失不报错。
+type UpdateAccountRequestBody struct {
+	// Country 同注册时那个 country
+	Country *string `json:"country,omitempty"`
+
+	// Locale 界面和邮件用哪种语言。它和 country 是两件事，不能互相推——一个在香港的人可能读简体， 一个在美国的人可能读繁体。
+	Locale *Locale `json:"locale,omitempty"`
+}
+
 // ListMyInvitationsParams defines parameters for ListMyInvitations.
 type ListMyInvitationsParams struct {
 	// Limit 这一页最多返回多少条
@@ -524,6 +568,9 @@ type ListProjectsParams struct {
 
 // ListProjectsParamsStatus defines parameters for ListProjects.
 type ListProjectsParamsStatus string
+
+// UpdateAccountJSONRequestBody defines body for UpdateAccount for application/json ContentType.
+type UpdateAccountJSONRequestBody = UpdateAccountRequestBody
 
 // AcceptAgreementsJSONRequestBody defines body for AcceptAgreements for application/json ContentType.
 type AcceptAgreementsJSONRequestBody = AcceptConsentsRequestBody
@@ -629,6 +676,24 @@ type ClientInterface interface {
 	//
 	// Corresponds with GET /account/v1/me (the `GetAccount` operationId).
 	GetAccount(ctx context.Context, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// UpdateAccountWithBody 改当前账号的国家/地区和语言
+	//
+	// 姓名和邮箱不在这里改：它们来自身份提供方，改了会在下一次登录同步时被覆盖回去。.
+	//
+	// Takes any type of body and a specified content type.
+	//
+	// Corresponds with PATCH /account/v1/me (the `UpdateAccount` operationId).
+	UpdateAccountWithBody(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// UpdateAccount 改当前账号的国家/地区和语言
+	//
+	// 姓名和邮箱不在这里改：它们来自身份提供方，改了会在下一次登录同步时被覆盖回去。.
+	//
+	// Takes a body of the `application/json` content type.
+	//
+	// Corresponds with PATCH /account/v1/me (the `UpdateAccount` operationId).
+	UpdateAccount(ctx context.Context, body UpdateAccountJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
 
 	// ListConsents 列出我同意过的文件
 	//
@@ -816,6 +881,44 @@ func (c *Client) ListAgreements(ctx context.Context, reqEditors ...RequestEditor
 // Corresponds with GET /account/v1/me (the `GetAccount` operationId).
 func (c *Client) GetAccount(ctx context.Context, reqEditors ...RequestEditorFn) (*http.Response, error) {
 	req, err := NewGetAccountRequest(c.Server)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+// UpdateAccountWithBody 改当前账号的国家/地区和语言
+//
+// 姓名和邮箱不在这里改：它们来自身份提供方，改了会在下一次登录同步时被覆盖回去。.
+//
+// Takes any type of body and a specified content type.
+//
+// Corresponds with PATCH /account/v1/me (the `UpdateAccount` operationId).
+func (c *Client) UpdateAccountWithBody(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewUpdateAccountRequestWithBody(c.Server, contentType, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+// UpdateAccount 改当前账号的国家/地区和语言
+//
+// 姓名和邮箱不在这里改：它们来自身份提供方，改了会在下一次登录同步时被覆盖回去。.
+//
+// Takes a body of the `application/json` content type.
+//
+// Corresponds with PATCH /account/v1/me (the `UpdateAccount` operationId).
+func (c *Client) UpdateAccount(ctx context.Context, body UpdateAccountJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewUpdateAccountRequest(c.Server, body)
 	if err != nil {
 		return nil, err
 	}
@@ -1205,6 +1308,46 @@ func NewGetAccountRequest(server string) (*http.Request, error) {
 	if err != nil {
 		return nil, err
 	}
+
+	return req, nil
+}
+
+// NewUpdateAccountRequest calls the generic UpdateAccount builder with application/json body
+func NewUpdateAccountRequest(server string, body UpdateAccountJSONRequestBody) (*http.Request, error) {
+	var bodyReader io.Reader
+	buf, err := json.Marshal(body)
+	if err != nil {
+		return nil, err
+	}
+	bodyReader = bytes.NewReader(buf)
+	return NewUpdateAccountRequestWithBody(server, "application/json", bodyReader)
+}
+
+// NewUpdateAccountRequestWithBody constructs an http.Request for the UpdateAccount method, with any body, and a specified content type
+func NewUpdateAccountRequestWithBody(server string, contentType string, body io.Reader) (*http.Request, error) {
+	var err error
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/account/v1/me")
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest(http.MethodPatch, queryURL.String(), body)
+	if err != nil {
+		return nil, err
+	}
+
+	req.Header.Add("Content-Type", contentType)
 
 	return req, nil
 }
@@ -1778,6 +1921,24 @@ type ClientWithResponsesInterface interface {
 	// Corresponds with GET /account/v1/me (the `GetAccount` operationId).
 	GetAccountWithResponse(ctx context.Context, reqEditors ...RequestEditorFn) (*GetAccountResponse, error)
 
+	// UpdateAccountWithBodyWithResponse 改当前账号的国家/地区和语言
+	//
+	// 姓名和邮箱不在这里改：它们来自身份提供方，改了会在下一次登录同步时被覆盖回去。.
+	//
+	// Takes any type of body and a specified content type, and returns a wrapper object for the known response body format(s).
+	//
+	// Corresponds with PATCH /account/v1/me (the `UpdateAccount` operationId).
+	UpdateAccountWithBodyWithResponse(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*UpdateAccountResponse, error)
+
+	// UpdateAccountWithResponse 改当前账号的国家/地区和语言
+	//
+	// 姓名和邮箱不在这里改：它们来自身份提供方，改了会在下一次登录同步时被覆盖回去。.
+	//
+	// Takes a body of the `application/json` content type, and returns a wrapper object for the known response body format(s).
+	//
+	// Corresponds with PATCH /account/v1/me (the `UpdateAccount` operationId).
+	UpdateAccountWithResponse(ctx context.Context, body UpdateAccountJSONRequestBody, reqEditors ...RequestEditorFn) (*UpdateAccountResponse, error)
+
 	// ListConsentsWithResponse 列出我同意过的文件
 	//
 	// 全部记录，最新的在前，包括已经不是当前版本的那些。.
@@ -2042,6 +2203,54 @@ func (r GetAccountResponse) StatusCode() int {
 
 // ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
 func (r GetAccountResponse) ContentType() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Header.Get("Content-Type")
+	}
+	return ""
+}
+
+type UpdateAccountResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	// JSON200 the response for an HTTP 200 `application/json` response
+	JSON200 *AccountResource
+	// JSONDefault the response for an HTTP default `application/json` response
+	JSONDefault *Error
+}
+
+// GetJSON200 returns the response for an HTTP 200 `application/json` response
+func (r UpdateAccountResponse) GetJSON200() *AccountResource {
+	return r.JSON200
+}
+
+// GetJSONDefault returns the response for an HTTP default `application/json` response
+func (r UpdateAccountResponse) GetJSONDefault() *Error {
+	return r.JSONDefault
+}
+
+// GetBody returns the raw response body bytes
+func (r UpdateAccountResponse) GetBody() []byte {
+	return r.Body
+}
+
+// Status returns HTTPResponse.Status
+func (r UpdateAccountResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r UpdateAccountResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+// ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
+func (r UpdateAccountResponse) ContentType() string {
 	if r.HTTPResponse != nil {
 		return r.HTTPResponse.Header.Get("Content-Type")
 	}
@@ -2656,6 +2865,36 @@ func (c *ClientWithResponses) GetAccountWithResponse(ctx context.Context, reqEdi
 	return ParseGetAccountResponse(rsp)
 }
 
+// UpdateAccountWithBodyWithResponse 改当前账号的国家/地区和语言
+//
+// 姓名和邮箱不在这里改：它们来自身份提供方，改了会在下一次登录同步时被覆盖回去。.
+//
+// Takes any type of body and a specified content type, and returns a wrapper object for the known response body format(s).
+//
+// Corresponds with PATCH /account/v1/me (the `UpdateAccount` operationId).
+func (c *ClientWithResponses) UpdateAccountWithBodyWithResponse(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*UpdateAccountResponse, error) {
+	rsp, err := c.UpdateAccountWithBody(ctx, contentType, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseUpdateAccountResponse(rsp)
+}
+
+// UpdateAccountWithResponse 改当前账号的国家/地区和语言
+//
+// 姓名和邮箱不在这里改：它们来自身份提供方，改了会在下一次登录同步时被覆盖回去。.
+//
+// Takes a body of the `application/json` content type, and returns a wrapper object for the known response body format(s).
+//
+// Corresponds with PATCH /account/v1/me (the `UpdateAccount` operationId).
+func (c *ClientWithResponses) UpdateAccountWithResponse(ctx context.Context, body UpdateAccountJSONRequestBody, reqEditors ...RequestEditorFn) (*UpdateAccountResponse, error) {
+	rsp, err := c.UpdateAccount(ctx, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseUpdateAccountResponse(rsp)
+}
+
 // ListConsentsWithResponse 列出我同意过的文件
 //
 // 全部记录，最新的在前，包括已经不是当前版本的那些。.
@@ -2973,6 +3212,39 @@ func ParseGetAccountResponse(rsp *http.Response) (*GetAccountResponse, error) {
 	}
 
 	response := &GetAccountResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest AccountResource
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && true:
+		var dest Error
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSONDefault = &dest
+
+	}
+
+	return response, nil
+}
+
+// ParseUpdateAccountResponse parses an HTTP response from a UpdateAccountWithResponse call
+func ParseUpdateAccountResponse(rsp *http.Response) (*UpdateAccountResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &UpdateAccountResponse{
 		Body:         bodyBytes,
 		HTTPResponse: rsp,
 	}

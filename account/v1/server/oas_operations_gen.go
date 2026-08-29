@@ -20,4 +20,5 @@ const (
 	ListProjectsOperation               OperationName = "ListProjects"
 	RegisterOperation                   OperationName = "Register"
 	SubmitIdentityVerificationOperation OperationName = "SubmitIdentityVerification"
+	UpdateAccountOperation              OperationName = "UpdateAccount"
 )

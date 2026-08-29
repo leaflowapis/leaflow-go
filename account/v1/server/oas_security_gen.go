@@ -48,6 +48,7 @@ var operationRolesBearerAuth = map[string][]string{
 	ListProjectsOperation:               []string{},
 	RegisterOperation:                   []string{},
 	SubmitIdentityVerificationOperation: []string{},
+	UpdateAccountOperation:              []string{},
 }
 
 // GetRolesForBearerAuth returns the required roles for the given operation.

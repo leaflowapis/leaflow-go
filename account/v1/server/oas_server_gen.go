@@ -127,6 +127,12 @@ type Handler interface {
 	//
 	// POST /account/v1/me/identity-verification
 	SubmitIdentityVerification(ctx context.Context, req *SubmitIdentityVerificationRequestBody) (*IdentityVerificationResource, error)
+	// UpdateAccount implements update-account operation.
+	//
+	// 姓名和邮箱不在这里改：它们来自身份提供方，改了会在下一次登录同步时被覆盖回去。.
+	//
+	// PATCH /account/v1/me
+	UpdateAccount(ctx context.Context, req *UpdateAccountRequestBody) (*AccountResource, error)
 	// NewError creates *ErrorStatusCode from error returned by handler.
 	//
 	// Used for common default response.

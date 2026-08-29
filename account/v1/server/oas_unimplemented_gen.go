@@ -174,6 +174,15 @@ func (UnimplementedHandler) SubmitIdentityVerification(ctx context.Context, req 
 	return r, ht.ErrNotImplemented
 }
 
+// UpdateAccount implements update-account operation.
+//
+// 姓名和邮箱不在这里改：它们来自身份提供方，改了会在下一次登录同步时被覆盖回去。.
+//
+// PATCH /account/v1/me
+func (UnimplementedHandler) UpdateAccount(ctx context.Context, req *UpdateAccountRequestBody) (r *AccountResource, _ error) {
+	return r, ht.ErrNotImplemented
+}
+
 // NewError creates *ErrorStatusCode from error returned by handler.
 //
 // Used for common default response.

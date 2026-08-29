@@ -12,7 +12,8 @@ import (
 
 var (
 	rn12AllowedHeaders = map[string]string{
-		"GET": "Authorization",
+		"GET":   "Authorization",
+		"PATCH": "Authorization,Content-Type",
 	}
 	rn1AllowedHeaders = map[string]string{
 		"GET":  "Authorization",
@@ -131,12 +132,14 @@ func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 					switch r.Method {
 					case "GET":
 						s.handleGetAccountRequest([0]string{}, elemIsEscaped, w, r)
+					case "PATCH":
+						s.handleUpdateAccountRequest([0]string{}, elemIsEscaped, w, r)
 					default:
 						s.notAllowed(w, r, notAllowedParams{
-							allowedMethods: "GET",
+							allowedMethods: "GET,PATCH",
 							allowedHeaders: rn12AllowedHeaders,
 							acceptPost:     "",
-							acceptPatch:    "",
+							acceptPatch:    "application/json",
 						})
 					}
 
@@ -601,6 +604,15 @@ func (s *Server) FindPath(method string, u *url.URL) (r Route, _ bool) {
 						r.name = GetAccountOperation
 						r.summary = "查看当前账号"
 						r.operationID = "get-account"
+						r.operationGroup = ""
+						r.pathPattern = "/account/v1/me"
+						r.args = args
+						r.count = 0
+						return r, true
+					case "PATCH":
+						r.name = UpdateAccountOperation
+						r.summary = "改当前账号的国家/地区和语言"
+						r.operationID = "update-account"
 						r.operationGroup = ""
 						r.pathPattern = "/account/v1/me"
 						r.args = args
