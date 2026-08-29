@@ -9,6 +9,42 @@ import (
 	"github.com/ogen-go/ogen/validate"
 )
 
+func (s *AttachmentResource) Validate() error {
+	if s == nil {
+		return validate.ErrNilPointer
+	}
+
+	var failures []validate.FieldError
+	if err := func() error {
+		if err := s.Kind.Validate(); err != nil {
+			return err
+		}
+		return nil
+	}(); err != nil {
+		failures = append(failures, validate.FieldError{
+			Name:  "kind",
+			Error: err,
+		})
+	}
+	if len(failures) > 0 {
+		return &validate.Error{Fields: failures}
+	}
+	return nil
+}
+
+func (s AttachmentResourceKind) Validate() error {
+	switch s {
+	case "image":
+		return nil
+	case "text":
+		return nil
+	case "binary":
+		return nil
+	default:
+		return errors.Errorf("invalid value: %v", s)
+	}
+}
+
 func (s *BindingResource) Validate() error {
 	if s == nil {
 		return validate.ErrNilPointer
@@ -1004,6 +1040,23 @@ func (s *ItemResource) Validate() error {
 			if err := func() error {
 				if value == nil {
 					return errors.New("nil is invalid value")
+				}
+				var failures []validate.FieldError
+				for i, elem := range value {
+					if err := func() error {
+						if err := elem.Validate(); err != nil {
+							return err
+						}
+						return nil
+					}(); err != nil {
+						failures = append(failures, validate.FieldError{
+							Name:  fmt.Sprintf("[%d]", i),
+							Error: err,
+						})
+					}
+				}
+				if len(failures) > 0 {
+					return &validate.Error{Fields: failures}
 				}
 				return nil
 			}(); err != nil {
@@ -2091,6 +2144,42 @@ func (s UpdateThreadRequestBodyApprovalMode) Validate() error {
 	case "manual":
 		return nil
 	case "yolo":
+		return nil
+	default:
+		return errors.Errorf("invalid value: %v", s)
+	}
+}
+
+func (s *UploadedResource) Validate() error {
+	if s == nil {
+		return validate.ErrNilPointer
+	}
+
+	var failures []validate.FieldError
+	if err := func() error {
+		if err := s.Kind.Validate(); err != nil {
+			return err
+		}
+		return nil
+	}(); err != nil {
+		failures = append(failures, validate.FieldError{
+			Name:  "kind",
+			Error: err,
+		})
+	}
+	if len(failures) > 0 {
+		return &validate.Error{Fields: failures}
+	}
+	return nil
+}
+
+func (s UploadedResourceKind) Validate() error {
+	switch s {
+	case "image":
+		return nil
+	case "text":
+		return nil
+	case "binary":
 		return nil
 	default:
 		return errors.Errorf("invalid value: %v", s)

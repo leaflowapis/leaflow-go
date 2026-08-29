@@ -783,7 +783,7 @@ func decodeDownloadAttachmentResponse(resp *http.Response) (res *DownloadAttachm
 			return res, errors.Wrap(err, "parse media type")
 		}
 		switch {
-		case ht.MatchContentType("image/*", ct):
+		case ht.MatchContentType("*/*", ct):
 			reader := resp.Body
 			b, err := io.ReadAll(reader)
 			if err != nil {
@@ -829,6 +829,43 @@ func decodeDownloadAttachmentResponse(resp *http.Response) (res *DownloadAttachm
 					return nil
 				}(); err != nil {
 					return res, errors.Wrap(err, "parse Cache-Control header")
+				}
+			}
+			// Parse "Content-Disposition" header.
+			{
+				cfg := uri.HeaderParameterDecodingConfig{
+					Name:    "Content-Disposition",
+					Explode: false,
+				}
+				if err := func() error {
+					if err := h.HasParam(cfg); err == nil {
+						if err := h.DecodeParam(cfg, func(d uri.Decoder) error {
+							var wrapperDotContentDispositionVal string
+							if err := func() error {
+								val, err := d.DecodeValue()
+								if err != nil {
+									return err
+								}
+
+								c, err := conv.ToString(val)
+								if err != nil {
+									return err
+								}
+
+								wrapperDotContentDispositionVal = c
+								return nil
+							}(); err != nil {
+								return err
+							}
+							wrapper.ContentDisposition.SetTo(wrapperDotContentDispositionVal)
+							return nil
+						}); err != nil {
+							return err
+						}
+					}
+					return nil
+				}(); err != nil {
+					return res, errors.Wrap(err, "parse Content-Disposition header")
 				}
 			}
 			// Parse "Content-Type" header.
@@ -2994,6 +3031,15 @@ func decodeUploadAttachmentResponse(resp *http.Response) (res *UploadedResource,
 					Err:         err,
 				}
 				return res, err
+			}
+			// Validate response.
+			if err := func() error {
+				if err := response.Validate(); err != nil {
+					return err
+				}
+				return nil
+			}(); err != nil {
+				return res, errors.Wrap(err, "validate")
 			}
 			return &response, nil
 		default:
