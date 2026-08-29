@@ -2427,6 +2427,10 @@ type RealtimeConnectionResource struct {
 	// The application key, which is public and identifies the deployment rather than the caller.
 	Key  string `json:"key"`
 	Port int64  `json:"port"`
+	// The channel carrying announcements. It is public: subscribing to it needs no authorization, because
+	// an announcement is addressed to everybody. The events on it carry an identifier and nothing else, so
+	// a client fetches the list and sees the announcements it is entitled to.
+	AnnouncementsChannel string `json:"announcements_channel"`
 	// The channel carrying events about the project in the token; empty when the token names no project.
 	ProjectChannel string `json:"project_channel"`
 	// Whether to connect over TLS.
@@ -2463,6 +2467,11 @@ func (s *RealtimeConnectionResource) GetKey() string {
 // GetPort returns the value of Port.
 func (s *RealtimeConnectionResource) GetPort() int64 {
 	return s.Port
+}
+
+// GetAnnouncementsChannel returns the value of AnnouncementsChannel.
+func (s *RealtimeConnectionResource) GetAnnouncementsChannel() string {
+	return s.AnnouncementsChannel
 }
 
 // GetProjectChannel returns the value of ProjectChannel.
@@ -2508,6 +2517,11 @@ func (s *RealtimeConnectionResource) SetKey(val string) {
 // SetPort sets the value of Port.
 func (s *RealtimeConnectionResource) SetPort(val int64) {
 	s.Port = val
+}
+
+// SetAnnouncementsChannel sets the value of AnnouncementsChannel.
+func (s *RealtimeConnectionResource) SetAnnouncementsChannel(val string) {
+	s.AnnouncementsChannel = val
 }
 
 // SetProjectChannel sets the value of ProjectChannel.

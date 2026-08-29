@@ -3831,6 +3831,10 @@ func (s *RealtimeConnectionResource) encodeFields(e *jx.Encoder) {
 		e.Int64(s.Port)
 	}
 	{
+		e.FieldStart("announcements_channel")
+		e.Str(s.AnnouncementsChannel)
+	}
+	{
 		e.FieldStart("project_channel")
 		e.Str(s.ProjectChannel)
 	}
@@ -3844,16 +3848,17 @@ func (s *RealtimeConnectionResource) encodeFields(e *jx.Encoder) {
 	}
 }
 
-var jsonFieldsNameOfRealtimeConnectionResource = [9]string{
+var jsonFieldsNameOfRealtimeConnectionResource = [10]string{
 	0: "auth_path",
 	1: "cluster",
 	2: "enabled",
 	3: "host",
 	4: "key",
 	5: "port",
-	6: "project_channel",
-	7: "secure",
-	8: "user_channel",
+	6: "announcements_channel",
+	7: "project_channel",
+	8: "secure",
+	9: "user_channel",
 }
 
 // Decode decodes RealtimeConnectionResource from json.
@@ -3937,8 +3942,20 @@ func (s *RealtimeConnectionResource) Decode(d *jx.Decoder) error {
 			}(); err != nil {
 				return errors.Wrap(err, "decode field \"port\"")
 			}
-		case "project_channel":
+		case "announcements_channel":
 			requiredBitSet[0] |= 1 << 6
+			if err := func() error {
+				v, err := d.Str()
+				s.AnnouncementsChannel = string(v)
+				if err != nil {
+					return err
+				}
+				return nil
+			}(); err != nil {
+				return errors.Wrap(err, "decode field \"announcements_channel\"")
+			}
+		case "project_channel":
+			requiredBitSet[0] |= 1 << 7
 			if err := func() error {
 				v, err := d.Str()
 				s.ProjectChannel = string(v)
@@ -3950,7 +3967,7 @@ func (s *RealtimeConnectionResource) Decode(d *jx.Decoder) error {
 				return errors.Wrap(err, "decode field \"project_channel\"")
 			}
 		case "secure":
-			requiredBitSet[0] |= 1 << 7
+			requiredBitSet[1] |= 1 << 0
 			if err := func() error {
 				v, err := d.Bool()
 				s.Secure = bool(v)
@@ -3962,7 +3979,7 @@ func (s *RealtimeConnectionResource) Decode(d *jx.Decoder) error {
 				return errors.Wrap(err, "decode field \"secure\"")
 			}
 		case "user_channel":
-			requiredBitSet[1] |= 1 << 0
+			requiredBitSet[1] |= 1 << 1
 			if err := func() error {
 				v, err := d.Str()
 				s.UserChannel = string(v)
@@ -3984,7 +4001,7 @@ func (s *RealtimeConnectionResource) Decode(d *jx.Decoder) error {
 	var failures []validate.FieldError
 	for i, mask := range [2]uint8{
 		0b11111111,
-		0b00000001,
+		0b00000011,
 	} {
 		if result := (requiredBitSet[i] & mask) ^ mask; result != 0 {
 			// Mask only required fields and check equality to mask using XOR.
