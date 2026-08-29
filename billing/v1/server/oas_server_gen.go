@@ -191,6 +191,32 @@ type Handler interface {
 	//
 	// POST /account/v1/billing-accounts/{accountKey}/offers/{offerKey}/purchase
 	PurchaseOffer(ctx context.Context, params PurchaseOfferParams) (*Purchase, error)
+	// QuoteUsage implements quote-usage operation.
+	//
+	// Prices a set of usages against whatever plan this account is currently on, and returns every
+	// intermediate step rather than a single number.
+	//
+	// # What it is for
+	//
+	// Showing someone what a machine will cost before they create it. The console asks for the usage a
+	// machine of that shape produces in an hour, and gets back what that hour costs them — on their
+	// plan, with their discounts.
+	//
+	// # Quantities are raw
+	//
+	// Seconds, token counts, GiB-seconds: the amount a service reports. Conversion happens here, which is
+	// why services keep no conversion tables of their own and why the console must not do the arithmetic
+	// itself.
+	//
+	// # It is an estimate
+	//
+	// The engine computes the real amount; this reproduces the same rules. Every step comes back for that
+	// reason — a single number that disagrees with the bill says nothing about which step was wrong.
+	//
+	// `404` means this account is not on any plan, and there is therefore nothing to price against.
+	//
+	// POST /account/v1/billing-accounts/{accountKey}/quote
+	QuoteUsage(ctx context.Context, req *QuoteRequest, params QuoteUsageParams) (*Quote, error)
 	// ReadBillingAccountBalance implements read-billing-account-balance operation.
 	//
 	// What is left on the account.
