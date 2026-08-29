@@ -139,9 +139,10 @@ type Handler interface {
 	//
 	// Returns notifications in reverse chronological order, newest first.
 	//
-	// Announcements published to the whole platform appear here alongside notifications addressed to you
-	// individually and are distinguished by `kind`. They are read and archived through the same
-	// operations.
+	// Announcements are not in this list. They are one row for the whole platform rather than one per
+	// reader, so they are listed, read and counted by their own operations under `/api/v1/announcements`.
+	// `kind` is on every item here for clients that merge the two lists themselves, and it is
+	// `notification` for everything this operation returns.
 	//
 	// GET /api/v1/notifications
 	ListNotifications(ctx context.Context, params ListNotificationsParams) (*LengthAwarePageNotificationResource, error)
@@ -168,6 +169,15 @@ type Handler interface {
 	//
 	// POST /api/v1/notifications/{notificationId}/read
 	MarkNotificationRead(ctx context.Context, params MarkNotificationReadParams) (*NotificationResource, error)
+	// MarkNotificationUnread implements mark-notification-unread operation.
+	//
+	// Puts it back in the unread count, which is what somebody wants after opening a thing by accident and
+	// needing it to stay in front of them.
+	//
+	// Marking one that is already unread succeeds and changes nothing.
+	//
+	// DELETE /api/v1/notifications/{notificationId}/read
+	MarkNotificationUnread(ctx context.Context, params MarkNotificationUnreadParams) (*NotificationResource, error)
 	// MarkNotificationsRead implements mark-notifications-read operation.
 	//
 	// Marks every listed notification as read. Notifications already read are left alone, and the
@@ -209,6 +219,19 @@ type Handler interface {
 	//
 	// POST /api/v1/credentials/{ticketId}/reveal
 	RevealCredential(ctx context.Context, params RevealCredentialParams) (*RevealedCredentialResource, error)
+	// UnarchiveNotification implements unarchive-notification operation.
+	//
+	// Returns it to the default listing. Archiving is one click away from anything in the list, so undoing
+	// it has to be too; without this operation a mistaken archive is permanent, and the notification stays
+	// reachable only by asking for archived ones.
+	//
+	// It does not mark it unread again: archiving marked it read, and that it was read is still true. Use
+	// `mark-notification-unread` for that.
+	//
+	// Unarchiving one that is not archived succeeds and changes nothing.
+	//
+	// DELETE /api/v1/notifications/{notificationId}/archive
+	UnarchiveNotification(ctx context.Context, params UnarchiveNotificationParams) (*NotificationResource, error)
 	// UpdateNotificationPreferences implements update-notification-preferences operation.
 	//
 	// Fields that are omitted are left alone.

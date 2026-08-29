@@ -160,9 +160,10 @@ type Invoker interface {
 	//
 	// Returns notifications in reverse chronological order, newest first.
 	//
-	// Announcements published to the whole platform appear here alongside notifications addressed to you
-	// individually and are distinguished by `kind`. They are read and archived through the same
-	// operations.
+	// Announcements are not in this list. They are one row for the whole platform rather than one per
+	// reader, so they are listed, read and counted by their own operations under `/api/v1/announcements`.
+	// `kind` is on every item here for clients that merge the two lists themselves, and it is
+	// `notification` for everything this operation returns.
 	//
 	// GET /api/v1/notifications
 	ListNotifications(ctx context.Context, params ListNotificationsParams) (*LengthAwarePageNotificationResource, error)
@@ -189,6 +190,15 @@ type Invoker interface {
 	//
 	// POST /api/v1/notifications/{notificationId}/read
 	MarkNotificationRead(ctx context.Context, params MarkNotificationReadParams) (*NotificationResource, error)
+	// MarkNotificationUnread invokes mark-notification-unread operation.
+	//
+	// Puts it back in the unread count, which is what somebody wants after opening a thing by accident and
+	// needing it to stay in front of them.
+	//
+	// Marking one that is already unread succeeds and changes nothing.
+	//
+	// DELETE /api/v1/notifications/{notificationId}/read
+	MarkNotificationUnread(ctx context.Context, params MarkNotificationUnreadParams) (*NotificationResource, error)
 	// MarkNotificationsRead invokes mark-notifications-read operation.
 	//
 	// Marks every listed notification as read. Notifications already read are left alone, and the
@@ -230,6 +240,19 @@ type Invoker interface {
 	//
 	// POST /api/v1/credentials/{ticketId}/reveal
 	RevealCredential(ctx context.Context, params RevealCredentialParams) (*RevealedCredentialResource, error)
+	// UnarchiveNotification invokes unarchive-notification operation.
+	//
+	// Returns it to the default listing. Archiving is one click away from anything in the list, so undoing
+	// it has to be too; without this operation a mistaken archive is permanent, and the notification stays
+	// reachable only by asking for archived ones.
+	//
+	// It does not mark it unread again: archiving marked it read, and that it was read is still true. Use
+	// `mark-notification-unread` for that.
+	//
+	// Unarchiving one that is not archived succeeds and changes nothing.
+	//
+	// DELETE /api/v1/notifications/{notificationId}/archive
+	UnarchiveNotification(ctx context.Context, params UnarchiveNotificationParams) (*NotificationResource, error)
 	// UpdateNotificationPreferences invokes update-notification-preferences operation.
 	//
 	// Fields that are omitted are left alone.
@@ -1845,9 +1868,10 @@ func (c *Client) sendListNotificationTypes(ctx context.Context) (res *Notificati
 //
 // Returns notifications in reverse chronological order, newest first.
 //
-// Announcements published to the whole platform appear here alongside notifications addressed to you
-// individually and are distinguished by `kind`. They are read and archived through the same
-// operations.
+// Announcements are not in this list. They are one row for the whole platform rather than one per
+// reader, so they are listed, read and counted by their own operations under `/api/v1/announcements`.
+// `kind` is on every item here for clients that merge the two lists themselves, and it is
+// `notification` for everything this operation returns.
 //
 // GET /api/v1/notifications
 func (c *Client) ListNotifications(ctx context.Context, params ListNotificationsParams) (*LengthAwarePageNotificationResource, error) {
@@ -2503,6 +2527,141 @@ func (c *Client) sendMarkNotificationRead(ctx context.Context, params MarkNotifi
 	return result, nil
 }
 
+// MarkNotificationUnread invokes mark-notification-unread operation.
+//
+// Puts it back in the unread count, which is what somebody wants after opening a thing by accident and
+// needing it to stay in front of them.
+//
+// Marking one that is already unread succeeds and changes nothing.
+//
+// DELETE /api/v1/notifications/{notificationId}/read
+func (c *Client) MarkNotificationUnread(ctx context.Context, params MarkNotificationUnreadParams) (*NotificationResource, error) {
+	res, err := c.sendMarkNotificationUnread(ctx, params)
+	return res, err
+}
+
+func (c *Client) sendMarkNotificationUnread(ctx context.Context, params MarkNotificationUnreadParams) (res *NotificationResource, err error) {
+	otelAttrs := []attribute.KeyValue{
+		otelogen.OperationID("mark-notification-unread"),
+		semconv.HTTPRequestMethodKey.String("DELETE"),
+		semconv.URLTemplateKey.String("/api/v1/notifications/{notificationId}/read"),
+	}
+	otelAttrs = append(otelAttrs, c.cfg.Attributes...)
+
+	// Run stopwatch.
+	startTime := time.Now()
+	defer func() {
+		// Use floating point division here for higher precision (instead of Millisecond method).
+		elapsedDuration := time.Since(startTime)
+		c.duration.Record(ctx, float64(elapsedDuration)/float64(time.Millisecond), metric.WithAttributes(otelAttrs...))
+	}()
+
+	// Increment request counter.
+	c.requests.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
+
+	// Start a span for this request.
+	ctx, span := c.cfg.Tracer.Start(ctx, MarkNotificationUnreadOperation,
+		trace.WithAttributes(otelAttrs...),
+		clientSpanKind,
+	)
+	// Track stage for error reporting.
+	var stage string
+	defer func() {
+		if err != nil {
+			span.RecordError(err)
+			span.SetStatus(codes.Error, stage)
+			c.errors.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
+		}
+		span.End()
+	}()
+
+	stage = "BuildURL"
+	u := uri.Clone(c.requestURL(ctx))
+	var pathParts [3]string
+	pathParts[0] = "/api/v1/notifications/"
+	{
+		// Encode "notificationId" parameter.
+		e := uri.NewPathEncoder(uri.PathEncoderConfig{
+			Param:   "notificationId",
+			Style:   uri.PathStyleSimple,
+			Explode: false,
+		})
+		if err := func() error {
+			return e.EncodeValue(conv.UUIDToString(params.NotificationId))
+		}(); err != nil {
+			return res, errors.Wrap(err, "encode path")
+		}
+		encoded, err := e.Result()
+		if err != nil {
+			return res, errors.Wrap(err, "encode path")
+		}
+		pathParts[1] = encoded
+	}
+	pathParts[2] = "/read"
+	uri.AddPathParts(u, pathParts[:]...)
+
+	stage = "EncodeRequest"
+	r, err := ht.NewRequest(ctx, "DELETE", u)
+	if err != nil {
+		return res, errors.Wrap(err, "create request")
+	}
+
+	{
+		type bitset = [1]uint8
+		var satisfied bitset
+		{
+			stage = "Security:BearerAuth"
+			switch err := c.securityBearerAuth(ctx, MarkNotificationUnreadOperation, r); {
+			case err == nil: // if NO error
+				satisfied[0] |= 1 << 0
+			case errors.Is(err, ogenerrors.ErrSkipClientSecurity):
+				// Skip this security.
+			default:
+				return res, errors.Wrap(err, "security \"BearerAuth\"")
+			}
+		}
+
+		if ok := func() bool {
+		nextRequirement:
+			for _, requirement := range []bitset{
+				{0b00000001},
+			} {
+				for i, mask := range requirement {
+					if satisfied[i]&mask != mask {
+						continue nextRequirement
+					}
+				}
+				return true
+			}
+			return false
+		}(); !ok {
+			return res, ogenerrors.ErrSecurityRequirementIsNotSatisfied
+		}
+	}
+
+	stage = "SendRequest"
+	resp, err := c.cfg.Client.Do(r)
+	if err != nil {
+		return res, errors.Wrap(err, "do request")
+	}
+	body := resp.Body
+	defer func() {
+		// Drain the body to EOF before closing, so the underlying
+		// connection can be reused by the Transport regardless of the
+		// response status code. See https://github.com/ogen-go/ogen/issues/1670.
+		_, _ = io.Copy(io.Discard, body)
+		_ = body.Close()
+	}()
+
+	stage = "DecodeResponse"
+	result, err := decodeMarkNotificationUnreadResponse(resp)
+	if err != nil {
+		return res, errors.Wrap(err, "decode response")
+	}
+
+	return result, nil
+}
+
 // MarkNotificationsRead invokes mark-notifications-read operation.
 //
 // Marks every listed notification as read. Notifications already read are left alone, and the
@@ -3006,6 +3165,145 @@ func (c *Client) sendRevealCredential(ctx context.Context, params RevealCredenti
 
 	stage = "DecodeResponse"
 	result, err := decodeRevealCredentialResponse(resp)
+	if err != nil {
+		return res, errors.Wrap(err, "decode response")
+	}
+
+	return result, nil
+}
+
+// UnarchiveNotification invokes unarchive-notification operation.
+//
+// Returns it to the default listing. Archiving is one click away from anything in the list, so undoing
+// it has to be too; without this operation a mistaken archive is permanent, and the notification stays
+// reachable only by asking for archived ones.
+//
+// It does not mark it unread again: archiving marked it read, and that it was read is still true. Use
+// `mark-notification-unread` for that.
+//
+// Unarchiving one that is not archived succeeds and changes nothing.
+//
+// DELETE /api/v1/notifications/{notificationId}/archive
+func (c *Client) UnarchiveNotification(ctx context.Context, params UnarchiveNotificationParams) (*NotificationResource, error) {
+	res, err := c.sendUnarchiveNotification(ctx, params)
+	return res, err
+}
+
+func (c *Client) sendUnarchiveNotification(ctx context.Context, params UnarchiveNotificationParams) (res *NotificationResource, err error) {
+	otelAttrs := []attribute.KeyValue{
+		otelogen.OperationID("unarchive-notification"),
+		semconv.HTTPRequestMethodKey.String("DELETE"),
+		semconv.URLTemplateKey.String("/api/v1/notifications/{notificationId}/archive"),
+	}
+	otelAttrs = append(otelAttrs, c.cfg.Attributes...)
+
+	// Run stopwatch.
+	startTime := time.Now()
+	defer func() {
+		// Use floating point division here for higher precision (instead of Millisecond method).
+		elapsedDuration := time.Since(startTime)
+		c.duration.Record(ctx, float64(elapsedDuration)/float64(time.Millisecond), metric.WithAttributes(otelAttrs...))
+	}()
+
+	// Increment request counter.
+	c.requests.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
+
+	// Start a span for this request.
+	ctx, span := c.cfg.Tracer.Start(ctx, UnarchiveNotificationOperation,
+		trace.WithAttributes(otelAttrs...),
+		clientSpanKind,
+	)
+	// Track stage for error reporting.
+	var stage string
+	defer func() {
+		if err != nil {
+			span.RecordError(err)
+			span.SetStatus(codes.Error, stage)
+			c.errors.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
+		}
+		span.End()
+	}()
+
+	stage = "BuildURL"
+	u := uri.Clone(c.requestURL(ctx))
+	var pathParts [3]string
+	pathParts[0] = "/api/v1/notifications/"
+	{
+		// Encode "notificationId" parameter.
+		e := uri.NewPathEncoder(uri.PathEncoderConfig{
+			Param:   "notificationId",
+			Style:   uri.PathStyleSimple,
+			Explode: false,
+		})
+		if err := func() error {
+			return e.EncodeValue(conv.UUIDToString(params.NotificationId))
+		}(); err != nil {
+			return res, errors.Wrap(err, "encode path")
+		}
+		encoded, err := e.Result()
+		if err != nil {
+			return res, errors.Wrap(err, "encode path")
+		}
+		pathParts[1] = encoded
+	}
+	pathParts[2] = "/archive"
+	uri.AddPathParts(u, pathParts[:]...)
+
+	stage = "EncodeRequest"
+	r, err := ht.NewRequest(ctx, "DELETE", u)
+	if err != nil {
+		return res, errors.Wrap(err, "create request")
+	}
+
+	{
+		type bitset = [1]uint8
+		var satisfied bitset
+		{
+			stage = "Security:BearerAuth"
+			switch err := c.securityBearerAuth(ctx, UnarchiveNotificationOperation, r); {
+			case err == nil: // if NO error
+				satisfied[0] |= 1 << 0
+			case errors.Is(err, ogenerrors.ErrSkipClientSecurity):
+				// Skip this security.
+			default:
+				return res, errors.Wrap(err, "security \"BearerAuth\"")
+			}
+		}
+
+		if ok := func() bool {
+		nextRequirement:
+			for _, requirement := range []bitset{
+				{0b00000001},
+			} {
+				for i, mask := range requirement {
+					if satisfied[i]&mask != mask {
+						continue nextRequirement
+					}
+				}
+				return true
+			}
+			return false
+		}(); !ok {
+			return res, ogenerrors.ErrSecurityRequirementIsNotSatisfied
+		}
+	}
+
+	stage = "SendRequest"
+	resp, err := c.cfg.Client.Do(r)
+	if err != nil {
+		return res, errors.Wrap(err, "do request")
+	}
+	body := resp.Body
+	defer func() {
+		// Drain the body to EOF before closing, so the underlying
+		// connection can be reused by the Transport regardless of the
+		// response status code. See https://github.com/ogen-go/ogen/issues/1670.
+		_, _ = io.Copy(io.Discard, body)
+		_ = body.Close()
+	}()
+
+	stage = "DecodeResponse"
+	result, err := decodeUnarchiveNotificationResponse(resp)
 	if err != nil {
 		return res, errors.Wrap(err, "decode response")
 	}

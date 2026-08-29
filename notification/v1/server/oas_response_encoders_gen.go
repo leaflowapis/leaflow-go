@@ -206,6 +206,19 @@ func encodeMarkNotificationReadResponse(response *NotificationResource, w http.R
 	return nil
 }
 
+func encodeMarkNotificationUnreadResponse(response *NotificationResource, w http.ResponseWriter, span trace.Span) error {
+	w.Header().Set("Content-Type", "application/json; charset=utf-8")
+	w.WriteHeader(200)
+
+	e := new(jx.Encoder)
+	response.Encode(e)
+	if _, err := e.WriteTo(w); err != nil {
+		return errors.Wrap(err, "write")
+	}
+
+	return nil
+}
+
 func encodeMarkNotificationsReadResponse(response *UnreadCountResource, w http.ResponseWriter, span trace.Span) error {
 	w.Header().Set("Content-Type", "application/json; charset=utf-8")
 	w.WriteHeader(200)
@@ -239,6 +252,19 @@ func encodeReadAnnouncementResponse(response *ReadAnnouncementNoContent, w http.
 }
 
 func encodeRevealCredentialResponse(response *RevealedCredentialResource, w http.ResponseWriter, span trace.Span) error {
+	w.Header().Set("Content-Type", "application/json; charset=utf-8")
+	w.WriteHeader(200)
+
+	e := new(jx.Encoder)
+	response.Encode(e)
+	if _, err := e.WriteTo(w); err != nil {
+		return errors.Wrap(err, "write")
+	}
+
+	return nil
+}
+
+func encodeUnarchiveNotificationResponse(response *NotificationResource, w http.ResponseWriter, span trace.Span) error {
 	w.Header().Set("Content-Type", "application/json; charset=utf-8")
 	w.WriteHeader(200)
 
