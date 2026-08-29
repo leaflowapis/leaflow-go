@@ -1967,6 +1967,19 @@ type ClientInterface interface {
 	// Corresponds with POST /api/v1/threads (the `CreateThread` operationId).
 	CreateThread(ctx context.Context, body CreateThreadJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
 
+	// DeleteThread Delete a conversation
+	//
+	// Removes the conversation from every list and makes it unreachable by id. The assistant can no longer find it either — neither by searching past conversations nor by reading one back.
+	//
+	// Deleting is not the same as archiving, and the two are not degrees of the same thing. An archived conversation is still there and still readable, it just takes no new input; a deleted one is gone from view. Archiving can be undone; this cannot.
+	//
+	// What survives is the record itself, because a conversation with this assistant is an account of what was done to real infrastructure — which machine was changed, which disk was removed. That record is kept even though nobody can reach it here.
+	//
+	// Fails while a turn is running: stop it first. Deleting an already deleted conversation succeeds and changes nothing.
+	//
+	// Corresponds with DELETE /api/v1/threads/{thread} (the `DeleteThread` operationId).
+	DeleteThread(ctx context.Context, thread string, reqEditors ...RequestEditorFn) (*http.Response, error)
+
 	// GetThread Fetch the conversation document
 	//
 	// The complete current state of a conversation, for the first render. Its `stream` gives the address and admission ticket for live output, and what that stream pushes are incremental edits to this same document, so the same rendering logic applies.
@@ -1976,7 +1989,9 @@ type ClientInterface interface {
 
 	// UpdateThreadWithBody Update conversation settings
 	//
-	// Changes the approval mode and archived state. A change takes effect from the next turn; a turn already running keeps the settings it started with.
+	// Changes the title, the approval mode, and whether the conversation is archived. A change to the approval mode takes effect from the next turn; a turn already running keeps the settings it started with.
+	//
+	// Archiving makes a conversation read-only: it stays in the list under "archived", stays readable, and the assistant can still find it when it searches past conversations — it just takes no new input. Unarchive it to continue. Archiving fails while a turn is running; stop it first.
 	//
 	// Takes any type of body and a specified content type.
 	//
@@ -1985,7 +2000,9 @@ type ClientInterface interface {
 
 	// UpdateThread Update conversation settings
 	//
-	// Changes the approval mode and archived state. A change takes effect from the next turn; a turn already running keeps the settings it started with.
+	// Changes the title, the approval mode, and whether the conversation is archived. A change to the approval mode takes effect from the next turn; a turn already running keeps the settings it started with.
+	//
+	// Archiving makes a conversation read-only: it stays in the list under "archived", stays readable, and the assistant can still find it when it searches past conversations — it just takes no new input. Unarchive it to continue. Archiving fails while a turn is running; stop it first.
 	//
 	// Takes a body of the `application/json` content type.
 	//
@@ -2722,6 +2739,29 @@ func (c *Client) CreateThread(ctx context.Context, body CreateThreadJSONRequestB
 	return c.Client.Do(req)
 }
 
+// DeleteThread Delete a conversation
+//
+// Removes the conversation from every list and makes it unreachable by id. The assistant can no longer find it either — neither by searching past conversations nor by reading one back.
+//
+// Deleting is not the same as archiving, and the two are not degrees of the same thing. An archived conversation is still there and still readable, it just takes no new input; a deleted one is gone from view. Archiving can be undone; this cannot.
+//
+// What survives is the record itself, because a conversation with this assistant is an account of what was done to real infrastructure — which machine was changed, which disk was removed. That record is kept even though nobody can reach it here.
+//
+// Fails while a turn is running: stop it first. Deleting an already deleted conversation succeeds and changes nothing.
+//
+// Corresponds with DELETE /api/v1/threads/{thread} (the `DeleteThread` operationId).
+func (c *Client) DeleteThread(ctx context.Context, thread string, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewDeleteThreadRequest(c.Server, thread)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
 // GetThread Fetch the conversation document
 //
 // The complete current state of a conversation, for the first render. Its `stream` gives the address and admission ticket for live output, and what that stream pushes are incremental edits to this same document, so the same rendering logic applies.
@@ -2741,7 +2781,9 @@ func (c *Client) GetThread(ctx context.Context, thread string, reqEditors ...Req
 
 // UpdateThreadWithBody Update conversation settings
 //
-// Changes the approval mode and archived state. A change takes effect from the next turn; a turn already running keeps the settings it started with.
+// Changes the title, the approval mode, and whether the conversation is archived. A change to the approval mode takes effect from the next turn; a turn already running keeps the settings it started with.
+//
+// Archiving makes a conversation read-only: it stays in the list under "archived", stays readable, and the assistant can still find it when it searches past conversations — it just takes no new input. Unarchive it to continue. Archiving fails while a turn is running; stop it first.
 //
 // Takes any type of body and a specified content type.
 //
@@ -2760,7 +2802,9 @@ func (c *Client) UpdateThreadWithBody(ctx context.Context, thread string, conten
 
 // UpdateThread Update conversation settings
 //
-// Changes the approval mode and archived state. A change takes effect from the next turn; a turn already running keeps the settings it started with.
+// Changes the title, the approval mode, and whether the conversation is archived. A change to the approval mode takes effect from the next turn; a turn already running keeps the settings it started with.
+//
+// Archiving makes a conversation read-only: it stays in the list under "archived", stays readable, and the assistant can still find it when it searches past conversations — it just takes no new input. Unarchive it to continue. Archiving fails while a turn is running; stop it first.
 //
 // Takes a body of the `application/json` content type.
 //
@@ -4218,6 +4262,40 @@ func NewCreateThreadRequestWithBody(server string, contentType string, body io.R
 	return req, nil
 }
 
+// NewDeleteThreadRequest constructs an http.Request for the DeleteThread method
+func NewDeleteThreadRequest(server string, thread string) (*http.Request, error) {
+	var err error
+
+	var pathParam0 string
+
+	pathParam0, err = runtime.StyleParamWithOptions("simple", false, "thread", thread, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: ""})
+	if err != nil {
+		return nil, err
+	}
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/api/v1/threads/%s", pathParam0)
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest(http.MethodDelete, queryURL.String(), nil)
+	if err != nil {
+		return nil, err
+	}
+
+	return req, nil
+}
+
 // NewGetThreadRequest constructs an http.Request for the GetThread method
 func NewGetThreadRequest(server string, thread string) (*http.Request, error) {
 	var err error
@@ -5070,6 +5148,21 @@ type ClientWithResponsesInterface interface {
 	// Corresponds with POST /api/v1/threads (the `CreateThread` operationId).
 	CreateThreadWithResponse(ctx context.Context, body CreateThreadJSONRequestBody, reqEditors ...RequestEditorFn) (*CreateThreadResponse, error)
 
+	// DeleteThreadWithResponse Delete a conversation
+	//
+	// Removes the conversation from every list and makes it unreachable by id. The assistant can no longer find it either — neither by searching past conversations nor by reading one back.
+	//
+	// Deleting is not the same as archiving, and the two are not degrees of the same thing. An archived conversation is still there and still readable, it just takes no new input; a deleted one is gone from view. Archiving can be undone; this cannot.
+	//
+	// What survives is the record itself, because a conversation with this assistant is an account of what was done to real infrastructure — which machine was changed, which disk was removed. That record is kept even though nobody can reach it here.
+	//
+	// Fails while a turn is running: stop it first. Deleting an already deleted conversation succeeds and changes nothing.
+	//
+	// Returns a wrapper object for the known response body format(s).
+	//
+	// Corresponds with DELETE /api/v1/threads/{thread} (the `DeleteThread` operationId).
+	DeleteThreadWithResponse(ctx context.Context, thread string, reqEditors ...RequestEditorFn) (*DeleteThreadResponse, error)
+
 	// GetThreadWithResponse Fetch the conversation document
 	//
 	// The complete current state of a conversation, for the first render. Its `stream` gives the address and admission ticket for live output, and what that stream pushes are incremental edits to this same document, so the same rendering logic applies.
@@ -5081,7 +5174,9 @@ type ClientWithResponsesInterface interface {
 
 	// UpdateThreadWithBodyWithResponse Update conversation settings
 	//
-	// Changes the approval mode and archived state. A change takes effect from the next turn; a turn already running keeps the settings it started with.
+	// Changes the title, the approval mode, and whether the conversation is archived. A change to the approval mode takes effect from the next turn; a turn already running keeps the settings it started with.
+	//
+	// Archiving makes a conversation read-only: it stays in the list under "archived", stays readable, and the assistant can still find it when it searches past conversations — it just takes no new input. Unarchive it to continue. Archiving fails while a turn is running; stop it first.
 	//
 	// Takes any type of body and a specified content type, and returns a wrapper object for the known response body format(s).
 	//
@@ -5090,7 +5185,9 @@ type ClientWithResponsesInterface interface {
 
 	// UpdateThreadWithResponse Update conversation settings
 	//
-	// Changes the approval mode and archived state. A change takes effect from the next turn; a turn already running keeps the settings it started with.
+	// Changes the title, the approval mode, and whether the conversation is archived. A change to the approval mode takes effect from the next turn; a turn already running keeps the settings it started with.
+	//
+	// Archiving makes a conversation read-only: it stays in the list under "archived", stays readable, and the assistant can still find it when it searches past conversations — it just takes no new input. Unarchive it to continue. Archiving fails while a turn is running; stop it first.
 	//
 	// Takes a body of the `application/json` content type, and returns a wrapper object for the known response body format(s).
 	//
@@ -6436,6 +6533,47 @@ func (r CreateThreadResponse) ContentType() string {
 	return ""
 }
 
+type DeleteThreadResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	// JSONDefault the response for an HTTP default `application/json` response
+	JSONDefault *Error
+}
+
+// GetJSONDefault returns the response for an HTTP default `application/json` response
+func (r DeleteThreadResponse) GetJSONDefault() *Error {
+	return r.JSONDefault
+}
+
+// GetBody returns the raw response body bytes
+func (r DeleteThreadResponse) GetBody() []byte {
+	return r.Body
+}
+
+// Status returns HTTPResponse.Status
+func (r DeleteThreadResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r DeleteThreadResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+// ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
+func (r DeleteThreadResponse) ContentType() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Header.Get("Content-Type")
+	}
+	return ""
+}
+
 type GetThreadResponse struct {
 	Body         []byte
 	HTTPResponse *http.Response
@@ -7453,6 +7591,27 @@ func (c *ClientWithResponses) CreateThreadWithResponse(ctx context.Context, body
 	return ParseCreateThreadResponse(rsp)
 }
 
+// DeleteThreadWithResponse Delete a conversation
+//
+// Removes the conversation from every list and makes it unreachable by id. The assistant can no longer find it either — neither by searching past conversations nor by reading one back.
+//
+// Deleting is not the same as archiving, and the two are not degrees of the same thing. An archived conversation is still there and still readable, it just takes no new input; a deleted one is gone from view. Archiving can be undone; this cannot.
+//
+// What survives is the record itself, because a conversation with this assistant is an account of what was done to real infrastructure — which machine was changed, which disk was removed. That record is kept even though nobody can reach it here.
+//
+// Fails while a turn is running: stop it first. Deleting an already deleted conversation succeeds and changes nothing.
+//
+// Returns a wrapper object for the known response body format(s).
+//
+// Corresponds with DELETE /api/v1/threads/{thread} (the `DeleteThread` operationId).
+func (c *ClientWithResponses) DeleteThreadWithResponse(ctx context.Context, thread string, reqEditors ...RequestEditorFn) (*DeleteThreadResponse, error) {
+	rsp, err := c.DeleteThread(ctx, thread, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseDeleteThreadResponse(rsp)
+}
+
 // GetThreadWithResponse Fetch the conversation document
 //
 // The complete current state of a conversation, for the first render. Its `stream` gives the address and admission ticket for live output, and what that stream pushes are incremental edits to this same document, so the same rendering logic applies.
@@ -7470,7 +7629,9 @@ func (c *ClientWithResponses) GetThreadWithResponse(ctx context.Context, thread 
 
 // UpdateThreadWithBodyWithResponse Update conversation settings
 //
-// Changes the approval mode and archived state. A change takes effect from the next turn; a turn already running keeps the settings it started with.
+// Changes the title, the approval mode, and whether the conversation is archived. A change to the approval mode takes effect from the next turn; a turn already running keeps the settings it started with.
+//
+// Archiving makes a conversation read-only: it stays in the list under "archived", stays readable, and the assistant can still find it when it searches past conversations — it just takes no new input. Unarchive it to continue. Archiving fails while a turn is running; stop it first.
 //
 // Takes any type of body and a specified content type, and returns a wrapper object for the known response body format(s).
 //
@@ -7485,7 +7646,9 @@ func (c *ClientWithResponses) UpdateThreadWithBodyWithResponse(ctx context.Conte
 
 // UpdateThreadWithResponse Update conversation settings
 //
-// Changes the approval mode and archived state. A change takes effect from the next turn; a turn already running keeps the settings it started with.
+// Changes the title, the approval mode, and whether the conversation is archived. A change to the approval mode takes effect from the next turn; a turn already running keeps the settings it started with.
+//
+// Archiving makes a conversation read-only: it stays in the list under "archived", stays readable, and the assistant can still find it when it searches past conversations — it just takes no new input. Unarchive it to continue. Archiving fails while a turn is running; stop it first.
 //
 // Takes a body of the `application/json` content type, and returns a wrapper object for the known response body format(s).
 //
@@ -8544,6 +8707,35 @@ func ParseCreateThreadResponse(rsp *http.Response) (*CreateThreadResponse, error
 			return nil, err
 		}
 		response.JSON201 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && true:
+		var dest Error
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSONDefault = &dest
+
+	}
+
+	return response, nil
+}
+
+// ParseDeleteThreadResponse parses an HTTP response from a DeleteThreadWithResponse call
+func ParseDeleteThreadResponse(rsp *http.Response) (*DeleteThreadResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &DeleteThreadResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case rsp.StatusCode == 204:
+		break // No content-type
 
 	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && true:
 		var dest Error

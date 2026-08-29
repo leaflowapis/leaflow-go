@@ -113,6 +113,24 @@ type Invoker interface {
 	//
 	// DELETE /api/v1/skills/{skill}
 	DeleteSkill(ctx context.Context, params DeleteSkillParams) error
+	// DeleteThread invokes delete-thread operation.
+	//
+	// Removes the conversation from every list and makes it unreachable by id. The assistant can no longer
+	// find it either — neither by searching past conversations nor by reading one back.
+	//
+	// Deleting is not the same as archiving, and the two are not degrees of the same thing. An archived
+	// conversation is still there and still readable, it just takes no new input; a deleted one is gone
+	// from view. Archiving can be undone; this cannot.
+	//
+	// What survives is the record itself, because a conversation with this assistant is an account of what
+	// was done to real infrastructure — which machine was changed, which disk was removed. That record
+	// is kept even though nobody can reach it here.
+	//
+	// Fails while a turn is running: stop it first. Deleting an already deleted conversation succeeds and
+	// changes nothing.
+	//
+	// DELETE /api/v1/threads/{thread}
+	DeleteThread(ctx context.Context, params DeleteThreadParams) error
 	// DownloadAttachment invokes download-attachment operation.
 	//
 	// Returns the original bytes for an attachment id. The response carries long-lived cache headers
@@ -312,8 +330,13 @@ type Invoker interface {
 	UpdateChannel(ctx context.Context, request *UpdateChannelRequestBody, params UpdateChannelParams) (*ChannelResource, error)
 	// UpdateThread invokes update-thread operation.
 	//
-	// Changes the approval mode and archived state. A change takes effect from the next turn; a turn
-	// already running keeps the settings it started with.
+	// Changes the title, the approval mode, and whether the conversation is archived. A change to the
+	// approval mode takes effect from the next turn; a turn already running keeps the settings it started
+	// with.
+	//
+	// Archiving makes a conversation read-only: it stays in the list under "archived", stays readable, and
+	// the assistant can still find it when it searches past conversations — it just takes no new input.
+	// Unarchive it to continue. Archiving fails while a turn is running; stop it first.
 	//
 	// PATCH /api/v1/threads/{thread}
 	UpdateThread(ctx context.Context, request *UpdateThreadRequestBody, params UpdateThreadParams) (*ThreadSummaryResource, error)
@@ -1877,6 +1900,149 @@ func (c *Client) sendDeleteSkill(ctx context.Context, params DeleteSkillParams) 
 
 	stage = "DecodeResponse"
 	result, err := decodeDeleteSkillResponse(resp)
+	if err != nil {
+		return res, errors.Wrap(err, "decode response")
+	}
+
+	return result, nil
+}
+
+// DeleteThread invokes delete-thread operation.
+//
+// Removes the conversation from every list and makes it unreachable by id. The assistant can no longer
+// find it either — neither by searching past conversations nor by reading one back.
+//
+// Deleting is not the same as archiving, and the two are not degrees of the same thing. An archived
+// conversation is still there and still readable, it just takes no new input; a deleted one is gone
+// from view. Archiving can be undone; this cannot.
+//
+// What survives is the record itself, because a conversation with this assistant is an account of what
+// was done to real infrastructure — which machine was changed, which disk was removed. That record
+// is kept even though nobody can reach it here.
+//
+// Fails while a turn is running: stop it first. Deleting an already deleted conversation succeeds and
+// changes nothing.
+//
+// DELETE /api/v1/threads/{thread}
+func (c *Client) DeleteThread(ctx context.Context, params DeleteThreadParams) error {
+	_, err := c.sendDeleteThread(ctx, params)
+	return err
+}
+
+func (c *Client) sendDeleteThread(ctx context.Context, params DeleteThreadParams) (res *DeleteThreadNoContent, err error) {
+	otelAttrs := []attribute.KeyValue{
+		otelogen.OperationID("delete-thread"),
+		semconv.HTTPRequestMethodKey.String("DELETE"),
+		semconv.URLTemplateKey.String("/api/v1/threads/{thread}"),
+	}
+	otelAttrs = append(otelAttrs, c.cfg.Attributes...)
+
+	// Run stopwatch.
+	startTime := time.Now()
+	defer func() {
+		// Use floating point division here for higher precision (instead of Millisecond method).
+		elapsedDuration := time.Since(startTime)
+		c.duration.Record(ctx, float64(elapsedDuration)/float64(time.Millisecond), metric.WithAttributes(otelAttrs...))
+	}()
+
+	// Increment request counter.
+	c.requests.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
+
+	// Start a span for this request.
+	ctx, span := c.cfg.Tracer.Start(ctx, DeleteThreadOperation,
+		trace.WithAttributes(otelAttrs...),
+		clientSpanKind,
+	)
+	// Track stage for error reporting.
+	var stage string
+	defer func() {
+		if err != nil {
+			span.RecordError(err)
+			span.SetStatus(codes.Error, stage)
+			c.errors.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
+		}
+		span.End()
+	}()
+
+	stage = "BuildURL"
+	u := uri.Clone(c.requestURL(ctx))
+	var pathParts [2]string
+	pathParts[0] = "/api/v1/threads/"
+	{
+		// Encode "thread" parameter.
+		e := uri.NewPathEncoder(uri.PathEncoderConfig{
+			Param:   "thread",
+			Style:   uri.PathStyleSimple,
+			Explode: false,
+		})
+		if err := func() error {
+			return e.EncodeValue(conv.StringToString(params.Thread))
+		}(); err != nil {
+			return res, errors.Wrap(err, "encode path")
+		}
+		encoded, err := e.Result()
+		if err != nil {
+			return res, errors.Wrap(err, "encode path")
+		}
+		pathParts[1] = encoded
+	}
+	uri.AddPathParts(u, pathParts[:]...)
+
+	stage = "EncodeRequest"
+	r, err := ht.NewRequest(ctx, "DELETE", u)
+	if err != nil {
+		return res, errors.Wrap(err, "create request")
+	}
+
+	{
+		type bitset = [1]uint8
+		var satisfied bitset
+		{
+			stage = "Security:BearerAuth"
+			switch err := c.securityBearerAuth(ctx, DeleteThreadOperation, r); {
+			case err == nil: // if NO error
+				satisfied[0] |= 1 << 0
+			case errors.Is(err, ogenerrors.ErrSkipClientSecurity):
+				// Skip this security.
+			default:
+				return res, errors.Wrap(err, "security \"BearerAuth\"")
+			}
+		}
+
+		if ok := func() bool {
+		nextRequirement:
+			for _, requirement := range []bitset{
+				{0b00000001},
+			} {
+				for i, mask := range requirement {
+					if satisfied[i]&mask != mask {
+						continue nextRequirement
+					}
+				}
+				return true
+			}
+			return false
+		}(); !ok {
+			return res, ogenerrors.ErrSecurityRequirementIsNotSatisfied
+		}
+	}
+
+	stage = "SendRequest"
+	resp, err := c.cfg.Client.Do(r)
+	if err != nil {
+		return res, errors.Wrap(err, "do request")
+	}
+	body := resp.Body
+	defer func() {
+		// Drain the body to EOF before closing, so the underlying
+		// connection can be reused by the Transport regardless of the
+		// response status code. See https://github.com/ogen-go/ogen/issues/1670.
+		_, _ = io.Copy(io.Discard, body)
+		_ = body.Close()
+	}()
+
+	stage = "DecodeResponse"
+	result, err := decodeDeleteThreadResponse(resp)
 	if err != nil {
 		return res, errors.Wrap(err, "decode response")
 	}
@@ -5245,8 +5411,13 @@ func (c *Client) sendUpdateChannel(ctx context.Context, request *UpdateChannelRe
 
 // UpdateThread invokes update-thread operation.
 //
-// Changes the approval mode and archived state. A change takes effect from the next turn; a turn
-// already running keeps the settings it started with.
+// Changes the title, the approval mode, and whether the conversation is archived. A change to the
+// approval mode takes effect from the next turn; a turn already running keeps the settings it started
+// with.
+//
+// Archiving makes a conversation read-only: it stays in the list under "archived", stays readable, and
+// the assistant can still find it when it searches past conversations — it just takes no new input.
+// Unarchive it to continue. Archiving fails while a turn is running; stop it first.
 //
 // PATCH /api/v1/threads/{thread}
 func (c *Client) UpdateThread(ctx context.Context, request *UpdateThreadRequestBody, params UpdateThreadParams) (*ThreadSummaryResource, error) {

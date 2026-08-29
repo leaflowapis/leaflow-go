@@ -17,6 +17,7 @@ const (
 	DeleteChannelOperation           OperationName = "DeleteChannel"
 	DeleteMemoryOperation            OperationName = "DeleteMemory"
 	DeleteSkillOperation             OperationName = "DeleteSkill"
+	DeleteThreadOperation            OperationName = "DeleteThread"
 	DownloadAttachmentOperation      OperationName = "DownloadAttachment"
 	GetBindingOperation              OperationName = "GetBinding"
 	GetChannelOperation              OperationName = "GetChannel"

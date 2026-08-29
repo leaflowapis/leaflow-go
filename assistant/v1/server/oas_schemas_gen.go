@@ -1742,6 +1742,9 @@ type DeleteMemoryNoContent struct{}
 // DeleteSkillNoContent is response for DeleteSkill operation.
 type DeleteSkillNoContent struct{}
 
+// DeleteThreadNoContent is response for DeleteThread operation.
+type DeleteThreadNoContent struct{}
+
 // Ref: #/components/schemas/DocumentResource
 type DocumentResource struct {
 	Context ContextResource    `json:"context"`
