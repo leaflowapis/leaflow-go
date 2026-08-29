@@ -20,6 +20,7 @@ const (
 	ListOrdersOperation                      OperationName = "ListOrders"
 	ListTopUpsOperation                      OperationName = "ListTopUps"
 	PurchaseOfferOperation                   OperationName = "PurchaseOffer"
+	QuoteProjectUsageOperation               OperationName = "QuoteProjectUsage"
 	QuoteUsageOperation                      OperationName = "QuoteUsage"
 	ReadBillingAccountBalanceOperation       OperationName = "ReadBillingAccountBalance"
 	ReadPaymentMethodOperation               OperationName = "ReadPaymentMethod"

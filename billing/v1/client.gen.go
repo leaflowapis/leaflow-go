@@ -847,6 +847,9 @@ type QuoteUsageJSONRequestBody = QuoteRequest
 // StartTopUpJSONRequestBody defines body for StartTopUp for application/json ContentType.
 type StartTopUpJSONRequestBody = StartTopUpRequestBody
 
+// QuoteProjectUsageJSONRequestBody defines body for QuoteProjectUsage for application/json ContentType.
+type QuoteProjectUsageJSONRequestBody = QuoteRequest
+
 // RequestEditorFn is the function signature for the RequestEditor callback function
 type RequestEditorFn func(ctx context.Context, req *http.Request) error
 
@@ -1404,6 +1407,76 @@ type ClientInterface interface {
 	//
 	// Corresponds with GET /account/v1/billing-accounts/{accountKey}/top-ups/{paymentId} (the `ReadTopUp` operationId).
 	ReadTopUp(ctx context.Context, accountKey AccountKey, paymentId string, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// QuoteProjectUsageWithBody What a usage would cost in this project
+	//
+	// Prices a set of usages against whatever plan pays for this project, and returns **every
+	// intermediate step** rather than a single number.
+	//
+	// # Why by project rather than by billing account
+	//
+	// The page that needs this is the one where somebody is about to create a machine, and all it has
+	// is a project. Which account pays for that project is billing's own bookkeeping — asking the
+	// caller to resolve it first would put that mapping into a page that otherwise has no business
+	// knowing accounts exist.
+	//
+	// # Quantities are raw
+	//
+	// Seconds, token counts, GiB-seconds: the amount a service reports. Conversion happens here, which
+	// is why services keep no conversion tables of their own and why the caller must not do the
+	// arithmetic itself.
+	//
+	// Name each usage by `service` and `product_id` rather than by key: the key is a hash of a
+	// convention that has exactly one implementation on purpose.
+	//
+	// # It is an estimate
+	//
+	// The engine computes the real amount; this reproduces the same rules. Every step comes back for
+	// that reason — a single number that disagrees with the bill says nothing about which step was
+	// wrong.
+	//
+	// `404` means the project has no billing account, or its account is on no plan. Both are worth
+	// showing: nothing can be created in either case, because admission refuses it.
+	//
+	// Takes any type of body and a specified content type.
+	//
+	// Corresponds with POST /account/v1/projects/{projectId}/quote (the `QuoteProjectUsage` operationId).
+	QuoteProjectUsageWithBody(ctx context.Context, projectId openapi_types.UUID, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// QuoteProjectUsage What a usage would cost in this project
+	//
+	// Prices a set of usages against whatever plan pays for this project, and returns **every
+	// intermediate step** rather than a single number.
+	//
+	// # Why by project rather than by billing account
+	//
+	// The page that needs this is the one where somebody is about to create a machine, and all it has
+	// is a project. Which account pays for that project is billing's own bookkeeping — asking the
+	// caller to resolve it first would put that mapping into a page that otherwise has no business
+	// knowing accounts exist.
+	//
+	// # Quantities are raw
+	//
+	// Seconds, token counts, GiB-seconds: the amount a service reports. Conversion happens here, which
+	// is why services keep no conversion tables of their own and why the caller must not do the
+	// arithmetic itself.
+	//
+	// Name each usage by `service` and `product_id` rather than by key: the key is a hash of a
+	// convention that has exactly one implementation on purpose.
+	//
+	// # It is an estimate
+	//
+	// The engine computes the real amount; this reproduces the same rules. Every step comes back for
+	// that reason — a single number that disagrees with the bill says nothing about which step was
+	// wrong.
+	//
+	// `404` means the project has no billing account, or its account is on no plan. Both are worth
+	// showing: nothing can be created in either case, because admission refuses it.
+	//
+	// Takes a body of the `application/json` content type.
+	//
+	// Corresponds with POST /account/v1/projects/{projectId}/quote (the `QuoteProjectUsage` operationId).
+	QuoteProjectUsage(ctx context.Context, projectId openapi_types.UUID, body QuoteProjectUsageJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
 }
 
 // ListBillingAccounts List my billing accounts
@@ -2160,6 +2233,96 @@ func (c *Client) StartTopUp(ctx context.Context, accountKey AccountKey, body Sta
 // Corresponds with GET /account/v1/billing-accounts/{accountKey}/top-ups/{paymentId} (the `ReadTopUp` operationId).
 func (c *Client) ReadTopUp(ctx context.Context, accountKey AccountKey, paymentId string, reqEditors ...RequestEditorFn) (*http.Response, error) {
 	req, err := NewReadTopUpRequest(c.Server, accountKey, paymentId)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+// QuoteProjectUsageWithBody What a usage would cost in this project
+//
+// Prices a set of usages against whatever plan pays for this project, and returns **every
+// intermediate step** rather than a single number.
+//
+// # Why by project rather than by billing account
+//
+// The page that needs this is the one where somebody is about to create a machine, and all it has
+// is a project. Which account pays for that project is billing's own bookkeeping — asking the
+// caller to resolve it first would put that mapping into a page that otherwise has no business
+// knowing accounts exist.
+//
+// # Quantities are raw
+//
+// Seconds, token counts, GiB-seconds: the amount a service reports. Conversion happens here, which
+// is why services keep no conversion tables of their own and why the caller must not do the
+// arithmetic itself.
+//
+// Name each usage by `service` and `product_id` rather than by key: the key is a hash of a
+// convention that has exactly one implementation on purpose.
+//
+// # It is an estimate
+//
+// The engine computes the real amount; this reproduces the same rules. Every step comes back for
+// that reason — a single number that disagrees with the bill says nothing about which step was
+// wrong.
+//
+// `404` means the project has no billing account, or its account is on no plan. Both are worth
+// showing: nothing can be created in either case, because admission refuses it.
+//
+// Takes any type of body and a specified content type.
+//
+// Corresponds with POST /account/v1/projects/{projectId}/quote (the `QuoteProjectUsage` operationId).
+func (c *Client) QuoteProjectUsageWithBody(ctx context.Context, projectId openapi_types.UUID, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewQuoteProjectUsageRequestWithBody(c.Server, projectId, contentType, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+// QuoteProjectUsage What a usage would cost in this project
+//
+// Prices a set of usages against whatever plan pays for this project, and returns **every
+// intermediate step** rather than a single number.
+//
+// # Why by project rather than by billing account
+//
+// The page that needs this is the one where somebody is about to create a machine, and all it has
+// is a project. Which account pays for that project is billing's own bookkeeping — asking the
+// caller to resolve it first would put that mapping into a page that otherwise has no business
+// knowing accounts exist.
+//
+// # Quantities are raw
+//
+// Seconds, token counts, GiB-seconds: the amount a service reports. Conversion happens here, which
+// is why services keep no conversion tables of their own and why the caller must not do the
+// arithmetic itself.
+//
+// Name each usage by `service` and `product_id` rather than by key: the key is a hash of a
+// convention that has exactly one implementation on purpose.
+//
+// # It is an estimate
+//
+// The engine computes the real amount; this reproduces the same rules. Every step comes back for
+// that reason — a single number that disagrees with the bill says nothing about which step was
+// wrong.
+//
+// `404` means the project has no billing account, or its account is on no plan. Both are worth
+// showing: nothing can be created in either case, because admission refuses it.
+//
+// Takes a body of the `application/json` content type.
+//
+// Corresponds with POST /account/v1/projects/{projectId}/quote (the `QuoteProjectUsage` operationId).
+func (c *Client) QuoteProjectUsage(ctx context.Context, projectId openapi_types.UUID, body QuoteProjectUsageJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewQuoteProjectUsageRequest(c.Server, projectId, body)
 	if err != nil {
 		return nil, err
 	}
@@ -3116,6 +3279,53 @@ func NewReadTopUpRequest(server string, accountKey AccountKey, paymentId string)
 	return req, nil
 }
 
+// NewQuoteProjectUsageRequest calls the generic QuoteProjectUsage builder with application/json body
+func NewQuoteProjectUsageRequest(server string, projectId openapi_types.UUID, body QuoteProjectUsageJSONRequestBody) (*http.Request, error) {
+	var bodyReader io.Reader
+	buf, err := json.Marshal(body)
+	if err != nil {
+		return nil, err
+	}
+	bodyReader = bytes.NewReader(buf)
+	return NewQuoteProjectUsageRequestWithBody(server, projectId, "application/json", bodyReader)
+}
+
+// NewQuoteProjectUsageRequestWithBody constructs an http.Request for the QuoteProjectUsage method, with any body, and a specified content type
+func NewQuoteProjectUsageRequestWithBody(server string, projectId openapi_types.UUID, contentType string, body io.Reader) (*http.Request, error) {
+	var err error
+
+	var pathParam0 string
+
+	pathParam0, err = runtime.StyleParamWithOptions("simple", false, "projectId", projectId, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: "uuid"})
+	if err != nil {
+		return nil, err
+	}
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/account/v1/projects/%s/quote", pathParam0)
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest(http.MethodPost, queryURL.String(), body)
+	if err != nil {
+		return nil, err
+	}
+
+	req.Header.Add("Content-Type", contentType)
+
+	return req, nil
+}
+
 func (c *Client) applyEditors(ctx context.Context, req *http.Request, additionalEditors []RequestEditorFn) error {
 	for _, r := range c.RequestEditors {
 		if err := r(ctx, req); err != nil {
@@ -3683,6 +3893,76 @@ type ClientWithResponsesInterface interface {
 	//
 	// Corresponds with GET /account/v1/billing-accounts/{accountKey}/top-ups/{paymentId} (the `ReadTopUp` operationId).
 	ReadTopUpWithResponse(ctx context.Context, accountKey AccountKey, paymentId string, reqEditors ...RequestEditorFn) (*ReadTopUpResponse, error)
+
+	// QuoteProjectUsageWithBodyWithResponse What a usage would cost in this project
+	//
+	// Prices a set of usages against whatever plan pays for this project, and returns **every
+	// intermediate step** rather than a single number.
+	//
+	// # Why by project rather than by billing account
+	//
+	// The page that needs this is the one where somebody is about to create a machine, and all it has
+	// is a project. Which account pays for that project is billing's own bookkeeping — asking the
+	// caller to resolve it first would put that mapping into a page that otherwise has no business
+	// knowing accounts exist.
+	//
+	// # Quantities are raw
+	//
+	// Seconds, token counts, GiB-seconds: the amount a service reports. Conversion happens here, which
+	// is why services keep no conversion tables of their own and why the caller must not do the
+	// arithmetic itself.
+	//
+	// Name each usage by `service` and `product_id` rather than by key: the key is a hash of a
+	// convention that has exactly one implementation on purpose.
+	//
+	// # It is an estimate
+	//
+	// The engine computes the real amount; this reproduces the same rules. Every step comes back for
+	// that reason — a single number that disagrees with the bill says nothing about which step was
+	// wrong.
+	//
+	// `404` means the project has no billing account, or its account is on no plan. Both are worth
+	// showing: nothing can be created in either case, because admission refuses it.
+	//
+	// Takes any type of body and a specified content type, and returns a wrapper object for the known response body format(s).
+	//
+	// Corresponds with POST /account/v1/projects/{projectId}/quote (the `QuoteProjectUsage` operationId).
+	QuoteProjectUsageWithBodyWithResponse(ctx context.Context, projectId openapi_types.UUID, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*QuoteProjectUsageResponse, error)
+
+	// QuoteProjectUsageWithResponse What a usage would cost in this project
+	//
+	// Prices a set of usages against whatever plan pays for this project, and returns **every
+	// intermediate step** rather than a single number.
+	//
+	// # Why by project rather than by billing account
+	//
+	// The page that needs this is the one where somebody is about to create a machine, and all it has
+	// is a project. Which account pays for that project is billing's own bookkeeping — asking the
+	// caller to resolve it first would put that mapping into a page that otherwise has no business
+	// knowing accounts exist.
+	//
+	// # Quantities are raw
+	//
+	// Seconds, token counts, GiB-seconds: the amount a service reports. Conversion happens here, which
+	// is why services keep no conversion tables of their own and why the caller must not do the
+	// arithmetic itself.
+	//
+	// Name each usage by `service` and `product_id` rather than by key: the key is a hash of a
+	// convention that has exactly one implementation on purpose.
+	//
+	// # It is an estimate
+	//
+	// The engine computes the real amount; this reproduces the same rules. Every step comes back for
+	// that reason — a single number that disagrees with the bill says nothing about which step was
+	// wrong.
+	//
+	// `404` means the project has no billing account, or its account is on no plan. Both are worth
+	// showing: nothing can be created in either case, because admission refuses it.
+	//
+	// Takes a body of the `application/json` content type, and returns a wrapper object for the known response body format(s).
+	//
+	// Corresponds with POST /account/v1/projects/{projectId}/quote (the `QuoteProjectUsage` operationId).
+	QuoteProjectUsageWithResponse(ctx context.Context, projectId openapi_types.UUID, body QuoteProjectUsageJSONRequestBody, reqEditors ...RequestEditorFn) (*QuoteProjectUsageResponse, error)
 }
 
 type ListBillingAccountsResponse struct {
@@ -4830,6 +5110,54 @@ func (r ReadTopUpResponse) ContentType() string {
 	return ""
 }
 
+type QuoteProjectUsageResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	// JSON200 the response for an HTTP 200 `application/json` response
+	JSON200 *Quote
+	// JSONDefault the response for an HTTP default `application/json` response
+	JSONDefault *Error
+}
+
+// GetJSON200 returns the response for an HTTP 200 `application/json` response
+func (r QuoteProjectUsageResponse) GetJSON200() *Quote {
+	return r.JSON200
+}
+
+// GetJSONDefault returns the response for an HTTP default `application/json` response
+func (r QuoteProjectUsageResponse) GetJSONDefault() *Error {
+	return r.JSONDefault
+}
+
+// GetBody returns the raw response body bytes
+func (r QuoteProjectUsageResponse) GetBody() []byte {
+	return r.Body
+}
+
+// Status returns HTTPResponse.Status
+func (r QuoteProjectUsageResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r QuoteProjectUsageResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+// ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
+func (r QuoteProjectUsageResponse) ContentType() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Header.Get("Content-Type")
+	}
+	return ""
+}
+
 // ListBillingAccountsWithResponse List my billing accounts
 //
 // Every billing account belonging to the caller, with the projects each one currently pays for.
@@ -5520,6 +5848,88 @@ func (c *ClientWithResponses) ReadTopUpWithResponse(ctx context.Context, account
 		return nil, err
 	}
 	return ParseReadTopUpResponse(rsp)
+}
+
+// QuoteProjectUsageWithBodyWithResponse What a usage would cost in this project
+//
+// Prices a set of usages against whatever plan pays for this project, and returns **every
+// intermediate step** rather than a single number.
+//
+// # Why by project rather than by billing account
+//
+// The page that needs this is the one where somebody is about to create a machine, and all it has
+// is a project. Which account pays for that project is billing's own bookkeeping — asking the
+// caller to resolve it first would put that mapping into a page that otherwise has no business
+// knowing accounts exist.
+//
+// # Quantities are raw
+//
+// Seconds, token counts, GiB-seconds: the amount a service reports. Conversion happens here, which
+// is why services keep no conversion tables of their own and why the caller must not do the
+// arithmetic itself.
+//
+// Name each usage by `service` and `product_id` rather than by key: the key is a hash of a
+// convention that has exactly one implementation on purpose.
+//
+// # It is an estimate
+//
+// The engine computes the real amount; this reproduces the same rules. Every step comes back for
+// that reason — a single number that disagrees with the bill says nothing about which step was
+// wrong.
+//
+// `404` means the project has no billing account, or its account is on no plan. Both are worth
+// showing: nothing can be created in either case, because admission refuses it.
+//
+// Takes any type of body and a specified content type, and returns a wrapper object for the known response body format(s).
+//
+// Corresponds with POST /account/v1/projects/{projectId}/quote (the `QuoteProjectUsage` operationId).
+func (c *ClientWithResponses) QuoteProjectUsageWithBodyWithResponse(ctx context.Context, projectId openapi_types.UUID, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*QuoteProjectUsageResponse, error) {
+	rsp, err := c.QuoteProjectUsageWithBody(ctx, projectId, contentType, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseQuoteProjectUsageResponse(rsp)
+}
+
+// QuoteProjectUsageWithResponse What a usage would cost in this project
+//
+// Prices a set of usages against whatever plan pays for this project, and returns **every
+// intermediate step** rather than a single number.
+//
+// # Why by project rather than by billing account
+//
+// The page that needs this is the one where somebody is about to create a machine, and all it has
+// is a project. Which account pays for that project is billing's own bookkeeping — asking the
+// caller to resolve it first would put that mapping into a page that otherwise has no business
+// knowing accounts exist.
+//
+// # Quantities are raw
+//
+// Seconds, token counts, GiB-seconds: the amount a service reports. Conversion happens here, which
+// is why services keep no conversion tables of their own and why the caller must not do the
+// arithmetic itself.
+//
+// Name each usage by `service` and `product_id` rather than by key: the key is a hash of a
+// convention that has exactly one implementation on purpose.
+//
+// # It is an estimate
+//
+// The engine computes the real amount; this reproduces the same rules. Every step comes back for
+// that reason — a single number that disagrees with the bill says nothing about which step was
+// wrong.
+//
+// `404` means the project has no billing account, or its account is on no plan. Both are worth
+// showing: nothing can be created in either case, because admission refuses it.
+//
+// Takes a body of the `application/json` content type, and returns a wrapper object for the known response body format(s).
+//
+// Corresponds with POST /account/v1/projects/{projectId}/quote (the `QuoteProjectUsage` operationId).
+func (c *ClientWithResponses) QuoteProjectUsageWithResponse(ctx context.Context, projectId openapi_types.UUID, body QuoteProjectUsageJSONRequestBody, reqEditors ...RequestEditorFn) (*QuoteProjectUsageResponse, error) {
+	rsp, err := c.QuoteProjectUsage(ctx, projectId, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseQuoteProjectUsageResponse(rsp)
 }
 
 // ParseListBillingAccountsResponse parses an HTTP response from a ListBillingAccountsWithResponse call
@@ -6293,6 +6703,39 @@ func ParseReadTopUpResponse(rsp *http.Response) (*ReadTopUpResponse, error) {
 	switch {
 	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
 		var dest TopUpStatus
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && true:
+		var dest Error
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSONDefault = &dest
+
+	}
+
+	return response, nil
+}
+
+// ParseQuoteProjectUsageResponse parses an HTTP response from a QuoteProjectUsageWithResponse call
+func ParseQuoteProjectUsageResponse(rsp *http.Response) (*QuoteProjectUsageResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &QuoteProjectUsageResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest Quote
 		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
 			return nil, err
 		}

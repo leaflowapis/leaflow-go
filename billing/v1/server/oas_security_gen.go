@@ -51,6 +51,7 @@ var operationRolesBearerAuth = map[string][]string{
 	ListOrdersOperation:                      []string{},
 	ListTopUpsOperation:                      []string{},
 	PurchaseOfferOperation:                   []string{},
+	QuoteProjectUsageOperation:               []string{},
 	QuoteUsageOperation:                      []string{},
 	ReadBillingAccountBalanceOperation:       []string{},
 	ReadPaymentMethodOperation:               []string{},
