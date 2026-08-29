@@ -96,6 +96,15 @@ func (UnimplementedHandler) GetInvoice(ctx context.Context, params GetInvoicePar
 	return r, ht.ErrNotImplemented
 }
 
+// GetOrder implements get-order operation.
+//
+// Each line names what was asked for and how much of it. This is the only route that carries them.
+//
+// GET /account/v1/billing-accounts/{accountKey}/orders/{orderId}
+func (UnimplementedHandler) GetOrder(ctx context.Context, params GetOrderParams) (r *Order, _ error) {
+	return r, ht.ErrNotImplemented
+}
+
 // ListBillingAccounts implements list-billing-accounts operation.
 //
 // Every billing account belonging to the caller, with the projects each one currently pays for.
@@ -162,6 +171,22 @@ func (UnimplementedHandler) ListInvoices(ctx context.Context, params ListInvoice
 //
 // GET /account/v1/billing-accounts/{accountKey}/offers
 func (UnimplementedHandler) ListOffers(ctx context.Context, params ListOffersParams) (r *OfferList, _ error) {
+	return r, ht.ErrNotImplemented
+}
+
+// ListOrders implements list-orders operation.
+//
+// Every provisioning request made against the projects this account pays for, newest first.
+//
+// An order that never went through stays here on purpose. Removing it would leave nothing to look at
+// in exactly the case someone wants to look: a resource was asked for, was not delivered, and the
+// question is what happened.
+//
+// The list carries no lines. An order has only a handful, but shipping them on every page means
+// carrying data no column shows.
+//
+// GET /account/v1/billing-accounts/{accountKey}/orders
+func (UnimplementedHandler) ListOrders(ctx context.Context, params ListOrdersParams) (r *OrderList, _ error) {
 	return r, ht.ErrNotImplemented
 }
 

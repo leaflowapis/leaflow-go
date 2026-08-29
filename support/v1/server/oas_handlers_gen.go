@@ -2114,8 +2114,8 @@ func (s *Server) handleListMaintenancesRequest(args [0]string, argsEscaped bool,
 // reached before a project has been selected. It returns a narrower shape than the authenticated
 // operations and is not paginated.
 //
-// Platform announcements are not served here. They belong to the notification service, which owns
-// announcements for the whole platform.
+// Platform announcements are not part of this API. They are served by the notification service, which
+// owns platform-wide announcements.
 //
 // GET /api/v1/notices
 func (s *Server) handleListNoticesRequest(args [0]string, argsEscaped bool, w http.ResponseWriter, r *http.Request) {
