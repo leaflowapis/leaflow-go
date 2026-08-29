@@ -1444,6 +1444,13 @@ type UpdateChannelRequestBodySenderPolicy string
 type UpdateThreadRequestBody struct {
 	ApprovalMode *UpdateThreadRequestBodyApprovalMode `json:"approvalMode,omitempty"`
 	Archived     *bool                                `json:"archived,omitempty"`
+
+	// Title Rename this conversation.
+	//
+	// A conversation names itself: the first message gives it a working title, and the assistant replaces that with a better one once it has answered. Setting this stops both — a name somebody chose is never overwritten by one that was generated.
+	//
+	// Renaming does not move the conversation in the list. The order answers "which conversation has something new in it", and editing a title is not that.
+	Title *string `json:"title,omitempty"`
 }
 
 // UpdateThreadRequestBodyApprovalMode defines model for UpdateThreadRequestBody.ApprovalMode.

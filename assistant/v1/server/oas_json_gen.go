@@ -11429,11 +11429,18 @@ func (s *UpdateThreadRequestBody) encodeFields(e *jx.Encoder) {
 			s.Archived.Encode(e)
 		}
 	}
+	{
+		if s.Title.Set {
+			e.FieldStart("title")
+			s.Title.Encode(e)
+		}
+	}
 }
 
-var jsonFieldsNameOfUpdateThreadRequestBody = [2]string{
+var jsonFieldsNameOfUpdateThreadRequestBody = [3]string{
 	0: "approvalMode",
 	1: "archived",
+	2: "title",
 }
 
 // Decode decodes UpdateThreadRequestBody from json.
@@ -11463,6 +11470,16 @@ func (s *UpdateThreadRequestBody) Decode(d *jx.Decoder) error {
 				return nil
 			}(); err != nil {
 				return errors.Wrap(err, "decode field \"archived\"")
+			}
+		case "title":
+			if err := func() error {
+				s.Title.Reset()
+				if err := s.Title.Decode(d); err != nil {
+					return err
+				}
+				return nil
+			}(); err != nil {
+				return errors.Wrap(err, "decode field \"title\"")
 			}
 		default:
 			return errors.Errorf("unexpected field %q", k)

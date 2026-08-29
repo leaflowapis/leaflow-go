@@ -6564,6 +6564,15 @@ func (s *UpdateChannelRequestBodySenderPolicy) UnmarshalText(data []byte) error 
 type UpdateThreadRequestBody struct {
 	ApprovalMode OptUpdateThreadRequestBodyApprovalMode `json:"approvalMode"`
 	Archived     OptBool                                `json:"archived"`
+	// Rename this conversation.
+	//
+	// A conversation names itself: the first message gives it a working title, and the assistant replaces
+	// that with a better one once it has answered. Setting this stops both — a name somebody chose is
+	// never overwritten by one that was generated.
+	//
+	// Renaming does not move the conversation in the list. The order answers "which conversation has
+	// something new in it", and editing a title is not that.
+	Title OptString `json:"title"`
 }
 
 // GetApprovalMode returns the value of ApprovalMode.
@@ -6576,6 +6585,11 @@ func (s *UpdateThreadRequestBody) GetArchived() OptBool {
 	return s.Archived
 }
 
+// GetTitle returns the value of Title.
+func (s *UpdateThreadRequestBody) GetTitle() OptString {
+	return s.Title
+}
+
 // SetApprovalMode sets the value of ApprovalMode.
 func (s *UpdateThreadRequestBody) SetApprovalMode(val OptUpdateThreadRequestBodyApprovalMode) {
 	s.ApprovalMode = val
@@ -6584,6 +6598,11 @@ func (s *UpdateThreadRequestBody) SetApprovalMode(val OptUpdateThreadRequestBody
 // SetArchived sets the value of Archived.
 func (s *UpdateThreadRequestBody) SetArchived(val OptBool) {
 	s.Archived = val
+}
+
+// SetTitle sets the value of Title.
+func (s *UpdateThreadRequestBody) SetTitle(val OptString) {
+	s.Title = val
 }
 
 type UpdateThreadRequestBodyApprovalMode string
