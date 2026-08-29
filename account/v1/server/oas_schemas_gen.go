@@ -70,7 +70,13 @@ type AccountResource struct {
 	// 身份提供方签发的 subject.
 	ID string `json:"id"`
 	// 来自登录信息，可能为空.
-	LastName          string                `json:"last_name"`
+	LastName string `json:"last_name"`
+	// ISO 3166-1
+	// alpha-2。这两个字段是后加的，注册时才开始要求填——已经注册过的人这里
+	// 是空串，让他们在设置里补，补之前一切照常。.
+	Country OptString `json:"country"`
+	// 为空表示没设过，那时按请求头（Accept-Language）走，两者都没有才用平台默认.
+	Locale            OptString             `json:"locale"`
 	PendingAgreements []AgreementResource   `json:"pending_agreements"`
 	Status            AccountResourceStatus `json:"status"`
 }
@@ -103,6 +109,16 @@ func (s *AccountResource) GetID() string {
 // GetLastName returns the value of LastName.
 func (s *AccountResource) GetLastName() string {
 	return s.LastName
+}
+
+// GetCountry returns the value of Country.
+func (s *AccountResource) GetCountry() OptString {
+	return s.Country
+}
+
+// GetLocale returns the value of Locale.
+func (s *AccountResource) GetLocale() OptString {
+	return s.Locale
 }
 
 // GetPendingAgreements returns the value of PendingAgreements.
@@ -143,6 +159,16 @@ func (s *AccountResource) SetID(val string) {
 // SetLastName sets the value of LastName.
 func (s *AccountResource) SetLastName(val string) {
 	s.LastName = val
+}
+
+// SetCountry sets the value of Country.
+func (s *AccountResource) SetCountry(val OptString) {
+	s.Country = val
+}
+
+// SetLocale sets the value of Locale.
+func (s *AccountResource) SetLocale(val OptString) {
+	s.Locale = val
 }
 
 // SetPendingAgreements sets the value of PendingAgreements.
@@ -1099,6 +1125,58 @@ func (s *ListProjectsStatus) UnmarshalText(data []byte) error {
 	}
 }
 
+// 界面和邮件用哪种语言。它和 country
+// 是两件事，不能互相推——一个在香港的人可能读简体，
+// 一个在美国的人可能读繁体。.
+// Ref: #/components/schemas/Locale
+type Locale string
+
+const (
+	LocaleZhHans   Locale = "zh-Hans"
+	LocaleZhHantHK Locale = "zh-Hant-HK"
+	LocaleEn       Locale = "en"
+)
+
+// AllValues returns all Locale values.
+func (Locale) AllValues() []Locale {
+	return []Locale{
+		LocaleZhHans,
+		LocaleZhHantHK,
+		LocaleEn,
+	}
+}
+
+// MarshalText implements encoding.TextMarshaler.
+func (s Locale) MarshalText() ([]byte, error) {
+	switch s {
+	case LocaleZhHans:
+		return []byte(s), nil
+	case LocaleZhHantHK:
+		return []byte(s), nil
+	case LocaleEn:
+		return []byte(s), nil
+	default:
+		return nil, errors.Errorf("invalid value: %q", s)
+	}
+}
+
+// UnmarshalText implements encoding.TextUnmarshaler.
+func (s *Locale) UnmarshalText(data []byte) error {
+	switch Locale(data) {
+	case LocaleZhHans:
+		*s = LocaleZhHans
+		return nil
+	case LocaleZhHantHK:
+		*s = LocaleZhHantHK
+		return nil
+	case LocaleEn:
+		*s = LocaleEn
+		return nil
+	default:
+		return errors.Errorf("invalid value: %q", data)
+	}
+}
+
 // NewNilDateTime returns new NilDateTime with value set to v.
 func NewNilDateTime(v time.Time) NilDateTime {
 	return NilDateTime{
@@ -1276,6 +1354,52 @@ func (o OptListProjectsStatus) Get() (v ListProjectsStatus, ok bool) {
 
 // Or returns value if set, or given parameter if does not.
 func (o OptListProjectsStatus) Or(d ListProjectsStatus) ListProjectsStatus {
+	if v, ok := o.Get(); ok {
+		return v
+	}
+	return d
+}
+
+// NewOptLocale returns new OptLocale with value set to v.
+func NewOptLocale(v Locale) OptLocale {
+	return OptLocale{
+		Value: v,
+		Set:   true,
+	}
+}
+
+// OptLocale is optional Locale.
+type OptLocale struct {
+	Value Locale
+	Set   bool
+}
+
+// IsSet returns true if OptLocale was set.
+func (o OptLocale) IsSet() bool { return o.Set }
+
+// Reset unsets value.
+func (o *OptLocale) Reset() {
+	var v Locale
+	o.Value = v
+	o.Set = false
+}
+
+// SetTo sets value to v.
+func (o *OptLocale) SetTo(v Locale) {
+	o.Set = true
+	o.Value = v
+}
+
+// Get returns value and boolean that denotes whether value was set.
+func (o OptLocale) Get() (v Locale, ok bool) {
+	if !o.Set {
+		return v, false
+	}
+	return o.Value, true
+}
+
+// Or returns value if set, or given parameter if does not.
+func (o OptLocale) Or(d Locale) Locale {
 	if v, ok := o.Get(); ok {
 		return v
 	}
@@ -1625,6 +1749,12 @@ func (s *ProjectTokenResponseBody) SetTokenType(val string) {
 type RegisterRequestBody struct {
 	// 当前生效的必签文件全部要在里面，版本号要和 GET /api/v1/agreements 给的一致.
 	Consents []ConsentBody `json:"consents"`
+	// ISO 3166-1
+	// alpha-2（CN、HK、US）。必须是现实世界里真实存在的国家或地区——EU、ZZ
+	// 这类在标准里有位置但不是国家的代码会被拒。存代码不存名字：名字是本地化的，存下来
+	// 的那份只会是某一种语言的。.
+	Country string `json:"country"`
+	Locale  Locale `json:"locale"`
 }
 
 // GetConsents returns the value of Consents.
@@ -1632,9 +1762,29 @@ func (s *RegisterRequestBody) GetConsents() []ConsentBody {
 	return s.Consents
 }
 
+// GetCountry returns the value of Country.
+func (s *RegisterRequestBody) GetCountry() string {
+	return s.Country
+}
+
+// GetLocale returns the value of Locale.
+func (s *RegisterRequestBody) GetLocale() Locale {
+	return s.Locale
+}
+
 // SetConsents sets the value of Consents.
 func (s *RegisterRequestBody) SetConsents(val []ConsentBody) {
 	s.Consents = val
+}
+
+// SetCountry sets the value of Country.
+func (s *RegisterRequestBody) SetCountry(val string) {
+	s.Country = val
+}
+
+// SetLocale sets the value of Locale.
+func (s *RegisterRequestBody) SetLocale(val Locale) {
+	s.Locale = val
 }
 
 // Ref: #/components/schemas/SettingsResource
@@ -1813,4 +1963,33 @@ func (s *SubmitIdentityVerificationRequestBody) SetIDNumber(val string) {
 // SetRealName sets the value of RealName.
 func (s *SubmitIdentityVerificationRequestBody) SetRealName(val string) {
 	s.RealName = val
+}
+
+// 两个字段都是「不传就不动」。设置页上它们是两个独立的控件，用户可能只改其中一个；做成
+// 整体替换的话，一次只想改语言的提交会把国家清掉，而那种丢失不报错。.
+// Ref: #/components/schemas/UpdateAccountRequestBody
+type UpdateAccountRequestBody struct {
+	// 同注册时那个 country.
+	Country OptString `json:"country"`
+	Locale  OptLocale `json:"locale"`
+}
+
+// GetCountry returns the value of Country.
+func (s *UpdateAccountRequestBody) GetCountry() OptString {
+	return s.Country
+}
+
+// GetLocale returns the value of Locale.
+func (s *UpdateAccountRequestBody) GetLocale() OptLocale {
+	return s.Locale
+}
+
+// SetCountry sets the value of Country.
+func (s *UpdateAccountRequestBody) SetCountry(val OptString) {
+	s.Country = val
+}
+
+// SetLocale sets the value of Locale.
+func (s *UpdateAccountRequestBody) SetLocale(val OptLocale) {
+	s.Locale = val
 }
