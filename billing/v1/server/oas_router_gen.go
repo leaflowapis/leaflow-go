@@ -19,10 +19,10 @@ var (
 		"GET": "Authorization",
 		"PUT": "Authorization,Content-Type",
 	}
-	rn24AllowedHeaders = map[string]string{
+	rn28AllowedHeaders = map[string]string{
 		"GET": "Authorization",
 	}
-	rn31AllowedHeaders = map[string]string{
+	rn35AllowedHeaders = map[string]string{
 		"POST": "Authorization",
 	}
 	rn12AllowedHeaders = map[string]string{
@@ -49,7 +49,7 @@ var (
 	rn11AllowedHeaders = map[string]string{
 		"GET": "Authorization",
 	}
-	rn26AllowedHeaders = map[string]string{
+	rn30AllowedHeaders = map[string]string{
 		"GET":  "Authorization",
 		"POST": "Authorization",
 	}
@@ -57,10 +57,10 @@ var (
 		"DELETE": "Authorization",
 		"PUT":    "Authorization",
 	}
-	rn23AllowedHeaders = map[string]string{
+	rn27AllowedHeaders = map[string]string{
 		"POST": "Authorization,Content-Type",
 	}
-	rn27AllowedHeaders = map[string]string{
+	rn31AllowedHeaders = map[string]string{
 		"GET": "Authorization",
 	}
 	rn6AllowedHeaders = map[string]string{
@@ -70,8 +70,11 @@ var (
 		"GET":  "Authorization",
 		"POST": "Authorization,Content-Type",
 	}
-	rn29AllowedHeaders = map[string]string{
+	rn33AllowedHeaders = map[string]string{
 		"GET": "Authorization",
+	}
+	rn26AllowedHeaders = map[string]string{
+		"POST": "Authorization,Content-Type",
 	}
 )
 
@@ -114,64 +117,37 @@ func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 			break
 		}
 		switch elem[0] {
-		case '/': // Prefix: "/account/v1/billing-accounts"
+		case '/': // Prefix: "/account/v1/"
 
-			if l := len("/account/v1/billing-accounts"); len(elem) >= l && elem[0:l] == "/account/v1/billing-accounts" {
+			if l := len("/account/v1/"); len(elem) >= l && elem[0:l] == "/account/v1/" {
 				elem = elem[l:]
 			} else {
 				break
 			}
 
 			if len(elem) == 0 {
-				switch r.Method {
-				case "GET":
-					s.handleListBillingAccountsRequest([0]string{}, elemIsEscaped, w, r)
-				case "POST":
-					s.handleCreateBillingAccountRequest([0]string{}, elemIsEscaped, w, r)
-				default:
-					s.notAllowed(w, r, notAllowedParams{
-						allowedMethods: "GET,POST",
-						allowedHeaders: rn7AllowedHeaders,
-						acceptPost:     "application/json",
-						acceptPatch:    "",
-					})
-				}
-
-				return
+				break
 			}
 			switch elem[0] {
-			case '/': // Prefix: "/"
+			case 'b': // Prefix: "billing-accounts"
 
-				if l := len("/"); len(elem) >= l && elem[0:l] == "/" {
+				if l := len("billing-accounts"); len(elem) >= l && elem[0:l] == "billing-accounts" {
 					elem = elem[l:]
 				} else {
 					break
 				}
 
-				// Param: "accountKey"
-				// Match until "/"
-				idx := strings.IndexByte(elem, '/')
-				if idx < 0 {
-					idx = len(elem)
-				}
-				args[0] = elem[:idx]
-				elem = elem[idx:]
-
 				if len(elem) == 0 {
 					switch r.Method {
 					case "GET":
-						s.handleGetBillingAccountRequest([1]string{
-							args[0],
-						}, elemIsEscaped, w, r)
-					case "PUT":
-						s.handleUpdateBillingAccountRequest([1]string{
-							args[0],
-						}, elemIsEscaped, w, r)
+						s.handleListBillingAccountsRequest([0]string{}, elemIsEscaped, w, r)
+					case "POST":
+						s.handleCreateBillingAccountRequest([0]string{}, elemIsEscaped, w, r)
 					default:
 						s.notAllowed(w, r, notAllowedParams{
-							allowedMethods: "GET,PUT",
-							allowedHeaders: rn2AllowedHeaders,
-							acceptPost:     "",
+							allowedMethods: "GET,POST",
+							allowedHeaders: rn7AllowedHeaders,
+							acceptPost:     "application/json",
 							acceptPatch:    "",
 						})
 					}
@@ -187,13 +163,40 @@ func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 						break
 					}
 
+					// Param: "accountKey"
+					// Match until "/"
+					idx := strings.IndexByte(elem, '/')
+					if idx < 0 {
+						idx = len(elem)
+					}
+					args[0] = elem[:idx]
+					elem = elem[idx:]
+
 					if len(elem) == 0 {
-						break
+						switch r.Method {
+						case "GET":
+							s.handleGetBillingAccountRequest([1]string{
+								args[0],
+							}, elemIsEscaped, w, r)
+						case "PUT":
+							s.handleUpdateBillingAccountRequest([1]string{
+								args[0],
+							}, elemIsEscaped, w, r)
+						default:
+							s.notAllowed(w, r, notAllowedParams{
+								allowedMethods: "GET,PUT",
+								allowedHeaders: rn2AllowedHeaders,
+								acceptPost:     "",
+								acceptPatch:    "",
+							})
+						}
+
+						return
 					}
 					switch elem[0] {
-					case 'b': // Prefix: "b"
+					case '/': // Prefix: "/"
 
-						if l := len("b"); len(elem) >= l && elem[0:l] == "b" {
+						if l := len("/"); len(elem) >= l && elem[0:l] == "/" {
 							elem = elem[l:]
 						} else {
 							break
@@ -203,289 +206,145 @@ func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 							break
 						}
 						switch elem[0] {
-						case 'a': // Prefix: "alance"
+						case 'b': // Prefix: "b"
 
-							if l := len("alance"); len(elem) >= l && elem[0:l] == "alance" {
+							if l := len("b"); len(elem) >= l && elem[0:l] == "b" {
 								elem = elem[l:]
 							} else {
 								break
 							}
 
 							if len(elem) == 0 {
-								// Leaf node.
-								switch r.Method {
-								case "GET":
-									s.handleReadBillingAccountBalanceRequest([1]string{
-										args[0],
-									}, elemIsEscaped, w, r)
-								default:
-									s.notAllowed(w, r, notAllowedParams{
-										allowedMethods: "GET",
-										allowedHeaders: rn24AllowedHeaders,
-										acceptPost:     "",
-										acceptPatch:    "",
-									})
-								}
-
-								return
-							}
-
-						case 'i': // Prefix: "illing-portal"
-
-							if l := len("illing-portal"); len(elem) >= l && elem[0:l] == "illing-portal" {
-								elem = elem[l:]
-							} else {
 								break
-							}
-
-							if len(elem) == 0 {
-								// Leaf node.
-								switch r.Method {
-								case "POST":
-									s.handleStartBillingPortalRequest([1]string{
-										args[0],
-									}, elemIsEscaped, w, r)
-								default:
-									s.notAllowed(w, r, notAllowedParams{
-										allowedMethods: "POST",
-										allowedHeaders: rn31AllowedHeaders,
-										acceptPost:     "",
-										acceptPatch:    "",
-									})
-								}
-
-								return
-							}
-
-						}
-
-					case 'c': // Prefix: "c"
-
-						if l := len("c"); len(elem) >= l && elem[0:l] == "c" {
-							elem = elem[l:]
-						} else {
-							break
-						}
-
-						if len(elem) == 0 {
-							break
-						}
-						switch elem[0] {
-						case 'h': // Prefix: "harges"
-
-							if l := len("harges"); len(elem) >= l && elem[0:l] == "harges" {
-								elem = elem[l:]
-							} else {
-								break
-							}
-
-							if len(elem) == 0 {
-								// Leaf node.
-								switch r.Method {
-								case "GET":
-									s.handleListChargesRequest([1]string{
-										args[0],
-									}, elemIsEscaped, w, r)
-								default:
-									s.notAllowed(w, r, notAllowedParams{
-										allowedMethods: "GET",
-										allowedHeaders: rn12AllowedHeaders,
-										acceptPost:     "",
-										acceptPatch:    "",
-									})
-								}
-
-								return
-							}
-
-						case 'r': // Prefix: "redit-transactions"
-
-							if l := len("redit-transactions"); len(elem) >= l && elem[0:l] == "redit-transactions" {
-								elem = elem[l:]
-							} else {
-								break
-							}
-
-							if len(elem) == 0 {
-								// Leaf node.
-								switch r.Method {
-								case "GET":
-									s.handleListCreditTransactionsRequest([1]string{
-										args[0],
-									}, elemIsEscaped, w, r)
-								default:
-									s.notAllowed(w, r, notAllowedParams{
-										allowedMethods: "GET",
-										allowedHeaders: rn14AllowedHeaders,
-										acceptPost:     "",
-										acceptPatch:    "",
-									})
-								}
-
-								return
-							}
-
-						}
-
-					case 'i': // Prefix: "invoices"
-
-						if l := len("invoices"); len(elem) >= l && elem[0:l] == "invoices" {
-							elem = elem[l:]
-						} else {
-							break
-						}
-
-						if len(elem) == 0 {
-							switch r.Method {
-							case "GET":
-								s.handleListInvoicesRequest([1]string{
-									args[0],
-								}, elemIsEscaped, w, r)
-							default:
-								s.notAllowed(w, r, notAllowedParams{
-									allowedMethods: "GET",
-									allowedHeaders: rn15AllowedHeaders,
-									acceptPost:     "",
-									acceptPatch:    "",
-								})
-							}
-
-							return
-						}
-						switch elem[0] {
-						case '/': // Prefix: "/"
-
-							if l := len("/"); len(elem) >= l && elem[0:l] == "/" {
-								elem = elem[l:]
-							} else {
-								break
-							}
-
-							// Param: "invoiceId"
-							// Leaf parameter, slashes are prohibited
-							idx := strings.IndexByte(elem, '/')
-							if idx >= 0 {
-								break
-							}
-							args[1] = elem
-							elem = ""
-
-							if len(elem) == 0 {
-								// Leaf node.
-								switch r.Method {
-								case "GET":
-									s.handleGetInvoiceRequest([2]string{
-										args[0],
-										args[1],
-									}, elemIsEscaped, w, r)
-								default:
-									s.notAllowed(w, r, notAllowedParams{
-										allowedMethods: "GET",
-										allowedHeaders: rn9AllowedHeaders,
-										acceptPost:     "",
-										acceptPatch:    "",
-									})
-								}
-
-								return
-							}
-
-						}
-
-					case 'o': // Prefix: "o"
-
-						if l := len("o"); len(elem) >= l && elem[0:l] == "o" {
-							elem = elem[l:]
-						} else {
-							break
-						}
-
-						if len(elem) == 0 {
-							break
-						}
-						switch elem[0] {
-						case 'f': // Prefix: "ffers"
-
-							if l := len("ffers"); len(elem) >= l && elem[0:l] == "ffers" {
-								elem = elem[l:]
-							} else {
-								break
-							}
-
-							if len(elem) == 0 {
-								switch r.Method {
-								case "GET":
-									s.handleListOffersRequest([1]string{
-										args[0],
-									}, elemIsEscaped, w, r)
-								default:
-									s.notAllowed(w, r, notAllowedParams{
-										allowedMethods: "GET",
-										allowedHeaders: rn17AllowedHeaders,
-										acceptPost:     "",
-										acceptPatch:    "",
-									})
-								}
-
-								return
 							}
 							switch elem[0] {
-							case '/': // Prefix: "/"
+							case 'a': // Prefix: "alance"
 
-								if l := len("/"); len(elem) >= l && elem[0:l] == "/" {
+								if l := len("alance"); len(elem) >= l && elem[0:l] == "alance" {
 									elem = elem[l:]
 								} else {
 									break
 								}
-
-								// Param: "offerKey"
-								// Match until "/"
-								idx := strings.IndexByte(elem, '/')
-								if idx < 0 {
-									idx = len(elem)
-								}
-								args[1] = elem[:idx]
-								elem = elem[idx:]
 
 								if len(elem) == 0 {
+									// Leaf node.
+									switch r.Method {
+									case "GET":
+										s.handleReadBillingAccountBalanceRequest([1]string{
+											args[0],
+										}, elemIsEscaped, w, r)
+									default:
+										s.notAllowed(w, r, notAllowedParams{
+											allowedMethods: "GET",
+											allowedHeaders: rn28AllowedHeaders,
+											acceptPost:     "",
+											acceptPatch:    "",
+										})
+									}
+
+									return
+								}
+
+							case 'i': // Prefix: "illing-portal"
+
+								if l := len("illing-portal"); len(elem) >= l && elem[0:l] == "illing-portal" {
+									elem = elem[l:]
+								} else {
 									break
 								}
-								switch elem[0] {
-								case '/': // Prefix: "/purchase"
 
-									if l := len("/purchase"); len(elem) >= l && elem[0:l] == "/purchase" {
-										elem = elem[l:]
-									} else {
-										break
+								if len(elem) == 0 {
+									// Leaf node.
+									switch r.Method {
+									case "POST":
+										s.handleStartBillingPortalRequest([1]string{
+											args[0],
+										}, elemIsEscaped, w, r)
+									default:
+										s.notAllowed(w, r, notAllowedParams{
+											allowedMethods: "POST",
+											allowedHeaders: rn35AllowedHeaders,
+											acceptPost:     "",
+											acceptPatch:    "",
+										})
 									}
 
-									if len(elem) == 0 {
-										// Leaf node.
-										switch r.Method {
-										case "POST":
-											s.handlePurchaseOfferRequest([2]string{
-												args[0],
-												args[1],
-											}, elemIsEscaped, w, r)
-										default:
-											s.notAllowed(w, r, notAllowedParams{
-												allowedMethods: "POST",
-												allowedHeaders: rn22AllowedHeaders,
-												acceptPost:     "",
-												acceptPatch:    "",
-											})
-										}
-
-										return
-									}
-
+									return
 								}
 
 							}
 
-						case 'r': // Prefix: "rders"
+						case 'c': // Prefix: "c"
 
-							if l := len("rders"); len(elem) >= l && elem[0:l] == "rders" {
+							if l := len("c"); len(elem) >= l && elem[0:l] == "c" {
+								elem = elem[l:]
+							} else {
+								break
+							}
+
+							if len(elem) == 0 {
+								break
+							}
+							switch elem[0] {
+							case 'h': // Prefix: "harges"
+
+								if l := len("harges"); len(elem) >= l && elem[0:l] == "harges" {
+									elem = elem[l:]
+								} else {
+									break
+								}
+
+								if len(elem) == 0 {
+									// Leaf node.
+									switch r.Method {
+									case "GET":
+										s.handleListChargesRequest([1]string{
+											args[0],
+										}, elemIsEscaped, w, r)
+									default:
+										s.notAllowed(w, r, notAllowedParams{
+											allowedMethods: "GET",
+											allowedHeaders: rn12AllowedHeaders,
+											acceptPost:     "",
+											acceptPatch:    "",
+										})
+									}
+
+									return
+								}
+
+							case 'r': // Prefix: "redit-transactions"
+
+								if l := len("redit-transactions"); len(elem) >= l && elem[0:l] == "redit-transactions" {
+									elem = elem[l:]
+								} else {
+									break
+								}
+
+								if len(elem) == 0 {
+									// Leaf node.
+									switch r.Method {
+									case "GET":
+										s.handleListCreditTransactionsRequest([1]string{
+											args[0],
+										}, elemIsEscaped, w, r)
+									default:
+										s.notAllowed(w, r, notAllowedParams{
+											allowedMethods: "GET",
+											allowedHeaders: rn14AllowedHeaders,
+											acceptPost:     "",
+											acceptPatch:    "",
+										})
+									}
+
+									return
+								}
+
+							}
+
+						case 'i': // Prefix: "invoices"
+
+							if l := len("invoices"); len(elem) >= l && elem[0:l] == "invoices" {
 								elem = elem[l:]
 							} else {
 								break
@@ -494,13 +353,13 @@ func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 							if len(elem) == 0 {
 								switch r.Method {
 								case "GET":
-									s.handleListOrdersRequest([1]string{
+									s.handleListInvoicesRequest([1]string{
 										args[0],
 									}, elemIsEscaped, w, r)
 								default:
 									s.notAllowed(w, r, notAllowedParams{
 										allowedMethods: "GET",
-										allowedHeaders: rn18AllowedHeaders,
+										allowedHeaders: rn15AllowedHeaders,
 										acceptPost:     "",
 										acceptPatch:    "",
 									})
@@ -517,7 +376,7 @@ func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 									break
 								}
 
-								// Param: "orderId"
+								// Param: "invoiceId"
 								// Leaf parameter, slashes are prohibited
 								idx := strings.IndexByte(elem, '/')
 								if idx >= 0 {
@@ -530,14 +389,410 @@ func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 									// Leaf node.
 									switch r.Method {
 									case "GET":
-										s.handleGetOrderRequest([2]string{
+										s.handleGetInvoiceRequest([2]string{
 											args[0],
 											args[1],
 										}, elemIsEscaped, w, r)
 									default:
 										s.notAllowed(w, r, notAllowedParams{
 											allowedMethods: "GET",
-											allowedHeaders: rn11AllowedHeaders,
+											allowedHeaders: rn9AllowedHeaders,
+											acceptPost:     "",
+											acceptPatch:    "",
+										})
+									}
+
+									return
+								}
+
+							}
+
+						case 'o': // Prefix: "o"
+
+							if l := len("o"); len(elem) >= l && elem[0:l] == "o" {
+								elem = elem[l:]
+							} else {
+								break
+							}
+
+							if len(elem) == 0 {
+								break
+							}
+							switch elem[0] {
+							case 'f': // Prefix: "ffers"
+
+								if l := len("ffers"); len(elem) >= l && elem[0:l] == "ffers" {
+									elem = elem[l:]
+								} else {
+									break
+								}
+
+								if len(elem) == 0 {
+									switch r.Method {
+									case "GET":
+										s.handleListOffersRequest([1]string{
+											args[0],
+										}, elemIsEscaped, w, r)
+									default:
+										s.notAllowed(w, r, notAllowedParams{
+											allowedMethods: "GET",
+											allowedHeaders: rn17AllowedHeaders,
+											acceptPost:     "",
+											acceptPatch:    "",
+										})
+									}
+
+									return
+								}
+								switch elem[0] {
+								case '/': // Prefix: "/"
+
+									if l := len("/"); len(elem) >= l && elem[0:l] == "/" {
+										elem = elem[l:]
+									} else {
+										break
+									}
+
+									// Param: "offerKey"
+									// Match until "/"
+									idx := strings.IndexByte(elem, '/')
+									if idx < 0 {
+										idx = len(elem)
+									}
+									args[1] = elem[:idx]
+									elem = elem[idx:]
+
+									if len(elem) == 0 {
+										break
+									}
+									switch elem[0] {
+									case '/': // Prefix: "/purchase"
+
+										if l := len("/purchase"); len(elem) >= l && elem[0:l] == "/purchase" {
+											elem = elem[l:]
+										} else {
+											break
+										}
+
+										if len(elem) == 0 {
+											// Leaf node.
+											switch r.Method {
+											case "POST":
+												s.handlePurchaseOfferRequest([2]string{
+													args[0],
+													args[1],
+												}, elemIsEscaped, w, r)
+											default:
+												s.notAllowed(w, r, notAllowedParams{
+													allowedMethods: "POST",
+													allowedHeaders: rn22AllowedHeaders,
+													acceptPost:     "",
+													acceptPatch:    "",
+												})
+											}
+
+											return
+										}
+
+									}
+
+								}
+
+							case 'r': // Prefix: "rders"
+
+								if l := len("rders"); len(elem) >= l && elem[0:l] == "rders" {
+									elem = elem[l:]
+								} else {
+									break
+								}
+
+								if len(elem) == 0 {
+									switch r.Method {
+									case "GET":
+										s.handleListOrdersRequest([1]string{
+											args[0],
+										}, elemIsEscaped, w, r)
+									default:
+										s.notAllowed(w, r, notAllowedParams{
+											allowedMethods: "GET",
+											allowedHeaders: rn18AllowedHeaders,
+											acceptPost:     "",
+											acceptPatch:    "",
+										})
+									}
+
+									return
+								}
+								switch elem[0] {
+								case '/': // Prefix: "/"
+
+									if l := len("/"); len(elem) >= l && elem[0:l] == "/" {
+										elem = elem[l:]
+									} else {
+										break
+									}
+
+									// Param: "orderId"
+									// Leaf parameter, slashes are prohibited
+									idx := strings.IndexByte(elem, '/')
+									if idx >= 0 {
+										break
+									}
+									args[1] = elem
+									elem = ""
+
+									if len(elem) == 0 {
+										// Leaf node.
+										switch r.Method {
+										case "GET":
+											s.handleGetOrderRequest([2]string{
+												args[0],
+												args[1],
+											}, elemIsEscaped, w, r)
+										default:
+											s.notAllowed(w, r, notAllowedParams{
+												allowedMethods: "GET",
+												allowedHeaders: rn11AllowedHeaders,
+												acceptPost:     "",
+												acceptPatch:    "",
+											})
+										}
+
+										return
+									}
+
+								}
+
+							}
+
+						case 'p': // Prefix: "p"
+
+							if l := len("p"); len(elem) >= l && elem[0:l] == "p" {
+								elem = elem[l:]
+							} else {
+								break
+							}
+
+							if len(elem) == 0 {
+								break
+							}
+							switch elem[0] {
+							case 'a': // Prefix: "ayment-method"
+
+								if l := len("ayment-method"); len(elem) >= l && elem[0:l] == "ayment-method" {
+									elem = elem[l:]
+								} else {
+									break
+								}
+
+								if len(elem) == 0 {
+									// Leaf node.
+									switch r.Method {
+									case "GET":
+										s.handleReadPaymentMethodRequest([1]string{
+											args[0],
+										}, elemIsEscaped, w, r)
+									case "POST":
+										s.handleStartPaymentMethodSetupRequest([1]string{
+											args[0],
+										}, elemIsEscaped, w, r)
+									default:
+										s.notAllowed(w, r, notAllowedParams{
+											allowedMethods: "GET,POST",
+											allowedHeaders: rn30AllowedHeaders,
+											acceptPost:     "",
+											acceptPatch:    "",
+										})
+									}
+
+									return
+								}
+
+							case 'r': // Prefix: "rojects/"
+
+								if l := len("rojects/"); len(elem) >= l && elem[0:l] == "rojects/" {
+									elem = elem[l:]
+								} else {
+									break
+								}
+
+								// Param: "projectId"
+								// Leaf parameter, slashes are prohibited
+								idx := strings.IndexByte(elem, '/')
+								if idx >= 0 {
+									break
+								}
+								args[1] = elem
+								elem = ""
+
+								if len(elem) == 0 {
+									// Leaf node.
+									switch r.Method {
+									case "DELETE":
+										s.handleUnbindProjectFromBillingAccountRequest([2]string{
+											args[0],
+											args[1],
+										}, elemIsEscaped, w, r)
+									case "PUT":
+										s.handleBindProjectToBillingAccountRequest([2]string{
+											args[0],
+											args[1],
+										}, elemIsEscaped, w, r)
+									default:
+										s.notAllowed(w, r, notAllowedParams{
+											allowedMethods: "DELETE,PUT",
+											allowedHeaders: rn4AllowedHeaders,
+											acceptPost:     "",
+											acceptPatch:    "",
+										})
+									}
+
+									return
+								}
+
+							}
+
+						case 'q': // Prefix: "quote"
+
+							if l := len("quote"); len(elem) >= l && elem[0:l] == "quote" {
+								elem = elem[l:]
+							} else {
+								break
+							}
+
+							if len(elem) == 0 {
+								// Leaf node.
+								switch r.Method {
+								case "POST":
+									s.handleQuoteUsageRequest([1]string{
+										args[0],
+									}, elemIsEscaped, w, r)
+								default:
+									s.notAllowed(w, r, notAllowedParams{
+										allowedMethods: "POST",
+										allowedHeaders: rn27AllowedHeaders,
+										acceptPost:     "application/json",
+										acceptPatch:    "",
+									})
+								}
+
+								return
+							}
+
+						case 's': // Prefix: "subscription"
+
+							if l := len("subscription"); len(elem) >= l && elem[0:l] == "subscription" {
+								elem = elem[l:]
+							} else {
+								break
+							}
+
+							if len(elem) == 0 {
+								switch r.Method {
+								case "GET":
+									s.handleReadSubscriptionRequest([1]string{
+										args[0],
+									}, elemIsEscaped, w, r)
+								default:
+									s.notAllowed(w, r, notAllowedParams{
+										allowedMethods: "GET",
+										allowedHeaders: rn31AllowedHeaders,
+										acceptPost:     "",
+										acceptPatch:    "",
+									})
+								}
+
+								return
+							}
+							switch elem[0] {
+							case '/': // Prefix: "/cancel"
+
+								if l := len("/cancel"); len(elem) >= l && elem[0:l] == "/cancel" {
+									elem = elem[l:]
+								} else {
+									break
+								}
+
+								if len(elem) == 0 {
+									// Leaf node.
+									switch r.Method {
+									case "POST":
+										s.handleCancelSubscriptionRequest([1]string{
+											args[0],
+										}, elemIsEscaped, w, r)
+									default:
+										s.notAllowed(w, r, notAllowedParams{
+											allowedMethods: "POST",
+											allowedHeaders: rn6AllowedHeaders,
+											acceptPost:     "",
+											acceptPatch:    "",
+										})
+									}
+
+									return
+								}
+
+							}
+
+						case 't': // Prefix: "top-ups"
+
+							if l := len("top-ups"); len(elem) >= l && elem[0:l] == "top-ups" {
+								elem = elem[l:]
+							} else {
+								break
+							}
+
+							if len(elem) == 0 {
+								switch r.Method {
+								case "GET":
+									s.handleListTopUpsRequest([1]string{
+										args[0],
+									}, elemIsEscaped, w, r)
+								case "POST":
+									s.handleStartTopUpRequest([1]string{
+										args[0],
+									}, elemIsEscaped, w, r)
+								default:
+									s.notAllowed(w, r, notAllowedParams{
+										allowedMethods: "GET,POST",
+										allowedHeaders: rn19AllowedHeaders,
+										acceptPost:     "application/json",
+										acceptPatch:    "",
+									})
+								}
+
+								return
+							}
+							switch elem[0] {
+							case '/': // Prefix: "/"
+
+								if l := len("/"); len(elem) >= l && elem[0:l] == "/" {
+									elem = elem[l:]
+								} else {
+									break
+								}
+
+								// Param: "paymentId"
+								// Leaf parameter, slashes are prohibited
+								idx := strings.IndexByte(elem, '/')
+								if idx >= 0 {
+									break
+								}
+								args[1] = elem
+								elem = ""
+
+								if len(elem) == 0 {
+									// Leaf node.
+									switch r.Method {
+									case "GET":
+										s.handleReadTopUpRequest([2]string{
+											args[0],
+											args[1],
+										}, elemIsEscaped, w, r)
+									default:
+										s.notAllowed(w, r, notAllowedParams{
+											allowedMethods: "GET",
+											allowedHeaders: rn33AllowedHeaders,
 											acceptPost:     "",
 											acceptPatch:    "",
 										})
@@ -550,244 +805,56 @@ func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 
 						}
 
-					case 'p': // Prefix: "p"
+					}
 
-						if l := len("p"); len(elem) >= l && elem[0:l] == "p" {
-							elem = elem[l:]
-						} else {
-							break
+				}
+
+			case 'p': // Prefix: "projects/"
+
+				if l := len("projects/"); len(elem) >= l && elem[0:l] == "projects/" {
+					elem = elem[l:]
+				} else {
+					break
+				}
+
+				// Param: "projectId"
+				// Match until "/"
+				idx := strings.IndexByte(elem, '/')
+				if idx < 0 {
+					idx = len(elem)
+				}
+				args[0] = elem[:idx]
+				elem = elem[idx:]
+
+				if len(elem) == 0 {
+					break
+				}
+				switch elem[0] {
+				case '/': // Prefix: "/quote"
+
+					if l := len("/quote"); len(elem) >= l && elem[0:l] == "/quote" {
+						elem = elem[l:]
+					} else {
+						break
+					}
+
+					if len(elem) == 0 {
+						// Leaf node.
+						switch r.Method {
+						case "POST":
+							s.handleQuoteProjectUsageRequest([1]string{
+								args[0],
+							}, elemIsEscaped, w, r)
+						default:
+							s.notAllowed(w, r, notAllowedParams{
+								allowedMethods: "POST",
+								allowedHeaders: rn26AllowedHeaders,
+								acceptPost:     "application/json",
+								acceptPatch:    "",
+							})
 						}
 
-						if len(elem) == 0 {
-							break
-						}
-						switch elem[0] {
-						case 'a': // Prefix: "ayment-method"
-
-							if l := len("ayment-method"); len(elem) >= l && elem[0:l] == "ayment-method" {
-								elem = elem[l:]
-							} else {
-								break
-							}
-
-							if len(elem) == 0 {
-								// Leaf node.
-								switch r.Method {
-								case "GET":
-									s.handleReadPaymentMethodRequest([1]string{
-										args[0],
-									}, elemIsEscaped, w, r)
-								case "POST":
-									s.handleStartPaymentMethodSetupRequest([1]string{
-										args[0],
-									}, elemIsEscaped, w, r)
-								default:
-									s.notAllowed(w, r, notAllowedParams{
-										allowedMethods: "GET,POST",
-										allowedHeaders: rn26AllowedHeaders,
-										acceptPost:     "",
-										acceptPatch:    "",
-									})
-								}
-
-								return
-							}
-
-						case 'r': // Prefix: "rojects/"
-
-							if l := len("rojects/"); len(elem) >= l && elem[0:l] == "rojects/" {
-								elem = elem[l:]
-							} else {
-								break
-							}
-
-							// Param: "projectId"
-							// Leaf parameter, slashes are prohibited
-							idx := strings.IndexByte(elem, '/')
-							if idx >= 0 {
-								break
-							}
-							args[1] = elem
-							elem = ""
-
-							if len(elem) == 0 {
-								// Leaf node.
-								switch r.Method {
-								case "DELETE":
-									s.handleUnbindProjectFromBillingAccountRequest([2]string{
-										args[0],
-										args[1],
-									}, elemIsEscaped, w, r)
-								case "PUT":
-									s.handleBindProjectToBillingAccountRequest([2]string{
-										args[0],
-										args[1],
-									}, elemIsEscaped, w, r)
-								default:
-									s.notAllowed(w, r, notAllowedParams{
-										allowedMethods: "DELETE,PUT",
-										allowedHeaders: rn4AllowedHeaders,
-										acceptPost:     "",
-										acceptPatch:    "",
-									})
-								}
-
-								return
-							}
-
-						}
-
-					case 'q': // Prefix: "quote"
-
-						if l := len("quote"); len(elem) >= l && elem[0:l] == "quote" {
-							elem = elem[l:]
-						} else {
-							break
-						}
-
-						if len(elem) == 0 {
-							// Leaf node.
-							switch r.Method {
-							case "POST":
-								s.handleQuoteUsageRequest([1]string{
-									args[0],
-								}, elemIsEscaped, w, r)
-							default:
-								s.notAllowed(w, r, notAllowedParams{
-									allowedMethods: "POST",
-									allowedHeaders: rn23AllowedHeaders,
-									acceptPost:     "application/json",
-									acceptPatch:    "",
-								})
-							}
-
-							return
-						}
-
-					case 's': // Prefix: "subscription"
-
-						if l := len("subscription"); len(elem) >= l && elem[0:l] == "subscription" {
-							elem = elem[l:]
-						} else {
-							break
-						}
-
-						if len(elem) == 0 {
-							switch r.Method {
-							case "GET":
-								s.handleReadSubscriptionRequest([1]string{
-									args[0],
-								}, elemIsEscaped, w, r)
-							default:
-								s.notAllowed(w, r, notAllowedParams{
-									allowedMethods: "GET",
-									allowedHeaders: rn27AllowedHeaders,
-									acceptPost:     "",
-									acceptPatch:    "",
-								})
-							}
-
-							return
-						}
-						switch elem[0] {
-						case '/': // Prefix: "/cancel"
-
-							if l := len("/cancel"); len(elem) >= l && elem[0:l] == "/cancel" {
-								elem = elem[l:]
-							} else {
-								break
-							}
-
-							if len(elem) == 0 {
-								// Leaf node.
-								switch r.Method {
-								case "POST":
-									s.handleCancelSubscriptionRequest([1]string{
-										args[0],
-									}, elemIsEscaped, w, r)
-								default:
-									s.notAllowed(w, r, notAllowedParams{
-										allowedMethods: "POST",
-										allowedHeaders: rn6AllowedHeaders,
-										acceptPost:     "",
-										acceptPatch:    "",
-									})
-								}
-
-								return
-							}
-
-						}
-
-					case 't': // Prefix: "top-ups"
-
-						if l := len("top-ups"); len(elem) >= l && elem[0:l] == "top-ups" {
-							elem = elem[l:]
-						} else {
-							break
-						}
-
-						if len(elem) == 0 {
-							switch r.Method {
-							case "GET":
-								s.handleListTopUpsRequest([1]string{
-									args[0],
-								}, elemIsEscaped, w, r)
-							case "POST":
-								s.handleStartTopUpRequest([1]string{
-									args[0],
-								}, elemIsEscaped, w, r)
-							default:
-								s.notAllowed(w, r, notAllowedParams{
-									allowedMethods: "GET,POST",
-									allowedHeaders: rn19AllowedHeaders,
-									acceptPost:     "application/json",
-									acceptPatch:    "",
-								})
-							}
-
-							return
-						}
-						switch elem[0] {
-						case '/': // Prefix: "/"
-
-							if l := len("/"); len(elem) >= l && elem[0:l] == "/" {
-								elem = elem[l:]
-							} else {
-								break
-							}
-
-							// Param: "paymentId"
-							// Leaf parameter, slashes are prohibited
-							idx := strings.IndexByte(elem, '/')
-							if idx >= 0 {
-								break
-							}
-							args[1] = elem
-							elem = ""
-
-							if len(elem) == 0 {
-								// Leaf node.
-								switch r.Method {
-								case "GET":
-									s.handleReadTopUpRequest([2]string{
-										args[0],
-										args[1],
-									}, elemIsEscaped, w, r)
-								default:
-									s.notAllowed(w, r, notAllowedParams{
-										allowedMethods: "GET",
-										allowedHeaders: rn29AllowedHeaders,
-										acceptPost:     "",
-										acceptPatch:    "",
-									})
-								}
-
-								return
-							}
-
-						}
-
+						return
 					}
 
 				}
@@ -880,75 +947,45 @@ func (s *Server) FindPath(method string, u *url.URL) (r Route, _ bool) {
 			break
 		}
 		switch elem[0] {
-		case '/': // Prefix: "/account/v1/billing-accounts"
+		case '/': // Prefix: "/account/v1/"
 
-			if l := len("/account/v1/billing-accounts"); len(elem) >= l && elem[0:l] == "/account/v1/billing-accounts" {
+			if l := len("/account/v1/"); len(elem) >= l && elem[0:l] == "/account/v1/" {
 				elem = elem[l:]
 			} else {
 				break
 			}
 
 			if len(elem) == 0 {
-				switch method {
-				case "GET":
-					r.name = ListBillingAccountsOperation
-					r.summary = "List my billing accounts"
-					r.operationID = "list-billing-accounts"
-					r.operationGroup = ""
-					r.pathPattern = "/account/v1/billing-accounts"
-					r.args = args
-					r.count = 0
-					return r, true
-				case "POST":
-					r.name = CreateBillingAccountOperation
-					r.summary = "Create a billing account"
-					r.operationID = "create-billing-account"
-					r.operationGroup = ""
-					r.pathPattern = "/account/v1/billing-accounts"
-					r.args = args
-					r.count = 0
-					return r, true
-				default:
-					return
-				}
+				break
 			}
 			switch elem[0] {
-			case '/': // Prefix: "/"
+			case 'b': // Prefix: "billing-accounts"
 
-				if l := len("/"); len(elem) >= l && elem[0:l] == "/" {
+				if l := len("billing-accounts"); len(elem) >= l && elem[0:l] == "billing-accounts" {
 					elem = elem[l:]
 				} else {
 					break
 				}
 
-				// Param: "accountKey"
-				// Match until "/"
-				idx := strings.IndexByte(elem, '/')
-				if idx < 0 {
-					idx = len(elem)
-				}
-				args[0] = elem[:idx]
-				elem = elem[idx:]
-
 				if len(elem) == 0 {
 					switch method {
 					case "GET":
-						r.name = GetBillingAccountOperation
-						r.summary = "Read one of my billing accounts"
-						r.operationID = "get-billing-account"
+						r.name = ListBillingAccountsOperation
+						r.summary = "List my billing accounts"
+						r.operationID = "list-billing-accounts"
 						r.operationGroup = ""
-						r.pathPattern = "/account/v1/billing-accounts/{accountKey}"
+						r.pathPattern = "/account/v1/billing-accounts"
 						r.args = args
-						r.count = 1
+						r.count = 0
 						return r, true
-					case "PUT":
-						r.name = UpdateBillingAccountOperation
-						r.summary = "Rename a billing account"
-						r.operationID = "update-billing-account"
+					case "POST":
+						r.name = CreateBillingAccountOperation
+						r.summary = "Create a billing account"
+						r.operationID = "create-billing-account"
 						r.operationGroup = ""
-						r.pathPattern = "/account/v1/billing-accounts/{accountKey}"
+						r.pathPattern = "/account/v1/billing-accounts"
 						r.args = args
-						r.count = 1
+						r.count = 0
 						return r, true
 					default:
 						return
@@ -963,13 +1000,43 @@ func (s *Server) FindPath(method string, u *url.URL) (r Route, _ bool) {
 						break
 					}
 
+					// Param: "accountKey"
+					// Match until "/"
+					idx := strings.IndexByte(elem, '/')
+					if idx < 0 {
+						idx = len(elem)
+					}
+					args[0] = elem[:idx]
+					elem = elem[idx:]
+
 					if len(elem) == 0 {
-						break
+						switch method {
+						case "GET":
+							r.name = GetBillingAccountOperation
+							r.summary = "Read one of my billing accounts"
+							r.operationID = "get-billing-account"
+							r.operationGroup = ""
+							r.pathPattern = "/account/v1/billing-accounts/{accountKey}"
+							r.args = args
+							r.count = 1
+							return r, true
+						case "PUT":
+							r.name = UpdateBillingAccountOperation
+							r.summary = "Rename a billing account"
+							r.operationID = "update-billing-account"
+							r.operationGroup = ""
+							r.pathPattern = "/account/v1/billing-accounts/{accountKey}"
+							r.args = args
+							r.count = 1
+							return r, true
+						default:
+							return
+						}
 					}
 					switch elem[0] {
-					case 'b': // Prefix: "b"
+					case '/': // Prefix: "/"
 
-						if l := len("b"); len(elem) >= l && elem[0:l] == "b" {
+						if l := len("/"); len(elem) >= l && elem[0:l] == "/" {
 							elem = elem[l:]
 						} else {
 							break
@@ -979,271 +1046,137 @@ func (s *Server) FindPath(method string, u *url.URL) (r Route, _ bool) {
 							break
 						}
 						switch elem[0] {
-						case 'a': // Prefix: "alance"
+						case 'b': // Prefix: "b"
 
-							if l := len("alance"); len(elem) >= l && elem[0:l] == "alance" {
+							if l := len("b"); len(elem) >= l && elem[0:l] == "b" {
 								elem = elem[l:]
 							} else {
 								break
 							}
 
 							if len(elem) == 0 {
-								// Leaf node.
-								switch method {
-								case "GET":
-									r.name = ReadBillingAccountBalanceOperation
-									r.summary = "Read an account's balance"
-									r.operationID = "read-billing-account-balance"
-									r.operationGroup = ""
-									r.pathPattern = "/account/v1/billing-accounts/{accountKey}/balance"
-									r.args = args
-									r.count = 1
-									return r, true
-								default:
-									return
-								}
-							}
-
-						case 'i': // Prefix: "illing-portal"
-
-							if l := len("illing-portal"); len(elem) >= l && elem[0:l] == "illing-portal" {
-								elem = elem[l:]
-							} else {
 								break
-							}
-
-							if len(elem) == 0 {
-								// Leaf node.
-								switch method {
-								case "POST":
-									r.name = StartBillingPortalOperation
-									r.summary = "Open the hosted billing portal"
-									r.operationID = "start-billing-portal"
-									r.operationGroup = ""
-									r.pathPattern = "/account/v1/billing-accounts/{accountKey}/billing-portal"
-									r.args = args
-									r.count = 1
-									return r, true
-								default:
-									return
-								}
-							}
-
-						}
-
-					case 'c': // Prefix: "c"
-
-						if l := len("c"); len(elem) >= l && elem[0:l] == "c" {
-							elem = elem[l:]
-						} else {
-							break
-						}
-
-						if len(elem) == 0 {
-							break
-						}
-						switch elem[0] {
-						case 'h': // Prefix: "harges"
-
-							if l := len("harges"); len(elem) >= l && elem[0:l] == "harges" {
-								elem = elem[l:]
-							} else {
-								break
-							}
-
-							if len(elem) == 0 {
-								// Leaf node.
-								switch method {
-								case "GET":
-									r.name = ListChargesOperation
-									r.summary = "What this period has run up so far"
-									r.operationID = "list-charges"
-									r.operationGroup = ""
-									r.pathPattern = "/account/v1/billing-accounts/{accountKey}/charges"
-									r.args = args
-									r.count = 1
-									return r, true
-								default:
-									return
-								}
-							}
-
-						case 'r': // Prefix: "redit-transactions"
-
-							if l := len("redit-transactions"); len(elem) >= l && elem[0:l] == "redit-transactions" {
-								elem = elem[l:]
-							} else {
-								break
-							}
-
-							if len(elem) == 0 {
-								// Leaf node.
-								switch method {
-								case "GET":
-									r.name = ListCreditTransactionsOperation
-									r.summary = "How the balance got to where it is"
-									r.operationID = "list-credit-transactions"
-									r.operationGroup = ""
-									r.pathPattern = "/account/v1/billing-accounts/{accountKey}/credit-transactions"
-									r.args = args
-									r.count = 1
-									return r, true
-								default:
-									return
-								}
-							}
-
-						}
-
-					case 'i': // Prefix: "invoices"
-
-						if l := len("invoices"); len(elem) >= l && elem[0:l] == "invoices" {
-							elem = elem[l:]
-						} else {
-							break
-						}
-
-						if len(elem) == 0 {
-							switch method {
-							case "GET":
-								r.name = ListInvoicesOperation
-								r.summary = "List this account's invoices"
-								r.operationID = "list-invoices"
-								r.operationGroup = ""
-								r.pathPattern = "/account/v1/billing-accounts/{accountKey}/invoices"
-								r.args = args
-								r.count = 1
-								return r, true
-							default:
-								return
-							}
-						}
-						switch elem[0] {
-						case '/': // Prefix: "/"
-
-							if l := len("/"); len(elem) >= l && elem[0:l] == "/" {
-								elem = elem[l:]
-							} else {
-								break
-							}
-
-							// Param: "invoiceId"
-							// Leaf parameter, slashes are prohibited
-							idx := strings.IndexByte(elem, '/')
-							if idx >= 0 {
-								break
-							}
-							args[1] = elem
-							elem = ""
-
-							if len(elem) == 0 {
-								// Leaf node.
-								switch method {
-								case "GET":
-									r.name = GetInvoiceOperation
-									r.summary = "Read one invoice with its lines"
-									r.operationID = "get-invoice"
-									r.operationGroup = ""
-									r.pathPattern = "/account/v1/billing-accounts/{accountKey}/invoices/{invoiceId}"
-									r.args = args
-									r.count = 2
-									return r, true
-								default:
-									return
-								}
-							}
-
-						}
-
-					case 'o': // Prefix: "o"
-
-						if l := len("o"); len(elem) >= l && elem[0:l] == "o" {
-							elem = elem[l:]
-						} else {
-							break
-						}
-
-						if len(elem) == 0 {
-							break
-						}
-						switch elem[0] {
-						case 'f': // Prefix: "ffers"
-
-							if l := len("ffers"); len(elem) >= l && elem[0:l] == "ffers" {
-								elem = elem[l:]
-							} else {
-								break
-							}
-
-							if len(elem) == 0 {
-								switch method {
-								case "GET":
-									r.name = ListOffersOperation
-									r.summary = "List the offers this account can buy"
-									r.operationID = "list-offers"
-									r.operationGroup = ""
-									r.pathPattern = "/account/v1/billing-accounts/{accountKey}/offers"
-									r.args = args
-									r.count = 1
-									return r, true
-								default:
-									return
-								}
 							}
 							switch elem[0] {
-							case '/': // Prefix: "/"
+							case 'a': // Prefix: "alance"
 
-								if l := len("/"); len(elem) >= l && elem[0:l] == "/" {
+								if l := len("alance"); len(elem) >= l && elem[0:l] == "alance" {
 									elem = elem[l:]
 								} else {
 									break
 								}
-
-								// Param: "offerKey"
-								// Match until "/"
-								idx := strings.IndexByte(elem, '/')
-								if idx < 0 {
-									idx = len(elem)
-								}
-								args[1] = elem[:idx]
-								elem = elem[idx:]
 
 								if len(elem) == 0 {
+									// Leaf node.
+									switch method {
+									case "GET":
+										r.name = ReadBillingAccountBalanceOperation
+										r.summary = "Read an account's balance"
+										r.operationID = "read-billing-account-balance"
+										r.operationGroup = ""
+										r.pathPattern = "/account/v1/billing-accounts/{accountKey}/balance"
+										r.args = args
+										r.count = 1
+										return r, true
+									default:
+										return
+									}
+								}
+
+							case 'i': // Prefix: "illing-portal"
+
+								if l := len("illing-portal"); len(elem) >= l && elem[0:l] == "illing-portal" {
+									elem = elem[l:]
+								} else {
 									break
 								}
-								switch elem[0] {
-								case '/': // Prefix: "/purchase"
 
-									if l := len("/purchase"); len(elem) >= l && elem[0:l] == "/purchase" {
-										elem = elem[l:]
-									} else {
-										break
+								if len(elem) == 0 {
+									// Leaf node.
+									switch method {
+									case "POST":
+										r.name = StartBillingPortalOperation
+										r.summary = "Open the hosted billing portal"
+										r.operationID = "start-billing-portal"
+										r.operationGroup = ""
+										r.pathPattern = "/account/v1/billing-accounts/{accountKey}/billing-portal"
+										r.args = args
+										r.count = 1
+										return r, true
+									default:
+										return
 									}
-
-									if len(elem) == 0 {
-										// Leaf node.
-										switch method {
-										case "POST":
-											r.name = PurchaseOfferOperation
-											r.summary = "Buy an offer"
-											r.operationID = "purchase-offer"
-											r.operationGroup = ""
-											r.pathPattern = "/account/v1/billing-accounts/{accountKey}/offers/{offerKey}/purchase"
-											r.args = args
-											r.count = 2
-											return r, true
-										default:
-											return
-										}
-									}
-
 								}
 
 							}
 
-						case 'r': // Prefix: "rders"
+						case 'c': // Prefix: "c"
 
-							if l := len("rders"); len(elem) >= l && elem[0:l] == "rders" {
+							if l := len("c"); len(elem) >= l && elem[0:l] == "c" {
+								elem = elem[l:]
+							} else {
+								break
+							}
+
+							if len(elem) == 0 {
+								break
+							}
+							switch elem[0] {
+							case 'h': // Prefix: "harges"
+
+								if l := len("harges"); len(elem) >= l && elem[0:l] == "harges" {
+									elem = elem[l:]
+								} else {
+									break
+								}
+
+								if len(elem) == 0 {
+									// Leaf node.
+									switch method {
+									case "GET":
+										r.name = ListChargesOperation
+										r.summary = "What this period has run up so far"
+										r.operationID = "list-charges"
+										r.operationGroup = ""
+										r.pathPattern = "/account/v1/billing-accounts/{accountKey}/charges"
+										r.args = args
+										r.count = 1
+										return r, true
+									default:
+										return
+									}
+								}
+
+							case 'r': // Prefix: "redit-transactions"
+
+								if l := len("redit-transactions"); len(elem) >= l && elem[0:l] == "redit-transactions" {
+									elem = elem[l:]
+								} else {
+									break
+								}
+
+								if len(elem) == 0 {
+									// Leaf node.
+									switch method {
+									case "GET":
+										r.name = ListCreditTransactionsOperation
+										r.summary = "How the balance got to where it is"
+										r.operationID = "list-credit-transactions"
+										r.operationGroup = ""
+										r.pathPattern = "/account/v1/billing-accounts/{accountKey}/credit-transactions"
+										r.args = args
+										r.count = 1
+										return r, true
+									default:
+										return
+									}
+								}
+
+							}
+
+						case 'i': // Prefix: "invoices"
+
+							if l := len("invoices"); len(elem) >= l && elem[0:l] == "invoices" {
 								elem = elem[l:]
 							} else {
 								break
@@ -1252,11 +1185,11 @@ func (s *Server) FindPath(method string, u *url.URL) (r Route, _ bool) {
 							if len(elem) == 0 {
 								switch method {
 								case "GET":
-									r.name = ListOrdersOperation
-									r.summary = "My orders"
-									r.operationID = "list-orders"
+									r.name = ListInvoicesOperation
+									r.summary = "List this account's invoices"
+									r.operationID = "list-invoices"
 									r.operationGroup = ""
-									r.pathPattern = "/account/v1/billing-accounts/{accountKey}/orders"
+									r.pathPattern = "/account/v1/billing-accounts/{accountKey}/invoices"
 									r.args = args
 									r.count = 1
 									return r, true
@@ -1273,7 +1206,7 @@ func (s *Server) FindPath(method string, u *url.URL) (r Route, _ bool) {
 									break
 								}
 
-								// Param: "orderId"
+								// Param: "invoiceId"
 								// Leaf parameter, slashes are prohibited
 								idx := strings.IndexByte(elem, '/')
 								if idx >= 0 {
@@ -1286,11 +1219,395 @@ func (s *Server) FindPath(method string, u *url.URL) (r Route, _ bool) {
 									// Leaf node.
 									switch method {
 									case "GET":
-										r.name = GetOrderOperation
-										r.summary = "One order, with its lines"
-										r.operationID = "get-order"
+										r.name = GetInvoiceOperation
+										r.summary = "Read one invoice with its lines"
+										r.operationID = "get-invoice"
 										r.operationGroup = ""
-										r.pathPattern = "/account/v1/billing-accounts/{accountKey}/orders/{orderId}"
+										r.pathPattern = "/account/v1/billing-accounts/{accountKey}/invoices/{invoiceId}"
+										r.args = args
+										r.count = 2
+										return r, true
+									default:
+										return
+									}
+								}
+
+							}
+
+						case 'o': // Prefix: "o"
+
+							if l := len("o"); len(elem) >= l && elem[0:l] == "o" {
+								elem = elem[l:]
+							} else {
+								break
+							}
+
+							if len(elem) == 0 {
+								break
+							}
+							switch elem[0] {
+							case 'f': // Prefix: "ffers"
+
+								if l := len("ffers"); len(elem) >= l && elem[0:l] == "ffers" {
+									elem = elem[l:]
+								} else {
+									break
+								}
+
+								if len(elem) == 0 {
+									switch method {
+									case "GET":
+										r.name = ListOffersOperation
+										r.summary = "List the offers this account can buy"
+										r.operationID = "list-offers"
+										r.operationGroup = ""
+										r.pathPattern = "/account/v1/billing-accounts/{accountKey}/offers"
+										r.args = args
+										r.count = 1
+										return r, true
+									default:
+										return
+									}
+								}
+								switch elem[0] {
+								case '/': // Prefix: "/"
+
+									if l := len("/"); len(elem) >= l && elem[0:l] == "/" {
+										elem = elem[l:]
+									} else {
+										break
+									}
+
+									// Param: "offerKey"
+									// Match until "/"
+									idx := strings.IndexByte(elem, '/')
+									if idx < 0 {
+										idx = len(elem)
+									}
+									args[1] = elem[:idx]
+									elem = elem[idx:]
+
+									if len(elem) == 0 {
+										break
+									}
+									switch elem[0] {
+									case '/': // Prefix: "/purchase"
+
+										if l := len("/purchase"); len(elem) >= l && elem[0:l] == "/purchase" {
+											elem = elem[l:]
+										} else {
+											break
+										}
+
+										if len(elem) == 0 {
+											// Leaf node.
+											switch method {
+											case "POST":
+												r.name = PurchaseOfferOperation
+												r.summary = "Buy an offer"
+												r.operationID = "purchase-offer"
+												r.operationGroup = ""
+												r.pathPattern = "/account/v1/billing-accounts/{accountKey}/offers/{offerKey}/purchase"
+												r.args = args
+												r.count = 2
+												return r, true
+											default:
+												return
+											}
+										}
+
+									}
+
+								}
+
+							case 'r': // Prefix: "rders"
+
+								if l := len("rders"); len(elem) >= l && elem[0:l] == "rders" {
+									elem = elem[l:]
+								} else {
+									break
+								}
+
+								if len(elem) == 0 {
+									switch method {
+									case "GET":
+										r.name = ListOrdersOperation
+										r.summary = "My orders"
+										r.operationID = "list-orders"
+										r.operationGroup = ""
+										r.pathPattern = "/account/v1/billing-accounts/{accountKey}/orders"
+										r.args = args
+										r.count = 1
+										return r, true
+									default:
+										return
+									}
+								}
+								switch elem[0] {
+								case '/': // Prefix: "/"
+
+									if l := len("/"); len(elem) >= l && elem[0:l] == "/" {
+										elem = elem[l:]
+									} else {
+										break
+									}
+
+									// Param: "orderId"
+									// Leaf parameter, slashes are prohibited
+									idx := strings.IndexByte(elem, '/')
+									if idx >= 0 {
+										break
+									}
+									args[1] = elem
+									elem = ""
+
+									if len(elem) == 0 {
+										// Leaf node.
+										switch method {
+										case "GET":
+											r.name = GetOrderOperation
+											r.summary = "One order, with its lines"
+											r.operationID = "get-order"
+											r.operationGroup = ""
+											r.pathPattern = "/account/v1/billing-accounts/{accountKey}/orders/{orderId}"
+											r.args = args
+											r.count = 2
+											return r, true
+										default:
+											return
+										}
+									}
+
+								}
+
+							}
+
+						case 'p': // Prefix: "p"
+
+							if l := len("p"); len(elem) >= l && elem[0:l] == "p" {
+								elem = elem[l:]
+							} else {
+								break
+							}
+
+							if len(elem) == 0 {
+								break
+							}
+							switch elem[0] {
+							case 'a': // Prefix: "ayment-method"
+
+								if l := len("ayment-method"); len(elem) >= l && elem[0:l] == "ayment-method" {
+									elem = elem[l:]
+								} else {
+									break
+								}
+
+								if len(elem) == 0 {
+									// Leaf node.
+									switch method {
+									case "GET":
+										r.name = ReadPaymentMethodOperation
+										r.summary = "Whether this account can be charged"
+										r.operationID = "read-payment-method"
+										r.operationGroup = ""
+										r.pathPattern = "/account/v1/billing-accounts/{accountKey}/payment-method"
+										r.args = args
+										r.count = 1
+										return r, true
+									case "POST":
+										r.name = StartPaymentMethodSetupOperation
+										r.summary = "Add or replace the payment method on file"
+										r.operationID = "start-payment-method-setup"
+										r.operationGroup = ""
+										r.pathPattern = "/account/v1/billing-accounts/{accountKey}/payment-method"
+										r.args = args
+										r.count = 1
+										return r, true
+									default:
+										return
+									}
+								}
+
+							case 'r': // Prefix: "rojects/"
+
+								if l := len("rojects/"); len(elem) >= l && elem[0:l] == "rojects/" {
+									elem = elem[l:]
+								} else {
+									break
+								}
+
+								// Param: "projectId"
+								// Leaf parameter, slashes are prohibited
+								idx := strings.IndexByte(elem, '/')
+								if idx >= 0 {
+									break
+								}
+								args[1] = elem
+								elem = ""
+
+								if len(elem) == 0 {
+									// Leaf node.
+									switch method {
+									case "DELETE":
+										r.name = UnbindProjectFromBillingAccountOperation
+										r.summary = "Stop paying for a project"
+										r.operationID = "unbind-project-from-billing-account"
+										r.operationGroup = ""
+										r.pathPattern = "/account/v1/billing-accounts/{accountKey}/projects/{projectId}"
+										r.args = args
+										r.count = 2
+										return r, true
+									case "PUT":
+										r.name = BindProjectToBillingAccountOperation
+										r.summary = "Make this account pay for a project"
+										r.operationID = "bind-project-to-billing-account"
+										r.operationGroup = ""
+										r.pathPattern = "/account/v1/billing-accounts/{accountKey}/projects/{projectId}"
+										r.args = args
+										r.count = 2
+										return r, true
+									default:
+										return
+									}
+								}
+
+							}
+
+						case 'q': // Prefix: "quote"
+
+							if l := len("quote"); len(elem) >= l && elem[0:l] == "quote" {
+								elem = elem[l:]
+							} else {
+								break
+							}
+
+							if len(elem) == 0 {
+								// Leaf node.
+								switch method {
+								case "POST":
+									r.name = QuoteUsageOperation
+									r.summary = "What a usage would cost on this account's plan"
+									r.operationID = "quote-usage"
+									r.operationGroup = ""
+									r.pathPattern = "/account/v1/billing-accounts/{accountKey}/quote"
+									r.args = args
+									r.count = 1
+									return r, true
+								default:
+									return
+								}
+							}
+
+						case 's': // Prefix: "subscription"
+
+							if l := len("subscription"); len(elem) >= l && elem[0:l] == "subscription" {
+								elem = elem[l:]
+							} else {
+								break
+							}
+
+							if len(elem) == 0 {
+								switch method {
+								case "GET":
+									r.name = ReadSubscriptionOperation
+									r.summary = "Which plan this account is on"
+									r.operationID = "read-subscription"
+									r.operationGroup = ""
+									r.pathPattern = "/account/v1/billing-accounts/{accountKey}/subscription"
+									r.args = args
+									r.count = 1
+									return r, true
+								default:
+									return
+								}
+							}
+							switch elem[0] {
+							case '/': // Prefix: "/cancel"
+
+								if l := len("/cancel"); len(elem) >= l && elem[0:l] == "/cancel" {
+									elem = elem[l:]
+								} else {
+									break
+								}
+
+								if len(elem) == 0 {
+									// Leaf node.
+									switch method {
+									case "POST":
+										r.name = CancelSubscriptionOperation
+										r.summary = "Come off the paid plan"
+										r.operationID = "cancel-subscription"
+										r.operationGroup = ""
+										r.pathPattern = "/account/v1/billing-accounts/{accountKey}/subscription/cancel"
+										r.args = args
+										r.count = 1
+										return r, true
+									default:
+										return
+									}
+								}
+
+							}
+
+						case 't': // Prefix: "top-ups"
+
+							if l := len("top-ups"); len(elem) >= l && elem[0:l] == "top-ups" {
+								elem = elem[l:]
+							} else {
+								break
+							}
+
+							if len(elem) == 0 {
+								switch method {
+								case "GET":
+									r.name = ListTopUpsOperation
+									r.summary = "My top-ups"
+									r.operationID = "list-top-ups"
+									r.operationGroup = ""
+									r.pathPattern = "/account/v1/billing-accounts/{accountKey}/top-ups"
+									r.args = args
+									r.count = 1
+									return r, true
+								case "POST":
+									r.name = StartTopUpOperation
+									r.summary = "Start a top-up"
+									r.operationID = "start-top-up"
+									r.operationGroup = ""
+									r.pathPattern = "/account/v1/billing-accounts/{accountKey}/top-ups"
+									r.args = args
+									r.count = 1
+									return r, true
+								default:
+									return
+								}
+							}
+							switch elem[0] {
+							case '/': // Prefix: "/"
+
+								if l := len("/"); len(elem) >= l && elem[0:l] == "/" {
+									elem = elem[l:]
+								} else {
+									break
+								}
+
+								// Param: "paymentId"
+								// Leaf parameter, slashes are prohibited
+								idx := strings.IndexByte(elem, '/')
+								if idx >= 0 {
+									break
+								}
+								args[1] = elem
+								elem = ""
+
+								if len(elem) == 0 {
+									// Leaf node.
+									switch method {
+									case "GET":
+										r.name = ReadTopUpOperation
+										r.summary = "How far along a top-up is"
+										r.operationID = "read-top-up"
+										r.operationGroup = ""
+										r.pathPattern = "/account/v1/billing-accounts/{accountKey}/top-ups/{paymentId}"
 										r.args = args
 										r.count = 2
 										return r, true
@@ -1303,242 +1620,54 @@ func (s *Server) FindPath(method string, u *url.URL) (r Route, _ bool) {
 
 						}
 
-					case 'p': // Prefix: "p"
+					}
 
-						if l := len("p"); len(elem) >= l && elem[0:l] == "p" {
-							elem = elem[l:]
-						} else {
-							break
+				}
+
+			case 'p': // Prefix: "projects/"
+
+				if l := len("projects/"); len(elem) >= l && elem[0:l] == "projects/" {
+					elem = elem[l:]
+				} else {
+					break
+				}
+
+				// Param: "projectId"
+				// Match until "/"
+				idx := strings.IndexByte(elem, '/')
+				if idx < 0 {
+					idx = len(elem)
+				}
+				args[0] = elem[:idx]
+				elem = elem[idx:]
+
+				if len(elem) == 0 {
+					break
+				}
+				switch elem[0] {
+				case '/': // Prefix: "/quote"
+
+					if l := len("/quote"); len(elem) >= l && elem[0:l] == "/quote" {
+						elem = elem[l:]
+					} else {
+						break
+					}
+
+					if len(elem) == 0 {
+						// Leaf node.
+						switch method {
+						case "POST":
+							r.name = QuoteProjectUsageOperation
+							r.summary = "What a usage would cost in this project"
+							r.operationID = "quote-project-usage"
+							r.operationGroup = ""
+							r.pathPattern = "/account/v1/projects/{projectId}/quote"
+							r.args = args
+							r.count = 1
+							return r, true
+						default:
+							return
 						}
-
-						if len(elem) == 0 {
-							break
-						}
-						switch elem[0] {
-						case 'a': // Prefix: "ayment-method"
-
-							if l := len("ayment-method"); len(elem) >= l && elem[0:l] == "ayment-method" {
-								elem = elem[l:]
-							} else {
-								break
-							}
-
-							if len(elem) == 0 {
-								// Leaf node.
-								switch method {
-								case "GET":
-									r.name = ReadPaymentMethodOperation
-									r.summary = "Whether this account can be charged"
-									r.operationID = "read-payment-method"
-									r.operationGroup = ""
-									r.pathPattern = "/account/v1/billing-accounts/{accountKey}/payment-method"
-									r.args = args
-									r.count = 1
-									return r, true
-								case "POST":
-									r.name = StartPaymentMethodSetupOperation
-									r.summary = "Add or replace the payment method on file"
-									r.operationID = "start-payment-method-setup"
-									r.operationGroup = ""
-									r.pathPattern = "/account/v1/billing-accounts/{accountKey}/payment-method"
-									r.args = args
-									r.count = 1
-									return r, true
-								default:
-									return
-								}
-							}
-
-						case 'r': // Prefix: "rojects/"
-
-							if l := len("rojects/"); len(elem) >= l && elem[0:l] == "rojects/" {
-								elem = elem[l:]
-							} else {
-								break
-							}
-
-							// Param: "projectId"
-							// Leaf parameter, slashes are prohibited
-							idx := strings.IndexByte(elem, '/')
-							if idx >= 0 {
-								break
-							}
-							args[1] = elem
-							elem = ""
-
-							if len(elem) == 0 {
-								// Leaf node.
-								switch method {
-								case "DELETE":
-									r.name = UnbindProjectFromBillingAccountOperation
-									r.summary = "Stop paying for a project"
-									r.operationID = "unbind-project-from-billing-account"
-									r.operationGroup = ""
-									r.pathPattern = "/account/v1/billing-accounts/{accountKey}/projects/{projectId}"
-									r.args = args
-									r.count = 2
-									return r, true
-								case "PUT":
-									r.name = BindProjectToBillingAccountOperation
-									r.summary = "Make this account pay for a project"
-									r.operationID = "bind-project-to-billing-account"
-									r.operationGroup = ""
-									r.pathPattern = "/account/v1/billing-accounts/{accountKey}/projects/{projectId}"
-									r.args = args
-									r.count = 2
-									return r, true
-								default:
-									return
-								}
-							}
-
-						}
-
-					case 'q': // Prefix: "quote"
-
-						if l := len("quote"); len(elem) >= l && elem[0:l] == "quote" {
-							elem = elem[l:]
-						} else {
-							break
-						}
-
-						if len(elem) == 0 {
-							// Leaf node.
-							switch method {
-							case "POST":
-								r.name = QuoteUsageOperation
-								r.summary = "What a usage would cost on this account's plan"
-								r.operationID = "quote-usage"
-								r.operationGroup = ""
-								r.pathPattern = "/account/v1/billing-accounts/{accountKey}/quote"
-								r.args = args
-								r.count = 1
-								return r, true
-							default:
-								return
-							}
-						}
-
-					case 's': // Prefix: "subscription"
-
-						if l := len("subscription"); len(elem) >= l && elem[0:l] == "subscription" {
-							elem = elem[l:]
-						} else {
-							break
-						}
-
-						if len(elem) == 0 {
-							switch method {
-							case "GET":
-								r.name = ReadSubscriptionOperation
-								r.summary = "Which plan this account is on"
-								r.operationID = "read-subscription"
-								r.operationGroup = ""
-								r.pathPattern = "/account/v1/billing-accounts/{accountKey}/subscription"
-								r.args = args
-								r.count = 1
-								return r, true
-							default:
-								return
-							}
-						}
-						switch elem[0] {
-						case '/': // Prefix: "/cancel"
-
-							if l := len("/cancel"); len(elem) >= l && elem[0:l] == "/cancel" {
-								elem = elem[l:]
-							} else {
-								break
-							}
-
-							if len(elem) == 0 {
-								// Leaf node.
-								switch method {
-								case "POST":
-									r.name = CancelSubscriptionOperation
-									r.summary = "Come off the paid plan"
-									r.operationID = "cancel-subscription"
-									r.operationGroup = ""
-									r.pathPattern = "/account/v1/billing-accounts/{accountKey}/subscription/cancel"
-									r.args = args
-									r.count = 1
-									return r, true
-								default:
-									return
-								}
-							}
-
-						}
-
-					case 't': // Prefix: "top-ups"
-
-						if l := len("top-ups"); len(elem) >= l && elem[0:l] == "top-ups" {
-							elem = elem[l:]
-						} else {
-							break
-						}
-
-						if len(elem) == 0 {
-							switch method {
-							case "GET":
-								r.name = ListTopUpsOperation
-								r.summary = "My top-ups"
-								r.operationID = "list-top-ups"
-								r.operationGroup = ""
-								r.pathPattern = "/account/v1/billing-accounts/{accountKey}/top-ups"
-								r.args = args
-								r.count = 1
-								return r, true
-							case "POST":
-								r.name = StartTopUpOperation
-								r.summary = "Start a top-up"
-								r.operationID = "start-top-up"
-								r.operationGroup = ""
-								r.pathPattern = "/account/v1/billing-accounts/{accountKey}/top-ups"
-								r.args = args
-								r.count = 1
-								return r, true
-							default:
-								return
-							}
-						}
-						switch elem[0] {
-						case '/': // Prefix: "/"
-
-							if l := len("/"); len(elem) >= l && elem[0:l] == "/" {
-								elem = elem[l:]
-							} else {
-								break
-							}
-
-							// Param: "paymentId"
-							// Leaf parameter, slashes are prohibited
-							idx := strings.IndexByte(elem, '/')
-							if idx >= 0 {
-								break
-							}
-							args[1] = elem
-							elem = ""
-
-							if len(elem) == 0 {
-								// Leaf node.
-								switch method {
-								case "GET":
-									r.name = ReadTopUpOperation
-									r.summary = "How far along a top-up is"
-									r.operationID = "read-top-up"
-									r.operationGroup = ""
-									r.pathPattern = "/account/v1/billing-accounts/{accountKey}/top-ups/{paymentId}"
-									r.args = args
-									r.count = 2
-									return r, true
-								default:
-									return
-								}
-							}
-
-						}
-
 					}
 
 				}
