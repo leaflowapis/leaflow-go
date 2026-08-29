@@ -421,7 +421,7 @@ func (UnimplementedHandler) UpdateThread(ctx context.Context, req *UpdateThreadR
 // that usually means downloading it onto one of the project's cloud instances.
 //
 // POST /api/v1/attachments
-func (UnimplementedHandler) UploadAttachment(ctx context.Context, req UploadAttachmentReq, params UploadAttachmentParams) (r *UploadedResource, _ error) {
+func (UnimplementedHandler) UploadAttachment(ctx context.Context, req *UploadAttachmentReqWithContentType, params UploadAttachmentParams) (r *UploadedResource, _ error) {
 	return r, ht.ErrNotImplemented
 }
 

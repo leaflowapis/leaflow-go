@@ -329,7 +329,7 @@ type Invoker interface {
 	// that usually means downloading it onto one of the project's cloud instances.
 	//
 	// POST /api/v1/attachments
-	UploadAttachment(ctx context.Context, request UploadAttachmentReq, params UploadAttachmentParams) (*UploadedResource, error)
+	UploadAttachment(ctx context.Context, request *UploadAttachmentReqWithContentType, params UploadAttachmentParams) (*UploadedResource, error)
 }
 
 // Client implements OAS client.
@@ -5390,12 +5390,12 @@ func (c *Client) sendUpdateThread(ctx context.Context, request *UpdateThreadRequ
 // that usually means downloading it onto one of the project's cloud instances.
 //
 // POST /api/v1/attachments
-func (c *Client) UploadAttachment(ctx context.Context, request UploadAttachmentReq, params UploadAttachmentParams) (*UploadedResource, error) {
+func (c *Client) UploadAttachment(ctx context.Context, request *UploadAttachmentReqWithContentType, params UploadAttachmentParams) (*UploadedResource, error) {
 	res, err := c.sendUploadAttachment(ctx, request, params)
 	return res, err
 }
 
-func (c *Client) sendUploadAttachment(ctx context.Context, request UploadAttachmentReq, params UploadAttachmentParams) (res *UploadedResource, err error) {
+func (c *Client) sendUploadAttachment(ctx context.Context, request *UploadAttachmentReqWithContentType, params UploadAttachmentParams) (res *UploadedResource, err error) {
 	otelAttrs := []attribute.KeyValue{
 		otelogen.OperationID("upload-attachment"),
 		semconv.HTTPRequestMethodKey.String("POST"),

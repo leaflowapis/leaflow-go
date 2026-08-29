@@ -6648,6 +6648,32 @@ func (s UploadAttachmentReq) Read(p []byte) (n int, err error) {
 	return s.Data.Read(p)
 }
 
+// UploadAttachmentReqWithContentType wraps UploadAttachmentReq with Content-Type.
+type UploadAttachmentReqWithContentType struct {
+	ContentType string
+	Content     UploadAttachmentReq
+}
+
+// GetContentType returns the value of ContentType.
+func (s *UploadAttachmentReqWithContentType) GetContentType() string {
+	return s.ContentType
+}
+
+// GetContent returns the value of Content.
+func (s *UploadAttachmentReqWithContentType) GetContent() UploadAttachmentReq {
+	return s.Content
+}
+
+// SetContentType sets the value of ContentType.
+func (s *UploadAttachmentReqWithContentType) SetContentType(val string) {
+	s.ContentType = val
+}
+
+// SetContent sets the value of Content.
+func (s *UploadAttachmentReqWithContentType) SetContent(val UploadAttachmentReq) {
+	s.Content = val
+}
+
 // Ref: #/components/schemas/UploadedResource
 type UploadedResource struct {
 	// Size of what was stored. For an image that has been resized, this is the resized size, not what was
