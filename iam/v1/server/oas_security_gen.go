@@ -37,17 +37,21 @@ func findAuthorization(h http.Header, prefix string) (string, bool) {
 
 // operationRolesBearerAuth is a private map storing roles per operation.
 var operationRolesBearerAuth = map[string][]string{
+	AttachPolicyOperation:             []string{},
 	BatchGetMembersOperation:          []string{},
 	CreateRoleOperation:               []string{},
 	CreateSSHKeyOperation:             []string{},
 	DeleteProjectOperation:            []string{},
 	DeleteRoleOperation:               []string{},
+	DetachPolicyOperation:             []string{},
+	GetPolicyOperation:                []string{},
 	GetProjectOperation:               []string{},
 	GetProjectMembershipOperation:     []string{},
 	GetRoleOperation:                  []string{},
 	GetSSHKeyOperation:                []string{},
 	IssueInvitationOperation:          []string{},
 	ListMembersOperation:              []string{},
+	ListPoliciesOperation:             []string{},
 	ListProjectInvitationsOperation:   []string{},
 	ListRolesOperation:                []string{},
 	ListSSHKeysOperation:              []string{},
@@ -55,8 +59,10 @@ var operationRolesBearerAuth = map[string][]string{
 	RenameSSHKeyOperation:             []string{},
 	RevokeInvitationOperation:         []string{},
 	RevokeSSHKeyOperation:             []string{},
+	SetMemberPermissionsOperation:     []string{},
 	SetMemberRolesOperation:           []string{},
 	TransferProjectOwnershipOperation: []string{},
+	UpdatePolicyOperation:             []string{},
 	UpdateProjectOperation:            []string{},
 	UpdateRoleOperation:               []string{},
 }

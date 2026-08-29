@@ -10,6 +10,20 @@ import (
 	ht "github.com/ogen-go/ogen/http"
 )
 
+func encodeAttachPolicyRequest(
+	req *AttachPolicyRequestBody,
+	r *http.Request,
+) error {
+	const contentType = "application/json"
+	e := new(jx.Encoder)
+	{
+		req.Encode(e)
+	}
+	encoded := e.Bytes()
+	ht.SetBody(r, bytes.NewReader(encoded), contentType)
+	return nil
+}
+
 func encodeBatchGetMembersRequest(
 	req *BatchGetMembersRequestBody,
 	r *http.Request,
@@ -80,6 +94,20 @@ func encodeRenameSSHKeyRequest(
 	return nil
 }
 
+func encodeSetMemberPermissionsRequest(
+	req *SetMemberPermissionsRequestBody,
+	r *http.Request,
+) error {
+	const contentType = "application/json"
+	e := new(jx.Encoder)
+	{
+		req.Encode(e)
+	}
+	encoded := e.Bytes()
+	ht.SetBody(r, bytes.NewReader(encoded), contentType)
+	return nil
+}
+
 func encodeSetMemberRolesRequest(
 	req *SetMemberRolesRequestBody,
 	r *http.Request,
@@ -96,6 +124,20 @@ func encodeSetMemberRolesRequest(
 
 func encodeTransferProjectOwnershipRequest(
 	req *TransferOwnershipRequestBody,
+	r *http.Request,
+) error {
+	const contentType = "application/json"
+	e := new(jx.Encoder)
+	{
+		req.Encode(e)
+	}
+	encoded := e.Bytes()
+	ht.SetBody(r, bytes.NewReader(encoded), contentType)
+	return nil
+}
+
+func encodeUpdatePolicyRequest(
+	req *UpdatePolicyRequestBody,
 	r *http.Request,
 ) error {
 	const contentType = "application/json"

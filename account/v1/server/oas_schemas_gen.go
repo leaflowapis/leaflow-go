@@ -746,10 +746,13 @@ func (s *ErrorStatusCode) SetResponse(val Error) {
 type GrantResource struct {
 	Admin bool `json:"admin"`
 	Owner bool `json:"owner"`
-	// 持有的全部自定义角色的权限并集，已去重排序.
-	Permissions []string `json:"permissions"`
 	// 持有的角色编码，只用于展示.
 	Roles []string `json:"roles"`
+	// 他全部策略编译出来的规则。不要自己遍历它做判定——拿它配上自己那份权限目录交给
+	// pkg/rbac：那里面的顺序（所有者不可被 deny、deny
+	// 优先于管理员、带资源范围的规则不
+	// 参与项目级判定）每一条都对着一种会静默放行的写法。.
+	Rules []RuleResource `json:"rules"`
 }
 
 // GetAdmin returns the value of Admin.
@@ -762,14 +765,14 @@ func (s *GrantResource) GetOwner() bool {
 	return s.Owner
 }
 
-// GetPermissions returns the value of Permissions.
-func (s *GrantResource) GetPermissions() []string {
-	return s.Permissions
-}
-
 // GetRoles returns the value of Roles.
 func (s *GrantResource) GetRoles() []string {
 	return s.Roles
+}
+
+// GetRules returns the value of Rules.
+func (s *GrantResource) GetRules() []RuleResource {
+	return s.Rules
 }
 
 // SetAdmin sets the value of Admin.
@@ -782,14 +785,14 @@ func (s *GrantResource) SetOwner(val bool) {
 	s.Owner = val
 }
 
-// SetPermissions sets the value of Permissions.
-func (s *GrantResource) SetPermissions(val []string) {
-	s.Permissions = val
-}
-
 // SetRoles sets the value of Roles.
 func (s *GrantResource) SetRoles(val []string) {
 	s.Roles = val
+}
+
+// SetRules sets the value of Rules.
+func (s *GrantResource) SetRules(val []RuleResource) {
+	s.Rules = val
 }
 
 // Ref: #/components/schemas/IdentityVerificationResource
@@ -1868,6 +1871,117 @@ func (s *RegisterRequestBody) SetCountry(val string) {
 // SetLocale sets the value of Locale.
 func (s *RegisterRequestBody) SetLocale(val Locale) {
 	s.Locale = val
+}
+
+// Ref: #/components/schemas/ResourceRefResource
+type ResourceRefResource struct {
+	// 是字符串而不是 uuid：dns 的 zone 标识是一个域名，而且它根本不在 IAM
+	// 的库里。匹配 语义是 glob，所以 *.example.com 能表达一批子域名；uuid
+	// 和域名都不含 glob 元字符， 对它们来说这就是精确相等。.
+	ID string `json:"id"`
+	// 形如 compute:instance、dns:zone，和权限名同一个命名空间.
+	Type string `json:"type"`
+}
+
+// GetID returns the value of ID.
+func (s *ResourceRefResource) GetID() string {
+	return s.ID
+}
+
+// GetType returns the value of Type.
+func (s *ResourceRefResource) GetType() string {
+	return s.Type
+}
+
+// SetID sets the value of ID.
+func (s *ResourceRefResource) SetID(val string) {
+	s.ID = val
+}
+
+// SetType sets the value of Type.
+func (s *ResourceRefResource) SetType(val string) {
+	s.Type = val
+}
+
+// Ref: #/components/schemas/RuleResource
+type RuleResource struct {
+	Effect RuleResourceEffect `json:"effect"`
+	// 支持尾部通配（compute:instance.*），通配必须带服务前缀.
+	Permissions []string `json:"permissions"`
+	// 为空表示这条规则在整个项目范围内成立；非空则表示它只在这些资源上成立，而那意味着
+	// 它回答不了项目级的问题。.
+	Resources []ResourceRefResource `json:"resources"`
+}
+
+// GetEffect returns the value of Effect.
+func (s *RuleResource) GetEffect() RuleResourceEffect {
+	return s.Effect
+}
+
+// GetPermissions returns the value of Permissions.
+func (s *RuleResource) GetPermissions() []string {
+	return s.Permissions
+}
+
+// GetResources returns the value of Resources.
+func (s *RuleResource) GetResources() []ResourceRefResource {
+	return s.Resources
+}
+
+// SetEffect sets the value of Effect.
+func (s *RuleResource) SetEffect(val RuleResourceEffect) {
+	s.Effect = val
+}
+
+// SetPermissions sets the value of Permissions.
+func (s *RuleResource) SetPermissions(val []string) {
+	s.Permissions = val
+}
+
+// SetResources sets the value of Resources.
+func (s *RuleResource) SetResources(val []ResourceRefResource) {
+	s.Resources = val
+}
+
+type RuleResourceEffect string
+
+const (
+	RuleResourceEffectAllow RuleResourceEffect = "allow"
+	RuleResourceEffectDeny  RuleResourceEffect = "deny"
+)
+
+// AllValues returns all RuleResourceEffect values.
+func (RuleResourceEffect) AllValues() []RuleResourceEffect {
+	return []RuleResourceEffect{
+		RuleResourceEffectAllow,
+		RuleResourceEffectDeny,
+	}
+}
+
+// MarshalText implements encoding.TextMarshaler.
+func (s RuleResourceEffect) MarshalText() ([]byte, error) {
+	switch s {
+	case RuleResourceEffectAllow:
+		return []byte(s), nil
+	case RuleResourceEffectDeny:
+		return []byte(s), nil
+	default:
+		return nil, errors.Errorf("invalid value: %q", s)
+	}
+}
+
+// UnmarshalText implements encoding.TextUnmarshaler.
+func (s *RuleResourceEffect) UnmarshalText(data []byte) error {
+	switch RuleResourceEffect(data) {
+	case RuleResourceEffectAllow:
+		*s = RuleResourceEffectAllow
+		return nil
+	case RuleResourceEffectDeny:
+		*s = RuleResourceEffectDeny
+		return nil
+	default:
+		return errors.Errorf("invalid value: %q", data)
+	}
 }
 
 // Ref: #/components/schemas/SettingsResource

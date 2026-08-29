@@ -19,6 +19,24 @@ import (
 	openapi_types "github.com/oapi-codegen/runtime/types"
 )
 
+// Defines values for AttachPolicyRequestBodyEffect.
+const (
+	AttachPolicyRequestBodyEffectAllow AttachPolicyRequestBodyEffect = "allow"
+	AttachPolicyRequestBodyEffectDeny  AttachPolicyRequestBodyEffect = "deny"
+)
+
+// Valid indicates whether the value is a known member of the AttachPolicyRequestBodyEffect enum.
+func (e AttachPolicyRequestBodyEffect) Valid() bool {
+	switch e {
+	case AttachPolicyRequestBodyEffectAllow:
+		return true
+	case AttachPolicyRequestBodyEffectDeny:
+		return true
+	default:
+		return false
+	}
+}
+
 // Defines values for CreateSSHKeyRequestBodyOwner.
 const (
 	Me      CreateSSHKeyRequestBodyOwner = "me"
@@ -31,6 +49,24 @@ func (e CreateSSHKeyRequestBodyOwner) Valid() bool {
 	case Me:
 		return true
 	case Project:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for PolicyResourceEffect.
+const (
+	PolicyResourceEffectAllow PolicyResourceEffect = "allow"
+	PolicyResourceEffectDeny  PolicyResourceEffect = "deny"
+)
+
+// Valid indicates whether the value is a known member of the PolicyResourceEffect enum.
+func (e PolicyResourceEffect) Valid() bool {
+	switch e {
+	case PolicyResourceEffectAllow:
+		return true
+	case PolicyResourceEffectDeny:
 		return true
 	default:
 		return false
@@ -64,6 +100,24 @@ func (e ProjectResourceStatus) Valid() bool {
 	}
 }
 
+// Defines values for RuleResourceEffect.
+const (
+	RuleResourceEffectAllow RuleResourceEffect = "allow"
+	RuleResourceEffectDeny  RuleResourceEffect = "deny"
+)
+
+// Valid indicates whether the value is a known member of the RuleResourceEffect enum.
+func (e RuleResourceEffect) Valid() bool {
+	switch e {
+	case RuleResourceEffectAllow:
+		return true
+	case RuleResourceEffectDeny:
+		return true
+	default:
+		return false
+	}
+}
+
 // Defines values for SSHKeyResourceStatus.
 const (
 	SSHKeyResourceStatusACTIVE  SSHKeyResourceStatus = "ACTIVE"
@@ -76,6 +130,24 @@ func (e SSHKeyResourceStatus) Valid() bool {
 	case SSHKeyResourceStatusACTIVE:
 		return true
 	case SSHKeyResourceStatusREVOKED:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for UpdatePolicyRequestBodyEffect.
+const (
+	UpdatePolicyRequestBodyEffectAllow UpdatePolicyRequestBodyEffect = "allow"
+	UpdatePolicyRequestBodyEffectDeny  UpdatePolicyRequestBodyEffect = "deny"
+)
+
+// Valid indicates whether the value is a known member of the UpdatePolicyRequestBodyEffect enum.
+func (e UpdatePolicyRequestBodyEffect) Valid() bool {
+	switch e {
+	case UpdatePolicyRequestBodyEffectAllow:
+		return true
+	case UpdatePolicyRequestBodyEffectDeny:
 		return true
 	default:
 		return false
@@ -100,6 +172,28 @@ func (e ListSshKeysParamsStatus) Valid() bool {
 	}
 }
 
+// AttachPolicyRequestBody defines model for AttachPolicyRequestBody.
+type AttachPolicyRequestBody struct {
+	// Description 给人看的理由。一条附加策略事后最难回答的是「当初为什么开这一条」
+	Description *string                       `json:"description,omitempty"`
+	Effect      AttachPolicyRequestBodyEffect `json:"effect"`
+
+	// Permissions 直挂的权限名，用它就不必为一个人临时造一个只有他持有的角色
+	Permissions []string `json:"permissions,omitempty"`
+
+	// Resources 这条策略只在这些资源上成立。留空只有配合 deny 才讲得通——一条不限资源的 allow 是基础策略，那一条已经有了
+	Resources []ResourceRefResource `json:"resources,omitempty"`
+
+	// Roles 必须是这个项目已经定义的角色。OWNER 和 ADMIN 不行——它们是规则而不是权限集合，「限定在三台机器上的所有者」讲不通
+	Roles []string `json:"roles,omitempty"`
+
+	// UserId 必须已经是这个项目的成员
+	UserId string `json:"user_id"`
+}
+
+// AttachPolicyRequestBodyEffect defines model for AttachPolicyRequestBody.Effect.
+type AttachPolicyRequestBodyEffect string
+
 // BatchGetMembersRequestBody defines model for BatchGetMembersRequestBody.
 type BatchGetMembersRequestBody struct {
 	// Ids The account ids to resolve. Blank entries are ignored.
@@ -110,6 +204,20 @@ type BatchGetMembersRequestBody struct {
 type BatchGetMembersResponseBody struct {
 	// Items The people that resolved. Ids that never belonged to this project are absent, as are ids that do not resolve at all.
 	Items []ResolvedMemberResource `json:"items"`
+}
+
+// CatalogListResponseBody defines model for CatalogListResponseBody.
+type CatalogListResponseBody struct {
+	Items []CatalogResource `json:"items"`
+}
+
+// CatalogResource defines model for CatalogResource.
+type CatalogResource struct {
+	Permissions []PermissionResource `json:"permissions"`
+
+	// ResourceTypes 这个服务声明的资源类型。带资源范围的规则只落得到它们上面——一个没有被声明过的类型没人认得，限定在它上面的规则谁都判不出来
+	ResourceTypes []ResourceTypeResource `json:"resource_types"`
+	Service       string                 `json:"service"`
 }
 
 // CreateRoleRequestBody defines model for CreateRoleRequestBody.
@@ -148,11 +256,11 @@ type GrantResource struct {
 	Admin bool `json:"admin"`
 	Owner bool `json:"owner"`
 
-	// Permissions 持有的全部自定义角色的权限并集，已去重排序
-	Permissions []string `json:"permissions"`
-
 	// Roles 持有的角色编码，只用于展示
 	Roles []string `json:"roles"`
+
+	// Rules 他全部策略编译出来的规则。**不要自己遍历它做判定**——拿它配上自己那份权限目录交给 pkg/rbac：owner 不可被 deny、deny 优先于 admin、带资源范围的规则不参与项目级判定，那里面的顺序每一条都对着一种会静默放行的写法
+	Rules []RuleResource `json:"rules"`
 }
 
 // InvitationResource defines model for InvitationResource.
@@ -257,11 +365,6 @@ type OwnershipTransferResponseBody struct {
 	To   MemberResource `json:"to"`
 }
 
-// PermissionListResponseBody defines model for PermissionListResponseBody.
-type PermissionListResponseBody struct {
-	Items []PermissionResource `json:"items"`
-}
-
 // PermissionResource defines model for PermissionResource.
 type PermissionResource struct {
 	Description string `json:"description"`
@@ -269,7 +372,41 @@ type PermissionResource struct {
 
 	// OwnerOnly 只有项目所有者能做，绑到自定义角色上也不会生效
 	OwnerOnly bool `json:"owner_only"`
+
+	// ResourceType 这条权限的判定对象是哪类资源，空表示它是项目级的。**它不必等于操作对象本身**——compute 的 route 表上没有 project_id，隔离本来就经父网络传递，所以 compute:route.create 的判定对象是 compute:private_network。非空同时意味着这条权限可以被限定到具体实例；create 和 list 一律留空
+	ResourceType string `json:"resource_type"`
 }
+
+// PolicyListResponseBody defines model for PolicyListResponseBody.
+type PolicyListResponseBody struct {
+	Items []PolicyResource `json:"items"`
+}
+
+// PolicyResource defines model for PolicyResource.
+type PolicyResource struct {
+	// Base 基础策略是方向 allow、不限资源的那一条，每个成员恰好一条，装的是他的常规角色。改它走 PUT /members/{userId}/roles 和 PUT /members/{userId}/permissions
+	Base      bool      `json:"base"`
+	CreatedAt time.Time `json:"created_at"`
+
+	// Description 给人看的理由。一条附加策略事后最难回答的是「当初为什么开这一条」
+	Description string               `json:"description"`
+	Effect      PolicyResourceEffect `json:"effect"`
+	Id          openapi_types.UUID   `json:"id"`
+
+	// Permissions 直挂在这个人身上的权限名，不经过角色
+	Permissions []string `json:"permissions"`
+
+	// Resources 为空表示整个项目范围
+	Resources []ResourceRefResource `json:"resources"`
+
+	// Roles 这条策略带上的角色编码
+	Roles     []string  `json:"roles"`
+	UpdatedAt time.Time `json:"updated_at"`
+	UserId    string    `json:"user_id"`
+}
+
+// PolicyResourceEffect defines model for PolicyResource.Effect.
+type PolicyResourceEffect string
 
 // ProjectAccessResource defines model for ProjectAccessResource.
 type ProjectAccessResource struct {
@@ -319,6 +456,21 @@ type ResolvedMemberResource struct {
 	UserId string `json:"user_id"`
 }
 
+// ResourceRefResource defines model for ResourceRefResource.
+type ResourceRefResource struct {
+	// Id 是字符串不是 uuid：dns 的 zone 标识是域名，而且不在 IAM 库里。匹配语义是 glob，所以 *.example.com 能表达一批子域名；uuid 和域名都不含 glob 元字符，对它们来说就是精确相等
+	Id string `json:"id"`
+
+	// Type 形如 compute:instance、dns:zone，和权限名同一个命名空间
+	Type string `json:"type"`
+}
+
+// ResourceTypeResource defines model for ResourceTypeResource.
+type ResourceTypeResource struct {
+	Description string `json:"description"`
+	Name        string `json:"name"`
+}
+
 // RoleListResponseBody defines model for RoleListResponseBody.
 type RoleListResponseBody struct {
 	Items []RoleResource `json:"items"`
@@ -335,6 +487,20 @@ type RoleResource struct {
 	Permissions []string  `json:"permissions"`
 	UpdatedAt   time.Time `json:"updated_at"`
 }
+
+// RuleResource defines model for RuleResource.
+type RuleResource struct {
+	Effect RuleResourceEffect `json:"effect"`
+
+	// Permissions 权限名，支持尾部通配（compute:instance.*）。通配必须带服务前缀——一条光秃秃的 * 会把日后新上线的服务的操作也一起授出去，而那件事发生的时候没有任何人在场
+	Permissions []string `json:"permissions"`
+
+	// Resources 为空表示整个项目范围；非空表示这条规则只在这些资源上成立，而那意味着它回答不了项目级的问题
+	Resources []ResourceRefResource `json:"resources"`
+}
+
+// RuleResourceEffect defines model for RuleResource.Effect.
+type RuleResourceEffect string
 
 // SSHKeyResource defines model for SSHKeyResource.
 type SSHKeyResource struct {
@@ -359,6 +525,12 @@ type SSHKeyResource struct {
 // SSHKeyResourceStatus defines model for SSHKeyResource.Status.
 type SSHKeyResourceStatus string
 
+// SetMemberPermissionsRequestBody defines model for SetMemberPermissionsRequestBody.
+type SetMemberPermissionsRequestBody struct {
+	// Permissions 这个人应当直挂的**全部**权限名，整体替换。角色给的那些不在这里，也不会被这次写入碰到
+	Permissions []string `json:"permissions"`
+}
+
 // SetMemberRolesRequestBody defines model for SetMemberRolesRequestBody.
 type SetMemberRolesRequestBody struct {
 	// Roles 这个人应当持有的**全部**角色编码。OWNER 不能出现在这里
@@ -370,6 +542,27 @@ type TransferOwnershipRequestBody struct {
 	// ToUserId 接手的人必须已经是这个项目的成员
 	ToUserId string `json:"to_user_id"`
 }
+
+// UpdatePolicyRequestBody defines model for UpdatePolicyRequestBody.
+type UpdatePolicyRequestBody struct {
+	// Description 给人看的理由。它和这次改动一起替换，不然留下来的会是一句解释着上一个版本的话
+	Description *string `json:"description,omitempty"`
+
+	// Effect 必须和这条策略当前的方向一致。方向改不动——那不是「改一条策略」，是一次意思完全相反的授权决定，改它的人多半以为自己在收紧，而读这行数据的下一个人看到的是一条方向和当初授予时不同、说明文字却还是旧的策略。仍然要求发这个字段而不是干脆不收，是因为整体替换的语义是「这就是这条策略现在的全貌」：少一个字段的话，调用方以为自己把 deny 改成了 allow，而服务端默默忽略了它。不一致时返回 PROJECT_POLICY_EFFECT_IMMUTABLE
+	Effect UpdatePolicyRequestBodyEffect `json:"effect"`
+
+	// Permissions 直挂的权限名，整份替换。没列进来的就是被收回了——它不是往上加一条
+	Permissions []string `json:"permissions,omitempty"`
+
+	// Resources 这条策略的资源范围，整份替换。范围内容能改，有没有范围改不了：基础策略加不上范围，带范围的也清不空——清空之后它就是基础策略的形状，而那个位置每个成员只有一条
+	Resources []ResourceRefResource `json:"resources,omitempty"`
+
+	// Roles 必须是这个项目已经定义的角色，整份替换。和挂上去那次一样不能有 OWNER 或 ADMIN
+	Roles []string `json:"roles,omitempty"`
+}
+
+// UpdatePolicyRequestBodyEffect 必须和这条策略当前的方向一致。方向改不动——那不是「改一条策略」，是一次意思完全相反的授权决定，改它的人多半以为自己在收紧，而读这行数据的下一个人看到的是一条方向和当初授予时不同、说明文字却还是旧的策略。仍然要求发这个字段而不是干脆不收，是因为整体替换的语义是「这就是这条策略现在的全貌」：少一个字段的话，调用方以为自己把 deny 改成了 allow，而服务端默默忽略了它。不一致时返回 PROJECT_POLICY_EFFECT_IMMUTABLE
+type UpdatePolicyRequestBodyEffect string
 
 // UpdateProjectRequestBody defines model for UpdateProjectRequestBody.
 type UpdateProjectRequestBody struct {
@@ -405,6 +598,12 @@ type ListMembersParams struct {
 	Keyword *string `form:"keyword,omitempty" json:"keyword,omitempty"`
 }
 
+// ListPoliciesParams defines parameters for ListPolicies.
+type ListPoliciesParams struct {
+	// UserId 只看这个人身上的。不传表示整个项目的
+	UserId *string `form:"userId,omitempty" json:"userId,omitempty"`
+}
+
 // ListSshKeysParams defines parameters for ListSshKeys.
 type ListSshKeysParams struct {
 	// Limit 这一页最多返回多少条
@@ -426,11 +625,20 @@ type ListSshKeysParamsStatus string
 // IssueInvitationJSONRequestBody defines body for IssueInvitation for application/json ContentType.
 type IssueInvitationJSONRequestBody = IssueInvitationRequestBody
 
+// SetMemberPermissionsJSONRequestBody defines body for SetMemberPermissions for application/json ContentType.
+type SetMemberPermissionsJSONRequestBody = SetMemberPermissionsRequestBody
+
 // SetMemberRolesJSONRequestBody defines body for SetMemberRoles for application/json ContentType.
 type SetMemberRolesJSONRequestBody = SetMemberRolesRequestBody
 
 // BatchGetMembersJSONRequestBody defines body for BatchGetMembers for application/json ContentType.
 type BatchGetMembersJSONRequestBody = BatchGetMembersRequestBody
+
+// AttachPolicyJSONRequestBody defines body for AttachPolicy for application/json ContentType.
+type AttachPolicyJSONRequestBody = AttachPolicyRequestBody
+
+// UpdatePolicyJSONRequestBody defines body for UpdatePolicy for application/json ContentType.
+type UpdatePolicyJSONRequestBody = UpdatePolicyRequestBody
 
 // UpdateProjectJSONRequestBody defines body for UpdateProject for application/json ContentType.
 type UpdateProjectJSONRequestBody = UpdateProjectRequestBody
@@ -566,6 +774,24 @@ type ClientInterface interface {
 	// Corresponds with DELETE /api/v1/members/{userId} (the `RemoveMember` operationId).
 	RemoveMember(ctx context.Context, userId string, reqEditors ...RequestEditorFn) (*http.Response, error)
 
+	// SetMemberPermissionsWithBody 设置一个成员直挂的权限
+	//
+	// 整体替换基础策略上直挂的那些权限。直挂让「给某个人临时开一条」不必先造一个只有他一个人持有的角色，但它不会随角色调整而更新，所以它适合一次性的、说得出理由的授予——角色仍然是主要的组织方式。要 iam:members.manage。
+	//
+	// Takes any type of body and a specified content type.
+	//
+	// Corresponds with PUT /api/v1/members/{userId}/permissions (the `SetMemberPermissions` operationId).
+	SetMemberPermissionsWithBody(ctx context.Context, userId string, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// SetMemberPermissions 设置一个成员直挂的权限
+	//
+	// 整体替换基础策略上直挂的那些权限。直挂让「给某个人临时开一条」不必先造一个只有他一个人持有的角色，但它不会随角色调整而更新，所以它适合一次性的、说得出理由的授予——角色仍然是主要的组织方式。要 iam:members.manage。
+	//
+	// Takes a body of the `application/json` content type.
+	//
+	// Corresponds with PUT /api/v1/members/{userId}/permissions (the `SetMemberPermissions` operationId).
+	SetMemberPermissions(ctx context.Context, userId string, body SetMemberPermissionsJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
+
 	// SetMemberRolesWithBody 设置一个成员持有的角色
 	//
 	// 整体替换而不是增删：调用方拿到的就是一份完整清单，让它自己算差集只会让「我以为我取消了那个角色」这种事变得可能。所有者身上的 OWNER 不受影响。.
@@ -617,12 +843,69 @@ type ClientInterface interface {
 	// Corresponds with GET /api/v1/membership (the `GetProjectMembership` operationId).
 	GetProjectMembership(ctx context.Context, reqEditors ...RequestEditorFn) (*http.Response, error)
 
-	// ListPermissions 列出 IAM 自己声明的权限
+	// ListPermissions 列出全平台可授予的权限
 	//
-	// **只有 IAM 这一份。** 别的服务的操作不在这里——权限目录由各个服务自己声明，IAM 认识它们就等于要跟着每个下游一起发版。.
+	// 各服务在启动时把自己那份目录注册进 IAM（和 AddFinalizer 同一段代码），所以这里是一份汇总，不只是 IAM 自己那几条。**IAM 不用它做判定**——判定在各服务自己那边，拿 Grant 配它自己那份目录算；这份汇总只是让界面画得出勾选框，它落后一个版本只会让界面上少几条可选项，不会让判定出错。一个还没启动过的服务，它的权限不在这里。.
 	//
 	// Corresponds with GET /api/v1/permissions (the `ListPermissions` operationId).
 	ListPermissions(ctx context.Context, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// ListPolicies 列出这个项目里的策略
+	//
+	// 在项目里就看得到，和成员列表同一条规则：谁被授了什么也是「这个项目有谁」的一部分。.
+	//
+	// Corresponds with GET /api/v1/policies (the `ListPolicies` operationId).
+	ListPolicies(ctx context.Context, params *ListPoliciesParams, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// AttachPolicyWithBody 附加一条策略
+	//
+	// 它建的是**附加**策略——要么带资源范围，要么方向是 deny。一条不限资源的 allow 是基础策略，每个成员只有一条，改它走 set-member-roles 和 set-member-permissions。roles 里不能有 OWNER 或 ADMIN：它们是规则而不是权限集合，「限定在三台机器上的所有者」讲不通。要 iam:members.manage。
+	//
+	// Takes any type of body and a specified content type.
+	//
+	// Corresponds with POST /api/v1/policies (the `AttachPolicy` operationId).
+	AttachPolicyWithBody(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// AttachPolicy 附加一条策略
+	//
+	// 它建的是**附加**策略——要么带资源范围，要么方向是 deny。一条不限资源的 allow 是基础策略，每个成员只有一条，改它走 set-member-roles 和 set-member-permissions。roles 里不能有 OWNER 或 ADMIN：它们是规则而不是权限集合，「限定在三台机器上的所有者」讲不通。要 iam:members.manage。
+	//
+	// Takes a body of the `application/json` content type.
+	//
+	// Corresponds with POST /api/v1/policies (the `AttachPolicy` operationId).
+	AttachPolicy(ctx context.Context, body AttachPolicyJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// DetachPolicy 摘掉一条策略
+	//
+	// 基础策略摘不掉——它是这个成员角色的落点，删了它这个人就不再持有任何角色，而「让他离开这个项目」是 remove-member 的事。要 iam:members.manage。
+	//
+	// Corresponds with DELETE /api/v1/policies/{policyId} (the `DetachPolicy` operationId).
+	DetachPolicy(ctx context.Context, policyId openapi_types.UUID, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// GetPolicy 查看一条策略
+	//
+	// 和 list-policies 同一条规则，在项目里就看得到：谁被授了什么也是「这个项目有谁」的一部分，读它不需要额外的权限。.
+	//
+	// Corresponds with GET /api/v1/policies/{policyId} (the `GetPolicy` operationId).
+	GetPolicy(ctx context.Context, policyId openapi_types.UUID, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// UpdatePolicyWithBody 改一条策略
+	//
+	// 整体替换而不是逐字段改：resources、roles、permissions 各自整份覆盖，没发的那份就是空的——只有「这就是这条策略现在的全貌」这一种语义说得清一次写入到底收回了什么。改不动的是策略的**种类**：基础策略（不限资源的 allow）加不上资源范围，这个成员的角色就存在它上面，给它加个范围等于让他在别的资源上什么都不是；一条带范围的策略反过来也不能把范围清空变成基础策略，那个位置每个成员只有一条。要换种类就删了重建。要 iam:members.manage。
+	//
+	// Takes any type of body and a specified content type.
+	//
+	// Corresponds with PUT /api/v1/policies/{policyId} (the `UpdatePolicy` operationId).
+	UpdatePolicyWithBody(ctx context.Context, policyId openapi_types.UUID, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// UpdatePolicy 改一条策略
+	//
+	// 整体替换而不是逐字段改：resources、roles、permissions 各自整份覆盖，没发的那份就是空的——只有「这就是这条策略现在的全貌」这一种语义说得清一次写入到底收回了什么。改不动的是策略的**种类**：基础策略（不限资源的 allow）加不上资源范围，这个成员的角色就存在它上面，给它加个范围等于让他在别的资源上什么都不是；一条带范围的策略反过来也不能把范围清空变成基础策略，那个位置每个成员只有一条。要换种类就删了重建。要 iam:members.manage。
+	//
+	// Takes a body of the `application/json` content type.
+	//
+	// Corresponds with PUT /api/v1/policies/{policyId} (the `UpdatePolicy` operationId).
+	UpdatePolicy(ctx context.Context, policyId openapi_types.UUID, body UpdatePolicyJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
 
 	// DeleteProject 删除项目
 	//
@@ -877,6 +1160,44 @@ func (c *Client) RemoveMember(ctx context.Context, userId string, reqEditors ...
 	return c.Client.Do(req)
 }
 
+// SetMemberPermissionsWithBody 设置一个成员直挂的权限
+//
+// 整体替换基础策略上直挂的那些权限。直挂让「给某个人临时开一条」不必先造一个只有他一个人持有的角色，但它不会随角色调整而更新，所以它适合一次性的、说得出理由的授予——角色仍然是主要的组织方式。要 iam:members.manage。
+//
+// Takes any type of body and a specified content type.
+//
+// Corresponds with PUT /api/v1/members/{userId}/permissions (the `SetMemberPermissions` operationId).
+func (c *Client) SetMemberPermissionsWithBody(ctx context.Context, userId string, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewSetMemberPermissionsRequestWithBody(c.Server, userId, contentType, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+// SetMemberPermissions 设置一个成员直挂的权限
+//
+// 整体替换基础策略上直挂的那些权限。直挂让「给某个人临时开一条」不必先造一个只有他一个人持有的角色，但它不会随角色调整而更新，所以它适合一次性的、说得出理由的授予——角色仍然是主要的组织方式。要 iam:members.manage。
+//
+// Takes a body of the `application/json` content type.
+//
+// Corresponds with PUT /api/v1/members/{userId}/permissions (the `SetMemberPermissions` operationId).
+func (c *Client) SetMemberPermissions(ctx context.Context, userId string, body SetMemberPermissionsJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewSetMemberPermissionsRequest(c.Server, userId, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
 // SetMemberRolesWithBody 设置一个成员持有的角色
 //
 // 整体替换而不是增删：调用方拿到的就是一份完整清单，让它自己算差集只会让「我以为我取消了那个角色」这种事变得可能。所有者身上的 OWNER 不受影响。.
@@ -978,13 +1299,140 @@ func (c *Client) GetProjectMembership(ctx context.Context, reqEditors ...Request
 	return c.Client.Do(req)
 }
 
-// ListPermissions 列出 IAM 自己声明的权限
+// ListPermissions 列出全平台可授予的权限
 //
-// **只有 IAM 这一份。** 别的服务的操作不在这里——权限目录由各个服务自己声明，IAM 认识它们就等于要跟着每个下游一起发版。.
+// 各服务在启动时把自己那份目录注册进 IAM（和 AddFinalizer 同一段代码），所以这里是一份汇总，不只是 IAM 自己那几条。**IAM 不用它做判定**——判定在各服务自己那边，拿 Grant 配它自己那份目录算；这份汇总只是让界面画得出勾选框，它落后一个版本只会让界面上少几条可选项，不会让判定出错。一个还没启动过的服务，它的权限不在这里。.
 //
 // Corresponds with GET /api/v1/permissions (the `ListPermissions` operationId).
 func (c *Client) ListPermissions(ctx context.Context, reqEditors ...RequestEditorFn) (*http.Response, error) {
 	req, err := NewListPermissionsRequest(c.Server)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+// ListPolicies 列出这个项目里的策略
+//
+// 在项目里就看得到，和成员列表同一条规则：谁被授了什么也是「这个项目有谁」的一部分。.
+//
+// Corresponds with GET /api/v1/policies (the `ListPolicies` operationId).
+func (c *Client) ListPolicies(ctx context.Context, params *ListPoliciesParams, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewListPoliciesRequest(c.Server, params)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+// AttachPolicyWithBody 附加一条策略
+//
+// 它建的是**附加**策略——要么带资源范围，要么方向是 deny。一条不限资源的 allow 是基础策略，每个成员只有一条，改它走 set-member-roles 和 set-member-permissions。roles 里不能有 OWNER 或 ADMIN：它们是规则而不是权限集合，「限定在三台机器上的所有者」讲不通。要 iam:members.manage。
+//
+// Takes any type of body and a specified content type.
+//
+// Corresponds with POST /api/v1/policies (the `AttachPolicy` operationId).
+func (c *Client) AttachPolicyWithBody(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewAttachPolicyRequestWithBody(c.Server, contentType, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+// AttachPolicy 附加一条策略
+//
+// 它建的是**附加**策略——要么带资源范围，要么方向是 deny。一条不限资源的 allow 是基础策略，每个成员只有一条，改它走 set-member-roles 和 set-member-permissions。roles 里不能有 OWNER 或 ADMIN：它们是规则而不是权限集合，「限定在三台机器上的所有者」讲不通。要 iam:members.manage。
+//
+// Takes a body of the `application/json` content type.
+//
+// Corresponds with POST /api/v1/policies (the `AttachPolicy` operationId).
+func (c *Client) AttachPolicy(ctx context.Context, body AttachPolicyJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewAttachPolicyRequest(c.Server, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+// DetachPolicy 摘掉一条策略
+//
+// 基础策略摘不掉——它是这个成员角色的落点，删了它这个人就不再持有任何角色，而「让他离开这个项目」是 remove-member 的事。要 iam:members.manage。
+//
+// Corresponds with DELETE /api/v1/policies/{policyId} (the `DetachPolicy` operationId).
+func (c *Client) DetachPolicy(ctx context.Context, policyId openapi_types.UUID, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewDetachPolicyRequest(c.Server, policyId)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+// GetPolicy 查看一条策略
+//
+// 和 list-policies 同一条规则，在项目里就看得到：谁被授了什么也是「这个项目有谁」的一部分，读它不需要额外的权限。.
+//
+// Corresponds with GET /api/v1/policies/{policyId} (the `GetPolicy` operationId).
+func (c *Client) GetPolicy(ctx context.Context, policyId openapi_types.UUID, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewGetPolicyRequest(c.Server, policyId)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+// UpdatePolicyWithBody 改一条策略
+//
+// 整体替换而不是逐字段改：resources、roles、permissions 各自整份覆盖，没发的那份就是空的——只有「这就是这条策略现在的全貌」这一种语义说得清一次写入到底收回了什么。改不动的是策略的**种类**：基础策略（不限资源的 allow）加不上资源范围，这个成员的角色就存在它上面，给它加个范围等于让他在别的资源上什么都不是；一条带范围的策略反过来也不能把范围清空变成基础策略，那个位置每个成员只有一条。要换种类就删了重建。要 iam:members.manage。
+//
+// Takes any type of body and a specified content type.
+//
+// Corresponds with PUT /api/v1/policies/{policyId} (the `UpdatePolicy` operationId).
+func (c *Client) UpdatePolicyWithBody(ctx context.Context, policyId openapi_types.UUID, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewUpdatePolicyRequestWithBody(c.Server, policyId, contentType, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+// UpdatePolicy 改一条策略
+//
+// 整体替换而不是逐字段改：resources、roles、permissions 各自整份覆盖，没发的那份就是空的——只有「这就是这条策略现在的全貌」这一种语义说得清一次写入到底收回了什么。改不动的是策略的**种类**：基础策略（不限资源的 allow）加不上资源范围，这个成员的角色就存在它上面，给它加个范围等于让他在别的资源上什么都不是；一条带范围的策略反过来也不能把范围清空变成基础策略，那个位置每个成员只有一条。要换种类就删了重建。要 iam:members.manage。
+//
+// Takes a body of the `application/json` content type.
+//
+// Corresponds with PUT /api/v1/policies/{policyId} (the `UpdatePolicy` operationId).
+func (c *Client) UpdatePolicy(ctx context.Context, policyId openapi_types.UUID, body UpdatePolicyJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewUpdatePolicyRequest(c.Server, policyId, body)
 	if err != nil {
 		return nil, err
 	}
@@ -1597,6 +2045,53 @@ func NewRemoveMemberRequest(server string, userId string) (*http.Request, error)
 	return req, nil
 }
 
+// NewSetMemberPermissionsRequest calls the generic SetMemberPermissions builder with application/json body
+func NewSetMemberPermissionsRequest(server string, userId string, body SetMemberPermissionsJSONRequestBody) (*http.Request, error) {
+	var bodyReader io.Reader
+	buf, err := json.Marshal(body)
+	if err != nil {
+		return nil, err
+	}
+	bodyReader = bytes.NewReader(buf)
+	return NewSetMemberPermissionsRequestWithBody(server, userId, "application/json", bodyReader)
+}
+
+// NewSetMemberPermissionsRequestWithBody constructs an http.Request for the SetMemberPermissions method, with any body, and a specified content type
+func NewSetMemberPermissionsRequestWithBody(server string, userId string, contentType string, body io.Reader) (*http.Request, error) {
+	var err error
+
+	var pathParam0 string
+
+	pathParam0, err = runtime.StyleParamWithOptions("simple", false, "userId", userId, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: ""})
+	if err != nil {
+		return nil, err
+	}
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/api/v1/members/%s/permissions", pathParam0)
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest(http.MethodPut, queryURL.String(), body)
+	if err != nil {
+		return nil, err
+	}
+
+	req.Header.Add("Content-Type", contentType)
+
+	return req, nil
+}
+
 // NewSetMemberRolesRequest calls the generic SetMemberRoles builder with application/json body
 func NewSetMemberRolesRequest(server string, userId string, body SetMemberRolesJSONRequestBody) (*http.Request, error) {
 	var bodyReader io.Reader
@@ -1734,6 +2229,215 @@ func NewListPermissionsRequest(server string) (*http.Request, error) {
 	if err != nil {
 		return nil, err
 	}
+
+	return req, nil
+}
+
+// NewListPoliciesRequest constructs an http.Request for the ListPolicies method
+func NewListPoliciesRequest(server string, params *ListPoliciesParams) (*http.Request, error) {
+	var err error
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/api/v1/policies")
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	if params != nil {
+		// queryValues collects non-styled parameters (passthrough, JSON)
+		// that are safe to round-trip through url.Values.Encode().
+		queryValues := queryURL.Query()
+		// rawQueryFragments collects pre-encoded query fragments from
+		// styled parameters, preserving literal commas as delimiters
+		// per the OpenAPI spec (e.g. "color=blue,black,brown").
+		var rawQueryFragments []string
+
+		if params.UserId != nil {
+
+			if queryFrag, err := runtime.StyleParamWithOptions("form", false, "userId", *params.UserId, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			} else {
+				for _, qp := range strings.Split(queryFrag, "&") {
+					rawQueryFragments = append(rawQueryFragments, qp)
+				}
+			}
+
+		}
+
+		if encoded := queryValues.Encode(); encoded != "" {
+			rawQueryFragments = append(rawQueryFragments, encoded)
+		}
+		queryURL.RawQuery = strings.Join(rawQueryFragments, "&")
+	}
+
+	req, err := http.NewRequest(http.MethodGet, queryURL.String(), nil)
+	if err != nil {
+		return nil, err
+	}
+
+	return req, nil
+}
+
+// NewAttachPolicyRequest calls the generic AttachPolicy builder with application/json body
+func NewAttachPolicyRequest(server string, body AttachPolicyJSONRequestBody) (*http.Request, error) {
+	var bodyReader io.Reader
+	buf, err := json.Marshal(body)
+	if err != nil {
+		return nil, err
+	}
+	bodyReader = bytes.NewReader(buf)
+	return NewAttachPolicyRequestWithBody(server, "application/json", bodyReader)
+}
+
+// NewAttachPolicyRequestWithBody constructs an http.Request for the AttachPolicy method, with any body, and a specified content type
+func NewAttachPolicyRequestWithBody(server string, contentType string, body io.Reader) (*http.Request, error) {
+	var err error
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/api/v1/policies")
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest(http.MethodPost, queryURL.String(), body)
+	if err != nil {
+		return nil, err
+	}
+
+	req.Header.Add("Content-Type", contentType)
+
+	return req, nil
+}
+
+// NewDetachPolicyRequest constructs an http.Request for the DetachPolicy method
+func NewDetachPolicyRequest(server string, policyId openapi_types.UUID) (*http.Request, error) {
+	var err error
+
+	var pathParam0 string
+
+	pathParam0, err = runtime.StyleParamWithOptions("simple", false, "policyId", policyId, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: "uuid"})
+	if err != nil {
+		return nil, err
+	}
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/api/v1/policies/%s", pathParam0)
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest(http.MethodDelete, queryURL.String(), nil)
+	if err != nil {
+		return nil, err
+	}
+
+	return req, nil
+}
+
+// NewGetPolicyRequest constructs an http.Request for the GetPolicy method
+func NewGetPolicyRequest(server string, policyId openapi_types.UUID) (*http.Request, error) {
+	var err error
+
+	var pathParam0 string
+
+	pathParam0, err = runtime.StyleParamWithOptions("simple", false, "policyId", policyId, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: "uuid"})
+	if err != nil {
+		return nil, err
+	}
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/api/v1/policies/%s", pathParam0)
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest(http.MethodGet, queryURL.String(), nil)
+	if err != nil {
+		return nil, err
+	}
+
+	return req, nil
+}
+
+// NewUpdatePolicyRequest calls the generic UpdatePolicy builder with application/json body
+func NewUpdatePolicyRequest(server string, policyId openapi_types.UUID, body UpdatePolicyJSONRequestBody) (*http.Request, error) {
+	var bodyReader io.Reader
+	buf, err := json.Marshal(body)
+	if err != nil {
+		return nil, err
+	}
+	bodyReader = bytes.NewReader(buf)
+	return NewUpdatePolicyRequestWithBody(server, policyId, "application/json", bodyReader)
+}
+
+// NewUpdatePolicyRequestWithBody constructs an http.Request for the UpdatePolicy method, with any body, and a specified content type
+func NewUpdatePolicyRequestWithBody(server string, policyId openapi_types.UUID, contentType string, body io.Reader) (*http.Request, error) {
+	var err error
+
+	var pathParam0 string
+
+	pathParam0, err = runtime.StyleParamWithOptions("simple", false, "policyId", policyId, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: "uuid"})
+	if err != nil {
+		return nil, err
+	}
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/api/v1/policies/%s", pathParam0)
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest(http.MethodPut, queryURL.String(), body)
+	if err != nil {
+		return nil, err
+	}
+
+	req.Header.Add("Content-Type", contentType)
 
 	return req, nil
 }
@@ -2393,6 +3097,24 @@ type ClientWithResponsesInterface interface {
 	// Corresponds with DELETE /api/v1/members/{userId} (the `RemoveMember` operationId).
 	RemoveMemberWithResponse(ctx context.Context, userId string, reqEditors ...RequestEditorFn) (*RemoveMemberResponse, error)
 
+	// SetMemberPermissionsWithBodyWithResponse 设置一个成员直挂的权限
+	//
+	// 整体替换基础策略上直挂的那些权限。直挂让「给某个人临时开一条」不必先造一个只有他一个人持有的角色，但它不会随角色调整而更新，所以它适合一次性的、说得出理由的授予——角色仍然是主要的组织方式。要 iam:members.manage。
+	//
+	// Takes any type of body and a specified content type, and returns a wrapper object for the known response body format(s).
+	//
+	// Corresponds with PUT /api/v1/members/{userId}/permissions (the `SetMemberPermissions` operationId).
+	SetMemberPermissionsWithBodyWithResponse(ctx context.Context, userId string, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*SetMemberPermissionsResponse, error)
+
+	// SetMemberPermissionsWithResponse 设置一个成员直挂的权限
+	//
+	// 整体替换基础策略上直挂的那些权限。直挂让「给某个人临时开一条」不必先造一个只有他一个人持有的角色，但它不会随角色调整而更新，所以它适合一次性的、说得出理由的授予——角色仍然是主要的组织方式。要 iam:members.manage。
+	//
+	// Takes a body of the `application/json` content type, and returns a wrapper object for the known response body format(s).
+	//
+	// Corresponds with PUT /api/v1/members/{userId}/permissions (the `SetMemberPermissions` operationId).
+	SetMemberPermissionsWithResponse(ctx context.Context, userId string, body SetMemberPermissionsJSONRequestBody, reqEditors ...RequestEditorFn) (*SetMemberPermissionsResponse, error)
+
 	// SetMemberRolesWithBodyWithResponse 设置一个成员持有的角色
 	//
 	// 整体替换而不是增删：调用方拿到的就是一份完整清单，让它自己算差集只会让「我以为我取消了那个角色」这种事变得可能。所有者身上的 OWNER 不受影响。.
@@ -2446,14 +3168,77 @@ type ClientWithResponsesInterface interface {
 	// Corresponds with GET /api/v1/membership (the `GetProjectMembership` operationId).
 	GetProjectMembershipWithResponse(ctx context.Context, reqEditors ...RequestEditorFn) (*GetProjectMembershipResponse, error)
 
-	// ListPermissionsWithResponse 列出 IAM 自己声明的权限
+	// ListPermissionsWithResponse 列出全平台可授予的权限
 	//
-	// **只有 IAM 这一份。** 别的服务的操作不在这里——权限目录由各个服务自己声明，IAM 认识它们就等于要跟着每个下游一起发版。.
+	// 各服务在启动时把自己那份目录注册进 IAM（和 AddFinalizer 同一段代码），所以这里是一份汇总，不只是 IAM 自己那几条。**IAM 不用它做判定**——判定在各服务自己那边，拿 Grant 配它自己那份目录算；这份汇总只是让界面画得出勾选框，它落后一个版本只会让界面上少几条可选项，不会让判定出错。一个还没启动过的服务，它的权限不在这里。.
 	//
 	// Returns a wrapper object for the known response body format(s).
 	//
 	// Corresponds with GET /api/v1/permissions (the `ListPermissions` operationId).
 	ListPermissionsWithResponse(ctx context.Context, reqEditors ...RequestEditorFn) (*ListPermissionsResponse, error)
+
+	// ListPoliciesWithResponse 列出这个项目里的策略
+	//
+	// 在项目里就看得到，和成员列表同一条规则：谁被授了什么也是「这个项目有谁」的一部分。.
+	//
+	// Returns a wrapper object for the known response body format(s).
+	//
+	// Corresponds with GET /api/v1/policies (the `ListPolicies` operationId).
+	ListPoliciesWithResponse(ctx context.Context, params *ListPoliciesParams, reqEditors ...RequestEditorFn) (*ListPoliciesResponse, error)
+
+	// AttachPolicyWithBodyWithResponse 附加一条策略
+	//
+	// 它建的是**附加**策略——要么带资源范围，要么方向是 deny。一条不限资源的 allow 是基础策略，每个成员只有一条，改它走 set-member-roles 和 set-member-permissions。roles 里不能有 OWNER 或 ADMIN：它们是规则而不是权限集合，「限定在三台机器上的所有者」讲不通。要 iam:members.manage。
+	//
+	// Takes any type of body and a specified content type, and returns a wrapper object for the known response body format(s).
+	//
+	// Corresponds with POST /api/v1/policies (the `AttachPolicy` operationId).
+	AttachPolicyWithBodyWithResponse(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*AttachPolicyResponse, error)
+
+	// AttachPolicyWithResponse 附加一条策略
+	//
+	// 它建的是**附加**策略——要么带资源范围，要么方向是 deny。一条不限资源的 allow 是基础策略，每个成员只有一条，改它走 set-member-roles 和 set-member-permissions。roles 里不能有 OWNER 或 ADMIN：它们是规则而不是权限集合，「限定在三台机器上的所有者」讲不通。要 iam:members.manage。
+	//
+	// Takes a body of the `application/json` content type, and returns a wrapper object for the known response body format(s).
+	//
+	// Corresponds with POST /api/v1/policies (the `AttachPolicy` operationId).
+	AttachPolicyWithResponse(ctx context.Context, body AttachPolicyJSONRequestBody, reqEditors ...RequestEditorFn) (*AttachPolicyResponse, error)
+
+	// DetachPolicyWithResponse 摘掉一条策略
+	//
+	// 基础策略摘不掉——它是这个成员角色的落点，删了它这个人就不再持有任何角色，而「让他离开这个项目」是 remove-member 的事。要 iam:members.manage。
+	//
+	// Returns a wrapper object for the known response body format(s).
+	//
+	// Corresponds with DELETE /api/v1/policies/{policyId} (the `DetachPolicy` operationId).
+	DetachPolicyWithResponse(ctx context.Context, policyId openapi_types.UUID, reqEditors ...RequestEditorFn) (*DetachPolicyResponse, error)
+
+	// GetPolicyWithResponse 查看一条策略
+	//
+	// 和 list-policies 同一条规则，在项目里就看得到：谁被授了什么也是「这个项目有谁」的一部分，读它不需要额外的权限。.
+	//
+	// Returns a wrapper object for the known response body format(s).
+	//
+	// Corresponds with GET /api/v1/policies/{policyId} (the `GetPolicy` operationId).
+	GetPolicyWithResponse(ctx context.Context, policyId openapi_types.UUID, reqEditors ...RequestEditorFn) (*GetPolicyResponse, error)
+
+	// UpdatePolicyWithBodyWithResponse 改一条策略
+	//
+	// 整体替换而不是逐字段改：resources、roles、permissions 各自整份覆盖，没发的那份就是空的——只有「这就是这条策略现在的全貌」这一种语义说得清一次写入到底收回了什么。改不动的是策略的**种类**：基础策略（不限资源的 allow）加不上资源范围，这个成员的角色就存在它上面，给它加个范围等于让他在别的资源上什么都不是；一条带范围的策略反过来也不能把范围清空变成基础策略，那个位置每个成员只有一条。要换种类就删了重建。要 iam:members.manage。
+	//
+	// Takes any type of body and a specified content type, and returns a wrapper object for the known response body format(s).
+	//
+	// Corresponds with PUT /api/v1/policies/{policyId} (the `UpdatePolicy` operationId).
+	UpdatePolicyWithBodyWithResponse(ctx context.Context, policyId openapi_types.UUID, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*UpdatePolicyResponse, error)
+
+	// UpdatePolicyWithResponse 改一条策略
+	//
+	// 整体替换而不是逐字段改：resources、roles、permissions 各自整份覆盖，没发的那份就是空的——只有「这就是这条策略现在的全貌」这一种语义说得清一次写入到底收回了什么。改不动的是策略的**种类**：基础策略（不限资源的 allow）加不上资源范围，这个成员的角色就存在它上面，给它加个范围等于让他在别的资源上什么都不是；一条带范围的策略反过来也不能把范围清空变成基础策略，那个位置每个成员只有一条。要换种类就删了重建。要 iam:members.manage。
+	//
+	// Takes a body of the `application/json` content type, and returns a wrapper object for the known response body format(s).
+	//
+	// Corresponds with PUT /api/v1/policies/{policyId} (the `UpdatePolicy` operationId).
+	UpdatePolicyWithResponse(ctx context.Context, policyId openapi_types.UUID, body UpdatePolicyJSONRequestBody, reqEditors ...RequestEditorFn) (*UpdatePolicyResponse, error)
 
 	// DeleteProjectWithResponse 删除项目
 	//
@@ -2848,6 +3633,54 @@ func (r RemoveMemberResponse) ContentType() string {
 	return ""
 }
 
+type SetMemberPermissionsResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	// JSON200 the response for an HTTP 200 `application/json` response
+	JSON200 *PolicyResource
+	// JSONDefault the response for an HTTP default `application/json` response
+	JSONDefault *Error
+}
+
+// GetJSON200 returns the response for an HTTP 200 `application/json` response
+func (r SetMemberPermissionsResponse) GetJSON200() *PolicyResource {
+	return r.JSON200
+}
+
+// GetJSONDefault returns the response for an HTTP default `application/json` response
+func (r SetMemberPermissionsResponse) GetJSONDefault() *Error {
+	return r.JSONDefault
+}
+
+// GetBody returns the raw response body bytes
+func (r SetMemberPermissionsResponse) GetBody() []byte {
+	return r.Body
+}
+
+// Status returns HTTPResponse.Status
+func (r SetMemberPermissionsResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r SetMemberPermissionsResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+// ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
+func (r SetMemberPermissionsResponse) ContentType() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Header.Get("Content-Type")
+	}
+	return ""
+}
+
 type SetMemberRolesResponse struct {
 	Body         []byte
 	HTTPResponse *http.Response
@@ -2996,13 +3829,13 @@ type ListPermissionsResponse struct {
 	Body         []byte
 	HTTPResponse *http.Response
 	// JSON200 the response for an HTTP 200 `application/json` response
-	JSON200 *PermissionListResponseBody
+	JSON200 *CatalogListResponseBody
 	// JSONDefault the response for an HTTP default `application/json` response
 	JSONDefault *Error
 }
 
 // GetJSON200 returns the response for an HTTP 200 `application/json` response
-func (r ListPermissionsResponse) GetJSON200() *PermissionListResponseBody {
+func (r ListPermissionsResponse) GetJSON200() *CatalogListResponseBody {
 	return r.JSON200
 }
 
@@ -3034,6 +3867,239 @@ func (r ListPermissionsResponse) StatusCode() int {
 
 // ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
 func (r ListPermissionsResponse) ContentType() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Header.Get("Content-Type")
+	}
+	return ""
+}
+
+type ListPoliciesResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	// JSON200 the response for an HTTP 200 `application/json` response
+	JSON200 *PolicyListResponseBody
+	// JSONDefault the response for an HTTP default `application/json` response
+	JSONDefault *Error
+}
+
+// GetJSON200 returns the response for an HTTP 200 `application/json` response
+func (r ListPoliciesResponse) GetJSON200() *PolicyListResponseBody {
+	return r.JSON200
+}
+
+// GetJSONDefault returns the response for an HTTP default `application/json` response
+func (r ListPoliciesResponse) GetJSONDefault() *Error {
+	return r.JSONDefault
+}
+
+// GetBody returns the raw response body bytes
+func (r ListPoliciesResponse) GetBody() []byte {
+	return r.Body
+}
+
+// Status returns HTTPResponse.Status
+func (r ListPoliciesResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r ListPoliciesResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+// ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
+func (r ListPoliciesResponse) ContentType() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Header.Get("Content-Type")
+	}
+	return ""
+}
+
+type AttachPolicyResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	// JSON201 the response for an HTTP 201 `application/json` response
+	JSON201 *PolicyResource
+	// JSONDefault the response for an HTTP default `application/json` response
+	JSONDefault *Error
+}
+
+// GetJSON201 returns the response for an HTTP 201 `application/json` response
+func (r AttachPolicyResponse) GetJSON201() *PolicyResource {
+	return r.JSON201
+}
+
+// GetJSONDefault returns the response for an HTTP default `application/json` response
+func (r AttachPolicyResponse) GetJSONDefault() *Error {
+	return r.JSONDefault
+}
+
+// GetBody returns the raw response body bytes
+func (r AttachPolicyResponse) GetBody() []byte {
+	return r.Body
+}
+
+// Status returns HTTPResponse.Status
+func (r AttachPolicyResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r AttachPolicyResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+// ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
+func (r AttachPolicyResponse) ContentType() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Header.Get("Content-Type")
+	}
+	return ""
+}
+
+type DetachPolicyResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	// JSONDefault the response for an HTTP default `application/json` response
+	JSONDefault *Error
+}
+
+// GetJSONDefault returns the response for an HTTP default `application/json` response
+func (r DetachPolicyResponse) GetJSONDefault() *Error {
+	return r.JSONDefault
+}
+
+// GetBody returns the raw response body bytes
+func (r DetachPolicyResponse) GetBody() []byte {
+	return r.Body
+}
+
+// Status returns HTTPResponse.Status
+func (r DetachPolicyResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r DetachPolicyResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+// ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
+func (r DetachPolicyResponse) ContentType() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Header.Get("Content-Type")
+	}
+	return ""
+}
+
+type GetPolicyResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	// JSON200 the response for an HTTP 200 `application/json` response
+	JSON200 *PolicyResource
+	// JSONDefault the response for an HTTP default `application/json` response
+	JSONDefault *Error
+}
+
+// GetJSON200 returns the response for an HTTP 200 `application/json` response
+func (r GetPolicyResponse) GetJSON200() *PolicyResource {
+	return r.JSON200
+}
+
+// GetJSONDefault returns the response for an HTTP default `application/json` response
+func (r GetPolicyResponse) GetJSONDefault() *Error {
+	return r.JSONDefault
+}
+
+// GetBody returns the raw response body bytes
+func (r GetPolicyResponse) GetBody() []byte {
+	return r.Body
+}
+
+// Status returns HTTPResponse.Status
+func (r GetPolicyResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r GetPolicyResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+// ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
+func (r GetPolicyResponse) ContentType() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Header.Get("Content-Type")
+	}
+	return ""
+}
+
+type UpdatePolicyResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	// JSON200 the response for an HTTP 200 `application/json` response
+	JSON200 *PolicyResource
+	// JSONDefault the response for an HTTP default `application/json` response
+	JSONDefault *Error
+}
+
+// GetJSON200 returns the response for an HTTP 200 `application/json` response
+func (r UpdatePolicyResponse) GetJSON200() *PolicyResource {
+	return r.JSON200
+}
+
+// GetJSONDefault returns the response for an HTTP default `application/json` response
+func (r UpdatePolicyResponse) GetJSONDefault() *Error {
+	return r.JSONDefault
+}
+
+// GetBody returns the raw response body bytes
+func (r UpdatePolicyResponse) GetBody() []byte {
+	return r.Body
+}
+
+// Status returns HTTPResponse.Status
+func (r UpdatePolicyResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r UpdatePolicyResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+// ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
+func (r UpdatePolicyResponse) ContentType() string {
 	if r.HTTPResponse != nil {
 		return r.HTTPResponse.Header.Get("Content-Type")
 	}
@@ -3791,6 +4857,36 @@ func (c *ClientWithResponses) RemoveMemberWithResponse(ctx context.Context, user
 	return ParseRemoveMemberResponse(rsp)
 }
 
+// SetMemberPermissionsWithBodyWithResponse 设置一个成员直挂的权限
+//
+// 整体替换基础策略上直挂的那些权限。直挂让「给某个人临时开一条」不必先造一个只有他一个人持有的角色，但它不会随角色调整而更新，所以它适合一次性的、说得出理由的授予——角色仍然是主要的组织方式。要 iam:members.manage。
+//
+// Takes any type of body and a specified content type, and returns a wrapper object for the known response body format(s).
+//
+// Corresponds with PUT /api/v1/members/{userId}/permissions (the `SetMemberPermissions` operationId).
+func (c *ClientWithResponses) SetMemberPermissionsWithBodyWithResponse(ctx context.Context, userId string, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*SetMemberPermissionsResponse, error) {
+	rsp, err := c.SetMemberPermissionsWithBody(ctx, userId, contentType, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseSetMemberPermissionsResponse(rsp)
+}
+
+// SetMemberPermissionsWithResponse 设置一个成员直挂的权限
+//
+// 整体替换基础策略上直挂的那些权限。直挂让「给某个人临时开一条」不必先造一个只有他一个人持有的角色，但它不会随角色调整而更新，所以它适合一次性的、说得出理由的授予——角色仍然是主要的组织方式。要 iam:members.manage。
+//
+// Takes a body of the `application/json` content type, and returns a wrapper object for the known response body format(s).
+//
+// Corresponds with PUT /api/v1/members/{userId}/permissions (the `SetMemberPermissions` operationId).
+func (c *ClientWithResponses) SetMemberPermissionsWithResponse(ctx context.Context, userId string, body SetMemberPermissionsJSONRequestBody, reqEditors ...RequestEditorFn) (*SetMemberPermissionsResponse, error) {
+	rsp, err := c.SetMemberPermissions(ctx, userId, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseSetMemberPermissionsResponse(rsp)
+}
+
 // SetMemberRolesWithBodyWithResponse 设置一个成员持有的角色
 //
 // 整体替换而不是增删：调用方拿到的就是一份完整清单，让它自己算差集只会让「我以为我取消了那个角色」这种事变得可能。所有者身上的 OWNER 不受影响。.
@@ -3874,9 +4970,9 @@ func (c *ClientWithResponses) GetProjectMembershipWithResponse(ctx context.Conte
 	return ParseGetProjectMembershipResponse(rsp)
 }
 
-// ListPermissionsWithResponse 列出 IAM 自己声明的权限
+// ListPermissionsWithResponse 列出全平台可授予的权限
 //
-// **只有 IAM 这一份。** 别的服务的操作不在这里——权限目录由各个服务自己声明，IAM 认识它们就等于要跟着每个下游一起发版。.
+// 各服务在启动时把自己那份目录注册进 IAM（和 AddFinalizer 同一段代码），所以这里是一份汇总，不只是 IAM 自己那几条。**IAM 不用它做判定**——判定在各服务自己那边，拿 Grant 配它自己那份目录算；这份汇总只是让界面画得出勾选框，它落后一个版本只会让界面上少几条可选项，不会让判定出错。一个还没启动过的服务，它的权限不在这里。.
 //
 // Returns a wrapper object for the known response body format(s).
 //
@@ -3887,6 +4983,111 @@ func (c *ClientWithResponses) ListPermissionsWithResponse(ctx context.Context, r
 		return nil, err
 	}
 	return ParseListPermissionsResponse(rsp)
+}
+
+// ListPoliciesWithResponse 列出这个项目里的策略
+//
+// 在项目里就看得到，和成员列表同一条规则：谁被授了什么也是「这个项目有谁」的一部分。.
+//
+// Returns a wrapper object for the known response body format(s).
+//
+// Corresponds with GET /api/v1/policies (the `ListPolicies` operationId).
+func (c *ClientWithResponses) ListPoliciesWithResponse(ctx context.Context, params *ListPoliciesParams, reqEditors ...RequestEditorFn) (*ListPoliciesResponse, error) {
+	rsp, err := c.ListPolicies(ctx, params, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseListPoliciesResponse(rsp)
+}
+
+// AttachPolicyWithBodyWithResponse 附加一条策略
+//
+// 它建的是**附加**策略——要么带资源范围，要么方向是 deny。一条不限资源的 allow 是基础策略，每个成员只有一条，改它走 set-member-roles 和 set-member-permissions。roles 里不能有 OWNER 或 ADMIN：它们是规则而不是权限集合，「限定在三台机器上的所有者」讲不通。要 iam:members.manage。
+//
+// Takes any type of body and a specified content type, and returns a wrapper object for the known response body format(s).
+//
+// Corresponds with POST /api/v1/policies (the `AttachPolicy` operationId).
+func (c *ClientWithResponses) AttachPolicyWithBodyWithResponse(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*AttachPolicyResponse, error) {
+	rsp, err := c.AttachPolicyWithBody(ctx, contentType, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseAttachPolicyResponse(rsp)
+}
+
+// AttachPolicyWithResponse 附加一条策略
+//
+// 它建的是**附加**策略——要么带资源范围，要么方向是 deny。一条不限资源的 allow 是基础策略，每个成员只有一条，改它走 set-member-roles 和 set-member-permissions。roles 里不能有 OWNER 或 ADMIN：它们是规则而不是权限集合，「限定在三台机器上的所有者」讲不通。要 iam:members.manage。
+//
+// Takes a body of the `application/json` content type, and returns a wrapper object for the known response body format(s).
+//
+// Corresponds with POST /api/v1/policies (the `AttachPolicy` operationId).
+func (c *ClientWithResponses) AttachPolicyWithResponse(ctx context.Context, body AttachPolicyJSONRequestBody, reqEditors ...RequestEditorFn) (*AttachPolicyResponse, error) {
+	rsp, err := c.AttachPolicy(ctx, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseAttachPolicyResponse(rsp)
+}
+
+// DetachPolicyWithResponse 摘掉一条策略
+//
+// 基础策略摘不掉——它是这个成员角色的落点，删了它这个人就不再持有任何角色，而「让他离开这个项目」是 remove-member 的事。要 iam:members.manage。
+//
+// Returns a wrapper object for the known response body format(s).
+//
+// Corresponds with DELETE /api/v1/policies/{policyId} (the `DetachPolicy` operationId).
+func (c *ClientWithResponses) DetachPolicyWithResponse(ctx context.Context, policyId openapi_types.UUID, reqEditors ...RequestEditorFn) (*DetachPolicyResponse, error) {
+	rsp, err := c.DetachPolicy(ctx, policyId, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseDetachPolicyResponse(rsp)
+}
+
+// GetPolicyWithResponse 查看一条策略
+//
+// 和 list-policies 同一条规则，在项目里就看得到：谁被授了什么也是「这个项目有谁」的一部分，读它不需要额外的权限。.
+//
+// Returns a wrapper object for the known response body format(s).
+//
+// Corresponds with GET /api/v1/policies/{policyId} (the `GetPolicy` operationId).
+func (c *ClientWithResponses) GetPolicyWithResponse(ctx context.Context, policyId openapi_types.UUID, reqEditors ...RequestEditorFn) (*GetPolicyResponse, error) {
+	rsp, err := c.GetPolicy(ctx, policyId, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseGetPolicyResponse(rsp)
+}
+
+// UpdatePolicyWithBodyWithResponse 改一条策略
+//
+// 整体替换而不是逐字段改：resources、roles、permissions 各自整份覆盖，没发的那份就是空的——只有「这就是这条策略现在的全貌」这一种语义说得清一次写入到底收回了什么。改不动的是策略的**种类**：基础策略（不限资源的 allow）加不上资源范围，这个成员的角色就存在它上面，给它加个范围等于让他在别的资源上什么都不是；一条带范围的策略反过来也不能把范围清空变成基础策略，那个位置每个成员只有一条。要换种类就删了重建。要 iam:members.manage。
+//
+// Takes any type of body and a specified content type, and returns a wrapper object for the known response body format(s).
+//
+// Corresponds with PUT /api/v1/policies/{policyId} (the `UpdatePolicy` operationId).
+func (c *ClientWithResponses) UpdatePolicyWithBodyWithResponse(ctx context.Context, policyId openapi_types.UUID, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*UpdatePolicyResponse, error) {
+	rsp, err := c.UpdatePolicyWithBody(ctx, policyId, contentType, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseUpdatePolicyResponse(rsp)
+}
+
+// UpdatePolicyWithResponse 改一条策略
+//
+// 整体替换而不是逐字段改：resources、roles、permissions 各自整份覆盖，没发的那份就是空的——只有「这就是这条策略现在的全貌」这一种语义说得清一次写入到底收回了什么。改不动的是策略的**种类**：基础策略（不限资源的 allow）加不上资源范围，这个成员的角色就存在它上面，给它加个范围等于让他在别的资源上什么都不是；一条带范围的策略反过来也不能把范围清空变成基础策略，那个位置每个成员只有一条。要换种类就删了重建。要 iam:members.manage。
+//
+// Takes a body of the `application/json` content type, and returns a wrapper object for the known response body format(s).
+//
+// Corresponds with PUT /api/v1/policies/{policyId} (the `UpdatePolicy` operationId).
+func (c *ClientWithResponses) UpdatePolicyWithResponse(ctx context.Context, policyId openapi_types.UUID, body UpdatePolicyJSONRequestBody, reqEditors ...RequestEditorFn) (*UpdatePolicyResponse, error) {
+	rsp, err := c.UpdatePolicy(ctx, policyId, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseUpdatePolicyResponse(rsp)
 }
 
 // DeleteProjectWithResponse 删除项目
@@ -4332,6 +5533,39 @@ func ParseRemoveMemberResponse(rsp *http.Response) (*RemoveMemberResponse, error
 	return response, nil
 }
 
+// ParseSetMemberPermissionsResponse parses an HTTP response from a SetMemberPermissionsWithResponse call
+func ParseSetMemberPermissionsResponse(rsp *http.Response) (*SetMemberPermissionsResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &SetMemberPermissionsResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest PolicyResource
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && true:
+		var dest Error
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSONDefault = &dest
+
+	}
+
+	return response, nil
+}
+
 // ParseSetMemberRolesResponse parses an HTTP response from a SetMemberRolesWithResponse call
 func ParseSetMemberRolesResponse(rsp *http.Response) (*SetMemberRolesResponse, error) {
 	bodyBytes, err := io.ReadAll(rsp.Body)
@@ -4446,7 +5680,168 @@ func ParseListPermissionsResponse(rsp *http.Response) (*ListPermissionsResponse,
 
 	switch {
 	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
-		var dest PermissionListResponseBody
+		var dest CatalogListResponseBody
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && true:
+		var dest Error
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSONDefault = &dest
+
+	}
+
+	return response, nil
+}
+
+// ParseListPoliciesResponse parses an HTTP response from a ListPoliciesWithResponse call
+func ParseListPoliciesResponse(rsp *http.Response) (*ListPoliciesResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &ListPoliciesResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest PolicyListResponseBody
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && true:
+		var dest Error
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSONDefault = &dest
+
+	}
+
+	return response, nil
+}
+
+// ParseAttachPolicyResponse parses an HTTP response from a AttachPolicyWithResponse call
+func ParseAttachPolicyResponse(rsp *http.Response) (*AttachPolicyResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &AttachPolicyResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 201:
+		var dest PolicyResource
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON201 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && true:
+		var dest Error
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSONDefault = &dest
+
+	}
+
+	return response, nil
+}
+
+// ParseDetachPolicyResponse parses an HTTP response from a DetachPolicyWithResponse call
+func ParseDetachPolicyResponse(rsp *http.Response) (*DetachPolicyResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &DetachPolicyResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case rsp.StatusCode == 204:
+		break // No content-type
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && true:
+		var dest Error
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSONDefault = &dest
+
+	}
+
+	return response, nil
+}
+
+// ParseGetPolicyResponse parses an HTTP response from a GetPolicyWithResponse call
+func ParseGetPolicyResponse(rsp *http.Response) (*GetPolicyResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &GetPolicyResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest PolicyResource
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && true:
+		var dest Error
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSONDefault = &dest
+
+	}
+
+	return response, nil
+}
+
+// ParseUpdatePolicyResponse parses an HTTP response from a UpdatePolicyWithResponse call
+func ParseUpdatePolicyResponse(rsp *http.Response) (*UpdatePolicyResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &UpdatePolicyResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest PolicyResource
 		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
 			return nil, err
 		}
