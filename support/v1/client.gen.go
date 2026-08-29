@@ -19,27 +19,6 @@ import (
 	openapi_types "github.com/oapi-codegen/runtime/types"
 )
 
-// Defines values for AnnouncementSeverity.
-const (
-	CRITICAL AnnouncementSeverity = "CRITICAL"
-	INFO     AnnouncementSeverity = "INFO"
-	WARNING  AnnouncementSeverity = "WARNING"
-)
-
-// Valid indicates whether the value is a known member of the AnnouncementSeverity enum.
-func (e AnnouncementSeverity) Valid() bool {
-	switch e {
-	case CRITICAL:
-		return true
-	case INFO:
-		return true
-	case WARNING:
-		return true
-	default:
-		return false
-	}
-}
-
 // Defines values for MaintenanceImpact.
 const (
 	DEGRADED      MaintenanceImpact = "DEGRADED"
@@ -151,24 +130,6 @@ func (e TicketStatus) Valid() bool {
 	}
 }
 
-// AnnouncementResource A platform announcement.
-type AnnouncementResource struct {
-	// Body Markdown
-	Body        string             `json:"body"`
-	Id          openapi_types.UUID `json:"id"`
-	PublishedAt time.Time          `json:"published_at"`
-
-	// ReadAt When this user marked the announcement as read; null when they have not
-	ReadAt *time.Time `json:"read_at"`
-
-	// Severity How prominently an announcement should be presented.
-	Severity AnnouncementSeverity `json:"severity"`
-	Title    string               `json:"title"`
-}
-
-// AnnouncementSeverity How prominently an announcement should be presented.
-type AnnouncementSeverity string
-
 // AttachmentDownloadResource defines model for AttachmentDownloadResource.
 type AttachmentDownloadResource struct {
 	// ExpiresAt After this moment the address stops working; request a new one
@@ -209,15 +170,6 @@ type CreateTicketSatisfactionRequestBody struct {
 
 // Error defines model for Error.
 type Error = externalRef0.Error
-
-// LengthAwarePageAnnouncementResource defines model for LengthAwarePageAnnouncementResource.
-type LengthAwarePageAnnouncementResource struct {
-	// Items The contents of this page
-	Items  []AnnouncementResource `json:"items"`
-	Limit  int64                  `json:"limit"`
-	Offset int64                  `json:"offset"`
-	Total  int64                  `json:"total"`
-}
 
 // LengthAwarePageMaintenanceResource defines model for LengthAwarePageMaintenanceResource.
 type LengthAwarePageMaintenanceResource struct {
@@ -320,18 +272,6 @@ type MaintenanceTimelineEntryResource struct {
 	Status *MaintenanceStatus `json:"status"`
 }
 
-// NoticeAnnouncementResource defines model for NoticeAnnouncementResource.
-type NoticeAnnouncementResource struct {
-	// Body Markdown
-	Body        string             `json:"body"`
-	Id          openapi_types.UUID `json:"id"`
-	PublishedAt time.Time          `json:"published_at"`
-
-	// Severity How prominently an announcement should be presented.
-	Severity AnnouncementSeverity `json:"severity"`
-	Title    string               `json:"title"`
-}
-
 // NoticeMaintenanceResource defines model for NoticeMaintenanceResource.
 type NoticeMaintenanceResource struct {
 	// Body Markdown
@@ -356,8 +296,7 @@ type NoticeMaintenanceResource struct {
 // This shape is deliberately narrower than the authenticated resources and carries no read
 // state.
 type NoticeResource struct {
-	Announcements []NoticeAnnouncementResource `json:"announcements"`
-	Maintenances  []NoticeMaintenanceResource  `json:"maintenances"`
+	Maintenances []NoticeMaintenanceResource `json:"maintenances"`
 }
 
 // TicketAttachmentResource A file uploaded for a ticket. The bytes are retrieved separately; see the download-url operation.
@@ -442,20 +381,6 @@ type TicketSatisfactionResource struct {
 //
 // The state follows whoever spoke last and cannot be set directly.
 type TicketStatus string
-
-// UnreadCountResource defines model for UnreadCountResource.
-type UnreadCountResource struct {
-	Count int64 `json:"count"`
-}
-
-// ListAnnouncementsParams defines parameters for ListAnnouncements.
-type ListAnnouncementsParams struct {
-	// Limit Maximum number of items to return in this page
-	Limit *int64 `form:"limit,omitempty" json:"limit,omitempty"`
-
-	// Offset Number of items to skip
-	Offset *int64 `form:"offset,omitempty" json:"offset,omitempty"`
-}
 
 // UploadAttachmentParams defines parameters for UploadAttachment.
 type UploadAttachmentParams struct {
@@ -609,39 +534,6 @@ func WithRequestEditorFn(fn RequestEditorFn) ClientOption {
 // The interface specification for the client above.
 type ClientInterface interface {
 
-	// ListAnnouncements List announcements
-	//
-	// Returns the announcements in effect for the current user, most recently published first.
-	// Announcements that are scheduled but not yet published, and those that have expired, are
-	// omitted.
-	//
-	// `read_at` is null when this user has not marked the announcement as read.
-	//
-	// Corresponds with GET /api/v1/announcements (the `ListAnnouncements` operationId).
-	ListAnnouncements(ctx context.Context, params *ListAnnouncementsParams, reqEditors ...RequestEditorFn) (*http.Response, error)
-
-	// CountUnreadAnnouncements Count the announcements this user has not read
-	//
-	// Corresponds with GET /api/v1/announcements/unread-count (the `CountUnreadAnnouncements` operationId).
-	CountUnreadAnnouncements(ctx context.Context, reqEditors ...RequestEditorFn) (*http.Response, error)
-
-	// GetAnnouncement Get an announcement
-	//
-	// Returns 404 for an announcement that is not in effect for this user.
-	//
-	// Corresponds with GET /api/v1/announcements/{announcementId} (the `GetAnnouncement` operationId).
-	GetAnnouncement(ctx context.Context, announcementId openapi_types.UUID, reqEditors ...RequestEditorFn) (*http.Response, error)
-
-	// MarkAnnouncementRead Mark an announcement as read
-	//
-	// Marking an announcement that is already marked succeeds and changes nothing; `read_at` keeps
-	// its original value.
-	//
-	// Read state is per person, not per project.
-	//
-	// Corresponds with POST /api/v1/announcements/{announcementId}/read (the `MarkAnnouncementRead` operationId).
-	MarkAnnouncementRead(ctx context.Context, announcementId openapi_types.UUID, reqEditors ...RequestEditorFn) (*http.Response, error)
-
 	// UploadAttachmentWithBody Upload an attachment
 	//
 	// The body is the file bytes themselves, not multipart, one file per request. The content type
@@ -689,17 +581,16 @@ type ClientInterface interface {
 	// Corresponds with GET /api/v1/maintenances/{maintenanceId}/timeline (the `ListMaintenanceTimeline` operationId).
 	ListMaintenanceTimeline(ctx context.Context, maintenanceId openapi_types.UUID, params *ListMaintenanceTimelineParams, reqEditors ...RequestEditorFn) (*http.Response, error)
 
-	// ListNotices List announcements and maintenance in effect right now
+	// ListNotices List the maintenance in effect right now
 	//
-	// Returns the announcements published for general visibility and the maintenance windows that
-	// have not finished yet.
+	// Returns the maintenance windows that have not finished yet.
 	//
 	// **This operation requires no credentials.** It is intended for sign-in pages and status
 	// pages, which are reached before a project has been selected. It returns a narrower shape
 	// than the authenticated operations and is not paginated.
 	//
-	// Announcements appear here only when an operator has published them for general visibility;
-	// the authenticated `GET /api/v1/announcements` returns more of them.
+	// Platform announcements are not served here. They belong to the notification service, which
+	// owns announcements for the whole platform.
 	//
 	// Corresponds with GET /api/v1/notices (the `ListNotices` operationId).
 	ListNotices(ctx context.Context, reqEditors ...RequestEditorFn) (*http.Response, error)
@@ -834,79 +725,6 @@ type ClientInterface interface {
 	CreateTicketSatisfaction(ctx context.Context, ticketId openapi_types.UUID, body CreateTicketSatisfactionJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
 }
 
-// ListAnnouncements List announcements
-//
-// Returns the announcements in effect for the current user, most recently published first.
-// Announcements that are scheduled but not yet published, and those that have expired, are
-// omitted.
-//
-// `read_at` is null when this user has not marked the announcement as read.
-//
-// Corresponds with GET /api/v1/announcements (the `ListAnnouncements` operationId).
-func (c *Client) ListAnnouncements(ctx context.Context, params *ListAnnouncementsParams, reqEditors ...RequestEditorFn) (*http.Response, error) {
-	req, err := NewListAnnouncementsRequest(c.Server, params)
-	if err != nil {
-		return nil, err
-	}
-	req = req.WithContext(ctx)
-	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
-		return nil, err
-	}
-	return c.Client.Do(req)
-}
-
-// CountUnreadAnnouncements Count the announcements this user has not read
-//
-// Corresponds with GET /api/v1/announcements/unread-count (the `CountUnreadAnnouncements` operationId).
-func (c *Client) CountUnreadAnnouncements(ctx context.Context, reqEditors ...RequestEditorFn) (*http.Response, error) {
-	req, err := NewCountUnreadAnnouncementsRequest(c.Server)
-	if err != nil {
-		return nil, err
-	}
-	req = req.WithContext(ctx)
-	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
-		return nil, err
-	}
-	return c.Client.Do(req)
-}
-
-// GetAnnouncement Get an announcement
-//
-// Returns 404 for an announcement that is not in effect for this user.
-//
-// Corresponds with GET /api/v1/announcements/{announcementId} (the `GetAnnouncement` operationId).
-func (c *Client) GetAnnouncement(ctx context.Context, announcementId openapi_types.UUID, reqEditors ...RequestEditorFn) (*http.Response, error) {
-	req, err := NewGetAnnouncementRequest(c.Server, announcementId)
-	if err != nil {
-		return nil, err
-	}
-	req = req.WithContext(ctx)
-	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
-		return nil, err
-	}
-	return c.Client.Do(req)
-}
-
-// MarkAnnouncementRead Mark an announcement as read
-//
-// Marking an announcement that is already marked succeeds and changes nothing; `read_at` keeps
-// its original value.
-//
-// Read state is per person, not per project.
-//
-// Corresponds with POST /api/v1/announcements/{announcementId}/read (the `MarkAnnouncementRead` operationId).
-func (c *Client) MarkAnnouncementRead(ctx context.Context, announcementId openapi_types.UUID, reqEditors ...RequestEditorFn) (*http.Response, error) {
-	req, err := NewMarkAnnouncementReadRequest(c.Server, announcementId)
-	if err != nil {
-		return nil, err
-	}
-	req = req.WithContext(ctx)
-	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
-		return nil, err
-	}
-	return c.Client.Do(req)
-}
-
 // UploadAttachmentWithBody Upload an attachment
 //
 // The body is the file bytes themselves, not multipart, one file per request. The content type
@@ -1004,17 +822,16 @@ func (c *Client) ListMaintenanceTimeline(ctx context.Context, maintenanceId open
 	return c.Client.Do(req)
 }
 
-// ListNotices List announcements and maintenance in effect right now
+// ListNotices List the maintenance in effect right now
 //
-// Returns the announcements published for general visibility and the maintenance windows that
-// have not finished yet.
+// Returns the maintenance windows that have not finished yet.
 //
 // **This operation requires no credentials.** It is intended for sign-in pages and status
 // pages, which are reached before a project has been selected. It returns a narrower shape
 // than the authenticated operations and is not paginated.
 //
-// Announcements appear here only when an operator has published them for general visibility;
-// the authenticated `GET /api/v1/announcements` returns more of them.
+// Platform announcements are not served here. They belong to the notification service, which
+// owns announcements for the whole platform.
 //
 // Corresponds with GET /api/v1/notices (the `ListNotices` operationId).
 func (c *Client) ListNotices(ctx context.Context, reqEditors ...RequestEditorFn) (*http.Response, error) {
@@ -1276,167 +1093,6 @@ func (c *Client) CreateTicketSatisfaction(ctx context.Context, ticketId openapi_
 		return nil, err
 	}
 	return c.Client.Do(req)
-}
-
-// NewListAnnouncementsRequest constructs an http.Request for the ListAnnouncements method
-func NewListAnnouncementsRequest(server string, params *ListAnnouncementsParams) (*http.Request, error) {
-	var err error
-
-	serverURL, err := url.Parse(server)
-	if err != nil {
-		return nil, err
-	}
-
-	operationPath := fmt.Sprintf("/api/v1/announcements")
-	if operationPath[0] == '/' {
-		operationPath = "." + operationPath
-	}
-
-	queryURL, err := serverURL.Parse(operationPath)
-	if err != nil {
-		return nil, err
-	}
-
-	if params != nil {
-		// queryValues collects non-styled parameters (passthrough, JSON)
-		// that are safe to round-trip through url.Values.Encode().
-		queryValues := queryURL.Query()
-		// rawQueryFragments collects pre-encoded query fragments from
-		// styled parameters, preserving literal commas as delimiters
-		// per the OpenAPI spec (e.g. "color=blue,black,brown").
-		var rawQueryFragments []string
-
-		if params.Limit != nil {
-
-			if queryFrag, err := runtime.StyleParamWithOptions("form", false, "limit", *params.Limit, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "integer", Format: "int64"}); err != nil {
-				return nil, err
-			} else {
-				for _, qp := range strings.Split(queryFrag, "&") {
-					rawQueryFragments = append(rawQueryFragments, qp)
-				}
-			}
-
-		}
-
-		if params.Offset != nil {
-
-			if queryFrag, err := runtime.StyleParamWithOptions("form", false, "offset", *params.Offset, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "integer", Format: "int64"}); err != nil {
-				return nil, err
-			} else {
-				for _, qp := range strings.Split(queryFrag, "&") {
-					rawQueryFragments = append(rawQueryFragments, qp)
-				}
-			}
-
-		}
-
-		if encoded := queryValues.Encode(); encoded != "" {
-			rawQueryFragments = append(rawQueryFragments, encoded)
-		}
-		queryURL.RawQuery = strings.Join(rawQueryFragments, "&")
-	}
-
-	req, err := http.NewRequest(http.MethodGet, queryURL.String(), nil)
-	if err != nil {
-		return nil, err
-	}
-
-	return req, nil
-}
-
-// NewCountUnreadAnnouncementsRequest constructs an http.Request for the CountUnreadAnnouncements method
-func NewCountUnreadAnnouncementsRequest(server string) (*http.Request, error) {
-	var err error
-
-	serverURL, err := url.Parse(server)
-	if err != nil {
-		return nil, err
-	}
-
-	operationPath := fmt.Sprintf("/api/v1/announcements/unread-count")
-	if operationPath[0] == '/' {
-		operationPath = "." + operationPath
-	}
-
-	queryURL, err := serverURL.Parse(operationPath)
-	if err != nil {
-		return nil, err
-	}
-
-	req, err := http.NewRequest(http.MethodGet, queryURL.String(), nil)
-	if err != nil {
-		return nil, err
-	}
-
-	return req, nil
-}
-
-// NewGetAnnouncementRequest constructs an http.Request for the GetAnnouncement method
-func NewGetAnnouncementRequest(server string, announcementId openapi_types.UUID) (*http.Request, error) {
-	var err error
-
-	var pathParam0 string
-
-	pathParam0, err = runtime.StyleParamWithOptions("simple", false, "announcementId", announcementId, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: "uuid"})
-	if err != nil {
-		return nil, err
-	}
-
-	serverURL, err := url.Parse(server)
-	if err != nil {
-		return nil, err
-	}
-
-	operationPath := fmt.Sprintf("/api/v1/announcements/%s", pathParam0)
-	if operationPath[0] == '/' {
-		operationPath = "." + operationPath
-	}
-
-	queryURL, err := serverURL.Parse(operationPath)
-	if err != nil {
-		return nil, err
-	}
-
-	req, err := http.NewRequest(http.MethodGet, queryURL.String(), nil)
-	if err != nil {
-		return nil, err
-	}
-
-	return req, nil
-}
-
-// NewMarkAnnouncementReadRequest constructs an http.Request for the MarkAnnouncementRead method
-func NewMarkAnnouncementReadRequest(server string, announcementId openapi_types.UUID) (*http.Request, error) {
-	var err error
-
-	var pathParam0 string
-
-	pathParam0, err = runtime.StyleParamWithOptions("simple", false, "announcementId", announcementId, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: "uuid"})
-	if err != nil {
-		return nil, err
-	}
-
-	serverURL, err := url.Parse(server)
-	if err != nil {
-		return nil, err
-	}
-
-	operationPath := fmt.Sprintf("/api/v1/announcements/%s/read", pathParam0)
-	if operationPath[0] == '/' {
-		operationPath = "." + operationPath
-	}
-
-	queryURL, err := serverURL.Parse(operationPath)
-	if err != nil {
-		return nil, err
-	}
-
-	req, err := http.NewRequest(http.MethodPost, queryURL.String(), nil)
-	if err != nil {
-		return nil, err
-	}
-
-	return req, nil
 }
 
 // NewUploadAttachmentRequestWithBody constructs an http.Request for the UploadAttachment method, with any body, and a specified content type
@@ -2282,47 +1938,6 @@ func WithBaseURL(baseURL string) ClientOption {
 // ClientWithResponsesInterface is the interface specification for the client with responses above.
 type ClientWithResponsesInterface interface {
 
-	// ListAnnouncementsWithResponse List announcements
-	//
-	// Returns the announcements in effect for the current user, most recently published first.
-	// Announcements that are scheduled but not yet published, and those that have expired, are
-	// omitted.
-	//
-	// `read_at` is null when this user has not marked the announcement as read.
-	//
-	// Returns a wrapper object for the known response body format(s).
-	//
-	// Corresponds with GET /api/v1/announcements (the `ListAnnouncements` operationId).
-	ListAnnouncementsWithResponse(ctx context.Context, params *ListAnnouncementsParams, reqEditors ...RequestEditorFn) (*ListAnnouncementsResponse, error)
-
-	// CountUnreadAnnouncementsWithResponse Count the announcements this user has not read
-	//
-	// Returns a wrapper object for the known response body format(s).
-	//
-	// Corresponds with GET /api/v1/announcements/unread-count (the `CountUnreadAnnouncements` operationId).
-	CountUnreadAnnouncementsWithResponse(ctx context.Context, reqEditors ...RequestEditorFn) (*CountUnreadAnnouncementsResponse, error)
-
-	// GetAnnouncementWithResponse Get an announcement
-	//
-	// Returns 404 for an announcement that is not in effect for this user.
-	//
-	// Returns a wrapper object for the known response body format(s).
-	//
-	// Corresponds with GET /api/v1/announcements/{announcementId} (the `GetAnnouncement` operationId).
-	GetAnnouncementWithResponse(ctx context.Context, announcementId openapi_types.UUID, reqEditors ...RequestEditorFn) (*GetAnnouncementResponse, error)
-
-	// MarkAnnouncementReadWithResponse Mark an announcement as read
-	//
-	// Marking an announcement that is already marked succeeds and changes nothing; `read_at` keeps
-	// its original value.
-	//
-	// Read state is per person, not per project.
-	//
-	// Returns a wrapper object for the known response body format(s).
-	//
-	// Corresponds with POST /api/v1/announcements/{announcementId}/read (the `MarkAnnouncementRead` operationId).
-	MarkAnnouncementReadWithResponse(ctx context.Context, announcementId openapi_types.UUID, reqEditors ...RequestEditorFn) (*MarkAnnouncementReadResponse, error)
-
 	// UploadAttachmentWithBodyWithResponse Upload an attachment
 	//
 	// The body is the file bytes themselves, not multipart, one file per request. The content type
@@ -2378,17 +1993,16 @@ type ClientWithResponsesInterface interface {
 	// Corresponds with GET /api/v1/maintenances/{maintenanceId}/timeline (the `ListMaintenanceTimeline` operationId).
 	ListMaintenanceTimelineWithResponse(ctx context.Context, maintenanceId openapi_types.UUID, params *ListMaintenanceTimelineParams, reqEditors ...RequestEditorFn) (*ListMaintenanceTimelineResponse, error)
 
-	// ListNoticesWithResponse List announcements and maintenance in effect right now
+	// ListNoticesWithResponse List the maintenance in effect right now
 	//
-	// Returns the announcements published for general visibility and the maintenance windows that
-	// have not finished yet.
+	// Returns the maintenance windows that have not finished yet.
 	//
 	// **This operation requires no credentials.** It is intended for sign-in pages and status
 	// pages, which are reached before a project has been selected. It returns a narrower shape
 	// than the authenticated operations and is not paginated.
 	//
-	// Announcements appear here only when an operator has published them for general visibility;
-	// the authenticated `GET /api/v1/announcements` returns more of them.
+	// Platform announcements are not served here. They belong to the notification service, which
+	// owns announcements for the whole platform.
 	//
 	// Returns a wrapper object for the known response body format(s).
 	//
@@ -2535,198 +2149,6 @@ type ClientWithResponsesInterface interface {
 	//
 	// Corresponds with POST /api/v1/tickets/{ticketId}/satisfaction (the `CreateTicketSatisfaction` operationId).
 	CreateTicketSatisfactionWithResponse(ctx context.Context, ticketId openapi_types.UUID, body CreateTicketSatisfactionJSONRequestBody, reqEditors ...RequestEditorFn) (*CreateTicketSatisfactionResponse, error)
-}
-
-type ListAnnouncementsResponse struct {
-	Body         []byte
-	HTTPResponse *http.Response
-	// JSON200 the response for an HTTP 200 `application/json` response
-	JSON200 *LengthAwarePageAnnouncementResource
-	// JSONDefault the response for an HTTP default `application/json` response
-	JSONDefault *Error
-}
-
-// GetJSON200 returns the response for an HTTP 200 `application/json` response
-func (r ListAnnouncementsResponse) GetJSON200() *LengthAwarePageAnnouncementResource {
-	return r.JSON200
-}
-
-// GetJSONDefault returns the response for an HTTP default `application/json` response
-func (r ListAnnouncementsResponse) GetJSONDefault() *Error {
-	return r.JSONDefault
-}
-
-// GetBody returns the raw response body bytes
-func (r ListAnnouncementsResponse) GetBody() []byte {
-	return r.Body
-}
-
-// Status returns HTTPResponse.Status
-func (r ListAnnouncementsResponse) Status() string {
-	if r.HTTPResponse != nil {
-		return r.HTTPResponse.Status
-	}
-	return http.StatusText(0)
-}
-
-// StatusCode returns HTTPResponse.StatusCode
-func (r ListAnnouncementsResponse) StatusCode() int {
-	if r.HTTPResponse != nil {
-		return r.HTTPResponse.StatusCode
-	}
-	return 0
-}
-
-// ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
-func (r ListAnnouncementsResponse) ContentType() string {
-	if r.HTTPResponse != nil {
-		return r.HTTPResponse.Header.Get("Content-Type")
-	}
-	return ""
-}
-
-type CountUnreadAnnouncementsResponse struct {
-	Body         []byte
-	HTTPResponse *http.Response
-	// JSON200 the response for an HTTP 200 `application/json` response
-	JSON200 *UnreadCountResource
-	// JSONDefault the response for an HTTP default `application/json` response
-	JSONDefault *Error
-}
-
-// GetJSON200 returns the response for an HTTP 200 `application/json` response
-func (r CountUnreadAnnouncementsResponse) GetJSON200() *UnreadCountResource {
-	return r.JSON200
-}
-
-// GetJSONDefault returns the response for an HTTP default `application/json` response
-func (r CountUnreadAnnouncementsResponse) GetJSONDefault() *Error {
-	return r.JSONDefault
-}
-
-// GetBody returns the raw response body bytes
-func (r CountUnreadAnnouncementsResponse) GetBody() []byte {
-	return r.Body
-}
-
-// Status returns HTTPResponse.Status
-func (r CountUnreadAnnouncementsResponse) Status() string {
-	if r.HTTPResponse != nil {
-		return r.HTTPResponse.Status
-	}
-	return http.StatusText(0)
-}
-
-// StatusCode returns HTTPResponse.StatusCode
-func (r CountUnreadAnnouncementsResponse) StatusCode() int {
-	if r.HTTPResponse != nil {
-		return r.HTTPResponse.StatusCode
-	}
-	return 0
-}
-
-// ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
-func (r CountUnreadAnnouncementsResponse) ContentType() string {
-	if r.HTTPResponse != nil {
-		return r.HTTPResponse.Header.Get("Content-Type")
-	}
-	return ""
-}
-
-type GetAnnouncementResponse struct {
-	Body         []byte
-	HTTPResponse *http.Response
-	// JSON200 the response for an HTTP 200 `application/json` response
-	JSON200 *AnnouncementResource
-	// JSONDefault the response for an HTTP default `application/json` response
-	JSONDefault *Error
-}
-
-// GetJSON200 returns the response for an HTTP 200 `application/json` response
-func (r GetAnnouncementResponse) GetJSON200() *AnnouncementResource {
-	return r.JSON200
-}
-
-// GetJSONDefault returns the response for an HTTP default `application/json` response
-func (r GetAnnouncementResponse) GetJSONDefault() *Error {
-	return r.JSONDefault
-}
-
-// GetBody returns the raw response body bytes
-func (r GetAnnouncementResponse) GetBody() []byte {
-	return r.Body
-}
-
-// Status returns HTTPResponse.Status
-func (r GetAnnouncementResponse) Status() string {
-	if r.HTTPResponse != nil {
-		return r.HTTPResponse.Status
-	}
-	return http.StatusText(0)
-}
-
-// StatusCode returns HTTPResponse.StatusCode
-func (r GetAnnouncementResponse) StatusCode() int {
-	if r.HTTPResponse != nil {
-		return r.HTTPResponse.StatusCode
-	}
-	return 0
-}
-
-// ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
-func (r GetAnnouncementResponse) ContentType() string {
-	if r.HTTPResponse != nil {
-		return r.HTTPResponse.Header.Get("Content-Type")
-	}
-	return ""
-}
-
-type MarkAnnouncementReadResponse struct {
-	Body         []byte
-	HTTPResponse *http.Response
-	// JSON200 the response for an HTTP 200 `application/json` response
-	JSON200 *AnnouncementResource
-	// JSONDefault the response for an HTTP default `application/json` response
-	JSONDefault *Error
-}
-
-// GetJSON200 returns the response for an HTTP 200 `application/json` response
-func (r MarkAnnouncementReadResponse) GetJSON200() *AnnouncementResource {
-	return r.JSON200
-}
-
-// GetJSONDefault returns the response for an HTTP default `application/json` response
-func (r MarkAnnouncementReadResponse) GetJSONDefault() *Error {
-	return r.JSONDefault
-}
-
-// GetBody returns the raw response body bytes
-func (r MarkAnnouncementReadResponse) GetBody() []byte {
-	return r.Body
-}
-
-// Status returns HTTPResponse.Status
-func (r MarkAnnouncementReadResponse) Status() string {
-	if r.HTTPResponse != nil {
-		return r.HTTPResponse.Status
-	}
-	return http.StatusText(0)
-}
-
-// StatusCode returns HTTPResponse.StatusCode
-func (r MarkAnnouncementReadResponse) StatusCode() int {
-	if r.HTTPResponse != nil {
-		return r.HTTPResponse.StatusCode
-	}
-	return 0
-}
-
-// ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
-func (r MarkAnnouncementReadResponse) ContentType() string {
-	if r.HTTPResponse != nil {
-		return r.HTTPResponse.Header.Get("Content-Type")
-	}
-	return ""
 }
 
 type UploadAttachmentResponse struct {
@@ -3449,71 +2871,6 @@ func (r CreateTicketSatisfactionResponse) ContentType() string {
 	return ""
 }
 
-// ListAnnouncementsWithResponse List announcements
-//
-// Returns the announcements in effect for the current user, most recently published first.
-// Announcements that are scheduled but not yet published, and those that have expired, are
-// omitted.
-//
-// `read_at` is null when this user has not marked the announcement as read.
-//
-// Returns a wrapper object for the known response body format(s).
-//
-// Corresponds with GET /api/v1/announcements (the `ListAnnouncements` operationId).
-func (c *ClientWithResponses) ListAnnouncementsWithResponse(ctx context.Context, params *ListAnnouncementsParams, reqEditors ...RequestEditorFn) (*ListAnnouncementsResponse, error) {
-	rsp, err := c.ListAnnouncements(ctx, params, reqEditors...)
-	if err != nil {
-		return nil, err
-	}
-	return ParseListAnnouncementsResponse(rsp)
-}
-
-// CountUnreadAnnouncementsWithResponse Count the announcements this user has not read
-//
-// Returns a wrapper object for the known response body format(s).
-//
-// Corresponds with GET /api/v1/announcements/unread-count (the `CountUnreadAnnouncements` operationId).
-func (c *ClientWithResponses) CountUnreadAnnouncementsWithResponse(ctx context.Context, reqEditors ...RequestEditorFn) (*CountUnreadAnnouncementsResponse, error) {
-	rsp, err := c.CountUnreadAnnouncements(ctx, reqEditors...)
-	if err != nil {
-		return nil, err
-	}
-	return ParseCountUnreadAnnouncementsResponse(rsp)
-}
-
-// GetAnnouncementWithResponse Get an announcement
-//
-// Returns 404 for an announcement that is not in effect for this user.
-//
-// Returns a wrapper object for the known response body format(s).
-//
-// Corresponds with GET /api/v1/announcements/{announcementId} (the `GetAnnouncement` operationId).
-func (c *ClientWithResponses) GetAnnouncementWithResponse(ctx context.Context, announcementId openapi_types.UUID, reqEditors ...RequestEditorFn) (*GetAnnouncementResponse, error) {
-	rsp, err := c.GetAnnouncement(ctx, announcementId, reqEditors...)
-	if err != nil {
-		return nil, err
-	}
-	return ParseGetAnnouncementResponse(rsp)
-}
-
-// MarkAnnouncementReadWithResponse Mark an announcement as read
-//
-// Marking an announcement that is already marked succeeds and changes nothing; `read_at` keeps
-// its original value.
-//
-// Read state is per person, not per project.
-//
-// Returns a wrapper object for the known response body format(s).
-//
-// Corresponds with POST /api/v1/announcements/{announcementId}/read (the `MarkAnnouncementRead` operationId).
-func (c *ClientWithResponses) MarkAnnouncementReadWithResponse(ctx context.Context, announcementId openapi_types.UUID, reqEditors ...RequestEditorFn) (*MarkAnnouncementReadResponse, error) {
-	rsp, err := c.MarkAnnouncementRead(ctx, announcementId, reqEditors...)
-	if err != nil {
-		return nil, err
-	}
-	return ParseMarkAnnouncementReadResponse(rsp)
-}
-
 // UploadAttachmentWithBodyWithResponse Upload an attachment
 //
 // The body is the file bytes themselves, not multipart, one file per request. The content type
@@ -3599,17 +2956,16 @@ func (c *ClientWithResponses) ListMaintenanceTimelineWithResponse(ctx context.Co
 	return ParseListMaintenanceTimelineResponse(rsp)
 }
 
-// ListNoticesWithResponse List announcements and maintenance in effect right now
+// ListNoticesWithResponse List the maintenance in effect right now
 //
-// Returns the announcements published for general visibility and the maintenance windows that
-// have not finished yet.
+// Returns the maintenance windows that have not finished yet.
 //
 // **This operation requires no credentials.** It is intended for sign-in pages and status
 // pages, which are reached before a project has been selected. It returns a narrower shape
 // than the authenticated operations and is not paginated.
 //
-// Announcements appear here only when an operator has published them for general visibility;
-// the authenticated `GET /api/v1/announcements` returns more of them.
+// Platform announcements are not served here. They belong to the notification service, which
+// owns announcements for the whole platform.
 //
 // Returns a wrapper object for the known response body format(s).
 //
@@ -3833,138 +3189,6 @@ func (c *ClientWithResponses) CreateTicketSatisfactionWithResponse(ctx context.C
 		return nil, err
 	}
 	return ParseCreateTicketSatisfactionResponse(rsp)
-}
-
-// ParseListAnnouncementsResponse parses an HTTP response from a ListAnnouncementsWithResponse call
-func ParseListAnnouncementsResponse(rsp *http.Response) (*ListAnnouncementsResponse, error) {
-	bodyBytes, err := io.ReadAll(rsp.Body)
-	defer func() { _ = rsp.Body.Close() }()
-	if err != nil {
-		return nil, err
-	}
-
-	response := &ListAnnouncementsResponse{
-		Body:         bodyBytes,
-		HTTPResponse: rsp,
-	}
-
-	switch {
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
-		var dest LengthAwarePageAnnouncementResource
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSON200 = &dest
-
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && true:
-		var dest Error
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSONDefault = &dest
-
-	}
-
-	return response, nil
-}
-
-// ParseCountUnreadAnnouncementsResponse parses an HTTP response from a CountUnreadAnnouncementsWithResponse call
-func ParseCountUnreadAnnouncementsResponse(rsp *http.Response) (*CountUnreadAnnouncementsResponse, error) {
-	bodyBytes, err := io.ReadAll(rsp.Body)
-	defer func() { _ = rsp.Body.Close() }()
-	if err != nil {
-		return nil, err
-	}
-
-	response := &CountUnreadAnnouncementsResponse{
-		Body:         bodyBytes,
-		HTTPResponse: rsp,
-	}
-
-	switch {
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
-		var dest UnreadCountResource
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSON200 = &dest
-
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && true:
-		var dest Error
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSONDefault = &dest
-
-	}
-
-	return response, nil
-}
-
-// ParseGetAnnouncementResponse parses an HTTP response from a GetAnnouncementWithResponse call
-func ParseGetAnnouncementResponse(rsp *http.Response) (*GetAnnouncementResponse, error) {
-	bodyBytes, err := io.ReadAll(rsp.Body)
-	defer func() { _ = rsp.Body.Close() }()
-	if err != nil {
-		return nil, err
-	}
-
-	response := &GetAnnouncementResponse{
-		Body:         bodyBytes,
-		HTTPResponse: rsp,
-	}
-
-	switch {
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
-		var dest AnnouncementResource
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSON200 = &dest
-
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && true:
-		var dest Error
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSONDefault = &dest
-
-	}
-
-	return response, nil
-}
-
-// ParseMarkAnnouncementReadResponse parses an HTTP response from a MarkAnnouncementReadWithResponse call
-func ParseMarkAnnouncementReadResponse(rsp *http.Response) (*MarkAnnouncementReadResponse, error) {
-	bodyBytes, err := io.ReadAll(rsp.Body)
-	defer func() { _ = rsp.Body.Close() }()
-	if err != nil {
-		return nil, err
-	}
-
-	response := &MarkAnnouncementReadResponse{
-		Body:         bodyBytes,
-		HTTPResponse: rsp,
-	}
-
-	switch {
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
-		var dest AnnouncementResource
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSON200 = &dest
-
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && true:
-		var dest Error
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSONDefault = &dest
-
-	}
-
-	return response, nil
 }
 
 // ParseUploadAttachmentResponse parses an HTTP response from a UploadAttachmentWithResponse call

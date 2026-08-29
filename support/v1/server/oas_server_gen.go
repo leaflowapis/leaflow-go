@@ -17,12 +17,6 @@ type Handler interface {
 	//
 	// POST /api/v1/tickets/{ticketId}/close
 	CloseTicket(ctx context.Context, params CloseTicketParams) (*TicketResource, error)
-	// CountUnreadAnnouncements implements count-unread-announcements operation.
-	//
-	// Count the announcements this user has not read.
-	//
-	// GET /api/v1/announcements/unread-count
-	CountUnreadAnnouncements(ctx context.Context) (*UnreadCountResource, error)
 	// CreateTicket implements create-ticket operation.
 	//
 	// Opens a ticket and posts its first message in one request. A ticket always has at least one message.
@@ -64,12 +58,6 @@ type Handler interface {
 	//
 	// GET /api/v1/attachments/{attachmentId}/download-url
 	DescribeAttachmentDownload(ctx context.Context, params DescribeAttachmentDownloadParams) (*AttachmentDownloadResource, error)
-	// GetAnnouncement implements get-announcement operation.
-	//
-	// Returns 404 for an announcement that is not in effect for this user.
-	//
-	// GET /api/v1/announcements/{announcementId}
-	GetAnnouncement(ctx context.Context, params GetAnnouncementParams) (*AnnouncementResource, error)
 	// GetMaintenance implements get-maintenance operation.
 	//
 	// Returns 404 for cancelled maintenance.
@@ -88,15 +76,6 @@ type Handler interface {
 	//
 	// GET /api/v1/tickets/{ticketId}/satisfaction
 	GetTicketSatisfaction(ctx context.Context, params GetTicketSatisfactionParams) (*TicketSatisfactionResource, error)
-	// ListAnnouncements implements list-announcements operation.
-	//
-	// Returns the announcements in effect for the current user, most recently published first.
-	// Announcements that are scheduled but not yet published, and those that have expired, are omitted.
-	//
-	// `read_at` is null when this user has not marked the announcement as read.
-	//
-	// GET /api/v1/announcements
-	ListAnnouncements(ctx context.Context, params ListAnnouncementsParams) (*LengthAwarePageAnnouncementResource, error)
 	// ListMaintenanceTimeline implements list-maintenance-timeline operation.
 	//
 	// Ordered oldest first, because it is an account of what happened.
@@ -114,15 +93,14 @@ type Handler interface {
 	ListMaintenances(ctx context.Context, params ListMaintenancesParams) (*LengthAwarePageMaintenanceResource, error)
 	// ListNotices implements list-notices operation.
 	//
-	// Returns the announcements published for general visibility and the maintenance windows that have not
-	// finished yet.
+	// Returns the maintenance windows that have not finished yet.
 	//
 	// This operation requires no credentials. It is intended for sign-in pages and status pages, which are
 	// reached before a project has been selected. It returns a narrower shape than the authenticated
 	// operations and is not paginated.
 	//
-	// Announcements appear here only when an operator has published them for general visibility; the
-	// authenticated `GET /api/v1/announcements` returns more of them.
+	// Platform announcements are not served here. They belong to the notification service, which owns
+	// announcements for the whole platform.
 	//
 	// GET /api/v1/notices
 	ListNotices(ctx context.Context) (*NoticeResource, error)
@@ -145,15 +123,6 @@ type Handler interface {
 	//
 	// GET /api/v1/tickets
 	ListTickets(ctx context.Context, params ListTicketsParams) (*LengthAwarePageTicketResource, error)
-	// MarkAnnouncementRead implements mark-announcement-read operation.
-	//
-	// Marking an announcement that is already marked succeeds and changes nothing; `read_at` keeps its
-	// original value.
-	//
-	// Read state is per person, not per project.
-	//
-	// POST /api/v1/announcements/{announcementId}/read
-	MarkAnnouncementRead(ctx context.Context, params MarkAnnouncementReadParams) (*AnnouncementResource, error)
 	// UploadAttachment implements upload-attachment operation.
 	//
 	// The body is the file bytes themselves, not multipart, one file per request. The content type is

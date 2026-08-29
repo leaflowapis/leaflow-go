@@ -25,15 +25,6 @@ func (UnimplementedHandler) CloseTicket(ctx context.Context, params CloseTicketP
 	return r, ht.ErrNotImplemented
 }
 
-// CountUnreadAnnouncements implements count-unread-announcements operation.
-//
-// Count the announcements this user has not read.
-//
-// GET /api/v1/announcements/unread-count
-func (UnimplementedHandler) CountUnreadAnnouncements(ctx context.Context) (r *UnreadCountResource, _ error) {
-	return r, ht.ErrNotImplemented
-}
-
 // CreateTicket implements create-ticket operation.
 //
 // Opens a ticket and posts its first message in one request. A ticket always has at least one message.
@@ -87,15 +78,6 @@ func (UnimplementedHandler) DescribeAttachmentDownload(ctx context.Context, para
 	return r, ht.ErrNotImplemented
 }
 
-// GetAnnouncement implements get-announcement operation.
-//
-// Returns 404 for an announcement that is not in effect for this user.
-//
-// GET /api/v1/announcements/{announcementId}
-func (UnimplementedHandler) GetAnnouncement(ctx context.Context, params GetAnnouncementParams) (r *AnnouncementResource, _ error) {
-	return r, ht.ErrNotImplemented
-}
-
 // GetMaintenance implements get-maintenance operation.
 //
 // Returns 404 for cancelled maintenance.
@@ -123,18 +105,6 @@ func (UnimplementedHandler) GetTicketSatisfaction(ctx context.Context, params Ge
 	return r, ht.ErrNotImplemented
 }
 
-// ListAnnouncements implements list-announcements operation.
-//
-// Returns the announcements in effect for the current user, most recently published first.
-// Announcements that are scheduled but not yet published, and those that have expired, are omitted.
-//
-// `read_at` is null when this user has not marked the announcement as read.
-//
-// GET /api/v1/announcements
-func (UnimplementedHandler) ListAnnouncements(ctx context.Context, params ListAnnouncementsParams) (r *LengthAwarePageAnnouncementResource, _ error) {
-	return r, ht.ErrNotImplemented
-}
-
 // ListMaintenanceTimeline implements list-maintenance-timeline operation.
 //
 // Ordered oldest first, because it is an account of what happened.
@@ -158,15 +128,14 @@ func (UnimplementedHandler) ListMaintenances(ctx context.Context, params ListMai
 
 // ListNotices implements list-notices operation.
 //
-// Returns the announcements published for general visibility and the maintenance windows that have not
-// finished yet.
+// Returns the maintenance windows that have not finished yet.
 //
 // This operation requires no credentials. It is intended for sign-in pages and status pages, which are
 // reached before a project has been selected. It returns a narrower shape than the authenticated
 // operations and is not paginated.
 //
-// Announcements appear here only when an operator has published them for general visibility; the
-// authenticated `GET /api/v1/announcements` returns more of them.
+// Platform announcements are not served here. They belong to the notification service, which owns
+// announcements for the whole platform.
 //
 // GET /api/v1/notices
 func (UnimplementedHandler) ListNotices(ctx context.Context) (r *NoticeResource, _ error) {
@@ -198,18 +167,6 @@ func (UnimplementedHandler) ListTicketMessages(ctx context.Context, params ListT
 //
 // GET /api/v1/tickets
 func (UnimplementedHandler) ListTickets(ctx context.Context, params ListTicketsParams) (r *LengthAwarePageTicketResource, _ error) {
-	return r, ht.ErrNotImplemented
-}
-
-// MarkAnnouncementRead implements mark-announcement-read operation.
-//
-// Marking an announcement that is already marked succeeds and changes nothing; `read_at` keeps its
-// original value.
-//
-// Read state is per person, not per project.
-//
-// POST /api/v1/announcements/{announcementId}/read
-func (UnimplementedHandler) MarkAnnouncementRead(ctx context.Context, params MarkAnnouncementReadParams) (r *AnnouncementResource, _ error) {
 	return r, ht.ErrNotImplemented
 }
 

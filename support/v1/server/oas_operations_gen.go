@@ -7,22 +7,18 @@ type OperationName = string
 
 const (
 	CloseTicketOperation                OperationName = "CloseTicket"
-	CountUnreadAnnouncementsOperation   OperationName = "CountUnreadAnnouncements"
 	CreateTicketOperation               OperationName = "CreateTicket"
 	CreateTicketMessageOperation        OperationName = "CreateTicketMessage"
 	CreateTicketSatisfactionOperation   OperationName = "CreateTicketSatisfaction"
 	DescribeAttachmentDownloadOperation OperationName = "DescribeAttachmentDownload"
-	GetAnnouncementOperation            OperationName = "GetAnnouncement"
 	GetMaintenanceOperation             OperationName = "GetMaintenance"
 	GetTicketOperation                  OperationName = "GetTicket"
 	GetTicketSatisfactionOperation      OperationName = "GetTicketSatisfaction"
-	ListAnnouncementsOperation          OperationName = "ListAnnouncements"
 	ListMaintenanceTimelineOperation    OperationName = "ListMaintenanceTimeline"
 	ListMaintenancesOperation           OperationName = "ListMaintenances"
 	ListNoticesOperation                OperationName = "ListNotices"
 	ListTicketCategoriesOperation       OperationName = "ListTicketCategories"
 	ListTicketMessagesOperation         OperationName = "ListTicketMessages"
 	ListTicketsOperation                OperationName = "ListTickets"
-	MarkAnnouncementReadOperation       OperationName = "MarkAnnouncementRead"
 	UploadAttachmentOperation           OperationName = "UploadAttachment"
 )

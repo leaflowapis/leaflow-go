@@ -38,12 +38,6 @@ type Invoker interface {
 	//
 	// POST /api/v1/tickets/{ticketId}/close
 	CloseTicket(ctx context.Context, params CloseTicketParams) (*TicketResource, error)
-	// CountUnreadAnnouncements invokes count-unread-announcements operation.
-	//
-	// Count the announcements this user has not read.
-	//
-	// GET /api/v1/announcements/unread-count
-	CountUnreadAnnouncements(ctx context.Context) (*UnreadCountResource, error)
 	// CreateTicket invokes create-ticket operation.
 	//
 	// Opens a ticket and posts its first message in one request. A ticket always has at least one message.
@@ -85,12 +79,6 @@ type Invoker interface {
 	//
 	// GET /api/v1/attachments/{attachmentId}/download-url
 	DescribeAttachmentDownload(ctx context.Context, params DescribeAttachmentDownloadParams) (*AttachmentDownloadResource, error)
-	// GetAnnouncement invokes get-announcement operation.
-	//
-	// Returns 404 for an announcement that is not in effect for this user.
-	//
-	// GET /api/v1/announcements/{announcementId}
-	GetAnnouncement(ctx context.Context, params GetAnnouncementParams) (*AnnouncementResource, error)
 	// GetMaintenance invokes get-maintenance operation.
 	//
 	// Returns 404 for cancelled maintenance.
@@ -109,15 +97,6 @@ type Invoker interface {
 	//
 	// GET /api/v1/tickets/{ticketId}/satisfaction
 	GetTicketSatisfaction(ctx context.Context, params GetTicketSatisfactionParams) (*TicketSatisfactionResource, error)
-	// ListAnnouncements invokes list-announcements operation.
-	//
-	// Returns the announcements in effect for the current user, most recently published first.
-	// Announcements that are scheduled but not yet published, and those that have expired, are omitted.
-	//
-	// `read_at` is null when this user has not marked the announcement as read.
-	//
-	// GET /api/v1/announcements
-	ListAnnouncements(ctx context.Context, params ListAnnouncementsParams) (*LengthAwarePageAnnouncementResource, error)
 	// ListMaintenanceTimeline invokes list-maintenance-timeline operation.
 	//
 	// Ordered oldest first, because it is an account of what happened.
@@ -135,15 +114,14 @@ type Invoker interface {
 	ListMaintenances(ctx context.Context, params ListMaintenancesParams) (*LengthAwarePageMaintenanceResource, error)
 	// ListNotices invokes list-notices operation.
 	//
-	// Returns the announcements published for general visibility and the maintenance windows that have not
-	// finished yet.
+	// Returns the maintenance windows that have not finished yet.
 	//
 	// This operation requires no credentials. It is intended for sign-in pages and status pages, which are
 	// reached before a project has been selected. It returns a narrower shape than the authenticated
 	// operations and is not paginated.
 	//
-	// Announcements appear here only when an operator has published them for general visibility; the
-	// authenticated `GET /api/v1/announcements` returns more of them.
+	// Platform announcements are not served here. They belong to the notification service, which owns
+	// announcements for the whole platform.
 	//
 	// GET /api/v1/notices
 	ListNotices(ctx context.Context) (*NoticeResource, error)
@@ -166,15 +144,6 @@ type Invoker interface {
 	//
 	// GET /api/v1/tickets
 	ListTickets(ctx context.Context, params ListTicketsParams) (*LengthAwarePageTicketResource, error)
-	// MarkAnnouncementRead invokes mark-announcement-read operation.
-	//
-	// Marking an announcement that is already marked succeeds and changes nothing; `read_at` keeps its
-	// original value.
-	//
-	// Read state is per person, not per project.
-	//
-	// POST /api/v1/announcements/{announcementId}/read
-	MarkAnnouncementRead(ctx context.Context, params MarkAnnouncementReadParams) (*AnnouncementResource, error)
 	// UploadAttachment invokes upload-attachment operation.
 	//
 	// The body is the file bytes themselves, not multipart, one file per request. The content type is
@@ -356,119 +325,6 @@ func (c *Client) sendCloseTicket(ctx context.Context, params CloseTicketParams) 
 
 	stage = "DecodeResponse"
 	result, err := decodeCloseTicketResponse(resp)
-	if err != nil {
-		return res, errors.Wrap(err, "decode response")
-	}
-
-	return result, nil
-}
-
-// CountUnreadAnnouncements invokes count-unread-announcements operation.
-//
-// Count the announcements this user has not read.
-//
-// GET /api/v1/announcements/unread-count
-func (c *Client) CountUnreadAnnouncements(ctx context.Context) (*UnreadCountResource, error) {
-	res, err := c.sendCountUnreadAnnouncements(ctx)
-	return res, err
-}
-
-func (c *Client) sendCountUnreadAnnouncements(ctx context.Context) (res *UnreadCountResource, err error) {
-	otelAttrs := []attribute.KeyValue{
-		otelogen.OperationID("count-unread-announcements"),
-		semconv.HTTPRequestMethodKey.String("GET"),
-		semconv.URLTemplateKey.String("/api/v1/announcements/unread-count"),
-	}
-	otelAttrs = append(otelAttrs, c.cfg.Attributes...)
-
-	// Run stopwatch.
-	startTime := time.Now()
-	defer func() {
-		// Use floating point division here for higher precision (instead of Millisecond method).
-		elapsedDuration := time.Since(startTime)
-		c.duration.Record(ctx, float64(elapsedDuration)/float64(time.Millisecond), metric.WithAttributes(otelAttrs...))
-	}()
-
-	// Increment request counter.
-	c.requests.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
-
-	// Start a span for this request.
-	ctx, span := c.cfg.Tracer.Start(ctx, CountUnreadAnnouncementsOperation,
-		trace.WithAttributes(otelAttrs...),
-		clientSpanKind,
-	)
-	// Track stage for error reporting.
-	var stage string
-	defer func() {
-		if err != nil {
-			span.RecordError(err)
-			span.SetStatus(codes.Error, stage)
-			c.errors.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
-		}
-		span.End()
-	}()
-
-	stage = "BuildURL"
-	u := uri.Clone(c.requestURL(ctx))
-	var pathParts [1]string
-	pathParts[0] = "/api/v1/announcements/unread-count"
-	uri.AddPathParts(u, pathParts[:]...)
-
-	stage = "EncodeRequest"
-	r, err := ht.NewRequest(ctx, "GET", u)
-	if err != nil {
-		return res, errors.Wrap(err, "create request")
-	}
-
-	{
-		type bitset = [1]uint8
-		var satisfied bitset
-		{
-			stage = "Security:BearerAuth"
-			switch err := c.securityBearerAuth(ctx, CountUnreadAnnouncementsOperation, r); {
-			case err == nil: // if NO error
-				satisfied[0] |= 1 << 0
-			case errors.Is(err, ogenerrors.ErrSkipClientSecurity):
-				// Skip this security.
-			default:
-				return res, errors.Wrap(err, "security \"BearerAuth\"")
-			}
-		}
-
-		if ok := func() bool {
-		nextRequirement:
-			for _, requirement := range []bitset{
-				{0b00000001},
-			} {
-				for i, mask := range requirement {
-					if satisfied[i]&mask != mask {
-						continue nextRequirement
-					}
-				}
-				return true
-			}
-			return false
-		}(); !ok {
-			return res, ogenerrors.ErrSecurityRequirementIsNotSatisfied
-		}
-	}
-
-	stage = "SendRequest"
-	resp, err := c.cfg.Client.Do(r)
-	if err != nil {
-		return res, errors.Wrap(err, "do request")
-	}
-	body := resp.Body
-	defer func() {
-		// Drain the body to EOF before closing, so the underlying
-		// connection can be reused by the Transport regardless of the
-		// response status code. See https://github.com/ogen-go/ogen/issues/1670.
-		_, _ = io.Copy(io.Discard, body)
-		_ = body.Close()
-	}()
-
-	stage = "DecodeResponse"
-	result, err := decodeCountUnreadAnnouncementsResponse(resp)
 	if err != nil {
 		return res, errors.Wrap(err, "decode response")
 	}
@@ -1011,137 +867,6 @@ func (c *Client) sendDescribeAttachmentDownload(ctx context.Context, params Desc
 	return result, nil
 }
 
-// GetAnnouncement invokes get-announcement operation.
-//
-// Returns 404 for an announcement that is not in effect for this user.
-//
-// GET /api/v1/announcements/{announcementId}
-func (c *Client) GetAnnouncement(ctx context.Context, params GetAnnouncementParams) (*AnnouncementResource, error) {
-	res, err := c.sendGetAnnouncement(ctx, params)
-	return res, err
-}
-
-func (c *Client) sendGetAnnouncement(ctx context.Context, params GetAnnouncementParams) (res *AnnouncementResource, err error) {
-	otelAttrs := []attribute.KeyValue{
-		otelogen.OperationID("get-announcement"),
-		semconv.HTTPRequestMethodKey.String("GET"),
-		semconv.URLTemplateKey.String("/api/v1/announcements/{announcementId}"),
-	}
-	otelAttrs = append(otelAttrs, c.cfg.Attributes...)
-
-	// Run stopwatch.
-	startTime := time.Now()
-	defer func() {
-		// Use floating point division here for higher precision (instead of Millisecond method).
-		elapsedDuration := time.Since(startTime)
-		c.duration.Record(ctx, float64(elapsedDuration)/float64(time.Millisecond), metric.WithAttributes(otelAttrs...))
-	}()
-
-	// Increment request counter.
-	c.requests.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
-
-	// Start a span for this request.
-	ctx, span := c.cfg.Tracer.Start(ctx, GetAnnouncementOperation,
-		trace.WithAttributes(otelAttrs...),
-		clientSpanKind,
-	)
-	// Track stage for error reporting.
-	var stage string
-	defer func() {
-		if err != nil {
-			span.RecordError(err)
-			span.SetStatus(codes.Error, stage)
-			c.errors.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
-		}
-		span.End()
-	}()
-
-	stage = "BuildURL"
-	u := uri.Clone(c.requestURL(ctx))
-	var pathParts [2]string
-	pathParts[0] = "/api/v1/announcements/"
-	{
-		// Encode "announcementId" parameter.
-		e := uri.NewPathEncoder(uri.PathEncoderConfig{
-			Param:   "announcementId",
-			Style:   uri.PathStyleSimple,
-			Explode: false,
-		})
-		if err := func() error {
-			return e.EncodeValue(conv.UUIDToString(params.AnnouncementId))
-		}(); err != nil {
-			return res, errors.Wrap(err, "encode path")
-		}
-		encoded, err := e.Result()
-		if err != nil {
-			return res, errors.Wrap(err, "encode path")
-		}
-		pathParts[1] = encoded
-	}
-	uri.AddPathParts(u, pathParts[:]...)
-
-	stage = "EncodeRequest"
-	r, err := ht.NewRequest(ctx, "GET", u)
-	if err != nil {
-		return res, errors.Wrap(err, "create request")
-	}
-
-	{
-		type bitset = [1]uint8
-		var satisfied bitset
-		{
-			stage = "Security:BearerAuth"
-			switch err := c.securityBearerAuth(ctx, GetAnnouncementOperation, r); {
-			case err == nil: // if NO error
-				satisfied[0] |= 1 << 0
-			case errors.Is(err, ogenerrors.ErrSkipClientSecurity):
-				// Skip this security.
-			default:
-				return res, errors.Wrap(err, "security \"BearerAuth\"")
-			}
-		}
-
-		if ok := func() bool {
-		nextRequirement:
-			for _, requirement := range []bitset{
-				{0b00000001},
-			} {
-				for i, mask := range requirement {
-					if satisfied[i]&mask != mask {
-						continue nextRequirement
-					}
-				}
-				return true
-			}
-			return false
-		}(); !ok {
-			return res, ogenerrors.ErrSecurityRequirementIsNotSatisfied
-		}
-	}
-
-	stage = "SendRequest"
-	resp, err := c.cfg.Client.Do(r)
-	if err != nil {
-		return res, errors.Wrap(err, "do request")
-	}
-	body := resp.Body
-	defer func() {
-		// Drain the body to EOF before closing, so the underlying
-		// connection can be reused by the Transport regardless of the
-		// response status code. See https://github.com/ogen-go/ogen/issues/1670.
-		_, _ = io.Copy(io.Discard, body)
-		_ = body.Close()
-	}()
-
-	stage = "DecodeResponse"
-	result, err := decodeGetAnnouncementResponse(resp)
-	if err != nil {
-		return res, errors.Wrap(err, "decode response")
-	}
-
-	return result, nil
-}
-
 // GetMaintenance invokes get-maintenance operation.
 //
 // Returns 404 for cancelled maintenance.
@@ -1536,160 +1261,6 @@ func (c *Client) sendGetTicketSatisfaction(ctx context.Context, params GetTicket
 	return result, nil
 }
 
-// ListAnnouncements invokes list-announcements operation.
-//
-// Returns the announcements in effect for the current user, most recently published first.
-// Announcements that are scheduled but not yet published, and those that have expired, are omitted.
-//
-// `read_at` is null when this user has not marked the announcement as read.
-//
-// GET /api/v1/announcements
-func (c *Client) ListAnnouncements(ctx context.Context, params ListAnnouncementsParams) (*LengthAwarePageAnnouncementResource, error) {
-	res, err := c.sendListAnnouncements(ctx, params)
-	return res, err
-}
-
-func (c *Client) sendListAnnouncements(ctx context.Context, params ListAnnouncementsParams) (res *LengthAwarePageAnnouncementResource, err error) {
-	otelAttrs := []attribute.KeyValue{
-		otelogen.OperationID("list-announcements"),
-		semconv.HTTPRequestMethodKey.String("GET"),
-		semconv.URLTemplateKey.String("/api/v1/announcements"),
-	}
-	otelAttrs = append(otelAttrs, c.cfg.Attributes...)
-
-	// Run stopwatch.
-	startTime := time.Now()
-	defer func() {
-		// Use floating point division here for higher precision (instead of Millisecond method).
-		elapsedDuration := time.Since(startTime)
-		c.duration.Record(ctx, float64(elapsedDuration)/float64(time.Millisecond), metric.WithAttributes(otelAttrs...))
-	}()
-
-	// Increment request counter.
-	c.requests.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
-
-	// Start a span for this request.
-	ctx, span := c.cfg.Tracer.Start(ctx, ListAnnouncementsOperation,
-		trace.WithAttributes(otelAttrs...),
-		clientSpanKind,
-	)
-	// Track stage for error reporting.
-	var stage string
-	defer func() {
-		if err != nil {
-			span.RecordError(err)
-			span.SetStatus(codes.Error, stage)
-			c.errors.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
-		}
-		span.End()
-	}()
-
-	stage = "BuildURL"
-	u := uri.Clone(c.requestURL(ctx))
-	var pathParts [1]string
-	pathParts[0] = "/api/v1/announcements"
-	uri.AddPathParts(u, pathParts[:]...)
-
-	stage = "EncodeQueryParams"
-	q := uri.NewQueryEncoder()
-	{
-		// Encode "limit" parameter.
-		cfg := uri.QueryParameterEncodingConfig{
-			Name:    "limit",
-			Style:   uri.QueryStyleForm,
-			Explode: false,
-		}
-
-		if err := q.EncodeParam(cfg, func(e uri.Encoder) error {
-			if val, ok := params.Limit.Get(); ok {
-				return e.EncodeValue(conv.Int64ToString(val))
-			}
-			return nil
-		}); err != nil {
-			return res, errors.Wrap(err, "encode query")
-		}
-	}
-	{
-		// Encode "offset" parameter.
-		cfg := uri.QueryParameterEncodingConfig{
-			Name:    "offset",
-			Style:   uri.QueryStyleForm,
-			Explode: false,
-		}
-
-		if err := q.EncodeParam(cfg, func(e uri.Encoder) error {
-			if val, ok := params.Offset.Get(); ok {
-				return e.EncodeValue(conv.Int64ToString(val))
-			}
-			return nil
-		}); err != nil {
-			return res, errors.Wrap(err, "encode query")
-		}
-	}
-	u.RawQuery = q.Values().Encode()
-
-	stage = "EncodeRequest"
-	r, err := ht.NewRequest(ctx, "GET", u)
-	if err != nil {
-		return res, errors.Wrap(err, "create request")
-	}
-
-	{
-		type bitset = [1]uint8
-		var satisfied bitset
-		{
-			stage = "Security:BearerAuth"
-			switch err := c.securityBearerAuth(ctx, ListAnnouncementsOperation, r); {
-			case err == nil: // if NO error
-				satisfied[0] |= 1 << 0
-			case errors.Is(err, ogenerrors.ErrSkipClientSecurity):
-				// Skip this security.
-			default:
-				return res, errors.Wrap(err, "security \"BearerAuth\"")
-			}
-		}
-
-		if ok := func() bool {
-		nextRequirement:
-			for _, requirement := range []bitset{
-				{0b00000001},
-			} {
-				for i, mask := range requirement {
-					if satisfied[i]&mask != mask {
-						continue nextRequirement
-					}
-				}
-				return true
-			}
-			return false
-		}(); !ok {
-			return res, ogenerrors.ErrSecurityRequirementIsNotSatisfied
-		}
-	}
-
-	stage = "SendRequest"
-	resp, err := c.cfg.Client.Do(r)
-	if err != nil {
-		return res, errors.Wrap(err, "do request")
-	}
-	body := resp.Body
-	defer func() {
-		// Drain the body to EOF before closing, so the underlying
-		// connection can be reused by the Transport regardless of the
-		// response status code. See https://github.com/ogen-go/ogen/issues/1670.
-		_, _ = io.Copy(io.Discard, body)
-		_ = body.Close()
-	}()
-
-	stage = "DecodeResponse"
-	result, err := decodeListAnnouncementsResponse(resp)
-	if err != nil {
-		return res, errors.Wrap(err, "decode response")
-	}
-
-	return result, nil
-}
-
 // ListMaintenanceTimeline invokes list-maintenance-timeline operation.
 //
 // Ordered oldest first, because it is an account of what happened.
@@ -2050,15 +1621,14 @@ func (c *Client) sendListMaintenances(ctx context.Context, params ListMaintenanc
 
 // ListNotices invokes list-notices operation.
 //
-// Returns the announcements published for general visibility and the maintenance windows that have not
-// finished yet.
+// Returns the maintenance windows that have not finished yet.
 //
 // This operation requires no credentials. It is intended for sign-in pages and status pages, which are
 // reached before a project has been selected. It returns a narrower shape than the authenticated
 // operations and is not paginated.
 //
-// Announcements appear here only when an operator has published them for general visibility; the
-// authenticated `GET /api/v1/announcements` returns more of them.
+// Platform announcements are not served here. They belong to the notification service, which owns
+// announcements for the whole platform.
 //
 // GET /api/v1/notices
 func (c *Client) ListNotices(ctx context.Context) (*NoticeResource, error) {
@@ -2670,141 +2240,6 @@ func (c *Client) sendListTickets(ctx context.Context, params ListTicketsParams) 
 
 	stage = "DecodeResponse"
 	result, err := decodeListTicketsResponse(resp)
-	if err != nil {
-		return res, errors.Wrap(err, "decode response")
-	}
-
-	return result, nil
-}
-
-// MarkAnnouncementRead invokes mark-announcement-read operation.
-//
-// Marking an announcement that is already marked succeeds and changes nothing; `read_at` keeps its
-// original value.
-//
-// Read state is per person, not per project.
-//
-// POST /api/v1/announcements/{announcementId}/read
-func (c *Client) MarkAnnouncementRead(ctx context.Context, params MarkAnnouncementReadParams) (*AnnouncementResource, error) {
-	res, err := c.sendMarkAnnouncementRead(ctx, params)
-	return res, err
-}
-
-func (c *Client) sendMarkAnnouncementRead(ctx context.Context, params MarkAnnouncementReadParams) (res *AnnouncementResource, err error) {
-	otelAttrs := []attribute.KeyValue{
-		otelogen.OperationID("mark-announcement-read"),
-		semconv.HTTPRequestMethodKey.String("POST"),
-		semconv.URLTemplateKey.String("/api/v1/announcements/{announcementId}/read"),
-	}
-	otelAttrs = append(otelAttrs, c.cfg.Attributes...)
-
-	// Run stopwatch.
-	startTime := time.Now()
-	defer func() {
-		// Use floating point division here for higher precision (instead of Millisecond method).
-		elapsedDuration := time.Since(startTime)
-		c.duration.Record(ctx, float64(elapsedDuration)/float64(time.Millisecond), metric.WithAttributes(otelAttrs...))
-	}()
-
-	// Increment request counter.
-	c.requests.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
-
-	// Start a span for this request.
-	ctx, span := c.cfg.Tracer.Start(ctx, MarkAnnouncementReadOperation,
-		trace.WithAttributes(otelAttrs...),
-		clientSpanKind,
-	)
-	// Track stage for error reporting.
-	var stage string
-	defer func() {
-		if err != nil {
-			span.RecordError(err)
-			span.SetStatus(codes.Error, stage)
-			c.errors.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
-		}
-		span.End()
-	}()
-
-	stage = "BuildURL"
-	u := uri.Clone(c.requestURL(ctx))
-	var pathParts [3]string
-	pathParts[0] = "/api/v1/announcements/"
-	{
-		// Encode "announcementId" parameter.
-		e := uri.NewPathEncoder(uri.PathEncoderConfig{
-			Param:   "announcementId",
-			Style:   uri.PathStyleSimple,
-			Explode: false,
-		})
-		if err := func() error {
-			return e.EncodeValue(conv.UUIDToString(params.AnnouncementId))
-		}(); err != nil {
-			return res, errors.Wrap(err, "encode path")
-		}
-		encoded, err := e.Result()
-		if err != nil {
-			return res, errors.Wrap(err, "encode path")
-		}
-		pathParts[1] = encoded
-	}
-	pathParts[2] = "/read"
-	uri.AddPathParts(u, pathParts[:]...)
-
-	stage = "EncodeRequest"
-	r, err := ht.NewRequest(ctx, "POST", u)
-	if err != nil {
-		return res, errors.Wrap(err, "create request")
-	}
-
-	{
-		type bitset = [1]uint8
-		var satisfied bitset
-		{
-			stage = "Security:BearerAuth"
-			switch err := c.securityBearerAuth(ctx, MarkAnnouncementReadOperation, r); {
-			case err == nil: // if NO error
-				satisfied[0] |= 1 << 0
-			case errors.Is(err, ogenerrors.ErrSkipClientSecurity):
-				// Skip this security.
-			default:
-				return res, errors.Wrap(err, "security \"BearerAuth\"")
-			}
-		}
-
-		if ok := func() bool {
-		nextRequirement:
-			for _, requirement := range []bitset{
-				{0b00000001},
-			} {
-				for i, mask := range requirement {
-					if satisfied[i]&mask != mask {
-						continue nextRequirement
-					}
-				}
-				return true
-			}
-			return false
-		}(); !ok {
-			return res, ogenerrors.ErrSecurityRequirementIsNotSatisfied
-		}
-	}
-
-	stage = "SendRequest"
-	resp, err := c.cfg.Client.Do(r)
-	if err != nil {
-		return res, errors.Wrap(err, "do request")
-	}
-	body := resp.Body
-	defer func() {
-		// Drain the body to EOF before closing, so the underlying
-		// connection can be reused by the Transport regardless of the
-		// response status code. See https://github.com/ogen-go/ogen/issues/1670.
-		_, _ = io.Copy(io.Discard, body)
-		_ = body.Close()
-	}()
-
-	stage = "DecodeResponse"
-	result, err := decodeMarkAnnouncementReadResponse(resp)
 	if err != nil {
 		return res, errors.Wrap(err, "decode response")
 	}
