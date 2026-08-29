@@ -8,6 +8,16 @@ import (
 
 // Handler handles operations described by OpenAPI v3 specification.
 type Handler interface {
+	// AttachPolicy implements attach-policy operation.
+	//
+	// 它建的是附加策略——要么带资源范围，要么方向是 deny。一条不限资源的
+	// allow 是基础策略，每个成员只有一条，改它走 set-member-roles 和
+	// set-member-permissions。roles 里不能有 OWNER 或
+	// ADMIN：它们是规则而不是权限集合，「限定在三台机器上的所有者」讲不通。要
+	// iam:members.manage。.
+	//
+	// POST /api/v1/policies
+	AttachPolicy(ctx context.Context, req *AttachPolicyRequestBody) (*PolicyResource, error)
 	// BatchGetMembers implements batch-get-members operation.
 	//
 	// Resolves a set of account ids to the people behind them, scoped to the current project and including
@@ -50,6 +60,20 @@ type Handler interface {
 	//
 	// DELETE /api/v1/roles/{code}
 	DeleteRole(ctx context.Context, params DeleteRoleParams) error
+	// DetachPolicy implements detach-policy operation.
+	//
+	// 基础策略摘不掉——它是这个成员角色的落点，删了它这个人就不再持有任何角色，而「让他离开这个项目」是
+	// remove-member 的事。要 iam:members.manage。.
+	//
+	// DELETE /api/v1/policies/{policyId}
+	DetachPolicy(ctx context.Context, params DetachPolicyParams) error
+	// GetPolicy implements get-policy operation.
+	//
+	// 和 list-policies
+	// 同一条规则，在项目里就看得到：谁被授了什么也是「这个项目有谁」的一部分，读它不需要额外的权限。.
+	//
+	// GET /api/v1/policies/{policyId}
+	GetPolicy(ctx context.Context, params GetPolicyParams) (*PolicyResource, error)
 	// GetProject implements get-project operation.
 	//
 	// 在项目里就看得到，不需要额外的读权限。.
@@ -90,12 +114,19 @@ type Handler interface {
 	ListMembers(ctx context.Context, params ListMembersParams) (*LengthAwarePageMemberResource, error)
 	// ListPermissions implements list-permissions operation.
 	//
-	// 只有 IAM 这一份。
-	// 别的服务的操作不在这里——权限目录由各个服务自己声明，IAM
-	// 认识它们就等于要跟着每个下游一起发版。.
+	// 各服务在启动时把自己那份目录注册进 IAM（和 AddFinalizer
+	// 同一段代码），所以这里是一份汇总，不只是 IAM 自己那几条。IAM
+	// 不用它做判定——判定在各服务自己那边，拿 Grant
+	// 配它自己那份目录算；这份汇总只是让界面画得出勾选框，它落后一个版本只会让界面上少几条可选项，不会让判定出错。一个还没启动过的服务，它的权限不在这里。.
 	//
 	// GET /api/v1/permissions
-	ListPermissions(ctx context.Context) (*PermissionListResponseBody, error)
+	ListPermissions(ctx context.Context) (*CatalogListResponseBody, error)
+	// ListPolicies implements list-policies operation.
+	//
+	// 在项目里就看得到，和成员列表同一条规则：谁被授了什么也是「这个项目有谁」的一部分。.
+	//
+	// GET /api/v1/policies
+	ListPolicies(ctx context.Context, params ListPoliciesParams) (*PolicyListResponseBody, error)
 	// ListProjectInvitations implements list-project-invitations operation.
 	//
 	// 在项目里就看得到，和成员列表同一条规则：谁被请了也是「这个项目有谁」的一部分。.
@@ -139,6 +170,13 @@ type Handler interface {
 	//
 	// DELETE /api/v1/ssh-keys/{keyId}
 	RevokeSSHKey(ctx context.Context, params RevokeSSHKeyParams) (*SSHKeyResource, error)
+	// SetMemberPermissions implements set-member-permissions operation.
+	//
+	// 整体替换基础策略上直挂的那些权限。直挂让「给某个人临时开一条」不必先造一个只有他一个人持有的角色，但它不会随角色调整而更新，所以它适合一次性的、说得出理由的授予——角色仍然是主要的组织方式。要
+	// iam:members.manage。.
+	//
+	// PUT /api/v1/members/{userId}/permissions
+	SetMemberPermissions(ctx context.Context, req *SetMemberPermissionsRequestBody, params SetMemberPermissionsParams) (*PolicyResource, error)
 	// SetMemberRoles implements set-member-roles operation.
 	//
 	// 整体替换而不是增删：调用方拿到的就是一份完整清单，让它自己算差集只会让「我以为我取消了那个角色」这种事变得可能。所有者身上的
@@ -153,6 +191,15 @@ type Handler interface {
 	//
 	// POST /api/v1/transfer-ownership
 	TransferProjectOwnership(ctx context.Context, req *TransferOwnershipRequestBody) (*OwnershipTransferResponseBody, error)
+	// UpdatePolicy implements update-policy operation.
+	//
+	// 整体替换而不是逐字段改：resources、roles、permissions
+	// 各自整份覆盖，没发的那份就是空的——只有「这就是这条策略现在的全貌」这一种语义说得清一次写入到底收回了什么。改不动的是策略的种类：基础策略（不限资源的
+	// allow）加不上资源范围，这个成员的角色就存在它上面，给它加个范围等于让他在别的资源上什么都不是；一条带范围的策略反过来也不能把范围清空变成基础策略，那个位置每个成员只有一条。要换种类就删了重建。要
+	// iam:members.manage。.
+	//
+	// PUT /api/v1/policies/{policyId}
+	UpdatePolicy(ctx context.Context, req *UpdatePolicyRequestBody, params UpdatePolicyParams) (*PolicyResource, error)
 	// UpdateProject implements update-project operation.
 	//
 	// 改项目的名称与描述.

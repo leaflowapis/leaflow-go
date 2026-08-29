@@ -1879,18 +1879,6 @@ func (s *GrantResource) encodeFields(e *jx.Encoder) {
 		e.Bool(s.Owner)
 	}
 	{
-		e.FieldStart("permissions")
-		if s.Permissions == nil {
-			e.Null()
-		} else {
-			e.ArrStart()
-			for _, elem := range s.Permissions {
-				e.Str(elem)
-			}
-			e.ArrEnd()
-		}
-	}
-	{
 		e.FieldStart("roles")
 		if s.Roles == nil {
 			e.Null()
@@ -1902,13 +1890,25 @@ func (s *GrantResource) encodeFields(e *jx.Encoder) {
 			e.ArrEnd()
 		}
 	}
+	{
+		e.FieldStart("rules")
+		if s.Rules == nil {
+			e.Null()
+		} else {
+			e.ArrStart()
+			for _, elem := range s.Rules {
+				elem.Encode(e)
+			}
+			e.ArrEnd()
+		}
+	}
 }
 
 var jsonFieldsNameOfGrantResource = [4]string{
 	0: "admin",
 	1: "owner",
-	2: "permissions",
-	3: "roles",
+	2: "roles",
+	3: "rules",
 }
 
 // Decode decodes GrantResource from json.
@@ -1944,35 +1944,8 @@ func (s *GrantResource) Decode(d *jx.Decoder) error {
 			}(); err != nil {
 				return errors.Wrap(err, "decode field \"owner\"")
 			}
-		case "permissions":
-			requiredBitSet[0] |= 1 << 2
-			if err := func() error {
-				switch tt := d.Next(); tt {
-				case jx.Null:
-					if err := d.Skip(); err != nil {
-						return err
-					}
-				default:
-					s.Permissions = make([]string, 0)
-					if err := d.Arr(func(d *jx.Decoder) error {
-						var elem string
-						v, err := d.Str()
-						elem = string(v)
-						if err != nil {
-							return err
-						}
-						s.Permissions = append(s.Permissions, elem)
-						return nil
-					}); err != nil {
-						return err
-					}
-				}
-				return nil
-			}(); err != nil {
-				return errors.Wrap(err, "decode field \"permissions\"")
-			}
 		case "roles":
-			requiredBitSet[0] |= 1 << 3
+			requiredBitSet[0] |= 1 << 2
 			if err := func() error {
 				switch tt := d.Next(); tt {
 				case jx.Null:
@@ -1997,6 +1970,31 @@ func (s *GrantResource) Decode(d *jx.Decoder) error {
 				return nil
 			}(); err != nil {
 				return errors.Wrap(err, "decode field \"roles\"")
+			}
+		case "rules":
+			requiredBitSet[0] |= 1 << 3
+			if err := func() error {
+				switch tt := d.Next(); tt {
+				case jx.Null:
+					if err := d.Skip(); err != nil {
+						return err
+					}
+				default:
+					s.Rules = make([]RuleResource, 0)
+					if err := d.Arr(func(d *jx.Decoder) error {
+						var elem RuleResource
+						if err := elem.Decode(d); err != nil {
+							return err
+						}
+						s.Rules = append(s.Rules, elem)
+						return nil
+					}); err != nil {
+						return err
+					}
+				}
+				return nil
+			}(); err != nil {
+				return errors.Wrap(err, "decode field \"rules\"")
 			}
 		default:
 			return errors.Errorf("unexpected field %q", k)
@@ -3948,6 +3946,331 @@ func (s *RegisterRequestBody) MarshalJSON() ([]byte, error) {
 
 // UnmarshalJSON implements stdjson.Unmarshaler.
 func (s *RegisterRequestBody) UnmarshalJSON(data []byte) error {
+	d := jx.DecodeBytes(data)
+	return s.Decode(d)
+}
+
+// Encode implements json.Marshaler.
+func (s *ResourceRefResource) Encode(e *jx.Encoder) {
+	e.ObjStart()
+	s.encodeFields(e)
+	e.ObjEnd()
+}
+
+// encodeFields encodes fields.
+func (s *ResourceRefResource) encodeFields(e *jx.Encoder) {
+	{
+		e.FieldStart("id")
+		e.Str(s.ID)
+	}
+	{
+		e.FieldStart("type")
+		e.Str(s.Type)
+	}
+}
+
+var jsonFieldsNameOfResourceRefResource = [2]string{
+	0: "id",
+	1: "type",
+}
+
+// Decode decodes ResourceRefResource from json.
+func (s *ResourceRefResource) Decode(d *jx.Decoder) error {
+	if s == nil {
+		return errors.New("invalid: unable to decode ResourceRefResource to nil")
+	}
+	var requiredBitSet [1]uint8
+
+	if err := d.ObjBytes(func(d *jx.Decoder, k []byte) error {
+		switch string(k) {
+		case "id":
+			requiredBitSet[0] |= 1 << 0
+			if err := func() error {
+				v, err := d.Str()
+				s.ID = string(v)
+				if err != nil {
+					return err
+				}
+				return nil
+			}(); err != nil {
+				return errors.Wrap(err, "decode field \"id\"")
+			}
+		case "type":
+			requiredBitSet[0] |= 1 << 1
+			if err := func() error {
+				v, err := d.Str()
+				s.Type = string(v)
+				if err != nil {
+					return err
+				}
+				return nil
+			}(); err != nil {
+				return errors.Wrap(err, "decode field \"type\"")
+			}
+		default:
+			return errors.Errorf("unexpected field %q", k)
+		}
+		return nil
+	}); err != nil {
+		return errors.Wrap(err, "decode ResourceRefResource")
+	}
+	// Validate required fields.
+	var failures []validate.FieldError
+	for i, mask := range [1]uint8{
+		0b00000011,
+	} {
+		if result := (requiredBitSet[i] & mask) ^ mask; result != 0 {
+			// Mask only required fields and check equality to mask using XOR.
+			//
+			// If XOR result is not zero, result is not equal to expected, so some fields are missed.
+			// Bits of fields which would be set are actually bits of missed fields.
+			missed := bits.OnesCount8(result)
+			for bitN := 0; bitN < missed; bitN++ {
+				bitIdx := bits.TrailingZeros8(result)
+				fieldIdx := i*8 + bitIdx
+				var name string
+				if fieldIdx < len(jsonFieldsNameOfResourceRefResource) {
+					name = jsonFieldsNameOfResourceRefResource[fieldIdx]
+				} else {
+					name = strconv.Itoa(fieldIdx)
+				}
+				failures = append(failures, validate.FieldError{
+					Name:  name,
+					Error: validate.ErrFieldRequired,
+				})
+				// Reset bit.
+				result &^= 1 << bitIdx
+			}
+		}
+	}
+	if len(failures) > 0 {
+		return &validate.Error{Fields: failures}
+	}
+
+	return nil
+}
+
+// MarshalJSON implements stdjson.Marshaler.
+func (s *ResourceRefResource) MarshalJSON() ([]byte, error) {
+	e := jx.Encoder{}
+	s.Encode(&e)
+	return e.Bytes(), nil
+}
+
+// UnmarshalJSON implements stdjson.Unmarshaler.
+func (s *ResourceRefResource) UnmarshalJSON(data []byte) error {
+	d := jx.DecodeBytes(data)
+	return s.Decode(d)
+}
+
+// Encode implements json.Marshaler.
+func (s *RuleResource) Encode(e *jx.Encoder) {
+	e.ObjStart()
+	s.encodeFields(e)
+	e.ObjEnd()
+}
+
+// encodeFields encodes fields.
+func (s *RuleResource) encodeFields(e *jx.Encoder) {
+	{
+		e.FieldStart("effect")
+		s.Effect.Encode(e)
+	}
+	{
+		e.FieldStart("permissions")
+		if s.Permissions == nil {
+			e.Null()
+		} else {
+			e.ArrStart()
+			for _, elem := range s.Permissions {
+				e.Str(elem)
+			}
+			e.ArrEnd()
+		}
+	}
+	{
+		e.FieldStart("resources")
+		if s.Resources == nil {
+			e.Null()
+		} else {
+			e.ArrStart()
+			for _, elem := range s.Resources {
+				elem.Encode(e)
+			}
+			e.ArrEnd()
+		}
+	}
+}
+
+var jsonFieldsNameOfRuleResource = [3]string{
+	0: "effect",
+	1: "permissions",
+	2: "resources",
+}
+
+// Decode decodes RuleResource from json.
+func (s *RuleResource) Decode(d *jx.Decoder) error {
+	if s == nil {
+		return errors.New("invalid: unable to decode RuleResource to nil")
+	}
+	var requiredBitSet [1]uint8
+
+	if err := d.ObjBytes(func(d *jx.Decoder, k []byte) error {
+		switch string(k) {
+		case "effect":
+			requiredBitSet[0] |= 1 << 0
+			if err := func() error {
+				if err := s.Effect.Decode(d); err != nil {
+					return err
+				}
+				return nil
+			}(); err != nil {
+				return errors.Wrap(err, "decode field \"effect\"")
+			}
+		case "permissions":
+			requiredBitSet[0] |= 1 << 1
+			if err := func() error {
+				switch tt := d.Next(); tt {
+				case jx.Null:
+					if err := d.Skip(); err != nil {
+						return err
+					}
+				default:
+					s.Permissions = make([]string, 0)
+					if err := d.Arr(func(d *jx.Decoder) error {
+						var elem string
+						v, err := d.Str()
+						elem = string(v)
+						if err != nil {
+							return err
+						}
+						s.Permissions = append(s.Permissions, elem)
+						return nil
+					}); err != nil {
+						return err
+					}
+				}
+				return nil
+			}(); err != nil {
+				return errors.Wrap(err, "decode field \"permissions\"")
+			}
+		case "resources":
+			requiredBitSet[0] |= 1 << 2
+			if err := func() error {
+				switch tt := d.Next(); tt {
+				case jx.Null:
+					if err := d.Skip(); err != nil {
+						return err
+					}
+				default:
+					s.Resources = make([]ResourceRefResource, 0)
+					if err := d.Arr(func(d *jx.Decoder) error {
+						var elem ResourceRefResource
+						if err := elem.Decode(d); err != nil {
+							return err
+						}
+						s.Resources = append(s.Resources, elem)
+						return nil
+					}); err != nil {
+						return err
+					}
+				}
+				return nil
+			}(); err != nil {
+				return errors.Wrap(err, "decode field \"resources\"")
+			}
+		default:
+			return errors.Errorf("unexpected field %q", k)
+		}
+		return nil
+	}); err != nil {
+		return errors.Wrap(err, "decode RuleResource")
+	}
+	// Validate required fields.
+	var failures []validate.FieldError
+	for i, mask := range [1]uint8{
+		0b00000111,
+	} {
+		if result := (requiredBitSet[i] & mask) ^ mask; result != 0 {
+			// Mask only required fields and check equality to mask using XOR.
+			//
+			// If XOR result is not zero, result is not equal to expected, so some fields are missed.
+			// Bits of fields which would be set are actually bits of missed fields.
+			missed := bits.OnesCount8(result)
+			for bitN := 0; bitN < missed; bitN++ {
+				bitIdx := bits.TrailingZeros8(result)
+				fieldIdx := i*8 + bitIdx
+				var name string
+				if fieldIdx < len(jsonFieldsNameOfRuleResource) {
+					name = jsonFieldsNameOfRuleResource[fieldIdx]
+				} else {
+					name = strconv.Itoa(fieldIdx)
+				}
+				failures = append(failures, validate.FieldError{
+					Name:  name,
+					Error: validate.ErrFieldRequired,
+				})
+				// Reset bit.
+				result &^= 1 << bitIdx
+			}
+		}
+	}
+	if len(failures) > 0 {
+		return &validate.Error{Fields: failures}
+	}
+
+	return nil
+}
+
+// MarshalJSON implements stdjson.Marshaler.
+func (s *RuleResource) MarshalJSON() ([]byte, error) {
+	e := jx.Encoder{}
+	s.Encode(&e)
+	return e.Bytes(), nil
+}
+
+// UnmarshalJSON implements stdjson.Unmarshaler.
+func (s *RuleResource) UnmarshalJSON(data []byte) error {
+	d := jx.DecodeBytes(data)
+	return s.Decode(d)
+}
+
+// Encode encodes RuleResourceEffect as json.
+func (s RuleResourceEffect) Encode(e *jx.Encoder) {
+	e.Str(string(s))
+}
+
+// Decode decodes RuleResourceEffect from json.
+func (s *RuleResourceEffect) Decode(d *jx.Decoder) error {
+	if s == nil {
+		return errors.New("invalid: unable to decode RuleResourceEffect to nil")
+	}
+	v, err := d.StrBytes()
+	if err != nil {
+		return err
+	}
+	// Try to use constant string.
+	switch RuleResourceEffect(v) {
+	case RuleResourceEffectAllow:
+		*s = RuleResourceEffectAllow
+	case RuleResourceEffectDeny:
+		*s = RuleResourceEffectDeny
+	default:
+		*s = RuleResourceEffect(v)
+	}
+
+	return nil
+}
+
+// MarshalJSON implements stdjson.Marshaler.
+func (s RuleResourceEffect) MarshalJSON() ([]byte, error) {
+	e := jx.Encoder{}
+	s.Encode(&e)
+	return e.Bytes(), nil
+}
+
+// UnmarshalJSON implements stdjson.Unmarshaler.
+func (s *RuleResourceEffect) UnmarshalJSON(data []byte) error {
 	d := jx.DecodeBytes(data)
 	return s.Decode(d)
 }

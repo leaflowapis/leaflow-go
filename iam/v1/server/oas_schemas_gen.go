@@ -15,6 +15,124 @@ func (s *ErrorStatusCode) Error() string {
 	return fmt.Sprintf("code %d: %+v", s.StatusCode, s.Response)
 }
 
+// Ref: #/components/schemas/AttachPolicyRequestBody
+type AttachPolicyRequestBody struct {
+	// 给人看的理由。一条附加策略事后最难回答的是「当初为什么开这一条」.
+	Description OptString                     `json:"description"`
+	Effect      AttachPolicyRequestBodyEffect `json:"effect"`
+	// 直挂的权限名，用它就不必为一个人临时造一个只有他持有的角色.
+	Permissions OptNilStringArray `json:"permissions"`
+	// 这条策略只在这些资源上成立。留空只有配合 deny
+	// 才讲得通——一条不限资源的 allow 是基础策略，那一条已经有了.
+	Resources OptNilResourceRefResourceArray `json:"resources"`
+	// 必须是这个项目已经定义的角色。OWNER 和 ADMIN
+	// 不行——它们是规则而不是权限集合，「限定在三台机器上的所有者」讲不通.
+	Roles OptNilStringArray `json:"roles"`
+	// 必须已经是这个项目的成员.
+	UserID string `json:"user_id"`
+}
+
+// GetDescription returns the value of Description.
+func (s *AttachPolicyRequestBody) GetDescription() OptString {
+	return s.Description
+}
+
+// GetEffect returns the value of Effect.
+func (s *AttachPolicyRequestBody) GetEffect() AttachPolicyRequestBodyEffect {
+	return s.Effect
+}
+
+// GetPermissions returns the value of Permissions.
+func (s *AttachPolicyRequestBody) GetPermissions() OptNilStringArray {
+	return s.Permissions
+}
+
+// GetResources returns the value of Resources.
+func (s *AttachPolicyRequestBody) GetResources() OptNilResourceRefResourceArray {
+	return s.Resources
+}
+
+// GetRoles returns the value of Roles.
+func (s *AttachPolicyRequestBody) GetRoles() OptNilStringArray {
+	return s.Roles
+}
+
+// GetUserID returns the value of UserID.
+func (s *AttachPolicyRequestBody) GetUserID() string {
+	return s.UserID
+}
+
+// SetDescription sets the value of Description.
+func (s *AttachPolicyRequestBody) SetDescription(val OptString) {
+	s.Description = val
+}
+
+// SetEffect sets the value of Effect.
+func (s *AttachPolicyRequestBody) SetEffect(val AttachPolicyRequestBodyEffect) {
+	s.Effect = val
+}
+
+// SetPermissions sets the value of Permissions.
+func (s *AttachPolicyRequestBody) SetPermissions(val OptNilStringArray) {
+	s.Permissions = val
+}
+
+// SetResources sets the value of Resources.
+func (s *AttachPolicyRequestBody) SetResources(val OptNilResourceRefResourceArray) {
+	s.Resources = val
+}
+
+// SetRoles sets the value of Roles.
+func (s *AttachPolicyRequestBody) SetRoles(val OptNilStringArray) {
+	s.Roles = val
+}
+
+// SetUserID sets the value of UserID.
+func (s *AttachPolicyRequestBody) SetUserID(val string) {
+	s.UserID = val
+}
+
+type AttachPolicyRequestBodyEffect string
+
+const (
+	AttachPolicyRequestBodyEffectAllow AttachPolicyRequestBodyEffect = "allow"
+	AttachPolicyRequestBodyEffectDeny  AttachPolicyRequestBodyEffect = "deny"
+)
+
+// AllValues returns all AttachPolicyRequestBodyEffect values.
+func (AttachPolicyRequestBodyEffect) AllValues() []AttachPolicyRequestBodyEffect {
+	return []AttachPolicyRequestBodyEffect{
+		AttachPolicyRequestBodyEffectAllow,
+		AttachPolicyRequestBodyEffectDeny,
+	}
+}
+
+// MarshalText implements encoding.TextMarshaler.
+func (s AttachPolicyRequestBodyEffect) MarshalText() ([]byte, error) {
+	switch s {
+	case AttachPolicyRequestBodyEffectAllow:
+		return []byte(s), nil
+	case AttachPolicyRequestBodyEffectDeny:
+		return []byte(s), nil
+	default:
+		return nil, errors.Errorf("invalid value: %q", s)
+	}
+}
+
+// UnmarshalText implements encoding.TextUnmarshaler.
+func (s *AttachPolicyRequestBodyEffect) UnmarshalText(data []byte) error {
+	switch AttachPolicyRequestBodyEffect(data) {
+	case AttachPolicyRequestBodyEffectAllow:
+		*s = AttachPolicyRequestBodyEffectAllow
+		return nil
+	case AttachPolicyRequestBodyEffectDeny:
+		*s = AttachPolicyRequestBodyEffectDeny
+		return nil
+	default:
+		return errors.Errorf("invalid value: %q", data)
+	}
+}
+
 // Ref: #/components/schemas/BatchGetMembersRequestBody
 type BatchGetMembersRequestBody struct {
 	// The account ids to resolve. Blank entries are ignored.
@@ -71,6 +189,59 @@ func (s *BearerAuth) SetToken(val string) {
 // SetRoles sets the value of Roles.
 func (s *BearerAuth) SetRoles(val []string) {
 	s.Roles = val
+}
+
+// Ref: #/components/schemas/CatalogListResponseBody
+type CatalogListResponseBody struct {
+	Items []CatalogResource `json:"items"`
+}
+
+// GetItems returns the value of Items.
+func (s *CatalogListResponseBody) GetItems() []CatalogResource {
+	return s.Items
+}
+
+// SetItems sets the value of Items.
+func (s *CatalogListResponseBody) SetItems(val []CatalogResource) {
+	s.Items = val
+}
+
+// Ref: #/components/schemas/CatalogResource
+type CatalogResource struct {
+	Permissions []PermissionResource `json:"permissions"`
+	// 这个服务声明的资源类型。带资源范围的规则只落得到它们上面——一个没有被声明过的类型没人认得，限定在它上面的规则谁都判不出来.
+	ResourceTypes []ResourceTypeResource `json:"resource_types"`
+	Service       string                 `json:"service"`
+}
+
+// GetPermissions returns the value of Permissions.
+func (s *CatalogResource) GetPermissions() []PermissionResource {
+	return s.Permissions
+}
+
+// GetResourceTypes returns the value of ResourceTypes.
+func (s *CatalogResource) GetResourceTypes() []ResourceTypeResource {
+	return s.ResourceTypes
+}
+
+// GetService returns the value of Service.
+func (s *CatalogResource) GetService() string {
+	return s.Service
+}
+
+// SetPermissions sets the value of Permissions.
+func (s *CatalogResource) SetPermissions(val []PermissionResource) {
+	s.Permissions = val
+}
+
+// SetResourceTypes sets the value of ResourceTypes.
+func (s *CatalogResource) SetResourceTypes(val []ResourceTypeResource) {
+	s.ResourceTypes = val
+}
+
+// SetService sets the value of Service.
+func (s *CatalogResource) SetService(val string) {
+	s.Service = val
 }
 
 // Ref: #/components/schemas/CreateRoleRequestBody
@@ -219,6 +390,9 @@ func (s *CreateSSHKeyRequestBodyOwner) UnmarshalText(data []byte) error {
 // DeleteRoleNoContent is response for DeleteRole operation.
 type DeleteRoleNoContent struct{}
 
+// DetachPolicyNoContent is response for DetachPolicy operation.
+type DetachPolicyNoContent struct{}
+
 // Ref: #/components/schemas/Error
 type Error struct {
 	Code    OptString    `json:"code"`
@@ -308,10 +482,12 @@ func (s *ErrorStatusCode) SetResponse(val Error) {
 type GrantResource struct {
 	Admin bool `json:"admin"`
 	Owner bool `json:"owner"`
-	// 持有的全部自定义角色的权限并集，已去重排序.
-	Permissions []string `json:"permissions"`
 	// 持有的角色编码，只用于展示.
 	Roles []string `json:"roles"`
+	// 他全部策略编译出来的规则。不要自己遍历它做判定——拿它配上自己那份权限目录交给
+	// pkg/rbac：owner 不可被 deny、deny 优先于
+	// admin、带资源范围的规则不参与项目级判定，那里面的顺序每一条都对着一种会静默放行的写法.
+	Rules []RuleResource `json:"rules"`
 }
 
 // GetAdmin returns the value of Admin.
@@ -324,14 +500,14 @@ func (s *GrantResource) GetOwner() bool {
 	return s.Owner
 }
 
-// GetPermissions returns the value of Permissions.
-func (s *GrantResource) GetPermissions() []string {
-	return s.Permissions
-}
-
 // GetRoles returns the value of Roles.
 func (s *GrantResource) GetRoles() []string {
 	return s.Roles
+}
+
+// GetRules returns the value of Rules.
+func (s *GrantResource) GetRules() []RuleResource {
+	return s.Rules
 }
 
 // SetAdmin sets the value of Admin.
@@ -344,14 +520,14 @@ func (s *GrantResource) SetOwner(val bool) {
 	s.Owner = val
 }
 
-// SetPermissions sets the value of Permissions.
-func (s *GrantResource) SetPermissions(val []string) {
-	s.Permissions = val
-}
-
 // SetRoles sets the value of Roles.
 func (s *GrantResource) SetRoles(val []string) {
 	s.Roles = val
+}
+
+// SetRules sets the value of Rules.
+func (s *GrantResource) SetRules(val []RuleResource) {
+	s.Rules = val
 }
 
 // Ref: #/components/schemas/InvitationResource
@@ -1059,6 +1235,74 @@ func (o OptListSSHKeysStatus) Or(d ListSSHKeysStatus) ListSSHKeysStatus {
 	return d
 }
 
+// NewOptNilResourceRefResourceArray returns new OptNilResourceRefResourceArray with value set to v.
+func NewOptNilResourceRefResourceArray(v []ResourceRefResource) OptNilResourceRefResourceArray {
+	return OptNilResourceRefResourceArray{
+		Value: v,
+		Set:   true,
+	}
+}
+
+// OptNilResourceRefResourceArray is optional nullable []ResourceRefResource.
+type OptNilResourceRefResourceArray struct {
+	Value []ResourceRefResource
+	Set   bool
+	Null  bool
+}
+
+// IsSet returns true if OptNilResourceRefResourceArray was set.
+func (o OptNilResourceRefResourceArray) IsSet() bool { return o.Set }
+
+// Reset unsets value.
+func (o *OptNilResourceRefResourceArray) Reset() {
+	var v []ResourceRefResource
+	o.Value = v
+	o.Set = false
+	o.Null = false
+}
+
+// SetTo sets value to v.
+func (o *OptNilResourceRefResourceArray) SetTo(v []ResourceRefResource) {
+	o.Set = true
+	o.Null = false
+	o.Value = v
+}
+
+// IsNull returns true if value is Null.
+func (o OptNilResourceRefResourceArray) IsNull() bool { return o.Null }
+
+// SetToNull sets value to null.
+func (o *OptNilResourceRefResourceArray) SetToNull() {
+	o.Set = true
+	o.Null = true
+	var v []ResourceRefResource
+	o.Value = v
+}
+
+// IsEmpty returns true if the field was omitted from the payload (not Set and not Null).
+func (o OptNilResourceRefResourceArray) IsEmpty() bool {
+	return !o.Set && !o.Null
+}
+
+// Get returns value and boolean that denotes whether value was set.
+func (o OptNilResourceRefResourceArray) Get() (v []ResourceRefResource, ok bool) {
+	if o.Null {
+		return v, false
+	}
+	if !o.Set {
+		return v, false
+	}
+	return o.Value, true
+}
+
+// Or returns value if set, or given parameter if does not.
+func (o OptNilResourceRefResourceArray) Or(d []ResourceRefResource) []ResourceRefResource {
+	if v, ok := o.Get(); ok {
+		return v
+	}
+	return d
+}
+
 // NewOptNilStringArray returns new OptNilStringArray with value set to v.
 func NewOptNilStringArray(v []string) OptNilStringArray {
 	return OptNilStringArray{
@@ -1200,27 +1444,18 @@ func (s *OwnershipTransferResponseBody) SetTo(val MemberResource) {
 	s.To = val
 }
 
-// Ref: #/components/schemas/PermissionListResponseBody
-type PermissionListResponseBody struct {
-	Items []PermissionResource `json:"items"`
-}
-
-// GetItems returns the value of Items.
-func (s *PermissionListResponseBody) GetItems() []PermissionResource {
-	return s.Items
-}
-
-// SetItems sets the value of Items.
-func (s *PermissionListResponseBody) SetItems(val []PermissionResource) {
-	s.Items = val
-}
-
 // Ref: #/components/schemas/PermissionResource
 type PermissionResource struct {
 	Description string `json:"description"`
 	Name        string `json:"name"`
 	// 只有项目所有者能做，绑到自定义角色上也不会生效.
 	OwnerOnly bool `json:"owner_only"`
+	// 这条权限的判定对象是哪类资源，空表示它是项目级的。它不必等于操作对象本身——compute
+	// 的 route 表上没有 project_id，隔离本来就经父网络传递，所以 compute:route.create
+	// 的判定对象是
+	// compute:private_network。非空同时意味着这条权限可以被限定到具体实例；create
+	// 和 list 一律留空.
+	ResourceType string `json:"resource_type"`
 }
 
 // GetDescription returns the value of Description.
@@ -1238,6 +1473,11 @@ func (s *PermissionResource) GetOwnerOnly() bool {
 	return s.OwnerOnly
 }
 
+// GetResourceType returns the value of ResourceType.
+func (s *PermissionResource) GetResourceType() string {
+	return s.ResourceType
+}
+
 // SetDescription sets the value of Description.
 func (s *PermissionResource) SetDescription(val string) {
 	s.Description = val
@@ -1251,6 +1491,188 @@ func (s *PermissionResource) SetName(val string) {
 // SetOwnerOnly sets the value of OwnerOnly.
 func (s *PermissionResource) SetOwnerOnly(val bool) {
 	s.OwnerOnly = val
+}
+
+// SetResourceType sets the value of ResourceType.
+func (s *PermissionResource) SetResourceType(val string) {
+	s.ResourceType = val
+}
+
+// Ref: #/components/schemas/PolicyListResponseBody
+type PolicyListResponseBody struct {
+	Items []PolicyResource `json:"items"`
+}
+
+// GetItems returns the value of Items.
+func (s *PolicyListResponseBody) GetItems() []PolicyResource {
+	return s.Items
+}
+
+// SetItems sets the value of Items.
+func (s *PolicyListResponseBody) SetItems(val []PolicyResource) {
+	s.Items = val
+}
+
+// Ref: #/components/schemas/PolicyResource
+type PolicyResource struct {
+	// 基础策略是方向
+	// allow、不限资源的那一条，每个成员恰好一条，装的是他的常规角色。改它走
+	// PUT /members/{userId}/roles 和 PUT /members/{userId}/permissions.
+	Base      bool      `json:"base"`
+	CreatedAt time.Time `json:"created_at"`
+	// 给人看的理由。一条附加策略事后最难回答的是「当初为什么开这一条」.
+	Description string               `json:"description"`
+	Effect      PolicyResourceEffect `json:"effect"`
+	ID          uuid.UUID            `json:"id"`
+	// 直挂在这个人身上的权限名，不经过角色.
+	Permissions []string `json:"permissions"`
+	// 为空表示整个项目范围.
+	Resources []ResourceRefResource `json:"resources"`
+	// 这条策略带上的角色编码.
+	Roles     []string  `json:"roles"`
+	UpdatedAt time.Time `json:"updated_at"`
+	UserID    string    `json:"user_id"`
+}
+
+// GetBase returns the value of Base.
+func (s *PolicyResource) GetBase() bool {
+	return s.Base
+}
+
+// GetCreatedAt returns the value of CreatedAt.
+func (s *PolicyResource) GetCreatedAt() time.Time {
+	return s.CreatedAt
+}
+
+// GetDescription returns the value of Description.
+func (s *PolicyResource) GetDescription() string {
+	return s.Description
+}
+
+// GetEffect returns the value of Effect.
+func (s *PolicyResource) GetEffect() PolicyResourceEffect {
+	return s.Effect
+}
+
+// GetID returns the value of ID.
+func (s *PolicyResource) GetID() uuid.UUID {
+	return s.ID
+}
+
+// GetPermissions returns the value of Permissions.
+func (s *PolicyResource) GetPermissions() []string {
+	return s.Permissions
+}
+
+// GetResources returns the value of Resources.
+func (s *PolicyResource) GetResources() []ResourceRefResource {
+	return s.Resources
+}
+
+// GetRoles returns the value of Roles.
+func (s *PolicyResource) GetRoles() []string {
+	return s.Roles
+}
+
+// GetUpdatedAt returns the value of UpdatedAt.
+func (s *PolicyResource) GetUpdatedAt() time.Time {
+	return s.UpdatedAt
+}
+
+// GetUserID returns the value of UserID.
+func (s *PolicyResource) GetUserID() string {
+	return s.UserID
+}
+
+// SetBase sets the value of Base.
+func (s *PolicyResource) SetBase(val bool) {
+	s.Base = val
+}
+
+// SetCreatedAt sets the value of CreatedAt.
+func (s *PolicyResource) SetCreatedAt(val time.Time) {
+	s.CreatedAt = val
+}
+
+// SetDescription sets the value of Description.
+func (s *PolicyResource) SetDescription(val string) {
+	s.Description = val
+}
+
+// SetEffect sets the value of Effect.
+func (s *PolicyResource) SetEffect(val PolicyResourceEffect) {
+	s.Effect = val
+}
+
+// SetID sets the value of ID.
+func (s *PolicyResource) SetID(val uuid.UUID) {
+	s.ID = val
+}
+
+// SetPermissions sets the value of Permissions.
+func (s *PolicyResource) SetPermissions(val []string) {
+	s.Permissions = val
+}
+
+// SetResources sets the value of Resources.
+func (s *PolicyResource) SetResources(val []ResourceRefResource) {
+	s.Resources = val
+}
+
+// SetRoles sets the value of Roles.
+func (s *PolicyResource) SetRoles(val []string) {
+	s.Roles = val
+}
+
+// SetUpdatedAt sets the value of UpdatedAt.
+func (s *PolicyResource) SetUpdatedAt(val time.Time) {
+	s.UpdatedAt = val
+}
+
+// SetUserID sets the value of UserID.
+func (s *PolicyResource) SetUserID(val string) {
+	s.UserID = val
+}
+
+type PolicyResourceEffect string
+
+const (
+	PolicyResourceEffectAllow PolicyResourceEffect = "allow"
+	PolicyResourceEffectDeny  PolicyResourceEffect = "deny"
+)
+
+// AllValues returns all PolicyResourceEffect values.
+func (PolicyResourceEffect) AllValues() []PolicyResourceEffect {
+	return []PolicyResourceEffect{
+		PolicyResourceEffectAllow,
+		PolicyResourceEffectDeny,
+	}
+}
+
+// MarshalText implements encoding.TextMarshaler.
+func (s PolicyResourceEffect) MarshalText() ([]byte, error) {
+	switch s {
+	case PolicyResourceEffectAllow:
+		return []byte(s), nil
+	case PolicyResourceEffectDeny:
+		return []byte(s), nil
+	default:
+		return nil, errors.Errorf("invalid value: %q", s)
+	}
+}
+
+// UnmarshalText implements encoding.TextUnmarshaler.
+func (s *PolicyResourceEffect) UnmarshalText(data []byte) error {
+	switch PolicyResourceEffect(data) {
+	case PolicyResourceEffectAllow:
+		*s = PolicyResourceEffectAllow
+		return nil
+	case PolicyResourceEffectDeny:
+		*s = PolicyResourceEffectDeny
+		return nil
+	default:
+		return errors.Errorf("invalid value: %q", data)
+	}
 }
 
 // Ref: #/components/schemas/ProjectAccessResource
@@ -1562,6 +1984,62 @@ func (s *ResolvedMemberResource) SetUserID(val string) {
 	s.UserID = val
 }
 
+// Ref: #/components/schemas/ResourceRefResource
+type ResourceRefResource struct {
+	// 是字符串不是 uuid：dns 的 zone 标识是域名，而且不在 IAM 库里。匹配语义是
+	// glob，所以 *.example.com 能表达一批子域名；uuid 和域名都不含 glob
+	// 元字符，对它们来说就是精确相等.
+	ID string `json:"id"`
+	// 形如 compute:instance、dns:zone，和权限名同一个命名空间.
+	Type string `json:"type"`
+}
+
+// GetID returns the value of ID.
+func (s *ResourceRefResource) GetID() string {
+	return s.ID
+}
+
+// GetType returns the value of Type.
+func (s *ResourceRefResource) GetType() string {
+	return s.Type
+}
+
+// SetID sets the value of ID.
+func (s *ResourceRefResource) SetID(val string) {
+	s.ID = val
+}
+
+// SetType sets the value of Type.
+func (s *ResourceRefResource) SetType(val string) {
+	s.Type = val
+}
+
+// Ref: #/components/schemas/ResourceTypeResource
+type ResourceTypeResource struct {
+	Description string `json:"description"`
+	Name        string `json:"name"`
+}
+
+// GetDescription returns the value of Description.
+func (s *ResourceTypeResource) GetDescription() string {
+	return s.Description
+}
+
+// GetName returns the value of Name.
+func (s *ResourceTypeResource) GetName() string {
+	return s.Name
+}
+
+// SetDescription sets the value of Description.
+func (s *ResourceTypeResource) SetDescription(val string) {
+	s.Description = val
+}
+
+// SetName sets the value of Name.
+func (s *ResourceTypeResource) SetName(val string) {
+	s.Name = val
+}
+
 // RevokeInvitationNoContent is response for RevokeInvitation operation.
 type RevokeInvitationNoContent struct{}
 
@@ -1660,6 +2138,88 @@ func (s *RoleResource) SetPermissions(val []string) {
 // SetUpdatedAt sets the value of UpdatedAt.
 func (s *RoleResource) SetUpdatedAt(val time.Time) {
 	s.UpdatedAt = val
+}
+
+// Ref: #/components/schemas/RuleResource
+type RuleResource struct {
+	Effect RuleResourceEffect `json:"effect"`
+	// 权限名，支持尾部通配（compute:instance.*）。通配必须带服务前缀——一条光秃秃的
+	// *
+	// 会把日后新上线的服务的操作也一起授出去，而那件事发生的时候没有任何人在场.
+	Permissions []string `json:"permissions"`
+	// 为空表示整个项目范围；非空表示这条规则只在这些资源上成立，而那意味着它回答不了项目级的问题.
+	Resources []ResourceRefResource `json:"resources"`
+}
+
+// GetEffect returns the value of Effect.
+func (s *RuleResource) GetEffect() RuleResourceEffect {
+	return s.Effect
+}
+
+// GetPermissions returns the value of Permissions.
+func (s *RuleResource) GetPermissions() []string {
+	return s.Permissions
+}
+
+// GetResources returns the value of Resources.
+func (s *RuleResource) GetResources() []ResourceRefResource {
+	return s.Resources
+}
+
+// SetEffect sets the value of Effect.
+func (s *RuleResource) SetEffect(val RuleResourceEffect) {
+	s.Effect = val
+}
+
+// SetPermissions sets the value of Permissions.
+func (s *RuleResource) SetPermissions(val []string) {
+	s.Permissions = val
+}
+
+// SetResources sets the value of Resources.
+func (s *RuleResource) SetResources(val []ResourceRefResource) {
+	s.Resources = val
+}
+
+type RuleResourceEffect string
+
+const (
+	RuleResourceEffectAllow RuleResourceEffect = "allow"
+	RuleResourceEffectDeny  RuleResourceEffect = "deny"
+)
+
+// AllValues returns all RuleResourceEffect values.
+func (RuleResourceEffect) AllValues() []RuleResourceEffect {
+	return []RuleResourceEffect{
+		RuleResourceEffectAllow,
+		RuleResourceEffectDeny,
+	}
+}
+
+// MarshalText implements encoding.TextMarshaler.
+func (s RuleResourceEffect) MarshalText() ([]byte, error) {
+	switch s {
+	case RuleResourceEffectAllow:
+		return []byte(s), nil
+	case RuleResourceEffectDeny:
+		return []byte(s), nil
+	default:
+		return nil, errors.Errorf("invalid value: %q", s)
+	}
+}
+
+// UnmarshalText implements encoding.TextUnmarshaler.
+func (s *RuleResourceEffect) UnmarshalText(data []byte) error {
+	switch RuleResourceEffect(data) {
+	case RuleResourceEffectAllow:
+		*s = RuleResourceEffectAllow
+		return nil
+	case RuleResourceEffectDeny:
+		*s = RuleResourceEffectDeny
+		return nil
+	default:
+		return errors.Errorf("invalid value: %q", data)
+	}
 }
 
 // Ref: #/components/schemas/SSHKeyResource
@@ -1820,6 +2380,22 @@ func (s *SSHKeyResourceStatus) UnmarshalText(data []byte) error {
 	}
 }
 
+// Ref: #/components/schemas/SetMemberPermissionsRequestBody
+type SetMemberPermissionsRequestBody struct {
+	// 这个人应当直挂的全部权限名，整体替换。角色给的那些不在这里，也不会被这次写入碰到.
+	Permissions []string `json:"permissions"`
+}
+
+// GetPermissions returns the value of Permissions.
+func (s *SetMemberPermissionsRequestBody) GetPermissions() []string {
+	return s.Permissions
+}
+
+// SetPermissions sets the value of Permissions.
+func (s *SetMemberPermissionsRequestBody) SetPermissions(val []string) {
+	s.Permissions = val
+}
+
 // Ref: #/components/schemas/SetMemberRolesRequestBody
 type SetMemberRolesRequestBody struct {
 	// 这个人应当持有的全部角色编码。OWNER 不能出现在这里.
@@ -1850,6 +2426,117 @@ func (s *TransferOwnershipRequestBody) GetToUserID() string {
 // SetToUserID sets the value of ToUserID.
 func (s *TransferOwnershipRequestBody) SetToUserID(val string) {
 	s.ToUserID = val
+}
+
+// Ref: #/components/schemas/UpdatePolicyRequestBody
+type UpdatePolicyRequestBody struct {
+	// 给人看的理由。它和这次改动一起替换，不然留下来的会是一句解释着上一个版本的话.
+	Description OptString `json:"description"`
+	// 必须和这条策略当前的方向一致。方向改不动——那不是「改一条策略」，是一次意思完全相反的授权决定，改它的人多半以为自己在收紧，而读这行数据的下一个人看到的是一条方向和当初授予时不同、说明文字却还是旧的策略。仍然要求发这个字段而不是干脆不收，是因为整体替换的语义是「这就是这条策略现在的全貌」：少一个字段的话，调用方以为自己把
+	// deny 改成了 allow，而服务端默默忽略了它。不一致时返回
+	// PROJECT_POLICY_EFFECT_IMMUTABLE.
+	Effect UpdatePolicyRequestBodyEffect `json:"effect"`
+	// 直挂的权限名，整份替换。没列进来的就是被收回了——它不是往上加一条.
+	Permissions OptNilStringArray `json:"permissions"`
+	// 这条策略的资源范围，整份替换。范围内容能改，有没有范围改不了：基础策略加不上范围，带范围的也清不空——清空之后它就是基础策略的形状，而那个位置每个成员只有一条.
+	Resources OptNilResourceRefResourceArray `json:"resources"`
+	// 必须是这个项目已经定义的角色，整份替换。和挂上去那次一样不能有 OWNER
+	// 或 ADMIN.
+	Roles OptNilStringArray `json:"roles"`
+}
+
+// GetDescription returns the value of Description.
+func (s *UpdatePolicyRequestBody) GetDescription() OptString {
+	return s.Description
+}
+
+// GetEffect returns the value of Effect.
+func (s *UpdatePolicyRequestBody) GetEffect() UpdatePolicyRequestBodyEffect {
+	return s.Effect
+}
+
+// GetPermissions returns the value of Permissions.
+func (s *UpdatePolicyRequestBody) GetPermissions() OptNilStringArray {
+	return s.Permissions
+}
+
+// GetResources returns the value of Resources.
+func (s *UpdatePolicyRequestBody) GetResources() OptNilResourceRefResourceArray {
+	return s.Resources
+}
+
+// GetRoles returns the value of Roles.
+func (s *UpdatePolicyRequestBody) GetRoles() OptNilStringArray {
+	return s.Roles
+}
+
+// SetDescription sets the value of Description.
+func (s *UpdatePolicyRequestBody) SetDescription(val OptString) {
+	s.Description = val
+}
+
+// SetEffect sets the value of Effect.
+func (s *UpdatePolicyRequestBody) SetEffect(val UpdatePolicyRequestBodyEffect) {
+	s.Effect = val
+}
+
+// SetPermissions sets the value of Permissions.
+func (s *UpdatePolicyRequestBody) SetPermissions(val OptNilStringArray) {
+	s.Permissions = val
+}
+
+// SetResources sets the value of Resources.
+func (s *UpdatePolicyRequestBody) SetResources(val OptNilResourceRefResourceArray) {
+	s.Resources = val
+}
+
+// SetRoles sets the value of Roles.
+func (s *UpdatePolicyRequestBody) SetRoles(val OptNilStringArray) {
+	s.Roles = val
+}
+
+// 必须和这条策略当前的方向一致。方向改不动——那不是「改一条策略」，是一次意思完全相反的授权决定，改它的人多半以为自己在收紧，而读这行数据的下一个人看到的是一条方向和当初授予时不同、说明文字却还是旧的策略。仍然要求发这个字段而不是干脆不收，是因为整体替换的语义是「这就是这条策略现在的全貌」：少一个字段的话，调用方以为自己把
+// deny 改成了 allow，而服务端默默忽略了它。不一致时返回
+// PROJECT_POLICY_EFFECT_IMMUTABLE.
+type UpdatePolicyRequestBodyEffect string
+
+const (
+	UpdatePolicyRequestBodyEffectAllow UpdatePolicyRequestBodyEffect = "allow"
+	UpdatePolicyRequestBodyEffectDeny  UpdatePolicyRequestBodyEffect = "deny"
+)
+
+// AllValues returns all UpdatePolicyRequestBodyEffect values.
+func (UpdatePolicyRequestBodyEffect) AllValues() []UpdatePolicyRequestBodyEffect {
+	return []UpdatePolicyRequestBodyEffect{
+		UpdatePolicyRequestBodyEffectAllow,
+		UpdatePolicyRequestBodyEffectDeny,
+	}
+}
+
+// MarshalText implements encoding.TextMarshaler.
+func (s UpdatePolicyRequestBodyEffect) MarshalText() ([]byte, error) {
+	switch s {
+	case UpdatePolicyRequestBodyEffectAllow:
+		return []byte(s), nil
+	case UpdatePolicyRequestBodyEffectDeny:
+		return []byte(s), nil
+	default:
+		return nil, errors.Errorf("invalid value: %q", s)
+	}
+}
+
+// UnmarshalText implements encoding.TextUnmarshaler.
+func (s *UpdatePolicyRequestBodyEffect) UnmarshalText(data []byte) error {
+	switch UpdatePolicyRequestBodyEffect(data) {
+	case UpdatePolicyRequestBodyEffectAllow:
+		*s = UpdatePolicyRequestBodyEffectAllow
+		return nil
+	case UpdatePolicyRequestBodyEffectDeny:
+		*s = UpdatePolicyRequestBodyEffectDeny
+		return nil
+	default:
+		return errors.Errorf("invalid value: %q", data)
+	}
 }
 
 // Ref: #/components/schemas/UpdateProjectRequestBody

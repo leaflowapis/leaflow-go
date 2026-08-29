@@ -12,6 +12,19 @@ import (
 	"go.opentelemetry.io/otel/trace"
 )
 
+func encodeAttachPolicyResponse(response *PolicyResource, w http.ResponseWriter, span trace.Span) error {
+	w.Header().Set("Content-Type", "application/json; charset=utf-8")
+	w.WriteHeader(201)
+
+	e := new(jx.Encoder)
+	response.Encode(e)
+	if _, err := e.WriteTo(w); err != nil {
+		return errors.Wrap(err, "write")
+	}
+
+	return nil
+}
+
 func encodeBatchGetMembersResponse(response *BatchGetMembersResponseBody, w http.ResponseWriter, span trace.Span) error {
 	w.Header().Set("Content-Type", "application/json; charset=utf-8")
 	w.WriteHeader(200)
@@ -66,6 +79,25 @@ func encodeDeleteProjectResponse(response *ProjectAccessResource, w http.Respons
 
 func encodeDeleteRoleResponse(response *DeleteRoleNoContent, w http.ResponseWriter, span trace.Span) error {
 	w.WriteHeader(204)
+
+	return nil
+}
+
+func encodeDetachPolicyResponse(response *DetachPolicyNoContent, w http.ResponseWriter, span trace.Span) error {
+	w.WriteHeader(204)
+
+	return nil
+}
+
+func encodeGetPolicyResponse(response *PolicyResource, w http.ResponseWriter, span trace.Span) error {
+	w.Header().Set("Content-Type", "application/json; charset=utf-8")
+	w.WriteHeader(200)
+
+	e := new(jx.Encoder)
+	response.Encode(e)
+	if _, err := e.WriteTo(w); err != nil {
+		return errors.Wrap(err, "write")
+	}
 
 	return nil
 }
@@ -148,7 +180,20 @@ func encodeListMembersResponse(response *LengthAwarePageMemberResource, w http.R
 	return nil
 }
 
-func encodeListPermissionsResponse(response *PermissionListResponseBody, w http.ResponseWriter, span trace.Span) error {
+func encodeListPermissionsResponse(response *CatalogListResponseBody, w http.ResponseWriter, span trace.Span) error {
+	w.Header().Set("Content-Type", "application/json; charset=utf-8")
+	w.WriteHeader(200)
+
+	e := new(jx.Encoder)
+	response.Encode(e)
+	if _, err := e.WriteTo(w); err != nil {
+		return errors.Wrap(err, "write")
+	}
+
+	return nil
+}
+
+func encodeListPoliciesResponse(response *PolicyListResponseBody, w http.ResponseWriter, span trace.Span) error {
 	w.Header().Set("Content-Type", "application/json; charset=utf-8")
 	w.WriteHeader(200)
 
@@ -238,6 +283,19 @@ func encodeRevokeSSHKeyResponse(response *SSHKeyResource, w http.ResponseWriter,
 	return nil
 }
 
+func encodeSetMemberPermissionsResponse(response *PolicyResource, w http.ResponseWriter, span trace.Span) error {
+	w.Header().Set("Content-Type", "application/json; charset=utf-8")
+	w.WriteHeader(200)
+
+	e := new(jx.Encoder)
+	response.Encode(e)
+	if _, err := e.WriteTo(w); err != nil {
+		return errors.Wrap(err, "write")
+	}
+
+	return nil
+}
+
 func encodeSetMemberRolesResponse(response *MemberResource, w http.ResponseWriter, span trace.Span) error {
 	w.Header().Set("Content-Type", "application/json; charset=utf-8")
 	w.WriteHeader(200)
@@ -252,6 +310,19 @@ func encodeSetMemberRolesResponse(response *MemberResource, w http.ResponseWrite
 }
 
 func encodeTransferProjectOwnershipResponse(response *OwnershipTransferResponseBody, w http.ResponseWriter, span trace.Span) error {
+	w.Header().Set("Content-Type", "application/json; charset=utf-8")
+	w.WriteHeader(200)
+
+	e := new(jx.Encoder)
+	response.Encode(e)
+	if _, err := e.WriteTo(w); err != nil {
+		return errors.Wrap(err, "write")
+	}
+
+	return nil
+}
+
+func encodeUpdatePolicyResponse(response *PolicyResource, w http.ResponseWriter, span trace.Span) error {
 	w.Header().Set("Content-Type", "application/json; charset=utf-8")
 	w.WriteHeader(200)
 

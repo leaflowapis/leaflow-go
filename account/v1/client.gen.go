@@ -199,6 +199,24 @@ func (e ProjectResourceStatus) Valid() bool {
 	}
 }
 
+// Defines values for RuleResourceEffect.
+const (
+	Allow RuleResourceEffect = "allow"
+	Deny  RuleResourceEffect = "deny"
+)
+
+// Valid indicates whether the value is a known member of the RuleResourceEffect enum.
+func (e RuleResourceEffect) Valid() bool {
+	switch e {
+	case Allow:
+		return true
+	case Deny:
+		return true
+	default:
+		return false
+	}
+}
+
 // Defines values for SettingsResourceProjectCreationMode.
 const (
 	SettingsResourceProjectCreationModeCLOSED       SettingsResourceProjectCreationMode = "CLOSED"
@@ -383,11 +401,11 @@ type GrantResource struct {
 	Admin bool `json:"admin"`
 	Owner bool `json:"owner"`
 
-	// Permissions 持有的全部自定义角色的权限并集，已去重排序
-	Permissions []string `json:"permissions"`
-
 	// Roles 持有的角色编码，只用于展示
 	Roles []string `json:"roles"`
+
+	// Rules 他全部策略编译出来的规则。**不要自己遍历它做判定**——拿它配上自己那份权限目录交给 pkg/rbac：那里面的顺序（所有者不可被 deny、deny 优先于管理员、带资源范围的规则不 参与项目级判定）每一条都对着一种会静默放行的写法。
+	Rules []RuleResource `json:"rules"`
 }
 
 // IdentityVerificationResource defines model for IdentityVerificationResource.
@@ -526,6 +544,29 @@ type RegisterRequestBody struct {
 	// Locale 界面和邮件用哪种语言。它和 country 是两件事，不能互相推——一个在香港的人可能读简体， 一个在美国的人可能读繁体。
 	Locale Locale `json:"locale"`
 }
+
+// ResourceRefResource defines model for ResourceRefResource.
+type ResourceRefResource struct {
+	// Id 是字符串而不是 uuid：dns 的 zone 标识是一个域名，而且它根本不在 IAM 的库里。匹配 语义是 glob，所以 *.example.com 能表达一批子域名；uuid 和域名都不含 glob 元字符， 对它们来说这就是精确相等。
+	Id string `json:"id"`
+
+	// Type 形如 compute:instance、dns:zone，和权限名同一个命名空间
+	Type string `json:"type"`
+}
+
+// RuleResource defines model for RuleResource.
+type RuleResource struct {
+	Effect RuleResourceEffect `json:"effect"`
+
+	// Permissions 支持尾部通配（compute:instance.*），通配必须带服务前缀
+	Permissions []string `json:"permissions"`
+
+	// Resources 为空表示这条规则在整个项目范围内成立；非空则表示它只在这些资源上成立，而那意味着 它回答不了项目级的问题。
+	Resources []ResourceRefResource `json:"resources"`
+}
+
+// RuleResourceEffect defines model for RuleResource.Effect.
+type RuleResourceEffect string
 
 // SettingsResource defines model for SettingsResource.
 type SettingsResource struct {

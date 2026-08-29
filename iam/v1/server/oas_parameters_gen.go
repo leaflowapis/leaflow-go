@@ -100,6 +100,136 @@ func decodeDeleteRoleParams(args [1]string, argsEscaped bool, r *http.Request) (
 	return params, nil
 }
 
+// DetachPolicyParams is parameters of detach-policy operation.
+type DetachPolicyParams struct {
+	PolicyId uuid.UUID
+}
+
+func unpackDetachPolicyParams(packed middleware.Parameters) (params DetachPolicyParams) {
+	{
+		key := middleware.ParameterKey{
+			Name: "policyId",
+			In:   "path",
+		}
+		params.PolicyId = packed[key].(uuid.UUID)
+	}
+	return params
+}
+
+func decodeDetachPolicyParams(args [1]string, argsEscaped bool, r *http.Request) (params DetachPolicyParams, _ error) {
+	// Decode path: policyId.
+	if err := func() error {
+		param := args[0]
+		if argsEscaped {
+			unescaped, err := url.PathUnescape(args[0])
+			if err != nil {
+				return errors.Wrap(err, "unescape path")
+			}
+			param = unescaped
+		}
+		if len(param) > 0 {
+			d := uri.NewPathDecoder(uri.PathDecoderConfig{
+				Param:   "policyId",
+				Value:   param,
+				Style:   uri.PathStyleSimple,
+				Explode: false,
+			})
+
+			if err := func() error {
+				val, err := d.DecodeValue()
+				if err != nil {
+					return err
+				}
+
+				c, err := conv.ToUUID(val)
+				if err != nil {
+					return err
+				}
+
+				params.PolicyId = c
+				return nil
+			}(); err != nil {
+				return err
+			}
+		} else {
+			return validate.ErrFieldRequired
+		}
+		return nil
+	}(); err != nil {
+		return params, &ogenerrors.DecodeParamError{
+			Name: "policyId",
+			In:   "path",
+			Err:  err,
+		}
+	}
+	return params, nil
+}
+
+// GetPolicyParams is parameters of get-policy operation.
+type GetPolicyParams struct {
+	PolicyId uuid.UUID
+}
+
+func unpackGetPolicyParams(packed middleware.Parameters) (params GetPolicyParams) {
+	{
+		key := middleware.ParameterKey{
+			Name: "policyId",
+			In:   "path",
+		}
+		params.PolicyId = packed[key].(uuid.UUID)
+	}
+	return params
+}
+
+func decodeGetPolicyParams(args [1]string, argsEscaped bool, r *http.Request) (params GetPolicyParams, _ error) {
+	// Decode path: policyId.
+	if err := func() error {
+		param := args[0]
+		if argsEscaped {
+			unescaped, err := url.PathUnescape(args[0])
+			if err != nil {
+				return errors.Wrap(err, "unescape path")
+			}
+			param = unescaped
+		}
+		if len(param) > 0 {
+			d := uri.NewPathDecoder(uri.PathDecoderConfig{
+				Param:   "policyId",
+				Value:   param,
+				Style:   uri.PathStyleSimple,
+				Explode: false,
+			})
+
+			if err := func() error {
+				val, err := d.DecodeValue()
+				if err != nil {
+					return err
+				}
+
+				c, err := conv.ToUUID(val)
+				if err != nil {
+					return err
+				}
+
+				params.PolicyId = c
+				return nil
+			}(); err != nil {
+				return err
+			}
+		} else {
+			return validate.ErrFieldRequired
+		}
+		return nil
+	}(); err != nil {
+		return params, &ogenerrors.DecodeParamError{
+			Name: "policyId",
+			In:   "path",
+			Err:  err,
+		}
+	}
+	return params, nil
+}
+
 // GetRoleParams is parameters of get-role operation.
 type GetRoleParams struct {
 	Code string
@@ -494,6 +624,98 @@ func decodeListMembersParams(args [0]string, argsEscaped bool, r *http.Request) 
 	}(); err != nil {
 		return params, &ogenerrors.DecodeParamError{
 			Name: "keyword",
+			In:   "query",
+			Err:  err,
+		}
+	}
+	return params, nil
+}
+
+// ListPoliciesParams is parameters of list-policies operation.
+type ListPoliciesParams struct {
+	// 只看这个人身上的。不传表示整个项目的.
+	UserId OptString `json:",omitempty,omitzero"`
+}
+
+func unpackListPoliciesParams(packed middleware.Parameters) (params ListPoliciesParams) {
+	{
+		key := middleware.ParameterKey{
+			Name: "userId",
+			In:   "query",
+		}
+		if v, ok := packed[key]; ok {
+			params.UserId = v.(OptString)
+		}
+	}
+	return params
+}
+
+func decodeListPoliciesParams(args [0]string, argsEscaped bool, r *http.Request) (params ListPoliciesParams, _ error) {
+	q := uri.NewQueryDecoder(r.URL.Query())
+	// Decode query: userId.
+	if err := func() error {
+		cfg := uri.QueryParameterDecodingConfig{
+			Name:    "userId",
+			Style:   uri.QueryStyleForm,
+			Explode: false,
+		}
+
+		if err := q.HasParam(cfg); err == nil {
+			if err := q.DecodeParam(cfg, func(d uri.Decoder) error {
+				var paramsDotUserIdVal string
+				if err := func() error {
+					val, err := d.DecodeValue()
+					if err != nil {
+						return err
+					}
+
+					c, err := conv.ToString(val)
+					if err != nil {
+						return err
+					}
+
+					paramsDotUserIdVal = c
+					return nil
+				}(); err != nil {
+					return err
+				}
+				params.UserId.SetTo(paramsDotUserIdVal)
+				return nil
+			}); err != nil {
+				return err
+			}
+			if err := func() error {
+				if value, ok := params.UserId.Get(); ok {
+					if err := func() error {
+						if err := (validate.String{
+							MinLength:     0,
+							MinLengthSet:  false,
+							MaxLength:     255,
+							MaxLengthSet:  true,
+							Email:         false,
+							Hostname:      false,
+							Regex:         nil,
+							MinNumeric:    0,
+							MinNumericSet: false,
+							MaxNumeric:    0,
+							MaxNumericSet: false,
+						}).Validate(string(value)); err != nil {
+							return errors.Wrap(err, "string")
+						}
+						return nil
+					}(); err != nil {
+						return err
+					}
+				}
+				return nil
+			}(); err != nil {
+				return err
+			}
+		}
+		return nil
+	}(); err != nil {
+		return params, &ogenerrors.DecodeParamError{
+			Name: "userId",
 			In:   "query",
 			Err:  err,
 		}
@@ -1271,6 +1493,91 @@ func decodeRevokeSSHKeyParams(args [1]string, argsEscaped bool, r *http.Request)
 	return params, nil
 }
 
+// SetMemberPermissionsParams is parameters of set-member-permissions operation.
+type SetMemberPermissionsParams struct {
+	UserId string
+}
+
+func unpackSetMemberPermissionsParams(packed middleware.Parameters) (params SetMemberPermissionsParams) {
+	{
+		key := middleware.ParameterKey{
+			Name: "userId",
+			In:   "path",
+		}
+		params.UserId = packed[key].(string)
+	}
+	return params
+}
+
+func decodeSetMemberPermissionsParams(args [1]string, argsEscaped bool, r *http.Request) (params SetMemberPermissionsParams, _ error) {
+	// Decode path: userId.
+	if err := func() error {
+		param := args[0]
+		if argsEscaped {
+			unescaped, err := url.PathUnescape(args[0])
+			if err != nil {
+				return errors.Wrap(err, "unescape path")
+			}
+			param = unescaped
+		}
+		if len(param) > 0 {
+			d := uri.NewPathDecoder(uri.PathDecoderConfig{
+				Param:   "userId",
+				Value:   param,
+				Style:   uri.PathStyleSimple,
+				Explode: false,
+			})
+
+			if err := func() error {
+				val, err := d.DecodeValue()
+				if err != nil {
+					return err
+				}
+
+				c, err := conv.ToString(val)
+				if err != nil {
+					return err
+				}
+
+				params.UserId = c
+				return nil
+			}(); err != nil {
+				return err
+			}
+			if err := func() error {
+				if err := (validate.String{
+					MinLength:     0,
+					MinLengthSet:  false,
+					MaxLength:     255,
+					MaxLengthSet:  true,
+					Email:         false,
+					Hostname:      false,
+					Regex:         nil,
+					MinNumeric:    0,
+					MinNumericSet: false,
+					MaxNumeric:    0,
+					MaxNumericSet: false,
+				}).Validate(string(params.UserId)); err != nil {
+					return errors.Wrap(err, "string")
+				}
+				return nil
+			}(); err != nil {
+				return err
+			}
+		} else {
+			return validate.ErrFieldRequired
+		}
+		return nil
+	}(); err != nil {
+		return params, &ogenerrors.DecodeParamError{
+			Name: "userId",
+			In:   "path",
+			Err:  err,
+		}
+	}
+	return params, nil
+}
+
 // SetMemberRolesParams is parameters of set-member-roles operation.
 type SetMemberRolesParams struct {
 	UserId string
@@ -1349,6 +1656,71 @@ func decodeSetMemberRolesParams(args [1]string, argsEscaped bool, r *http.Reques
 	}(); err != nil {
 		return params, &ogenerrors.DecodeParamError{
 			Name: "userId",
+			In:   "path",
+			Err:  err,
+		}
+	}
+	return params, nil
+}
+
+// UpdatePolicyParams is parameters of update-policy operation.
+type UpdatePolicyParams struct {
+	PolicyId uuid.UUID
+}
+
+func unpackUpdatePolicyParams(packed middleware.Parameters) (params UpdatePolicyParams) {
+	{
+		key := middleware.ParameterKey{
+			Name: "policyId",
+			In:   "path",
+		}
+		params.PolicyId = packed[key].(uuid.UUID)
+	}
+	return params
+}
+
+func decodeUpdatePolicyParams(args [1]string, argsEscaped bool, r *http.Request) (params UpdatePolicyParams, _ error) {
+	// Decode path: policyId.
+	if err := func() error {
+		param := args[0]
+		if argsEscaped {
+			unescaped, err := url.PathUnescape(args[0])
+			if err != nil {
+				return errors.Wrap(err, "unescape path")
+			}
+			param = unescaped
+		}
+		if len(param) > 0 {
+			d := uri.NewPathDecoder(uri.PathDecoderConfig{
+				Param:   "policyId",
+				Value:   param,
+				Style:   uri.PathStyleSimple,
+				Explode: false,
+			})
+
+			if err := func() error {
+				val, err := d.DecodeValue()
+				if err != nil {
+					return err
+				}
+
+				c, err := conv.ToUUID(val)
+				if err != nil {
+					return err
+				}
+
+				params.PolicyId = c
+				return nil
+			}(); err != nil {
+				return err
+			}
+		} else {
+			return validate.ErrFieldRequired
+		}
+		return nil
+	}(); err != nil {
+		return params, &ogenerrors.DecodeParamError{
+			Name: "policyId",
 			In:   "path",
 			Err:  err,
 		}

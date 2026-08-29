@@ -29,6 +29,16 @@ func trimTrailingSlashes(u *url.URL) {
 
 // Invoker invokes operations described by OpenAPI v3 specification.
 type Invoker interface {
+	// AttachPolicy invokes attach-policy operation.
+	//
+	// 它建的是附加策略——要么带资源范围，要么方向是 deny。一条不限资源的
+	// allow 是基础策略，每个成员只有一条，改它走 set-member-roles 和
+	// set-member-permissions。roles 里不能有 OWNER 或
+	// ADMIN：它们是规则而不是权限集合，「限定在三台机器上的所有者」讲不通。要
+	// iam:members.manage。.
+	//
+	// POST /api/v1/policies
+	AttachPolicy(ctx context.Context, request *AttachPolicyRequestBody) (*PolicyResource, error)
 	// BatchGetMembers invokes batch-get-members operation.
 	//
 	// Resolves a set of account ids to the people behind them, scoped to the current project and including
@@ -71,6 +81,20 @@ type Invoker interface {
 	//
 	// DELETE /api/v1/roles/{code}
 	DeleteRole(ctx context.Context, params DeleteRoleParams) error
+	// DetachPolicy invokes detach-policy operation.
+	//
+	// 基础策略摘不掉——它是这个成员角色的落点，删了它这个人就不再持有任何角色，而「让他离开这个项目」是
+	// remove-member 的事。要 iam:members.manage。.
+	//
+	// DELETE /api/v1/policies/{policyId}
+	DetachPolicy(ctx context.Context, params DetachPolicyParams) error
+	// GetPolicy invokes get-policy operation.
+	//
+	// 和 list-policies
+	// 同一条规则，在项目里就看得到：谁被授了什么也是「这个项目有谁」的一部分，读它不需要额外的权限。.
+	//
+	// GET /api/v1/policies/{policyId}
+	GetPolicy(ctx context.Context, params GetPolicyParams) (*PolicyResource, error)
 	// GetProject invokes get-project operation.
 	//
 	// 在项目里就看得到，不需要额外的读权限。.
@@ -111,12 +135,19 @@ type Invoker interface {
 	ListMembers(ctx context.Context, params ListMembersParams) (*LengthAwarePageMemberResource, error)
 	// ListPermissions invokes list-permissions operation.
 	//
-	// 只有 IAM 这一份。
-	// 别的服务的操作不在这里——权限目录由各个服务自己声明，IAM
-	// 认识它们就等于要跟着每个下游一起发版。.
+	// 各服务在启动时把自己那份目录注册进 IAM（和 AddFinalizer
+	// 同一段代码），所以这里是一份汇总，不只是 IAM 自己那几条。IAM
+	// 不用它做判定——判定在各服务自己那边，拿 Grant
+	// 配它自己那份目录算；这份汇总只是让界面画得出勾选框，它落后一个版本只会让界面上少几条可选项，不会让判定出错。一个还没启动过的服务，它的权限不在这里。.
 	//
 	// GET /api/v1/permissions
-	ListPermissions(ctx context.Context) (*PermissionListResponseBody, error)
+	ListPermissions(ctx context.Context) (*CatalogListResponseBody, error)
+	// ListPolicies invokes list-policies operation.
+	//
+	// 在项目里就看得到，和成员列表同一条规则：谁被授了什么也是「这个项目有谁」的一部分。.
+	//
+	// GET /api/v1/policies
+	ListPolicies(ctx context.Context, params ListPoliciesParams) (*PolicyListResponseBody, error)
 	// ListProjectInvitations invokes list-project-invitations operation.
 	//
 	// 在项目里就看得到，和成员列表同一条规则：谁被请了也是「这个项目有谁」的一部分。.
@@ -160,6 +191,13 @@ type Invoker interface {
 	//
 	// DELETE /api/v1/ssh-keys/{keyId}
 	RevokeSSHKey(ctx context.Context, params RevokeSSHKeyParams) (*SSHKeyResource, error)
+	// SetMemberPermissions invokes set-member-permissions operation.
+	//
+	// 整体替换基础策略上直挂的那些权限。直挂让「给某个人临时开一条」不必先造一个只有他一个人持有的角色，但它不会随角色调整而更新，所以它适合一次性的、说得出理由的授予——角色仍然是主要的组织方式。要
+	// iam:members.manage。.
+	//
+	// PUT /api/v1/members/{userId}/permissions
+	SetMemberPermissions(ctx context.Context, request *SetMemberPermissionsRequestBody, params SetMemberPermissionsParams) (*PolicyResource, error)
 	// SetMemberRoles invokes set-member-roles operation.
 	//
 	// 整体替换而不是增删：调用方拿到的就是一份完整清单，让它自己算差集只会让「我以为我取消了那个角色」这种事变得可能。所有者身上的
@@ -174,6 +212,15 @@ type Invoker interface {
 	//
 	// POST /api/v1/transfer-ownership
 	TransferProjectOwnership(ctx context.Context, request *TransferOwnershipRequestBody) (*OwnershipTransferResponseBody, error)
+	// UpdatePolicy invokes update-policy operation.
+	//
+	// 整体替换而不是逐字段改：resources、roles、permissions
+	// 各自整份覆盖，没发的那份就是空的——只有「这就是这条策略现在的全貌」这一种语义说得清一次写入到底收回了什么。改不动的是策略的种类：基础策略（不限资源的
+	// allow）加不上资源范围，这个成员的角色就存在它上面，给它加个范围等于让他在别的资源上什么都不是；一条带范围的策略反过来也不能把范围清空变成基础策略，那个位置每个成员只有一条。要换种类就删了重建。要
+	// iam:members.manage。.
+	//
+	// PUT /api/v1/policies/{policyId}
+	UpdatePolicy(ctx context.Context, request *UpdatePolicyRequestBody, params UpdatePolicyParams) (*PolicyResource, error)
 	// UpdateProject invokes update-project operation.
 	//
 	// 改项目的名称与描述.
@@ -227,6 +274,126 @@ func (c *Client) requestURL(ctx context.Context) *url.URL {
 		return c.serverURL
 	}
 	return u
+}
+
+// AttachPolicy invokes attach-policy operation.
+//
+// 它建的是附加策略——要么带资源范围，要么方向是 deny。一条不限资源的
+// allow 是基础策略，每个成员只有一条，改它走 set-member-roles 和
+// set-member-permissions。roles 里不能有 OWNER 或
+// ADMIN：它们是规则而不是权限集合，「限定在三台机器上的所有者」讲不通。要
+// iam:members.manage。.
+//
+// POST /api/v1/policies
+func (c *Client) AttachPolicy(ctx context.Context, request *AttachPolicyRequestBody) (*PolicyResource, error) {
+	res, err := c.sendAttachPolicy(ctx, request)
+	return res, err
+}
+
+func (c *Client) sendAttachPolicy(ctx context.Context, request *AttachPolicyRequestBody) (res *PolicyResource, err error) {
+	otelAttrs := []attribute.KeyValue{
+		otelogen.OperationID("attach-policy"),
+		semconv.HTTPRequestMethodKey.String("POST"),
+		semconv.URLTemplateKey.String("/api/v1/policies"),
+	}
+	otelAttrs = append(otelAttrs, c.cfg.Attributes...)
+
+	// Run stopwatch.
+	startTime := time.Now()
+	defer func() {
+		// Use floating point division here for higher precision (instead of Millisecond method).
+		elapsedDuration := time.Since(startTime)
+		c.duration.Record(ctx, float64(elapsedDuration)/float64(time.Millisecond), metric.WithAttributes(otelAttrs...))
+	}()
+
+	// Increment request counter.
+	c.requests.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
+
+	// Start a span for this request.
+	ctx, span := c.cfg.Tracer.Start(ctx, AttachPolicyOperation,
+		trace.WithAttributes(otelAttrs...),
+		clientSpanKind,
+	)
+	// Track stage for error reporting.
+	var stage string
+	defer func() {
+		if err != nil {
+			span.RecordError(err)
+			span.SetStatus(codes.Error, stage)
+			c.errors.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
+		}
+		span.End()
+	}()
+
+	stage = "BuildURL"
+	u := uri.Clone(c.requestURL(ctx))
+	var pathParts [1]string
+	pathParts[0] = "/api/v1/policies"
+	uri.AddPathParts(u, pathParts[:]...)
+
+	stage = "EncodeRequest"
+	r, err := ht.NewRequest(ctx, "POST", u)
+	if err != nil {
+		return res, errors.Wrap(err, "create request")
+	}
+	if err := encodeAttachPolicyRequest(request, r); err != nil {
+		return res, errors.Wrap(err, "encode request")
+	}
+
+	{
+		type bitset = [1]uint8
+		var satisfied bitset
+		{
+			stage = "Security:BearerAuth"
+			switch err := c.securityBearerAuth(ctx, AttachPolicyOperation, r); {
+			case err == nil: // if NO error
+				satisfied[0] |= 1 << 0
+			case errors.Is(err, ogenerrors.ErrSkipClientSecurity):
+				// Skip this security.
+			default:
+				return res, errors.Wrap(err, "security \"BearerAuth\"")
+			}
+		}
+
+		if ok := func() bool {
+		nextRequirement:
+			for _, requirement := range []bitset{
+				{0b00000001},
+			} {
+				for i, mask := range requirement {
+					if satisfied[i]&mask != mask {
+						continue nextRequirement
+					}
+				}
+				return true
+			}
+			return false
+		}(); !ok {
+			return res, ogenerrors.ErrSecurityRequirementIsNotSatisfied
+		}
+	}
+
+	stage = "SendRequest"
+	resp, err := c.cfg.Client.Do(r)
+	if err != nil {
+		return res, errors.Wrap(err, "do request")
+	}
+	body := resp.Body
+	defer func() {
+		// Drain the body to EOF before closing, so the underlying
+		// connection can be reused by the Transport regardless of the
+		// response status code. See https://github.com/ogen-go/ogen/issues/1670.
+		_, _ = io.Copy(io.Discard, body)
+		_ = body.Close()
+	}()
+
+	stage = "DecodeResponse"
+	result, err := decodeAttachPolicyResponse(resp)
+	if err != nil {
+		return res, errors.Wrap(err, "decode response")
+	}
+
+	return result, nil
 }
 
 // BatchGetMembers invokes batch-get-members operation.
@@ -826,6 +993,270 @@ func (c *Client) sendDeleteRole(ctx context.Context, params DeleteRoleParams) (r
 
 	stage = "DecodeResponse"
 	result, err := decodeDeleteRoleResponse(resp)
+	if err != nil {
+		return res, errors.Wrap(err, "decode response")
+	}
+
+	return result, nil
+}
+
+// DetachPolicy invokes detach-policy operation.
+//
+// 基础策略摘不掉——它是这个成员角色的落点，删了它这个人就不再持有任何角色，而「让他离开这个项目」是
+// remove-member 的事。要 iam:members.manage。.
+//
+// DELETE /api/v1/policies/{policyId}
+func (c *Client) DetachPolicy(ctx context.Context, params DetachPolicyParams) error {
+	_, err := c.sendDetachPolicy(ctx, params)
+	return err
+}
+
+func (c *Client) sendDetachPolicy(ctx context.Context, params DetachPolicyParams) (res *DetachPolicyNoContent, err error) {
+	otelAttrs := []attribute.KeyValue{
+		otelogen.OperationID("detach-policy"),
+		semconv.HTTPRequestMethodKey.String("DELETE"),
+		semconv.URLTemplateKey.String("/api/v1/policies/{policyId}"),
+	}
+	otelAttrs = append(otelAttrs, c.cfg.Attributes...)
+
+	// Run stopwatch.
+	startTime := time.Now()
+	defer func() {
+		// Use floating point division here for higher precision (instead of Millisecond method).
+		elapsedDuration := time.Since(startTime)
+		c.duration.Record(ctx, float64(elapsedDuration)/float64(time.Millisecond), metric.WithAttributes(otelAttrs...))
+	}()
+
+	// Increment request counter.
+	c.requests.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
+
+	// Start a span for this request.
+	ctx, span := c.cfg.Tracer.Start(ctx, DetachPolicyOperation,
+		trace.WithAttributes(otelAttrs...),
+		clientSpanKind,
+	)
+	// Track stage for error reporting.
+	var stage string
+	defer func() {
+		if err != nil {
+			span.RecordError(err)
+			span.SetStatus(codes.Error, stage)
+			c.errors.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
+		}
+		span.End()
+	}()
+
+	stage = "BuildURL"
+	u := uri.Clone(c.requestURL(ctx))
+	var pathParts [2]string
+	pathParts[0] = "/api/v1/policies/"
+	{
+		// Encode "policyId" parameter.
+		e := uri.NewPathEncoder(uri.PathEncoderConfig{
+			Param:   "policyId",
+			Style:   uri.PathStyleSimple,
+			Explode: false,
+		})
+		if err := func() error {
+			return e.EncodeValue(conv.UUIDToString(params.PolicyId))
+		}(); err != nil {
+			return res, errors.Wrap(err, "encode path")
+		}
+		encoded, err := e.Result()
+		if err != nil {
+			return res, errors.Wrap(err, "encode path")
+		}
+		pathParts[1] = encoded
+	}
+	uri.AddPathParts(u, pathParts[:]...)
+
+	stage = "EncodeRequest"
+	r, err := ht.NewRequest(ctx, "DELETE", u)
+	if err != nil {
+		return res, errors.Wrap(err, "create request")
+	}
+
+	{
+		type bitset = [1]uint8
+		var satisfied bitset
+		{
+			stage = "Security:BearerAuth"
+			switch err := c.securityBearerAuth(ctx, DetachPolicyOperation, r); {
+			case err == nil: // if NO error
+				satisfied[0] |= 1 << 0
+			case errors.Is(err, ogenerrors.ErrSkipClientSecurity):
+				// Skip this security.
+			default:
+				return res, errors.Wrap(err, "security \"BearerAuth\"")
+			}
+		}
+
+		if ok := func() bool {
+		nextRequirement:
+			for _, requirement := range []bitset{
+				{0b00000001},
+			} {
+				for i, mask := range requirement {
+					if satisfied[i]&mask != mask {
+						continue nextRequirement
+					}
+				}
+				return true
+			}
+			return false
+		}(); !ok {
+			return res, ogenerrors.ErrSecurityRequirementIsNotSatisfied
+		}
+	}
+
+	stage = "SendRequest"
+	resp, err := c.cfg.Client.Do(r)
+	if err != nil {
+		return res, errors.Wrap(err, "do request")
+	}
+	body := resp.Body
+	defer func() {
+		// Drain the body to EOF before closing, so the underlying
+		// connection can be reused by the Transport regardless of the
+		// response status code. See https://github.com/ogen-go/ogen/issues/1670.
+		_, _ = io.Copy(io.Discard, body)
+		_ = body.Close()
+	}()
+
+	stage = "DecodeResponse"
+	result, err := decodeDetachPolicyResponse(resp)
+	if err != nil {
+		return res, errors.Wrap(err, "decode response")
+	}
+
+	return result, nil
+}
+
+// GetPolicy invokes get-policy operation.
+//
+// 和 list-policies
+// 同一条规则，在项目里就看得到：谁被授了什么也是「这个项目有谁」的一部分，读它不需要额外的权限。.
+//
+// GET /api/v1/policies/{policyId}
+func (c *Client) GetPolicy(ctx context.Context, params GetPolicyParams) (*PolicyResource, error) {
+	res, err := c.sendGetPolicy(ctx, params)
+	return res, err
+}
+
+func (c *Client) sendGetPolicy(ctx context.Context, params GetPolicyParams) (res *PolicyResource, err error) {
+	otelAttrs := []attribute.KeyValue{
+		otelogen.OperationID("get-policy"),
+		semconv.HTTPRequestMethodKey.String("GET"),
+		semconv.URLTemplateKey.String("/api/v1/policies/{policyId}"),
+	}
+	otelAttrs = append(otelAttrs, c.cfg.Attributes...)
+
+	// Run stopwatch.
+	startTime := time.Now()
+	defer func() {
+		// Use floating point division here for higher precision (instead of Millisecond method).
+		elapsedDuration := time.Since(startTime)
+		c.duration.Record(ctx, float64(elapsedDuration)/float64(time.Millisecond), metric.WithAttributes(otelAttrs...))
+	}()
+
+	// Increment request counter.
+	c.requests.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
+
+	// Start a span for this request.
+	ctx, span := c.cfg.Tracer.Start(ctx, GetPolicyOperation,
+		trace.WithAttributes(otelAttrs...),
+		clientSpanKind,
+	)
+	// Track stage for error reporting.
+	var stage string
+	defer func() {
+		if err != nil {
+			span.RecordError(err)
+			span.SetStatus(codes.Error, stage)
+			c.errors.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
+		}
+		span.End()
+	}()
+
+	stage = "BuildURL"
+	u := uri.Clone(c.requestURL(ctx))
+	var pathParts [2]string
+	pathParts[0] = "/api/v1/policies/"
+	{
+		// Encode "policyId" parameter.
+		e := uri.NewPathEncoder(uri.PathEncoderConfig{
+			Param:   "policyId",
+			Style:   uri.PathStyleSimple,
+			Explode: false,
+		})
+		if err := func() error {
+			return e.EncodeValue(conv.UUIDToString(params.PolicyId))
+		}(); err != nil {
+			return res, errors.Wrap(err, "encode path")
+		}
+		encoded, err := e.Result()
+		if err != nil {
+			return res, errors.Wrap(err, "encode path")
+		}
+		pathParts[1] = encoded
+	}
+	uri.AddPathParts(u, pathParts[:]...)
+
+	stage = "EncodeRequest"
+	r, err := ht.NewRequest(ctx, "GET", u)
+	if err != nil {
+		return res, errors.Wrap(err, "create request")
+	}
+
+	{
+		type bitset = [1]uint8
+		var satisfied bitset
+		{
+			stage = "Security:BearerAuth"
+			switch err := c.securityBearerAuth(ctx, GetPolicyOperation, r); {
+			case err == nil: // if NO error
+				satisfied[0] |= 1 << 0
+			case errors.Is(err, ogenerrors.ErrSkipClientSecurity):
+				// Skip this security.
+			default:
+				return res, errors.Wrap(err, "security \"BearerAuth\"")
+			}
+		}
+
+		if ok := func() bool {
+		nextRequirement:
+			for _, requirement := range []bitset{
+				{0b00000001},
+			} {
+				for i, mask := range requirement {
+					if satisfied[i]&mask != mask {
+						continue nextRequirement
+					}
+				}
+				return true
+			}
+			return false
+		}(); !ok {
+			return res, ogenerrors.ErrSecurityRequirementIsNotSatisfied
+		}
+	}
+
+	stage = "SendRequest"
+	resp, err := c.cfg.Client.Do(r)
+	if err != nil {
+		return res, errors.Wrap(err, "do request")
+	}
+	body := resp.Body
+	defer func() {
+		// Drain the body to EOF before closing, so the underlying
+		// connection can be reused by the Transport regardless of the
+		// response status code. See https://github.com/ogen-go/ogen/issues/1670.
+		_, _ = io.Copy(io.Discard, body)
+		_ = body.Close()
+	}()
+
+	stage = "DecodeResponse"
+	result, err := decodeGetPolicyResponse(resp)
 	if err != nil {
 		return res, errors.Wrap(err, "decode response")
 	}
@@ -1609,17 +2040,18 @@ func (c *Client) sendListMembers(ctx context.Context, params ListMembersParams) 
 
 // ListPermissions invokes list-permissions operation.
 //
-// 只有 IAM 这一份。
-// 别的服务的操作不在这里——权限目录由各个服务自己声明，IAM
-// 认识它们就等于要跟着每个下游一起发版。.
+// 各服务在启动时把自己那份目录注册进 IAM（和 AddFinalizer
+// 同一段代码），所以这里是一份汇总，不只是 IAM 自己那几条。IAM
+// 不用它做判定——判定在各服务自己那边，拿 Grant
+// 配它自己那份目录算；这份汇总只是让界面画得出勾选框，它落后一个版本只会让界面上少几条可选项，不会让判定出错。一个还没启动过的服务，它的权限不在这里。.
 //
 // GET /api/v1/permissions
-func (c *Client) ListPermissions(ctx context.Context) (*PermissionListResponseBody, error) {
+func (c *Client) ListPermissions(ctx context.Context) (*CatalogListResponseBody, error) {
 	res, err := c.sendListPermissions(ctx)
 	return res, err
 }
 
-func (c *Client) sendListPermissions(ctx context.Context) (res *PermissionListResponseBody, err error) {
+func (c *Client) sendListPermissions(ctx context.Context) (res *CatalogListResponseBody, err error) {
 	otelAttrs := []attribute.KeyValue{
 		otelogen.OperationID("list-permissions"),
 		semconv.HTTPRequestMethodKey.String("GET"),
@@ -1682,6 +2114,140 @@ func (c *Client) sendListPermissions(ctx context.Context) (res *PermissionListRe
 
 	stage = "DecodeResponse"
 	result, err := decodeListPermissionsResponse(resp)
+	if err != nil {
+		return res, errors.Wrap(err, "decode response")
+	}
+
+	return result, nil
+}
+
+// ListPolicies invokes list-policies operation.
+//
+// 在项目里就看得到，和成员列表同一条规则：谁被授了什么也是「这个项目有谁」的一部分。.
+//
+// GET /api/v1/policies
+func (c *Client) ListPolicies(ctx context.Context, params ListPoliciesParams) (*PolicyListResponseBody, error) {
+	res, err := c.sendListPolicies(ctx, params)
+	return res, err
+}
+
+func (c *Client) sendListPolicies(ctx context.Context, params ListPoliciesParams) (res *PolicyListResponseBody, err error) {
+	otelAttrs := []attribute.KeyValue{
+		otelogen.OperationID("list-policies"),
+		semconv.HTTPRequestMethodKey.String("GET"),
+		semconv.URLTemplateKey.String("/api/v1/policies"),
+	}
+	otelAttrs = append(otelAttrs, c.cfg.Attributes...)
+
+	// Run stopwatch.
+	startTime := time.Now()
+	defer func() {
+		// Use floating point division here for higher precision (instead of Millisecond method).
+		elapsedDuration := time.Since(startTime)
+		c.duration.Record(ctx, float64(elapsedDuration)/float64(time.Millisecond), metric.WithAttributes(otelAttrs...))
+	}()
+
+	// Increment request counter.
+	c.requests.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
+
+	// Start a span for this request.
+	ctx, span := c.cfg.Tracer.Start(ctx, ListPoliciesOperation,
+		trace.WithAttributes(otelAttrs...),
+		clientSpanKind,
+	)
+	// Track stage for error reporting.
+	var stage string
+	defer func() {
+		if err != nil {
+			span.RecordError(err)
+			span.SetStatus(codes.Error, stage)
+			c.errors.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
+		}
+		span.End()
+	}()
+
+	stage = "BuildURL"
+	u := uri.Clone(c.requestURL(ctx))
+	var pathParts [1]string
+	pathParts[0] = "/api/v1/policies"
+	uri.AddPathParts(u, pathParts[:]...)
+
+	stage = "EncodeQueryParams"
+	q := uri.NewQueryEncoder()
+	{
+		// Encode "userId" parameter.
+		cfg := uri.QueryParameterEncodingConfig{
+			Name:    "userId",
+			Style:   uri.QueryStyleForm,
+			Explode: false,
+		}
+
+		if err := q.EncodeParam(cfg, func(e uri.Encoder) error {
+			if val, ok := params.UserId.Get(); ok {
+				return e.EncodeValue(conv.StringToString(val))
+			}
+			return nil
+		}); err != nil {
+			return res, errors.Wrap(err, "encode query")
+		}
+	}
+	u.RawQuery = q.Values().Encode()
+
+	stage = "EncodeRequest"
+	r, err := ht.NewRequest(ctx, "GET", u)
+	if err != nil {
+		return res, errors.Wrap(err, "create request")
+	}
+
+	{
+		type bitset = [1]uint8
+		var satisfied bitset
+		{
+			stage = "Security:BearerAuth"
+			switch err := c.securityBearerAuth(ctx, ListPoliciesOperation, r); {
+			case err == nil: // if NO error
+				satisfied[0] |= 1 << 0
+			case errors.Is(err, ogenerrors.ErrSkipClientSecurity):
+				// Skip this security.
+			default:
+				return res, errors.Wrap(err, "security \"BearerAuth\"")
+			}
+		}
+
+		if ok := func() bool {
+		nextRequirement:
+			for _, requirement := range []bitset{
+				{0b00000001},
+			} {
+				for i, mask := range requirement {
+					if satisfied[i]&mask != mask {
+						continue nextRequirement
+					}
+				}
+				return true
+			}
+			return false
+		}(); !ok {
+			return res, ogenerrors.ErrSecurityRequirementIsNotSatisfied
+		}
+	}
+
+	stage = "SendRequest"
+	resp, err := c.cfg.Client.Do(r)
+	if err != nil {
+		return res, errors.Wrap(err, "do request")
+	}
+	body := resp.Body
+	defer func() {
+		// Drain the body to EOF before closing, so the underlying
+		// connection can be reused by the Transport regardless of the
+		// response status code. See https://github.com/ogen-go/ogen/issues/1670.
+		_, _ = io.Copy(io.Discard, body)
+		_ = body.Close()
+	}()
+
+	stage = "DecodeResponse"
+	result, err := decodeListPoliciesResponse(resp)
 	if err != nil {
 		return res, errors.Wrap(err, "decode response")
 	}
@@ -2666,6 +3232,142 @@ func (c *Client) sendRevokeSSHKey(ctx context.Context, params RevokeSSHKeyParams
 	return result, nil
 }
 
+// SetMemberPermissions invokes set-member-permissions operation.
+//
+// 整体替换基础策略上直挂的那些权限。直挂让「给某个人临时开一条」不必先造一个只有他一个人持有的角色，但它不会随角色调整而更新，所以它适合一次性的、说得出理由的授予——角色仍然是主要的组织方式。要
+// iam:members.manage。.
+//
+// PUT /api/v1/members/{userId}/permissions
+func (c *Client) SetMemberPermissions(ctx context.Context, request *SetMemberPermissionsRequestBody, params SetMemberPermissionsParams) (*PolicyResource, error) {
+	res, err := c.sendSetMemberPermissions(ctx, request, params)
+	return res, err
+}
+
+func (c *Client) sendSetMemberPermissions(ctx context.Context, request *SetMemberPermissionsRequestBody, params SetMemberPermissionsParams) (res *PolicyResource, err error) {
+	otelAttrs := []attribute.KeyValue{
+		otelogen.OperationID("set-member-permissions"),
+		semconv.HTTPRequestMethodKey.String("PUT"),
+		semconv.URLTemplateKey.String("/api/v1/members/{userId}/permissions"),
+	}
+	otelAttrs = append(otelAttrs, c.cfg.Attributes...)
+
+	// Run stopwatch.
+	startTime := time.Now()
+	defer func() {
+		// Use floating point division here for higher precision (instead of Millisecond method).
+		elapsedDuration := time.Since(startTime)
+		c.duration.Record(ctx, float64(elapsedDuration)/float64(time.Millisecond), metric.WithAttributes(otelAttrs...))
+	}()
+
+	// Increment request counter.
+	c.requests.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
+
+	// Start a span for this request.
+	ctx, span := c.cfg.Tracer.Start(ctx, SetMemberPermissionsOperation,
+		trace.WithAttributes(otelAttrs...),
+		clientSpanKind,
+	)
+	// Track stage for error reporting.
+	var stage string
+	defer func() {
+		if err != nil {
+			span.RecordError(err)
+			span.SetStatus(codes.Error, stage)
+			c.errors.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
+		}
+		span.End()
+	}()
+
+	stage = "BuildURL"
+	u := uri.Clone(c.requestURL(ctx))
+	var pathParts [3]string
+	pathParts[0] = "/api/v1/members/"
+	{
+		// Encode "userId" parameter.
+		e := uri.NewPathEncoder(uri.PathEncoderConfig{
+			Param:   "userId",
+			Style:   uri.PathStyleSimple,
+			Explode: false,
+		})
+		if err := func() error {
+			return e.EncodeValue(conv.StringToString(params.UserId))
+		}(); err != nil {
+			return res, errors.Wrap(err, "encode path")
+		}
+		encoded, err := e.Result()
+		if err != nil {
+			return res, errors.Wrap(err, "encode path")
+		}
+		pathParts[1] = encoded
+	}
+	pathParts[2] = "/permissions"
+	uri.AddPathParts(u, pathParts[:]...)
+
+	stage = "EncodeRequest"
+	r, err := ht.NewRequest(ctx, "PUT", u)
+	if err != nil {
+		return res, errors.Wrap(err, "create request")
+	}
+	if err := encodeSetMemberPermissionsRequest(request, r); err != nil {
+		return res, errors.Wrap(err, "encode request")
+	}
+
+	{
+		type bitset = [1]uint8
+		var satisfied bitset
+		{
+			stage = "Security:BearerAuth"
+			switch err := c.securityBearerAuth(ctx, SetMemberPermissionsOperation, r); {
+			case err == nil: // if NO error
+				satisfied[0] |= 1 << 0
+			case errors.Is(err, ogenerrors.ErrSkipClientSecurity):
+				// Skip this security.
+			default:
+				return res, errors.Wrap(err, "security \"BearerAuth\"")
+			}
+		}
+
+		if ok := func() bool {
+		nextRequirement:
+			for _, requirement := range []bitset{
+				{0b00000001},
+			} {
+				for i, mask := range requirement {
+					if satisfied[i]&mask != mask {
+						continue nextRequirement
+					}
+				}
+				return true
+			}
+			return false
+		}(); !ok {
+			return res, ogenerrors.ErrSecurityRequirementIsNotSatisfied
+		}
+	}
+
+	stage = "SendRequest"
+	resp, err := c.cfg.Client.Do(r)
+	if err != nil {
+		return res, errors.Wrap(err, "do request")
+	}
+	body := resp.Body
+	defer func() {
+		// Drain the body to EOF before closing, so the underlying
+		// connection can be reused by the Transport regardless of the
+		// response status code. See https://github.com/ogen-go/ogen/issues/1670.
+		_, _ = io.Copy(io.Discard, body)
+		_ = body.Close()
+	}()
+
+	stage = "DecodeResponse"
+	result, err := decodeSetMemberPermissionsResponse(resp)
+	if err != nil {
+		return res, errors.Wrap(err, "decode response")
+	}
+
+	return result, nil
+}
+
 // SetMemberRoles invokes set-member-roles operation.
 //
 // 整体替换而不是增删：调用方拿到的就是一份完整清单，让它自己算差集只会让「我以为我取消了那个角色」这种事变得可能。所有者身上的
@@ -2912,6 +3614,143 @@ func (c *Client) sendTransferProjectOwnership(ctx context.Context, request *Tran
 
 	stage = "DecodeResponse"
 	result, err := decodeTransferProjectOwnershipResponse(resp)
+	if err != nil {
+		return res, errors.Wrap(err, "decode response")
+	}
+
+	return result, nil
+}
+
+// UpdatePolicy invokes update-policy operation.
+//
+// 整体替换而不是逐字段改：resources、roles、permissions
+// 各自整份覆盖，没发的那份就是空的——只有「这就是这条策略现在的全貌」这一种语义说得清一次写入到底收回了什么。改不动的是策略的种类：基础策略（不限资源的
+// allow）加不上资源范围，这个成员的角色就存在它上面，给它加个范围等于让他在别的资源上什么都不是；一条带范围的策略反过来也不能把范围清空变成基础策略，那个位置每个成员只有一条。要换种类就删了重建。要
+// iam:members.manage。.
+//
+// PUT /api/v1/policies/{policyId}
+func (c *Client) UpdatePolicy(ctx context.Context, request *UpdatePolicyRequestBody, params UpdatePolicyParams) (*PolicyResource, error) {
+	res, err := c.sendUpdatePolicy(ctx, request, params)
+	return res, err
+}
+
+func (c *Client) sendUpdatePolicy(ctx context.Context, request *UpdatePolicyRequestBody, params UpdatePolicyParams) (res *PolicyResource, err error) {
+	otelAttrs := []attribute.KeyValue{
+		otelogen.OperationID("update-policy"),
+		semconv.HTTPRequestMethodKey.String("PUT"),
+		semconv.URLTemplateKey.String("/api/v1/policies/{policyId}"),
+	}
+	otelAttrs = append(otelAttrs, c.cfg.Attributes...)
+
+	// Run stopwatch.
+	startTime := time.Now()
+	defer func() {
+		// Use floating point division here for higher precision (instead of Millisecond method).
+		elapsedDuration := time.Since(startTime)
+		c.duration.Record(ctx, float64(elapsedDuration)/float64(time.Millisecond), metric.WithAttributes(otelAttrs...))
+	}()
+
+	// Increment request counter.
+	c.requests.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
+
+	// Start a span for this request.
+	ctx, span := c.cfg.Tracer.Start(ctx, UpdatePolicyOperation,
+		trace.WithAttributes(otelAttrs...),
+		clientSpanKind,
+	)
+	// Track stage for error reporting.
+	var stage string
+	defer func() {
+		if err != nil {
+			span.RecordError(err)
+			span.SetStatus(codes.Error, stage)
+			c.errors.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
+		}
+		span.End()
+	}()
+
+	stage = "BuildURL"
+	u := uri.Clone(c.requestURL(ctx))
+	var pathParts [2]string
+	pathParts[0] = "/api/v1/policies/"
+	{
+		// Encode "policyId" parameter.
+		e := uri.NewPathEncoder(uri.PathEncoderConfig{
+			Param:   "policyId",
+			Style:   uri.PathStyleSimple,
+			Explode: false,
+		})
+		if err := func() error {
+			return e.EncodeValue(conv.UUIDToString(params.PolicyId))
+		}(); err != nil {
+			return res, errors.Wrap(err, "encode path")
+		}
+		encoded, err := e.Result()
+		if err != nil {
+			return res, errors.Wrap(err, "encode path")
+		}
+		pathParts[1] = encoded
+	}
+	uri.AddPathParts(u, pathParts[:]...)
+
+	stage = "EncodeRequest"
+	r, err := ht.NewRequest(ctx, "PUT", u)
+	if err != nil {
+		return res, errors.Wrap(err, "create request")
+	}
+	if err := encodeUpdatePolicyRequest(request, r); err != nil {
+		return res, errors.Wrap(err, "encode request")
+	}
+
+	{
+		type bitset = [1]uint8
+		var satisfied bitset
+		{
+			stage = "Security:BearerAuth"
+			switch err := c.securityBearerAuth(ctx, UpdatePolicyOperation, r); {
+			case err == nil: // if NO error
+				satisfied[0] |= 1 << 0
+			case errors.Is(err, ogenerrors.ErrSkipClientSecurity):
+				// Skip this security.
+			default:
+				return res, errors.Wrap(err, "security \"BearerAuth\"")
+			}
+		}
+
+		if ok := func() bool {
+		nextRequirement:
+			for _, requirement := range []bitset{
+				{0b00000001},
+			} {
+				for i, mask := range requirement {
+					if satisfied[i]&mask != mask {
+						continue nextRequirement
+					}
+				}
+				return true
+			}
+			return false
+		}(); !ok {
+			return res, ogenerrors.ErrSecurityRequirementIsNotSatisfied
+		}
+	}
+
+	stage = "SendRequest"
+	resp, err := c.cfg.Client.Do(r)
+	if err != nil {
+		return res, errors.Wrap(err, "do request")
+	}
+	body := resp.Body
+	defer func() {
+		// Drain the body to EOF before closing, so the underlying
+		// connection can be reused by the Transport regardless of the
+		// response status code. See https://github.com/ogen-go/ogen/issues/1670.
+		_, _ = io.Copy(io.Discard, body)
+		_ = body.Close()
+	}()
+
+	stage = "DecodeResponse"
+	result, err := decodeUpdatePolicyResponse(resp)
 	if err != nil {
 		return res, errors.Wrap(err, "decode response")
 	}

@@ -6,11 +6,14 @@ package iamv1server
 type OperationName = string
 
 const (
+	AttachPolicyOperation             OperationName = "AttachPolicy"
 	BatchGetMembersOperation          OperationName = "BatchGetMembers"
 	CreateRoleOperation               OperationName = "CreateRole"
 	CreateSSHKeyOperation             OperationName = "CreateSSHKey"
 	DeleteProjectOperation            OperationName = "DeleteProject"
 	DeleteRoleOperation               OperationName = "DeleteRole"
+	DetachPolicyOperation             OperationName = "DetachPolicy"
+	GetPolicyOperation                OperationName = "GetPolicy"
 	GetProjectOperation               OperationName = "GetProject"
 	GetProjectMembershipOperation     OperationName = "GetProjectMembership"
 	GetRoleOperation                  OperationName = "GetRole"
@@ -18,6 +21,7 @@ const (
 	IssueInvitationOperation          OperationName = "IssueInvitation"
 	ListMembersOperation              OperationName = "ListMembers"
 	ListPermissionsOperation          OperationName = "ListPermissions"
+	ListPoliciesOperation             OperationName = "ListPolicies"
 	ListProjectInvitationsOperation   OperationName = "ListProjectInvitations"
 	ListRolesOperation                OperationName = "ListRoles"
 	ListSSHKeysOperation              OperationName = "ListSSHKeys"
@@ -25,8 +29,10 @@ const (
 	RenameSSHKeyOperation             OperationName = "RenameSSHKey"
 	RevokeInvitationOperation         OperationName = "RevokeInvitation"
 	RevokeSSHKeyOperation             OperationName = "RevokeSSHKey"
+	SetMemberPermissionsOperation     OperationName = "SetMemberPermissions"
 	SetMemberRolesOperation           OperationName = "SetMemberRoles"
 	TransferProjectOwnershipOperation OperationName = "TransferProjectOwnership"
+	UpdatePolicyOperation             OperationName = "UpdatePolicy"
 	UpdateProjectOperation            OperationName = "UpdateProject"
 	UpdateRoleOperation               OperationName = "UpdateRole"
 )
