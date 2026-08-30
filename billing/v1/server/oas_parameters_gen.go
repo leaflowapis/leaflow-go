@@ -2056,6 +2056,72 @@ func decodeReadPaymentMethodParams(args [1]string, argsEscaped bool, r *http.Req
 	return params, nil
 }
 
+// ReadProjectBillingAccountParams is parameters of read-project-billing-account operation.
+type ReadProjectBillingAccountParams struct {
+	// The project being worked in.
+	ProjectId uuid.UUID
+}
+
+func unpackReadProjectBillingAccountParams(packed middleware.Parameters) (params ReadProjectBillingAccountParams) {
+	{
+		key := middleware.ParameterKey{
+			Name: "projectId",
+			In:   "path",
+		}
+		params.ProjectId = packed[key].(uuid.UUID)
+	}
+	return params
+}
+
+func decodeReadProjectBillingAccountParams(args [1]string, argsEscaped bool, r *http.Request) (params ReadProjectBillingAccountParams, _ error) {
+	// Decode path: projectId.
+	if err := func() error {
+		param := args[0]
+		if argsEscaped {
+			unescaped, err := url.PathUnescape(args[0])
+			if err != nil {
+				return errors.Wrap(err, "unescape path")
+			}
+			param = unescaped
+		}
+		if len(param) > 0 {
+			d := uri.NewPathDecoder(uri.PathDecoderConfig{
+				Param:   "projectId",
+				Value:   param,
+				Style:   uri.PathStyleSimple,
+				Explode: false,
+			})
+
+			if err := func() error {
+				val, err := d.DecodeValue()
+				if err != nil {
+					return err
+				}
+
+				c, err := conv.ToUUID(val)
+				if err != nil {
+					return err
+				}
+
+				params.ProjectId = c
+				return nil
+			}(); err != nil {
+				return err
+			}
+		} else {
+			return validate.ErrFieldRequired
+		}
+		return nil
+	}(); err != nil {
+		return params, &ogenerrors.DecodeParamError{
+			Name: "projectId",
+			In:   "path",
+			Err:  err,
+		}
+	}
+	return params, nil
+}
+
 // ReadSubscriptionParams is parameters of read-subscription operation.
 type ReadSubscriptionParams struct {
 	// The account's key, of the form `u_<user_id>_<seq>`. Ownership is stated by the key itself, which is

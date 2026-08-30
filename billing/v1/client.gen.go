@@ -19,6 +19,24 @@ import (
 	openapi_types "github.com/oapi-codegen/runtime/types"
 )
 
+// Defines values for ChargeType.
+const (
+	FlatFee    ChargeType = "flat_fee"
+	UsageBased ChargeType = "usage_based"
+)
+
+// Valid indicates whether the value is a known member of the ChargeType enum.
+func (e ChargeType) Valid() bool {
+	switch e {
+	case FlatFee:
+		return true
+	case UsageBased:
+		return true
+	default:
+		return false
+	}
+}
+
 // Defines values for CreditTransactionType.
 const (
 	CreditTransactionTypeConsumed CreditTransactionType = "consumed"
@@ -341,13 +359,51 @@ type BillingPortalSession struct {
 
 // Charge One thing this period has been charged for
 type Charge struct {
-	Id   string `json:"id"`
-	Name string `json:"name"`
+	// Credits How much of this charge was covered by credit, as a decimal string.
+	//
+	// It is the answer to "I have a balance, why am I still being charged". Without it the
+	// customer sees a number that disagrees with what they expected and the only thing that
+	// explains it is on our side.
+	Credits *string `json:"credits,omitempty"`
+
+	// Description Free text from the charge, usually empty. Set on charges raised by hand.
+	Description *string `json:"description,omitempty"`
+
+	// Discounts How much was taken off by a discount, as a decimal string. A usage allowance (the first N
+	// units free) lands here too.
+	Discounts *string `json:"discounts,omitempty"`
+
+	// FeatureKey Which meter it is for, when the charge came from usage. A hash, not something to show —
+	// it is here so two rows can be told apart programmatically and so support can line a row
+	// up with the catalogue.
+	FeatureKey *string `json:"feature_key,omitempty"`
+	Id         string  `json:"id"`
+	Name       string  `json:"name"`
+
+	// PeriodFrom Start of the service period this charge covers.
+	//
+	// This is what tells two same-named rows apart. Something billed by the hour produces
+	// hundreds of identically named charges in a month, and a list carrying only a name and an
+	// amount shows them as a wall of duplicates — which is what it looks like today.
+	PeriodFrom time.Time `json:"period_from"`
+
+	// PeriodTo End of the service period this charge covers.
+	PeriodTo time.Time `json:"period_to"`
 
 	// Total Decimal string, the real-time figure. The booked figure would show a machine that only
 	// just started as zero
 	Total string `json:"total"`
+
+	// Type Whether this figure moves. A usage charge climbs through the period; a flat fee does not.
+	// Without it, the same number on two refreshes could mean "nobody used it" or "it never
+	// moves", and those need different next steps.
+	Type ChargeType `json:"type"`
 }
+
+// ChargeType Whether this figure moves. A usage charge climbs through the period; a flat fee does not.
+// Without it, the same number on two refreshes could mean "nobody used it" or "it never
+// moves", and those need different next steps.
+type ChargeType string
 
 // ChargeList defines model for ChargeList.
 type ChargeList struct {
@@ -735,6 +791,28 @@ type PricingPhase struct {
 	Duration *string       `json:"duration,omitempty"`
 	Lines    []PricingLine `json:"lines"`
 	Name     string        `json:"name"`
+}
+
+// ProjectBillingAccount The account a project's resources are charged to
+type ProjectBillingAccount struct {
+	AccountKey string `json:"account_key"`
+
+	// Currency ISO 4217, uppercase. `USD` is the only value the platform issues today, and a request
+	// naming any other is refused with `BILLING_CURRENCY_UNSUPPORTED`.
+	//
+	// Deliberately not an enumeration. The set of currency codes is governed outside this API, so
+	// a client generated today must still be able to read a response naming a code added later —
+	// an enumeration turns that response into a decode failure in a client nobody can redeploy.
+	// Restricting what may be *sent* is a rule about what the platform supports, and it lives
+	// where that rule can change without regenerating anything.
+	Currency    Currency `json:"currency"`
+	DisplayName string   `json:"display_name"`
+
+	// OwnedByMe Whether the caller owns this account, and therefore whether the balance routes will
+	// answer for it. False means someone else pays for this project: the figures are theirs,
+	// not the caller's, and a page should say so rather than showing nothing.
+	OwnedByMe bool   `json:"owned_by_me"`
+	ProjectId string `json:"project_id"`
 }
 
 // ProjectBinding Which account pays for which project, as it stands once the request has been applied
@@ -1683,6 +1761,36 @@ type ClientInterface interface {
 	//
 	// Corresponds with GET /account/v1/billing-accounts/{accountKey}/top-ups/{paymentId} (the `ReadTopUp` operationId).
 	ReadTopUp(ctx context.Context, accountKey AccountKey, paymentId string, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// ReadProjectBillingAccount Which account pays for this project
+	//
+	// The account a project's resources are charged to, resolved from the project rather than
+	// guessed.
+	//
+	// ## Why a console needs this
+	//
+	// Everything in a console happens inside a project, while billing accounts belong to a person —
+	// and a person can have many. Showing "the first one" next to a sentence like *you are
+	// overdrawn, new resources will be refused* pairs one account's balance with another account's
+	// rule. Both directions are wrong and one of them is silent: the figures look healthy while
+	// creating anything is refused, and the refusal names a reason the page just contradicted.
+	//
+	// ## Being a member is enough to ask, but not to see the money
+	//
+	// The answer is the account's identity, not its balance. A project's members are not
+	// necessarily the people paying for it — a company account can pay for a project someone else
+	// works in — and their balance is not those members' business. Whoever owns the account reads
+	// the figures from the balance route as before; `owned_by_me` says which case this is, so a
+	// page can tell "you are overdrawn" apart from "ask whoever pays for this project".
+	//
+	// ## A project with no account is a normal state, and it answers 404
+	//
+	// A project nobody has bound yet cannot create resources at all — admission refuses it. That is
+	// worth saying plainly ("this project has no billing account, bind one") rather than falling
+	// back to some other account of theirs, which is how the wrong-account problem started.
+	//
+	// Corresponds with GET /account/v1/projects/{projectId}/billing-account (the `ReadProjectBillingAccount` operationId).
+	ReadProjectBillingAccount(ctx context.Context, projectId openapi_types.UUID, reqEditors ...RequestEditorFn) (*http.Response, error)
 
 	// QuoteProjectUsageWithBody What a usage would cost in this project
 	//
@@ -2665,6 +2773,46 @@ func (c *Client) StartTopUp(ctx context.Context, accountKey AccountKey, body Sta
 // Corresponds with GET /account/v1/billing-accounts/{accountKey}/top-ups/{paymentId} (the `ReadTopUp` operationId).
 func (c *Client) ReadTopUp(ctx context.Context, accountKey AccountKey, paymentId string, reqEditors ...RequestEditorFn) (*http.Response, error) {
 	req, err := NewReadTopUpRequest(c.Server, accountKey, paymentId)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+// ReadProjectBillingAccount Which account pays for this project
+//
+// The account a project's resources are charged to, resolved from the project rather than
+// guessed.
+//
+// ## Why a console needs this
+//
+// Everything in a console happens inside a project, while billing accounts belong to a person —
+// and a person can have many. Showing "the first one" next to a sentence like *you are
+// overdrawn, new resources will be refused* pairs one account's balance with another account's
+// rule. Both directions are wrong and one of them is silent: the figures look healthy while
+// creating anything is refused, and the refusal names a reason the page just contradicted.
+//
+// ## Being a member is enough to ask, but not to see the money
+//
+// The answer is the account's identity, not its balance. A project's members are not
+// necessarily the people paying for it — a company account can pay for a project someone else
+// works in — and their balance is not those members' business. Whoever owns the account reads
+// the figures from the balance route as before; `owned_by_me` says which case this is, so a
+// page can tell "you are overdrawn" apart from "ask whoever pays for this project".
+//
+// ## A project with no account is a normal state, and it answers 404
+//
+// A project nobody has bound yet cannot create resources at all — admission refuses it. That is
+// worth saying plainly ("this project has no billing account, bind one") rather than falling
+// back to some other account of theirs, which is how the wrong-account problem started.
+//
+// Corresponds with GET /account/v1/projects/{projectId}/billing-account (the `ReadProjectBillingAccount` operationId).
+func (c *Client) ReadProjectBillingAccount(ctx context.Context, projectId openapi_types.UUID, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewReadProjectBillingAccountRequest(c.Server, projectId)
 	if err != nil {
 		return nil, err
 	}
@@ -3863,6 +4011,40 @@ func NewReadTopUpRequest(server string, accountKey AccountKey, paymentId string)
 	return req, nil
 }
 
+// NewReadProjectBillingAccountRequest constructs an http.Request for the ReadProjectBillingAccount method
+func NewReadProjectBillingAccountRequest(server string, projectId openapi_types.UUID) (*http.Request, error) {
+	var err error
+
+	var pathParam0 string
+
+	pathParam0, err = runtime.StyleParamWithOptions("simple", false, "projectId", projectId, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: "uuid"})
+	if err != nil {
+		return nil, err
+	}
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/account/v1/projects/%s/billing-account", pathParam0)
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest(http.MethodGet, queryURL.String(), nil)
+	if err != nil {
+		return nil, err
+	}
+
+	return req, nil
+}
+
 // NewQuoteProjectUsageRequest calls the generic QuoteProjectUsage builder with application/json body
 func NewQuoteProjectUsageRequest(server string, projectId openapi_types.UUID, body QuoteProjectUsageJSONRequestBody) (*http.Request, error) {
 	var bodyReader io.Reader
@@ -4597,6 +4779,38 @@ type ClientWithResponsesInterface interface {
 	//
 	// Corresponds with GET /account/v1/billing-accounts/{accountKey}/top-ups/{paymentId} (the `ReadTopUp` operationId).
 	ReadTopUpWithResponse(ctx context.Context, accountKey AccountKey, paymentId string, reqEditors ...RequestEditorFn) (*ReadTopUpResponse, error)
+
+	// ReadProjectBillingAccountWithResponse Which account pays for this project
+	//
+	// The account a project's resources are charged to, resolved from the project rather than
+	// guessed.
+	//
+	// ## Why a console needs this
+	//
+	// Everything in a console happens inside a project, while billing accounts belong to a person —
+	// and a person can have many. Showing "the first one" next to a sentence like *you are
+	// overdrawn, new resources will be refused* pairs one account's balance with another account's
+	// rule. Both directions are wrong and one of them is silent: the figures look healthy while
+	// creating anything is refused, and the refusal names a reason the page just contradicted.
+	//
+	// ## Being a member is enough to ask, but not to see the money
+	//
+	// The answer is the account's identity, not its balance. A project's members are not
+	// necessarily the people paying for it — a company account can pay for a project someone else
+	// works in — and their balance is not those members' business. Whoever owns the account reads
+	// the figures from the balance route as before; `owned_by_me` says which case this is, so a
+	// page can tell "you are overdrawn" apart from "ask whoever pays for this project".
+	//
+	// ## A project with no account is a normal state, and it answers 404
+	//
+	// A project nobody has bound yet cannot create resources at all — admission refuses it. That is
+	// worth saying plainly ("this project has no billing account, bind one") rather than falling
+	// back to some other account of theirs, which is how the wrong-account problem started.
+	//
+	// Returns a wrapper object for the known response body format(s).
+	//
+	// Corresponds with GET /account/v1/projects/{projectId}/billing-account (the `ReadProjectBillingAccount` operationId).
+	ReadProjectBillingAccountWithResponse(ctx context.Context, projectId openapi_types.UUID, reqEditors ...RequestEditorFn) (*ReadProjectBillingAccountResponse, error)
 
 	// QuoteProjectUsageWithBodyWithResponse What a usage would cost in this project
 	//
@@ -5958,6 +6172,54 @@ func (r ReadTopUpResponse) ContentType() string {
 	return ""
 }
 
+type ReadProjectBillingAccountResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	// JSON200 the response for an HTTP 200 `application/json` response
+	JSON200 *ProjectBillingAccount
+	// JSONDefault the response for an HTTP default `application/json` response
+	JSONDefault *Error
+}
+
+// GetJSON200 returns the response for an HTTP 200 `application/json` response
+func (r ReadProjectBillingAccountResponse) GetJSON200() *ProjectBillingAccount {
+	return r.JSON200
+}
+
+// GetJSONDefault returns the response for an HTTP default `application/json` response
+func (r ReadProjectBillingAccountResponse) GetJSONDefault() *Error {
+	return r.JSONDefault
+}
+
+// GetBody returns the raw response body bytes
+func (r ReadProjectBillingAccountResponse) GetBody() []byte {
+	return r.Body
+}
+
+// Status returns HTTPResponse.Status
+func (r ReadProjectBillingAccountResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r ReadProjectBillingAccountResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+// ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
+func (r ReadProjectBillingAccountResponse) ContentType() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Header.Get("Content-Type")
+	}
+	return ""
+}
+
 type QuoteProjectUsageResponse struct {
 	Body         []byte
 	HTTPResponse *http.Response
@@ -6840,6 +7102,44 @@ func (c *ClientWithResponses) ReadTopUpWithResponse(ctx context.Context, account
 		return nil, err
 	}
 	return ParseReadTopUpResponse(rsp)
+}
+
+// ReadProjectBillingAccountWithResponse Which account pays for this project
+//
+// The account a project's resources are charged to, resolved from the project rather than
+// guessed.
+//
+// ## Why a console needs this
+//
+// Everything in a console happens inside a project, while billing accounts belong to a person —
+// and a person can have many. Showing "the first one" next to a sentence like *you are
+// overdrawn, new resources will be refused* pairs one account's balance with another account's
+// rule. Both directions are wrong and one of them is silent: the figures look healthy while
+// creating anything is refused, and the refusal names a reason the page just contradicted.
+//
+// ## Being a member is enough to ask, but not to see the money
+//
+// The answer is the account's identity, not its balance. A project's members are not
+// necessarily the people paying for it — a company account can pay for a project someone else
+// works in — and their balance is not those members' business. Whoever owns the account reads
+// the figures from the balance route as before; `owned_by_me` says which case this is, so a
+// page can tell "you are overdrawn" apart from "ask whoever pays for this project".
+//
+// ## A project with no account is a normal state, and it answers 404
+//
+// A project nobody has bound yet cannot create resources at all — admission refuses it. That is
+// worth saying plainly ("this project has no billing account, bind one") rather than falling
+// back to some other account of theirs, which is how the wrong-account problem started.
+//
+// Returns a wrapper object for the known response body format(s).
+//
+// Corresponds with GET /account/v1/projects/{projectId}/billing-account (the `ReadProjectBillingAccount` operationId).
+func (c *ClientWithResponses) ReadProjectBillingAccountWithResponse(ctx context.Context, projectId openapi_types.UUID, reqEditors ...RequestEditorFn) (*ReadProjectBillingAccountResponse, error) {
+	rsp, err := c.ReadProjectBillingAccount(ctx, projectId, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseReadProjectBillingAccountResponse(rsp)
 }
 
 // QuoteProjectUsageWithBodyWithResponse What a usage would cost in this project
@@ -7794,6 +8094,39 @@ func ParseReadTopUpResponse(rsp *http.Response) (*ReadTopUpResponse, error) {
 	switch {
 	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
 		var dest TopUpStatus
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && true:
+		var dest Error
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSONDefault = &dest
+
+	}
+
+	return response, nil
+}
+
+// ParseReadProjectBillingAccountResponse parses an HTTP response from a ReadProjectBillingAccountWithResponse call
+func ParseReadProjectBillingAccountResponse(rsp *http.Response) (*ReadProjectBillingAccountResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &ReadProjectBillingAccountResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest ProjectBillingAccount
 		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
 			return nil, err
 		}

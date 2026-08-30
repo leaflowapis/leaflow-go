@@ -361,6 +361,34 @@ type Invoker interface {
 	//
 	// GET /account/v1/billing-accounts/{accountKey}/payment-method
 	ReadPaymentMethod(ctx context.Context, params ReadPaymentMethodParams) (*PaymentMethod, error)
+	// ReadProjectBillingAccount invokes read-project-billing-account operation.
+	//
+	// The account a project's resources are charged to, resolved from the project rather than guessed.
+	//
+	// # Why a console needs this
+	//
+	// Everything in a console happens inside a project, while billing accounts belong to a person — and
+	// a person can have many. Showing "the first one" next to a sentence like you are overdrawn, new
+	// resources will be refused pairs one account's balance with another account's rule. Both directions
+	// are wrong and one of them is silent: the figures look healthy while creating anything is refused,
+	// and the refusal names a reason the page just contradicted.
+	//
+	// # Being a member is enough to ask, but not to see the money
+	//
+	// The answer is the account's identity, not its balance. A project's members are not necessarily the
+	// people paying for it — a company account can pay for a project someone else works in — and their
+	// balance is not those members' business. Whoever owns the account reads the figures from the balance
+	// route as before; `owned_by_me` says which case this is, so a page can tell "you are overdrawn" apart
+	// from "ask whoever pays for this project".
+	//
+	// # A project with no account is a normal state, and it answers 404
+	//
+	// A project nobody has bound yet cannot create resources at all — admission refuses it. That is
+	// worth saying plainly ("this project has no billing account, bind one") rather than falling back to
+	// some other account of theirs, which is how the wrong-account problem started.
+	//
+	// GET /account/v1/projects/{projectId}/billing-account
+	ReadProjectBillingAccount(ctx context.Context, params ReadProjectBillingAccountParams) (*ProjectBillingAccount, error)
 	// ReadSubscription invokes read-subscription operation.
 	//
 	// `404` means no plan, which is worth showing rather than hiding: an account without one is refused
@@ -3505,6 +3533,160 @@ func (c *Client) sendReadPaymentMethod(ctx context.Context, params ReadPaymentMe
 
 	stage = "DecodeResponse"
 	result, err := decodeReadPaymentMethodResponse(resp)
+	if err != nil {
+		return res, errors.Wrap(err, "decode response")
+	}
+
+	return result, nil
+}
+
+// ReadProjectBillingAccount invokes read-project-billing-account operation.
+//
+// The account a project's resources are charged to, resolved from the project rather than guessed.
+//
+// # Why a console needs this
+//
+// Everything in a console happens inside a project, while billing accounts belong to a person — and
+// a person can have many. Showing "the first one" next to a sentence like you are overdrawn, new
+// resources will be refused pairs one account's balance with another account's rule. Both directions
+// are wrong and one of them is silent: the figures look healthy while creating anything is refused,
+// and the refusal names a reason the page just contradicted.
+//
+// # Being a member is enough to ask, but not to see the money
+//
+// The answer is the account's identity, not its balance. A project's members are not necessarily the
+// people paying for it — a company account can pay for a project someone else works in — and their
+// balance is not those members' business. Whoever owns the account reads the figures from the balance
+// route as before; `owned_by_me` says which case this is, so a page can tell "you are overdrawn" apart
+// from "ask whoever pays for this project".
+//
+// # A project with no account is a normal state, and it answers 404
+//
+// A project nobody has bound yet cannot create resources at all — admission refuses it. That is
+// worth saying plainly ("this project has no billing account, bind one") rather than falling back to
+// some other account of theirs, which is how the wrong-account problem started.
+//
+// GET /account/v1/projects/{projectId}/billing-account
+func (c *Client) ReadProjectBillingAccount(ctx context.Context, params ReadProjectBillingAccountParams) (*ProjectBillingAccount, error) {
+	res, err := c.sendReadProjectBillingAccount(ctx, params)
+	return res, err
+}
+
+func (c *Client) sendReadProjectBillingAccount(ctx context.Context, params ReadProjectBillingAccountParams) (res *ProjectBillingAccount, err error) {
+	otelAttrs := []attribute.KeyValue{
+		otelogen.OperationID("read-project-billing-account"),
+		semconv.HTTPRequestMethodKey.String("GET"),
+		semconv.URLTemplateKey.String("/account/v1/projects/{projectId}/billing-account"),
+	}
+	otelAttrs = append(otelAttrs, c.cfg.Attributes...)
+
+	// Run stopwatch.
+	startTime := time.Now()
+	defer func() {
+		// Use floating point division here for higher precision (instead of Millisecond method).
+		elapsedDuration := time.Since(startTime)
+		c.duration.Record(ctx, float64(elapsedDuration)/float64(time.Millisecond), metric.WithAttributes(otelAttrs...))
+	}()
+
+	// Increment request counter.
+	c.requests.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
+
+	// Start a span for this request.
+	ctx, span := c.cfg.Tracer.Start(ctx, ReadProjectBillingAccountOperation,
+		trace.WithAttributes(otelAttrs...),
+		clientSpanKind,
+	)
+	// Track stage for error reporting.
+	var stage string
+	defer func() {
+		if err != nil {
+			span.RecordError(err)
+			span.SetStatus(codes.Error, stage)
+			c.errors.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
+		}
+		span.End()
+	}()
+
+	stage = "BuildURL"
+	u := uri.Clone(c.requestURL(ctx))
+	var pathParts [3]string
+	pathParts[0] = "/account/v1/projects/"
+	{
+		// Encode "projectId" parameter.
+		e := uri.NewPathEncoder(uri.PathEncoderConfig{
+			Param:   "projectId",
+			Style:   uri.PathStyleSimple,
+			Explode: false,
+		})
+		if err := func() error {
+			return e.EncodeValue(conv.UUIDToString(params.ProjectId))
+		}(); err != nil {
+			return res, errors.Wrap(err, "encode path")
+		}
+		encoded, err := e.Result()
+		if err != nil {
+			return res, errors.Wrap(err, "encode path")
+		}
+		pathParts[1] = encoded
+	}
+	pathParts[2] = "/billing-account"
+	uri.AddPathParts(u, pathParts[:]...)
+
+	stage = "EncodeRequest"
+	r, err := ht.NewRequest(ctx, "GET", u)
+	if err != nil {
+		return res, errors.Wrap(err, "create request")
+	}
+
+	{
+		type bitset = [1]uint8
+		var satisfied bitset
+		{
+			stage = "Security:BearerAuth"
+			switch err := c.securityBearerAuth(ctx, ReadProjectBillingAccountOperation, r); {
+			case err == nil: // if NO error
+				satisfied[0] |= 1 << 0
+			case errors.Is(err, ogenerrors.ErrSkipClientSecurity):
+				// Skip this security.
+			default:
+				return res, errors.Wrap(err, "security \"BearerAuth\"")
+			}
+		}
+
+		if ok := func() bool {
+		nextRequirement:
+			for _, requirement := range []bitset{
+				{0b00000001},
+			} {
+				for i, mask := range requirement {
+					if satisfied[i]&mask != mask {
+						continue nextRequirement
+					}
+				}
+				return true
+			}
+			return false
+		}(); !ok {
+			return res, ogenerrors.ErrSecurityRequirementIsNotSatisfied
+		}
+	}
+
+	stage = "SendRequest"
+	resp, err := c.cfg.Client.Do(r)
+	if err != nil {
+		return res, errors.Wrap(err, "do request")
+	}
+	body := resp.Body
+	defer func() {
+		// Drain the body to EOF before closing, so the underlying
+		// connection can be reused by the Transport regardless of the
+		// response status code. See https://github.com/ogen-go/ogen/issues/1670.
+		_, _ = io.Copy(io.Discard, body)
+		_ = body.Close()
+	}()
+
+	stage = "DecodeResponse"
+	result, err := decodeReadProjectBillingAccountResponse(resp)
 	if err != nil {
 		return res, errors.Wrap(err, "decode response")
 	}
