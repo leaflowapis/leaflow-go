@@ -8710,7 +8710,10 @@ func (s *Server) handleUpdateThreadRequest(args [1]string, argsEscaped bool, w h
 //
 // The body is the file bytes themselves, not multipart, one file per request. The kind is determined
 // from the content, not from Content-Type or from the name. Put the returned id in attachmentIds when
-// sending a message; attachments never referenced by any message are cleared periodically.
+// sending a message.
+//
+// An upload that no message ever references is a draft, and drafts are collected — `draftExpiresAt`
+// in the response says when this one goes. Sending a message with the id makes it permanent.
 //
 // The returned `kind` says how the assistant will see it. An `image` is read directly, and only by
 // models that accept image input. A small `text` file is placed inline in the message. A large `text`
