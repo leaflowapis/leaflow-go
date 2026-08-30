@@ -6837,8 +6837,16 @@ func (s *UploadAttachmentReqWithContentType) SetContent(val UploadAttachmentReq)
 type UploadedResource struct {
 	// Size of what was stored. For an image that has been resized, this is the resized size, not what was
 	// uploaded.
-	ByteSize int64  `json:"byteSize"`
-	Filename string `json:"filename"`
+	ByteSize int64 `json:"byteSize"`
+	// When this upload gets cleared if no message ever references it. Sending a message with this id makes
+	// it permanent and this stops applying — a file that belongs to a conversation is kept as long as
+	// the conversation is.
+	//
+	// It is here so the editor can say so before it happens. An attachment chip that quietly stops working
+	// a week later reads as a bug, and the person who hits it has no way to tell that what they are seeing
+	// is a draft being collected.
+	DraftExpiresAt time.Time `json:"draftExpiresAt"`
+	Filename       string    `json:"filename"`
 	// Null unless kind is image.
 	Height NilInt64 `json:"height"`
 	ID     string   `json:"id"`
@@ -6856,6 +6864,11 @@ type UploadedResource struct {
 // GetByteSize returns the value of ByteSize.
 func (s *UploadedResource) GetByteSize() int64 {
 	return s.ByteSize
+}
+
+// GetDraftExpiresAt returns the value of DraftExpiresAt.
+func (s *UploadedResource) GetDraftExpiresAt() time.Time {
+	return s.DraftExpiresAt
 }
 
 // GetFilename returns the value of Filename.
@@ -6886,6 +6899,11 @@ func (s *UploadedResource) GetWidth() NilInt64 {
 // SetByteSize sets the value of ByteSize.
 func (s *UploadedResource) SetByteSize(val int64) {
 	s.ByteSize = val
+}
+
+// SetDraftExpiresAt sets the value of DraftExpiresAt.
+func (s *UploadedResource) SetDraftExpiresAt(val time.Time) {
+	s.DraftExpiresAt = val
 }
 
 // SetFilename sets the value of Filename.

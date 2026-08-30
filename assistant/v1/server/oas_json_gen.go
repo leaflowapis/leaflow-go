@@ -12067,6 +12067,10 @@ func (s *UploadedResource) encodeFields(e *jx.Encoder) {
 		e.Int64(s.ByteSize)
 	}
 	{
+		e.FieldStart("draftExpiresAt")
+		json.EncodeDateTime(e, s.DraftExpiresAt)
+	}
+	{
 		e.FieldStart("filename")
 		e.Str(s.Filename)
 	}
@@ -12088,13 +12092,14 @@ func (s *UploadedResource) encodeFields(e *jx.Encoder) {
 	}
 }
 
-var jsonFieldsNameOfUploadedResource = [6]string{
+var jsonFieldsNameOfUploadedResource = [7]string{
 	0: "byteSize",
-	1: "filename",
-	2: "height",
-	3: "id",
-	4: "kind",
-	5: "width",
+	1: "draftExpiresAt",
+	2: "filename",
+	3: "height",
+	4: "id",
+	5: "kind",
+	6: "width",
 }
 
 // Decode decodes UploadedResource from json.
@@ -12118,8 +12123,20 @@ func (s *UploadedResource) Decode(d *jx.Decoder) error {
 			}(); err != nil {
 				return errors.Wrap(err, "decode field \"byteSize\"")
 			}
-		case "filename":
+		case "draftExpiresAt":
 			requiredBitSet[0] |= 1 << 1
+			if err := func() error {
+				v, err := json.DecodeDateTime(d)
+				s.DraftExpiresAt = v
+				if err != nil {
+					return err
+				}
+				return nil
+			}(); err != nil {
+				return errors.Wrap(err, "decode field \"draftExpiresAt\"")
+			}
+		case "filename":
+			requiredBitSet[0] |= 1 << 2
 			if err := func() error {
 				v, err := d.Str()
 				s.Filename = string(v)
@@ -12131,7 +12148,7 @@ func (s *UploadedResource) Decode(d *jx.Decoder) error {
 				return errors.Wrap(err, "decode field \"filename\"")
 			}
 		case "height":
-			requiredBitSet[0] |= 1 << 2
+			requiredBitSet[0] |= 1 << 3
 			if err := func() error {
 				if err := s.Height.Decode(d); err != nil {
 					return err
@@ -12141,7 +12158,7 @@ func (s *UploadedResource) Decode(d *jx.Decoder) error {
 				return errors.Wrap(err, "decode field \"height\"")
 			}
 		case "id":
-			requiredBitSet[0] |= 1 << 3
+			requiredBitSet[0] |= 1 << 4
 			if err := func() error {
 				v, err := d.Str()
 				s.ID = string(v)
@@ -12153,7 +12170,7 @@ func (s *UploadedResource) Decode(d *jx.Decoder) error {
 				return errors.Wrap(err, "decode field \"id\"")
 			}
 		case "kind":
-			requiredBitSet[0] |= 1 << 4
+			requiredBitSet[0] |= 1 << 5
 			if err := func() error {
 				if err := s.Kind.Decode(d); err != nil {
 					return err
@@ -12163,7 +12180,7 @@ func (s *UploadedResource) Decode(d *jx.Decoder) error {
 				return errors.Wrap(err, "decode field \"kind\"")
 			}
 		case "width":
-			requiredBitSet[0] |= 1 << 5
+			requiredBitSet[0] |= 1 << 6
 			if err := func() error {
 				if err := s.Width.Decode(d); err != nil {
 					return err
@@ -12182,7 +12199,7 @@ func (s *UploadedResource) Decode(d *jx.Decoder) error {
 	// Validate required fields.
 	var failures []validate.FieldError
 	for i, mask := range [1]uint8{
-		0b00111111,
+		0b01111111,
 	} {
 		if result := (requiredBitSet[i] & mask) ^ mask; result != 0 {
 			// Mask only required fields and check equality to mask using XOR.
