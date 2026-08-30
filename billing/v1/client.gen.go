@@ -469,8 +469,17 @@ type ChargeList struct {
 	// where that rule can change without regenerating anything.
 	Currency Currency `json:"currency"`
 
-	// Total The sum, which is the same number as `unsettled` on the balance
+	// Total The sum over the **whole period**, not this page — it is the same number as `unsettled`
+	// on the balance, and paging must not change it. A page-scoped sum would disagree with the
+	// balance card sitting next to it, and there would be no way to tell which one to believe.
 	Total string `json:"total"`
+
+	// TotalCount How many charges there are in total, across every page.
+	//
+	// Without it, "is there another page" has to be guessed from whether this one came back
+	// full — and that guess turns into one extra fetch of an empty page whenever the last page
+	// happens to be exactly full.
+	TotalCount *int64 `json:"total_count,omitempty"`
 }
 
 // ChargeResource defines model for ChargeResource.
@@ -1164,6 +1173,19 @@ type AccountKey = string
 // ProvisionId defines model for ProvisionId.
 type ProvisionId = openapi_types.UUID
 
+// ListChargesParams defines parameters for ListCharges.
+type ListChargesParams struct {
+	// Page 1-based page number; the first page when omitted.
+	Page *int `form:"page,omitempty" json:"page,omitempty"`
+
+	// PageSize How many charges per page. Defaults to a full page.
+	//
+	// Charge count grows with resource count — an account running dozens of machines produces
+	// hundreds of lines in a period, and a screen shows a dozen. Fetching all of them on every
+	// visit carries data nothing displays.
+	PageSize *int `form:"page_size,omitempty" json:"page_size,omitempty"`
+}
+
 // PurchaseOfferParams defines parameters for PurchaseOffer.
 type PurchaseOfferParams struct {
 	// Timing When the switch takes effect. Required if the account already has a plan, ignored otherwise
@@ -1406,7 +1428,7 @@ type ClientInterface interface {
 	// nothing, while the spend keeps climbing.
 	//
 	// Corresponds with GET /account/v1/billing-accounts/{accountKey}/charges (the `ListCharges` operationId).
-	ListCharges(ctx context.Context, accountKey AccountKey, reqEditors ...RequestEditorFn) (*http.Response, error)
+	ListCharges(ctx context.Context, accountKey AccountKey, params *ListChargesParams, reqEditors ...RequestEditorFn) (*http.Response, error)
 
 	// GetChargeUsage What produced this charge
 	//
@@ -2231,8 +2253,8 @@ func (c *Client) StartBillingPortal(ctx context.Context, accountKey AccountKey, 
 // nothing, while the spend keeps climbing.
 //
 // Corresponds with GET /account/v1/billing-accounts/{accountKey}/charges (the `ListCharges` operationId).
-func (c *Client) ListCharges(ctx context.Context, accountKey AccountKey, reqEditors ...RequestEditorFn) (*http.Response, error) {
-	req, err := NewListChargesRequest(c.Server, accountKey)
+func (c *Client) ListCharges(ctx context.Context, accountKey AccountKey, params *ListChargesParams, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewListChargesRequest(c.Server, accountKey, params)
 	if err != nil {
 		return nil, err
 	}
@@ -3344,7 +3366,7 @@ func NewStartBillingPortalRequest(server string, accountKey AccountKey) (*http.R
 }
 
 // NewListChargesRequest constructs an http.Request for the ListCharges method
-func NewListChargesRequest(server string, accountKey AccountKey) (*http.Request, error) {
+func NewListChargesRequest(server string, accountKey AccountKey, params *ListChargesParams) (*http.Request, error) {
 	var err error
 
 	var pathParam0 string
@@ -3367,6 +3389,45 @@ func NewListChargesRequest(server string, accountKey AccountKey) (*http.Request,
 	queryURL, err := serverURL.Parse(operationPath)
 	if err != nil {
 		return nil, err
+	}
+
+	if params != nil {
+		// queryValues collects non-styled parameters (passthrough, JSON)
+		// that are safe to round-trip through url.Values.Encode().
+		queryValues := queryURL.Query()
+		// rawQueryFragments collects pre-encoded query fragments from
+		// styled parameters, preserving literal commas as delimiters
+		// per the OpenAPI spec (e.g. "color=blue,black,brown").
+		var rawQueryFragments []string
+
+		if params.Page != nil {
+
+			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "page", *params.Page, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "integer", Format: ""}); err != nil {
+				return nil, err
+			} else {
+				for _, qp := range strings.Split(queryFrag, "&") {
+					rawQueryFragments = append(rawQueryFragments, qp)
+				}
+			}
+
+		}
+
+		if params.PageSize != nil {
+
+			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "page_size", *params.PageSize, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "integer", Format: ""}); err != nil {
+				return nil, err
+			} else {
+				for _, qp := range strings.Split(queryFrag, "&") {
+					rawQueryFragments = append(rawQueryFragments, qp)
+				}
+			}
+
+		}
+
+		if encoded := queryValues.Encode(); encoded != "" {
+			rawQueryFragments = append(rawQueryFragments, encoded)
+		}
+		queryURL.RawQuery = strings.Join(rawQueryFragments, "&")
 	}
 
 	req, err := http.NewRequest(http.MethodGet, queryURL.String(), nil)
@@ -4529,7 +4590,7 @@ type ClientWithResponsesInterface interface {
 	// Returns a wrapper object for the known response body format(s).
 	//
 	// Corresponds with GET /account/v1/billing-accounts/{accountKey}/charges (the `ListCharges` operationId).
-	ListChargesWithResponse(ctx context.Context, accountKey AccountKey, reqEditors ...RequestEditorFn) (*ListChargesResponse, error)
+	ListChargesWithResponse(ctx context.Context, accountKey AccountKey, params *ListChargesParams, reqEditors ...RequestEditorFn) (*ListChargesResponse, error)
 
 	// GetChargeUsageWithResponse What produced this charge
 	//
@@ -6803,8 +6864,8 @@ func (c *ClientWithResponses) StartBillingPortalWithResponse(ctx context.Context
 // Returns a wrapper object for the known response body format(s).
 //
 // Corresponds with GET /account/v1/billing-accounts/{accountKey}/charges (the `ListCharges` operationId).
-func (c *ClientWithResponses) ListChargesWithResponse(ctx context.Context, accountKey AccountKey, reqEditors ...RequestEditorFn) (*ListChargesResponse, error) {
-	rsp, err := c.ListCharges(ctx, accountKey, reqEditors...)
+func (c *ClientWithResponses) ListChargesWithResponse(ctx context.Context, accountKey AccountKey, params *ListChargesParams, reqEditors ...RequestEditorFn) (*ListChargesResponse, error) {
+	rsp, err := c.ListCharges(ctx, accountKey, params, reqEditors...)
 	if err != nil {
 		return nil, err
 	}
