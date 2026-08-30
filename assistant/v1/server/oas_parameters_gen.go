@@ -675,6 +675,71 @@ func decodeDeleteChannelParams(args [1]string, argsEscaped bool, r *http.Request
 	return params, nil
 }
 
+// DeleteFolderParams is parameters of delete-folder operation.
+type DeleteFolderParams struct {
+	Folder string
+}
+
+func unpackDeleteFolderParams(packed middleware.Parameters) (params DeleteFolderParams) {
+	{
+		key := middleware.ParameterKey{
+			Name: "folder",
+			In:   "path",
+		}
+		params.Folder = packed[key].(string)
+	}
+	return params
+}
+
+func decodeDeleteFolderParams(args [1]string, argsEscaped bool, r *http.Request) (params DeleteFolderParams, _ error) {
+	// Decode path: folder.
+	if err := func() error {
+		param := args[0]
+		if argsEscaped {
+			unescaped, err := url.PathUnescape(args[0])
+			if err != nil {
+				return errors.Wrap(err, "unescape path")
+			}
+			param = unescaped
+		}
+		if len(param) > 0 {
+			d := uri.NewPathDecoder(uri.PathDecoderConfig{
+				Param:   "folder",
+				Value:   param,
+				Style:   uri.PathStyleSimple,
+				Explode: false,
+			})
+
+			if err := func() error {
+				val, err := d.DecodeValue()
+				if err != nil {
+					return err
+				}
+
+				c, err := conv.ToString(val)
+				if err != nil {
+					return err
+				}
+
+				params.Folder = c
+				return nil
+			}(); err != nil {
+				return err
+			}
+		} else {
+			return validate.ErrFieldRequired
+		}
+		return nil
+	}(); err != nil {
+		return params, &ogenerrors.DecodeParamError{
+			Name: "folder",
+			In:   "path",
+			Err:  err,
+		}
+	}
+	return params, nil
+}
+
 // DeleteMemoryParams is parameters of delete-memory operation.
 type DeleteMemoryParams struct {
 	Memory string
@@ -2208,8 +2273,13 @@ type ListThreadsParams struct {
 	// Search titles, case-insensitively. Leave it empty for the most recent conversations.
 	Q OptString `json:",omitempty,omitzero"`
 	// When true, returns only archived conversations; otherwise only unarchived ones.
-	Archived OptBool  `json:",omitempty,omitzero"`
-	Limit    OptInt64 `json:",omitempty,omitzero"`
+	Archived OptBool `json:",omitempty,omitzero"`
+	// Narrow the list to one folder. Omitting it returns conversations from every folder and from none; a
+	// folder id returns that folder's; the empty value (`?folder=`) returns the ones that are in no folder
+	// at all. Empty is not the same as omitted, and a sidebar needs both: "chats" is exactly the ungrouped
+	// set, and asking for everything would let filed conversations crowd it out of the limit.
+	Folder OptString `json:",omitempty,omitzero"`
+	Limit  OptInt64  `json:",omitempty,omitzero"`
 }
 
 func unpackListThreadsParams(packed middleware.Parameters) (params ListThreadsParams) {
@@ -2229,6 +2299,15 @@ func unpackListThreadsParams(packed middleware.Parameters) (params ListThreadsPa
 		}
 		if v, ok := packed[key]; ok {
 			params.Archived = v.(OptBool)
+		}
+	}
+	{
+		key := middleware.ParameterKey{
+			Name: "folder",
+			In:   "query",
+		}
+		if v, ok := packed[key]; ok {
+			params.Folder = v.(OptString)
 		}
 	}
 	{
@@ -2350,6 +2429,74 @@ func decodeListThreadsParams(args [0]string, argsEscaped bool, r *http.Request) 
 	}(); err != nil {
 		return params, &ogenerrors.DecodeParamError{
 			Name: "archived",
+			In:   "query",
+			Err:  err,
+		}
+	}
+	// Decode query: folder.
+	if err := func() error {
+		cfg := uri.QueryParameterDecodingConfig{
+			Name:    "folder",
+			Style:   uri.QueryStyleForm,
+			Explode: false,
+		}
+
+		if err := q.HasParam(cfg); err == nil {
+			if err := q.DecodeParam(cfg, func(d uri.Decoder) error {
+				var paramsDotFolderVal string
+				if err := func() error {
+					val, err := d.DecodeValue()
+					if err != nil {
+						return err
+					}
+
+					c, err := conv.ToString(val)
+					if err != nil {
+						return err
+					}
+
+					paramsDotFolderVal = c
+					return nil
+				}(); err != nil {
+					return err
+				}
+				params.Folder.SetTo(paramsDotFolderVal)
+				return nil
+			}); err != nil {
+				return err
+			}
+			if err := func() error {
+				if value, ok := params.Folder.Get(); ok {
+					if err := func() error {
+						if err := (validate.String{
+							MinLength:     0,
+							MinLengthSet:  false,
+							MaxLength:     64,
+							MaxLengthSet:  true,
+							Email:         false,
+							Hostname:      false,
+							Regex:         nil,
+							MinNumeric:    0,
+							MinNumericSet: false,
+							MaxNumeric:    0,
+							MaxNumericSet: false,
+						}).Validate(string(value)); err != nil {
+							return errors.Wrap(err, "string")
+						}
+						return nil
+					}(); err != nil {
+						return err
+					}
+				}
+				return nil
+			}(); err != nil {
+				return err
+			}
+		}
+		return nil
+	}(); err != nil {
+		return params, &ogenerrors.DecodeParamError{
+			Name: "folder",
 			In:   "query",
 			Err:  err,
 		}
@@ -2937,6 +3084,71 @@ func decodeUpdateChannelParams(args [1]string, argsEscaped bool, r *http.Request
 	}(); err != nil {
 		return params, &ogenerrors.DecodeParamError{
 			Name: "channel",
+			In:   "path",
+			Err:  err,
+		}
+	}
+	return params, nil
+}
+
+// UpdateFolderParams is parameters of update-folder operation.
+type UpdateFolderParams struct {
+	Folder string
+}
+
+func unpackUpdateFolderParams(packed middleware.Parameters) (params UpdateFolderParams) {
+	{
+		key := middleware.ParameterKey{
+			Name: "folder",
+			In:   "path",
+		}
+		params.Folder = packed[key].(string)
+	}
+	return params
+}
+
+func decodeUpdateFolderParams(args [1]string, argsEscaped bool, r *http.Request) (params UpdateFolderParams, _ error) {
+	// Decode path: folder.
+	if err := func() error {
+		param := args[0]
+		if argsEscaped {
+			unescaped, err := url.PathUnescape(args[0])
+			if err != nil {
+				return errors.Wrap(err, "unescape path")
+			}
+			param = unescaped
+		}
+		if len(param) > 0 {
+			d := uri.NewPathDecoder(uri.PathDecoderConfig{
+				Param:   "folder",
+				Value:   param,
+				Style:   uri.PathStyleSimple,
+				Explode: false,
+			})
+
+			if err := func() error {
+				val, err := d.DecodeValue()
+				if err != nil {
+					return err
+				}
+
+				c, err := conv.ToString(val)
+				if err != nil {
+					return err
+				}
+
+				params.Folder = c
+				return nil
+			}(); err != nil {
+				return err
+			}
+		} else {
+			return validate.ErrFieldRequired
+		}
+		return nil
+	}(); err != nil {
+		return params, &ogenerrors.DecodeParamError{
+			Name: "folder",
 			In:   "path",
 			Err:  err,
 		}

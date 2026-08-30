@@ -73,6 +73,19 @@ func encodeCreateChannelResponse(response *ChannelWithSecretResponseBody, w http
 	return nil
 }
 
+func encodeCreateFolderResponse(response *FolderResource, w http.ResponseWriter, span trace.Span) error {
+	w.Header().Set("Content-Type", "application/json; charset=utf-8")
+	w.WriteHeader(201)
+
+	e := new(jx.Encoder)
+	response.Encode(e)
+	if _, err := e.WriteTo(w); err != nil {
+		return errors.Wrap(err, "write")
+	}
+
+	return nil
+}
+
 func encodeCreateThreadResponse(response *ThreadSummaryResource, w http.ResponseWriter, span trace.Span) error {
 	w.Header().Set("Content-Type", "application/json; charset=utf-8")
 	w.WriteHeader(201)
@@ -99,6 +112,12 @@ func encodeDeleteBindingResponse(response *DeleteBindingNoContent, w http.Respon
 }
 
 func encodeDeleteChannelResponse(response *DeleteChannelNoContent, w http.ResponseWriter, span trace.Span) error {
+	w.WriteHeader(204)
+
+	return nil
+}
+
+func encodeDeleteFolderResponse(response *DeleteFolderNoContent, w http.ResponseWriter, span trace.Span) error {
 	w.WriteHeader(204)
 
 	return nil
@@ -306,6 +325,19 @@ func encodeListEarlierItemsResponse(response *EarlierResponseBody, w http.Respon
 	return nil
 }
 
+func encodeListFoldersResponse(response *FolderListResponseBody, w http.ResponseWriter, span trace.Span) error {
+	w.Header().Set("Content-Type", "application/json; charset=utf-8")
+	w.WriteHeader(200)
+
+	e := new(jx.Encoder)
+	response.Encode(e)
+	if _, err := e.WriteTo(w); err != nil {
+		return errors.Wrap(err, "write")
+	}
+
+	return nil
+}
+
 func encodeListMemoriesResponse(response *MemoryListResponseBody, w http.ResponseWriter, span trace.Span) error {
 	w.Header().Set("Content-Type", "application/json; charset=utf-8")
 	w.WriteHeader(200)
@@ -449,6 +481,19 @@ func encodeSubmitWeixinVerifyCodeResponse(response *LoginResource, w http.Respon
 }
 
 func encodeUpdateChannelResponse(response *ChannelResource, w http.ResponseWriter, span trace.Span) error {
+	w.Header().Set("Content-Type", "application/json; charset=utf-8")
+	w.WriteHeader(200)
+
+	e := new(jx.Encoder)
+	response.Encode(e)
+	if _, err := e.WriteTo(w); err != nil {
+		return errors.Wrap(err, "write")
+	}
+
+	return nil
+}
+
+func encodeUpdateFolderResponse(response *FolderResource, w http.ResponseWriter, span trace.Span) error {
 	w.Header().Set("Content-Type", "application/json; charset=utf-8")
 	w.WriteHeader(200)
 
