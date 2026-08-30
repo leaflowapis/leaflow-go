@@ -54,6 +54,7 @@ var operationRolesBearerAuth = map[string][]string{
 	DownloadAttachmentOperation:      []string{},
 	GetBindingOperation:              []string{},
 	GetChannelOperation:              []string{},
+	GetFolderOperation:               []string{},
 	GetSkillOperation:                []string{},
 	GetThreadOperation:               []string{},
 	GetWeixinLoginOperation:          []string{},
