@@ -6287,6 +6287,10 @@ func (s *Server) handleListThreadsRequest(args [0]string, argsEscaped bool, w ht
 					In:   "query",
 				}: params.Folder,
 				{
+					Name: "cursor",
+					In:   "query",
+				}: params.Cursor,
+				{
 					Name: "limit",
 					In:   "query",
 				}: params.Limit,
