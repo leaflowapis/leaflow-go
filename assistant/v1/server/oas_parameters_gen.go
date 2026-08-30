@@ -2344,6 +2344,16 @@ type ListThreadsParams struct {
 	// at all. Empty is not the same as omitted, and a sidebar needs both: "chats" is exactly the ungrouped
 	// set, and asking for everything would let filed conversations crowd it out of the limit.
 	Folder OptString `json:",omitempty,omitzero"`
+	// Where the previous page ended, from its `nextCursor`. Omit it for the first page.
+	//
+	// It is a position, not an offset, and that matters here: this list is ordered by recent activity, and
+	// the activity happens while it is being read. An offset would hand back a conversation twice when one
+	// moves up in between, and skip one when it moves down — silently, because a conversation that was
+	// skipped simply is not there.
+	//
+	// Pass the same `q`, `archived` and `folder` along with it. A cursor carries a position, not the
+	// question that produced it, so changing the filters mid-scroll walks a range nobody asked for.
+	Cursor OptString `json:",omitempty,omitzero"`
 	Limit  OptInt64  `json:",omitempty,omitzero"`
 }
 
@@ -2373,6 +2383,15 @@ func unpackListThreadsParams(packed middleware.Parameters) (params ListThreadsPa
 		}
 		if v, ok := packed[key]; ok {
 			params.Folder = v.(OptString)
+		}
+	}
+	{
+		key := middleware.ParameterKey{
+			Name: "cursor",
+			In:   "query",
+		}
+		if v, ok := packed[key]; ok {
+			params.Cursor = v.(OptString)
 		}
 	}
 	{
@@ -2562,6 +2581,74 @@ func decodeListThreadsParams(args [0]string, argsEscaped bool, r *http.Request) 
 	}(); err != nil {
 		return params, &ogenerrors.DecodeParamError{
 			Name: "folder",
+			In:   "query",
+			Err:  err,
+		}
+	}
+	// Decode query: cursor.
+	if err := func() error {
+		cfg := uri.QueryParameterDecodingConfig{
+			Name:    "cursor",
+			Style:   uri.QueryStyleForm,
+			Explode: false,
+		}
+
+		if err := q.HasParam(cfg); err == nil {
+			if err := q.DecodeParam(cfg, func(d uri.Decoder) error {
+				var paramsDotCursorVal string
+				if err := func() error {
+					val, err := d.DecodeValue()
+					if err != nil {
+						return err
+					}
+
+					c, err := conv.ToString(val)
+					if err != nil {
+						return err
+					}
+
+					paramsDotCursorVal = c
+					return nil
+				}(); err != nil {
+					return err
+				}
+				params.Cursor.SetTo(paramsDotCursorVal)
+				return nil
+			}); err != nil {
+				return err
+			}
+			if err := func() error {
+				if value, ok := params.Cursor.Get(); ok {
+					if err := func() error {
+						if err := (validate.String{
+							MinLength:     0,
+							MinLengthSet:  false,
+							MaxLength:     128,
+							MaxLengthSet:  true,
+							Email:         false,
+							Hostname:      false,
+							Regex:         nil,
+							MinNumeric:    0,
+							MinNumericSet: false,
+							MaxNumeric:    0,
+							MaxNumericSet: false,
+						}).Validate(string(value)); err != nil {
+							return errors.Wrap(err, "string")
+						}
+						return nil
+					}(); err != nil {
+						return err
+					}
+				}
+				return nil
+			}(); err != nil {
+				return err
+			}
+		}
+		return nil
+	}(); err != nil {
+		return params, &ogenerrors.DecodeParamError{
+			Name: "cursor",
 			In:   "query",
 			Err:  err,
 		}

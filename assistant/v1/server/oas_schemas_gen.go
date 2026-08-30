@@ -6193,12 +6193,25 @@ type SubmitDynamicCallResultNoContent struct{}
 
 // Ref: #/components/schemas/ThreadListResponseBody
 type ThreadListResponseBody struct {
-	Threads []ThreadSummaryResource `json:"threads"`
+	// Pass this back as `cursor` for the next page. Null means this was the last one — it is only set
+	// when there is genuinely more, so an empty final page never happens.
+	NextCursor NilString               `json:"nextCursor"`
+	Threads    []ThreadSummaryResource `json:"threads"`
+}
+
+// GetNextCursor returns the value of NextCursor.
+func (s *ThreadListResponseBody) GetNextCursor() NilString {
+	return s.NextCursor
 }
 
 // GetThreads returns the value of Threads.
 func (s *ThreadListResponseBody) GetThreads() []ThreadSummaryResource {
 	return s.Threads
+}
+
+// SetNextCursor sets the value of NextCursor.
+func (s *ThreadListResponseBody) SetNextCursor(val NilString) {
+	s.NextCursor = val
 }
 
 // SetThreads sets the value of Threads.

@@ -1391,7 +1391,9 @@ type StreamResource struct {
 
 // ThreadListResponseBody defines model for ThreadListResponseBody.
 type ThreadListResponseBody struct {
-	Threads []ThreadSummaryResource `json:"threads"`
+	// NextCursor Pass this back as `cursor` for the next page. Null means this was the last one — it is only set when there is genuinely more, so an empty final page never happens.
+	NextCursor *string                 `json:"nextCursor"`
+	Threads    []ThreadSummaryResource `json:"threads"`
 }
 
 // ThreadSummaryResource defines model for ThreadSummaryResource.
@@ -1604,6 +1606,13 @@ type ListThreadsParams struct {
 
 	// Folder Narrow the list to one folder. Omitting it returns conversations from every folder and from none; a folder id returns that folder's; the empty value (`?folder=`) returns the ones that are in no folder at all. Empty is not the same as omitted, and a sidebar needs both: "chats" is exactly the ungrouped set, and asking for everything would let filed conversations crowd it out of the limit.
 	Folder *string `form:"folder,omitempty" json:"folder,omitempty"`
+
+	// Cursor Where the previous page ended, from its `nextCursor`. Omit it for the first page.
+	//
+	// It is a position, not an offset, and that matters here: this list is ordered by recent activity, and the activity happens while it is being read. An offset would hand back a conversation twice when one moves up in between, and skip one when it moves down — silently, because a conversation that was skipped simply is not there.
+	//
+	// Pass the same `q`, `archived` and `folder` along with it. A cursor carries a position, not the question that produced it, so changing the filters mid-scroll walks a range nobody asked for.
+	Cursor *string `form:"cursor,omitempty" json:"cursor,omitempty"`
 	Limit  *int64  `form:"limit,omitempty" json:"limit,omitempty"`
 }
 
@@ -4629,6 +4638,18 @@ func NewListThreadsRequest(server string, params *ListThreadsParams) (*http.Requ
 		if params.Folder != nil {
 
 			if queryFrag, err := runtime.StyleParamWithOptions("form", false, "folder", *params.Folder, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			} else {
+				for _, qp := range strings.Split(queryFrag, "&") {
+					rawQueryFragments = append(rawQueryFragments, qp)
+				}
+			}
+
+		}
+
+		if params.Cursor != nil {
+
+			if queryFrag, err := runtime.StyleParamWithOptions("form", false, "cursor", *params.Cursor, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "string", Format: ""}); err != nil {
 				return nil, err
 			} else {
 				for _, qp := range strings.Split(queryFrag, "&") {
