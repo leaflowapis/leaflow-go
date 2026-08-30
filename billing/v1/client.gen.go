@@ -37,6 +37,30 @@ func (e ChargeType) Valid() bool {
 	}
 }
 
+// Defines values for ChargeResourceState.
+const (
+	ChargeResourceStateActive     ChargeResourceState = "active"
+	ChargeResourceStatePending    ChargeResourceState = "pending"
+	ChargeResourceStateSuspended  ChargeResourceState = "suspended"
+	ChargeResourceStateTerminated ChargeResourceState = "terminated"
+)
+
+// Valid indicates whether the value is a known member of the ChargeResourceState enum.
+func (e ChargeResourceState) Valid() bool {
+	switch e {
+	case ChargeResourceStateActive:
+		return true
+	case ChargeResourceStatePending:
+		return true
+	case ChargeResourceStateSuspended:
+		return true
+	case ChargeResourceStateTerminated:
+		return true
+	default:
+		return false
+	}
+}
+
 // Defines values for CreditTransactionType.
 const (
 	CreditTransactionTypeConsumed CreditTransactionType = "consumed"
@@ -55,6 +79,24 @@ func (e CreditTransactionType) Valid() bool {
 	case CreditTransactionTypeFunded:
 		return true
 	case CreditTransactionTypeVoided:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for InvoiceLineConversionOperation.
+const (
+	Divide   InvoiceLineConversionOperation = "divide"
+	Multiply InvoiceLineConversionOperation = "multiply"
+)
+
+// Valid indicates whether the value is a known member of the InvoiceLineConversionOperation enum.
+func (e InvoiceLineConversionOperation) Valid() bool {
+	switch e {
+	case Divide:
+		return true
+	case Multiply:
 		return true
 	default:
 		return false
@@ -398,6 +440,14 @@ type Charge struct {
 	// Without it, the same number on two refreshes could mean "nobody used it" or "it never
 	// moves", and those need different next steps.
 	Type ChargeType `json:"type"`
+
+	// UnitPrice What one unit costs, as a decimal string. Absent when the line has no single unit price
+	// — a flat fee, or a tiered price whose rate changes with volume.
+	//
+	// The conversion between reported and billed quantity is deliberately not here: the engine
+	// does not echo it back on a charge, only on an invoice line. So a charge answers "what
+	// does a unit cost", and an invoice answers "how the total was reached".
+	UnitPrice *string `json:"unit_price,omitempty"`
 }
 
 // ChargeType Whether this figure moves. A usage charge climbs through the period; a flat fee does not.
@@ -421,6 +471,39 @@ type ChargeList struct {
 
 	// Total The sum, which is the same number as `unsettled` on the balance
 	Total string `json:"total"`
+}
+
+// ChargeResource defines model for ChargeResource.
+type ChargeResource struct {
+	ProductId  string `json:"product_id"`
+	ProjectId  string `json:"project_id"`
+	ResourceId string `json:"resource_id"`
+
+	// Service Which service holds it, and therefore which console manages it.
+	Service string              `json:"service"`
+	State   ChargeResourceState `json:"state"`
+}
+
+// ChargeResourceState defines model for ChargeResource.State.
+type ChargeResourceState string
+
+// ChargeUsage What produced one charge
+type ChargeUsage struct {
+	// ByProject The same quantity split by project. Empty when the charge has no meter behind it — a
+	// flat fee has nothing to attribute.
+	ByProject []ProjectUsage `json:"by_project"`
+	ChargeId  string         `json:"charge_id"`
+
+	// Quantity Total reported quantity for the period, as a decimal string. Empty on a charge with no
+	// meter behind it.
+	//
+	// Reported, not billed: see the route's description.
+	Quantity string `json:"quantity"`
+
+	// Resources Resources of this product in the account's projects — candidates for what produced the
+	// charge, not a per-resource breakdown. Absent when billing could not look them up; the
+	// charge itself is still answered.
+	Resources []ChargeResource `json:"resources,omitempty"`
 }
 
 // CreateBillingAccountRequestBody defines model for CreateBillingAccountRequestBody.
@@ -551,6 +634,16 @@ type InvoiceLine struct {
 	// Amount Before discounts and credit
 	Amount string `json:"amount"`
 
+	// ConversionFactor How reported quantity became billed quantity — 3600 for a machine billed by the hour
+	// from machine-seconds, 1000000 for a price per million tokens.
+	//
+	// Without it, `quantity` disagrees with what the customer remembers doing, by whole orders
+	// of magnitude, and there is nothing on the page that explains the gap.
+	ConversionFactor *string `json:"conversion_factor,omitempty"`
+
+	// ConversionOperation What was done with the factor.
+	ConversionOperation *InvoiceLineConversionOperation `json:"conversion_operation,omitempty"`
+
 	// CreditsTotal How much of this line credit covered
 	CreditsTotal   *string `json:"credits_total,omitempty"`
 	Description    *string `json:"description,omitempty"`
@@ -561,8 +654,23 @@ type InvoiceLine struct {
 	// bill — and without the period they cannot be told apart
 	PeriodFrom time.Time `json:"period_from"`
 	PeriodTo   time.Time `json:"period_to"`
-	Total      string    `json:"total"`
+
+	// Quantity The billed quantity for this line, as a decimal string — after conversion. A machine
+	// billed by the hour reports machine-seconds; this is machine-hours.
+	//
+	// It comes from the line's detailed segments summed together: the engine splits a line
+	// into segments (different cost categories, different sub-periods) and the quantity lives
+	// on those.
+	Quantity *string `json:"quantity,omitempty"`
+	Total    string  `json:"total"`
+
+	// UnitPrice What one unit cost, as a decimal string, frozen at billing time. Absent on a flat fee,
+	// whose amount is the amount, and on tiered prices, whose rate changes with volume.
+	UnitPrice *string `json:"unit_price,omitempty"`
 }
+
+// InvoiceLineConversionOperation What was done with the factor.
+type InvoiceLineConversionOperation string
 
 // InvoiceList defines model for InvoiceList.
 type InvoiceList struct {
@@ -819,6 +927,14 @@ type ProjectBillingAccount struct {
 type ProjectBinding struct {
 	AccountKey string             `json:"account_key"`
 	ProjectId  openapi_types.UUID `json:"project_id"`
+}
+
+// ProjectUsage defines model for ProjectUsage.
+type ProjectUsage struct {
+	ProjectId string `json:"project_id"`
+
+	// Quantity Decimal string.
+	Quantity string `json:"quantity"`
 }
 
 // Purchase defines model for Purchase.
@@ -1291,6 +1407,50 @@ type ClientInterface interface {
 	//
 	// Corresponds with GET /account/v1/billing-accounts/{accountKey}/charges (the `ListCharges` operationId).
 	ListCharges(ctx context.Context, accountKey AccountKey, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// GetChargeUsage What produced this charge
+	//
+	// Splits one charge back into the projects that produced it, and lists the resources it could
+	// have come from.
+	//
+	// ## Why this is not a field on the charge
+	//
+	// A charge has no project, and that is not an omission: the billing subject is the **account**,
+	// and the project is a dimension on each usage event. When three of an account's projects use
+	// the same product, their usage aggregates into one charge — that charge genuinely spans three
+	// projects, and stamping any single project id on it would be wrong.
+	//
+	// A split is also more useful than a label would be: it gives proportions, and proportions are
+	// what decide which project's resources to switch off.
+	//
+	// ## The quantity here is what was reported, not what was billed
+	//
+	// Conversion (machine-seconds to machine-hours) happens on the pricing side, and the engine
+	// does not echo `unit_config` back on a charge. So this figure times the unit price does not
+	// equal the total — a step is missing in between, and that step only becomes visible on the
+	// invoice, where the whole pricing configuration is frozen onto each line.
+	//
+	// Reported quantity is still the right number for "which project is burning this", which is
+	// what the split is for.
+	//
+	// ## The resource list says which, not how much
+	//
+	// Usage events carry no resource id — it is not a grouping dimension, and making it one would
+	// mean one time series per machine per hour. So the engine cannot attribute a charge to a
+	// machine. What it can be attributed to is a product, and which resources of that product
+	// exist is something billing knows from its own records.
+	//
+	// Destroyed resources are listed too: this period's charge includes the part they ran for.
+	// Leaving them out is what makes the numbers fail to add up for someone who deleted a machine
+	// mid-month — which is exactly the case they are trying to explain.
+	//
+	// ## A flat fee answers with an empty split
+	//
+	// There is no meter behind it, so there is nothing to attribute. That is an answer, not an
+	// error.
+	//
+	// Corresponds with GET /account/v1/billing-accounts/{accountKey}/charges/{chargeId}/usage (the `GetChargeUsage` operationId).
+	GetChargeUsage(ctx context.Context, accountKey AccountKey, chargeId string, reqEditors ...RequestEditorFn) (*http.Response, error)
 
 	// ListCreditTransactions How the balance got to where it is
 	//
@@ -2073,6 +2233,60 @@ func (c *Client) StartBillingPortal(ctx context.Context, accountKey AccountKey, 
 // Corresponds with GET /account/v1/billing-accounts/{accountKey}/charges (the `ListCharges` operationId).
 func (c *Client) ListCharges(ctx context.Context, accountKey AccountKey, reqEditors ...RequestEditorFn) (*http.Response, error) {
 	req, err := NewListChargesRequest(c.Server, accountKey)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+// GetChargeUsage What produced this charge
+//
+// Splits one charge back into the projects that produced it, and lists the resources it could
+// have come from.
+//
+// ## Why this is not a field on the charge
+//
+// A charge has no project, and that is not an omission: the billing subject is the **account**,
+// and the project is a dimension on each usage event. When three of an account's projects use
+// the same product, their usage aggregates into one charge — that charge genuinely spans three
+// projects, and stamping any single project id on it would be wrong.
+//
+// A split is also more useful than a label would be: it gives proportions, and proportions are
+// what decide which project's resources to switch off.
+//
+// ## The quantity here is what was reported, not what was billed
+//
+// Conversion (machine-seconds to machine-hours) happens on the pricing side, and the engine
+// does not echo `unit_config` back on a charge. So this figure times the unit price does not
+// equal the total — a step is missing in between, and that step only becomes visible on the
+// invoice, where the whole pricing configuration is frozen onto each line.
+//
+// Reported quantity is still the right number for "which project is burning this", which is
+// what the split is for.
+//
+// ## The resource list says which, not how much
+//
+// Usage events carry no resource id — it is not a grouping dimension, and making it one would
+// mean one time series per machine per hour. So the engine cannot attribute a charge to a
+// machine. What it can be attributed to is a product, and which resources of that product
+// exist is something billing knows from its own records.
+//
+// Destroyed resources are listed too: this period's charge includes the part they ran for.
+// Leaving them out is what makes the numbers fail to add up for someone who deleted a machine
+// mid-month — which is exactly the case they are trying to explain.
+//
+// ## A flat fee answers with an empty split
+//
+// There is no meter behind it, so there is nothing to attribute. That is an answer, not an
+// error.
+//
+// Corresponds with GET /account/v1/billing-accounts/{accountKey}/charges/{chargeId}/usage (the `GetChargeUsage` operationId).
+func (c *Client) GetChargeUsage(ctx context.Context, accountKey AccountKey, chargeId string, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewGetChargeUsageRequest(c.Server, accountKey, chargeId)
 	if err != nil {
 		return nil, err
 	}
@@ -3146,6 +3360,47 @@ func NewListChargesRequest(server string, accountKey AccountKey) (*http.Request,
 	}
 
 	operationPath := fmt.Sprintf("/account/v1/billing-accounts/%s/charges", pathParam0)
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest(http.MethodGet, queryURL.String(), nil)
+	if err != nil {
+		return nil, err
+	}
+
+	return req, nil
+}
+
+// NewGetChargeUsageRequest constructs an http.Request for the GetChargeUsage method
+func NewGetChargeUsageRequest(server string, accountKey AccountKey, chargeId string) (*http.Request, error) {
+	var err error
+
+	var pathParam0 string
+
+	pathParam0, err = runtime.StyleParamWithOptions("simple", false, "accountKey", accountKey, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: ""})
+	if err != nil {
+		return nil, err
+	}
+
+	var pathParam1 string
+
+	pathParam1, err = runtime.StyleParamWithOptions("simple", false, "chargeId", chargeId, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: ""})
+	if err != nil {
+		return nil, err
+	}
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/account/v1/billing-accounts/%s/charges/%s/usage", pathParam0, pathParam1)
 	if operationPath[0] == '/' {
 		operationPath = "." + operationPath
 	}
@@ -4276,6 +4531,52 @@ type ClientWithResponsesInterface interface {
 	// Corresponds with GET /account/v1/billing-accounts/{accountKey}/charges (the `ListCharges` operationId).
 	ListChargesWithResponse(ctx context.Context, accountKey AccountKey, reqEditors ...RequestEditorFn) (*ListChargesResponse, error)
 
+	// GetChargeUsageWithResponse What produced this charge
+	//
+	// Splits one charge back into the projects that produced it, and lists the resources it could
+	// have come from.
+	//
+	// ## Why this is not a field on the charge
+	//
+	// A charge has no project, and that is not an omission: the billing subject is the **account**,
+	// and the project is a dimension on each usage event. When three of an account's projects use
+	// the same product, their usage aggregates into one charge — that charge genuinely spans three
+	// projects, and stamping any single project id on it would be wrong.
+	//
+	// A split is also more useful than a label would be: it gives proportions, and proportions are
+	// what decide which project's resources to switch off.
+	//
+	// ## The quantity here is what was reported, not what was billed
+	//
+	// Conversion (machine-seconds to machine-hours) happens on the pricing side, and the engine
+	// does not echo `unit_config` back on a charge. So this figure times the unit price does not
+	// equal the total — a step is missing in between, and that step only becomes visible on the
+	// invoice, where the whole pricing configuration is frozen onto each line.
+	//
+	// Reported quantity is still the right number for "which project is burning this", which is
+	// what the split is for.
+	//
+	// ## The resource list says which, not how much
+	//
+	// Usage events carry no resource id — it is not a grouping dimension, and making it one would
+	// mean one time series per machine per hour. So the engine cannot attribute a charge to a
+	// machine. What it can be attributed to is a product, and which resources of that product
+	// exist is something billing knows from its own records.
+	//
+	// Destroyed resources are listed too: this period's charge includes the part they ran for.
+	// Leaving them out is what makes the numbers fail to add up for someone who deleted a machine
+	// mid-month — which is exactly the case they are trying to explain.
+	//
+	// ## A flat fee answers with an empty split
+	//
+	// There is no meter behind it, so there is nothing to attribute. That is an answer, not an
+	// error.
+	//
+	// Returns a wrapper object for the known response body format(s).
+	//
+	// Corresponds with GET /account/v1/billing-accounts/{accountKey}/charges/{chargeId}/usage (the `GetChargeUsage` operationId).
+	GetChargeUsageWithResponse(ctx context.Context, accountKey AccountKey, chargeId string, reqEditors ...RequestEditorFn) (*GetChargeUsageResponse, error)
+
 	// ListCreditTransactionsWithResponse How the balance got to where it is
 	//
 	// Every movement of credit on this account: what was added, what was spent, what expired, what
@@ -5213,6 +5514,54 @@ func (r ListChargesResponse) StatusCode() int {
 
 // ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
 func (r ListChargesResponse) ContentType() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Header.Get("Content-Type")
+	}
+	return ""
+}
+
+type GetChargeUsageResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	// JSON200 the response for an HTTP 200 `application/json` response
+	JSON200 *ChargeUsage
+	// JSONDefault the response for an HTTP default `application/json` response
+	JSONDefault *Error
+}
+
+// GetJSON200 returns the response for an HTTP 200 `application/json` response
+func (r GetChargeUsageResponse) GetJSON200() *ChargeUsage {
+	return r.JSON200
+}
+
+// GetJSONDefault returns the response for an HTTP default `application/json` response
+func (r GetChargeUsageResponse) GetJSONDefault() *Error {
+	return r.JSONDefault
+}
+
+// GetBody returns the raw response body bytes
+func (r GetChargeUsageResponse) GetBody() []byte {
+	return r.Body
+}
+
+// Status returns HTTPResponse.Status
+func (r GetChargeUsageResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r GetChargeUsageResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+// ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
+func (r GetChargeUsageResponse) ContentType() string {
 	if r.HTTPResponse != nil {
 		return r.HTTPResponse.Header.Get("Content-Type")
 	}
@@ -6462,6 +6811,58 @@ func (c *ClientWithResponses) ListChargesWithResponse(ctx context.Context, accou
 	return ParseListChargesResponse(rsp)
 }
 
+// GetChargeUsageWithResponse What produced this charge
+//
+// Splits one charge back into the projects that produced it, and lists the resources it could
+// have come from.
+//
+// ## Why this is not a field on the charge
+//
+// A charge has no project, and that is not an omission: the billing subject is the **account**,
+// and the project is a dimension on each usage event. When three of an account's projects use
+// the same product, their usage aggregates into one charge — that charge genuinely spans three
+// projects, and stamping any single project id on it would be wrong.
+//
+// A split is also more useful than a label would be: it gives proportions, and proportions are
+// what decide which project's resources to switch off.
+//
+// ## The quantity here is what was reported, not what was billed
+//
+// Conversion (machine-seconds to machine-hours) happens on the pricing side, and the engine
+// does not echo `unit_config` back on a charge. So this figure times the unit price does not
+// equal the total — a step is missing in between, and that step only becomes visible on the
+// invoice, where the whole pricing configuration is frozen onto each line.
+//
+// Reported quantity is still the right number for "which project is burning this", which is
+// what the split is for.
+//
+// ## The resource list says which, not how much
+//
+// Usage events carry no resource id — it is not a grouping dimension, and making it one would
+// mean one time series per machine per hour. So the engine cannot attribute a charge to a
+// machine. What it can be attributed to is a product, and which resources of that product
+// exist is something billing knows from its own records.
+//
+// Destroyed resources are listed too: this period's charge includes the part they ran for.
+// Leaving them out is what makes the numbers fail to add up for someone who deleted a machine
+// mid-month — which is exactly the case they are trying to explain.
+//
+// ## A flat fee answers with an empty split
+//
+// There is no meter behind it, so there is nothing to attribute. That is an answer, not an
+// error.
+//
+// Returns a wrapper object for the known response body format(s).
+//
+// Corresponds with GET /account/v1/billing-accounts/{accountKey}/charges/{chargeId}/usage (the `GetChargeUsage` operationId).
+func (c *ClientWithResponses) GetChargeUsageWithResponse(ctx context.Context, accountKey AccountKey, chargeId string, reqEditors ...RequestEditorFn) (*GetChargeUsageResponse, error) {
+	rsp, err := c.GetChargeUsage(ctx, accountKey, chargeId, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseGetChargeUsageResponse(rsp)
+}
+
 // ListCreditTransactionsWithResponse How the balance got to where it is
 //
 // Every movement of credit on this account: what was added, what was spent, what expired, what
@@ -7438,6 +7839,39 @@ func ParseListChargesResponse(rsp *http.Response) (*ListChargesResponse, error) 
 	switch {
 	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
 		var dest ChargeList
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && true:
+		var dest Error
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSONDefault = &dest
+
+	}
+
+	return response, nil
+}
+
+// ParseGetChargeUsageResponse parses an HTTP response from a GetChargeUsageWithResponse call
+func ParseGetChargeUsageResponse(rsp *http.Response) (*GetChargeUsageResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &GetChargeUsageResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest ChargeUsage
 		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
 			return nil, err
 		}
