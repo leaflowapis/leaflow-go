@@ -39,7 +39,7 @@ var (
 	rn11AllowedHeaders = map[string]string{
 		"POST": "Authorization",
 	}
-	rn19AllowedHeaders = map[string]string{
+	rn20AllowedHeaders = map[string]string{
 		"POST": "Authorization,Content-Type",
 	}
 )
@@ -311,6 +311,32 @@ func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 									}
 
 									elem = origElem
+								case 'b': // Prefix: "by-token"
+									origElem := elem
+									if l := len("by-token"); len(elem) >= l && elem[0:l] == "by-token" {
+										elem = elem[l:]
+									} else {
+										break
+									}
+
+									if len(elem) == 0 {
+										// Leaf node.
+										switch r.Method {
+										case "GET":
+											s.handlePreviewInvitationByTokenRequest([0]string{}, elemIsEscaped, w, r)
+										default:
+											s.notAllowed(w, r, notAllowedParams{
+												allowedMethods: "GET",
+												allowedHeaders: nil,
+												acceptPost:     "",
+												acceptPatch:    "",
+											})
+										}
+
+										return
+									}
+
+									elem = origElem
 								}
 								// Param: "invitationId"
 								// Match until "/"
@@ -456,7 +482,7 @@ func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 					default:
 						s.notAllowed(w, r, notAllowedParams{
 							allowedMethods: "POST",
-							allowedHeaders: rn19AllowedHeaders,
+							allowedHeaders: rn20AllowedHeaders,
 							acceptPost:     "application/json",
 							acceptPatch:    "",
 						})
@@ -818,6 +844,32 @@ func (s *Server) FindPath(method string, u *url.URL) (r Route, _ bool) {
 											r.operationID = "accept-invitation-by-token"
 											r.operationGroup = ""
 											r.pathPattern = "/account/v1/me/invitations/accept"
+											r.args = args
+											r.count = 0
+											return r, true
+										default:
+											return
+										}
+									}
+
+									elem = origElem
+								case 'b': // Prefix: "by-token"
+									origElem := elem
+									if l := len("by-token"); len(elem) >= l && elem[0:l] == "by-token" {
+										elem = elem[l:]
+									} else {
+										break
+									}
+
+									if len(elem) == 0 {
+										// Leaf node.
+										switch method {
+										case "GET":
+											r.name = PreviewInvitationByTokenOperation
+											r.summary = "看一眼这封邀请是谁发的、加入哪儿、什么角色"
+											r.operationID = "preview-invitation-by-token"
+											r.operationGroup = ""
+											r.pathPattern = "/account/v1/me/invitations/by-token"
 											r.args = args
 											r.count = 0
 											return r, true

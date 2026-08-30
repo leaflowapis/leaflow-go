@@ -19,6 +19,7 @@ const (
 	ListLocalesOperation                OperationName = "ListLocales"
 	ListMyInvitationsOperation          OperationName = "ListMyInvitations"
 	ListProjectsOperation               OperationName = "ListProjects"
+	PreviewInvitationByTokenOperation   OperationName = "PreviewInvitationByToken"
 	RegisterOperation                   OperationName = "Register"
 	SubmitIdentityVerificationOperation OperationName = "SubmitIdentityVerification"
 	UpdateAccountOperation              OperationName = "UpdateAccount"

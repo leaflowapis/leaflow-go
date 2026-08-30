@@ -2444,6 +2444,171 @@ func (s *Server) handleListProjectsRequest(args [0]string, argsEscaped bool, w h
 	}
 }
 
+// handlePreviewInvitationByTokenRequest handles preview-invitation-by-token operation.
+//
+// 免认证，而且是有意的：点邮件里那条链接的人多半还没登录，甚至还没有账号。要他先注册再
+// 告诉他这是谁发来的、加入哪个项目，等于让他在不知道要加入什么的情况下决定要不要注册。
+// 它不多泄露任何东西。
+// 这三样——项目名、邀请人、角色——邮件正文里已经写着了，而读得到
+// 这个令牌的人就是收得到那封邮件的人。同一个令牌本来就能把持有者加进项目（见
+// `accept-invitation-by-token`），读一个项目名比那件事轻得多。
+// 收件地址打了码（`t***@example.com`）。
+// 不打码的话，这个接口就成了「拿一个令牌反查它
+// 当初寄给了哪个地址」——而那是邮件正文里没有、持有者也未必知道的一件事。
+// 令牌不存在、已经用过、被撤回、过期，四种情况同一个 404
+// 和同一句话。分开报会把它变成
+// 一个可以拿来试令牌的探针，而这个接口免认证，任何人都试得起。.
+//
+// GET /account/v1/me/invitations/by-token
+func (s *Server) handlePreviewInvitationByTokenRequest(args [0]string, argsEscaped bool, w http.ResponseWriter, r *http.Request) {
+	statusWriter := &codeRecorder{ResponseWriter: w}
+	w = statusWriter
+	otelAttrs := []attribute.KeyValue{
+		otelogen.OperationID("preview-invitation-by-token"),
+		semconv.HTTPRequestMethodKey.String("GET"),
+		semconv.HTTPRouteKey.String("/account/v1/me/invitations/by-token"),
+	}
+	// Add attributes from config.
+	otelAttrs = append(otelAttrs, s.cfg.Attributes...)
+
+	// Start a span for this request.
+	ctx, span := s.cfg.Tracer.Start(r.Context(), PreviewInvitationByTokenOperation,
+		trace.WithAttributes(otelAttrs...),
+		serverSpanKind,
+	)
+	defer span.End()
+
+	// Add Labeler to context.
+	labeler := &Labeler{attrs: otelAttrs}
+	ctx = contextWithLabeler(ctx, labeler)
+
+	// Run stopwatch.
+	startTime := time.Now()
+	defer func() {
+		elapsedDuration := time.Since(startTime)
+
+		attrSet := labeler.AttributeSet()
+		attrs := attrSet.ToSlice()
+		code := statusWriter.status
+		if code != 0 {
+			codeAttr := semconv.HTTPResponseStatusCode(code)
+			attrs = append(attrs, codeAttr)
+			span.SetAttributes(attrs...)
+		}
+		attrOpt := metric.WithAttributes(attrs...)
+
+		// Increment request counter.
+		s.requests.Add(ctx, 1, attrOpt)
+
+		// Use floating point division here for higher precision (instead of Millisecond method).
+		s.duration.Record(ctx, float64(elapsedDuration)/float64(time.Millisecond), attrOpt)
+	}()
+
+	var (
+		recordError = func(stage string, err error) {
+			span.RecordError(err)
+
+			// https://opentelemetry.io/docs/specs/semconv/http/http-spans/#status
+			// Span Status MUST be left unset if HTTP status code was in the 1xx, 2xx or 3xx ranges,
+			// unless there was another error (e.g., network error receiving the response body; or 3xx codes with
+			// max redirects exceeded), in which case status MUST be set to Error.
+			code := statusWriter.status
+			if code < 100 || code >= 500 {
+				span.SetStatus(codes.Error, stage)
+			}
+
+			attrSet := labeler.AttributeSet()
+			attrs := attrSet.ToSlice()
+			if code != 0 {
+				attrs = append(attrs, semconv.HTTPResponseStatusCode(code))
+			}
+
+			s.errors.Add(ctx, 1, metric.WithAttributes(attrs...))
+		}
+		err          error
+		opErrContext = ogenerrors.OperationContext{
+			Name: PreviewInvitationByTokenOperation,
+			ID:   "preview-invitation-by-token",
+		}
+	)
+	params, err := decodePreviewInvitationByTokenParams(args, argsEscaped, r)
+	if err != nil {
+		err = &ogenerrors.DecodeParamsError{
+			OperationContext: opErrContext,
+			Err:              err,
+		}
+		defer recordError("DecodeParams", err)
+		s.cfg.ErrorHandler(ctx, w, r, err)
+		return
+	}
+
+	var rawBody []byte
+
+	var response *InvitationPreviewResource
+	if m := s.cfg.Middleware; m != nil {
+		mreq := middleware.Request{
+			Context:          ctx,
+			OperationName:    PreviewInvitationByTokenOperation,
+			OperationSummary: "看一眼这封邀请是谁发的、加入哪儿、什么角色",
+			OperationID:      "preview-invitation-by-token",
+			Body:             nil,
+			RawBody:          rawBody,
+			Params: middleware.Parameters{
+				{
+					Name: "token",
+					In:   "query",
+				}: params.Token,
+			},
+			Raw: r,
+		}
+
+		type (
+			Request  = struct{}
+			Params   = PreviewInvitationByTokenParams
+			Response = *InvitationPreviewResource
+		)
+		response, err = middleware.HookMiddleware[
+			Request,
+			Params,
+			Response,
+		](
+			m,
+			mreq,
+			unpackPreviewInvitationByTokenParams,
+			func(ctx context.Context, request Request, params Params) (response Response, err error) {
+				response, err = s.h.PreviewInvitationByToken(ctx, params)
+				return response, err
+			},
+		)
+	} else {
+		response, err = s.h.PreviewInvitationByToken(ctx, params)
+	}
+	if err != nil {
+		if errRes, ok := errors.Into[*ErrorStatusCode](err); ok {
+			if err := encodeErrorResponse(errRes, w, span); err != nil {
+				defer recordError("Internal", err)
+			}
+			return
+		}
+		if errors.Is(err, ht.ErrNotImplemented) {
+			s.cfg.ErrorHandler(ctx, w, r, err)
+			return
+		}
+		if err := encodeErrorResponse(s.h.NewError(ctx, err), w, span); err != nil {
+			defer recordError("Internal", err)
+		}
+		return
+	}
+
+	if err := encodePreviewInvitationByTokenResponse(response, w, span); err != nil {
+		defer recordError("EncodeResponse", err)
+		if !errors.Is(err, ht.ErrInternalServerErrorResponse) {
+			s.cfg.ErrorHandler(ctx, w, r, err)
+		}
+		return
+	}
+}
+
 // handleRegisterRequest handles register operation.
 //
 // 在 auth.leaflow.net

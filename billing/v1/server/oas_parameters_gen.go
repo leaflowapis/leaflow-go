@@ -1119,6 +1119,93 @@ func decodeListOrdersParams(args [1]string, argsEscaped bool, r *http.Request) (
 	return params, nil
 }
 
+// ListPrepaidAssetsParams is parameters of list-prepaid-assets operation.
+type ListPrepaidAssetsParams struct {
+	// The account's key, of the form `u_<user_id>_<seq>`. Ownership is stated by the key itself, which is
+	// why the key is what addresses the account.
+	AccountKey string
+}
+
+func unpackListPrepaidAssetsParams(packed middleware.Parameters) (params ListPrepaidAssetsParams) {
+	{
+		key := middleware.ParameterKey{
+			Name: "accountKey",
+			In:   "path",
+		}
+		params.AccountKey = packed[key].(string)
+	}
+	return params
+}
+
+func decodeListPrepaidAssetsParams(args [1]string, argsEscaped bool, r *http.Request) (params ListPrepaidAssetsParams, _ error) {
+	// Decode path: accountKey.
+	if err := func() error {
+		param := args[0]
+		if argsEscaped {
+			unescaped, err := url.PathUnescape(args[0])
+			if err != nil {
+				return errors.Wrap(err, "unescape path")
+			}
+			param = unescaped
+		}
+		if len(param) > 0 {
+			d := uri.NewPathDecoder(uri.PathDecoderConfig{
+				Param:   "accountKey",
+				Value:   param,
+				Style:   uri.PathStyleSimple,
+				Explode: false,
+			})
+
+			if err := func() error {
+				val, err := d.DecodeValue()
+				if err != nil {
+					return err
+				}
+
+				c, err := conv.ToString(val)
+				if err != nil {
+					return err
+				}
+
+				params.AccountKey = c
+				return nil
+			}(); err != nil {
+				return err
+			}
+			if err := func() error {
+				if err := (validate.String{
+					MinLength:     3,
+					MinLengthSet:  true,
+					MaxLength:     128,
+					MaxLengthSet:  true,
+					Email:         false,
+					Hostname:      false,
+					Regex:         regexMap["^u_.+_[0-9]+$"],
+					MinNumeric:    0,
+					MinNumericSet: false,
+					MaxNumeric:    0,
+					MaxNumericSet: false,
+				}).Validate(string(params.AccountKey)); err != nil {
+					return errors.Wrap(err, "string")
+				}
+				return nil
+			}(); err != nil {
+				return err
+			}
+		} else {
+			return validate.ErrFieldRequired
+		}
+		return nil
+	}(); err != nil {
+		return params, &ogenerrors.DecodeParamError{
+			Name: "accountKey",
+			In:   "path",
+			Err:  err,
+		}
+	}
+	return params, nil
+}
+
 // ListTopUpsParams is parameters of list-top-ups operation.
 type ListTopUpsParams struct {
 	// The account's key, of the form `u_<user_id>_<seq>`. Ownership is stated by the key itself, which is
@@ -1494,6 +1581,214 @@ func decodeQuoteProjectUsageParams(args [1]string, argsEscaped bool, r *http.Req
 		return params, &ogenerrors.DecodeParamError{
 			Name: "projectId",
 			In:   "path",
+			Err:  err,
+		}
+	}
+	return params, nil
+}
+
+// QuoteRenewalParams is parameters of quote-renewal operation.
+type QuoteRenewalParams struct {
+	// The account's key, of the form `u_<user_id>_<seq>`. Ownership is stated by the key itself, which is
+	// why the key is what addresses the account.
+	AccountKey string
+	// Which asset, from the prepaid list.
+	ProvisionId uuid.UUID
+	// How long to renew for, as an ISO 8601 duration (P1M, P1Y). A duration rather than a number of
+	// months: months are not the same length.
+	Term string
+}
+
+func unpackQuoteRenewalParams(packed middleware.Parameters) (params QuoteRenewalParams) {
+	{
+		key := middleware.ParameterKey{
+			Name: "accountKey",
+			In:   "path",
+		}
+		params.AccountKey = packed[key].(string)
+	}
+	{
+		key := middleware.ParameterKey{
+			Name: "provisionId",
+			In:   "path",
+		}
+		params.ProvisionId = packed[key].(uuid.UUID)
+	}
+	{
+		key := middleware.ParameterKey{
+			Name: "term",
+			In:   "query",
+		}
+		params.Term = packed[key].(string)
+	}
+	return params
+}
+
+func decodeQuoteRenewalParams(args [2]string, argsEscaped bool, r *http.Request) (params QuoteRenewalParams, _ error) {
+	q := uri.NewQueryDecoder(r.URL.Query())
+	// Decode path: accountKey.
+	if err := func() error {
+		param := args[0]
+		if argsEscaped {
+			unescaped, err := url.PathUnescape(args[0])
+			if err != nil {
+				return errors.Wrap(err, "unescape path")
+			}
+			param = unescaped
+		}
+		if len(param) > 0 {
+			d := uri.NewPathDecoder(uri.PathDecoderConfig{
+				Param:   "accountKey",
+				Value:   param,
+				Style:   uri.PathStyleSimple,
+				Explode: false,
+			})
+
+			if err := func() error {
+				val, err := d.DecodeValue()
+				if err != nil {
+					return err
+				}
+
+				c, err := conv.ToString(val)
+				if err != nil {
+					return err
+				}
+
+				params.AccountKey = c
+				return nil
+			}(); err != nil {
+				return err
+			}
+			if err := func() error {
+				if err := (validate.String{
+					MinLength:     3,
+					MinLengthSet:  true,
+					MaxLength:     128,
+					MaxLengthSet:  true,
+					Email:         false,
+					Hostname:      false,
+					Regex:         regexMap["^u_.+_[0-9]+$"],
+					MinNumeric:    0,
+					MinNumericSet: false,
+					MaxNumeric:    0,
+					MaxNumericSet: false,
+				}).Validate(string(params.AccountKey)); err != nil {
+					return errors.Wrap(err, "string")
+				}
+				return nil
+			}(); err != nil {
+				return err
+			}
+		} else {
+			return validate.ErrFieldRequired
+		}
+		return nil
+	}(); err != nil {
+		return params, &ogenerrors.DecodeParamError{
+			Name: "accountKey",
+			In:   "path",
+			Err:  err,
+		}
+	}
+	// Decode path: provisionId.
+	if err := func() error {
+		param := args[1]
+		if argsEscaped {
+			unescaped, err := url.PathUnescape(args[1])
+			if err != nil {
+				return errors.Wrap(err, "unescape path")
+			}
+			param = unescaped
+		}
+		if len(param) > 0 {
+			d := uri.NewPathDecoder(uri.PathDecoderConfig{
+				Param:   "provisionId",
+				Value:   param,
+				Style:   uri.PathStyleSimple,
+				Explode: false,
+			})
+
+			if err := func() error {
+				val, err := d.DecodeValue()
+				if err != nil {
+					return err
+				}
+
+				c, err := conv.ToUUID(val)
+				if err != nil {
+					return err
+				}
+
+				params.ProvisionId = c
+				return nil
+			}(); err != nil {
+				return err
+			}
+		} else {
+			return validate.ErrFieldRequired
+		}
+		return nil
+	}(); err != nil {
+		return params, &ogenerrors.DecodeParamError{
+			Name: "provisionId",
+			In:   "path",
+			Err:  err,
+		}
+	}
+	// Decode query: term.
+	if err := func() error {
+		cfg := uri.QueryParameterDecodingConfig{
+			Name:    "term",
+			Style:   uri.QueryStyleForm,
+			Explode: true,
+		}
+
+		if err := q.HasParam(cfg); err == nil {
+			if err := q.DecodeParam(cfg, func(d uri.Decoder) error {
+				val, err := d.DecodeValue()
+				if err != nil {
+					return err
+				}
+
+				c, err := conv.ToString(val)
+				if err != nil {
+					return err
+				}
+
+				params.Term = c
+				return nil
+			}); err != nil {
+				return err
+			}
+			if err := func() error {
+				if err := (validate.String{
+					MinLength:     2,
+					MinLengthSet:  true,
+					MaxLength:     16,
+					MaxLengthSet:  true,
+					Email:         false,
+					Hostname:      false,
+					Regex:         nil,
+					MinNumeric:    0,
+					MinNumericSet: false,
+					MaxNumeric:    0,
+					MaxNumericSet: false,
+				}).Validate(string(params.Term)); err != nil {
+					return errors.Wrap(err, "string")
+				}
+				return nil
+			}(); err != nil {
+				return err
+			}
+		} else {
+			return err
+		}
+		return nil
+	}(); err != nil {
+		return params, &ogenerrors.DecodeParamError{
+			Name: "term",
+			In:   "query",
 			Err:  err,
 		}
 	}
@@ -2002,6 +2297,147 @@ func decodeReadTopUpParams(args [2]string, argsEscaped bool, r *http.Request) (p
 	}(); err != nil {
 		return params, &ogenerrors.DecodeParamError{
 			Name: "paymentId",
+			In:   "path",
+			Err:  err,
+		}
+	}
+	return params, nil
+}
+
+// RenewPrepaidAssetParams is parameters of renew-prepaid-asset operation.
+type RenewPrepaidAssetParams struct {
+	// The account's key, of the form `u_<user_id>_<seq>`. Ownership is stated by the key itself, which is
+	// why the key is what addresses the account.
+	AccountKey string
+	// Which asset, from the prepaid list.
+	ProvisionId uuid.UUID
+}
+
+func unpackRenewPrepaidAssetParams(packed middleware.Parameters) (params RenewPrepaidAssetParams) {
+	{
+		key := middleware.ParameterKey{
+			Name: "accountKey",
+			In:   "path",
+		}
+		params.AccountKey = packed[key].(string)
+	}
+	{
+		key := middleware.ParameterKey{
+			Name: "provisionId",
+			In:   "path",
+		}
+		params.ProvisionId = packed[key].(uuid.UUID)
+	}
+	return params
+}
+
+func decodeRenewPrepaidAssetParams(args [2]string, argsEscaped bool, r *http.Request) (params RenewPrepaidAssetParams, _ error) {
+	// Decode path: accountKey.
+	if err := func() error {
+		param := args[0]
+		if argsEscaped {
+			unescaped, err := url.PathUnescape(args[0])
+			if err != nil {
+				return errors.Wrap(err, "unescape path")
+			}
+			param = unescaped
+		}
+		if len(param) > 0 {
+			d := uri.NewPathDecoder(uri.PathDecoderConfig{
+				Param:   "accountKey",
+				Value:   param,
+				Style:   uri.PathStyleSimple,
+				Explode: false,
+			})
+
+			if err := func() error {
+				val, err := d.DecodeValue()
+				if err != nil {
+					return err
+				}
+
+				c, err := conv.ToString(val)
+				if err != nil {
+					return err
+				}
+
+				params.AccountKey = c
+				return nil
+			}(); err != nil {
+				return err
+			}
+			if err := func() error {
+				if err := (validate.String{
+					MinLength:     3,
+					MinLengthSet:  true,
+					MaxLength:     128,
+					MaxLengthSet:  true,
+					Email:         false,
+					Hostname:      false,
+					Regex:         regexMap["^u_.+_[0-9]+$"],
+					MinNumeric:    0,
+					MinNumericSet: false,
+					MaxNumeric:    0,
+					MaxNumericSet: false,
+				}).Validate(string(params.AccountKey)); err != nil {
+					return errors.Wrap(err, "string")
+				}
+				return nil
+			}(); err != nil {
+				return err
+			}
+		} else {
+			return validate.ErrFieldRequired
+		}
+		return nil
+	}(); err != nil {
+		return params, &ogenerrors.DecodeParamError{
+			Name: "accountKey",
+			In:   "path",
+			Err:  err,
+		}
+	}
+	// Decode path: provisionId.
+	if err := func() error {
+		param := args[1]
+		if argsEscaped {
+			unescaped, err := url.PathUnescape(args[1])
+			if err != nil {
+				return errors.Wrap(err, "unescape path")
+			}
+			param = unescaped
+		}
+		if len(param) > 0 {
+			d := uri.NewPathDecoder(uri.PathDecoderConfig{
+				Param:   "provisionId",
+				Value:   param,
+				Style:   uri.PathStyleSimple,
+				Explode: false,
+			})
+
+			if err := func() error {
+				val, err := d.DecodeValue()
+				if err != nil {
+					return err
+				}
+
+				c, err := conv.ToUUID(val)
+				if err != nil {
+					return err
+				}
+
+				params.ProvisionId = c
+				return nil
+			}(); err != nil {
+				return err
+			}
+		} else {
+			return validate.ErrFieldRequired
+		}
+		return nil
+	}(); err != nil {
+		return params, &ogenerrors.DecodeParamError{
+			Name: "provisionId",
 			In:   "path",
 			Err:  err,
 		}

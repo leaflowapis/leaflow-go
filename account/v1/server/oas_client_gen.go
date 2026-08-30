@@ -142,6 +142,23 @@ type Invoker interface {
 	//
 	// GET /account/v1/projects
 	ListProjects(ctx context.Context, params ListProjectsParams) (*LengthAwarePageProjectAccessResource, error)
+	// PreviewInvitationByToken invokes preview-invitation-by-token operation.
+	//
+	// 免认证，而且是有意的：点邮件里那条链接的人多半还没登录，甚至还没有账号。要他先注册再
+	// 告诉他这是谁发来的、加入哪个项目，等于让他在不知道要加入什么的情况下决定要不要注册。
+	// 它不多泄露任何东西。
+	// 这三样——项目名、邀请人、角色——邮件正文里已经写着了，而读得到
+	// 这个令牌的人就是收得到那封邮件的人。同一个令牌本来就能把持有者加进项目（见
+	// `accept-invitation-by-token`），读一个项目名比那件事轻得多。
+	// 收件地址打了码（`t***@example.com`）。
+	// 不打码的话，这个接口就成了「拿一个令牌反查它
+	// 当初寄给了哪个地址」——而那是邮件正文里没有、持有者也未必知道的一件事。
+	// 令牌不存在、已经用过、被撤回、过期，四种情况同一个 404
+	// 和同一句话。分开报会把它变成
+	// 一个可以拿来试令牌的探针，而这个接口免认证，任何人都试得起。.
+	//
+	// GET /account/v1/me/invitations/by-token
+	PreviewInvitationByToken(ctx context.Context, params PreviewInvitationByTokenParams) (*InvitationPreviewResource, error)
 	// Register invokes register operation.
 	//
 	// 在 auth.leaflow.net
@@ -1764,6 +1781,115 @@ func (c *Client) sendListProjects(ctx context.Context, params ListProjectsParams
 
 	stage = "DecodeResponse"
 	result, err := decodeListProjectsResponse(resp)
+	if err != nil {
+		return res, errors.Wrap(err, "decode response")
+	}
+
+	return result, nil
+}
+
+// PreviewInvitationByToken invokes preview-invitation-by-token operation.
+//
+// 免认证，而且是有意的：点邮件里那条链接的人多半还没登录，甚至还没有账号。要他先注册再
+// 告诉他这是谁发来的、加入哪个项目，等于让他在不知道要加入什么的情况下决定要不要注册。
+// 它不多泄露任何东西。
+// 这三样——项目名、邀请人、角色——邮件正文里已经写着了，而读得到
+// 这个令牌的人就是收得到那封邮件的人。同一个令牌本来就能把持有者加进项目（见
+// `accept-invitation-by-token`），读一个项目名比那件事轻得多。
+// 收件地址打了码（`t***@example.com`）。
+// 不打码的话，这个接口就成了「拿一个令牌反查它
+// 当初寄给了哪个地址」——而那是邮件正文里没有、持有者也未必知道的一件事。
+// 令牌不存在、已经用过、被撤回、过期，四种情况同一个 404
+// 和同一句话。分开报会把它变成
+// 一个可以拿来试令牌的探针，而这个接口免认证，任何人都试得起。.
+//
+// GET /account/v1/me/invitations/by-token
+func (c *Client) PreviewInvitationByToken(ctx context.Context, params PreviewInvitationByTokenParams) (*InvitationPreviewResource, error) {
+	res, err := c.sendPreviewInvitationByToken(ctx, params)
+	return res, err
+}
+
+func (c *Client) sendPreviewInvitationByToken(ctx context.Context, params PreviewInvitationByTokenParams) (res *InvitationPreviewResource, err error) {
+	otelAttrs := []attribute.KeyValue{
+		otelogen.OperationID("preview-invitation-by-token"),
+		semconv.HTTPRequestMethodKey.String("GET"),
+		semconv.URLTemplateKey.String("/account/v1/me/invitations/by-token"),
+	}
+	otelAttrs = append(otelAttrs, c.cfg.Attributes...)
+
+	// Run stopwatch.
+	startTime := time.Now()
+	defer func() {
+		// Use floating point division here for higher precision (instead of Millisecond method).
+		elapsedDuration := time.Since(startTime)
+		c.duration.Record(ctx, float64(elapsedDuration)/float64(time.Millisecond), metric.WithAttributes(otelAttrs...))
+	}()
+
+	// Increment request counter.
+	c.requests.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
+
+	// Start a span for this request.
+	ctx, span := c.cfg.Tracer.Start(ctx, PreviewInvitationByTokenOperation,
+		trace.WithAttributes(otelAttrs...),
+		clientSpanKind,
+	)
+	// Track stage for error reporting.
+	var stage string
+	defer func() {
+		if err != nil {
+			span.RecordError(err)
+			span.SetStatus(codes.Error, stage)
+			c.errors.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
+		}
+		span.End()
+	}()
+
+	stage = "BuildURL"
+	u := uri.Clone(c.requestURL(ctx))
+	var pathParts [1]string
+	pathParts[0] = "/account/v1/me/invitations/by-token"
+	uri.AddPathParts(u, pathParts[:]...)
+
+	stage = "EncodeQueryParams"
+	q := uri.NewQueryEncoder()
+	{
+		// Encode "token" parameter.
+		cfg := uri.QueryParameterEncodingConfig{
+			Name:    "token",
+			Style:   uri.QueryStyleForm,
+			Explode: false,
+		}
+
+		if err := q.EncodeParam(cfg, func(e uri.Encoder) error {
+			return e.EncodeValue(conv.StringToString(params.Token))
+		}); err != nil {
+			return res, errors.Wrap(err, "encode query")
+		}
+	}
+	u.RawQuery = q.Values().Encode()
+
+	stage = "EncodeRequest"
+	r, err := ht.NewRequest(ctx, "GET", u)
+	if err != nil {
+		return res, errors.Wrap(err, "create request")
+	}
+
+	stage = "SendRequest"
+	resp, err := c.cfg.Client.Do(r)
+	if err != nil {
+		return res, errors.Wrap(err, "do request")
+	}
+	body := resp.Body
+	defer func() {
+		// Drain the body to EOF before closing, so the underlying
+		// connection can be reused by the Transport regardless of the
+		// response status code. See https://github.com/ogen-go/ogen/issues/1670.
+		_, _ = io.Copy(io.Discard, body)
+		_ = body.Close()
+	}()
+
+	stage = "DecodeResponse"
+	result, err := decodePreviewInvitationByTokenResponse(resp)
 	if err != nil {
 		return res, errors.Wrap(err, "decode response")
 	}

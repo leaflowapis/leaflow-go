@@ -1454,6 +1454,52 @@ func (o OptInt) Or(d int) int {
 	return d
 }
 
+// NewOptOrderPaymentState returns new OptOrderPaymentState with value set to v.
+func NewOptOrderPaymentState(v OrderPaymentState) OptOrderPaymentState {
+	return OptOrderPaymentState{
+		Value: v,
+		Set:   true,
+	}
+}
+
+// OptOrderPaymentState is optional OrderPaymentState.
+type OptOrderPaymentState struct {
+	Value OrderPaymentState
+	Set   bool
+}
+
+// IsSet returns true if OptOrderPaymentState was set.
+func (o OptOrderPaymentState) IsSet() bool { return o.Set }
+
+// Reset unsets value.
+func (o *OptOrderPaymentState) Reset() {
+	var v OrderPaymentState
+	o.Value = v
+	o.Set = false
+}
+
+// SetTo sets value to v.
+func (o *OptOrderPaymentState) SetTo(v OrderPaymentState) {
+	o.Set = true
+	o.Value = v
+}
+
+// Get returns value and boolean that denotes whether value was set.
+func (o OptOrderPaymentState) Get() (v OrderPaymentState, ok bool) {
+	if !o.Set {
+		return v, false
+	}
+	return o.Value, true
+}
+
+// Or returns value if set, or given parameter if does not.
+func (o OptOrderPaymentState) Or(d OrderPaymentState) OrderPaymentState {
+	if v, ok := o.Get(); ok {
+		return v
+	}
+	return d
+}
+
 // NewOptPlanChangeTiming returns new OptPlanChangeTiming with value set to v.
 func NewOptPlanChangeTiming(v PlanChangeTiming) OptPlanChangeTiming {
 	return OptPlanChangeTiming{
@@ -1693,7 +1739,14 @@ type Order struct {
 	// resource and outlives the order.
 	State         OrderState `json:"state"`
 	FailureReason OptString  `json:"failure_reason"`
-	CreatedAt     time.Time  `json:"created_at"`
+	// What was taken, as a decimal string. Absent on a metered order, where the amount is not known when
+	// the order is placed: it comes from usage afterwards. Absent must be read as "billed by usage" —
+	// writing zero would make a metered order and a genuinely free one look the same.
+	Amount   OptString `json:"amount"`
+	Currency OptString `json:"currency"`
+	// Always `none` on a metered order.
+	PaymentState OptOrderPaymentState `json:"payment_state"`
+	CreatedAt    time.Time            `json:"created_at"`
 	// Only present on the single-order route.
 	Lines []OrderLine `json:"lines"`
 }
@@ -1721,6 +1774,21 @@ func (s *Order) GetState() OrderState {
 // GetFailureReason returns the value of FailureReason.
 func (s *Order) GetFailureReason() OptString {
 	return s.FailureReason
+}
+
+// GetAmount returns the value of Amount.
+func (s *Order) GetAmount() OptString {
+	return s.Amount
+}
+
+// GetCurrency returns the value of Currency.
+func (s *Order) GetCurrency() OptString {
+	return s.Currency
+}
+
+// GetPaymentState returns the value of PaymentState.
+func (s *Order) GetPaymentState() OptOrderPaymentState {
+	return s.PaymentState
 }
 
 // GetCreatedAt returns the value of CreatedAt.
@@ -1756,6 +1824,21 @@ func (s *Order) SetState(val OrderState) {
 // SetFailureReason sets the value of FailureReason.
 func (s *Order) SetFailureReason(val OptString) {
 	s.FailureReason = val
+}
+
+// SetAmount sets the value of Amount.
+func (s *Order) SetAmount(val OptString) {
+	s.Amount = val
+}
+
+// SetCurrency sets the value of Currency.
+func (s *Order) SetCurrency(val OptString) {
+	s.Currency = val
+}
+
+// SetPaymentState sets the value of PaymentState.
+func (s *Order) SetPaymentState(val OptOrderPaymentState) {
+	s.PaymentState = val
 }
 
 // SetCreatedAt sets the value of CreatedAt.
@@ -1899,6 +1982,55 @@ func (s *OrderList) SetOrders(val []Order) {
 	s.Orders = val
 }
 
+// Always `none` on a metered order.
+type OrderPaymentState string
+
+const (
+	OrderPaymentStateNone     OrderPaymentState = "none"
+	OrderPaymentStatePaid     OrderPaymentState = "paid"
+	OrderPaymentStateRefunded OrderPaymentState = "refunded"
+)
+
+// AllValues returns all OrderPaymentState values.
+func (OrderPaymentState) AllValues() []OrderPaymentState {
+	return []OrderPaymentState{
+		OrderPaymentStateNone,
+		OrderPaymentStatePaid,
+		OrderPaymentStateRefunded,
+	}
+}
+
+// MarshalText implements encoding.TextMarshaler.
+func (s OrderPaymentState) MarshalText() ([]byte, error) {
+	switch s {
+	case OrderPaymentStateNone:
+		return []byte(s), nil
+	case OrderPaymentStatePaid:
+		return []byte(s), nil
+	case OrderPaymentStateRefunded:
+		return []byte(s), nil
+	default:
+		return nil, errors.Errorf("invalid value: %q", s)
+	}
+}
+
+// UnmarshalText implements encoding.TextUnmarshaler.
+func (s *OrderPaymentState) UnmarshalText(data []byte) error {
+	switch OrderPaymentState(data) {
+	case OrderPaymentStateNone:
+		*s = OrderPaymentStateNone
+		return nil
+	case OrderPaymentStatePaid:
+		*s = OrderPaymentStatePaid
+		return nil
+	case OrderPaymentStateRefunded:
+		*s = OrderPaymentStateRefunded
+		return nil
+	default:
+		return errors.Errorf("invalid value: %q", data)
+	}
+}
+
 // Whether the request went through. It is not the state of what was provisioned: that belongs to each
 // resource and outlives the order.
 type OrderState string
@@ -2034,6 +2166,240 @@ func (s *PlanChangeTiming) UnmarshalText(data []byte) error {
 		return nil
 	case PlanChangeTimingNextBillingCycle:
 		*s = PlanChangeTimingNextBillingCycle
+		return nil
+	default:
+		return errors.Errorf("invalid value: %q", data)
+	}
+}
+
+// Ref: #/components/schemas/PrepaidAsset
+type PrepaidAsset struct {
+	// Use this to quote and to renew.
+	ID        string `json:"id"`
+	ProjectID string `json:"project_id"`
+	// Which service holds it. Also which console it is managed from.
+	Service string `json:"service"`
+	// That service's own catalogue id, not a billing sku. The price of a machine is made of finer parts
+	// than the machine type — the type does not appear in the rate card at all.
+	ProductID string `json:"product_id"`
+	// The id that service knows it by, so the two consoles can be lined up.
+	ResourceID OptString `json:"resource_id"`
+	// GiB for a disk, 1 for a machine or an address.
+	Quantity int64 `json:"quantity"`
+	// Paid up to this instant. It stops being served after it, not before.
+	TermEnd time.Time         `json:"term_end"`
+	State   PrepaidAssetState `json:"state"`
+	// What it is being moved to. Differs from `state` while a change is still being applied — in
+	// particular right after a renewal, which is the moment a customer is most likely to conclude that
+	// nothing happened.
+	DesiredState PrepaidAssetDesiredState `json:"desired_state"`
+}
+
+// GetID returns the value of ID.
+func (s *PrepaidAsset) GetID() string {
+	return s.ID
+}
+
+// GetProjectID returns the value of ProjectID.
+func (s *PrepaidAsset) GetProjectID() string {
+	return s.ProjectID
+}
+
+// GetService returns the value of Service.
+func (s *PrepaidAsset) GetService() string {
+	return s.Service
+}
+
+// GetProductID returns the value of ProductID.
+func (s *PrepaidAsset) GetProductID() string {
+	return s.ProductID
+}
+
+// GetResourceID returns the value of ResourceID.
+func (s *PrepaidAsset) GetResourceID() OptString {
+	return s.ResourceID
+}
+
+// GetQuantity returns the value of Quantity.
+func (s *PrepaidAsset) GetQuantity() int64 {
+	return s.Quantity
+}
+
+// GetTermEnd returns the value of TermEnd.
+func (s *PrepaidAsset) GetTermEnd() time.Time {
+	return s.TermEnd
+}
+
+// GetState returns the value of State.
+func (s *PrepaidAsset) GetState() PrepaidAssetState {
+	return s.State
+}
+
+// GetDesiredState returns the value of DesiredState.
+func (s *PrepaidAsset) GetDesiredState() PrepaidAssetDesiredState {
+	return s.DesiredState
+}
+
+// SetID sets the value of ID.
+func (s *PrepaidAsset) SetID(val string) {
+	s.ID = val
+}
+
+// SetProjectID sets the value of ProjectID.
+func (s *PrepaidAsset) SetProjectID(val string) {
+	s.ProjectID = val
+}
+
+// SetService sets the value of Service.
+func (s *PrepaidAsset) SetService(val string) {
+	s.Service = val
+}
+
+// SetProductID sets the value of ProductID.
+func (s *PrepaidAsset) SetProductID(val string) {
+	s.ProductID = val
+}
+
+// SetResourceID sets the value of ResourceID.
+func (s *PrepaidAsset) SetResourceID(val OptString) {
+	s.ResourceID = val
+}
+
+// SetQuantity sets the value of Quantity.
+func (s *PrepaidAsset) SetQuantity(val int64) {
+	s.Quantity = val
+}
+
+// SetTermEnd sets the value of TermEnd.
+func (s *PrepaidAsset) SetTermEnd(val time.Time) {
+	s.TermEnd = val
+}
+
+// SetState sets the value of State.
+func (s *PrepaidAsset) SetState(val PrepaidAssetState) {
+	s.State = val
+}
+
+// SetDesiredState sets the value of DesiredState.
+func (s *PrepaidAsset) SetDesiredState(val PrepaidAssetDesiredState) {
+	s.DesiredState = val
+}
+
+// What it is being moved to. Differs from `state` while a change is still being applied — in
+// particular right after a renewal, which is the moment a customer is most likely to conclude that
+// nothing happened.
+type PrepaidAssetDesiredState string
+
+const (
+	PrepaidAssetDesiredStateActive     PrepaidAssetDesiredState = "active"
+	PrepaidAssetDesiredStateSuspended  PrepaidAssetDesiredState = "suspended"
+	PrepaidAssetDesiredStateTerminated PrepaidAssetDesiredState = "terminated"
+)
+
+// AllValues returns all PrepaidAssetDesiredState values.
+func (PrepaidAssetDesiredState) AllValues() []PrepaidAssetDesiredState {
+	return []PrepaidAssetDesiredState{
+		PrepaidAssetDesiredStateActive,
+		PrepaidAssetDesiredStateSuspended,
+		PrepaidAssetDesiredStateTerminated,
+	}
+}
+
+// MarshalText implements encoding.TextMarshaler.
+func (s PrepaidAssetDesiredState) MarshalText() ([]byte, error) {
+	switch s {
+	case PrepaidAssetDesiredStateActive:
+		return []byte(s), nil
+	case PrepaidAssetDesiredStateSuspended:
+		return []byte(s), nil
+	case PrepaidAssetDesiredStateTerminated:
+		return []byte(s), nil
+	default:
+		return nil, errors.Errorf("invalid value: %q", s)
+	}
+}
+
+// UnmarshalText implements encoding.TextUnmarshaler.
+func (s *PrepaidAssetDesiredState) UnmarshalText(data []byte) error {
+	switch PrepaidAssetDesiredState(data) {
+	case PrepaidAssetDesiredStateActive:
+		*s = PrepaidAssetDesiredStateActive
+		return nil
+	case PrepaidAssetDesiredStateSuspended:
+		*s = PrepaidAssetDesiredStateSuspended
+		return nil
+	case PrepaidAssetDesiredStateTerminated:
+		*s = PrepaidAssetDesiredStateTerminated
+		return nil
+	default:
+		return errors.Errorf("invalid value: %q", data)
+	}
+}
+
+// Ref: #/components/schemas/PrepaidAssetList
+type PrepaidAssetList struct {
+	Assets []PrepaidAsset `json:"assets"`
+}
+
+// GetAssets returns the value of Assets.
+func (s *PrepaidAssetList) GetAssets() []PrepaidAsset {
+	return s.Assets
+}
+
+// SetAssets sets the value of Assets.
+func (s *PrepaidAssetList) SetAssets(val []PrepaidAsset) {
+	s.Assets = val
+}
+
+type PrepaidAssetState string
+
+const (
+	PrepaidAssetStatePending    PrepaidAssetState = "pending"
+	PrepaidAssetStateActive     PrepaidAssetState = "active"
+	PrepaidAssetStateSuspended  PrepaidAssetState = "suspended"
+	PrepaidAssetStateTerminated PrepaidAssetState = "terminated"
+)
+
+// AllValues returns all PrepaidAssetState values.
+func (PrepaidAssetState) AllValues() []PrepaidAssetState {
+	return []PrepaidAssetState{
+		PrepaidAssetStatePending,
+		PrepaidAssetStateActive,
+		PrepaidAssetStateSuspended,
+		PrepaidAssetStateTerminated,
+	}
+}
+
+// MarshalText implements encoding.TextMarshaler.
+func (s PrepaidAssetState) MarshalText() ([]byte, error) {
+	switch s {
+	case PrepaidAssetStatePending:
+		return []byte(s), nil
+	case PrepaidAssetStateActive:
+		return []byte(s), nil
+	case PrepaidAssetStateSuspended:
+		return []byte(s), nil
+	case PrepaidAssetStateTerminated:
+		return []byte(s), nil
+	default:
+		return nil, errors.Errorf("invalid value: %q", s)
+	}
+}
+
+// UnmarshalText implements encoding.TextUnmarshaler.
+func (s *PrepaidAssetState) UnmarshalText(data []byte) error {
+	switch PrepaidAssetState(data) {
+	case PrepaidAssetStatePending:
+		*s = PrepaidAssetStatePending
+		return nil
+	case PrepaidAssetStateActive:
+		*s = PrepaidAssetStateActive
+		return nil
+	case PrepaidAssetStateSuspended:
+		*s = PrepaidAssetStateSuspended
+		return nil
+	case PrepaidAssetStateTerminated:
+		*s = PrepaidAssetStateTerminated
 		return nil
 	default:
 		return errors.Errorf("invalid value: %q", data)
@@ -2627,6 +2993,110 @@ func (s *QuoteUsageVariant) init() QuoteUsageVariant {
 		*s = m
 	}
 	return m
+}
+
+// Ref: #/components/schemas/RenewRequestBody
+type RenewRequestBody struct {
+	// How long to renew for, as an ISO 8601 duration (P1M, P1Y). It does not have to match the term
+	// originally bought.
+	Term string `json:"term"`
+	// Generate one per renewal the customer starts — when the dialog opens, not when it is submitted —
+	// and send the same one on every retry of that renewal.
+	IdempotencyKey string `json:"idempotency_key"`
+}
+
+// GetTerm returns the value of Term.
+func (s *RenewRequestBody) GetTerm() string {
+	return s.Term
+}
+
+// GetIdempotencyKey returns the value of IdempotencyKey.
+func (s *RenewRequestBody) GetIdempotencyKey() string {
+	return s.IdempotencyKey
+}
+
+// SetTerm sets the value of Term.
+func (s *RenewRequestBody) SetTerm(val string) {
+	s.Term = val
+}
+
+// SetIdempotencyKey sets the value of IdempotencyKey.
+func (s *RenewRequestBody) SetIdempotencyKey(val string) {
+	s.IdempotencyKey = val
+}
+
+// Ref: #/components/schemas/RenewalQuote
+type RenewalQuote struct {
+	ProvisionID string `json:"provision_id"`
+	Term        string `json:"term"`
+	// A decimal string, not a float. Money that survives a round trip through binary floating point is
+	// money that stops adding up.
+	Amount   string `json:"amount"`
+	Currency string `json:"currency"`
+	// What it is paid up to now.
+	CurrentTermEnd time.Time `json:"current_term_end"`
+	// What it would be paid up to after renewing.
+	TermEnd time.Time `json:"term_end"`
+}
+
+// GetProvisionID returns the value of ProvisionID.
+func (s *RenewalQuote) GetProvisionID() string {
+	return s.ProvisionID
+}
+
+// GetTerm returns the value of Term.
+func (s *RenewalQuote) GetTerm() string {
+	return s.Term
+}
+
+// GetAmount returns the value of Amount.
+func (s *RenewalQuote) GetAmount() string {
+	return s.Amount
+}
+
+// GetCurrency returns the value of Currency.
+func (s *RenewalQuote) GetCurrency() string {
+	return s.Currency
+}
+
+// GetCurrentTermEnd returns the value of CurrentTermEnd.
+func (s *RenewalQuote) GetCurrentTermEnd() time.Time {
+	return s.CurrentTermEnd
+}
+
+// GetTermEnd returns the value of TermEnd.
+func (s *RenewalQuote) GetTermEnd() time.Time {
+	return s.TermEnd
+}
+
+// SetProvisionID sets the value of ProvisionID.
+func (s *RenewalQuote) SetProvisionID(val string) {
+	s.ProvisionID = val
+}
+
+// SetTerm sets the value of Term.
+func (s *RenewalQuote) SetTerm(val string) {
+	s.Term = val
+}
+
+// SetAmount sets the value of Amount.
+func (s *RenewalQuote) SetAmount(val string) {
+	s.Amount = val
+}
+
+// SetCurrency sets the value of Currency.
+func (s *RenewalQuote) SetCurrency(val string) {
+	s.Currency = val
+}
+
+// SetCurrentTermEnd sets the value of CurrentTermEnd.
+func (s *RenewalQuote) SetCurrentTermEnd(val time.Time) {
+	s.CurrentTermEnd = val
+}
+
+// SetTermEnd sets the value of TermEnd.
+func (s *RenewalQuote) SetTermEnd(val time.Time) {
+	s.TermEnd = val
 }
 
 // Ref: #/components/schemas/StartTopUpRequestBody

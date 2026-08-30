@@ -1459,6 +1459,36 @@ func (s *LaunchInstanceRequestBody) Validate() error {
 		})
 	}
 	if err := func() error {
+		if value, ok := s.Term.Get(); ok {
+			if err := func() error {
+				if err := (validate.String{
+					MinLength:     2,
+					MinLengthSet:  true,
+					MaxLength:     16,
+					MaxLengthSet:  true,
+					Email:         false,
+					Hostname:      false,
+					Regex:         nil,
+					MinNumeric:    0,
+					MinNumericSet: false,
+					MaxNumeric:    0,
+					MaxNumericSet: false,
+				}).Validate(string(value)); err != nil {
+					return errors.Wrap(err, "string")
+				}
+				return nil
+			}(); err != nil {
+				return err
+			}
+		}
+		return nil
+	}(); err != nil {
+		failures = append(failures, validate.FieldError{
+			Name:  "term",
+			Error: err,
+		})
+	}
+	if err := func() error {
 		if value, ok := s.RootDiskGB.Get(); ok {
 			if err := func() error {
 				if err := (validate.Int{

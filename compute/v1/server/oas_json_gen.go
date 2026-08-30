@@ -5501,18 +5501,41 @@ func (s *InstanceTypeResource) encodeFields(e *jx.Encoder) {
 		e.FieldStart("vcpus")
 		e.Int64(s.Vcpus)
 	}
+	{
+		e.FieldStart("sold_out")
+		e.Bool(s.SoldOut)
+	}
+	{
+		if s.Remaining.Set {
+			e.FieldStart("remaining")
+			s.Remaining.Encode(e)
+		}
+	}
+	{
+		if s.PrepaidPrices != nil {
+			e.FieldStart("prepaid_prices")
+			e.ArrStart()
+			for _, elem := range s.PrepaidPrices {
+				elem.Encode(e)
+			}
+			e.ArrEnd()
+		}
+	}
 }
 
-var jsonFieldsNameOfInstanceTypeResource = [9]string{
-	0: "availability_zone_code",
-	1: "id",
-	2: "max_bandwidth_mbps",
-	3: "max_floating_ips",
-	4: "max_ports",
-	5: "name",
-	6: "ram_mb",
-	7: "region_code",
-	8: "vcpus",
+var jsonFieldsNameOfInstanceTypeResource = [12]string{
+	0:  "availability_zone_code",
+	1:  "id",
+	2:  "max_bandwidth_mbps",
+	3:  "max_floating_ips",
+	4:  "max_ports",
+	5:  "name",
+	6:  "ram_mb",
+	7:  "region_code",
+	8:  "vcpus",
+	9:  "sold_out",
+	10: "remaining",
+	11: "prepaid_prices",
 }
 
 // Decode decodes InstanceTypeResource from json.
@@ -5632,6 +5655,45 @@ func (s *InstanceTypeResource) Decode(d *jx.Decoder) error {
 			}(); err != nil {
 				return errors.Wrap(err, "decode field \"vcpus\"")
 			}
+		case "sold_out":
+			requiredBitSet[1] |= 1 << 1
+			if err := func() error {
+				v, err := d.Bool()
+				s.SoldOut = bool(v)
+				if err != nil {
+					return err
+				}
+				return nil
+			}(); err != nil {
+				return errors.Wrap(err, "decode field \"sold_out\"")
+			}
+		case "remaining":
+			if err := func() error {
+				s.Remaining.Reset()
+				if err := s.Remaining.Decode(d); err != nil {
+					return err
+				}
+				return nil
+			}(); err != nil {
+				return errors.Wrap(err, "decode field \"remaining\"")
+			}
+		case "prepaid_prices":
+			if err := func() error {
+				s.PrepaidPrices = make([]PrepaidPrice, 0)
+				if err := d.Arr(func(d *jx.Decoder) error {
+					var elem PrepaidPrice
+					if err := elem.Decode(d); err != nil {
+						return err
+					}
+					s.PrepaidPrices = append(s.PrepaidPrices, elem)
+					return nil
+				}); err != nil {
+					return err
+				}
+				return nil
+			}(); err != nil {
+				return errors.Wrap(err, "decode field \"prepaid_prices\"")
+			}
 		default:
 			return errors.Errorf("unexpected field %q", k)
 		}
@@ -5643,7 +5705,7 @@ func (s *InstanceTypeResource) Decode(d *jx.Decoder) error {
 	var failures []validate.FieldError
 	for i, mask := range [2]uint8{
 		0b11111111,
-		0b00000001,
+		0b00000011,
 	} {
 		if result := (requiredBitSet[i] & mask) ^ mask; result != 0 {
 			// Mask only required fields and check equality to mask using XOR.
@@ -5755,6 +5817,12 @@ func (s *LaunchInstanceRequestBody) encodeFields(e *jx.Encoder) {
 		}
 	}
 	{
+		if s.Term.Set {
+			e.FieldStart("term")
+			s.Term.Encode(e)
+		}
+	}
+	{
 		if s.RootDiskGB.Set {
 			e.FieldStart("root_disk_gb")
 			s.RootDiskGB.Encode(e)
@@ -5774,7 +5842,7 @@ func (s *LaunchInstanceRequestBody) encodeFields(e *jx.Encoder) {
 	}
 }
 
-var jsonFieldsNameOfLaunchInstanceRequestBody = [13]string{
+var jsonFieldsNameOfLaunchInstanceRequestBody = [14]string{
 	0:  "count",
 	1:  "generate_password",
 	2:  "boot_disk_id",
@@ -5785,9 +5853,10 @@ var jsonFieldsNameOfLaunchInstanceRequestBody = [13]string{
 	7:  "password",
 	8:  "port_id",
 	9:  "private_image_id",
-	10: "root_disk_gb",
-	11: "security_group_ids",
-	12: "subnet_id",
+	10: "term",
+	11: "root_disk_gb",
+	12: "security_group_ids",
+	13: "subnet_id",
 }
 
 // Decode decodes LaunchInstanceRequestBody from json.
@@ -5902,6 +5971,16 @@ func (s *LaunchInstanceRequestBody) Decode(d *jx.Decoder) error {
 				return nil
 			}(); err != nil {
 				return errors.Wrap(err, "decode field \"private_image_id\"")
+			}
+		case "term":
+			if err := func() error {
+				s.Term.Reset()
+				if err := s.Term.Decode(d); err != nil {
+					return err
+				}
+				return nil
+			}(); err != nil {
+				return errors.Wrap(err, "decode field \"term\"")
 			}
 		case "root_disk_gb":
 			if err := func() error {
@@ -7551,6 +7630,136 @@ func (s *PortResource) MarshalJSON() ([]byte, error) {
 
 // UnmarshalJSON implements stdjson.Unmarshaler.
 func (s *PortResource) UnmarshalJSON(data []byte) error {
+	d := jx.DecodeBytes(data)
+	return s.Decode(d)
+}
+
+// Encode implements json.Marshaler.
+func (s *PrepaidPrice) Encode(e *jx.Encoder) {
+	e.ObjStart()
+	s.encodeFields(e)
+	e.ObjEnd()
+}
+
+// encodeFields encodes fields.
+func (s *PrepaidPrice) encodeFields(e *jx.Encoder) {
+	{
+		e.FieldStart("term")
+		e.Str(s.Term)
+	}
+	{
+		e.FieldStart("amount")
+		e.Str(s.Amount)
+	}
+	{
+		e.FieldStart("currency")
+		e.Str(s.Currency)
+	}
+}
+
+var jsonFieldsNameOfPrepaidPrice = [3]string{
+	0: "term",
+	1: "amount",
+	2: "currency",
+}
+
+// Decode decodes PrepaidPrice from json.
+func (s *PrepaidPrice) Decode(d *jx.Decoder) error {
+	if s == nil {
+		return errors.New("invalid: unable to decode PrepaidPrice to nil")
+	}
+	var requiredBitSet [1]uint8
+
+	if err := d.ObjBytes(func(d *jx.Decoder, k []byte) error {
+		switch string(k) {
+		case "term":
+			requiredBitSet[0] |= 1 << 0
+			if err := func() error {
+				v, err := d.Str()
+				s.Term = string(v)
+				if err != nil {
+					return err
+				}
+				return nil
+			}(); err != nil {
+				return errors.Wrap(err, "decode field \"term\"")
+			}
+		case "amount":
+			requiredBitSet[0] |= 1 << 1
+			if err := func() error {
+				v, err := d.Str()
+				s.Amount = string(v)
+				if err != nil {
+					return err
+				}
+				return nil
+			}(); err != nil {
+				return errors.Wrap(err, "decode field \"amount\"")
+			}
+		case "currency":
+			requiredBitSet[0] |= 1 << 2
+			if err := func() error {
+				v, err := d.Str()
+				s.Currency = string(v)
+				if err != nil {
+					return err
+				}
+				return nil
+			}(); err != nil {
+				return errors.Wrap(err, "decode field \"currency\"")
+			}
+		default:
+			return errors.Errorf("unexpected field %q", k)
+		}
+		return nil
+	}); err != nil {
+		return errors.Wrap(err, "decode PrepaidPrice")
+	}
+	// Validate required fields.
+	var failures []validate.FieldError
+	for i, mask := range [1]uint8{
+		0b00000111,
+	} {
+		if result := (requiredBitSet[i] & mask) ^ mask; result != 0 {
+			// Mask only required fields and check equality to mask using XOR.
+			//
+			// If XOR result is not zero, result is not equal to expected, so some fields are missed.
+			// Bits of fields which would be set are actually bits of missed fields.
+			missed := bits.OnesCount8(result)
+			for bitN := 0; bitN < missed; bitN++ {
+				bitIdx := bits.TrailingZeros8(result)
+				fieldIdx := i*8 + bitIdx
+				var name string
+				if fieldIdx < len(jsonFieldsNameOfPrepaidPrice) {
+					name = jsonFieldsNameOfPrepaidPrice[fieldIdx]
+				} else {
+					name = strconv.Itoa(fieldIdx)
+				}
+				failures = append(failures, validate.FieldError{
+					Name:  name,
+					Error: validate.ErrFieldRequired,
+				})
+				// Reset bit.
+				result &^= 1 << bitIdx
+			}
+		}
+	}
+	if len(failures) > 0 {
+		return &validate.Error{Fields: failures}
+	}
+
+	return nil
+}
+
+// MarshalJSON implements stdjson.Marshaler.
+func (s *PrepaidPrice) MarshalJSON() ([]byte, error) {
+	e := jx.Encoder{}
+	s.Encode(&e)
+	return e.Bytes(), nil
+}
+
+// UnmarshalJSON implements stdjson.Unmarshaler.
+func (s *PrepaidPrice) UnmarshalJSON(data []byte) error {
 	d := jx.DecodeBytes(data)
 	return s.Decode(d)
 }

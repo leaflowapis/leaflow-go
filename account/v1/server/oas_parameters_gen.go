@@ -634,3 +634,81 @@ func decodeListProjectsParams(args [0]string, argsEscaped bool, r *http.Request)
 	}
 	return params, nil
 }
+
+// PreviewInvitationByTokenParams is parameters of preview-invitation-by-token operation.
+type PreviewInvitationByTokenParams struct {
+	// 邀请链接里那串令牌.
+	Token string
+}
+
+func unpackPreviewInvitationByTokenParams(packed middleware.Parameters) (params PreviewInvitationByTokenParams) {
+	{
+		key := middleware.ParameterKey{
+			Name: "token",
+			In:   "query",
+		}
+		params.Token = packed[key].(string)
+	}
+	return params
+}
+
+func decodePreviewInvitationByTokenParams(args [0]string, argsEscaped bool, r *http.Request) (params PreviewInvitationByTokenParams, _ error) {
+	q := uri.NewQueryDecoder(r.URL.Query())
+	// Decode query: token.
+	if err := func() error {
+		cfg := uri.QueryParameterDecodingConfig{
+			Name:    "token",
+			Style:   uri.QueryStyleForm,
+			Explode: false,
+		}
+
+		if err := q.HasParam(cfg); err == nil {
+			if err := q.DecodeParam(cfg, func(d uri.Decoder) error {
+				val, err := d.DecodeValue()
+				if err != nil {
+					return err
+				}
+
+				c, err := conv.ToString(val)
+				if err != nil {
+					return err
+				}
+
+				params.Token = c
+				return nil
+			}); err != nil {
+				return err
+			}
+			if err := func() error {
+				if err := (validate.String{
+					MinLength:     1,
+					MinLengthSet:  true,
+					MaxLength:     128,
+					MaxLengthSet:  true,
+					Email:         false,
+					Hostname:      false,
+					Regex:         nil,
+					MinNumeric:    0,
+					MinNumericSet: false,
+					MaxNumeric:    0,
+					MaxNumericSet: false,
+				}).Validate(string(params.Token)); err != nil {
+					return errors.Wrap(err, "string")
+				}
+				return nil
+			}(); err != nil {
+				return err
+			}
+		} else {
+			return err
+		}
+		return nil
+	}(); err != nil {
+		return params, &ogenerrors.DecodeParamError{
+			Name: "token",
+			In:   "query",
+			Err:  err,
+		}
+	}
+	return params, nil
+}

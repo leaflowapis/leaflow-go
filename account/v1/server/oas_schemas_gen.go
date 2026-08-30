@@ -907,16 +907,92 @@ func (s *IdentityVerificationResourceStatus) UnmarshalText(data []byte) error {
 	}
 }
 
+// 一封邀请在被接受之前能给出的全部信息。 它比 InvitationResource
+// 少两样：要约 id 和完整的收件地址。id 不给是因为持有令牌不等于
+// 这封要约列在你名下——真正列在你名下的那些走
+// list-my-invitations，那条是认过身份的。.
+// Ref: #/components/schemas/InvitationPreviewResource
+type InvitationPreviewResource struct {
+	// 打过码的收件地址，只够收件人认出「这是发给我的」.
+	EmailMasked string    `json:"email_masked"`
+	ExpiresAt   time.Time `json:"expires_at"`
+	// 邀请人的显示名，姓名都空时是他的邮箱.
+	InvitedByName string `json:"invited_by_name"`
+	ProjectName   string `json:"project_name"`
+	// 接受之后会拿到的角色，显示名.
+	RoleNames []string `json:"role_names"`
+}
+
+// GetEmailMasked returns the value of EmailMasked.
+func (s *InvitationPreviewResource) GetEmailMasked() string {
+	return s.EmailMasked
+}
+
+// GetExpiresAt returns the value of ExpiresAt.
+func (s *InvitationPreviewResource) GetExpiresAt() time.Time {
+	return s.ExpiresAt
+}
+
+// GetInvitedByName returns the value of InvitedByName.
+func (s *InvitationPreviewResource) GetInvitedByName() string {
+	return s.InvitedByName
+}
+
+// GetProjectName returns the value of ProjectName.
+func (s *InvitationPreviewResource) GetProjectName() string {
+	return s.ProjectName
+}
+
+// GetRoleNames returns the value of RoleNames.
+func (s *InvitationPreviewResource) GetRoleNames() []string {
+	return s.RoleNames
+}
+
+// SetEmailMasked sets the value of EmailMasked.
+func (s *InvitationPreviewResource) SetEmailMasked(val string) {
+	s.EmailMasked = val
+}
+
+// SetExpiresAt sets the value of ExpiresAt.
+func (s *InvitationPreviewResource) SetExpiresAt(val time.Time) {
+	s.ExpiresAt = val
+}
+
+// SetInvitedByName sets the value of InvitedByName.
+func (s *InvitationPreviewResource) SetInvitedByName(val string) {
+	s.InvitedByName = val
+}
+
+// SetProjectName sets the value of ProjectName.
+func (s *InvitationPreviewResource) SetProjectName(val string) {
+	s.ProjectName = val
+}
+
+// SetRoleNames sets the value of RoleNames.
+func (s *InvitationPreviewResource) SetRoleNames(val []string) {
+	s.RoleNames = val
+}
+
 // Ref: #/components/schemas/InvitationResource
 type InvitationResource struct {
 	CreatedAt time.Time `json:"created_at"`
 	Email     string    `json:"email"`
 	ExpiresAt time.Time `json:"expires_at"`
 	ID        uuid.UUID `json:"id"`
-	InvitedBy string    `json:"invited_by"`
-	ProjectID uuid.UUID `json:"project_id"`
+	// 发出这份要约的账号 id.
+	InvitedBy string `json:"invited_by"`
+	// 发出这份要约的人的显示名，姓名都空时是他的邮箱。它是读取那一刻的事实，不是发信时的快照.
+	InvitedByName string    `json:"invited_by_name"`
+	ProjectID     uuid.UUID `json:"project_id"`
+	// 目标项目的名字。
+	// 它在这里，而这一度是刻意不给的——理由是「没接受就不是成员，而名字只有成员能读」。
+	// 那条克制在这个场景下站不住：邀请邮件正文里就写着项目名，收件人早就知道了，而一个
+	// 只显示 uuid 的邀请列表让人没法判断该不该接受。.
+	ProjectName string `json:"project_name"`
 	// 兑现时会授予的角色编码.
 	Roles []string `json:"roles"`
+	// 上面那些编码的显示名，按同样的顺序。读者看的是「管理员」，不是 ADMIN.
+	RoleNames []string `json:"role_names"`
 }
 
 // GetCreatedAt returns the value of CreatedAt.
@@ -944,14 +1020,29 @@ func (s *InvitationResource) GetInvitedBy() string {
 	return s.InvitedBy
 }
 
+// GetInvitedByName returns the value of InvitedByName.
+func (s *InvitationResource) GetInvitedByName() string {
+	return s.InvitedByName
+}
+
 // GetProjectID returns the value of ProjectID.
 func (s *InvitationResource) GetProjectID() uuid.UUID {
 	return s.ProjectID
 }
 
+// GetProjectName returns the value of ProjectName.
+func (s *InvitationResource) GetProjectName() string {
+	return s.ProjectName
+}
+
 // GetRoles returns the value of Roles.
 func (s *InvitationResource) GetRoles() []string {
 	return s.Roles
+}
+
+// GetRoleNames returns the value of RoleNames.
+func (s *InvitationResource) GetRoleNames() []string {
+	return s.RoleNames
 }
 
 // SetCreatedAt sets the value of CreatedAt.
@@ -979,14 +1070,29 @@ func (s *InvitationResource) SetInvitedBy(val string) {
 	s.InvitedBy = val
 }
 
+// SetInvitedByName sets the value of InvitedByName.
+func (s *InvitationResource) SetInvitedByName(val string) {
+	s.InvitedByName = val
+}
+
 // SetProjectID sets the value of ProjectID.
 func (s *InvitationResource) SetProjectID(val uuid.UUID) {
 	s.ProjectID = val
 }
 
+// SetProjectName sets the value of ProjectName.
+func (s *InvitationResource) SetProjectName(val string) {
+	s.ProjectName = val
+}
+
 // SetRoles sets the value of Roles.
 func (s *InvitationResource) SetRoles(val []string) {
 	s.Roles = val
+}
+
+// SetRoleNames sets the value of RoleNames.
+func (s *InvitationResource) SetRoleNames(val []string) {
+	s.RoleNames = val
 }
 
 // Ref: #/components/schemas/LanguageOption

@@ -79,6 +79,27 @@ func (e InvoiceStatus) Valid() bool {
 	}
 }
 
+// Defines values for OrderPaymentState.
+const (
+	OrderPaymentStateNone     OrderPaymentState = "none"
+	OrderPaymentStatePaid     OrderPaymentState = "paid"
+	OrderPaymentStateRefunded OrderPaymentState = "refunded"
+)
+
+// Valid indicates whether the value is a known member of the OrderPaymentState enum.
+func (e OrderPaymentState) Valid() bool {
+	switch e {
+	case OrderPaymentStateNone:
+		return true
+	case OrderPaymentStatePaid:
+		return true
+	case OrderPaymentStateRefunded:
+		return true
+	default:
+		return false
+	}
+}
+
 // Defines values for OrderState.
 const (
 	OrderStateFailed    OrderState = "failed"
@@ -136,6 +157,51 @@ func (e PlanChangeTiming) Valid() bool {
 	case PlanChangeTimingImmediate:
 		return true
 	case PlanChangeTimingNextBillingCycle:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for PrepaidAssetDesiredState.
+const (
+	PrepaidAssetDesiredStateActive     PrepaidAssetDesiredState = "active"
+	PrepaidAssetDesiredStateSuspended  PrepaidAssetDesiredState = "suspended"
+	PrepaidAssetDesiredStateTerminated PrepaidAssetDesiredState = "terminated"
+)
+
+// Valid indicates whether the value is a known member of the PrepaidAssetDesiredState enum.
+func (e PrepaidAssetDesiredState) Valid() bool {
+	switch e {
+	case PrepaidAssetDesiredStateActive:
+		return true
+	case PrepaidAssetDesiredStateSuspended:
+		return true
+	case PrepaidAssetDesiredStateTerminated:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for PrepaidAssetState.
+const (
+	PrepaidAssetStateActive     PrepaidAssetState = "active"
+	PrepaidAssetStatePending    PrepaidAssetState = "pending"
+	PrepaidAssetStateSuspended  PrepaidAssetState = "suspended"
+	PrepaidAssetStateTerminated PrepaidAssetState = "terminated"
+)
+
+// Valid indicates whether the value is a known member of the PrepaidAssetState enum.
+func (e PrepaidAssetState) Valid() bool {
+	switch e {
+	case PrepaidAssetStateActive:
+		return true
+	case PrepaidAssetStatePending:
+		return true
+	case PrepaidAssetStateSuspended:
+		return true
+	case PrepaidAssetStateTerminated:
 		return true
 	default:
 		return false
@@ -478,19 +544,31 @@ type OfferList struct {
 
 // Order defines model for Order.
 type Order struct {
+	// Amount What was taken, as a decimal string. Absent on a metered order, where the amount is not
+	// known when the order is placed: it comes from usage afterwards. Absent must be read as
+	// "billed by usage" — writing zero would make a metered order and a genuinely free one
+	// look the same.
+	Amount        *string   `json:"amount,omitempty"`
 	CreatedAt     time.Time `json:"created_at"`
+	Currency      *string   `json:"currency,omitempty"`
 	FailureReason *string   `json:"failure_reason,omitempty"`
 	Id            string    `json:"id"`
 
 	// Lines Only present on the single-order route.
-	Lines     []OrderLine `json:"lines,omitempty"`
-	PlacedBy  string      `json:"placed_by"`
-	ProjectId string      `json:"project_id"`
+	Lines []OrderLine `json:"lines,omitempty"`
+
+	// PaymentState Always `none` on a metered order.
+	PaymentState *OrderPaymentState `json:"payment_state,omitempty"`
+	PlacedBy     string             `json:"placed_by"`
+	ProjectId    string             `json:"project_id"`
 
 	// State Whether the request went through. It is not the state of what was provisioned: that
 	// belongs to each resource and outlives the order.
 	State OrderState `json:"state"`
 }
+
+// OrderPaymentState Always `none` on a metered order.
+type OrderPaymentState string
 
 // OrderState Whether the request went through. It is not the state of what was provisioned: that
 // belongs to each resource and outlives the order.
@@ -546,6 +624,48 @@ type PaymentMethodSetupSession struct {
 // PlanChangeTiming When a plan change takes effect. There is no default: an upgrade and a downgrade want opposite
 // answers, and the difference is money
 type PlanChangeTiming string
+
+// PrepaidAsset defines model for PrepaidAsset.
+type PrepaidAsset struct {
+	// DesiredState What it is being moved to. Differs from `state` while a change is still being applied —
+	// in particular right after a renewal, which is the moment a customer is most likely to
+	// conclude that nothing happened.
+	DesiredState PrepaidAssetDesiredState `json:"desired_state"`
+
+	// Id Use this to quote and to renew.
+	Id string `json:"id"`
+
+	// ProductId That service's own catalogue id, not a billing sku. The price of a machine is made of
+	// finer parts than the machine type — the type does not appear in the rate card at all.
+	ProductId string `json:"product_id"`
+	ProjectId string `json:"project_id"`
+
+	// Quantity GiB for a disk, 1 for a machine or an address.
+	Quantity int64 `json:"quantity"`
+
+	// ResourceId The id that service knows it by, so the two consoles can be lined up.
+	ResourceId *string `json:"resource_id,omitempty"`
+
+	// Service Which service holds it. Also which console it is managed from.
+	Service string            `json:"service"`
+	State   PrepaidAssetState `json:"state"`
+
+	// TermEnd Paid up to this instant. It stops being served after it, not before.
+	TermEnd time.Time `json:"term_end"`
+}
+
+// PrepaidAssetDesiredState What it is being moved to. Differs from `state` while a change is still being applied —
+// in particular right after a renewal, which is the moment a customer is most likely to
+// conclude that nothing happened.
+type PrepaidAssetDesiredState string
+
+// PrepaidAssetState defines model for PrepaidAsset.State.
+type PrepaidAssetState string
+
+// PrepaidAssetList defines model for PrepaidAssetList.
+type PrepaidAssetList struct {
+	Assets []PrepaidAsset `json:"assets"`
+}
 
 // Pricing What this offer costs, as a structure rather than a number.
 //
@@ -720,6 +840,33 @@ type QuoteUsage struct {
 	Variant map[string]string `json:"variant,omitempty"`
 }
 
+// RenewRequestBody defines model for RenewRequestBody.
+type RenewRequestBody struct {
+	// IdempotencyKey Generate one per renewal the customer starts — when the dialog opens, not when it is
+	// submitted — and send the same one on every retry of that renewal.
+	IdempotencyKey string `json:"idempotency_key"`
+
+	// Term How long to renew for, as an ISO 8601 duration (P1M, P1Y). It does not have to match the
+	// term originally bought.
+	Term string `json:"term"`
+}
+
+// RenewalQuote defines model for RenewalQuote.
+type RenewalQuote struct {
+	// Amount A decimal string, not a float. Money that survives a round trip through binary floating
+	// point is money that stops adding up.
+	Amount   string `json:"amount"`
+	Currency string `json:"currency"`
+
+	// CurrentTermEnd What it is paid up to now.
+	CurrentTermEnd time.Time `json:"current_term_end"`
+	ProvisionId    string    `json:"provision_id"`
+	Term           string    `json:"term"`
+
+	// TermEnd What it would be paid up to after renewing.
+	TermEnd time.Time `json:"term_end"`
+}
+
 // StartTopUpRequestBody defines model for StartTopUpRequestBody.
 type StartTopUpRequestBody struct {
 	// Amount How much to add, as a decimal string — `"20"`, `"19.99"`.
@@ -820,10 +967,20 @@ type UpdateBillingAccountRequestBody struct {
 // AccountKey defines model for AccountKey.
 type AccountKey = string
 
+// ProvisionId defines model for ProvisionId.
+type ProvisionId = openapi_types.UUID
+
 // PurchaseOfferParams defines parameters for PurchaseOffer.
 type PurchaseOfferParams struct {
 	// Timing When the switch takes effect. Required if the account already has a plan, ignored otherwise
 	Timing *PlanChangeTiming `form:"timing,omitempty" json:"timing,omitempty"`
+}
+
+// QuoteRenewalParams defines parameters for QuoteRenewal.
+type QuoteRenewalParams struct {
+	// Term How long to renew for, as an ISO 8601 duration (P1M, P1Y). A duration rather than a
+	// number of months: months are not the same length.
+	Term string `form:"term" json:"term"`
 }
 
 // CancelSubscriptionParams defines parameters for CancelSubscription.
@@ -840,6 +997,9 @@ type CreateBillingAccountJSONRequestBody = CreateBillingAccountRequestBody
 
 // UpdateBillingAccountJSONRequestBody defines body for UpdateBillingAccount for application/json ContentType.
 type UpdateBillingAccountJSONRequestBody = UpdateBillingAccountRequestBody
+
+// RenewPrepaidAssetJSONRequestBody defines body for RenewPrepaidAsset for application/json ContentType.
+type RenewPrepaidAssetJSONRequestBody = RenewRequestBody
 
 // QuoteUsageJSONRequestBody defines body for QuoteUsage for application/json ContentType.
 type QuoteUsageJSONRequestBody = QuoteRequest
@@ -1211,6 +1371,122 @@ type ClientInterface interface {
 	//
 	// Corresponds with POST /account/v1/billing-accounts/{accountKey}/payment-method (the `StartPaymentMethodSetup` operationId).
 	StartPaymentMethodSetup(ctx context.Context, accountKey AccountKey, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// ListPrepaidAssets What I bought outright, and when it runs out
+	//
+	// Everything this account paid a term for, across every product, soonest to expire first.
+	//
+	// ## Why this is one list rather than a page inside each product
+	//
+	// Renewal is the one thing a customer forgets, and forgetting it stops the machine. Splitting
+	// the list per product means the instance about to lapse tomorrow is only visible to someone
+	// who thought to go and look at instances. Sorting by expiry rather than by purchase date is
+	// the same reason: the row that matters is the one at the top.
+	//
+	// ## Metered resources are not here
+	//
+	// There is no term to run out. Listing them with an empty expiry would invite renewing
+	// something that is already billed by the hour until it is deleted.
+	//
+	// ## `state` and `desired_state` are both reported
+	//
+	// A machine stopped because its term lapsed reads `suspended` for both. One that has just been
+	// renewed reads `suspended` and `active` — it is on its way back. Without the second field
+	// those look identical, and a customer who just paid concludes it did not work and pays again.
+	//
+	// Corresponds with GET /account/v1/billing-accounts/{accountKey}/prepaid-assets (the `ListPrepaidAssets` operationId).
+	ListPrepaidAssets(ctx context.Context, accountKey AccountKey, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// RenewPrepaidAssetWithBody Renew it
+	//
+	// Takes the money from the balance and pushes the expiry out. The resource itself is not
+	// touched — nothing is rebuilt, nothing restarts, the id stays the same.
+	//
+	// ## An idempotency key is required, not optional
+	//
+	// Renewal is a pure charge. Unlike creating something, there is no resource whose uniqueness
+	// catches a repeat, so a double click is two charges and twice the term — and both calls
+	// return success. Letting the field be omitted would mean losing that protection silently, in
+	// the one case that looks completely normal until the books are reconciled.
+	//
+	// Sending the same key again returns the order that was already placed. It does not charge
+	// again, and it is not an error: reporting a repeat as a failure makes the caller retry
+	// forever, and makes the customer press the button a second time with a fresh key.
+	//
+	// ## What happens if the balance is short
+	//
+	// The order is recorded as failed and nothing else changes: no money moves, the expiry stays
+	// where it was, and the resource keeps running until its existing term ends. Retrying with the
+	// same key after topping up goes through.
+	//
+	// ## Renewing something that already lapsed brings it back
+	//
+	// Its term is counted from now, and it is asked to start again. Coming back is the
+	// reconciliation loop's job, so it is not instant — which is what `desired_state` on the asset
+	// list is for.
+	//
+	// Takes any type of body and a specified content type.
+	//
+	// Corresponds with POST /account/v1/billing-accounts/{accountKey}/prepaid-assets/{provisionId}/renew (the `RenewPrepaidAsset` operationId).
+	RenewPrepaidAssetWithBody(ctx context.Context, accountKey AccountKey, provisionId ProvisionId, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// RenewPrepaidAsset Renew it
+	//
+	// Takes the money from the balance and pushes the expiry out. The resource itself is not
+	// touched — nothing is rebuilt, nothing restarts, the id stays the same.
+	//
+	// ## An idempotency key is required, not optional
+	//
+	// Renewal is a pure charge. Unlike creating something, there is no resource whose uniqueness
+	// catches a repeat, so a double click is two charges and twice the term — and both calls
+	// return success. Letting the field be omitted would mean losing that protection silently, in
+	// the one case that looks completely normal until the books are reconciled.
+	//
+	// Sending the same key again returns the order that was already placed. It does not charge
+	// again, and it is not an error: reporting a repeat as a failure makes the caller retry
+	// forever, and makes the customer press the button a second time with a fresh key.
+	//
+	// ## What happens if the balance is short
+	//
+	// The order is recorded as failed and nothing else changes: no money moves, the expiry stays
+	// where it was, and the resource keeps running until its existing term ends. Retrying with the
+	// same key after topping up goes through.
+	//
+	// ## Renewing something that already lapsed brings it back
+	//
+	// Its term is counted from now, and it is asked to start again. Coming back is the
+	// reconciliation loop's job, so it is not instant — which is what `desired_state` on the asset
+	// list is for.
+	//
+	// Takes a body of the `application/json` content type.
+	//
+	// Corresponds with POST /account/v1/billing-accounts/{accountKey}/prepaid-assets/{provisionId}/renew (the `RenewPrepaidAsset` operationId).
+	RenewPrepaidAsset(ctx context.Context, accountKey AccountKey, provisionId ProvisionId, body RenewPrepaidAssetJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// QuoteRenewal What renewing this would cost
+	//
+	// Priced the same way the charge is, from the same table, so the number shown is the number
+	// taken. Quoting separately from charging is what lets a customer see the price before
+	// committing; computing it twice in two places is what makes the two disagree, and a bill that
+	// disagrees with the page that sold it is a complaint rather than a bug report.
+	//
+	// ## Both the current and the resulting expiry are returned
+	//
+	// Renewing early adds the term to what is left, not to today — otherwise renewing a month
+	// ahead throws that month away, and everyone learns to wait until the last moment. Something
+	// that lapsed long ago is counted from now instead, because adding to a date in the past
+	// produces an expiry that is still in the past.
+	//
+	// Reporting only the new date leaves the customer unable to tell which of those happened.
+	//
+	// ## A withdrawn price still quotes
+	//
+	// Taking a product off sale means stop selling new ones. Refusing renewals as well would stop
+	// a batch of existing machines on their expiry date, which is not what the operator pressed
+	// that button for.
+	//
+	// Corresponds with GET /account/v1/billing-accounts/{accountKey}/prepaid-assets/{provisionId}/renewal-quote (the `QuoteRenewal` operationId).
+	QuoteRenewal(ctx context.Context, accountKey AccountKey, provisionId ProvisionId, params *QuoteRenewalParams, reqEditors ...RequestEditorFn) (*http.Response, error)
 
 	// UnbindProjectFromBillingAccount Stop paying for a project
 	//
@@ -1937,6 +2213,162 @@ func (c *Client) ReadPaymentMethod(ctx context.Context, accountKey AccountKey, r
 // Corresponds with POST /account/v1/billing-accounts/{accountKey}/payment-method (the `StartPaymentMethodSetup` operationId).
 func (c *Client) StartPaymentMethodSetup(ctx context.Context, accountKey AccountKey, reqEditors ...RequestEditorFn) (*http.Response, error) {
 	req, err := NewStartPaymentMethodSetupRequest(c.Server, accountKey)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+// ListPrepaidAssets What I bought outright, and when it runs out
+//
+// Everything this account paid a term for, across every product, soonest to expire first.
+//
+// ## Why this is one list rather than a page inside each product
+//
+// Renewal is the one thing a customer forgets, and forgetting it stops the machine. Splitting
+// the list per product means the instance about to lapse tomorrow is only visible to someone
+// who thought to go and look at instances. Sorting by expiry rather than by purchase date is
+// the same reason: the row that matters is the one at the top.
+//
+// ## Metered resources are not here
+//
+// There is no term to run out. Listing them with an empty expiry would invite renewing
+// something that is already billed by the hour until it is deleted.
+//
+// ## `state` and `desired_state` are both reported
+//
+// A machine stopped because its term lapsed reads `suspended` for both. One that has just been
+// renewed reads `suspended` and `active` — it is on its way back. Without the second field
+// those look identical, and a customer who just paid concludes it did not work and pays again.
+//
+// Corresponds with GET /account/v1/billing-accounts/{accountKey}/prepaid-assets (the `ListPrepaidAssets` operationId).
+func (c *Client) ListPrepaidAssets(ctx context.Context, accountKey AccountKey, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewListPrepaidAssetsRequest(c.Server, accountKey)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+// RenewPrepaidAssetWithBody Renew it
+//
+// Takes the money from the balance and pushes the expiry out. The resource itself is not
+// touched — nothing is rebuilt, nothing restarts, the id stays the same.
+//
+// ## An idempotency key is required, not optional
+//
+// Renewal is a pure charge. Unlike creating something, there is no resource whose uniqueness
+// catches a repeat, so a double click is two charges and twice the term — and both calls
+// return success. Letting the field be omitted would mean losing that protection silently, in
+// the one case that looks completely normal until the books are reconciled.
+//
+// Sending the same key again returns the order that was already placed. It does not charge
+// again, and it is not an error: reporting a repeat as a failure makes the caller retry
+// forever, and makes the customer press the button a second time with a fresh key.
+//
+// ## What happens if the balance is short
+//
+// The order is recorded as failed and nothing else changes: no money moves, the expiry stays
+// where it was, and the resource keeps running until its existing term ends. Retrying with the
+// same key after topping up goes through.
+//
+// ## Renewing something that already lapsed brings it back
+//
+// Its term is counted from now, and it is asked to start again. Coming back is the
+// reconciliation loop's job, so it is not instant — which is what `desired_state` on the asset
+// list is for.
+//
+// Takes any type of body and a specified content type.
+//
+// Corresponds with POST /account/v1/billing-accounts/{accountKey}/prepaid-assets/{provisionId}/renew (the `RenewPrepaidAsset` operationId).
+func (c *Client) RenewPrepaidAssetWithBody(ctx context.Context, accountKey AccountKey, provisionId ProvisionId, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewRenewPrepaidAssetRequestWithBody(c.Server, accountKey, provisionId, contentType, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+// RenewPrepaidAsset Renew it
+//
+// Takes the money from the balance and pushes the expiry out. The resource itself is not
+// touched — nothing is rebuilt, nothing restarts, the id stays the same.
+//
+// ## An idempotency key is required, not optional
+//
+// Renewal is a pure charge. Unlike creating something, there is no resource whose uniqueness
+// catches a repeat, so a double click is two charges and twice the term — and both calls
+// return success. Letting the field be omitted would mean losing that protection silently, in
+// the one case that looks completely normal until the books are reconciled.
+//
+// Sending the same key again returns the order that was already placed. It does not charge
+// again, and it is not an error: reporting a repeat as a failure makes the caller retry
+// forever, and makes the customer press the button a second time with a fresh key.
+//
+// ## What happens if the balance is short
+//
+// The order is recorded as failed and nothing else changes: no money moves, the expiry stays
+// where it was, and the resource keeps running until its existing term ends. Retrying with the
+// same key after topping up goes through.
+//
+// ## Renewing something that already lapsed brings it back
+//
+// Its term is counted from now, and it is asked to start again. Coming back is the
+// reconciliation loop's job, so it is not instant — which is what `desired_state` on the asset
+// list is for.
+//
+// Takes a body of the `application/json` content type.
+//
+// Corresponds with POST /account/v1/billing-accounts/{accountKey}/prepaid-assets/{provisionId}/renew (the `RenewPrepaidAsset` operationId).
+func (c *Client) RenewPrepaidAsset(ctx context.Context, accountKey AccountKey, provisionId ProvisionId, body RenewPrepaidAssetJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewRenewPrepaidAssetRequest(c.Server, accountKey, provisionId, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+// QuoteRenewal What renewing this would cost
+//
+// Priced the same way the charge is, from the same table, so the number shown is the number
+// taken. Quoting separately from charging is what lets a customer see the price before
+// committing; computing it twice in two places is what makes the two disagree, and a bill that
+// disagrees with the page that sold it is a complaint rather than a bug report.
+//
+// ## Both the current and the resulting expiry are returned
+//
+// Renewing early adds the term to what is left, not to today — otherwise renewing a month
+// ahead throws that month away, and everyone learns to wait until the last moment. Something
+// that lapsed long ago is counted from now instead, because adding to a date in the past
+// produces an expiry that is still in the past.
+//
+// Reporting only the new date leaves the customer unable to tell which of those happened.
+//
+// ## A withdrawn price still quotes
+//
+// Taking a product off sale means stop selling new ones. Refusing renewals as well would stop
+// a batch of existing machines on their expiry date, which is not what the operator pressed
+// that button for.
+//
+// Corresponds with GET /account/v1/billing-accounts/{accountKey}/prepaid-assets/{provisionId}/renewal-quote (the `QuoteRenewal` operationId).
+func (c *Client) QuoteRenewal(ctx context.Context, accountKey AccountKey, provisionId ProvisionId, params *QuoteRenewalParams, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewQuoteRenewalRequest(c.Server, accountKey, provisionId, params)
 	if err != nil {
 		return nil, err
 	}
@@ -2937,6 +3369,158 @@ func NewStartPaymentMethodSetupRequest(server string, accountKey AccountKey) (*h
 	return req, nil
 }
 
+// NewListPrepaidAssetsRequest constructs an http.Request for the ListPrepaidAssets method
+func NewListPrepaidAssetsRequest(server string, accountKey AccountKey) (*http.Request, error) {
+	var err error
+
+	var pathParam0 string
+
+	pathParam0, err = runtime.StyleParamWithOptions("simple", false, "accountKey", accountKey, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: ""})
+	if err != nil {
+		return nil, err
+	}
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/account/v1/billing-accounts/%s/prepaid-assets", pathParam0)
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest(http.MethodGet, queryURL.String(), nil)
+	if err != nil {
+		return nil, err
+	}
+
+	return req, nil
+}
+
+// NewRenewPrepaidAssetRequest calls the generic RenewPrepaidAsset builder with application/json body
+func NewRenewPrepaidAssetRequest(server string, accountKey AccountKey, provisionId ProvisionId, body RenewPrepaidAssetJSONRequestBody) (*http.Request, error) {
+	var bodyReader io.Reader
+	buf, err := json.Marshal(body)
+	if err != nil {
+		return nil, err
+	}
+	bodyReader = bytes.NewReader(buf)
+	return NewRenewPrepaidAssetRequestWithBody(server, accountKey, provisionId, "application/json", bodyReader)
+}
+
+// NewRenewPrepaidAssetRequestWithBody constructs an http.Request for the RenewPrepaidAsset method, with any body, and a specified content type
+func NewRenewPrepaidAssetRequestWithBody(server string, accountKey AccountKey, provisionId ProvisionId, contentType string, body io.Reader) (*http.Request, error) {
+	var err error
+
+	var pathParam0 string
+
+	pathParam0, err = runtime.StyleParamWithOptions("simple", false, "accountKey", accountKey, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: ""})
+	if err != nil {
+		return nil, err
+	}
+
+	var pathParam1 string
+
+	pathParam1, err = runtime.StyleParamWithOptions("simple", false, "provisionId", provisionId, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: "uuid"})
+	if err != nil {
+		return nil, err
+	}
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/account/v1/billing-accounts/%s/prepaid-assets/%s/renew", pathParam0, pathParam1)
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest(http.MethodPost, queryURL.String(), body)
+	if err != nil {
+		return nil, err
+	}
+
+	req.Header.Add("Content-Type", contentType)
+
+	return req, nil
+}
+
+// NewQuoteRenewalRequest constructs an http.Request for the QuoteRenewal method
+func NewQuoteRenewalRequest(server string, accountKey AccountKey, provisionId ProvisionId, params *QuoteRenewalParams) (*http.Request, error) {
+	var err error
+
+	var pathParam0 string
+
+	pathParam0, err = runtime.StyleParamWithOptions("simple", false, "accountKey", accountKey, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: ""})
+	if err != nil {
+		return nil, err
+	}
+
+	var pathParam1 string
+
+	pathParam1, err = runtime.StyleParamWithOptions("simple", false, "provisionId", provisionId, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: "uuid"})
+	if err != nil {
+		return nil, err
+	}
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/account/v1/billing-accounts/%s/prepaid-assets/%s/renewal-quote", pathParam0, pathParam1)
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	if params != nil {
+		// queryValues collects non-styled parameters (passthrough, JSON)
+		// that are safe to round-trip through url.Values.Encode().
+		queryValues := queryURL.Query()
+		// rawQueryFragments collects pre-encoded query fragments from
+		// styled parameters, preserving literal commas as delimiters
+		// per the OpenAPI spec (e.g. "color=blue,black,brown").
+		var rawQueryFragments []string
+
+		if queryFrag, err := runtime.StyleParamWithOptions("form", true, "term", params.Term, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "string", Format: ""}); err != nil {
+			return nil, err
+		} else {
+			for _, qp := range strings.Split(queryFrag, "&") {
+				rawQueryFragments = append(rawQueryFragments, qp)
+			}
+		}
+
+		if encoded := queryValues.Encode(); encoded != "" {
+			rawQueryFragments = append(rawQueryFragments, encoded)
+		}
+		queryURL.RawQuery = strings.Join(rawQueryFragments, "&")
+	}
+
+	req, err := http.NewRequest(http.MethodGet, queryURL.String(), nil)
+	if err != nil {
+		return nil, err
+	}
+
+	return req, nil
+}
+
 // NewUnbindProjectFromBillingAccountRequest constructs an http.Request for the UnbindProjectFromBillingAccount method
 func NewUnbindProjectFromBillingAccountRequest(server string, accountKey AccountKey, projectId openapi_types.UUID) (*http.Request, error) {
 	var err error
@@ -3685,6 +4269,126 @@ type ClientWithResponsesInterface interface {
 	//
 	// Corresponds with POST /account/v1/billing-accounts/{accountKey}/payment-method (the `StartPaymentMethodSetup` operationId).
 	StartPaymentMethodSetupWithResponse(ctx context.Context, accountKey AccountKey, reqEditors ...RequestEditorFn) (*StartPaymentMethodSetupResponse, error)
+
+	// ListPrepaidAssetsWithResponse What I bought outright, and when it runs out
+	//
+	// Everything this account paid a term for, across every product, soonest to expire first.
+	//
+	// ## Why this is one list rather than a page inside each product
+	//
+	// Renewal is the one thing a customer forgets, and forgetting it stops the machine. Splitting
+	// the list per product means the instance about to lapse tomorrow is only visible to someone
+	// who thought to go and look at instances. Sorting by expiry rather than by purchase date is
+	// the same reason: the row that matters is the one at the top.
+	//
+	// ## Metered resources are not here
+	//
+	// There is no term to run out. Listing them with an empty expiry would invite renewing
+	// something that is already billed by the hour until it is deleted.
+	//
+	// ## `state` and `desired_state` are both reported
+	//
+	// A machine stopped because its term lapsed reads `suspended` for both. One that has just been
+	// renewed reads `suspended` and `active` — it is on its way back. Without the second field
+	// those look identical, and a customer who just paid concludes it did not work and pays again.
+	//
+	// Returns a wrapper object for the known response body format(s).
+	//
+	// Corresponds with GET /account/v1/billing-accounts/{accountKey}/prepaid-assets (the `ListPrepaidAssets` operationId).
+	ListPrepaidAssetsWithResponse(ctx context.Context, accountKey AccountKey, reqEditors ...RequestEditorFn) (*ListPrepaidAssetsResponse, error)
+
+	// RenewPrepaidAssetWithBodyWithResponse Renew it
+	//
+	// Takes the money from the balance and pushes the expiry out. The resource itself is not
+	// touched — nothing is rebuilt, nothing restarts, the id stays the same.
+	//
+	// ## An idempotency key is required, not optional
+	//
+	// Renewal is a pure charge. Unlike creating something, there is no resource whose uniqueness
+	// catches a repeat, so a double click is two charges and twice the term — and both calls
+	// return success. Letting the field be omitted would mean losing that protection silently, in
+	// the one case that looks completely normal until the books are reconciled.
+	//
+	// Sending the same key again returns the order that was already placed. It does not charge
+	// again, and it is not an error: reporting a repeat as a failure makes the caller retry
+	// forever, and makes the customer press the button a second time with a fresh key.
+	//
+	// ## What happens if the balance is short
+	//
+	// The order is recorded as failed and nothing else changes: no money moves, the expiry stays
+	// where it was, and the resource keeps running until its existing term ends. Retrying with the
+	// same key after topping up goes through.
+	//
+	// ## Renewing something that already lapsed brings it back
+	//
+	// Its term is counted from now, and it is asked to start again. Coming back is the
+	// reconciliation loop's job, so it is not instant — which is what `desired_state` on the asset
+	// list is for.
+	//
+	// Takes any type of body and a specified content type, and returns a wrapper object for the known response body format(s).
+	//
+	// Corresponds with POST /account/v1/billing-accounts/{accountKey}/prepaid-assets/{provisionId}/renew (the `RenewPrepaidAsset` operationId).
+	RenewPrepaidAssetWithBodyWithResponse(ctx context.Context, accountKey AccountKey, provisionId ProvisionId, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*RenewPrepaidAssetResponse, error)
+
+	// RenewPrepaidAssetWithResponse Renew it
+	//
+	// Takes the money from the balance and pushes the expiry out. The resource itself is not
+	// touched — nothing is rebuilt, nothing restarts, the id stays the same.
+	//
+	// ## An idempotency key is required, not optional
+	//
+	// Renewal is a pure charge. Unlike creating something, there is no resource whose uniqueness
+	// catches a repeat, so a double click is two charges and twice the term — and both calls
+	// return success. Letting the field be omitted would mean losing that protection silently, in
+	// the one case that looks completely normal until the books are reconciled.
+	//
+	// Sending the same key again returns the order that was already placed. It does not charge
+	// again, and it is not an error: reporting a repeat as a failure makes the caller retry
+	// forever, and makes the customer press the button a second time with a fresh key.
+	//
+	// ## What happens if the balance is short
+	//
+	// The order is recorded as failed and nothing else changes: no money moves, the expiry stays
+	// where it was, and the resource keeps running until its existing term ends. Retrying with the
+	// same key after topping up goes through.
+	//
+	// ## Renewing something that already lapsed brings it back
+	//
+	// Its term is counted from now, and it is asked to start again. Coming back is the
+	// reconciliation loop's job, so it is not instant — which is what `desired_state` on the asset
+	// list is for.
+	//
+	// Takes a body of the `application/json` content type, and returns a wrapper object for the known response body format(s).
+	//
+	// Corresponds with POST /account/v1/billing-accounts/{accountKey}/prepaid-assets/{provisionId}/renew (the `RenewPrepaidAsset` operationId).
+	RenewPrepaidAssetWithResponse(ctx context.Context, accountKey AccountKey, provisionId ProvisionId, body RenewPrepaidAssetJSONRequestBody, reqEditors ...RequestEditorFn) (*RenewPrepaidAssetResponse, error)
+
+	// QuoteRenewalWithResponse What renewing this would cost
+	//
+	// Priced the same way the charge is, from the same table, so the number shown is the number
+	// taken. Quoting separately from charging is what lets a customer see the price before
+	// committing; computing it twice in two places is what makes the two disagree, and a bill that
+	// disagrees with the page that sold it is a complaint rather than a bug report.
+	//
+	// ## Both the current and the resulting expiry are returned
+	//
+	// Renewing early adds the term to what is left, not to today — otherwise renewing a month
+	// ahead throws that month away, and everyone learns to wait until the last moment. Something
+	// that lapsed long ago is counted from now instead, because adding to a date in the past
+	// produces an expiry that is still in the past.
+	//
+	// Reporting only the new date leaves the customer unable to tell which of those happened.
+	//
+	// ## A withdrawn price still quotes
+	//
+	// Taking a product off sale means stop selling new ones. Refusing renewals as well would stop
+	// a batch of existing machines on their expiry date, which is not what the operator pressed
+	// that button for.
+	//
+	// Returns a wrapper object for the known response body format(s).
+	//
+	// Corresponds with GET /account/v1/billing-accounts/{accountKey}/prepaid-assets/{provisionId}/renewal-quote (the `QuoteRenewal` operationId).
+	QuoteRenewalWithResponse(ctx context.Context, accountKey AccountKey, provisionId ProvisionId, params *QuoteRenewalParams, reqEditors ...RequestEditorFn) (*QuoteRenewalResponse, error)
 
 	// UnbindProjectFromBillingAccountWithResponse Stop paying for a project
 	//
@@ -4733,6 +5437,150 @@ func (r StartPaymentMethodSetupResponse) ContentType() string {
 	return ""
 }
 
+type ListPrepaidAssetsResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	// JSON200 the response for an HTTP 200 `application/json` response
+	JSON200 *PrepaidAssetList
+	// JSONDefault the response for an HTTP default `application/json` response
+	JSONDefault *Error
+}
+
+// GetJSON200 returns the response for an HTTP 200 `application/json` response
+func (r ListPrepaidAssetsResponse) GetJSON200() *PrepaidAssetList {
+	return r.JSON200
+}
+
+// GetJSONDefault returns the response for an HTTP default `application/json` response
+func (r ListPrepaidAssetsResponse) GetJSONDefault() *Error {
+	return r.JSONDefault
+}
+
+// GetBody returns the raw response body bytes
+func (r ListPrepaidAssetsResponse) GetBody() []byte {
+	return r.Body
+}
+
+// Status returns HTTPResponse.Status
+func (r ListPrepaidAssetsResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r ListPrepaidAssetsResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+// ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
+func (r ListPrepaidAssetsResponse) ContentType() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Header.Get("Content-Type")
+	}
+	return ""
+}
+
+type RenewPrepaidAssetResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	// JSON200 the response for an HTTP 200 `application/json` response
+	JSON200 *Order
+	// JSONDefault the response for an HTTP default `application/json` response
+	JSONDefault *Error
+}
+
+// GetJSON200 returns the response for an HTTP 200 `application/json` response
+func (r RenewPrepaidAssetResponse) GetJSON200() *Order {
+	return r.JSON200
+}
+
+// GetJSONDefault returns the response for an HTTP default `application/json` response
+func (r RenewPrepaidAssetResponse) GetJSONDefault() *Error {
+	return r.JSONDefault
+}
+
+// GetBody returns the raw response body bytes
+func (r RenewPrepaidAssetResponse) GetBody() []byte {
+	return r.Body
+}
+
+// Status returns HTTPResponse.Status
+func (r RenewPrepaidAssetResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r RenewPrepaidAssetResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+// ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
+func (r RenewPrepaidAssetResponse) ContentType() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Header.Get("Content-Type")
+	}
+	return ""
+}
+
+type QuoteRenewalResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	// JSON200 the response for an HTTP 200 `application/json` response
+	JSON200 *RenewalQuote
+	// JSONDefault the response for an HTTP default `application/json` response
+	JSONDefault *Error
+}
+
+// GetJSON200 returns the response for an HTTP 200 `application/json` response
+func (r QuoteRenewalResponse) GetJSON200() *RenewalQuote {
+	return r.JSON200
+}
+
+// GetJSONDefault returns the response for an HTTP default `application/json` response
+func (r QuoteRenewalResponse) GetJSONDefault() *Error {
+	return r.JSONDefault
+}
+
+// GetBody returns the raw response body bytes
+func (r QuoteRenewalResponse) GetBody() []byte {
+	return r.Body
+}
+
+// Status returns HTTPResponse.Status
+func (r QuoteRenewalResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r QuoteRenewalResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+// ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
+func (r QuoteRenewalResponse) ContentType() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Header.Get("Content-Type")
+	}
+	return ""
+}
+
 type UnbindProjectFromBillingAccountResponse struct {
 	Body         []byte
 	HTTPResponse *http.Response
@@ -5580,6 +6428,150 @@ func (c *ClientWithResponses) StartPaymentMethodSetupWithResponse(ctx context.Co
 		return nil, err
 	}
 	return ParseStartPaymentMethodSetupResponse(rsp)
+}
+
+// ListPrepaidAssetsWithResponse What I bought outright, and when it runs out
+//
+// Everything this account paid a term for, across every product, soonest to expire first.
+//
+// ## Why this is one list rather than a page inside each product
+//
+// Renewal is the one thing a customer forgets, and forgetting it stops the machine. Splitting
+// the list per product means the instance about to lapse tomorrow is only visible to someone
+// who thought to go and look at instances. Sorting by expiry rather than by purchase date is
+// the same reason: the row that matters is the one at the top.
+//
+// ## Metered resources are not here
+//
+// There is no term to run out. Listing them with an empty expiry would invite renewing
+// something that is already billed by the hour until it is deleted.
+//
+// ## `state` and `desired_state` are both reported
+//
+// A machine stopped because its term lapsed reads `suspended` for both. One that has just been
+// renewed reads `suspended` and `active` — it is on its way back. Without the second field
+// those look identical, and a customer who just paid concludes it did not work and pays again.
+//
+// Returns a wrapper object for the known response body format(s).
+//
+// Corresponds with GET /account/v1/billing-accounts/{accountKey}/prepaid-assets (the `ListPrepaidAssets` operationId).
+func (c *ClientWithResponses) ListPrepaidAssetsWithResponse(ctx context.Context, accountKey AccountKey, reqEditors ...RequestEditorFn) (*ListPrepaidAssetsResponse, error) {
+	rsp, err := c.ListPrepaidAssets(ctx, accountKey, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseListPrepaidAssetsResponse(rsp)
+}
+
+// RenewPrepaidAssetWithBodyWithResponse Renew it
+//
+// Takes the money from the balance and pushes the expiry out. The resource itself is not
+// touched — nothing is rebuilt, nothing restarts, the id stays the same.
+//
+// ## An idempotency key is required, not optional
+//
+// Renewal is a pure charge. Unlike creating something, there is no resource whose uniqueness
+// catches a repeat, so a double click is two charges and twice the term — and both calls
+// return success. Letting the field be omitted would mean losing that protection silently, in
+// the one case that looks completely normal until the books are reconciled.
+//
+// Sending the same key again returns the order that was already placed. It does not charge
+// again, and it is not an error: reporting a repeat as a failure makes the caller retry
+// forever, and makes the customer press the button a second time with a fresh key.
+//
+// ## What happens if the balance is short
+//
+// The order is recorded as failed and nothing else changes: no money moves, the expiry stays
+// where it was, and the resource keeps running until its existing term ends. Retrying with the
+// same key after topping up goes through.
+//
+// ## Renewing something that already lapsed brings it back
+//
+// Its term is counted from now, and it is asked to start again. Coming back is the
+// reconciliation loop's job, so it is not instant — which is what `desired_state` on the asset
+// list is for.
+//
+// Takes any type of body and a specified content type, and returns a wrapper object for the known response body format(s).
+//
+// Corresponds with POST /account/v1/billing-accounts/{accountKey}/prepaid-assets/{provisionId}/renew (the `RenewPrepaidAsset` operationId).
+func (c *ClientWithResponses) RenewPrepaidAssetWithBodyWithResponse(ctx context.Context, accountKey AccountKey, provisionId ProvisionId, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*RenewPrepaidAssetResponse, error) {
+	rsp, err := c.RenewPrepaidAssetWithBody(ctx, accountKey, provisionId, contentType, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseRenewPrepaidAssetResponse(rsp)
+}
+
+// RenewPrepaidAssetWithResponse Renew it
+//
+// Takes the money from the balance and pushes the expiry out. The resource itself is not
+// touched — nothing is rebuilt, nothing restarts, the id stays the same.
+//
+// ## An idempotency key is required, not optional
+//
+// Renewal is a pure charge. Unlike creating something, there is no resource whose uniqueness
+// catches a repeat, so a double click is two charges and twice the term — and both calls
+// return success. Letting the field be omitted would mean losing that protection silently, in
+// the one case that looks completely normal until the books are reconciled.
+//
+// Sending the same key again returns the order that was already placed. It does not charge
+// again, and it is not an error: reporting a repeat as a failure makes the caller retry
+// forever, and makes the customer press the button a second time with a fresh key.
+//
+// ## What happens if the balance is short
+//
+// The order is recorded as failed and nothing else changes: no money moves, the expiry stays
+// where it was, and the resource keeps running until its existing term ends. Retrying with the
+// same key after topping up goes through.
+//
+// ## Renewing something that already lapsed brings it back
+//
+// Its term is counted from now, and it is asked to start again. Coming back is the
+// reconciliation loop's job, so it is not instant — which is what `desired_state` on the asset
+// list is for.
+//
+// Takes a body of the `application/json` content type, and returns a wrapper object for the known response body format(s).
+//
+// Corresponds with POST /account/v1/billing-accounts/{accountKey}/prepaid-assets/{provisionId}/renew (the `RenewPrepaidAsset` operationId).
+func (c *ClientWithResponses) RenewPrepaidAssetWithResponse(ctx context.Context, accountKey AccountKey, provisionId ProvisionId, body RenewPrepaidAssetJSONRequestBody, reqEditors ...RequestEditorFn) (*RenewPrepaidAssetResponse, error) {
+	rsp, err := c.RenewPrepaidAsset(ctx, accountKey, provisionId, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseRenewPrepaidAssetResponse(rsp)
+}
+
+// QuoteRenewalWithResponse What renewing this would cost
+//
+// Priced the same way the charge is, from the same table, so the number shown is the number
+// taken. Quoting separately from charging is what lets a customer see the price before
+// committing; computing it twice in two places is what makes the two disagree, and a bill that
+// disagrees with the page that sold it is a complaint rather than a bug report.
+//
+// ## Both the current and the resulting expiry are returned
+//
+// Renewing early adds the term to what is left, not to today — otherwise renewing a month
+// ahead throws that month away, and everyone learns to wait until the last moment. Something
+// that lapsed long ago is counted from now instead, because adding to a date in the past
+// produces an expiry that is still in the past.
+//
+// Reporting only the new date leaves the customer unable to tell which of those happened.
+//
+// ## A withdrawn price still quotes
+//
+// Taking a product off sale means stop selling new ones. Refusing renewals as well would stop
+// a batch of existing machines on their expiry date, which is not what the operator pressed
+// that button for.
+//
+// Returns a wrapper object for the known response body format(s).
+//
+// Corresponds with GET /account/v1/billing-accounts/{accountKey}/prepaid-assets/{provisionId}/renewal-quote (the `QuoteRenewal` operationId).
+func (c *ClientWithResponses) QuoteRenewalWithResponse(ctx context.Context, accountKey AccountKey, provisionId ProvisionId, params *QuoteRenewalParams, reqEditors ...RequestEditorFn) (*QuoteRenewalResponse, error) {
+	rsp, err := c.QuoteRenewal(ctx, accountKey, provisionId, params, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseQuoteRenewalResponse(rsp)
 }
 
 // UnbindProjectFromBillingAccountWithResponse Stop paying for a project
@@ -6443,6 +7435,105 @@ func ParseStartPaymentMethodSetupResponse(rsp *http.Response) (*StartPaymentMeth
 	switch {
 	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
 		var dest PaymentMethodSetupSession
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && true:
+		var dest Error
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSONDefault = &dest
+
+	}
+
+	return response, nil
+}
+
+// ParseListPrepaidAssetsResponse parses an HTTP response from a ListPrepaidAssetsWithResponse call
+func ParseListPrepaidAssetsResponse(rsp *http.Response) (*ListPrepaidAssetsResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &ListPrepaidAssetsResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest PrepaidAssetList
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && true:
+		var dest Error
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSONDefault = &dest
+
+	}
+
+	return response, nil
+}
+
+// ParseRenewPrepaidAssetResponse parses an HTTP response from a RenewPrepaidAssetWithResponse call
+func ParseRenewPrepaidAssetResponse(rsp *http.Response) (*RenewPrepaidAssetResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &RenewPrepaidAssetResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest Order
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && true:
+		var dest Error
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSONDefault = &dest
+
+	}
+
+	return response, nil
+}
+
+// ParseQuoteRenewalResponse parses an HTTP response from a QuoteRenewalWithResponse call
+func ParseQuoteRenewalResponse(rsp *http.Response) (*QuoteRenewalResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &QuoteRenewalResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest RenewalQuote
 		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
 			return nil, err
 		}
