@@ -120,6 +120,31 @@ func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 					return
 				}
 
+			case 'i': // Prefix: "invitations/by-token"
+
+				if l := len("invitations/by-token"); len(elem) >= l && elem[0:l] == "invitations/by-token" {
+					elem = elem[l:]
+				} else {
+					break
+				}
+
+				if len(elem) == 0 {
+					// Leaf node.
+					switch r.Method {
+					case "GET":
+						s.handlePreviewInvitationByTokenRequest([0]string{}, elemIsEscaped, w, r)
+					default:
+						s.notAllowed(w, r, notAllowedParams{
+							allowedMethods: "GET",
+							allowedHeaders: nil,
+							acceptPost:     "",
+							acceptPatch:    "",
+						})
+					}
+
+					return
+				}
+
 			case 'l': // Prefix: "locales"
 
 				if l := len("locales"); len(elem) >= l && elem[0:l] == "locales" {
@@ -303,32 +328,6 @@ func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 												allowedMethods: "POST",
 												allowedHeaders: rn6AllowedHeaders,
 												acceptPost:     "application/json",
-												acceptPatch:    "",
-											})
-										}
-
-										return
-									}
-
-									elem = origElem
-								case 'b': // Prefix: "by-token"
-									origElem := elem
-									if l := len("by-token"); len(elem) >= l && elem[0:l] == "by-token" {
-										elem = elem[l:]
-									} else {
-										break
-									}
-
-									if len(elem) == 0 {
-										// Leaf node.
-										switch r.Method {
-										case "GET":
-											s.handlePreviewInvitationByTokenRequest([0]string{}, elemIsEscaped, w, r)
-										default:
-											s.notAllowed(w, r, notAllowedParams{
-												allowedMethods: "GET",
-												allowedHeaders: nil,
-												acceptPost:     "",
 												acceptPatch:    "",
 											})
 										}
@@ -641,6 +640,31 @@ func (s *Server) FindPath(method string, u *url.URL) (r Route, _ bool) {
 					}
 				}
 
+			case 'i': // Prefix: "invitations/by-token"
+
+				if l := len("invitations/by-token"); len(elem) >= l && elem[0:l] == "invitations/by-token" {
+					elem = elem[l:]
+				} else {
+					break
+				}
+
+				if len(elem) == 0 {
+					// Leaf node.
+					switch method {
+					case "GET":
+						r.name = PreviewInvitationByTokenOperation
+						r.summary = "看一眼这封邀请是谁发的、加入哪儿、什么角色"
+						r.operationID = "preview-invitation-by-token"
+						r.operationGroup = ""
+						r.pathPattern = "/account/v1/invitations/by-token"
+						r.args = args
+						r.count = 0
+						return r, true
+					default:
+						return
+					}
+				}
+
 			case 'l': // Prefix: "locales"
 
 				if l := len("locales"); len(elem) >= l && elem[0:l] == "locales" {
@@ -844,32 +868,6 @@ func (s *Server) FindPath(method string, u *url.URL) (r Route, _ bool) {
 											r.operationID = "accept-invitation-by-token"
 											r.operationGroup = ""
 											r.pathPattern = "/account/v1/me/invitations/accept"
-											r.args = args
-											r.count = 0
-											return r, true
-										default:
-											return
-										}
-									}
-
-									elem = origElem
-								case 'b': // Prefix: "by-token"
-									origElem := elem
-									if l := len("by-token"); len(elem) >= l && elem[0:l] == "by-token" {
-										elem = elem[l:]
-									} else {
-										break
-									}
-
-									if len(elem) == 0 {
-										// Leaf node.
-										switch method {
-										case "GET":
-											r.name = PreviewInvitationByTokenOperation
-											r.summary = "看一眼这封邀请是谁发的、加入哪儿、什么角色"
-											r.operationID = "preview-invitation-by-token"
-											r.operationGroup = ""
-											r.pathPattern = "/account/v1/me/invitations/by-token"
 											r.args = args
 											r.count = 0
 											return r, true

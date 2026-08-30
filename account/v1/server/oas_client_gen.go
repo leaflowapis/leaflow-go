@@ -155,9 +155,13 @@ type Invoker interface {
 	// 当初寄给了哪个地址」——而那是邮件正文里没有、持有者也未必知道的一件事。
 	// 令牌不存在、已经用过、被撤回、过期，四种情况同一个 404
 	// 和同一句话。分开报会把它变成
-	// 一个可以拿来试令牌的探针，而这个接口免认证，任何人都试得起。.
+	// 一个可以拿来试令牌的探针，而这个接口免认证，任何人都试得起。 它不在
+	// `/me` 下面，隔壁那两条接受要约的在。 `/me`
+	// 的意思是「按这次请求的身份认出来
+	// 的、属于我的那些」，而这条路上没有身份——持有令牌的人未必是收件人本人。挂在
+	// `/me` 下面会让读的人以为它认过身份，而那正是这条路唯一不做的事。.
 	//
-	// GET /account/v1/me/invitations/by-token
+	// GET /account/v1/invitations/by-token
 	PreviewInvitationByToken(ctx context.Context, params PreviewInvitationByTokenParams) (*InvitationPreviewResource, error)
 	// Register invokes register operation.
 	//
@@ -1801,9 +1805,13 @@ func (c *Client) sendListProjects(ctx context.Context, params ListProjectsParams
 // 当初寄给了哪个地址」——而那是邮件正文里没有、持有者也未必知道的一件事。
 // 令牌不存在、已经用过、被撤回、过期，四种情况同一个 404
 // 和同一句话。分开报会把它变成
-// 一个可以拿来试令牌的探针，而这个接口免认证，任何人都试得起。.
+// 一个可以拿来试令牌的探针，而这个接口免认证，任何人都试得起。 它不在
+// `/me` 下面，隔壁那两条接受要约的在。 `/me`
+// 的意思是「按这次请求的身份认出来
+// 的、属于我的那些」，而这条路上没有身份——持有令牌的人未必是收件人本人。挂在
+// `/me` 下面会让读的人以为它认过身份，而那正是这条路唯一不做的事。.
 //
-// GET /account/v1/me/invitations/by-token
+// GET /account/v1/invitations/by-token
 func (c *Client) PreviewInvitationByToken(ctx context.Context, params PreviewInvitationByTokenParams) (*InvitationPreviewResource, error) {
 	res, err := c.sendPreviewInvitationByToken(ctx, params)
 	return res, err
@@ -1813,7 +1821,7 @@ func (c *Client) sendPreviewInvitationByToken(ctx context.Context, params Previe
 	otelAttrs := []attribute.KeyValue{
 		otelogen.OperationID("preview-invitation-by-token"),
 		semconv.HTTPRequestMethodKey.String("GET"),
-		semconv.URLTemplateKey.String("/account/v1/me/invitations/by-token"),
+		semconv.URLTemplateKey.String("/account/v1/invitations/by-token"),
 	}
 	otelAttrs = append(otelAttrs, c.cfg.Attributes...)
 
@@ -1847,7 +1855,7 @@ func (c *Client) sendPreviewInvitationByToken(ctx context.Context, params Previe
 	stage = "BuildURL"
 	u := uri.Clone(c.requestURL(ctx))
 	var pathParts [1]string
-	pathParts[0] = "/account/v1/me/invitations/by-token"
+	pathParts[0] = "/account/v1/invitations/by-token"
 	uri.AddPathParts(u, pathParts[:]...)
 
 	stage = "EncodeQueryParams"
