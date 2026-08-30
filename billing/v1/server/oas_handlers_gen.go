@@ -876,6 +876,246 @@ func (s *Server) handleGetBillingAccountRequest(args [1]string, argsEscaped bool
 	}
 }
 
+// handleGetChargeUsageRequest handles get-charge-usage operation.
+//
+// Splits one charge back into the projects that produced it, and lists the resources it could have
+// come from.
+//
+// # Why this is not a field on the charge
+//
+// A charge has no project, and that is not an omission: the billing subject is the account, and the
+// project is a dimension on each usage event. When three of an account's projects use the same
+// product, their usage aggregates into one charge — that charge genuinely spans three projects, and
+// stamping any single project id on it would be wrong.
+//
+// A split is also more useful than a label would be: it gives proportions, and proportions are what
+// decide which project's resources to switch off.
+//
+// # The quantity here is what was reported, not what was billed
+//
+// Conversion (machine-seconds to machine-hours) happens on the pricing side, and the engine does not
+// echo `unit_config` back on a charge. So this figure times the unit price does not equal the total
+// — a step is missing in between, and that step only becomes visible on the invoice, where the whole
+// pricing configuration is frozen onto each line.
+//
+// Reported quantity is still the right number for "which project is burning this", which is what the
+// split is for.
+//
+// # The resource list says which, not how much
+//
+// Usage events carry no resource id — it is not a grouping dimension, and making it one would mean
+// one time series per machine per hour. So the engine cannot attribute a charge to a machine. What it
+// can be attributed to is a product, and which resources of that product exist is something billing
+// knows from its own records.
+//
+// Destroyed resources are listed too: this period's charge includes the part they ran for. Leaving
+// them out is what makes the numbers fail to add up for someone who deleted a machine mid-month —
+// which is exactly the case they are trying to explain.
+//
+// # A flat fee answers with an empty split
+//
+// There is no meter behind it, so there is nothing to attribute. That is an answer, not an error.
+//
+// GET /account/v1/billing-accounts/{accountKey}/charges/{chargeId}/usage
+func (s *Server) handleGetChargeUsageRequest(args [2]string, argsEscaped bool, w http.ResponseWriter, r *http.Request) {
+	statusWriter := &codeRecorder{ResponseWriter: w}
+	w = statusWriter
+	otelAttrs := []attribute.KeyValue{
+		otelogen.OperationID("get-charge-usage"),
+		semconv.HTTPRequestMethodKey.String("GET"),
+		semconv.HTTPRouteKey.String("/account/v1/billing-accounts/{accountKey}/charges/{chargeId}/usage"),
+	}
+	// Add attributes from config.
+	otelAttrs = append(otelAttrs, s.cfg.Attributes...)
+
+	// Start a span for this request.
+	ctx, span := s.cfg.Tracer.Start(r.Context(), GetChargeUsageOperation,
+		trace.WithAttributes(otelAttrs...),
+		serverSpanKind,
+	)
+	defer span.End()
+
+	// Add Labeler to context.
+	labeler := &Labeler{attrs: otelAttrs}
+	ctx = contextWithLabeler(ctx, labeler)
+
+	// Run stopwatch.
+	startTime := time.Now()
+	defer func() {
+		elapsedDuration := time.Since(startTime)
+
+		attrSet := labeler.AttributeSet()
+		attrs := attrSet.ToSlice()
+		code := statusWriter.status
+		if code != 0 {
+			codeAttr := semconv.HTTPResponseStatusCode(code)
+			attrs = append(attrs, codeAttr)
+			span.SetAttributes(attrs...)
+		}
+		attrOpt := metric.WithAttributes(attrs...)
+
+		// Increment request counter.
+		s.requests.Add(ctx, 1, attrOpt)
+
+		// Use floating point division here for higher precision (instead of Millisecond method).
+		s.duration.Record(ctx, float64(elapsedDuration)/float64(time.Millisecond), attrOpt)
+	}()
+
+	var (
+		recordError = func(stage string, err error) {
+			span.RecordError(err)
+
+			// https://opentelemetry.io/docs/specs/semconv/http/http-spans/#status
+			// Span Status MUST be left unset if HTTP status code was in the 1xx, 2xx or 3xx ranges,
+			// unless there was another error (e.g., network error receiving the response body; or 3xx codes with
+			// max redirects exceeded), in which case status MUST be set to Error.
+			code := statusWriter.status
+			if code < 100 || code >= 500 {
+				span.SetStatus(codes.Error, stage)
+			}
+
+			attrSet := labeler.AttributeSet()
+			attrs := attrSet.ToSlice()
+			if code != 0 {
+				attrs = append(attrs, semconv.HTTPResponseStatusCode(code))
+			}
+
+			s.errors.Add(ctx, 1, metric.WithAttributes(attrs...))
+		}
+		err          error
+		opErrContext = ogenerrors.OperationContext{
+			Name: GetChargeUsageOperation,
+			ID:   "get-charge-usage",
+		}
+	)
+	{
+		type bitset = [1]uint8
+		var satisfied bitset
+		{
+			sctx, ok, err := s.securityBearerAuth(ctx, GetChargeUsageOperation, r)
+			if err != nil {
+				err = &ogenerrors.SecurityError{
+					OperationContext: opErrContext,
+					Security:         "BearerAuth",
+					Err:              err,
+				}
+				if encodeErr := encodeErrorResponse(s.h.NewError(ctx, err), w, span); encodeErr != nil {
+					defer recordError("Security:BearerAuth", err)
+				}
+				return
+			}
+			if ok {
+				satisfied[0] |= 1 << 0
+				ctx = sctx
+			}
+		}
+
+		if ok := func() bool {
+		nextRequirement:
+			for _, requirement := range []bitset{
+				{0b00000001},
+			} {
+				for i, mask := range requirement {
+					if satisfied[i]&mask != mask {
+						continue nextRequirement
+					}
+				}
+				return true
+			}
+			return false
+		}(); !ok {
+			err = &ogenerrors.SecurityError{
+				OperationContext: opErrContext,
+				Err:              ogenerrors.ErrSecurityRequirementIsNotSatisfied,
+			}
+			if encodeErr := encodeErrorResponse(s.h.NewError(ctx, err), w, span); encodeErr != nil {
+				defer recordError("Security", err)
+			}
+			return
+		}
+	}
+	params, err := decodeGetChargeUsageParams(args, argsEscaped, r)
+	if err != nil {
+		err = &ogenerrors.DecodeParamsError{
+			OperationContext: opErrContext,
+			Err:              err,
+		}
+		defer recordError("DecodeParams", err)
+		s.cfg.ErrorHandler(ctx, w, r, err)
+		return
+	}
+
+	var rawBody []byte
+
+	var response *ChargeUsage
+	if m := s.cfg.Middleware; m != nil {
+		mreq := middleware.Request{
+			Context:          ctx,
+			OperationName:    GetChargeUsageOperation,
+			OperationSummary: "What produced this charge",
+			OperationID:      "get-charge-usage",
+			Body:             nil,
+			RawBody:          rawBody,
+			Params: middleware.Parameters{
+				{
+					Name: "accountKey",
+					In:   "path",
+				}: params.AccountKey,
+				{
+					Name: "chargeId",
+					In:   "path",
+				}: params.ChargeId,
+			},
+			Raw: r,
+		}
+
+		type (
+			Request  = struct{}
+			Params   = GetChargeUsageParams
+			Response = *ChargeUsage
+		)
+		response, err = middleware.HookMiddleware[
+			Request,
+			Params,
+			Response,
+		](
+			m,
+			mreq,
+			unpackGetChargeUsageParams,
+			func(ctx context.Context, request Request, params Params) (response Response, err error) {
+				response, err = s.h.GetChargeUsage(ctx, params)
+				return response, err
+			},
+		)
+	} else {
+		response, err = s.h.GetChargeUsage(ctx, params)
+	}
+	if err != nil {
+		if errRes, ok := errors.Into[*ErrorStatusCode](err); ok {
+			if err := encodeErrorResponse(errRes, w, span); err != nil {
+				defer recordError("Internal", err)
+			}
+			return
+		}
+		if errors.Is(err, ht.ErrNotImplemented) {
+			s.cfg.ErrorHandler(ctx, w, r, err)
+			return
+		}
+		if err := encodeErrorResponse(s.h.NewError(ctx, err), w, span); err != nil {
+			defer recordError("Internal", err)
+		}
+		return
+	}
+
+	if err := encodeGetChargeUsageResponse(response, w, span); err != nil {
+		defer recordError("EncodeResponse", err)
+		if !errors.Is(err, ht.ErrInternalServerErrorResponse) {
+			s.cfg.ErrorHandler(ctx, w, r, err)
+		}
+		return
+	}
+}
+
 // handleGetInvoiceRequest handles get-invoice operation.
 //
 // A total does not answer "why is it this much", and that is the question a bill provokes. Each line

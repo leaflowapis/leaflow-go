@@ -84,6 +84,51 @@ func (UnimplementedHandler) GetBillingAccount(ctx context.Context, params GetBil
 	return r, ht.ErrNotImplemented
 }
 
+// GetChargeUsage implements get-charge-usage operation.
+//
+// Splits one charge back into the projects that produced it, and lists the resources it could have
+// come from.
+//
+// # Why this is not a field on the charge
+//
+// A charge has no project, and that is not an omission: the billing subject is the account, and the
+// project is a dimension on each usage event. When three of an account's projects use the same
+// product, their usage aggregates into one charge — that charge genuinely spans three projects, and
+// stamping any single project id on it would be wrong.
+//
+// A split is also more useful than a label would be: it gives proportions, and proportions are what
+// decide which project's resources to switch off.
+//
+// # The quantity here is what was reported, not what was billed
+//
+// Conversion (machine-seconds to machine-hours) happens on the pricing side, and the engine does not
+// echo `unit_config` back on a charge. So this figure times the unit price does not equal the total
+// — a step is missing in between, and that step only becomes visible on the invoice, where the whole
+// pricing configuration is frozen onto each line.
+//
+// Reported quantity is still the right number for "which project is burning this", which is what the
+// split is for.
+//
+// # The resource list says which, not how much
+//
+// Usage events carry no resource id — it is not a grouping dimension, and making it one would mean
+// one time series per machine per hour. So the engine cannot attribute a charge to a machine. What it
+// can be attributed to is a product, and which resources of that product exist is something billing
+// knows from its own records.
+//
+// Destroyed resources are listed too: this period's charge includes the part they ran for. Leaving
+// them out is what makes the numbers fail to add up for someone who deleted a machine mid-month —
+// which is exactly the case they are trying to explain.
+//
+// # A flat fee answers with an empty split
+//
+// There is no meter behind it, so there is nothing to attribute. That is an answer, not an error.
+//
+// GET /account/v1/billing-accounts/{accountKey}/charges/{chargeId}/usage
+func (UnimplementedHandler) GetChargeUsage(ctx context.Context, params GetChargeUsageParams) (r *ChargeUsage, _ error) {
+	return r, ht.ErrNotImplemented
+}
+
 // GetInvoice implements get-invoice operation.
 //
 // A total does not answer "why is it this much", and that is the question a bill provokes. Each line

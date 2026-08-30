@@ -88,6 +88,48 @@ type Invoker interface {
 	//
 	// GET /account/v1/billing-accounts/{accountKey}
 	GetBillingAccount(ctx context.Context, params GetBillingAccountParams) (*BillingAccount, error)
+	// GetChargeUsage invokes get-charge-usage operation.
+	//
+	// Splits one charge back into the projects that produced it, and lists the resources it could have
+	// come from.
+	//
+	// # Why this is not a field on the charge
+	//
+	// A charge has no project, and that is not an omission: the billing subject is the account, and the
+	// project is a dimension on each usage event. When three of an account's projects use the same
+	// product, their usage aggregates into one charge — that charge genuinely spans three projects, and
+	// stamping any single project id on it would be wrong.
+	//
+	// A split is also more useful than a label would be: it gives proportions, and proportions are what
+	// decide which project's resources to switch off.
+	//
+	// # The quantity here is what was reported, not what was billed
+	//
+	// Conversion (machine-seconds to machine-hours) happens on the pricing side, and the engine does not
+	// echo `unit_config` back on a charge. So this figure times the unit price does not equal the total
+	// — a step is missing in between, and that step only becomes visible on the invoice, where the whole
+	// pricing configuration is frozen onto each line.
+	//
+	// Reported quantity is still the right number for "which project is burning this", which is what the
+	// split is for.
+	//
+	// # The resource list says which, not how much
+	//
+	// Usage events carry no resource id — it is not a grouping dimension, and making it one would mean
+	// one time series per machine per hour. So the engine cannot attribute a charge to a machine. What it
+	// can be attributed to is a product, and which resources of that product exist is something billing
+	// knows from its own records.
+	//
+	// Destroyed resources are listed too: this period's charge includes the part they ran for. Leaving
+	// them out is what makes the numbers fail to add up for someone who deleted a machine mid-month —
+	// which is exactly the case they are trying to explain.
+	//
+	// # A flat fee answers with an empty split
+	//
+	// There is no meter behind it, so there is nothing to attribute. That is an answer, not an error.
+	//
+	// GET /account/v1/billing-accounts/{accountKey}/charges/{chargeId}/usage
+	GetChargeUsage(ctx context.Context, params GetChargeUsageParams) (*ChargeUsage, error)
 	// GetInvoice invokes get-invoice operation.
 	//
 	// A total does not answer "why is it this much", and that is the question a bill provokes. Each line
@@ -1144,6 +1186,193 @@ func (c *Client) sendGetBillingAccount(ctx context.Context, params GetBillingAcc
 
 	stage = "DecodeResponse"
 	result, err := decodeGetBillingAccountResponse(resp)
+	if err != nil {
+		return res, errors.Wrap(err, "decode response")
+	}
+
+	return result, nil
+}
+
+// GetChargeUsage invokes get-charge-usage operation.
+//
+// Splits one charge back into the projects that produced it, and lists the resources it could have
+// come from.
+//
+// # Why this is not a field on the charge
+//
+// A charge has no project, and that is not an omission: the billing subject is the account, and the
+// project is a dimension on each usage event. When three of an account's projects use the same
+// product, their usage aggregates into one charge — that charge genuinely spans three projects, and
+// stamping any single project id on it would be wrong.
+//
+// A split is also more useful than a label would be: it gives proportions, and proportions are what
+// decide which project's resources to switch off.
+//
+// # The quantity here is what was reported, not what was billed
+//
+// Conversion (machine-seconds to machine-hours) happens on the pricing side, and the engine does not
+// echo `unit_config` back on a charge. So this figure times the unit price does not equal the total
+// — a step is missing in between, and that step only becomes visible on the invoice, where the whole
+// pricing configuration is frozen onto each line.
+//
+// Reported quantity is still the right number for "which project is burning this", which is what the
+// split is for.
+//
+// # The resource list says which, not how much
+//
+// Usage events carry no resource id — it is not a grouping dimension, and making it one would mean
+// one time series per machine per hour. So the engine cannot attribute a charge to a machine. What it
+// can be attributed to is a product, and which resources of that product exist is something billing
+// knows from its own records.
+//
+// Destroyed resources are listed too: this period's charge includes the part they ran for. Leaving
+// them out is what makes the numbers fail to add up for someone who deleted a machine mid-month —
+// which is exactly the case they are trying to explain.
+//
+// # A flat fee answers with an empty split
+//
+// There is no meter behind it, so there is nothing to attribute. That is an answer, not an error.
+//
+// GET /account/v1/billing-accounts/{accountKey}/charges/{chargeId}/usage
+func (c *Client) GetChargeUsage(ctx context.Context, params GetChargeUsageParams) (*ChargeUsage, error) {
+	res, err := c.sendGetChargeUsage(ctx, params)
+	return res, err
+}
+
+func (c *Client) sendGetChargeUsage(ctx context.Context, params GetChargeUsageParams) (res *ChargeUsage, err error) {
+	otelAttrs := []attribute.KeyValue{
+		otelogen.OperationID("get-charge-usage"),
+		semconv.HTTPRequestMethodKey.String("GET"),
+		semconv.URLTemplateKey.String("/account/v1/billing-accounts/{accountKey}/charges/{chargeId}/usage"),
+	}
+	otelAttrs = append(otelAttrs, c.cfg.Attributes...)
+
+	// Run stopwatch.
+	startTime := time.Now()
+	defer func() {
+		// Use floating point division here for higher precision (instead of Millisecond method).
+		elapsedDuration := time.Since(startTime)
+		c.duration.Record(ctx, float64(elapsedDuration)/float64(time.Millisecond), metric.WithAttributes(otelAttrs...))
+	}()
+
+	// Increment request counter.
+	c.requests.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
+
+	// Start a span for this request.
+	ctx, span := c.cfg.Tracer.Start(ctx, GetChargeUsageOperation,
+		trace.WithAttributes(otelAttrs...),
+		clientSpanKind,
+	)
+	// Track stage for error reporting.
+	var stage string
+	defer func() {
+		if err != nil {
+			span.RecordError(err)
+			span.SetStatus(codes.Error, stage)
+			c.errors.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
+		}
+		span.End()
+	}()
+
+	stage = "BuildURL"
+	u := uri.Clone(c.requestURL(ctx))
+	var pathParts [5]string
+	pathParts[0] = "/account/v1/billing-accounts/"
+	{
+		// Encode "accountKey" parameter.
+		e := uri.NewPathEncoder(uri.PathEncoderConfig{
+			Param:   "accountKey",
+			Style:   uri.PathStyleSimple,
+			Explode: false,
+		})
+		if err := func() error {
+			return e.EncodeValue(conv.StringToString(params.AccountKey))
+		}(); err != nil {
+			return res, errors.Wrap(err, "encode path")
+		}
+		encoded, err := e.Result()
+		if err != nil {
+			return res, errors.Wrap(err, "encode path")
+		}
+		pathParts[1] = encoded
+	}
+	pathParts[2] = "/charges/"
+	{
+		// Encode "chargeId" parameter.
+		e := uri.NewPathEncoder(uri.PathEncoderConfig{
+			Param:   "chargeId",
+			Style:   uri.PathStyleSimple,
+			Explode: false,
+		})
+		if err := func() error {
+			return e.EncodeValue(conv.StringToString(params.ChargeId))
+		}(); err != nil {
+			return res, errors.Wrap(err, "encode path")
+		}
+		encoded, err := e.Result()
+		if err != nil {
+			return res, errors.Wrap(err, "encode path")
+		}
+		pathParts[3] = encoded
+	}
+	pathParts[4] = "/usage"
+	uri.AddPathParts(u, pathParts[:]...)
+
+	stage = "EncodeRequest"
+	r, err := ht.NewRequest(ctx, "GET", u)
+	if err != nil {
+		return res, errors.Wrap(err, "create request")
+	}
+
+	{
+		type bitset = [1]uint8
+		var satisfied bitset
+		{
+			stage = "Security:BearerAuth"
+			switch err := c.securityBearerAuth(ctx, GetChargeUsageOperation, r); {
+			case err == nil: // if NO error
+				satisfied[0] |= 1 << 0
+			case errors.Is(err, ogenerrors.ErrSkipClientSecurity):
+				// Skip this security.
+			default:
+				return res, errors.Wrap(err, "security \"BearerAuth\"")
+			}
+		}
+
+		if ok := func() bool {
+		nextRequirement:
+			for _, requirement := range []bitset{
+				{0b00000001},
+			} {
+				for i, mask := range requirement {
+					if satisfied[i]&mask != mask {
+						continue nextRequirement
+					}
+				}
+				return true
+			}
+			return false
+		}(); !ok {
+			return res, ogenerrors.ErrSecurityRequirementIsNotSatisfied
+		}
+	}
+
+	stage = "SendRequest"
+	resp, err := c.cfg.Client.Do(r)
+	if err != nil {
+		return res, errors.Wrap(err, "do request")
+	}
+	body := resp.Body
+	defer func() {
+		// Drain the body to EOF before closing, so the underlying
+		// connection can be reused by the Transport regardless of the
+		// response status code. See https://github.com/ogen-go/ogen/issues/1670.
+		_, _ = io.Copy(io.Discard, body)
+		_ = body.Close()
+	}()
+
+	stage = "DecodeResponse"
+	result, err := decodeGetChargeUsageResponse(resp)
 	if err != nil {
 		return res, errors.Wrap(err, "decode response")
 	}

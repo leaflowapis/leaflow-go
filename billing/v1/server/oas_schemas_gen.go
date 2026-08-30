@@ -278,6 +278,13 @@ type Charge struct {
 	Discounts OptString `json:"discounts"`
 	// Free text from the charge, usually empty. Set on charges raised by hand.
 	Description OptString `json:"description"`
+	// What one unit costs, as a decimal string. Absent when the line has no single unit price — a flat
+	// fee, or a tiered price whose rate changes with volume.
+	//
+	// The conversion between reported and billed quantity is deliberately not here: the engine does not
+	// echo it back on a charge, only on an invoice line. So a charge answers "what does a unit cost", and
+	// an invoice answers "how the total was reached".
+	UnitPrice OptString `json:"unit_price"`
 }
 
 // GetID returns the value of ID.
@@ -330,6 +337,11 @@ func (s *Charge) GetDescription() OptString {
 	return s.Description
 }
 
+// GetUnitPrice returns the value of UnitPrice.
+func (s *Charge) GetUnitPrice() OptString {
+	return s.UnitPrice
+}
+
 // SetID sets the value of ID.
 func (s *Charge) SetID(val string) {
 	s.ID = val
@@ -380,6 +392,11 @@ func (s *Charge) SetDescription(val OptString) {
 	s.Description = val
 }
 
+// SetUnitPrice sets the value of UnitPrice.
+func (s *Charge) SetUnitPrice(val OptString) {
+	s.UnitPrice = val
+}
+
 // Ref: #/components/schemas/ChargeList
 type ChargeList struct {
 	Currency Currency `json:"currency"`
@@ -416,6 +433,121 @@ func (s *ChargeList) SetCharges(val []Charge) {
 // SetTotal sets the value of Total.
 func (s *ChargeList) SetTotal(val string) {
 	s.Total = val
+}
+
+// Ref: #/components/schemas/ChargeResource
+type ChargeResource struct {
+	ProjectID string `json:"project_id"`
+	// Which service holds it, and therefore which console manages it.
+	Service    string              `json:"service"`
+	ProductID  string              `json:"product_id"`
+	ResourceID string              `json:"resource_id"`
+	State      ChargeResourceState `json:"state"`
+}
+
+// GetProjectID returns the value of ProjectID.
+func (s *ChargeResource) GetProjectID() string {
+	return s.ProjectID
+}
+
+// GetService returns the value of Service.
+func (s *ChargeResource) GetService() string {
+	return s.Service
+}
+
+// GetProductID returns the value of ProductID.
+func (s *ChargeResource) GetProductID() string {
+	return s.ProductID
+}
+
+// GetResourceID returns the value of ResourceID.
+func (s *ChargeResource) GetResourceID() string {
+	return s.ResourceID
+}
+
+// GetState returns the value of State.
+func (s *ChargeResource) GetState() ChargeResourceState {
+	return s.State
+}
+
+// SetProjectID sets the value of ProjectID.
+func (s *ChargeResource) SetProjectID(val string) {
+	s.ProjectID = val
+}
+
+// SetService sets the value of Service.
+func (s *ChargeResource) SetService(val string) {
+	s.Service = val
+}
+
+// SetProductID sets the value of ProductID.
+func (s *ChargeResource) SetProductID(val string) {
+	s.ProductID = val
+}
+
+// SetResourceID sets the value of ResourceID.
+func (s *ChargeResource) SetResourceID(val string) {
+	s.ResourceID = val
+}
+
+// SetState sets the value of State.
+func (s *ChargeResource) SetState(val ChargeResourceState) {
+	s.State = val
+}
+
+type ChargeResourceState string
+
+const (
+	ChargeResourceStatePending    ChargeResourceState = "pending"
+	ChargeResourceStateActive     ChargeResourceState = "active"
+	ChargeResourceStateSuspended  ChargeResourceState = "suspended"
+	ChargeResourceStateTerminated ChargeResourceState = "terminated"
+)
+
+// AllValues returns all ChargeResourceState values.
+func (ChargeResourceState) AllValues() []ChargeResourceState {
+	return []ChargeResourceState{
+		ChargeResourceStatePending,
+		ChargeResourceStateActive,
+		ChargeResourceStateSuspended,
+		ChargeResourceStateTerminated,
+	}
+}
+
+// MarshalText implements encoding.TextMarshaler.
+func (s ChargeResourceState) MarshalText() ([]byte, error) {
+	switch s {
+	case ChargeResourceStatePending:
+		return []byte(s), nil
+	case ChargeResourceStateActive:
+		return []byte(s), nil
+	case ChargeResourceStateSuspended:
+		return []byte(s), nil
+	case ChargeResourceStateTerminated:
+		return []byte(s), nil
+	default:
+		return nil, errors.Errorf("invalid value: %q", s)
+	}
+}
+
+// UnmarshalText implements encoding.TextUnmarshaler.
+func (s *ChargeResourceState) UnmarshalText(data []byte) error {
+	switch ChargeResourceState(data) {
+	case ChargeResourceStatePending:
+		*s = ChargeResourceStatePending
+		return nil
+	case ChargeResourceStateActive:
+		*s = ChargeResourceStateActive
+		return nil
+	case ChargeResourceStateSuspended:
+		*s = ChargeResourceStateSuspended
+		return nil
+	case ChargeResourceStateTerminated:
+		*s = ChargeResourceStateTerminated
+		return nil
+	default:
+		return errors.Errorf("invalid value: %q", data)
+	}
 }
 
 // Whether this figure moves. A usage charge climbs through the period; a flat fee does not. Without
@@ -460,6 +592,64 @@ func (s *ChargeType) UnmarshalText(data []byte) error {
 	default:
 		return errors.Errorf("invalid value: %q", data)
 	}
+}
+
+// What produced one charge.
+// Ref: #/components/schemas/ChargeUsage
+type ChargeUsage struct {
+	ChargeID string `json:"charge_id"`
+	// Total reported quantity for the period, as a decimal string. Empty on a charge with no meter behind
+	// it.
+	//
+	// Reported, not billed: see the route's description.
+	Quantity string `json:"quantity"`
+	// The same quantity split by project. Empty when the charge has no meter behind it — a flat fee has
+	// nothing to attribute.
+	ByProject []ProjectUsage `json:"by_project"`
+	// Resources of this product in the account's projects — candidates for what produced the charge, not
+	// a per-resource breakdown. Absent when billing could not look them up; the charge itself is still
+	// answered.
+	Resources []ChargeResource `json:"resources"`
+}
+
+// GetChargeID returns the value of ChargeID.
+func (s *ChargeUsage) GetChargeID() string {
+	return s.ChargeID
+}
+
+// GetQuantity returns the value of Quantity.
+func (s *ChargeUsage) GetQuantity() string {
+	return s.Quantity
+}
+
+// GetByProject returns the value of ByProject.
+func (s *ChargeUsage) GetByProject() []ProjectUsage {
+	return s.ByProject
+}
+
+// GetResources returns the value of Resources.
+func (s *ChargeUsage) GetResources() []ChargeResource {
+	return s.Resources
+}
+
+// SetChargeID sets the value of ChargeID.
+func (s *ChargeUsage) SetChargeID(val string) {
+	s.ChargeID = val
+}
+
+// SetQuantity sets the value of Quantity.
+func (s *ChargeUsage) SetQuantity(val string) {
+	s.Quantity = val
+}
+
+// SetByProject sets the value of ByProject.
+func (s *ChargeUsage) SetByProject(val []ProjectUsage) {
+	s.ByProject = val
+}
+
+// SetResources sets the value of Resources.
+func (s *ChargeUsage) SetResources(val []ChargeResource) {
+	s.Resources = val
 }
 
 // Ref: #/components/schemas/CreateBillingAccountRequestBody
@@ -1030,6 +1220,23 @@ type InvoiceLine struct {
 	// Before discounts and credit.
 	Amount         string    `json:"amount"`
 	DiscountsTotal OptString `json:"discounts_total"`
+	// The billed quantity for this line, as a decimal string — after conversion. A machine billed by the
+	// hour reports machine-seconds; this is machine-hours.
+	//
+	// It comes from the line's detailed segments summed together: the engine splits a line into segments
+	// (different cost categories, different sub-periods) and the quantity lives on those.
+	Quantity OptString `json:"quantity"`
+	// What one unit cost, as a decimal string, frozen at billing time. Absent on a flat fee, whose amount
+	// is the amount, and on tiered prices, whose rate changes with volume.
+	UnitPrice OptString `json:"unit_price"`
+	// How reported quantity became billed quantity — 3600 for a machine billed by the hour from
+	// machine-seconds, 1000000 for a price per million tokens.
+	//
+	// Without it, `quantity` disagrees with what the customer remembers doing, by whole orders of
+	// magnitude, and there is nothing on the page that explains the gap.
+	ConversionFactor OptString `json:"conversion_factor"`
+	// What was done with the factor.
+	ConversionOperation OptInvoiceLineConversionOperation `json:"conversion_operation"`
 	// How much of this line credit covered.
 	CreditsTotal OptString `json:"credits_total"`
 	Total        string    `json:"total"`
@@ -1063,6 +1270,26 @@ func (s *InvoiceLine) GetAmount() string {
 // GetDiscountsTotal returns the value of DiscountsTotal.
 func (s *InvoiceLine) GetDiscountsTotal() OptString {
 	return s.DiscountsTotal
+}
+
+// GetQuantity returns the value of Quantity.
+func (s *InvoiceLine) GetQuantity() OptString {
+	return s.Quantity
+}
+
+// GetUnitPrice returns the value of UnitPrice.
+func (s *InvoiceLine) GetUnitPrice() OptString {
+	return s.UnitPrice
+}
+
+// GetConversionFactor returns the value of ConversionFactor.
+func (s *InvoiceLine) GetConversionFactor() OptString {
+	return s.ConversionFactor
+}
+
+// GetConversionOperation returns the value of ConversionOperation.
+func (s *InvoiceLine) GetConversionOperation() OptInvoiceLineConversionOperation {
+	return s.ConversionOperation
 }
 
 // GetCreditsTotal returns the value of CreditsTotal.
@@ -1105,6 +1332,26 @@ func (s *InvoiceLine) SetDiscountsTotal(val OptString) {
 	s.DiscountsTotal = val
 }
 
+// SetQuantity sets the value of Quantity.
+func (s *InvoiceLine) SetQuantity(val OptString) {
+	s.Quantity = val
+}
+
+// SetUnitPrice sets the value of UnitPrice.
+func (s *InvoiceLine) SetUnitPrice(val OptString) {
+	s.UnitPrice = val
+}
+
+// SetConversionFactor sets the value of ConversionFactor.
+func (s *InvoiceLine) SetConversionFactor(val OptString) {
+	s.ConversionFactor = val
+}
+
+// SetConversionOperation sets the value of ConversionOperation.
+func (s *InvoiceLine) SetConversionOperation(val OptInvoiceLineConversionOperation) {
+	s.ConversionOperation = val
+}
+
 // SetCreditsTotal sets the value of CreditsTotal.
 func (s *InvoiceLine) SetCreditsTotal(val OptString) {
 	s.CreditsTotal = val
@@ -1113,6 +1360,48 @@ func (s *InvoiceLine) SetCreditsTotal(val OptString) {
 // SetTotal sets the value of Total.
 func (s *InvoiceLine) SetTotal(val string) {
 	s.Total = val
+}
+
+// What was done with the factor.
+type InvoiceLineConversionOperation string
+
+const (
+	InvoiceLineConversionOperationDivide   InvoiceLineConversionOperation = "divide"
+	InvoiceLineConversionOperationMultiply InvoiceLineConversionOperation = "multiply"
+)
+
+// AllValues returns all InvoiceLineConversionOperation values.
+func (InvoiceLineConversionOperation) AllValues() []InvoiceLineConversionOperation {
+	return []InvoiceLineConversionOperation{
+		InvoiceLineConversionOperationDivide,
+		InvoiceLineConversionOperationMultiply,
+	}
+}
+
+// MarshalText implements encoding.TextMarshaler.
+func (s InvoiceLineConversionOperation) MarshalText() ([]byte, error) {
+	switch s {
+	case InvoiceLineConversionOperationDivide:
+		return []byte(s), nil
+	case InvoiceLineConversionOperationMultiply:
+		return []byte(s), nil
+	default:
+		return nil, errors.Errorf("invalid value: %q", s)
+	}
+}
+
+// UnmarshalText implements encoding.TextUnmarshaler.
+func (s *InvoiceLineConversionOperation) UnmarshalText(data []byte) error {
+	switch InvoiceLineConversionOperation(data) {
+	case InvoiceLineConversionOperationDivide:
+		*s = InvoiceLineConversionOperationDivide
+		return nil
+	case InvoiceLineConversionOperationMultiply:
+		*s = InvoiceLineConversionOperationMultiply
+		return nil
+	default:
+		return errors.Errorf("invalid value: %q", data)
+	}
 }
 
 // Ref: #/components/schemas/InvoiceList
@@ -1587,6 +1876,52 @@ func (o OptInt) Get() (v int, ok bool) {
 
 // Or returns value if set, or given parameter if does not.
 func (o OptInt) Or(d int) int {
+	if v, ok := o.Get(); ok {
+		return v
+	}
+	return d
+}
+
+// NewOptInvoiceLineConversionOperation returns new OptInvoiceLineConversionOperation with value set to v.
+func NewOptInvoiceLineConversionOperation(v InvoiceLineConversionOperation) OptInvoiceLineConversionOperation {
+	return OptInvoiceLineConversionOperation{
+		Value: v,
+		Set:   true,
+	}
+}
+
+// OptInvoiceLineConversionOperation is optional InvoiceLineConversionOperation.
+type OptInvoiceLineConversionOperation struct {
+	Value InvoiceLineConversionOperation
+	Set   bool
+}
+
+// IsSet returns true if OptInvoiceLineConversionOperation was set.
+func (o OptInvoiceLineConversionOperation) IsSet() bool { return o.Set }
+
+// Reset unsets value.
+func (o *OptInvoiceLineConversionOperation) Reset() {
+	var v InvoiceLineConversionOperation
+	o.Value = v
+	o.Set = false
+}
+
+// SetTo sets value to v.
+func (o *OptInvoiceLineConversionOperation) SetTo(v InvoiceLineConversionOperation) {
+	o.Set = true
+	o.Value = v
+}
+
+// Get returns value and boolean that denotes whether value was set.
+func (o OptInvoiceLineConversionOperation) Get() (v InvoiceLineConversionOperation, ok bool) {
+	if !o.Set {
+		return v, false
+	}
+	return o.Value, true
+}
+
+// Or returns value if set, or given parameter if does not.
+func (o OptInvoiceLineConversionOperation) Or(d InvoiceLineConversionOperation) InvoiceLineConversionOperation {
 	if v, ok := o.Get(); ok {
 		return v
 	}
@@ -2865,6 +3200,33 @@ func (s *ProjectBinding) SetAccountKey(val string) {
 // SetProjectID sets the value of ProjectID.
 func (s *ProjectBinding) SetProjectID(val uuid.UUID) {
 	s.ProjectID = val
+}
+
+// Ref: #/components/schemas/ProjectUsage
+type ProjectUsage struct {
+	ProjectID string `json:"project_id"`
+	// Decimal string.
+	Quantity string `json:"quantity"`
+}
+
+// GetProjectID returns the value of ProjectID.
+func (s *ProjectUsage) GetProjectID() string {
+	return s.ProjectID
+}
+
+// GetQuantity returns the value of Quantity.
+func (s *ProjectUsage) GetQuantity() string {
+	return s.Quantity
+}
+
+// SetProjectID sets the value of ProjectID.
+func (s *ProjectUsage) SetProjectID(val string) {
+	s.ProjectID = val
+}
+
+// SetQuantity sets the value of Quantity.
+func (s *ProjectUsage) SetQuantity(val string) {
+	s.Quantity = val
 }
 
 // Ref: #/components/schemas/Purchase

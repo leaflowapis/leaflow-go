@@ -10,6 +10,7 @@ const (
 	CancelSubscriptionOperation              OperationName = "CancelSubscription"
 	CreateBillingAccountOperation            OperationName = "CreateBillingAccount"
 	GetBillingAccountOperation               OperationName = "GetBillingAccount"
+	GetChargeUsageOperation                  OperationName = "GetChargeUsage"
 	GetInvoiceOperation                      OperationName = "GetInvoice"
 	GetOrderOperation                        OperationName = "GetOrder"
 	ListBillingAccountsOperation             OperationName = "ListBillingAccounts"
