@@ -72,6 +72,20 @@ func (UnimplementedHandler) CreateChannel(ctx context.Context, req *CreateChanne
 	return r, ht.ErrNotImplemented
 }
 
+// CreateFolder implements create-folder operation.
+//
+// A folder groups conversations in the sidebar and does nothing else. The assistant is never told
+// which folder a conversation is in, and a conversation behaves exactly the same inside one as
+// outside: no shared instructions, no shared files, no shared memory.
+//
+// Names are unique within an account's folders in this project, because the only way to aim at a
+// folder is to read its name.
+//
+// POST /api/v1/folders
+func (UnimplementedHandler) CreateFolder(ctx context.Context, req *CreateFolderRequestBody) (r *FolderResource, _ error) {
+	return r, ht.ErrNotImplemented
+}
+
 // CreateThread implements create-thread operation.
 //
 // Create a conversation.
@@ -108,6 +122,19 @@ func (UnimplementedHandler) DeleteBinding(ctx context.Context, params DeleteBind
 //
 // DELETE /api/v1/channels/{channel}
 func (UnimplementedHandler) DeleteChannel(ctx context.Context, params DeleteChannelParams) error {
+	return ht.ErrNotImplemented
+}
+
+// DeleteFolder implements delete-folder operation.
+//
+// The conversations inside are not deleted. They leave the folder and go back to the ungrouped list,
+// where they can be filed again. Emptying a shelf is not the same as throwing out what was on it, and
+// deleting a conversation is a different request.
+//
+// Idempotent: deleting a folder that is already gone succeeds and changes nothing.
+//
+// DELETE /api/v1/folders/{folder}
+func (UnimplementedHandler) DeleteFolder(ctx context.Context, params DeleteFolderParams) error {
 	return ht.ErrNotImplemented
 }
 
@@ -268,6 +295,18 @@ func (UnimplementedHandler) ListEarlierItems(ctx context.Context, params ListEar
 	return r, ht.ErrNotImplemented
 }
 
+// ListFolders implements list-folders operation.
+//
+// The current account's folders in this project, oldest first. That order is fixed and does not react
+// to what happens inside a folder: a folder is a place on the screen, and a place that moves whenever
+// something is put into it is not one anybody can aim at. Not paginated — there is a cap on how many
+// there can be, and all of them come back at once.
+//
+// GET /api/v1/folders
+func (UnimplementedHandler) ListFolders(ctx context.Context) (r *FolderListResponseBody, _ error) {
+	return r, ht.ErrNotImplemented
+}
+
 // ListMemories implements list-memories operation.
 //
 // Facts the assistant has written down for the current account in this project. They appear at the
@@ -417,6 +456,16 @@ func (UnimplementedHandler) SubmitWeixinVerifyCode(ctx context.Context, req *Ver
 //
 // PATCH /api/v1/channels/{channel}
 func (UnimplementedHandler) UpdateChannel(ctx context.Context, req *UpdateChannelRequestBody, params UpdateChannelParams) (r *ChannelResource, _ error) {
+	return r, ht.ErrNotImplemented
+}
+
+// UpdateFolder implements update-folder operation.
+//
+// The conversations in it are untouched, and none of them move in the list — a folder's name is not
+// part of what any conversation is about.
+//
+// PATCH /api/v1/folders/{folder}
+func (UnimplementedHandler) UpdateFolder(ctx context.Context, req *UpdateFolderRequestBody, params UpdateFolderParams) (r *FolderResource, _ error) {
 	return r, ht.ErrNotImplemented
 }
 

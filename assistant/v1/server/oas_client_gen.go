@@ -73,6 +73,17 @@ type Invoker interface {
 	//
 	// POST /api/v1/channels
 	CreateChannel(ctx context.Context, request *CreateChannelRequestBody) (*ChannelWithSecretResponseBody, error)
+	// CreateFolder invokes create-folder operation.
+	//
+	// A folder groups conversations in the sidebar and does nothing else. The assistant is never told
+	// which folder a conversation is in, and a conversation behaves exactly the same inside one as
+	// outside: no shared instructions, no shared files, no shared memory.
+	//
+	// Names are unique within an account's folders in this project, because the only way to aim at a
+	// folder is to read its name.
+	//
+	// POST /api/v1/folders
+	CreateFolder(ctx context.Context, request *CreateFolderRequestBody) (*FolderResource, error)
 	// CreateThread invokes create-thread operation.
 	//
 	// Create a conversation.
@@ -100,6 +111,16 @@ type Invoker interface {
 	//
 	// DELETE /api/v1/channels/{channel}
 	DeleteChannel(ctx context.Context, params DeleteChannelParams) error
+	// DeleteFolder invokes delete-folder operation.
+	//
+	// The conversations inside are not deleted. They leave the folder and go back to the ungrouped list,
+	// where they can be filed again. Emptying a shelf is not the same as throwing out what was on it, and
+	// deleting a conversation is a different request.
+	//
+	// Idempotent: deleting a folder that is already gone succeeds and changes nothing.
+	//
+	// DELETE /api/v1/folders/{folder}
+	DeleteFolder(ctx context.Context, params DeleteFolderParams) error
 	// DeleteMemory invokes delete-memory operation.
 	//
 	// The assistant stops remembering this. It takes effect at once, so the next conversation will not
@@ -215,6 +236,15 @@ type Invoker interface {
 	//
 	// GET /api/v1/threads/{thread}/earlier
 	ListEarlierItems(ctx context.Context, params ListEarlierItemsParams) (*EarlierResponseBody, error)
+	// ListFolders invokes list-folders operation.
+	//
+	// The current account's folders in this project, oldest first. That order is fixed and does not react
+	// to what happens inside a folder: a folder is a place on the screen, and a place that moves whenever
+	// something is put into it is not one anybody can aim at. Not paginated — there is a cap on how many
+	// there can be, and all of them come back at once.
+	//
+	// GET /api/v1/folders
+	ListFolders(ctx context.Context) (*FolderListResponseBody, error)
 	// ListMemories invokes list-memories operation.
 	//
 	// Facts the assistant has written down for the current account in this project. They appear at the
@@ -328,6 +358,13 @@ type Invoker interface {
 	//
 	// PATCH /api/v1/channels/{channel}
 	UpdateChannel(ctx context.Context, request *UpdateChannelRequestBody, params UpdateChannelParams) (*ChannelResource, error)
+	// UpdateFolder invokes update-folder operation.
+	//
+	// The conversations in it are untouched, and none of them move in the list — a folder's name is not
+	// part of what any conversation is about.
+	//
+	// PATCH /api/v1/folders/{folder}
+	UpdateFolder(ctx context.Context, request *UpdateFolderRequestBody, params UpdateFolderParams) (*FolderResource, error)
 	// UpdateThread invokes update-thread operation.
 	//
 	// Changes the title, the approval mode, and whether the conversation is archived. A change to the
@@ -1110,6 +1147,127 @@ func (c *Client) sendCreateChannel(ctx context.Context, request *CreateChannelRe
 	return result, nil
 }
 
+// CreateFolder invokes create-folder operation.
+//
+// A folder groups conversations in the sidebar and does nothing else. The assistant is never told
+// which folder a conversation is in, and a conversation behaves exactly the same inside one as
+// outside: no shared instructions, no shared files, no shared memory.
+//
+// Names are unique within an account's folders in this project, because the only way to aim at a
+// folder is to read its name.
+//
+// POST /api/v1/folders
+func (c *Client) CreateFolder(ctx context.Context, request *CreateFolderRequestBody) (*FolderResource, error) {
+	res, err := c.sendCreateFolder(ctx, request)
+	return res, err
+}
+
+func (c *Client) sendCreateFolder(ctx context.Context, request *CreateFolderRequestBody) (res *FolderResource, err error) {
+	otelAttrs := []attribute.KeyValue{
+		otelogen.OperationID("create-folder"),
+		semconv.HTTPRequestMethodKey.String("POST"),
+		semconv.URLTemplateKey.String("/api/v1/folders"),
+	}
+	otelAttrs = append(otelAttrs, c.cfg.Attributes...)
+
+	// Run stopwatch.
+	startTime := time.Now()
+	defer func() {
+		// Use floating point division here for higher precision (instead of Millisecond method).
+		elapsedDuration := time.Since(startTime)
+		c.duration.Record(ctx, float64(elapsedDuration)/float64(time.Millisecond), metric.WithAttributes(otelAttrs...))
+	}()
+
+	// Increment request counter.
+	c.requests.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
+
+	// Start a span for this request.
+	ctx, span := c.cfg.Tracer.Start(ctx, CreateFolderOperation,
+		trace.WithAttributes(otelAttrs...),
+		clientSpanKind,
+	)
+	// Track stage for error reporting.
+	var stage string
+	defer func() {
+		if err != nil {
+			span.RecordError(err)
+			span.SetStatus(codes.Error, stage)
+			c.errors.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
+		}
+		span.End()
+	}()
+
+	stage = "BuildURL"
+	u := uri.Clone(c.requestURL(ctx))
+	var pathParts [1]string
+	pathParts[0] = "/api/v1/folders"
+	uri.AddPathParts(u, pathParts[:]...)
+
+	stage = "EncodeRequest"
+	r, err := ht.NewRequest(ctx, "POST", u)
+	if err != nil {
+		return res, errors.Wrap(err, "create request")
+	}
+	if err := encodeCreateFolderRequest(request, r); err != nil {
+		return res, errors.Wrap(err, "encode request")
+	}
+
+	{
+		type bitset = [1]uint8
+		var satisfied bitset
+		{
+			stage = "Security:BearerAuth"
+			switch err := c.securityBearerAuth(ctx, CreateFolderOperation, r); {
+			case err == nil: // if NO error
+				satisfied[0] |= 1 << 0
+			case errors.Is(err, ogenerrors.ErrSkipClientSecurity):
+				// Skip this security.
+			default:
+				return res, errors.Wrap(err, "security \"BearerAuth\"")
+			}
+		}
+
+		if ok := func() bool {
+		nextRequirement:
+			for _, requirement := range []bitset{
+				{0b00000001},
+			} {
+				for i, mask := range requirement {
+					if satisfied[i]&mask != mask {
+						continue nextRequirement
+					}
+				}
+				return true
+			}
+			return false
+		}(); !ok {
+			return res, ogenerrors.ErrSecurityRequirementIsNotSatisfied
+		}
+	}
+
+	stage = "SendRequest"
+	resp, err := c.cfg.Client.Do(r)
+	if err != nil {
+		return res, errors.Wrap(err, "do request")
+	}
+	body := resp.Body
+	defer func() {
+		// Drain the body to EOF before closing, so the underlying
+		// connection can be reused by the Transport regardless of the
+		// response status code. See https://github.com/ogen-go/ogen/issues/1670.
+		_, _ = io.Copy(io.Discard, body)
+		_ = body.Close()
+	}()
+
+	stage = "DecodeResponse"
+	result, err := decodeCreateFolderResponse(resp)
+	if err != nil {
+		return res, errors.Wrap(err, "decode response")
+	}
+
+	return result, nil
+}
+
 // CreateThread invokes create-thread operation.
 //
 // Create a conversation.
@@ -1637,6 +1795,141 @@ func (c *Client) sendDeleteChannel(ctx context.Context, params DeleteChannelPara
 
 	stage = "DecodeResponse"
 	result, err := decodeDeleteChannelResponse(resp)
+	if err != nil {
+		return res, errors.Wrap(err, "decode response")
+	}
+
+	return result, nil
+}
+
+// DeleteFolder invokes delete-folder operation.
+//
+// The conversations inside are not deleted. They leave the folder and go back to the ungrouped list,
+// where they can be filed again. Emptying a shelf is not the same as throwing out what was on it, and
+// deleting a conversation is a different request.
+//
+// Idempotent: deleting a folder that is already gone succeeds and changes nothing.
+//
+// DELETE /api/v1/folders/{folder}
+func (c *Client) DeleteFolder(ctx context.Context, params DeleteFolderParams) error {
+	_, err := c.sendDeleteFolder(ctx, params)
+	return err
+}
+
+func (c *Client) sendDeleteFolder(ctx context.Context, params DeleteFolderParams) (res *DeleteFolderNoContent, err error) {
+	otelAttrs := []attribute.KeyValue{
+		otelogen.OperationID("delete-folder"),
+		semconv.HTTPRequestMethodKey.String("DELETE"),
+		semconv.URLTemplateKey.String("/api/v1/folders/{folder}"),
+	}
+	otelAttrs = append(otelAttrs, c.cfg.Attributes...)
+
+	// Run stopwatch.
+	startTime := time.Now()
+	defer func() {
+		// Use floating point division here for higher precision (instead of Millisecond method).
+		elapsedDuration := time.Since(startTime)
+		c.duration.Record(ctx, float64(elapsedDuration)/float64(time.Millisecond), metric.WithAttributes(otelAttrs...))
+	}()
+
+	// Increment request counter.
+	c.requests.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
+
+	// Start a span for this request.
+	ctx, span := c.cfg.Tracer.Start(ctx, DeleteFolderOperation,
+		trace.WithAttributes(otelAttrs...),
+		clientSpanKind,
+	)
+	// Track stage for error reporting.
+	var stage string
+	defer func() {
+		if err != nil {
+			span.RecordError(err)
+			span.SetStatus(codes.Error, stage)
+			c.errors.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
+		}
+		span.End()
+	}()
+
+	stage = "BuildURL"
+	u := uri.Clone(c.requestURL(ctx))
+	var pathParts [2]string
+	pathParts[0] = "/api/v1/folders/"
+	{
+		// Encode "folder" parameter.
+		e := uri.NewPathEncoder(uri.PathEncoderConfig{
+			Param:   "folder",
+			Style:   uri.PathStyleSimple,
+			Explode: false,
+		})
+		if err := func() error {
+			return e.EncodeValue(conv.StringToString(params.Folder))
+		}(); err != nil {
+			return res, errors.Wrap(err, "encode path")
+		}
+		encoded, err := e.Result()
+		if err != nil {
+			return res, errors.Wrap(err, "encode path")
+		}
+		pathParts[1] = encoded
+	}
+	uri.AddPathParts(u, pathParts[:]...)
+
+	stage = "EncodeRequest"
+	r, err := ht.NewRequest(ctx, "DELETE", u)
+	if err != nil {
+		return res, errors.Wrap(err, "create request")
+	}
+
+	{
+		type bitset = [1]uint8
+		var satisfied bitset
+		{
+			stage = "Security:BearerAuth"
+			switch err := c.securityBearerAuth(ctx, DeleteFolderOperation, r); {
+			case err == nil: // if NO error
+				satisfied[0] |= 1 << 0
+			case errors.Is(err, ogenerrors.ErrSkipClientSecurity):
+				// Skip this security.
+			default:
+				return res, errors.Wrap(err, "security \"BearerAuth\"")
+			}
+		}
+
+		if ok := func() bool {
+		nextRequirement:
+			for _, requirement := range []bitset{
+				{0b00000001},
+			} {
+				for i, mask := range requirement {
+					if satisfied[i]&mask != mask {
+						continue nextRequirement
+					}
+				}
+				return true
+			}
+			return false
+		}(); !ok {
+			return res, ogenerrors.ErrSecurityRequirementIsNotSatisfied
+		}
+	}
+
+	stage = "SendRequest"
+	resp, err := c.cfg.Client.Do(r)
+	if err != nil {
+		return res, errors.Wrap(err, "do request")
+	}
+	body := resp.Body
+	defer func() {
+		// Drain the body to EOF before closing, so the underlying
+		// connection can be reused by the Transport regardless of the
+		// response status code. See https://github.com/ogen-go/ogen/issues/1670.
+		_, _ = io.Copy(io.Discard, body)
+		_ = body.Close()
+	}()
+
+	stage = "DecodeResponse"
+	result, err := decodeDeleteFolderResponse(resp)
 	if err != nil {
 		return res, errors.Wrap(err, "decode response")
 	}
@@ -3676,6 +3969,122 @@ func (c *Client) sendListEarlierItems(ctx context.Context, params ListEarlierIte
 	return result, nil
 }
 
+// ListFolders invokes list-folders operation.
+//
+// The current account's folders in this project, oldest first. That order is fixed and does not react
+// to what happens inside a folder: a folder is a place on the screen, and a place that moves whenever
+// something is put into it is not one anybody can aim at. Not paginated — there is a cap on how many
+// there can be, and all of them come back at once.
+//
+// GET /api/v1/folders
+func (c *Client) ListFolders(ctx context.Context) (*FolderListResponseBody, error) {
+	res, err := c.sendListFolders(ctx)
+	return res, err
+}
+
+func (c *Client) sendListFolders(ctx context.Context) (res *FolderListResponseBody, err error) {
+	otelAttrs := []attribute.KeyValue{
+		otelogen.OperationID("list-folders"),
+		semconv.HTTPRequestMethodKey.String("GET"),
+		semconv.URLTemplateKey.String("/api/v1/folders"),
+	}
+	otelAttrs = append(otelAttrs, c.cfg.Attributes...)
+
+	// Run stopwatch.
+	startTime := time.Now()
+	defer func() {
+		// Use floating point division here for higher precision (instead of Millisecond method).
+		elapsedDuration := time.Since(startTime)
+		c.duration.Record(ctx, float64(elapsedDuration)/float64(time.Millisecond), metric.WithAttributes(otelAttrs...))
+	}()
+
+	// Increment request counter.
+	c.requests.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
+
+	// Start a span for this request.
+	ctx, span := c.cfg.Tracer.Start(ctx, ListFoldersOperation,
+		trace.WithAttributes(otelAttrs...),
+		clientSpanKind,
+	)
+	// Track stage for error reporting.
+	var stage string
+	defer func() {
+		if err != nil {
+			span.RecordError(err)
+			span.SetStatus(codes.Error, stage)
+			c.errors.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
+		}
+		span.End()
+	}()
+
+	stage = "BuildURL"
+	u := uri.Clone(c.requestURL(ctx))
+	var pathParts [1]string
+	pathParts[0] = "/api/v1/folders"
+	uri.AddPathParts(u, pathParts[:]...)
+
+	stage = "EncodeRequest"
+	r, err := ht.NewRequest(ctx, "GET", u)
+	if err != nil {
+		return res, errors.Wrap(err, "create request")
+	}
+
+	{
+		type bitset = [1]uint8
+		var satisfied bitset
+		{
+			stage = "Security:BearerAuth"
+			switch err := c.securityBearerAuth(ctx, ListFoldersOperation, r); {
+			case err == nil: // if NO error
+				satisfied[0] |= 1 << 0
+			case errors.Is(err, ogenerrors.ErrSkipClientSecurity):
+				// Skip this security.
+			default:
+				return res, errors.Wrap(err, "security \"BearerAuth\"")
+			}
+		}
+
+		if ok := func() bool {
+		nextRequirement:
+			for _, requirement := range []bitset{
+				{0b00000001},
+			} {
+				for i, mask := range requirement {
+					if satisfied[i]&mask != mask {
+						continue nextRequirement
+					}
+				}
+				return true
+			}
+			return false
+		}(); !ok {
+			return res, ogenerrors.ErrSecurityRequirementIsNotSatisfied
+		}
+	}
+
+	stage = "SendRequest"
+	resp, err := c.cfg.Client.Do(r)
+	if err != nil {
+		return res, errors.Wrap(err, "do request")
+	}
+	body := resp.Body
+	defer func() {
+		// Drain the body to EOF before closing, so the underlying
+		// connection can be reused by the Transport regardless of the
+		// response status code. See https://github.com/ogen-go/ogen/issues/1670.
+		_, _ = io.Copy(io.Discard, body)
+		_ = body.Close()
+	}()
+
+	stage = "DecodeResponse"
+	result, err := decodeListFoldersResponse(resp)
+	if err != nil {
+		return res, errors.Wrap(err, "decode response")
+	}
+
+	return result, nil
+}
+
 // ListMemories invokes list-memories operation.
 //
 // Facts the assistant has written down for the current account in this project. They appear at the
@@ -4108,6 +4517,23 @@ func (c *Client) sendListThreads(ctx context.Context, params ListThreadsParams) 
 		if err := q.EncodeParam(cfg, func(e uri.Encoder) error {
 			if val, ok := params.Archived.Get(); ok {
 				return e.EncodeValue(conv.BoolToString(val))
+			}
+			return nil
+		}); err != nil {
+			return res, errors.Wrap(err, "encode query")
+		}
+	}
+	{
+		// Encode "folder" parameter.
+		cfg := uri.QueryParameterEncodingConfig{
+			Name:    "folder",
+			Style:   uri.QueryStyleForm,
+			Explode: false,
+		}
+
+		if err := q.EncodeParam(cfg, func(e uri.Encoder) error {
+			if val, ok := params.Folder.Get(); ok {
+				return e.EncodeValue(conv.StringToString(val))
 			}
 			return nil
 		}); err != nil {
@@ -5402,6 +5828,141 @@ func (c *Client) sendUpdateChannel(ctx context.Context, request *UpdateChannelRe
 
 	stage = "DecodeResponse"
 	result, err := decodeUpdateChannelResponse(resp)
+	if err != nil {
+		return res, errors.Wrap(err, "decode response")
+	}
+
+	return result, nil
+}
+
+// UpdateFolder invokes update-folder operation.
+//
+// The conversations in it are untouched, and none of them move in the list — a folder's name is not
+// part of what any conversation is about.
+//
+// PATCH /api/v1/folders/{folder}
+func (c *Client) UpdateFolder(ctx context.Context, request *UpdateFolderRequestBody, params UpdateFolderParams) (*FolderResource, error) {
+	res, err := c.sendUpdateFolder(ctx, request, params)
+	return res, err
+}
+
+func (c *Client) sendUpdateFolder(ctx context.Context, request *UpdateFolderRequestBody, params UpdateFolderParams) (res *FolderResource, err error) {
+	otelAttrs := []attribute.KeyValue{
+		otelogen.OperationID("update-folder"),
+		semconv.HTTPRequestMethodKey.String("PATCH"),
+		semconv.URLTemplateKey.String("/api/v1/folders/{folder}"),
+	}
+	otelAttrs = append(otelAttrs, c.cfg.Attributes...)
+
+	// Run stopwatch.
+	startTime := time.Now()
+	defer func() {
+		// Use floating point division here for higher precision (instead of Millisecond method).
+		elapsedDuration := time.Since(startTime)
+		c.duration.Record(ctx, float64(elapsedDuration)/float64(time.Millisecond), metric.WithAttributes(otelAttrs...))
+	}()
+
+	// Increment request counter.
+	c.requests.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
+
+	// Start a span for this request.
+	ctx, span := c.cfg.Tracer.Start(ctx, UpdateFolderOperation,
+		trace.WithAttributes(otelAttrs...),
+		clientSpanKind,
+	)
+	// Track stage for error reporting.
+	var stage string
+	defer func() {
+		if err != nil {
+			span.RecordError(err)
+			span.SetStatus(codes.Error, stage)
+			c.errors.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
+		}
+		span.End()
+	}()
+
+	stage = "BuildURL"
+	u := uri.Clone(c.requestURL(ctx))
+	var pathParts [2]string
+	pathParts[0] = "/api/v1/folders/"
+	{
+		// Encode "folder" parameter.
+		e := uri.NewPathEncoder(uri.PathEncoderConfig{
+			Param:   "folder",
+			Style:   uri.PathStyleSimple,
+			Explode: false,
+		})
+		if err := func() error {
+			return e.EncodeValue(conv.StringToString(params.Folder))
+		}(); err != nil {
+			return res, errors.Wrap(err, "encode path")
+		}
+		encoded, err := e.Result()
+		if err != nil {
+			return res, errors.Wrap(err, "encode path")
+		}
+		pathParts[1] = encoded
+	}
+	uri.AddPathParts(u, pathParts[:]...)
+
+	stage = "EncodeRequest"
+	r, err := ht.NewRequest(ctx, "PATCH", u)
+	if err != nil {
+		return res, errors.Wrap(err, "create request")
+	}
+	if err := encodeUpdateFolderRequest(request, r); err != nil {
+		return res, errors.Wrap(err, "encode request")
+	}
+
+	{
+		type bitset = [1]uint8
+		var satisfied bitset
+		{
+			stage = "Security:BearerAuth"
+			switch err := c.securityBearerAuth(ctx, UpdateFolderOperation, r); {
+			case err == nil: // if NO error
+				satisfied[0] |= 1 << 0
+			case errors.Is(err, ogenerrors.ErrSkipClientSecurity):
+				// Skip this security.
+			default:
+				return res, errors.Wrap(err, "security \"BearerAuth\"")
+			}
+		}
+
+		if ok := func() bool {
+		nextRequirement:
+			for _, requirement := range []bitset{
+				{0b00000001},
+			} {
+				for i, mask := range requirement {
+					if satisfied[i]&mask != mask {
+						continue nextRequirement
+					}
+				}
+				return true
+			}
+			return false
+		}(); !ok {
+			return res, ogenerrors.ErrSecurityRequirementIsNotSatisfied
+		}
+	}
+
+	stage = "SendRequest"
+	resp, err := c.cfg.Client.Do(r)
+	if err != nil {
+		return res, errors.Wrap(err, "do request")
+	}
+	body := resp.Body
+	defer func() {
+		// Drain the body to EOF before closing, so the underlying
+		// connection can be reused by the Transport regardless of the
+		// response status code. See https://github.com/ogen-go/ogen/issues/1670.
+		_, _ = io.Copy(io.Discard, body)
+		_ = body.Close()
+	}()
+
+	stage = "DecodeResponse"
+	result, err := decodeUpdateFolderResponse(resp)
 	if err != nil {
 		return res, errors.Wrap(err, "decode response")
 	}

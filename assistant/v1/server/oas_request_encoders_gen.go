@@ -39,6 +39,20 @@ func encodeCreateChannelRequest(
 	return nil
 }
 
+func encodeCreateFolderRequest(
+	req *CreateFolderRequestBody,
+	r *http.Request,
+) error {
+	const contentType = "application/json"
+	e := new(jx.Encoder)
+	{
+		req.Encode(e)
+	}
+	encoded := e.Bytes()
+	ht.SetBody(r, bytes.NewReader(encoded), contentType)
+	return nil
+}
+
 func encodeCreateThreadRequest(
 	req *CreateThreadRequestBody,
 	r *http.Request,
@@ -173,6 +187,20 @@ func encodeSubmitWeixinVerifyCodeRequest(
 
 func encodeUpdateChannelRequest(
 	req *UpdateChannelRequestBody,
+	r *http.Request,
+) error {
+	const contentType = "application/json"
+	e := new(jx.Encoder)
+	{
+		req.Encode(e)
+	}
+	encoded := e.Bytes()
+	ht.SetBody(r, bytes.NewReader(encoded), contentType)
+	return nil
+}
+
+func encodeUpdateFolderRequest(
+	req *UpdateFolderRequestBody,
 	r *http.Request,
 ) error {
 	const contentType = "application/json"

@@ -935,6 +935,11 @@ type CreateChannelRequestBody struct {
 // CreateChannelRequestBodySenderPolicy defines model for CreateChannelRequestBody.SenderPolicy.
 type CreateChannelRequestBodySenderPolicy string
 
+// CreateFolderRequestBody defines model for CreateFolderRequestBody.
+type CreateFolderRequestBody struct {
+	Name string `json:"name"`
+}
+
 // CreateThreadRequestBody defines model for CreateThreadRequestBody.
 type CreateThreadRequestBody struct {
 	// ApprovalMode Absent uses the platform's default approval mode
@@ -1034,6 +1039,22 @@ type FileDiffResource struct {
 
 // FileDiffResourceStatus What the call did to the file
 type FileDiffResourceStatus string
+
+// FolderListResponseBody defines model for FolderListResponseBody.
+type FolderListResponseBody struct {
+	Folders []FolderResource `json:"folders"`
+}
+
+// FolderResource defines model for FolderResource.
+type FolderResource struct {
+	CreatedAt time.Time `json:"createdAt"`
+	Id        string    `json:"id"`
+	Name      string    `json:"name"`
+
+	// ThreadCount How many conversations are filed here and would show up in the default list. Archived and deleted ones are not counted, so this is exactly what `GET /api/v1/threads?folder=<id>` returns.
+	ThreadCount int64     `json:"threadCount"`
+	UpdatedAt   time.Time `json:"updatedAt"`
+}
 
 // ItemResource defines model for ItemResource.
 type ItemResource struct {
@@ -1378,11 +1399,14 @@ type ThreadSummaryResource struct {
 	ApprovalMode ThreadSummaryResourceApprovalMode `json:"approvalMode"`
 	Archived     bool                              `json:"archived"`
 	CreatedAt    time.Time                         `json:"createdAt"`
-	Id           string                            `json:"id"`
-	Model        string                            `json:"model"`
-	Title        *string                           `json:"title"`
-	Unread       bool                              `json:"unread"`
-	UpdatedAt    time.Time                         `json:"updatedAt"`
+
+	// FolderId The folder this conversation is filed under, or null when it is in none
+	FolderId  *string   `json:"folderId"`
+	Id        string    `json:"id"`
+	Model     string    `json:"model"`
+	Title     *string   `json:"title"`
+	Unread    bool      `json:"unread"`
+	UpdatedAt time.Time `json:"updatedAt"`
 }
 
 // ThreadSummaryResourceApprovalMode defines model for ThreadSummaryResource.ApprovalMode.
@@ -1440,10 +1464,20 @@ type UpdateChannelRequestBody struct {
 // UpdateChannelRequestBodySenderPolicy Only when this is sent is allowFrom replaced along with it
 type UpdateChannelRequestBodySenderPolicy string
 
+// UpdateFolderRequestBody defines model for UpdateFolderRequestBody.
+type UpdateFolderRequestBody struct {
+	Name string `json:"name"`
+}
+
 // UpdateThreadRequestBody defines model for UpdateThreadRequestBody.
 type UpdateThreadRequestBody struct {
 	ApprovalMode *UpdateThreadRequestBodyApprovalMode `json:"approvalMode,omitempty"`
 	Archived     *bool                                `json:"archived,omitempty"`
+
+	// FolderId File this conversation into a folder, or `null` to take it out of the one it is in. Omit the field to leave it where it is.
+	//
+	// Filing does not move the conversation in the list. The order answers "which conversation has something new in it", and putting one away is not that.
+	FolderId *string `json:"folderId,omitempty"`
 
 	// Title Rename this conversation.
 	//
@@ -1561,8 +1595,11 @@ type ListThreadsParams struct {
 	Q *string `form:"q,omitempty" json:"q,omitempty"`
 
 	// Archived When true, returns **only** archived conversations; otherwise only unarchived ones
-	Archived *bool  `form:"archived,omitempty" json:"archived,omitempty"`
-	Limit    *int64 `form:"limit,omitempty" json:"limit,omitempty"`
+	Archived *bool `form:"archived,omitempty" json:"archived,omitempty"`
+
+	// Folder Narrow the list to one folder. Omitting it returns conversations from every folder and from none; a folder id returns that folder's; the empty value (`?folder=`) returns the ones that are in no folder at all. Empty is not the same as omitted, and a sidebar needs both: "chats" is exactly the ungrouped set, and asking for everything would let filed conversations crowd it out of the limit.
+	Folder *string `form:"folder,omitempty" json:"folder,omitempty"`
+	Limit  *int64  `form:"limit,omitempty" json:"limit,omitempty"`
 }
 
 // ListEarlierItemsParams defines parameters for ListEarlierItems.
@@ -1582,6 +1619,12 @@ type RotateChannelSecretJSONRequestBody = RotateSecretRequestBody
 
 // SubmitDynamicCallResultJSONRequestBody defines body for SubmitDynamicCallResult for application/json ContentType.
 type SubmitDynamicCallResultJSONRequestBody = DynamicCallResultRequestBody
+
+// CreateFolderJSONRequestBody defines body for CreateFolder for application/json ContentType.
+type CreateFolderJSONRequestBody = CreateFolderRequestBody
+
+// UpdateFolderJSONRequestBody defines body for UpdateFolder for application/json ContentType.
+type UpdateFolderJSONRequestBody = UpdateFolderRequestBody
 
 // PutSkillJSONRequestBody defines body for PutSkill for application/json ContentType.
 type PutSkillJSONRequestBody = SkillRequestBody
@@ -1845,6 +1888,62 @@ type ClientInterface interface {
 	//
 	// Corresponds with POST /api/v1/dynamic-calls/{call}/result (the `SubmitDynamicCallResult` operationId).
 	SubmitDynamicCallResult(ctx context.Context, call string, body SubmitDynamicCallResultJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// ListFolders List folders
+	//
+	// The current account's folders in this project, oldest first. That order is fixed and does not react to what happens inside a folder: a folder is a place on the screen, and a place that moves whenever something is put into it is not one anybody can aim at. Not paginated — there is a cap on how many there can be, and all of them come back at once.
+	//
+	// Corresponds with GET /api/v1/folders (the `ListFolders` operationId).
+	ListFolders(ctx context.Context, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// CreateFolderWithBody Create a folder
+	//
+	// A folder groups conversations in the sidebar and does nothing else. The assistant is never told which folder a conversation is in, and a conversation behaves exactly the same inside one as outside: no shared instructions, no shared files, no shared memory.
+	//
+	// Names are unique within an account's folders in this project, because the only way to aim at a folder is to read its name.
+	//
+	// Takes any type of body and a specified content type.
+	//
+	// Corresponds with POST /api/v1/folders (the `CreateFolder` operationId).
+	CreateFolderWithBody(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// CreateFolder Create a folder
+	//
+	// A folder groups conversations in the sidebar and does nothing else. The assistant is never told which folder a conversation is in, and a conversation behaves exactly the same inside one as outside: no shared instructions, no shared files, no shared memory.
+	//
+	// Names are unique within an account's folders in this project, because the only way to aim at a folder is to read its name.
+	//
+	// Takes a body of the `application/json` content type.
+	//
+	// Corresponds with POST /api/v1/folders (the `CreateFolder` operationId).
+	CreateFolder(ctx context.Context, body CreateFolderJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// DeleteFolder Delete a folder
+	//
+	// The conversations inside are **not** deleted. They leave the folder and go back to the ungrouped list, where they can be filed again. Emptying a shelf is not the same as throwing out what was on it, and deleting a conversation is a different request.
+	//
+	// Idempotent: deleting a folder that is already gone succeeds and changes nothing.
+	//
+	// Corresponds with DELETE /api/v1/folders/{folder} (the `DeleteFolder` operationId).
+	DeleteFolder(ctx context.Context, folder string, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// UpdateFolderWithBody Rename a folder
+	//
+	// The conversations in it are untouched, and none of them move in the list — a folder's name is not part of what any conversation is about.
+	//
+	// Takes any type of body and a specified content type.
+	//
+	// Corresponds with PATCH /api/v1/folders/{folder} (the `UpdateFolder` operationId).
+	UpdateFolderWithBody(ctx context.Context, folder string, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// UpdateFolder Rename a folder
+	//
+	// The conversations in it are untouched, and none of them move in the list — a folder's name is not part of what any conversation is about.
+	//
+	// Takes a body of the `application/json` content type.
+	//
+	// Corresponds with PATCH /api/v1/folders/{folder} (the `UpdateFolder` operationId).
+	UpdateFolder(ctx context.Context, folder string, body UpdateFolderJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
 
 	// ListMemories List what the assistant remembers
 	//
@@ -2478,6 +2577,122 @@ func (c *Client) SubmitDynamicCallResultWithBody(ctx context.Context, call strin
 // Corresponds with POST /api/v1/dynamic-calls/{call}/result (the `SubmitDynamicCallResult` operationId).
 func (c *Client) SubmitDynamicCallResult(ctx context.Context, call string, body SubmitDynamicCallResultJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
 	req, err := NewSubmitDynamicCallResultRequest(c.Server, call, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+// ListFolders List folders
+//
+// The current account's folders in this project, oldest first. That order is fixed and does not react to what happens inside a folder: a folder is a place on the screen, and a place that moves whenever something is put into it is not one anybody can aim at. Not paginated — there is a cap on how many there can be, and all of them come back at once.
+//
+// Corresponds with GET /api/v1/folders (the `ListFolders` operationId).
+func (c *Client) ListFolders(ctx context.Context, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewListFoldersRequest(c.Server)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+// CreateFolderWithBody Create a folder
+//
+// A folder groups conversations in the sidebar and does nothing else. The assistant is never told which folder a conversation is in, and a conversation behaves exactly the same inside one as outside: no shared instructions, no shared files, no shared memory.
+//
+// Names are unique within an account's folders in this project, because the only way to aim at a folder is to read its name.
+//
+// Takes any type of body and a specified content type.
+//
+// Corresponds with POST /api/v1/folders (the `CreateFolder` operationId).
+func (c *Client) CreateFolderWithBody(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewCreateFolderRequestWithBody(c.Server, contentType, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+// CreateFolder Create a folder
+//
+// A folder groups conversations in the sidebar and does nothing else. The assistant is never told which folder a conversation is in, and a conversation behaves exactly the same inside one as outside: no shared instructions, no shared files, no shared memory.
+//
+// Names are unique within an account's folders in this project, because the only way to aim at a folder is to read its name.
+//
+// Takes a body of the `application/json` content type.
+//
+// Corresponds with POST /api/v1/folders (the `CreateFolder` operationId).
+func (c *Client) CreateFolder(ctx context.Context, body CreateFolderJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewCreateFolderRequest(c.Server, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+// DeleteFolder Delete a folder
+//
+// The conversations inside are **not** deleted. They leave the folder and go back to the ungrouped list, where they can be filed again. Emptying a shelf is not the same as throwing out what was on it, and deleting a conversation is a different request.
+//
+// Idempotent: deleting a folder that is already gone succeeds and changes nothing.
+//
+// Corresponds with DELETE /api/v1/folders/{folder} (the `DeleteFolder` operationId).
+func (c *Client) DeleteFolder(ctx context.Context, folder string, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewDeleteFolderRequest(c.Server, folder)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+// UpdateFolderWithBody Rename a folder
+//
+// The conversations in it are untouched, and none of them move in the list — a folder's name is not part of what any conversation is about.
+//
+// Takes any type of body and a specified content type.
+//
+// Corresponds with PATCH /api/v1/folders/{folder} (the `UpdateFolder` operationId).
+func (c *Client) UpdateFolderWithBody(ctx context.Context, folder string, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewUpdateFolderRequestWithBody(c.Server, folder, contentType, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+// UpdateFolder Rename a folder
+//
+// The conversations in it are untouched, and none of them move in the list — a folder's name is not part of what any conversation is about.
+//
+// Takes a body of the `application/json` content type.
+//
+// Corresponds with PATCH /api/v1/folders/{folder} (the `UpdateFolder` operationId).
+func (c *Client) UpdateFolder(ctx context.Context, folder string, body UpdateFolderJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewUpdateFolderRequest(c.Server, folder, body)
 	if err != nil {
 		return nil, err
 	}
@@ -3874,6 +4089,154 @@ func NewSubmitDynamicCallResultRequestWithBody(server string, call string, conte
 	return req, nil
 }
 
+// NewListFoldersRequest constructs an http.Request for the ListFolders method
+func NewListFoldersRequest(server string) (*http.Request, error) {
+	var err error
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/api/v1/folders")
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest(http.MethodGet, queryURL.String(), nil)
+	if err != nil {
+		return nil, err
+	}
+
+	return req, nil
+}
+
+// NewCreateFolderRequest calls the generic CreateFolder builder with application/json body
+func NewCreateFolderRequest(server string, body CreateFolderJSONRequestBody) (*http.Request, error) {
+	var bodyReader io.Reader
+	buf, err := json.Marshal(body)
+	if err != nil {
+		return nil, err
+	}
+	bodyReader = bytes.NewReader(buf)
+	return NewCreateFolderRequestWithBody(server, "application/json", bodyReader)
+}
+
+// NewCreateFolderRequestWithBody constructs an http.Request for the CreateFolder method, with any body, and a specified content type
+func NewCreateFolderRequestWithBody(server string, contentType string, body io.Reader) (*http.Request, error) {
+	var err error
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/api/v1/folders")
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest(http.MethodPost, queryURL.String(), body)
+	if err != nil {
+		return nil, err
+	}
+
+	req.Header.Add("Content-Type", contentType)
+
+	return req, nil
+}
+
+// NewDeleteFolderRequest constructs an http.Request for the DeleteFolder method
+func NewDeleteFolderRequest(server string, folder string) (*http.Request, error) {
+	var err error
+
+	var pathParam0 string
+
+	pathParam0, err = runtime.StyleParamWithOptions("simple", false, "folder", folder, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: ""})
+	if err != nil {
+		return nil, err
+	}
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/api/v1/folders/%s", pathParam0)
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest(http.MethodDelete, queryURL.String(), nil)
+	if err != nil {
+		return nil, err
+	}
+
+	return req, nil
+}
+
+// NewUpdateFolderRequest calls the generic UpdateFolder builder with application/json body
+func NewUpdateFolderRequest(server string, folder string, body UpdateFolderJSONRequestBody) (*http.Request, error) {
+	var bodyReader io.Reader
+	buf, err := json.Marshal(body)
+	if err != nil {
+		return nil, err
+	}
+	bodyReader = bytes.NewReader(buf)
+	return NewUpdateFolderRequestWithBody(server, folder, "application/json", bodyReader)
+}
+
+// NewUpdateFolderRequestWithBody constructs an http.Request for the UpdateFolder method, with any body, and a specified content type
+func NewUpdateFolderRequestWithBody(server string, folder string, contentType string, body io.Reader) (*http.Request, error) {
+	var err error
+
+	var pathParam0 string
+
+	pathParam0, err = runtime.StyleParamWithOptions("simple", false, "folder", folder, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: ""})
+	if err != nil {
+		return nil, err
+	}
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/api/v1/folders/%s", pathParam0)
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest(http.MethodPatch, queryURL.String(), body)
+	if err != nil {
+		return nil, err
+	}
+
+	req.Header.Add("Content-Type", contentType)
+
+	return req, nil
+}
+
 // NewListMemoriesRequest constructs an http.Request for the ListMemories method
 func NewListMemoriesRequest(server string) (*http.Request, error) {
 	var err error
@@ -4187,6 +4550,18 @@ func NewListThreadsRequest(server string, params *ListThreadsParams) (*http.Requ
 		if params.Archived != nil {
 
 			if queryFrag, err := runtime.StyleParamWithOptions("form", false, "archived", *params.Archived, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "boolean", Format: ""}); err != nil {
+				return nil, err
+			} else {
+				for _, qp := range strings.Split(queryFrag, "&") {
+					rawQueryFragments = append(rawQueryFragments, qp)
+				}
+			}
+
+		}
+
+		if params.Folder != nil {
+
+			if queryFrag, err := runtime.StyleParamWithOptions("form", false, "folder", *params.Folder, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "string", Format: ""}); err != nil {
 				return nil, err
 			} else {
 				for _, qp := range strings.Split(queryFrag, "&") {
@@ -5012,6 +5387,66 @@ type ClientWithResponsesInterface interface {
 	//
 	// Corresponds with POST /api/v1/dynamic-calls/{call}/result (the `SubmitDynamicCallResult` operationId).
 	SubmitDynamicCallResultWithResponse(ctx context.Context, call string, body SubmitDynamicCallResultJSONRequestBody, reqEditors ...RequestEditorFn) (*SubmitDynamicCallResultResponse, error)
+
+	// ListFoldersWithResponse List folders
+	//
+	// The current account's folders in this project, oldest first. That order is fixed and does not react to what happens inside a folder: a folder is a place on the screen, and a place that moves whenever something is put into it is not one anybody can aim at. Not paginated — there is a cap on how many there can be, and all of them come back at once.
+	//
+	// Returns a wrapper object for the known response body format(s).
+	//
+	// Corresponds with GET /api/v1/folders (the `ListFolders` operationId).
+	ListFoldersWithResponse(ctx context.Context, reqEditors ...RequestEditorFn) (*ListFoldersResponse, error)
+
+	// CreateFolderWithBodyWithResponse Create a folder
+	//
+	// A folder groups conversations in the sidebar and does nothing else. The assistant is never told which folder a conversation is in, and a conversation behaves exactly the same inside one as outside: no shared instructions, no shared files, no shared memory.
+	//
+	// Names are unique within an account's folders in this project, because the only way to aim at a folder is to read its name.
+	//
+	// Takes any type of body and a specified content type, and returns a wrapper object for the known response body format(s).
+	//
+	// Corresponds with POST /api/v1/folders (the `CreateFolder` operationId).
+	CreateFolderWithBodyWithResponse(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*CreateFolderResponse, error)
+
+	// CreateFolderWithResponse Create a folder
+	//
+	// A folder groups conversations in the sidebar and does nothing else. The assistant is never told which folder a conversation is in, and a conversation behaves exactly the same inside one as outside: no shared instructions, no shared files, no shared memory.
+	//
+	// Names are unique within an account's folders in this project, because the only way to aim at a folder is to read its name.
+	//
+	// Takes a body of the `application/json` content type, and returns a wrapper object for the known response body format(s).
+	//
+	// Corresponds with POST /api/v1/folders (the `CreateFolder` operationId).
+	CreateFolderWithResponse(ctx context.Context, body CreateFolderJSONRequestBody, reqEditors ...RequestEditorFn) (*CreateFolderResponse, error)
+
+	// DeleteFolderWithResponse Delete a folder
+	//
+	// The conversations inside are **not** deleted. They leave the folder and go back to the ungrouped list, where they can be filed again. Emptying a shelf is not the same as throwing out what was on it, and deleting a conversation is a different request.
+	//
+	// Idempotent: deleting a folder that is already gone succeeds and changes nothing.
+	//
+	// Returns a wrapper object for the known response body format(s).
+	//
+	// Corresponds with DELETE /api/v1/folders/{folder} (the `DeleteFolder` operationId).
+	DeleteFolderWithResponse(ctx context.Context, folder string, reqEditors ...RequestEditorFn) (*DeleteFolderResponse, error)
+
+	// UpdateFolderWithBodyWithResponse Rename a folder
+	//
+	// The conversations in it are untouched, and none of them move in the list — a folder's name is not part of what any conversation is about.
+	//
+	// Takes any type of body and a specified content type, and returns a wrapper object for the known response body format(s).
+	//
+	// Corresponds with PATCH /api/v1/folders/{folder} (the `UpdateFolder` operationId).
+	UpdateFolderWithBodyWithResponse(ctx context.Context, folder string, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*UpdateFolderResponse, error)
+
+	// UpdateFolderWithResponse Rename a folder
+	//
+	// The conversations in it are untouched, and none of them move in the list — a folder's name is not part of what any conversation is about.
+	//
+	// Takes a body of the `application/json` content type, and returns a wrapper object for the known response body format(s).
+	//
+	// Corresponds with PATCH /api/v1/folders/{folder} (the `UpdateFolder` operationId).
+	UpdateFolderWithResponse(ctx context.Context, folder string, body UpdateFolderJSONRequestBody, reqEditors ...RequestEditorFn) (*UpdateFolderResponse, error)
 
 	// ListMemoriesWithResponse List what the assistant remembers
 	//
@@ -6061,6 +6496,191 @@ func (r SubmitDynamicCallResultResponse) StatusCode() int {
 
 // ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
 func (r SubmitDynamicCallResultResponse) ContentType() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Header.Get("Content-Type")
+	}
+	return ""
+}
+
+type ListFoldersResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	// JSON200 the response for an HTTP 200 `application/json` response
+	JSON200 *FolderListResponseBody
+	// JSONDefault the response for an HTTP default `application/json` response
+	JSONDefault *Error
+}
+
+// GetJSON200 returns the response for an HTTP 200 `application/json` response
+func (r ListFoldersResponse) GetJSON200() *FolderListResponseBody {
+	return r.JSON200
+}
+
+// GetJSONDefault returns the response for an HTTP default `application/json` response
+func (r ListFoldersResponse) GetJSONDefault() *Error {
+	return r.JSONDefault
+}
+
+// GetBody returns the raw response body bytes
+func (r ListFoldersResponse) GetBody() []byte {
+	return r.Body
+}
+
+// Status returns HTTPResponse.Status
+func (r ListFoldersResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r ListFoldersResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+// ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
+func (r ListFoldersResponse) ContentType() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Header.Get("Content-Type")
+	}
+	return ""
+}
+
+type CreateFolderResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	// JSON201 the response for an HTTP 201 `application/json` response
+	JSON201 *FolderResource
+	// JSONDefault the response for an HTTP default `application/json` response
+	JSONDefault *Error
+}
+
+// GetJSON201 returns the response for an HTTP 201 `application/json` response
+func (r CreateFolderResponse) GetJSON201() *FolderResource {
+	return r.JSON201
+}
+
+// GetJSONDefault returns the response for an HTTP default `application/json` response
+func (r CreateFolderResponse) GetJSONDefault() *Error {
+	return r.JSONDefault
+}
+
+// GetBody returns the raw response body bytes
+func (r CreateFolderResponse) GetBody() []byte {
+	return r.Body
+}
+
+// Status returns HTTPResponse.Status
+func (r CreateFolderResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r CreateFolderResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+// ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
+func (r CreateFolderResponse) ContentType() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Header.Get("Content-Type")
+	}
+	return ""
+}
+
+type DeleteFolderResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	// JSONDefault the response for an HTTP default `application/json` response
+	JSONDefault *Error
+}
+
+// GetJSONDefault returns the response for an HTTP default `application/json` response
+func (r DeleteFolderResponse) GetJSONDefault() *Error {
+	return r.JSONDefault
+}
+
+// GetBody returns the raw response body bytes
+func (r DeleteFolderResponse) GetBody() []byte {
+	return r.Body
+}
+
+// Status returns HTTPResponse.Status
+func (r DeleteFolderResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r DeleteFolderResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+// ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
+func (r DeleteFolderResponse) ContentType() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Header.Get("Content-Type")
+	}
+	return ""
+}
+
+type UpdateFolderResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	// JSON200 the response for an HTTP 200 `application/json` response
+	JSON200 *FolderResource
+	// JSONDefault the response for an HTTP default `application/json` response
+	JSONDefault *Error
+}
+
+// GetJSON200 returns the response for an HTTP 200 `application/json` response
+func (r UpdateFolderResponse) GetJSON200() *FolderResource {
+	return r.JSON200
+}
+
+// GetJSONDefault returns the response for an HTTP default `application/json` response
+func (r UpdateFolderResponse) GetJSONDefault() *Error {
+	return r.JSONDefault
+}
+
+// GetBody returns the raw response body bytes
+func (r UpdateFolderResponse) GetBody() []byte {
+	return r.Body
+}
+
+// Status returns HTTPResponse.Status
+func (r UpdateFolderResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r UpdateFolderResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+// ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
+func (r UpdateFolderResponse) ContentType() string {
 	if r.HTTPResponse != nil {
 		return r.HTTPResponse.Header.Get("Content-Type")
 	}
@@ -7378,6 +7998,102 @@ func (c *ClientWithResponses) SubmitDynamicCallResultWithResponse(ctx context.Co
 	return ParseSubmitDynamicCallResultResponse(rsp)
 }
 
+// ListFoldersWithResponse List folders
+//
+// The current account's folders in this project, oldest first. That order is fixed and does not react to what happens inside a folder: a folder is a place on the screen, and a place that moves whenever something is put into it is not one anybody can aim at. Not paginated — there is a cap on how many there can be, and all of them come back at once.
+//
+// Returns a wrapper object for the known response body format(s).
+//
+// Corresponds with GET /api/v1/folders (the `ListFolders` operationId).
+func (c *ClientWithResponses) ListFoldersWithResponse(ctx context.Context, reqEditors ...RequestEditorFn) (*ListFoldersResponse, error) {
+	rsp, err := c.ListFolders(ctx, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseListFoldersResponse(rsp)
+}
+
+// CreateFolderWithBodyWithResponse Create a folder
+//
+// A folder groups conversations in the sidebar and does nothing else. The assistant is never told which folder a conversation is in, and a conversation behaves exactly the same inside one as outside: no shared instructions, no shared files, no shared memory.
+//
+// Names are unique within an account's folders in this project, because the only way to aim at a folder is to read its name.
+//
+// Takes any type of body and a specified content type, and returns a wrapper object for the known response body format(s).
+//
+// Corresponds with POST /api/v1/folders (the `CreateFolder` operationId).
+func (c *ClientWithResponses) CreateFolderWithBodyWithResponse(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*CreateFolderResponse, error) {
+	rsp, err := c.CreateFolderWithBody(ctx, contentType, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseCreateFolderResponse(rsp)
+}
+
+// CreateFolderWithResponse Create a folder
+//
+// A folder groups conversations in the sidebar and does nothing else. The assistant is never told which folder a conversation is in, and a conversation behaves exactly the same inside one as outside: no shared instructions, no shared files, no shared memory.
+//
+// Names are unique within an account's folders in this project, because the only way to aim at a folder is to read its name.
+//
+// Takes a body of the `application/json` content type, and returns a wrapper object for the known response body format(s).
+//
+// Corresponds with POST /api/v1/folders (the `CreateFolder` operationId).
+func (c *ClientWithResponses) CreateFolderWithResponse(ctx context.Context, body CreateFolderJSONRequestBody, reqEditors ...RequestEditorFn) (*CreateFolderResponse, error) {
+	rsp, err := c.CreateFolder(ctx, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseCreateFolderResponse(rsp)
+}
+
+// DeleteFolderWithResponse Delete a folder
+//
+// The conversations inside are **not** deleted. They leave the folder and go back to the ungrouped list, where they can be filed again. Emptying a shelf is not the same as throwing out what was on it, and deleting a conversation is a different request.
+//
+// Idempotent: deleting a folder that is already gone succeeds and changes nothing.
+//
+// Returns a wrapper object for the known response body format(s).
+//
+// Corresponds with DELETE /api/v1/folders/{folder} (the `DeleteFolder` operationId).
+func (c *ClientWithResponses) DeleteFolderWithResponse(ctx context.Context, folder string, reqEditors ...RequestEditorFn) (*DeleteFolderResponse, error) {
+	rsp, err := c.DeleteFolder(ctx, folder, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseDeleteFolderResponse(rsp)
+}
+
+// UpdateFolderWithBodyWithResponse Rename a folder
+//
+// The conversations in it are untouched, and none of them move in the list — a folder's name is not part of what any conversation is about.
+//
+// Takes any type of body and a specified content type, and returns a wrapper object for the known response body format(s).
+//
+// Corresponds with PATCH /api/v1/folders/{folder} (the `UpdateFolder` operationId).
+func (c *ClientWithResponses) UpdateFolderWithBodyWithResponse(ctx context.Context, folder string, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*UpdateFolderResponse, error) {
+	rsp, err := c.UpdateFolderWithBody(ctx, folder, contentType, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseUpdateFolderResponse(rsp)
+}
+
+// UpdateFolderWithResponse Rename a folder
+//
+// The conversations in it are untouched, and none of them move in the list — a folder's name is not part of what any conversation is about.
+//
+// Takes a body of the `application/json` content type, and returns a wrapper object for the known response body format(s).
+//
+// Corresponds with PATCH /api/v1/folders/{folder} (the `UpdateFolder` operationId).
+func (c *ClientWithResponses) UpdateFolderWithResponse(ctx context.Context, folder string, body UpdateFolderJSONRequestBody, reqEditors ...RequestEditorFn) (*UpdateFolderResponse, error) {
+	rsp, err := c.UpdateFolder(ctx, folder, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseUpdateFolderResponse(rsp)
+}
+
 // ListMemoriesWithResponse List what the assistant remembers
 //
 // Facts the assistant has written down for the current account in this project. They appear at the start of every later conversation. Members of the same project each have their own, and this returns only the current account's. Not paginated: there is a cap on how many there can be, and all of them come back at once.
@@ -8385,6 +9101,134 @@ func ParseSubmitDynamicCallResultResponse(rsp *http.Response) (*SubmitDynamicCal
 	switch {
 	case rsp.StatusCode == 204:
 		break // No content-type
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && true:
+		var dest Error
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSONDefault = &dest
+
+	}
+
+	return response, nil
+}
+
+// ParseListFoldersResponse parses an HTTP response from a ListFoldersWithResponse call
+func ParseListFoldersResponse(rsp *http.Response) (*ListFoldersResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &ListFoldersResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest FolderListResponseBody
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && true:
+		var dest Error
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSONDefault = &dest
+
+	}
+
+	return response, nil
+}
+
+// ParseCreateFolderResponse parses an HTTP response from a CreateFolderWithResponse call
+func ParseCreateFolderResponse(rsp *http.Response) (*CreateFolderResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &CreateFolderResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 201:
+		var dest FolderResource
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON201 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && true:
+		var dest Error
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSONDefault = &dest
+
+	}
+
+	return response, nil
+}
+
+// ParseDeleteFolderResponse parses an HTTP response from a DeleteFolderWithResponse call
+func ParseDeleteFolderResponse(rsp *http.Response) (*DeleteFolderResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &DeleteFolderResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case rsp.StatusCode == 204:
+		break // No content-type
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && true:
+		var dest Error
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSONDefault = &dest
+
+	}
+
+	return response, nil
+}
+
+// ParseUpdateFolderResponse parses an HTTP response from a UpdateFolderWithResponse call
+func ParseUpdateFolderResponse(rsp *http.Response) (*UpdateFolderResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &UpdateFolderResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest FolderResource
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
 
 	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && true:
 		var dest Error

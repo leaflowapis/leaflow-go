@@ -52,6 +52,17 @@ type Handler interface {
 	//
 	// POST /api/v1/channels
 	CreateChannel(ctx context.Context, req *CreateChannelRequestBody) (*ChannelWithSecretResponseBody, error)
+	// CreateFolder implements create-folder operation.
+	//
+	// A folder groups conversations in the sidebar and does nothing else. The assistant is never told
+	// which folder a conversation is in, and a conversation behaves exactly the same inside one as
+	// outside: no shared instructions, no shared files, no shared memory.
+	//
+	// Names are unique within an account's folders in this project, because the only way to aim at a
+	// folder is to read its name.
+	//
+	// POST /api/v1/folders
+	CreateFolder(ctx context.Context, req *CreateFolderRequestBody) (*FolderResource, error)
 	// CreateThread implements create-thread operation.
 	//
 	// Create a conversation.
@@ -79,6 +90,16 @@ type Handler interface {
 	//
 	// DELETE /api/v1/channels/{channel}
 	DeleteChannel(ctx context.Context, params DeleteChannelParams) error
+	// DeleteFolder implements delete-folder operation.
+	//
+	// The conversations inside are not deleted. They leave the folder and go back to the ungrouped list,
+	// where they can be filed again. Emptying a shelf is not the same as throwing out what was on it, and
+	// deleting a conversation is a different request.
+	//
+	// Idempotent: deleting a folder that is already gone succeeds and changes nothing.
+	//
+	// DELETE /api/v1/folders/{folder}
+	DeleteFolder(ctx context.Context, params DeleteFolderParams) error
 	// DeleteMemory implements delete-memory operation.
 	//
 	// The assistant stops remembering this. It takes effect at once, so the next conversation will not
@@ -194,6 +215,15 @@ type Handler interface {
 	//
 	// GET /api/v1/threads/{thread}/earlier
 	ListEarlierItems(ctx context.Context, params ListEarlierItemsParams) (*EarlierResponseBody, error)
+	// ListFolders implements list-folders operation.
+	//
+	// The current account's folders in this project, oldest first. That order is fixed and does not react
+	// to what happens inside a folder: a folder is a place on the screen, and a place that moves whenever
+	// something is put into it is not one anybody can aim at. Not paginated — there is a cap on how many
+	// there can be, and all of them come back at once.
+	//
+	// GET /api/v1/folders
+	ListFolders(ctx context.Context) (*FolderListResponseBody, error)
 	// ListMemories implements list-memories operation.
 	//
 	// Facts the assistant has written down for the current account in this project. They appear at the
@@ -307,6 +337,13 @@ type Handler interface {
 	//
 	// PATCH /api/v1/channels/{channel}
 	UpdateChannel(ctx context.Context, req *UpdateChannelRequestBody, params UpdateChannelParams) (*ChannelResource, error)
+	// UpdateFolder implements update-folder operation.
+	//
+	// The conversations in it are untouched, and none of them move in the list — a folder's name is not
+	// part of what any conversation is about.
+	//
+	// PATCH /api/v1/folders/{folder}
+	UpdateFolder(ctx context.Context, req *UpdateFolderRequestBody, params UpdateFolderParams) (*FolderResource, error)
 	// UpdateThread implements update-thread operation.
 	//
 	// Changes the title, the approval mode, and whether the conversation is archived. A change to the

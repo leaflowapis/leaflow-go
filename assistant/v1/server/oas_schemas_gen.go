@@ -1577,6 +1577,21 @@ func (s *CreateChannelRequestBodySenderPolicy) UnmarshalText(data []byte) error 
 	}
 }
 
+// Ref: #/components/schemas/CreateFolderRequestBody
+type CreateFolderRequestBody struct {
+	Name string `json:"name"`
+}
+
+// GetName returns the value of Name.
+func (s *CreateFolderRequestBody) GetName() string {
+	return s.Name
+}
+
+// SetName sets the value of Name.
+func (s *CreateFolderRequestBody) SetName(val string) {
+	s.Name = val
+}
+
 // Ref: #/components/schemas/CreateThreadRequestBody
 type CreateThreadRequestBody struct {
 	// Absent uses the platform's default approval mode.
@@ -1735,6 +1750,9 @@ type DeleteBindingNoContent struct{}
 
 // DeleteChannelNoContent is response for DeleteChannel operation.
 type DeleteChannelNoContent struct{}
+
+// DeleteFolderNoContent is response for DeleteFolder operation.
+type DeleteFolderNoContent struct{}
 
 // DeleteMemoryNoContent is response for DeleteMemory operation.
 type DeleteMemoryNoContent struct{}
@@ -2245,6 +2263,82 @@ func (s *FileDiffResourceStatus) UnmarshalText(data []byte) error {
 	default:
 		return errors.Errorf("invalid value: %q", data)
 	}
+}
+
+// Ref: #/components/schemas/FolderListResponseBody
+type FolderListResponseBody struct {
+	Folders []FolderResource `json:"folders"`
+}
+
+// GetFolders returns the value of Folders.
+func (s *FolderListResponseBody) GetFolders() []FolderResource {
+	return s.Folders
+}
+
+// SetFolders sets the value of Folders.
+func (s *FolderListResponseBody) SetFolders(val []FolderResource) {
+	s.Folders = val
+}
+
+// Ref: #/components/schemas/FolderResource
+type FolderResource struct {
+	CreatedAt time.Time `json:"createdAt"`
+	ID        string    `json:"id"`
+	Name      string    `json:"name"`
+	// How many conversations are filed here and would show up in the default list. Archived and deleted
+	// ones are not counted, so this is exactly what `GET /api/v1/threads?folder=<id>` returns.
+	ThreadCount int64     `json:"threadCount"`
+	UpdatedAt   time.Time `json:"updatedAt"`
+}
+
+// GetCreatedAt returns the value of CreatedAt.
+func (s *FolderResource) GetCreatedAt() time.Time {
+	return s.CreatedAt
+}
+
+// GetID returns the value of ID.
+func (s *FolderResource) GetID() string {
+	return s.ID
+}
+
+// GetName returns the value of Name.
+func (s *FolderResource) GetName() string {
+	return s.Name
+}
+
+// GetThreadCount returns the value of ThreadCount.
+func (s *FolderResource) GetThreadCount() int64 {
+	return s.ThreadCount
+}
+
+// GetUpdatedAt returns the value of UpdatedAt.
+func (s *FolderResource) GetUpdatedAt() time.Time {
+	return s.UpdatedAt
+}
+
+// SetCreatedAt sets the value of CreatedAt.
+func (s *FolderResource) SetCreatedAt(val time.Time) {
+	s.CreatedAt = val
+}
+
+// SetID sets the value of ID.
+func (s *FolderResource) SetID(val string) {
+	s.ID = val
+}
+
+// SetName sets the value of Name.
+func (s *FolderResource) SetName(val string) {
+	s.Name = val
+}
+
+// SetThreadCount sets the value of ThreadCount.
+func (s *FolderResource) SetThreadCount(val int64) {
+	s.ThreadCount = val
+}
+
+// SetUpdatedAt sets the value of UpdatedAt.
+func (s *FolderResource) SetUpdatedAt(val time.Time) {
+	s.UpdatedAt = val
 }
 
 // InterruptThreadNoContent is response for InterruptThread operation.
@@ -6117,11 +6211,13 @@ type ThreadSummaryResource struct {
 	ApprovalMode ThreadSummaryResourceApprovalMode `json:"approvalMode"`
 	Archived     bool                              `json:"archived"`
 	CreatedAt    time.Time                         `json:"createdAt"`
-	ID           string                            `json:"id"`
-	Model        string                            `json:"model"`
-	Title        NilString                         `json:"title"`
-	Unread       bool                              `json:"unread"`
-	UpdatedAt    time.Time                         `json:"updatedAt"`
+	// The folder this conversation is filed under, or null when it is in none.
+	FolderId  NilString `json:"folderId"`
+	ID        string    `json:"id"`
+	Model     string    `json:"model"`
+	Title     NilString `json:"title"`
+	Unread    bool      `json:"unread"`
+	UpdatedAt time.Time `json:"updatedAt"`
 }
 
 // GetApprovalMode returns the value of ApprovalMode.
@@ -6137,6 +6233,11 @@ func (s *ThreadSummaryResource) GetArchived() bool {
 // GetCreatedAt returns the value of CreatedAt.
 func (s *ThreadSummaryResource) GetCreatedAt() time.Time {
 	return s.CreatedAt
+}
+
+// GetFolderId returns the value of FolderId.
+func (s *ThreadSummaryResource) GetFolderId() NilString {
+	return s.FolderId
 }
 
 // GetID returns the value of ID.
@@ -6177,6 +6278,11 @@ func (s *ThreadSummaryResource) SetArchived(val bool) {
 // SetCreatedAt sets the value of CreatedAt.
 func (s *ThreadSummaryResource) SetCreatedAt(val time.Time) {
 	s.CreatedAt = val
+}
+
+// SetFolderId sets the value of FolderId.
+func (s *ThreadSummaryResource) SetFolderId(val NilString) {
+	s.FolderId = val
 }
 
 // SetID sets the value of ID.
@@ -6563,10 +6669,31 @@ func (s *UpdateChannelRequestBodySenderPolicy) UnmarshalText(data []byte) error 
 	}
 }
 
+// Ref: #/components/schemas/UpdateFolderRequestBody
+type UpdateFolderRequestBody struct {
+	Name string `json:"name"`
+}
+
+// GetName returns the value of Name.
+func (s *UpdateFolderRequestBody) GetName() string {
+	return s.Name
+}
+
+// SetName sets the value of Name.
+func (s *UpdateFolderRequestBody) SetName(val string) {
+	s.Name = val
+}
+
 // Ref: #/components/schemas/UpdateThreadRequestBody
 type UpdateThreadRequestBody struct {
 	ApprovalMode OptUpdateThreadRequestBodyApprovalMode `json:"approvalMode"`
 	Archived     OptBool                                `json:"archived"`
+	// File this conversation into a folder, or `null` to take it out of the one it is in. Omit the field
+	// to leave it where it is.
+	//
+	// Filing does not move the conversation in the list. The order answers "which conversation has
+	// something new in it", and putting one away is not that.
+	FolderId OptNilString `json:"folderId"`
 	// Rename this conversation.
 	//
 	// A conversation names itself: the first message gives it a working title, and the assistant replaces
@@ -6588,6 +6715,11 @@ func (s *UpdateThreadRequestBody) GetArchived() OptBool {
 	return s.Archived
 }
 
+// GetFolderId returns the value of FolderId.
+func (s *UpdateThreadRequestBody) GetFolderId() OptNilString {
+	return s.FolderId
+}
+
 // GetTitle returns the value of Title.
 func (s *UpdateThreadRequestBody) GetTitle() OptString {
 	return s.Title
@@ -6601,6 +6733,11 @@ func (s *UpdateThreadRequestBody) SetApprovalMode(val OptUpdateThreadRequestBody
 // SetArchived sets the value of Archived.
 func (s *UpdateThreadRequestBody) SetArchived(val OptBool) {
 	s.Archived = val
+}
+
+// SetFolderId sets the value of FolderId.
+func (s *UpdateThreadRequestBody) SetFolderId(val OptNilString) {
+	s.FolderId = val
 }
 
 // SetTitle sets the value of Title.
