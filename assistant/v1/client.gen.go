@@ -1927,6 +1927,13 @@ type ClientInterface interface {
 	// Corresponds with DELETE /api/v1/folders/{folder} (the `DeleteFolder` operationId).
 	DeleteFolder(ctx context.Context, folder string, reqEditors ...RequestEditorFn) (*http.Response, error)
 
+	// GetFolder Fetch one folder
+	//
+	// The list returns every folder at once, so this is for the case the list does not cover: a page opened straight at a folder, holding nothing but the id from the address bar. Its conversations are a separate request — `GET /api/v1/threads?folder=<id>`.
+	//
+	// Corresponds with GET /api/v1/folders/{folder} (the `GetFolder` operationId).
+	GetFolder(ctx context.Context, folder string, reqEditors ...RequestEditorFn) (*http.Response, error)
+
 	// UpdateFolderWithBody Rename a folder
 	//
 	// The conversations in it are untouched, and none of them move in the list — a folder's name is not part of what any conversation is about.
@@ -2655,6 +2662,23 @@ func (c *Client) CreateFolder(ctx context.Context, body CreateFolderJSONRequestB
 // Corresponds with DELETE /api/v1/folders/{folder} (the `DeleteFolder` operationId).
 func (c *Client) DeleteFolder(ctx context.Context, folder string, reqEditors ...RequestEditorFn) (*http.Response, error) {
 	req, err := NewDeleteFolderRequest(c.Server, folder)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+// GetFolder Fetch one folder
+//
+// The list returns every folder at once, so this is for the case the list does not cover: a page opened straight at a folder, holding nothing but the id from the address bar. Its conversations are a separate request — `GET /api/v1/threads?folder=<id>`.
+//
+// Corresponds with GET /api/v1/folders/{folder} (the `GetFolder` operationId).
+func (c *Client) GetFolder(ctx context.Context, folder string, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewGetFolderRequest(c.Server, folder)
 	if err != nil {
 		return nil, err
 	}
@@ -4190,6 +4214,40 @@ func NewDeleteFolderRequest(server string, folder string) (*http.Request, error)
 	return req, nil
 }
 
+// NewGetFolderRequest constructs an http.Request for the GetFolder method
+func NewGetFolderRequest(server string, folder string) (*http.Request, error) {
+	var err error
+
+	var pathParam0 string
+
+	pathParam0, err = runtime.StyleParamWithOptions("simple", false, "folder", folder, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: ""})
+	if err != nil {
+		return nil, err
+	}
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/api/v1/folders/%s", pathParam0)
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest(http.MethodGet, queryURL.String(), nil)
+	if err != nil {
+		return nil, err
+	}
+
+	return req, nil
+}
+
 // NewUpdateFolderRequest calls the generic UpdateFolder builder with application/json body
 func NewUpdateFolderRequest(server string, folder string, body UpdateFolderJSONRequestBody) (*http.Request, error) {
 	var bodyReader io.Reader
@@ -5430,6 +5488,15 @@ type ClientWithResponsesInterface interface {
 	// Corresponds with DELETE /api/v1/folders/{folder} (the `DeleteFolder` operationId).
 	DeleteFolderWithResponse(ctx context.Context, folder string, reqEditors ...RequestEditorFn) (*DeleteFolderResponse, error)
 
+	// GetFolderWithResponse Fetch one folder
+	//
+	// The list returns every folder at once, so this is for the case the list does not cover: a page opened straight at a folder, holding nothing but the id from the address bar. Its conversations are a separate request — `GET /api/v1/threads?folder=<id>`.
+	//
+	// Returns a wrapper object for the known response body format(s).
+	//
+	// Corresponds with GET /api/v1/folders/{folder} (the `GetFolder` operationId).
+	GetFolderWithResponse(ctx context.Context, folder string, reqEditors ...RequestEditorFn) (*GetFolderResponse, error)
+
 	// UpdateFolderWithBodyWithResponse Rename a folder
 	//
 	// The conversations in it are untouched, and none of them move in the list — a folder's name is not part of what any conversation is about.
@@ -6633,6 +6700,54 @@ func (r DeleteFolderResponse) StatusCode() int {
 
 // ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
 func (r DeleteFolderResponse) ContentType() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Header.Get("Content-Type")
+	}
+	return ""
+}
+
+type GetFolderResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	// JSON200 the response for an HTTP 200 `application/json` response
+	JSON200 *FolderResource
+	// JSONDefault the response for an HTTP default `application/json` response
+	JSONDefault *Error
+}
+
+// GetJSON200 returns the response for an HTTP 200 `application/json` response
+func (r GetFolderResponse) GetJSON200() *FolderResource {
+	return r.JSON200
+}
+
+// GetJSONDefault returns the response for an HTTP default `application/json` response
+func (r GetFolderResponse) GetJSONDefault() *Error {
+	return r.JSONDefault
+}
+
+// GetBody returns the raw response body bytes
+func (r GetFolderResponse) GetBody() []byte {
+	return r.Body
+}
+
+// Status returns HTTPResponse.Status
+func (r GetFolderResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r GetFolderResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+// ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
+func (r GetFolderResponse) ContentType() string {
 	if r.HTTPResponse != nil {
 		return r.HTTPResponse.Header.Get("Content-Type")
 	}
@@ -8064,6 +8179,21 @@ func (c *ClientWithResponses) DeleteFolderWithResponse(ctx context.Context, fold
 	return ParseDeleteFolderResponse(rsp)
 }
 
+// GetFolderWithResponse Fetch one folder
+//
+// The list returns every folder at once, so this is for the case the list does not cover: a page opened straight at a folder, holding nothing but the id from the address bar. Its conversations are a separate request — `GET /api/v1/threads?folder=<id>`.
+//
+// Returns a wrapper object for the known response body format(s).
+//
+// Corresponds with GET /api/v1/folders/{folder} (the `GetFolder` operationId).
+func (c *ClientWithResponses) GetFolderWithResponse(ctx context.Context, folder string, reqEditors ...RequestEditorFn) (*GetFolderResponse, error) {
+	rsp, err := c.GetFolder(ctx, folder, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseGetFolderResponse(rsp)
+}
+
 // UpdateFolderWithBodyWithResponse Rename a folder
 //
 // The conversations in it are untouched, and none of them move in the list — a folder's name is not part of what any conversation is about.
@@ -9196,6 +9326,39 @@ func ParseDeleteFolderResponse(rsp *http.Response) (*DeleteFolderResponse, error
 	switch {
 	case rsp.StatusCode == 204:
 		break // No content-type
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && true:
+		var dest Error
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSONDefault = &dest
+
+	}
+
+	return response, nil
+}
+
+// ParseGetFolderResponse parses an HTTP response from a GetFolderWithResponse call
+func ParseGetFolderResponse(rsp *http.Response) (*GetFolderResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &GetFolderResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest FolderResource
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
 
 	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && true:
 		var dest Error

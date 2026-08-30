@@ -1130,6 +1130,71 @@ func decodeGetChannelParams(args [1]string, argsEscaped bool, r *http.Request) (
 	return params, nil
 }
 
+// GetFolderParams is parameters of get-folder operation.
+type GetFolderParams struct {
+	Folder string
+}
+
+func unpackGetFolderParams(packed middleware.Parameters) (params GetFolderParams) {
+	{
+		key := middleware.ParameterKey{
+			Name: "folder",
+			In:   "path",
+		}
+		params.Folder = packed[key].(string)
+	}
+	return params
+}
+
+func decodeGetFolderParams(args [1]string, argsEscaped bool, r *http.Request) (params GetFolderParams, _ error) {
+	// Decode path: folder.
+	if err := func() error {
+		param := args[0]
+		if argsEscaped {
+			unescaped, err := url.PathUnescape(args[0])
+			if err != nil {
+				return errors.Wrap(err, "unescape path")
+			}
+			param = unescaped
+		}
+		if len(param) > 0 {
+			d := uri.NewPathDecoder(uri.PathDecoderConfig{
+				Param:   "folder",
+				Value:   param,
+				Style:   uri.PathStyleSimple,
+				Explode: false,
+			})
+
+			if err := func() error {
+				val, err := d.DecodeValue()
+				if err != nil {
+					return err
+				}
+
+				c, err := conv.ToString(val)
+				if err != nil {
+					return err
+				}
+
+				params.Folder = c
+				return nil
+			}(); err != nil {
+				return err
+			}
+		} else {
+			return validate.ErrFieldRequired
+		}
+		return nil
+	}(); err != nil {
+		return params, &ogenerrors.DecodeParamError{
+			Name: "folder",
+			In:   "path",
+			Err:  err,
+		}
+	}
+	return params, nil
+}
+
 // GetSkillParams is parameters of get-skill operation.
 type GetSkillParams struct {
 	// The skill's name, as `list-skills` returned it.

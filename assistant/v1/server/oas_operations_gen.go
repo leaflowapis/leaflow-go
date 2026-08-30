@@ -23,6 +23,7 @@ const (
 	DownloadAttachmentOperation      OperationName = "DownloadAttachment"
 	GetBindingOperation              OperationName = "GetBinding"
 	GetChannelOperation              OperationName = "GetChannel"
+	GetFolderOperation               OperationName = "GetFolder"
 	GetSkillOperation                OperationName = "GetSkill"
 	GetThreadOperation               OperationName = "GetThread"
 	GetWeixinLoginOperation          OperationName = "GetWeixinLogin"

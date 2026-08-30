@@ -57,6 +57,7 @@ var (
 	}
 	rn21AllowedHeaders = map[string]string{
 		"DELETE": "Authorization",
+		"GET":    "Authorization",
 		"PATCH":  "Authorization,Content-Type",
 	}
 	rn34AllowedHeaders = map[string]string{
@@ -630,13 +631,17 @@ func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 							s.handleDeleteFolderRequest([1]string{
 								args[0],
 							}, elemIsEscaped, w, r)
+						case "GET":
+							s.handleGetFolderRequest([1]string{
+								args[0],
+							}, elemIsEscaped, w, r)
 						case "PATCH":
 							s.handleUpdateFolderRequest([1]string{
 								args[0],
 							}, elemIsEscaped, w, r)
 						default:
 							s.notAllowed(w, r, notAllowedParams{
-								allowedMethods: "DELETE,PATCH",
+								allowedMethods: "DELETE,GET,PATCH",
 								allowedHeaders: rn21AllowedHeaders,
 								acceptPost:     "",
 								acceptPatch:    "application/json",
@@ -1756,6 +1761,15 @@ func (s *Server) FindPath(method string, u *url.URL) (r Route, _ bool) {
 							r.name = DeleteFolderOperation
 							r.summary = "Delete a folder"
 							r.operationID = "delete-folder"
+							r.operationGroup = ""
+							r.pathPattern = "/api/v1/folders/{folder}"
+							r.args = args
+							r.count = 1
+							return r, true
+						case "GET":
+							r.name = GetFolderOperation
+							r.summary = "Fetch one folder"
+							r.operationID = "get-folder"
 							r.operationGroup = ""
 							r.pathPattern = "/api/v1/folders/{folder}"
 							r.args = args

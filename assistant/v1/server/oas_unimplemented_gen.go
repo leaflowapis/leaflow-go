@@ -212,6 +212,17 @@ func (UnimplementedHandler) GetChannel(ctx context.Context, params GetChannelPar
 	return r, ht.ErrNotImplemented
 }
 
+// GetFolder implements get-folder operation.
+//
+// The list returns every folder at once, so this is for the case the list does not cover: a page
+// opened straight at a folder, holding nothing but the id from the address bar. Its conversations are
+// a separate request — `GET /api/v1/threads?folder=<id>`.
+//
+// GET /api/v1/folders/{folder}
+func (UnimplementedHandler) GetFolder(ctx context.Context, params GetFolderParams) (r *FolderResource, _ error) {
+	return r, ht.ErrNotImplemented
+}
+
 // GetSkill implements get-skill operation.
 //
 // Works for built-in skills too; they simply cannot be written.
