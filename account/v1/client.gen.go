@@ -421,14 +421,41 @@ type IdentityVerificationResource struct {
 // IdentityVerificationResourceStatus PERSONAL 和 ENTERPRISE 是两类主体而不是两个等级，别拿它们比大小
 type IdentityVerificationResourceStatus string
 
+// InvitationPreviewResource 一封邀请在被接受之前能给出的全部信息。
+// 它比 InvitationResource 少两样：要约 id 和完整的收件地址。id 不给是因为持有令牌不等于 这封要约列在你名下——真正列在你名下的那些走 list-my-invitations，那条是认过身份的。
+type InvitationPreviewResource struct {
+	// EmailMasked 打过码的收件地址，只够收件人认出「这是发给我的」
+	EmailMasked string    `json:"email_masked"`
+	ExpiresAt   time.Time `json:"expires_at"`
+
+	// InvitedByName 邀请人的显示名，姓名都空时是他的邮箱
+	InvitedByName string `json:"invited_by_name"`
+	ProjectName   string `json:"project_name"`
+
+	// RoleNames 接受之后会拿到的角色，显示名
+	RoleNames []string `json:"role_names"`
+}
+
 // InvitationResource defines model for InvitationResource.
 type InvitationResource struct {
 	CreatedAt time.Time          `json:"created_at"`
 	Email     string             `json:"email"`
 	ExpiresAt time.Time          `json:"expires_at"`
 	Id        openapi_types.UUID `json:"id"`
-	InvitedBy string             `json:"invited_by"`
-	ProjectId openapi_types.UUID `json:"project_id"`
+
+	// InvitedBy 发出这份要约的账号 id
+	InvitedBy string `json:"invited_by"`
+
+	// InvitedByName 发出这份要约的人的显示名，姓名都空时是他的邮箱。它是读取那一刻的事实，不是发信时的快照
+	InvitedByName string             `json:"invited_by_name"`
+	ProjectId     openapi_types.UUID `json:"project_id"`
+
+	// ProjectName 目标项目的名字。
+	// 它在这里，而这一度是刻意不给的——理由是「没接受就不是成员，而名字只有成员能读」。 那条克制在这个场景下站不住：邀请邮件正文里就写着项目名，收件人早就知道了，而一个 只显示 uuid 的邀请列表让人没法判断该不该接受。
+	ProjectName string `json:"project_name"`
+
+	// RoleNames 上面那些编码的显示名，按同样的顺序。读者看的是「管理员」，不是 ADMIN
+	RoleNames []string `json:"role_names"`
 
 	// Roles 兑现时会授予的角色编码
 	Roles []string `json:"roles"`
@@ -614,6 +641,12 @@ type ListMyInvitationsParams struct {
 
 	// Offset 跳过多少条。要翻得更深请改用游标翻页的接口
 	Offset *int64 `form:"offset,omitempty" json:"offset,omitempty"`
+}
+
+// PreviewInvitationByTokenParams defines parameters for PreviewInvitationByToken.
+type PreviewInvitationByTokenParams struct {
+	// Token 邀请链接里那串令牌
+	Token string `form:"token" json:"token"`
 }
 
 // ListProjectsParams defines parameters for ListProjects.
@@ -847,6 +880,16 @@ type ClientInterface interface {
 	//
 	// Corresponds with POST /account/v1/me/invitations/accept (the `AcceptInvitationByToken` operationId).
 	AcceptInvitationByToken(ctx context.Context, body AcceptInvitationByTokenJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// PreviewInvitationByToken 看一眼这封邀请是谁发的、加入哪儿、什么角色
+	//
+	// 免认证，而且是有意的：点邮件里那条链接的人多半还没登录，甚至还没有账号。要他先注册再 告诉他这是谁发来的、加入哪个项目，等于让他在不知道要加入什么的情况下决定要不要注册。
+	// 它不多泄露任何东西。 这三样——项目名、邀请人、角色——邮件正文里已经写着了，而读得到 这个令牌的人就是收得到那封邮件的人。同一个令牌本来就能把持有者加进项目（见 `accept-invitation-by-token`），读一个项目名比那件事轻得多。
+	// 收件地址打了码（`t***@example.com`）。 不打码的话，这个接口就成了「拿一个令牌反查它 当初寄给了哪个地址」——而那是邮件正文里没有、持有者也未必知道的一件事。
+	// 令牌不存在、已经用过、被撤回、过期，四种情况同一个 404 和同一句话。分开报会把它变成 一个可以拿来试令牌的探针，而这个接口免认证，任何人都试得起。
+	//
+	// Corresponds with GET /account/v1/me/invitations/by-token (the `PreviewInvitationByToken` operationId).
+	PreviewInvitationByToken(ctx context.Context, params *PreviewInvitationByTokenParams, reqEditors ...RequestEditorFn) (*http.Response, error)
 
 	// AcceptInvitation 接受一份列在我名下的要约
 	//
@@ -1181,6 +1224,26 @@ func (c *Client) AcceptInvitationByTokenWithBody(ctx context.Context, contentTyp
 // Corresponds with POST /account/v1/me/invitations/accept (the `AcceptInvitationByToken` operationId).
 func (c *Client) AcceptInvitationByToken(ctx context.Context, body AcceptInvitationByTokenJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
 	req, err := NewAcceptInvitationByTokenRequest(c.Server, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+// PreviewInvitationByToken 看一眼这封邀请是谁发的、加入哪儿、什么角色
+//
+// 免认证，而且是有意的：点邮件里那条链接的人多半还没登录，甚至还没有账号。要他先注册再 告诉他这是谁发来的、加入哪个项目，等于让他在不知道要加入什么的情况下决定要不要注册。
+// 它不多泄露任何东西。 这三样——项目名、邀请人、角色——邮件正文里已经写着了，而读得到 这个令牌的人就是收得到那封邮件的人。同一个令牌本来就能把持有者加进项目（见 `accept-invitation-by-token`），读一个项目名比那件事轻得多。
+// 收件地址打了码（`t***@example.com`）。 不打码的话，这个接口就成了「拿一个令牌反查它 当初寄给了哪个地址」——而那是邮件正文里没有、持有者也未必知道的一件事。
+// 令牌不存在、已经用过、被撤回、过期，四种情况同一个 404 和同一句话。分开报会把它变成 一个可以拿来试令牌的探针，而这个接口免认证，任何人都试得起。
+//
+// Corresponds with GET /account/v1/me/invitations/by-token (the `PreviewInvitationByToken` operationId).
+func (c *Client) PreviewInvitationByToken(ctx context.Context, params *PreviewInvitationByTokenParams, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewPreviewInvitationByTokenRequest(c.Server, params)
 	if err != nil {
 		return nil, err
 	}
@@ -1712,6 +1775,56 @@ func NewAcceptInvitationByTokenRequestWithBody(server string, contentType string
 	return req, nil
 }
 
+// NewPreviewInvitationByTokenRequest constructs an http.Request for the PreviewInvitationByToken method
+func NewPreviewInvitationByTokenRequest(server string, params *PreviewInvitationByTokenParams) (*http.Request, error) {
+	var err error
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/account/v1/me/invitations/by-token")
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	if params != nil {
+		// queryValues collects non-styled parameters (passthrough, JSON)
+		// that are safe to round-trip through url.Values.Encode().
+		queryValues := queryURL.Query()
+		// rawQueryFragments collects pre-encoded query fragments from
+		// styled parameters, preserving literal commas as delimiters
+		// per the OpenAPI spec (e.g. "color=blue,black,brown").
+		var rawQueryFragments []string
+
+		if queryFrag, err := runtime.StyleParamWithOptions("form", false, "token", params.Token, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "string", Format: ""}); err != nil {
+			return nil, err
+		} else {
+			for _, qp := range strings.Split(queryFrag, "&") {
+				rawQueryFragments = append(rawQueryFragments, qp)
+			}
+		}
+
+		if encoded := queryValues.Encode(); encoded != "" {
+			rawQueryFragments = append(rawQueryFragments, encoded)
+		}
+		queryURL.RawQuery = strings.Join(rawQueryFragments, "&")
+	}
+
+	req, err := http.NewRequest(http.MethodGet, queryURL.String(), nil)
+	if err != nil {
+		return nil, err
+	}
+
+	return req, nil
+}
+
 // NewAcceptInvitationRequest constructs an http.Request for the AcceptInvitation method
 func NewAcceptInvitationRequest(server string, invitationId openapi_types.UUID) (*http.Request, error) {
 	var err error
@@ -2154,6 +2267,18 @@ type ClientWithResponsesInterface interface {
 	//
 	// Corresponds with POST /account/v1/me/invitations/accept (the `AcceptInvitationByToken` operationId).
 	AcceptInvitationByTokenWithResponse(ctx context.Context, body AcceptInvitationByTokenJSONRequestBody, reqEditors ...RequestEditorFn) (*AcceptInvitationByTokenResponse, error)
+
+	// PreviewInvitationByTokenWithResponse 看一眼这封邀请是谁发的、加入哪儿、什么角色
+	//
+	// 免认证，而且是有意的：点邮件里那条链接的人多半还没登录，甚至还没有账号。要他先注册再 告诉他这是谁发来的、加入哪个项目，等于让他在不知道要加入什么的情况下决定要不要注册。
+	// 它不多泄露任何东西。 这三样——项目名、邀请人、角色——邮件正文里已经写着了，而读得到 这个令牌的人就是收得到那封邮件的人。同一个令牌本来就能把持有者加进项目（见 `accept-invitation-by-token`），读一个项目名比那件事轻得多。
+	// 收件地址打了码（`t***@example.com`）。 不打码的话，这个接口就成了「拿一个令牌反查它 当初寄给了哪个地址」——而那是邮件正文里没有、持有者也未必知道的一件事。
+	// 令牌不存在、已经用过、被撤回、过期，四种情况同一个 404 和同一句话。分开报会把它变成 一个可以拿来试令牌的探针，而这个接口免认证，任何人都试得起。
+	//
+	// Returns a wrapper object for the known response body format(s).
+	//
+	// Corresponds with GET /account/v1/me/invitations/by-token (the `PreviewInvitationByToken` operationId).
+	PreviewInvitationByTokenWithResponse(ctx context.Context, params *PreviewInvitationByTokenParams, reqEditors ...RequestEditorFn) (*PreviewInvitationByTokenResponse, error)
 
 	// AcceptInvitationWithResponse 接受一份列在我名下的要约
 	//
@@ -2724,6 +2849,54 @@ func (r AcceptInvitationByTokenResponse) ContentType() string {
 	return ""
 }
 
+type PreviewInvitationByTokenResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	// JSON200 the response for an HTTP 200 `application/json` response
+	JSON200 *InvitationPreviewResource
+	// JSONDefault the response for an HTTP default `application/json` response
+	JSONDefault *Error
+}
+
+// GetJSON200 returns the response for an HTTP 200 `application/json` response
+func (r PreviewInvitationByTokenResponse) GetJSON200() *InvitationPreviewResource {
+	return r.JSON200
+}
+
+// GetJSONDefault returns the response for an HTTP default `application/json` response
+func (r PreviewInvitationByTokenResponse) GetJSONDefault() *Error {
+	return r.JSONDefault
+}
+
+// GetBody returns the raw response body bytes
+func (r PreviewInvitationByTokenResponse) GetBody() []byte {
+	return r.Body
+}
+
+// Status returns HTTPResponse.Status
+func (r PreviewInvitationByTokenResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r PreviewInvitationByTokenResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+// ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
+func (r PreviewInvitationByTokenResponse) ContentType() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Header.Get("Content-Type")
+	}
+	return ""
+}
+
 type AcceptInvitationResponse struct {
 	Body         []byte
 	HTTPResponse *http.Response
@@ -3230,6 +3403,24 @@ func (c *ClientWithResponses) AcceptInvitationByTokenWithResponse(ctx context.Co
 	return ParseAcceptInvitationByTokenResponse(rsp)
 }
 
+// PreviewInvitationByTokenWithResponse 看一眼这封邀请是谁发的、加入哪儿、什么角色
+//
+// 免认证，而且是有意的：点邮件里那条链接的人多半还没登录，甚至还没有账号。要他先注册再 告诉他这是谁发来的、加入哪个项目，等于让他在不知道要加入什么的情况下决定要不要注册。
+// 它不多泄露任何东西。 这三样——项目名、邀请人、角色——邮件正文里已经写着了，而读得到 这个令牌的人就是收得到那封邮件的人。同一个令牌本来就能把持有者加进项目（见 `accept-invitation-by-token`），读一个项目名比那件事轻得多。
+// 收件地址打了码（`t***@example.com`）。 不打码的话，这个接口就成了「拿一个令牌反查它 当初寄给了哪个地址」——而那是邮件正文里没有、持有者也未必知道的一件事。
+// 令牌不存在、已经用过、被撤回、过期，四种情况同一个 404 和同一句话。分开报会把它变成 一个可以拿来试令牌的探针，而这个接口免认证，任何人都试得起。
+//
+// Returns a wrapper object for the known response body format(s).
+//
+// Corresponds with GET /account/v1/me/invitations/by-token (the `PreviewInvitationByToken` operationId).
+func (c *ClientWithResponses) PreviewInvitationByTokenWithResponse(ctx context.Context, params *PreviewInvitationByTokenParams, reqEditors ...RequestEditorFn) (*PreviewInvitationByTokenResponse, error) {
+	rsp, err := c.PreviewInvitationByToken(ctx, params, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParsePreviewInvitationByTokenResponse(rsp)
+}
+
 // AcceptInvitationWithResponse 接受一份列在我名下的要约
 //
 // 不需要 token：token 证明的是「你就是这份要约寄给的那个人」，而当前账号的邮箱对得上这份要约，证明的是同一件事。.
@@ -3679,6 +3870,39 @@ func ParseAcceptInvitationByTokenResponse(rsp *http.Response) (*AcceptInvitation
 	switch {
 	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
 		var dest AcceptedInvitationResponseBody
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && true:
+		var dest Error
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSONDefault = &dest
+
+	}
+
+	return response, nil
+}
+
+// ParsePreviewInvitationByTokenResponse parses an HTTP response from a PreviewInvitationByTokenWithResponse call
+func ParsePreviewInvitationByTokenResponse(rsp *http.Response) (*PreviewInvitationByTokenResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &PreviewInvitationByTokenResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest InvitationPreviewResource
 		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
 			return nil, err
 		}

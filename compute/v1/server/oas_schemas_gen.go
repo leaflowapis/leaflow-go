@@ -2250,6 +2250,30 @@ type InstanceTypeResource struct {
 	RAMMB                int64     `json:"ram_mb"`
 	RegionCode           string    `json:"region_code"`
 	Vcpus                int64     `json:"vcpus"`
+	// Whether this type can be ordered right now.
+	//
+	// It reflects a limit set by operations, not what the cloud can physically schedule — raising the
+	// limit does not create capacity that is not there, and a type that is not sold out can still fail to
+	// start if the zone is full.
+	//
+	// It is advisory: it is read when the list is built, and the last one can be taken between that read
+	// and the order. The order is what actually refuses.
+	SoldOut bool `json:"sold_out"`
+	// How many more may be created. Absent when this type is not limited at all.
+	//
+	// Absent is not zero and not "unknown": a type with no limit simply has no number to show. Reporting
+	// it as a number would need a sentinel, and any sentinel eventually gets compared against a real
+	// count.
+	Remaining OptInt64 `json:"remaining"`
+	// What buying this type outright costs, per term. Empty means this type is only sold by the hour.
+	//
+	// The hourly price is not here and is not missing: it is made of finer parts than the type (cores and
+	// memory are priced separately, and the type itself does not appear in the rate card at all), so there
+	// is no single number to show. A term price is one number because a term is one purchase.
+	//
+	// Advisory, like `sold_out`: it is read when the list is built. The order is what fixes the price, and
+	// it refuses rather than falling back to hourly if the term is not sold.
+	PrepaidPrices []PrepaidPrice `json:"prepaid_prices"`
 }
 
 // GetAvailabilityZoneCode returns the value of AvailabilityZoneCode.
@@ -2297,6 +2321,21 @@ func (s *InstanceTypeResource) GetVcpus() int64 {
 	return s.Vcpus
 }
 
+// GetSoldOut returns the value of SoldOut.
+func (s *InstanceTypeResource) GetSoldOut() bool {
+	return s.SoldOut
+}
+
+// GetRemaining returns the value of Remaining.
+func (s *InstanceTypeResource) GetRemaining() OptInt64 {
+	return s.Remaining
+}
+
+// GetPrepaidPrices returns the value of PrepaidPrices.
+func (s *InstanceTypeResource) GetPrepaidPrices() []PrepaidPrice {
+	return s.PrepaidPrices
+}
+
 // SetAvailabilityZoneCode sets the value of AvailabilityZoneCode.
 func (s *InstanceTypeResource) SetAvailabilityZoneCode(val string) {
 	s.AvailabilityZoneCode = val
@@ -2342,6 +2381,21 @@ func (s *InstanceTypeResource) SetVcpus(val int64) {
 	s.Vcpus = val
 }
 
+// SetSoldOut sets the value of SoldOut.
+func (s *InstanceTypeResource) SetSoldOut(val bool) {
+	s.SoldOut = val
+}
+
+// SetRemaining sets the value of Remaining.
+func (s *InstanceTypeResource) SetRemaining(val OptInt64) {
+	s.Remaining = val
+}
+
+// SetPrepaidPrices sets the value of PrepaidPrices.
+func (s *InstanceTypeResource) SetPrepaidPrices(val []PrepaidPrice) {
+	s.PrepaidPrices = val
+}
+
 // Ref: #/components/schemas/LaunchInstanceRequestBody
 type LaunchInstanceRequestBody struct {
 	// Number of instances to create; 1 when omitted. Names are numbered automatically for several.
@@ -2367,6 +2421,22 @@ type LaunchInstanceRequestBody struct {
 	PortID OptUUID `json:"port_id"`
 	// A private image. Exactly one of this, `image_id` and `boot_disk_id`.
 	PrivateImageID OptUUID `json:"private_image_id"`
+	// Buy the instance outright for this long, as an ISO 8601 duration (P1M, P1Y). Billed by the hour when
+	// omitted.
+	//
+	// The money is taken from the balance when the order is placed, at the price the catalogue reported
+	// for this type and term. If that term is not on sale for this type the request is refused — it is
+	// never quietly sold by the hour instead, because the customer who asked for a year would find out
+	// only from the bill.
+	//
+	// The system disk is bought for the same term: it is the same purchase, and one order cannot be half
+	// outright and half hourly. A term is therefore refused together with `boot_disk_id`, where the disk
+	// already exists and is already billed its own way.
+	//
+	// When the term runs out the instance is stopped, not deleted, and starts again once it is renewed.
+	// Renewal lives in the billing console, across every product, because what a customer needs to see is
+	// everything expiring this month rather than one product at a time.
+	Term OptString `json:"term"`
 	// System disk capacity in GB. Chosen automatically from the requirement of the image and the platform
 	// minimum when omitted. Ignored with `boot_disk_id`, since that disk already has its capacity.
 	RootDiskGB OptInt64 `json:"root_disk_gb"`
@@ -2426,6 +2496,11 @@ func (s *LaunchInstanceRequestBody) GetPortID() OptUUID {
 // GetPrivateImageID returns the value of PrivateImageID.
 func (s *LaunchInstanceRequestBody) GetPrivateImageID() OptUUID {
 	return s.PrivateImageID
+}
+
+// GetTerm returns the value of Term.
+func (s *LaunchInstanceRequestBody) GetTerm() OptString {
+	return s.Term
 }
 
 // GetRootDiskGB returns the value of RootDiskGB.
@@ -2491,6 +2566,11 @@ func (s *LaunchInstanceRequestBody) SetPortID(val OptUUID) {
 // SetPrivateImageID sets the value of PrivateImageID.
 func (s *LaunchInstanceRequestBody) SetPrivateImageID(val OptUUID) {
 	s.PrivateImageID = val
+}
+
+// SetTerm sets the value of Term.
+func (s *LaunchInstanceRequestBody) SetTerm(val OptString) {
+	s.Term = val
 }
 
 // SetRootDiskGB sets the value of RootDiskGB.
@@ -3426,6 +3506,47 @@ func (s *PortResource) SetPublicIps(val []string) {
 // SetSubnetID sets the value of SubnetID.
 func (s *PortResource) SetSubnetID(val uuid.UUID) {
 	s.SubnetID = val
+}
+
+// Ref: #/components/schemas/PrepaidPrice
+type PrepaidPrice struct {
+	// An ISO 8601 duration (P1M, P1Y). A duration rather than a number of months: months are not the same
+	// length, and storing a number leaves whoever reads it to decide what it means.
+	Term string `json:"term"`
+	// A decimal string, not a float. Money that survives a round trip through binary floating point is
+	// money that stops adding up.
+	Amount   string `json:"amount"`
+	Currency string `json:"currency"`
+}
+
+// GetTerm returns the value of Term.
+func (s *PrepaidPrice) GetTerm() string {
+	return s.Term
+}
+
+// GetAmount returns the value of Amount.
+func (s *PrepaidPrice) GetAmount() string {
+	return s.Amount
+}
+
+// GetCurrency returns the value of Currency.
+func (s *PrepaidPrice) GetCurrency() string {
+	return s.Currency
+}
+
+// SetTerm sets the value of Term.
+func (s *PrepaidPrice) SetTerm(val string) {
+	s.Term = val
+}
+
+// SetAmount sets the value of Amount.
+func (s *PrepaidPrice) SetAmount(val string) {
+	s.Amount = val
+}
+
+// SetCurrency sets the value of Currency.
+func (s *PrepaidPrice) SetCurrency(val string) {
+	s.Currency = val
 }
 
 // Ref: #/components/schemas/PrivateImageListResponseBody

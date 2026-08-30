@@ -165,6 +165,26 @@ func (UnimplementedHandler) ListProjects(ctx context.Context, params ListProject
 	return r, ht.ErrNotImplemented
 }
 
+// PreviewInvitationByToken implements preview-invitation-by-token operation.
+//
+// 免认证，而且是有意的：点邮件里那条链接的人多半还没登录，甚至还没有账号。要他先注册再
+// 告诉他这是谁发来的、加入哪个项目，等于让他在不知道要加入什么的情况下决定要不要注册。
+// 它不多泄露任何东西。
+// 这三样——项目名、邀请人、角色——邮件正文里已经写着了，而读得到
+// 这个令牌的人就是收得到那封邮件的人。同一个令牌本来就能把持有者加进项目（见
+// `accept-invitation-by-token`），读一个项目名比那件事轻得多。
+// 收件地址打了码（`t***@example.com`）。
+// 不打码的话，这个接口就成了「拿一个令牌反查它
+// 当初寄给了哪个地址」——而那是邮件正文里没有、持有者也未必知道的一件事。
+// 令牌不存在、已经用过、被撤回、过期，四种情况同一个 404
+// 和同一句话。分开报会把它变成
+// 一个可以拿来试令牌的探针，而这个接口免认证，任何人都试得起。.
+//
+// GET /account/v1/me/invitations/by-token
+func (UnimplementedHandler) PreviewInvitationByToken(ctx context.Context, params PreviewInvitationByTokenParams) (r *InvitationPreviewResource, _ error) {
+	return r, ht.ErrNotImplemented
+}
+
 // Register implements register operation.
 //
 // 在 auth.leaflow.net

@@ -149,6 +149,30 @@ type Handler interface {
 	//
 	// GET /account/v1/billing-accounts/{accountKey}/orders
 	ListOrders(ctx context.Context, params ListOrdersParams) (*OrderList, error)
+	// ListPrepaidAssets implements list-prepaid-assets operation.
+	//
+	// Everything this account paid a term for, across every product, soonest to expire first.
+	//
+	// # Why this is one list rather than a page inside each product
+	//
+	// Renewal is the one thing a customer forgets, and forgetting it stops the machine. Splitting the list
+	// per product means the instance about to lapse tomorrow is only visible to someone who thought to go
+	// and look at instances. Sorting by expiry rather than by purchase date is the same reason: the row
+	// that matters is the one at the top.
+	//
+	// # Metered resources are not here
+	//
+	// There is no term to run out. Listing them with an empty expiry would invite renewing something that
+	// is already billed by the hour until it is deleted.
+	//
+	// # `state` and `desired_state` are both reported
+	//
+	// A machine stopped because its term lapsed reads `suspended` for both. One that has just been renewed
+	// reads `suspended` and `active` — it is on its way back. Without the second field those look
+	// identical, and a customer who just paid concludes it did not work and pays again.
+	//
+	// GET /account/v1/billing-accounts/{accountKey}/prepaid-assets
+	ListPrepaidAssets(ctx context.Context, params ListPrepaidAssetsParams) (*PrepaidAssetList, error)
 	// ListTopUps implements list-top-ups operation.
 	//
 	// Every top-up this account has made, newest first.
@@ -222,6 +246,29 @@ type Handler interface {
 	//
 	// POST /account/v1/projects/{projectId}/quote
 	QuoteProjectUsage(ctx context.Context, req *QuoteRequest, params QuoteProjectUsageParams) (*Quote, error)
+	// QuoteRenewal implements quote-renewal operation.
+	//
+	// Priced the same way the charge is, from the same table, so the number shown is the number taken.
+	// Quoting separately from charging is what lets a customer see the price before committing; computing
+	// it twice in two places is what makes the two disagree, and a bill that disagrees with the page that
+	// sold it is a complaint rather than a bug report.
+	//
+	// # Both the current and the resulting expiry are returned
+	//
+	// Renewing early adds the term to what is left, not to today — otherwise renewing a month ahead
+	// throws that month away, and everyone learns to wait until the last moment. Something that lapsed
+	// long ago is counted from now instead, because adding to a date in the past produces an expiry that
+	// is still in the past.
+	//
+	// Reporting only the new date leaves the customer unable to tell which of those happened.
+	//
+	// # A withdrawn price still quotes
+	//
+	// Taking a product off sale means stop selling new ones. Refusing renewals as well would stop a batch
+	// of existing machines on their expiry date, which is not what the operator pressed that button for.
+	//
+	// GET /account/v1/billing-accounts/{accountKey}/prepaid-assets/{provisionId}/renewal-quote
+	QuoteRenewal(ctx context.Context, params QuoteRenewalParams) (*RenewalQuote, error)
 	// QuoteUsage implements quote-usage operation.
 	//
 	// Prices a set of usages against whatever plan this account is currently on, and returns every
@@ -315,6 +362,35 @@ type Handler interface {
 	//
 	// GET /account/v1/billing-accounts/{accountKey}/top-ups/{paymentId}
 	ReadTopUp(ctx context.Context, params ReadTopUpParams) (*TopUpStatus, error)
+	// RenewPrepaidAsset implements renew-prepaid-asset operation.
+	//
+	// Takes the money from the balance and pushes the expiry out. The resource itself is not touched —
+	// nothing is rebuilt, nothing restarts, the id stays the same.
+	//
+	// # An idempotency key is required, not optional
+	//
+	// Renewal is a pure charge. Unlike creating something, there is no resource whose uniqueness catches a
+	// repeat, so a double click is two charges and twice the term — and both calls return success.
+	// Letting the field be omitted would mean losing that protection silently, in the one case that looks
+	// completely normal until the books are reconciled.
+	//
+	// Sending the same key again returns the order that was already placed. It does not charge again, and
+	// it is not an error: reporting a repeat as a failure makes the caller retry forever, and makes the
+	// customer press the button a second time with a fresh key.
+	//
+	// # What happens if the balance is short
+	//
+	// The order is recorded as failed and nothing else changes: no money moves, the expiry stays where it
+	// was, and the resource keeps running until its existing term ends. Retrying with the same key after
+	// topping up goes through.
+	//
+	// # Renewing something that already lapsed brings it back
+	//
+	// Its term is counted from now, and it is asked to start again. Coming back is the reconciliation
+	// loop's job, so it is not instant — which is what `desired_state` on the asset list is for.
+	//
+	// POST /account/v1/billing-accounts/{accountKey}/prepaid-assets/{provisionId}/renew
+	RenewPrepaidAsset(ctx context.Context, req *RenewRequestBody, params RenewPrepaidAssetParams) (*Order, error)
 	// StartBillingPortal implements start-billing-portal operation.
 	//
 	// Returns a URL to the payment provider's own portal, where the card can be replaced or removed, the
