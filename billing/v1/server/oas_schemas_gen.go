@@ -253,6 +253,31 @@ type Charge struct {
 	// Decimal string, the real-time figure. The booked figure would show a machine that only just started
 	// as zero.
 	Total string `json:"total"`
+	// Which meter it is for, when the charge came from usage. A hash, not something to show — it is here
+	// so two rows can be told apart programmatically and so support can line a row up with the catalogue.
+	FeatureKey OptString `json:"feature_key"`
+	// Whether this figure moves. A usage charge climbs through the period; a flat fee does not. Without
+	// it, the same number on two refreshes could mean "nobody used it" or "it never moves", and those need
+	// different next steps.
+	Type ChargeType `json:"type"`
+	// Start of the service period this charge covers.
+	//
+	// This is what tells two same-named rows apart. Something billed by the hour produces hundreds of
+	// identically named charges in a month, and a list carrying only a name and an amount shows them as a
+	// wall of duplicates — which is what it looks like today.
+	PeriodFrom time.Time `json:"period_from"`
+	// End of the service period this charge covers.
+	PeriodTo time.Time `json:"period_to"`
+	// How much of this charge was covered by credit, as a decimal string.
+	//
+	// It is the answer to "I have a balance, why am I still being charged". Without it the customer sees a
+	// number that disagrees with what they expected and the only thing that explains it is on our side.
+	Credits OptString `json:"credits"`
+	// How much was taken off by a discount, as a decimal string. A usage allowance (the first N units
+	// free) lands here too.
+	Discounts OptString `json:"discounts"`
+	// Free text from the charge, usually empty. Set on charges raised by hand.
+	Description OptString `json:"description"`
 }
 
 // GetID returns the value of ID.
@@ -270,6 +295,41 @@ func (s *Charge) GetTotal() string {
 	return s.Total
 }
 
+// GetFeatureKey returns the value of FeatureKey.
+func (s *Charge) GetFeatureKey() OptString {
+	return s.FeatureKey
+}
+
+// GetType returns the value of Type.
+func (s *Charge) GetType() ChargeType {
+	return s.Type
+}
+
+// GetPeriodFrom returns the value of PeriodFrom.
+func (s *Charge) GetPeriodFrom() time.Time {
+	return s.PeriodFrom
+}
+
+// GetPeriodTo returns the value of PeriodTo.
+func (s *Charge) GetPeriodTo() time.Time {
+	return s.PeriodTo
+}
+
+// GetCredits returns the value of Credits.
+func (s *Charge) GetCredits() OptString {
+	return s.Credits
+}
+
+// GetDiscounts returns the value of Discounts.
+func (s *Charge) GetDiscounts() OptString {
+	return s.Discounts
+}
+
+// GetDescription returns the value of Description.
+func (s *Charge) GetDescription() OptString {
+	return s.Description
+}
+
 // SetID sets the value of ID.
 func (s *Charge) SetID(val string) {
 	s.ID = val
@@ -283,6 +343,41 @@ func (s *Charge) SetName(val string) {
 // SetTotal sets the value of Total.
 func (s *Charge) SetTotal(val string) {
 	s.Total = val
+}
+
+// SetFeatureKey sets the value of FeatureKey.
+func (s *Charge) SetFeatureKey(val OptString) {
+	s.FeatureKey = val
+}
+
+// SetType sets the value of Type.
+func (s *Charge) SetType(val ChargeType) {
+	s.Type = val
+}
+
+// SetPeriodFrom sets the value of PeriodFrom.
+func (s *Charge) SetPeriodFrom(val time.Time) {
+	s.PeriodFrom = val
+}
+
+// SetPeriodTo sets the value of PeriodTo.
+func (s *Charge) SetPeriodTo(val time.Time) {
+	s.PeriodTo = val
+}
+
+// SetCredits sets the value of Credits.
+func (s *Charge) SetCredits(val OptString) {
+	s.Credits = val
+}
+
+// SetDiscounts sets the value of Discounts.
+func (s *Charge) SetDiscounts(val OptString) {
+	s.Discounts = val
+}
+
+// SetDescription sets the value of Description.
+func (s *Charge) SetDescription(val OptString) {
+	s.Description = val
 }
 
 // Ref: #/components/schemas/ChargeList
@@ -321,6 +416,50 @@ func (s *ChargeList) SetCharges(val []Charge) {
 // SetTotal sets the value of Total.
 func (s *ChargeList) SetTotal(val string) {
 	s.Total = val
+}
+
+// Whether this figure moves. A usage charge climbs through the period; a flat fee does not. Without
+// it, the same number on two refreshes could mean "nobody used it" or "it never moves", and those need
+// different next steps.
+type ChargeType string
+
+const (
+	ChargeTypeUsageBased ChargeType = "usage_based"
+	ChargeTypeFlatFee    ChargeType = "flat_fee"
+)
+
+// AllValues returns all ChargeType values.
+func (ChargeType) AllValues() []ChargeType {
+	return []ChargeType{
+		ChargeTypeUsageBased,
+		ChargeTypeFlatFee,
+	}
+}
+
+// MarshalText implements encoding.TextMarshaler.
+func (s ChargeType) MarshalText() ([]byte, error) {
+	switch s {
+	case ChargeTypeUsageBased:
+		return []byte(s), nil
+	case ChargeTypeFlatFee:
+		return []byte(s), nil
+	default:
+		return nil, errors.Errorf("invalid value: %q", s)
+	}
+}
+
+// UnmarshalText implements encoding.TextUnmarshaler.
+func (s *ChargeType) UnmarshalText(data []byte) error {
+	switch ChargeType(data) {
+	case ChargeTypeUsageBased:
+		*s = ChargeTypeUsageBased
+		return nil
+	case ChargeTypeFlatFee:
+		*s = ChargeTypeFlatFee
+		return nil
+	default:
+		return errors.Errorf("invalid value: %q", data)
+	}
 }
 
 // Ref: #/components/schemas/CreateBillingAccountRequestBody
@@ -2636,6 +2775,69 @@ func (s *PricingPhase) SetDuration(val OptString) {
 // SetLines sets the value of Lines.
 func (s *PricingPhase) SetLines(val []PricingLine) {
 	s.Lines = val
+}
+
+// The account a project's resources are charged to.
+// Ref: #/components/schemas/ProjectBillingAccount
+type ProjectBillingAccount struct {
+	AccountKey  string   `json:"account_key"`
+	ProjectID   string   `json:"project_id"`
+	DisplayName string   `json:"display_name"`
+	Currency    Currency `json:"currency"`
+	// Whether the caller owns this account, and therefore whether the balance routes will answer for it.
+	// False means someone else pays for this project: the figures are theirs, not the caller's, and a page
+	// should say so rather than showing nothing.
+	OwnedByMe bool `json:"owned_by_me"`
+}
+
+// GetAccountKey returns the value of AccountKey.
+func (s *ProjectBillingAccount) GetAccountKey() string {
+	return s.AccountKey
+}
+
+// GetProjectID returns the value of ProjectID.
+func (s *ProjectBillingAccount) GetProjectID() string {
+	return s.ProjectID
+}
+
+// GetDisplayName returns the value of DisplayName.
+func (s *ProjectBillingAccount) GetDisplayName() string {
+	return s.DisplayName
+}
+
+// GetCurrency returns the value of Currency.
+func (s *ProjectBillingAccount) GetCurrency() Currency {
+	return s.Currency
+}
+
+// GetOwnedByMe returns the value of OwnedByMe.
+func (s *ProjectBillingAccount) GetOwnedByMe() bool {
+	return s.OwnedByMe
+}
+
+// SetAccountKey sets the value of AccountKey.
+func (s *ProjectBillingAccount) SetAccountKey(val string) {
+	s.AccountKey = val
+}
+
+// SetProjectID sets the value of ProjectID.
+func (s *ProjectBillingAccount) SetProjectID(val string) {
+	s.ProjectID = val
+}
+
+// SetDisplayName sets the value of DisplayName.
+func (s *ProjectBillingAccount) SetDisplayName(val string) {
+	s.DisplayName = val
+}
+
+// SetCurrency sets the value of Currency.
+func (s *ProjectBillingAccount) SetCurrency(val Currency) {
+	s.Currency = val
+}
+
+// SetOwnedByMe sets the value of OwnedByMe.
+func (s *ProjectBillingAccount) SetOwnedByMe(val bool) {
+	s.OwnedByMe = val
 }
 
 // Which account pays for which project, as it stands once the request has been applied.

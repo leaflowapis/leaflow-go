@@ -340,6 +340,34 @@ type Handler interface {
 	//
 	// GET /account/v1/billing-accounts/{accountKey}/payment-method
 	ReadPaymentMethod(ctx context.Context, params ReadPaymentMethodParams) (*PaymentMethod, error)
+	// ReadProjectBillingAccount implements read-project-billing-account operation.
+	//
+	// The account a project's resources are charged to, resolved from the project rather than guessed.
+	//
+	// # Why a console needs this
+	//
+	// Everything in a console happens inside a project, while billing accounts belong to a person — and
+	// a person can have many. Showing "the first one" next to a sentence like you are overdrawn, new
+	// resources will be refused pairs one account's balance with another account's rule. Both directions
+	// are wrong and one of them is silent: the figures look healthy while creating anything is refused,
+	// and the refusal names a reason the page just contradicted.
+	//
+	// # Being a member is enough to ask, but not to see the money
+	//
+	// The answer is the account's identity, not its balance. A project's members are not necessarily the
+	// people paying for it — a company account can pay for a project someone else works in — and their
+	// balance is not those members' business. Whoever owns the account reads the figures from the balance
+	// route as before; `owned_by_me` says which case this is, so a page can tell "you are overdrawn" apart
+	// from "ask whoever pays for this project".
+	//
+	// # A project with no account is a normal state, and it answers 404
+	//
+	// A project nobody has bound yet cannot create resources at all — admission refuses it. That is
+	// worth saying plainly ("this project has no billing account, bind one") rather than falling back to
+	// some other account of theirs, which is how the wrong-account problem started.
+	//
+	// GET /account/v1/projects/{projectId}/billing-account
+	ReadProjectBillingAccount(ctx context.Context, params ReadProjectBillingAccountParams) (*ProjectBillingAccount, error)
 	// ReadSubscription implements read-subscription operation.
 	//
 	// `404` means no plan, which is worth showing rather than hiding: an account without one is refused

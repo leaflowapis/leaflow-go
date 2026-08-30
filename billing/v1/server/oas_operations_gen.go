@@ -26,6 +26,7 @@ const (
 	QuoteUsageOperation                      OperationName = "QuoteUsage"
 	ReadBillingAccountBalanceOperation       OperationName = "ReadBillingAccountBalance"
 	ReadPaymentMethodOperation               OperationName = "ReadPaymentMethod"
+	ReadProjectBillingAccountOperation       OperationName = "ReadProjectBillingAccount"
 	ReadSubscriptionOperation                OperationName = "ReadSubscription"
 	ReadTopUpOperation                       OperationName = "ReadTopUp"
 	RenewPrepaidAssetOperation               OperationName = "RenewPrepaidAsset"
