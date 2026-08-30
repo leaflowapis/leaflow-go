@@ -1869,6 +1869,14 @@ func (s *Server) handleListChargesRequest(args [1]string, argsEscaped bool, w ht
 					Name: "accountKey",
 					In:   "path",
 				}: params.AccountKey,
+				{
+					Name: "page",
+					In:   "query",
+				}: params.Page,
+				{
+					Name: "page_size",
+					In:   "query",
+				}: params.PageSize,
 			},
 			Raw: r,
 		}

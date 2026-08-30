@@ -401,7 +401,15 @@ func (s *Charge) SetUnitPrice(val OptString) {
 type ChargeList struct {
 	Currency Currency `json:"currency"`
 	Charges  []Charge `json:"charges"`
-	// The sum, which is the same number as `unsettled` on the balance.
+	// How many charges there are in total, across every page.
+	//
+	// Without it, "is there another page" has to be guessed from whether this one came back full — and
+	// that guess turns into one extra fetch of an empty page whenever the last page happens to be exactly
+	// full.
+	TotalCount OptInt64 `json:"total_count"`
+	// The sum over the whole period, not this page — it is the same number as `unsettled` on the
+	// balance, and paging must not change it. A page-scoped sum would disagree with the balance card
+	// sitting next to it, and there would be no way to tell which one to believe.
 	Total string `json:"total"`
 }
 
@@ -413,6 +421,11 @@ func (s *ChargeList) GetCurrency() Currency {
 // GetCharges returns the value of Charges.
 func (s *ChargeList) GetCharges() []Charge {
 	return s.Charges
+}
+
+// GetTotalCount returns the value of TotalCount.
+func (s *ChargeList) GetTotalCount() OptInt64 {
+	return s.TotalCount
 }
 
 // GetTotal returns the value of Total.
@@ -428,6 +441,11 @@ func (s *ChargeList) SetCurrency(val Currency) {
 // SetCharges sets the value of Charges.
 func (s *ChargeList) SetCharges(val []Charge) {
 	s.Charges = val
+}
+
+// SetTotalCount sets the value of TotalCount.
+func (s *ChargeList) SetTotalCount(val OptInt64) {
+	s.TotalCount = val
 }
 
 // SetTotal sets the value of Total.
@@ -1876,6 +1894,52 @@ func (o OptInt) Get() (v int, ok bool) {
 
 // Or returns value if set, or given parameter if does not.
 func (o OptInt) Or(d int) int {
+	if v, ok := o.Get(); ok {
+		return v
+	}
+	return d
+}
+
+// NewOptInt64 returns new OptInt64 with value set to v.
+func NewOptInt64(v int64) OptInt64 {
+	return OptInt64{
+		Value: v,
+		Set:   true,
+	}
+}
+
+// OptInt64 is optional int64.
+type OptInt64 struct {
+	Value int64
+	Set   bool
+}
+
+// IsSet returns true if OptInt64 was set.
+func (o OptInt64) IsSet() bool { return o.Set }
+
+// Reset unsets value.
+func (o *OptInt64) Reset() {
+	var v int64
+	o.Value = v
+	o.Set = false
+}
+
+// SetTo sets value to v.
+func (o *OptInt64) SetTo(v int64) {
+	o.Set = true
+	o.Value = v
+}
+
+// Get returns value and boolean that denotes whether value was set.
+func (o OptInt64) Get() (v int64, ok bool) {
+	if !o.Set {
+		return v, false
+	}
+	return o.Value, true
+}
+
+// Or returns value if set, or given parameter if does not.
+func (o OptInt64) Or(d int64) int64 {
 	if v, ok := o.Get(); ok {
 		return v
 	}
