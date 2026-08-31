@@ -807,6 +807,14 @@ type PaymentMethodSetupSession struct {
 	// when the page loads.
 	ClientSecret string `json:"client_secret"`
 
+	// PublishableKey Identifies this platform to the provider's JavaScript. Public by design.
+	//
+	// It comes from here rather than from the browser bundle because it has to match the
+	// account and the mode of the key the session was created with. Baking it into the build
+	// makes one image unusable against the other mode, and the mismatch shows up as a form
+	// that never loads.
+	PublishableKey string `json:"publishable_key"`
+
 	// SessionId The provider's id for this attempt.
 	//
 	// The browser does not need it — the callback carries the same id and is what actually

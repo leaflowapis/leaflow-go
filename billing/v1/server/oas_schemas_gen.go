@@ -2759,6 +2759,12 @@ type PaymentMethodSetupSession struct {
 	// Not a URL: the form is embedded rather than redirected to, so the account holder stays on the
 	// console. It expires, so fetch it when the form is about to be shown rather than when the page loads.
 	ClientSecret string `json:"client_secret"`
+	// Identifies this platform to the provider's JavaScript. Public by design.
+	//
+	// It comes from here rather than from the browser bundle because it has to match the account and the
+	// mode of the key the session was created with. Baking it into the build makes one image unusable
+	// against the other mode, and the mismatch shows up as a form that never loads.
+	PublishableKey string `json:"publishable_key"`
 	// The provider's id for this attempt.
 	//
 	// The browser does not need it — the callback carries the same id and is what actually records the
@@ -2772,6 +2778,11 @@ func (s *PaymentMethodSetupSession) GetClientSecret() string {
 	return s.ClientSecret
 }
 
+// GetPublishableKey returns the value of PublishableKey.
+func (s *PaymentMethodSetupSession) GetPublishableKey() string {
+	return s.PublishableKey
+}
+
 // GetSessionID returns the value of SessionID.
 func (s *PaymentMethodSetupSession) GetSessionID() OptString {
 	return s.SessionID
@@ -2780,6 +2791,11 @@ func (s *PaymentMethodSetupSession) GetSessionID() OptString {
 // SetClientSecret sets the value of ClientSecret.
 func (s *PaymentMethodSetupSession) SetClientSecret(val string) {
 	s.ClientSecret = val
+}
+
+// SetPublishableKey sets the value of PublishableKey.
+func (s *PaymentMethodSetupSession) SetPublishableKey(val string) {
+	s.PublishableKey = val
 }
 
 // SetSessionID sets the value of SessionID.
