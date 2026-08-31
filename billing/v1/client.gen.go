@@ -800,11 +800,11 @@ type PaymentMethodList struct {
 
 // PaymentMethodSetupSession defines model for PaymentMethodSetupSession.
 type PaymentMethodSetupSession struct {
-	// ClientSecret Initialises the provider's JavaScript, which mounts its form in an iframe on this page.
+	// ClientSecret Confirms this attempt from the browser, against the provider's own inputs.
 	//
-	// Not a URL: the form is embedded rather than redirected to, so the account holder stays
-	// on the console. It expires, so fetch it when the form is about to be shown rather than
-	// when the page loads.
+	// Not a URL and not a hosted page: only the inputs come from the provider, so the
+	// heading, the button and the styling around them are this platform's. It expires, so
+	// fetch it when the form is about to be shown rather than when the page loads.
 	ClientSecret string `json:"client_secret"`
 
 	// PublishableKey Identifies this platform to the provider's JavaScript. Public by design.
@@ -815,12 +815,12 @@ type PaymentMethodSetupSession struct {
 	// that never loads.
 	PublishableKey string `json:"publishable_key"`
 
-	// SessionId The provider's id for this attempt.
+	// SetupId The provider's id for this attempt.
 	//
 	// The browser does not need it — the callback carries the same id and is what actually
 	// records the method. It is here so that a support conversation about one failed attempt
 	// has something to look it up by.
-	SessionId *string `json:"session_id,omitempty"`
+	SetupId *string `json:"setup_id,omitempty"`
 }
 
 // PlanChangeTiming When a plan change takes effect. There is no default: an upgrade and a downgrade want opposite
