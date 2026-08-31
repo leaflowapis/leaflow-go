@@ -188,22 +188,6 @@ func (s *BillingAccountList) SetAccounts(val []BillingAccount) {
 	s.Accounts = val
 }
 
-// Ref: #/components/schemas/BillingPortalSession
-type BillingPortalSession struct {
-	// Send the browser here. It expires, so do not store it.
-	URL url.URL `json:"url"`
-}
-
-// GetURL returns the value of URL.
-func (s *BillingPortalSession) GetURL() url.URL {
-	return s.URL
-}
-
-// SetURL sets the value of URL.
-func (s *BillingPortalSession) SetURL(val url.URL) {
-	s.URL = val
-}
-
 type CancelSubscriptionTiming string
 
 const (
@@ -1900,6 +1884,52 @@ func (o OptInt) Or(d int) int {
 	return d
 }
 
+// NewOptInt32 returns new OptInt32 with value set to v.
+func NewOptInt32(v int32) OptInt32 {
+	return OptInt32{
+		Value: v,
+		Set:   true,
+	}
+}
+
+// OptInt32 is optional int32.
+type OptInt32 struct {
+	Value int32
+	Set   bool
+}
+
+// IsSet returns true if OptInt32 was set.
+func (o OptInt32) IsSet() bool { return o.Set }
+
+// Reset unsets value.
+func (o *OptInt32) Reset() {
+	var v int32
+	o.Value = v
+	o.Set = false
+}
+
+// SetTo sets value to v.
+func (o *OptInt32) SetTo(v int32) {
+	o.Set = true
+	o.Value = v
+}
+
+// Get returns value and boolean that denotes whether value was set.
+func (o OptInt32) Get() (v int32, ok bool) {
+	if !o.Set {
+		return v, false
+	}
+	return o.Value, true
+}
+
+// Or returns value if set, or given parameter if does not.
+func (o OptInt32) Or(d int32) int32 {
+	if v, ok := o.Get(); ok {
+		return v
+	}
+	return d
+}
+
 // NewOptInt64 returns new OptInt64 with value set to v.
 func NewOptInt64(v int64) OptInt64 {
 	return OptInt64{
@@ -2619,51 +2649,142 @@ func (s *OrderState) UnmarshalText(data []byte) error {
 	}
 }
 
-// Whether money can be collected from this account later, without the account holder present.
+// One saved way of collecting money later, without the account holder present.
 //
-// Deliberately not called a card: a card is one kind of payment method, and direct debit and the
-// recurring mandates offered by regional wallets occupy the same slot.
+// Deliberately not called a card: a card is one kind, and direct debit and the recurring mandates
+// offered by regional wallets occupy the same slot.
 // Ref: #/components/schemas/PaymentMethod
 type PaymentMethod struct {
-	// True when the billing engine holds a default payment method for this account and can therefore
-	// collect an invoice.
+	// The provider's id for it. Used to remove it or make it the default.
+	ID string `json:"id"`
+	// Visa, Mastercard, and so on. Empty for kinds that have no brand.
+	Brand OptString `json:"brand"`
+	// The last four digits, for telling two saved methods apart.
 	//
-	// This is the precondition for a paid plan. While it is false, starting a paid subscription is
-	// refused, and the refusal is about billing setup rather than about the plan — so check this first
-	// and say what is actually missing.
+	// This and the expiry are the only parts of the instrument that exist here. The number, the expiry the
+	// holder typed and the CVC never reach this platform.
+	Last4    OptString `json:"last4"`
+	ExpMonth OptInt32  `json:"exp_month"`
+	// Together with `exp_month`, when this stops working.
 	//
-	// It says nothing about which kind is on file. To show or change that, send the account holder to the
-	// billing portal.
+	// Worth showing because the failure is otherwise invisible: the card expires, the invoice fails,
+	// dunning runs out, and the project stops — with nothing pointing at the card.
+	ExpYear OptInt32 `json:"exp_year"`
+	// True for the one an invoice is collected from.
 	//
-	// A free plan does not require it, which is what allows a new account to be placed on the default tier
-	// before anyone has entered a card.
-	Ready bool `json:"ready"`
+	// Exactly one is the default while any exist. An account whose only method was removed has none, and
+	// its next invoice cannot be collected.
+	Default bool `json:"default"`
 }
 
-// GetReady returns the value of Ready.
-func (s *PaymentMethod) GetReady() bool {
-	return s.Ready
+// GetID returns the value of ID.
+func (s *PaymentMethod) GetID() string {
+	return s.ID
 }
 
-// SetReady sets the value of Ready.
-func (s *PaymentMethod) SetReady(val bool) {
-	s.Ready = val
+// GetBrand returns the value of Brand.
+func (s *PaymentMethod) GetBrand() OptString {
+	return s.Brand
+}
+
+// GetLast4 returns the value of Last4.
+func (s *PaymentMethod) GetLast4() OptString {
+	return s.Last4
+}
+
+// GetExpMonth returns the value of ExpMonth.
+func (s *PaymentMethod) GetExpMonth() OptInt32 {
+	return s.ExpMonth
+}
+
+// GetExpYear returns the value of ExpYear.
+func (s *PaymentMethod) GetExpYear() OptInt32 {
+	return s.ExpYear
+}
+
+// GetDefault returns the value of Default.
+func (s *PaymentMethod) GetDefault() bool {
+	return s.Default
+}
+
+// SetID sets the value of ID.
+func (s *PaymentMethod) SetID(val string) {
+	s.ID = val
+}
+
+// SetBrand sets the value of Brand.
+func (s *PaymentMethod) SetBrand(val OptString) {
+	s.Brand = val
+}
+
+// SetLast4 sets the value of Last4.
+func (s *PaymentMethod) SetLast4(val OptString) {
+	s.Last4 = val
+}
+
+// SetExpMonth sets the value of ExpMonth.
+func (s *PaymentMethod) SetExpMonth(val OptInt32) {
+	s.ExpMonth = val
+}
+
+// SetExpYear sets the value of ExpYear.
+func (s *PaymentMethod) SetExpYear(val OptInt32) {
+	s.ExpYear = val
+}
+
+// SetDefault sets the value of Default.
+func (s *PaymentMethod) SetDefault(val bool) {
+	s.Default = val
+}
+
+// Ref: #/components/schemas/PaymentMethodList
+type PaymentMethodList struct {
+	PaymentMethods []PaymentMethod `json:"payment_methods"`
+}
+
+// GetPaymentMethods returns the value of PaymentMethods.
+func (s *PaymentMethodList) GetPaymentMethods() []PaymentMethod {
+	return s.PaymentMethods
+}
+
+// SetPaymentMethods sets the value of PaymentMethods.
+func (s *PaymentMethodList) SetPaymentMethods(val []PaymentMethod) {
+	s.PaymentMethods = val
 }
 
 // Ref: #/components/schemas/PaymentMethodSetupSession
 type PaymentMethodSetupSession struct {
-	// Send the browser here. It expires, so do not store it.
-	URL url.URL `json:"url"`
+	// Initialises the provider's JavaScript, which mounts its form in an iframe on this page.
+	//
+	// Not a URL: the form is embedded rather than redirected to, so the account holder stays on the
+	// console. It expires, so fetch it when the form is about to be shown rather than when the page loads.
+	ClientSecret string `json:"client_secret"`
+	// The provider's id for this attempt.
+	//
+	// The browser does not need it — the callback carries the same id and is what actually records the
+	// method. It is here so that a support conversation about one failed attempt has something to look it
+	// up by.
+	SessionID OptString `json:"session_id"`
 }
 
-// GetURL returns the value of URL.
-func (s *PaymentMethodSetupSession) GetURL() url.URL {
-	return s.URL
+// GetClientSecret returns the value of ClientSecret.
+func (s *PaymentMethodSetupSession) GetClientSecret() string {
+	return s.ClientSecret
 }
 
-// SetURL sets the value of URL.
-func (s *PaymentMethodSetupSession) SetURL(val url.URL) {
-	s.URL = val
+// GetSessionID returns the value of SessionID.
+func (s *PaymentMethodSetupSession) GetSessionID() OptString {
+	return s.SessionID
+}
+
+// SetClientSecret sets the value of ClientSecret.
+func (s *PaymentMethodSetupSession) SetClientSecret(val string) {
+	s.ClientSecret = val
+}
+
+// SetSessionID sets the value of SessionID.
+func (s *PaymentMethodSetupSession) SetSessionID(val OptString) {
+	s.SessionID = val
 }
 
 // When a plan change takes effect. There is no default: an upgrade and a downgrade want opposite
@@ -3624,6 +3745,12 @@ func (s *QuoteUsageVariant) init() QuoteUsageVariant {
 	}
 	return m
 }
+
+// RemovePaymentMethodNoContent is response for RemovePaymentMethod operation.
+type RemovePaymentMethodNoContent struct{}
+
+// SetDefaultPaymentMethodNoContent is response for SetDefaultPaymentMethod operation.
+type SetDefaultPaymentMethodNoContent struct{}
 
 // Ref: #/components/schemas/StartTopUpRequestBody
 type StartTopUpRequestBody struct {

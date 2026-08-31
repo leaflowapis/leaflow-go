@@ -191,6 +191,29 @@ type Handler interface {
 	//
 	// GET /account/v1/billing-accounts/{accountKey}/orders
 	ListOrders(ctx context.Context, params ListOrdersParams) (*OrderList, error)
+	// ListPaymentMethods implements list-payment-methods operation.
+	//
+	// Every method saved against this account, and which one an invoice will be charged to.
+	//
+	// # Why the brand, last four and expiry are here
+	//
+	// They were deliberately absent while the billing engine held the card, because the answer that
+	// mattered — can money be collected — came from the engine, and a page built on the provider's
+	// answer could show a method the engine had not recorded. Collection now runs from this service
+	// against the provider directly, so there is one answer, and it is the one shown.
+	//
+	// Expiry is the reason this is worth showing at all: a card expires, the invoice then fails, dunning
+	// runs out, and the project stops — with the account holder watching it happen and no indication
+	// that a card was the cause.
+	//
+	// No other card data exists here. The number, the expiry entered by the holder and the CVC go from the
+	// browser to the provider and never reach this platform.
+	//
+	// An account that has never added one returns an empty list. That is the normal state of a new
+	// account, not an error.
+	//
+	// GET /account/v1/billing-accounts/{accountKey}/payment-methods
+	ListPaymentMethods(ctx context.Context, params ListPaymentMethodsParams) (*PaymentMethodList, error)
 	// ListPrepaidAssets implements list-prepaid-assets operation.
 	//
 	// Everything this account holds on a term, across every product.
@@ -330,38 +353,6 @@ type Handler interface {
 	//
 	// GET /account/v1/billing-accounts/{accountKey}/balance
 	ReadBillingAccountBalance(ctx context.Context, params ReadBillingAccountBalanceParams) (*Balance, error)
-	// ReadPaymentMethod implements read-payment-method operation.
-	//
-	// Answers whether a payment method is on file, and nothing else.
-	//
-	// # It is a payment method, not a card
-	//
-	// A card is one kind. Direct debit and the recurring-payment mandates offered by regional wallets are
-	// others, and they occupy the same slot: something the provider can charge later without the account
-	// holder present. Naming the slot after cards would put an assumption into the contract that stops
-	// being true the day a second kind is accepted.
-	//
-	// # Why there is no brand, no last four digits, no expiry
-	//
-	// Those would have to be read from the payment provider, and the two answers can disagree: a method
-	// present at the provider that the billing engine has not recorded as the default is exactly the state
-	// in which money cannot be collected — while a page built on the provider's answer would be showing
-	// one. What matters here is whether the party that will run the charge believes it can, so the answer
-	// comes from that party alone.
-	//
-	// To see it, replace it, or remove it, open the billing portal.
-	//
-	// # Read this before offering a paid plan, not after
-	//
-	// `ready` being false is why the engine refuses to start a paid subscription. Discovering it at
-	// purchase time turns a missing payment method into a rejection whose wording is about something else
-	// entirely.
-	//
-	// An account that has never had one returns `ready: false`. That is the normal state of a new account,
-	// not an error.
-	//
-	// GET /account/v1/billing-accounts/{accountKey}/payment-method
-	ReadPaymentMethod(ctx context.Context, params ReadPaymentMethodParams) (*PaymentMethod, error)
 	// ReadProjectBillingAccount implements read-project-billing-account operation.
 	//
 	// The account a project's resources are charged to, resolved from the project rather than guessed.
@@ -412,48 +403,54 @@ type Handler interface {
 	//
 	// GET /account/v1/billing-accounts/{accountKey}/top-ups/{paymentId}
 	ReadTopUp(ctx context.Context, params ReadTopUpParams) (*TopUpStatus, error)
-	// StartBillingPortal implements start-billing-portal operation.
+	// RemovePaymentMethod implements remove-payment-method operation.
 	//
-	// Returns a URL to the payment provider's own portal, where the card can be replaced or removed, the
-	// billing address changed, and past invoices downloaded.
+	// Detaches it from this account. Removing the last one is allowed.
 	//
-	// # Why replacing a card is not a form on this platform
+	// # Why removing the last one is not blocked
 	//
-	// A form would mean a card number field, and no card data ever reaches this platform. The portal moves
-	// the whole interaction to the provider; only a session URL comes back.
+	// Blocking it leaves an account holder who wants to stop paying with no way out. The cost of allowing
+	// it is that later invoices cannot be collected — and that path has notice, a grace period and a way
+	// back. A card that cannot be removed is a dead end.
 	//
-	// # Something has to be able to replace an expiring card
+	// DELETE /account/v1/billing-accounts/{accountKey}/payment-methods/{paymentMethodId}
+	RemovePaymentMethod(ctx context.Context, params RemovePaymentMethodParams) error
+	// SetDefaultPaymentMethod implements set-default-payment-method operation.
 	//
-	// Cards expire. Once one does, the invoices for a plan stop being collectable, dunning runs out, and
-	// the projects paid for by this account are suspended for non-payment. Without this operation the
-	// account holder watches that happen with nowhere to fix it — adding a card does not help, since
-	// that operation only makes sense when there is none.
+	// Makes this the method an invoice is collected from.
 	//
-	// The URL is single-use and expires. Do not store it.
+	// # It is stored at the provider, not here
 	//
-	// POST /account/v1/billing-accounts/{accountKey}/billing-portal
-	StartBillingPortal(ctx context.Context, params StartBillingPortalParams) (*BillingPortalSession, error)
+	// The charge itself reads that setting from the provider, so keeping a second copy here would create
+	// two answers to the same question. When they disagree the visible symptom is that the account holder
+	// changed the default and the charge still went to the old one.
+	//
+	// PUT /account/v1/billing-accounts/{accountKey}/payment-methods/{paymentMethodId}/default
+	SetDefaultPaymentMethod(ctx context.Context, params SetDefaultPaymentMethodParams) error
 	// StartPaymentMethodSetup implements start-payment-method-setup operation.
 	//
-	// Begins adding a payment method. Returns a URL to send the browser to; the details are entered there,
-	// on the payment provider's own page, and no card data ever reaches this platform.
+	// Starts a session for adding a method, and returns the secret the browser needs to mount the
+	// provider's own form.
 	//
-	// Which kinds are offered is the provider's decision, not this API's — a card today, a wallet
-	// mandate or a direct debit wherever the provider supports charging one later without the account
-	// holder present.
+	// # The form is embedded, not a redirect
+	//
+	// The returned `client_secret` initialises the provider's JavaScript, which renders its form inside an
+	// iframe on this platform's own page. No card data reaches this platform — the number goes from the
+	// browser straight to the provider, exactly as it would on a redirect — but the account holder never
+	// leaves the console.
+	//
+	// A redirect would take them to a page with someone else's branding in the middle of adding a payment
+	// method, which is the moment they are most likely to abandon it.
 	//
 	// # This is a prerequisite for buying a plan, not a convenience
 	//
-	// A plan is charged by invoice, and the invoice is collected from the method on file. A subscription
-	// cannot start for an account that has none — so "add a payment method, then buy" is the order the
-	// system requires, not a flow that was chosen.
+	// A plan is charged by invoice, and the invoice is collected from a method on file. Discovering that
+	// none exists at purchase time turns a missing payment method into a rejection whose wording is about
+	// something else entirely.
 	//
 	// It is not a prerequisite for topping up: a top-up collects the money there and then.
 	//
-	// Replacing uses the same operation. The new method becomes the default and the old one stops being
-	// used; nothing else about the account changes.
-	//
-	// POST /account/v1/billing-accounts/{accountKey}/payment-method
+	// POST /account/v1/billing-accounts/{accountKey}/payment-methods
 	StartPaymentMethodSetup(ctx context.Context, params StartPaymentMethodSetupParams) (*PaymentMethodSetupSession, error)
 	// StartTopUp implements start-top-up operation.
 	//

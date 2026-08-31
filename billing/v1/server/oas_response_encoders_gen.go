@@ -181,6 +181,19 @@ func encodeListOrdersResponse(response *OrderList, w http.ResponseWriter, span t
 	return nil
 }
 
+func encodeListPaymentMethodsResponse(response *PaymentMethodList, w http.ResponseWriter, span trace.Span) error {
+	w.Header().Set("Content-Type", "application/json; charset=utf-8")
+	w.WriteHeader(200)
+
+	e := new(jx.Encoder)
+	response.Encode(e)
+	if _, err := e.WriteTo(w); err != nil {
+		return errors.Wrap(err, "write")
+	}
+
+	return nil
+}
+
 func encodeListPrepaidAssetsResponse(response *PrepaidAssetList, w http.ResponseWriter, span trace.Span) error {
 	w.Header().Set("Content-Type", "application/json; charset=utf-8")
 	w.WriteHeader(200)
@@ -259,19 +272,6 @@ func encodeReadBillingAccountBalanceResponse(response *Balance, w http.ResponseW
 	return nil
 }
 
-func encodeReadPaymentMethodResponse(response *PaymentMethod, w http.ResponseWriter, span trace.Span) error {
-	w.Header().Set("Content-Type", "application/json; charset=utf-8")
-	w.WriteHeader(200)
-
-	e := new(jx.Encoder)
-	response.Encode(e)
-	if _, err := e.WriteTo(w); err != nil {
-		return errors.Wrap(err, "write")
-	}
-
-	return nil
-}
-
 func encodeReadProjectBillingAccountResponse(response *ProjectBillingAccount, w http.ResponseWriter, span trace.Span) error {
 	w.Header().Set("Content-Type", "application/json; charset=utf-8")
 	w.WriteHeader(200)
@@ -311,15 +311,14 @@ func encodeReadTopUpResponse(response *TopUpStatus, w http.ResponseWriter, span 
 	return nil
 }
 
-func encodeStartBillingPortalResponse(response *BillingPortalSession, w http.ResponseWriter, span trace.Span) error {
-	w.Header().Set("Content-Type", "application/json; charset=utf-8")
-	w.WriteHeader(200)
+func encodeRemovePaymentMethodResponse(response *RemovePaymentMethodNoContent, w http.ResponseWriter, span trace.Span) error {
+	w.WriteHeader(204)
 
-	e := new(jx.Encoder)
-	response.Encode(e)
-	if _, err := e.WriteTo(w); err != nil {
-		return errors.Wrap(err, "write")
-	}
+	return nil
+}
+
+func encodeSetDefaultPaymentMethodResponse(response *SetDefaultPaymentMethodNoContent, w http.ResponseWriter, span trace.Span) error {
+	w.WriteHeader(204)
 
 	return nil
 }
