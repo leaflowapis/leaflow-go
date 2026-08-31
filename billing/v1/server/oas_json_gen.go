@@ -4754,8 +4754,8 @@ func (s *PrepaidAsset) encodeFields(e *jx.Encoder) {
 		e.Int64(s.Quantity)
 	}
 	{
-		e.FieldStart("term_end")
-		json.EncodeDateTime(e, s.TermEnd)
+		e.FieldStart("term")
+		e.Str(s.Term)
 	}
 	{
 		e.FieldStart("state")
@@ -4765,30 +4765,18 @@ func (s *PrepaidAsset) encodeFields(e *jx.Encoder) {
 		e.FieldStart("desired_state")
 		s.DesiredState.Encode(e)
 	}
-	{
-		if s.BillingCycle.Set {
-			e.FieldStart("billing_cycle")
-			s.BillingCycle.Encode(e)
-		}
-	}
-	{
-		e.FieldStart("renewal_status")
-		s.RenewalStatus.Encode(e)
-	}
 }
 
-var jsonFieldsNameOfPrepaidAsset = [11]string{
-	0:  "id",
-	1:  "project_id",
-	2:  "service",
-	3:  "product_id",
-	4:  "resource_id",
-	5:  "quantity",
-	6:  "term_end",
-	7:  "state",
-	8:  "desired_state",
-	9:  "billing_cycle",
-	10: "renewal_status",
+var jsonFieldsNameOfPrepaidAsset = [9]string{
+	0: "id",
+	1: "project_id",
+	2: "service",
+	3: "product_id",
+	4: "resource_id",
+	5: "quantity",
+	6: "term",
+	7: "state",
+	8: "desired_state",
 }
 
 // Decode decodes PrepaidAsset from json.
@@ -4870,17 +4858,17 @@ func (s *PrepaidAsset) Decode(d *jx.Decoder) error {
 			}(); err != nil {
 				return errors.Wrap(err, "decode field \"quantity\"")
 			}
-		case "term_end":
+		case "term":
 			requiredBitSet[0] |= 1 << 6
 			if err := func() error {
-				v, err := json.DecodeDateTime(d)
-				s.TermEnd = v
+				v, err := d.Str()
+				s.Term = string(v)
 				if err != nil {
 					return err
 				}
 				return nil
 			}(); err != nil {
-				return errors.Wrap(err, "decode field \"term_end\"")
+				return errors.Wrap(err, "decode field \"term\"")
 			}
 		case "state":
 			requiredBitSet[0] |= 1 << 7
@@ -4902,26 +4890,6 @@ func (s *PrepaidAsset) Decode(d *jx.Decoder) error {
 			}(); err != nil {
 				return errors.Wrap(err, "decode field \"desired_state\"")
 			}
-		case "billing_cycle":
-			if err := func() error {
-				s.BillingCycle.Reset()
-				if err := s.BillingCycle.Decode(d); err != nil {
-					return err
-				}
-				return nil
-			}(); err != nil {
-				return errors.Wrap(err, "decode field \"billing_cycle\"")
-			}
-		case "renewal_status":
-			requiredBitSet[1] |= 1 << 2
-			if err := func() error {
-				if err := s.RenewalStatus.Decode(d); err != nil {
-					return err
-				}
-				return nil
-			}(); err != nil {
-				return errors.Wrap(err, "decode field \"renewal_status\"")
-			}
 		default:
 			return errors.Errorf("unexpected field %q", k)
 		}
@@ -4933,7 +4901,7 @@ func (s *PrepaidAsset) Decode(d *jx.Decoder) error {
 	var failures []validate.FieldError
 	for i, mask := range [2]uint8{
 		0b11101111,
-		0b00000101,
+		0b00000001,
 	} {
 		if result := (requiredBitSet[i] & mask) ^ mask; result != 0 {
 			// Mask only required fields and check equality to mask using XOR.
@@ -5123,48 +5091,6 @@ func (s *PrepaidAssetList) MarshalJSON() ([]byte, error) {
 
 // UnmarshalJSON implements stdjson.Unmarshaler.
 func (s *PrepaidAssetList) UnmarshalJSON(data []byte) error {
-	d := jx.DecodeBytes(data)
-	return s.Decode(d)
-}
-
-// Encode encodes PrepaidAssetRenewalStatus as json.
-func (s PrepaidAssetRenewalStatus) Encode(e *jx.Encoder) {
-	e.Str(string(s))
-}
-
-// Decode decodes PrepaidAssetRenewalStatus from json.
-func (s *PrepaidAssetRenewalStatus) Decode(d *jx.Decoder) error {
-	if s == nil {
-		return errors.New("invalid: unable to decode PrepaidAssetRenewalStatus to nil")
-	}
-	v, err := d.StrBytes()
-	if err != nil {
-		return err
-	}
-	// Try to use constant string.
-	switch PrepaidAssetRenewalStatus(v) {
-	case PrepaidAssetRenewalStatusManual:
-		*s = PrepaidAssetRenewalStatusManual
-	case PrepaidAssetRenewalStatusAuto:
-		*s = PrepaidAssetRenewalStatusAuto
-	case PrepaidAssetRenewalStatusNone:
-		*s = PrepaidAssetRenewalStatusNone
-	default:
-		*s = PrepaidAssetRenewalStatus(v)
-	}
-
-	return nil
-}
-
-// MarshalJSON implements stdjson.Marshaler.
-func (s PrepaidAssetRenewalStatus) MarshalJSON() ([]byte, error) {
-	e := jx.Encoder{}
-	s.Encode(&e)
-	return e.Bytes(), nil
-}
-
-// UnmarshalJSON implements stdjson.Unmarshaler.
-func (s *PrepaidAssetRenewalStatus) UnmarshalJSON(data []byte) error {
 	d := jx.DecodeBytes(data)
 	return s.Decode(d)
 }
@@ -6989,436 +6915,6 @@ func (s QuoteUsageVariant) MarshalJSON() ([]byte, error) {
 
 // UnmarshalJSON implements stdjson.Unmarshaler.
 func (s *QuoteUsageVariant) UnmarshalJSON(data []byte) error {
-	d := jx.DecodeBytes(data)
-	return s.Decode(d)
-}
-
-// Encode implements json.Marshaler.
-func (s *RenewRequestBody) Encode(e *jx.Encoder) {
-	e.ObjStart()
-	s.encodeFields(e)
-	e.ObjEnd()
-}
-
-// encodeFields encodes fields.
-func (s *RenewRequestBody) encodeFields(e *jx.Encoder) {
-	{
-		e.FieldStart("term")
-		e.Str(s.Term)
-	}
-	{
-		e.FieldStart("idempotency_key")
-		e.Str(s.IdempotencyKey)
-	}
-}
-
-var jsonFieldsNameOfRenewRequestBody = [2]string{
-	0: "term",
-	1: "idempotency_key",
-}
-
-// Decode decodes RenewRequestBody from json.
-func (s *RenewRequestBody) Decode(d *jx.Decoder) error {
-	if s == nil {
-		return errors.New("invalid: unable to decode RenewRequestBody to nil")
-	}
-	var requiredBitSet [1]uint8
-
-	if err := d.ObjBytes(func(d *jx.Decoder, k []byte) error {
-		switch string(k) {
-		case "term":
-			requiredBitSet[0] |= 1 << 0
-			if err := func() error {
-				v, err := d.Str()
-				s.Term = string(v)
-				if err != nil {
-					return err
-				}
-				return nil
-			}(); err != nil {
-				return errors.Wrap(err, "decode field \"term\"")
-			}
-		case "idempotency_key":
-			requiredBitSet[0] |= 1 << 1
-			if err := func() error {
-				v, err := d.Str()
-				s.IdempotencyKey = string(v)
-				if err != nil {
-					return err
-				}
-				return nil
-			}(); err != nil {
-				return errors.Wrap(err, "decode field \"idempotency_key\"")
-			}
-		default:
-			return errors.Errorf("unexpected field %q", k)
-		}
-		return nil
-	}); err != nil {
-		return errors.Wrap(err, "decode RenewRequestBody")
-	}
-	// Validate required fields.
-	var failures []validate.FieldError
-	for i, mask := range [1]uint8{
-		0b00000011,
-	} {
-		if result := (requiredBitSet[i] & mask) ^ mask; result != 0 {
-			// Mask only required fields and check equality to mask using XOR.
-			//
-			// If XOR result is not zero, result is not equal to expected, so some fields are missed.
-			// Bits of fields which would be set are actually bits of missed fields.
-			missed := bits.OnesCount8(result)
-			for bitN := 0; bitN < missed; bitN++ {
-				bitIdx := bits.TrailingZeros8(result)
-				fieldIdx := i*8 + bitIdx
-				var name string
-				if fieldIdx < len(jsonFieldsNameOfRenewRequestBody) {
-					name = jsonFieldsNameOfRenewRequestBody[fieldIdx]
-				} else {
-					name = strconv.Itoa(fieldIdx)
-				}
-				failures = append(failures, validate.FieldError{
-					Name:  name,
-					Error: validate.ErrFieldRequired,
-				})
-				// Reset bit.
-				result &^= 1 << bitIdx
-			}
-		}
-	}
-	if len(failures) > 0 {
-		return &validate.Error{Fields: failures}
-	}
-
-	return nil
-}
-
-// MarshalJSON implements stdjson.Marshaler.
-func (s *RenewRequestBody) MarshalJSON() ([]byte, error) {
-	e := jx.Encoder{}
-	s.Encode(&e)
-	return e.Bytes(), nil
-}
-
-// UnmarshalJSON implements stdjson.Unmarshaler.
-func (s *RenewRequestBody) UnmarshalJSON(data []byte) error {
-	d := jx.DecodeBytes(data)
-	return s.Decode(d)
-}
-
-// Encode implements json.Marshaler.
-func (s *RenewalQuote) Encode(e *jx.Encoder) {
-	e.ObjStart()
-	s.encodeFields(e)
-	e.ObjEnd()
-}
-
-// encodeFields encodes fields.
-func (s *RenewalQuote) encodeFields(e *jx.Encoder) {
-	{
-		e.FieldStart("provision_id")
-		e.Str(s.ProvisionID)
-	}
-	{
-		e.FieldStart("term")
-		e.Str(s.Term)
-	}
-	{
-		e.FieldStart("amount")
-		e.Str(s.Amount)
-	}
-	{
-		e.FieldStart("currency")
-		e.Str(s.Currency)
-	}
-	{
-		e.FieldStart("current_term_end")
-		json.EncodeDateTime(e, s.CurrentTermEnd)
-	}
-	{
-		e.FieldStart("term_end")
-		json.EncodeDateTime(e, s.TermEnd)
-	}
-}
-
-var jsonFieldsNameOfRenewalQuote = [6]string{
-	0: "provision_id",
-	1: "term",
-	2: "amount",
-	3: "currency",
-	4: "current_term_end",
-	5: "term_end",
-}
-
-// Decode decodes RenewalQuote from json.
-func (s *RenewalQuote) Decode(d *jx.Decoder) error {
-	if s == nil {
-		return errors.New("invalid: unable to decode RenewalQuote to nil")
-	}
-	var requiredBitSet [1]uint8
-
-	if err := d.ObjBytes(func(d *jx.Decoder, k []byte) error {
-		switch string(k) {
-		case "provision_id":
-			requiredBitSet[0] |= 1 << 0
-			if err := func() error {
-				v, err := d.Str()
-				s.ProvisionID = string(v)
-				if err != nil {
-					return err
-				}
-				return nil
-			}(); err != nil {
-				return errors.Wrap(err, "decode field \"provision_id\"")
-			}
-		case "term":
-			requiredBitSet[0] |= 1 << 1
-			if err := func() error {
-				v, err := d.Str()
-				s.Term = string(v)
-				if err != nil {
-					return err
-				}
-				return nil
-			}(); err != nil {
-				return errors.Wrap(err, "decode field \"term\"")
-			}
-		case "amount":
-			requiredBitSet[0] |= 1 << 2
-			if err := func() error {
-				v, err := d.Str()
-				s.Amount = string(v)
-				if err != nil {
-					return err
-				}
-				return nil
-			}(); err != nil {
-				return errors.Wrap(err, "decode field \"amount\"")
-			}
-		case "currency":
-			requiredBitSet[0] |= 1 << 3
-			if err := func() error {
-				v, err := d.Str()
-				s.Currency = string(v)
-				if err != nil {
-					return err
-				}
-				return nil
-			}(); err != nil {
-				return errors.Wrap(err, "decode field \"currency\"")
-			}
-		case "current_term_end":
-			requiredBitSet[0] |= 1 << 4
-			if err := func() error {
-				v, err := json.DecodeDateTime(d)
-				s.CurrentTermEnd = v
-				if err != nil {
-					return err
-				}
-				return nil
-			}(); err != nil {
-				return errors.Wrap(err, "decode field \"current_term_end\"")
-			}
-		case "term_end":
-			requiredBitSet[0] |= 1 << 5
-			if err := func() error {
-				v, err := json.DecodeDateTime(d)
-				s.TermEnd = v
-				if err != nil {
-					return err
-				}
-				return nil
-			}(); err != nil {
-				return errors.Wrap(err, "decode field \"term_end\"")
-			}
-		default:
-			return errors.Errorf("unexpected field %q", k)
-		}
-		return nil
-	}); err != nil {
-		return errors.Wrap(err, "decode RenewalQuote")
-	}
-	// Validate required fields.
-	var failures []validate.FieldError
-	for i, mask := range [1]uint8{
-		0b00111111,
-	} {
-		if result := (requiredBitSet[i] & mask) ^ mask; result != 0 {
-			// Mask only required fields and check equality to mask using XOR.
-			//
-			// If XOR result is not zero, result is not equal to expected, so some fields are missed.
-			// Bits of fields which would be set are actually bits of missed fields.
-			missed := bits.OnesCount8(result)
-			for bitN := 0; bitN < missed; bitN++ {
-				bitIdx := bits.TrailingZeros8(result)
-				fieldIdx := i*8 + bitIdx
-				var name string
-				if fieldIdx < len(jsonFieldsNameOfRenewalQuote) {
-					name = jsonFieldsNameOfRenewalQuote[fieldIdx]
-				} else {
-					name = strconv.Itoa(fieldIdx)
-				}
-				failures = append(failures, validate.FieldError{
-					Name:  name,
-					Error: validate.ErrFieldRequired,
-				})
-				// Reset bit.
-				result &^= 1 << bitIdx
-			}
-		}
-	}
-	if len(failures) > 0 {
-		return &validate.Error{Fields: failures}
-	}
-
-	return nil
-}
-
-// MarshalJSON implements stdjson.Marshaler.
-func (s *RenewalQuote) MarshalJSON() ([]byte, error) {
-	e := jx.Encoder{}
-	s.Encode(&e)
-	return e.Bytes(), nil
-}
-
-// UnmarshalJSON implements stdjson.Unmarshaler.
-func (s *RenewalQuote) UnmarshalJSON(data []byte) error {
-	d := jx.DecodeBytes(data)
-	return s.Decode(d)
-}
-
-// Encode implements json.Marshaler.
-func (s *SetRenewalStatusRequestBody) Encode(e *jx.Encoder) {
-	e.ObjStart()
-	s.encodeFields(e)
-	e.ObjEnd()
-}
-
-// encodeFields encodes fields.
-func (s *SetRenewalStatusRequestBody) encodeFields(e *jx.Encoder) {
-	{
-		e.FieldStart("status")
-		s.Status.Encode(e)
-	}
-}
-
-var jsonFieldsNameOfSetRenewalStatusRequestBody = [1]string{
-	0: "status",
-}
-
-// Decode decodes SetRenewalStatusRequestBody from json.
-func (s *SetRenewalStatusRequestBody) Decode(d *jx.Decoder) error {
-	if s == nil {
-		return errors.New("invalid: unable to decode SetRenewalStatusRequestBody to nil")
-	}
-	var requiredBitSet [1]uint8
-
-	if err := d.ObjBytes(func(d *jx.Decoder, k []byte) error {
-		switch string(k) {
-		case "status":
-			requiredBitSet[0] |= 1 << 0
-			if err := func() error {
-				if err := s.Status.Decode(d); err != nil {
-					return err
-				}
-				return nil
-			}(); err != nil {
-				return errors.Wrap(err, "decode field \"status\"")
-			}
-		default:
-			return errors.Errorf("unexpected field %q", k)
-		}
-		return nil
-	}); err != nil {
-		return errors.Wrap(err, "decode SetRenewalStatusRequestBody")
-	}
-	// Validate required fields.
-	var failures []validate.FieldError
-	for i, mask := range [1]uint8{
-		0b00000001,
-	} {
-		if result := (requiredBitSet[i] & mask) ^ mask; result != 0 {
-			// Mask only required fields and check equality to mask using XOR.
-			//
-			// If XOR result is not zero, result is not equal to expected, so some fields are missed.
-			// Bits of fields which would be set are actually bits of missed fields.
-			missed := bits.OnesCount8(result)
-			for bitN := 0; bitN < missed; bitN++ {
-				bitIdx := bits.TrailingZeros8(result)
-				fieldIdx := i*8 + bitIdx
-				var name string
-				if fieldIdx < len(jsonFieldsNameOfSetRenewalStatusRequestBody) {
-					name = jsonFieldsNameOfSetRenewalStatusRequestBody[fieldIdx]
-				} else {
-					name = strconv.Itoa(fieldIdx)
-				}
-				failures = append(failures, validate.FieldError{
-					Name:  name,
-					Error: validate.ErrFieldRequired,
-				})
-				// Reset bit.
-				result &^= 1 << bitIdx
-			}
-		}
-	}
-	if len(failures) > 0 {
-		return &validate.Error{Fields: failures}
-	}
-
-	return nil
-}
-
-// MarshalJSON implements stdjson.Marshaler.
-func (s *SetRenewalStatusRequestBody) MarshalJSON() ([]byte, error) {
-	e := jx.Encoder{}
-	s.Encode(&e)
-	return e.Bytes(), nil
-}
-
-// UnmarshalJSON implements stdjson.Unmarshaler.
-func (s *SetRenewalStatusRequestBody) UnmarshalJSON(data []byte) error {
-	d := jx.DecodeBytes(data)
-	return s.Decode(d)
-}
-
-// Encode encodes SetRenewalStatusRequestBodyStatus as json.
-func (s SetRenewalStatusRequestBodyStatus) Encode(e *jx.Encoder) {
-	e.Str(string(s))
-}
-
-// Decode decodes SetRenewalStatusRequestBodyStatus from json.
-func (s *SetRenewalStatusRequestBodyStatus) Decode(d *jx.Decoder) error {
-	if s == nil {
-		return errors.New("invalid: unable to decode SetRenewalStatusRequestBodyStatus to nil")
-	}
-	v, err := d.StrBytes()
-	if err != nil {
-		return err
-	}
-	// Try to use constant string.
-	switch SetRenewalStatusRequestBodyStatus(v) {
-	case SetRenewalStatusRequestBodyStatusManual:
-		*s = SetRenewalStatusRequestBodyStatusManual
-	case SetRenewalStatusRequestBodyStatusAuto:
-		*s = SetRenewalStatusRequestBodyStatusAuto
-	case SetRenewalStatusRequestBodyStatusNone:
-		*s = SetRenewalStatusRequestBodyStatusNone
-	default:
-		*s = SetRenewalStatusRequestBodyStatus(v)
-	}
-
-	return nil
-}
-
-// MarshalJSON implements stdjson.Marshaler.
-func (s SetRenewalStatusRequestBodyStatus) MarshalJSON() ([]byte, error) {
-	e := jx.Encoder{}
-	s.Encode(&e)
-	return e.Bytes(), nil
-}
-
-// UnmarshalJSON implements stdjson.Unmarshaler.
-func (s *SetRenewalStatusRequestBodyStatus) UnmarshalJSON(data []byte) error {
 	d := jx.DecodeBytes(data)
 	return s.Decode(d)
 }
