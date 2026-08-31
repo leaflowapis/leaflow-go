@@ -1596,7 +1596,11 @@ type NotificationTypeDescriptor struct {
 	// The service that reports this type.
 	Service  string               `json:"service"`
 	Severity NotificationSeverity `json:"severity"`
-	Type     string               `json:"type"`
+	// A short name for this type, in the reader's language — what a settings screen puts on the row. It
+	// is not the subject line of the notification itself: a subject says what happened this time and
+	// carries the ticket number, while this names the kind of thing.
+	Title string `json:"title"`
+	Type  string `json:"type"`
 }
 
 // GetAudience returns the value of Audience.
@@ -1632,6 +1636,11 @@ func (s *NotificationTypeDescriptor) GetService() string {
 // GetSeverity returns the value of Severity.
 func (s *NotificationTypeDescriptor) GetSeverity() NotificationSeverity {
 	return s.Severity
+}
+
+// GetTitle returns the value of Title.
+func (s *NotificationTypeDescriptor) GetTitle() string {
+	return s.Title
 }
 
 // GetType returns the value of Type.
@@ -1672,6 +1681,11 @@ func (s *NotificationTypeDescriptor) SetService(val string) {
 // SetSeverity sets the value of Severity.
 func (s *NotificationTypeDescriptor) SetSeverity(val NotificationSeverity) {
 	s.Severity = val
+}
+
+// SetTitle sets the value of Title.
+func (s *NotificationTypeDescriptor) SetTitle(val string) {
+	s.Title = val
 }
 
 // SetType sets the value of Type.

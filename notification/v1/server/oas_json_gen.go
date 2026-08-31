@@ -2941,12 +2941,16 @@ func (s *NotificationTypeDescriptor) encodeFields(e *jx.Encoder) {
 		s.Severity.Encode(e)
 	}
 	{
+		e.FieldStart("title")
+		e.Str(s.Title)
+	}
+	{
 		e.FieldStart("type")
 		e.Str(s.Type)
 	}
 }
 
-var jsonFieldsNameOfNotificationTypeDescriptor = [8]string{
+var jsonFieldsNameOfNotificationTypeDescriptor = [9]string{
 	0: "audience",
 	1: "available_channels",
 	2: "default_channels",
@@ -2954,7 +2958,8 @@ var jsonFieldsNameOfNotificationTypeDescriptor = [8]string{
 	4: "params",
 	5: "service",
 	6: "severity",
-	7: "type",
+	7: "title",
+	8: "type",
 }
 
 // Decode decodes NotificationTypeDescriptor from json.
@@ -2962,7 +2967,7 @@ func (s *NotificationTypeDescriptor) Decode(d *jx.Decoder) error {
 	if s == nil {
 		return errors.New("invalid: unable to decode NotificationTypeDescriptor to nil")
 	}
-	var requiredBitSet [1]uint8
+	var requiredBitSet [2]uint8
 
 	if err := d.ObjBytes(func(d *jx.Decoder, k []byte) error {
 		switch string(k) {
@@ -3066,8 +3071,20 @@ func (s *NotificationTypeDescriptor) Decode(d *jx.Decoder) error {
 			}(); err != nil {
 				return errors.Wrap(err, "decode field \"severity\"")
 			}
-		case "type":
+		case "title":
 			requiredBitSet[0] |= 1 << 7
+			if err := func() error {
+				v, err := d.Str()
+				s.Title = string(v)
+				if err != nil {
+					return err
+				}
+				return nil
+			}(); err != nil {
+				return errors.Wrap(err, "decode field \"title\"")
+			}
+		case "type":
+			requiredBitSet[1] |= 1 << 0
 			if err := func() error {
 				v, err := d.Str()
 				s.Type = string(v)
@@ -3087,8 +3104,9 @@ func (s *NotificationTypeDescriptor) Decode(d *jx.Decoder) error {
 	}
 	// Validate required fields.
 	var failures []validate.FieldError
-	for i, mask := range [1]uint8{
+	for i, mask := range [2]uint8{
 		0b11111111,
+		0b00000001,
 	} {
 		if result := (requiredBitSet[i] & mask) ^ mask; result != 0 {
 			// Mask only required fields and check equality to mask using XOR.

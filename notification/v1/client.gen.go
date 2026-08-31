@@ -511,7 +511,12 @@ type NotificationTypeDescriptor struct {
 	// `critical` announces something that is either irreversible or actively costing the
 	// recipient something.
 	Severity NotificationSeverity `json:"severity"`
-	Type     string               `json:"type"`
+
+	// Title A short name for this type, in the reader's language — what a settings screen puts on
+	// the row. It is not the subject line of the notification itself: a subject says what
+	// happened this time and carries the ticket number, while this names the kind of thing.
+	Title string `json:"title"`
+	Type  string `json:"type"`
 }
 
 // NotificationTypeListResponseBody defines model for NotificationTypeListResponseBody.
