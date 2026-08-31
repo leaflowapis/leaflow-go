@@ -237,25 +237,28 @@ func (UnimplementedHandler) ListOrders(ctx context.Context, params ListOrdersPar
 
 // ListPrepaidAssets implements list-prepaid-assets operation.
 //
-// Everything this account paid a term for, across every product, soonest to expire first.
+// Everything this account holds on a term, across every product.
 //
-// # Why this is one list rather than a page inside each product
+// # Nothing here expires on its own
 //
-// Renewal is the one thing a customer forgets, and forgetting it stops the machine. Splitting the list
-// per product means the instance about to lapse tomorrow is only visible to someone who thought to go
-// and look at instances. Sorting by expiry rather than by purchase date is the same reason: the row
-// that matters is the one at the top.
+// A term renews for as long as the seat is held: the engine charges the next period, prorates any
+// change to the second, and stops the moment the seat is given up. So there is no renewal to remember
+// and no expiry to warn about — giving it up means deleting the resource, in the console that owns
+// it.
+//
+// What the next period costs and when it falls due is on the charges route. That is read straight from
+// the engine rather than copied here, because a copy is a second answer that drifts without saying so.
 //
 // # Metered resources are not here
 //
-// There is no term to run out. Listing them with an empty expiry would invite renewing something that
-// is already billed by the hour until it is deleted.
+// They have no term. Listing them would invite renewing something that is already billed by the hour
+// until it is deleted.
 //
 // # `state` and `desired_state` are both reported
 //
-// A machine stopped because its term lapsed reads `suspended` for both. One that has just been renewed
-// reads `suspended` and `active` — it is on its way back. Without the second field those look
-// identical, and a customer who just paid concludes it did not work and pays again.
+// A machine stopped for arrears reads `suspended` for both. One being brought back reads `suspended`
+// and `active` — it is on its way. Without the second field those look identical, and a customer who
+// just paid concludes it did not work and pays again.
 //
 // GET /account/v1/billing-accounts/{accountKey}/prepaid-assets
 func (UnimplementedHandler) ListPrepaidAssets(ctx context.Context, params ListPrepaidAssetsParams) (r *PrepaidAssetList, _ error) {
@@ -341,32 +344,6 @@ func (UnimplementedHandler) PurchaseOffer(ctx context.Context, params PurchaseOf
 //
 // POST /account/v1/projects/{projectId}/quote
 func (UnimplementedHandler) QuoteProjectUsage(ctx context.Context, req *QuoteRequest, params QuoteProjectUsageParams) (r *Quote, _ error) {
-	return r, ht.ErrNotImplemented
-}
-
-// QuoteRenewal implements quote-renewal operation.
-//
-// Priced the same way the charge is, from the same table, so the number shown is the number taken.
-// Quoting separately from charging is what lets a customer see the price before committing; computing
-// it twice in two places is what makes the two disagree, and a bill that disagrees with the page that
-// sold it is a complaint rather than a bug report.
-//
-// # Both the current and the resulting expiry are returned
-//
-// Renewing early adds the term to what is left, not to today — otherwise renewing a month ahead
-// throws that month away, and everyone learns to wait until the last moment. Something that lapsed
-// long ago is counted from now instead, because adding to a date in the past produces an expiry that
-// is still in the past.
-//
-// Reporting only the new date leaves the customer unable to tell which of those happened.
-//
-// # A withdrawn price still quotes
-//
-// Taking a product off sale means stop selling new ones. Refusing renewals as well would stop a batch
-// of existing machines on their expiry date, which is not what the operator pressed that button for.
-//
-// GET /account/v1/billing-accounts/{accountKey}/prepaid-assets/{provisionId}/renewal-quote
-func (UnimplementedHandler) QuoteRenewal(ctx context.Context, params QuoteRenewalParams) (r *RenewalQuote, _ error) {
 	return r, ht.ErrNotImplemented
 }
 
@@ -506,65 +483,6 @@ func (UnimplementedHandler) ReadSubscription(ctx context.Context, params ReadSub
 //
 // GET /account/v1/billing-accounts/{accountKey}/top-ups/{paymentId}
 func (UnimplementedHandler) ReadTopUp(ctx context.Context, params ReadTopUpParams) (r *TopUpStatus, _ error) {
-	return r, ht.ErrNotImplemented
-}
-
-// RenewPrepaidAsset implements renew-prepaid-asset operation.
-//
-// Takes the money from the balance and pushes the expiry out. The resource itself is not touched —
-// nothing is rebuilt, nothing restarts, the id stays the same.
-//
-// # An idempotency key is required, not optional
-//
-// Renewal is a pure charge. Unlike creating something, there is no resource whose uniqueness catches a
-// repeat, so a double click is two charges and twice the term — and both calls return success.
-// Letting the field be omitted would mean losing that protection silently, in the one case that looks
-// completely normal until the books are reconciled.
-//
-// Sending the same key again returns the order that was already placed. It does not charge again, and
-// it is not an error: reporting a repeat as a failure makes the caller retry forever, and makes the
-// customer press the button a second time with a fresh key.
-//
-// # What happens if the balance is short
-//
-// The order is recorded as failed and nothing else changes: no money moves, the expiry stays where it
-// was, and the resource keeps running until its existing term ends. Retrying with the same key after
-// topping up goes through.
-//
-// # Renewing something that already lapsed brings it back
-//
-// Its term is counted from now, and it is asked to start again. Coming back is the reconciliation
-// loop's job, so it is not instant — which is what `desired_state` on the asset list is for.
-//
-// POST /account/v1/billing-accounts/{accountKey}/prepaid-assets/{provisionId}/renew
-func (UnimplementedHandler) RenewPrepaidAsset(ctx context.Context, req *RenewRequestBody, params RenewPrepaidAssetParams) (r *Order, _ error) {
-	return r, ht.ErrNotImplemented
-}
-
-// SetRenewalStatus implements set-renewal-status operation.
-//
-// Three choices, not two.
-//
-// # Why automatic renewal has to be opted into
-//
-// Charging someone automatically has to be something they chose. Defaulting to it means a person who
-// wanted to try one month is charged for a second they never agreed to — and that is where
-// chargebacks come from. So a resource bought outright starts on `manual`.
-//
-// # And why "let it expire" is its own choice, not just "not automatic"
-//
-// `manual` keeps reminding: the notice before expiry is mandatory, because expiry stops the resource.
-// Someone who has decided to let it go does not want those, and the cost of sending them anyway is not
-// annoyance — it is that the reminders get filtered away, taking the ones that mattered with them.
-//
-// # Turning it on needs a known cycle
-//
-// Renewing automatically has to know for how long, which comes from the last purchase or renewal. A
-// resource adopted into billing, or bought before this was recorded, has no cycle yet: renew it
-// manually once and the cycle is written down.
-//
-// PUT /account/v1/billing-accounts/{accountKey}/prepaid-assets/{provisionId}/renewal
-func (UnimplementedHandler) SetRenewalStatus(ctx context.Context, req *SetRenewalStatusRequestBody, params SetRenewalStatusParams) (r *PrepaidAsset, _ error) {
 	return r, ht.ErrNotImplemented
 }
 

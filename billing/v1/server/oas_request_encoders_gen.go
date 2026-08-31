@@ -52,34 +52,6 @@ func encodeQuoteUsageRequest(
 	return nil
 }
 
-func encodeRenewPrepaidAssetRequest(
-	req *RenewRequestBody,
-	r *http.Request,
-) error {
-	const contentType = "application/json"
-	e := new(jx.Encoder)
-	{
-		req.Encode(e)
-	}
-	encoded := e.Bytes()
-	ht.SetBody(r, bytes.NewReader(encoded), contentType)
-	return nil
-}
-
-func encodeSetRenewalStatusRequest(
-	req *SetRenewalStatusRequestBody,
-	r *http.Request,
-) error {
-	const contentType = "application/json"
-	e := new(jx.Encoder)
-	{
-		req.Encode(e)
-	}
-	encoded := e.Bytes()
-	ht.SetBody(r, bytes.NewReader(encoded), contentType)
-	return nil
-}
-
 func encodeStartTopUpRequest(
 	req *StartTopUpRequestBody,
 	r *http.Request,

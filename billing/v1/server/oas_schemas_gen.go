@@ -2712,7 +2712,6 @@ func (s *PlanChangeTiming) UnmarshalText(data []byte) error {
 
 // Ref: #/components/schemas/PrepaidAsset
 type PrepaidAsset struct {
-	// Use this to quote and to renew.
 	ID        string `json:"id"`
 	ProjectID string `json:"project_id"`
 	// Which service holds it. Also which console it is managed from.
@@ -2724,21 +2723,17 @@ type PrepaidAsset struct {
 	ResourceID OptString `json:"resource_id"`
 	// GiB for a disk, 1 for a machine or an address.
 	Quantity int64 `json:"quantity"`
-	// Paid up to this instant. It stops being served after it, not before.
-	TermEnd time.Time         `json:"term_end"`
-	State   PrepaidAssetState `json:"state"`
-	// What it is being moved to. Differs from `state` while a change is still being applied — in
-	// particular right after a renewal, which is the moment a customer is most likely to conclude that
-	// nothing happened.
+	// How long one period buys, as an ISO 8601 duration (P1M, P1Y).
+	//
+	// There is no expiry to report. The engine keeps renewing this for as long as the seat is held, so
+	// what runs out is not the term but the customer's decision to keep it. What the next period costs,
+	// and when it is charged, is on the charges route — that is the engine's own answer rather than a
+	// copy of it.
+	Term  string            `json:"term"`
+	State PrepaidAssetState `json:"state"`
+	// What it is being moved to. Differs from `state` while a change is still being applied, which is the
+	// moment a customer is most likely to conclude that nothing happened.
 	DesiredState PrepaidAssetDesiredState `json:"desired_state"`
-	// How long one renewal buys, as an ISO 8601 duration (P1M, P1Y). Empty on something adopted into
-	// billing rather than bought through it — automatic renewal cannot be turned on until one manual
-	// renewal records it.
-	BillingCycle OptString `json:"billing_cycle"`
-	// What happens at expiry. `manual` is where everything starts: charging automatically has to be
-	// chosen. `none` also stops the reminders, which is a different thing from `manual` — see the route
-	// that sets it.
-	RenewalStatus PrepaidAssetRenewalStatus `json:"renewal_status"`
 }
 
 // GetID returns the value of ID.
@@ -2771,9 +2766,9 @@ func (s *PrepaidAsset) GetQuantity() int64 {
 	return s.Quantity
 }
 
-// GetTermEnd returns the value of TermEnd.
-func (s *PrepaidAsset) GetTermEnd() time.Time {
-	return s.TermEnd
+// GetTerm returns the value of Term.
+func (s *PrepaidAsset) GetTerm() string {
+	return s.Term
 }
 
 // GetState returns the value of State.
@@ -2784,16 +2779,6 @@ func (s *PrepaidAsset) GetState() PrepaidAssetState {
 // GetDesiredState returns the value of DesiredState.
 func (s *PrepaidAsset) GetDesiredState() PrepaidAssetDesiredState {
 	return s.DesiredState
-}
-
-// GetBillingCycle returns the value of BillingCycle.
-func (s *PrepaidAsset) GetBillingCycle() OptString {
-	return s.BillingCycle
-}
-
-// GetRenewalStatus returns the value of RenewalStatus.
-func (s *PrepaidAsset) GetRenewalStatus() PrepaidAssetRenewalStatus {
-	return s.RenewalStatus
 }
 
 // SetID sets the value of ID.
@@ -2826,9 +2811,9 @@ func (s *PrepaidAsset) SetQuantity(val int64) {
 	s.Quantity = val
 }
 
-// SetTermEnd sets the value of TermEnd.
-func (s *PrepaidAsset) SetTermEnd(val time.Time) {
-	s.TermEnd = val
+// SetTerm sets the value of Term.
+func (s *PrepaidAsset) SetTerm(val string) {
+	s.Term = val
 }
 
 // SetState sets the value of State.
@@ -2841,19 +2826,8 @@ func (s *PrepaidAsset) SetDesiredState(val PrepaidAssetDesiredState) {
 	s.DesiredState = val
 }
 
-// SetBillingCycle sets the value of BillingCycle.
-func (s *PrepaidAsset) SetBillingCycle(val OptString) {
-	s.BillingCycle = val
-}
-
-// SetRenewalStatus sets the value of RenewalStatus.
-func (s *PrepaidAsset) SetRenewalStatus(val PrepaidAssetRenewalStatus) {
-	s.RenewalStatus = val
-}
-
-// What it is being moved to. Differs from `state` while a change is still being applied — in
-// particular right after a renewal, which is the moment a customer is most likely to conclude that
-// nothing happened.
+// What it is being moved to. Differs from `state` while a change is still being applied, which is the
+// moment a customer is most likely to conclude that nothing happened.
 type PrepaidAssetDesiredState string
 
 const (
@@ -2915,57 +2889,6 @@ func (s *PrepaidAssetList) GetAssets() []PrepaidAsset {
 // SetAssets sets the value of Assets.
 func (s *PrepaidAssetList) SetAssets(val []PrepaidAsset) {
 	s.Assets = val
-}
-
-// What happens at expiry. `manual` is where everything starts: charging automatically has to be
-// chosen. `none` also stops the reminders, which is a different thing from `manual` — see the route
-// that sets it.
-type PrepaidAssetRenewalStatus string
-
-const (
-	PrepaidAssetRenewalStatusManual PrepaidAssetRenewalStatus = "manual"
-	PrepaidAssetRenewalStatusAuto   PrepaidAssetRenewalStatus = "auto"
-	PrepaidAssetRenewalStatusNone   PrepaidAssetRenewalStatus = "none"
-)
-
-// AllValues returns all PrepaidAssetRenewalStatus values.
-func (PrepaidAssetRenewalStatus) AllValues() []PrepaidAssetRenewalStatus {
-	return []PrepaidAssetRenewalStatus{
-		PrepaidAssetRenewalStatusManual,
-		PrepaidAssetRenewalStatusAuto,
-		PrepaidAssetRenewalStatusNone,
-	}
-}
-
-// MarshalText implements encoding.TextMarshaler.
-func (s PrepaidAssetRenewalStatus) MarshalText() ([]byte, error) {
-	switch s {
-	case PrepaidAssetRenewalStatusManual:
-		return []byte(s), nil
-	case PrepaidAssetRenewalStatusAuto:
-		return []byte(s), nil
-	case PrepaidAssetRenewalStatusNone:
-		return []byte(s), nil
-	default:
-		return nil, errors.Errorf("invalid value: %q", s)
-	}
-}
-
-// UnmarshalText implements encoding.TextUnmarshaler.
-func (s *PrepaidAssetRenewalStatus) UnmarshalText(data []byte) error {
-	switch PrepaidAssetRenewalStatus(data) {
-	case PrepaidAssetRenewalStatusManual:
-		*s = PrepaidAssetRenewalStatusManual
-		return nil
-	case PrepaidAssetRenewalStatusAuto:
-		*s = PrepaidAssetRenewalStatusAuto
-		return nil
-	case PrepaidAssetRenewalStatusNone:
-		*s = PrepaidAssetRenewalStatusNone
-		return nil
-	default:
-		return errors.Errorf("invalid value: %q", data)
-	}
 }
 
 type PrepaidAssetState string
@@ -3700,173 +3623,6 @@ func (s *QuoteUsageVariant) init() QuoteUsageVariant {
 		*s = m
 	}
 	return m
-}
-
-// Ref: #/components/schemas/RenewRequestBody
-type RenewRequestBody struct {
-	// How long to renew for, as an ISO 8601 duration (P1M, P1Y). It does not have to match the term
-	// originally bought.
-	Term string `json:"term"`
-	// Generate one per renewal the customer starts — when the dialog opens, not when it is submitted —
-	// and send the same one on every retry of that renewal.
-	IdempotencyKey string `json:"idempotency_key"`
-}
-
-// GetTerm returns the value of Term.
-func (s *RenewRequestBody) GetTerm() string {
-	return s.Term
-}
-
-// GetIdempotencyKey returns the value of IdempotencyKey.
-func (s *RenewRequestBody) GetIdempotencyKey() string {
-	return s.IdempotencyKey
-}
-
-// SetTerm sets the value of Term.
-func (s *RenewRequestBody) SetTerm(val string) {
-	s.Term = val
-}
-
-// SetIdempotencyKey sets the value of IdempotencyKey.
-func (s *RenewRequestBody) SetIdempotencyKey(val string) {
-	s.IdempotencyKey = val
-}
-
-// Ref: #/components/schemas/RenewalQuote
-type RenewalQuote struct {
-	ProvisionID string `json:"provision_id"`
-	Term        string `json:"term"`
-	// A decimal string, not a float. Money that survives a round trip through binary floating point is
-	// money that stops adding up.
-	Amount   string `json:"amount"`
-	Currency string `json:"currency"`
-	// What it is paid up to now.
-	CurrentTermEnd time.Time `json:"current_term_end"`
-	// What it would be paid up to after renewing.
-	TermEnd time.Time `json:"term_end"`
-}
-
-// GetProvisionID returns the value of ProvisionID.
-func (s *RenewalQuote) GetProvisionID() string {
-	return s.ProvisionID
-}
-
-// GetTerm returns the value of Term.
-func (s *RenewalQuote) GetTerm() string {
-	return s.Term
-}
-
-// GetAmount returns the value of Amount.
-func (s *RenewalQuote) GetAmount() string {
-	return s.Amount
-}
-
-// GetCurrency returns the value of Currency.
-func (s *RenewalQuote) GetCurrency() string {
-	return s.Currency
-}
-
-// GetCurrentTermEnd returns the value of CurrentTermEnd.
-func (s *RenewalQuote) GetCurrentTermEnd() time.Time {
-	return s.CurrentTermEnd
-}
-
-// GetTermEnd returns the value of TermEnd.
-func (s *RenewalQuote) GetTermEnd() time.Time {
-	return s.TermEnd
-}
-
-// SetProvisionID sets the value of ProvisionID.
-func (s *RenewalQuote) SetProvisionID(val string) {
-	s.ProvisionID = val
-}
-
-// SetTerm sets the value of Term.
-func (s *RenewalQuote) SetTerm(val string) {
-	s.Term = val
-}
-
-// SetAmount sets the value of Amount.
-func (s *RenewalQuote) SetAmount(val string) {
-	s.Amount = val
-}
-
-// SetCurrency sets the value of Currency.
-func (s *RenewalQuote) SetCurrency(val string) {
-	s.Currency = val
-}
-
-// SetCurrentTermEnd sets the value of CurrentTermEnd.
-func (s *RenewalQuote) SetCurrentTermEnd(val time.Time) {
-	s.CurrentTermEnd = val
-}
-
-// SetTermEnd sets the value of TermEnd.
-func (s *RenewalQuote) SetTermEnd(val time.Time) {
-	s.TermEnd = val
-}
-
-// Ref: #/components/schemas/SetRenewalStatusRequestBody
-type SetRenewalStatusRequestBody struct {
-	Status SetRenewalStatusRequestBodyStatus `json:"status"`
-}
-
-// GetStatus returns the value of Status.
-func (s *SetRenewalStatusRequestBody) GetStatus() SetRenewalStatusRequestBodyStatus {
-	return s.Status
-}
-
-// SetStatus sets the value of Status.
-func (s *SetRenewalStatusRequestBody) SetStatus(val SetRenewalStatusRequestBodyStatus) {
-	s.Status = val
-}
-
-type SetRenewalStatusRequestBodyStatus string
-
-const (
-	SetRenewalStatusRequestBodyStatusManual SetRenewalStatusRequestBodyStatus = "manual"
-	SetRenewalStatusRequestBodyStatusAuto   SetRenewalStatusRequestBodyStatus = "auto"
-	SetRenewalStatusRequestBodyStatusNone   SetRenewalStatusRequestBodyStatus = "none"
-)
-
-// AllValues returns all SetRenewalStatusRequestBodyStatus values.
-func (SetRenewalStatusRequestBodyStatus) AllValues() []SetRenewalStatusRequestBodyStatus {
-	return []SetRenewalStatusRequestBodyStatus{
-		SetRenewalStatusRequestBodyStatusManual,
-		SetRenewalStatusRequestBodyStatusAuto,
-		SetRenewalStatusRequestBodyStatusNone,
-	}
-}
-
-// MarshalText implements encoding.TextMarshaler.
-func (s SetRenewalStatusRequestBodyStatus) MarshalText() ([]byte, error) {
-	switch s {
-	case SetRenewalStatusRequestBodyStatusManual:
-		return []byte(s), nil
-	case SetRenewalStatusRequestBodyStatusAuto:
-		return []byte(s), nil
-	case SetRenewalStatusRequestBodyStatusNone:
-		return []byte(s), nil
-	default:
-		return nil, errors.Errorf("invalid value: %q", s)
-	}
-}
-
-// UnmarshalText implements encoding.TextUnmarshaler.
-func (s *SetRenewalStatusRequestBodyStatus) UnmarshalText(data []byte) error {
-	switch SetRenewalStatusRequestBodyStatus(data) {
-	case SetRenewalStatusRequestBodyStatusManual:
-		*s = SetRenewalStatusRequestBodyStatusManual
-		return nil
-	case SetRenewalStatusRequestBodyStatusAuto:
-		*s = SetRenewalStatusRequestBodyStatusAuto
-		return nil
-	case SetRenewalStatusRequestBodyStatusNone:
-		*s = SetRenewalStatusRequestBodyStatusNone
-		return nil
-	default:
-		return errors.Errorf("invalid value: %q", data)
-	}
 }
 
 // Ref: #/components/schemas/StartTopUpRequestBody
