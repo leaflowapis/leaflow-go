@@ -2754,10 +2754,11 @@ func (s *PaymentMethodList) SetPaymentMethods(val []PaymentMethod) {
 
 // Ref: #/components/schemas/PaymentMethodSetupSession
 type PaymentMethodSetupSession struct {
-	// Initialises the provider's JavaScript, which mounts its form in an iframe on this page.
+	// Confirms this attempt from the browser, against the provider's own inputs.
 	//
-	// Not a URL: the form is embedded rather than redirected to, so the account holder stays on the
-	// console. It expires, so fetch it when the form is about to be shown rather than when the page loads.
+	// Not a URL and not a hosted page: only the inputs come from the provider, so the heading, the button
+	// and the styling around them are this platform's. It expires, so fetch it when the form is about to
+	// be shown rather than when the page loads.
 	ClientSecret string `json:"client_secret"`
 	// Identifies this platform to the provider's JavaScript. Public by design.
 	//
@@ -2770,7 +2771,7 @@ type PaymentMethodSetupSession struct {
 	// The browser does not need it — the callback carries the same id and is what actually records the
 	// method. It is here so that a support conversation about one failed attempt has something to look it
 	// up by.
-	SessionID OptString `json:"session_id"`
+	SetupID OptString `json:"setup_id"`
 }
 
 // GetClientSecret returns the value of ClientSecret.
@@ -2783,9 +2784,9 @@ func (s *PaymentMethodSetupSession) GetPublishableKey() string {
 	return s.PublishableKey
 }
 
-// GetSessionID returns the value of SessionID.
-func (s *PaymentMethodSetupSession) GetSessionID() OptString {
-	return s.SessionID
+// GetSetupID returns the value of SetupID.
+func (s *PaymentMethodSetupSession) GetSetupID() OptString {
+	return s.SetupID
 }
 
 // SetClientSecret sets the value of ClientSecret.
@@ -2798,9 +2799,9 @@ func (s *PaymentMethodSetupSession) SetPublishableKey(val string) {
 	s.PublishableKey = val
 }
 
-// SetSessionID sets the value of SessionID.
-func (s *PaymentMethodSetupSession) SetSessionID(val OptString) {
-	s.SessionID = val
+// SetSetupID sets the value of SetupID.
+func (s *PaymentMethodSetupSession) SetSetupID(val OptString) {
+	s.SetupID = val
 }
 
 // When a plan change takes effect. There is no default: an upgrade and a downgrade want opposite

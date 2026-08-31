@@ -4770,9 +4770,9 @@ func (s *PaymentMethodSetupSession) encodeFields(e *jx.Encoder) {
 		e.Str(s.PublishableKey)
 	}
 	{
-		if s.SessionID.Set {
-			e.FieldStart("session_id")
-			s.SessionID.Encode(e)
+		if s.SetupID.Set {
+			e.FieldStart("setup_id")
+			s.SetupID.Encode(e)
 		}
 	}
 }
@@ -4780,7 +4780,7 @@ func (s *PaymentMethodSetupSession) encodeFields(e *jx.Encoder) {
 var jsonFieldsNameOfPaymentMethodSetupSession = [3]string{
 	0: "client_secret",
 	1: "publishable_key",
-	2: "session_id",
+	2: "setup_id",
 }
 
 // Decode decodes PaymentMethodSetupSession from json.
@@ -4816,15 +4816,15 @@ func (s *PaymentMethodSetupSession) Decode(d *jx.Decoder) error {
 			}(); err != nil {
 				return errors.Wrap(err, "decode field \"publishable_key\"")
 			}
-		case "session_id":
+		case "setup_id":
 			if err := func() error {
-				s.SessionID.Reset()
-				if err := s.SessionID.Decode(d); err != nil {
+				s.SetupID.Reset()
+				if err := s.SetupID.Decode(d); err != nil {
 					return err
 				}
 				return nil
 			}(); err != nil {
-				return errors.Wrap(err, "decode field \"session_id\"")
+				return errors.Wrap(err, "decode field \"setup_id\"")
 			}
 		default:
 			return errors.Errorf("unexpected field %q", k)
