@@ -461,6 +461,30 @@ type Handler interface {
 	//
 	// POST /account/v1/billing-accounts/{accountKey}/prepaid-assets/{provisionId}/renew
 	RenewPrepaidAsset(ctx context.Context, req *RenewRequestBody, params RenewPrepaidAssetParams) (*Order, error)
+	// SetRenewalStatus implements set-renewal-status operation.
+	//
+	// Three choices, not two.
+	//
+	// # Why automatic renewal has to be opted into
+	//
+	// Charging someone automatically has to be something they chose. Defaulting to it means a person who
+	// wanted to try one month is charged for a second they never agreed to — and that is where
+	// chargebacks come from. So a resource bought outright starts on `manual`.
+	//
+	// # And why "let it expire" is its own choice, not just "not automatic"
+	//
+	// `manual` keeps reminding: the notice before expiry is mandatory, because expiry stops the resource.
+	// Someone who has decided to let it go does not want those, and the cost of sending them anyway is not
+	// annoyance — it is that the reminders get filtered away, taking the ones that mattered with them.
+	//
+	// # Turning it on needs a known cycle
+	//
+	// Renewing automatically has to know for how long, which comes from the last purchase or renewal. A
+	// resource adopted into billing, or bought before this was recorded, has no cycle yet: renew it
+	// manually once and the cycle is written down.
+	//
+	// PUT /account/v1/billing-accounts/{accountKey}/prepaid-assets/{provisionId}/renewal
+	SetRenewalStatus(ctx context.Context, req *SetRenewalStatusRequestBody, params SetRenewalStatusParams) (*PrepaidAsset, error)
 	// StartBillingPortal implements start-billing-portal operation.
 	//
 	// Returns a URL to the payment provider's own portal, where the card can be replaced or removed, the

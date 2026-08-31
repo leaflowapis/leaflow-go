@@ -62,6 +62,7 @@ var operationRolesBearerAuth = map[string][]string{
 	ReadSubscriptionOperation:                []string{},
 	ReadTopUpOperation:                       []string{},
 	RenewPrepaidAssetOperation:               []string{},
+	SetRenewalStatusOperation:                []string{},
 	StartBillingPortalOperation:              []string{},
 	StartPaymentMethodSetupOperation:         []string{},
 	StartTopUpOperation:                      []string{},

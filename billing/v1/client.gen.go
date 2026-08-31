@@ -244,6 +244,27 @@ func (e PrepaidAssetDesiredState) Valid() bool {
 	}
 }
 
+// Defines values for PrepaidAssetRenewalStatus.
+const (
+	PrepaidAssetRenewalStatusAuto   PrepaidAssetRenewalStatus = "auto"
+	PrepaidAssetRenewalStatusManual PrepaidAssetRenewalStatus = "manual"
+	PrepaidAssetRenewalStatusNone   PrepaidAssetRenewalStatus = "none"
+)
+
+// Valid indicates whether the value is a known member of the PrepaidAssetRenewalStatus enum.
+func (e PrepaidAssetRenewalStatus) Valid() bool {
+	switch e {
+	case PrepaidAssetRenewalStatusAuto:
+		return true
+	case PrepaidAssetRenewalStatusManual:
+		return true
+	case PrepaidAssetRenewalStatusNone:
+		return true
+	default:
+		return false
+	}
+}
+
 // Defines values for PrepaidAssetState.
 const (
 	PrepaidAssetStateActive     PrepaidAssetState = "active"
@@ -283,6 +304,27 @@ func (e PricingLineType) Valid() bool {
 	case Free:
 		return true
 	case Unit:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for SetRenewalStatusRequestBodyStatus.
+const (
+	SetRenewalStatusRequestBodyStatusAuto   SetRenewalStatusRequestBodyStatus = "auto"
+	SetRenewalStatusRequestBodyStatusManual SetRenewalStatusRequestBodyStatus = "manual"
+	SetRenewalStatusRequestBodyStatusNone   SetRenewalStatusRequestBodyStatus = "none"
+)
+
+// Valid indicates whether the value is a known member of the SetRenewalStatusRequestBodyStatus enum.
+func (e SetRenewalStatusRequestBodyStatus) Valid() bool {
+	switch e {
+	case SetRenewalStatusRequestBodyStatusAuto:
+		return true
+	case SetRenewalStatusRequestBodyStatusManual:
+		return true
+	case SetRenewalStatusRequestBodyStatusNone:
 		return true
 	default:
 		return false
@@ -800,6 +842,11 @@ type PlanChangeTiming string
 
 // PrepaidAsset defines model for PrepaidAsset.
 type PrepaidAsset struct {
+	// BillingCycle How long one renewal buys, as an ISO 8601 duration (P1M, P1Y). Empty on something adopted
+	// into billing rather than bought through it — automatic renewal cannot be turned on until
+	// one manual renewal records it.
+	BillingCycle *string `json:"billing_cycle,omitempty"`
+
 	// DesiredState What it is being moved to. Differs from `state` while a change is still being applied —
 	// in particular right after a renewal, which is the moment a customer is most likely to
 	// conclude that nothing happened.
@@ -816,6 +863,11 @@ type PrepaidAsset struct {
 	// Quantity GiB for a disk, 1 for a machine or an address.
 	Quantity int64 `json:"quantity"`
 
+	// RenewalStatus What happens at expiry. `manual` is where everything starts: charging automatically has
+	// to be chosen. `none` also stops the reminders, which is a different thing from `manual`
+	// — see the route that sets it.
+	RenewalStatus PrepaidAssetRenewalStatus `json:"renewal_status"`
+
 	// ResourceId The id that service knows it by, so the two consoles can be lined up.
 	ResourceId *string `json:"resource_id,omitempty"`
 
@@ -831,6 +883,11 @@ type PrepaidAsset struct {
 // in particular right after a renewal, which is the moment a customer is most likely to
 // conclude that nothing happened.
 type PrepaidAssetDesiredState string
+
+// PrepaidAssetRenewalStatus What happens at expiry. `manual` is where everything starts: charging automatically has
+// to be chosen. `none` also stops the reminders, which is a different thing from `manual`
+// — see the route that sets it.
+type PrepaidAssetRenewalStatus string
 
 // PrepaidAssetState defines model for PrepaidAsset.State.
 type PrepaidAssetState string
@@ -1070,6 +1127,14 @@ type RenewalQuote struct {
 	TermEnd time.Time `json:"term_end"`
 }
 
+// SetRenewalStatusRequestBody defines model for SetRenewalStatusRequestBody.
+type SetRenewalStatusRequestBody struct {
+	Status SetRenewalStatusRequestBodyStatus `json:"status"`
+}
+
+// SetRenewalStatusRequestBodyStatus defines model for SetRenewalStatusRequestBody.Status.
+type SetRenewalStatusRequestBodyStatus string
+
 // StartTopUpRequestBody defines model for StartTopUpRequestBody.
 type StartTopUpRequestBody struct {
 	// Amount How much to add, as a decimal string — `"20"`, `"19.99"`.
@@ -1216,6 +1281,9 @@ type UpdateBillingAccountJSONRequestBody = UpdateBillingAccountRequestBody
 
 // RenewPrepaidAssetJSONRequestBody defines body for RenewPrepaidAsset for application/json ContentType.
 type RenewPrepaidAssetJSONRequestBody = RenewRequestBody
+
+// SetRenewalStatusJSONRequestBody defines body for SetRenewalStatus for application/json ContentType.
+type SetRenewalStatusJSONRequestBody = SetRenewalStatusRequestBody
 
 // QuoteUsageJSONRequestBody defines body for QuoteUsage for application/json ContentType.
 type QuoteUsageJSONRequestBody = QuoteRequest
@@ -1722,6 +1790,62 @@ type ClientInterface interface {
 	//
 	// Corresponds with POST /account/v1/billing-accounts/{accountKey}/prepaid-assets/{provisionId}/renew (the `RenewPrepaidAsset` operationId).
 	RenewPrepaidAsset(ctx context.Context, accountKey AccountKey, provisionId ProvisionId, body RenewPrepaidAssetJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// SetRenewalStatusWithBody Choose what happens when it expires
+	//
+	// Three choices, not two.
+	//
+	// ## Why automatic renewal has to be opted into
+	//
+	// Charging someone automatically has to be something they chose. Defaulting to it means a
+	// person who wanted to try one month is charged for a second they never agreed to — and that
+	// is where chargebacks come from. So a resource bought outright starts on `manual`.
+	//
+	// ## And why "let it expire" is its own choice, not just "not automatic"
+	//
+	// `manual` keeps reminding: the notice before expiry is mandatory, because expiry stops the
+	// resource. Someone who has decided to let it go does not want those, and the cost of sending
+	// them anyway is not annoyance — it is that the reminders get filtered away, taking the ones
+	// that mattered with them.
+	//
+	// ## Turning it on needs a known cycle
+	//
+	// Renewing automatically has to know for how long, which comes from the last purchase or
+	// renewal. A resource adopted into billing, or bought before this was recorded, has no cycle
+	// yet: renew it manually once and the cycle is written down.
+	//
+	// Takes any type of body and a specified content type.
+	//
+	// Corresponds with PUT /account/v1/billing-accounts/{accountKey}/prepaid-assets/{provisionId}/renewal (the `SetRenewalStatus` operationId).
+	SetRenewalStatusWithBody(ctx context.Context, accountKey AccountKey, provisionId ProvisionId, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// SetRenewalStatus Choose what happens when it expires
+	//
+	// Three choices, not two.
+	//
+	// ## Why automatic renewal has to be opted into
+	//
+	// Charging someone automatically has to be something they chose. Defaulting to it means a
+	// person who wanted to try one month is charged for a second they never agreed to — and that
+	// is where chargebacks come from. So a resource bought outright starts on `manual`.
+	//
+	// ## And why "let it expire" is its own choice, not just "not automatic"
+	//
+	// `manual` keeps reminding: the notice before expiry is mandatory, because expiry stops the
+	// resource. Someone who has decided to let it go does not want those, and the cost of sending
+	// them anyway is not annoyance — it is that the reminders get filtered away, taking the ones
+	// that mattered with them.
+	//
+	// ## Turning it on needs a known cycle
+	//
+	// Renewing automatically has to know for how long, which comes from the last purchase or
+	// renewal. A resource adopted into billing, or bought before this was recorded, has no cycle
+	// yet: renew it manually once and the cycle is written down.
+	//
+	// Takes a body of the `application/json` content type.
+	//
+	// Corresponds with PUT /account/v1/billing-accounts/{accountKey}/prepaid-assets/{provisionId}/renewal (the `SetRenewalStatus` operationId).
+	SetRenewalStatus(ctx context.Context, accountKey AccountKey, provisionId ProvisionId, body SetRenewalStatusJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
 
 	// QuoteRenewal What renewing this would cost
 	//
@@ -2678,6 +2802,82 @@ func (c *Client) RenewPrepaidAssetWithBody(ctx context.Context, accountKey Accou
 // Corresponds with POST /account/v1/billing-accounts/{accountKey}/prepaid-assets/{provisionId}/renew (the `RenewPrepaidAsset` operationId).
 func (c *Client) RenewPrepaidAsset(ctx context.Context, accountKey AccountKey, provisionId ProvisionId, body RenewPrepaidAssetJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
 	req, err := NewRenewPrepaidAssetRequest(c.Server, accountKey, provisionId, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+// SetRenewalStatusWithBody Choose what happens when it expires
+//
+// Three choices, not two.
+//
+// ## Why automatic renewal has to be opted into
+//
+// Charging someone automatically has to be something they chose. Defaulting to it means a
+// person who wanted to try one month is charged for a second they never agreed to — and that
+// is where chargebacks come from. So a resource bought outright starts on `manual`.
+//
+// ## And why "let it expire" is its own choice, not just "not automatic"
+//
+// `manual` keeps reminding: the notice before expiry is mandatory, because expiry stops the
+// resource. Someone who has decided to let it go does not want those, and the cost of sending
+// them anyway is not annoyance — it is that the reminders get filtered away, taking the ones
+// that mattered with them.
+//
+// ## Turning it on needs a known cycle
+//
+// Renewing automatically has to know for how long, which comes from the last purchase or
+// renewal. A resource adopted into billing, or bought before this was recorded, has no cycle
+// yet: renew it manually once and the cycle is written down.
+//
+// Takes any type of body and a specified content type.
+//
+// Corresponds with PUT /account/v1/billing-accounts/{accountKey}/prepaid-assets/{provisionId}/renewal (the `SetRenewalStatus` operationId).
+func (c *Client) SetRenewalStatusWithBody(ctx context.Context, accountKey AccountKey, provisionId ProvisionId, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewSetRenewalStatusRequestWithBody(c.Server, accountKey, provisionId, contentType, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+// SetRenewalStatus Choose what happens when it expires
+//
+// Three choices, not two.
+//
+// ## Why automatic renewal has to be opted into
+//
+// Charging someone automatically has to be something they chose. Defaulting to it means a
+// person who wanted to try one month is charged for a second they never agreed to — and that
+// is where chargebacks come from. So a resource bought outright starts on `manual`.
+//
+// ## And why "let it expire" is its own choice, not just "not automatic"
+//
+// `manual` keeps reminding: the notice before expiry is mandatory, because expiry stops the
+// resource. Someone who has decided to let it go does not want those, and the cost of sending
+// them anyway is not annoyance — it is that the reminders get filtered away, taking the ones
+// that mattered with them.
+//
+// ## Turning it on needs a known cycle
+//
+// Renewing automatically has to know for how long, which comes from the last purchase or
+// renewal. A resource adopted into billing, or bought before this was recorded, has no cycle
+// yet: renew it manually once and the cycle is written down.
+//
+// Takes a body of the `application/json` content type.
+//
+// Corresponds with PUT /account/v1/billing-accounts/{accountKey}/prepaid-assets/{provisionId}/renewal (the `SetRenewalStatus` operationId).
+func (c *Client) SetRenewalStatus(ctx context.Context, accountKey AccountKey, provisionId ProvisionId, body SetRenewalStatusJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewSetRenewalStatusRequest(c.Server, accountKey, provisionId, body)
 	if err != nil {
 		return nil, err
 	}
@@ -3921,6 +4121,60 @@ func NewRenewPrepaidAssetRequestWithBody(server string, accountKey AccountKey, p
 	return req, nil
 }
 
+// NewSetRenewalStatusRequest calls the generic SetRenewalStatus builder with application/json body
+func NewSetRenewalStatusRequest(server string, accountKey AccountKey, provisionId ProvisionId, body SetRenewalStatusJSONRequestBody) (*http.Request, error) {
+	var bodyReader io.Reader
+	buf, err := json.Marshal(body)
+	if err != nil {
+		return nil, err
+	}
+	bodyReader = bytes.NewReader(buf)
+	return NewSetRenewalStatusRequestWithBody(server, accountKey, provisionId, "application/json", bodyReader)
+}
+
+// NewSetRenewalStatusRequestWithBody constructs an http.Request for the SetRenewalStatus method, with any body, and a specified content type
+func NewSetRenewalStatusRequestWithBody(server string, accountKey AccountKey, provisionId ProvisionId, contentType string, body io.Reader) (*http.Request, error) {
+	var err error
+
+	var pathParam0 string
+
+	pathParam0, err = runtime.StyleParamWithOptions("simple", false, "accountKey", accountKey, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: ""})
+	if err != nil {
+		return nil, err
+	}
+
+	var pathParam1 string
+
+	pathParam1, err = runtime.StyleParamWithOptions("simple", false, "provisionId", provisionId, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: "uuid"})
+	if err != nil {
+		return nil, err
+	}
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/account/v1/billing-accounts/%s/prepaid-assets/%s/renewal", pathParam0, pathParam1)
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest(http.MethodPut, queryURL.String(), body)
+	if err != nil {
+		return nil, err
+	}
+
+	req.Header.Add("Content-Type", contentType)
+
+	return req, nil
+}
+
 // NewQuoteRenewalRequest constructs an http.Request for the QuoteRenewal method
 func NewQuoteRenewalRequest(server string, accountKey AccountKey, provisionId ProvisionId, params *QuoteRenewalParams) (*http.Request, error) {
 	var err error
@@ -4906,6 +5160,62 @@ type ClientWithResponsesInterface interface {
 	//
 	// Corresponds with POST /account/v1/billing-accounts/{accountKey}/prepaid-assets/{provisionId}/renew (the `RenewPrepaidAsset` operationId).
 	RenewPrepaidAssetWithResponse(ctx context.Context, accountKey AccountKey, provisionId ProvisionId, body RenewPrepaidAssetJSONRequestBody, reqEditors ...RequestEditorFn) (*RenewPrepaidAssetResponse, error)
+
+	// SetRenewalStatusWithBodyWithResponse Choose what happens when it expires
+	//
+	// Three choices, not two.
+	//
+	// ## Why automatic renewal has to be opted into
+	//
+	// Charging someone automatically has to be something they chose. Defaulting to it means a
+	// person who wanted to try one month is charged for a second they never agreed to — and that
+	// is where chargebacks come from. So a resource bought outright starts on `manual`.
+	//
+	// ## And why "let it expire" is its own choice, not just "not automatic"
+	//
+	// `manual` keeps reminding: the notice before expiry is mandatory, because expiry stops the
+	// resource. Someone who has decided to let it go does not want those, and the cost of sending
+	// them anyway is not annoyance — it is that the reminders get filtered away, taking the ones
+	// that mattered with them.
+	//
+	// ## Turning it on needs a known cycle
+	//
+	// Renewing automatically has to know for how long, which comes from the last purchase or
+	// renewal. A resource adopted into billing, or bought before this was recorded, has no cycle
+	// yet: renew it manually once and the cycle is written down.
+	//
+	// Takes any type of body and a specified content type, and returns a wrapper object for the known response body format(s).
+	//
+	// Corresponds with PUT /account/v1/billing-accounts/{accountKey}/prepaid-assets/{provisionId}/renewal (the `SetRenewalStatus` operationId).
+	SetRenewalStatusWithBodyWithResponse(ctx context.Context, accountKey AccountKey, provisionId ProvisionId, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*SetRenewalStatusResponse, error)
+
+	// SetRenewalStatusWithResponse Choose what happens when it expires
+	//
+	// Three choices, not two.
+	//
+	// ## Why automatic renewal has to be opted into
+	//
+	// Charging someone automatically has to be something they chose. Defaulting to it means a
+	// person who wanted to try one month is charged for a second they never agreed to — and that
+	// is where chargebacks come from. So a resource bought outright starts on `manual`.
+	//
+	// ## And why "let it expire" is its own choice, not just "not automatic"
+	//
+	// `manual` keeps reminding: the notice before expiry is mandatory, because expiry stops the
+	// resource. Someone who has decided to let it go does not want those, and the cost of sending
+	// them anyway is not annoyance — it is that the reminders get filtered away, taking the ones
+	// that mattered with them.
+	//
+	// ## Turning it on needs a known cycle
+	//
+	// Renewing automatically has to know for how long, which comes from the last purchase or
+	// renewal. A resource adopted into billing, or bought before this was recorded, has no cycle
+	// yet: renew it manually once and the cycle is written down.
+	//
+	// Takes a body of the `application/json` content type, and returns a wrapper object for the known response body format(s).
+	//
+	// Corresponds with PUT /account/v1/billing-accounts/{accountKey}/prepaid-assets/{provisionId}/renewal (the `SetRenewalStatus` operationId).
+	SetRenewalStatusWithResponse(ctx context.Context, accountKey AccountKey, provisionId ProvisionId, body SetRenewalStatusJSONRequestBody, reqEditors ...RequestEditorFn) (*SetRenewalStatusResponse, error)
 
 	// QuoteRenewalWithResponse What renewing this would cost
 	//
@@ -6157,6 +6467,54 @@ func (r RenewPrepaidAssetResponse) ContentType() string {
 	return ""
 }
 
+type SetRenewalStatusResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	// JSON200 the response for an HTTP 200 `application/json` response
+	JSON200 *PrepaidAsset
+	// JSONDefault the response for an HTTP default `application/json` response
+	JSONDefault *Error
+}
+
+// GetJSON200 returns the response for an HTTP 200 `application/json` response
+func (r SetRenewalStatusResponse) GetJSON200() *PrepaidAsset {
+	return r.JSON200
+}
+
+// GetJSONDefault returns the response for an HTTP default `application/json` response
+func (r SetRenewalStatusResponse) GetJSONDefault() *Error {
+	return r.JSONDefault
+}
+
+// GetBody returns the raw response body bytes
+func (r SetRenewalStatusResponse) GetBody() []byte {
+	return r.Body
+}
+
+// Status returns HTTPResponse.Status
+func (r SetRenewalStatusResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r SetRenewalStatusResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+// ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
+func (r SetRenewalStatusResponse) ContentType() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Header.Get("Content-Type")
+	}
+	return ""
+}
+
 type QuoteRenewalResponse struct {
 	Body         []byte
 	HTTPResponse *http.Response
@@ -7265,6 +7623,74 @@ func (c *ClientWithResponses) RenewPrepaidAssetWithResponse(ctx context.Context,
 	return ParseRenewPrepaidAssetResponse(rsp)
 }
 
+// SetRenewalStatusWithBodyWithResponse Choose what happens when it expires
+//
+// Three choices, not two.
+//
+// ## Why automatic renewal has to be opted into
+//
+// Charging someone automatically has to be something they chose. Defaulting to it means a
+// person who wanted to try one month is charged for a second they never agreed to — and that
+// is where chargebacks come from. So a resource bought outright starts on `manual`.
+//
+// ## And why "let it expire" is its own choice, not just "not automatic"
+//
+// `manual` keeps reminding: the notice before expiry is mandatory, because expiry stops the
+// resource. Someone who has decided to let it go does not want those, and the cost of sending
+// them anyway is not annoyance — it is that the reminders get filtered away, taking the ones
+// that mattered with them.
+//
+// ## Turning it on needs a known cycle
+//
+// Renewing automatically has to know for how long, which comes from the last purchase or
+// renewal. A resource adopted into billing, or bought before this was recorded, has no cycle
+// yet: renew it manually once and the cycle is written down.
+//
+// Takes any type of body and a specified content type, and returns a wrapper object for the known response body format(s).
+//
+// Corresponds with PUT /account/v1/billing-accounts/{accountKey}/prepaid-assets/{provisionId}/renewal (the `SetRenewalStatus` operationId).
+func (c *ClientWithResponses) SetRenewalStatusWithBodyWithResponse(ctx context.Context, accountKey AccountKey, provisionId ProvisionId, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*SetRenewalStatusResponse, error) {
+	rsp, err := c.SetRenewalStatusWithBody(ctx, accountKey, provisionId, contentType, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseSetRenewalStatusResponse(rsp)
+}
+
+// SetRenewalStatusWithResponse Choose what happens when it expires
+//
+// Three choices, not two.
+//
+// ## Why automatic renewal has to be opted into
+//
+// Charging someone automatically has to be something they chose. Defaulting to it means a
+// person who wanted to try one month is charged for a second they never agreed to — and that
+// is where chargebacks come from. So a resource bought outright starts on `manual`.
+//
+// ## And why "let it expire" is its own choice, not just "not automatic"
+//
+// `manual` keeps reminding: the notice before expiry is mandatory, because expiry stops the
+// resource. Someone who has decided to let it go does not want those, and the cost of sending
+// them anyway is not annoyance — it is that the reminders get filtered away, taking the ones
+// that mattered with them.
+//
+// ## Turning it on needs a known cycle
+//
+// Renewing automatically has to know for how long, which comes from the last purchase or
+// renewal. A resource adopted into billing, or bought before this was recorded, has no cycle
+// yet: renew it manually once and the cycle is written down.
+//
+// Takes a body of the `application/json` content type, and returns a wrapper object for the known response body format(s).
+//
+// Corresponds with PUT /account/v1/billing-accounts/{accountKey}/prepaid-assets/{provisionId}/renewal (the `SetRenewalStatus` operationId).
+func (c *ClientWithResponses) SetRenewalStatusWithResponse(ctx context.Context, accountKey AccountKey, provisionId ProvisionId, body SetRenewalStatusJSONRequestBody, reqEditors ...RequestEditorFn) (*SetRenewalStatusResponse, error) {
+	rsp, err := c.SetRenewalStatus(ctx, accountKey, provisionId, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseSetRenewalStatusResponse(rsp)
+}
+
 // QuoteRenewalWithResponse What renewing this would cost
 //
 // Priced the same way the charge is, from the same table, so the number shown is the number
@@ -8296,6 +8722,39 @@ func ParseRenewPrepaidAssetResponse(rsp *http.Response) (*RenewPrepaidAssetRespo
 	switch {
 	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
 		var dest Order
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && true:
+		var dest Error
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSONDefault = &dest
+
+	}
+
+	return response, nil
+}
+
+// ParseSetRenewalStatusResponse parses an HTTP response from a SetRenewalStatusWithResponse call
+func ParseSetRenewalStatusResponse(rsp *http.Response) (*SetRenewalStatusResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &SetRenewalStatusResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest PrepaidAsset
 		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
 			return nil, err
 		}

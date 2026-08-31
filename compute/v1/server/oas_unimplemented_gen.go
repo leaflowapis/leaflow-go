@@ -96,7 +96,7 @@ func (UnimplementedHandler) CreateBackup(ctx context.Context, req *CreateBackupR
 // in the same zone to attach it. Choosing the disk type therefore determines the zone.
 //
 // POST /api/v1/disks
-func (UnimplementedHandler) CreateDisk(ctx context.Context, req *CreateDiskRequestBody) (r *DiskResource, _ error) {
+func (UnimplementedHandler) CreateDisk(ctx context.Context, req *CreateDiskRequestBody) (r CreateDiskRes, _ error) {
 	return r, ht.ErrNotImplemented
 }
 
@@ -493,7 +493,7 @@ func (UnimplementedHandler) GetSnapshot(ctx context.Context, params GetSnapshotP
 // observe the outcome.
 //
 // POST /api/v1/instances
-func (UnimplementedHandler) LaunchInstance(ctx context.Context, req *LaunchInstanceRequestBody) (r *LaunchInstanceResponseBody, _ error) {
+func (UnimplementedHandler) LaunchInstance(ctx context.Context, req *LaunchInstanceRequestBody) (r LaunchInstanceRes, _ error) {
 	return r, ht.ErrNotImplemented
 }
 

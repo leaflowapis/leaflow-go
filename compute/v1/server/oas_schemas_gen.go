@@ -428,6 +428,24 @@ type CreateDiskRequestBody struct {
 	SizeGB     int64     `json:"size_gb"`
 	// Restore from this snapshot. When given, the capacity need only be no smaller than the snapshot.
 	SnapshotID OptUUID `json:"snapshot_id"`
+	// Buy the disk outright for this long, as an ISO 8601 duration (P1M, P1Y). Billed by the hour when
+	// omitted.
+	//
+	// A disk bought outright can still be expanded: the difference is prorated over the days left in the
+	// term, and the expiry date does not move. It is stopped, not deleted, when the term runs out — the
+	// data stays and comes back once renewed.
+	Term OptString `json:"term"`
+	// How to pay for a term bought outright. Only meaningful together with `term`.
+	//
+	// `balance` takes it from the account balance and either succeeds or refuses on the spot. `online`
+	// returns a `checkout_url` instead and creates nothing — the resource is only created once the money
+	// arrives and the customer comes back to place it again. That last part is deliberate: a successful
+	// payment should not silently turn into a machine, because between paying and returning they may have
+	// changed their mind.
+	//
+	// Online payment is not a second wallet. What arrives lands in the balance first and the order is
+	// settled from there, so money topped up and money paid at checkout are the same pool.
+	PaymentMethod OptCreateDiskRequestBodyPaymentMethod `json:"payment_method"`
 }
 
 // GetDiskTypeID returns the value of DiskTypeID.
@@ -450,6 +468,16 @@ func (s *CreateDiskRequestBody) GetSnapshotID() OptUUID {
 	return s.SnapshotID
 }
 
+// GetTerm returns the value of Term.
+func (s *CreateDiskRequestBody) GetTerm() OptString {
+	return s.Term
+}
+
+// GetPaymentMethod returns the value of PaymentMethod.
+func (s *CreateDiskRequestBody) GetPaymentMethod() OptCreateDiskRequestBodyPaymentMethod {
+	return s.PaymentMethod
+}
+
 // SetDiskTypeID sets the value of DiskTypeID.
 func (s *CreateDiskRequestBody) SetDiskTypeID(val uuid.UUID) {
 	s.DiskTypeID = val
@@ -468,6 +496,67 @@ func (s *CreateDiskRequestBody) SetSizeGB(val int64) {
 // SetSnapshotID sets the value of SnapshotID.
 func (s *CreateDiskRequestBody) SetSnapshotID(val OptUUID) {
 	s.SnapshotID = val
+}
+
+// SetTerm sets the value of Term.
+func (s *CreateDiskRequestBody) SetTerm(val OptString) {
+	s.Term = val
+}
+
+// SetPaymentMethod sets the value of PaymentMethod.
+func (s *CreateDiskRequestBody) SetPaymentMethod(val OptCreateDiskRequestBodyPaymentMethod) {
+	s.PaymentMethod = val
+}
+
+// How to pay for a term bought outright. Only meaningful together with `term`.
+//
+// `balance` takes it from the account balance and either succeeds or refuses on the spot. `online`
+// returns a `checkout_url` instead and creates nothing — the resource is only created once the money
+// arrives and the customer comes back to place it again. That last part is deliberate: a successful
+// payment should not silently turn into a machine, because between paying and returning they may have
+// changed their mind.
+//
+// Online payment is not a second wallet. What arrives lands in the balance first and the order is
+// settled from there, so money topped up and money paid at checkout are the same pool.
+type CreateDiskRequestBodyPaymentMethod string
+
+const (
+	CreateDiskRequestBodyPaymentMethodBalance CreateDiskRequestBodyPaymentMethod = "balance"
+	CreateDiskRequestBodyPaymentMethodOnline  CreateDiskRequestBodyPaymentMethod = "online"
+)
+
+// AllValues returns all CreateDiskRequestBodyPaymentMethod values.
+func (CreateDiskRequestBodyPaymentMethod) AllValues() []CreateDiskRequestBodyPaymentMethod {
+	return []CreateDiskRequestBodyPaymentMethod{
+		CreateDiskRequestBodyPaymentMethodBalance,
+		CreateDiskRequestBodyPaymentMethodOnline,
+	}
+}
+
+// MarshalText implements encoding.TextMarshaler.
+func (s CreateDiskRequestBodyPaymentMethod) MarshalText() ([]byte, error) {
+	switch s {
+	case CreateDiskRequestBodyPaymentMethodBalance:
+		return []byte(s), nil
+	case CreateDiskRequestBodyPaymentMethodOnline:
+		return []byte(s), nil
+	default:
+		return nil, errors.Errorf("invalid value: %q", s)
+	}
+}
+
+// UnmarshalText implements encoding.TextUnmarshaler.
+func (s *CreateDiskRequestBodyPaymentMethod) UnmarshalText(data []byte) error {
+	switch CreateDiskRequestBodyPaymentMethod(data) {
+	case CreateDiskRequestBodyPaymentMethodBalance:
+		*s = CreateDiskRequestBodyPaymentMethodBalance
+		return nil
+	case CreateDiskRequestBodyPaymentMethodOnline:
+		*s = CreateDiskRequestBodyPaymentMethodOnline
+		return nil
+	default:
+		return errors.Errorf("invalid value: %q", data)
+	}
 }
 
 // Ref: #/components/schemas/CreatePortRequestBody
@@ -1060,6 +1149,8 @@ func (s *DiskResource) SetStatus(val DiskResourceStatus) {
 	s.Status = val
 }
 
+func (*DiskResource) createDiskRes() {}
+
 type DiskResourceStatus string
 
 const (
@@ -1388,6 +1479,9 @@ func (s *Error) SetMeta(val OptErrorMeta) {
 func (s *Error) SetStatus(val int64) {
 	s.Status = val
 }
+
+func (*Error) createDiskRes()     {}
+func (*Error) launchInstanceRes() {}
 
 type ErrorMeta map[string]jx.Raw
 
@@ -2421,6 +2515,17 @@ type LaunchInstanceRequestBody struct {
 	PortID OptUUID `json:"port_id"`
 	// A private image. Exactly one of this, `image_id` and `boot_disk_id`.
 	PrivateImageID OptUUID `json:"private_image_id"`
+	// How to pay for a term bought outright. Only meaningful together with `term`.
+	//
+	// `balance` takes it from the account balance and either succeeds or refuses on the spot. `online`
+	// returns a `checkout_url` instead and creates nothing — the resource is only created once the money
+	// arrives and the customer comes back to place it again. That last part is deliberate: a successful
+	// payment should not silently turn into a machine, because between paying and returning they may have
+	// changed their mind.
+	//
+	// Online payment is not a second wallet. What arrives lands in the balance first and the order is
+	// settled from there, so money topped up and money paid at checkout are the same pool.
+	PaymentMethod OptLaunchInstanceRequestBodyPaymentMethod `json:"payment_method"`
 	// Buy the instance outright for this long, as an ISO 8601 duration (P1M, P1Y). Billed by the hour when
 	// omitted.
 	//
@@ -2498,6 +2603,11 @@ func (s *LaunchInstanceRequestBody) GetPrivateImageID() OptUUID {
 	return s.PrivateImageID
 }
 
+// GetPaymentMethod returns the value of PaymentMethod.
+func (s *LaunchInstanceRequestBody) GetPaymentMethod() OptLaunchInstanceRequestBodyPaymentMethod {
+	return s.PaymentMethod
+}
+
 // GetTerm returns the value of Term.
 func (s *LaunchInstanceRequestBody) GetTerm() OptString {
 	return s.Term
@@ -2568,6 +2678,11 @@ func (s *LaunchInstanceRequestBody) SetPrivateImageID(val OptUUID) {
 	s.PrivateImageID = val
 }
 
+// SetPaymentMethod sets the value of PaymentMethod.
+func (s *LaunchInstanceRequestBody) SetPaymentMethod(val OptLaunchInstanceRequestBodyPaymentMethod) {
+	s.PaymentMethod = val
+}
+
 // SetTerm sets the value of Term.
 func (s *LaunchInstanceRequestBody) SetTerm(val OptString) {
 	s.Term = val
@@ -2588,6 +2703,57 @@ func (s *LaunchInstanceRequestBody) SetSubnetID(val OptUUID) {
 	s.SubnetID = val
 }
 
+// How to pay for a term bought outright. Only meaningful together with `term`.
+//
+// `balance` takes it from the account balance and either succeeds or refuses on the spot. `online`
+// returns a `checkout_url` instead and creates nothing — the resource is only created once the money
+// arrives and the customer comes back to place it again. That last part is deliberate: a successful
+// payment should not silently turn into a machine, because between paying and returning they may have
+// changed their mind.
+//
+// Online payment is not a second wallet. What arrives lands in the balance first and the order is
+// settled from there, so money topped up and money paid at checkout are the same pool.
+type LaunchInstanceRequestBodyPaymentMethod string
+
+const (
+	LaunchInstanceRequestBodyPaymentMethodBalance LaunchInstanceRequestBodyPaymentMethod = "balance"
+	LaunchInstanceRequestBodyPaymentMethodOnline  LaunchInstanceRequestBodyPaymentMethod = "online"
+)
+
+// AllValues returns all LaunchInstanceRequestBodyPaymentMethod values.
+func (LaunchInstanceRequestBodyPaymentMethod) AllValues() []LaunchInstanceRequestBodyPaymentMethod {
+	return []LaunchInstanceRequestBodyPaymentMethod{
+		LaunchInstanceRequestBodyPaymentMethodBalance,
+		LaunchInstanceRequestBodyPaymentMethodOnline,
+	}
+}
+
+// MarshalText implements encoding.TextMarshaler.
+func (s LaunchInstanceRequestBodyPaymentMethod) MarshalText() ([]byte, error) {
+	switch s {
+	case LaunchInstanceRequestBodyPaymentMethodBalance:
+		return []byte(s), nil
+	case LaunchInstanceRequestBodyPaymentMethodOnline:
+		return []byte(s), nil
+	default:
+		return nil, errors.Errorf("invalid value: %q", s)
+	}
+}
+
+// UnmarshalText implements encoding.TextUnmarshaler.
+func (s *LaunchInstanceRequestBodyPaymentMethod) UnmarshalText(data []byte) error {
+	switch LaunchInstanceRequestBodyPaymentMethod(data) {
+	case LaunchInstanceRequestBodyPaymentMethodBalance:
+		*s = LaunchInstanceRequestBodyPaymentMethodBalance
+		return nil
+	case LaunchInstanceRequestBodyPaymentMethodOnline:
+		*s = LaunchInstanceRequestBodyPaymentMethodOnline
+		return nil
+	default:
+		return errors.Errorf("invalid value: %q", data)
+	}
+}
+
 // Ref: #/components/schemas/LaunchInstanceResponseBody
 type LaunchInstanceResponseBody struct {
 	// Non-empty when only some of the instances were created, stating why the sequence stopped.
@@ -2596,6 +2762,12 @@ type LaunchInstanceResponseBody struct {
 	Instances []InstanceResource `json:"instances"`
 	// Returned only in this response; store it immediately. All instances of a batch share it.
 	Password string `json:"password"`
+	// Present only when `payment_method` was `online`: nothing was created. Send the customer here to pay.
+	//
+	// What comes back is not a resource but a bill to settle. Treating this response as a success and
+	// moving on is how something gets handed over without the money arriving — and it looks exactly like
+	// a normal creation from the outside.
+	CheckoutURL OptString `json:"checkout_url"`
 }
 
 // GetFailure returns the value of Failure.
@@ -2613,6 +2785,11 @@ func (s *LaunchInstanceResponseBody) GetPassword() string {
 	return s.Password
 }
 
+// GetCheckoutURL returns the value of CheckoutURL.
+func (s *LaunchInstanceResponseBody) GetCheckoutURL() OptString {
+	return s.CheckoutURL
+}
+
 // SetFailure sets the value of Failure.
 func (s *LaunchInstanceResponseBody) SetFailure(val NilString) {
 	s.Failure = val
@@ -2627,6 +2804,13 @@ func (s *LaunchInstanceResponseBody) SetInstances(val []InstanceResource) {
 func (s *LaunchInstanceResponseBody) SetPassword(val string) {
 	s.Password = val
 }
+
+// SetCheckoutURL sets the value of CheckoutURL.
+func (s *LaunchInstanceResponseBody) SetCheckoutURL(val OptString) {
+	s.CheckoutURL = val
+}
+
+func (*LaunchInstanceResponseBody) launchInstanceRes() {}
 
 // Ref: #/components/schemas/NextFreeCidrResponseBody
 type NextFreeCidrResponseBody struct {
@@ -3056,6 +3240,52 @@ func (o OptBool) Or(d bool) bool {
 	return d
 }
 
+// NewOptCreateDiskRequestBodyPaymentMethod returns new OptCreateDiskRequestBodyPaymentMethod with value set to v.
+func NewOptCreateDiskRequestBodyPaymentMethod(v CreateDiskRequestBodyPaymentMethod) OptCreateDiskRequestBodyPaymentMethod {
+	return OptCreateDiskRequestBodyPaymentMethod{
+		Value: v,
+		Set:   true,
+	}
+}
+
+// OptCreateDiskRequestBodyPaymentMethod is optional CreateDiskRequestBodyPaymentMethod.
+type OptCreateDiskRequestBodyPaymentMethod struct {
+	Value CreateDiskRequestBodyPaymentMethod
+	Set   bool
+}
+
+// IsSet returns true if OptCreateDiskRequestBodyPaymentMethod was set.
+func (o OptCreateDiskRequestBodyPaymentMethod) IsSet() bool { return o.Set }
+
+// Reset unsets value.
+func (o *OptCreateDiskRequestBodyPaymentMethod) Reset() {
+	var v CreateDiskRequestBodyPaymentMethod
+	o.Value = v
+	o.Set = false
+}
+
+// SetTo sets value to v.
+func (o *OptCreateDiskRequestBodyPaymentMethod) SetTo(v CreateDiskRequestBodyPaymentMethod) {
+	o.Set = true
+	o.Value = v
+}
+
+// Get returns value and boolean that denotes whether value was set.
+func (o OptCreateDiskRequestBodyPaymentMethod) Get() (v CreateDiskRequestBodyPaymentMethod, ok bool) {
+	if !o.Set {
+		return v, false
+	}
+	return o.Value, true
+}
+
+// Or returns value if set, or given parameter if does not.
+func (o OptCreateDiskRequestBodyPaymentMethod) Or(d CreateDiskRequestBodyPaymentMethod) CreateDiskRequestBodyPaymentMethod {
+	if v, ok := o.Get(); ok {
+		return v
+	}
+	return d
+}
+
 // NewOptErrorMeta returns new OptErrorMeta with value set to v.
 func NewOptErrorMeta(v ErrorMeta) OptErrorMeta {
 	return OptErrorMeta{
@@ -3142,6 +3372,52 @@ func (o OptInt64) Get() (v int64, ok bool) {
 
 // Or returns value if set, or given parameter if does not.
 func (o OptInt64) Or(d int64) int64 {
+	if v, ok := o.Get(); ok {
+		return v
+	}
+	return d
+}
+
+// NewOptLaunchInstanceRequestBodyPaymentMethod returns new OptLaunchInstanceRequestBodyPaymentMethod with value set to v.
+func NewOptLaunchInstanceRequestBodyPaymentMethod(v LaunchInstanceRequestBodyPaymentMethod) OptLaunchInstanceRequestBodyPaymentMethod {
+	return OptLaunchInstanceRequestBodyPaymentMethod{
+		Value: v,
+		Set:   true,
+	}
+}
+
+// OptLaunchInstanceRequestBodyPaymentMethod is optional LaunchInstanceRequestBodyPaymentMethod.
+type OptLaunchInstanceRequestBodyPaymentMethod struct {
+	Value LaunchInstanceRequestBodyPaymentMethod
+	Set   bool
+}
+
+// IsSet returns true if OptLaunchInstanceRequestBodyPaymentMethod was set.
+func (o OptLaunchInstanceRequestBodyPaymentMethod) IsSet() bool { return o.Set }
+
+// Reset unsets value.
+func (o *OptLaunchInstanceRequestBodyPaymentMethod) Reset() {
+	var v LaunchInstanceRequestBodyPaymentMethod
+	o.Value = v
+	o.Set = false
+}
+
+// SetTo sets value to v.
+func (o *OptLaunchInstanceRequestBodyPaymentMethod) SetTo(v LaunchInstanceRequestBodyPaymentMethod) {
+	o.Set = true
+	o.Value = v
+}
+
+// Get returns value and boolean that denotes whether value was set.
+func (o OptLaunchInstanceRequestBodyPaymentMethod) Get() (v LaunchInstanceRequestBodyPaymentMethod, ok bool) {
+	if !o.Set {
+		return v, false
+	}
+	return o.Value, true
+}
+
+// Or returns value if set, or given parameter if does not.
+func (o OptLaunchInstanceRequestBodyPaymentMethod) Or(d LaunchInstanceRequestBodyPaymentMethod) LaunchInstanceRequestBodyPaymentMethod {
 	if v, ok := o.Get(); ok {
 		return v
 	}

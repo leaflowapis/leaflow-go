@@ -1381,13 +1381,27 @@ func (s *CreateDiskRequestBody) encodeFields(e *jx.Encoder) {
 			s.SnapshotID.Encode(e)
 		}
 	}
+	{
+		if s.Term.Set {
+			e.FieldStart("term")
+			s.Term.Encode(e)
+		}
+	}
+	{
+		if s.PaymentMethod.Set {
+			e.FieldStart("payment_method")
+			s.PaymentMethod.Encode(e)
+		}
+	}
 }
 
-var jsonFieldsNameOfCreateDiskRequestBody = [4]string{
+var jsonFieldsNameOfCreateDiskRequestBody = [6]string{
 	0: "disk_type_id",
 	1: "name",
 	2: "size_gb",
 	3: "snapshot_id",
+	4: "term",
+	5: "payment_method",
 }
 
 // Decode decodes CreateDiskRequestBody from json.
@@ -1396,6 +1410,7 @@ func (s *CreateDiskRequestBody) Decode(d *jx.Decoder) error {
 		return errors.New("invalid: unable to decode CreateDiskRequestBody to nil")
 	}
 	var requiredBitSet [1]uint8
+	s.setDefaults()
 
 	if err := d.ObjBytes(func(d *jx.Decoder, k []byte) error {
 		switch string(k) {
@@ -1444,6 +1459,26 @@ func (s *CreateDiskRequestBody) Decode(d *jx.Decoder) error {
 				return nil
 			}(); err != nil {
 				return errors.Wrap(err, "decode field \"snapshot_id\"")
+			}
+		case "term":
+			if err := func() error {
+				s.Term.Reset()
+				if err := s.Term.Decode(d); err != nil {
+					return err
+				}
+				return nil
+			}(); err != nil {
+				return errors.Wrap(err, "decode field \"term\"")
+			}
+		case "payment_method":
+			if err := func() error {
+				s.PaymentMethod.Reset()
+				if err := s.PaymentMethod.Decode(d); err != nil {
+					return err
+				}
+				return nil
+			}(); err != nil {
+				return errors.Wrap(err, "decode field \"payment_method\"")
 			}
 		default:
 			return errors.Errorf("unexpected field %q", k)
@@ -1497,6 +1532,46 @@ func (s *CreateDiskRequestBody) MarshalJSON() ([]byte, error) {
 
 // UnmarshalJSON implements stdjson.Unmarshaler.
 func (s *CreateDiskRequestBody) UnmarshalJSON(data []byte) error {
+	d := jx.DecodeBytes(data)
+	return s.Decode(d)
+}
+
+// Encode encodes CreateDiskRequestBodyPaymentMethod as json.
+func (s CreateDiskRequestBodyPaymentMethod) Encode(e *jx.Encoder) {
+	e.Str(string(s))
+}
+
+// Decode decodes CreateDiskRequestBodyPaymentMethod from json.
+func (s *CreateDiskRequestBodyPaymentMethod) Decode(d *jx.Decoder) error {
+	if s == nil {
+		return errors.New("invalid: unable to decode CreateDiskRequestBodyPaymentMethod to nil")
+	}
+	v, err := d.StrBytes()
+	if err != nil {
+		return err
+	}
+	// Try to use constant string.
+	switch CreateDiskRequestBodyPaymentMethod(v) {
+	case CreateDiskRequestBodyPaymentMethodBalance:
+		*s = CreateDiskRequestBodyPaymentMethodBalance
+	case CreateDiskRequestBodyPaymentMethodOnline:
+		*s = CreateDiskRequestBodyPaymentMethodOnline
+	default:
+		*s = CreateDiskRequestBodyPaymentMethod(v)
+	}
+
+	return nil
+}
+
+// MarshalJSON implements stdjson.Marshaler.
+func (s CreateDiskRequestBodyPaymentMethod) MarshalJSON() ([]byte, error) {
+	e := jx.Encoder{}
+	s.Encode(&e)
+	return e.Bytes(), nil
+}
+
+// UnmarshalJSON implements stdjson.Unmarshaler.
+func (s *CreateDiskRequestBodyPaymentMethod) UnmarshalJSON(data []byte) error {
 	d := jx.DecodeBytes(data)
 	return s.Decode(d)
 }
@@ -5817,6 +5892,12 @@ func (s *LaunchInstanceRequestBody) encodeFields(e *jx.Encoder) {
 		}
 	}
 	{
+		if s.PaymentMethod.Set {
+			e.FieldStart("payment_method")
+			s.PaymentMethod.Encode(e)
+		}
+	}
+	{
 		if s.Term.Set {
 			e.FieldStart("term")
 			s.Term.Encode(e)
@@ -5842,7 +5923,7 @@ func (s *LaunchInstanceRequestBody) encodeFields(e *jx.Encoder) {
 	}
 }
 
-var jsonFieldsNameOfLaunchInstanceRequestBody = [14]string{
+var jsonFieldsNameOfLaunchInstanceRequestBody = [15]string{
 	0:  "count",
 	1:  "generate_password",
 	2:  "boot_disk_id",
@@ -5853,10 +5934,11 @@ var jsonFieldsNameOfLaunchInstanceRequestBody = [14]string{
 	7:  "password",
 	8:  "port_id",
 	9:  "private_image_id",
-	10: "term",
-	11: "root_disk_gb",
-	12: "security_group_ids",
-	13: "subnet_id",
+	10: "payment_method",
+	11: "term",
+	12: "root_disk_gb",
+	13: "security_group_ids",
+	14: "subnet_id",
 }
 
 // Decode decodes LaunchInstanceRequestBody from json.
@@ -5865,6 +5947,7 @@ func (s *LaunchInstanceRequestBody) Decode(d *jx.Decoder) error {
 		return errors.New("invalid: unable to decode LaunchInstanceRequestBody to nil")
 	}
 	var requiredBitSet [2]uint8
+	s.setDefaults()
 
 	if err := d.ObjBytes(func(d *jx.Decoder, k []byte) error {
 		switch string(k) {
@@ -5972,6 +6055,16 @@ func (s *LaunchInstanceRequestBody) Decode(d *jx.Decoder) error {
 			}(); err != nil {
 				return errors.Wrap(err, "decode field \"private_image_id\"")
 			}
+		case "payment_method":
+			if err := func() error {
+				s.PaymentMethod.Reset()
+				if err := s.PaymentMethod.Decode(d); err != nil {
+					return err
+				}
+				return nil
+			}(); err != nil {
+				return errors.Wrap(err, "decode field \"payment_method\"")
+			}
 		case "term":
 			if err := func() error {
 				s.Term.Reset()
@@ -6069,6 +6162,46 @@ func (s *LaunchInstanceRequestBody) UnmarshalJSON(data []byte) error {
 	return s.Decode(d)
 }
 
+// Encode encodes LaunchInstanceRequestBodyPaymentMethod as json.
+func (s LaunchInstanceRequestBodyPaymentMethod) Encode(e *jx.Encoder) {
+	e.Str(string(s))
+}
+
+// Decode decodes LaunchInstanceRequestBodyPaymentMethod from json.
+func (s *LaunchInstanceRequestBodyPaymentMethod) Decode(d *jx.Decoder) error {
+	if s == nil {
+		return errors.New("invalid: unable to decode LaunchInstanceRequestBodyPaymentMethod to nil")
+	}
+	v, err := d.StrBytes()
+	if err != nil {
+		return err
+	}
+	// Try to use constant string.
+	switch LaunchInstanceRequestBodyPaymentMethod(v) {
+	case LaunchInstanceRequestBodyPaymentMethodBalance:
+		*s = LaunchInstanceRequestBodyPaymentMethodBalance
+	case LaunchInstanceRequestBodyPaymentMethodOnline:
+		*s = LaunchInstanceRequestBodyPaymentMethodOnline
+	default:
+		*s = LaunchInstanceRequestBodyPaymentMethod(v)
+	}
+
+	return nil
+}
+
+// MarshalJSON implements stdjson.Marshaler.
+func (s LaunchInstanceRequestBodyPaymentMethod) MarshalJSON() ([]byte, error) {
+	e := jx.Encoder{}
+	s.Encode(&e)
+	return e.Bytes(), nil
+}
+
+// UnmarshalJSON implements stdjson.Unmarshaler.
+func (s *LaunchInstanceRequestBodyPaymentMethod) UnmarshalJSON(data []byte) error {
+	d := jx.DecodeBytes(data)
+	return s.Decode(d)
+}
+
 // Encode implements json.Marshaler.
 func (s *LaunchInstanceResponseBody) Encode(e *jx.Encoder) {
 	e.ObjStart()
@@ -6098,12 +6231,19 @@ func (s *LaunchInstanceResponseBody) encodeFields(e *jx.Encoder) {
 		e.FieldStart("password")
 		e.Str(s.Password)
 	}
+	{
+		if s.CheckoutURL.Set {
+			e.FieldStart("checkout_url")
+			s.CheckoutURL.Encode(e)
+		}
+	}
 }
 
-var jsonFieldsNameOfLaunchInstanceResponseBody = [3]string{
+var jsonFieldsNameOfLaunchInstanceResponseBody = [4]string{
 	0: "failure",
 	1: "instances",
 	2: "password",
+	3: "checkout_url",
 }
 
 // Decode decodes LaunchInstanceResponseBody from json.
@@ -6161,6 +6301,16 @@ func (s *LaunchInstanceResponseBody) Decode(d *jx.Decoder) error {
 				return nil
 			}(); err != nil {
 				return errors.Wrap(err, "decode field \"password\"")
+			}
+		case "checkout_url":
+			if err := func() error {
+				s.CheckoutURL.Reset()
+				if err := s.CheckoutURL.Decode(d); err != nil {
+					return err
+				}
+				return nil
+			}(); err != nil {
+				return errors.Wrap(err, "decode field \"checkout_url\"")
 			}
 		default:
 			return errors.Errorf("unexpected field %q", k)
@@ -6999,6 +7149,39 @@ func (s *OptBool) UnmarshalJSON(data []byte) error {
 	return s.Decode(d)
 }
 
+// Encode encodes CreateDiskRequestBodyPaymentMethod as json.
+func (o OptCreateDiskRequestBodyPaymentMethod) Encode(e *jx.Encoder) {
+	if !o.Set {
+		return
+	}
+	e.Str(string(o.Value))
+}
+
+// Decode decodes CreateDiskRequestBodyPaymentMethod from json.
+func (o *OptCreateDiskRequestBodyPaymentMethod) Decode(d *jx.Decoder) error {
+	if o == nil {
+		return errors.New("invalid: unable to decode OptCreateDiskRequestBodyPaymentMethod to nil")
+	}
+	o.Set = true
+	if err := o.Value.Decode(d); err != nil {
+		return err
+	}
+	return nil
+}
+
+// MarshalJSON implements stdjson.Marshaler.
+func (s OptCreateDiskRequestBodyPaymentMethod) MarshalJSON() ([]byte, error) {
+	e := jx.Encoder{}
+	s.Encode(&e)
+	return e.Bytes(), nil
+}
+
+// UnmarshalJSON implements stdjson.Unmarshaler.
+func (s *OptCreateDiskRequestBodyPaymentMethod) UnmarshalJSON(data []byte) error {
+	d := jx.DecodeBytes(data)
+	return s.Decode(d)
+}
+
 // Encode encodes ErrorMeta as json.
 func (o OptErrorMeta) Encode(e *jx.Encoder) {
 	if !o.Set {
@@ -7064,6 +7247,39 @@ func (s OptInt64) MarshalJSON() ([]byte, error) {
 
 // UnmarshalJSON implements stdjson.Unmarshaler.
 func (s *OptInt64) UnmarshalJSON(data []byte) error {
+	d := jx.DecodeBytes(data)
+	return s.Decode(d)
+}
+
+// Encode encodes LaunchInstanceRequestBodyPaymentMethod as json.
+func (o OptLaunchInstanceRequestBodyPaymentMethod) Encode(e *jx.Encoder) {
+	if !o.Set {
+		return
+	}
+	e.Str(string(o.Value))
+}
+
+// Decode decodes LaunchInstanceRequestBodyPaymentMethod from json.
+func (o *OptLaunchInstanceRequestBodyPaymentMethod) Decode(d *jx.Decoder) error {
+	if o == nil {
+		return errors.New("invalid: unable to decode OptLaunchInstanceRequestBodyPaymentMethod to nil")
+	}
+	o.Set = true
+	if err := o.Value.Decode(d); err != nil {
+		return err
+	}
+	return nil
+}
+
+// MarshalJSON implements stdjson.Marshaler.
+func (s OptLaunchInstanceRequestBodyPaymentMethod) MarshalJSON() ([]byte, error) {
+	e := jx.Encoder{}
+	s.Encode(&e)
+	return e.Bytes(), nil
+}
+
+// UnmarshalJSON implements stdjson.Unmarshaler.
+func (s *OptLaunchInstanceRequestBodyPaymentMethod) UnmarshalJSON(data []byte) error {
 	d := jx.DecodeBytes(data)
 	return s.Decode(d)
 }

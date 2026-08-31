@@ -969,6 +969,17 @@ func (s *PrepaidAsset) Validate() error {
 			Error: err,
 		})
 	}
+	if err := func() error {
+		if err := s.RenewalStatus.Validate(); err != nil {
+			return err
+		}
+		return nil
+	}(); err != nil {
+		failures = append(failures, validate.FieldError{
+			Name:  "renewal_status",
+			Error: err,
+		})
+	}
 	if len(failures) > 0 {
 		return &validate.Error{Fields: failures}
 	}
@@ -1026,6 +1037,19 @@ func (s *PrepaidAssetList) Validate() error {
 		return &validate.Error{Fields: failures}
 	}
 	return nil
+}
+
+func (s PrepaidAssetRenewalStatus) Validate() error {
+	switch s {
+	case "manual":
+		return nil
+	case "auto":
+		return nil
+	case "none":
+		return nil
+	default:
+		return errors.Errorf("invalid value: %v", s)
+	}
 }
 
 func (s PrepaidAssetState) Validate() error {
@@ -1463,6 +1487,42 @@ func (s *RenewRequestBody) Validate() error {
 		return &validate.Error{Fields: failures}
 	}
 	return nil
+}
+
+func (s *SetRenewalStatusRequestBody) Validate() error {
+	if s == nil {
+		return validate.ErrNilPointer
+	}
+
+	var failures []validate.FieldError
+	if err := func() error {
+		if err := s.Status.Validate(); err != nil {
+			return err
+		}
+		return nil
+	}(); err != nil {
+		failures = append(failures, validate.FieldError{
+			Name:  "status",
+			Error: err,
+		})
+	}
+	if len(failures) > 0 {
+		return &validate.Error{Fields: failures}
+	}
+	return nil
+}
+
+func (s SetRenewalStatusRequestBodyStatus) Validate() error {
+	switch s {
+	case "manual":
+		return nil
+	case "auto":
+		return nil
+	case "none":
+		return nil
+	default:
+		return errors.Errorf("invalid value: %v", s)
+	}
 }
 
 func (s *StartTopUpRequestBody) Validate() error {

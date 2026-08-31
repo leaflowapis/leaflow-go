@@ -70,7 +70,7 @@ type Handler interface {
 	// in the same zone to attach it. Choosing the disk type therefore determines the zone.
 	//
 	// POST /api/v1/disks
-	CreateDisk(ctx context.Context, req *CreateDiskRequestBody) (*DiskResource, error)
+	CreateDisk(ctx context.Context, req *CreateDiskRequestBody) (CreateDiskRes, error)
 	// CreatePort implements create-port operation.
 	//
 	// The new network interface is not attached to any instance. Primary network interfaces are not
@@ -362,7 +362,7 @@ type Handler interface {
 	// observe the outcome.
 	//
 	// POST /api/v1/instances
-	LaunchInstance(ctx context.Context, req *LaunchInstanceRequestBody) (*LaunchInstanceResponseBody, error)
+	LaunchInstance(ctx context.Context, req *LaunchInstanceRequestBody) (LaunchInstanceRes, error)
 	// ListAvailabilityZones implements list-availability-zones operation.
 	//
 	// A disk and an instance must reside in the same availability zone to be attached. Confirm the zone
