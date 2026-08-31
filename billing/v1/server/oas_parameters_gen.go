@@ -1439,6 +1439,93 @@ func decodeListOrdersParams(args [1]string, argsEscaped bool, r *http.Request) (
 	return params, nil
 }
 
+// ListPaymentMethodsParams is parameters of list-payment-methods operation.
+type ListPaymentMethodsParams struct {
+	// The account's key, of the form `u_<user_id>_<seq>`. Ownership is stated by the key itself, which is
+	// why the key is what addresses the account.
+	AccountKey string
+}
+
+func unpackListPaymentMethodsParams(packed middleware.Parameters) (params ListPaymentMethodsParams) {
+	{
+		key := middleware.ParameterKey{
+			Name: "accountKey",
+			In:   "path",
+		}
+		params.AccountKey = packed[key].(string)
+	}
+	return params
+}
+
+func decodeListPaymentMethodsParams(args [1]string, argsEscaped bool, r *http.Request) (params ListPaymentMethodsParams, _ error) {
+	// Decode path: accountKey.
+	if err := func() error {
+		param := args[0]
+		if argsEscaped {
+			unescaped, err := url.PathUnescape(args[0])
+			if err != nil {
+				return errors.Wrap(err, "unescape path")
+			}
+			param = unescaped
+		}
+		if len(param) > 0 {
+			d := uri.NewPathDecoder(uri.PathDecoderConfig{
+				Param:   "accountKey",
+				Value:   param,
+				Style:   uri.PathStyleSimple,
+				Explode: false,
+			})
+
+			if err := func() error {
+				val, err := d.DecodeValue()
+				if err != nil {
+					return err
+				}
+
+				c, err := conv.ToString(val)
+				if err != nil {
+					return err
+				}
+
+				params.AccountKey = c
+				return nil
+			}(); err != nil {
+				return err
+			}
+			if err := func() error {
+				if err := (validate.String{
+					MinLength:     3,
+					MinLengthSet:  true,
+					MaxLength:     128,
+					MaxLengthSet:  true,
+					Email:         false,
+					Hostname:      false,
+					Regex:         regexMap["^u_.+_[0-9]+$"],
+					MinNumeric:    0,
+					MinNumericSet: false,
+					MaxNumeric:    0,
+					MaxNumericSet: false,
+				}).Validate(string(params.AccountKey)); err != nil {
+					return errors.Wrap(err, "string")
+				}
+				return nil
+			}(); err != nil {
+				return err
+			}
+		} else {
+			return validate.ErrFieldRequired
+		}
+		return nil
+	}(); err != nil {
+		return params, &ogenerrors.DecodeParamError{
+			Name: "accountKey",
+			In:   "path",
+			Err:  err,
+		}
+	}
+	return params, nil
+}
+
 // ListPrepaidAssetsParams is parameters of list-prepaid-assets operation.
 type ListPrepaidAssetsParams struct {
 	// The account's key, of the form `u_<user_id>_<seq>`. Ownership is stated by the key itself, which is
@@ -2081,93 +2168,6 @@ func decodeReadBillingAccountBalanceParams(args [1]string, argsEscaped bool, r *
 	return params, nil
 }
 
-// ReadPaymentMethodParams is parameters of read-payment-method operation.
-type ReadPaymentMethodParams struct {
-	// The account's key, of the form `u_<user_id>_<seq>`. Ownership is stated by the key itself, which is
-	// why the key is what addresses the account.
-	AccountKey string
-}
-
-func unpackReadPaymentMethodParams(packed middleware.Parameters) (params ReadPaymentMethodParams) {
-	{
-		key := middleware.ParameterKey{
-			Name: "accountKey",
-			In:   "path",
-		}
-		params.AccountKey = packed[key].(string)
-	}
-	return params
-}
-
-func decodeReadPaymentMethodParams(args [1]string, argsEscaped bool, r *http.Request) (params ReadPaymentMethodParams, _ error) {
-	// Decode path: accountKey.
-	if err := func() error {
-		param := args[0]
-		if argsEscaped {
-			unescaped, err := url.PathUnescape(args[0])
-			if err != nil {
-				return errors.Wrap(err, "unescape path")
-			}
-			param = unescaped
-		}
-		if len(param) > 0 {
-			d := uri.NewPathDecoder(uri.PathDecoderConfig{
-				Param:   "accountKey",
-				Value:   param,
-				Style:   uri.PathStyleSimple,
-				Explode: false,
-			})
-
-			if err := func() error {
-				val, err := d.DecodeValue()
-				if err != nil {
-					return err
-				}
-
-				c, err := conv.ToString(val)
-				if err != nil {
-					return err
-				}
-
-				params.AccountKey = c
-				return nil
-			}(); err != nil {
-				return err
-			}
-			if err := func() error {
-				if err := (validate.String{
-					MinLength:     3,
-					MinLengthSet:  true,
-					MaxLength:     128,
-					MaxLengthSet:  true,
-					Email:         false,
-					Hostname:      false,
-					Regex:         regexMap["^u_.+_[0-9]+$"],
-					MinNumeric:    0,
-					MinNumericSet: false,
-					MaxNumeric:    0,
-					MaxNumericSet: false,
-				}).Validate(string(params.AccountKey)); err != nil {
-					return errors.Wrap(err, "string")
-				}
-				return nil
-			}(); err != nil {
-				return err
-			}
-		} else {
-			return validate.ErrFieldRequired
-		}
-		return nil
-	}(); err != nil {
-		return params, &ogenerrors.DecodeParamError{
-			Name: "accountKey",
-			In:   "path",
-			Err:  err,
-		}
-	}
-	return params, nil
-}
-
 // ReadProjectBillingAccountParams is parameters of read-project-billing-account operation.
 type ReadProjectBillingAccountParams struct {
 	// The project being worked in.
@@ -2482,14 +2482,15 @@ func decodeReadTopUpParams(args [2]string, argsEscaped bool, r *http.Request) (p
 	return params, nil
 }
 
-// StartBillingPortalParams is parameters of start-billing-portal operation.
-type StartBillingPortalParams struct {
+// RemovePaymentMethodParams is parameters of remove-payment-method operation.
+type RemovePaymentMethodParams struct {
 	// The account's key, of the form `u_<user_id>_<seq>`. Ownership is stated by the key itself, which is
 	// why the key is what addresses the account.
-	AccountKey string
+	AccountKey      string
+	PaymentMethodId string
 }
 
-func unpackStartBillingPortalParams(packed middleware.Parameters) (params StartBillingPortalParams) {
+func unpackRemovePaymentMethodParams(packed middleware.Parameters) (params RemovePaymentMethodParams) {
 	{
 		key := middleware.ParameterKey{
 			Name: "accountKey",
@@ -2497,10 +2498,17 @@ func unpackStartBillingPortalParams(packed middleware.Parameters) (params StartB
 		}
 		params.AccountKey = packed[key].(string)
 	}
+	{
+		key := middleware.ParameterKey{
+			Name: "paymentMethodId",
+			In:   "path",
+		}
+		params.PaymentMethodId = packed[key].(string)
+	}
 	return params
 }
 
-func decodeStartBillingPortalParams(args [1]string, argsEscaped bool, r *http.Request) (params StartBillingPortalParams, _ error) {
+func decodeRemovePaymentMethodParams(args [2]string, argsEscaped bool, r *http.Request) (params RemovePaymentMethodParams, _ error) {
 	// Decode path: accountKey.
 	if err := func() error {
 		param := args[0]
@@ -2562,6 +2570,231 @@ func decodeStartBillingPortalParams(args [1]string, argsEscaped bool, r *http.Re
 	}(); err != nil {
 		return params, &ogenerrors.DecodeParamError{
 			Name: "accountKey",
+			In:   "path",
+			Err:  err,
+		}
+	}
+	// Decode path: paymentMethodId.
+	if err := func() error {
+		param := args[1]
+		if argsEscaped {
+			unescaped, err := url.PathUnescape(args[1])
+			if err != nil {
+				return errors.Wrap(err, "unescape path")
+			}
+			param = unescaped
+		}
+		if len(param) > 0 {
+			d := uri.NewPathDecoder(uri.PathDecoderConfig{
+				Param:   "paymentMethodId",
+				Value:   param,
+				Style:   uri.PathStyleSimple,
+				Explode: false,
+			})
+
+			if err := func() error {
+				val, err := d.DecodeValue()
+				if err != nil {
+					return err
+				}
+
+				c, err := conv.ToString(val)
+				if err != nil {
+					return err
+				}
+
+				params.PaymentMethodId = c
+				return nil
+			}(); err != nil {
+				return err
+			}
+			if err := func() error {
+				if err := (validate.String{
+					MinLength:     1,
+					MinLengthSet:  true,
+					MaxLength:     255,
+					MaxLengthSet:  true,
+					Email:         false,
+					Hostname:      false,
+					Regex:         nil,
+					MinNumeric:    0,
+					MinNumericSet: false,
+					MaxNumeric:    0,
+					MaxNumericSet: false,
+				}).Validate(string(params.PaymentMethodId)); err != nil {
+					return errors.Wrap(err, "string")
+				}
+				return nil
+			}(); err != nil {
+				return err
+			}
+		} else {
+			return validate.ErrFieldRequired
+		}
+		return nil
+	}(); err != nil {
+		return params, &ogenerrors.DecodeParamError{
+			Name: "paymentMethodId",
+			In:   "path",
+			Err:  err,
+		}
+	}
+	return params, nil
+}
+
+// SetDefaultPaymentMethodParams is parameters of set-default-payment-method operation.
+type SetDefaultPaymentMethodParams struct {
+	// The account's key, of the form `u_<user_id>_<seq>`. Ownership is stated by the key itself, which is
+	// why the key is what addresses the account.
+	AccountKey      string
+	PaymentMethodId string
+}
+
+func unpackSetDefaultPaymentMethodParams(packed middleware.Parameters) (params SetDefaultPaymentMethodParams) {
+	{
+		key := middleware.ParameterKey{
+			Name: "accountKey",
+			In:   "path",
+		}
+		params.AccountKey = packed[key].(string)
+	}
+	{
+		key := middleware.ParameterKey{
+			Name: "paymentMethodId",
+			In:   "path",
+		}
+		params.PaymentMethodId = packed[key].(string)
+	}
+	return params
+}
+
+func decodeSetDefaultPaymentMethodParams(args [2]string, argsEscaped bool, r *http.Request) (params SetDefaultPaymentMethodParams, _ error) {
+	// Decode path: accountKey.
+	if err := func() error {
+		param := args[0]
+		if argsEscaped {
+			unescaped, err := url.PathUnescape(args[0])
+			if err != nil {
+				return errors.Wrap(err, "unescape path")
+			}
+			param = unescaped
+		}
+		if len(param) > 0 {
+			d := uri.NewPathDecoder(uri.PathDecoderConfig{
+				Param:   "accountKey",
+				Value:   param,
+				Style:   uri.PathStyleSimple,
+				Explode: false,
+			})
+
+			if err := func() error {
+				val, err := d.DecodeValue()
+				if err != nil {
+					return err
+				}
+
+				c, err := conv.ToString(val)
+				if err != nil {
+					return err
+				}
+
+				params.AccountKey = c
+				return nil
+			}(); err != nil {
+				return err
+			}
+			if err := func() error {
+				if err := (validate.String{
+					MinLength:     3,
+					MinLengthSet:  true,
+					MaxLength:     128,
+					MaxLengthSet:  true,
+					Email:         false,
+					Hostname:      false,
+					Regex:         regexMap["^u_.+_[0-9]+$"],
+					MinNumeric:    0,
+					MinNumericSet: false,
+					MaxNumeric:    0,
+					MaxNumericSet: false,
+				}).Validate(string(params.AccountKey)); err != nil {
+					return errors.Wrap(err, "string")
+				}
+				return nil
+			}(); err != nil {
+				return err
+			}
+		} else {
+			return validate.ErrFieldRequired
+		}
+		return nil
+	}(); err != nil {
+		return params, &ogenerrors.DecodeParamError{
+			Name: "accountKey",
+			In:   "path",
+			Err:  err,
+		}
+	}
+	// Decode path: paymentMethodId.
+	if err := func() error {
+		param := args[1]
+		if argsEscaped {
+			unescaped, err := url.PathUnescape(args[1])
+			if err != nil {
+				return errors.Wrap(err, "unescape path")
+			}
+			param = unescaped
+		}
+		if len(param) > 0 {
+			d := uri.NewPathDecoder(uri.PathDecoderConfig{
+				Param:   "paymentMethodId",
+				Value:   param,
+				Style:   uri.PathStyleSimple,
+				Explode: false,
+			})
+
+			if err := func() error {
+				val, err := d.DecodeValue()
+				if err != nil {
+					return err
+				}
+
+				c, err := conv.ToString(val)
+				if err != nil {
+					return err
+				}
+
+				params.PaymentMethodId = c
+				return nil
+			}(); err != nil {
+				return err
+			}
+			if err := func() error {
+				if err := (validate.String{
+					MinLength:     1,
+					MinLengthSet:  true,
+					MaxLength:     255,
+					MaxLengthSet:  true,
+					Email:         false,
+					Hostname:      false,
+					Regex:         nil,
+					MinNumeric:    0,
+					MinNumericSet: false,
+					MaxNumeric:    0,
+					MaxNumericSet: false,
+				}).Validate(string(params.PaymentMethodId)); err != nil {
+					return errors.Wrap(err, "string")
+				}
+				return nil
+			}(); err != nil {
+				return err
+			}
+		} else {
+			return validate.ErrFieldRequired
+		}
+		return nil
+	}(); err != nil {
+		return params, &ogenerrors.DecodeParamError{
+			Name: "paymentMethodId",
 			In:   "path",
 			Err:  err,
 		}

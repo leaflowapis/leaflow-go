@@ -2751,6 +2751,223 @@ func (s *Server) handleListOrdersRequest(args [1]string, argsEscaped bool, w htt
 	}
 }
 
+// handleListPaymentMethodsRequest handles list-payment-methods operation.
+//
+// Every method saved against this account, and which one an invoice will be charged to.
+//
+// # Why the brand, last four and expiry are here
+//
+// They were deliberately absent while the billing engine held the card, because the answer that
+// mattered — can money be collected — came from the engine, and a page built on the provider's
+// answer could show a method the engine had not recorded. Collection now runs from this service
+// against the provider directly, so there is one answer, and it is the one shown.
+//
+// Expiry is the reason this is worth showing at all: a card expires, the invoice then fails, dunning
+// runs out, and the project stops — with the account holder watching it happen and no indication
+// that a card was the cause.
+//
+// No other card data exists here. The number, the expiry entered by the holder and the CVC go from the
+// browser to the provider and never reach this platform.
+//
+// An account that has never added one returns an empty list. That is the normal state of a new
+// account, not an error.
+//
+// GET /account/v1/billing-accounts/{accountKey}/payment-methods
+func (s *Server) handleListPaymentMethodsRequest(args [1]string, argsEscaped bool, w http.ResponseWriter, r *http.Request) {
+	statusWriter := &codeRecorder{ResponseWriter: w}
+	w = statusWriter
+	otelAttrs := []attribute.KeyValue{
+		otelogen.OperationID("list-payment-methods"),
+		semconv.HTTPRequestMethodKey.String("GET"),
+		semconv.HTTPRouteKey.String("/account/v1/billing-accounts/{accountKey}/payment-methods"),
+	}
+	// Add attributes from config.
+	otelAttrs = append(otelAttrs, s.cfg.Attributes...)
+
+	// Start a span for this request.
+	ctx, span := s.cfg.Tracer.Start(r.Context(), ListPaymentMethodsOperation,
+		trace.WithAttributes(otelAttrs...),
+		serverSpanKind,
+	)
+	defer span.End()
+
+	// Add Labeler to context.
+	labeler := &Labeler{attrs: otelAttrs}
+	ctx = contextWithLabeler(ctx, labeler)
+
+	// Run stopwatch.
+	startTime := time.Now()
+	defer func() {
+		elapsedDuration := time.Since(startTime)
+
+		attrSet := labeler.AttributeSet()
+		attrs := attrSet.ToSlice()
+		code := statusWriter.status
+		if code != 0 {
+			codeAttr := semconv.HTTPResponseStatusCode(code)
+			attrs = append(attrs, codeAttr)
+			span.SetAttributes(attrs...)
+		}
+		attrOpt := metric.WithAttributes(attrs...)
+
+		// Increment request counter.
+		s.requests.Add(ctx, 1, attrOpt)
+
+		// Use floating point division here for higher precision (instead of Millisecond method).
+		s.duration.Record(ctx, float64(elapsedDuration)/float64(time.Millisecond), attrOpt)
+	}()
+
+	var (
+		recordError = func(stage string, err error) {
+			span.RecordError(err)
+
+			// https://opentelemetry.io/docs/specs/semconv/http/http-spans/#status
+			// Span Status MUST be left unset if HTTP status code was in the 1xx, 2xx or 3xx ranges,
+			// unless there was another error (e.g., network error receiving the response body; or 3xx codes with
+			// max redirects exceeded), in which case status MUST be set to Error.
+			code := statusWriter.status
+			if code < 100 || code >= 500 {
+				span.SetStatus(codes.Error, stage)
+			}
+
+			attrSet := labeler.AttributeSet()
+			attrs := attrSet.ToSlice()
+			if code != 0 {
+				attrs = append(attrs, semconv.HTTPResponseStatusCode(code))
+			}
+
+			s.errors.Add(ctx, 1, metric.WithAttributes(attrs...))
+		}
+		err          error
+		opErrContext = ogenerrors.OperationContext{
+			Name: ListPaymentMethodsOperation,
+			ID:   "list-payment-methods",
+		}
+	)
+	{
+		type bitset = [1]uint8
+		var satisfied bitset
+		{
+			sctx, ok, err := s.securityBearerAuth(ctx, ListPaymentMethodsOperation, r)
+			if err != nil {
+				err = &ogenerrors.SecurityError{
+					OperationContext: opErrContext,
+					Security:         "BearerAuth",
+					Err:              err,
+				}
+				if encodeErr := encodeErrorResponse(s.h.NewError(ctx, err), w, span); encodeErr != nil {
+					defer recordError("Security:BearerAuth", err)
+				}
+				return
+			}
+			if ok {
+				satisfied[0] |= 1 << 0
+				ctx = sctx
+			}
+		}
+
+		if ok := func() bool {
+		nextRequirement:
+			for _, requirement := range []bitset{
+				{0b00000001},
+			} {
+				for i, mask := range requirement {
+					if satisfied[i]&mask != mask {
+						continue nextRequirement
+					}
+				}
+				return true
+			}
+			return false
+		}(); !ok {
+			err = &ogenerrors.SecurityError{
+				OperationContext: opErrContext,
+				Err:              ogenerrors.ErrSecurityRequirementIsNotSatisfied,
+			}
+			if encodeErr := encodeErrorResponse(s.h.NewError(ctx, err), w, span); encodeErr != nil {
+				defer recordError("Security", err)
+			}
+			return
+		}
+	}
+	params, err := decodeListPaymentMethodsParams(args, argsEscaped, r)
+	if err != nil {
+		err = &ogenerrors.DecodeParamsError{
+			OperationContext: opErrContext,
+			Err:              err,
+		}
+		defer recordError("DecodeParams", err)
+		s.cfg.ErrorHandler(ctx, w, r, err)
+		return
+	}
+
+	var rawBody []byte
+
+	var response *PaymentMethodList
+	if m := s.cfg.Middleware; m != nil {
+		mreq := middleware.Request{
+			Context:          ctx,
+			OperationName:    ListPaymentMethodsOperation,
+			OperationSummary: "The payment methods on file",
+			OperationID:      "list-payment-methods",
+			Body:             nil,
+			RawBody:          rawBody,
+			Params: middleware.Parameters{
+				{
+					Name: "accountKey",
+					In:   "path",
+				}: params.AccountKey,
+			},
+			Raw: r,
+		}
+
+		type (
+			Request  = struct{}
+			Params   = ListPaymentMethodsParams
+			Response = *PaymentMethodList
+		)
+		response, err = middleware.HookMiddleware[
+			Request,
+			Params,
+			Response,
+		](
+			m,
+			mreq,
+			unpackListPaymentMethodsParams,
+			func(ctx context.Context, request Request, params Params) (response Response, err error) {
+				response, err = s.h.ListPaymentMethods(ctx, params)
+				return response, err
+			},
+		)
+	} else {
+		response, err = s.h.ListPaymentMethods(ctx, params)
+	}
+	if err != nil {
+		if errRes, ok := errors.Into[*ErrorStatusCode](err); ok {
+			if err := encodeErrorResponse(errRes, w, span); err != nil {
+				defer recordError("Internal", err)
+			}
+			return
+		}
+		if errors.Is(err, ht.ErrNotImplemented) {
+			s.cfg.ErrorHandler(ctx, w, r, err)
+			return
+		}
+		if err := encodeErrorResponse(s.h.NewError(ctx, err), w, span); err != nil {
+			defer recordError("Internal", err)
+		}
+		return
+	}
+
+	if err := encodeListPaymentMethodsResponse(response, w, span); err != nil {
+		defer recordError("EncodeResponse", err)
+		if !errors.Is(err, ht.ErrInternalServerErrorResponse) {
+			s.cfg.ErrorHandler(ctx, w, r, err)
+		}
+		return
+	}
+}
+
 // handleListPrepaidAssetsRequest handles list-prepaid-assets operation.
 //
 // Everything this account holds on a term, across every product.
@@ -4092,232 +4309,6 @@ func (s *Server) handleReadBillingAccountBalanceRequest(args [1]string, argsEsca
 	}
 }
 
-// handleReadPaymentMethodRequest handles read-payment-method operation.
-//
-// Answers whether a payment method is on file, and nothing else.
-//
-// # It is a payment method, not a card
-//
-// A card is one kind. Direct debit and the recurring-payment mandates offered by regional wallets are
-// others, and they occupy the same slot: something the provider can charge later without the account
-// holder present. Naming the slot after cards would put an assumption into the contract that stops
-// being true the day a second kind is accepted.
-//
-// # Why there is no brand, no last four digits, no expiry
-//
-// Those would have to be read from the payment provider, and the two answers can disagree: a method
-// present at the provider that the billing engine has not recorded as the default is exactly the state
-// in which money cannot be collected — while a page built on the provider's answer would be showing
-// one. What matters here is whether the party that will run the charge believes it can, so the answer
-// comes from that party alone.
-//
-// To see it, replace it, or remove it, open the billing portal.
-//
-// # Read this before offering a paid plan, not after
-//
-// `ready` being false is why the engine refuses to start a paid subscription. Discovering it at
-// purchase time turns a missing payment method into a rejection whose wording is about something else
-// entirely.
-//
-// An account that has never had one returns `ready: false`. That is the normal state of a new account,
-// not an error.
-//
-// GET /account/v1/billing-accounts/{accountKey}/payment-method
-func (s *Server) handleReadPaymentMethodRequest(args [1]string, argsEscaped bool, w http.ResponseWriter, r *http.Request) {
-	statusWriter := &codeRecorder{ResponseWriter: w}
-	w = statusWriter
-	otelAttrs := []attribute.KeyValue{
-		otelogen.OperationID("read-payment-method"),
-		semconv.HTTPRequestMethodKey.String("GET"),
-		semconv.HTTPRouteKey.String("/account/v1/billing-accounts/{accountKey}/payment-method"),
-	}
-	// Add attributes from config.
-	otelAttrs = append(otelAttrs, s.cfg.Attributes...)
-
-	// Start a span for this request.
-	ctx, span := s.cfg.Tracer.Start(r.Context(), ReadPaymentMethodOperation,
-		trace.WithAttributes(otelAttrs...),
-		serverSpanKind,
-	)
-	defer span.End()
-
-	// Add Labeler to context.
-	labeler := &Labeler{attrs: otelAttrs}
-	ctx = contextWithLabeler(ctx, labeler)
-
-	// Run stopwatch.
-	startTime := time.Now()
-	defer func() {
-		elapsedDuration := time.Since(startTime)
-
-		attrSet := labeler.AttributeSet()
-		attrs := attrSet.ToSlice()
-		code := statusWriter.status
-		if code != 0 {
-			codeAttr := semconv.HTTPResponseStatusCode(code)
-			attrs = append(attrs, codeAttr)
-			span.SetAttributes(attrs...)
-		}
-		attrOpt := metric.WithAttributes(attrs...)
-
-		// Increment request counter.
-		s.requests.Add(ctx, 1, attrOpt)
-
-		// Use floating point division here for higher precision (instead of Millisecond method).
-		s.duration.Record(ctx, float64(elapsedDuration)/float64(time.Millisecond), attrOpt)
-	}()
-
-	var (
-		recordError = func(stage string, err error) {
-			span.RecordError(err)
-
-			// https://opentelemetry.io/docs/specs/semconv/http/http-spans/#status
-			// Span Status MUST be left unset if HTTP status code was in the 1xx, 2xx or 3xx ranges,
-			// unless there was another error (e.g., network error receiving the response body; or 3xx codes with
-			// max redirects exceeded), in which case status MUST be set to Error.
-			code := statusWriter.status
-			if code < 100 || code >= 500 {
-				span.SetStatus(codes.Error, stage)
-			}
-
-			attrSet := labeler.AttributeSet()
-			attrs := attrSet.ToSlice()
-			if code != 0 {
-				attrs = append(attrs, semconv.HTTPResponseStatusCode(code))
-			}
-
-			s.errors.Add(ctx, 1, metric.WithAttributes(attrs...))
-		}
-		err          error
-		opErrContext = ogenerrors.OperationContext{
-			Name: ReadPaymentMethodOperation,
-			ID:   "read-payment-method",
-		}
-	)
-	{
-		type bitset = [1]uint8
-		var satisfied bitset
-		{
-			sctx, ok, err := s.securityBearerAuth(ctx, ReadPaymentMethodOperation, r)
-			if err != nil {
-				err = &ogenerrors.SecurityError{
-					OperationContext: opErrContext,
-					Security:         "BearerAuth",
-					Err:              err,
-				}
-				if encodeErr := encodeErrorResponse(s.h.NewError(ctx, err), w, span); encodeErr != nil {
-					defer recordError("Security:BearerAuth", err)
-				}
-				return
-			}
-			if ok {
-				satisfied[0] |= 1 << 0
-				ctx = sctx
-			}
-		}
-
-		if ok := func() bool {
-		nextRequirement:
-			for _, requirement := range []bitset{
-				{0b00000001},
-			} {
-				for i, mask := range requirement {
-					if satisfied[i]&mask != mask {
-						continue nextRequirement
-					}
-				}
-				return true
-			}
-			return false
-		}(); !ok {
-			err = &ogenerrors.SecurityError{
-				OperationContext: opErrContext,
-				Err:              ogenerrors.ErrSecurityRequirementIsNotSatisfied,
-			}
-			if encodeErr := encodeErrorResponse(s.h.NewError(ctx, err), w, span); encodeErr != nil {
-				defer recordError("Security", err)
-			}
-			return
-		}
-	}
-	params, err := decodeReadPaymentMethodParams(args, argsEscaped, r)
-	if err != nil {
-		err = &ogenerrors.DecodeParamsError{
-			OperationContext: opErrContext,
-			Err:              err,
-		}
-		defer recordError("DecodeParams", err)
-		s.cfg.ErrorHandler(ctx, w, r, err)
-		return
-	}
-
-	var rawBody []byte
-
-	var response *PaymentMethod
-	if m := s.cfg.Middleware; m != nil {
-		mreq := middleware.Request{
-			Context:          ctx,
-			OperationName:    ReadPaymentMethodOperation,
-			OperationSummary: "Whether this account can be charged",
-			OperationID:      "read-payment-method",
-			Body:             nil,
-			RawBody:          rawBody,
-			Params: middleware.Parameters{
-				{
-					Name: "accountKey",
-					In:   "path",
-				}: params.AccountKey,
-			},
-			Raw: r,
-		}
-
-		type (
-			Request  = struct{}
-			Params   = ReadPaymentMethodParams
-			Response = *PaymentMethod
-		)
-		response, err = middleware.HookMiddleware[
-			Request,
-			Params,
-			Response,
-		](
-			m,
-			mreq,
-			unpackReadPaymentMethodParams,
-			func(ctx context.Context, request Request, params Params) (response Response, err error) {
-				response, err = s.h.ReadPaymentMethod(ctx, params)
-				return response, err
-			},
-		)
-	} else {
-		response, err = s.h.ReadPaymentMethod(ctx, params)
-	}
-	if err != nil {
-		if errRes, ok := errors.Into[*ErrorStatusCode](err); ok {
-			if err := encodeErrorResponse(errRes, w, span); err != nil {
-				defer recordError("Internal", err)
-			}
-			return
-		}
-		if errors.Is(err, ht.ErrNotImplemented) {
-			s.cfg.ErrorHandler(ctx, w, r, err)
-			return
-		}
-		if err := encodeErrorResponse(s.h.NewError(ctx, err), w, span); err != nil {
-			defer recordError("Internal", err)
-		}
-		return
-	}
-
-	if err := encodeReadPaymentMethodResponse(response, w, span); err != nil {
-		defer recordError("EncodeResponse", err)
-		if !errors.Is(err, ht.ErrInternalServerErrorResponse) {
-			s.cfg.ErrorHandler(ctx, w, r, err)
-		}
-		return
-	}
-}
-
 // handleReadProjectBillingAccountRequest handles read-project-billing-account operation.
 //
 // The account a project's resources are charged to, resolved from the project rather than guessed.
@@ -4954,39 +4945,30 @@ func (s *Server) handleReadTopUpRequest(args [2]string, argsEscaped bool, w http
 	}
 }
 
-// handleStartBillingPortalRequest handles start-billing-portal operation.
+// handleRemovePaymentMethodRequest handles remove-payment-method operation.
 //
-// Returns a URL to the payment provider's own portal, where the card can be replaced or removed, the
-// billing address changed, and past invoices downloaded.
+// Detaches it from this account. Removing the last one is allowed.
 //
-// # Why replacing a card is not a form on this platform
+// # Why removing the last one is not blocked
 //
-// A form would mean a card number field, and no card data ever reaches this platform. The portal moves
-// the whole interaction to the provider; only a session URL comes back.
+// Blocking it leaves an account holder who wants to stop paying with no way out. The cost of allowing
+// it is that later invoices cannot be collected — and that path has notice, a grace period and a way
+// back. A card that cannot be removed is a dead end.
 //
-// # Something has to be able to replace an expiring card
-//
-// Cards expire. Once one does, the invoices for a plan stop being collectable, dunning runs out, and
-// the projects paid for by this account are suspended for non-payment. Without this operation the
-// account holder watches that happen with nowhere to fix it — adding a card does not help, since
-// that operation only makes sense when there is none.
-//
-// The URL is single-use and expires. Do not store it.
-//
-// POST /account/v1/billing-accounts/{accountKey}/billing-portal
-func (s *Server) handleStartBillingPortalRequest(args [1]string, argsEscaped bool, w http.ResponseWriter, r *http.Request) {
+// DELETE /account/v1/billing-accounts/{accountKey}/payment-methods/{paymentMethodId}
+func (s *Server) handleRemovePaymentMethodRequest(args [2]string, argsEscaped bool, w http.ResponseWriter, r *http.Request) {
 	statusWriter := &codeRecorder{ResponseWriter: w}
 	w = statusWriter
 	otelAttrs := []attribute.KeyValue{
-		otelogen.OperationID("start-billing-portal"),
-		semconv.HTTPRequestMethodKey.String("POST"),
-		semconv.HTTPRouteKey.String("/account/v1/billing-accounts/{accountKey}/billing-portal"),
+		otelogen.OperationID("remove-payment-method"),
+		semconv.HTTPRequestMethodKey.String("DELETE"),
+		semconv.HTTPRouteKey.String("/account/v1/billing-accounts/{accountKey}/payment-methods/{paymentMethodId}"),
 	}
 	// Add attributes from config.
 	otelAttrs = append(otelAttrs, s.cfg.Attributes...)
 
 	// Start a span for this request.
-	ctx, span := s.cfg.Tracer.Start(r.Context(), StartBillingPortalOperation,
+	ctx, span := s.cfg.Tracer.Start(r.Context(), RemovePaymentMethodOperation,
 		trace.WithAttributes(otelAttrs...),
 		serverSpanKind,
 	)
@@ -5041,15 +5023,15 @@ func (s *Server) handleStartBillingPortalRequest(args [1]string, argsEscaped boo
 		}
 		err          error
 		opErrContext = ogenerrors.OperationContext{
-			Name: StartBillingPortalOperation,
-			ID:   "start-billing-portal",
+			Name: RemovePaymentMethodOperation,
+			ID:   "remove-payment-method",
 		}
 	)
 	{
 		type bitset = [1]uint8
 		var satisfied bitset
 		{
-			sctx, ok, err := s.securityBearerAuth(ctx, StartBillingPortalOperation, r)
+			sctx, ok, err := s.securityBearerAuth(ctx, RemovePaymentMethodOperation, r)
 			if err != nil {
 				err = &ogenerrors.SecurityError{
 					OperationContext: opErrContext,
@@ -5091,7 +5073,7 @@ func (s *Server) handleStartBillingPortalRequest(args [1]string, argsEscaped boo
 			return
 		}
 	}
-	params, err := decodeStartBillingPortalParams(args, argsEscaped, r)
+	params, err := decodeRemovePaymentMethodParams(args, argsEscaped, r)
 	if err != nil {
 		err = &ogenerrors.DecodeParamsError{
 			OperationContext: opErrContext,
@@ -5104,13 +5086,13 @@ func (s *Server) handleStartBillingPortalRequest(args [1]string, argsEscaped boo
 
 	var rawBody []byte
 
-	var response *BillingPortalSession
+	var response *RemovePaymentMethodNoContent
 	if m := s.cfg.Middleware; m != nil {
 		mreq := middleware.Request{
 			Context:          ctx,
-			OperationName:    StartBillingPortalOperation,
-			OperationSummary: "Open the hosted billing portal",
-			OperationID:      "start-billing-portal",
+			OperationName:    RemovePaymentMethodOperation,
+			OperationSummary: "Remove a payment method",
+			OperationID:      "remove-payment-method",
 			Body:             nil,
 			RawBody:          rawBody,
 			Params: middleware.Parameters{
@@ -5118,14 +5100,18 @@ func (s *Server) handleStartBillingPortalRequest(args [1]string, argsEscaped boo
 					Name: "accountKey",
 					In:   "path",
 				}: params.AccountKey,
+				{
+					Name: "paymentMethodId",
+					In:   "path",
+				}: params.PaymentMethodId,
 			},
 			Raw: r,
 		}
 
 		type (
 			Request  = struct{}
-			Params   = StartBillingPortalParams
-			Response = *BillingPortalSession
+			Params   = RemovePaymentMethodParams
+			Response = *RemovePaymentMethodNoContent
 		)
 		response, err = middleware.HookMiddleware[
 			Request,
@@ -5134,14 +5120,14 @@ func (s *Server) handleStartBillingPortalRequest(args [1]string, argsEscaped boo
 		](
 			m,
 			mreq,
-			unpackStartBillingPortalParams,
+			unpackRemovePaymentMethodParams,
 			func(ctx context.Context, request Request, params Params) (response Response, err error) {
-				response, err = s.h.StartBillingPortal(ctx, params)
+				err = s.h.RemovePaymentMethod(ctx, params)
 				return response, err
 			},
 		)
 	} else {
-		response, err = s.h.StartBillingPortal(ctx, params)
+		err = s.h.RemovePaymentMethod(ctx, params)
 	}
 	if err != nil {
 		if errRes, ok := errors.Into[*ErrorStatusCode](err); ok {
@@ -5160,7 +5146,217 @@ func (s *Server) handleStartBillingPortalRequest(args [1]string, argsEscaped boo
 		return
 	}
 
-	if err := encodeStartBillingPortalResponse(response, w, span); err != nil {
+	if err := encodeRemovePaymentMethodResponse(response, w, span); err != nil {
+		defer recordError("EncodeResponse", err)
+		if !errors.Is(err, ht.ErrInternalServerErrorResponse) {
+			s.cfg.ErrorHandler(ctx, w, r, err)
+		}
+		return
+	}
+}
+
+// handleSetDefaultPaymentMethodRequest handles set-default-payment-method operation.
+//
+// Makes this the method an invoice is collected from.
+//
+// # It is stored at the provider, not here
+//
+// The charge itself reads that setting from the provider, so keeping a second copy here would create
+// two answers to the same question. When they disagree the visible symptom is that the account holder
+// changed the default and the charge still went to the old one.
+//
+// PUT /account/v1/billing-accounts/{accountKey}/payment-methods/{paymentMethodId}/default
+func (s *Server) handleSetDefaultPaymentMethodRequest(args [2]string, argsEscaped bool, w http.ResponseWriter, r *http.Request) {
+	statusWriter := &codeRecorder{ResponseWriter: w}
+	w = statusWriter
+	otelAttrs := []attribute.KeyValue{
+		otelogen.OperationID("set-default-payment-method"),
+		semconv.HTTPRequestMethodKey.String("PUT"),
+		semconv.HTTPRouteKey.String("/account/v1/billing-accounts/{accountKey}/payment-methods/{paymentMethodId}/default"),
+	}
+	// Add attributes from config.
+	otelAttrs = append(otelAttrs, s.cfg.Attributes...)
+
+	// Start a span for this request.
+	ctx, span := s.cfg.Tracer.Start(r.Context(), SetDefaultPaymentMethodOperation,
+		trace.WithAttributes(otelAttrs...),
+		serverSpanKind,
+	)
+	defer span.End()
+
+	// Add Labeler to context.
+	labeler := &Labeler{attrs: otelAttrs}
+	ctx = contextWithLabeler(ctx, labeler)
+
+	// Run stopwatch.
+	startTime := time.Now()
+	defer func() {
+		elapsedDuration := time.Since(startTime)
+
+		attrSet := labeler.AttributeSet()
+		attrs := attrSet.ToSlice()
+		code := statusWriter.status
+		if code != 0 {
+			codeAttr := semconv.HTTPResponseStatusCode(code)
+			attrs = append(attrs, codeAttr)
+			span.SetAttributes(attrs...)
+		}
+		attrOpt := metric.WithAttributes(attrs...)
+
+		// Increment request counter.
+		s.requests.Add(ctx, 1, attrOpt)
+
+		// Use floating point division here for higher precision (instead of Millisecond method).
+		s.duration.Record(ctx, float64(elapsedDuration)/float64(time.Millisecond), attrOpt)
+	}()
+
+	var (
+		recordError = func(stage string, err error) {
+			span.RecordError(err)
+
+			// https://opentelemetry.io/docs/specs/semconv/http/http-spans/#status
+			// Span Status MUST be left unset if HTTP status code was in the 1xx, 2xx or 3xx ranges,
+			// unless there was another error (e.g., network error receiving the response body; or 3xx codes with
+			// max redirects exceeded), in which case status MUST be set to Error.
+			code := statusWriter.status
+			if code < 100 || code >= 500 {
+				span.SetStatus(codes.Error, stage)
+			}
+
+			attrSet := labeler.AttributeSet()
+			attrs := attrSet.ToSlice()
+			if code != 0 {
+				attrs = append(attrs, semconv.HTTPResponseStatusCode(code))
+			}
+
+			s.errors.Add(ctx, 1, metric.WithAttributes(attrs...))
+		}
+		err          error
+		opErrContext = ogenerrors.OperationContext{
+			Name: SetDefaultPaymentMethodOperation,
+			ID:   "set-default-payment-method",
+		}
+	)
+	{
+		type bitset = [1]uint8
+		var satisfied bitset
+		{
+			sctx, ok, err := s.securityBearerAuth(ctx, SetDefaultPaymentMethodOperation, r)
+			if err != nil {
+				err = &ogenerrors.SecurityError{
+					OperationContext: opErrContext,
+					Security:         "BearerAuth",
+					Err:              err,
+				}
+				if encodeErr := encodeErrorResponse(s.h.NewError(ctx, err), w, span); encodeErr != nil {
+					defer recordError("Security:BearerAuth", err)
+				}
+				return
+			}
+			if ok {
+				satisfied[0] |= 1 << 0
+				ctx = sctx
+			}
+		}
+
+		if ok := func() bool {
+		nextRequirement:
+			for _, requirement := range []bitset{
+				{0b00000001},
+			} {
+				for i, mask := range requirement {
+					if satisfied[i]&mask != mask {
+						continue nextRequirement
+					}
+				}
+				return true
+			}
+			return false
+		}(); !ok {
+			err = &ogenerrors.SecurityError{
+				OperationContext: opErrContext,
+				Err:              ogenerrors.ErrSecurityRequirementIsNotSatisfied,
+			}
+			if encodeErr := encodeErrorResponse(s.h.NewError(ctx, err), w, span); encodeErr != nil {
+				defer recordError("Security", err)
+			}
+			return
+		}
+	}
+	params, err := decodeSetDefaultPaymentMethodParams(args, argsEscaped, r)
+	if err != nil {
+		err = &ogenerrors.DecodeParamsError{
+			OperationContext: opErrContext,
+			Err:              err,
+		}
+		defer recordError("DecodeParams", err)
+		s.cfg.ErrorHandler(ctx, w, r, err)
+		return
+	}
+
+	var rawBody []byte
+
+	var response *SetDefaultPaymentMethodNoContent
+	if m := s.cfg.Middleware; m != nil {
+		mreq := middleware.Request{
+			Context:          ctx,
+			OperationName:    SetDefaultPaymentMethodOperation,
+			OperationSummary: "Charge invoices to this one",
+			OperationID:      "set-default-payment-method",
+			Body:             nil,
+			RawBody:          rawBody,
+			Params: middleware.Parameters{
+				{
+					Name: "accountKey",
+					In:   "path",
+				}: params.AccountKey,
+				{
+					Name: "paymentMethodId",
+					In:   "path",
+				}: params.PaymentMethodId,
+			},
+			Raw: r,
+		}
+
+		type (
+			Request  = struct{}
+			Params   = SetDefaultPaymentMethodParams
+			Response = *SetDefaultPaymentMethodNoContent
+		)
+		response, err = middleware.HookMiddleware[
+			Request,
+			Params,
+			Response,
+		](
+			m,
+			mreq,
+			unpackSetDefaultPaymentMethodParams,
+			func(ctx context.Context, request Request, params Params) (response Response, err error) {
+				err = s.h.SetDefaultPaymentMethod(ctx, params)
+				return response, err
+			},
+		)
+	} else {
+		err = s.h.SetDefaultPaymentMethod(ctx, params)
+	}
+	if err != nil {
+		if errRes, ok := errors.Into[*ErrorStatusCode](err); ok {
+			if err := encodeErrorResponse(errRes, w, span); err != nil {
+				defer recordError("Internal", err)
+			}
+			return
+		}
+		if errors.Is(err, ht.ErrNotImplemented) {
+			s.cfg.ErrorHandler(ctx, w, r, err)
+			return
+		}
+		if err := encodeErrorResponse(s.h.NewError(ctx, err), w, span); err != nil {
+			defer recordError("Internal", err)
+		}
+		return
+	}
+
+	if err := encodeSetDefaultPaymentMethodResponse(response, w, span); err != nil {
 		defer recordError("EncodeResponse", err)
 		if !errors.Is(err, ht.ErrInternalServerErrorResponse) {
 			s.cfg.ErrorHandler(ctx, w, r, err)
@@ -5171,32 +5367,35 @@ func (s *Server) handleStartBillingPortalRequest(args [1]string, argsEscaped boo
 
 // handleStartPaymentMethodSetupRequest handles start-payment-method-setup operation.
 //
-// Begins adding a payment method. Returns a URL to send the browser to; the details are entered there,
-// on the payment provider's own page, and no card data ever reaches this platform.
+// Starts a session for adding a method, and returns the secret the browser needs to mount the
+// provider's own form.
 //
-// Which kinds are offered is the provider's decision, not this API's — a card today, a wallet
-// mandate or a direct debit wherever the provider supports charging one later without the account
-// holder present.
+// # The form is embedded, not a redirect
+//
+// The returned `client_secret` initialises the provider's JavaScript, which renders its form inside an
+// iframe on this platform's own page. No card data reaches this platform — the number goes from the
+// browser straight to the provider, exactly as it would on a redirect — but the account holder never
+// leaves the console.
+//
+// A redirect would take them to a page with someone else's branding in the middle of adding a payment
+// method, which is the moment they are most likely to abandon it.
 //
 // # This is a prerequisite for buying a plan, not a convenience
 //
-// A plan is charged by invoice, and the invoice is collected from the method on file. A subscription
-// cannot start for an account that has none — so "add a payment method, then buy" is the order the
-// system requires, not a flow that was chosen.
+// A plan is charged by invoice, and the invoice is collected from a method on file. Discovering that
+// none exists at purchase time turns a missing payment method into a rejection whose wording is about
+// something else entirely.
 //
 // It is not a prerequisite for topping up: a top-up collects the money there and then.
 //
-// Replacing uses the same operation. The new method becomes the default and the old one stops being
-// used; nothing else about the account changes.
-//
-// POST /account/v1/billing-accounts/{accountKey}/payment-method
+// POST /account/v1/billing-accounts/{accountKey}/payment-methods
 func (s *Server) handleStartPaymentMethodSetupRequest(args [1]string, argsEscaped bool, w http.ResponseWriter, r *http.Request) {
 	statusWriter := &codeRecorder{ResponseWriter: w}
 	w = statusWriter
 	otelAttrs := []attribute.KeyValue{
 		otelogen.OperationID("start-payment-method-setup"),
 		semconv.HTTPRequestMethodKey.String("POST"),
-		semconv.HTTPRouteKey.String("/account/v1/billing-accounts/{accountKey}/payment-method"),
+		semconv.HTTPRouteKey.String("/account/v1/billing-accounts/{accountKey}/payment-methods"),
 	}
 	// Add attributes from config.
 	otelAttrs = append(otelAttrs, s.cfg.Attributes...)
@@ -5325,7 +5524,7 @@ func (s *Server) handleStartPaymentMethodSetupRequest(args [1]string, argsEscape
 		mreq := middleware.Request{
 			Context:          ctx,
 			OperationName:    StartPaymentMethodSetupOperation,
-			OperationSummary: "Add or replace the payment method on file",
+			OperationSummary: "Begin adding a payment method",
 			OperationID:      "start-payment-method-setup",
 			Body:             nil,
 			RawBody:          rawBody,
