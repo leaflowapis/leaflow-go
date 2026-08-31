@@ -46,6 +46,24 @@ func (e BackupResourceStatus) Valid() bool {
 	}
 }
 
+// Defines values for CreateDiskRequestBodyPaymentMethod.
+const (
+	CreateDiskRequestBodyPaymentMethodBalance CreateDiskRequestBodyPaymentMethod = "balance"
+	CreateDiskRequestBodyPaymentMethodOnline  CreateDiskRequestBodyPaymentMethod = "online"
+)
+
+// Valid indicates whether the value is a known member of the CreateDiskRequestBodyPaymentMethod enum.
+func (e CreateDiskRequestBodyPaymentMethod) Valid() bool {
+	switch e {
+	case CreateDiskRequestBodyPaymentMethodBalance:
+		return true
+	case CreateDiskRequestBodyPaymentMethodOnline:
+		return true
+	default:
+		return false
+	}
+}
+
 // Defines values for CreateSecurityRuleRequestBodyDirection.
 const (
 	CreateSecurityRuleRequestBodyDirectionEgress  CreateSecurityRuleRequestBodyDirection = "egress"
@@ -229,6 +247,24 @@ func (e InstanceResourceStatus) Valid() bool {
 	case InstanceResourceStatusSuspended:
 		return true
 	case InstanceResourceStatusTransitioning:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for LaunchInstanceRequestBodyPaymentMethod.
+const (
+	LaunchInstanceRequestBodyPaymentMethodBalance LaunchInstanceRequestBodyPaymentMethod = "balance"
+	LaunchInstanceRequestBodyPaymentMethodOnline  LaunchInstanceRequestBodyPaymentMethod = "online"
+)
+
+// Valid indicates whether the value is a known member of the LaunchInstanceRequestBodyPaymentMethod enum.
+func (e LaunchInstanceRequestBodyPaymentMethod) Valid() bool {
+	switch e {
+	case LaunchInstanceRequestBodyPaymentMethodBalance:
+		return true
+	case LaunchInstanceRequestBodyPaymentMethodOnline:
 		return true
 	default:
 		return false
@@ -449,11 +485,45 @@ type CreateBackupRequestBody struct {
 type CreateDiskRequestBody struct {
 	DiskTypeId openapi_types.UUID `json:"disk_type_id"`
 	Name       string             `json:"name"`
-	SizeGb     int64              `json:"size_gb"`
+
+	// PaymentMethod How to pay for a term bought outright. Only meaningful together with `term`.
+	//
+	// `balance` takes it from the account balance and either succeeds or refuses on the spot.
+	// `online` returns a `checkout_url` instead and **creates nothing** — the resource is only
+	// created once the money arrives and the customer comes back to place it again. That last
+	// part is deliberate: a successful payment should not silently turn into a machine, because
+	// between paying and returning they may have changed their mind.
+	//
+	// Online payment is not a second wallet. What arrives lands in the balance first and the
+	// order is settled from there, so money topped up and money paid at checkout are the same
+	// pool.
+	PaymentMethod *CreateDiskRequestBodyPaymentMethod `json:"payment_method,omitempty"`
+	SizeGb        int64                               `json:"size_gb"`
 
 	// SnapshotId Restore from this snapshot. When given, the capacity need only be no smaller than the snapshot
 	SnapshotId *openapi_types.UUID `json:"snapshot_id,omitempty"`
+
+	// Term Buy the disk outright for this long, as an ISO 8601 duration (P1M, P1Y). Billed by the
+	// hour when omitted.
+	//
+	// A disk bought outright can still be expanded: the difference is prorated over the days
+	// left in the term, and the expiry date does not move. It is stopped, not deleted, when the
+	// term runs out — the data stays and comes back once renewed.
+	Term *string `json:"term,omitempty"`
 }
+
+// CreateDiskRequestBodyPaymentMethod How to pay for a term bought outright. Only meaningful together with `term`.
+//
+// `balance` takes it from the account balance and either succeeds or refuses on the spot.
+// `online` returns a `checkout_url` instead and **creates nothing** — the resource is only
+// created once the money arrives and the customer comes back to place it again. That last
+// part is deliberate: a successful payment should not silently turn into a machine, because
+// between paying and returning they may have changed their mind.
+//
+// Online payment is not a second wallet. What arrives lands in the balance first and the
+// order is settled from there, so money topped up and money paid at checkout are the same
+// pool.
+type CreateDiskRequestBodyPaymentMethod string
 
 // CreatePortRequestBody defines model for CreatePortRequestBody.
 type CreatePortRequestBody struct {
@@ -795,6 +865,19 @@ type LaunchInstanceRequestBody struct {
 	// Password The password to set, on the login account and on root. Only the SSH public keys of the project are used when omitted
 	Password *string `json:"password,omitempty"`
 
+	// PaymentMethod How to pay for a term bought outright. Only meaningful together with `term`.
+	//
+	// `balance` takes it from the account balance and either succeeds or refuses on the spot.
+	// `online` returns a `checkout_url` instead and **creates nothing** — the resource is only
+	// created once the money arrives and the customer comes back to place it again. That last
+	// part is deliberate: a successful payment should not silently turn into a machine, because
+	// between paying and returning they may have changed their mind.
+	//
+	// Online payment is not a second wallet. What arrives lands in the balance first and the
+	// order is settled from there, so money topped up and money paid at checkout are the same
+	// pool.
+	PaymentMethod *LaunchInstanceRequestBodyPaymentMethod `json:"payment_method,omitempty"`
+
 	// PortId Use an existing network interface, which may already have a floating IP bound. Exactly one of this and `subnet_id`; only one instance can be created when it is used
 	PortId *openapi_types.UUID `json:"port_id,omitempty"`
 
@@ -828,8 +911,29 @@ type LaunchInstanceRequestBody struct {
 	Term *string `json:"term,omitempty"`
 }
 
+// LaunchInstanceRequestBodyPaymentMethod How to pay for a term bought outright. Only meaningful together with `term`.
+//
+// `balance` takes it from the account balance and either succeeds or refuses on the spot.
+// `online` returns a `checkout_url` instead and **creates nothing** — the resource is only
+// created once the money arrives and the customer comes back to place it again. That last
+// part is deliberate: a successful payment should not silently turn into a machine, because
+// between paying and returning they may have changed their mind.
+//
+// Online payment is not a second wallet. What arrives lands in the balance first and the
+// order is settled from there, so money topped up and money paid at checkout are the same
+// pool.
+type LaunchInstanceRequestBodyPaymentMethod string
+
 // LaunchInstanceResponseBody defines model for LaunchInstanceResponseBody.
 type LaunchInstanceResponseBody struct {
+	// CheckoutUrl Present only when `payment_method` was `online`: **nothing was created**. Send the
+	// customer here to pay.
+	//
+	// What comes back is not a resource but a bill to settle. Treating this response as a
+	// success and moving on is how something gets handed over without the money arriving —
+	// and it looks exactly like a normal creation from the outside.
+	CheckoutUrl *string `json:"checkout_url,omitempty"`
+
 	// Failure Non-empty when only some of the instances were created, stating why the sequence stopped
 	Failure *string `json:"failure"`
 
@@ -10231,6 +10335,8 @@ type CreateDiskResponse struct {
 	HTTPResponse *http.Response
 	// JSON201 the response for an HTTP 201 `application/json` response
 	JSON201 *DiskResource
+	// JSON402 the response for an HTTP 402 `application/json` response
+	JSON402 *Error
 	// JSONDefault the response for an HTTP default `application/json` response
 	JSONDefault *Error
 }
@@ -10238,6 +10344,11 @@ type CreateDiskResponse struct {
 // GetJSON201 returns the response for an HTTP 201 `application/json` response
 func (r CreateDiskResponse) GetJSON201() *DiskResource {
 	return r.JSON201
+}
+
+// GetJSON402 returns the response for an HTTP 402 `application/json` response
+func (r CreateDiskResponse) GetJSON402() *Error {
+	return r.JSON402
 }
 
 // GetJSONDefault returns the response for an HTTP default `application/json` response
@@ -10985,6 +11096,8 @@ type LaunchInstanceResponse struct {
 	HTTPResponse *http.Response
 	// JSON201 the response for an HTTP 201 `application/json` response
 	JSON201 *LaunchInstanceResponseBody
+	// JSON402 the response for an HTTP 402 `application/json` response
+	JSON402 *Error
 	// JSONDefault the response for an HTTP default `application/json` response
 	JSONDefault *Error
 }
@@ -10992,6 +11105,11 @@ type LaunchInstanceResponse struct {
 // GetJSON201 returns the response for an HTTP 201 `application/json` response
 func (r LaunchInstanceResponse) GetJSON201() *LaunchInstanceResponseBody {
 	return r.JSON201
+}
+
+// GetJSON402 returns the response for an HTTP 402 `application/json` response
+func (r LaunchInstanceResponse) GetJSON402() *Error {
+	return r.JSON402
 }
 
 // GetJSONDefault returns the response for an HTTP default `application/json` response
@@ -16197,6 +16315,13 @@ func ParseCreateDiskResponse(rsp *http.Response) (*CreateDiskResponse, error) {
 		}
 		response.JSON201 = &dest
 
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 402:
+		var dest Error
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON402 = &dest
+
 	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && true:
 		var dest Error
 		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
@@ -16716,6 +16841,13 @@ func ParseLaunchInstanceResponse(rsp *http.Response) (*LaunchInstanceResponse, e
 			return nil, err
 		}
 		response.JSON201 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 402:
+		var dest Error
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON402 = &dest
 
 	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && true:
 		var dest Error

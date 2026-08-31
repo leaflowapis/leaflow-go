@@ -31,6 +31,7 @@ const (
 	ReadSubscriptionOperation                OperationName = "ReadSubscription"
 	ReadTopUpOperation                       OperationName = "ReadTopUp"
 	RenewPrepaidAssetOperation               OperationName = "RenewPrepaidAsset"
+	SetRenewalStatusOperation                OperationName = "SetRenewalStatus"
 	StartBillingPortalOperation              OperationName = "StartBillingPortal"
 	StartPaymentMethodSetupOperation         OperationName = "StartPaymentMethodSetup"
 	StartTopUpOperation                      OperationName = "StartTopUp"

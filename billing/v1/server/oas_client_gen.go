@@ -482,6 +482,30 @@ type Invoker interface {
 	//
 	// POST /account/v1/billing-accounts/{accountKey}/prepaid-assets/{provisionId}/renew
 	RenewPrepaidAsset(ctx context.Context, request *RenewRequestBody, params RenewPrepaidAssetParams) (*Order, error)
+	// SetRenewalStatus invokes set-renewal-status operation.
+	//
+	// Three choices, not two.
+	//
+	// # Why automatic renewal has to be opted into
+	//
+	// Charging someone automatically has to be something they chose. Defaulting to it means a person who
+	// wanted to try one month is charged for a second they never agreed to — and that is where
+	// chargebacks come from. So a resource bought outright starts on `manual`.
+	//
+	// # And why "let it expire" is its own choice, not just "not automatic"
+	//
+	// `manual` keeps reminding: the notice before expiry is mandatory, because expiry stops the resource.
+	// Someone who has decided to let it go does not want those, and the cost of sending them anyway is not
+	// annoyance — it is that the reminders get filtered away, taking the ones that mattered with them.
+	//
+	// # Turning it on needs a known cycle
+	//
+	// Renewing automatically has to know for how long, which comes from the last purchase or renewal. A
+	// resource adopted into billing, or bought before this was recorded, has no cycle yet: renew it
+	// manually once and the cycle is written down.
+	//
+	// PUT /account/v1/billing-accounts/{accountKey}/prepaid-assets/{provisionId}/renewal
+	SetRenewalStatus(ctx context.Context, request *SetRenewalStatusRequestBody, params SetRenewalStatusParams) (*PrepaidAsset, error)
 	// StartBillingPortal invokes start-billing-portal operation.
 	//
 	// Returns a URL to the payment provider's own portal, where the card can be replaced or removed, the
@@ -4423,6 +4447,178 @@ func (c *Client) sendRenewPrepaidAsset(ctx context.Context, request *RenewReques
 
 	stage = "DecodeResponse"
 	result, err := decodeRenewPrepaidAssetResponse(resp)
+	if err != nil {
+		return res, errors.Wrap(err, "decode response")
+	}
+
+	return result, nil
+}
+
+// SetRenewalStatus invokes set-renewal-status operation.
+//
+// Three choices, not two.
+//
+// # Why automatic renewal has to be opted into
+//
+// Charging someone automatically has to be something they chose. Defaulting to it means a person who
+// wanted to try one month is charged for a second they never agreed to — and that is where
+// chargebacks come from. So a resource bought outright starts on `manual`.
+//
+// # And why "let it expire" is its own choice, not just "not automatic"
+//
+// `manual` keeps reminding: the notice before expiry is mandatory, because expiry stops the resource.
+// Someone who has decided to let it go does not want those, and the cost of sending them anyway is not
+// annoyance — it is that the reminders get filtered away, taking the ones that mattered with them.
+//
+// # Turning it on needs a known cycle
+//
+// Renewing automatically has to know for how long, which comes from the last purchase or renewal. A
+// resource adopted into billing, or bought before this was recorded, has no cycle yet: renew it
+// manually once and the cycle is written down.
+//
+// PUT /account/v1/billing-accounts/{accountKey}/prepaid-assets/{provisionId}/renewal
+func (c *Client) SetRenewalStatus(ctx context.Context, request *SetRenewalStatusRequestBody, params SetRenewalStatusParams) (*PrepaidAsset, error) {
+	res, err := c.sendSetRenewalStatus(ctx, request, params)
+	return res, err
+}
+
+func (c *Client) sendSetRenewalStatus(ctx context.Context, request *SetRenewalStatusRequestBody, params SetRenewalStatusParams) (res *PrepaidAsset, err error) {
+	otelAttrs := []attribute.KeyValue{
+		otelogen.OperationID("set-renewal-status"),
+		semconv.HTTPRequestMethodKey.String("PUT"),
+		semconv.URLTemplateKey.String("/account/v1/billing-accounts/{accountKey}/prepaid-assets/{provisionId}/renewal"),
+	}
+	otelAttrs = append(otelAttrs, c.cfg.Attributes...)
+
+	// Run stopwatch.
+	startTime := time.Now()
+	defer func() {
+		// Use floating point division here for higher precision (instead of Millisecond method).
+		elapsedDuration := time.Since(startTime)
+		c.duration.Record(ctx, float64(elapsedDuration)/float64(time.Millisecond), metric.WithAttributes(otelAttrs...))
+	}()
+
+	// Increment request counter.
+	c.requests.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
+
+	// Start a span for this request.
+	ctx, span := c.cfg.Tracer.Start(ctx, SetRenewalStatusOperation,
+		trace.WithAttributes(otelAttrs...),
+		clientSpanKind,
+	)
+	// Track stage for error reporting.
+	var stage string
+	defer func() {
+		if err != nil {
+			span.RecordError(err)
+			span.SetStatus(codes.Error, stage)
+			c.errors.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
+		}
+		span.End()
+	}()
+
+	stage = "BuildURL"
+	u := uri.Clone(c.requestURL(ctx))
+	var pathParts [5]string
+	pathParts[0] = "/account/v1/billing-accounts/"
+	{
+		// Encode "accountKey" parameter.
+		e := uri.NewPathEncoder(uri.PathEncoderConfig{
+			Param:   "accountKey",
+			Style:   uri.PathStyleSimple,
+			Explode: false,
+		})
+		if err := func() error {
+			return e.EncodeValue(conv.StringToString(params.AccountKey))
+		}(); err != nil {
+			return res, errors.Wrap(err, "encode path")
+		}
+		encoded, err := e.Result()
+		if err != nil {
+			return res, errors.Wrap(err, "encode path")
+		}
+		pathParts[1] = encoded
+	}
+	pathParts[2] = "/prepaid-assets/"
+	{
+		// Encode "provisionId" parameter.
+		e := uri.NewPathEncoder(uri.PathEncoderConfig{
+			Param:   "provisionId",
+			Style:   uri.PathStyleSimple,
+			Explode: false,
+		})
+		if err := func() error {
+			return e.EncodeValue(conv.UUIDToString(params.ProvisionId))
+		}(); err != nil {
+			return res, errors.Wrap(err, "encode path")
+		}
+		encoded, err := e.Result()
+		if err != nil {
+			return res, errors.Wrap(err, "encode path")
+		}
+		pathParts[3] = encoded
+	}
+	pathParts[4] = "/renewal"
+	uri.AddPathParts(u, pathParts[:]...)
+
+	stage = "EncodeRequest"
+	r, err := ht.NewRequest(ctx, "PUT", u)
+	if err != nil {
+		return res, errors.Wrap(err, "create request")
+	}
+	if err := encodeSetRenewalStatusRequest(request, r); err != nil {
+		return res, errors.Wrap(err, "encode request")
+	}
+
+	{
+		type bitset = [1]uint8
+		var satisfied bitset
+		{
+			stage = "Security:BearerAuth"
+			switch err := c.securityBearerAuth(ctx, SetRenewalStatusOperation, r); {
+			case err == nil: // if NO error
+				satisfied[0] |= 1 << 0
+			case errors.Is(err, ogenerrors.ErrSkipClientSecurity):
+				// Skip this security.
+			default:
+				return res, errors.Wrap(err, "security \"BearerAuth\"")
+			}
+		}
+
+		if ok := func() bool {
+		nextRequirement:
+			for _, requirement := range []bitset{
+				{0b00000001},
+			} {
+				for i, mask := range requirement {
+					if satisfied[i]&mask != mask {
+						continue nextRequirement
+					}
+				}
+				return true
+			}
+			return false
+		}(); !ok {
+			return res, ogenerrors.ErrSecurityRequirementIsNotSatisfied
+		}
+	}
+
+	stage = "SendRequest"
+	resp, err := c.cfg.Client.Do(r)
+	if err != nil {
+		return res, errors.Wrap(err, "do request")
+	}
+	body := resp.Body
+	defer func() {
+		// Drain the body to EOF before closing, so the underlying
+		// connection can be reused by the Transport regardless of the
+		// response status code. See https://github.com/ogen-go/ogen/issues/1670.
+		_, _ = io.Copy(io.Discard, body)
+		_ = body.Close()
+	}()
+
+	stage = "DecodeResponse"
+	result, err := decodeSetRenewalStatusResponse(resp)
 	if err != nil {
 		return res, errors.Wrap(err, "decode response")
 	}

@@ -2731,6 +2731,14 @@ type PrepaidAsset struct {
 	// particular right after a renewal, which is the moment a customer is most likely to conclude that
 	// nothing happened.
 	DesiredState PrepaidAssetDesiredState `json:"desired_state"`
+	// How long one renewal buys, as an ISO 8601 duration (P1M, P1Y). Empty on something adopted into
+	// billing rather than bought through it — automatic renewal cannot be turned on until one manual
+	// renewal records it.
+	BillingCycle OptString `json:"billing_cycle"`
+	// What happens at expiry. `manual` is where everything starts: charging automatically has to be
+	// chosen. `none` also stops the reminders, which is a different thing from `manual` — see the route
+	// that sets it.
+	RenewalStatus PrepaidAssetRenewalStatus `json:"renewal_status"`
 }
 
 // GetID returns the value of ID.
@@ -2778,6 +2786,16 @@ func (s *PrepaidAsset) GetDesiredState() PrepaidAssetDesiredState {
 	return s.DesiredState
 }
 
+// GetBillingCycle returns the value of BillingCycle.
+func (s *PrepaidAsset) GetBillingCycle() OptString {
+	return s.BillingCycle
+}
+
+// GetRenewalStatus returns the value of RenewalStatus.
+func (s *PrepaidAsset) GetRenewalStatus() PrepaidAssetRenewalStatus {
+	return s.RenewalStatus
+}
+
 // SetID sets the value of ID.
 func (s *PrepaidAsset) SetID(val string) {
 	s.ID = val
@@ -2821,6 +2839,16 @@ func (s *PrepaidAsset) SetState(val PrepaidAssetState) {
 // SetDesiredState sets the value of DesiredState.
 func (s *PrepaidAsset) SetDesiredState(val PrepaidAssetDesiredState) {
 	s.DesiredState = val
+}
+
+// SetBillingCycle sets the value of BillingCycle.
+func (s *PrepaidAsset) SetBillingCycle(val OptString) {
+	s.BillingCycle = val
+}
+
+// SetRenewalStatus sets the value of RenewalStatus.
+func (s *PrepaidAsset) SetRenewalStatus(val PrepaidAssetRenewalStatus) {
+	s.RenewalStatus = val
 }
 
 // What it is being moved to. Differs from `state` while a change is still being applied — in
@@ -2887,6 +2915,57 @@ func (s *PrepaidAssetList) GetAssets() []PrepaidAsset {
 // SetAssets sets the value of Assets.
 func (s *PrepaidAssetList) SetAssets(val []PrepaidAsset) {
 	s.Assets = val
+}
+
+// What happens at expiry. `manual` is where everything starts: charging automatically has to be
+// chosen. `none` also stops the reminders, which is a different thing from `manual` — see the route
+// that sets it.
+type PrepaidAssetRenewalStatus string
+
+const (
+	PrepaidAssetRenewalStatusManual PrepaidAssetRenewalStatus = "manual"
+	PrepaidAssetRenewalStatusAuto   PrepaidAssetRenewalStatus = "auto"
+	PrepaidAssetRenewalStatusNone   PrepaidAssetRenewalStatus = "none"
+)
+
+// AllValues returns all PrepaidAssetRenewalStatus values.
+func (PrepaidAssetRenewalStatus) AllValues() []PrepaidAssetRenewalStatus {
+	return []PrepaidAssetRenewalStatus{
+		PrepaidAssetRenewalStatusManual,
+		PrepaidAssetRenewalStatusAuto,
+		PrepaidAssetRenewalStatusNone,
+	}
+}
+
+// MarshalText implements encoding.TextMarshaler.
+func (s PrepaidAssetRenewalStatus) MarshalText() ([]byte, error) {
+	switch s {
+	case PrepaidAssetRenewalStatusManual:
+		return []byte(s), nil
+	case PrepaidAssetRenewalStatusAuto:
+		return []byte(s), nil
+	case PrepaidAssetRenewalStatusNone:
+		return []byte(s), nil
+	default:
+		return nil, errors.Errorf("invalid value: %q", s)
+	}
+}
+
+// UnmarshalText implements encoding.TextUnmarshaler.
+func (s *PrepaidAssetRenewalStatus) UnmarshalText(data []byte) error {
+	switch PrepaidAssetRenewalStatus(data) {
+	case PrepaidAssetRenewalStatusManual:
+		*s = PrepaidAssetRenewalStatusManual
+		return nil
+	case PrepaidAssetRenewalStatusAuto:
+		*s = PrepaidAssetRenewalStatusAuto
+		return nil
+	case PrepaidAssetRenewalStatusNone:
+		*s = PrepaidAssetRenewalStatusNone
+		return nil
+	default:
+		return errors.Errorf("invalid value: %q", data)
+	}
 }
 
 type PrepaidAssetState string
@@ -3725,6 +3804,69 @@ func (s *RenewalQuote) SetCurrentTermEnd(val time.Time) {
 // SetTermEnd sets the value of TermEnd.
 func (s *RenewalQuote) SetTermEnd(val time.Time) {
 	s.TermEnd = val
+}
+
+// Ref: #/components/schemas/SetRenewalStatusRequestBody
+type SetRenewalStatusRequestBody struct {
+	Status SetRenewalStatusRequestBodyStatus `json:"status"`
+}
+
+// GetStatus returns the value of Status.
+func (s *SetRenewalStatusRequestBody) GetStatus() SetRenewalStatusRequestBodyStatus {
+	return s.Status
+}
+
+// SetStatus sets the value of Status.
+func (s *SetRenewalStatusRequestBody) SetStatus(val SetRenewalStatusRequestBodyStatus) {
+	s.Status = val
+}
+
+type SetRenewalStatusRequestBodyStatus string
+
+const (
+	SetRenewalStatusRequestBodyStatusManual SetRenewalStatusRequestBodyStatus = "manual"
+	SetRenewalStatusRequestBodyStatusAuto   SetRenewalStatusRequestBodyStatus = "auto"
+	SetRenewalStatusRequestBodyStatusNone   SetRenewalStatusRequestBodyStatus = "none"
+)
+
+// AllValues returns all SetRenewalStatusRequestBodyStatus values.
+func (SetRenewalStatusRequestBodyStatus) AllValues() []SetRenewalStatusRequestBodyStatus {
+	return []SetRenewalStatusRequestBodyStatus{
+		SetRenewalStatusRequestBodyStatusManual,
+		SetRenewalStatusRequestBodyStatusAuto,
+		SetRenewalStatusRequestBodyStatusNone,
+	}
+}
+
+// MarshalText implements encoding.TextMarshaler.
+func (s SetRenewalStatusRequestBodyStatus) MarshalText() ([]byte, error) {
+	switch s {
+	case SetRenewalStatusRequestBodyStatusManual:
+		return []byte(s), nil
+	case SetRenewalStatusRequestBodyStatusAuto:
+		return []byte(s), nil
+	case SetRenewalStatusRequestBodyStatusNone:
+		return []byte(s), nil
+	default:
+		return nil, errors.Errorf("invalid value: %q", s)
+	}
+}
+
+// UnmarshalText implements encoding.TextUnmarshaler.
+func (s *SetRenewalStatusRequestBodyStatus) UnmarshalText(data []byte) error {
+	switch SetRenewalStatusRequestBodyStatus(data) {
+	case SetRenewalStatusRequestBodyStatusManual:
+		*s = SetRenewalStatusRequestBodyStatusManual
+		return nil
+	case SetRenewalStatusRequestBodyStatusAuto:
+		*s = SetRenewalStatusRequestBodyStatusAuto
+		return nil
+	case SetRenewalStatusRequestBodyStatusNone:
+		*s = SetRenewalStatusRequestBodyStatusNone
+		return nil
+	default:
+		return errors.Errorf("invalid value: %q", data)
+	}
 }
 
 // Ref: #/components/schemas/StartTopUpRequestBody

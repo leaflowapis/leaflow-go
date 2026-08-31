@@ -91,7 +91,7 @@ type Invoker interface {
 	// in the same zone to attach it. Choosing the disk type therefore determines the zone.
 	//
 	// POST /api/v1/disks
-	CreateDisk(ctx context.Context, request *CreateDiskRequestBody) (*DiskResource, error)
+	CreateDisk(ctx context.Context, request *CreateDiskRequestBody) (CreateDiskRes, error)
 	// CreatePort invokes create-port operation.
 	//
 	// The new network interface is not attached to any instance. Primary network interfaces are not
@@ -383,7 +383,7 @@ type Invoker interface {
 	// observe the outcome.
 	//
 	// POST /api/v1/instances
-	LaunchInstance(ctx context.Context, request *LaunchInstanceRequestBody) (*LaunchInstanceResponseBody, error)
+	LaunchInstance(ctx context.Context, request *LaunchInstanceRequestBody) (LaunchInstanceRes, error)
 	// ListAvailabilityZones invokes list-availability-zones operation.
 	//
 	// A disk and an instance must reside in the same availability zone to be attached. Confirm the zone
@@ -1730,12 +1730,12 @@ func (c *Client) sendCreateBackup(ctx context.Context, request *CreateBackupRequ
 // in the same zone to attach it. Choosing the disk type therefore determines the zone.
 //
 // POST /api/v1/disks
-func (c *Client) CreateDisk(ctx context.Context, request *CreateDiskRequestBody) (*DiskResource, error) {
+func (c *Client) CreateDisk(ctx context.Context, request *CreateDiskRequestBody) (CreateDiskRes, error) {
 	res, err := c.sendCreateDisk(ctx, request)
 	return res, err
 }
 
-func (c *Client) sendCreateDisk(ctx context.Context, request *CreateDiskRequestBody) (res *DiskResource, err error) {
+func (c *Client) sendCreateDisk(ctx context.Context, request *CreateDiskRequestBody) (res CreateDiskRes, err error) {
 	otelAttrs := []attribute.KeyValue{
 		otelogen.OperationID("create-disk"),
 		semconv.HTTPRequestMethodKey.String("POST"),
@@ -6458,12 +6458,12 @@ func (c *Client) sendGetSnapshot(ctx context.Context, params GetSnapshotParams) 
 // observe the outcome.
 //
 // POST /api/v1/instances
-func (c *Client) LaunchInstance(ctx context.Context, request *LaunchInstanceRequestBody) (*LaunchInstanceResponseBody, error) {
+func (c *Client) LaunchInstance(ctx context.Context, request *LaunchInstanceRequestBody) (LaunchInstanceRes, error) {
 	res, err := c.sendLaunchInstance(ctx, request)
 	return res, err
 }
 
-func (c *Client) sendLaunchInstance(ctx context.Context, request *LaunchInstanceRequestBody) (res *LaunchInstanceResponseBody, err error) {
+func (c *Client) sendLaunchInstance(ctx context.Context, request *LaunchInstanceRequestBody) (res LaunchInstanceRes, err error) {
 	otelAttrs := []attribute.KeyValue{
 		otelogen.OperationID("launch-instance"),
 		semconv.HTTPRequestMethodKey.String("POST"),

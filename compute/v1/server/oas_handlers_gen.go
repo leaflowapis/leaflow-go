@@ -1648,7 +1648,7 @@ func (s *Server) handleCreateDiskRequest(args [0]string, argsEscaped bool, w htt
 		}
 	}()
 
-	var response *DiskResource
+	var response CreateDiskRes
 	if m := s.cfg.Middleware; m != nil {
 		mreq := middleware.Request{
 			Context:          ctx,
@@ -1664,7 +1664,7 @@ func (s *Server) handleCreateDiskRequest(args [0]string, argsEscaped bool, w htt
 		type (
 			Request  = *CreateDiskRequestBody
 			Params   = struct{}
-			Response = *DiskResource
+			Response = CreateDiskRes
 		)
 		response, err = middleware.HookMiddleware[
 			Request,
@@ -8803,7 +8803,7 @@ func (s *Server) handleLaunchInstanceRequest(args [0]string, argsEscaped bool, w
 		}
 	}()
 
-	var response *LaunchInstanceResponseBody
+	var response LaunchInstanceRes
 	if m := s.cfg.Middleware; m != nil {
 		mreq := middleware.Request{
 			Context:          ctx,
@@ -8819,7 +8819,7 @@ func (s *Server) handleLaunchInstanceRequest(args [0]string, argsEscaped bool, w
 		type (
 			Request  = *LaunchInstanceRequestBody
 			Params   = struct{}
-			Response = *LaunchInstanceResponseBody
+			Response = LaunchInstanceRes
 		)
 		response, err = middleware.HookMiddleware[
 			Request,

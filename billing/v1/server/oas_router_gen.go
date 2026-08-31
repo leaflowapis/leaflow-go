@@ -22,7 +22,7 @@ var (
 	rn36AllowedHeaders = map[string]string{
 		"GET": "Authorization",
 	}
-	rn46AllowedHeaders = map[string]string{
+	rn47AllowedHeaders = map[string]string{
 		"POST": "Authorization",
 	}
 	rn15AllowedHeaders = map[string]string{
@@ -61,6 +61,9 @@ var (
 	}
 	rn44AllowedHeaders = map[string]string{
 		"POST": "Authorization,Content-Type",
+	}
+	rn45AllowedHeaders = map[string]string{
+		"PUT": "Authorization,Content-Type",
 	}
 	rn34AllowedHeaders = map[string]string{
 		"GET": "Authorization",
@@ -278,7 +281,7 @@ func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 									default:
 										s.notAllowed(w, r, notAllowedParams{
 											allowedMethods: "POST",
-											allowedHeaders: rn46AllowedHeaders,
+											allowedHeaders: rn47AllowedHeaders,
 											acceptPost:     "",
 											acceptPatch:    "",
 										})
@@ -761,32 +764,61 @@ func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 												return
 											}
 											switch elem[0] {
-											case 'a': // Prefix: "al-quote"
+											case 'a': // Prefix: "al"
 
-												if l := len("al-quote"); len(elem) >= l && elem[0:l] == "al-quote" {
+												if l := len("al"); len(elem) >= l && elem[0:l] == "al" {
 													elem = elem[l:]
 												} else {
 													break
 												}
 
 												if len(elem) == 0 {
-													// Leaf node.
 													switch r.Method {
-													case "GET":
-														s.handleQuoteRenewalRequest([2]string{
+													case "PUT":
+														s.handleSetRenewalStatusRequest([2]string{
 															args[0],
 															args[1],
 														}, elemIsEscaped, w, r)
 													default:
 														s.notAllowed(w, r, notAllowedParams{
-															allowedMethods: "GET",
-															allowedHeaders: rn34AllowedHeaders,
+															allowedMethods: "PUT",
+															allowedHeaders: rn45AllowedHeaders,
 															acceptPost:     "",
 															acceptPatch:    "",
 														})
 													}
 
 													return
+												}
+												switch elem[0] {
+												case '-': // Prefix: "-quote"
+
+													if l := len("-quote"); len(elem) >= l && elem[0:l] == "-quote" {
+														elem = elem[l:]
+													} else {
+														break
+													}
+
+													if len(elem) == 0 {
+														// Leaf node.
+														switch r.Method {
+														case "GET":
+															s.handleQuoteRenewalRequest([2]string{
+																args[0],
+																args[1],
+															}, elemIsEscaped, w, r)
+														default:
+															s.notAllowed(w, r, notAllowedParams{
+																allowedMethods: "GET",
+																allowedHeaders: rn34AllowedHeaders,
+																acceptPost:     "",
+																acceptPatch:    "",
+															})
+														}
+
+														return
+													}
+
 												}
 
 											}
@@ -1788,29 +1820,55 @@ func (s *Server) FindPath(method string, u *url.URL) (r Route, _ bool) {
 												}
 											}
 											switch elem[0] {
-											case 'a': // Prefix: "al-quote"
+											case 'a': // Prefix: "al"
 
-												if l := len("al-quote"); len(elem) >= l && elem[0:l] == "al-quote" {
+												if l := len("al"); len(elem) >= l && elem[0:l] == "al" {
 													elem = elem[l:]
 												} else {
 													break
 												}
 
 												if len(elem) == 0 {
-													// Leaf node.
 													switch method {
-													case "GET":
-														r.name = QuoteRenewalOperation
-														r.summary = "What renewing this would cost"
-														r.operationID = "quote-renewal"
+													case "PUT":
+														r.name = SetRenewalStatusOperation
+														r.summary = "Choose what happens when it expires"
+														r.operationID = "set-renewal-status"
 														r.operationGroup = ""
-														r.pathPattern = "/account/v1/billing-accounts/{accountKey}/prepaid-assets/{provisionId}/renewal-quote"
+														r.pathPattern = "/account/v1/billing-accounts/{accountKey}/prepaid-assets/{provisionId}/renewal"
 														r.args = args
 														r.count = 2
 														return r, true
 													default:
 														return
 													}
+												}
+												switch elem[0] {
+												case '-': // Prefix: "-quote"
+
+													if l := len("-quote"); len(elem) >= l && elem[0:l] == "-quote" {
+														elem = elem[l:]
+													} else {
+														break
+													}
+
+													if len(elem) == 0 {
+														// Leaf node.
+														switch method {
+														case "GET":
+															r.name = QuoteRenewalOperation
+															r.summary = "What renewing this would cost"
+															r.operationID = "quote-renewal"
+															r.operationGroup = ""
+															r.pathPattern = "/account/v1/billing-accounts/{accountKey}/prepaid-assets/{provisionId}/renewal-quote"
+															r.args = args
+															r.count = 2
+															return r, true
+														default:
+															return
+														}
+													}
+
 												}
 
 											}

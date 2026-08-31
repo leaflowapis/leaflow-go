@@ -2831,6 +2831,147 @@ func decodeRenewPrepaidAssetParams(args [2]string, argsEscaped bool, r *http.Req
 	return params, nil
 }
 
+// SetRenewalStatusParams is parameters of set-renewal-status operation.
+type SetRenewalStatusParams struct {
+	// The account's key, of the form `u_<user_id>_<seq>`. Ownership is stated by the key itself, which is
+	// why the key is what addresses the account.
+	AccountKey string
+	// Which asset, from the prepaid list.
+	ProvisionId uuid.UUID
+}
+
+func unpackSetRenewalStatusParams(packed middleware.Parameters) (params SetRenewalStatusParams) {
+	{
+		key := middleware.ParameterKey{
+			Name: "accountKey",
+			In:   "path",
+		}
+		params.AccountKey = packed[key].(string)
+	}
+	{
+		key := middleware.ParameterKey{
+			Name: "provisionId",
+			In:   "path",
+		}
+		params.ProvisionId = packed[key].(uuid.UUID)
+	}
+	return params
+}
+
+func decodeSetRenewalStatusParams(args [2]string, argsEscaped bool, r *http.Request) (params SetRenewalStatusParams, _ error) {
+	// Decode path: accountKey.
+	if err := func() error {
+		param := args[0]
+		if argsEscaped {
+			unescaped, err := url.PathUnescape(args[0])
+			if err != nil {
+				return errors.Wrap(err, "unescape path")
+			}
+			param = unescaped
+		}
+		if len(param) > 0 {
+			d := uri.NewPathDecoder(uri.PathDecoderConfig{
+				Param:   "accountKey",
+				Value:   param,
+				Style:   uri.PathStyleSimple,
+				Explode: false,
+			})
+
+			if err := func() error {
+				val, err := d.DecodeValue()
+				if err != nil {
+					return err
+				}
+
+				c, err := conv.ToString(val)
+				if err != nil {
+					return err
+				}
+
+				params.AccountKey = c
+				return nil
+			}(); err != nil {
+				return err
+			}
+			if err := func() error {
+				if err := (validate.String{
+					MinLength:     3,
+					MinLengthSet:  true,
+					MaxLength:     128,
+					MaxLengthSet:  true,
+					Email:         false,
+					Hostname:      false,
+					Regex:         regexMap["^u_.+_[0-9]+$"],
+					MinNumeric:    0,
+					MinNumericSet: false,
+					MaxNumeric:    0,
+					MaxNumericSet: false,
+				}).Validate(string(params.AccountKey)); err != nil {
+					return errors.Wrap(err, "string")
+				}
+				return nil
+			}(); err != nil {
+				return err
+			}
+		} else {
+			return validate.ErrFieldRequired
+		}
+		return nil
+	}(); err != nil {
+		return params, &ogenerrors.DecodeParamError{
+			Name: "accountKey",
+			In:   "path",
+			Err:  err,
+		}
+	}
+	// Decode path: provisionId.
+	if err := func() error {
+		param := args[1]
+		if argsEscaped {
+			unescaped, err := url.PathUnescape(args[1])
+			if err != nil {
+				return errors.Wrap(err, "unescape path")
+			}
+			param = unescaped
+		}
+		if len(param) > 0 {
+			d := uri.NewPathDecoder(uri.PathDecoderConfig{
+				Param:   "provisionId",
+				Value:   param,
+				Style:   uri.PathStyleSimple,
+				Explode: false,
+			})
+
+			if err := func() error {
+				val, err := d.DecodeValue()
+				if err != nil {
+					return err
+				}
+
+				c, err := conv.ToUUID(val)
+				if err != nil {
+					return err
+				}
+
+				params.ProvisionId = c
+				return nil
+			}(); err != nil {
+				return err
+			}
+		} else {
+			return validate.ErrFieldRequired
+		}
+		return nil
+	}(); err != nil {
+		return params, &ogenerrors.DecodeParamError{
+			Name: "provisionId",
+			In:   "path",
+			Err:  err,
+		}
+	}
+	return params, nil
+}
+
 // StartBillingPortalParams is parameters of start-billing-portal operation.
 type StartBillingPortalParams struct {
 	// The account's key, of the form `u_<user_id>_<seq>`. Ownership is stated by the key itself, which is
