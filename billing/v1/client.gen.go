@@ -694,6 +694,14 @@ type Offer struct {
 	// OfferKey The stable identifier operations and support use for this offer
 	OfferKey string `json:"offer_key"`
 
+	// PlanKey The plan this offer sells, matching `plan_key` on the subscription. Present on offers
+	// that sell a plan.
+	//
+	// It is here so the pricing page can mark the tier the account is already on. Without it
+	// the current tier looks like every other one, and the obvious thing to do — buy it — is
+	// refused as a switch to the same plan
+	PlanKey *string `json:"plan_key,omitempty"`
+
 	// Pricing Present on offers that sell a plan
 	Pricing *Pricing `json:"pricing,omitempty"`
 

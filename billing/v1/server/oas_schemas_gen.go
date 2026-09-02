@@ -1517,6 +1517,13 @@ type Offer struct {
 	Badge OptString `json:"badge"`
 	// When this offer stops being purchasable. Absent means it does not expire.
 	ValidUntil OptDateTime `json:"valid_until"`
+	// The plan this offer sells, matching `plan_key` on the subscription. Present on offers that sell a
+	// plan.
+	//
+	// It is here so the pricing page can mark the tier the account is already on. Without it the current
+	// tier looks like every other one, and the obvious thing to do — buy it — is refused as a switch
+	// to the same plan.
+	PlanKey OptString `json:"plan_key"`
 	// Present on offers that sell a plan.
 	Pricing OptPricing `json:"pricing"`
 	// Present on offers that sell credit.
@@ -1546,6 +1553,11 @@ func (s *Offer) GetBadge() OptString {
 // GetValidUntil returns the value of ValidUntil.
 func (s *Offer) GetValidUntil() OptDateTime {
 	return s.ValidUntil
+}
+
+// GetPlanKey returns the value of PlanKey.
+func (s *Offer) GetPlanKey() OptString {
+	return s.PlanKey
 }
 
 // GetPricing returns the value of Pricing.
@@ -1581,6 +1593,11 @@ func (s *Offer) SetBadge(val OptString) {
 // SetValidUntil sets the value of ValidUntil.
 func (s *Offer) SetValidUntil(val OptDateTime) {
 	s.ValidUntil = val
+}
+
+// SetPlanKey sets the value of PlanKey.
+func (s *Offer) SetPlanKey(val OptString) {
+	s.PlanKey = val
 }
 
 // SetPricing sets the value of Pricing.

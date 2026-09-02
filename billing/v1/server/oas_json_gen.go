@@ -3064,6 +3064,12 @@ func (s *Offer) encodeFields(e *jx.Encoder) {
 		}
 	}
 	{
+		if s.PlanKey.Set {
+			e.FieldStart("plan_key")
+			s.PlanKey.Encode(e)
+		}
+	}
+	{
 		if s.Pricing.Set {
 			e.FieldStart("pricing")
 			s.Pricing.Encode(e)
@@ -3077,14 +3083,15 @@ func (s *Offer) encodeFields(e *jx.Encoder) {
 	}
 }
 
-var jsonFieldsNameOfOffer = [7]string{
+var jsonFieldsNameOfOffer = [8]string{
 	0: "offer_key",
 	1: "name",
 	2: "description",
 	3: "badge",
 	4: "valid_until",
-	5: "pricing",
-	6: "top_up",
+	5: "plan_key",
+	6: "pricing",
+	7: "top_up",
 }
 
 // Decode decodes Offer from json.
@@ -3149,6 +3156,16 @@ func (s *Offer) Decode(d *jx.Decoder) error {
 				return nil
 			}(); err != nil {
 				return errors.Wrap(err, "decode field \"valid_until\"")
+			}
+		case "plan_key":
+			if err := func() error {
+				s.PlanKey.Reset()
+				if err := s.PlanKey.Decode(d); err != nil {
+					return err
+				}
+				return nil
+			}(); err != nil {
+				return errors.Wrap(err, "decode field \"plan_key\"")
 			}
 		case "pricing":
 			if err := func() error {
