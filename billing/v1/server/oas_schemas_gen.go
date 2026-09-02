@@ -2206,6 +2206,52 @@ func (o OptQuoteUsageVariant) Or(d QuoteUsageVariant) QuoteUsageVariant {
 	return d
 }
 
+// NewOptScheduledPlan returns new OptScheduledPlan with value set to v.
+func NewOptScheduledPlan(v ScheduledPlan) OptScheduledPlan {
+	return OptScheduledPlan{
+		Value: v,
+		Set:   true,
+	}
+}
+
+// OptScheduledPlan is optional ScheduledPlan.
+type OptScheduledPlan struct {
+	Value ScheduledPlan
+	Set   bool
+}
+
+// IsSet returns true if OptScheduledPlan was set.
+func (o OptScheduledPlan) IsSet() bool { return o.Set }
+
+// Reset unsets value.
+func (o *OptScheduledPlan) Reset() {
+	var v ScheduledPlan
+	o.Value = v
+	o.Set = false
+}
+
+// SetTo sets value to v.
+func (o *OptScheduledPlan) SetTo(v ScheduledPlan) {
+	o.Set = true
+	o.Value = v
+}
+
+// Get returns value and boolean that denotes whether value was set.
+func (o OptScheduledPlan) Get() (v ScheduledPlan, ok bool) {
+	if !o.Set {
+		return v, false
+	}
+	return o.Value, true
+}
+
+// Or returns value if set, or given parameter if does not.
+func (o OptScheduledPlan) Or(d ScheduledPlan) ScheduledPlan {
+	if v, ok := o.Get(); ok {
+		return v
+	}
+	return d
+}
+
 // NewOptString returns new OptString with value set to v.
 func NewOptString(v string) OptString {
 	return OptString{
@@ -3796,6 +3842,55 @@ func (s *QuoteUsageVariant) init() QuoteUsageVariant {
 // RemovePaymentMethodNoContent is response for RemovePaymentMethod operation.
 type RemovePaymentMethodNoContent struct{}
 
+// Ref: #/components/schemas/ScheduledPlan
+type ScheduledPlan struct {
+	PlanKey     string    `json:"plan_key"`
+	PlanName    OptString `json:"plan_name"`
+	PlanVersion OptInt    `json:"plan_version"`
+	// When it takes over, which is the end of the current period.
+	StartsAt OptDateTime `json:"starts_at"`
+}
+
+// GetPlanKey returns the value of PlanKey.
+func (s *ScheduledPlan) GetPlanKey() string {
+	return s.PlanKey
+}
+
+// GetPlanName returns the value of PlanName.
+func (s *ScheduledPlan) GetPlanName() OptString {
+	return s.PlanName
+}
+
+// GetPlanVersion returns the value of PlanVersion.
+func (s *ScheduledPlan) GetPlanVersion() OptInt {
+	return s.PlanVersion
+}
+
+// GetStartsAt returns the value of StartsAt.
+func (s *ScheduledPlan) GetStartsAt() OptDateTime {
+	return s.StartsAt
+}
+
+// SetPlanKey sets the value of PlanKey.
+func (s *ScheduledPlan) SetPlanKey(val string) {
+	s.PlanKey = val
+}
+
+// SetPlanName sets the value of PlanName.
+func (s *ScheduledPlan) SetPlanName(val OptString) {
+	s.PlanName = val
+}
+
+// SetPlanVersion sets the value of PlanVersion.
+func (s *ScheduledPlan) SetPlanVersion(val OptInt) {
+	s.PlanVersion = val
+}
+
+// SetStartsAt sets the value of StartsAt.
+func (s *ScheduledPlan) SetStartsAt(val OptDateTime) {
+	s.StartsAt = val
+}
+
 // SetDefaultPaymentMethodNoContent is response for SetDefaultPaymentMethod operation.
 type SetDefaultPaymentMethodNoContent struct{}
 
@@ -3849,12 +3944,28 @@ func (s *StartTopUpRequestBody) SetOfferKey(val OptString) {
 
 // Ref: #/components/schemas/Subscription
 type Subscription struct {
-	ID          string `json:"id"`
-	PlanKey     string `json:"plan_key"`
-	PlanVersion OptInt `json:"plan_version"`
+	ID      string `json:"id"`
+	PlanKey string `json:"plan_key"`
+	// What this tier is called on the pricing page.
+	PlanName    OptString `json:"plan_name"`
+	PlanVersion OptInt    `json:"plan_version"`
 	// `canceled` still counts as being on a plan — it is serving until the end of the period, which has
 	// already been paid for.
 	Status string `json:"status"`
+	// Start of the period being served. Absent for the moment right after subscribing, while the engine is
+	// still writing the charge this is read from — absent means "not known yet" rather than "no period".
+	CurrentPeriodStart OptDateTime `json:"current_period_start"`
+	// End of the period being served, which is also when the next charge falls and when anything scheduled
+	// takes effect.
+	CurrentPeriodEnd OptDateTime `json:"current_period_end"`
+	// What takes over at the end of the period, when a downgrade has been scheduled.
+	//
+	// Absent when nothing is pending. Leaving it out entirely would show someone who has already scheduled
+	// a downgrade the tier they are on today, so they would schedule it again.
+	Scheduled OptScheduledPlan `json:"scheduled"`
+	// True once the account has been taken off its paid plan at the end of the period. It is still being
+	// served until then, and this can still be undone — unlike a scheduled downgrade.
+	CancelsAtPeriodEnd OptBool `json:"cancels_at_period_end"`
 }
 
 // GetID returns the value of ID.
@@ -3867,6 +3978,11 @@ func (s *Subscription) GetPlanKey() string {
 	return s.PlanKey
 }
 
+// GetPlanName returns the value of PlanName.
+func (s *Subscription) GetPlanName() OptString {
+	return s.PlanName
+}
+
 // GetPlanVersion returns the value of PlanVersion.
 func (s *Subscription) GetPlanVersion() OptInt {
 	return s.PlanVersion
@@ -3875,6 +3991,26 @@ func (s *Subscription) GetPlanVersion() OptInt {
 // GetStatus returns the value of Status.
 func (s *Subscription) GetStatus() string {
 	return s.Status
+}
+
+// GetCurrentPeriodStart returns the value of CurrentPeriodStart.
+func (s *Subscription) GetCurrentPeriodStart() OptDateTime {
+	return s.CurrentPeriodStart
+}
+
+// GetCurrentPeriodEnd returns the value of CurrentPeriodEnd.
+func (s *Subscription) GetCurrentPeriodEnd() OptDateTime {
+	return s.CurrentPeriodEnd
+}
+
+// GetScheduled returns the value of Scheduled.
+func (s *Subscription) GetScheduled() OptScheduledPlan {
+	return s.Scheduled
+}
+
+// GetCancelsAtPeriodEnd returns the value of CancelsAtPeriodEnd.
+func (s *Subscription) GetCancelsAtPeriodEnd() OptBool {
+	return s.CancelsAtPeriodEnd
 }
 
 // SetID sets the value of ID.
@@ -3887,6 +4023,11 @@ func (s *Subscription) SetPlanKey(val string) {
 	s.PlanKey = val
 }
 
+// SetPlanName sets the value of PlanName.
+func (s *Subscription) SetPlanName(val OptString) {
+	s.PlanName = val
+}
+
 // SetPlanVersion sets the value of PlanVersion.
 func (s *Subscription) SetPlanVersion(val OptInt) {
 	s.PlanVersion = val
@@ -3895,6 +4036,26 @@ func (s *Subscription) SetPlanVersion(val OptInt) {
 // SetStatus sets the value of Status.
 func (s *Subscription) SetStatus(val string) {
 	s.Status = val
+}
+
+// SetCurrentPeriodStart sets the value of CurrentPeriodStart.
+func (s *Subscription) SetCurrentPeriodStart(val OptDateTime) {
+	s.CurrentPeriodStart = val
+}
+
+// SetCurrentPeriodEnd sets the value of CurrentPeriodEnd.
+func (s *Subscription) SetCurrentPeriodEnd(val OptDateTime) {
+	s.CurrentPeriodEnd = val
+}
+
+// SetScheduled sets the value of Scheduled.
+func (s *Subscription) SetScheduled(val OptScheduledPlan) {
+	s.Scheduled = val
+}
+
+// SetCancelsAtPeriodEnd sets the value of CancelsAtPeriodEnd.
+func (s *Subscription) SetCancelsAtPeriodEnd(val OptBool) {
+	s.CancelsAtPeriodEnd = val
 }
 
 // Ref: #/components/schemas/TopUpList

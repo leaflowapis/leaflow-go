@@ -47,12 +47,13 @@ type Invoker interface {
 	BindProjectToBillingAccount(ctx context.Context, params BindProjectToBillingAccountParams) (*ProjectBinding, error)
 	// CancelSubscription invokes cancel-subscription operation.
 	//
-	// Moves the account off whatever plan it is on.
+	// Takes the account off its paid plan and back to the free tier.
 	//
-	// Where a default plan is configured this is a switch to it rather than a cancellation — an account
-	// with no plan is refused admission, so cancelling outright would cut off someone who only meant to
-	// drop back to the free tier. Without a default plan it is a real cancellation and the account is left
-	// with no plan on purpose.
+	// Ending immediately lands on the free tier straight away. Ending at the end of the period is a plain
+	// cancellation that can still be undone (`subscription/keep`) — it deliberately does not schedule a
+	// switch, because a scheduled switch holds the customer's one subscription slot and the engine gives
+	// no way to cancel it afterwards. The free tier is applied once the period actually ends, by the sweep
+	// that keeps every account on some plan.
 	//
 	// `timing` has to be stated. Ending immediately on an account that has already paid for the current
 	// period takes back what they paid for; ending at the end of the period does not. There is no default
@@ -145,6 +146,22 @@ type Invoker interface {
 	//
 	// GET /account/v1/billing-accounts/{accountKey}/orders/{orderId}
 	GetOrder(ctx context.Context, params GetOrderParams) (*Order, error)
+	// KeepSubscription invokes keep-subscription operation.
+	//
+	// Takes back a cancellation that was set for the end of the period, so the plan carries on.
+	//
+	// It only works on a cancellation, not on a scheduled downgrade. Scheduling a change to another plan
+	// leaves a second, scheduled subscription holding the customer's one slot, and the engine offers no
+	// way to remove it: unscheduling is refused with a conflict and the scheduled subscription cannot be
+	// deleted over HTTP. So a downgrade becomes final the moment it is scheduled, and saying so up front
+	// is the only honest thing to do — this endpoint answers `BILLING_NO_SCHEDULED_CHANGE` rather than
+	// pretending to undo it.
+	//
+	// Without this, someone who cancels by accident has to wait out the period and buy the tier again,
+	// losing whatever the tier had accumulated.
+	//
+	// POST /account/v1/billing-accounts/{accountKey}/subscription/keep
+	KeepSubscription(ctx context.Context, params KeepSubscriptionParams) (*Subscription, error)
 	// ListBillingAccounts invokes list-billing-accounts operation.
 	//
 	// Every billing account belonging to the caller, with the projects each one currently pays for.
@@ -721,12 +738,13 @@ func (c *Client) sendBindProjectToBillingAccount(ctx context.Context, params Bin
 
 // CancelSubscription invokes cancel-subscription operation.
 //
-// Moves the account off whatever plan it is on.
+// Takes the account off its paid plan and back to the free tier.
 //
-// Where a default plan is configured this is a switch to it rather than a cancellation — an account
-// with no plan is refused admission, so cancelling outright would cut off someone who only meant to
-// drop back to the free tier. Without a default plan it is a real cancellation and the account is left
-// with no plan on purpose.
+// Ending immediately lands on the free tier straight away. Ending at the end of the period is a plain
+// cancellation that can still be undone (`subscription/keep`) — it deliberately does not schedule a
+// switch, because a scheduled switch holds the customer's one subscription slot and the engine gives
+// no way to cancel it afterwards. The free tier is applied once the period actually ends, by the sweep
+// that keeps every account on some plan.
 //
 // `timing` has to be stated. Ending immediately on an account that has already paid for the current
 // period takes back what they paid for; ending at the end of the period does not. There is no default
@@ -1624,6 +1642,148 @@ func (c *Client) sendGetOrder(ctx context.Context, params GetOrderParams) (res *
 
 	stage = "DecodeResponse"
 	result, err := decodeGetOrderResponse(resp)
+	if err != nil {
+		return res, errors.Wrap(err, "decode response")
+	}
+
+	return result, nil
+}
+
+// KeepSubscription invokes keep-subscription operation.
+//
+// Takes back a cancellation that was set for the end of the period, so the plan carries on.
+//
+// It only works on a cancellation, not on a scheduled downgrade. Scheduling a change to another plan
+// leaves a second, scheduled subscription holding the customer's one slot, and the engine offers no
+// way to remove it: unscheduling is refused with a conflict and the scheduled subscription cannot be
+// deleted over HTTP. So a downgrade becomes final the moment it is scheduled, and saying so up front
+// is the only honest thing to do — this endpoint answers `BILLING_NO_SCHEDULED_CHANGE` rather than
+// pretending to undo it.
+//
+// Without this, someone who cancels by accident has to wait out the period and buy the tier again,
+// losing whatever the tier had accumulated.
+//
+// POST /account/v1/billing-accounts/{accountKey}/subscription/keep
+func (c *Client) KeepSubscription(ctx context.Context, params KeepSubscriptionParams) (*Subscription, error) {
+	res, err := c.sendKeepSubscription(ctx, params)
+	return res, err
+}
+
+func (c *Client) sendKeepSubscription(ctx context.Context, params KeepSubscriptionParams) (res *Subscription, err error) {
+	otelAttrs := []attribute.KeyValue{
+		otelogen.OperationID("keep-subscription"),
+		semconv.HTTPRequestMethodKey.String("POST"),
+		semconv.URLTemplateKey.String("/account/v1/billing-accounts/{accountKey}/subscription/keep"),
+	}
+	otelAttrs = append(otelAttrs, c.cfg.Attributes...)
+
+	// Run stopwatch.
+	startTime := time.Now()
+	defer func() {
+		// Use floating point division here for higher precision (instead of Millisecond method).
+		elapsedDuration := time.Since(startTime)
+		c.duration.Record(ctx, float64(elapsedDuration)/float64(time.Millisecond), metric.WithAttributes(otelAttrs...))
+	}()
+
+	// Increment request counter.
+	c.requests.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
+
+	// Start a span for this request.
+	ctx, span := c.cfg.Tracer.Start(ctx, KeepSubscriptionOperation,
+		trace.WithAttributes(otelAttrs...),
+		clientSpanKind,
+	)
+	// Track stage for error reporting.
+	var stage string
+	defer func() {
+		if err != nil {
+			span.RecordError(err)
+			span.SetStatus(codes.Error, stage)
+			c.errors.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
+		}
+		span.End()
+	}()
+
+	stage = "BuildURL"
+	u := uri.Clone(c.requestURL(ctx))
+	var pathParts [3]string
+	pathParts[0] = "/account/v1/billing-accounts/"
+	{
+		// Encode "accountKey" parameter.
+		e := uri.NewPathEncoder(uri.PathEncoderConfig{
+			Param:   "accountKey",
+			Style:   uri.PathStyleSimple,
+			Explode: false,
+		})
+		if err := func() error {
+			return e.EncodeValue(conv.StringToString(params.AccountKey))
+		}(); err != nil {
+			return res, errors.Wrap(err, "encode path")
+		}
+		encoded, err := e.Result()
+		if err != nil {
+			return res, errors.Wrap(err, "encode path")
+		}
+		pathParts[1] = encoded
+	}
+	pathParts[2] = "/subscription/keep"
+	uri.AddPathParts(u, pathParts[:]...)
+
+	stage = "EncodeRequest"
+	r, err := ht.NewRequest(ctx, "POST", u)
+	if err != nil {
+		return res, errors.Wrap(err, "create request")
+	}
+
+	{
+		type bitset = [1]uint8
+		var satisfied bitset
+		{
+			stage = "Security:BearerAuth"
+			switch err := c.securityBearerAuth(ctx, KeepSubscriptionOperation, r); {
+			case err == nil: // if NO error
+				satisfied[0] |= 1 << 0
+			case errors.Is(err, ogenerrors.ErrSkipClientSecurity):
+				// Skip this security.
+			default:
+				return res, errors.Wrap(err, "security \"BearerAuth\"")
+			}
+		}
+
+		if ok := func() bool {
+		nextRequirement:
+			for _, requirement := range []bitset{
+				{0b00000001},
+			} {
+				for i, mask := range requirement {
+					if satisfied[i]&mask != mask {
+						continue nextRequirement
+					}
+				}
+				return true
+			}
+			return false
+		}(); !ok {
+			return res, ogenerrors.ErrSecurityRequirementIsNotSatisfied
+		}
+	}
+
+	stage = "SendRequest"
+	resp, err := c.cfg.Client.Do(r)
+	if err != nil {
+		return res, errors.Wrap(err, "do request")
+	}
+	body := resp.Body
+	defer func() {
+		// Drain the body to EOF before closing, so the underlying
+		// connection can be reused by the Transport regardless of the
+		// response status code. See https://github.com/ogen-go/ogen/issues/1670.
+		_, _ = io.Copy(io.Discard, body)
+		_ = body.Close()
+	}()
+
+	stage = "DecodeResponse"
+	result, err := decodeKeepSubscriptionResponse(resp)
 	if err != nil {
 		return res, errors.Wrap(err, "decode response")
 	}

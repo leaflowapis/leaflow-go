@@ -1086,6 +1086,16 @@ type QuoteUsage struct {
 	Variant map[string]string `json:"variant,omitempty"`
 }
 
+// ScheduledPlan defines model for ScheduledPlan.
+type ScheduledPlan struct {
+	PlanKey     string  `json:"plan_key"`
+	PlanName    *string `json:"plan_name,omitempty"`
+	PlanVersion *int    `json:"plan_version,omitempty"`
+
+	// StartsAt When it takes over, which is the end of the current period
+	StartsAt *time.Time `json:"starts_at,omitempty"`
+}
+
 // StartTopUpRequestBody defines model for StartTopUpRequestBody.
 type StartTopUpRequestBody struct {
 	// Amount How much to add, as a decimal string — `"20"`, `"19.99"`.
@@ -1116,9 +1126,32 @@ type StartTopUpRequestBody struct {
 
 // Subscription defines model for Subscription.
 type Subscription struct {
-	Id          string `json:"id"`
-	PlanKey     string `json:"plan_key"`
-	PlanVersion *int   `json:"plan_version,omitempty"`
+	// CancelsAtPeriodEnd True once the account has been taken off its paid plan at the end of the period. It is
+	// still being served until then, and this can still be undone — unlike a scheduled
+	// downgrade
+	CancelsAtPeriodEnd *bool `json:"cancels_at_period_end,omitempty"`
+
+	// CurrentPeriodEnd End of the period being served, which is also when the next charge falls and when
+	// anything scheduled takes effect
+	CurrentPeriodEnd *time.Time `json:"current_period_end,omitempty"`
+
+	// CurrentPeriodStart Start of the period being served. Absent for the moment right after subscribing, while
+	// the engine is still writing the charge this is read from — absent means "not known yet"
+	// rather than "no period"
+	CurrentPeriodStart *time.Time `json:"current_period_start,omitempty"`
+	Id                 string     `json:"id"`
+	PlanKey            string     `json:"plan_key"`
+
+	// PlanName What this tier is called on the pricing page
+	PlanName    *string `json:"plan_name,omitempty"`
+	PlanVersion *int    `json:"plan_version,omitempty"`
+
+	// Scheduled What takes over at the end of the period, when a downgrade has been scheduled.
+	//
+	// Absent when nothing is pending. Leaving it out entirely would show someone who has
+	// already scheduled a downgrade the tier they are on today, so they would schedule it
+	// again.
+	Scheduled *ScheduledPlan `json:"scheduled,omitempty"`
 
 	// Status `canceled` still counts as being on a plan — it is serving until the end of the period,
 	// which has already been paid for
@@ -1769,12 +1802,13 @@ type ClientInterface interface {
 
 	// CancelSubscription Come off the paid plan
 	//
-	// Moves the account off whatever plan it is on.
+	// Takes the account off its paid plan and back to the free tier.
 	//
-	// Where a default plan is configured this is a switch to it rather than a cancellation — an
-	// account with no plan is refused admission, so cancelling outright would cut off someone who
-	// only meant to drop back to the free tier. Without a default plan it is a real cancellation and
-	// the account is left with no plan on purpose.
+	// Ending immediately lands on the free tier straight away. Ending at the end of the period is a
+	// plain cancellation that can still be undone (`subscription/keep`) — it deliberately does not
+	// schedule a switch, because a scheduled switch holds the customer's one subscription slot and
+	// the engine gives no way to cancel it afterwards. The free tier is applied once the period
+	// actually ends, by the sweep that keeps every account on some plan.
 	//
 	// `timing` has to be stated. Ending immediately on an account that has already paid for the
 	// current period takes back what they paid for; ending at the end of the period does not. There
@@ -1786,6 +1820,23 @@ type ClientInterface interface {
 	//
 	// Corresponds with POST /account/v1/billing-accounts/{accountKey}/subscription/cancel (the `CancelSubscription` operationId).
 	CancelSubscription(ctx context.Context, accountKey AccountKey, params *CancelSubscriptionParams, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// KeepSubscription Undo an end-of-period cancellation
+	//
+	// Takes back a cancellation that was set for the end of the period, so the plan carries on.
+	//
+	// **It only works on a cancellation, not on a scheduled downgrade.** Scheduling a change to
+	// another plan leaves a second, scheduled subscription holding the customer's one slot, and the
+	// engine offers no way to remove it: unscheduling is refused with a conflict and the scheduled
+	// subscription cannot be deleted over HTTP. So a downgrade becomes final the moment it is
+	// scheduled, and saying so up front is the only honest thing to do — this endpoint answers
+	// `BILLING_NO_SCHEDULED_CHANGE` rather than pretending to undo it.
+	//
+	// Without this, someone who cancels by accident has to wait out the period and buy the tier
+	// again, losing whatever the tier had accumulated.
+	//
+	// Corresponds with POST /account/v1/billing-accounts/{accountKey}/subscription/keep (the `KeepSubscription` operationId).
+	KeepSubscription(ctx context.Context, accountKey AccountKey, reqEditors ...RequestEditorFn) (*http.Response, error)
 
 	// ListTopUps My top-ups
 	//
@@ -2684,12 +2735,13 @@ func (c *Client) ReadSubscription(ctx context.Context, accountKey AccountKey, re
 
 // CancelSubscription Come off the paid plan
 //
-// Moves the account off whatever plan it is on.
+// Takes the account off its paid plan and back to the free tier.
 //
-// Where a default plan is configured this is a switch to it rather than a cancellation — an
-// account with no plan is refused admission, so cancelling outright would cut off someone who
-// only meant to drop back to the free tier. Without a default plan it is a real cancellation and
-// the account is left with no plan on purpose.
+// Ending immediately lands on the free tier straight away. Ending at the end of the period is a
+// plain cancellation that can still be undone (`subscription/keep`) — it deliberately does not
+// schedule a switch, because a scheduled switch holds the customer's one subscription slot and
+// the engine gives no way to cancel it afterwards. The free tier is applied once the period
+// actually ends, by the sweep that keeps every account on some plan.
 //
 // `timing` has to be stated. Ending immediately on an account that has already paid for the
 // current period takes back what they paid for; ending at the end of the period does not. There
@@ -2702,6 +2754,33 @@ func (c *Client) ReadSubscription(ctx context.Context, accountKey AccountKey, re
 // Corresponds with POST /account/v1/billing-accounts/{accountKey}/subscription/cancel (the `CancelSubscription` operationId).
 func (c *Client) CancelSubscription(ctx context.Context, accountKey AccountKey, params *CancelSubscriptionParams, reqEditors ...RequestEditorFn) (*http.Response, error) {
 	req, err := NewCancelSubscriptionRequest(c.Server, accountKey, params)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+// KeepSubscription Undo an end-of-period cancellation
+//
+// Takes back a cancellation that was set for the end of the period, so the plan carries on.
+//
+// **It only works on a cancellation, not on a scheduled downgrade.** Scheduling a change to
+// another plan leaves a second, scheduled subscription holding the customer's one slot, and the
+// engine offers no way to remove it: unscheduling is refused with a conflict and the scheduled
+// subscription cannot be deleted over HTTP. So a downgrade becomes final the moment it is
+// scheduled, and saying so up front is the only honest thing to do — this endpoint answers
+// `BILLING_NO_SCHEDULED_CHANGE` rather than pretending to undo it.
+//
+// Without this, someone who cancels by accident has to wait out the period and buy the tier
+// again, losing whatever the tier had accumulated.
+//
+// Corresponds with POST /account/v1/billing-accounts/{accountKey}/subscription/keep (the `KeepSubscription` operationId).
+func (c *Client) KeepSubscription(ctx context.Context, accountKey AccountKey, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewKeepSubscriptionRequest(c.Server, accountKey)
 	if err != nil {
 		return nil, err
 	}
@@ -3938,6 +4017,40 @@ func NewCancelSubscriptionRequest(server string, accountKey AccountKey, params *
 	return req, nil
 }
 
+// NewKeepSubscriptionRequest constructs an http.Request for the KeepSubscription method
+func NewKeepSubscriptionRequest(server string, accountKey AccountKey) (*http.Request, error) {
+	var err error
+
+	var pathParam0 string
+
+	pathParam0, err = runtime.StyleParamWithOptions("simple", false, "accountKey", accountKey, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: ""})
+	if err != nil {
+		return nil, err
+	}
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/account/v1/billing-accounts/%s/subscription/keep", pathParam0)
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest(http.MethodPost, queryURL.String(), nil)
+	if err != nil {
+		return nil, err
+	}
+
+	return req, nil
+}
+
 // NewListTopUpsRequest constructs an http.Request for the ListTopUps method
 func NewListTopUpsRequest(server string, accountKey AccountKey) (*http.Request, error) {
 	var err error
@@ -4691,12 +4804,13 @@ type ClientWithResponsesInterface interface {
 
 	// CancelSubscriptionWithResponse Come off the paid plan
 	//
-	// Moves the account off whatever plan it is on.
+	// Takes the account off its paid plan and back to the free tier.
 	//
-	// Where a default plan is configured this is a switch to it rather than a cancellation — an
-	// account with no plan is refused admission, so cancelling outright would cut off someone who
-	// only meant to drop back to the free tier. Without a default plan it is a real cancellation and
-	// the account is left with no plan on purpose.
+	// Ending immediately lands on the free tier straight away. Ending at the end of the period is a
+	// plain cancellation that can still be undone (`subscription/keep`) — it deliberately does not
+	// schedule a switch, because a scheduled switch holds the customer's one subscription slot and
+	// the engine gives no way to cancel it afterwards. The free tier is applied once the period
+	// actually ends, by the sweep that keeps every account on some plan.
 	//
 	// `timing` has to be stated. Ending immediately on an account that has already paid for the
 	// current period takes back what they paid for; ending at the end of the period does not. There
@@ -4710,6 +4824,25 @@ type ClientWithResponsesInterface interface {
 	//
 	// Corresponds with POST /account/v1/billing-accounts/{accountKey}/subscription/cancel (the `CancelSubscription` operationId).
 	CancelSubscriptionWithResponse(ctx context.Context, accountKey AccountKey, params *CancelSubscriptionParams, reqEditors ...RequestEditorFn) (*CancelSubscriptionResponse, error)
+
+	// KeepSubscriptionWithResponse Undo an end-of-period cancellation
+	//
+	// Takes back a cancellation that was set for the end of the period, so the plan carries on.
+	//
+	// **It only works on a cancellation, not on a scheduled downgrade.** Scheduling a change to
+	// another plan leaves a second, scheduled subscription holding the customer's one slot, and the
+	// engine offers no way to remove it: unscheduling is refused with a conflict and the scheduled
+	// subscription cannot be deleted over HTTP. So a downgrade becomes final the moment it is
+	// scheduled, and saying so up front is the only honest thing to do — this endpoint answers
+	// `BILLING_NO_SCHEDULED_CHANGE` rather than pretending to undo it.
+	//
+	// Without this, someone who cancels by accident has to wait out the period and buy the tier
+	// again, losing whatever the tier had accumulated.
+	//
+	// Returns a wrapper object for the known response body format(s).
+	//
+	// Corresponds with POST /account/v1/billing-accounts/{accountKey}/subscription/keep (the `KeepSubscription` operationId).
+	KeepSubscriptionWithResponse(ctx context.Context, accountKey AccountKey, reqEditors ...RequestEditorFn) (*KeepSubscriptionResponse, error)
 
 	// ListTopUpsWithResponse My top-ups
 	//
@@ -6019,6 +6152,54 @@ func (r CancelSubscriptionResponse) ContentType() string {
 	return ""
 }
 
+type KeepSubscriptionResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	// JSON200 the response for an HTTP 200 `application/json` response
+	JSON200 *Subscription
+	// JSONDefault the response for an HTTP default `application/json` response
+	JSONDefault *Error
+}
+
+// GetJSON200 returns the response for an HTTP 200 `application/json` response
+func (r KeepSubscriptionResponse) GetJSON200() *Subscription {
+	return r.JSON200
+}
+
+// GetJSONDefault returns the response for an HTTP default `application/json` response
+func (r KeepSubscriptionResponse) GetJSONDefault() *Error {
+	return r.JSONDefault
+}
+
+// GetBody returns the raw response body bytes
+func (r KeepSubscriptionResponse) GetBody() []byte {
+	return r.Body
+}
+
+// Status returns HTTPResponse.Status
+func (r KeepSubscriptionResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r KeepSubscriptionResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+// ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
+func (r KeepSubscriptionResponse) ContentType() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Header.Get("Content-Type")
+	}
+	return ""
+}
+
 type ListTopUpsResponse struct {
 	Body         []byte
 	HTTPResponse *http.Response
@@ -6921,12 +7102,13 @@ func (c *ClientWithResponses) ReadSubscriptionWithResponse(ctx context.Context, 
 
 // CancelSubscriptionWithResponse Come off the paid plan
 //
-// Moves the account off whatever plan it is on.
+// Takes the account off its paid plan and back to the free tier.
 //
-// Where a default plan is configured this is a switch to it rather than a cancellation — an
-// account with no plan is refused admission, so cancelling outright would cut off someone who
-// only meant to drop back to the free tier. Without a default plan it is a real cancellation and
-// the account is left with no plan on purpose.
+// Ending immediately lands on the free tier straight away. Ending at the end of the period is a
+// plain cancellation that can still be undone (`subscription/keep`) — it deliberately does not
+// schedule a switch, because a scheduled switch holds the customer's one subscription slot and
+// the engine gives no way to cancel it afterwards. The free tier is applied once the period
+// actually ends, by the sweep that keeps every account on some plan.
 //
 // `timing` has to be stated. Ending immediately on an account that has already paid for the
 // current period takes back what they paid for; ending at the end of the period does not. There
@@ -6945,6 +7127,31 @@ func (c *ClientWithResponses) CancelSubscriptionWithResponse(ctx context.Context
 		return nil, err
 	}
 	return ParseCancelSubscriptionResponse(rsp)
+}
+
+// KeepSubscriptionWithResponse Undo an end-of-period cancellation
+//
+// Takes back a cancellation that was set for the end of the period, so the plan carries on.
+//
+// **It only works on a cancellation, not on a scheduled downgrade.** Scheduling a change to
+// another plan leaves a second, scheduled subscription holding the customer's one slot, and the
+// engine offers no way to remove it: unscheduling is refused with a conflict and the scheduled
+// subscription cannot be deleted over HTTP. So a downgrade becomes final the moment it is
+// scheduled, and saying so up front is the only honest thing to do — this endpoint answers
+// `BILLING_NO_SCHEDULED_CHANGE` rather than pretending to undo it.
+//
+// Without this, someone who cancels by accident has to wait out the period and buy the tier
+// again, losing whatever the tier had accumulated.
+//
+// Returns a wrapper object for the known response body format(s).
+//
+// Corresponds with POST /account/v1/billing-accounts/{accountKey}/subscription/keep (the `KeepSubscription` operationId).
+func (c *ClientWithResponses) KeepSubscriptionWithResponse(ctx context.Context, accountKey AccountKey, reqEditors ...RequestEditorFn) (*KeepSubscriptionResponse, error) {
+	rsp, err := c.KeepSubscription(ctx, accountKey, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseKeepSubscriptionResponse(rsp)
 }
 
 // ListTopUpsWithResponse My top-ups
@@ -7921,6 +8128,39 @@ func ParseCancelSubscriptionResponse(rsp *http.Response) (*CancelSubscriptionRes
 	}
 
 	response := &CancelSubscriptionResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest Subscription
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && true:
+		var dest Error
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSONDefault = &dest
+
+	}
+
+	return response, nil
+}
+
+// ParseKeepSubscriptionResponse parses an HTTP response from a KeepSubscriptionWithResponse call
+func ParseKeepSubscriptionResponse(rsp *http.Response) (*KeepSubscriptionResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &KeepSubscriptionResponse{
 		Body:         bodyBytes,
 		HTTPResponse: rsp,
 	}

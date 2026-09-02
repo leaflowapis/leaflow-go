@@ -44,6 +44,7 @@ var operationRolesBearerAuth = map[string][]string{
 	GetChargeUsageOperation:                  []string{},
 	GetInvoiceOperation:                      []string{},
 	GetOrderOperation:                        []string{},
+	KeepSubscriptionOperation:                []string{},
 	ListBillingAccountsOperation:             []string{},
 	ListChargesOperation:                     []string{},
 	ListCreditTransactionsOperation:          []string{},

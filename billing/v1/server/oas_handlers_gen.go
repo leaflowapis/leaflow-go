@@ -249,12 +249,13 @@ func (s *Server) handleBindProjectToBillingAccountRequest(args [2]string, argsEs
 
 // handleCancelSubscriptionRequest handles cancel-subscription operation.
 //
-// Moves the account off whatever plan it is on.
+// Takes the account off its paid plan and back to the free tier.
 //
-// Where a default plan is configured this is a switch to it rather than a cancellation — an account
-// with no plan is refused admission, so cancelling outright would cut off someone who only meant to
-// drop back to the free tier. Without a default plan it is a real cancellation and the account is left
-// with no plan on purpose.
+// Ending immediately lands on the free tier straight away. Ending at the end of the period is a plain
+// cancellation that can still be undone (`subscription/keep`) — it deliberately does not schedule a
+// switch, because a scheduled switch holds the customer's one subscription slot and the engine gives
+// no way to cancel it afterwards. The free tier is applied once the period actually ends, by the sweep
+// that keeps every account on some plan.
 //
 // `timing` has to be stated. Ending immediately on an account that has already paid for the current
 // period takes back what they paid for; ending at the end of the period does not. There is no default
@@ -1519,6 +1520,216 @@ func (s *Server) handleGetOrderRequest(args [2]string, argsEscaped bool, w http.
 	}
 
 	if err := encodeGetOrderResponse(response, w, span); err != nil {
+		defer recordError("EncodeResponse", err)
+		if !errors.Is(err, ht.ErrInternalServerErrorResponse) {
+			s.cfg.ErrorHandler(ctx, w, r, err)
+		}
+		return
+	}
+}
+
+// handleKeepSubscriptionRequest handles keep-subscription operation.
+//
+// Takes back a cancellation that was set for the end of the period, so the plan carries on.
+//
+// It only works on a cancellation, not on a scheduled downgrade. Scheduling a change to another plan
+// leaves a second, scheduled subscription holding the customer's one slot, and the engine offers no
+// way to remove it: unscheduling is refused with a conflict and the scheduled subscription cannot be
+// deleted over HTTP. So a downgrade becomes final the moment it is scheduled, and saying so up front
+// is the only honest thing to do — this endpoint answers `BILLING_NO_SCHEDULED_CHANGE` rather than
+// pretending to undo it.
+//
+// Without this, someone who cancels by accident has to wait out the period and buy the tier again,
+// losing whatever the tier had accumulated.
+//
+// POST /account/v1/billing-accounts/{accountKey}/subscription/keep
+func (s *Server) handleKeepSubscriptionRequest(args [1]string, argsEscaped bool, w http.ResponseWriter, r *http.Request) {
+	statusWriter := &codeRecorder{ResponseWriter: w}
+	w = statusWriter
+	otelAttrs := []attribute.KeyValue{
+		otelogen.OperationID("keep-subscription"),
+		semconv.HTTPRequestMethodKey.String("POST"),
+		semconv.HTTPRouteKey.String("/account/v1/billing-accounts/{accountKey}/subscription/keep"),
+	}
+	// Add attributes from config.
+	otelAttrs = append(otelAttrs, s.cfg.Attributes...)
+
+	// Start a span for this request.
+	ctx, span := s.cfg.Tracer.Start(r.Context(), KeepSubscriptionOperation,
+		trace.WithAttributes(otelAttrs...),
+		serverSpanKind,
+	)
+	defer span.End()
+
+	// Add Labeler to context.
+	labeler := &Labeler{attrs: otelAttrs}
+	ctx = contextWithLabeler(ctx, labeler)
+
+	// Run stopwatch.
+	startTime := time.Now()
+	defer func() {
+		elapsedDuration := time.Since(startTime)
+
+		attrSet := labeler.AttributeSet()
+		attrs := attrSet.ToSlice()
+		code := statusWriter.status
+		if code != 0 {
+			codeAttr := semconv.HTTPResponseStatusCode(code)
+			attrs = append(attrs, codeAttr)
+			span.SetAttributes(attrs...)
+		}
+		attrOpt := metric.WithAttributes(attrs...)
+
+		// Increment request counter.
+		s.requests.Add(ctx, 1, attrOpt)
+
+		// Use floating point division here for higher precision (instead of Millisecond method).
+		s.duration.Record(ctx, float64(elapsedDuration)/float64(time.Millisecond), attrOpt)
+	}()
+
+	var (
+		recordError = func(stage string, err error) {
+			span.RecordError(err)
+
+			// https://opentelemetry.io/docs/specs/semconv/http/http-spans/#status
+			// Span Status MUST be left unset if HTTP status code was in the 1xx, 2xx or 3xx ranges,
+			// unless there was another error (e.g., network error receiving the response body; or 3xx codes with
+			// max redirects exceeded), in which case status MUST be set to Error.
+			code := statusWriter.status
+			if code < 100 || code >= 500 {
+				span.SetStatus(codes.Error, stage)
+			}
+
+			attrSet := labeler.AttributeSet()
+			attrs := attrSet.ToSlice()
+			if code != 0 {
+				attrs = append(attrs, semconv.HTTPResponseStatusCode(code))
+			}
+
+			s.errors.Add(ctx, 1, metric.WithAttributes(attrs...))
+		}
+		err          error
+		opErrContext = ogenerrors.OperationContext{
+			Name: KeepSubscriptionOperation,
+			ID:   "keep-subscription",
+		}
+	)
+	{
+		type bitset = [1]uint8
+		var satisfied bitset
+		{
+			sctx, ok, err := s.securityBearerAuth(ctx, KeepSubscriptionOperation, r)
+			if err != nil {
+				err = &ogenerrors.SecurityError{
+					OperationContext: opErrContext,
+					Security:         "BearerAuth",
+					Err:              err,
+				}
+				if encodeErr := encodeErrorResponse(s.h.NewError(ctx, err), w, span); encodeErr != nil {
+					defer recordError("Security:BearerAuth", err)
+				}
+				return
+			}
+			if ok {
+				satisfied[0] |= 1 << 0
+				ctx = sctx
+			}
+		}
+
+		if ok := func() bool {
+		nextRequirement:
+			for _, requirement := range []bitset{
+				{0b00000001},
+			} {
+				for i, mask := range requirement {
+					if satisfied[i]&mask != mask {
+						continue nextRequirement
+					}
+				}
+				return true
+			}
+			return false
+		}(); !ok {
+			err = &ogenerrors.SecurityError{
+				OperationContext: opErrContext,
+				Err:              ogenerrors.ErrSecurityRequirementIsNotSatisfied,
+			}
+			if encodeErr := encodeErrorResponse(s.h.NewError(ctx, err), w, span); encodeErr != nil {
+				defer recordError("Security", err)
+			}
+			return
+		}
+	}
+	params, err := decodeKeepSubscriptionParams(args, argsEscaped, r)
+	if err != nil {
+		err = &ogenerrors.DecodeParamsError{
+			OperationContext: opErrContext,
+			Err:              err,
+		}
+		defer recordError("DecodeParams", err)
+		s.cfg.ErrorHandler(ctx, w, r, err)
+		return
+	}
+
+	var rawBody []byte
+
+	var response *Subscription
+	if m := s.cfg.Middleware; m != nil {
+		mreq := middleware.Request{
+			Context:          ctx,
+			OperationName:    KeepSubscriptionOperation,
+			OperationSummary: "Undo an end-of-period cancellation",
+			OperationID:      "keep-subscription",
+			Body:             nil,
+			RawBody:          rawBody,
+			Params: middleware.Parameters{
+				{
+					Name: "accountKey",
+					In:   "path",
+				}: params.AccountKey,
+			},
+			Raw: r,
+		}
+
+		type (
+			Request  = struct{}
+			Params   = KeepSubscriptionParams
+			Response = *Subscription
+		)
+		response, err = middleware.HookMiddleware[
+			Request,
+			Params,
+			Response,
+		](
+			m,
+			mreq,
+			unpackKeepSubscriptionParams,
+			func(ctx context.Context, request Request, params Params) (response Response, err error) {
+				response, err = s.h.KeepSubscription(ctx, params)
+				return response, err
+			},
+		)
+	} else {
+		response, err = s.h.KeepSubscription(ctx, params)
+	}
+	if err != nil {
+		if errRes, ok := errors.Into[*ErrorStatusCode](err); ok {
+			if err := encodeErrorResponse(errRes, w, span); err != nil {
+				defer recordError("Internal", err)
+			}
+			return
+		}
+		if errors.Is(err, ht.ErrNotImplemented) {
+			s.cfg.ErrorHandler(ctx, w, r, err)
+			return
+		}
+		if err := encodeErrorResponse(s.h.NewError(ctx, err), w, span); err != nil {
+			defer recordError("Internal", err)
+		}
+		return
+	}
+
+	if err := encodeKeepSubscriptionResponse(response, w, span); err != nil {
 		defer recordError("EncodeResponse", err)
 		if !errors.Is(err, ht.ErrInternalServerErrorResponse) {
 			s.cfg.ErrorHandler(ctx, w, r, err)

@@ -3742,6 +3742,39 @@ func (s *OptQuoteUsageVariant) UnmarshalJSON(data []byte) error {
 	return s.Decode(d)
 }
 
+// Encode encodes ScheduledPlan as json.
+func (o OptScheduledPlan) Encode(e *jx.Encoder) {
+	if !o.Set {
+		return
+	}
+	o.Value.Encode(e)
+}
+
+// Decode decodes ScheduledPlan from json.
+func (o *OptScheduledPlan) Decode(d *jx.Decoder) error {
+	if o == nil {
+		return errors.New("invalid: unable to decode OptScheduledPlan to nil")
+	}
+	o.Set = true
+	if err := o.Value.Decode(d); err != nil {
+		return err
+	}
+	return nil
+}
+
+// MarshalJSON implements stdjson.Marshaler.
+func (s OptScheduledPlan) MarshalJSON() ([]byte, error) {
+	e := jx.Encoder{}
+	s.Encode(&e)
+	return e.Bytes(), nil
+}
+
+// UnmarshalJSON implements stdjson.Unmarshaler.
+func (s *OptScheduledPlan) UnmarshalJSON(data []byte) error {
+	d := jx.DecodeBytes(data)
+	return s.Decode(d)
+}
+
 // Encode encodes string as json.
 func (o OptString) Encode(e *jx.Encoder) {
 	if !o.Set {
@@ -7118,6 +7151,153 @@ func (s *QuoteUsageVariant) UnmarshalJSON(data []byte) error {
 }
 
 // Encode implements json.Marshaler.
+func (s *ScheduledPlan) Encode(e *jx.Encoder) {
+	e.ObjStart()
+	s.encodeFields(e)
+	e.ObjEnd()
+}
+
+// encodeFields encodes fields.
+func (s *ScheduledPlan) encodeFields(e *jx.Encoder) {
+	{
+		e.FieldStart("plan_key")
+		e.Str(s.PlanKey)
+	}
+	{
+		if s.PlanName.Set {
+			e.FieldStart("plan_name")
+			s.PlanName.Encode(e)
+		}
+	}
+	{
+		if s.PlanVersion.Set {
+			e.FieldStart("plan_version")
+			s.PlanVersion.Encode(e)
+		}
+	}
+	{
+		if s.StartsAt.Set {
+			e.FieldStart("starts_at")
+			s.StartsAt.Encode(e, json.EncodeDateTime)
+		}
+	}
+}
+
+var jsonFieldsNameOfScheduledPlan = [4]string{
+	0: "plan_key",
+	1: "plan_name",
+	2: "plan_version",
+	3: "starts_at",
+}
+
+// Decode decodes ScheduledPlan from json.
+func (s *ScheduledPlan) Decode(d *jx.Decoder) error {
+	if s == nil {
+		return errors.New("invalid: unable to decode ScheduledPlan to nil")
+	}
+	var requiredBitSet [1]uint8
+
+	if err := d.ObjBytes(func(d *jx.Decoder, k []byte) error {
+		switch string(k) {
+		case "plan_key":
+			requiredBitSet[0] |= 1 << 0
+			if err := func() error {
+				v, err := d.Str()
+				s.PlanKey = string(v)
+				if err != nil {
+					return err
+				}
+				return nil
+			}(); err != nil {
+				return errors.Wrap(err, "decode field \"plan_key\"")
+			}
+		case "plan_name":
+			if err := func() error {
+				s.PlanName.Reset()
+				if err := s.PlanName.Decode(d); err != nil {
+					return err
+				}
+				return nil
+			}(); err != nil {
+				return errors.Wrap(err, "decode field \"plan_name\"")
+			}
+		case "plan_version":
+			if err := func() error {
+				s.PlanVersion.Reset()
+				if err := s.PlanVersion.Decode(d); err != nil {
+					return err
+				}
+				return nil
+			}(); err != nil {
+				return errors.Wrap(err, "decode field \"plan_version\"")
+			}
+		case "starts_at":
+			if err := func() error {
+				s.StartsAt.Reset()
+				if err := s.StartsAt.Decode(d, json.DecodeDateTime); err != nil {
+					return err
+				}
+				return nil
+			}(); err != nil {
+				return errors.Wrap(err, "decode field \"starts_at\"")
+			}
+		default:
+			return errors.Errorf("unexpected field %q", k)
+		}
+		return nil
+	}); err != nil {
+		return errors.Wrap(err, "decode ScheduledPlan")
+	}
+	// Validate required fields.
+	var failures []validate.FieldError
+	for i, mask := range [1]uint8{
+		0b00000001,
+	} {
+		if result := (requiredBitSet[i] & mask) ^ mask; result != 0 {
+			// Mask only required fields and check equality to mask using XOR.
+			//
+			// If XOR result is not zero, result is not equal to expected, so some fields are missed.
+			// Bits of fields which would be set are actually bits of missed fields.
+			missed := bits.OnesCount8(result)
+			for bitN := 0; bitN < missed; bitN++ {
+				bitIdx := bits.TrailingZeros8(result)
+				fieldIdx := i*8 + bitIdx
+				var name string
+				if fieldIdx < len(jsonFieldsNameOfScheduledPlan) {
+					name = jsonFieldsNameOfScheduledPlan[fieldIdx]
+				} else {
+					name = strconv.Itoa(fieldIdx)
+				}
+				failures = append(failures, validate.FieldError{
+					Name:  name,
+					Error: validate.ErrFieldRequired,
+				})
+				// Reset bit.
+				result &^= 1 << bitIdx
+			}
+		}
+	}
+	if len(failures) > 0 {
+		return &validate.Error{Fields: failures}
+	}
+
+	return nil
+}
+
+// MarshalJSON implements stdjson.Marshaler.
+func (s *ScheduledPlan) MarshalJSON() ([]byte, error) {
+	e := jx.Encoder{}
+	s.Encode(&e)
+	return e.Bytes(), nil
+}
+
+// UnmarshalJSON implements stdjson.Unmarshaler.
+func (s *ScheduledPlan) UnmarshalJSON(data []byte) error {
+	d := jx.DecodeBytes(data)
+	return s.Decode(d)
+}
+
+// Encode implements json.Marshaler.
 func (s *StartTopUpRequestBody) Encode(e *jx.Encoder) {
 	e.ObjStart()
 	s.encodeFields(e)
@@ -7265,6 +7445,12 @@ func (s *Subscription) encodeFields(e *jx.Encoder) {
 		e.Str(s.PlanKey)
 	}
 	{
+		if s.PlanName.Set {
+			e.FieldStart("plan_name")
+			s.PlanName.Encode(e)
+		}
+	}
+	{
 		if s.PlanVersion.Set {
 			e.FieldStart("plan_version")
 			s.PlanVersion.Encode(e)
@@ -7274,13 +7460,42 @@ func (s *Subscription) encodeFields(e *jx.Encoder) {
 		e.FieldStart("status")
 		e.Str(s.Status)
 	}
+	{
+		if s.CurrentPeriodStart.Set {
+			e.FieldStart("current_period_start")
+			s.CurrentPeriodStart.Encode(e, json.EncodeDateTime)
+		}
+	}
+	{
+		if s.CurrentPeriodEnd.Set {
+			e.FieldStart("current_period_end")
+			s.CurrentPeriodEnd.Encode(e, json.EncodeDateTime)
+		}
+	}
+	{
+		if s.Scheduled.Set {
+			e.FieldStart("scheduled")
+			s.Scheduled.Encode(e)
+		}
+	}
+	{
+		if s.CancelsAtPeriodEnd.Set {
+			e.FieldStart("cancels_at_period_end")
+			s.CancelsAtPeriodEnd.Encode(e)
+		}
+	}
 }
 
-var jsonFieldsNameOfSubscription = [4]string{
+var jsonFieldsNameOfSubscription = [9]string{
 	0: "id",
 	1: "plan_key",
-	2: "plan_version",
-	3: "status",
+	2: "plan_name",
+	3: "plan_version",
+	4: "status",
+	5: "current_period_start",
+	6: "current_period_end",
+	7: "scheduled",
+	8: "cancels_at_period_end",
 }
 
 // Decode decodes Subscription from json.
@@ -7288,7 +7503,7 @@ func (s *Subscription) Decode(d *jx.Decoder) error {
 	if s == nil {
 		return errors.New("invalid: unable to decode Subscription to nil")
 	}
-	var requiredBitSet [1]uint8
+	var requiredBitSet [2]uint8
 
 	if err := d.ObjBytes(func(d *jx.Decoder, k []byte) error {
 		switch string(k) {
@@ -7316,6 +7531,16 @@ func (s *Subscription) Decode(d *jx.Decoder) error {
 			}(); err != nil {
 				return errors.Wrap(err, "decode field \"plan_key\"")
 			}
+		case "plan_name":
+			if err := func() error {
+				s.PlanName.Reset()
+				if err := s.PlanName.Decode(d); err != nil {
+					return err
+				}
+				return nil
+			}(); err != nil {
+				return errors.Wrap(err, "decode field \"plan_name\"")
+			}
 		case "plan_version":
 			if err := func() error {
 				s.PlanVersion.Reset()
@@ -7327,7 +7552,7 @@ func (s *Subscription) Decode(d *jx.Decoder) error {
 				return errors.Wrap(err, "decode field \"plan_version\"")
 			}
 		case "status":
-			requiredBitSet[0] |= 1 << 3
+			requiredBitSet[0] |= 1 << 4
 			if err := func() error {
 				v, err := d.Str()
 				s.Status = string(v)
@@ -7338,6 +7563,46 @@ func (s *Subscription) Decode(d *jx.Decoder) error {
 			}(); err != nil {
 				return errors.Wrap(err, "decode field \"status\"")
 			}
+		case "current_period_start":
+			if err := func() error {
+				s.CurrentPeriodStart.Reset()
+				if err := s.CurrentPeriodStart.Decode(d, json.DecodeDateTime); err != nil {
+					return err
+				}
+				return nil
+			}(); err != nil {
+				return errors.Wrap(err, "decode field \"current_period_start\"")
+			}
+		case "current_period_end":
+			if err := func() error {
+				s.CurrentPeriodEnd.Reset()
+				if err := s.CurrentPeriodEnd.Decode(d, json.DecodeDateTime); err != nil {
+					return err
+				}
+				return nil
+			}(); err != nil {
+				return errors.Wrap(err, "decode field \"current_period_end\"")
+			}
+		case "scheduled":
+			if err := func() error {
+				s.Scheduled.Reset()
+				if err := s.Scheduled.Decode(d); err != nil {
+					return err
+				}
+				return nil
+			}(); err != nil {
+				return errors.Wrap(err, "decode field \"scheduled\"")
+			}
+		case "cancels_at_period_end":
+			if err := func() error {
+				s.CancelsAtPeriodEnd.Reset()
+				if err := s.CancelsAtPeriodEnd.Decode(d); err != nil {
+					return err
+				}
+				return nil
+			}(); err != nil {
+				return errors.Wrap(err, "decode field \"cancels_at_period_end\"")
+			}
 		default:
 			return errors.Errorf("unexpected field %q", k)
 		}
@@ -7347,8 +7612,9 @@ func (s *Subscription) Decode(d *jx.Decoder) error {
 	}
 	// Validate required fields.
 	var failures []validate.FieldError
-	for i, mask := range [1]uint8{
-		0b00001011,
+	for i, mask := range [2]uint8{
+		0b00010011,
+		0b00000000,
 	} {
 		if result := (requiredBitSet[i] & mask) ^ mask; result != 0 {
 			// Mask only required fields and check equality to mask using XOR.

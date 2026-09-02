@@ -13,6 +13,7 @@ const (
 	GetChargeUsageOperation                  OperationName = "GetChargeUsage"
 	GetInvoiceOperation                      OperationName = "GetInvoice"
 	GetOrderOperation                        OperationName = "GetOrder"
+	KeepSubscriptionOperation                OperationName = "KeepSubscription"
 	ListBillingAccountsOperation             OperationName = "ListBillingAccounts"
 	ListChargesOperation                     OperationName = "ListCharges"
 	ListCreditTransactionsOperation          OperationName = "ListCreditTransactions"
