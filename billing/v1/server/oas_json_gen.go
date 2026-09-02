@@ -5330,12 +5330,26 @@ func (s *Pricing) encodeFields(e *jx.Encoder) {
 		}
 		e.ArrEnd()
 	}
+	{
+		if s.IncludedCredit.Set {
+			e.FieldStart("included_credit")
+			s.IncludedCredit.Encode(e)
+		}
+	}
+	{
+		if s.IncludedCreditExpires.Set {
+			e.FieldStart("included_credit_expires")
+			s.IncludedCreditExpires.Encode(e)
+		}
+	}
 }
 
-var jsonFieldsNameOfPricing = [3]string{
+var jsonFieldsNameOfPricing = [5]string{
 	0: "currency",
 	1: "billing_period",
 	2: "phases",
+	3: "included_credit",
+	4: "included_credit_expires",
 }
 
 // Decode decodes Pricing from json.
@@ -5384,6 +5398,26 @@ func (s *Pricing) Decode(d *jx.Decoder) error {
 				return nil
 			}(); err != nil {
 				return errors.Wrap(err, "decode field \"phases\"")
+			}
+		case "included_credit":
+			if err := func() error {
+				s.IncludedCredit.Reset()
+				if err := s.IncludedCredit.Decode(d); err != nil {
+					return err
+				}
+				return nil
+			}(); err != nil {
+				return errors.Wrap(err, "decode field \"included_credit\"")
+			}
+		case "included_credit_expires":
+			if err := func() error {
+				s.IncludedCreditExpires.Reset()
+				if err := s.IncludedCreditExpires.Decode(d); err != nil {
+					return err
+				}
+				return nil
+			}(); err != nil {
+				return errors.Wrap(err, "decode field \"included_credit_expires\"")
 			}
 		default:
 			return errors.Errorf("unexpected field %q", k)

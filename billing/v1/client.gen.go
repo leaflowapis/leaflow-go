@@ -894,6 +894,19 @@ type Pricing struct {
 	// where that rule can change without regenerating anything.
 	Currency Currency `json:"currency"`
 
+	// IncludedCredit Credit handed out at the start of every period, as a decimal string in `currency`. Absent
+	// when the tier comes with none.
+	//
+	// It is what makes a paid tier worth buying — "$200 a month, and $200 of credit to spend" —
+	// so leaving it off the pricing page turns that tier into a fee with nothing visibly
+	// attached to it
+	IncludedCredit *string `json:"included_credit,omitempty"`
+
+	// IncludedCreditExpires Whether unused credit is voided at the end of the period. Only meaningful alongside
+	// `included_credit`, and worth showing either way: carried over, it accumulates, which is a
+	// materially different offer at the same price
+	IncludedCreditExpires *bool `json:"included_credit_expires,omitempty"`
+
 	// Phases In order. A phase with no `duration` runs until the subscription ends, and there is at most
 	// one of those, last
 	Phases []PricingPhase `json:"phases"`

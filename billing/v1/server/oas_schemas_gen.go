@@ -3101,6 +3101,16 @@ type Pricing struct {
 	// In order. A phase with no `duration` runs until the subscription ends, and there is at most one of
 	// those, last.
 	Phases []PricingPhase `json:"phases"`
+	// Credit handed out at the start of every period, as a decimal string in `currency`. Absent when the
+	// tier comes with none.
+	//
+	// It is what makes a paid tier worth buying — "$200 a month, and $200 of credit to spend" — so
+	// leaving it off the pricing page turns that tier into a fee with nothing visibly attached to it.
+	IncludedCredit OptString `json:"included_credit"`
+	// Whether unused credit is voided at the end of the period. Only meaningful alongside
+	// `included_credit`, and worth showing either way: carried over, it accumulates, which is a materially
+	// different offer at the same price.
+	IncludedCreditExpires OptBool `json:"included_credit_expires"`
 }
 
 // GetCurrency returns the value of Currency.
@@ -3118,6 +3128,16 @@ func (s *Pricing) GetPhases() []PricingPhase {
 	return s.Phases
 }
 
+// GetIncludedCredit returns the value of IncludedCredit.
+func (s *Pricing) GetIncludedCredit() OptString {
+	return s.IncludedCredit
+}
+
+// GetIncludedCreditExpires returns the value of IncludedCreditExpires.
+func (s *Pricing) GetIncludedCreditExpires() OptBool {
+	return s.IncludedCreditExpires
+}
+
 // SetCurrency sets the value of Currency.
 func (s *Pricing) SetCurrency(val Currency) {
 	s.Currency = val
@@ -3131,6 +3151,16 @@ func (s *Pricing) SetBillingPeriod(val OptString) {
 // SetPhases sets the value of Phases.
 func (s *Pricing) SetPhases(val []PricingPhase) {
 	s.Phases = val
+}
+
+// SetIncludedCredit sets the value of IncludedCredit.
+func (s *Pricing) SetIncludedCredit(val OptString) {
+	s.IncludedCredit = val
+}
+
+// SetIncludedCreditExpires sets the value of IncludedCreditExpires.
+func (s *Pricing) SetIncludedCreditExpires(val OptBool) {
+	s.IncludedCreditExpires = val
 }
 
 // One charge within a phase — a fee, or a rate for something metered.
