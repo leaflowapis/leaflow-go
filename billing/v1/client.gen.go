@@ -1196,7 +1196,15 @@ type Subscription struct {
 	// rather than "no period"
 	CurrentPeriodStart *time.Time `json:"current_period_start,omitempty"`
 	Id                 string     `json:"id"`
-	PlanKey            string     `json:"plan_key"`
+
+	// IsDefaultPlan True when this is the free tier every account starts on.
+	//
+	// Coming off it is not a thing that can happen: cancelling puts the account back on it, so
+	// offering that as an action is at best a no-op and at worst a gap — between the period
+	// ending and the sweep putting the tier back, the account has no plan at all and admission
+	// refuses it. A console reads this to leave the action out.
+	IsDefaultPlan *bool  `json:"is_default_plan,omitempty"`
+	PlanKey       string `json:"plan_key"`
 
 	// PlanName What this tier is called on the pricing page
 	PlanName    *string `json:"plan_name,omitempty"`

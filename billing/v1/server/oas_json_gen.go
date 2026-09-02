@@ -7620,9 +7620,15 @@ func (s *Subscription) encodeFields(e *jx.Encoder) {
 			s.CancelsAtPeriodEnd.Encode(e)
 		}
 	}
+	{
+		if s.IsDefaultPlan.Set {
+			e.FieldStart("is_default_plan")
+			s.IsDefaultPlan.Encode(e)
+		}
+	}
 }
 
-var jsonFieldsNameOfSubscription = [9]string{
+var jsonFieldsNameOfSubscription = [10]string{
 	0: "id",
 	1: "plan_key",
 	2: "plan_name",
@@ -7632,6 +7638,7 @@ var jsonFieldsNameOfSubscription = [9]string{
 	6: "current_period_end",
 	7: "scheduled",
 	8: "cancels_at_period_end",
+	9: "is_default_plan",
 }
 
 // Decode decodes Subscription from json.
@@ -7738,6 +7745,16 @@ func (s *Subscription) Decode(d *jx.Decoder) error {
 				return nil
 			}(); err != nil {
 				return errors.Wrap(err, "decode field \"cancels_at_period_end\"")
+			}
+		case "is_default_plan":
+			if err := func() error {
+				s.IsDefaultPlan.Reset()
+				if err := s.IsDefaultPlan.Decode(d); err != nil {
+					return err
+				}
+				return nil
+			}(); err != nil {
+				return errors.Wrap(err, "decode field \"is_default_plan\"")
 			}
 		default:
 			return errors.Errorf("unexpected field %q", k)

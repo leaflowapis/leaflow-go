@@ -4095,6 +4095,13 @@ type Subscription struct {
 	// True once the account has been taken off its paid plan at the end of the period. It is still being
 	// served until then, and this can still be undone — unlike a scheduled downgrade.
 	CancelsAtPeriodEnd OptBool `json:"cancels_at_period_end"`
+	// True when this is the free tier every account starts on.
+	//
+	// Coming off it is not a thing that can happen: cancelling puts the account back on it, so offering
+	// that as an action is at best a no-op and at worst a gap — between the period ending and the sweep
+	// putting the tier back, the account has no plan at all and admission refuses it. A console reads this
+	// to leave the action out.
+	IsDefaultPlan OptBool `json:"is_default_plan"`
 }
 
 // GetID returns the value of ID.
@@ -4142,6 +4149,11 @@ func (s *Subscription) GetCancelsAtPeriodEnd() OptBool {
 	return s.CancelsAtPeriodEnd
 }
 
+// GetIsDefaultPlan returns the value of IsDefaultPlan.
+func (s *Subscription) GetIsDefaultPlan() OptBool {
+	return s.IsDefaultPlan
+}
+
 // SetID sets the value of ID.
 func (s *Subscription) SetID(val string) {
 	s.ID = val
@@ -4185,6 +4197,11 @@ func (s *Subscription) SetScheduled(val OptScheduledPlan) {
 // SetCancelsAtPeriodEnd sets the value of CancelsAtPeriodEnd.
 func (s *Subscription) SetCancelsAtPeriodEnd(val OptBool) {
 	s.CancelsAtPeriodEnd = val
+}
+
+// SetIsDefaultPlan sets the value of IsDefaultPlan.
+func (s *Subscription) SetIsDefaultPlan(val OptBool) {
+	s.IsDefaultPlan = val
 }
 
 // Ref: #/components/schemas/TopUpList
