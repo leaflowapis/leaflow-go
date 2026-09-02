@@ -1045,13 +1045,51 @@ type ProjectUsage struct {
 	Quantity string `json:"quantity"`
 }
 
-// Purchase defines model for Purchase.
+// Purchase The result of buying an offer — either it is done, or the money has to arrive first.
+//
+// ## A paid tier is never granted before the money lands
+//
+// A tier that charges a fee is paid for by card, not from the credit balance. Two reasons, and
+// the second is the one that decides it:
+//
+//  1. The engine bills a plan's fee **in arrears** — subscribing only records an unsettled
+//     charge, while the tier's credit is handed over at once. Without payment first, an account
+//     can subscribe, spend the credit, and walk away from an invoice nobody will pay.
+//  2. Paying for the membership out of credit is a loop: the tier hands back credit of the same
+//     value, so nothing the platform can bank ever enters. The membership fee is where real
+//     money is supposed to arrive.
+//
+// So `checkout_url` comes back instead of `subscription_id`, and the switch happens when the
+// payment does. The place on the offer is already held, so returning to it later finishes the
+// same purchase rather than starting a second one.
 type Purchase struct {
-	OfferKey string `json:"offer_key"`
+	// AmountDue What the buyer is being sent to pay, in `currency`. Present with `checkout_url`
+	AmountDue *string `json:"amount_due,omitempty"`
+
+	// CheckoutUrl Where to send the buyer to pay. Present exactly when the tier charges a fee and the
+	// payment has not been made yet.
+	//
+	// The switch is performed by the payment callback, so a client that ignores this and reads
+	// `subscription_id` gets nothing — which is the intended failure: pretending the tier is
+	// active before the money arrives is the thing this whole route exists to prevent
+	CheckoutUrl *string `json:"checkout_url,omitempty"`
+
+	// Currency ISO 4217, uppercase. `USD` is the only value the platform issues today, and a request
+	// naming any other is refused with `BILLING_CURRENCY_UNSUPPORTED`.
+	//
+	// Deliberately not an enumeration. The set of currency codes is governed outside this API, so
+	// a client generated today must still be able to read a response naming a code added later —
+	// an enumeration turns that response into a decode failure in a client nobody can redeploy.
+	// Restricting what may be *sent* is a rule about what the platform supports, and it lives
+	// where that rule can change without regenerating anything.
+	Currency *Currency `json:"currency,omitempty"`
+	OfferKey string    `json:"offer_key"`
 
 	// SubscriptionId The subscription now serving this account. When the change was set to take effect at the
-	// end of the period, this is the one that takes over then, and its status says `scheduled`
-	SubscriptionId string `json:"subscription_id"`
+	// end of the period, this is the one that takes over then, and its status says `scheduled`.
+	//
+	// Absent when payment is still needed — see `checkout_url`
+	SubscriptionId *string `json:"subscription_id,omitempty"`
 }
 
 // Quote defines model for Quote.

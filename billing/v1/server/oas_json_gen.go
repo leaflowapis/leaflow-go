@@ -6424,14 +6424,37 @@ func (s *Purchase) encodeFields(e *jx.Encoder) {
 		e.Str(s.OfferKey)
 	}
 	{
-		e.FieldStart("subscription_id")
-		e.Str(s.SubscriptionID)
+		if s.SubscriptionID.Set {
+			e.FieldStart("subscription_id")
+			s.SubscriptionID.Encode(e)
+		}
+	}
+	{
+		if s.CheckoutURL.Set {
+			e.FieldStart("checkout_url")
+			s.CheckoutURL.Encode(e)
+		}
+	}
+	{
+		if s.AmountDue.Set {
+			e.FieldStart("amount_due")
+			s.AmountDue.Encode(e)
+		}
+	}
+	{
+		if s.Currency.Set {
+			e.FieldStart("currency")
+			s.Currency.Encode(e)
+		}
 	}
 }
 
-var jsonFieldsNameOfPurchase = [2]string{
+var jsonFieldsNameOfPurchase = [5]string{
 	0: "offer_key",
 	1: "subscription_id",
+	2: "checkout_url",
+	3: "amount_due",
+	4: "currency",
 }
 
 // Decode decodes Purchase from json.
@@ -6456,16 +6479,44 @@ func (s *Purchase) Decode(d *jx.Decoder) error {
 				return errors.Wrap(err, "decode field \"offer_key\"")
 			}
 		case "subscription_id":
-			requiredBitSet[0] |= 1 << 1
 			if err := func() error {
-				v, err := d.Str()
-				s.SubscriptionID = string(v)
-				if err != nil {
+				s.SubscriptionID.Reset()
+				if err := s.SubscriptionID.Decode(d); err != nil {
 					return err
 				}
 				return nil
 			}(); err != nil {
 				return errors.Wrap(err, "decode field \"subscription_id\"")
+			}
+		case "checkout_url":
+			if err := func() error {
+				s.CheckoutURL.Reset()
+				if err := s.CheckoutURL.Decode(d); err != nil {
+					return err
+				}
+				return nil
+			}(); err != nil {
+				return errors.Wrap(err, "decode field \"checkout_url\"")
+			}
+		case "amount_due":
+			if err := func() error {
+				s.AmountDue.Reset()
+				if err := s.AmountDue.Decode(d); err != nil {
+					return err
+				}
+				return nil
+			}(); err != nil {
+				return errors.Wrap(err, "decode field \"amount_due\"")
+			}
+		case "currency":
+			if err := func() error {
+				s.Currency.Reset()
+				if err := s.Currency.Decode(d); err != nil {
+					return err
+				}
+				return nil
+			}(); err != nil {
+				return errors.Wrap(err, "decode field \"currency\"")
 			}
 		default:
 			return errors.Errorf("unexpected field %q", k)
@@ -6477,7 +6528,7 @@ func (s *Purchase) Decode(d *jx.Decoder) error {
 	// Validate required fields.
 	var failures []validate.FieldError
 	for i, mask := range [1]uint8{
-		0b00000011,
+		0b00000001,
 	} {
 		if result := (requiredBitSet[i] & mask) ^ mask; result != 0 {
 			// Mask only required fields and check equality to mask using XOR.

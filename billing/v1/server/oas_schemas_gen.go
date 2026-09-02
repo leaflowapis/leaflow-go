@@ -3638,12 +3638,41 @@ func (s *ProjectUsage) SetQuantity(val string) {
 	s.Quantity = val
 }
 
+// The result of buying an offer — either it is done, or the money has to arrive first.
+//
+// # A paid tier is never granted before the money lands
+//
+// A tier that charges a fee is paid for by card, not from the credit balance. Two reasons, and the
+// second is the one that decides it:
+//
+//  1. The engine bills a plan's fee in arrears — subscribing only records an unsettled charge, while
+//     the tier's credit is handed over at once. Without payment first, an account can subscribe, spend
+//     the credit, and walk away from an invoice nobody will pay.
+//  2. Paying for the membership out of credit is a loop: the tier hands back credit of the same value,
+//     so nothing the platform can bank ever enters. The membership fee is where real money is supposed
+//     to arrive.
+//
+// So `checkout_url` comes back instead of `subscription_id`, and the switch happens when the payment
+// does. The place on the offer is already held, so returning to it later finishes the same purchase
+// rather than starting a second one.
 // Ref: #/components/schemas/Purchase
 type Purchase struct {
 	OfferKey string `json:"offer_key"`
 	// The subscription now serving this account. When the change was set to take effect at the end of the
 	// period, this is the one that takes over then, and its status says `scheduled`.
-	SubscriptionID string `json:"subscription_id"`
+	//
+	// Absent when payment is still needed — see `checkout_url`.
+	SubscriptionID OptString `json:"subscription_id"`
+	// Where to send the buyer to pay. Present exactly when the tier charges a fee and the payment has not
+	// been made yet.
+	//
+	// The switch is performed by the payment callback, so a client that ignores this and reads
+	// `subscription_id` gets nothing — which is the intended failure: pretending the tier is active
+	// before the money arrives is the thing this whole route exists to prevent.
+	CheckoutURL OptString `json:"checkout_url"`
+	// What the buyer is being sent to pay, in `currency`. Present with `checkout_url`.
+	AmountDue OptString   `json:"amount_due"`
+	Currency  OptCurrency `json:"currency"`
 }
 
 // GetOfferKey returns the value of OfferKey.
@@ -3652,8 +3681,23 @@ func (s *Purchase) GetOfferKey() string {
 }
 
 // GetSubscriptionID returns the value of SubscriptionID.
-func (s *Purchase) GetSubscriptionID() string {
+func (s *Purchase) GetSubscriptionID() OptString {
 	return s.SubscriptionID
+}
+
+// GetCheckoutURL returns the value of CheckoutURL.
+func (s *Purchase) GetCheckoutURL() OptString {
+	return s.CheckoutURL
+}
+
+// GetAmountDue returns the value of AmountDue.
+func (s *Purchase) GetAmountDue() OptString {
+	return s.AmountDue
+}
+
+// GetCurrency returns the value of Currency.
+func (s *Purchase) GetCurrency() OptCurrency {
+	return s.Currency
 }
 
 // SetOfferKey sets the value of OfferKey.
@@ -3662,8 +3706,23 @@ func (s *Purchase) SetOfferKey(val string) {
 }
 
 // SetSubscriptionID sets the value of SubscriptionID.
-func (s *Purchase) SetSubscriptionID(val string) {
+func (s *Purchase) SetSubscriptionID(val OptString) {
 	s.SubscriptionID = val
+}
+
+// SetCheckoutURL sets the value of CheckoutURL.
+func (s *Purchase) SetCheckoutURL(val OptString) {
+	s.CheckoutURL = val
+}
+
+// SetAmountDue sets the value of AmountDue.
+func (s *Purchase) SetAmountDue(val OptString) {
+	s.AmountDue = val
+}
+
+// SetCurrency sets the value of Currency.
+func (s *Purchase) SetCurrency(val OptCurrency) {
+	s.Currency = val
 }
 
 // Ref: #/components/schemas/Quote
