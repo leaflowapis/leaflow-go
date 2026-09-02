@@ -178,7 +178,7 @@ func (UnimplementedHandler) KeepSubscription(ctx context.Context, params KeepSub
 // and that is a small number.
 //
 // GET /account/v1/billing-accounts
-func (UnimplementedHandler) ListBillingAccounts(ctx context.Context) (r *BillingAccountList, _ error) {
+func (UnimplementedHandler) ListBillingAccounts(ctx context.Context, params ListBillingAccountsParams) (r *BillingAccountList, _ error) {
 	return r, ht.ErrNotImplemented
 }
 

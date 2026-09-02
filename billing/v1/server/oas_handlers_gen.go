@@ -1863,6 +1863,16 @@ func (s *Server) handleListBillingAccountsRequest(args [0]string, argsEscaped bo
 			return
 		}
 	}
+	params, err := decodeListBillingAccountsParams(args, argsEscaped, r)
+	if err != nil {
+		err = &ogenerrors.DecodeParamsError{
+			OperationContext: opErrContext,
+			Err:              err,
+		}
+		defer recordError("DecodeParams", err)
+		s.cfg.ErrorHandler(ctx, w, r, err)
+		return
+	}
 
 	var rawBody []byte
 
@@ -1875,13 +1885,22 @@ func (s *Server) handleListBillingAccountsRequest(args [0]string, argsEscaped bo
 			OperationID:      "list-billing-accounts",
 			Body:             nil,
 			RawBody:          rawBody,
-			Params:           middleware.Parameters{},
-			Raw:              r,
+			Params: middleware.Parameters{
+				{
+					Name: "page",
+					In:   "query",
+				}: params.Page,
+				{
+					Name: "page_size",
+					In:   "query",
+				}: params.PageSize,
+			},
+			Raw: r,
 		}
 
 		type (
 			Request  = struct{}
-			Params   = struct{}
+			Params   = ListBillingAccountsParams
 			Response = *BillingAccountList
 		)
 		response, err = middleware.HookMiddleware[
@@ -1891,14 +1910,14 @@ func (s *Server) handleListBillingAccountsRequest(args [0]string, argsEscaped bo
 		](
 			m,
 			mreq,
-			nil,
+			unpackListBillingAccountsParams,
 			func(ctx context.Context, request Request, params Params) (response Response, err error) {
-				response, err = s.h.ListBillingAccounts(ctx)
+				response, err = s.h.ListBillingAccounts(ctx, params)
 				return response, err
 			},
 		)
 	} else {
-		response, err = s.h.ListBillingAccounts(ctx)
+		response, err = s.h.ListBillingAccounts(ctx, params)
 	}
 	if err != nil {
 		if errRes, ok := errors.Into[*ErrorStatusCode](err); ok {
@@ -2293,6 +2312,14 @@ func (s *Server) handleListCreditTransactionsRequest(args [1]string, argsEscaped
 					Name: "accountKey",
 					In:   "path",
 				}: params.AccountKey,
+				{
+					Name: "page",
+					In:   "query",
+				}: params.Page,
+				{
+					Name: "page_size",
+					In:   "query",
+				}: params.PageSize,
 			},
 			Raw: r,
 		}
@@ -2494,6 +2521,14 @@ func (s *Server) handleListInvoicesRequest(args [1]string, argsEscaped bool, w h
 					Name: "accountKey",
 					In:   "path",
 				}: params.AccountKey,
+				{
+					Name: "page",
+					In:   "query",
+				}: params.Page,
+				{
+					Name: "page_size",
+					In:   "query",
+				}: params.PageSize,
 			},
 			Raw: r,
 		}
@@ -2704,6 +2739,14 @@ func (s *Server) handleListOffersRequest(args [1]string, argsEscaped bool, w htt
 					Name: "accountKey",
 					In:   "path",
 				}: params.AccountKey,
+				{
+					Name: "page",
+					In:   "query",
+				}: params.Page,
+				{
+					Name: "page_size",
+					In:   "query",
+				}: params.PageSize,
 			},
 			Raw: r,
 		}
@@ -2911,6 +2954,14 @@ func (s *Server) handleListOrdersRequest(args [1]string, argsEscaped bool, w htt
 					Name: "accountKey",
 					In:   "path",
 				}: params.AccountKey,
+				{
+					Name: "page",
+					In:   "query",
+				}: params.Page,
+				{
+					Name: "page_size",
+					In:   "query",
+				}: params.PageSize,
 			},
 			Raw: r,
 		}
@@ -3128,6 +3179,14 @@ func (s *Server) handleListPaymentMethodsRequest(args [1]string, argsEscaped boo
 					Name: "accountKey",
 					In:   "path",
 				}: params.AccountKey,
+				{
+					Name: "page",
+					In:   "query",
+				}: params.Page,
+				{
+					Name: "page_size",
+					In:   "query",
+				}: params.PageSize,
 			},
 			Raw: r,
 		}
@@ -3349,6 +3408,14 @@ func (s *Server) handleListPrepaidAssetsRequest(args [1]string, argsEscaped bool
 					Name: "accountKey",
 					In:   "path",
 				}: params.AccountKey,
+				{
+					Name: "page",
+					In:   "query",
+				}: params.Page,
+				{
+					Name: "page_size",
+					In:   "query",
+				}: params.PageSize,
 			},
 			Raw: r,
 		}
@@ -3554,6 +3621,14 @@ func (s *Server) handleListTopUpsRequest(args [1]string, argsEscaped bool, w htt
 					Name: "accountKey",
 					In:   "path",
 				}: params.AccountKey,
+				{
+					Name: "page",
+					In:   "query",
+				}: params.Page,
+				{
+					Name: "page_size",
+					In:   "query",
+				}: params.PageSize,
 			},
 			Raw: r,
 		}

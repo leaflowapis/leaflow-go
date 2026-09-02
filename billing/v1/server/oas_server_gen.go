@@ -149,7 +149,7 @@ type Handler interface {
 	// and that is a small number.
 	//
 	// GET /account/v1/billing-accounts
-	ListBillingAccounts(ctx context.Context) (*BillingAccountList, error)
+	ListBillingAccounts(ctx context.Context, params ListBillingAccountsParams) (*BillingAccountList, error)
 	// ListCharges implements list-charges operation.
 	//
 	// The itemised version of `unsettled`: what has been used this period and not yet billed.

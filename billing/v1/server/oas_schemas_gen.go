@@ -174,13 +174,29 @@ func (s *BillingAccount) SetProjectIds(val []uuid.UUID) {
 
 // Ref: #/components/schemas/BillingAccountList
 type BillingAccountList struct {
+	// How many entries there are in total, across every page.
+	//
+	// Without it, "is there another page" has to be guessed from whether this one came back full — and
+	// that guess turns into one extra fetch of an empty page whenever the last page happens to be exactly
+	// full.
+	TotalCount OptInt64 `json:"total_count"`
 	// Every account belonging to the caller. Empty when they hold none.
 	Accounts []BillingAccount `json:"accounts"`
+}
+
+// GetTotalCount returns the value of TotalCount.
+func (s *BillingAccountList) GetTotalCount() OptInt64 {
+	return s.TotalCount
 }
 
 // GetAccounts returns the value of Accounts.
 func (s *BillingAccountList) GetAccounts() []BillingAccount {
 	return s.Accounts
+}
+
+// SetTotalCount sets the value of TotalCount.
+func (s *BillingAccountList) SetTotalCount(val OptInt64) {
+	s.TotalCount = val
 }
 
 // SetAccounts sets the value of Accounts.
@@ -792,12 +808,28 @@ func (s *CreditTransaction) SetBalanceAfter(val string) {
 
 // Ref: #/components/schemas/CreditTransactionList
 type CreditTransactionList struct {
+	// How many entries there are in total, across every page.
+	//
+	// Without it, "is there another page" has to be guessed from whether this one came back full — and
+	// that guess turns into one extra fetch of an empty page whenever the last page happens to be exactly
+	// full.
+	TotalCount   OptInt64            `json:"total_count"`
 	Transactions []CreditTransaction `json:"transactions"`
+}
+
+// GetTotalCount returns the value of TotalCount.
+func (s *CreditTransactionList) GetTotalCount() OptInt64 {
+	return s.TotalCount
 }
 
 // GetTransactions returns the value of Transactions.
 func (s *CreditTransactionList) GetTransactions() []CreditTransaction {
 	return s.Transactions
+}
+
+// SetTotalCount sets the value of TotalCount.
+func (s *CreditTransactionList) SetTotalCount(val OptInt64) {
+	s.TotalCount = val
 }
 
 // SetTransactions sets the value of Transactions.
@@ -1408,12 +1440,28 @@ func (s *InvoiceLineConversionOperation) UnmarshalText(data []byte) error {
 
 // Ref: #/components/schemas/InvoiceList
 type InvoiceList struct {
-	Invoices []Invoice `json:"invoices"`
+	// How many entries there are in total, across every page.
+	//
+	// Without it, "is there another page" has to be guessed from whether this one came back full — and
+	// that guess turns into one extra fetch of an empty page whenever the last page happens to be exactly
+	// full.
+	TotalCount OptInt64  `json:"total_count"`
+	Invoices   []Invoice `json:"invoices"`
+}
+
+// GetTotalCount returns the value of TotalCount.
+func (s *InvoiceList) GetTotalCount() OptInt64 {
+	return s.TotalCount
 }
 
 // GetInvoices returns the value of Invoices.
 func (s *InvoiceList) GetInvoices() []Invoice {
 	return s.Invoices
+}
+
+// SetTotalCount sets the value of TotalCount.
+func (s *InvoiceList) SetTotalCount(val OptInt64) {
+	s.TotalCount = val
 }
 
 // SetInvoices sets the value of Invoices.
@@ -1612,12 +1660,28 @@ func (s *Offer) SetTopUp(val OptTopUpPricing) {
 
 // Ref: #/components/schemas/OfferList
 type OfferList struct {
-	Offers []Offer `json:"offers"`
+	// How many entries there are in total, across every page.
+	//
+	// Without it, "is there another page" has to be guessed from whether this one came back full — and
+	// that guess turns into one extra fetch of an empty page whenever the last page happens to be exactly
+	// full.
+	TotalCount OptInt64 `json:"total_count"`
+	Offers     []Offer  `json:"offers"`
+}
+
+// GetTotalCount returns the value of TotalCount.
+func (s *OfferList) GetTotalCount() OptInt64 {
+	return s.TotalCount
 }
 
 // GetOffers returns the value of Offers.
 func (s *OfferList) GetOffers() []Offer {
 	return s.Offers
+}
+
+// SetTotalCount sets the value of TotalCount.
+func (s *OfferList) SetTotalCount(val OptInt64) {
+	s.TotalCount = val
 }
 
 // SetOffers sets the value of Offers.
@@ -2600,12 +2664,28 @@ func (s *OrderLineAction) UnmarshalText(data []byte) error {
 
 // Ref: #/components/schemas/OrderList
 type OrderList struct {
-	Orders []Order `json:"orders"`
+	// How many entries there are in total, across every page.
+	//
+	// Without it, "is there another page" has to be guessed from whether this one came back full — and
+	// that guess turns into one extra fetch of an empty page whenever the last page happens to be exactly
+	// full.
+	TotalCount OptInt64 `json:"total_count"`
+	Orders     []Order  `json:"orders"`
+}
+
+// GetTotalCount returns the value of TotalCount.
+func (s *OrderList) GetTotalCount() OptInt64 {
+	return s.TotalCount
 }
 
 // GetOrders returns the value of Orders.
 func (s *OrderList) GetOrders() []Order {
 	return s.Orders
+}
+
+// SetTotalCount sets the value of TotalCount.
+func (s *OrderList) SetTotalCount(val OptInt64) {
+	s.TotalCount = val
 }
 
 // SetOrders sets the value of Orders.
@@ -2802,12 +2882,28 @@ func (s *PaymentMethod) SetDefault(val bool) {
 
 // Ref: #/components/schemas/PaymentMethodList
 type PaymentMethodList struct {
+	// How many entries there are in total, across every page.
+	//
+	// Without it, "is there another page" has to be guessed from whether this one came back full — and
+	// that guess turns into one extra fetch of an empty page whenever the last page happens to be exactly
+	// full.
+	TotalCount     OptInt64        `json:"total_count"`
 	PaymentMethods []PaymentMethod `json:"payment_methods"`
+}
+
+// GetTotalCount returns the value of TotalCount.
+func (s *PaymentMethodList) GetTotalCount() OptInt64 {
+	return s.TotalCount
 }
 
 // GetPaymentMethods returns the value of PaymentMethods.
 func (s *PaymentMethodList) GetPaymentMethods() []PaymentMethod {
 	return s.PaymentMethods
+}
+
+// SetTotalCount sets the value of TotalCount.
+func (s *PaymentMethodList) SetTotalCount(val OptInt64) {
+	s.TotalCount = val
 }
 
 // SetPaymentMethods sets the value of PaymentMethods.
@@ -3079,12 +3175,28 @@ func (s *PrepaidAssetDesiredState) UnmarshalText(data []byte) error {
 
 // Ref: #/components/schemas/PrepaidAssetList
 type PrepaidAssetList struct {
-	Assets []PrepaidAsset `json:"assets"`
+	// How many entries there are in total, across every page.
+	//
+	// Without it, "is there another page" has to be guessed from whether this one came back full — and
+	// that guess turns into one extra fetch of an empty page whenever the last page happens to be exactly
+	// full.
+	TotalCount OptInt64       `json:"total_count"`
+	Assets     []PrepaidAsset `json:"assets"`
+}
+
+// GetTotalCount returns the value of TotalCount.
+func (s *PrepaidAssetList) GetTotalCount() OptInt64 {
+	return s.TotalCount
 }
 
 // GetAssets returns the value of Assets.
 func (s *PrepaidAssetList) GetAssets() []PrepaidAsset {
 	return s.Assets
+}
+
+// SetTotalCount sets the value of TotalCount.
+func (s *PrepaidAssetList) SetTotalCount(val OptInt64) {
+	s.TotalCount = val
 }
 
 // SetAssets sets the value of Assets.
@@ -4077,12 +4189,28 @@ func (s *Subscription) SetCancelsAtPeriodEnd(val OptBool) {
 
 // Ref: #/components/schemas/TopUpList
 type TopUpList struct {
-	TopUps []TopUpStatus `json:"top_ups"`
+	// How many entries there are in total, across every page.
+	//
+	// Without it, "is there another page" has to be guessed from whether this one came back full — and
+	// that guess turns into one extra fetch of an empty page whenever the last page happens to be exactly
+	// full.
+	TotalCount OptInt64      `json:"total_count"`
+	TopUps     []TopUpStatus `json:"top_ups"`
+}
+
+// GetTotalCount returns the value of TotalCount.
+func (s *TopUpList) GetTotalCount() OptInt64 {
+	return s.TotalCount
 }
 
 // GetTopUps returns the value of TopUps.
 func (s *TopUpList) GetTopUps() []TopUpStatus {
 	return s.TopUps
+}
+
+// SetTotalCount sets the value of TotalCount.
+func (s *TopUpList) SetTotalCount(val OptInt64) {
+	s.TotalCount = val
 }
 
 // SetTopUps sets the value of TopUps.

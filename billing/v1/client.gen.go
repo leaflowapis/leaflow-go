@@ -391,6 +391,13 @@ type BillingAccount struct {
 type BillingAccountList struct {
 	// Accounts Every account belonging to the caller. Empty when they hold none
 	Accounts []BillingAccount `json:"accounts"`
+
+	// TotalCount How many entries there are in total, across every page.
+	//
+	// Without it, "is there another page" has to be guessed from whether this one came back
+	// full — and that guess turns into one extra fetch of an empty page whenever the last page
+	// happens to be exactly full.
+	TotalCount *int64 `json:"total_count,omitempty"`
 }
 
 // Charge One thing this period has been charged for
@@ -563,6 +570,12 @@ type CreditTransaction struct {
 
 // CreditTransactionList defines model for CreditTransactionList.
 type CreditTransactionList struct {
+	// TotalCount How many entries there are in total, across every page.
+	//
+	// Without it, "is there another page" has to be guessed from whether this one came back
+	// full — and that guess turns into one extra fetch of an empty page whenever the last page
+	// happens to be exactly full.
+	TotalCount   *int64              `json:"total_count,omitempty"`
 	Transactions []CreditTransaction `json:"transactions"`
 }
 
@@ -678,6 +691,13 @@ type InvoiceLineConversionOperation string
 // InvoiceList defines model for InvoiceList.
 type InvoiceList struct {
 	Invoices []Invoice `json:"invoices"`
+
+	// TotalCount How many entries there are in total, across every page.
+	//
+	// Without it, "is there another page" has to be guessed from whether this one came back
+	// full — and that guess turns into one extra fetch of an empty page whenever the last page
+	// happens to be exactly full.
+	TotalCount *int64 `json:"total_count,omitempty"`
 }
 
 // InvoiceStatus defines model for InvoiceStatus.
@@ -715,6 +735,13 @@ type Offer struct {
 // OfferList defines model for OfferList.
 type OfferList struct {
 	Offers []Offer `json:"offers"`
+
+	// TotalCount How many entries there are in total, across every page.
+	//
+	// Without it, "is there another page" has to be guessed from whether this one came back
+	// full — and that guess turns into one extra fetch of an empty page whenever the last page
+	// happens to be exactly full.
+	TotalCount *int64 `json:"total_count,omitempty"`
 }
 
 // Order defines model for Order.
@@ -768,6 +795,13 @@ type OrderLineAction string
 // OrderList defines model for OrderList.
 type OrderList struct {
 	Orders []Order `json:"orders"`
+
+	// TotalCount How many entries there are in total, across every page.
+	//
+	// Without it, "is there another page" has to be guessed from whether this one came back
+	// full — and that guess turns into one extra fetch of an empty page whenever the last page
+	// happens to be exactly full.
+	TotalCount *int64 `json:"total_count,omitempty"`
 }
 
 // PaymentMethod One saved way of collecting money later, without the account holder present.
@@ -804,6 +838,13 @@ type PaymentMethod struct {
 // PaymentMethodList defines model for PaymentMethodList.
 type PaymentMethodList struct {
 	PaymentMethods []PaymentMethod `json:"payment_methods"`
+
+	// TotalCount How many entries there are in total, across every page.
+	//
+	// Without it, "is there another page" has to be guessed from whether this one came back
+	// full — and that guess turns into one extra fetch of an empty page whenever the last page
+	// happens to be exactly full.
+	TotalCount *int64 `json:"total_count,omitempty"`
 }
 
 // PaymentMethodSetupSession defines model for PaymentMethodSetupSession.
@@ -876,6 +917,13 @@ type PrepaidAssetState string
 // PrepaidAssetList defines model for PrepaidAssetList.
 type PrepaidAssetList struct {
 	Assets []PrepaidAsset `json:"assets"`
+
+	// TotalCount How many entries there are in total, across every page.
+	//
+	// Without it, "is there another page" has to be guessed from whether this one came back
+	// full — and that guess turns into one extra fetch of an empty page whenever the last page
+	// happens to be exactly full.
+	TotalCount *int64 `json:"total_count,omitempty"`
 }
 
 // Pricing What this offer costs, as a structure rather than a number.
@@ -1169,6 +1217,13 @@ type Subscription struct {
 // TopUpList defines model for TopUpList.
 type TopUpList struct {
 	TopUps []TopUpStatus `json:"top_ups"`
+
+	// TotalCount How many entries there are in total, across every page.
+	//
+	// Without it, "is there another page" has to be guessed from whether this one came back
+	// full — and that guess turns into one extra fetch of an empty page whenever the last page
+	// happens to be exactly full.
+	TotalCount *int64 `json:"total_count,omitempty"`
 }
 
 // TopUpPricing What a top-up bundle costs and what it grants. Present only on offers that sell credit.
@@ -1227,23 +1282,120 @@ type UpdateBillingAccountRequestBody struct {
 // AccountKey defines model for AccountKey.
 type AccountKey = string
 
+// Page defines model for Page.
+type Page = int32
+
+// PageSize defines model for PageSize.
+type PageSize = int32
+
+// ListBillingAccountsParams defines parameters for ListBillingAccounts.
+type ListBillingAccountsParams struct {
+	// Page 1-based page number; the first page when omitted.
+	Page *Page `form:"page,omitempty" json:"page,omitempty"`
+
+	// PageSize How many entries per page, at most 100.
+	//
+	// Every list here grows without bound — charges with resources, transactions with time. A list
+	// that returns everything works on the account it was written against and quietly turns into a
+	// multi-megabyte response on the one that has been running for a year.
+	PageSize *PageSize `form:"page_size,omitempty" json:"page_size,omitempty"`
+}
+
 // ListChargesParams defines parameters for ListCharges.
 type ListChargesParams struct {
 	// Page 1-based page number; the first page when omitted.
-	Page *int `form:"page,omitempty" json:"page,omitempty"`
+	Page *Page `form:"page,omitempty" json:"page,omitempty"`
 
-	// PageSize How many charges per page. Defaults to a full page.
+	// PageSize How many entries per page, at most 100.
 	//
-	// Charge count grows with resource count — an account running dozens of machines produces
-	// hundreds of lines in a period, and a screen shows a dozen. Fetching all of them on every
-	// visit carries data nothing displays.
-	PageSize *int `form:"page_size,omitempty" json:"page_size,omitempty"`
+	// Every list here grows without bound — charges with resources, transactions with time. A list
+	// that returns everything works on the account it was written against and quietly turns into a
+	// multi-megabyte response on the one that has been running for a year.
+	PageSize *PageSize `form:"page_size,omitempty" json:"page_size,omitempty"`
+}
+
+// ListCreditTransactionsParams defines parameters for ListCreditTransactions.
+type ListCreditTransactionsParams struct {
+	// Page 1-based page number; the first page when omitted.
+	Page *Page `form:"page,omitempty" json:"page,omitempty"`
+
+	// PageSize How many entries per page, at most 100.
+	//
+	// Every list here grows without bound — charges with resources, transactions with time. A list
+	// that returns everything works on the account it was written against and quietly turns into a
+	// multi-megabyte response on the one that has been running for a year.
+	PageSize *PageSize `form:"page_size,omitempty" json:"page_size,omitempty"`
+}
+
+// ListInvoicesParams defines parameters for ListInvoices.
+type ListInvoicesParams struct {
+	// Page 1-based page number; the first page when omitted.
+	Page *Page `form:"page,omitempty" json:"page,omitempty"`
+
+	// PageSize How many entries per page, at most 100.
+	//
+	// Every list here grows without bound — charges with resources, transactions with time. A list
+	// that returns everything works on the account it was written against and quietly turns into a
+	// multi-megabyte response on the one that has been running for a year.
+	PageSize *PageSize `form:"page_size,omitempty" json:"page_size,omitempty"`
+}
+
+// ListOffersParams defines parameters for ListOffers.
+type ListOffersParams struct {
+	// Page 1-based page number; the first page when omitted.
+	Page *Page `form:"page,omitempty" json:"page,omitempty"`
+
+	// PageSize How many entries per page, at most 100.
+	//
+	// Every list here grows without bound — charges with resources, transactions with time. A list
+	// that returns everything works on the account it was written against and quietly turns into a
+	// multi-megabyte response on the one that has been running for a year.
+	PageSize *PageSize `form:"page_size,omitempty" json:"page_size,omitempty"`
 }
 
 // PurchaseOfferParams defines parameters for PurchaseOffer.
 type PurchaseOfferParams struct {
 	// Timing When the switch takes effect. Required if the account already has a plan, ignored otherwise
 	Timing *PlanChangeTiming `form:"timing,omitempty" json:"timing,omitempty"`
+}
+
+// ListOrdersParams defines parameters for ListOrders.
+type ListOrdersParams struct {
+	// Page 1-based page number; the first page when omitted.
+	Page *Page `form:"page,omitempty" json:"page,omitempty"`
+
+	// PageSize How many entries per page, at most 100.
+	//
+	// Every list here grows without bound — charges with resources, transactions with time. A list
+	// that returns everything works on the account it was written against and quietly turns into a
+	// multi-megabyte response on the one that has been running for a year.
+	PageSize *PageSize `form:"page_size,omitempty" json:"page_size,omitempty"`
+}
+
+// ListPaymentMethodsParams defines parameters for ListPaymentMethods.
+type ListPaymentMethodsParams struct {
+	// Page 1-based page number; the first page when omitted.
+	Page *Page `form:"page,omitempty" json:"page,omitempty"`
+
+	// PageSize How many entries per page, at most 100.
+	//
+	// Every list here grows without bound — charges with resources, transactions with time. A list
+	// that returns everything works on the account it was written against and quietly turns into a
+	// multi-megabyte response on the one that has been running for a year.
+	PageSize *PageSize `form:"page_size,omitempty" json:"page_size,omitempty"`
+}
+
+// ListPrepaidAssetsParams defines parameters for ListPrepaidAssets.
+type ListPrepaidAssetsParams struct {
+	// Page 1-based page number; the first page when omitted.
+	Page *Page `form:"page,omitempty" json:"page,omitempty"`
+
+	// PageSize How many entries per page, at most 100.
+	//
+	// Every list here grows without bound — charges with resources, transactions with time. A list
+	// that returns everything works on the account it was written against and quietly turns into a
+	// multi-megabyte response on the one that has been running for a year.
+	PageSize *PageSize `form:"page_size,omitempty" json:"page_size,omitempty"`
 }
 
 // CancelSubscriptionParams defines parameters for CancelSubscription.
@@ -1254,6 +1406,19 @@ type CancelSubscriptionParams struct {
 
 // CancelSubscriptionParamsTiming defines parameters for CancelSubscription.
 type CancelSubscriptionParamsTiming string
+
+// ListTopUpsParams defines parameters for ListTopUps.
+type ListTopUpsParams struct {
+	// Page 1-based page number; the first page when omitted.
+	Page *Page `form:"page,omitempty" json:"page,omitempty"`
+
+	// PageSize How many entries per page, at most 100.
+	//
+	// Every list here grows without bound — charges with resources, transactions with time. A list
+	// that returns everything works on the account it was written against and quietly turns into a
+	// multi-megabyte response on the one that has been running for a year.
+	PageSize *PageSize `form:"page_size,omitempty" json:"page_size,omitempty"`
+}
 
 // CreateBillingAccountJSONRequestBody defines body for CreateBillingAccount for application/json ContentType.
 type CreateBillingAccountJSONRequestBody = CreateBillingAccountRequestBody
@@ -1352,7 +1517,7 @@ type ClientInterface interface {
 	// create, and that is a small number.
 	//
 	// Corresponds with GET /account/v1/billing-accounts (the `ListBillingAccounts` operationId).
-	ListBillingAccounts(ctx context.Context, reqEditors ...RequestEditorFn) (*http.Response, error)
+	ListBillingAccounts(ctx context.Context, params *ListBillingAccountsParams, reqEditors ...RequestEditorFn) (*http.Response, error)
 
 	// CreateBillingAccountWithBody Create a billing account
 	//
@@ -1506,7 +1671,7 @@ type ClientInterface interface {
 	// "something expired" — which lead to different next steps.
 	//
 	// Corresponds with GET /account/v1/billing-accounts/{accountKey}/credit-transactions (the `ListCreditTransactions` operationId).
-	ListCreditTransactions(ctx context.Context, accountKey AccountKey, reqEditors ...RequestEditorFn) (*http.Response, error)
+	ListCreditTransactions(ctx context.Context, accountKey AccountKey, params *ListCreditTransactionsParams, reqEditors ...RequestEditorFn) (*http.Response, error)
 
 	// ListInvoices List this account's invoices
 	//
@@ -1514,7 +1679,7 @@ type ClientInterface interface {
 	// endpoint for that.
 	//
 	// Corresponds with GET /account/v1/billing-accounts/{accountKey}/invoices (the `ListInvoices` operationId).
-	ListInvoices(ctx context.Context, accountKey AccountKey, reqEditors ...RequestEditorFn) (*http.Response, error)
+	ListInvoices(ctx context.Context, accountKey AccountKey, params *ListInvoicesParams, reqEditors ...RequestEditorFn) (*http.Response, error)
 
 	// GetInvoice Read one invoice with its lines
 	//
@@ -1541,7 +1706,7 @@ type ClientInterface interface {
 	// when**. What it costs comes from the plan it points at, and is reported by the offers list.
 	//
 	// Corresponds with GET /account/v1/billing-accounts/{accountKey}/offers (the `ListOffers` operationId).
-	ListOffers(ctx context.Context, accountKey AccountKey, reqEditors ...RequestEditorFn) (*http.Response, error)
+	ListOffers(ctx context.Context, accountKey AccountKey, params *ListOffersParams, reqEditors ...RequestEditorFn) (*http.Response, error)
 
 	// PurchaseOffer Buy an offer
 	//
@@ -1587,7 +1752,7 @@ type ClientInterface interface {
 	// means carrying data no column shows.
 	//
 	// Corresponds with GET /account/v1/billing-accounts/{accountKey}/orders (the `ListOrders` operationId).
-	ListOrders(ctx context.Context, accountKey AccountKey, reqEditors ...RequestEditorFn) (*http.Response, error)
+	ListOrders(ctx context.Context, accountKey AccountKey, params *ListOrdersParams, reqEditors ...RequestEditorFn) (*http.Response, error)
 
 	// GetOrder One order, with its lines
 	//
@@ -1619,7 +1784,7 @@ type ClientInterface interface {
 	// account, not an error.
 	//
 	// Corresponds with GET /account/v1/billing-accounts/{accountKey}/payment-methods (the `ListPaymentMethods` operationId).
-	ListPaymentMethods(ctx context.Context, accountKey AccountKey, reqEditors ...RequestEditorFn) (*http.Response, error)
+	ListPaymentMethods(ctx context.Context, accountKey AccountKey, params *ListPaymentMethodsParams, reqEditors ...RequestEditorFn) (*http.Response, error)
 
 	// StartPaymentMethodSetup Begin adding a payment method
 	//
@@ -1700,7 +1865,7 @@ type ClientInterface interface {
 	// and a customer who just paid concludes it did not work and pays again.
 	//
 	// Corresponds with GET /account/v1/billing-accounts/{accountKey}/prepaid-assets (the `ListPrepaidAssets` operationId).
-	ListPrepaidAssets(ctx context.Context, accountKey AccountKey, reqEditors ...RequestEditorFn) (*http.Response, error)
+	ListPrepaidAssets(ctx context.Context, accountKey AccountKey, params *ListPrepaidAssetsParams, reqEditors ...RequestEditorFn) (*http.Response, error)
 
 	// UnbindProjectFromBillingAccount Stop paying for a project
 	//
@@ -1856,7 +2021,7 @@ type ClientInterface interface {
 	// check whether their money arrived.
 	//
 	// Corresponds with GET /account/v1/billing-accounts/{accountKey}/top-ups (the `ListTopUps` operationId).
-	ListTopUps(ctx context.Context, accountKey AccountKey, reqEditors ...RequestEditorFn) (*http.Response, error)
+	ListTopUps(ctx context.Context, accountKey AccountKey, params *ListTopUpsParams, reqEditors ...RequestEditorFn) (*http.Response, error)
 
 	// StartTopUpWithBody Start a top-up
 	//
@@ -2025,8 +2190,8 @@ type ClientInterface interface {
 // create, and that is a small number.
 //
 // Corresponds with GET /account/v1/billing-accounts (the `ListBillingAccounts` operationId).
-func (c *Client) ListBillingAccounts(ctx context.Context, reqEditors ...RequestEditorFn) (*http.Response, error) {
-	req, err := NewListBillingAccountsRequest(c.Server)
+func (c *Client) ListBillingAccounts(ctx context.Context, params *ListBillingAccountsParams, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewListBillingAccountsRequest(c.Server, params)
 	if err != nil {
 		return nil, err
 	}
@@ -2269,8 +2434,8 @@ func (c *Client) GetChargeUsage(ctx context.Context, accountKey AccountKey, char
 // "something expired" — which lead to different next steps.
 //
 // Corresponds with GET /account/v1/billing-accounts/{accountKey}/credit-transactions (the `ListCreditTransactions` operationId).
-func (c *Client) ListCreditTransactions(ctx context.Context, accountKey AccountKey, reqEditors ...RequestEditorFn) (*http.Response, error) {
-	req, err := NewListCreditTransactionsRequest(c.Server, accountKey)
+func (c *Client) ListCreditTransactions(ctx context.Context, accountKey AccountKey, params *ListCreditTransactionsParams, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewListCreditTransactionsRequest(c.Server, accountKey, params)
 	if err != nil {
 		return nil, err
 	}
@@ -2287,8 +2452,8 @@ func (c *Client) ListCreditTransactions(ctx context.Context, accountKey AccountK
 // endpoint for that.
 //
 // Corresponds with GET /account/v1/billing-accounts/{accountKey}/invoices (the `ListInvoices` operationId).
-func (c *Client) ListInvoices(ctx context.Context, accountKey AccountKey, reqEditors ...RequestEditorFn) (*http.Response, error) {
-	req, err := NewListInvoicesRequest(c.Server, accountKey)
+func (c *Client) ListInvoices(ctx context.Context, accountKey AccountKey, params *ListInvoicesParams, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewListInvoicesRequest(c.Server, accountKey, params)
 	if err != nil {
 		return nil, err
 	}
@@ -2334,8 +2499,8 @@ func (c *Client) GetInvoice(ctx context.Context, accountKey AccountKey, invoiceI
 // when**. What it costs comes from the plan it points at, and is reported by the offers list.
 //
 // Corresponds with GET /account/v1/billing-accounts/{accountKey}/offers (the `ListOffers` operationId).
-func (c *Client) ListOffers(ctx context.Context, accountKey AccountKey, reqEditors ...RequestEditorFn) (*http.Response, error) {
-	req, err := NewListOffersRequest(c.Server, accountKey)
+func (c *Client) ListOffers(ctx context.Context, accountKey AccountKey, params *ListOffersParams, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewListOffersRequest(c.Server, accountKey, params)
 	if err != nil {
 		return nil, err
 	}
@@ -2400,8 +2565,8 @@ func (c *Client) PurchaseOffer(ctx context.Context, accountKey AccountKey, offer
 // means carrying data no column shows.
 //
 // Corresponds with GET /account/v1/billing-accounts/{accountKey}/orders (the `ListOrders` operationId).
-func (c *Client) ListOrders(ctx context.Context, accountKey AccountKey, reqEditors ...RequestEditorFn) (*http.Response, error) {
-	req, err := NewListOrdersRequest(c.Server, accountKey)
+func (c *Client) ListOrders(ctx context.Context, accountKey AccountKey, params *ListOrdersParams, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewListOrdersRequest(c.Server, accountKey, params)
 	if err != nil {
 		return nil, err
 	}
@@ -2452,8 +2617,8 @@ func (c *Client) GetOrder(ctx context.Context, accountKey AccountKey, orderId op
 // account, not an error.
 //
 // Corresponds with GET /account/v1/billing-accounts/{accountKey}/payment-methods (the `ListPaymentMethods` operationId).
-func (c *Client) ListPaymentMethods(ctx context.Context, accountKey AccountKey, reqEditors ...RequestEditorFn) (*http.Response, error) {
-	req, err := NewListPaymentMethodsRequest(c.Server, accountKey)
+func (c *Client) ListPaymentMethods(ctx context.Context, accountKey AccountKey, params *ListPaymentMethodsParams, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewListPaymentMethodsRequest(c.Server, accountKey, params)
 	if err != nil {
 		return nil, err
 	}
@@ -2573,8 +2738,8 @@ func (c *Client) SetDefaultPaymentMethod(ctx context.Context, accountKey Account
 // and a customer who just paid concludes it did not work and pays again.
 //
 // Corresponds with GET /account/v1/billing-accounts/{accountKey}/prepaid-assets (the `ListPrepaidAssets` operationId).
-func (c *Client) ListPrepaidAssets(ctx context.Context, accountKey AccountKey, reqEditors ...RequestEditorFn) (*http.Response, error) {
-	req, err := NewListPrepaidAssetsRequest(c.Server, accountKey)
+func (c *Client) ListPrepaidAssets(ctx context.Context, accountKey AccountKey, params *ListPrepaidAssetsParams, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewListPrepaidAssetsRequest(c.Server, accountKey, params)
 	if err != nil {
 		return nil, err
 	}
@@ -2809,8 +2974,8 @@ func (c *Client) KeepSubscription(ctx context.Context, accountKey AccountKey, re
 // check whether their money arrived.
 //
 // Corresponds with GET /account/v1/billing-accounts/{accountKey}/top-ups (the `ListTopUps` operationId).
-func (c *Client) ListTopUps(ctx context.Context, accountKey AccountKey, reqEditors ...RequestEditorFn) (*http.Response, error) {
-	req, err := NewListTopUpsRequest(c.Server, accountKey)
+func (c *Client) ListTopUps(ctx context.Context, accountKey AccountKey, params *ListTopUpsParams, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewListTopUpsRequest(c.Server, accountKey, params)
 	if err != nil {
 		return nil, err
 	}
@@ -3040,7 +3205,7 @@ func (c *Client) QuoteProjectUsage(ctx context.Context, projectId openapi_types.
 }
 
 // NewListBillingAccountsRequest constructs an http.Request for the ListBillingAccounts method
-func NewListBillingAccountsRequest(server string) (*http.Request, error) {
+func NewListBillingAccountsRequest(server string, params *ListBillingAccountsParams) (*http.Request, error) {
 	var err error
 
 	serverURL, err := url.Parse(server)
@@ -3056,6 +3221,45 @@ func NewListBillingAccountsRequest(server string) (*http.Request, error) {
 	queryURL, err := serverURL.Parse(operationPath)
 	if err != nil {
 		return nil, err
+	}
+
+	if params != nil {
+		// queryValues collects non-styled parameters (passthrough, JSON)
+		// that are safe to round-trip through url.Values.Encode().
+		queryValues := queryURL.Query()
+		// rawQueryFragments collects pre-encoded query fragments from
+		// styled parameters, preserving literal commas as delimiters
+		// per the OpenAPI spec (e.g. "color=blue,black,brown").
+		var rawQueryFragments []string
+
+		if params.Page != nil {
+
+			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "page", *params.Page, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "integer", Format: "int32"}); err != nil {
+				return nil, err
+			} else {
+				for _, qp := range strings.Split(queryFrag, "&") {
+					rawQueryFragments = append(rawQueryFragments, qp)
+				}
+			}
+
+		}
+
+		if params.PageSize != nil {
+
+			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "page_size", *params.PageSize, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "integer", Format: "int32"}); err != nil {
+				return nil, err
+			} else {
+				for _, qp := range strings.Split(queryFrag, "&") {
+					rawQueryFragments = append(rawQueryFragments, qp)
+				}
+			}
+
+		}
+
+		if encoded := queryValues.Encode(); encoded != "" {
+			rawQueryFragments = append(rawQueryFragments, encoded)
+		}
+		queryURL.RawQuery = strings.Join(rawQueryFragments, "&")
 	}
 
 	req, err := http.NewRequest(http.MethodGet, queryURL.String(), nil)
@@ -3258,7 +3462,7 @@ func NewListChargesRequest(server string, accountKey AccountKey, params *ListCha
 
 		if params.Page != nil {
 
-			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "page", *params.Page, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "integer", Format: ""}); err != nil {
+			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "page", *params.Page, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "integer", Format: "int32"}); err != nil {
 				return nil, err
 			} else {
 				for _, qp := range strings.Split(queryFrag, "&") {
@@ -3270,7 +3474,7 @@ func NewListChargesRequest(server string, accountKey AccountKey, params *ListCha
 
 		if params.PageSize != nil {
 
-			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "page_size", *params.PageSize, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "integer", Format: ""}); err != nil {
+			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "page_size", *params.PageSize, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "integer", Format: "int32"}); err != nil {
 				return nil, err
 			} else {
 				for _, qp := range strings.Split(queryFrag, "&") {
@@ -3336,7 +3540,7 @@ func NewGetChargeUsageRequest(server string, accountKey AccountKey, chargeId str
 }
 
 // NewListCreditTransactionsRequest constructs an http.Request for the ListCreditTransactions method
-func NewListCreditTransactionsRequest(server string, accountKey AccountKey) (*http.Request, error) {
+func NewListCreditTransactionsRequest(server string, accountKey AccountKey, params *ListCreditTransactionsParams) (*http.Request, error) {
 	var err error
 
 	var pathParam0 string
@@ -3361,6 +3565,45 @@ func NewListCreditTransactionsRequest(server string, accountKey AccountKey) (*ht
 		return nil, err
 	}
 
+	if params != nil {
+		// queryValues collects non-styled parameters (passthrough, JSON)
+		// that are safe to round-trip through url.Values.Encode().
+		queryValues := queryURL.Query()
+		// rawQueryFragments collects pre-encoded query fragments from
+		// styled parameters, preserving literal commas as delimiters
+		// per the OpenAPI spec (e.g. "color=blue,black,brown").
+		var rawQueryFragments []string
+
+		if params.Page != nil {
+
+			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "page", *params.Page, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "integer", Format: "int32"}); err != nil {
+				return nil, err
+			} else {
+				for _, qp := range strings.Split(queryFrag, "&") {
+					rawQueryFragments = append(rawQueryFragments, qp)
+				}
+			}
+
+		}
+
+		if params.PageSize != nil {
+
+			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "page_size", *params.PageSize, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "integer", Format: "int32"}); err != nil {
+				return nil, err
+			} else {
+				for _, qp := range strings.Split(queryFrag, "&") {
+					rawQueryFragments = append(rawQueryFragments, qp)
+				}
+			}
+
+		}
+
+		if encoded := queryValues.Encode(); encoded != "" {
+			rawQueryFragments = append(rawQueryFragments, encoded)
+		}
+		queryURL.RawQuery = strings.Join(rawQueryFragments, "&")
+	}
+
 	req, err := http.NewRequest(http.MethodGet, queryURL.String(), nil)
 	if err != nil {
 		return nil, err
@@ -3370,7 +3613,7 @@ func NewListCreditTransactionsRequest(server string, accountKey AccountKey) (*ht
 }
 
 // NewListInvoicesRequest constructs an http.Request for the ListInvoices method
-func NewListInvoicesRequest(server string, accountKey AccountKey) (*http.Request, error) {
+func NewListInvoicesRequest(server string, accountKey AccountKey, params *ListInvoicesParams) (*http.Request, error) {
 	var err error
 
 	var pathParam0 string
@@ -3393,6 +3636,45 @@ func NewListInvoicesRequest(server string, accountKey AccountKey) (*http.Request
 	queryURL, err := serverURL.Parse(operationPath)
 	if err != nil {
 		return nil, err
+	}
+
+	if params != nil {
+		// queryValues collects non-styled parameters (passthrough, JSON)
+		// that are safe to round-trip through url.Values.Encode().
+		queryValues := queryURL.Query()
+		// rawQueryFragments collects pre-encoded query fragments from
+		// styled parameters, preserving literal commas as delimiters
+		// per the OpenAPI spec (e.g. "color=blue,black,brown").
+		var rawQueryFragments []string
+
+		if params.Page != nil {
+
+			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "page", *params.Page, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "integer", Format: "int32"}); err != nil {
+				return nil, err
+			} else {
+				for _, qp := range strings.Split(queryFrag, "&") {
+					rawQueryFragments = append(rawQueryFragments, qp)
+				}
+			}
+
+		}
+
+		if params.PageSize != nil {
+
+			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "page_size", *params.PageSize, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "integer", Format: "int32"}); err != nil {
+				return nil, err
+			} else {
+				for _, qp := range strings.Split(queryFrag, "&") {
+					rawQueryFragments = append(rawQueryFragments, qp)
+				}
+			}
+
+		}
+
+		if encoded := queryValues.Encode(); encoded != "" {
+			rawQueryFragments = append(rawQueryFragments, encoded)
+		}
+		queryURL.RawQuery = strings.Join(rawQueryFragments, "&")
 	}
 
 	req, err := http.NewRequest(http.MethodGet, queryURL.String(), nil)
@@ -3445,7 +3727,7 @@ func NewGetInvoiceRequest(server string, accountKey AccountKey, invoiceId string
 }
 
 // NewListOffersRequest constructs an http.Request for the ListOffers method
-func NewListOffersRequest(server string, accountKey AccountKey) (*http.Request, error) {
+func NewListOffersRequest(server string, accountKey AccountKey, params *ListOffersParams) (*http.Request, error) {
 	var err error
 
 	var pathParam0 string
@@ -3468,6 +3750,45 @@ func NewListOffersRequest(server string, accountKey AccountKey) (*http.Request, 
 	queryURL, err := serverURL.Parse(operationPath)
 	if err != nil {
 		return nil, err
+	}
+
+	if params != nil {
+		// queryValues collects non-styled parameters (passthrough, JSON)
+		// that are safe to round-trip through url.Values.Encode().
+		queryValues := queryURL.Query()
+		// rawQueryFragments collects pre-encoded query fragments from
+		// styled parameters, preserving literal commas as delimiters
+		// per the OpenAPI spec (e.g. "color=blue,black,brown").
+		var rawQueryFragments []string
+
+		if params.Page != nil {
+
+			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "page", *params.Page, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "integer", Format: "int32"}); err != nil {
+				return nil, err
+			} else {
+				for _, qp := range strings.Split(queryFrag, "&") {
+					rawQueryFragments = append(rawQueryFragments, qp)
+				}
+			}
+
+		}
+
+		if params.PageSize != nil {
+
+			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "page_size", *params.PageSize, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "integer", Format: "int32"}); err != nil {
+				return nil, err
+			} else {
+				for _, qp := range strings.Split(queryFrag, "&") {
+					rawQueryFragments = append(rawQueryFragments, qp)
+				}
+			}
+
+		}
+
+		if encoded := queryValues.Encode(); encoded != "" {
+			rawQueryFragments = append(rawQueryFragments, encoded)
+		}
+		queryURL.RawQuery = strings.Join(rawQueryFragments, "&")
 	}
 
 	req, err := http.NewRequest(http.MethodGet, queryURL.String(), nil)
@@ -3547,7 +3868,7 @@ func NewPurchaseOfferRequest(server string, accountKey AccountKey, offerKey stri
 }
 
 // NewListOrdersRequest constructs an http.Request for the ListOrders method
-func NewListOrdersRequest(server string, accountKey AccountKey) (*http.Request, error) {
+func NewListOrdersRequest(server string, accountKey AccountKey, params *ListOrdersParams) (*http.Request, error) {
 	var err error
 
 	var pathParam0 string
@@ -3570,6 +3891,45 @@ func NewListOrdersRequest(server string, accountKey AccountKey) (*http.Request, 
 	queryURL, err := serverURL.Parse(operationPath)
 	if err != nil {
 		return nil, err
+	}
+
+	if params != nil {
+		// queryValues collects non-styled parameters (passthrough, JSON)
+		// that are safe to round-trip through url.Values.Encode().
+		queryValues := queryURL.Query()
+		// rawQueryFragments collects pre-encoded query fragments from
+		// styled parameters, preserving literal commas as delimiters
+		// per the OpenAPI spec (e.g. "color=blue,black,brown").
+		var rawQueryFragments []string
+
+		if params.Page != nil {
+
+			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "page", *params.Page, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "integer", Format: "int32"}); err != nil {
+				return nil, err
+			} else {
+				for _, qp := range strings.Split(queryFrag, "&") {
+					rawQueryFragments = append(rawQueryFragments, qp)
+				}
+			}
+
+		}
+
+		if params.PageSize != nil {
+
+			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "page_size", *params.PageSize, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "integer", Format: "int32"}); err != nil {
+				return nil, err
+			} else {
+				for _, qp := range strings.Split(queryFrag, "&") {
+					rawQueryFragments = append(rawQueryFragments, qp)
+				}
+			}
+
+		}
+
+		if encoded := queryValues.Encode(); encoded != "" {
+			rawQueryFragments = append(rawQueryFragments, encoded)
+		}
+		queryURL.RawQuery = strings.Join(rawQueryFragments, "&")
 	}
 
 	req, err := http.NewRequest(http.MethodGet, queryURL.String(), nil)
@@ -3622,7 +3982,7 @@ func NewGetOrderRequest(server string, accountKey AccountKey, orderId openapi_ty
 }
 
 // NewListPaymentMethodsRequest constructs an http.Request for the ListPaymentMethods method
-func NewListPaymentMethodsRequest(server string, accountKey AccountKey) (*http.Request, error) {
+func NewListPaymentMethodsRequest(server string, accountKey AccountKey, params *ListPaymentMethodsParams) (*http.Request, error) {
 	var err error
 
 	var pathParam0 string
@@ -3645,6 +4005,45 @@ func NewListPaymentMethodsRequest(server string, accountKey AccountKey) (*http.R
 	queryURL, err := serverURL.Parse(operationPath)
 	if err != nil {
 		return nil, err
+	}
+
+	if params != nil {
+		// queryValues collects non-styled parameters (passthrough, JSON)
+		// that are safe to round-trip through url.Values.Encode().
+		queryValues := queryURL.Query()
+		// rawQueryFragments collects pre-encoded query fragments from
+		// styled parameters, preserving literal commas as delimiters
+		// per the OpenAPI spec (e.g. "color=blue,black,brown").
+		var rawQueryFragments []string
+
+		if params.Page != nil {
+
+			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "page", *params.Page, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "integer", Format: "int32"}); err != nil {
+				return nil, err
+			} else {
+				for _, qp := range strings.Split(queryFrag, "&") {
+					rawQueryFragments = append(rawQueryFragments, qp)
+				}
+			}
+
+		}
+
+		if params.PageSize != nil {
+
+			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "page_size", *params.PageSize, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "integer", Format: "int32"}); err != nil {
+				return nil, err
+			} else {
+				for _, qp := range strings.Split(queryFrag, "&") {
+					rawQueryFragments = append(rawQueryFragments, qp)
+				}
+			}
+
+		}
+
+		if encoded := queryValues.Encode(); encoded != "" {
+			rawQueryFragments = append(rawQueryFragments, encoded)
+		}
+		queryURL.RawQuery = strings.Join(rawQueryFragments, "&")
 	}
 
 	req, err := http.NewRequest(http.MethodGet, queryURL.String(), nil)
@@ -3772,7 +4171,7 @@ func NewSetDefaultPaymentMethodRequest(server string, accountKey AccountKey, pay
 }
 
 // NewListPrepaidAssetsRequest constructs an http.Request for the ListPrepaidAssets method
-func NewListPrepaidAssetsRequest(server string, accountKey AccountKey) (*http.Request, error) {
+func NewListPrepaidAssetsRequest(server string, accountKey AccountKey, params *ListPrepaidAssetsParams) (*http.Request, error) {
 	var err error
 
 	var pathParam0 string
@@ -3795,6 +4194,45 @@ func NewListPrepaidAssetsRequest(server string, accountKey AccountKey) (*http.Re
 	queryURL, err := serverURL.Parse(operationPath)
 	if err != nil {
 		return nil, err
+	}
+
+	if params != nil {
+		// queryValues collects non-styled parameters (passthrough, JSON)
+		// that are safe to round-trip through url.Values.Encode().
+		queryValues := queryURL.Query()
+		// rawQueryFragments collects pre-encoded query fragments from
+		// styled parameters, preserving literal commas as delimiters
+		// per the OpenAPI spec (e.g. "color=blue,black,brown").
+		var rawQueryFragments []string
+
+		if params.Page != nil {
+
+			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "page", *params.Page, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "integer", Format: "int32"}); err != nil {
+				return nil, err
+			} else {
+				for _, qp := range strings.Split(queryFrag, "&") {
+					rawQueryFragments = append(rawQueryFragments, qp)
+				}
+			}
+
+		}
+
+		if params.PageSize != nil {
+
+			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "page_size", *params.PageSize, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "integer", Format: "int32"}); err != nil {
+				return nil, err
+			} else {
+				for _, qp := range strings.Split(queryFrag, "&") {
+					rawQueryFragments = append(rawQueryFragments, qp)
+				}
+			}
+
+		}
+
+		if encoded := queryValues.Encode(); encoded != "" {
+			rawQueryFragments = append(rawQueryFragments, encoded)
+		}
+		queryURL.RawQuery = strings.Join(rawQueryFragments, "&")
 	}
 
 	req, err := http.NewRequest(http.MethodGet, queryURL.String(), nil)
@@ -4060,7 +4498,7 @@ func NewKeepSubscriptionRequest(server string, accountKey AccountKey) (*http.Req
 }
 
 // NewListTopUpsRequest constructs an http.Request for the ListTopUps method
-func NewListTopUpsRequest(server string, accountKey AccountKey) (*http.Request, error) {
+func NewListTopUpsRequest(server string, accountKey AccountKey, params *ListTopUpsParams) (*http.Request, error) {
 	var err error
 
 	var pathParam0 string
@@ -4083,6 +4521,45 @@ func NewListTopUpsRequest(server string, accountKey AccountKey) (*http.Request, 
 	queryURL, err := serverURL.Parse(operationPath)
 	if err != nil {
 		return nil, err
+	}
+
+	if params != nil {
+		// queryValues collects non-styled parameters (passthrough, JSON)
+		// that are safe to round-trip through url.Values.Encode().
+		queryValues := queryURL.Query()
+		// rawQueryFragments collects pre-encoded query fragments from
+		// styled parameters, preserving literal commas as delimiters
+		// per the OpenAPI spec (e.g. "color=blue,black,brown").
+		var rawQueryFragments []string
+
+		if params.Page != nil {
+
+			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "page", *params.Page, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "integer", Format: "int32"}); err != nil {
+				return nil, err
+			} else {
+				for _, qp := range strings.Split(queryFrag, "&") {
+					rawQueryFragments = append(rawQueryFragments, qp)
+				}
+			}
+
+		}
+
+		if params.PageSize != nil {
+
+			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "page_size", *params.PageSize, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "integer", Format: "int32"}); err != nil {
+				return nil, err
+			} else {
+				for _, qp := range strings.Split(queryFrag, "&") {
+					rawQueryFragments = append(rawQueryFragments, qp)
+				}
+			}
+
+		}
+
+		if encoded := queryValues.Encode(); encoded != "" {
+			rawQueryFragments = append(rawQueryFragments, encoded)
+		}
+		queryURL.RawQuery = strings.Join(rawQueryFragments, "&")
 	}
 
 	req, err := http.NewRequest(http.MethodGet, queryURL.String(), nil)
@@ -4316,7 +4793,7 @@ type ClientWithResponsesInterface interface {
 	// Returns a wrapper object for the known response body format(s).
 	//
 	// Corresponds with GET /account/v1/billing-accounts (the `ListBillingAccounts` operationId).
-	ListBillingAccountsWithResponse(ctx context.Context, reqEditors ...RequestEditorFn) (*ListBillingAccountsResponse, error)
+	ListBillingAccountsWithResponse(ctx context.Context, params *ListBillingAccountsParams, reqEditors ...RequestEditorFn) (*ListBillingAccountsResponse, error)
 
 	// CreateBillingAccountWithBodyWithResponse Create a billing account
 	//
@@ -4480,7 +4957,7 @@ type ClientWithResponsesInterface interface {
 	// Returns a wrapper object for the known response body format(s).
 	//
 	// Corresponds with GET /account/v1/billing-accounts/{accountKey}/credit-transactions (the `ListCreditTransactions` operationId).
-	ListCreditTransactionsWithResponse(ctx context.Context, accountKey AccountKey, reqEditors ...RequestEditorFn) (*ListCreditTransactionsResponse, error)
+	ListCreditTransactionsWithResponse(ctx context.Context, accountKey AccountKey, params *ListCreditTransactionsParams, reqEditors ...RequestEditorFn) (*ListCreditTransactionsResponse, error)
 
 	// ListInvoicesWithResponse List this account's invoices
 	//
@@ -4490,7 +4967,7 @@ type ClientWithResponsesInterface interface {
 	// Returns a wrapper object for the known response body format(s).
 	//
 	// Corresponds with GET /account/v1/billing-accounts/{accountKey}/invoices (the `ListInvoices` operationId).
-	ListInvoicesWithResponse(ctx context.Context, accountKey AccountKey, reqEditors ...RequestEditorFn) (*ListInvoicesResponse, error)
+	ListInvoicesWithResponse(ctx context.Context, accountKey AccountKey, params *ListInvoicesParams, reqEditors ...RequestEditorFn) (*ListInvoicesResponse, error)
 
 	// GetInvoiceWithResponse Read one invoice with its lines
 	//
@@ -4521,7 +4998,7 @@ type ClientWithResponsesInterface interface {
 	// Returns a wrapper object for the known response body format(s).
 	//
 	// Corresponds with GET /account/v1/billing-accounts/{accountKey}/offers (the `ListOffers` operationId).
-	ListOffersWithResponse(ctx context.Context, accountKey AccountKey, reqEditors ...RequestEditorFn) (*ListOffersResponse, error)
+	ListOffersWithResponse(ctx context.Context, accountKey AccountKey, params *ListOffersParams, reqEditors ...RequestEditorFn) (*ListOffersResponse, error)
 
 	// PurchaseOfferWithResponse Buy an offer
 	//
@@ -4571,7 +5048,7 @@ type ClientWithResponsesInterface interface {
 	// Returns a wrapper object for the known response body format(s).
 	//
 	// Corresponds with GET /account/v1/billing-accounts/{accountKey}/orders (the `ListOrders` operationId).
-	ListOrdersWithResponse(ctx context.Context, accountKey AccountKey, reqEditors ...RequestEditorFn) (*ListOrdersResponse, error)
+	ListOrdersWithResponse(ctx context.Context, accountKey AccountKey, params *ListOrdersParams, reqEditors ...RequestEditorFn) (*ListOrdersResponse, error)
 
 	// GetOrderWithResponse One order, with its lines
 	//
@@ -4607,7 +5084,7 @@ type ClientWithResponsesInterface interface {
 	// Returns a wrapper object for the known response body format(s).
 	//
 	// Corresponds with GET /account/v1/billing-accounts/{accountKey}/payment-methods (the `ListPaymentMethods` operationId).
-	ListPaymentMethodsWithResponse(ctx context.Context, accountKey AccountKey, reqEditors ...RequestEditorFn) (*ListPaymentMethodsResponse, error)
+	ListPaymentMethodsWithResponse(ctx context.Context, accountKey AccountKey, params *ListPaymentMethodsParams, reqEditors ...RequestEditorFn) (*ListPaymentMethodsResponse, error)
 
 	// StartPaymentMethodSetupWithResponse Begin adding a payment method
 	//
@@ -4696,7 +5173,7 @@ type ClientWithResponsesInterface interface {
 	// Returns a wrapper object for the known response body format(s).
 	//
 	// Corresponds with GET /account/v1/billing-accounts/{accountKey}/prepaid-assets (the `ListPrepaidAssets` operationId).
-	ListPrepaidAssetsWithResponse(ctx context.Context, accountKey AccountKey, reqEditors ...RequestEditorFn) (*ListPrepaidAssetsResponse, error)
+	ListPrepaidAssetsWithResponse(ctx context.Context, accountKey AccountKey, params *ListPrepaidAssetsParams, reqEditors ...RequestEditorFn) (*ListPrepaidAssetsResponse, error)
 
 	// UnbindProjectFromBillingAccountWithResponse Stop paying for a project
 	//
@@ -4864,7 +5341,7 @@ type ClientWithResponsesInterface interface {
 	// Returns a wrapper object for the known response body format(s).
 	//
 	// Corresponds with GET /account/v1/billing-accounts/{accountKey}/top-ups (the `ListTopUps` operationId).
-	ListTopUpsWithResponse(ctx context.Context, accountKey AccountKey, reqEditors ...RequestEditorFn) (*ListTopUpsResponse, error)
+	ListTopUpsWithResponse(ctx context.Context, accountKey AccountKey, params *ListTopUpsParams, reqEditors ...RequestEditorFn) (*ListTopUpsResponse, error)
 
 	// StartTopUpWithBodyWithResponse Start a top-up
 	//
@@ -6458,8 +6935,8 @@ func (r QuoteProjectUsageResponse) ContentType() string {
 // Returns a wrapper object for the known response body format(s).
 //
 // Corresponds with GET /account/v1/billing-accounts (the `ListBillingAccounts` operationId).
-func (c *ClientWithResponses) ListBillingAccountsWithResponse(ctx context.Context, reqEditors ...RequestEditorFn) (*ListBillingAccountsResponse, error) {
-	rsp, err := c.ListBillingAccounts(ctx, reqEditors...)
+func (c *ClientWithResponses) ListBillingAccountsWithResponse(ctx context.Context, params *ListBillingAccountsParams, reqEditors ...RequestEditorFn) (*ListBillingAccountsResponse, error) {
+	rsp, err := c.ListBillingAccounts(ctx, params, reqEditors...)
 	if err != nil {
 		return nil, err
 	}
@@ -6676,8 +7153,8 @@ func (c *ClientWithResponses) GetChargeUsageWithResponse(ctx context.Context, ac
 // Returns a wrapper object for the known response body format(s).
 //
 // Corresponds with GET /account/v1/billing-accounts/{accountKey}/credit-transactions (the `ListCreditTransactions` operationId).
-func (c *ClientWithResponses) ListCreditTransactionsWithResponse(ctx context.Context, accountKey AccountKey, reqEditors ...RequestEditorFn) (*ListCreditTransactionsResponse, error) {
-	rsp, err := c.ListCreditTransactions(ctx, accountKey, reqEditors...)
+func (c *ClientWithResponses) ListCreditTransactionsWithResponse(ctx context.Context, accountKey AccountKey, params *ListCreditTransactionsParams, reqEditors ...RequestEditorFn) (*ListCreditTransactionsResponse, error) {
+	rsp, err := c.ListCreditTransactions(ctx, accountKey, params, reqEditors...)
 	if err != nil {
 		return nil, err
 	}
@@ -6692,8 +7169,8 @@ func (c *ClientWithResponses) ListCreditTransactionsWithResponse(ctx context.Con
 // Returns a wrapper object for the known response body format(s).
 //
 // Corresponds with GET /account/v1/billing-accounts/{accountKey}/invoices (the `ListInvoices` operationId).
-func (c *ClientWithResponses) ListInvoicesWithResponse(ctx context.Context, accountKey AccountKey, reqEditors ...RequestEditorFn) (*ListInvoicesResponse, error) {
-	rsp, err := c.ListInvoices(ctx, accountKey, reqEditors...)
+func (c *ClientWithResponses) ListInvoicesWithResponse(ctx context.Context, accountKey AccountKey, params *ListInvoicesParams, reqEditors ...RequestEditorFn) (*ListInvoicesResponse, error) {
+	rsp, err := c.ListInvoices(ctx, accountKey, params, reqEditors...)
 	if err != nil {
 		return nil, err
 	}
@@ -6735,8 +7212,8 @@ func (c *ClientWithResponses) GetInvoiceWithResponse(ctx context.Context, accoun
 // Returns a wrapper object for the known response body format(s).
 //
 // Corresponds with GET /account/v1/billing-accounts/{accountKey}/offers (the `ListOffers` operationId).
-func (c *ClientWithResponses) ListOffersWithResponse(ctx context.Context, accountKey AccountKey, reqEditors ...RequestEditorFn) (*ListOffersResponse, error) {
-	rsp, err := c.ListOffers(ctx, accountKey, reqEditors...)
+func (c *ClientWithResponses) ListOffersWithResponse(ctx context.Context, accountKey AccountKey, params *ListOffersParams, reqEditors ...RequestEditorFn) (*ListOffersResponse, error) {
+	rsp, err := c.ListOffers(ctx, accountKey, params, reqEditors...)
 	if err != nil {
 		return nil, err
 	}
@@ -6797,8 +7274,8 @@ func (c *ClientWithResponses) PurchaseOfferWithResponse(ctx context.Context, acc
 // Returns a wrapper object for the known response body format(s).
 //
 // Corresponds with GET /account/v1/billing-accounts/{accountKey}/orders (the `ListOrders` operationId).
-func (c *ClientWithResponses) ListOrdersWithResponse(ctx context.Context, accountKey AccountKey, reqEditors ...RequestEditorFn) (*ListOrdersResponse, error) {
-	rsp, err := c.ListOrders(ctx, accountKey, reqEditors...)
+func (c *ClientWithResponses) ListOrdersWithResponse(ctx context.Context, accountKey AccountKey, params *ListOrdersParams, reqEditors ...RequestEditorFn) (*ListOrdersResponse, error) {
+	rsp, err := c.ListOrders(ctx, accountKey, params, reqEditors...)
 	if err != nil {
 		return nil, err
 	}
@@ -6845,8 +7322,8 @@ func (c *ClientWithResponses) GetOrderWithResponse(ctx context.Context, accountK
 // Returns a wrapper object for the known response body format(s).
 //
 // Corresponds with GET /account/v1/billing-accounts/{accountKey}/payment-methods (the `ListPaymentMethods` operationId).
-func (c *ClientWithResponses) ListPaymentMethodsWithResponse(ctx context.Context, accountKey AccountKey, reqEditors ...RequestEditorFn) (*ListPaymentMethodsResponse, error) {
-	rsp, err := c.ListPaymentMethods(ctx, accountKey, reqEditors...)
+func (c *ClientWithResponses) ListPaymentMethodsWithResponse(ctx context.Context, accountKey AccountKey, params *ListPaymentMethodsParams, reqEditors ...RequestEditorFn) (*ListPaymentMethodsResponse, error) {
+	rsp, err := c.ListPaymentMethods(ctx, accountKey, params, reqEditors...)
 	if err != nil {
 		return nil, err
 	}
@@ -6958,8 +7435,8 @@ func (c *ClientWithResponses) SetDefaultPaymentMethodWithResponse(ctx context.Co
 // Returns a wrapper object for the known response body format(s).
 //
 // Corresponds with GET /account/v1/billing-accounts/{accountKey}/prepaid-assets (the `ListPrepaidAssets` operationId).
-func (c *ClientWithResponses) ListPrepaidAssetsWithResponse(ctx context.Context, accountKey AccountKey, reqEditors ...RequestEditorFn) (*ListPrepaidAssetsResponse, error) {
-	rsp, err := c.ListPrepaidAssets(ctx, accountKey, reqEditors...)
+func (c *ClientWithResponses) ListPrepaidAssetsWithResponse(ctx context.Context, accountKey AccountKey, params *ListPrepaidAssetsParams, reqEditors ...RequestEditorFn) (*ListPrepaidAssetsResponse, error) {
+	rsp, err := c.ListPrepaidAssets(ctx, accountKey, params, reqEditors...)
 	if err != nil {
 		return nil, err
 	}
@@ -7174,8 +7651,8 @@ func (c *ClientWithResponses) KeepSubscriptionWithResponse(ctx context.Context, 
 // Returns a wrapper object for the known response body format(s).
 //
 // Corresponds with GET /account/v1/billing-accounts/{accountKey}/top-ups (the `ListTopUps` operationId).
-func (c *ClientWithResponses) ListTopUpsWithResponse(ctx context.Context, accountKey AccountKey, reqEditors ...RequestEditorFn) (*ListTopUpsResponse, error) {
-	rsp, err := c.ListTopUps(ctx, accountKey, reqEditors...)
+func (c *ClientWithResponses) ListTopUpsWithResponse(ctx context.Context, accountKey AccountKey, params *ListTopUpsParams, reqEditors ...RequestEditorFn) (*ListTopUpsResponse, error) {
+	rsp, err := c.ListTopUps(ctx, accountKey, params, reqEditors...)
 	if err != nil {
 		return nil, err
 	}

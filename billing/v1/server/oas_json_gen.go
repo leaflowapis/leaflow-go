@@ -343,6 +343,12 @@ func (s *BillingAccountList) Encode(e *jx.Encoder) {
 // encodeFields encodes fields.
 func (s *BillingAccountList) encodeFields(e *jx.Encoder) {
 	{
+		if s.TotalCount.Set {
+			e.FieldStart("total_count")
+			s.TotalCount.Encode(e)
+		}
+	}
+	{
 		e.FieldStart("accounts")
 		e.ArrStart()
 		for _, elem := range s.Accounts {
@@ -352,8 +358,9 @@ func (s *BillingAccountList) encodeFields(e *jx.Encoder) {
 	}
 }
 
-var jsonFieldsNameOfBillingAccountList = [1]string{
-	0: "accounts",
+var jsonFieldsNameOfBillingAccountList = [2]string{
+	0: "total_count",
+	1: "accounts",
 }
 
 // Decode decodes BillingAccountList from json.
@@ -365,8 +372,18 @@ func (s *BillingAccountList) Decode(d *jx.Decoder) error {
 
 	if err := d.ObjBytes(func(d *jx.Decoder, k []byte) error {
 		switch string(k) {
+		case "total_count":
+			if err := func() error {
+				s.TotalCount.Reset()
+				if err := s.TotalCount.Decode(d); err != nil {
+					return err
+				}
+				return nil
+			}(); err != nil {
+				return errors.Wrap(err, "decode field \"total_count\"")
+			}
 		case "accounts":
-			requiredBitSet[0] |= 1 << 0
+			requiredBitSet[0] |= 1 << 1
 			if err := func() error {
 				s.Accounts = make([]BillingAccount, 0)
 				if err := d.Arr(func(d *jx.Decoder) error {
@@ -393,7 +410,7 @@ func (s *BillingAccountList) Decode(d *jx.Decoder) error {
 	// Validate required fields.
 	var failures []validate.FieldError
 	for i, mask := range [1]uint8{
-		0b00000001,
+		0b00000010,
 	} {
 		if result := (requiredBitSet[i] & mask) ^ mask; result != 0 {
 			// Mask only required fields and check equality to mask using XOR.
@@ -1609,6 +1626,12 @@ func (s *CreditTransactionList) Encode(e *jx.Encoder) {
 // encodeFields encodes fields.
 func (s *CreditTransactionList) encodeFields(e *jx.Encoder) {
 	{
+		if s.TotalCount.Set {
+			e.FieldStart("total_count")
+			s.TotalCount.Encode(e)
+		}
+	}
+	{
 		e.FieldStart("transactions")
 		e.ArrStart()
 		for _, elem := range s.Transactions {
@@ -1618,8 +1641,9 @@ func (s *CreditTransactionList) encodeFields(e *jx.Encoder) {
 	}
 }
 
-var jsonFieldsNameOfCreditTransactionList = [1]string{
-	0: "transactions",
+var jsonFieldsNameOfCreditTransactionList = [2]string{
+	0: "total_count",
+	1: "transactions",
 }
 
 // Decode decodes CreditTransactionList from json.
@@ -1631,8 +1655,18 @@ func (s *CreditTransactionList) Decode(d *jx.Decoder) error {
 
 	if err := d.ObjBytes(func(d *jx.Decoder, k []byte) error {
 		switch string(k) {
+		case "total_count":
+			if err := func() error {
+				s.TotalCount.Reset()
+				if err := s.TotalCount.Decode(d); err != nil {
+					return err
+				}
+				return nil
+			}(); err != nil {
+				return errors.Wrap(err, "decode field \"total_count\"")
+			}
 		case "transactions":
-			requiredBitSet[0] |= 1 << 0
+			requiredBitSet[0] |= 1 << 1
 			if err := func() error {
 				s.Transactions = make([]CreditTransaction, 0)
 				if err := d.Arr(func(d *jx.Decoder) error {
@@ -1659,7 +1693,7 @@ func (s *CreditTransactionList) Decode(d *jx.Decoder) error {
 	// Validate required fields.
 	var failures []validate.FieldError
 	for i, mask := range [1]uint8{
-		0b00000001,
+		0b00000010,
 	} {
 		if result := (requiredBitSet[i] & mask) ^ mask; result != 0 {
 			// Mask only required fields and check equality to mask using XOR.
@@ -2880,6 +2914,12 @@ func (s *InvoiceList) Encode(e *jx.Encoder) {
 // encodeFields encodes fields.
 func (s *InvoiceList) encodeFields(e *jx.Encoder) {
 	{
+		if s.TotalCount.Set {
+			e.FieldStart("total_count")
+			s.TotalCount.Encode(e)
+		}
+	}
+	{
 		e.FieldStart("invoices")
 		e.ArrStart()
 		for _, elem := range s.Invoices {
@@ -2889,8 +2929,9 @@ func (s *InvoiceList) encodeFields(e *jx.Encoder) {
 	}
 }
 
-var jsonFieldsNameOfInvoiceList = [1]string{
-	0: "invoices",
+var jsonFieldsNameOfInvoiceList = [2]string{
+	0: "total_count",
+	1: "invoices",
 }
 
 // Decode decodes InvoiceList from json.
@@ -2902,8 +2943,18 @@ func (s *InvoiceList) Decode(d *jx.Decoder) error {
 
 	if err := d.ObjBytes(func(d *jx.Decoder, k []byte) error {
 		switch string(k) {
+		case "total_count":
+			if err := func() error {
+				s.TotalCount.Reset()
+				if err := s.TotalCount.Decode(d); err != nil {
+					return err
+				}
+				return nil
+			}(); err != nil {
+				return errors.Wrap(err, "decode field \"total_count\"")
+			}
 		case "invoices":
-			requiredBitSet[0] |= 1 << 0
+			requiredBitSet[0] |= 1 << 1
 			if err := func() error {
 				s.Invoices = make([]Invoice, 0)
 				if err := d.Arr(func(d *jx.Decoder) error {
@@ -2930,7 +2981,7 @@ func (s *InvoiceList) Decode(d *jx.Decoder) error {
 	// Validate required fields.
 	var failures []validate.FieldError
 	for i, mask := range [1]uint8{
-		0b00000001,
+		0b00000010,
 	} {
 		if result := (requiredBitSet[i] & mask) ^ mask; result != 0 {
 			// Mask only required fields and check equality to mask using XOR.
@@ -3253,6 +3304,12 @@ func (s *OfferList) Encode(e *jx.Encoder) {
 // encodeFields encodes fields.
 func (s *OfferList) encodeFields(e *jx.Encoder) {
 	{
+		if s.TotalCount.Set {
+			e.FieldStart("total_count")
+			s.TotalCount.Encode(e)
+		}
+	}
+	{
 		e.FieldStart("offers")
 		e.ArrStart()
 		for _, elem := range s.Offers {
@@ -3262,8 +3319,9 @@ func (s *OfferList) encodeFields(e *jx.Encoder) {
 	}
 }
 
-var jsonFieldsNameOfOfferList = [1]string{
-	0: "offers",
+var jsonFieldsNameOfOfferList = [2]string{
+	0: "total_count",
+	1: "offers",
 }
 
 // Decode decodes OfferList from json.
@@ -3275,8 +3333,18 @@ func (s *OfferList) Decode(d *jx.Decoder) error {
 
 	if err := d.ObjBytes(func(d *jx.Decoder, k []byte) error {
 		switch string(k) {
+		case "total_count":
+			if err := func() error {
+				s.TotalCount.Reset()
+				if err := s.TotalCount.Decode(d); err != nil {
+					return err
+				}
+				return nil
+			}(); err != nil {
+				return errors.Wrap(err, "decode field \"total_count\"")
+			}
 		case "offers":
-			requiredBitSet[0] |= 1 << 0
+			requiredBitSet[0] |= 1 << 1
 			if err := func() error {
 				s.Offers = make([]Offer, 0)
 				if err := d.Arr(func(d *jx.Decoder) error {
@@ -3303,7 +3371,7 @@ func (s *OfferList) Decode(d *jx.Decoder) error {
 	// Validate required fields.
 	var failures []validate.FieldError
 	for i, mask := range [1]uint8{
-		0b00000001,
+		0b00000010,
 	} {
 		if result := (requiredBitSet[i] & mask) ^ mask; result != 0 {
 			// Mask only required fields and check equality to mask using XOR.
@@ -4335,6 +4403,12 @@ func (s *OrderList) Encode(e *jx.Encoder) {
 // encodeFields encodes fields.
 func (s *OrderList) encodeFields(e *jx.Encoder) {
 	{
+		if s.TotalCount.Set {
+			e.FieldStart("total_count")
+			s.TotalCount.Encode(e)
+		}
+	}
+	{
 		e.FieldStart("orders")
 		e.ArrStart()
 		for _, elem := range s.Orders {
@@ -4344,8 +4418,9 @@ func (s *OrderList) encodeFields(e *jx.Encoder) {
 	}
 }
 
-var jsonFieldsNameOfOrderList = [1]string{
-	0: "orders",
+var jsonFieldsNameOfOrderList = [2]string{
+	0: "total_count",
+	1: "orders",
 }
 
 // Decode decodes OrderList from json.
@@ -4357,8 +4432,18 @@ func (s *OrderList) Decode(d *jx.Decoder) error {
 
 	if err := d.ObjBytes(func(d *jx.Decoder, k []byte) error {
 		switch string(k) {
+		case "total_count":
+			if err := func() error {
+				s.TotalCount.Reset()
+				if err := s.TotalCount.Decode(d); err != nil {
+					return err
+				}
+				return nil
+			}(); err != nil {
+				return errors.Wrap(err, "decode field \"total_count\"")
+			}
 		case "orders":
-			requiredBitSet[0] |= 1 << 0
+			requiredBitSet[0] |= 1 << 1
 			if err := func() error {
 				s.Orders = make([]Order, 0)
 				if err := d.Arr(func(d *jx.Decoder) error {
@@ -4385,7 +4470,7 @@ func (s *OrderList) Decode(d *jx.Decoder) error {
 	// Validate required fields.
 	var failures []validate.FieldError
 	for i, mask := range [1]uint8{
-		0b00000001,
+		0b00000010,
 	} {
 		if result := (requiredBitSet[i] & mask) ^ mask; result != 0 {
 			// Mask only required fields and check equality to mask using XOR.
@@ -4706,6 +4791,12 @@ func (s *PaymentMethodList) Encode(e *jx.Encoder) {
 // encodeFields encodes fields.
 func (s *PaymentMethodList) encodeFields(e *jx.Encoder) {
 	{
+		if s.TotalCount.Set {
+			e.FieldStart("total_count")
+			s.TotalCount.Encode(e)
+		}
+	}
+	{
 		e.FieldStart("payment_methods")
 		e.ArrStart()
 		for _, elem := range s.PaymentMethods {
@@ -4715,8 +4806,9 @@ func (s *PaymentMethodList) encodeFields(e *jx.Encoder) {
 	}
 }
 
-var jsonFieldsNameOfPaymentMethodList = [1]string{
-	0: "payment_methods",
+var jsonFieldsNameOfPaymentMethodList = [2]string{
+	0: "total_count",
+	1: "payment_methods",
 }
 
 // Decode decodes PaymentMethodList from json.
@@ -4728,8 +4820,18 @@ func (s *PaymentMethodList) Decode(d *jx.Decoder) error {
 
 	if err := d.ObjBytes(func(d *jx.Decoder, k []byte) error {
 		switch string(k) {
+		case "total_count":
+			if err := func() error {
+				s.TotalCount.Reset()
+				if err := s.TotalCount.Decode(d); err != nil {
+					return err
+				}
+				return nil
+			}(); err != nil {
+				return errors.Wrap(err, "decode field \"total_count\"")
+			}
 		case "payment_methods":
-			requiredBitSet[0] |= 1 << 0
+			requiredBitSet[0] |= 1 << 1
 			if err := func() error {
 				s.PaymentMethods = make([]PaymentMethod, 0)
 				if err := d.Arr(func(d *jx.Decoder) error {
@@ -4756,7 +4858,7 @@ func (s *PaymentMethodList) Decode(d *jx.Decoder) error {
 	// Validate required fields.
 	var failures []validate.FieldError
 	for i, mask := range [1]uint8{
-		0b00000001,
+		0b00000010,
 	} {
 		if result := (requiredBitSet[i] & mask) ^ mask; result != 0 {
 			// Mask only required fields and check equality to mask using XOR.
@@ -5213,6 +5315,12 @@ func (s *PrepaidAssetList) Encode(e *jx.Encoder) {
 // encodeFields encodes fields.
 func (s *PrepaidAssetList) encodeFields(e *jx.Encoder) {
 	{
+		if s.TotalCount.Set {
+			e.FieldStart("total_count")
+			s.TotalCount.Encode(e)
+		}
+	}
+	{
 		e.FieldStart("assets")
 		e.ArrStart()
 		for _, elem := range s.Assets {
@@ -5222,8 +5330,9 @@ func (s *PrepaidAssetList) encodeFields(e *jx.Encoder) {
 	}
 }
 
-var jsonFieldsNameOfPrepaidAssetList = [1]string{
-	0: "assets",
+var jsonFieldsNameOfPrepaidAssetList = [2]string{
+	0: "total_count",
+	1: "assets",
 }
 
 // Decode decodes PrepaidAssetList from json.
@@ -5235,8 +5344,18 @@ func (s *PrepaidAssetList) Decode(d *jx.Decoder) error {
 
 	if err := d.ObjBytes(func(d *jx.Decoder, k []byte) error {
 		switch string(k) {
+		case "total_count":
+			if err := func() error {
+				s.TotalCount.Reset()
+				if err := s.TotalCount.Decode(d); err != nil {
+					return err
+				}
+				return nil
+			}(); err != nil {
+				return errors.Wrap(err, "decode field \"total_count\"")
+			}
 		case "assets":
-			requiredBitSet[0] |= 1 << 0
+			requiredBitSet[0] |= 1 << 1
 			if err := func() error {
 				s.Assets = make([]PrepaidAsset, 0)
 				if err := d.Arr(func(d *jx.Decoder) error {
@@ -5263,7 +5382,7 @@ func (s *PrepaidAssetList) Decode(d *jx.Decoder) error {
 	// Validate required fields.
 	var failures []validate.FieldError
 	for i, mask := range [1]uint8{
-		0b00000001,
+		0b00000010,
 	} {
 		if result := (requiredBitSet[i] & mask) ^ mask; result != 0 {
 			// Mask only required fields and check equality to mask using XOR.
@@ -7687,6 +7806,12 @@ func (s *TopUpList) Encode(e *jx.Encoder) {
 // encodeFields encodes fields.
 func (s *TopUpList) encodeFields(e *jx.Encoder) {
 	{
+		if s.TotalCount.Set {
+			e.FieldStart("total_count")
+			s.TotalCount.Encode(e)
+		}
+	}
+	{
 		e.FieldStart("top_ups")
 		e.ArrStart()
 		for _, elem := range s.TopUps {
@@ -7696,8 +7821,9 @@ func (s *TopUpList) encodeFields(e *jx.Encoder) {
 	}
 }
 
-var jsonFieldsNameOfTopUpList = [1]string{
-	0: "top_ups",
+var jsonFieldsNameOfTopUpList = [2]string{
+	0: "total_count",
+	1: "top_ups",
 }
 
 // Decode decodes TopUpList from json.
@@ -7709,8 +7835,18 @@ func (s *TopUpList) Decode(d *jx.Decoder) error {
 
 	if err := d.ObjBytes(func(d *jx.Decoder, k []byte) error {
 		switch string(k) {
+		case "total_count":
+			if err := func() error {
+				s.TotalCount.Reset()
+				if err := s.TotalCount.Decode(d); err != nil {
+					return err
+				}
+				return nil
+			}(); err != nil {
+				return errors.Wrap(err, "decode field \"total_count\"")
+			}
 		case "top_ups":
-			requiredBitSet[0] |= 1 << 0
+			requiredBitSet[0] |= 1 << 1
 			if err := func() error {
 				s.TopUps = make([]TopUpStatus, 0)
 				if err := d.Arr(func(d *jx.Decoder) error {
@@ -7737,7 +7873,7 @@ func (s *TopUpList) Decode(d *jx.Decoder) error {
 	// Validate required fields.
 	var failures []validate.FieldError
 	for i, mask := range [1]uint8{
-		0b00000001,
+		0b00000010,
 	} {
 		if result := (requiredBitSet[i] & mask) ^ mask; result != 0 {
 			// Mask only required fields and check equality to mask using XOR.
