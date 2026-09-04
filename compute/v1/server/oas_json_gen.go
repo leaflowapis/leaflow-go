@@ -6042,6 +6042,12 @@ func (s *LaunchInstanceRequestBody) Encode(e *jx.Encoder) {
 // encodeFields encodes fields.
 func (s *LaunchInstanceRequestBody) encodeFields(e *jx.Encoder) {
 	{
+		if s.FloatingIPID.Set {
+			e.FieldStart("floating_ip_id")
+			s.FloatingIPID.Encode(e)
+		}
+	}
+	{
 		if s.BandwidthMbps.Set {
 			e.FieldStart("bandwidth_mbps")
 			s.BandwidthMbps.Encode(e)
@@ -6135,23 +6141,24 @@ func (s *LaunchInstanceRequestBody) encodeFields(e *jx.Encoder) {
 	}
 }
 
-var jsonFieldsNameOfLaunchInstanceRequestBody = [16]string{
-	0:  "bandwidth_mbps",
-	1:  "count",
-	2:  "generate_password",
-	3:  "boot_disk_id",
-	4:  "image_id",
-	5:  "instance_type_id",
-	6:  "login_username",
-	7:  "name",
-	8:  "password",
-	9:  "port_id",
-	10: "private_image_id",
-	11: "payment_method",
-	12: "term",
-	13: "root_disk_gb",
-	14: "security_group_ids",
-	15: "subnet_id",
+var jsonFieldsNameOfLaunchInstanceRequestBody = [17]string{
+	0:  "floating_ip_id",
+	1:  "bandwidth_mbps",
+	2:  "count",
+	3:  "generate_password",
+	4:  "boot_disk_id",
+	5:  "image_id",
+	6:  "instance_type_id",
+	7:  "login_username",
+	8:  "name",
+	9:  "password",
+	10: "port_id",
+	11: "private_image_id",
+	12: "payment_method",
+	13: "term",
+	14: "root_disk_gb",
+	15: "security_group_ids",
+	16: "subnet_id",
 }
 
 // Decode decodes LaunchInstanceRequestBody from json.
@@ -6159,11 +6166,21 @@ func (s *LaunchInstanceRequestBody) Decode(d *jx.Decoder) error {
 	if s == nil {
 		return errors.New("invalid: unable to decode LaunchInstanceRequestBody to nil")
 	}
-	var requiredBitSet [2]uint8
+	var requiredBitSet [3]uint8
 	s.setDefaults()
 
 	if err := d.ObjBytes(func(d *jx.Decoder, k []byte) error {
 		switch string(k) {
+		case "floating_ip_id":
+			if err := func() error {
+				s.FloatingIPID.Reset()
+				if err := s.FloatingIPID.Decode(d); err != nil {
+					return err
+				}
+				return nil
+			}(); err != nil {
+				return errors.Wrap(err, "decode field \"floating_ip_id\"")
+			}
 		case "bandwidth_mbps":
 			if err := func() error {
 				s.BandwidthMbps.Reset()
@@ -6215,7 +6232,7 @@ func (s *LaunchInstanceRequestBody) Decode(d *jx.Decoder) error {
 				return errors.Wrap(err, "decode field \"image_id\"")
 			}
 		case "instance_type_id":
-			requiredBitSet[0] |= 1 << 5
+			requiredBitSet[0] |= 1 << 6
 			if err := func() error {
 				v, err := json.DecodeUUID(d)
 				s.InstanceTypeID = v
@@ -6237,7 +6254,7 @@ func (s *LaunchInstanceRequestBody) Decode(d *jx.Decoder) error {
 				return errors.Wrap(err, "decode field \"login_username\"")
 			}
 		case "name":
-			requiredBitSet[0] |= 1 << 7
+			requiredBitSet[1] |= 1 << 0
 			if err := func() error {
 				v, err := d.Str()
 				s.Name = string(v)
@@ -6337,8 +6354,9 @@ func (s *LaunchInstanceRequestBody) Decode(d *jx.Decoder) error {
 	}
 	// Validate required fields.
 	var failures []validate.FieldError
-	for i, mask := range [2]uint8{
-		0b10100000,
+	for i, mask := range [3]uint8{
+		0b01000000,
+		0b00000001,
 		0b00000000,
 	} {
 		if result := (requiredBitSet[i] & mask) ^ mask; result != 0 {

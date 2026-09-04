@@ -977,6 +977,8 @@ type LaunchInstanceRequestBody struct {
 	// BandwidthMbps Give this instance a public address with this much bandwidth, in Mbit/s. Omitted or 0 means
 	// no public address.
 	//
+	// Mutually exclusive with `floating_ip_id`, which binds one you already hold.
+	//
 	// The bandwidth is what says whether an address is wanted, rather than a separate flag,
 	// because an address with no ceiling would run at line rate and be charged nothing for the
 	// traffic — while the address itself bills normally and the invoice looks correct.
@@ -1005,6 +1007,19 @@ type LaunchInstanceRequestBody struct {
 
 	// Count Number of instances to create; 1 when omitted. Names are numbered automatically for several
 	Count *int64 `json:"count,omitempty"`
+
+	// FloatingIpId Bind a floating IP you already hold, instead of allocating a new one. It must be idle and in
+	// the same region.
+	//
+	// Mutually exclusive with `bandwidth_mbps`: an address you already hold has its own bandwidth
+	// ceiling, set when it was allocated, and changing it is a separate operation.
+	//
+	// Like `bandwidth_mbps`, this happens **inside the creation**: if binding fails, no instance is
+	// created. Binding afterwards is still possible from the instance page, but then it is two
+	// operations and a failure in between leaves an instance you cannot reach.
+	//
+	// Only one instance can be created when it is used — one address binds to one interface.
+	FloatingIpId *openapi_types.UUID `json:"floating_ip_id,omitempty"`
 
 	// GeneratePassword Have the platform generate a random password, returned only in this response
 	GeneratePassword *bool `json:"generate_password,omitempty"`

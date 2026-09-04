@@ -2723,8 +2723,22 @@ func (s *InstanceTypeResource) SetPrepaidPrices(val []PrepaidPrice) {
 
 // Ref: #/components/schemas/LaunchInstanceRequestBody
 type LaunchInstanceRequestBody struct {
+	// Bind a floating IP you already hold, instead of allocating a new one. It must be idle and in the
+	// same region.
+	//
+	// Mutually exclusive with `bandwidth_mbps`: an address you already hold has its own bandwidth ceiling,
+	// set when it was allocated, and changing it is a separate operation.
+	//
+	// Like `bandwidth_mbps`, this happens inside the creation: if binding fails, no instance is created.
+	// Binding afterwards is still possible from the instance page, but then it is two operations and a
+	// failure in between leaves an instance you cannot reach.
+	//
+	// Only one instance can be created when it is used — one address binds to one interface.
+	FloatingIPID OptUUID `json:"floating_ip_id"`
 	// Give this instance a public address with this much bandwidth, in Mbit/s. Omitted or 0 means no
 	// public address.
+	//
+	// Mutually exclusive with `floating_ip_id`, which binds one you already hold.
 	//
 	// The bandwidth is what says whether an address is wanted, rather than a separate flag, because an
 	// address with no ceiling would run at line rate and be charged nothing for the traffic — while the
@@ -2814,6 +2828,11 @@ type LaunchInstanceRequestBody struct {
 	SubnetID OptUUID `json:"subnet_id"`
 }
 
+// GetFloatingIPID returns the value of FloatingIPID.
+func (s *LaunchInstanceRequestBody) GetFloatingIPID() OptUUID {
+	return s.FloatingIPID
+}
+
 // GetBandwidthMbps returns the value of BandwidthMbps.
 func (s *LaunchInstanceRequestBody) GetBandwidthMbps() OptInt64 {
 	return s.BandwidthMbps
@@ -2892,6 +2911,11 @@ func (s *LaunchInstanceRequestBody) GetSecurityGroupIds() OptNilUUIDArray {
 // GetSubnetID returns the value of SubnetID.
 func (s *LaunchInstanceRequestBody) GetSubnetID() OptUUID {
 	return s.SubnetID
+}
+
+// SetFloatingIPID sets the value of FloatingIPID.
+func (s *LaunchInstanceRequestBody) SetFloatingIPID(val OptUUID) {
+	s.FloatingIPID = val
 }
 
 // SetBandwidthMbps sets the value of BandwidthMbps.
