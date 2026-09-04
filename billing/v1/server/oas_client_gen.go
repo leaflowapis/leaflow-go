@@ -142,7 +142,8 @@ type Invoker interface {
 	GetInvoice(ctx context.Context, params GetInvoiceParams) (*InvoiceDetail, error)
 	// GetOrder invokes get-order operation.
 	//
-	// Each line names what was asked for and how much of it. This is the only route that carries them.
+	// Each line names what was asked for, how much of it, and what it produced. The list route carries
+	// lines too; this one exists for a permanent link to a single transaction.
 	//
 	// GET /account/v1/billing-accounts/{accountKey}/orders/{orderId}
 	GetOrder(ctx context.Context, params GetOrderParams) (*Order, error)
@@ -224,8 +225,8 @@ type Invoker interface {
 	// in exactly the case someone wants to look: a resource was asked for, was not delivered, and the
 	// question is what happened.
 	//
-	// The list carries no lines. An order has only a handful, but shipping them on every page means
-	// carrying data no column shows.
+	// Lines come with each order. A list showing only identifiers and amounts is a page nobody can read
+	// — recognising one ("which of these was last week's machine") is why it gets opened.
 	//
 	// GET /account/v1/billing-accounts/{accountKey}/orders
 	ListOrders(ctx context.Context, params ListOrdersParams) (*OrderList, error)
@@ -391,6 +392,27 @@ type Invoker interface {
 	//
 	// GET /account/v1/billing-accounts/{accountKey}/balance
 	ReadBillingAccountBalance(ctx context.Context, params ReadBillingAccountBalanceParams) (*Balance, error)
+	// ReadBillingAccountBalanceMovement invokes read-billing-account-balance-movement operation.
+	//
+	// Opening balance, money in, money out, closing balance — for the current calendar month.
+	//
+	// The four add up: `closing = opening + income - spending`. That is the point of the endpoint. The
+	// balance alone answers "how much is left" and cannot answer "how did it get there", which is what
+	// somebody watching their balance shrink is actually asking. Four figures that add up can be checked
+	// by the holder; a single figure can only be taken on faith or queried with support.
+	//
+	// `closing` is computed from the other three rather than read separately. Reading the current balance
+	// for it would leave the equation off by whatever was booked between the two reads — and an equation
+	// that is off by a few cents is worse than no equation, because it puts the ledger itself in doubt.
+	//
+	// The window is the calendar month, not the engine's billing period. This is the month a person means
+	// when they say "this month"; the billing anchor is an internal recurrence that happens to line up.
+	//
+	// A month with no movement reports opening equal to closing and zero on both sides — not all zeroes,
+	// which would read as "your money is gone".
+	//
+	// GET /account/v1/billing-accounts/{accountKey}/balance/movement
+	ReadBillingAccountBalanceMovement(ctx context.Context, params ReadBillingAccountBalanceMovementParams) (*BalanceMovement, error)
 	// ReadProjectBillingAccount invokes read-project-billing-account operation.
 	//
 	// The account a project's resources are charged to, resolved from the project rather than guessed.
@@ -1501,7 +1523,8 @@ func (c *Client) sendGetInvoice(ctx context.Context, params GetInvoiceParams) (r
 
 // GetOrder invokes get-order operation.
 //
-// Each line names what was asked for and how much of it. This is the only route that carries them.
+// Each line names what was asked for, how much of it, and what it produced. The list route carries
+// lines too; this one exists for a permanent link to a single transaction.
 //
 // GET /account/v1/billing-accounts/{accountKey}/orders/{orderId}
 func (c *Client) GetOrder(ctx context.Context, params GetOrderParams) (*Order, error) {
@@ -2654,8 +2677,8 @@ func (c *Client) sendListOffers(ctx context.Context, params ListOffersParams) (r
 // in exactly the case someone wants to look: a resource was asked for, was not delivered, and the
 // question is what happened.
 //
-// The list carries no lines. An order has only a handful, but shipping them on every page means
-// carrying data no column shows.
+// Lines come with each order. A list showing only identifiers and amounts is a page nobody can read
+// — recognising one ("which of these was last week's machine") is why it gets opened.
 //
 // GET /account/v1/billing-accounts/{accountKey}/orders
 func (c *Client) ListOrders(ctx context.Context, params ListOrdersParams) (*OrderList, error) {
@@ -4020,6 +4043,153 @@ func (c *Client) sendReadBillingAccountBalance(ctx context.Context, params ReadB
 
 	stage = "DecodeResponse"
 	result, err := decodeReadBillingAccountBalanceResponse(resp)
+	if err != nil {
+		return res, errors.Wrap(err, "decode response")
+	}
+
+	return result, nil
+}
+
+// ReadBillingAccountBalanceMovement invokes read-billing-account-balance-movement operation.
+//
+// Opening balance, money in, money out, closing balance — for the current calendar month.
+//
+// The four add up: `closing = opening + income - spending`. That is the point of the endpoint. The
+// balance alone answers "how much is left" and cannot answer "how did it get there", which is what
+// somebody watching their balance shrink is actually asking. Four figures that add up can be checked
+// by the holder; a single figure can only be taken on faith or queried with support.
+//
+// `closing` is computed from the other three rather than read separately. Reading the current balance
+// for it would leave the equation off by whatever was booked between the two reads — and an equation
+// that is off by a few cents is worse than no equation, because it puts the ledger itself in doubt.
+//
+// The window is the calendar month, not the engine's billing period. This is the month a person means
+// when they say "this month"; the billing anchor is an internal recurrence that happens to line up.
+//
+// A month with no movement reports opening equal to closing and zero on both sides — not all zeroes,
+// which would read as "your money is gone".
+//
+// GET /account/v1/billing-accounts/{accountKey}/balance/movement
+func (c *Client) ReadBillingAccountBalanceMovement(ctx context.Context, params ReadBillingAccountBalanceMovementParams) (*BalanceMovement, error) {
+	res, err := c.sendReadBillingAccountBalanceMovement(ctx, params)
+	return res, err
+}
+
+func (c *Client) sendReadBillingAccountBalanceMovement(ctx context.Context, params ReadBillingAccountBalanceMovementParams) (res *BalanceMovement, err error) {
+	otelAttrs := []attribute.KeyValue{
+		otelogen.OperationID("read-billing-account-balance-movement"),
+		semconv.HTTPRequestMethodKey.String("GET"),
+		semconv.URLTemplateKey.String("/account/v1/billing-accounts/{accountKey}/balance/movement"),
+	}
+	otelAttrs = append(otelAttrs, c.cfg.Attributes...)
+
+	// Run stopwatch.
+	startTime := time.Now()
+	defer func() {
+		// Use floating point division here for higher precision (instead of Millisecond method).
+		elapsedDuration := time.Since(startTime)
+		c.duration.Record(ctx, float64(elapsedDuration)/float64(time.Millisecond), metric.WithAttributes(otelAttrs...))
+	}()
+
+	// Increment request counter.
+	c.requests.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
+
+	// Start a span for this request.
+	ctx, span := c.cfg.Tracer.Start(ctx, ReadBillingAccountBalanceMovementOperation,
+		trace.WithAttributes(otelAttrs...),
+		clientSpanKind,
+	)
+	// Track stage for error reporting.
+	var stage string
+	defer func() {
+		if err != nil {
+			span.RecordError(err)
+			span.SetStatus(codes.Error, stage)
+			c.errors.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
+		}
+		span.End()
+	}()
+
+	stage = "BuildURL"
+	u := uri.Clone(c.requestURL(ctx))
+	var pathParts [3]string
+	pathParts[0] = "/account/v1/billing-accounts/"
+	{
+		// Encode "accountKey" parameter.
+		e := uri.NewPathEncoder(uri.PathEncoderConfig{
+			Param:   "accountKey",
+			Style:   uri.PathStyleSimple,
+			Explode: false,
+		})
+		if err := func() error {
+			return e.EncodeValue(conv.StringToString(params.AccountKey))
+		}(); err != nil {
+			return res, errors.Wrap(err, "encode path")
+		}
+		encoded, err := e.Result()
+		if err != nil {
+			return res, errors.Wrap(err, "encode path")
+		}
+		pathParts[1] = encoded
+	}
+	pathParts[2] = "/balance/movement"
+	uri.AddPathParts(u, pathParts[:]...)
+
+	stage = "EncodeRequest"
+	r, err := ht.NewRequest(ctx, "GET", u)
+	if err != nil {
+		return res, errors.Wrap(err, "create request")
+	}
+
+	{
+		type bitset = [1]uint8
+		var satisfied bitset
+		{
+			stage = "Security:BearerAuth"
+			switch err := c.securityBearerAuth(ctx, ReadBillingAccountBalanceMovementOperation, r); {
+			case err == nil: // if NO error
+				satisfied[0] |= 1 << 0
+			case errors.Is(err, ogenerrors.ErrSkipClientSecurity):
+				// Skip this security.
+			default:
+				return res, errors.Wrap(err, "security \"BearerAuth\"")
+			}
+		}
+
+		if ok := func() bool {
+		nextRequirement:
+			for _, requirement := range []bitset{
+				{0b00000001},
+			} {
+				for i, mask := range requirement {
+					if satisfied[i]&mask != mask {
+						continue nextRequirement
+					}
+				}
+				return true
+			}
+			return false
+		}(); !ok {
+			return res, ogenerrors.ErrSecurityRequirementIsNotSatisfied
+		}
+	}
+
+	stage = "SendRequest"
+	resp, err := c.cfg.Client.Do(r)
+	if err != nil {
+		return res, errors.Wrap(err, "do request")
+	}
+	body := resp.Body
+	defer func() {
+		// Drain the body to EOF before closing, so the underlying
+		// connection can be reused by the Transport regardless of the
+		// response status code. See https://github.com/ogen-go/ogen/issues/1670.
+		_, _ = io.Copy(io.Discard, body)
+		_ = body.Close()
+	}()
+
+	stage = "DecodeResponse"
+	result, err := decodeReadBillingAccountBalanceMovementResponse(resp)
 	if err != nil {
 		return res, errors.Wrap(err, "decode response")
 	}

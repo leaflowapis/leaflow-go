@@ -91,6 +91,111 @@ func (s *Balance) SetAvailable(val string) {
 	s.Available = val
 }
 
+// Ref: #/components/schemas/BalanceMovement
+type BalanceMovement struct {
+	Currency Currency `json:"currency"`
+	// Start of the window — the first instant of the current calendar month, UTC.
+	From time.Time `json:"from"`
+	// End of the window, which is now rather than the month's end. The month is not over.
+	To time.Time `json:"to"`
+	// The balance when the window opened, as a decimal string.
+	//
+	// Taken from the earliest transaction in the window rather than read separately: every transaction
+	// carries the balance before and after it, so this figure and the totals below come from one read of
+	// one ledger and therefore agree.
+	Opening string `json:"opening"`
+	// What came in — top-ups and credit issued by operations. Never negative.
+	Income string `json:"income"`
+	// What went out — consumption and expiry. Never negative: the direction is in the name, not in the
+	// sign. Signed, a client would have to handle both `-20` and `20` meaning the same thing.
+	Spending string `json:"spending"`
+	// `opening + income - spending`. Computed, not read separately — see the endpoint.
+	Closing string `json:"closing"`
+	// False when this account has no balance record in this currency at all, which is not the same as a
+	// zero balance.
+	Present bool `json:"present"`
+}
+
+// GetCurrency returns the value of Currency.
+func (s *BalanceMovement) GetCurrency() Currency {
+	return s.Currency
+}
+
+// GetFrom returns the value of From.
+func (s *BalanceMovement) GetFrom() time.Time {
+	return s.From
+}
+
+// GetTo returns the value of To.
+func (s *BalanceMovement) GetTo() time.Time {
+	return s.To
+}
+
+// GetOpening returns the value of Opening.
+func (s *BalanceMovement) GetOpening() string {
+	return s.Opening
+}
+
+// GetIncome returns the value of Income.
+func (s *BalanceMovement) GetIncome() string {
+	return s.Income
+}
+
+// GetSpending returns the value of Spending.
+func (s *BalanceMovement) GetSpending() string {
+	return s.Spending
+}
+
+// GetClosing returns the value of Closing.
+func (s *BalanceMovement) GetClosing() string {
+	return s.Closing
+}
+
+// GetPresent returns the value of Present.
+func (s *BalanceMovement) GetPresent() bool {
+	return s.Present
+}
+
+// SetCurrency sets the value of Currency.
+func (s *BalanceMovement) SetCurrency(val Currency) {
+	s.Currency = val
+}
+
+// SetFrom sets the value of From.
+func (s *BalanceMovement) SetFrom(val time.Time) {
+	s.From = val
+}
+
+// SetTo sets the value of To.
+func (s *BalanceMovement) SetTo(val time.Time) {
+	s.To = val
+}
+
+// SetOpening sets the value of Opening.
+func (s *BalanceMovement) SetOpening(val string) {
+	s.Opening = val
+}
+
+// SetIncome sets the value of Income.
+func (s *BalanceMovement) SetIncome(val string) {
+	s.Income = val
+}
+
+// SetSpending sets the value of Spending.
+func (s *BalanceMovement) SetSpending(val string) {
+	s.Spending = val
+}
+
+// SetClosing sets the value of Closing.
+func (s *BalanceMovement) SetClosing(val string) {
+	s.Closing = val
+}
+
+// SetPresent sets the value of Present.
+func (s *BalanceMovement) SetPresent(val bool) {
+	s.Present = val
+}
+
 type BearerAuth struct {
 	Token string
 	Roles []string
@@ -2103,6 +2208,52 @@ func (o OptInvoiceLineConversionOperation) Or(d InvoiceLineConversionOperation) 
 	return d
 }
 
+// NewOptOrderLineConfiguration returns new OptOrderLineConfiguration with value set to v.
+func NewOptOrderLineConfiguration(v OrderLineConfiguration) OptOrderLineConfiguration {
+	return OptOrderLineConfiguration{
+		Value: v,
+		Set:   true,
+	}
+}
+
+// OptOrderLineConfiguration is optional OrderLineConfiguration.
+type OptOrderLineConfiguration struct {
+	Value OrderLineConfiguration
+	Set   bool
+}
+
+// IsSet returns true if OptOrderLineConfiguration was set.
+func (o OptOrderLineConfiguration) IsSet() bool { return o.Set }
+
+// Reset unsets value.
+func (o *OptOrderLineConfiguration) Reset() {
+	var v OrderLineConfiguration
+	o.Value = v
+	o.Set = false
+}
+
+// SetTo sets value to v.
+func (o *OptOrderLineConfiguration) SetTo(v OrderLineConfiguration) {
+	o.Set = true
+	o.Value = v
+}
+
+// Get returns value and boolean that denotes whether value was set.
+func (o OptOrderLineConfiguration) Get() (v OrderLineConfiguration, ok bool) {
+	if !o.Set {
+		return v, false
+	}
+	return o.Value, true
+}
+
+// Or returns value if set, or given parameter if does not.
+func (o OptOrderLineConfiguration) Or(d OrderLineConfiguration) OrderLineConfiguration {
+	if v, ok := o.Get(); ok {
+		return v
+	}
+	return d
+}
+
 // NewOptOrderPaymentState returns new OptOrderPaymentState with value set to v.
 func NewOptOrderPaymentState(v OrderPaymentState) OptOrderPaymentState {
 	return OptOrderPaymentState{
@@ -2425,6 +2576,52 @@ func (o OptTopUpPricing) Or(d TopUpPricing) TopUpPricing {
 	return d
 }
 
+// NewOptUnpricedUsageVariant returns new OptUnpricedUsageVariant with value set to v.
+func NewOptUnpricedUsageVariant(v UnpricedUsageVariant) OptUnpricedUsageVariant {
+	return OptUnpricedUsageVariant{
+		Value: v,
+		Set:   true,
+	}
+}
+
+// OptUnpricedUsageVariant is optional UnpricedUsageVariant.
+type OptUnpricedUsageVariant struct {
+	Value UnpricedUsageVariant
+	Set   bool
+}
+
+// IsSet returns true if OptUnpricedUsageVariant was set.
+func (o OptUnpricedUsageVariant) IsSet() bool { return o.Set }
+
+// Reset unsets value.
+func (o *OptUnpricedUsageVariant) Reset() {
+	var v UnpricedUsageVariant
+	o.Value = v
+	o.Set = false
+}
+
+// SetTo sets value to v.
+func (o *OptUnpricedUsageVariant) SetTo(v UnpricedUsageVariant) {
+	o.Set = true
+	o.Value = v
+}
+
+// Get returns value and boolean that denotes whether value was set.
+func (o OptUnpricedUsageVariant) Get() (v UnpricedUsageVariant, ok bool) {
+	if !o.Set {
+		return v, false
+	}
+	return o.Value, true
+}
+
+// Or returns value if set, or given parameter if does not.
+func (o OptUnpricedUsageVariant) Or(d UnpricedUsageVariant) UnpricedUsageVariant {
+	if v, ok := o.Get(); ok {
+		return v
+	}
+	return d
+}
+
 // Ref: #/components/schemas/Order
 type Order struct {
 	ID        string `json:"id"`
@@ -2439,10 +2636,24 @@ type Order struct {
 	// writing zero would make a metered order and a genuinely free one look the same.
 	Amount   OptString `json:"amount"`
 	Currency OptString `json:"currency"`
+	// When the money for this order arrived. Absent on an order nothing was charged for, and on one still
+	// waiting to be paid.
+	//
+	// Separate from `created_at` because the two can be far apart: an order paid online is created first
+	// and paid whenever the customer gets round to it. Merged into one field, "how long did this sit
+	// unpaid" has no answer anywhere — and that is the number chasing payment looks at.
+	PaidAt OptDateTime `json:"paid_at"`
 	// Always `none` on a metered order.
+	//
+	// `pending` is an order paid for online whose money has not arrived yet: the checkout session is open
+	// and nothing has been created. It was missing from this enum while the column had it and the handler
+	// passed it through unchanged, so such an order read back a value outside the enum — the one state
+	// where the caller most needs to know not to expect the resource yet.
 	PaymentState OptOrderPaymentState `json:"payment_state"`
 	CreatedAt    time.Time            `json:"created_at"`
-	// Only present on the single-order route.
+	// What this order was for. Present on the list route too — an order list that shows only numbers and
+	// amounts is a page of identifiers with no content, and recognising one ("which of these was last
+	// week's machine") is the reason anyone opens it.
 	Lines []OrderLine `json:"lines"`
 }
 
@@ -2479,6 +2690,11 @@ func (s *Order) GetAmount() OptString {
 // GetCurrency returns the value of Currency.
 func (s *Order) GetCurrency() OptString {
 	return s.Currency
+}
+
+// GetPaidAt returns the value of PaidAt.
+func (s *Order) GetPaidAt() OptDateTime {
+	return s.PaidAt
 }
 
 // GetPaymentState returns the value of PaymentState.
@@ -2531,6 +2747,11 @@ func (s *Order) SetCurrency(val OptString) {
 	s.Currency = val
 }
 
+// SetPaidAt sets the value of PaidAt.
+func (s *Order) SetPaidAt(val OptDateTime) {
+	s.PaidAt = val
+}
+
 // SetPaymentState sets the value of PaymentState.
 func (s *Order) SetPaymentState(val OptOrderPaymentState) {
 	s.PaymentState = val
@@ -2554,7 +2775,42 @@ type OrderLine struct {
 	Service string `json:"service"`
 	// That service's own catalogue identifier for what was asked for.
 	ProductID string `json:"product_id"`
-	Quantity  int64  `json:"quantity"`
+	// What this was called when it was ordered.
+	//
+	// A snapshot, not a lookup. `product_id` is usually a uuid, and an order page that shows it shows a
+	// string of hex. Asking the owning service for the name later is worse: it is a cross-service call per
+	// row, and by then the product may have been renamed or withdrawn — a bill has to answer "what did I
+	// buy", and that answer has to be in the words used at the time.
+	//
+	// Empty on orders placed before this was recorded, and on the rare call that omits it. Fall back to
+	// `product_id`.
+	ProductName string `json:"product_name"`
+	// What was configured on this line at the moment of sale, as key–value pairs meant for a person to
+	// read.
+	//
+	// Free-form, not fixed fields. Every service's products have their own dimensions — a machine has
+	// cores and memory, a disk has capacity and medium, an address has bandwidth. Fixed fields would mean
+	// adding more of them for every service that comes along, or squeezing one service's answers into
+	// another's boxes.
+	//
+	// Do not parse it. The keys are written for the reader, in the reader's language, and they change when
+	// the wording changes. Anything a program needs to decide on is in `product_id` and `quantity`.
+	Configuration OptOrderLineConfiguration `json:"configuration"`
+	Quantity      int64                     `json:"quantity"`
+	// How this line is paid for: empty is by the hour, an ISO 8601 duration (`P1M`, `P1Y`) is bought
+	// outright for that long.
+	//
+	// Fixed at the moment of sale. The asset's own term can move afterwards (renewing can change the
+	// period); this one cannot, because an order is a transaction that already happened.
+	Term string `json:"term"`
+	// Start of the period this line bought. Absent when billed by the hour — that has no service period,
+	// and filling in "today to today" would state a term that does not exist.
+	ServicePeriodFrom OptDateTime `json:"service_period_from"`
+	// End of the period this line bought. Absent when billed by the hour.
+	ServicePeriodTo OptDateTime `json:"service_period_to"`
+	// The resource this line produced, in the owning service's own identifiers. Absent until that service
+	// reports it back, which is also the moment the line starts being billed.
+	ResourceID OptString `json:"resource_id"`
 }
 
 // GetID returns the value of ID.
@@ -2577,9 +2833,39 @@ func (s *OrderLine) GetProductID() string {
 	return s.ProductID
 }
 
+// GetProductName returns the value of ProductName.
+func (s *OrderLine) GetProductName() string {
+	return s.ProductName
+}
+
+// GetConfiguration returns the value of Configuration.
+func (s *OrderLine) GetConfiguration() OptOrderLineConfiguration {
+	return s.Configuration
+}
+
 // GetQuantity returns the value of Quantity.
 func (s *OrderLine) GetQuantity() int64 {
 	return s.Quantity
+}
+
+// GetTerm returns the value of Term.
+func (s *OrderLine) GetTerm() string {
+	return s.Term
+}
+
+// GetServicePeriodFrom returns the value of ServicePeriodFrom.
+func (s *OrderLine) GetServicePeriodFrom() OptDateTime {
+	return s.ServicePeriodFrom
+}
+
+// GetServicePeriodTo returns the value of ServicePeriodTo.
+func (s *OrderLine) GetServicePeriodTo() OptDateTime {
+	return s.ServicePeriodTo
+}
+
+// GetResourceID returns the value of ResourceID.
+func (s *OrderLine) GetResourceID() OptString {
+	return s.ResourceID
 }
 
 // SetID sets the value of ID.
@@ -2602,9 +2888,39 @@ func (s *OrderLine) SetProductID(val string) {
 	s.ProductID = val
 }
 
+// SetProductName sets the value of ProductName.
+func (s *OrderLine) SetProductName(val string) {
+	s.ProductName = val
+}
+
+// SetConfiguration sets the value of Configuration.
+func (s *OrderLine) SetConfiguration(val OptOrderLineConfiguration) {
+	s.Configuration = val
+}
+
 // SetQuantity sets the value of Quantity.
 func (s *OrderLine) SetQuantity(val int64) {
 	s.Quantity = val
+}
+
+// SetTerm sets the value of Term.
+func (s *OrderLine) SetTerm(val string) {
+	s.Term = val
+}
+
+// SetServicePeriodFrom sets the value of ServicePeriodFrom.
+func (s *OrderLine) SetServicePeriodFrom(val OptDateTime) {
+	s.ServicePeriodFrom = val
+}
+
+// SetServicePeriodTo sets the value of ServicePeriodTo.
+func (s *OrderLine) SetServicePeriodTo(val OptDateTime) {
+	s.ServicePeriodTo = val
+}
+
+// SetResourceID sets the value of ResourceID.
+func (s *OrderLine) SetResourceID(val OptString) {
+	s.ResourceID = val
 }
 
 type OrderLineAction string
@@ -2662,6 +2978,27 @@ func (s *OrderLineAction) UnmarshalText(data []byte) error {
 	}
 }
 
+// What was configured on this line at the moment of sale, as key–value pairs meant for a person to
+// read.
+//
+// Free-form, not fixed fields. Every service's products have their own dimensions — a machine has
+// cores and memory, a disk has capacity and medium, an address has bandwidth. Fixed fields would mean
+// adding more of them for every service that comes along, or squeezing one service's answers into
+// another's boxes.
+//
+// Do not parse it. The keys are written for the reader, in the reader's language, and they change when
+// the wording changes. Anything a program needs to decide on is in `product_id` and `quantity`.
+type OrderLineConfiguration map[string]string
+
+func (s *OrderLineConfiguration) init() OrderLineConfiguration {
+	m := *s
+	if m == nil {
+		m = map[string]string{}
+		*s = m
+	}
+	return m
+}
+
 // Ref: #/components/schemas/OrderList
 type OrderList struct {
 	// How many entries there are in total, across every page.
@@ -2694,10 +3031,16 @@ func (s *OrderList) SetOrders(val []Order) {
 }
 
 // Always `none` on a metered order.
+//
+// `pending` is an order paid for online whose money has not arrived yet: the checkout session is open
+// and nothing has been created. It was missing from this enum while the column had it and the handler
+// passed it through unchanged, so such an order read back a value outside the enum — the one state
+// where the caller most needs to know not to expect the resource yet.
 type OrderPaymentState string
 
 const (
 	OrderPaymentStateNone     OrderPaymentState = "none"
+	OrderPaymentStatePending  OrderPaymentState = "pending"
 	OrderPaymentStatePaid     OrderPaymentState = "paid"
 	OrderPaymentStateRefunded OrderPaymentState = "refunded"
 )
@@ -2706,6 +3049,7 @@ const (
 func (OrderPaymentState) AllValues() []OrderPaymentState {
 	return []OrderPaymentState{
 		OrderPaymentStateNone,
+		OrderPaymentStatePending,
 		OrderPaymentStatePaid,
 		OrderPaymentStateRefunded,
 	}
@@ -2715,6 +3059,8 @@ func (OrderPaymentState) AllValues() []OrderPaymentState {
 func (s OrderPaymentState) MarshalText() ([]byte, error) {
 	switch s {
 	case OrderPaymentStateNone:
+		return []byte(s), nil
+	case OrderPaymentStatePending:
 		return []byte(s), nil
 	case OrderPaymentStatePaid:
 		return []byte(s), nil
@@ -2730,6 +3076,9 @@ func (s *OrderPaymentState) UnmarshalText(data []byte) error {
 	switch OrderPaymentState(data) {
 	case OrderPaymentStateNone:
 		*s = OrderPaymentStateNone
+		return nil
+	case OrderPaymentStatePending:
+		*s = OrderPaymentStatePending
 		return nil
 	case OrderPaymentStatePaid:
 		*s = OrderPaymentStatePaid
@@ -3730,12 +4079,21 @@ type Quote struct {
 	Lines []QuoteLine `json:"lines"`
 	// The sum of the already-rounded lines.
 	Total string `json:"total"`
-	// Keys that were given a usage but have no rate card on this plan.
+	// The usages that have no rate card on this plan.
 	//
 	// Reported rather than ignored, because ignoring them yields a smaller but entirely normal-looking
 	// number — and that is the most expensive misconfiguration there is: usage lands, the usage chart
 	// shows it, and the bill has no line for it.
-	Unpriced []string `json:"unpriced"`
+	//
+	// # Each entry carries the caller's own naming, not only the key
+	//
+	// A meter key is a hash, and callers are told not to compute it (see `QuoteUsage`). An answer that
+	// named the unpriced usages by key alone was therefore unusable whenever more than one usage was
+	// priced at a time: the caller could see that something was unsold but not which of the things it
+	// asked about. That is the case a catalogue page needs — pricing thirty machine types in one call
+	// and marking the ones this plan does not sell — so the answer echoes the `service` and `product_id`
+	// that were given.
+	Unpriced []UnpricedUsage `json:"unpriced"`
 }
 
 // GetLines returns the value of Lines.
@@ -3749,7 +4107,7 @@ func (s *Quote) GetTotal() string {
 }
 
 // GetUnpriced returns the value of Unpriced.
-func (s *Quote) GetUnpriced() []string {
+func (s *Quote) GetUnpriced() []UnpricedUsage {
 	return s.Unpriced
 }
 
@@ -3764,7 +4122,7 @@ func (s *Quote) SetTotal(val string) {
 }
 
 // SetUnpriced sets the value of Unpriced.
-func (s *Quote) SetUnpriced(val []string) {
+func (s *Quote) SetUnpriced(val []UnpricedUsage) {
 	s.Unpriced = val
 }
 
@@ -4452,6 +4810,71 @@ func (s *TopUpStatusState) UnmarshalText(data []byte) error {
 
 // UnbindProjectFromBillingAccountNoContent is response for UnbindProjectFromBillingAccount operation.
 type UnbindProjectFromBillingAccountNoContent struct{}
+
+// One usage that has no rate card on the plan it was priced against.
+// Ref: #/components/schemas/UnpricedUsage
+type UnpricedUsage struct {
+	// The meter key this usage resolved to.
+	Key string `json:"key"`
+	// Echoed from the request when the usage was named by service and product.
+	Service OptString `json:"service"`
+	// Echoed from the request when the usage was named by service and product.
+	ProductID OptString `json:"product_id"`
+	// Echoed from the request.
+	Variant OptUnpricedUsageVariant `json:"variant"`
+}
+
+// GetKey returns the value of Key.
+func (s *UnpricedUsage) GetKey() string {
+	return s.Key
+}
+
+// GetService returns the value of Service.
+func (s *UnpricedUsage) GetService() OptString {
+	return s.Service
+}
+
+// GetProductID returns the value of ProductID.
+func (s *UnpricedUsage) GetProductID() OptString {
+	return s.ProductID
+}
+
+// GetVariant returns the value of Variant.
+func (s *UnpricedUsage) GetVariant() OptUnpricedUsageVariant {
+	return s.Variant
+}
+
+// SetKey sets the value of Key.
+func (s *UnpricedUsage) SetKey(val string) {
+	s.Key = val
+}
+
+// SetService sets the value of Service.
+func (s *UnpricedUsage) SetService(val OptString) {
+	s.Service = val
+}
+
+// SetProductID sets the value of ProductID.
+func (s *UnpricedUsage) SetProductID(val OptString) {
+	s.ProductID = val
+}
+
+// SetVariant sets the value of Variant.
+func (s *UnpricedUsage) SetVariant(val OptUnpricedUsageVariant) {
+	s.Variant = val
+}
+
+// Echoed from the request.
+type UnpricedUsageVariant map[string]string
+
+func (s *UnpricedUsageVariant) init() UnpricedUsageVariant {
+	m := *s
+	if m == nil {
+		m = map[string]string{}
+		*s = m
+	}
+	return m
+}
 
 // Ref: #/components/schemas/UpdateBillingAccountRequestBody
 type UpdateBillingAccountRequestBody struct {

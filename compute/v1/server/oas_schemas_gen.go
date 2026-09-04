@@ -18,13 +18,27 @@ func (s *ErrorStatusCode) Error() string {
 // Ref: #/components/schemas/AllocateFloatingIPRequestBody
 type AllocateFloatingIPRequestBody struct {
 	// The address to allocate. Allocated by the platform when omitted.
-	Address          OptString `json:"address"`
+	Address OptString `json:"address"`
+	// The bandwidth ceiling of this address, in Mbit/s, applied to both directions.
+	//
+	// Required, and there is no "unlimited": an address with no ceiling runs at line rate and is charged
+	// nothing for the traffic, while the address itself bills normally — so the invoice looks correct
+	// and nothing anywhere reports it.
+	//
+	// It is billed separately from the address, per Mbit/s-hour, and appears as its own line on the order.
+	// Changing it later goes through the bandwidth endpoint.
+	BandwidthMbps    int64     `json:"bandwidth_mbps"`
 	PrivateNetworkID uuid.UUID `json:"private_network_id"`
 }
 
 // GetAddress returns the value of Address.
 func (s *AllocateFloatingIPRequestBody) GetAddress() OptString {
 	return s.Address
+}
+
+// GetBandwidthMbps returns the value of BandwidthMbps.
+func (s *AllocateFloatingIPRequestBody) GetBandwidthMbps() int64 {
+	return s.BandwidthMbps
 }
 
 // GetPrivateNetworkID returns the value of PrivateNetworkID.
@@ -35,6 +49,11 @@ func (s *AllocateFloatingIPRequestBody) GetPrivateNetworkID() uuid.UUID {
 // SetAddress sets the value of Address.
 func (s *AllocateFloatingIPRequestBody) SetAddress(val OptString) {
 	s.Address = val
+}
+
+// SetBandwidthMbps sets the value of BandwidthMbps.
+func (s *AllocateFloatingIPRequestBody) SetBandwidthMbps(val int64) {
+	s.BandwidthMbps = val
 }
 
 // SetPrivateNetworkID sets the value of PrivateNetworkID.
@@ -423,6 +442,7 @@ func (s *CreateBackupRequestBody) SetName(val string) {
 
 // Ref: #/components/schemas/CreateDiskRequestBody
 type CreateDiskRequestBody struct {
+	// A disk type currently on sale. A withdrawn one is rejected even though its identifier still resolves.
 	DiskTypeID uuid.UUID `json:"disk_type_id"`
 	Name       string    `json:"name"`
 	SizeGB     int64     `json:"size_gb"`
@@ -1037,6 +1057,14 @@ type DiskResource struct {
 	RegionCode string             `json:"region_code"`
 	SizeGB     int64              `json:"size_gb"`
 	Status     DiskResourceStatus `json:"status"`
+	// How this disk is paid for. `postpaid` is billed by the hour for as long as it exists; `prepaid` was
+	// bought outright for a term.
+	//
+	// Not the term. How long it was bought for belongs to the order, not to the disk: renewing can change
+	// it, and a machine bought for a year and then renewed for a month is still a prepaid machine. Ask
+	// billing for the term and the expiry — they live there, and they are the only two values a renewal
+	// moves.
+	ChargeType DiskResourceChargeType `json:"charge_type"`
 }
 
 // GetAttachedInstanceID returns the value of AttachedInstanceID.
@@ -1094,6 +1122,11 @@ func (s *DiskResource) GetStatus() DiskResourceStatus {
 	return s.Status
 }
 
+// GetChargeType returns the value of ChargeType.
+func (s *DiskResource) GetChargeType() DiskResourceChargeType {
+	return s.ChargeType
+}
+
 // SetAttachedInstanceID sets the value of AttachedInstanceID.
 func (s *DiskResource) SetAttachedInstanceID(val NilString) {
 	s.AttachedInstanceID = val
@@ -1149,7 +1182,60 @@ func (s *DiskResource) SetStatus(val DiskResourceStatus) {
 	s.Status = val
 }
 
+// SetChargeType sets the value of ChargeType.
+func (s *DiskResource) SetChargeType(val DiskResourceChargeType) {
+	s.ChargeType = val
+}
+
 func (*DiskResource) createDiskRes() {}
+
+// How this disk is paid for. `postpaid` is billed by the hour for as long as it exists; `prepaid` was
+// bought outright for a term.
+//
+// Not the term. How long it was bought for belongs to the order, not to the disk: renewing can change
+// it, and a machine bought for a year and then renewed for a month is still a prepaid machine. Ask
+// billing for the term and the expiry — they live there, and they are the only two values a renewal
+// moves.
+type DiskResourceChargeType string
+
+const (
+	DiskResourceChargeTypePostpaid DiskResourceChargeType = "postpaid"
+	DiskResourceChargeTypePrepaid  DiskResourceChargeType = "prepaid"
+)
+
+// AllValues returns all DiskResourceChargeType values.
+func (DiskResourceChargeType) AllValues() []DiskResourceChargeType {
+	return []DiskResourceChargeType{
+		DiskResourceChargeTypePostpaid,
+		DiskResourceChargeTypePrepaid,
+	}
+}
+
+// MarshalText implements encoding.TextMarshaler.
+func (s DiskResourceChargeType) MarshalText() ([]byte, error) {
+	switch s {
+	case DiskResourceChargeTypePostpaid:
+		return []byte(s), nil
+	case DiskResourceChargeTypePrepaid:
+		return []byte(s), nil
+	default:
+		return nil, errors.Errorf("invalid value: %q", s)
+	}
+}
+
+// UnmarshalText implements encoding.TextUnmarshaler.
+func (s *DiskResourceChargeType) UnmarshalText(data []byte) error {
+	switch DiskResourceChargeType(data) {
+	case DiskResourceChargeTypePostpaid:
+		*s = DiskResourceChargeTypePostpaid
+		return nil
+	case DiskResourceChargeTypePrepaid:
+		*s = DiskResourceChargeTypePrepaid
+		return nil
+	default:
+		return errors.Errorf("invalid value: %q", data)
+	}
+}
 
 type DiskResourceStatus string
 
@@ -1282,6 +1368,38 @@ type DiskTypeResource struct {
 	RegionCode           string                `json:"region_code"`
 	StepGB               int64                 `json:"step_gb"`
 	ThroughputDisplay    string                `json:"throughput_display"`
+	// Whether any capacity is left in this type's pool.
+	//
+	// The same shape as on an instance type, but it answers less here: a disk is sold by the GiB, so "not
+	// sold out" does not mean the size being asked for fits. `remaining` is the field that decides that,
+	// and this one only says whether the pool is empty outright.
+	//
+	// It reflects a limit set by operations, not what the storage backend physically has — raising the
+	// limit does not create capacity, and a type that is not sold out can still fail to create if the
+	// backend is full.
+	//
+	// Advisory: it is read when the list is built, and capacity can be taken between that read and the
+	// order. The order is what actually refuses.
+	SoldOut bool `json:"sold_out"`
+	// How much capacity is left, in GiB. Absent when this type is not limited at all.
+	//
+	// Unlike an instance type, where this is a count of machines, here it is an amount of storage — and
+	// it is the number that bounds the size a customer may ask for. A picker that offers sizes above it
+	// produces orders that are refused after the customer has chosen everything else.
+	//
+	// Absent is not zero and not "unknown": a type with no limit simply has no number to show. Reporting
+	// it as a number would need a sentinel, and any sentinel eventually gets compared against a real size.
+	Remaining OptInt64 `json:"remaining"`
+	// What buying this type outright costs, per term. Empty means this type is only sold by the hour.
+	//
+	// The amount is per GiB for the whole term, not the price of one disk: a disk's size is chosen by the
+	// customer, so the total is this figure times the size. That differs from an instance type, where the
+	// same field is the price of one machine — the unit follows what the product is sold by, and the
+	// order is priced the same way.
+	//
+	// Advisory, like `sold_out`: it is read when the list is built. The order is what fixes the price, and
+	// it refuses rather than falling back to hourly if the term is not sold.
+	PrepaidPrices []PrepaidPrice `json:"prepaid_prices"`
 }
 
 // GetAvailabilityZoneCode returns the value of AvailabilityZoneCode.
@@ -1334,6 +1452,21 @@ func (s *DiskTypeResource) GetThroughputDisplay() string {
 	return s.ThroughputDisplay
 }
 
+// GetSoldOut returns the value of SoldOut.
+func (s *DiskTypeResource) GetSoldOut() bool {
+	return s.SoldOut
+}
+
+// GetRemaining returns the value of Remaining.
+func (s *DiskTypeResource) GetRemaining() OptInt64 {
+	return s.Remaining
+}
+
+// GetPrepaidPrices returns the value of PrepaidPrices.
+func (s *DiskTypeResource) GetPrepaidPrices() []PrepaidPrice {
+	return s.PrepaidPrices
+}
+
 // SetAvailabilityZoneCode sets the value of AvailabilityZoneCode.
 func (s *DiskTypeResource) SetAvailabilityZoneCode(val string) {
 	s.AvailabilityZoneCode = val
@@ -1382,6 +1515,21 @@ func (s *DiskTypeResource) SetStepGB(val int64) {
 // SetThroughputDisplay sets the value of ThroughputDisplay.
 func (s *DiskTypeResource) SetThroughputDisplay(val string) {
 	s.ThroughputDisplay = val
+}
+
+// SetSoldOut sets the value of SoldOut.
+func (s *DiskTypeResource) SetSoldOut(val bool) {
+	s.SoldOut = val
+}
+
+// SetRemaining sets the value of Remaining.
+func (s *DiskTypeResource) SetRemaining(val OptInt64) {
+	s.Remaining = val
+}
+
+// SetPrepaidPrices sets the value of PrepaidPrices.
+func (s *DiskTypeResource) SetPrepaidPrices(val []PrepaidPrice) {
+	s.PrepaidPrices = val
 }
 
 type DiskTypeResourceMedia string
@@ -1964,6 +2112,21 @@ type InstanceResource struct {
 	// Non-empty once the platform has suspended the instance, which must be lifted before any operation.
 	SuspendedAt NilDateTime `json:"suspended_at"`
 	UpdatedAt   time.Time   `json:"updated_at"`
+	// How this instance is paid for. `postpaid` is billed by the hour for as long as it exists; `prepaid`
+	// was bought outright for a term.
+	//
+	// Not the term. How long it was bought for belongs to the order, not to the instance: renewing can
+	// change it, and a machine bought for a year and then renewed for a month is still a prepaid machine.
+	// Ask billing for the term and the expiry — they live there, and they are the only two values a
+	// renewal moves.
+	ChargeType InstanceResourceChargeType `json:"charge_type"`
+	// The order this instance was bought under, in billing's own identifiers. Empty when the deployment
+	// has no billing wired in.
+	//
+	// Kept so the question can be answered later. "Why was I charged for this" is asked days after the
+	// fact, and an order id handed back only in the launch response is one the person who needs it never
+	// had.
+	BillingOrderID string `json:"billing_order_id"`
 }
 
 // GetAvailabilityZone returns the value of AvailabilityZone.
@@ -2076,6 +2239,16 @@ func (s *InstanceResource) GetUpdatedAt() time.Time {
 	return s.UpdatedAt
 }
 
+// GetChargeType returns the value of ChargeType.
+func (s *InstanceResource) GetChargeType() InstanceResourceChargeType {
+	return s.ChargeType
+}
+
+// GetBillingOrderID returns the value of BillingOrderID.
+func (s *InstanceResource) GetBillingOrderID() string {
+	return s.BillingOrderID
+}
+
 // SetAvailabilityZone sets the value of AvailabilityZone.
 func (s *InstanceResource) SetAvailabilityZone(val string) {
 	s.AvailabilityZone = val
@@ -2184,6 +2357,64 @@ func (s *InstanceResource) SetSuspendedAt(val NilDateTime) {
 // SetUpdatedAt sets the value of UpdatedAt.
 func (s *InstanceResource) SetUpdatedAt(val time.Time) {
 	s.UpdatedAt = val
+}
+
+// SetChargeType sets the value of ChargeType.
+func (s *InstanceResource) SetChargeType(val InstanceResourceChargeType) {
+	s.ChargeType = val
+}
+
+// SetBillingOrderID sets the value of BillingOrderID.
+func (s *InstanceResource) SetBillingOrderID(val string) {
+	s.BillingOrderID = val
+}
+
+// How this instance is paid for. `postpaid` is billed by the hour for as long as it exists; `prepaid`
+// was bought outright for a term.
+//
+// Not the term. How long it was bought for belongs to the order, not to the instance: renewing can
+// change it, and a machine bought for a year and then renewed for a month is still a prepaid machine.
+// Ask billing for the term and the expiry — they live there, and they are the only two values a
+// renewal moves.
+type InstanceResourceChargeType string
+
+const (
+	InstanceResourceChargeTypePostpaid InstanceResourceChargeType = "postpaid"
+	InstanceResourceChargeTypePrepaid  InstanceResourceChargeType = "prepaid"
+)
+
+// AllValues returns all InstanceResourceChargeType values.
+func (InstanceResourceChargeType) AllValues() []InstanceResourceChargeType {
+	return []InstanceResourceChargeType{
+		InstanceResourceChargeTypePostpaid,
+		InstanceResourceChargeTypePrepaid,
+	}
+}
+
+// MarshalText implements encoding.TextMarshaler.
+func (s InstanceResourceChargeType) MarshalText() ([]byte, error) {
+	switch s {
+	case InstanceResourceChargeTypePostpaid:
+		return []byte(s), nil
+	case InstanceResourceChargeTypePrepaid:
+		return []byte(s), nil
+	default:
+		return nil, errors.Errorf("invalid value: %q", s)
+	}
+}
+
+// UnmarshalText implements encoding.TextUnmarshaler.
+func (s *InstanceResourceChargeType) UnmarshalText(data []byte) error {
+	switch InstanceResourceChargeType(data) {
+	case InstanceResourceChargeTypePostpaid:
+		*s = InstanceResourceChargeTypePostpaid
+		return nil
+	case InstanceResourceChargeTypePrepaid:
+		*s = InstanceResourceChargeTypePrepaid
+		return nil
+	default:
+		return errors.Errorf("invalid value: %q", data)
+	}
 }
 
 // Your own classification of this instance, as key-value pairs. Empty when never set.
@@ -2492,6 +2723,29 @@ func (s *InstanceTypeResource) SetPrepaidPrices(val []PrepaidPrice) {
 
 // Ref: #/components/schemas/LaunchInstanceRequestBody
 type LaunchInstanceRequestBody struct {
+	// Give this instance a public address with this much bandwidth, in Mbit/s. Omitted or 0 means no
+	// public address.
+	//
+	// The bandwidth is what says whether an address is wanted, rather than a separate flag, because an
+	// address with no ceiling would run at line rate and be charged nothing for the traffic — while the
+	// address itself bills normally and the invoice looks correct.
+	//
+	// The address and its bandwidth are two lines on the same order as the instance and its system disk
+	// — one purchase with one total — and everything is created together or not at all: if any step
+	// fails, the address goes back to the pool and no instance is created. Asking for an address
+	// separately afterwards is still possible, but then they are separate purchases, and a failure in
+	// between leaves an instance you cannot reach.
+	//
+	// Both lines are always billed by the hour, even when the instance is bought outright for a term: a
+	// public IPv4 is a scarce resource the platform keeps holding for as long as you have it, so it is not
+	// something that can be paid for once.
+	//
+	// Which address you get is not a choice here. Use the floating IP endpoints to claim a particular
+	// address and bind it, which is what getting a known address back after a migration needs.
+	//
+	// Rejected together with `port_id` when that interface already has a floating IP: an interface carries
+	// one IPv4, and one IPv4 takes one floating IP. Attach another interface to hold a second address.
+	BandwidthMbps OptInt64 `json:"bandwidth_mbps"`
 	// Number of instances to create; 1 when omitted. Names are numbered automatically for several.
 	Count OptInt64 `json:"count"`
 	// Have the platform generate a random password, returned only in this response.
@@ -2500,8 +2754,11 @@ type LaunchInstanceRequestBody struct {
 	// and in the same availability zone as the instance type. Exactly one of this, `image_id` and
 	// `private_image_id`.
 	BootDiskID OptUUID `json:"boot_disk_id"`
-	// A platform image. Exactly one of this, `private_image_id` and `boot_disk_id`.
-	ImageID        OptUUID   `json:"image_id"`
+	// A platform image, and it must be one currently on sale. Exactly one of this, `private_image_id` and
+	// `boot_disk_id`.
+	ImageID OptUUID `json:"image_id"`
+	// An instance type currently on sale. A withdrawn one is rejected even though its identifier still
+	// resolves.
 	InstanceTypeID uuid.UUID `json:"instance_type_id"`
 	// The account the disk lets you log in as. Required with `boot_disk_id`, and rejected without it since
 	// an image states its own.
@@ -2534,9 +2791,13 @@ type LaunchInstanceRequestBody struct {
 	// never quietly sold by the hour instead, because the customer who asked for a year would find out
 	// only from the bill.
 	//
-	// The system disk is bought for the same term: it is the same purchase, and one order cannot be half
-	// outright and half hourly. A term is therefore refused together with `boot_disk_id`, where the disk
-	// already exists and is already billed its own way.
+	// The system disk is bought for the same term, because it is the same purchase: an instance bought for
+	// a year whose disk is billed hourly is a bill nobody would predict from what they clicked. A term is
+	// therefore refused together with `boot_disk_id`, where the disk already exists and is already billed
+	// its own way.
+	//
+	// A public address asked for with `assign_public_ip` stays hourly regardless — it cannot be bought
+	// outright — so one order can carry both.
 	//
 	// When the term runs out the instance is stopped, not deleted, and starts again once it is renewed.
 	// Renewal lives in the billing console, across every product, because what a customer needs to see is
@@ -2551,6 +2812,11 @@ type LaunchInstanceRequestBody struct {
 	SecurityGroupIds OptNilUUIDArray `json:"security_group_ids"`
 	// Create the primary network interface in this subnet. Exactly one of this and `port_id`.
 	SubnetID OptUUID `json:"subnet_id"`
+}
+
+// GetBandwidthMbps returns the value of BandwidthMbps.
+func (s *LaunchInstanceRequestBody) GetBandwidthMbps() OptInt64 {
+	return s.BandwidthMbps
 }
 
 // GetCount returns the value of Count.
@@ -2626,6 +2892,11 @@ func (s *LaunchInstanceRequestBody) GetSecurityGroupIds() OptNilUUIDArray {
 // GetSubnetID returns the value of SubnetID.
 func (s *LaunchInstanceRequestBody) GetSubnetID() OptUUID {
 	return s.SubnetID
+}
+
+// SetBandwidthMbps sets the value of BandwidthMbps.
+func (s *LaunchInstanceRequestBody) SetBandwidthMbps(val OptInt64) {
+	s.BandwidthMbps = val
 }
 
 // SetCount sets the value of Count.
@@ -2756,6 +3027,20 @@ func (s *LaunchInstanceRequestBodyPaymentMethod) UnmarshalText(data []byte) erro
 
 // Ref: #/components/schemas/LaunchInstanceResponseBody
 type LaunchInstanceResponseBody struct {
+	// The orders these instances were bought under, in the same order as `instances`.
+	//
+	// One per instance, not one per request. A batch of three places three orders, because each machine is
+	// ordered as it is created — stopping halfway leaves the machines already made, and they each have
+	// to be paid for. A caller showing "your order" for a batch has to show all of them.
+	//
+	// Empty when the deployment has no billing wired in, and on the `checkout_url` branch where nothing
+	// was created yet.
+	//
+	// Given so the caller can point at the transaction. Creating a resource takes money — by the hour
+	// from that moment for a metered one, in full from the balance for a prepaid one — and until now the
+	// only thing handed back was the resource itself. Somebody asking "why was I charged" had nothing to
+	// open.
+	OrderIds OptNilUUIDArray `json:"order_ids"`
 	// Non-empty when only some of the instances were created, stating why the sequence stopped.
 	Failure NilString `json:"failure"`
 	// Returned in request order; an array even for a single instance.
@@ -2768,6 +3053,11 @@ type LaunchInstanceResponseBody struct {
 	// moving on is how something gets handed over without the money arriving — and it looks exactly like
 	// a normal creation from the outside.
 	CheckoutURL OptString `json:"checkout_url"`
+}
+
+// GetOrderIds returns the value of OrderIds.
+func (s *LaunchInstanceResponseBody) GetOrderIds() OptNilUUIDArray {
+	return s.OrderIds
 }
 
 // GetFailure returns the value of Failure.
@@ -2788,6 +3078,11 @@ func (s *LaunchInstanceResponseBody) GetPassword() string {
 // GetCheckoutURL returns the value of CheckoutURL.
 func (s *LaunchInstanceResponseBody) GetCheckoutURL() OptString {
 	return s.CheckoutURL
+}
+
+// SetOrderIds sets the value of OrderIds.
+func (s *LaunchInstanceResponseBody) SetOrderIds(val OptNilUUIDArray) {
+	s.OrderIds = val
 }
 
 // SetFailure sets the value of Failure.
@@ -4247,7 +4542,8 @@ func (s *RebootInstanceRequestBody) SetForce(val OptBool) {
 // Ref: #/components/schemas/RebuildInstanceRequestBody
 type RebuildInstanceRequestBody struct {
 	GeneratePassword OptBool `json:"generate_password"`
-	// A platform image. Exactly one of this and `private_image_id`.
+	// A platform image, which must be on sale unless it is the one this instance already runs. Exactly one
+	// of this and `private_image_id`.
 	ImageID  OptUUID   `json:"image_id"`
 	Password OptString `json:"password"`
 	// A private image. Exactly one of this and `image_id`.
@@ -4560,7 +4856,8 @@ func (s *ResizeInstanceRequestBody) SetInstanceTypeID(val uuid.UUID) {
 
 // Ref: #/components/schemas/RestoreBackupRequestBody
 type RestoreBackupRequestBody struct {
-	// May differ from the availability zone of the source disk, but must be in the same region.
+	// May differ from the availability zone of the source disk, but must be in the same region. It has to
+	// be on sale — restoring creates a new disk, so a withdrawn type is rejected here as well.
 	DiskTypeID uuid.UUID `json:"disk_type_id"`
 	Name       string    `json:"name"`
 	// Matches the size of the backup when omitted. When given, it must not be smaller than the backup.

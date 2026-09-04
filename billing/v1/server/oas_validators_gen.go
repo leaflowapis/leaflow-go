@@ -32,6 +32,29 @@ func (s *Balance) Validate() error {
 	return nil
 }
 
+func (s *BalanceMovement) Validate() error {
+	if s == nil {
+		return validate.ErrNilPointer
+	}
+
+	var failures []validate.FieldError
+	if err := func() error {
+		if err := s.Currency.Validate(); err != nil {
+			return err
+		}
+		return nil
+	}(); err != nil {
+		failures = append(failures, validate.FieldError{
+			Name:  "currency",
+			Error: err,
+		})
+	}
+	if len(failures) > 0 {
+		return &validate.Error{Fields: failures}
+	}
+	return nil
+}
+
 func (s *BillingAccount) Validate() error {
 	if s == nil {
 		return validate.ErrNilPointer
@@ -907,6 +930,8 @@ func (s *OrderList) Validate() error {
 func (s OrderPaymentState) Validate() error {
 	switch s {
 	case "none":
+		return nil
+	case "pending":
 		return nil
 	case "paid":
 		return nil

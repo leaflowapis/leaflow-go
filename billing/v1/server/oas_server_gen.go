@@ -121,7 +121,8 @@ type Handler interface {
 	GetInvoice(ctx context.Context, params GetInvoiceParams) (*InvoiceDetail, error)
 	// GetOrder implements get-order operation.
 	//
-	// Each line names what was asked for and how much of it. This is the only route that carries them.
+	// Each line names what was asked for, how much of it, and what it produced. The list route carries
+	// lines too; this one exists for a permanent link to a single transaction.
 	//
 	// GET /account/v1/billing-accounts/{accountKey}/orders/{orderId}
 	GetOrder(ctx context.Context, params GetOrderParams) (*Order, error)
@@ -203,8 +204,8 @@ type Handler interface {
 	// in exactly the case someone wants to look: a resource was asked for, was not delivered, and the
 	// question is what happened.
 	//
-	// The list carries no lines. An order has only a handful, but shipping them on every page means
-	// carrying data no column shows.
+	// Lines come with each order. A list showing only identifiers and amounts is a page nobody can read
+	// — recognising one ("which of these was last week's machine") is why it gets opened.
 	//
 	// GET /account/v1/billing-accounts/{accountKey}/orders
 	ListOrders(ctx context.Context, params ListOrdersParams) (*OrderList, error)
@@ -370,6 +371,27 @@ type Handler interface {
 	//
 	// GET /account/v1/billing-accounts/{accountKey}/balance
 	ReadBillingAccountBalance(ctx context.Context, params ReadBillingAccountBalanceParams) (*Balance, error)
+	// ReadBillingAccountBalanceMovement implements read-billing-account-balance-movement operation.
+	//
+	// Opening balance, money in, money out, closing balance — for the current calendar month.
+	//
+	// The four add up: `closing = opening + income - spending`. That is the point of the endpoint. The
+	// balance alone answers "how much is left" and cannot answer "how did it get there", which is what
+	// somebody watching their balance shrink is actually asking. Four figures that add up can be checked
+	// by the holder; a single figure can only be taken on faith or queried with support.
+	//
+	// `closing` is computed from the other three rather than read separately. Reading the current balance
+	// for it would leave the equation off by whatever was booked between the two reads — and an equation
+	// that is off by a few cents is worse than no equation, because it puts the ledger itself in doubt.
+	//
+	// The window is the calendar month, not the engine's billing period. This is the month a person means
+	// when they say "this month"; the billing anchor is an internal recurrence that happens to line up.
+	//
+	// A month with no movement reports opening equal to closing and zero on both sides — not all zeroes,
+	// which would read as "your money is gone".
+	//
+	// GET /account/v1/billing-accounts/{accountKey}/balance/movement
+	ReadBillingAccountBalanceMovement(ctx context.Context, params ReadBillingAccountBalanceMovementParams) (*BalanceMovement, error)
 	// ReadProjectBillingAccount implements read-project-billing-account operation.
 	//
 	// The account a project's resources are charged to, resolved from the project rather than guessed.

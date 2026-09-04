@@ -69,6 +69,10 @@ type Handler interface {
 	// The disk is created in the availability zone of the selected disk type, and an instance must reside
 	// in the same zone to attach it. Choosing the disk type therefore determines the zone.
 	//
+	// A disk type that has been withdrawn is rejected with `DISK_TYPE_RETIRED`, even though its identifier
+	// still resolves. Withdrawn types stop appearing in the disk type listing; disks already bought on one
+	// keep working and can still be resized.
+	//
 	// POST /api/v1/disks
 	CreateDisk(ctx context.Context, req *CreateDiskRequestBody) (CreateDiskRes, error)
 	// CreatePort implements create-port operation.
@@ -350,6 +354,12 @@ type Handler interface {
 	// image, or `boot_disk_id` to boot a disk you already have. Supplying more than one, or none, is
 	// rejected.
 	//
+	// A platform image that has been withdrawn is rejected with `IMAGE_RETIRED`, and an instance type that
+	// has been withdrawn with `INSTANCE_TYPE_RETIRED` — in both cases the identifier still resolves.
+	// Withdrawn entries stop appearing in their listing, so an identifier held in a script, a template or
+	// an earlier order is the way this is usually hit: reread the listing and pick another. Instances
+	// already running either are unaffected, and one on a withdrawn image can still be rebuilt onto it.
+	//
 	// `boot_disk_id` recovers an instance that can no longer be repaired from the inside. Snapshot its
 	// disk, restore that snapshot into a new disk, attach the new disk to another instance and repair it
 	// there, then create an instance from it. That disk is not deleted when the instance is released; it
@@ -378,7 +388,8 @@ type Handler interface {
 	ListBackups(ctx context.Context, params ListBackupsParams) (*BackupListResponseBody, error)
 	// ListDiskTypes implements list-disk-types operation.
 	//
-	// List disk types on sale.
+	// Only disk types currently on sale are listed. A withdrawn one disappears from here and can no longer
+	// be bought, while the disks already on it keep working and can still be resized.
 	//
 	// GET /api/v1/disk-types
 	ListDiskTypes(ctx context.Context, params ListDiskTypesParams) (*DiskTypeListResponseBody, error)
@@ -400,6 +411,10 @@ type Handler interface {
 	// An image whose `min_ram_mb` exceeds the memory of the selected instance type cannot boot. Filter the
 	// options accordingly.
 	//
+	// Only images currently on sale are listed. An image the platform withdraws disappears from here and
+	// can no longer install new instances, while the instances already running it keep running and can
+	// still be rebuilt onto it.
+	//
 	// GET /api/v1/images
 	ListImages(ctx context.Context, params ListImagesParams) (*ImageListResponseBody, error)
 	// ListInstanceDisks implements list-instance-disks operation.
@@ -416,7 +431,8 @@ type Handler interface {
 	ListInstancePorts(ctx context.Context, params ListInstancePortsParams) (*PortListResponseBody, error)
 	// ListInstanceTypes implements list-instance-types operation.
 	//
-	// List instance types on sale.
+	// Only instance types currently on sale are listed. A withdrawn one disappears from here and can no
+	// longer be ordered, while the instances already running it keep running.
 	//
 	// GET /api/v1/instance-types
 	ListInstanceTypes(ctx context.Context, params ListInstanceTypesParams) (*InstanceTypeListResponseBody, error)
@@ -527,6 +543,10 @@ type Handler interface {
 	// RebuildInstance implements rebuild-instance operation.
 	//
 	// All data on the system disk is erased and cannot be recovered. Attached data disks are unaffected.
+	//
+	// The image this instance already runs is accepted even after the platform has withdrawn it, since
+	// rebuilding is the only way back into an instance broken from the inside. Any other withdrawn image
+	// is rejected with `IMAGE_RETIRED`, which is a change of image and therefore a new order.
 	//
 	// POST /api/v1/instances/{instanceId}/rebuild
 	RebuildInstance(ctx context.Context, req *RebuildInstanceRequestBody, params RebuildInstanceParams) (*RebuildInstanceResponseBody, error)

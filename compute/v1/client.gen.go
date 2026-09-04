@@ -100,6 +100,24 @@ func (e CreateSecurityRuleRequestBodyEthertype) Valid() bool {
 	}
 }
 
+// Defines values for DiskResourceChargeType.
+const (
+	DiskResourceChargeTypePostpaid DiskResourceChargeType = "postpaid"
+	DiskResourceChargeTypePrepaid  DiskResourceChargeType = "prepaid"
+)
+
+// Valid indicates whether the value is a known member of the DiskResourceChargeType enum.
+func (e DiskResourceChargeType) Valid() bool {
+	switch e {
+	case DiskResourceChargeTypePostpaid:
+		return true
+	case DiskResourceChargeTypePrepaid:
+		return true
+	default:
+		return false
+	}
+}
+
 // Defines values for DiskResourceStatus.
 const (
 	DiskResourceStatusAttaching    DiskResourceStatus = "attaching"
@@ -199,6 +217,24 @@ func (e IPv6ResponseBodyStatus) Valid() bool {
 	case Draining:
 		return true
 	case Pending:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for InstanceResourceChargeType.
+const (
+	InstanceResourceChargeTypePostpaid InstanceResourceChargeType = "postpaid"
+	InstanceResourceChargeTypePrepaid  InstanceResourceChargeType = "prepaid"
+)
+
+// Valid indicates whether the value is a known member of the InstanceResourceChargeType enum.
+func (e InstanceResourceChargeType) Valid() bool {
+	switch e {
+	case InstanceResourceChargeTypePostpaid:
+		return true
+	case InstanceResourceChargeTypePrepaid:
 		return true
 	default:
 		return false
@@ -400,7 +436,17 @@ func (e SubnetResourceIpVersion) Valid() bool {
 // AllocateFloatingIPRequestBody defines model for AllocateFloatingIPRequestBody.
 type AllocateFloatingIPRequestBody struct {
 	// Address The address to allocate. Allocated by the platform when omitted
-	Address          *string            `json:"address,omitempty"`
+	Address *string `json:"address,omitempty"`
+
+	// BandwidthMbps The bandwidth ceiling of this address, in Mbit/s, applied to both directions.
+	//
+	// Required, and there is no "unlimited": an address with no ceiling runs at line rate and is
+	// charged nothing for the traffic, while the address itself bills normally — so the invoice
+	// looks correct and nothing anywhere reports it.
+	//
+	// It is billed separately from the address, per Mbit/s-hour, and appears as its own line on
+	// the order. Changing it later goes through the bandwidth endpoint.
+	BandwidthMbps    int64              `json:"bandwidth_mbps"`
 	PrivateNetworkId openapi_types.UUID `json:"private_network_id"`
 }
 
@@ -483,6 +529,7 @@ type CreateBackupRequestBody struct {
 
 // CreateDiskRequestBody defines model for CreateDiskRequestBody.
 type CreateDiskRequestBody struct {
+	// DiskTypeId A disk type currently on sale. A withdrawn one is rejected even though its identifier still resolves
 	DiskTypeId openapi_types.UUID `json:"disk_type_id"`
 	Name       string             `json:"name"`
 
@@ -618,8 +665,17 @@ type DiskResource struct {
 	AttachedInstanceId *string `json:"attached_instance_id"`
 
 	// AvailabilityZone Availability zone the disk actually resides in. An instance must be in the same zone to attach it
-	AvailabilityZone string    `json:"availability_zone"`
-	CreatedAt        time.Time `json:"created_at"`
+	AvailabilityZone string `json:"availability_zone"`
+
+	// ChargeType How this disk is paid for. `postpaid` is billed by the hour for as long as it exists;
+	// `prepaid` was bought outright for a term.
+	//
+	// **Not the term.** How long it was bought for belongs to the order, not to the disk:
+	// renewing can change it, and a machine bought for a year and then renewed for a month is
+	// still a prepaid machine. Ask billing for the term and the expiry — they live there, and
+	// they are the only two values a renewal moves.
+	ChargeType DiskResourceChargeType `json:"charge_type"`
+	CreatedAt  time.Time              `json:"created_at"`
 
 	// Device Device name assigned by the system, as seen inside the instance
 	Device     *string            `json:"device"`
@@ -633,6 +689,15 @@ type DiskResource struct {
 	SizeGb     int64              `json:"size_gb"`
 	Status     DiskResourceStatus `json:"status"`
 }
+
+// DiskResourceChargeType How this disk is paid for. `postpaid` is billed by the hour for as long as it exists;
+// `prepaid` was bought outright for a term.
+//
+// **Not the term.** How long it was bought for belongs to the order, not to the disk:
+// renewing can change it, and a machine bought for a year and then renewed for a month is
+// still a prepaid machine. Ask billing for the term and the expiry — they live there, and
+// they are the only two values a renewal moves.
+type DiskResourceChargeType string
 
 // DiskResourceStatus defines model for DiskResource.Status.
 type DiskResourceStatus string
@@ -651,9 +716,47 @@ type DiskTypeResource struct {
 	Media                DiskTypeResourceMedia `json:"media"`
 	MinSizeGb            int64                 `json:"min_size_gb"`
 	Name                 string                `json:"name"`
-	RegionCode           string                `json:"region_code"`
-	StepGb               int64                 `json:"step_gb"`
-	ThroughputDisplay    string                `json:"throughput_display"`
+
+	// PrepaidPrices What buying this type outright costs, per term. Empty means this type is only sold by the
+	// hour.
+	//
+	// **The amount is per GiB for the whole term**, not the price of one disk: a disk's size is
+	// chosen by the customer, so the total is this figure times the size. That differs from an
+	// instance type, where the same field is the price of one machine — the unit follows what
+	// the product is sold by, and the order is priced the same way.
+	//
+	// Advisory, like `sold_out`: it is read when the list is built. The order is what fixes the
+	// price, and it refuses rather than falling back to hourly if the term is not sold.
+	PrepaidPrices []PrepaidPrice `json:"prepaid_prices,omitempty"`
+	RegionCode    string         `json:"region_code"`
+
+	// Remaining How much capacity is left, **in GiB**. Absent when this type is not limited at all.
+	//
+	// Unlike an instance type, where this is a count of machines, here it is an amount of
+	// storage — and it is the number that bounds the size a customer may ask for. A picker that
+	// offers sizes above it produces orders that are refused after the customer has chosen
+	// everything else.
+	//
+	// Absent is not zero and not "unknown": a type with no limit simply has no number to show.
+	// Reporting it as a number would need a sentinel, and any sentinel eventually gets compared
+	// against a real size.
+	Remaining *int64 `json:"remaining,omitempty"`
+
+	// SoldOut Whether any capacity is left in this type's pool.
+	//
+	// The same shape as on an instance type, but it answers less here: a disk is sold by the
+	// GiB, so "not sold out" does not mean the size being asked for fits. `remaining` is the
+	// field that decides that, and this one only says whether the pool is empty outright.
+	//
+	// It reflects a limit set by operations, not what the storage backend physically has —
+	// raising the limit does not create capacity, and a type that is not sold out can still fail
+	// to create if the backend is full.
+	//
+	// Advisory: it is read when the list is built, and capacity can be taken between that read
+	// and the order. The order is what actually refuses.
+	SoldOut           bool   `json:"sold_out"`
+	StepGb            int64  `json:"step_gb"`
+	ThroughputDisplay string `json:"throughput_display"`
 }
 
 // DiskTypeResourceMedia defines model for DiskTypeResource.Media.
@@ -730,9 +833,26 @@ type InstanceListResponseBody struct {
 type InstanceResource struct {
 	AvailabilityZone string `json:"availability_zone"`
 
+	// BillingOrderId The order this instance was bought under, in billing's own identifiers. Empty when the
+	// deployment has no billing wired in.
+	//
+	// Kept so the question can be answered later. "Why was I charged for this" is asked days
+	// after the fact, and an order id handed back only in the launch response is one the
+	// person who needs it never had.
+	BillingOrderId string `json:"billing_order_id"`
+
 	// BootDiskId Non-empty when the instance was created from a disk you already had, instead of from an image
 	BootDiskId *openapi_types.UUID `json:"boot_disk_id"`
-	CreatedAt  time.Time           `json:"created_at"`
+
+	// ChargeType How this instance is paid for. `postpaid` is billed by the hour for as long as it exists;
+	// `prepaid` was bought outright for a term.
+	//
+	// **Not the term.** How long it was bought for belongs to the order, not to the instance:
+	// renewing can change it, and a machine bought for a year and then renewed for a month is
+	// still a prepaid machine. Ask billing for the term and the expiry — they live there, and
+	// they are the only two values a renewal moves.
+	ChargeType InstanceResourceChargeType `json:"charge_type"`
+	CreatedAt  time.Time                  `json:"created_at"`
 
 	// Hostname Hostname inside the instance; equals the instance id
 	Hostname string             `json:"hostname"`
@@ -787,6 +907,15 @@ type InstanceResource struct {
 	SuspendedAt *time.Time `json:"suspended_at"`
 	UpdatedAt   time.Time  `json:"updated_at"`
 }
+
+// InstanceResourceChargeType How this instance is paid for. `postpaid` is billed by the hour for as long as it exists;
+// `prepaid` was bought outright for a term.
+//
+// **Not the term.** How long it was bought for belongs to the order, not to the instance:
+// renewing can change it, and a machine bought for a year and then renewed for a month is
+// still a prepaid machine. Ask billing for the term and the expiry — they live there, and
+// they are the only two values a renewal moves.
+type InstanceResourceChargeType string
 
 // InstanceResourceStatus Only `running` and `stopped` accept commands. Every other value means the instance is changing, and start, stop, reboot, resize, rebuild and password reset are all rejected.
 //
@@ -845,6 +974,32 @@ type InstanceTypeResource struct {
 
 // LaunchInstanceRequestBody defines model for LaunchInstanceRequestBody.
 type LaunchInstanceRequestBody struct {
+	// BandwidthMbps Give this instance a public address with this much bandwidth, in Mbit/s. Omitted or 0 means
+	// no public address.
+	//
+	// The bandwidth is what says whether an address is wanted, rather than a separate flag,
+	// because an address with no ceiling would run at line rate and be charged nothing for the
+	// traffic — while the address itself bills normally and the invoice looks correct.
+	//
+	// The address and its bandwidth are two lines on the same order as the instance and its
+	// system disk — one purchase with one total — and everything is created together or not at
+	// all: if any step fails, the address goes back to the pool and no instance is created.
+	// Asking for an address separately afterwards is still possible, but then they are separate
+	// purchases, and a failure in between leaves an instance you cannot reach.
+	//
+	// Both lines are always billed by the hour, even when the instance is bought outright for a
+	// term: a public IPv4 is a scarce resource the platform keeps holding for as long as you have
+	// it, so it is not something that can be paid for once.
+	//
+	// Which address you get is not a choice here. Use the floating IP endpoints to claim a
+	// particular address and bind it, which is what getting a known address back after a
+	// migration needs.
+	//
+	// Rejected together with `port_id` when that interface already has a floating IP: an
+	// interface carries one IPv4, and one IPv4 takes one floating IP. Attach another interface to
+	// hold a second address.
+	BandwidthMbps *int64 `json:"bandwidth_mbps,omitempty"`
+
 	// BootDiskId Boot a disk you already have instead of installing an image. The disk must be available, unattached, and in the same availability zone as the instance type. Exactly one of this, `image_id` and `private_image_id`
 	BootDiskId *openapi_types.UUID `json:"boot_disk_id,omitempty"`
 
@@ -854,9 +1009,11 @@ type LaunchInstanceRequestBody struct {
 	// GeneratePassword Have the platform generate a random password, returned only in this response
 	GeneratePassword *bool `json:"generate_password,omitempty"`
 
-	// ImageId A platform image. Exactly one of this, `private_image_id` and `boot_disk_id`
-	ImageId        *openapi_types.UUID `json:"image_id,omitempty"`
-	InstanceTypeId openapi_types.UUID  `json:"instance_type_id"`
+	// ImageId A platform image, and it must be one currently on sale. Exactly one of this, `private_image_id` and `boot_disk_id`
+	ImageId *openapi_types.UUID `json:"image_id,omitempty"`
+
+	// InstanceTypeId An instance type currently on sale. A withdrawn one is rejected even though its identifier still resolves
+	InstanceTypeId openapi_types.UUID `json:"instance_type_id"`
 
 	// LoginUsername The account the disk lets you log in as. Required with `boot_disk_id`, and rejected without it since an image states its own
 	LoginUsername *string `json:"login_username,omitempty"`
@@ -901,9 +1058,13 @@ type LaunchInstanceRequestBody struct {
 	// refused — it is never quietly sold by the hour instead, because the customer who asked for
 	// a year would find out only from the bill.
 	//
-	// The system disk is bought for the same term: it is the same purchase, and one order cannot
-	// be half outright and half hourly. A term is therefore refused together with `boot_disk_id`,
-	// where the disk already exists and is already billed its own way.
+	// The system disk is bought for the same term, because it is the same purchase: an instance
+	// bought for a year whose disk is billed hourly is a bill nobody would predict from what they
+	// clicked. A term is therefore refused together with `boot_disk_id`, where the disk already
+	// exists and is already billed its own way.
+	//
+	// A public address asked for with `assign_public_ip` stays hourly regardless — it cannot be
+	// bought outright — so one order can carry both.
 	//
 	// When the term runs out the instance is stopped, not deleted, and starts again once it is
 	// renewed. Renewal lives in the billing console, across every product, because what a
@@ -939,6 +1100,22 @@ type LaunchInstanceResponseBody struct {
 
 	// Instances Returned in request order; an array even for a single instance
 	Instances []InstanceResource `json:"instances"`
+
+	// OrderIds The orders these instances were bought under, in the same order as `instances`.
+	//
+	// **One per instance, not one per request.** A batch of three places three orders, because
+	// each machine is ordered as it is created — stopping halfway leaves the machines already
+	// made, and they each have to be paid for. A caller showing "your order" for a batch has to
+	// show all of them.
+	//
+	// Empty when the deployment has no billing wired in, and on the `checkout_url` branch where
+	// nothing was created yet.
+	//
+	// Given so the caller can point at the transaction. Creating a resource takes money — by
+	// the hour from that moment for a metered one, in full from the balance for a prepaid one —
+	// and until now the only thing handed back was the resource itself. Somebody asking "why
+	// was I charged" had nothing to open.
+	OrderIds []openapi_types.UUID `json:"order_ids,omitempty"`
 
 	// Password Returned only in this response; store it immediately. All instances of a batch share it
 	Password string `json:"password"`
@@ -1095,7 +1272,7 @@ type RebootInstanceRequestBody struct {
 type RebuildInstanceRequestBody struct {
 	GeneratePassword *bool `json:"generate_password,omitempty"`
 
-	// ImageId A platform image. Exactly one of this and `private_image_id`
+	// ImageId A platform image, which must be on sale unless it is the one this instance already runs. Exactly one of this and `private_image_id`
 	ImageId  *openapi_types.UUID `json:"image_id,omitempty"`
 	Password *string             `json:"password,omitempty"`
 
@@ -1187,7 +1364,7 @@ type ResizeInstanceRequestBody struct {
 
 // RestoreBackupRequestBody defines model for RestoreBackupRequestBody.
 type RestoreBackupRequestBody struct {
-	// DiskTypeId May differ from the availability zone of the source disk, but must be in the same region
+	// DiskTypeId May differ from the availability zone of the source disk, but must be in the same region. It has to be on sale — restoring creates a new disk, so a withdrawn type is rejected here as well
 	DiskTypeId openapi_types.UUID `json:"disk_type_id"`
 	Name       string             `json:"name"`
 
@@ -1678,6 +1855,8 @@ type ClientInterface interface {
 
 	// ListDiskTypes List disk types on sale
 	//
+	// Only disk types currently on sale are listed. A withdrawn one disappears from here and can no longer be bought, while the disks already on it keep working and can still be resized.
+	//
 	// Corresponds with GET /api/v1/disk-types (the `ListDiskTypes` operationId).
 	ListDiskTypes(ctx context.Context, params *ListDiskTypesParams, reqEditors ...RequestEditorFn) (*http.Response, error)
 
@@ -1692,6 +1871,8 @@ type ClientInterface interface {
 	//
 	// The disk is created in the availability zone of the selected disk type, and an instance must reside in the same zone to attach it. Choosing the disk type therefore determines the zone.
 	//
+	// A disk type that has been withdrawn is rejected with `DISK_TYPE_RETIRED`, even though its identifier still resolves. Withdrawn types stop appearing in the disk type listing; disks already bought on one keep working and can still be resized.
+	//
 	// Takes any type of body and a specified content type.
 	//
 	// Corresponds with POST /api/v1/disks (the `CreateDisk` operationId).
@@ -1700,6 +1881,8 @@ type ClientInterface interface {
 	// CreateDisk Create a disk
 	//
 	// The disk is created in the availability zone of the selected disk type, and an instance must reside in the same zone to attach it. Choosing the disk type therefore determines the zone.
+	//
+	// A disk type that has been withdrawn is rejected with `DISK_TYPE_RETIRED`, even though its identifier still resolves. Withdrawn types stop appearing in the disk type listing; disks already bought on one keep working and can still be resized.
 	//
 	// Takes a body of the `application/json` content type.
 	//
@@ -1864,10 +2047,14 @@ type ClientInterface interface {
 	//
 	// An image whose `min_ram_mb` exceeds the memory of the selected instance type cannot boot. Filter the options accordingly.
 	//
+	// Only images currently on sale are listed. An image the platform withdraws disappears from here and can no longer install new instances, while the instances already running it keep running and can still be rebuilt onto it.
+	//
 	// Corresponds with GET /api/v1/images (the `ListImages` operationId).
 	ListImages(ctx context.Context, params *ListImagesParams, reqEditors ...RequestEditorFn) (*http.Response, error)
 
 	// ListInstanceTypes List instance types on sale
+	//
+	// Only instance types currently on sale are listed. A withdrawn one disappears from here and can no longer be ordered, while the instances already running it keep running.
 	//
 	// Corresponds with GET /api/v1/instance-types (the `ListInstanceTypes` operationId).
 	ListInstanceTypes(ctx context.Context, params *ListInstanceTypesParams, reqEditors ...RequestEditorFn) (*http.Response, error)
@@ -1889,6 +2076,8 @@ type ClientInterface interface {
 	//
 	// Exactly one source must be given: `image_id` for a platform image, `private_image_id` for a private image, or `boot_disk_id` to boot a disk you already have. Supplying more than one, or none, is rejected.
 	//
+	// A platform image that has been withdrawn is rejected with `IMAGE_RETIRED`, and an instance type that has been withdrawn with `INSTANCE_TYPE_RETIRED` — in both cases the identifier still resolves. Withdrawn entries stop appearing in their listing, so an identifier held in a script, a template or an earlier order is the way this is usually hit: reread the listing and pick another. Instances already running either are unaffected, and one on a withdrawn image can still be rebuilt onto it.
+	//
 	// `boot_disk_id` recovers an instance that can no longer be repaired from the inside. Snapshot its disk, restore that snapshot into a new disk, attach the new disk to another instance and repair it there, then create an instance from it. That disk is not deleted when the instance is released; it is detached and returned to you.
 	//
 	// Instances are created in the availability zone of the instance type. Disks to be attached later must reside in the same zone.
@@ -1909,6 +2098,8 @@ type ClientInterface interface {
 	// Instances are created one by one in order. If the sequence stops part way through, because of a quota limit for example, **the instances already created are kept** and `failure` states why it stopped. A failure on the first instance is treated as a failure of the whole request and no instance is created.
 	//
 	// Exactly one source must be given: `image_id` for a platform image, `private_image_id` for a private image, or `boot_disk_id` to boot a disk you already have. Supplying more than one, or none, is rejected.
+	//
+	// A platform image that has been withdrawn is rejected with `IMAGE_RETIRED`, and an instance type that has been withdrawn with `INSTANCE_TYPE_RETIRED` — in both cases the identifier still resolves. Withdrawn entries stop appearing in their listing, so an identifier held in a script, a template or an earlier order is the way this is usually hit: reread the listing and pick another. Instances already running either are unaffected, and one on a withdrawn image can still be rebuilt onto it.
 	//
 	// `boot_disk_id` recovers an instance that can no longer be repaired from the inside. Snapshot its disk, restore that snapshot into a new disk, attach the new disk to another instance and repair it there, then create an instance from it. That disk is not deleted when the instance is released; it is detached and returned to you.
 	//
@@ -2218,6 +2409,8 @@ type ClientInterface interface {
 	//
 	// **All data on the system disk is erased and cannot be recovered.** Attached data disks are unaffected.
 	//
+	// The image this instance already runs is accepted even after the platform has withdrawn it, since rebuilding is the only way back into an instance broken from the inside. Any *other* withdrawn image is rejected with `IMAGE_RETIRED`, which is a change of image and therefore a new order.
+	//
 	// Takes any type of body and a specified content type.
 	//
 	// Corresponds with POST /api/v1/instances/{instanceId}/rebuild (the `RebuildInstance` operationId).
@@ -2226,6 +2419,8 @@ type ClientInterface interface {
 	// RebuildInstance Rebuild an instance
 	//
 	// **All data on the system disk is erased and cannot be recovered.** Attached data disks are unaffected.
+	//
+	// The image this instance already runs is accepted even after the platform has withdrawn it, since rebuilding is the only way back into an instance broken from the inside. Any *other* withdrawn image is rejected with `IMAGE_RETIRED`, which is a change of image and therefore a new order.
 	//
 	// Takes a body of the `application/json` content type.
 	//
@@ -2863,6 +3058,8 @@ func (c *Client) RestoreBackup(ctx context.Context, backupId openapi_types.UUID,
 
 // ListDiskTypes List disk types on sale
 //
+// Only disk types currently on sale are listed. A withdrawn one disappears from here and can no longer be bought, while the disks already on it keep working and can still be resized.
+//
 // Corresponds with GET /api/v1/disk-types (the `ListDiskTypes` operationId).
 func (c *Client) ListDiskTypes(ctx context.Context, params *ListDiskTypesParams, reqEditors ...RequestEditorFn) (*http.Response, error) {
 	req, err := NewListDiskTypesRequest(c.Server, params)
@@ -2897,6 +3094,8 @@ func (c *Client) ListDisks(ctx context.Context, params *ListDisksParams, reqEdit
 //
 // The disk is created in the availability zone of the selected disk type, and an instance must reside in the same zone to attach it. Choosing the disk type therefore determines the zone.
 //
+// A disk type that has been withdrawn is rejected with `DISK_TYPE_RETIRED`, even though its identifier still resolves. Withdrawn types stop appearing in the disk type listing; disks already bought on one keep working and can still be resized.
+//
 // Takes any type of body and a specified content type.
 //
 // Corresponds with POST /api/v1/disks (the `CreateDisk` operationId).
@@ -2915,6 +3114,8 @@ func (c *Client) CreateDiskWithBody(ctx context.Context, contentType string, bod
 // CreateDisk Create a disk
 //
 // The disk is created in the availability zone of the selected disk type, and an instance must reside in the same zone to attach it. Choosing the disk type therefore determines the zone.
+//
+// A disk type that has been withdrawn is rejected with `DISK_TYPE_RETIRED`, even though its identifier still resolves. Withdrawn types stop appearing in the disk type listing; disks already bought on one keep working and can still be resized.
 //
 // Takes a body of the `application/json` content type.
 //
@@ -3269,6 +3470,8 @@ func (c *Client) BindFloatingIp(ctx context.Context, floatingIpId openapi_types.
 //
 // An image whose `min_ram_mb` exceeds the memory of the selected instance type cannot boot. Filter the options accordingly.
 //
+// Only images currently on sale are listed. An image the platform withdraws disappears from here and can no longer install new instances, while the instances already running it keep running and can still be rebuilt onto it.
+//
 // Corresponds with GET /api/v1/images (the `ListImages` operationId).
 func (c *Client) ListImages(ctx context.Context, params *ListImagesParams, reqEditors ...RequestEditorFn) (*http.Response, error) {
 	req, err := NewListImagesRequest(c.Server, params)
@@ -3283,6 +3486,8 @@ func (c *Client) ListImages(ctx context.Context, params *ListImagesParams, reqEd
 }
 
 // ListInstanceTypes List instance types on sale
+//
+// Only instance types currently on sale are listed. A withdrawn one disappears from here and can no longer be ordered, while the instances already running it keep running.
 //
 // Corresponds with GET /api/v1/instance-types (the `ListInstanceTypes` operationId).
 func (c *Client) ListInstanceTypes(ctx context.Context, params *ListInstanceTypesParams, reqEditors ...RequestEditorFn) (*http.Response, error) {
@@ -3324,6 +3529,8 @@ func (c *Client) ListInstances(ctx context.Context, params *ListInstancesParams,
 //
 // Exactly one source must be given: `image_id` for a platform image, `private_image_id` for a private image, or `boot_disk_id` to boot a disk you already have. Supplying more than one, or none, is rejected.
 //
+// A platform image that has been withdrawn is rejected with `IMAGE_RETIRED`, and an instance type that has been withdrawn with `INSTANCE_TYPE_RETIRED` — in both cases the identifier still resolves. Withdrawn entries stop appearing in their listing, so an identifier held in a script, a template or an earlier order is the way this is usually hit: reread the listing and pick another. Instances already running either are unaffected, and one on a withdrawn image can still be rebuilt onto it.
+//
 // `boot_disk_id` recovers an instance that can no longer be repaired from the inside. Snapshot its disk, restore that snapshot into a new disk, attach the new disk to another instance and repair it there, then create an instance from it. That disk is not deleted when the instance is released; it is detached and returned to you.
 //
 // Instances are created in the availability zone of the instance type. Disks to be attached later must reside in the same zone.
@@ -3354,6 +3561,8 @@ func (c *Client) LaunchInstanceWithBody(ctx context.Context, contentType string,
 // Instances are created one by one in order. If the sequence stops part way through, because of a quota limit for example, **the instances already created are kept** and `failure` states why it stopped. A failure on the first instance is treated as a failure of the whole request and no instance is created.
 //
 // Exactly one source must be given: `image_id` for a platform image, `private_image_id` for a private image, or `boot_disk_id` to boot a disk you already have. Supplying more than one, or none, is rejected.
+//
+// A platform image that has been withdrawn is rejected with `IMAGE_RETIRED`, and an instance type that has been withdrawn with `INSTANCE_TYPE_RETIRED` — in both cases the identifier still resolves. Withdrawn entries stop appearing in their listing, so an identifier held in a script, a template or an earlier order is the way this is usually hit: reread the listing and pick another. Instances already running either are unaffected, and one on a withdrawn image can still be rebuilt onto it.
 //
 // `boot_disk_id` recovers an instance that can no longer be repaired from the inside. Snapshot its disk, restore that snapshot into a new disk, attach the new disk to another instance and repair it there, then create an instance from it. That disk is not deleted when the instance is released; it is detached and returned to you.
 //
@@ -3943,6 +4152,8 @@ func (c *Client) RebootInstance(ctx context.Context, instanceId openapi_types.UU
 //
 // **All data on the system disk is erased and cannot be recovered.** Attached data disks are unaffected.
 //
+// The image this instance already runs is accepted even after the platform has withdrawn it, since rebuilding is the only way back into an instance broken from the inside. Any *other* withdrawn image is rejected with `IMAGE_RETIRED`, which is a change of image and therefore a new order.
+//
 // Takes any type of body and a specified content type.
 //
 // Corresponds with POST /api/v1/instances/{instanceId}/rebuild (the `RebuildInstance` operationId).
@@ -3961,6 +4172,8 @@ func (c *Client) RebuildInstanceWithBody(ctx context.Context, instanceId openapi
 // RebuildInstance Rebuild an instance
 //
 // **All data on the system disk is erased and cannot be recovered.** Attached data disks are unaffected.
+//
+// The image this instance already runs is accepted even after the platform has withdrawn it, since rebuilding is the only way back into an instance broken from the inside. Any *other* withdrawn image is rejected with `IMAGE_RETIRED`, which is a change of image and therefore a new order.
 //
 // Takes a body of the `application/json` content type.
 //
@@ -8839,6 +9052,8 @@ type ClientWithResponsesInterface interface {
 
 	// ListDiskTypesWithResponse List disk types on sale
 	//
+	// Only disk types currently on sale are listed. A withdrawn one disappears from here and can no longer be bought, while the disks already on it keep working and can still be resized.
+	//
 	// Returns a wrapper object for the known response body format(s).
 	//
 	// Corresponds with GET /api/v1/disk-types (the `ListDiskTypes` operationId).
@@ -8857,6 +9072,8 @@ type ClientWithResponsesInterface interface {
 	//
 	// The disk is created in the availability zone of the selected disk type, and an instance must reside in the same zone to attach it. Choosing the disk type therefore determines the zone.
 	//
+	// A disk type that has been withdrawn is rejected with `DISK_TYPE_RETIRED`, even though its identifier still resolves. Withdrawn types stop appearing in the disk type listing; disks already bought on one keep working and can still be resized.
+	//
 	// Takes any type of body and a specified content type, and returns a wrapper object for the known response body format(s).
 	//
 	// Corresponds with POST /api/v1/disks (the `CreateDisk` operationId).
@@ -8865,6 +9082,8 @@ type ClientWithResponsesInterface interface {
 	// CreateDiskWithResponse Create a disk
 	//
 	// The disk is created in the availability zone of the selected disk type, and an instance must reside in the same zone to attach it. Choosing the disk type therefore determines the zone.
+	//
+	// A disk type that has been withdrawn is rejected with `DISK_TYPE_RETIRED`, even though its identifier still resolves. Withdrawn types stop appearing in the disk type listing; disks already bought on one keep working and can still be resized.
 	//
 	// Takes a body of the `application/json` content type, and returns a wrapper object for the known response body format(s).
 	//
@@ -9041,12 +9260,16 @@ type ClientWithResponsesInterface interface {
 	//
 	// An image whose `min_ram_mb` exceeds the memory of the selected instance type cannot boot. Filter the options accordingly.
 	//
+	// Only images currently on sale are listed. An image the platform withdraws disappears from here and can no longer install new instances, while the instances already running it keep running and can still be rebuilt onto it.
+	//
 	// Returns a wrapper object for the known response body format(s).
 	//
 	// Corresponds with GET /api/v1/images (the `ListImages` operationId).
 	ListImagesWithResponse(ctx context.Context, params *ListImagesParams, reqEditors ...RequestEditorFn) (*ListImagesResponse, error)
 
 	// ListInstanceTypesWithResponse List instance types on sale
+	//
+	// Only instance types currently on sale are listed. A withdrawn one disappears from here and can no longer be ordered, while the instances already running it keep running.
 	//
 	// Returns a wrapper object for the known response body format(s).
 	//
@@ -9072,6 +9295,8 @@ type ClientWithResponsesInterface interface {
 	//
 	// Exactly one source must be given: `image_id` for a platform image, `private_image_id` for a private image, or `boot_disk_id` to boot a disk you already have. Supplying more than one, or none, is rejected.
 	//
+	// A platform image that has been withdrawn is rejected with `IMAGE_RETIRED`, and an instance type that has been withdrawn with `INSTANCE_TYPE_RETIRED` — in both cases the identifier still resolves. Withdrawn entries stop appearing in their listing, so an identifier held in a script, a template or an earlier order is the way this is usually hit: reread the listing and pick another. Instances already running either are unaffected, and one on a withdrawn image can still be rebuilt onto it.
+	//
 	// `boot_disk_id` recovers an instance that can no longer be repaired from the inside. Snapshot its disk, restore that snapshot into a new disk, attach the new disk to another instance and repair it there, then create an instance from it. That disk is not deleted when the instance is released; it is detached and returned to you.
 	//
 	// Instances are created in the availability zone of the instance type. Disks to be attached later must reside in the same zone.
@@ -9092,6 +9317,8 @@ type ClientWithResponsesInterface interface {
 	// Instances are created one by one in order. If the sequence stops part way through, because of a quota limit for example, **the instances already created are kept** and `failure` states why it stopped. A failure on the first instance is treated as a failure of the whole request and no instance is created.
 	//
 	// Exactly one source must be given: `image_id` for a platform image, `private_image_id` for a private image, or `boot_disk_id` to boot a disk you already have. Supplying more than one, or none, is rejected.
+	//
+	// A platform image that has been withdrawn is rejected with `IMAGE_RETIRED`, and an instance type that has been withdrawn with `INSTANCE_TYPE_RETIRED` — in both cases the identifier still resolves. Withdrawn entries stop appearing in their listing, so an identifier held in a script, a template or an earlier order is the way this is usually hit: reread the listing and pick another. Instances already running either are unaffected, and one on a withdrawn image can still be rebuilt onto it.
 	//
 	// `boot_disk_id` recovers an instance that can no longer be repaired from the inside. Snapshot its disk, restore that snapshot into a new disk, attach the new disk to another instance and repair it there, then create an instance from it. That disk is not deleted when the instance is released; it is detached and returned to you.
 	//
@@ -9419,6 +9646,8 @@ type ClientWithResponsesInterface interface {
 	//
 	// **All data on the system disk is erased and cannot be recovered.** Attached data disks are unaffected.
 	//
+	// The image this instance already runs is accepted even after the platform has withdrawn it, since rebuilding is the only way back into an instance broken from the inside. Any *other* withdrawn image is rejected with `IMAGE_RETIRED`, which is a change of image and therefore a new order.
+	//
 	// Takes any type of body and a specified content type, and returns a wrapper object for the known response body format(s).
 	//
 	// Corresponds with POST /api/v1/instances/{instanceId}/rebuild (the `RebuildInstance` operationId).
@@ -9427,6 +9656,8 @@ type ClientWithResponsesInterface interface {
 	// RebuildInstanceWithResponse Rebuild an instance
 	//
 	// **All data on the system disk is erased and cannot be recovered.** Attached data disks are unaffected.
+	//
+	// The image this instance already runs is accepted even after the platform has withdrawn it, since rebuilding is the only way back into an instance broken from the inside. Any *other* withdrawn image is rejected with `IMAGE_RETIRED`, which is a change of image and therefore a new order.
 	//
 	// Takes a body of the `application/json` content type, and returns a wrapper object for the known response body format(s).
 	//
@@ -14243,6 +14474,8 @@ func (c *ClientWithResponses) RestoreBackupWithResponse(ctx context.Context, bac
 
 // ListDiskTypesWithResponse List disk types on sale
 //
+// Only disk types currently on sale are listed. A withdrawn one disappears from here and can no longer be bought, while the disks already on it keep working and can still be resized.
+//
 // Returns a wrapper object for the known response body format(s).
 //
 // Corresponds with GET /api/v1/disk-types (the `ListDiskTypes` operationId).
@@ -14273,6 +14506,8 @@ func (c *ClientWithResponses) ListDisksWithResponse(ctx context.Context, params 
 //
 // The disk is created in the availability zone of the selected disk type, and an instance must reside in the same zone to attach it. Choosing the disk type therefore determines the zone.
 //
+// A disk type that has been withdrawn is rejected with `DISK_TYPE_RETIRED`, even though its identifier still resolves. Withdrawn types stop appearing in the disk type listing; disks already bought on one keep working and can still be resized.
+//
 // Takes any type of body and a specified content type, and returns a wrapper object for the known response body format(s).
 //
 // Corresponds with POST /api/v1/disks (the `CreateDisk` operationId).
@@ -14287,6 +14522,8 @@ func (c *ClientWithResponses) CreateDiskWithBodyWithResponse(ctx context.Context
 // CreateDiskWithResponse Create a disk
 //
 // The disk is created in the availability zone of the selected disk type, and an instance must reside in the same zone to attach it. Choosing the disk type therefore determines the zone.
+//
+// A disk type that has been withdrawn is rejected with `DISK_TYPE_RETIRED`, even though its identifier still resolves. Withdrawn types stop appearing in the disk type listing; disks already bought on one keep working and can still be resized.
 //
 // Takes a body of the `application/json` content type, and returns a wrapper object for the known response body format(s).
 //
@@ -14577,6 +14814,8 @@ func (c *ClientWithResponses) BindFloatingIpWithResponse(ctx context.Context, fl
 //
 // An image whose `min_ram_mb` exceeds the memory of the selected instance type cannot boot. Filter the options accordingly.
 //
+// Only images currently on sale are listed. An image the platform withdraws disappears from here and can no longer install new instances, while the instances already running it keep running and can still be rebuilt onto it.
+//
 // Returns a wrapper object for the known response body format(s).
 //
 // Corresponds with GET /api/v1/images (the `ListImages` operationId).
@@ -14589,6 +14828,8 @@ func (c *ClientWithResponses) ListImagesWithResponse(ctx context.Context, params
 }
 
 // ListInstanceTypesWithResponse List instance types on sale
+//
+// Only instance types currently on sale are listed. A withdrawn one disappears from here and can no longer be ordered, while the instances already running it keep running.
 //
 // Returns a wrapper object for the known response body format(s).
 //
@@ -14626,6 +14867,8 @@ func (c *ClientWithResponses) ListInstancesWithResponse(ctx context.Context, par
 //
 // Exactly one source must be given: `image_id` for a platform image, `private_image_id` for a private image, or `boot_disk_id` to boot a disk you already have. Supplying more than one, or none, is rejected.
 //
+// A platform image that has been withdrawn is rejected with `IMAGE_RETIRED`, and an instance type that has been withdrawn with `INSTANCE_TYPE_RETIRED` — in both cases the identifier still resolves. Withdrawn entries stop appearing in their listing, so an identifier held in a script, a template or an earlier order is the way this is usually hit: reread the listing and pick another. Instances already running either are unaffected, and one on a withdrawn image can still be rebuilt onto it.
+//
 // `boot_disk_id` recovers an instance that can no longer be repaired from the inside. Snapshot its disk, restore that snapshot into a new disk, attach the new disk to another instance and repair it there, then create an instance from it. That disk is not deleted when the instance is released; it is detached and returned to you.
 //
 // Instances are created in the availability zone of the instance type. Disks to be attached later must reside in the same zone.
@@ -14652,6 +14895,8 @@ func (c *ClientWithResponses) LaunchInstanceWithBodyWithResponse(ctx context.Con
 // Instances are created one by one in order. If the sequence stops part way through, because of a quota limit for example, **the instances already created are kept** and `failure` states why it stopped. A failure on the first instance is treated as a failure of the whole request and no instance is created.
 //
 // Exactly one source must be given: `image_id` for a platform image, `private_image_id` for a private image, or `boot_disk_id` to boot a disk you already have. Supplying more than one, or none, is rejected.
+//
+// A platform image that has been withdrawn is rejected with `IMAGE_RETIRED`, and an instance type that has been withdrawn with `INSTANCE_TYPE_RETIRED` — in both cases the identifier still resolves. Withdrawn entries stop appearing in their listing, so an identifier held in a script, a template or an earlier order is the way this is usually hit: reread the listing and pick another. Instances already running either are unaffected, and one on a withdrawn image can still be rebuilt onto it.
 //
 // `boot_disk_id` recovers an instance that can no longer be repaired from the inside. Snapshot its disk, restore that snapshot into a new disk, attach the new disk to another instance and repair it there, then create an instance from it. That disk is not deleted when the instance is released; it is detached and returned to you.
 //
@@ -15147,6 +15392,8 @@ func (c *ClientWithResponses) RebootInstanceWithResponse(ctx context.Context, in
 //
 // **All data on the system disk is erased and cannot be recovered.** Attached data disks are unaffected.
 //
+// The image this instance already runs is accepted even after the platform has withdrawn it, since rebuilding is the only way back into an instance broken from the inside. Any *other* withdrawn image is rejected with `IMAGE_RETIRED`, which is a change of image and therefore a new order.
+//
 // Takes any type of body and a specified content type, and returns a wrapper object for the known response body format(s).
 //
 // Corresponds with POST /api/v1/instances/{instanceId}/rebuild (the `RebuildInstance` operationId).
@@ -15161,6 +15408,8 @@ func (c *ClientWithResponses) RebuildInstanceWithBodyWithResponse(ctx context.Co
 // RebuildInstanceWithResponse Rebuild an instance
 //
 // **All data on the system disk is erased and cannot be recovered.** Attached data disks are unaffected.
+//
+// The image this instance already runs is accepted even after the platform has withdrawn it, since rebuilding is the only way back into an instance broken from the inside. Any *other* withdrawn image is rejected with `IMAGE_RETIRED`, which is a change of image and therefore a new order.
 //
 // Takes a body of the `application/json` content type, and returns a wrapper object for the known response body format(s).
 //

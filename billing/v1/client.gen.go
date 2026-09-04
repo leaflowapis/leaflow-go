@@ -143,6 +143,7 @@ func (e InvoiceStatus) Valid() bool {
 const (
 	OrderPaymentStateNone     OrderPaymentState = "none"
 	OrderPaymentStatePaid     OrderPaymentState = "paid"
+	OrderPaymentStatePending  OrderPaymentState = "pending"
 	OrderPaymentStateRefunded OrderPaymentState = "refunded"
 )
 
@@ -152,6 +153,8 @@ func (e OrderPaymentState) Valid() bool {
 	case OrderPaymentStateNone:
 		return true
 	case OrderPaymentStatePaid:
+		return true
+	case OrderPaymentStatePending:
 		return true
 	case OrderPaymentStateRefunded:
 		return true
@@ -359,6 +362,46 @@ type Balance struct {
 	// Unsettled What this period has run up and not yet been billed for. It keeps growing past the cash
 	// balance, which is precisely the case the live figure cannot show
 	Unsettled string `json:"unsettled"`
+}
+
+// BalanceMovement defines model for BalanceMovement.
+type BalanceMovement struct {
+	// Closing `opening + income - spending`. Computed, not read separately — see the endpoint.
+	Closing string `json:"closing"`
+
+	// Currency ISO 4217, uppercase. `USD` is the only value the platform issues today, and a request
+	// naming any other is refused with `BILLING_CURRENCY_UNSUPPORTED`.
+	//
+	// Deliberately not an enumeration. The set of currency codes is governed outside this API, so
+	// a client generated today must still be able to read a response naming a code added later —
+	// an enumeration turns that response into a decode failure in a client nobody can redeploy.
+	// Restricting what may be *sent* is a rule about what the platform supports, and it lives
+	// where that rule can change without regenerating anything.
+	Currency Currency `json:"currency"`
+
+	// From Start of the window — the first instant of the current calendar month, UTC.
+	From time.Time `json:"from"`
+
+	// Income What came in — top-ups and credit issued by operations. Never negative.
+	Income string `json:"income"`
+
+	// Opening The balance when the window opened, as a decimal string.
+	//
+	// Taken from the earliest transaction in the window rather than read separately: every
+	// transaction carries the balance before and after it, so this figure and the totals below
+	// come from one read of one ledger and therefore agree.
+	Opening string `json:"opening"`
+
+	// Present False when this account has no balance record in this currency at all, which is not the same as a zero balance.
+	Present bool `json:"present"`
+
+	// Spending What went out — consumption and expiry. **Never negative**: the direction is in the
+	// name, not in the sign. Signed, a client would have to handle both `-20` and `20` meaning
+	// the same thing.
+	Spending string `json:"spending"`
+
+	// To End of the window, which is **now** rather than the month's end. The month is not over.
+	To time.Time `json:"to"`
 }
 
 // BillingAccount A billing account.
@@ -756,10 +799,27 @@ type Order struct {
 	FailureReason *string   `json:"failure_reason,omitempty"`
 	Id            string    `json:"id"`
 
-	// Lines Only present on the single-order route.
+	// Lines What this order was for. Present on the list route too — an order list that shows only
+	// numbers and amounts is a page of identifiers with no content, and recognising one
+	// ("which of these was last week's machine") is the reason anyone opens it.
 	Lines []OrderLine `json:"lines,omitempty"`
 
+	// PaidAt When the money for this order arrived. Absent on an order nothing was charged for, and on
+	// one still waiting to be paid.
+	//
+	// Separate from `created_at` because the two can be far apart: an order paid online is
+	// created first and paid whenever the customer gets round to it. Merged into one field,
+	// "how long did this sit unpaid" has no answer anywhere — and that is the number chasing
+	// payment looks at.
+	PaidAt *time.Time `json:"paid_at,omitempty"`
+
 	// PaymentState Always `none` on a metered order.
+	//
+	// `pending` is an order paid for online whose money has not arrived yet: the checkout
+	// session is open and nothing has been created. It was missing from this enum while the
+	// column had it and the handler passed it through unchanged, so such an order read back
+	// a value outside the enum — the one state where the caller most needs to know not to
+	// expect the resource yet.
 	PaymentState *OrderPaymentState `json:"payment_state,omitempty"`
 	PlacedBy     string             `json:"placed_by"`
 	ProjectId    string             `json:"project_id"`
@@ -770,6 +830,12 @@ type Order struct {
 }
 
 // OrderPaymentState Always `none` on a metered order.
+//
+// `pending` is an order paid for online whose money has not arrived yet: the checkout
+// session is open and nothing has been created. It was missing from this enum while the
+// column had it and the handler passed it through unchanged, so such an order read back
+// a value outside the enum — the one state where the caller most needs to know not to
+// expect the resource yet.
 type OrderPaymentState string
 
 // OrderState Whether the request went through. It is not the state of what was provisioned: that
@@ -779,14 +845,58 @@ type OrderState string
 // OrderLine defines model for OrderLine.
 type OrderLine struct {
 	Action OrderLineAction `json:"action"`
-	Id     string          `json:"id"`
+
+	// Configuration What was configured on this line at the moment of sale, as key–value pairs meant for a
+	// person to read.
+	//
+	// **Free-form, not fixed fields.** Every service's products have their own dimensions — a
+	// machine has cores and memory, a disk has capacity and medium, an address has bandwidth.
+	// Fixed fields would mean adding more of them for every service that comes along, or
+	// squeezing one service's answers into another's boxes.
+	//
+	// Do not parse it. The keys are written for the reader, in the reader's language, and they
+	// change when the wording changes. Anything a program needs to decide on is in
+	// `product_id` and `quantity`.
+	Configuration map[string]string `json:"configuration,omitempty"`
+	Id            string            `json:"id"`
 
 	// ProductId That service's own catalogue identifier for what was asked for.
 	ProductId string `json:"product_id"`
-	Quantity  int64  `json:"quantity"`
+
+	// ProductName What this was called when it was ordered.
+	//
+	// A snapshot, not a lookup. `product_id` is usually a uuid, and an order page that shows it
+	// shows a string of hex. Asking the owning service for the name later is worse: it is a
+	// cross-service call per row, and by then the product may have been renamed or withdrawn —
+	// a bill has to answer "what did I buy", and that answer has to be in the words used at the
+	// time.
+	//
+	// Empty on orders placed before this was recorded, and on the rare call that omits it.
+	// Fall back to `product_id`.
+	ProductName string `json:"product_name"`
+	Quantity    int64  `json:"quantity"`
+
+	// ResourceId The resource this line produced, in the owning service's own identifiers. Absent until
+	// that service reports it back, which is also the moment the line starts being billed.
+	ResourceId *string `json:"resource_id,omitempty"`
 
 	// Service Which service holds the thing, for example `compute`.
 	Service string `json:"service"`
+
+	// ServicePeriodFrom Start of the period this line bought. **Absent when billed by the hour** — that has no
+	// service period, and filling in "today to today" would state a term that does not exist.
+	ServicePeriodFrom *time.Time `json:"service_period_from,omitempty"`
+
+	// ServicePeriodTo End of the period this line bought. Absent when billed by the hour.
+	ServicePeriodTo *time.Time `json:"service_period_to,omitempty"`
+
+	// Term How this line is paid for: empty is by the hour, an ISO 8601 duration (`P1M`, `P1Y`) is
+	// bought outright for that long.
+	//
+	// Fixed at the moment of sale. The asset's own term can move afterwards (renewing can
+	// change the period); this one cannot, because an order is a transaction that already
+	// happened.
+	Term string `json:"term"`
 }
 
 // OrderLineAction defines model for OrderLine.Action.
@@ -1099,12 +1209,21 @@ type Quote struct {
 	// Total The sum of the already-rounded lines
 	Total string `json:"total"`
 
-	// Unpriced Keys that were given a usage but have no rate card on this plan.
+	// Unpriced The usages that have no rate card on this plan.
 	//
 	// **Reported rather than ignored**, because ignoring them yields a smaller but entirely
 	// normal-looking number — and that is the most expensive misconfiguration there is: usage
-	// lands, the usage chart shows it, and the bill has no line for it
-	Unpriced []string `json:"unpriced,omitempty"`
+	// lands, the usage chart shows it, and the bill has no line for it.
+	//
+	// ## Each entry carries the caller's own naming, not only the key
+	//
+	// A meter key is a hash, and callers are told not to compute it (see `QuoteUsage`). An answer
+	// that named the unpriced usages by key alone was therefore unusable whenever more than one
+	// usage was priced at a time: the caller could see that something was unsold but not which of
+	// the things it asked about. That is the case a catalogue page needs — pricing thirty machine
+	// types in one call and marking the ones this plan does not sell — so the answer echoes the
+	// `service` and `product_id` that were given
+	Unpriced []UnpricedUsage `json:"unpriced,omitempty"`
 }
 
 // QuoteLine One rate card priced, with every intermediate step.
@@ -1319,6 +1438,21 @@ type TopUpStatus struct {
 // TopUpStatusState `settled` means the credit has landed. `pending` means it has not yet — the payment is
 // still being confirmed, or the money itself is still in transit
 type TopUpStatusState string
+
+// UnpricedUsage One usage that has no rate card on the plan it was priced against.
+type UnpricedUsage struct {
+	// Key The meter key this usage resolved to
+	Key string `json:"key"`
+
+	// ProductId Echoed from the request when the usage was named by service and product
+	ProductId *string `json:"product_id,omitempty"`
+
+	// Service Echoed from the request when the usage was named by service and product
+	Service *string `json:"service,omitempty"`
+
+	// Variant Echoed from the request
+	Variant map[string]string `json:"variant,omitempty"`
+}
 
 // UpdateBillingAccountRequestBody defines model for UpdateBillingAccountRequestBody.
 type UpdateBillingAccountRequestBody struct {
@@ -1651,6 +1785,31 @@ type ClientInterface interface {
 	// Corresponds with GET /account/v1/billing-accounts/{accountKey}/balance (the `ReadBillingAccountBalance` operationId).
 	ReadBillingAccountBalance(ctx context.Context, accountKey AccountKey, reqEditors ...RequestEditorFn) (*http.Response, error)
 
+	// ReadBillingAccountBalanceMovement How the balance moved this month
+	//
+	// Opening balance, money in, money out, closing balance — for the current calendar month.
+	//
+	// **The four add up**: `closing = opening + income - spending`. That is the point of the
+	// endpoint. The balance alone answers "how much is left" and cannot answer "how did it get
+	// there", which is what somebody watching their balance shrink is actually asking. Four
+	// figures that add up can be checked by the holder; a single figure can only be taken on
+	// faith or queried with support.
+	//
+	// `closing` is computed from the other three rather than read separately. Reading the current
+	// balance for it would leave the equation off by whatever was booked between the two reads —
+	// and an equation that is off by a few cents is worse than no equation, because it puts the
+	// ledger itself in doubt.
+	//
+	// The window is the **calendar** month, not the engine's billing period. This is the month a
+	// person means when they say "this month"; the billing anchor is an internal recurrence that
+	// happens to line up.
+	//
+	// A month with no movement reports opening equal to closing and zero on both sides — not all
+	// zeroes, which would read as "your money is gone".
+	//
+	// Corresponds with GET /account/v1/billing-accounts/{accountKey}/balance/movement (the `ReadBillingAccountBalanceMovement` operationId).
+	ReadBillingAccountBalanceMovement(ctx context.Context, accountKey AccountKey, reqEditors ...RequestEditorFn) (*http.Response, error)
+
 	// ListCharges What this period has run up so far
 	//
 	// The itemised version of `unsettled`: what has been used this period and not yet billed.
@@ -1794,16 +1953,16 @@ type ClientInterface interface {
 	// look at in exactly the case someone wants to look: a resource was asked for, was not
 	// delivered, and the question is what happened.
 	//
-	// The list carries no lines. An order has only a handful, but shipping them on every page
-	// means carrying data no column shows.
+	// Lines come with each order. A list showing only identifiers and amounts is a page nobody can
+	// read — recognising one ("which of these was last week's machine") is why it gets opened.
 	//
 	// Corresponds with GET /account/v1/billing-accounts/{accountKey}/orders (the `ListOrders` operationId).
 	ListOrders(ctx context.Context, accountKey AccountKey, params *ListOrdersParams, reqEditors ...RequestEditorFn) (*http.Response, error)
 
 	// GetOrder One order, with its lines
 	//
-	// Each line names what was asked for and how much of it. This is the only route that carries
-	// them.
+	// Each line names what was asked for, how much of it, and what it produced. The list route
+	// carries lines too; this one exists for a permanent link to a single transaction.
 	//
 	// Corresponds with GET /account/v1/billing-accounts/{accountKey}/orders/{orderId} (the `GetOrder` operationId).
 	GetOrder(ctx context.Context, accountKey AccountKey, orderId openapi_types.UUID, reqEditors ...RequestEditorFn) (*http.Response, error)
@@ -2394,6 +2553,41 @@ func (c *Client) ReadBillingAccountBalance(ctx context.Context, accountKey Accou
 	return c.Client.Do(req)
 }
 
+// ReadBillingAccountBalanceMovement How the balance moved this month
+//
+// Opening balance, money in, money out, closing balance — for the current calendar month.
+//
+// **The four add up**: `closing = opening + income - spending`. That is the point of the
+// endpoint. The balance alone answers "how much is left" and cannot answer "how did it get
+// there", which is what somebody watching their balance shrink is actually asking. Four
+// figures that add up can be checked by the holder; a single figure can only be taken on
+// faith or queried with support.
+//
+// `closing` is computed from the other three rather than read separately. Reading the current
+// balance for it would leave the equation off by whatever was booked between the two reads —
+// and an equation that is off by a few cents is worse than no equation, because it puts the
+// ledger itself in doubt.
+//
+// The window is the **calendar** month, not the engine's billing period. This is the month a
+// person means when they say "this month"; the billing anchor is an internal recurrence that
+// happens to line up.
+//
+// A month with no movement reports opening equal to closing and zero on both sides — not all
+// zeroes, which would read as "your money is gone".
+//
+// Corresponds with GET /account/v1/billing-accounts/{accountKey}/balance/movement (the `ReadBillingAccountBalanceMovement` operationId).
+func (c *Client) ReadBillingAccountBalanceMovement(ctx context.Context, accountKey AccountKey, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewReadBillingAccountBalanceMovementRequest(c.Server, accountKey)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
 // ListCharges What this period has run up so far
 //
 // The itemised version of `unsettled`: what has been used this period and not yet billed.
@@ -2607,8 +2801,8 @@ func (c *Client) PurchaseOffer(ctx context.Context, accountKey AccountKey, offer
 // look at in exactly the case someone wants to look: a resource was asked for, was not
 // delivered, and the question is what happened.
 //
-// The list carries no lines. An order has only a handful, but shipping them on every page
-// means carrying data no column shows.
+// Lines come with each order. A list showing only identifiers and amounts is a page nobody can
+// read — recognising one ("which of these was last week's machine") is why it gets opened.
 //
 // Corresponds with GET /account/v1/billing-accounts/{accountKey}/orders (the `ListOrders` operationId).
 func (c *Client) ListOrders(ctx context.Context, accountKey AccountKey, params *ListOrdersParams, reqEditors ...RequestEditorFn) (*http.Response, error) {
@@ -2625,8 +2819,8 @@ func (c *Client) ListOrders(ctx context.Context, accountKey AccountKey, params *
 
 // GetOrder One order, with its lines
 //
-// Each line names what was asked for and how much of it. This is the only route that carries
-// them.
+// Each line names what was asked for, how much of it, and what it produced. The list route
+// carries lines too; this one exists for a permanent link to a single transaction.
 //
 // Corresponds with GET /account/v1/billing-accounts/{accountKey}/orders/{orderId} (the `GetOrder` operationId).
 func (c *Client) GetOrder(ctx context.Context, accountKey AccountKey, orderId openapi_types.UUID, reqEditors ...RequestEditorFn) (*http.Response, error) {
@@ -3454,6 +3648,40 @@ func NewReadBillingAccountBalanceRequest(server string, accountKey AccountKey) (
 	}
 
 	operationPath := fmt.Sprintf("/account/v1/billing-accounts/%s/balance", pathParam0)
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest(http.MethodGet, queryURL.String(), nil)
+	if err != nil {
+		return nil, err
+	}
+
+	return req, nil
+}
+
+// NewReadBillingAccountBalanceMovementRequest constructs an http.Request for the ReadBillingAccountBalanceMovement method
+func NewReadBillingAccountBalanceMovementRequest(server string, accountKey AccountKey) (*http.Request, error) {
+	var err error
+
+	var pathParam0 string
+
+	pathParam0, err = runtime.StyleParamWithOptions("simple", false, "accountKey", accountKey, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: ""})
+	if err != nil {
+		return nil, err
+	}
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/account/v1/billing-accounts/%s/balance/movement", pathParam0)
 	if operationPath[0] == '/' {
 		operationPath = "." + operationPath
 	}
@@ -4931,6 +5159,33 @@ type ClientWithResponsesInterface interface {
 	// Corresponds with GET /account/v1/billing-accounts/{accountKey}/balance (the `ReadBillingAccountBalance` operationId).
 	ReadBillingAccountBalanceWithResponse(ctx context.Context, accountKey AccountKey, reqEditors ...RequestEditorFn) (*ReadBillingAccountBalanceResponse, error)
 
+	// ReadBillingAccountBalanceMovementWithResponse How the balance moved this month
+	//
+	// Opening balance, money in, money out, closing balance — for the current calendar month.
+	//
+	// **The four add up**: `closing = opening + income - spending`. That is the point of the
+	// endpoint. The balance alone answers "how much is left" and cannot answer "how did it get
+	// there", which is what somebody watching their balance shrink is actually asking. Four
+	// figures that add up can be checked by the holder; a single figure can only be taken on
+	// faith or queried with support.
+	//
+	// `closing` is computed from the other three rather than read separately. Reading the current
+	// balance for it would leave the equation off by whatever was booked between the two reads —
+	// and an equation that is off by a few cents is worse than no equation, because it puts the
+	// ledger itself in doubt.
+	//
+	// The window is the **calendar** month, not the engine's billing period. This is the month a
+	// person means when they say "this month"; the billing anchor is an internal recurrence that
+	// happens to line up.
+	//
+	// A month with no movement reports opening equal to closing and zero on both sides — not all
+	// zeroes, which would read as "your money is gone".
+	//
+	// Returns a wrapper object for the known response body format(s).
+	//
+	// Corresponds with GET /account/v1/billing-accounts/{accountKey}/balance/movement (the `ReadBillingAccountBalanceMovement` operationId).
+	ReadBillingAccountBalanceMovementWithResponse(ctx context.Context, accountKey AccountKey, reqEditors ...RequestEditorFn) (*ReadBillingAccountBalanceMovementResponse, error)
+
 	// ListChargesWithResponse What this period has run up so far
 	//
 	// The itemised version of `unsettled`: what has been used this period and not yet billed.
@@ -5088,8 +5343,8 @@ type ClientWithResponsesInterface interface {
 	// look at in exactly the case someone wants to look: a resource was asked for, was not
 	// delivered, and the question is what happened.
 	//
-	// The list carries no lines. An order has only a handful, but shipping them on every page
-	// means carrying data no column shows.
+	// Lines come with each order. A list showing only identifiers and amounts is a page nobody can
+	// read — recognising one ("which of these was last week's machine") is why it gets opened.
 	//
 	// Returns a wrapper object for the known response body format(s).
 	//
@@ -5098,8 +5353,8 @@ type ClientWithResponsesInterface interface {
 
 	// GetOrderWithResponse One order, with its lines
 	//
-	// Each line names what was asked for and how much of it. This is the only route that carries
-	// them.
+	// Each line names what was asked for, how much of it, and what it produced. The list route
+	// carries lines too; this one exists for a permanent link to a single transaction.
 	//
 	// Returns a wrapper object for the known response body format(s).
 	//
@@ -5786,6 +6041,54 @@ func (r ReadBillingAccountBalanceResponse) StatusCode() int {
 
 // ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
 func (r ReadBillingAccountBalanceResponse) ContentType() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Header.Get("Content-Type")
+	}
+	return ""
+}
+
+type ReadBillingAccountBalanceMovementResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	// JSON200 the response for an HTTP 200 `application/json` response
+	JSON200 *BalanceMovement
+	// JSONDefault the response for an HTTP default `application/json` response
+	JSONDefault *Error
+}
+
+// GetJSON200 returns the response for an HTTP 200 `application/json` response
+func (r ReadBillingAccountBalanceMovementResponse) GetJSON200() *BalanceMovement {
+	return r.JSON200
+}
+
+// GetJSONDefault returns the response for an HTTP default `application/json` response
+func (r ReadBillingAccountBalanceMovementResponse) GetJSONDefault() *Error {
+	return r.JSONDefault
+}
+
+// GetBody returns the raw response body bytes
+func (r ReadBillingAccountBalanceMovementResponse) GetBody() []byte {
+	return r.Body
+}
+
+// Status returns HTTPResponse.Status
+func (r ReadBillingAccountBalanceMovementResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r ReadBillingAccountBalanceMovementResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+// ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
+func (r ReadBillingAccountBalanceMovementResponse) ContentType() string {
 	if r.HTTPResponse != nil {
 		return r.HTTPResponse.Header.Get("Content-Type")
 	}
@@ -7115,6 +7418,39 @@ func (c *ClientWithResponses) ReadBillingAccountBalanceWithResponse(ctx context.
 	return ParseReadBillingAccountBalanceResponse(rsp)
 }
 
+// ReadBillingAccountBalanceMovementWithResponse How the balance moved this month
+//
+// Opening balance, money in, money out, closing balance — for the current calendar month.
+//
+// **The four add up**: `closing = opening + income - spending`. That is the point of the
+// endpoint. The balance alone answers "how much is left" and cannot answer "how did it get
+// there", which is what somebody watching their balance shrink is actually asking. Four
+// figures that add up can be checked by the holder; a single figure can only be taken on
+// faith or queried with support.
+//
+// `closing` is computed from the other three rather than read separately. Reading the current
+// balance for it would leave the equation off by whatever was booked between the two reads —
+// and an equation that is off by a few cents is worse than no equation, because it puts the
+// ledger itself in doubt.
+//
+// The window is the **calendar** month, not the engine's billing period. This is the month a
+// person means when they say "this month"; the billing anchor is an internal recurrence that
+// happens to line up.
+//
+// A month with no movement reports opening equal to closing and zero on both sides — not all
+// zeroes, which would read as "your money is gone".
+//
+// Returns a wrapper object for the known response body format(s).
+//
+// Corresponds with GET /account/v1/billing-accounts/{accountKey}/balance/movement (the `ReadBillingAccountBalanceMovement` operationId).
+func (c *ClientWithResponses) ReadBillingAccountBalanceMovementWithResponse(ctx context.Context, accountKey AccountKey, reqEditors ...RequestEditorFn) (*ReadBillingAccountBalanceMovementResponse, error) {
+	rsp, err := c.ReadBillingAccountBalanceMovement(ctx, accountKey, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseReadBillingAccountBalanceMovementResponse(rsp)
+}
+
 // ListChargesWithResponse What this period has run up so far
 //
 // The itemised version of `unsettled`: what has been used this period and not yet billed.
@@ -7314,8 +7650,8 @@ func (c *ClientWithResponses) PurchaseOfferWithResponse(ctx context.Context, acc
 // look at in exactly the case someone wants to look: a resource was asked for, was not
 // delivered, and the question is what happened.
 //
-// The list carries no lines. An order has only a handful, but shipping them on every page
-// means carrying data no column shows.
+// Lines come with each order. A list showing only identifiers and amounts is a page nobody can
+// read — recognising one ("which of these was last week's machine") is why it gets opened.
 //
 // Returns a wrapper object for the known response body format(s).
 //
@@ -7330,8 +7666,8 @@ func (c *ClientWithResponses) ListOrdersWithResponse(ctx context.Context, accoun
 
 // GetOrderWithResponse One order, with its lines
 //
-// Each line names what was asked for and how much of it. This is the only route that carries
-// them.
+// Each line names what was asked for, how much of it, and what it produced. The list route
+// carries lines too; this one exists for a permanent link to a single transaction.
 //
 // Returns a wrapper object for the known response body format(s).
 //
@@ -8051,6 +8387,39 @@ func ParseReadBillingAccountBalanceResponse(rsp *http.Response) (*ReadBillingAcc
 	switch {
 	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
 		var dest Balance
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && true:
+		var dest Error
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSONDefault = &dest
+
+	}
+
+	return response, nil
+}
+
+// ParseReadBillingAccountBalanceMovementResponse parses an HTTP response from a ReadBillingAccountBalanceMovementWithResponse call
+func ParseReadBillingAccountBalanceMovementResponse(rsp *http.Response) (*ReadBillingAccountBalanceMovementResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &ReadBillingAccountBalanceMovementResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest BalanceMovement
 		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
 			return nil, err
 		}

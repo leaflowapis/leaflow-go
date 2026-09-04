@@ -3539,6 +3539,93 @@ func decodeReadBillingAccountBalanceParams(args [1]string, argsEscaped bool, r *
 	return params, nil
 }
 
+// ReadBillingAccountBalanceMovementParams is parameters of read-billing-account-balance-movement operation.
+type ReadBillingAccountBalanceMovementParams struct {
+	// The account's key, of the form `u_<user_id>_<seq>`. Ownership is stated by the key itself, which is
+	// why the key is what addresses the account.
+	AccountKey string
+}
+
+func unpackReadBillingAccountBalanceMovementParams(packed middleware.Parameters) (params ReadBillingAccountBalanceMovementParams) {
+	{
+		key := middleware.ParameterKey{
+			Name: "accountKey",
+			In:   "path",
+		}
+		params.AccountKey = packed[key].(string)
+	}
+	return params
+}
+
+func decodeReadBillingAccountBalanceMovementParams(args [1]string, argsEscaped bool, r *http.Request) (params ReadBillingAccountBalanceMovementParams, _ error) {
+	// Decode path: accountKey.
+	if err := func() error {
+		param := args[0]
+		if argsEscaped {
+			unescaped, err := url.PathUnescape(args[0])
+			if err != nil {
+				return errors.Wrap(err, "unescape path")
+			}
+			param = unescaped
+		}
+		if len(param) > 0 {
+			d := uri.NewPathDecoder(uri.PathDecoderConfig{
+				Param:   "accountKey",
+				Value:   param,
+				Style:   uri.PathStyleSimple,
+				Explode: false,
+			})
+
+			if err := func() error {
+				val, err := d.DecodeValue()
+				if err != nil {
+					return err
+				}
+
+				c, err := conv.ToString(val)
+				if err != nil {
+					return err
+				}
+
+				params.AccountKey = c
+				return nil
+			}(); err != nil {
+				return err
+			}
+			if err := func() error {
+				if err := (validate.String{
+					MinLength:     3,
+					MinLengthSet:  true,
+					MaxLength:     128,
+					MaxLengthSet:  true,
+					Email:         false,
+					Hostname:      false,
+					Regex:         regexMap["^u_.+_[0-9]+$"],
+					MinNumeric:    0,
+					MinNumericSet: false,
+					MaxNumeric:    0,
+					MaxNumericSet: false,
+				}).Validate(string(params.AccountKey)); err != nil {
+					return errors.Wrap(err, "string")
+				}
+				return nil
+			}(); err != nil {
+				return err
+			}
+		} else {
+			return validate.ErrFieldRequired
+		}
+		return nil
+	}(); err != nil {
+		return params, &ogenerrors.DecodeParamError{
+			Name: "accountKey",
+			In:   "path",
+			Err:  err,
+		}
+	}
+	return params, nil
+}
+
 // ReadProjectBillingAccountParams is parameters of read-project-billing-account operation.
 type ReadProjectBillingAccountParams struct {
 	// The project being worked in.
