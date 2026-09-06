@@ -531,7 +531,15 @@ type CreateBackupRequestBody struct {
 type CreateDiskRequestBody struct {
 	// DiskTypeId A disk type currently on sale. A withdrawn one is rejected even though its identifier still resolves
 	DiskTypeId openapi_types.UUID `json:"disk_type_id"`
-	Name       string             `json:"name"`
+
+	// IdempotencyKey "This is the same click". Generate one when the dialog opens — not when it is submitted —
+	// and send the same one on every retry of that action.
+	//
+	// Optional, and what happens without it is worth knowing: two identical requests inside the
+	// same minute are treated as one, because there is nothing else to tell a double-click apart
+	// from a deliberate second order. Sending your own key removes that guess entirely.
+	IdempotencyKey *string `json:"idempotency_key,omitempty"`
+	Name           string  `json:"name"`
 
 	// PaymentMethod How to pay for a term bought outright. Only meaningful together with `term`.
 	//
@@ -545,7 +553,21 @@ type CreateDiskRequestBody struct {
 	// order is settled from there, so money topped up and money paid at checkout are the same
 	// pool.
 	PaymentMethod *CreateDiskRequestBodyPaymentMethod `json:"payment_method,omitempty"`
-	SizeGb        int64                               `json:"size_gb"`
+
+	// PromotionCode A promotion code to apply to this order. Case and surrounding whitespace do not matter.
+	//
+	// An unusable code is rejected outright rather than quietly ignored: somebody who typed a
+	// code is buying at the discounted price, and letting it through silently means they pay
+	// full price expecting the discount, with nothing anywhere saying so.
+	//
+	// The discount applies to the lines the campaign covers, not the whole order — typically
+	// the instance type and memory, not the system disk, the address, or traffic. Preview it
+	// first at `POST /account/v1/billing-accounts/{accountKey}/promotion-codes/preview` to
+	// show the customer what will actually be charged.
+	//
+	// Metered orders reject any code: there is no amount to discount at this point.
+	PromotionCode *string `json:"promotion_code,omitempty"`
+	SizeGb        int64   `json:"size_gb"`
 
 	// SnapshotId Restore from this snapshot. When given, the capacity need only be no smaller than the snapshot
 	SnapshotId *openapi_types.UUID `json:"snapshot_id,omitempty"`
@@ -1024,6 +1046,14 @@ type LaunchInstanceRequestBody struct {
 	// GeneratePassword Have the platform generate a random password, returned only in this response
 	GeneratePassword *bool `json:"generate_password,omitempty"`
 
+	// IdempotencyKey "This is the same click". Generate one when the dialog opens — not when it is submitted —
+	// and send the same one on every retry of that action.
+	//
+	// Optional, and what happens without it is worth knowing: two identical requests inside the
+	// same minute are treated as one, because there is nothing else to tell a double-click apart
+	// from a deliberate second order. Sending your own key removes that guess entirely.
+	IdempotencyKey *string `json:"idempotency_key,omitempty"`
+
 	// ImageId A platform image, and it must be one currently on sale. Exactly one of this, `private_image_id` and `boot_disk_id`
 	ImageId *openapi_types.UUID `json:"image_id,omitempty"`
 
@@ -1055,6 +1085,20 @@ type LaunchInstanceRequestBody struct {
 
 	// PrivateImageId A private image. Exactly one of this, `image_id` and `boot_disk_id`
 	PrivateImageId *openapi_types.UUID `json:"private_image_id,omitempty"`
+
+	// PromotionCode A promotion code to apply to this order. Case and surrounding whitespace do not matter.
+	//
+	// An unusable code is rejected outright rather than quietly ignored: somebody who typed a
+	// code is buying at the discounted price, and letting it through silently means they pay
+	// full price expecting the discount, with nothing anywhere saying so.
+	//
+	// The discount applies to the lines the campaign covers, not the whole order — typically
+	// the instance type and memory, not the system disk, the address, or traffic. Preview it
+	// first at `POST /account/v1/billing-accounts/{accountKey}/promotion-codes/preview` to
+	// show the customer what will actually be charged.
+	//
+	// Metered orders reject any code: there is no amount to discount at this point.
+	PromotionCode *string `json:"promotion_code,omitempty"`
 
 	// RootDiskGb System disk capacity in GB. Chosen automatically from the requirement of the image and the platform minimum when omitted. Ignored with `boot_disk_id`, since that disk already has its capacity
 	RootDiskGb *int64 `json:"root_disk_gb,omitempty"`

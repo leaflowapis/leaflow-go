@@ -19,6 +19,69 @@ import (
 	openapi_types "github.com/oapi-codegen/runtime/types"
 )
 
+// Defines values for AccountRefundState.
+const (
+	AccountRefundStatePartial AccountRefundState = "partial"
+	AccountRefundStatePending AccountRefundState = "pending"
+	AccountRefundStateSettled AccountRefundState = "settled"
+)
+
+// Valid indicates whether the value is a known member of the AccountRefundState enum.
+func (e AccountRefundState) Valid() bool {
+	switch e {
+	case AccountRefundStatePartial:
+		return true
+	case AccountRefundStatePending:
+		return true
+	case AccountRefundStateSettled:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for AccountRefundLegKind.
+const (
+	AccountRefundLegKindBalance AccountRefundLegKind = "balance"
+	AccountRefundLegKindCash    AccountRefundLegKind = "cash"
+	AccountRefundLegKindVoucher AccountRefundLegKind = "voucher"
+)
+
+// Valid indicates whether the value is a known member of the AccountRefundLegKind enum.
+func (e AccountRefundLegKind) Valid() bool {
+	switch e {
+	case AccountRefundLegKindBalance:
+		return true
+	case AccountRefundLegKindCash:
+		return true
+	case AccountRefundLegKindVoucher:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for AccountRefundLegState.
+const (
+	AccountRefundLegStateDone    AccountRefundLegState = "done"
+	AccountRefundLegStateFailed  AccountRefundLegState = "failed"
+	AccountRefundLegStatePending AccountRefundLegState = "pending"
+)
+
+// Valid indicates whether the value is a known member of the AccountRefundLegState enum.
+func (e AccountRefundLegState) Valid() bool {
+	switch e {
+	case AccountRefundLegStateDone:
+		return true
+	case AccountRefundLegStateFailed:
+		return true
+	case AccountRefundLegStatePending:
+		return true
+	default:
+		return false
+	}
+}
+
 // Defines values for ChargeType.
 const (
 	FlatFee    ChargeType = "flat_fee"
@@ -292,6 +355,24 @@ func (e PricingLineType) Valid() bool {
 	}
 }
 
+// Defines values for PromotionPreviewKind.
+const (
+	PromotionPreviewKindDiscount PromotionPreviewKind = "discount"
+	PromotionPreviewKindVoucher  PromotionPreviewKind = "voucher"
+)
+
+// Valid indicates whether the value is a known member of the PromotionPreviewKind enum.
+func (e PromotionPreviewKind) Valid() bool {
+	switch e {
+	case PromotionPreviewKindDiscount:
+		return true
+	case PromotionPreviewKindVoucher:
+		return true
+	default:
+		return false
+	}
+}
+
 // Defines values for TopUpStatusState.
 const (
 	TopUpStatusStatePending TopUpStatusState = "pending"
@@ -326,6 +407,50 @@ func (e CancelSubscriptionParamsTiming) Valid() bool {
 	default:
 		return false
 	}
+}
+
+// AccountRefund defines model for AccountRefund.
+type AccountRefund struct {
+	CreatedAt time.Time           `json:"created_at"`
+	Currency  string              `json:"currency"`
+	Legs      []AccountRefundLeg  `json:"legs"`
+	OrderId   *openapi_types.UUID `json:"order_id,omitempty"`
+	RefundId  openapi_types.UUID  `json:"refund_id"`
+
+	// State `partial` means some of it is back and some is not. Showing it as "refunded" would have
+	// the customer looking for money that has not moved.
+	State       AccountRefundState `json:"state"`
+	TotalAmount string             `json:"total_amount"`
+}
+
+// AccountRefundState `partial` means some of it is back and some is not. Showing it as "refunded" would have
+// the customer looking for money that has not moved.
+type AccountRefundState string
+
+// AccountRefundLeg defines model for AccountRefundLeg.
+type AccountRefundLeg struct {
+	Amount    string                `json:"amount"`
+	Currency  string                `json:"currency"`
+	Kind      AccountRefundLegKind  `json:"kind"`
+	SettledAt *time.Time            `json:"settled_at,omitempty"`
+	State     AccountRefundLegState `json:"state"`
+}
+
+// AccountRefundLegKind defines model for AccountRefundLeg.Kind.
+type AccountRefundLegKind string
+
+// AccountRefundLegState defines model for AccountRefundLeg.State.
+type AccountRefundLegState string
+
+// AccountRefundList defines model for AccountRefundList.
+type AccountRefundList struct {
+	Items      []AccountRefund `json:"items"`
+	TotalCount *int            `json:"total_count,omitempty"`
+}
+
+// AutoRenewRequestBody defines model for AutoRenewRequestBody.
+type AutoRenewRequestBody struct {
+	AutoRenew bool `json:"auto_renew"`
 }
 
 // Balance The three numbers a billing page needs, which are not the same number.
@@ -988,10 +1113,27 @@ type PlanChangeTiming string
 
 // PrepaidAsset defines model for PrepaidAsset.
 type PrepaidAsset struct {
+	// AutoRenew Whether billing places the renewal order itself as the period runs out.
+	//
+	// Off by default, and deliberately so: renewing charges the account, and a charge nobody
+	// asked for is worse than an expiry that was warned about. With it on, the renewal is
+	// placed only while there is balance to pay for it — when there is not, the customer is
+	// told rather than put into debt.
+	AutoRenew bool `json:"auto_renew"`
+
 	// DesiredState What it is being moved to. Differs from `state` while a change is still being applied,
 	// which is the moment a customer is most likely to conclude that nothing happened.
 	DesiredState PrepaidAssetDesiredState `json:"desired_state"`
-	Id           string                   `json:"id"`
+
+	// ExpiresAt When the paid-for period runs out.
+	//
+	// Settled when the order is placed, not when the resource lands, so a purchase paid for
+	// online does not get a longer period by being paid later.
+	//
+	// Absent means it was never settled — a row that has not finished being created. It is not
+	// "does not expire": everything on this route does.
+	ExpiresAt *time.Time `json:"expires_at,omitempty"`
+	Id        string     `json:"id"`
 
 	// ProductId That service's own catalogue id, not a billing sku. The price of a machine is made of
 	// finer parts than the machine type — the type does not appear in the rate card at all.
@@ -1010,10 +1152,9 @@ type PrepaidAsset struct {
 
 	// Term How long one period buys, as an ISO 8601 duration (P1M, P1Y).
 	//
-	// There is no expiry to report. The engine keeps renewing this for as long as the seat is
-	// held, so what runs out is not the term but the customer's decision to keep it. What the
-	// next period costs, and when it is charged, is on the charges route — that is the engine's
-	// own answer rather than a copy of it.
+	// It is paid for once at purchase. Read it next to `expires_at`, which is when the period
+	// actually runs out — the two are settled when the order is placed and neither moves on
+	// its own.
 	Term string `json:"term"`
 }
 
@@ -1034,6 +1175,19 @@ type PrepaidAssetList struct {
 	// full — and that guess turns into one extra fetch of an empty page whenever the last page
 	// happens to be exactly full.
 	TotalCount *int64 `json:"total_count,omitempty"`
+}
+
+// PreviewPromotionCodeRequestBody defines model for PreviewPromotionCodeRequestBody.
+type PreviewPromotionCodeRequestBody struct {
+	// Code Case and surrounding whitespace do not matter.
+	Code string `json:"code"`
+
+	// Lines The same lines the order will carry. The discount is computed over the ones in scope,
+	// not the whole order, so leaving lines out changes the answer.
+	Lines []PromotionPreviewLine `json:"lines"`
+
+	// ProjectId Which project the order will be placed against — the price depends on its plan.
+	ProjectId openapi_types.UUID `json:"project_id"`
 }
 
 // Pricing What this offer costs, as a structure rather than a number.
@@ -1153,6 +1307,44 @@ type ProjectUsage struct {
 
 	// Quantity Decimal string.
 	Quantity string `json:"quantity"`
+}
+
+// PromotionPreview defines model for PromotionPreview.
+type PromotionPreview struct {
+	// BenefitAmount How much comes off this order, or how much credit is granted.
+	BenefitAmount string `json:"benefit_amount"`
+
+	// Code The code as stored, upper-cased.
+	Code     string `json:"code"`
+	Currency string `json:"currency"`
+
+	// DiscountBase The part of the order the discount applies to. Shown so "why did only 12 come off a 200
+	// order" has an answer on the page rather than in a support ticket.
+	DiscountBase *string              `json:"discount_base,omitempty"`
+	Kind         PromotionPreviewKind `json:"kind"`
+
+	// Name The campaign's name, to show next to the price.
+	Name           *string `json:"name,omitempty"`
+	OriginalAmount string  `json:"original_amount"`
+
+	// PayableAmount What will actually be charged. This is the number to show as the price.
+	PayableAmount string `json:"payable_amount"`
+}
+
+// PromotionPreviewKind defines model for PromotionPreview.Kind.
+type PromotionPreviewKind string
+
+// PromotionPreviewLine One line of the order being previewed. Only what pricing and scope need — this is not the
+// order itself, and carrying the whole order here would mean two places that have to agree on
+// what an order looks like.
+type PromotionPreviewLine struct {
+	ProductId string `json:"product_id"`
+	Quantity  *int   `json:"quantity,omitempty"`
+	Service   string `json:"service"`
+
+	// Term ISO 8601 duration for a prepaid line. Empty means metered, and a metered line
+	// contributes nothing to the discount — it has no amount at this point.
+	Term *string `json:"term,omitempty"`
 }
 
 // Purchase The result of buying an offer — either it is done, or the money has to arrive first.
@@ -1297,6 +1489,17 @@ type QuoteUsage struct {
 	// Variant The fixed dimension values that split one product into several meters — canopy's token kind,
 	// for instance. Part of the key, so leaving it out names a different meter
 	Variant map[string]string `json:"variant,omitempty"`
+}
+
+// RenewRequestBody defines model for RenewRequestBody.
+type RenewRequestBody struct {
+	// IdempotencyKey Generate one per renewal the customer starts — when the dialog opens, not when it is
+	// submitted — and send the same one on every retry of that renewal.
+	IdempotencyKey string `json:"idempotency_key"`
+
+	// Term How long to renew for, as an ISO 8601 duration (P1M, P1Y). It does not have to match the
+	// term originally bought.
+	Term string `json:"term"`
 }
 
 // ScheduledPlan defines model for ScheduledPlan.
@@ -1459,6 +1662,22 @@ type UpdateBillingAccountRequestBody struct {
 	DisplayName string `json:"display_name"`
 }
 
+// Voucher defines model for Voucher.
+type Voucher struct {
+	Amount       string             `json:"amount"`
+	Currency     string             `json:"currency"`
+	GrantedAt    time.Time          `json:"granted_at"`
+	Name         *string            `json:"name,omitempty"`
+	PromotionKey string             `json:"promotion_key"`
+	RedemptionId openapi_types.UUID `json:"redemption_id"`
+}
+
+// VoucherList defines model for VoucherList.
+type VoucherList struct {
+	Items      []Voucher `json:"items"`
+	TotalCount *int      `json:"total_count,omitempty"`
+}
+
 // AccountKey defines model for AccountKey.
 type AccountKey = string
 
@@ -1578,6 +1797,19 @@ type ListPrepaidAssetsParams struct {
 	PageSize *PageSize `form:"page_size,omitempty" json:"page_size,omitempty"`
 }
 
+// ListAccountRefundsParams defines parameters for ListAccountRefunds.
+type ListAccountRefundsParams struct {
+	// Page 1-based page number; the first page when omitted.
+	Page *Page `form:"page,omitempty" json:"page,omitempty"`
+
+	// PageSize How many entries per page, at most 100.
+	//
+	// Every list here grows without bound — charges with resources, transactions with time. A list
+	// that returns everything works on the account it was written against and quietly turns into a
+	// multi-megabyte response on the one that has been running for a year.
+	PageSize *PageSize `form:"page_size,omitempty" json:"page_size,omitempty"`
+}
+
 // CancelSubscriptionParams defines parameters for CancelSubscription.
 type CancelSubscriptionParams struct {
 	// Timing When it takes effect
@@ -1600,11 +1832,33 @@ type ListTopUpsParams struct {
 	PageSize *PageSize `form:"page_size,omitempty" json:"page_size,omitempty"`
 }
 
+// ListAccountVouchersParams defines parameters for ListAccountVouchers.
+type ListAccountVouchersParams struct {
+	// Page 1-based page number; the first page when omitted.
+	Page *Page `form:"page,omitempty" json:"page,omitempty"`
+
+	// PageSize How many entries per page, at most 100.
+	//
+	// Every list here grows without bound — charges with resources, transactions with time. A list
+	// that returns everything works on the account it was written against and quietly turns into a
+	// multi-megabyte response on the one that has been running for a year.
+	PageSize *PageSize `form:"page_size,omitempty" json:"page_size,omitempty"`
+}
+
 // CreateBillingAccountJSONRequestBody defines body for CreateBillingAccount for application/json ContentType.
 type CreateBillingAccountJSONRequestBody = CreateBillingAccountRequestBody
 
 // UpdateBillingAccountJSONRequestBody defines body for UpdateBillingAccount for application/json ContentType.
 type UpdateBillingAccountJSONRequestBody = UpdateBillingAccountRequestBody
+
+// SetPrepaidAutoRenewJSONRequestBody defines body for SetPrepaidAutoRenew for application/json ContentType.
+type SetPrepaidAutoRenewJSONRequestBody = AutoRenewRequestBody
+
+// RenewPrepaidAssetJSONRequestBody defines body for RenewPrepaidAsset for application/json ContentType.
+type RenewPrepaidAssetJSONRequestBody = RenewRequestBody
+
+// PreviewPromotionCodeJSONRequestBody defines body for PreviewPromotionCode for application/json ContentType.
+type PreviewPromotionCodeJSONRequestBody = PreviewPromotionCodeRequestBody
 
 // QuoteUsageJSONRequestBody defines body for QuoteUsage for application/json ContentType.
 type QuoteUsageJSONRequestBody = QuoteRequest
@@ -2047,16 +2301,19 @@ type ClientInterface interface {
 	//
 	// Everything this account holds on a term, across every product.
 	//
-	// ## Nothing here expires on its own
+	// ## Every one of these expires
 	//
-	// A term renews for as long as the seat is held: the engine charges the next period, prorates
-	// any change to the second, and stops the moment the seat is given up. So there is no renewal
-	// to remember and no expiry to warn about — giving it up means deleting the resource, in the
-	// console that owns it.
+	// A term is paid for once, up front, and buys exactly the period named by `term`. Nothing
+	// renews it on its own: `expires_at` is when it runs out, and after that the machine is
+	// stopped and — once the retention window is over — released.
 	//
-	// What the next period costs and when it falls due is on the charges route. That is read
-	// straight from the engine rather than copied here, because a copy is a second answer that
-	// drifts without saying so.
+	// This route used to say the opposite. It described an engine that charged the next period by
+	// itself for as long as the seat was held, which is how this worked before the money became a
+	// single up-front charge. Reading the old text, a customer would have had no reason to renew
+	// anything, and the first sign of trouble would have been a stopped machine.
+	//
+	// Turn on `auto_renew` to have billing place the renewal order itself while there is balance
+	// to pay for it. That is the only thing that makes a term continue.
 	//
 	// ## Metered resources are not here
 	//
@@ -2071,6 +2328,74 @@ type ClientInterface interface {
 	//
 	// Corresponds with GET /account/v1/billing-accounts/{accountKey}/prepaid-assets (the `ListPrepaidAssets` operationId).
 	ListPrepaidAssets(ctx context.Context, accountKey AccountKey, params *ListPrepaidAssetsParams, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// SetPrepaidAutoRenewWithBody Turn automatic renewal on or off
+	//
+	// With it on, billing places the renewal order itself a few days before the period runs out,
+	// paying from the account's balance.
+	//
+	// **Not enough balance is not an error here.** The switch only says what to attempt; whether
+	// the money is there is settled at renewal time, and the customer is told either way — told it
+	// renewed, or told it could not and by when it will expire.
+	//
+	// Takes any type of body and a specified content type.
+	//
+	// Corresponds with PUT /account/v1/billing-accounts/{accountKey}/prepaid-assets/{assetId}/auto-renew (the `SetPrepaidAutoRenew` operationId).
+	SetPrepaidAutoRenewWithBody(ctx context.Context, accountKey AccountKey, assetId openapi_types.UUID, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// SetPrepaidAutoRenew Turn automatic renewal on or off
+	//
+	// With it on, billing places the renewal order itself a few days before the period runs out,
+	// paying from the account's balance.
+	//
+	// **Not enough balance is not an error here.** The switch only says what to attempt; whether
+	// the money is there is settled at renewal time, and the customer is told either way — told it
+	// renewed, or told it could not and by when it will expire.
+	//
+	// Takes a body of the `application/json` content type.
+	//
+	// Corresponds with PUT /account/v1/billing-accounts/{accountKey}/prepaid-assets/{assetId}/auto-renew (the `SetPrepaidAutoRenew` operationId).
+	SetPrepaidAutoRenew(ctx context.Context, accountKey AccountKey, assetId openapi_types.UUID, body SetPrepaidAutoRenewJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// RenewPrepaidAssetWithBody Buy another period
+	//
+	// Extends a term by one more period, paid for out of the account's balance right now.
+	//
+	// **The new expiry is the old one plus the term, not now plus the term.** Renewing three days
+	// early would otherwise throw those three days away, and renewing after the expiry would
+	// quietly reward the delay. Neither shows up as an error — the date on the account looks
+	// self-consistent either way, and only the customer notices.
+	//
+	// `term` does not have to match what was bought originally: a monthly machine can be renewed
+	// for a year.
+	//
+	// Refused when the balance does not cover it. The alternative — placing the order and letting
+	// the account go negative — turns a renewal the customer chose into a debt they did not.
+	//
+	// Takes any type of body and a specified content type.
+	//
+	// Corresponds with POST /account/v1/billing-accounts/{accountKey}/prepaid-assets/{assetId}/renew (the `RenewPrepaidAsset` operationId).
+	RenewPrepaidAssetWithBody(ctx context.Context, accountKey AccountKey, assetId openapi_types.UUID, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// RenewPrepaidAsset Buy another period
+	//
+	// Extends a term by one more period, paid for out of the account's balance right now.
+	//
+	// **The new expiry is the old one plus the term, not now plus the term.** Renewing three days
+	// early would otherwise throw those three days away, and renewing after the expiry would
+	// quietly reward the delay. Neither shows up as an error — the date on the account looks
+	// self-consistent either way, and only the customer notices.
+	//
+	// `term` does not have to match what was bought originally: a monthly machine can be renewed
+	// for a year.
+	//
+	// Refused when the balance does not cover it. The alternative — placing the order and letting
+	// the account go negative — turns a renewal the customer chose into a debt they did not.
+	//
+	// Takes a body of the `application/json` content type.
+	//
+	// Corresponds with POST /account/v1/billing-accounts/{accountKey}/prepaid-assets/{assetId}/renew (the `RenewPrepaidAsset` operationId).
+	RenewPrepaidAsset(ctx context.Context, accountKey AccountKey, assetId openapi_types.UUID, body RenewPrepaidAssetJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
 
 	// UnbindProjectFromBillingAccount Stop paying for a project
 	//
@@ -2105,6 +2430,48 @@ type ClientInterface interface {
 	//
 	// Corresponds with PUT /account/v1/billing-accounts/{accountKey}/projects/{projectId} (the `BindProjectToBillingAccount` operationId).
 	BindProjectToBillingAccount(ctx context.Context, accountKey AccountKey, projectId openapi_types.UUID, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// PreviewPromotionCodeWithBody See what a code takes off before committing
+	//
+	// Runs the same checks and the same arithmetic that placing the order will run, so the price
+	// shown here and the price charged agree. Writing the calculation twice — once for the page and
+	// once for the order — means they drift, and the visible form of that drift is a page saying
+	// "20 off" while the full amount is taken.
+	//
+	// Nothing is redeemed. The allowance is only consumed when the order is actually placed.
+	//
+	// A code that cannot be used is rejected here with the reason, so the user learns it before
+	// filling in the rest of the form rather than at the moment they press buy.
+	//
+	// **Metered orders are rejected.** They have no amount at this point — the money is worked out
+	// later from usage. Applying a discount to a nil amount leaves the user believing they saved
+	// something while the bill is unchanged.
+	//
+	// Takes any type of body and a specified content type.
+	//
+	// Corresponds with POST /account/v1/billing-accounts/{accountKey}/promotion-codes/preview (the `PreviewPromotionCode` operationId).
+	PreviewPromotionCodeWithBody(ctx context.Context, accountKey AccountKey, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// PreviewPromotionCode See what a code takes off before committing
+	//
+	// Runs the same checks and the same arithmetic that placing the order will run, so the price
+	// shown here and the price charged agree. Writing the calculation twice — once for the page and
+	// once for the order — means they drift, and the visible form of that drift is a page saying
+	// "20 off" while the full amount is taken.
+	//
+	// Nothing is redeemed. The allowance is only consumed when the order is actually placed.
+	//
+	// A code that cannot be used is rejected here with the reason, so the user learns it before
+	// filling in the rest of the form rather than at the moment they press buy.
+	//
+	// **Metered orders are rejected.** They have no amount at this point — the money is worked out
+	// later from usage. Applying a discount to a nil amount leaves the user believing they saved
+	// something while the bill is unchanged.
+	//
+	// Takes a body of the `application/json` content type.
+	//
+	// Corresponds with POST /account/v1/billing-accounts/{accountKey}/promotion-codes/preview (the `PreviewPromotionCode` operationId).
+	PreviewPromotionCode(ctx context.Context, accountKey AccountKey, body PreviewPromotionCodeJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
 
 	// QuoteUsageWithBody What a usage would cost on this account's plan
 	//
@@ -2165,6 +2532,14 @@ type ClientInterface interface {
 	//
 	// Corresponds with POST /account/v1/billing-accounts/{accountKey}/quote (the `QuoteUsage` operationId).
 	QuoteUsage(ctx context.Context, accountKey AccountKey, body QuoteUsageJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// ListAccountRefunds List this account's refunds
+	//
+	// Each refund carries how it was split. A customer asking "I was refunded 100, why is only 60
+	// back on my card" is answered here and nowhere else.
+	//
+	// Corresponds with GET /account/v1/billing-accounts/{accountKey}/refunds (the `ListAccountRefunds` operationId).
+	ListAccountRefunds(ctx context.Context, accountKey AccountKey, params *ListAccountRefundsParams, reqEditors ...RequestEditorFn) (*http.Response, error)
 
 	// ReadSubscription Which plan this account is on
 	//
@@ -2285,6 +2660,15 @@ type ClientInterface interface {
 	//
 	// Corresponds with GET /account/v1/billing-accounts/{accountKey}/top-ups/{paymentId} (the `ReadTopUp` operationId).
 	ReadTopUp(ctx context.Context, accountKey AccountKey, paymentId string, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// ListAccountVouchers List this account's vouchers
+	//
+	// Credit received from campaigns, most recent first. Not the credit ledger — this says which
+	// campaign each amount came from, which is the question "where did this 50 come from" that the
+	// ledger cannot answer.
+	//
+	// Corresponds with GET /account/v1/billing-accounts/{accountKey}/vouchers (the `ListAccountVouchers` operationId).
+	ListAccountVouchers(ctx context.Context, accountKey AccountKey, params *ListAccountVouchersParams, reqEditors ...RequestEditorFn) (*http.Response, error)
 
 	// ReadProjectBillingAccount Which account pays for this project
 	//
@@ -2955,16 +3339,19 @@ func (c *Client) SetDefaultPaymentMethod(ctx context.Context, accountKey Account
 //
 // Everything this account holds on a term, across every product.
 //
-// ## Nothing here expires on its own
+// ## Every one of these expires
 //
-// A term renews for as long as the seat is held: the engine charges the next period, prorates
-// any change to the second, and stops the moment the seat is given up. So there is no renewal
-// to remember and no expiry to warn about — giving it up means deleting the resource, in the
-// console that owns it.
+// A term is paid for once, up front, and buys exactly the period named by `term`. Nothing
+// renews it on its own: `expires_at` is when it runs out, and after that the machine is
+// stopped and — once the retention window is over — released.
 //
-// What the next period costs and when it falls due is on the charges route. That is read
-// straight from the engine rather than copied here, because a copy is a second answer that
-// drifts without saying so.
+// This route used to say the opposite. It described an engine that charged the next period by
+// itself for as long as the seat was held, which is how this worked before the money became a
+// single up-front charge. Reading the old text, a customer would have had no reason to renew
+// anything, and the first sign of trouble would have been a stopped machine.
+//
+// Turn on `auto_renew` to have billing place the renewal order itself while there is balance
+// to pay for it. That is the only thing that makes a term continue.
 //
 // ## Metered resources are not here
 //
@@ -2980,6 +3367,114 @@ func (c *Client) SetDefaultPaymentMethod(ctx context.Context, accountKey Account
 // Corresponds with GET /account/v1/billing-accounts/{accountKey}/prepaid-assets (the `ListPrepaidAssets` operationId).
 func (c *Client) ListPrepaidAssets(ctx context.Context, accountKey AccountKey, params *ListPrepaidAssetsParams, reqEditors ...RequestEditorFn) (*http.Response, error) {
 	req, err := NewListPrepaidAssetsRequest(c.Server, accountKey, params)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+// SetPrepaidAutoRenewWithBody Turn automatic renewal on or off
+//
+// With it on, billing places the renewal order itself a few days before the period runs out,
+// paying from the account's balance.
+//
+// **Not enough balance is not an error here.** The switch only says what to attempt; whether
+// the money is there is settled at renewal time, and the customer is told either way — told it
+// renewed, or told it could not and by when it will expire.
+//
+// Takes any type of body and a specified content type.
+//
+// Corresponds with PUT /account/v1/billing-accounts/{accountKey}/prepaid-assets/{assetId}/auto-renew (the `SetPrepaidAutoRenew` operationId).
+func (c *Client) SetPrepaidAutoRenewWithBody(ctx context.Context, accountKey AccountKey, assetId openapi_types.UUID, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewSetPrepaidAutoRenewRequestWithBody(c.Server, accountKey, assetId, contentType, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+// SetPrepaidAutoRenew Turn automatic renewal on or off
+//
+// With it on, billing places the renewal order itself a few days before the period runs out,
+// paying from the account's balance.
+//
+// **Not enough balance is not an error here.** The switch only says what to attempt; whether
+// the money is there is settled at renewal time, and the customer is told either way — told it
+// renewed, or told it could not and by when it will expire.
+//
+// Takes a body of the `application/json` content type.
+//
+// Corresponds with PUT /account/v1/billing-accounts/{accountKey}/prepaid-assets/{assetId}/auto-renew (the `SetPrepaidAutoRenew` operationId).
+func (c *Client) SetPrepaidAutoRenew(ctx context.Context, accountKey AccountKey, assetId openapi_types.UUID, body SetPrepaidAutoRenewJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewSetPrepaidAutoRenewRequest(c.Server, accountKey, assetId, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+// RenewPrepaidAssetWithBody Buy another period
+//
+// Extends a term by one more period, paid for out of the account's balance right now.
+//
+// **The new expiry is the old one plus the term, not now plus the term.** Renewing three days
+// early would otherwise throw those three days away, and renewing after the expiry would
+// quietly reward the delay. Neither shows up as an error — the date on the account looks
+// self-consistent either way, and only the customer notices.
+//
+// `term` does not have to match what was bought originally: a monthly machine can be renewed
+// for a year.
+//
+// Refused when the balance does not cover it. The alternative — placing the order and letting
+// the account go negative — turns a renewal the customer chose into a debt they did not.
+//
+// Takes any type of body and a specified content type.
+//
+// Corresponds with POST /account/v1/billing-accounts/{accountKey}/prepaid-assets/{assetId}/renew (the `RenewPrepaidAsset` operationId).
+func (c *Client) RenewPrepaidAssetWithBody(ctx context.Context, accountKey AccountKey, assetId openapi_types.UUID, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewRenewPrepaidAssetRequestWithBody(c.Server, accountKey, assetId, contentType, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+// RenewPrepaidAsset Buy another period
+//
+// Extends a term by one more period, paid for out of the account's balance right now.
+//
+// **The new expiry is the old one plus the term, not now plus the term.** Renewing three days
+// early would otherwise throw those three days away, and renewing after the expiry would
+// quietly reward the delay. Neither shows up as an error — the date on the account looks
+// self-consistent either way, and only the customer notices.
+//
+// `term` does not have to match what was bought originally: a monthly machine can be renewed
+// for a year.
+//
+// Refused when the balance does not cover it. The alternative — placing the order and letting
+// the account go negative — turns a renewal the customer chose into a debt they did not.
+//
+// Takes a body of the `application/json` content type.
+//
+// Corresponds with POST /account/v1/billing-accounts/{accountKey}/prepaid-assets/{assetId}/renew (the `RenewPrepaidAsset` operationId).
+func (c *Client) RenewPrepaidAsset(ctx context.Context, accountKey AccountKey, assetId openapi_types.UUID, body RenewPrepaidAssetJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewRenewPrepaidAssetRequest(c.Server, accountKey, assetId, body)
 	if err != nil {
 		return nil, err
 	}
@@ -3034,6 +3529,68 @@ func (c *Client) UnbindProjectFromBillingAccount(ctx context.Context, accountKey
 // Corresponds with PUT /account/v1/billing-accounts/{accountKey}/projects/{projectId} (the `BindProjectToBillingAccount` operationId).
 func (c *Client) BindProjectToBillingAccount(ctx context.Context, accountKey AccountKey, projectId openapi_types.UUID, reqEditors ...RequestEditorFn) (*http.Response, error) {
 	req, err := NewBindProjectToBillingAccountRequest(c.Server, accountKey, projectId)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+// PreviewPromotionCodeWithBody See what a code takes off before committing
+//
+// Runs the same checks and the same arithmetic that placing the order will run, so the price
+// shown here and the price charged agree. Writing the calculation twice — once for the page and
+// once for the order — means they drift, and the visible form of that drift is a page saying
+// "20 off" while the full amount is taken.
+//
+// Nothing is redeemed. The allowance is only consumed when the order is actually placed.
+//
+// A code that cannot be used is rejected here with the reason, so the user learns it before
+// filling in the rest of the form rather than at the moment they press buy.
+//
+// **Metered orders are rejected.** They have no amount at this point — the money is worked out
+// later from usage. Applying a discount to a nil amount leaves the user believing they saved
+// something while the bill is unchanged.
+//
+// Takes any type of body and a specified content type.
+//
+// Corresponds with POST /account/v1/billing-accounts/{accountKey}/promotion-codes/preview (the `PreviewPromotionCode` operationId).
+func (c *Client) PreviewPromotionCodeWithBody(ctx context.Context, accountKey AccountKey, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewPreviewPromotionCodeRequestWithBody(c.Server, accountKey, contentType, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+// PreviewPromotionCode See what a code takes off before committing
+//
+// Runs the same checks and the same arithmetic that placing the order will run, so the price
+// shown here and the price charged agree. Writing the calculation twice — once for the page and
+// once for the order — means they drift, and the visible form of that drift is a page saying
+// "20 off" while the full amount is taken.
+//
+// Nothing is redeemed. The allowance is only consumed when the order is actually placed.
+//
+// A code that cannot be used is rejected here with the reason, so the user learns it before
+// filling in the rest of the form rather than at the moment they press buy.
+//
+// **Metered orders are rejected.** They have no amount at this point — the money is worked out
+// later from usage. Applying a discount to a nil amount leaves the user believing they saved
+// something while the bill is unchanged.
+//
+// Takes a body of the `application/json` content type.
+//
+// Corresponds with POST /account/v1/billing-accounts/{accountKey}/promotion-codes/preview (the `PreviewPromotionCode` operationId).
+func (c *Client) PreviewPromotionCode(ctx context.Context, accountKey AccountKey, body PreviewPromotionCodeJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewPreviewPromotionCodeRequest(c.Server, accountKey, body)
 	if err != nil {
 		return nil, err
 	}
@@ -3114,6 +3671,24 @@ func (c *Client) QuoteUsageWithBody(ctx context.Context, accountKey AccountKey, 
 // Corresponds with POST /account/v1/billing-accounts/{accountKey}/quote (the `QuoteUsage` operationId).
 func (c *Client) QuoteUsage(ctx context.Context, accountKey AccountKey, body QuoteUsageJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
 	req, err := NewQuoteUsageRequest(c.Server, accountKey, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+// ListAccountRefunds List this account's refunds
+//
+// Each refund carries how it was split. A customer asking "I was refunded 100, why is only 60
+// back on my card" is answered here and nowhere else.
+//
+// Corresponds with GET /account/v1/billing-accounts/{accountKey}/refunds (the `ListAccountRefunds` operationId).
+func (c *Client) ListAccountRefunds(ctx context.Context, accountKey AccountKey, params *ListAccountRefundsParams, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewListAccountRefundsRequest(c.Server, accountKey, params)
 	if err != nil {
 		return nil, err
 	}
@@ -3304,6 +3879,25 @@ func (c *Client) StartTopUp(ctx context.Context, accountKey AccountKey, body Sta
 // Corresponds with GET /account/v1/billing-accounts/{accountKey}/top-ups/{paymentId} (the `ReadTopUp` operationId).
 func (c *Client) ReadTopUp(ctx context.Context, accountKey AccountKey, paymentId string, reqEditors ...RequestEditorFn) (*http.Response, error) {
 	req, err := NewReadTopUpRequest(c.Server, accountKey, paymentId)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+// ListAccountVouchers List this account's vouchers
+//
+// Credit received from campaigns, most recent first. Not the credit ledger — this says which
+// campaign each amount came from, which is the question "where did this 50 come from" that the
+// ledger cannot answer.
+//
+// Corresponds with GET /account/v1/billing-accounts/{accountKey}/vouchers (the `ListAccountVouchers` operationId).
+func (c *Client) ListAccountVouchers(ctx context.Context, accountKey AccountKey, params *ListAccountVouchersParams, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewListAccountVouchersRequest(c.Server, accountKey, params)
 	if err != nil {
 		return nil, err
 	}
@@ -4517,6 +5111,114 @@ func NewListPrepaidAssetsRequest(server string, accountKey AccountKey, params *L
 	return req, nil
 }
 
+// NewSetPrepaidAutoRenewRequest calls the generic SetPrepaidAutoRenew builder with application/json body
+func NewSetPrepaidAutoRenewRequest(server string, accountKey AccountKey, assetId openapi_types.UUID, body SetPrepaidAutoRenewJSONRequestBody) (*http.Request, error) {
+	var bodyReader io.Reader
+	buf, err := json.Marshal(body)
+	if err != nil {
+		return nil, err
+	}
+	bodyReader = bytes.NewReader(buf)
+	return NewSetPrepaidAutoRenewRequestWithBody(server, accountKey, assetId, "application/json", bodyReader)
+}
+
+// NewSetPrepaidAutoRenewRequestWithBody constructs an http.Request for the SetPrepaidAutoRenew method, with any body, and a specified content type
+func NewSetPrepaidAutoRenewRequestWithBody(server string, accountKey AccountKey, assetId openapi_types.UUID, contentType string, body io.Reader) (*http.Request, error) {
+	var err error
+
+	var pathParam0 string
+
+	pathParam0, err = runtime.StyleParamWithOptions("simple", false, "accountKey", accountKey, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: ""})
+	if err != nil {
+		return nil, err
+	}
+
+	var pathParam1 string
+
+	pathParam1, err = runtime.StyleParamWithOptions("simple", false, "assetId", assetId, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: "uuid"})
+	if err != nil {
+		return nil, err
+	}
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/account/v1/billing-accounts/%s/prepaid-assets/%s/auto-renew", pathParam0, pathParam1)
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest(http.MethodPut, queryURL.String(), body)
+	if err != nil {
+		return nil, err
+	}
+
+	req.Header.Add("Content-Type", contentType)
+
+	return req, nil
+}
+
+// NewRenewPrepaidAssetRequest calls the generic RenewPrepaidAsset builder with application/json body
+func NewRenewPrepaidAssetRequest(server string, accountKey AccountKey, assetId openapi_types.UUID, body RenewPrepaidAssetJSONRequestBody) (*http.Request, error) {
+	var bodyReader io.Reader
+	buf, err := json.Marshal(body)
+	if err != nil {
+		return nil, err
+	}
+	bodyReader = bytes.NewReader(buf)
+	return NewRenewPrepaidAssetRequestWithBody(server, accountKey, assetId, "application/json", bodyReader)
+}
+
+// NewRenewPrepaidAssetRequestWithBody constructs an http.Request for the RenewPrepaidAsset method, with any body, and a specified content type
+func NewRenewPrepaidAssetRequestWithBody(server string, accountKey AccountKey, assetId openapi_types.UUID, contentType string, body io.Reader) (*http.Request, error) {
+	var err error
+
+	var pathParam0 string
+
+	pathParam0, err = runtime.StyleParamWithOptions("simple", false, "accountKey", accountKey, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: ""})
+	if err != nil {
+		return nil, err
+	}
+
+	var pathParam1 string
+
+	pathParam1, err = runtime.StyleParamWithOptions("simple", false, "assetId", assetId, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: "uuid"})
+	if err != nil {
+		return nil, err
+	}
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/account/v1/billing-accounts/%s/prepaid-assets/%s/renew", pathParam0, pathParam1)
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest(http.MethodPost, queryURL.String(), body)
+	if err != nil {
+		return nil, err
+	}
+
+	req.Header.Add("Content-Type", contentType)
+
+	return req, nil
+}
+
 // NewUnbindProjectFromBillingAccountRequest constructs an http.Request for the UnbindProjectFromBillingAccount method
 func NewUnbindProjectFromBillingAccountRequest(server string, accountKey AccountKey, projectId openapi_types.UUID) (*http.Request, error) {
 	var err error
@@ -4599,6 +5301,53 @@ func NewBindProjectToBillingAccountRequest(server string, accountKey AccountKey,
 	return req, nil
 }
 
+// NewPreviewPromotionCodeRequest calls the generic PreviewPromotionCode builder with application/json body
+func NewPreviewPromotionCodeRequest(server string, accountKey AccountKey, body PreviewPromotionCodeJSONRequestBody) (*http.Request, error) {
+	var bodyReader io.Reader
+	buf, err := json.Marshal(body)
+	if err != nil {
+		return nil, err
+	}
+	bodyReader = bytes.NewReader(buf)
+	return NewPreviewPromotionCodeRequestWithBody(server, accountKey, "application/json", bodyReader)
+}
+
+// NewPreviewPromotionCodeRequestWithBody constructs an http.Request for the PreviewPromotionCode method, with any body, and a specified content type
+func NewPreviewPromotionCodeRequestWithBody(server string, accountKey AccountKey, contentType string, body io.Reader) (*http.Request, error) {
+	var err error
+
+	var pathParam0 string
+
+	pathParam0, err = runtime.StyleParamWithOptions("simple", false, "accountKey", accountKey, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: ""})
+	if err != nil {
+		return nil, err
+	}
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/account/v1/billing-accounts/%s/promotion-codes/preview", pathParam0)
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest(http.MethodPost, queryURL.String(), body)
+	if err != nil {
+		return nil, err
+	}
+
+	req.Header.Add("Content-Type", contentType)
+
+	return req, nil
+}
+
 // NewQuoteUsageRequest calls the generic QuoteUsage builder with application/json body
 func NewQuoteUsageRequest(server string, accountKey AccountKey, body QuoteUsageJSONRequestBody) (*http.Request, error) {
 	var bodyReader io.Reader
@@ -4642,6 +5391,79 @@ func NewQuoteUsageRequestWithBody(server string, accountKey AccountKey, contentT
 	}
 
 	req.Header.Add("Content-Type", contentType)
+
+	return req, nil
+}
+
+// NewListAccountRefundsRequest constructs an http.Request for the ListAccountRefunds method
+func NewListAccountRefundsRequest(server string, accountKey AccountKey, params *ListAccountRefundsParams) (*http.Request, error) {
+	var err error
+
+	var pathParam0 string
+
+	pathParam0, err = runtime.StyleParamWithOptions("simple", false, "accountKey", accountKey, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: ""})
+	if err != nil {
+		return nil, err
+	}
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/account/v1/billing-accounts/%s/refunds", pathParam0)
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	if params != nil {
+		// queryValues collects non-styled parameters (passthrough, JSON)
+		// that are safe to round-trip through url.Values.Encode().
+		queryValues := queryURL.Query()
+		// rawQueryFragments collects pre-encoded query fragments from
+		// styled parameters, preserving literal commas as delimiters
+		// per the OpenAPI spec (e.g. "color=blue,black,brown").
+		var rawQueryFragments []string
+
+		if params.Page != nil {
+
+			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "page", *params.Page, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "integer", Format: "int32"}); err != nil {
+				return nil, err
+			} else {
+				for _, qp := range strings.Split(queryFrag, "&") {
+					rawQueryFragments = append(rawQueryFragments, qp)
+				}
+			}
+
+		}
+
+		if params.PageSize != nil {
+
+			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "page_size", *params.PageSize, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "integer", Format: "int32"}); err != nil {
+				return nil, err
+			} else {
+				for _, qp := range strings.Split(queryFrag, "&") {
+					rawQueryFragments = append(rawQueryFragments, qp)
+				}
+			}
+
+		}
+
+		if encoded := queryValues.Encode(); encoded != "" {
+			rawQueryFragments = append(rawQueryFragments, encoded)
+		}
+		queryURL.RawQuery = strings.Join(rawQueryFragments, "&")
+	}
+
+	req, err := http.NewRequest(http.MethodGet, queryURL.String(), nil)
+	if err != nil {
+		return nil, err
+	}
 
 	return req, nil
 }
@@ -4922,6 +5744,79 @@ func NewReadTopUpRequest(server string, accountKey AccountKey, paymentId string)
 	queryURL, err := serverURL.Parse(operationPath)
 	if err != nil {
 		return nil, err
+	}
+
+	req, err := http.NewRequest(http.MethodGet, queryURL.String(), nil)
+	if err != nil {
+		return nil, err
+	}
+
+	return req, nil
+}
+
+// NewListAccountVouchersRequest constructs an http.Request for the ListAccountVouchers method
+func NewListAccountVouchersRequest(server string, accountKey AccountKey, params *ListAccountVouchersParams) (*http.Request, error) {
+	var err error
+
+	var pathParam0 string
+
+	pathParam0, err = runtime.StyleParamWithOptions("simple", false, "accountKey", accountKey, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: ""})
+	if err != nil {
+		return nil, err
+	}
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/account/v1/billing-accounts/%s/vouchers", pathParam0)
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	if params != nil {
+		// queryValues collects non-styled parameters (passthrough, JSON)
+		// that are safe to round-trip through url.Values.Encode().
+		queryValues := queryURL.Query()
+		// rawQueryFragments collects pre-encoded query fragments from
+		// styled parameters, preserving literal commas as delimiters
+		// per the OpenAPI spec (e.g. "color=blue,black,brown").
+		var rawQueryFragments []string
+
+		if params.Page != nil {
+
+			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "page", *params.Page, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "integer", Format: "int32"}); err != nil {
+				return nil, err
+			} else {
+				for _, qp := range strings.Split(queryFrag, "&") {
+					rawQueryFragments = append(rawQueryFragments, qp)
+				}
+			}
+
+		}
+
+		if params.PageSize != nil {
+
+			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "page_size", *params.PageSize, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "integer", Format: "int32"}); err != nil {
+				return nil, err
+			} else {
+				for _, qp := range strings.Split(queryFrag, "&") {
+					rawQueryFragments = append(rawQueryFragments, qp)
+				}
+			}
+
+		}
+
+		if encoded := queryValues.Encode(); encoded != "" {
+			rawQueryFragments = append(rawQueryFragments, encoded)
+		}
+		queryURL.RawQuery = strings.Join(rawQueryFragments, "&")
 	}
 
 	req, err := http.NewRequest(http.MethodGet, queryURL.String(), nil)
@@ -5449,16 +6344,19 @@ type ClientWithResponsesInterface interface {
 	//
 	// Everything this account holds on a term, across every product.
 	//
-	// ## Nothing here expires on its own
+	// ## Every one of these expires
 	//
-	// A term renews for as long as the seat is held: the engine charges the next period, prorates
-	// any change to the second, and stops the moment the seat is given up. So there is no renewal
-	// to remember and no expiry to warn about — giving it up means deleting the resource, in the
-	// console that owns it.
+	// A term is paid for once, up front, and buys exactly the period named by `term`. Nothing
+	// renews it on its own: `expires_at` is when it runs out, and after that the machine is
+	// stopped and — once the retention window is over — released.
 	//
-	// What the next period costs and when it falls due is on the charges route. That is read
-	// straight from the engine rather than copied here, because a copy is a second answer that
-	// drifts without saying so.
+	// This route used to say the opposite. It described an engine that charged the next period by
+	// itself for as long as the seat was held, which is how this worked before the money became a
+	// single up-front charge. Reading the old text, a customer would have had no reason to renew
+	// anything, and the first sign of trouble would have been a stopped machine.
+	//
+	// Turn on `auto_renew` to have billing place the renewal order itself while there is balance
+	// to pay for it. That is the only thing that makes a term continue.
 	//
 	// ## Metered resources are not here
 	//
@@ -5475,6 +6373,74 @@ type ClientWithResponsesInterface interface {
 	//
 	// Corresponds with GET /account/v1/billing-accounts/{accountKey}/prepaid-assets (the `ListPrepaidAssets` operationId).
 	ListPrepaidAssetsWithResponse(ctx context.Context, accountKey AccountKey, params *ListPrepaidAssetsParams, reqEditors ...RequestEditorFn) (*ListPrepaidAssetsResponse, error)
+
+	// SetPrepaidAutoRenewWithBodyWithResponse Turn automatic renewal on or off
+	//
+	// With it on, billing places the renewal order itself a few days before the period runs out,
+	// paying from the account's balance.
+	//
+	// **Not enough balance is not an error here.** The switch only says what to attempt; whether
+	// the money is there is settled at renewal time, and the customer is told either way — told it
+	// renewed, or told it could not and by when it will expire.
+	//
+	// Takes any type of body and a specified content type, and returns a wrapper object for the known response body format(s).
+	//
+	// Corresponds with PUT /account/v1/billing-accounts/{accountKey}/prepaid-assets/{assetId}/auto-renew (the `SetPrepaidAutoRenew` operationId).
+	SetPrepaidAutoRenewWithBodyWithResponse(ctx context.Context, accountKey AccountKey, assetId openapi_types.UUID, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*SetPrepaidAutoRenewResponse, error)
+
+	// SetPrepaidAutoRenewWithResponse Turn automatic renewal on or off
+	//
+	// With it on, billing places the renewal order itself a few days before the period runs out,
+	// paying from the account's balance.
+	//
+	// **Not enough balance is not an error here.** The switch only says what to attempt; whether
+	// the money is there is settled at renewal time, and the customer is told either way — told it
+	// renewed, or told it could not and by when it will expire.
+	//
+	// Takes a body of the `application/json` content type, and returns a wrapper object for the known response body format(s).
+	//
+	// Corresponds with PUT /account/v1/billing-accounts/{accountKey}/prepaid-assets/{assetId}/auto-renew (the `SetPrepaidAutoRenew` operationId).
+	SetPrepaidAutoRenewWithResponse(ctx context.Context, accountKey AccountKey, assetId openapi_types.UUID, body SetPrepaidAutoRenewJSONRequestBody, reqEditors ...RequestEditorFn) (*SetPrepaidAutoRenewResponse, error)
+
+	// RenewPrepaidAssetWithBodyWithResponse Buy another period
+	//
+	// Extends a term by one more period, paid for out of the account's balance right now.
+	//
+	// **The new expiry is the old one plus the term, not now plus the term.** Renewing three days
+	// early would otherwise throw those three days away, and renewing after the expiry would
+	// quietly reward the delay. Neither shows up as an error — the date on the account looks
+	// self-consistent either way, and only the customer notices.
+	//
+	// `term` does not have to match what was bought originally: a monthly machine can be renewed
+	// for a year.
+	//
+	// Refused when the balance does not cover it. The alternative — placing the order and letting
+	// the account go negative — turns a renewal the customer chose into a debt they did not.
+	//
+	// Takes any type of body and a specified content type, and returns a wrapper object for the known response body format(s).
+	//
+	// Corresponds with POST /account/v1/billing-accounts/{accountKey}/prepaid-assets/{assetId}/renew (the `RenewPrepaidAsset` operationId).
+	RenewPrepaidAssetWithBodyWithResponse(ctx context.Context, accountKey AccountKey, assetId openapi_types.UUID, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*RenewPrepaidAssetResponse, error)
+
+	// RenewPrepaidAssetWithResponse Buy another period
+	//
+	// Extends a term by one more period, paid for out of the account's balance right now.
+	//
+	// **The new expiry is the old one plus the term, not now plus the term.** Renewing three days
+	// early would otherwise throw those three days away, and renewing after the expiry would
+	// quietly reward the delay. Neither shows up as an error — the date on the account looks
+	// self-consistent either way, and only the customer notices.
+	//
+	// `term` does not have to match what was bought originally: a monthly machine can be renewed
+	// for a year.
+	//
+	// Refused when the balance does not cover it. The alternative — placing the order and letting
+	// the account go negative — turns a renewal the customer chose into a debt they did not.
+	//
+	// Takes a body of the `application/json` content type, and returns a wrapper object for the known response body format(s).
+	//
+	// Corresponds with POST /account/v1/billing-accounts/{accountKey}/prepaid-assets/{assetId}/renew (the `RenewPrepaidAsset` operationId).
+	RenewPrepaidAssetWithResponse(ctx context.Context, accountKey AccountKey, assetId openapi_types.UUID, body RenewPrepaidAssetJSONRequestBody, reqEditors ...RequestEditorFn) (*RenewPrepaidAssetResponse, error)
 
 	// UnbindProjectFromBillingAccountWithResponse Stop paying for a project
 	//
@@ -5513,6 +6479,48 @@ type ClientWithResponsesInterface interface {
 	//
 	// Corresponds with PUT /account/v1/billing-accounts/{accountKey}/projects/{projectId} (the `BindProjectToBillingAccount` operationId).
 	BindProjectToBillingAccountWithResponse(ctx context.Context, accountKey AccountKey, projectId openapi_types.UUID, reqEditors ...RequestEditorFn) (*BindProjectToBillingAccountResponse, error)
+
+	// PreviewPromotionCodeWithBodyWithResponse See what a code takes off before committing
+	//
+	// Runs the same checks and the same arithmetic that placing the order will run, so the price
+	// shown here and the price charged agree. Writing the calculation twice — once for the page and
+	// once for the order — means they drift, and the visible form of that drift is a page saying
+	// "20 off" while the full amount is taken.
+	//
+	// Nothing is redeemed. The allowance is only consumed when the order is actually placed.
+	//
+	// A code that cannot be used is rejected here with the reason, so the user learns it before
+	// filling in the rest of the form rather than at the moment they press buy.
+	//
+	// **Metered orders are rejected.** They have no amount at this point — the money is worked out
+	// later from usage. Applying a discount to a nil amount leaves the user believing they saved
+	// something while the bill is unchanged.
+	//
+	// Takes any type of body and a specified content type, and returns a wrapper object for the known response body format(s).
+	//
+	// Corresponds with POST /account/v1/billing-accounts/{accountKey}/promotion-codes/preview (the `PreviewPromotionCode` operationId).
+	PreviewPromotionCodeWithBodyWithResponse(ctx context.Context, accountKey AccountKey, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*PreviewPromotionCodeResponse, error)
+
+	// PreviewPromotionCodeWithResponse See what a code takes off before committing
+	//
+	// Runs the same checks and the same arithmetic that placing the order will run, so the price
+	// shown here and the price charged agree. Writing the calculation twice — once for the page and
+	// once for the order — means they drift, and the visible form of that drift is a page saying
+	// "20 off" while the full amount is taken.
+	//
+	// Nothing is redeemed. The allowance is only consumed when the order is actually placed.
+	//
+	// A code that cannot be used is rejected here with the reason, so the user learns it before
+	// filling in the rest of the form rather than at the moment they press buy.
+	//
+	// **Metered orders are rejected.** They have no amount at this point — the money is worked out
+	// later from usage. Applying a discount to a nil amount leaves the user believing they saved
+	// something while the bill is unchanged.
+	//
+	// Takes a body of the `application/json` content type, and returns a wrapper object for the known response body format(s).
+	//
+	// Corresponds with POST /account/v1/billing-accounts/{accountKey}/promotion-codes/preview (the `PreviewPromotionCode` operationId).
+	PreviewPromotionCodeWithResponse(ctx context.Context, accountKey AccountKey, body PreviewPromotionCodeJSONRequestBody, reqEditors ...RequestEditorFn) (*PreviewPromotionCodeResponse, error)
 
 	// QuoteUsageWithBodyWithResponse What a usage would cost on this account's plan
 	//
@@ -5573,6 +6581,16 @@ type ClientWithResponsesInterface interface {
 	//
 	// Corresponds with POST /account/v1/billing-accounts/{accountKey}/quote (the `QuoteUsage` operationId).
 	QuoteUsageWithResponse(ctx context.Context, accountKey AccountKey, body QuoteUsageJSONRequestBody, reqEditors ...RequestEditorFn) (*QuoteUsageResponse, error)
+
+	// ListAccountRefundsWithResponse List this account's refunds
+	//
+	// Each refund carries how it was split. A customer asking "I was refunded 100, why is only 60
+	// back on my card" is answered here and nowhere else.
+	//
+	// Returns a wrapper object for the known response body format(s).
+	//
+	// Corresponds with GET /account/v1/billing-accounts/{accountKey}/refunds (the `ListAccountRefunds` operationId).
+	ListAccountRefundsWithResponse(ctx context.Context, accountKey AccountKey, params *ListAccountRefundsParams, reqEditors ...RequestEditorFn) (*ListAccountRefundsResponse, error)
 
 	// ReadSubscriptionWithResponse Which plan this account is on
 	//
@@ -5703,6 +6721,17 @@ type ClientWithResponsesInterface interface {
 	//
 	// Corresponds with GET /account/v1/billing-accounts/{accountKey}/top-ups/{paymentId} (the `ReadTopUp` operationId).
 	ReadTopUpWithResponse(ctx context.Context, accountKey AccountKey, paymentId string, reqEditors ...RequestEditorFn) (*ReadTopUpResponse, error)
+
+	// ListAccountVouchersWithResponse List this account's vouchers
+	//
+	// Credit received from campaigns, most recent first. Not the credit ledger — this says which
+	// campaign each amount came from, which is the question "where did this 50 come from" that the
+	// ledger cannot answer.
+	//
+	// Returns a wrapper object for the known response body format(s).
+	//
+	// Corresponds with GET /account/v1/billing-accounts/{accountKey}/vouchers (the `ListAccountVouchers` operationId).
+	ListAccountVouchersWithResponse(ctx context.Context, accountKey AccountKey, params *ListAccountVouchersParams, reqEditors ...RequestEditorFn) (*ListAccountVouchersResponse, error)
 
 	// ReadProjectBillingAccountWithResponse Which account pays for this project
 	//
@@ -6753,6 +7782,102 @@ func (r ListPrepaidAssetsResponse) ContentType() string {
 	return ""
 }
 
+type SetPrepaidAutoRenewResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	// JSON200 the response for an HTTP 200 `application/json` response
+	JSON200 *PrepaidAsset
+	// JSONDefault the response for an HTTP default `application/json` response
+	JSONDefault *Error
+}
+
+// GetJSON200 returns the response for an HTTP 200 `application/json` response
+func (r SetPrepaidAutoRenewResponse) GetJSON200() *PrepaidAsset {
+	return r.JSON200
+}
+
+// GetJSONDefault returns the response for an HTTP default `application/json` response
+func (r SetPrepaidAutoRenewResponse) GetJSONDefault() *Error {
+	return r.JSONDefault
+}
+
+// GetBody returns the raw response body bytes
+func (r SetPrepaidAutoRenewResponse) GetBody() []byte {
+	return r.Body
+}
+
+// Status returns HTTPResponse.Status
+func (r SetPrepaidAutoRenewResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r SetPrepaidAutoRenewResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+// ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
+func (r SetPrepaidAutoRenewResponse) ContentType() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Header.Get("Content-Type")
+	}
+	return ""
+}
+
+type RenewPrepaidAssetResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	// JSON200 the response for an HTTP 200 `application/json` response
+	JSON200 *PrepaidAsset
+	// JSONDefault the response for an HTTP default `application/json` response
+	JSONDefault *Error
+}
+
+// GetJSON200 returns the response for an HTTP 200 `application/json` response
+func (r RenewPrepaidAssetResponse) GetJSON200() *PrepaidAsset {
+	return r.JSON200
+}
+
+// GetJSONDefault returns the response for an HTTP default `application/json` response
+func (r RenewPrepaidAssetResponse) GetJSONDefault() *Error {
+	return r.JSONDefault
+}
+
+// GetBody returns the raw response body bytes
+func (r RenewPrepaidAssetResponse) GetBody() []byte {
+	return r.Body
+}
+
+// Status returns HTTPResponse.Status
+func (r RenewPrepaidAssetResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r RenewPrepaidAssetResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+// ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
+func (r RenewPrepaidAssetResponse) ContentType() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Header.Get("Content-Type")
+	}
+	return ""
+}
+
 type UnbindProjectFromBillingAccountResponse struct {
 	Body         []byte
 	HTTPResponse *http.Response
@@ -6842,6 +7967,54 @@ func (r BindProjectToBillingAccountResponse) ContentType() string {
 	return ""
 }
 
+type PreviewPromotionCodeResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	// JSON200 the response for an HTTP 200 `application/json` response
+	JSON200 *PromotionPreview
+	// JSONDefault the response for an HTTP default `application/json` response
+	JSONDefault *Error
+}
+
+// GetJSON200 returns the response for an HTTP 200 `application/json` response
+func (r PreviewPromotionCodeResponse) GetJSON200() *PromotionPreview {
+	return r.JSON200
+}
+
+// GetJSONDefault returns the response for an HTTP default `application/json` response
+func (r PreviewPromotionCodeResponse) GetJSONDefault() *Error {
+	return r.JSONDefault
+}
+
+// GetBody returns the raw response body bytes
+func (r PreviewPromotionCodeResponse) GetBody() []byte {
+	return r.Body
+}
+
+// Status returns HTTPResponse.Status
+func (r PreviewPromotionCodeResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r PreviewPromotionCodeResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+// ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
+func (r PreviewPromotionCodeResponse) ContentType() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Header.Get("Content-Type")
+	}
+	return ""
+}
+
 type QuoteUsageResponse struct {
 	Body         []byte
 	HTTPResponse *http.Response
@@ -6884,6 +8057,54 @@ func (r QuoteUsageResponse) StatusCode() int {
 
 // ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
 func (r QuoteUsageResponse) ContentType() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Header.Get("Content-Type")
+	}
+	return ""
+}
+
+type ListAccountRefundsResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	// JSON200 the response for an HTTP 200 `application/json` response
+	JSON200 *AccountRefundList
+	// JSONDefault the response for an HTTP default `application/json` response
+	JSONDefault *Error
+}
+
+// GetJSON200 returns the response for an HTTP 200 `application/json` response
+func (r ListAccountRefundsResponse) GetJSON200() *AccountRefundList {
+	return r.JSON200
+}
+
+// GetJSONDefault returns the response for an HTTP default `application/json` response
+func (r ListAccountRefundsResponse) GetJSONDefault() *Error {
+	return r.JSONDefault
+}
+
+// GetBody returns the raw response body bytes
+func (r ListAccountRefundsResponse) GetBody() []byte {
+	return r.Body
+}
+
+// Status returns HTTPResponse.Status
+func (r ListAccountRefundsResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r ListAccountRefundsResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+// ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
+func (r ListAccountRefundsResponse) ContentType() string {
 	if r.HTTPResponse != nil {
 		return r.HTTPResponse.Header.Get("Content-Type")
 	}
@@ -7172,6 +8393,54 @@ func (r ReadTopUpResponse) StatusCode() int {
 
 // ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
 func (r ReadTopUpResponse) ContentType() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Header.Get("Content-Type")
+	}
+	return ""
+}
+
+type ListAccountVouchersResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	// JSON200 the response for an HTTP 200 `application/json` response
+	JSON200 *VoucherList
+	// JSONDefault the response for an HTTP default `application/json` response
+	JSONDefault *Error
+}
+
+// GetJSON200 returns the response for an HTTP 200 `application/json` response
+func (r ListAccountVouchersResponse) GetJSON200() *VoucherList {
+	return r.JSON200
+}
+
+// GetJSONDefault returns the response for an HTTP default `application/json` response
+func (r ListAccountVouchersResponse) GetJSONDefault() *Error {
+	return r.JSONDefault
+}
+
+// GetBody returns the raw response body bytes
+func (r ListAccountVouchersResponse) GetBody() []byte {
+	return r.Body
+}
+
+// Status returns HTTPResponse.Status
+func (r ListAccountVouchersResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r ListAccountVouchersResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+// ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
+func (r ListAccountVouchersResponse) ContentType() string {
 	if r.HTTPResponse != nil {
 		return r.HTTPResponse.Header.Get("Content-Type")
 	}
@@ -7792,16 +9061,19 @@ func (c *ClientWithResponses) SetDefaultPaymentMethodWithResponse(ctx context.Co
 //
 // Everything this account holds on a term, across every product.
 //
-// ## Nothing here expires on its own
+// ## Every one of these expires
 //
-// A term renews for as long as the seat is held: the engine charges the next period, prorates
-// any change to the second, and stops the moment the seat is given up. So there is no renewal
-// to remember and no expiry to warn about — giving it up means deleting the resource, in the
-// console that owns it.
+// A term is paid for once, up front, and buys exactly the period named by `term`. Nothing
+// renews it on its own: `expires_at` is when it runs out, and after that the machine is
+// stopped and — once the retention window is over — released.
 //
-// What the next period costs and when it falls due is on the charges route. That is read
-// straight from the engine rather than copied here, because a copy is a second answer that
-// drifts without saying so.
+// This route used to say the opposite. It described an engine that charged the next period by
+// itself for as long as the seat was held, which is how this worked before the money became a
+// single up-front charge. Reading the old text, a customer would have had no reason to renew
+// anything, and the first sign of trouble would have been a stopped machine.
+//
+// Turn on `auto_renew` to have billing place the renewal order itself while there is balance
+// to pay for it. That is the only thing that makes a term continue.
 //
 // ## Metered resources are not here
 //
@@ -7823,6 +9095,98 @@ func (c *ClientWithResponses) ListPrepaidAssetsWithResponse(ctx context.Context,
 		return nil, err
 	}
 	return ParseListPrepaidAssetsResponse(rsp)
+}
+
+// SetPrepaidAutoRenewWithBodyWithResponse Turn automatic renewal on or off
+//
+// With it on, billing places the renewal order itself a few days before the period runs out,
+// paying from the account's balance.
+//
+// **Not enough balance is not an error here.** The switch only says what to attempt; whether
+// the money is there is settled at renewal time, and the customer is told either way — told it
+// renewed, or told it could not and by when it will expire.
+//
+// Takes any type of body and a specified content type, and returns a wrapper object for the known response body format(s).
+//
+// Corresponds with PUT /account/v1/billing-accounts/{accountKey}/prepaid-assets/{assetId}/auto-renew (the `SetPrepaidAutoRenew` operationId).
+func (c *ClientWithResponses) SetPrepaidAutoRenewWithBodyWithResponse(ctx context.Context, accountKey AccountKey, assetId openapi_types.UUID, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*SetPrepaidAutoRenewResponse, error) {
+	rsp, err := c.SetPrepaidAutoRenewWithBody(ctx, accountKey, assetId, contentType, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseSetPrepaidAutoRenewResponse(rsp)
+}
+
+// SetPrepaidAutoRenewWithResponse Turn automatic renewal on or off
+//
+// With it on, billing places the renewal order itself a few days before the period runs out,
+// paying from the account's balance.
+//
+// **Not enough balance is not an error here.** The switch only says what to attempt; whether
+// the money is there is settled at renewal time, and the customer is told either way — told it
+// renewed, or told it could not and by when it will expire.
+//
+// Takes a body of the `application/json` content type, and returns a wrapper object for the known response body format(s).
+//
+// Corresponds with PUT /account/v1/billing-accounts/{accountKey}/prepaid-assets/{assetId}/auto-renew (the `SetPrepaidAutoRenew` operationId).
+func (c *ClientWithResponses) SetPrepaidAutoRenewWithResponse(ctx context.Context, accountKey AccountKey, assetId openapi_types.UUID, body SetPrepaidAutoRenewJSONRequestBody, reqEditors ...RequestEditorFn) (*SetPrepaidAutoRenewResponse, error) {
+	rsp, err := c.SetPrepaidAutoRenew(ctx, accountKey, assetId, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseSetPrepaidAutoRenewResponse(rsp)
+}
+
+// RenewPrepaidAssetWithBodyWithResponse Buy another period
+//
+// Extends a term by one more period, paid for out of the account's balance right now.
+//
+// **The new expiry is the old one plus the term, not now plus the term.** Renewing three days
+// early would otherwise throw those three days away, and renewing after the expiry would
+// quietly reward the delay. Neither shows up as an error — the date on the account looks
+// self-consistent either way, and only the customer notices.
+//
+// `term` does not have to match what was bought originally: a monthly machine can be renewed
+// for a year.
+//
+// Refused when the balance does not cover it. The alternative — placing the order and letting
+// the account go negative — turns a renewal the customer chose into a debt they did not.
+//
+// Takes any type of body and a specified content type, and returns a wrapper object for the known response body format(s).
+//
+// Corresponds with POST /account/v1/billing-accounts/{accountKey}/prepaid-assets/{assetId}/renew (the `RenewPrepaidAsset` operationId).
+func (c *ClientWithResponses) RenewPrepaidAssetWithBodyWithResponse(ctx context.Context, accountKey AccountKey, assetId openapi_types.UUID, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*RenewPrepaidAssetResponse, error) {
+	rsp, err := c.RenewPrepaidAssetWithBody(ctx, accountKey, assetId, contentType, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseRenewPrepaidAssetResponse(rsp)
+}
+
+// RenewPrepaidAssetWithResponse Buy another period
+//
+// Extends a term by one more period, paid for out of the account's balance right now.
+//
+// **The new expiry is the old one plus the term, not now plus the term.** Renewing three days
+// early would otherwise throw those three days away, and renewing after the expiry would
+// quietly reward the delay. Neither shows up as an error — the date on the account looks
+// self-consistent either way, and only the customer notices.
+//
+// `term` does not have to match what was bought originally: a monthly machine can be renewed
+// for a year.
+//
+// Refused when the balance does not cover it. The alternative — placing the order and letting
+// the account go negative — turns a renewal the customer chose into a debt they did not.
+//
+// Takes a body of the `application/json` content type, and returns a wrapper object for the known response body format(s).
+//
+// Corresponds with POST /account/v1/billing-accounts/{accountKey}/prepaid-assets/{assetId}/renew (the `RenewPrepaidAsset` operationId).
+func (c *ClientWithResponses) RenewPrepaidAssetWithResponse(ctx context.Context, accountKey AccountKey, assetId openapi_types.UUID, body RenewPrepaidAssetJSONRequestBody, reqEditors ...RequestEditorFn) (*RenewPrepaidAssetResponse, error) {
+	rsp, err := c.RenewPrepaidAsset(ctx, accountKey, assetId, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseRenewPrepaidAssetResponse(rsp)
 }
 
 // UnbindProjectFromBillingAccountWithResponse Stop paying for a project
@@ -7873,6 +9237,60 @@ func (c *ClientWithResponses) BindProjectToBillingAccountWithResponse(ctx contex
 		return nil, err
 	}
 	return ParseBindProjectToBillingAccountResponse(rsp)
+}
+
+// PreviewPromotionCodeWithBodyWithResponse See what a code takes off before committing
+//
+// Runs the same checks and the same arithmetic that placing the order will run, so the price
+// shown here and the price charged agree. Writing the calculation twice — once for the page and
+// once for the order — means they drift, and the visible form of that drift is a page saying
+// "20 off" while the full amount is taken.
+//
+// Nothing is redeemed. The allowance is only consumed when the order is actually placed.
+//
+// A code that cannot be used is rejected here with the reason, so the user learns it before
+// filling in the rest of the form rather than at the moment they press buy.
+//
+// **Metered orders are rejected.** They have no amount at this point — the money is worked out
+// later from usage. Applying a discount to a nil amount leaves the user believing they saved
+// something while the bill is unchanged.
+//
+// Takes any type of body and a specified content type, and returns a wrapper object for the known response body format(s).
+//
+// Corresponds with POST /account/v1/billing-accounts/{accountKey}/promotion-codes/preview (the `PreviewPromotionCode` operationId).
+func (c *ClientWithResponses) PreviewPromotionCodeWithBodyWithResponse(ctx context.Context, accountKey AccountKey, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*PreviewPromotionCodeResponse, error) {
+	rsp, err := c.PreviewPromotionCodeWithBody(ctx, accountKey, contentType, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParsePreviewPromotionCodeResponse(rsp)
+}
+
+// PreviewPromotionCodeWithResponse See what a code takes off before committing
+//
+// Runs the same checks and the same arithmetic that placing the order will run, so the price
+// shown here and the price charged agree. Writing the calculation twice — once for the page and
+// once for the order — means they drift, and the visible form of that drift is a page saying
+// "20 off" while the full amount is taken.
+//
+// Nothing is redeemed. The allowance is only consumed when the order is actually placed.
+//
+// A code that cannot be used is rejected here with the reason, so the user learns it before
+// filling in the rest of the form rather than at the moment they press buy.
+//
+// **Metered orders are rejected.** They have no amount at this point — the money is worked out
+// later from usage. Applying a discount to a nil amount leaves the user believing they saved
+// something while the bill is unchanged.
+//
+// Takes a body of the `application/json` content type, and returns a wrapper object for the known response body format(s).
+//
+// Corresponds with POST /account/v1/billing-accounts/{accountKey}/promotion-codes/preview (the `PreviewPromotionCode` operationId).
+func (c *ClientWithResponses) PreviewPromotionCodeWithResponse(ctx context.Context, accountKey AccountKey, body PreviewPromotionCodeJSONRequestBody, reqEditors ...RequestEditorFn) (*PreviewPromotionCodeResponse, error) {
+	rsp, err := c.PreviewPromotionCode(ctx, accountKey, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParsePreviewPromotionCodeResponse(rsp)
 }
 
 // QuoteUsageWithBodyWithResponse What a usage would cost on this account's plan
@@ -7945,6 +9363,22 @@ func (c *ClientWithResponses) QuoteUsageWithResponse(ctx context.Context, accoun
 		return nil, err
 	}
 	return ParseQuoteUsageResponse(rsp)
+}
+
+// ListAccountRefundsWithResponse List this account's refunds
+//
+// Each refund carries how it was split. A customer asking "I was refunded 100, why is only 60
+// back on my card" is answered here and nowhere else.
+//
+// Returns a wrapper object for the known response body format(s).
+//
+// Corresponds with GET /account/v1/billing-accounts/{accountKey}/refunds (the `ListAccountRefunds` operationId).
+func (c *ClientWithResponses) ListAccountRefundsWithResponse(ctx context.Context, accountKey AccountKey, params *ListAccountRefundsParams, reqEditors ...RequestEditorFn) (*ListAccountRefundsResponse, error) {
+	rsp, err := c.ListAccountRefunds(ctx, accountKey, params, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseListAccountRefundsResponse(rsp)
 }
 
 // ReadSubscriptionWithResponse Which plan this account is on
@@ -8117,6 +9551,23 @@ func (c *ClientWithResponses) ReadTopUpWithResponse(ctx context.Context, account
 		return nil, err
 	}
 	return ParseReadTopUpResponse(rsp)
+}
+
+// ListAccountVouchersWithResponse List this account's vouchers
+//
+// Credit received from campaigns, most recent first. Not the credit ledger — this says which
+// campaign each amount came from, which is the question "where did this 50 come from" that the
+// ledger cannot answer.
+//
+// Returns a wrapper object for the known response body format(s).
+//
+// Corresponds with GET /account/v1/billing-accounts/{accountKey}/vouchers (the `ListAccountVouchers` operationId).
+func (c *ClientWithResponses) ListAccountVouchersWithResponse(ctx context.Context, accountKey AccountKey, params *ListAccountVouchersParams, reqEditors ...RequestEditorFn) (*ListAccountVouchersResponse, error) {
+	rsp, err := c.ListAccountVouchers(ctx, accountKey, params, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseListAccountVouchersResponse(rsp)
 }
 
 // ReadProjectBillingAccountWithResponse Which account pays for this project
@@ -8891,6 +10342,72 @@ func ParseListPrepaidAssetsResponse(rsp *http.Response) (*ListPrepaidAssetsRespo
 	return response, nil
 }
 
+// ParseSetPrepaidAutoRenewResponse parses an HTTP response from a SetPrepaidAutoRenewWithResponse call
+func ParseSetPrepaidAutoRenewResponse(rsp *http.Response) (*SetPrepaidAutoRenewResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &SetPrepaidAutoRenewResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest PrepaidAsset
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && true:
+		var dest Error
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSONDefault = &dest
+
+	}
+
+	return response, nil
+}
+
+// ParseRenewPrepaidAssetResponse parses an HTTP response from a RenewPrepaidAssetWithResponse call
+func ParseRenewPrepaidAssetResponse(rsp *http.Response) (*RenewPrepaidAssetResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &RenewPrepaidAssetResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest PrepaidAsset
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && true:
+		var dest Error
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSONDefault = &dest
+
+	}
+
+	return response, nil
+}
+
 // ParseUnbindProjectFromBillingAccountResponse parses an HTTP response from a UnbindProjectFromBillingAccountWithResponse call
 func ParseUnbindProjectFromBillingAccountResponse(rsp *http.Response) (*UnbindProjectFromBillingAccountResponse, error) {
 	bodyBytes, err := io.ReadAll(rsp.Body)
@@ -8953,6 +10470,39 @@ func ParseBindProjectToBillingAccountResponse(rsp *http.Response) (*BindProjectT
 	return response, nil
 }
 
+// ParsePreviewPromotionCodeResponse parses an HTTP response from a PreviewPromotionCodeWithResponse call
+func ParsePreviewPromotionCodeResponse(rsp *http.Response) (*PreviewPromotionCodeResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &PreviewPromotionCodeResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest PromotionPreview
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && true:
+		var dest Error
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSONDefault = &dest
+
+	}
+
+	return response, nil
+}
+
 // ParseQuoteUsageResponse parses an HTTP response from a QuoteUsageWithResponse call
 func ParseQuoteUsageResponse(rsp *http.Response) (*QuoteUsageResponse, error) {
 	bodyBytes, err := io.ReadAll(rsp.Body)
@@ -8969,6 +10519,39 @@ func ParseQuoteUsageResponse(rsp *http.Response) (*QuoteUsageResponse, error) {
 	switch {
 	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
 		var dest Quote
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && true:
+		var dest Error
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSONDefault = &dest
+
+	}
+
+	return response, nil
+}
+
+// ParseListAccountRefundsResponse parses an HTTP response from a ListAccountRefundsWithResponse call
+func ParseListAccountRefundsResponse(rsp *http.Response) (*ListAccountRefundsResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &ListAccountRefundsResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest AccountRefundList
 		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
 			return nil, err
 		}
@@ -9167,6 +10750,39 @@ func ParseReadTopUpResponse(rsp *http.Response) (*ReadTopUpResponse, error) {
 	switch {
 	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
 		var dest TopUpStatus
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && true:
+		var dest Error
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSONDefault = &dest
+
+	}
+
+	return response, nil
+}
+
+// ParseListAccountVouchersResponse parses an HTTP response from a ListAccountVouchersWithResponse call
+func ParseListAccountVouchersResponse(rsp *http.Response) (*ListAccountVouchersResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &ListAccountVouchersResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest VoucherList
 		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
 			return nil, err
 		}

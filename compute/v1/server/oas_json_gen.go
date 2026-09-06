@@ -1381,6 +1381,18 @@ func (s *CreateDiskRequestBody) Encode(e *jx.Encoder) {
 // encodeFields encodes fields.
 func (s *CreateDiskRequestBody) encodeFields(e *jx.Encoder) {
 	{
+		if s.PromotionCode.Set {
+			e.FieldStart("promotion_code")
+			s.PromotionCode.Encode(e)
+		}
+	}
+	{
+		if s.IdempotencyKey.Set {
+			e.FieldStart("idempotency_key")
+			s.IdempotencyKey.Encode(e)
+		}
+	}
+	{
 		e.FieldStart("disk_type_id")
 		json.EncodeUUID(e, s.DiskTypeID)
 	}
@@ -1412,13 +1424,15 @@ func (s *CreateDiskRequestBody) encodeFields(e *jx.Encoder) {
 	}
 }
 
-var jsonFieldsNameOfCreateDiskRequestBody = [6]string{
-	0: "disk_type_id",
-	1: "name",
-	2: "size_gb",
-	3: "snapshot_id",
-	4: "term",
-	5: "payment_method",
+var jsonFieldsNameOfCreateDiskRequestBody = [8]string{
+	0: "promotion_code",
+	1: "idempotency_key",
+	2: "disk_type_id",
+	3: "name",
+	4: "size_gb",
+	5: "snapshot_id",
+	6: "term",
+	7: "payment_method",
 }
 
 // Decode decodes CreateDiskRequestBody from json.
@@ -1431,8 +1445,28 @@ func (s *CreateDiskRequestBody) Decode(d *jx.Decoder) error {
 
 	if err := d.ObjBytes(func(d *jx.Decoder, k []byte) error {
 		switch string(k) {
+		case "promotion_code":
+			if err := func() error {
+				s.PromotionCode.Reset()
+				if err := s.PromotionCode.Decode(d); err != nil {
+					return err
+				}
+				return nil
+			}(); err != nil {
+				return errors.Wrap(err, "decode field \"promotion_code\"")
+			}
+		case "idempotency_key":
+			if err := func() error {
+				s.IdempotencyKey.Reset()
+				if err := s.IdempotencyKey.Decode(d); err != nil {
+					return err
+				}
+				return nil
+			}(); err != nil {
+				return errors.Wrap(err, "decode field \"idempotency_key\"")
+			}
 		case "disk_type_id":
-			requiredBitSet[0] |= 1 << 0
+			requiredBitSet[0] |= 1 << 2
 			if err := func() error {
 				v, err := json.DecodeUUID(d)
 				s.DiskTypeID = v
@@ -1444,7 +1478,7 @@ func (s *CreateDiskRequestBody) Decode(d *jx.Decoder) error {
 				return errors.Wrap(err, "decode field \"disk_type_id\"")
 			}
 		case "name":
-			requiredBitSet[0] |= 1 << 1
+			requiredBitSet[0] |= 1 << 3
 			if err := func() error {
 				v, err := d.Str()
 				s.Name = string(v)
@@ -1456,7 +1490,7 @@ func (s *CreateDiskRequestBody) Decode(d *jx.Decoder) error {
 				return errors.Wrap(err, "decode field \"name\"")
 			}
 		case "size_gb":
-			requiredBitSet[0] |= 1 << 2
+			requiredBitSet[0] |= 1 << 4
 			if err := func() error {
 				v, err := d.Int64()
 				s.SizeGB = int64(v)
@@ -1507,7 +1541,7 @@ func (s *CreateDiskRequestBody) Decode(d *jx.Decoder) error {
 	// Validate required fields.
 	var failures []validate.FieldError
 	for i, mask := range [1]uint8{
-		0b00000111,
+		0b00011100,
 	} {
 		if result := (requiredBitSet[i] & mask) ^ mask; result != 0 {
 			// Mask only required fields and check equality to mask using XOR.
@@ -6042,6 +6076,18 @@ func (s *LaunchInstanceRequestBody) Encode(e *jx.Encoder) {
 // encodeFields encodes fields.
 func (s *LaunchInstanceRequestBody) encodeFields(e *jx.Encoder) {
 	{
+		if s.PromotionCode.Set {
+			e.FieldStart("promotion_code")
+			s.PromotionCode.Encode(e)
+		}
+	}
+	{
+		if s.IdempotencyKey.Set {
+			e.FieldStart("idempotency_key")
+			s.IdempotencyKey.Encode(e)
+		}
+	}
+	{
 		if s.FloatingIPID.Set {
 			e.FieldStart("floating_ip_id")
 			s.FloatingIPID.Encode(e)
@@ -6141,24 +6187,26 @@ func (s *LaunchInstanceRequestBody) encodeFields(e *jx.Encoder) {
 	}
 }
 
-var jsonFieldsNameOfLaunchInstanceRequestBody = [17]string{
-	0:  "floating_ip_id",
-	1:  "bandwidth_mbps",
-	2:  "count",
-	3:  "generate_password",
-	4:  "boot_disk_id",
-	5:  "image_id",
-	6:  "instance_type_id",
-	7:  "login_username",
-	8:  "name",
-	9:  "password",
-	10: "port_id",
-	11: "private_image_id",
-	12: "payment_method",
-	13: "term",
-	14: "root_disk_gb",
-	15: "security_group_ids",
-	16: "subnet_id",
+var jsonFieldsNameOfLaunchInstanceRequestBody = [19]string{
+	0:  "promotion_code",
+	1:  "idempotency_key",
+	2:  "floating_ip_id",
+	3:  "bandwidth_mbps",
+	4:  "count",
+	5:  "generate_password",
+	6:  "boot_disk_id",
+	7:  "image_id",
+	8:  "instance_type_id",
+	9:  "login_username",
+	10: "name",
+	11: "password",
+	12: "port_id",
+	13: "private_image_id",
+	14: "payment_method",
+	15: "term",
+	16: "root_disk_gb",
+	17: "security_group_ids",
+	18: "subnet_id",
 }
 
 // Decode decodes LaunchInstanceRequestBody from json.
@@ -6171,6 +6219,26 @@ func (s *LaunchInstanceRequestBody) Decode(d *jx.Decoder) error {
 
 	if err := d.ObjBytes(func(d *jx.Decoder, k []byte) error {
 		switch string(k) {
+		case "promotion_code":
+			if err := func() error {
+				s.PromotionCode.Reset()
+				if err := s.PromotionCode.Decode(d); err != nil {
+					return err
+				}
+				return nil
+			}(); err != nil {
+				return errors.Wrap(err, "decode field \"promotion_code\"")
+			}
+		case "idempotency_key":
+			if err := func() error {
+				s.IdempotencyKey.Reset()
+				if err := s.IdempotencyKey.Decode(d); err != nil {
+					return err
+				}
+				return nil
+			}(); err != nil {
+				return errors.Wrap(err, "decode field \"idempotency_key\"")
+			}
 		case "floating_ip_id":
 			if err := func() error {
 				s.FloatingIPID.Reset()
@@ -6232,7 +6300,7 @@ func (s *LaunchInstanceRequestBody) Decode(d *jx.Decoder) error {
 				return errors.Wrap(err, "decode field \"image_id\"")
 			}
 		case "instance_type_id":
-			requiredBitSet[0] |= 1 << 6
+			requiredBitSet[1] |= 1 << 0
 			if err := func() error {
 				v, err := json.DecodeUUID(d)
 				s.InstanceTypeID = v
@@ -6254,7 +6322,7 @@ func (s *LaunchInstanceRequestBody) Decode(d *jx.Decoder) error {
 				return errors.Wrap(err, "decode field \"login_username\"")
 			}
 		case "name":
-			requiredBitSet[1] |= 1 << 0
+			requiredBitSet[1] |= 1 << 2
 			if err := func() error {
 				v, err := d.Str()
 				s.Name = string(v)
@@ -6355,8 +6423,8 @@ func (s *LaunchInstanceRequestBody) Decode(d *jx.Decoder) error {
 	// Validate required fields.
 	var failures []validate.FieldError
 	for i, mask := range [3]uint8{
-		0b01000000,
-		0b00000001,
+		0b00000000,
+		0b00000101,
 		0b00000000,
 	} {
 		if result := (requiredBitSet[i] & mask) ^ mask; result != 0 {

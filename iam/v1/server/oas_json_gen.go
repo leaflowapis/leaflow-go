@@ -3893,10 +3893,6 @@ func (s *ProjectResource) encodeFields(e *jx.Encoder) {
 		e.Str(s.Name)
 	}
 	{
-		e.FieldStart("overdue_at")
-		s.OverdueAt.Encode(e, json.EncodeDateTime)
-	}
-	{
 		e.FieldStart("status")
 		s.Status.Encode(e)
 	}
@@ -3910,18 +3906,17 @@ func (s *ProjectResource) encodeFields(e *jx.Encoder) {
 	}
 }
 
-var jsonFieldsNameOfProjectResource = [11]string{
-	0:  "ban_reason",
-	1:  "created_at",
-	2:  "created_by",
-	3:  "deleted_at",
-	4:  "description",
-	5:  "id",
-	6:  "name",
-	7:  "overdue_at",
-	8:  "status",
-	9:  "status_reason",
-	10: "updated_at",
+var jsonFieldsNameOfProjectResource = [10]string{
+	0: "ban_reason",
+	1: "created_at",
+	2: "created_by",
+	3: "deleted_at",
+	4: "description",
+	5: "id",
+	6: "name",
+	7: "status",
+	8: "status_reason",
+	9: "updated_at",
 }
 
 // Decode decodes ProjectResource from json.
@@ -4015,18 +4010,8 @@ func (s *ProjectResource) Decode(d *jx.Decoder) error {
 			}(); err != nil {
 				return errors.Wrap(err, "decode field \"name\"")
 			}
-		case "overdue_at":
-			requiredBitSet[0] |= 1 << 7
-			if err := func() error {
-				if err := s.OverdueAt.Decode(d, json.DecodeDateTime); err != nil {
-					return err
-				}
-				return nil
-			}(); err != nil {
-				return errors.Wrap(err, "decode field \"overdue_at\"")
-			}
 		case "status":
-			requiredBitSet[1] |= 1 << 0
+			requiredBitSet[0] |= 1 << 7
 			if err := func() error {
 				if err := s.Status.Decode(d); err != nil {
 					return err
@@ -4036,7 +4021,7 @@ func (s *ProjectResource) Decode(d *jx.Decoder) error {
 				return errors.Wrap(err, "decode field \"status\"")
 			}
 		case "status_reason":
-			requiredBitSet[1] |= 1 << 1
+			requiredBitSet[1] |= 1 << 0
 			if err := func() error {
 				v, err := d.Str()
 				s.StatusReason = string(v)
@@ -4048,7 +4033,7 @@ func (s *ProjectResource) Decode(d *jx.Decoder) error {
 				return errors.Wrap(err, "decode field \"status_reason\"")
 			}
 		case "updated_at":
-			requiredBitSet[1] |= 1 << 2
+			requiredBitSet[1] |= 1 << 1
 			if err := func() error {
 				v, err := json.DecodeDateTime(d)
 				s.UpdatedAt = v
@@ -4070,7 +4055,7 @@ func (s *ProjectResource) Decode(d *jx.Decoder) error {
 	var failures []validate.FieldError
 	for i, mask := range [2]uint8{
 		0b11111111,
-		0b00000111,
+		0b00000011,
 	} {
 		if result := (requiredBitSet[i] & mask) ^ mask; result != 0 {
 			// Mask only required fields and check equality to mask using XOR.

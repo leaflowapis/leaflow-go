@@ -932,6 +932,498 @@ func decodeKeepSubscriptionParams(args [1]string, argsEscaped bool, r *http.Requ
 	return params, nil
 }
 
+// ListAccountRefundsParams is parameters of list-account-refunds operation.
+type ListAccountRefundsParams struct {
+	// The account's key, of the form `u_<user_id>_<seq>`. Ownership is stated by the key itself, which is
+	// why the key is what addresses the account.
+	AccountKey string
+	// 1-based page number; the first page when omitted.
+	Page OptInt32 `json:",omitempty,omitzero"`
+	// How many entries per page, at most 100.
+	//
+	// Every list here grows without bound — charges with resources, transactions with time. A list that
+	// returns everything works on the account it was written against and quietly turns into a
+	// multi-megabyte response on the one that has been running for a year.
+	PageSize OptInt32 `json:",omitempty,omitzero"`
+}
+
+func unpackListAccountRefundsParams(packed middleware.Parameters) (params ListAccountRefundsParams) {
+	{
+		key := middleware.ParameterKey{
+			Name: "accountKey",
+			In:   "path",
+		}
+		params.AccountKey = packed[key].(string)
+	}
+	{
+		key := middleware.ParameterKey{
+			Name: "page",
+			In:   "query",
+		}
+		if v, ok := packed[key]; ok {
+			params.Page = v.(OptInt32)
+		}
+	}
+	{
+		key := middleware.ParameterKey{
+			Name: "page_size",
+			In:   "query",
+		}
+		if v, ok := packed[key]; ok {
+			params.PageSize = v.(OptInt32)
+		}
+	}
+	return params
+}
+
+func decodeListAccountRefundsParams(args [1]string, argsEscaped bool, r *http.Request) (params ListAccountRefundsParams, _ error) {
+	q := uri.NewQueryDecoder(r.URL.Query())
+	// Decode path: accountKey.
+	if err := func() error {
+		param := args[0]
+		if argsEscaped {
+			unescaped, err := url.PathUnescape(args[0])
+			if err != nil {
+				return errors.Wrap(err, "unescape path")
+			}
+			param = unescaped
+		}
+		if len(param) > 0 {
+			d := uri.NewPathDecoder(uri.PathDecoderConfig{
+				Param:   "accountKey",
+				Value:   param,
+				Style:   uri.PathStyleSimple,
+				Explode: false,
+			})
+
+			if err := func() error {
+				val, err := d.DecodeValue()
+				if err != nil {
+					return err
+				}
+
+				c, err := conv.ToString(val)
+				if err != nil {
+					return err
+				}
+
+				params.AccountKey = c
+				return nil
+			}(); err != nil {
+				return err
+			}
+			if err := func() error {
+				if err := (validate.String{
+					MinLength:     3,
+					MinLengthSet:  true,
+					MaxLength:     128,
+					MaxLengthSet:  true,
+					Email:         false,
+					Hostname:      false,
+					Regex:         regexMap["^u_.+_[0-9]+$"],
+					MinNumeric:    0,
+					MinNumericSet: false,
+					MaxNumeric:    0,
+					MaxNumericSet: false,
+				}).Validate(string(params.AccountKey)); err != nil {
+					return errors.Wrap(err, "string")
+				}
+				return nil
+			}(); err != nil {
+				return err
+			}
+		} else {
+			return validate.ErrFieldRequired
+		}
+		return nil
+	}(); err != nil {
+		return params, &ogenerrors.DecodeParamError{
+			Name: "accountKey",
+			In:   "path",
+			Err:  err,
+		}
+	}
+	// Decode query: page.
+	if err := func() error {
+		cfg := uri.QueryParameterDecodingConfig{
+			Name:    "page",
+			Style:   uri.QueryStyleForm,
+			Explode: true,
+		}
+
+		if err := q.HasParam(cfg); err == nil {
+			if err := q.DecodeParam(cfg, func(d uri.Decoder) error {
+				var paramsDotPageVal int32
+				if err := func() error {
+					val, err := d.DecodeValue()
+					if err != nil {
+						return err
+					}
+
+					c, err := conv.ToInt32(val)
+					if err != nil {
+						return err
+					}
+
+					paramsDotPageVal = c
+					return nil
+				}(); err != nil {
+					return err
+				}
+				params.Page.SetTo(paramsDotPageVal)
+				return nil
+			}); err != nil {
+				return err
+			}
+			if err := func() error {
+				if value, ok := params.Page.Get(); ok {
+					if err := func() error {
+						if err := (validate.Int{
+							MinSet:        true,
+							Min:           1,
+							MaxSet:        false,
+							Max:           0,
+							MinExclusive:  false,
+							MaxExclusive:  false,
+							MultipleOfSet: false,
+							MultipleOf:    0,
+							Pattern:       nil,
+						}).Validate(int64(value)); err != nil {
+							return errors.Wrap(err, "int")
+						}
+						return nil
+					}(); err != nil {
+						return err
+					}
+				}
+				return nil
+			}(); err != nil {
+				return err
+			}
+		}
+		return nil
+	}(); err != nil {
+		return params, &ogenerrors.DecodeParamError{
+			Name: "page",
+			In:   "query",
+			Err:  err,
+		}
+	}
+	// Decode query: page_size.
+	if err := func() error {
+		cfg := uri.QueryParameterDecodingConfig{
+			Name:    "page_size",
+			Style:   uri.QueryStyleForm,
+			Explode: true,
+		}
+
+		if err := q.HasParam(cfg); err == nil {
+			if err := q.DecodeParam(cfg, func(d uri.Decoder) error {
+				var paramsDotPageSizeVal int32
+				if err := func() error {
+					val, err := d.DecodeValue()
+					if err != nil {
+						return err
+					}
+
+					c, err := conv.ToInt32(val)
+					if err != nil {
+						return err
+					}
+
+					paramsDotPageSizeVal = c
+					return nil
+				}(); err != nil {
+					return err
+				}
+				params.PageSize.SetTo(paramsDotPageSizeVal)
+				return nil
+			}); err != nil {
+				return err
+			}
+			if err := func() error {
+				if value, ok := params.PageSize.Get(); ok {
+					if err := func() error {
+						if err := (validate.Int{
+							MinSet:        true,
+							Min:           1,
+							MaxSet:        true,
+							Max:           100,
+							MinExclusive:  false,
+							MaxExclusive:  false,
+							MultipleOfSet: false,
+							MultipleOf:    0,
+							Pattern:       nil,
+						}).Validate(int64(value)); err != nil {
+							return errors.Wrap(err, "int")
+						}
+						return nil
+					}(); err != nil {
+						return err
+					}
+				}
+				return nil
+			}(); err != nil {
+				return err
+			}
+		}
+		return nil
+	}(); err != nil {
+		return params, &ogenerrors.DecodeParamError{
+			Name: "page_size",
+			In:   "query",
+			Err:  err,
+		}
+	}
+	return params, nil
+}
+
+// ListAccountVouchersParams is parameters of list-account-vouchers operation.
+type ListAccountVouchersParams struct {
+	// The account's key, of the form `u_<user_id>_<seq>`. Ownership is stated by the key itself, which is
+	// why the key is what addresses the account.
+	AccountKey string
+	// 1-based page number; the first page when omitted.
+	Page OptInt32 `json:",omitempty,omitzero"`
+	// How many entries per page, at most 100.
+	//
+	// Every list here grows without bound — charges with resources, transactions with time. A list that
+	// returns everything works on the account it was written against and quietly turns into a
+	// multi-megabyte response on the one that has been running for a year.
+	PageSize OptInt32 `json:",omitempty,omitzero"`
+}
+
+func unpackListAccountVouchersParams(packed middleware.Parameters) (params ListAccountVouchersParams) {
+	{
+		key := middleware.ParameterKey{
+			Name: "accountKey",
+			In:   "path",
+		}
+		params.AccountKey = packed[key].(string)
+	}
+	{
+		key := middleware.ParameterKey{
+			Name: "page",
+			In:   "query",
+		}
+		if v, ok := packed[key]; ok {
+			params.Page = v.(OptInt32)
+		}
+	}
+	{
+		key := middleware.ParameterKey{
+			Name: "page_size",
+			In:   "query",
+		}
+		if v, ok := packed[key]; ok {
+			params.PageSize = v.(OptInt32)
+		}
+	}
+	return params
+}
+
+func decodeListAccountVouchersParams(args [1]string, argsEscaped bool, r *http.Request) (params ListAccountVouchersParams, _ error) {
+	q := uri.NewQueryDecoder(r.URL.Query())
+	// Decode path: accountKey.
+	if err := func() error {
+		param := args[0]
+		if argsEscaped {
+			unescaped, err := url.PathUnescape(args[0])
+			if err != nil {
+				return errors.Wrap(err, "unescape path")
+			}
+			param = unescaped
+		}
+		if len(param) > 0 {
+			d := uri.NewPathDecoder(uri.PathDecoderConfig{
+				Param:   "accountKey",
+				Value:   param,
+				Style:   uri.PathStyleSimple,
+				Explode: false,
+			})
+
+			if err := func() error {
+				val, err := d.DecodeValue()
+				if err != nil {
+					return err
+				}
+
+				c, err := conv.ToString(val)
+				if err != nil {
+					return err
+				}
+
+				params.AccountKey = c
+				return nil
+			}(); err != nil {
+				return err
+			}
+			if err := func() error {
+				if err := (validate.String{
+					MinLength:     3,
+					MinLengthSet:  true,
+					MaxLength:     128,
+					MaxLengthSet:  true,
+					Email:         false,
+					Hostname:      false,
+					Regex:         regexMap["^u_.+_[0-9]+$"],
+					MinNumeric:    0,
+					MinNumericSet: false,
+					MaxNumeric:    0,
+					MaxNumericSet: false,
+				}).Validate(string(params.AccountKey)); err != nil {
+					return errors.Wrap(err, "string")
+				}
+				return nil
+			}(); err != nil {
+				return err
+			}
+		} else {
+			return validate.ErrFieldRequired
+		}
+		return nil
+	}(); err != nil {
+		return params, &ogenerrors.DecodeParamError{
+			Name: "accountKey",
+			In:   "path",
+			Err:  err,
+		}
+	}
+	// Decode query: page.
+	if err := func() error {
+		cfg := uri.QueryParameterDecodingConfig{
+			Name:    "page",
+			Style:   uri.QueryStyleForm,
+			Explode: true,
+		}
+
+		if err := q.HasParam(cfg); err == nil {
+			if err := q.DecodeParam(cfg, func(d uri.Decoder) error {
+				var paramsDotPageVal int32
+				if err := func() error {
+					val, err := d.DecodeValue()
+					if err != nil {
+						return err
+					}
+
+					c, err := conv.ToInt32(val)
+					if err != nil {
+						return err
+					}
+
+					paramsDotPageVal = c
+					return nil
+				}(); err != nil {
+					return err
+				}
+				params.Page.SetTo(paramsDotPageVal)
+				return nil
+			}); err != nil {
+				return err
+			}
+			if err := func() error {
+				if value, ok := params.Page.Get(); ok {
+					if err := func() error {
+						if err := (validate.Int{
+							MinSet:        true,
+							Min:           1,
+							MaxSet:        false,
+							Max:           0,
+							MinExclusive:  false,
+							MaxExclusive:  false,
+							MultipleOfSet: false,
+							MultipleOf:    0,
+							Pattern:       nil,
+						}).Validate(int64(value)); err != nil {
+							return errors.Wrap(err, "int")
+						}
+						return nil
+					}(); err != nil {
+						return err
+					}
+				}
+				return nil
+			}(); err != nil {
+				return err
+			}
+		}
+		return nil
+	}(); err != nil {
+		return params, &ogenerrors.DecodeParamError{
+			Name: "page",
+			In:   "query",
+			Err:  err,
+		}
+	}
+	// Decode query: page_size.
+	if err := func() error {
+		cfg := uri.QueryParameterDecodingConfig{
+			Name:    "page_size",
+			Style:   uri.QueryStyleForm,
+			Explode: true,
+		}
+
+		if err := q.HasParam(cfg); err == nil {
+			if err := q.DecodeParam(cfg, func(d uri.Decoder) error {
+				var paramsDotPageSizeVal int32
+				if err := func() error {
+					val, err := d.DecodeValue()
+					if err != nil {
+						return err
+					}
+
+					c, err := conv.ToInt32(val)
+					if err != nil {
+						return err
+					}
+
+					paramsDotPageSizeVal = c
+					return nil
+				}(); err != nil {
+					return err
+				}
+				params.PageSize.SetTo(paramsDotPageSizeVal)
+				return nil
+			}); err != nil {
+				return err
+			}
+			if err := func() error {
+				if value, ok := params.PageSize.Get(); ok {
+					if err := func() error {
+						if err := (validate.Int{
+							MinSet:        true,
+							Min:           1,
+							MaxSet:        true,
+							Max:           100,
+							MinExclusive:  false,
+							MaxExclusive:  false,
+							MultipleOfSet: false,
+							MultipleOf:    0,
+							Pattern:       nil,
+						}).Validate(int64(value)); err != nil {
+							return errors.Wrap(err, "int")
+						}
+						return nil
+					}(); err != nil {
+						return err
+					}
+				}
+				return nil
+			}(); err != nil {
+				return err
+			}
+		}
+		return nil
+	}(); err != nil {
+		return params, &ogenerrors.DecodeParamError{
+			Name: "page_size",
+			In:   "query",
+			Err:  err,
+		}
+	}
+	return params, nil
+}
+
 // ListBillingAccountsParams is parameters of list-billing-accounts operation.
 type ListBillingAccountsParams struct {
 	// 1-based page number; the first page when omitted.
@@ -3071,6 +3563,93 @@ func decodeListTopUpsParams(args [1]string, argsEscaped bool, r *http.Request) (
 	return params, nil
 }
 
+// PreviewPromotionCodeParams is parameters of preview-promotion-code operation.
+type PreviewPromotionCodeParams struct {
+	// The account's key, of the form `u_<user_id>_<seq>`. Ownership is stated by the key itself, which is
+	// why the key is what addresses the account.
+	AccountKey string
+}
+
+func unpackPreviewPromotionCodeParams(packed middleware.Parameters) (params PreviewPromotionCodeParams) {
+	{
+		key := middleware.ParameterKey{
+			Name: "accountKey",
+			In:   "path",
+		}
+		params.AccountKey = packed[key].(string)
+	}
+	return params
+}
+
+func decodePreviewPromotionCodeParams(args [1]string, argsEscaped bool, r *http.Request) (params PreviewPromotionCodeParams, _ error) {
+	// Decode path: accountKey.
+	if err := func() error {
+		param := args[0]
+		if argsEscaped {
+			unescaped, err := url.PathUnescape(args[0])
+			if err != nil {
+				return errors.Wrap(err, "unescape path")
+			}
+			param = unescaped
+		}
+		if len(param) > 0 {
+			d := uri.NewPathDecoder(uri.PathDecoderConfig{
+				Param:   "accountKey",
+				Value:   param,
+				Style:   uri.PathStyleSimple,
+				Explode: false,
+			})
+
+			if err := func() error {
+				val, err := d.DecodeValue()
+				if err != nil {
+					return err
+				}
+
+				c, err := conv.ToString(val)
+				if err != nil {
+					return err
+				}
+
+				params.AccountKey = c
+				return nil
+			}(); err != nil {
+				return err
+			}
+			if err := func() error {
+				if err := (validate.String{
+					MinLength:     3,
+					MinLengthSet:  true,
+					MaxLength:     128,
+					MaxLengthSet:  true,
+					Email:         false,
+					Hostname:      false,
+					Regex:         regexMap["^u_.+_[0-9]+$"],
+					MinNumeric:    0,
+					MinNumericSet: false,
+					MaxNumeric:    0,
+					MaxNumericSet: false,
+				}).Validate(string(params.AccountKey)); err != nil {
+					return errors.Wrap(err, "string")
+				}
+				return nil
+			}(); err != nil {
+				return err
+			}
+		} else {
+			return validate.ErrFieldRequired
+		}
+		return nil
+	}(); err != nil {
+		return params, &ogenerrors.DecodeParamError{
+			Name: "accountKey",
+			In:   "path",
+			Err:  err,
+		}
+	}
+	return params, nil
+}
+
 // PurchaseOfferParams is parameters of purchase-offer operation.
 type PurchaseOfferParams struct {
 	// The account's key, of the form `u_<user_id>_<seq>`. Ownership is stated by the key itself, which is
@@ -4100,6 +4679,147 @@ func decodeRemovePaymentMethodParams(args [2]string, argsEscaped bool, r *http.R
 	return params, nil
 }
 
+// RenewPrepaidAssetParams is parameters of renew-prepaid-asset operation.
+type RenewPrepaidAssetParams struct {
+	// The account's key, of the form `u_<user_id>_<seq>`. Ownership is stated by the key itself, which is
+	// why the key is what addresses the account.
+	AccountKey string
+	// Which asset, from the prepaid list.
+	AssetId uuid.UUID
+}
+
+func unpackRenewPrepaidAssetParams(packed middleware.Parameters) (params RenewPrepaidAssetParams) {
+	{
+		key := middleware.ParameterKey{
+			Name: "accountKey",
+			In:   "path",
+		}
+		params.AccountKey = packed[key].(string)
+	}
+	{
+		key := middleware.ParameterKey{
+			Name: "assetId",
+			In:   "path",
+		}
+		params.AssetId = packed[key].(uuid.UUID)
+	}
+	return params
+}
+
+func decodeRenewPrepaidAssetParams(args [2]string, argsEscaped bool, r *http.Request) (params RenewPrepaidAssetParams, _ error) {
+	// Decode path: accountKey.
+	if err := func() error {
+		param := args[0]
+		if argsEscaped {
+			unescaped, err := url.PathUnescape(args[0])
+			if err != nil {
+				return errors.Wrap(err, "unescape path")
+			}
+			param = unescaped
+		}
+		if len(param) > 0 {
+			d := uri.NewPathDecoder(uri.PathDecoderConfig{
+				Param:   "accountKey",
+				Value:   param,
+				Style:   uri.PathStyleSimple,
+				Explode: false,
+			})
+
+			if err := func() error {
+				val, err := d.DecodeValue()
+				if err != nil {
+					return err
+				}
+
+				c, err := conv.ToString(val)
+				if err != nil {
+					return err
+				}
+
+				params.AccountKey = c
+				return nil
+			}(); err != nil {
+				return err
+			}
+			if err := func() error {
+				if err := (validate.String{
+					MinLength:     3,
+					MinLengthSet:  true,
+					MaxLength:     128,
+					MaxLengthSet:  true,
+					Email:         false,
+					Hostname:      false,
+					Regex:         regexMap["^u_.+_[0-9]+$"],
+					MinNumeric:    0,
+					MinNumericSet: false,
+					MaxNumeric:    0,
+					MaxNumericSet: false,
+				}).Validate(string(params.AccountKey)); err != nil {
+					return errors.Wrap(err, "string")
+				}
+				return nil
+			}(); err != nil {
+				return err
+			}
+		} else {
+			return validate.ErrFieldRequired
+		}
+		return nil
+	}(); err != nil {
+		return params, &ogenerrors.DecodeParamError{
+			Name: "accountKey",
+			In:   "path",
+			Err:  err,
+		}
+	}
+	// Decode path: assetId.
+	if err := func() error {
+		param := args[1]
+		if argsEscaped {
+			unescaped, err := url.PathUnescape(args[1])
+			if err != nil {
+				return errors.Wrap(err, "unescape path")
+			}
+			param = unescaped
+		}
+		if len(param) > 0 {
+			d := uri.NewPathDecoder(uri.PathDecoderConfig{
+				Param:   "assetId",
+				Value:   param,
+				Style:   uri.PathStyleSimple,
+				Explode: false,
+			})
+
+			if err := func() error {
+				val, err := d.DecodeValue()
+				if err != nil {
+					return err
+				}
+
+				c, err := conv.ToUUID(val)
+				if err != nil {
+					return err
+				}
+
+				params.AssetId = c
+				return nil
+			}(); err != nil {
+				return err
+			}
+		} else {
+			return validate.ErrFieldRequired
+		}
+		return nil
+	}(); err != nil {
+		return params, &ogenerrors.DecodeParamError{
+			Name: "assetId",
+			In:   "path",
+			Err:  err,
+		}
+	}
+	return params, nil
+}
+
 // SetDefaultPaymentMethodParams is parameters of set-default-payment-method operation.
 type SetDefaultPaymentMethodParams struct {
 	// The account's key, of the form `u_<user_id>_<seq>`. Ownership is stated by the key itself, which is
@@ -4253,6 +4973,147 @@ func decodeSetDefaultPaymentMethodParams(args [2]string, argsEscaped bool, r *ht
 	}(); err != nil {
 		return params, &ogenerrors.DecodeParamError{
 			Name: "paymentMethodId",
+			In:   "path",
+			Err:  err,
+		}
+	}
+	return params, nil
+}
+
+// SetPrepaidAutoRenewParams is parameters of set-prepaid-auto-renew operation.
+type SetPrepaidAutoRenewParams struct {
+	// The account's key, of the form `u_<user_id>_<seq>`. Ownership is stated by the key itself, which is
+	// why the key is what addresses the account.
+	AccountKey string
+	// Which asset, from the prepaid list.
+	AssetId uuid.UUID
+}
+
+func unpackSetPrepaidAutoRenewParams(packed middleware.Parameters) (params SetPrepaidAutoRenewParams) {
+	{
+		key := middleware.ParameterKey{
+			Name: "accountKey",
+			In:   "path",
+		}
+		params.AccountKey = packed[key].(string)
+	}
+	{
+		key := middleware.ParameterKey{
+			Name: "assetId",
+			In:   "path",
+		}
+		params.AssetId = packed[key].(uuid.UUID)
+	}
+	return params
+}
+
+func decodeSetPrepaidAutoRenewParams(args [2]string, argsEscaped bool, r *http.Request) (params SetPrepaidAutoRenewParams, _ error) {
+	// Decode path: accountKey.
+	if err := func() error {
+		param := args[0]
+		if argsEscaped {
+			unescaped, err := url.PathUnescape(args[0])
+			if err != nil {
+				return errors.Wrap(err, "unescape path")
+			}
+			param = unescaped
+		}
+		if len(param) > 0 {
+			d := uri.NewPathDecoder(uri.PathDecoderConfig{
+				Param:   "accountKey",
+				Value:   param,
+				Style:   uri.PathStyleSimple,
+				Explode: false,
+			})
+
+			if err := func() error {
+				val, err := d.DecodeValue()
+				if err != nil {
+					return err
+				}
+
+				c, err := conv.ToString(val)
+				if err != nil {
+					return err
+				}
+
+				params.AccountKey = c
+				return nil
+			}(); err != nil {
+				return err
+			}
+			if err := func() error {
+				if err := (validate.String{
+					MinLength:     3,
+					MinLengthSet:  true,
+					MaxLength:     128,
+					MaxLengthSet:  true,
+					Email:         false,
+					Hostname:      false,
+					Regex:         regexMap["^u_.+_[0-9]+$"],
+					MinNumeric:    0,
+					MinNumericSet: false,
+					MaxNumeric:    0,
+					MaxNumericSet: false,
+				}).Validate(string(params.AccountKey)); err != nil {
+					return errors.Wrap(err, "string")
+				}
+				return nil
+			}(); err != nil {
+				return err
+			}
+		} else {
+			return validate.ErrFieldRequired
+		}
+		return nil
+	}(); err != nil {
+		return params, &ogenerrors.DecodeParamError{
+			Name: "accountKey",
+			In:   "path",
+			Err:  err,
+		}
+	}
+	// Decode path: assetId.
+	if err := func() error {
+		param := args[1]
+		if argsEscaped {
+			unescaped, err := url.PathUnescape(args[1])
+			if err != nil {
+				return errors.Wrap(err, "unescape path")
+			}
+			param = unescaped
+		}
+		if len(param) > 0 {
+			d := uri.NewPathDecoder(uri.PathDecoderConfig{
+				Param:   "assetId",
+				Value:   param,
+				Style:   uri.PathStyleSimple,
+				Explode: false,
+			})
+
+			if err := func() error {
+				val, err := d.DecodeValue()
+				if err != nil {
+					return err
+				}
+
+				c, err := conv.ToUUID(val)
+				if err != nil {
+					return err
+				}
+
+				params.AssetId = c
+				return nil
+			}(); err != nil {
+				return err
+			}
+		} else {
+			return validate.ErrFieldRequired
+		}
+		return nil
+	}(); err != nil {
+		return params, &ogenerrors.DecodeParamError{
+			Name: "assetId",
 			In:   "path",
 			Err:  err,
 		}

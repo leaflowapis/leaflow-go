@@ -24,6 +24,20 @@ func encodeCreateBillingAccountRequest(
 	return nil
 }
 
+func encodePreviewPromotionCodeRequest(
+	req *PreviewPromotionCodeRequestBody,
+	r *http.Request,
+) error {
+	const contentType = "application/json"
+	e := new(jx.Encoder)
+	{
+		req.Encode(e)
+	}
+	encoded := e.Bytes()
+	ht.SetBody(r, bytes.NewReader(encoded), contentType)
+	return nil
+}
+
 func encodeQuoteProjectUsageRequest(
 	req *QuoteRequest,
 	r *http.Request,
@@ -40,6 +54,34 @@ func encodeQuoteProjectUsageRequest(
 
 func encodeQuoteUsageRequest(
 	req *QuoteRequest,
+	r *http.Request,
+) error {
+	const contentType = "application/json"
+	e := new(jx.Encoder)
+	{
+		req.Encode(e)
+	}
+	encoded := e.Bytes()
+	ht.SetBody(r, bytes.NewReader(encoded), contentType)
+	return nil
+}
+
+func encodeRenewPrepaidAssetRequest(
+	req *RenewRequestBody,
+	r *http.Request,
+) error {
+	const contentType = "application/json"
+	e := new(jx.Encoder)
+	{
+		req.Encode(e)
+	}
+	encoded := e.Bytes()
+	ht.SetBody(r, bytes.NewReader(encoded), contentType)
+	return nil
+}
+
+func encodeSetPrepaidAutoRenewRequest(
+	req *AutoRenewRequestBody,
 	r *http.Request,
 ) error {
 	const contentType = "application/json"

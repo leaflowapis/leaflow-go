@@ -1698,13 +1698,11 @@ type ProjectResource struct {
 	CreatedAt time.Time `json:"created_at"`
 	CreatedBy string    `json:"created_by"`
 	// 盖上墓碑的那一刻.
-	DeletedAt   NilDateTime `json:"deleted_at"`
-	Description string      `json:"description"`
-	ID          uuid.UUID   `json:"id"`
-	Name        string      `json:"name"`
-	// 欠费的起始时间.
-	OverdueAt NilDateTime           `json:"overdue_at"`
-	Status    ProjectResourceStatus `json:"status"`
+	DeletedAt   NilDateTime           `json:"deleted_at"`
+	Description string                `json:"description"`
+	ID          uuid.UUID             `json:"id"`
+	Name        string                `json:"name"`
+	Status      ProjectResourceStatus `json:"status"`
 	// 给人看的，不参与任何查询.
 	StatusReason string    `json:"status_reason"`
 	UpdatedAt    time.Time `json:"updated_at"`
@@ -1743,11 +1741,6 @@ func (s *ProjectResource) GetID() uuid.UUID {
 // GetName returns the value of Name.
 func (s *ProjectResource) GetName() string {
 	return s.Name
-}
-
-// GetOverdueAt returns the value of OverdueAt.
-func (s *ProjectResource) GetOverdueAt() NilDateTime {
-	return s.OverdueAt
 }
 
 // GetStatus returns the value of Status.
@@ -1798,11 +1791,6 @@ func (s *ProjectResource) SetID(val uuid.UUID) {
 // SetName sets the value of Name.
 func (s *ProjectResource) SetName(val string) {
 	s.Name = val
-}
-
-// SetOverdueAt sets the value of OverdueAt.
-func (s *ProjectResource) SetOverdueAt(val NilDateTime) {
-	s.OverdueAt = val
 }
 
 // SetStatus sets the value of Status.

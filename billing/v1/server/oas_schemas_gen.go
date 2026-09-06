@@ -16,6 +16,335 @@ func (s *ErrorStatusCode) Error() string {
 	return fmt.Sprintf("code %d: %+v", s.StatusCode, s.Response)
 }
 
+// Ref: #/components/schemas/AccountRefund
+type AccountRefund struct {
+	RefundID    uuid.UUID  `json:"refund_id"`
+	OrderID     OptNilUUID `json:"order_id"`
+	TotalAmount string     `json:"total_amount"`
+	Currency    string     `json:"currency"`
+	// `partial` means some of it is back and some is not. Showing it as "refunded" would have the customer
+	// looking for money that has not moved.
+	State     AccountRefundState `json:"state"`
+	Legs      []AccountRefundLeg `json:"legs"`
+	CreatedAt time.Time          `json:"created_at"`
+}
+
+// GetRefundID returns the value of RefundID.
+func (s *AccountRefund) GetRefundID() uuid.UUID {
+	return s.RefundID
+}
+
+// GetOrderID returns the value of OrderID.
+func (s *AccountRefund) GetOrderID() OptNilUUID {
+	return s.OrderID
+}
+
+// GetTotalAmount returns the value of TotalAmount.
+func (s *AccountRefund) GetTotalAmount() string {
+	return s.TotalAmount
+}
+
+// GetCurrency returns the value of Currency.
+func (s *AccountRefund) GetCurrency() string {
+	return s.Currency
+}
+
+// GetState returns the value of State.
+func (s *AccountRefund) GetState() AccountRefundState {
+	return s.State
+}
+
+// GetLegs returns the value of Legs.
+func (s *AccountRefund) GetLegs() []AccountRefundLeg {
+	return s.Legs
+}
+
+// GetCreatedAt returns the value of CreatedAt.
+func (s *AccountRefund) GetCreatedAt() time.Time {
+	return s.CreatedAt
+}
+
+// SetRefundID sets the value of RefundID.
+func (s *AccountRefund) SetRefundID(val uuid.UUID) {
+	s.RefundID = val
+}
+
+// SetOrderID sets the value of OrderID.
+func (s *AccountRefund) SetOrderID(val OptNilUUID) {
+	s.OrderID = val
+}
+
+// SetTotalAmount sets the value of TotalAmount.
+func (s *AccountRefund) SetTotalAmount(val string) {
+	s.TotalAmount = val
+}
+
+// SetCurrency sets the value of Currency.
+func (s *AccountRefund) SetCurrency(val string) {
+	s.Currency = val
+}
+
+// SetState sets the value of State.
+func (s *AccountRefund) SetState(val AccountRefundState) {
+	s.State = val
+}
+
+// SetLegs sets the value of Legs.
+func (s *AccountRefund) SetLegs(val []AccountRefundLeg) {
+	s.Legs = val
+}
+
+// SetCreatedAt sets the value of CreatedAt.
+func (s *AccountRefund) SetCreatedAt(val time.Time) {
+	s.CreatedAt = val
+}
+
+// Ref: #/components/schemas/AccountRefundLeg
+type AccountRefundLeg struct {
+	Kind      AccountRefundLegKind  `json:"kind"`
+	Amount    string                `json:"amount"`
+	Currency  string                `json:"currency"`
+	State     AccountRefundLegState `json:"state"`
+	SettledAt OptNilDateTime        `json:"settled_at"`
+}
+
+// GetKind returns the value of Kind.
+func (s *AccountRefundLeg) GetKind() AccountRefundLegKind {
+	return s.Kind
+}
+
+// GetAmount returns the value of Amount.
+func (s *AccountRefundLeg) GetAmount() string {
+	return s.Amount
+}
+
+// GetCurrency returns the value of Currency.
+func (s *AccountRefundLeg) GetCurrency() string {
+	return s.Currency
+}
+
+// GetState returns the value of State.
+func (s *AccountRefundLeg) GetState() AccountRefundLegState {
+	return s.State
+}
+
+// GetSettledAt returns the value of SettledAt.
+func (s *AccountRefundLeg) GetSettledAt() OptNilDateTime {
+	return s.SettledAt
+}
+
+// SetKind sets the value of Kind.
+func (s *AccountRefundLeg) SetKind(val AccountRefundLegKind) {
+	s.Kind = val
+}
+
+// SetAmount sets the value of Amount.
+func (s *AccountRefundLeg) SetAmount(val string) {
+	s.Amount = val
+}
+
+// SetCurrency sets the value of Currency.
+func (s *AccountRefundLeg) SetCurrency(val string) {
+	s.Currency = val
+}
+
+// SetState sets the value of State.
+func (s *AccountRefundLeg) SetState(val AccountRefundLegState) {
+	s.State = val
+}
+
+// SetSettledAt sets the value of SettledAt.
+func (s *AccountRefundLeg) SetSettledAt(val OptNilDateTime) {
+	s.SettledAt = val
+}
+
+type AccountRefundLegKind string
+
+const (
+	AccountRefundLegKindCash    AccountRefundLegKind = "cash"
+	AccountRefundLegKindVoucher AccountRefundLegKind = "voucher"
+	AccountRefundLegKindBalance AccountRefundLegKind = "balance"
+)
+
+// AllValues returns all AccountRefundLegKind values.
+func (AccountRefundLegKind) AllValues() []AccountRefundLegKind {
+	return []AccountRefundLegKind{
+		AccountRefundLegKindCash,
+		AccountRefundLegKindVoucher,
+		AccountRefundLegKindBalance,
+	}
+}
+
+// MarshalText implements encoding.TextMarshaler.
+func (s AccountRefundLegKind) MarshalText() ([]byte, error) {
+	switch s {
+	case AccountRefundLegKindCash:
+		return []byte(s), nil
+	case AccountRefundLegKindVoucher:
+		return []byte(s), nil
+	case AccountRefundLegKindBalance:
+		return []byte(s), nil
+	default:
+		return nil, errors.Errorf("invalid value: %q", s)
+	}
+}
+
+// UnmarshalText implements encoding.TextUnmarshaler.
+func (s *AccountRefundLegKind) UnmarshalText(data []byte) error {
+	switch AccountRefundLegKind(data) {
+	case AccountRefundLegKindCash:
+		*s = AccountRefundLegKindCash
+		return nil
+	case AccountRefundLegKindVoucher:
+		*s = AccountRefundLegKindVoucher
+		return nil
+	case AccountRefundLegKindBalance:
+		*s = AccountRefundLegKindBalance
+		return nil
+	default:
+		return errors.Errorf("invalid value: %q", data)
+	}
+}
+
+type AccountRefundLegState string
+
+const (
+	AccountRefundLegStatePending AccountRefundLegState = "pending"
+	AccountRefundLegStateDone    AccountRefundLegState = "done"
+	AccountRefundLegStateFailed  AccountRefundLegState = "failed"
+)
+
+// AllValues returns all AccountRefundLegState values.
+func (AccountRefundLegState) AllValues() []AccountRefundLegState {
+	return []AccountRefundLegState{
+		AccountRefundLegStatePending,
+		AccountRefundLegStateDone,
+		AccountRefundLegStateFailed,
+	}
+}
+
+// MarshalText implements encoding.TextMarshaler.
+func (s AccountRefundLegState) MarshalText() ([]byte, error) {
+	switch s {
+	case AccountRefundLegStatePending:
+		return []byte(s), nil
+	case AccountRefundLegStateDone:
+		return []byte(s), nil
+	case AccountRefundLegStateFailed:
+		return []byte(s), nil
+	default:
+		return nil, errors.Errorf("invalid value: %q", s)
+	}
+}
+
+// UnmarshalText implements encoding.TextUnmarshaler.
+func (s *AccountRefundLegState) UnmarshalText(data []byte) error {
+	switch AccountRefundLegState(data) {
+	case AccountRefundLegStatePending:
+		*s = AccountRefundLegStatePending
+		return nil
+	case AccountRefundLegStateDone:
+		*s = AccountRefundLegStateDone
+		return nil
+	case AccountRefundLegStateFailed:
+		*s = AccountRefundLegStateFailed
+		return nil
+	default:
+		return errors.Errorf("invalid value: %q", data)
+	}
+}
+
+// Ref: #/components/schemas/AccountRefundList
+type AccountRefundList struct {
+	Items      []AccountRefund `json:"items"`
+	TotalCount OptInt          `json:"total_count"`
+}
+
+// GetItems returns the value of Items.
+func (s *AccountRefundList) GetItems() []AccountRefund {
+	return s.Items
+}
+
+// GetTotalCount returns the value of TotalCount.
+func (s *AccountRefundList) GetTotalCount() OptInt {
+	return s.TotalCount
+}
+
+// SetItems sets the value of Items.
+func (s *AccountRefundList) SetItems(val []AccountRefund) {
+	s.Items = val
+}
+
+// SetTotalCount sets the value of TotalCount.
+func (s *AccountRefundList) SetTotalCount(val OptInt) {
+	s.TotalCount = val
+}
+
+// `partial` means some of it is back and some is not. Showing it as "refunded" would have the customer
+// looking for money that has not moved.
+type AccountRefundState string
+
+const (
+	AccountRefundStatePending AccountRefundState = "pending"
+	AccountRefundStateSettled AccountRefundState = "settled"
+	AccountRefundStatePartial AccountRefundState = "partial"
+)
+
+// AllValues returns all AccountRefundState values.
+func (AccountRefundState) AllValues() []AccountRefundState {
+	return []AccountRefundState{
+		AccountRefundStatePending,
+		AccountRefundStateSettled,
+		AccountRefundStatePartial,
+	}
+}
+
+// MarshalText implements encoding.TextMarshaler.
+func (s AccountRefundState) MarshalText() ([]byte, error) {
+	switch s {
+	case AccountRefundStatePending:
+		return []byte(s), nil
+	case AccountRefundStateSettled:
+		return []byte(s), nil
+	case AccountRefundStatePartial:
+		return []byte(s), nil
+	default:
+		return nil, errors.Errorf("invalid value: %q", s)
+	}
+}
+
+// UnmarshalText implements encoding.TextUnmarshaler.
+func (s *AccountRefundState) UnmarshalText(data []byte) error {
+	switch AccountRefundState(data) {
+	case AccountRefundStatePending:
+		*s = AccountRefundStatePending
+		return nil
+	case AccountRefundStateSettled:
+		*s = AccountRefundStateSettled
+		return nil
+	case AccountRefundStatePartial:
+		*s = AccountRefundStatePartial
+		return nil
+	default:
+		return errors.Errorf("invalid value: %q", data)
+	}
+}
+
+// Ref: #/components/schemas/AutoRenewRequestBody
+type AutoRenewRequestBody struct {
+	AutoRenew bool `json:"auto_renew"`
+}
+
+// GetAutoRenew returns the value of AutoRenew.
+func (s *AutoRenewRequestBody) GetAutoRenew() bool {
+	return s.AutoRenew
+}
+
+// SetAutoRenew sets the value of AutoRenew.
+func (s *AutoRenewRequestBody) SetAutoRenew(val bool) {
+	s.AutoRenew = val
+}
+
 // The three numbers a billing page needs, which are not the same number.
 //
 // `balance` answers "can I start another one" and is floored at zero, so it cannot express being past
@@ -2208,6 +2537,142 @@ func (o OptInvoiceLineConversionOperation) Or(d InvoiceLineConversionOperation) 
 	return d
 }
 
+// NewOptNilDateTime returns new OptNilDateTime with value set to v.
+func NewOptNilDateTime(v time.Time) OptNilDateTime {
+	return OptNilDateTime{
+		Value: v,
+		Set:   true,
+	}
+}
+
+// OptNilDateTime is optional nullable time.Time.
+type OptNilDateTime struct {
+	Value time.Time
+	Set   bool
+	Null  bool
+}
+
+// IsSet returns true if OptNilDateTime was set.
+func (o OptNilDateTime) IsSet() bool { return o.Set }
+
+// Reset unsets value.
+func (o *OptNilDateTime) Reset() {
+	var v time.Time
+	o.Value = v
+	o.Set = false
+	o.Null = false
+}
+
+// SetTo sets value to v.
+func (o *OptNilDateTime) SetTo(v time.Time) {
+	o.Set = true
+	o.Null = false
+	o.Value = v
+}
+
+// IsNull returns true if value is Null.
+func (o OptNilDateTime) IsNull() bool { return o.Null }
+
+// SetToNull sets value to null.
+func (o *OptNilDateTime) SetToNull() {
+	o.Set = true
+	o.Null = true
+	var v time.Time
+	o.Value = v
+}
+
+// IsEmpty returns true if the field was omitted from the payload (not Set and not Null).
+func (o OptNilDateTime) IsEmpty() bool {
+	return !o.Set && !o.Null
+}
+
+// Get returns value and boolean that denotes whether value was set.
+func (o OptNilDateTime) Get() (v time.Time, ok bool) {
+	if o.Null {
+		return v, false
+	}
+	if !o.Set {
+		return v, false
+	}
+	return o.Value, true
+}
+
+// Or returns value if set, or given parameter if does not.
+func (o OptNilDateTime) Or(d time.Time) time.Time {
+	if v, ok := o.Get(); ok {
+		return v
+	}
+	return d
+}
+
+// NewOptNilUUID returns new OptNilUUID with value set to v.
+func NewOptNilUUID(v uuid.UUID) OptNilUUID {
+	return OptNilUUID{
+		Value: v,
+		Set:   true,
+	}
+}
+
+// OptNilUUID is optional nullable uuid.UUID.
+type OptNilUUID struct {
+	Value uuid.UUID
+	Set   bool
+	Null  bool
+}
+
+// IsSet returns true if OptNilUUID was set.
+func (o OptNilUUID) IsSet() bool { return o.Set }
+
+// Reset unsets value.
+func (o *OptNilUUID) Reset() {
+	var v uuid.UUID
+	o.Value = v
+	o.Set = false
+	o.Null = false
+}
+
+// SetTo sets value to v.
+func (o *OptNilUUID) SetTo(v uuid.UUID) {
+	o.Set = true
+	o.Null = false
+	o.Value = v
+}
+
+// IsNull returns true if value is Null.
+func (o OptNilUUID) IsNull() bool { return o.Null }
+
+// SetToNull sets value to null.
+func (o *OptNilUUID) SetToNull() {
+	o.Set = true
+	o.Null = true
+	var v uuid.UUID
+	o.Value = v
+}
+
+// IsEmpty returns true if the field was omitted from the payload (not Set and not Null).
+func (o OptNilUUID) IsEmpty() bool {
+	return !o.Set && !o.Null
+}
+
+// Get returns value and boolean that denotes whether value was set.
+func (o OptNilUUID) Get() (v uuid.UUID, ok bool) {
+	if o.Null {
+		return v, false
+	}
+	if !o.Set {
+		return v, false
+	}
+	return o.Value, true
+}
+
+// Or returns value if set, or given parameter if does not.
+func (o OptNilUUID) Or(d uuid.UUID) uuid.UUID {
+	if v, ok := o.Get(); ok {
+		return v
+	}
+	return d
+}
+
 // NewOptOrderLineConfiguration returns new OptOrderLineConfiguration with value set to v.
 func NewOptOrderLineConfiguration(v OrderLineConfiguration) OptOrderLineConfiguration {
 	return OptOrderLineConfiguration{
@@ -3371,12 +3836,24 @@ type PrepaidAsset struct {
 	Quantity int64 `json:"quantity"`
 	// How long one period buys, as an ISO 8601 duration (P1M, P1Y).
 	//
-	// There is no expiry to report. The engine keeps renewing this for as long as the seat is held, so
-	// what runs out is not the term but the customer's decision to keep it. What the next period costs,
-	// and when it is charged, is on the charges route — that is the engine's own answer rather than a
-	// copy of it.
-	Term  string            `json:"term"`
-	State PrepaidAssetState `json:"state"`
+	// It is paid for once at purchase. Read it next to `expires_at`, which is when the period actually
+	// runs out — the two are settled when the order is placed and neither moves on its own.
+	Term string `json:"term"`
+	// When the paid-for period runs out.
+	//
+	// Settled when the order is placed, not when the resource lands, so a purchase paid for online does
+	// not get a longer period by being paid later.
+	//
+	// Absent means it was never settled — a row that has not finished being created. It is not "does not
+	// expire": everything on this route does.
+	ExpiresAt OptDateTime `json:"expires_at"`
+	// Whether billing places the renewal order itself as the period runs out.
+	//
+	// Off by default, and deliberately so: renewing charges the account, and a charge nobody asked for is
+	// worse than an expiry that was warned about. With it on, the renewal is placed only while there is
+	// balance to pay for it — when there is not, the customer is told rather than put into debt.
+	AutoRenew bool              `json:"auto_renew"`
+	State     PrepaidAssetState `json:"state"`
 	// What it is being moved to. Differs from `state` while a change is still being applied, which is the
 	// moment a customer is most likely to conclude that nothing happened.
 	DesiredState PrepaidAssetDesiredState `json:"desired_state"`
@@ -3415,6 +3892,16 @@ func (s *PrepaidAsset) GetQuantity() int64 {
 // GetTerm returns the value of Term.
 func (s *PrepaidAsset) GetTerm() string {
 	return s.Term
+}
+
+// GetExpiresAt returns the value of ExpiresAt.
+func (s *PrepaidAsset) GetExpiresAt() OptDateTime {
+	return s.ExpiresAt
+}
+
+// GetAutoRenew returns the value of AutoRenew.
+func (s *PrepaidAsset) GetAutoRenew() bool {
+	return s.AutoRenew
 }
 
 // GetState returns the value of State.
@@ -3460,6 +3947,16 @@ func (s *PrepaidAsset) SetQuantity(val int64) {
 // SetTerm sets the value of Term.
 func (s *PrepaidAsset) SetTerm(val string) {
 	s.Term = val
+}
+
+// SetExpiresAt sets the value of ExpiresAt.
+func (s *PrepaidAsset) SetExpiresAt(val OptDateTime) {
+	s.ExpiresAt = val
+}
+
+// SetAutoRenew sets the value of AutoRenew.
+func (s *PrepaidAsset) SetAutoRenew(val bool) {
+	s.AutoRenew = val
 }
 
 // SetState sets the value of State.
@@ -3606,6 +4103,47 @@ func (s *PrepaidAssetState) UnmarshalText(data []byte) error {
 	default:
 		return errors.Errorf("invalid value: %q", data)
 	}
+}
+
+// Ref: #/components/schemas/PreviewPromotionCodeRequestBody
+type PreviewPromotionCodeRequestBody struct {
+	// Case and surrounding whitespace do not matter.
+	Code string `json:"code"`
+	// Which project the order will be placed against — the price depends on its plan.
+	ProjectID uuid.UUID `json:"project_id"`
+	// The same lines the order will carry. The discount is computed over the ones in scope, not the whole
+	// order, so leaving lines out changes the answer.
+	Lines []PromotionPreviewLine `json:"lines"`
+}
+
+// GetCode returns the value of Code.
+func (s *PreviewPromotionCodeRequestBody) GetCode() string {
+	return s.Code
+}
+
+// GetProjectID returns the value of ProjectID.
+func (s *PreviewPromotionCodeRequestBody) GetProjectID() uuid.UUID {
+	return s.ProjectID
+}
+
+// GetLines returns the value of Lines.
+func (s *PreviewPromotionCodeRequestBody) GetLines() []PromotionPreviewLine {
+	return s.Lines
+}
+
+// SetCode sets the value of Code.
+func (s *PreviewPromotionCodeRequestBody) SetCode(val string) {
+	s.Code = val
+}
+
+// SetProjectID sets the value of ProjectID.
+func (s *PreviewPromotionCodeRequestBody) SetProjectID(val uuid.UUID) {
+	s.ProjectID = val
+}
+
+// SetLines sets the value of Lines.
+func (s *PreviewPromotionCodeRequestBody) SetLines(val []PromotionPreviewLine) {
+	s.Lines = val
 }
 
 // What this offer costs, as a structure rather than a number.
@@ -3984,6 +4522,198 @@ func (s *ProjectUsage) SetProjectID(val string) {
 
 // SetQuantity sets the value of Quantity.
 func (s *ProjectUsage) SetQuantity(val string) {
+	s.Quantity = val
+}
+
+// Ref: #/components/schemas/PromotionPreview
+type PromotionPreview struct {
+	// The code as stored, upper-cased.
+	Code string `json:"code"`
+	// The campaign's name, to show next to the price.
+	Name OptString            `json:"name"`
+	Kind PromotionPreviewKind `json:"kind"`
+	// How much comes off this order, or how much credit is granted.
+	BenefitAmount string `json:"benefit_amount"`
+	// The part of the order the discount applies to. Shown so "why did only 12 come off a 200 order" has
+	// an answer on the page rather than in a support ticket.
+	DiscountBase   OptString `json:"discount_base"`
+	OriginalAmount string    `json:"original_amount"`
+	// What will actually be charged. This is the number to show as the price.
+	PayableAmount string `json:"payable_amount"`
+	Currency      string `json:"currency"`
+}
+
+// GetCode returns the value of Code.
+func (s *PromotionPreview) GetCode() string {
+	return s.Code
+}
+
+// GetName returns the value of Name.
+func (s *PromotionPreview) GetName() OptString {
+	return s.Name
+}
+
+// GetKind returns the value of Kind.
+func (s *PromotionPreview) GetKind() PromotionPreviewKind {
+	return s.Kind
+}
+
+// GetBenefitAmount returns the value of BenefitAmount.
+func (s *PromotionPreview) GetBenefitAmount() string {
+	return s.BenefitAmount
+}
+
+// GetDiscountBase returns the value of DiscountBase.
+func (s *PromotionPreview) GetDiscountBase() OptString {
+	return s.DiscountBase
+}
+
+// GetOriginalAmount returns the value of OriginalAmount.
+func (s *PromotionPreview) GetOriginalAmount() string {
+	return s.OriginalAmount
+}
+
+// GetPayableAmount returns the value of PayableAmount.
+func (s *PromotionPreview) GetPayableAmount() string {
+	return s.PayableAmount
+}
+
+// GetCurrency returns the value of Currency.
+func (s *PromotionPreview) GetCurrency() string {
+	return s.Currency
+}
+
+// SetCode sets the value of Code.
+func (s *PromotionPreview) SetCode(val string) {
+	s.Code = val
+}
+
+// SetName sets the value of Name.
+func (s *PromotionPreview) SetName(val OptString) {
+	s.Name = val
+}
+
+// SetKind sets the value of Kind.
+func (s *PromotionPreview) SetKind(val PromotionPreviewKind) {
+	s.Kind = val
+}
+
+// SetBenefitAmount sets the value of BenefitAmount.
+func (s *PromotionPreview) SetBenefitAmount(val string) {
+	s.BenefitAmount = val
+}
+
+// SetDiscountBase sets the value of DiscountBase.
+func (s *PromotionPreview) SetDiscountBase(val OptString) {
+	s.DiscountBase = val
+}
+
+// SetOriginalAmount sets the value of OriginalAmount.
+func (s *PromotionPreview) SetOriginalAmount(val string) {
+	s.OriginalAmount = val
+}
+
+// SetPayableAmount sets the value of PayableAmount.
+func (s *PromotionPreview) SetPayableAmount(val string) {
+	s.PayableAmount = val
+}
+
+// SetCurrency sets the value of Currency.
+func (s *PromotionPreview) SetCurrency(val string) {
+	s.Currency = val
+}
+
+type PromotionPreviewKind string
+
+const (
+	PromotionPreviewKindVoucher  PromotionPreviewKind = "voucher"
+	PromotionPreviewKindDiscount PromotionPreviewKind = "discount"
+)
+
+// AllValues returns all PromotionPreviewKind values.
+func (PromotionPreviewKind) AllValues() []PromotionPreviewKind {
+	return []PromotionPreviewKind{
+		PromotionPreviewKindVoucher,
+		PromotionPreviewKindDiscount,
+	}
+}
+
+// MarshalText implements encoding.TextMarshaler.
+func (s PromotionPreviewKind) MarshalText() ([]byte, error) {
+	switch s {
+	case PromotionPreviewKindVoucher:
+		return []byte(s), nil
+	case PromotionPreviewKindDiscount:
+		return []byte(s), nil
+	default:
+		return nil, errors.Errorf("invalid value: %q", s)
+	}
+}
+
+// UnmarshalText implements encoding.TextUnmarshaler.
+func (s *PromotionPreviewKind) UnmarshalText(data []byte) error {
+	switch PromotionPreviewKind(data) {
+	case PromotionPreviewKindVoucher:
+		*s = PromotionPreviewKindVoucher
+		return nil
+	case PromotionPreviewKindDiscount:
+		*s = PromotionPreviewKindDiscount
+		return nil
+	default:
+		return errors.Errorf("invalid value: %q", data)
+	}
+}
+
+// One line of the order being previewed. Only what pricing and scope need — this is not the order
+// itself, and carrying the whole order here would mean two places that have to agree on what an order
+// looks like.
+// Ref: #/components/schemas/PromotionPreviewLine
+type PromotionPreviewLine struct {
+	Service   string `json:"service"`
+	ProductID string `json:"product_id"`
+	// ISO 8601 duration for a prepaid line. Empty means metered, and a metered line contributes nothing to
+	// the discount — it has no amount at this point.
+	Term     OptString `json:"term"`
+	Quantity OptInt    `json:"quantity"`
+}
+
+// GetService returns the value of Service.
+func (s *PromotionPreviewLine) GetService() string {
+	return s.Service
+}
+
+// GetProductID returns the value of ProductID.
+func (s *PromotionPreviewLine) GetProductID() string {
+	return s.ProductID
+}
+
+// GetTerm returns the value of Term.
+func (s *PromotionPreviewLine) GetTerm() OptString {
+	return s.Term
+}
+
+// GetQuantity returns the value of Quantity.
+func (s *PromotionPreviewLine) GetQuantity() OptInt {
+	return s.Quantity
+}
+
+// SetService sets the value of Service.
+func (s *PromotionPreviewLine) SetService(val string) {
+	s.Service = val
+}
+
+// SetProductID sets the value of ProductID.
+func (s *PromotionPreviewLine) SetProductID(val string) {
+	s.ProductID = val
+}
+
+// SetTerm sets the value of Term.
+func (s *PromotionPreviewLine) SetTerm(val OptString) {
+	s.Term = val
+}
+
+// SetQuantity sets the value of Quantity.
+func (s *PromotionPreviewLine) SetQuantity(val OptInt) {
 	s.Quantity = val
 }
 
@@ -4387,6 +5117,36 @@ func (s *QuoteUsageVariant) init() QuoteUsageVariant {
 
 // RemovePaymentMethodNoContent is response for RemovePaymentMethod operation.
 type RemovePaymentMethodNoContent struct{}
+
+// Ref: #/components/schemas/RenewRequestBody
+type RenewRequestBody struct {
+	// How long to renew for, as an ISO 8601 duration (P1M, P1Y). It does not have to match the term
+	// originally bought.
+	Term string `json:"term"`
+	// Generate one per renewal the customer starts — when the dialog opens, not when it is submitted —
+	// and send the same one on every retry of that renewal.
+	IdempotencyKey string `json:"idempotency_key"`
+}
+
+// GetTerm returns the value of Term.
+func (s *RenewRequestBody) GetTerm() string {
+	return s.Term
+}
+
+// GetIdempotencyKey returns the value of IdempotencyKey.
+func (s *RenewRequestBody) GetIdempotencyKey() string {
+	return s.IdempotencyKey
+}
+
+// SetTerm sets the value of Term.
+func (s *RenewRequestBody) SetTerm(val string) {
+	s.Term = val
+}
+
+// SetIdempotencyKey sets the value of IdempotencyKey.
+func (s *RenewRequestBody) SetIdempotencyKey(val string) {
+	s.IdempotencyKey = val
+}
 
 // Ref: #/components/schemas/ScheduledPlan
 type ScheduledPlan struct {
@@ -4889,4 +5649,100 @@ func (s *UpdateBillingAccountRequestBody) GetDisplayName() string {
 // SetDisplayName sets the value of DisplayName.
 func (s *UpdateBillingAccountRequestBody) SetDisplayName(val string) {
 	s.DisplayName = val
+}
+
+// Ref: #/components/schemas/Voucher
+type Voucher struct {
+	RedemptionID uuid.UUID `json:"redemption_id"`
+	PromotionKey string    `json:"promotion_key"`
+	Name         OptString `json:"name"`
+	Amount       string    `json:"amount"`
+	Currency     string    `json:"currency"`
+	GrantedAt    time.Time `json:"granted_at"`
+}
+
+// GetRedemptionID returns the value of RedemptionID.
+func (s *Voucher) GetRedemptionID() uuid.UUID {
+	return s.RedemptionID
+}
+
+// GetPromotionKey returns the value of PromotionKey.
+func (s *Voucher) GetPromotionKey() string {
+	return s.PromotionKey
+}
+
+// GetName returns the value of Name.
+func (s *Voucher) GetName() OptString {
+	return s.Name
+}
+
+// GetAmount returns the value of Amount.
+func (s *Voucher) GetAmount() string {
+	return s.Amount
+}
+
+// GetCurrency returns the value of Currency.
+func (s *Voucher) GetCurrency() string {
+	return s.Currency
+}
+
+// GetGrantedAt returns the value of GrantedAt.
+func (s *Voucher) GetGrantedAt() time.Time {
+	return s.GrantedAt
+}
+
+// SetRedemptionID sets the value of RedemptionID.
+func (s *Voucher) SetRedemptionID(val uuid.UUID) {
+	s.RedemptionID = val
+}
+
+// SetPromotionKey sets the value of PromotionKey.
+func (s *Voucher) SetPromotionKey(val string) {
+	s.PromotionKey = val
+}
+
+// SetName sets the value of Name.
+func (s *Voucher) SetName(val OptString) {
+	s.Name = val
+}
+
+// SetAmount sets the value of Amount.
+func (s *Voucher) SetAmount(val string) {
+	s.Amount = val
+}
+
+// SetCurrency sets the value of Currency.
+func (s *Voucher) SetCurrency(val string) {
+	s.Currency = val
+}
+
+// SetGrantedAt sets the value of GrantedAt.
+func (s *Voucher) SetGrantedAt(val time.Time) {
+	s.GrantedAt = val
+}
+
+// Ref: #/components/schemas/VoucherList
+type VoucherList struct {
+	Items      []Voucher `json:"items"`
+	TotalCount OptInt    `json:"total_count"`
+}
+
+// GetItems returns the value of Items.
+func (s *VoucherList) GetItems() []Voucher {
+	return s.Items
+}
+
+// GetTotalCount returns the value of TotalCount.
+func (s *VoucherList) GetTotalCount() OptInt {
+	return s.TotalCount
+}
+
+// SetItems sets the value of Items.
+func (s *VoucherList) SetItems(val []Voucher) {
+	s.Items = val
+}
+
+// SetTotalCount sets the value of TotalCount.
+func (s *VoucherList) SetTotalCount(val OptInt) {
+	s.TotalCount = val
 }

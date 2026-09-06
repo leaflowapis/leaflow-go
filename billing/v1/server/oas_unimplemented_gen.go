@@ -171,6 +171,27 @@ func (UnimplementedHandler) KeepSubscription(ctx context.Context, params KeepSub
 	return r, ht.ErrNotImplemented
 }
 
+// ListAccountRefunds implements list-account-refunds operation.
+//
+// Each refund carries how it was split. A customer asking "I was refunded 100, why is only 60 back on
+// my card" is answered here and nowhere else.
+//
+// GET /account/v1/billing-accounts/{accountKey}/refunds
+func (UnimplementedHandler) ListAccountRefunds(ctx context.Context, params ListAccountRefundsParams) (r *AccountRefundList, _ error) {
+	return r, ht.ErrNotImplemented
+}
+
+// ListAccountVouchers implements list-account-vouchers operation.
+//
+// Credit received from campaigns, most recent first. Not the credit ledger — this says which
+// campaign each amount came from, which is the question "where did this 50 come from" that the ledger
+// cannot answer.
+//
+// GET /account/v1/billing-accounts/{accountKey}/vouchers
+func (UnimplementedHandler) ListAccountVouchers(ctx context.Context, params ListAccountVouchersParams) (r *VoucherList, _ error) {
+	return r, ht.ErrNotImplemented
+}
+
 // ListBillingAccounts implements list-billing-accounts operation.
 //
 // Every billing account belonging to the caller, with the projects each one currently pays for.
@@ -286,15 +307,19 @@ func (UnimplementedHandler) ListPaymentMethods(ctx context.Context, params ListP
 //
 // Everything this account holds on a term, across every product.
 //
-// # Nothing here expires on its own
+// # Every one of these expires
 //
-// A term renews for as long as the seat is held: the engine charges the next period, prorates any
-// change to the second, and stops the moment the seat is given up. So there is no renewal to remember
-// and no expiry to warn about — giving it up means deleting the resource, in the console that owns
-// it.
+// A term is paid for once, up front, and buys exactly the period named by `term`. Nothing renews it on
+// its own: `expires_at` is when it runs out, and after that the machine is stopped and — once the
+// retention window is over — released.
 //
-// What the next period costs and when it falls due is on the charges route. That is read straight from
-// the engine rather than copied here, because a copy is a second answer that drifts without saying so.
+// This route used to say the opposite. It described an engine that charged the next period by itself
+// for as long as the seat was held, which is how this worked before the money became a single up-front
+// charge. Reading the old text, a customer would have had no reason to renew anything, and the first
+// sign of trouble would have been a stopped machine.
+//
+// Turn on `auto_renew` to have billing place the renewal order itself while there is balance to pay
+// for it. That is the only thing that makes a term continue.
 //
 // # Metered resources are not here
 //
@@ -323,6 +348,27 @@ func (UnimplementedHandler) ListPrepaidAssets(ctx context.Context, params ListPr
 //
 // GET /account/v1/billing-accounts/{accountKey}/top-ups
 func (UnimplementedHandler) ListTopUps(ctx context.Context, params ListTopUpsParams) (r *TopUpList, _ error) {
+	return r, ht.ErrNotImplemented
+}
+
+// PreviewPromotionCode implements preview-promotion-code operation.
+//
+// Runs the same checks and the same arithmetic that placing the order will run, so the price shown
+// here and the price charged agree. Writing the calculation twice — once for the page and once for
+// the order — means they drift, and the visible form of that drift is a page saying "20 off" while
+// the full amount is taken.
+//
+// Nothing is redeemed. The allowance is only consumed when the order is actually placed.
+//
+// A code that cannot be used is rejected here with the reason, so the user learns it before filling in
+// the rest of the form rather than at the moment they press buy.
+//
+// Metered orders are rejected. They have no amount at this point — the money is worked out later
+// from usage. Applying a discount to a nil amount leaves the user believing they saved something while
+// the bill is unchanged.
+//
+// POST /account/v1/billing-accounts/{accountKey}/promotion-codes/preview
+func (UnimplementedHandler) PreviewPromotionCode(ctx context.Context, req *PreviewPromotionCodeRequestBody, params PreviewPromotionCodeParams) (r *PromotionPreview, _ error) {
 	return r, ht.ErrNotImplemented
 }
 
@@ -537,6 +583,26 @@ func (UnimplementedHandler) RemovePaymentMethod(ctx context.Context, params Remo
 	return ht.ErrNotImplemented
 }
 
+// RenewPrepaidAsset implements renew-prepaid-asset operation.
+//
+// Extends a term by one more period, paid for out of the account's balance right now.
+//
+// The new expiry is the old one plus the term, not now plus the term. Renewing three days early would
+// otherwise throw those three days away, and renewing after the expiry would quietly reward the delay.
+// Neither shows up as an error — the date on the account looks self-consistent either way, and only
+// the customer notices.
+//
+// `term` does not have to match what was bought originally: a monthly machine can be renewed for a
+// year.
+//
+// Refused when the balance does not cover it. The alternative — placing the order and letting the
+// account go negative — turns a renewal the customer chose into a debt they did not.
+//
+// POST /account/v1/billing-accounts/{accountKey}/prepaid-assets/{assetId}/renew
+func (UnimplementedHandler) RenewPrepaidAsset(ctx context.Context, req *RenewRequestBody, params RenewPrepaidAssetParams) (r *PrepaidAsset, _ error) {
+	return r, ht.ErrNotImplemented
+}
+
 // SetDefaultPaymentMethod implements set-default-payment-method operation.
 //
 // Makes this the method an invoice is collected from.
@@ -550,6 +616,20 @@ func (UnimplementedHandler) RemovePaymentMethod(ctx context.Context, params Remo
 // PUT /account/v1/billing-accounts/{accountKey}/payment-methods/{paymentMethodId}/default
 func (UnimplementedHandler) SetDefaultPaymentMethod(ctx context.Context, params SetDefaultPaymentMethodParams) error {
 	return ht.ErrNotImplemented
+}
+
+// SetPrepaidAutoRenew implements set-prepaid-auto-renew operation.
+//
+// With it on, billing places the renewal order itself a few days before the period runs out, paying
+// from the account's balance.
+//
+// Not enough balance is not an error here. The switch only says what to attempt; whether the money is
+// there is settled at renewal time, and the customer is told either way — told it renewed, or told
+// it could not and by when it will expire.
+//
+// PUT /account/v1/billing-accounts/{accountKey}/prepaid-assets/{assetId}/auto-renew
+func (UnimplementedHandler) SetPrepaidAutoRenew(ctx context.Context, req *AutoRenewRequestBody, params SetPrepaidAutoRenewParams) (r *PrepaidAsset, _ error) {
+	return r, ht.ErrNotImplemented
 }
 
 // StartPaymentMethodSetup implements start-payment-method-setup operation.

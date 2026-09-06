@@ -116,6 +116,32 @@ func encodeKeepSubscriptionResponse(response *Subscription, w http.ResponseWrite
 	return nil
 }
 
+func encodeListAccountRefundsResponse(response *AccountRefundList, w http.ResponseWriter, span trace.Span) error {
+	w.Header().Set("Content-Type", "application/json; charset=utf-8")
+	w.WriteHeader(200)
+
+	e := new(jx.Encoder)
+	response.Encode(e)
+	if _, err := e.WriteTo(w); err != nil {
+		return errors.Wrap(err, "write")
+	}
+
+	return nil
+}
+
+func encodeListAccountVouchersResponse(response *VoucherList, w http.ResponseWriter, span trace.Span) error {
+	w.Header().Set("Content-Type", "application/json; charset=utf-8")
+	w.WriteHeader(200)
+
+	e := new(jx.Encoder)
+	response.Encode(e)
+	if _, err := e.WriteTo(w); err != nil {
+		return errors.Wrap(err, "write")
+	}
+
+	return nil
+}
+
 func encodeListBillingAccountsResponse(response *BillingAccountList, w http.ResponseWriter, span trace.Span) error {
 	w.Header().Set("Content-Type", "application/json; charset=utf-8")
 	w.WriteHeader(200)
@@ -221,6 +247,19 @@ func encodeListPrepaidAssetsResponse(response *PrepaidAssetList, w http.Response
 }
 
 func encodeListTopUpsResponse(response *TopUpList, w http.ResponseWriter, span trace.Span) error {
+	w.Header().Set("Content-Type", "application/json; charset=utf-8")
+	w.WriteHeader(200)
+
+	e := new(jx.Encoder)
+	response.Encode(e)
+	if _, err := e.WriteTo(w); err != nil {
+		return errors.Wrap(err, "write")
+	}
+
+	return nil
+}
+
+func encodePreviewPromotionCodeResponse(response *PromotionPreview, w http.ResponseWriter, span trace.Span) error {
 	w.Header().Set("Content-Type", "application/json; charset=utf-8")
 	w.WriteHeader(200)
 
@@ -343,8 +382,34 @@ func encodeRemovePaymentMethodResponse(response *RemovePaymentMethodNoContent, w
 	return nil
 }
 
+func encodeRenewPrepaidAssetResponse(response *PrepaidAsset, w http.ResponseWriter, span trace.Span) error {
+	w.Header().Set("Content-Type", "application/json; charset=utf-8")
+	w.WriteHeader(200)
+
+	e := new(jx.Encoder)
+	response.Encode(e)
+	if _, err := e.WriteTo(w); err != nil {
+		return errors.Wrap(err, "write")
+	}
+
+	return nil
+}
+
 func encodeSetDefaultPaymentMethodResponse(response *SetDefaultPaymentMethodNoContent, w http.ResponseWriter, span trace.Span) error {
 	w.WriteHeader(204)
+
+	return nil
+}
+
+func encodeSetPrepaidAutoRenewResponse(response *PrepaidAsset, w http.ResponseWriter, span trace.Span) error {
+	w.Header().Set("Content-Type", "application/json; charset=utf-8")
+	w.WriteHeader(200)
+
+	e := new(jx.Encoder)
+	response.Encode(e)
+	if _, err := e.WriteTo(w); err != nil {
+		return errors.Wrap(err, "write")
+	}
 
 	return nil
 }

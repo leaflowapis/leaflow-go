@@ -442,6 +442,26 @@ func (s *CreateBackupRequestBody) SetName(val string) {
 
 // Ref: #/components/schemas/CreateDiskRequestBody
 type CreateDiskRequestBody struct {
+	// A promotion code to apply to this order. Case and surrounding whitespace do not matter.
+	//
+	// An unusable code is rejected outright rather than quietly ignored: somebody who typed a code is
+	// buying at the discounted price, and letting it through silently means they pay full price expecting
+	// the discount, with nothing anywhere saying so.
+	//
+	// The discount applies to the lines the campaign covers, not the whole order — typically the
+	// instance type and memory, not the system disk, the address, or traffic. Preview it first at
+	// `POST /account/v1/billing-accounts/{accountKey}/promotion-codes/preview` to show the customer what
+	// will actually be charged.
+	//
+	// Metered orders reject any code: there is no amount to discount at this point.
+	PromotionCode OptString `json:"promotion_code"`
+	// "This is the same click". Generate one when the dialog opens — not when it is submitted — and
+	// send the same one on every retry of that action.
+	//
+	// Optional, and what happens without it is worth knowing: two identical requests inside the same
+	// minute are treated as one, because there is nothing else to tell a double-click apart from a
+	// deliberate second order. Sending your own key removes that guess entirely.
+	IdempotencyKey OptString `json:"idempotency_key"`
 	// A disk type currently on sale. A withdrawn one is rejected even though its identifier still resolves.
 	DiskTypeID uuid.UUID `json:"disk_type_id"`
 	Name       string    `json:"name"`
@@ -466,6 +486,16 @@ type CreateDiskRequestBody struct {
 	// Online payment is not a second wallet. What arrives lands in the balance first and the order is
 	// settled from there, so money topped up and money paid at checkout are the same pool.
 	PaymentMethod OptCreateDiskRequestBodyPaymentMethod `json:"payment_method"`
+}
+
+// GetPromotionCode returns the value of PromotionCode.
+func (s *CreateDiskRequestBody) GetPromotionCode() OptString {
+	return s.PromotionCode
+}
+
+// GetIdempotencyKey returns the value of IdempotencyKey.
+func (s *CreateDiskRequestBody) GetIdempotencyKey() OptString {
+	return s.IdempotencyKey
 }
 
 // GetDiskTypeID returns the value of DiskTypeID.
@@ -496,6 +526,16 @@ func (s *CreateDiskRequestBody) GetTerm() OptString {
 // GetPaymentMethod returns the value of PaymentMethod.
 func (s *CreateDiskRequestBody) GetPaymentMethod() OptCreateDiskRequestBodyPaymentMethod {
 	return s.PaymentMethod
+}
+
+// SetPromotionCode sets the value of PromotionCode.
+func (s *CreateDiskRequestBody) SetPromotionCode(val OptString) {
+	s.PromotionCode = val
+}
+
+// SetIdempotencyKey sets the value of IdempotencyKey.
+func (s *CreateDiskRequestBody) SetIdempotencyKey(val OptString) {
+	s.IdempotencyKey = val
 }
 
 // SetDiskTypeID sets the value of DiskTypeID.
@@ -2723,6 +2763,26 @@ func (s *InstanceTypeResource) SetPrepaidPrices(val []PrepaidPrice) {
 
 // Ref: #/components/schemas/LaunchInstanceRequestBody
 type LaunchInstanceRequestBody struct {
+	// A promotion code to apply to this order. Case and surrounding whitespace do not matter.
+	//
+	// An unusable code is rejected outright rather than quietly ignored: somebody who typed a code is
+	// buying at the discounted price, and letting it through silently means they pay full price expecting
+	// the discount, with nothing anywhere saying so.
+	//
+	// The discount applies to the lines the campaign covers, not the whole order — typically the
+	// instance type and memory, not the system disk, the address, or traffic. Preview it first at
+	// `POST /account/v1/billing-accounts/{accountKey}/promotion-codes/preview` to show the customer what
+	// will actually be charged.
+	//
+	// Metered orders reject any code: there is no amount to discount at this point.
+	PromotionCode OptString `json:"promotion_code"`
+	// "This is the same click". Generate one when the dialog opens — not when it is submitted — and
+	// send the same one on every retry of that action.
+	//
+	// Optional, and what happens without it is worth knowing: two identical requests inside the same
+	// minute are treated as one, because there is nothing else to tell a double-click apart from a
+	// deliberate second order. Sending your own key removes that guess entirely.
+	IdempotencyKey OptString `json:"idempotency_key"`
 	// Bind a floating IP you already hold, instead of allocating a new one. It must be idle and in the
 	// same region.
 	//
@@ -2828,6 +2888,16 @@ type LaunchInstanceRequestBody struct {
 	SubnetID OptUUID `json:"subnet_id"`
 }
 
+// GetPromotionCode returns the value of PromotionCode.
+func (s *LaunchInstanceRequestBody) GetPromotionCode() OptString {
+	return s.PromotionCode
+}
+
+// GetIdempotencyKey returns the value of IdempotencyKey.
+func (s *LaunchInstanceRequestBody) GetIdempotencyKey() OptString {
+	return s.IdempotencyKey
+}
+
 // GetFloatingIPID returns the value of FloatingIPID.
 func (s *LaunchInstanceRequestBody) GetFloatingIPID() OptUUID {
 	return s.FloatingIPID
@@ -2911,6 +2981,16 @@ func (s *LaunchInstanceRequestBody) GetSecurityGroupIds() OptNilUUIDArray {
 // GetSubnetID returns the value of SubnetID.
 func (s *LaunchInstanceRequestBody) GetSubnetID() OptUUID {
 	return s.SubnetID
+}
+
+// SetPromotionCode sets the value of PromotionCode.
+func (s *LaunchInstanceRequestBody) SetPromotionCode(val OptString) {
+	s.PromotionCode = val
+}
+
+// SetIdempotencyKey sets the value of IdempotencyKey.
+func (s *LaunchInstanceRequestBody) SetIdempotencyKey(val OptString) {
+	s.IdempotencyKey = val
 }
 
 // SetFloatingIPID sets the value of FloatingIPID.

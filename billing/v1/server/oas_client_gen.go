@@ -163,6 +163,21 @@ type Invoker interface {
 	//
 	// POST /account/v1/billing-accounts/{accountKey}/subscription/keep
 	KeepSubscription(ctx context.Context, params KeepSubscriptionParams) (*Subscription, error)
+	// ListAccountRefunds invokes list-account-refunds operation.
+	//
+	// Each refund carries how it was split. A customer asking "I was refunded 100, why is only 60 back on
+	// my card" is answered here and nowhere else.
+	//
+	// GET /account/v1/billing-accounts/{accountKey}/refunds
+	ListAccountRefunds(ctx context.Context, params ListAccountRefundsParams) (*AccountRefundList, error)
+	// ListAccountVouchers invokes list-account-vouchers operation.
+	//
+	// Credit received from campaigns, most recent first. Not the credit ledger — this says which
+	// campaign each amount came from, which is the question "where did this 50 come from" that the ledger
+	// cannot answer.
+	//
+	// GET /account/v1/billing-accounts/{accountKey}/vouchers
+	ListAccountVouchers(ctx context.Context, params ListAccountVouchersParams) (*VoucherList, error)
 	// ListBillingAccounts invokes list-billing-accounts operation.
 	//
 	// Every billing account belonging to the caller, with the projects each one currently pays for.
@@ -257,15 +272,19 @@ type Invoker interface {
 	//
 	// Everything this account holds on a term, across every product.
 	//
-	// # Nothing here expires on its own
+	// # Every one of these expires
 	//
-	// A term renews for as long as the seat is held: the engine charges the next period, prorates any
-	// change to the second, and stops the moment the seat is given up. So there is no renewal to remember
-	// and no expiry to warn about — giving it up means deleting the resource, in the console that owns
-	// it.
+	// A term is paid for once, up front, and buys exactly the period named by `term`. Nothing renews it on
+	// its own: `expires_at` is when it runs out, and after that the machine is stopped and — once the
+	// retention window is over — released.
 	//
-	// What the next period costs and when it falls due is on the charges route. That is read straight from
-	// the engine rather than copied here, because a copy is a second answer that drifts without saying so.
+	// This route used to say the opposite. It described an engine that charged the next period by itself
+	// for as long as the seat was held, which is how this worked before the money became a single up-front
+	// charge. Reading the old text, a customer would have had no reason to renew anything, and the first
+	// sign of trouble would have been a stopped machine.
+	//
+	// Turn on `auto_renew` to have billing place the renewal order itself while there is balance to pay
+	// for it. That is the only thing that makes a term continue.
 	//
 	// # Metered resources are not here
 	//
@@ -291,6 +310,24 @@ type Invoker interface {
 	//
 	// GET /account/v1/billing-accounts/{accountKey}/top-ups
 	ListTopUps(ctx context.Context, params ListTopUpsParams) (*TopUpList, error)
+	// PreviewPromotionCode invokes preview-promotion-code operation.
+	//
+	// Runs the same checks and the same arithmetic that placing the order will run, so the price shown
+	// here and the price charged agree. Writing the calculation twice — once for the page and once for
+	// the order — means they drift, and the visible form of that drift is a page saying "20 off" while
+	// the full amount is taken.
+	//
+	// Nothing is redeemed. The allowance is only consumed when the order is actually placed.
+	//
+	// A code that cannot be used is rejected here with the reason, so the user learns it before filling in
+	// the rest of the form rather than at the moment they press buy.
+	//
+	// Metered orders are rejected. They have no amount at this point — the money is worked out later
+	// from usage. Applying a discount to a nil amount leaves the user believing they saved something while
+	// the bill is unchanged.
+	//
+	// POST /account/v1/billing-accounts/{accountKey}/promotion-codes/preview
+	PreviewPromotionCode(ctx context.Context, request *PreviewPromotionCodeRequestBody, params PreviewPromotionCodeParams) (*PromotionPreview, error)
 	// PurchaseOffer invokes purchase-offer operation.
 	//
 	// Puts the account on the plan this offer points at, taking one of its places if it has a limit.
@@ -475,6 +512,23 @@ type Invoker interface {
 	//
 	// DELETE /account/v1/billing-accounts/{accountKey}/payment-methods/{paymentMethodId}
 	RemovePaymentMethod(ctx context.Context, params RemovePaymentMethodParams) error
+	// RenewPrepaidAsset invokes renew-prepaid-asset operation.
+	//
+	// Extends a term by one more period, paid for out of the account's balance right now.
+	//
+	// The new expiry is the old one plus the term, not now plus the term. Renewing three days early would
+	// otherwise throw those three days away, and renewing after the expiry would quietly reward the delay.
+	// Neither shows up as an error — the date on the account looks self-consistent either way, and only
+	// the customer notices.
+	//
+	// `term` does not have to match what was bought originally: a monthly machine can be renewed for a
+	// year.
+	//
+	// Refused when the balance does not cover it. The alternative — placing the order and letting the
+	// account go negative — turns a renewal the customer chose into a debt they did not.
+	//
+	// POST /account/v1/billing-accounts/{accountKey}/prepaid-assets/{assetId}/renew
+	RenewPrepaidAsset(ctx context.Context, request *RenewRequestBody, params RenewPrepaidAssetParams) (*PrepaidAsset, error)
 	// SetDefaultPaymentMethod invokes set-default-payment-method operation.
 	//
 	// Makes this the method an invoice is collected from.
@@ -487,6 +541,17 @@ type Invoker interface {
 	//
 	// PUT /account/v1/billing-accounts/{accountKey}/payment-methods/{paymentMethodId}/default
 	SetDefaultPaymentMethod(ctx context.Context, params SetDefaultPaymentMethodParams) error
+	// SetPrepaidAutoRenew invokes set-prepaid-auto-renew operation.
+	//
+	// With it on, billing places the renewal order itself a few days before the period runs out, paying
+	// from the account's balance.
+	//
+	// Not enough balance is not an error here. The switch only says what to attempt; whether the money is
+	// there is settled at renewal time, and the customer is told either way — told it renewed, or told
+	// it could not and by when it will expire.
+	//
+	// PUT /account/v1/billing-accounts/{accountKey}/prepaid-assets/{assetId}/auto-renew
+	SetPrepaidAutoRenew(ctx context.Context, request *AutoRenewRequestBody, params SetPrepaidAutoRenewParams) (*PrepaidAsset, error)
 	// StartPaymentMethodSetup invokes start-payment-method-setup operation.
 	//
 	// Starts a session for adding a method, and returns the secret the browser needs to mount the
@@ -1814,6 +1879,349 @@ func (c *Client) sendKeepSubscription(ctx context.Context, params KeepSubscripti
 	return result, nil
 }
 
+// ListAccountRefunds invokes list-account-refunds operation.
+//
+// Each refund carries how it was split. A customer asking "I was refunded 100, why is only 60 back on
+// my card" is answered here and nowhere else.
+//
+// GET /account/v1/billing-accounts/{accountKey}/refunds
+func (c *Client) ListAccountRefunds(ctx context.Context, params ListAccountRefundsParams) (*AccountRefundList, error) {
+	res, err := c.sendListAccountRefunds(ctx, params)
+	return res, err
+}
+
+func (c *Client) sendListAccountRefunds(ctx context.Context, params ListAccountRefundsParams) (res *AccountRefundList, err error) {
+	otelAttrs := []attribute.KeyValue{
+		otelogen.OperationID("list-account-refunds"),
+		semconv.HTTPRequestMethodKey.String("GET"),
+		semconv.URLTemplateKey.String("/account/v1/billing-accounts/{accountKey}/refunds"),
+	}
+	otelAttrs = append(otelAttrs, c.cfg.Attributes...)
+
+	// Run stopwatch.
+	startTime := time.Now()
+	defer func() {
+		// Use floating point division here for higher precision (instead of Millisecond method).
+		elapsedDuration := time.Since(startTime)
+		c.duration.Record(ctx, float64(elapsedDuration)/float64(time.Millisecond), metric.WithAttributes(otelAttrs...))
+	}()
+
+	// Increment request counter.
+	c.requests.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
+
+	// Start a span for this request.
+	ctx, span := c.cfg.Tracer.Start(ctx, ListAccountRefundsOperation,
+		trace.WithAttributes(otelAttrs...),
+		clientSpanKind,
+	)
+	// Track stage for error reporting.
+	var stage string
+	defer func() {
+		if err != nil {
+			span.RecordError(err)
+			span.SetStatus(codes.Error, stage)
+			c.errors.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
+		}
+		span.End()
+	}()
+
+	stage = "BuildURL"
+	u := uri.Clone(c.requestURL(ctx))
+	var pathParts [3]string
+	pathParts[0] = "/account/v1/billing-accounts/"
+	{
+		// Encode "accountKey" parameter.
+		e := uri.NewPathEncoder(uri.PathEncoderConfig{
+			Param:   "accountKey",
+			Style:   uri.PathStyleSimple,
+			Explode: false,
+		})
+		if err := func() error {
+			return e.EncodeValue(conv.StringToString(params.AccountKey))
+		}(); err != nil {
+			return res, errors.Wrap(err, "encode path")
+		}
+		encoded, err := e.Result()
+		if err != nil {
+			return res, errors.Wrap(err, "encode path")
+		}
+		pathParts[1] = encoded
+	}
+	pathParts[2] = "/refunds"
+	uri.AddPathParts(u, pathParts[:]...)
+
+	stage = "EncodeQueryParams"
+	q := uri.NewQueryEncoder()
+	{
+		// Encode "page" parameter.
+		cfg := uri.QueryParameterEncodingConfig{
+			Name:    "page",
+			Style:   uri.QueryStyleForm,
+			Explode: true,
+		}
+
+		if err := q.EncodeParam(cfg, func(e uri.Encoder) error {
+			if val, ok := params.Page.Get(); ok {
+				return e.EncodeValue(conv.Int32ToString(val))
+			}
+			return nil
+		}); err != nil {
+			return res, errors.Wrap(err, "encode query")
+		}
+	}
+	{
+		// Encode "page_size" parameter.
+		cfg := uri.QueryParameterEncodingConfig{
+			Name:    "page_size",
+			Style:   uri.QueryStyleForm,
+			Explode: true,
+		}
+
+		if err := q.EncodeParam(cfg, func(e uri.Encoder) error {
+			if val, ok := params.PageSize.Get(); ok {
+				return e.EncodeValue(conv.Int32ToString(val))
+			}
+			return nil
+		}); err != nil {
+			return res, errors.Wrap(err, "encode query")
+		}
+	}
+	u.RawQuery = q.Values().Encode()
+
+	stage = "EncodeRequest"
+	r, err := ht.NewRequest(ctx, "GET", u)
+	if err != nil {
+		return res, errors.Wrap(err, "create request")
+	}
+
+	{
+		type bitset = [1]uint8
+		var satisfied bitset
+		{
+			stage = "Security:BearerAuth"
+			switch err := c.securityBearerAuth(ctx, ListAccountRefundsOperation, r); {
+			case err == nil: // if NO error
+				satisfied[0] |= 1 << 0
+			case errors.Is(err, ogenerrors.ErrSkipClientSecurity):
+				// Skip this security.
+			default:
+				return res, errors.Wrap(err, "security \"BearerAuth\"")
+			}
+		}
+
+		if ok := func() bool {
+		nextRequirement:
+			for _, requirement := range []bitset{
+				{0b00000001},
+			} {
+				for i, mask := range requirement {
+					if satisfied[i]&mask != mask {
+						continue nextRequirement
+					}
+				}
+				return true
+			}
+			return false
+		}(); !ok {
+			return res, ogenerrors.ErrSecurityRequirementIsNotSatisfied
+		}
+	}
+
+	stage = "SendRequest"
+	resp, err := c.cfg.Client.Do(r)
+	if err != nil {
+		return res, errors.Wrap(err, "do request")
+	}
+	body := resp.Body
+	defer func() {
+		// Drain the body to EOF before closing, so the underlying
+		// connection can be reused by the Transport regardless of the
+		// response status code. See https://github.com/ogen-go/ogen/issues/1670.
+		_, _ = io.Copy(io.Discard, body)
+		_ = body.Close()
+	}()
+
+	stage = "DecodeResponse"
+	result, err := decodeListAccountRefundsResponse(resp)
+	if err != nil {
+		return res, errors.Wrap(err, "decode response")
+	}
+
+	return result, nil
+}
+
+// ListAccountVouchers invokes list-account-vouchers operation.
+//
+// Credit received from campaigns, most recent first. Not the credit ledger — this says which
+// campaign each amount came from, which is the question "where did this 50 come from" that the ledger
+// cannot answer.
+//
+// GET /account/v1/billing-accounts/{accountKey}/vouchers
+func (c *Client) ListAccountVouchers(ctx context.Context, params ListAccountVouchersParams) (*VoucherList, error) {
+	res, err := c.sendListAccountVouchers(ctx, params)
+	return res, err
+}
+
+func (c *Client) sendListAccountVouchers(ctx context.Context, params ListAccountVouchersParams) (res *VoucherList, err error) {
+	otelAttrs := []attribute.KeyValue{
+		otelogen.OperationID("list-account-vouchers"),
+		semconv.HTTPRequestMethodKey.String("GET"),
+		semconv.URLTemplateKey.String("/account/v1/billing-accounts/{accountKey}/vouchers"),
+	}
+	otelAttrs = append(otelAttrs, c.cfg.Attributes...)
+
+	// Run stopwatch.
+	startTime := time.Now()
+	defer func() {
+		// Use floating point division here for higher precision (instead of Millisecond method).
+		elapsedDuration := time.Since(startTime)
+		c.duration.Record(ctx, float64(elapsedDuration)/float64(time.Millisecond), metric.WithAttributes(otelAttrs...))
+	}()
+
+	// Increment request counter.
+	c.requests.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
+
+	// Start a span for this request.
+	ctx, span := c.cfg.Tracer.Start(ctx, ListAccountVouchersOperation,
+		trace.WithAttributes(otelAttrs...),
+		clientSpanKind,
+	)
+	// Track stage for error reporting.
+	var stage string
+	defer func() {
+		if err != nil {
+			span.RecordError(err)
+			span.SetStatus(codes.Error, stage)
+			c.errors.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
+		}
+		span.End()
+	}()
+
+	stage = "BuildURL"
+	u := uri.Clone(c.requestURL(ctx))
+	var pathParts [3]string
+	pathParts[0] = "/account/v1/billing-accounts/"
+	{
+		// Encode "accountKey" parameter.
+		e := uri.NewPathEncoder(uri.PathEncoderConfig{
+			Param:   "accountKey",
+			Style:   uri.PathStyleSimple,
+			Explode: false,
+		})
+		if err := func() error {
+			return e.EncodeValue(conv.StringToString(params.AccountKey))
+		}(); err != nil {
+			return res, errors.Wrap(err, "encode path")
+		}
+		encoded, err := e.Result()
+		if err != nil {
+			return res, errors.Wrap(err, "encode path")
+		}
+		pathParts[1] = encoded
+	}
+	pathParts[2] = "/vouchers"
+	uri.AddPathParts(u, pathParts[:]...)
+
+	stage = "EncodeQueryParams"
+	q := uri.NewQueryEncoder()
+	{
+		// Encode "page" parameter.
+		cfg := uri.QueryParameterEncodingConfig{
+			Name:    "page",
+			Style:   uri.QueryStyleForm,
+			Explode: true,
+		}
+
+		if err := q.EncodeParam(cfg, func(e uri.Encoder) error {
+			if val, ok := params.Page.Get(); ok {
+				return e.EncodeValue(conv.Int32ToString(val))
+			}
+			return nil
+		}); err != nil {
+			return res, errors.Wrap(err, "encode query")
+		}
+	}
+	{
+		// Encode "page_size" parameter.
+		cfg := uri.QueryParameterEncodingConfig{
+			Name:    "page_size",
+			Style:   uri.QueryStyleForm,
+			Explode: true,
+		}
+
+		if err := q.EncodeParam(cfg, func(e uri.Encoder) error {
+			if val, ok := params.PageSize.Get(); ok {
+				return e.EncodeValue(conv.Int32ToString(val))
+			}
+			return nil
+		}); err != nil {
+			return res, errors.Wrap(err, "encode query")
+		}
+	}
+	u.RawQuery = q.Values().Encode()
+
+	stage = "EncodeRequest"
+	r, err := ht.NewRequest(ctx, "GET", u)
+	if err != nil {
+		return res, errors.Wrap(err, "create request")
+	}
+
+	{
+		type bitset = [1]uint8
+		var satisfied bitset
+		{
+			stage = "Security:BearerAuth"
+			switch err := c.securityBearerAuth(ctx, ListAccountVouchersOperation, r); {
+			case err == nil: // if NO error
+				satisfied[0] |= 1 << 0
+			case errors.Is(err, ogenerrors.ErrSkipClientSecurity):
+				// Skip this security.
+			default:
+				return res, errors.Wrap(err, "security \"BearerAuth\"")
+			}
+		}
+
+		if ok := func() bool {
+		nextRequirement:
+			for _, requirement := range []bitset{
+				{0b00000001},
+			} {
+				for i, mask := range requirement {
+					if satisfied[i]&mask != mask {
+						continue nextRequirement
+					}
+				}
+				return true
+			}
+			return false
+		}(); !ok {
+			return res, ogenerrors.ErrSecurityRequirementIsNotSatisfied
+		}
+	}
+
+	stage = "SendRequest"
+	resp, err := c.cfg.Client.Do(r)
+	if err != nil {
+		return res, errors.Wrap(err, "do request")
+	}
+	body := resp.Body
+	defer func() {
+		// Drain the body to EOF before closing, so the underlying
+		// connection can be reused by the Transport regardless of the
+		// response status code. See https://github.com/ogen-go/ogen/issues/1670.
+		_, _ = io.Copy(io.Discard, body)
+		_ = body.Close()
+	}()
+
+	stage = "DecodeResponse"
+	result, err := decodeListAccountVouchersResponse(resp)
+	if err != nil {
+		return res, errors.Wrap(err, "decode response")
+	}
+
+	return result, nil
+}
+
 // ListBillingAccounts invokes list-billing-accounts operation.
 //
 // Every billing account belonging to the caller, with the projects each one currently pays for.
@@ -3037,15 +3445,19 @@ func (c *Client) sendListPaymentMethods(ctx context.Context, params ListPaymentM
 //
 // Everything this account holds on a term, across every product.
 //
-// # Nothing here expires on its own
+// # Every one of these expires
 //
-// A term renews for as long as the seat is held: the engine charges the next period, prorates any
-// change to the second, and stops the moment the seat is given up. So there is no renewal to remember
-// and no expiry to warn about — giving it up means deleting the resource, in the console that owns
-// it.
+// A term is paid for once, up front, and buys exactly the period named by `term`. Nothing renews it on
+// its own: `expires_at` is when it runs out, and after that the machine is stopped and — once the
+// retention window is over — released.
 //
-// What the next period costs and when it falls due is on the charges route. That is read straight from
-// the engine rather than copied here, because a copy is a second answer that drifts without saying so.
+// This route used to say the opposite. It described an engine that charged the next period by itself
+// for as long as the seat was held, which is how this worked before the money became a single up-front
+// charge. Reading the old text, a customer would have had no reason to renew anything, and the first
+// sign of trouble would have been a stopped machine.
+//
+// Turn on `auto_renew` to have billing place the renewal order itself while there is balance to pay
+// for it. That is the only thing that makes a term continue.
 //
 // # Metered resources are not here
 //
@@ -3392,6 +3804,153 @@ func (c *Client) sendListTopUps(ctx context.Context, params ListTopUpsParams) (r
 
 	stage = "DecodeResponse"
 	result, err := decodeListTopUpsResponse(resp)
+	if err != nil {
+		return res, errors.Wrap(err, "decode response")
+	}
+
+	return result, nil
+}
+
+// PreviewPromotionCode invokes preview-promotion-code operation.
+//
+// Runs the same checks and the same arithmetic that placing the order will run, so the price shown
+// here and the price charged agree. Writing the calculation twice — once for the page and once for
+// the order — means they drift, and the visible form of that drift is a page saying "20 off" while
+// the full amount is taken.
+//
+// Nothing is redeemed. The allowance is only consumed when the order is actually placed.
+//
+// A code that cannot be used is rejected here with the reason, so the user learns it before filling in
+// the rest of the form rather than at the moment they press buy.
+//
+// Metered orders are rejected. They have no amount at this point — the money is worked out later
+// from usage. Applying a discount to a nil amount leaves the user believing they saved something while
+// the bill is unchanged.
+//
+// POST /account/v1/billing-accounts/{accountKey}/promotion-codes/preview
+func (c *Client) PreviewPromotionCode(ctx context.Context, request *PreviewPromotionCodeRequestBody, params PreviewPromotionCodeParams) (*PromotionPreview, error) {
+	res, err := c.sendPreviewPromotionCode(ctx, request, params)
+	return res, err
+}
+
+func (c *Client) sendPreviewPromotionCode(ctx context.Context, request *PreviewPromotionCodeRequestBody, params PreviewPromotionCodeParams) (res *PromotionPreview, err error) {
+	otelAttrs := []attribute.KeyValue{
+		otelogen.OperationID("preview-promotion-code"),
+		semconv.HTTPRequestMethodKey.String("POST"),
+		semconv.URLTemplateKey.String("/account/v1/billing-accounts/{accountKey}/promotion-codes/preview"),
+	}
+	otelAttrs = append(otelAttrs, c.cfg.Attributes...)
+
+	// Run stopwatch.
+	startTime := time.Now()
+	defer func() {
+		// Use floating point division here for higher precision (instead of Millisecond method).
+		elapsedDuration := time.Since(startTime)
+		c.duration.Record(ctx, float64(elapsedDuration)/float64(time.Millisecond), metric.WithAttributes(otelAttrs...))
+	}()
+
+	// Increment request counter.
+	c.requests.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
+
+	// Start a span for this request.
+	ctx, span := c.cfg.Tracer.Start(ctx, PreviewPromotionCodeOperation,
+		trace.WithAttributes(otelAttrs...),
+		clientSpanKind,
+	)
+	// Track stage for error reporting.
+	var stage string
+	defer func() {
+		if err != nil {
+			span.RecordError(err)
+			span.SetStatus(codes.Error, stage)
+			c.errors.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
+		}
+		span.End()
+	}()
+
+	stage = "BuildURL"
+	u := uri.Clone(c.requestURL(ctx))
+	var pathParts [3]string
+	pathParts[0] = "/account/v1/billing-accounts/"
+	{
+		// Encode "accountKey" parameter.
+		e := uri.NewPathEncoder(uri.PathEncoderConfig{
+			Param:   "accountKey",
+			Style:   uri.PathStyleSimple,
+			Explode: false,
+		})
+		if err := func() error {
+			return e.EncodeValue(conv.StringToString(params.AccountKey))
+		}(); err != nil {
+			return res, errors.Wrap(err, "encode path")
+		}
+		encoded, err := e.Result()
+		if err != nil {
+			return res, errors.Wrap(err, "encode path")
+		}
+		pathParts[1] = encoded
+	}
+	pathParts[2] = "/promotion-codes/preview"
+	uri.AddPathParts(u, pathParts[:]...)
+
+	stage = "EncodeRequest"
+	r, err := ht.NewRequest(ctx, "POST", u)
+	if err != nil {
+		return res, errors.Wrap(err, "create request")
+	}
+	if err := encodePreviewPromotionCodeRequest(request, r); err != nil {
+		return res, errors.Wrap(err, "encode request")
+	}
+
+	{
+		type bitset = [1]uint8
+		var satisfied bitset
+		{
+			stage = "Security:BearerAuth"
+			switch err := c.securityBearerAuth(ctx, PreviewPromotionCodeOperation, r); {
+			case err == nil: // if NO error
+				satisfied[0] |= 1 << 0
+			case errors.Is(err, ogenerrors.ErrSkipClientSecurity):
+				// Skip this security.
+			default:
+				return res, errors.Wrap(err, "security \"BearerAuth\"")
+			}
+		}
+
+		if ok := func() bool {
+		nextRequirement:
+			for _, requirement := range []bitset{
+				{0b00000001},
+			} {
+				for i, mask := range requirement {
+					if satisfied[i]&mask != mask {
+						continue nextRequirement
+					}
+				}
+				return true
+			}
+			return false
+		}(); !ok {
+			return res, ogenerrors.ErrSecurityRequirementIsNotSatisfied
+		}
+	}
+
+	stage = "SendRequest"
+	resp, err := c.cfg.Client.Do(r)
+	if err != nil {
+		return res, errors.Wrap(err, "do request")
+	}
+	body := resp.Body
+	defer func() {
+		// Drain the body to EOF before closing, so the underlying
+		// connection can be reused by the Transport regardless of the
+		// response status code. See https://github.com/ogen-go/ogen/issues/1670.
+		_, _ = io.Copy(io.Discard, body)
+		_ = body.Close()
+	}()
+
+	stage = "DecodeResponse"
+	result, err := decodePreviewPromotionCodeResponse(resp)
 	if err != nil {
 		return res, errors.Wrap(err, "decode response")
 	}
@@ -4799,6 +5358,171 @@ func (c *Client) sendRemovePaymentMethod(ctx context.Context, params RemovePayme
 	return result, nil
 }
 
+// RenewPrepaidAsset invokes renew-prepaid-asset operation.
+//
+// Extends a term by one more period, paid for out of the account's balance right now.
+//
+// The new expiry is the old one plus the term, not now plus the term. Renewing three days early would
+// otherwise throw those three days away, and renewing after the expiry would quietly reward the delay.
+// Neither shows up as an error — the date on the account looks self-consistent either way, and only
+// the customer notices.
+//
+// `term` does not have to match what was bought originally: a monthly machine can be renewed for a
+// year.
+//
+// Refused when the balance does not cover it. The alternative — placing the order and letting the
+// account go negative — turns a renewal the customer chose into a debt they did not.
+//
+// POST /account/v1/billing-accounts/{accountKey}/prepaid-assets/{assetId}/renew
+func (c *Client) RenewPrepaidAsset(ctx context.Context, request *RenewRequestBody, params RenewPrepaidAssetParams) (*PrepaidAsset, error) {
+	res, err := c.sendRenewPrepaidAsset(ctx, request, params)
+	return res, err
+}
+
+func (c *Client) sendRenewPrepaidAsset(ctx context.Context, request *RenewRequestBody, params RenewPrepaidAssetParams) (res *PrepaidAsset, err error) {
+	otelAttrs := []attribute.KeyValue{
+		otelogen.OperationID("renew-prepaid-asset"),
+		semconv.HTTPRequestMethodKey.String("POST"),
+		semconv.URLTemplateKey.String("/account/v1/billing-accounts/{accountKey}/prepaid-assets/{assetId}/renew"),
+	}
+	otelAttrs = append(otelAttrs, c.cfg.Attributes...)
+
+	// Run stopwatch.
+	startTime := time.Now()
+	defer func() {
+		// Use floating point division here for higher precision (instead of Millisecond method).
+		elapsedDuration := time.Since(startTime)
+		c.duration.Record(ctx, float64(elapsedDuration)/float64(time.Millisecond), metric.WithAttributes(otelAttrs...))
+	}()
+
+	// Increment request counter.
+	c.requests.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
+
+	// Start a span for this request.
+	ctx, span := c.cfg.Tracer.Start(ctx, RenewPrepaidAssetOperation,
+		trace.WithAttributes(otelAttrs...),
+		clientSpanKind,
+	)
+	// Track stage for error reporting.
+	var stage string
+	defer func() {
+		if err != nil {
+			span.RecordError(err)
+			span.SetStatus(codes.Error, stage)
+			c.errors.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
+		}
+		span.End()
+	}()
+
+	stage = "BuildURL"
+	u := uri.Clone(c.requestURL(ctx))
+	var pathParts [5]string
+	pathParts[0] = "/account/v1/billing-accounts/"
+	{
+		// Encode "accountKey" parameter.
+		e := uri.NewPathEncoder(uri.PathEncoderConfig{
+			Param:   "accountKey",
+			Style:   uri.PathStyleSimple,
+			Explode: false,
+		})
+		if err := func() error {
+			return e.EncodeValue(conv.StringToString(params.AccountKey))
+		}(); err != nil {
+			return res, errors.Wrap(err, "encode path")
+		}
+		encoded, err := e.Result()
+		if err != nil {
+			return res, errors.Wrap(err, "encode path")
+		}
+		pathParts[1] = encoded
+	}
+	pathParts[2] = "/prepaid-assets/"
+	{
+		// Encode "assetId" parameter.
+		e := uri.NewPathEncoder(uri.PathEncoderConfig{
+			Param:   "assetId",
+			Style:   uri.PathStyleSimple,
+			Explode: false,
+		})
+		if err := func() error {
+			return e.EncodeValue(conv.UUIDToString(params.AssetId))
+		}(); err != nil {
+			return res, errors.Wrap(err, "encode path")
+		}
+		encoded, err := e.Result()
+		if err != nil {
+			return res, errors.Wrap(err, "encode path")
+		}
+		pathParts[3] = encoded
+	}
+	pathParts[4] = "/renew"
+	uri.AddPathParts(u, pathParts[:]...)
+
+	stage = "EncodeRequest"
+	r, err := ht.NewRequest(ctx, "POST", u)
+	if err != nil {
+		return res, errors.Wrap(err, "create request")
+	}
+	if err := encodeRenewPrepaidAssetRequest(request, r); err != nil {
+		return res, errors.Wrap(err, "encode request")
+	}
+
+	{
+		type bitset = [1]uint8
+		var satisfied bitset
+		{
+			stage = "Security:BearerAuth"
+			switch err := c.securityBearerAuth(ctx, RenewPrepaidAssetOperation, r); {
+			case err == nil: // if NO error
+				satisfied[0] |= 1 << 0
+			case errors.Is(err, ogenerrors.ErrSkipClientSecurity):
+				// Skip this security.
+			default:
+				return res, errors.Wrap(err, "security \"BearerAuth\"")
+			}
+		}
+
+		if ok := func() bool {
+		nextRequirement:
+			for _, requirement := range []bitset{
+				{0b00000001},
+			} {
+				for i, mask := range requirement {
+					if satisfied[i]&mask != mask {
+						continue nextRequirement
+					}
+				}
+				return true
+			}
+			return false
+		}(); !ok {
+			return res, ogenerrors.ErrSecurityRequirementIsNotSatisfied
+		}
+	}
+
+	stage = "SendRequest"
+	resp, err := c.cfg.Client.Do(r)
+	if err != nil {
+		return res, errors.Wrap(err, "do request")
+	}
+	body := resp.Body
+	defer func() {
+		// Drain the body to EOF before closing, so the underlying
+		// connection can be reused by the Transport regardless of the
+		// response status code. See https://github.com/ogen-go/ogen/issues/1670.
+		_, _ = io.Copy(io.Discard, body)
+		_ = body.Close()
+	}()
+
+	stage = "DecodeResponse"
+	result, err := decodeRenewPrepaidAssetResponse(resp)
+	if err != nil {
+		return res, errors.Wrap(err, "decode response")
+	}
+
+	return result, nil
+}
+
 // SetDefaultPaymentMethod invokes set-default-payment-method operation.
 //
 // Makes this the method an invoice is collected from.
@@ -4949,6 +5673,165 @@ func (c *Client) sendSetDefaultPaymentMethod(ctx context.Context, params SetDefa
 
 	stage = "DecodeResponse"
 	result, err := decodeSetDefaultPaymentMethodResponse(resp)
+	if err != nil {
+		return res, errors.Wrap(err, "decode response")
+	}
+
+	return result, nil
+}
+
+// SetPrepaidAutoRenew invokes set-prepaid-auto-renew operation.
+//
+// With it on, billing places the renewal order itself a few days before the period runs out, paying
+// from the account's balance.
+//
+// Not enough balance is not an error here. The switch only says what to attempt; whether the money is
+// there is settled at renewal time, and the customer is told either way — told it renewed, or told
+// it could not and by when it will expire.
+//
+// PUT /account/v1/billing-accounts/{accountKey}/prepaid-assets/{assetId}/auto-renew
+func (c *Client) SetPrepaidAutoRenew(ctx context.Context, request *AutoRenewRequestBody, params SetPrepaidAutoRenewParams) (*PrepaidAsset, error) {
+	res, err := c.sendSetPrepaidAutoRenew(ctx, request, params)
+	return res, err
+}
+
+func (c *Client) sendSetPrepaidAutoRenew(ctx context.Context, request *AutoRenewRequestBody, params SetPrepaidAutoRenewParams) (res *PrepaidAsset, err error) {
+	otelAttrs := []attribute.KeyValue{
+		otelogen.OperationID("set-prepaid-auto-renew"),
+		semconv.HTTPRequestMethodKey.String("PUT"),
+		semconv.URLTemplateKey.String("/account/v1/billing-accounts/{accountKey}/prepaid-assets/{assetId}/auto-renew"),
+	}
+	otelAttrs = append(otelAttrs, c.cfg.Attributes...)
+
+	// Run stopwatch.
+	startTime := time.Now()
+	defer func() {
+		// Use floating point division here for higher precision (instead of Millisecond method).
+		elapsedDuration := time.Since(startTime)
+		c.duration.Record(ctx, float64(elapsedDuration)/float64(time.Millisecond), metric.WithAttributes(otelAttrs...))
+	}()
+
+	// Increment request counter.
+	c.requests.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
+
+	// Start a span for this request.
+	ctx, span := c.cfg.Tracer.Start(ctx, SetPrepaidAutoRenewOperation,
+		trace.WithAttributes(otelAttrs...),
+		clientSpanKind,
+	)
+	// Track stage for error reporting.
+	var stage string
+	defer func() {
+		if err != nil {
+			span.RecordError(err)
+			span.SetStatus(codes.Error, stage)
+			c.errors.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
+		}
+		span.End()
+	}()
+
+	stage = "BuildURL"
+	u := uri.Clone(c.requestURL(ctx))
+	var pathParts [5]string
+	pathParts[0] = "/account/v1/billing-accounts/"
+	{
+		// Encode "accountKey" parameter.
+		e := uri.NewPathEncoder(uri.PathEncoderConfig{
+			Param:   "accountKey",
+			Style:   uri.PathStyleSimple,
+			Explode: false,
+		})
+		if err := func() error {
+			return e.EncodeValue(conv.StringToString(params.AccountKey))
+		}(); err != nil {
+			return res, errors.Wrap(err, "encode path")
+		}
+		encoded, err := e.Result()
+		if err != nil {
+			return res, errors.Wrap(err, "encode path")
+		}
+		pathParts[1] = encoded
+	}
+	pathParts[2] = "/prepaid-assets/"
+	{
+		// Encode "assetId" parameter.
+		e := uri.NewPathEncoder(uri.PathEncoderConfig{
+			Param:   "assetId",
+			Style:   uri.PathStyleSimple,
+			Explode: false,
+		})
+		if err := func() error {
+			return e.EncodeValue(conv.UUIDToString(params.AssetId))
+		}(); err != nil {
+			return res, errors.Wrap(err, "encode path")
+		}
+		encoded, err := e.Result()
+		if err != nil {
+			return res, errors.Wrap(err, "encode path")
+		}
+		pathParts[3] = encoded
+	}
+	pathParts[4] = "/auto-renew"
+	uri.AddPathParts(u, pathParts[:]...)
+
+	stage = "EncodeRequest"
+	r, err := ht.NewRequest(ctx, "PUT", u)
+	if err != nil {
+		return res, errors.Wrap(err, "create request")
+	}
+	if err := encodeSetPrepaidAutoRenewRequest(request, r); err != nil {
+		return res, errors.Wrap(err, "encode request")
+	}
+
+	{
+		type bitset = [1]uint8
+		var satisfied bitset
+		{
+			stage = "Security:BearerAuth"
+			switch err := c.securityBearerAuth(ctx, SetPrepaidAutoRenewOperation, r); {
+			case err == nil: // if NO error
+				satisfied[0] |= 1 << 0
+			case errors.Is(err, ogenerrors.ErrSkipClientSecurity):
+				// Skip this security.
+			default:
+				return res, errors.Wrap(err, "security \"BearerAuth\"")
+			}
+		}
+
+		if ok := func() bool {
+		nextRequirement:
+			for _, requirement := range []bitset{
+				{0b00000001},
+			} {
+				for i, mask := range requirement {
+					if satisfied[i]&mask != mask {
+						continue nextRequirement
+					}
+				}
+				return true
+			}
+			return false
+		}(); !ok {
+			return res, ogenerrors.ErrSecurityRequirementIsNotSatisfied
+		}
+	}
+
+	stage = "SendRequest"
+	resp, err := c.cfg.Client.Do(r)
+	if err != nil {
+		return res, errors.Wrap(err, "do request")
+	}
+	body := resp.Body
+	defer func() {
+		// Drain the body to EOF before closing, so the underlying
+		// connection can be reused by the Transport regardless of the
+		// response status code. See https://github.com/ogen-go/ogen/issues/1670.
+		_, _ = io.Copy(io.Discard, body)
+		_ = body.Close()
+	}()
+
+	stage = "DecodeResponse"
+	result, err := decodeSetPrepaidAutoRenewResponse(resp)
 	if err != nil {
 		return res, errors.Wrap(err, "decode response")
 	}

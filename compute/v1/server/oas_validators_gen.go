@@ -191,6 +191,66 @@ func (s *CreateDiskRequestBody) Validate() error {
 
 	var failures []validate.FieldError
 	if err := func() error {
+		if value, ok := s.PromotionCode.Get(); ok {
+			if err := func() error {
+				if err := (validate.String{
+					MinLength:     0,
+					MinLengthSet:  false,
+					MaxLength:     64,
+					MaxLengthSet:  true,
+					Email:         false,
+					Hostname:      false,
+					Regex:         nil,
+					MinNumeric:    0,
+					MinNumericSet: false,
+					MaxNumeric:    0,
+					MaxNumericSet: false,
+				}).Validate(string(value)); err != nil {
+					return errors.Wrap(err, "string")
+				}
+				return nil
+			}(); err != nil {
+				return err
+			}
+		}
+		return nil
+	}(); err != nil {
+		failures = append(failures, validate.FieldError{
+			Name:  "promotion_code",
+			Error: err,
+		})
+	}
+	if err := func() error {
+		if value, ok := s.IdempotencyKey.Get(); ok {
+			if err := func() error {
+				if err := (validate.String{
+					MinLength:     8,
+					MinLengthSet:  true,
+					MaxLength:     255,
+					MaxLengthSet:  true,
+					Email:         false,
+					Hostname:      false,
+					Regex:         nil,
+					MinNumeric:    0,
+					MinNumericSet: false,
+					MaxNumeric:    0,
+					MaxNumericSet: false,
+				}).Validate(string(value)); err != nil {
+					return errors.Wrap(err, "string")
+				}
+				return nil
+			}(); err != nil {
+				return err
+			}
+		}
+		return nil
+	}(); err != nil {
+		failures = append(failures, validate.FieldError{
+			Name:  "idempotency_key",
+			Error: err,
+		})
+	}
+	if err := func() error {
 		if err := (validate.String{
 			MinLength:     1,
 			MinLengthSet:  true,
@@ -1471,6 +1531,66 @@ func (s *LaunchInstanceRequestBody) Validate() error {
 	}
 
 	var failures []validate.FieldError
+	if err := func() error {
+		if value, ok := s.PromotionCode.Get(); ok {
+			if err := func() error {
+				if err := (validate.String{
+					MinLength:     0,
+					MinLengthSet:  false,
+					MaxLength:     64,
+					MaxLengthSet:  true,
+					Email:         false,
+					Hostname:      false,
+					Regex:         nil,
+					MinNumeric:    0,
+					MinNumericSet: false,
+					MaxNumeric:    0,
+					MaxNumericSet: false,
+				}).Validate(string(value)); err != nil {
+					return errors.Wrap(err, "string")
+				}
+				return nil
+			}(); err != nil {
+				return err
+			}
+		}
+		return nil
+	}(); err != nil {
+		failures = append(failures, validate.FieldError{
+			Name:  "promotion_code",
+			Error: err,
+		})
+	}
+	if err := func() error {
+		if value, ok := s.IdempotencyKey.Get(); ok {
+			if err := func() error {
+				if err := (validate.String{
+					MinLength:     8,
+					MinLengthSet:  true,
+					MaxLength:     255,
+					MaxLengthSet:  true,
+					Email:         false,
+					Hostname:      false,
+					Regex:         nil,
+					MinNumeric:    0,
+					MinNumericSet: false,
+					MaxNumeric:    0,
+					MaxNumericSet: false,
+				}).Validate(string(value)); err != nil {
+					return errors.Wrap(err, "string")
+				}
+				return nil
+			}(); err != nil {
+				return err
+			}
+		}
+		return nil
+	}(); err != nil {
+		failures = append(failures, validate.FieldError{
+			Name:  "idempotency_key",
+			Error: err,
+		})
+	}
 	if err := func() error {
 		if value, ok := s.BandwidthMbps.Get(); ok {
 			if err := func() error {

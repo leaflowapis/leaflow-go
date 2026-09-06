@@ -522,14 +522,11 @@ type ProjectResource struct {
 	CreatedBy string    `json:"created_by"`
 
 	// DeletedAt 盖上墓碑的那一刻
-	DeletedAt   *time.Time         `json:"deleted_at"`
-	Description string             `json:"description"`
-	Id          openapi_types.UUID `json:"id"`
-	Name        string             `json:"name"`
-
-	// OverdueAt 欠费的起始时间
-	OverdueAt *time.Time            `json:"overdue_at"`
-	Status    ProjectResourceStatus `json:"status"`
+	DeletedAt   *time.Time            `json:"deleted_at"`
+	Description string                `json:"description"`
+	Id          openapi_types.UUID    `json:"id"`
+	Name        string                `json:"name"`
+	Status      ProjectResourceStatus `json:"status"`
 
 	// StatusReason 给人看的，不参与任何查询
 	StatusReason string    `json:"status_reason"`
