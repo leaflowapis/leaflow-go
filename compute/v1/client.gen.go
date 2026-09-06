@@ -704,12 +704,22 @@ type DiskResource struct {
 	DiskTypeId openapi_types.UUID `json:"disk_type_id"`
 	Id         openapi_types.UUID `json:"id"`
 
+	// Iops IOPS this disk is allowed. Null when its type is not rate-limited.
+	//
+	// Computed from the disk's own capacity, so it grows when the disk is grown — but see the
+	// note on the resize endpoint: growing a disk that is attached is refused, precisely because
+	// the new figure would not take effect until it was attached again.
+	Iops *int64 `json:"iops"`
+
 	// IsSystem A system disk is released with its instance and can be neither detached nor deleted individually
 	IsSystem   bool               `json:"is_system"`
 	Name       string             `json:"name"`
 	RegionCode string             `json:"region_code"`
 	SizeGb     int64              `json:"size_gb"`
 	Status     DiskResourceStatus `json:"status"`
+
+	// ThroughputBytesPerSec Throughput this disk is allowed, in bytes per second. Null when its type is not rate-limited
+	ThroughputBytesPerSec *int64 `json:"throughput_bytes_per_sec"`
 }
 
 // DiskResourceChargeType How this disk is paid for. `postpaid` is billed by the hour for as long as it exists;
@@ -731,13 +741,22 @@ type DiskTypeListResponseBody struct {
 
 // DiskTypeResource defines model for DiskTypeResource.
 type DiskTypeResource struct {
-	AvailabilityZoneCode string                `json:"availability_zone_code"`
-	Id                   openapi_types.UUID    `json:"id"`
-	IopsDisplay          string                `json:"iops_display"`
-	MaxSizeGb            int64                 `json:"max_size_gb"`
-	Media                DiskTypeResourceMedia `json:"media"`
-	MinSizeGb            int64                 `json:"min_size_gb"`
-	Name                 string                `json:"name"`
+	AvailabilityZoneCode string             `json:"availability_zone_code"`
+	Id                   openapi_types.UUID `json:"id"`
+
+	// IopsAtMaxSize IOPS a disk of `max_size_gb` gets. Null when this type is not rate-limited
+	IopsAtMaxSize *int64 `json:"iops_at_max_size"`
+
+	// IopsAtMinSize IOPS a disk of `min_size_gb` gets. Null when this type is not rate-limited.
+	//
+	// Performance grows with capacity, so this and `iops_at_max_size` are the two ends of the
+	// range. The exact figure for the size actually bought appears on the disk itself once it
+	// exists.
+	IopsAtMinSize *int64                `json:"iops_at_min_size"`
+	MaxSizeGb     int64                 `json:"max_size_gb"`
+	Media         DiskTypeResourceMedia `json:"media"`
+	MinSizeGb     int64                 `json:"min_size_gb"`
+	Name          string                `json:"name"`
 
 	// PrepaidPrices What buying this type outright costs, per term. Empty means this type is only sold by the
 	// hour.
@@ -776,9 +795,18 @@ type DiskTypeResource struct {
 	//
 	// Advisory: it is read when the list is built, and capacity can be taken between that read
 	// and the order. The order is what actually refuses.
-	SoldOut           bool   `json:"sold_out"`
-	StepGb            int64  `json:"step_gb"`
-	ThroughputDisplay string `json:"throughput_display"`
+	SoldOut bool  `json:"sold_out"`
+	StepGb  int64 `json:"step_gb"`
+
+	// ThroughputAtMaxSize Throughput a disk of `max_size_gb` gets, in bytes per second. Null when this type is not rate-limited
+	ThroughputAtMaxSize *int64 `json:"throughput_at_max_size"`
+
+	// ThroughputAtMinSize Throughput a disk of `min_size_gb` gets, in **bytes per second**. Null when this type is
+	// not rate-limited.
+	//
+	// Bytes rather than MiB so the number needs no rounding on the way out; divide by 1048576
+	// for MiB/s at the point of display.
+	ThroughputAtMinSize *int64 `json:"throughput_at_min_size"`
 }
 
 // DiskTypeResourceMedia defines model for DiskTypeResource.Media.
@@ -956,10 +984,26 @@ type InstanceTypeResource struct {
 	// AvailabilityZoneCode Availability zone of this instance type. A disk must be in the same zone to be attached
 	AvailabilityZoneCode string             `json:"availability_zone_code"`
 	Id                   openapi_types.UUID `json:"id"`
-	MaxBandwidthMbps     int64              `json:"max_bandwidth_mbps"`
-	MaxFloatingIps       int64              `json:"max_floating_ips"`
-	MaxPorts             int64              `json:"max_ports"`
-	Name                 string             `json:"name"`
+
+	// MaxBandwidthMbps The most public bandwidth a machine of this type may be given, in Mbps. Asking for more
+	// when creating a machine, or raising a bound address past it, is refused.
+	//
+	// A ceiling on what can be bought, not a speed. How fast the machine's own interfaces run is
+	// `network_egress_kbps` / `network_ingress_kbps`.
+	MaxBandwidthMbps int64  `json:"max_bandwidth_mbps"`
+	MaxFloatingIps   int64  `json:"max_floating_ips"`
+	MaxPorts         int64  `json:"max_ports"`
+	Name             string `json:"name"`
+
+	// NetworkEgressKbps Outbound ceiling of **each** network interface, in kbps. Null when this type is not
+	// rate-limited.
+	//
+	// Per interface rather than per machine: a machine with two interfaces has this ceiling on
+	// each of them, not shared between them. `max_ports` says how many it may have.
+	NetworkEgressKbps *int64 `json:"network_egress_kbps"`
+
+	// NetworkIngressKbps Inbound ceiling of each network interface, in kbps. Null when this type is not rate-limited
+	NetworkIngressKbps *int64 `json:"network_ingress_kbps"`
 
 	// PrepaidPrices What buying this type outright costs, per term. Empty means this type is only sold by the
 	// hour.
@@ -1984,6 +2028,12 @@ type ClientInterface interface {
 	//
 	// Capacity can only be increased; shrinking is not supported. Extend the file system inside the instance once the resize completes.
 	//
+	// **A data disk whose performance grows with its size has to be detached first.** The storage backend decides a volume's limit when the volume is attached and never revisits it, so growing one that is attached would give you the capacity immediately and leave the speed at the old size's figure — indefinitely, and stopping the instance does not help. Rather than take the money for performance that does not arrive, this is refused with `DISK_RESIZE_NEEDS_DETACH`; detach the disk, resize it, and attach it again.
+	//
+	// It is only refused when the two sizes really would differ in speed. A disk whose type has no QoS level, or whose performance has already reached the type's ceiling, grows online as before.
+	//
+	// **A system disk is the exception and grows online**, because a root volume cannot be detached at all. Its performance does not change with size for exactly that reason — system disk types are required to carry a level that does not scale.
+	//
 	// Takes any type of body and a specified content type.
 	//
 	// Corresponds with POST /api/v1/disks/{diskId}/resize (the `ResizeDisk` operationId).
@@ -1992,6 +2042,12 @@ type ClientInterface interface {
 	// ResizeDisk Resize a disk
 	//
 	// Capacity can only be increased; shrinking is not supported. Extend the file system inside the instance once the resize completes.
+	//
+	// **A data disk whose performance grows with its size has to be detached first.** The storage backend decides a volume's limit when the volume is attached and never revisits it, so growing one that is attached would give you the capacity immediately and leave the speed at the old size's figure — indefinitely, and stopping the instance does not help. Rather than take the money for performance that does not arrive, this is refused with `DISK_RESIZE_NEEDS_DETACH`; detach the disk, resize it, and attach it again.
+	//
+	// It is only refused when the two sizes really would differ in speed. A disk whose type has no QoS level, or whose performance has already reached the type's ceiling, grows online as before.
+	//
+	// **A system disk is the exception and grows online**, because a root volume cannot be detached at all. Its performance does not change with size for exactly that reason — system disk types are required to carry a level that does not scale.
 	//
 	// Takes a body of the `application/json` content type.
 	//
@@ -2067,6 +2123,8 @@ type ClientInterface interface {
 	//
 	// Limits both directions at once. Limiting egress alone does not prevent ingress traffic from saturating the uplink.
 	//
+	// While the address is bound to an instance, the ceiling has to fit that instance type's `max_bandwidth_mbps`; asking for more is refused with `INSTANCE_BANDWIDTH_CEILING`. An address bound to nothing is not checked against any type — there is none to check against — and is checked again when it is attached.
+	//
 	// Takes any type of body and a specified content type.
 	//
 	// Corresponds with PUT /api/v1/floating-ips/{floatingIpId}/bandwidth (the `SetFloatingIpBandwidth` operationId).
@@ -2075,6 +2133,8 @@ type ClientInterface interface {
 	// SetFloatingIpBandwidth Set the bandwidth limit
 	//
 	// Limits both directions at once. Limiting egress alone does not prevent ingress traffic from saturating the uplink.
+	//
+	// While the address is bound to an instance, the ceiling has to fit that instance type's `max_bandwidth_mbps`; asking for more is refused with `INSTANCE_BANDWIDTH_CEILING`. An address bound to nothing is not checked against any type — there is none to check against — and is checked again when it is attached.
 	//
 	// Takes a body of the `application/json` content type.
 	//
@@ -3267,6 +3327,12 @@ func (c *Client) RenameDisk(ctx context.Context, diskId openapi_types.UUID, body
 //
 // Capacity can only be increased; shrinking is not supported. Extend the file system inside the instance once the resize completes.
 //
+// **A data disk whose performance grows with its size has to be detached first.** The storage backend decides a volume's limit when the volume is attached and never revisits it, so growing one that is attached would give you the capacity immediately and leave the speed at the old size's figure — indefinitely, and stopping the instance does not help. Rather than take the money for performance that does not arrive, this is refused with `DISK_RESIZE_NEEDS_DETACH`; detach the disk, resize it, and attach it again.
+//
+// It is only refused when the two sizes really would differ in speed. A disk whose type has no QoS level, or whose performance has already reached the type's ceiling, grows online as before.
+//
+// **A system disk is the exception and grows online**, because a root volume cannot be detached at all. Its performance does not change with size for exactly that reason — system disk types are required to carry a level that does not scale.
+//
 // Takes any type of body and a specified content type.
 //
 // Corresponds with POST /api/v1/disks/{diskId}/resize (the `ResizeDisk` operationId).
@@ -3285,6 +3351,12 @@ func (c *Client) ResizeDiskWithBody(ctx context.Context, diskId openapi_types.UU
 // ResizeDisk Resize a disk
 //
 // Capacity can only be increased; shrinking is not supported. Extend the file system inside the instance once the resize completes.
+//
+// **A data disk whose performance grows with its size has to be detached first.** The storage backend decides a volume's limit when the volume is attached and never revisits it, so growing one that is attached would give you the capacity immediately and leave the speed at the old size's figure — indefinitely, and stopping the instance does not help. Rather than take the money for performance that does not arrive, this is refused with `DISK_RESIZE_NEEDS_DETACH`; detach the disk, resize it, and attach it again.
+//
+// It is only refused when the two sizes really would differ in speed. A disk whose type has no QoS level, or whose performance has already reached the type's ceiling, grows online as before.
+//
+// **A system disk is the exception and grows online**, because a root volume cannot be detached at all. Its performance does not change with size for exactly that reason — system disk types are required to carry a level that does not scale.
 //
 // Takes a body of the `application/json` content type.
 //
@@ -3440,6 +3512,8 @@ func (c *Client) GetFloatingIp(ctx context.Context, floatingIpId openapi_types.U
 //
 // Limits both directions at once. Limiting egress alone does not prevent ingress traffic from saturating the uplink.
 //
+// While the address is bound to an instance, the ceiling has to fit that instance type's `max_bandwidth_mbps`; asking for more is refused with `INSTANCE_BANDWIDTH_CEILING`. An address bound to nothing is not checked against any type — there is none to check against — and is checked again when it is attached.
+//
 // Takes any type of body and a specified content type.
 //
 // Corresponds with PUT /api/v1/floating-ips/{floatingIpId}/bandwidth (the `SetFloatingIpBandwidth` operationId).
@@ -3458,6 +3532,8 @@ func (c *Client) SetFloatingIpBandwidthWithBody(ctx context.Context, floatingIpI
 // SetFloatingIpBandwidth Set the bandwidth limit
 //
 // Limits both directions at once. Limiting egress alone does not prevent ingress traffic from saturating the uplink.
+//
+// While the address is bound to an instance, the ceiling has to fit that instance type's `max_bandwidth_mbps`; asking for more is refused with `INSTANCE_BANDWIDTH_CEILING`. An address bound to nothing is not checked against any type — there is none to check against — and is checked again when it is attached.
 //
 // Takes a body of the `application/json` content type.
 //
@@ -9189,6 +9265,12 @@ type ClientWithResponsesInterface interface {
 	//
 	// Capacity can only be increased; shrinking is not supported. Extend the file system inside the instance once the resize completes.
 	//
+	// **A data disk whose performance grows with its size has to be detached first.** The storage backend decides a volume's limit when the volume is attached and never revisits it, so growing one that is attached would give you the capacity immediately and leave the speed at the old size's figure — indefinitely, and stopping the instance does not help. Rather than take the money for performance that does not arrive, this is refused with `DISK_RESIZE_NEEDS_DETACH`; detach the disk, resize it, and attach it again.
+	//
+	// It is only refused when the two sizes really would differ in speed. A disk whose type has no QoS level, or whose performance has already reached the type's ceiling, grows online as before.
+	//
+	// **A system disk is the exception and grows online**, because a root volume cannot be detached at all. Its performance does not change with size for exactly that reason — system disk types are required to carry a level that does not scale.
+	//
 	// Takes any type of body and a specified content type, and returns a wrapper object for the known response body format(s).
 	//
 	// Corresponds with POST /api/v1/disks/{diskId}/resize (the `ResizeDisk` operationId).
@@ -9197,6 +9279,12 @@ type ClientWithResponsesInterface interface {
 	// ResizeDiskWithResponse Resize a disk
 	//
 	// Capacity can only be increased; shrinking is not supported. Extend the file system inside the instance once the resize completes.
+	//
+	// **A data disk whose performance grows with its size has to be detached first.** The storage backend decides a volume's limit when the volume is attached and never revisits it, so growing one that is attached would give you the capacity immediately and leave the speed at the old size's figure — indefinitely, and stopping the instance does not help. Rather than take the money for performance that does not arrive, this is refused with `DISK_RESIZE_NEEDS_DETACH`; detach the disk, resize it, and attach it again.
+	//
+	// It is only refused when the two sizes really would differ in speed. A disk whose type has no QoS level, or whose performance has already reached the type's ceiling, grows online as before.
+	//
+	// **A system disk is the exception and grows online**, because a root volume cannot be detached at all. Its performance does not change with size for exactly that reason — system disk types are required to carry a level that does not scale.
 	//
 	// Takes a body of the `application/json` content type, and returns a wrapper object for the known response body format(s).
 	//
@@ -9278,6 +9366,8 @@ type ClientWithResponsesInterface interface {
 	//
 	// Limits both directions at once. Limiting egress alone does not prevent ingress traffic from saturating the uplink.
 	//
+	// While the address is bound to an instance, the ceiling has to fit that instance type's `max_bandwidth_mbps`; asking for more is refused with `INSTANCE_BANDWIDTH_CEILING`. An address bound to nothing is not checked against any type — there is none to check against — and is checked again when it is attached.
+	//
 	// Takes any type of body and a specified content type, and returns a wrapper object for the known response body format(s).
 	//
 	// Corresponds with PUT /api/v1/floating-ips/{floatingIpId}/bandwidth (the `SetFloatingIpBandwidth` operationId).
@@ -9286,6 +9376,8 @@ type ClientWithResponsesInterface interface {
 	// SetFloatingIpBandwidthWithResponse Set the bandwidth limit
 	//
 	// Limits both directions at once. Limiting egress alone does not prevent ingress traffic from saturating the uplink.
+	//
+	// While the address is bound to an instance, the ceiling has to fit that instance type's `max_bandwidth_mbps`; asking for more is refused with `INSTANCE_BANDWIDTH_CEILING`. An address bound to nothing is not checked against any type — there is none to check against — and is checked again when it is attached.
 	//
 	// Takes a body of the `application/json` content type, and returns a wrapper object for the known response body format(s).
 	//
@@ -14659,6 +14751,12 @@ func (c *ClientWithResponses) RenameDiskWithResponse(ctx context.Context, diskId
 //
 // Capacity can only be increased; shrinking is not supported. Extend the file system inside the instance once the resize completes.
 //
+// **A data disk whose performance grows with its size has to be detached first.** The storage backend decides a volume's limit when the volume is attached and never revisits it, so growing one that is attached would give you the capacity immediately and leave the speed at the old size's figure — indefinitely, and stopping the instance does not help. Rather than take the money for performance that does not arrive, this is refused with `DISK_RESIZE_NEEDS_DETACH`; detach the disk, resize it, and attach it again.
+//
+// It is only refused when the two sizes really would differ in speed. A disk whose type has no QoS level, or whose performance has already reached the type's ceiling, grows online as before.
+//
+// **A system disk is the exception and grows online**, because a root volume cannot be detached at all. Its performance does not change with size for exactly that reason — system disk types are required to carry a level that does not scale.
+//
 // Takes any type of body and a specified content type, and returns a wrapper object for the known response body format(s).
 //
 // Corresponds with POST /api/v1/disks/{diskId}/resize (the `ResizeDisk` operationId).
@@ -14673,6 +14771,12 @@ func (c *ClientWithResponses) ResizeDiskWithBodyWithResponse(ctx context.Context
 // ResizeDiskWithResponse Resize a disk
 //
 // Capacity can only be increased; shrinking is not supported. Extend the file system inside the instance once the resize completes.
+//
+// **A data disk whose performance grows with its size has to be detached first.** The storage backend decides a volume's limit when the volume is attached and never revisits it, so growing one that is attached would give you the capacity immediately and leave the speed at the old size's figure — indefinitely, and stopping the instance does not help. Rather than take the money for performance that does not arrive, this is refused with `DISK_RESIZE_NEEDS_DETACH`; detach the disk, resize it, and attach it again.
+//
+// It is only refused when the two sizes really would differ in speed. A disk whose type has no QoS level, or whose performance has already reached the type's ceiling, grows online as before.
+//
+// **A system disk is the exception and grows online**, because a root volume cannot be detached at all. Its performance does not change with size for exactly that reason — system disk types are required to carry a level that does not scale.
 //
 // Takes a body of the `application/json` content type, and returns a wrapper object for the known response body format(s).
 //
@@ -14802,6 +14906,8 @@ func (c *ClientWithResponses) GetFloatingIpWithResponse(ctx context.Context, flo
 //
 // Limits both directions at once. Limiting egress alone does not prevent ingress traffic from saturating the uplink.
 //
+// While the address is bound to an instance, the ceiling has to fit that instance type's `max_bandwidth_mbps`; asking for more is refused with `INSTANCE_BANDWIDTH_CEILING`. An address bound to nothing is not checked against any type — there is none to check against — and is checked again when it is attached.
+//
 // Takes any type of body and a specified content type, and returns a wrapper object for the known response body format(s).
 //
 // Corresponds with PUT /api/v1/floating-ips/{floatingIpId}/bandwidth (the `SetFloatingIpBandwidth` operationId).
@@ -14816,6 +14922,8 @@ func (c *ClientWithResponses) SetFloatingIpBandwidthWithBodyWithResponse(ctx con
 // SetFloatingIpBandwidthWithResponse Set the bandwidth limit
 //
 // Limits both directions at once. Limiting egress alone does not prevent ingress traffic from saturating the uplink.
+//
+// While the address is bound to an instance, the ceiling has to fit that instance type's `max_bandwidth_mbps`; asking for more is refused with `INSTANCE_BANDWIDTH_CEILING`. An address bound to nothing is not checked against any type — there is none to check against — and is checked again when it is attached.
 //
 // Takes a body of the `application/json` content type, and returns a wrapper object for the known response body format(s).
 //

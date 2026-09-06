@@ -640,6 +640,20 @@ type Invoker interface {
 	// Capacity can only be increased; shrinking is not supported. Extend the file system inside the
 	// instance once the resize completes.
 	//
+	// A data disk whose performance grows with its size has to be detached first. The storage backend
+	// decides a volume's limit when the volume is attached and never revisits it, so growing one that is
+	// attached would give you the capacity immediately and leave the speed at the old size's figure —
+	// indefinitely, and stopping the instance does not help. Rather than take the money for performance
+	// that does not arrive, this is refused with `DISK_RESIZE_NEEDS_DETACH`; detach the disk, resize it,
+	// and attach it again.
+	//
+	// It is only refused when the two sizes really would differ in speed. A disk whose type has no QoS
+	// level, or whose performance has already reached the type's ceiling, grows online as before.
+	//
+	// A system disk is the exception and grows online, because a root volume cannot be detached at all.
+	// Its performance does not change with size for exactly that reason — system disk types are required
+	// to carry a level that does not scale.
+	//
 	// POST /api/v1/disks/{diskId}/resize
 	ResizeDisk(ctx context.Context, request *ResizeDiskRequestBody, params ResizeDiskParams) (*DiskResource, error)
 	// ResizeInstance invokes resize-instance operation.
@@ -724,6 +738,11 @@ type Invoker interface {
 	//
 	// Limits both directions at once. Limiting egress alone does not prevent ingress traffic from
 	// saturating the uplink.
+	//
+	// While the address is bound to an instance, the ceiling has to fit that instance type's
+	// `max_bandwidth_mbps`; asking for more is refused with `INSTANCE_BANDWIDTH_CEILING`. An address bound
+	// to nothing is not checked against any type — there is none to check against — and is checked
+	// again when it is attached.
 	//
 	// PUT /api/v1/floating-ips/{floatingIpId}/bandwidth
 	SetFloatingIPBandwidth(ctx context.Context, request *SetBandwidthRequestBody, params SetFloatingIPBandwidthParams) (*FloatingIPResource, error)
@@ -10923,6 +10942,20 @@ func (c *Client) sendResetInstancePassword(ctx context.Context, request *ResetPa
 // Capacity can only be increased; shrinking is not supported. Extend the file system inside the
 // instance once the resize completes.
 //
+// A data disk whose performance grows with its size has to be detached first. The storage backend
+// decides a volume's limit when the volume is attached and never revisits it, so growing one that is
+// attached would give you the capacity immediately and leave the speed at the old size's figure —
+// indefinitely, and stopping the instance does not help. Rather than take the money for performance
+// that does not arrive, this is refused with `DISK_RESIZE_NEEDS_DETACH`; detach the disk, resize it,
+// and attach it again.
+//
+// It is only refused when the two sizes really would differ in speed. A disk whose type has no QoS
+// level, or whose performance has already reached the type's ceiling, grows online as before.
+//
+// A system disk is the exception and grows online, because a root volume cannot be detached at all.
+// Its performance does not change with size for exactly that reason — system disk types are required
+// to carry a level that does not scale.
+//
 // POST /api/v1/disks/{diskId}/resize
 func (c *Client) ResizeDisk(ctx context.Context, request *ResizeDiskRequestBody, params ResizeDiskParams) (*DiskResource, error) {
 	res, err := c.sendResizeDisk(ctx, request, params)
@@ -11778,6 +11811,11 @@ func (c *Client) sendRunInstanceCommand(ctx context.Context, request *RunCommand
 //
 // Limits both directions at once. Limiting egress alone does not prevent ingress traffic from
 // saturating the uplink.
+//
+// While the address is bound to an instance, the ceiling has to fit that instance type's
+// `max_bandwidth_mbps`; asking for more is refused with `INSTANCE_BANDWIDTH_CEILING`. An address bound
+// to nothing is not checked against any type — there is none to check against — and is checked
+// again when it is attached.
 //
 // PUT /api/v1/floating-ips/{floatingIpId}/bandwidth
 func (c *Client) SetFloatingIPBandwidth(ctx context.Context, request *SetBandwidthRequestBody, params SetFloatingIPBandwidthParams) (*FloatingIPResource, error) {

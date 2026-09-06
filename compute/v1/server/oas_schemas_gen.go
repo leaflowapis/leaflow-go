@@ -1092,11 +1092,19 @@ type DiskResource struct {
 	DiskTypeID uuid.UUID `json:"disk_type_id"`
 	ID         uuid.UUID `json:"id"`
 	// A system disk is released with its instance and can be neither detached nor deleted individually.
-	IsSystem   bool               `json:"is_system"`
-	Name       string             `json:"name"`
-	RegionCode string             `json:"region_code"`
-	SizeGB     int64              `json:"size_gb"`
-	Status     DiskResourceStatus `json:"status"`
+	IsSystem   bool   `json:"is_system"`
+	Name       string `json:"name"`
+	RegionCode string `json:"region_code"`
+	SizeGB     int64  `json:"size_gb"`
+	// IOPS this disk is allowed. Null when its type is not rate-limited.
+	//
+	// Computed from the disk's own capacity, so it grows when the disk is grown — but see the note on
+	// the resize endpoint: growing a disk that is attached is refused, precisely because the new figure
+	// would not take effect until it was attached again.
+	Iops NilInt64 `json:"iops"`
+	// Throughput this disk is allowed, in bytes per second. Null when its type is not rate-limited.
+	ThroughputBytesPerSec NilInt64           `json:"throughput_bytes_per_sec"`
+	Status                DiskResourceStatus `json:"status"`
 	// How this disk is paid for. `postpaid` is billed by the hour for as long as it exists; `prepaid` was
 	// bought outright for a term.
 	//
@@ -1157,6 +1165,16 @@ func (s *DiskResource) GetSizeGB() int64 {
 	return s.SizeGB
 }
 
+// GetIops returns the value of Iops.
+func (s *DiskResource) GetIops() NilInt64 {
+	return s.Iops
+}
+
+// GetThroughputBytesPerSec returns the value of ThroughputBytesPerSec.
+func (s *DiskResource) GetThroughputBytesPerSec() NilInt64 {
+	return s.ThroughputBytesPerSec
+}
+
 // GetStatus returns the value of Status.
 func (s *DiskResource) GetStatus() DiskResourceStatus {
 	return s.Status
@@ -1215,6 +1233,16 @@ func (s *DiskResource) SetRegionCode(val string) {
 // SetSizeGB sets the value of SizeGB.
 func (s *DiskResource) SetSizeGB(val int64) {
 	s.SizeGB = val
+}
+
+// SetIops sets the value of Iops.
+func (s *DiskResource) SetIops(val NilInt64) {
+	s.Iops = val
+}
+
+// SetThroughputBytesPerSec sets the value of ThroughputBytesPerSec.
+func (s *DiskResource) SetThroughputBytesPerSec(val NilInt64) {
+	s.ThroughputBytesPerSec = val
 }
 
 // SetStatus sets the value of Status.
@@ -1398,16 +1426,30 @@ func (s *DiskTypeListResponseBody) SetItems(val []DiskTypeResource) {
 
 // Ref: #/components/schemas/DiskTypeResource
 type DiskTypeResource struct {
-	AvailabilityZoneCode string                `json:"availability_zone_code"`
-	ID                   uuid.UUID             `json:"id"`
-	IopsDisplay          string                `json:"iops_display"`
-	MaxSizeGB            int64                 `json:"max_size_gb"`
-	Media                DiskTypeResourceMedia `json:"media"`
-	MinSizeGB            int64                 `json:"min_size_gb"`
-	Name                 string                `json:"name"`
-	RegionCode           string                `json:"region_code"`
-	StepGB               int64                 `json:"step_gb"`
-	ThroughputDisplay    string                `json:"throughput_display"`
+	AvailabilityZoneCode string    `json:"availability_zone_code"`
+	ID                   uuid.UUID `json:"id"`
+	// IOPS a disk of `min_size_gb` gets. Null when this type is not rate-limited.
+	//
+	// Performance grows with capacity, so this and `iops_at_max_size` are the two ends of the range. The
+	// exact figure for the size actually bought appears on the disk itself once it exists.
+	IopsAtMinSize NilInt64 `json:"iops_at_min_size"`
+	// IOPS a disk of `max_size_gb` gets. Null when this type is not rate-limited.
+	IopsAtMaxSize NilInt64              `json:"iops_at_max_size"`
+	MaxSizeGB     int64                 `json:"max_size_gb"`
+	Media         DiskTypeResourceMedia `json:"media"`
+	MinSizeGB     int64                 `json:"min_size_gb"`
+	Name          string                `json:"name"`
+	RegionCode    string                `json:"region_code"`
+	StepGB        int64                 `json:"step_gb"`
+	// Throughput a disk of `min_size_gb` gets, in bytes per second. Null when this type is not
+	// rate-limited.
+	//
+	// Bytes rather than MiB so the number needs no rounding on the way out; divide by 1048576 for MiB/s at
+	// the point of display.
+	ThroughputAtMinSize NilInt64 `json:"throughput_at_min_size"`
+	// Throughput a disk of `max_size_gb` gets, in bytes per second. Null when this type is not
+	// rate-limited.
+	ThroughputAtMaxSize NilInt64 `json:"throughput_at_max_size"`
 	// Whether any capacity is left in this type's pool.
 	//
 	// The same shape as on an instance type, but it answers less here: a disk is sold by the GiB, so "not
@@ -1452,9 +1494,14 @@ func (s *DiskTypeResource) GetID() uuid.UUID {
 	return s.ID
 }
 
-// GetIopsDisplay returns the value of IopsDisplay.
-func (s *DiskTypeResource) GetIopsDisplay() string {
-	return s.IopsDisplay
+// GetIopsAtMinSize returns the value of IopsAtMinSize.
+func (s *DiskTypeResource) GetIopsAtMinSize() NilInt64 {
+	return s.IopsAtMinSize
+}
+
+// GetIopsAtMaxSize returns the value of IopsAtMaxSize.
+func (s *DiskTypeResource) GetIopsAtMaxSize() NilInt64 {
+	return s.IopsAtMaxSize
 }
 
 // GetMaxSizeGB returns the value of MaxSizeGB.
@@ -1487,9 +1534,14 @@ func (s *DiskTypeResource) GetStepGB() int64 {
 	return s.StepGB
 }
 
-// GetThroughputDisplay returns the value of ThroughputDisplay.
-func (s *DiskTypeResource) GetThroughputDisplay() string {
-	return s.ThroughputDisplay
+// GetThroughputAtMinSize returns the value of ThroughputAtMinSize.
+func (s *DiskTypeResource) GetThroughputAtMinSize() NilInt64 {
+	return s.ThroughputAtMinSize
+}
+
+// GetThroughputAtMaxSize returns the value of ThroughputAtMaxSize.
+func (s *DiskTypeResource) GetThroughputAtMaxSize() NilInt64 {
+	return s.ThroughputAtMaxSize
 }
 
 // GetSoldOut returns the value of SoldOut.
@@ -1517,9 +1569,14 @@ func (s *DiskTypeResource) SetID(val uuid.UUID) {
 	s.ID = val
 }
 
-// SetIopsDisplay sets the value of IopsDisplay.
-func (s *DiskTypeResource) SetIopsDisplay(val string) {
-	s.IopsDisplay = val
+// SetIopsAtMinSize sets the value of IopsAtMinSize.
+func (s *DiskTypeResource) SetIopsAtMinSize(val NilInt64) {
+	s.IopsAtMinSize = val
+}
+
+// SetIopsAtMaxSize sets the value of IopsAtMaxSize.
+func (s *DiskTypeResource) SetIopsAtMaxSize(val NilInt64) {
+	s.IopsAtMaxSize = val
 }
 
 // SetMaxSizeGB sets the value of MaxSizeGB.
@@ -1552,9 +1609,14 @@ func (s *DiskTypeResource) SetStepGB(val int64) {
 	s.StepGB = val
 }
 
-// SetThroughputDisplay sets the value of ThroughputDisplay.
-func (s *DiskTypeResource) SetThroughputDisplay(val string) {
-	s.ThroughputDisplay = val
+// SetThroughputAtMinSize sets the value of ThroughputAtMinSize.
+func (s *DiskTypeResource) SetThroughputAtMinSize(val NilInt64) {
+	s.ThroughputAtMinSize = val
+}
+
+// SetThroughputAtMaxSize sets the value of ThroughputAtMaxSize.
+func (s *DiskTypeResource) SetThroughputAtMaxSize(val NilInt64) {
+	s.ThroughputAtMaxSize = val
 }
 
 // SetSoldOut sets the value of SoldOut.
@@ -2608,13 +2670,25 @@ type InstanceTypeResource struct {
 	// Availability zone of this instance type. A disk must be in the same zone to be attached.
 	AvailabilityZoneCode string    `json:"availability_zone_code"`
 	ID                   uuid.UUID `json:"id"`
-	MaxBandwidthMbps     int64     `json:"max_bandwidth_mbps"`
-	MaxFloatingIps       int64     `json:"max_floating_ips"`
-	MaxPorts             int64     `json:"max_ports"`
-	Name                 string    `json:"name"`
-	RAMMB                int64     `json:"ram_mb"`
-	RegionCode           string    `json:"region_code"`
-	Vcpus                int64     `json:"vcpus"`
+	// The most public bandwidth a machine of this type may be given, in Mbps. Asking for more when
+	// creating a machine, or raising a bound address past it, is refused.
+	//
+	// A ceiling on what can be bought, not a speed. How fast the machine's own interfaces run is
+	// `network_egress_kbps` / `network_ingress_kbps`.
+	MaxBandwidthMbps int64 `json:"max_bandwidth_mbps"`
+	// Outbound ceiling of each network interface, in kbps. Null when this type is not rate-limited.
+	//
+	// Per interface rather than per machine: a machine with two interfaces has this ceiling on each of
+	// them, not shared between them. `max_ports` says how many it may have.
+	NetworkEgressKbps NilInt64 `json:"network_egress_kbps"`
+	// Inbound ceiling of each network interface, in kbps. Null when this type is not rate-limited.
+	NetworkIngressKbps NilInt64 `json:"network_ingress_kbps"`
+	MaxFloatingIps     int64    `json:"max_floating_ips"`
+	MaxPorts           int64    `json:"max_ports"`
+	Name               string   `json:"name"`
+	RAMMB              int64    `json:"ram_mb"`
+	RegionCode         string   `json:"region_code"`
+	Vcpus              int64    `json:"vcpus"`
 	// Whether this type can be ordered right now.
 	//
 	// It reflects a limit set by operations, not what the cloud can physically schedule — raising the
@@ -2654,6 +2728,16 @@ func (s *InstanceTypeResource) GetID() uuid.UUID {
 // GetMaxBandwidthMbps returns the value of MaxBandwidthMbps.
 func (s *InstanceTypeResource) GetMaxBandwidthMbps() int64 {
 	return s.MaxBandwidthMbps
+}
+
+// GetNetworkEgressKbps returns the value of NetworkEgressKbps.
+func (s *InstanceTypeResource) GetNetworkEgressKbps() NilInt64 {
+	return s.NetworkEgressKbps
+}
+
+// GetNetworkIngressKbps returns the value of NetworkIngressKbps.
+func (s *InstanceTypeResource) GetNetworkIngressKbps() NilInt64 {
+	return s.NetworkIngressKbps
 }
 
 // GetMaxFloatingIps returns the value of MaxFloatingIps.
@@ -2714,6 +2798,16 @@ func (s *InstanceTypeResource) SetID(val uuid.UUID) {
 // SetMaxBandwidthMbps sets the value of MaxBandwidthMbps.
 func (s *InstanceTypeResource) SetMaxBandwidthMbps(val int64) {
 	s.MaxBandwidthMbps = val
+}
+
+// SetNetworkEgressKbps sets the value of NetworkEgressKbps.
+func (s *InstanceTypeResource) SetNetworkEgressKbps(val NilInt64) {
+	s.NetworkEgressKbps = val
+}
+
+// SetNetworkIngressKbps sets the value of NetworkIngressKbps.
+func (s *InstanceTypeResource) SetNetworkIngressKbps(val NilInt64) {
+	s.NetworkIngressKbps = val
 }
 
 // SetMaxFloatingIps sets the value of MaxFloatingIps.
