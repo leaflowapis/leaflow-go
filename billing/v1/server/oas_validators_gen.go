@@ -2381,9 +2381,9 @@ func (s ProjectPayerStatus) Validate() error {
 
 func (s PurchaseOperation) Validate() error {
 	switch s {
-	case "new":
+	case "purchase":
 		return nil
-	case "renewal":
+	case "renew":
 		return nil
 	case "upgrade":
 		return nil

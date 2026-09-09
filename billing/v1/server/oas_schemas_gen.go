@@ -146,7 +146,7 @@ func (s *AccountBalance) SetSpendable(val Money) {
 type ActiveResource struct {
 	ResourceID string `json:"resource_id"`
 	ProductKey string `json:"product_key"`
-	// What kind of thing it is.
+	// What it is.
 	ResourceType OptString `json:"resource_type"`
 	MeterKey     string    `json:"meter_key"`
 	Unit         OptString `json:"unit"`
@@ -7278,9 +7278,9 @@ func (s *ProjectPayerStatus) UnmarshalText(data []byte) error {
 	}
 }
 
-// Which kind of purchase. `upgrade` and `downgrade` are told apart by money: a change that costs more
-// for the remainder of the period is an upgrade, one that returns money is a downgrade. A change that
-// costs neither more nor less is neither.
+// Which purchase this applies to. `upgrade` and `downgrade` are told apart by money: a change that
+// costs more for the remainder of the period is an upgrade, one that returns money is a downgrade. A
+// change that costs neither more nor less is neither.
 //
 // `new` means a new purchase as opposed to a renewal or a change. It does not mean the account's first
 // purchase.
@@ -7288,8 +7288,8 @@ func (s *ProjectPayerStatus) UnmarshalText(data []byte) error {
 type PurchaseOperation string
 
 const (
-	PurchaseOperationNew       PurchaseOperation = "new"
-	PurchaseOperationRenewal   PurchaseOperation = "renewal"
+	PurchaseOperationPurchase  PurchaseOperation = "purchase"
+	PurchaseOperationRenew     PurchaseOperation = "renew"
 	PurchaseOperationUpgrade   PurchaseOperation = "upgrade"
 	PurchaseOperationDowngrade PurchaseOperation = "downgrade"
 )
@@ -7297,8 +7297,8 @@ const (
 // AllValues returns all PurchaseOperation values.
 func (PurchaseOperation) AllValues() []PurchaseOperation {
 	return []PurchaseOperation{
-		PurchaseOperationNew,
-		PurchaseOperationRenewal,
+		PurchaseOperationPurchase,
+		PurchaseOperationRenew,
 		PurchaseOperationUpgrade,
 		PurchaseOperationDowngrade,
 	}
@@ -7307,9 +7307,9 @@ func (PurchaseOperation) AllValues() []PurchaseOperation {
 // MarshalText implements encoding.TextMarshaler.
 func (s PurchaseOperation) MarshalText() ([]byte, error) {
 	switch s {
-	case PurchaseOperationNew:
+	case PurchaseOperationPurchase:
 		return []byte(s), nil
-	case PurchaseOperationRenewal:
+	case PurchaseOperationRenew:
 		return []byte(s), nil
 	case PurchaseOperationUpgrade:
 		return []byte(s), nil
@@ -7323,11 +7323,11 @@ func (s PurchaseOperation) MarshalText() ([]byte, error) {
 // UnmarshalText implements encoding.TextUnmarshaler.
 func (s *PurchaseOperation) UnmarshalText(data []byte) error {
 	switch PurchaseOperation(data) {
-	case PurchaseOperationNew:
-		*s = PurchaseOperationNew
+	case PurchaseOperationPurchase:
+		*s = PurchaseOperationPurchase
 		return nil
-	case PurchaseOperationRenewal:
-		*s = PurchaseOperationRenewal
+	case PurchaseOperationRenew:
+		*s = PurchaseOperationRenew
 		return nil
 	case PurchaseOperationUpgrade:
 		*s = PurchaseOperationUpgrade
@@ -7606,7 +7606,7 @@ type QuoteLine struct {
 	// Required for a metered price whose price list covers more than one meter, so that the intended one
 	// is unambiguous.
 	MeterKey OptString `json:"meter_key"`
-	// The attributes the price depends on — region, instance type, token kind.
+	// The attributes the price depends on — region, instance type, token class.
 	//
 	// Required when the price draws its rates from a price list, which is how anything sold by region or
 	// by machine type is priced. A price that carries a single unit amount, or a ladder, has no attributes
@@ -7721,7 +7721,7 @@ func (s *QuoteLine) SetDurationSeconds(val OptInt64) {
 	s.DurationSeconds = val
 }
 
-// The attributes the price depends on — region, instance type, token kind.
+// The attributes the price depends on — region, instance type, token class.
 //
 // Required when the price draws its rates from a price list, which is how anything sold by region or
 // by machine type is priced. A price that carries a single unit amount, or a ladder, has no attributes

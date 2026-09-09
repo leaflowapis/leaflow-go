@@ -480,19 +480,19 @@ func (e InvoiceStatus) Valid() bool {
 
 // Defines values for OrderType.
 const (
-	Change   OrderType = "change"
-	Purchase OrderType = "purchase"
-	Renew    OrderType = "renew"
+	OrderTypeChange   OrderType = "change"
+	OrderTypePurchase OrderType = "purchase"
+	OrderTypeRenew    OrderType = "renew"
 )
 
 // Valid indicates whether the value is a known member of the OrderType enum.
 func (e OrderType) Valid() bool {
 	switch e {
-	case Change:
+	case OrderTypeChange:
 		return true
-	case Purchase:
+	case OrderTypePurchase:
 		return true
-	case Renew:
+	case OrderTypeRenew:
 		return true
 	default:
 		return false
@@ -594,22 +594,22 @@ func (e ProjectPayerStatus) Valid() bool {
 
 // Defines values for PurchaseOperation.
 const (
-	Downgrade PurchaseOperation = "downgrade"
-	New       PurchaseOperation = "new"
-	Renewal   PurchaseOperation = "renewal"
-	Upgrade   PurchaseOperation = "upgrade"
+	PurchaseOperationDowngrade PurchaseOperation = "downgrade"
+	PurchaseOperationPurchase  PurchaseOperation = "purchase"
+	PurchaseOperationRenew     PurchaseOperation = "renew"
+	PurchaseOperationUpgrade   PurchaseOperation = "upgrade"
 )
 
 // Valid indicates whether the value is a known member of the PurchaseOperation enum.
 func (e PurchaseOperation) Valid() bool {
 	switch e {
-	case Downgrade:
+	case PurchaseOperationDowngrade:
 		return true
-	case New:
+	case PurchaseOperationPurchase:
 		return true
-	case Renewal:
+	case PurchaseOperationRenew:
 		return true
-	case Upgrade:
+	case PurchaseOperationUpgrade:
 		return true
 	default:
 		return false
@@ -901,7 +901,7 @@ type ActiveResource struct {
 	Quantity   string `json:"quantity"`
 	ResourceId string `json:"resource_id"`
 
-	// ResourceType What kind of thing it is
+	// ResourceType What it is
 	ResourceType *string              `json:"resource_type,omitempty"`
 	StartedAt    time.Time            `json:"started_at"`
 	Status       ActiveResourceStatus `json:"status"`
@@ -1838,7 +1838,7 @@ type ProjectPayerSet struct {
 	BillingAccountId int64 `json:"billing_account_id"`
 }
 
-// PurchaseOperation Which kind of purchase. `upgrade` and `downgrade` are told apart by money: a change
+// PurchaseOperation Which purchase this applies to. `upgrade` and `downgrade` are told apart by money: a change
 // that costs more for the remainder of the period is an upgrade, one that returns money
 // is a downgrade. A change that costs neither more nor less is neither.
 //
@@ -1918,7 +1918,7 @@ type QuoteLine struct {
 	// for more than one period.
 	BillingPeriod *string `json:"billing_period,omitempty"`
 
-	// Dimensions The attributes the price depends on — region, instance type, token kind.
+	// Dimensions The attributes the price depends on — region, instance type, token class.
 	//
 	// Required when the price draws its rates from a price list, which is how anything
 	// sold by region or by machine type is priced. A price that carries a single unit
