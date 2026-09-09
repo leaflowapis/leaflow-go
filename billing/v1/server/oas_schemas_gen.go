@@ -4,7 +4,6 @@ package billingv1server
 
 import (
 	"fmt"
-	"net/url"
 	"time"
 
 	"github.com/go-faster/errors"
@@ -16,606 +15,1252 @@ func (s *ErrorStatusCode) Error() string {
 	return fmt.Sprintf("code %d: %+v", s.StatusCode, s.Response)
 }
 
-// Ref: #/components/schemas/AccountRefund
-type AccountRefund struct {
-	RefundID    uuid.UUID  `json:"refund_id"`
-	OrderID     OptNilUUID `json:"order_id"`
-	TotalAmount string     `json:"total_amount"`
-	Currency    string     `json:"currency"`
-	// `partial` means some of it is back and some is not. Showing it as "refunded" would have the customer
-	// looking for money that has not moved.
-	State     AccountRefundState `json:"state"`
-	Legs      []AccountRefundLeg `json:"legs"`
-	CreatedAt time.Time          `json:"created_at"`
-}
-
-// GetRefundID returns the value of RefundID.
-func (s *AccountRefund) GetRefundID() uuid.UUID {
-	return s.RefundID
-}
-
-// GetOrderID returns the value of OrderID.
-func (s *AccountRefund) GetOrderID() OptNilUUID {
-	return s.OrderID
-}
-
-// GetTotalAmount returns the value of TotalAmount.
-func (s *AccountRefund) GetTotalAmount() string {
-	return s.TotalAmount
-}
-
-// GetCurrency returns the value of Currency.
-func (s *AccountRefund) GetCurrency() string {
-	return s.Currency
-}
-
-// GetState returns the value of State.
-func (s *AccountRefund) GetState() AccountRefundState {
-	return s.State
-}
-
-// GetLegs returns the value of Legs.
-func (s *AccountRefund) GetLegs() []AccountRefundLeg {
-	return s.Legs
-}
-
-// GetCreatedAt returns the value of CreatedAt.
-func (s *AccountRefund) GetCreatedAt() time.Time {
-	return s.CreatedAt
-}
-
-// SetRefundID sets the value of RefundID.
-func (s *AccountRefund) SetRefundID(val uuid.UUID) {
-	s.RefundID = val
-}
-
-// SetOrderID sets the value of OrderID.
-func (s *AccountRefund) SetOrderID(val OptNilUUID) {
-	s.OrderID = val
-}
-
-// SetTotalAmount sets the value of TotalAmount.
-func (s *AccountRefund) SetTotalAmount(val string) {
-	s.TotalAmount = val
-}
-
-// SetCurrency sets the value of Currency.
-func (s *AccountRefund) SetCurrency(val string) {
-	s.Currency = val
-}
-
-// SetState sets the value of State.
-func (s *AccountRefund) SetState(val AccountRefundState) {
-	s.State = val
-}
-
-// SetLegs sets the value of Legs.
-func (s *AccountRefund) SetLegs(val []AccountRefundLeg) {
-	s.Legs = val
-}
-
-// SetCreatedAt sets the value of CreatedAt.
-func (s *AccountRefund) SetCreatedAt(val time.Time) {
-	s.CreatedAt = val
-}
-
-// Ref: #/components/schemas/AccountRefundLeg
-type AccountRefundLeg struct {
-	Kind      AccountRefundLegKind  `json:"kind"`
-	Amount    string                `json:"amount"`
-	Currency  string                `json:"currency"`
-	State     AccountRefundLegState `json:"state"`
-	SettledAt OptNilDateTime        `json:"settled_at"`
-}
-
-// GetKind returns the value of Kind.
-func (s *AccountRefundLeg) GetKind() AccountRefundLegKind {
-	return s.Kind
-}
-
-// GetAmount returns the value of Amount.
-func (s *AccountRefundLeg) GetAmount() string {
-	return s.Amount
-}
-
-// GetCurrency returns the value of Currency.
-func (s *AccountRefundLeg) GetCurrency() string {
-	return s.Currency
-}
-
-// GetState returns the value of State.
-func (s *AccountRefundLeg) GetState() AccountRefundLegState {
-	return s.State
-}
-
-// GetSettledAt returns the value of SettledAt.
-func (s *AccountRefundLeg) GetSettledAt() OptNilDateTime {
-	return s.SettledAt
-}
-
-// SetKind sets the value of Kind.
-func (s *AccountRefundLeg) SetKind(val AccountRefundLegKind) {
-	s.Kind = val
-}
-
-// SetAmount sets the value of Amount.
-func (s *AccountRefundLeg) SetAmount(val string) {
-	s.Amount = val
-}
-
-// SetCurrency sets the value of Currency.
-func (s *AccountRefundLeg) SetCurrency(val string) {
-	s.Currency = val
-}
-
-// SetState sets the value of State.
-func (s *AccountRefundLeg) SetState(val AccountRefundLegState) {
-	s.State = val
-}
-
-// SetSettledAt sets the value of SettledAt.
-func (s *AccountRefundLeg) SetSettledAt(val OptNilDateTime) {
-	s.SettledAt = val
-}
-
-type AccountRefundLegKind string
-
-const (
-	AccountRefundLegKindCash    AccountRefundLegKind = "cash"
-	AccountRefundLegKindVoucher AccountRefundLegKind = "voucher"
-	AccountRefundLegKindBalance AccountRefundLegKind = "balance"
-)
-
-// AllValues returns all AccountRefundLegKind values.
-func (AccountRefundLegKind) AllValues() []AccountRefundLegKind {
-	return []AccountRefundLegKind{
-		AccountRefundLegKindCash,
-		AccountRefundLegKindVoucher,
-		AccountRefundLegKindBalance,
-	}
-}
-
-// MarshalText implements encoding.TextMarshaler.
-func (s AccountRefundLegKind) MarshalText() ([]byte, error) {
-	switch s {
-	case AccountRefundLegKindCash:
-		return []byte(s), nil
-	case AccountRefundLegKindVoucher:
-		return []byte(s), nil
-	case AccountRefundLegKindBalance:
-		return []byte(s), nil
-	default:
-		return nil, errors.Errorf("invalid value: %q", s)
-	}
-}
-
-// UnmarshalText implements encoding.TextUnmarshaler.
-func (s *AccountRefundLegKind) UnmarshalText(data []byte) error {
-	switch AccountRefundLegKind(data) {
-	case AccountRefundLegKindCash:
-		*s = AccountRefundLegKindCash
-		return nil
-	case AccountRefundLegKindVoucher:
-		*s = AccountRefundLegKindVoucher
-		return nil
-	case AccountRefundLegKindBalance:
-		*s = AccountRefundLegKindBalance
-		return nil
-	default:
-		return errors.Errorf("invalid value: %q", data)
-	}
-}
-
-type AccountRefundLegState string
-
-const (
-	AccountRefundLegStatePending AccountRefundLegState = "pending"
-	AccountRefundLegStateDone    AccountRefundLegState = "done"
-	AccountRefundLegStateFailed  AccountRefundLegState = "failed"
-)
-
-// AllValues returns all AccountRefundLegState values.
-func (AccountRefundLegState) AllValues() []AccountRefundLegState {
-	return []AccountRefundLegState{
-		AccountRefundLegStatePending,
-		AccountRefundLegStateDone,
-		AccountRefundLegStateFailed,
-	}
-}
-
-// MarshalText implements encoding.TextMarshaler.
-func (s AccountRefundLegState) MarshalText() ([]byte, error) {
-	switch s {
-	case AccountRefundLegStatePending:
-		return []byte(s), nil
-	case AccountRefundLegStateDone:
-		return []byte(s), nil
-	case AccountRefundLegStateFailed:
-		return []byte(s), nil
-	default:
-		return nil, errors.Errorf("invalid value: %q", s)
-	}
-}
-
-// UnmarshalText implements encoding.TextUnmarshaler.
-func (s *AccountRefundLegState) UnmarshalText(data []byte) error {
-	switch AccountRefundLegState(data) {
-	case AccountRefundLegStatePending:
-		*s = AccountRefundLegStatePending
-		return nil
-	case AccountRefundLegStateDone:
-		*s = AccountRefundLegStateDone
-		return nil
-	case AccountRefundLegStateFailed:
-		*s = AccountRefundLegStateFailed
-		return nil
-	default:
-		return errors.Errorf("invalid value: %q", data)
-	}
-}
-
-// Ref: #/components/schemas/AccountRefundList
-type AccountRefundList struct {
-	Items      []AccountRefund `json:"items"`
-	TotalCount OptInt          `json:"total_count"`
-}
-
-// GetItems returns the value of Items.
-func (s *AccountRefundList) GetItems() []AccountRefund {
-	return s.Items
-}
-
-// GetTotalCount returns the value of TotalCount.
-func (s *AccountRefundList) GetTotalCount() OptInt {
-	return s.TotalCount
-}
-
-// SetItems sets the value of Items.
-func (s *AccountRefundList) SetItems(val []AccountRefund) {
-	s.Items = val
-}
-
-// SetTotalCount sets the value of TotalCount.
-func (s *AccountRefundList) SetTotalCount(val OptInt) {
-	s.TotalCount = val
-}
-
-// `partial` means some of it is back and some is not. Showing it as "refunded" would have the customer
-// looking for money that has not moved.
-type AccountRefundState string
-
-const (
-	AccountRefundStatePending AccountRefundState = "pending"
-	AccountRefundStateSettled AccountRefundState = "settled"
-	AccountRefundStatePartial AccountRefundState = "partial"
-)
-
-// AllValues returns all AccountRefundState values.
-func (AccountRefundState) AllValues() []AccountRefundState {
-	return []AccountRefundState{
-		AccountRefundStatePending,
-		AccountRefundStateSettled,
-		AccountRefundStatePartial,
-	}
-}
-
-// MarshalText implements encoding.TextMarshaler.
-func (s AccountRefundState) MarshalText() ([]byte, error) {
-	switch s {
-	case AccountRefundStatePending:
-		return []byte(s), nil
-	case AccountRefundStateSettled:
-		return []byte(s), nil
-	case AccountRefundStatePartial:
-		return []byte(s), nil
-	default:
-		return nil, errors.Errorf("invalid value: %q", s)
-	}
-}
-
-// UnmarshalText implements encoding.TextUnmarshaler.
-func (s *AccountRefundState) UnmarshalText(data []byte) error {
-	switch AccountRefundState(data) {
-	case AccountRefundStatePending:
-		*s = AccountRefundStatePending
-		return nil
-	case AccountRefundStateSettled:
-		*s = AccountRefundStateSettled
-		return nil
-	case AccountRefundStatePartial:
-		*s = AccountRefundStatePartial
-		return nil
-	default:
-		return errors.Errorf("invalid value: %q", data)
-	}
-}
-
-// Ref: #/components/schemas/AutoRenewRequestBody
-type AutoRenewRequestBody struct {
-	AutoRenew bool `json:"auto_renew"`
-}
-
-// GetAutoRenew returns the value of AutoRenew.
-func (s *AutoRenewRequestBody) GetAutoRenew() bool {
-	return s.AutoRenew
-}
-
-// SetAutoRenew sets the value of AutoRenew.
-func (s *AutoRenewRequestBody) SetAutoRenew(val bool) {
-	s.AutoRenew = val
-}
-
-// The three numbers a billing page needs, which are not the same number.
-//
-// `balance` answers "can I start another one" and is floored at zero, so it cannot express being past
-// zero. `unsettled` is what the current period has run up. `available` is the difference between the
-// two and may be negative.
-//
-// Reporting only the first would make an account that has overspent indistinguishable from one that
-// spent exactly what it had, and those two call for different actions.
-// Ref: #/components/schemas/Balance
-type Balance struct {
-	Currency Currency `json:"currency"`
-	// What is spendable right now, with usage reported but not yet settled already subtracted. Never
-	// negative — it is floored at zero, so it answers "can I start another machine" but not "how much do
-	// I owe". A decimal string; `"0"` when the account has never been topped up.
-	Balance string `json:"balance"`
-	// The amount booked to the ledger, before this period's usage is taken off.
-	Cash string `json:"cash"`
-	// What this period has run up and not yet been billed for. It keeps growing past the cash balance,
-	// which is precisely the case the live figure cannot show.
-	Unsettled string `json:"unsettled"`
-	// `cash` minus `unsettled`. Negative means already in arrears, and being able to say that is the whole
-	// reason this field exists — the positive range is already covered by `balance`.
-	Available string `json:"available"`
-}
-
-// GetCurrency returns the value of Currency.
-func (s *Balance) GetCurrency() Currency {
-	return s.Currency
-}
-
-// GetBalance returns the value of Balance.
-func (s *Balance) GetBalance() string {
-	return s.Balance
-}
-
-// GetCash returns the value of Cash.
-func (s *Balance) GetCash() string {
-	return s.Cash
-}
-
-// GetUnsettled returns the value of Unsettled.
-func (s *Balance) GetUnsettled() string {
-	return s.Unsettled
-}
-
-// GetAvailable returns the value of Available.
-func (s *Balance) GetAvailable() string {
-	return s.Available
-}
-
-// SetCurrency sets the value of Currency.
-func (s *Balance) SetCurrency(val Currency) {
-	s.Currency = val
-}
-
-// SetBalance sets the value of Balance.
-func (s *Balance) SetBalance(val string) {
-	s.Balance = val
-}
-
-// SetCash sets the value of Cash.
-func (s *Balance) SetCash(val string) {
-	s.Cash = val
-}
-
-// SetUnsettled sets the value of Unsettled.
-func (s *Balance) SetUnsettled(val string) {
-	s.Unsettled = val
-}
-
-// SetAvailable sets the value of Available.
-func (s *Balance) SetAvailable(val string) {
-	s.Available = val
-}
-
-// Ref: #/components/schemas/BalanceMovement
-type BalanceMovement struct {
-	Currency Currency `json:"currency"`
-	// Start of the window — the first instant of the current calendar month, UTC.
-	From time.Time `json:"from"`
-	// End of the window, which is now rather than the month's end. The month is not over.
-	To time.Time `json:"to"`
-	// The balance when the window opened, as a decimal string.
-	//
-	// Taken from the earliest transaction in the window rather than read separately: every transaction
-	// carries the balance before and after it, so this figure and the totals below come from one read of
-	// one ledger and therefore agree.
-	Opening string `json:"opening"`
-	// What came in — top-ups and credit issued by operations. Never negative.
-	Income string `json:"income"`
-	// What went out — consumption and expiry. Never negative: the direction is in the name, not in the
-	// sign. Signed, a client would have to handle both `-20` and `20` meaning the same thing.
-	Spending string `json:"spending"`
-	// `opening + income - spending`. Computed, not read separately — see the endpoint.
-	Closing string `json:"closing"`
-	// False when this account has no balance record in this currency at all, which is not the same as a
-	// zero balance.
-	Present bool `json:"present"`
-}
-
-// GetCurrency returns the value of Currency.
-func (s *BalanceMovement) GetCurrency() Currency {
-	return s.Currency
-}
-
-// GetFrom returns the value of From.
-func (s *BalanceMovement) GetFrom() time.Time {
-	return s.From
-}
-
-// GetTo returns the value of To.
-func (s *BalanceMovement) GetTo() time.Time {
-	return s.To
-}
-
-// GetOpening returns the value of Opening.
-func (s *BalanceMovement) GetOpening() string {
-	return s.Opening
-}
-
-// GetIncome returns the value of Income.
-func (s *BalanceMovement) GetIncome() string {
-	return s.Income
-}
-
-// GetSpending returns the value of Spending.
-func (s *BalanceMovement) GetSpending() string {
-	return s.Spending
-}
-
-// GetClosing returns the value of Closing.
-func (s *BalanceMovement) GetClosing() string {
-	return s.Closing
-}
-
-// GetPresent returns the value of Present.
-func (s *BalanceMovement) GetPresent() bool {
-	return s.Present
-}
-
-// SetCurrency sets the value of Currency.
-func (s *BalanceMovement) SetCurrency(val Currency) {
-	s.Currency = val
-}
-
-// SetFrom sets the value of From.
-func (s *BalanceMovement) SetFrom(val time.Time) {
-	s.From = val
-}
-
-// SetTo sets the value of To.
-func (s *BalanceMovement) SetTo(val time.Time) {
-	s.To = val
-}
-
-// SetOpening sets the value of Opening.
-func (s *BalanceMovement) SetOpening(val string) {
-	s.Opening = val
-}
-
-// SetIncome sets the value of Income.
-func (s *BalanceMovement) SetIncome(val string) {
-	s.Income = val
-}
-
-// SetSpending sets the value of Spending.
-func (s *BalanceMovement) SetSpending(val string) {
-	s.Spending = val
-}
-
-// SetClosing sets the value of Closing.
-func (s *BalanceMovement) SetClosing(val string) {
-	s.Closing = val
-}
-
-// SetPresent sets the value of Present.
-func (s *BalanceMovement) SetPresent(val bool) {
-	s.Present = val
-}
-
-type BearerAuth struct {
+type AccountAuth struct {
 	Token string
 	Roles []string
 }
 
 // GetToken returns the value of Token.
-func (s *BearerAuth) GetToken() string {
+func (s *AccountAuth) GetToken() string {
 	return s.Token
 }
 
 // GetRoles returns the value of Roles.
-func (s *BearerAuth) GetRoles() []string {
+func (s *AccountAuth) GetRoles() []string {
 	return s.Roles
 }
 
 // SetToken sets the value of Token.
-func (s *BearerAuth) SetToken(val string) {
+func (s *AccountAuth) SetToken(val string) {
 	s.Token = val
 }
 
 // SetRoles sets the value of Roles.
-func (s *BearerAuth) SetRoles(val []string) {
+func (s *AccountAuth) SetRoles(val []string) {
 	s.Roles = val
 }
 
-// A billing account.
-//
-// Any internal identifier is deliberately absent: the key addresses everything on this API, and a
-// second identifier is one more thing a client can pass in the wrong place, for no benefit to anyone
-// reading the page.
-// Ref: #/components/schemas/BillingAccount
-type BillingAccount struct {
-	// Addresses the account and states who owns it. Of the form `u_<user_id>_<seq>`.
-	Key string `json:"key"`
-	// What the holder called it. Not unique, and it addresses nothing.
-	DisplayName string   `json:"display_name"`
-	Currency    Currency `json:"currency"`
-	// The projects this account pays for. Empty when it pays for none, never `null`.
-	ProjectIds []uuid.UUID `json:"project_ids"`
+// Ref: #/components/schemas/AccountBalance
+type AccountBalance struct {
+	BillingAccountID int64  `json:"billing_account_id"`
+	Currency         string `json:"currency"`
+	// Funds paid in and not yet spent. This is the part that can be refunded.
+	Cash Money `json:"cash"`
+	// Reserved by orders that have not completed.
+	Held Money `json:"held"`
+	// Metered usage priced this month but not yet invoiced. It is already committed even though no invoice
+	// exists for it yet.
+	Accrued Money `json:"accrued"`
+	// Granted credit. Spendable, but not withdrawable.
+	Credit Money `json:"credit"`
+	// Voucher balance, spendable within each voucher's own scope.
+	Voucher Money `json:"voucher"`
+	// `cash` less `accrued` and `held` — what is actually available at checkout. It goes negative when
+	// usage has exceeded the balance. Credit and vouchers are shown separately because each can only pay
+	// for what it covers.
+	Spendable Money `json:"spendable"`
 }
 
-// GetKey returns the value of Key.
-func (s *BillingAccount) GetKey() string {
-	return s.Key
-}
-
-// GetDisplayName returns the value of DisplayName.
-func (s *BillingAccount) GetDisplayName() string {
-	return s.DisplayName
+// GetBillingAccountID returns the value of BillingAccountID.
+func (s *AccountBalance) GetBillingAccountID() int64 {
+	return s.BillingAccountID
 }
 
 // GetCurrency returns the value of Currency.
-func (s *BillingAccount) GetCurrency() Currency {
+func (s *AccountBalance) GetCurrency() string {
 	return s.Currency
 }
 
-// GetProjectIds returns the value of ProjectIds.
-func (s *BillingAccount) GetProjectIds() []uuid.UUID {
-	return s.ProjectIds
+// GetCash returns the value of Cash.
+func (s *AccountBalance) GetCash() Money {
+	return s.Cash
 }
 
-// SetKey sets the value of Key.
-func (s *BillingAccount) SetKey(val string) {
-	s.Key = val
+// GetHeld returns the value of Held.
+func (s *AccountBalance) GetHeld() Money {
+	return s.Held
 }
 
-// SetDisplayName sets the value of DisplayName.
-func (s *BillingAccount) SetDisplayName(val string) {
-	s.DisplayName = val
+// GetAccrued returns the value of Accrued.
+func (s *AccountBalance) GetAccrued() Money {
+	return s.Accrued
+}
+
+// GetCredit returns the value of Credit.
+func (s *AccountBalance) GetCredit() Money {
+	return s.Credit
+}
+
+// GetVoucher returns the value of Voucher.
+func (s *AccountBalance) GetVoucher() Money {
+	return s.Voucher
+}
+
+// GetSpendable returns the value of Spendable.
+func (s *AccountBalance) GetSpendable() Money {
+	return s.Spendable
+}
+
+// SetBillingAccountID sets the value of BillingAccountID.
+func (s *AccountBalance) SetBillingAccountID(val int64) {
+	s.BillingAccountID = val
 }
 
 // SetCurrency sets the value of Currency.
-func (s *BillingAccount) SetCurrency(val Currency) {
+func (s *AccountBalance) SetCurrency(val string) {
 	s.Currency = val
 }
 
-// SetProjectIds sets the value of ProjectIds.
-func (s *BillingAccount) SetProjectIds(val []uuid.UUID) {
-	s.ProjectIds = val
+// SetCash sets the value of Cash.
+func (s *AccountBalance) SetCash(val Money) {
+	s.Cash = val
+}
+
+// SetHeld sets the value of Held.
+func (s *AccountBalance) SetHeld(val Money) {
+	s.Held = val
+}
+
+// SetAccrued sets the value of Accrued.
+func (s *AccountBalance) SetAccrued(val Money) {
+	s.Accrued = val
+}
+
+// SetCredit sets the value of Credit.
+func (s *AccountBalance) SetCredit(val Money) {
+	s.Credit = val
+}
+
+// SetVoucher sets the value of Voucher.
+func (s *AccountBalance) SetVoucher(val Money) {
+	s.Voucher = val
+}
+
+// SetSpendable sets the value of Spendable.
+func (s *AccountBalance) SetSpendable(val Money) {
+	s.Spendable = val
+}
+
+// A resource currently accruing charges by the second.
+// Ref: #/components/schemas/ActiveResource
+type ActiveResource struct {
+	ResourceID string `json:"resource_id"`
+	ProductKey string `json:"product_key"`
+	// What kind of thing it is.
+	ResourceType OptString `json:"resource_type"`
+	MeterKey     string    `json:"meter_key"`
+	Unit         OptString `json:"unit"`
+	// How much is held — cores, MiB, cards. Not how much has been used.
+	Quantity   string                      `json:"quantity"`
+	Dimensions OptActiveResourceDimensions `json:"dimensions"`
+	Status     ActiveResourceStatus        `json:"status"`
+	StartedAt  time.Time                   `json:"started_at"`
+	// Charges are settled up to this moment.
+	LastBilledUntil OptDateTime `json:"last_billed_until"`
+}
+
+// GetResourceID returns the value of ResourceID.
+func (s *ActiveResource) GetResourceID() string {
+	return s.ResourceID
+}
+
+// GetProductKey returns the value of ProductKey.
+func (s *ActiveResource) GetProductKey() string {
+	return s.ProductKey
+}
+
+// GetResourceType returns the value of ResourceType.
+func (s *ActiveResource) GetResourceType() OptString {
+	return s.ResourceType
+}
+
+// GetMeterKey returns the value of MeterKey.
+func (s *ActiveResource) GetMeterKey() string {
+	return s.MeterKey
+}
+
+// GetUnit returns the value of Unit.
+func (s *ActiveResource) GetUnit() OptString {
+	return s.Unit
+}
+
+// GetQuantity returns the value of Quantity.
+func (s *ActiveResource) GetQuantity() string {
+	return s.Quantity
+}
+
+// GetDimensions returns the value of Dimensions.
+func (s *ActiveResource) GetDimensions() OptActiveResourceDimensions {
+	return s.Dimensions
+}
+
+// GetStatus returns the value of Status.
+func (s *ActiveResource) GetStatus() ActiveResourceStatus {
+	return s.Status
+}
+
+// GetStartedAt returns the value of StartedAt.
+func (s *ActiveResource) GetStartedAt() time.Time {
+	return s.StartedAt
+}
+
+// GetLastBilledUntil returns the value of LastBilledUntil.
+func (s *ActiveResource) GetLastBilledUntil() OptDateTime {
+	return s.LastBilledUntil
+}
+
+// SetResourceID sets the value of ResourceID.
+func (s *ActiveResource) SetResourceID(val string) {
+	s.ResourceID = val
+}
+
+// SetProductKey sets the value of ProductKey.
+func (s *ActiveResource) SetProductKey(val string) {
+	s.ProductKey = val
+}
+
+// SetResourceType sets the value of ResourceType.
+func (s *ActiveResource) SetResourceType(val OptString) {
+	s.ResourceType = val
+}
+
+// SetMeterKey sets the value of MeterKey.
+func (s *ActiveResource) SetMeterKey(val string) {
+	s.MeterKey = val
+}
+
+// SetUnit sets the value of Unit.
+func (s *ActiveResource) SetUnit(val OptString) {
+	s.Unit = val
+}
+
+// SetQuantity sets the value of Quantity.
+func (s *ActiveResource) SetQuantity(val string) {
+	s.Quantity = val
+}
+
+// SetDimensions sets the value of Dimensions.
+func (s *ActiveResource) SetDimensions(val OptActiveResourceDimensions) {
+	s.Dimensions = val
+}
+
+// SetStatus sets the value of Status.
+func (s *ActiveResource) SetStatus(val ActiveResourceStatus) {
+	s.Status = val
+}
+
+// SetStartedAt sets the value of StartedAt.
+func (s *ActiveResource) SetStartedAt(val time.Time) {
+	s.StartedAt = val
+}
+
+// SetLastBilledUntil sets the value of LastBilledUntil.
+func (s *ActiveResource) SetLastBilledUntil(val OptDateTime) {
+	s.LastBilledUntil = val
+}
+
+type ActiveResourceDimensions map[string]string
+
+func (s *ActiveResourceDimensions) init() ActiveResourceDimensions {
+	m := *s
+	if m == nil {
+		m = map[string]string{}
+		*s = m
+	}
+	return m
+}
+
+// Ref: #/components/schemas/ActiveResourceList
+type ActiveResourceList struct {
+	Items      []ActiveResource `json:"items"`
+	TotalCount OptInt64         `json:"total_count"`
+}
+
+// GetItems returns the value of Items.
+func (s *ActiveResourceList) GetItems() []ActiveResource {
+	return s.Items
+}
+
+// GetTotalCount returns the value of TotalCount.
+func (s *ActiveResourceList) GetTotalCount() OptInt64 {
+	return s.TotalCount
+}
+
+// SetItems sets the value of Items.
+func (s *ActiveResourceList) SetItems(val []ActiveResource) {
+	s.Items = val
+}
+
+// SetTotalCount sets the value of TotalCount.
+func (s *ActiveResourceList) SetTotalCount(val OptInt64) {
+	s.TotalCount = val
+}
+
+type ActiveResourceStatus string
+
+const (
+	ActiveResourceStatusActive    ActiveResourceStatus = "active"
+	ActiveResourceStatusSuspended ActiveResourceStatus = "suspended"
+)
+
+// AllValues returns all ActiveResourceStatus values.
+func (ActiveResourceStatus) AllValues() []ActiveResourceStatus {
+	return []ActiveResourceStatus{
+		ActiveResourceStatusActive,
+		ActiveResourceStatusSuspended,
+	}
+}
+
+// MarshalText implements encoding.TextMarshaler.
+func (s ActiveResourceStatus) MarshalText() ([]byte, error) {
+	switch s {
+	case ActiveResourceStatusActive:
+		return []byte(s), nil
+	case ActiveResourceStatusSuspended:
+		return []byte(s), nil
+	default:
+		return nil, errors.Errorf("invalid value: %q", s)
+	}
+}
+
+// UnmarshalText implements encoding.TextUnmarshaler.
+func (s *ActiveResourceStatus) UnmarshalText(data []byte) error {
+	switch ActiveResourceStatus(data) {
+	case ActiveResourceStatusActive:
+		*s = ActiveResourceStatusActive
+		return nil
+	case ActiveResourceStatusSuspended:
+		*s = ActiveResourceStatusSuspended
+		return nil
+	default:
+		return errors.Errorf("invalid value: %q", data)
+	}
+}
+
+// Ref: #/components/schemas/Allocation
+type Allocation struct {
+	ID         uuid.UUID            `json:"id"`
+	SourceType AllocationSourceType `json:"source_type"`
+	SourceID   uuid.UUID            `json:"source_id"`
+	// A readable line, such as "Top-up of 100.00 on 3 September".
+	SourceDescription OptString            `json:"source_description"`
+	TargetType        AllocationTargetType `json:"target_type"`
+	TargetID          uuid.UUID            `json:"target_id"`
+	TargetDescription OptString            `json:"target_description"`
+	Amount            Money                `json:"amount"`
+	Currency          string               `json:"currency"`
+	AllocatedAt       time.Time            `json:"allocated_at"`
+	ReversedAt        OptNilDateTime       `json:"reversed_at"`
+}
+
+// GetID returns the value of ID.
+func (s *Allocation) GetID() uuid.UUID {
+	return s.ID
+}
+
+// GetSourceType returns the value of SourceType.
+func (s *Allocation) GetSourceType() AllocationSourceType {
+	return s.SourceType
+}
+
+// GetSourceID returns the value of SourceID.
+func (s *Allocation) GetSourceID() uuid.UUID {
+	return s.SourceID
+}
+
+// GetSourceDescription returns the value of SourceDescription.
+func (s *Allocation) GetSourceDescription() OptString {
+	return s.SourceDescription
+}
+
+// GetTargetType returns the value of TargetType.
+func (s *Allocation) GetTargetType() AllocationTargetType {
+	return s.TargetType
+}
+
+// GetTargetID returns the value of TargetID.
+func (s *Allocation) GetTargetID() uuid.UUID {
+	return s.TargetID
+}
+
+// GetTargetDescription returns the value of TargetDescription.
+func (s *Allocation) GetTargetDescription() OptString {
+	return s.TargetDescription
+}
+
+// GetAmount returns the value of Amount.
+func (s *Allocation) GetAmount() Money {
+	return s.Amount
+}
+
+// GetCurrency returns the value of Currency.
+func (s *Allocation) GetCurrency() string {
+	return s.Currency
+}
+
+// GetAllocatedAt returns the value of AllocatedAt.
+func (s *Allocation) GetAllocatedAt() time.Time {
+	return s.AllocatedAt
+}
+
+// GetReversedAt returns the value of ReversedAt.
+func (s *Allocation) GetReversedAt() OptNilDateTime {
+	return s.ReversedAt
+}
+
+// SetID sets the value of ID.
+func (s *Allocation) SetID(val uuid.UUID) {
+	s.ID = val
+}
+
+// SetSourceType sets the value of SourceType.
+func (s *Allocation) SetSourceType(val AllocationSourceType) {
+	s.SourceType = val
+}
+
+// SetSourceID sets the value of SourceID.
+func (s *Allocation) SetSourceID(val uuid.UUID) {
+	s.SourceID = val
+}
+
+// SetSourceDescription sets the value of SourceDescription.
+func (s *Allocation) SetSourceDescription(val OptString) {
+	s.SourceDescription = val
+}
+
+// SetTargetType sets the value of TargetType.
+func (s *Allocation) SetTargetType(val AllocationTargetType) {
+	s.TargetType = val
+}
+
+// SetTargetID sets the value of TargetID.
+func (s *Allocation) SetTargetID(val uuid.UUID) {
+	s.TargetID = val
+}
+
+// SetTargetDescription sets the value of TargetDescription.
+func (s *Allocation) SetTargetDescription(val OptString) {
+	s.TargetDescription = val
+}
+
+// SetAmount sets the value of Amount.
+func (s *Allocation) SetAmount(val Money) {
+	s.Amount = val
+}
+
+// SetCurrency sets the value of Currency.
+func (s *Allocation) SetCurrency(val string) {
+	s.Currency = val
+}
+
+// SetAllocatedAt sets the value of AllocatedAt.
+func (s *Allocation) SetAllocatedAt(val time.Time) {
+	s.AllocatedAt = val
+}
+
+// SetReversedAt sets the value of ReversedAt.
+func (s *Allocation) SetReversedAt(val OptNilDateTime) {
+	s.ReversedAt = val
+}
+
+// Ref: #/components/schemas/AllocationList
+type AllocationList struct {
+	Items      []Allocation `json:"items"`
+	TotalCount OptInt64     `json:"total_count"`
+}
+
+// GetItems returns the value of Items.
+func (s *AllocationList) GetItems() []Allocation {
+	return s.Items
+}
+
+// GetTotalCount returns the value of TotalCount.
+func (s *AllocationList) GetTotalCount() OptInt64 {
+	return s.TotalCount
+}
+
+// SetItems sets the value of Items.
+func (s *AllocationList) SetItems(val []Allocation) {
+	s.Items = val
+}
+
+// SetTotalCount sets the value of TotalCount.
+func (s *AllocationList) SetTotalCount(val OptInt64) {
+	s.TotalCount = val
+}
+
+type AllocationSourceType string
+
+const (
+	AllocationSourceTypeTransaction AllocationSourceType = "transaction"
+	AllocationSourceTypeCreditGrant AllocationSourceType = "credit_grant"
+)
+
+// AllValues returns all AllocationSourceType values.
+func (AllocationSourceType) AllValues() []AllocationSourceType {
+	return []AllocationSourceType{
+		AllocationSourceTypeTransaction,
+		AllocationSourceTypeCreditGrant,
+	}
+}
+
+// MarshalText implements encoding.TextMarshaler.
+func (s AllocationSourceType) MarshalText() ([]byte, error) {
+	switch s {
+	case AllocationSourceTypeTransaction:
+		return []byte(s), nil
+	case AllocationSourceTypeCreditGrant:
+		return []byte(s), nil
+	default:
+		return nil, errors.Errorf("invalid value: %q", s)
+	}
+}
+
+// UnmarshalText implements encoding.TextUnmarshaler.
+func (s *AllocationSourceType) UnmarshalText(data []byte) error {
+	switch AllocationSourceType(data) {
+	case AllocationSourceTypeTransaction:
+		*s = AllocationSourceTypeTransaction
+		return nil
+	case AllocationSourceTypeCreditGrant:
+		*s = AllocationSourceTypeCreditGrant
+		return nil
+	default:
+		return errors.Errorf("invalid value: %q", data)
+	}
+}
+
+type AllocationTargetType string
+
+const (
+	AllocationTargetTypeHold        AllocationTargetType = "hold"
+	AllocationTargetTypeOrderItem   AllocationTargetType = "order_item"
+	AllocationTargetTypeInvoiceItem AllocationTargetType = "invoice_item"
+)
+
+// AllValues returns all AllocationTargetType values.
+func (AllocationTargetType) AllValues() []AllocationTargetType {
+	return []AllocationTargetType{
+		AllocationTargetTypeHold,
+		AllocationTargetTypeOrderItem,
+		AllocationTargetTypeInvoiceItem,
+	}
+}
+
+// MarshalText implements encoding.TextMarshaler.
+func (s AllocationTargetType) MarshalText() ([]byte, error) {
+	switch s {
+	case AllocationTargetTypeHold:
+		return []byte(s), nil
+	case AllocationTargetTypeOrderItem:
+		return []byte(s), nil
+	case AllocationTargetTypeInvoiceItem:
+		return []byte(s), nil
+	default:
+		return nil, errors.Errorf("invalid value: %q", s)
+	}
+}
+
+// UnmarshalText implements encoding.TextUnmarshaler.
+func (s *AllocationTargetType) UnmarshalText(data []byte) error {
+	switch AllocationTargetType(data) {
+	case AllocationTargetTypeHold:
+		*s = AllocationTargetTypeHold
+		return nil
+	case AllocationTargetTypeOrderItem:
+		*s = AllocationTargetTypeOrderItem
+		return nil
+	case AllocationTargetTypeInvoiceItem:
+		*s = AllocationTargetTypeInvoiceItem
+		return nil
+	default:
+		return errors.Errorf("invalid value: %q", data)
+	}
+}
+
+// Ref: #/components/schemas/Allowance
+type Allowance struct {
+	ID               uuid.UUID `json:"id"`
+	BillingAccountID OptInt64  `json:"billing_account_id"`
+	// What it covers, such as `egress_bytes`.
+	MeterKey string `json:"meter_key"`
+	// The unit it is counted in, such as `MiB`.
+	Unit OptString `json:"unit"`
+	// `included` came with a recurring purchase, `package` was bought on its own such as a traffic pack,
+	// `promotional` was granted.
+	SourceType AllowanceSourceType `json:"source_type"`
+	Name       string              `json:"name"`
+	// How much was granted.
+	Quantity string `json:"quantity"`
+	// How much is left.
+	RemainingQuantity string `json:"remaining_quantity"`
+	// Lower is drawn on first. Included quantities sit ahead of purchased packs.
+	Priority  OptInt          `json:"priority"`
+	Status    AllowanceStatus `json:"status"`
+	ValidFrom time.Time       `json:"valid_from"`
+	// When it lapses. Anything unused at that point is lost; it is not refunded and does not carry over.
+	// Absent when it does not expire on its own.
+	ValidUntil OptNilDateTime `json:"valid_until"`
+}
+
+// GetID returns the value of ID.
+func (s *Allowance) GetID() uuid.UUID {
+	return s.ID
+}
+
+// GetBillingAccountID returns the value of BillingAccountID.
+func (s *Allowance) GetBillingAccountID() OptInt64 {
+	return s.BillingAccountID
+}
+
+// GetMeterKey returns the value of MeterKey.
+func (s *Allowance) GetMeterKey() string {
+	return s.MeterKey
+}
+
+// GetUnit returns the value of Unit.
+func (s *Allowance) GetUnit() OptString {
+	return s.Unit
+}
+
+// GetSourceType returns the value of SourceType.
+func (s *Allowance) GetSourceType() AllowanceSourceType {
+	return s.SourceType
+}
+
+// GetName returns the value of Name.
+func (s *Allowance) GetName() string {
+	return s.Name
+}
+
+// GetQuantity returns the value of Quantity.
+func (s *Allowance) GetQuantity() string {
+	return s.Quantity
+}
+
+// GetRemainingQuantity returns the value of RemainingQuantity.
+func (s *Allowance) GetRemainingQuantity() string {
+	return s.RemainingQuantity
+}
+
+// GetPriority returns the value of Priority.
+func (s *Allowance) GetPriority() OptInt {
+	return s.Priority
+}
+
+// GetStatus returns the value of Status.
+func (s *Allowance) GetStatus() AllowanceStatus {
+	return s.Status
+}
+
+// GetValidFrom returns the value of ValidFrom.
+func (s *Allowance) GetValidFrom() time.Time {
+	return s.ValidFrom
+}
+
+// GetValidUntil returns the value of ValidUntil.
+func (s *Allowance) GetValidUntil() OptNilDateTime {
+	return s.ValidUntil
+}
+
+// SetID sets the value of ID.
+func (s *Allowance) SetID(val uuid.UUID) {
+	s.ID = val
+}
+
+// SetBillingAccountID sets the value of BillingAccountID.
+func (s *Allowance) SetBillingAccountID(val OptInt64) {
+	s.BillingAccountID = val
+}
+
+// SetMeterKey sets the value of MeterKey.
+func (s *Allowance) SetMeterKey(val string) {
+	s.MeterKey = val
+}
+
+// SetUnit sets the value of Unit.
+func (s *Allowance) SetUnit(val OptString) {
+	s.Unit = val
+}
+
+// SetSourceType sets the value of SourceType.
+func (s *Allowance) SetSourceType(val AllowanceSourceType) {
+	s.SourceType = val
+}
+
+// SetName sets the value of Name.
+func (s *Allowance) SetName(val string) {
+	s.Name = val
+}
+
+// SetQuantity sets the value of Quantity.
+func (s *Allowance) SetQuantity(val string) {
+	s.Quantity = val
+}
+
+// SetRemainingQuantity sets the value of RemainingQuantity.
+func (s *Allowance) SetRemainingQuantity(val string) {
+	s.RemainingQuantity = val
+}
+
+// SetPriority sets the value of Priority.
+func (s *Allowance) SetPriority(val OptInt) {
+	s.Priority = val
+}
+
+// SetStatus sets the value of Status.
+func (s *Allowance) SetStatus(val AllowanceStatus) {
+	s.Status = val
+}
+
+// SetValidFrom sets the value of ValidFrom.
+func (s *Allowance) SetValidFrom(val time.Time) {
+	s.ValidFrom = val
+}
+
+// SetValidUntil sets the value of ValidUntil.
+func (s *Allowance) SetValidUntil(val OptNilDateTime) {
+	s.ValidUntil = val
+}
+
+// Ref: #/components/schemas/AllowanceConsumption
+type AllowanceConsumption struct {
+	ID            uuid.UUID      `json:"id"`
+	UsageChargeID OptUUID        `json:"usage_charge_id"`
+	MeterKey      OptString      `json:"meter_key"`
+	Quantity      string         `json:"quantity"`
+	ConsumedAt    time.Time      `json:"consumed_at"`
+	ReversedAt    OptNilDateTime `json:"reversed_at"`
+}
+
+// GetID returns the value of ID.
+func (s *AllowanceConsumption) GetID() uuid.UUID {
+	return s.ID
+}
+
+// GetUsageChargeID returns the value of UsageChargeID.
+func (s *AllowanceConsumption) GetUsageChargeID() OptUUID {
+	return s.UsageChargeID
+}
+
+// GetMeterKey returns the value of MeterKey.
+func (s *AllowanceConsumption) GetMeterKey() OptString {
+	return s.MeterKey
+}
+
+// GetQuantity returns the value of Quantity.
+func (s *AllowanceConsumption) GetQuantity() string {
+	return s.Quantity
+}
+
+// GetConsumedAt returns the value of ConsumedAt.
+func (s *AllowanceConsumption) GetConsumedAt() time.Time {
+	return s.ConsumedAt
+}
+
+// GetReversedAt returns the value of ReversedAt.
+func (s *AllowanceConsumption) GetReversedAt() OptNilDateTime {
+	return s.ReversedAt
+}
+
+// SetID sets the value of ID.
+func (s *AllowanceConsumption) SetID(val uuid.UUID) {
+	s.ID = val
+}
+
+// SetUsageChargeID sets the value of UsageChargeID.
+func (s *AllowanceConsumption) SetUsageChargeID(val OptUUID) {
+	s.UsageChargeID = val
+}
+
+// SetMeterKey sets the value of MeterKey.
+func (s *AllowanceConsumption) SetMeterKey(val OptString) {
+	s.MeterKey = val
+}
+
+// SetQuantity sets the value of Quantity.
+func (s *AllowanceConsumption) SetQuantity(val string) {
+	s.Quantity = val
+}
+
+// SetConsumedAt sets the value of ConsumedAt.
+func (s *AllowanceConsumption) SetConsumedAt(val time.Time) {
+	s.ConsumedAt = val
+}
+
+// SetReversedAt sets the value of ReversedAt.
+func (s *AllowanceConsumption) SetReversedAt(val OptNilDateTime) {
+	s.ReversedAt = val
+}
+
+// Ref: #/components/schemas/AllowanceConsumptionList
+type AllowanceConsumptionList struct {
+	Items      []AllowanceConsumption `json:"items"`
+	TotalCount OptInt64               `json:"total_count"`
+}
+
+// GetItems returns the value of Items.
+func (s *AllowanceConsumptionList) GetItems() []AllowanceConsumption {
+	return s.Items
+}
+
+// GetTotalCount returns the value of TotalCount.
+func (s *AllowanceConsumptionList) GetTotalCount() OptInt64 {
+	return s.TotalCount
+}
+
+// SetItems sets the value of Items.
+func (s *AllowanceConsumptionList) SetItems(val []AllowanceConsumption) {
+	s.Items = val
+}
+
+// SetTotalCount sets the value of TotalCount.
+func (s *AllowanceConsumptionList) SetTotalCount(val OptInt64) {
+	s.TotalCount = val
+}
+
+// Ref: #/components/schemas/AllowanceList
+type AllowanceList struct {
+	Items      []Allowance `json:"items"`
+	TotalCount OptInt64    `json:"total_count"`
+}
+
+// GetItems returns the value of Items.
+func (s *AllowanceList) GetItems() []Allowance {
+	return s.Items
+}
+
+// GetTotalCount returns the value of TotalCount.
+func (s *AllowanceList) GetTotalCount() OptInt64 {
+	return s.TotalCount
+}
+
+// SetItems sets the value of Items.
+func (s *AllowanceList) SetItems(val []Allowance) {
+	s.Items = val
+}
+
+// SetTotalCount sets the value of TotalCount.
+func (s *AllowanceList) SetTotalCount(val OptInt64) {
+	s.TotalCount = val
+}
+
+// `included` came with a recurring purchase, `package` was bought on its own such as a traffic pack,
+// `promotional` was granted.
+type AllowanceSourceType string
+
+const (
+	AllowanceSourceTypeIncluded    AllowanceSourceType = "included"
+	AllowanceSourceTypePackage     AllowanceSourceType = "package"
+	AllowanceSourceTypePromotional AllowanceSourceType = "promotional"
+)
+
+// AllValues returns all AllowanceSourceType values.
+func (AllowanceSourceType) AllValues() []AllowanceSourceType {
+	return []AllowanceSourceType{
+		AllowanceSourceTypeIncluded,
+		AllowanceSourceTypePackage,
+		AllowanceSourceTypePromotional,
+	}
+}
+
+// MarshalText implements encoding.TextMarshaler.
+func (s AllowanceSourceType) MarshalText() ([]byte, error) {
+	switch s {
+	case AllowanceSourceTypeIncluded:
+		return []byte(s), nil
+	case AllowanceSourceTypePackage:
+		return []byte(s), nil
+	case AllowanceSourceTypePromotional:
+		return []byte(s), nil
+	default:
+		return nil, errors.Errorf("invalid value: %q", s)
+	}
+}
+
+// UnmarshalText implements encoding.TextUnmarshaler.
+func (s *AllowanceSourceType) UnmarshalText(data []byte) error {
+	switch AllowanceSourceType(data) {
+	case AllowanceSourceTypeIncluded:
+		*s = AllowanceSourceTypeIncluded
+		return nil
+	case AllowanceSourceTypePackage:
+		*s = AllowanceSourceTypePackage
+		return nil
+	case AllowanceSourceTypePromotional:
+		*s = AllowanceSourceTypePromotional
+		return nil
+	default:
+		return errors.Errorf("invalid value: %q", data)
+	}
+}
+
+type AllowanceStatus string
+
+const (
+	AllowanceStatusActive   AllowanceStatus = "active"
+	AllowanceStatusDepleted AllowanceStatus = "depleted"
+	AllowanceStatusExpired  AllowanceStatus = "expired"
+	AllowanceStatusVoided   AllowanceStatus = "voided"
+)
+
+// AllValues returns all AllowanceStatus values.
+func (AllowanceStatus) AllValues() []AllowanceStatus {
+	return []AllowanceStatus{
+		AllowanceStatusActive,
+		AllowanceStatusDepleted,
+		AllowanceStatusExpired,
+		AllowanceStatusVoided,
+	}
+}
+
+// MarshalText implements encoding.TextMarshaler.
+func (s AllowanceStatus) MarshalText() ([]byte, error) {
+	switch s {
+	case AllowanceStatusActive:
+		return []byte(s), nil
+	case AllowanceStatusDepleted:
+		return []byte(s), nil
+	case AllowanceStatusExpired:
+		return []byte(s), nil
+	case AllowanceStatusVoided:
+		return []byte(s), nil
+	default:
+		return nil, errors.Errorf("invalid value: %q", s)
+	}
+}
+
+// UnmarshalText implements encoding.TextUnmarshaler.
+func (s *AllowanceStatus) UnmarshalText(data []byte) error {
+	switch AllowanceStatus(data) {
+	case AllowanceStatusActive:
+		*s = AllowanceStatusActive
+		return nil
+	case AllowanceStatusDepleted:
+		*s = AllowanceStatusDepleted
+		return nil
+	case AllowanceStatusExpired:
+		*s = AllowanceStatusExpired
+		return nil
+	case AllowanceStatusVoided:
+		*s = AllowanceStatusVoided
+		return nil
+	default:
+		return errors.Errorf("invalid value: %q", data)
+	}
+}
+
+// What something may be used for. A field that is absent places no restriction on that dimension; all
+// of them absent means no restriction at all.
+//
+// A line qualifies when it satisfies every field that is set. `min_amount` is then measured against
+// the qualifying lines only, not the order total.
+// Ref: #/components/schemas/Applicability
+type Applicability struct {
+	ProductKeys []string            `json:"product_keys"`
+	PlanKeys    []string            `json:"plan_keys"`
+	PriceTypes  []string            `json:"price_types"`
+	Operations  []PurchaseOperation `json:"operations"`
+	// Restricted to your first purchase of a covered product.
+	FirstPurchaseOnly OptBool  `json:"first_purchase_only"`
+	MinAmount         OptMoney `json:"min_amount"`
+}
+
+// GetProductKeys returns the value of ProductKeys.
+func (s *Applicability) GetProductKeys() []string {
+	return s.ProductKeys
+}
+
+// GetPlanKeys returns the value of PlanKeys.
+func (s *Applicability) GetPlanKeys() []string {
+	return s.PlanKeys
+}
+
+// GetPriceTypes returns the value of PriceTypes.
+func (s *Applicability) GetPriceTypes() []string {
+	return s.PriceTypes
+}
+
+// GetOperations returns the value of Operations.
+func (s *Applicability) GetOperations() []PurchaseOperation {
+	return s.Operations
+}
+
+// GetFirstPurchaseOnly returns the value of FirstPurchaseOnly.
+func (s *Applicability) GetFirstPurchaseOnly() OptBool {
+	return s.FirstPurchaseOnly
+}
+
+// GetMinAmount returns the value of MinAmount.
+func (s *Applicability) GetMinAmount() OptMoney {
+	return s.MinAmount
+}
+
+// SetProductKeys sets the value of ProductKeys.
+func (s *Applicability) SetProductKeys(val []string) {
+	s.ProductKeys = val
+}
+
+// SetPlanKeys sets the value of PlanKeys.
+func (s *Applicability) SetPlanKeys(val []string) {
+	s.PlanKeys = val
+}
+
+// SetPriceTypes sets the value of PriceTypes.
+func (s *Applicability) SetPriceTypes(val []string) {
+	s.PriceTypes = val
+}
+
+// SetOperations sets the value of Operations.
+func (s *Applicability) SetOperations(val []PurchaseOperation) {
+	s.Operations = val
+}
+
+// SetFirstPurchaseOnly sets the value of FirstPurchaseOnly.
+func (s *Applicability) SetFirstPurchaseOnly(val OptBool) {
+	s.FirstPurchaseOnly = val
+}
+
+// SetMinAmount sets the value of MinAmount.
+func (s *Applicability) SetMinAmount(val OptMoney) {
+	s.MinAmount = val
+}
+
+// Ref: #/components/schemas/AutoRenewSet
+type AutoRenewSet struct {
+	AutoRenew bool `json:"auto_renew"`
+}
+
+// GetAutoRenew returns the value of AutoRenew.
+func (s *AutoRenewSet) GetAutoRenew() bool {
+	return s.AutoRenew
+}
+
+// SetAutoRenew sets the value of AutoRenew.
+func (s *AutoRenewSet) SetAutoRenew(val bool) {
+	s.AutoRenew = val
+}
+
+// Ref: #/components/schemas/BillingAccount
+type BillingAccount struct {
+	ID int64 `json:"id"`
+	// What you call this account.
+	Name OptString `json:"name"`
+	// The name invoices are made out to. Copied onto each invoice when it is issued.
+	LegalName OptString `json:"legal_name"`
+	// Where invoices are sent.
+	Email             OptString `json:"email"`
+	AddressLine1      OptString `json:"address_line1"`
+	AddressLine2      OptString `json:"address_line2"`
+	AddressCity       OptString `json:"address_city"`
+	AddressState      OptString `json:"address_state"`
+	AddressPostalCode OptString `json:"address_postal_code"`
+	// Two-letter code.
+	AddressCountry OptString `json:"address_country"`
+	TaxID          OptString `json:"tax_id"`
+	// Fixed when the account was opened.
+	Currency  string               `json:"currency"`
+	Status    BillingAccountStatus `json:"status"`
+	CreatedAt time.Time            `json:"created_at"`
+}
+
+// GetID returns the value of ID.
+func (s *BillingAccount) GetID() int64 {
+	return s.ID
+}
+
+// GetName returns the value of Name.
+func (s *BillingAccount) GetName() OptString {
+	return s.Name
+}
+
+// GetLegalName returns the value of LegalName.
+func (s *BillingAccount) GetLegalName() OptString {
+	return s.LegalName
+}
+
+// GetEmail returns the value of Email.
+func (s *BillingAccount) GetEmail() OptString {
+	return s.Email
+}
+
+// GetAddressLine1 returns the value of AddressLine1.
+func (s *BillingAccount) GetAddressLine1() OptString {
+	return s.AddressLine1
+}
+
+// GetAddressLine2 returns the value of AddressLine2.
+func (s *BillingAccount) GetAddressLine2() OptString {
+	return s.AddressLine2
+}
+
+// GetAddressCity returns the value of AddressCity.
+func (s *BillingAccount) GetAddressCity() OptString {
+	return s.AddressCity
+}
+
+// GetAddressState returns the value of AddressState.
+func (s *BillingAccount) GetAddressState() OptString {
+	return s.AddressState
+}
+
+// GetAddressPostalCode returns the value of AddressPostalCode.
+func (s *BillingAccount) GetAddressPostalCode() OptString {
+	return s.AddressPostalCode
+}
+
+// GetAddressCountry returns the value of AddressCountry.
+func (s *BillingAccount) GetAddressCountry() OptString {
+	return s.AddressCountry
+}
+
+// GetTaxID returns the value of TaxID.
+func (s *BillingAccount) GetTaxID() OptString {
+	return s.TaxID
+}
+
+// GetCurrency returns the value of Currency.
+func (s *BillingAccount) GetCurrency() string {
+	return s.Currency
+}
+
+// GetStatus returns the value of Status.
+func (s *BillingAccount) GetStatus() BillingAccountStatus {
+	return s.Status
+}
+
+// GetCreatedAt returns the value of CreatedAt.
+func (s *BillingAccount) GetCreatedAt() time.Time {
+	return s.CreatedAt
+}
+
+// SetID sets the value of ID.
+func (s *BillingAccount) SetID(val int64) {
+	s.ID = val
+}
+
+// SetName sets the value of Name.
+func (s *BillingAccount) SetName(val OptString) {
+	s.Name = val
+}
+
+// SetLegalName sets the value of LegalName.
+func (s *BillingAccount) SetLegalName(val OptString) {
+	s.LegalName = val
+}
+
+// SetEmail sets the value of Email.
+func (s *BillingAccount) SetEmail(val OptString) {
+	s.Email = val
+}
+
+// SetAddressLine1 sets the value of AddressLine1.
+func (s *BillingAccount) SetAddressLine1(val OptString) {
+	s.AddressLine1 = val
+}
+
+// SetAddressLine2 sets the value of AddressLine2.
+func (s *BillingAccount) SetAddressLine2(val OptString) {
+	s.AddressLine2 = val
+}
+
+// SetAddressCity sets the value of AddressCity.
+func (s *BillingAccount) SetAddressCity(val OptString) {
+	s.AddressCity = val
+}
+
+// SetAddressState sets the value of AddressState.
+func (s *BillingAccount) SetAddressState(val OptString) {
+	s.AddressState = val
+}
+
+// SetAddressPostalCode sets the value of AddressPostalCode.
+func (s *BillingAccount) SetAddressPostalCode(val OptString) {
+	s.AddressPostalCode = val
+}
+
+// SetAddressCountry sets the value of AddressCountry.
+func (s *BillingAccount) SetAddressCountry(val OptString) {
+	s.AddressCountry = val
+}
+
+// SetTaxID sets the value of TaxID.
+func (s *BillingAccount) SetTaxID(val OptString) {
+	s.TaxID = val
+}
+
+// SetCurrency sets the value of Currency.
+func (s *BillingAccount) SetCurrency(val string) {
+	s.Currency = val
+}
+
+// SetStatus sets the value of Status.
+func (s *BillingAccount) SetStatus(val BillingAccountStatus) {
+	s.Status = val
+}
+
+// SetCreatedAt sets the value of CreatedAt.
+func (s *BillingAccount) SetCreatedAt(val time.Time) {
+	s.CreatedAt = val
+}
+
+// Ref: #/components/schemas/BillingAccountCreate
+type BillingAccountCreate struct {
+	Currency  string    `json:"currency"`
+	Name      OptString `json:"name"`
+	LegalName OptString `json:"legal_name"`
+	Email     OptString `json:"email"`
+}
+
+// GetCurrency returns the value of Currency.
+func (s *BillingAccountCreate) GetCurrency() string {
+	return s.Currency
+}
+
+// GetName returns the value of Name.
+func (s *BillingAccountCreate) GetName() OptString {
+	return s.Name
+}
+
+// GetLegalName returns the value of LegalName.
+func (s *BillingAccountCreate) GetLegalName() OptString {
+	return s.LegalName
+}
+
+// GetEmail returns the value of Email.
+func (s *BillingAccountCreate) GetEmail() OptString {
+	return s.Email
+}
+
+// SetCurrency sets the value of Currency.
+func (s *BillingAccountCreate) SetCurrency(val string) {
+	s.Currency = val
+}
+
+// SetName sets the value of Name.
+func (s *BillingAccountCreate) SetName(val OptString) {
+	s.Name = val
+}
+
+// SetLegalName sets the value of LegalName.
+func (s *BillingAccountCreate) SetLegalName(val OptString) {
+	s.LegalName = val
+}
+
+// SetEmail sets the value of Email.
+func (s *BillingAccountCreate) SetEmail(val OptString) {
+	s.Email = val
 }
 
 // Ref: #/components/schemas/BillingAccountList
 type BillingAccountList struct {
-	// How many entries there are in total, across every page.
-	//
-	// Without it, "is there another page" has to be guessed from whether this one came back full — and
-	// that guess turns into one extra fetch of an empty page whenever the last page happens to be exactly
-	// full.
-	TotalCount OptInt64 `json:"total_count"`
-	// Every account belonging to the caller. Empty when they hold none.
-	Accounts []BillingAccount `json:"accounts"`
+	Items      []BillingAccount `json:"items"`
+	TotalCount OptInt64         `json:"total_count"`
+}
+
+// GetItems returns the value of Items.
+func (s *BillingAccountList) GetItems() []BillingAccount {
+	return s.Items
 }
 
 // GetTotalCount returns the value of TotalCount.
@@ -623,9 +1268,9 @@ func (s *BillingAccountList) GetTotalCount() OptInt64 {
 	return s.TotalCount
 }
 
-// GetAccounts returns the value of Accounts.
-func (s *BillingAccountList) GetAccounts() []BillingAccount {
-	return s.Accounts
+// SetItems sets the value of Items.
+func (s *BillingAccountList) SetItems(val []BillingAccount) {
+	s.Items = val
 }
 
 // SetTotalCount sets the value of TotalCount.
@@ -633,32 +1278,31 @@ func (s *BillingAccountList) SetTotalCount(val OptInt64) {
 	s.TotalCount = val
 }
 
-// SetAccounts sets the value of Accounts.
-func (s *BillingAccountList) SetAccounts(val []BillingAccount) {
-	s.Accounts = val
-}
-
-type CancelSubscriptionTiming string
+type BillingAccountStatus string
 
 const (
-	CancelSubscriptionTimingImmediate        CancelSubscriptionTiming = "immediate"
-	CancelSubscriptionTimingNextBillingCycle CancelSubscriptionTiming = "next_billing_cycle"
+	BillingAccountStatusActive    BillingAccountStatus = "active"
+	BillingAccountStatusSuspended BillingAccountStatus = "suspended"
+	BillingAccountStatusClosed    BillingAccountStatus = "closed"
 )
 
-// AllValues returns all CancelSubscriptionTiming values.
-func (CancelSubscriptionTiming) AllValues() []CancelSubscriptionTiming {
-	return []CancelSubscriptionTiming{
-		CancelSubscriptionTimingImmediate,
-		CancelSubscriptionTimingNextBillingCycle,
+// AllValues returns all BillingAccountStatus values.
+func (BillingAccountStatus) AllValues() []BillingAccountStatus {
+	return []BillingAccountStatus{
+		BillingAccountStatusActive,
+		BillingAccountStatusSuspended,
+		BillingAccountStatusClosed,
 	}
 }
 
 // MarshalText implements encoding.TextMarshaler.
-func (s CancelSubscriptionTiming) MarshalText() ([]byte, error) {
+func (s BillingAccountStatus) MarshalText() ([]byte, error) {
 	switch s {
-	case CancelSubscriptionTimingImmediate:
+	case BillingAccountStatusActive:
 		return []byte(s), nil
-	case CancelSubscriptionTimingNextBillingCycle:
+	case BillingAccountStatusSuspended:
+		return []byte(s), nil
+	case BillingAccountStatusClosed:
 		return []byte(s), nil
 	default:
 		return nil, errors.Errorf("invalid value: %q", s)
@@ -666,643 +1310,1405 @@ func (s CancelSubscriptionTiming) MarshalText() ([]byte, error) {
 }
 
 // UnmarshalText implements encoding.TextUnmarshaler.
-func (s *CancelSubscriptionTiming) UnmarshalText(data []byte) error {
-	switch CancelSubscriptionTiming(data) {
-	case CancelSubscriptionTimingImmediate:
-		*s = CancelSubscriptionTimingImmediate
+func (s *BillingAccountStatus) UnmarshalText(data []byte) error {
+	switch BillingAccountStatus(data) {
+	case BillingAccountStatusActive:
+		*s = BillingAccountStatusActive
 		return nil
-	case CancelSubscriptionTimingNextBillingCycle:
-		*s = CancelSubscriptionTimingNextBillingCycle
+	case BillingAccountStatusSuspended:
+		*s = BillingAccountStatusSuspended
+		return nil
+	case BillingAccountStatusClosed:
+		*s = BillingAccountStatusClosed
 		return nil
 	default:
 		return errors.Errorf("invalid value: %q", data)
 	}
 }
 
-// One thing this period has been charged for.
-// Ref: #/components/schemas/Charge
-type Charge struct {
-	ID   string `json:"id"`
-	Name string `json:"name"`
-	// Decimal string, the real-time figure. The booked figure would show a machine that only just started
-	// as zero.
-	Total string `json:"total"`
-	// Which meter it is for, when the charge came from usage. A hash, not something to show — it is here
-	// so two rows can be told apart programmatically and so support can line a row up with the catalogue.
-	FeatureKey OptString `json:"feature_key"`
-	// Whether this figure moves. A usage charge climbs through the period; a flat fee does not. Without
-	// it, the same number on two refreshes could mean "nobody used it" or "it never moves", and those need
-	// different next steps.
-	Type ChargeType `json:"type"`
-	// Start of the service period this charge covers.
-	//
-	// This is what tells two same-named rows apart. Something billed by the hour produces hundreds of
-	// identically named charges in a month, and a list carrying only a name and an amount shows them as a
-	// wall of duplicates — which is what it looks like today.
-	PeriodFrom time.Time `json:"period_from"`
-	// End of the service period this charge covers.
-	PeriodTo time.Time `json:"period_to"`
-	// How much of this charge was covered by credit, as a decimal string.
-	//
-	// It is the answer to "I have a balance, why am I still being charged". Without it the customer sees a
-	// number that disagrees with what they expected and the only thing that explains it is on our side.
-	Credits OptString `json:"credits"`
-	// How much was taken off by a discount, as a decimal string. A usage allowance (the first N units
-	// free) lands here too.
-	Discounts OptString `json:"discounts"`
-	// Free text from the charge, usually empty. Set on charges raised by hand.
-	Description OptString `json:"description"`
-	// What one unit costs, as a decimal string. Absent when the line has no single unit price — a flat
-	// fee, or a tiered price whose rate changes with volume.
-	//
-	// The conversion between reported and billed quantity is deliberately not here: the engine does not
-	// echo it back on a charge, only on an invoice line. So a charge answers "what does a unit cost", and
-	// an invoice answers "how the total was reached".
-	UnitPrice OptString `json:"unit_price"`
-}
-
-// GetID returns the value of ID.
-func (s *Charge) GetID() string {
-	return s.ID
+// Ref: #/components/schemas/BillingAccountUpdate
+type BillingAccountUpdate struct {
+	Name              OptString `json:"name"`
+	LegalName         OptString `json:"legal_name"`
+	Email             OptString `json:"email"`
+	AddressLine1      OptString `json:"address_line1"`
+	AddressLine2      OptString `json:"address_line2"`
+	AddressCity       OptString `json:"address_city"`
+	AddressState      OptString `json:"address_state"`
+	AddressPostalCode OptString `json:"address_postal_code"`
+	AddressCountry    OptString `json:"address_country"`
+	TaxID             OptString `json:"tax_id"`
 }
 
 // GetName returns the value of Name.
-func (s *Charge) GetName() string {
+func (s *BillingAccountUpdate) GetName() OptString {
 	return s.Name
 }
 
-// GetTotal returns the value of Total.
-func (s *Charge) GetTotal() string {
-	return s.Total
+// GetLegalName returns the value of LegalName.
+func (s *BillingAccountUpdate) GetLegalName() OptString {
+	return s.LegalName
 }
 
-// GetFeatureKey returns the value of FeatureKey.
-func (s *Charge) GetFeatureKey() OptString {
-	return s.FeatureKey
+// GetEmail returns the value of Email.
+func (s *BillingAccountUpdate) GetEmail() OptString {
+	return s.Email
 }
 
-// GetType returns the value of Type.
-func (s *Charge) GetType() ChargeType {
-	return s.Type
+// GetAddressLine1 returns the value of AddressLine1.
+func (s *BillingAccountUpdate) GetAddressLine1() OptString {
+	return s.AddressLine1
 }
 
-// GetPeriodFrom returns the value of PeriodFrom.
-func (s *Charge) GetPeriodFrom() time.Time {
-	return s.PeriodFrom
+// GetAddressLine2 returns the value of AddressLine2.
+func (s *BillingAccountUpdate) GetAddressLine2() OptString {
+	return s.AddressLine2
 }
 
-// GetPeriodTo returns the value of PeriodTo.
-func (s *Charge) GetPeriodTo() time.Time {
-	return s.PeriodTo
+// GetAddressCity returns the value of AddressCity.
+func (s *BillingAccountUpdate) GetAddressCity() OptString {
+	return s.AddressCity
 }
 
-// GetCredits returns the value of Credits.
-func (s *Charge) GetCredits() OptString {
-	return s.Credits
+// GetAddressState returns the value of AddressState.
+func (s *BillingAccountUpdate) GetAddressState() OptString {
+	return s.AddressState
 }
 
-// GetDiscounts returns the value of Discounts.
-func (s *Charge) GetDiscounts() OptString {
-	return s.Discounts
+// GetAddressPostalCode returns the value of AddressPostalCode.
+func (s *BillingAccountUpdate) GetAddressPostalCode() OptString {
+	return s.AddressPostalCode
 }
 
-// GetDescription returns the value of Description.
-func (s *Charge) GetDescription() OptString {
-	return s.Description
+// GetAddressCountry returns the value of AddressCountry.
+func (s *BillingAccountUpdate) GetAddressCountry() OptString {
+	return s.AddressCountry
 }
 
-// GetUnitPrice returns the value of UnitPrice.
-func (s *Charge) GetUnitPrice() OptString {
-	return s.UnitPrice
-}
-
-// SetID sets the value of ID.
-func (s *Charge) SetID(val string) {
-	s.ID = val
+// GetTaxID returns the value of TaxID.
+func (s *BillingAccountUpdate) GetTaxID() OptString {
+	return s.TaxID
 }
 
 // SetName sets the value of Name.
-func (s *Charge) SetName(val string) {
+func (s *BillingAccountUpdate) SetName(val OptString) {
 	s.Name = val
 }
 
-// SetTotal sets the value of Total.
-func (s *Charge) SetTotal(val string) {
-	s.Total = val
+// SetLegalName sets the value of LegalName.
+func (s *BillingAccountUpdate) SetLegalName(val OptString) {
+	s.LegalName = val
 }
 
-// SetFeatureKey sets the value of FeatureKey.
-func (s *Charge) SetFeatureKey(val OptString) {
-	s.FeatureKey = val
+// SetEmail sets the value of Email.
+func (s *BillingAccountUpdate) SetEmail(val OptString) {
+	s.Email = val
 }
 
-// SetType sets the value of Type.
-func (s *Charge) SetType(val ChargeType) {
-	s.Type = val
+// SetAddressLine1 sets the value of AddressLine1.
+func (s *BillingAccountUpdate) SetAddressLine1(val OptString) {
+	s.AddressLine1 = val
 }
 
-// SetPeriodFrom sets the value of PeriodFrom.
-func (s *Charge) SetPeriodFrom(val time.Time) {
-	s.PeriodFrom = val
+// SetAddressLine2 sets the value of AddressLine2.
+func (s *BillingAccountUpdate) SetAddressLine2(val OptString) {
+	s.AddressLine2 = val
 }
 
-// SetPeriodTo sets the value of PeriodTo.
-func (s *Charge) SetPeriodTo(val time.Time) {
-	s.PeriodTo = val
+// SetAddressCity sets the value of AddressCity.
+func (s *BillingAccountUpdate) SetAddressCity(val OptString) {
+	s.AddressCity = val
 }
 
-// SetCredits sets the value of Credits.
-func (s *Charge) SetCredits(val OptString) {
-	s.Credits = val
+// SetAddressState sets the value of AddressState.
+func (s *BillingAccountUpdate) SetAddressState(val OptString) {
+	s.AddressState = val
 }
 
-// SetDiscounts sets the value of Discounts.
-func (s *Charge) SetDiscounts(val OptString) {
-	s.Discounts = val
+// SetAddressPostalCode sets the value of AddressPostalCode.
+func (s *BillingAccountUpdate) SetAddressPostalCode(val OptString) {
+	s.AddressPostalCode = val
 }
 
-// SetDescription sets the value of Description.
-func (s *Charge) SetDescription(val OptString) {
-	s.Description = val
+// SetAddressCountry sets the value of AddressCountry.
+func (s *BillingAccountUpdate) SetAddressCountry(val OptString) {
+	s.AddressCountry = val
 }
 
-// SetUnitPrice sets the value of UnitPrice.
-func (s *Charge) SetUnitPrice(val OptString) {
-	s.UnitPrice = val
+// SetTaxID sets the value of TaxID.
+func (s *BillingAccountUpdate) SetTaxID(val OptString) {
+	s.TaxID = val
 }
 
-// Ref: #/components/schemas/ChargeList
-type ChargeList struct {
-	Currency Currency `json:"currency"`
-	Charges  []Charge `json:"charges"`
-	// How many charges there are in total, across every page.
-	//
-	// Without it, "is there another page" has to be guessed from whether this one came back full — and
-	// that guess turns into one extra fetch of an empty page whenever the last page happens to be exactly
-	// full.
-	TotalCount OptInt64 `json:"total_count"`
-	// The sum over the whole period, not this page — it is the same number as `unsettled` on the
-	// balance, and paging must not change it. A page-scoped sum would disagree with the balance card
-	// sitting next to it, and there would be no way to tell which one to believe.
-	Total string `json:"total"`
-}
-
-// GetCurrency returns the value of Currency.
-func (s *ChargeList) GetCurrency() Currency {
-	return s.Currency
-}
-
-// GetCharges returns the value of Charges.
-func (s *ChargeList) GetCharges() []Charge {
-	return s.Charges
-}
-
-// GetTotalCount returns the value of TotalCount.
-func (s *ChargeList) GetTotalCount() OptInt64 {
-	return s.TotalCount
-}
-
-// GetTotal returns the value of Total.
-func (s *ChargeList) GetTotal() string {
-	return s.Total
-}
-
-// SetCurrency sets the value of Currency.
-func (s *ChargeList) SetCurrency(val Currency) {
-	s.Currency = val
-}
-
-// SetCharges sets the value of Charges.
-func (s *ChargeList) SetCharges(val []Charge) {
-	s.Charges = val
-}
-
-// SetTotalCount sets the value of TotalCount.
-func (s *ChargeList) SetTotalCount(val OptInt64) {
-	s.TotalCount = val
-}
-
-// SetTotal sets the value of Total.
-func (s *ChargeList) SetTotal(val string) {
-	s.Total = val
-}
-
-// Ref: #/components/schemas/ChargeResource
-type ChargeResource struct {
-	ProjectID string `json:"project_id"`
-	// Which service holds it, and therefore which console manages it.
-	Service    string              `json:"service"`
-	ProductID  string              `json:"product_id"`
-	ResourceID string              `json:"resource_id"`
-	State      ChargeResourceState `json:"state"`
-}
-
-// GetProjectID returns the value of ProjectID.
-func (s *ChargeResource) GetProjectID() string {
-	return s.ProjectID
-}
-
-// GetService returns the value of Service.
-func (s *ChargeResource) GetService() string {
-	return s.Service
-}
-
-// GetProductID returns the value of ProductID.
-func (s *ChargeResource) GetProductID() string {
-	return s.ProductID
-}
-
-// GetResourceID returns the value of ResourceID.
-func (s *ChargeResource) GetResourceID() string {
-	return s.ResourceID
-}
-
-// GetState returns the value of State.
-func (s *ChargeResource) GetState() ChargeResourceState {
-	return s.State
-}
-
-// SetProjectID sets the value of ProjectID.
-func (s *ChargeResource) SetProjectID(val string) {
-	s.ProjectID = val
-}
-
-// SetService sets the value of Service.
-func (s *ChargeResource) SetService(val string) {
-	s.Service = val
-}
-
-// SetProductID sets the value of ProductID.
-func (s *ChargeResource) SetProductID(val string) {
-	s.ProductID = val
-}
-
-// SetResourceID sets the value of ResourceID.
-func (s *ChargeResource) SetResourceID(val string) {
-	s.ResourceID = val
-}
-
-// SetState sets the value of State.
-func (s *ChargeResource) SetState(val ChargeResourceState) {
-	s.State = val
-}
-
-type ChargeResourceState string
-
-const (
-	ChargeResourceStatePending    ChargeResourceState = "pending"
-	ChargeResourceStateActive     ChargeResourceState = "active"
-	ChargeResourceStateSuspended  ChargeResourceState = "suspended"
-	ChargeResourceStateTerminated ChargeResourceState = "terminated"
-)
-
-// AllValues returns all ChargeResourceState values.
-func (ChargeResourceState) AllValues() []ChargeResourceState {
-	return []ChargeResourceState{
-		ChargeResourceStatePending,
-		ChargeResourceStateActive,
-		ChargeResourceStateSuspended,
-		ChargeResourceStateTerminated,
-	}
-}
-
-// MarshalText implements encoding.TextMarshaler.
-func (s ChargeResourceState) MarshalText() ([]byte, error) {
-	switch s {
-	case ChargeResourceStatePending:
-		return []byte(s), nil
-	case ChargeResourceStateActive:
-		return []byte(s), nil
-	case ChargeResourceStateSuspended:
-		return []byte(s), nil
-	case ChargeResourceStateTerminated:
-		return []byte(s), nil
-	default:
-		return nil, errors.Errorf("invalid value: %q", s)
-	}
-}
-
-// UnmarshalText implements encoding.TextUnmarshaler.
-func (s *ChargeResourceState) UnmarshalText(data []byte) error {
-	switch ChargeResourceState(data) {
-	case ChargeResourceStatePending:
-		*s = ChargeResourceStatePending
-		return nil
-	case ChargeResourceStateActive:
-		*s = ChargeResourceStateActive
-		return nil
-	case ChargeResourceStateSuspended:
-		*s = ChargeResourceStateSuspended
-		return nil
-	case ChargeResourceStateTerminated:
-		*s = ChargeResourceStateTerminated
-		return nil
-	default:
-		return errors.Errorf("invalid value: %q", data)
-	}
-}
-
-// Whether this figure moves. A usage charge climbs through the period; a flat fee does not. Without
-// it, the same number on two refreshes could mean "nobody used it" or "it never moves", and those need
-// different next steps.
-type ChargeType string
-
-const (
-	ChargeTypeUsageBased ChargeType = "usage_based"
-	ChargeTypeFlatFee    ChargeType = "flat_fee"
-)
-
-// AllValues returns all ChargeType values.
-func (ChargeType) AllValues() []ChargeType {
-	return []ChargeType{
-		ChargeTypeUsageBased,
-		ChargeTypeFlatFee,
-	}
-}
-
-// MarshalText implements encoding.TextMarshaler.
-func (s ChargeType) MarshalText() ([]byte, error) {
-	switch s {
-	case ChargeTypeUsageBased:
-		return []byte(s), nil
-	case ChargeTypeFlatFee:
-		return []byte(s), nil
-	default:
-		return nil, errors.Errorf("invalid value: %q", s)
-	}
-}
-
-// UnmarshalText implements encoding.TextUnmarshaler.
-func (s *ChargeType) UnmarshalText(data []byte) error {
-	switch ChargeType(data) {
-	case ChargeTypeUsageBased:
-		*s = ChargeTypeUsageBased
-		return nil
-	case ChargeTypeFlatFee:
-		*s = ChargeTypeFlatFee
-		return nil
-	default:
-		return errors.Errorf("invalid value: %q", data)
-	}
-}
-
-// What produced one charge.
-// Ref: #/components/schemas/ChargeUsage
-type ChargeUsage struct {
-	ChargeID string `json:"charge_id"`
-	// Total reported quantity for the period, as a decimal string. Empty on a charge with no meter behind
-	// it.
-	//
-	// Reported, not billed: see the route's description.
-	Quantity string `json:"quantity"`
-	// The same quantity split by project. Empty when the charge has no meter behind it — a flat fee has
-	// nothing to attribute.
-	ByProject []ProjectUsage `json:"by_project"`
-	// Resources of this product in the account's projects — candidates for what produced the charge, not
-	// a per-resource breakdown. Absent when billing could not look them up; the charge itself is still
-	// answered.
-	Resources []ChargeResource `json:"resources"`
-}
-
-// GetChargeID returns the value of ChargeID.
-func (s *ChargeUsage) GetChargeID() string {
-	return s.ChargeID
-}
-
-// GetQuantity returns the value of Quantity.
-func (s *ChargeUsage) GetQuantity() string {
-	return s.Quantity
-}
-
-// GetByProject returns the value of ByProject.
-func (s *ChargeUsage) GetByProject() []ProjectUsage {
-	return s.ByProject
-}
-
-// GetResources returns the value of Resources.
-func (s *ChargeUsage) GetResources() []ChargeResource {
-	return s.Resources
-}
-
-// SetChargeID sets the value of ChargeID.
-func (s *ChargeUsage) SetChargeID(val string) {
-	s.ChargeID = val
-}
-
-// SetQuantity sets the value of Quantity.
-func (s *ChargeUsage) SetQuantity(val string) {
-	s.Quantity = val
-}
-
-// SetByProject sets the value of ByProject.
-func (s *ChargeUsage) SetByProject(val []ProjectUsage) {
-	s.ByProject = val
-}
-
-// SetResources sets the value of Resources.
-func (s *ChargeUsage) SetResources(val []ChargeResource) {
-	s.Resources = val
-}
-
-// Ref: #/components/schemas/CreateBillingAccountRequestBody
-type CreateBillingAccountRequestBody struct {
-	// Which of the caller's accounts this is. Two requests carrying the same `seq` describe the same
-	// account, so a retry is safe; a different `seq` creates a different account.
-	//
-	// It is not optional. Defaulting it would mean that a client which forgot the field silently receives
-	// the account it already had, and reads that as a successful creation.
-	Seq int32 `json:"seq"`
-	// A name for the holder's own benefit.
-	DisplayName string      `json:"display_name"`
-	Currency    OptCurrency `json:"currency"`
-	// Buy one of the top-up bundles from `/offers` instead of an arbitrary amount. When given, `amount` is
-	// ignored: the bundle says what is charged and how much credit it grants.
-	//
-	// How much credit arrives is decided when the money does, not now — and only if the amount collected
-	// matches what the bundle costs. A bundle whose places ran out, or whose window closed, in between
-	// still grants what was paid for; it just does not grant the bonus.
-	OfferKey OptString `json:"offer_key"`
-}
-
-// GetSeq returns the value of Seq.
-func (s *CreateBillingAccountRequestBody) GetSeq() int32 {
-	return s.Seq
-}
-
-// GetDisplayName returns the value of DisplayName.
-func (s *CreateBillingAccountRequestBody) GetDisplayName() string {
-	return s.DisplayName
-}
-
-// GetCurrency returns the value of Currency.
-func (s *CreateBillingAccountRequestBody) GetCurrency() OptCurrency {
-	return s.Currency
-}
-
-// GetOfferKey returns the value of OfferKey.
-func (s *CreateBillingAccountRequestBody) GetOfferKey() OptString {
-	return s.OfferKey
-}
-
-// SetSeq sets the value of Seq.
-func (s *CreateBillingAccountRequestBody) SetSeq(val int32) {
-	s.Seq = val
-}
-
-// SetDisplayName sets the value of DisplayName.
-func (s *CreateBillingAccountRequestBody) SetDisplayName(val string) {
-	s.DisplayName = val
-}
-
-// SetCurrency sets the value of Currency.
-func (s *CreateBillingAccountRequestBody) SetCurrency(val OptCurrency) {
-	s.Currency = val
-}
-
-// SetOfferKey sets the value of OfferKey.
-func (s *CreateBillingAccountRequestBody) SetOfferKey(val OptString) {
-	s.OfferKey = val
-}
-
-// One movement of credit. Immutable — a correction is another movement, never an edit of this one,
-// which is what lets the balance be recomputed from the list at any time.
-// Ref: #/components/schemas/CreditTransaction
-type CreditTransaction struct {
-	ID   string                `json:"id"`
-	Type CreditTransactionType `json:"type"`
-	// A decimal string. Never a float — a balance that rounds is a balance that drifts.
-	Amount   string `json:"amount"`
-	Currency string `json:"currency"`
-	// When it landed on the ledger, which is not always when it was requested.
-	BookedAt time.Time `json:"booked_at"`
-	// What the balance became. Recorded by the metering engine rather than recomputed here — recomputing
-	// assumes our understanding of the burn-down order matches its own, and this is its own account of it.
-	BalanceAfter string `json:"balance_after"`
+// Ref: #/components/schemas/CatalogPlan
+type CatalogPlan struct {
+	ID                      uuid.UUID       `json:"id"`
+	ProductID               uuid.UUID       `json:"product_id"`
+	LookupKey               string          `json:"lookup_key"`
+	Name                    string          `json:"name"`
+	NameTranslations        OptTranslations `json:"name_translations"`
+	Description             OptString       `json:"description"`
+	DescriptionTranslations OptTranslations `json:"description_translations"`
 }
 
 // GetID returns the value of ID.
-func (s *CreditTransaction) GetID() string {
+func (s *CatalogPlan) GetID() uuid.UUID {
 	return s.ID
 }
 
+// GetProductID returns the value of ProductID.
+func (s *CatalogPlan) GetProductID() uuid.UUID {
+	return s.ProductID
+}
+
+// GetLookupKey returns the value of LookupKey.
+func (s *CatalogPlan) GetLookupKey() string {
+	return s.LookupKey
+}
+
+// GetName returns the value of Name.
+func (s *CatalogPlan) GetName() string {
+	return s.Name
+}
+
+// GetNameTranslations returns the value of NameTranslations.
+func (s *CatalogPlan) GetNameTranslations() OptTranslations {
+	return s.NameTranslations
+}
+
+// GetDescription returns the value of Description.
+func (s *CatalogPlan) GetDescription() OptString {
+	return s.Description
+}
+
+// GetDescriptionTranslations returns the value of DescriptionTranslations.
+func (s *CatalogPlan) GetDescriptionTranslations() OptTranslations {
+	return s.DescriptionTranslations
+}
+
+// SetID sets the value of ID.
+func (s *CatalogPlan) SetID(val uuid.UUID) {
+	s.ID = val
+}
+
+// SetProductID sets the value of ProductID.
+func (s *CatalogPlan) SetProductID(val uuid.UUID) {
+	s.ProductID = val
+}
+
+// SetLookupKey sets the value of LookupKey.
+func (s *CatalogPlan) SetLookupKey(val string) {
+	s.LookupKey = val
+}
+
+// SetName sets the value of Name.
+func (s *CatalogPlan) SetName(val string) {
+	s.Name = val
+}
+
+// SetNameTranslations sets the value of NameTranslations.
+func (s *CatalogPlan) SetNameTranslations(val OptTranslations) {
+	s.NameTranslations = val
+}
+
+// SetDescription sets the value of Description.
+func (s *CatalogPlan) SetDescription(val OptString) {
+	s.Description = val
+}
+
+// SetDescriptionTranslations sets the value of DescriptionTranslations.
+func (s *CatalogPlan) SetDescriptionTranslations(val OptTranslations) {
+	s.DescriptionTranslations = val
+}
+
+// Ref: #/components/schemas/CatalogPlanList
+type CatalogPlanList struct {
+	Items      []CatalogPlan `json:"items"`
+	TotalCount OptInt64      `json:"total_count"`
+}
+
+// GetItems returns the value of Items.
+func (s *CatalogPlanList) GetItems() []CatalogPlan {
+	return s.Items
+}
+
+// GetTotalCount returns the value of TotalCount.
+func (s *CatalogPlanList) GetTotalCount() OptInt64 {
+	return s.TotalCount
+}
+
+// SetItems sets the value of Items.
+func (s *CatalogPlanList) SetItems(val []CatalogPlan) {
+	s.Items = val
+}
+
+// SetTotalCount sets the value of TotalCount.
+func (s *CatalogPlanList) SetTotalCount(val OptInt64) {
+	s.TotalCount = val
+}
+
+// CatalogPlanListHeaders wraps CatalogPlanList with response headers.
+type CatalogPlanListHeaders struct {
+	ETag     OptString
+	Response CatalogPlanList
+}
+
+// GetETag returns the value of ETag.
+func (s *CatalogPlanListHeaders) GetETag() OptString {
+	return s.ETag
+}
+
+// GetResponse returns the value of Response.
+func (s *CatalogPlanListHeaders) GetResponse() CatalogPlanList {
+	return s.Response
+}
+
+// SetETag sets the value of ETag.
+func (s *CatalogPlanListHeaders) SetETag(val OptString) {
+	s.ETag = val
+}
+
+// SetResponse sets the value of Response.
+func (s *CatalogPlanListHeaders) SetResponse(val CatalogPlanList) {
+	s.Response = val
+}
+
+func (*CatalogPlanListHeaders) listCatalogPlansRes() {}
+
+// Ref: #/components/schemas/CatalogPrice
+type CatalogPrice struct {
+	ID       uuid.UUID `json:"id"`
+	PlanID   uuid.UUID `json:"plan_id"`
+	Currency string    `json:"currency"`
+	// `metered` charges for what is used, `prepaid` buys a period in advance, `one_time` charges once.
+	Type CatalogPriceType `json:"type"`
+	// How the amount is arrived at. `rated` means the rate depends on attributes such as region or machine
+	// type, and is looked up on a price list.
+	BillingScheme CatalogPriceBillingScheme `json:"billing_scheme"`
+	// Present for `per_unit`.
+	UnitAmount OptMoney `json:"unit_amount"`
+	// Present for `tiered`. `graduated` charges each band at its own rate; `volume` charges everything at
+	// the rate of the band the total falls in.
+	TiersMode OptCatalogPriceTiersMode `json:"tiers_mode"`
+	// Present for `tiered`, in ascending order.
+	Tiers []Tier `json:"tiers"`
+	// For `rated` prices, the price list the rates are read from.
+	RateCardID OptUUID `json:"rate_card_id"`
+	// Quantities included when this price is bought — the traffic or requests that are used before
+	// anything is charged for.
+	Allowances []IncludedAllowance `json:"allowances"`
+	// Capabilities that buying this price makes available.
+	Features []IncludedFeature `json:"features"`
+	// For prepaid prices.
+	Term     OptInt                `json:"term"`
+	Period   OptCatalogPricePeriod `json:"period"`
+	SetupFee OptMoney              `json:"setup_fee"`
+}
+
+// GetID returns the value of ID.
+func (s *CatalogPrice) GetID() uuid.UUID {
+	return s.ID
+}
+
+// GetPlanID returns the value of PlanID.
+func (s *CatalogPrice) GetPlanID() uuid.UUID {
+	return s.PlanID
+}
+
+// GetCurrency returns the value of Currency.
+func (s *CatalogPrice) GetCurrency() string {
+	return s.Currency
+}
+
 // GetType returns the value of Type.
-func (s *CreditTransaction) GetType() CreditTransactionType {
+func (s *CatalogPrice) GetType() CatalogPriceType {
 	return s.Type
 }
 
+// GetBillingScheme returns the value of BillingScheme.
+func (s *CatalogPrice) GetBillingScheme() CatalogPriceBillingScheme {
+	return s.BillingScheme
+}
+
+// GetUnitAmount returns the value of UnitAmount.
+func (s *CatalogPrice) GetUnitAmount() OptMoney {
+	return s.UnitAmount
+}
+
+// GetTiersMode returns the value of TiersMode.
+func (s *CatalogPrice) GetTiersMode() OptCatalogPriceTiersMode {
+	return s.TiersMode
+}
+
+// GetTiers returns the value of Tiers.
+func (s *CatalogPrice) GetTiers() []Tier {
+	return s.Tiers
+}
+
+// GetRateCardID returns the value of RateCardID.
+func (s *CatalogPrice) GetRateCardID() OptUUID {
+	return s.RateCardID
+}
+
+// GetAllowances returns the value of Allowances.
+func (s *CatalogPrice) GetAllowances() []IncludedAllowance {
+	return s.Allowances
+}
+
+// GetFeatures returns the value of Features.
+func (s *CatalogPrice) GetFeatures() []IncludedFeature {
+	return s.Features
+}
+
+// GetTerm returns the value of Term.
+func (s *CatalogPrice) GetTerm() OptInt {
+	return s.Term
+}
+
+// GetPeriod returns the value of Period.
+func (s *CatalogPrice) GetPeriod() OptCatalogPricePeriod {
+	return s.Period
+}
+
+// GetSetupFee returns the value of SetupFee.
+func (s *CatalogPrice) GetSetupFee() OptMoney {
+	return s.SetupFee
+}
+
+// SetID sets the value of ID.
+func (s *CatalogPrice) SetID(val uuid.UUID) {
+	s.ID = val
+}
+
+// SetPlanID sets the value of PlanID.
+func (s *CatalogPrice) SetPlanID(val uuid.UUID) {
+	s.PlanID = val
+}
+
+// SetCurrency sets the value of Currency.
+func (s *CatalogPrice) SetCurrency(val string) {
+	s.Currency = val
+}
+
+// SetType sets the value of Type.
+func (s *CatalogPrice) SetType(val CatalogPriceType) {
+	s.Type = val
+}
+
+// SetBillingScheme sets the value of BillingScheme.
+func (s *CatalogPrice) SetBillingScheme(val CatalogPriceBillingScheme) {
+	s.BillingScheme = val
+}
+
+// SetUnitAmount sets the value of UnitAmount.
+func (s *CatalogPrice) SetUnitAmount(val OptMoney) {
+	s.UnitAmount = val
+}
+
+// SetTiersMode sets the value of TiersMode.
+func (s *CatalogPrice) SetTiersMode(val OptCatalogPriceTiersMode) {
+	s.TiersMode = val
+}
+
+// SetTiers sets the value of Tiers.
+func (s *CatalogPrice) SetTiers(val []Tier) {
+	s.Tiers = val
+}
+
+// SetRateCardID sets the value of RateCardID.
+func (s *CatalogPrice) SetRateCardID(val OptUUID) {
+	s.RateCardID = val
+}
+
+// SetAllowances sets the value of Allowances.
+func (s *CatalogPrice) SetAllowances(val []IncludedAllowance) {
+	s.Allowances = val
+}
+
+// SetFeatures sets the value of Features.
+func (s *CatalogPrice) SetFeatures(val []IncludedFeature) {
+	s.Features = val
+}
+
+// SetTerm sets the value of Term.
+func (s *CatalogPrice) SetTerm(val OptInt) {
+	s.Term = val
+}
+
+// SetPeriod sets the value of Period.
+func (s *CatalogPrice) SetPeriod(val OptCatalogPricePeriod) {
+	s.Period = val
+}
+
+// SetSetupFee sets the value of SetupFee.
+func (s *CatalogPrice) SetSetupFee(val OptMoney) {
+	s.SetupFee = val
+}
+
+// How the amount is arrived at. `rated` means the rate depends on attributes such as region or machine
+// type, and is looked up on a price list.
+type CatalogPriceBillingScheme string
+
+const (
+	CatalogPriceBillingSchemePerUnit CatalogPriceBillingScheme = "per_unit"
+	CatalogPriceBillingSchemeTiered  CatalogPriceBillingScheme = "tiered"
+	CatalogPriceBillingSchemeRated   CatalogPriceBillingScheme = "rated"
+)
+
+// AllValues returns all CatalogPriceBillingScheme values.
+func (CatalogPriceBillingScheme) AllValues() []CatalogPriceBillingScheme {
+	return []CatalogPriceBillingScheme{
+		CatalogPriceBillingSchemePerUnit,
+		CatalogPriceBillingSchemeTiered,
+		CatalogPriceBillingSchemeRated,
+	}
+}
+
+// MarshalText implements encoding.TextMarshaler.
+func (s CatalogPriceBillingScheme) MarshalText() ([]byte, error) {
+	switch s {
+	case CatalogPriceBillingSchemePerUnit:
+		return []byte(s), nil
+	case CatalogPriceBillingSchemeTiered:
+		return []byte(s), nil
+	case CatalogPriceBillingSchemeRated:
+		return []byte(s), nil
+	default:
+		return nil, errors.Errorf("invalid value: %q", s)
+	}
+}
+
+// UnmarshalText implements encoding.TextUnmarshaler.
+func (s *CatalogPriceBillingScheme) UnmarshalText(data []byte) error {
+	switch CatalogPriceBillingScheme(data) {
+	case CatalogPriceBillingSchemePerUnit:
+		*s = CatalogPriceBillingSchemePerUnit
+		return nil
+	case CatalogPriceBillingSchemeTiered:
+		*s = CatalogPriceBillingSchemeTiered
+		return nil
+	case CatalogPriceBillingSchemeRated:
+		*s = CatalogPriceBillingSchemeRated
+		return nil
+	default:
+		return errors.Errorf("invalid value: %q", data)
+	}
+}
+
+// Ref: #/components/schemas/CatalogPriceList
+type CatalogPriceList struct {
+	Items      []CatalogPrice `json:"items"`
+	TotalCount OptInt64       `json:"total_count"`
+}
+
+// GetItems returns the value of Items.
+func (s *CatalogPriceList) GetItems() []CatalogPrice {
+	return s.Items
+}
+
+// GetTotalCount returns the value of TotalCount.
+func (s *CatalogPriceList) GetTotalCount() OptInt64 {
+	return s.TotalCount
+}
+
+// SetItems sets the value of Items.
+func (s *CatalogPriceList) SetItems(val []CatalogPrice) {
+	s.Items = val
+}
+
+// SetTotalCount sets the value of TotalCount.
+func (s *CatalogPriceList) SetTotalCount(val OptInt64) {
+	s.TotalCount = val
+}
+
+// CatalogPriceListHeaders wraps CatalogPriceList with response headers.
+type CatalogPriceListHeaders struct {
+	ETag     OptString
+	Response CatalogPriceList
+}
+
+// GetETag returns the value of ETag.
+func (s *CatalogPriceListHeaders) GetETag() OptString {
+	return s.ETag
+}
+
+// GetResponse returns the value of Response.
+func (s *CatalogPriceListHeaders) GetResponse() CatalogPriceList {
+	return s.Response
+}
+
+// SetETag sets the value of ETag.
+func (s *CatalogPriceListHeaders) SetETag(val OptString) {
+	s.ETag = val
+}
+
+// SetResponse sets the value of Response.
+func (s *CatalogPriceListHeaders) SetResponse(val CatalogPriceList) {
+	s.Response = val
+}
+
+func (*CatalogPriceListHeaders) listCatalogPricesRes() {}
+
+type CatalogPricePeriod string
+
+const (
+	CatalogPricePeriodNone  CatalogPricePeriod = "none"
+	CatalogPricePeriodDay   CatalogPricePeriod = "day"
+	CatalogPricePeriodMonth CatalogPricePeriod = "month"
+	CatalogPricePeriodYear  CatalogPricePeriod = "year"
+)
+
+// AllValues returns all CatalogPricePeriod values.
+func (CatalogPricePeriod) AllValues() []CatalogPricePeriod {
+	return []CatalogPricePeriod{
+		CatalogPricePeriodNone,
+		CatalogPricePeriodDay,
+		CatalogPricePeriodMonth,
+		CatalogPricePeriodYear,
+	}
+}
+
+// MarshalText implements encoding.TextMarshaler.
+func (s CatalogPricePeriod) MarshalText() ([]byte, error) {
+	switch s {
+	case CatalogPricePeriodNone:
+		return []byte(s), nil
+	case CatalogPricePeriodDay:
+		return []byte(s), nil
+	case CatalogPricePeriodMonth:
+		return []byte(s), nil
+	case CatalogPricePeriodYear:
+		return []byte(s), nil
+	default:
+		return nil, errors.Errorf("invalid value: %q", s)
+	}
+}
+
+// UnmarshalText implements encoding.TextUnmarshaler.
+func (s *CatalogPricePeriod) UnmarshalText(data []byte) error {
+	switch CatalogPricePeriod(data) {
+	case CatalogPricePeriodNone:
+		*s = CatalogPricePeriodNone
+		return nil
+	case CatalogPricePeriodDay:
+		*s = CatalogPricePeriodDay
+		return nil
+	case CatalogPricePeriodMonth:
+		*s = CatalogPricePeriodMonth
+		return nil
+	case CatalogPricePeriodYear:
+		*s = CatalogPricePeriodYear
+		return nil
+	default:
+		return errors.Errorf("invalid value: %q", data)
+	}
+}
+
+// Present for `tiered`. `graduated` charges each band at its own rate; `volume` charges everything at
+// the rate of the band the total falls in.
+type CatalogPriceTiersMode string
+
+const (
+	CatalogPriceTiersModeGraduated CatalogPriceTiersMode = "graduated"
+	CatalogPriceTiersModeVolume    CatalogPriceTiersMode = "volume"
+)
+
+// AllValues returns all CatalogPriceTiersMode values.
+func (CatalogPriceTiersMode) AllValues() []CatalogPriceTiersMode {
+	return []CatalogPriceTiersMode{
+		CatalogPriceTiersModeGraduated,
+		CatalogPriceTiersModeVolume,
+	}
+}
+
+// MarshalText implements encoding.TextMarshaler.
+func (s CatalogPriceTiersMode) MarshalText() ([]byte, error) {
+	switch s {
+	case CatalogPriceTiersModeGraduated:
+		return []byte(s), nil
+	case CatalogPriceTiersModeVolume:
+		return []byte(s), nil
+	default:
+		return nil, errors.Errorf("invalid value: %q", s)
+	}
+}
+
+// UnmarshalText implements encoding.TextUnmarshaler.
+func (s *CatalogPriceTiersMode) UnmarshalText(data []byte) error {
+	switch CatalogPriceTiersMode(data) {
+	case CatalogPriceTiersModeGraduated:
+		*s = CatalogPriceTiersModeGraduated
+		return nil
+	case CatalogPriceTiersModeVolume:
+		*s = CatalogPriceTiersModeVolume
+		return nil
+	default:
+		return errors.Errorf("invalid value: %q", data)
+	}
+}
+
+// `metered` charges for what is used, `prepaid` buys a period in advance, `one_time` charges once.
+type CatalogPriceType string
+
+const (
+	CatalogPriceTypeMetered CatalogPriceType = "metered"
+	CatalogPriceTypePrepaid CatalogPriceType = "prepaid"
+	CatalogPriceTypeOneTime CatalogPriceType = "one_time"
+)
+
+// AllValues returns all CatalogPriceType values.
+func (CatalogPriceType) AllValues() []CatalogPriceType {
+	return []CatalogPriceType{
+		CatalogPriceTypeMetered,
+		CatalogPriceTypePrepaid,
+		CatalogPriceTypeOneTime,
+	}
+}
+
+// MarshalText implements encoding.TextMarshaler.
+func (s CatalogPriceType) MarshalText() ([]byte, error) {
+	switch s {
+	case CatalogPriceTypeMetered:
+		return []byte(s), nil
+	case CatalogPriceTypePrepaid:
+		return []byte(s), nil
+	case CatalogPriceTypeOneTime:
+		return []byte(s), nil
+	default:
+		return nil, errors.Errorf("invalid value: %q", s)
+	}
+}
+
+// UnmarshalText implements encoding.TextUnmarshaler.
+func (s *CatalogPriceType) UnmarshalText(data []byte) error {
+	switch CatalogPriceType(data) {
+	case CatalogPriceTypeMetered:
+		*s = CatalogPriceTypeMetered
+		return nil
+	case CatalogPriceTypePrepaid:
+		*s = CatalogPriceTypePrepaid
+		return nil
+	case CatalogPriceTypeOneTime:
+		*s = CatalogPriceTypeOneTime
+		return nil
+	default:
+		return errors.Errorf("invalid value: %q", data)
+	}
+}
+
+// Ref: #/components/schemas/CatalogProduct
+type CatalogProduct struct {
+	ID                      uuid.UUID       `json:"id"`
+	LookupKey               string          `json:"lookup_key"`
+	Name                    string          `json:"name"`
+	NameTranslations        OptTranslations `json:"name_translations"`
+	Description             OptString       `json:"description"`
+	DescriptionTranslations OptTranslations `json:"description_translations"`
+}
+
+// GetID returns the value of ID.
+func (s *CatalogProduct) GetID() uuid.UUID {
+	return s.ID
+}
+
+// GetLookupKey returns the value of LookupKey.
+func (s *CatalogProduct) GetLookupKey() string {
+	return s.LookupKey
+}
+
+// GetName returns the value of Name.
+func (s *CatalogProduct) GetName() string {
+	return s.Name
+}
+
+// GetNameTranslations returns the value of NameTranslations.
+func (s *CatalogProduct) GetNameTranslations() OptTranslations {
+	return s.NameTranslations
+}
+
+// GetDescription returns the value of Description.
+func (s *CatalogProduct) GetDescription() OptString {
+	return s.Description
+}
+
+// GetDescriptionTranslations returns the value of DescriptionTranslations.
+func (s *CatalogProduct) GetDescriptionTranslations() OptTranslations {
+	return s.DescriptionTranslations
+}
+
+// SetID sets the value of ID.
+func (s *CatalogProduct) SetID(val uuid.UUID) {
+	s.ID = val
+}
+
+// SetLookupKey sets the value of LookupKey.
+func (s *CatalogProduct) SetLookupKey(val string) {
+	s.LookupKey = val
+}
+
+// SetName sets the value of Name.
+func (s *CatalogProduct) SetName(val string) {
+	s.Name = val
+}
+
+// SetNameTranslations sets the value of NameTranslations.
+func (s *CatalogProduct) SetNameTranslations(val OptTranslations) {
+	s.NameTranslations = val
+}
+
+// SetDescription sets the value of Description.
+func (s *CatalogProduct) SetDescription(val OptString) {
+	s.Description = val
+}
+
+// SetDescriptionTranslations sets the value of DescriptionTranslations.
+func (s *CatalogProduct) SetDescriptionTranslations(val OptTranslations) {
+	s.DescriptionTranslations = val
+}
+
+// Ref: #/components/schemas/CatalogProductList
+type CatalogProductList struct {
+	Items      []CatalogProduct `json:"items"`
+	TotalCount OptInt64         `json:"total_count"`
+}
+
+// GetItems returns the value of Items.
+func (s *CatalogProductList) GetItems() []CatalogProduct {
+	return s.Items
+}
+
+// GetTotalCount returns the value of TotalCount.
+func (s *CatalogProductList) GetTotalCount() OptInt64 {
+	return s.TotalCount
+}
+
+// SetItems sets the value of Items.
+func (s *CatalogProductList) SetItems(val []CatalogProduct) {
+	s.Items = val
+}
+
+// SetTotalCount sets the value of TotalCount.
+func (s *CatalogProductList) SetTotalCount(val OptInt64) {
+	s.TotalCount = val
+}
+
+// CatalogProductListHeaders wraps CatalogProductList with response headers.
+type CatalogProductListHeaders struct {
+	ETag     OptString
+	Response CatalogProductList
+}
+
+// GetETag returns the value of ETag.
+func (s *CatalogProductListHeaders) GetETag() OptString {
+	return s.ETag
+}
+
+// GetResponse returns the value of Response.
+func (s *CatalogProductListHeaders) GetResponse() CatalogProductList {
+	return s.Response
+}
+
+// SetETag sets the value of ETag.
+func (s *CatalogProductListHeaders) SetETag(val OptString) {
+	s.ETag = val
+}
+
+// SetResponse sets the value of Response.
+func (s *CatalogProductListHeaders) SetResponse(val CatalogProductList) {
+	s.Response = val
+}
+
+func (*CatalogProductListHeaders) listCatalogProductsRes() {}
+
+// Ref: #/components/schemas/CatalogRate
+type CatalogRate struct {
+	// What is being measured.
+	MeterKey string `json:"meter_key"`
+	// The unit readings arrive in, such as `core-second`.
+	Unit OptString `json:"unit"`
+	// The attributes this rate applies to, such as region and machine type.
+	Dimensions   CatalogRateDimensions   `json:"dimensions"`
+	PricingModel CatalogRatePricingModel `json:"pricing_model"`
+	// Present for `per_unit`. Tiered rates carry their amounts on the tiers.
+	UnitAmount OptMoney `json:"unit_amount"`
+	// Present for `graduated` and `volume`, in ascending order.
+	Tiers []Tier `json:"tiers"`
+	// How many measured units one amount covers. An hourly rate on a per-second meter is `"3600"`.
+	UnitQuantity  OptString      `json:"unit_quantity"`
+	Currency      string         `json:"currency"`
+	EffectiveFrom time.Time      `json:"effective_from"`
+	EffectiveTo   OptNilDateTime `json:"effective_to"`
+}
+
+// GetMeterKey returns the value of MeterKey.
+func (s *CatalogRate) GetMeterKey() string {
+	return s.MeterKey
+}
+
+// GetUnit returns the value of Unit.
+func (s *CatalogRate) GetUnit() OptString {
+	return s.Unit
+}
+
+// GetDimensions returns the value of Dimensions.
+func (s *CatalogRate) GetDimensions() CatalogRateDimensions {
+	return s.Dimensions
+}
+
+// GetPricingModel returns the value of PricingModel.
+func (s *CatalogRate) GetPricingModel() CatalogRatePricingModel {
+	return s.PricingModel
+}
+
+// GetUnitAmount returns the value of UnitAmount.
+func (s *CatalogRate) GetUnitAmount() OptMoney {
+	return s.UnitAmount
+}
+
+// GetTiers returns the value of Tiers.
+func (s *CatalogRate) GetTiers() []Tier {
+	return s.Tiers
+}
+
+// GetUnitQuantity returns the value of UnitQuantity.
+func (s *CatalogRate) GetUnitQuantity() OptString {
+	return s.UnitQuantity
+}
+
+// GetCurrency returns the value of Currency.
+func (s *CatalogRate) GetCurrency() string {
+	return s.Currency
+}
+
+// GetEffectiveFrom returns the value of EffectiveFrom.
+func (s *CatalogRate) GetEffectiveFrom() time.Time {
+	return s.EffectiveFrom
+}
+
+// GetEffectiveTo returns the value of EffectiveTo.
+func (s *CatalogRate) GetEffectiveTo() OptNilDateTime {
+	return s.EffectiveTo
+}
+
+// SetMeterKey sets the value of MeterKey.
+func (s *CatalogRate) SetMeterKey(val string) {
+	s.MeterKey = val
+}
+
+// SetUnit sets the value of Unit.
+func (s *CatalogRate) SetUnit(val OptString) {
+	s.Unit = val
+}
+
+// SetDimensions sets the value of Dimensions.
+func (s *CatalogRate) SetDimensions(val CatalogRateDimensions) {
+	s.Dimensions = val
+}
+
+// SetPricingModel sets the value of PricingModel.
+func (s *CatalogRate) SetPricingModel(val CatalogRatePricingModel) {
+	s.PricingModel = val
+}
+
+// SetUnitAmount sets the value of UnitAmount.
+func (s *CatalogRate) SetUnitAmount(val OptMoney) {
+	s.UnitAmount = val
+}
+
+// SetTiers sets the value of Tiers.
+func (s *CatalogRate) SetTiers(val []Tier) {
+	s.Tiers = val
+}
+
+// SetUnitQuantity sets the value of UnitQuantity.
+func (s *CatalogRate) SetUnitQuantity(val OptString) {
+	s.UnitQuantity = val
+}
+
+// SetCurrency sets the value of Currency.
+func (s *CatalogRate) SetCurrency(val string) {
+	s.Currency = val
+}
+
+// SetEffectiveFrom sets the value of EffectiveFrom.
+func (s *CatalogRate) SetEffectiveFrom(val time.Time) {
+	s.EffectiveFrom = val
+}
+
+// SetEffectiveTo sets the value of EffectiveTo.
+func (s *CatalogRate) SetEffectiveTo(val OptNilDateTime) {
+	s.EffectiveTo = val
+}
+
+// The attributes this rate applies to, such as region and machine type.
+type CatalogRateDimensions map[string]string
+
+func (s *CatalogRateDimensions) init() CatalogRateDimensions {
+	m := *s
+	if m == nil {
+		m = map[string]string{}
+		*s = m
+	}
+	return m
+}
+
+// Ref: #/components/schemas/CatalogRateList
+type CatalogRateList struct {
+	Items      []CatalogRate `json:"items"`
+	TotalCount OptInt64      `json:"total_count"`
+}
+
+// GetItems returns the value of Items.
+func (s *CatalogRateList) GetItems() []CatalogRate {
+	return s.Items
+}
+
+// GetTotalCount returns the value of TotalCount.
+func (s *CatalogRateList) GetTotalCount() OptInt64 {
+	return s.TotalCount
+}
+
+// SetItems sets the value of Items.
+func (s *CatalogRateList) SetItems(val []CatalogRate) {
+	s.Items = val
+}
+
+// SetTotalCount sets the value of TotalCount.
+func (s *CatalogRateList) SetTotalCount(val OptInt64) {
+	s.TotalCount = val
+}
+
+// CatalogRateListHeaders wraps CatalogRateList with response headers.
+type CatalogRateListHeaders struct {
+	ETag     OptString
+	Response CatalogRateList
+}
+
+// GetETag returns the value of ETag.
+func (s *CatalogRateListHeaders) GetETag() OptString {
+	return s.ETag
+}
+
+// GetResponse returns the value of Response.
+func (s *CatalogRateListHeaders) GetResponse() CatalogRateList {
+	return s.Response
+}
+
+// SetETag sets the value of ETag.
+func (s *CatalogRateListHeaders) SetETag(val OptString) {
+	s.ETag = val
+}
+
+// SetResponse sets the value of Response.
+func (s *CatalogRateListHeaders) SetResponse(val CatalogRateList) {
+	s.Response = val
+}
+
+func (*CatalogRateListHeaders) listCatalogRatesRes() {}
+
+type CatalogRatePricingModel string
+
+const (
+	CatalogRatePricingModelPerUnit   CatalogRatePricingModel = "per_unit"
+	CatalogRatePricingModelGraduated CatalogRatePricingModel = "graduated"
+	CatalogRatePricingModelVolume    CatalogRatePricingModel = "volume"
+)
+
+// AllValues returns all CatalogRatePricingModel values.
+func (CatalogRatePricingModel) AllValues() []CatalogRatePricingModel {
+	return []CatalogRatePricingModel{
+		CatalogRatePricingModelPerUnit,
+		CatalogRatePricingModelGraduated,
+		CatalogRatePricingModelVolume,
+	}
+}
+
+// MarshalText implements encoding.TextMarshaler.
+func (s CatalogRatePricingModel) MarshalText() ([]byte, error) {
+	switch s {
+	case CatalogRatePricingModelPerUnit:
+		return []byte(s), nil
+	case CatalogRatePricingModelGraduated:
+		return []byte(s), nil
+	case CatalogRatePricingModelVolume:
+		return []byte(s), nil
+	default:
+		return nil, errors.Errorf("invalid value: %q", s)
+	}
+}
+
+// UnmarshalText implements encoding.TextUnmarshaler.
+func (s *CatalogRatePricingModel) UnmarshalText(data []byte) error {
+	switch CatalogRatePricingModel(data) {
+	case CatalogRatePricingModelPerUnit:
+		*s = CatalogRatePricingModelPerUnit
+		return nil
+	case CatalogRatePricingModelGraduated:
+		*s = CatalogRatePricingModelGraduated
+		return nil
+	case CatalogRatePricingModelVolume:
+		*s = CatalogRatePricingModelVolume
+		return nil
+	default:
+		return errors.Errorf("invalid value: %q", data)
+	}
+}
+
+// Ref: #/components/schemas/CodePreview
+type CodePreview struct {
+	// Whether the code itself is usable — it exists, has not expired, has not been used up, and matches
+	// the account's currency. It says nothing about a particular purchase; `applicable` does.
+	Valid  bool             `json:"valid"`
+	Reason OptCodeRejection `json:"reason"`
+	Type   CodePreviewType  `json:"type"`
+	Name   OptString        `json:"name"`
+	// For a voucher, the amount it adds.
+	Amount OptMoney `json:"amount"`
+	// For a percentage discount.
+	PercentOff  OptString `json:"percent_off"`
+	MaxDiscount OptMoney  `json:"max_discount"`
+	Currency    OptString `json:"currency"`
+	// What it may be used for. Present whether or not a purchase was given, so that the terms can be shown
+	// before anything is chosen.
+	AppliesTo OptApplicability `json:"applies_to"`
+	// The terms in one sentence, ready to display — for example "Compute, new purchases only, from
+	// 100.00" or "No restriction on product or purchase type".
+	Summary    OptString      `json:"summary"`
+	ValidUntil OptNilDateTime `json:"valid_until"`
+	// Whether it applies to the purchase given in `lines`. Absent when no purchase was given.
+	Applicable       OptBool          `json:"applicable"`
+	ApplicableReason OptCodeRejection `json:"applicable_reason"`
+	// The total of the lines that match the restrictions. This is what the threshold is measured against,
+	// not the order total.
+	QualifyingAmount OptMoney `json:"qualifying_amount"`
+	// How much more of a qualifying purchase is needed to reach the threshold. `"0"` once it is met.
+	Shortfall OptMoney `json:"shortfall"`
+	// What it would take off this purchase. An estimate: the amount is settled at the moment the order is
+	// placed.
+	EstimatedDiscount OptMoney `json:"estimated_discount"`
+}
+
+// GetValid returns the value of Valid.
+func (s *CodePreview) GetValid() bool {
+	return s.Valid
+}
+
+// GetReason returns the value of Reason.
+func (s *CodePreview) GetReason() OptCodeRejection {
+	return s.Reason
+}
+
+// GetType returns the value of Type.
+func (s *CodePreview) GetType() CodePreviewType {
+	return s.Type
+}
+
+// GetName returns the value of Name.
+func (s *CodePreview) GetName() OptString {
+	return s.Name
+}
+
 // GetAmount returns the value of Amount.
-func (s *CreditTransaction) GetAmount() string {
+func (s *CodePreview) GetAmount() OptMoney {
+	return s.Amount
+}
+
+// GetPercentOff returns the value of PercentOff.
+func (s *CodePreview) GetPercentOff() OptString {
+	return s.PercentOff
+}
+
+// GetMaxDiscount returns the value of MaxDiscount.
+func (s *CodePreview) GetMaxDiscount() OptMoney {
+	return s.MaxDiscount
+}
+
+// GetCurrency returns the value of Currency.
+func (s *CodePreview) GetCurrency() OptString {
+	return s.Currency
+}
+
+// GetAppliesTo returns the value of AppliesTo.
+func (s *CodePreview) GetAppliesTo() OptApplicability {
+	return s.AppliesTo
+}
+
+// GetSummary returns the value of Summary.
+func (s *CodePreview) GetSummary() OptString {
+	return s.Summary
+}
+
+// GetValidUntil returns the value of ValidUntil.
+func (s *CodePreview) GetValidUntil() OptNilDateTime {
+	return s.ValidUntil
+}
+
+// GetApplicable returns the value of Applicable.
+func (s *CodePreview) GetApplicable() OptBool {
+	return s.Applicable
+}
+
+// GetApplicableReason returns the value of ApplicableReason.
+func (s *CodePreview) GetApplicableReason() OptCodeRejection {
+	return s.ApplicableReason
+}
+
+// GetQualifyingAmount returns the value of QualifyingAmount.
+func (s *CodePreview) GetQualifyingAmount() OptMoney {
+	return s.QualifyingAmount
+}
+
+// GetShortfall returns the value of Shortfall.
+func (s *CodePreview) GetShortfall() OptMoney {
+	return s.Shortfall
+}
+
+// GetEstimatedDiscount returns the value of EstimatedDiscount.
+func (s *CodePreview) GetEstimatedDiscount() OptMoney {
+	return s.EstimatedDiscount
+}
+
+// SetValid sets the value of Valid.
+func (s *CodePreview) SetValid(val bool) {
+	s.Valid = val
+}
+
+// SetReason sets the value of Reason.
+func (s *CodePreview) SetReason(val OptCodeRejection) {
+	s.Reason = val
+}
+
+// SetType sets the value of Type.
+func (s *CodePreview) SetType(val CodePreviewType) {
+	s.Type = val
+}
+
+// SetName sets the value of Name.
+func (s *CodePreview) SetName(val OptString) {
+	s.Name = val
+}
+
+// SetAmount sets the value of Amount.
+func (s *CodePreview) SetAmount(val OptMoney) {
+	s.Amount = val
+}
+
+// SetPercentOff sets the value of PercentOff.
+func (s *CodePreview) SetPercentOff(val OptString) {
+	s.PercentOff = val
+}
+
+// SetMaxDiscount sets the value of MaxDiscount.
+func (s *CodePreview) SetMaxDiscount(val OptMoney) {
+	s.MaxDiscount = val
+}
+
+// SetCurrency sets the value of Currency.
+func (s *CodePreview) SetCurrency(val OptString) {
+	s.Currency = val
+}
+
+// SetAppliesTo sets the value of AppliesTo.
+func (s *CodePreview) SetAppliesTo(val OptApplicability) {
+	s.AppliesTo = val
+}
+
+// SetSummary sets the value of Summary.
+func (s *CodePreview) SetSummary(val OptString) {
+	s.Summary = val
+}
+
+// SetValidUntil sets the value of ValidUntil.
+func (s *CodePreview) SetValidUntil(val OptNilDateTime) {
+	s.ValidUntil = val
+}
+
+// SetApplicable sets the value of Applicable.
+func (s *CodePreview) SetApplicable(val OptBool) {
+	s.Applicable = val
+}
+
+// SetApplicableReason sets the value of ApplicableReason.
+func (s *CodePreview) SetApplicableReason(val OptCodeRejection) {
+	s.ApplicableReason = val
+}
+
+// SetQualifyingAmount sets the value of QualifyingAmount.
+func (s *CodePreview) SetQualifyingAmount(val OptMoney) {
+	s.QualifyingAmount = val
+}
+
+// SetShortfall sets the value of Shortfall.
+func (s *CodePreview) SetShortfall(val OptMoney) {
+	s.Shortfall = val
+}
+
+// SetEstimatedDiscount sets the value of EstimatedDiscount.
+func (s *CodePreview) SetEstimatedDiscount(val OptMoney) {
+	s.EstimatedDiscount = val
+}
+
+type CodePreviewType string
+
+const (
+	CodePreviewTypeVoucher  CodePreviewType = "voucher"
+	CodePreviewTypeDiscount CodePreviewType = "discount"
+)
+
+// AllValues returns all CodePreviewType values.
+func (CodePreviewType) AllValues() []CodePreviewType {
+	return []CodePreviewType{
+		CodePreviewTypeVoucher,
+		CodePreviewTypeDiscount,
+	}
+}
+
+// MarshalText implements encoding.TextMarshaler.
+func (s CodePreviewType) MarshalText() ([]byte, error) {
+	switch s {
+	case CodePreviewTypeVoucher:
+		return []byte(s), nil
+	case CodePreviewTypeDiscount:
+		return []byte(s), nil
+	default:
+		return nil, errors.Errorf("invalid value: %q", s)
+	}
+}
+
+// UnmarshalText implements encoding.TextUnmarshaler.
+func (s *CodePreviewType) UnmarshalText(data []byte) error {
+	switch CodePreviewType(data) {
+	case CodePreviewTypeVoucher:
+		*s = CodePreviewTypeVoucher
+		return nil
+	case CodePreviewTypeDiscount:
+		*s = CodePreviewTypeDiscount
+		return nil
+	default:
+		return errors.Errorf("invalid value: %q", data)
+	}
+}
+
+// Ref: #/components/schemas/CodeRedeem
+type CodeRedeem struct {
+	BillingAccountID int64  `json:"billing_account_id"`
+	Code             string `json:"code"`
+	IdempotencyKey   string `json:"idempotency_key"`
+}
+
+// GetBillingAccountID returns the value of BillingAccountID.
+func (s *CodeRedeem) GetBillingAccountID() int64 {
+	return s.BillingAccountID
+}
+
+// GetCode returns the value of Code.
+func (s *CodeRedeem) GetCode() string {
+	return s.Code
+}
+
+// GetIdempotencyKey returns the value of IdempotencyKey.
+func (s *CodeRedeem) GetIdempotencyKey() string {
+	return s.IdempotencyKey
+}
+
+// SetBillingAccountID sets the value of BillingAccountID.
+func (s *CodeRedeem) SetBillingAccountID(val int64) {
+	s.BillingAccountID = val
+}
+
+// SetCode sets the value of Code.
+func (s *CodeRedeem) SetCode(val string) {
+	s.Code = val
+}
+
+// SetIdempotencyKey sets the value of IdempotencyKey.
+func (s *CodeRedeem) SetIdempotencyKey(val string) {
+	s.IdempotencyKey = val
+}
+
+// Ref: #/components/schemas/CodeRedeemResult
+type CodeRedeemResult struct {
+	Type CodeRedeemResultType `json:"type"`
+	// For a voucher, the credit that was added.
+	CreditGrantID OptNilUUID `json:"credit_grant_id"`
+	Amount        OptMoney   `json:"amount"`
+	Currency      OptString  `json:"currency"`
+	// For a discount, what will happen — it is applied to the next qualifying purchase rather than added
+	// to the balance.
+	Message OptString `json:"message"`
+}
+
+// GetType returns the value of Type.
+func (s *CodeRedeemResult) GetType() CodeRedeemResultType {
+	return s.Type
+}
+
+// GetCreditGrantID returns the value of CreditGrantID.
+func (s *CodeRedeemResult) GetCreditGrantID() OptNilUUID {
+	return s.CreditGrantID
+}
+
+// GetAmount returns the value of Amount.
+func (s *CodeRedeemResult) GetAmount() OptMoney {
 	return s.Amount
 }
 
 // GetCurrency returns the value of Currency.
-func (s *CreditTransaction) GetCurrency() string {
+func (s *CodeRedeemResult) GetCurrency() OptString {
 	return s.Currency
 }
 
-// GetBookedAt returns the value of BookedAt.
-func (s *CreditTransaction) GetBookedAt() time.Time {
-	return s.BookedAt
-}
-
-// GetBalanceAfter returns the value of BalanceAfter.
-func (s *CreditTransaction) GetBalanceAfter() string {
-	return s.BalanceAfter
-}
-
-// SetID sets the value of ID.
-func (s *CreditTransaction) SetID(val string) {
-	s.ID = val
+// GetMessage returns the value of Message.
+func (s *CodeRedeemResult) GetMessage() OptString {
+	return s.Message
 }
 
 // SetType sets the value of Type.
-func (s *CreditTransaction) SetType(val CreditTransactionType) {
+func (s *CodeRedeemResult) SetType(val CodeRedeemResultType) {
 	s.Type = val
 }
 
+// SetCreditGrantID sets the value of CreditGrantID.
+func (s *CodeRedeemResult) SetCreditGrantID(val OptNilUUID) {
+	s.CreditGrantID = val
+}
+
 // SetAmount sets the value of Amount.
-func (s *CreditTransaction) SetAmount(val string) {
+func (s *CodeRedeemResult) SetAmount(val OptMoney) {
 	s.Amount = val
 }
 
 // SetCurrency sets the value of Currency.
-func (s *CreditTransaction) SetCurrency(val string) {
+func (s *CodeRedeemResult) SetCurrency(val OptString) {
 	s.Currency = val
 }
 
-// SetBookedAt sets the value of BookedAt.
-func (s *CreditTransaction) SetBookedAt(val time.Time) {
-	s.BookedAt = val
+// SetMessage sets the value of Message.
+func (s *CodeRedeemResult) SetMessage(val OptString) {
+	s.Message = val
 }
 
-// SetBalanceAfter sets the value of BalanceAfter.
-func (s *CreditTransaction) SetBalanceAfter(val string) {
-	s.BalanceAfter = val
-}
-
-// Ref: #/components/schemas/CreditTransactionList
-type CreditTransactionList struct {
-	// How many entries there are in total, across every page.
-	//
-	// Without it, "is there another page" has to be guessed from whether this one came back full — and
-	// that guess turns into one extra fetch of an empty page whenever the last page happens to be exactly
-	// full.
-	TotalCount   OptInt64            `json:"total_count"`
-	Transactions []CreditTransaction `json:"transactions"`
-}
-
-// GetTotalCount returns the value of TotalCount.
-func (s *CreditTransactionList) GetTotalCount() OptInt64 {
-	return s.TotalCount
-}
-
-// GetTransactions returns the value of Transactions.
-func (s *CreditTransactionList) GetTransactions() []CreditTransaction {
-	return s.Transactions
-}
-
-// SetTotalCount sets the value of TotalCount.
-func (s *CreditTransactionList) SetTotalCount(val OptInt64) {
-	s.TotalCount = val
-}
-
-// SetTransactions sets the value of Transactions.
-func (s *CreditTransactionList) SetTransactions(val []CreditTransaction) {
-	s.Transactions = val
-}
-
-// `funded` is credit arriving, `consumed` is it being spent, `expired` is a grant reaching the end of
-// its life unspent, and `voided` is one cancelled — a refund, or a correction.
-// Ref: #/components/schemas/CreditTransactionType
-type CreditTransactionType string
+type CodeRedeemResultType string
 
 const (
-	CreditTransactionTypeFunded   CreditTransactionType = "funded"
-	CreditTransactionTypeConsumed CreditTransactionType = "consumed"
-	CreditTransactionTypeExpired  CreditTransactionType = "expired"
-	CreditTransactionTypeVoided   CreditTransactionType = "voided"
+	CodeRedeemResultTypeVoucher  CodeRedeemResultType = "voucher"
+	CodeRedeemResultTypeDiscount CodeRedeemResultType = "discount"
 )
 
-// AllValues returns all CreditTransactionType values.
-func (CreditTransactionType) AllValues() []CreditTransactionType {
-	return []CreditTransactionType{
-		CreditTransactionTypeFunded,
-		CreditTransactionTypeConsumed,
-		CreditTransactionTypeExpired,
-		CreditTransactionTypeVoided,
+// AllValues returns all CodeRedeemResultType values.
+func (CodeRedeemResultType) AllValues() []CodeRedeemResultType {
+	return []CodeRedeemResultType{
+		CodeRedeemResultTypeVoucher,
+		CodeRedeemResultTypeDiscount,
 	}
 }
 
 // MarshalText implements encoding.TextMarshaler.
-func (s CreditTransactionType) MarshalText() ([]byte, error) {
+func (s CodeRedeemResultType) MarshalText() ([]byte, error) {
 	switch s {
-	case CreditTransactionTypeFunded:
+	case CodeRedeemResultTypeVoucher:
 		return []byte(s), nil
-	case CreditTransactionTypeConsumed:
-		return []byte(s), nil
-	case CreditTransactionTypeExpired:
-		return []byte(s), nil
-	case CreditTransactionTypeVoided:
+	case CodeRedeemResultTypeDiscount:
 		return []byte(s), nil
 	default:
 		return nil, errors.Errorf("invalid value: %q", s)
@@ -1310,26 +2716,637 @@ func (s CreditTransactionType) MarshalText() ([]byte, error) {
 }
 
 // UnmarshalText implements encoding.TextUnmarshaler.
-func (s *CreditTransactionType) UnmarshalText(data []byte) error {
-	switch CreditTransactionType(data) {
-	case CreditTransactionTypeFunded:
-		*s = CreditTransactionTypeFunded
+func (s *CodeRedeemResultType) UnmarshalText(data []byte) error {
+	switch CodeRedeemResultType(data) {
+	case CodeRedeemResultTypeVoucher:
+		*s = CodeRedeemResultTypeVoucher
 		return nil
-	case CreditTransactionTypeConsumed:
-		*s = CreditTransactionTypeConsumed
-		return nil
-	case CreditTransactionTypeExpired:
-		*s = CreditTransactionTypeExpired
-		return nil
-	case CreditTransactionTypeVoided:
-		*s = CreditTransactionTypeVoided
+	case CodeRedeemResultTypeDiscount:
+		*s = CodeRedeemResultTypeDiscount
 		return nil
 	default:
 		return errors.Errorf("invalid value: %q", data)
 	}
 }
 
-type Currency string
+// Why a code cannot be used. `none` when it can.
+//
+// `operation_not_covered` means the code is limited to certain purchase actions — a first-purchase
+// code presented for a renewal, for example.
+//
+// `below_minimum` is accompanied by `shortfall`.
+// Ref: #/components/schemas/CodeRejection
+type CodeRejection string
+
+const (
+	CodeRejectionNone                CodeRejection = "none"
+	CodeRejectionNotFound            CodeRejection = "not_found"
+	CodeRejectionExpired             CodeRejection = "expired"
+	CodeRejectionNotYetValid         CodeRejection = "not_yet_valid"
+	CodeRejectionExhausted           CodeRejection = "exhausted"
+	CodeRejectionAlreadyRedeemed     CodeRejection = "already_redeemed"
+	CodeRejectionCurrencyMismatch    CodeRejection = "currency_mismatch"
+	CodeRejectionProductNotCovered   CodeRejection = "product_not_covered"
+	CodeRejectionPlanNotCovered      CodeRejection = "plan_not_covered"
+	CodeRejectionPriceTypeNotCovered CodeRejection = "price_type_not_covered"
+	CodeRejectionOperationNotCovered CodeRejection = "operation_not_covered"
+	CodeRejectionNotFirstPurchase    CodeRejection = "not_first_purchase"
+	CodeRejectionBelowMinimum        CodeRejection = "below_minimum"
+)
+
+// AllValues returns all CodeRejection values.
+func (CodeRejection) AllValues() []CodeRejection {
+	return []CodeRejection{
+		CodeRejectionNone,
+		CodeRejectionNotFound,
+		CodeRejectionExpired,
+		CodeRejectionNotYetValid,
+		CodeRejectionExhausted,
+		CodeRejectionAlreadyRedeemed,
+		CodeRejectionCurrencyMismatch,
+		CodeRejectionProductNotCovered,
+		CodeRejectionPlanNotCovered,
+		CodeRejectionPriceTypeNotCovered,
+		CodeRejectionOperationNotCovered,
+		CodeRejectionNotFirstPurchase,
+		CodeRejectionBelowMinimum,
+	}
+}
+
+// MarshalText implements encoding.TextMarshaler.
+func (s CodeRejection) MarshalText() ([]byte, error) {
+	switch s {
+	case CodeRejectionNone:
+		return []byte(s), nil
+	case CodeRejectionNotFound:
+		return []byte(s), nil
+	case CodeRejectionExpired:
+		return []byte(s), nil
+	case CodeRejectionNotYetValid:
+		return []byte(s), nil
+	case CodeRejectionExhausted:
+		return []byte(s), nil
+	case CodeRejectionAlreadyRedeemed:
+		return []byte(s), nil
+	case CodeRejectionCurrencyMismatch:
+		return []byte(s), nil
+	case CodeRejectionProductNotCovered:
+		return []byte(s), nil
+	case CodeRejectionPlanNotCovered:
+		return []byte(s), nil
+	case CodeRejectionPriceTypeNotCovered:
+		return []byte(s), nil
+	case CodeRejectionOperationNotCovered:
+		return []byte(s), nil
+	case CodeRejectionNotFirstPurchase:
+		return []byte(s), nil
+	case CodeRejectionBelowMinimum:
+		return []byte(s), nil
+	default:
+		return nil, errors.Errorf("invalid value: %q", s)
+	}
+}
+
+// UnmarshalText implements encoding.TextUnmarshaler.
+func (s *CodeRejection) UnmarshalText(data []byte) error {
+	switch CodeRejection(data) {
+	case CodeRejectionNone:
+		*s = CodeRejectionNone
+		return nil
+	case CodeRejectionNotFound:
+		*s = CodeRejectionNotFound
+		return nil
+	case CodeRejectionExpired:
+		*s = CodeRejectionExpired
+		return nil
+	case CodeRejectionNotYetValid:
+		*s = CodeRejectionNotYetValid
+		return nil
+	case CodeRejectionExhausted:
+		*s = CodeRejectionExhausted
+		return nil
+	case CodeRejectionAlreadyRedeemed:
+		*s = CodeRejectionAlreadyRedeemed
+		return nil
+	case CodeRejectionCurrencyMismatch:
+		*s = CodeRejectionCurrencyMismatch
+		return nil
+	case CodeRejectionProductNotCovered:
+		*s = CodeRejectionProductNotCovered
+		return nil
+	case CodeRejectionPlanNotCovered:
+		*s = CodeRejectionPlanNotCovered
+		return nil
+	case CodeRejectionPriceTypeNotCovered:
+		*s = CodeRejectionPriceTypeNotCovered
+		return nil
+	case CodeRejectionOperationNotCovered:
+		*s = CodeRejectionOperationNotCovered
+		return nil
+	case CodeRejectionNotFirstPurchase:
+		*s = CodeRejectionNotFirstPurchase
+		return nil
+	case CodeRejectionBelowMinimum:
+		*s = CodeRejectionBelowMinimum
+		return nil
+	default:
+		return errors.Errorf("invalid value: %q", data)
+	}
+}
+
+// Give a purchase — `lines`, `changes` or `renewal_of` — to find out whether the code applies to
+// it and what it would take off. Without one the reply describes the code's own terms but cannot say
+// whether it applies, because most codes are restricted to certain items or purchase actions.
+//
+// The purchase action is worked out from what is given rather than taken on trust: a change is an
+// upgrade or a downgrade according to what it costs for the remainder of the period.
+// Ref: #/components/schemas/CodeRequest
+type CodeRequest struct {
+	BillingAccountID int64  `json:"billing_account_id"`
+	Code             string `json:"code"`
+	// The project the purchase would be for.
+	ProjectID OptUUID `json:"project_id"`
+	// New purchases to test against, in the same shape as a quote.
+	Lines []QuoteLine `json:"lines"`
+	// Changes to existing subscriptions to test against, in the same shape as a quote.
+	//
+	// Give these rather than declaring an operation: whether a change counts as an upgrade or a downgrade
+	// follows from what it costs, which cannot be determined without the subscription item and the moment
+	// it takes effect.
+	Changes []QuoteChange `json:"changes"`
+	// Subscription items being renewed, when testing a renewal.
+	RenewalOf []uuid.UUID `json:"renewal_of"`
+}
+
+// GetBillingAccountID returns the value of BillingAccountID.
+func (s *CodeRequest) GetBillingAccountID() int64 {
+	return s.BillingAccountID
+}
+
+// GetCode returns the value of Code.
+func (s *CodeRequest) GetCode() string {
+	return s.Code
+}
+
+// GetProjectID returns the value of ProjectID.
+func (s *CodeRequest) GetProjectID() OptUUID {
+	return s.ProjectID
+}
+
+// GetLines returns the value of Lines.
+func (s *CodeRequest) GetLines() []QuoteLine {
+	return s.Lines
+}
+
+// GetChanges returns the value of Changes.
+func (s *CodeRequest) GetChanges() []QuoteChange {
+	return s.Changes
+}
+
+// GetRenewalOf returns the value of RenewalOf.
+func (s *CodeRequest) GetRenewalOf() []uuid.UUID {
+	return s.RenewalOf
+}
+
+// SetBillingAccountID sets the value of BillingAccountID.
+func (s *CodeRequest) SetBillingAccountID(val int64) {
+	s.BillingAccountID = val
+}
+
+// SetCode sets the value of Code.
+func (s *CodeRequest) SetCode(val string) {
+	s.Code = val
+}
+
+// SetProjectID sets the value of ProjectID.
+func (s *CodeRequest) SetProjectID(val OptUUID) {
+	s.ProjectID = val
+}
+
+// SetLines sets the value of Lines.
+func (s *CodeRequest) SetLines(val []QuoteLine) {
+	s.Lines = val
+}
+
+// SetChanges sets the value of Changes.
+func (s *CodeRequest) SetChanges(val []QuoteChange) {
+	s.Changes = val
+}
+
+// SetRenewalOf sets the value of RenewalOf.
+func (s *CodeRequest) SetRenewalOf(val []uuid.UUID) {
+	s.RenewalOf = val
+}
+
+// Ref: #/components/schemas/CreditGrant
+type CreditGrant struct {
+	ID               uuid.UUID                `json:"id"`
+	BillingAccountID OptInt64                 `json:"billing_account_id"`
+	SourceType       OptCreditGrantSourceType `json:"source_type"`
+	Name             string                   `json:"name"`
+	Amount           Money                    `json:"amount"`
+	RemainingAmount  Money                    `json:"remaining_amount"`
+	Currency         string                   `json:"currency"`
+	// What this credit may pay for. No restrictions means anything on the account.
+	AppliesTo OptApplicability `json:"applies_to"`
+	// The restrictions in one sentence, ready to display.
+	AppliesToSummary OptString         `json:"applies_to_summary"`
+	Status           CreditGrantStatus `json:"status"`
+	ValidFrom        time.Time         `json:"valid_from"`
+	ValidUntil       OptNilDateTime    `json:"valid_until"`
+}
+
+// GetID returns the value of ID.
+func (s *CreditGrant) GetID() uuid.UUID {
+	return s.ID
+}
+
+// GetBillingAccountID returns the value of BillingAccountID.
+func (s *CreditGrant) GetBillingAccountID() OptInt64 {
+	return s.BillingAccountID
+}
+
+// GetSourceType returns the value of SourceType.
+func (s *CreditGrant) GetSourceType() OptCreditGrantSourceType {
+	return s.SourceType
+}
+
+// GetName returns the value of Name.
+func (s *CreditGrant) GetName() string {
+	return s.Name
+}
+
+// GetAmount returns the value of Amount.
+func (s *CreditGrant) GetAmount() Money {
+	return s.Amount
+}
+
+// GetRemainingAmount returns the value of RemainingAmount.
+func (s *CreditGrant) GetRemainingAmount() Money {
+	return s.RemainingAmount
+}
+
+// GetCurrency returns the value of Currency.
+func (s *CreditGrant) GetCurrency() string {
+	return s.Currency
+}
+
+// GetAppliesTo returns the value of AppliesTo.
+func (s *CreditGrant) GetAppliesTo() OptApplicability {
+	return s.AppliesTo
+}
+
+// GetAppliesToSummary returns the value of AppliesToSummary.
+func (s *CreditGrant) GetAppliesToSummary() OptString {
+	return s.AppliesToSummary
+}
+
+// GetStatus returns the value of Status.
+func (s *CreditGrant) GetStatus() CreditGrantStatus {
+	return s.Status
+}
+
+// GetValidFrom returns the value of ValidFrom.
+func (s *CreditGrant) GetValidFrom() time.Time {
+	return s.ValidFrom
+}
+
+// GetValidUntil returns the value of ValidUntil.
+func (s *CreditGrant) GetValidUntil() OptNilDateTime {
+	return s.ValidUntil
+}
+
+// SetID sets the value of ID.
+func (s *CreditGrant) SetID(val uuid.UUID) {
+	s.ID = val
+}
+
+// SetBillingAccountID sets the value of BillingAccountID.
+func (s *CreditGrant) SetBillingAccountID(val OptInt64) {
+	s.BillingAccountID = val
+}
+
+// SetSourceType sets the value of SourceType.
+func (s *CreditGrant) SetSourceType(val OptCreditGrantSourceType) {
+	s.SourceType = val
+}
+
+// SetName sets the value of Name.
+func (s *CreditGrant) SetName(val string) {
+	s.Name = val
+}
+
+// SetAmount sets the value of Amount.
+func (s *CreditGrant) SetAmount(val Money) {
+	s.Amount = val
+}
+
+// SetRemainingAmount sets the value of RemainingAmount.
+func (s *CreditGrant) SetRemainingAmount(val Money) {
+	s.RemainingAmount = val
+}
+
+// SetCurrency sets the value of Currency.
+func (s *CreditGrant) SetCurrency(val string) {
+	s.Currency = val
+}
+
+// SetAppliesTo sets the value of AppliesTo.
+func (s *CreditGrant) SetAppliesTo(val OptApplicability) {
+	s.AppliesTo = val
+}
+
+// SetAppliesToSummary sets the value of AppliesToSummary.
+func (s *CreditGrant) SetAppliesToSummary(val OptString) {
+	s.AppliesToSummary = val
+}
+
+// SetStatus sets the value of Status.
+func (s *CreditGrant) SetStatus(val CreditGrantStatus) {
+	s.Status = val
+}
+
+// SetValidFrom sets the value of ValidFrom.
+func (s *CreditGrant) SetValidFrom(val time.Time) {
+	s.ValidFrom = val
+}
+
+// SetValidUntil sets the value of ValidUntil.
+func (s *CreditGrant) SetValidUntil(val OptNilDateTime) {
+	s.ValidUntil = val
+}
+
+// Ref: #/components/schemas/CreditGrantList
+type CreditGrantList struct {
+	Items      []CreditGrant `json:"items"`
+	TotalCount OptInt64      `json:"total_count"`
+}
+
+// GetItems returns the value of Items.
+func (s *CreditGrantList) GetItems() []CreditGrant {
+	return s.Items
+}
+
+// GetTotalCount returns the value of TotalCount.
+func (s *CreditGrantList) GetTotalCount() OptInt64 {
+	return s.TotalCount
+}
+
+// SetItems sets the value of Items.
+func (s *CreditGrantList) SetItems(val []CreditGrant) {
+	s.Items = val
+}
+
+// SetTotalCount sets the value of TotalCount.
+func (s *CreditGrantList) SetTotalCount(val OptInt64) {
+	s.TotalCount = val
+}
+
+type CreditGrantSourceType string
+
+const (
+	CreditGrantSourceTypePromotional  CreditGrantSourceType = "promotional"
+	CreditGrantSourceTypeVoucher      CreditGrantSourceType = "voucher"
+	CreditGrantSourceTypeCompensation CreditGrantSourceType = "compensation"
+	CreditGrantSourceTypeMembership   CreditGrantSourceType = "membership"
+)
+
+// AllValues returns all CreditGrantSourceType values.
+func (CreditGrantSourceType) AllValues() []CreditGrantSourceType {
+	return []CreditGrantSourceType{
+		CreditGrantSourceTypePromotional,
+		CreditGrantSourceTypeVoucher,
+		CreditGrantSourceTypeCompensation,
+		CreditGrantSourceTypeMembership,
+	}
+}
+
+// MarshalText implements encoding.TextMarshaler.
+func (s CreditGrantSourceType) MarshalText() ([]byte, error) {
+	switch s {
+	case CreditGrantSourceTypePromotional:
+		return []byte(s), nil
+	case CreditGrantSourceTypeVoucher:
+		return []byte(s), nil
+	case CreditGrantSourceTypeCompensation:
+		return []byte(s), nil
+	case CreditGrantSourceTypeMembership:
+		return []byte(s), nil
+	default:
+		return nil, errors.Errorf("invalid value: %q", s)
+	}
+}
+
+// UnmarshalText implements encoding.TextUnmarshaler.
+func (s *CreditGrantSourceType) UnmarshalText(data []byte) error {
+	switch CreditGrantSourceType(data) {
+	case CreditGrantSourceTypePromotional:
+		*s = CreditGrantSourceTypePromotional
+		return nil
+	case CreditGrantSourceTypeVoucher:
+		*s = CreditGrantSourceTypeVoucher
+		return nil
+	case CreditGrantSourceTypeCompensation:
+		*s = CreditGrantSourceTypeCompensation
+		return nil
+	case CreditGrantSourceTypeMembership:
+		*s = CreditGrantSourceTypeMembership
+		return nil
+	default:
+		return errors.Errorf("invalid value: %q", data)
+	}
+}
+
+type CreditGrantStatus string
+
+const (
+	CreditGrantStatusActive    CreditGrantStatus = "active"
+	CreditGrantStatusExhausted CreditGrantStatus = "exhausted"
+	CreditGrantStatusExpired   CreditGrantStatus = "expired"
+	CreditGrantStatusVoided    CreditGrantStatus = "voided"
+)
+
+// AllValues returns all CreditGrantStatus values.
+func (CreditGrantStatus) AllValues() []CreditGrantStatus {
+	return []CreditGrantStatus{
+		CreditGrantStatusActive,
+		CreditGrantStatusExhausted,
+		CreditGrantStatusExpired,
+		CreditGrantStatusVoided,
+	}
+}
+
+// MarshalText implements encoding.TextMarshaler.
+func (s CreditGrantStatus) MarshalText() ([]byte, error) {
+	switch s {
+	case CreditGrantStatusActive:
+		return []byte(s), nil
+	case CreditGrantStatusExhausted:
+		return []byte(s), nil
+	case CreditGrantStatusExpired:
+		return []byte(s), nil
+	case CreditGrantStatusVoided:
+		return []byte(s), nil
+	default:
+		return nil, errors.Errorf("invalid value: %q", s)
+	}
+}
+
+// UnmarshalText implements encoding.TextUnmarshaler.
+func (s *CreditGrantStatus) UnmarshalText(data []byte) error {
+	switch CreditGrantStatus(data) {
+	case CreditGrantStatusActive:
+		*s = CreditGrantStatusActive
+		return nil
+	case CreditGrantStatusExhausted:
+		*s = CreditGrantStatusExhausted
+		return nil
+	case CreditGrantStatusExpired:
+		*s = CreditGrantStatusExpired
+		return nil
+	case CreditGrantStatusVoided:
+		*s = CreditGrantStatusVoided
+		return nil
+	default:
+		return errors.Errorf("invalid value: %q", data)
+	}
+}
+
+// DeletePaymentMethodNoContent is response for DeletePaymentMethod operation.
+type DeletePaymentMethodNoContent struct{}
+
+// Ref: #/components/schemas/Entitlement
+type Entitlement struct {
+	// Which service. Read it alongside `feature_key`, which is unique only within its service.
+	ProductKey string `json:"product_key"`
+	// What calling code tests against.
+	FeatureKey string    `json:"feature_key"`
+	Name       OptString `json:"name"`
+	Enabled    bool      `json:"enabled"`
+	// Whether its use is counted. `false` means no limit — the plan providing it grants it without a cap
+	// — and `remaining_quantity` should not be read in that case.
+	//
+	// A capped capability whose quantity has run out keeps `metered` true with `remaining_quantity` of
+	// `"0"`. Exhausted and uncapped are therefore always distinguishable.
+	Metered bool `json:"metered"`
+	// How much is left, as a decimal string. Meaningful only when `metered` is true. `"0"` once exhausted,
+	// never negative.
+	//
+	// This is the figure at the moment of the reply, and quantities are drawn down at settlement rather
+	// than on each call. It is suitable for display and for a soft warning, but it cannot enforce a strict
+	// limit: concurrent requests all see the same figure. A hard limit has to be counted by the service
+	// that owns the capability, in the same transaction as the operation it is limiting.
+	RemainingQuantity OptString `json:"remaining_quantity"`
+	Unit              OptString `json:"unit"`
+	// When the subscription providing it ends. Absent for a metered subscription, which has no end date.
+	ExpiresAt OptNilDateTime `json:"expires_at"`
+}
+
+// GetProductKey returns the value of ProductKey.
+func (s *Entitlement) GetProductKey() string {
+	return s.ProductKey
+}
+
+// GetFeatureKey returns the value of FeatureKey.
+func (s *Entitlement) GetFeatureKey() string {
+	return s.FeatureKey
+}
+
+// GetName returns the value of Name.
+func (s *Entitlement) GetName() OptString {
+	return s.Name
+}
+
+// GetEnabled returns the value of Enabled.
+func (s *Entitlement) GetEnabled() bool {
+	return s.Enabled
+}
+
+// GetMetered returns the value of Metered.
+func (s *Entitlement) GetMetered() bool {
+	return s.Metered
+}
+
+// GetRemainingQuantity returns the value of RemainingQuantity.
+func (s *Entitlement) GetRemainingQuantity() OptString {
+	return s.RemainingQuantity
+}
+
+// GetUnit returns the value of Unit.
+func (s *Entitlement) GetUnit() OptString {
+	return s.Unit
+}
+
+// GetExpiresAt returns the value of ExpiresAt.
+func (s *Entitlement) GetExpiresAt() OptNilDateTime {
+	return s.ExpiresAt
+}
+
+// SetProductKey sets the value of ProductKey.
+func (s *Entitlement) SetProductKey(val string) {
+	s.ProductKey = val
+}
+
+// SetFeatureKey sets the value of FeatureKey.
+func (s *Entitlement) SetFeatureKey(val string) {
+	s.FeatureKey = val
+}
+
+// SetName sets the value of Name.
+func (s *Entitlement) SetName(val OptString) {
+	s.Name = val
+}
+
+// SetEnabled sets the value of Enabled.
+func (s *Entitlement) SetEnabled(val bool) {
+	s.Enabled = val
+}
+
+// SetMetered sets the value of Metered.
+func (s *Entitlement) SetMetered(val bool) {
+	s.Metered = val
+}
+
+// SetRemainingQuantity sets the value of RemainingQuantity.
+func (s *Entitlement) SetRemainingQuantity(val OptString) {
+	s.RemainingQuantity = val
+}
+
+// SetUnit sets the value of Unit.
+func (s *Entitlement) SetUnit(val OptString) {
+	s.Unit = val
+}
+
+// SetExpiresAt sets the value of ExpiresAt.
+func (s *Entitlement) SetExpiresAt(val OptNilDateTime) {
+	s.ExpiresAt = val
+}
+
+// Ref: #/components/schemas/EntitlementList
+type EntitlementList struct {
+	Items      []Entitlement `json:"items"`
+	TotalCount OptInt64      `json:"total_count"`
+}
+
+// GetItems returns the value of Items.
+func (s *EntitlementList) GetItems() []Entitlement {
+	return s.Items
+}
+
+// GetTotalCount returns the value of TotalCount.
+func (s *EntitlementList) GetTotalCount() OptInt64 {
+	return s.TotalCount
+}
+
+// SetItems sets the value of Items.
+func (s *EntitlementList) SetItems(val []Entitlement) {
+	s.Items = val
+}
+
+// SetTotalCount sets the value of TotalCount.
+func (s *EntitlementList) SetTotalCount(val OptInt64) {
+	s.TotalCount = val
+}
 
 // Ref: #/components/schemas/Error
 type Error struct {
@@ -1416,442 +3433,123 @@ func (s *ErrorStatusCode) SetResponse(val Error) {
 	s.Response = val
 }
 
-// Ref: #/components/schemas/Invoice
-type Invoice struct {
-	ID        string        `json:"id"`
-	Number    OptString     `json:"number"`
-	Status    InvoiceStatus `json:"status"`
-	Currency  Currency      `json:"currency"`
-	Total     string        `json:"total"`
-	DueAt     OptDateTime   `json:"due_at"`
-	IssuedAt  OptDateTime   `json:"issued_at"`
-	CreatedAt time.Time     `json:"created_at"`
-}
-
-// GetID returns the value of ID.
-func (s *Invoice) GetID() string {
-	return s.ID
-}
-
-// GetNumber returns the value of Number.
-func (s *Invoice) GetNumber() OptString {
-	return s.Number
-}
-
-// GetStatus returns the value of Status.
-func (s *Invoice) GetStatus() InvoiceStatus {
-	return s.Status
+// Ref: #/components/schemas/EstimateRequest
+type EstimateRequest struct {
+	// Must be one the catalogue publishes.
+	Currency string      `json:"currency"`
+	Lines    []QuoteLine `json:"lines"`
 }
 
 // GetCurrency returns the value of Currency.
-func (s *Invoice) GetCurrency() Currency {
+func (s *EstimateRequest) GetCurrency() string {
 	return s.Currency
-}
-
-// GetTotal returns the value of Total.
-func (s *Invoice) GetTotal() string {
-	return s.Total
-}
-
-// GetDueAt returns the value of DueAt.
-func (s *Invoice) GetDueAt() OptDateTime {
-	return s.DueAt
-}
-
-// GetIssuedAt returns the value of IssuedAt.
-func (s *Invoice) GetIssuedAt() OptDateTime {
-	return s.IssuedAt
-}
-
-// GetCreatedAt returns the value of CreatedAt.
-func (s *Invoice) GetCreatedAt() time.Time {
-	return s.CreatedAt
-}
-
-// SetID sets the value of ID.
-func (s *Invoice) SetID(val string) {
-	s.ID = val
-}
-
-// SetNumber sets the value of Number.
-func (s *Invoice) SetNumber(val OptString) {
-	s.Number = val
-}
-
-// SetStatus sets the value of Status.
-func (s *Invoice) SetStatus(val InvoiceStatus) {
-	s.Status = val
-}
-
-// SetCurrency sets the value of Currency.
-func (s *Invoice) SetCurrency(val Currency) {
-	s.Currency = val
-}
-
-// SetTotal sets the value of Total.
-func (s *Invoice) SetTotal(val string) {
-	s.Total = val
-}
-
-// SetDueAt sets the value of DueAt.
-func (s *Invoice) SetDueAt(val OptDateTime) {
-	s.DueAt = val
-}
-
-// SetIssuedAt sets the value of IssuedAt.
-func (s *Invoice) SetIssuedAt(val OptDateTime) {
-	s.IssuedAt = val
-}
-
-// SetCreatedAt sets the value of CreatedAt.
-func (s *Invoice) SetCreatedAt(val time.Time) {
-	s.CreatedAt = val
-}
-
-// Ref: #/components/schemas/InvoiceDetail
-type InvoiceDetail struct {
-	ID             string        `json:"id"`
-	Number         OptString     `json:"number"`
-	Status         InvoiceStatus `json:"status"`
-	Currency       Currency      `json:"currency"`
-	Total          string        `json:"total"`
-	ChargesTotal   OptString     `json:"charges_total"`
-	DiscountsTotal OptString     `json:"discounts_total"`
-	CreditsTotal   OptString     `json:"credits_total"`
-	TaxesTotal     OptString     `json:"taxes_total"`
-	PeriodFrom     OptDateTime   `json:"period_from"`
-	PeriodTo       OptDateTime   `json:"period_to"`
-	DueAt          OptDateTime   `json:"due_at"`
-	IssuedAt       OptDateTime   `json:"issued_at"`
-	CreatedAt      time.Time     `json:"created_at"`
-	Lines          []InvoiceLine `json:"lines"`
-}
-
-// GetID returns the value of ID.
-func (s *InvoiceDetail) GetID() string {
-	return s.ID
-}
-
-// GetNumber returns the value of Number.
-func (s *InvoiceDetail) GetNumber() OptString {
-	return s.Number
-}
-
-// GetStatus returns the value of Status.
-func (s *InvoiceDetail) GetStatus() InvoiceStatus {
-	return s.Status
-}
-
-// GetCurrency returns the value of Currency.
-func (s *InvoiceDetail) GetCurrency() Currency {
-	return s.Currency
-}
-
-// GetTotal returns the value of Total.
-func (s *InvoiceDetail) GetTotal() string {
-	return s.Total
-}
-
-// GetChargesTotal returns the value of ChargesTotal.
-func (s *InvoiceDetail) GetChargesTotal() OptString {
-	return s.ChargesTotal
-}
-
-// GetDiscountsTotal returns the value of DiscountsTotal.
-func (s *InvoiceDetail) GetDiscountsTotal() OptString {
-	return s.DiscountsTotal
-}
-
-// GetCreditsTotal returns the value of CreditsTotal.
-func (s *InvoiceDetail) GetCreditsTotal() OptString {
-	return s.CreditsTotal
-}
-
-// GetTaxesTotal returns the value of TaxesTotal.
-func (s *InvoiceDetail) GetTaxesTotal() OptString {
-	return s.TaxesTotal
-}
-
-// GetPeriodFrom returns the value of PeriodFrom.
-func (s *InvoiceDetail) GetPeriodFrom() OptDateTime {
-	return s.PeriodFrom
-}
-
-// GetPeriodTo returns the value of PeriodTo.
-func (s *InvoiceDetail) GetPeriodTo() OptDateTime {
-	return s.PeriodTo
-}
-
-// GetDueAt returns the value of DueAt.
-func (s *InvoiceDetail) GetDueAt() OptDateTime {
-	return s.DueAt
-}
-
-// GetIssuedAt returns the value of IssuedAt.
-func (s *InvoiceDetail) GetIssuedAt() OptDateTime {
-	return s.IssuedAt
-}
-
-// GetCreatedAt returns the value of CreatedAt.
-func (s *InvoiceDetail) GetCreatedAt() time.Time {
-	return s.CreatedAt
 }
 
 // GetLines returns the value of Lines.
-func (s *InvoiceDetail) GetLines() []InvoiceLine {
+func (s *EstimateRequest) GetLines() []QuoteLine {
 	return s.Lines
 }
 
-// SetID sets the value of ID.
-func (s *InvoiceDetail) SetID(val string) {
-	s.ID = val
-}
-
-// SetNumber sets the value of Number.
-func (s *InvoiceDetail) SetNumber(val OptString) {
-	s.Number = val
-}
-
-// SetStatus sets the value of Status.
-func (s *InvoiceDetail) SetStatus(val InvoiceStatus) {
-	s.Status = val
-}
-
 // SetCurrency sets the value of Currency.
-func (s *InvoiceDetail) SetCurrency(val Currency) {
+func (s *EstimateRequest) SetCurrency(val string) {
 	s.Currency = val
 }
 
-// SetTotal sets the value of Total.
-func (s *InvoiceDetail) SetTotal(val string) {
-	s.Total = val
-}
-
-// SetChargesTotal sets the value of ChargesTotal.
-func (s *InvoiceDetail) SetChargesTotal(val OptString) {
-	s.ChargesTotal = val
-}
-
-// SetDiscountsTotal sets the value of DiscountsTotal.
-func (s *InvoiceDetail) SetDiscountsTotal(val OptString) {
-	s.DiscountsTotal = val
-}
-
-// SetCreditsTotal sets the value of CreditsTotal.
-func (s *InvoiceDetail) SetCreditsTotal(val OptString) {
-	s.CreditsTotal = val
-}
-
-// SetTaxesTotal sets the value of TaxesTotal.
-func (s *InvoiceDetail) SetTaxesTotal(val OptString) {
-	s.TaxesTotal = val
-}
-
-// SetPeriodFrom sets the value of PeriodFrom.
-func (s *InvoiceDetail) SetPeriodFrom(val OptDateTime) {
-	s.PeriodFrom = val
-}
-
-// SetPeriodTo sets the value of PeriodTo.
-func (s *InvoiceDetail) SetPeriodTo(val OptDateTime) {
-	s.PeriodTo = val
-}
-
-// SetDueAt sets the value of DueAt.
-func (s *InvoiceDetail) SetDueAt(val OptDateTime) {
-	s.DueAt = val
-}
-
-// SetIssuedAt sets the value of IssuedAt.
-func (s *InvoiceDetail) SetIssuedAt(val OptDateTime) {
-	s.IssuedAt = val
-}
-
-// SetCreatedAt sets the value of CreatedAt.
-func (s *InvoiceDetail) SetCreatedAt(val time.Time) {
-	s.CreatedAt = val
-}
-
 // SetLines sets the value of Lines.
-func (s *InvoiceDetail) SetLines(val []InvoiceLine) {
+func (s *EstimateRequest) SetLines(val []QuoteLine) {
 	s.Lines = val
 }
 
-// Ref: #/components/schemas/InvoiceLine
-type InvoiceLine struct {
-	Name        string    `json:"name"`
-	Description OptString `json:"description"`
-	// Required. Lines of the same name repeat many times on one invoice — hundreds on an hourly bill —
-	// and without the period they cannot be told apart.
-	PeriodFrom time.Time `json:"period_from"`
-	PeriodTo   time.Time `json:"period_to"`
-	// Before discounts and credit.
-	Amount         string    `json:"amount"`
-	DiscountsTotal OptString `json:"discounts_total"`
-	// The billed quantity for this line, as a decimal string — after conversion. A machine billed by the
-	// hour reports machine-seconds; this is machine-hours.
-	//
-	// It comes from the line's detailed segments summed together: the engine splits a line into segments
-	// (different cost categories, different sub-periods) and the quantity lives on those.
-	Quantity OptString `json:"quantity"`
-	// What one unit cost, as a decimal string, frozen at billing time. Absent on a flat fee, whose amount
-	// is the amount, and on tiered prices, whose rate changes with volume.
-	UnitPrice OptString `json:"unit_price"`
-	// How reported quantity became billed quantity — 3600 for a machine billed by the hour from
-	// machine-seconds, 1000000 for a price per million tokens.
-	//
-	// Without it, `quantity` disagrees with what the customer remembers doing, by whole orders of
-	// magnitude, and there is nothing on the page that explains the gap.
-	ConversionFactor OptString `json:"conversion_factor"`
-	// What was done with the factor.
-	ConversionOperation OptInvoiceLineConversionOperation `json:"conversion_operation"`
-	// How much of this line credit covered.
-	CreditsTotal OptString `json:"credits_total"`
-	Total        string    `json:"total"`
+// Ref: #/components/schemas/IncludedAllowance
+type IncludedAllowance struct {
+	MeterKey string    `json:"meter_key"`
+	Unit     OptString `json:"unit"`
+	// How much is included.
+	Quantity string `json:"quantity"`
+	// `period_end` lasts as long as the period it came with. `days` lasts a fixed number of days from
+	// purchase. `never` does not lapse.
+	Expiry IncludedAllowanceExpiry `json:"expiry"`
+	// Only meaningful when `expiry` is `days`.
+	ValidDays OptInt `json:"valid_days"`
 }
 
-// GetName returns the value of Name.
-func (s *InvoiceLine) GetName() string {
-	return s.Name
+// GetMeterKey returns the value of MeterKey.
+func (s *IncludedAllowance) GetMeterKey() string {
+	return s.MeterKey
 }
 
-// GetDescription returns the value of Description.
-func (s *InvoiceLine) GetDescription() OptString {
-	return s.Description
-}
-
-// GetPeriodFrom returns the value of PeriodFrom.
-func (s *InvoiceLine) GetPeriodFrom() time.Time {
-	return s.PeriodFrom
-}
-
-// GetPeriodTo returns the value of PeriodTo.
-func (s *InvoiceLine) GetPeriodTo() time.Time {
-	return s.PeriodTo
-}
-
-// GetAmount returns the value of Amount.
-func (s *InvoiceLine) GetAmount() string {
-	return s.Amount
-}
-
-// GetDiscountsTotal returns the value of DiscountsTotal.
-func (s *InvoiceLine) GetDiscountsTotal() OptString {
-	return s.DiscountsTotal
+// GetUnit returns the value of Unit.
+func (s *IncludedAllowance) GetUnit() OptString {
+	return s.Unit
 }
 
 // GetQuantity returns the value of Quantity.
-func (s *InvoiceLine) GetQuantity() OptString {
+func (s *IncludedAllowance) GetQuantity() string {
 	return s.Quantity
 }
 
-// GetUnitPrice returns the value of UnitPrice.
-func (s *InvoiceLine) GetUnitPrice() OptString {
-	return s.UnitPrice
+// GetExpiry returns the value of Expiry.
+func (s *IncludedAllowance) GetExpiry() IncludedAllowanceExpiry {
+	return s.Expiry
 }
 
-// GetConversionFactor returns the value of ConversionFactor.
-func (s *InvoiceLine) GetConversionFactor() OptString {
-	return s.ConversionFactor
+// GetValidDays returns the value of ValidDays.
+func (s *IncludedAllowance) GetValidDays() OptInt {
+	return s.ValidDays
 }
 
-// GetConversionOperation returns the value of ConversionOperation.
-func (s *InvoiceLine) GetConversionOperation() OptInvoiceLineConversionOperation {
-	return s.ConversionOperation
+// SetMeterKey sets the value of MeterKey.
+func (s *IncludedAllowance) SetMeterKey(val string) {
+	s.MeterKey = val
 }
 
-// GetCreditsTotal returns the value of CreditsTotal.
-func (s *InvoiceLine) GetCreditsTotal() OptString {
-	return s.CreditsTotal
-}
-
-// GetTotal returns the value of Total.
-func (s *InvoiceLine) GetTotal() string {
-	return s.Total
-}
-
-// SetName sets the value of Name.
-func (s *InvoiceLine) SetName(val string) {
-	s.Name = val
-}
-
-// SetDescription sets the value of Description.
-func (s *InvoiceLine) SetDescription(val OptString) {
-	s.Description = val
-}
-
-// SetPeriodFrom sets the value of PeriodFrom.
-func (s *InvoiceLine) SetPeriodFrom(val time.Time) {
-	s.PeriodFrom = val
-}
-
-// SetPeriodTo sets the value of PeriodTo.
-func (s *InvoiceLine) SetPeriodTo(val time.Time) {
-	s.PeriodTo = val
-}
-
-// SetAmount sets the value of Amount.
-func (s *InvoiceLine) SetAmount(val string) {
-	s.Amount = val
-}
-
-// SetDiscountsTotal sets the value of DiscountsTotal.
-func (s *InvoiceLine) SetDiscountsTotal(val OptString) {
-	s.DiscountsTotal = val
+// SetUnit sets the value of Unit.
+func (s *IncludedAllowance) SetUnit(val OptString) {
+	s.Unit = val
 }
 
 // SetQuantity sets the value of Quantity.
-func (s *InvoiceLine) SetQuantity(val OptString) {
+func (s *IncludedAllowance) SetQuantity(val string) {
 	s.Quantity = val
 }
 
-// SetUnitPrice sets the value of UnitPrice.
-func (s *InvoiceLine) SetUnitPrice(val OptString) {
-	s.UnitPrice = val
+// SetExpiry sets the value of Expiry.
+func (s *IncludedAllowance) SetExpiry(val IncludedAllowanceExpiry) {
+	s.Expiry = val
 }
 
-// SetConversionFactor sets the value of ConversionFactor.
-func (s *InvoiceLine) SetConversionFactor(val OptString) {
-	s.ConversionFactor = val
+// SetValidDays sets the value of ValidDays.
+func (s *IncludedAllowance) SetValidDays(val OptInt) {
+	s.ValidDays = val
 }
 
-// SetConversionOperation sets the value of ConversionOperation.
-func (s *InvoiceLine) SetConversionOperation(val OptInvoiceLineConversionOperation) {
-	s.ConversionOperation = val
-}
-
-// SetCreditsTotal sets the value of CreditsTotal.
-func (s *InvoiceLine) SetCreditsTotal(val OptString) {
-	s.CreditsTotal = val
-}
-
-// SetTotal sets the value of Total.
-func (s *InvoiceLine) SetTotal(val string) {
-	s.Total = val
-}
-
-// What was done with the factor.
-type InvoiceLineConversionOperation string
+// `period_end` lasts as long as the period it came with. `days` lasts a fixed number of days from
+// purchase. `never` does not lapse.
+type IncludedAllowanceExpiry string
 
 const (
-	InvoiceLineConversionOperationDivide   InvoiceLineConversionOperation = "divide"
-	InvoiceLineConversionOperationMultiply InvoiceLineConversionOperation = "multiply"
+	IncludedAllowanceExpiryPeriodEnd IncludedAllowanceExpiry = "period_end"
+	IncludedAllowanceExpiryDays      IncludedAllowanceExpiry = "days"
+	IncludedAllowanceExpiryNever     IncludedAllowanceExpiry = "never"
 )
 
-// AllValues returns all InvoiceLineConversionOperation values.
-func (InvoiceLineConversionOperation) AllValues() []InvoiceLineConversionOperation {
-	return []InvoiceLineConversionOperation{
-		InvoiceLineConversionOperationDivide,
-		InvoiceLineConversionOperationMultiply,
+// AllValues returns all IncludedAllowanceExpiry values.
+func (IncludedAllowanceExpiry) AllValues() []IncludedAllowanceExpiry {
+	return []IncludedAllowanceExpiry{
+		IncludedAllowanceExpiryPeriodEnd,
+		IncludedAllowanceExpiryDays,
+		IncludedAllowanceExpiryNever,
 	}
 }
 
 // MarshalText implements encoding.TextMarshaler.
-func (s InvoiceLineConversionOperation) MarshalText() ([]byte, error) {
+func (s IncludedAllowanceExpiry) MarshalText() ([]byte, error) {
 	switch s {
-	case InvoiceLineConversionOperationDivide:
+	case IncludedAllowanceExpiryPeriodEnd:
 		return []byte(s), nil
-	case InvoiceLineConversionOperationMultiply:
+	case IncludedAllowanceExpiryDays:
+		return []byte(s), nil
+	case IncludedAllowanceExpiryNever:
 		return []byte(s), nil
 	default:
 		return nil, errors.Errorf("invalid value: %q", s)
@@ -1859,13 +3557,619 @@ func (s InvoiceLineConversionOperation) MarshalText() ([]byte, error) {
 }
 
 // UnmarshalText implements encoding.TextUnmarshaler.
-func (s *InvoiceLineConversionOperation) UnmarshalText(data []byte) error {
-	switch InvoiceLineConversionOperation(data) {
-	case InvoiceLineConversionOperationDivide:
-		*s = InvoiceLineConversionOperationDivide
+func (s *IncludedAllowanceExpiry) UnmarshalText(data []byte) error {
+	switch IncludedAllowanceExpiry(data) {
+	case IncludedAllowanceExpiryPeriodEnd:
+		*s = IncludedAllowanceExpiryPeriodEnd
 		return nil
-	case InvoiceLineConversionOperationMultiply:
-		*s = InvoiceLineConversionOperationMultiply
+	case IncludedAllowanceExpiryDays:
+		*s = IncludedAllowanceExpiryDays
+		return nil
+	case IncludedAllowanceExpiryNever:
+		*s = IncludedAllowanceExpiryNever
+		return nil
+	default:
+		return errors.Errorf("invalid value: %q", data)
+	}
+}
+
+// Ref: #/components/schemas/IncludedFeature
+type IncludedFeature struct {
+	FeatureKey       string          `json:"feature_key"`
+	Name             string          `json:"name"`
+	NameTranslations OptTranslations `json:"name_translations"`
+	Description      OptString       `json:"description"`
+	// Whether this price grants the capability without a cap.
+	//
+	// This is what says whether it is capped, not the presence of an included quantity. A capped
+	// capability whose quantity has run out would otherwise be indistinguishable from one that was never
+	// capped.
+	//
+	// `true` for a capability that is simply available or not, with nothing to count.
+	Unlimited bool `json:"unlimited"`
+	// How much is included, as a decimal string. Present when `unlimited` is false.
+	IncludedQuantity OptString `json:"included_quantity"`
+	// The unit that quantity is counted in, such as `request`.
+	Unit OptString `json:"unit"`
+}
+
+// GetFeatureKey returns the value of FeatureKey.
+func (s *IncludedFeature) GetFeatureKey() string {
+	return s.FeatureKey
+}
+
+// GetName returns the value of Name.
+func (s *IncludedFeature) GetName() string {
+	return s.Name
+}
+
+// GetNameTranslations returns the value of NameTranslations.
+func (s *IncludedFeature) GetNameTranslations() OptTranslations {
+	return s.NameTranslations
+}
+
+// GetDescription returns the value of Description.
+func (s *IncludedFeature) GetDescription() OptString {
+	return s.Description
+}
+
+// GetUnlimited returns the value of Unlimited.
+func (s *IncludedFeature) GetUnlimited() bool {
+	return s.Unlimited
+}
+
+// GetIncludedQuantity returns the value of IncludedQuantity.
+func (s *IncludedFeature) GetIncludedQuantity() OptString {
+	return s.IncludedQuantity
+}
+
+// GetUnit returns the value of Unit.
+func (s *IncludedFeature) GetUnit() OptString {
+	return s.Unit
+}
+
+// SetFeatureKey sets the value of FeatureKey.
+func (s *IncludedFeature) SetFeatureKey(val string) {
+	s.FeatureKey = val
+}
+
+// SetName sets the value of Name.
+func (s *IncludedFeature) SetName(val string) {
+	s.Name = val
+}
+
+// SetNameTranslations sets the value of NameTranslations.
+func (s *IncludedFeature) SetNameTranslations(val OptTranslations) {
+	s.NameTranslations = val
+}
+
+// SetDescription sets the value of Description.
+func (s *IncludedFeature) SetDescription(val OptString) {
+	s.Description = val
+}
+
+// SetUnlimited sets the value of Unlimited.
+func (s *IncludedFeature) SetUnlimited(val bool) {
+	s.Unlimited = val
+}
+
+// SetIncludedQuantity sets the value of IncludedQuantity.
+func (s *IncludedFeature) SetIncludedQuantity(val OptString) {
+	s.IncludedQuantity = val
+}
+
+// SetUnit sets the value of Unit.
+func (s *IncludedFeature) SetUnit(val OptString) {
+	s.Unit = val
+}
+
+// Ref: #/components/schemas/Invoice
+type Invoice struct {
+	ID               uuid.UUID `json:"id"`
+	BillingAccountID int64     `json:"billing_account_id"`
+	// Numbered per account and per month.
+	Number OptString `json:"number"`
+	// What produced it — metered usage for a period, a purchase, or a correction.
+	Type           OptInvoiceType `json:"type"`
+	Currency       string         `json:"currency"`
+	Status         InvoiceStatus  `json:"status"`
+	Subtotal       OptMoney       `json:"subtotal"`
+	DiscountAmount OptMoney       `json:"discount_amount"`
+	TaxAmount      OptMoney       `json:"tax_amount"`
+	// Paid from credit or a voucher.
+	CreditApplied OptMoney `json:"credit_applied"`
+	// Subtotal less discount, plus tax, less credit applied.
+	Total       Money     `json:"total"`
+	AmountPaid  OptMoney  `json:"amount_paid"`
+	PeriodStart time.Time `json:"period_start"`
+	// Exclusive.
+	PeriodEnd time.Time `json:"period_end"`
+	// Who this was billed to, as recorded when the invoice was issued. Later changes to the account do not
+	// alter it.
+	CustomerName              OptString      `json:"customer_name"`
+	CustomerEmail             OptString      `json:"customer_email"`
+	CustomerTaxID             OptString      `json:"customer_tax_id"`
+	CustomerAddressLine1      OptString      `json:"customer_address_line1"`
+	CustomerAddressLine2      OptString      `json:"customer_address_line2"`
+	CustomerAddressCity       OptString      `json:"customer_address_city"`
+	CustomerAddressState      OptString      `json:"customer_address_state"`
+	CustomerAddressPostalCode OptString      `json:"customer_address_postal_code"`
+	CustomerAddressCountry    OptString      `json:"customer_address_country"`
+	PaidAt                    OptNilDateTime `json:"paid_at"`
+}
+
+// GetID returns the value of ID.
+func (s *Invoice) GetID() uuid.UUID {
+	return s.ID
+}
+
+// GetBillingAccountID returns the value of BillingAccountID.
+func (s *Invoice) GetBillingAccountID() int64 {
+	return s.BillingAccountID
+}
+
+// GetNumber returns the value of Number.
+func (s *Invoice) GetNumber() OptString {
+	return s.Number
+}
+
+// GetType returns the value of Type.
+func (s *Invoice) GetType() OptInvoiceType {
+	return s.Type
+}
+
+// GetCurrency returns the value of Currency.
+func (s *Invoice) GetCurrency() string {
+	return s.Currency
+}
+
+// GetStatus returns the value of Status.
+func (s *Invoice) GetStatus() InvoiceStatus {
+	return s.Status
+}
+
+// GetSubtotal returns the value of Subtotal.
+func (s *Invoice) GetSubtotal() OptMoney {
+	return s.Subtotal
+}
+
+// GetDiscountAmount returns the value of DiscountAmount.
+func (s *Invoice) GetDiscountAmount() OptMoney {
+	return s.DiscountAmount
+}
+
+// GetTaxAmount returns the value of TaxAmount.
+func (s *Invoice) GetTaxAmount() OptMoney {
+	return s.TaxAmount
+}
+
+// GetCreditApplied returns the value of CreditApplied.
+func (s *Invoice) GetCreditApplied() OptMoney {
+	return s.CreditApplied
+}
+
+// GetTotal returns the value of Total.
+func (s *Invoice) GetTotal() Money {
+	return s.Total
+}
+
+// GetAmountPaid returns the value of AmountPaid.
+func (s *Invoice) GetAmountPaid() OptMoney {
+	return s.AmountPaid
+}
+
+// GetPeriodStart returns the value of PeriodStart.
+func (s *Invoice) GetPeriodStart() time.Time {
+	return s.PeriodStart
+}
+
+// GetPeriodEnd returns the value of PeriodEnd.
+func (s *Invoice) GetPeriodEnd() time.Time {
+	return s.PeriodEnd
+}
+
+// GetCustomerName returns the value of CustomerName.
+func (s *Invoice) GetCustomerName() OptString {
+	return s.CustomerName
+}
+
+// GetCustomerEmail returns the value of CustomerEmail.
+func (s *Invoice) GetCustomerEmail() OptString {
+	return s.CustomerEmail
+}
+
+// GetCustomerTaxID returns the value of CustomerTaxID.
+func (s *Invoice) GetCustomerTaxID() OptString {
+	return s.CustomerTaxID
+}
+
+// GetCustomerAddressLine1 returns the value of CustomerAddressLine1.
+func (s *Invoice) GetCustomerAddressLine1() OptString {
+	return s.CustomerAddressLine1
+}
+
+// GetCustomerAddressLine2 returns the value of CustomerAddressLine2.
+func (s *Invoice) GetCustomerAddressLine2() OptString {
+	return s.CustomerAddressLine2
+}
+
+// GetCustomerAddressCity returns the value of CustomerAddressCity.
+func (s *Invoice) GetCustomerAddressCity() OptString {
+	return s.CustomerAddressCity
+}
+
+// GetCustomerAddressState returns the value of CustomerAddressState.
+func (s *Invoice) GetCustomerAddressState() OptString {
+	return s.CustomerAddressState
+}
+
+// GetCustomerAddressPostalCode returns the value of CustomerAddressPostalCode.
+func (s *Invoice) GetCustomerAddressPostalCode() OptString {
+	return s.CustomerAddressPostalCode
+}
+
+// GetCustomerAddressCountry returns the value of CustomerAddressCountry.
+func (s *Invoice) GetCustomerAddressCountry() OptString {
+	return s.CustomerAddressCountry
+}
+
+// GetPaidAt returns the value of PaidAt.
+func (s *Invoice) GetPaidAt() OptNilDateTime {
+	return s.PaidAt
+}
+
+// SetID sets the value of ID.
+func (s *Invoice) SetID(val uuid.UUID) {
+	s.ID = val
+}
+
+// SetBillingAccountID sets the value of BillingAccountID.
+func (s *Invoice) SetBillingAccountID(val int64) {
+	s.BillingAccountID = val
+}
+
+// SetNumber sets the value of Number.
+func (s *Invoice) SetNumber(val OptString) {
+	s.Number = val
+}
+
+// SetType sets the value of Type.
+func (s *Invoice) SetType(val OptInvoiceType) {
+	s.Type = val
+}
+
+// SetCurrency sets the value of Currency.
+func (s *Invoice) SetCurrency(val string) {
+	s.Currency = val
+}
+
+// SetStatus sets the value of Status.
+func (s *Invoice) SetStatus(val InvoiceStatus) {
+	s.Status = val
+}
+
+// SetSubtotal sets the value of Subtotal.
+func (s *Invoice) SetSubtotal(val OptMoney) {
+	s.Subtotal = val
+}
+
+// SetDiscountAmount sets the value of DiscountAmount.
+func (s *Invoice) SetDiscountAmount(val OptMoney) {
+	s.DiscountAmount = val
+}
+
+// SetTaxAmount sets the value of TaxAmount.
+func (s *Invoice) SetTaxAmount(val OptMoney) {
+	s.TaxAmount = val
+}
+
+// SetCreditApplied sets the value of CreditApplied.
+func (s *Invoice) SetCreditApplied(val OptMoney) {
+	s.CreditApplied = val
+}
+
+// SetTotal sets the value of Total.
+func (s *Invoice) SetTotal(val Money) {
+	s.Total = val
+}
+
+// SetAmountPaid sets the value of AmountPaid.
+func (s *Invoice) SetAmountPaid(val OptMoney) {
+	s.AmountPaid = val
+}
+
+// SetPeriodStart sets the value of PeriodStart.
+func (s *Invoice) SetPeriodStart(val time.Time) {
+	s.PeriodStart = val
+}
+
+// SetPeriodEnd sets the value of PeriodEnd.
+func (s *Invoice) SetPeriodEnd(val time.Time) {
+	s.PeriodEnd = val
+}
+
+// SetCustomerName sets the value of CustomerName.
+func (s *Invoice) SetCustomerName(val OptString) {
+	s.CustomerName = val
+}
+
+// SetCustomerEmail sets the value of CustomerEmail.
+func (s *Invoice) SetCustomerEmail(val OptString) {
+	s.CustomerEmail = val
+}
+
+// SetCustomerTaxID sets the value of CustomerTaxID.
+func (s *Invoice) SetCustomerTaxID(val OptString) {
+	s.CustomerTaxID = val
+}
+
+// SetCustomerAddressLine1 sets the value of CustomerAddressLine1.
+func (s *Invoice) SetCustomerAddressLine1(val OptString) {
+	s.CustomerAddressLine1 = val
+}
+
+// SetCustomerAddressLine2 sets the value of CustomerAddressLine2.
+func (s *Invoice) SetCustomerAddressLine2(val OptString) {
+	s.CustomerAddressLine2 = val
+}
+
+// SetCustomerAddressCity sets the value of CustomerAddressCity.
+func (s *Invoice) SetCustomerAddressCity(val OptString) {
+	s.CustomerAddressCity = val
+}
+
+// SetCustomerAddressState sets the value of CustomerAddressState.
+func (s *Invoice) SetCustomerAddressState(val OptString) {
+	s.CustomerAddressState = val
+}
+
+// SetCustomerAddressPostalCode sets the value of CustomerAddressPostalCode.
+func (s *Invoice) SetCustomerAddressPostalCode(val OptString) {
+	s.CustomerAddressPostalCode = val
+}
+
+// SetCustomerAddressCountry sets the value of CustomerAddressCountry.
+func (s *Invoice) SetCustomerAddressCountry(val OptString) {
+	s.CustomerAddressCountry = val
+}
+
+// SetPaidAt sets the value of PaidAt.
+func (s *Invoice) SetPaidAt(val OptNilDateTime) {
+	s.PaidAt = val
+}
+
+// Ref: #/components/schemas/InvoiceItem
+type InvoiceItem struct {
+	ID         uuid.UUID          `json:"id"`
+	Type       OptInvoiceItemType `json:"type"`
+	ProjectID  OptNilUUID         `json:"project_id"`
+	ResourceID OptString          `json:"resource_id"`
+	// The wording as recorded when the invoice was issued. It is not re-translated afterwards, so that an
+	// invoice continues to read as it did when it was sent.
+	Description string    `json:"description"`
+	Unit        OptString `json:"unit"`
+	Quantity    OptString `json:"quantity"`
+	// The part covered by an included allowance, and therefore not charged.
+	DeductedQuantity OptString      `json:"deducted_quantity"`
+	UnitAmount       OptMoney       `json:"unit_amount"`
+	Amount           Money          `json:"amount"`
+	Currency         string         `json:"currency"`
+	PeriodStart      OptNilDateTime `json:"period_start"`
+	PeriodEnd        OptNilDateTime `json:"period_end"`
+}
+
+// GetID returns the value of ID.
+func (s *InvoiceItem) GetID() uuid.UUID {
+	return s.ID
+}
+
+// GetType returns the value of Type.
+func (s *InvoiceItem) GetType() OptInvoiceItemType {
+	return s.Type
+}
+
+// GetProjectID returns the value of ProjectID.
+func (s *InvoiceItem) GetProjectID() OptNilUUID {
+	return s.ProjectID
+}
+
+// GetResourceID returns the value of ResourceID.
+func (s *InvoiceItem) GetResourceID() OptString {
+	return s.ResourceID
+}
+
+// GetDescription returns the value of Description.
+func (s *InvoiceItem) GetDescription() string {
+	return s.Description
+}
+
+// GetUnit returns the value of Unit.
+func (s *InvoiceItem) GetUnit() OptString {
+	return s.Unit
+}
+
+// GetQuantity returns the value of Quantity.
+func (s *InvoiceItem) GetQuantity() OptString {
+	return s.Quantity
+}
+
+// GetDeductedQuantity returns the value of DeductedQuantity.
+func (s *InvoiceItem) GetDeductedQuantity() OptString {
+	return s.DeductedQuantity
+}
+
+// GetUnitAmount returns the value of UnitAmount.
+func (s *InvoiceItem) GetUnitAmount() OptMoney {
+	return s.UnitAmount
+}
+
+// GetAmount returns the value of Amount.
+func (s *InvoiceItem) GetAmount() Money {
+	return s.Amount
+}
+
+// GetCurrency returns the value of Currency.
+func (s *InvoiceItem) GetCurrency() string {
+	return s.Currency
+}
+
+// GetPeriodStart returns the value of PeriodStart.
+func (s *InvoiceItem) GetPeriodStart() OptNilDateTime {
+	return s.PeriodStart
+}
+
+// GetPeriodEnd returns the value of PeriodEnd.
+func (s *InvoiceItem) GetPeriodEnd() OptNilDateTime {
+	return s.PeriodEnd
+}
+
+// SetID sets the value of ID.
+func (s *InvoiceItem) SetID(val uuid.UUID) {
+	s.ID = val
+}
+
+// SetType sets the value of Type.
+func (s *InvoiceItem) SetType(val OptInvoiceItemType) {
+	s.Type = val
+}
+
+// SetProjectID sets the value of ProjectID.
+func (s *InvoiceItem) SetProjectID(val OptNilUUID) {
+	s.ProjectID = val
+}
+
+// SetResourceID sets the value of ResourceID.
+func (s *InvoiceItem) SetResourceID(val OptString) {
+	s.ResourceID = val
+}
+
+// SetDescription sets the value of Description.
+func (s *InvoiceItem) SetDescription(val string) {
+	s.Description = val
+}
+
+// SetUnit sets the value of Unit.
+func (s *InvoiceItem) SetUnit(val OptString) {
+	s.Unit = val
+}
+
+// SetQuantity sets the value of Quantity.
+func (s *InvoiceItem) SetQuantity(val OptString) {
+	s.Quantity = val
+}
+
+// SetDeductedQuantity sets the value of DeductedQuantity.
+func (s *InvoiceItem) SetDeductedQuantity(val OptString) {
+	s.DeductedQuantity = val
+}
+
+// SetUnitAmount sets the value of UnitAmount.
+func (s *InvoiceItem) SetUnitAmount(val OptMoney) {
+	s.UnitAmount = val
+}
+
+// SetAmount sets the value of Amount.
+func (s *InvoiceItem) SetAmount(val Money) {
+	s.Amount = val
+}
+
+// SetCurrency sets the value of Currency.
+func (s *InvoiceItem) SetCurrency(val string) {
+	s.Currency = val
+}
+
+// SetPeriodStart sets the value of PeriodStart.
+func (s *InvoiceItem) SetPeriodStart(val OptNilDateTime) {
+	s.PeriodStart = val
+}
+
+// SetPeriodEnd sets the value of PeriodEnd.
+func (s *InvoiceItem) SetPeriodEnd(val OptNilDateTime) {
+	s.PeriodEnd = val
+}
+
+// Ref: #/components/schemas/InvoiceItemList
+type InvoiceItemList struct {
+	Items      []InvoiceItem `json:"items"`
+	TotalCount OptInt64      `json:"total_count"`
+}
+
+// GetItems returns the value of Items.
+func (s *InvoiceItemList) GetItems() []InvoiceItem {
+	return s.Items
+}
+
+// GetTotalCount returns the value of TotalCount.
+func (s *InvoiceItemList) GetTotalCount() OptInt64 {
+	return s.TotalCount
+}
+
+// SetItems sets the value of Items.
+func (s *InvoiceItemList) SetItems(val []InvoiceItem) {
+	s.Items = val
+}
+
+// SetTotalCount sets the value of TotalCount.
+func (s *InvoiceItemList) SetTotalCount(val OptInt64) {
+	s.TotalCount = val
+}
+
+type InvoiceItemType string
+
+const (
+	InvoiceItemTypeUsage        InvoiceItemType = "usage"
+	InvoiceItemTypeSubscription InvoiceItemType = "subscription"
+	InvoiceItemTypeOneTime      InvoiceItemType = "one_time"
+	InvoiceItemTypeAdjustment   InvoiceItemType = "adjustment"
+	InvoiceItemTypeCredit       InvoiceItemType = "credit"
+)
+
+// AllValues returns all InvoiceItemType values.
+func (InvoiceItemType) AllValues() []InvoiceItemType {
+	return []InvoiceItemType{
+		InvoiceItemTypeUsage,
+		InvoiceItemTypeSubscription,
+		InvoiceItemTypeOneTime,
+		InvoiceItemTypeAdjustment,
+		InvoiceItemTypeCredit,
+	}
+}
+
+// MarshalText implements encoding.TextMarshaler.
+func (s InvoiceItemType) MarshalText() ([]byte, error) {
+	switch s {
+	case InvoiceItemTypeUsage:
+		return []byte(s), nil
+	case InvoiceItemTypeSubscription:
+		return []byte(s), nil
+	case InvoiceItemTypeOneTime:
+		return []byte(s), nil
+	case InvoiceItemTypeAdjustment:
+		return []byte(s), nil
+	case InvoiceItemTypeCredit:
+		return []byte(s), nil
+	default:
+		return nil, errors.Errorf("invalid value: %q", s)
+	}
+}
+
+// UnmarshalText implements encoding.TextUnmarshaler.
+func (s *InvoiceItemType) UnmarshalText(data []byte) error {
+	switch InvoiceItemType(data) {
+	case InvoiceItemTypeUsage:
+		*s = InvoiceItemTypeUsage
+		return nil
+	case InvoiceItemTypeSubscription:
+		*s = InvoiceItemTypeSubscription
+		return nil
+	case InvoiceItemTypeOneTime:
+		*s = InvoiceItemTypeOneTime
+		return nil
+	case InvoiceItemTypeAdjustment:
+		*s = InvoiceItemTypeAdjustment
+		return nil
+	case InvoiceItemTypeCredit:
+		*s = InvoiceItemTypeCredit
 		return nil
 	default:
 		return errors.Errorf("invalid value: %q", data)
@@ -1874,13 +4178,13 @@ func (s *InvoiceLineConversionOperation) UnmarshalText(data []byte) error {
 
 // Ref: #/components/schemas/InvoiceList
 type InvoiceList struct {
-	// How many entries there are in total, across every page.
-	//
-	// Without it, "is there another page" has to be guessed from whether this one came back full — and
-	// that guess turns into one extra fetch of an empty page whenever the last page happens to be exactly
-	// full.
+	Items      []Invoice `json:"items"`
 	TotalCount OptInt64  `json:"total_count"`
-	Invoices   []Invoice `json:"invoices"`
+}
+
+// GetItems returns the value of Items.
+func (s *InvoiceList) GetItems() []Invoice {
+	return s.Items
 }
 
 // GetTotalCount returns the value of TotalCount.
@@ -1888,9 +4192,9 @@ func (s *InvoiceList) GetTotalCount() OptInt64 {
 	return s.TotalCount
 }
 
-// GetInvoices returns the value of Invoices.
-func (s *InvoiceList) GetInvoices() []Invoice {
-	return s.Invoices
+// SetItems sets the value of Items.
+func (s *InvoiceList) SetItems(val []Invoice) {
+	s.Items = val
 }
 
 // SetTotalCount sets the value of TotalCount.
@@ -1898,36 +4202,25 @@ func (s *InvoiceList) SetTotalCount(val OptInt64) {
 	s.TotalCount = val
 }
 
-// SetInvoices sets the value of Invoices.
-func (s *InvoiceList) SetInvoices(val []Invoice) {
-	s.Invoices = val
-}
-
 // Ref: #/components/schemas/InvoiceStatus
 type InvoiceStatus string
 
 const (
-	InvoiceStatusDraft             InvoiceStatus = "draft"
-	InvoiceStatusIssuing           InvoiceStatus = "issuing"
-	InvoiceStatusIssued            InvoiceStatus = "issued"
-	InvoiceStatusPaymentProcessing InvoiceStatus = "payment_processing"
-	InvoiceStatusOverdue           InvoiceStatus = "overdue"
-	InvoiceStatusPaid              InvoiceStatus = "paid"
-	InvoiceStatusUncollectible     InvoiceStatus = "uncollectible"
-	InvoiceStatusVoided            InvoiceStatus = "voided"
+	InvoiceStatusDraft         InvoiceStatus = "draft"
+	InvoiceStatusOpen          InvoiceStatus = "open"
+	InvoiceStatusPaid          InvoiceStatus = "paid"
+	InvoiceStatusVoid          InvoiceStatus = "void"
+	InvoiceStatusUncollectible InvoiceStatus = "uncollectible"
 )
 
 // AllValues returns all InvoiceStatus values.
 func (InvoiceStatus) AllValues() []InvoiceStatus {
 	return []InvoiceStatus{
 		InvoiceStatusDraft,
-		InvoiceStatusIssuing,
-		InvoiceStatusIssued,
-		InvoiceStatusPaymentProcessing,
-		InvoiceStatusOverdue,
+		InvoiceStatusOpen,
 		InvoiceStatusPaid,
+		InvoiceStatusVoid,
 		InvoiceStatusUncollectible,
-		InvoiceStatusVoided,
 	}
 }
 
@@ -1936,19 +4229,13 @@ func (s InvoiceStatus) MarshalText() ([]byte, error) {
 	switch s {
 	case InvoiceStatusDraft:
 		return []byte(s), nil
-	case InvoiceStatusIssuing:
-		return []byte(s), nil
-	case InvoiceStatusIssued:
-		return []byte(s), nil
-	case InvoiceStatusPaymentProcessing:
-		return []byte(s), nil
-	case InvoiceStatusOverdue:
+	case InvoiceStatusOpen:
 		return []byte(s), nil
 	case InvoiceStatusPaid:
 		return []byte(s), nil
-	case InvoiceStatusUncollectible:
+	case InvoiceStatusVoid:
 		return []byte(s), nil
-	case InvoiceStatusVoided:
+	case InvoiceStatusUncollectible:
 		return []byte(s), nil
 	default:
 		return nil, errors.Errorf("invalid value: %q", s)
@@ -1961,166 +4248,342 @@ func (s *InvoiceStatus) UnmarshalText(data []byte) error {
 	case InvoiceStatusDraft:
 		*s = InvoiceStatusDraft
 		return nil
-	case InvoiceStatusIssuing:
-		*s = InvoiceStatusIssuing
-		return nil
-	case InvoiceStatusIssued:
-		*s = InvoiceStatusIssued
-		return nil
-	case InvoiceStatusPaymentProcessing:
-		*s = InvoiceStatusPaymentProcessing
-		return nil
-	case InvoiceStatusOverdue:
-		*s = InvoiceStatusOverdue
+	case InvoiceStatusOpen:
+		*s = InvoiceStatusOpen
 		return nil
 	case InvoiceStatusPaid:
 		*s = InvoiceStatusPaid
 		return nil
+	case InvoiceStatusVoid:
+		*s = InvoiceStatusVoid
+		return nil
 	case InvoiceStatusUncollectible:
 		*s = InvoiceStatusUncollectible
-		return nil
-	case InvoiceStatusVoided:
-		*s = InvoiceStatusVoided
 		return nil
 	default:
 		return errors.Errorf("invalid value: %q", data)
 	}
 }
 
-// One thing this account can buy. It carries no price — the price is on the plan it points at,
-// recorded in exactly one place.
-// Ref: #/components/schemas/Offer
-type Offer struct {
-	// The stable identifier operations and support use for this offer.
-	OfferKey    string    `json:"offer_key"`
-	Name        string    `json:"name"`
-	Description OptString `json:"description"`
-	// A short label for the pricing page, e.g. the one marking the recommended tier.
-	Badge OptString `json:"badge"`
-	// When this offer stops being purchasable. Absent means it does not expire.
-	ValidUntil OptDateTime `json:"valid_until"`
-	// The plan this offer sells, matching `plan_key` on the subscription. Present on offers that sell a
-	// plan.
-	//
-	// It is here so the pricing page can mark the tier the account is already on. Without it the current
-	// tier looks like every other one, and the obvious thing to do — buy it — is refused as a switch
-	// to the same plan.
-	PlanKey OptString `json:"plan_key"`
-	// Present on offers that sell a plan.
-	Pricing OptPricing `json:"pricing"`
-	// Present on offers that sell credit.
-	TopUp OptTopUpPricing `json:"top_up"`
+// What produced it — metered usage for a period, a purchase, or a correction.
+type InvoiceType string
+
+const (
+	InvoiceTypeUsage      InvoiceType = "usage"
+	InvoiceTypeOrder      InvoiceType = "order"
+	InvoiceTypeAdjustment InvoiceType = "adjustment"
+)
+
+// AllValues returns all InvoiceType values.
+func (InvoiceType) AllValues() []InvoiceType {
+	return []InvoiceType{
+		InvoiceTypeUsage,
+		InvoiceTypeOrder,
+		InvoiceTypeAdjustment,
+	}
 }
 
-// GetOfferKey returns the value of OfferKey.
-func (s *Offer) GetOfferKey() string {
-	return s.OfferKey
+// MarshalText implements encoding.TextMarshaler.
+func (s InvoiceType) MarshalText() ([]byte, error) {
+	switch s {
+	case InvoiceTypeUsage:
+		return []byte(s), nil
+	case InvoiceTypeOrder:
+		return []byte(s), nil
+	case InvoiceTypeAdjustment:
+		return []byte(s), nil
+	default:
+		return nil, errors.Errorf("invalid value: %q", s)
+	}
 }
 
-// GetName returns the value of Name.
-func (s *Offer) GetName() string {
-	return s.Name
+// UnmarshalText implements encoding.TextUnmarshaler.
+func (s *InvoiceType) UnmarshalText(data []byte) error {
+	switch InvoiceType(data) {
+	case InvoiceTypeUsage:
+		*s = InvoiceTypeUsage
+		return nil
+	case InvoiceTypeOrder:
+		*s = InvoiceTypeOrder
+		return nil
+	case InvoiceTypeAdjustment:
+		*s = InvoiceTypeAdjustment
+		return nil
+	default:
+		return errors.Errorf("invalid value: %q", data)
+	}
 }
 
-// GetDescription returns the value of Description.
-func (s *Offer) GetDescription() OptString {
-	return s.Description
+type ListAllowancesStatus string
+
+const (
+	ListAllowancesStatusActive   ListAllowancesStatus = "active"
+	ListAllowancesStatusDepleted ListAllowancesStatus = "depleted"
+	ListAllowancesStatusExpired  ListAllowancesStatus = "expired"
+	ListAllowancesStatusVoided   ListAllowancesStatus = "voided"
+)
+
+// AllValues returns all ListAllowancesStatus values.
+func (ListAllowancesStatus) AllValues() []ListAllowancesStatus {
+	return []ListAllowancesStatus{
+		ListAllowancesStatusActive,
+		ListAllowancesStatusDepleted,
+		ListAllowancesStatusExpired,
+		ListAllowancesStatusVoided,
+	}
 }
 
-// GetBadge returns the value of Badge.
-func (s *Offer) GetBadge() OptString {
-	return s.Badge
+// MarshalText implements encoding.TextMarshaler.
+func (s ListAllowancesStatus) MarshalText() ([]byte, error) {
+	switch s {
+	case ListAllowancesStatusActive:
+		return []byte(s), nil
+	case ListAllowancesStatusDepleted:
+		return []byte(s), nil
+	case ListAllowancesStatusExpired:
+		return []byte(s), nil
+	case ListAllowancesStatusVoided:
+		return []byte(s), nil
+	default:
+		return nil, errors.Errorf("invalid value: %q", s)
+	}
 }
 
-// GetValidUntil returns the value of ValidUntil.
-func (s *Offer) GetValidUntil() OptDateTime {
-	return s.ValidUntil
+// UnmarshalText implements encoding.TextUnmarshaler.
+func (s *ListAllowancesStatus) UnmarshalText(data []byte) error {
+	switch ListAllowancesStatus(data) {
+	case ListAllowancesStatusActive:
+		*s = ListAllowancesStatusActive
+		return nil
+	case ListAllowancesStatusDepleted:
+		*s = ListAllowancesStatusDepleted
+		return nil
+	case ListAllowancesStatusExpired:
+		*s = ListAllowancesStatusExpired
+		return nil
+	case ListAllowancesStatusVoided:
+		*s = ListAllowancesStatusVoided
+		return nil
+	default:
+		return errors.Errorf("invalid value: %q", data)
+	}
 }
 
-// GetPlanKey returns the value of PlanKey.
-func (s *Offer) GetPlanKey() OptString {
-	return s.PlanKey
+type ListCreditGrantsStatus string
+
+const (
+	ListCreditGrantsStatusActive    ListCreditGrantsStatus = "active"
+	ListCreditGrantsStatusExhausted ListCreditGrantsStatus = "exhausted"
+	ListCreditGrantsStatusExpired   ListCreditGrantsStatus = "expired"
+	ListCreditGrantsStatusVoided    ListCreditGrantsStatus = "voided"
+)
+
+// AllValues returns all ListCreditGrantsStatus values.
+func (ListCreditGrantsStatus) AllValues() []ListCreditGrantsStatus {
+	return []ListCreditGrantsStatus{
+		ListCreditGrantsStatusActive,
+		ListCreditGrantsStatusExhausted,
+		ListCreditGrantsStatusExpired,
+		ListCreditGrantsStatusVoided,
+	}
 }
 
-// GetPricing returns the value of Pricing.
-func (s *Offer) GetPricing() OptPricing {
-	return s.Pricing
+// MarshalText implements encoding.TextMarshaler.
+func (s ListCreditGrantsStatus) MarshalText() ([]byte, error) {
+	switch s {
+	case ListCreditGrantsStatusActive:
+		return []byte(s), nil
+	case ListCreditGrantsStatusExhausted:
+		return []byte(s), nil
+	case ListCreditGrantsStatusExpired:
+		return []byte(s), nil
+	case ListCreditGrantsStatusVoided:
+		return []byte(s), nil
+	default:
+		return nil, errors.Errorf("invalid value: %q", s)
+	}
 }
 
-// GetTopUp returns the value of TopUp.
-func (s *Offer) GetTopUp() OptTopUpPricing {
-	return s.TopUp
+// UnmarshalText implements encoding.TextUnmarshaler.
+func (s *ListCreditGrantsStatus) UnmarshalText(data []byte) error {
+	switch ListCreditGrantsStatus(data) {
+	case ListCreditGrantsStatusActive:
+		*s = ListCreditGrantsStatusActive
+		return nil
+	case ListCreditGrantsStatusExhausted:
+		*s = ListCreditGrantsStatusExhausted
+		return nil
+	case ListCreditGrantsStatusExpired:
+		*s = ListCreditGrantsStatusExpired
+		return nil
+	case ListCreditGrantsStatusVoided:
+		*s = ListCreditGrantsStatusVoided
+		return nil
+	default:
+		return errors.Errorf("invalid value: %q", data)
+	}
 }
 
-// SetOfferKey sets the value of OfferKey.
-func (s *Offer) SetOfferKey(val string) {
-	s.OfferKey = val
+type ListProjectSpendGroupBy string
+
+const (
+	ListProjectSpendGroupByProduct  ListProjectSpendGroupBy = "product"
+	ListProjectSpendGroupByPlan     ListProjectSpendGroupBy = "plan"
+	ListProjectSpendGroupByResource ListProjectSpendGroupBy = "resource"
+)
+
+// AllValues returns all ListProjectSpendGroupBy values.
+func (ListProjectSpendGroupBy) AllValues() []ListProjectSpendGroupBy {
+	return []ListProjectSpendGroupBy{
+		ListProjectSpendGroupByProduct,
+		ListProjectSpendGroupByPlan,
+		ListProjectSpendGroupByResource,
+	}
 }
 
-// SetName sets the value of Name.
-func (s *Offer) SetName(val string) {
-	s.Name = val
+// MarshalText implements encoding.TextMarshaler.
+func (s ListProjectSpendGroupBy) MarshalText() ([]byte, error) {
+	switch s {
+	case ListProjectSpendGroupByProduct:
+		return []byte(s), nil
+	case ListProjectSpendGroupByPlan:
+		return []byte(s), nil
+	case ListProjectSpendGroupByResource:
+		return []byte(s), nil
+	default:
+		return nil, errors.Errorf("invalid value: %q", s)
+	}
 }
 
-// SetDescription sets the value of Description.
-func (s *Offer) SetDescription(val OptString) {
-	s.Description = val
+// UnmarshalText implements encoding.TextUnmarshaler.
+func (s *ListProjectSpendGroupBy) UnmarshalText(data []byte) error {
+	switch ListProjectSpendGroupBy(data) {
+	case ListProjectSpendGroupByProduct:
+		*s = ListProjectSpendGroupByProduct
+		return nil
+	case ListProjectSpendGroupByPlan:
+		*s = ListProjectSpendGroupByPlan
+		return nil
+	case ListProjectSpendGroupByResource:
+		*s = ListProjectSpendGroupByResource
+		return nil
+	default:
+		return errors.Errorf("invalid value: %q", data)
+	}
 }
 
-// SetBadge sets the value of Badge.
-func (s *Offer) SetBadge(val OptString) {
-	s.Badge = val
+type Money string
+
+// Ref: #/components/responses/NotModified
+type NotModified struct {
+	ETag OptString
 }
 
-// SetValidUntil sets the value of ValidUntil.
-func (s *Offer) SetValidUntil(val OptDateTime) {
-	s.ValidUntil = val
+// GetETag returns the value of ETag.
+func (s *NotModified) GetETag() OptString {
+	return s.ETag
 }
 
-// SetPlanKey sets the value of PlanKey.
-func (s *Offer) SetPlanKey(val OptString) {
-	s.PlanKey = val
+// SetETag sets the value of ETag.
+func (s *NotModified) SetETag(val OptString) {
+	s.ETag = val
 }
 
-// SetPricing sets the value of Pricing.
-func (s *Offer) SetPricing(val OptPricing) {
-	s.Pricing = val
+func (*NotModified) listCatalogPlansRes()    {}
+func (*NotModified) listCatalogPricesRes()   {}
+func (*NotModified) listCatalogProductsRes() {}
+func (*NotModified) listCatalogRatesRes()    {}
+
+// NewOptActiveResourceDimensions returns new OptActiveResourceDimensions with value set to v.
+func NewOptActiveResourceDimensions(v ActiveResourceDimensions) OptActiveResourceDimensions {
+	return OptActiveResourceDimensions{
+		Value: v,
+		Set:   true,
+	}
 }
 
-// SetTopUp sets the value of TopUp.
-func (s *Offer) SetTopUp(val OptTopUpPricing) {
-	s.TopUp = val
+// OptActiveResourceDimensions is optional ActiveResourceDimensions.
+type OptActiveResourceDimensions struct {
+	Value ActiveResourceDimensions
+	Set   bool
 }
 
-// Ref: #/components/schemas/OfferList
-type OfferList struct {
-	// How many entries there are in total, across every page.
-	//
-	// Without it, "is there another page" has to be guessed from whether this one came back full — and
-	// that guess turns into one extra fetch of an empty page whenever the last page happens to be exactly
-	// full.
-	TotalCount OptInt64 `json:"total_count"`
-	Offers     []Offer  `json:"offers"`
+// IsSet returns true if OptActiveResourceDimensions was set.
+func (o OptActiveResourceDimensions) IsSet() bool { return o.Set }
+
+// Reset unsets value.
+func (o *OptActiveResourceDimensions) Reset() {
+	var v ActiveResourceDimensions
+	o.Value = v
+	o.Set = false
 }
 
-// GetTotalCount returns the value of TotalCount.
-func (s *OfferList) GetTotalCount() OptInt64 {
-	return s.TotalCount
+// SetTo sets value to v.
+func (o *OptActiveResourceDimensions) SetTo(v ActiveResourceDimensions) {
+	o.Set = true
+	o.Value = v
 }
 
-// GetOffers returns the value of Offers.
-func (s *OfferList) GetOffers() []Offer {
-	return s.Offers
+// Get returns value and boolean that denotes whether value was set.
+func (o OptActiveResourceDimensions) Get() (v ActiveResourceDimensions, ok bool) {
+	if !o.Set {
+		return v, false
+	}
+	return o.Value, true
 }
 
-// SetTotalCount sets the value of TotalCount.
-func (s *OfferList) SetTotalCount(val OptInt64) {
-	s.TotalCount = val
+// Or returns value if set, or given parameter if does not.
+func (o OptActiveResourceDimensions) Or(d ActiveResourceDimensions) ActiveResourceDimensions {
+	if v, ok := o.Get(); ok {
+		return v
+	}
+	return d
 }
 
-// SetOffers sets the value of Offers.
-func (s *OfferList) SetOffers(val []Offer) {
-	s.Offers = val
+// NewOptApplicability returns new OptApplicability with value set to v.
+func NewOptApplicability(v Applicability) OptApplicability {
+	return OptApplicability{
+		Value: v,
+		Set:   true,
+	}
+}
+
+// OptApplicability is optional Applicability.
+type OptApplicability struct {
+	Value Applicability
+	Set   bool
+}
+
+// IsSet returns true if OptApplicability was set.
+func (o OptApplicability) IsSet() bool { return o.Set }
+
+// Reset unsets value.
+func (o *OptApplicability) Reset() {
+	var v Applicability
+	o.Value = v
+	o.Set = false
+}
+
+// SetTo sets value to v.
+func (o *OptApplicability) SetTo(v Applicability) {
+	o.Set = true
+	o.Value = v
+}
+
+// Get returns value and boolean that denotes whether value was set.
+func (o OptApplicability) Get() (v Applicability, ok bool) {
+	if !o.Set {
+		return v, false
+	}
+	return o.Value, true
+}
+
+// Or returns value if set, or given parameter if does not.
+func (o OptApplicability) Or(d Applicability) Applicability {
+	if v, ok := o.Get(); ok {
+		return v
+	}
+	return d
 }
 
 // NewOptBool returns new OptBool with value set to v.
@@ -2169,38 +4632,38 @@ func (o OptBool) Or(d bool) bool {
 	return d
 }
 
-// NewOptCurrency returns new OptCurrency with value set to v.
-func NewOptCurrency(v Currency) OptCurrency {
-	return OptCurrency{
+// NewOptCatalogPricePeriod returns new OptCatalogPricePeriod with value set to v.
+func NewOptCatalogPricePeriod(v CatalogPricePeriod) OptCatalogPricePeriod {
+	return OptCatalogPricePeriod{
 		Value: v,
 		Set:   true,
 	}
 }
 
-// OptCurrency is optional Currency.
-type OptCurrency struct {
-	Value Currency
+// OptCatalogPricePeriod is optional CatalogPricePeriod.
+type OptCatalogPricePeriod struct {
+	Value CatalogPricePeriod
 	Set   bool
 }
 
-// IsSet returns true if OptCurrency was set.
-func (o OptCurrency) IsSet() bool { return o.Set }
+// IsSet returns true if OptCatalogPricePeriod was set.
+func (o OptCatalogPricePeriod) IsSet() bool { return o.Set }
 
 // Reset unsets value.
-func (o *OptCurrency) Reset() {
-	var v Currency
+func (o *OptCatalogPricePeriod) Reset() {
+	var v CatalogPricePeriod
 	o.Value = v
 	o.Set = false
 }
 
 // SetTo sets value to v.
-func (o *OptCurrency) SetTo(v Currency) {
+func (o *OptCatalogPricePeriod) SetTo(v CatalogPricePeriod) {
 	o.Set = true
 	o.Value = v
 }
 
 // Get returns value and boolean that denotes whether value was set.
-func (o OptCurrency) Get() (v Currency, ok bool) {
+func (o OptCatalogPricePeriod) Get() (v CatalogPricePeriod, ok bool) {
 	if !o.Set {
 		return v, false
 	}
@@ -2208,7 +4671,145 @@ func (o OptCurrency) Get() (v Currency, ok bool) {
 }
 
 // Or returns value if set, or given parameter if does not.
-func (o OptCurrency) Or(d Currency) Currency {
+func (o OptCatalogPricePeriod) Or(d CatalogPricePeriod) CatalogPricePeriod {
+	if v, ok := o.Get(); ok {
+		return v
+	}
+	return d
+}
+
+// NewOptCatalogPriceTiersMode returns new OptCatalogPriceTiersMode with value set to v.
+func NewOptCatalogPriceTiersMode(v CatalogPriceTiersMode) OptCatalogPriceTiersMode {
+	return OptCatalogPriceTiersMode{
+		Value: v,
+		Set:   true,
+	}
+}
+
+// OptCatalogPriceTiersMode is optional CatalogPriceTiersMode.
+type OptCatalogPriceTiersMode struct {
+	Value CatalogPriceTiersMode
+	Set   bool
+}
+
+// IsSet returns true if OptCatalogPriceTiersMode was set.
+func (o OptCatalogPriceTiersMode) IsSet() bool { return o.Set }
+
+// Reset unsets value.
+func (o *OptCatalogPriceTiersMode) Reset() {
+	var v CatalogPriceTiersMode
+	o.Value = v
+	o.Set = false
+}
+
+// SetTo sets value to v.
+func (o *OptCatalogPriceTiersMode) SetTo(v CatalogPriceTiersMode) {
+	o.Set = true
+	o.Value = v
+}
+
+// Get returns value and boolean that denotes whether value was set.
+func (o OptCatalogPriceTiersMode) Get() (v CatalogPriceTiersMode, ok bool) {
+	if !o.Set {
+		return v, false
+	}
+	return o.Value, true
+}
+
+// Or returns value if set, or given parameter if does not.
+func (o OptCatalogPriceTiersMode) Or(d CatalogPriceTiersMode) CatalogPriceTiersMode {
+	if v, ok := o.Get(); ok {
+		return v
+	}
+	return d
+}
+
+// NewOptCodeRejection returns new OptCodeRejection with value set to v.
+func NewOptCodeRejection(v CodeRejection) OptCodeRejection {
+	return OptCodeRejection{
+		Value: v,
+		Set:   true,
+	}
+}
+
+// OptCodeRejection is optional CodeRejection.
+type OptCodeRejection struct {
+	Value CodeRejection
+	Set   bool
+}
+
+// IsSet returns true if OptCodeRejection was set.
+func (o OptCodeRejection) IsSet() bool { return o.Set }
+
+// Reset unsets value.
+func (o *OptCodeRejection) Reset() {
+	var v CodeRejection
+	o.Value = v
+	o.Set = false
+}
+
+// SetTo sets value to v.
+func (o *OptCodeRejection) SetTo(v CodeRejection) {
+	o.Set = true
+	o.Value = v
+}
+
+// Get returns value and boolean that denotes whether value was set.
+func (o OptCodeRejection) Get() (v CodeRejection, ok bool) {
+	if !o.Set {
+		return v, false
+	}
+	return o.Value, true
+}
+
+// Or returns value if set, or given parameter if does not.
+func (o OptCodeRejection) Or(d CodeRejection) CodeRejection {
+	if v, ok := o.Get(); ok {
+		return v
+	}
+	return d
+}
+
+// NewOptCreditGrantSourceType returns new OptCreditGrantSourceType with value set to v.
+func NewOptCreditGrantSourceType(v CreditGrantSourceType) OptCreditGrantSourceType {
+	return OptCreditGrantSourceType{
+		Value: v,
+		Set:   true,
+	}
+}
+
+// OptCreditGrantSourceType is optional CreditGrantSourceType.
+type OptCreditGrantSourceType struct {
+	Value CreditGrantSourceType
+	Set   bool
+}
+
+// IsSet returns true if OptCreditGrantSourceType was set.
+func (o OptCreditGrantSourceType) IsSet() bool { return o.Set }
+
+// Reset unsets value.
+func (o *OptCreditGrantSourceType) Reset() {
+	var v CreditGrantSourceType
+	o.Value = v
+	o.Set = false
+}
+
+// SetTo sets value to v.
+func (o *OptCreditGrantSourceType) SetTo(v CreditGrantSourceType) {
+	o.Set = true
+	o.Value = v
+}
+
+// Get returns value and boolean that denotes whether value was set.
+func (o OptCreditGrantSourceType) Get() (v CreditGrantSourceType, ok bool) {
+	if !o.Set {
+		return v, false
+	}
+	return o.Value, true
+}
+
+// Or returns value if set, or given parameter if does not.
+func (o OptCreditGrantSourceType) Or(d CreditGrantSourceType) CreditGrantSourceType {
 	if v, ok := o.Get(); ok {
 		return v
 	}
@@ -2301,52 +4902,6 @@ func (o OptErrorMeta) Get() (v ErrorMeta, ok bool) {
 
 // Or returns value if set, or given parameter if does not.
 func (o OptErrorMeta) Or(d ErrorMeta) ErrorMeta {
-	if v, ok := o.Get(); ok {
-		return v
-	}
-	return d
-}
-
-// NewOptFloat32 returns new OptFloat32 with value set to v.
-func NewOptFloat32(v float32) OptFloat32 {
-	return OptFloat32{
-		Value: v,
-		Set:   true,
-	}
-}
-
-// OptFloat32 is optional float32.
-type OptFloat32 struct {
-	Value float32
-	Set   bool
-}
-
-// IsSet returns true if OptFloat32 was set.
-func (o OptFloat32) IsSet() bool { return o.Set }
-
-// Reset unsets value.
-func (o *OptFloat32) Reset() {
-	var v float32
-	o.Value = v
-	o.Set = false
-}
-
-// SetTo sets value to v.
-func (o *OptFloat32) SetTo(v float32) {
-	o.Set = true
-	o.Value = v
-}
-
-// Get returns value and boolean that denotes whether value was set.
-func (o OptFloat32) Get() (v float32, ok bool) {
-	if !o.Set {
-		return v, false
-	}
-	return o.Value, true
-}
-
-// Or returns value if set, or given parameter if does not.
-func (o OptFloat32) Or(d float32) float32 {
 	if v, ok := o.Get(); ok {
 		return v
 	}
@@ -2491,38 +5046,38 @@ func (o OptInt64) Or(d int64) int64 {
 	return d
 }
 
-// NewOptInvoiceLineConversionOperation returns new OptInvoiceLineConversionOperation with value set to v.
-func NewOptInvoiceLineConversionOperation(v InvoiceLineConversionOperation) OptInvoiceLineConversionOperation {
-	return OptInvoiceLineConversionOperation{
+// NewOptInvoiceItemType returns new OptInvoiceItemType with value set to v.
+func NewOptInvoiceItemType(v InvoiceItemType) OptInvoiceItemType {
+	return OptInvoiceItemType{
 		Value: v,
 		Set:   true,
 	}
 }
 
-// OptInvoiceLineConversionOperation is optional InvoiceLineConversionOperation.
-type OptInvoiceLineConversionOperation struct {
-	Value InvoiceLineConversionOperation
+// OptInvoiceItemType is optional InvoiceItemType.
+type OptInvoiceItemType struct {
+	Value InvoiceItemType
 	Set   bool
 }
 
-// IsSet returns true if OptInvoiceLineConversionOperation was set.
-func (o OptInvoiceLineConversionOperation) IsSet() bool { return o.Set }
+// IsSet returns true if OptInvoiceItemType was set.
+func (o OptInvoiceItemType) IsSet() bool { return o.Set }
 
 // Reset unsets value.
-func (o *OptInvoiceLineConversionOperation) Reset() {
-	var v InvoiceLineConversionOperation
+func (o *OptInvoiceItemType) Reset() {
+	var v InvoiceItemType
 	o.Value = v
 	o.Set = false
 }
 
 // SetTo sets value to v.
-func (o *OptInvoiceLineConversionOperation) SetTo(v InvoiceLineConversionOperation) {
+func (o *OptInvoiceItemType) SetTo(v InvoiceItemType) {
 	o.Set = true
 	o.Value = v
 }
 
 // Get returns value and boolean that denotes whether value was set.
-func (o OptInvoiceLineConversionOperation) Get() (v InvoiceLineConversionOperation, ok bool) {
+func (o OptInvoiceItemType) Get() (v InvoiceItemType, ok bool) {
 	if !o.Set {
 		return v, false
 	}
@@ -2530,7 +5085,283 @@ func (o OptInvoiceLineConversionOperation) Get() (v InvoiceLineConversionOperati
 }
 
 // Or returns value if set, or given parameter if does not.
-func (o OptInvoiceLineConversionOperation) Or(d InvoiceLineConversionOperation) InvoiceLineConversionOperation {
+func (o OptInvoiceItemType) Or(d InvoiceItemType) InvoiceItemType {
+	if v, ok := o.Get(); ok {
+		return v
+	}
+	return d
+}
+
+// NewOptInvoiceStatus returns new OptInvoiceStatus with value set to v.
+func NewOptInvoiceStatus(v InvoiceStatus) OptInvoiceStatus {
+	return OptInvoiceStatus{
+		Value: v,
+		Set:   true,
+	}
+}
+
+// OptInvoiceStatus is optional InvoiceStatus.
+type OptInvoiceStatus struct {
+	Value InvoiceStatus
+	Set   bool
+}
+
+// IsSet returns true if OptInvoiceStatus was set.
+func (o OptInvoiceStatus) IsSet() bool { return o.Set }
+
+// Reset unsets value.
+func (o *OptInvoiceStatus) Reset() {
+	var v InvoiceStatus
+	o.Value = v
+	o.Set = false
+}
+
+// SetTo sets value to v.
+func (o *OptInvoiceStatus) SetTo(v InvoiceStatus) {
+	o.Set = true
+	o.Value = v
+}
+
+// Get returns value and boolean that denotes whether value was set.
+func (o OptInvoiceStatus) Get() (v InvoiceStatus, ok bool) {
+	if !o.Set {
+		return v, false
+	}
+	return o.Value, true
+}
+
+// Or returns value if set, or given parameter if does not.
+func (o OptInvoiceStatus) Or(d InvoiceStatus) InvoiceStatus {
+	if v, ok := o.Get(); ok {
+		return v
+	}
+	return d
+}
+
+// NewOptInvoiceType returns new OptInvoiceType with value set to v.
+func NewOptInvoiceType(v InvoiceType) OptInvoiceType {
+	return OptInvoiceType{
+		Value: v,
+		Set:   true,
+	}
+}
+
+// OptInvoiceType is optional InvoiceType.
+type OptInvoiceType struct {
+	Value InvoiceType
+	Set   bool
+}
+
+// IsSet returns true if OptInvoiceType was set.
+func (o OptInvoiceType) IsSet() bool { return o.Set }
+
+// Reset unsets value.
+func (o *OptInvoiceType) Reset() {
+	var v InvoiceType
+	o.Value = v
+	o.Set = false
+}
+
+// SetTo sets value to v.
+func (o *OptInvoiceType) SetTo(v InvoiceType) {
+	o.Set = true
+	o.Value = v
+}
+
+// Get returns value and boolean that denotes whether value was set.
+func (o OptInvoiceType) Get() (v InvoiceType, ok bool) {
+	if !o.Set {
+		return v, false
+	}
+	return o.Value, true
+}
+
+// Or returns value if set, or given parameter if does not.
+func (o OptInvoiceType) Or(d InvoiceType) InvoiceType {
+	if v, ok := o.Get(); ok {
+		return v
+	}
+	return d
+}
+
+// NewOptListAllowancesStatus returns new OptListAllowancesStatus with value set to v.
+func NewOptListAllowancesStatus(v ListAllowancesStatus) OptListAllowancesStatus {
+	return OptListAllowancesStatus{
+		Value: v,
+		Set:   true,
+	}
+}
+
+// OptListAllowancesStatus is optional ListAllowancesStatus.
+type OptListAllowancesStatus struct {
+	Value ListAllowancesStatus
+	Set   bool
+}
+
+// IsSet returns true if OptListAllowancesStatus was set.
+func (o OptListAllowancesStatus) IsSet() bool { return o.Set }
+
+// Reset unsets value.
+func (o *OptListAllowancesStatus) Reset() {
+	var v ListAllowancesStatus
+	o.Value = v
+	o.Set = false
+}
+
+// SetTo sets value to v.
+func (o *OptListAllowancesStatus) SetTo(v ListAllowancesStatus) {
+	o.Set = true
+	o.Value = v
+}
+
+// Get returns value and boolean that denotes whether value was set.
+func (o OptListAllowancesStatus) Get() (v ListAllowancesStatus, ok bool) {
+	if !o.Set {
+		return v, false
+	}
+	return o.Value, true
+}
+
+// Or returns value if set, or given parameter if does not.
+func (o OptListAllowancesStatus) Or(d ListAllowancesStatus) ListAllowancesStatus {
+	if v, ok := o.Get(); ok {
+		return v
+	}
+	return d
+}
+
+// NewOptListCreditGrantsStatus returns new OptListCreditGrantsStatus with value set to v.
+func NewOptListCreditGrantsStatus(v ListCreditGrantsStatus) OptListCreditGrantsStatus {
+	return OptListCreditGrantsStatus{
+		Value: v,
+		Set:   true,
+	}
+}
+
+// OptListCreditGrantsStatus is optional ListCreditGrantsStatus.
+type OptListCreditGrantsStatus struct {
+	Value ListCreditGrantsStatus
+	Set   bool
+}
+
+// IsSet returns true if OptListCreditGrantsStatus was set.
+func (o OptListCreditGrantsStatus) IsSet() bool { return o.Set }
+
+// Reset unsets value.
+func (o *OptListCreditGrantsStatus) Reset() {
+	var v ListCreditGrantsStatus
+	o.Value = v
+	o.Set = false
+}
+
+// SetTo sets value to v.
+func (o *OptListCreditGrantsStatus) SetTo(v ListCreditGrantsStatus) {
+	o.Set = true
+	o.Value = v
+}
+
+// Get returns value and boolean that denotes whether value was set.
+func (o OptListCreditGrantsStatus) Get() (v ListCreditGrantsStatus, ok bool) {
+	if !o.Set {
+		return v, false
+	}
+	return o.Value, true
+}
+
+// Or returns value if set, or given parameter if does not.
+func (o OptListCreditGrantsStatus) Or(d ListCreditGrantsStatus) ListCreditGrantsStatus {
+	if v, ok := o.Get(); ok {
+		return v
+	}
+	return d
+}
+
+// NewOptListProjectSpendGroupBy returns new OptListProjectSpendGroupBy with value set to v.
+func NewOptListProjectSpendGroupBy(v ListProjectSpendGroupBy) OptListProjectSpendGroupBy {
+	return OptListProjectSpendGroupBy{
+		Value: v,
+		Set:   true,
+	}
+}
+
+// OptListProjectSpendGroupBy is optional ListProjectSpendGroupBy.
+type OptListProjectSpendGroupBy struct {
+	Value ListProjectSpendGroupBy
+	Set   bool
+}
+
+// IsSet returns true if OptListProjectSpendGroupBy was set.
+func (o OptListProjectSpendGroupBy) IsSet() bool { return o.Set }
+
+// Reset unsets value.
+func (o *OptListProjectSpendGroupBy) Reset() {
+	var v ListProjectSpendGroupBy
+	o.Value = v
+	o.Set = false
+}
+
+// SetTo sets value to v.
+func (o *OptListProjectSpendGroupBy) SetTo(v ListProjectSpendGroupBy) {
+	o.Set = true
+	o.Value = v
+}
+
+// Get returns value and boolean that denotes whether value was set.
+func (o OptListProjectSpendGroupBy) Get() (v ListProjectSpendGroupBy, ok bool) {
+	if !o.Set {
+		return v, false
+	}
+	return o.Value, true
+}
+
+// Or returns value if set, or given parameter if does not.
+func (o OptListProjectSpendGroupBy) Or(d ListProjectSpendGroupBy) ListProjectSpendGroupBy {
+	if v, ok := o.Get(); ok {
+		return v
+	}
+	return d
+}
+
+// NewOptMoney returns new OptMoney with value set to v.
+func NewOptMoney(v Money) OptMoney {
+	return OptMoney{
+		Value: v,
+		Set:   true,
+	}
+}
+
+// OptMoney is optional Money.
+type OptMoney struct {
+	Value Money
+	Set   bool
+}
+
+// IsSet returns true if OptMoney was set.
+func (o OptMoney) IsSet() bool { return o.Set }
+
+// Reset unsets value.
+func (o *OptMoney) Reset() {
+	var v Money
+	o.Value = v
+	o.Set = false
+}
+
+// SetTo sets value to v.
+func (o *OptMoney) SetTo(v Money) {
+	o.Set = true
+	o.Value = v
+}
+
+// Get returns value and boolean that denotes whether value was set.
+func (o OptMoney) Get() (v Money, ok bool) {
+	if !o.Set {
+		return v, false
+	}
+	return o.Value, true
+}
+
+// Or returns value if set, or given parameter if does not.
+func (o OptMoney) Or(d Money) Money {
 	if v, ok := o.Get(); ok {
 		return v
 	}
@@ -2605,6 +5436,142 @@ func (o OptNilDateTime) Or(d time.Time) time.Time {
 	return d
 }
 
+// NewOptNilInt returns new OptNilInt with value set to v.
+func NewOptNilInt(v int) OptNilInt {
+	return OptNilInt{
+		Value: v,
+		Set:   true,
+	}
+}
+
+// OptNilInt is optional nullable int.
+type OptNilInt struct {
+	Value int
+	Set   bool
+	Null  bool
+}
+
+// IsSet returns true if OptNilInt was set.
+func (o OptNilInt) IsSet() bool { return o.Set }
+
+// Reset unsets value.
+func (o *OptNilInt) Reset() {
+	var v int
+	o.Value = v
+	o.Set = false
+	o.Null = false
+}
+
+// SetTo sets value to v.
+func (o *OptNilInt) SetTo(v int) {
+	o.Set = true
+	o.Null = false
+	o.Value = v
+}
+
+// IsNull returns true if value is Null.
+func (o OptNilInt) IsNull() bool { return o.Null }
+
+// SetToNull sets value to null.
+func (o *OptNilInt) SetToNull() {
+	o.Set = true
+	o.Null = true
+	var v int
+	o.Value = v
+}
+
+// IsEmpty returns true if the field was omitted from the payload (not Set and not Null).
+func (o OptNilInt) IsEmpty() bool {
+	return !o.Set && !o.Null
+}
+
+// Get returns value and boolean that denotes whether value was set.
+func (o OptNilInt) Get() (v int, ok bool) {
+	if o.Null {
+		return v, false
+	}
+	if !o.Set {
+		return v, false
+	}
+	return o.Value, true
+}
+
+// Or returns value if set, or given parameter if does not.
+func (o OptNilInt) Or(d int) int {
+	if v, ok := o.Get(); ok {
+		return v
+	}
+	return d
+}
+
+// NewOptNilString returns new OptNilString with value set to v.
+func NewOptNilString(v string) OptNilString {
+	return OptNilString{
+		Value: v,
+		Set:   true,
+	}
+}
+
+// OptNilString is optional nullable string.
+type OptNilString struct {
+	Value string
+	Set   bool
+	Null  bool
+}
+
+// IsSet returns true if OptNilString was set.
+func (o OptNilString) IsSet() bool { return o.Set }
+
+// Reset unsets value.
+func (o *OptNilString) Reset() {
+	var v string
+	o.Value = v
+	o.Set = false
+	o.Null = false
+}
+
+// SetTo sets value to v.
+func (o *OptNilString) SetTo(v string) {
+	o.Set = true
+	o.Null = false
+	o.Value = v
+}
+
+// IsNull returns true if value is Null.
+func (o OptNilString) IsNull() bool { return o.Null }
+
+// SetToNull sets value to null.
+func (o *OptNilString) SetToNull() {
+	o.Set = true
+	o.Null = true
+	var v string
+	o.Value = v
+}
+
+// IsEmpty returns true if the field was omitted from the payload (not Set and not Null).
+func (o OptNilString) IsEmpty() bool {
+	return !o.Set && !o.Null
+}
+
+// Get returns value and boolean that denotes whether value was set.
+func (o OptNilString) Get() (v string, ok bool) {
+	if o.Null {
+		return v, false
+	}
+	if !o.Set {
+		return v, false
+	}
+	return o.Value, true
+}
+
+// Or returns value if set, or given parameter if does not.
+func (o OptNilString) Or(d string) string {
+	if v, ok := o.Get(); ok {
+		return v
+	}
+	return d
+}
+
 // NewOptNilUUID returns new OptNilUUID with value set to v.
 func NewOptNilUUID(v uuid.UUID) OptNilUUID {
 	return OptNilUUID{
@@ -2673,38 +5640,38 @@ func (o OptNilUUID) Or(d uuid.UUID) uuid.UUID {
 	return d
 }
 
-// NewOptOrderLineConfiguration returns new OptOrderLineConfiguration with value set to v.
-func NewOptOrderLineConfiguration(v OrderLineConfiguration) OptOrderLineConfiguration {
-	return OptOrderLineConfiguration{
+// NewOptOrderState returns new OptOrderState with value set to v.
+func NewOptOrderState(v OrderState) OptOrderState {
+	return OptOrderState{
 		Value: v,
 		Set:   true,
 	}
 }
 
-// OptOrderLineConfiguration is optional OrderLineConfiguration.
-type OptOrderLineConfiguration struct {
-	Value OrderLineConfiguration
+// OptOrderState is optional OrderState.
+type OptOrderState struct {
+	Value OrderState
 	Set   bool
 }
 
-// IsSet returns true if OptOrderLineConfiguration was set.
-func (o OptOrderLineConfiguration) IsSet() bool { return o.Set }
+// IsSet returns true if OptOrderState was set.
+func (o OptOrderState) IsSet() bool { return o.Set }
 
 // Reset unsets value.
-func (o *OptOrderLineConfiguration) Reset() {
-	var v OrderLineConfiguration
+func (o *OptOrderState) Reset() {
+	var v OrderState
 	o.Value = v
 	o.Set = false
 }
 
 // SetTo sets value to v.
-func (o *OptOrderLineConfiguration) SetTo(v OrderLineConfiguration) {
+func (o *OptOrderState) SetTo(v OrderState) {
 	o.Set = true
 	o.Value = v
 }
 
 // Get returns value and boolean that denotes whether value was set.
-func (o OptOrderLineConfiguration) Get() (v OrderLineConfiguration, ok bool) {
+func (o OptOrderState) Get() (v OrderState, ok bool) {
 	if !o.Set {
 		return v, false
 	}
@@ -2712,45 +5679,45 @@ func (o OptOrderLineConfiguration) Get() (v OrderLineConfiguration, ok bool) {
 }
 
 // Or returns value if set, or given parameter if does not.
-func (o OptOrderLineConfiguration) Or(d OrderLineConfiguration) OrderLineConfiguration {
+func (o OptOrderState) Or(d OrderState) OrderState {
 	if v, ok := o.Get(); ok {
 		return v
 	}
 	return d
 }
 
-// NewOptOrderPaymentState returns new OptOrderPaymentState with value set to v.
-func NewOptOrderPaymentState(v OrderPaymentState) OptOrderPaymentState {
-	return OptOrderPaymentState{
+// NewOptPayRequest returns new OptPayRequest with value set to v.
+func NewOptPayRequest(v PayRequest) OptPayRequest {
+	return OptPayRequest{
 		Value: v,
 		Set:   true,
 	}
 }
 
-// OptOrderPaymentState is optional OrderPaymentState.
-type OptOrderPaymentState struct {
-	Value OrderPaymentState
+// OptPayRequest is optional PayRequest.
+type OptPayRequest struct {
+	Value PayRequest
 	Set   bool
 }
 
-// IsSet returns true if OptOrderPaymentState was set.
-func (o OptOrderPaymentState) IsSet() bool { return o.Set }
+// IsSet returns true if OptPayRequest was set.
+func (o OptPayRequest) IsSet() bool { return o.Set }
 
 // Reset unsets value.
-func (o *OptOrderPaymentState) Reset() {
-	var v OrderPaymentState
+func (o *OptPayRequest) Reset() {
+	var v PayRequest
 	o.Value = v
 	o.Set = false
 }
 
 // SetTo sets value to v.
-func (o *OptOrderPaymentState) SetTo(v OrderPaymentState) {
+func (o *OptPayRequest) SetTo(v PayRequest) {
 	o.Set = true
 	o.Value = v
 }
 
 // Get returns value and boolean that denotes whether value was set.
-func (o OptOrderPaymentState) Get() (v OrderPaymentState, ok bool) {
+func (o OptPayRequest) Get() (v PayRequest, ok bool) {
 	if !o.Set {
 		return v, false
 	}
@@ -2758,45 +5725,45 @@ func (o OptOrderPaymentState) Get() (v OrderPaymentState, ok bool) {
 }
 
 // Or returns value if set, or given parameter if does not.
-func (o OptOrderPaymentState) Or(d OrderPaymentState) OrderPaymentState {
+func (o OptPayRequest) Or(d PayRequest) PayRequest {
 	if v, ok := o.Get(); ok {
 		return v
 	}
 	return d
 }
 
-// NewOptPlanChangeTiming returns new OptPlanChangeTiming with value set to v.
-func NewOptPlanChangeTiming(v PlanChangeTiming) OptPlanChangeTiming {
-	return OptPlanChangeTiming{
+// NewOptQuoteLineDimensions returns new OptQuoteLineDimensions with value set to v.
+func NewOptQuoteLineDimensions(v QuoteLineDimensions) OptQuoteLineDimensions {
+	return OptQuoteLineDimensions{
 		Value: v,
 		Set:   true,
 	}
 }
 
-// OptPlanChangeTiming is optional PlanChangeTiming.
-type OptPlanChangeTiming struct {
-	Value PlanChangeTiming
+// OptQuoteLineDimensions is optional QuoteLineDimensions.
+type OptQuoteLineDimensions struct {
+	Value QuoteLineDimensions
 	Set   bool
 }
 
-// IsSet returns true if OptPlanChangeTiming was set.
-func (o OptPlanChangeTiming) IsSet() bool { return o.Set }
+// IsSet returns true if OptQuoteLineDimensions was set.
+func (o OptQuoteLineDimensions) IsSet() bool { return o.Set }
 
 // Reset unsets value.
-func (o *OptPlanChangeTiming) Reset() {
-	var v PlanChangeTiming
+func (o *OptQuoteLineDimensions) Reset() {
+	var v QuoteLineDimensions
 	o.Value = v
 	o.Set = false
 }
 
 // SetTo sets value to v.
-func (o *OptPlanChangeTiming) SetTo(v PlanChangeTiming) {
+func (o *OptQuoteLineDimensions) SetTo(v QuoteLineDimensions) {
 	o.Set = true
 	o.Value = v
 }
 
 // Get returns value and boolean that denotes whether value was set.
-func (o OptPlanChangeTiming) Get() (v PlanChangeTiming, ok bool) {
+func (o OptQuoteLineDimensions) Get() (v QuoteLineDimensions, ok bool) {
 	if !o.Set {
 		return v, false
 	}
@@ -2804,45 +5771,45 @@ func (o OptPlanChangeTiming) Get() (v PlanChangeTiming, ok bool) {
 }
 
 // Or returns value if set, or given parameter if does not.
-func (o OptPlanChangeTiming) Or(d PlanChangeTiming) PlanChangeTiming {
+func (o OptQuoteLineDimensions) Or(d QuoteLineDimensions) QuoteLineDimensions {
 	if v, ok := o.Get(); ok {
 		return v
 	}
 	return d
 }
 
-// NewOptPricing returns new OptPricing with value set to v.
-func NewOptPricing(v Pricing) OptPricing {
-	return OptPricing{
+// NewOptQuoteLinePriceType returns new OptQuoteLinePriceType with value set to v.
+func NewOptQuoteLinePriceType(v QuoteLinePriceType) OptQuoteLinePriceType {
+	return OptQuoteLinePriceType{
 		Value: v,
 		Set:   true,
 	}
 }
 
-// OptPricing is optional Pricing.
-type OptPricing struct {
-	Value Pricing
+// OptQuoteLinePriceType is optional QuoteLinePriceType.
+type OptQuoteLinePriceType struct {
+	Value QuoteLinePriceType
 	Set   bool
 }
 
-// IsSet returns true if OptPricing was set.
-func (o OptPricing) IsSet() bool { return o.Set }
+// IsSet returns true if OptQuoteLinePriceType was set.
+func (o OptQuoteLinePriceType) IsSet() bool { return o.Set }
 
 // Reset unsets value.
-func (o *OptPricing) Reset() {
-	var v Pricing
+func (o *OptQuoteLinePriceType) Reset() {
+	var v QuoteLinePriceType
 	o.Value = v
 	o.Set = false
 }
 
 // SetTo sets value to v.
-func (o *OptPricing) SetTo(v Pricing) {
+func (o *OptQuoteLinePriceType) SetTo(v QuoteLinePriceType) {
 	o.Set = true
 	o.Value = v
 }
 
 // Get returns value and boolean that denotes whether value was set.
-func (o OptPricing) Get() (v Pricing, ok bool) {
+func (o OptQuoteLinePriceType) Get() (v QuoteLinePriceType, ok bool) {
 	if !o.Set {
 		return v, false
 	}
@@ -2850,45 +5817,45 @@ func (o OptPricing) Get() (v Pricing, ok bool) {
 }
 
 // Or returns value if set, or given parameter if does not.
-func (o OptPricing) Or(d Pricing) Pricing {
+func (o OptQuoteLinePriceType) Or(d QuoteLinePriceType) QuoteLinePriceType {
 	if v, ok := o.Get(); ok {
 		return v
 	}
 	return d
 }
 
-// NewOptQuoteUsageVariant returns new OptQuoteUsageVariant with value set to v.
-func NewOptQuoteUsageVariant(v QuoteUsageVariant) OptQuoteUsageVariant {
-	return OptQuoteUsageVariant{
+// NewOptRefundDestination returns new OptRefundDestination with value set to v.
+func NewOptRefundDestination(v RefundDestination) OptRefundDestination {
+	return OptRefundDestination{
 		Value: v,
 		Set:   true,
 	}
 }
 
-// OptQuoteUsageVariant is optional QuoteUsageVariant.
-type OptQuoteUsageVariant struct {
-	Value QuoteUsageVariant
+// OptRefundDestination is optional RefundDestination.
+type OptRefundDestination struct {
+	Value RefundDestination
 	Set   bool
 }
 
-// IsSet returns true if OptQuoteUsageVariant was set.
-func (o OptQuoteUsageVariant) IsSet() bool { return o.Set }
+// IsSet returns true if OptRefundDestination was set.
+func (o OptRefundDestination) IsSet() bool { return o.Set }
 
 // Reset unsets value.
-func (o *OptQuoteUsageVariant) Reset() {
-	var v QuoteUsageVariant
+func (o *OptRefundDestination) Reset() {
+	var v RefundDestination
 	o.Value = v
 	o.Set = false
 }
 
 // SetTo sets value to v.
-func (o *OptQuoteUsageVariant) SetTo(v QuoteUsageVariant) {
+func (o *OptRefundDestination) SetTo(v RefundDestination) {
 	o.Set = true
 	o.Value = v
 }
 
 // Get returns value and boolean that denotes whether value was set.
-func (o OptQuoteUsageVariant) Get() (v QuoteUsageVariant, ok bool) {
+func (o OptRefundDestination) Get() (v RefundDestination, ok bool) {
 	if !o.Set {
 		return v, false
 	}
@@ -2896,53 +5863,7 @@ func (o OptQuoteUsageVariant) Get() (v QuoteUsageVariant, ok bool) {
 }
 
 // Or returns value if set, or given parameter if does not.
-func (o OptQuoteUsageVariant) Or(d QuoteUsageVariant) QuoteUsageVariant {
-	if v, ok := o.Get(); ok {
-		return v
-	}
-	return d
-}
-
-// NewOptScheduledPlan returns new OptScheduledPlan with value set to v.
-func NewOptScheduledPlan(v ScheduledPlan) OptScheduledPlan {
-	return OptScheduledPlan{
-		Value: v,
-		Set:   true,
-	}
-}
-
-// OptScheduledPlan is optional ScheduledPlan.
-type OptScheduledPlan struct {
-	Value ScheduledPlan
-	Set   bool
-}
-
-// IsSet returns true if OptScheduledPlan was set.
-func (o OptScheduledPlan) IsSet() bool { return o.Set }
-
-// Reset unsets value.
-func (o *OptScheduledPlan) Reset() {
-	var v ScheduledPlan
-	o.Value = v
-	o.Set = false
-}
-
-// SetTo sets value to v.
-func (o *OptScheduledPlan) SetTo(v ScheduledPlan) {
-	o.Set = true
-	o.Value = v
-}
-
-// Get returns value and boolean that denotes whether value was set.
-func (o OptScheduledPlan) Get() (v ScheduledPlan, ok bool) {
-	if !o.Set {
-		return v, false
-	}
-	return o.Value, true
-}
-
-// Or returns value if set, or given parameter if does not.
-func (o OptScheduledPlan) Or(d ScheduledPlan) ScheduledPlan {
+func (o OptRefundDestination) Or(d RefundDestination) RefundDestination {
 	if v, ok := o.Get(); ok {
 		return v
 	}
@@ -2995,38 +5916,38 @@ func (o OptString) Or(d string) string {
 	return d
 }
 
-// NewOptTopUpPricing returns new OptTopUpPricing with value set to v.
-func NewOptTopUpPricing(v TopUpPricing) OptTopUpPricing {
-	return OptTopUpPricing{
+// NewOptTranslations returns new OptTranslations with value set to v.
+func NewOptTranslations(v Translations) OptTranslations {
+	return OptTranslations{
 		Value: v,
 		Set:   true,
 	}
 }
 
-// OptTopUpPricing is optional TopUpPricing.
-type OptTopUpPricing struct {
-	Value TopUpPricing
+// OptTranslations is optional Translations.
+type OptTranslations struct {
+	Value Translations
 	Set   bool
 }
 
-// IsSet returns true if OptTopUpPricing was set.
-func (o OptTopUpPricing) IsSet() bool { return o.Set }
+// IsSet returns true if OptTranslations was set.
+func (o OptTranslations) IsSet() bool { return o.Set }
 
 // Reset unsets value.
-func (o *OptTopUpPricing) Reset() {
-	var v TopUpPricing
+func (o *OptTranslations) Reset() {
+	var v Translations
 	o.Value = v
 	o.Set = false
 }
 
 // SetTo sets value to v.
-func (o *OptTopUpPricing) SetTo(v TopUpPricing) {
+func (o *OptTranslations) SetTo(v Translations) {
 	o.Set = true
 	o.Value = v
 }
 
 // Get returns value and boolean that denotes whether value was set.
-func (o OptTopUpPricing) Get() (v TopUpPricing, ok bool) {
+func (o OptTranslations) Get() (v Translations, ok bool) {
 	if !o.Set {
 		return v, false
 	}
@@ -3034,45 +5955,45 @@ func (o OptTopUpPricing) Get() (v TopUpPricing, ok bool) {
 }
 
 // Or returns value if set, or given parameter if does not.
-func (o OptTopUpPricing) Or(d TopUpPricing) TopUpPricing {
+func (o OptTranslations) Or(d Translations) Translations {
 	if v, ok := o.Get(); ok {
 		return v
 	}
 	return d
 }
 
-// NewOptUnpricedUsageVariant returns new OptUnpricedUsageVariant with value set to v.
-func NewOptUnpricedUsageVariant(v UnpricedUsageVariant) OptUnpricedUsageVariant {
-	return OptUnpricedUsageVariant{
+// NewOptUUID returns new OptUUID with value set to v.
+func NewOptUUID(v uuid.UUID) OptUUID {
+	return OptUUID{
 		Value: v,
 		Set:   true,
 	}
 }
 
-// OptUnpricedUsageVariant is optional UnpricedUsageVariant.
-type OptUnpricedUsageVariant struct {
-	Value UnpricedUsageVariant
+// OptUUID is optional uuid.UUID.
+type OptUUID struct {
+	Value uuid.UUID
 	Set   bool
 }
 
-// IsSet returns true if OptUnpricedUsageVariant was set.
-func (o OptUnpricedUsageVariant) IsSet() bool { return o.Set }
+// IsSet returns true if OptUUID was set.
+func (o OptUUID) IsSet() bool { return o.Set }
 
 // Reset unsets value.
-func (o *OptUnpricedUsageVariant) Reset() {
-	var v UnpricedUsageVariant
+func (o *OptUUID) Reset() {
+	var v uuid.UUID
 	o.Value = v
 	o.Set = false
 }
 
 // SetTo sets value to v.
-func (o *OptUnpricedUsageVariant) SetTo(v UnpricedUsageVariant) {
+func (o *OptUUID) SetTo(v uuid.UUID) {
 	o.Set = true
 	o.Value = v
 }
 
 // Get returns value and boolean that denotes whether value was set.
-func (o OptUnpricedUsageVariant) Get() (v UnpricedUsageVariant, ok bool) {
+func (o OptUUID) Get() (v uuid.UUID, ok bool) {
 	if !o.Set {
 		return v, false
 	}
@@ -3080,7 +6001,53 @@ func (o OptUnpricedUsageVariant) Get() (v UnpricedUsageVariant, ok bool) {
 }
 
 // Or returns value if set, or given parameter if does not.
-func (o OptUnpricedUsageVariant) Or(d UnpricedUsageVariant) UnpricedUsageVariant {
+func (o OptUUID) Or(d uuid.UUID) uuid.UUID {
+	if v, ok := o.Get(); ok {
+		return v
+	}
+	return d
+}
+
+// NewOptUsageChargeDimensions returns new OptUsageChargeDimensions with value set to v.
+func NewOptUsageChargeDimensions(v UsageChargeDimensions) OptUsageChargeDimensions {
+	return OptUsageChargeDimensions{
+		Value: v,
+		Set:   true,
+	}
+}
+
+// OptUsageChargeDimensions is optional UsageChargeDimensions.
+type OptUsageChargeDimensions struct {
+	Value UsageChargeDimensions
+	Set   bool
+}
+
+// IsSet returns true if OptUsageChargeDimensions was set.
+func (o OptUsageChargeDimensions) IsSet() bool { return o.Set }
+
+// Reset unsets value.
+func (o *OptUsageChargeDimensions) Reset() {
+	var v UsageChargeDimensions
+	o.Value = v
+	o.Set = false
+}
+
+// SetTo sets value to v.
+func (o *OptUsageChargeDimensions) SetTo(v UsageChargeDimensions) {
+	o.Set = true
+	o.Value = v
+}
+
+// Get returns value and boolean that denotes whether value was set.
+func (o OptUsageChargeDimensions) Get() (v UsageChargeDimensions, ok bool) {
+	if !o.Set {
+		return v, false
+	}
+	return o.Value, true
+}
+
+// Or returns value if set, or given parameter if does not.
+func (o OptUsageChargeDimensions) Or(d UsageChargeDimensions) UsageChargeDimensions {
 	if v, ok := o.Get(); ok {
 		return v
 	}
@@ -3089,52 +6056,50 @@ func (o OptUnpricedUsageVariant) Or(d UnpricedUsageVariant) UnpricedUsageVariant
 
 // Ref: #/components/schemas/Order
 type Order struct {
-	ID        string `json:"id"`
-	ProjectID string `json:"project_id"`
-	PlacedBy  string `json:"placed_by"`
-	// Whether the request went through. It is not the state of what was provisioned: that belongs to each
-	// resource and outlives the order.
-	State         OrderState `json:"state"`
-	FailureReason OptString  `json:"failure_reason"`
-	// What was taken, as a decimal string. Absent on a metered order, where the amount is not known when
-	// the order is placed: it comes from usage afterwards. Absent must be read as "billed by usage" —
-	// writing zero would make a metered order and a genuinely free one look the same.
-	Amount   OptString `json:"amount"`
-	Currency OptString `json:"currency"`
-	// When the money for this order arrived. Absent on an order nothing was charged for, and on one still
-	// waiting to be paid.
-	//
-	// Separate from `created_at` because the two can be far apart: an order paid online is created first
-	// and paid whenever the customer gets round to it. Merged into one field, "how long did this sit
-	// unpaid" has no answer anywhere — and that is the number chasing payment looks at.
-	PaidAt OptDateTime `json:"paid_at"`
-	// Always `none` on a metered order.
-	//
-	// `pending` is an order paid for online whose money has not arrived yet: the checkout session is open
-	// and nothing has been created. It was missing from this enum while the column had it and the handler
-	// passed it through unchanged, so such an order read back a value outside the enum — the one state
-	// where the caller most needs to know not to expect the resource yet.
-	PaymentState OptOrderPaymentState `json:"payment_state"`
-	CreatedAt    time.Time            `json:"created_at"`
-	// What this order was for. Present on the list route too — an order list that shows only numbers and
-	// amounts is a page of identifiers with no content, and recognising one ("which of these was last
-	// week's machine") is the reason anyone opens it.
-	Lines []OrderLine `json:"lines"`
+	ID uuid.UUID `json:"id"`
+	// Which project it was bought for. Absent for a purchase made at account level, such as a membership.
+	ProjectID        OptNilUUID `json:"project_id"`
+	BillingAccountID OptInt64   `json:"billing_account_id"`
+	Currency         string     `json:"currency"`
+	Type             OrderType  `json:"type"`
+	State            OrderState `json:"state"`
+	GrossAmount      OptMoney   `json:"gross_amount"`
+	DiscountAmount   OptMoney   `json:"discount_amount"`
+	Amount           Money      `json:"amount"`
+	// What is still outstanding. Zero once paid.
+	AmountDue OptMoney `json:"amount_due"`
+	// Returned as part of a downgrade. It is returned to the sources that originally paid rather than
+	// deducted from `amount`.
+	RefundedAmount OptMoney `json:"refunded_amount"`
+	// When the funds and any stock held for this order are released. After this it can no longer be paid
+	// and has to be placed again. Absent once the order is settled.
+	ReservationExpiresAt OptNilDateTime `json:"reservation_expires_at"`
+	CreatedAt            time.Time      `json:"created_at"`
 }
 
 // GetID returns the value of ID.
-func (s *Order) GetID() string {
+func (s *Order) GetID() uuid.UUID {
 	return s.ID
 }
 
 // GetProjectID returns the value of ProjectID.
-func (s *Order) GetProjectID() string {
+func (s *Order) GetProjectID() OptNilUUID {
 	return s.ProjectID
 }
 
-// GetPlacedBy returns the value of PlacedBy.
-func (s *Order) GetPlacedBy() string {
-	return s.PlacedBy
+// GetBillingAccountID returns the value of BillingAccountID.
+func (s *Order) GetBillingAccountID() OptInt64 {
+	return s.BillingAccountID
+}
+
+// GetCurrency returns the value of Currency.
+func (s *Order) GetCurrency() string {
+	return s.Currency
+}
+
+// GetType returns the value of Type.
+func (s *Order) GetType() OrderType {
+	return s.Type
 }
 
 // GetState returns the value of State.
@@ -3142,29 +6107,34 @@ func (s *Order) GetState() OrderState {
 	return s.State
 }
 
-// GetFailureReason returns the value of FailureReason.
-func (s *Order) GetFailureReason() OptString {
-	return s.FailureReason
+// GetGrossAmount returns the value of GrossAmount.
+func (s *Order) GetGrossAmount() OptMoney {
+	return s.GrossAmount
+}
+
+// GetDiscountAmount returns the value of DiscountAmount.
+func (s *Order) GetDiscountAmount() OptMoney {
+	return s.DiscountAmount
 }
 
 // GetAmount returns the value of Amount.
-func (s *Order) GetAmount() OptString {
+func (s *Order) GetAmount() Money {
 	return s.Amount
 }
 
-// GetCurrency returns the value of Currency.
-func (s *Order) GetCurrency() OptString {
-	return s.Currency
+// GetAmountDue returns the value of AmountDue.
+func (s *Order) GetAmountDue() OptMoney {
+	return s.AmountDue
 }
 
-// GetPaidAt returns the value of PaidAt.
-func (s *Order) GetPaidAt() OptDateTime {
-	return s.PaidAt
+// GetRefundedAmount returns the value of RefundedAmount.
+func (s *Order) GetRefundedAmount() OptMoney {
+	return s.RefundedAmount
 }
 
-// GetPaymentState returns the value of PaymentState.
-func (s *Order) GetPaymentState() OptOrderPaymentState {
-	return s.PaymentState
+// GetReservationExpiresAt returns the value of ReservationExpiresAt.
+func (s *Order) GetReservationExpiresAt() OptNilDateTime {
+	return s.ReservationExpiresAt
 }
 
 // GetCreatedAt returns the value of CreatedAt.
@@ -3172,24 +6142,29 @@ func (s *Order) GetCreatedAt() time.Time {
 	return s.CreatedAt
 }
 
-// GetLines returns the value of Lines.
-func (s *Order) GetLines() []OrderLine {
-	return s.Lines
-}
-
 // SetID sets the value of ID.
-func (s *Order) SetID(val string) {
+func (s *Order) SetID(val uuid.UUID) {
 	s.ID = val
 }
 
 // SetProjectID sets the value of ProjectID.
-func (s *Order) SetProjectID(val string) {
+func (s *Order) SetProjectID(val OptNilUUID) {
 	s.ProjectID = val
 }
 
-// SetPlacedBy sets the value of PlacedBy.
-func (s *Order) SetPlacedBy(val string) {
-	s.PlacedBy = val
+// SetBillingAccountID sets the value of BillingAccountID.
+func (s *Order) SetBillingAccountID(val OptInt64) {
+	s.BillingAccountID = val
+}
+
+// SetCurrency sets the value of Currency.
+func (s *Order) SetCurrency(val string) {
+	s.Currency = val
+}
+
+// SetType sets the value of Type.
+func (s *Order) SetType(val OrderType) {
+	s.Type = val
 }
 
 // SetState sets the value of State.
@@ -3197,29 +6172,34 @@ func (s *Order) SetState(val OrderState) {
 	s.State = val
 }
 
-// SetFailureReason sets the value of FailureReason.
-func (s *Order) SetFailureReason(val OptString) {
-	s.FailureReason = val
+// SetGrossAmount sets the value of GrossAmount.
+func (s *Order) SetGrossAmount(val OptMoney) {
+	s.GrossAmount = val
+}
+
+// SetDiscountAmount sets the value of DiscountAmount.
+func (s *Order) SetDiscountAmount(val OptMoney) {
+	s.DiscountAmount = val
 }
 
 // SetAmount sets the value of Amount.
-func (s *Order) SetAmount(val OptString) {
+func (s *Order) SetAmount(val Money) {
 	s.Amount = val
 }
 
-// SetCurrency sets the value of Currency.
-func (s *Order) SetCurrency(val OptString) {
-	s.Currency = val
+// SetAmountDue sets the value of AmountDue.
+func (s *Order) SetAmountDue(val OptMoney) {
+	s.AmountDue = val
 }
 
-// SetPaidAt sets the value of PaidAt.
-func (s *Order) SetPaidAt(val OptDateTime) {
-	s.PaidAt = val
+// SetRefundedAmount sets the value of RefundedAmount.
+func (s *Order) SetRefundedAmount(val OptMoney) {
+	s.RefundedAmount = val
 }
 
-// SetPaymentState sets the value of PaymentState.
-func (s *Order) SetPaymentState(val OptOrderPaymentState) {
-	s.PaymentState = val
+// SetReservationExpiresAt sets the value of ReservationExpiresAt.
+func (s *Order) SetReservationExpiresAt(val OptNilDateTime) {
+	s.ReservationExpiresAt = val
 }
 
 // SetCreatedAt sets the value of CreatedAt.
@@ -3227,252 +6207,189 @@ func (s *Order) SetCreatedAt(val time.Time) {
 	s.CreatedAt = val
 }
 
-// SetLines sets the value of Lines.
-func (s *Order) SetLines(val []OrderLine) {
-	s.Lines = val
-}
-
-// Ref: #/components/schemas/OrderLine
-type OrderLine struct {
-	ID     string          `json:"id"`
-	Action OrderLineAction `json:"action"`
-	// Which service holds the thing, for example `compute`.
-	Service string `json:"service"`
-	// That service's own catalogue identifier for what was asked for.
-	ProductID string `json:"product_id"`
-	// What this was called when it was ordered.
-	//
-	// A snapshot, not a lookup. `product_id` is usually a uuid, and an order page that shows it shows a
-	// string of hex. Asking the owning service for the name later is worse: it is a cross-service call per
-	// row, and by then the product may have been renamed or withdrawn — a bill has to answer "what did I
-	// buy", and that answer has to be in the words used at the time.
-	//
-	// Empty on orders placed before this was recorded, and on the rare call that omits it. Fall back to
-	// `product_id`.
-	ProductName string `json:"product_name"`
-	// What was configured on this line at the moment of sale, as key–value pairs meant for a person to
-	// read.
-	//
-	// Free-form, not fixed fields. Every service's products have their own dimensions — a machine has
-	// cores and memory, a disk has capacity and medium, an address has bandwidth. Fixed fields would mean
-	// adding more of them for every service that comes along, or squeezing one service's answers into
-	// another's boxes.
-	//
-	// Do not parse it. The keys are written for the reader, in the reader's language, and they change when
-	// the wording changes. Anything a program needs to decide on is in `product_id` and `quantity`.
-	Configuration OptOrderLineConfiguration `json:"configuration"`
-	Quantity      int64                     `json:"quantity"`
-	// How this line is paid for: empty is by the hour, an ISO 8601 duration (`P1M`, `P1Y`) is bought
-	// outright for that long.
-	//
-	// Fixed at the moment of sale. The asset's own term can move afterwards (renewing can change the
-	// period); this one cannot, because an order is a transaction that already happened.
-	Term string `json:"term"`
-	// Start of the period this line bought. Absent when billed by the hour — that has no service period,
-	// and filling in "today to today" would state a term that does not exist.
-	ServicePeriodFrom OptDateTime `json:"service_period_from"`
-	// End of the period this line bought. Absent when billed by the hour.
-	ServicePeriodTo OptDateTime `json:"service_period_to"`
-	// The resource this line produced, in the owning service's own identifiers. Absent until that service
-	// reports it back, which is also the moment the line starts being billed.
-	ResourceID OptString `json:"resource_id"`
+// Ref: #/components/schemas/OrderItem
+type OrderItem struct {
+	ID      uuid.UUID `json:"id"`
+	OrderID OptUUID   `json:"order_id"`
+	PriceID uuid.UUID `json:"price_id"`
+	// What it was called when bought. It does not follow later catalogue renames and is not translated.
+	PlanName           OptString      `json:"plan_name"`
+	ResourceID         OptString      `json:"resource_id"`
+	Quantity           string         `json:"quantity"`
+	UnitAmount         OptMoney       `json:"unit_amount"`
+	GrossAmount        OptMoney       `json:"gross_amount"`
+	DiscountAmount     OptMoney       `json:"discount_amount"`
+	Amount             Money          `json:"amount"`
+	Currency           string         `json:"currency"`
+	ServicePeriodStart OptNilDateTime `json:"service_period_start"`
+	ServicePeriodEnd   OptNilDateTime `json:"service_period_end"`
 }
 
 // GetID returns the value of ID.
-func (s *OrderLine) GetID() string {
+func (s *OrderItem) GetID() uuid.UUID {
 	return s.ID
 }
 
-// GetAction returns the value of Action.
-func (s *OrderLine) GetAction() OrderLineAction {
-	return s.Action
+// GetOrderID returns the value of OrderID.
+func (s *OrderItem) GetOrderID() OptUUID {
+	return s.OrderID
 }
 
-// GetService returns the value of Service.
-func (s *OrderLine) GetService() string {
-	return s.Service
+// GetPriceID returns the value of PriceID.
+func (s *OrderItem) GetPriceID() uuid.UUID {
+	return s.PriceID
 }
 
-// GetProductID returns the value of ProductID.
-func (s *OrderLine) GetProductID() string {
-	return s.ProductID
-}
-
-// GetProductName returns the value of ProductName.
-func (s *OrderLine) GetProductName() string {
-	return s.ProductName
-}
-
-// GetConfiguration returns the value of Configuration.
-func (s *OrderLine) GetConfiguration() OptOrderLineConfiguration {
-	return s.Configuration
-}
-
-// GetQuantity returns the value of Quantity.
-func (s *OrderLine) GetQuantity() int64 {
-	return s.Quantity
-}
-
-// GetTerm returns the value of Term.
-func (s *OrderLine) GetTerm() string {
-	return s.Term
-}
-
-// GetServicePeriodFrom returns the value of ServicePeriodFrom.
-func (s *OrderLine) GetServicePeriodFrom() OptDateTime {
-	return s.ServicePeriodFrom
-}
-
-// GetServicePeriodTo returns the value of ServicePeriodTo.
-func (s *OrderLine) GetServicePeriodTo() OptDateTime {
-	return s.ServicePeriodTo
+// GetPlanName returns the value of PlanName.
+func (s *OrderItem) GetPlanName() OptString {
+	return s.PlanName
 }
 
 // GetResourceID returns the value of ResourceID.
-func (s *OrderLine) GetResourceID() OptString {
+func (s *OrderItem) GetResourceID() OptString {
 	return s.ResourceID
 }
 
+// GetQuantity returns the value of Quantity.
+func (s *OrderItem) GetQuantity() string {
+	return s.Quantity
+}
+
+// GetUnitAmount returns the value of UnitAmount.
+func (s *OrderItem) GetUnitAmount() OptMoney {
+	return s.UnitAmount
+}
+
+// GetGrossAmount returns the value of GrossAmount.
+func (s *OrderItem) GetGrossAmount() OptMoney {
+	return s.GrossAmount
+}
+
+// GetDiscountAmount returns the value of DiscountAmount.
+func (s *OrderItem) GetDiscountAmount() OptMoney {
+	return s.DiscountAmount
+}
+
+// GetAmount returns the value of Amount.
+func (s *OrderItem) GetAmount() Money {
+	return s.Amount
+}
+
+// GetCurrency returns the value of Currency.
+func (s *OrderItem) GetCurrency() string {
+	return s.Currency
+}
+
+// GetServicePeriodStart returns the value of ServicePeriodStart.
+func (s *OrderItem) GetServicePeriodStart() OptNilDateTime {
+	return s.ServicePeriodStart
+}
+
+// GetServicePeriodEnd returns the value of ServicePeriodEnd.
+func (s *OrderItem) GetServicePeriodEnd() OptNilDateTime {
+	return s.ServicePeriodEnd
+}
+
 // SetID sets the value of ID.
-func (s *OrderLine) SetID(val string) {
+func (s *OrderItem) SetID(val uuid.UUID) {
 	s.ID = val
 }
 
-// SetAction sets the value of Action.
-func (s *OrderLine) SetAction(val OrderLineAction) {
-	s.Action = val
+// SetOrderID sets the value of OrderID.
+func (s *OrderItem) SetOrderID(val OptUUID) {
+	s.OrderID = val
 }
 
-// SetService sets the value of Service.
-func (s *OrderLine) SetService(val string) {
-	s.Service = val
+// SetPriceID sets the value of PriceID.
+func (s *OrderItem) SetPriceID(val uuid.UUID) {
+	s.PriceID = val
 }
 
-// SetProductID sets the value of ProductID.
-func (s *OrderLine) SetProductID(val string) {
-	s.ProductID = val
-}
-
-// SetProductName sets the value of ProductName.
-func (s *OrderLine) SetProductName(val string) {
-	s.ProductName = val
-}
-
-// SetConfiguration sets the value of Configuration.
-func (s *OrderLine) SetConfiguration(val OptOrderLineConfiguration) {
-	s.Configuration = val
-}
-
-// SetQuantity sets the value of Quantity.
-func (s *OrderLine) SetQuantity(val int64) {
-	s.Quantity = val
-}
-
-// SetTerm sets the value of Term.
-func (s *OrderLine) SetTerm(val string) {
-	s.Term = val
-}
-
-// SetServicePeriodFrom sets the value of ServicePeriodFrom.
-func (s *OrderLine) SetServicePeriodFrom(val OptDateTime) {
-	s.ServicePeriodFrom = val
-}
-
-// SetServicePeriodTo sets the value of ServicePeriodTo.
-func (s *OrderLine) SetServicePeriodTo(val OptDateTime) {
-	s.ServicePeriodTo = val
+// SetPlanName sets the value of PlanName.
+func (s *OrderItem) SetPlanName(val OptString) {
+	s.PlanName = val
 }
 
 // SetResourceID sets the value of ResourceID.
-func (s *OrderLine) SetResourceID(val OptString) {
+func (s *OrderItem) SetResourceID(val OptString) {
 	s.ResourceID = val
 }
 
-type OrderLineAction string
-
-const (
-	OrderLineActionAdd    OrderLineAction = "add"
-	OrderLineActionRenew  OrderLineAction = "renew"
-	OrderLineActionModify OrderLineAction = "modify"
-	OrderLineActionRemove OrderLineAction = "remove"
-)
-
-// AllValues returns all OrderLineAction values.
-func (OrderLineAction) AllValues() []OrderLineAction {
-	return []OrderLineAction{
-		OrderLineActionAdd,
-		OrderLineActionRenew,
-		OrderLineActionModify,
-		OrderLineActionRemove,
-	}
+// SetQuantity sets the value of Quantity.
+func (s *OrderItem) SetQuantity(val string) {
+	s.Quantity = val
 }
 
-// MarshalText implements encoding.TextMarshaler.
-func (s OrderLineAction) MarshalText() ([]byte, error) {
-	switch s {
-	case OrderLineActionAdd:
-		return []byte(s), nil
-	case OrderLineActionRenew:
-		return []byte(s), nil
-	case OrderLineActionModify:
-		return []byte(s), nil
-	case OrderLineActionRemove:
-		return []byte(s), nil
-	default:
-		return nil, errors.Errorf("invalid value: %q", s)
-	}
+// SetUnitAmount sets the value of UnitAmount.
+func (s *OrderItem) SetUnitAmount(val OptMoney) {
+	s.UnitAmount = val
 }
 
-// UnmarshalText implements encoding.TextUnmarshaler.
-func (s *OrderLineAction) UnmarshalText(data []byte) error {
-	switch OrderLineAction(data) {
-	case OrderLineActionAdd:
-		*s = OrderLineActionAdd
-		return nil
-	case OrderLineActionRenew:
-		*s = OrderLineActionRenew
-		return nil
-	case OrderLineActionModify:
-		*s = OrderLineActionModify
-		return nil
-	case OrderLineActionRemove:
-		*s = OrderLineActionRemove
-		return nil
-	default:
-		return errors.Errorf("invalid value: %q", data)
-	}
+// SetGrossAmount sets the value of GrossAmount.
+func (s *OrderItem) SetGrossAmount(val OptMoney) {
+	s.GrossAmount = val
 }
 
-// What was configured on this line at the moment of sale, as key–value pairs meant for a person to
-// read.
-//
-// Free-form, not fixed fields. Every service's products have their own dimensions — a machine has
-// cores and memory, a disk has capacity and medium, an address has bandwidth. Fixed fields would mean
-// adding more of them for every service that comes along, or squeezing one service's answers into
-// another's boxes.
-//
-// Do not parse it. The keys are written for the reader, in the reader's language, and they change when
-// the wording changes. Anything a program needs to decide on is in `product_id` and `quantity`.
-type OrderLineConfiguration map[string]string
+// SetDiscountAmount sets the value of DiscountAmount.
+func (s *OrderItem) SetDiscountAmount(val OptMoney) {
+	s.DiscountAmount = val
+}
 
-func (s *OrderLineConfiguration) init() OrderLineConfiguration {
-	m := *s
-	if m == nil {
-		m = map[string]string{}
-		*s = m
-	}
-	return m
+// SetAmount sets the value of Amount.
+func (s *OrderItem) SetAmount(val Money) {
+	s.Amount = val
+}
+
+// SetCurrency sets the value of Currency.
+func (s *OrderItem) SetCurrency(val string) {
+	s.Currency = val
+}
+
+// SetServicePeriodStart sets the value of ServicePeriodStart.
+func (s *OrderItem) SetServicePeriodStart(val OptNilDateTime) {
+	s.ServicePeriodStart = val
+}
+
+// SetServicePeriodEnd sets the value of ServicePeriodEnd.
+func (s *OrderItem) SetServicePeriodEnd(val OptNilDateTime) {
+	s.ServicePeriodEnd = val
+}
+
+// Ref: #/components/schemas/OrderItemList
+type OrderItemList struct {
+	Items      []OrderItem `json:"items"`
+	TotalCount OptInt64    `json:"total_count"`
+}
+
+// GetItems returns the value of Items.
+func (s *OrderItemList) GetItems() []OrderItem {
+	return s.Items
+}
+
+// GetTotalCount returns the value of TotalCount.
+func (s *OrderItemList) GetTotalCount() OptInt64 {
+	return s.TotalCount
+}
+
+// SetItems sets the value of Items.
+func (s *OrderItemList) SetItems(val []OrderItem) {
+	s.Items = val
+}
+
+// SetTotalCount sets the value of TotalCount.
+func (s *OrderItemList) SetTotalCount(val OptInt64) {
+	s.TotalCount = val
 }
 
 // Ref: #/components/schemas/OrderList
 type OrderList struct {
-	// How many entries there are in total, across every page.
-	//
-	// Without it, "is there another page" has to be guessed from whether this one came back full — and
-	// that guess turns into one extra fetch of an empty page whenever the last page happens to be exactly
-	// full.
+	Items      []Order  `json:"items"`
 	TotalCount OptInt64 `json:"total_count"`
-	Orders     []Order  `json:"orders"`
+}
+
+// GetItems returns the value of Items.
+func (s *OrderList) GetItems() []Order {
+	return s.Items
 }
 
 // GetTotalCount returns the value of TotalCount.
@@ -3480,9 +6397,9 @@ func (s *OrderList) GetTotalCount() OptInt64 {
 	return s.TotalCount
 }
 
-// GetOrders returns the value of Orders.
-func (s *OrderList) GetOrders() []Order {
-	return s.Orders
+// SetItems sets the value of Items.
+func (s *OrderList) SetItems(val []Order) {
+	s.Items = val
 }
 
 // SetTotalCount sets the value of TotalCount.
@@ -3490,88 +6407,25 @@ func (s *OrderList) SetTotalCount(val OptInt64) {
 	s.TotalCount = val
 }
 
-// SetOrders sets the value of Orders.
-func (s *OrderList) SetOrders(val []Order) {
-	s.Orders = val
-}
-
-// Always `none` on a metered order.
-//
-// `pending` is an order paid for online whose money has not arrived yet: the checkout session is open
-// and nothing has been created. It was missing from this enum while the column had it and the handler
-// passed it through unchanged, so such an order read back a value outside the enum — the one state
-// where the caller most needs to know not to expect the resource yet.
-type OrderPaymentState string
-
-const (
-	OrderPaymentStateNone     OrderPaymentState = "none"
-	OrderPaymentStatePending  OrderPaymentState = "pending"
-	OrderPaymentStatePaid     OrderPaymentState = "paid"
-	OrderPaymentStateRefunded OrderPaymentState = "refunded"
-)
-
-// AllValues returns all OrderPaymentState values.
-func (OrderPaymentState) AllValues() []OrderPaymentState {
-	return []OrderPaymentState{
-		OrderPaymentStateNone,
-		OrderPaymentStatePending,
-		OrderPaymentStatePaid,
-		OrderPaymentStateRefunded,
-	}
-}
-
-// MarshalText implements encoding.TextMarshaler.
-func (s OrderPaymentState) MarshalText() ([]byte, error) {
-	switch s {
-	case OrderPaymentStateNone:
-		return []byte(s), nil
-	case OrderPaymentStatePending:
-		return []byte(s), nil
-	case OrderPaymentStatePaid:
-		return []byte(s), nil
-	case OrderPaymentStateRefunded:
-		return []byte(s), nil
-	default:
-		return nil, errors.Errorf("invalid value: %q", s)
-	}
-}
-
-// UnmarshalText implements encoding.TextUnmarshaler.
-func (s *OrderPaymentState) UnmarshalText(data []byte) error {
-	switch OrderPaymentState(data) {
-	case OrderPaymentStateNone:
-		*s = OrderPaymentStateNone
-		return nil
-	case OrderPaymentStatePending:
-		*s = OrderPaymentStatePending
-		return nil
-	case OrderPaymentStatePaid:
-		*s = OrderPaymentStatePaid
-		return nil
-	case OrderPaymentStateRefunded:
-		*s = OrderPaymentStateRefunded
-		return nil
-	default:
-		return errors.Errorf("invalid value: %q", data)
-	}
-}
-
-// Whether the request went through. It is not the state of what was provisioned: that belongs to each
-// resource and outlives the order.
+// Ref: #/components/schemas/OrderState
 type OrderState string
 
 const (
 	OrderStatePending   OrderState = "pending"
+	OrderStatePaid      OrderState = "paid"
 	OrderStateFulfilled OrderState = "fulfilled"
 	OrderStateFailed    OrderState = "failed"
+	OrderStateCanceled  OrderState = "canceled"
 )
 
 // AllValues returns all OrderState values.
 func (OrderState) AllValues() []OrderState {
 	return []OrderState{
 		OrderStatePending,
+		OrderStatePaid,
 		OrderStateFulfilled,
 		OrderStateFailed,
+		OrderStateCanceled,
 	}
 }
 
@@ -3580,9 +6434,13 @@ func (s OrderState) MarshalText() ([]byte, error) {
 	switch s {
 	case OrderStatePending:
 		return []byte(s), nil
+	case OrderStatePaid:
+		return []byte(s), nil
 	case OrderStateFulfilled:
 		return []byte(s), nil
 	case OrderStateFailed:
+		return []byte(s), nil
+	case OrderStateCanceled:
 		return []byte(s), nil
 	default:
 		return nil, errors.Errorf("invalid value: %q", s)
@@ -3595,48 +6453,141 @@ func (s *OrderState) UnmarshalText(data []byte) error {
 	case OrderStatePending:
 		*s = OrderStatePending
 		return nil
+	case OrderStatePaid:
+		*s = OrderStatePaid
+		return nil
 	case OrderStateFulfilled:
 		*s = OrderStateFulfilled
 		return nil
 	case OrderStateFailed:
 		*s = OrderStateFailed
 		return nil
+	case OrderStateCanceled:
+		*s = OrderStateCanceled
+		return nil
 	default:
 		return errors.Errorf("invalid value: %q", data)
 	}
 }
 
-// One saved way of collecting money later, without the account holder present.
+type OrderType string
+
+const (
+	OrderTypePurchase OrderType = "purchase"
+	OrderTypeRenew    OrderType = "renew"
+	OrderTypeChange   OrderType = "change"
+)
+
+// AllValues returns all OrderType values.
+func (OrderType) AllValues() []OrderType {
+	return []OrderType{
+		OrderTypePurchase,
+		OrderTypeRenew,
+		OrderTypeChange,
+	}
+}
+
+// MarshalText implements encoding.TextMarshaler.
+func (s OrderType) MarshalText() ([]byte, error) {
+	switch s {
+	case OrderTypePurchase:
+		return []byte(s), nil
+	case OrderTypeRenew:
+		return []byte(s), nil
+	case OrderTypeChange:
+		return []byte(s), nil
+	default:
+		return nil, errors.Errorf("invalid value: %q", s)
+	}
+}
+
+// UnmarshalText implements encoding.TextUnmarshaler.
+func (s *OrderType) UnmarshalText(data []byte) error {
+	switch OrderType(data) {
+	case OrderTypePurchase:
+		*s = OrderTypePurchase
+		return nil
+	case OrderTypeRenew:
+		*s = OrderTypeRenew
+		return nil
+	case OrderTypeChange:
+		*s = OrderTypeChange
+		return nil
+	default:
+		return errors.Errorf("invalid value: %q", data)
+	}
+}
+
+// Safe to call again. While an attempt is still with the payment provider, calling this returns that
+// attempt rather than starting a second one, so a customer who reloads the page is not charged twice.
 //
-// Deliberately not called a card: a card is one kind, and direct debit and the recurring mandates
-// offered by regional wallets occupy the same slot.
+// A new attempt is started only once the previous one has failed.
+// Ref: #/components/schemas/PayRequest
+type PayRequest struct {
+	// Which method to charge the remainder to. The default is used when omitted.
+	PaymentMethodID OptUUID `json:"payment_method_id"`
+	// Whether to apply the account balance first. Set it to `false` to charge the full amount to a payment
+	// method.
+	UseBalance OptBool   `json:"use_balance"`
+	ReturnURL  OptString `json:"return_url"`
+}
+
+// GetPaymentMethodID returns the value of PaymentMethodID.
+func (s *PayRequest) GetPaymentMethodID() OptUUID {
+	return s.PaymentMethodID
+}
+
+// GetUseBalance returns the value of UseBalance.
+func (s *PayRequest) GetUseBalance() OptBool {
+	return s.UseBalance
+}
+
+// GetReturnURL returns the value of ReturnURL.
+func (s *PayRequest) GetReturnURL() OptString {
+	return s.ReturnURL
+}
+
+// SetPaymentMethodID sets the value of PaymentMethodID.
+func (s *PayRequest) SetPaymentMethodID(val OptUUID) {
+	s.PaymentMethodID = val
+}
+
+// SetUseBalance sets the value of UseBalance.
+func (s *PayRequest) SetUseBalance(val OptBool) {
+	s.UseBalance = val
+}
+
+// SetReturnURL sets the value of ReturnURL.
+func (s *PayRequest) SetReturnURL(val OptString) {
+	s.ReturnURL = val
+}
+
 // Ref: #/components/schemas/PaymentMethod
 type PaymentMethod struct {
-	// The provider's id for it. Used to remove it or make it the default.
-	ID string `json:"id"`
-	// Visa, Mastercard, and so on. Empty for kinds that have no brand.
-	Brand OptString `json:"brand"`
-	// The last four digits, for telling two saved methods apart.
-	//
-	// This and the expiry are the only parts of the instrument that exist here. The number, the expiry the
-	// holder typed and the CVC never reach this platform.
-	Last4    OptString `json:"last4"`
-	ExpMonth OptInt32  `json:"exp_month"`
-	// Together with `exp_month`, when this stops working.
-	//
-	// Worth showing because the failure is otherwise invisible: the card expires, the invoice fails,
-	// dunning runs out, and the project stops — with nothing pointing at the card.
-	ExpYear OptInt32 `json:"exp_year"`
-	// True for the one an invoice is collected from.
-	//
-	// Exactly one is the default while any exist. An account whose only method was removed has none, and
-	// its next invoice cannot be collected.
-	Default bool `json:"default"`
+	ID               uuid.UUID           `json:"id"`
+	BillingAccountID int64               `json:"billing_account_id"`
+	Provider         string              `json:"provider"`
+	Brand            OptString           `json:"brand"`
+	Last4            OptString           `json:"last4"`
+	ExpMonth         OptNilInt           `json:"exp_month"`
+	ExpYear          OptNilInt           `json:"exp_year"`
+	IsDefault        bool                `json:"is_default"`
+	Status           PaymentMethodStatus `json:"status"`
 }
 
 // GetID returns the value of ID.
-func (s *PaymentMethod) GetID() string {
+func (s *PaymentMethod) GetID() uuid.UUID {
 	return s.ID
+}
+
+// GetBillingAccountID returns the value of BillingAccountID.
+func (s *PaymentMethod) GetBillingAccountID() int64 {
+	return s.BillingAccountID
+}
+
+// GetProvider returns the value of Provider.
+func (s *PaymentMethod) GetProvider() string {
+	return s.Provider
 }
 
 // GetBrand returns the value of Brand.
@@ -3650,23 +6601,38 @@ func (s *PaymentMethod) GetLast4() OptString {
 }
 
 // GetExpMonth returns the value of ExpMonth.
-func (s *PaymentMethod) GetExpMonth() OptInt32 {
+func (s *PaymentMethod) GetExpMonth() OptNilInt {
 	return s.ExpMonth
 }
 
 // GetExpYear returns the value of ExpYear.
-func (s *PaymentMethod) GetExpYear() OptInt32 {
+func (s *PaymentMethod) GetExpYear() OptNilInt {
 	return s.ExpYear
 }
 
-// GetDefault returns the value of Default.
-func (s *PaymentMethod) GetDefault() bool {
-	return s.Default
+// GetIsDefault returns the value of IsDefault.
+func (s *PaymentMethod) GetIsDefault() bool {
+	return s.IsDefault
+}
+
+// GetStatus returns the value of Status.
+func (s *PaymentMethod) GetStatus() PaymentMethodStatus {
+	return s.Status
 }
 
 // SetID sets the value of ID.
-func (s *PaymentMethod) SetID(val string) {
+func (s *PaymentMethod) SetID(val uuid.UUID) {
 	s.ID = val
+}
+
+// SetBillingAccountID sets the value of BillingAccountID.
+func (s *PaymentMethod) SetBillingAccountID(val int64) {
+	s.BillingAccountID = val
+}
+
+// SetProvider sets the value of Provider.
+func (s *PaymentMethod) SetProvider(val string) {
+	s.Provider = val
 }
 
 // SetBrand sets the value of Brand.
@@ -3680,29 +6646,34 @@ func (s *PaymentMethod) SetLast4(val OptString) {
 }
 
 // SetExpMonth sets the value of ExpMonth.
-func (s *PaymentMethod) SetExpMonth(val OptInt32) {
+func (s *PaymentMethod) SetExpMonth(val OptNilInt) {
 	s.ExpMonth = val
 }
 
 // SetExpYear sets the value of ExpYear.
-func (s *PaymentMethod) SetExpYear(val OptInt32) {
+func (s *PaymentMethod) SetExpYear(val OptNilInt) {
 	s.ExpYear = val
 }
 
-// SetDefault sets the value of Default.
-func (s *PaymentMethod) SetDefault(val bool) {
-	s.Default = val
+// SetIsDefault sets the value of IsDefault.
+func (s *PaymentMethod) SetIsDefault(val bool) {
+	s.IsDefault = val
+}
+
+// SetStatus sets the value of Status.
+func (s *PaymentMethod) SetStatus(val PaymentMethodStatus) {
+	s.Status = val
 }
 
 // Ref: #/components/schemas/PaymentMethodList
 type PaymentMethodList struct {
-	// How many entries there are in total, across every page.
-	//
-	// Without it, "is there another page" has to be guessed from whether this one came back full — and
-	// that guess turns into one extra fetch of an empty page whenever the last page happens to be exactly
-	// full.
-	TotalCount     OptInt64        `json:"total_count"`
-	PaymentMethods []PaymentMethod `json:"payment_methods"`
+	Items      []PaymentMethod `json:"items"`
+	TotalCount OptInt64        `json:"total_count"`
+}
+
+// GetItems returns the value of Items.
+func (s *PaymentMethodList) GetItems() []PaymentMethod {
+	return s.Items
 }
 
 // GetTotalCount returns the value of TotalCount.
@@ -3710,9 +6681,9 @@ func (s *PaymentMethodList) GetTotalCount() OptInt64 {
 	return s.TotalCount
 }
 
-// GetPaymentMethods returns the value of PaymentMethods.
-func (s *PaymentMethodList) GetPaymentMethods() []PaymentMethod {
-	return s.PaymentMethods
+// SetItems sets the value of Items.
+func (s *PaymentMethodList) SetItems(val []PaymentMethod) {
+	s.Items = val
 }
 
 // SetTotalCount sets the value of TotalCount.
@@ -3720,282 +6691,84 @@ func (s *PaymentMethodList) SetTotalCount(val OptInt64) {
 	s.TotalCount = val
 }
 
-// SetPaymentMethods sets the value of PaymentMethods.
-func (s *PaymentMethodList) SetPaymentMethods(val []PaymentMethod) {
-	s.PaymentMethods = val
+// Ref: #/components/schemas/PaymentMethodSetup
+type PaymentMethodSetup struct {
+	BillingAccountID int64     `json:"billing_account_id"`
+	ReturnURL        OptString `json:"return_url"`
 }
 
-// Ref: #/components/schemas/PaymentMethodSetupSession
-type PaymentMethodSetupSession struct {
-	// Confirms this attempt from the browser, against the provider's own inputs.
-	//
-	// Not a URL and not a hosted page: only the inputs come from the provider, so the heading, the button
-	// and the styling around them are this platform's. It expires, so fetch it when the form is about to
-	// be shown rather than when the page loads.
-	ClientSecret string `json:"client_secret"`
-	// Identifies this platform to the provider's JavaScript. Public by design.
-	//
-	// It comes from here rather than from the browser bundle because it has to match the account and the
-	// mode of the key the session was created with. Baking it into the build makes one image unusable
-	// against the other mode, and the mismatch shows up as a form that never loads.
-	PublishableKey string `json:"publishable_key"`
-	// The provider's id for this attempt.
-	//
-	// The browser does not need it — the callback carries the same id and is what actually records the
-	// method. It is here so that a support conversation about one failed attempt has something to look it
-	// up by.
-	SetupID OptString `json:"setup_id"`
+// GetBillingAccountID returns the value of BillingAccountID.
+func (s *PaymentMethodSetup) GetBillingAccountID() int64 {
+	return s.BillingAccountID
 }
 
-// GetClientSecret returns the value of ClientSecret.
-func (s *PaymentMethodSetupSession) GetClientSecret() string {
-	return s.ClientSecret
+// GetReturnURL returns the value of ReturnURL.
+func (s *PaymentMethodSetup) GetReturnURL() OptString {
+	return s.ReturnURL
 }
 
-// GetPublishableKey returns the value of PublishableKey.
-func (s *PaymentMethodSetupSession) GetPublishableKey() string {
-	return s.PublishableKey
+// SetBillingAccountID sets the value of BillingAccountID.
+func (s *PaymentMethodSetup) SetBillingAccountID(val int64) {
+	s.BillingAccountID = val
 }
 
-// GetSetupID returns the value of SetupID.
-func (s *PaymentMethodSetupSession) GetSetupID() OptString {
-	return s.SetupID
+// SetReturnURL sets the value of ReturnURL.
+func (s *PaymentMethodSetup) SetReturnURL(val OptString) {
+	s.ReturnURL = val
 }
 
-// SetClientSecret sets the value of ClientSecret.
-func (s *PaymentMethodSetupSession) SetClientSecret(val string) {
-	s.ClientSecret = val
-}
-
-// SetPublishableKey sets the value of PublishableKey.
-func (s *PaymentMethodSetupSession) SetPublishableKey(val string) {
-	s.PublishableKey = val
-}
-
-// SetSetupID sets the value of SetupID.
-func (s *PaymentMethodSetupSession) SetSetupID(val OptString) {
-	s.SetupID = val
-}
-
-// When a plan change takes effect. There is no default: an upgrade and a downgrade want opposite
-// answers, and the difference is money.
-// Ref: #/components/schemas/PlanChangeTiming
-type PlanChangeTiming string
-
-const (
-	PlanChangeTimingImmediate        PlanChangeTiming = "immediate"
-	PlanChangeTimingNextBillingCycle PlanChangeTiming = "next_billing_cycle"
-)
-
-// AllValues returns all PlanChangeTiming values.
-func (PlanChangeTiming) AllValues() []PlanChangeTiming {
-	return []PlanChangeTiming{
-		PlanChangeTimingImmediate,
-		PlanChangeTimingNextBillingCycle,
-	}
-}
-
-// MarshalText implements encoding.TextMarshaler.
-func (s PlanChangeTiming) MarshalText() ([]byte, error) {
-	switch s {
-	case PlanChangeTimingImmediate:
-		return []byte(s), nil
-	case PlanChangeTimingNextBillingCycle:
-		return []byte(s), nil
-	default:
-		return nil, errors.Errorf("invalid value: %q", s)
-	}
-}
-
-// UnmarshalText implements encoding.TextUnmarshaler.
-func (s *PlanChangeTiming) UnmarshalText(data []byte) error {
-	switch PlanChangeTiming(data) {
-	case PlanChangeTimingImmediate:
-		*s = PlanChangeTimingImmediate
-		return nil
-	case PlanChangeTimingNextBillingCycle:
-		*s = PlanChangeTimingNextBillingCycle
-		return nil
-	default:
-		return errors.Errorf("invalid value: %q", data)
-	}
-}
-
-// Ref: #/components/schemas/PrepaidAsset
-type PrepaidAsset struct {
-	ID        string `json:"id"`
-	ProjectID string `json:"project_id"`
-	// Which service holds it. Also which console it is managed from.
-	Service string `json:"service"`
-	// That service's own catalogue id, not a billing sku. The price of a machine is made of finer parts
-	// than the machine type — the type does not appear in the rate card at all.
-	ProductID string `json:"product_id"`
-	// The id that service knows it by, so the two consoles can be lined up.
-	ResourceID OptString `json:"resource_id"`
-	// GiB for a disk, 1 for a machine or an address.
-	Quantity int64 `json:"quantity"`
-	// How long one period buys, as an ISO 8601 duration (P1M, P1Y).
-	//
-	// It is paid for once at purchase. Read it next to `expires_at`, which is when the period actually
-	// runs out — the two are settled when the order is placed and neither moves on its own.
-	Term string `json:"term"`
-	// When the paid-for period runs out.
-	//
-	// Settled when the order is placed, not when the resource lands, so a purchase paid for online does
-	// not get a longer period by being paid later.
-	//
-	// Absent means it was never settled — a row that has not finished being created. It is not "does not
-	// expire": everything on this route does.
+// Ref: #/components/schemas/PaymentMethodSetupResult
+type PaymentMethodSetupResult struct {
+	// Where the payer enters their card details.
+	SetupURL  string      `json:"setup_url"`
 	ExpiresAt OptDateTime `json:"expires_at"`
-	// Whether billing places the renewal order itself as the period runs out.
-	//
-	// Off by default, and deliberately so: renewing charges the account, and a charge nobody asked for is
-	// worse than an expiry that was warned about. With it on, the renewal is placed only while there is
-	// balance to pay for it — when there is not, the customer is told rather than put into debt.
-	AutoRenew bool              `json:"auto_renew"`
-	State     PrepaidAssetState `json:"state"`
-	// What it is being moved to. Differs from `state` while a change is still being applied, which is the
-	// moment a customer is most likely to conclude that nothing happened.
-	DesiredState PrepaidAssetDesiredState `json:"desired_state"`
 }
 
-// GetID returns the value of ID.
-func (s *PrepaidAsset) GetID() string {
-	return s.ID
-}
-
-// GetProjectID returns the value of ProjectID.
-func (s *PrepaidAsset) GetProjectID() string {
-	return s.ProjectID
-}
-
-// GetService returns the value of Service.
-func (s *PrepaidAsset) GetService() string {
-	return s.Service
-}
-
-// GetProductID returns the value of ProductID.
-func (s *PrepaidAsset) GetProductID() string {
-	return s.ProductID
-}
-
-// GetResourceID returns the value of ResourceID.
-func (s *PrepaidAsset) GetResourceID() OptString {
-	return s.ResourceID
-}
-
-// GetQuantity returns the value of Quantity.
-func (s *PrepaidAsset) GetQuantity() int64 {
-	return s.Quantity
-}
-
-// GetTerm returns the value of Term.
-func (s *PrepaidAsset) GetTerm() string {
-	return s.Term
+// GetSetupURL returns the value of SetupURL.
+func (s *PaymentMethodSetupResult) GetSetupURL() string {
+	return s.SetupURL
 }
 
 // GetExpiresAt returns the value of ExpiresAt.
-func (s *PrepaidAsset) GetExpiresAt() OptDateTime {
+func (s *PaymentMethodSetupResult) GetExpiresAt() OptDateTime {
 	return s.ExpiresAt
 }
 
-// GetAutoRenew returns the value of AutoRenew.
-func (s *PrepaidAsset) GetAutoRenew() bool {
-	return s.AutoRenew
-}
-
-// GetState returns the value of State.
-func (s *PrepaidAsset) GetState() PrepaidAssetState {
-	return s.State
-}
-
-// GetDesiredState returns the value of DesiredState.
-func (s *PrepaidAsset) GetDesiredState() PrepaidAssetDesiredState {
-	return s.DesiredState
-}
-
-// SetID sets the value of ID.
-func (s *PrepaidAsset) SetID(val string) {
-	s.ID = val
-}
-
-// SetProjectID sets the value of ProjectID.
-func (s *PrepaidAsset) SetProjectID(val string) {
-	s.ProjectID = val
-}
-
-// SetService sets the value of Service.
-func (s *PrepaidAsset) SetService(val string) {
-	s.Service = val
-}
-
-// SetProductID sets the value of ProductID.
-func (s *PrepaidAsset) SetProductID(val string) {
-	s.ProductID = val
-}
-
-// SetResourceID sets the value of ResourceID.
-func (s *PrepaidAsset) SetResourceID(val OptString) {
-	s.ResourceID = val
-}
-
-// SetQuantity sets the value of Quantity.
-func (s *PrepaidAsset) SetQuantity(val int64) {
-	s.Quantity = val
-}
-
-// SetTerm sets the value of Term.
-func (s *PrepaidAsset) SetTerm(val string) {
-	s.Term = val
+// SetSetupURL sets the value of SetupURL.
+func (s *PaymentMethodSetupResult) SetSetupURL(val string) {
+	s.SetupURL = val
 }
 
 // SetExpiresAt sets the value of ExpiresAt.
-func (s *PrepaidAsset) SetExpiresAt(val OptDateTime) {
+func (s *PaymentMethodSetupResult) SetExpiresAt(val OptDateTime) {
 	s.ExpiresAt = val
 }
 
-// SetAutoRenew sets the value of AutoRenew.
-func (s *PrepaidAsset) SetAutoRenew(val bool) {
-	s.AutoRenew = val
-}
-
-// SetState sets the value of State.
-func (s *PrepaidAsset) SetState(val PrepaidAssetState) {
-	s.State = val
-}
-
-// SetDesiredState sets the value of DesiredState.
-func (s *PrepaidAsset) SetDesiredState(val PrepaidAssetDesiredState) {
-	s.DesiredState = val
-}
-
-// What it is being moved to. Differs from `state` while a change is still being applied, which is the
-// moment a customer is most likely to conclude that nothing happened.
-type PrepaidAssetDesiredState string
+type PaymentMethodStatus string
 
 const (
-	PrepaidAssetDesiredStateActive     PrepaidAssetDesiredState = "active"
-	PrepaidAssetDesiredStateSuspended  PrepaidAssetDesiredState = "suspended"
-	PrepaidAssetDesiredStateTerminated PrepaidAssetDesiredState = "terminated"
+	PaymentMethodStatusActive  PaymentMethodStatus = "active"
+	PaymentMethodStatusExpired PaymentMethodStatus = "expired"
+	PaymentMethodStatusRemoved PaymentMethodStatus = "removed"
 )
 
-// AllValues returns all PrepaidAssetDesiredState values.
-func (PrepaidAssetDesiredState) AllValues() []PrepaidAssetDesiredState {
-	return []PrepaidAssetDesiredState{
-		PrepaidAssetDesiredStateActive,
-		PrepaidAssetDesiredStateSuspended,
-		PrepaidAssetDesiredStateTerminated,
+// AllValues returns all PaymentMethodStatus values.
+func (PaymentMethodStatus) AllValues() []PaymentMethodStatus {
+	return []PaymentMethodStatus{
+		PaymentMethodStatusActive,
+		PaymentMethodStatusExpired,
+		PaymentMethodStatusRemoved,
 	}
 }
 
 // MarshalText implements encoding.TextMarshaler.
-func (s PrepaidAssetDesiredState) MarshalText() ([]byte, error) {
+func (s PaymentMethodStatus) MarshalText() ([]byte, error) {
 	switch s {
-	case PrepaidAssetDesiredStateActive:
+	case PaymentMethodStatusActive:
 		return []byte(s), nil
-	case PrepaidAssetDesiredStateSuspended:
+	case PaymentMethodStatusExpired:
 		return []byte(s), nil
-	case PrepaidAssetDesiredStateTerminated:
+	case PaymentMethodStatusRemoved:
 		return []byte(s), nil
 	default:
 		return nil, errors.Errorf("invalid value: %q", s)
@@ -4003,350 +6776,214 @@ func (s PrepaidAssetDesiredState) MarshalText() ([]byte, error) {
 }
 
 // UnmarshalText implements encoding.TextUnmarshaler.
-func (s *PrepaidAssetDesiredState) UnmarshalText(data []byte) error {
-	switch PrepaidAssetDesiredState(data) {
-	case PrepaidAssetDesiredStateActive:
-		*s = PrepaidAssetDesiredStateActive
+func (s *PaymentMethodStatus) UnmarshalText(data []byte) error {
+	switch PaymentMethodStatus(data) {
+	case PaymentMethodStatusActive:
+		*s = PaymentMethodStatusActive
 		return nil
-	case PrepaidAssetDesiredStateSuspended:
-		*s = PrepaidAssetDesiredStateSuspended
+	case PaymentMethodStatusExpired:
+		*s = PaymentMethodStatusExpired
 		return nil
-	case PrepaidAssetDesiredStateTerminated:
-		*s = PrepaidAssetDesiredStateTerminated
-		return nil
-	default:
-		return errors.Errorf("invalid value: %q", data)
-	}
-}
-
-// Ref: #/components/schemas/PrepaidAssetList
-type PrepaidAssetList struct {
-	// How many entries there are in total, across every page.
-	//
-	// Without it, "is there another page" has to be guessed from whether this one came back full — and
-	// that guess turns into one extra fetch of an empty page whenever the last page happens to be exactly
-	// full.
-	TotalCount OptInt64       `json:"total_count"`
-	Assets     []PrepaidAsset `json:"assets"`
-}
-
-// GetTotalCount returns the value of TotalCount.
-func (s *PrepaidAssetList) GetTotalCount() OptInt64 {
-	return s.TotalCount
-}
-
-// GetAssets returns the value of Assets.
-func (s *PrepaidAssetList) GetAssets() []PrepaidAsset {
-	return s.Assets
-}
-
-// SetTotalCount sets the value of TotalCount.
-func (s *PrepaidAssetList) SetTotalCount(val OptInt64) {
-	s.TotalCount = val
-}
-
-// SetAssets sets the value of Assets.
-func (s *PrepaidAssetList) SetAssets(val []PrepaidAsset) {
-	s.Assets = val
-}
-
-type PrepaidAssetState string
-
-const (
-	PrepaidAssetStatePending    PrepaidAssetState = "pending"
-	PrepaidAssetStateActive     PrepaidAssetState = "active"
-	PrepaidAssetStateSuspended  PrepaidAssetState = "suspended"
-	PrepaidAssetStateTerminated PrepaidAssetState = "terminated"
-)
-
-// AllValues returns all PrepaidAssetState values.
-func (PrepaidAssetState) AllValues() []PrepaidAssetState {
-	return []PrepaidAssetState{
-		PrepaidAssetStatePending,
-		PrepaidAssetStateActive,
-		PrepaidAssetStateSuspended,
-		PrepaidAssetStateTerminated,
-	}
-}
-
-// MarshalText implements encoding.TextMarshaler.
-func (s PrepaidAssetState) MarshalText() ([]byte, error) {
-	switch s {
-	case PrepaidAssetStatePending:
-		return []byte(s), nil
-	case PrepaidAssetStateActive:
-		return []byte(s), nil
-	case PrepaidAssetStateSuspended:
-		return []byte(s), nil
-	case PrepaidAssetStateTerminated:
-		return []byte(s), nil
-	default:
-		return nil, errors.Errorf("invalid value: %q", s)
-	}
-}
-
-// UnmarshalText implements encoding.TextUnmarshaler.
-func (s *PrepaidAssetState) UnmarshalText(data []byte) error {
-	switch PrepaidAssetState(data) {
-	case PrepaidAssetStatePending:
-		*s = PrepaidAssetStatePending
-		return nil
-	case PrepaidAssetStateActive:
-		*s = PrepaidAssetStateActive
-		return nil
-	case PrepaidAssetStateSuspended:
-		*s = PrepaidAssetStateSuspended
-		return nil
-	case PrepaidAssetStateTerminated:
-		*s = PrepaidAssetStateTerminated
+	case PaymentMethodStatusRemoved:
+		*s = PaymentMethodStatusRemoved
 		return nil
 	default:
 		return errors.Errorf("invalid value: %q", data)
 	}
 }
 
-// Ref: #/components/schemas/PreviewPromotionCodeRequestBody
-type PreviewPromotionCodeRequestBody struct {
-	// Case and surrounding whitespace do not matter.
-	Code string `json:"code"`
-	// Which project the order will be placed against — the price depends on its plan.
-	ProjectID uuid.UUID `json:"project_id"`
-	// The same lines the order will carry. The discount is computed over the ones in scope, not the whole
-	// order, so leaving lines out changes the answer.
-	Lines []PromotionPreviewLine `json:"lines"`
+// Ref: #/components/schemas/PaymentResult
+type PaymentResult struct {
+	// This attempt. The same identifier comes back while it is still in flight, which is how a repeated
+	// call is told apart from a genuine second payment.
+	PaymentAttemptID uuid.UUID     `json:"payment_attempt_id"`
+	Status           PaymentStatus `json:"status"`
+	AmountPaid       Money         `json:"amount_paid"`
+	// What is still outstanding. Zero once the payment succeeds. Unchanged while `processing`: nothing is
+	// collected until the provider confirms it.
+	AmountDue Money  `json:"amount_due"`
+	Currency  string `json:"currency"`
+	// How much came from the account balance. Applied immediately, and released again if the rest of the
+	// payment fails, so a failed card does not leave part of the balance consumed against an unpaid
+	// invoice.
+	BalanceApplied OptMoney `json:"balance_applied"`
+	// Present with `requires_action`.
+	CheckoutURL OptString `json:"checkout_url"`
+	// Whether paying again is worth attempting. False for a refusal that will keep happening — a closed
+	// account, an amount over a limit — so that a client does not retry in a loop.
+	Retriable OptBool `json:"retriable"`
+	// The earliest sensible moment to try again. Present when the provider asked for a wait.
+	RetryAfter    OptNilDateTime `json:"retry_after"`
+	InvoiceID     OptNilUUID     `json:"invoice_id"`
+	OrderID       OptNilUUID     `json:"order_id"`
+	FailureReason OptString      `json:"failure_reason"`
 }
 
-// GetCode returns the value of Code.
-func (s *PreviewPromotionCodeRequestBody) GetCode() string {
-	return s.Code
+// GetPaymentAttemptID returns the value of PaymentAttemptID.
+func (s *PaymentResult) GetPaymentAttemptID() uuid.UUID {
+	return s.PaymentAttemptID
 }
 
-// GetProjectID returns the value of ProjectID.
-func (s *PreviewPromotionCodeRequestBody) GetProjectID() uuid.UUID {
-	return s.ProjectID
+// GetStatus returns the value of Status.
+func (s *PaymentResult) GetStatus() PaymentStatus {
+	return s.Status
 }
 
-// GetLines returns the value of Lines.
-func (s *PreviewPromotionCodeRequestBody) GetLines() []PromotionPreviewLine {
-	return s.Lines
+// GetAmountPaid returns the value of AmountPaid.
+func (s *PaymentResult) GetAmountPaid() Money {
+	return s.AmountPaid
 }
 
-// SetCode sets the value of Code.
-func (s *PreviewPromotionCodeRequestBody) SetCode(val string) {
-	s.Code = val
-}
-
-// SetProjectID sets the value of ProjectID.
-func (s *PreviewPromotionCodeRequestBody) SetProjectID(val uuid.UUID) {
-	s.ProjectID = val
-}
-
-// SetLines sets the value of Lines.
-func (s *PreviewPromotionCodeRequestBody) SetLines(val []PromotionPreviewLine) {
-	s.Lines = val
-}
-
-// What this offer costs, as a structure rather than a number.
-//
-// A plan is rarely one number: an introductory period at one price followed by another, a monthly fee
-// alongside metered usage, an allowance of free units before metering starts. Flattening that into a
-// single figure means deciding which part to show, and every such decision is wrong for some plan.
-//
-// This is read on each request rather than stored alongside the offer. The plan owns prices; a second
-// copy would be a second answer, and the two would drift without anything saying so — the visible
-// symptom being a pricing page that disagrees with the invoice.
-// Ref: #/components/schemas/Pricing
-type Pricing struct {
-	Currency Currency `json:"currency"`
-	// How often this recurs, as an ISO 8601 duration. `P1M` is monthly.
-	BillingPeriod OptString `json:"billing_period"`
-	// In order. A phase with no `duration` runs until the subscription ends, and there is at most one of
-	// those, last.
-	Phases []PricingPhase `json:"phases"`
-	// Credit handed out at the start of every period, as a decimal string in `currency`. Absent when the
-	// tier comes with none.
-	//
-	// It is what makes a paid tier worth buying — "$200 a month, and $200 of credit to spend" — so
-	// leaving it off the pricing page turns that tier into a fee with nothing visibly attached to it.
-	IncludedCredit OptString `json:"included_credit"`
-	// Whether unused credit is voided at the end of the period. Only meaningful alongside
-	// `included_credit`, and worth showing either way: carried over, it accumulates, which is a materially
-	// different offer at the same price.
-	IncludedCreditExpires OptBool `json:"included_credit_expires"`
+// GetAmountDue returns the value of AmountDue.
+func (s *PaymentResult) GetAmountDue() Money {
+	return s.AmountDue
 }
 
 // GetCurrency returns the value of Currency.
-func (s *Pricing) GetCurrency() Currency {
+func (s *PaymentResult) GetCurrency() string {
 	return s.Currency
 }
 
-// GetBillingPeriod returns the value of BillingPeriod.
-func (s *Pricing) GetBillingPeriod() OptString {
-	return s.BillingPeriod
+// GetBalanceApplied returns the value of BalanceApplied.
+func (s *PaymentResult) GetBalanceApplied() OptMoney {
+	return s.BalanceApplied
 }
 
-// GetPhases returns the value of Phases.
-func (s *Pricing) GetPhases() []PricingPhase {
-	return s.Phases
+// GetCheckoutURL returns the value of CheckoutURL.
+func (s *PaymentResult) GetCheckoutURL() OptString {
+	return s.CheckoutURL
 }
 
-// GetIncludedCredit returns the value of IncludedCredit.
-func (s *Pricing) GetIncludedCredit() OptString {
-	return s.IncludedCredit
+// GetRetriable returns the value of Retriable.
+func (s *PaymentResult) GetRetriable() OptBool {
+	return s.Retriable
 }
 
-// GetIncludedCreditExpires returns the value of IncludedCreditExpires.
-func (s *Pricing) GetIncludedCreditExpires() OptBool {
-	return s.IncludedCreditExpires
+// GetRetryAfter returns the value of RetryAfter.
+func (s *PaymentResult) GetRetryAfter() OptNilDateTime {
+	return s.RetryAfter
+}
+
+// GetInvoiceID returns the value of InvoiceID.
+func (s *PaymentResult) GetInvoiceID() OptNilUUID {
+	return s.InvoiceID
+}
+
+// GetOrderID returns the value of OrderID.
+func (s *PaymentResult) GetOrderID() OptNilUUID {
+	return s.OrderID
+}
+
+// GetFailureReason returns the value of FailureReason.
+func (s *PaymentResult) GetFailureReason() OptString {
+	return s.FailureReason
+}
+
+// SetPaymentAttemptID sets the value of PaymentAttemptID.
+func (s *PaymentResult) SetPaymentAttemptID(val uuid.UUID) {
+	s.PaymentAttemptID = val
+}
+
+// SetStatus sets the value of Status.
+func (s *PaymentResult) SetStatus(val PaymentStatus) {
+	s.Status = val
+}
+
+// SetAmountPaid sets the value of AmountPaid.
+func (s *PaymentResult) SetAmountPaid(val Money) {
+	s.AmountPaid = val
+}
+
+// SetAmountDue sets the value of AmountDue.
+func (s *PaymentResult) SetAmountDue(val Money) {
+	s.AmountDue = val
 }
 
 // SetCurrency sets the value of Currency.
-func (s *Pricing) SetCurrency(val Currency) {
+func (s *PaymentResult) SetCurrency(val string) {
 	s.Currency = val
 }
 
-// SetBillingPeriod sets the value of BillingPeriod.
-func (s *Pricing) SetBillingPeriod(val OptString) {
-	s.BillingPeriod = val
+// SetBalanceApplied sets the value of BalanceApplied.
+func (s *PaymentResult) SetBalanceApplied(val OptMoney) {
+	s.BalanceApplied = val
 }
 
-// SetPhases sets the value of Phases.
-func (s *Pricing) SetPhases(val []PricingPhase) {
-	s.Phases = val
+// SetCheckoutURL sets the value of CheckoutURL.
+func (s *PaymentResult) SetCheckoutURL(val OptString) {
+	s.CheckoutURL = val
 }
 
-// SetIncludedCredit sets the value of IncludedCredit.
-func (s *Pricing) SetIncludedCredit(val OptString) {
-	s.IncludedCredit = val
+// SetRetriable sets the value of Retriable.
+func (s *PaymentResult) SetRetriable(val OptBool) {
+	s.Retriable = val
 }
 
-// SetIncludedCreditExpires sets the value of IncludedCreditExpires.
-func (s *Pricing) SetIncludedCreditExpires(val OptBool) {
-	s.IncludedCreditExpires = val
+// SetRetryAfter sets the value of RetryAfter.
+func (s *PaymentResult) SetRetryAfter(val OptNilDateTime) {
+	s.RetryAfter = val
 }
 
-// One charge within a phase — a fee, or a rate for something metered.
-// Ref: #/components/schemas/PricingLine
-type PricingLine struct {
-	Name string `json:"name"`
-	// `free` costs nothing. `flat` is charged once per period regardless of use. `unit` is charged per
-	// unit consumed.
-	Type PricingLineType `json:"type"`
-	// A decimal string. Money is never a float.
-	Amount OptString `json:"amount"`
-	// For `unit` lines whose meter counts something finer than what is charged for: how many metered units
-	// one charge covers. A price of `10` with `units_per_charge` of `1000000` is ten currency units per
-	// million.
-	//
-	// Absent means one for one. Showing the amount without this is wrong by whatever this factor is, which
-	// for token pricing is six orders of magnitude.
-	UnitsPerCharge OptString `json:"units_per_charge"`
-	// How many units are not charged for before charging starts.
-	FreeUnits OptString `json:"free_units"`
-	// A reduction applied to this line, 0 to 100.
-	PercentOff OptFloat32 `json:"percent_off"`
-	// True when this is charged once at the start rather than every period. Absent or false means it
-	// recurs.
-	OneTime OptBool `json:"one_time"`
+// SetInvoiceID sets the value of InvoiceID.
+func (s *PaymentResult) SetInvoiceID(val OptNilUUID) {
+	s.InvoiceID = val
 }
 
-// GetName returns the value of Name.
-func (s *PricingLine) GetName() string {
-	return s.Name
+// SetOrderID sets the value of OrderID.
+func (s *PaymentResult) SetOrderID(val OptNilUUID) {
+	s.OrderID = val
 }
 
-// GetType returns the value of Type.
-func (s *PricingLine) GetType() PricingLineType {
-	return s.Type
+// SetFailureReason sets the value of FailureReason.
+func (s *PaymentResult) SetFailureReason(val OptString) {
+	s.FailureReason = val
 }
 
-// GetAmount returns the value of Amount.
-func (s *PricingLine) GetAmount() OptString {
-	return s.Amount
-}
-
-// GetUnitsPerCharge returns the value of UnitsPerCharge.
-func (s *PricingLine) GetUnitsPerCharge() OptString {
-	return s.UnitsPerCharge
-}
-
-// GetFreeUnits returns the value of FreeUnits.
-func (s *PricingLine) GetFreeUnits() OptString {
-	return s.FreeUnits
-}
-
-// GetPercentOff returns the value of PercentOff.
-func (s *PricingLine) GetPercentOff() OptFloat32 {
-	return s.PercentOff
-}
-
-// GetOneTime returns the value of OneTime.
-func (s *PricingLine) GetOneTime() OptBool {
-	return s.OneTime
-}
-
-// SetName sets the value of Name.
-func (s *PricingLine) SetName(val string) {
-	s.Name = val
-}
-
-// SetType sets the value of Type.
-func (s *PricingLine) SetType(val PricingLineType) {
-	s.Type = val
-}
-
-// SetAmount sets the value of Amount.
-func (s *PricingLine) SetAmount(val OptString) {
-	s.Amount = val
-}
-
-// SetUnitsPerCharge sets the value of UnitsPerCharge.
-func (s *PricingLine) SetUnitsPerCharge(val OptString) {
-	s.UnitsPerCharge = val
-}
-
-// SetFreeUnits sets the value of FreeUnits.
-func (s *PricingLine) SetFreeUnits(val OptString) {
-	s.FreeUnits = val
-}
-
-// SetPercentOff sets the value of PercentOff.
-func (s *PricingLine) SetPercentOff(val OptFloat32) {
-	s.PercentOff = val
-}
-
-// SetOneTime sets the value of OneTime.
-func (s *PricingLine) SetOneTime(val OptBool) {
-	s.OneTime = val
-}
-
-// `free` costs nothing. `flat` is charged once per period regardless of use. `unit` is charged per
-// unit consumed.
-type PricingLineType string
+// Where the payment has got to.
+//
+// `succeeded` — collected in full. Nothing further is owed.
+//
+// `processing` — submitted to the payment provider and awaiting its answer. Do not submit it again;
+// poll the invoice or order, or wait to be notified. Some methods take minutes and a few take days.
+//
+// `requires_action` — the payer has to finish it at `checkout_url`, typically by confirming with
+// their bank. It becomes `processing` once they do.
+//
+// `failed` — this attempt did not go through. `failure_reason` says why, and paying again starts a
+// fresh attempt.
+//
+// The provider's own answer is what decides: an attempt is only `succeeded` once the provider says so,
+// never because this call returned.
+// Ref: #/components/schemas/PaymentStatus
+type PaymentStatus string
 
 const (
-	PricingLineTypeFree PricingLineType = "free"
-	PricingLineTypeFlat PricingLineType = "flat"
-	PricingLineTypeUnit PricingLineType = "unit"
+	PaymentStatusSucceeded      PaymentStatus = "succeeded"
+	PaymentStatusProcessing     PaymentStatus = "processing"
+	PaymentStatusRequiresAction PaymentStatus = "requires_action"
+	PaymentStatusFailed         PaymentStatus = "failed"
 )
 
-// AllValues returns all PricingLineType values.
-func (PricingLineType) AllValues() []PricingLineType {
-	return []PricingLineType{
-		PricingLineTypeFree,
-		PricingLineTypeFlat,
-		PricingLineTypeUnit,
+// AllValues returns all PaymentStatus values.
+func (PaymentStatus) AllValues() []PaymentStatus {
+	return []PaymentStatus{
+		PaymentStatusSucceeded,
+		PaymentStatusProcessing,
+		PaymentStatusRequiresAction,
+		PaymentStatusFailed,
 	}
 }
 
 // MarshalText implements encoding.TextMarshaler.
-func (s PricingLineType) MarshalText() ([]byte, error) {
+func (s PaymentStatus) MarshalText() ([]byte, error) {
 	switch s {
-	case PricingLineTypeFree:
+	case PaymentStatusSucceeded:
 		return []byte(s), nil
-	case PricingLineTypeFlat:
+	case PaymentStatusProcessing:
 		return []byte(s), nil
-	case PricingLineTypeUnit:
+	case PaymentStatusRequiresAction:
+		return []byte(s), nil
+	case PaymentStatusFailed:
 		return []byte(s), nil
 	default:
 		return nil, errors.Errorf("invalid value: %q", s)
@@ -4354,133 +6991,58 @@ func (s PricingLineType) MarshalText() ([]byte, error) {
 }
 
 // UnmarshalText implements encoding.TextUnmarshaler.
-func (s *PricingLineType) UnmarshalText(data []byte) error {
-	switch PricingLineType(data) {
-	case PricingLineTypeFree:
-		*s = PricingLineTypeFree
+func (s *PaymentStatus) UnmarshalText(data []byte) error {
+	switch PaymentStatus(data) {
+	case PaymentStatusSucceeded:
+		*s = PaymentStatusSucceeded
 		return nil
-	case PricingLineTypeFlat:
-		*s = PricingLineTypeFlat
+	case PaymentStatusProcessing:
+		*s = PaymentStatusProcessing
 		return nil
-	case PricingLineTypeUnit:
-		*s = PricingLineTypeUnit
+	case PaymentStatusRequiresAction:
+		*s = PaymentStatusRequiresAction
+		return nil
+	case PaymentStatusFailed:
+		*s = PaymentStatusFailed
 		return nil
 	default:
 		return errors.Errorf("invalid value: %q", data)
 	}
 }
 
-// Ref: #/components/schemas/PricingPhase
-type PricingPhase struct {
-	Name string `json:"name"`
-	// How long this phase lasts, as an ISO 8601 duration. Absent means "until the end".
-	Duration OptString     `json:"duration"`
-	Lines    []PricingLine `json:"lines"`
+type ProjectAuth struct {
+	Token string
+	Roles []string
 }
 
-// GetName returns the value of Name.
-func (s *PricingPhase) GetName() string {
-	return s.Name
+// GetToken returns the value of Token.
+func (s *ProjectAuth) GetToken() string {
+	return s.Token
 }
 
-// GetDuration returns the value of Duration.
-func (s *PricingPhase) GetDuration() OptString {
-	return s.Duration
+// GetRoles returns the value of Roles.
+func (s *ProjectAuth) GetRoles() []string {
+	return s.Roles
 }
 
-// GetLines returns the value of Lines.
-func (s *PricingPhase) GetLines() []PricingLine {
-	return s.Lines
+// SetToken sets the value of Token.
+func (s *ProjectAuth) SetToken(val string) {
+	s.Token = val
 }
 
-// SetName sets the value of Name.
-func (s *PricingPhase) SetName(val string) {
-	s.Name = val
+// SetRoles sets the value of Roles.
+func (s *ProjectAuth) SetRoles(val []string) {
+	s.Roles = val
 }
 
-// SetDuration sets the value of Duration.
-func (s *PricingPhase) SetDuration(val OptString) {
-	s.Duration = val
-}
-
-// SetLines sets the value of Lines.
-func (s *PricingPhase) SetLines(val []PricingLine) {
-	s.Lines = val
-}
-
-// The account a project's resources are charged to.
-// Ref: #/components/schemas/ProjectBillingAccount
-type ProjectBillingAccount struct {
-	AccountKey  string   `json:"account_key"`
-	ProjectID   string   `json:"project_id"`
-	DisplayName string   `json:"display_name"`
-	Currency    Currency `json:"currency"`
-	// Whether the caller owns this account, and therefore whether the balance routes will answer for it.
-	// False means someone else pays for this project: the figures are theirs, not the caller's, and a page
-	// should say so rather than showing nothing.
-	OwnedByMe bool `json:"owned_by_me"`
-}
-
-// GetAccountKey returns the value of AccountKey.
-func (s *ProjectBillingAccount) GetAccountKey() string {
-	return s.AccountKey
-}
-
-// GetProjectID returns the value of ProjectID.
-func (s *ProjectBillingAccount) GetProjectID() string {
-	return s.ProjectID
-}
-
-// GetDisplayName returns the value of DisplayName.
-func (s *ProjectBillingAccount) GetDisplayName() string {
-	return s.DisplayName
-}
-
-// GetCurrency returns the value of Currency.
-func (s *ProjectBillingAccount) GetCurrency() Currency {
-	return s.Currency
-}
-
-// GetOwnedByMe returns the value of OwnedByMe.
-func (s *ProjectBillingAccount) GetOwnedByMe() bool {
-	return s.OwnedByMe
-}
-
-// SetAccountKey sets the value of AccountKey.
-func (s *ProjectBillingAccount) SetAccountKey(val string) {
-	s.AccountKey = val
-}
-
-// SetProjectID sets the value of ProjectID.
-func (s *ProjectBillingAccount) SetProjectID(val string) {
-	s.ProjectID = val
-}
-
-// SetDisplayName sets the value of DisplayName.
-func (s *ProjectBillingAccount) SetDisplayName(val string) {
-	s.DisplayName = val
-}
-
-// SetCurrency sets the value of Currency.
-func (s *ProjectBillingAccount) SetCurrency(val Currency) {
-	s.Currency = val
-}
-
-// SetOwnedByMe sets the value of OwnedByMe.
-func (s *ProjectBillingAccount) SetOwnedByMe(val bool) {
-	s.OwnedByMe = val
-}
-
-// Which account pays for which project, as it stands once the request has been applied.
 // Ref: #/components/schemas/ProjectBinding
 type ProjectBinding struct {
-	AccountKey string    `json:"account_key"`
-	ProjectID  uuid.UUID `json:"project_id"`
-}
-
-// GetAccountKey returns the value of AccountKey.
-func (s *ProjectBinding) GetAccountKey() string {
-	return s.AccountKey
+	ProjectID        uuid.UUID      `json:"project_id"`
+	BillingAccountID int64          `json:"billing_account_id"`
+	AccountName      OptString      `json:"account_name"`
+	Currency         string         `json:"currency"`
+	EffectiveFrom    time.Time      `json:"effective_from"`
+	EffectiveTo      OptNilDateTime `json:"effective_to"`
 }
 
 // GetProjectID returns the value of ProjectID.
@@ -4488,9 +7050,29 @@ func (s *ProjectBinding) GetProjectID() uuid.UUID {
 	return s.ProjectID
 }
 
-// SetAccountKey sets the value of AccountKey.
-func (s *ProjectBinding) SetAccountKey(val string) {
-	s.AccountKey = val
+// GetBillingAccountID returns the value of BillingAccountID.
+func (s *ProjectBinding) GetBillingAccountID() int64 {
+	return s.BillingAccountID
+}
+
+// GetAccountName returns the value of AccountName.
+func (s *ProjectBinding) GetAccountName() OptString {
+	return s.AccountName
+}
+
+// GetCurrency returns the value of Currency.
+func (s *ProjectBinding) GetCurrency() string {
+	return s.Currency
+}
+
+// GetEffectiveFrom returns the value of EffectiveFrom.
+func (s *ProjectBinding) GetEffectiveFrom() time.Time {
+	return s.EffectiveFrom
+}
+
+// GetEffectiveTo returns the value of EffectiveTo.
+func (s *ProjectBinding) GetEffectiveTo() OptNilDateTime {
+	return s.EffectiveTo
 }
 
 // SetProjectID sets the value of ProjectID.
@@ -4498,152 +7080,181 @@ func (s *ProjectBinding) SetProjectID(val uuid.UUID) {
 	s.ProjectID = val
 }
 
-// Ref: #/components/schemas/ProjectUsage
-type ProjectUsage struct {
-	ProjectID string `json:"project_id"`
-	// Decimal string.
-	Quantity string `json:"quantity"`
+// SetBillingAccountID sets the value of BillingAccountID.
+func (s *ProjectBinding) SetBillingAccountID(val int64) {
+	s.BillingAccountID = val
 }
 
-// GetProjectID returns the value of ProjectID.
-func (s *ProjectUsage) GetProjectID() string {
-	return s.ProjectID
-}
-
-// GetQuantity returns the value of Quantity.
-func (s *ProjectUsage) GetQuantity() string {
-	return s.Quantity
-}
-
-// SetProjectID sets the value of ProjectID.
-func (s *ProjectUsage) SetProjectID(val string) {
-	s.ProjectID = val
-}
-
-// SetQuantity sets the value of Quantity.
-func (s *ProjectUsage) SetQuantity(val string) {
-	s.Quantity = val
-}
-
-// Ref: #/components/schemas/PromotionPreview
-type PromotionPreview struct {
-	// The code as stored, upper-cased.
-	Code string `json:"code"`
-	// The campaign's name, to show next to the price.
-	Name OptString            `json:"name"`
-	Kind PromotionPreviewKind `json:"kind"`
-	// How much comes off this order, or how much credit is granted.
-	BenefitAmount string `json:"benefit_amount"`
-	// The part of the order the discount applies to. Shown so "why did only 12 come off a 200 order" has
-	// an answer on the page rather than in a support ticket.
-	DiscountBase   OptString `json:"discount_base"`
-	OriginalAmount string    `json:"original_amount"`
-	// What will actually be charged. This is the number to show as the price.
-	PayableAmount string `json:"payable_amount"`
-	Currency      string `json:"currency"`
-}
-
-// GetCode returns the value of Code.
-func (s *PromotionPreview) GetCode() string {
-	return s.Code
-}
-
-// GetName returns the value of Name.
-func (s *PromotionPreview) GetName() OptString {
-	return s.Name
-}
-
-// GetKind returns the value of Kind.
-func (s *PromotionPreview) GetKind() PromotionPreviewKind {
-	return s.Kind
-}
-
-// GetBenefitAmount returns the value of BenefitAmount.
-func (s *PromotionPreview) GetBenefitAmount() string {
-	return s.BenefitAmount
-}
-
-// GetDiscountBase returns the value of DiscountBase.
-func (s *PromotionPreview) GetDiscountBase() OptString {
-	return s.DiscountBase
-}
-
-// GetOriginalAmount returns the value of OriginalAmount.
-func (s *PromotionPreview) GetOriginalAmount() string {
-	return s.OriginalAmount
-}
-
-// GetPayableAmount returns the value of PayableAmount.
-func (s *PromotionPreview) GetPayableAmount() string {
-	return s.PayableAmount
-}
-
-// GetCurrency returns the value of Currency.
-func (s *PromotionPreview) GetCurrency() string {
-	return s.Currency
-}
-
-// SetCode sets the value of Code.
-func (s *PromotionPreview) SetCode(val string) {
-	s.Code = val
-}
-
-// SetName sets the value of Name.
-func (s *PromotionPreview) SetName(val OptString) {
-	s.Name = val
-}
-
-// SetKind sets the value of Kind.
-func (s *PromotionPreview) SetKind(val PromotionPreviewKind) {
-	s.Kind = val
-}
-
-// SetBenefitAmount sets the value of BenefitAmount.
-func (s *PromotionPreview) SetBenefitAmount(val string) {
-	s.BenefitAmount = val
-}
-
-// SetDiscountBase sets the value of DiscountBase.
-func (s *PromotionPreview) SetDiscountBase(val OptString) {
-	s.DiscountBase = val
-}
-
-// SetOriginalAmount sets the value of OriginalAmount.
-func (s *PromotionPreview) SetOriginalAmount(val string) {
-	s.OriginalAmount = val
-}
-
-// SetPayableAmount sets the value of PayableAmount.
-func (s *PromotionPreview) SetPayableAmount(val string) {
-	s.PayableAmount = val
+// SetAccountName sets the value of AccountName.
+func (s *ProjectBinding) SetAccountName(val OptString) {
+	s.AccountName = val
 }
 
 // SetCurrency sets the value of Currency.
-func (s *PromotionPreview) SetCurrency(val string) {
+func (s *ProjectBinding) SetCurrency(val string) {
 	s.Currency = val
 }
 
-type PromotionPreviewKind string
+// SetEffectiveFrom sets the value of EffectiveFrom.
+func (s *ProjectBinding) SetEffectiveFrom(val time.Time) {
+	s.EffectiveFrom = val
+}
+
+// SetEffectiveTo sets the value of EffectiveTo.
+func (s *ProjectBinding) SetEffectiveTo(val OptNilDateTime) {
+	s.EffectiveTo = val
+}
+
+// Ref: #/components/schemas/ProjectBindingList
+type ProjectBindingList struct {
+	Items      []ProjectBinding `json:"items"`
+	TotalCount OptInt64         `json:"total_count"`
+}
+
+// GetItems returns the value of Items.
+func (s *ProjectBindingList) GetItems() []ProjectBinding {
+	return s.Items
+}
+
+// GetTotalCount returns the value of TotalCount.
+func (s *ProjectBindingList) GetTotalCount() OptInt64 {
+	return s.TotalCount
+}
+
+// SetItems sets the value of Items.
+func (s *ProjectBindingList) SetItems(val []ProjectBinding) {
+	s.Items = val
+}
+
+// SetTotalCount sets the value of TotalCount.
+func (s *ProjectBindingList) SetTotalCount(val OptInt64) {
+	s.TotalCount = val
+}
+
+// A narrow view of the paying account, restricted to what a project member needs in order to know
+// whether the project's resources will keep running.
+// Ref: #/components/schemas/ProjectPayer
+type ProjectPayer struct {
+	// Identifies the payer. Use it to link into the billing centre.
+	BillingAccountID int64  `json:"billing_account_id"`
+	Name             string `json:"name"`
+	// Everything this project is charged is in this currency, and it cannot change while the account
+	// exists.
+	Currency string `json:"currency"`
+	// What remains to be spent. It already accounts for this month's uninvoiced usage, so it is what will
+	// be available at checkout rather than the cash figure shown in the billing centre. It goes negative
+	// when usage has exceeded the balance.
+	SpendableAmount Money `json:"spendable_amount"`
+	// `active` — nothing is owed. `past_due` — the account owes money and resources are still running.
+	// `suspended` — resources have been stopped for non-payment.
+	Status ProjectPayerStatus `json:"status"`
+	// When this project's resources will be stopped unless the account is topped up. Absent while `status`
+	// is `active`.
+	SuspendsAt OptNilDateTime `json:"suspends_at"`
+}
+
+// GetBillingAccountID returns the value of BillingAccountID.
+func (s *ProjectPayer) GetBillingAccountID() int64 {
+	return s.BillingAccountID
+}
+
+// GetName returns the value of Name.
+func (s *ProjectPayer) GetName() string {
+	return s.Name
+}
+
+// GetCurrency returns the value of Currency.
+func (s *ProjectPayer) GetCurrency() string {
+	return s.Currency
+}
+
+// GetSpendableAmount returns the value of SpendableAmount.
+func (s *ProjectPayer) GetSpendableAmount() Money {
+	return s.SpendableAmount
+}
+
+// GetStatus returns the value of Status.
+func (s *ProjectPayer) GetStatus() ProjectPayerStatus {
+	return s.Status
+}
+
+// GetSuspendsAt returns the value of SuspendsAt.
+func (s *ProjectPayer) GetSuspendsAt() OptNilDateTime {
+	return s.SuspendsAt
+}
+
+// SetBillingAccountID sets the value of BillingAccountID.
+func (s *ProjectPayer) SetBillingAccountID(val int64) {
+	s.BillingAccountID = val
+}
+
+// SetName sets the value of Name.
+func (s *ProjectPayer) SetName(val string) {
+	s.Name = val
+}
+
+// SetCurrency sets the value of Currency.
+func (s *ProjectPayer) SetCurrency(val string) {
+	s.Currency = val
+}
+
+// SetSpendableAmount sets the value of SpendableAmount.
+func (s *ProjectPayer) SetSpendableAmount(val Money) {
+	s.SpendableAmount = val
+}
+
+// SetStatus sets the value of Status.
+func (s *ProjectPayer) SetStatus(val ProjectPayerStatus) {
+	s.Status = val
+}
+
+// SetSuspendsAt sets the value of SuspendsAt.
+func (s *ProjectPayer) SetSuspendsAt(val OptNilDateTime) {
+	s.SuspendsAt = val
+}
+
+// Ref: #/components/schemas/ProjectPayerSet
+type ProjectPayerSet struct {
+	BillingAccountID int64 `json:"billing_account_id"`
+}
+
+// GetBillingAccountID returns the value of BillingAccountID.
+func (s *ProjectPayerSet) GetBillingAccountID() int64 {
+	return s.BillingAccountID
+}
+
+// SetBillingAccountID sets the value of BillingAccountID.
+func (s *ProjectPayerSet) SetBillingAccountID(val int64) {
+	s.BillingAccountID = val
+}
+
+// `active` — nothing is owed. `past_due` — the account owes money and resources are still running.
+// `suspended` — resources have been stopped for non-payment.
+type ProjectPayerStatus string
 
 const (
-	PromotionPreviewKindVoucher  PromotionPreviewKind = "voucher"
-	PromotionPreviewKindDiscount PromotionPreviewKind = "discount"
+	ProjectPayerStatusActive    ProjectPayerStatus = "active"
+	ProjectPayerStatusPastDue   ProjectPayerStatus = "past_due"
+	ProjectPayerStatusSuspended ProjectPayerStatus = "suspended"
 )
 
-// AllValues returns all PromotionPreviewKind values.
-func (PromotionPreviewKind) AllValues() []PromotionPreviewKind {
-	return []PromotionPreviewKind{
-		PromotionPreviewKindVoucher,
-		PromotionPreviewKindDiscount,
+// AllValues returns all ProjectPayerStatus values.
+func (ProjectPayerStatus) AllValues() []ProjectPayerStatus {
+	return []ProjectPayerStatus{
+		ProjectPayerStatusActive,
+		ProjectPayerStatusPastDue,
+		ProjectPayerStatusSuspended,
 	}
 }
 
 // MarshalText implements encoding.TextMarshaler.
-func (s PromotionPreviewKind) MarshalText() ([]byte, error) {
+func (s ProjectPayerStatus) MarshalText() ([]byte, error) {
 	switch s {
-	case PromotionPreviewKindVoucher:
+	case ProjectPayerStatusActive:
 		return []byte(s), nil
-	case PromotionPreviewKindDiscount:
+	case ProjectPayerStatusPastDue:
+		return []byte(s), nil
+	case ProjectPayerStatusSuspended:
 		return []byte(s), nil
 	default:
 		return nil, errors.Errorf("invalid value: %q", s)
@@ -4651,462 +7262,476 @@ func (s PromotionPreviewKind) MarshalText() ([]byte, error) {
 }
 
 // UnmarshalText implements encoding.TextUnmarshaler.
-func (s *PromotionPreviewKind) UnmarshalText(data []byte) error {
-	switch PromotionPreviewKind(data) {
-	case PromotionPreviewKindVoucher:
-		*s = PromotionPreviewKindVoucher
+func (s *ProjectPayerStatus) UnmarshalText(data []byte) error {
+	switch ProjectPayerStatus(data) {
+	case ProjectPayerStatusActive:
+		*s = ProjectPayerStatusActive
 		return nil
-	case PromotionPreviewKindDiscount:
-		*s = PromotionPreviewKindDiscount
+	case ProjectPayerStatusPastDue:
+		*s = ProjectPayerStatusPastDue
+		return nil
+	case ProjectPayerStatusSuspended:
+		*s = ProjectPayerStatusSuspended
 		return nil
 	default:
 		return errors.Errorf("invalid value: %q", data)
 	}
 }
 
-// One line of the order being previewed. Only what pricing and scope need — this is not the order
-// itself, and carrying the whole order here would mean two places that have to agree on what an order
-// looks like.
-// Ref: #/components/schemas/PromotionPreviewLine
-type PromotionPreviewLine struct {
-	Service   string `json:"service"`
-	ProductID string `json:"product_id"`
-	// ISO 8601 duration for a prepaid line. Empty means metered, and a metered line contributes nothing to
-	// the discount — it has no amount at this point.
-	Term     OptString `json:"term"`
-	Quantity OptInt    `json:"quantity"`
-}
-
-// GetService returns the value of Service.
-func (s *PromotionPreviewLine) GetService() string {
-	return s.Service
-}
-
-// GetProductID returns the value of ProductID.
-func (s *PromotionPreviewLine) GetProductID() string {
-	return s.ProductID
-}
-
-// GetTerm returns the value of Term.
-func (s *PromotionPreviewLine) GetTerm() OptString {
-	return s.Term
-}
-
-// GetQuantity returns the value of Quantity.
-func (s *PromotionPreviewLine) GetQuantity() OptInt {
-	return s.Quantity
-}
-
-// SetService sets the value of Service.
-func (s *PromotionPreviewLine) SetService(val string) {
-	s.Service = val
-}
-
-// SetProductID sets the value of ProductID.
-func (s *PromotionPreviewLine) SetProductID(val string) {
-	s.ProductID = val
-}
-
-// SetTerm sets the value of Term.
-func (s *PromotionPreviewLine) SetTerm(val OptString) {
-	s.Term = val
-}
-
-// SetQuantity sets the value of Quantity.
-func (s *PromotionPreviewLine) SetQuantity(val OptInt) {
-	s.Quantity = val
-}
-
-// The result of buying an offer — either it is done, or the money has to arrive first.
+// Which kind of purchase. `upgrade` and `downgrade` are told apart by money: a change that costs more
+// for the remainder of the period is an upgrade, one that returns money is a downgrade. A change that
+// costs neither more nor less is neither.
 //
-// # A paid tier is never granted before the money lands
-//
-// A tier that charges a fee is paid for by card, not from the credit balance. Two reasons, and the
-// second is the one that decides it:
-//
-//  1. The engine bills a plan's fee in arrears — subscribing only records an unsettled charge, while
-//     the tier's credit is handed over at once. Without payment first, an account can subscribe, spend
-//     the credit, and walk away from an invoice nobody will pay.
-//  2. Paying for the membership out of credit is a loop: the tier hands back credit of the same value,
-//     so nothing the platform can bank ever enters. The membership fee is where real money is supposed
-//     to arrive.
-//
-// So `checkout_url` comes back instead of `subscription_id`, and the switch happens when the payment
-// does. The place on the offer is already held, so returning to it later finishes the same purchase
-// rather than starting a second one.
-// Ref: #/components/schemas/Purchase
-type Purchase struct {
-	OfferKey string `json:"offer_key"`
-	// The subscription now serving this account. When the change was set to take effect at the end of the
-	// period, this is the one that takes over then, and its status says `scheduled`.
-	//
-	// Absent when payment is still needed — see `checkout_url`.
-	SubscriptionID OptString `json:"subscription_id"`
-	// Where to send the buyer to pay. Present exactly when the tier charges a fee and the payment has not
-	// been made yet.
-	//
-	// The switch is performed by the payment callback, so a client that ignores this and reads
-	// `subscription_id` gets nothing — which is the intended failure: pretending the tier is active
-	// before the money arrives is the thing this whole route exists to prevent.
-	CheckoutURL OptString `json:"checkout_url"`
-	// What the buyer is being sent to pay, in `currency`. Present with `checkout_url`.
-	AmountDue OptString   `json:"amount_due"`
-	Currency  OptCurrency `json:"currency"`
+// `new` means a new purchase as opposed to a renewal or a change. It does not mean the account's first
+// purchase.
+// Ref: #/components/schemas/PurchaseOperation
+type PurchaseOperation string
+
+const (
+	PurchaseOperationNew       PurchaseOperation = "new"
+	PurchaseOperationRenewal   PurchaseOperation = "renewal"
+	PurchaseOperationUpgrade   PurchaseOperation = "upgrade"
+	PurchaseOperationDowngrade PurchaseOperation = "downgrade"
+)
+
+// AllValues returns all PurchaseOperation values.
+func (PurchaseOperation) AllValues() []PurchaseOperation {
+	return []PurchaseOperation{
+		PurchaseOperationNew,
+		PurchaseOperationRenewal,
+		PurchaseOperationUpgrade,
+		PurchaseOperationDowngrade,
+	}
 }
 
-// GetOfferKey returns the value of OfferKey.
-func (s *Purchase) GetOfferKey() string {
-	return s.OfferKey
+// MarshalText implements encoding.TextMarshaler.
+func (s PurchaseOperation) MarshalText() ([]byte, error) {
+	switch s {
+	case PurchaseOperationNew:
+		return []byte(s), nil
+	case PurchaseOperationRenewal:
+		return []byte(s), nil
+	case PurchaseOperationUpgrade:
+		return []byte(s), nil
+	case PurchaseOperationDowngrade:
+		return []byte(s), nil
+	default:
+		return nil, errors.Errorf("invalid value: %q", s)
+	}
 }
 
-// GetSubscriptionID returns the value of SubscriptionID.
-func (s *Purchase) GetSubscriptionID() OptString {
-	return s.SubscriptionID
-}
-
-// GetCheckoutURL returns the value of CheckoutURL.
-func (s *Purchase) GetCheckoutURL() OptString {
-	return s.CheckoutURL
-}
-
-// GetAmountDue returns the value of AmountDue.
-func (s *Purchase) GetAmountDue() OptString {
-	return s.AmountDue
-}
-
-// GetCurrency returns the value of Currency.
-func (s *Purchase) GetCurrency() OptCurrency {
-	return s.Currency
-}
-
-// SetOfferKey sets the value of OfferKey.
-func (s *Purchase) SetOfferKey(val string) {
-	s.OfferKey = val
-}
-
-// SetSubscriptionID sets the value of SubscriptionID.
-func (s *Purchase) SetSubscriptionID(val OptString) {
-	s.SubscriptionID = val
-}
-
-// SetCheckoutURL sets the value of CheckoutURL.
-func (s *Purchase) SetCheckoutURL(val OptString) {
-	s.CheckoutURL = val
-}
-
-// SetAmountDue sets the value of AmountDue.
-func (s *Purchase) SetAmountDue(val OptString) {
-	s.AmountDue = val
-}
-
-// SetCurrency sets the value of Currency.
-func (s *Purchase) SetCurrency(val OptCurrency) {
-	s.Currency = val
+// UnmarshalText implements encoding.TextUnmarshaler.
+func (s *PurchaseOperation) UnmarshalText(data []byte) error {
+	switch PurchaseOperation(data) {
+	case PurchaseOperationNew:
+		*s = PurchaseOperationNew
+		return nil
+	case PurchaseOperationRenewal:
+		*s = PurchaseOperationRenewal
+		return nil
+	case PurchaseOperationUpgrade:
+		*s = PurchaseOperationUpgrade
+		return nil
+	case PurchaseOperationDowngrade:
+		*s = PurchaseOperationDowngrade
+		return nil
+	default:
+		return errors.Errorf("invalid value: %q", data)
+	}
 }
 
 // Ref: #/components/schemas/Quote
 type Quote struct {
-	Lines []QuoteLine `json:"lines"`
-	// The sum of the already-rounded lines.
-	Total string `json:"total"`
-	// The usages that have no rate card on this plan.
-	//
-	// Reported rather than ignored, because ignoring them yields a smaller but entirely normal-looking
-	// number — and that is the most expensive misconfiguration there is: usage lands, the usage chart
-	// shows it, and the bill has no line for it.
-	//
-	// # Each entry carries the caller's own naming, not only the key
-	//
-	// A meter key is a hash, and callers are told not to compute it (see `QuoteUsage`). An answer that
-	// named the unpriced usages by key alone was therefore unusable whenever more than one usage was
-	// priced at a time: the caller could see that something was unsold but not which of the things it
-	// asked about. That is the case a catalogue page needs — pricing thirty machine types in one call
-	// and marking the ones this plan does not sell — so the answer echoes the `service` and `product_id`
-	// that were given.
-	Unpriced []UnpricedUsage `json:"unpriced"`
+	Lines   []QuoteLineResult   `json:"lines"`
+	Changes []QuoteChangeResult `json:"changes"`
+	// What would be owed in total. Amounts to be returned are not netted off it.
+	Total Money `json:"total"`
+	// What would be returned in total.
+	TotalRefundable OptMoney `json:"total_refundable"`
+	Currency        string   `json:"currency"`
 }
 
 // GetLines returns the value of Lines.
-func (s *Quote) GetLines() []QuoteLine {
+func (s *Quote) GetLines() []QuoteLineResult {
 	return s.Lines
 }
 
-// GetTotal returns the value of Total.
-func (s *Quote) GetTotal() string {
-	return s.Total
-}
-
-// GetUnpriced returns the value of Unpriced.
-func (s *Quote) GetUnpriced() []UnpricedUsage {
-	return s.Unpriced
-}
-
-// SetLines sets the value of Lines.
-func (s *Quote) SetLines(val []QuoteLine) {
-	s.Lines = val
-}
-
-// SetTotal sets the value of Total.
-func (s *Quote) SetTotal(val string) {
-	s.Total = val
-}
-
-// SetUnpriced sets the value of Unpriced.
-func (s *Quote) SetUnpriced(val []UnpricedUsage) {
-	s.Unpriced = val
-}
-
-// One rate card priced, with every intermediate step.
-//
-// Each step is here on purpose: a single total that disagrees with the bill says nothing about which
-// step went wrong, and this is a second implementation of the engine's rules.
-// Ref: #/components/schemas/QuoteLine
-type QuoteLine struct {
-	Key  string `json:"key"`
-	Name string `json:"name"`
-	// False for a flat fee, which ignores usage entirely.
-	Metered bool `json:"metered"`
-	// The quantity as given.
-	Raw string `json:"raw"`
-	// After unit conversion, before rounding.
-	Converted string `json:"converted"`
-	// After rounding. `unit_config.rounding` applies to this step only — entitlement uses the exact
-	// converted value, which is the engine's documented behaviour.
-	Billable string `json:"billable"`
-	// Units covered by the usage discount.
-	FreeUnits string `json:"free_units"`
-	Charged   string `json:"charged"`
-	UnitPrice string `json:"unit_price"`
-	// Before the percentage discount.
-	Gross    string `json:"gross"`
-	Discount string `json:"discount"`
-	// Rounded to the currency's minor unit, per line. Not by rounding the sum: the engine rounds each
-	// line, and the difference grows with the number of lines.
-	Total string `json:"total"`
-}
-
-// GetKey returns the value of Key.
-func (s *QuoteLine) GetKey() string {
-	return s.Key
-}
-
-// GetName returns the value of Name.
-func (s *QuoteLine) GetName() string {
-	return s.Name
-}
-
-// GetMetered returns the value of Metered.
-func (s *QuoteLine) GetMetered() bool {
-	return s.Metered
-}
-
-// GetRaw returns the value of Raw.
-func (s *QuoteLine) GetRaw() string {
-	return s.Raw
-}
-
-// GetConverted returns the value of Converted.
-func (s *QuoteLine) GetConverted() string {
-	return s.Converted
-}
-
-// GetBillable returns the value of Billable.
-func (s *QuoteLine) GetBillable() string {
-	return s.Billable
-}
-
-// GetFreeUnits returns the value of FreeUnits.
-func (s *QuoteLine) GetFreeUnits() string {
-	return s.FreeUnits
-}
-
-// GetCharged returns the value of Charged.
-func (s *QuoteLine) GetCharged() string {
-	return s.Charged
-}
-
-// GetUnitPrice returns the value of UnitPrice.
-func (s *QuoteLine) GetUnitPrice() string {
-	return s.UnitPrice
-}
-
-// GetGross returns the value of Gross.
-func (s *QuoteLine) GetGross() string {
-	return s.Gross
-}
-
-// GetDiscount returns the value of Discount.
-func (s *QuoteLine) GetDiscount() string {
-	return s.Discount
+// GetChanges returns the value of Changes.
+func (s *Quote) GetChanges() []QuoteChangeResult {
+	return s.Changes
 }
 
 // GetTotal returns the value of Total.
-func (s *QuoteLine) GetTotal() string {
+func (s *Quote) GetTotal() Money {
 	return s.Total
 }
 
-// SetKey sets the value of Key.
-func (s *QuoteLine) SetKey(val string) {
-	s.Key = val
+// GetTotalRefundable returns the value of TotalRefundable.
+func (s *Quote) GetTotalRefundable() OptMoney {
+	return s.TotalRefundable
 }
 
-// SetName sets the value of Name.
-func (s *QuoteLine) SetName(val string) {
-	s.Name = val
-}
-
-// SetMetered sets the value of Metered.
-func (s *QuoteLine) SetMetered(val bool) {
-	s.Metered = val
-}
-
-// SetRaw sets the value of Raw.
-func (s *QuoteLine) SetRaw(val string) {
-	s.Raw = val
-}
-
-// SetConverted sets the value of Converted.
-func (s *QuoteLine) SetConverted(val string) {
-	s.Converted = val
-}
-
-// SetBillable sets the value of Billable.
-func (s *QuoteLine) SetBillable(val string) {
-	s.Billable = val
-}
-
-// SetFreeUnits sets the value of FreeUnits.
-func (s *QuoteLine) SetFreeUnits(val string) {
-	s.FreeUnits = val
-}
-
-// SetCharged sets the value of Charged.
-func (s *QuoteLine) SetCharged(val string) {
-	s.Charged = val
-}
-
-// SetUnitPrice sets the value of UnitPrice.
-func (s *QuoteLine) SetUnitPrice(val string) {
-	s.UnitPrice = val
-}
-
-// SetGross sets the value of Gross.
-func (s *QuoteLine) SetGross(val string) {
-	s.Gross = val
-}
-
-// SetDiscount sets the value of Discount.
-func (s *QuoteLine) SetDiscount(val string) {
-	s.Discount = val
-}
-
-// SetTotal sets the value of Total.
-func (s *QuoteLine) SetTotal(val string) {
-	s.Total = val
-}
-
-// The usages to price. Quantities are the raw amounts a service reports — seconds, token counts,
-// GiB-seconds. Conversion happens on the billing side, which is why services keep no conversion tables
-// of their own.
-// Ref: #/components/schemas/QuoteRequest
-type QuoteRequest struct {
-	Lines []QuoteUsage `json:"lines"`
-}
-
-// GetLines returns the value of Lines.
-func (s *QuoteRequest) GetLines() []QuoteUsage {
-	return s.Lines
+// GetCurrency returns the value of Currency.
+func (s *Quote) GetCurrency() string {
+	return s.Currency
 }
 
 // SetLines sets the value of Lines.
-func (s *QuoteRequest) SetLines(val []QuoteUsage) {
+func (s *Quote) SetLines(val []QuoteLineResult) {
 	s.Lines = val
 }
 
-// One usage to price. Name the thing either by its rate card key or by the service and product it
-// belongs to — exactly one of the two.
+// SetChanges sets the value of Changes.
+func (s *Quote) SetChanges(val []QuoteChangeResult) {
+	s.Changes = val
+}
+
+// SetTotal sets the value of Total.
+func (s *Quote) SetTotal(val Money) {
+	s.Total = val
+}
+
+// SetTotalRefundable sets the value of TotalRefundable.
+func (s *Quote) SetTotalRefundable(val OptMoney) {
+	s.TotalRefundable = val
+}
+
+// SetCurrency sets the value of Currency.
+func (s *Quote) SetCurrency(val string) {
+	s.Currency = val
+}
+
+// Price a change to something already running, rather than a new purchase.
 //
-// # Why the second form exists
-//
-// A meter's key is a hash of `(service, product_id, variant)`, computed by a function that lives in
-// one place on purpose: get it wrong and usage lands in the wrong bucket, or in none, and nothing
-// reports it. A caller that derived the key itself would be a second copy of that convention.
-//
-// So callers that know what they are buying — a machine of a given type, a model's input tokens —
-// give the service and product, and this side derives the key.
-// Ref: #/components/schemas/QuoteUsage
-type QuoteUsage struct {
-	// The rate card's key. For a card tied to a meter that is the meter's key, because the engine requires
-	// the two to be identical.
-	//
-	// Leave it out when giving `service` and `product_id` instead.
-	Key OptString `json:"key"`
-	// The service that owns the product, as it appears in its usage events.
-	Service OptString `json:"service"`
-	// That service's own catalogue id for the thing being bought.
-	ProductID OptString `json:"product_id"`
-	// The fixed dimension values that split one product into several meters — canopy's token kind, for
-	// instance. Part of the key, so leaving it out names a different meter.
-	Variant OptQuoteUsageVariant `json:"variant"`
-	// The raw amount, before any conversion. A decimal string.
-	Quantity string `json:"quantity"`
+// The result states what is still owed for the period already paid for, what the new configuration
+// costs for the remainder, and the difference in either direction.
+// Ref: #/components/schemas/QuoteChange
+type QuoteChange struct {
+	// What is being changed.
+	SubscriptionItemID uuid.UUID `json:"subscription_item_id"`
+	// The price to move to. Identify it here, or by `service_product_id` below. Supplying both, or
+	// neither, is refused.
+	PriceID          OptUUID   `json:"price_id"`
+	ServiceProductID OptString `json:"service_product_id"`
+	// The new quantity. The current one is kept when omitted.
+	Quantity OptString `json:"quantity"`
+	// When the change would take effect. Defaults to now. Charging is split at this moment: before it at
+	// the old configuration, after it at the new one.
+	EffectiveAt OptDateTime `json:"effective_at"`
 }
 
-// GetKey returns the value of Key.
-func (s *QuoteUsage) GetKey() OptString {
-	return s.Key
+// GetSubscriptionItemID returns the value of SubscriptionItemID.
+func (s *QuoteChange) GetSubscriptionItemID() uuid.UUID {
+	return s.SubscriptionItemID
 }
 
-// GetService returns the value of Service.
-func (s *QuoteUsage) GetService() OptString {
-	return s.Service
+// GetPriceID returns the value of PriceID.
+func (s *QuoteChange) GetPriceID() OptUUID {
+	return s.PriceID
 }
 
-// GetProductID returns the value of ProductID.
-func (s *QuoteUsage) GetProductID() OptString {
-	return s.ProductID
-}
-
-// GetVariant returns the value of Variant.
-func (s *QuoteUsage) GetVariant() OptQuoteUsageVariant {
-	return s.Variant
+// GetServiceProductID returns the value of ServiceProductID.
+func (s *QuoteChange) GetServiceProductID() OptString {
+	return s.ServiceProductID
 }
 
 // GetQuantity returns the value of Quantity.
-func (s *QuoteUsage) GetQuantity() string {
+func (s *QuoteChange) GetQuantity() OptString {
 	return s.Quantity
 }
 
-// SetKey sets the value of Key.
-func (s *QuoteUsage) SetKey(val OptString) {
-	s.Key = val
+// GetEffectiveAt returns the value of EffectiveAt.
+func (s *QuoteChange) GetEffectiveAt() OptDateTime {
+	return s.EffectiveAt
 }
 
-// SetService sets the value of Service.
-func (s *QuoteUsage) SetService(val OptString) {
-	s.Service = val
+// SetSubscriptionItemID sets the value of SubscriptionItemID.
+func (s *QuoteChange) SetSubscriptionItemID(val uuid.UUID) {
+	s.SubscriptionItemID = val
 }
 
-// SetProductID sets the value of ProductID.
-func (s *QuoteUsage) SetProductID(val OptString) {
-	s.ProductID = val
+// SetPriceID sets the value of PriceID.
+func (s *QuoteChange) SetPriceID(val OptUUID) {
+	s.PriceID = val
 }
 
-// SetVariant sets the value of Variant.
-func (s *QuoteUsage) SetVariant(val OptQuoteUsageVariant) {
-	s.Variant = val
+// SetServiceProductID sets the value of ServiceProductID.
+func (s *QuoteChange) SetServiceProductID(val OptString) {
+	s.ServiceProductID = val
 }
 
 // SetQuantity sets the value of Quantity.
-func (s *QuoteUsage) SetQuantity(val string) {
+func (s *QuoteChange) SetQuantity(val OptString) {
 	s.Quantity = val
 }
 
-// The fixed dimension values that split one product into several meters — canopy's token kind, for
-// instance. Part of the key, so leaving it out names a different meter.
-type QuoteUsageVariant map[string]string
+// SetEffectiveAt sets the value of EffectiveAt.
+func (s *QuoteChange) SetEffectiveAt(val OptDateTime) {
+	s.EffectiveAt = val
+}
 
-func (s *QuoteUsageVariant) init() QuoteUsageVariant {
+// Ref: #/components/schemas/QuoteChangeResult
+type QuoteChangeResult struct {
+	Index              int       `json:"index"`
+	SubscriptionItemID uuid.UUID `json:"subscription_item_id"`
+	// The price that would apply. Always returned.
+	PriceID  uuid.UUID `json:"price_id"`
+	PlanName OptString `json:"plan_name"`
+	// What remains unused of the period already paid for, valued at the price it was bought at rather than
+	// at today's price.
+	UnusedCredit OptMoney `json:"unused_credit"`
+	// What the new configuration costs for the rest of that period.
+	NewCharge OptMoney `json:"new_charge"`
+	// What would be owed. Zero when the change reduces the price; the difference then appears in
+	// `refundable_amount`.
+	PayableNow Money `json:"payable_now"`
+	// What would be returned. It goes back to the sources that originally paid rather than being offset
+	// against `payable_now`, so that a purchase made with credit is refunded as credit.
+	RefundableAmount Money `json:"refundable_amount"`
+	// When the current period ends. A change does not move it; the next renewal is charged at the new
+	// price.
+	PeriodEnd OptDateTime `json:"period_end"`
+	Currency  string      `json:"currency"`
+}
+
+// GetIndex returns the value of Index.
+func (s *QuoteChangeResult) GetIndex() int {
+	return s.Index
+}
+
+// GetSubscriptionItemID returns the value of SubscriptionItemID.
+func (s *QuoteChangeResult) GetSubscriptionItemID() uuid.UUID {
+	return s.SubscriptionItemID
+}
+
+// GetPriceID returns the value of PriceID.
+func (s *QuoteChangeResult) GetPriceID() uuid.UUID {
+	return s.PriceID
+}
+
+// GetPlanName returns the value of PlanName.
+func (s *QuoteChangeResult) GetPlanName() OptString {
+	return s.PlanName
+}
+
+// GetUnusedCredit returns the value of UnusedCredit.
+func (s *QuoteChangeResult) GetUnusedCredit() OptMoney {
+	return s.UnusedCredit
+}
+
+// GetNewCharge returns the value of NewCharge.
+func (s *QuoteChangeResult) GetNewCharge() OptMoney {
+	return s.NewCharge
+}
+
+// GetPayableNow returns the value of PayableNow.
+func (s *QuoteChangeResult) GetPayableNow() Money {
+	return s.PayableNow
+}
+
+// GetRefundableAmount returns the value of RefundableAmount.
+func (s *QuoteChangeResult) GetRefundableAmount() Money {
+	return s.RefundableAmount
+}
+
+// GetPeriodEnd returns the value of PeriodEnd.
+func (s *QuoteChangeResult) GetPeriodEnd() OptDateTime {
+	return s.PeriodEnd
+}
+
+// GetCurrency returns the value of Currency.
+func (s *QuoteChangeResult) GetCurrency() string {
+	return s.Currency
+}
+
+// SetIndex sets the value of Index.
+func (s *QuoteChangeResult) SetIndex(val int) {
+	s.Index = val
+}
+
+// SetSubscriptionItemID sets the value of SubscriptionItemID.
+func (s *QuoteChangeResult) SetSubscriptionItemID(val uuid.UUID) {
+	s.SubscriptionItemID = val
+}
+
+// SetPriceID sets the value of PriceID.
+func (s *QuoteChangeResult) SetPriceID(val uuid.UUID) {
+	s.PriceID = val
+}
+
+// SetPlanName sets the value of PlanName.
+func (s *QuoteChangeResult) SetPlanName(val OptString) {
+	s.PlanName = val
+}
+
+// SetUnusedCredit sets the value of UnusedCredit.
+func (s *QuoteChangeResult) SetUnusedCredit(val OptMoney) {
+	s.UnusedCredit = val
+}
+
+// SetNewCharge sets the value of NewCharge.
+func (s *QuoteChangeResult) SetNewCharge(val OptMoney) {
+	s.NewCharge = val
+}
+
+// SetPayableNow sets the value of PayableNow.
+func (s *QuoteChangeResult) SetPayableNow(val Money) {
+	s.PayableNow = val
+}
+
+// SetRefundableAmount sets the value of RefundableAmount.
+func (s *QuoteChangeResult) SetRefundableAmount(val Money) {
+	s.RefundableAmount = val
+}
+
+// SetPeriodEnd sets the value of PeriodEnd.
+func (s *QuoteChangeResult) SetPeriodEnd(val OptDateTime) {
+	s.PeriodEnd = val
+}
+
+// SetCurrency sets the value of Currency.
+func (s *QuoteChangeResult) SetCurrency(val string) {
+	s.Currency = val
+}
+
+// Identify what to price either by `price_id`, or by `product_key` together with `service_product_id`.
+// Supplying both, or neither, is refused.
+// Ref: #/components/schemas/QuoteLine
+type QuoteLine struct {
+	PriceID OptUUID `json:"price_id"`
+	// The service, such as `compute`.
+	ProductKey OptString `json:"product_key"`
+	// How the owning service identifies the item, such as a machine type.
+	ServiceProductID OptString `json:"service_product_id"`
+	// Required for a metered price whose price list covers more than one meter, so that the intended one
+	// is unambiguous.
+	MeterKey OptString `json:"meter_key"`
+	// The attributes the price depends on — region, instance type, token kind.
+	//
+	// Required when the price draws its rates from a price list, which is how anything sold by region or
+	// by machine type is priced. A price that carries a single unit amount, or a ladder, has no attributes
+	// to give and takes none.
+	//
+	// Every attribute the meter declares must be present. A combination with no rate covering it is
+	// refused rather than priced at zero.
+	Dimensions OptQuoteLineDimensions `json:"dimensions"`
+	// Which way of buying. Required when the item is sold in more than one way — the same item may be
+	// offered metered, prepaid and as a one-off pack, and the pair `product_key` + `service_product_id`
+	// names only the item, not the way.
+	//
+	// Omit it when the item is sold one way only. If what is given matches no price, or still leaves more
+	// than one candidate, the request is refused rather than resolved by guessing.
+	PriceType OptQuoteLinePriceType `json:"price_type"`
+	// For prepaid items, such as `1_month` or `1_year`. Required when the item is offered for more than
+	// one period.
+	BillingPeriod OptString `json:"billing_period"`
+	Quantity      string    `json:"quantity"`
+	// For metered items, how long to price for. This allows an estimate such as "about this much per
+	// month" to be shown before anything exists.
+	DurationSeconds OptInt64 `json:"duration_seconds"`
+}
+
+// GetPriceID returns the value of PriceID.
+func (s *QuoteLine) GetPriceID() OptUUID {
+	return s.PriceID
+}
+
+// GetProductKey returns the value of ProductKey.
+func (s *QuoteLine) GetProductKey() OptString {
+	return s.ProductKey
+}
+
+// GetServiceProductID returns the value of ServiceProductID.
+func (s *QuoteLine) GetServiceProductID() OptString {
+	return s.ServiceProductID
+}
+
+// GetMeterKey returns the value of MeterKey.
+func (s *QuoteLine) GetMeterKey() OptString {
+	return s.MeterKey
+}
+
+// GetDimensions returns the value of Dimensions.
+func (s *QuoteLine) GetDimensions() OptQuoteLineDimensions {
+	return s.Dimensions
+}
+
+// GetPriceType returns the value of PriceType.
+func (s *QuoteLine) GetPriceType() OptQuoteLinePriceType {
+	return s.PriceType
+}
+
+// GetBillingPeriod returns the value of BillingPeriod.
+func (s *QuoteLine) GetBillingPeriod() OptString {
+	return s.BillingPeriod
+}
+
+// GetQuantity returns the value of Quantity.
+func (s *QuoteLine) GetQuantity() string {
+	return s.Quantity
+}
+
+// GetDurationSeconds returns the value of DurationSeconds.
+func (s *QuoteLine) GetDurationSeconds() OptInt64 {
+	return s.DurationSeconds
+}
+
+// SetPriceID sets the value of PriceID.
+func (s *QuoteLine) SetPriceID(val OptUUID) {
+	s.PriceID = val
+}
+
+// SetProductKey sets the value of ProductKey.
+func (s *QuoteLine) SetProductKey(val OptString) {
+	s.ProductKey = val
+}
+
+// SetServiceProductID sets the value of ServiceProductID.
+func (s *QuoteLine) SetServiceProductID(val OptString) {
+	s.ServiceProductID = val
+}
+
+// SetMeterKey sets the value of MeterKey.
+func (s *QuoteLine) SetMeterKey(val OptString) {
+	s.MeterKey = val
+}
+
+// SetDimensions sets the value of Dimensions.
+func (s *QuoteLine) SetDimensions(val OptQuoteLineDimensions) {
+	s.Dimensions = val
+}
+
+// SetPriceType sets the value of PriceType.
+func (s *QuoteLine) SetPriceType(val OptQuoteLinePriceType) {
+	s.PriceType = val
+}
+
+// SetBillingPeriod sets the value of BillingPeriod.
+func (s *QuoteLine) SetBillingPeriod(val OptString) {
+	s.BillingPeriod = val
+}
+
+// SetQuantity sets the value of Quantity.
+func (s *QuoteLine) SetQuantity(val string) {
+	s.Quantity = val
+}
+
+// SetDurationSeconds sets the value of DurationSeconds.
+func (s *QuoteLine) SetDurationSeconds(val OptInt64) {
+	s.DurationSeconds = val
+}
+
+// The attributes the price depends on — region, instance type, token kind.
+//
+// Required when the price draws its rates from a price list, which is how anything sold by region or
+// by machine type is priced. A price that carries a single unit amount, or a ladder, has no attributes
+// to give and takes none.
+//
+// Every attribute the meter declares must be present. A combination with no rate covering it is
+// refused rather than priced at zero.
+type QuoteLineDimensions map[string]string
+
+func (s *QuoteLineDimensions) init() QuoteLineDimensions {
 	m := *s
 	if m == nil {
 		m = map[string]string{}
@@ -5115,281 +7740,1234 @@ func (s *QuoteUsageVariant) init() QuoteUsageVariant {
 	return m
 }
 
-// RemovePaymentMethodNoContent is response for RemovePaymentMethod operation.
-type RemovePaymentMethodNoContent struct{}
+// Which way of buying. Required when the item is sold in more than one way — the same item may be
+// offered metered, prepaid and as a one-off pack, and the pair `product_key` + `service_product_id`
+// names only the item, not the way.
+//
+// Omit it when the item is sold one way only. If what is given matches no price, or still leaves more
+// than one candidate, the request is refused rather than resolved by guessing.
+type QuoteLinePriceType string
 
-// Ref: #/components/schemas/RenewRequestBody
-type RenewRequestBody struct {
-	// How long to renew for, as an ISO 8601 duration (P1M, P1Y). It does not have to match the term
-	// originally bought.
-	Term string `json:"term"`
-	// Generate one per renewal the customer starts — when the dialog opens, not when it is submitted —
-	// and send the same one on every retry of that renewal.
-	IdempotencyKey string `json:"idempotency_key"`
+const (
+	QuoteLinePriceTypeMetered QuoteLinePriceType = "metered"
+	QuoteLinePriceTypePrepaid QuoteLinePriceType = "prepaid"
+	QuoteLinePriceTypeOneTime QuoteLinePriceType = "one_time"
+)
+
+// AllValues returns all QuoteLinePriceType values.
+func (QuoteLinePriceType) AllValues() []QuoteLinePriceType {
+	return []QuoteLinePriceType{
+		QuoteLinePriceTypeMetered,
+		QuoteLinePriceTypePrepaid,
+		QuoteLinePriceTypeOneTime,
+	}
 }
 
-// GetTerm returns the value of Term.
-func (s *RenewRequestBody) GetTerm() string {
-	return s.Term
+// MarshalText implements encoding.TextMarshaler.
+func (s QuoteLinePriceType) MarshalText() ([]byte, error) {
+	switch s {
+	case QuoteLinePriceTypeMetered:
+		return []byte(s), nil
+	case QuoteLinePriceTypePrepaid:
+		return []byte(s), nil
+	case QuoteLinePriceTypeOneTime:
+		return []byte(s), nil
+	default:
+		return nil, errors.Errorf("invalid value: %q", s)
+	}
 }
 
-// GetIdempotencyKey returns the value of IdempotencyKey.
-func (s *RenewRequestBody) GetIdempotencyKey() string {
-	return s.IdempotencyKey
+// UnmarshalText implements encoding.TextUnmarshaler.
+func (s *QuoteLinePriceType) UnmarshalText(data []byte) error {
+	switch QuoteLinePriceType(data) {
+	case QuoteLinePriceTypeMetered:
+		*s = QuoteLinePriceTypeMetered
+		return nil
+	case QuoteLinePriceTypePrepaid:
+		*s = QuoteLinePriceTypePrepaid
+		return nil
+	case QuoteLinePriceTypeOneTime:
+		*s = QuoteLinePriceTypeOneTime
+		return nil
+	default:
+		return errors.Errorf("invalid value: %q", data)
+	}
 }
 
-// SetTerm sets the value of Term.
-func (s *RenewRequestBody) SetTerm(val string) {
-	s.Term = val
+// Ref: #/components/schemas/QuoteLineResult
+type QuoteLineResult struct {
+	// Which line of the request this answers.
+	Index int `json:"index"`
+	// The price selected. Always returned, including when the request identified the item indirectly, so
+	// that the choice can be confirmed.
+	PriceID    uuid.UUID `json:"price_id"`
+	PlanName   OptString `json:"plan_name"`
+	UnitAmount OptMoney  `json:"unit_amount"`
+	Quantity   OptString `json:"quantity"`
+	// Not rounded. Round only for display.
+	Amount   Money  `json:"amount"`
+	Currency string `json:"currency"`
 }
 
-// SetIdempotencyKey sets the value of IdempotencyKey.
-func (s *RenewRequestBody) SetIdempotencyKey(val string) {
-	s.IdempotencyKey = val
+// GetIndex returns the value of Index.
+func (s *QuoteLineResult) GetIndex() int {
+	return s.Index
 }
 
-// Ref: #/components/schemas/ScheduledPlan
-type ScheduledPlan struct {
-	PlanKey     string    `json:"plan_key"`
-	PlanName    OptString `json:"plan_name"`
-	PlanVersion OptInt    `json:"plan_version"`
-	// When it takes over, which is the end of the current period.
-	StartsAt OptDateTime `json:"starts_at"`
-}
-
-// GetPlanKey returns the value of PlanKey.
-func (s *ScheduledPlan) GetPlanKey() string {
-	return s.PlanKey
+// GetPriceID returns the value of PriceID.
+func (s *QuoteLineResult) GetPriceID() uuid.UUID {
+	return s.PriceID
 }
 
 // GetPlanName returns the value of PlanName.
-func (s *ScheduledPlan) GetPlanName() OptString {
+func (s *QuoteLineResult) GetPlanName() OptString {
 	return s.PlanName
 }
 
-// GetPlanVersion returns the value of PlanVersion.
-func (s *ScheduledPlan) GetPlanVersion() OptInt {
-	return s.PlanVersion
+// GetUnitAmount returns the value of UnitAmount.
+func (s *QuoteLineResult) GetUnitAmount() OptMoney {
+	return s.UnitAmount
 }
 
-// GetStartsAt returns the value of StartsAt.
-func (s *ScheduledPlan) GetStartsAt() OptDateTime {
-	return s.StartsAt
-}
-
-// SetPlanKey sets the value of PlanKey.
-func (s *ScheduledPlan) SetPlanKey(val string) {
-	s.PlanKey = val
-}
-
-// SetPlanName sets the value of PlanName.
-func (s *ScheduledPlan) SetPlanName(val OptString) {
-	s.PlanName = val
-}
-
-// SetPlanVersion sets the value of PlanVersion.
-func (s *ScheduledPlan) SetPlanVersion(val OptInt) {
-	s.PlanVersion = val
-}
-
-// SetStartsAt sets the value of StartsAt.
-func (s *ScheduledPlan) SetStartsAt(val OptDateTime) {
-	s.StartsAt = val
-}
-
-// SetDefaultPaymentMethodNoContent is response for SetDefaultPaymentMethod operation.
-type SetDefaultPaymentMethodNoContent struct{}
-
-// Ref: #/components/schemas/StartTopUpRequestBody
-type StartTopUpRequestBody struct {
-	// How much to add, as a decimal string — `"20"`, `"19.99"`.
-	//
-	// Anything below one cent is rejected rather than rounded. Rounding up overcharges and rounding down
-	// undercharges; both alter the amount somewhere the payer cannot see it, and this is the one number on
-	// this API where being wrong means money is wrong.
-	Amount   string      `json:"amount"`
-	Currency OptCurrency `json:"currency"`
-	// Buy one of the top-up bundles from `/offers` instead of an arbitrary amount. When given, `amount` is
-	// ignored: the bundle says what is charged and how much credit it grants.
-	//
-	// How much credit arrives is decided when the money does, not now — and only if the amount collected
-	// matches what the bundle costs. A bundle whose places ran out, or whose window closed, in between
-	// still grants what was paid for; it just does not grant the bonus.
-	OfferKey OptString `json:"offer_key"`
+// GetQuantity returns the value of Quantity.
+func (s *QuoteLineResult) GetQuantity() OptString {
+	return s.Quantity
 }
 
 // GetAmount returns the value of Amount.
-func (s *StartTopUpRequestBody) GetAmount() string {
+func (s *QuoteLineResult) GetAmount() Money {
 	return s.Amount
 }
 
 // GetCurrency returns the value of Currency.
-func (s *StartTopUpRequestBody) GetCurrency() OptCurrency {
+func (s *QuoteLineResult) GetCurrency() string {
 	return s.Currency
 }
 
-// GetOfferKey returns the value of OfferKey.
-func (s *StartTopUpRequestBody) GetOfferKey() OptString {
-	return s.OfferKey
+// SetIndex sets the value of Index.
+func (s *QuoteLineResult) SetIndex(val int) {
+	s.Index = val
+}
+
+// SetPriceID sets the value of PriceID.
+func (s *QuoteLineResult) SetPriceID(val uuid.UUID) {
+	s.PriceID = val
+}
+
+// SetPlanName sets the value of PlanName.
+func (s *QuoteLineResult) SetPlanName(val OptString) {
+	s.PlanName = val
+}
+
+// SetUnitAmount sets the value of UnitAmount.
+func (s *QuoteLineResult) SetUnitAmount(val OptMoney) {
+	s.UnitAmount = val
+}
+
+// SetQuantity sets the value of Quantity.
+func (s *QuoteLineResult) SetQuantity(val OptString) {
+	s.Quantity = val
 }
 
 // SetAmount sets the value of Amount.
-func (s *StartTopUpRequestBody) SetAmount(val string) {
+func (s *QuoteLineResult) SetAmount(val Money) {
 	s.Amount = val
 }
 
 // SetCurrency sets the value of Currency.
-func (s *StartTopUpRequestBody) SetCurrency(val OptCurrency) {
+func (s *QuoteLineResult) SetCurrency(val string) {
 	s.Currency = val
 }
 
-// SetOfferKey sets the value of OfferKey.
-func (s *StartTopUpRequestBody) SetOfferKey(val OptString) {
-	s.OfferKey = val
+// Give `lines` to price new purchases, or `changes` to price alterations to what is already running.
+// Both may appear in one request; the total covers everything.
+// Ref: #/components/schemas/QuoteRequest
+type QuoteRequest struct {
+	Lines   []QuoteLine   `json:"lines"`
+	Changes []QuoteChange `json:"changes"`
+}
+
+// GetLines returns the value of Lines.
+func (s *QuoteRequest) GetLines() []QuoteLine {
+	return s.Lines
+}
+
+// GetChanges returns the value of Changes.
+func (s *QuoteRequest) GetChanges() []QuoteChange {
+	return s.Changes
+}
+
+// SetLines sets the value of Lines.
+func (s *QuoteRequest) SetLines(val []QuoteLine) {
+	s.Lines = val
+}
+
+// SetChanges sets the value of Changes.
+func (s *QuoteRequest) SetChanges(val []QuoteChange) {
+	s.Changes = val
+}
+
+// Ref: #/components/schemas/Refund
+type Refund struct {
+	ID               uuid.UUID  `json:"id"`
+	BillingAccountID OptInt64   `json:"billing_account_id"`
+	InvoiceID        OptNilUUID `json:"invoice_id"`
+	OrderID          OptNilUUID `json:"order_id"`
+	RequestedAmount  OptMoney   `json:"requested_amount"`
+	// What has actually been returned.
+	SettledAmount OptMoney `json:"settled_amount"`
+	Currency      string   `json:"currency"`
+	// Where the cash went.
+	Destination OptRefundDestination `json:"destination"`
+	Status      RefundStatus         `json:"status"`
+	Reason      OptString            `json:"reason"`
+	CreatedAt   time.Time            `json:"created_at"`
+}
+
+// GetID returns the value of ID.
+func (s *Refund) GetID() uuid.UUID {
+	return s.ID
+}
+
+// GetBillingAccountID returns the value of BillingAccountID.
+func (s *Refund) GetBillingAccountID() OptInt64 {
+	return s.BillingAccountID
+}
+
+// GetInvoiceID returns the value of InvoiceID.
+func (s *Refund) GetInvoiceID() OptNilUUID {
+	return s.InvoiceID
+}
+
+// GetOrderID returns the value of OrderID.
+func (s *Refund) GetOrderID() OptNilUUID {
+	return s.OrderID
+}
+
+// GetRequestedAmount returns the value of RequestedAmount.
+func (s *Refund) GetRequestedAmount() OptMoney {
+	return s.RequestedAmount
+}
+
+// GetSettledAmount returns the value of SettledAmount.
+func (s *Refund) GetSettledAmount() OptMoney {
+	return s.SettledAmount
+}
+
+// GetCurrency returns the value of Currency.
+func (s *Refund) GetCurrency() string {
+	return s.Currency
+}
+
+// GetDestination returns the value of Destination.
+func (s *Refund) GetDestination() OptRefundDestination {
+	return s.Destination
+}
+
+// GetStatus returns the value of Status.
+func (s *Refund) GetStatus() RefundStatus {
+	return s.Status
+}
+
+// GetReason returns the value of Reason.
+func (s *Refund) GetReason() OptString {
+	return s.Reason
+}
+
+// GetCreatedAt returns the value of CreatedAt.
+func (s *Refund) GetCreatedAt() time.Time {
+	return s.CreatedAt
+}
+
+// SetID sets the value of ID.
+func (s *Refund) SetID(val uuid.UUID) {
+	s.ID = val
+}
+
+// SetBillingAccountID sets the value of BillingAccountID.
+func (s *Refund) SetBillingAccountID(val OptInt64) {
+	s.BillingAccountID = val
+}
+
+// SetInvoiceID sets the value of InvoiceID.
+func (s *Refund) SetInvoiceID(val OptNilUUID) {
+	s.InvoiceID = val
+}
+
+// SetOrderID sets the value of OrderID.
+func (s *Refund) SetOrderID(val OptNilUUID) {
+	s.OrderID = val
+}
+
+// SetRequestedAmount sets the value of RequestedAmount.
+func (s *Refund) SetRequestedAmount(val OptMoney) {
+	s.RequestedAmount = val
+}
+
+// SetSettledAmount sets the value of SettledAmount.
+func (s *Refund) SetSettledAmount(val OptMoney) {
+	s.SettledAmount = val
+}
+
+// SetCurrency sets the value of Currency.
+func (s *Refund) SetCurrency(val string) {
+	s.Currency = val
+}
+
+// SetDestination sets the value of Destination.
+func (s *Refund) SetDestination(val OptRefundDestination) {
+	s.Destination = val
+}
+
+// SetStatus sets the value of Status.
+func (s *Refund) SetStatus(val RefundStatus) {
+	s.Status = val
+}
+
+// SetReason sets the value of Reason.
+func (s *Refund) SetReason(val OptString) {
+	s.Reason = val
+}
+
+// SetCreatedAt sets the value of CreatedAt.
+func (s *Refund) SetCreatedAt(val time.Time) {
+	s.CreatedAt = val
+}
+
+// Where the cash went.
+type RefundDestination string
+
+const (
+	RefundDestinationBalance  RefundDestination = "balance"
+	RefundDestinationProvider RefundDestination = "provider"
+)
+
+// AllValues returns all RefundDestination values.
+func (RefundDestination) AllValues() []RefundDestination {
+	return []RefundDestination{
+		RefundDestinationBalance,
+		RefundDestinationProvider,
+	}
+}
+
+// MarshalText implements encoding.TextMarshaler.
+func (s RefundDestination) MarshalText() ([]byte, error) {
+	switch s {
+	case RefundDestinationBalance:
+		return []byte(s), nil
+	case RefundDestinationProvider:
+		return []byte(s), nil
+	default:
+		return nil, errors.Errorf("invalid value: %q", s)
+	}
+}
+
+// UnmarshalText implements encoding.TextUnmarshaler.
+func (s *RefundDestination) UnmarshalText(data []byte) error {
+	switch RefundDestination(data) {
+	case RefundDestinationBalance:
+		*s = RefundDestinationBalance
+		return nil
+	case RefundDestinationProvider:
+		*s = RefundDestinationProvider
+		return nil
+	default:
+		return errors.Errorf("invalid value: %q", data)
+	}
+}
+
+// Ref: #/components/schemas/RefundList
+type RefundList struct {
+	Items      []Refund `json:"items"`
+	TotalCount OptInt64 `json:"total_count"`
+}
+
+// GetItems returns the value of Items.
+func (s *RefundList) GetItems() []Refund {
+	return s.Items
+}
+
+// GetTotalCount returns the value of TotalCount.
+func (s *RefundList) GetTotalCount() OptInt64 {
+	return s.TotalCount
+}
+
+// SetItems sets the value of Items.
+func (s *RefundList) SetItems(val []Refund) {
+	s.Items = val
+}
+
+// SetTotalCount sets the value of TotalCount.
+func (s *RefundList) SetTotalCount(val OptInt64) {
+	s.TotalCount = val
+}
+
+type RefundStatus string
+
+const (
+	RefundStatusPending   RefundStatus = "pending"
+	RefundStatusSucceeded RefundStatus = "succeeded"
+	RefundStatusFailed    RefundStatus = "failed"
+)
+
+// AllValues returns all RefundStatus values.
+func (RefundStatus) AllValues() []RefundStatus {
+	return []RefundStatus{
+		RefundStatusPending,
+		RefundStatusSucceeded,
+		RefundStatusFailed,
+	}
+}
+
+// MarshalText implements encoding.TextMarshaler.
+func (s RefundStatus) MarshalText() ([]byte, error) {
+	switch s {
+	case RefundStatusPending:
+		return []byte(s), nil
+	case RefundStatusSucceeded:
+		return []byte(s), nil
+	case RefundStatusFailed:
+		return []byte(s), nil
+	default:
+		return nil, errors.Errorf("invalid value: %q", s)
+	}
+}
+
+// UnmarshalText implements encoding.TextUnmarshaler.
+func (s *RefundStatus) UnmarshalText(data []byte) error {
+	switch RefundStatus(data) {
+	case RefundStatusPending:
+		*s = RefundStatusPending
+		return nil
+	case RefundStatusSucceeded:
+		*s = RefundStatusSucceeded
+		return nil
+	case RefundStatusFailed:
+		*s = RefundStatusFailed
+		return nil
+	default:
+		return errors.Errorf("invalid value: %q", data)
+	}
+}
+
+// Ref: #/components/schemas/RenewRequest
+type RenewRequest struct {
+	// How many further periods to buy.
+	Periods         OptInt    `json:"periods"`
+	PaymentMethodID OptUUID   `json:"payment_method_id"`
+	UseBalance      OptBool   `json:"use_balance"`
+	ReturnURL       OptString `json:"return_url"`
+	IdempotencyKey  string    `json:"idempotency_key"`
+}
+
+// GetPeriods returns the value of Periods.
+func (s *RenewRequest) GetPeriods() OptInt {
+	return s.Periods
+}
+
+// GetPaymentMethodID returns the value of PaymentMethodID.
+func (s *RenewRequest) GetPaymentMethodID() OptUUID {
+	return s.PaymentMethodID
+}
+
+// GetUseBalance returns the value of UseBalance.
+func (s *RenewRequest) GetUseBalance() OptBool {
+	return s.UseBalance
+}
+
+// GetReturnURL returns the value of ReturnURL.
+func (s *RenewRequest) GetReturnURL() OptString {
+	return s.ReturnURL
+}
+
+// GetIdempotencyKey returns the value of IdempotencyKey.
+func (s *RenewRequest) GetIdempotencyKey() string {
+	return s.IdempotencyKey
+}
+
+// SetPeriods sets the value of Periods.
+func (s *RenewRequest) SetPeriods(val OptInt) {
+	s.Periods = val
+}
+
+// SetPaymentMethodID sets the value of PaymentMethodID.
+func (s *RenewRequest) SetPaymentMethodID(val OptUUID) {
+	s.PaymentMethodID = val
+}
+
+// SetUseBalance sets the value of UseBalance.
+func (s *RenewRequest) SetUseBalance(val OptBool) {
+	s.UseBalance = val
+}
+
+// SetReturnURL sets the value of ReturnURL.
+func (s *RenewRequest) SetReturnURL(val OptString) {
+	s.ReturnURL = val
+}
+
+// SetIdempotencyKey sets the value of IdempotencyKey.
+func (s *RenewRequest) SetIdempotencyKey(val string) {
+	s.IdempotencyKey = val
+}
+
+// Ref: #/components/schemas/SettleResult
+type SettleResult struct {
+	InvoiceID OptNilUUID `json:"invoice_id"`
+	// Zero when there was nothing outstanding, in which case no invoice is created.
+	InvoicedAmount Money  `json:"invoiced_amount"`
+	Currency       string `json:"currency"`
+}
+
+// GetInvoiceID returns the value of InvoiceID.
+func (s *SettleResult) GetInvoiceID() OptNilUUID {
+	return s.InvoiceID
+}
+
+// GetInvoicedAmount returns the value of InvoicedAmount.
+func (s *SettleResult) GetInvoicedAmount() Money {
+	return s.InvoicedAmount
+}
+
+// GetCurrency returns the value of Currency.
+func (s *SettleResult) GetCurrency() string {
+	return s.Currency
+}
+
+// SetInvoiceID sets the value of InvoiceID.
+func (s *SettleResult) SetInvoiceID(val OptNilUUID) {
+	s.InvoiceID = val
+}
+
+// SetInvoicedAmount sets the value of InvoicedAmount.
+func (s *SettleResult) SetInvoicedAmount(val Money) {
+	s.InvoicedAmount = val
+}
+
+// SetCurrency sets the value of Currency.
+func (s *SettleResult) SetCurrency(val string) {
+	s.Currency = val
+}
+
+// Ref: #/components/schemas/SpendRow
+type SpendRow struct {
+	ProductKey OptString `json:"product_key"`
+	PlanID     OptUUID   `json:"plan_id"`
+	PlanName   OptString `json:"plan_name"`
+	// Present only when grouped by resource.
+	ResourceID OptString `json:"resource_id"`
+	Amount     Money     `json:"amount"`
+	Currency   string    `json:"currency"`
+}
+
+// GetProductKey returns the value of ProductKey.
+func (s *SpendRow) GetProductKey() OptString {
+	return s.ProductKey
+}
+
+// GetPlanID returns the value of PlanID.
+func (s *SpendRow) GetPlanID() OptUUID {
+	return s.PlanID
+}
+
+// GetPlanName returns the value of PlanName.
+func (s *SpendRow) GetPlanName() OptString {
+	return s.PlanName
+}
+
+// GetResourceID returns the value of ResourceID.
+func (s *SpendRow) GetResourceID() OptString {
+	return s.ResourceID
+}
+
+// GetAmount returns the value of Amount.
+func (s *SpendRow) GetAmount() Money {
+	return s.Amount
+}
+
+// GetCurrency returns the value of Currency.
+func (s *SpendRow) GetCurrency() string {
+	return s.Currency
+}
+
+// SetProductKey sets the value of ProductKey.
+func (s *SpendRow) SetProductKey(val OptString) {
+	s.ProductKey = val
+}
+
+// SetPlanID sets the value of PlanID.
+func (s *SpendRow) SetPlanID(val OptUUID) {
+	s.PlanID = val
+}
+
+// SetPlanName sets the value of PlanName.
+func (s *SpendRow) SetPlanName(val OptString) {
+	s.PlanName = val
+}
+
+// SetResourceID sets the value of ResourceID.
+func (s *SpendRow) SetResourceID(val OptString) {
+	s.ResourceID = val
+}
+
+// SetAmount sets the value of Amount.
+func (s *SpendRow) SetAmount(val Money) {
+	s.Amount = val
+}
+
+// SetCurrency sets the value of Currency.
+func (s *SpendRow) SetCurrency(val string) {
+	s.Currency = val
+}
+
+// Ref: #/components/schemas/SpendRowList
+type SpendRowList struct {
+	Items []SpendRow `json:"items"`
+	// The sum over the whole period, not only the page returned.
+	Total      Money    `json:"total"`
+	Currency   string   `json:"currency"`
+	TotalCount OptInt64 `json:"total_count"`
+}
+
+// GetItems returns the value of Items.
+func (s *SpendRowList) GetItems() []SpendRow {
+	return s.Items
+}
+
+// GetTotal returns the value of Total.
+func (s *SpendRowList) GetTotal() Money {
+	return s.Total
+}
+
+// GetCurrency returns the value of Currency.
+func (s *SpendRowList) GetCurrency() string {
+	return s.Currency
+}
+
+// GetTotalCount returns the value of TotalCount.
+func (s *SpendRowList) GetTotalCount() OptInt64 {
+	return s.TotalCount
+}
+
+// SetItems sets the value of Items.
+func (s *SpendRowList) SetItems(val []SpendRow) {
+	s.Items = val
+}
+
+// SetTotal sets the value of Total.
+func (s *SpendRowList) SetTotal(val Money) {
+	s.Total = val
+}
+
+// SetCurrency sets the value of Currency.
+func (s *SpendRowList) SetCurrency(val string) {
+	s.Currency = val
+}
+
+// SetTotalCount sets the value of TotalCount.
+func (s *SpendRowList) SetTotalCount(val OptInt64) {
+	s.TotalCount = val
 }
 
 // Ref: #/components/schemas/Subscription
 type Subscription struct {
-	ID      string `json:"id"`
-	PlanKey string `json:"plan_key"`
-	// What this tier is called on the pricing page.
-	PlanName    OptString `json:"plan_name"`
-	PlanVersion OptInt    `json:"plan_version"`
-	// `canceled` still counts as being on a plan — it is serving until the end of the period, which has
-	// already been paid for.
-	Status string `json:"status"`
-	// Start of the period being served. Absent for the moment right after subscribing, while the engine is
-	// still writing the charge this is read from — absent means "not known yet" rather than "no period".
-	CurrentPeriodStart OptDateTime `json:"current_period_start"`
-	// End of the period being served, which is also when the next charge falls and when anything scheduled
-	// takes effect.
-	CurrentPeriodEnd OptDateTime `json:"current_period_end"`
-	// What takes over at the end of the period, when a downgrade has been scheduled.
-	//
-	// Absent when nothing is pending. Leaving it out entirely would show someone who has already scheduled
-	// a downgrade the tier they are on today, so they would schedule it again.
-	Scheduled OptScheduledPlan `json:"scheduled"`
-	// True once the account has been taken off its paid plan at the end of the period. It is still being
-	// served until then, and this can still be undone — unlike a scheduled downgrade.
-	CancelsAtPeriodEnd OptBool `json:"cancels_at_period_end"`
-	// True when this is the free tier every account starts on.
-	//
-	// Coming off it is not a thing that can happen: cancelling puts the account back on it, so offering
-	// that as an action is at best a no-op and at worst a gap — between the period ending and the sweep
-	// putting the tier back, the account has no plan at all and admission refuses it. A console reads this
-	// to leave the action out.
-	IsDefaultPlan OptBool `json:"is_default_plan"`
+	ID uuid.UUID `json:"id"`
+	// Which project this is for. Absent when it was bought at account level, such as a membership, which
+	// belongs to no single project.
+	ProjectID        OptNilUUID         `json:"project_id"`
+	BillingAccountID OptInt64           `json:"billing_account_id"`
+	ProductID        uuid.UUID          `json:"product_id"`
+	ProductKey       OptString          `json:"product_key"`
+	Status           SubscriptionStatus `json:"status"`
+	ItemCount        OptInt64           `json:"item_count"`
 }
 
 // GetID returns the value of ID.
-func (s *Subscription) GetID() string {
+func (s *Subscription) GetID() uuid.UUID {
 	return s.ID
 }
 
-// GetPlanKey returns the value of PlanKey.
-func (s *Subscription) GetPlanKey() string {
-	return s.PlanKey
+// GetProjectID returns the value of ProjectID.
+func (s *Subscription) GetProjectID() OptNilUUID {
+	return s.ProjectID
 }
 
-// GetPlanName returns the value of PlanName.
-func (s *Subscription) GetPlanName() OptString {
-	return s.PlanName
+// GetBillingAccountID returns the value of BillingAccountID.
+func (s *Subscription) GetBillingAccountID() OptInt64 {
+	return s.BillingAccountID
 }
 
-// GetPlanVersion returns the value of PlanVersion.
-func (s *Subscription) GetPlanVersion() OptInt {
-	return s.PlanVersion
+// GetProductID returns the value of ProductID.
+func (s *Subscription) GetProductID() uuid.UUID {
+	return s.ProductID
+}
+
+// GetProductKey returns the value of ProductKey.
+func (s *Subscription) GetProductKey() OptString {
+	return s.ProductKey
 }
 
 // GetStatus returns the value of Status.
-func (s *Subscription) GetStatus() string {
+func (s *Subscription) GetStatus() SubscriptionStatus {
 	return s.Status
 }
 
-// GetCurrentPeriodStart returns the value of CurrentPeriodStart.
-func (s *Subscription) GetCurrentPeriodStart() OptDateTime {
-	return s.CurrentPeriodStart
-}
-
-// GetCurrentPeriodEnd returns the value of CurrentPeriodEnd.
-func (s *Subscription) GetCurrentPeriodEnd() OptDateTime {
-	return s.CurrentPeriodEnd
-}
-
-// GetScheduled returns the value of Scheduled.
-func (s *Subscription) GetScheduled() OptScheduledPlan {
-	return s.Scheduled
-}
-
-// GetCancelsAtPeriodEnd returns the value of CancelsAtPeriodEnd.
-func (s *Subscription) GetCancelsAtPeriodEnd() OptBool {
-	return s.CancelsAtPeriodEnd
-}
-
-// GetIsDefaultPlan returns the value of IsDefaultPlan.
-func (s *Subscription) GetIsDefaultPlan() OptBool {
-	return s.IsDefaultPlan
+// GetItemCount returns the value of ItemCount.
+func (s *Subscription) GetItemCount() OptInt64 {
+	return s.ItemCount
 }
 
 // SetID sets the value of ID.
-func (s *Subscription) SetID(val string) {
+func (s *Subscription) SetID(val uuid.UUID) {
 	s.ID = val
 }
 
-// SetPlanKey sets the value of PlanKey.
-func (s *Subscription) SetPlanKey(val string) {
-	s.PlanKey = val
+// SetProjectID sets the value of ProjectID.
+func (s *Subscription) SetProjectID(val OptNilUUID) {
+	s.ProjectID = val
 }
 
-// SetPlanName sets the value of PlanName.
-func (s *Subscription) SetPlanName(val OptString) {
-	s.PlanName = val
+// SetBillingAccountID sets the value of BillingAccountID.
+func (s *Subscription) SetBillingAccountID(val OptInt64) {
+	s.BillingAccountID = val
 }
 
-// SetPlanVersion sets the value of PlanVersion.
-func (s *Subscription) SetPlanVersion(val OptInt) {
-	s.PlanVersion = val
+// SetProductID sets the value of ProductID.
+func (s *Subscription) SetProductID(val uuid.UUID) {
+	s.ProductID = val
+}
+
+// SetProductKey sets the value of ProductKey.
+func (s *Subscription) SetProductKey(val OptString) {
+	s.ProductKey = val
 }
 
 // SetStatus sets the value of Status.
-func (s *Subscription) SetStatus(val string) {
+func (s *Subscription) SetStatus(val SubscriptionStatus) {
 	s.Status = val
 }
 
-// SetCurrentPeriodStart sets the value of CurrentPeriodStart.
-func (s *Subscription) SetCurrentPeriodStart(val OptDateTime) {
-	s.CurrentPeriodStart = val
+// SetItemCount sets the value of ItemCount.
+func (s *Subscription) SetItemCount(val OptInt64) {
+	s.ItemCount = val
 }
 
-// SetCurrentPeriodEnd sets the value of CurrentPeriodEnd.
-func (s *Subscription) SetCurrentPeriodEnd(val OptDateTime) {
-	s.CurrentPeriodEnd = val
+// Ref: #/components/schemas/SubscriptionItem
+type SubscriptionItem struct {
+	ID             uuid.UUID `json:"id"`
+	SubscriptionID OptUUID   `json:"subscription_id"`
+	// Which project this is for. Absent when it was bought at account level, such as a membership, which
+	// belongs to no single project.
+	ProjectID  OptNilUUID `json:"project_id"`
+	ProductKey OptString  `json:"product_key"`
+	PlanID     uuid.UUID  `json:"plan_id"`
+	PlanName   OptString  `json:"plan_name"`
+	PriceID    uuid.UUID  `json:"price_id"`
+	ResourceID OptString  `json:"resource_id"`
+	Quantity   string     `json:"quantity"`
+	// Present for prepaid items. Absent for metered ones, which have no end date.
+	PaidUntil OptNilDateTime         `json:"paid_until"`
+	AutoRenew OptBool                `json:"auto_renew"`
+	Status    SubscriptionItemStatus `json:"status"`
+	StartedAt OptNilDateTime         `json:"started_at"`
+	EndedAt   OptNilDateTime         `json:"ended_at"`
 }
 
-// SetScheduled sets the value of Scheduled.
-func (s *Subscription) SetScheduled(val OptScheduledPlan) {
-	s.Scheduled = val
+// GetID returns the value of ID.
+func (s *SubscriptionItem) GetID() uuid.UUID {
+	return s.ID
 }
 
-// SetCancelsAtPeriodEnd sets the value of CancelsAtPeriodEnd.
-func (s *Subscription) SetCancelsAtPeriodEnd(val OptBool) {
-	s.CancelsAtPeriodEnd = val
+// GetSubscriptionID returns the value of SubscriptionID.
+func (s *SubscriptionItem) GetSubscriptionID() OptUUID {
+	return s.SubscriptionID
 }
 
-// SetIsDefaultPlan sets the value of IsDefaultPlan.
-func (s *Subscription) SetIsDefaultPlan(val OptBool) {
-	s.IsDefaultPlan = val
+// GetProjectID returns the value of ProjectID.
+func (s *SubscriptionItem) GetProjectID() OptNilUUID {
+	return s.ProjectID
+}
+
+// GetProductKey returns the value of ProductKey.
+func (s *SubscriptionItem) GetProductKey() OptString {
+	return s.ProductKey
+}
+
+// GetPlanID returns the value of PlanID.
+func (s *SubscriptionItem) GetPlanID() uuid.UUID {
+	return s.PlanID
+}
+
+// GetPlanName returns the value of PlanName.
+func (s *SubscriptionItem) GetPlanName() OptString {
+	return s.PlanName
+}
+
+// GetPriceID returns the value of PriceID.
+func (s *SubscriptionItem) GetPriceID() uuid.UUID {
+	return s.PriceID
+}
+
+// GetResourceID returns the value of ResourceID.
+func (s *SubscriptionItem) GetResourceID() OptString {
+	return s.ResourceID
+}
+
+// GetQuantity returns the value of Quantity.
+func (s *SubscriptionItem) GetQuantity() string {
+	return s.Quantity
+}
+
+// GetPaidUntil returns the value of PaidUntil.
+func (s *SubscriptionItem) GetPaidUntil() OptNilDateTime {
+	return s.PaidUntil
+}
+
+// GetAutoRenew returns the value of AutoRenew.
+func (s *SubscriptionItem) GetAutoRenew() OptBool {
+	return s.AutoRenew
+}
+
+// GetStatus returns the value of Status.
+func (s *SubscriptionItem) GetStatus() SubscriptionItemStatus {
+	return s.Status
+}
+
+// GetStartedAt returns the value of StartedAt.
+func (s *SubscriptionItem) GetStartedAt() OptNilDateTime {
+	return s.StartedAt
+}
+
+// GetEndedAt returns the value of EndedAt.
+func (s *SubscriptionItem) GetEndedAt() OptNilDateTime {
+	return s.EndedAt
+}
+
+// SetID sets the value of ID.
+func (s *SubscriptionItem) SetID(val uuid.UUID) {
+	s.ID = val
+}
+
+// SetSubscriptionID sets the value of SubscriptionID.
+func (s *SubscriptionItem) SetSubscriptionID(val OptUUID) {
+	s.SubscriptionID = val
+}
+
+// SetProjectID sets the value of ProjectID.
+func (s *SubscriptionItem) SetProjectID(val OptNilUUID) {
+	s.ProjectID = val
+}
+
+// SetProductKey sets the value of ProductKey.
+func (s *SubscriptionItem) SetProductKey(val OptString) {
+	s.ProductKey = val
+}
+
+// SetPlanID sets the value of PlanID.
+func (s *SubscriptionItem) SetPlanID(val uuid.UUID) {
+	s.PlanID = val
+}
+
+// SetPlanName sets the value of PlanName.
+func (s *SubscriptionItem) SetPlanName(val OptString) {
+	s.PlanName = val
+}
+
+// SetPriceID sets the value of PriceID.
+func (s *SubscriptionItem) SetPriceID(val uuid.UUID) {
+	s.PriceID = val
+}
+
+// SetResourceID sets the value of ResourceID.
+func (s *SubscriptionItem) SetResourceID(val OptString) {
+	s.ResourceID = val
+}
+
+// SetQuantity sets the value of Quantity.
+func (s *SubscriptionItem) SetQuantity(val string) {
+	s.Quantity = val
+}
+
+// SetPaidUntil sets the value of PaidUntil.
+func (s *SubscriptionItem) SetPaidUntil(val OptNilDateTime) {
+	s.PaidUntil = val
+}
+
+// SetAutoRenew sets the value of AutoRenew.
+func (s *SubscriptionItem) SetAutoRenew(val OptBool) {
+	s.AutoRenew = val
+}
+
+// SetStatus sets the value of Status.
+func (s *SubscriptionItem) SetStatus(val SubscriptionItemStatus) {
+	s.Status = val
+}
+
+// SetStartedAt sets the value of StartedAt.
+func (s *SubscriptionItem) SetStartedAt(val OptNilDateTime) {
+	s.StartedAt = val
+}
+
+// SetEndedAt sets the value of EndedAt.
+func (s *SubscriptionItem) SetEndedAt(val OptNilDateTime) {
+	s.EndedAt = val
+}
+
+// Ref: #/components/schemas/SubscriptionItemList
+type SubscriptionItemList struct {
+	Items      []SubscriptionItem `json:"items"`
+	TotalCount OptInt64           `json:"total_count"`
+}
+
+// GetItems returns the value of Items.
+func (s *SubscriptionItemList) GetItems() []SubscriptionItem {
+	return s.Items
+}
+
+// GetTotalCount returns the value of TotalCount.
+func (s *SubscriptionItemList) GetTotalCount() OptInt64 {
+	return s.TotalCount
+}
+
+// SetItems sets the value of Items.
+func (s *SubscriptionItemList) SetItems(val []SubscriptionItem) {
+	s.Items = val
+}
+
+// SetTotalCount sets the value of TotalCount.
+func (s *SubscriptionItemList) SetTotalCount(val OptInt64) {
+	s.TotalCount = val
+}
+
+type SubscriptionItemStatus string
+
+const (
+	SubscriptionItemStatusPending    SubscriptionItemStatus = "pending"
+	SubscriptionItemStatusActive     SubscriptionItemStatus = "active"
+	SubscriptionItemStatusSuspended  SubscriptionItemStatus = "suspended"
+	SubscriptionItemStatusCancelled  SubscriptionItemStatus = "cancelled"
+	SubscriptionItemStatusTerminated SubscriptionItemStatus = "terminated"
+)
+
+// AllValues returns all SubscriptionItemStatus values.
+func (SubscriptionItemStatus) AllValues() []SubscriptionItemStatus {
+	return []SubscriptionItemStatus{
+		SubscriptionItemStatusPending,
+		SubscriptionItemStatusActive,
+		SubscriptionItemStatusSuspended,
+		SubscriptionItemStatusCancelled,
+		SubscriptionItemStatusTerminated,
+	}
+}
+
+// MarshalText implements encoding.TextMarshaler.
+func (s SubscriptionItemStatus) MarshalText() ([]byte, error) {
+	switch s {
+	case SubscriptionItemStatusPending:
+		return []byte(s), nil
+	case SubscriptionItemStatusActive:
+		return []byte(s), nil
+	case SubscriptionItemStatusSuspended:
+		return []byte(s), nil
+	case SubscriptionItemStatusCancelled:
+		return []byte(s), nil
+	case SubscriptionItemStatusTerminated:
+		return []byte(s), nil
+	default:
+		return nil, errors.Errorf("invalid value: %q", s)
+	}
+}
+
+// UnmarshalText implements encoding.TextUnmarshaler.
+func (s *SubscriptionItemStatus) UnmarshalText(data []byte) error {
+	switch SubscriptionItemStatus(data) {
+	case SubscriptionItemStatusPending:
+		*s = SubscriptionItemStatusPending
+		return nil
+	case SubscriptionItemStatusActive:
+		*s = SubscriptionItemStatusActive
+		return nil
+	case SubscriptionItemStatusSuspended:
+		*s = SubscriptionItemStatusSuspended
+		return nil
+	case SubscriptionItemStatusCancelled:
+		*s = SubscriptionItemStatusCancelled
+		return nil
+	case SubscriptionItemStatusTerminated:
+		*s = SubscriptionItemStatusTerminated
+		return nil
+	default:
+		return errors.Errorf("invalid value: %q", data)
+	}
+}
+
+// Ref: #/components/schemas/SubscriptionList
+type SubscriptionList struct {
+	Items      []Subscription `json:"items"`
+	TotalCount OptInt64       `json:"total_count"`
+}
+
+// GetItems returns the value of Items.
+func (s *SubscriptionList) GetItems() []Subscription {
+	return s.Items
+}
+
+// GetTotalCount returns the value of TotalCount.
+func (s *SubscriptionList) GetTotalCount() OptInt64 {
+	return s.TotalCount
+}
+
+// SetItems sets the value of Items.
+func (s *SubscriptionList) SetItems(val []Subscription) {
+	s.Items = val
+}
+
+// SetTotalCount sets the value of TotalCount.
+func (s *SubscriptionList) SetTotalCount(val OptInt64) {
+	s.TotalCount = val
+}
+
+type SubscriptionStatus string
+
+const (
+	SubscriptionStatusActive    SubscriptionStatus = "active"
+	SubscriptionStatusSuspended SubscriptionStatus = "suspended"
+	SubscriptionStatusCancelled SubscriptionStatus = "cancelled"
+)
+
+// AllValues returns all SubscriptionStatus values.
+func (SubscriptionStatus) AllValues() []SubscriptionStatus {
+	return []SubscriptionStatus{
+		SubscriptionStatusActive,
+		SubscriptionStatusSuspended,
+		SubscriptionStatusCancelled,
+	}
+}
+
+// MarshalText implements encoding.TextMarshaler.
+func (s SubscriptionStatus) MarshalText() ([]byte, error) {
+	switch s {
+	case SubscriptionStatusActive:
+		return []byte(s), nil
+	case SubscriptionStatusSuspended:
+		return []byte(s), nil
+	case SubscriptionStatusCancelled:
+		return []byte(s), nil
+	default:
+		return nil, errors.Errorf("invalid value: %q", s)
+	}
+}
+
+// UnmarshalText implements encoding.TextUnmarshaler.
+func (s *SubscriptionStatus) UnmarshalText(data []byte) error {
+	switch SubscriptionStatus(data) {
+	case SubscriptionStatusActive:
+		*s = SubscriptionStatusActive
+		return nil
+	case SubscriptionStatusSuspended:
+		*s = SubscriptionStatusSuspended
+		return nil
+	case SubscriptionStatusCancelled:
+		*s = SubscriptionStatusCancelled
+		return nil
+	default:
+		return errors.Errorf("invalid value: %q", data)
+	}
+}
+
+// Ref: #/components/schemas/Tier
+type Tier struct {
+	// The upper bound of this band. Null on the last band, which has no bound.
+	UpTo       OptNilString `json:"up_to"`
+	UnitAmount Money        `json:"unit_amount"`
+	// Charged once when this band is reached, in addition to the per-unit amount.
+	FlatAmount OptMoney `json:"flat_amount"`
+}
+
+// GetUpTo returns the value of UpTo.
+func (s *Tier) GetUpTo() OptNilString {
+	return s.UpTo
+}
+
+// GetUnitAmount returns the value of UnitAmount.
+func (s *Tier) GetUnitAmount() Money {
+	return s.UnitAmount
+}
+
+// GetFlatAmount returns the value of FlatAmount.
+func (s *Tier) GetFlatAmount() OptMoney {
+	return s.FlatAmount
+}
+
+// SetUpTo sets the value of UpTo.
+func (s *Tier) SetUpTo(val OptNilString) {
+	s.UpTo = val
+}
+
+// SetUnitAmount sets the value of UnitAmount.
+func (s *Tier) SetUnitAmount(val Money) {
+	s.UnitAmount = val
+}
+
+// SetFlatAmount sets the value of FlatAmount.
+func (s *Tier) SetFlatAmount(val OptMoney) {
+	s.FlatAmount = val
+}
+
+// Ref: #/components/schemas/TopUp
+type TopUp struct {
+	ID               uuid.UUID `json:"id"`
+	BillingAccountID int64     `json:"billing_account_id"`
+	Amount           Money     `json:"amount"`
+	Currency         string    `json:"currency"`
+	// `pending` until the payment provider confirms. The balance increases on `succeeded`.
+	Status TopUpStatus `json:"status"`
+	// Where the payer completes the payment. Absent once it has completed.
+	CheckoutURL OptString `json:"checkout_url"`
+	CreatedAt   time.Time `json:"created_at"`
+}
+
+// GetID returns the value of ID.
+func (s *TopUp) GetID() uuid.UUID {
+	return s.ID
+}
+
+// GetBillingAccountID returns the value of BillingAccountID.
+func (s *TopUp) GetBillingAccountID() int64 {
+	return s.BillingAccountID
+}
+
+// GetAmount returns the value of Amount.
+func (s *TopUp) GetAmount() Money {
+	return s.Amount
+}
+
+// GetCurrency returns the value of Currency.
+func (s *TopUp) GetCurrency() string {
+	return s.Currency
+}
+
+// GetStatus returns the value of Status.
+func (s *TopUp) GetStatus() TopUpStatus {
+	return s.Status
+}
+
+// GetCheckoutURL returns the value of CheckoutURL.
+func (s *TopUp) GetCheckoutURL() OptString {
+	return s.CheckoutURL
+}
+
+// GetCreatedAt returns the value of CreatedAt.
+func (s *TopUp) GetCreatedAt() time.Time {
+	return s.CreatedAt
+}
+
+// SetID sets the value of ID.
+func (s *TopUp) SetID(val uuid.UUID) {
+	s.ID = val
+}
+
+// SetBillingAccountID sets the value of BillingAccountID.
+func (s *TopUp) SetBillingAccountID(val int64) {
+	s.BillingAccountID = val
+}
+
+// SetAmount sets the value of Amount.
+func (s *TopUp) SetAmount(val Money) {
+	s.Amount = val
+}
+
+// SetCurrency sets the value of Currency.
+func (s *TopUp) SetCurrency(val string) {
+	s.Currency = val
+}
+
+// SetStatus sets the value of Status.
+func (s *TopUp) SetStatus(val TopUpStatus) {
+	s.Status = val
+}
+
+// SetCheckoutURL sets the value of CheckoutURL.
+func (s *TopUp) SetCheckoutURL(val OptString) {
+	s.CheckoutURL = val
+}
+
+// SetCreatedAt sets the value of CreatedAt.
+func (s *TopUp) SetCreatedAt(val time.Time) {
+	s.CreatedAt = val
+}
+
+// Ref: #/components/schemas/TopUpCreate
+type TopUpCreate struct {
+	BillingAccountID int64 `json:"billing_account_id"`
+	// In the account's currency.
+	Amount Money `json:"amount"`
+	// Charge a saved method instead of opening a checkout page.
+	PaymentMethodID OptUUID `json:"payment_method_id"`
+	// Where to send the payer after checkout.
+	ReturnURL OptString `json:"return_url"`
+	// Retrying with the same key returns the original top-up rather than starting a second one.
+	IdempotencyKey string `json:"idempotency_key"`
+}
+
+// GetBillingAccountID returns the value of BillingAccountID.
+func (s *TopUpCreate) GetBillingAccountID() int64 {
+	return s.BillingAccountID
+}
+
+// GetAmount returns the value of Amount.
+func (s *TopUpCreate) GetAmount() Money {
+	return s.Amount
+}
+
+// GetPaymentMethodID returns the value of PaymentMethodID.
+func (s *TopUpCreate) GetPaymentMethodID() OptUUID {
+	return s.PaymentMethodID
+}
+
+// GetReturnURL returns the value of ReturnURL.
+func (s *TopUpCreate) GetReturnURL() OptString {
+	return s.ReturnURL
+}
+
+// GetIdempotencyKey returns the value of IdempotencyKey.
+func (s *TopUpCreate) GetIdempotencyKey() string {
+	return s.IdempotencyKey
+}
+
+// SetBillingAccountID sets the value of BillingAccountID.
+func (s *TopUpCreate) SetBillingAccountID(val int64) {
+	s.BillingAccountID = val
+}
+
+// SetAmount sets the value of Amount.
+func (s *TopUpCreate) SetAmount(val Money) {
+	s.Amount = val
+}
+
+// SetPaymentMethodID sets the value of PaymentMethodID.
+func (s *TopUpCreate) SetPaymentMethodID(val OptUUID) {
+	s.PaymentMethodID = val
+}
+
+// SetReturnURL sets the value of ReturnURL.
+func (s *TopUpCreate) SetReturnURL(val OptString) {
+	s.ReturnURL = val
+}
+
+// SetIdempotencyKey sets the value of IdempotencyKey.
+func (s *TopUpCreate) SetIdempotencyKey(val string) {
+	s.IdempotencyKey = val
 }
 
 // Ref: #/components/schemas/TopUpList
 type TopUpList struct {
-	// How many entries there are in total, across every page.
-	//
-	// Without it, "is there another page" has to be guessed from whether this one came back full — and
-	// that guess turns into one extra fetch of an empty page whenever the last page happens to be exactly
-	// full.
-	TotalCount OptInt64      `json:"total_count"`
-	TopUps     []TopUpStatus `json:"top_ups"`
+	Items      []TopUp  `json:"items"`
+	TotalCount OptInt64 `json:"total_count"`
+}
+
+// GetItems returns the value of Items.
+func (s *TopUpList) GetItems() []TopUp {
+	return s.Items
 }
 
 // GetTotalCount returns the value of TotalCount.
@@ -5397,9 +8975,9 @@ func (s *TopUpList) GetTotalCount() OptInt64 {
 	return s.TotalCount
 }
 
-// GetTopUps returns the value of TopUps.
-func (s *TopUpList) GetTopUps() []TopUpStatus {
-	return s.TopUps
+// SetItems sets the value of Items.
+func (s *TopUpList) SetItems(val []TopUp) {
+	s.Items = val
 }
 
 // SetTotalCount sets the value of TotalCount.
@@ -5407,147 +8985,32 @@ func (s *TopUpList) SetTotalCount(val OptInt64) {
 	s.TotalCount = val
 }
 
-// SetTopUps sets the value of TopUps.
-func (s *TopUpList) SetTopUps(val []TopUpStatus) {
-	s.TopUps = val
-}
-
-// What a top-up bundle costs and what it grants. Present only on offers that sell credit.
-//
-// Unlike a plan price, this is stated on the bundle itself: credit is granted per transaction and has
-// no catalog of bundles to read from. There is no second copy to drift against, because there is no
-// first one anywhere else.
-// Ref: #/components/schemas/TopUpPricing
-type TopUpPricing struct {
-	// What is charged, as a decimal string.
-	Pay string `json:"pay"`
-	// How much credit is granted. Equal to `pay` when there is no bonus.
-	Credit string `json:"credit"`
-}
-
-// GetPay returns the value of Pay.
-func (s *TopUpPricing) GetPay() string {
-	return s.Pay
-}
-
-// GetCredit returns the value of Credit.
-func (s *TopUpPricing) GetCredit() string {
-	return s.Credit
-}
-
-// SetPay sets the value of Pay.
-func (s *TopUpPricing) SetPay(val string) {
-	s.Pay = val
-}
-
-// SetCredit sets the value of Credit.
-func (s *TopUpPricing) SetCredit(val string) {
-	s.Credit = val
-}
-
-// Ref: #/components/schemas/TopUpSession
-type TopUpSession struct {
-	// Identifies this attempt. Quote it in a support conversation — it is what ties the payment
-	// provider's record to the credit that was granted.
-	PaymentID string `json:"payment_id"`
-	// Send the browser here. It expires, so do not store it.
-	URL url.URL `json:"url"`
-}
-
-// GetPaymentID returns the value of PaymentID.
-func (s *TopUpSession) GetPaymentID() string {
-	return s.PaymentID
-}
-
-// GetURL returns the value of URL.
-func (s *TopUpSession) GetURL() url.URL {
-	return s.URL
-}
-
-// SetPaymentID sets the value of PaymentID.
-func (s *TopUpSession) SetPaymentID(val string) {
-	s.PaymentID = val
-}
-
-// SetURL sets the value of URL.
-func (s *TopUpSession) SetURL(val url.URL) {
-	s.URL = val
-}
-
-// Ref: #/components/schemas/TopUpStatus
-type TopUpStatus struct {
-	PaymentID string `json:"payment_id"`
-	// `settled` means the credit has landed. `pending` means it has not yet — the payment is still being
-	// confirmed, or the money itself is still in transit.
-	State TopUpStatusState `json:"state"`
-	// The credit that was issued, present once settled.
-	Amount   OptString   `json:"amount"`
-	Currency OptCurrency `json:"currency"`
-}
-
-// GetPaymentID returns the value of PaymentID.
-func (s *TopUpStatus) GetPaymentID() string {
-	return s.PaymentID
-}
-
-// GetState returns the value of State.
-func (s *TopUpStatus) GetState() TopUpStatusState {
-	return s.State
-}
-
-// GetAmount returns the value of Amount.
-func (s *TopUpStatus) GetAmount() OptString {
-	return s.Amount
-}
-
-// GetCurrency returns the value of Currency.
-func (s *TopUpStatus) GetCurrency() OptCurrency {
-	return s.Currency
-}
-
-// SetPaymentID sets the value of PaymentID.
-func (s *TopUpStatus) SetPaymentID(val string) {
-	s.PaymentID = val
-}
-
-// SetState sets the value of State.
-func (s *TopUpStatus) SetState(val TopUpStatusState) {
-	s.State = val
-}
-
-// SetAmount sets the value of Amount.
-func (s *TopUpStatus) SetAmount(val OptString) {
-	s.Amount = val
-}
-
-// SetCurrency sets the value of Currency.
-func (s *TopUpStatus) SetCurrency(val OptCurrency) {
-	s.Currency = val
-}
-
-// `settled` means the credit has landed. `pending` means it has not yet — the payment is still being
-// confirmed, or the money itself is still in transit.
-type TopUpStatusState string
+// `pending` until the payment provider confirms. The balance increases on `succeeded`.
+type TopUpStatus string
 
 const (
-	TopUpStatusStateSettled TopUpStatusState = "settled"
-	TopUpStatusStatePending TopUpStatusState = "pending"
+	TopUpStatusPending   TopUpStatus = "pending"
+	TopUpStatusSucceeded TopUpStatus = "succeeded"
+	TopUpStatusFailed    TopUpStatus = "failed"
 )
 
-// AllValues returns all TopUpStatusState values.
-func (TopUpStatusState) AllValues() []TopUpStatusState {
-	return []TopUpStatusState{
-		TopUpStatusStateSettled,
-		TopUpStatusStatePending,
+// AllValues returns all TopUpStatus values.
+func (TopUpStatus) AllValues() []TopUpStatus {
+	return []TopUpStatus{
+		TopUpStatusPending,
+		TopUpStatusSucceeded,
+		TopUpStatusFailed,
 	}
 }
 
 // MarshalText implements encoding.TextMarshaler.
-func (s TopUpStatusState) MarshalText() ([]byte, error) {
+func (s TopUpStatus) MarshalText() ([]byte, error) {
 	switch s {
-	case TopUpStatusStateSettled:
+	case TopUpStatusPending:
 		return []byte(s), nil
-	case TopUpStatusStatePending:
+	case TopUpStatusSucceeded:
+		return []byte(s), nil
+	case TopUpStatusFailed:
 		return []byte(s), nil
 	default:
 		return nil, errors.Errorf("invalid value: %q", s)
@@ -5555,79 +9018,289 @@ func (s TopUpStatusState) MarshalText() ([]byte, error) {
 }
 
 // UnmarshalText implements encoding.TextUnmarshaler.
-func (s *TopUpStatusState) UnmarshalText(data []byte) error {
-	switch TopUpStatusState(data) {
-	case TopUpStatusStateSettled:
-		*s = TopUpStatusStateSettled
+func (s *TopUpStatus) UnmarshalText(data []byte) error {
+	switch TopUpStatus(data) {
+	case TopUpStatusPending:
+		*s = TopUpStatusPending
 		return nil
-	case TopUpStatusStatePending:
-		*s = TopUpStatusStatePending
+	case TopUpStatusSucceeded:
+		*s = TopUpStatusSucceeded
+		return nil
+	case TopUpStatusFailed:
+		*s = TopUpStatusFailed
 		return nil
 	default:
 		return errors.Errorf("invalid value: %q", data)
 	}
 }
 
-// UnbindProjectFromBillingAccountNoContent is response for UnbindProjectFromBillingAccount operation.
-type UnbindProjectFromBillingAccountNoContent struct{}
-
-// One usage that has no rate card on the plan it was priced against.
-// Ref: #/components/schemas/UnpricedUsage
-type UnpricedUsage struct {
-	// The meter key this usage resolved to.
-	Key string `json:"key"`
-	// Echoed from the request when the usage was named by service and product.
-	Service OptString `json:"service"`
-	// Echoed from the request when the usage was named by service and product.
-	ProductID OptString `json:"product_id"`
-	// Echoed from the request.
-	Variant OptUnpricedUsageVariant `json:"variant"`
+// Ref: #/components/schemas/Transaction
+type Transaction struct {
+	ID               uuid.UUID       `json:"id"`
+	BillingAccountID OptInt64        `json:"billing_account_id"`
+	Type             TransactionType `json:"type"`
+	// Signed. Positive increases the balance, negative reduces it.
+	Amount   Money  `json:"amount"`
+	Currency string `json:"currency"`
+	// Why.
+	Reason    OptString  `json:"reason"`
+	InvoiceID OptNilUUID `json:"invoice_id"`
+	OrderID   OptNilUUID `json:"order_id"`
+	// `pending` is a payment still with the provider. Only one may be pending against any one invoice or
+	// order.
+	Status    TransactionStatus `json:"status"`
+	CreatedAt time.Time         `json:"created_at"`
 }
 
-// GetKey returns the value of Key.
-func (s *UnpricedUsage) GetKey() string {
-	return s.Key
+// GetID returns the value of ID.
+func (s *Transaction) GetID() uuid.UUID {
+	return s.ID
 }
 
-// GetService returns the value of Service.
-func (s *UnpricedUsage) GetService() OptString {
-	return s.Service
+// GetBillingAccountID returns the value of BillingAccountID.
+func (s *Transaction) GetBillingAccountID() OptInt64 {
+	return s.BillingAccountID
 }
 
-// GetProductID returns the value of ProductID.
-func (s *UnpricedUsage) GetProductID() OptString {
-	return s.ProductID
+// GetType returns the value of Type.
+func (s *Transaction) GetType() TransactionType {
+	return s.Type
 }
 
-// GetVariant returns the value of Variant.
-func (s *UnpricedUsage) GetVariant() OptUnpricedUsageVariant {
-	return s.Variant
+// GetAmount returns the value of Amount.
+func (s *Transaction) GetAmount() Money {
+	return s.Amount
 }
 
-// SetKey sets the value of Key.
-func (s *UnpricedUsage) SetKey(val string) {
-	s.Key = val
+// GetCurrency returns the value of Currency.
+func (s *Transaction) GetCurrency() string {
+	return s.Currency
 }
 
-// SetService sets the value of Service.
-func (s *UnpricedUsage) SetService(val OptString) {
-	s.Service = val
+// GetReason returns the value of Reason.
+func (s *Transaction) GetReason() OptString {
+	return s.Reason
 }
 
-// SetProductID sets the value of ProductID.
-func (s *UnpricedUsage) SetProductID(val OptString) {
-	s.ProductID = val
+// GetInvoiceID returns the value of InvoiceID.
+func (s *Transaction) GetInvoiceID() OptNilUUID {
+	return s.InvoiceID
 }
 
-// SetVariant sets the value of Variant.
-func (s *UnpricedUsage) SetVariant(val OptUnpricedUsageVariant) {
-	s.Variant = val
+// GetOrderID returns the value of OrderID.
+func (s *Transaction) GetOrderID() OptNilUUID {
+	return s.OrderID
 }
 
-// Echoed from the request.
-type UnpricedUsageVariant map[string]string
+// GetStatus returns the value of Status.
+func (s *Transaction) GetStatus() TransactionStatus {
+	return s.Status
+}
 
-func (s *UnpricedUsageVariant) init() UnpricedUsageVariant {
+// GetCreatedAt returns the value of CreatedAt.
+func (s *Transaction) GetCreatedAt() time.Time {
+	return s.CreatedAt
+}
+
+// SetID sets the value of ID.
+func (s *Transaction) SetID(val uuid.UUID) {
+	s.ID = val
+}
+
+// SetBillingAccountID sets the value of BillingAccountID.
+func (s *Transaction) SetBillingAccountID(val OptInt64) {
+	s.BillingAccountID = val
+}
+
+// SetType sets the value of Type.
+func (s *Transaction) SetType(val TransactionType) {
+	s.Type = val
+}
+
+// SetAmount sets the value of Amount.
+func (s *Transaction) SetAmount(val Money) {
+	s.Amount = val
+}
+
+// SetCurrency sets the value of Currency.
+func (s *Transaction) SetCurrency(val string) {
+	s.Currency = val
+}
+
+// SetReason sets the value of Reason.
+func (s *Transaction) SetReason(val OptString) {
+	s.Reason = val
+}
+
+// SetInvoiceID sets the value of InvoiceID.
+func (s *Transaction) SetInvoiceID(val OptNilUUID) {
+	s.InvoiceID = val
+}
+
+// SetOrderID sets the value of OrderID.
+func (s *Transaction) SetOrderID(val OptNilUUID) {
+	s.OrderID = val
+}
+
+// SetStatus sets the value of Status.
+func (s *Transaction) SetStatus(val TransactionStatus) {
+	s.Status = val
+}
+
+// SetCreatedAt sets the value of CreatedAt.
+func (s *Transaction) SetCreatedAt(val time.Time) {
+	s.CreatedAt = val
+}
+
+// Ref: #/components/schemas/TransactionList
+type TransactionList struct {
+	Items      []Transaction `json:"items"`
+	TotalCount OptInt64      `json:"total_count"`
+}
+
+// GetItems returns the value of Items.
+func (s *TransactionList) GetItems() []Transaction {
+	return s.Items
+}
+
+// GetTotalCount returns the value of TotalCount.
+func (s *TransactionList) GetTotalCount() OptInt64 {
+	return s.TotalCount
+}
+
+// SetItems sets the value of Items.
+func (s *TransactionList) SetItems(val []Transaction) {
+	s.Items = val
+}
+
+// SetTotalCount sets the value of TotalCount.
+func (s *TransactionList) SetTotalCount(val OptInt64) {
+	s.TotalCount = val
+}
+
+// `pending` is a payment still with the provider. Only one may be pending against any one invoice or
+// order.
+type TransactionStatus string
+
+const (
+	TransactionStatusPending   TransactionStatus = "pending"
+	TransactionStatusSucceeded TransactionStatus = "succeeded"
+	TransactionStatusFailed    TransactionStatus = "failed"
+	TransactionStatusCanceled  TransactionStatus = "canceled"
+)
+
+// AllValues returns all TransactionStatus values.
+func (TransactionStatus) AllValues() []TransactionStatus {
+	return []TransactionStatus{
+		TransactionStatusPending,
+		TransactionStatusSucceeded,
+		TransactionStatusFailed,
+		TransactionStatusCanceled,
+	}
+}
+
+// MarshalText implements encoding.TextMarshaler.
+func (s TransactionStatus) MarshalText() ([]byte, error) {
+	switch s {
+	case TransactionStatusPending:
+		return []byte(s), nil
+	case TransactionStatusSucceeded:
+		return []byte(s), nil
+	case TransactionStatusFailed:
+		return []byte(s), nil
+	case TransactionStatusCanceled:
+		return []byte(s), nil
+	default:
+		return nil, errors.Errorf("invalid value: %q", s)
+	}
+}
+
+// UnmarshalText implements encoding.TextUnmarshaler.
+func (s *TransactionStatus) UnmarshalText(data []byte) error {
+	switch TransactionStatus(data) {
+	case TransactionStatusPending:
+		*s = TransactionStatusPending
+		return nil
+	case TransactionStatusSucceeded:
+		*s = TransactionStatusSucceeded
+		return nil
+	case TransactionStatusFailed:
+		*s = TransactionStatusFailed
+		return nil
+	case TransactionStatusCanceled:
+		*s = TransactionStatusCanceled
+		return nil
+	default:
+		return errors.Errorf("invalid value: %q", data)
+	}
+}
+
+// What moved the money. These are the events that change the account's cash balance.
+//
+// Charges for usage and amounts reserved by orders are not here: usage appears among the charges and
+// on invoices, and a reservation appears as an allocation.
+// Ref: #/components/schemas/TransactionType
+type TransactionType string
+
+const (
+	TransactionTypeTopup      TransactionType = "topup"
+	TransactionTypeRefund     TransactionType = "refund"
+	TransactionTypePayout     TransactionType = "payout"
+	TransactionTypeAdjustment TransactionType = "adjustment"
+)
+
+// AllValues returns all TransactionType values.
+func (TransactionType) AllValues() []TransactionType {
+	return []TransactionType{
+		TransactionTypeTopup,
+		TransactionTypeRefund,
+		TransactionTypePayout,
+		TransactionTypeAdjustment,
+	}
+}
+
+// MarshalText implements encoding.TextMarshaler.
+func (s TransactionType) MarshalText() ([]byte, error) {
+	switch s {
+	case TransactionTypeTopup:
+		return []byte(s), nil
+	case TransactionTypeRefund:
+		return []byte(s), nil
+	case TransactionTypePayout:
+		return []byte(s), nil
+	case TransactionTypeAdjustment:
+		return []byte(s), nil
+	default:
+		return nil, errors.Errorf("invalid value: %q", s)
+	}
+}
+
+// UnmarshalText implements encoding.TextUnmarshaler.
+func (s *TransactionType) UnmarshalText(data []byte) error {
+	switch TransactionType(data) {
+	case TransactionTypeTopup:
+		*s = TransactionTypeTopup
+		return nil
+	case TransactionTypeRefund:
+		*s = TransactionTypeRefund
+		return nil
+	case TransactionTypePayout:
+		*s = TransactionTypePayout
+		return nil
+	case TransactionTypeAdjustment:
+		*s = TransactionTypeAdjustment
+		return nil
+	default:
+		return errors.Errorf("invalid value: %q", data)
+	}
+}
+
+// Names in other languages, keyed by BCP 47 language tag. Where your locale is absent, use the plain
+// `name`; there is no fallback between related tags.
+// Ref: #/components/schemas/Translations
+type Translations map[string]string
+
+func (s *Translations) init() Translations {
 	m := *s
 	if m == nil {
 		m = map[string]string{}
@@ -5636,113 +9309,231 @@ func (s *UnpricedUsageVariant) init() UnpricedUsageVariant {
 	return m
 }
 
-// Ref: #/components/schemas/UpdateBillingAccountRequestBody
-type UpdateBillingAccountRequestBody struct {
-	DisplayName string `json:"display_name"`
+// UnbindProjectPayerNoContent is response for UnbindProjectPayer operation.
+type UnbindProjectPayerNoContent struct{}
+
+// Ref: #/components/schemas/UsageCharge
+type UsageCharge struct {
+	ID         uuid.UUID `json:"id"`
+	ProjectID  OptUUID   `json:"project_id"`
+	ProductKey string    `json:"product_key"`
+	// Which resource this was charged for. Empty for charges not tied to one.
+	ResourceID OptString `json:"resource_id"`
+	// What was measured, such as `instance_seconds`.
+	MeterKey string    `json:"meter_key"`
+	Unit     OptString `json:"unit"`
+	// The attributes the rate was chosen by, such as region and machine type.
+	Dimensions  OptUsageChargeDimensions `json:"dimensions"`
+	WindowStart time.Time                `json:"window_start"`
+	// Exclusive.
+	WindowEnd time.Time `json:"window_end"`
+	// How much was used, before any included allowance.
+	GrossQuantity OptString `json:"gross_quantity"`
+	// How much of that was covered by an allowance.
+	DeductedQuantity OptString `json:"deducted_quantity"`
+	// What was charged for — the gross quantity less the part covered.
+	Quantity   string   `json:"quantity"`
+	UnitAmount OptMoney `json:"unit_amount"`
+	Amount     OptMoney `json:"amount"`
+	Currency   string   `json:"currency"`
+	// Absent until the period is invoiced.
+	InvoiceID OptNilUUID `json:"invoice_id"`
 }
 
-// GetDisplayName returns the value of DisplayName.
-func (s *UpdateBillingAccountRequestBody) GetDisplayName() string {
-	return s.DisplayName
+// GetID returns the value of ID.
+func (s *UsageCharge) GetID() uuid.UUID {
+	return s.ID
 }
 
-// SetDisplayName sets the value of DisplayName.
-func (s *UpdateBillingAccountRequestBody) SetDisplayName(val string) {
-	s.DisplayName = val
+// GetProjectID returns the value of ProjectID.
+func (s *UsageCharge) GetProjectID() OptUUID {
+	return s.ProjectID
 }
 
-// Ref: #/components/schemas/Voucher
-type Voucher struct {
-	RedemptionID uuid.UUID `json:"redemption_id"`
-	PromotionKey string    `json:"promotion_key"`
-	Name         OptString `json:"name"`
-	Amount       string    `json:"amount"`
-	Currency     string    `json:"currency"`
-	GrantedAt    time.Time `json:"granted_at"`
+// GetProductKey returns the value of ProductKey.
+func (s *UsageCharge) GetProductKey() string {
+	return s.ProductKey
 }
 
-// GetRedemptionID returns the value of RedemptionID.
-func (s *Voucher) GetRedemptionID() uuid.UUID {
-	return s.RedemptionID
+// GetResourceID returns the value of ResourceID.
+func (s *UsageCharge) GetResourceID() OptString {
+	return s.ResourceID
 }
 
-// GetPromotionKey returns the value of PromotionKey.
-func (s *Voucher) GetPromotionKey() string {
-	return s.PromotionKey
+// GetMeterKey returns the value of MeterKey.
+func (s *UsageCharge) GetMeterKey() string {
+	return s.MeterKey
 }
 
-// GetName returns the value of Name.
-func (s *Voucher) GetName() OptString {
-	return s.Name
+// GetUnit returns the value of Unit.
+func (s *UsageCharge) GetUnit() OptString {
+	return s.Unit
+}
+
+// GetDimensions returns the value of Dimensions.
+func (s *UsageCharge) GetDimensions() OptUsageChargeDimensions {
+	return s.Dimensions
+}
+
+// GetWindowStart returns the value of WindowStart.
+func (s *UsageCharge) GetWindowStart() time.Time {
+	return s.WindowStart
+}
+
+// GetWindowEnd returns the value of WindowEnd.
+func (s *UsageCharge) GetWindowEnd() time.Time {
+	return s.WindowEnd
+}
+
+// GetGrossQuantity returns the value of GrossQuantity.
+func (s *UsageCharge) GetGrossQuantity() OptString {
+	return s.GrossQuantity
+}
+
+// GetDeductedQuantity returns the value of DeductedQuantity.
+func (s *UsageCharge) GetDeductedQuantity() OptString {
+	return s.DeductedQuantity
+}
+
+// GetQuantity returns the value of Quantity.
+func (s *UsageCharge) GetQuantity() string {
+	return s.Quantity
+}
+
+// GetUnitAmount returns the value of UnitAmount.
+func (s *UsageCharge) GetUnitAmount() OptMoney {
+	return s.UnitAmount
 }
 
 // GetAmount returns the value of Amount.
-func (s *Voucher) GetAmount() string {
+func (s *UsageCharge) GetAmount() OptMoney {
 	return s.Amount
 }
 
 // GetCurrency returns the value of Currency.
-func (s *Voucher) GetCurrency() string {
+func (s *UsageCharge) GetCurrency() string {
 	return s.Currency
 }
 
-// GetGrantedAt returns the value of GrantedAt.
-func (s *Voucher) GetGrantedAt() time.Time {
-	return s.GrantedAt
+// GetInvoiceID returns the value of InvoiceID.
+func (s *UsageCharge) GetInvoiceID() OptNilUUID {
+	return s.InvoiceID
 }
 
-// SetRedemptionID sets the value of RedemptionID.
-func (s *Voucher) SetRedemptionID(val uuid.UUID) {
-	s.RedemptionID = val
+// SetID sets the value of ID.
+func (s *UsageCharge) SetID(val uuid.UUID) {
+	s.ID = val
 }
 
-// SetPromotionKey sets the value of PromotionKey.
-func (s *Voucher) SetPromotionKey(val string) {
-	s.PromotionKey = val
+// SetProjectID sets the value of ProjectID.
+func (s *UsageCharge) SetProjectID(val OptUUID) {
+	s.ProjectID = val
 }
 
-// SetName sets the value of Name.
-func (s *Voucher) SetName(val OptString) {
-	s.Name = val
+// SetProductKey sets the value of ProductKey.
+func (s *UsageCharge) SetProductKey(val string) {
+	s.ProductKey = val
+}
+
+// SetResourceID sets the value of ResourceID.
+func (s *UsageCharge) SetResourceID(val OptString) {
+	s.ResourceID = val
+}
+
+// SetMeterKey sets the value of MeterKey.
+func (s *UsageCharge) SetMeterKey(val string) {
+	s.MeterKey = val
+}
+
+// SetUnit sets the value of Unit.
+func (s *UsageCharge) SetUnit(val OptString) {
+	s.Unit = val
+}
+
+// SetDimensions sets the value of Dimensions.
+func (s *UsageCharge) SetDimensions(val OptUsageChargeDimensions) {
+	s.Dimensions = val
+}
+
+// SetWindowStart sets the value of WindowStart.
+func (s *UsageCharge) SetWindowStart(val time.Time) {
+	s.WindowStart = val
+}
+
+// SetWindowEnd sets the value of WindowEnd.
+func (s *UsageCharge) SetWindowEnd(val time.Time) {
+	s.WindowEnd = val
+}
+
+// SetGrossQuantity sets the value of GrossQuantity.
+func (s *UsageCharge) SetGrossQuantity(val OptString) {
+	s.GrossQuantity = val
+}
+
+// SetDeductedQuantity sets the value of DeductedQuantity.
+func (s *UsageCharge) SetDeductedQuantity(val OptString) {
+	s.DeductedQuantity = val
+}
+
+// SetQuantity sets the value of Quantity.
+func (s *UsageCharge) SetQuantity(val string) {
+	s.Quantity = val
+}
+
+// SetUnitAmount sets the value of UnitAmount.
+func (s *UsageCharge) SetUnitAmount(val OptMoney) {
+	s.UnitAmount = val
 }
 
 // SetAmount sets the value of Amount.
-func (s *Voucher) SetAmount(val string) {
+func (s *UsageCharge) SetAmount(val OptMoney) {
 	s.Amount = val
 }
 
 // SetCurrency sets the value of Currency.
-func (s *Voucher) SetCurrency(val string) {
+func (s *UsageCharge) SetCurrency(val string) {
 	s.Currency = val
 }
 
-// SetGrantedAt sets the value of GrantedAt.
-func (s *Voucher) SetGrantedAt(val time.Time) {
-	s.GrantedAt = val
+// SetInvoiceID sets the value of InvoiceID.
+func (s *UsageCharge) SetInvoiceID(val OptNilUUID) {
+	s.InvoiceID = val
 }
 
-// Ref: #/components/schemas/VoucherList
-type VoucherList struct {
-	Items      []Voucher `json:"items"`
-	TotalCount OptInt    `json:"total_count"`
+// The attributes the rate was chosen by, such as region and machine type.
+type UsageChargeDimensions map[string]string
+
+func (s *UsageChargeDimensions) init() UsageChargeDimensions {
+	m := *s
+	if m == nil {
+		m = map[string]string{}
+		*s = m
+	}
+	return m
+}
+
+// Ref: #/components/schemas/UsageChargeList
+type UsageChargeList struct {
+	Items      []UsageCharge `json:"items"`
+	TotalCount OptInt64      `json:"total_count"`
 }
 
 // GetItems returns the value of Items.
-func (s *VoucherList) GetItems() []Voucher {
+func (s *UsageChargeList) GetItems() []UsageCharge {
 	return s.Items
 }
 
 // GetTotalCount returns the value of TotalCount.
-func (s *VoucherList) GetTotalCount() OptInt {
+func (s *UsageChargeList) GetTotalCount() OptInt64 {
 	return s.TotalCount
 }
 
 // SetItems sets the value of Items.
-func (s *VoucherList) SetItems(val []Voucher) {
+func (s *UsageChargeList) SetItems(val []UsageCharge) {
 	s.Items = val
 }
 
 // SetTotalCount sets the value of TotalCount.
-func (s *VoucherList) SetTotalCount(val OptInt) {
+func (s *UsageChargeList) SetTotalCount(val OptInt64) {
 	s.TotalCount = val
 }

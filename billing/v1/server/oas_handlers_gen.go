@@ -33,449 +33,12 @@ func (c *codeRecorder) Unwrap() http.ResponseWriter {
 	return c.ResponseWriter
 }
 
-// handleBindProjectToBillingAccountRequest handles bind-project-to-billing-account operation.
-//
-// Binds a project to this account. A project bound to another account is moved.
-//
-// Both the account and the project must belong to the caller. Either one failing refuses the request.
-// Requiring the project as well as the account is what stops somebody attaching a project that is not
-// theirs — which sounds generous, since they would be paying for it, but it would also expose that
-// project's usage to them, and let them detach it again at any moment, leaving the project with no
-// account and therefore unable to allocate anything.
-//
-// Idempotent: binding a project already bound to this account changes nothing.
-//
-// Only subsequent usage is affected; see the hard constraint on rebinding.
-//
-// PUT /account/v1/billing-accounts/{accountKey}/projects/{projectId}
-func (s *Server) handleBindProjectToBillingAccountRequest(args [2]string, argsEscaped bool, w http.ResponseWriter, r *http.Request) {
-	statusWriter := &codeRecorder{ResponseWriter: w}
-	w = statusWriter
-	otelAttrs := []attribute.KeyValue{
-		otelogen.OperationID("bind-project-to-billing-account"),
-		semconv.HTTPRequestMethodKey.String("PUT"),
-		semconv.HTTPRouteKey.String("/account/v1/billing-accounts/{accountKey}/projects/{projectId}"),
-	}
-	// Add attributes from config.
-	otelAttrs = append(otelAttrs, s.cfg.Attributes...)
-
-	// Start a span for this request.
-	ctx, span := s.cfg.Tracer.Start(r.Context(), BindProjectToBillingAccountOperation,
-		trace.WithAttributes(otelAttrs...),
-		serverSpanKind,
-	)
-	defer span.End()
-
-	// Add Labeler to context.
-	labeler := &Labeler{attrs: otelAttrs}
-	ctx = contextWithLabeler(ctx, labeler)
-
-	// Run stopwatch.
-	startTime := time.Now()
-	defer func() {
-		elapsedDuration := time.Since(startTime)
-
-		attrSet := labeler.AttributeSet()
-		attrs := attrSet.ToSlice()
-		code := statusWriter.status
-		if code != 0 {
-			codeAttr := semconv.HTTPResponseStatusCode(code)
-			attrs = append(attrs, codeAttr)
-			span.SetAttributes(attrs...)
-		}
-		attrOpt := metric.WithAttributes(attrs...)
-
-		// Increment request counter.
-		s.requests.Add(ctx, 1, attrOpt)
-
-		// Use floating point division here for higher precision (instead of Millisecond method).
-		s.duration.Record(ctx, float64(elapsedDuration)/float64(time.Millisecond), attrOpt)
-	}()
-
-	var (
-		recordError = func(stage string, err error) {
-			span.RecordError(err)
-
-			// https://opentelemetry.io/docs/specs/semconv/http/http-spans/#status
-			// Span Status MUST be left unset if HTTP status code was in the 1xx, 2xx or 3xx ranges,
-			// unless there was another error (e.g., network error receiving the response body; or 3xx codes with
-			// max redirects exceeded), in which case status MUST be set to Error.
-			code := statusWriter.status
-			if code < 100 || code >= 500 {
-				span.SetStatus(codes.Error, stage)
-			}
-
-			attrSet := labeler.AttributeSet()
-			attrs := attrSet.ToSlice()
-			if code != 0 {
-				attrs = append(attrs, semconv.HTTPResponseStatusCode(code))
-			}
-
-			s.errors.Add(ctx, 1, metric.WithAttributes(attrs...))
-		}
-		err          error
-		opErrContext = ogenerrors.OperationContext{
-			Name: BindProjectToBillingAccountOperation,
-			ID:   "bind-project-to-billing-account",
-		}
-	)
-	{
-		type bitset = [1]uint8
-		var satisfied bitset
-		{
-			sctx, ok, err := s.securityBearerAuth(ctx, BindProjectToBillingAccountOperation, r)
-			if err != nil {
-				err = &ogenerrors.SecurityError{
-					OperationContext: opErrContext,
-					Security:         "BearerAuth",
-					Err:              err,
-				}
-				if encodeErr := encodeErrorResponse(s.h.NewError(ctx, err), w, span); encodeErr != nil {
-					defer recordError("Security:BearerAuth", err)
-				}
-				return
-			}
-			if ok {
-				satisfied[0] |= 1 << 0
-				ctx = sctx
-			}
-		}
-
-		if ok := func() bool {
-		nextRequirement:
-			for _, requirement := range []bitset{
-				{0b00000001},
-			} {
-				for i, mask := range requirement {
-					if satisfied[i]&mask != mask {
-						continue nextRequirement
-					}
-				}
-				return true
-			}
-			return false
-		}(); !ok {
-			err = &ogenerrors.SecurityError{
-				OperationContext: opErrContext,
-				Err:              ogenerrors.ErrSecurityRequirementIsNotSatisfied,
-			}
-			if encodeErr := encodeErrorResponse(s.h.NewError(ctx, err), w, span); encodeErr != nil {
-				defer recordError("Security", err)
-			}
-			return
-		}
-	}
-	params, err := decodeBindProjectToBillingAccountParams(args, argsEscaped, r)
-	if err != nil {
-		err = &ogenerrors.DecodeParamsError{
-			OperationContext: opErrContext,
-			Err:              err,
-		}
-		defer recordError("DecodeParams", err)
-		s.cfg.ErrorHandler(ctx, w, r, err)
-		return
-	}
-
-	var rawBody []byte
-
-	var response *ProjectBinding
-	if m := s.cfg.Middleware; m != nil {
-		mreq := middleware.Request{
-			Context:          ctx,
-			OperationName:    BindProjectToBillingAccountOperation,
-			OperationSummary: "Make this account pay for a project",
-			OperationID:      "bind-project-to-billing-account",
-			Body:             nil,
-			RawBody:          rawBody,
-			Params: middleware.Parameters{
-				{
-					Name: "accountKey",
-					In:   "path",
-				}: params.AccountKey,
-				{
-					Name: "projectId",
-					In:   "path",
-				}: params.ProjectId,
-			},
-			Raw: r,
-		}
-
-		type (
-			Request  = struct{}
-			Params   = BindProjectToBillingAccountParams
-			Response = *ProjectBinding
-		)
-		response, err = middleware.HookMiddleware[
-			Request,
-			Params,
-			Response,
-		](
-			m,
-			mreq,
-			unpackBindProjectToBillingAccountParams,
-			func(ctx context.Context, request Request, params Params) (response Response, err error) {
-				response, err = s.h.BindProjectToBillingAccount(ctx, params)
-				return response, err
-			},
-		)
-	} else {
-		response, err = s.h.BindProjectToBillingAccount(ctx, params)
-	}
-	if err != nil {
-		if errRes, ok := errors.Into[*ErrorStatusCode](err); ok {
-			if err := encodeErrorResponse(errRes, w, span); err != nil {
-				defer recordError("Internal", err)
-			}
-			return
-		}
-		if errors.Is(err, ht.ErrNotImplemented) {
-			s.cfg.ErrorHandler(ctx, w, r, err)
-			return
-		}
-		if err := encodeErrorResponse(s.h.NewError(ctx, err), w, span); err != nil {
-			defer recordError("Internal", err)
-		}
-		return
-	}
-
-	if err := encodeBindProjectToBillingAccountResponse(response, w, span); err != nil {
-		defer recordError("EncodeResponse", err)
-		if !errors.Is(err, ht.ErrInternalServerErrorResponse) {
-			s.cfg.ErrorHandler(ctx, w, r, err)
-		}
-		return
-	}
-}
-
-// handleCancelSubscriptionRequest handles cancel-subscription operation.
-//
-// Takes the account off its paid plan and back to the free tier.
-//
-// Ending immediately lands on the free tier straight away. Ending at the end of the period is a plain
-// cancellation that can still be undone (`subscription/keep`) — it deliberately does not schedule a
-// switch, because a scheduled switch holds the customer's one subscription slot and the engine gives
-// no way to cancel it afterwards. The free tier is applied once the period actually ends, by the sweep
-// that keeps every account on some plan.
-//
-// `timing` has to be stated. Ending immediately on an account that has already paid for the current
-// period takes back what they paid for; ending at the end of the period does not. There is no default
-// because the two are materially different and picking one silently would make the wrong one happen
-// whenever the field is forgotten.
-//
-// Without this, someone who bought a paid plan can only stop paying by contacting support — which is
-// how a cancellation becomes a chargeback.
-//
-// POST /account/v1/billing-accounts/{accountKey}/subscription/cancel
-func (s *Server) handleCancelSubscriptionRequest(args [1]string, argsEscaped bool, w http.ResponseWriter, r *http.Request) {
-	statusWriter := &codeRecorder{ResponseWriter: w}
-	w = statusWriter
-	otelAttrs := []attribute.KeyValue{
-		otelogen.OperationID("cancel-subscription"),
-		semconv.HTTPRequestMethodKey.String("POST"),
-		semconv.HTTPRouteKey.String("/account/v1/billing-accounts/{accountKey}/subscription/cancel"),
-	}
-	// Add attributes from config.
-	otelAttrs = append(otelAttrs, s.cfg.Attributes...)
-
-	// Start a span for this request.
-	ctx, span := s.cfg.Tracer.Start(r.Context(), CancelSubscriptionOperation,
-		trace.WithAttributes(otelAttrs...),
-		serverSpanKind,
-	)
-	defer span.End()
-
-	// Add Labeler to context.
-	labeler := &Labeler{attrs: otelAttrs}
-	ctx = contextWithLabeler(ctx, labeler)
-
-	// Run stopwatch.
-	startTime := time.Now()
-	defer func() {
-		elapsedDuration := time.Since(startTime)
-
-		attrSet := labeler.AttributeSet()
-		attrs := attrSet.ToSlice()
-		code := statusWriter.status
-		if code != 0 {
-			codeAttr := semconv.HTTPResponseStatusCode(code)
-			attrs = append(attrs, codeAttr)
-			span.SetAttributes(attrs...)
-		}
-		attrOpt := metric.WithAttributes(attrs...)
-
-		// Increment request counter.
-		s.requests.Add(ctx, 1, attrOpt)
-
-		// Use floating point division here for higher precision (instead of Millisecond method).
-		s.duration.Record(ctx, float64(elapsedDuration)/float64(time.Millisecond), attrOpt)
-	}()
-
-	var (
-		recordError = func(stage string, err error) {
-			span.RecordError(err)
-
-			// https://opentelemetry.io/docs/specs/semconv/http/http-spans/#status
-			// Span Status MUST be left unset if HTTP status code was in the 1xx, 2xx or 3xx ranges,
-			// unless there was another error (e.g., network error receiving the response body; or 3xx codes with
-			// max redirects exceeded), in which case status MUST be set to Error.
-			code := statusWriter.status
-			if code < 100 || code >= 500 {
-				span.SetStatus(codes.Error, stage)
-			}
-
-			attrSet := labeler.AttributeSet()
-			attrs := attrSet.ToSlice()
-			if code != 0 {
-				attrs = append(attrs, semconv.HTTPResponseStatusCode(code))
-			}
-
-			s.errors.Add(ctx, 1, metric.WithAttributes(attrs...))
-		}
-		err          error
-		opErrContext = ogenerrors.OperationContext{
-			Name: CancelSubscriptionOperation,
-			ID:   "cancel-subscription",
-		}
-	)
-	{
-		type bitset = [1]uint8
-		var satisfied bitset
-		{
-			sctx, ok, err := s.securityBearerAuth(ctx, CancelSubscriptionOperation, r)
-			if err != nil {
-				err = &ogenerrors.SecurityError{
-					OperationContext: opErrContext,
-					Security:         "BearerAuth",
-					Err:              err,
-				}
-				if encodeErr := encodeErrorResponse(s.h.NewError(ctx, err), w, span); encodeErr != nil {
-					defer recordError("Security:BearerAuth", err)
-				}
-				return
-			}
-			if ok {
-				satisfied[0] |= 1 << 0
-				ctx = sctx
-			}
-		}
-
-		if ok := func() bool {
-		nextRequirement:
-			for _, requirement := range []bitset{
-				{0b00000001},
-			} {
-				for i, mask := range requirement {
-					if satisfied[i]&mask != mask {
-						continue nextRequirement
-					}
-				}
-				return true
-			}
-			return false
-		}(); !ok {
-			err = &ogenerrors.SecurityError{
-				OperationContext: opErrContext,
-				Err:              ogenerrors.ErrSecurityRequirementIsNotSatisfied,
-			}
-			if encodeErr := encodeErrorResponse(s.h.NewError(ctx, err), w, span); encodeErr != nil {
-				defer recordError("Security", err)
-			}
-			return
-		}
-	}
-	params, err := decodeCancelSubscriptionParams(args, argsEscaped, r)
-	if err != nil {
-		err = &ogenerrors.DecodeParamsError{
-			OperationContext: opErrContext,
-			Err:              err,
-		}
-		defer recordError("DecodeParams", err)
-		s.cfg.ErrorHandler(ctx, w, r, err)
-		return
-	}
-
-	var rawBody []byte
-
-	var response *Subscription
-	if m := s.cfg.Middleware; m != nil {
-		mreq := middleware.Request{
-			Context:          ctx,
-			OperationName:    CancelSubscriptionOperation,
-			OperationSummary: "Come off the paid plan",
-			OperationID:      "cancel-subscription",
-			Body:             nil,
-			RawBody:          rawBody,
-			Params: middleware.Parameters{
-				{
-					Name: "accountKey",
-					In:   "path",
-				}: params.AccountKey,
-				{
-					Name: "timing",
-					In:   "query",
-				}: params.Timing,
-			},
-			Raw: r,
-		}
-
-		type (
-			Request  = struct{}
-			Params   = CancelSubscriptionParams
-			Response = *Subscription
-		)
-		response, err = middleware.HookMiddleware[
-			Request,
-			Params,
-			Response,
-		](
-			m,
-			mreq,
-			unpackCancelSubscriptionParams,
-			func(ctx context.Context, request Request, params Params) (response Response, err error) {
-				response, err = s.h.CancelSubscription(ctx, params)
-				return response, err
-			},
-		)
-	} else {
-		response, err = s.h.CancelSubscription(ctx, params)
-	}
-	if err != nil {
-		if errRes, ok := errors.Into[*ErrorStatusCode](err); ok {
-			if err := encodeErrorResponse(errRes, w, span); err != nil {
-				defer recordError("Internal", err)
-			}
-			return
-		}
-		if errors.Is(err, ht.ErrNotImplemented) {
-			s.cfg.ErrorHandler(ctx, w, r, err)
-			return
-		}
-		if err := encodeErrorResponse(s.h.NewError(ctx, err), w, span); err != nil {
-			defer recordError("Internal", err)
-		}
-		return
-	}
-
-	if err := encodeCancelSubscriptionResponse(response, w, span); err != nil {
-		defer recordError("EncodeResponse", err)
-		if !errors.Is(err, ht.ErrInternalServerErrorResponse) {
-			s.cfg.ErrorHandler(ctx, w, r, err)
-		}
-		return
-	}
-}
-
 // handleCreateBillingAccountRequest handles create-billing-account operation.
 //
-// Creates a billing account for the caller.
+// The currency is chosen here and cannot be changed afterwards. Everything charged to the account —
+// prices, orders, invoices, balance — is denominated in it.
 //
-// `seq` is supplied by the client, not assigned here. Assigning it would mean reading the existing
-// accounts and adding one, which is a read-modify-write race: two concurrent "create" clicks compute
-// the same `seq`. Having the client name it turns that race into a plain idempotent repeat — the
-// second request returns the first account instead of failing.
-//
-// The new account pays for nothing. Binding a project is a separate, deliberate act; doing it here
-// would quietly turn "I want to add a card" into "I have changed who pays".
+// One person may hold several accounts, for example a personal one and one for a team.
 //
 // POST /account/v1/billing-accounts
 func (s *Server) handleCreateBillingAccountRequest(args [0]string, argsEscaped bool, w http.ResponseWriter, r *http.Request) {
@@ -553,15 +116,15 @@ func (s *Server) handleCreateBillingAccountRequest(args [0]string, argsEscaped b
 		type bitset = [1]uint8
 		var satisfied bitset
 		{
-			sctx, ok, err := s.securityBearerAuth(ctx, CreateBillingAccountOperation, r)
+			sctx, ok, err := s.securityAccountAuth(ctx, CreateBillingAccountOperation, r)
 			if err != nil {
 				err = &ogenerrors.SecurityError{
 					OperationContext: opErrContext,
-					Security:         "BearerAuth",
+					Security:         "AccountAuth",
 					Err:              err,
 				}
 				if encodeErr := encodeErrorResponse(s.h.NewError(ctx, err), w, span); encodeErr != nil {
-					defer recordError("Security:BearerAuth", err)
+					defer recordError("Security:AccountAuth", err)
 				}
 				return
 			}
@@ -618,7 +181,7 @@ func (s *Server) handleCreateBillingAccountRequest(args [0]string, argsEscaped b
 		mreq := middleware.Request{
 			Context:          ctx,
 			OperationName:    CreateBillingAccountOperation,
-			OperationSummary: "Create a billing account",
+			OperationSummary: "Open a billing account",
 			OperationID:      "create-billing-account",
 			Body:             request,
 			RawBody:          rawBody,
@@ -627,7 +190,7 @@ func (s *Server) handleCreateBillingAccountRequest(args [0]string, argsEscaped b
 		}
 
 		type (
-			Request  = *CreateBillingAccountRequestBody
+			Request  = *BillingAccountCreate
 			Params   = struct{}
 			Response = *BillingAccount
 		)
@@ -673,22 +236,1406 @@ func (s *Server) handleCreateBillingAccountRequest(args [0]string, argsEscaped b
 	}
 }
 
+// handleCreateEstimateRequest handles create-estimate operation.
+//
+// Uses public list prices. Nothing is reserved and nothing is recorded, so this may be called as often
+// as required.
+//
+// `POST` is used because the set of items to price does not fit in a query string. There is no
+// corresponding `GET`, and no estimate is stored to retrieve.
+//
+// An account holding a negotiated agreement may be charged less than this. Tax and discounts are not
+// included.
+//
+// POST /catalog/v1/estimates
+func (s *Server) handleCreateEstimateRequest(args [0]string, argsEscaped bool, w http.ResponseWriter, r *http.Request) {
+	statusWriter := &codeRecorder{ResponseWriter: w}
+	w = statusWriter
+	otelAttrs := []attribute.KeyValue{
+		otelogen.OperationID("create-estimate"),
+		semconv.HTTPRequestMethodKey.String("POST"),
+		semconv.HTTPRouteKey.String("/catalog/v1/estimates"),
+	}
+	// Add attributes from config.
+	otelAttrs = append(otelAttrs, s.cfg.Attributes...)
+
+	// Start a span for this request.
+	ctx, span := s.cfg.Tracer.Start(r.Context(), CreateEstimateOperation,
+		trace.WithAttributes(otelAttrs...),
+		serverSpanKind,
+	)
+	defer span.End()
+
+	// Add Labeler to context.
+	labeler := &Labeler{attrs: otelAttrs}
+	ctx = contextWithLabeler(ctx, labeler)
+
+	// Run stopwatch.
+	startTime := time.Now()
+	defer func() {
+		elapsedDuration := time.Since(startTime)
+
+		attrSet := labeler.AttributeSet()
+		attrs := attrSet.ToSlice()
+		code := statusWriter.status
+		if code != 0 {
+			codeAttr := semconv.HTTPResponseStatusCode(code)
+			attrs = append(attrs, codeAttr)
+			span.SetAttributes(attrs...)
+		}
+		attrOpt := metric.WithAttributes(attrs...)
+
+		// Increment request counter.
+		s.requests.Add(ctx, 1, attrOpt)
+
+		// Use floating point division here for higher precision (instead of Millisecond method).
+		s.duration.Record(ctx, float64(elapsedDuration)/float64(time.Millisecond), attrOpt)
+	}()
+
+	var (
+		recordError = func(stage string, err error) {
+			span.RecordError(err)
+
+			// https://opentelemetry.io/docs/specs/semconv/http/http-spans/#status
+			// Span Status MUST be left unset if HTTP status code was in the 1xx, 2xx or 3xx ranges,
+			// unless there was another error (e.g., network error receiving the response body; or 3xx codes with
+			// max redirects exceeded), in which case status MUST be set to Error.
+			code := statusWriter.status
+			if code < 100 || code >= 500 {
+				span.SetStatus(codes.Error, stage)
+			}
+
+			attrSet := labeler.AttributeSet()
+			attrs := attrSet.ToSlice()
+			if code != 0 {
+				attrs = append(attrs, semconv.HTTPResponseStatusCode(code))
+			}
+
+			s.errors.Add(ctx, 1, metric.WithAttributes(attrs...))
+		}
+		err          error
+		opErrContext = ogenerrors.OperationContext{
+			Name: CreateEstimateOperation,
+			ID:   "create-estimate",
+		}
+	)
+
+	var rawBody []byte
+	request, rawBody, close, err := s.decodeCreateEstimateRequest(r)
+	if err != nil {
+		err = &ogenerrors.DecodeRequestError{
+			OperationContext: opErrContext,
+			Err:              err,
+		}
+		defer recordError("DecodeRequest", err)
+		s.cfg.ErrorHandler(ctx, w, r, err)
+		return
+	}
+	defer func() {
+		if err := close(); err != nil {
+			recordError("CloseRequest", err)
+		}
+	}()
+
+	var response *Quote
+	if m := s.cfg.Middleware; m != nil {
+		mreq := middleware.Request{
+			Context:          ctx,
+			OperationName:    CreateEstimateOperation,
+			OperationSummary: "Estimate a purchase without signing in",
+			OperationID:      "create-estimate",
+			Body:             request,
+			RawBody:          rawBody,
+			Params:           middleware.Parameters{},
+			Raw:              r,
+		}
+
+		type (
+			Request  = *EstimateRequest
+			Params   = struct{}
+			Response = *Quote
+		)
+		response, err = middleware.HookMiddleware[
+			Request,
+			Params,
+			Response,
+		](
+			m,
+			mreq,
+			nil,
+			func(ctx context.Context, request Request, params Params) (response Response, err error) {
+				response, err = s.h.CreateEstimate(ctx, request)
+				return response, err
+			},
+		)
+	} else {
+		response, err = s.h.CreateEstimate(ctx, request)
+	}
+	if err != nil {
+		if errRes, ok := errors.Into[*ErrorStatusCode](err); ok {
+			if err := encodeErrorResponse(errRes, w, span); err != nil {
+				defer recordError("Internal", err)
+			}
+			return
+		}
+		if errors.Is(err, ht.ErrNotImplemented) {
+			s.cfg.ErrorHandler(ctx, w, r, err)
+			return
+		}
+		if err := encodeErrorResponse(s.h.NewError(ctx, err), w, span); err != nil {
+			defer recordError("Internal", err)
+		}
+		return
+	}
+
+	if err := encodeCreateEstimateResponse(response, w, span); err != nil {
+		defer recordError("EncodeResponse", err)
+		if !errors.Is(err, ht.ErrInternalServerErrorResponse) {
+			s.cfg.ErrorHandler(ctx, w, r, err)
+		}
+		return
+	}
+}
+
+// handleCreatePaymentMethodSetupRequest handles create-payment-method-setup operation.
+//
+// Returns an address at which the payment provider collects the card details. Nothing is charged. The
+// method appears in the list once the provider confirms it.
+//
+// Card numbers are never sent to or stored by this service.
+//
+// POST /account/v1/payment-methods/setup
+func (s *Server) handleCreatePaymentMethodSetupRequest(args [0]string, argsEscaped bool, w http.ResponseWriter, r *http.Request) {
+	statusWriter := &codeRecorder{ResponseWriter: w}
+	w = statusWriter
+	otelAttrs := []attribute.KeyValue{
+		otelogen.OperationID("create-payment-method-setup"),
+		semconv.HTTPRequestMethodKey.String("POST"),
+		semconv.HTTPRouteKey.String("/account/v1/payment-methods/setup"),
+	}
+	// Add attributes from config.
+	otelAttrs = append(otelAttrs, s.cfg.Attributes...)
+
+	// Start a span for this request.
+	ctx, span := s.cfg.Tracer.Start(r.Context(), CreatePaymentMethodSetupOperation,
+		trace.WithAttributes(otelAttrs...),
+		serverSpanKind,
+	)
+	defer span.End()
+
+	// Add Labeler to context.
+	labeler := &Labeler{attrs: otelAttrs}
+	ctx = contextWithLabeler(ctx, labeler)
+
+	// Run stopwatch.
+	startTime := time.Now()
+	defer func() {
+		elapsedDuration := time.Since(startTime)
+
+		attrSet := labeler.AttributeSet()
+		attrs := attrSet.ToSlice()
+		code := statusWriter.status
+		if code != 0 {
+			codeAttr := semconv.HTTPResponseStatusCode(code)
+			attrs = append(attrs, codeAttr)
+			span.SetAttributes(attrs...)
+		}
+		attrOpt := metric.WithAttributes(attrs...)
+
+		// Increment request counter.
+		s.requests.Add(ctx, 1, attrOpt)
+
+		// Use floating point division here for higher precision (instead of Millisecond method).
+		s.duration.Record(ctx, float64(elapsedDuration)/float64(time.Millisecond), attrOpt)
+	}()
+
+	var (
+		recordError = func(stage string, err error) {
+			span.RecordError(err)
+
+			// https://opentelemetry.io/docs/specs/semconv/http/http-spans/#status
+			// Span Status MUST be left unset if HTTP status code was in the 1xx, 2xx or 3xx ranges,
+			// unless there was another error (e.g., network error receiving the response body; or 3xx codes with
+			// max redirects exceeded), in which case status MUST be set to Error.
+			code := statusWriter.status
+			if code < 100 || code >= 500 {
+				span.SetStatus(codes.Error, stage)
+			}
+
+			attrSet := labeler.AttributeSet()
+			attrs := attrSet.ToSlice()
+			if code != 0 {
+				attrs = append(attrs, semconv.HTTPResponseStatusCode(code))
+			}
+
+			s.errors.Add(ctx, 1, metric.WithAttributes(attrs...))
+		}
+		err          error
+		opErrContext = ogenerrors.OperationContext{
+			Name: CreatePaymentMethodSetupOperation,
+			ID:   "create-payment-method-setup",
+		}
+	)
+	{
+		type bitset = [1]uint8
+		var satisfied bitset
+		{
+			sctx, ok, err := s.securityAccountAuth(ctx, CreatePaymentMethodSetupOperation, r)
+			if err != nil {
+				err = &ogenerrors.SecurityError{
+					OperationContext: opErrContext,
+					Security:         "AccountAuth",
+					Err:              err,
+				}
+				if encodeErr := encodeErrorResponse(s.h.NewError(ctx, err), w, span); encodeErr != nil {
+					defer recordError("Security:AccountAuth", err)
+				}
+				return
+			}
+			if ok {
+				satisfied[0] |= 1 << 0
+				ctx = sctx
+			}
+		}
+
+		if ok := func() bool {
+		nextRequirement:
+			for _, requirement := range []bitset{
+				{0b00000001},
+			} {
+				for i, mask := range requirement {
+					if satisfied[i]&mask != mask {
+						continue nextRequirement
+					}
+				}
+				return true
+			}
+			return false
+		}(); !ok {
+			err = &ogenerrors.SecurityError{
+				OperationContext: opErrContext,
+				Err:              ogenerrors.ErrSecurityRequirementIsNotSatisfied,
+			}
+			if encodeErr := encodeErrorResponse(s.h.NewError(ctx, err), w, span); encodeErr != nil {
+				defer recordError("Security", err)
+			}
+			return
+		}
+	}
+
+	var rawBody []byte
+	request, rawBody, close, err := s.decodeCreatePaymentMethodSetupRequest(r)
+	if err != nil {
+		err = &ogenerrors.DecodeRequestError{
+			OperationContext: opErrContext,
+			Err:              err,
+		}
+		defer recordError("DecodeRequest", err)
+		s.cfg.ErrorHandler(ctx, w, r, err)
+		return
+	}
+	defer func() {
+		if err := close(); err != nil {
+			recordError("CloseRequest", err)
+		}
+	}()
+
+	var response *PaymentMethodSetupResult
+	if m := s.cfg.Middleware; m != nil {
+		mreq := middleware.Request{
+			Context:          ctx,
+			OperationName:    CreatePaymentMethodSetupOperation,
+			OperationSummary: "Begin adding a payment method",
+			OperationID:      "create-payment-method-setup",
+			Body:             request,
+			RawBody:          rawBody,
+			Params:           middleware.Parameters{},
+			Raw:              r,
+		}
+
+		type (
+			Request  = *PaymentMethodSetup
+			Params   = struct{}
+			Response = *PaymentMethodSetupResult
+		)
+		response, err = middleware.HookMiddleware[
+			Request,
+			Params,
+			Response,
+		](
+			m,
+			mreq,
+			nil,
+			func(ctx context.Context, request Request, params Params) (response Response, err error) {
+				response, err = s.h.CreatePaymentMethodSetup(ctx, request)
+				return response, err
+			},
+		)
+	} else {
+		response, err = s.h.CreatePaymentMethodSetup(ctx, request)
+	}
+	if err != nil {
+		if errRes, ok := errors.Into[*ErrorStatusCode](err); ok {
+			if err := encodeErrorResponse(errRes, w, span); err != nil {
+				defer recordError("Internal", err)
+			}
+			return
+		}
+		if errors.Is(err, ht.ErrNotImplemented) {
+			s.cfg.ErrorHandler(ctx, w, r, err)
+			return
+		}
+		if err := encodeErrorResponse(s.h.NewError(ctx, err), w, span); err != nil {
+			defer recordError("Internal", err)
+		}
+		return
+	}
+
+	if err := encodeCreatePaymentMethodSetupResponse(response, w, span); err != nil {
+		defer recordError("EncodeResponse", err)
+		if !errors.Is(err, ht.ErrInternalServerErrorResponse) {
+			s.cfg.ErrorHandler(ctx, w, r, err)
+		}
+		return
+	}
+}
+
+// handleCreateProjectQuoteRequest handles create-project-quote operation.
+//
+// Priced in the paying account's currency, and at any rate negotiated for that account. Nothing is
+// reserved and nothing is recorded, so this may be called as often as required.
+//
+// Prices may change between quoting and ordering. An order is charged at the price in effect when it
+// is placed, so a quote should be refreshed before a final confirmation is shown.
+//
+// Returns 404 when no account pays for this project.
+//
+// POST /api/v1/projects/{projectId}/quotes
+func (s *Server) handleCreateProjectQuoteRequest(args [1]string, argsEscaped bool, w http.ResponseWriter, r *http.Request) {
+	statusWriter := &codeRecorder{ResponseWriter: w}
+	w = statusWriter
+	otelAttrs := []attribute.KeyValue{
+		otelogen.OperationID("create-project-quote"),
+		semconv.HTTPRequestMethodKey.String("POST"),
+		semconv.HTTPRouteKey.String("/api/v1/projects/{projectId}/quotes"),
+	}
+	// Add attributes from config.
+	otelAttrs = append(otelAttrs, s.cfg.Attributes...)
+
+	// Start a span for this request.
+	ctx, span := s.cfg.Tracer.Start(r.Context(), CreateProjectQuoteOperation,
+		trace.WithAttributes(otelAttrs...),
+		serverSpanKind,
+	)
+	defer span.End()
+
+	// Add Labeler to context.
+	labeler := &Labeler{attrs: otelAttrs}
+	ctx = contextWithLabeler(ctx, labeler)
+
+	// Run stopwatch.
+	startTime := time.Now()
+	defer func() {
+		elapsedDuration := time.Since(startTime)
+
+		attrSet := labeler.AttributeSet()
+		attrs := attrSet.ToSlice()
+		code := statusWriter.status
+		if code != 0 {
+			codeAttr := semconv.HTTPResponseStatusCode(code)
+			attrs = append(attrs, codeAttr)
+			span.SetAttributes(attrs...)
+		}
+		attrOpt := metric.WithAttributes(attrs...)
+
+		// Increment request counter.
+		s.requests.Add(ctx, 1, attrOpt)
+
+		// Use floating point division here for higher precision (instead of Millisecond method).
+		s.duration.Record(ctx, float64(elapsedDuration)/float64(time.Millisecond), attrOpt)
+	}()
+
+	var (
+		recordError = func(stage string, err error) {
+			span.RecordError(err)
+
+			// https://opentelemetry.io/docs/specs/semconv/http/http-spans/#status
+			// Span Status MUST be left unset if HTTP status code was in the 1xx, 2xx or 3xx ranges,
+			// unless there was another error (e.g., network error receiving the response body; or 3xx codes with
+			// max redirects exceeded), in which case status MUST be set to Error.
+			code := statusWriter.status
+			if code < 100 || code >= 500 {
+				span.SetStatus(codes.Error, stage)
+			}
+
+			attrSet := labeler.AttributeSet()
+			attrs := attrSet.ToSlice()
+			if code != 0 {
+				attrs = append(attrs, semconv.HTTPResponseStatusCode(code))
+			}
+
+			s.errors.Add(ctx, 1, metric.WithAttributes(attrs...))
+		}
+		err          error
+		opErrContext = ogenerrors.OperationContext{
+			Name: CreateProjectQuoteOperation,
+			ID:   "create-project-quote",
+		}
+	)
+	{
+		type bitset = [1]uint8
+		var satisfied bitset
+		{
+			sctx, ok, err := s.securityProjectAuth(ctx, CreateProjectQuoteOperation, r)
+			if err != nil {
+				err = &ogenerrors.SecurityError{
+					OperationContext: opErrContext,
+					Security:         "ProjectAuth",
+					Err:              err,
+				}
+				if encodeErr := encodeErrorResponse(s.h.NewError(ctx, err), w, span); encodeErr != nil {
+					defer recordError("Security:ProjectAuth", err)
+				}
+				return
+			}
+			if ok {
+				satisfied[0] |= 1 << 0
+				ctx = sctx
+			}
+		}
+
+		if ok := func() bool {
+		nextRequirement:
+			for _, requirement := range []bitset{
+				{0b00000001},
+			} {
+				for i, mask := range requirement {
+					if satisfied[i]&mask != mask {
+						continue nextRequirement
+					}
+				}
+				return true
+			}
+			return false
+		}(); !ok {
+			err = &ogenerrors.SecurityError{
+				OperationContext: opErrContext,
+				Err:              ogenerrors.ErrSecurityRequirementIsNotSatisfied,
+			}
+			if encodeErr := encodeErrorResponse(s.h.NewError(ctx, err), w, span); encodeErr != nil {
+				defer recordError("Security", err)
+			}
+			return
+		}
+	}
+	params, err := decodeCreateProjectQuoteParams(args, argsEscaped, r)
+	if err != nil {
+		err = &ogenerrors.DecodeParamsError{
+			OperationContext: opErrContext,
+			Err:              err,
+		}
+		defer recordError("DecodeParams", err)
+		s.cfg.ErrorHandler(ctx, w, r, err)
+		return
+	}
+
+	var rawBody []byte
+	request, rawBody, close, err := s.decodeCreateProjectQuoteRequest(r)
+	if err != nil {
+		err = &ogenerrors.DecodeRequestError{
+			OperationContext: opErrContext,
+			Err:              err,
+		}
+		defer recordError("DecodeRequest", err)
+		s.cfg.ErrorHandler(ctx, w, r, err)
+		return
+	}
+	defer func() {
+		if err := close(); err != nil {
+			recordError("CloseRequest", err)
+		}
+	}()
+
+	var response *Quote
+	if m := s.cfg.Middleware; m != nil {
+		mreq := middleware.Request{
+			Context:          ctx,
+			OperationName:    CreateProjectQuoteOperation,
+			OperationSummary: "Price a purchase before making it",
+			OperationID:      "create-project-quote",
+			Body:             request,
+			RawBody:          rawBody,
+			Params: middleware.Parameters{
+				{
+					Name: "projectId",
+					In:   "path",
+				}: params.ProjectId,
+			},
+			Raw: r,
+		}
+
+		type (
+			Request  = *QuoteRequest
+			Params   = CreateProjectQuoteParams
+			Response = *Quote
+		)
+		response, err = middleware.HookMiddleware[
+			Request,
+			Params,
+			Response,
+		](
+			m,
+			mreq,
+			unpackCreateProjectQuoteParams,
+			func(ctx context.Context, request Request, params Params) (response Response, err error) {
+				response, err = s.h.CreateProjectQuote(ctx, request, params)
+				return response, err
+			},
+		)
+	} else {
+		response, err = s.h.CreateProjectQuote(ctx, request, params)
+	}
+	if err != nil {
+		if errRes, ok := errors.Into[*ErrorStatusCode](err); ok {
+			if err := encodeErrorResponse(errRes, w, span); err != nil {
+				defer recordError("Internal", err)
+			}
+			return
+		}
+		if errors.Is(err, ht.ErrNotImplemented) {
+			s.cfg.ErrorHandler(ctx, w, r, err)
+			return
+		}
+		if err := encodeErrorResponse(s.h.NewError(ctx, err), w, span); err != nil {
+			defer recordError("Internal", err)
+		}
+		return
+	}
+
+	if err := encodeCreateProjectQuoteResponse(response, w, span); err != nil {
+		defer recordError("EncodeResponse", err)
+		if !errors.Is(err, ht.ErrInternalServerErrorResponse) {
+			s.cfg.ErrorHandler(ctx, w, r, err)
+		}
+		return
+	}
+}
+
+// handleCreateTopUpRequest handles create-top-up operation.
+//
+// Returns a checkout address. The balance increases when the payment provider confirms the payment,
+// which may be after this call returns.
+//
+// The amount is in the account's currency. A checkout page may present a local currency; the amount
+// credited to the account is the one requested here.
+//
+// POST /account/v1/top-ups
+func (s *Server) handleCreateTopUpRequest(args [0]string, argsEscaped bool, w http.ResponseWriter, r *http.Request) {
+	statusWriter := &codeRecorder{ResponseWriter: w}
+	w = statusWriter
+	otelAttrs := []attribute.KeyValue{
+		otelogen.OperationID("create-top-up"),
+		semconv.HTTPRequestMethodKey.String("POST"),
+		semconv.HTTPRouteKey.String("/account/v1/top-ups"),
+	}
+	// Add attributes from config.
+	otelAttrs = append(otelAttrs, s.cfg.Attributes...)
+
+	// Start a span for this request.
+	ctx, span := s.cfg.Tracer.Start(r.Context(), CreateTopUpOperation,
+		trace.WithAttributes(otelAttrs...),
+		serverSpanKind,
+	)
+	defer span.End()
+
+	// Add Labeler to context.
+	labeler := &Labeler{attrs: otelAttrs}
+	ctx = contextWithLabeler(ctx, labeler)
+
+	// Run stopwatch.
+	startTime := time.Now()
+	defer func() {
+		elapsedDuration := time.Since(startTime)
+
+		attrSet := labeler.AttributeSet()
+		attrs := attrSet.ToSlice()
+		code := statusWriter.status
+		if code != 0 {
+			codeAttr := semconv.HTTPResponseStatusCode(code)
+			attrs = append(attrs, codeAttr)
+			span.SetAttributes(attrs...)
+		}
+		attrOpt := metric.WithAttributes(attrs...)
+
+		// Increment request counter.
+		s.requests.Add(ctx, 1, attrOpt)
+
+		// Use floating point division here for higher precision (instead of Millisecond method).
+		s.duration.Record(ctx, float64(elapsedDuration)/float64(time.Millisecond), attrOpt)
+	}()
+
+	var (
+		recordError = func(stage string, err error) {
+			span.RecordError(err)
+
+			// https://opentelemetry.io/docs/specs/semconv/http/http-spans/#status
+			// Span Status MUST be left unset if HTTP status code was in the 1xx, 2xx or 3xx ranges,
+			// unless there was another error (e.g., network error receiving the response body; or 3xx codes with
+			// max redirects exceeded), in which case status MUST be set to Error.
+			code := statusWriter.status
+			if code < 100 || code >= 500 {
+				span.SetStatus(codes.Error, stage)
+			}
+
+			attrSet := labeler.AttributeSet()
+			attrs := attrSet.ToSlice()
+			if code != 0 {
+				attrs = append(attrs, semconv.HTTPResponseStatusCode(code))
+			}
+
+			s.errors.Add(ctx, 1, metric.WithAttributes(attrs...))
+		}
+		err          error
+		opErrContext = ogenerrors.OperationContext{
+			Name: CreateTopUpOperation,
+			ID:   "create-top-up",
+		}
+	)
+	{
+		type bitset = [1]uint8
+		var satisfied bitset
+		{
+			sctx, ok, err := s.securityAccountAuth(ctx, CreateTopUpOperation, r)
+			if err != nil {
+				err = &ogenerrors.SecurityError{
+					OperationContext: opErrContext,
+					Security:         "AccountAuth",
+					Err:              err,
+				}
+				if encodeErr := encodeErrorResponse(s.h.NewError(ctx, err), w, span); encodeErr != nil {
+					defer recordError("Security:AccountAuth", err)
+				}
+				return
+			}
+			if ok {
+				satisfied[0] |= 1 << 0
+				ctx = sctx
+			}
+		}
+
+		if ok := func() bool {
+		nextRequirement:
+			for _, requirement := range []bitset{
+				{0b00000001},
+			} {
+				for i, mask := range requirement {
+					if satisfied[i]&mask != mask {
+						continue nextRequirement
+					}
+				}
+				return true
+			}
+			return false
+		}(); !ok {
+			err = &ogenerrors.SecurityError{
+				OperationContext: opErrContext,
+				Err:              ogenerrors.ErrSecurityRequirementIsNotSatisfied,
+			}
+			if encodeErr := encodeErrorResponse(s.h.NewError(ctx, err), w, span); encodeErr != nil {
+				defer recordError("Security", err)
+			}
+			return
+		}
+	}
+
+	var rawBody []byte
+	request, rawBody, close, err := s.decodeCreateTopUpRequest(r)
+	if err != nil {
+		err = &ogenerrors.DecodeRequestError{
+			OperationContext: opErrContext,
+			Err:              err,
+		}
+		defer recordError("DecodeRequest", err)
+		s.cfg.ErrorHandler(ctx, w, r, err)
+		return
+	}
+	defer func() {
+		if err := close(); err != nil {
+			recordError("CloseRequest", err)
+		}
+	}()
+
+	var response *TopUp
+	if m := s.cfg.Middleware; m != nil {
+		mreq := middleware.Request{
+			Context:          ctx,
+			OperationName:    CreateTopUpOperation,
+			OperationSummary: "Add funds to an account",
+			OperationID:      "create-top-up",
+			Body:             request,
+			RawBody:          rawBody,
+			Params:           middleware.Parameters{},
+			Raw:              r,
+		}
+
+		type (
+			Request  = *TopUpCreate
+			Params   = struct{}
+			Response = *TopUp
+		)
+		response, err = middleware.HookMiddleware[
+			Request,
+			Params,
+			Response,
+		](
+			m,
+			mreq,
+			nil,
+			func(ctx context.Context, request Request, params Params) (response Response, err error) {
+				response, err = s.h.CreateTopUp(ctx, request)
+				return response, err
+			},
+		)
+	} else {
+		response, err = s.h.CreateTopUp(ctx, request)
+	}
+	if err != nil {
+		if errRes, ok := errors.Into[*ErrorStatusCode](err); ok {
+			if err := encodeErrorResponse(errRes, w, span); err != nil {
+				defer recordError("Internal", err)
+			}
+			return
+		}
+		if errors.Is(err, ht.ErrNotImplemented) {
+			s.cfg.ErrorHandler(ctx, w, r, err)
+			return
+		}
+		if err := encodeErrorResponse(s.h.NewError(ctx, err), w, span); err != nil {
+			defer recordError("Internal", err)
+		}
+		return
+	}
+
+	if err := encodeCreateTopUpResponse(response, w, span); err != nil {
+		defer recordError("EncodeResponse", err)
+		if !errors.Is(err, ht.ErrInternalServerErrorResponse) {
+			s.cfg.ErrorHandler(ctx, w, r, err)
+		}
+		return
+	}
+}
+
+// handleDeletePaymentMethodRequest handles delete-payment-method operation.
+//
+// Refused when it is the only method on an account that has resources billed by the hour, as there
+// would be nothing left to charge when the balance runs out.
+//
+// DELETE /account/v1/payment-methods/{paymentMethodId}
+func (s *Server) handleDeletePaymentMethodRequest(args [1]string, argsEscaped bool, w http.ResponseWriter, r *http.Request) {
+	statusWriter := &codeRecorder{ResponseWriter: w}
+	w = statusWriter
+	otelAttrs := []attribute.KeyValue{
+		otelogen.OperationID("delete-payment-method"),
+		semconv.HTTPRequestMethodKey.String("DELETE"),
+		semconv.HTTPRouteKey.String("/account/v1/payment-methods/{paymentMethodId}"),
+	}
+	// Add attributes from config.
+	otelAttrs = append(otelAttrs, s.cfg.Attributes...)
+
+	// Start a span for this request.
+	ctx, span := s.cfg.Tracer.Start(r.Context(), DeletePaymentMethodOperation,
+		trace.WithAttributes(otelAttrs...),
+		serverSpanKind,
+	)
+	defer span.End()
+
+	// Add Labeler to context.
+	labeler := &Labeler{attrs: otelAttrs}
+	ctx = contextWithLabeler(ctx, labeler)
+
+	// Run stopwatch.
+	startTime := time.Now()
+	defer func() {
+		elapsedDuration := time.Since(startTime)
+
+		attrSet := labeler.AttributeSet()
+		attrs := attrSet.ToSlice()
+		code := statusWriter.status
+		if code != 0 {
+			codeAttr := semconv.HTTPResponseStatusCode(code)
+			attrs = append(attrs, codeAttr)
+			span.SetAttributes(attrs...)
+		}
+		attrOpt := metric.WithAttributes(attrs...)
+
+		// Increment request counter.
+		s.requests.Add(ctx, 1, attrOpt)
+
+		// Use floating point division here for higher precision (instead of Millisecond method).
+		s.duration.Record(ctx, float64(elapsedDuration)/float64(time.Millisecond), attrOpt)
+	}()
+
+	var (
+		recordError = func(stage string, err error) {
+			span.RecordError(err)
+
+			// https://opentelemetry.io/docs/specs/semconv/http/http-spans/#status
+			// Span Status MUST be left unset if HTTP status code was in the 1xx, 2xx or 3xx ranges,
+			// unless there was another error (e.g., network error receiving the response body; or 3xx codes with
+			// max redirects exceeded), in which case status MUST be set to Error.
+			code := statusWriter.status
+			if code < 100 || code >= 500 {
+				span.SetStatus(codes.Error, stage)
+			}
+
+			attrSet := labeler.AttributeSet()
+			attrs := attrSet.ToSlice()
+			if code != 0 {
+				attrs = append(attrs, semconv.HTTPResponseStatusCode(code))
+			}
+
+			s.errors.Add(ctx, 1, metric.WithAttributes(attrs...))
+		}
+		err          error
+		opErrContext = ogenerrors.OperationContext{
+			Name: DeletePaymentMethodOperation,
+			ID:   "delete-payment-method",
+		}
+	)
+	{
+		type bitset = [1]uint8
+		var satisfied bitset
+		{
+			sctx, ok, err := s.securityAccountAuth(ctx, DeletePaymentMethodOperation, r)
+			if err != nil {
+				err = &ogenerrors.SecurityError{
+					OperationContext: opErrContext,
+					Security:         "AccountAuth",
+					Err:              err,
+				}
+				if encodeErr := encodeErrorResponse(s.h.NewError(ctx, err), w, span); encodeErr != nil {
+					defer recordError("Security:AccountAuth", err)
+				}
+				return
+			}
+			if ok {
+				satisfied[0] |= 1 << 0
+				ctx = sctx
+			}
+		}
+
+		if ok := func() bool {
+		nextRequirement:
+			for _, requirement := range []bitset{
+				{0b00000001},
+			} {
+				for i, mask := range requirement {
+					if satisfied[i]&mask != mask {
+						continue nextRequirement
+					}
+				}
+				return true
+			}
+			return false
+		}(); !ok {
+			err = &ogenerrors.SecurityError{
+				OperationContext: opErrContext,
+				Err:              ogenerrors.ErrSecurityRequirementIsNotSatisfied,
+			}
+			if encodeErr := encodeErrorResponse(s.h.NewError(ctx, err), w, span); encodeErr != nil {
+				defer recordError("Security", err)
+			}
+			return
+		}
+	}
+	params, err := decodeDeletePaymentMethodParams(args, argsEscaped, r)
+	if err != nil {
+		err = &ogenerrors.DecodeParamsError{
+			OperationContext: opErrContext,
+			Err:              err,
+		}
+		defer recordError("DecodeParams", err)
+		s.cfg.ErrorHandler(ctx, w, r, err)
+		return
+	}
+
+	var rawBody []byte
+
+	var response *DeletePaymentMethodNoContent
+	if m := s.cfg.Middleware; m != nil {
+		mreq := middleware.Request{
+			Context:          ctx,
+			OperationName:    DeletePaymentMethodOperation,
+			OperationSummary: "Remove a payment method",
+			OperationID:      "delete-payment-method",
+			Body:             nil,
+			RawBody:          rawBody,
+			Params: middleware.Parameters{
+				{
+					Name: "paymentMethodId",
+					In:   "path",
+				}: params.PaymentMethodId,
+			},
+			Raw: r,
+		}
+
+		type (
+			Request  = struct{}
+			Params   = DeletePaymentMethodParams
+			Response = *DeletePaymentMethodNoContent
+		)
+		response, err = middleware.HookMiddleware[
+			Request,
+			Params,
+			Response,
+		](
+			m,
+			mreq,
+			unpackDeletePaymentMethodParams,
+			func(ctx context.Context, request Request, params Params) (response Response, err error) {
+				err = s.h.DeletePaymentMethod(ctx, params)
+				return response, err
+			},
+		)
+	} else {
+		err = s.h.DeletePaymentMethod(ctx, params)
+	}
+	if err != nil {
+		if errRes, ok := errors.Into[*ErrorStatusCode](err); ok {
+			if err := encodeErrorResponse(errRes, w, span); err != nil {
+				defer recordError("Internal", err)
+			}
+			return
+		}
+		if errors.Is(err, ht.ErrNotImplemented) {
+			s.cfg.ErrorHandler(ctx, w, r, err)
+			return
+		}
+		if err := encodeErrorResponse(s.h.NewError(ctx, err), w, span); err != nil {
+			defer recordError("Internal", err)
+		}
+		return
+	}
+
+	if err := encodeDeletePaymentMethodResponse(response, w, span); err != nil {
+		defer recordError("EncodeResponse", err)
+		if !errors.Is(err, ht.ErrInternalServerErrorResponse) {
+			s.cfg.ErrorHandler(ctx, w, r, err)
+		}
+		return
+	}
+}
+
+// handleFindProjectPayerRequest handles find-project-payer operation.
+//
+// Returns 404 when no account pays for it. No resources can be created until one does.
+//
+// GET /account/v1/projects/{projectId}/billing-account
+func (s *Server) handleFindProjectPayerRequest(args [1]string, argsEscaped bool, w http.ResponseWriter, r *http.Request) {
+	statusWriter := &codeRecorder{ResponseWriter: w}
+	w = statusWriter
+	otelAttrs := []attribute.KeyValue{
+		otelogen.OperationID("find-project-payer"),
+		semconv.HTTPRequestMethodKey.String("GET"),
+		semconv.HTTPRouteKey.String("/account/v1/projects/{projectId}/billing-account"),
+	}
+	// Add attributes from config.
+	otelAttrs = append(otelAttrs, s.cfg.Attributes...)
+
+	// Start a span for this request.
+	ctx, span := s.cfg.Tracer.Start(r.Context(), FindProjectPayerOperation,
+		trace.WithAttributes(otelAttrs...),
+		serverSpanKind,
+	)
+	defer span.End()
+
+	// Add Labeler to context.
+	labeler := &Labeler{attrs: otelAttrs}
+	ctx = contextWithLabeler(ctx, labeler)
+
+	// Run stopwatch.
+	startTime := time.Now()
+	defer func() {
+		elapsedDuration := time.Since(startTime)
+
+		attrSet := labeler.AttributeSet()
+		attrs := attrSet.ToSlice()
+		code := statusWriter.status
+		if code != 0 {
+			codeAttr := semconv.HTTPResponseStatusCode(code)
+			attrs = append(attrs, codeAttr)
+			span.SetAttributes(attrs...)
+		}
+		attrOpt := metric.WithAttributes(attrs...)
+
+		// Increment request counter.
+		s.requests.Add(ctx, 1, attrOpt)
+
+		// Use floating point division here for higher precision (instead of Millisecond method).
+		s.duration.Record(ctx, float64(elapsedDuration)/float64(time.Millisecond), attrOpt)
+	}()
+
+	var (
+		recordError = func(stage string, err error) {
+			span.RecordError(err)
+
+			// https://opentelemetry.io/docs/specs/semconv/http/http-spans/#status
+			// Span Status MUST be left unset if HTTP status code was in the 1xx, 2xx or 3xx ranges,
+			// unless there was another error (e.g., network error receiving the response body; or 3xx codes with
+			// max redirects exceeded), in which case status MUST be set to Error.
+			code := statusWriter.status
+			if code < 100 || code >= 500 {
+				span.SetStatus(codes.Error, stage)
+			}
+
+			attrSet := labeler.AttributeSet()
+			attrs := attrSet.ToSlice()
+			if code != 0 {
+				attrs = append(attrs, semconv.HTTPResponseStatusCode(code))
+			}
+
+			s.errors.Add(ctx, 1, metric.WithAttributes(attrs...))
+		}
+		err          error
+		opErrContext = ogenerrors.OperationContext{
+			Name: FindProjectPayerOperation,
+			ID:   "find-project-payer",
+		}
+	)
+	{
+		type bitset = [1]uint8
+		var satisfied bitset
+		{
+			sctx, ok, err := s.securityAccountAuth(ctx, FindProjectPayerOperation, r)
+			if err != nil {
+				err = &ogenerrors.SecurityError{
+					OperationContext: opErrContext,
+					Security:         "AccountAuth",
+					Err:              err,
+				}
+				if encodeErr := encodeErrorResponse(s.h.NewError(ctx, err), w, span); encodeErr != nil {
+					defer recordError("Security:AccountAuth", err)
+				}
+				return
+			}
+			if ok {
+				satisfied[0] |= 1 << 0
+				ctx = sctx
+			}
+		}
+
+		if ok := func() bool {
+		nextRequirement:
+			for _, requirement := range []bitset{
+				{0b00000001},
+			} {
+				for i, mask := range requirement {
+					if satisfied[i]&mask != mask {
+						continue nextRequirement
+					}
+				}
+				return true
+			}
+			return false
+		}(); !ok {
+			err = &ogenerrors.SecurityError{
+				OperationContext: opErrContext,
+				Err:              ogenerrors.ErrSecurityRequirementIsNotSatisfied,
+			}
+			if encodeErr := encodeErrorResponse(s.h.NewError(ctx, err), w, span); encodeErr != nil {
+				defer recordError("Security", err)
+			}
+			return
+		}
+	}
+	params, err := decodeFindProjectPayerParams(args, argsEscaped, r)
+	if err != nil {
+		err = &ogenerrors.DecodeParamsError{
+			OperationContext: opErrContext,
+			Err:              err,
+		}
+		defer recordError("DecodeParams", err)
+		s.cfg.ErrorHandler(ctx, w, r, err)
+		return
+	}
+
+	var rawBody []byte
+
+	var response *ProjectBinding
+	if m := s.cfg.Middleware; m != nil {
+		mreq := middleware.Request{
+			Context:          ctx,
+			OperationName:    FindProjectPayerOperation,
+			OperationSummary: "Which account pays for a project",
+			OperationID:      "find-project-payer",
+			Body:             nil,
+			RawBody:          rawBody,
+			Params: middleware.Parameters{
+				{
+					Name: "projectId",
+					In:   "path",
+				}: params.ProjectId,
+			},
+			Raw: r,
+		}
+
+		type (
+			Request  = struct{}
+			Params   = FindProjectPayerParams
+			Response = *ProjectBinding
+		)
+		response, err = middleware.HookMiddleware[
+			Request,
+			Params,
+			Response,
+		](
+			m,
+			mreq,
+			unpackFindProjectPayerParams,
+			func(ctx context.Context, request Request, params Params) (response Response, err error) {
+				response, err = s.h.FindProjectPayer(ctx, params)
+				return response, err
+			},
+		)
+	} else {
+		response, err = s.h.FindProjectPayer(ctx, params)
+	}
+	if err != nil {
+		if errRes, ok := errors.Into[*ErrorStatusCode](err); ok {
+			if err := encodeErrorResponse(errRes, w, span); err != nil {
+				defer recordError("Internal", err)
+			}
+			return
+		}
+		if errors.Is(err, ht.ErrNotImplemented) {
+			s.cfg.ErrorHandler(ctx, w, r, err)
+			return
+		}
+		if err := encodeErrorResponse(s.h.NewError(ctx, err), w, span); err != nil {
+			defer recordError("Internal", err)
+		}
+		return
+	}
+
+	if err := encodeFindProjectPayerResponse(response, w, span); err != nil {
+		defer recordError("EncodeResponse", err)
+		if !errors.Is(err, ht.ErrInternalServerErrorResponse) {
+			s.cfg.ErrorHandler(ctx, w, r, err)
+		}
+		return
+	}
+}
+
+// handleGetAccountBalanceRequest handles get-account-balance operation.
+//
+// What the account holds and what it can still spend.
+//
+// GET /account/v1/billing-accounts/{accountId}/balance
+func (s *Server) handleGetAccountBalanceRequest(args [1]string, argsEscaped bool, w http.ResponseWriter, r *http.Request) {
+	statusWriter := &codeRecorder{ResponseWriter: w}
+	w = statusWriter
+	otelAttrs := []attribute.KeyValue{
+		otelogen.OperationID("get-account-balance"),
+		semconv.HTTPRequestMethodKey.String("GET"),
+		semconv.HTTPRouteKey.String("/account/v1/billing-accounts/{accountId}/balance"),
+	}
+	// Add attributes from config.
+	otelAttrs = append(otelAttrs, s.cfg.Attributes...)
+
+	// Start a span for this request.
+	ctx, span := s.cfg.Tracer.Start(r.Context(), GetAccountBalanceOperation,
+		trace.WithAttributes(otelAttrs...),
+		serverSpanKind,
+	)
+	defer span.End()
+
+	// Add Labeler to context.
+	labeler := &Labeler{attrs: otelAttrs}
+	ctx = contextWithLabeler(ctx, labeler)
+
+	// Run stopwatch.
+	startTime := time.Now()
+	defer func() {
+		elapsedDuration := time.Since(startTime)
+
+		attrSet := labeler.AttributeSet()
+		attrs := attrSet.ToSlice()
+		code := statusWriter.status
+		if code != 0 {
+			codeAttr := semconv.HTTPResponseStatusCode(code)
+			attrs = append(attrs, codeAttr)
+			span.SetAttributes(attrs...)
+		}
+		attrOpt := metric.WithAttributes(attrs...)
+
+		// Increment request counter.
+		s.requests.Add(ctx, 1, attrOpt)
+
+		// Use floating point division here for higher precision (instead of Millisecond method).
+		s.duration.Record(ctx, float64(elapsedDuration)/float64(time.Millisecond), attrOpt)
+	}()
+
+	var (
+		recordError = func(stage string, err error) {
+			span.RecordError(err)
+
+			// https://opentelemetry.io/docs/specs/semconv/http/http-spans/#status
+			// Span Status MUST be left unset if HTTP status code was in the 1xx, 2xx or 3xx ranges,
+			// unless there was another error (e.g., network error receiving the response body; or 3xx codes with
+			// max redirects exceeded), in which case status MUST be set to Error.
+			code := statusWriter.status
+			if code < 100 || code >= 500 {
+				span.SetStatus(codes.Error, stage)
+			}
+
+			attrSet := labeler.AttributeSet()
+			attrs := attrSet.ToSlice()
+			if code != 0 {
+				attrs = append(attrs, semconv.HTTPResponseStatusCode(code))
+			}
+
+			s.errors.Add(ctx, 1, metric.WithAttributes(attrs...))
+		}
+		err          error
+		opErrContext = ogenerrors.OperationContext{
+			Name: GetAccountBalanceOperation,
+			ID:   "get-account-balance",
+		}
+	)
+	{
+		type bitset = [1]uint8
+		var satisfied bitset
+		{
+			sctx, ok, err := s.securityAccountAuth(ctx, GetAccountBalanceOperation, r)
+			if err != nil {
+				err = &ogenerrors.SecurityError{
+					OperationContext: opErrContext,
+					Security:         "AccountAuth",
+					Err:              err,
+				}
+				if encodeErr := encodeErrorResponse(s.h.NewError(ctx, err), w, span); encodeErr != nil {
+					defer recordError("Security:AccountAuth", err)
+				}
+				return
+			}
+			if ok {
+				satisfied[0] |= 1 << 0
+				ctx = sctx
+			}
+		}
+
+		if ok := func() bool {
+		nextRequirement:
+			for _, requirement := range []bitset{
+				{0b00000001},
+			} {
+				for i, mask := range requirement {
+					if satisfied[i]&mask != mask {
+						continue nextRequirement
+					}
+				}
+				return true
+			}
+			return false
+		}(); !ok {
+			err = &ogenerrors.SecurityError{
+				OperationContext: opErrContext,
+				Err:              ogenerrors.ErrSecurityRequirementIsNotSatisfied,
+			}
+			if encodeErr := encodeErrorResponse(s.h.NewError(ctx, err), w, span); encodeErr != nil {
+				defer recordError("Security", err)
+			}
+			return
+		}
+	}
+	params, err := decodeGetAccountBalanceParams(args, argsEscaped, r)
+	if err != nil {
+		err = &ogenerrors.DecodeParamsError{
+			OperationContext: opErrContext,
+			Err:              err,
+		}
+		defer recordError("DecodeParams", err)
+		s.cfg.ErrorHandler(ctx, w, r, err)
+		return
+	}
+
+	var rawBody []byte
+
+	var response *AccountBalance
+	if m := s.cfg.Middleware; m != nil {
+		mreq := middleware.Request{
+			Context:          ctx,
+			OperationName:    GetAccountBalanceOperation,
+			OperationSummary: "What the account holds and what it can still spend",
+			OperationID:      "get-account-balance",
+			Body:             nil,
+			RawBody:          rawBody,
+			Params: middleware.Parameters{
+				{
+					Name: "accountId",
+					In:   "path",
+				}: params.AccountId,
+			},
+			Raw: r,
+		}
+
+		type (
+			Request  = struct{}
+			Params   = GetAccountBalanceParams
+			Response = *AccountBalance
+		)
+		response, err = middleware.HookMiddleware[
+			Request,
+			Params,
+			Response,
+		](
+			m,
+			mreq,
+			unpackGetAccountBalanceParams,
+			func(ctx context.Context, request Request, params Params) (response Response, err error) {
+				response, err = s.h.GetAccountBalance(ctx, params)
+				return response, err
+			},
+		)
+	} else {
+		response, err = s.h.GetAccountBalance(ctx, params)
+	}
+	if err != nil {
+		if errRes, ok := errors.Into[*ErrorStatusCode](err); ok {
+			if err := encodeErrorResponse(errRes, w, span); err != nil {
+				defer recordError("Internal", err)
+			}
+			return
+		}
+		if errors.Is(err, ht.ErrNotImplemented) {
+			s.cfg.ErrorHandler(ctx, w, r, err)
+			return
+		}
+		if err := encodeErrorResponse(s.h.NewError(ctx, err), w, span); err != nil {
+			defer recordError("Internal", err)
+		}
+		return
+	}
+
+	if err := encodeGetAccountBalanceResponse(response, w, span); err != nil {
+		defer recordError("EncodeResponse", err)
+		if !errors.Is(err, ht.ErrInternalServerErrorResponse) {
+			s.cfg.ErrorHandler(ctx, w, r, err)
+		}
+		return
+	}
+}
+
 // handleGetBillingAccountRequest handles get-billing-account operation.
 //
-// One account, with the projects it currently pays for.
-//
-// The list returns the same objects, so this exists for the case the list cannot serve: a link
-// straight to one account. Making the caller fetch every account and filter turns a bookmarked page
-// into a request whose cost grows with how many accounts they hold.
-//
-// GET /account/v1/billing-accounts/{accountKey}
+// GET /account/v1/billing-accounts/{accountId}
 func (s *Server) handleGetBillingAccountRequest(args [1]string, argsEscaped bool, w http.ResponseWriter, r *http.Request) {
 	statusWriter := &codeRecorder{ResponseWriter: w}
 	w = statusWriter
 	otelAttrs := []attribute.KeyValue{
 		otelogen.OperationID("get-billing-account"),
 		semconv.HTTPRequestMethodKey.String("GET"),
-		semconv.HTTPRouteKey.String("/account/v1/billing-accounts/{accountKey}"),
+		semconv.HTTPRouteKey.String("/account/v1/billing-accounts/{accountId}"),
 	}
 	// Add attributes from config.
 	otelAttrs = append(otelAttrs, s.cfg.Attributes...)
@@ -757,15 +1704,15 @@ func (s *Server) handleGetBillingAccountRequest(args [1]string, argsEscaped bool
 		type bitset = [1]uint8
 		var satisfied bitset
 		{
-			sctx, ok, err := s.securityBearerAuth(ctx, GetBillingAccountOperation, r)
+			sctx, ok, err := s.securityAccountAuth(ctx, GetBillingAccountOperation, r)
 			if err != nil {
 				err = &ogenerrors.SecurityError{
 					OperationContext: opErrContext,
-					Security:         "BearerAuth",
+					Security:         "AccountAuth",
 					Err:              err,
 				}
 				if encodeErr := encodeErrorResponse(s.h.NewError(ctx, err), w, span); encodeErr != nil {
-					defer recordError("Security:BearerAuth", err)
+					defer recordError("Security:AccountAuth", err)
 				}
 				return
 			}
@@ -817,15 +1764,15 @@ func (s *Server) handleGetBillingAccountRequest(args [1]string, argsEscaped bool
 		mreq := middleware.Request{
 			Context:          ctx,
 			OperationName:    GetBillingAccountOperation,
-			OperationSummary: "Read one of my billing accounts",
+			OperationSummary: "",
 			OperationID:      "get-billing-account",
 			Body:             nil,
 			RawBody:          rawBody,
 			Params: middleware.Parameters{
 				{
-					Name: "accountKey",
+					Name: "accountId",
 					In:   "path",
-				}: params.AccountKey,
+				}: params.AccountId,
 			},
 			Raw: r,
 		}
@@ -877,261 +1824,16 @@ func (s *Server) handleGetBillingAccountRequest(args [1]string, argsEscaped bool
 	}
 }
 
-// handleGetChargeUsageRequest handles get-charge-usage operation.
-//
-// Splits one charge back into the projects that produced it, and lists the resources it could have
-// come from.
-//
-// # Why this is not a field on the charge
-//
-// A charge has no project, and that is not an omission: the billing subject is the account, and the
-// project is a dimension on each usage event. When three of an account's projects use the same
-// product, their usage aggregates into one charge — that charge genuinely spans three projects, and
-// stamping any single project id on it would be wrong.
-//
-// A split is also more useful than a label would be: it gives proportions, and proportions are what
-// decide which project's resources to switch off.
-//
-// # The quantity here is what was reported, not what was billed
-//
-// Conversion (machine-seconds to machine-hours) happens on the pricing side, and the engine does not
-// echo `unit_config` back on a charge. So this figure times the unit price does not equal the total
-// — a step is missing in between, and that step only becomes visible on the invoice, where the whole
-// pricing configuration is frozen onto each line.
-//
-// Reported quantity is still the right number for "which project is burning this", which is what the
-// split is for.
-//
-// # The resource list says which, not how much
-//
-// Usage events carry no resource id — it is not a grouping dimension, and making it one would mean
-// one time series per machine per hour. So the engine cannot attribute a charge to a machine. What it
-// can be attributed to is a product, and which resources of that product exist is something billing
-// knows from its own records.
-//
-// Destroyed resources are listed too: this period's charge includes the part they ran for. Leaving
-// them out is what makes the numbers fail to add up for someone who deleted a machine mid-month —
-// which is exactly the case they are trying to explain.
-//
-// # A flat fee answers with an empty split
-//
-// There is no meter behind it, so there is nothing to attribute. That is an answer, not an error.
-//
-// GET /account/v1/billing-accounts/{accountKey}/charges/{chargeId}/usage
-func (s *Server) handleGetChargeUsageRequest(args [2]string, argsEscaped bool, w http.ResponseWriter, r *http.Request) {
-	statusWriter := &codeRecorder{ResponseWriter: w}
-	w = statusWriter
-	otelAttrs := []attribute.KeyValue{
-		otelogen.OperationID("get-charge-usage"),
-		semconv.HTTPRequestMethodKey.String("GET"),
-		semconv.HTTPRouteKey.String("/account/v1/billing-accounts/{accountKey}/charges/{chargeId}/usage"),
-	}
-	// Add attributes from config.
-	otelAttrs = append(otelAttrs, s.cfg.Attributes...)
-
-	// Start a span for this request.
-	ctx, span := s.cfg.Tracer.Start(r.Context(), GetChargeUsageOperation,
-		trace.WithAttributes(otelAttrs...),
-		serverSpanKind,
-	)
-	defer span.End()
-
-	// Add Labeler to context.
-	labeler := &Labeler{attrs: otelAttrs}
-	ctx = contextWithLabeler(ctx, labeler)
-
-	// Run stopwatch.
-	startTime := time.Now()
-	defer func() {
-		elapsedDuration := time.Since(startTime)
-
-		attrSet := labeler.AttributeSet()
-		attrs := attrSet.ToSlice()
-		code := statusWriter.status
-		if code != 0 {
-			codeAttr := semconv.HTTPResponseStatusCode(code)
-			attrs = append(attrs, codeAttr)
-			span.SetAttributes(attrs...)
-		}
-		attrOpt := metric.WithAttributes(attrs...)
-
-		// Increment request counter.
-		s.requests.Add(ctx, 1, attrOpt)
-
-		// Use floating point division here for higher precision (instead of Millisecond method).
-		s.duration.Record(ctx, float64(elapsedDuration)/float64(time.Millisecond), attrOpt)
-	}()
-
-	var (
-		recordError = func(stage string, err error) {
-			span.RecordError(err)
-
-			// https://opentelemetry.io/docs/specs/semconv/http/http-spans/#status
-			// Span Status MUST be left unset if HTTP status code was in the 1xx, 2xx or 3xx ranges,
-			// unless there was another error (e.g., network error receiving the response body; or 3xx codes with
-			// max redirects exceeded), in which case status MUST be set to Error.
-			code := statusWriter.status
-			if code < 100 || code >= 500 {
-				span.SetStatus(codes.Error, stage)
-			}
-
-			attrSet := labeler.AttributeSet()
-			attrs := attrSet.ToSlice()
-			if code != 0 {
-				attrs = append(attrs, semconv.HTTPResponseStatusCode(code))
-			}
-
-			s.errors.Add(ctx, 1, metric.WithAttributes(attrs...))
-		}
-		err          error
-		opErrContext = ogenerrors.OperationContext{
-			Name: GetChargeUsageOperation,
-			ID:   "get-charge-usage",
-		}
-	)
-	{
-		type bitset = [1]uint8
-		var satisfied bitset
-		{
-			sctx, ok, err := s.securityBearerAuth(ctx, GetChargeUsageOperation, r)
-			if err != nil {
-				err = &ogenerrors.SecurityError{
-					OperationContext: opErrContext,
-					Security:         "BearerAuth",
-					Err:              err,
-				}
-				if encodeErr := encodeErrorResponse(s.h.NewError(ctx, err), w, span); encodeErr != nil {
-					defer recordError("Security:BearerAuth", err)
-				}
-				return
-			}
-			if ok {
-				satisfied[0] |= 1 << 0
-				ctx = sctx
-			}
-		}
-
-		if ok := func() bool {
-		nextRequirement:
-			for _, requirement := range []bitset{
-				{0b00000001},
-			} {
-				for i, mask := range requirement {
-					if satisfied[i]&mask != mask {
-						continue nextRequirement
-					}
-				}
-				return true
-			}
-			return false
-		}(); !ok {
-			err = &ogenerrors.SecurityError{
-				OperationContext: opErrContext,
-				Err:              ogenerrors.ErrSecurityRequirementIsNotSatisfied,
-			}
-			if encodeErr := encodeErrorResponse(s.h.NewError(ctx, err), w, span); encodeErr != nil {
-				defer recordError("Security", err)
-			}
-			return
-		}
-	}
-	params, err := decodeGetChargeUsageParams(args, argsEscaped, r)
-	if err != nil {
-		err = &ogenerrors.DecodeParamsError{
-			OperationContext: opErrContext,
-			Err:              err,
-		}
-		defer recordError("DecodeParams", err)
-		s.cfg.ErrorHandler(ctx, w, r, err)
-		return
-	}
-
-	var rawBody []byte
-
-	var response *ChargeUsage
-	if m := s.cfg.Middleware; m != nil {
-		mreq := middleware.Request{
-			Context:          ctx,
-			OperationName:    GetChargeUsageOperation,
-			OperationSummary: "What produced this charge",
-			OperationID:      "get-charge-usage",
-			Body:             nil,
-			RawBody:          rawBody,
-			Params: middleware.Parameters{
-				{
-					Name: "accountKey",
-					In:   "path",
-				}: params.AccountKey,
-				{
-					Name: "chargeId",
-					In:   "path",
-				}: params.ChargeId,
-			},
-			Raw: r,
-		}
-
-		type (
-			Request  = struct{}
-			Params   = GetChargeUsageParams
-			Response = *ChargeUsage
-		)
-		response, err = middleware.HookMiddleware[
-			Request,
-			Params,
-			Response,
-		](
-			m,
-			mreq,
-			unpackGetChargeUsageParams,
-			func(ctx context.Context, request Request, params Params) (response Response, err error) {
-				response, err = s.h.GetChargeUsage(ctx, params)
-				return response, err
-			},
-		)
-	} else {
-		response, err = s.h.GetChargeUsage(ctx, params)
-	}
-	if err != nil {
-		if errRes, ok := errors.Into[*ErrorStatusCode](err); ok {
-			if err := encodeErrorResponse(errRes, w, span); err != nil {
-				defer recordError("Internal", err)
-			}
-			return
-		}
-		if errors.Is(err, ht.ErrNotImplemented) {
-			s.cfg.ErrorHandler(ctx, w, r, err)
-			return
-		}
-		if err := encodeErrorResponse(s.h.NewError(ctx, err), w, span); err != nil {
-			defer recordError("Internal", err)
-		}
-		return
-	}
-
-	if err := encodeGetChargeUsageResponse(response, w, span); err != nil {
-		defer recordError("EncodeResponse", err)
-		if !errors.Is(err, ht.ErrInternalServerErrorResponse) {
-			s.cfg.ErrorHandler(ctx, w, r, err)
-		}
-		return
-	}
-}
-
 // handleGetInvoiceRequest handles get-invoice operation.
 //
-// A total does not answer "why is it this much", and that is the question a bill provokes. Each line
-// carries its service period, without which lines of the same name — hundreds of them on an hourly
-// bill — cannot be told apart, and how much of it credit covered, which is the answer to "I have a
-// balance, why am I being charged".
-//
-// GET /account/v1/billing-accounts/{accountKey}/invoices/{invoiceId}
-func (s *Server) handleGetInvoiceRequest(args [2]string, argsEscaped bool, w http.ResponseWriter, r *http.Request) {
+// GET /account/v1/invoices/{invoiceId}
+func (s *Server) handleGetInvoiceRequest(args [1]string, argsEscaped bool, w http.ResponseWriter, r *http.Request) {
 	statusWriter := &codeRecorder{ResponseWriter: w}
 	w = statusWriter
 	otelAttrs := []attribute.KeyValue{
 		otelogen.OperationID("get-invoice"),
 		semconv.HTTPRequestMethodKey.String("GET"),
-		semconv.HTTPRouteKey.String("/account/v1/billing-accounts/{accountKey}/invoices/{invoiceId}"),
+		semconv.HTTPRouteKey.String("/account/v1/invoices/{invoiceId}"),
 	}
 	// Add attributes from config.
 	otelAttrs = append(otelAttrs, s.cfg.Attributes...)
@@ -1200,15 +1902,15 @@ func (s *Server) handleGetInvoiceRequest(args [2]string, argsEscaped bool, w htt
 		type bitset = [1]uint8
 		var satisfied bitset
 		{
-			sctx, ok, err := s.securityBearerAuth(ctx, GetInvoiceOperation, r)
+			sctx, ok, err := s.securityAccountAuth(ctx, GetInvoiceOperation, r)
 			if err != nil {
 				err = &ogenerrors.SecurityError{
 					OperationContext: opErrContext,
-					Security:         "BearerAuth",
+					Security:         "AccountAuth",
 					Err:              err,
 				}
 				if encodeErr := encodeErrorResponse(s.h.NewError(ctx, err), w, span); encodeErr != nil {
-					defer recordError("Security:BearerAuth", err)
+					defer recordError("Security:AccountAuth", err)
 				}
 				return
 			}
@@ -1255,20 +1957,16 @@ func (s *Server) handleGetInvoiceRequest(args [2]string, argsEscaped bool, w htt
 
 	var rawBody []byte
 
-	var response *InvoiceDetail
+	var response *Invoice
 	if m := s.cfg.Middleware; m != nil {
 		mreq := middleware.Request{
 			Context:          ctx,
 			OperationName:    GetInvoiceOperation,
-			OperationSummary: "Read one invoice with its lines",
+			OperationSummary: "",
 			OperationID:      "get-invoice",
 			Body:             nil,
 			RawBody:          rawBody,
 			Params: middleware.Parameters{
-				{
-					Name: "accountKey",
-					In:   "path",
-				}: params.AccountKey,
 				{
 					Name: "invoiceId",
 					In:   "path",
@@ -1280,7 +1978,7 @@ func (s *Server) handleGetInvoiceRequest(args [2]string, argsEscaped bool, w htt
 		type (
 			Request  = struct{}
 			Params   = GetInvoiceParams
-			Response = *InvoiceDetail
+			Response = *Invoice
 		)
 		response, err = middleware.HookMiddleware[
 			Request,
@@ -1326,17 +2024,14 @@ func (s *Server) handleGetInvoiceRequest(args [2]string, argsEscaped bool, w htt
 
 // handleGetOrderRequest handles get-order operation.
 //
-// Each line names what was asked for, how much of it, and what it produced. The list route carries
-// lines too; this one exists for a permanent link to a single transaction.
-//
-// GET /account/v1/billing-accounts/{accountKey}/orders/{orderId}
-func (s *Server) handleGetOrderRequest(args [2]string, argsEscaped bool, w http.ResponseWriter, r *http.Request) {
+// GET /account/v1/orders/{orderId}
+func (s *Server) handleGetOrderRequest(args [1]string, argsEscaped bool, w http.ResponseWriter, r *http.Request) {
 	statusWriter := &codeRecorder{ResponseWriter: w}
 	w = statusWriter
 	otelAttrs := []attribute.KeyValue{
 		otelogen.OperationID("get-order"),
 		semconv.HTTPRequestMethodKey.String("GET"),
-		semconv.HTTPRouteKey.String("/account/v1/billing-accounts/{accountKey}/orders/{orderId}"),
+		semconv.HTTPRouteKey.String("/account/v1/orders/{orderId}"),
 	}
 	// Add attributes from config.
 	otelAttrs = append(otelAttrs, s.cfg.Attributes...)
@@ -1405,15 +2100,15 @@ func (s *Server) handleGetOrderRequest(args [2]string, argsEscaped bool, w http.
 		type bitset = [1]uint8
 		var satisfied bitset
 		{
-			sctx, ok, err := s.securityBearerAuth(ctx, GetOrderOperation, r)
+			sctx, ok, err := s.securityAccountAuth(ctx, GetOrderOperation, r)
 			if err != nil {
 				err = &ogenerrors.SecurityError{
 					OperationContext: opErrContext,
-					Security:         "BearerAuth",
+					Security:         "AccountAuth",
 					Err:              err,
 				}
 				if encodeErr := encodeErrorResponse(s.h.NewError(ctx, err), w, span); encodeErr != nil {
-					defer recordError("Security:BearerAuth", err)
+					defer recordError("Security:AccountAuth", err)
 				}
 				return
 			}
@@ -1465,15 +2160,11 @@ func (s *Server) handleGetOrderRequest(args [2]string, argsEscaped bool, w http.
 		mreq := middleware.Request{
 			Context:          ctx,
 			OperationName:    GetOrderOperation,
-			OperationSummary: "One order, with its lines",
+			OperationSummary: "",
 			OperationID:      "get-order",
 			Body:             nil,
 			RawBody:          rawBody,
 			Params: middleware.Parameters{
-				{
-					Name: "accountKey",
-					In:   "path",
-				}: params.AccountKey,
 				{
 					Name: "orderId",
 					In:   "path",
@@ -1529,34 +2220,28 @@ func (s *Server) handleGetOrderRequest(args [2]string, argsEscaped bool, w http.
 	}
 }
 
-// handleKeepSubscriptionRequest handles keep-subscription operation.
+// handleGetProjectBillingAccountRequest handles get-project-billing-account operation.
 //
-// Takes back a cancellation that was set for the end of the period, so the plan carries on.
+// A deliberately narrow view: the payer's identity, its currency, and how much can still be spent.
+// Cards, invoices and transaction history are not included; they belong to the account owner and are
+// reached through `/account/v1/`.
 //
-// It only works on a cancellation, not on a scheduled downgrade. Scheduling a change to another plan
-// leaves a second, scheduled subscription holding the customer's one slot, and the engine offers no
-// way to remove it: unscheduling is refused with a conflict and the scheduled subscription cannot be
-// deleted over HTTP. So a downgrade becomes final the moment it is scheduled, and saying so up front
-// is the only honest thing to do — this endpoint answers `BILLING_NO_SCHEDULED_CHANGE` rather than
-// pretending to undo it.
+// Returns 404 when no account pays for this project. Resources cannot be created in that state.
 //
-// Without this, someone who cancels by accident has to wait out the period and buy the tier again,
-// losing whatever the tier had accumulated.
-//
-// POST /account/v1/billing-accounts/{accountKey}/subscription/keep
-func (s *Server) handleKeepSubscriptionRequest(args [1]string, argsEscaped bool, w http.ResponseWriter, r *http.Request) {
+// GET /api/v1/projects/{projectId}/billing-account
+func (s *Server) handleGetProjectBillingAccountRequest(args [1]string, argsEscaped bool, w http.ResponseWriter, r *http.Request) {
 	statusWriter := &codeRecorder{ResponseWriter: w}
 	w = statusWriter
 	otelAttrs := []attribute.KeyValue{
-		otelogen.OperationID("keep-subscription"),
-		semconv.HTTPRequestMethodKey.String("POST"),
-		semconv.HTTPRouteKey.String("/account/v1/billing-accounts/{accountKey}/subscription/keep"),
+		otelogen.OperationID("get-project-billing-account"),
+		semconv.HTTPRequestMethodKey.String("GET"),
+		semconv.HTTPRouteKey.String("/api/v1/projects/{projectId}/billing-account"),
 	}
 	// Add attributes from config.
 	otelAttrs = append(otelAttrs, s.cfg.Attributes...)
 
 	// Start a span for this request.
-	ctx, span := s.cfg.Tracer.Start(r.Context(), KeepSubscriptionOperation,
+	ctx, span := s.cfg.Tracer.Start(r.Context(), GetProjectBillingAccountOperation,
 		trace.WithAttributes(otelAttrs...),
 		serverSpanKind,
 	)
@@ -1611,23 +2296,23 @@ func (s *Server) handleKeepSubscriptionRequest(args [1]string, argsEscaped bool,
 		}
 		err          error
 		opErrContext = ogenerrors.OperationContext{
-			Name: KeepSubscriptionOperation,
-			ID:   "keep-subscription",
+			Name: GetProjectBillingAccountOperation,
+			ID:   "get-project-billing-account",
 		}
 	)
 	{
 		type bitset = [1]uint8
 		var satisfied bitset
 		{
-			sctx, ok, err := s.securityBearerAuth(ctx, KeepSubscriptionOperation, r)
+			sctx, ok, err := s.securityProjectAuth(ctx, GetProjectBillingAccountOperation, r)
 			if err != nil {
 				err = &ogenerrors.SecurityError{
 					OperationContext: opErrContext,
-					Security:         "BearerAuth",
+					Security:         "ProjectAuth",
 					Err:              err,
 				}
 				if encodeErr := encodeErrorResponse(s.h.NewError(ctx, err), w, span); encodeErr != nil {
-					defer recordError("Security:BearerAuth", err)
+					defer recordError("Security:ProjectAuth", err)
 				}
 				return
 			}
@@ -1661,7 +2346,7 @@ func (s *Server) handleKeepSubscriptionRequest(args [1]string, argsEscaped bool,
 			return
 		}
 	}
-	params, err := decodeKeepSubscriptionParams(args, argsEscaped, r)
+	params, err := decodeGetProjectBillingAccountParams(args, argsEscaped, r)
 	if err != nil {
 		err = &ogenerrors.DecodeParamsError{
 			OperationContext: opErrContext,
@@ -1674,28 +2359,28 @@ func (s *Server) handleKeepSubscriptionRequest(args [1]string, argsEscaped bool,
 
 	var rawBody []byte
 
-	var response *Subscription
+	var response *ProjectPayer
 	if m := s.cfg.Middleware; m != nil {
 		mreq := middleware.Request{
 			Context:          ctx,
-			OperationName:    KeepSubscriptionOperation,
-			OperationSummary: "Undo an end-of-period cancellation",
-			OperationID:      "keep-subscription",
+			OperationName:    GetProjectBillingAccountOperation,
+			OperationSummary: "Who pays for this project, and how much is left",
+			OperationID:      "get-project-billing-account",
 			Body:             nil,
 			RawBody:          rawBody,
 			Params: middleware.Parameters{
 				{
-					Name: "accountKey",
+					Name: "projectId",
 					In:   "path",
-				}: params.AccountKey,
+				}: params.ProjectId,
 			},
 			Raw: r,
 		}
 
 		type (
 			Request  = struct{}
-			Params   = KeepSubscriptionParams
-			Response = *Subscription
+			Params   = GetProjectBillingAccountParams
+			Response = *ProjectPayer
 		)
 		response, err = middleware.HookMiddleware[
 			Request,
@@ -1704,14 +2389,14 @@ func (s *Server) handleKeepSubscriptionRequest(args [1]string, argsEscaped bool,
 		](
 			m,
 			mreq,
-			unpackKeepSubscriptionParams,
+			unpackGetProjectBillingAccountParams,
 			func(ctx context.Context, request Request, params Params) (response Response, err error) {
-				response, err = s.h.KeepSubscription(ctx, params)
+				response, err = s.h.GetProjectBillingAccount(ctx, params)
 				return response, err
 			},
 		)
 	} else {
-		response, err = s.h.KeepSubscription(ctx, params)
+		response, err = s.h.GetProjectBillingAccount(ctx, params)
 	}
 	if err != nil {
 		if errRes, ok := errors.Into[*ErrorStatusCode](err); ok {
@@ -1730,7 +2415,7 @@ func (s *Server) handleKeepSubscriptionRequest(args [1]string, argsEscaped bool,
 		return
 	}
 
-	if err := encodeKeepSubscriptionResponse(response, w, span); err != nil {
+	if err := encodeGetProjectBillingAccountResponse(response, w, span); err != nil {
 		defer recordError("EncodeResponse", err)
 		if !errors.Is(err, ht.ErrInternalServerErrorResponse) {
 			s.cfg.ErrorHandler(ctx, w, r, err)
@@ -1739,25 +2424,22 @@ func (s *Server) handleKeepSubscriptionRequest(args [1]string, argsEscaped bool,
 	}
 }
 
-// handleListAccountRefundsRequest handles list-account-refunds operation.
+// handleGetProjectOrderRequest handles get-project-order operation.
 //
-// Each refund carries how it was split. A customer asking "I was refunded 100, why is only 60 back on
-// my card" is answered here and nowhere else.
-//
-// GET /account/v1/billing-accounts/{accountKey}/refunds
-func (s *Server) handleListAccountRefundsRequest(args [1]string, argsEscaped bool, w http.ResponseWriter, r *http.Request) {
+// GET /api/v1/projects/{projectId}/orders/{orderId}
+func (s *Server) handleGetProjectOrderRequest(args [2]string, argsEscaped bool, w http.ResponseWriter, r *http.Request) {
 	statusWriter := &codeRecorder{ResponseWriter: w}
 	w = statusWriter
 	otelAttrs := []attribute.KeyValue{
-		otelogen.OperationID("list-account-refunds"),
+		otelogen.OperationID("get-project-order"),
 		semconv.HTTPRequestMethodKey.String("GET"),
-		semconv.HTTPRouteKey.String("/account/v1/billing-accounts/{accountKey}/refunds"),
+		semconv.HTTPRouteKey.String("/api/v1/projects/{projectId}/orders/{orderId}"),
 	}
 	// Add attributes from config.
 	otelAttrs = append(otelAttrs, s.cfg.Attributes...)
 
 	// Start a span for this request.
-	ctx, span := s.cfg.Tracer.Start(r.Context(), ListAccountRefundsOperation,
+	ctx, span := s.cfg.Tracer.Start(r.Context(), GetProjectOrderOperation,
 		trace.WithAttributes(otelAttrs...),
 		serverSpanKind,
 	)
@@ -1812,23 +2494,23 @@ func (s *Server) handleListAccountRefundsRequest(args [1]string, argsEscaped boo
 		}
 		err          error
 		opErrContext = ogenerrors.OperationContext{
-			Name: ListAccountRefundsOperation,
-			ID:   "list-account-refunds",
+			Name: GetProjectOrderOperation,
+			ID:   "get-project-order",
 		}
 	)
 	{
 		type bitset = [1]uint8
 		var satisfied bitset
 		{
-			sctx, ok, err := s.securityBearerAuth(ctx, ListAccountRefundsOperation, r)
+			sctx, ok, err := s.securityProjectAuth(ctx, GetProjectOrderOperation, r)
 			if err != nil {
 				err = &ogenerrors.SecurityError{
 					OperationContext: opErrContext,
-					Security:         "BearerAuth",
+					Security:         "ProjectAuth",
 					Err:              err,
 				}
 				if encodeErr := encodeErrorResponse(s.h.NewError(ctx, err), w, span); encodeErr != nil {
-					defer recordError("Security:BearerAuth", err)
+					defer recordError("Security:ProjectAuth", err)
 				}
 				return
 			}
@@ -1862,7 +2544,7 @@ func (s *Server) handleListAccountRefundsRequest(args [1]string, argsEscaped boo
 			return
 		}
 	}
-	params, err := decodeListAccountRefundsParams(args, argsEscaped, r)
+	params, err := decodeGetProjectOrderParams(args, argsEscaped, r)
 	if err != nil {
 		err = &ogenerrors.DecodeParamsError{
 			OperationContext: opErrContext,
@@ -1875,36 +2557,32 @@ func (s *Server) handleListAccountRefundsRequest(args [1]string, argsEscaped boo
 
 	var rawBody []byte
 
-	var response *AccountRefundList
+	var response *Order
 	if m := s.cfg.Middleware; m != nil {
 		mreq := middleware.Request{
 			Context:          ctx,
-			OperationName:    ListAccountRefundsOperation,
-			OperationSummary: "List this account's refunds",
-			OperationID:      "list-account-refunds",
+			OperationName:    GetProjectOrderOperation,
+			OperationSummary: "",
+			OperationID:      "get-project-order",
 			Body:             nil,
 			RawBody:          rawBody,
 			Params: middleware.Parameters{
 				{
-					Name: "accountKey",
+					Name: "projectId",
 					In:   "path",
-				}: params.AccountKey,
+				}: params.ProjectId,
 				{
-					Name: "page",
-					In:   "query",
-				}: params.Page,
-				{
-					Name: "page_size",
-					In:   "query",
-				}: params.PageSize,
+					Name: "orderId",
+					In:   "path",
+				}: params.OrderId,
 			},
 			Raw: r,
 		}
 
 		type (
 			Request  = struct{}
-			Params   = ListAccountRefundsParams
-			Response = *AccountRefundList
+			Params   = GetProjectOrderParams
+			Response = *Order
 		)
 		response, err = middleware.HookMiddleware[
 			Request,
@@ -1913,14 +2591,14 @@ func (s *Server) handleListAccountRefundsRequest(args [1]string, argsEscaped boo
 		](
 			m,
 			mreq,
-			unpackListAccountRefundsParams,
+			unpackGetProjectOrderParams,
 			func(ctx context.Context, request Request, params Params) (response Response, err error) {
-				response, err = s.h.ListAccountRefunds(ctx, params)
+				response, err = s.h.GetProjectOrder(ctx, params)
 				return response, err
 			},
 		)
 	} else {
-		response, err = s.h.ListAccountRefunds(ctx, params)
+		response, err = s.h.GetProjectOrder(ctx, params)
 	}
 	if err != nil {
 		if errRes, ok := errors.Into[*ErrorStatusCode](err); ok {
@@ -1939,7 +2617,7 @@ func (s *Server) handleListAccountRefundsRequest(args [1]string, argsEscaped boo
 		return
 	}
 
-	if err := encodeListAccountRefundsResponse(response, w, span); err != nil {
+	if err := encodeGetProjectOrderResponse(response, w, span); err != nil {
 		defer recordError("EncodeResponse", err)
 		if !errors.Is(err, ht.ErrInternalServerErrorResponse) {
 			s.cfg.ErrorHandler(ctx, w, r, err)
@@ -1948,26 +2626,24 @@ func (s *Server) handleListAccountRefundsRequest(args [1]string, argsEscaped boo
 	}
 }
 
-// handleListAccountVouchersRequest handles list-account-vouchers operation.
+// handleGetTopUpRequest handles get-top-up operation.
 //
-// Credit received from campaigns, most recent first. Not the credit ledger — this says which
-// campaign each amount came from, which is the question "where did this 50 come from" that the ledger
-// cannot answer.
+// Whether a payment has completed.
 //
-// GET /account/v1/billing-accounts/{accountKey}/vouchers
-func (s *Server) handleListAccountVouchersRequest(args [1]string, argsEscaped bool, w http.ResponseWriter, r *http.Request) {
+// GET /account/v1/top-ups/{topUpId}
+func (s *Server) handleGetTopUpRequest(args [1]string, argsEscaped bool, w http.ResponseWriter, r *http.Request) {
 	statusWriter := &codeRecorder{ResponseWriter: w}
 	w = statusWriter
 	otelAttrs := []attribute.KeyValue{
-		otelogen.OperationID("list-account-vouchers"),
+		otelogen.OperationID("get-top-up"),
 		semconv.HTTPRequestMethodKey.String("GET"),
-		semconv.HTTPRouteKey.String("/account/v1/billing-accounts/{accountKey}/vouchers"),
+		semconv.HTTPRouteKey.String("/account/v1/top-ups/{topUpId}"),
 	}
 	// Add attributes from config.
 	otelAttrs = append(otelAttrs, s.cfg.Attributes...)
 
 	// Start a span for this request.
-	ctx, span := s.cfg.Tracer.Start(r.Context(), ListAccountVouchersOperation,
+	ctx, span := s.cfg.Tracer.Start(r.Context(), GetTopUpOperation,
 		trace.WithAttributes(otelAttrs...),
 		serverSpanKind,
 	)
@@ -2022,23 +2698,23 @@ func (s *Server) handleListAccountVouchersRequest(args [1]string, argsEscaped bo
 		}
 		err          error
 		opErrContext = ogenerrors.OperationContext{
-			Name: ListAccountVouchersOperation,
-			ID:   "list-account-vouchers",
+			Name: GetTopUpOperation,
+			ID:   "get-top-up",
 		}
 	)
 	{
 		type bitset = [1]uint8
 		var satisfied bitset
 		{
-			sctx, ok, err := s.securityBearerAuth(ctx, ListAccountVouchersOperation, r)
+			sctx, ok, err := s.securityAccountAuth(ctx, GetTopUpOperation, r)
 			if err != nil {
 				err = &ogenerrors.SecurityError{
 					OperationContext: opErrContext,
-					Security:         "BearerAuth",
+					Security:         "AccountAuth",
 					Err:              err,
 				}
 				if encodeErr := encodeErrorResponse(s.h.NewError(ctx, err), w, span); encodeErr != nil {
-					defer recordError("Security:BearerAuth", err)
+					defer recordError("Security:AccountAuth", err)
 				}
 				return
 			}
@@ -2072,7 +2748,7 @@ func (s *Server) handleListAccountVouchersRequest(args [1]string, argsEscaped bo
 			return
 		}
 	}
-	params, err := decodeListAccountVouchersParams(args, argsEscaped, r)
+	params, err := decodeGetTopUpParams(args, argsEscaped, r)
 	if err != nil {
 		err = &ogenerrors.DecodeParamsError{
 			OperationContext: opErrContext,
@@ -2085,36 +2761,28 @@ func (s *Server) handleListAccountVouchersRequest(args [1]string, argsEscaped bo
 
 	var rawBody []byte
 
-	var response *VoucherList
+	var response *TopUp
 	if m := s.cfg.Middleware; m != nil {
 		mreq := middleware.Request{
 			Context:          ctx,
-			OperationName:    ListAccountVouchersOperation,
-			OperationSummary: "List this account's vouchers",
-			OperationID:      "list-account-vouchers",
+			OperationName:    GetTopUpOperation,
+			OperationSummary: "Whether a payment has completed",
+			OperationID:      "get-top-up",
 			Body:             nil,
 			RawBody:          rawBody,
 			Params: middleware.Parameters{
 				{
-					Name: "accountKey",
+					Name: "topUpId",
 					In:   "path",
-				}: params.AccountKey,
-				{
-					Name: "page",
-					In:   "query",
-				}: params.Page,
-				{
-					Name: "page_size",
-					In:   "query",
-				}: params.PageSize,
+				}: params.TopUpId,
 			},
 			Raw: r,
 		}
 
 		type (
 			Request  = struct{}
-			Params   = ListAccountVouchersParams
-			Response = *VoucherList
+			Params   = GetTopUpParams
+			Response = *TopUp
 		)
 		response, err = middleware.HookMiddleware[
 			Request,
@@ -2123,14 +2791,14 @@ func (s *Server) handleListAccountVouchersRequest(args [1]string, argsEscaped bo
 		](
 			m,
 			mreq,
-			unpackListAccountVouchersParams,
+			unpackGetTopUpParams,
 			func(ctx context.Context, request Request, params Params) (response Response, err error) {
-				response, err = s.h.ListAccountVouchers(ctx, params)
+				response, err = s.h.GetTopUp(ctx, params)
 				return response, err
 			},
 		)
 	} else {
-		response, err = s.h.ListAccountVouchers(ctx, params)
+		response, err = s.h.GetTopUp(ctx, params)
 	}
 	if err != nil {
 		if errRes, ok := errors.Into[*ErrorStatusCode](err); ok {
@@ -2149,7 +2817,659 @@ func (s *Server) handleListAccountVouchersRequest(args [1]string, argsEscaped bo
 		return
 	}
 
-	if err := encodeListAccountVouchersResponse(response, w, span); err != nil {
+	if err := encodeGetTopUpResponse(response, w, span); err != nil {
+		defer recordError("EncodeResponse", err)
+		if !errors.Is(err, ht.ErrInternalServerErrorResponse) {
+			s.cfg.ErrorHandler(ctx, w, r, err)
+		}
+		return
+	}
+}
+
+// handleListAllocationsRequest handles list-allocations operation.
+//
+// Give `source_id` to follow one top-up or grant through to everything it paid for. Give `target_id`
+// to see which sources paid for one line of an invoice.
+//
+// GET /account/v1/allocations
+func (s *Server) handleListAllocationsRequest(args [0]string, argsEscaped bool, w http.ResponseWriter, r *http.Request) {
+	statusWriter := &codeRecorder{ResponseWriter: w}
+	w = statusWriter
+	otelAttrs := []attribute.KeyValue{
+		otelogen.OperationID("list-allocations"),
+		semconv.HTTPRequestMethodKey.String("GET"),
+		semconv.HTTPRouteKey.String("/account/v1/allocations"),
+	}
+	// Add attributes from config.
+	otelAttrs = append(otelAttrs, s.cfg.Attributes...)
+
+	// Start a span for this request.
+	ctx, span := s.cfg.Tracer.Start(r.Context(), ListAllocationsOperation,
+		trace.WithAttributes(otelAttrs...),
+		serverSpanKind,
+	)
+	defer span.End()
+
+	// Add Labeler to context.
+	labeler := &Labeler{attrs: otelAttrs}
+	ctx = contextWithLabeler(ctx, labeler)
+
+	// Run stopwatch.
+	startTime := time.Now()
+	defer func() {
+		elapsedDuration := time.Since(startTime)
+
+		attrSet := labeler.AttributeSet()
+		attrs := attrSet.ToSlice()
+		code := statusWriter.status
+		if code != 0 {
+			codeAttr := semconv.HTTPResponseStatusCode(code)
+			attrs = append(attrs, codeAttr)
+			span.SetAttributes(attrs...)
+		}
+		attrOpt := metric.WithAttributes(attrs...)
+
+		// Increment request counter.
+		s.requests.Add(ctx, 1, attrOpt)
+
+		// Use floating point division here for higher precision (instead of Millisecond method).
+		s.duration.Record(ctx, float64(elapsedDuration)/float64(time.Millisecond), attrOpt)
+	}()
+
+	var (
+		recordError = func(stage string, err error) {
+			span.RecordError(err)
+
+			// https://opentelemetry.io/docs/specs/semconv/http/http-spans/#status
+			// Span Status MUST be left unset if HTTP status code was in the 1xx, 2xx or 3xx ranges,
+			// unless there was another error (e.g., network error receiving the response body; or 3xx codes with
+			// max redirects exceeded), in which case status MUST be set to Error.
+			code := statusWriter.status
+			if code < 100 || code >= 500 {
+				span.SetStatus(codes.Error, stage)
+			}
+
+			attrSet := labeler.AttributeSet()
+			attrs := attrSet.ToSlice()
+			if code != 0 {
+				attrs = append(attrs, semconv.HTTPResponseStatusCode(code))
+			}
+
+			s.errors.Add(ctx, 1, metric.WithAttributes(attrs...))
+		}
+		err          error
+		opErrContext = ogenerrors.OperationContext{
+			Name: ListAllocationsOperation,
+			ID:   "list-allocations",
+		}
+	)
+	{
+		type bitset = [1]uint8
+		var satisfied bitset
+		{
+			sctx, ok, err := s.securityAccountAuth(ctx, ListAllocationsOperation, r)
+			if err != nil {
+				err = &ogenerrors.SecurityError{
+					OperationContext: opErrContext,
+					Security:         "AccountAuth",
+					Err:              err,
+				}
+				if encodeErr := encodeErrorResponse(s.h.NewError(ctx, err), w, span); encodeErr != nil {
+					defer recordError("Security:AccountAuth", err)
+				}
+				return
+			}
+			if ok {
+				satisfied[0] |= 1 << 0
+				ctx = sctx
+			}
+		}
+
+		if ok := func() bool {
+		nextRequirement:
+			for _, requirement := range []bitset{
+				{0b00000001},
+			} {
+				for i, mask := range requirement {
+					if satisfied[i]&mask != mask {
+						continue nextRequirement
+					}
+				}
+				return true
+			}
+			return false
+		}(); !ok {
+			err = &ogenerrors.SecurityError{
+				OperationContext: opErrContext,
+				Err:              ogenerrors.ErrSecurityRequirementIsNotSatisfied,
+			}
+			if encodeErr := encodeErrorResponse(s.h.NewError(ctx, err), w, span); encodeErr != nil {
+				defer recordError("Security", err)
+			}
+			return
+		}
+	}
+	params, err := decodeListAllocationsParams(args, argsEscaped, r)
+	if err != nil {
+		err = &ogenerrors.DecodeParamsError{
+			OperationContext: opErrContext,
+			Err:              err,
+		}
+		defer recordError("DecodeParams", err)
+		s.cfg.ErrorHandler(ctx, w, r, err)
+		return
+	}
+
+	var rawBody []byte
+
+	var response *AllocationList
+	if m := s.cfg.Middleware; m != nil {
+		mreq := middleware.Request{
+			Context:          ctx,
+			OperationName:    ListAllocationsOperation,
+			OperationSummary: "Where each amount went",
+			OperationID:      "list-allocations",
+			Body:             nil,
+			RawBody:          rawBody,
+			Params: middleware.Parameters{
+				{
+					Name: "page",
+					In:   "query",
+				}: params.Page,
+				{
+					Name: "page_size",
+					In:   "query",
+				}: params.PageSize,
+				{
+					Name: "billing_account_id",
+					In:   "query",
+				}: params.BillingAccountID,
+				{
+					Name: "source_id",
+					In:   "query",
+				}: params.SourceID,
+				{
+					Name: "target_id",
+					In:   "query",
+				}: params.TargetID,
+			},
+			Raw: r,
+		}
+
+		type (
+			Request  = struct{}
+			Params   = ListAllocationsParams
+			Response = *AllocationList
+		)
+		response, err = middleware.HookMiddleware[
+			Request,
+			Params,
+			Response,
+		](
+			m,
+			mreq,
+			unpackListAllocationsParams,
+			func(ctx context.Context, request Request, params Params) (response Response, err error) {
+				response, err = s.h.ListAllocations(ctx, params)
+				return response, err
+			},
+		)
+	} else {
+		response, err = s.h.ListAllocations(ctx, params)
+	}
+	if err != nil {
+		if errRes, ok := errors.Into[*ErrorStatusCode](err); ok {
+			if err := encodeErrorResponse(errRes, w, span); err != nil {
+				defer recordError("Internal", err)
+			}
+			return
+		}
+		if errors.Is(err, ht.ErrNotImplemented) {
+			s.cfg.ErrorHandler(ctx, w, r, err)
+			return
+		}
+		if err := encodeErrorResponse(s.h.NewError(ctx, err), w, span); err != nil {
+			defer recordError("Internal", err)
+		}
+		return
+	}
+
+	if err := encodeListAllocationsResponse(response, w, span); err != nil {
+		defer recordError("EncodeResponse", err)
+		if !errors.Is(err, ht.ErrInternalServerErrorResponse) {
+			s.cfg.ErrorHandler(ctx, w, r, err)
+		}
+		return
+	}
+}
+
+// handleListAllowanceConsumptionsRequest handles list-allowance-consumptions operation.
+//
+// Each entry names the charge it covered, so the granted amount, what has been used and what remains
+// all reconcile.
+//
+// GET /account/v1/allowances/{allowanceId}/consumptions
+func (s *Server) handleListAllowanceConsumptionsRequest(args [1]string, argsEscaped bool, w http.ResponseWriter, r *http.Request) {
+	statusWriter := &codeRecorder{ResponseWriter: w}
+	w = statusWriter
+	otelAttrs := []attribute.KeyValue{
+		otelogen.OperationID("list-allowance-consumptions"),
+		semconv.HTTPRequestMethodKey.String("GET"),
+		semconv.HTTPRouteKey.String("/account/v1/allowances/{allowanceId}/consumptions"),
+	}
+	// Add attributes from config.
+	otelAttrs = append(otelAttrs, s.cfg.Attributes...)
+
+	// Start a span for this request.
+	ctx, span := s.cfg.Tracer.Start(r.Context(), ListAllowanceConsumptionsOperation,
+		trace.WithAttributes(otelAttrs...),
+		serverSpanKind,
+	)
+	defer span.End()
+
+	// Add Labeler to context.
+	labeler := &Labeler{attrs: otelAttrs}
+	ctx = contextWithLabeler(ctx, labeler)
+
+	// Run stopwatch.
+	startTime := time.Now()
+	defer func() {
+		elapsedDuration := time.Since(startTime)
+
+		attrSet := labeler.AttributeSet()
+		attrs := attrSet.ToSlice()
+		code := statusWriter.status
+		if code != 0 {
+			codeAttr := semconv.HTTPResponseStatusCode(code)
+			attrs = append(attrs, codeAttr)
+			span.SetAttributes(attrs...)
+		}
+		attrOpt := metric.WithAttributes(attrs...)
+
+		// Increment request counter.
+		s.requests.Add(ctx, 1, attrOpt)
+
+		// Use floating point division here for higher precision (instead of Millisecond method).
+		s.duration.Record(ctx, float64(elapsedDuration)/float64(time.Millisecond), attrOpt)
+	}()
+
+	var (
+		recordError = func(stage string, err error) {
+			span.RecordError(err)
+
+			// https://opentelemetry.io/docs/specs/semconv/http/http-spans/#status
+			// Span Status MUST be left unset if HTTP status code was in the 1xx, 2xx or 3xx ranges,
+			// unless there was another error (e.g., network error receiving the response body; or 3xx codes with
+			// max redirects exceeded), in which case status MUST be set to Error.
+			code := statusWriter.status
+			if code < 100 || code >= 500 {
+				span.SetStatus(codes.Error, stage)
+			}
+
+			attrSet := labeler.AttributeSet()
+			attrs := attrSet.ToSlice()
+			if code != 0 {
+				attrs = append(attrs, semconv.HTTPResponseStatusCode(code))
+			}
+
+			s.errors.Add(ctx, 1, metric.WithAttributes(attrs...))
+		}
+		err          error
+		opErrContext = ogenerrors.OperationContext{
+			Name: ListAllowanceConsumptionsOperation,
+			ID:   "list-allowance-consumptions",
+		}
+	)
+	{
+		type bitset = [1]uint8
+		var satisfied bitset
+		{
+			sctx, ok, err := s.securityAccountAuth(ctx, ListAllowanceConsumptionsOperation, r)
+			if err != nil {
+				err = &ogenerrors.SecurityError{
+					OperationContext: opErrContext,
+					Security:         "AccountAuth",
+					Err:              err,
+				}
+				if encodeErr := encodeErrorResponse(s.h.NewError(ctx, err), w, span); encodeErr != nil {
+					defer recordError("Security:AccountAuth", err)
+				}
+				return
+			}
+			if ok {
+				satisfied[0] |= 1 << 0
+				ctx = sctx
+			}
+		}
+
+		if ok := func() bool {
+		nextRequirement:
+			for _, requirement := range []bitset{
+				{0b00000001},
+			} {
+				for i, mask := range requirement {
+					if satisfied[i]&mask != mask {
+						continue nextRequirement
+					}
+				}
+				return true
+			}
+			return false
+		}(); !ok {
+			err = &ogenerrors.SecurityError{
+				OperationContext: opErrContext,
+				Err:              ogenerrors.ErrSecurityRequirementIsNotSatisfied,
+			}
+			if encodeErr := encodeErrorResponse(s.h.NewError(ctx, err), w, span); encodeErr != nil {
+				defer recordError("Security", err)
+			}
+			return
+		}
+	}
+	params, err := decodeListAllowanceConsumptionsParams(args, argsEscaped, r)
+	if err != nil {
+		err = &ogenerrors.DecodeParamsError{
+			OperationContext: opErrContext,
+			Err:              err,
+		}
+		defer recordError("DecodeParams", err)
+		s.cfg.ErrorHandler(ctx, w, r, err)
+		return
+	}
+
+	var rawBody []byte
+
+	var response *AllowanceConsumptionList
+	if m := s.cfg.Middleware; m != nil {
+		mreq := middleware.Request{
+			Context:          ctx,
+			OperationName:    ListAllowanceConsumptionsOperation,
+			OperationSummary: "What has been used from one quantity",
+			OperationID:      "list-allowance-consumptions",
+			Body:             nil,
+			RawBody:          rawBody,
+			Params: middleware.Parameters{
+				{
+					Name: "page",
+					In:   "query",
+				}: params.Page,
+				{
+					Name: "page_size",
+					In:   "query",
+				}: params.PageSize,
+				{
+					Name: "allowanceId",
+					In:   "path",
+				}: params.AllowanceId,
+			},
+			Raw: r,
+		}
+
+		type (
+			Request  = struct{}
+			Params   = ListAllowanceConsumptionsParams
+			Response = *AllowanceConsumptionList
+		)
+		response, err = middleware.HookMiddleware[
+			Request,
+			Params,
+			Response,
+		](
+			m,
+			mreq,
+			unpackListAllowanceConsumptionsParams,
+			func(ctx context.Context, request Request, params Params) (response Response, err error) {
+				response, err = s.h.ListAllowanceConsumptions(ctx, params)
+				return response, err
+			},
+		)
+	} else {
+		response, err = s.h.ListAllowanceConsumptions(ctx, params)
+	}
+	if err != nil {
+		if errRes, ok := errors.Into[*ErrorStatusCode](err); ok {
+			if err := encodeErrorResponse(errRes, w, span); err != nil {
+				defer recordError("Internal", err)
+			}
+			return
+		}
+		if errors.Is(err, ht.ErrNotImplemented) {
+			s.cfg.ErrorHandler(ctx, w, r, err)
+			return
+		}
+		if err := encodeErrorResponse(s.h.NewError(ctx, err), w, span); err != nil {
+			defer recordError("Internal", err)
+		}
+		return
+	}
+
+	if err := encodeListAllowanceConsumptionsResponse(response, w, span); err != nil {
+		defer recordError("EncodeResponse", err)
+		if !errors.Is(err, ht.ErrInternalServerErrorResponse) {
+			s.cfg.ErrorHandler(ctx, w, r, err)
+		}
+		return
+	}
+}
+
+// handleListAllowancesRequest handles list-allowances operation.
+//
+// A quantity rather than an amount of money: bytes, seconds or tokens that are used before anything is
+// charged for.
+//
+// Usage draws on these first and is only charged once they are exhausted. Where several apply, they
+// are drawn on in a fixed order: lower `priority` first, then whichever expires soonest, then
+// whichever was granted first. Included quantities therefore go before purchased packs, and a pack
+// that is about to expire goes before one that is not.
+//
+// An unused quantity is lost when it expires; it is not refunded and does not carry over.
+//
+// Quantities belong to the account and are shared by every project it pays for.
+//
+// GET /account/v1/allowances
+func (s *Server) handleListAllowancesRequest(args [0]string, argsEscaped bool, w http.ResponseWriter, r *http.Request) {
+	statusWriter := &codeRecorder{ResponseWriter: w}
+	w = statusWriter
+	otelAttrs := []attribute.KeyValue{
+		otelogen.OperationID("list-allowances"),
+		semconv.HTTPRequestMethodKey.String("GET"),
+		semconv.HTTPRouteKey.String("/account/v1/allowances"),
+	}
+	// Add attributes from config.
+	otelAttrs = append(otelAttrs, s.cfg.Attributes...)
+
+	// Start a span for this request.
+	ctx, span := s.cfg.Tracer.Start(r.Context(), ListAllowancesOperation,
+		trace.WithAttributes(otelAttrs...),
+		serverSpanKind,
+	)
+	defer span.End()
+
+	// Add Labeler to context.
+	labeler := &Labeler{attrs: otelAttrs}
+	ctx = contextWithLabeler(ctx, labeler)
+
+	// Run stopwatch.
+	startTime := time.Now()
+	defer func() {
+		elapsedDuration := time.Since(startTime)
+
+		attrSet := labeler.AttributeSet()
+		attrs := attrSet.ToSlice()
+		code := statusWriter.status
+		if code != 0 {
+			codeAttr := semconv.HTTPResponseStatusCode(code)
+			attrs = append(attrs, codeAttr)
+			span.SetAttributes(attrs...)
+		}
+		attrOpt := metric.WithAttributes(attrs...)
+
+		// Increment request counter.
+		s.requests.Add(ctx, 1, attrOpt)
+
+		// Use floating point division here for higher precision (instead of Millisecond method).
+		s.duration.Record(ctx, float64(elapsedDuration)/float64(time.Millisecond), attrOpt)
+	}()
+
+	var (
+		recordError = func(stage string, err error) {
+			span.RecordError(err)
+
+			// https://opentelemetry.io/docs/specs/semconv/http/http-spans/#status
+			// Span Status MUST be left unset if HTTP status code was in the 1xx, 2xx or 3xx ranges,
+			// unless there was another error (e.g., network error receiving the response body; or 3xx codes with
+			// max redirects exceeded), in which case status MUST be set to Error.
+			code := statusWriter.status
+			if code < 100 || code >= 500 {
+				span.SetStatus(codes.Error, stage)
+			}
+
+			attrSet := labeler.AttributeSet()
+			attrs := attrSet.ToSlice()
+			if code != 0 {
+				attrs = append(attrs, semconv.HTTPResponseStatusCode(code))
+			}
+
+			s.errors.Add(ctx, 1, metric.WithAttributes(attrs...))
+		}
+		err          error
+		opErrContext = ogenerrors.OperationContext{
+			Name: ListAllowancesOperation,
+			ID:   "list-allowances",
+		}
+	)
+	{
+		type bitset = [1]uint8
+		var satisfied bitset
+		{
+			sctx, ok, err := s.securityAccountAuth(ctx, ListAllowancesOperation, r)
+			if err != nil {
+				err = &ogenerrors.SecurityError{
+					OperationContext: opErrContext,
+					Security:         "AccountAuth",
+					Err:              err,
+				}
+				if encodeErr := encodeErrorResponse(s.h.NewError(ctx, err), w, span); encodeErr != nil {
+					defer recordError("Security:AccountAuth", err)
+				}
+				return
+			}
+			if ok {
+				satisfied[0] |= 1 << 0
+				ctx = sctx
+			}
+		}
+
+		if ok := func() bool {
+		nextRequirement:
+			for _, requirement := range []bitset{
+				{0b00000001},
+			} {
+				for i, mask := range requirement {
+					if satisfied[i]&mask != mask {
+						continue nextRequirement
+					}
+				}
+				return true
+			}
+			return false
+		}(); !ok {
+			err = &ogenerrors.SecurityError{
+				OperationContext: opErrContext,
+				Err:              ogenerrors.ErrSecurityRequirementIsNotSatisfied,
+			}
+			if encodeErr := encodeErrorResponse(s.h.NewError(ctx, err), w, span); encodeErr != nil {
+				defer recordError("Security", err)
+			}
+			return
+		}
+	}
+	params, err := decodeListAllowancesParams(args, argsEscaped, r)
+	if err != nil {
+		err = &ogenerrors.DecodeParamsError{
+			OperationContext: opErrContext,
+			Err:              err,
+		}
+		defer recordError("DecodeParams", err)
+		s.cfg.ErrorHandler(ctx, w, r, err)
+		return
+	}
+
+	var rawBody []byte
+
+	var response *AllowanceList
+	if m := s.cfg.Middleware; m != nil {
+		mreq := middleware.Request{
+			Context:          ctx,
+			OperationName:    ListAllowancesOperation,
+			OperationSummary: "Included and purchased quantities, and what is left",
+			OperationID:      "list-allowances",
+			Body:             nil,
+			RawBody:          rawBody,
+			Params: middleware.Parameters{
+				{
+					Name: "page",
+					In:   "query",
+				}: params.Page,
+				{
+					Name: "page_size",
+					In:   "query",
+				}: params.PageSize,
+				{
+					Name: "billing_account_id",
+					In:   "query",
+				}: params.BillingAccountID,
+				{
+					Name: "meter_key",
+					In:   "query",
+				}: params.MeterKey,
+				{
+					Name: "status",
+					In:   "query",
+				}: params.Status,
+			},
+			Raw: r,
+		}
+
+		type (
+			Request  = struct{}
+			Params   = ListAllowancesParams
+			Response = *AllowanceList
+		)
+		response, err = middleware.HookMiddleware[
+			Request,
+			Params,
+			Response,
+		](
+			m,
+			mreq,
+			unpackListAllowancesParams,
+			func(ctx context.Context, request Request, params Params) (response Response, err error) {
+				response, err = s.h.ListAllowances(ctx, params)
+				return response, err
+			},
+		)
+	} else {
+		response, err = s.h.ListAllowances(ctx, params)
+	}
+	if err != nil {
+		if errRes, ok := errors.Into[*ErrorStatusCode](err); ok {
+			if err := encodeErrorResponse(errRes, w, span); err != nil {
+				defer recordError("Internal", err)
+			}
+			return
+		}
+		if errors.Is(err, ht.ErrNotImplemented) {
+			s.cfg.ErrorHandler(ctx, w, r, err)
+			return
+		}
+		if err := encodeErrorResponse(s.h.NewError(ctx, err), w, span); err != nil {
+			defer recordError("Internal", err)
+		}
+		return
+	}
+
+	if err := encodeListAllowancesResponse(response, w, span); err != nil {
 		defer recordError("EncodeResponse", err)
 		if !errors.Is(err, ht.ErrInternalServerErrorResponse) {
 			s.cfg.ErrorHandler(ctx, w, r, err)
@@ -2160,10 +3480,7 @@ func (s *Server) handleListAccountVouchersRequest(args [1]string, argsEscaped bo
 
 // handleListBillingAccountsRequest handles list-billing-accounts operation.
 //
-// Every billing account belonging to the caller, with the projects each one currently pays for.
-//
-// Not paginated: how many accounts one person holds is bounded by how many they bothered to create,
-// and that is a small number.
+// The billing accounts you own.
 //
 // GET /account/v1/billing-accounts
 func (s *Server) handleListBillingAccountsRequest(args [0]string, argsEscaped bool, w http.ResponseWriter, r *http.Request) {
@@ -2241,15 +3558,15 @@ func (s *Server) handleListBillingAccountsRequest(args [0]string, argsEscaped bo
 		type bitset = [1]uint8
 		var satisfied bitset
 		{
-			sctx, ok, err := s.securityBearerAuth(ctx, ListBillingAccountsOperation, r)
+			sctx, ok, err := s.securityAccountAuth(ctx, ListBillingAccountsOperation, r)
 			if err != nil {
 				err = &ogenerrors.SecurityError{
 					OperationContext: opErrContext,
-					Security:         "BearerAuth",
+					Security:         "AccountAuth",
 					Err:              err,
 				}
 				if encodeErr := encodeErrorResponse(s.h.NewError(ctx, err), w, span); encodeErr != nil {
-					defer recordError("Security:BearerAuth", err)
+					defer recordError("Security:AccountAuth", err)
 				}
 				return
 			}
@@ -2301,7 +3618,7 @@ func (s *Server) handleListBillingAccountsRequest(args [0]string, argsEscaped bo
 		mreq := middleware.Request{
 			Context:          ctx,
 			OperationName:    ListBillingAccountsOperation,
-			OperationSummary: "List my billing accounts",
+			OperationSummary: "The billing accounts you own",
 			OperationID:      "list-billing-accounts",
 			Body:             nil,
 			RawBody:          rawBody,
@@ -2365,29 +3682,24 @@ func (s *Server) handleListBillingAccountsRequest(args [0]string, argsEscaped bo
 	}
 }
 
-// handleListChargesRequest handles list-charges operation.
+// handleListCatalogPlansRequest handles list-catalog-plans operation.
 //
-// The itemised version of `unsettled`: what has been used this period and not yet billed.
+// What can be bought under one service.
 //
-// It has to come from charges rather than from invoices. An invoice only exists once a period has been
-// billed, and the one for the period in progress is in a state that does not appear in the invoice
-// list at all — reading invoices would show nothing and suggest the account has used nothing, while
-// the spend keeps climbing.
-//
-// GET /account/v1/billing-accounts/{accountKey}/charges
-func (s *Server) handleListChargesRequest(args [1]string, argsEscaped bool, w http.ResponseWriter, r *http.Request) {
+// GET /catalog/v1/products/{productId}/plans
+func (s *Server) handleListCatalogPlansRequest(args [1]string, argsEscaped bool, w http.ResponseWriter, r *http.Request) {
 	statusWriter := &codeRecorder{ResponseWriter: w}
 	w = statusWriter
 	otelAttrs := []attribute.KeyValue{
-		otelogen.OperationID("list-charges"),
+		otelogen.OperationID("list-catalog-plans"),
 		semconv.HTTPRequestMethodKey.String("GET"),
-		semconv.HTTPRouteKey.String("/account/v1/billing-accounts/{accountKey}/charges"),
+		semconv.HTTPRouteKey.String("/catalog/v1/products/{productId}/plans"),
 	}
 	// Add attributes from config.
 	otelAttrs = append(otelAttrs, s.cfg.Attributes...)
 
 	// Start a span for this request.
-	ctx, span := s.cfg.Tracer.Start(r.Context(), ListChargesOperation,
+	ctx, span := s.cfg.Tracer.Start(r.Context(), ListCatalogPlansOperation,
 		trace.WithAttributes(otelAttrs...),
 		serverSpanKind,
 	)
@@ -2442,57 +3754,11 @@ func (s *Server) handleListChargesRequest(args [1]string, argsEscaped bool, w ht
 		}
 		err          error
 		opErrContext = ogenerrors.OperationContext{
-			Name: ListChargesOperation,
-			ID:   "list-charges",
+			Name: ListCatalogPlansOperation,
+			ID:   "list-catalog-plans",
 		}
 	)
-	{
-		type bitset = [1]uint8
-		var satisfied bitset
-		{
-			sctx, ok, err := s.securityBearerAuth(ctx, ListChargesOperation, r)
-			if err != nil {
-				err = &ogenerrors.SecurityError{
-					OperationContext: opErrContext,
-					Security:         "BearerAuth",
-					Err:              err,
-				}
-				if encodeErr := encodeErrorResponse(s.h.NewError(ctx, err), w, span); encodeErr != nil {
-					defer recordError("Security:BearerAuth", err)
-				}
-				return
-			}
-			if ok {
-				satisfied[0] |= 1 << 0
-				ctx = sctx
-			}
-		}
-
-		if ok := func() bool {
-		nextRequirement:
-			for _, requirement := range []bitset{
-				{0b00000001},
-			} {
-				for i, mask := range requirement {
-					if satisfied[i]&mask != mask {
-						continue nextRequirement
-					}
-				}
-				return true
-			}
-			return false
-		}(); !ok {
-			err = &ogenerrors.SecurityError{
-				OperationContext: opErrContext,
-				Err:              ogenerrors.ErrSecurityRequirementIsNotSatisfied,
-			}
-			if encodeErr := encodeErrorResponse(s.h.NewError(ctx, err), w, span); encodeErr != nil {
-				defer recordError("Security", err)
-			}
-			return
-		}
-	}
-	params, err := decodeListChargesParams(args, argsEscaped, r)
+	params, err := decodeListCatalogPlansParams(args, argsEscaped, r)
 	if err != nil {
 		err = &ogenerrors.DecodeParamsError{
 			OperationContext: opErrContext,
@@ -2505,20 +3771,16 @@ func (s *Server) handleListChargesRequest(args [1]string, argsEscaped bool, w ht
 
 	var rawBody []byte
 
-	var response *ChargeList
+	var response ListCatalogPlansRes
 	if m := s.cfg.Middleware; m != nil {
 		mreq := middleware.Request{
 			Context:          ctx,
-			OperationName:    ListChargesOperation,
-			OperationSummary: "What this period has run up so far",
-			OperationID:      "list-charges",
+			OperationName:    ListCatalogPlansOperation,
+			OperationSummary: "What can be bought under one service",
+			OperationID:      "list-catalog-plans",
 			Body:             nil,
 			RawBody:          rawBody,
 			Params: middleware.Parameters{
-				{
-					Name: "accountKey",
-					In:   "path",
-				}: params.AccountKey,
 				{
 					Name: "page",
 					In:   "query",
@@ -2527,14 +3789,22 @@ func (s *Server) handleListChargesRequest(args [1]string, argsEscaped bool, w ht
 					Name: "page_size",
 					In:   "query",
 				}: params.PageSize,
+				{
+					Name: "If-None-Match",
+					In:   "header",
+				}: params.IfNoneMatch,
+				{
+					Name: "productId",
+					In:   "path",
+				}: params.ProductId,
 			},
 			Raw: r,
 		}
 
 		type (
 			Request  = struct{}
-			Params   = ListChargesParams
-			Response = *ChargeList
+			Params   = ListCatalogPlansParams
+			Response = ListCatalogPlansRes
 		)
 		response, err = middleware.HookMiddleware[
 			Request,
@@ -2543,14 +3813,14 @@ func (s *Server) handleListChargesRequest(args [1]string, argsEscaped bool, w ht
 		](
 			m,
 			mreq,
-			unpackListChargesParams,
+			unpackListCatalogPlansParams,
 			func(ctx context.Context, request Request, params Params) (response Response, err error) {
-				response, err = s.h.ListCharges(ctx, params)
+				response, err = s.h.ListCatalogPlans(ctx, params)
 				return response, err
 			},
 		)
 	} else {
-		response, err = s.h.ListCharges(ctx, params)
+		response, err = s.h.ListCatalogPlans(ctx, params)
 	}
 	if err != nil {
 		if errRes, ok := errors.Into[*ErrorStatusCode](err); ok {
@@ -2569,7 +3839,7 @@ func (s *Server) handleListChargesRequest(args [1]string, argsEscaped bool, w ht
 		return
 	}
 
-	if err := encodeListChargesResponse(response, w, span); err != nil {
+	if err := encodeListCatalogPlansResponse(response, w, span); err != nil {
 		defer recordError("EncodeResponse", err)
 		if !errors.Is(err, ht.ErrInternalServerErrorResponse) {
 			s.cfg.ErrorHandler(ctx, w, r, err)
@@ -2578,29 +3848,25 @@ func (s *Server) handleListChargesRequest(args [1]string, argsEscaped bool, w ht
 	}
 }
 
-// handleListCreditTransactionsRequest handles list-credit-transactions operation.
+// handleListCatalogPricesRequest handles list-catalog-prices operation.
 //
-// Every movement of credit on this account: what was added, what was spent, what expired, what was
-// voided. Newest first.
+// Public list prices only. An account holding a negotiated agreement may be charged less; it is never
+// charged more.
 //
-// The balance on its own is a number with no account of itself. Asked why it is lower than expected,
-// it cannot answer, and the holder is left to guess between "I was charged" and "something expired"
-// — which lead to different next steps.
-//
-// GET /account/v1/billing-accounts/{accountKey}/credit-transactions
-func (s *Server) handleListCreditTransactionsRequest(args [1]string, argsEscaped bool, w http.ResponseWriter, r *http.Request) {
+// GET /catalog/v1/plans/{planId}/prices
+func (s *Server) handleListCatalogPricesRequest(args [1]string, argsEscaped bool, w http.ResponseWriter, r *http.Request) {
 	statusWriter := &codeRecorder{ResponseWriter: w}
 	w = statusWriter
 	otelAttrs := []attribute.KeyValue{
-		otelogen.OperationID("list-credit-transactions"),
+		otelogen.OperationID("list-catalog-prices"),
 		semconv.HTTPRequestMethodKey.String("GET"),
-		semconv.HTTPRouteKey.String("/account/v1/billing-accounts/{accountKey}/credit-transactions"),
+		semconv.HTTPRouteKey.String("/catalog/v1/plans/{planId}/prices"),
 	}
 	// Add attributes from config.
 	otelAttrs = append(otelAttrs, s.cfg.Attributes...)
 
 	// Start a span for this request.
-	ctx, span := s.cfg.Tracer.Start(r.Context(), ListCreditTransactionsOperation,
+	ctx, span := s.cfg.Tracer.Start(r.Context(), ListCatalogPricesOperation,
 		trace.WithAttributes(otelAttrs...),
 		serverSpanKind,
 	)
@@ -2655,23 +3921,531 @@ func (s *Server) handleListCreditTransactionsRequest(args [1]string, argsEscaped
 		}
 		err          error
 		opErrContext = ogenerrors.OperationContext{
-			Name: ListCreditTransactionsOperation,
-			ID:   "list-credit-transactions",
+			Name: ListCatalogPricesOperation,
+			ID:   "list-catalog-prices",
+		}
+	)
+	params, err := decodeListCatalogPricesParams(args, argsEscaped, r)
+	if err != nil {
+		err = &ogenerrors.DecodeParamsError{
+			OperationContext: opErrContext,
+			Err:              err,
+		}
+		defer recordError("DecodeParams", err)
+		s.cfg.ErrorHandler(ctx, w, r, err)
+		return
+	}
+
+	var rawBody []byte
+
+	var response ListCatalogPricesRes
+	if m := s.cfg.Middleware; m != nil {
+		mreq := middleware.Request{
+			Context:          ctx,
+			OperationName:    ListCatalogPricesOperation,
+			OperationSummary: "The ways one plan can be bought",
+			OperationID:      "list-catalog-prices",
+			Body:             nil,
+			RawBody:          rawBody,
+			Params: middleware.Parameters{
+				{
+					Name: "page",
+					In:   "query",
+				}: params.Page,
+				{
+					Name: "page_size",
+					In:   "query",
+				}: params.PageSize,
+				{
+					Name: "If-None-Match",
+					In:   "header",
+				}: params.IfNoneMatch,
+				{
+					Name: "currency",
+					In:   "query",
+				}: params.Currency,
+				{
+					Name: "planId",
+					In:   "path",
+				}: params.PlanId,
+			},
+			Raw: r,
+		}
+
+		type (
+			Request  = struct{}
+			Params   = ListCatalogPricesParams
+			Response = ListCatalogPricesRes
+		)
+		response, err = middleware.HookMiddleware[
+			Request,
+			Params,
+			Response,
+		](
+			m,
+			mreq,
+			unpackListCatalogPricesParams,
+			func(ctx context.Context, request Request, params Params) (response Response, err error) {
+				response, err = s.h.ListCatalogPrices(ctx, params)
+				return response, err
+			},
+		)
+	} else {
+		response, err = s.h.ListCatalogPrices(ctx, params)
+	}
+	if err != nil {
+		if errRes, ok := errors.Into[*ErrorStatusCode](err); ok {
+			if err := encodeErrorResponse(errRes, w, span); err != nil {
+				defer recordError("Internal", err)
+			}
+			return
+		}
+		if errors.Is(err, ht.ErrNotImplemented) {
+			s.cfg.ErrorHandler(ctx, w, r, err)
+			return
+		}
+		if err := encodeErrorResponse(s.h.NewError(ctx, err), w, span); err != nil {
+			defer recordError("Internal", err)
+		}
+		return
+	}
+
+	if err := encodeListCatalogPricesResponse(response, w, span); err != nil {
+		defer recordError("EncodeResponse", err)
+		if !errors.Is(err, ht.ErrInternalServerErrorResponse) {
+			s.cfg.ErrorHandler(ctx, w, r, err)
+		}
+		return
+	}
+}
+
+// handleListCatalogProductsRequest handles list-catalog-products operation.
+//
+// The services the platform sells.
+//
+// GET /catalog/v1/products
+func (s *Server) handleListCatalogProductsRequest(args [0]string, argsEscaped bool, w http.ResponseWriter, r *http.Request) {
+	statusWriter := &codeRecorder{ResponseWriter: w}
+	w = statusWriter
+	otelAttrs := []attribute.KeyValue{
+		otelogen.OperationID("list-catalog-products"),
+		semconv.HTTPRequestMethodKey.String("GET"),
+		semconv.HTTPRouteKey.String("/catalog/v1/products"),
+	}
+	// Add attributes from config.
+	otelAttrs = append(otelAttrs, s.cfg.Attributes...)
+
+	// Start a span for this request.
+	ctx, span := s.cfg.Tracer.Start(r.Context(), ListCatalogProductsOperation,
+		trace.WithAttributes(otelAttrs...),
+		serverSpanKind,
+	)
+	defer span.End()
+
+	// Add Labeler to context.
+	labeler := &Labeler{attrs: otelAttrs}
+	ctx = contextWithLabeler(ctx, labeler)
+
+	// Run stopwatch.
+	startTime := time.Now()
+	defer func() {
+		elapsedDuration := time.Since(startTime)
+
+		attrSet := labeler.AttributeSet()
+		attrs := attrSet.ToSlice()
+		code := statusWriter.status
+		if code != 0 {
+			codeAttr := semconv.HTTPResponseStatusCode(code)
+			attrs = append(attrs, codeAttr)
+			span.SetAttributes(attrs...)
+		}
+		attrOpt := metric.WithAttributes(attrs...)
+
+		// Increment request counter.
+		s.requests.Add(ctx, 1, attrOpt)
+
+		// Use floating point division here for higher precision (instead of Millisecond method).
+		s.duration.Record(ctx, float64(elapsedDuration)/float64(time.Millisecond), attrOpt)
+	}()
+
+	var (
+		recordError = func(stage string, err error) {
+			span.RecordError(err)
+
+			// https://opentelemetry.io/docs/specs/semconv/http/http-spans/#status
+			// Span Status MUST be left unset if HTTP status code was in the 1xx, 2xx or 3xx ranges,
+			// unless there was another error (e.g., network error receiving the response body; or 3xx codes with
+			// max redirects exceeded), in which case status MUST be set to Error.
+			code := statusWriter.status
+			if code < 100 || code >= 500 {
+				span.SetStatus(codes.Error, stage)
+			}
+
+			attrSet := labeler.AttributeSet()
+			attrs := attrSet.ToSlice()
+			if code != 0 {
+				attrs = append(attrs, semconv.HTTPResponseStatusCode(code))
+			}
+
+			s.errors.Add(ctx, 1, metric.WithAttributes(attrs...))
+		}
+		err          error
+		opErrContext = ogenerrors.OperationContext{
+			Name: ListCatalogProductsOperation,
+			ID:   "list-catalog-products",
+		}
+	)
+	params, err := decodeListCatalogProductsParams(args, argsEscaped, r)
+	if err != nil {
+		err = &ogenerrors.DecodeParamsError{
+			OperationContext: opErrContext,
+			Err:              err,
+		}
+		defer recordError("DecodeParams", err)
+		s.cfg.ErrorHandler(ctx, w, r, err)
+		return
+	}
+
+	var rawBody []byte
+
+	var response ListCatalogProductsRes
+	if m := s.cfg.Middleware; m != nil {
+		mreq := middleware.Request{
+			Context:          ctx,
+			OperationName:    ListCatalogProductsOperation,
+			OperationSummary: "The services the platform sells",
+			OperationID:      "list-catalog-products",
+			Body:             nil,
+			RawBody:          rawBody,
+			Params: middleware.Parameters{
+				{
+					Name: "page",
+					In:   "query",
+				}: params.Page,
+				{
+					Name: "page_size",
+					In:   "query",
+				}: params.PageSize,
+				{
+					Name: "If-None-Match",
+					In:   "header",
+				}: params.IfNoneMatch,
+			},
+			Raw: r,
+		}
+
+		type (
+			Request  = struct{}
+			Params   = ListCatalogProductsParams
+			Response = ListCatalogProductsRes
+		)
+		response, err = middleware.HookMiddleware[
+			Request,
+			Params,
+			Response,
+		](
+			m,
+			mreq,
+			unpackListCatalogProductsParams,
+			func(ctx context.Context, request Request, params Params) (response Response, err error) {
+				response, err = s.h.ListCatalogProducts(ctx, params)
+				return response, err
+			},
+		)
+	} else {
+		response, err = s.h.ListCatalogProducts(ctx, params)
+	}
+	if err != nil {
+		if errRes, ok := errors.Into[*ErrorStatusCode](err); ok {
+			if err := encodeErrorResponse(errRes, w, span); err != nil {
+				defer recordError("Internal", err)
+			}
+			return
+		}
+		if errors.Is(err, ht.ErrNotImplemented) {
+			s.cfg.ErrorHandler(ctx, w, r, err)
+			return
+		}
+		if err := encodeErrorResponse(s.h.NewError(ctx, err), w, span); err != nil {
+			defer recordError("Internal", err)
+		}
+		return
+	}
+
+	if err := encodeListCatalogProductsResponse(response, w, span); err != nil {
+		defer recordError("EncodeResponse", err)
+		if !errors.Is(err, ht.ErrInternalServerErrorResponse) {
+			s.cfg.ErrorHandler(ctx, w, r, err)
+		}
+		return
+	}
+}
+
+// handleListCatalogRatesRequest handles list-catalog-rates operation.
+//
+// Only public price lists are readable here. A list written for a single agreement is not, and its
+// identifier cannot be used to reach it.
+//
+// GET /catalog/v1/rate-cards/{rateCardId}/rules
+func (s *Server) handleListCatalogRatesRequest(args [1]string, argsEscaped bool, w http.ResponseWriter, r *http.Request) {
+	statusWriter := &codeRecorder{ResponseWriter: w}
+	w = statusWriter
+	otelAttrs := []attribute.KeyValue{
+		otelogen.OperationID("list-catalog-rates"),
+		semconv.HTTPRequestMethodKey.String("GET"),
+		semconv.HTTPRouteKey.String("/catalog/v1/rate-cards/{rateCardId}/rules"),
+	}
+	// Add attributes from config.
+	otelAttrs = append(otelAttrs, s.cfg.Attributes...)
+
+	// Start a span for this request.
+	ctx, span := s.cfg.Tracer.Start(r.Context(), ListCatalogRatesOperation,
+		trace.WithAttributes(otelAttrs...),
+		serverSpanKind,
+	)
+	defer span.End()
+
+	// Add Labeler to context.
+	labeler := &Labeler{attrs: otelAttrs}
+	ctx = contextWithLabeler(ctx, labeler)
+
+	// Run stopwatch.
+	startTime := time.Now()
+	defer func() {
+		elapsedDuration := time.Since(startTime)
+
+		attrSet := labeler.AttributeSet()
+		attrs := attrSet.ToSlice()
+		code := statusWriter.status
+		if code != 0 {
+			codeAttr := semconv.HTTPResponseStatusCode(code)
+			attrs = append(attrs, codeAttr)
+			span.SetAttributes(attrs...)
+		}
+		attrOpt := metric.WithAttributes(attrs...)
+
+		// Increment request counter.
+		s.requests.Add(ctx, 1, attrOpt)
+
+		// Use floating point division here for higher precision (instead of Millisecond method).
+		s.duration.Record(ctx, float64(elapsedDuration)/float64(time.Millisecond), attrOpt)
+	}()
+
+	var (
+		recordError = func(stage string, err error) {
+			span.RecordError(err)
+
+			// https://opentelemetry.io/docs/specs/semconv/http/http-spans/#status
+			// Span Status MUST be left unset if HTTP status code was in the 1xx, 2xx or 3xx ranges,
+			// unless there was another error (e.g., network error receiving the response body; or 3xx codes with
+			// max redirects exceeded), in which case status MUST be set to Error.
+			code := statusWriter.status
+			if code < 100 || code >= 500 {
+				span.SetStatus(codes.Error, stage)
+			}
+
+			attrSet := labeler.AttributeSet()
+			attrs := attrSet.ToSlice()
+			if code != 0 {
+				attrs = append(attrs, semconv.HTTPResponseStatusCode(code))
+			}
+
+			s.errors.Add(ctx, 1, metric.WithAttributes(attrs...))
+		}
+		err          error
+		opErrContext = ogenerrors.OperationContext{
+			Name: ListCatalogRatesOperation,
+			ID:   "list-catalog-rates",
+		}
+	)
+	params, err := decodeListCatalogRatesParams(args, argsEscaped, r)
+	if err != nil {
+		err = &ogenerrors.DecodeParamsError{
+			OperationContext: opErrContext,
+			Err:              err,
+		}
+		defer recordError("DecodeParams", err)
+		s.cfg.ErrorHandler(ctx, w, r, err)
+		return
+	}
+
+	var rawBody []byte
+
+	var response ListCatalogRatesRes
+	if m := s.cfg.Middleware; m != nil {
+		mreq := middleware.Request{
+			Context:          ctx,
+			OperationName:    ListCatalogRatesOperation,
+			OperationSummary: "The rates on a published price list",
+			OperationID:      "list-catalog-rates",
+			Body:             nil,
+			RawBody:          rawBody,
+			Params: middleware.Parameters{
+				{
+					Name: "page",
+					In:   "query",
+				}: params.Page,
+				{
+					Name: "page_size",
+					In:   "query",
+				}: params.PageSize,
+				{
+					Name: "If-None-Match",
+					In:   "header",
+				}: params.IfNoneMatch,
+				{
+					Name: "meter_key",
+					In:   "query",
+				}: params.MeterKey,
+				{
+					Name: "at",
+					In:   "query",
+				}: params.At,
+				{
+					Name: "rateCardId",
+					In:   "path",
+				}: params.RateCardId,
+			},
+			Raw: r,
+		}
+
+		type (
+			Request  = struct{}
+			Params   = ListCatalogRatesParams
+			Response = ListCatalogRatesRes
+		)
+		response, err = middleware.HookMiddleware[
+			Request,
+			Params,
+			Response,
+		](
+			m,
+			mreq,
+			unpackListCatalogRatesParams,
+			func(ctx context.Context, request Request, params Params) (response Response, err error) {
+				response, err = s.h.ListCatalogRates(ctx, params)
+				return response, err
+			},
+		)
+	} else {
+		response, err = s.h.ListCatalogRates(ctx, params)
+	}
+	if err != nil {
+		if errRes, ok := errors.Into[*ErrorStatusCode](err); ok {
+			if err := encodeErrorResponse(errRes, w, span); err != nil {
+				defer recordError("Internal", err)
+			}
+			return
+		}
+		if errors.Is(err, ht.ErrNotImplemented) {
+			s.cfg.ErrorHandler(ctx, w, r, err)
+			return
+		}
+		if err := encodeErrorResponse(s.h.NewError(ctx, err), w, span); err != nil {
+			defer recordError("Internal", err)
+		}
+		return
+	}
+
+	if err := encodeListCatalogRatesResponse(response, w, span); err != nil {
+		defer recordError("EncodeResponse", err)
+		if !errors.Is(err, ht.ErrInternalServerErrorResponse) {
+			s.cfg.ErrorHandler(ctx, w, r, err)
+		}
+		return
+	}
+}
+
+// handleListCreditGrantsRequest handles list-credit-grants operation.
+//
+// Each grant shows what remains and what it may be used for. Credit is spent before cash and cannot be
+// withdrawn.
+//
+// GET /account/v1/credit-grants
+func (s *Server) handleListCreditGrantsRequest(args [0]string, argsEscaped bool, w http.ResponseWriter, r *http.Request) {
+	statusWriter := &codeRecorder{ResponseWriter: w}
+	w = statusWriter
+	otelAttrs := []attribute.KeyValue{
+		otelogen.OperationID("list-credit-grants"),
+		semconv.HTTPRequestMethodKey.String("GET"),
+		semconv.HTTPRouteKey.String("/account/v1/credit-grants"),
+	}
+	// Add attributes from config.
+	otelAttrs = append(otelAttrs, s.cfg.Attributes...)
+
+	// Start a span for this request.
+	ctx, span := s.cfg.Tracer.Start(r.Context(), ListCreditGrantsOperation,
+		trace.WithAttributes(otelAttrs...),
+		serverSpanKind,
+	)
+	defer span.End()
+
+	// Add Labeler to context.
+	labeler := &Labeler{attrs: otelAttrs}
+	ctx = contextWithLabeler(ctx, labeler)
+
+	// Run stopwatch.
+	startTime := time.Now()
+	defer func() {
+		elapsedDuration := time.Since(startTime)
+
+		attrSet := labeler.AttributeSet()
+		attrs := attrSet.ToSlice()
+		code := statusWriter.status
+		if code != 0 {
+			codeAttr := semconv.HTTPResponseStatusCode(code)
+			attrs = append(attrs, codeAttr)
+			span.SetAttributes(attrs...)
+		}
+		attrOpt := metric.WithAttributes(attrs...)
+
+		// Increment request counter.
+		s.requests.Add(ctx, 1, attrOpt)
+
+		// Use floating point division here for higher precision (instead of Millisecond method).
+		s.duration.Record(ctx, float64(elapsedDuration)/float64(time.Millisecond), attrOpt)
+	}()
+
+	var (
+		recordError = func(stage string, err error) {
+			span.RecordError(err)
+
+			// https://opentelemetry.io/docs/specs/semconv/http/http-spans/#status
+			// Span Status MUST be left unset if HTTP status code was in the 1xx, 2xx or 3xx ranges,
+			// unless there was another error (e.g., network error receiving the response body; or 3xx codes with
+			// max redirects exceeded), in which case status MUST be set to Error.
+			code := statusWriter.status
+			if code < 100 || code >= 500 {
+				span.SetStatus(codes.Error, stage)
+			}
+
+			attrSet := labeler.AttributeSet()
+			attrs := attrSet.ToSlice()
+			if code != 0 {
+				attrs = append(attrs, semconv.HTTPResponseStatusCode(code))
+			}
+
+			s.errors.Add(ctx, 1, metric.WithAttributes(attrs...))
+		}
+		err          error
+		opErrContext = ogenerrors.OperationContext{
+			Name: ListCreditGrantsOperation,
+			ID:   "list-credit-grants",
 		}
 	)
 	{
 		type bitset = [1]uint8
 		var satisfied bitset
 		{
-			sctx, ok, err := s.securityBearerAuth(ctx, ListCreditTransactionsOperation, r)
+			sctx, ok, err := s.securityAccountAuth(ctx, ListCreditGrantsOperation, r)
 			if err != nil {
 				err = &ogenerrors.SecurityError{
 					OperationContext: opErrContext,
-					Security:         "BearerAuth",
+					Security:         "AccountAuth",
 					Err:              err,
 				}
 				if encodeErr := encodeErrorResponse(s.h.NewError(ctx, err), w, span); encodeErr != nil {
-					defer recordError("Security:BearerAuth", err)
+					defer recordError("Security:AccountAuth", err)
 				}
 				return
 			}
@@ -2705,7 +4479,7 @@ func (s *Server) handleListCreditTransactionsRequest(args [1]string, argsEscaped
 			return
 		}
 	}
-	params, err := decodeListCreditTransactionsParams(args, argsEscaped, r)
+	params, err := decodeListCreditGrantsParams(args, argsEscaped, r)
 	if err != nil {
 		err = &ogenerrors.DecodeParamsError{
 			OperationContext: opErrContext,
@@ -2718,20 +4492,16 @@ func (s *Server) handleListCreditTransactionsRequest(args [1]string, argsEscaped
 
 	var rawBody []byte
 
-	var response *CreditTransactionList
+	var response *CreditGrantList
 	if m := s.cfg.Middleware; m != nil {
 		mreq := middleware.Request{
 			Context:          ctx,
-			OperationName:    ListCreditTransactionsOperation,
-			OperationSummary: "How the balance got to where it is",
-			OperationID:      "list-credit-transactions",
+			OperationName:    ListCreditGrantsOperation,
+			OperationSummary: "Credit and vouchers held on the account",
+			OperationID:      "list-credit-grants",
 			Body:             nil,
 			RawBody:          rawBody,
 			Params: middleware.Parameters{
-				{
-					Name: "accountKey",
-					In:   "path",
-				}: params.AccountKey,
 				{
 					Name: "page",
 					In:   "query",
@@ -2740,14 +4510,22 @@ func (s *Server) handleListCreditTransactionsRequest(args [1]string, argsEscaped
 					Name: "page_size",
 					In:   "query",
 				}: params.PageSize,
+				{
+					Name: "billing_account_id",
+					In:   "query",
+				}: params.BillingAccountID,
+				{
+					Name: "status",
+					In:   "query",
+				}: params.Status,
 			},
 			Raw: r,
 		}
 
 		type (
 			Request  = struct{}
-			Params   = ListCreditTransactionsParams
-			Response = *CreditTransactionList
+			Params   = ListCreditGrantsParams
+			Response = *CreditGrantList
 		)
 		response, err = middleware.HookMiddleware[
 			Request,
@@ -2756,14 +4534,14 @@ func (s *Server) handleListCreditTransactionsRequest(args [1]string, argsEscaped
 		](
 			m,
 			mreq,
-			unpackListCreditTransactionsParams,
+			unpackListCreditGrantsParams,
 			func(ctx context.Context, request Request, params Params) (response Response, err error) {
-				response, err = s.h.ListCreditTransactions(ctx, params)
+				response, err = s.h.ListCreditGrants(ctx, params)
 				return response, err
 			},
 		)
 	} else {
-		response, err = s.h.ListCreditTransactions(ctx, params)
+		response, err = s.h.ListCreditGrants(ctx, params)
 	}
 	if err != nil {
 		if errRes, ok := errors.Into[*ErrorStatusCode](err); ok {
@@ -2782,7 +4560,431 @@ func (s *Server) handleListCreditTransactionsRequest(args [1]string, argsEscaped
 		return
 	}
 
-	if err := encodeListCreditTransactionsResponse(response, w, span); err != nil {
+	if err := encodeListCreditGrantsResponse(response, w, span); err != nil {
+		defer recordError("EncodeResponse", err)
+		if !errors.Is(err, ht.ErrInternalServerErrorResponse) {
+			s.cfg.ErrorHandler(ctx, w, r, err)
+		}
+		return
+	}
+}
+
+// handleListEntitlementsRequest handles list-entitlements operation.
+//
+// Capabilities that come with what has been bought. A capability that is not held simply does not
+// appear, so that "this does not exist" and "this has not been bought" cannot be confused.
+//
+// Derived from live subscriptions rather than stored, so this always agrees with what is being paid
+// for. It stops being listed as soon as the subscription providing it ends.
+//
+// GET /account/v1/entitlements
+func (s *Server) handleListEntitlementsRequest(args [0]string, argsEscaped bool, w http.ResponseWriter, r *http.Request) {
+	statusWriter := &codeRecorder{ResponseWriter: w}
+	w = statusWriter
+	otelAttrs := []attribute.KeyValue{
+		otelogen.OperationID("list-entitlements"),
+		semconv.HTTPRequestMethodKey.String("GET"),
+		semconv.HTTPRouteKey.String("/account/v1/entitlements"),
+	}
+	// Add attributes from config.
+	otelAttrs = append(otelAttrs, s.cfg.Attributes...)
+
+	// Start a span for this request.
+	ctx, span := s.cfg.Tracer.Start(r.Context(), ListEntitlementsOperation,
+		trace.WithAttributes(otelAttrs...),
+		serverSpanKind,
+	)
+	defer span.End()
+
+	// Add Labeler to context.
+	labeler := &Labeler{attrs: otelAttrs}
+	ctx = contextWithLabeler(ctx, labeler)
+
+	// Run stopwatch.
+	startTime := time.Now()
+	defer func() {
+		elapsedDuration := time.Since(startTime)
+
+		attrSet := labeler.AttributeSet()
+		attrs := attrSet.ToSlice()
+		code := statusWriter.status
+		if code != 0 {
+			codeAttr := semconv.HTTPResponseStatusCode(code)
+			attrs = append(attrs, codeAttr)
+			span.SetAttributes(attrs...)
+		}
+		attrOpt := metric.WithAttributes(attrs...)
+
+		// Increment request counter.
+		s.requests.Add(ctx, 1, attrOpt)
+
+		// Use floating point division here for higher precision (instead of Millisecond method).
+		s.duration.Record(ctx, float64(elapsedDuration)/float64(time.Millisecond), attrOpt)
+	}()
+
+	var (
+		recordError = func(stage string, err error) {
+			span.RecordError(err)
+
+			// https://opentelemetry.io/docs/specs/semconv/http/http-spans/#status
+			// Span Status MUST be left unset if HTTP status code was in the 1xx, 2xx or 3xx ranges,
+			// unless there was another error (e.g., network error receiving the response body; or 3xx codes with
+			// max redirects exceeded), in which case status MUST be set to Error.
+			code := statusWriter.status
+			if code < 100 || code >= 500 {
+				span.SetStatus(codes.Error, stage)
+			}
+
+			attrSet := labeler.AttributeSet()
+			attrs := attrSet.ToSlice()
+			if code != 0 {
+				attrs = append(attrs, semconv.HTTPResponseStatusCode(code))
+			}
+
+			s.errors.Add(ctx, 1, metric.WithAttributes(attrs...))
+		}
+		err          error
+		opErrContext = ogenerrors.OperationContext{
+			Name: ListEntitlementsOperation,
+			ID:   "list-entitlements",
+		}
+	)
+	{
+		type bitset = [1]uint8
+		var satisfied bitset
+		{
+			sctx, ok, err := s.securityAccountAuth(ctx, ListEntitlementsOperation, r)
+			if err != nil {
+				err = &ogenerrors.SecurityError{
+					OperationContext: opErrContext,
+					Security:         "AccountAuth",
+					Err:              err,
+				}
+				if encodeErr := encodeErrorResponse(s.h.NewError(ctx, err), w, span); encodeErr != nil {
+					defer recordError("Security:AccountAuth", err)
+				}
+				return
+			}
+			if ok {
+				satisfied[0] |= 1 << 0
+				ctx = sctx
+			}
+		}
+
+		if ok := func() bool {
+		nextRequirement:
+			for _, requirement := range []bitset{
+				{0b00000001},
+			} {
+				for i, mask := range requirement {
+					if satisfied[i]&mask != mask {
+						continue nextRequirement
+					}
+				}
+				return true
+			}
+			return false
+		}(); !ok {
+			err = &ogenerrors.SecurityError{
+				OperationContext: opErrContext,
+				Err:              ogenerrors.ErrSecurityRequirementIsNotSatisfied,
+			}
+			if encodeErr := encodeErrorResponse(s.h.NewError(ctx, err), w, span); encodeErr != nil {
+				defer recordError("Security", err)
+			}
+			return
+		}
+	}
+	params, err := decodeListEntitlementsParams(args, argsEscaped, r)
+	if err != nil {
+		err = &ogenerrors.DecodeParamsError{
+			OperationContext: opErrContext,
+			Err:              err,
+		}
+		defer recordError("DecodeParams", err)
+		s.cfg.ErrorHandler(ctx, w, r, err)
+		return
+	}
+
+	var rawBody []byte
+
+	var response *EntitlementList
+	if m := s.cfg.Middleware; m != nil {
+		mreq := middleware.Request{
+			Context:          ctx,
+			OperationName:    ListEntitlementsOperation,
+			OperationSummary: "What your accounts can currently use",
+			OperationID:      "list-entitlements",
+			Body:             nil,
+			RawBody:          rawBody,
+			Params: middleware.Parameters{
+				{
+					Name: "page",
+					In:   "query",
+				}: params.Page,
+				{
+					Name: "page_size",
+					In:   "query",
+				}: params.PageSize,
+				{
+					Name: "billing_account_id",
+					In:   "query",
+				}: params.BillingAccountID,
+				{
+					Name: "project_id",
+					In:   "query",
+				}: params.ProjectID,
+			},
+			Raw: r,
+		}
+
+		type (
+			Request  = struct{}
+			Params   = ListEntitlementsParams
+			Response = *EntitlementList
+		)
+		response, err = middleware.HookMiddleware[
+			Request,
+			Params,
+			Response,
+		](
+			m,
+			mreq,
+			unpackListEntitlementsParams,
+			func(ctx context.Context, request Request, params Params) (response Response, err error) {
+				response, err = s.h.ListEntitlements(ctx, params)
+				return response, err
+			},
+		)
+	} else {
+		response, err = s.h.ListEntitlements(ctx, params)
+	}
+	if err != nil {
+		if errRes, ok := errors.Into[*ErrorStatusCode](err); ok {
+			if err := encodeErrorResponse(errRes, w, span); err != nil {
+				defer recordError("Internal", err)
+			}
+			return
+		}
+		if errors.Is(err, ht.ErrNotImplemented) {
+			s.cfg.ErrorHandler(ctx, w, r, err)
+			return
+		}
+		if err := encodeErrorResponse(s.h.NewError(ctx, err), w, span); err != nil {
+			defer recordError("Internal", err)
+		}
+		return
+	}
+
+	if err := encodeListEntitlementsResponse(response, w, span); err != nil {
+		defer recordError("EncodeResponse", err)
+		if !errors.Is(err, ht.ErrInternalServerErrorResponse) {
+			s.cfg.ErrorHandler(ctx, w, r, err)
+		}
+		return
+	}
+}
+
+// handleListInvoiceItemsRequest handles list-invoice-items operation.
+//
+// What an invoice is made up of.
+//
+// GET /account/v1/invoices/{invoiceId}/items
+func (s *Server) handleListInvoiceItemsRequest(args [1]string, argsEscaped bool, w http.ResponseWriter, r *http.Request) {
+	statusWriter := &codeRecorder{ResponseWriter: w}
+	w = statusWriter
+	otelAttrs := []attribute.KeyValue{
+		otelogen.OperationID("list-invoice-items"),
+		semconv.HTTPRequestMethodKey.String("GET"),
+		semconv.HTTPRouteKey.String("/account/v1/invoices/{invoiceId}/items"),
+	}
+	// Add attributes from config.
+	otelAttrs = append(otelAttrs, s.cfg.Attributes...)
+
+	// Start a span for this request.
+	ctx, span := s.cfg.Tracer.Start(r.Context(), ListInvoiceItemsOperation,
+		trace.WithAttributes(otelAttrs...),
+		serverSpanKind,
+	)
+	defer span.End()
+
+	// Add Labeler to context.
+	labeler := &Labeler{attrs: otelAttrs}
+	ctx = contextWithLabeler(ctx, labeler)
+
+	// Run stopwatch.
+	startTime := time.Now()
+	defer func() {
+		elapsedDuration := time.Since(startTime)
+
+		attrSet := labeler.AttributeSet()
+		attrs := attrSet.ToSlice()
+		code := statusWriter.status
+		if code != 0 {
+			codeAttr := semconv.HTTPResponseStatusCode(code)
+			attrs = append(attrs, codeAttr)
+			span.SetAttributes(attrs...)
+		}
+		attrOpt := metric.WithAttributes(attrs...)
+
+		// Increment request counter.
+		s.requests.Add(ctx, 1, attrOpt)
+
+		// Use floating point division here for higher precision (instead of Millisecond method).
+		s.duration.Record(ctx, float64(elapsedDuration)/float64(time.Millisecond), attrOpt)
+	}()
+
+	var (
+		recordError = func(stage string, err error) {
+			span.RecordError(err)
+
+			// https://opentelemetry.io/docs/specs/semconv/http/http-spans/#status
+			// Span Status MUST be left unset if HTTP status code was in the 1xx, 2xx or 3xx ranges,
+			// unless there was another error (e.g., network error receiving the response body; or 3xx codes with
+			// max redirects exceeded), in which case status MUST be set to Error.
+			code := statusWriter.status
+			if code < 100 || code >= 500 {
+				span.SetStatus(codes.Error, stage)
+			}
+
+			attrSet := labeler.AttributeSet()
+			attrs := attrSet.ToSlice()
+			if code != 0 {
+				attrs = append(attrs, semconv.HTTPResponseStatusCode(code))
+			}
+
+			s.errors.Add(ctx, 1, metric.WithAttributes(attrs...))
+		}
+		err          error
+		opErrContext = ogenerrors.OperationContext{
+			Name: ListInvoiceItemsOperation,
+			ID:   "list-invoice-items",
+		}
+	)
+	{
+		type bitset = [1]uint8
+		var satisfied bitset
+		{
+			sctx, ok, err := s.securityAccountAuth(ctx, ListInvoiceItemsOperation, r)
+			if err != nil {
+				err = &ogenerrors.SecurityError{
+					OperationContext: opErrContext,
+					Security:         "AccountAuth",
+					Err:              err,
+				}
+				if encodeErr := encodeErrorResponse(s.h.NewError(ctx, err), w, span); encodeErr != nil {
+					defer recordError("Security:AccountAuth", err)
+				}
+				return
+			}
+			if ok {
+				satisfied[0] |= 1 << 0
+				ctx = sctx
+			}
+		}
+
+		if ok := func() bool {
+		nextRequirement:
+			for _, requirement := range []bitset{
+				{0b00000001},
+			} {
+				for i, mask := range requirement {
+					if satisfied[i]&mask != mask {
+						continue nextRequirement
+					}
+				}
+				return true
+			}
+			return false
+		}(); !ok {
+			err = &ogenerrors.SecurityError{
+				OperationContext: opErrContext,
+				Err:              ogenerrors.ErrSecurityRequirementIsNotSatisfied,
+			}
+			if encodeErr := encodeErrorResponse(s.h.NewError(ctx, err), w, span); encodeErr != nil {
+				defer recordError("Security", err)
+			}
+			return
+		}
+	}
+	params, err := decodeListInvoiceItemsParams(args, argsEscaped, r)
+	if err != nil {
+		err = &ogenerrors.DecodeParamsError{
+			OperationContext: opErrContext,
+			Err:              err,
+		}
+		defer recordError("DecodeParams", err)
+		s.cfg.ErrorHandler(ctx, w, r, err)
+		return
+	}
+
+	var rawBody []byte
+
+	var response *InvoiceItemList
+	if m := s.cfg.Middleware; m != nil {
+		mreq := middleware.Request{
+			Context:          ctx,
+			OperationName:    ListInvoiceItemsOperation,
+			OperationSummary: "What an invoice is made up of",
+			OperationID:      "list-invoice-items",
+			Body:             nil,
+			RawBody:          rawBody,
+			Params: middleware.Parameters{
+				{
+					Name: "page",
+					In:   "query",
+				}: params.Page,
+				{
+					Name: "page_size",
+					In:   "query",
+				}: params.PageSize,
+				{
+					Name: "invoiceId",
+					In:   "path",
+				}: params.InvoiceId,
+			},
+			Raw: r,
+		}
+
+		type (
+			Request  = struct{}
+			Params   = ListInvoiceItemsParams
+			Response = *InvoiceItemList
+		)
+		response, err = middleware.HookMiddleware[
+			Request,
+			Params,
+			Response,
+		](
+			m,
+			mreq,
+			unpackListInvoiceItemsParams,
+			func(ctx context.Context, request Request, params Params) (response Response, err error) {
+				response, err = s.h.ListInvoiceItems(ctx, params)
+				return response, err
+			},
+		)
+	} else {
+		response, err = s.h.ListInvoiceItems(ctx, params)
+	}
+	if err != nil {
+		if errRes, ok := errors.Into[*ErrorStatusCode](err); ok {
+			if err := encodeErrorResponse(errRes, w, span); err != nil {
+				defer recordError("Internal", err)
+			}
+			return
+		}
+		if errors.Is(err, ht.ErrNotImplemented) {
+			s.cfg.ErrorHandler(ctx, w, r, err)
+			return
+		}
+		if err := encodeErrorResponse(s.h.NewError(ctx, err), w, span); err != nil {
+			defer recordError("Internal", err)
+		}
+		return
+	}
+
+	if err := encodeListInvoiceItemsResponse(response, w, span); err != nil {
 		defer recordError("EncodeResponse", err)
 		if !errors.Is(err, ht.ErrInternalServerErrorResponse) {
 			s.cfg.ErrorHandler(ctx, w, r, err)
@@ -2793,17 +4995,14 @@ func (s *Server) handleListCreditTransactionsRequest(args [1]string, argsEscaped
 
 // handleListInvoicesRequest handles list-invoices operation.
 //
-// Past periods, most recent first. The period in progress is not here — see the charges endpoint for
-// that.
-//
-// GET /account/v1/billing-accounts/{accountKey}/invoices
-func (s *Server) handleListInvoicesRequest(args [1]string, argsEscaped bool, w http.ResponseWriter, r *http.Request) {
+// GET /account/v1/invoices
+func (s *Server) handleListInvoicesRequest(args [0]string, argsEscaped bool, w http.ResponseWriter, r *http.Request) {
 	statusWriter := &codeRecorder{ResponseWriter: w}
 	w = statusWriter
 	otelAttrs := []attribute.KeyValue{
 		otelogen.OperationID("list-invoices"),
 		semconv.HTTPRequestMethodKey.String("GET"),
-		semconv.HTTPRouteKey.String("/account/v1/billing-accounts/{accountKey}/invoices"),
+		semconv.HTTPRouteKey.String("/account/v1/invoices"),
 	}
 	// Add attributes from config.
 	otelAttrs = append(otelAttrs, s.cfg.Attributes...)
@@ -2872,15 +5071,15 @@ func (s *Server) handleListInvoicesRequest(args [1]string, argsEscaped bool, w h
 		type bitset = [1]uint8
 		var satisfied bitset
 		{
-			sctx, ok, err := s.securityBearerAuth(ctx, ListInvoicesOperation, r)
+			sctx, ok, err := s.securityAccountAuth(ctx, ListInvoicesOperation, r)
 			if err != nil {
 				err = &ogenerrors.SecurityError{
 					OperationContext: opErrContext,
-					Security:         "BearerAuth",
+					Security:         "AccountAuth",
 					Err:              err,
 				}
 				if encodeErr := encodeErrorResponse(s.h.NewError(ctx, err), w, span); encodeErr != nil {
-					defer recordError("Security:BearerAuth", err)
+					defer recordError("Security:AccountAuth", err)
 				}
 				return
 			}
@@ -2932,15 +5131,11 @@ func (s *Server) handleListInvoicesRequest(args [1]string, argsEscaped bool, w h
 		mreq := middleware.Request{
 			Context:          ctx,
 			OperationName:    ListInvoicesOperation,
-			OperationSummary: "List this account's invoices",
+			OperationSummary: "",
 			OperationID:      "list-invoices",
 			Body:             nil,
 			RawBody:          rawBody,
 			Params: middleware.Parameters{
-				{
-					Name: "accountKey",
-					In:   "path",
-				}: params.AccountKey,
 				{
 					Name: "page",
 					In:   "query",
@@ -2949,6 +5144,22 @@ func (s *Server) handleListInvoicesRequest(args [1]string, argsEscaped bool, w h
 					Name: "page_size",
 					In:   "query",
 				}: params.PageSize,
+				{
+					Name: "billing_account_id",
+					In:   "query",
+				}: params.BillingAccountID,
+				{
+					Name: "status",
+					In:   "query",
+				}: params.Status,
+				{
+					Name: "from",
+					In:   "query",
+				}: params.From,
+				{
+					Name: "to",
+					In:   "query",
+				}: params.To,
 			},
 			Raw: r,
 		}
@@ -3000,34 +5211,24 @@ func (s *Server) handleListInvoicesRequest(args [1]string, argsEscaped bool, w h
 	}
 }
 
-// handleListOffersRequest handles list-offers operation.
+// handleListOrderItemsRequest handles list-order-items operation.
 //
-// Lists what is actually purchasable by this account, right now.
+// One entry per item bought, with the price charged and the period it covers.
 //
-// # Every offer here has passed the full eligibility check
-//
-// The list is not "everything on sale" filtered by status. A promotion whose places are gone, a
-// first-month discount this person already used, a beta price they are not on the list for — none of
-// them appear. Returning them and rejecting the purchase afterwards reads as a broken system rather
-// than as a rule.
-//
-// The price is not here, and not because it was left out: an offer states who may buy, and when. What
-// it costs comes from the plan it points at, and is reported by the offers list.
-//
-// GET /account/v1/billing-accounts/{accountKey}/offers
-func (s *Server) handleListOffersRequest(args [1]string, argsEscaped bool, w http.ResponseWriter, r *http.Request) {
+// GET /account/v1/orders/{orderId}/items
+func (s *Server) handleListOrderItemsRequest(args [1]string, argsEscaped bool, w http.ResponseWriter, r *http.Request) {
 	statusWriter := &codeRecorder{ResponseWriter: w}
 	w = statusWriter
 	otelAttrs := []attribute.KeyValue{
-		otelogen.OperationID("list-offers"),
+		otelogen.OperationID("list-order-items"),
 		semconv.HTTPRequestMethodKey.String("GET"),
-		semconv.HTTPRouteKey.String("/account/v1/billing-accounts/{accountKey}/offers"),
+		semconv.HTTPRouteKey.String("/account/v1/orders/{orderId}/items"),
 	}
 	// Add attributes from config.
 	otelAttrs = append(otelAttrs, s.cfg.Attributes...)
 
 	// Start a span for this request.
-	ctx, span := s.cfg.Tracer.Start(r.Context(), ListOffersOperation,
+	ctx, span := s.cfg.Tracer.Start(r.Context(), ListOrderItemsOperation,
 		trace.WithAttributes(otelAttrs...),
 		serverSpanKind,
 	)
@@ -3082,23 +5283,23 @@ func (s *Server) handleListOffersRequest(args [1]string, argsEscaped bool, w htt
 		}
 		err          error
 		opErrContext = ogenerrors.OperationContext{
-			Name: ListOffersOperation,
-			ID:   "list-offers",
+			Name: ListOrderItemsOperation,
+			ID:   "list-order-items",
 		}
 	)
 	{
 		type bitset = [1]uint8
 		var satisfied bitset
 		{
-			sctx, ok, err := s.securityBearerAuth(ctx, ListOffersOperation, r)
+			sctx, ok, err := s.securityAccountAuth(ctx, ListOrderItemsOperation, r)
 			if err != nil {
 				err = &ogenerrors.SecurityError{
 					OperationContext: opErrContext,
-					Security:         "BearerAuth",
+					Security:         "AccountAuth",
 					Err:              err,
 				}
 				if encodeErr := encodeErrorResponse(s.h.NewError(ctx, err), w, span); encodeErr != nil {
-					defer recordError("Security:BearerAuth", err)
+					defer recordError("Security:AccountAuth", err)
 				}
 				return
 			}
@@ -3132,7 +5333,7 @@ func (s *Server) handleListOffersRequest(args [1]string, argsEscaped bool, w htt
 			return
 		}
 	}
-	params, err := decodeListOffersParams(args, argsEscaped, r)
+	params, err := decodeListOrderItemsParams(args, argsEscaped, r)
 	if err != nil {
 		err = &ogenerrors.DecodeParamsError{
 			OperationContext: opErrContext,
@@ -3145,20 +5346,16 @@ func (s *Server) handleListOffersRequest(args [1]string, argsEscaped bool, w htt
 
 	var rawBody []byte
 
-	var response *OfferList
+	var response *OrderItemList
 	if m := s.cfg.Middleware; m != nil {
 		mreq := middleware.Request{
 			Context:          ctx,
-			OperationName:    ListOffersOperation,
-			OperationSummary: "List the offers this account can buy",
-			OperationID:      "list-offers",
+			OperationName:    ListOrderItemsOperation,
+			OperationSummary: "What an order is made up of",
+			OperationID:      "list-order-items",
 			Body:             nil,
 			RawBody:          rawBody,
 			Params: middleware.Parameters{
-				{
-					Name: "accountKey",
-					In:   "path",
-				}: params.AccountKey,
 				{
 					Name: "page",
 					In:   "query",
@@ -3167,14 +5364,18 @@ func (s *Server) handleListOffersRequest(args [1]string, argsEscaped bool, w htt
 					Name: "page_size",
 					In:   "query",
 				}: params.PageSize,
+				{
+					Name: "orderId",
+					In:   "path",
+				}: params.OrderId,
 			},
 			Raw: r,
 		}
 
 		type (
 			Request  = struct{}
-			Params   = ListOffersParams
-			Response = *OfferList
+			Params   = ListOrderItemsParams
+			Response = *OrderItemList
 		)
 		response, err = middleware.HookMiddleware[
 			Request,
@@ -3183,14 +5384,14 @@ func (s *Server) handleListOffersRequest(args [1]string, argsEscaped bool, w htt
 		](
 			m,
 			mreq,
-			unpackListOffersParams,
+			unpackListOrderItemsParams,
 			func(ctx context.Context, request Request, params Params) (response Response, err error) {
-				response, err = s.h.ListOffers(ctx, params)
+				response, err = s.h.ListOrderItems(ctx, params)
 				return response, err
 			},
 		)
 	} else {
-		response, err = s.h.ListOffers(ctx, params)
+		response, err = s.h.ListOrderItems(ctx, params)
 	}
 	if err != nil {
 		if errRes, ok := errors.Into[*ErrorStatusCode](err); ok {
@@ -3209,7 +5410,7 @@ func (s *Server) handleListOffersRequest(args [1]string, argsEscaped bool, w htt
 		return
 	}
 
-	if err := encodeListOffersResponse(response, w, span); err != nil {
+	if err := encodeListOrderItemsResponse(response, w, span); err != nil {
 		defer recordError("EncodeResponse", err)
 		if !errors.Is(err, ht.ErrInternalServerErrorResponse) {
 			s.cfg.ErrorHandler(ctx, w, r, err)
@@ -3220,23 +5421,17 @@ func (s *Server) handleListOffersRequest(args [1]string, argsEscaped bool, w htt
 
 // handleListOrdersRequest handles list-orders operation.
 //
-// Every provisioning request made against the projects this account pays for, newest first.
+// An order in `pending` still owes money; `amount_due` states how much and `reservation_expires_at`
+// states how long it can still be paid.
 //
-// An order that never went through stays here on purpose. Removing it would leave nothing to look at
-// in exactly the case someone wants to look: a resource was asked for, was not delivered, and the
-// question is what happened.
-//
-// Lines come with each order. A list showing only identifiers and amounts is a page nobody can read
-// — recognising one ("which of these was last week's machine") is why it gets opened.
-//
-// GET /account/v1/billing-accounts/{accountKey}/orders
-func (s *Server) handleListOrdersRequest(args [1]string, argsEscaped bool, w http.ResponseWriter, r *http.Request) {
+// GET /account/v1/orders
+func (s *Server) handleListOrdersRequest(args [0]string, argsEscaped bool, w http.ResponseWriter, r *http.Request) {
 	statusWriter := &codeRecorder{ResponseWriter: w}
 	w = statusWriter
 	otelAttrs := []attribute.KeyValue{
 		otelogen.OperationID("list-orders"),
 		semconv.HTTPRequestMethodKey.String("GET"),
-		semconv.HTTPRouteKey.String("/account/v1/billing-accounts/{accountKey}/orders"),
+		semconv.HTTPRouteKey.String("/account/v1/orders"),
 	}
 	// Add attributes from config.
 	otelAttrs = append(otelAttrs, s.cfg.Attributes...)
@@ -3305,15 +5500,15 @@ func (s *Server) handleListOrdersRequest(args [1]string, argsEscaped bool, w htt
 		type bitset = [1]uint8
 		var satisfied bitset
 		{
-			sctx, ok, err := s.securityBearerAuth(ctx, ListOrdersOperation, r)
+			sctx, ok, err := s.securityAccountAuth(ctx, ListOrdersOperation, r)
 			if err != nil {
 				err = &ogenerrors.SecurityError{
 					OperationContext: opErrContext,
-					Security:         "BearerAuth",
+					Security:         "AccountAuth",
 					Err:              err,
 				}
 				if encodeErr := encodeErrorResponse(s.h.NewError(ctx, err), w, span); encodeErr != nil {
-					defer recordError("Security:BearerAuth", err)
+					defer recordError("Security:AccountAuth", err)
 				}
 				return
 			}
@@ -3365,15 +5560,11 @@ func (s *Server) handleListOrdersRequest(args [1]string, argsEscaped bool, w htt
 		mreq := middleware.Request{
 			Context:          ctx,
 			OperationName:    ListOrdersOperation,
-			OperationSummary: "My orders",
+			OperationSummary: "Purchases made against your accounts",
 			OperationID:      "list-orders",
 			Body:             nil,
 			RawBody:          rawBody,
 			Params: middleware.Parameters{
-				{
-					Name: "accountKey",
-					In:   "path",
-				}: params.AccountKey,
 				{
 					Name: "page",
 					In:   "query",
@@ -3382,6 +5573,26 @@ func (s *Server) handleListOrdersRequest(args [1]string, argsEscaped bool, w htt
 					Name: "page_size",
 					In:   "query",
 				}: params.PageSize,
+				{
+					Name: "billing_account_id",
+					In:   "query",
+				}: params.BillingAccountID,
+				{
+					Name: "project_id",
+					In:   "query",
+				}: params.ProjectID,
+				{
+					Name: "state",
+					In:   "query",
+				}: params.State,
+				{
+					Name: "from",
+					In:   "query",
+				}: params.From,
+				{
+					Name: "to",
+					In:   "query",
+				}: params.To,
 			},
 			Raw: r,
 		}
@@ -3433,35 +5644,224 @@ func (s *Server) handleListOrdersRequest(args [1]string, argsEscaped bool, w htt
 	}
 }
 
+// handleListPaidProjectsRequest handles list-paid-projects operation.
+//
+// The projects your accounts pay for.
+//
+// GET /account/v1/projects
+func (s *Server) handleListPaidProjectsRequest(args [0]string, argsEscaped bool, w http.ResponseWriter, r *http.Request) {
+	statusWriter := &codeRecorder{ResponseWriter: w}
+	w = statusWriter
+	otelAttrs := []attribute.KeyValue{
+		otelogen.OperationID("list-paid-projects"),
+		semconv.HTTPRequestMethodKey.String("GET"),
+		semconv.HTTPRouteKey.String("/account/v1/projects"),
+	}
+	// Add attributes from config.
+	otelAttrs = append(otelAttrs, s.cfg.Attributes...)
+
+	// Start a span for this request.
+	ctx, span := s.cfg.Tracer.Start(r.Context(), ListPaidProjectsOperation,
+		trace.WithAttributes(otelAttrs...),
+		serverSpanKind,
+	)
+	defer span.End()
+
+	// Add Labeler to context.
+	labeler := &Labeler{attrs: otelAttrs}
+	ctx = contextWithLabeler(ctx, labeler)
+
+	// Run stopwatch.
+	startTime := time.Now()
+	defer func() {
+		elapsedDuration := time.Since(startTime)
+
+		attrSet := labeler.AttributeSet()
+		attrs := attrSet.ToSlice()
+		code := statusWriter.status
+		if code != 0 {
+			codeAttr := semconv.HTTPResponseStatusCode(code)
+			attrs = append(attrs, codeAttr)
+			span.SetAttributes(attrs...)
+		}
+		attrOpt := metric.WithAttributes(attrs...)
+
+		// Increment request counter.
+		s.requests.Add(ctx, 1, attrOpt)
+
+		// Use floating point division here for higher precision (instead of Millisecond method).
+		s.duration.Record(ctx, float64(elapsedDuration)/float64(time.Millisecond), attrOpt)
+	}()
+
+	var (
+		recordError = func(stage string, err error) {
+			span.RecordError(err)
+
+			// https://opentelemetry.io/docs/specs/semconv/http/http-spans/#status
+			// Span Status MUST be left unset if HTTP status code was in the 1xx, 2xx or 3xx ranges,
+			// unless there was another error (e.g., network error receiving the response body; or 3xx codes with
+			// max redirects exceeded), in which case status MUST be set to Error.
+			code := statusWriter.status
+			if code < 100 || code >= 500 {
+				span.SetStatus(codes.Error, stage)
+			}
+
+			attrSet := labeler.AttributeSet()
+			attrs := attrSet.ToSlice()
+			if code != 0 {
+				attrs = append(attrs, semconv.HTTPResponseStatusCode(code))
+			}
+
+			s.errors.Add(ctx, 1, metric.WithAttributes(attrs...))
+		}
+		err          error
+		opErrContext = ogenerrors.OperationContext{
+			Name: ListPaidProjectsOperation,
+			ID:   "list-paid-projects",
+		}
+	)
+	{
+		type bitset = [1]uint8
+		var satisfied bitset
+		{
+			sctx, ok, err := s.securityAccountAuth(ctx, ListPaidProjectsOperation, r)
+			if err != nil {
+				err = &ogenerrors.SecurityError{
+					OperationContext: opErrContext,
+					Security:         "AccountAuth",
+					Err:              err,
+				}
+				if encodeErr := encodeErrorResponse(s.h.NewError(ctx, err), w, span); encodeErr != nil {
+					defer recordError("Security:AccountAuth", err)
+				}
+				return
+			}
+			if ok {
+				satisfied[0] |= 1 << 0
+				ctx = sctx
+			}
+		}
+
+		if ok := func() bool {
+		nextRequirement:
+			for _, requirement := range []bitset{
+				{0b00000001},
+			} {
+				for i, mask := range requirement {
+					if satisfied[i]&mask != mask {
+						continue nextRequirement
+					}
+				}
+				return true
+			}
+			return false
+		}(); !ok {
+			err = &ogenerrors.SecurityError{
+				OperationContext: opErrContext,
+				Err:              ogenerrors.ErrSecurityRequirementIsNotSatisfied,
+			}
+			if encodeErr := encodeErrorResponse(s.h.NewError(ctx, err), w, span); encodeErr != nil {
+				defer recordError("Security", err)
+			}
+			return
+		}
+	}
+	params, err := decodeListPaidProjectsParams(args, argsEscaped, r)
+	if err != nil {
+		err = &ogenerrors.DecodeParamsError{
+			OperationContext: opErrContext,
+			Err:              err,
+		}
+		defer recordError("DecodeParams", err)
+		s.cfg.ErrorHandler(ctx, w, r, err)
+		return
+	}
+
+	var rawBody []byte
+
+	var response *ProjectBindingList
+	if m := s.cfg.Middleware; m != nil {
+		mreq := middleware.Request{
+			Context:          ctx,
+			OperationName:    ListPaidProjectsOperation,
+			OperationSummary: "The projects your accounts pay for",
+			OperationID:      "list-paid-projects",
+			Body:             nil,
+			RawBody:          rawBody,
+			Params: middleware.Parameters{
+				{
+					Name: "page",
+					In:   "query",
+				}: params.Page,
+				{
+					Name: "page_size",
+					In:   "query",
+				}: params.PageSize,
+				{
+					Name: "billing_account_id",
+					In:   "query",
+				}: params.BillingAccountID,
+			},
+			Raw: r,
+		}
+
+		type (
+			Request  = struct{}
+			Params   = ListPaidProjectsParams
+			Response = *ProjectBindingList
+		)
+		response, err = middleware.HookMiddleware[
+			Request,
+			Params,
+			Response,
+		](
+			m,
+			mreq,
+			unpackListPaidProjectsParams,
+			func(ctx context.Context, request Request, params Params) (response Response, err error) {
+				response, err = s.h.ListPaidProjects(ctx, params)
+				return response, err
+			},
+		)
+	} else {
+		response, err = s.h.ListPaidProjects(ctx, params)
+	}
+	if err != nil {
+		if errRes, ok := errors.Into[*ErrorStatusCode](err); ok {
+			if err := encodeErrorResponse(errRes, w, span); err != nil {
+				defer recordError("Internal", err)
+			}
+			return
+		}
+		if errors.Is(err, ht.ErrNotImplemented) {
+			s.cfg.ErrorHandler(ctx, w, r, err)
+			return
+		}
+		if err := encodeErrorResponse(s.h.NewError(ctx, err), w, span); err != nil {
+			defer recordError("Internal", err)
+		}
+		return
+	}
+
+	if err := encodeListPaidProjectsResponse(response, w, span); err != nil {
+		defer recordError("EncodeResponse", err)
+		if !errors.Is(err, ht.ErrInternalServerErrorResponse) {
+			s.cfg.ErrorHandler(ctx, w, r, err)
+		}
+		return
+	}
+}
+
 // handleListPaymentMethodsRequest handles list-payment-methods operation.
 //
-// Every method saved against this account, and which one an invoice will be charged to.
-//
-// # Why the brand, last four and expiry are here
-//
-// They were deliberately absent while the billing engine held the card, because the answer that
-// mattered — can money be collected — came from the engine, and a page built on the provider's
-// answer could show a method the engine had not recorded. Collection now runs from this service
-// against the provider directly, so there is one answer, and it is the one shown.
-//
-// Expiry is the reason this is worth showing at all: a card expires, the invoice then fails, dunning
-// runs out, and the project stops — with the account holder watching it happen and no indication
-// that a card was the cause.
-//
-// No other card data exists here. The number, the expiry entered by the holder and the CVC go from the
-// browser to the provider and never reach this platform.
-//
-// An account that has never added one returns an empty list. That is the normal state of a new
-// account, not an error.
-//
-// GET /account/v1/billing-accounts/{accountKey}/payment-methods
-func (s *Server) handleListPaymentMethodsRequest(args [1]string, argsEscaped bool, w http.ResponseWriter, r *http.Request) {
+// GET /account/v1/payment-methods
+func (s *Server) handleListPaymentMethodsRequest(args [0]string, argsEscaped bool, w http.ResponseWriter, r *http.Request) {
 	statusWriter := &codeRecorder{ResponseWriter: w}
 	w = statusWriter
 	otelAttrs := []attribute.KeyValue{
 		otelogen.OperationID("list-payment-methods"),
 		semconv.HTTPRequestMethodKey.String("GET"),
-		semconv.HTTPRouteKey.String("/account/v1/billing-accounts/{accountKey}/payment-methods"),
+		semconv.HTTPRouteKey.String("/account/v1/payment-methods"),
 	}
 	// Add attributes from config.
 	otelAttrs = append(otelAttrs, s.cfg.Attributes...)
@@ -3530,15 +5930,15 @@ func (s *Server) handleListPaymentMethodsRequest(args [1]string, argsEscaped boo
 		type bitset = [1]uint8
 		var satisfied bitset
 		{
-			sctx, ok, err := s.securityBearerAuth(ctx, ListPaymentMethodsOperation, r)
+			sctx, ok, err := s.securityAccountAuth(ctx, ListPaymentMethodsOperation, r)
 			if err != nil {
 				err = &ogenerrors.SecurityError{
 					OperationContext: opErrContext,
-					Security:         "BearerAuth",
+					Security:         "AccountAuth",
 					Err:              err,
 				}
 				if encodeErr := encodeErrorResponse(s.h.NewError(ctx, err), w, span); encodeErr != nil {
-					defer recordError("Security:BearerAuth", err)
+					defer recordError("Security:AccountAuth", err)
 				}
 				return
 			}
@@ -3590,15 +5990,11 @@ func (s *Server) handleListPaymentMethodsRequest(args [1]string, argsEscaped boo
 		mreq := middleware.Request{
 			Context:          ctx,
 			OperationName:    ListPaymentMethodsOperation,
-			OperationSummary: "The payment methods on file",
+			OperationSummary: "",
 			OperationID:      "list-payment-methods",
 			Body:             nil,
 			RawBody:          rawBody,
 			Params: middleware.Parameters{
-				{
-					Name: "accountKey",
-					In:   "path",
-				}: params.AccountKey,
 				{
 					Name: "page",
 					In:   "query",
@@ -3607,6 +6003,10 @@ func (s *Server) handleListPaymentMethodsRequest(args [1]string, argsEscaped boo
 					Name: "page_size",
 					In:   "query",
 				}: params.PageSize,
+				{
+					Name: "billing_account_id",
+					In:   "query",
+				}: params.BillingAccountID,
 			},
 			Raw: r,
 		}
@@ -3658,49 +6058,24 @@ func (s *Server) handleListPaymentMethodsRequest(args [1]string, argsEscaped boo
 	}
 }
 
-// handleListPrepaidAssetsRequest handles list-prepaid-assets operation.
+// handleListProjectActiveResourcesRequest handles list-project-active-resources operation.
 //
-// Everything this account holds on a term, across every product.
+// A resource that is running but does not appear here is not being charged for.
 //
-// # Every one of these expires
-//
-// A term is paid for once, up front, and buys exactly the period named by `term`. Nothing renews it on
-// its own: `expires_at` is when it runs out, and after that the machine is stopped and — once the
-// retention window is over — released.
-//
-// This route used to say the opposite. It described an engine that charged the next period by itself
-// for as long as the seat was held, which is how this worked before the money became a single up-front
-// charge. Reading the old text, a customer would have had no reason to renew anything, and the first
-// sign of trouble would have been a stopped machine.
-//
-// Turn on `auto_renew` to have billing place the renewal order itself while there is balance to pay
-// for it. That is the only thing that makes a term continue.
-//
-// # Metered resources are not here
-//
-// They have no term. Listing them would invite renewing something that is already billed by the hour
-// until it is deleted.
-//
-// # `state` and `desired_state` are both reported
-//
-// A machine stopped for arrears reads `suspended` for both. One being brought back reads `suspended`
-// and `active` — it is on its way. Without the second field those look identical, and a customer who
-// just paid concludes it did not work and pays again.
-//
-// GET /account/v1/billing-accounts/{accountKey}/prepaid-assets
-func (s *Server) handleListPrepaidAssetsRequest(args [1]string, argsEscaped bool, w http.ResponseWriter, r *http.Request) {
+// GET /api/v1/projects/{projectId}/active-resources
+func (s *Server) handleListProjectActiveResourcesRequest(args [1]string, argsEscaped bool, w http.ResponseWriter, r *http.Request) {
 	statusWriter := &codeRecorder{ResponseWriter: w}
 	w = statusWriter
 	otelAttrs := []attribute.KeyValue{
-		otelogen.OperationID("list-prepaid-assets"),
+		otelogen.OperationID("list-project-active-resources"),
 		semconv.HTTPRequestMethodKey.String("GET"),
-		semconv.HTTPRouteKey.String("/account/v1/billing-accounts/{accountKey}/prepaid-assets"),
+		semconv.HTTPRouteKey.String("/api/v1/projects/{projectId}/active-resources"),
 	}
 	// Add attributes from config.
 	otelAttrs = append(otelAttrs, s.cfg.Attributes...)
 
 	// Start a span for this request.
-	ctx, span := s.cfg.Tracer.Start(r.Context(), ListPrepaidAssetsOperation,
+	ctx, span := s.cfg.Tracer.Start(r.Context(), ListProjectActiveResourcesOperation,
 		trace.WithAttributes(otelAttrs...),
 		serverSpanKind,
 	)
@@ -3755,23 +6130,23 @@ func (s *Server) handleListPrepaidAssetsRequest(args [1]string, argsEscaped bool
 		}
 		err          error
 		opErrContext = ogenerrors.OperationContext{
-			Name: ListPrepaidAssetsOperation,
-			ID:   "list-prepaid-assets",
+			Name: ListProjectActiveResourcesOperation,
+			ID:   "list-project-active-resources",
 		}
 	)
 	{
 		type bitset = [1]uint8
 		var satisfied bitset
 		{
-			sctx, ok, err := s.securityBearerAuth(ctx, ListPrepaidAssetsOperation, r)
+			sctx, ok, err := s.securityProjectAuth(ctx, ListProjectActiveResourcesOperation, r)
 			if err != nil {
 				err = &ogenerrors.SecurityError{
 					OperationContext: opErrContext,
-					Security:         "BearerAuth",
+					Security:         "ProjectAuth",
 					Err:              err,
 				}
 				if encodeErr := encodeErrorResponse(s.h.NewError(ctx, err), w, span); encodeErr != nil {
-					defer recordError("Security:BearerAuth", err)
+					defer recordError("Security:ProjectAuth", err)
 				}
 				return
 			}
@@ -3805,7 +6180,7 @@ func (s *Server) handleListPrepaidAssetsRequest(args [1]string, argsEscaped bool
 			return
 		}
 	}
-	params, err := decodeListPrepaidAssetsParams(args, argsEscaped, r)
+	params, err := decodeListProjectActiveResourcesParams(args, argsEscaped, r)
 	if err != nil {
 		err = &ogenerrors.DecodeParamsError{
 			OperationContext: opErrContext,
@@ -3818,20 +6193,16 @@ func (s *Server) handleListPrepaidAssetsRequest(args [1]string, argsEscaped bool
 
 	var rawBody []byte
 
-	var response *PrepaidAssetList
+	var response *ActiveResourceList
 	if m := s.cfg.Middleware; m != nil {
 		mreq := middleware.Request{
 			Context:          ctx,
-			OperationName:    ListPrepaidAssetsOperation,
-			OperationSummary: "What I bought outright",
-			OperationID:      "list-prepaid-assets",
+			OperationName:    ListProjectActiveResourcesOperation,
+			OperationSummary: "What is accruing charges right now",
+			OperationID:      "list-project-active-resources",
 			Body:             nil,
 			RawBody:          rawBody,
 			Params: middleware.Parameters{
-				{
-					Name: "accountKey",
-					In:   "path",
-				}: params.AccountKey,
 				{
 					Name: "page",
 					In:   "query",
@@ -3840,14 +6211,22 @@ func (s *Server) handleListPrepaidAssetsRequest(args [1]string, argsEscaped bool
 					Name: "page_size",
 					In:   "query",
 				}: params.PageSize,
+				{
+					Name: "resource_id",
+					In:   "query",
+				}: params.ResourceID,
+				{
+					Name: "projectId",
+					In:   "path",
+				}: params.ProjectId,
 			},
 			Raw: r,
 		}
 
 		type (
 			Request  = struct{}
-			Params   = ListPrepaidAssetsParams
-			Response = *PrepaidAssetList
+			Params   = ListProjectActiveResourcesParams
+			Response = *ActiveResourceList
 		)
 		response, err = middleware.HookMiddleware[
 			Request,
@@ -3856,14 +6235,14 @@ func (s *Server) handleListPrepaidAssetsRequest(args [1]string, argsEscaped bool
 		](
 			m,
 			mreq,
-			unpackListPrepaidAssetsParams,
+			unpackListProjectActiveResourcesParams,
 			func(ctx context.Context, request Request, params Params) (response Response, err error) {
-				response, err = s.h.ListPrepaidAssets(ctx, params)
+				response, err = s.h.ListProjectActiveResources(ctx, params)
 				return response, err
 			},
 		)
 	} else {
-		response, err = s.h.ListPrepaidAssets(ctx, params)
+		response, err = s.h.ListProjectActiveResources(ctx, params)
 	}
 	if err != nil {
 		if errRes, ok := errors.Into[*ErrorStatusCode](err); ok {
@@ -3882,7 +6261,2373 @@ func (s *Server) handleListPrepaidAssetsRequest(args [1]string, argsEscaped bool
 		return
 	}
 
-	if err := encodeListPrepaidAssetsResponse(response, w, span); err != nil {
+	if err := encodeListProjectActiveResourcesResponse(response, w, span); err != nil {
+		defer recordError("EncodeResponse", err)
+		if !errors.Is(err, ht.ErrInternalServerErrorResponse) {
+			s.cfg.ErrorHandler(ctx, w, r, err)
+		}
+		return
+	}
+}
+
+// handleListProjectAllowancesRequest handles list-project-allowances operation.
+//
+// These belong to the paying account and are shared with every other project it pays for, so what is
+// left here may be consumed elsewhere.
+//
+// GET /api/v1/projects/{projectId}/allowances
+func (s *Server) handleListProjectAllowancesRequest(args [1]string, argsEscaped bool, w http.ResponseWriter, r *http.Request) {
+	statusWriter := &codeRecorder{ResponseWriter: w}
+	w = statusWriter
+	otelAttrs := []attribute.KeyValue{
+		otelogen.OperationID("list-project-allowances"),
+		semconv.HTTPRequestMethodKey.String("GET"),
+		semconv.HTTPRouteKey.String("/api/v1/projects/{projectId}/allowances"),
+	}
+	// Add attributes from config.
+	otelAttrs = append(otelAttrs, s.cfg.Attributes...)
+
+	// Start a span for this request.
+	ctx, span := s.cfg.Tracer.Start(r.Context(), ListProjectAllowancesOperation,
+		trace.WithAttributes(otelAttrs...),
+		serverSpanKind,
+	)
+	defer span.End()
+
+	// Add Labeler to context.
+	labeler := &Labeler{attrs: otelAttrs}
+	ctx = contextWithLabeler(ctx, labeler)
+
+	// Run stopwatch.
+	startTime := time.Now()
+	defer func() {
+		elapsedDuration := time.Since(startTime)
+
+		attrSet := labeler.AttributeSet()
+		attrs := attrSet.ToSlice()
+		code := statusWriter.status
+		if code != 0 {
+			codeAttr := semconv.HTTPResponseStatusCode(code)
+			attrs = append(attrs, codeAttr)
+			span.SetAttributes(attrs...)
+		}
+		attrOpt := metric.WithAttributes(attrs...)
+
+		// Increment request counter.
+		s.requests.Add(ctx, 1, attrOpt)
+
+		// Use floating point division here for higher precision (instead of Millisecond method).
+		s.duration.Record(ctx, float64(elapsedDuration)/float64(time.Millisecond), attrOpt)
+	}()
+
+	var (
+		recordError = func(stage string, err error) {
+			span.RecordError(err)
+
+			// https://opentelemetry.io/docs/specs/semconv/http/http-spans/#status
+			// Span Status MUST be left unset if HTTP status code was in the 1xx, 2xx or 3xx ranges,
+			// unless there was another error (e.g., network error receiving the response body; or 3xx codes with
+			// max redirects exceeded), in which case status MUST be set to Error.
+			code := statusWriter.status
+			if code < 100 || code >= 500 {
+				span.SetStatus(codes.Error, stage)
+			}
+
+			attrSet := labeler.AttributeSet()
+			attrs := attrSet.ToSlice()
+			if code != 0 {
+				attrs = append(attrs, semconv.HTTPResponseStatusCode(code))
+			}
+
+			s.errors.Add(ctx, 1, metric.WithAttributes(attrs...))
+		}
+		err          error
+		opErrContext = ogenerrors.OperationContext{
+			Name: ListProjectAllowancesOperation,
+			ID:   "list-project-allowances",
+		}
+	)
+	{
+		type bitset = [1]uint8
+		var satisfied bitset
+		{
+			sctx, ok, err := s.securityProjectAuth(ctx, ListProjectAllowancesOperation, r)
+			if err != nil {
+				err = &ogenerrors.SecurityError{
+					OperationContext: opErrContext,
+					Security:         "ProjectAuth",
+					Err:              err,
+				}
+				if encodeErr := encodeErrorResponse(s.h.NewError(ctx, err), w, span); encodeErr != nil {
+					defer recordError("Security:ProjectAuth", err)
+				}
+				return
+			}
+			if ok {
+				satisfied[0] |= 1 << 0
+				ctx = sctx
+			}
+		}
+
+		if ok := func() bool {
+		nextRequirement:
+			for _, requirement := range []bitset{
+				{0b00000001},
+			} {
+				for i, mask := range requirement {
+					if satisfied[i]&mask != mask {
+						continue nextRequirement
+					}
+				}
+				return true
+			}
+			return false
+		}(); !ok {
+			err = &ogenerrors.SecurityError{
+				OperationContext: opErrContext,
+				Err:              ogenerrors.ErrSecurityRequirementIsNotSatisfied,
+			}
+			if encodeErr := encodeErrorResponse(s.h.NewError(ctx, err), w, span); encodeErr != nil {
+				defer recordError("Security", err)
+			}
+			return
+		}
+	}
+	params, err := decodeListProjectAllowancesParams(args, argsEscaped, r)
+	if err != nil {
+		err = &ogenerrors.DecodeParamsError{
+			OperationContext: opErrContext,
+			Err:              err,
+		}
+		defer recordError("DecodeParams", err)
+		s.cfg.ErrorHandler(ctx, w, r, err)
+		return
+	}
+
+	var rawBody []byte
+
+	var response *AllowanceList
+	if m := s.cfg.Middleware; m != nil {
+		mreq := middleware.Request{
+			Context:          ctx,
+			OperationName:    ListProjectAllowancesOperation,
+			OperationSummary: "Quantities this project can draw on",
+			OperationID:      "list-project-allowances",
+			Body:             nil,
+			RawBody:          rawBody,
+			Params: middleware.Parameters{
+				{
+					Name: "page",
+					In:   "query",
+				}: params.Page,
+				{
+					Name: "page_size",
+					In:   "query",
+				}: params.PageSize,
+				{
+					Name: "meter_key",
+					In:   "query",
+				}: params.MeterKey,
+				{
+					Name: "projectId",
+					In:   "path",
+				}: params.ProjectId,
+			},
+			Raw: r,
+		}
+
+		type (
+			Request  = struct{}
+			Params   = ListProjectAllowancesParams
+			Response = *AllowanceList
+		)
+		response, err = middleware.HookMiddleware[
+			Request,
+			Params,
+			Response,
+		](
+			m,
+			mreq,
+			unpackListProjectAllowancesParams,
+			func(ctx context.Context, request Request, params Params) (response Response, err error) {
+				response, err = s.h.ListProjectAllowances(ctx, params)
+				return response, err
+			},
+		)
+	} else {
+		response, err = s.h.ListProjectAllowances(ctx, params)
+	}
+	if err != nil {
+		if errRes, ok := errors.Into[*ErrorStatusCode](err); ok {
+			if err := encodeErrorResponse(errRes, w, span); err != nil {
+				defer recordError("Internal", err)
+			}
+			return
+		}
+		if errors.Is(err, ht.ErrNotImplemented) {
+			s.cfg.ErrorHandler(ctx, w, r, err)
+			return
+		}
+		if err := encodeErrorResponse(s.h.NewError(ctx, err), w, span); err != nil {
+			defer recordError("Internal", err)
+		}
+		return
+	}
+
+	if err := encodeListProjectAllowancesResponse(response, w, span); err != nil {
+		defer recordError("EncodeResponse", err)
+		if !errors.Is(err, ht.ErrInternalServerErrorResponse) {
+			s.cfg.ErrorHandler(ctx, w, r, err)
+		}
+		return
+	}
+}
+
+// handleListProjectEntitlementsRequest handles list-project-entitlements operation.
+//
+// Includes capabilities bought for this project and those the paying account holds at account level.
+//
+// Where a capability counts uses, `remaining_quantity` states how much is left. Whether exceeding it
+// refuses the request or simply continues to be charged for is decided by the service that owns the
+// capability.
+//
+// GET /api/v1/projects/{projectId}/entitlements
+func (s *Server) handleListProjectEntitlementsRequest(args [1]string, argsEscaped bool, w http.ResponseWriter, r *http.Request) {
+	statusWriter := &codeRecorder{ResponseWriter: w}
+	w = statusWriter
+	otelAttrs := []attribute.KeyValue{
+		otelogen.OperationID("list-project-entitlements"),
+		semconv.HTTPRequestMethodKey.String("GET"),
+		semconv.HTTPRouteKey.String("/api/v1/projects/{projectId}/entitlements"),
+	}
+	// Add attributes from config.
+	otelAttrs = append(otelAttrs, s.cfg.Attributes...)
+
+	// Start a span for this request.
+	ctx, span := s.cfg.Tracer.Start(r.Context(), ListProjectEntitlementsOperation,
+		trace.WithAttributes(otelAttrs...),
+		serverSpanKind,
+	)
+	defer span.End()
+
+	// Add Labeler to context.
+	labeler := &Labeler{attrs: otelAttrs}
+	ctx = contextWithLabeler(ctx, labeler)
+
+	// Run stopwatch.
+	startTime := time.Now()
+	defer func() {
+		elapsedDuration := time.Since(startTime)
+
+		attrSet := labeler.AttributeSet()
+		attrs := attrSet.ToSlice()
+		code := statusWriter.status
+		if code != 0 {
+			codeAttr := semconv.HTTPResponseStatusCode(code)
+			attrs = append(attrs, codeAttr)
+			span.SetAttributes(attrs...)
+		}
+		attrOpt := metric.WithAttributes(attrs...)
+
+		// Increment request counter.
+		s.requests.Add(ctx, 1, attrOpt)
+
+		// Use floating point division here for higher precision (instead of Millisecond method).
+		s.duration.Record(ctx, float64(elapsedDuration)/float64(time.Millisecond), attrOpt)
+	}()
+
+	var (
+		recordError = func(stage string, err error) {
+			span.RecordError(err)
+
+			// https://opentelemetry.io/docs/specs/semconv/http/http-spans/#status
+			// Span Status MUST be left unset if HTTP status code was in the 1xx, 2xx or 3xx ranges,
+			// unless there was another error (e.g., network error receiving the response body; or 3xx codes with
+			// max redirects exceeded), in which case status MUST be set to Error.
+			code := statusWriter.status
+			if code < 100 || code >= 500 {
+				span.SetStatus(codes.Error, stage)
+			}
+
+			attrSet := labeler.AttributeSet()
+			attrs := attrSet.ToSlice()
+			if code != 0 {
+				attrs = append(attrs, semconv.HTTPResponseStatusCode(code))
+			}
+
+			s.errors.Add(ctx, 1, metric.WithAttributes(attrs...))
+		}
+		err          error
+		opErrContext = ogenerrors.OperationContext{
+			Name: ListProjectEntitlementsOperation,
+			ID:   "list-project-entitlements",
+		}
+	)
+	{
+		type bitset = [1]uint8
+		var satisfied bitset
+		{
+			sctx, ok, err := s.securityProjectAuth(ctx, ListProjectEntitlementsOperation, r)
+			if err != nil {
+				err = &ogenerrors.SecurityError{
+					OperationContext: opErrContext,
+					Security:         "ProjectAuth",
+					Err:              err,
+				}
+				if encodeErr := encodeErrorResponse(s.h.NewError(ctx, err), w, span); encodeErr != nil {
+					defer recordError("Security:ProjectAuth", err)
+				}
+				return
+			}
+			if ok {
+				satisfied[0] |= 1 << 0
+				ctx = sctx
+			}
+		}
+
+		if ok := func() bool {
+		nextRequirement:
+			for _, requirement := range []bitset{
+				{0b00000001},
+			} {
+				for i, mask := range requirement {
+					if satisfied[i]&mask != mask {
+						continue nextRequirement
+					}
+				}
+				return true
+			}
+			return false
+		}(); !ok {
+			err = &ogenerrors.SecurityError{
+				OperationContext: opErrContext,
+				Err:              ogenerrors.ErrSecurityRequirementIsNotSatisfied,
+			}
+			if encodeErr := encodeErrorResponse(s.h.NewError(ctx, err), w, span); encodeErr != nil {
+				defer recordError("Security", err)
+			}
+			return
+		}
+	}
+	params, err := decodeListProjectEntitlementsParams(args, argsEscaped, r)
+	if err != nil {
+		err = &ogenerrors.DecodeParamsError{
+			OperationContext: opErrContext,
+			Err:              err,
+		}
+		defer recordError("DecodeParams", err)
+		s.cfg.ErrorHandler(ctx, w, r, err)
+		return
+	}
+
+	var rawBody []byte
+
+	var response *EntitlementList
+	if m := s.cfg.Middleware; m != nil {
+		mreq := middleware.Request{
+			Context:          ctx,
+			OperationName:    ListProjectEntitlementsOperation,
+			OperationSummary: "What this project can currently use",
+			OperationID:      "list-project-entitlements",
+			Body:             nil,
+			RawBody:          rawBody,
+			Params: middleware.Parameters{
+				{
+					Name: "page",
+					In:   "query",
+				}: params.Page,
+				{
+					Name: "page_size",
+					In:   "query",
+				}: params.PageSize,
+				{
+					Name: "product_key",
+					In:   "query",
+				}: params.ProductKey,
+				{
+					Name: "projectId",
+					In:   "path",
+				}: params.ProjectId,
+			},
+			Raw: r,
+		}
+
+		type (
+			Request  = struct{}
+			Params   = ListProjectEntitlementsParams
+			Response = *EntitlementList
+		)
+		response, err = middleware.HookMiddleware[
+			Request,
+			Params,
+			Response,
+		](
+			m,
+			mreq,
+			unpackListProjectEntitlementsParams,
+			func(ctx context.Context, request Request, params Params) (response Response, err error) {
+				response, err = s.h.ListProjectEntitlements(ctx, params)
+				return response, err
+			},
+		)
+	} else {
+		response, err = s.h.ListProjectEntitlements(ctx, params)
+	}
+	if err != nil {
+		if errRes, ok := errors.Into[*ErrorStatusCode](err); ok {
+			if err := encodeErrorResponse(errRes, w, span); err != nil {
+				defer recordError("Internal", err)
+			}
+			return
+		}
+		if errors.Is(err, ht.ErrNotImplemented) {
+			s.cfg.ErrorHandler(ctx, w, r, err)
+			return
+		}
+		if err := encodeErrorResponse(s.h.NewError(ctx, err), w, span); err != nil {
+			defer recordError("Internal", err)
+		}
+		return
+	}
+
+	if err := encodeListProjectEntitlementsResponse(response, w, span); err != nil {
+		defer recordError("EncodeResponse", err)
+		if !errors.Is(err, ht.ErrInternalServerErrorResponse) {
+			s.cfg.ErrorHandler(ctx, w, r, err)
+		}
+		return
+	}
+}
+
+// handleListProjectOrderItemsRequest handles list-project-order-items operation.
+//
+// What an order is made up of.
+//
+// GET /api/v1/projects/{projectId}/orders/{orderId}/items
+func (s *Server) handleListProjectOrderItemsRequest(args [2]string, argsEscaped bool, w http.ResponseWriter, r *http.Request) {
+	statusWriter := &codeRecorder{ResponseWriter: w}
+	w = statusWriter
+	otelAttrs := []attribute.KeyValue{
+		otelogen.OperationID("list-project-order-items"),
+		semconv.HTTPRequestMethodKey.String("GET"),
+		semconv.HTTPRouteKey.String("/api/v1/projects/{projectId}/orders/{orderId}/items"),
+	}
+	// Add attributes from config.
+	otelAttrs = append(otelAttrs, s.cfg.Attributes...)
+
+	// Start a span for this request.
+	ctx, span := s.cfg.Tracer.Start(r.Context(), ListProjectOrderItemsOperation,
+		trace.WithAttributes(otelAttrs...),
+		serverSpanKind,
+	)
+	defer span.End()
+
+	// Add Labeler to context.
+	labeler := &Labeler{attrs: otelAttrs}
+	ctx = contextWithLabeler(ctx, labeler)
+
+	// Run stopwatch.
+	startTime := time.Now()
+	defer func() {
+		elapsedDuration := time.Since(startTime)
+
+		attrSet := labeler.AttributeSet()
+		attrs := attrSet.ToSlice()
+		code := statusWriter.status
+		if code != 0 {
+			codeAttr := semconv.HTTPResponseStatusCode(code)
+			attrs = append(attrs, codeAttr)
+			span.SetAttributes(attrs...)
+		}
+		attrOpt := metric.WithAttributes(attrs...)
+
+		// Increment request counter.
+		s.requests.Add(ctx, 1, attrOpt)
+
+		// Use floating point division here for higher precision (instead of Millisecond method).
+		s.duration.Record(ctx, float64(elapsedDuration)/float64(time.Millisecond), attrOpt)
+	}()
+
+	var (
+		recordError = func(stage string, err error) {
+			span.RecordError(err)
+
+			// https://opentelemetry.io/docs/specs/semconv/http/http-spans/#status
+			// Span Status MUST be left unset if HTTP status code was in the 1xx, 2xx or 3xx ranges,
+			// unless there was another error (e.g., network error receiving the response body; or 3xx codes with
+			// max redirects exceeded), in which case status MUST be set to Error.
+			code := statusWriter.status
+			if code < 100 || code >= 500 {
+				span.SetStatus(codes.Error, stage)
+			}
+
+			attrSet := labeler.AttributeSet()
+			attrs := attrSet.ToSlice()
+			if code != 0 {
+				attrs = append(attrs, semconv.HTTPResponseStatusCode(code))
+			}
+
+			s.errors.Add(ctx, 1, metric.WithAttributes(attrs...))
+		}
+		err          error
+		opErrContext = ogenerrors.OperationContext{
+			Name: ListProjectOrderItemsOperation,
+			ID:   "list-project-order-items",
+		}
+	)
+	{
+		type bitset = [1]uint8
+		var satisfied bitset
+		{
+			sctx, ok, err := s.securityProjectAuth(ctx, ListProjectOrderItemsOperation, r)
+			if err != nil {
+				err = &ogenerrors.SecurityError{
+					OperationContext: opErrContext,
+					Security:         "ProjectAuth",
+					Err:              err,
+				}
+				if encodeErr := encodeErrorResponse(s.h.NewError(ctx, err), w, span); encodeErr != nil {
+					defer recordError("Security:ProjectAuth", err)
+				}
+				return
+			}
+			if ok {
+				satisfied[0] |= 1 << 0
+				ctx = sctx
+			}
+		}
+
+		if ok := func() bool {
+		nextRequirement:
+			for _, requirement := range []bitset{
+				{0b00000001},
+			} {
+				for i, mask := range requirement {
+					if satisfied[i]&mask != mask {
+						continue nextRequirement
+					}
+				}
+				return true
+			}
+			return false
+		}(); !ok {
+			err = &ogenerrors.SecurityError{
+				OperationContext: opErrContext,
+				Err:              ogenerrors.ErrSecurityRequirementIsNotSatisfied,
+			}
+			if encodeErr := encodeErrorResponse(s.h.NewError(ctx, err), w, span); encodeErr != nil {
+				defer recordError("Security", err)
+			}
+			return
+		}
+	}
+	params, err := decodeListProjectOrderItemsParams(args, argsEscaped, r)
+	if err != nil {
+		err = &ogenerrors.DecodeParamsError{
+			OperationContext: opErrContext,
+			Err:              err,
+		}
+		defer recordError("DecodeParams", err)
+		s.cfg.ErrorHandler(ctx, w, r, err)
+		return
+	}
+
+	var rawBody []byte
+
+	var response *OrderItemList
+	if m := s.cfg.Middleware; m != nil {
+		mreq := middleware.Request{
+			Context:          ctx,
+			OperationName:    ListProjectOrderItemsOperation,
+			OperationSummary: "What an order is made up of",
+			OperationID:      "list-project-order-items",
+			Body:             nil,
+			RawBody:          rawBody,
+			Params: middleware.Parameters{
+				{
+					Name: "page",
+					In:   "query",
+				}: params.Page,
+				{
+					Name: "page_size",
+					In:   "query",
+				}: params.PageSize,
+				{
+					Name: "projectId",
+					In:   "path",
+				}: params.ProjectId,
+				{
+					Name: "orderId",
+					In:   "path",
+				}: params.OrderId,
+			},
+			Raw: r,
+		}
+
+		type (
+			Request  = struct{}
+			Params   = ListProjectOrderItemsParams
+			Response = *OrderItemList
+		)
+		response, err = middleware.HookMiddleware[
+			Request,
+			Params,
+			Response,
+		](
+			m,
+			mreq,
+			unpackListProjectOrderItemsParams,
+			func(ctx context.Context, request Request, params Params) (response Response, err error) {
+				response, err = s.h.ListProjectOrderItems(ctx, params)
+				return response, err
+			},
+		)
+	} else {
+		response, err = s.h.ListProjectOrderItems(ctx, params)
+	}
+	if err != nil {
+		if errRes, ok := errors.Into[*ErrorStatusCode](err); ok {
+			if err := encodeErrorResponse(errRes, w, span); err != nil {
+				defer recordError("Internal", err)
+			}
+			return
+		}
+		if errors.Is(err, ht.ErrNotImplemented) {
+			s.cfg.ErrorHandler(ctx, w, r, err)
+			return
+		}
+		if err := encodeErrorResponse(s.h.NewError(ctx, err), w, span); err != nil {
+			defer recordError("Internal", err)
+		}
+		return
+	}
+
+	if err := encodeListProjectOrderItemsResponse(response, w, span); err != nil {
+		defer recordError("EncodeResponse", err)
+		if !errors.Is(err, ht.ErrInternalServerErrorResponse) {
+			s.cfg.ErrorHandler(ctx, w, r, err)
+		}
+		return
+	}
+}
+
+// handleListProjectOrdersRequest handles list-project-orders operation.
+//
+// An order awaiting payment shows what is outstanding. Paying it is done from the billing centre by
+// the account owner.
+//
+// GET /api/v1/projects/{projectId}/orders
+func (s *Server) handleListProjectOrdersRequest(args [1]string, argsEscaped bool, w http.ResponseWriter, r *http.Request) {
+	statusWriter := &codeRecorder{ResponseWriter: w}
+	w = statusWriter
+	otelAttrs := []attribute.KeyValue{
+		otelogen.OperationID("list-project-orders"),
+		semconv.HTTPRequestMethodKey.String("GET"),
+		semconv.HTTPRouteKey.String("/api/v1/projects/{projectId}/orders"),
+	}
+	// Add attributes from config.
+	otelAttrs = append(otelAttrs, s.cfg.Attributes...)
+
+	// Start a span for this request.
+	ctx, span := s.cfg.Tracer.Start(r.Context(), ListProjectOrdersOperation,
+		trace.WithAttributes(otelAttrs...),
+		serverSpanKind,
+	)
+	defer span.End()
+
+	// Add Labeler to context.
+	labeler := &Labeler{attrs: otelAttrs}
+	ctx = contextWithLabeler(ctx, labeler)
+
+	// Run stopwatch.
+	startTime := time.Now()
+	defer func() {
+		elapsedDuration := time.Since(startTime)
+
+		attrSet := labeler.AttributeSet()
+		attrs := attrSet.ToSlice()
+		code := statusWriter.status
+		if code != 0 {
+			codeAttr := semconv.HTTPResponseStatusCode(code)
+			attrs = append(attrs, codeAttr)
+			span.SetAttributes(attrs...)
+		}
+		attrOpt := metric.WithAttributes(attrs...)
+
+		// Increment request counter.
+		s.requests.Add(ctx, 1, attrOpt)
+
+		// Use floating point division here for higher precision (instead of Millisecond method).
+		s.duration.Record(ctx, float64(elapsedDuration)/float64(time.Millisecond), attrOpt)
+	}()
+
+	var (
+		recordError = func(stage string, err error) {
+			span.RecordError(err)
+
+			// https://opentelemetry.io/docs/specs/semconv/http/http-spans/#status
+			// Span Status MUST be left unset if HTTP status code was in the 1xx, 2xx or 3xx ranges,
+			// unless there was another error (e.g., network error receiving the response body; or 3xx codes with
+			// max redirects exceeded), in which case status MUST be set to Error.
+			code := statusWriter.status
+			if code < 100 || code >= 500 {
+				span.SetStatus(codes.Error, stage)
+			}
+
+			attrSet := labeler.AttributeSet()
+			attrs := attrSet.ToSlice()
+			if code != 0 {
+				attrs = append(attrs, semconv.HTTPResponseStatusCode(code))
+			}
+
+			s.errors.Add(ctx, 1, metric.WithAttributes(attrs...))
+		}
+		err          error
+		opErrContext = ogenerrors.OperationContext{
+			Name: ListProjectOrdersOperation,
+			ID:   "list-project-orders",
+		}
+	)
+	{
+		type bitset = [1]uint8
+		var satisfied bitset
+		{
+			sctx, ok, err := s.securityProjectAuth(ctx, ListProjectOrdersOperation, r)
+			if err != nil {
+				err = &ogenerrors.SecurityError{
+					OperationContext: opErrContext,
+					Security:         "ProjectAuth",
+					Err:              err,
+				}
+				if encodeErr := encodeErrorResponse(s.h.NewError(ctx, err), w, span); encodeErr != nil {
+					defer recordError("Security:ProjectAuth", err)
+				}
+				return
+			}
+			if ok {
+				satisfied[0] |= 1 << 0
+				ctx = sctx
+			}
+		}
+
+		if ok := func() bool {
+		nextRequirement:
+			for _, requirement := range []bitset{
+				{0b00000001},
+			} {
+				for i, mask := range requirement {
+					if satisfied[i]&mask != mask {
+						continue nextRequirement
+					}
+				}
+				return true
+			}
+			return false
+		}(); !ok {
+			err = &ogenerrors.SecurityError{
+				OperationContext: opErrContext,
+				Err:              ogenerrors.ErrSecurityRequirementIsNotSatisfied,
+			}
+			if encodeErr := encodeErrorResponse(s.h.NewError(ctx, err), w, span); encodeErr != nil {
+				defer recordError("Security", err)
+			}
+			return
+		}
+	}
+	params, err := decodeListProjectOrdersParams(args, argsEscaped, r)
+	if err != nil {
+		err = &ogenerrors.DecodeParamsError{
+			OperationContext: opErrContext,
+			Err:              err,
+		}
+		defer recordError("DecodeParams", err)
+		s.cfg.ErrorHandler(ctx, w, r, err)
+		return
+	}
+
+	var rawBody []byte
+
+	var response *OrderList
+	if m := s.cfg.Middleware; m != nil {
+		mreq := middleware.Request{
+			Context:          ctx,
+			OperationName:    ListProjectOrdersOperation,
+			OperationSummary: "Purchases made for this project",
+			OperationID:      "list-project-orders",
+			Body:             nil,
+			RawBody:          rawBody,
+			Params: middleware.Parameters{
+				{
+					Name: "page",
+					In:   "query",
+				}: params.Page,
+				{
+					Name: "page_size",
+					In:   "query",
+				}: params.PageSize,
+				{
+					Name: "state",
+					In:   "query",
+				}: params.State,
+				{
+					Name: "from",
+					In:   "query",
+				}: params.From,
+				{
+					Name: "to",
+					In:   "query",
+				}: params.To,
+				{
+					Name: "projectId",
+					In:   "path",
+				}: params.ProjectId,
+			},
+			Raw: r,
+		}
+
+		type (
+			Request  = struct{}
+			Params   = ListProjectOrdersParams
+			Response = *OrderList
+		)
+		response, err = middleware.HookMiddleware[
+			Request,
+			Params,
+			Response,
+		](
+			m,
+			mreq,
+			unpackListProjectOrdersParams,
+			func(ctx context.Context, request Request, params Params) (response Response, err error) {
+				response, err = s.h.ListProjectOrders(ctx, params)
+				return response, err
+			},
+		)
+	} else {
+		response, err = s.h.ListProjectOrders(ctx, params)
+	}
+	if err != nil {
+		if errRes, ok := errors.Into[*ErrorStatusCode](err); ok {
+			if err := encodeErrorResponse(errRes, w, span); err != nil {
+				defer recordError("Internal", err)
+			}
+			return
+		}
+		if errors.Is(err, ht.ErrNotImplemented) {
+			s.cfg.ErrorHandler(ctx, w, r, err)
+			return
+		}
+		if err := encodeErrorResponse(s.h.NewError(ctx, err), w, span); err != nil {
+			defer recordError("Internal", err)
+		}
+		return
+	}
+
+	if err := encodeListProjectOrdersResponse(response, w, span); err != nil {
+		defer recordError("EncodeResponse", err)
+		if !errors.Is(err, ht.ErrInternalServerErrorResponse) {
+			s.cfg.ErrorHandler(ctx, w, r, err)
+		}
+		return
+	}
+}
+
+// handleListProjectSpendRequest handles list-project-spend operation.
+//
+// Covers a closed time range. Both bounds are required: a total without a stated period cannot be
+// reconciled against an invoice.
+//
+// Includes usage that has not been invoiced yet.
+//
+// GET /api/v1/projects/{projectId}/spend
+func (s *Server) handleListProjectSpendRequest(args [1]string, argsEscaped bool, w http.ResponseWriter, r *http.Request) {
+	statusWriter := &codeRecorder{ResponseWriter: w}
+	w = statusWriter
+	otelAttrs := []attribute.KeyValue{
+		otelogen.OperationID("list-project-spend"),
+		semconv.HTTPRequestMethodKey.String("GET"),
+		semconv.HTTPRouteKey.String("/api/v1/projects/{projectId}/spend"),
+	}
+	// Add attributes from config.
+	otelAttrs = append(otelAttrs, s.cfg.Attributes...)
+
+	// Start a span for this request.
+	ctx, span := s.cfg.Tracer.Start(r.Context(), ListProjectSpendOperation,
+		trace.WithAttributes(otelAttrs...),
+		serverSpanKind,
+	)
+	defer span.End()
+
+	// Add Labeler to context.
+	labeler := &Labeler{attrs: otelAttrs}
+	ctx = contextWithLabeler(ctx, labeler)
+
+	// Run stopwatch.
+	startTime := time.Now()
+	defer func() {
+		elapsedDuration := time.Since(startTime)
+
+		attrSet := labeler.AttributeSet()
+		attrs := attrSet.ToSlice()
+		code := statusWriter.status
+		if code != 0 {
+			codeAttr := semconv.HTTPResponseStatusCode(code)
+			attrs = append(attrs, codeAttr)
+			span.SetAttributes(attrs...)
+		}
+		attrOpt := metric.WithAttributes(attrs...)
+
+		// Increment request counter.
+		s.requests.Add(ctx, 1, attrOpt)
+
+		// Use floating point division here for higher precision (instead of Millisecond method).
+		s.duration.Record(ctx, float64(elapsedDuration)/float64(time.Millisecond), attrOpt)
+	}()
+
+	var (
+		recordError = func(stage string, err error) {
+			span.RecordError(err)
+
+			// https://opentelemetry.io/docs/specs/semconv/http/http-spans/#status
+			// Span Status MUST be left unset if HTTP status code was in the 1xx, 2xx or 3xx ranges,
+			// unless there was another error (e.g., network error receiving the response body; or 3xx codes with
+			// max redirects exceeded), in which case status MUST be set to Error.
+			code := statusWriter.status
+			if code < 100 || code >= 500 {
+				span.SetStatus(codes.Error, stage)
+			}
+
+			attrSet := labeler.AttributeSet()
+			attrs := attrSet.ToSlice()
+			if code != 0 {
+				attrs = append(attrs, semconv.HTTPResponseStatusCode(code))
+			}
+
+			s.errors.Add(ctx, 1, metric.WithAttributes(attrs...))
+		}
+		err          error
+		opErrContext = ogenerrors.OperationContext{
+			Name: ListProjectSpendOperation,
+			ID:   "list-project-spend",
+		}
+	)
+	{
+		type bitset = [1]uint8
+		var satisfied bitset
+		{
+			sctx, ok, err := s.securityProjectAuth(ctx, ListProjectSpendOperation, r)
+			if err != nil {
+				err = &ogenerrors.SecurityError{
+					OperationContext: opErrContext,
+					Security:         "ProjectAuth",
+					Err:              err,
+				}
+				if encodeErr := encodeErrorResponse(s.h.NewError(ctx, err), w, span); encodeErr != nil {
+					defer recordError("Security:ProjectAuth", err)
+				}
+				return
+			}
+			if ok {
+				satisfied[0] |= 1 << 0
+				ctx = sctx
+			}
+		}
+
+		if ok := func() bool {
+		nextRequirement:
+			for _, requirement := range []bitset{
+				{0b00000001},
+			} {
+				for i, mask := range requirement {
+					if satisfied[i]&mask != mask {
+						continue nextRequirement
+					}
+				}
+				return true
+			}
+			return false
+		}(); !ok {
+			err = &ogenerrors.SecurityError{
+				OperationContext: opErrContext,
+				Err:              ogenerrors.ErrSecurityRequirementIsNotSatisfied,
+			}
+			if encodeErr := encodeErrorResponse(s.h.NewError(ctx, err), w, span); encodeErr != nil {
+				defer recordError("Security", err)
+			}
+			return
+		}
+	}
+	params, err := decodeListProjectSpendParams(args, argsEscaped, r)
+	if err != nil {
+		err = &ogenerrors.DecodeParamsError{
+			OperationContext: opErrContext,
+			Err:              err,
+		}
+		defer recordError("DecodeParams", err)
+		s.cfg.ErrorHandler(ctx, w, r, err)
+		return
+	}
+
+	var rawBody []byte
+
+	var response *SpendRowList
+	if m := s.cfg.Middleware; m != nil {
+		mreq := middleware.Request{
+			Context:          ctx,
+			OperationName:    ListProjectSpendOperation,
+			OperationSummary: "What this project spent, grouped",
+			OperationID:      "list-project-spend",
+			Body:             nil,
+			RawBody:          rawBody,
+			Params: middleware.Parameters{
+				{
+					Name: "from",
+					In:   "query",
+				}: params.From,
+				{
+					Name: "to",
+					In:   "query",
+				}: params.To,
+				{
+					Name: "group_by",
+					In:   "query",
+				}: params.GroupBy,
+				{
+					Name: "product_key",
+					In:   "query",
+				}: params.ProductKey,
+				{
+					Name: "page",
+					In:   "query",
+				}: params.Page,
+				{
+					Name: "page_size",
+					In:   "query",
+				}: params.PageSize,
+				{
+					Name: "projectId",
+					In:   "path",
+				}: params.ProjectId,
+			},
+			Raw: r,
+		}
+
+		type (
+			Request  = struct{}
+			Params   = ListProjectSpendParams
+			Response = *SpendRowList
+		)
+		response, err = middleware.HookMiddleware[
+			Request,
+			Params,
+			Response,
+		](
+			m,
+			mreq,
+			unpackListProjectSpendParams,
+			func(ctx context.Context, request Request, params Params) (response Response, err error) {
+				response, err = s.h.ListProjectSpend(ctx, params)
+				return response, err
+			},
+		)
+	} else {
+		response, err = s.h.ListProjectSpend(ctx, params)
+	}
+	if err != nil {
+		if errRes, ok := errors.Into[*ErrorStatusCode](err); ok {
+			if err := encodeErrorResponse(errRes, w, span); err != nil {
+				defer recordError("Internal", err)
+			}
+			return
+		}
+		if errors.Is(err, ht.ErrNotImplemented) {
+			s.cfg.ErrorHandler(ctx, w, r, err)
+			return
+		}
+		if err := encodeErrorResponse(s.h.NewError(ctx, err), w, span); err != nil {
+			defer recordError("Internal", err)
+		}
+		return
+	}
+
+	if err := encodeListProjectSpendResponse(response, w, span); err != nil {
+		defer recordError("EncodeResponse", err)
+		if !errors.Is(err, ht.ErrInternalServerErrorResponse) {
+			s.cfg.ErrorHandler(ctx, w, r, err)
+		}
+		return
+	}
+}
+
+// handleListProjectSubscriptionItemsRequest handles list-project-subscription-items operation.
+//
+// What this project has bought, and when each renews.
+//
+// GET /api/v1/projects/{projectId}/subscription-items
+func (s *Server) handleListProjectSubscriptionItemsRequest(args [1]string, argsEscaped bool, w http.ResponseWriter, r *http.Request) {
+	statusWriter := &codeRecorder{ResponseWriter: w}
+	w = statusWriter
+	otelAttrs := []attribute.KeyValue{
+		otelogen.OperationID("list-project-subscription-items"),
+		semconv.HTTPRequestMethodKey.String("GET"),
+		semconv.HTTPRouteKey.String("/api/v1/projects/{projectId}/subscription-items"),
+	}
+	// Add attributes from config.
+	otelAttrs = append(otelAttrs, s.cfg.Attributes...)
+
+	// Start a span for this request.
+	ctx, span := s.cfg.Tracer.Start(r.Context(), ListProjectSubscriptionItemsOperation,
+		trace.WithAttributes(otelAttrs...),
+		serverSpanKind,
+	)
+	defer span.End()
+
+	// Add Labeler to context.
+	labeler := &Labeler{attrs: otelAttrs}
+	ctx = contextWithLabeler(ctx, labeler)
+
+	// Run stopwatch.
+	startTime := time.Now()
+	defer func() {
+		elapsedDuration := time.Since(startTime)
+
+		attrSet := labeler.AttributeSet()
+		attrs := attrSet.ToSlice()
+		code := statusWriter.status
+		if code != 0 {
+			codeAttr := semconv.HTTPResponseStatusCode(code)
+			attrs = append(attrs, codeAttr)
+			span.SetAttributes(attrs...)
+		}
+		attrOpt := metric.WithAttributes(attrs...)
+
+		// Increment request counter.
+		s.requests.Add(ctx, 1, attrOpt)
+
+		// Use floating point division here for higher precision (instead of Millisecond method).
+		s.duration.Record(ctx, float64(elapsedDuration)/float64(time.Millisecond), attrOpt)
+	}()
+
+	var (
+		recordError = func(stage string, err error) {
+			span.RecordError(err)
+
+			// https://opentelemetry.io/docs/specs/semconv/http/http-spans/#status
+			// Span Status MUST be left unset if HTTP status code was in the 1xx, 2xx or 3xx ranges,
+			// unless there was another error (e.g., network error receiving the response body; or 3xx codes with
+			// max redirects exceeded), in which case status MUST be set to Error.
+			code := statusWriter.status
+			if code < 100 || code >= 500 {
+				span.SetStatus(codes.Error, stage)
+			}
+
+			attrSet := labeler.AttributeSet()
+			attrs := attrSet.ToSlice()
+			if code != 0 {
+				attrs = append(attrs, semconv.HTTPResponseStatusCode(code))
+			}
+
+			s.errors.Add(ctx, 1, metric.WithAttributes(attrs...))
+		}
+		err          error
+		opErrContext = ogenerrors.OperationContext{
+			Name: ListProjectSubscriptionItemsOperation,
+			ID:   "list-project-subscription-items",
+		}
+	)
+	{
+		type bitset = [1]uint8
+		var satisfied bitset
+		{
+			sctx, ok, err := s.securityProjectAuth(ctx, ListProjectSubscriptionItemsOperation, r)
+			if err != nil {
+				err = &ogenerrors.SecurityError{
+					OperationContext: opErrContext,
+					Security:         "ProjectAuth",
+					Err:              err,
+				}
+				if encodeErr := encodeErrorResponse(s.h.NewError(ctx, err), w, span); encodeErr != nil {
+					defer recordError("Security:ProjectAuth", err)
+				}
+				return
+			}
+			if ok {
+				satisfied[0] |= 1 << 0
+				ctx = sctx
+			}
+		}
+
+		if ok := func() bool {
+		nextRequirement:
+			for _, requirement := range []bitset{
+				{0b00000001},
+			} {
+				for i, mask := range requirement {
+					if satisfied[i]&mask != mask {
+						continue nextRequirement
+					}
+				}
+				return true
+			}
+			return false
+		}(); !ok {
+			err = &ogenerrors.SecurityError{
+				OperationContext: opErrContext,
+				Err:              ogenerrors.ErrSecurityRequirementIsNotSatisfied,
+			}
+			if encodeErr := encodeErrorResponse(s.h.NewError(ctx, err), w, span); encodeErr != nil {
+				defer recordError("Security", err)
+			}
+			return
+		}
+	}
+	params, err := decodeListProjectSubscriptionItemsParams(args, argsEscaped, r)
+	if err != nil {
+		err = &ogenerrors.DecodeParamsError{
+			OperationContext: opErrContext,
+			Err:              err,
+		}
+		defer recordError("DecodeParams", err)
+		s.cfg.ErrorHandler(ctx, w, r, err)
+		return
+	}
+
+	var rawBody []byte
+
+	var response *SubscriptionItemList
+	if m := s.cfg.Middleware; m != nil {
+		mreq := middleware.Request{
+			Context:          ctx,
+			OperationName:    ListProjectSubscriptionItemsOperation,
+			OperationSummary: "What this project has bought, and when each renews",
+			OperationID:      "list-project-subscription-items",
+			Body:             nil,
+			RawBody:          rawBody,
+			Params: middleware.Parameters{
+				{
+					Name: "page",
+					In:   "query",
+				}: params.Page,
+				{
+					Name: "page_size",
+					In:   "query",
+				}: params.PageSize,
+				{
+					Name: "expiring_before",
+					In:   "query",
+				}: params.ExpiringBefore,
+				{
+					Name: "projectId",
+					In:   "path",
+				}: params.ProjectId,
+			},
+			Raw: r,
+		}
+
+		type (
+			Request  = struct{}
+			Params   = ListProjectSubscriptionItemsParams
+			Response = *SubscriptionItemList
+		)
+		response, err = middleware.HookMiddleware[
+			Request,
+			Params,
+			Response,
+		](
+			m,
+			mreq,
+			unpackListProjectSubscriptionItemsParams,
+			func(ctx context.Context, request Request, params Params) (response Response, err error) {
+				response, err = s.h.ListProjectSubscriptionItems(ctx, params)
+				return response, err
+			},
+		)
+	} else {
+		response, err = s.h.ListProjectSubscriptionItems(ctx, params)
+	}
+	if err != nil {
+		if errRes, ok := errors.Into[*ErrorStatusCode](err); ok {
+			if err := encodeErrorResponse(errRes, w, span); err != nil {
+				defer recordError("Internal", err)
+			}
+			return
+		}
+		if errors.Is(err, ht.ErrNotImplemented) {
+			s.cfg.ErrorHandler(ctx, w, r, err)
+			return
+		}
+		if err := encodeErrorResponse(s.h.NewError(ctx, err), w, span); err != nil {
+			defer recordError("Internal", err)
+		}
+		return
+	}
+
+	if err := encodeListProjectSubscriptionItemsResponse(response, w, span); err != nil {
+		defer recordError("EncodeResponse", err)
+		if !errors.Is(err, ht.ErrInternalServerErrorResponse) {
+			s.cfg.ErrorHandler(ctx, w, r, err)
+		}
+		return
+	}
+}
+
+// handleListProjectSubscriptionsRequest handles list-project-subscriptions operation.
+//
+// Which services this project has enabled.
+//
+// GET /api/v1/projects/{projectId}/subscriptions
+func (s *Server) handleListProjectSubscriptionsRequest(args [1]string, argsEscaped bool, w http.ResponseWriter, r *http.Request) {
+	statusWriter := &codeRecorder{ResponseWriter: w}
+	w = statusWriter
+	otelAttrs := []attribute.KeyValue{
+		otelogen.OperationID("list-project-subscriptions"),
+		semconv.HTTPRequestMethodKey.String("GET"),
+		semconv.HTTPRouteKey.String("/api/v1/projects/{projectId}/subscriptions"),
+	}
+	// Add attributes from config.
+	otelAttrs = append(otelAttrs, s.cfg.Attributes...)
+
+	// Start a span for this request.
+	ctx, span := s.cfg.Tracer.Start(r.Context(), ListProjectSubscriptionsOperation,
+		trace.WithAttributes(otelAttrs...),
+		serverSpanKind,
+	)
+	defer span.End()
+
+	// Add Labeler to context.
+	labeler := &Labeler{attrs: otelAttrs}
+	ctx = contextWithLabeler(ctx, labeler)
+
+	// Run stopwatch.
+	startTime := time.Now()
+	defer func() {
+		elapsedDuration := time.Since(startTime)
+
+		attrSet := labeler.AttributeSet()
+		attrs := attrSet.ToSlice()
+		code := statusWriter.status
+		if code != 0 {
+			codeAttr := semconv.HTTPResponseStatusCode(code)
+			attrs = append(attrs, codeAttr)
+			span.SetAttributes(attrs...)
+		}
+		attrOpt := metric.WithAttributes(attrs...)
+
+		// Increment request counter.
+		s.requests.Add(ctx, 1, attrOpt)
+
+		// Use floating point division here for higher precision (instead of Millisecond method).
+		s.duration.Record(ctx, float64(elapsedDuration)/float64(time.Millisecond), attrOpt)
+	}()
+
+	var (
+		recordError = func(stage string, err error) {
+			span.RecordError(err)
+
+			// https://opentelemetry.io/docs/specs/semconv/http/http-spans/#status
+			// Span Status MUST be left unset if HTTP status code was in the 1xx, 2xx or 3xx ranges,
+			// unless there was another error (e.g., network error receiving the response body; or 3xx codes with
+			// max redirects exceeded), in which case status MUST be set to Error.
+			code := statusWriter.status
+			if code < 100 || code >= 500 {
+				span.SetStatus(codes.Error, stage)
+			}
+
+			attrSet := labeler.AttributeSet()
+			attrs := attrSet.ToSlice()
+			if code != 0 {
+				attrs = append(attrs, semconv.HTTPResponseStatusCode(code))
+			}
+
+			s.errors.Add(ctx, 1, metric.WithAttributes(attrs...))
+		}
+		err          error
+		opErrContext = ogenerrors.OperationContext{
+			Name: ListProjectSubscriptionsOperation,
+			ID:   "list-project-subscriptions",
+		}
+	)
+	{
+		type bitset = [1]uint8
+		var satisfied bitset
+		{
+			sctx, ok, err := s.securityProjectAuth(ctx, ListProjectSubscriptionsOperation, r)
+			if err != nil {
+				err = &ogenerrors.SecurityError{
+					OperationContext: opErrContext,
+					Security:         "ProjectAuth",
+					Err:              err,
+				}
+				if encodeErr := encodeErrorResponse(s.h.NewError(ctx, err), w, span); encodeErr != nil {
+					defer recordError("Security:ProjectAuth", err)
+				}
+				return
+			}
+			if ok {
+				satisfied[0] |= 1 << 0
+				ctx = sctx
+			}
+		}
+
+		if ok := func() bool {
+		nextRequirement:
+			for _, requirement := range []bitset{
+				{0b00000001},
+			} {
+				for i, mask := range requirement {
+					if satisfied[i]&mask != mask {
+						continue nextRequirement
+					}
+				}
+				return true
+			}
+			return false
+		}(); !ok {
+			err = &ogenerrors.SecurityError{
+				OperationContext: opErrContext,
+				Err:              ogenerrors.ErrSecurityRequirementIsNotSatisfied,
+			}
+			if encodeErr := encodeErrorResponse(s.h.NewError(ctx, err), w, span); encodeErr != nil {
+				defer recordError("Security", err)
+			}
+			return
+		}
+	}
+	params, err := decodeListProjectSubscriptionsParams(args, argsEscaped, r)
+	if err != nil {
+		err = &ogenerrors.DecodeParamsError{
+			OperationContext: opErrContext,
+			Err:              err,
+		}
+		defer recordError("DecodeParams", err)
+		s.cfg.ErrorHandler(ctx, w, r, err)
+		return
+	}
+
+	var rawBody []byte
+
+	var response *SubscriptionList
+	if m := s.cfg.Middleware; m != nil {
+		mreq := middleware.Request{
+			Context:          ctx,
+			OperationName:    ListProjectSubscriptionsOperation,
+			OperationSummary: "Which services this project has enabled",
+			OperationID:      "list-project-subscriptions",
+			Body:             nil,
+			RawBody:          rawBody,
+			Params: middleware.Parameters{
+				{
+					Name: "page",
+					In:   "query",
+				}: params.Page,
+				{
+					Name: "page_size",
+					In:   "query",
+				}: params.PageSize,
+				{
+					Name: "projectId",
+					In:   "path",
+				}: params.ProjectId,
+			},
+			Raw: r,
+		}
+
+		type (
+			Request  = struct{}
+			Params   = ListProjectSubscriptionsParams
+			Response = *SubscriptionList
+		)
+		response, err = middleware.HookMiddleware[
+			Request,
+			Params,
+			Response,
+		](
+			m,
+			mreq,
+			unpackListProjectSubscriptionsParams,
+			func(ctx context.Context, request Request, params Params) (response Response, err error) {
+				response, err = s.h.ListProjectSubscriptions(ctx, params)
+				return response, err
+			},
+		)
+	} else {
+		response, err = s.h.ListProjectSubscriptions(ctx, params)
+	}
+	if err != nil {
+		if errRes, ok := errors.Into[*ErrorStatusCode](err); ok {
+			if err := encodeErrorResponse(errRes, w, span); err != nil {
+				defer recordError("Internal", err)
+			}
+			return
+		}
+		if errors.Is(err, ht.ErrNotImplemented) {
+			s.cfg.ErrorHandler(ctx, w, r, err)
+			return
+		}
+		if err := encodeErrorResponse(s.h.NewError(ctx, err), w, span); err != nil {
+			defer recordError("Internal", err)
+		}
+		return
+	}
+
+	if err := encodeListProjectSubscriptionsResponse(response, w, span); err != nil {
+		defer recordError("EncodeResponse", err)
+		if !errors.Is(err, ht.ErrInternalServerErrorResponse) {
+			s.cfg.ErrorHandler(ctx, w, r, err)
+		}
+		return
+	}
+}
+
+// handleListProjectUsageChargesRequest handles list-project-usage-charges operation.
+//
+// The individual charges behind the figures in `/spend`. Amounts here sum to the totals reported there
+// over the same period.
+//
+// GET /api/v1/projects/{projectId}/usage-charges
+func (s *Server) handleListProjectUsageChargesRequest(args [1]string, argsEscaped bool, w http.ResponseWriter, r *http.Request) {
+	statusWriter := &codeRecorder{ResponseWriter: w}
+	w = statusWriter
+	otelAttrs := []attribute.KeyValue{
+		otelogen.OperationID("list-project-usage-charges"),
+		semconv.HTTPRequestMethodKey.String("GET"),
+		semconv.HTTPRouteKey.String("/api/v1/projects/{projectId}/usage-charges"),
+	}
+	// Add attributes from config.
+	otelAttrs = append(otelAttrs, s.cfg.Attributes...)
+
+	// Start a span for this request.
+	ctx, span := s.cfg.Tracer.Start(r.Context(), ListProjectUsageChargesOperation,
+		trace.WithAttributes(otelAttrs...),
+		serverSpanKind,
+	)
+	defer span.End()
+
+	// Add Labeler to context.
+	labeler := &Labeler{attrs: otelAttrs}
+	ctx = contextWithLabeler(ctx, labeler)
+
+	// Run stopwatch.
+	startTime := time.Now()
+	defer func() {
+		elapsedDuration := time.Since(startTime)
+
+		attrSet := labeler.AttributeSet()
+		attrs := attrSet.ToSlice()
+		code := statusWriter.status
+		if code != 0 {
+			codeAttr := semconv.HTTPResponseStatusCode(code)
+			attrs = append(attrs, codeAttr)
+			span.SetAttributes(attrs...)
+		}
+		attrOpt := metric.WithAttributes(attrs...)
+
+		// Increment request counter.
+		s.requests.Add(ctx, 1, attrOpt)
+
+		// Use floating point division here for higher precision (instead of Millisecond method).
+		s.duration.Record(ctx, float64(elapsedDuration)/float64(time.Millisecond), attrOpt)
+	}()
+
+	var (
+		recordError = func(stage string, err error) {
+			span.RecordError(err)
+
+			// https://opentelemetry.io/docs/specs/semconv/http/http-spans/#status
+			// Span Status MUST be left unset if HTTP status code was in the 1xx, 2xx or 3xx ranges,
+			// unless there was another error (e.g., network error receiving the response body; or 3xx codes with
+			// max redirects exceeded), in which case status MUST be set to Error.
+			code := statusWriter.status
+			if code < 100 || code >= 500 {
+				span.SetStatus(codes.Error, stage)
+			}
+
+			attrSet := labeler.AttributeSet()
+			attrs := attrSet.ToSlice()
+			if code != 0 {
+				attrs = append(attrs, semconv.HTTPResponseStatusCode(code))
+			}
+
+			s.errors.Add(ctx, 1, metric.WithAttributes(attrs...))
+		}
+		err          error
+		opErrContext = ogenerrors.OperationContext{
+			Name: ListProjectUsageChargesOperation,
+			ID:   "list-project-usage-charges",
+		}
+	)
+	{
+		type bitset = [1]uint8
+		var satisfied bitset
+		{
+			sctx, ok, err := s.securityProjectAuth(ctx, ListProjectUsageChargesOperation, r)
+			if err != nil {
+				err = &ogenerrors.SecurityError{
+					OperationContext: opErrContext,
+					Security:         "ProjectAuth",
+					Err:              err,
+				}
+				if encodeErr := encodeErrorResponse(s.h.NewError(ctx, err), w, span); encodeErr != nil {
+					defer recordError("Security:ProjectAuth", err)
+				}
+				return
+			}
+			if ok {
+				satisfied[0] |= 1 << 0
+				ctx = sctx
+			}
+		}
+
+		if ok := func() bool {
+		nextRequirement:
+			for _, requirement := range []bitset{
+				{0b00000001},
+			} {
+				for i, mask := range requirement {
+					if satisfied[i]&mask != mask {
+						continue nextRequirement
+					}
+				}
+				return true
+			}
+			return false
+		}(); !ok {
+			err = &ogenerrors.SecurityError{
+				OperationContext: opErrContext,
+				Err:              ogenerrors.ErrSecurityRequirementIsNotSatisfied,
+			}
+			if encodeErr := encodeErrorResponse(s.h.NewError(ctx, err), w, span); encodeErr != nil {
+				defer recordError("Security", err)
+			}
+			return
+		}
+	}
+	params, err := decodeListProjectUsageChargesParams(args, argsEscaped, r)
+	if err != nil {
+		err = &ogenerrors.DecodeParamsError{
+			OperationContext: opErrContext,
+			Err:              err,
+		}
+		defer recordError("DecodeParams", err)
+		s.cfg.ErrorHandler(ctx, w, r, err)
+		return
+	}
+
+	var rawBody []byte
+
+	var response *UsageChargeList
+	if m := s.cfg.Middleware; m != nil {
+		mreq := middleware.Request{
+			Context:          ctx,
+			OperationName:    ListProjectUsageChargesOperation,
+			OperationSummary: "Metered charges for this project, line by line",
+			OperationID:      "list-project-usage-charges",
+			Body:             nil,
+			RawBody:          rawBody,
+			Params: middleware.Parameters{
+				{
+					Name: "page",
+					In:   "query",
+				}: params.Page,
+				{
+					Name: "page_size",
+					In:   "query",
+				}: params.PageSize,
+				{
+					Name: "resource_id",
+					In:   "query",
+				}: params.ResourceID,
+				{
+					Name: "meter_key",
+					In:   "query",
+				}: params.MeterKey,
+				{
+					Name: "from",
+					In:   "query",
+				}: params.From,
+				{
+					Name: "to",
+					In:   "query",
+				}: params.To,
+				{
+					Name: "projectId",
+					In:   "path",
+				}: params.ProjectId,
+			},
+			Raw: r,
+		}
+
+		type (
+			Request  = struct{}
+			Params   = ListProjectUsageChargesParams
+			Response = *UsageChargeList
+		)
+		response, err = middleware.HookMiddleware[
+			Request,
+			Params,
+			Response,
+		](
+			m,
+			mreq,
+			unpackListProjectUsageChargesParams,
+			func(ctx context.Context, request Request, params Params) (response Response, err error) {
+				response, err = s.h.ListProjectUsageCharges(ctx, params)
+				return response, err
+			},
+		)
+	} else {
+		response, err = s.h.ListProjectUsageCharges(ctx, params)
+	}
+	if err != nil {
+		if errRes, ok := errors.Into[*ErrorStatusCode](err); ok {
+			if err := encodeErrorResponse(errRes, w, span); err != nil {
+				defer recordError("Internal", err)
+			}
+			return
+		}
+		if errors.Is(err, ht.ErrNotImplemented) {
+			s.cfg.ErrorHandler(ctx, w, r, err)
+			return
+		}
+		if err := encodeErrorResponse(s.h.NewError(ctx, err), w, span); err != nil {
+			defer recordError("Internal", err)
+		}
+		return
+	}
+
+	if err := encodeListProjectUsageChargesResponse(response, w, span); err != nil {
+		defer recordError("EncodeResponse", err)
+		if !errors.Is(err, ht.ErrInternalServerErrorResponse) {
+			s.cfg.ErrorHandler(ctx, w, r, err)
+		}
+		return
+	}
+}
+
+// handleListRefundsRequest handles list-refunds operation.
+//
+// GET /account/v1/refunds
+func (s *Server) handleListRefundsRequest(args [0]string, argsEscaped bool, w http.ResponseWriter, r *http.Request) {
+	statusWriter := &codeRecorder{ResponseWriter: w}
+	w = statusWriter
+	otelAttrs := []attribute.KeyValue{
+		otelogen.OperationID("list-refunds"),
+		semconv.HTTPRequestMethodKey.String("GET"),
+		semconv.HTTPRouteKey.String("/account/v1/refunds"),
+	}
+	// Add attributes from config.
+	otelAttrs = append(otelAttrs, s.cfg.Attributes...)
+
+	// Start a span for this request.
+	ctx, span := s.cfg.Tracer.Start(r.Context(), ListRefundsOperation,
+		trace.WithAttributes(otelAttrs...),
+		serverSpanKind,
+	)
+	defer span.End()
+
+	// Add Labeler to context.
+	labeler := &Labeler{attrs: otelAttrs}
+	ctx = contextWithLabeler(ctx, labeler)
+
+	// Run stopwatch.
+	startTime := time.Now()
+	defer func() {
+		elapsedDuration := time.Since(startTime)
+
+		attrSet := labeler.AttributeSet()
+		attrs := attrSet.ToSlice()
+		code := statusWriter.status
+		if code != 0 {
+			codeAttr := semconv.HTTPResponseStatusCode(code)
+			attrs = append(attrs, codeAttr)
+			span.SetAttributes(attrs...)
+		}
+		attrOpt := metric.WithAttributes(attrs...)
+
+		// Increment request counter.
+		s.requests.Add(ctx, 1, attrOpt)
+
+		// Use floating point division here for higher precision (instead of Millisecond method).
+		s.duration.Record(ctx, float64(elapsedDuration)/float64(time.Millisecond), attrOpt)
+	}()
+
+	var (
+		recordError = func(stage string, err error) {
+			span.RecordError(err)
+
+			// https://opentelemetry.io/docs/specs/semconv/http/http-spans/#status
+			// Span Status MUST be left unset if HTTP status code was in the 1xx, 2xx or 3xx ranges,
+			// unless there was another error (e.g., network error receiving the response body; or 3xx codes with
+			// max redirects exceeded), in which case status MUST be set to Error.
+			code := statusWriter.status
+			if code < 100 || code >= 500 {
+				span.SetStatus(codes.Error, stage)
+			}
+
+			attrSet := labeler.AttributeSet()
+			attrs := attrSet.ToSlice()
+			if code != 0 {
+				attrs = append(attrs, semconv.HTTPResponseStatusCode(code))
+			}
+
+			s.errors.Add(ctx, 1, metric.WithAttributes(attrs...))
+		}
+		err          error
+		opErrContext = ogenerrors.OperationContext{
+			Name: ListRefundsOperation,
+			ID:   "list-refunds",
+		}
+	)
+	{
+		type bitset = [1]uint8
+		var satisfied bitset
+		{
+			sctx, ok, err := s.securityAccountAuth(ctx, ListRefundsOperation, r)
+			if err != nil {
+				err = &ogenerrors.SecurityError{
+					OperationContext: opErrContext,
+					Security:         "AccountAuth",
+					Err:              err,
+				}
+				if encodeErr := encodeErrorResponse(s.h.NewError(ctx, err), w, span); encodeErr != nil {
+					defer recordError("Security:AccountAuth", err)
+				}
+				return
+			}
+			if ok {
+				satisfied[0] |= 1 << 0
+				ctx = sctx
+			}
+		}
+
+		if ok := func() bool {
+		nextRequirement:
+			for _, requirement := range []bitset{
+				{0b00000001},
+			} {
+				for i, mask := range requirement {
+					if satisfied[i]&mask != mask {
+						continue nextRequirement
+					}
+				}
+				return true
+			}
+			return false
+		}(); !ok {
+			err = &ogenerrors.SecurityError{
+				OperationContext: opErrContext,
+				Err:              ogenerrors.ErrSecurityRequirementIsNotSatisfied,
+			}
+			if encodeErr := encodeErrorResponse(s.h.NewError(ctx, err), w, span); encodeErr != nil {
+				defer recordError("Security", err)
+			}
+			return
+		}
+	}
+	params, err := decodeListRefundsParams(args, argsEscaped, r)
+	if err != nil {
+		err = &ogenerrors.DecodeParamsError{
+			OperationContext: opErrContext,
+			Err:              err,
+		}
+		defer recordError("DecodeParams", err)
+		s.cfg.ErrorHandler(ctx, w, r, err)
+		return
+	}
+
+	var rawBody []byte
+
+	var response *RefundList
+	if m := s.cfg.Middleware; m != nil {
+		mreq := middleware.Request{
+			Context:          ctx,
+			OperationName:    ListRefundsOperation,
+			OperationSummary: "",
+			OperationID:      "list-refunds",
+			Body:             nil,
+			RawBody:          rawBody,
+			Params: middleware.Parameters{
+				{
+					Name: "page",
+					In:   "query",
+				}: params.Page,
+				{
+					Name: "page_size",
+					In:   "query",
+				}: params.PageSize,
+				{
+					Name: "billing_account_id",
+					In:   "query",
+				}: params.BillingAccountID,
+			},
+			Raw: r,
+		}
+
+		type (
+			Request  = struct{}
+			Params   = ListRefundsParams
+			Response = *RefundList
+		)
+		response, err = middleware.HookMiddleware[
+			Request,
+			Params,
+			Response,
+		](
+			m,
+			mreq,
+			unpackListRefundsParams,
+			func(ctx context.Context, request Request, params Params) (response Response, err error) {
+				response, err = s.h.ListRefunds(ctx, params)
+				return response, err
+			},
+		)
+	} else {
+		response, err = s.h.ListRefunds(ctx, params)
+	}
+	if err != nil {
+		if errRes, ok := errors.Into[*ErrorStatusCode](err); ok {
+			if err := encodeErrorResponse(errRes, w, span); err != nil {
+				defer recordError("Internal", err)
+			}
+			return
+		}
+		if errors.Is(err, ht.ErrNotImplemented) {
+			s.cfg.ErrorHandler(ctx, w, r, err)
+			return
+		}
+		if err := encodeErrorResponse(s.h.NewError(ctx, err), w, span); err != nil {
+			defer recordError("Internal", err)
+		}
+		return
+	}
+
+	if err := encodeListRefundsResponse(response, w, span); err != nil {
+		defer recordError("EncodeResponse", err)
+		if !errors.Is(err, ht.ErrInternalServerErrorResponse) {
+			s.cfg.ErrorHandler(ctx, w, r, err)
+		}
+		return
+	}
+}
+
+// handleListSubscriptionItemsRequest handles list-subscription-items operation.
+//
+// What has been bought, and when each renews.
+//
+// GET /account/v1/subscription-items
+func (s *Server) handleListSubscriptionItemsRequest(args [0]string, argsEscaped bool, w http.ResponseWriter, r *http.Request) {
+	statusWriter := &codeRecorder{ResponseWriter: w}
+	w = statusWriter
+	otelAttrs := []attribute.KeyValue{
+		otelogen.OperationID("list-subscription-items"),
+		semconv.HTTPRequestMethodKey.String("GET"),
+		semconv.HTTPRouteKey.String("/account/v1/subscription-items"),
+	}
+	// Add attributes from config.
+	otelAttrs = append(otelAttrs, s.cfg.Attributes...)
+
+	// Start a span for this request.
+	ctx, span := s.cfg.Tracer.Start(r.Context(), ListSubscriptionItemsOperation,
+		trace.WithAttributes(otelAttrs...),
+		serverSpanKind,
+	)
+	defer span.End()
+
+	// Add Labeler to context.
+	labeler := &Labeler{attrs: otelAttrs}
+	ctx = contextWithLabeler(ctx, labeler)
+
+	// Run stopwatch.
+	startTime := time.Now()
+	defer func() {
+		elapsedDuration := time.Since(startTime)
+
+		attrSet := labeler.AttributeSet()
+		attrs := attrSet.ToSlice()
+		code := statusWriter.status
+		if code != 0 {
+			codeAttr := semconv.HTTPResponseStatusCode(code)
+			attrs = append(attrs, codeAttr)
+			span.SetAttributes(attrs...)
+		}
+		attrOpt := metric.WithAttributes(attrs...)
+
+		// Increment request counter.
+		s.requests.Add(ctx, 1, attrOpt)
+
+		// Use floating point division here for higher precision (instead of Millisecond method).
+		s.duration.Record(ctx, float64(elapsedDuration)/float64(time.Millisecond), attrOpt)
+	}()
+
+	var (
+		recordError = func(stage string, err error) {
+			span.RecordError(err)
+
+			// https://opentelemetry.io/docs/specs/semconv/http/http-spans/#status
+			// Span Status MUST be left unset if HTTP status code was in the 1xx, 2xx or 3xx ranges,
+			// unless there was another error (e.g., network error receiving the response body; or 3xx codes with
+			// max redirects exceeded), in which case status MUST be set to Error.
+			code := statusWriter.status
+			if code < 100 || code >= 500 {
+				span.SetStatus(codes.Error, stage)
+			}
+
+			attrSet := labeler.AttributeSet()
+			attrs := attrSet.ToSlice()
+			if code != 0 {
+				attrs = append(attrs, semconv.HTTPResponseStatusCode(code))
+			}
+
+			s.errors.Add(ctx, 1, metric.WithAttributes(attrs...))
+		}
+		err          error
+		opErrContext = ogenerrors.OperationContext{
+			Name: ListSubscriptionItemsOperation,
+			ID:   "list-subscription-items",
+		}
+	)
+	{
+		type bitset = [1]uint8
+		var satisfied bitset
+		{
+			sctx, ok, err := s.securityAccountAuth(ctx, ListSubscriptionItemsOperation, r)
+			if err != nil {
+				err = &ogenerrors.SecurityError{
+					OperationContext: opErrContext,
+					Security:         "AccountAuth",
+					Err:              err,
+				}
+				if encodeErr := encodeErrorResponse(s.h.NewError(ctx, err), w, span); encodeErr != nil {
+					defer recordError("Security:AccountAuth", err)
+				}
+				return
+			}
+			if ok {
+				satisfied[0] |= 1 << 0
+				ctx = sctx
+			}
+		}
+
+		if ok := func() bool {
+		nextRequirement:
+			for _, requirement := range []bitset{
+				{0b00000001},
+			} {
+				for i, mask := range requirement {
+					if satisfied[i]&mask != mask {
+						continue nextRequirement
+					}
+				}
+				return true
+			}
+			return false
+		}(); !ok {
+			err = &ogenerrors.SecurityError{
+				OperationContext: opErrContext,
+				Err:              ogenerrors.ErrSecurityRequirementIsNotSatisfied,
+			}
+			if encodeErr := encodeErrorResponse(s.h.NewError(ctx, err), w, span); encodeErr != nil {
+				defer recordError("Security", err)
+			}
+			return
+		}
+	}
+	params, err := decodeListSubscriptionItemsParams(args, argsEscaped, r)
+	if err != nil {
+		err = &ogenerrors.DecodeParamsError{
+			OperationContext: opErrContext,
+			Err:              err,
+		}
+		defer recordError("DecodeParams", err)
+		s.cfg.ErrorHandler(ctx, w, r, err)
+		return
+	}
+
+	var rawBody []byte
+
+	var response *SubscriptionItemList
+	if m := s.cfg.Middleware; m != nil {
+		mreq := middleware.Request{
+			Context:          ctx,
+			OperationName:    ListSubscriptionItemsOperation,
+			OperationSummary: "What has been bought, and when each renews",
+			OperationID:      "list-subscription-items",
+			Body:             nil,
+			RawBody:          rawBody,
+			Params: middleware.Parameters{
+				{
+					Name: "page",
+					In:   "query",
+				}: params.Page,
+				{
+					Name: "page_size",
+					In:   "query",
+				}: params.PageSize,
+				{
+					Name: "billing_account_id",
+					In:   "query",
+				}: params.BillingAccountID,
+				{
+					Name: "project_id",
+					In:   "query",
+				}: params.ProjectID,
+				{
+					Name: "expiring_before",
+					In:   "query",
+				}: params.ExpiringBefore,
+			},
+			Raw: r,
+		}
+
+		type (
+			Request  = struct{}
+			Params   = ListSubscriptionItemsParams
+			Response = *SubscriptionItemList
+		)
+		response, err = middleware.HookMiddleware[
+			Request,
+			Params,
+			Response,
+		](
+			m,
+			mreq,
+			unpackListSubscriptionItemsParams,
+			func(ctx context.Context, request Request, params Params) (response Response, err error) {
+				response, err = s.h.ListSubscriptionItems(ctx, params)
+				return response, err
+			},
+		)
+	} else {
+		response, err = s.h.ListSubscriptionItems(ctx, params)
+	}
+	if err != nil {
+		if errRes, ok := errors.Into[*ErrorStatusCode](err); ok {
+			if err := encodeErrorResponse(errRes, w, span); err != nil {
+				defer recordError("Internal", err)
+			}
+			return
+		}
+		if errors.Is(err, ht.ErrNotImplemented) {
+			s.cfg.ErrorHandler(ctx, w, r, err)
+			return
+		}
+		if err := encodeErrorResponse(s.h.NewError(ctx, err), w, span); err != nil {
+			defer recordError("Internal", err)
+		}
+		return
+	}
+
+	if err := encodeListSubscriptionItemsResponse(response, w, span); err != nil {
+		defer recordError("EncodeResponse", err)
+		if !errors.Is(err, ht.ErrInternalServerErrorResponse) {
+			s.cfg.ErrorHandler(ctx, w, r, err)
+		}
+		return
+	}
+}
+
+// handleListSubscriptionsRequest handles list-subscriptions operation.
+//
+// GET /account/v1/subscriptions
+func (s *Server) handleListSubscriptionsRequest(args [0]string, argsEscaped bool, w http.ResponseWriter, r *http.Request) {
+	statusWriter := &codeRecorder{ResponseWriter: w}
+	w = statusWriter
+	otelAttrs := []attribute.KeyValue{
+		otelogen.OperationID("list-subscriptions"),
+		semconv.HTTPRequestMethodKey.String("GET"),
+		semconv.HTTPRouteKey.String("/account/v1/subscriptions"),
+	}
+	// Add attributes from config.
+	otelAttrs = append(otelAttrs, s.cfg.Attributes...)
+
+	// Start a span for this request.
+	ctx, span := s.cfg.Tracer.Start(r.Context(), ListSubscriptionsOperation,
+		trace.WithAttributes(otelAttrs...),
+		serverSpanKind,
+	)
+	defer span.End()
+
+	// Add Labeler to context.
+	labeler := &Labeler{attrs: otelAttrs}
+	ctx = contextWithLabeler(ctx, labeler)
+
+	// Run stopwatch.
+	startTime := time.Now()
+	defer func() {
+		elapsedDuration := time.Since(startTime)
+
+		attrSet := labeler.AttributeSet()
+		attrs := attrSet.ToSlice()
+		code := statusWriter.status
+		if code != 0 {
+			codeAttr := semconv.HTTPResponseStatusCode(code)
+			attrs = append(attrs, codeAttr)
+			span.SetAttributes(attrs...)
+		}
+		attrOpt := metric.WithAttributes(attrs...)
+
+		// Increment request counter.
+		s.requests.Add(ctx, 1, attrOpt)
+
+		// Use floating point division here for higher precision (instead of Millisecond method).
+		s.duration.Record(ctx, float64(elapsedDuration)/float64(time.Millisecond), attrOpt)
+	}()
+
+	var (
+		recordError = func(stage string, err error) {
+			span.RecordError(err)
+
+			// https://opentelemetry.io/docs/specs/semconv/http/http-spans/#status
+			// Span Status MUST be left unset if HTTP status code was in the 1xx, 2xx or 3xx ranges,
+			// unless there was another error (e.g., network error receiving the response body; or 3xx codes with
+			// max redirects exceeded), in which case status MUST be set to Error.
+			code := statusWriter.status
+			if code < 100 || code >= 500 {
+				span.SetStatus(codes.Error, stage)
+			}
+
+			attrSet := labeler.AttributeSet()
+			attrs := attrSet.ToSlice()
+			if code != 0 {
+				attrs = append(attrs, semconv.HTTPResponseStatusCode(code))
+			}
+
+			s.errors.Add(ctx, 1, metric.WithAttributes(attrs...))
+		}
+		err          error
+		opErrContext = ogenerrors.OperationContext{
+			Name: ListSubscriptionsOperation,
+			ID:   "list-subscriptions",
+		}
+	)
+	{
+		type bitset = [1]uint8
+		var satisfied bitset
+		{
+			sctx, ok, err := s.securityAccountAuth(ctx, ListSubscriptionsOperation, r)
+			if err != nil {
+				err = &ogenerrors.SecurityError{
+					OperationContext: opErrContext,
+					Security:         "AccountAuth",
+					Err:              err,
+				}
+				if encodeErr := encodeErrorResponse(s.h.NewError(ctx, err), w, span); encodeErr != nil {
+					defer recordError("Security:AccountAuth", err)
+				}
+				return
+			}
+			if ok {
+				satisfied[0] |= 1 << 0
+				ctx = sctx
+			}
+		}
+
+		if ok := func() bool {
+		nextRequirement:
+			for _, requirement := range []bitset{
+				{0b00000001},
+			} {
+				for i, mask := range requirement {
+					if satisfied[i]&mask != mask {
+						continue nextRequirement
+					}
+				}
+				return true
+			}
+			return false
+		}(); !ok {
+			err = &ogenerrors.SecurityError{
+				OperationContext: opErrContext,
+				Err:              ogenerrors.ErrSecurityRequirementIsNotSatisfied,
+			}
+			if encodeErr := encodeErrorResponse(s.h.NewError(ctx, err), w, span); encodeErr != nil {
+				defer recordError("Security", err)
+			}
+			return
+		}
+	}
+	params, err := decodeListSubscriptionsParams(args, argsEscaped, r)
+	if err != nil {
+		err = &ogenerrors.DecodeParamsError{
+			OperationContext: opErrContext,
+			Err:              err,
+		}
+		defer recordError("DecodeParams", err)
+		s.cfg.ErrorHandler(ctx, w, r, err)
+		return
+	}
+
+	var rawBody []byte
+
+	var response *SubscriptionList
+	if m := s.cfg.Middleware; m != nil {
+		mreq := middleware.Request{
+			Context:          ctx,
+			OperationName:    ListSubscriptionsOperation,
+			OperationSummary: "",
+			OperationID:      "list-subscriptions",
+			Body:             nil,
+			RawBody:          rawBody,
+			Params: middleware.Parameters{
+				{
+					Name: "page",
+					In:   "query",
+				}: params.Page,
+				{
+					Name: "page_size",
+					In:   "query",
+				}: params.PageSize,
+				{
+					Name: "billing_account_id",
+					In:   "query",
+				}: params.BillingAccountID,
+				{
+					Name: "project_id",
+					In:   "query",
+				}: params.ProjectID,
+			},
+			Raw: r,
+		}
+
+		type (
+			Request  = struct{}
+			Params   = ListSubscriptionsParams
+			Response = *SubscriptionList
+		)
+		response, err = middleware.HookMiddleware[
+			Request,
+			Params,
+			Response,
+		](
+			m,
+			mreq,
+			unpackListSubscriptionsParams,
+			func(ctx context.Context, request Request, params Params) (response Response, err error) {
+				response, err = s.h.ListSubscriptions(ctx, params)
+				return response, err
+			},
+		)
+	} else {
+		response, err = s.h.ListSubscriptions(ctx, params)
+	}
+	if err != nil {
+		if errRes, ok := errors.Into[*ErrorStatusCode](err); ok {
+			if err := encodeErrorResponse(errRes, w, span); err != nil {
+				defer recordError("Internal", err)
+			}
+			return
+		}
+		if errors.Is(err, ht.ErrNotImplemented) {
+			s.cfg.ErrorHandler(ctx, w, r, err)
+			return
+		}
+		if err := encodeErrorResponse(s.h.NewError(ctx, err), w, span); err != nil {
+			defer recordError("Internal", err)
+		}
+		return
+	}
+
+	if err := encodeListSubscriptionsResponse(response, w, span); err != nil {
 		defer recordError("EncodeResponse", err)
 		if !errors.Is(err, ht.ErrInternalServerErrorResponse) {
 			s.cfg.ErrorHandler(ctx, w, r, err)
@@ -3893,21 +8638,14 @@ func (s *Server) handleListPrepaidAssetsRequest(args [1]string, argsEscaped bool
 
 // handleListTopUpsRequest handles list-top-ups operation.
 //
-// Every top-up this account has made, newest first.
-//
-// Reading one top-up requires already holding its identifier, and the only place that identifier
-// appears is the redirect that started it — so without this list a top-up becomes unfindable the
-// moment the browser tab is closed, which is exactly when somebody wants to check whether their money
-// arrived.
-//
-// GET /account/v1/billing-accounts/{accountKey}/top-ups
-func (s *Server) handleListTopUpsRequest(args [1]string, argsEscaped bool, w http.ResponseWriter, r *http.Request) {
+// GET /account/v1/top-ups
+func (s *Server) handleListTopUpsRequest(args [0]string, argsEscaped bool, w http.ResponseWriter, r *http.Request) {
 	statusWriter := &codeRecorder{ResponseWriter: w}
 	w = statusWriter
 	otelAttrs := []attribute.KeyValue{
 		otelogen.OperationID("list-top-ups"),
 		semconv.HTTPRequestMethodKey.String("GET"),
-		semconv.HTTPRouteKey.String("/account/v1/billing-accounts/{accountKey}/top-ups"),
+		semconv.HTTPRouteKey.String("/account/v1/top-ups"),
 	}
 	// Add attributes from config.
 	otelAttrs = append(otelAttrs, s.cfg.Attributes...)
@@ -3976,15 +8714,15 @@ func (s *Server) handleListTopUpsRequest(args [1]string, argsEscaped bool, w htt
 		type bitset = [1]uint8
 		var satisfied bitset
 		{
-			sctx, ok, err := s.securityBearerAuth(ctx, ListTopUpsOperation, r)
+			sctx, ok, err := s.securityAccountAuth(ctx, ListTopUpsOperation, r)
 			if err != nil {
 				err = &ogenerrors.SecurityError{
 					OperationContext: opErrContext,
-					Security:         "BearerAuth",
+					Security:         "AccountAuth",
 					Err:              err,
 				}
 				if encodeErr := encodeErrorResponse(s.h.NewError(ctx, err), w, span); encodeErr != nil {
-					defer recordError("Security:BearerAuth", err)
+					defer recordError("Security:AccountAuth", err)
 				}
 				return
 			}
@@ -4036,15 +8774,11 @@ func (s *Server) handleListTopUpsRequest(args [1]string, argsEscaped bool, w htt
 		mreq := middleware.Request{
 			Context:          ctx,
 			OperationName:    ListTopUpsOperation,
-			OperationSummary: "My top-ups",
+			OperationSummary: "",
 			OperationID:      "list-top-ups",
 			Body:             nil,
 			RawBody:          rawBody,
 			Params: middleware.Parameters{
-				{
-					Name: "accountKey",
-					In:   "path",
-				}: params.AccountKey,
 				{
 					Name: "page",
 					In:   "query",
@@ -4053,6 +8787,10 @@ func (s *Server) handleListTopUpsRequest(args [1]string, argsEscaped bool, w htt
 					Name: "page_size",
 					In:   "query",
 				}: params.PageSize,
+				{
+					Name: "billing_account_id",
+					In:   "query",
+				}: params.BillingAccountID,
 			},
 			Raw: r,
 		}
@@ -4104,36 +8842,24 @@ func (s *Server) handleListTopUpsRequest(args [1]string, argsEscaped bool, w htt
 	}
 }
 
-// handlePreviewPromotionCodeRequest handles preview-promotion-code operation.
+// handleListTransactionsRequest handles list-transactions operation.
 //
-// Runs the same checks and the same arithmetic that placing the order will run, so the price shown
-// here and the price charged agree. Writing the calculation twice — once for the page and once for
-// the order — means they drift, and the visible form of that drift is a page saying "20 off" while
-// the full amount is taken.
+// Every movement of funds on the account.
 //
-// Nothing is redeemed. The allowance is only consumed when the order is actually placed.
-//
-// A code that cannot be used is rejected here with the reason, so the user learns it before filling in
-// the rest of the form rather than at the moment they press buy.
-//
-// Metered orders are rejected. They have no amount at this point — the money is worked out later
-// from usage. Applying a discount to a nil amount leaves the user believing they saved something while
-// the bill is unchanged.
-//
-// POST /account/v1/billing-accounts/{accountKey}/promotion-codes/preview
-func (s *Server) handlePreviewPromotionCodeRequest(args [1]string, argsEscaped bool, w http.ResponseWriter, r *http.Request) {
+// GET /account/v1/transactions
+func (s *Server) handleListTransactionsRequest(args [0]string, argsEscaped bool, w http.ResponseWriter, r *http.Request) {
 	statusWriter := &codeRecorder{ResponseWriter: w}
 	w = statusWriter
 	otelAttrs := []attribute.KeyValue{
-		otelogen.OperationID("preview-promotion-code"),
-		semconv.HTTPRequestMethodKey.String("POST"),
-		semconv.HTTPRouteKey.String("/account/v1/billing-accounts/{accountKey}/promotion-codes/preview"),
+		otelogen.OperationID("list-transactions"),
+		semconv.HTTPRequestMethodKey.String("GET"),
+		semconv.HTTPRouteKey.String("/account/v1/transactions"),
 	}
 	// Add attributes from config.
 	otelAttrs = append(otelAttrs, s.cfg.Attributes...)
 
 	// Start a span for this request.
-	ctx, span := s.cfg.Tracer.Start(r.Context(), PreviewPromotionCodeOperation,
+	ctx, span := s.cfg.Tracer.Start(r.Context(), ListTransactionsOperation,
 		trace.WithAttributes(otelAttrs...),
 		serverSpanKind,
 	)
@@ -4188,23 +8914,23 @@ func (s *Server) handlePreviewPromotionCodeRequest(args [1]string, argsEscaped b
 		}
 		err          error
 		opErrContext = ogenerrors.OperationContext{
-			Name: PreviewPromotionCodeOperation,
-			ID:   "preview-promotion-code",
+			Name: ListTransactionsOperation,
+			ID:   "list-transactions",
 		}
 	)
 	{
 		type bitset = [1]uint8
 		var satisfied bitset
 		{
-			sctx, ok, err := s.securityBearerAuth(ctx, PreviewPromotionCodeOperation, r)
+			sctx, ok, err := s.securityAccountAuth(ctx, ListTransactionsOperation, r)
 			if err != nil {
 				err = &ogenerrors.SecurityError{
 					OperationContext: opErrContext,
-					Security:         "BearerAuth",
+					Security:         "AccountAuth",
 					Err:              err,
 				}
 				if encodeErr := encodeErrorResponse(s.h.NewError(ctx, err), w, span); encodeErr != nil {
-					defer recordError("Security:BearerAuth", err)
+					defer recordError("Security:AccountAuth", err)
 				}
 				return
 			}
@@ -4238,247 +8964,7 @@ func (s *Server) handlePreviewPromotionCodeRequest(args [1]string, argsEscaped b
 			return
 		}
 	}
-	params, err := decodePreviewPromotionCodeParams(args, argsEscaped, r)
-	if err != nil {
-		err = &ogenerrors.DecodeParamsError{
-			OperationContext: opErrContext,
-			Err:              err,
-		}
-		defer recordError("DecodeParams", err)
-		s.cfg.ErrorHandler(ctx, w, r, err)
-		return
-	}
-
-	var rawBody []byte
-	request, rawBody, close, err := s.decodePreviewPromotionCodeRequest(r)
-	if err != nil {
-		err = &ogenerrors.DecodeRequestError{
-			OperationContext: opErrContext,
-			Err:              err,
-		}
-		defer recordError("DecodeRequest", err)
-		s.cfg.ErrorHandler(ctx, w, r, err)
-		return
-	}
-	defer func() {
-		if err := close(); err != nil {
-			recordError("CloseRequest", err)
-		}
-	}()
-
-	var response *PromotionPreview
-	if m := s.cfg.Middleware; m != nil {
-		mreq := middleware.Request{
-			Context:          ctx,
-			OperationName:    PreviewPromotionCodeOperation,
-			OperationSummary: "See what a code takes off before committing",
-			OperationID:      "preview-promotion-code",
-			Body:             request,
-			RawBody:          rawBody,
-			Params: middleware.Parameters{
-				{
-					Name: "accountKey",
-					In:   "path",
-				}: params.AccountKey,
-			},
-			Raw: r,
-		}
-
-		type (
-			Request  = *PreviewPromotionCodeRequestBody
-			Params   = PreviewPromotionCodeParams
-			Response = *PromotionPreview
-		)
-		response, err = middleware.HookMiddleware[
-			Request,
-			Params,
-			Response,
-		](
-			m,
-			mreq,
-			unpackPreviewPromotionCodeParams,
-			func(ctx context.Context, request Request, params Params) (response Response, err error) {
-				response, err = s.h.PreviewPromotionCode(ctx, request, params)
-				return response, err
-			},
-		)
-	} else {
-		response, err = s.h.PreviewPromotionCode(ctx, request, params)
-	}
-	if err != nil {
-		if errRes, ok := errors.Into[*ErrorStatusCode](err); ok {
-			if err := encodeErrorResponse(errRes, w, span); err != nil {
-				defer recordError("Internal", err)
-			}
-			return
-		}
-		if errors.Is(err, ht.ErrNotImplemented) {
-			s.cfg.ErrorHandler(ctx, w, r, err)
-			return
-		}
-		if err := encodeErrorResponse(s.h.NewError(ctx, err), w, span); err != nil {
-			defer recordError("Internal", err)
-		}
-		return
-	}
-
-	if err := encodePreviewPromotionCodeResponse(response, w, span); err != nil {
-		defer recordError("EncodeResponse", err)
-		if !errors.Is(err, ht.ErrInternalServerErrorResponse) {
-			s.cfg.ErrorHandler(ctx, w, r, err)
-		}
-		return
-	}
-}
-
-// handlePurchaseOfferRequest handles purchase-offer operation.
-//
-// Puts the account on the plan this offer points at, taking one of its places if it has a limit.
-//
-// # A card has to be on file first
-//
-// Unless the offer points at a free plan. A paid plan is collected from the card on file and refuses
-// to start the subscription without one; that refusal arrives here as a precondition error rather than
-// as a conflict.
-//
-// # `timing` is required only when the account already has a plan
-//
-// Moving between plans immediately is what an upgrade wants — the customer paid more and wants it
-// now. Waiting for the end of the period is what a downgrade wants — they already paid for this one.
-// Neither is a safe default, and picking one silently gets the money wrong whenever the field is
-// forgotten.
-//
-// # Being refused says which rule refused
-//
-// Places gone, window closed, already used, not on the list — each needs the customer to do
-// something different, and several of them need them to do nothing at all. A single "not eligible"
-// sends everyone to support.
-//
-// # Retrying is safe
-//
-// A place is taken before the subscription is created, so a failure in between leaves the place held
-// rather than the discount given away. Retrying the same purchase finishes it instead of taking a
-// second place.
-//
-// POST /account/v1/billing-accounts/{accountKey}/offers/{offerKey}/purchase
-func (s *Server) handlePurchaseOfferRequest(args [2]string, argsEscaped bool, w http.ResponseWriter, r *http.Request) {
-	statusWriter := &codeRecorder{ResponseWriter: w}
-	w = statusWriter
-	otelAttrs := []attribute.KeyValue{
-		otelogen.OperationID("purchase-offer"),
-		semconv.HTTPRequestMethodKey.String("POST"),
-		semconv.HTTPRouteKey.String("/account/v1/billing-accounts/{accountKey}/offers/{offerKey}/purchase"),
-	}
-	// Add attributes from config.
-	otelAttrs = append(otelAttrs, s.cfg.Attributes...)
-
-	// Start a span for this request.
-	ctx, span := s.cfg.Tracer.Start(r.Context(), PurchaseOfferOperation,
-		trace.WithAttributes(otelAttrs...),
-		serverSpanKind,
-	)
-	defer span.End()
-
-	// Add Labeler to context.
-	labeler := &Labeler{attrs: otelAttrs}
-	ctx = contextWithLabeler(ctx, labeler)
-
-	// Run stopwatch.
-	startTime := time.Now()
-	defer func() {
-		elapsedDuration := time.Since(startTime)
-
-		attrSet := labeler.AttributeSet()
-		attrs := attrSet.ToSlice()
-		code := statusWriter.status
-		if code != 0 {
-			codeAttr := semconv.HTTPResponseStatusCode(code)
-			attrs = append(attrs, codeAttr)
-			span.SetAttributes(attrs...)
-		}
-		attrOpt := metric.WithAttributes(attrs...)
-
-		// Increment request counter.
-		s.requests.Add(ctx, 1, attrOpt)
-
-		// Use floating point division here for higher precision (instead of Millisecond method).
-		s.duration.Record(ctx, float64(elapsedDuration)/float64(time.Millisecond), attrOpt)
-	}()
-
-	var (
-		recordError = func(stage string, err error) {
-			span.RecordError(err)
-
-			// https://opentelemetry.io/docs/specs/semconv/http/http-spans/#status
-			// Span Status MUST be left unset if HTTP status code was in the 1xx, 2xx or 3xx ranges,
-			// unless there was another error (e.g., network error receiving the response body; or 3xx codes with
-			// max redirects exceeded), in which case status MUST be set to Error.
-			code := statusWriter.status
-			if code < 100 || code >= 500 {
-				span.SetStatus(codes.Error, stage)
-			}
-
-			attrSet := labeler.AttributeSet()
-			attrs := attrSet.ToSlice()
-			if code != 0 {
-				attrs = append(attrs, semconv.HTTPResponseStatusCode(code))
-			}
-
-			s.errors.Add(ctx, 1, metric.WithAttributes(attrs...))
-		}
-		err          error
-		opErrContext = ogenerrors.OperationContext{
-			Name: PurchaseOfferOperation,
-			ID:   "purchase-offer",
-		}
-	)
-	{
-		type bitset = [1]uint8
-		var satisfied bitset
-		{
-			sctx, ok, err := s.securityBearerAuth(ctx, PurchaseOfferOperation, r)
-			if err != nil {
-				err = &ogenerrors.SecurityError{
-					OperationContext: opErrContext,
-					Security:         "BearerAuth",
-					Err:              err,
-				}
-				if encodeErr := encodeErrorResponse(s.h.NewError(ctx, err), w, span); encodeErr != nil {
-					defer recordError("Security:BearerAuth", err)
-				}
-				return
-			}
-			if ok {
-				satisfied[0] |= 1 << 0
-				ctx = sctx
-			}
-		}
-
-		if ok := func() bool {
-		nextRequirement:
-			for _, requirement := range []bitset{
-				{0b00000001},
-			} {
-				for i, mask := range requirement {
-					if satisfied[i]&mask != mask {
-						continue nextRequirement
-					}
-				}
-				return true
-			}
-			return false
-		}(); !ok {
-			err = &ogenerrors.SecurityError{
-				OperationContext: opErrContext,
-				Err:              ogenerrors.ErrSecurityRequirementIsNotSatisfied,
-			}
-			if encodeErr := encodeErrorResponse(s.h.NewError(ctx, err), w, span); encodeErr != nil {
-				defer recordError("Security", err)
-			}
-			return
-		}
-	}
-	params, err := decodePurchaseOfferParams(args, argsEscaped, r)
+	params, err := decodeListTransactionsParams(args, argsEscaped, r)
 	if err != nil {
 		err = &ogenerrors.DecodeParamsError{
 			OperationContext: opErrContext,
@@ -4491,36 +8977,44 @@ func (s *Server) handlePurchaseOfferRequest(args [2]string, argsEscaped bool, w 
 
 	var rawBody []byte
 
-	var response *Purchase
+	var response *TransactionList
 	if m := s.cfg.Middleware; m != nil {
 		mreq := middleware.Request{
 			Context:          ctx,
-			OperationName:    PurchaseOfferOperation,
-			OperationSummary: "Buy an offer",
-			OperationID:      "purchase-offer",
+			OperationName:    ListTransactionsOperation,
+			OperationSummary: "Every movement of funds on the account",
+			OperationID:      "list-transactions",
 			Body:             nil,
 			RawBody:          rawBody,
 			Params: middleware.Parameters{
 				{
-					Name: "accountKey",
-					In:   "path",
-				}: params.AccountKey,
-				{
-					Name: "offerKey",
-					In:   "path",
-				}: params.OfferKey,
-				{
-					Name: "timing",
+					Name: "page",
 					In:   "query",
-				}: params.Timing,
+				}: params.Page,
+				{
+					Name: "page_size",
+					In:   "query",
+				}: params.PageSize,
+				{
+					Name: "billing_account_id",
+					In:   "query",
+				}: params.BillingAccountID,
+				{
+					Name: "from",
+					In:   "query",
+				}: params.From,
+				{
+					Name: "to",
+					In:   "query",
+				}: params.To,
 			},
 			Raw: r,
 		}
 
 		type (
 			Request  = struct{}
-			Params   = PurchaseOfferParams
-			Response = *Purchase
+			Params   = ListTransactionsParams
+			Response = *TransactionList
 		)
 		response, err = middleware.HookMiddleware[
 			Request,
@@ -4529,14 +9023,14 @@ func (s *Server) handlePurchaseOfferRequest(args [2]string, argsEscaped bool, w 
 		](
 			m,
 			mreq,
-			unpackPurchaseOfferParams,
+			unpackListTransactionsParams,
 			func(ctx context.Context, request Request, params Params) (response Response, err error) {
-				response, err = s.h.PurchaseOffer(ctx, params)
+				response, err = s.h.ListTransactions(ctx, params)
 				return response, err
 			},
 		)
 	} else {
-		response, err = s.h.PurchaseOffer(ctx, params)
+		response, err = s.h.ListTransactions(ctx, params)
 	}
 	if err != nil {
 		if errRes, ok := errors.Into[*ErrorStatusCode](err); ok {
@@ -4555,7 +9049,7 @@ func (s *Server) handlePurchaseOfferRequest(args [2]string, argsEscaped bool, w 
 		return
 	}
 
-	if err := encodePurchaseOfferResponse(response, w, span); err != nil {
+	if err := encodeListTransactionsResponse(response, w, span); err != nil {
 		defer recordError("EncodeResponse", err)
 		if !errors.Is(err, ht.ErrInternalServerErrorResponse) {
 			s.cfg.ErrorHandler(ctx, w, r, err)
@@ -4564,49 +9058,25 @@ func (s *Server) handlePurchaseOfferRequest(args [2]string, argsEscaped bool, w 
 	}
 }
 
-// handleQuoteProjectUsageRequest handles quote-project-usage operation.
+// handleListUsageChargesRequest handles list-usage-charges operation.
 //
-// Prices a set of usages against whatever plan pays for this project, and returns every intermediate
-// step rather than a single number.
+// Includes charges that have not been invoiced yet, which is how the current month's spending is seen
+// before the invoice is issued.
 //
-// # Why by project rather than by billing account
-//
-// The page that needs this is the one where somebody is about to create a machine, and all it has is a
-// project. Which account pays for that project is billing's own bookkeeping — asking the caller to
-// resolve it first would put that mapping into a page that otherwise has no business knowing accounts
-// exist.
-//
-// # Quantities are raw
-//
-// Seconds, token counts, GiB-seconds: the amount a service reports. Conversion happens here, which is
-// why services keep no conversion tables of their own and why the caller must not do the arithmetic
-// itself.
-//
-// Name each usage by `service` and `product_id` rather than by key: the key is a hash of a convention
-// that has exactly one implementation on purpose.
-//
-// # It is an estimate
-//
-// The engine computes the real amount; this reproduces the same rules. Every step comes back for that
-// reason — a single number that disagrees with the bill says nothing about which step was wrong.
-//
-// `404` means the project has no billing account, or its account is on no plan. Both are worth
-// showing: nothing can be created in either case, because admission refuses it.
-//
-// POST /account/v1/projects/{projectId}/quote
-func (s *Server) handleQuoteProjectUsageRequest(args [1]string, argsEscaped bool, w http.ResponseWriter, r *http.Request) {
+// GET /account/v1/usage-charges
+func (s *Server) handleListUsageChargesRequest(args [0]string, argsEscaped bool, w http.ResponseWriter, r *http.Request) {
 	statusWriter := &codeRecorder{ResponseWriter: w}
 	w = statusWriter
 	otelAttrs := []attribute.KeyValue{
-		otelogen.OperationID("quote-project-usage"),
-		semconv.HTTPRequestMethodKey.String("POST"),
-		semconv.HTTPRouteKey.String("/account/v1/projects/{projectId}/quote"),
+		otelogen.OperationID("list-usage-charges"),
+		semconv.HTTPRequestMethodKey.String("GET"),
+		semconv.HTTPRouteKey.String("/account/v1/usage-charges"),
 	}
 	// Add attributes from config.
 	otelAttrs = append(otelAttrs, s.cfg.Attributes...)
 
 	// Start a span for this request.
-	ctx, span := s.cfg.Tracer.Start(r.Context(), QuoteProjectUsageOperation,
+	ctx, span := s.cfg.Tracer.Start(r.Context(), ListUsageChargesOperation,
 		trace.WithAttributes(otelAttrs...),
 		serverSpanKind,
 	)
@@ -4661,23 +9131,23 @@ func (s *Server) handleQuoteProjectUsageRequest(args [1]string, argsEscaped bool
 		}
 		err          error
 		opErrContext = ogenerrors.OperationContext{
-			Name: QuoteProjectUsageOperation,
-			ID:   "quote-project-usage",
+			Name: ListUsageChargesOperation,
+			ID:   "list-usage-charges",
 		}
 	)
 	{
 		type bitset = [1]uint8
 		var satisfied bitset
 		{
-			sctx, ok, err := s.securityBearerAuth(ctx, QuoteProjectUsageOperation, r)
+			sctx, ok, err := s.securityAccountAuth(ctx, ListUsageChargesOperation, r)
 			if err != nil {
 				err = &ogenerrors.SecurityError{
 					OperationContext: opErrContext,
-					Security:         "BearerAuth",
+					Security:         "AccountAuth",
 					Err:              err,
 				}
 				if encodeErr := encodeErrorResponse(s.h.NewError(ctx, err), w, span); encodeErr != nil {
-					defer recordError("Security:BearerAuth", err)
+					defer recordError("Security:AccountAuth", err)
 				}
 				return
 			}
@@ -4711,7 +9181,7 @@ func (s *Server) handleQuoteProjectUsageRequest(args [1]string, argsEscaped bool
 			return
 		}
 	}
-	params, err := decodeQuoteProjectUsageParams(args, argsEscaped, r)
+	params, err := decodeListUsageChargesParams(args, argsEscaped, r)
 	if err != nil {
 		err = &ogenerrors.DecodeParamsError{
 			OperationContext: opErrContext,
@@ -4723,7 +9193,237 @@ func (s *Server) handleQuoteProjectUsageRequest(args [1]string, argsEscaped bool
 	}
 
 	var rawBody []byte
-	request, rawBody, close, err := s.decodeQuoteProjectUsageRequest(r)
+
+	var response *UsageChargeList
+	if m := s.cfg.Middleware; m != nil {
+		mreq := middleware.Request{
+			Context:          ctx,
+			OperationName:    ListUsageChargesOperation,
+			OperationSummary: "Metered charges, line by line",
+			OperationID:      "list-usage-charges",
+			Body:             nil,
+			RawBody:          rawBody,
+			Params: middleware.Parameters{
+				{
+					Name: "page",
+					In:   "query",
+				}: params.Page,
+				{
+					Name: "page_size",
+					In:   "query",
+				}: params.PageSize,
+				{
+					Name: "billing_account_id",
+					In:   "query",
+				}: params.BillingAccountID,
+				{
+					Name: "project_id",
+					In:   "query",
+				}: params.ProjectID,
+				{
+					Name: "resource_id",
+					In:   "query",
+				}: params.ResourceID,
+				{
+					Name: "from",
+					In:   "query",
+				}: params.From,
+				{
+					Name: "to",
+					In:   "query",
+				}: params.To,
+			},
+			Raw: r,
+		}
+
+		type (
+			Request  = struct{}
+			Params   = ListUsageChargesParams
+			Response = *UsageChargeList
+		)
+		response, err = middleware.HookMiddleware[
+			Request,
+			Params,
+			Response,
+		](
+			m,
+			mreq,
+			unpackListUsageChargesParams,
+			func(ctx context.Context, request Request, params Params) (response Response, err error) {
+				response, err = s.h.ListUsageCharges(ctx, params)
+				return response, err
+			},
+		)
+	} else {
+		response, err = s.h.ListUsageCharges(ctx, params)
+	}
+	if err != nil {
+		if errRes, ok := errors.Into[*ErrorStatusCode](err); ok {
+			if err := encodeErrorResponse(errRes, w, span); err != nil {
+				defer recordError("Internal", err)
+			}
+			return
+		}
+		if errors.Is(err, ht.ErrNotImplemented) {
+			s.cfg.ErrorHandler(ctx, w, r, err)
+			return
+		}
+		if err := encodeErrorResponse(s.h.NewError(ctx, err), w, span); err != nil {
+			defer recordError("Internal", err)
+		}
+		return
+	}
+
+	if err := encodeListUsageChargesResponse(response, w, span); err != nil {
+		defer recordError("EncodeResponse", err)
+		if !errors.Is(err, ht.ErrInternalServerErrorResponse) {
+			s.cfg.ErrorHandler(ctx, w, r, err)
+		}
+		return
+	}
+}
+
+// handlePayInvoiceRequest handles pay-invoice operation.
+//
+// Applies the account balance first, then charges the remainder to a payment method. Give
+// `payment_method_id` to choose one, or omit it to use the default.
+//
+// Returns a checkout address when the provider requires the cardholder to confirm the payment; the
+// invoice is marked paid once the provider confirms it.
+//
+// Calling this on an invoice that is already paid returns the invoice unchanged.
+//
+// POST /account/v1/invoices/{invoiceId}/pay
+func (s *Server) handlePayInvoiceRequest(args [1]string, argsEscaped bool, w http.ResponseWriter, r *http.Request) {
+	statusWriter := &codeRecorder{ResponseWriter: w}
+	w = statusWriter
+	otelAttrs := []attribute.KeyValue{
+		otelogen.OperationID("pay-invoice"),
+		semconv.HTTPRequestMethodKey.String("POST"),
+		semconv.HTTPRouteKey.String("/account/v1/invoices/{invoiceId}/pay"),
+	}
+	// Add attributes from config.
+	otelAttrs = append(otelAttrs, s.cfg.Attributes...)
+
+	// Start a span for this request.
+	ctx, span := s.cfg.Tracer.Start(r.Context(), PayInvoiceOperation,
+		trace.WithAttributes(otelAttrs...),
+		serverSpanKind,
+	)
+	defer span.End()
+
+	// Add Labeler to context.
+	labeler := &Labeler{attrs: otelAttrs}
+	ctx = contextWithLabeler(ctx, labeler)
+
+	// Run stopwatch.
+	startTime := time.Now()
+	defer func() {
+		elapsedDuration := time.Since(startTime)
+
+		attrSet := labeler.AttributeSet()
+		attrs := attrSet.ToSlice()
+		code := statusWriter.status
+		if code != 0 {
+			codeAttr := semconv.HTTPResponseStatusCode(code)
+			attrs = append(attrs, codeAttr)
+			span.SetAttributes(attrs...)
+		}
+		attrOpt := metric.WithAttributes(attrs...)
+
+		// Increment request counter.
+		s.requests.Add(ctx, 1, attrOpt)
+
+		// Use floating point division here for higher precision (instead of Millisecond method).
+		s.duration.Record(ctx, float64(elapsedDuration)/float64(time.Millisecond), attrOpt)
+	}()
+
+	var (
+		recordError = func(stage string, err error) {
+			span.RecordError(err)
+
+			// https://opentelemetry.io/docs/specs/semconv/http/http-spans/#status
+			// Span Status MUST be left unset if HTTP status code was in the 1xx, 2xx or 3xx ranges,
+			// unless there was another error (e.g., network error receiving the response body; or 3xx codes with
+			// max redirects exceeded), in which case status MUST be set to Error.
+			code := statusWriter.status
+			if code < 100 || code >= 500 {
+				span.SetStatus(codes.Error, stage)
+			}
+
+			attrSet := labeler.AttributeSet()
+			attrs := attrSet.ToSlice()
+			if code != 0 {
+				attrs = append(attrs, semconv.HTTPResponseStatusCode(code))
+			}
+
+			s.errors.Add(ctx, 1, metric.WithAttributes(attrs...))
+		}
+		err          error
+		opErrContext = ogenerrors.OperationContext{
+			Name: PayInvoiceOperation,
+			ID:   "pay-invoice",
+		}
+	)
+	{
+		type bitset = [1]uint8
+		var satisfied bitset
+		{
+			sctx, ok, err := s.securityAccountAuth(ctx, PayInvoiceOperation, r)
+			if err != nil {
+				err = &ogenerrors.SecurityError{
+					OperationContext: opErrContext,
+					Security:         "AccountAuth",
+					Err:              err,
+				}
+				if encodeErr := encodeErrorResponse(s.h.NewError(ctx, err), w, span); encodeErr != nil {
+					defer recordError("Security:AccountAuth", err)
+				}
+				return
+			}
+			if ok {
+				satisfied[0] |= 1 << 0
+				ctx = sctx
+			}
+		}
+
+		if ok := func() bool {
+		nextRequirement:
+			for _, requirement := range []bitset{
+				{0b00000001},
+			} {
+				for i, mask := range requirement {
+					if satisfied[i]&mask != mask {
+						continue nextRequirement
+					}
+				}
+				return true
+			}
+			return false
+		}(); !ok {
+			err = &ogenerrors.SecurityError{
+				OperationContext: opErrContext,
+				Err:              ogenerrors.ErrSecurityRequirementIsNotSatisfied,
+			}
+			if encodeErr := encodeErrorResponse(s.h.NewError(ctx, err), w, span); encodeErr != nil {
+				defer recordError("Security", err)
+			}
+			return
+		}
+	}
+	params, err := decodePayInvoiceParams(args, argsEscaped, r)
+	if err != nil {
+		err = &ogenerrors.DecodeParamsError{
+			OperationContext: opErrContext,
+			Err:              err,
+		}
+		defer recordError("DecodeParams", err)
+		s.cfg.ErrorHandler(ctx, w, r, err)
+		return
+	}
+
+	var rawBody []byte
+	request, rawBody, close, err := s.decodePayInvoiceRequest(r)
 	if err != nil {
 		err = &ogenerrors.DecodeRequestError{
 			OperationContext: opErrContext,
@@ -4739,28 +9439,28 @@ func (s *Server) handleQuoteProjectUsageRequest(args [1]string, argsEscaped bool
 		}
 	}()
 
-	var response *Quote
+	var response *PaymentResult
 	if m := s.cfg.Middleware; m != nil {
 		mreq := middleware.Request{
 			Context:          ctx,
-			OperationName:    QuoteProjectUsageOperation,
-			OperationSummary: "What a usage would cost in this project",
-			OperationID:      "quote-project-usage",
+			OperationName:    PayInvoiceOperation,
+			OperationSummary: "Pay an outstanding invoice",
+			OperationID:      "pay-invoice",
 			Body:             request,
 			RawBody:          rawBody,
 			Params: middleware.Parameters{
 				{
-					Name: "projectId",
+					Name: "invoiceId",
 					In:   "path",
-				}: params.ProjectId,
+				}: params.InvoiceId,
 			},
 			Raw: r,
 		}
 
 		type (
-			Request  = *QuoteRequest
-			Params   = QuoteProjectUsageParams
-			Response = *Quote
+			Request  = OptPayRequest
+			Params   = PayInvoiceParams
+			Response = *PaymentResult
 		)
 		response, err = middleware.HookMiddleware[
 			Request,
@@ -4769,14 +9469,14 @@ func (s *Server) handleQuoteProjectUsageRequest(args [1]string, argsEscaped bool
 		](
 			m,
 			mreq,
-			unpackQuoteProjectUsageParams,
+			unpackPayInvoiceParams,
 			func(ctx context.Context, request Request, params Params) (response Response, err error) {
-				response, err = s.h.QuoteProjectUsage(ctx, request, params)
+				response, err = s.h.PayInvoice(ctx, request, params)
 				return response, err
 			},
 		)
 	} else {
-		response, err = s.h.QuoteProjectUsage(ctx, request, params)
+		response, err = s.h.PayInvoice(ctx, request, params)
 	}
 	if err != nil {
 		if errRes, ok := errors.Into[*ErrorStatusCode](err); ok {
@@ -4795,7 +9495,7 @@ func (s *Server) handleQuoteProjectUsageRequest(args [1]string, argsEscaped bool
 		return
 	}
 
-	if err := encodeQuoteProjectUsageResponse(response, w, span); err != nil {
+	if err := encodePayInvoiceResponse(response, w, span); err != nil {
 		defer recordError("EncodeResponse", err)
 		if !errors.Is(err, ht.ErrInternalServerErrorResponse) {
 			s.cfg.ErrorHandler(ctx, w, r, err)
@@ -4804,44 +9504,27 @@ func (s *Server) handleQuoteProjectUsageRequest(args [1]string, argsEscaped bool
 	}
 }
 
-// handleQuoteUsageRequest handles quote-usage operation.
+// handlePayOrderRequest handles pay-order operation.
 //
-// Prices a set of usages against whatever plan this account is currently on, and returns every
-// intermediate step rather than a single number.
+// Use this to resume an order whose checkout was interrupted.
 //
-// # What it is for
+// An order reserves both funds and stock for a limited time. Once that reservation expires the order
+// can no longer be paid and must be placed again; `reservation_expires_at` on the order states when.
 //
-// Showing someone what a machine will cost before they create it. The console asks for the usage a
-// machine of that shape produces in an hour, and gets back what that hour costs them — on their
-// plan, with their discounts.
-//
-// # Quantities are raw
-//
-// Seconds, token counts, GiB-seconds: the amount a service reports. Conversion happens here, which is
-// why services keep no conversion tables of their own and why the console must not do the arithmetic
-// itself.
-//
-// # It is an estimate
-//
-// The engine computes the real amount; this reproduces the same rules. Every step comes back for that
-// reason — a single number that disagrees with the bill says nothing about which step was wrong.
-//
-// `404` means this account is not on any plan, and there is therefore nothing to price against.
-//
-// POST /account/v1/billing-accounts/{accountKey}/quote
-func (s *Server) handleQuoteUsageRequest(args [1]string, argsEscaped bool, w http.ResponseWriter, r *http.Request) {
+// POST /account/v1/orders/{orderId}/pay
+func (s *Server) handlePayOrderRequest(args [1]string, argsEscaped bool, w http.ResponseWriter, r *http.Request) {
 	statusWriter := &codeRecorder{ResponseWriter: w}
 	w = statusWriter
 	otelAttrs := []attribute.KeyValue{
-		otelogen.OperationID("quote-usage"),
+		otelogen.OperationID("pay-order"),
 		semconv.HTTPRequestMethodKey.String("POST"),
-		semconv.HTTPRouteKey.String("/account/v1/billing-accounts/{accountKey}/quote"),
+		semconv.HTTPRouteKey.String("/account/v1/orders/{orderId}/pay"),
 	}
 	// Add attributes from config.
 	otelAttrs = append(otelAttrs, s.cfg.Attributes...)
 
 	// Start a span for this request.
-	ctx, span := s.cfg.Tracer.Start(r.Context(), QuoteUsageOperation,
+	ctx, span := s.cfg.Tracer.Start(r.Context(), PayOrderOperation,
 		trace.WithAttributes(otelAttrs...),
 		serverSpanKind,
 	)
@@ -4896,23 +9579,23 @@ func (s *Server) handleQuoteUsageRequest(args [1]string, argsEscaped bool, w htt
 		}
 		err          error
 		opErrContext = ogenerrors.OperationContext{
-			Name: QuoteUsageOperation,
-			ID:   "quote-usage",
+			Name: PayOrderOperation,
+			ID:   "pay-order",
 		}
 	)
 	{
 		type bitset = [1]uint8
 		var satisfied bitset
 		{
-			sctx, ok, err := s.securityBearerAuth(ctx, QuoteUsageOperation, r)
+			sctx, ok, err := s.securityAccountAuth(ctx, PayOrderOperation, r)
 			if err != nil {
 				err = &ogenerrors.SecurityError{
 					OperationContext: opErrContext,
-					Security:         "BearerAuth",
+					Security:         "AccountAuth",
 					Err:              err,
 				}
 				if encodeErr := encodeErrorResponse(s.h.NewError(ctx, err), w, span); encodeErr != nil {
-					defer recordError("Security:BearerAuth", err)
+					defer recordError("Security:AccountAuth", err)
 				}
 				return
 			}
@@ -4946,7 +9629,7 @@ func (s *Server) handleQuoteUsageRequest(args [1]string, argsEscaped bool, w htt
 			return
 		}
 	}
-	params, err := decodeQuoteUsageParams(args, argsEscaped, r)
+	params, err := decodePayOrderParams(args, argsEscaped, r)
 	if err != nil {
 		err = &ogenerrors.DecodeParamsError{
 			OperationContext: opErrContext,
@@ -4958,7 +9641,7 @@ func (s *Server) handleQuoteUsageRequest(args [1]string, argsEscaped bool, w htt
 	}
 
 	var rawBody []byte
-	request, rawBody, close, err := s.decodeQuoteUsageRequest(r)
+	request, rawBody, close, err := s.decodePayOrderRequest(r)
 	if err != nil {
 		err = &ogenerrors.DecodeRequestError{
 			OperationContext: opErrContext,
@@ -4974,28 +9657,28 @@ func (s *Server) handleQuoteUsageRequest(args [1]string, argsEscaped bool, w htt
 		}
 	}()
 
-	var response *Quote
+	var response *PaymentResult
 	if m := s.cfg.Middleware; m != nil {
 		mreq := middleware.Request{
 			Context:          ctx,
-			OperationName:    QuoteUsageOperation,
-			OperationSummary: "What a usage would cost on this account's plan",
-			OperationID:      "quote-usage",
+			OperationName:    PayOrderOperation,
+			OperationSummary: "Complete payment for an order",
+			OperationID:      "pay-order",
 			Body:             request,
 			RawBody:          rawBody,
 			Params: middleware.Parameters{
 				{
-					Name: "accountKey",
+					Name: "orderId",
 					In:   "path",
-				}: params.AccountKey,
+				}: params.OrderId,
 			},
 			Raw: r,
 		}
 
 		type (
-			Request  = *QuoteRequest
-			Params   = QuoteUsageParams
-			Response = *Quote
+			Request  = OptPayRequest
+			Params   = PayOrderParams
+			Response = *PaymentResult
 		)
 		response, err = middleware.HookMiddleware[
 			Request,
@@ -5004,14 +9687,14 @@ func (s *Server) handleQuoteUsageRequest(args [1]string, argsEscaped bool, w htt
 		](
 			m,
 			mreq,
-			unpackQuoteUsageParams,
+			unpackPayOrderParams,
 			func(ctx context.Context, request Request, params Params) (response Response, err error) {
-				response, err = s.h.QuoteUsage(ctx, request, params)
+				response, err = s.h.PayOrder(ctx, request, params)
 				return response, err
 			},
 		)
 	} else {
-		response, err = s.h.QuoteUsage(ctx, request, params)
+		response, err = s.h.PayOrder(ctx, request, params)
 	}
 	if err != nil {
 		if errRes, ok := errors.Into[*ErrorStatusCode](err); ok {
@@ -5030,7 +9713,7 @@ func (s *Server) handleQuoteUsageRequest(args [1]string, argsEscaped bool, w htt
 		return
 	}
 
-	if err := encodeQuoteUsageResponse(response, w, span); err != nil {
+	if err := encodePayOrderResponse(response, w, span); err != nil {
 		defer recordError("EncodeResponse", err)
 		if !errors.Is(err, ht.ErrInternalServerErrorResponse) {
 			s.cfg.ErrorHandler(ctx, w, r, err)
@@ -5039,1303 +9722,25 @@ func (s *Server) handleQuoteUsageRequest(args [1]string, argsEscaped bool, w htt
 	}
 }
 
-// handleReadBillingAccountBalanceRequest handles read-billing-account-balance operation.
+// handlePreviewCodeRequest handles preview-code operation.
 //
-// What is left on the account.
+// Nothing is recorded and the code is not consumed. Use it to show the customer the effect before they
+// commit.
 //
-// The figure is the live balance: usage that has been reported but not yet settled is already
-// subtracted. The settled figure is larger, and the difference is precisely what the holder has just
-// spent — showing that instead would tell them they can afford something they cannot.
-//
-// An account that has never been topped up reports `"0"` — not an absent field, and not an empty
-// string.
-//
-// GET /account/v1/billing-accounts/{accountKey}/balance
-func (s *Server) handleReadBillingAccountBalanceRequest(args [1]string, argsEscaped bool, w http.ResponseWriter, r *http.Request) {
+// POST /account/v1/codes/preview
+func (s *Server) handlePreviewCodeRequest(args [0]string, argsEscaped bool, w http.ResponseWriter, r *http.Request) {
 	statusWriter := &codeRecorder{ResponseWriter: w}
 	w = statusWriter
 	otelAttrs := []attribute.KeyValue{
-		otelogen.OperationID("read-billing-account-balance"),
-		semconv.HTTPRequestMethodKey.String("GET"),
-		semconv.HTTPRouteKey.String("/account/v1/billing-accounts/{accountKey}/balance"),
-	}
-	// Add attributes from config.
-	otelAttrs = append(otelAttrs, s.cfg.Attributes...)
-
-	// Start a span for this request.
-	ctx, span := s.cfg.Tracer.Start(r.Context(), ReadBillingAccountBalanceOperation,
-		trace.WithAttributes(otelAttrs...),
-		serverSpanKind,
-	)
-	defer span.End()
-
-	// Add Labeler to context.
-	labeler := &Labeler{attrs: otelAttrs}
-	ctx = contextWithLabeler(ctx, labeler)
-
-	// Run stopwatch.
-	startTime := time.Now()
-	defer func() {
-		elapsedDuration := time.Since(startTime)
-
-		attrSet := labeler.AttributeSet()
-		attrs := attrSet.ToSlice()
-		code := statusWriter.status
-		if code != 0 {
-			codeAttr := semconv.HTTPResponseStatusCode(code)
-			attrs = append(attrs, codeAttr)
-			span.SetAttributes(attrs...)
-		}
-		attrOpt := metric.WithAttributes(attrs...)
-
-		// Increment request counter.
-		s.requests.Add(ctx, 1, attrOpt)
-
-		// Use floating point division here for higher precision (instead of Millisecond method).
-		s.duration.Record(ctx, float64(elapsedDuration)/float64(time.Millisecond), attrOpt)
-	}()
-
-	var (
-		recordError = func(stage string, err error) {
-			span.RecordError(err)
-
-			// https://opentelemetry.io/docs/specs/semconv/http/http-spans/#status
-			// Span Status MUST be left unset if HTTP status code was in the 1xx, 2xx or 3xx ranges,
-			// unless there was another error (e.g., network error receiving the response body; or 3xx codes with
-			// max redirects exceeded), in which case status MUST be set to Error.
-			code := statusWriter.status
-			if code < 100 || code >= 500 {
-				span.SetStatus(codes.Error, stage)
-			}
-
-			attrSet := labeler.AttributeSet()
-			attrs := attrSet.ToSlice()
-			if code != 0 {
-				attrs = append(attrs, semconv.HTTPResponseStatusCode(code))
-			}
-
-			s.errors.Add(ctx, 1, metric.WithAttributes(attrs...))
-		}
-		err          error
-		opErrContext = ogenerrors.OperationContext{
-			Name: ReadBillingAccountBalanceOperation,
-			ID:   "read-billing-account-balance",
-		}
-	)
-	{
-		type bitset = [1]uint8
-		var satisfied bitset
-		{
-			sctx, ok, err := s.securityBearerAuth(ctx, ReadBillingAccountBalanceOperation, r)
-			if err != nil {
-				err = &ogenerrors.SecurityError{
-					OperationContext: opErrContext,
-					Security:         "BearerAuth",
-					Err:              err,
-				}
-				if encodeErr := encodeErrorResponse(s.h.NewError(ctx, err), w, span); encodeErr != nil {
-					defer recordError("Security:BearerAuth", err)
-				}
-				return
-			}
-			if ok {
-				satisfied[0] |= 1 << 0
-				ctx = sctx
-			}
-		}
-
-		if ok := func() bool {
-		nextRequirement:
-			for _, requirement := range []bitset{
-				{0b00000001},
-			} {
-				for i, mask := range requirement {
-					if satisfied[i]&mask != mask {
-						continue nextRequirement
-					}
-				}
-				return true
-			}
-			return false
-		}(); !ok {
-			err = &ogenerrors.SecurityError{
-				OperationContext: opErrContext,
-				Err:              ogenerrors.ErrSecurityRequirementIsNotSatisfied,
-			}
-			if encodeErr := encodeErrorResponse(s.h.NewError(ctx, err), w, span); encodeErr != nil {
-				defer recordError("Security", err)
-			}
-			return
-		}
-	}
-	params, err := decodeReadBillingAccountBalanceParams(args, argsEscaped, r)
-	if err != nil {
-		err = &ogenerrors.DecodeParamsError{
-			OperationContext: opErrContext,
-			Err:              err,
-		}
-		defer recordError("DecodeParams", err)
-		s.cfg.ErrorHandler(ctx, w, r, err)
-		return
-	}
-
-	var rawBody []byte
-
-	var response *Balance
-	if m := s.cfg.Middleware; m != nil {
-		mreq := middleware.Request{
-			Context:          ctx,
-			OperationName:    ReadBillingAccountBalanceOperation,
-			OperationSummary: "Read an account's balance",
-			OperationID:      "read-billing-account-balance",
-			Body:             nil,
-			RawBody:          rawBody,
-			Params: middleware.Parameters{
-				{
-					Name: "accountKey",
-					In:   "path",
-				}: params.AccountKey,
-			},
-			Raw: r,
-		}
-
-		type (
-			Request  = struct{}
-			Params   = ReadBillingAccountBalanceParams
-			Response = *Balance
-		)
-		response, err = middleware.HookMiddleware[
-			Request,
-			Params,
-			Response,
-		](
-			m,
-			mreq,
-			unpackReadBillingAccountBalanceParams,
-			func(ctx context.Context, request Request, params Params) (response Response, err error) {
-				response, err = s.h.ReadBillingAccountBalance(ctx, params)
-				return response, err
-			},
-		)
-	} else {
-		response, err = s.h.ReadBillingAccountBalance(ctx, params)
-	}
-	if err != nil {
-		if errRes, ok := errors.Into[*ErrorStatusCode](err); ok {
-			if err := encodeErrorResponse(errRes, w, span); err != nil {
-				defer recordError("Internal", err)
-			}
-			return
-		}
-		if errors.Is(err, ht.ErrNotImplemented) {
-			s.cfg.ErrorHandler(ctx, w, r, err)
-			return
-		}
-		if err := encodeErrorResponse(s.h.NewError(ctx, err), w, span); err != nil {
-			defer recordError("Internal", err)
-		}
-		return
-	}
-
-	if err := encodeReadBillingAccountBalanceResponse(response, w, span); err != nil {
-		defer recordError("EncodeResponse", err)
-		if !errors.Is(err, ht.ErrInternalServerErrorResponse) {
-			s.cfg.ErrorHandler(ctx, w, r, err)
-		}
-		return
-	}
-}
-
-// handleReadBillingAccountBalanceMovementRequest handles read-billing-account-balance-movement operation.
-//
-// Opening balance, money in, money out, closing balance — for the current calendar month.
-//
-// The four add up: `closing = opening + income - spending`. That is the point of the endpoint. The
-// balance alone answers "how much is left" and cannot answer "how did it get there", which is what
-// somebody watching their balance shrink is actually asking. Four figures that add up can be checked
-// by the holder; a single figure can only be taken on faith or queried with support.
-//
-// `closing` is computed from the other three rather than read separately. Reading the current balance
-// for it would leave the equation off by whatever was booked between the two reads — and an equation
-// that is off by a few cents is worse than no equation, because it puts the ledger itself in doubt.
-//
-// The window is the calendar month, not the engine's billing period. This is the month a person means
-// when they say "this month"; the billing anchor is an internal recurrence that happens to line up.
-//
-// A month with no movement reports opening equal to closing and zero on both sides — not all zeroes,
-// which would read as "your money is gone".
-//
-// GET /account/v1/billing-accounts/{accountKey}/balance/movement
-func (s *Server) handleReadBillingAccountBalanceMovementRequest(args [1]string, argsEscaped bool, w http.ResponseWriter, r *http.Request) {
-	statusWriter := &codeRecorder{ResponseWriter: w}
-	w = statusWriter
-	otelAttrs := []attribute.KeyValue{
-		otelogen.OperationID("read-billing-account-balance-movement"),
-		semconv.HTTPRequestMethodKey.String("GET"),
-		semconv.HTTPRouteKey.String("/account/v1/billing-accounts/{accountKey}/balance/movement"),
-	}
-	// Add attributes from config.
-	otelAttrs = append(otelAttrs, s.cfg.Attributes...)
-
-	// Start a span for this request.
-	ctx, span := s.cfg.Tracer.Start(r.Context(), ReadBillingAccountBalanceMovementOperation,
-		trace.WithAttributes(otelAttrs...),
-		serverSpanKind,
-	)
-	defer span.End()
-
-	// Add Labeler to context.
-	labeler := &Labeler{attrs: otelAttrs}
-	ctx = contextWithLabeler(ctx, labeler)
-
-	// Run stopwatch.
-	startTime := time.Now()
-	defer func() {
-		elapsedDuration := time.Since(startTime)
-
-		attrSet := labeler.AttributeSet()
-		attrs := attrSet.ToSlice()
-		code := statusWriter.status
-		if code != 0 {
-			codeAttr := semconv.HTTPResponseStatusCode(code)
-			attrs = append(attrs, codeAttr)
-			span.SetAttributes(attrs...)
-		}
-		attrOpt := metric.WithAttributes(attrs...)
-
-		// Increment request counter.
-		s.requests.Add(ctx, 1, attrOpt)
-
-		// Use floating point division here for higher precision (instead of Millisecond method).
-		s.duration.Record(ctx, float64(elapsedDuration)/float64(time.Millisecond), attrOpt)
-	}()
-
-	var (
-		recordError = func(stage string, err error) {
-			span.RecordError(err)
-
-			// https://opentelemetry.io/docs/specs/semconv/http/http-spans/#status
-			// Span Status MUST be left unset if HTTP status code was in the 1xx, 2xx or 3xx ranges,
-			// unless there was another error (e.g., network error receiving the response body; or 3xx codes with
-			// max redirects exceeded), in which case status MUST be set to Error.
-			code := statusWriter.status
-			if code < 100 || code >= 500 {
-				span.SetStatus(codes.Error, stage)
-			}
-
-			attrSet := labeler.AttributeSet()
-			attrs := attrSet.ToSlice()
-			if code != 0 {
-				attrs = append(attrs, semconv.HTTPResponseStatusCode(code))
-			}
-
-			s.errors.Add(ctx, 1, metric.WithAttributes(attrs...))
-		}
-		err          error
-		opErrContext = ogenerrors.OperationContext{
-			Name: ReadBillingAccountBalanceMovementOperation,
-			ID:   "read-billing-account-balance-movement",
-		}
-	)
-	{
-		type bitset = [1]uint8
-		var satisfied bitset
-		{
-			sctx, ok, err := s.securityBearerAuth(ctx, ReadBillingAccountBalanceMovementOperation, r)
-			if err != nil {
-				err = &ogenerrors.SecurityError{
-					OperationContext: opErrContext,
-					Security:         "BearerAuth",
-					Err:              err,
-				}
-				if encodeErr := encodeErrorResponse(s.h.NewError(ctx, err), w, span); encodeErr != nil {
-					defer recordError("Security:BearerAuth", err)
-				}
-				return
-			}
-			if ok {
-				satisfied[0] |= 1 << 0
-				ctx = sctx
-			}
-		}
-
-		if ok := func() bool {
-		nextRequirement:
-			for _, requirement := range []bitset{
-				{0b00000001},
-			} {
-				for i, mask := range requirement {
-					if satisfied[i]&mask != mask {
-						continue nextRequirement
-					}
-				}
-				return true
-			}
-			return false
-		}(); !ok {
-			err = &ogenerrors.SecurityError{
-				OperationContext: opErrContext,
-				Err:              ogenerrors.ErrSecurityRequirementIsNotSatisfied,
-			}
-			if encodeErr := encodeErrorResponse(s.h.NewError(ctx, err), w, span); encodeErr != nil {
-				defer recordError("Security", err)
-			}
-			return
-		}
-	}
-	params, err := decodeReadBillingAccountBalanceMovementParams(args, argsEscaped, r)
-	if err != nil {
-		err = &ogenerrors.DecodeParamsError{
-			OperationContext: opErrContext,
-			Err:              err,
-		}
-		defer recordError("DecodeParams", err)
-		s.cfg.ErrorHandler(ctx, w, r, err)
-		return
-	}
-
-	var rawBody []byte
-
-	var response *BalanceMovement
-	if m := s.cfg.Middleware; m != nil {
-		mreq := middleware.Request{
-			Context:          ctx,
-			OperationName:    ReadBillingAccountBalanceMovementOperation,
-			OperationSummary: "How the balance moved this month",
-			OperationID:      "read-billing-account-balance-movement",
-			Body:             nil,
-			RawBody:          rawBody,
-			Params: middleware.Parameters{
-				{
-					Name: "accountKey",
-					In:   "path",
-				}: params.AccountKey,
-			},
-			Raw: r,
-		}
-
-		type (
-			Request  = struct{}
-			Params   = ReadBillingAccountBalanceMovementParams
-			Response = *BalanceMovement
-		)
-		response, err = middleware.HookMiddleware[
-			Request,
-			Params,
-			Response,
-		](
-			m,
-			mreq,
-			unpackReadBillingAccountBalanceMovementParams,
-			func(ctx context.Context, request Request, params Params) (response Response, err error) {
-				response, err = s.h.ReadBillingAccountBalanceMovement(ctx, params)
-				return response, err
-			},
-		)
-	} else {
-		response, err = s.h.ReadBillingAccountBalanceMovement(ctx, params)
-	}
-	if err != nil {
-		if errRes, ok := errors.Into[*ErrorStatusCode](err); ok {
-			if err := encodeErrorResponse(errRes, w, span); err != nil {
-				defer recordError("Internal", err)
-			}
-			return
-		}
-		if errors.Is(err, ht.ErrNotImplemented) {
-			s.cfg.ErrorHandler(ctx, w, r, err)
-			return
-		}
-		if err := encodeErrorResponse(s.h.NewError(ctx, err), w, span); err != nil {
-			defer recordError("Internal", err)
-		}
-		return
-	}
-
-	if err := encodeReadBillingAccountBalanceMovementResponse(response, w, span); err != nil {
-		defer recordError("EncodeResponse", err)
-		if !errors.Is(err, ht.ErrInternalServerErrorResponse) {
-			s.cfg.ErrorHandler(ctx, w, r, err)
-		}
-		return
-	}
-}
-
-// handleReadProjectBillingAccountRequest handles read-project-billing-account operation.
-//
-// The account a project's resources are charged to, resolved from the project rather than guessed.
-//
-// # Why a console needs this
-//
-// Everything in a console happens inside a project, while billing accounts belong to a person — and
-// a person can have many. Showing "the first one" next to a sentence like you are overdrawn, new
-// resources will be refused pairs one account's balance with another account's rule. Both directions
-// are wrong and one of them is silent: the figures look healthy while creating anything is refused,
-// and the refusal names a reason the page just contradicted.
-//
-// # Being a member is enough to ask, but not to see the money
-//
-// The answer is the account's identity, not its balance. A project's members are not necessarily the
-// people paying for it — a company account can pay for a project someone else works in — and their
-// balance is not those members' business. Whoever owns the account reads the figures from the balance
-// route as before; `owned_by_me` says which case this is, so a page can tell "you are overdrawn" apart
-// from "ask whoever pays for this project".
-//
-// # A project with no account is a normal state, and it answers 404
-//
-// A project nobody has bound yet cannot create resources at all — admission refuses it. That is
-// worth saying plainly ("this project has no billing account, bind one") rather than falling back to
-// some other account of theirs, which is how the wrong-account problem started.
-//
-// GET /account/v1/projects/{projectId}/billing-account
-func (s *Server) handleReadProjectBillingAccountRequest(args [1]string, argsEscaped bool, w http.ResponseWriter, r *http.Request) {
-	statusWriter := &codeRecorder{ResponseWriter: w}
-	w = statusWriter
-	otelAttrs := []attribute.KeyValue{
-		otelogen.OperationID("read-project-billing-account"),
-		semconv.HTTPRequestMethodKey.String("GET"),
-		semconv.HTTPRouteKey.String("/account/v1/projects/{projectId}/billing-account"),
-	}
-	// Add attributes from config.
-	otelAttrs = append(otelAttrs, s.cfg.Attributes...)
-
-	// Start a span for this request.
-	ctx, span := s.cfg.Tracer.Start(r.Context(), ReadProjectBillingAccountOperation,
-		trace.WithAttributes(otelAttrs...),
-		serverSpanKind,
-	)
-	defer span.End()
-
-	// Add Labeler to context.
-	labeler := &Labeler{attrs: otelAttrs}
-	ctx = contextWithLabeler(ctx, labeler)
-
-	// Run stopwatch.
-	startTime := time.Now()
-	defer func() {
-		elapsedDuration := time.Since(startTime)
-
-		attrSet := labeler.AttributeSet()
-		attrs := attrSet.ToSlice()
-		code := statusWriter.status
-		if code != 0 {
-			codeAttr := semconv.HTTPResponseStatusCode(code)
-			attrs = append(attrs, codeAttr)
-			span.SetAttributes(attrs...)
-		}
-		attrOpt := metric.WithAttributes(attrs...)
-
-		// Increment request counter.
-		s.requests.Add(ctx, 1, attrOpt)
-
-		// Use floating point division here for higher precision (instead of Millisecond method).
-		s.duration.Record(ctx, float64(elapsedDuration)/float64(time.Millisecond), attrOpt)
-	}()
-
-	var (
-		recordError = func(stage string, err error) {
-			span.RecordError(err)
-
-			// https://opentelemetry.io/docs/specs/semconv/http/http-spans/#status
-			// Span Status MUST be left unset if HTTP status code was in the 1xx, 2xx or 3xx ranges,
-			// unless there was another error (e.g., network error receiving the response body; or 3xx codes with
-			// max redirects exceeded), in which case status MUST be set to Error.
-			code := statusWriter.status
-			if code < 100 || code >= 500 {
-				span.SetStatus(codes.Error, stage)
-			}
-
-			attrSet := labeler.AttributeSet()
-			attrs := attrSet.ToSlice()
-			if code != 0 {
-				attrs = append(attrs, semconv.HTTPResponseStatusCode(code))
-			}
-
-			s.errors.Add(ctx, 1, metric.WithAttributes(attrs...))
-		}
-		err          error
-		opErrContext = ogenerrors.OperationContext{
-			Name: ReadProjectBillingAccountOperation,
-			ID:   "read-project-billing-account",
-		}
-	)
-	{
-		type bitset = [1]uint8
-		var satisfied bitset
-		{
-			sctx, ok, err := s.securityBearerAuth(ctx, ReadProjectBillingAccountOperation, r)
-			if err != nil {
-				err = &ogenerrors.SecurityError{
-					OperationContext: opErrContext,
-					Security:         "BearerAuth",
-					Err:              err,
-				}
-				if encodeErr := encodeErrorResponse(s.h.NewError(ctx, err), w, span); encodeErr != nil {
-					defer recordError("Security:BearerAuth", err)
-				}
-				return
-			}
-			if ok {
-				satisfied[0] |= 1 << 0
-				ctx = sctx
-			}
-		}
-
-		if ok := func() bool {
-		nextRequirement:
-			for _, requirement := range []bitset{
-				{0b00000001},
-			} {
-				for i, mask := range requirement {
-					if satisfied[i]&mask != mask {
-						continue nextRequirement
-					}
-				}
-				return true
-			}
-			return false
-		}(); !ok {
-			err = &ogenerrors.SecurityError{
-				OperationContext: opErrContext,
-				Err:              ogenerrors.ErrSecurityRequirementIsNotSatisfied,
-			}
-			if encodeErr := encodeErrorResponse(s.h.NewError(ctx, err), w, span); encodeErr != nil {
-				defer recordError("Security", err)
-			}
-			return
-		}
-	}
-	params, err := decodeReadProjectBillingAccountParams(args, argsEscaped, r)
-	if err != nil {
-		err = &ogenerrors.DecodeParamsError{
-			OperationContext: opErrContext,
-			Err:              err,
-		}
-		defer recordError("DecodeParams", err)
-		s.cfg.ErrorHandler(ctx, w, r, err)
-		return
-	}
-
-	var rawBody []byte
-
-	var response *ProjectBillingAccount
-	if m := s.cfg.Middleware; m != nil {
-		mreq := middleware.Request{
-			Context:          ctx,
-			OperationName:    ReadProjectBillingAccountOperation,
-			OperationSummary: "Which account pays for this project",
-			OperationID:      "read-project-billing-account",
-			Body:             nil,
-			RawBody:          rawBody,
-			Params: middleware.Parameters{
-				{
-					Name: "projectId",
-					In:   "path",
-				}: params.ProjectId,
-			},
-			Raw: r,
-		}
-
-		type (
-			Request  = struct{}
-			Params   = ReadProjectBillingAccountParams
-			Response = *ProjectBillingAccount
-		)
-		response, err = middleware.HookMiddleware[
-			Request,
-			Params,
-			Response,
-		](
-			m,
-			mreq,
-			unpackReadProjectBillingAccountParams,
-			func(ctx context.Context, request Request, params Params) (response Response, err error) {
-				response, err = s.h.ReadProjectBillingAccount(ctx, params)
-				return response, err
-			},
-		)
-	} else {
-		response, err = s.h.ReadProjectBillingAccount(ctx, params)
-	}
-	if err != nil {
-		if errRes, ok := errors.Into[*ErrorStatusCode](err); ok {
-			if err := encodeErrorResponse(errRes, w, span); err != nil {
-				defer recordError("Internal", err)
-			}
-			return
-		}
-		if errors.Is(err, ht.ErrNotImplemented) {
-			s.cfg.ErrorHandler(ctx, w, r, err)
-			return
-		}
-		if err := encodeErrorResponse(s.h.NewError(ctx, err), w, span); err != nil {
-			defer recordError("Internal", err)
-		}
-		return
-	}
-
-	if err := encodeReadProjectBillingAccountResponse(response, w, span); err != nil {
-		defer recordError("EncodeResponse", err)
-		if !errors.Is(err, ht.ErrInternalServerErrorResponse) {
-			s.cfg.ErrorHandler(ctx, w, r, err)
-		}
-		return
-	}
-}
-
-// handleReadSubscriptionRequest handles read-subscription operation.
-//
-// `404` means no plan, which is worth showing rather than hiding: an account without one is refused
-// admission, so nothing can be allocated in it.
-//
-// A subscription that has been cancelled but has not reached the end of its period still counts as
-// being on a plan — it is still serving, still billing, and the period has already been paid for.
-//
-// GET /account/v1/billing-accounts/{accountKey}/subscription
-func (s *Server) handleReadSubscriptionRequest(args [1]string, argsEscaped bool, w http.ResponseWriter, r *http.Request) {
-	statusWriter := &codeRecorder{ResponseWriter: w}
-	w = statusWriter
-	otelAttrs := []attribute.KeyValue{
-		otelogen.OperationID("read-subscription"),
-		semconv.HTTPRequestMethodKey.String("GET"),
-		semconv.HTTPRouteKey.String("/account/v1/billing-accounts/{accountKey}/subscription"),
-	}
-	// Add attributes from config.
-	otelAttrs = append(otelAttrs, s.cfg.Attributes...)
-
-	// Start a span for this request.
-	ctx, span := s.cfg.Tracer.Start(r.Context(), ReadSubscriptionOperation,
-		trace.WithAttributes(otelAttrs...),
-		serverSpanKind,
-	)
-	defer span.End()
-
-	// Add Labeler to context.
-	labeler := &Labeler{attrs: otelAttrs}
-	ctx = contextWithLabeler(ctx, labeler)
-
-	// Run stopwatch.
-	startTime := time.Now()
-	defer func() {
-		elapsedDuration := time.Since(startTime)
-
-		attrSet := labeler.AttributeSet()
-		attrs := attrSet.ToSlice()
-		code := statusWriter.status
-		if code != 0 {
-			codeAttr := semconv.HTTPResponseStatusCode(code)
-			attrs = append(attrs, codeAttr)
-			span.SetAttributes(attrs...)
-		}
-		attrOpt := metric.WithAttributes(attrs...)
-
-		// Increment request counter.
-		s.requests.Add(ctx, 1, attrOpt)
-
-		// Use floating point division here for higher precision (instead of Millisecond method).
-		s.duration.Record(ctx, float64(elapsedDuration)/float64(time.Millisecond), attrOpt)
-	}()
-
-	var (
-		recordError = func(stage string, err error) {
-			span.RecordError(err)
-
-			// https://opentelemetry.io/docs/specs/semconv/http/http-spans/#status
-			// Span Status MUST be left unset if HTTP status code was in the 1xx, 2xx or 3xx ranges,
-			// unless there was another error (e.g., network error receiving the response body; or 3xx codes with
-			// max redirects exceeded), in which case status MUST be set to Error.
-			code := statusWriter.status
-			if code < 100 || code >= 500 {
-				span.SetStatus(codes.Error, stage)
-			}
-
-			attrSet := labeler.AttributeSet()
-			attrs := attrSet.ToSlice()
-			if code != 0 {
-				attrs = append(attrs, semconv.HTTPResponseStatusCode(code))
-			}
-
-			s.errors.Add(ctx, 1, metric.WithAttributes(attrs...))
-		}
-		err          error
-		opErrContext = ogenerrors.OperationContext{
-			Name: ReadSubscriptionOperation,
-			ID:   "read-subscription",
-		}
-	)
-	{
-		type bitset = [1]uint8
-		var satisfied bitset
-		{
-			sctx, ok, err := s.securityBearerAuth(ctx, ReadSubscriptionOperation, r)
-			if err != nil {
-				err = &ogenerrors.SecurityError{
-					OperationContext: opErrContext,
-					Security:         "BearerAuth",
-					Err:              err,
-				}
-				if encodeErr := encodeErrorResponse(s.h.NewError(ctx, err), w, span); encodeErr != nil {
-					defer recordError("Security:BearerAuth", err)
-				}
-				return
-			}
-			if ok {
-				satisfied[0] |= 1 << 0
-				ctx = sctx
-			}
-		}
-
-		if ok := func() bool {
-		nextRequirement:
-			for _, requirement := range []bitset{
-				{0b00000001},
-			} {
-				for i, mask := range requirement {
-					if satisfied[i]&mask != mask {
-						continue nextRequirement
-					}
-				}
-				return true
-			}
-			return false
-		}(); !ok {
-			err = &ogenerrors.SecurityError{
-				OperationContext: opErrContext,
-				Err:              ogenerrors.ErrSecurityRequirementIsNotSatisfied,
-			}
-			if encodeErr := encodeErrorResponse(s.h.NewError(ctx, err), w, span); encodeErr != nil {
-				defer recordError("Security", err)
-			}
-			return
-		}
-	}
-	params, err := decodeReadSubscriptionParams(args, argsEscaped, r)
-	if err != nil {
-		err = &ogenerrors.DecodeParamsError{
-			OperationContext: opErrContext,
-			Err:              err,
-		}
-		defer recordError("DecodeParams", err)
-		s.cfg.ErrorHandler(ctx, w, r, err)
-		return
-	}
-
-	var rawBody []byte
-
-	var response *Subscription
-	if m := s.cfg.Middleware; m != nil {
-		mreq := middleware.Request{
-			Context:          ctx,
-			OperationName:    ReadSubscriptionOperation,
-			OperationSummary: "Which plan this account is on",
-			OperationID:      "read-subscription",
-			Body:             nil,
-			RawBody:          rawBody,
-			Params: middleware.Parameters{
-				{
-					Name: "accountKey",
-					In:   "path",
-				}: params.AccountKey,
-			},
-			Raw: r,
-		}
-
-		type (
-			Request  = struct{}
-			Params   = ReadSubscriptionParams
-			Response = *Subscription
-		)
-		response, err = middleware.HookMiddleware[
-			Request,
-			Params,
-			Response,
-		](
-			m,
-			mreq,
-			unpackReadSubscriptionParams,
-			func(ctx context.Context, request Request, params Params) (response Response, err error) {
-				response, err = s.h.ReadSubscription(ctx, params)
-				return response, err
-			},
-		)
-	} else {
-		response, err = s.h.ReadSubscription(ctx, params)
-	}
-	if err != nil {
-		if errRes, ok := errors.Into[*ErrorStatusCode](err); ok {
-			if err := encodeErrorResponse(errRes, w, span); err != nil {
-				defer recordError("Internal", err)
-			}
-			return
-		}
-		if errors.Is(err, ht.ErrNotImplemented) {
-			s.cfg.ErrorHandler(ctx, w, r, err)
-			return
-		}
-		if err := encodeErrorResponse(s.h.NewError(ctx, err), w, span); err != nil {
-			defer recordError("Internal", err)
-		}
-		return
-	}
-
-	if err := encodeReadSubscriptionResponse(response, w, span); err != nil {
-		defer recordError("EncodeResponse", err)
-		if !errors.Is(err, ht.ErrInternalServerErrorResponse) {
-			s.cfg.ErrorHandler(ctx, w, r, err)
-		}
-		return
-	}
-}
-
-// handleReadTopUpRequest handles read-top-up operation.
-//
-// Credit arrives asynchronously, shortly after the payment provider confirms the money. Coming back
-// from the payment page the balance has usually not moved yet, and without this there is no way to
-// tell "it is on its way" from "it failed" — the only recourse is refreshing the balance and
-// guessing.
-//
-// `settled` means the credit has landed. `pending` means the money arrived and the credit has not been
-// issued yet, or the payment method is an asynchronous one and the money itself is still in transit.
-//
-// GET /account/v1/billing-accounts/{accountKey}/top-ups/{paymentId}
-func (s *Server) handleReadTopUpRequest(args [2]string, argsEscaped bool, w http.ResponseWriter, r *http.Request) {
-	statusWriter := &codeRecorder{ResponseWriter: w}
-	w = statusWriter
-	otelAttrs := []attribute.KeyValue{
-		otelogen.OperationID("read-top-up"),
-		semconv.HTTPRequestMethodKey.String("GET"),
-		semconv.HTTPRouteKey.String("/account/v1/billing-accounts/{accountKey}/top-ups/{paymentId}"),
-	}
-	// Add attributes from config.
-	otelAttrs = append(otelAttrs, s.cfg.Attributes...)
-
-	// Start a span for this request.
-	ctx, span := s.cfg.Tracer.Start(r.Context(), ReadTopUpOperation,
-		trace.WithAttributes(otelAttrs...),
-		serverSpanKind,
-	)
-	defer span.End()
-
-	// Add Labeler to context.
-	labeler := &Labeler{attrs: otelAttrs}
-	ctx = contextWithLabeler(ctx, labeler)
-
-	// Run stopwatch.
-	startTime := time.Now()
-	defer func() {
-		elapsedDuration := time.Since(startTime)
-
-		attrSet := labeler.AttributeSet()
-		attrs := attrSet.ToSlice()
-		code := statusWriter.status
-		if code != 0 {
-			codeAttr := semconv.HTTPResponseStatusCode(code)
-			attrs = append(attrs, codeAttr)
-			span.SetAttributes(attrs...)
-		}
-		attrOpt := metric.WithAttributes(attrs...)
-
-		// Increment request counter.
-		s.requests.Add(ctx, 1, attrOpt)
-
-		// Use floating point division here for higher precision (instead of Millisecond method).
-		s.duration.Record(ctx, float64(elapsedDuration)/float64(time.Millisecond), attrOpt)
-	}()
-
-	var (
-		recordError = func(stage string, err error) {
-			span.RecordError(err)
-
-			// https://opentelemetry.io/docs/specs/semconv/http/http-spans/#status
-			// Span Status MUST be left unset if HTTP status code was in the 1xx, 2xx or 3xx ranges,
-			// unless there was another error (e.g., network error receiving the response body; or 3xx codes with
-			// max redirects exceeded), in which case status MUST be set to Error.
-			code := statusWriter.status
-			if code < 100 || code >= 500 {
-				span.SetStatus(codes.Error, stage)
-			}
-
-			attrSet := labeler.AttributeSet()
-			attrs := attrSet.ToSlice()
-			if code != 0 {
-				attrs = append(attrs, semconv.HTTPResponseStatusCode(code))
-			}
-
-			s.errors.Add(ctx, 1, metric.WithAttributes(attrs...))
-		}
-		err          error
-		opErrContext = ogenerrors.OperationContext{
-			Name: ReadTopUpOperation,
-			ID:   "read-top-up",
-		}
-	)
-	{
-		type bitset = [1]uint8
-		var satisfied bitset
-		{
-			sctx, ok, err := s.securityBearerAuth(ctx, ReadTopUpOperation, r)
-			if err != nil {
-				err = &ogenerrors.SecurityError{
-					OperationContext: opErrContext,
-					Security:         "BearerAuth",
-					Err:              err,
-				}
-				if encodeErr := encodeErrorResponse(s.h.NewError(ctx, err), w, span); encodeErr != nil {
-					defer recordError("Security:BearerAuth", err)
-				}
-				return
-			}
-			if ok {
-				satisfied[0] |= 1 << 0
-				ctx = sctx
-			}
-		}
-
-		if ok := func() bool {
-		nextRequirement:
-			for _, requirement := range []bitset{
-				{0b00000001},
-			} {
-				for i, mask := range requirement {
-					if satisfied[i]&mask != mask {
-						continue nextRequirement
-					}
-				}
-				return true
-			}
-			return false
-		}(); !ok {
-			err = &ogenerrors.SecurityError{
-				OperationContext: opErrContext,
-				Err:              ogenerrors.ErrSecurityRequirementIsNotSatisfied,
-			}
-			if encodeErr := encodeErrorResponse(s.h.NewError(ctx, err), w, span); encodeErr != nil {
-				defer recordError("Security", err)
-			}
-			return
-		}
-	}
-	params, err := decodeReadTopUpParams(args, argsEscaped, r)
-	if err != nil {
-		err = &ogenerrors.DecodeParamsError{
-			OperationContext: opErrContext,
-			Err:              err,
-		}
-		defer recordError("DecodeParams", err)
-		s.cfg.ErrorHandler(ctx, w, r, err)
-		return
-	}
-
-	var rawBody []byte
-
-	var response *TopUpStatus
-	if m := s.cfg.Middleware; m != nil {
-		mreq := middleware.Request{
-			Context:          ctx,
-			OperationName:    ReadTopUpOperation,
-			OperationSummary: "How far along a top-up is",
-			OperationID:      "read-top-up",
-			Body:             nil,
-			RawBody:          rawBody,
-			Params: middleware.Parameters{
-				{
-					Name: "accountKey",
-					In:   "path",
-				}: params.AccountKey,
-				{
-					Name: "paymentId",
-					In:   "path",
-				}: params.PaymentId,
-			},
-			Raw: r,
-		}
-
-		type (
-			Request  = struct{}
-			Params   = ReadTopUpParams
-			Response = *TopUpStatus
-		)
-		response, err = middleware.HookMiddleware[
-			Request,
-			Params,
-			Response,
-		](
-			m,
-			mreq,
-			unpackReadTopUpParams,
-			func(ctx context.Context, request Request, params Params) (response Response, err error) {
-				response, err = s.h.ReadTopUp(ctx, params)
-				return response, err
-			},
-		)
-	} else {
-		response, err = s.h.ReadTopUp(ctx, params)
-	}
-	if err != nil {
-		if errRes, ok := errors.Into[*ErrorStatusCode](err); ok {
-			if err := encodeErrorResponse(errRes, w, span); err != nil {
-				defer recordError("Internal", err)
-			}
-			return
-		}
-		if errors.Is(err, ht.ErrNotImplemented) {
-			s.cfg.ErrorHandler(ctx, w, r, err)
-			return
-		}
-		if err := encodeErrorResponse(s.h.NewError(ctx, err), w, span); err != nil {
-			defer recordError("Internal", err)
-		}
-		return
-	}
-
-	if err := encodeReadTopUpResponse(response, w, span); err != nil {
-		defer recordError("EncodeResponse", err)
-		if !errors.Is(err, ht.ErrInternalServerErrorResponse) {
-			s.cfg.ErrorHandler(ctx, w, r, err)
-		}
-		return
-	}
-}
-
-// handleRemovePaymentMethodRequest handles remove-payment-method operation.
-//
-// Detaches it from this account. Removing the last one is allowed.
-//
-// # Why removing the last one is not blocked
-//
-// Blocking it leaves an account holder who wants to stop paying with no way out. The cost of allowing
-// it is that later invoices cannot be collected — and that path has notice, a grace period and a way
-// back. A card that cannot be removed is a dead end.
-//
-// DELETE /account/v1/billing-accounts/{accountKey}/payment-methods/{paymentMethodId}
-func (s *Server) handleRemovePaymentMethodRequest(args [2]string, argsEscaped bool, w http.ResponseWriter, r *http.Request) {
-	statusWriter := &codeRecorder{ResponseWriter: w}
-	w = statusWriter
-	otelAttrs := []attribute.KeyValue{
-		otelogen.OperationID("remove-payment-method"),
-		semconv.HTTPRequestMethodKey.String("DELETE"),
-		semconv.HTTPRouteKey.String("/account/v1/billing-accounts/{accountKey}/payment-methods/{paymentMethodId}"),
-	}
-	// Add attributes from config.
-	otelAttrs = append(otelAttrs, s.cfg.Attributes...)
-
-	// Start a span for this request.
-	ctx, span := s.cfg.Tracer.Start(r.Context(), RemovePaymentMethodOperation,
-		trace.WithAttributes(otelAttrs...),
-		serverSpanKind,
-	)
-	defer span.End()
-
-	// Add Labeler to context.
-	labeler := &Labeler{attrs: otelAttrs}
-	ctx = contextWithLabeler(ctx, labeler)
-
-	// Run stopwatch.
-	startTime := time.Now()
-	defer func() {
-		elapsedDuration := time.Since(startTime)
-
-		attrSet := labeler.AttributeSet()
-		attrs := attrSet.ToSlice()
-		code := statusWriter.status
-		if code != 0 {
-			codeAttr := semconv.HTTPResponseStatusCode(code)
-			attrs = append(attrs, codeAttr)
-			span.SetAttributes(attrs...)
-		}
-		attrOpt := metric.WithAttributes(attrs...)
-
-		// Increment request counter.
-		s.requests.Add(ctx, 1, attrOpt)
-
-		// Use floating point division here for higher precision (instead of Millisecond method).
-		s.duration.Record(ctx, float64(elapsedDuration)/float64(time.Millisecond), attrOpt)
-	}()
-
-	var (
-		recordError = func(stage string, err error) {
-			span.RecordError(err)
-
-			// https://opentelemetry.io/docs/specs/semconv/http/http-spans/#status
-			// Span Status MUST be left unset if HTTP status code was in the 1xx, 2xx or 3xx ranges,
-			// unless there was another error (e.g., network error receiving the response body; or 3xx codes with
-			// max redirects exceeded), in which case status MUST be set to Error.
-			code := statusWriter.status
-			if code < 100 || code >= 500 {
-				span.SetStatus(codes.Error, stage)
-			}
-
-			attrSet := labeler.AttributeSet()
-			attrs := attrSet.ToSlice()
-			if code != 0 {
-				attrs = append(attrs, semconv.HTTPResponseStatusCode(code))
-			}
-
-			s.errors.Add(ctx, 1, metric.WithAttributes(attrs...))
-		}
-		err          error
-		opErrContext = ogenerrors.OperationContext{
-			Name: RemovePaymentMethodOperation,
-			ID:   "remove-payment-method",
-		}
-	)
-	{
-		type bitset = [1]uint8
-		var satisfied bitset
-		{
-			sctx, ok, err := s.securityBearerAuth(ctx, RemovePaymentMethodOperation, r)
-			if err != nil {
-				err = &ogenerrors.SecurityError{
-					OperationContext: opErrContext,
-					Security:         "BearerAuth",
-					Err:              err,
-				}
-				if encodeErr := encodeErrorResponse(s.h.NewError(ctx, err), w, span); encodeErr != nil {
-					defer recordError("Security:BearerAuth", err)
-				}
-				return
-			}
-			if ok {
-				satisfied[0] |= 1 << 0
-				ctx = sctx
-			}
-		}
-
-		if ok := func() bool {
-		nextRequirement:
-			for _, requirement := range []bitset{
-				{0b00000001},
-			} {
-				for i, mask := range requirement {
-					if satisfied[i]&mask != mask {
-						continue nextRequirement
-					}
-				}
-				return true
-			}
-			return false
-		}(); !ok {
-			err = &ogenerrors.SecurityError{
-				OperationContext: opErrContext,
-				Err:              ogenerrors.ErrSecurityRequirementIsNotSatisfied,
-			}
-			if encodeErr := encodeErrorResponse(s.h.NewError(ctx, err), w, span); encodeErr != nil {
-				defer recordError("Security", err)
-			}
-			return
-		}
-	}
-	params, err := decodeRemovePaymentMethodParams(args, argsEscaped, r)
-	if err != nil {
-		err = &ogenerrors.DecodeParamsError{
-			OperationContext: opErrContext,
-			Err:              err,
-		}
-		defer recordError("DecodeParams", err)
-		s.cfg.ErrorHandler(ctx, w, r, err)
-		return
-	}
-
-	var rawBody []byte
-
-	var response *RemovePaymentMethodNoContent
-	if m := s.cfg.Middleware; m != nil {
-		mreq := middleware.Request{
-			Context:          ctx,
-			OperationName:    RemovePaymentMethodOperation,
-			OperationSummary: "Remove a payment method",
-			OperationID:      "remove-payment-method",
-			Body:             nil,
-			RawBody:          rawBody,
-			Params: middleware.Parameters{
-				{
-					Name: "accountKey",
-					In:   "path",
-				}: params.AccountKey,
-				{
-					Name: "paymentMethodId",
-					In:   "path",
-				}: params.PaymentMethodId,
-			},
-			Raw: r,
-		}
-
-		type (
-			Request  = struct{}
-			Params   = RemovePaymentMethodParams
-			Response = *RemovePaymentMethodNoContent
-		)
-		response, err = middleware.HookMiddleware[
-			Request,
-			Params,
-			Response,
-		](
-			m,
-			mreq,
-			unpackRemovePaymentMethodParams,
-			func(ctx context.Context, request Request, params Params) (response Response, err error) {
-				err = s.h.RemovePaymentMethod(ctx, params)
-				return response, err
-			},
-		)
-	} else {
-		err = s.h.RemovePaymentMethod(ctx, params)
-	}
-	if err != nil {
-		if errRes, ok := errors.Into[*ErrorStatusCode](err); ok {
-			if err := encodeErrorResponse(errRes, w, span); err != nil {
-				defer recordError("Internal", err)
-			}
-			return
-		}
-		if errors.Is(err, ht.ErrNotImplemented) {
-			s.cfg.ErrorHandler(ctx, w, r, err)
-			return
-		}
-		if err := encodeErrorResponse(s.h.NewError(ctx, err), w, span); err != nil {
-			defer recordError("Internal", err)
-		}
-		return
-	}
-
-	if err := encodeRemovePaymentMethodResponse(response, w, span); err != nil {
-		defer recordError("EncodeResponse", err)
-		if !errors.Is(err, ht.ErrInternalServerErrorResponse) {
-			s.cfg.ErrorHandler(ctx, w, r, err)
-		}
-		return
-	}
-}
-
-// handleRenewPrepaidAssetRequest handles renew-prepaid-asset operation.
-//
-// Extends a term by one more period, paid for out of the account's balance right now.
-//
-// The new expiry is the old one plus the term, not now plus the term. Renewing three days early would
-// otherwise throw those three days away, and renewing after the expiry would quietly reward the delay.
-// Neither shows up as an error — the date on the account looks self-consistent either way, and only
-// the customer notices.
-//
-// `term` does not have to match what was bought originally: a monthly machine can be renewed for a
-// year.
-//
-// Refused when the balance does not cover it. The alternative — placing the order and letting the
-// account go negative — turns a renewal the customer chose into a debt they did not.
-//
-// POST /account/v1/billing-accounts/{accountKey}/prepaid-assets/{assetId}/renew
-func (s *Server) handleRenewPrepaidAssetRequest(args [2]string, argsEscaped bool, w http.ResponseWriter, r *http.Request) {
-	statusWriter := &codeRecorder{ResponseWriter: w}
-	w = statusWriter
-	otelAttrs := []attribute.KeyValue{
-		otelogen.OperationID("renew-prepaid-asset"),
+		otelogen.OperationID("preview-code"),
 		semconv.HTTPRequestMethodKey.String("POST"),
-		semconv.HTTPRouteKey.String("/account/v1/billing-accounts/{accountKey}/prepaid-assets/{assetId}/renew"),
+		semconv.HTTPRouteKey.String("/account/v1/codes/preview"),
 	}
 	// Add attributes from config.
 	otelAttrs = append(otelAttrs, s.cfg.Attributes...)
 
 	// Start a span for this request.
-	ctx, span := s.cfg.Tracer.Start(r.Context(), RenewPrepaidAssetOperation,
+	ctx, span := s.cfg.Tracer.Start(r.Context(), PreviewCodeOperation,
 		trace.WithAttributes(otelAttrs...),
 		serverSpanKind,
 	)
@@ -6390,23 +9795,23 @@ func (s *Server) handleRenewPrepaidAssetRequest(args [2]string, argsEscaped bool
 		}
 		err          error
 		opErrContext = ogenerrors.OperationContext{
-			Name: RenewPrepaidAssetOperation,
-			ID:   "renew-prepaid-asset",
+			Name: PreviewCodeOperation,
+			ID:   "preview-code",
 		}
 	)
 	{
 		type bitset = [1]uint8
 		var satisfied bitset
 		{
-			sctx, ok, err := s.securityBearerAuth(ctx, RenewPrepaidAssetOperation, r)
+			sctx, ok, err := s.securityAccountAuth(ctx, PreviewCodeOperation, r)
 			if err != nil {
 				err = &ogenerrors.SecurityError{
 					OperationContext: opErrContext,
-					Security:         "BearerAuth",
+					Security:         "AccountAuth",
 					Err:              err,
 				}
 				if encodeErr := encodeErrorResponse(s.h.NewError(ctx, err), w, span); encodeErr != nil {
-					defer recordError("Security:BearerAuth", err)
+					defer recordError("Security:AccountAuth", err)
 				}
 				return
 			}
@@ -6440,19 +9845,9 @@ func (s *Server) handleRenewPrepaidAssetRequest(args [2]string, argsEscaped bool
 			return
 		}
 	}
-	params, err := decodeRenewPrepaidAssetParams(args, argsEscaped, r)
-	if err != nil {
-		err = &ogenerrors.DecodeParamsError{
-			OperationContext: opErrContext,
-			Err:              err,
-		}
-		defer recordError("DecodeParams", err)
-		s.cfg.ErrorHandler(ctx, w, r, err)
-		return
-	}
 
 	var rawBody []byte
-	request, rawBody, close, err := s.decodeRenewPrepaidAssetRequest(r)
+	request, rawBody, close, err := s.decodePreviewCodeRequest(r)
 	if err != nil {
 		err = &ogenerrors.DecodeRequestError{
 			OperationContext: opErrContext,
@@ -6468,32 +9863,23 @@ func (s *Server) handleRenewPrepaidAssetRequest(args [2]string, argsEscaped bool
 		}
 	}()
 
-	var response *PrepaidAsset
+	var response *CodePreview
 	if m := s.cfg.Middleware; m != nil {
 		mreq := middleware.Request{
 			Context:          ctx,
-			OperationName:    RenewPrepaidAssetOperation,
-			OperationSummary: "Buy another period",
-			OperationID:      "renew-prepaid-asset",
+			OperationName:    PreviewCodeOperation,
+			OperationSummary: "Check what a code would give you",
+			OperationID:      "preview-code",
 			Body:             request,
 			RawBody:          rawBody,
-			Params: middleware.Parameters{
-				{
-					Name: "accountKey",
-					In:   "path",
-				}: params.AccountKey,
-				{
-					Name: "assetId",
-					In:   "path",
-				}: params.AssetId,
-			},
-			Raw: r,
+			Params:           middleware.Parameters{},
+			Raw:              r,
 		}
 
 		type (
-			Request  = *RenewRequestBody
-			Params   = RenewPrepaidAssetParams
-			Response = *PrepaidAsset
+			Request  = *CodeRequest
+			Params   = struct{}
+			Response = *CodePreview
 		)
 		response, err = middleware.HookMiddleware[
 			Request,
@@ -6502,14 +9888,14 @@ func (s *Server) handleRenewPrepaidAssetRequest(args [2]string, argsEscaped bool
 		](
 			m,
 			mreq,
-			unpackRenewPrepaidAssetParams,
+			nil,
 			func(ctx context.Context, request Request, params Params) (response Response, err error) {
-				response, err = s.h.RenewPrepaidAsset(ctx, request, params)
+				response, err = s.h.PreviewCode(ctx, request)
 				return response, err
 			},
 		)
 	} else {
-		response, err = s.h.RenewPrepaidAsset(ctx, request, params)
+		response, err = s.h.PreviewCode(ctx, request)
 	}
 	if err != nil {
 		if errRes, ok := errors.Into[*ErrorStatusCode](err); ok {
@@ -6528,7 +9914,645 @@ func (s *Server) handleRenewPrepaidAssetRequest(args [2]string, argsEscaped bool
 		return
 	}
 
-	if err := encodeRenewPrepaidAssetResponse(response, w, span); err != nil {
+	if err := encodePreviewCodeResponse(response, w, span); err != nil {
+		defer recordError("EncodeResponse", err)
+		if !errors.Is(err, ht.ErrInternalServerErrorResponse) {
+			s.cfg.ErrorHandler(ctx, w, r, err)
+		}
+		return
+	}
+}
+
+// handleRedeemCodeRequest handles redeem-code operation.
+//
+// A voucher code adds credit to the account. A discount code records the entitlement, which is then
+// applied to the next qualifying purchase.
+//
+// A code that has already been redeemed by this account is refused rather than redeemed a second time.
+//
+// POST /account/v1/codes/redeem
+func (s *Server) handleRedeemCodeRequest(args [0]string, argsEscaped bool, w http.ResponseWriter, r *http.Request) {
+	statusWriter := &codeRecorder{ResponseWriter: w}
+	w = statusWriter
+	otelAttrs := []attribute.KeyValue{
+		otelogen.OperationID("redeem-code"),
+		semconv.HTTPRequestMethodKey.String("POST"),
+		semconv.HTTPRouteKey.String("/account/v1/codes/redeem"),
+	}
+	// Add attributes from config.
+	otelAttrs = append(otelAttrs, s.cfg.Attributes...)
+
+	// Start a span for this request.
+	ctx, span := s.cfg.Tracer.Start(r.Context(), RedeemCodeOperation,
+		trace.WithAttributes(otelAttrs...),
+		serverSpanKind,
+	)
+	defer span.End()
+
+	// Add Labeler to context.
+	labeler := &Labeler{attrs: otelAttrs}
+	ctx = contextWithLabeler(ctx, labeler)
+
+	// Run stopwatch.
+	startTime := time.Now()
+	defer func() {
+		elapsedDuration := time.Since(startTime)
+
+		attrSet := labeler.AttributeSet()
+		attrs := attrSet.ToSlice()
+		code := statusWriter.status
+		if code != 0 {
+			codeAttr := semconv.HTTPResponseStatusCode(code)
+			attrs = append(attrs, codeAttr)
+			span.SetAttributes(attrs...)
+		}
+		attrOpt := metric.WithAttributes(attrs...)
+
+		// Increment request counter.
+		s.requests.Add(ctx, 1, attrOpt)
+
+		// Use floating point division here for higher precision (instead of Millisecond method).
+		s.duration.Record(ctx, float64(elapsedDuration)/float64(time.Millisecond), attrOpt)
+	}()
+
+	var (
+		recordError = func(stage string, err error) {
+			span.RecordError(err)
+
+			// https://opentelemetry.io/docs/specs/semconv/http/http-spans/#status
+			// Span Status MUST be left unset if HTTP status code was in the 1xx, 2xx or 3xx ranges,
+			// unless there was another error (e.g., network error receiving the response body; or 3xx codes with
+			// max redirects exceeded), in which case status MUST be set to Error.
+			code := statusWriter.status
+			if code < 100 || code >= 500 {
+				span.SetStatus(codes.Error, stage)
+			}
+
+			attrSet := labeler.AttributeSet()
+			attrs := attrSet.ToSlice()
+			if code != 0 {
+				attrs = append(attrs, semconv.HTTPResponseStatusCode(code))
+			}
+
+			s.errors.Add(ctx, 1, metric.WithAttributes(attrs...))
+		}
+		err          error
+		opErrContext = ogenerrors.OperationContext{
+			Name: RedeemCodeOperation,
+			ID:   "redeem-code",
+		}
+	)
+	{
+		type bitset = [1]uint8
+		var satisfied bitset
+		{
+			sctx, ok, err := s.securityAccountAuth(ctx, RedeemCodeOperation, r)
+			if err != nil {
+				err = &ogenerrors.SecurityError{
+					OperationContext: opErrContext,
+					Security:         "AccountAuth",
+					Err:              err,
+				}
+				if encodeErr := encodeErrorResponse(s.h.NewError(ctx, err), w, span); encodeErr != nil {
+					defer recordError("Security:AccountAuth", err)
+				}
+				return
+			}
+			if ok {
+				satisfied[0] |= 1 << 0
+				ctx = sctx
+			}
+		}
+
+		if ok := func() bool {
+		nextRequirement:
+			for _, requirement := range []bitset{
+				{0b00000001},
+			} {
+				for i, mask := range requirement {
+					if satisfied[i]&mask != mask {
+						continue nextRequirement
+					}
+				}
+				return true
+			}
+			return false
+		}(); !ok {
+			err = &ogenerrors.SecurityError{
+				OperationContext: opErrContext,
+				Err:              ogenerrors.ErrSecurityRequirementIsNotSatisfied,
+			}
+			if encodeErr := encodeErrorResponse(s.h.NewError(ctx, err), w, span); encodeErr != nil {
+				defer recordError("Security", err)
+			}
+			return
+		}
+	}
+
+	var rawBody []byte
+	request, rawBody, close, err := s.decodeRedeemCodeRequest(r)
+	if err != nil {
+		err = &ogenerrors.DecodeRequestError{
+			OperationContext: opErrContext,
+			Err:              err,
+		}
+		defer recordError("DecodeRequest", err)
+		s.cfg.ErrorHandler(ctx, w, r, err)
+		return
+	}
+	defer func() {
+		if err := close(); err != nil {
+			recordError("CloseRequest", err)
+		}
+	}()
+
+	var response *CodeRedeemResult
+	if m := s.cfg.Middleware; m != nil {
+		mreq := middleware.Request{
+			Context:          ctx,
+			OperationName:    RedeemCodeOperation,
+			OperationSummary: "Redeem a code",
+			OperationID:      "redeem-code",
+			Body:             request,
+			RawBody:          rawBody,
+			Params:           middleware.Parameters{},
+			Raw:              r,
+		}
+
+		type (
+			Request  = *CodeRedeem
+			Params   = struct{}
+			Response = *CodeRedeemResult
+		)
+		response, err = middleware.HookMiddleware[
+			Request,
+			Params,
+			Response,
+		](
+			m,
+			mreq,
+			nil,
+			func(ctx context.Context, request Request, params Params) (response Response, err error) {
+				response, err = s.h.RedeemCode(ctx, request)
+				return response, err
+			},
+		)
+	} else {
+		response, err = s.h.RedeemCode(ctx, request)
+	}
+	if err != nil {
+		if errRes, ok := errors.Into[*ErrorStatusCode](err); ok {
+			if err := encodeErrorResponse(errRes, w, span); err != nil {
+				defer recordError("Internal", err)
+			}
+			return
+		}
+		if errors.Is(err, ht.ErrNotImplemented) {
+			s.cfg.ErrorHandler(ctx, w, r, err)
+			return
+		}
+		if err := encodeErrorResponse(s.h.NewError(ctx, err), w, span); err != nil {
+			defer recordError("Internal", err)
+		}
+		return
+	}
+
+	if err := encodeRedeemCodeResponse(response, w, span); err != nil {
+		defer recordError("EncodeResponse", err)
+		if !errors.Is(err, ht.ErrInternalServerErrorResponse) {
+			s.cfg.ErrorHandler(ctx, w, r, err)
+		}
+		return
+	}
+}
+
+// handleRenewSubscriptionItemRequest handles renew-subscription-item operation.
+//
+// Extends the paid period from its current end, not from today, so renewing early does not shorten
+// what has already been paid for.
+//
+// The price charged is the one in effect at the moment of renewal, which may differ from what was paid
+// for the current period.
+//
+// POST /account/v1/subscription-items/{itemId}/renew
+func (s *Server) handleRenewSubscriptionItemRequest(args [1]string, argsEscaped bool, w http.ResponseWriter, r *http.Request) {
+	statusWriter := &codeRecorder{ResponseWriter: w}
+	w = statusWriter
+	otelAttrs := []attribute.KeyValue{
+		otelogen.OperationID("renew-subscription-item"),
+		semconv.HTTPRequestMethodKey.String("POST"),
+		semconv.HTTPRouteKey.String("/account/v1/subscription-items/{itemId}/renew"),
+	}
+	// Add attributes from config.
+	otelAttrs = append(otelAttrs, s.cfg.Attributes...)
+
+	// Start a span for this request.
+	ctx, span := s.cfg.Tracer.Start(r.Context(), RenewSubscriptionItemOperation,
+		trace.WithAttributes(otelAttrs...),
+		serverSpanKind,
+	)
+	defer span.End()
+
+	// Add Labeler to context.
+	labeler := &Labeler{attrs: otelAttrs}
+	ctx = contextWithLabeler(ctx, labeler)
+
+	// Run stopwatch.
+	startTime := time.Now()
+	defer func() {
+		elapsedDuration := time.Since(startTime)
+
+		attrSet := labeler.AttributeSet()
+		attrs := attrSet.ToSlice()
+		code := statusWriter.status
+		if code != 0 {
+			codeAttr := semconv.HTTPResponseStatusCode(code)
+			attrs = append(attrs, codeAttr)
+			span.SetAttributes(attrs...)
+		}
+		attrOpt := metric.WithAttributes(attrs...)
+
+		// Increment request counter.
+		s.requests.Add(ctx, 1, attrOpt)
+
+		// Use floating point division here for higher precision (instead of Millisecond method).
+		s.duration.Record(ctx, float64(elapsedDuration)/float64(time.Millisecond), attrOpt)
+	}()
+
+	var (
+		recordError = func(stage string, err error) {
+			span.RecordError(err)
+
+			// https://opentelemetry.io/docs/specs/semconv/http/http-spans/#status
+			// Span Status MUST be left unset if HTTP status code was in the 1xx, 2xx or 3xx ranges,
+			// unless there was another error (e.g., network error receiving the response body; or 3xx codes with
+			// max redirects exceeded), in which case status MUST be set to Error.
+			code := statusWriter.status
+			if code < 100 || code >= 500 {
+				span.SetStatus(codes.Error, stage)
+			}
+
+			attrSet := labeler.AttributeSet()
+			attrs := attrSet.ToSlice()
+			if code != 0 {
+				attrs = append(attrs, semconv.HTTPResponseStatusCode(code))
+			}
+
+			s.errors.Add(ctx, 1, metric.WithAttributes(attrs...))
+		}
+		err          error
+		opErrContext = ogenerrors.OperationContext{
+			Name: RenewSubscriptionItemOperation,
+			ID:   "renew-subscription-item",
+		}
+	)
+	{
+		type bitset = [1]uint8
+		var satisfied bitset
+		{
+			sctx, ok, err := s.securityAccountAuth(ctx, RenewSubscriptionItemOperation, r)
+			if err != nil {
+				err = &ogenerrors.SecurityError{
+					OperationContext: opErrContext,
+					Security:         "AccountAuth",
+					Err:              err,
+				}
+				if encodeErr := encodeErrorResponse(s.h.NewError(ctx, err), w, span); encodeErr != nil {
+					defer recordError("Security:AccountAuth", err)
+				}
+				return
+			}
+			if ok {
+				satisfied[0] |= 1 << 0
+				ctx = sctx
+			}
+		}
+
+		if ok := func() bool {
+		nextRequirement:
+			for _, requirement := range []bitset{
+				{0b00000001},
+			} {
+				for i, mask := range requirement {
+					if satisfied[i]&mask != mask {
+						continue nextRequirement
+					}
+				}
+				return true
+			}
+			return false
+		}(); !ok {
+			err = &ogenerrors.SecurityError{
+				OperationContext: opErrContext,
+				Err:              ogenerrors.ErrSecurityRequirementIsNotSatisfied,
+			}
+			if encodeErr := encodeErrorResponse(s.h.NewError(ctx, err), w, span); encodeErr != nil {
+				defer recordError("Security", err)
+			}
+			return
+		}
+	}
+	params, err := decodeRenewSubscriptionItemParams(args, argsEscaped, r)
+	if err != nil {
+		err = &ogenerrors.DecodeParamsError{
+			OperationContext: opErrContext,
+			Err:              err,
+		}
+		defer recordError("DecodeParams", err)
+		s.cfg.ErrorHandler(ctx, w, r, err)
+		return
+	}
+
+	var rawBody []byte
+	request, rawBody, close, err := s.decodeRenewSubscriptionItemRequest(r)
+	if err != nil {
+		err = &ogenerrors.DecodeRequestError{
+			OperationContext: opErrContext,
+			Err:              err,
+		}
+		defer recordError("DecodeRequest", err)
+		s.cfg.ErrorHandler(ctx, w, r, err)
+		return
+	}
+	defer func() {
+		if err := close(); err != nil {
+			recordError("CloseRequest", err)
+		}
+	}()
+
+	var response *PaymentResult
+	if m := s.cfg.Middleware; m != nil {
+		mreq := middleware.Request{
+			Context:          ctx,
+			OperationName:    RenewSubscriptionItemOperation,
+			OperationSummary: "Renew now rather than waiting for the renewal date",
+			OperationID:      "renew-subscription-item",
+			Body:             request,
+			RawBody:          rawBody,
+			Params: middleware.Parameters{
+				{
+					Name: "itemId",
+					In:   "path",
+				}: params.ItemId,
+			},
+			Raw: r,
+		}
+
+		type (
+			Request  = *RenewRequest
+			Params   = RenewSubscriptionItemParams
+			Response = *PaymentResult
+		)
+		response, err = middleware.HookMiddleware[
+			Request,
+			Params,
+			Response,
+		](
+			m,
+			mreq,
+			unpackRenewSubscriptionItemParams,
+			func(ctx context.Context, request Request, params Params) (response Response, err error) {
+				response, err = s.h.RenewSubscriptionItem(ctx, request, params)
+				return response, err
+			},
+		)
+	} else {
+		response, err = s.h.RenewSubscriptionItem(ctx, request, params)
+	}
+	if err != nil {
+		if errRes, ok := errors.Into[*ErrorStatusCode](err); ok {
+			if err := encodeErrorResponse(errRes, w, span); err != nil {
+				defer recordError("Internal", err)
+			}
+			return
+		}
+		if errors.Is(err, ht.ErrNotImplemented) {
+			s.cfg.ErrorHandler(ctx, w, r, err)
+			return
+		}
+		if err := encodeErrorResponse(s.h.NewError(ctx, err), w, span); err != nil {
+			defer recordError("Internal", err)
+		}
+		return
+	}
+
+	if err := encodeRenewSubscriptionItemResponse(response, w, span); err != nil {
+		defer recordError("EncodeResponse", err)
+		if !errors.Is(err, ht.ErrInternalServerErrorResponse) {
+			s.cfg.ErrorHandler(ctx, w, r, err)
+		}
+		return
+	}
+}
+
+// handleSetAutoRenewRequest handles set-auto-renew operation.
+//
+// When on, the account balance is charged at the renewal date. Turning it off lets the current period
+// run to its end and stops the resource afterwards.
+//
+// PUT /account/v1/subscription-items/{itemId}/auto-renew
+func (s *Server) handleSetAutoRenewRequest(args [1]string, argsEscaped bool, w http.ResponseWriter, r *http.Request) {
+	statusWriter := &codeRecorder{ResponseWriter: w}
+	w = statusWriter
+	otelAttrs := []attribute.KeyValue{
+		otelogen.OperationID("set-auto-renew"),
+		semconv.HTTPRequestMethodKey.String("PUT"),
+		semconv.HTTPRouteKey.String("/account/v1/subscription-items/{itemId}/auto-renew"),
+	}
+	// Add attributes from config.
+	otelAttrs = append(otelAttrs, s.cfg.Attributes...)
+
+	// Start a span for this request.
+	ctx, span := s.cfg.Tracer.Start(r.Context(), SetAutoRenewOperation,
+		trace.WithAttributes(otelAttrs...),
+		serverSpanKind,
+	)
+	defer span.End()
+
+	// Add Labeler to context.
+	labeler := &Labeler{attrs: otelAttrs}
+	ctx = contextWithLabeler(ctx, labeler)
+
+	// Run stopwatch.
+	startTime := time.Now()
+	defer func() {
+		elapsedDuration := time.Since(startTime)
+
+		attrSet := labeler.AttributeSet()
+		attrs := attrSet.ToSlice()
+		code := statusWriter.status
+		if code != 0 {
+			codeAttr := semconv.HTTPResponseStatusCode(code)
+			attrs = append(attrs, codeAttr)
+			span.SetAttributes(attrs...)
+		}
+		attrOpt := metric.WithAttributes(attrs...)
+
+		// Increment request counter.
+		s.requests.Add(ctx, 1, attrOpt)
+
+		// Use floating point division here for higher precision (instead of Millisecond method).
+		s.duration.Record(ctx, float64(elapsedDuration)/float64(time.Millisecond), attrOpt)
+	}()
+
+	var (
+		recordError = func(stage string, err error) {
+			span.RecordError(err)
+
+			// https://opentelemetry.io/docs/specs/semconv/http/http-spans/#status
+			// Span Status MUST be left unset if HTTP status code was in the 1xx, 2xx or 3xx ranges,
+			// unless there was another error (e.g., network error receiving the response body; or 3xx codes with
+			// max redirects exceeded), in which case status MUST be set to Error.
+			code := statusWriter.status
+			if code < 100 || code >= 500 {
+				span.SetStatus(codes.Error, stage)
+			}
+
+			attrSet := labeler.AttributeSet()
+			attrs := attrSet.ToSlice()
+			if code != 0 {
+				attrs = append(attrs, semconv.HTTPResponseStatusCode(code))
+			}
+
+			s.errors.Add(ctx, 1, metric.WithAttributes(attrs...))
+		}
+		err          error
+		opErrContext = ogenerrors.OperationContext{
+			Name: SetAutoRenewOperation,
+			ID:   "set-auto-renew",
+		}
+	)
+	{
+		type bitset = [1]uint8
+		var satisfied bitset
+		{
+			sctx, ok, err := s.securityAccountAuth(ctx, SetAutoRenewOperation, r)
+			if err != nil {
+				err = &ogenerrors.SecurityError{
+					OperationContext: opErrContext,
+					Security:         "AccountAuth",
+					Err:              err,
+				}
+				if encodeErr := encodeErrorResponse(s.h.NewError(ctx, err), w, span); encodeErr != nil {
+					defer recordError("Security:AccountAuth", err)
+				}
+				return
+			}
+			if ok {
+				satisfied[0] |= 1 << 0
+				ctx = sctx
+			}
+		}
+
+		if ok := func() bool {
+		nextRequirement:
+			for _, requirement := range []bitset{
+				{0b00000001},
+			} {
+				for i, mask := range requirement {
+					if satisfied[i]&mask != mask {
+						continue nextRequirement
+					}
+				}
+				return true
+			}
+			return false
+		}(); !ok {
+			err = &ogenerrors.SecurityError{
+				OperationContext: opErrContext,
+				Err:              ogenerrors.ErrSecurityRequirementIsNotSatisfied,
+			}
+			if encodeErr := encodeErrorResponse(s.h.NewError(ctx, err), w, span); encodeErr != nil {
+				defer recordError("Security", err)
+			}
+			return
+		}
+	}
+	params, err := decodeSetAutoRenewParams(args, argsEscaped, r)
+	if err != nil {
+		err = &ogenerrors.DecodeParamsError{
+			OperationContext: opErrContext,
+			Err:              err,
+		}
+		defer recordError("DecodeParams", err)
+		s.cfg.ErrorHandler(ctx, w, r, err)
+		return
+	}
+
+	var rawBody []byte
+	request, rawBody, close, err := s.decodeSetAutoRenewRequest(r)
+	if err != nil {
+		err = &ogenerrors.DecodeRequestError{
+			OperationContext: opErrContext,
+			Err:              err,
+		}
+		defer recordError("DecodeRequest", err)
+		s.cfg.ErrorHandler(ctx, w, r, err)
+		return
+	}
+	defer func() {
+		if err := close(); err != nil {
+			recordError("CloseRequest", err)
+		}
+	}()
+
+	var response *SubscriptionItem
+	if m := s.cfg.Middleware; m != nil {
+		mreq := middleware.Request{
+			Context:          ctx,
+			OperationName:    SetAutoRenewOperation,
+			OperationSummary: "Turn automatic renewal on or off",
+			OperationID:      "set-auto-renew",
+			Body:             request,
+			RawBody:          rawBody,
+			Params: middleware.Parameters{
+				{
+					Name: "itemId",
+					In:   "path",
+				}: params.ItemId,
+			},
+			Raw: r,
+		}
+
+		type (
+			Request  = *AutoRenewSet
+			Params   = SetAutoRenewParams
+			Response = *SubscriptionItem
+		)
+		response, err = middleware.HookMiddleware[
+			Request,
+			Params,
+			Response,
+		](
+			m,
+			mreq,
+			unpackSetAutoRenewParams,
+			func(ctx context.Context, request Request, params Params) (response Response, err error) {
+				response, err = s.h.SetAutoRenew(ctx, request, params)
+				return response, err
+			},
+		)
+	} else {
+		response, err = s.h.SetAutoRenew(ctx, request, params)
+	}
+	if err != nil {
+		if errRes, ok := errors.Into[*ErrorStatusCode](err); ok {
+			if err := encodeErrorResponse(errRes, w, span); err != nil {
+				defer recordError("Internal", err)
+			}
+			return
+		}
+		if errors.Is(err, ht.ErrNotImplemented) {
+			s.cfg.ErrorHandler(ctx, w, r, err)
+			return
+		}
+		if err := encodeErrorResponse(s.h.NewError(ctx, err), w, span); err != nil {
+			defer recordError("Internal", err)
+		}
+		return
+	}
+
+	if err := encodeSetAutoRenewResponse(response, w, span); err != nil {
 		defer recordError("EncodeResponse", err)
 		if !errors.Is(err, ht.ErrInternalServerErrorResponse) {
 			s.cfg.ErrorHandler(ctx, w, r, err)
@@ -6539,22 +10563,16 @@ func (s *Server) handleRenewPrepaidAssetRequest(args [2]string, argsEscaped bool
 
 // handleSetDefaultPaymentMethodRequest handles set-default-payment-method operation.
 //
-// Makes this the method an invoice is collected from.
+// Choose which method is used automatically.
 //
-// # It is stored at the provider, not here
-//
-// The charge itself reads that setting from the provider, so keeping a second copy here would create
-// two answers to the same question. When they disagree the visible symptom is that the account holder
-// changed the default and the charge still went to the old one.
-//
-// PUT /account/v1/billing-accounts/{accountKey}/payment-methods/{paymentMethodId}/default
-func (s *Server) handleSetDefaultPaymentMethodRequest(args [2]string, argsEscaped bool, w http.ResponseWriter, r *http.Request) {
+// PUT /account/v1/payment-methods/{paymentMethodId}/default
+func (s *Server) handleSetDefaultPaymentMethodRequest(args [1]string, argsEscaped bool, w http.ResponseWriter, r *http.Request) {
 	statusWriter := &codeRecorder{ResponseWriter: w}
 	w = statusWriter
 	otelAttrs := []attribute.KeyValue{
 		otelogen.OperationID("set-default-payment-method"),
 		semconv.HTTPRequestMethodKey.String("PUT"),
-		semconv.HTTPRouteKey.String("/account/v1/billing-accounts/{accountKey}/payment-methods/{paymentMethodId}/default"),
+		semconv.HTTPRouteKey.String("/account/v1/payment-methods/{paymentMethodId}/default"),
 	}
 	// Add attributes from config.
 	otelAttrs = append(otelAttrs, s.cfg.Attributes...)
@@ -6623,15 +10641,15 @@ func (s *Server) handleSetDefaultPaymentMethodRequest(args [2]string, argsEscape
 		type bitset = [1]uint8
 		var satisfied bitset
 		{
-			sctx, ok, err := s.securityBearerAuth(ctx, SetDefaultPaymentMethodOperation, r)
+			sctx, ok, err := s.securityAccountAuth(ctx, SetDefaultPaymentMethodOperation, r)
 			if err != nil {
 				err = &ogenerrors.SecurityError{
 					OperationContext: opErrContext,
-					Security:         "BearerAuth",
+					Security:         "AccountAuth",
 					Err:              err,
 				}
 				if encodeErr := encodeErrorResponse(s.h.NewError(ctx, err), w, span); encodeErr != nil {
-					defer recordError("Security:BearerAuth", err)
+					defer recordError("Security:AccountAuth", err)
 				}
 				return
 			}
@@ -6678,20 +10696,16 @@ func (s *Server) handleSetDefaultPaymentMethodRequest(args [2]string, argsEscape
 
 	var rawBody []byte
 
-	var response *SetDefaultPaymentMethodNoContent
+	var response *PaymentMethod
 	if m := s.cfg.Middleware; m != nil {
 		mreq := middleware.Request{
 			Context:          ctx,
 			OperationName:    SetDefaultPaymentMethodOperation,
-			OperationSummary: "Charge invoices to this one",
+			OperationSummary: "Choose which method is used automatically",
 			OperationID:      "set-default-payment-method",
 			Body:             nil,
 			RawBody:          rawBody,
 			Params: middleware.Parameters{
-				{
-					Name: "accountKey",
-					In:   "path",
-				}: params.AccountKey,
 				{
 					Name: "paymentMethodId",
 					In:   "path",
@@ -6703,7 +10717,7 @@ func (s *Server) handleSetDefaultPaymentMethodRequest(args [2]string, argsEscape
 		type (
 			Request  = struct{}
 			Params   = SetDefaultPaymentMethodParams
-			Response = *SetDefaultPaymentMethodNoContent
+			Response = *PaymentMethod
 		)
 		response, err = middleware.HookMiddleware[
 			Request,
@@ -6714,12 +10728,12 @@ func (s *Server) handleSetDefaultPaymentMethodRequest(args [2]string, argsEscape
 			mreq,
 			unpackSetDefaultPaymentMethodParams,
 			func(ctx context.Context, request Request, params Params) (response Response, err error) {
-				err = s.h.SetDefaultPaymentMethod(ctx, params)
+				response, err = s.h.SetDefaultPaymentMethod(ctx, params)
 				return response, err
 			},
 		)
 	} else {
-		err = s.h.SetDefaultPaymentMethod(ctx, params)
+		response, err = s.h.SetDefaultPaymentMethod(ctx, params)
 	}
 	if err != nil {
 		if errRes, ok := errors.Into[*ErrorStatusCode](err); ok {
@@ -6747,29 +10761,25 @@ func (s *Server) handleSetDefaultPaymentMethodRequest(args [2]string, argsEscape
 	}
 }
 
-// handleSetPrepaidAutoRenewRequest handles set-prepaid-auto-renew operation.
+// handleSetProjectAutoRenewRequest handles set-project-auto-renew operation.
 //
-// With it on, billing places the renewal order itself a few days before the period runs out, paying
-// from the account's balance.
+// Automatic renewal draws on the paying account's balance, which a project member may commit. Paying
+// by card requires the account owner and is done from the billing centre.
 //
-// Not enough balance is not an error here. The switch only says what to attempt; whether the money is
-// there is settled at renewal time, and the customer is told either way — told it renewed, or told
-// it could not and by when it will expire.
-//
-// PUT /account/v1/billing-accounts/{accountKey}/prepaid-assets/{assetId}/auto-renew
-func (s *Server) handleSetPrepaidAutoRenewRequest(args [2]string, argsEscaped bool, w http.ResponseWriter, r *http.Request) {
+// PUT /api/v1/projects/{projectId}/subscription-items/{itemId}/auto-renew
+func (s *Server) handleSetProjectAutoRenewRequest(args [2]string, argsEscaped bool, w http.ResponseWriter, r *http.Request) {
 	statusWriter := &codeRecorder{ResponseWriter: w}
 	w = statusWriter
 	otelAttrs := []attribute.KeyValue{
-		otelogen.OperationID("set-prepaid-auto-renew"),
+		otelogen.OperationID("set-project-auto-renew"),
 		semconv.HTTPRequestMethodKey.String("PUT"),
-		semconv.HTTPRouteKey.String("/account/v1/billing-accounts/{accountKey}/prepaid-assets/{assetId}/auto-renew"),
+		semconv.HTTPRouteKey.String("/api/v1/projects/{projectId}/subscription-items/{itemId}/auto-renew"),
 	}
 	// Add attributes from config.
 	otelAttrs = append(otelAttrs, s.cfg.Attributes...)
 
 	// Start a span for this request.
-	ctx, span := s.cfg.Tracer.Start(r.Context(), SetPrepaidAutoRenewOperation,
+	ctx, span := s.cfg.Tracer.Start(r.Context(), SetProjectAutoRenewOperation,
 		trace.WithAttributes(otelAttrs...),
 		serverSpanKind,
 	)
@@ -6824,23 +10834,23 @@ func (s *Server) handleSetPrepaidAutoRenewRequest(args [2]string, argsEscaped bo
 		}
 		err          error
 		opErrContext = ogenerrors.OperationContext{
-			Name: SetPrepaidAutoRenewOperation,
-			ID:   "set-prepaid-auto-renew",
+			Name: SetProjectAutoRenewOperation,
+			ID:   "set-project-auto-renew",
 		}
 	)
 	{
 		type bitset = [1]uint8
 		var satisfied bitset
 		{
-			sctx, ok, err := s.securityBearerAuth(ctx, SetPrepaidAutoRenewOperation, r)
+			sctx, ok, err := s.securityProjectAuth(ctx, SetProjectAutoRenewOperation, r)
 			if err != nil {
 				err = &ogenerrors.SecurityError{
 					OperationContext: opErrContext,
-					Security:         "BearerAuth",
+					Security:         "ProjectAuth",
 					Err:              err,
 				}
 				if encodeErr := encodeErrorResponse(s.h.NewError(ctx, err), w, span); encodeErr != nil {
-					defer recordError("Security:BearerAuth", err)
+					defer recordError("Security:ProjectAuth", err)
 				}
 				return
 			}
@@ -6874,7 +10884,7 @@ func (s *Server) handleSetPrepaidAutoRenewRequest(args [2]string, argsEscaped bo
 			return
 		}
 	}
-	params, err := decodeSetPrepaidAutoRenewParams(args, argsEscaped, r)
+	params, err := decodeSetProjectAutoRenewParams(args, argsEscaped, r)
 	if err != nil {
 		err = &ogenerrors.DecodeParamsError{
 			OperationContext: opErrContext,
@@ -6886,7 +10896,7 @@ func (s *Server) handleSetPrepaidAutoRenewRequest(args [2]string, argsEscaped bo
 	}
 
 	var rawBody []byte
-	request, rawBody, close, err := s.decodeSetPrepaidAutoRenewRequest(r)
+	request, rawBody, close, err := s.decodeSetProjectAutoRenewRequest(r)
 	if err != nil {
 		err = &ogenerrors.DecodeRequestError{
 			OperationContext: opErrContext,
@@ -6902,32 +10912,32 @@ func (s *Server) handleSetPrepaidAutoRenewRequest(args [2]string, argsEscaped bo
 		}
 	}()
 
-	var response *PrepaidAsset
+	var response *SubscriptionItem
 	if m := s.cfg.Middleware; m != nil {
 		mreq := middleware.Request{
 			Context:          ctx,
-			OperationName:    SetPrepaidAutoRenewOperation,
+			OperationName:    SetProjectAutoRenewOperation,
 			OperationSummary: "Turn automatic renewal on or off",
-			OperationID:      "set-prepaid-auto-renew",
+			OperationID:      "set-project-auto-renew",
 			Body:             request,
 			RawBody:          rawBody,
 			Params: middleware.Parameters{
 				{
-					Name: "accountKey",
+					Name: "projectId",
 					In:   "path",
-				}: params.AccountKey,
+				}: params.ProjectId,
 				{
-					Name: "assetId",
+					Name: "itemId",
 					In:   "path",
-				}: params.AssetId,
+				}: params.ItemId,
 			},
 			Raw: r,
 		}
 
 		type (
-			Request  = *AutoRenewRequestBody
-			Params   = SetPrepaidAutoRenewParams
-			Response = *PrepaidAsset
+			Request  = *AutoRenewSet
+			Params   = SetProjectAutoRenewParams
+			Response = *SubscriptionItem
 		)
 		response, err = middleware.HookMiddleware[
 			Request,
@@ -6936,14 +10946,14 @@ func (s *Server) handleSetPrepaidAutoRenewRequest(args [2]string, argsEscaped bo
 		](
 			m,
 			mreq,
-			unpackSetPrepaidAutoRenewParams,
+			unpackSetProjectAutoRenewParams,
 			func(ctx context.Context, request Request, params Params) (response Response, err error) {
-				response, err = s.h.SetPrepaidAutoRenew(ctx, request, params)
+				response, err = s.h.SetProjectAutoRenew(ctx, request, params)
 				return response, err
 			},
 		)
 	} else {
-		response, err = s.h.SetPrepaidAutoRenew(ctx, request, params)
+		response, err = s.h.SetProjectAutoRenew(ctx, request, params)
 	}
 	if err != nil {
 		if errRes, ok := errors.Into[*ErrorStatusCode](err); ok {
@@ -6962,7 +10972,7 @@ func (s *Server) handleSetPrepaidAutoRenewRequest(args [2]string, argsEscaped bo
 		return
 	}
 
-	if err := encodeSetPrepaidAutoRenewResponse(response, w, span); err != nil {
+	if err := encodeSetProjectAutoRenewResponse(response, w, span); err != nil {
 		defer recordError("EncodeResponse", err)
 		if !errors.Is(err, ht.ErrInternalServerErrorResponse) {
 			s.cfg.ErrorHandler(ctx, w, r, err)
@@ -6971,43 +10981,30 @@ func (s *Server) handleSetPrepaidAutoRenewRequest(args [2]string, argsEscaped bo
 	}
 }
 
-// handleStartPaymentMethodSetupRequest handles start-payment-method-setup operation.
+// handleSetProjectPayerRequest handles set-project-payer operation.
 //
-// Starts a session for adding a method, and returns the secret the browser needs to mount the
-// provider's own form.
+// Charges already recorded remain with the account that was paying when they occurred, and are still
+// invoiced to it. Metered resources are settled up to the moment of the change.
 //
-// # The form is embedded, not a redirect
+// Periods already paid for are unaffected; renewals are charged to the new account.
 //
-// The returned `client_secret` initialises the provider's JavaScript, which renders its form inside an
-// iframe on this platform's own page. No card data reaches this platform — the number goes from the
-// browser straight to the provider, exactly as it would on a redirect — but the account holder never
-// leaves the console.
+// The request is refused while the current account has an unpaid invoice, and — once the project
+// holds subscriptions — while the new account uses a different currency.
 //
-// A redirect would take them to a page with someone else's branding in the middle of adding a payment
-// method, which is the moment they are most likely to abandon it.
-//
-// # This is a prerequisite for buying a plan, not a convenience
-//
-// A plan is charged by invoice, and the invoice is collected from a method on file. Discovering that
-// none exists at purchase time turns a missing payment method into a rejection whose wording is about
-// something else entirely.
-//
-// It is not a prerequisite for topping up: a top-up collects the money there and then.
-//
-// POST /account/v1/billing-accounts/{accountKey}/payment-methods
-func (s *Server) handleStartPaymentMethodSetupRequest(args [1]string, argsEscaped bool, w http.ResponseWriter, r *http.Request) {
+// PUT /account/v1/projects/{projectId}/billing-account
+func (s *Server) handleSetProjectPayerRequest(args [1]string, argsEscaped bool, w http.ResponseWriter, r *http.Request) {
 	statusWriter := &codeRecorder{ResponseWriter: w}
 	w = statusWriter
 	otelAttrs := []attribute.KeyValue{
-		otelogen.OperationID("start-payment-method-setup"),
-		semconv.HTTPRequestMethodKey.String("POST"),
-		semconv.HTTPRouteKey.String("/account/v1/billing-accounts/{accountKey}/payment-methods"),
+		otelogen.OperationID("set-project-payer"),
+		semconv.HTTPRequestMethodKey.String("PUT"),
+		semconv.HTTPRouteKey.String("/account/v1/projects/{projectId}/billing-account"),
 	}
 	// Add attributes from config.
 	otelAttrs = append(otelAttrs, s.cfg.Attributes...)
 
 	// Start a span for this request.
-	ctx, span := s.cfg.Tracer.Start(r.Context(), StartPaymentMethodSetupOperation,
+	ctx, span := s.cfg.Tracer.Start(r.Context(), SetProjectPayerOperation,
 		trace.WithAttributes(otelAttrs...),
 		serverSpanKind,
 	)
@@ -7062,23 +11059,23 @@ func (s *Server) handleStartPaymentMethodSetupRequest(args [1]string, argsEscape
 		}
 		err          error
 		opErrContext = ogenerrors.OperationContext{
-			Name: StartPaymentMethodSetupOperation,
-			ID:   "start-payment-method-setup",
+			Name: SetProjectPayerOperation,
+			ID:   "set-project-payer",
 		}
 	)
 	{
 		type bitset = [1]uint8
 		var satisfied bitset
 		{
-			sctx, ok, err := s.securityBearerAuth(ctx, StartPaymentMethodSetupOperation, r)
+			sctx, ok, err := s.securityAccountAuth(ctx, SetProjectPayerOperation, r)
 			if err != nil {
 				err = &ogenerrors.SecurityError{
 					OperationContext: opErrContext,
-					Security:         "BearerAuth",
+					Security:         "AccountAuth",
 					Err:              err,
 				}
 				if encodeErr := encodeErrorResponse(s.h.NewError(ctx, err), w, span); encodeErr != nil {
-					defer recordError("Security:BearerAuth", err)
+					defer recordError("Security:AccountAuth", err)
 				}
 				return
 			}
@@ -7112,7 +11109,7 @@ func (s *Server) handleStartPaymentMethodSetupRequest(args [1]string, argsEscape
 			return
 		}
 	}
-	params, err := decodeStartPaymentMethodSetupParams(args, argsEscaped, r)
+	params, err := decodeSetProjectPayerParams(args, argsEscaped, r)
 	if err != nil {
 		err = &ogenerrors.DecodeParamsError{
 			OperationContext: opErrContext,
@@ -7124,220 +11121,7 @@ func (s *Server) handleStartPaymentMethodSetupRequest(args [1]string, argsEscape
 	}
 
 	var rawBody []byte
-
-	var response *PaymentMethodSetupSession
-	if m := s.cfg.Middleware; m != nil {
-		mreq := middleware.Request{
-			Context:          ctx,
-			OperationName:    StartPaymentMethodSetupOperation,
-			OperationSummary: "Begin adding a payment method",
-			OperationID:      "start-payment-method-setup",
-			Body:             nil,
-			RawBody:          rawBody,
-			Params: middleware.Parameters{
-				{
-					Name: "accountKey",
-					In:   "path",
-				}: params.AccountKey,
-			},
-			Raw: r,
-		}
-
-		type (
-			Request  = struct{}
-			Params   = StartPaymentMethodSetupParams
-			Response = *PaymentMethodSetupSession
-		)
-		response, err = middleware.HookMiddleware[
-			Request,
-			Params,
-			Response,
-		](
-			m,
-			mreq,
-			unpackStartPaymentMethodSetupParams,
-			func(ctx context.Context, request Request, params Params) (response Response, err error) {
-				response, err = s.h.StartPaymentMethodSetup(ctx, params)
-				return response, err
-			},
-		)
-	} else {
-		response, err = s.h.StartPaymentMethodSetup(ctx, params)
-	}
-	if err != nil {
-		if errRes, ok := errors.Into[*ErrorStatusCode](err); ok {
-			if err := encodeErrorResponse(errRes, w, span); err != nil {
-				defer recordError("Internal", err)
-			}
-			return
-		}
-		if errors.Is(err, ht.ErrNotImplemented) {
-			s.cfg.ErrorHandler(ctx, w, r, err)
-			return
-		}
-		if err := encodeErrorResponse(s.h.NewError(ctx, err), w, span); err != nil {
-			defer recordError("Internal", err)
-		}
-		return
-	}
-
-	if err := encodeStartPaymentMethodSetupResponse(response, w, span); err != nil {
-		defer recordError("EncodeResponse", err)
-		if !errors.Is(err, ht.ErrInternalServerErrorResponse) {
-			s.cfg.ErrorHandler(ctx, w, r, err)
-		}
-		return
-	}
-}
-
-// handleStartTopUpRequest handles start-top-up operation.
-//
-// Begins adding money to this account. Returns a URL to send the browser to; the card is entered
-// there, on the payment provider's own page.
-//
-// No card data ever reaches this platform, in any field, in any log. That is the entire reason this
-// returns a redirect instead of accepting card details.
-//
-// Credit is not added here. It is added once the payment provider confirms the money arrived, which
-// happens out of band and usually within seconds. The balance is unchanged when this call returns, and
-// polling it immediately will show the old figure.
-//
-// That ordering is deliberate. Credit is spendable as soon as it exists, so anything added before the
-// charge succeeds is money the holder can spend against a payment that then fails.
-//
-// Abandoning the page costs nothing; nothing is created on the account until the money arrives.
-//
-// POST /account/v1/billing-accounts/{accountKey}/top-ups
-func (s *Server) handleStartTopUpRequest(args [1]string, argsEscaped bool, w http.ResponseWriter, r *http.Request) {
-	statusWriter := &codeRecorder{ResponseWriter: w}
-	w = statusWriter
-	otelAttrs := []attribute.KeyValue{
-		otelogen.OperationID("start-top-up"),
-		semconv.HTTPRequestMethodKey.String("POST"),
-		semconv.HTTPRouteKey.String("/account/v1/billing-accounts/{accountKey}/top-ups"),
-	}
-	// Add attributes from config.
-	otelAttrs = append(otelAttrs, s.cfg.Attributes...)
-
-	// Start a span for this request.
-	ctx, span := s.cfg.Tracer.Start(r.Context(), StartTopUpOperation,
-		trace.WithAttributes(otelAttrs...),
-		serverSpanKind,
-	)
-	defer span.End()
-
-	// Add Labeler to context.
-	labeler := &Labeler{attrs: otelAttrs}
-	ctx = contextWithLabeler(ctx, labeler)
-
-	// Run stopwatch.
-	startTime := time.Now()
-	defer func() {
-		elapsedDuration := time.Since(startTime)
-
-		attrSet := labeler.AttributeSet()
-		attrs := attrSet.ToSlice()
-		code := statusWriter.status
-		if code != 0 {
-			codeAttr := semconv.HTTPResponseStatusCode(code)
-			attrs = append(attrs, codeAttr)
-			span.SetAttributes(attrs...)
-		}
-		attrOpt := metric.WithAttributes(attrs...)
-
-		// Increment request counter.
-		s.requests.Add(ctx, 1, attrOpt)
-
-		// Use floating point division here for higher precision (instead of Millisecond method).
-		s.duration.Record(ctx, float64(elapsedDuration)/float64(time.Millisecond), attrOpt)
-	}()
-
-	var (
-		recordError = func(stage string, err error) {
-			span.RecordError(err)
-
-			// https://opentelemetry.io/docs/specs/semconv/http/http-spans/#status
-			// Span Status MUST be left unset if HTTP status code was in the 1xx, 2xx or 3xx ranges,
-			// unless there was another error (e.g., network error receiving the response body; or 3xx codes with
-			// max redirects exceeded), in which case status MUST be set to Error.
-			code := statusWriter.status
-			if code < 100 || code >= 500 {
-				span.SetStatus(codes.Error, stage)
-			}
-
-			attrSet := labeler.AttributeSet()
-			attrs := attrSet.ToSlice()
-			if code != 0 {
-				attrs = append(attrs, semconv.HTTPResponseStatusCode(code))
-			}
-
-			s.errors.Add(ctx, 1, metric.WithAttributes(attrs...))
-		}
-		err          error
-		opErrContext = ogenerrors.OperationContext{
-			Name: StartTopUpOperation,
-			ID:   "start-top-up",
-		}
-	)
-	{
-		type bitset = [1]uint8
-		var satisfied bitset
-		{
-			sctx, ok, err := s.securityBearerAuth(ctx, StartTopUpOperation, r)
-			if err != nil {
-				err = &ogenerrors.SecurityError{
-					OperationContext: opErrContext,
-					Security:         "BearerAuth",
-					Err:              err,
-				}
-				if encodeErr := encodeErrorResponse(s.h.NewError(ctx, err), w, span); encodeErr != nil {
-					defer recordError("Security:BearerAuth", err)
-				}
-				return
-			}
-			if ok {
-				satisfied[0] |= 1 << 0
-				ctx = sctx
-			}
-		}
-
-		if ok := func() bool {
-		nextRequirement:
-			for _, requirement := range []bitset{
-				{0b00000001},
-			} {
-				for i, mask := range requirement {
-					if satisfied[i]&mask != mask {
-						continue nextRequirement
-					}
-				}
-				return true
-			}
-			return false
-		}(); !ok {
-			err = &ogenerrors.SecurityError{
-				OperationContext: opErrContext,
-				Err:              ogenerrors.ErrSecurityRequirementIsNotSatisfied,
-			}
-			if encodeErr := encodeErrorResponse(s.h.NewError(ctx, err), w, span); encodeErr != nil {
-				defer recordError("Security", err)
-			}
-			return
-		}
-	}
-	params, err := decodeStartTopUpParams(args, argsEscaped, r)
-	if err != nil {
-		err = &ogenerrors.DecodeParamsError{
-			OperationContext: opErrContext,
-			Err:              err,
-		}
-		defer recordError("DecodeParams", err)
-		s.cfg.ErrorHandler(ctx, w, r, err)
-		return
-	}
-
-	var rawBody []byte
-	request, rawBody, close, err := s.decodeStartTopUpRequest(r)
+	request, rawBody, close, err := s.decodeSetProjectPayerRequest(r)
 	if err != nil {
 		err = &ogenerrors.DecodeRequestError{
 			OperationContext: opErrContext,
@@ -7353,28 +11137,28 @@ func (s *Server) handleStartTopUpRequest(args [1]string, argsEscaped bool, w htt
 		}
 	}()
 
-	var response *TopUpSession
+	var response *ProjectBinding
 	if m := s.cfg.Middleware; m != nil {
 		mreq := middleware.Request{
 			Context:          ctx,
-			OperationName:    StartTopUpOperation,
-			OperationSummary: "Start a top-up",
-			OperationID:      "start-top-up",
+			OperationName:    SetProjectPayerOperation,
+			OperationSummary: "Choose which account pays for a project",
+			OperationID:      "set-project-payer",
 			Body:             request,
 			RawBody:          rawBody,
 			Params: middleware.Parameters{
 				{
-					Name: "accountKey",
+					Name: "projectId",
 					In:   "path",
-				}: params.AccountKey,
+				}: params.ProjectId,
 			},
 			Raw: r,
 		}
 
 		type (
-			Request  = *StartTopUpRequestBody
-			Params   = StartTopUpParams
-			Response = *TopUpSession
+			Request  = *ProjectPayerSet
+			Params   = SetProjectPayerParams
+			Response = *ProjectBinding
 		)
 		response, err = middleware.HookMiddleware[
 			Request,
@@ -7383,14 +11167,14 @@ func (s *Server) handleStartTopUpRequest(args [1]string, argsEscaped bool, w htt
 		](
 			m,
 			mreq,
-			unpackStartTopUpParams,
+			unpackSetProjectPayerParams,
 			func(ctx context.Context, request Request, params Params) (response Response, err error) {
-				response, err = s.h.StartTopUp(ctx, request, params)
+				response, err = s.h.SetProjectPayer(ctx, request, params)
 				return response, err
 			},
 		)
 	} else {
-		response, err = s.h.StartTopUp(ctx, request, params)
+		response, err = s.h.SetProjectPayer(ctx, request, params)
 	}
 	if err != nil {
 		if errRes, ok := errors.Into[*ErrorStatusCode](err); ok {
@@ -7409,7 +11193,7 @@ func (s *Server) handleStartTopUpRequest(args [1]string, argsEscaped bool, w htt
 		return
 	}
 
-	if err := encodeStartTopUpResponse(response, w, span); err != nil {
+	if err := encodeSetProjectPayerResponse(response, w, span); err != nil {
 		defer recordError("EncodeResponse", err)
 		if !errors.Is(err, ht.ErrInternalServerErrorResponse) {
 			s.cfg.ErrorHandler(ctx, w, r, err)
@@ -7418,32 +11202,28 @@ func (s *Server) handleStartTopUpRequest(args [1]string, argsEscaped bool, w htt
 	}
 }
 
-// handleUnbindProjectFromBillingAccountRequest handles unbind-project-from-billing-account operation.
+// handleSettleProjectUsageRequest handles settle-project-usage operation.
 //
-// Unbinds the project from this account. Nothing pays for it afterwards, and everything in it is
-// refused admission until some account takes it on — no new machines, no forwarded requests.
+// Metered usage is normally invoiced at the end of the month. This issues an invoice for everything
+// charged to the project so far, to the account currently paying for it.
 //
-// That consequence is the reason this exists rather than an argument against it: a project bound to
-// the wrong account has no other way out, and moving it to another of the caller's accounts is not a
-// correction when the answer is that this account should not be paying for it at all.
+// Use it before unbinding a project, or to obtain a settled figure part-way through a month. Calling
+// it again when nothing is outstanding has no effect.
 //
-// Charges already accrued stay where they are. They were incurred while this account held the project,
-// and an invoice has to keep pointing at what it was based on.
-//
-// DELETE /account/v1/billing-accounts/{accountKey}/projects/{projectId}
-func (s *Server) handleUnbindProjectFromBillingAccountRequest(args [2]string, argsEscaped bool, w http.ResponseWriter, r *http.Request) {
+// POST /account/v1/projects/{projectId}/billing-account/settle
+func (s *Server) handleSettleProjectUsageRequest(args [1]string, argsEscaped bool, w http.ResponseWriter, r *http.Request) {
 	statusWriter := &codeRecorder{ResponseWriter: w}
 	w = statusWriter
 	otelAttrs := []attribute.KeyValue{
-		otelogen.OperationID("unbind-project-from-billing-account"),
-		semconv.HTTPRequestMethodKey.String("DELETE"),
-		semconv.HTTPRouteKey.String("/account/v1/billing-accounts/{accountKey}/projects/{projectId}"),
+		otelogen.OperationID("settle-project-usage"),
+		semconv.HTTPRequestMethodKey.String("POST"),
+		semconv.HTTPRouteKey.String("/account/v1/projects/{projectId}/billing-account/settle"),
 	}
 	// Add attributes from config.
 	otelAttrs = append(otelAttrs, s.cfg.Attributes...)
 
 	// Start a span for this request.
-	ctx, span := s.cfg.Tracer.Start(r.Context(), UnbindProjectFromBillingAccountOperation,
+	ctx, span := s.cfg.Tracer.Start(r.Context(), SettleProjectUsageOperation,
 		trace.WithAttributes(otelAttrs...),
 		serverSpanKind,
 	)
@@ -7498,23 +11278,23 @@ func (s *Server) handleUnbindProjectFromBillingAccountRequest(args [2]string, ar
 		}
 		err          error
 		opErrContext = ogenerrors.OperationContext{
-			Name: UnbindProjectFromBillingAccountOperation,
-			ID:   "unbind-project-from-billing-account",
+			Name: SettleProjectUsageOperation,
+			ID:   "settle-project-usage",
 		}
 	)
 	{
 		type bitset = [1]uint8
 		var satisfied bitset
 		{
-			sctx, ok, err := s.securityBearerAuth(ctx, UnbindProjectFromBillingAccountOperation, r)
+			sctx, ok, err := s.securityAccountAuth(ctx, SettleProjectUsageOperation, r)
 			if err != nil {
 				err = &ogenerrors.SecurityError{
 					OperationContext: opErrContext,
-					Security:         "BearerAuth",
+					Security:         "AccountAuth",
 					Err:              err,
 				}
 				if encodeErr := encodeErrorResponse(s.h.NewError(ctx, err), w, span); encodeErr != nil {
-					defer recordError("Security:BearerAuth", err)
+					defer recordError("Security:AccountAuth", err)
 				}
 				return
 			}
@@ -7548,7 +11328,7 @@ func (s *Server) handleUnbindProjectFromBillingAccountRequest(args [2]string, ar
 			return
 		}
 	}
-	params, err := decodeUnbindProjectFromBillingAccountParams(args, argsEscaped, r)
+	params, err := decodeSettleProjectUsageParams(args, argsEscaped, r)
 	if err != nil {
 		err = &ogenerrors.DecodeParamsError{
 			OperationContext: opErrContext,
@@ -7561,20 +11341,16 @@ func (s *Server) handleUnbindProjectFromBillingAccountRequest(args [2]string, ar
 
 	var rawBody []byte
 
-	var response *UnbindProjectFromBillingAccountNoContent
+	var response *SettleResult
 	if m := s.cfg.Middleware; m != nil {
 		mreq := middleware.Request{
 			Context:          ctx,
-			OperationName:    UnbindProjectFromBillingAccountOperation,
-			OperationSummary: "Stop paying for a project",
-			OperationID:      "unbind-project-from-billing-account",
+			OperationName:    SettleProjectUsageOperation,
+			OperationSummary: "Invoice a project's outstanding usage now",
+			OperationID:      "settle-project-usage",
 			Body:             nil,
 			RawBody:          rawBody,
 			Params: middleware.Parameters{
-				{
-					Name: "accountKey",
-					In:   "path",
-				}: params.AccountKey,
 				{
 					Name: "projectId",
 					In:   "path",
@@ -7585,8 +11361,8 @@ func (s *Server) handleUnbindProjectFromBillingAccountRequest(args [2]string, ar
 
 		type (
 			Request  = struct{}
-			Params   = UnbindProjectFromBillingAccountParams
-			Response = *UnbindProjectFromBillingAccountNoContent
+			Params   = SettleProjectUsageParams
+			Response = *SettleResult
 		)
 		response, err = middleware.HookMiddleware[
 			Request,
@@ -7595,14 +11371,14 @@ func (s *Server) handleUnbindProjectFromBillingAccountRequest(args [2]string, ar
 		](
 			m,
 			mreq,
-			unpackUnbindProjectFromBillingAccountParams,
+			unpackSettleProjectUsageParams,
 			func(ctx context.Context, request Request, params Params) (response Response, err error) {
-				err = s.h.UnbindProjectFromBillingAccount(ctx, params)
+				response, err = s.h.SettleProjectUsage(ctx, params)
 				return response, err
 			},
 		)
 	} else {
-		err = s.h.UnbindProjectFromBillingAccount(ctx, params)
+		response, err = s.h.SettleProjectUsage(ctx, params)
 	}
 	if err != nil {
 		if errRes, ok := errors.Into[*ErrorStatusCode](err); ok {
@@ -7621,7 +11397,213 @@ func (s *Server) handleUnbindProjectFromBillingAccountRequest(args [2]string, ar
 		return
 	}
 
-	if err := encodeUnbindProjectFromBillingAccountResponse(response, w, span); err != nil {
+	if err := encodeSettleProjectUsageResponse(response, w, span); err != nil {
+		defer recordError("EncodeResponse", err)
+		if !errors.Is(err, ht.ErrInternalServerErrorResponse) {
+			s.cfg.ErrorHandler(ctx, w, r, err)
+		}
+		return
+	}
+}
+
+// handleUnbindProjectPayerRequest handles unbind-project-payer operation.
+//
+// Permitted only when the project has nothing left to charge: no resources accruing charges, no
+// subscriptions still running, no usage awaiting invoicing, and no unpaid invoice on the account.
+//
+// Usage that has not yet been invoiced is settled by calling
+// `POST /account/v1/projects/{projectId}/billing-account/settle` first.
+//
+// After this the project cannot create resources until an account is chosen again.
+//
+// DELETE /account/v1/projects/{projectId}/billing-account
+func (s *Server) handleUnbindProjectPayerRequest(args [1]string, argsEscaped bool, w http.ResponseWriter, r *http.Request) {
+	statusWriter := &codeRecorder{ResponseWriter: w}
+	w = statusWriter
+	otelAttrs := []attribute.KeyValue{
+		otelogen.OperationID("unbind-project-payer"),
+		semconv.HTTPRequestMethodKey.String("DELETE"),
+		semconv.HTTPRouteKey.String("/account/v1/projects/{projectId}/billing-account"),
+	}
+	// Add attributes from config.
+	otelAttrs = append(otelAttrs, s.cfg.Attributes...)
+
+	// Start a span for this request.
+	ctx, span := s.cfg.Tracer.Start(r.Context(), UnbindProjectPayerOperation,
+		trace.WithAttributes(otelAttrs...),
+		serverSpanKind,
+	)
+	defer span.End()
+
+	// Add Labeler to context.
+	labeler := &Labeler{attrs: otelAttrs}
+	ctx = contextWithLabeler(ctx, labeler)
+
+	// Run stopwatch.
+	startTime := time.Now()
+	defer func() {
+		elapsedDuration := time.Since(startTime)
+
+		attrSet := labeler.AttributeSet()
+		attrs := attrSet.ToSlice()
+		code := statusWriter.status
+		if code != 0 {
+			codeAttr := semconv.HTTPResponseStatusCode(code)
+			attrs = append(attrs, codeAttr)
+			span.SetAttributes(attrs...)
+		}
+		attrOpt := metric.WithAttributes(attrs...)
+
+		// Increment request counter.
+		s.requests.Add(ctx, 1, attrOpt)
+
+		// Use floating point division here for higher precision (instead of Millisecond method).
+		s.duration.Record(ctx, float64(elapsedDuration)/float64(time.Millisecond), attrOpt)
+	}()
+
+	var (
+		recordError = func(stage string, err error) {
+			span.RecordError(err)
+
+			// https://opentelemetry.io/docs/specs/semconv/http/http-spans/#status
+			// Span Status MUST be left unset if HTTP status code was in the 1xx, 2xx or 3xx ranges,
+			// unless there was another error (e.g., network error receiving the response body; or 3xx codes with
+			// max redirects exceeded), in which case status MUST be set to Error.
+			code := statusWriter.status
+			if code < 100 || code >= 500 {
+				span.SetStatus(codes.Error, stage)
+			}
+
+			attrSet := labeler.AttributeSet()
+			attrs := attrSet.ToSlice()
+			if code != 0 {
+				attrs = append(attrs, semconv.HTTPResponseStatusCode(code))
+			}
+
+			s.errors.Add(ctx, 1, metric.WithAttributes(attrs...))
+		}
+		err          error
+		opErrContext = ogenerrors.OperationContext{
+			Name: UnbindProjectPayerOperation,
+			ID:   "unbind-project-payer",
+		}
+	)
+	{
+		type bitset = [1]uint8
+		var satisfied bitset
+		{
+			sctx, ok, err := s.securityAccountAuth(ctx, UnbindProjectPayerOperation, r)
+			if err != nil {
+				err = &ogenerrors.SecurityError{
+					OperationContext: opErrContext,
+					Security:         "AccountAuth",
+					Err:              err,
+				}
+				if encodeErr := encodeErrorResponse(s.h.NewError(ctx, err), w, span); encodeErr != nil {
+					defer recordError("Security:AccountAuth", err)
+				}
+				return
+			}
+			if ok {
+				satisfied[0] |= 1 << 0
+				ctx = sctx
+			}
+		}
+
+		if ok := func() bool {
+		nextRequirement:
+			for _, requirement := range []bitset{
+				{0b00000001},
+			} {
+				for i, mask := range requirement {
+					if satisfied[i]&mask != mask {
+						continue nextRequirement
+					}
+				}
+				return true
+			}
+			return false
+		}(); !ok {
+			err = &ogenerrors.SecurityError{
+				OperationContext: opErrContext,
+				Err:              ogenerrors.ErrSecurityRequirementIsNotSatisfied,
+			}
+			if encodeErr := encodeErrorResponse(s.h.NewError(ctx, err), w, span); encodeErr != nil {
+				defer recordError("Security", err)
+			}
+			return
+		}
+	}
+	params, err := decodeUnbindProjectPayerParams(args, argsEscaped, r)
+	if err != nil {
+		err = &ogenerrors.DecodeParamsError{
+			OperationContext: opErrContext,
+			Err:              err,
+		}
+		defer recordError("DecodeParams", err)
+		s.cfg.ErrorHandler(ctx, w, r, err)
+		return
+	}
+
+	var rawBody []byte
+
+	var response *UnbindProjectPayerNoContent
+	if m := s.cfg.Middleware; m != nil {
+		mreq := middleware.Request{
+			Context:          ctx,
+			OperationName:    UnbindProjectPayerOperation,
+			OperationSummary: "Stop paying for a project",
+			OperationID:      "unbind-project-payer",
+			Body:             nil,
+			RawBody:          rawBody,
+			Params: middleware.Parameters{
+				{
+					Name: "projectId",
+					In:   "path",
+				}: params.ProjectId,
+			},
+			Raw: r,
+		}
+
+		type (
+			Request  = struct{}
+			Params   = UnbindProjectPayerParams
+			Response = *UnbindProjectPayerNoContent
+		)
+		response, err = middleware.HookMiddleware[
+			Request,
+			Params,
+			Response,
+		](
+			m,
+			mreq,
+			unpackUnbindProjectPayerParams,
+			func(ctx context.Context, request Request, params Params) (response Response, err error) {
+				err = s.h.UnbindProjectPayer(ctx, params)
+				return response, err
+			},
+		)
+	} else {
+		err = s.h.UnbindProjectPayer(ctx, params)
+	}
+	if err != nil {
+		if errRes, ok := errors.Into[*ErrorStatusCode](err); ok {
+			if err := encodeErrorResponse(errRes, w, span); err != nil {
+				defer recordError("Internal", err)
+			}
+			return
+		}
+		if errors.Is(err, ht.ErrNotImplemented) {
+			s.cfg.ErrorHandler(ctx, w, r, err)
+			return
+		}
+		if err := encodeErrorResponse(s.h.NewError(ctx, err), w, span); err != nil {
+			defer recordError("Internal", err)
+		}
+		return
+	}
+
+	if err := encodeUnbindProjectPayerResponse(response, w, span); err != nil {
 		defer recordError("EncodeResponse", err)
 		if !errors.Is(err, ht.ErrInternalServerErrorResponse) {
 			s.cfg.ErrorHandler(ctx, w, r, err)
@@ -7632,20 +11614,19 @@ func (s *Server) handleUnbindProjectFromBillingAccountRequest(args [2]string, ar
 
 // handleUpdateBillingAccountRequest handles update-billing-account operation.
 //
-// Changes the display name. Nothing else about the account can be changed here.
+// The legal name, address and tax identifier are copied onto each invoice when it is issued. Changing
+// them here affects invoices issued afterwards, not those already sent.
 //
-// The key is not among the fields and never will be: ownership is stated by the key, and invoices
-// already issued refer to it. The name is what tells two accounts apart in a list, so a mistake made
-// while creating one is otherwise permanent.
+// The currency cannot be changed.
 //
-// PUT /account/v1/billing-accounts/{accountKey}
+// PATCH /account/v1/billing-accounts/{accountId}
 func (s *Server) handleUpdateBillingAccountRequest(args [1]string, argsEscaped bool, w http.ResponseWriter, r *http.Request) {
 	statusWriter := &codeRecorder{ResponseWriter: w}
 	w = statusWriter
 	otelAttrs := []attribute.KeyValue{
 		otelogen.OperationID("update-billing-account"),
-		semconv.HTTPRequestMethodKey.String("PUT"),
-		semconv.HTTPRouteKey.String("/account/v1/billing-accounts/{accountKey}"),
+		semconv.HTTPRequestMethodKey.String("PATCH"),
+		semconv.HTTPRouteKey.String("/account/v1/billing-accounts/{accountId}"),
 	}
 	// Add attributes from config.
 	otelAttrs = append(otelAttrs, s.cfg.Attributes...)
@@ -7714,15 +11695,15 @@ func (s *Server) handleUpdateBillingAccountRequest(args [1]string, argsEscaped b
 		type bitset = [1]uint8
 		var satisfied bitset
 		{
-			sctx, ok, err := s.securityBearerAuth(ctx, UpdateBillingAccountOperation, r)
+			sctx, ok, err := s.securityAccountAuth(ctx, UpdateBillingAccountOperation, r)
 			if err != nil {
 				err = &ogenerrors.SecurityError{
 					OperationContext: opErrContext,
-					Security:         "BearerAuth",
+					Security:         "AccountAuth",
 					Err:              err,
 				}
 				if encodeErr := encodeErrorResponse(s.h.NewError(ctx, err), w, span); encodeErr != nil {
-					defer recordError("Security:BearerAuth", err)
+					defer recordError("Security:AccountAuth", err)
 				}
 				return
 			}
@@ -7789,21 +11770,21 @@ func (s *Server) handleUpdateBillingAccountRequest(args [1]string, argsEscaped b
 		mreq := middleware.Request{
 			Context:          ctx,
 			OperationName:    UpdateBillingAccountOperation,
-			OperationSummary: "Rename a billing account",
+			OperationSummary: "Change the account's details",
 			OperationID:      "update-billing-account",
 			Body:             request,
 			RawBody:          rawBody,
 			Params: middleware.Parameters{
 				{
-					Name: "accountKey",
+					Name: "accountId",
 					In:   "path",
-				}: params.AccountKey,
+				}: params.AccountId,
 			},
 			Raw: r,
 		}
 
 		type (
-			Request  = *UpdateBillingAccountRequestBody
+			Request  = *BillingAccountUpdate
 			Params   = UpdateBillingAccountParams
 			Response = *BillingAccount
 		)

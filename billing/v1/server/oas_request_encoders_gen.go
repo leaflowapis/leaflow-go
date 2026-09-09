@@ -11,7 +11,7 @@ import (
 )
 
 func encodeCreateBillingAccountRequest(
-	req *CreateBillingAccountRequestBody,
+	req *BillingAccountCreate,
 	r *http.Request,
 ) error {
 	const contentType = "application/json"
@@ -24,8 +24,8 @@ func encodeCreateBillingAccountRequest(
 	return nil
 }
 
-func encodePreviewPromotionCodeRequest(
-	req *PreviewPromotionCodeRequestBody,
+func encodeCreateEstimateRequest(
+	req *EstimateRequest,
 	r *http.Request,
 ) error {
 	const contentType = "application/json"
@@ -38,7 +38,21 @@ func encodePreviewPromotionCodeRequest(
 	return nil
 }
 
-func encodeQuoteProjectUsageRequest(
+func encodeCreatePaymentMethodSetupRequest(
+	req *PaymentMethodSetup,
+	r *http.Request,
+) error {
+	const contentType = "application/json"
+	e := new(jx.Encoder)
+	{
+		req.Encode(e)
+	}
+	encoded := e.Bytes()
+	ht.SetBody(r, bytes.NewReader(encoded), contentType)
+	return nil
+}
+
+func encodeCreateProjectQuoteRequest(
 	req *QuoteRequest,
 	r *http.Request,
 ) error {
@@ -52,8 +66,8 @@ func encodeQuoteProjectUsageRequest(
 	return nil
 }
 
-func encodeQuoteUsageRequest(
-	req *QuoteRequest,
+func encodeCreateTopUpRequest(
+	req *TopUpCreate,
 	r *http.Request,
 ) error {
 	const contentType = "application/json"
@@ -66,8 +80,48 @@ func encodeQuoteUsageRequest(
 	return nil
 }
 
-func encodeRenewPrepaidAssetRequest(
-	req *RenewRequestBody,
+func encodePayInvoiceRequest(
+	req OptPayRequest,
+	r *http.Request,
+) error {
+	const contentType = "application/json"
+	if !req.Set {
+		// Keep request with empty body if value is not set.
+		return nil
+	}
+	e := new(jx.Encoder)
+	{
+		if req.Set {
+			req.Encode(e)
+		}
+	}
+	encoded := e.Bytes()
+	ht.SetBody(r, bytes.NewReader(encoded), contentType)
+	return nil
+}
+
+func encodePayOrderRequest(
+	req OptPayRequest,
+	r *http.Request,
+) error {
+	const contentType = "application/json"
+	if !req.Set {
+		// Keep request with empty body if value is not set.
+		return nil
+	}
+	e := new(jx.Encoder)
+	{
+		if req.Set {
+			req.Encode(e)
+		}
+	}
+	encoded := e.Bytes()
+	ht.SetBody(r, bytes.NewReader(encoded), contentType)
+	return nil
+}
+
+func encodePreviewCodeRequest(
+	req *CodeRequest,
 	r *http.Request,
 ) error {
 	const contentType = "application/json"
@@ -80,8 +134,8 @@ func encodeRenewPrepaidAssetRequest(
 	return nil
 }
 
-func encodeSetPrepaidAutoRenewRequest(
-	req *AutoRenewRequestBody,
+func encodeRedeemCodeRequest(
+	req *CodeRedeem,
 	r *http.Request,
 ) error {
 	const contentType = "application/json"
@@ -94,8 +148,50 @@ func encodeSetPrepaidAutoRenewRequest(
 	return nil
 }
 
-func encodeStartTopUpRequest(
-	req *StartTopUpRequestBody,
+func encodeRenewSubscriptionItemRequest(
+	req *RenewRequest,
+	r *http.Request,
+) error {
+	const contentType = "application/json"
+	e := new(jx.Encoder)
+	{
+		req.Encode(e)
+	}
+	encoded := e.Bytes()
+	ht.SetBody(r, bytes.NewReader(encoded), contentType)
+	return nil
+}
+
+func encodeSetAutoRenewRequest(
+	req *AutoRenewSet,
+	r *http.Request,
+) error {
+	const contentType = "application/json"
+	e := new(jx.Encoder)
+	{
+		req.Encode(e)
+	}
+	encoded := e.Bytes()
+	ht.SetBody(r, bytes.NewReader(encoded), contentType)
+	return nil
+}
+
+func encodeSetProjectAutoRenewRequest(
+	req *AutoRenewSet,
+	r *http.Request,
+) error {
+	const contentType = "application/json"
+	e := new(jx.Encoder)
+	{
+		req.Encode(e)
+	}
+	encoded := e.Bytes()
+	ht.SetBody(r, bytes.NewReader(encoded), contentType)
+	return nil
+}
+
+func encodeSetProjectPayerRequest(
+	req *ProjectPayerSet,
 	r *http.Request,
 ) error {
 	const contentType = "application/json"
@@ -109,7 +205,7 @@ func encodeStartTopUpRequest(
 }
 
 func encodeUpdateBillingAccountRequest(
-	req *UpdateBillingAccountRequestBody,
+	req *BillingAccountUpdate,
 	r *http.Request,
 ) error {
 	const contentType = "application/json"

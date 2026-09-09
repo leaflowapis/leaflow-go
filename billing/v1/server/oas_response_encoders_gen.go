@@ -7,38 +7,98 @@ import (
 
 	"github.com/go-faster/errors"
 	"github.com/go-faster/jx"
+	"github.com/ogen-go/ogen/conv"
 	ht "github.com/ogen-go/ogen/http"
+	"github.com/ogen-go/ogen/uri"
 	"go.opentelemetry.io/otel/codes"
 	"go.opentelemetry.io/otel/trace"
 )
 
-func encodeBindProjectToBillingAccountResponse(response *ProjectBinding, w http.ResponseWriter, span trace.Span) error {
-	w.Header().Set("Content-Type", "application/json; charset=utf-8")
-	w.WriteHeader(200)
-
-	e := new(jx.Encoder)
-	response.Encode(e)
-	if _, err := e.WriteTo(w); err != nil {
-		return errors.Wrap(err, "write")
-	}
-
-	return nil
-}
-
-func encodeCancelSubscriptionResponse(response *Subscription, w http.ResponseWriter, span trace.Span) error {
-	w.Header().Set("Content-Type", "application/json; charset=utf-8")
-	w.WriteHeader(200)
-
-	e := new(jx.Encoder)
-	response.Encode(e)
-	if _, err := e.WriteTo(w); err != nil {
-		return errors.Wrap(err, "write")
-	}
-
-	return nil
-}
-
 func encodeCreateBillingAccountResponse(response *BillingAccount, w http.ResponseWriter, span trace.Span) error {
+	w.Header().Set("Content-Type", "application/json; charset=utf-8")
+	w.WriteHeader(201)
+
+	e := new(jx.Encoder)
+	response.Encode(e)
+	if _, err := e.WriteTo(w); err != nil {
+		return errors.Wrap(err, "write")
+	}
+
+	return nil
+}
+
+func encodeCreateEstimateResponse(response *Quote, w http.ResponseWriter, span trace.Span) error {
+	w.Header().Set("Content-Type", "application/json; charset=utf-8")
+	w.WriteHeader(200)
+
+	e := new(jx.Encoder)
+	response.Encode(e)
+	if _, err := e.WriteTo(w); err != nil {
+		return errors.Wrap(err, "write")
+	}
+
+	return nil
+}
+
+func encodeCreatePaymentMethodSetupResponse(response *PaymentMethodSetupResult, w http.ResponseWriter, span trace.Span) error {
+	w.Header().Set("Content-Type", "application/json; charset=utf-8")
+	w.WriteHeader(201)
+
+	e := new(jx.Encoder)
+	response.Encode(e)
+	if _, err := e.WriteTo(w); err != nil {
+		return errors.Wrap(err, "write")
+	}
+
+	return nil
+}
+
+func encodeCreateProjectQuoteResponse(response *Quote, w http.ResponseWriter, span trace.Span) error {
+	w.Header().Set("Content-Type", "application/json; charset=utf-8")
+	w.WriteHeader(200)
+
+	e := new(jx.Encoder)
+	response.Encode(e)
+	if _, err := e.WriteTo(w); err != nil {
+		return errors.Wrap(err, "write")
+	}
+
+	return nil
+}
+
+func encodeCreateTopUpResponse(response *TopUp, w http.ResponseWriter, span trace.Span) error {
+	w.Header().Set("Content-Type", "application/json; charset=utf-8")
+	w.WriteHeader(201)
+
+	e := new(jx.Encoder)
+	response.Encode(e)
+	if _, err := e.WriteTo(w); err != nil {
+		return errors.Wrap(err, "write")
+	}
+
+	return nil
+}
+
+func encodeDeletePaymentMethodResponse(response *DeletePaymentMethodNoContent, w http.ResponseWriter, span trace.Span) error {
+	w.WriteHeader(204)
+
+	return nil
+}
+
+func encodeFindProjectPayerResponse(response *ProjectBinding, w http.ResponseWriter, span trace.Span) error {
+	w.Header().Set("Content-Type", "application/json; charset=utf-8")
+	w.WriteHeader(200)
+
+	e := new(jx.Encoder)
+	response.Encode(e)
+	if _, err := e.WriteTo(w); err != nil {
+		return errors.Wrap(err, "write")
+	}
+
+	return nil
+}
+
+func encodeGetAccountBalanceResponse(response *AccountBalance, w http.ResponseWriter, span trace.Span) error {
 	w.Header().Set("Content-Type", "application/json; charset=utf-8")
 	w.WriteHeader(200)
 
@@ -64,20 +124,7 @@ func encodeGetBillingAccountResponse(response *BillingAccount, w http.ResponseWr
 	return nil
 }
 
-func encodeGetChargeUsageResponse(response *ChargeUsage, w http.ResponseWriter, span trace.Span) error {
-	w.Header().Set("Content-Type", "application/json; charset=utf-8")
-	w.WriteHeader(200)
-
-	e := new(jx.Encoder)
-	response.Encode(e)
-	if _, err := e.WriteTo(w); err != nil {
-		return errors.Wrap(err, "write")
-	}
-
-	return nil
-}
-
-func encodeGetInvoiceResponse(response *InvoiceDetail, w http.ResponseWriter, span trace.Span) error {
+func encodeGetInvoiceResponse(response *Invoice, w http.ResponseWriter, span trace.Span) error {
 	w.Header().Set("Content-Type", "application/json; charset=utf-8")
 	w.WriteHeader(200)
 
@@ -103,7 +150,7 @@ func encodeGetOrderResponse(response *Order, w http.ResponseWriter, span trace.S
 	return nil
 }
 
-func encodeKeepSubscriptionResponse(response *Subscription, w http.ResponseWriter, span trace.Span) error {
+func encodeGetProjectBillingAccountResponse(response *ProjectPayer, w http.ResponseWriter, span trace.Span) error {
 	w.Header().Set("Content-Type", "application/json; charset=utf-8")
 	w.WriteHeader(200)
 
@@ -116,7 +163,7 @@ func encodeKeepSubscriptionResponse(response *Subscription, w http.ResponseWrite
 	return nil
 }
 
-func encodeListAccountRefundsResponse(response *AccountRefundList, w http.ResponseWriter, span trace.Span) error {
+func encodeGetProjectOrderResponse(response *Order, w http.ResponseWriter, span trace.Span) error {
 	w.Header().Set("Content-Type", "application/json; charset=utf-8")
 	w.WriteHeader(200)
 
@@ -129,7 +176,46 @@ func encodeListAccountRefundsResponse(response *AccountRefundList, w http.Respon
 	return nil
 }
 
-func encodeListAccountVouchersResponse(response *VoucherList, w http.ResponseWriter, span trace.Span) error {
+func encodeGetTopUpResponse(response *TopUp, w http.ResponseWriter, span trace.Span) error {
+	w.Header().Set("Content-Type", "application/json; charset=utf-8")
+	w.WriteHeader(200)
+
+	e := new(jx.Encoder)
+	response.Encode(e)
+	if _, err := e.WriteTo(w); err != nil {
+		return errors.Wrap(err, "write")
+	}
+
+	return nil
+}
+
+func encodeListAllocationsResponse(response *AllocationList, w http.ResponseWriter, span trace.Span) error {
+	w.Header().Set("Content-Type", "application/json; charset=utf-8")
+	w.WriteHeader(200)
+
+	e := new(jx.Encoder)
+	response.Encode(e)
+	if _, err := e.WriteTo(w); err != nil {
+		return errors.Wrap(err, "write")
+	}
+
+	return nil
+}
+
+func encodeListAllowanceConsumptionsResponse(response *AllowanceConsumptionList, w http.ResponseWriter, span trace.Span) error {
+	w.Header().Set("Content-Type", "application/json; charset=utf-8")
+	w.WriteHeader(200)
+
+	e := new(jx.Encoder)
+	response.Encode(e)
+	if _, err := e.WriteTo(w); err != nil {
+		return errors.Wrap(err, "write")
+	}
+
+	return nil
+}
+
+func encodeListAllowancesResponse(response *AllowanceList, w http.ResponseWriter, span trace.Span) error {
 	w.Header().Set("Content-Type", "application/json; charset=utf-8")
 	w.WriteHeader(200)
 
@@ -155,7 +241,263 @@ func encodeListBillingAccountsResponse(response *BillingAccountList, w http.Resp
 	return nil
 }
 
-func encodeListChargesResponse(response *ChargeList, w http.ResponseWriter, span trace.Span) error {
+func encodeListCatalogPlansResponse(response ListCatalogPlansRes, w http.ResponseWriter, span trace.Span) error {
+	switch response := response.(type) {
+	case *CatalogPlanListHeaders:
+		w.Header().Set("Content-Type", "application/json; charset=utf-8")
+		w.Header().Set("Access-Control-Expose-Headers", "Etag")
+		// Encoding response headers.
+		{
+			h := uri.NewHeaderEncoder(w.Header())
+			// Encode "ETag" header.
+			{
+				cfg := uri.HeaderParameterEncodingConfig{
+					Name:    "ETag",
+					Explode: false,
+				}
+				if err := h.EncodeParam(cfg, func(e uri.Encoder) error {
+					if val, ok := response.ETag.Get(); ok {
+						return e.EncodeValue(conv.StringToString(val))
+					}
+					return nil
+				}); err != nil {
+					return errors.Wrap(err, "encode ETag header")
+				}
+			}
+		}
+		w.WriteHeader(200)
+
+		e := new(jx.Encoder)
+		response.Response.Encode(e)
+		if _, err := e.WriteTo(w); err != nil {
+			return errors.Wrap(err, "write")
+		}
+
+		return nil
+
+	case *NotModified:
+		w.Header().Set("Access-Control-Expose-Headers", "Etag")
+		// Encoding response headers.
+		{
+			h := uri.NewHeaderEncoder(w.Header())
+			// Encode "ETag" header.
+			{
+				cfg := uri.HeaderParameterEncodingConfig{
+					Name:    "ETag",
+					Explode: false,
+				}
+				if err := h.EncodeParam(cfg, func(e uri.Encoder) error {
+					if val, ok := response.ETag.Get(); ok {
+						return e.EncodeValue(conv.StringToString(val))
+					}
+					return nil
+				}); err != nil {
+					return errors.Wrap(err, "encode ETag header")
+				}
+			}
+		}
+		w.WriteHeader(304)
+
+		return nil
+
+	default:
+		return errors.Errorf("unexpected response type: %T", response)
+	}
+}
+
+func encodeListCatalogPricesResponse(response ListCatalogPricesRes, w http.ResponseWriter, span trace.Span) error {
+	switch response := response.(type) {
+	case *CatalogPriceListHeaders:
+		w.Header().Set("Content-Type", "application/json; charset=utf-8")
+		w.Header().Set("Access-Control-Expose-Headers", "Etag")
+		// Encoding response headers.
+		{
+			h := uri.NewHeaderEncoder(w.Header())
+			// Encode "ETag" header.
+			{
+				cfg := uri.HeaderParameterEncodingConfig{
+					Name:    "ETag",
+					Explode: false,
+				}
+				if err := h.EncodeParam(cfg, func(e uri.Encoder) error {
+					if val, ok := response.ETag.Get(); ok {
+						return e.EncodeValue(conv.StringToString(val))
+					}
+					return nil
+				}); err != nil {
+					return errors.Wrap(err, "encode ETag header")
+				}
+			}
+		}
+		w.WriteHeader(200)
+
+		e := new(jx.Encoder)
+		response.Response.Encode(e)
+		if _, err := e.WriteTo(w); err != nil {
+			return errors.Wrap(err, "write")
+		}
+
+		return nil
+
+	case *NotModified:
+		w.Header().Set("Access-Control-Expose-Headers", "Etag")
+		// Encoding response headers.
+		{
+			h := uri.NewHeaderEncoder(w.Header())
+			// Encode "ETag" header.
+			{
+				cfg := uri.HeaderParameterEncodingConfig{
+					Name:    "ETag",
+					Explode: false,
+				}
+				if err := h.EncodeParam(cfg, func(e uri.Encoder) error {
+					if val, ok := response.ETag.Get(); ok {
+						return e.EncodeValue(conv.StringToString(val))
+					}
+					return nil
+				}); err != nil {
+					return errors.Wrap(err, "encode ETag header")
+				}
+			}
+		}
+		w.WriteHeader(304)
+
+		return nil
+
+	default:
+		return errors.Errorf("unexpected response type: %T", response)
+	}
+}
+
+func encodeListCatalogProductsResponse(response ListCatalogProductsRes, w http.ResponseWriter, span trace.Span) error {
+	switch response := response.(type) {
+	case *CatalogProductListHeaders:
+		w.Header().Set("Content-Type", "application/json; charset=utf-8")
+		w.Header().Set("Access-Control-Expose-Headers", "Etag")
+		// Encoding response headers.
+		{
+			h := uri.NewHeaderEncoder(w.Header())
+			// Encode "ETag" header.
+			{
+				cfg := uri.HeaderParameterEncodingConfig{
+					Name:    "ETag",
+					Explode: false,
+				}
+				if err := h.EncodeParam(cfg, func(e uri.Encoder) error {
+					if val, ok := response.ETag.Get(); ok {
+						return e.EncodeValue(conv.StringToString(val))
+					}
+					return nil
+				}); err != nil {
+					return errors.Wrap(err, "encode ETag header")
+				}
+			}
+		}
+		w.WriteHeader(200)
+
+		e := new(jx.Encoder)
+		response.Response.Encode(e)
+		if _, err := e.WriteTo(w); err != nil {
+			return errors.Wrap(err, "write")
+		}
+
+		return nil
+
+	case *NotModified:
+		w.Header().Set("Access-Control-Expose-Headers", "Etag")
+		// Encoding response headers.
+		{
+			h := uri.NewHeaderEncoder(w.Header())
+			// Encode "ETag" header.
+			{
+				cfg := uri.HeaderParameterEncodingConfig{
+					Name:    "ETag",
+					Explode: false,
+				}
+				if err := h.EncodeParam(cfg, func(e uri.Encoder) error {
+					if val, ok := response.ETag.Get(); ok {
+						return e.EncodeValue(conv.StringToString(val))
+					}
+					return nil
+				}); err != nil {
+					return errors.Wrap(err, "encode ETag header")
+				}
+			}
+		}
+		w.WriteHeader(304)
+
+		return nil
+
+	default:
+		return errors.Errorf("unexpected response type: %T", response)
+	}
+}
+
+func encodeListCatalogRatesResponse(response ListCatalogRatesRes, w http.ResponseWriter, span trace.Span) error {
+	switch response := response.(type) {
+	case *CatalogRateListHeaders:
+		w.Header().Set("Content-Type", "application/json; charset=utf-8")
+		w.Header().Set("Access-Control-Expose-Headers", "Etag")
+		// Encoding response headers.
+		{
+			h := uri.NewHeaderEncoder(w.Header())
+			// Encode "ETag" header.
+			{
+				cfg := uri.HeaderParameterEncodingConfig{
+					Name:    "ETag",
+					Explode: false,
+				}
+				if err := h.EncodeParam(cfg, func(e uri.Encoder) error {
+					if val, ok := response.ETag.Get(); ok {
+						return e.EncodeValue(conv.StringToString(val))
+					}
+					return nil
+				}); err != nil {
+					return errors.Wrap(err, "encode ETag header")
+				}
+			}
+		}
+		w.WriteHeader(200)
+
+		e := new(jx.Encoder)
+		response.Response.Encode(e)
+		if _, err := e.WriteTo(w); err != nil {
+			return errors.Wrap(err, "write")
+		}
+
+		return nil
+
+	case *NotModified:
+		w.Header().Set("Access-Control-Expose-Headers", "Etag")
+		// Encoding response headers.
+		{
+			h := uri.NewHeaderEncoder(w.Header())
+			// Encode "ETag" header.
+			{
+				cfg := uri.HeaderParameterEncodingConfig{
+					Name:    "ETag",
+					Explode: false,
+				}
+				if err := h.EncodeParam(cfg, func(e uri.Encoder) error {
+					if val, ok := response.ETag.Get(); ok {
+						return e.EncodeValue(conv.StringToString(val))
+					}
+					return nil
+				}); err != nil {
+					return errors.Wrap(err, "encode ETag header")
+				}
+			}
+		}
+		w.WriteHeader(304)
+
+		return nil
+
+	default:
+		return errors.Errorf("unexpected response type: %T", response)
+	}
+}
+
+func encodeListCreditGrantsResponse(response *CreditGrantList, w http.ResponseWriter, span trace.Span) error {
 	w.Header().Set("Content-Type", "application/json; charset=utf-8")
 	w.WriteHeader(200)
 
@@ -168,7 +510,20 @@ func encodeListChargesResponse(response *ChargeList, w http.ResponseWriter, span
 	return nil
 }
 
-func encodeListCreditTransactionsResponse(response *CreditTransactionList, w http.ResponseWriter, span trace.Span) error {
+func encodeListEntitlementsResponse(response *EntitlementList, w http.ResponseWriter, span trace.Span) error {
+	w.Header().Set("Content-Type", "application/json; charset=utf-8")
+	w.WriteHeader(200)
+
+	e := new(jx.Encoder)
+	response.Encode(e)
+	if _, err := e.WriteTo(w); err != nil {
+		return errors.Wrap(err, "write")
+	}
+
+	return nil
+}
+
+func encodeListInvoiceItemsResponse(response *InvoiceItemList, w http.ResponseWriter, span trace.Span) error {
 	w.Header().Set("Content-Type", "application/json; charset=utf-8")
 	w.WriteHeader(200)
 
@@ -194,7 +549,7 @@ func encodeListInvoicesResponse(response *InvoiceList, w http.ResponseWriter, sp
 	return nil
 }
 
-func encodeListOffersResponse(response *OfferList, w http.ResponseWriter, span trace.Span) error {
+func encodeListOrderItemsResponse(response *OrderItemList, w http.ResponseWriter, span trace.Span) error {
 	w.Header().Set("Content-Type", "application/json; charset=utf-8")
 	w.WriteHeader(200)
 
@@ -220,6 +575,19 @@ func encodeListOrdersResponse(response *OrderList, w http.ResponseWriter, span t
 	return nil
 }
 
+func encodeListPaidProjectsResponse(response *ProjectBindingList, w http.ResponseWriter, span trace.Span) error {
+	w.Header().Set("Content-Type", "application/json; charset=utf-8")
+	w.WriteHeader(200)
+
+	e := new(jx.Encoder)
+	response.Encode(e)
+	if _, err := e.WriteTo(w); err != nil {
+		return errors.Wrap(err, "write")
+	}
+
+	return nil
+}
+
 func encodeListPaymentMethodsResponse(response *PaymentMethodList, w http.ResponseWriter, span trace.Span) error {
 	w.Header().Set("Content-Type", "application/json; charset=utf-8")
 	w.WriteHeader(200)
@@ -233,7 +601,150 @@ func encodeListPaymentMethodsResponse(response *PaymentMethodList, w http.Respon
 	return nil
 }
 
-func encodeListPrepaidAssetsResponse(response *PrepaidAssetList, w http.ResponseWriter, span trace.Span) error {
+func encodeListProjectActiveResourcesResponse(response *ActiveResourceList, w http.ResponseWriter, span trace.Span) error {
+	w.Header().Set("Content-Type", "application/json; charset=utf-8")
+	w.WriteHeader(200)
+
+	e := new(jx.Encoder)
+	response.Encode(e)
+	if _, err := e.WriteTo(w); err != nil {
+		return errors.Wrap(err, "write")
+	}
+
+	return nil
+}
+
+func encodeListProjectAllowancesResponse(response *AllowanceList, w http.ResponseWriter, span trace.Span) error {
+	w.Header().Set("Content-Type", "application/json; charset=utf-8")
+	w.WriteHeader(200)
+
+	e := new(jx.Encoder)
+	response.Encode(e)
+	if _, err := e.WriteTo(w); err != nil {
+		return errors.Wrap(err, "write")
+	}
+
+	return nil
+}
+
+func encodeListProjectEntitlementsResponse(response *EntitlementList, w http.ResponseWriter, span trace.Span) error {
+	w.Header().Set("Content-Type", "application/json; charset=utf-8")
+	w.WriteHeader(200)
+
+	e := new(jx.Encoder)
+	response.Encode(e)
+	if _, err := e.WriteTo(w); err != nil {
+		return errors.Wrap(err, "write")
+	}
+
+	return nil
+}
+
+func encodeListProjectOrderItemsResponse(response *OrderItemList, w http.ResponseWriter, span trace.Span) error {
+	w.Header().Set("Content-Type", "application/json; charset=utf-8")
+	w.WriteHeader(200)
+
+	e := new(jx.Encoder)
+	response.Encode(e)
+	if _, err := e.WriteTo(w); err != nil {
+		return errors.Wrap(err, "write")
+	}
+
+	return nil
+}
+
+func encodeListProjectOrdersResponse(response *OrderList, w http.ResponseWriter, span trace.Span) error {
+	w.Header().Set("Content-Type", "application/json; charset=utf-8")
+	w.WriteHeader(200)
+
+	e := new(jx.Encoder)
+	response.Encode(e)
+	if _, err := e.WriteTo(w); err != nil {
+		return errors.Wrap(err, "write")
+	}
+
+	return nil
+}
+
+func encodeListProjectSpendResponse(response *SpendRowList, w http.ResponseWriter, span trace.Span) error {
+	w.Header().Set("Content-Type", "application/json; charset=utf-8")
+	w.WriteHeader(200)
+
+	e := new(jx.Encoder)
+	response.Encode(e)
+	if _, err := e.WriteTo(w); err != nil {
+		return errors.Wrap(err, "write")
+	}
+
+	return nil
+}
+
+func encodeListProjectSubscriptionItemsResponse(response *SubscriptionItemList, w http.ResponseWriter, span trace.Span) error {
+	w.Header().Set("Content-Type", "application/json; charset=utf-8")
+	w.WriteHeader(200)
+
+	e := new(jx.Encoder)
+	response.Encode(e)
+	if _, err := e.WriteTo(w); err != nil {
+		return errors.Wrap(err, "write")
+	}
+
+	return nil
+}
+
+func encodeListProjectSubscriptionsResponse(response *SubscriptionList, w http.ResponseWriter, span trace.Span) error {
+	w.Header().Set("Content-Type", "application/json; charset=utf-8")
+	w.WriteHeader(200)
+
+	e := new(jx.Encoder)
+	response.Encode(e)
+	if _, err := e.WriteTo(w); err != nil {
+		return errors.Wrap(err, "write")
+	}
+
+	return nil
+}
+
+func encodeListProjectUsageChargesResponse(response *UsageChargeList, w http.ResponseWriter, span trace.Span) error {
+	w.Header().Set("Content-Type", "application/json; charset=utf-8")
+	w.WriteHeader(200)
+
+	e := new(jx.Encoder)
+	response.Encode(e)
+	if _, err := e.WriteTo(w); err != nil {
+		return errors.Wrap(err, "write")
+	}
+
+	return nil
+}
+
+func encodeListRefundsResponse(response *RefundList, w http.ResponseWriter, span trace.Span) error {
+	w.Header().Set("Content-Type", "application/json; charset=utf-8")
+	w.WriteHeader(200)
+
+	e := new(jx.Encoder)
+	response.Encode(e)
+	if _, err := e.WriteTo(w); err != nil {
+		return errors.Wrap(err, "write")
+	}
+
+	return nil
+}
+
+func encodeListSubscriptionItemsResponse(response *SubscriptionItemList, w http.ResponseWriter, span trace.Span) error {
+	w.Header().Set("Content-Type", "application/json; charset=utf-8")
+	w.WriteHeader(200)
+
+	e := new(jx.Encoder)
+	response.Encode(e)
+	if _, err := e.WriteTo(w); err != nil {
+		return errors.Wrap(err, "write")
+	}
+
+	return nil
+}
+
+func encodeListSubscriptionsResponse(response *SubscriptionList, w http.ResponseWriter, span trace.Span) error {
 	w.Header().Set("Content-Type", "application/json; charset=utf-8")
 	w.WriteHeader(200)
 
@@ -259,7 +770,7 @@ func encodeListTopUpsResponse(response *TopUpList, w http.ResponseWriter, span t
 	return nil
 }
 
-func encodePreviewPromotionCodeResponse(response *PromotionPreview, w http.ResponseWriter, span trace.Span) error {
+func encodeListTransactionsResponse(response *TransactionList, w http.ResponseWriter, span trace.Span) error {
 	w.Header().Set("Content-Type", "application/json; charset=utf-8")
 	w.WriteHeader(200)
 
@@ -272,7 +783,7 @@ func encodePreviewPromotionCodeResponse(response *PromotionPreview, w http.Respo
 	return nil
 }
 
-func encodePurchaseOfferResponse(response *Purchase, w http.ResponseWriter, span trace.Span) error {
+func encodeListUsageChargesResponse(response *UsageChargeList, w http.ResponseWriter, span trace.Span) error {
 	w.Header().Set("Content-Type", "application/json; charset=utf-8")
 	w.WriteHeader(200)
 
@@ -285,7 +796,7 @@ func encodePurchaseOfferResponse(response *Purchase, w http.ResponseWriter, span
 	return nil
 }
 
-func encodeQuoteProjectUsageResponse(response *Quote, w http.ResponseWriter, span trace.Span) error {
+func encodePayInvoiceResponse(response *PaymentResult, w http.ResponseWriter, span trace.Span) error {
 	w.Header().Set("Content-Type", "application/json; charset=utf-8")
 	w.WriteHeader(200)
 
@@ -298,7 +809,7 @@ func encodeQuoteProjectUsageResponse(response *Quote, w http.ResponseWriter, spa
 	return nil
 }
 
-func encodeQuoteUsageResponse(response *Quote, w http.ResponseWriter, span trace.Span) error {
+func encodePayOrderResponse(response *PaymentResult, w http.ResponseWriter, span trace.Span) error {
 	w.Header().Set("Content-Type", "application/json; charset=utf-8")
 	w.WriteHeader(200)
 
@@ -311,7 +822,7 @@ func encodeQuoteUsageResponse(response *Quote, w http.ResponseWriter, span trace
 	return nil
 }
 
-func encodeReadBillingAccountBalanceResponse(response *Balance, w http.ResponseWriter, span trace.Span) error {
+func encodePreviewCodeResponse(response *CodePreview, w http.ResponseWriter, span trace.Span) error {
 	w.Header().Set("Content-Type", "application/json; charset=utf-8")
 	w.WriteHeader(200)
 
@@ -324,7 +835,7 @@ func encodeReadBillingAccountBalanceResponse(response *Balance, w http.ResponseW
 	return nil
 }
 
-func encodeReadBillingAccountBalanceMovementResponse(response *BalanceMovement, w http.ResponseWriter, span trace.Span) error {
+func encodeRedeemCodeResponse(response *CodeRedeemResult, w http.ResponseWriter, span trace.Span) error {
 	w.Header().Set("Content-Type", "application/json; charset=utf-8")
 	w.WriteHeader(200)
 
@@ -337,7 +848,7 @@ func encodeReadBillingAccountBalanceMovementResponse(response *BalanceMovement, 
 	return nil
 }
 
-func encodeReadProjectBillingAccountResponse(response *ProjectBillingAccount, w http.ResponseWriter, span trace.Span) error {
+func encodeRenewSubscriptionItemResponse(response *PaymentResult, w http.ResponseWriter, span trace.Span) error {
 	w.Header().Set("Content-Type", "application/json; charset=utf-8")
 	w.WriteHeader(200)
 
@@ -350,7 +861,7 @@ func encodeReadProjectBillingAccountResponse(response *ProjectBillingAccount, w 
 	return nil
 }
 
-func encodeReadSubscriptionResponse(response *Subscription, w http.ResponseWriter, span trace.Span) error {
+func encodeSetAutoRenewResponse(response *SubscriptionItem, w http.ResponseWriter, span trace.Span) error {
 	w.Header().Set("Content-Type", "application/json; charset=utf-8")
 	w.WriteHeader(200)
 
@@ -363,7 +874,7 @@ func encodeReadSubscriptionResponse(response *Subscription, w http.ResponseWrite
 	return nil
 }
 
-func encodeReadTopUpResponse(response *TopUpStatus, w http.ResponseWriter, span trace.Span) error {
+func encodeSetDefaultPaymentMethodResponse(response *PaymentMethod, w http.ResponseWriter, span trace.Span) error {
 	w.Header().Set("Content-Type", "application/json; charset=utf-8")
 	w.WriteHeader(200)
 
@@ -376,13 +887,7 @@ func encodeReadTopUpResponse(response *TopUpStatus, w http.ResponseWriter, span 
 	return nil
 }
 
-func encodeRemovePaymentMethodResponse(response *RemovePaymentMethodNoContent, w http.ResponseWriter, span trace.Span) error {
-	w.WriteHeader(204)
-
-	return nil
-}
-
-func encodeRenewPrepaidAssetResponse(response *PrepaidAsset, w http.ResponseWriter, span trace.Span) error {
+func encodeSetProjectAutoRenewResponse(response *SubscriptionItem, w http.ResponseWriter, span trace.Span) error {
 	w.Header().Set("Content-Type", "application/json; charset=utf-8")
 	w.WriteHeader(200)
 
@@ -395,13 +900,7 @@ func encodeRenewPrepaidAssetResponse(response *PrepaidAsset, w http.ResponseWrit
 	return nil
 }
 
-func encodeSetDefaultPaymentMethodResponse(response *SetDefaultPaymentMethodNoContent, w http.ResponseWriter, span trace.Span) error {
-	w.WriteHeader(204)
-
-	return nil
-}
-
-func encodeSetPrepaidAutoRenewResponse(response *PrepaidAsset, w http.ResponseWriter, span trace.Span) error {
+func encodeSetProjectPayerResponse(response *ProjectBinding, w http.ResponseWriter, span trace.Span) error {
 	w.Header().Set("Content-Type", "application/json; charset=utf-8")
 	w.WriteHeader(200)
 
@@ -414,7 +913,7 @@ func encodeSetPrepaidAutoRenewResponse(response *PrepaidAsset, w http.ResponseWr
 	return nil
 }
 
-func encodeStartPaymentMethodSetupResponse(response *PaymentMethodSetupSession, w http.ResponseWriter, span trace.Span) error {
+func encodeSettleProjectUsageResponse(response *SettleResult, w http.ResponseWriter, span trace.Span) error {
 	w.Header().Set("Content-Type", "application/json; charset=utf-8")
 	w.WriteHeader(200)
 
@@ -427,20 +926,7 @@ func encodeStartPaymentMethodSetupResponse(response *PaymentMethodSetupSession, 
 	return nil
 }
 
-func encodeStartTopUpResponse(response *TopUpSession, w http.ResponseWriter, span trace.Span) error {
-	w.Header().Set("Content-Type", "application/json; charset=utf-8")
-	w.WriteHeader(200)
-
-	e := new(jx.Encoder)
-	response.Encode(e)
-	if _, err := e.WriteTo(w); err != nil {
-		return errors.Wrap(err, "write")
-	}
-
-	return nil
-}
-
-func encodeUnbindProjectFromBillingAccountResponse(response *UnbindProjectFromBillingAccountNoContent, w http.ResponseWriter, span trace.Span) error {
+func encodeUnbindProjectPayerResponse(response *UnbindProjectPayerNoContent, w http.ResponseWriter, span trace.Span) error {
 	w.WriteHeader(204)
 
 	return nil

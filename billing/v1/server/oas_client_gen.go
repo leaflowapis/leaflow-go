@@ -29,597 +29,427 @@ func trimTrailingSlashes(u *url.URL) {
 
 // Invoker invokes operations described by OpenAPI v3 specification.
 type Invoker interface {
-	// BindProjectToBillingAccount invokes bind-project-to-billing-account operation.
-	//
-	// Binds a project to this account. A project bound to another account is moved.
-	//
-	// Both the account and the project must belong to the caller. Either one failing refuses the request.
-	// Requiring the project as well as the account is what stops somebody attaching a project that is not
-	// theirs — which sounds generous, since they would be paying for it, but it would also expose that
-	// project's usage to them, and let them detach it again at any moment, leaving the project with no
-	// account and therefore unable to allocate anything.
-	//
-	// Idempotent: binding a project already bound to this account changes nothing.
-	//
-	// Only subsequent usage is affected; see the hard constraint on rebinding.
-	//
-	// PUT /account/v1/billing-accounts/{accountKey}/projects/{projectId}
-	BindProjectToBillingAccount(ctx context.Context, params BindProjectToBillingAccountParams) (*ProjectBinding, error)
-	// CancelSubscription invokes cancel-subscription operation.
-	//
-	// Takes the account off its paid plan and back to the free tier.
-	//
-	// Ending immediately lands on the free tier straight away. Ending at the end of the period is a plain
-	// cancellation that can still be undone (`subscription/keep`) — it deliberately does not schedule a
-	// switch, because a scheduled switch holds the customer's one subscription slot and the engine gives
-	// no way to cancel it afterwards. The free tier is applied once the period actually ends, by the sweep
-	// that keeps every account on some plan.
-	//
-	// `timing` has to be stated. Ending immediately on an account that has already paid for the current
-	// period takes back what they paid for; ending at the end of the period does not. There is no default
-	// because the two are materially different and picking one silently would make the wrong one happen
-	// whenever the field is forgotten.
-	//
-	// Without this, someone who bought a paid plan can only stop paying by contacting support — which is
-	// how a cancellation becomes a chargeback.
-	//
-	// POST /account/v1/billing-accounts/{accountKey}/subscription/cancel
-	CancelSubscription(ctx context.Context, params CancelSubscriptionParams) (*Subscription, error)
 	// CreateBillingAccount invokes create-billing-account operation.
 	//
-	// Creates a billing account for the caller.
+	// The currency is chosen here and cannot be changed afterwards. Everything charged to the account —
+	// prices, orders, invoices, balance — is denominated in it.
 	//
-	// `seq` is supplied by the client, not assigned here. Assigning it would mean reading the existing
-	// accounts and adding one, which is a read-modify-write race: two concurrent "create" clicks compute
-	// the same `seq`. Having the client name it turns that race into a plain idempotent repeat — the
-	// second request returns the first account instead of failing.
-	//
-	// The new account pays for nothing. Binding a project is a separate, deliberate act; doing it here
-	// would quietly turn "I want to add a card" into "I have changed who pays".
+	// One person may hold several accounts, for example a personal one and one for a team.
 	//
 	// POST /account/v1/billing-accounts
-	CreateBillingAccount(ctx context.Context, request *CreateBillingAccountRequestBody) (*BillingAccount, error)
+	CreateBillingAccount(ctx context.Context, request *BillingAccountCreate) (*BillingAccount, error)
+	// CreateEstimate invokes create-estimate operation.
+	//
+	// Uses public list prices. Nothing is reserved and nothing is recorded, so this may be called as often
+	// as required.
+	//
+	// `POST` is used because the set of items to price does not fit in a query string. There is no
+	// corresponding `GET`, and no estimate is stored to retrieve.
+	//
+	// An account holding a negotiated agreement may be charged less than this. Tax and discounts are not
+	// included.
+	//
+	// POST /catalog/v1/estimates
+	CreateEstimate(ctx context.Context, request *EstimateRequest) (*Quote, error)
+	// CreatePaymentMethodSetup invokes create-payment-method-setup operation.
+	//
+	// Returns an address at which the payment provider collects the card details. Nothing is charged. The
+	// method appears in the list once the provider confirms it.
+	//
+	// Card numbers are never sent to or stored by this service.
+	//
+	// POST /account/v1/payment-methods/setup
+	CreatePaymentMethodSetup(ctx context.Context, request *PaymentMethodSetup) (*PaymentMethodSetupResult, error)
+	// CreateProjectQuote invokes create-project-quote operation.
+	//
+	// Priced in the paying account's currency, and at any rate negotiated for that account. Nothing is
+	// reserved and nothing is recorded, so this may be called as often as required.
+	//
+	// Prices may change between quoting and ordering. An order is charged at the price in effect when it
+	// is placed, so a quote should be refreshed before a final confirmation is shown.
+	//
+	// Returns 404 when no account pays for this project.
+	//
+	// POST /api/v1/projects/{projectId}/quotes
+	CreateProjectQuote(ctx context.Context, request *QuoteRequest, params CreateProjectQuoteParams) (*Quote, error)
+	// CreateTopUp invokes create-top-up operation.
+	//
+	// Returns a checkout address. The balance increases when the payment provider confirms the payment,
+	// which may be after this call returns.
+	//
+	// The amount is in the account's currency. A checkout page may present a local currency; the amount
+	// credited to the account is the one requested here.
+	//
+	// POST /account/v1/top-ups
+	CreateTopUp(ctx context.Context, request *TopUpCreate) (*TopUp, error)
+	// DeletePaymentMethod invokes delete-payment-method operation.
+	//
+	// Refused when it is the only method on an account that has resources billed by the hour, as there
+	// would be nothing left to charge when the balance runs out.
+	//
+	// DELETE /account/v1/payment-methods/{paymentMethodId}
+	DeletePaymentMethod(ctx context.Context, params DeletePaymentMethodParams) error
+	// FindProjectPayer invokes find-project-payer operation.
+	//
+	// Returns 404 when no account pays for it. No resources can be created until one does.
+	//
+	// GET /account/v1/projects/{projectId}/billing-account
+	FindProjectPayer(ctx context.Context, params FindProjectPayerParams) (*ProjectBinding, error)
+	// GetAccountBalance invokes get-account-balance operation.
+	//
+	// What the account holds and what it can still spend.
+	//
+	// GET /account/v1/billing-accounts/{accountId}/balance
+	GetAccountBalance(ctx context.Context, params GetAccountBalanceParams) (*AccountBalance, error)
 	// GetBillingAccount invokes get-billing-account operation.
 	//
-	// One account, with the projects it currently pays for.
-	//
-	// The list returns the same objects, so this exists for the case the list cannot serve: a link
-	// straight to one account. Making the caller fetch every account and filter turns a bookmarked page
-	// into a request whose cost grows with how many accounts they hold.
-	//
-	// GET /account/v1/billing-accounts/{accountKey}
+	// GET /account/v1/billing-accounts/{accountId}
 	GetBillingAccount(ctx context.Context, params GetBillingAccountParams) (*BillingAccount, error)
-	// GetChargeUsage invokes get-charge-usage operation.
-	//
-	// Splits one charge back into the projects that produced it, and lists the resources it could have
-	// come from.
-	//
-	// # Why this is not a field on the charge
-	//
-	// A charge has no project, and that is not an omission: the billing subject is the account, and the
-	// project is a dimension on each usage event. When three of an account's projects use the same
-	// product, their usage aggregates into one charge — that charge genuinely spans three projects, and
-	// stamping any single project id on it would be wrong.
-	//
-	// A split is also more useful than a label would be: it gives proportions, and proportions are what
-	// decide which project's resources to switch off.
-	//
-	// # The quantity here is what was reported, not what was billed
-	//
-	// Conversion (machine-seconds to machine-hours) happens on the pricing side, and the engine does not
-	// echo `unit_config` back on a charge. So this figure times the unit price does not equal the total
-	// — a step is missing in between, and that step only becomes visible on the invoice, where the whole
-	// pricing configuration is frozen onto each line.
-	//
-	// Reported quantity is still the right number for "which project is burning this", which is what the
-	// split is for.
-	//
-	// # The resource list says which, not how much
-	//
-	// Usage events carry no resource id — it is not a grouping dimension, and making it one would mean
-	// one time series per machine per hour. So the engine cannot attribute a charge to a machine. What it
-	// can be attributed to is a product, and which resources of that product exist is something billing
-	// knows from its own records.
-	//
-	// Destroyed resources are listed too: this period's charge includes the part they ran for. Leaving
-	// them out is what makes the numbers fail to add up for someone who deleted a machine mid-month —
-	// which is exactly the case they are trying to explain.
-	//
-	// # A flat fee answers with an empty split
-	//
-	// There is no meter behind it, so there is nothing to attribute. That is an answer, not an error.
-	//
-	// GET /account/v1/billing-accounts/{accountKey}/charges/{chargeId}/usage
-	GetChargeUsage(ctx context.Context, params GetChargeUsageParams) (*ChargeUsage, error)
 	// GetInvoice invokes get-invoice operation.
 	//
-	// A total does not answer "why is it this much", and that is the question a bill provokes. Each line
-	// carries its service period, without which lines of the same name — hundreds of them on an hourly
-	// bill — cannot be told apart, and how much of it credit covered, which is the answer to "I have a
-	// balance, why am I being charged".
-	//
-	// GET /account/v1/billing-accounts/{accountKey}/invoices/{invoiceId}
-	GetInvoice(ctx context.Context, params GetInvoiceParams) (*InvoiceDetail, error)
+	// GET /account/v1/invoices/{invoiceId}
+	GetInvoice(ctx context.Context, params GetInvoiceParams) (*Invoice, error)
 	// GetOrder invokes get-order operation.
 	//
-	// Each line names what was asked for, how much of it, and what it produced. The list route carries
-	// lines too; this one exists for a permanent link to a single transaction.
-	//
-	// GET /account/v1/billing-accounts/{accountKey}/orders/{orderId}
+	// GET /account/v1/orders/{orderId}
 	GetOrder(ctx context.Context, params GetOrderParams) (*Order, error)
-	// KeepSubscription invokes keep-subscription operation.
+	// GetProjectBillingAccount invokes get-project-billing-account operation.
 	//
-	// Takes back a cancellation that was set for the end of the period, so the plan carries on.
+	// A deliberately narrow view: the payer's identity, its currency, and how much can still be spent.
+	// Cards, invoices and transaction history are not included; they belong to the account owner and are
+	// reached through `/account/v1/`.
 	//
-	// It only works on a cancellation, not on a scheduled downgrade. Scheduling a change to another plan
-	// leaves a second, scheduled subscription holding the customer's one slot, and the engine offers no
-	// way to remove it: unscheduling is refused with a conflict and the scheduled subscription cannot be
-	// deleted over HTTP. So a downgrade becomes final the moment it is scheduled, and saying so up front
-	// is the only honest thing to do — this endpoint answers `BILLING_NO_SCHEDULED_CHANGE` rather than
-	// pretending to undo it.
+	// Returns 404 when no account pays for this project. Resources cannot be created in that state.
 	//
-	// Without this, someone who cancels by accident has to wait out the period and buy the tier again,
-	// losing whatever the tier had accumulated.
+	// GET /api/v1/projects/{projectId}/billing-account
+	GetProjectBillingAccount(ctx context.Context, params GetProjectBillingAccountParams) (*ProjectPayer, error)
+	// GetProjectOrder invokes get-project-order operation.
 	//
-	// POST /account/v1/billing-accounts/{accountKey}/subscription/keep
-	KeepSubscription(ctx context.Context, params KeepSubscriptionParams) (*Subscription, error)
-	// ListAccountRefunds invokes list-account-refunds operation.
+	// GET /api/v1/projects/{projectId}/orders/{orderId}
+	GetProjectOrder(ctx context.Context, params GetProjectOrderParams) (*Order, error)
+	// GetTopUp invokes get-top-up operation.
 	//
-	// Each refund carries how it was split. A customer asking "I was refunded 100, why is only 60 back on
-	// my card" is answered here and nowhere else.
+	// Whether a payment has completed.
 	//
-	// GET /account/v1/billing-accounts/{accountKey}/refunds
-	ListAccountRefunds(ctx context.Context, params ListAccountRefundsParams) (*AccountRefundList, error)
-	// ListAccountVouchers invokes list-account-vouchers operation.
+	// GET /account/v1/top-ups/{topUpId}
+	GetTopUp(ctx context.Context, params GetTopUpParams) (*TopUp, error)
+	// ListAllocations invokes list-allocations operation.
 	//
-	// Credit received from campaigns, most recent first. Not the credit ledger — this says which
-	// campaign each amount came from, which is the question "where did this 50 come from" that the ledger
-	// cannot answer.
+	// Give `source_id` to follow one top-up or grant through to everything it paid for. Give `target_id`
+	// to see which sources paid for one line of an invoice.
 	//
-	// GET /account/v1/billing-accounts/{accountKey}/vouchers
-	ListAccountVouchers(ctx context.Context, params ListAccountVouchersParams) (*VoucherList, error)
+	// GET /account/v1/allocations
+	ListAllocations(ctx context.Context, params ListAllocationsParams) (*AllocationList, error)
+	// ListAllowanceConsumptions invokes list-allowance-consumptions operation.
+	//
+	// Each entry names the charge it covered, so the granted amount, what has been used and what remains
+	// all reconcile.
+	//
+	// GET /account/v1/allowances/{allowanceId}/consumptions
+	ListAllowanceConsumptions(ctx context.Context, params ListAllowanceConsumptionsParams) (*AllowanceConsumptionList, error)
+	// ListAllowances invokes list-allowances operation.
+	//
+	// A quantity rather than an amount of money: bytes, seconds or tokens that are used before anything is
+	// charged for.
+	//
+	// Usage draws on these first and is only charged once they are exhausted. Where several apply, they
+	// are drawn on in a fixed order: lower `priority` first, then whichever expires soonest, then
+	// whichever was granted first. Included quantities therefore go before purchased packs, and a pack
+	// that is about to expire goes before one that is not.
+	//
+	// An unused quantity is lost when it expires; it is not refunded and does not carry over.
+	//
+	// Quantities belong to the account and are shared by every project it pays for.
+	//
+	// GET /account/v1/allowances
+	ListAllowances(ctx context.Context, params ListAllowancesParams) (*AllowanceList, error)
 	// ListBillingAccounts invokes list-billing-accounts operation.
 	//
-	// Every billing account belonging to the caller, with the projects each one currently pays for.
-	//
-	// Not paginated: how many accounts one person holds is bounded by how many they bothered to create,
-	// and that is a small number.
+	// The billing accounts you own.
 	//
 	// GET /account/v1/billing-accounts
 	ListBillingAccounts(ctx context.Context, params ListBillingAccountsParams) (*BillingAccountList, error)
-	// ListCharges invokes list-charges operation.
+	// ListCatalogPlans invokes list-catalog-plans operation.
 	//
-	// The itemised version of `unsettled`: what has been used this period and not yet billed.
+	// What can be bought under one service.
 	//
-	// It has to come from charges rather than from invoices. An invoice only exists once a period has been
-	// billed, and the one for the period in progress is in a state that does not appear in the invoice
-	// list at all — reading invoices would show nothing and suggest the account has used nothing, while
-	// the spend keeps climbing.
+	// GET /catalog/v1/products/{productId}/plans
+	ListCatalogPlans(ctx context.Context, params ListCatalogPlansParams) (ListCatalogPlansRes, error)
+	// ListCatalogPrices invokes list-catalog-prices operation.
 	//
-	// GET /account/v1/billing-accounts/{accountKey}/charges
-	ListCharges(ctx context.Context, params ListChargesParams) (*ChargeList, error)
-	// ListCreditTransactions invokes list-credit-transactions operation.
+	// Public list prices only. An account holding a negotiated agreement may be charged less; it is never
+	// charged more.
 	//
-	// Every movement of credit on this account: what was added, what was spent, what expired, what was
-	// voided. Newest first.
+	// GET /catalog/v1/plans/{planId}/prices
+	ListCatalogPrices(ctx context.Context, params ListCatalogPricesParams) (ListCatalogPricesRes, error)
+	// ListCatalogProducts invokes list-catalog-products operation.
 	//
-	// The balance on its own is a number with no account of itself. Asked why it is lower than expected,
-	// it cannot answer, and the holder is left to guess between "I was charged" and "something expired"
-	// — which lead to different next steps.
+	// The services the platform sells.
 	//
-	// GET /account/v1/billing-accounts/{accountKey}/credit-transactions
-	ListCreditTransactions(ctx context.Context, params ListCreditTransactionsParams) (*CreditTransactionList, error)
+	// GET /catalog/v1/products
+	ListCatalogProducts(ctx context.Context, params ListCatalogProductsParams) (ListCatalogProductsRes, error)
+	// ListCatalogRates invokes list-catalog-rates operation.
+	//
+	// Only public price lists are readable here. A list written for a single agreement is not, and its
+	// identifier cannot be used to reach it.
+	//
+	// GET /catalog/v1/rate-cards/{rateCardId}/rules
+	ListCatalogRates(ctx context.Context, params ListCatalogRatesParams) (ListCatalogRatesRes, error)
+	// ListCreditGrants invokes list-credit-grants operation.
+	//
+	// Each grant shows what remains and what it may be used for. Credit is spent before cash and cannot be
+	// withdrawn.
+	//
+	// GET /account/v1/credit-grants
+	ListCreditGrants(ctx context.Context, params ListCreditGrantsParams) (*CreditGrantList, error)
+	// ListEntitlements invokes list-entitlements operation.
+	//
+	// Capabilities that come with what has been bought. A capability that is not held simply does not
+	// appear, so that "this does not exist" and "this has not been bought" cannot be confused.
+	//
+	// Derived from live subscriptions rather than stored, so this always agrees with what is being paid
+	// for. It stops being listed as soon as the subscription providing it ends.
+	//
+	// GET /account/v1/entitlements
+	ListEntitlements(ctx context.Context, params ListEntitlementsParams) (*EntitlementList, error)
+	// ListInvoiceItems invokes list-invoice-items operation.
+	//
+	// What an invoice is made up of.
+	//
+	// GET /account/v1/invoices/{invoiceId}/items
+	ListInvoiceItems(ctx context.Context, params ListInvoiceItemsParams) (*InvoiceItemList, error)
 	// ListInvoices invokes list-invoices operation.
 	//
-	// Past periods, most recent first. The period in progress is not here — see the charges endpoint for
-	// that.
-	//
-	// GET /account/v1/billing-accounts/{accountKey}/invoices
+	// GET /account/v1/invoices
 	ListInvoices(ctx context.Context, params ListInvoicesParams) (*InvoiceList, error)
-	// ListOffers invokes list-offers operation.
+	// ListOrderItems invokes list-order-items operation.
 	//
-	// Lists what is actually purchasable by this account, right now.
+	// One entry per item bought, with the price charged and the period it covers.
 	//
-	// # Every offer here has passed the full eligibility check
-	//
-	// The list is not "everything on sale" filtered by status. A promotion whose places are gone, a
-	// first-month discount this person already used, a beta price they are not on the list for — none of
-	// them appear. Returning them and rejecting the purchase afterwards reads as a broken system rather
-	// than as a rule.
-	//
-	// The price is not here, and not because it was left out: an offer states who may buy, and when. What
-	// it costs comes from the plan it points at, and is reported by the offers list.
-	//
-	// GET /account/v1/billing-accounts/{accountKey}/offers
-	ListOffers(ctx context.Context, params ListOffersParams) (*OfferList, error)
+	// GET /account/v1/orders/{orderId}/items
+	ListOrderItems(ctx context.Context, params ListOrderItemsParams) (*OrderItemList, error)
 	// ListOrders invokes list-orders operation.
 	//
-	// Every provisioning request made against the projects this account pays for, newest first.
+	// An order in `pending` still owes money; `amount_due` states how much and `reservation_expires_at`
+	// states how long it can still be paid.
 	//
-	// An order that never went through stays here on purpose. Removing it would leave nothing to look at
-	// in exactly the case someone wants to look: a resource was asked for, was not delivered, and the
-	// question is what happened.
-	//
-	// Lines come with each order. A list showing only identifiers and amounts is a page nobody can read
-	// — recognising one ("which of these was last week's machine") is why it gets opened.
-	//
-	// GET /account/v1/billing-accounts/{accountKey}/orders
+	// GET /account/v1/orders
 	ListOrders(ctx context.Context, params ListOrdersParams) (*OrderList, error)
+	// ListPaidProjects invokes list-paid-projects operation.
+	//
+	// The projects your accounts pay for.
+	//
+	// GET /account/v1/projects
+	ListPaidProjects(ctx context.Context, params ListPaidProjectsParams) (*ProjectBindingList, error)
 	// ListPaymentMethods invokes list-payment-methods operation.
 	//
-	// Every method saved against this account, and which one an invoice will be charged to.
-	//
-	// # Why the brand, last four and expiry are here
-	//
-	// They were deliberately absent while the billing engine held the card, because the answer that
-	// mattered — can money be collected — came from the engine, and a page built on the provider's
-	// answer could show a method the engine had not recorded. Collection now runs from this service
-	// against the provider directly, so there is one answer, and it is the one shown.
-	//
-	// Expiry is the reason this is worth showing at all: a card expires, the invoice then fails, dunning
-	// runs out, and the project stops — with the account holder watching it happen and no indication
-	// that a card was the cause.
-	//
-	// No other card data exists here. The number, the expiry entered by the holder and the CVC go from the
-	// browser to the provider and never reach this platform.
-	//
-	// An account that has never added one returns an empty list. That is the normal state of a new
-	// account, not an error.
-	//
-	// GET /account/v1/billing-accounts/{accountKey}/payment-methods
+	// GET /account/v1/payment-methods
 	ListPaymentMethods(ctx context.Context, params ListPaymentMethodsParams) (*PaymentMethodList, error)
-	// ListPrepaidAssets invokes list-prepaid-assets operation.
+	// ListProjectActiveResources invokes list-project-active-resources operation.
 	//
-	// Everything this account holds on a term, across every product.
+	// A resource that is running but does not appear here is not being charged for.
 	//
-	// # Every one of these expires
+	// GET /api/v1/projects/{projectId}/active-resources
+	ListProjectActiveResources(ctx context.Context, params ListProjectActiveResourcesParams) (*ActiveResourceList, error)
+	// ListProjectAllowances invokes list-project-allowances operation.
 	//
-	// A term is paid for once, up front, and buys exactly the period named by `term`. Nothing renews it on
-	// its own: `expires_at` is when it runs out, and after that the machine is stopped and — once the
-	// retention window is over — released.
+	// These belong to the paying account and are shared with every other project it pays for, so what is
+	// left here may be consumed elsewhere.
 	//
-	// This route used to say the opposite. It described an engine that charged the next period by itself
-	// for as long as the seat was held, which is how this worked before the money became a single up-front
-	// charge. Reading the old text, a customer would have had no reason to renew anything, and the first
-	// sign of trouble would have been a stopped machine.
+	// GET /api/v1/projects/{projectId}/allowances
+	ListProjectAllowances(ctx context.Context, params ListProjectAllowancesParams) (*AllowanceList, error)
+	// ListProjectEntitlements invokes list-project-entitlements operation.
 	//
-	// Turn on `auto_renew` to have billing place the renewal order itself while there is balance to pay
-	// for it. That is the only thing that makes a term continue.
+	// Includes capabilities bought for this project and those the paying account holds at account level.
 	//
-	// # Metered resources are not here
+	// Where a capability counts uses, `remaining_quantity` states how much is left. Whether exceeding it
+	// refuses the request or simply continues to be charged for is decided by the service that owns the
+	// capability.
 	//
-	// They have no term. Listing them would invite renewing something that is already billed by the hour
-	// until it is deleted.
+	// GET /api/v1/projects/{projectId}/entitlements
+	ListProjectEntitlements(ctx context.Context, params ListProjectEntitlementsParams) (*EntitlementList, error)
+	// ListProjectOrderItems invokes list-project-order-items operation.
 	//
-	// # `state` and `desired_state` are both reported
+	// What an order is made up of.
 	//
-	// A machine stopped for arrears reads `suspended` for both. One being brought back reads `suspended`
-	// and `active` — it is on its way. Without the second field those look identical, and a customer who
-	// just paid concludes it did not work and pays again.
+	// GET /api/v1/projects/{projectId}/orders/{orderId}/items
+	ListProjectOrderItems(ctx context.Context, params ListProjectOrderItemsParams) (*OrderItemList, error)
+	// ListProjectOrders invokes list-project-orders operation.
 	//
-	// GET /account/v1/billing-accounts/{accountKey}/prepaid-assets
-	ListPrepaidAssets(ctx context.Context, params ListPrepaidAssetsParams) (*PrepaidAssetList, error)
+	// An order awaiting payment shows what is outstanding. Paying it is done from the billing centre by
+	// the account owner.
+	//
+	// GET /api/v1/projects/{projectId}/orders
+	ListProjectOrders(ctx context.Context, params ListProjectOrdersParams) (*OrderList, error)
+	// ListProjectSpend invokes list-project-spend operation.
+	//
+	// Covers a closed time range. Both bounds are required: a total without a stated period cannot be
+	// reconciled against an invoice.
+	//
+	// Includes usage that has not been invoiced yet.
+	//
+	// GET /api/v1/projects/{projectId}/spend
+	ListProjectSpend(ctx context.Context, params ListProjectSpendParams) (*SpendRowList, error)
+	// ListProjectSubscriptionItems invokes list-project-subscription-items operation.
+	//
+	// What this project has bought, and when each renews.
+	//
+	// GET /api/v1/projects/{projectId}/subscription-items
+	ListProjectSubscriptionItems(ctx context.Context, params ListProjectSubscriptionItemsParams) (*SubscriptionItemList, error)
+	// ListProjectSubscriptions invokes list-project-subscriptions operation.
+	//
+	// Which services this project has enabled.
+	//
+	// GET /api/v1/projects/{projectId}/subscriptions
+	ListProjectSubscriptions(ctx context.Context, params ListProjectSubscriptionsParams) (*SubscriptionList, error)
+	// ListProjectUsageCharges invokes list-project-usage-charges operation.
+	//
+	// The individual charges behind the figures in `/spend`. Amounts here sum to the totals reported there
+	// over the same period.
+	//
+	// GET /api/v1/projects/{projectId}/usage-charges
+	ListProjectUsageCharges(ctx context.Context, params ListProjectUsageChargesParams) (*UsageChargeList, error)
+	// ListRefunds invokes list-refunds operation.
+	//
+	// GET /account/v1/refunds
+	ListRefunds(ctx context.Context, params ListRefundsParams) (*RefundList, error)
+	// ListSubscriptionItems invokes list-subscription-items operation.
+	//
+	// What has been bought, and when each renews.
+	//
+	// GET /account/v1/subscription-items
+	ListSubscriptionItems(ctx context.Context, params ListSubscriptionItemsParams) (*SubscriptionItemList, error)
+	// ListSubscriptions invokes list-subscriptions operation.
+	//
+	// GET /account/v1/subscriptions
+	ListSubscriptions(ctx context.Context, params ListSubscriptionsParams) (*SubscriptionList, error)
 	// ListTopUps invokes list-top-ups operation.
 	//
-	// Every top-up this account has made, newest first.
-	//
-	// Reading one top-up requires already holding its identifier, and the only place that identifier
-	// appears is the redirect that started it — so without this list a top-up becomes unfindable the
-	// moment the browser tab is closed, which is exactly when somebody wants to check whether their money
-	// arrived.
-	//
-	// GET /account/v1/billing-accounts/{accountKey}/top-ups
+	// GET /account/v1/top-ups
 	ListTopUps(ctx context.Context, params ListTopUpsParams) (*TopUpList, error)
-	// PreviewPromotionCode invokes preview-promotion-code operation.
+	// ListTransactions invokes list-transactions operation.
 	//
-	// Runs the same checks and the same arithmetic that placing the order will run, so the price shown
-	// here and the price charged agree. Writing the calculation twice — once for the page and once for
-	// the order — means they drift, and the visible form of that drift is a page saying "20 off" while
-	// the full amount is taken.
+	// Every movement of funds on the account.
 	//
-	// Nothing is redeemed. The allowance is only consumed when the order is actually placed.
+	// GET /account/v1/transactions
+	ListTransactions(ctx context.Context, params ListTransactionsParams) (*TransactionList, error)
+	// ListUsageCharges invokes list-usage-charges operation.
 	//
-	// A code that cannot be used is rejected here with the reason, so the user learns it before filling in
-	// the rest of the form rather than at the moment they press buy.
+	// Includes charges that have not been invoiced yet, which is how the current month's spending is seen
+	// before the invoice is issued.
 	//
-	// Metered orders are rejected. They have no amount at this point — the money is worked out later
-	// from usage. Applying a discount to a nil amount leaves the user believing they saved something while
-	// the bill is unchanged.
+	// GET /account/v1/usage-charges
+	ListUsageCharges(ctx context.Context, params ListUsageChargesParams) (*UsageChargeList, error)
+	// PayInvoice invokes pay-invoice operation.
 	//
-	// POST /account/v1/billing-accounts/{accountKey}/promotion-codes/preview
-	PreviewPromotionCode(ctx context.Context, request *PreviewPromotionCodeRequestBody, params PreviewPromotionCodeParams) (*PromotionPreview, error)
-	// PurchaseOffer invokes purchase-offer operation.
+	// Applies the account balance first, then charges the remainder to a payment method. Give
+	// `payment_method_id` to choose one, or omit it to use the default.
 	//
-	// Puts the account on the plan this offer points at, taking one of its places if it has a limit.
+	// Returns a checkout address when the provider requires the cardholder to confirm the payment; the
+	// invoice is marked paid once the provider confirms it.
 	//
-	// # A card has to be on file first
+	// Calling this on an invoice that is already paid returns the invoice unchanged.
 	//
-	// Unless the offer points at a free plan. A paid plan is collected from the card on file and refuses
-	// to start the subscription without one; that refusal arrives here as a precondition error rather than
-	// as a conflict.
+	// POST /account/v1/invoices/{invoiceId}/pay
+	PayInvoice(ctx context.Context, request OptPayRequest, params PayInvoiceParams) (*PaymentResult, error)
+	// PayOrder invokes pay-order operation.
 	//
-	// # `timing` is required only when the account already has a plan
+	// Use this to resume an order whose checkout was interrupted.
 	//
-	// Moving between plans immediately is what an upgrade wants — the customer paid more and wants it
-	// now. Waiting for the end of the period is what a downgrade wants — they already paid for this one.
-	// Neither is a safe default, and picking one silently gets the money wrong whenever the field is
-	// forgotten.
+	// An order reserves both funds and stock for a limited time. Once that reservation expires the order
+	// can no longer be paid and must be placed again; `reservation_expires_at` on the order states when.
 	//
-	// # Being refused says which rule refused
+	// POST /account/v1/orders/{orderId}/pay
+	PayOrder(ctx context.Context, request OptPayRequest, params PayOrderParams) (*PaymentResult, error)
+	// PreviewCode invokes preview-code operation.
 	//
-	// Places gone, window closed, already used, not on the list — each needs the customer to do
-	// something different, and several of them need them to do nothing at all. A single "not eligible"
-	// sends everyone to support.
+	// Nothing is recorded and the code is not consumed. Use it to show the customer the effect before they
+	// commit.
 	//
-	// # Retrying is safe
+	// POST /account/v1/codes/preview
+	PreviewCode(ctx context.Context, request *CodeRequest) (*CodePreview, error)
+	// RedeemCode invokes redeem-code operation.
 	//
-	// A place is taken before the subscription is created, so a failure in between leaves the place held
-	// rather than the discount given away. Retrying the same purchase finishes it instead of taking a
-	// second place.
+	// A voucher code adds credit to the account. A discount code records the entitlement, which is then
+	// applied to the next qualifying purchase.
 	//
-	// POST /account/v1/billing-accounts/{accountKey}/offers/{offerKey}/purchase
-	PurchaseOffer(ctx context.Context, params PurchaseOfferParams) (*Purchase, error)
-	// QuoteProjectUsage invokes quote-project-usage operation.
+	// A code that has already been redeemed by this account is refused rather than redeemed a second time.
 	//
-	// Prices a set of usages against whatever plan pays for this project, and returns every intermediate
-	// step rather than a single number.
+	// POST /account/v1/codes/redeem
+	RedeemCode(ctx context.Context, request *CodeRedeem) (*CodeRedeemResult, error)
+	// RenewSubscriptionItem invokes renew-subscription-item operation.
 	//
-	// # Why by project rather than by billing account
+	// Extends the paid period from its current end, not from today, so renewing early does not shorten
+	// what has already been paid for.
 	//
-	// The page that needs this is the one where somebody is about to create a machine, and all it has is a
-	// project. Which account pays for that project is billing's own bookkeeping — asking the caller to
-	// resolve it first would put that mapping into a page that otherwise has no business knowing accounts
-	// exist.
+	// The price charged is the one in effect at the moment of renewal, which may differ from what was paid
+	// for the current period.
 	//
-	// # Quantities are raw
+	// POST /account/v1/subscription-items/{itemId}/renew
+	RenewSubscriptionItem(ctx context.Context, request *RenewRequest, params RenewSubscriptionItemParams) (*PaymentResult, error)
+	// SetAutoRenew invokes set-auto-renew operation.
 	//
-	// Seconds, token counts, GiB-seconds: the amount a service reports. Conversion happens here, which is
-	// why services keep no conversion tables of their own and why the caller must not do the arithmetic
-	// itself.
+	// When on, the account balance is charged at the renewal date. Turning it off lets the current period
+	// run to its end and stops the resource afterwards.
 	//
-	// Name each usage by `service` and `product_id` rather than by key: the key is a hash of a convention
-	// that has exactly one implementation on purpose.
-	//
-	// # It is an estimate
-	//
-	// The engine computes the real amount; this reproduces the same rules. Every step comes back for that
-	// reason — a single number that disagrees with the bill says nothing about which step was wrong.
-	//
-	// `404` means the project has no billing account, or its account is on no plan. Both are worth
-	// showing: nothing can be created in either case, because admission refuses it.
-	//
-	// POST /account/v1/projects/{projectId}/quote
-	QuoteProjectUsage(ctx context.Context, request *QuoteRequest, params QuoteProjectUsageParams) (*Quote, error)
-	// QuoteUsage invokes quote-usage operation.
-	//
-	// Prices a set of usages against whatever plan this account is currently on, and returns every
-	// intermediate step rather than a single number.
-	//
-	// # What it is for
-	//
-	// Showing someone what a machine will cost before they create it. The console asks for the usage a
-	// machine of that shape produces in an hour, and gets back what that hour costs them — on their
-	// plan, with their discounts.
-	//
-	// # Quantities are raw
-	//
-	// Seconds, token counts, GiB-seconds: the amount a service reports. Conversion happens here, which is
-	// why services keep no conversion tables of their own and why the console must not do the arithmetic
-	// itself.
-	//
-	// # It is an estimate
-	//
-	// The engine computes the real amount; this reproduces the same rules. Every step comes back for that
-	// reason — a single number that disagrees with the bill says nothing about which step was wrong.
-	//
-	// `404` means this account is not on any plan, and there is therefore nothing to price against.
-	//
-	// POST /account/v1/billing-accounts/{accountKey}/quote
-	QuoteUsage(ctx context.Context, request *QuoteRequest, params QuoteUsageParams) (*Quote, error)
-	// ReadBillingAccountBalance invokes read-billing-account-balance operation.
-	//
-	// What is left on the account.
-	//
-	// The figure is the live balance: usage that has been reported but not yet settled is already
-	// subtracted. The settled figure is larger, and the difference is precisely what the holder has just
-	// spent — showing that instead would tell them they can afford something they cannot.
-	//
-	// An account that has never been topped up reports `"0"` — not an absent field, and not an empty
-	// string.
-	//
-	// GET /account/v1/billing-accounts/{accountKey}/balance
-	ReadBillingAccountBalance(ctx context.Context, params ReadBillingAccountBalanceParams) (*Balance, error)
-	// ReadBillingAccountBalanceMovement invokes read-billing-account-balance-movement operation.
-	//
-	// Opening balance, money in, money out, closing balance — for the current calendar month.
-	//
-	// The four add up: `closing = opening + income - spending`. That is the point of the endpoint. The
-	// balance alone answers "how much is left" and cannot answer "how did it get there", which is what
-	// somebody watching their balance shrink is actually asking. Four figures that add up can be checked
-	// by the holder; a single figure can only be taken on faith or queried with support.
-	//
-	// `closing` is computed from the other three rather than read separately. Reading the current balance
-	// for it would leave the equation off by whatever was booked between the two reads — and an equation
-	// that is off by a few cents is worse than no equation, because it puts the ledger itself in doubt.
-	//
-	// The window is the calendar month, not the engine's billing period. This is the month a person means
-	// when they say "this month"; the billing anchor is an internal recurrence that happens to line up.
-	//
-	// A month with no movement reports opening equal to closing and zero on both sides — not all zeroes,
-	// which would read as "your money is gone".
-	//
-	// GET /account/v1/billing-accounts/{accountKey}/balance/movement
-	ReadBillingAccountBalanceMovement(ctx context.Context, params ReadBillingAccountBalanceMovementParams) (*BalanceMovement, error)
-	// ReadProjectBillingAccount invokes read-project-billing-account operation.
-	//
-	// The account a project's resources are charged to, resolved from the project rather than guessed.
-	//
-	// # Why a console needs this
-	//
-	// Everything in a console happens inside a project, while billing accounts belong to a person — and
-	// a person can have many. Showing "the first one" next to a sentence like you are overdrawn, new
-	// resources will be refused pairs one account's balance with another account's rule. Both directions
-	// are wrong and one of them is silent: the figures look healthy while creating anything is refused,
-	// and the refusal names a reason the page just contradicted.
-	//
-	// # Being a member is enough to ask, but not to see the money
-	//
-	// The answer is the account's identity, not its balance. A project's members are not necessarily the
-	// people paying for it — a company account can pay for a project someone else works in — and their
-	// balance is not those members' business. Whoever owns the account reads the figures from the balance
-	// route as before; `owned_by_me` says which case this is, so a page can tell "you are overdrawn" apart
-	// from "ask whoever pays for this project".
-	//
-	// # A project with no account is a normal state, and it answers 404
-	//
-	// A project nobody has bound yet cannot create resources at all — admission refuses it. That is
-	// worth saying plainly ("this project has no billing account, bind one") rather than falling back to
-	// some other account of theirs, which is how the wrong-account problem started.
-	//
-	// GET /account/v1/projects/{projectId}/billing-account
-	ReadProjectBillingAccount(ctx context.Context, params ReadProjectBillingAccountParams) (*ProjectBillingAccount, error)
-	// ReadSubscription invokes read-subscription operation.
-	//
-	// `404` means no plan, which is worth showing rather than hiding: an account without one is refused
-	// admission, so nothing can be allocated in it.
-	//
-	// A subscription that has been cancelled but has not reached the end of its period still counts as
-	// being on a plan — it is still serving, still billing, and the period has already been paid for.
-	//
-	// GET /account/v1/billing-accounts/{accountKey}/subscription
-	ReadSubscription(ctx context.Context, params ReadSubscriptionParams) (*Subscription, error)
-	// ReadTopUp invokes read-top-up operation.
-	//
-	// Credit arrives asynchronously, shortly after the payment provider confirms the money. Coming back
-	// from the payment page the balance has usually not moved yet, and without this there is no way to
-	// tell "it is on its way" from "it failed" — the only recourse is refreshing the balance and
-	// guessing.
-	//
-	// `settled` means the credit has landed. `pending` means the money arrived and the credit has not been
-	// issued yet, or the payment method is an asynchronous one and the money itself is still in transit.
-	//
-	// GET /account/v1/billing-accounts/{accountKey}/top-ups/{paymentId}
-	ReadTopUp(ctx context.Context, params ReadTopUpParams) (*TopUpStatus, error)
-	// RemovePaymentMethod invokes remove-payment-method operation.
-	//
-	// Detaches it from this account. Removing the last one is allowed.
-	//
-	// # Why removing the last one is not blocked
-	//
-	// Blocking it leaves an account holder who wants to stop paying with no way out. The cost of allowing
-	// it is that later invoices cannot be collected — and that path has notice, a grace period and a way
-	// back. A card that cannot be removed is a dead end.
-	//
-	// DELETE /account/v1/billing-accounts/{accountKey}/payment-methods/{paymentMethodId}
-	RemovePaymentMethod(ctx context.Context, params RemovePaymentMethodParams) error
-	// RenewPrepaidAsset invokes renew-prepaid-asset operation.
-	//
-	// Extends a term by one more period, paid for out of the account's balance right now.
-	//
-	// The new expiry is the old one plus the term, not now plus the term. Renewing three days early would
-	// otherwise throw those three days away, and renewing after the expiry would quietly reward the delay.
-	// Neither shows up as an error — the date on the account looks self-consistent either way, and only
-	// the customer notices.
-	//
-	// `term` does not have to match what was bought originally: a monthly machine can be renewed for a
-	// year.
-	//
-	// Refused when the balance does not cover it. The alternative — placing the order and letting the
-	// account go negative — turns a renewal the customer chose into a debt they did not.
-	//
-	// POST /account/v1/billing-accounts/{accountKey}/prepaid-assets/{assetId}/renew
-	RenewPrepaidAsset(ctx context.Context, request *RenewRequestBody, params RenewPrepaidAssetParams) (*PrepaidAsset, error)
+	// PUT /account/v1/subscription-items/{itemId}/auto-renew
+	SetAutoRenew(ctx context.Context, request *AutoRenewSet, params SetAutoRenewParams) (*SubscriptionItem, error)
 	// SetDefaultPaymentMethod invokes set-default-payment-method operation.
 	//
-	// Makes this the method an invoice is collected from.
+	// Choose which method is used automatically.
 	//
-	// # It is stored at the provider, not here
+	// PUT /account/v1/payment-methods/{paymentMethodId}/default
+	SetDefaultPaymentMethod(ctx context.Context, params SetDefaultPaymentMethodParams) (*PaymentMethod, error)
+	// SetProjectAutoRenew invokes set-project-auto-renew operation.
 	//
-	// The charge itself reads that setting from the provider, so keeping a second copy here would create
-	// two answers to the same question. When they disagree the visible symptom is that the account holder
-	// changed the default and the charge still went to the old one.
+	// Automatic renewal draws on the paying account's balance, which a project member may commit. Paying
+	// by card requires the account owner and is done from the billing centre.
 	//
-	// PUT /account/v1/billing-accounts/{accountKey}/payment-methods/{paymentMethodId}/default
-	SetDefaultPaymentMethod(ctx context.Context, params SetDefaultPaymentMethodParams) error
-	// SetPrepaidAutoRenew invokes set-prepaid-auto-renew operation.
+	// PUT /api/v1/projects/{projectId}/subscription-items/{itemId}/auto-renew
+	SetProjectAutoRenew(ctx context.Context, request *AutoRenewSet, params SetProjectAutoRenewParams) (*SubscriptionItem, error)
+	// SetProjectPayer invokes set-project-payer operation.
 	//
-	// With it on, billing places the renewal order itself a few days before the period runs out, paying
-	// from the account's balance.
+	// Charges already recorded remain with the account that was paying when they occurred, and are still
+	// invoiced to it. Metered resources are settled up to the moment of the change.
 	//
-	// Not enough balance is not an error here. The switch only says what to attempt; whether the money is
-	// there is settled at renewal time, and the customer is told either way — told it renewed, or told
-	// it could not and by when it will expire.
+	// Periods already paid for are unaffected; renewals are charged to the new account.
 	//
-	// PUT /account/v1/billing-accounts/{accountKey}/prepaid-assets/{assetId}/auto-renew
-	SetPrepaidAutoRenew(ctx context.Context, request *AutoRenewRequestBody, params SetPrepaidAutoRenewParams) (*PrepaidAsset, error)
-	// StartPaymentMethodSetup invokes start-payment-method-setup operation.
+	// The request is refused while the current account has an unpaid invoice, and — once the project
+	// holds subscriptions — while the new account uses a different currency.
 	//
-	// Starts a session for adding a method, and returns the secret the browser needs to mount the
-	// provider's own form.
+	// PUT /account/v1/projects/{projectId}/billing-account
+	SetProjectPayer(ctx context.Context, request *ProjectPayerSet, params SetProjectPayerParams) (*ProjectBinding, error)
+	// SettleProjectUsage invokes settle-project-usage operation.
 	//
-	// # The form is embedded, not a redirect
+	// Metered usage is normally invoiced at the end of the month. This issues an invoice for everything
+	// charged to the project so far, to the account currently paying for it.
 	//
-	// The returned `client_secret` initialises the provider's JavaScript, which renders its form inside an
-	// iframe on this platform's own page. No card data reaches this platform — the number goes from the
-	// browser straight to the provider, exactly as it would on a redirect — but the account holder never
-	// leaves the console.
+	// Use it before unbinding a project, or to obtain a settled figure part-way through a month. Calling
+	// it again when nothing is outstanding has no effect.
 	//
-	// A redirect would take them to a page with someone else's branding in the middle of adding a payment
-	// method, which is the moment they are most likely to abandon it.
+	// POST /account/v1/projects/{projectId}/billing-account/settle
+	SettleProjectUsage(ctx context.Context, params SettleProjectUsageParams) (*SettleResult, error)
+	// UnbindProjectPayer invokes unbind-project-payer operation.
 	//
-	// # This is a prerequisite for buying a plan, not a convenience
+	// Permitted only when the project has nothing left to charge: no resources accruing charges, no
+	// subscriptions still running, no usage awaiting invoicing, and no unpaid invoice on the account.
 	//
-	// A plan is charged by invoice, and the invoice is collected from a method on file. Discovering that
-	// none exists at purchase time turns a missing payment method into a rejection whose wording is about
-	// something else entirely.
+	// Usage that has not yet been invoiced is settled by calling
+	// `POST /account/v1/projects/{projectId}/billing-account/settle` first.
 	//
-	// It is not a prerequisite for topping up: a top-up collects the money there and then.
+	// After this the project cannot create resources until an account is chosen again.
 	//
-	// POST /account/v1/billing-accounts/{accountKey}/payment-methods
-	StartPaymentMethodSetup(ctx context.Context, params StartPaymentMethodSetupParams) (*PaymentMethodSetupSession, error)
-	// StartTopUp invokes start-top-up operation.
-	//
-	// Begins adding money to this account. Returns a URL to send the browser to; the card is entered
-	// there, on the payment provider's own page.
-	//
-	// No card data ever reaches this platform, in any field, in any log. That is the entire reason this
-	// returns a redirect instead of accepting card details.
-	//
-	// Credit is not added here. It is added once the payment provider confirms the money arrived, which
-	// happens out of band and usually within seconds. The balance is unchanged when this call returns, and
-	// polling it immediately will show the old figure.
-	//
-	// That ordering is deliberate. Credit is spendable as soon as it exists, so anything added before the
-	// charge succeeds is money the holder can spend against a payment that then fails.
-	//
-	// Abandoning the page costs nothing; nothing is created on the account until the money arrives.
-	//
-	// POST /account/v1/billing-accounts/{accountKey}/top-ups
-	StartTopUp(ctx context.Context, request *StartTopUpRequestBody, params StartTopUpParams) (*TopUpSession, error)
-	// UnbindProjectFromBillingAccount invokes unbind-project-from-billing-account operation.
-	//
-	// Unbinds the project from this account. Nothing pays for it afterwards, and everything in it is
-	// refused admission until some account takes it on — no new machines, no forwarded requests.
-	//
-	// That consequence is the reason this exists rather than an argument against it: a project bound to
-	// the wrong account has no other way out, and moving it to another of the caller's accounts is not a
-	// correction when the answer is that this account should not be paying for it at all.
-	//
-	// Charges already accrued stay where they are. They were incurred while this account held the project,
-	// and an invoice has to keep pointing at what it was based on.
-	//
-	// DELETE /account/v1/billing-accounts/{accountKey}/projects/{projectId}
-	UnbindProjectFromBillingAccount(ctx context.Context, params UnbindProjectFromBillingAccountParams) error
+	// DELETE /account/v1/projects/{projectId}/billing-account
+	UnbindProjectPayer(ctx context.Context, params UnbindProjectPayerParams) error
 	// UpdateBillingAccount invokes update-billing-account operation.
 	//
-	// Changes the display name. Nothing else about the account can be changed here.
+	// The legal name, address and tax identifier are copied onto each invoice when it is issued. Changing
+	// them here affects invoices issued afterwards, not those already sent.
 	//
-	// The key is not among the fields and never will be: ownership is stated by the key, and invoices
-	// already issued refer to it. The name is what tells two accounts apart in a list, so a mistake made
-	// while creating one is otherwise permanent.
+	// The currency cannot be changed.
 	//
-	// PUT /account/v1/billing-accounts/{accountKey}
-	UpdateBillingAccount(ctx context.Context, request *UpdateBillingAccountRequestBody, params UpdateBillingAccountParams) (*BillingAccount, error)
+	// PATCH /account/v1/billing-accounts/{accountId}
+	UpdateBillingAccount(ctx context.Context, request *BillingAccountUpdate, params UpdateBillingAccountParams) (*BillingAccount, error)
 }
 
 // Client implements OAS client.
@@ -663,349 +493,20 @@ func (c *Client) requestURL(ctx context.Context) *url.URL {
 	return u
 }
 
-// BindProjectToBillingAccount invokes bind-project-to-billing-account operation.
-//
-// Binds a project to this account. A project bound to another account is moved.
-//
-// Both the account and the project must belong to the caller. Either one failing refuses the request.
-// Requiring the project as well as the account is what stops somebody attaching a project that is not
-// theirs — which sounds generous, since they would be paying for it, but it would also expose that
-// project's usage to them, and let them detach it again at any moment, leaving the project with no
-// account and therefore unable to allocate anything.
-//
-// Idempotent: binding a project already bound to this account changes nothing.
-//
-// Only subsequent usage is affected; see the hard constraint on rebinding.
-//
-// PUT /account/v1/billing-accounts/{accountKey}/projects/{projectId}
-func (c *Client) BindProjectToBillingAccount(ctx context.Context, params BindProjectToBillingAccountParams) (*ProjectBinding, error) {
-	res, err := c.sendBindProjectToBillingAccount(ctx, params)
-	return res, err
-}
-
-func (c *Client) sendBindProjectToBillingAccount(ctx context.Context, params BindProjectToBillingAccountParams) (res *ProjectBinding, err error) {
-	otelAttrs := []attribute.KeyValue{
-		otelogen.OperationID("bind-project-to-billing-account"),
-		semconv.HTTPRequestMethodKey.String("PUT"),
-		semconv.URLTemplateKey.String("/account/v1/billing-accounts/{accountKey}/projects/{projectId}"),
-	}
-	otelAttrs = append(otelAttrs, c.cfg.Attributes...)
-
-	// Run stopwatch.
-	startTime := time.Now()
-	defer func() {
-		// Use floating point division here for higher precision (instead of Millisecond method).
-		elapsedDuration := time.Since(startTime)
-		c.duration.Record(ctx, float64(elapsedDuration)/float64(time.Millisecond), metric.WithAttributes(otelAttrs...))
-	}()
-
-	// Increment request counter.
-	c.requests.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
-
-	// Start a span for this request.
-	ctx, span := c.cfg.Tracer.Start(ctx, BindProjectToBillingAccountOperation,
-		trace.WithAttributes(otelAttrs...),
-		clientSpanKind,
-	)
-	// Track stage for error reporting.
-	var stage string
-	defer func() {
-		if err != nil {
-			span.RecordError(err)
-			span.SetStatus(codes.Error, stage)
-			c.errors.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
-		}
-		span.End()
-	}()
-
-	stage = "BuildURL"
-	u := uri.Clone(c.requestURL(ctx))
-	var pathParts [4]string
-	pathParts[0] = "/account/v1/billing-accounts/"
-	{
-		// Encode "accountKey" parameter.
-		e := uri.NewPathEncoder(uri.PathEncoderConfig{
-			Param:   "accountKey",
-			Style:   uri.PathStyleSimple,
-			Explode: false,
-		})
-		if err := func() error {
-			return e.EncodeValue(conv.StringToString(params.AccountKey))
-		}(); err != nil {
-			return res, errors.Wrap(err, "encode path")
-		}
-		encoded, err := e.Result()
-		if err != nil {
-			return res, errors.Wrap(err, "encode path")
-		}
-		pathParts[1] = encoded
-	}
-	pathParts[2] = "/projects/"
-	{
-		// Encode "projectId" parameter.
-		e := uri.NewPathEncoder(uri.PathEncoderConfig{
-			Param:   "projectId",
-			Style:   uri.PathStyleSimple,
-			Explode: false,
-		})
-		if err := func() error {
-			return e.EncodeValue(conv.UUIDToString(params.ProjectId))
-		}(); err != nil {
-			return res, errors.Wrap(err, "encode path")
-		}
-		encoded, err := e.Result()
-		if err != nil {
-			return res, errors.Wrap(err, "encode path")
-		}
-		pathParts[3] = encoded
-	}
-	uri.AddPathParts(u, pathParts[:]...)
-
-	stage = "EncodeRequest"
-	r, err := ht.NewRequest(ctx, "PUT", u)
-	if err != nil {
-		return res, errors.Wrap(err, "create request")
-	}
-
-	{
-		type bitset = [1]uint8
-		var satisfied bitset
-		{
-			stage = "Security:BearerAuth"
-			switch err := c.securityBearerAuth(ctx, BindProjectToBillingAccountOperation, r); {
-			case err == nil: // if NO error
-				satisfied[0] |= 1 << 0
-			case errors.Is(err, ogenerrors.ErrSkipClientSecurity):
-				// Skip this security.
-			default:
-				return res, errors.Wrap(err, "security \"BearerAuth\"")
-			}
-		}
-
-		if ok := func() bool {
-		nextRequirement:
-			for _, requirement := range []bitset{
-				{0b00000001},
-			} {
-				for i, mask := range requirement {
-					if satisfied[i]&mask != mask {
-						continue nextRequirement
-					}
-				}
-				return true
-			}
-			return false
-		}(); !ok {
-			return res, ogenerrors.ErrSecurityRequirementIsNotSatisfied
-		}
-	}
-
-	stage = "SendRequest"
-	resp, err := c.cfg.Client.Do(r)
-	if err != nil {
-		return res, errors.Wrap(err, "do request")
-	}
-	body := resp.Body
-	defer func() {
-		// Drain the body to EOF before closing, so the underlying
-		// connection can be reused by the Transport regardless of the
-		// response status code. See https://github.com/ogen-go/ogen/issues/1670.
-		_, _ = io.Copy(io.Discard, body)
-		_ = body.Close()
-	}()
-
-	stage = "DecodeResponse"
-	result, err := decodeBindProjectToBillingAccountResponse(resp)
-	if err != nil {
-		return res, errors.Wrap(err, "decode response")
-	}
-
-	return result, nil
-}
-
-// CancelSubscription invokes cancel-subscription operation.
-//
-// Takes the account off its paid plan and back to the free tier.
-//
-// Ending immediately lands on the free tier straight away. Ending at the end of the period is a plain
-// cancellation that can still be undone (`subscription/keep`) — it deliberately does not schedule a
-// switch, because a scheduled switch holds the customer's one subscription slot and the engine gives
-// no way to cancel it afterwards. The free tier is applied once the period actually ends, by the sweep
-// that keeps every account on some plan.
-//
-// `timing` has to be stated. Ending immediately on an account that has already paid for the current
-// period takes back what they paid for; ending at the end of the period does not. There is no default
-// because the two are materially different and picking one silently would make the wrong one happen
-// whenever the field is forgotten.
-//
-// Without this, someone who bought a paid plan can only stop paying by contacting support — which is
-// how a cancellation becomes a chargeback.
-//
-// POST /account/v1/billing-accounts/{accountKey}/subscription/cancel
-func (c *Client) CancelSubscription(ctx context.Context, params CancelSubscriptionParams) (*Subscription, error) {
-	res, err := c.sendCancelSubscription(ctx, params)
-	return res, err
-}
-
-func (c *Client) sendCancelSubscription(ctx context.Context, params CancelSubscriptionParams) (res *Subscription, err error) {
-	otelAttrs := []attribute.KeyValue{
-		otelogen.OperationID("cancel-subscription"),
-		semconv.HTTPRequestMethodKey.String("POST"),
-		semconv.URLTemplateKey.String("/account/v1/billing-accounts/{accountKey}/subscription/cancel"),
-	}
-	otelAttrs = append(otelAttrs, c.cfg.Attributes...)
-
-	// Run stopwatch.
-	startTime := time.Now()
-	defer func() {
-		// Use floating point division here for higher precision (instead of Millisecond method).
-		elapsedDuration := time.Since(startTime)
-		c.duration.Record(ctx, float64(elapsedDuration)/float64(time.Millisecond), metric.WithAttributes(otelAttrs...))
-	}()
-
-	// Increment request counter.
-	c.requests.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
-
-	// Start a span for this request.
-	ctx, span := c.cfg.Tracer.Start(ctx, CancelSubscriptionOperation,
-		trace.WithAttributes(otelAttrs...),
-		clientSpanKind,
-	)
-	// Track stage for error reporting.
-	var stage string
-	defer func() {
-		if err != nil {
-			span.RecordError(err)
-			span.SetStatus(codes.Error, stage)
-			c.errors.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
-		}
-		span.End()
-	}()
-
-	stage = "BuildURL"
-	u := uri.Clone(c.requestURL(ctx))
-	var pathParts [3]string
-	pathParts[0] = "/account/v1/billing-accounts/"
-	{
-		// Encode "accountKey" parameter.
-		e := uri.NewPathEncoder(uri.PathEncoderConfig{
-			Param:   "accountKey",
-			Style:   uri.PathStyleSimple,
-			Explode: false,
-		})
-		if err := func() error {
-			return e.EncodeValue(conv.StringToString(params.AccountKey))
-		}(); err != nil {
-			return res, errors.Wrap(err, "encode path")
-		}
-		encoded, err := e.Result()
-		if err != nil {
-			return res, errors.Wrap(err, "encode path")
-		}
-		pathParts[1] = encoded
-	}
-	pathParts[2] = "/subscription/cancel"
-	uri.AddPathParts(u, pathParts[:]...)
-
-	stage = "EncodeQueryParams"
-	q := uri.NewQueryEncoder()
-	{
-		// Encode "timing" parameter.
-		cfg := uri.QueryParameterEncodingConfig{
-			Name:    "timing",
-			Style:   uri.QueryStyleForm,
-			Explode: true,
-		}
-
-		if err := q.EncodeParam(cfg, func(e uri.Encoder) error {
-			return e.EncodeValue(conv.StringToString(string(params.Timing)))
-		}); err != nil {
-			return res, errors.Wrap(err, "encode query")
-		}
-	}
-	u.RawQuery = q.Values().Encode()
-
-	stage = "EncodeRequest"
-	r, err := ht.NewRequest(ctx, "POST", u)
-	if err != nil {
-		return res, errors.Wrap(err, "create request")
-	}
-
-	{
-		type bitset = [1]uint8
-		var satisfied bitset
-		{
-			stage = "Security:BearerAuth"
-			switch err := c.securityBearerAuth(ctx, CancelSubscriptionOperation, r); {
-			case err == nil: // if NO error
-				satisfied[0] |= 1 << 0
-			case errors.Is(err, ogenerrors.ErrSkipClientSecurity):
-				// Skip this security.
-			default:
-				return res, errors.Wrap(err, "security \"BearerAuth\"")
-			}
-		}
-
-		if ok := func() bool {
-		nextRequirement:
-			for _, requirement := range []bitset{
-				{0b00000001},
-			} {
-				for i, mask := range requirement {
-					if satisfied[i]&mask != mask {
-						continue nextRequirement
-					}
-				}
-				return true
-			}
-			return false
-		}(); !ok {
-			return res, ogenerrors.ErrSecurityRequirementIsNotSatisfied
-		}
-	}
-
-	stage = "SendRequest"
-	resp, err := c.cfg.Client.Do(r)
-	if err != nil {
-		return res, errors.Wrap(err, "do request")
-	}
-	body := resp.Body
-	defer func() {
-		// Drain the body to EOF before closing, so the underlying
-		// connection can be reused by the Transport regardless of the
-		// response status code. See https://github.com/ogen-go/ogen/issues/1670.
-		_, _ = io.Copy(io.Discard, body)
-		_ = body.Close()
-	}()
-
-	stage = "DecodeResponse"
-	result, err := decodeCancelSubscriptionResponse(resp)
-	if err != nil {
-		return res, errors.Wrap(err, "decode response")
-	}
-
-	return result, nil
-}
-
 // CreateBillingAccount invokes create-billing-account operation.
 //
-// Creates a billing account for the caller.
+// The currency is chosen here and cannot be changed afterwards. Everything charged to the account —
+// prices, orders, invoices, balance — is denominated in it.
 //
-// `seq` is supplied by the client, not assigned here. Assigning it would mean reading the existing
-// accounts and adding one, which is a read-modify-write race: two concurrent "create" clicks compute
-// the same `seq`. Having the client name it turns that race into a plain idempotent repeat — the
-// second request returns the first account instead of failing.
-//
-// The new account pays for nothing. Binding a project is a separate, deliberate act; doing it here
-// would quietly turn "I want to add a card" into "I have changed who pays".
+// One person may hold several accounts, for example a personal one and one for a team.
 //
 // POST /account/v1/billing-accounts
-func (c *Client) CreateBillingAccount(ctx context.Context, request *CreateBillingAccountRequestBody) (*BillingAccount, error) {
+func (c *Client) CreateBillingAccount(ctx context.Context, request *BillingAccountCreate) (*BillingAccount, error) {
 	res, err := c.sendCreateBillingAccount(ctx, request)
 	return res, err
 }
 
-func (c *Client) sendCreateBillingAccount(ctx context.Context, request *CreateBillingAccountRequestBody) (res *BillingAccount, err error) {
+func (c *Client) sendCreateBillingAccount(ctx context.Context, request *BillingAccountCreate) (res *BillingAccount, err error) {
 	otelAttrs := []attribute.KeyValue{
 		otelogen.OperationID("create-billing-account"),
 		semconv.HTTPRequestMethodKey.String("POST"),
@@ -1059,14 +560,14 @@ func (c *Client) sendCreateBillingAccount(ctx context.Context, request *CreateBi
 		type bitset = [1]uint8
 		var satisfied bitset
 		{
-			stage = "Security:BearerAuth"
-			switch err := c.securityBearerAuth(ctx, CreateBillingAccountOperation, r); {
+			stage = "Security:AccountAuth"
+			switch err := c.securityAccountAuth(ctx, CreateBillingAccountOperation, r); {
 			case err == nil: // if NO error
 				satisfied[0] |= 1 << 0
 			case errors.Is(err, ogenerrors.ErrSkipClientSecurity):
 				// Skip this security.
 			default:
-				return res, errors.Wrap(err, "security \"BearerAuth\"")
+				return res, errors.Wrap(err, "security \"AccountAuth\"")
 			}
 		}
 
@@ -1111,15 +612,875 @@ func (c *Client) sendCreateBillingAccount(ctx context.Context, request *CreateBi
 	return result, nil
 }
 
+// CreateEstimate invokes create-estimate operation.
+//
+// Uses public list prices. Nothing is reserved and nothing is recorded, so this may be called as often
+// as required.
+//
+// `POST` is used because the set of items to price does not fit in a query string. There is no
+// corresponding `GET`, and no estimate is stored to retrieve.
+//
+// An account holding a negotiated agreement may be charged less than this. Tax and discounts are not
+// included.
+//
+// POST /catalog/v1/estimates
+func (c *Client) CreateEstimate(ctx context.Context, request *EstimateRequest) (*Quote, error) {
+	res, err := c.sendCreateEstimate(ctx, request)
+	return res, err
+}
+
+func (c *Client) sendCreateEstimate(ctx context.Context, request *EstimateRequest) (res *Quote, err error) {
+	otelAttrs := []attribute.KeyValue{
+		otelogen.OperationID("create-estimate"),
+		semconv.HTTPRequestMethodKey.String("POST"),
+		semconv.URLTemplateKey.String("/catalog/v1/estimates"),
+	}
+	otelAttrs = append(otelAttrs, c.cfg.Attributes...)
+
+	// Run stopwatch.
+	startTime := time.Now()
+	defer func() {
+		// Use floating point division here for higher precision (instead of Millisecond method).
+		elapsedDuration := time.Since(startTime)
+		c.duration.Record(ctx, float64(elapsedDuration)/float64(time.Millisecond), metric.WithAttributes(otelAttrs...))
+	}()
+
+	// Increment request counter.
+	c.requests.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
+
+	// Start a span for this request.
+	ctx, span := c.cfg.Tracer.Start(ctx, CreateEstimateOperation,
+		trace.WithAttributes(otelAttrs...),
+		clientSpanKind,
+	)
+	// Track stage for error reporting.
+	var stage string
+	defer func() {
+		if err != nil {
+			span.RecordError(err)
+			span.SetStatus(codes.Error, stage)
+			c.errors.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
+		}
+		span.End()
+	}()
+
+	stage = "BuildURL"
+	u := uri.Clone(c.requestURL(ctx))
+	var pathParts [1]string
+	pathParts[0] = "/catalog/v1/estimates"
+	uri.AddPathParts(u, pathParts[:]...)
+
+	stage = "EncodeRequest"
+	r, err := ht.NewRequest(ctx, "POST", u)
+	if err != nil {
+		return res, errors.Wrap(err, "create request")
+	}
+	if err := encodeCreateEstimateRequest(request, r); err != nil {
+		return res, errors.Wrap(err, "encode request")
+	}
+
+	stage = "SendRequest"
+	resp, err := c.cfg.Client.Do(r)
+	if err != nil {
+		return res, errors.Wrap(err, "do request")
+	}
+	body := resp.Body
+	defer func() {
+		// Drain the body to EOF before closing, so the underlying
+		// connection can be reused by the Transport regardless of the
+		// response status code. See https://github.com/ogen-go/ogen/issues/1670.
+		_, _ = io.Copy(io.Discard, body)
+		_ = body.Close()
+	}()
+
+	stage = "DecodeResponse"
+	result, err := decodeCreateEstimateResponse(resp)
+	if err != nil {
+		return res, errors.Wrap(err, "decode response")
+	}
+
+	return result, nil
+}
+
+// CreatePaymentMethodSetup invokes create-payment-method-setup operation.
+//
+// Returns an address at which the payment provider collects the card details. Nothing is charged. The
+// method appears in the list once the provider confirms it.
+//
+// Card numbers are never sent to or stored by this service.
+//
+// POST /account/v1/payment-methods/setup
+func (c *Client) CreatePaymentMethodSetup(ctx context.Context, request *PaymentMethodSetup) (*PaymentMethodSetupResult, error) {
+	res, err := c.sendCreatePaymentMethodSetup(ctx, request)
+	return res, err
+}
+
+func (c *Client) sendCreatePaymentMethodSetup(ctx context.Context, request *PaymentMethodSetup) (res *PaymentMethodSetupResult, err error) {
+	otelAttrs := []attribute.KeyValue{
+		otelogen.OperationID("create-payment-method-setup"),
+		semconv.HTTPRequestMethodKey.String("POST"),
+		semconv.URLTemplateKey.String("/account/v1/payment-methods/setup"),
+	}
+	otelAttrs = append(otelAttrs, c.cfg.Attributes...)
+
+	// Run stopwatch.
+	startTime := time.Now()
+	defer func() {
+		// Use floating point division here for higher precision (instead of Millisecond method).
+		elapsedDuration := time.Since(startTime)
+		c.duration.Record(ctx, float64(elapsedDuration)/float64(time.Millisecond), metric.WithAttributes(otelAttrs...))
+	}()
+
+	// Increment request counter.
+	c.requests.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
+
+	// Start a span for this request.
+	ctx, span := c.cfg.Tracer.Start(ctx, CreatePaymentMethodSetupOperation,
+		trace.WithAttributes(otelAttrs...),
+		clientSpanKind,
+	)
+	// Track stage for error reporting.
+	var stage string
+	defer func() {
+		if err != nil {
+			span.RecordError(err)
+			span.SetStatus(codes.Error, stage)
+			c.errors.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
+		}
+		span.End()
+	}()
+
+	stage = "BuildURL"
+	u := uri.Clone(c.requestURL(ctx))
+	var pathParts [1]string
+	pathParts[0] = "/account/v1/payment-methods/setup"
+	uri.AddPathParts(u, pathParts[:]...)
+
+	stage = "EncodeRequest"
+	r, err := ht.NewRequest(ctx, "POST", u)
+	if err != nil {
+		return res, errors.Wrap(err, "create request")
+	}
+	if err := encodeCreatePaymentMethodSetupRequest(request, r); err != nil {
+		return res, errors.Wrap(err, "encode request")
+	}
+
+	{
+		type bitset = [1]uint8
+		var satisfied bitset
+		{
+			stage = "Security:AccountAuth"
+			switch err := c.securityAccountAuth(ctx, CreatePaymentMethodSetupOperation, r); {
+			case err == nil: // if NO error
+				satisfied[0] |= 1 << 0
+			case errors.Is(err, ogenerrors.ErrSkipClientSecurity):
+				// Skip this security.
+			default:
+				return res, errors.Wrap(err, "security \"AccountAuth\"")
+			}
+		}
+
+		if ok := func() bool {
+		nextRequirement:
+			for _, requirement := range []bitset{
+				{0b00000001},
+			} {
+				for i, mask := range requirement {
+					if satisfied[i]&mask != mask {
+						continue nextRequirement
+					}
+				}
+				return true
+			}
+			return false
+		}(); !ok {
+			return res, ogenerrors.ErrSecurityRequirementIsNotSatisfied
+		}
+	}
+
+	stage = "SendRequest"
+	resp, err := c.cfg.Client.Do(r)
+	if err != nil {
+		return res, errors.Wrap(err, "do request")
+	}
+	body := resp.Body
+	defer func() {
+		// Drain the body to EOF before closing, so the underlying
+		// connection can be reused by the Transport regardless of the
+		// response status code. See https://github.com/ogen-go/ogen/issues/1670.
+		_, _ = io.Copy(io.Discard, body)
+		_ = body.Close()
+	}()
+
+	stage = "DecodeResponse"
+	result, err := decodeCreatePaymentMethodSetupResponse(resp)
+	if err != nil {
+		return res, errors.Wrap(err, "decode response")
+	}
+
+	return result, nil
+}
+
+// CreateProjectQuote invokes create-project-quote operation.
+//
+// Priced in the paying account's currency, and at any rate negotiated for that account. Nothing is
+// reserved and nothing is recorded, so this may be called as often as required.
+//
+// Prices may change between quoting and ordering. An order is charged at the price in effect when it
+// is placed, so a quote should be refreshed before a final confirmation is shown.
+//
+// Returns 404 when no account pays for this project.
+//
+// POST /api/v1/projects/{projectId}/quotes
+func (c *Client) CreateProjectQuote(ctx context.Context, request *QuoteRequest, params CreateProjectQuoteParams) (*Quote, error) {
+	res, err := c.sendCreateProjectQuote(ctx, request, params)
+	return res, err
+}
+
+func (c *Client) sendCreateProjectQuote(ctx context.Context, request *QuoteRequest, params CreateProjectQuoteParams) (res *Quote, err error) {
+	otelAttrs := []attribute.KeyValue{
+		otelogen.OperationID("create-project-quote"),
+		semconv.HTTPRequestMethodKey.String("POST"),
+		semconv.URLTemplateKey.String("/api/v1/projects/{projectId}/quotes"),
+	}
+	otelAttrs = append(otelAttrs, c.cfg.Attributes...)
+
+	// Run stopwatch.
+	startTime := time.Now()
+	defer func() {
+		// Use floating point division here for higher precision (instead of Millisecond method).
+		elapsedDuration := time.Since(startTime)
+		c.duration.Record(ctx, float64(elapsedDuration)/float64(time.Millisecond), metric.WithAttributes(otelAttrs...))
+	}()
+
+	// Increment request counter.
+	c.requests.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
+
+	// Start a span for this request.
+	ctx, span := c.cfg.Tracer.Start(ctx, CreateProjectQuoteOperation,
+		trace.WithAttributes(otelAttrs...),
+		clientSpanKind,
+	)
+	// Track stage for error reporting.
+	var stage string
+	defer func() {
+		if err != nil {
+			span.RecordError(err)
+			span.SetStatus(codes.Error, stage)
+			c.errors.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
+		}
+		span.End()
+	}()
+
+	stage = "BuildURL"
+	u := uri.Clone(c.requestURL(ctx))
+	var pathParts [3]string
+	pathParts[0] = "/api/v1/projects/"
+	{
+		// Encode "projectId" parameter.
+		e := uri.NewPathEncoder(uri.PathEncoderConfig{
+			Param:   "projectId",
+			Style:   uri.PathStyleSimple,
+			Explode: false,
+		})
+		if err := func() error {
+			return e.EncodeValue(conv.UUIDToString(params.ProjectId))
+		}(); err != nil {
+			return res, errors.Wrap(err, "encode path")
+		}
+		encoded, err := e.Result()
+		if err != nil {
+			return res, errors.Wrap(err, "encode path")
+		}
+		pathParts[1] = encoded
+	}
+	pathParts[2] = "/quotes"
+	uri.AddPathParts(u, pathParts[:]...)
+
+	stage = "EncodeRequest"
+	r, err := ht.NewRequest(ctx, "POST", u)
+	if err != nil {
+		return res, errors.Wrap(err, "create request")
+	}
+	if err := encodeCreateProjectQuoteRequest(request, r); err != nil {
+		return res, errors.Wrap(err, "encode request")
+	}
+
+	{
+		type bitset = [1]uint8
+		var satisfied bitset
+		{
+			stage = "Security:ProjectAuth"
+			switch err := c.securityProjectAuth(ctx, CreateProjectQuoteOperation, r); {
+			case err == nil: // if NO error
+				satisfied[0] |= 1 << 0
+			case errors.Is(err, ogenerrors.ErrSkipClientSecurity):
+				// Skip this security.
+			default:
+				return res, errors.Wrap(err, "security \"ProjectAuth\"")
+			}
+		}
+
+		if ok := func() bool {
+		nextRequirement:
+			for _, requirement := range []bitset{
+				{0b00000001},
+			} {
+				for i, mask := range requirement {
+					if satisfied[i]&mask != mask {
+						continue nextRequirement
+					}
+				}
+				return true
+			}
+			return false
+		}(); !ok {
+			return res, ogenerrors.ErrSecurityRequirementIsNotSatisfied
+		}
+	}
+
+	stage = "SendRequest"
+	resp, err := c.cfg.Client.Do(r)
+	if err != nil {
+		return res, errors.Wrap(err, "do request")
+	}
+	body := resp.Body
+	defer func() {
+		// Drain the body to EOF before closing, so the underlying
+		// connection can be reused by the Transport regardless of the
+		// response status code. See https://github.com/ogen-go/ogen/issues/1670.
+		_, _ = io.Copy(io.Discard, body)
+		_ = body.Close()
+	}()
+
+	stage = "DecodeResponse"
+	result, err := decodeCreateProjectQuoteResponse(resp)
+	if err != nil {
+		return res, errors.Wrap(err, "decode response")
+	}
+
+	return result, nil
+}
+
+// CreateTopUp invokes create-top-up operation.
+//
+// Returns a checkout address. The balance increases when the payment provider confirms the payment,
+// which may be after this call returns.
+//
+// The amount is in the account's currency. A checkout page may present a local currency; the amount
+// credited to the account is the one requested here.
+//
+// POST /account/v1/top-ups
+func (c *Client) CreateTopUp(ctx context.Context, request *TopUpCreate) (*TopUp, error) {
+	res, err := c.sendCreateTopUp(ctx, request)
+	return res, err
+}
+
+func (c *Client) sendCreateTopUp(ctx context.Context, request *TopUpCreate) (res *TopUp, err error) {
+	otelAttrs := []attribute.KeyValue{
+		otelogen.OperationID("create-top-up"),
+		semconv.HTTPRequestMethodKey.String("POST"),
+		semconv.URLTemplateKey.String("/account/v1/top-ups"),
+	}
+	otelAttrs = append(otelAttrs, c.cfg.Attributes...)
+
+	// Run stopwatch.
+	startTime := time.Now()
+	defer func() {
+		// Use floating point division here for higher precision (instead of Millisecond method).
+		elapsedDuration := time.Since(startTime)
+		c.duration.Record(ctx, float64(elapsedDuration)/float64(time.Millisecond), metric.WithAttributes(otelAttrs...))
+	}()
+
+	// Increment request counter.
+	c.requests.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
+
+	// Start a span for this request.
+	ctx, span := c.cfg.Tracer.Start(ctx, CreateTopUpOperation,
+		trace.WithAttributes(otelAttrs...),
+		clientSpanKind,
+	)
+	// Track stage for error reporting.
+	var stage string
+	defer func() {
+		if err != nil {
+			span.RecordError(err)
+			span.SetStatus(codes.Error, stage)
+			c.errors.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
+		}
+		span.End()
+	}()
+
+	stage = "BuildURL"
+	u := uri.Clone(c.requestURL(ctx))
+	var pathParts [1]string
+	pathParts[0] = "/account/v1/top-ups"
+	uri.AddPathParts(u, pathParts[:]...)
+
+	stage = "EncodeRequest"
+	r, err := ht.NewRequest(ctx, "POST", u)
+	if err != nil {
+		return res, errors.Wrap(err, "create request")
+	}
+	if err := encodeCreateTopUpRequest(request, r); err != nil {
+		return res, errors.Wrap(err, "encode request")
+	}
+
+	{
+		type bitset = [1]uint8
+		var satisfied bitset
+		{
+			stage = "Security:AccountAuth"
+			switch err := c.securityAccountAuth(ctx, CreateTopUpOperation, r); {
+			case err == nil: // if NO error
+				satisfied[0] |= 1 << 0
+			case errors.Is(err, ogenerrors.ErrSkipClientSecurity):
+				// Skip this security.
+			default:
+				return res, errors.Wrap(err, "security \"AccountAuth\"")
+			}
+		}
+
+		if ok := func() bool {
+		nextRequirement:
+			for _, requirement := range []bitset{
+				{0b00000001},
+			} {
+				for i, mask := range requirement {
+					if satisfied[i]&mask != mask {
+						continue nextRequirement
+					}
+				}
+				return true
+			}
+			return false
+		}(); !ok {
+			return res, ogenerrors.ErrSecurityRequirementIsNotSatisfied
+		}
+	}
+
+	stage = "SendRequest"
+	resp, err := c.cfg.Client.Do(r)
+	if err != nil {
+		return res, errors.Wrap(err, "do request")
+	}
+	body := resp.Body
+	defer func() {
+		// Drain the body to EOF before closing, so the underlying
+		// connection can be reused by the Transport regardless of the
+		// response status code. See https://github.com/ogen-go/ogen/issues/1670.
+		_, _ = io.Copy(io.Discard, body)
+		_ = body.Close()
+	}()
+
+	stage = "DecodeResponse"
+	result, err := decodeCreateTopUpResponse(resp)
+	if err != nil {
+		return res, errors.Wrap(err, "decode response")
+	}
+
+	return result, nil
+}
+
+// DeletePaymentMethod invokes delete-payment-method operation.
+//
+// Refused when it is the only method on an account that has resources billed by the hour, as there
+// would be nothing left to charge when the balance runs out.
+//
+// DELETE /account/v1/payment-methods/{paymentMethodId}
+func (c *Client) DeletePaymentMethod(ctx context.Context, params DeletePaymentMethodParams) error {
+	_, err := c.sendDeletePaymentMethod(ctx, params)
+	return err
+}
+
+func (c *Client) sendDeletePaymentMethod(ctx context.Context, params DeletePaymentMethodParams) (res *DeletePaymentMethodNoContent, err error) {
+	otelAttrs := []attribute.KeyValue{
+		otelogen.OperationID("delete-payment-method"),
+		semconv.HTTPRequestMethodKey.String("DELETE"),
+		semconv.URLTemplateKey.String("/account/v1/payment-methods/{paymentMethodId}"),
+	}
+	otelAttrs = append(otelAttrs, c.cfg.Attributes...)
+
+	// Run stopwatch.
+	startTime := time.Now()
+	defer func() {
+		// Use floating point division here for higher precision (instead of Millisecond method).
+		elapsedDuration := time.Since(startTime)
+		c.duration.Record(ctx, float64(elapsedDuration)/float64(time.Millisecond), metric.WithAttributes(otelAttrs...))
+	}()
+
+	// Increment request counter.
+	c.requests.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
+
+	// Start a span for this request.
+	ctx, span := c.cfg.Tracer.Start(ctx, DeletePaymentMethodOperation,
+		trace.WithAttributes(otelAttrs...),
+		clientSpanKind,
+	)
+	// Track stage for error reporting.
+	var stage string
+	defer func() {
+		if err != nil {
+			span.RecordError(err)
+			span.SetStatus(codes.Error, stage)
+			c.errors.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
+		}
+		span.End()
+	}()
+
+	stage = "BuildURL"
+	u := uri.Clone(c.requestURL(ctx))
+	var pathParts [2]string
+	pathParts[0] = "/account/v1/payment-methods/"
+	{
+		// Encode "paymentMethodId" parameter.
+		e := uri.NewPathEncoder(uri.PathEncoderConfig{
+			Param:   "paymentMethodId",
+			Style:   uri.PathStyleSimple,
+			Explode: false,
+		})
+		if err := func() error {
+			return e.EncodeValue(conv.UUIDToString(params.PaymentMethodId))
+		}(); err != nil {
+			return res, errors.Wrap(err, "encode path")
+		}
+		encoded, err := e.Result()
+		if err != nil {
+			return res, errors.Wrap(err, "encode path")
+		}
+		pathParts[1] = encoded
+	}
+	uri.AddPathParts(u, pathParts[:]...)
+
+	stage = "EncodeRequest"
+	r, err := ht.NewRequest(ctx, "DELETE", u)
+	if err != nil {
+		return res, errors.Wrap(err, "create request")
+	}
+
+	{
+		type bitset = [1]uint8
+		var satisfied bitset
+		{
+			stage = "Security:AccountAuth"
+			switch err := c.securityAccountAuth(ctx, DeletePaymentMethodOperation, r); {
+			case err == nil: // if NO error
+				satisfied[0] |= 1 << 0
+			case errors.Is(err, ogenerrors.ErrSkipClientSecurity):
+				// Skip this security.
+			default:
+				return res, errors.Wrap(err, "security \"AccountAuth\"")
+			}
+		}
+
+		if ok := func() bool {
+		nextRequirement:
+			for _, requirement := range []bitset{
+				{0b00000001},
+			} {
+				for i, mask := range requirement {
+					if satisfied[i]&mask != mask {
+						continue nextRequirement
+					}
+				}
+				return true
+			}
+			return false
+		}(); !ok {
+			return res, ogenerrors.ErrSecurityRequirementIsNotSatisfied
+		}
+	}
+
+	stage = "SendRequest"
+	resp, err := c.cfg.Client.Do(r)
+	if err != nil {
+		return res, errors.Wrap(err, "do request")
+	}
+	body := resp.Body
+	defer func() {
+		// Drain the body to EOF before closing, so the underlying
+		// connection can be reused by the Transport regardless of the
+		// response status code. See https://github.com/ogen-go/ogen/issues/1670.
+		_, _ = io.Copy(io.Discard, body)
+		_ = body.Close()
+	}()
+
+	stage = "DecodeResponse"
+	result, err := decodeDeletePaymentMethodResponse(resp)
+	if err != nil {
+		return res, errors.Wrap(err, "decode response")
+	}
+
+	return result, nil
+}
+
+// FindProjectPayer invokes find-project-payer operation.
+//
+// Returns 404 when no account pays for it. No resources can be created until one does.
+//
+// GET /account/v1/projects/{projectId}/billing-account
+func (c *Client) FindProjectPayer(ctx context.Context, params FindProjectPayerParams) (*ProjectBinding, error) {
+	res, err := c.sendFindProjectPayer(ctx, params)
+	return res, err
+}
+
+func (c *Client) sendFindProjectPayer(ctx context.Context, params FindProjectPayerParams) (res *ProjectBinding, err error) {
+	otelAttrs := []attribute.KeyValue{
+		otelogen.OperationID("find-project-payer"),
+		semconv.HTTPRequestMethodKey.String("GET"),
+		semconv.URLTemplateKey.String("/account/v1/projects/{projectId}/billing-account"),
+	}
+	otelAttrs = append(otelAttrs, c.cfg.Attributes...)
+
+	// Run stopwatch.
+	startTime := time.Now()
+	defer func() {
+		// Use floating point division here for higher precision (instead of Millisecond method).
+		elapsedDuration := time.Since(startTime)
+		c.duration.Record(ctx, float64(elapsedDuration)/float64(time.Millisecond), metric.WithAttributes(otelAttrs...))
+	}()
+
+	// Increment request counter.
+	c.requests.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
+
+	// Start a span for this request.
+	ctx, span := c.cfg.Tracer.Start(ctx, FindProjectPayerOperation,
+		trace.WithAttributes(otelAttrs...),
+		clientSpanKind,
+	)
+	// Track stage for error reporting.
+	var stage string
+	defer func() {
+		if err != nil {
+			span.RecordError(err)
+			span.SetStatus(codes.Error, stage)
+			c.errors.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
+		}
+		span.End()
+	}()
+
+	stage = "BuildURL"
+	u := uri.Clone(c.requestURL(ctx))
+	var pathParts [3]string
+	pathParts[0] = "/account/v1/projects/"
+	{
+		// Encode "projectId" parameter.
+		e := uri.NewPathEncoder(uri.PathEncoderConfig{
+			Param:   "projectId",
+			Style:   uri.PathStyleSimple,
+			Explode: false,
+		})
+		if err := func() error {
+			return e.EncodeValue(conv.UUIDToString(params.ProjectId))
+		}(); err != nil {
+			return res, errors.Wrap(err, "encode path")
+		}
+		encoded, err := e.Result()
+		if err != nil {
+			return res, errors.Wrap(err, "encode path")
+		}
+		pathParts[1] = encoded
+	}
+	pathParts[2] = "/billing-account"
+	uri.AddPathParts(u, pathParts[:]...)
+
+	stage = "EncodeRequest"
+	r, err := ht.NewRequest(ctx, "GET", u)
+	if err != nil {
+		return res, errors.Wrap(err, "create request")
+	}
+
+	{
+		type bitset = [1]uint8
+		var satisfied bitset
+		{
+			stage = "Security:AccountAuth"
+			switch err := c.securityAccountAuth(ctx, FindProjectPayerOperation, r); {
+			case err == nil: // if NO error
+				satisfied[0] |= 1 << 0
+			case errors.Is(err, ogenerrors.ErrSkipClientSecurity):
+				// Skip this security.
+			default:
+				return res, errors.Wrap(err, "security \"AccountAuth\"")
+			}
+		}
+
+		if ok := func() bool {
+		nextRequirement:
+			for _, requirement := range []bitset{
+				{0b00000001},
+			} {
+				for i, mask := range requirement {
+					if satisfied[i]&mask != mask {
+						continue nextRequirement
+					}
+				}
+				return true
+			}
+			return false
+		}(); !ok {
+			return res, ogenerrors.ErrSecurityRequirementIsNotSatisfied
+		}
+	}
+
+	stage = "SendRequest"
+	resp, err := c.cfg.Client.Do(r)
+	if err != nil {
+		return res, errors.Wrap(err, "do request")
+	}
+	body := resp.Body
+	defer func() {
+		// Drain the body to EOF before closing, so the underlying
+		// connection can be reused by the Transport regardless of the
+		// response status code. See https://github.com/ogen-go/ogen/issues/1670.
+		_, _ = io.Copy(io.Discard, body)
+		_ = body.Close()
+	}()
+
+	stage = "DecodeResponse"
+	result, err := decodeFindProjectPayerResponse(resp)
+	if err != nil {
+		return res, errors.Wrap(err, "decode response")
+	}
+
+	return result, nil
+}
+
+// GetAccountBalance invokes get-account-balance operation.
+//
+// What the account holds and what it can still spend.
+//
+// GET /account/v1/billing-accounts/{accountId}/balance
+func (c *Client) GetAccountBalance(ctx context.Context, params GetAccountBalanceParams) (*AccountBalance, error) {
+	res, err := c.sendGetAccountBalance(ctx, params)
+	return res, err
+}
+
+func (c *Client) sendGetAccountBalance(ctx context.Context, params GetAccountBalanceParams) (res *AccountBalance, err error) {
+	otelAttrs := []attribute.KeyValue{
+		otelogen.OperationID("get-account-balance"),
+		semconv.HTTPRequestMethodKey.String("GET"),
+		semconv.URLTemplateKey.String("/account/v1/billing-accounts/{accountId}/balance"),
+	}
+	otelAttrs = append(otelAttrs, c.cfg.Attributes...)
+
+	// Run stopwatch.
+	startTime := time.Now()
+	defer func() {
+		// Use floating point division here for higher precision (instead of Millisecond method).
+		elapsedDuration := time.Since(startTime)
+		c.duration.Record(ctx, float64(elapsedDuration)/float64(time.Millisecond), metric.WithAttributes(otelAttrs...))
+	}()
+
+	// Increment request counter.
+	c.requests.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
+
+	// Start a span for this request.
+	ctx, span := c.cfg.Tracer.Start(ctx, GetAccountBalanceOperation,
+		trace.WithAttributes(otelAttrs...),
+		clientSpanKind,
+	)
+	// Track stage for error reporting.
+	var stage string
+	defer func() {
+		if err != nil {
+			span.RecordError(err)
+			span.SetStatus(codes.Error, stage)
+			c.errors.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
+		}
+		span.End()
+	}()
+
+	stage = "BuildURL"
+	u := uri.Clone(c.requestURL(ctx))
+	var pathParts [3]string
+	pathParts[0] = "/account/v1/billing-accounts/"
+	{
+		// Encode "accountId" parameter.
+		e := uri.NewPathEncoder(uri.PathEncoderConfig{
+			Param:   "accountId",
+			Style:   uri.PathStyleSimple,
+			Explode: false,
+		})
+		if err := func() error {
+			return e.EncodeValue(conv.Int64ToString(params.AccountId))
+		}(); err != nil {
+			return res, errors.Wrap(err, "encode path")
+		}
+		encoded, err := e.Result()
+		if err != nil {
+			return res, errors.Wrap(err, "encode path")
+		}
+		pathParts[1] = encoded
+	}
+	pathParts[2] = "/balance"
+	uri.AddPathParts(u, pathParts[:]...)
+
+	stage = "EncodeRequest"
+	r, err := ht.NewRequest(ctx, "GET", u)
+	if err != nil {
+		return res, errors.Wrap(err, "create request")
+	}
+
+	{
+		type bitset = [1]uint8
+		var satisfied bitset
+		{
+			stage = "Security:AccountAuth"
+			switch err := c.securityAccountAuth(ctx, GetAccountBalanceOperation, r); {
+			case err == nil: // if NO error
+				satisfied[0] |= 1 << 0
+			case errors.Is(err, ogenerrors.ErrSkipClientSecurity):
+				// Skip this security.
+			default:
+				return res, errors.Wrap(err, "security \"AccountAuth\"")
+			}
+		}
+
+		if ok := func() bool {
+		nextRequirement:
+			for _, requirement := range []bitset{
+				{0b00000001},
+			} {
+				for i, mask := range requirement {
+					if satisfied[i]&mask != mask {
+						continue nextRequirement
+					}
+				}
+				return true
+			}
+			return false
+		}(); !ok {
+			return res, ogenerrors.ErrSecurityRequirementIsNotSatisfied
+		}
+	}
+
+	stage = "SendRequest"
+	resp, err := c.cfg.Client.Do(r)
+	if err != nil {
+		return res, errors.Wrap(err, "do request")
+	}
+	body := resp.Body
+	defer func() {
+		// Drain the body to EOF before closing, so the underlying
+		// connection can be reused by the Transport regardless of the
+		// response status code. See https://github.com/ogen-go/ogen/issues/1670.
+		_, _ = io.Copy(io.Discard, body)
+		_ = body.Close()
+	}()
+
+	stage = "DecodeResponse"
+	result, err := decodeGetAccountBalanceResponse(resp)
+	if err != nil {
+		return res, errors.Wrap(err, "decode response")
+	}
+
+	return result, nil
+}
+
 // GetBillingAccount invokes get-billing-account operation.
 //
-// One account, with the projects it currently pays for.
-//
-// The list returns the same objects, so this exists for the case the list cannot serve: a link
-// straight to one account. Making the caller fetch every account and filter turns a bookmarked page
-// into a request whose cost grows with how many accounts they hold.
-//
-// GET /account/v1/billing-accounts/{accountKey}
+// GET /account/v1/billing-accounts/{accountId}
 func (c *Client) GetBillingAccount(ctx context.Context, params GetBillingAccountParams) (*BillingAccount, error) {
 	res, err := c.sendGetBillingAccount(ctx, params)
 	return res, err
@@ -1129,7 +1490,7 @@ func (c *Client) sendGetBillingAccount(ctx context.Context, params GetBillingAcc
 	otelAttrs := []attribute.KeyValue{
 		otelogen.OperationID("get-billing-account"),
 		semconv.HTTPRequestMethodKey.String("GET"),
-		semconv.URLTemplateKey.String("/account/v1/billing-accounts/{accountKey}"),
+		semconv.URLTemplateKey.String("/account/v1/billing-accounts/{accountId}"),
 	}
 	otelAttrs = append(otelAttrs, c.cfg.Attributes...)
 
@@ -1165,14 +1526,14 @@ func (c *Client) sendGetBillingAccount(ctx context.Context, params GetBillingAcc
 	var pathParts [2]string
 	pathParts[0] = "/account/v1/billing-accounts/"
 	{
-		// Encode "accountKey" parameter.
+		// Encode "accountId" parameter.
 		e := uri.NewPathEncoder(uri.PathEncoderConfig{
-			Param:   "accountKey",
+			Param:   "accountId",
 			Style:   uri.PathStyleSimple,
 			Explode: false,
 		})
 		if err := func() error {
-			return e.EncodeValue(conv.StringToString(params.AccountKey))
+			return e.EncodeValue(conv.Int64ToString(params.AccountId))
 		}(); err != nil {
 			return res, errors.Wrap(err, "encode path")
 		}
@@ -1194,14 +1555,14 @@ func (c *Client) sendGetBillingAccount(ctx context.Context, params GetBillingAcc
 		type bitset = [1]uint8
 		var satisfied bitset
 		{
-			stage = "Security:BearerAuth"
-			switch err := c.securityBearerAuth(ctx, GetBillingAccountOperation, r); {
+			stage = "Security:AccountAuth"
+			switch err := c.securityAccountAuth(ctx, GetBillingAccountOperation, r); {
 			case err == nil: // if NO error
 				satisfied[0] |= 1 << 0
 			case errors.Is(err, ogenerrors.ErrSkipClientSecurity):
 				// Skip this security.
 			default:
-				return res, errors.Wrap(err, "security \"BearerAuth\"")
+				return res, errors.Wrap(err, "security \"AccountAuth\"")
 			}
 		}
 
@@ -1246,211 +1607,19 @@ func (c *Client) sendGetBillingAccount(ctx context.Context, params GetBillingAcc
 	return result, nil
 }
 
-// GetChargeUsage invokes get-charge-usage operation.
-//
-// Splits one charge back into the projects that produced it, and lists the resources it could have
-// come from.
-//
-// # Why this is not a field on the charge
-//
-// A charge has no project, and that is not an omission: the billing subject is the account, and the
-// project is a dimension on each usage event. When three of an account's projects use the same
-// product, their usage aggregates into one charge — that charge genuinely spans three projects, and
-// stamping any single project id on it would be wrong.
-//
-// A split is also more useful than a label would be: it gives proportions, and proportions are what
-// decide which project's resources to switch off.
-//
-// # The quantity here is what was reported, not what was billed
-//
-// Conversion (machine-seconds to machine-hours) happens on the pricing side, and the engine does not
-// echo `unit_config` back on a charge. So this figure times the unit price does not equal the total
-// — a step is missing in between, and that step only becomes visible on the invoice, where the whole
-// pricing configuration is frozen onto each line.
-//
-// Reported quantity is still the right number for "which project is burning this", which is what the
-// split is for.
-//
-// # The resource list says which, not how much
-//
-// Usage events carry no resource id — it is not a grouping dimension, and making it one would mean
-// one time series per machine per hour. So the engine cannot attribute a charge to a machine. What it
-// can be attributed to is a product, and which resources of that product exist is something billing
-// knows from its own records.
-//
-// Destroyed resources are listed too: this period's charge includes the part they ran for. Leaving
-// them out is what makes the numbers fail to add up for someone who deleted a machine mid-month —
-// which is exactly the case they are trying to explain.
-//
-// # A flat fee answers with an empty split
-//
-// There is no meter behind it, so there is nothing to attribute. That is an answer, not an error.
-//
-// GET /account/v1/billing-accounts/{accountKey}/charges/{chargeId}/usage
-func (c *Client) GetChargeUsage(ctx context.Context, params GetChargeUsageParams) (*ChargeUsage, error) {
-	res, err := c.sendGetChargeUsage(ctx, params)
-	return res, err
-}
-
-func (c *Client) sendGetChargeUsage(ctx context.Context, params GetChargeUsageParams) (res *ChargeUsage, err error) {
-	otelAttrs := []attribute.KeyValue{
-		otelogen.OperationID("get-charge-usage"),
-		semconv.HTTPRequestMethodKey.String("GET"),
-		semconv.URLTemplateKey.String("/account/v1/billing-accounts/{accountKey}/charges/{chargeId}/usage"),
-	}
-	otelAttrs = append(otelAttrs, c.cfg.Attributes...)
-
-	// Run stopwatch.
-	startTime := time.Now()
-	defer func() {
-		// Use floating point division here for higher precision (instead of Millisecond method).
-		elapsedDuration := time.Since(startTime)
-		c.duration.Record(ctx, float64(elapsedDuration)/float64(time.Millisecond), metric.WithAttributes(otelAttrs...))
-	}()
-
-	// Increment request counter.
-	c.requests.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
-
-	// Start a span for this request.
-	ctx, span := c.cfg.Tracer.Start(ctx, GetChargeUsageOperation,
-		trace.WithAttributes(otelAttrs...),
-		clientSpanKind,
-	)
-	// Track stage for error reporting.
-	var stage string
-	defer func() {
-		if err != nil {
-			span.RecordError(err)
-			span.SetStatus(codes.Error, stage)
-			c.errors.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
-		}
-		span.End()
-	}()
-
-	stage = "BuildURL"
-	u := uri.Clone(c.requestURL(ctx))
-	var pathParts [5]string
-	pathParts[0] = "/account/v1/billing-accounts/"
-	{
-		// Encode "accountKey" parameter.
-		e := uri.NewPathEncoder(uri.PathEncoderConfig{
-			Param:   "accountKey",
-			Style:   uri.PathStyleSimple,
-			Explode: false,
-		})
-		if err := func() error {
-			return e.EncodeValue(conv.StringToString(params.AccountKey))
-		}(); err != nil {
-			return res, errors.Wrap(err, "encode path")
-		}
-		encoded, err := e.Result()
-		if err != nil {
-			return res, errors.Wrap(err, "encode path")
-		}
-		pathParts[1] = encoded
-	}
-	pathParts[2] = "/charges/"
-	{
-		// Encode "chargeId" parameter.
-		e := uri.NewPathEncoder(uri.PathEncoderConfig{
-			Param:   "chargeId",
-			Style:   uri.PathStyleSimple,
-			Explode: false,
-		})
-		if err := func() error {
-			return e.EncodeValue(conv.StringToString(params.ChargeId))
-		}(); err != nil {
-			return res, errors.Wrap(err, "encode path")
-		}
-		encoded, err := e.Result()
-		if err != nil {
-			return res, errors.Wrap(err, "encode path")
-		}
-		pathParts[3] = encoded
-	}
-	pathParts[4] = "/usage"
-	uri.AddPathParts(u, pathParts[:]...)
-
-	stage = "EncodeRequest"
-	r, err := ht.NewRequest(ctx, "GET", u)
-	if err != nil {
-		return res, errors.Wrap(err, "create request")
-	}
-
-	{
-		type bitset = [1]uint8
-		var satisfied bitset
-		{
-			stage = "Security:BearerAuth"
-			switch err := c.securityBearerAuth(ctx, GetChargeUsageOperation, r); {
-			case err == nil: // if NO error
-				satisfied[0] |= 1 << 0
-			case errors.Is(err, ogenerrors.ErrSkipClientSecurity):
-				// Skip this security.
-			default:
-				return res, errors.Wrap(err, "security \"BearerAuth\"")
-			}
-		}
-
-		if ok := func() bool {
-		nextRequirement:
-			for _, requirement := range []bitset{
-				{0b00000001},
-			} {
-				for i, mask := range requirement {
-					if satisfied[i]&mask != mask {
-						continue nextRequirement
-					}
-				}
-				return true
-			}
-			return false
-		}(); !ok {
-			return res, ogenerrors.ErrSecurityRequirementIsNotSatisfied
-		}
-	}
-
-	stage = "SendRequest"
-	resp, err := c.cfg.Client.Do(r)
-	if err != nil {
-		return res, errors.Wrap(err, "do request")
-	}
-	body := resp.Body
-	defer func() {
-		// Drain the body to EOF before closing, so the underlying
-		// connection can be reused by the Transport regardless of the
-		// response status code. See https://github.com/ogen-go/ogen/issues/1670.
-		_, _ = io.Copy(io.Discard, body)
-		_ = body.Close()
-	}()
-
-	stage = "DecodeResponse"
-	result, err := decodeGetChargeUsageResponse(resp)
-	if err != nil {
-		return res, errors.Wrap(err, "decode response")
-	}
-
-	return result, nil
-}
-
 // GetInvoice invokes get-invoice operation.
 //
-// A total does not answer "why is it this much", and that is the question a bill provokes. Each line
-// carries its service period, without which lines of the same name — hundreds of them on an hourly
-// bill — cannot be told apart, and how much of it credit covered, which is the answer to "I have a
-// balance, why am I being charged".
-//
-// GET /account/v1/billing-accounts/{accountKey}/invoices/{invoiceId}
-func (c *Client) GetInvoice(ctx context.Context, params GetInvoiceParams) (*InvoiceDetail, error) {
+// GET /account/v1/invoices/{invoiceId}
+func (c *Client) GetInvoice(ctx context.Context, params GetInvoiceParams) (*Invoice, error) {
 	res, err := c.sendGetInvoice(ctx, params)
 	return res, err
 }
 
-func (c *Client) sendGetInvoice(ctx context.Context, params GetInvoiceParams) (res *InvoiceDetail, err error) {
+func (c *Client) sendGetInvoice(ctx context.Context, params GetInvoiceParams) (res *Invoice, err error) {
 	otelAttrs := []attribute.KeyValue{
 		otelogen.OperationID("get-invoice"),
 		semconv.HTTPRequestMethodKey.String("GET"),
-		semconv.URLTemplateKey.String("/account/v1/billing-accounts/{accountKey}/invoices/{invoiceId}"),
+		semconv.URLTemplateKey.String("/account/v1/invoices/{invoiceId}"),
 	}
 	otelAttrs = append(otelAttrs, c.cfg.Attributes...)
 
@@ -1483,27 +1652,8 @@ func (c *Client) sendGetInvoice(ctx context.Context, params GetInvoiceParams) (r
 
 	stage = "BuildURL"
 	u := uri.Clone(c.requestURL(ctx))
-	var pathParts [4]string
-	pathParts[0] = "/account/v1/billing-accounts/"
-	{
-		// Encode "accountKey" parameter.
-		e := uri.NewPathEncoder(uri.PathEncoderConfig{
-			Param:   "accountKey",
-			Style:   uri.PathStyleSimple,
-			Explode: false,
-		})
-		if err := func() error {
-			return e.EncodeValue(conv.StringToString(params.AccountKey))
-		}(); err != nil {
-			return res, errors.Wrap(err, "encode path")
-		}
-		encoded, err := e.Result()
-		if err != nil {
-			return res, errors.Wrap(err, "encode path")
-		}
-		pathParts[1] = encoded
-	}
-	pathParts[2] = "/invoices/"
+	var pathParts [2]string
+	pathParts[0] = "/account/v1/invoices/"
 	{
 		// Encode "invoiceId" parameter.
 		e := uri.NewPathEncoder(uri.PathEncoderConfig{
@@ -1512,7 +1662,7 @@ func (c *Client) sendGetInvoice(ctx context.Context, params GetInvoiceParams) (r
 			Explode: false,
 		})
 		if err := func() error {
-			return e.EncodeValue(conv.StringToString(params.InvoiceId))
+			return e.EncodeValue(conv.UUIDToString(params.InvoiceId))
 		}(); err != nil {
 			return res, errors.Wrap(err, "encode path")
 		}
@@ -1520,7 +1670,7 @@ func (c *Client) sendGetInvoice(ctx context.Context, params GetInvoiceParams) (r
 		if err != nil {
 			return res, errors.Wrap(err, "encode path")
 		}
-		pathParts[3] = encoded
+		pathParts[1] = encoded
 	}
 	uri.AddPathParts(u, pathParts[:]...)
 
@@ -1534,14 +1684,14 @@ func (c *Client) sendGetInvoice(ctx context.Context, params GetInvoiceParams) (r
 		type bitset = [1]uint8
 		var satisfied bitset
 		{
-			stage = "Security:BearerAuth"
-			switch err := c.securityBearerAuth(ctx, GetInvoiceOperation, r); {
+			stage = "Security:AccountAuth"
+			switch err := c.securityAccountAuth(ctx, GetInvoiceOperation, r); {
 			case err == nil: // if NO error
 				satisfied[0] |= 1 << 0
 			case errors.Is(err, ogenerrors.ErrSkipClientSecurity):
 				// Skip this security.
 			default:
-				return res, errors.Wrap(err, "security \"BearerAuth\"")
+				return res, errors.Wrap(err, "security \"AccountAuth\"")
 			}
 		}
 
@@ -1588,10 +1738,7 @@ func (c *Client) sendGetInvoice(ctx context.Context, params GetInvoiceParams) (r
 
 // GetOrder invokes get-order operation.
 //
-// Each line names what was asked for, how much of it, and what it produced. The list route carries
-// lines too; this one exists for a permanent link to a single transaction.
-//
-// GET /account/v1/billing-accounts/{accountKey}/orders/{orderId}
+// GET /account/v1/orders/{orderId}
 func (c *Client) GetOrder(ctx context.Context, params GetOrderParams) (*Order, error) {
 	res, err := c.sendGetOrder(ctx, params)
 	return res, err
@@ -1601,7 +1748,7 @@ func (c *Client) sendGetOrder(ctx context.Context, params GetOrderParams) (res *
 	otelAttrs := []attribute.KeyValue{
 		otelogen.OperationID("get-order"),
 		semconv.HTTPRequestMethodKey.String("GET"),
-		semconv.URLTemplateKey.String("/account/v1/billing-accounts/{accountKey}/orders/{orderId}"),
+		semconv.URLTemplateKey.String("/account/v1/orders/{orderId}"),
 	}
 	otelAttrs = append(otelAttrs, c.cfg.Attributes...)
 
@@ -1634,27 +1781,8 @@ func (c *Client) sendGetOrder(ctx context.Context, params GetOrderParams) (res *
 
 	stage = "BuildURL"
 	u := uri.Clone(c.requestURL(ctx))
-	var pathParts [4]string
-	pathParts[0] = "/account/v1/billing-accounts/"
-	{
-		// Encode "accountKey" parameter.
-		e := uri.NewPathEncoder(uri.PathEncoderConfig{
-			Param:   "accountKey",
-			Style:   uri.PathStyleSimple,
-			Explode: false,
-		})
-		if err := func() error {
-			return e.EncodeValue(conv.StringToString(params.AccountKey))
-		}(); err != nil {
-			return res, errors.Wrap(err, "encode path")
-		}
-		encoded, err := e.Result()
-		if err != nil {
-			return res, errors.Wrap(err, "encode path")
-		}
-		pathParts[1] = encoded
-	}
-	pathParts[2] = "/orders/"
+	var pathParts [2]string
+	pathParts[0] = "/account/v1/orders/"
 	{
 		// Encode "orderId" parameter.
 		e := uri.NewPathEncoder(uri.PathEncoderConfig{
@@ -1671,7 +1799,7 @@ func (c *Client) sendGetOrder(ctx context.Context, params GetOrderParams) (res *
 		if err != nil {
 			return res, errors.Wrap(err, "encode path")
 		}
-		pathParts[3] = encoded
+		pathParts[1] = encoded
 	}
 	uri.AddPathParts(u, pathParts[:]...)
 
@@ -1685,14 +1813,14 @@ func (c *Client) sendGetOrder(ctx context.Context, params GetOrderParams) (res *
 		type bitset = [1]uint8
 		var satisfied bitset
 		{
-			stage = "Security:BearerAuth"
-			switch err := c.securityBearerAuth(ctx, GetOrderOperation, r); {
+			stage = "Security:AccountAuth"
+			switch err := c.securityAccountAuth(ctx, GetOrderOperation, r); {
 			case err == nil: // if NO error
 				satisfied[0] |= 1 << 0
 			case errors.Is(err, ogenerrors.ErrSkipClientSecurity):
 				// Skip this security.
 			default:
-				return res, errors.Wrap(err, "security \"BearerAuth\"")
+				return res, errors.Wrap(err, "security \"AccountAuth\"")
 			}
 		}
 
@@ -1737,31 +1865,25 @@ func (c *Client) sendGetOrder(ctx context.Context, params GetOrderParams) (res *
 	return result, nil
 }
 
-// KeepSubscription invokes keep-subscription operation.
+// GetProjectBillingAccount invokes get-project-billing-account operation.
 //
-// Takes back a cancellation that was set for the end of the period, so the plan carries on.
+// A deliberately narrow view: the payer's identity, its currency, and how much can still be spent.
+// Cards, invoices and transaction history are not included; they belong to the account owner and are
+// reached through `/account/v1/`.
 //
-// It only works on a cancellation, not on a scheduled downgrade. Scheduling a change to another plan
-// leaves a second, scheduled subscription holding the customer's one slot, and the engine offers no
-// way to remove it: unscheduling is refused with a conflict and the scheduled subscription cannot be
-// deleted over HTTP. So a downgrade becomes final the moment it is scheduled, and saying so up front
-// is the only honest thing to do — this endpoint answers `BILLING_NO_SCHEDULED_CHANGE` rather than
-// pretending to undo it.
+// Returns 404 when no account pays for this project. Resources cannot be created in that state.
 //
-// Without this, someone who cancels by accident has to wait out the period and buy the tier again,
-// losing whatever the tier had accumulated.
-//
-// POST /account/v1/billing-accounts/{accountKey}/subscription/keep
-func (c *Client) KeepSubscription(ctx context.Context, params KeepSubscriptionParams) (*Subscription, error) {
-	res, err := c.sendKeepSubscription(ctx, params)
+// GET /api/v1/projects/{projectId}/billing-account
+func (c *Client) GetProjectBillingAccount(ctx context.Context, params GetProjectBillingAccountParams) (*ProjectPayer, error) {
+	res, err := c.sendGetProjectBillingAccount(ctx, params)
 	return res, err
 }
 
-func (c *Client) sendKeepSubscription(ctx context.Context, params KeepSubscriptionParams) (res *Subscription, err error) {
+func (c *Client) sendGetProjectBillingAccount(ctx context.Context, params GetProjectBillingAccountParams) (res *ProjectPayer, err error) {
 	otelAttrs := []attribute.KeyValue{
-		otelogen.OperationID("keep-subscription"),
-		semconv.HTTPRequestMethodKey.String("POST"),
-		semconv.URLTemplateKey.String("/account/v1/billing-accounts/{accountKey}/subscription/keep"),
+		otelogen.OperationID("get-project-billing-account"),
+		semconv.HTTPRequestMethodKey.String("GET"),
+		semconv.URLTemplateKey.String("/api/v1/projects/{projectId}/billing-account"),
 	}
 	otelAttrs = append(otelAttrs, c.cfg.Attributes...)
 
@@ -1777,7 +1899,7 @@ func (c *Client) sendKeepSubscription(ctx context.Context, params KeepSubscripti
 	c.requests.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
 
 	// Start a span for this request.
-	ctx, span := c.cfg.Tracer.Start(ctx, KeepSubscriptionOperation,
+	ctx, span := c.cfg.Tracer.Start(ctx, GetProjectBillingAccountOperation,
 		trace.WithAttributes(otelAttrs...),
 		clientSpanKind,
 	)
@@ -1795,16 +1917,16 @@ func (c *Client) sendKeepSubscription(ctx context.Context, params KeepSubscripti
 	stage = "BuildURL"
 	u := uri.Clone(c.requestURL(ctx))
 	var pathParts [3]string
-	pathParts[0] = "/account/v1/billing-accounts/"
+	pathParts[0] = "/api/v1/projects/"
 	{
-		// Encode "accountKey" parameter.
+		// Encode "projectId" parameter.
 		e := uri.NewPathEncoder(uri.PathEncoderConfig{
-			Param:   "accountKey",
+			Param:   "projectId",
 			Style:   uri.PathStyleSimple,
 			Explode: false,
 		})
 		if err := func() error {
-			return e.EncodeValue(conv.StringToString(params.AccountKey))
+			return e.EncodeValue(conv.UUIDToString(params.ProjectId))
 		}(); err != nil {
 			return res, errors.Wrap(err, "encode path")
 		}
@@ -1814,11 +1936,11 @@ func (c *Client) sendKeepSubscription(ctx context.Context, params KeepSubscripti
 		}
 		pathParts[1] = encoded
 	}
-	pathParts[2] = "/subscription/keep"
+	pathParts[2] = "/billing-account"
 	uri.AddPathParts(u, pathParts[:]...)
 
 	stage = "EncodeRequest"
-	r, err := ht.NewRequest(ctx, "POST", u)
+	r, err := ht.NewRequest(ctx, "GET", u)
 	if err != nil {
 		return res, errors.Wrap(err, "create request")
 	}
@@ -1827,14 +1949,14 @@ func (c *Client) sendKeepSubscription(ctx context.Context, params KeepSubscripti
 		type bitset = [1]uint8
 		var satisfied bitset
 		{
-			stage = "Security:BearerAuth"
-			switch err := c.securityBearerAuth(ctx, KeepSubscriptionOperation, r); {
+			stage = "Security:ProjectAuth"
+			switch err := c.securityProjectAuth(ctx, GetProjectBillingAccountOperation, r); {
 			case err == nil: // if NO error
 				satisfied[0] |= 1 << 0
 			case errors.Is(err, ogenerrors.ErrSkipClientSecurity):
 				// Skip this security.
 			default:
-				return res, errors.Wrap(err, "security \"BearerAuth\"")
+				return res, errors.Wrap(err, "security \"ProjectAuth\"")
 			}
 		}
 
@@ -1871,7 +1993,7 @@ func (c *Client) sendKeepSubscription(ctx context.Context, params KeepSubscripti
 	}()
 
 	stage = "DecodeResponse"
-	result, err := decodeKeepSubscriptionResponse(resp)
+	result, err := decodeGetProjectBillingAccountResponse(resp)
 	if err != nil {
 		return res, errors.Wrap(err, "decode response")
 	}
@@ -1879,22 +2001,19 @@ func (c *Client) sendKeepSubscription(ctx context.Context, params KeepSubscripti
 	return result, nil
 }
 
-// ListAccountRefunds invokes list-account-refunds operation.
+// GetProjectOrder invokes get-project-order operation.
 //
-// Each refund carries how it was split. A customer asking "I was refunded 100, why is only 60 back on
-// my card" is answered here and nowhere else.
-//
-// GET /account/v1/billing-accounts/{accountKey}/refunds
-func (c *Client) ListAccountRefunds(ctx context.Context, params ListAccountRefundsParams) (*AccountRefundList, error) {
-	res, err := c.sendListAccountRefunds(ctx, params)
+// GET /api/v1/projects/{projectId}/orders/{orderId}
+func (c *Client) GetProjectOrder(ctx context.Context, params GetProjectOrderParams) (*Order, error) {
+	res, err := c.sendGetProjectOrder(ctx, params)
 	return res, err
 }
 
-func (c *Client) sendListAccountRefunds(ctx context.Context, params ListAccountRefundsParams) (res *AccountRefundList, err error) {
+func (c *Client) sendGetProjectOrder(ctx context.Context, params GetProjectOrderParams) (res *Order, err error) {
 	otelAttrs := []attribute.KeyValue{
-		otelogen.OperationID("list-account-refunds"),
+		otelogen.OperationID("get-project-order"),
 		semconv.HTTPRequestMethodKey.String("GET"),
-		semconv.URLTemplateKey.String("/account/v1/billing-accounts/{accountKey}/refunds"),
+		semconv.URLTemplateKey.String("/api/v1/projects/{projectId}/orders/{orderId}"),
 	}
 	otelAttrs = append(otelAttrs, c.cfg.Attributes...)
 
@@ -1910,7 +2029,492 @@ func (c *Client) sendListAccountRefunds(ctx context.Context, params ListAccountR
 	c.requests.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
 
 	// Start a span for this request.
-	ctx, span := c.cfg.Tracer.Start(ctx, ListAccountRefundsOperation,
+	ctx, span := c.cfg.Tracer.Start(ctx, GetProjectOrderOperation,
+		trace.WithAttributes(otelAttrs...),
+		clientSpanKind,
+	)
+	// Track stage for error reporting.
+	var stage string
+	defer func() {
+		if err != nil {
+			span.RecordError(err)
+			span.SetStatus(codes.Error, stage)
+			c.errors.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
+		}
+		span.End()
+	}()
+
+	stage = "BuildURL"
+	u := uri.Clone(c.requestURL(ctx))
+	var pathParts [4]string
+	pathParts[0] = "/api/v1/projects/"
+	{
+		// Encode "projectId" parameter.
+		e := uri.NewPathEncoder(uri.PathEncoderConfig{
+			Param:   "projectId",
+			Style:   uri.PathStyleSimple,
+			Explode: false,
+		})
+		if err := func() error {
+			return e.EncodeValue(conv.UUIDToString(params.ProjectId))
+		}(); err != nil {
+			return res, errors.Wrap(err, "encode path")
+		}
+		encoded, err := e.Result()
+		if err != nil {
+			return res, errors.Wrap(err, "encode path")
+		}
+		pathParts[1] = encoded
+	}
+	pathParts[2] = "/orders/"
+	{
+		// Encode "orderId" parameter.
+		e := uri.NewPathEncoder(uri.PathEncoderConfig{
+			Param:   "orderId",
+			Style:   uri.PathStyleSimple,
+			Explode: false,
+		})
+		if err := func() error {
+			return e.EncodeValue(conv.UUIDToString(params.OrderId))
+		}(); err != nil {
+			return res, errors.Wrap(err, "encode path")
+		}
+		encoded, err := e.Result()
+		if err != nil {
+			return res, errors.Wrap(err, "encode path")
+		}
+		pathParts[3] = encoded
+	}
+	uri.AddPathParts(u, pathParts[:]...)
+
+	stage = "EncodeRequest"
+	r, err := ht.NewRequest(ctx, "GET", u)
+	if err != nil {
+		return res, errors.Wrap(err, "create request")
+	}
+
+	{
+		type bitset = [1]uint8
+		var satisfied bitset
+		{
+			stage = "Security:ProjectAuth"
+			switch err := c.securityProjectAuth(ctx, GetProjectOrderOperation, r); {
+			case err == nil: // if NO error
+				satisfied[0] |= 1 << 0
+			case errors.Is(err, ogenerrors.ErrSkipClientSecurity):
+				// Skip this security.
+			default:
+				return res, errors.Wrap(err, "security \"ProjectAuth\"")
+			}
+		}
+
+		if ok := func() bool {
+		nextRequirement:
+			for _, requirement := range []bitset{
+				{0b00000001},
+			} {
+				for i, mask := range requirement {
+					if satisfied[i]&mask != mask {
+						continue nextRequirement
+					}
+				}
+				return true
+			}
+			return false
+		}(); !ok {
+			return res, ogenerrors.ErrSecurityRequirementIsNotSatisfied
+		}
+	}
+
+	stage = "SendRequest"
+	resp, err := c.cfg.Client.Do(r)
+	if err != nil {
+		return res, errors.Wrap(err, "do request")
+	}
+	body := resp.Body
+	defer func() {
+		// Drain the body to EOF before closing, so the underlying
+		// connection can be reused by the Transport regardless of the
+		// response status code. See https://github.com/ogen-go/ogen/issues/1670.
+		_, _ = io.Copy(io.Discard, body)
+		_ = body.Close()
+	}()
+
+	stage = "DecodeResponse"
+	result, err := decodeGetProjectOrderResponse(resp)
+	if err != nil {
+		return res, errors.Wrap(err, "decode response")
+	}
+
+	return result, nil
+}
+
+// GetTopUp invokes get-top-up operation.
+//
+// Whether a payment has completed.
+//
+// GET /account/v1/top-ups/{topUpId}
+func (c *Client) GetTopUp(ctx context.Context, params GetTopUpParams) (*TopUp, error) {
+	res, err := c.sendGetTopUp(ctx, params)
+	return res, err
+}
+
+func (c *Client) sendGetTopUp(ctx context.Context, params GetTopUpParams) (res *TopUp, err error) {
+	otelAttrs := []attribute.KeyValue{
+		otelogen.OperationID("get-top-up"),
+		semconv.HTTPRequestMethodKey.String("GET"),
+		semconv.URLTemplateKey.String("/account/v1/top-ups/{topUpId}"),
+	}
+	otelAttrs = append(otelAttrs, c.cfg.Attributes...)
+
+	// Run stopwatch.
+	startTime := time.Now()
+	defer func() {
+		// Use floating point division here for higher precision (instead of Millisecond method).
+		elapsedDuration := time.Since(startTime)
+		c.duration.Record(ctx, float64(elapsedDuration)/float64(time.Millisecond), metric.WithAttributes(otelAttrs...))
+	}()
+
+	// Increment request counter.
+	c.requests.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
+
+	// Start a span for this request.
+	ctx, span := c.cfg.Tracer.Start(ctx, GetTopUpOperation,
+		trace.WithAttributes(otelAttrs...),
+		clientSpanKind,
+	)
+	// Track stage for error reporting.
+	var stage string
+	defer func() {
+		if err != nil {
+			span.RecordError(err)
+			span.SetStatus(codes.Error, stage)
+			c.errors.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
+		}
+		span.End()
+	}()
+
+	stage = "BuildURL"
+	u := uri.Clone(c.requestURL(ctx))
+	var pathParts [2]string
+	pathParts[0] = "/account/v1/top-ups/"
+	{
+		// Encode "topUpId" parameter.
+		e := uri.NewPathEncoder(uri.PathEncoderConfig{
+			Param:   "topUpId",
+			Style:   uri.PathStyleSimple,
+			Explode: false,
+		})
+		if err := func() error {
+			return e.EncodeValue(conv.UUIDToString(params.TopUpId))
+		}(); err != nil {
+			return res, errors.Wrap(err, "encode path")
+		}
+		encoded, err := e.Result()
+		if err != nil {
+			return res, errors.Wrap(err, "encode path")
+		}
+		pathParts[1] = encoded
+	}
+	uri.AddPathParts(u, pathParts[:]...)
+
+	stage = "EncodeRequest"
+	r, err := ht.NewRequest(ctx, "GET", u)
+	if err != nil {
+		return res, errors.Wrap(err, "create request")
+	}
+
+	{
+		type bitset = [1]uint8
+		var satisfied bitset
+		{
+			stage = "Security:AccountAuth"
+			switch err := c.securityAccountAuth(ctx, GetTopUpOperation, r); {
+			case err == nil: // if NO error
+				satisfied[0] |= 1 << 0
+			case errors.Is(err, ogenerrors.ErrSkipClientSecurity):
+				// Skip this security.
+			default:
+				return res, errors.Wrap(err, "security \"AccountAuth\"")
+			}
+		}
+
+		if ok := func() bool {
+		nextRequirement:
+			for _, requirement := range []bitset{
+				{0b00000001},
+			} {
+				for i, mask := range requirement {
+					if satisfied[i]&mask != mask {
+						continue nextRequirement
+					}
+				}
+				return true
+			}
+			return false
+		}(); !ok {
+			return res, ogenerrors.ErrSecurityRequirementIsNotSatisfied
+		}
+	}
+
+	stage = "SendRequest"
+	resp, err := c.cfg.Client.Do(r)
+	if err != nil {
+		return res, errors.Wrap(err, "do request")
+	}
+	body := resp.Body
+	defer func() {
+		// Drain the body to EOF before closing, so the underlying
+		// connection can be reused by the Transport regardless of the
+		// response status code. See https://github.com/ogen-go/ogen/issues/1670.
+		_, _ = io.Copy(io.Discard, body)
+		_ = body.Close()
+	}()
+
+	stage = "DecodeResponse"
+	result, err := decodeGetTopUpResponse(resp)
+	if err != nil {
+		return res, errors.Wrap(err, "decode response")
+	}
+
+	return result, nil
+}
+
+// ListAllocations invokes list-allocations operation.
+//
+// Give `source_id` to follow one top-up or grant through to everything it paid for. Give `target_id`
+// to see which sources paid for one line of an invoice.
+//
+// GET /account/v1/allocations
+func (c *Client) ListAllocations(ctx context.Context, params ListAllocationsParams) (*AllocationList, error) {
+	res, err := c.sendListAllocations(ctx, params)
+	return res, err
+}
+
+func (c *Client) sendListAllocations(ctx context.Context, params ListAllocationsParams) (res *AllocationList, err error) {
+	otelAttrs := []attribute.KeyValue{
+		otelogen.OperationID("list-allocations"),
+		semconv.HTTPRequestMethodKey.String("GET"),
+		semconv.URLTemplateKey.String("/account/v1/allocations"),
+	}
+	otelAttrs = append(otelAttrs, c.cfg.Attributes...)
+
+	// Run stopwatch.
+	startTime := time.Now()
+	defer func() {
+		// Use floating point division here for higher precision (instead of Millisecond method).
+		elapsedDuration := time.Since(startTime)
+		c.duration.Record(ctx, float64(elapsedDuration)/float64(time.Millisecond), metric.WithAttributes(otelAttrs...))
+	}()
+
+	// Increment request counter.
+	c.requests.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
+
+	// Start a span for this request.
+	ctx, span := c.cfg.Tracer.Start(ctx, ListAllocationsOperation,
+		trace.WithAttributes(otelAttrs...),
+		clientSpanKind,
+	)
+	// Track stage for error reporting.
+	var stage string
+	defer func() {
+		if err != nil {
+			span.RecordError(err)
+			span.SetStatus(codes.Error, stage)
+			c.errors.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
+		}
+		span.End()
+	}()
+
+	stage = "BuildURL"
+	u := uri.Clone(c.requestURL(ctx))
+	var pathParts [1]string
+	pathParts[0] = "/account/v1/allocations"
+	uri.AddPathParts(u, pathParts[:]...)
+
+	stage = "EncodeQueryParams"
+	q := uri.NewQueryEncoder()
+	{
+		// Encode "page" parameter.
+		cfg := uri.QueryParameterEncodingConfig{
+			Name:    "page",
+			Style:   uri.QueryStyleForm,
+			Explode: true,
+		}
+
+		if err := q.EncodeParam(cfg, func(e uri.Encoder) error {
+			if val, ok := params.Page.Get(); ok {
+				return e.EncodeValue(conv.Int32ToString(val))
+			}
+			return nil
+		}); err != nil {
+			return res, errors.Wrap(err, "encode query")
+		}
+	}
+	{
+		// Encode "page_size" parameter.
+		cfg := uri.QueryParameterEncodingConfig{
+			Name:    "page_size",
+			Style:   uri.QueryStyleForm,
+			Explode: true,
+		}
+
+		if err := q.EncodeParam(cfg, func(e uri.Encoder) error {
+			if val, ok := params.PageSize.Get(); ok {
+				return e.EncodeValue(conv.Int32ToString(val))
+			}
+			return nil
+		}); err != nil {
+			return res, errors.Wrap(err, "encode query")
+		}
+	}
+	{
+		// Encode "billing_account_id" parameter.
+		cfg := uri.QueryParameterEncodingConfig{
+			Name:    "billing_account_id",
+			Style:   uri.QueryStyleForm,
+			Explode: true,
+		}
+
+		if err := q.EncodeParam(cfg, func(e uri.Encoder) error {
+			if val, ok := params.BillingAccountID.Get(); ok {
+				return e.EncodeValue(conv.Int64ToString(val))
+			}
+			return nil
+		}); err != nil {
+			return res, errors.Wrap(err, "encode query")
+		}
+	}
+	{
+		// Encode "source_id" parameter.
+		cfg := uri.QueryParameterEncodingConfig{
+			Name:    "source_id",
+			Style:   uri.QueryStyleForm,
+			Explode: true,
+		}
+
+		if err := q.EncodeParam(cfg, func(e uri.Encoder) error {
+			if val, ok := params.SourceID.Get(); ok {
+				return e.EncodeValue(conv.UUIDToString(val))
+			}
+			return nil
+		}); err != nil {
+			return res, errors.Wrap(err, "encode query")
+		}
+	}
+	{
+		// Encode "target_id" parameter.
+		cfg := uri.QueryParameterEncodingConfig{
+			Name:    "target_id",
+			Style:   uri.QueryStyleForm,
+			Explode: true,
+		}
+
+		if err := q.EncodeParam(cfg, func(e uri.Encoder) error {
+			if val, ok := params.TargetID.Get(); ok {
+				return e.EncodeValue(conv.UUIDToString(val))
+			}
+			return nil
+		}); err != nil {
+			return res, errors.Wrap(err, "encode query")
+		}
+	}
+	u.RawQuery = q.Values().Encode()
+
+	stage = "EncodeRequest"
+	r, err := ht.NewRequest(ctx, "GET", u)
+	if err != nil {
+		return res, errors.Wrap(err, "create request")
+	}
+
+	{
+		type bitset = [1]uint8
+		var satisfied bitset
+		{
+			stage = "Security:AccountAuth"
+			switch err := c.securityAccountAuth(ctx, ListAllocationsOperation, r); {
+			case err == nil: // if NO error
+				satisfied[0] |= 1 << 0
+			case errors.Is(err, ogenerrors.ErrSkipClientSecurity):
+				// Skip this security.
+			default:
+				return res, errors.Wrap(err, "security \"AccountAuth\"")
+			}
+		}
+
+		if ok := func() bool {
+		nextRequirement:
+			for _, requirement := range []bitset{
+				{0b00000001},
+			} {
+				for i, mask := range requirement {
+					if satisfied[i]&mask != mask {
+						continue nextRequirement
+					}
+				}
+				return true
+			}
+			return false
+		}(); !ok {
+			return res, ogenerrors.ErrSecurityRequirementIsNotSatisfied
+		}
+	}
+
+	stage = "SendRequest"
+	resp, err := c.cfg.Client.Do(r)
+	if err != nil {
+		return res, errors.Wrap(err, "do request")
+	}
+	body := resp.Body
+	defer func() {
+		// Drain the body to EOF before closing, so the underlying
+		// connection can be reused by the Transport regardless of the
+		// response status code. See https://github.com/ogen-go/ogen/issues/1670.
+		_, _ = io.Copy(io.Discard, body)
+		_ = body.Close()
+	}()
+
+	stage = "DecodeResponse"
+	result, err := decodeListAllocationsResponse(resp)
+	if err != nil {
+		return res, errors.Wrap(err, "decode response")
+	}
+
+	return result, nil
+}
+
+// ListAllowanceConsumptions invokes list-allowance-consumptions operation.
+//
+// Each entry names the charge it covered, so the granted amount, what has been used and what remains
+// all reconcile.
+//
+// GET /account/v1/allowances/{allowanceId}/consumptions
+func (c *Client) ListAllowanceConsumptions(ctx context.Context, params ListAllowanceConsumptionsParams) (*AllowanceConsumptionList, error) {
+	res, err := c.sendListAllowanceConsumptions(ctx, params)
+	return res, err
+}
+
+func (c *Client) sendListAllowanceConsumptions(ctx context.Context, params ListAllowanceConsumptionsParams) (res *AllowanceConsumptionList, err error) {
+	otelAttrs := []attribute.KeyValue{
+		otelogen.OperationID("list-allowance-consumptions"),
+		semconv.HTTPRequestMethodKey.String("GET"),
+		semconv.URLTemplateKey.String("/account/v1/allowances/{allowanceId}/consumptions"),
+	}
+	otelAttrs = append(otelAttrs, c.cfg.Attributes...)
+
+	// Run stopwatch.
+	startTime := time.Now()
+	defer func() {
+		// Use floating point division here for higher precision (instead of Millisecond method).
+		elapsedDuration := time.Since(startTime)
+		c.duration.Record(ctx, float64(elapsedDuration)/float64(time.Millisecond), metric.WithAttributes(otelAttrs...))
+	}()
+
+	// Increment request counter.
+	c.requests.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
+
+	// Start a span for this request.
+	ctx, span := c.cfg.Tracer.Start(ctx, ListAllowanceConsumptionsOperation,
 		trace.WithAttributes(otelAttrs...),
 		clientSpanKind,
 	)
@@ -1928,16 +2532,16 @@ func (c *Client) sendListAccountRefunds(ctx context.Context, params ListAccountR
 	stage = "BuildURL"
 	u := uri.Clone(c.requestURL(ctx))
 	var pathParts [3]string
-	pathParts[0] = "/account/v1/billing-accounts/"
+	pathParts[0] = "/account/v1/allowances/"
 	{
-		// Encode "accountKey" parameter.
+		// Encode "allowanceId" parameter.
 		e := uri.NewPathEncoder(uri.PathEncoderConfig{
-			Param:   "accountKey",
+			Param:   "allowanceId",
 			Style:   uri.PathStyleSimple,
 			Explode: false,
 		})
 		if err := func() error {
-			return e.EncodeValue(conv.StringToString(params.AccountKey))
+			return e.EncodeValue(conv.UUIDToString(params.AllowanceId))
 		}(); err != nil {
 			return res, errors.Wrap(err, "encode path")
 		}
@@ -1947,7 +2551,7 @@ func (c *Client) sendListAccountRefunds(ctx context.Context, params ListAccountR
 		}
 		pathParts[1] = encoded
 	}
-	pathParts[2] = "/refunds"
+	pathParts[2] = "/consumptions"
 	uri.AddPathParts(u, pathParts[:]...)
 
 	stage = "EncodeQueryParams"
@@ -1998,14 +2602,14 @@ func (c *Client) sendListAccountRefunds(ctx context.Context, params ListAccountR
 		type bitset = [1]uint8
 		var satisfied bitset
 		{
-			stage = "Security:BearerAuth"
-			switch err := c.securityBearerAuth(ctx, ListAccountRefundsOperation, r); {
+			stage = "Security:AccountAuth"
+			switch err := c.securityAccountAuth(ctx, ListAllowanceConsumptionsOperation, r); {
 			case err == nil: // if NO error
 				satisfied[0] |= 1 << 0
 			case errors.Is(err, ogenerrors.ErrSkipClientSecurity):
 				// Skip this security.
 			default:
-				return res, errors.Wrap(err, "security \"BearerAuth\"")
+				return res, errors.Wrap(err, "security \"AccountAuth\"")
 			}
 		}
 
@@ -2042,7 +2646,7 @@ func (c *Client) sendListAccountRefunds(ctx context.Context, params ListAccountR
 	}()
 
 	stage = "DecodeResponse"
-	result, err := decodeListAccountRefundsResponse(resp)
+	result, err := decodeListAllowanceConsumptionsResponse(resp)
 	if err != nil {
 		return res, errors.Wrap(err, "decode response")
 	}
@@ -2050,23 +2654,31 @@ func (c *Client) sendListAccountRefunds(ctx context.Context, params ListAccountR
 	return result, nil
 }
 
-// ListAccountVouchers invokes list-account-vouchers operation.
+// ListAllowances invokes list-allowances operation.
 //
-// Credit received from campaigns, most recent first. Not the credit ledger — this says which
-// campaign each amount came from, which is the question "where did this 50 come from" that the ledger
-// cannot answer.
+// A quantity rather than an amount of money: bytes, seconds or tokens that are used before anything is
+// charged for.
 //
-// GET /account/v1/billing-accounts/{accountKey}/vouchers
-func (c *Client) ListAccountVouchers(ctx context.Context, params ListAccountVouchersParams) (*VoucherList, error) {
-	res, err := c.sendListAccountVouchers(ctx, params)
+// Usage draws on these first and is only charged once they are exhausted. Where several apply, they
+// are drawn on in a fixed order: lower `priority` first, then whichever expires soonest, then
+// whichever was granted first. Included quantities therefore go before purchased packs, and a pack
+// that is about to expire goes before one that is not.
+//
+// An unused quantity is lost when it expires; it is not refunded and does not carry over.
+//
+// Quantities belong to the account and are shared by every project it pays for.
+//
+// GET /account/v1/allowances
+func (c *Client) ListAllowances(ctx context.Context, params ListAllowancesParams) (*AllowanceList, error) {
+	res, err := c.sendListAllowances(ctx, params)
 	return res, err
 }
 
-func (c *Client) sendListAccountVouchers(ctx context.Context, params ListAccountVouchersParams) (res *VoucherList, err error) {
+func (c *Client) sendListAllowances(ctx context.Context, params ListAllowancesParams) (res *AllowanceList, err error) {
 	otelAttrs := []attribute.KeyValue{
-		otelogen.OperationID("list-account-vouchers"),
+		otelogen.OperationID("list-allowances"),
 		semconv.HTTPRequestMethodKey.String("GET"),
-		semconv.URLTemplateKey.String("/account/v1/billing-accounts/{accountKey}/vouchers"),
+		semconv.URLTemplateKey.String("/account/v1/allowances"),
 	}
 	otelAttrs = append(otelAttrs, c.cfg.Attributes...)
 
@@ -2082,7 +2694,7 @@ func (c *Client) sendListAccountVouchers(ctx context.Context, params ListAccount
 	c.requests.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
 
 	// Start a span for this request.
-	ctx, span := c.cfg.Tracer.Start(ctx, ListAccountVouchersOperation,
+	ctx, span := c.cfg.Tracer.Start(ctx, ListAllowancesOperation,
 		trace.WithAttributes(otelAttrs...),
 		clientSpanKind,
 	)
@@ -2099,27 +2711,8 @@ func (c *Client) sendListAccountVouchers(ctx context.Context, params ListAccount
 
 	stage = "BuildURL"
 	u := uri.Clone(c.requestURL(ctx))
-	var pathParts [3]string
-	pathParts[0] = "/account/v1/billing-accounts/"
-	{
-		// Encode "accountKey" parameter.
-		e := uri.NewPathEncoder(uri.PathEncoderConfig{
-			Param:   "accountKey",
-			Style:   uri.PathStyleSimple,
-			Explode: false,
-		})
-		if err := func() error {
-			return e.EncodeValue(conv.StringToString(params.AccountKey))
-		}(); err != nil {
-			return res, errors.Wrap(err, "encode path")
-		}
-		encoded, err := e.Result()
-		if err != nil {
-			return res, errors.Wrap(err, "encode path")
-		}
-		pathParts[1] = encoded
-	}
-	pathParts[2] = "/vouchers"
+	var pathParts [1]string
+	pathParts[0] = "/account/v1/allowances"
 	uri.AddPathParts(u, pathParts[:]...)
 
 	stage = "EncodeQueryParams"
@@ -2158,6 +2751,57 @@ func (c *Client) sendListAccountVouchers(ctx context.Context, params ListAccount
 			return res, errors.Wrap(err, "encode query")
 		}
 	}
+	{
+		// Encode "billing_account_id" parameter.
+		cfg := uri.QueryParameterEncodingConfig{
+			Name:    "billing_account_id",
+			Style:   uri.QueryStyleForm,
+			Explode: true,
+		}
+
+		if err := q.EncodeParam(cfg, func(e uri.Encoder) error {
+			if val, ok := params.BillingAccountID.Get(); ok {
+				return e.EncodeValue(conv.Int64ToString(val))
+			}
+			return nil
+		}); err != nil {
+			return res, errors.Wrap(err, "encode query")
+		}
+	}
+	{
+		// Encode "meter_key" parameter.
+		cfg := uri.QueryParameterEncodingConfig{
+			Name:    "meter_key",
+			Style:   uri.QueryStyleForm,
+			Explode: true,
+		}
+
+		if err := q.EncodeParam(cfg, func(e uri.Encoder) error {
+			if val, ok := params.MeterKey.Get(); ok {
+				return e.EncodeValue(conv.StringToString(val))
+			}
+			return nil
+		}); err != nil {
+			return res, errors.Wrap(err, "encode query")
+		}
+	}
+	{
+		// Encode "status" parameter.
+		cfg := uri.QueryParameterEncodingConfig{
+			Name:    "status",
+			Style:   uri.QueryStyleForm,
+			Explode: true,
+		}
+
+		if err := q.EncodeParam(cfg, func(e uri.Encoder) error {
+			if val, ok := params.Status.Get(); ok {
+				return e.EncodeValue(conv.StringToString(string(val)))
+			}
+			return nil
+		}); err != nil {
+			return res, errors.Wrap(err, "encode query")
+		}
+	}
 	u.RawQuery = q.Values().Encode()
 
 	stage = "EncodeRequest"
@@ -2170,14 +2814,14 @@ func (c *Client) sendListAccountVouchers(ctx context.Context, params ListAccount
 		type bitset = [1]uint8
 		var satisfied bitset
 		{
-			stage = "Security:BearerAuth"
-			switch err := c.securityBearerAuth(ctx, ListAccountVouchersOperation, r); {
+			stage = "Security:AccountAuth"
+			switch err := c.securityAccountAuth(ctx, ListAllowancesOperation, r); {
 			case err == nil: // if NO error
 				satisfied[0] |= 1 << 0
 			case errors.Is(err, ogenerrors.ErrSkipClientSecurity):
 				// Skip this security.
 			default:
-				return res, errors.Wrap(err, "security \"BearerAuth\"")
+				return res, errors.Wrap(err, "security \"AccountAuth\"")
 			}
 		}
 
@@ -2214,7 +2858,7 @@ func (c *Client) sendListAccountVouchers(ctx context.Context, params ListAccount
 	}()
 
 	stage = "DecodeResponse"
-	result, err := decodeListAccountVouchersResponse(resp)
+	result, err := decodeListAllowancesResponse(resp)
 	if err != nil {
 		return res, errors.Wrap(err, "decode response")
 	}
@@ -2224,10 +2868,7 @@ func (c *Client) sendListAccountVouchers(ctx context.Context, params ListAccount
 
 // ListBillingAccounts invokes list-billing-accounts operation.
 //
-// Every billing account belonging to the caller, with the projects each one currently pays for.
-//
-// Not paginated: how many accounts one person holds is bounded by how many they bothered to create,
-// and that is a small number.
+// The billing accounts you own.
 //
 // GET /account/v1/billing-accounts
 func (c *Client) ListBillingAccounts(ctx context.Context, params ListBillingAccountsParams) (*BillingAccountList, error) {
@@ -2324,14 +2965,14 @@ func (c *Client) sendListBillingAccounts(ctx context.Context, params ListBilling
 		type bitset = [1]uint8
 		var satisfied bitset
 		{
-			stage = "Security:BearerAuth"
-			switch err := c.securityBearerAuth(ctx, ListBillingAccountsOperation, r); {
+			stage = "Security:AccountAuth"
+			switch err := c.securityAccountAuth(ctx, ListBillingAccountsOperation, r); {
 			case err == nil: // if NO error
 				satisfied[0] |= 1 << 0
 			case errors.Is(err, ogenerrors.ErrSkipClientSecurity):
 				// Skip this security.
 			default:
-				return res, errors.Wrap(err, "security \"BearerAuth\"")
+				return res, errors.Wrap(err, "security \"AccountAuth\"")
 			}
 		}
 
@@ -2376,26 +3017,21 @@ func (c *Client) sendListBillingAccounts(ctx context.Context, params ListBilling
 	return result, nil
 }
 
-// ListCharges invokes list-charges operation.
+// ListCatalogPlans invokes list-catalog-plans operation.
 //
-// The itemised version of `unsettled`: what has been used this period and not yet billed.
+// What can be bought under one service.
 //
-// It has to come from charges rather than from invoices. An invoice only exists once a period has been
-// billed, and the one for the period in progress is in a state that does not appear in the invoice
-// list at all — reading invoices would show nothing and suggest the account has used nothing, while
-// the spend keeps climbing.
-//
-// GET /account/v1/billing-accounts/{accountKey}/charges
-func (c *Client) ListCharges(ctx context.Context, params ListChargesParams) (*ChargeList, error) {
-	res, err := c.sendListCharges(ctx, params)
+// GET /catalog/v1/products/{productId}/plans
+func (c *Client) ListCatalogPlans(ctx context.Context, params ListCatalogPlansParams) (ListCatalogPlansRes, error) {
+	res, err := c.sendListCatalogPlans(ctx, params)
 	return res, err
 }
 
-func (c *Client) sendListCharges(ctx context.Context, params ListChargesParams) (res *ChargeList, err error) {
+func (c *Client) sendListCatalogPlans(ctx context.Context, params ListCatalogPlansParams) (res ListCatalogPlansRes, err error) {
 	otelAttrs := []attribute.KeyValue{
-		otelogen.OperationID("list-charges"),
+		otelogen.OperationID("list-catalog-plans"),
 		semconv.HTTPRequestMethodKey.String("GET"),
-		semconv.URLTemplateKey.String("/account/v1/billing-accounts/{accountKey}/charges"),
+		semconv.URLTemplateKey.String("/catalog/v1/products/{productId}/plans"),
 	}
 	otelAttrs = append(otelAttrs, c.cfg.Attributes...)
 
@@ -2411,7 +3047,7 @@ func (c *Client) sendListCharges(ctx context.Context, params ListChargesParams) 
 	c.requests.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
 
 	// Start a span for this request.
-	ctx, span := c.cfg.Tracer.Start(ctx, ListChargesOperation,
+	ctx, span := c.cfg.Tracer.Start(ctx, ListCatalogPlansOperation,
 		trace.WithAttributes(otelAttrs...),
 		clientSpanKind,
 	)
@@ -2429,16 +3065,16 @@ func (c *Client) sendListCharges(ctx context.Context, params ListChargesParams) 
 	stage = "BuildURL"
 	u := uri.Clone(c.requestURL(ctx))
 	var pathParts [3]string
-	pathParts[0] = "/account/v1/billing-accounts/"
+	pathParts[0] = "/catalog/v1/products/"
 	{
-		// Encode "accountKey" parameter.
+		// Encode "productId" parameter.
 		e := uri.NewPathEncoder(uri.PathEncoderConfig{
-			Param:   "accountKey",
+			Param:   "productId",
 			Style:   uri.PathStyleSimple,
 			Explode: false,
 		})
 		if err := func() error {
-			return e.EncodeValue(conv.StringToString(params.AccountKey))
+			return e.EncodeValue(conv.UUIDToString(params.ProductId))
 		}(); err != nil {
 			return res, errors.Wrap(err, "encode path")
 		}
@@ -2448,7 +3084,7 @@ func (c *Client) sendListCharges(ctx context.Context, params ListChargesParams) 
 		}
 		pathParts[1] = encoded
 	}
-	pathParts[2] = "/charges"
+	pathParts[2] = "/plans"
 	uri.AddPathParts(u, pathParts[:]...)
 
 	stage = "EncodeQueryParams"
@@ -2495,36 +3131,20 @@ func (c *Client) sendListCharges(ctx context.Context, params ListChargesParams) 
 		return res, errors.Wrap(err, "create request")
 	}
 
+	stage = "EncodeHeaderParams"
+	h := uri.NewHeaderEncoder(r.Header)
 	{
-		type bitset = [1]uint8
-		var satisfied bitset
-		{
-			stage = "Security:BearerAuth"
-			switch err := c.securityBearerAuth(ctx, ListChargesOperation, r); {
-			case err == nil: // if NO error
-				satisfied[0] |= 1 << 0
-			case errors.Is(err, ogenerrors.ErrSkipClientSecurity):
-				// Skip this security.
-			default:
-				return res, errors.Wrap(err, "security \"BearerAuth\"")
-			}
+		cfg := uri.HeaderParameterEncodingConfig{
+			Name:    "If-None-Match",
+			Explode: false,
 		}
-
-		if ok := func() bool {
-		nextRequirement:
-			for _, requirement := range []bitset{
-				{0b00000001},
-			} {
-				for i, mask := range requirement {
-					if satisfied[i]&mask != mask {
-						continue nextRequirement
-					}
-				}
-				return true
+		if err := h.EncodeParam(cfg, func(e uri.Encoder) error {
+			if val, ok := params.IfNoneMatch.Get(); ok {
+				return e.EncodeValue(conv.StringToString(val))
 			}
-			return false
-		}(); !ok {
-			return res, ogenerrors.ErrSecurityRequirementIsNotSatisfied
+			return nil
+		}); err != nil {
+			return res, errors.Wrap(err, "encode header")
 		}
 	}
 
@@ -2543,7 +3163,7 @@ func (c *Client) sendListCharges(ctx context.Context, params ListChargesParams) 
 	}()
 
 	stage = "DecodeResponse"
-	result, err := decodeListChargesResponse(resp)
+	result, err := decodeListCatalogPlansResponse(resp)
 	if err != nil {
 		return res, errors.Wrap(err, "decode response")
 	}
@@ -2551,26 +3171,22 @@ func (c *Client) sendListCharges(ctx context.Context, params ListChargesParams) 
 	return result, nil
 }
 
-// ListCreditTransactions invokes list-credit-transactions operation.
+// ListCatalogPrices invokes list-catalog-prices operation.
 //
-// Every movement of credit on this account: what was added, what was spent, what expired, what was
-// voided. Newest first.
+// Public list prices only. An account holding a negotiated agreement may be charged less; it is never
+// charged more.
 //
-// The balance on its own is a number with no account of itself. Asked why it is lower than expected,
-// it cannot answer, and the holder is left to guess between "I was charged" and "something expired"
-// — which lead to different next steps.
-//
-// GET /account/v1/billing-accounts/{accountKey}/credit-transactions
-func (c *Client) ListCreditTransactions(ctx context.Context, params ListCreditTransactionsParams) (*CreditTransactionList, error) {
-	res, err := c.sendListCreditTransactions(ctx, params)
+// GET /catalog/v1/plans/{planId}/prices
+func (c *Client) ListCatalogPrices(ctx context.Context, params ListCatalogPricesParams) (ListCatalogPricesRes, error) {
+	res, err := c.sendListCatalogPrices(ctx, params)
 	return res, err
 }
 
-func (c *Client) sendListCreditTransactions(ctx context.Context, params ListCreditTransactionsParams) (res *CreditTransactionList, err error) {
+func (c *Client) sendListCatalogPrices(ctx context.Context, params ListCatalogPricesParams) (res ListCatalogPricesRes, err error) {
 	otelAttrs := []attribute.KeyValue{
-		otelogen.OperationID("list-credit-transactions"),
+		otelogen.OperationID("list-catalog-prices"),
 		semconv.HTTPRequestMethodKey.String("GET"),
-		semconv.URLTemplateKey.String("/account/v1/billing-accounts/{accountKey}/credit-transactions"),
+		semconv.URLTemplateKey.String("/catalog/v1/plans/{planId}/prices"),
 	}
 	otelAttrs = append(otelAttrs, c.cfg.Attributes...)
 
@@ -2586,7 +3202,7 @@ func (c *Client) sendListCreditTransactions(ctx context.Context, params ListCred
 	c.requests.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
 
 	// Start a span for this request.
-	ctx, span := c.cfg.Tracer.Start(ctx, ListCreditTransactionsOperation,
+	ctx, span := c.cfg.Tracer.Start(ctx, ListCatalogPricesOperation,
 		trace.WithAttributes(otelAttrs...),
 		clientSpanKind,
 	)
@@ -2604,16 +3220,16 @@ func (c *Client) sendListCreditTransactions(ctx context.Context, params ListCred
 	stage = "BuildURL"
 	u := uri.Clone(c.requestURL(ctx))
 	var pathParts [3]string
-	pathParts[0] = "/account/v1/billing-accounts/"
+	pathParts[0] = "/catalog/v1/plans/"
 	{
-		// Encode "accountKey" parameter.
+		// Encode "planId" parameter.
 		e := uri.NewPathEncoder(uri.PathEncoderConfig{
-			Param:   "accountKey",
+			Param:   "planId",
 			Style:   uri.PathStyleSimple,
 			Explode: false,
 		})
 		if err := func() error {
-			return e.EncodeValue(conv.StringToString(params.AccountKey))
+			return e.EncodeValue(conv.UUIDToString(params.PlanId))
 		}(); err != nil {
 			return res, errors.Wrap(err, "encode path")
 		}
@@ -2623,7 +3239,877 @@ func (c *Client) sendListCreditTransactions(ctx context.Context, params ListCred
 		}
 		pathParts[1] = encoded
 	}
-	pathParts[2] = "/credit-transactions"
+	pathParts[2] = "/prices"
+	uri.AddPathParts(u, pathParts[:]...)
+
+	stage = "EncodeQueryParams"
+	q := uri.NewQueryEncoder()
+	{
+		// Encode "page" parameter.
+		cfg := uri.QueryParameterEncodingConfig{
+			Name:    "page",
+			Style:   uri.QueryStyleForm,
+			Explode: true,
+		}
+
+		if err := q.EncodeParam(cfg, func(e uri.Encoder) error {
+			if val, ok := params.Page.Get(); ok {
+				return e.EncodeValue(conv.Int32ToString(val))
+			}
+			return nil
+		}); err != nil {
+			return res, errors.Wrap(err, "encode query")
+		}
+	}
+	{
+		// Encode "page_size" parameter.
+		cfg := uri.QueryParameterEncodingConfig{
+			Name:    "page_size",
+			Style:   uri.QueryStyleForm,
+			Explode: true,
+		}
+
+		if err := q.EncodeParam(cfg, func(e uri.Encoder) error {
+			if val, ok := params.PageSize.Get(); ok {
+				return e.EncodeValue(conv.Int32ToString(val))
+			}
+			return nil
+		}); err != nil {
+			return res, errors.Wrap(err, "encode query")
+		}
+	}
+	{
+		// Encode "currency" parameter.
+		cfg := uri.QueryParameterEncodingConfig{
+			Name:    "currency",
+			Style:   uri.QueryStyleForm,
+			Explode: true,
+		}
+
+		if err := q.EncodeParam(cfg, func(e uri.Encoder) error {
+			if val, ok := params.Currency.Get(); ok {
+				return e.EncodeValue(conv.StringToString(val))
+			}
+			return nil
+		}); err != nil {
+			return res, errors.Wrap(err, "encode query")
+		}
+	}
+	u.RawQuery = q.Values().Encode()
+
+	stage = "EncodeRequest"
+	r, err := ht.NewRequest(ctx, "GET", u)
+	if err != nil {
+		return res, errors.Wrap(err, "create request")
+	}
+
+	stage = "EncodeHeaderParams"
+	h := uri.NewHeaderEncoder(r.Header)
+	{
+		cfg := uri.HeaderParameterEncodingConfig{
+			Name:    "If-None-Match",
+			Explode: false,
+		}
+		if err := h.EncodeParam(cfg, func(e uri.Encoder) error {
+			if val, ok := params.IfNoneMatch.Get(); ok {
+				return e.EncodeValue(conv.StringToString(val))
+			}
+			return nil
+		}); err != nil {
+			return res, errors.Wrap(err, "encode header")
+		}
+	}
+
+	stage = "SendRequest"
+	resp, err := c.cfg.Client.Do(r)
+	if err != nil {
+		return res, errors.Wrap(err, "do request")
+	}
+	body := resp.Body
+	defer func() {
+		// Drain the body to EOF before closing, so the underlying
+		// connection can be reused by the Transport regardless of the
+		// response status code. See https://github.com/ogen-go/ogen/issues/1670.
+		_, _ = io.Copy(io.Discard, body)
+		_ = body.Close()
+	}()
+
+	stage = "DecodeResponse"
+	result, err := decodeListCatalogPricesResponse(resp)
+	if err != nil {
+		return res, errors.Wrap(err, "decode response")
+	}
+
+	return result, nil
+}
+
+// ListCatalogProducts invokes list-catalog-products operation.
+//
+// The services the platform sells.
+//
+// GET /catalog/v1/products
+func (c *Client) ListCatalogProducts(ctx context.Context, params ListCatalogProductsParams) (ListCatalogProductsRes, error) {
+	res, err := c.sendListCatalogProducts(ctx, params)
+	return res, err
+}
+
+func (c *Client) sendListCatalogProducts(ctx context.Context, params ListCatalogProductsParams) (res ListCatalogProductsRes, err error) {
+	otelAttrs := []attribute.KeyValue{
+		otelogen.OperationID("list-catalog-products"),
+		semconv.HTTPRequestMethodKey.String("GET"),
+		semconv.URLTemplateKey.String("/catalog/v1/products"),
+	}
+	otelAttrs = append(otelAttrs, c.cfg.Attributes...)
+
+	// Run stopwatch.
+	startTime := time.Now()
+	defer func() {
+		// Use floating point division here for higher precision (instead of Millisecond method).
+		elapsedDuration := time.Since(startTime)
+		c.duration.Record(ctx, float64(elapsedDuration)/float64(time.Millisecond), metric.WithAttributes(otelAttrs...))
+	}()
+
+	// Increment request counter.
+	c.requests.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
+
+	// Start a span for this request.
+	ctx, span := c.cfg.Tracer.Start(ctx, ListCatalogProductsOperation,
+		trace.WithAttributes(otelAttrs...),
+		clientSpanKind,
+	)
+	// Track stage for error reporting.
+	var stage string
+	defer func() {
+		if err != nil {
+			span.RecordError(err)
+			span.SetStatus(codes.Error, stage)
+			c.errors.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
+		}
+		span.End()
+	}()
+
+	stage = "BuildURL"
+	u := uri.Clone(c.requestURL(ctx))
+	var pathParts [1]string
+	pathParts[0] = "/catalog/v1/products"
+	uri.AddPathParts(u, pathParts[:]...)
+
+	stage = "EncodeQueryParams"
+	q := uri.NewQueryEncoder()
+	{
+		// Encode "page" parameter.
+		cfg := uri.QueryParameterEncodingConfig{
+			Name:    "page",
+			Style:   uri.QueryStyleForm,
+			Explode: true,
+		}
+
+		if err := q.EncodeParam(cfg, func(e uri.Encoder) error {
+			if val, ok := params.Page.Get(); ok {
+				return e.EncodeValue(conv.Int32ToString(val))
+			}
+			return nil
+		}); err != nil {
+			return res, errors.Wrap(err, "encode query")
+		}
+	}
+	{
+		// Encode "page_size" parameter.
+		cfg := uri.QueryParameterEncodingConfig{
+			Name:    "page_size",
+			Style:   uri.QueryStyleForm,
+			Explode: true,
+		}
+
+		if err := q.EncodeParam(cfg, func(e uri.Encoder) error {
+			if val, ok := params.PageSize.Get(); ok {
+				return e.EncodeValue(conv.Int32ToString(val))
+			}
+			return nil
+		}); err != nil {
+			return res, errors.Wrap(err, "encode query")
+		}
+	}
+	u.RawQuery = q.Values().Encode()
+
+	stage = "EncodeRequest"
+	r, err := ht.NewRequest(ctx, "GET", u)
+	if err != nil {
+		return res, errors.Wrap(err, "create request")
+	}
+
+	stage = "EncodeHeaderParams"
+	h := uri.NewHeaderEncoder(r.Header)
+	{
+		cfg := uri.HeaderParameterEncodingConfig{
+			Name:    "If-None-Match",
+			Explode: false,
+		}
+		if err := h.EncodeParam(cfg, func(e uri.Encoder) error {
+			if val, ok := params.IfNoneMatch.Get(); ok {
+				return e.EncodeValue(conv.StringToString(val))
+			}
+			return nil
+		}); err != nil {
+			return res, errors.Wrap(err, "encode header")
+		}
+	}
+
+	stage = "SendRequest"
+	resp, err := c.cfg.Client.Do(r)
+	if err != nil {
+		return res, errors.Wrap(err, "do request")
+	}
+	body := resp.Body
+	defer func() {
+		// Drain the body to EOF before closing, so the underlying
+		// connection can be reused by the Transport regardless of the
+		// response status code. See https://github.com/ogen-go/ogen/issues/1670.
+		_, _ = io.Copy(io.Discard, body)
+		_ = body.Close()
+	}()
+
+	stage = "DecodeResponse"
+	result, err := decodeListCatalogProductsResponse(resp)
+	if err != nil {
+		return res, errors.Wrap(err, "decode response")
+	}
+
+	return result, nil
+}
+
+// ListCatalogRates invokes list-catalog-rates operation.
+//
+// Only public price lists are readable here. A list written for a single agreement is not, and its
+// identifier cannot be used to reach it.
+//
+// GET /catalog/v1/rate-cards/{rateCardId}/rules
+func (c *Client) ListCatalogRates(ctx context.Context, params ListCatalogRatesParams) (ListCatalogRatesRes, error) {
+	res, err := c.sendListCatalogRates(ctx, params)
+	return res, err
+}
+
+func (c *Client) sendListCatalogRates(ctx context.Context, params ListCatalogRatesParams) (res ListCatalogRatesRes, err error) {
+	otelAttrs := []attribute.KeyValue{
+		otelogen.OperationID("list-catalog-rates"),
+		semconv.HTTPRequestMethodKey.String("GET"),
+		semconv.URLTemplateKey.String("/catalog/v1/rate-cards/{rateCardId}/rules"),
+	}
+	otelAttrs = append(otelAttrs, c.cfg.Attributes...)
+
+	// Run stopwatch.
+	startTime := time.Now()
+	defer func() {
+		// Use floating point division here for higher precision (instead of Millisecond method).
+		elapsedDuration := time.Since(startTime)
+		c.duration.Record(ctx, float64(elapsedDuration)/float64(time.Millisecond), metric.WithAttributes(otelAttrs...))
+	}()
+
+	// Increment request counter.
+	c.requests.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
+
+	// Start a span for this request.
+	ctx, span := c.cfg.Tracer.Start(ctx, ListCatalogRatesOperation,
+		trace.WithAttributes(otelAttrs...),
+		clientSpanKind,
+	)
+	// Track stage for error reporting.
+	var stage string
+	defer func() {
+		if err != nil {
+			span.RecordError(err)
+			span.SetStatus(codes.Error, stage)
+			c.errors.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
+		}
+		span.End()
+	}()
+
+	stage = "BuildURL"
+	u := uri.Clone(c.requestURL(ctx))
+	var pathParts [3]string
+	pathParts[0] = "/catalog/v1/rate-cards/"
+	{
+		// Encode "rateCardId" parameter.
+		e := uri.NewPathEncoder(uri.PathEncoderConfig{
+			Param:   "rateCardId",
+			Style:   uri.PathStyleSimple,
+			Explode: false,
+		})
+		if err := func() error {
+			return e.EncodeValue(conv.UUIDToString(params.RateCardId))
+		}(); err != nil {
+			return res, errors.Wrap(err, "encode path")
+		}
+		encoded, err := e.Result()
+		if err != nil {
+			return res, errors.Wrap(err, "encode path")
+		}
+		pathParts[1] = encoded
+	}
+	pathParts[2] = "/rules"
+	uri.AddPathParts(u, pathParts[:]...)
+
+	stage = "EncodeQueryParams"
+	q := uri.NewQueryEncoder()
+	{
+		// Encode "page" parameter.
+		cfg := uri.QueryParameterEncodingConfig{
+			Name:    "page",
+			Style:   uri.QueryStyleForm,
+			Explode: true,
+		}
+
+		if err := q.EncodeParam(cfg, func(e uri.Encoder) error {
+			if val, ok := params.Page.Get(); ok {
+				return e.EncodeValue(conv.Int32ToString(val))
+			}
+			return nil
+		}); err != nil {
+			return res, errors.Wrap(err, "encode query")
+		}
+	}
+	{
+		// Encode "page_size" parameter.
+		cfg := uri.QueryParameterEncodingConfig{
+			Name:    "page_size",
+			Style:   uri.QueryStyleForm,
+			Explode: true,
+		}
+
+		if err := q.EncodeParam(cfg, func(e uri.Encoder) error {
+			if val, ok := params.PageSize.Get(); ok {
+				return e.EncodeValue(conv.Int32ToString(val))
+			}
+			return nil
+		}); err != nil {
+			return res, errors.Wrap(err, "encode query")
+		}
+	}
+	{
+		// Encode "meter_key" parameter.
+		cfg := uri.QueryParameterEncodingConfig{
+			Name:    "meter_key",
+			Style:   uri.QueryStyleForm,
+			Explode: true,
+		}
+
+		if err := q.EncodeParam(cfg, func(e uri.Encoder) error {
+			if val, ok := params.MeterKey.Get(); ok {
+				return e.EncodeValue(conv.StringToString(val))
+			}
+			return nil
+		}); err != nil {
+			return res, errors.Wrap(err, "encode query")
+		}
+	}
+	{
+		// Encode "at" parameter.
+		cfg := uri.QueryParameterEncodingConfig{
+			Name:    "at",
+			Style:   uri.QueryStyleForm,
+			Explode: true,
+		}
+
+		if err := q.EncodeParam(cfg, func(e uri.Encoder) error {
+			if val, ok := params.At.Get(); ok {
+				return e.EncodeValue(conv.DateTimeToString(val))
+			}
+			return nil
+		}); err != nil {
+			return res, errors.Wrap(err, "encode query")
+		}
+	}
+	u.RawQuery = q.Values().Encode()
+
+	stage = "EncodeRequest"
+	r, err := ht.NewRequest(ctx, "GET", u)
+	if err != nil {
+		return res, errors.Wrap(err, "create request")
+	}
+
+	stage = "EncodeHeaderParams"
+	h := uri.NewHeaderEncoder(r.Header)
+	{
+		cfg := uri.HeaderParameterEncodingConfig{
+			Name:    "If-None-Match",
+			Explode: false,
+		}
+		if err := h.EncodeParam(cfg, func(e uri.Encoder) error {
+			if val, ok := params.IfNoneMatch.Get(); ok {
+				return e.EncodeValue(conv.StringToString(val))
+			}
+			return nil
+		}); err != nil {
+			return res, errors.Wrap(err, "encode header")
+		}
+	}
+
+	stage = "SendRequest"
+	resp, err := c.cfg.Client.Do(r)
+	if err != nil {
+		return res, errors.Wrap(err, "do request")
+	}
+	body := resp.Body
+	defer func() {
+		// Drain the body to EOF before closing, so the underlying
+		// connection can be reused by the Transport regardless of the
+		// response status code. See https://github.com/ogen-go/ogen/issues/1670.
+		_, _ = io.Copy(io.Discard, body)
+		_ = body.Close()
+	}()
+
+	stage = "DecodeResponse"
+	result, err := decodeListCatalogRatesResponse(resp)
+	if err != nil {
+		return res, errors.Wrap(err, "decode response")
+	}
+
+	return result, nil
+}
+
+// ListCreditGrants invokes list-credit-grants operation.
+//
+// Each grant shows what remains and what it may be used for. Credit is spent before cash and cannot be
+// withdrawn.
+//
+// GET /account/v1/credit-grants
+func (c *Client) ListCreditGrants(ctx context.Context, params ListCreditGrantsParams) (*CreditGrantList, error) {
+	res, err := c.sendListCreditGrants(ctx, params)
+	return res, err
+}
+
+func (c *Client) sendListCreditGrants(ctx context.Context, params ListCreditGrantsParams) (res *CreditGrantList, err error) {
+	otelAttrs := []attribute.KeyValue{
+		otelogen.OperationID("list-credit-grants"),
+		semconv.HTTPRequestMethodKey.String("GET"),
+		semconv.URLTemplateKey.String("/account/v1/credit-grants"),
+	}
+	otelAttrs = append(otelAttrs, c.cfg.Attributes...)
+
+	// Run stopwatch.
+	startTime := time.Now()
+	defer func() {
+		// Use floating point division here for higher precision (instead of Millisecond method).
+		elapsedDuration := time.Since(startTime)
+		c.duration.Record(ctx, float64(elapsedDuration)/float64(time.Millisecond), metric.WithAttributes(otelAttrs...))
+	}()
+
+	// Increment request counter.
+	c.requests.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
+
+	// Start a span for this request.
+	ctx, span := c.cfg.Tracer.Start(ctx, ListCreditGrantsOperation,
+		trace.WithAttributes(otelAttrs...),
+		clientSpanKind,
+	)
+	// Track stage for error reporting.
+	var stage string
+	defer func() {
+		if err != nil {
+			span.RecordError(err)
+			span.SetStatus(codes.Error, stage)
+			c.errors.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
+		}
+		span.End()
+	}()
+
+	stage = "BuildURL"
+	u := uri.Clone(c.requestURL(ctx))
+	var pathParts [1]string
+	pathParts[0] = "/account/v1/credit-grants"
+	uri.AddPathParts(u, pathParts[:]...)
+
+	stage = "EncodeQueryParams"
+	q := uri.NewQueryEncoder()
+	{
+		// Encode "page" parameter.
+		cfg := uri.QueryParameterEncodingConfig{
+			Name:    "page",
+			Style:   uri.QueryStyleForm,
+			Explode: true,
+		}
+
+		if err := q.EncodeParam(cfg, func(e uri.Encoder) error {
+			if val, ok := params.Page.Get(); ok {
+				return e.EncodeValue(conv.Int32ToString(val))
+			}
+			return nil
+		}); err != nil {
+			return res, errors.Wrap(err, "encode query")
+		}
+	}
+	{
+		// Encode "page_size" parameter.
+		cfg := uri.QueryParameterEncodingConfig{
+			Name:    "page_size",
+			Style:   uri.QueryStyleForm,
+			Explode: true,
+		}
+
+		if err := q.EncodeParam(cfg, func(e uri.Encoder) error {
+			if val, ok := params.PageSize.Get(); ok {
+				return e.EncodeValue(conv.Int32ToString(val))
+			}
+			return nil
+		}); err != nil {
+			return res, errors.Wrap(err, "encode query")
+		}
+	}
+	{
+		// Encode "billing_account_id" parameter.
+		cfg := uri.QueryParameterEncodingConfig{
+			Name:    "billing_account_id",
+			Style:   uri.QueryStyleForm,
+			Explode: true,
+		}
+
+		if err := q.EncodeParam(cfg, func(e uri.Encoder) error {
+			if val, ok := params.BillingAccountID.Get(); ok {
+				return e.EncodeValue(conv.Int64ToString(val))
+			}
+			return nil
+		}); err != nil {
+			return res, errors.Wrap(err, "encode query")
+		}
+	}
+	{
+		// Encode "status" parameter.
+		cfg := uri.QueryParameterEncodingConfig{
+			Name:    "status",
+			Style:   uri.QueryStyleForm,
+			Explode: true,
+		}
+
+		if err := q.EncodeParam(cfg, func(e uri.Encoder) error {
+			if val, ok := params.Status.Get(); ok {
+				return e.EncodeValue(conv.StringToString(string(val)))
+			}
+			return nil
+		}); err != nil {
+			return res, errors.Wrap(err, "encode query")
+		}
+	}
+	u.RawQuery = q.Values().Encode()
+
+	stage = "EncodeRequest"
+	r, err := ht.NewRequest(ctx, "GET", u)
+	if err != nil {
+		return res, errors.Wrap(err, "create request")
+	}
+
+	{
+		type bitset = [1]uint8
+		var satisfied bitset
+		{
+			stage = "Security:AccountAuth"
+			switch err := c.securityAccountAuth(ctx, ListCreditGrantsOperation, r); {
+			case err == nil: // if NO error
+				satisfied[0] |= 1 << 0
+			case errors.Is(err, ogenerrors.ErrSkipClientSecurity):
+				// Skip this security.
+			default:
+				return res, errors.Wrap(err, "security \"AccountAuth\"")
+			}
+		}
+
+		if ok := func() bool {
+		nextRequirement:
+			for _, requirement := range []bitset{
+				{0b00000001},
+			} {
+				for i, mask := range requirement {
+					if satisfied[i]&mask != mask {
+						continue nextRequirement
+					}
+				}
+				return true
+			}
+			return false
+		}(); !ok {
+			return res, ogenerrors.ErrSecurityRequirementIsNotSatisfied
+		}
+	}
+
+	stage = "SendRequest"
+	resp, err := c.cfg.Client.Do(r)
+	if err != nil {
+		return res, errors.Wrap(err, "do request")
+	}
+	body := resp.Body
+	defer func() {
+		// Drain the body to EOF before closing, so the underlying
+		// connection can be reused by the Transport regardless of the
+		// response status code. See https://github.com/ogen-go/ogen/issues/1670.
+		_, _ = io.Copy(io.Discard, body)
+		_ = body.Close()
+	}()
+
+	stage = "DecodeResponse"
+	result, err := decodeListCreditGrantsResponse(resp)
+	if err != nil {
+		return res, errors.Wrap(err, "decode response")
+	}
+
+	return result, nil
+}
+
+// ListEntitlements invokes list-entitlements operation.
+//
+// Capabilities that come with what has been bought. A capability that is not held simply does not
+// appear, so that "this does not exist" and "this has not been bought" cannot be confused.
+//
+// Derived from live subscriptions rather than stored, so this always agrees with what is being paid
+// for. It stops being listed as soon as the subscription providing it ends.
+//
+// GET /account/v1/entitlements
+func (c *Client) ListEntitlements(ctx context.Context, params ListEntitlementsParams) (*EntitlementList, error) {
+	res, err := c.sendListEntitlements(ctx, params)
+	return res, err
+}
+
+func (c *Client) sendListEntitlements(ctx context.Context, params ListEntitlementsParams) (res *EntitlementList, err error) {
+	otelAttrs := []attribute.KeyValue{
+		otelogen.OperationID("list-entitlements"),
+		semconv.HTTPRequestMethodKey.String("GET"),
+		semconv.URLTemplateKey.String("/account/v1/entitlements"),
+	}
+	otelAttrs = append(otelAttrs, c.cfg.Attributes...)
+
+	// Run stopwatch.
+	startTime := time.Now()
+	defer func() {
+		// Use floating point division here for higher precision (instead of Millisecond method).
+		elapsedDuration := time.Since(startTime)
+		c.duration.Record(ctx, float64(elapsedDuration)/float64(time.Millisecond), metric.WithAttributes(otelAttrs...))
+	}()
+
+	// Increment request counter.
+	c.requests.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
+
+	// Start a span for this request.
+	ctx, span := c.cfg.Tracer.Start(ctx, ListEntitlementsOperation,
+		trace.WithAttributes(otelAttrs...),
+		clientSpanKind,
+	)
+	// Track stage for error reporting.
+	var stage string
+	defer func() {
+		if err != nil {
+			span.RecordError(err)
+			span.SetStatus(codes.Error, stage)
+			c.errors.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
+		}
+		span.End()
+	}()
+
+	stage = "BuildURL"
+	u := uri.Clone(c.requestURL(ctx))
+	var pathParts [1]string
+	pathParts[0] = "/account/v1/entitlements"
+	uri.AddPathParts(u, pathParts[:]...)
+
+	stage = "EncodeQueryParams"
+	q := uri.NewQueryEncoder()
+	{
+		// Encode "page" parameter.
+		cfg := uri.QueryParameterEncodingConfig{
+			Name:    "page",
+			Style:   uri.QueryStyleForm,
+			Explode: true,
+		}
+
+		if err := q.EncodeParam(cfg, func(e uri.Encoder) error {
+			if val, ok := params.Page.Get(); ok {
+				return e.EncodeValue(conv.Int32ToString(val))
+			}
+			return nil
+		}); err != nil {
+			return res, errors.Wrap(err, "encode query")
+		}
+	}
+	{
+		// Encode "page_size" parameter.
+		cfg := uri.QueryParameterEncodingConfig{
+			Name:    "page_size",
+			Style:   uri.QueryStyleForm,
+			Explode: true,
+		}
+
+		if err := q.EncodeParam(cfg, func(e uri.Encoder) error {
+			if val, ok := params.PageSize.Get(); ok {
+				return e.EncodeValue(conv.Int32ToString(val))
+			}
+			return nil
+		}); err != nil {
+			return res, errors.Wrap(err, "encode query")
+		}
+	}
+	{
+		// Encode "billing_account_id" parameter.
+		cfg := uri.QueryParameterEncodingConfig{
+			Name:    "billing_account_id",
+			Style:   uri.QueryStyleForm,
+			Explode: true,
+		}
+
+		if err := q.EncodeParam(cfg, func(e uri.Encoder) error {
+			if val, ok := params.BillingAccountID.Get(); ok {
+				return e.EncodeValue(conv.Int64ToString(val))
+			}
+			return nil
+		}); err != nil {
+			return res, errors.Wrap(err, "encode query")
+		}
+	}
+	{
+		// Encode "project_id" parameter.
+		cfg := uri.QueryParameterEncodingConfig{
+			Name:    "project_id",
+			Style:   uri.QueryStyleForm,
+			Explode: true,
+		}
+
+		if err := q.EncodeParam(cfg, func(e uri.Encoder) error {
+			if val, ok := params.ProjectID.Get(); ok {
+				return e.EncodeValue(conv.UUIDToString(val))
+			}
+			return nil
+		}); err != nil {
+			return res, errors.Wrap(err, "encode query")
+		}
+	}
+	u.RawQuery = q.Values().Encode()
+
+	stage = "EncodeRequest"
+	r, err := ht.NewRequest(ctx, "GET", u)
+	if err != nil {
+		return res, errors.Wrap(err, "create request")
+	}
+
+	{
+		type bitset = [1]uint8
+		var satisfied bitset
+		{
+			stage = "Security:AccountAuth"
+			switch err := c.securityAccountAuth(ctx, ListEntitlementsOperation, r); {
+			case err == nil: // if NO error
+				satisfied[0] |= 1 << 0
+			case errors.Is(err, ogenerrors.ErrSkipClientSecurity):
+				// Skip this security.
+			default:
+				return res, errors.Wrap(err, "security \"AccountAuth\"")
+			}
+		}
+
+		if ok := func() bool {
+		nextRequirement:
+			for _, requirement := range []bitset{
+				{0b00000001},
+			} {
+				for i, mask := range requirement {
+					if satisfied[i]&mask != mask {
+						continue nextRequirement
+					}
+				}
+				return true
+			}
+			return false
+		}(); !ok {
+			return res, ogenerrors.ErrSecurityRequirementIsNotSatisfied
+		}
+	}
+
+	stage = "SendRequest"
+	resp, err := c.cfg.Client.Do(r)
+	if err != nil {
+		return res, errors.Wrap(err, "do request")
+	}
+	body := resp.Body
+	defer func() {
+		// Drain the body to EOF before closing, so the underlying
+		// connection can be reused by the Transport regardless of the
+		// response status code. See https://github.com/ogen-go/ogen/issues/1670.
+		_, _ = io.Copy(io.Discard, body)
+		_ = body.Close()
+	}()
+
+	stage = "DecodeResponse"
+	result, err := decodeListEntitlementsResponse(resp)
+	if err != nil {
+		return res, errors.Wrap(err, "decode response")
+	}
+
+	return result, nil
+}
+
+// ListInvoiceItems invokes list-invoice-items operation.
+//
+// What an invoice is made up of.
+//
+// GET /account/v1/invoices/{invoiceId}/items
+func (c *Client) ListInvoiceItems(ctx context.Context, params ListInvoiceItemsParams) (*InvoiceItemList, error) {
+	res, err := c.sendListInvoiceItems(ctx, params)
+	return res, err
+}
+
+func (c *Client) sendListInvoiceItems(ctx context.Context, params ListInvoiceItemsParams) (res *InvoiceItemList, err error) {
+	otelAttrs := []attribute.KeyValue{
+		otelogen.OperationID("list-invoice-items"),
+		semconv.HTTPRequestMethodKey.String("GET"),
+		semconv.URLTemplateKey.String("/account/v1/invoices/{invoiceId}/items"),
+	}
+	otelAttrs = append(otelAttrs, c.cfg.Attributes...)
+
+	// Run stopwatch.
+	startTime := time.Now()
+	defer func() {
+		// Use floating point division here for higher precision (instead of Millisecond method).
+		elapsedDuration := time.Since(startTime)
+		c.duration.Record(ctx, float64(elapsedDuration)/float64(time.Millisecond), metric.WithAttributes(otelAttrs...))
+	}()
+
+	// Increment request counter.
+	c.requests.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
+
+	// Start a span for this request.
+	ctx, span := c.cfg.Tracer.Start(ctx, ListInvoiceItemsOperation,
+		trace.WithAttributes(otelAttrs...),
+		clientSpanKind,
+	)
+	// Track stage for error reporting.
+	var stage string
+	defer func() {
+		if err != nil {
+			span.RecordError(err)
+			span.SetStatus(codes.Error, stage)
+			c.errors.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
+		}
+		span.End()
+	}()
+
+	stage = "BuildURL"
+	u := uri.Clone(c.requestURL(ctx))
+	var pathParts [3]string
+	pathParts[0] = "/account/v1/invoices/"
+	{
+		// Encode "invoiceId" parameter.
+		e := uri.NewPathEncoder(uri.PathEncoderConfig{
+			Param:   "invoiceId",
+			Style:   uri.PathStyleSimple,
+			Explode: false,
+		})
+		if err := func() error {
+			return e.EncodeValue(conv.UUIDToString(params.InvoiceId))
+		}(); err != nil {
+			return res, errors.Wrap(err, "encode path")
+		}
+		encoded, err := e.Result()
+		if err != nil {
+			return res, errors.Wrap(err, "encode path")
+		}
+		pathParts[1] = encoded
+	}
+	pathParts[2] = "/items"
 	uri.AddPathParts(u, pathParts[:]...)
 
 	stage = "EncodeQueryParams"
@@ -2674,14 +4160,14 @@ func (c *Client) sendListCreditTransactions(ctx context.Context, params ListCred
 		type bitset = [1]uint8
 		var satisfied bitset
 		{
-			stage = "Security:BearerAuth"
-			switch err := c.securityBearerAuth(ctx, ListCreditTransactionsOperation, r); {
+			stage = "Security:AccountAuth"
+			switch err := c.securityAccountAuth(ctx, ListInvoiceItemsOperation, r); {
 			case err == nil: // if NO error
 				satisfied[0] |= 1 << 0
 			case errors.Is(err, ogenerrors.ErrSkipClientSecurity):
 				// Skip this security.
 			default:
-				return res, errors.Wrap(err, "security \"BearerAuth\"")
+				return res, errors.Wrap(err, "security \"AccountAuth\"")
 			}
 		}
 
@@ -2718,7 +4204,7 @@ func (c *Client) sendListCreditTransactions(ctx context.Context, params ListCred
 	}()
 
 	stage = "DecodeResponse"
-	result, err := decodeListCreditTransactionsResponse(resp)
+	result, err := decodeListInvoiceItemsResponse(resp)
 	if err != nil {
 		return res, errors.Wrap(err, "decode response")
 	}
@@ -2728,10 +4214,7 @@ func (c *Client) sendListCreditTransactions(ctx context.Context, params ListCred
 
 // ListInvoices invokes list-invoices operation.
 //
-// Past periods, most recent first. The period in progress is not here — see the charges endpoint for
-// that.
-//
-// GET /account/v1/billing-accounts/{accountKey}/invoices
+// GET /account/v1/invoices
 func (c *Client) ListInvoices(ctx context.Context, params ListInvoicesParams) (*InvoiceList, error) {
 	res, err := c.sendListInvoices(ctx, params)
 	return res, err
@@ -2741,7 +4224,7 @@ func (c *Client) sendListInvoices(ctx context.Context, params ListInvoicesParams
 	otelAttrs := []attribute.KeyValue{
 		otelogen.OperationID("list-invoices"),
 		semconv.HTTPRequestMethodKey.String("GET"),
-		semconv.URLTemplateKey.String("/account/v1/billing-accounts/{accountKey}/invoices"),
+		semconv.URLTemplateKey.String("/account/v1/invoices"),
 	}
 	otelAttrs = append(otelAttrs, c.cfg.Attributes...)
 
@@ -2774,27 +4257,8 @@ func (c *Client) sendListInvoices(ctx context.Context, params ListInvoicesParams
 
 	stage = "BuildURL"
 	u := uri.Clone(c.requestURL(ctx))
-	var pathParts [3]string
-	pathParts[0] = "/account/v1/billing-accounts/"
-	{
-		// Encode "accountKey" parameter.
-		e := uri.NewPathEncoder(uri.PathEncoderConfig{
-			Param:   "accountKey",
-			Style:   uri.PathStyleSimple,
-			Explode: false,
-		})
-		if err := func() error {
-			return e.EncodeValue(conv.StringToString(params.AccountKey))
-		}(); err != nil {
-			return res, errors.Wrap(err, "encode path")
-		}
-		encoded, err := e.Result()
-		if err != nil {
-			return res, errors.Wrap(err, "encode path")
-		}
-		pathParts[1] = encoded
-	}
-	pathParts[2] = "/invoices"
+	var pathParts [1]string
+	pathParts[0] = "/account/v1/invoices"
 	uri.AddPathParts(u, pathParts[:]...)
 
 	stage = "EncodeQueryParams"
@@ -2833,6 +4297,74 @@ func (c *Client) sendListInvoices(ctx context.Context, params ListInvoicesParams
 			return res, errors.Wrap(err, "encode query")
 		}
 	}
+	{
+		// Encode "billing_account_id" parameter.
+		cfg := uri.QueryParameterEncodingConfig{
+			Name:    "billing_account_id",
+			Style:   uri.QueryStyleForm,
+			Explode: true,
+		}
+
+		if err := q.EncodeParam(cfg, func(e uri.Encoder) error {
+			if val, ok := params.BillingAccountID.Get(); ok {
+				return e.EncodeValue(conv.Int64ToString(val))
+			}
+			return nil
+		}); err != nil {
+			return res, errors.Wrap(err, "encode query")
+		}
+	}
+	{
+		// Encode "status" parameter.
+		cfg := uri.QueryParameterEncodingConfig{
+			Name:    "status",
+			Style:   uri.QueryStyleForm,
+			Explode: true,
+		}
+
+		if err := q.EncodeParam(cfg, func(e uri.Encoder) error {
+			if val, ok := params.Status.Get(); ok {
+				return e.EncodeValue(conv.StringToString(string(val)))
+			}
+			return nil
+		}); err != nil {
+			return res, errors.Wrap(err, "encode query")
+		}
+	}
+	{
+		// Encode "from" parameter.
+		cfg := uri.QueryParameterEncodingConfig{
+			Name:    "from",
+			Style:   uri.QueryStyleForm,
+			Explode: true,
+		}
+
+		if err := q.EncodeParam(cfg, func(e uri.Encoder) error {
+			if val, ok := params.From.Get(); ok {
+				return e.EncodeValue(conv.DateTimeToString(val))
+			}
+			return nil
+		}); err != nil {
+			return res, errors.Wrap(err, "encode query")
+		}
+	}
+	{
+		// Encode "to" parameter.
+		cfg := uri.QueryParameterEncodingConfig{
+			Name:    "to",
+			Style:   uri.QueryStyleForm,
+			Explode: true,
+		}
+
+		if err := q.EncodeParam(cfg, func(e uri.Encoder) error {
+			if val, ok := params.To.Get(); ok {
+				return e.EncodeValue(conv.DateTimeToString(val))
+			}
+			return nil
+		}); err != nil {
+			return res, errors.Wrap(err, "encode query")
+		}
+	}
 	u.RawQuery = q.Values().Encode()
 
 	stage = "EncodeRequest"
@@ -2845,14 +4377,14 @@ func (c *Client) sendListInvoices(ctx context.Context, params ListInvoicesParams
 		type bitset = [1]uint8
 		var satisfied bitset
 		{
-			stage = "Security:BearerAuth"
-			switch err := c.securityBearerAuth(ctx, ListInvoicesOperation, r); {
+			stage = "Security:AccountAuth"
+			switch err := c.securityAccountAuth(ctx, ListInvoicesOperation, r); {
 			case err == nil: // if NO error
 				satisfied[0] |= 1 << 0
 			case errors.Is(err, ogenerrors.ErrSkipClientSecurity):
 				// Skip this security.
 			default:
-				return res, errors.Wrap(err, "security \"BearerAuth\"")
+				return res, errors.Wrap(err, "security \"AccountAuth\"")
 			}
 		}
 
@@ -2897,31 +4429,21 @@ func (c *Client) sendListInvoices(ctx context.Context, params ListInvoicesParams
 	return result, nil
 }
 
-// ListOffers invokes list-offers operation.
+// ListOrderItems invokes list-order-items operation.
 //
-// Lists what is actually purchasable by this account, right now.
+// One entry per item bought, with the price charged and the period it covers.
 //
-// # Every offer here has passed the full eligibility check
-//
-// The list is not "everything on sale" filtered by status. A promotion whose places are gone, a
-// first-month discount this person already used, a beta price they are not on the list for — none of
-// them appear. Returning them and rejecting the purchase afterwards reads as a broken system rather
-// than as a rule.
-//
-// The price is not here, and not because it was left out: an offer states who may buy, and when. What
-// it costs comes from the plan it points at, and is reported by the offers list.
-//
-// GET /account/v1/billing-accounts/{accountKey}/offers
-func (c *Client) ListOffers(ctx context.Context, params ListOffersParams) (*OfferList, error) {
-	res, err := c.sendListOffers(ctx, params)
+// GET /account/v1/orders/{orderId}/items
+func (c *Client) ListOrderItems(ctx context.Context, params ListOrderItemsParams) (*OrderItemList, error) {
+	res, err := c.sendListOrderItems(ctx, params)
 	return res, err
 }
 
-func (c *Client) sendListOffers(ctx context.Context, params ListOffersParams) (res *OfferList, err error) {
+func (c *Client) sendListOrderItems(ctx context.Context, params ListOrderItemsParams) (res *OrderItemList, err error) {
 	otelAttrs := []attribute.KeyValue{
-		otelogen.OperationID("list-offers"),
+		otelogen.OperationID("list-order-items"),
 		semconv.HTTPRequestMethodKey.String("GET"),
-		semconv.URLTemplateKey.String("/account/v1/billing-accounts/{accountKey}/offers"),
+		semconv.URLTemplateKey.String("/account/v1/orders/{orderId}/items"),
 	}
 	otelAttrs = append(otelAttrs, c.cfg.Attributes...)
 
@@ -2937,7 +4459,7 @@ func (c *Client) sendListOffers(ctx context.Context, params ListOffersParams) (r
 	c.requests.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
 
 	// Start a span for this request.
-	ctx, span := c.cfg.Tracer.Start(ctx, ListOffersOperation,
+	ctx, span := c.cfg.Tracer.Start(ctx, ListOrderItemsOperation,
 		trace.WithAttributes(otelAttrs...),
 		clientSpanKind,
 	)
@@ -2955,16 +4477,16 @@ func (c *Client) sendListOffers(ctx context.Context, params ListOffersParams) (r
 	stage = "BuildURL"
 	u := uri.Clone(c.requestURL(ctx))
 	var pathParts [3]string
-	pathParts[0] = "/account/v1/billing-accounts/"
+	pathParts[0] = "/account/v1/orders/"
 	{
-		// Encode "accountKey" parameter.
+		// Encode "orderId" parameter.
 		e := uri.NewPathEncoder(uri.PathEncoderConfig{
-			Param:   "accountKey",
+			Param:   "orderId",
 			Style:   uri.PathStyleSimple,
 			Explode: false,
 		})
 		if err := func() error {
-			return e.EncodeValue(conv.StringToString(params.AccountKey))
+			return e.EncodeValue(conv.UUIDToString(params.OrderId))
 		}(); err != nil {
 			return res, errors.Wrap(err, "encode path")
 		}
@@ -2974,7 +4496,7 @@ func (c *Client) sendListOffers(ctx context.Context, params ListOffersParams) (r
 		}
 		pathParts[1] = encoded
 	}
-	pathParts[2] = "/offers"
+	pathParts[2] = "/items"
 	uri.AddPathParts(u, pathParts[:]...)
 
 	stage = "EncodeQueryParams"
@@ -3025,14 +4547,14 @@ func (c *Client) sendListOffers(ctx context.Context, params ListOffersParams) (r
 		type bitset = [1]uint8
 		var satisfied bitset
 		{
-			stage = "Security:BearerAuth"
-			switch err := c.securityBearerAuth(ctx, ListOffersOperation, r); {
+			stage = "Security:AccountAuth"
+			switch err := c.securityAccountAuth(ctx, ListOrderItemsOperation, r); {
 			case err == nil: // if NO error
 				satisfied[0] |= 1 << 0
 			case errors.Is(err, ogenerrors.ErrSkipClientSecurity):
 				// Skip this security.
 			default:
-				return res, errors.Wrap(err, "security \"BearerAuth\"")
+				return res, errors.Wrap(err, "security \"AccountAuth\"")
 			}
 		}
 
@@ -3069,7 +4591,7 @@ func (c *Client) sendListOffers(ctx context.Context, params ListOffersParams) (r
 	}()
 
 	stage = "DecodeResponse"
-	result, err := decodeListOffersResponse(resp)
+	result, err := decodeListOrderItemsResponse(resp)
 	if err != nil {
 		return res, errors.Wrap(err, "decode response")
 	}
@@ -3079,16 +4601,10 @@ func (c *Client) sendListOffers(ctx context.Context, params ListOffersParams) (r
 
 // ListOrders invokes list-orders operation.
 //
-// Every provisioning request made against the projects this account pays for, newest first.
+// An order in `pending` still owes money; `amount_due` states how much and `reservation_expires_at`
+// states how long it can still be paid.
 //
-// An order that never went through stays here on purpose. Removing it would leave nothing to look at
-// in exactly the case someone wants to look: a resource was asked for, was not delivered, and the
-// question is what happened.
-//
-// Lines come with each order. A list showing only identifiers and amounts is a page nobody can read
-// — recognising one ("which of these was last week's machine") is why it gets opened.
-//
-// GET /account/v1/billing-accounts/{accountKey}/orders
+// GET /account/v1/orders
 func (c *Client) ListOrders(ctx context.Context, params ListOrdersParams) (*OrderList, error) {
 	res, err := c.sendListOrders(ctx, params)
 	return res, err
@@ -3098,7 +4614,7 @@ func (c *Client) sendListOrders(ctx context.Context, params ListOrdersParams) (r
 	otelAttrs := []attribute.KeyValue{
 		otelogen.OperationID("list-orders"),
 		semconv.HTTPRequestMethodKey.String("GET"),
-		semconv.URLTemplateKey.String("/account/v1/billing-accounts/{accountKey}/orders"),
+		semconv.URLTemplateKey.String("/account/v1/orders"),
 	}
 	otelAttrs = append(otelAttrs, c.cfg.Attributes...)
 
@@ -3131,17 +4647,1343 @@ func (c *Client) sendListOrders(ctx context.Context, params ListOrdersParams) (r
 
 	stage = "BuildURL"
 	u := uri.Clone(c.requestURL(ctx))
-	var pathParts [3]string
-	pathParts[0] = "/account/v1/billing-accounts/"
+	var pathParts [1]string
+	pathParts[0] = "/account/v1/orders"
+	uri.AddPathParts(u, pathParts[:]...)
+
+	stage = "EncodeQueryParams"
+	q := uri.NewQueryEncoder()
 	{
-		// Encode "accountKey" parameter.
+		// Encode "page" parameter.
+		cfg := uri.QueryParameterEncodingConfig{
+			Name:    "page",
+			Style:   uri.QueryStyleForm,
+			Explode: true,
+		}
+
+		if err := q.EncodeParam(cfg, func(e uri.Encoder) error {
+			if val, ok := params.Page.Get(); ok {
+				return e.EncodeValue(conv.Int32ToString(val))
+			}
+			return nil
+		}); err != nil {
+			return res, errors.Wrap(err, "encode query")
+		}
+	}
+	{
+		// Encode "page_size" parameter.
+		cfg := uri.QueryParameterEncodingConfig{
+			Name:    "page_size",
+			Style:   uri.QueryStyleForm,
+			Explode: true,
+		}
+
+		if err := q.EncodeParam(cfg, func(e uri.Encoder) error {
+			if val, ok := params.PageSize.Get(); ok {
+				return e.EncodeValue(conv.Int32ToString(val))
+			}
+			return nil
+		}); err != nil {
+			return res, errors.Wrap(err, "encode query")
+		}
+	}
+	{
+		// Encode "billing_account_id" parameter.
+		cfg := uri.QueryParameterEncodingConfig{
+			Name:    "billing_account_id",
+			Style:   uri.QueryStyleForm,
+			Explode: true,
+		}
+
+		if err := q.EncodeParam(cfg, func(e uri.Encoder) error {
+			if val, ok := params.BillingAccountID.Get(); ok {
+				return e.EncodeValue(conv.Int64ToString(val))
+			}
+			return nil
+		}); err != nil {
+			return res, errors.Wrap(err, "encode query")
+		}
+	}
+	{
+		// Encode "project_id" parameter.
+		cfg := uri.QueryParameterEncodingConfig{
+			Name:    "project_id",
+			Style:   uri.QueryStyleForm,
+			Explode: true,
+		}
+
+		if err := q.EncodeParam(cfg, func(e uri.Encoder) error {
+			if val, ok := params.ProjectID.Get(); ok {
+				return e.EncodeValue(conv.UUIDToString(val))
+			}
+			return nil
+		}); err != nil {
+			return res, errors.Wrap(err, "encode query")
+		}
+	}
+	{
+		// Encode "state" parameter.
+		cfg := uri.QueryParameterEncodingConfig{
+			Name:    "state",
+			Style:   uri.QueryStyleForm,
+			Explode: true,
+		}
+
+		if err := q.EncodeParam(cfg, func(e uri.Encoder) error {
+			if val, ok := params.State.Get(); ok {
+				return e.EncodeValue(conv.StringToString(string(val)))
+			}
+			return nil
+		}); err != nil {
+			return res, errors.Wrap(err, "encode query")
+		}
+	}
+	{
+		// Encode "from" parameter.
+		cfg := uri.QueryParameterEncodingConfig{
+			Name:    "from",
+			Style:   uri.QueryStyleForm,
+			Explode: true,
+		}
+
+		if err := q.EncodeParam(cfg, func(e uri.Encoder) error {
+			if val, ok := params.From.Get(); ok {
+				return e.EncodeValue(conv.DateTimeToString(val))
+			}
+			return nil
+		}); err != nil {
+			return res, errors.Wrap(err, "encode query")
+		}
+	}
+	{
+		// Encode "to" parameter.
+		cfg := uri.QueryParameterEncodingConfig{
+			Name:    "to",
+			Style:   uri.QueryStyleForm,
+			Explode: true,
+		}
+
+		if err := q.EncodeParam(cfg, func(e uri.Encoder) error {
+			if val, ok := params.To.Get(); ok {
+				return e.EncodeValue(conv.DateTimeToString(val))
+			}
+			return nil
+		}); err != nil {
+			return res, errors.Wrap(err, "encode query")
+		}
+	}
+	u.RawQuery = q.Values().Encode()
+
+	stage = "EncodeRequest"
+	r, err := ht.NewRequest(ctx, "GET", u)
+	if err != nil {
+		return res, errors.Wrap(err, "create request")
+	}
+
+	{
+		type bitset = [1]uint8
+		var satisfied bitset
+		{
+			stage = "Security:AccountAuth"
+			switch err := c.securityAccountAuth(ctx, ListOrdersOperation, r); {
+			case err == nil: // if NO error
+				satisfied[0] |= 1 << 0
+			case errors.Is(err, ogenerrors.ErrSkipClientSecurity):
+				// Skip this security.
+			default:
+				return res, errors.Wrap(err, "security \"AccountAuth\"")
+			}
+		}
+
+		if ok := func() bool {
+		nextRequirement:
+			for _, requirement := range []bitset{
+				{0b00000001},
+			} {
+				for i, mask := range requirement {
+					if satisfied[i]&mask != mask {
+						continue nextRequirement
+					}
+				}
+				return true
+			}
+			return false
+		}(); !ok {
+			return res, ogenerrors.ErrSecurityRequirementIsNotSatisfied
+		}
+	}
+
+	stage = "SendRequest"
+	resp, err := c.cfg.Client.Do(r)
+	if err != nil {
+		return res, errors.Wrap(err, "do request")
+	}
+	body := resp.Body
+	defer func() {
+		// Drain the body to EOF before closing, so the underlying
+		// connection can be reused by the Transport regardless of the
+		// response status code. See https://github.com/ogen-go/ogen/issues/1670.
+		_, _ = io.Copy(io.Discard, body)
+		_ = body.Close()
+	}()
+
+	stage = "DecodeResponse"
+	result, err := decodeListOrdersResponse(resp)
+	if err != nil {
+		return res, errors.Wrap(err, "decode response")
+	}
+
+	return result, nil
+}
+
+// ListPaidProjects invokes list-paid-projects operation.
+//
+// The projects your accounts pay for.
+//
+// GET /account/v1/projects
+func (c *Client) ListPaidProjects(ctx context.Context, params ListPaidProjectsParams) (*ProjectBindingList, error) {
+	res, err := c.sendListPaidProjects(ctx, params)
+	return res, err
+}
+
+func (c *Client) sendListPaidProjects(ctx context.Context, params ListPaidProjectsParams) (res *ProjectBindingList, err error) {
+	otelAttrs := []attribute.KeyValue{
+		otelogen.OperationID("list-paid-projects"),
+		semconv.HTTPRequestMethodKey.String("GET"),
+		semconv.URLTemplateKey.String("/account/v1/projects"),
+	}
+	otelAttrs = append(otelAttrs, c.cfg.Attributes...)
+
+	// Run stopwatch.
+	startTime := time.Now()
+	defer func() {
+		// Use floating point division here for higher precision (instead of Millisecond method).
+		elapsedDuration := time.Since(startTime)
+		c.duration.Record(ctx, float64(elapsedDuration)/float64(time.Millisecond), metric.WithAttributes(otelAttrs...))
+	}()
+
+	// Increment request counter.
+	c.requests.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
+
+	// Start a span for this request.
+	ctx, span := c.cfg.Tracer.Start(ctx, ListPaidProjectsOperation,
+		trace.WithAttributes(otelAttrs...),
+		clientSpanKind,
+	)
+	// Track stage for error reporting.
+	var stage string
+	defer func() {
+		if err != nil {
+			span.RecordError(err)
+			span.SetStatus(codes.Error, stage)
+			c.errors.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
+		}
+		span.End()
+	}()
+
+	stage = "BuildURL"
+	u := uri.Clone(c.requestURL(ctx))
+	var pathParts [1]string
+	pathParts[0] = "/account/v1/projects"
+	uri.AddPathParts(u, pathParts[:]...)
+
+	stage = "EncodeQueryParams"
+	q := uri.NewQueryEncoder()
+	{
+		// Encode "page" parameter.
+		cfg := uri.QueryParameterEncodingConfig{
+			Name:    "page",
+			Style:   uri.QueryStyleForm,
+			Explode: true,
+		}
+
+		if err := q.EncodeParam(cfg, func(e uri.Encoder) error {
+			if val, ok := params.Page.Get(); ok {
+				return e.EncodeValue(conv.Int32ToString(val))
+			}
+			return nil
+		}); err != nil {
+			return res, errors.Wrap(err, "encode query")
+		}
+	}
+	{
+		// Encode "page_size" parameter.
+		cfg := uri.QueryParameterEncodingConfig{
+			Name:    "page_size",
+			Style:   uri.QueryStyleForm,
+			Explode: true,
+		}
+
+		if err := q.EncodeParam(cfg, func(e uri.Encoder) error {
+			if val, ok := params.PageSize.Get(); ok {
+				return e.EncodeValue(conv.Int32ToString(val))
+			}
+			return nil
+		}); err != nil {
+			return res, errors.Wrap(err, "encode query")
+		}
+	}
+	{
+		// Encode "billing_account_id" parameter.
+		cfg := uri.QueryParameterEncodingConfig{
+			Name:    "billing_account_id",
+			Style:   uri.QueryStyleForm,
+			Explode: true,
+		}
+
+		if err := q.EncodeParam(cfg, func(e uri.Encoder) error {
+			if val, ok := params.BillingAccountID.Get(); ok {
+				return e.EncodeValue(conv.Int64ToString(val))
+			}
+			return nil
+		}); err != nil {
+			return res, errors.Wrap(err, "encode query")
+		}
+	}
+	u.RawQuery = q.Values().Encode()
+
+	stage = "EncodeRequest"
+	r, err := ht.NewRequest(ctx, "GET", u)
+	if err != nil {
+		return res, errors.Wrap(err, "create request")
+	}
+
+	{
+		type bitset = [1]uint8
+		var satisfied bitset
+		{
+			stage = "Security:AccountAuth"
+			switch err := c.securityAccountAuth(ctx, ListPaidProjectsOperation, r); {
+			case err == nil: // if NO error
+				satisfied[0] |= 1 << 0
+			case errors.Is(err, ogenerrors.ErrSkipClientSecurity):
+				// Skip this security.
+			default:
+				return res, errors.Wrap(err, "security \"AccountAuth\"")
+			}
+		}
+
+		if ok := func() bool {
+		nextRequirement:
+			for _, requirement := range []bitset{
+				{0b00000001},
+			} {
+				for i, mask := range requirement {
+					if satisfied[i]&mask != mask {
+						continue nextRequirement
+					}
+				}
+				return true
+			}
+			return false
+		}(); !ok {
+			return res, ogenerrors.ErrSecurityRequirementIsNotSatisfied
+		}
+	}
+
+	stage = "SendRequest"
+	resp, err := c.cfg.Client.Do(r)
+	if err != nil {
+		return res, errors.Wrap(err, "do request")
+	}
+	body := resp.Body
+	defer func() {
+		// Drain the body to EOF before closing, so the underlying
+		// connection can be reused by the Transport regardless of the
+		// response status code. See https://github.com/ogen-go/ogen/issues/1670.
+		_, _ = io.Copy(io.Discard, body)
+		_ = body.Close()
+	}()
+
+	stage = "DecodeResponse"
+	result, err := decodeListPaidProjectsResponse(resp)
+	if err != nil {
+		return res, errors.Wrap(err, "decode response")
+	}
+
+	return result, nil
+}
+
+// ListPaymentMethods invokes list-payment-methods operation.
+//
+// GET /account/v1/payment-methods
+func (c *Client) ListPaymentMethods(ctx context.Context, params ListPaymentMethodsParams) (*PaymentMethodList, error) {
+	res, err := c.sendListPaymentMethods(ctx, params)
+	return res, err
+}
+
+func (c *Client) sendListPaymentMethods(ctx context.Context, params ListPaymentMethodsParams) (res *PaymentMethodList, err error) {
+	otelAttrs := []attribute.KeyValue{
+		otelogen.OperationID("list-payment-methods"),
+		semconv.HTTPRequestMethodKey.String("GET"),
+		semconv.URLTemplateKey.String("/account/v1/payment-methods"),
+	}
+	otelAttrs = append(otelAttrs, c.cfg.Attributes...)
+
+	// Run stopwatch.
+	startTime := time.Now()
+	defer func() {
+		// Use floating point division here for higher precision (instead of Millisecond method).
+		elapsedDuration := time.Since(startTime)
+		c.duration.Record(ctx, float64(elapsedDuration)/float64(time.Millisecond), metric.WithAttributes(otelAttrs...))
+	}()
+
+	// Increment request counter.
+	c.requests.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
+
+	// Start a span for this request.
+	ctx, span := c.cfg.Tracer.Start(ctx, ListPaymentMethodsOperation,
+		trace.WithAttributes(otelAttrs...),
+		clientSpanKind,
+	)
+	// Track stage for error reporting.
+	var stage string
+	defer func() {
+		if err != nil {
+			span.RecordError(err)
+			span.SetStatus(codes.Error, stage)
+			c.errors.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
+		}
+		span.End()
+	}()
+
+	stage = "BuildURL"
+	u := uri.Clone(c.requestURL(ctx))
+	var pathParts [1]string
+	pathParts[0] = "/account/v1/payment-methods"
+	uri.AddPathParts(u, pathParts[:]...)
+
+	stage = "EncodeQueryParams"
+	q := uri.NewQueryEncoder()
+	{
+		// Encode "page" parameter.
+		cfg := uri.QueryParameterEncodingConfig{
+			Name:    "page",
+			Style:   uri.QueryStyleForm,
+			Explode: true,
+		}
+
+		if err := q.EncodeParam(cfg, func(e uri.Encoder) error {
+			if val, ok := params.Page.Get(); ok {
+				return e.EncodeValue(conv.Int32ToString(val))
+			}
+			return nil
+		}); err != nil {
+			return res, errors.Wrap(err, "encode query")
+		}
+	}
+	{
+		// Encode "page_size" parameter.
+		cfg := uri.QueryParameterEncodingConfig{
+			Name:    "page_size",
+			Style:   uri.QueryStyleForm,
+			Explode: true,
+		}
+
+		if err := q.EncodeParam(cfg, func(e uri.Encoder) error {
+			if val, ok := params.PageSize.Get(); ok {
+				return e.EncodeValue(conv.Int32ToString(val))
+			}
+			return nil
+		}); err != nil {
+			return res, errors.Wrap(err, "encode query")
+		}
+	}
+	{
+		// Encode "billing_account_id" parameter.
+		cfg := uri.QueryParameterEncodingConfig{
+			Name:    "billing_account_id",
+			Style:   uri.QueryStyleForm,
+			Explode: true,
+		}
+
+		if err := q.EncodeParam(cfg, func(e uri.Encoder) error {
+			if val, ok := params.BillingAccountID.Get(); ok {
+				return e.EncodeValue(conv.Int64ToString(val))
+			}
+			return nil
+		}); err != nil {
+			return res, errors.Wrap(err, "encode query")
+		}
+	}
+	u.RawQuery = q.Values().Encode()
+
+	stage = "EncodeRequest"
+	r, err := ht.NewRequest(ctx, "GET", u)
+	if err != nil {
+		return res, errors.Wrap(err, "create request")
+	}
+
+	{
+		type bitset = [1]uint8
+		var satisfied bitset
+		{
+			stage = "Security:AccountAuth"
+			switch err := c.securityAccountAuth(ctx, ListPaymentMethodsOperation, r); {
+			case err == nil: // if NO error
+				satisfied[0] |= 1 << 0
+			case errors.Is(err, ogenerrors.ErrSkipClientSecurity):
+				// Skip this security.
+			default:
+				return res, errors.Wrap(err, "security \"AccountAuth\"")
+			}
+		}
+
+		if ok := func() bool {
+		nextRequirement:
+			for _, requirement := range []bitset{
+				{0b00000001},
+			} {
+				for i, mask := range requirement {
+					if satisfied[i]&mask != mask {
+						continue nextRequirement
+					}
+				}
+				return true
+			}
+			return false
+		}(); !ok {
+			return res, ogenerrors.ErrSecurityRequirementIsNotSatisfied
+		}
+	}
+
+	stage = "SendRequest"
+	resp, err := c.cfg.Client.Do(r)
+	if err != nil {
+		return res, errors.Wrap(err, "do request")
+	}
+	body := resp.Body
+	defer func() {
+		// Drain the body to EOF before closing, so the underlying
+		// connection can be reused by the Transport regardless of the
+		// response status code. See https://github.com/ogen-go/ogen/issues/1670.
+		_, _ = io.Copy(io.Discard, body)
+		_ = body.Close()
+	}()
+
+	stage = "DecodeResponse"
+	result, err := decodeListPaymentMethodsResponse(resp)
+	if err != nil {
+		return res, errors.Wrap(err, "decode response")
+	}
+
+	return result, nil
+}
+
+// ListProjectActiveResources invokes list-project-active-resources operation.
+//
+// A resource that is running but does not appear here is not being charged for.
+//
+// GET /api/v1/projects/{projectId}/active-resources
+func (c *Client) ListProjectActiveResources(ctx context.Context, params ListProjectActiveResourcesParams) (*ActiveResourceList, error) {
+	res, err := c.sendListProjectActiveResources(ctx, params)
+	return res, err
+}
+
+func (c *Client) sendListProjectActiveResources(ctx context.Context, params ListProjectActiveResourcesParams) (res *ActiveResourceList, err error) {
+	otelAttrs := []attribute.KeyValue{
+		otelogen.OperationID("list-project-active-resources"),
+		semconv.HTTPRequestMethodKey.String("GET"),
+		semconv.URLTemplateKey.String("/api/v1/projects/{projectId}/active-resources"),
+	}
+	otelAttrs = append(otelAttrs, c.cfg.Attributes...)
+
+	// Run stopwatch.
+	startTime := time.Now()
+	defer func() {
+		// Use floating point division here for higher precision (instead of Millisecond method).
+		elapsedDuration := time.Since(startTime)
+		c.duration.Record(ctx, float64(elapsedDuration)/float64(time.Millisecond), metric.WithAttributes(otelAttrs...))
+	}()
+
+	// Increment request counter.
+	c.requests.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
+
+	// Start a span for this request.
+	ctx, span := c.cfg.Tracer.Start(ctx, ListProjectActiveResourcesOperation,
+		trace.WithAttributes(otelAttrs...),
+		clientSpanKind,
+	)
+	// Track stage for error reporting.
+	var stage string
+	defer func() {
+		if err != nil {
+			span.RecordError(err)
+			span.SetStatus(codes.Error, stage)
+			c.errors.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
+		}
+		span.End()
+	}()
+
+	stage = "BuildURL"
+	u := uri.Clone(c.requestURL(ctx))
+	var pathParts [3]string
+	pathParts[0] = "/api/v1/projects/"
+	{
+		// Encode "projectId" parameter.
 		e := uri.NewPathEncoder(uri.PathEncoderConfig{
-			Param:   "accountKey",
+			Param:   "projectId",
 			Style:   uri.PathStyleSimple,
 			Explode: false,
 		})
 		if err := func() error {
-			return e.EncodeValue(conv.StringToString(params.AccountKey))
+			return e.EncodeValue(conv.UUIDToString(params.ProjectId))
+		}(); err != nil {
+			return res, errors.Wrap(err, "encode path")
+		}
+		encoded, err := e.Result()
+		if err != nil {
+			return res, errors.Wrap(err, "encode path")
+		}
+		pathParts[1] = encoded
+	}
+	pathParts[2] = "/active-resources"
+	uri.AddPathParts(u, pathParts[:]...)
+
+	stage = "EncodeQueryParams"
+	q := uri.NewQueryEncoder()
+	{
+		// Encode "page" parameter.
+		cfg := uri.QueryParameterEncodingConfig{
+			Name:    "page",
+			Style:   uri.QueryStyleForm,
+			Explode: true,
+		}
+
+		if err := q.EncodeParam(cfg, func(e uri.Encoder) error {
+			if val, ok := params.Page.Get(); ok {
+				return e.EncodeValue(conv.Int32ToString(val))
+			}
+			return nil
+		}); err != nil {
+			return res, errors.Wrap(err, "encode query")
+		}
+	}
+	{
+		// Encode "page_size" parameter.
+		cfg := uri.QueryParameterEncodingConfig{
+			Name:    "page_size",
+			Style:   uri.QueryStyleForm,
+			Explode: true,
+		}
+
+		if err := q.EncodeParam(cfg, func(e uri.Encoder) error {
+			if val, ok := params.PageSize.Get(); ok {
+				return e.EncodeValue(conv.Int32ToString(val))
+			}
+			return nil
+		}); err != nil {
+			return res, errors.Wrap(err, "encode query")
+		}
+	}
+	{
+		// Encode "resource_id" parameter.
+		cfg := uri.QueryParameterEncodingConfig{
+			Name:    "resource_id",
+			Style:   uri.QueryStyleForm,
+			Explode: true,
+		}
+
+		if err := q.EncodeParam(cfg, func(e uri.Encoder) error {
+			if val, ok := params.ResourceID.Get(); ok {
+				return e.EncodeValue(conv.StringToString(val))
+			}
+			return nil
+		}); err != nil {
+			return res, errors.Wrap(err, "encode query")
+		}
+	}
+	u.RawQuery = q.Values().Encode()
+
+	stage = "EncodeRequest"
+	r, err := ht.NewRequest(ctx, "GET", u)
+	if err != nil {
+		return res, errors.Wrap(err, "create request")
+	}
+
+	{
+		type bitset = [1]uint8
+		var satisfied bitset
+		{
+			stage = "Security:ProjectAuth"
+			switch err := c.securityProjectAuth(ctx, ListProjectActiveResourcesOperation, r); {
+			case err == nil: // if NO error
+				satisfied[0] |= 1 << 0
+			case errors.Is(err, ogenerrors.ErrSkipClientSecurity):
+				// Skip this security.
+			default:
+				return res, errors.Wrap(err, "security \"ProjectAuth\"")
+			}
+		}
+
+		if ok := func() bool {
+		nextRequirement:
+			for _, requirement := range []bitset{
+				{0b00000001},
+			} {
+				for i, mask := range requirement {
+					if satisfied[i]&mask != mask {
+						continue nextRequirement
+					}
+				}
+				return true
+			}
+			return false
+		}(); !ok {
+			return res, ogenerrors.ErrSecurityRequirementIsNotSatisfied
+		}
+	}
+
+	stage = "SendRequest"
+	resp, err := c.cfg.Client.Do(r)
+	if err != nil {
+		return res, errors.Wrap(err, "do request")
+	}
+	body := resp.Body
+	defer func() {
+		// Drain the body to EOF before closing, so the underlying
+		// connection can be reused by the Transport regardless of the
+		// response status code. See https://github.com/ogen-go/ogen/issues/1670.
+		_, _ = io.Copy(io.Discard, body)
+		_ = body.Close()
+	}()
+
+	stage = "DecodeResponse"
+	result, err := decodeListProjectActiveResourcesResponse(resp)
+	if err != nil {
+		return res, errors.Wrap(err, "decode response")
+	}
+
+	return result, nil
+}
+
+// ListProjectAllowances invokes list-project-allowances operation.
+//
+// These belong to the paying account and are shared with every other project it pays for, so what is
+// left here may be consumed elsewhere.
+//
+// GET /api/v1/projects/{projectId}/allowances
+func (c *Client) ListProjectAllowances(ctx context.Context, params ListProjectAllowancesParams) (*AllowanceList, error) {
+	res, err := c.sendListProjectAllowances(ctx, params)
+	return res, err
+}
+
+func (c *Client) sendListProjectAllowances(ctx context.Context, params ListProjectAllowancesParams) (res *AllowanceList, err error) {
+	otelAttrs := []attribute.KeyValue{
+		otelogen.OperationID("list-project-allowances"),
+		semconv.HTTPRequestMethodKey.String("GET"),
+		semconv.URLTemplateKey.String("/api/v1/projects/{projectId}/allowances"),
+	}
+	otelAttrs = append(otelAttrs, c.cfg.Attributes...)
+
+	// Run stopwatch.
+	startTime := time.Now()
+	defer func() {
+		// Use floating point division here for higher precision (instead of Millisecond method).
+		elapsedDuration := time.Since(startTime)
+		c.duration.Record(ctx, float64(elapsedDuration)/float64(time.Millisecond), metric.WithAttributes(otelAttrs...))
+	}()
+
+	// Increment request counter.
+	c.requests.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
+
+	// Start a span for this request.
+	ctx, span := c.cfg.Tracer.Start(ctx, ListProjectAllowancesOperation,
+		trace.WithAttributes(otelAttrs...),
+		clientSpanKind,
+	)
+	// Track stage for error reporting.
+	var stage string
+	defer func() {
+		if err != nil {
+			span.RecordError(err)
+			span.SetStatus(codes.Error, stage)
+			c.errors.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
+		}
+		span.End()
+	}()
+
+	stage = "BuildURL"
+	u := uri.Clone(c.requestURL(ctx))
+	var pathParts [3]string
+	pathParts[0] = "/api/v1/projects/"
+	{
+		// Encode "projectId" parameter.
+		e := uri.NewPathEncoder(uri.PathEncoderConfig{
+			Param:   "projectId",
+			Style:   uri.PathStyleSimple,
+			Explode: false,
+		})
+		if err := func() error {
+			return e.EncodeValue(conv.UUIDToString(params.ProjectId))
+		}(); err != nil {
+			return res, errors.Wrap(err, "encode path")
+		}
+		encoded, err := e.Result()
+		if err != nil {
+			return res, errors.Wrap(err, "encode path")
+		}
+		pathParts[1] = encoded
+	}
+	pathParts[2] = "/allowances"
+	uri.AddPathParts(u, pathParts[:]...)
+
+	stage = "EncodeQueryParams"
+	q := uri.NewQueryEncoder()
+	{
+		// Encode "page" parameter.
+		cfg := uri.QueryParameterEncodingConfig{
+			Name:    "page",
+			Style:   uri.QueryStyleForm,
+			Explode: true,
+		}
+
+		if err := q.EncodeParam(cfg, func(e uri.Encoder) error {
+			if val, ok := params.Page.Get(); ok {
+				return e.EncodeValue(conv.Int32ToString(val))
+			}
+			return nil
+		}); err != nil {
+			return res, errors.Wrap(err, "encode query")
+		}
+	}
+	{
+		// Encode "page_size" parameter.
+		cfg := uri.QueryParameterEncodingConfig{
+			Name:    "page_size",
+			Style:   uri.QueryStyleForm,
+			Explode: true,
+		}
+
+		if err := q.EncodeParam(cfg, func(e uri.Encoder) error {
+			if val, ok := params.PageSize.Get(); ok {
+				return e.EncodeValue(conv.Int32ToString(val))
+			}
+			return nil
+		}); err != nil {
+			return res, errors.Wrap(err, "encode query")
+		}
+	}
+	{
+		// Encode "meter_key" parameter.
+		cfg := uri.QueryParameterEncodingConfig{
+			Name:    "meter_key",
+			Style:   uri.QueryStyleForm,
+			Explode: true,
+		}
+
+		if err := q.EncodeParam(cfg, func(e uri.Encoder) error {
+			if val, ok := params.MeterKey.Get(); ok {
+				return e.EncodeValue(conv.StringToString(val))
+			}
+			return nil
+		}); err != nil {
+			return res, errors.Wrap(err, "encode query")
+		}
+	}
+	u.RawQuery = q.Values().Encode()
+
+	stage = "EncodeRequest"
+	r, err := ht.NewRequest(ctx, "GET", u)
+	if err != nil {
+		return res, errors.Wrap(err, "create request")
+	}
+
+	{
+		type bitset = [1]uint8
+		var satisfied bitset
+		{
+			stage = "Security:ProjectAuth"
+			switch err := c.securityProjectAuth(ctx, ListProjectAllowancesOperation, r); {
+			case err == nil: // if NO error
+				satisfied[0] |= 1 << 0
+			case errors.Is(err, ogenerrors.ErrSkipClientSecurity):
+				// Skip this security.
+			default:
+				return res, errors.Wrap(err, "security \"ProjectAuth\"")
+			}
+		}
+
+		if ok := func() bool {
+		nextRequirement:
+			for _, requirement := range []bitset{
+				{0b00000001},
+			} {
+				for i, mask := range requirement {
+					if satisfied[i]&mask != mask {
+						continue nextRequirement
+					}
+				}
+				return true
+			}
+			return false
+		}(); !ok {
+			return res, ogenerrors.ErrSecurityRequirementIsNotSatisfied
+		}
+	}
+
+	stage = "SendRequest"
+	resp, err := c.cfg.Client.Do(r)
+	if err != nil {
+		return res, errors.Wrap(err, "do request")
+	}
+	body := resp.Body
+	defer func() {
+		// Drain the body to EOF before closing, so the underlying
+		// connection can be reused by the Transport regardless of the
+		// response status code. See https://github.com/ogen-go/ogen/issues/1670.
+		_, _ = io.Copy(io.Discard, body)
+		_ = body.Close()
+	}()
+
+	stage = "DecodeResponse"
+	result, err := decodeListProjectAllowancesResponse(resp)
+	if err != nil {
+		return res, errors.Wrap(err, "decode response")
+	}
+
+	return result, nil
+}
+
+// ListProjectEntitlements invokes list-project-entitlements operation.
+//
+// Includes capabilities bought for this project and those the paying account holds at account level.
+//
+// Where a capability counts uses, `remaining_quantity` states how much is left. Whether exceeding it
+// refuses the request or simply continues to be charged for is decided by the service that owns the
+// capability.
+//
+// GET /api/v1/projects/{projectId}/entitlements
+func (c *Client) ListProjectEntitlements(ctx context.Context, params ListProjectEntitlementsParams) (*EntitlementList, error) {
+	res, err := c.sendListProjectEntitlements(ctx, params)
+	return res, err
+}
+
+func (c *Client) sendListProjectEntitlements(ctx context.Context, params ListProjectEntitlementsParams) (res *EntitlementList, err error) {
+	otelAttrs := []attribute.KeyValue{
+		otelogen.OperationID("list-project-entitlements"),
+		semconv.HTTPRequestMethodKey.String("GET"),
+		semconv.URLTemplateKey.String("/api/v1/projects/{projectId}/entitlements"),
+	}
+	otelAttrs = append(otelAttrs, c.cfg.Attributes...)
+
+	// Run stopwatch.
+	startTime := time.Now()
+	defer func() {
+		// Use floating point division here for higher precision (instead of Millisecond method).
+		elapsedDuration := time.Since(startTime)
+		c.duration.Record(ctx, float64(elapsedDuration)/float64(time.Millisecond), metric.WithAttributes(otelAttrs...))
+	}()
+
+	// Increment request counter.
+	c.requests.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
+
+	// Start a span for this request.
+	ctx, span := c.cfg.Tracer.Start(ctx, ListProjectEntitlementsOperation,
+		trace.WithAttributes(otelAttrs...),
+		clientSpanKind,
+	)
+	// Track stage for error reporting.
+	var stage string
+	defer func() {
+		if err != nil {
+			span.RecordError(err)
+			span.SetStatus(codes.Error, stage)
+			c.errors.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
+		}
+		span.End()
+	}()
+
+	stage = "BuildURL"
+	u := uri.Clone(c.requestURL(ctx))
+	var pathParts [3]string
+	pathParts[0] = "/api/v1/projects/"
+	{
+		// Encode "projectId" parameter.
+		e := uri.NewPathEncoder(uri.PathEncoderConfig{
+			Param:   "projectId",
+			Style:   uri.PathStyleSimple,
+			Explode: false,
+		})
+		if err := func() error {
+			return e.EncodeValue(conv.UUIDToString(params.ProjectId))
+		}(); err != nil {
+			return res, errors.Wrap(err, "encode path")
+		}
+		encoded, err := e.Result()
+		if err != nil {
+			return res, errors.Wrap(err, "encode path")
+		}
+		pathParts[1] = encoded
+	}
+	pathParts[2] = "/entitlements"
+	uri.AddPathParts(u, pathParts[:]...)
+
+	stage = "EncodeQueryParams"
+	q := uri.NewQueryEncoder()
+	{
+		// Encode "page" parameter.
+		cfg := uri.QueryParameterEncodingConfig{
+			Name:    "page",
+			Style:   uri.QueryStyleForm,
+			Explode: true,
+		}
+
+		if err := q.EncodeParam(cfg, func(e uri.Encoder) error {
+			if val, ok := params.Page.Get(); ok {
+				return e.EncodeValue(conv.Int32ToString(val))
+			}
+			return nil
+		}); err != nil {
+			return res, errors.Wrap(err, "encode query")
+		}
+	}
+	{
+		// Encode "page_size" parameter.
+		cfg := uri.QueryParameterEncodingConfig{
+			Name:    "page_size",
+			Style:   uri.QueryStyleForm,
+			Explode: true,
+		}
+
+		if err := q.EncodeParam(cfg, func(e uri.Encoder) error {
+			if val, ok := params.PageSize.Get(); ok {
+				return e.EncodeValue(conv.Int32ToString(val))
+			}
+			return nil
+		}); err != nil {
+			return res, errors.Wrap(err, "encode query")
+		}
+	}
+	{
+		// Encode "product_key" parameter.
+		cfg := uri.QueryParameterEncodingConfig{
+			Name:    "product_key",
+			Style:   uri.QueryStyleForm,
+			Explode: true,
+		}
+
+		if err := q.EncodeParam(cfg, func(e uri.Encoder) error {
+			if val, ok := params.ProductKey.Get(); ok {
+				return e.EncodeValue(conv.StringToString(val))
+			}
+			return nil
+		}); err != nil {
+			return res, errors.Wrap(err, "encode query")
+		}
+	}
+	u.RawQuery = q.Values().Encode()
+
+	stage = "EncodeRequest"
+	r, err := ht.NewRequest(ctx, "GET", u)
+	if err != nil {
+		return res, errors.Wrap(err, "create request")
+	}
+
+	{
+		type bitset = [1]uint8
+		var satisfied bitset
+		{
+			stage = "Security:ProjectAuth"
+			switch err := c.securityProjectAuth(ctx, ListProjectEntitlementsOperation, r); {
+			case err == nil: // if NO error
+				satisfied[0] |= 1 << 0
+			case errors.Is(err, ogenerrors.ErrSkipClientSecurity):
+				// Skip this security.
+			default:
+				return res, errors.Wrap(err, "security \"ProjectAuth\"")
+			}
+		}
+
+		if ok := func() bool {
+		nextRequirement:
+			for _, requirement := range []bitset{
+				{0b00000001},
+			} {
+				for i, mask := range requirement {
+					if satisfied[i]&mask != mask {
+						continue nextRequirement
+					}
+				}
+				return true
+			}
+			return false
+		}(); !ok {
+			return res, ogenerrors.ErrSecurityRequirementIsNotSatisfied
+		}
+	}
+
+	stage = "SendRequest"
+	resp, err := c.cfg.Client.Do(r)
+	if err != nil {
+		return res, errors.Wrap(err, "do request")
+	}
+	body := resp.Body
+	defer func() {
+		// Drain the body to EOF before closing, so the underlying
+		// connection can be reused by the Transport regardless of the
+		// response status code. See https://github.com/ogen-go/ogen/issues/1670.
+		_, _ = io.Copy(io.Discard, body)
+		_ = body.Close()
+	}()
+
+	stage = "DecodeResponse"
+	result, err := decodeListProjectEntitlementsResponse(resp)
+	if err != nil {
+		return res, errors.Wrap(err, "decode response")
+	}
+
+	return result, nil
+}
+
+// ListProjectOrderItems invokes list-project-order-items operation.
+//
+// What an order is made up of.
+//
+// GET /api/v1/projects/{projectId}/orders/{orderId}/items
+func (c *Client) ListProjectOrderItems(ctx context.Context, params ListProjectOrderItemsParams) (*OrderItemList, error) {
+	res, err := c.sendListProjectOrderItems(ctx, params)
+	return res, err
+}
+
+func (c *Client) sendListProjectOrderItems(ctx context.Context, params ListProjectOrderItemsParams) (res *OrderItemList, err error) {
+	otelAttrs := []attribute.KeyValue{
+		otelogen.OperationID("list-project-order-items"),
+		semconv.HTTPRequestMethodKey.String("GET"),
+		semconv.URLTemplateKey.String("/api/v1/projects/{projectId}/orders/{orderId}/items"),
+	}
+	otelAttrs = append(otelAttrs, c.cfg.Attributes...)
+
+	// Run stopwatch.
+	startTime := time.Now()
+	defer func() {
+		// Use floating point division here for higher precision (instead of Millisecond method).
+		elapsedDuration := time.Since(startTime)
+		c.duration.Record(ctx, float64(elapsedDuration)/float64(time.Millisecond), metric.WithAttributes(otelAttrs...))
+	}()
+
+	// Increment request counter.
+	c.requests.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
+
+	// Start a span for this request.
+	ctx, span := c.cfg.Tracer.Start(ctx, ListProjectOrderItemsOperation,
+		trace.WithAttributes(otelAttrs...),
+		clientSpanKind,
+	)
+	// Track stage for error reporting.
+	var stage string
+	defer func() {
+		if err != nil {
+			span.RecordError(err)
+			span.SetStatus(codes.Error, stage)
+			c.errors.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
+		}
+		span.End()
+	}()
+
+	stage = "BuildURL"
+	u := uri.Clone(c.requestURL(ctx))
+	var pathParts [5]string
+	pathParts[0] = "/api/v1/projects/"
+	{
+		// Encode "projectId" parameter.
+		e := uri.NewPathEncoder(uri.PathEncoderConfig{
+			Param:   "projectId",
+			Style:   uri.PathStyleSimple,
+			Explode: false,
+		})
+		if err := func() error {
+			return e.EncodeValue(conv.UUIDToString(params.ProjectId))
+		}(); err != nil {
+			return res, errors.Wrap(err, "encode path")
+		}
+		encoded, err := e.Result()
+		if err != nil {
+			return res, errors.Wrap(err, "encode path")
+		}
+		pathParts[1] = encoded
+	}
+	pathParts[2] = "/orders/"
+	{
+		// Encode "orderId" parameter.
+		e := uri.NewPathEncoder(uri.PathEncoderConfig{
+			Param:   "orderId",
+			Style:   uri.PathStyleSimple,
+			Explode: false,
+		})
+		if err := func() error {
+			return e.EncodeValue(conv.UUIDToString(params.OrderId))
+		}(); err != nil {
+			return res, errors.Wrap(err, "encode path")
+		}
+		encoded, err := e.Result()
+		if err != nil {
+			return res, errors.Wrap(err, "encode path")
+		}
+		pathParts[3] = encoded
+	}
+	pathParts[4] = "/items"
+	uri.AddPathParts(u, pathParts[:]...)
+
+	stage = "EncodeQueryParams"
+	q := uri.NewQueryEncoder()
+	{
+		// Encode "page" parameter.
+		cfg := uri.QueryParameterEncodingConfig{
+			Name:    "page",
+			Style:   uri.QueryStyleForm,
+			Explode: true,
+		}
+
+		if err := q.EncodeParam(cfg, func(e uri.Encoder) error {
+			if val, ok := params.Page.Get(); ok {
+				return e.EncodeValue(conv.Int32ToString(val))
+			}
+			return nil
+		}); err != nil {
+			return res, errors.Wrap(err, "encode query")
+		}
+	}
+	{
+		// Encode "page_size" parameter.
+		cfg := uri.QueryParameterEncodingConfig{
+			Name:    "page_size",
+			Style:   uri.QueryStyleForm,
+			Explode: true,
+		}
+
+		if err := q.EncodeParam(cfg, func(e uri.Encoder) error {
+			if val, ok := params.PageSize.Get(); ok {
+				return e.EncodeValue(conv.Int32ToString(val))
+			}
+			return nil
+		}); err != nil {
+			return res, errors.Wrap(err, "encode query")
+		}
+	}
+	u.RawQuery = q.Values().Encode()
+
+	stage = "EncodeRequest"
+	r, err := ht.NewRequest(ctx, "GET", u)
+	if err != nil {
+		return res, errors.Wrap(err, "create request")
+	}
+
+	{
+		type bitset = [1]uint8
+		var satisfied bitset
+		{
+			stage = "Security:ProjectAuth"
+			switch err := c.securityProjectAuth(ctx, ListProjectOrderItemsOperation, r); {
+			case err == nil: // if NO error
+				satisfied[0] |= 1 << 0
+			case errors.Is(err, ogenerrors.ErrSkipClientSecurity):
+				// Skip this security.
+			default:
+				return res, errors.Wrap(err, "security \"ProjectAuth\"")
+			}
+		}
+
+		if ok := func() bool {
+		nextRequirement:
+			for _, requirement := range []bitset{
+				{0b00000001},
+			} {
+				for i, mask := range requirement {
+					if satisfied[i]&mask != mask {
+						continue nextRequirement
+					}
+				}
+				return true
+			}
+			return false
+		}(); !ok {
+			return res, ogenerrors.ErrSecurityRequirementIsNotSatisfied
+		}
+	}
+
+	stage = "SendRequest"
+	resp, err := c.cfg.Client.Do(r)
+	if err != nil {
+		return res, errors.Wrap(err, "do request")
+	}
+	body := resp.Body
+	defer func() {
+		// Drain the body to EOF before closing, so the underlying
+		// connection can be reused by the Transport regardless of the
+		// response status code. See https://github.com/ogen-go/ogen/issues/1670.
+		_, _ = io.Copy(io.Discard, body)
+		_ = body.Close()
+	}()
+
+	stage = "DecodeResponse"
+	result, err := decodeListProjectOrderItemsResponse(resp)
+	if err != nil {
+		return res, errors.Wrap(err, "decode response")
+	}
+
+	return result, nil
+}
+
+// ListProjectOrders invokes list-project-orders operation.
+//
+// An order awaiting payment shows what is outstanding. Paying it is done from the billing centre by
+// the account owner.
+//
+// GET /api/v1/projects/{projectId}/orders
+func (c *Client) ListProjectOrders(ctx context.Context, params ListProjectOrdersParams) (*OrderList, error) {
+	res, err := c.sendListProjectOrders(ctx, params)
+	return res, err
+}
+
+func (c *Client) sendListProjectOrders(ctx context.Context, params ListProjectOrdersParams) (res *OrderList, err error) {
+	otelAttrs := []attribute.KeyValue{
+		otelogen.OperationID("list-project-orders"),
+		semconv.HTTPRequestMethodKey.String("GET"),
+		semconv.URLTemplateKey.String("/api/v1/projects/{projectId}/orders"),
+	}
+	otelAttrs = append(otelAttrs, c.cfg.Attributes...)
+
+	// Run stopwatch.
+	startTime := time.Now()
+	defer func() {
+		// Use floating point division here for higher precision (instead of Millisecond method).
+		elapsedDuration := time.Since(startTime)
+		c.duration.Record(ctx, float64(elapsedDuration)/float64(time.Millisecond), metric.WithAttributes(otelAttrs...))
+	}()
+
+	// Increment request counter.
+	c.requests.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
+
+	// Start a span for this request.
+	ctx, span := c.cfg.Tracer.Start(ctx, ListProjectOrdersOperation,
+		trace.WithAttributes(otelAttrs...),
+		clientSpanKind,
+	)
+	// Track stage for error reporting.
+	var stage string
+	defer func() {
+		if err != nil {
+			span.RecordError(err)
+			span.SetStatus(codes.Error, stage)
+			c.errors.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
+		}
+		span.End()
+	}()
+
+	stage = "BuildURL"
+	u := uri.Clone(c.requestURL(ctx))
+	var pathParts [3]string
+	pathParts[0] = "/api/v1/projects/"
+	{
+		// Encode "projectId" parameter.
+		e := uri.NewPathEncoder(uri.PathEncoderConfig{
+			Param:   "projectId",
+			Style:   uri.PathStyleSimple,
+			Explode: false,
+		})
+		if err := func() error {
+			return e.EncodeValue(conv.UUIDToString(params.ProjectId))
 		}(); err != nil {
 			return res, errors.Wrap(err, "encode path")
 		}
@@ -3190,6 +6032,57 @@ func (c *Client) sendListOrders(ctx context.Context, params ListOrdersParams) (r
 			return res, errors.Wrap(err, "encode query")
 		}
 	}
+	{
+		// Encode "state" parameter.
+		cfg := uri.QueryParameterEncodingConfig{
+			Name:    "state",
+			Style:   uri.QueryStyleForm,
+			Explode: true,
+		}
+
+		if err := q.EncodeParam(cfg, func(e uri.Encoder) error {
+			if val, ok := params.State.Get(); ok {
+				return e.EncodeValue(conv.StringToString(string(val)))
+			}
+			return nil
+		}); err != nil {
+			return res, errors.Wrap(err, "encode query")
+		}
+	}
+	{
+		// Encode "from" parameter.
+		cfg := uri.QueryParameterEncodingConfig{
+			Name:    "from",
+			Style:   uri.QueryStyleForm,
+			Explode: true,
+		}
+
+		if err := q.EncodeParam(cfg, func(e uri.Encoder) error {
+			if val, ok := params.From.Get(); ok {
+				return e.EncodeValue(conv.DateTimeToString(val))
+			}
+			return nil
+		}); err != nil {
+			return res, errors.Wrap(err, "encode query")
+		}
+	}
+	{
+		// Encode "to" parameter.
+		cfg := uri.QueryParameterEncodingConfig{
+			Name:    "to",
+			Style:   uri.QueryStyleForm,
+			Explode: true,
+		}
+
+		if err := q.EncodeParam(cfg, func(e uri.Encoder) error {
+			if val, ok := params.To.Get(); ok {
+				return e.EncodeValue(conv.DateTimeToString(val))
+			}
+			return nil
+		}); err != nil {
+			return res, errors.Wrap(err, "encode query")
+		}
+	}
 	u.RawQuery = q.Values().Encode()
 
 	stage = "EncodeRequest"
@@ -3202,14 +6095,14 @@ func (c *Client) sendListOrders(ctx context.Context, params ListOrdersParams) (r
 		type bitset = [1]uint8
 		var satisfied bitset
 		{
-			stage = "Security:BearerAuth"
-			switch err := c.securityBearerAuth(ctx, ListOrdersOperation, r); {
+			stage = "Security:ProjectAuth"
+			switch err := c.securityProjectAuth(ctx, ListProjectOrdersOperation, r); {
 			case err == nil: // if NO error
 				satisfied[0] |= 1 << 0
 			case errors.Is(err, ogenerrors.ErrSkipClientSecurity):
 				// Skip this security.
 			default:
-				return res, errors.Wrap(err, "security \"BearerAuth\"")
+				return res, errors.Wrap(err, "security \"ProjectAuth\"")
 			}
 		}
 
@@ -3246,7 +6139,7 @@ func (c *Client) sendListOrders(ctx context.Context, params ListOrdersParams) (r
 	}()
 
 	stage = "DecodeResponse"
-	result, err := decodeListOrdersResponse(resp)
+	result, err := decodeListProjectOrdersResponse(resp)
 	if err != nil {
 		return res, errors.Wrap(err, "decode response")
 	}
@@ -3254,38 +6147,24 @@ func (c *Client) sendListOrders(ctx context.Context, params ListOrdersParams) (r
 	return result, nil
 }
 
-// ListPaymentMethods invokes list-payment-methods operation.
+// ListProjectSpend invokes list-project-spend operation.
 //
-// Every method saved against this account, and which one an invoice will be charged to.
+// Covers a closed time range. Both bounds are required: a total without a stated period cannot be
+// reconciled against an invoice.
 //
-// # Why the brand, last four and expiry are here
+// Includes usage that has not been invoiced yet.
 //
-// They were deliberately absent while the billing engine held the card, because the answer that
-// mattered — can money be collected — came from the engine, and a page built on the provider's
-// answer could show a method the engine had not recorded. Collection now runs from this service
-// against the provider directly, so there is one answer, and it is the one shown.
-//
-// Expiry is the reason this is worth showing at all: a card expires, the invoice then fails, dunning
-// runs out, and the project stops — with the account holder watching it happen and no indication
-// that a card was the cause.
-//
-// No other card data exists here. The number, the expiry entered by the holder and the CVC go from the
-// browser to the provider and never reach this platform.
-//
-// An account that has never added one returns an empty list. That is the normal state of a new
-// account, not an error.
-//
-// GET /account/v1/billing-accounts/{accountKey}/payment-methods
-func (c *Client) ListPaymentMethods(ctx context.Context, params ListPaymentMethodsParams) (*PaymentMethodList, error) {
-	res, err := c.sendListPaymentMethods(ctx, params)
+// GET /api/v1/projects/{projectId}/spend
+func (c *Client) ListProjectSpend(ctx context.Context, params ListProjectSpendParams) (*SpendRowList, error) {
+	res, err := c.sendListProjectSpend(ctx, params)
 	return res, err
 }
 
-func (c *Client) sendListPaymentMethods(ctx context.Context, params ListPaymentMethodsParams) (res *PaymentMethodList, err error) {
+func (c *Client) sendListProjectSpend(ctx context.Context, params ListProjectSpendParams) (res *SpendRowList, err error) {
 	otelAttrs := []attribute.KeyValue{
-		otelogen.OperationID("list-payment-methods"),
+		otelogen.OperationID("list-project-spend"),
 		semconv.HTTPRequestMethodKey.String("GET"),
-		semconv.URLTemplateKey.String("/account/v1/billing-accounts/{accountKey}/payment-methods"),
+		semconv.URLTemplateKey.String("/api/v1/projects/{projectId}/spend"),
 	}
 	otelAttrs = append(otelAttrs, c.cfg.Attributes...)
 
@@ -3301,7 +6180,7 @@ func (c *Client) sendListPaymentMethods(ctx context.Context, params ListPaymentM
 	c.requests.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
 
 	// Start a span for this request.
-	ctx, span := c.cfg.Tracer.Start(ctx, ListPaymentMethodsOperation,
+	ctx, span := c.cfg.Tracer.Start(ctx, ListProjectSpendOperation,
 		trace.WithAttributes(otelAttrs...),
 		clientSpanKind,
 	)
@@ -3319,16 +6198,16 @@ func (c *Client) sendListPaymentMethods(ctx context.Context, params ListPaymentM
 	stage = "BuildURL"
 	u := uri.Clone(c.requestURL(ctx))
 	var pathParts [3]string
-	pathParts[0] = "/account/v1/billing-accounts/"
+	pathParts[0] = "/api/v1/projects/"
 	{
-		// Encode "accountKey" parameter.
+		// Encode "projectId" parameter.
 		e := uri.NewPathEncoder(uri.PathEncoderConfig{
-			Param:   "accountKey",
+			Param:   "projectId",
 			Style:   uri.PathStyleSimple,
 			Explode: false,
 		})
 		if err := func() error {
-			return e.EncodeValue(conv.StringToString(params.AccountKey))
+			return e.EncodeValue(conv.UUIDToString(params.ProjectId))
 		}(); err != nil {
 			return res, errors.Wrap(err, "encode path")
 		}
@@ -3338,7 +6217,426 @@ func (c *Client) sendListPaymentMethods(ctx context.Context, params ListPaymentM
 		}
 		pathParts[1] = encoded
 	}
-	pathParts[2] = "/payment-methods"
+	pathParts[2] = "/spend"
+	uri.AddPathParts(u, pathParts[:]...)
+
+	stage = "EncodeQueryParams"
+	q := uri.NewQueryEncoder()
+	{
+		// Encode "from" parameter.
+		cfg := uri.QueryParameterEncodingConfig{
+			Name:    "from",
+			Style:   uri.QueryStyleForm,
+			Explode: true,
+		}
+
+		if err := q.EncodeParam(cfg, func(e uri.Encoder) error {
+			return e.EncodeValue(conv.DateTimeToString(params.From))
+		}); err != nil {
+			return res, errors.Wrap(err, "encode query")
+		}
+	}
+	{
+		// Encode "to" parameter.
+		cfg := uri.QueryParameterEncodingConfig{
+			Name:    "to",
+			Style:   uri.QueryStyleForm,
+			Explode: true,
+		}
+
+		if err := q.EncodeParam(cfg, func(e uri.Encoder) error {
+			return e.EncodeValue(conv.DateTimeToString(params.To))
+		}); err != nil {
+			return res, errors.Wrap(err, "encode query")
+		}
+	}
+	{
+		// Encode "group_by" parameter.
+		cfg := uri.QueryParameterEncodingConfig{
+			Name:    "group_by",
+			Style:   uri.QueryStyleForm,
+			Explode: true,
+		}
+
+		if err := q.EncodeParam(cfg, func(e uri.Encoder) error {
+			if val, ok := params.GroupBy.Get(); ok {
+				return e.EncodeValue(conv.StringToString(string(val)))
+			}
+			return nil
+		}); err != nil {
+			return res, errors.Wrap(err, "encode query")
+		}
+	}
+	{
+		// Encode "product_key" parameter.
+		cfg := uri.QueryParameterEncodingConfig{
+			Name:    "product_key",
+			Style:   uri.QueryStyleForm,
+			Explode: true,
+		}
+
+		if err := q.EncodeParam(cfg, func(e uri.Encoder) error {
+			if val, ok := params.ProductKey.Get(); ok {
+				return e.EncodeValue(conv.StringToString(val))
+			}
+			return nil
+		}); err != nil {
+			return res, errors.Wrap(err, "encode query")
+		}
+	}
+	{
+		// Encode "page" parameter.
+		cfg := uri.QueryParameterEncodingConfig{
+			Name:    "page",
+			Style:   uri.QueryStyleForm,
+			Explode: true,
+		}
+
+		if err := q.EncodeParam(cfg, func(e uri.Encoder) error {
+			if val, ok := params.Page.Get(); ok {
+				return e.EncodeValue(conv.Int32ToString(val))
+			}
+			return nil
+		}); err != nil {
+			return res, errors.Wrap(err, "encode query")
+		}
+	}
+	{
+		// Encode "page_size" parameter.
+		cfg := uri.QueryParameterEncodingConfig{
+			Name:    "page_size",
+			Style:   uri.QueryStyleForm,
+			Explode: true,
+		}
+
+		if err := q.EncodeParam(cfg, func(e uri.Encoder) error {
+			if val, ok := params.PageSize.Get(); ok {
+				return e.EncodeValue(conv.Int32ToString(val))
+			}
+			return nil
+		}); err != nil {
+			return res, errors.Wrap(err, "encode query")
+		}
+	}
+	u.RawQuery = q.Values().Encode()
+
+	stage = "EncodeRequest"
+	r, err := ht.NewRequest(ctx, "GET", u)
+	if err != nil {
+		return res, errors.Wrap(err, "create request")
+	}
+
+	{
+		type bitset = [1]uint8
+		var satisfied bitset
+		{
+			stage = "Security:ProjectAuth"
+			switch err := c.securityProjectAuth(ctx, ListProjectSpendOperation, r); {
+			case err == nil: // if NO error
+				satisfied[0] |= 1 << 0
+			case errors.Is(err, ogenerrors.ErrSkipClientSecurity):
+				// Skip this security.
+			default:
+				return res, errors.Wrap(err, "security \"ProjectAuth\"")
+			}
+		}
+
+		if ok := func() bool {
+		nextRequirement:
+			for _, requirement := range []bitset{
+				{0b00000001},
+			} {
+				for i, mask := range requirement {
+					if satisfied[i]&mask != mask {
+						continue nextRequirement
+					}
+				}
+				return true
+			}
+			return false
+		}(); !ok {
+			return res, ogenerrors.ErrSecurityRequirementIsNotSatisfied
+		}
+	}
+
+	stage = "SendRequest"
+	resp, err := c.cfg.Client.Do(r)
+	if err != nil {
+		return res, errors.Wrap(err, "do request")
+	}
+	body := resp.Body
+	defer func() {
+		// Drain the body to EOF before closing, so the underlying
+		// connection can be reused by the Transport regardless of the
+		// response status code. See https://github.com/ogen-go/ogen/issues/1670.
+		_, _ = io.Copy(io.Discard, body)
+		_ = body.Close()
+	}()
+
+	stage = "DecodeResponse"
+	result, err := decodeListProjectSpendResponse(resp)
+	if err != nil {
+		return res, errors.Wrap(err, "decode response")
+	}
+
+	return result, nil
+}
+
+// ListProjectSubscriptionItems invokes list-project-subscription-items operation.
+//
+// What this project has bought, and when each renews.
+//
+// GET /api/v1/projects/{projectId}/subscription-items
+func (c *Client) ListProjectSubscriptionItems(ctx context.Context, params ListProjectSubscriptionItemsParams) (*SubscriptionItemList, error) {
+	res, err := c.sendListProjectSubscriptionItems(ctx, params)
+	return res, err
+}
+
+func (c *Client) sendListProjectSubscriptionItems(ctx context.Context, params ListProjectSubscriptionItemsParams) (res *SubscriptionItemList, err error) {
+	otelAttrs := []attribute.KeyValue{
+		otelogen.OperationID("list-project-subscription-items"),
+		semconv.HTTPRequestMethodKey.String("GET"),
+		semconv.URLTemplateKey.String("/api/v1/projects/{projectId}/subscription-items"),
+	}
+	otelAttrs = append(otelAttrs, c.cfg.Attributes...)
+
+	// Run stopwatch.
+	startTime := time.Now()
+	defer func() {
+		// Use floating point division here for higher precision (instead of Millisecond method).
+		elapsedDuration := time.Since(startTime)
+		c.duration.Record(ctx, float64(elapsedDuration)/float64(time.Millisecond), metric.WithAttributes(otelAttrs...))
+	}()
+
+	// Increment request counter.
+	c.requests.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
+
+	// Start a span for this request.
+	ctx, span := c.cfg.Tracer.Start(ctx, ListProjectSubscriptionItemsOperation,
+		trace.WithAttributes(otelAttrs...),
+		clientSpanKind,
+	)
+	// Track stage for error reporting.
+	var stage string
+	defer func() {
+		if err != nil {
+			span.RecordError(err)
+			span.SetStatus(codes.Error, stage)
+			c.errors.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
+		}
+		span.End()
+	}()
+
+	stage = "BuildURL"
+	u := uri.Clone(c.requestURL(ctx))
+	var pathParts [3]string
+	pathParts[0] = "/api/v1/projects/"
+	{
+		// Encode "projectId" parameter.
+		e := uri.NewPathEncoder(uri.PathEncoderConfig{
+			Param:   "projectId",
+			Style:   uri.PathStyleSimple,
+			Explode: false,
+		})
+		if err := func() error {
+			return e.EncodeValue(conv.UUIDToString(params.ProjectId))
+		}(); err != nil {
+			return res, errors.Wrap(err, "encode path")
+		}
+		encoded, err := e.Result()
+		if err != nil {
+			return res, errors.Wrap(err, "encode path")
+		}
+		pathParts[1] = encoded
+	}
+	pathParts[2] = "/subscription-items"
+	uri.AddPathParts(u, pathParts[:]...)
+
+	stage = "EncodeQueryParams"
+	q := uri.NewQueryEncoder()
+	{
+		// Encode "page" parameter.
+		cfg := uri.QueryParameterEncodingConfig{
+			Name:    "page",
+			Style:   uri.QueryStyleForm,
+			Explode: true,
+		}
+
+		if err := q.EncodeParam(cfg, func(e uri.Encoder) error {
+			if val, ok := params.Page.Get(); ok {
+				return e.EncodeValue(conv.Int32ToString(val))
+			}
+			return nil
+		}); err != nil {
+			return res, errors.Wrap(err, "encode query")
+		}
+	}
+	{
+		// Encode "page_size" parameter.
+		cfg := uri.QueryParameterEncodingConfig{
+			Name:    "page_size",
+			Style:   uri.QueryStyleForm,
+			Explode: true,
+		}
+
+		if err := q.EncodeParam(cfg, func(e uri.Encoder) error {
+			if val, ok := params.PageSize.Get(); ok {
+				return e.EncodeValue(conv.Int32ToString(val))
+			}
+			return nil
+		}); err != nil {
+			return res, errors.Wrap(err, "encode query")
+		}
+	}
+	{
+		// Encode "expiring_before" parameter.
+		cfg := uri.QueryParameterEncodingConfig{
+			Name:    "expiring_before",
+			Style:   uri.QueryStyleForm,
+			Explode: true,
+		}
+
+		if err := q.EncodeParam(cfg, func(e uri.Encoder) error {
+			if val, ok := params.ExpiringBefore.Get(); ok {
+				return e.EncodeValue(conv.DateTimeToString(val))
+			}
+			return nil
+		}); err != nil {
+			return res, errors.Wrap(err, "encode query")
+		}
+	}
+	u.RawQuery = q.Values().Encode()
+
+	stage = "EncodeRequest"
+	r, err := ht.NewRequest(ctx, "GET", u)
+	if err != nil {
+		return res, errors.Wrap(err, "create request")
+	}
+
+	{
+		type bitset = [1]uint8
+		var satisfied bitset
+		{
+			stage = "Security:ProjectAuth"
+			switch err := c.securityProjectAuth(ctx, ListProjectSubscriptionItemsOperation, r); {
+			case err == nil: // if NO error
+				satisfied[0] |= 1 << 0
+			case errors.Is(err, ogenerrors.ErrSkipClientSecurity):
+				// Skip this security.
+			default:
+				return res, errors.Wrap(err, "security \"ProjectAuth\"")
+			}
+		}
+
+		if ok := func() bool {
+		nextRequirement:
+			for _, requirement := range []bitset{
+				{0b00000001},
+			} {
+				for i, mask := range requirement {
+					if satisfied[i]&mask != mask {
+						continue nextRequirement
+					}
+				}
+				return true
+			}
+			return false
+		}(); !ok {
+			return res, ogenerrors.ErrSecurityRequirementIsNotSatisfied
+		}
+	}
+
+	stage = "SendRequest"
+	resp, err := c.cfg.Client.Do(r)
+	if err != nil {
+		return res, errors.Wrap(err, "do request")
+	}
+	body := resp.Body
+	defer func() {
+		// Drain the body to EOF before closing, so the underlying
+		// connection can be reused by the Transport regardless of the
+		// response status code. See https://github.com/ogen-go/ogen/issues/1670.
+		_, _ = io.Copy(io.Discard, body)
+		_ = body.Close()
+	}()
+
+	stage = "DecodeResponse"
+	result, err := decodeListProjectSubscriptionItemsResponse(resp)
+	if err != nil {
+		return res, errors.Wrap(err, "decode response")
+	}
+
+	return result, nil
+}
+
+// ListProjectSubscriptions invokes list-project-subscriptions operation.
+//
+// Which services this project has enabled.
+//
+// GET /api/v1/projects/{projectId}/subscriptions
+func (c *Client) ListProjectSubscriptions(ctx context.Context, params ListProjectSubscriptionsParams) (*SubscriptionList, error) {
+	res, err := c.sendListProjectSubscriptions(ctx, params)
+	return res, err
+}
+
+func (c *Client) sendListProjectSubscriptions(ctx context.Context, params ListProjectSubscriptionsParams) (res *SubscriptionList, err error) {
+	otelAttrs := []attribute.KeyValue{
+		otelogen.OperationID("list-project-subscriptions"),
+		semconv.HTTPRequestMethodKey.String("GET"),
+		semconv.URLTemplateKey.String("/api/v1/projects/{projectId}/subscriptions"),
+	}
+	otelAttrs = append(otelAttrs, c.cfg.Attributes...)
+
+	// Run stopwatch.
+	startTime := time.Now()
+	defer func() {
+		// Use floating point division here for higher precision (instead of Millisecond method).
+		elapsedDuration := time.Since(startTime)
+		c.duration.Record(ctx, float64(elapsedDuration)/float64(time.Millisecond), metric.WithAttributes(otelAttrs...))
+	}()
+
+	// Increment request counter.
+	c.requests.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
+
+	// Start a span for this request.
+	ctx, span := c.cfg.Tracer.Start(ctx, ListProjectSubscriptionsOperation,
+		trace.WithAttributes(otelAttrs...),
+		clientSpanKind,
+	)
+	// Track stage for error reporting.
+	var stage string
+	defer func() {
+		if err != nil {
+			span.RecordError(err)
+			span.SetStatus(codes.Error, stage)
+			c.errors.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
+		}
+		span.End()
+	}()
+
+	stage = "BuildURL"
+	u := uri.Clone(c.requestURL(ctx))
+	var pathParts [3]string
+	pathParts[0] = "/api/v1/projects/"
+	{
+		// Encode "projectId" parameter.
+		e := uri.NewPathEncoder(uri.PathEncoderConfig{
+			Param:   "projectId",
+			Style:   uri.PathStyleSimple,
+			Explode: false,
+		})
+		if err := func() error {
+			return e.EncodeValue(conv.UUIDToString(params.ProjectId))
+		}(); err != nil {
+			return res, errors.Wrap(err, "encode path")
+		}
+		encoded, err := e.Result()
+		if err != nil {
+			return res, errors.Wrap(err, "encode path")
+		}
+		pathParts[1] = encoded
+	}
+	pathParts[2] = "/subscriptions"
 	uri.AddPathParts(u, pathParts[:]...)
 
 	stage = "EncodeQueryParams"
@@ -3389,14 +6687,14 @@ func (c *Client) sendListPaymentMethods(ctx context.Context, params ListPaymentM
 		type bitset = [1]uint8
 		var satisfied bitset
 		{
-			stage = "Security:BearerAuth"
-			switch err := c.securityBearerAuth(ctx, ListPaymentMethodsOperation, r); {
+			stage = "Security:ProjectAuth"
+			switch err := c.securityProjectAuth(ctx, ListProjectSubscriptionsOperation, r); {
 			case err == nil: // if NO error
 				satisfied[0] |= 1 << 0
 			case errors.Is(err, ogenerrors.ErrSkipClientSecurity):
 				// Skip this security.
 			default:
-				return res, errors.Wrap(err, "security \"BearerAuth\"")
+				return res, errors.Wrap(err, "security \"ProjectAuth\"")
 			}
 		}
 
@@ -3433,7 +6731,7 @@ func (c *Client) sendListPaymentMethods(ctx context.Context, params ListPaymentM
 	}()
 
 	stage = "DecodeResponse"
-	result, err := decodeListPaymentMethodsResponse(resp)
+	result, err := decodeListProjectSubscriptionsResponse(resp)
 	if err != nil {
 		return res, errors.Wrap(err, "decode response")
 	}
@@ -3441,46 +6739,22 @@ func (c *Client) sendListPaymentMethods(ctx context.Context, params ListPaymentM
 	return result, nil
 }
 
-// ListPrepaidAssets invokes list-prepaid-assets operation.
+// ListProjectUsageCharges invokes list-project-usage-charges operation.
 //
-// Everything this account holds on a term, across every product.
+// The individual charges behind the figures in `/spend`. Amounts here sum to the totals reported there
+// over the same period.
 //
-// # Every one of these expires
-//
-// A term is paid for once, up front, and buys exactly the period named by `term`. Nothing renews it on
-// its own: `expires_at` is when it runs out, and after that the machine is stopped and — once the
-// retention window is over — released.
-//
-// This route used to say the opposite. It described an engine that charged the next period by itself
-// for as long as the seat was held, which is how this worked before the money became a single up-front
-// charge. Reading the old text, a customer would have had no reason to renew anything, and the first
-// sign of trouble would have been a stopped machine.
-//
-// Turn on `auto_renew` to have billing place the renewal order itself while there is balance to pay
-// for it. That is the only thing that makes a term continue.
-//
-// # Metered resources are not here
-//
-// They have no term. Listing them would invite renewing something that is already billed by the hour
-// until it is deleted.
-//
-// # `state` and `desired_state` are both reported
-//
-// A machine stopped for arrears reads `suspended` for both. One being brought back reads `suspended`
-// and `active` — it is on its way. Without the second field those look identical, and a customer who
-// just paid concludes it did not work and pays again.
-//
-// GET /account/v1/billing-accounts/{accountKey}/prepaid-assets
-func (c *Client) ListPrepaidAssets(ctx context.Context, params ListPrepaidAssetsParams) (*PrepaidAssetList, error) {
-	res, err := c.sendListPrepaidAssets(ctx, params)
+// GET /api/v1/projects/{projectId}/usage-charges
+func (c *Client) ListProjectUsageCharges(ctx context.Context, params ListProjectUsageChargesParams) (*UsageChargeList, error) {
+	res, err := c.sendListProjectUsageCharges(ctx, params)
 	return res, err
 }
 
-func (c *Client) sendListPrepaidAssets(ctx context.Context, params ListPrepaidAssetsParams) (res *PrepaidAssetList, err error) {
+func (c *Client) sendListProjectUsageCharges(ctx context.Context, params ListProjectUsageChargesParams) (res *UsageChargeList, err error) {
 	otelAttrs := []attribute.KeyValue{
-		otelogen.OperationID("list-prepaid-assets"),
+		otelogen.OperationID("list-project-usage-charges"),
 		semconv.HTTPRequestMethodKey.String("GET"),
-		semconv.URLTemplateKey.String("/account/v1/billing-accounts/{accountKey}/prepaid-assets"),
+		semconv.URLTemplateKey.String("/api/v1/projects/{projectId}/usage-charges"),
 	}
 	otelAttrs = append(otelAttrs, c.cfg.Attributes...)
 
@@ -3496,7 +6770,7 @@ func (c *Client) sendListPrepaidAssets(ctx context.Context, params ListPrepaidAs
 	c.requests.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
 
 	// Start a span for this request.
-	ctx, span := c.cfg.Tracer.Start(ctx, ListPrepaidAssetsOperation,
+	ctx, span := c.cfg.Tracer.Start(ctx, ListProjectUsageChargesOperation,
 		trace.WithAttributes(otelAttrs...),
 		clientSpanKind,
 	)
@@ -3514,16 +6788,16 @@ func (c *Client) sendListPrepaidAssets(ctx context.Context, params ListPrepaidAs
 	stage = "BuildURL"
 	u := uri.Clone(c.requestURL(ctx))
 	var pathParts [3]string
-	pathParts[0] = "/account/v1/billing-accounts/"
+	pathParts[0] = "/api/v1/projects/"
 	{
-		// Encode "accountKey" parameter.
+		// Encode "projectId" parameter.
 		e := uri.NewPathEncoder(uri.PathEncoderConfig{
-			Param:   "accountKey",
+			Param:   "projectId",
 			Style:   uri.PathStyleSimple,
 			Explode: false,
 		})
 		if err := func() error {
-			return e.EncodeValue(conv.StringToString(params.AccountKey))
+			return e.EncodeValue(conv.UUIDToString(params.ProjectId))
 		}(); err != nil {
 			return res, errors.Wrap(err, "encode path")
 		}
@@ -3533,7 +6807,7 @@ func (c *Client) sendListPrepaidAssets(ctx context.Context, params ListPrepaidAs
 		}
 		pathParts[1] = encoded
 	}
-	pathParts[2] = "/prepaid-assets"
+	pathParts[2] = "/usage-charges"
 	uri.AddPathParts(u, pathParts[:]...)
 
 	stage = "EncodeQueryParams"
@@ -3572,6 +6846,74 @@ func (c *Client) sendListPrepaidAssets(ctx context.Context, params ListPrepaidAs
 			return res, errors.Wrap(err, "encode query")
 		}
 	}
+	{
+		// Encode "resource_id" parameter.
+		cfg := uri.QueryParameterEncodingConfig{
+			Name:    "resource_id",
+			Style:   uri.QueryStyleForm,
+			Explode: true,
+		}
+
+		if err := q.EncodeParam(cfg, func(e uri.Encoder) error {
+			if val, ok := params.ResourceID.Get(); ok {
+				return e.EncodeValue(conv.StringToString(val))
+			}
+			return nil
+		}); err != nil {
+			return res, errors.Wrap(err, "encode query")
+		}
+	}
+	{
+		// Encode "meter_key" parameter.
+		cfg := uri.QueryParameterEncodingConfig{
+			Name:    "meter_key",
+			Style:   uri.QueryStyleForm,
+			Explode: true,
+		}
+
+		if err := q.EncodeParam(cfg, func(e uri.Encoder) error {
+			if val, ok := params.MeterKey.Get(); ok {
+				return e.EncodeValue(conv.StringToString(val))
+			}
+			return nil
+		}); err != nil {
+			return res, errors.Wrap(err, "encode query")
+		}
+	}
+	{
+		// Encode "from" parameter.
+		cfg := uri.QueryParameterEncodingConfig{
+			Name:    "from",
+			Style:   uri.QueryStyleForm,
+			Explode: true,
+		}
+
+		if err := q.EncodeParam(cfg, func(e uri.Encoder) error {
+			if val, ok := params.From.Get(); ok {
+				return e.EncodeValue(conv.DateTimeToString(val))
+			}
+			return nil
+		}); err != nil {
+			return res, errors.Wrap(err, "encode query")
+		}
+	}
+	{
+		// Encode "to" parameter.
+		cfg := uri.QueryParameterEncodingConfig{
+			Name:    "to",
+			Style:   uri.QueryStyleForm,
+			Explode: true,
+		}
+
+		if err := q.EncodeParam(cfg, func(e uri.Encoder) error {
+			if val, ok := params.To.Get(); ok {
+				return e.EncodeValue(conv.DateTimeToString(val))
+			}
+			return nil
+		}); err != nil {
+			return res, errors.Wrap(err, "encode query")
+		}
+	}
 	u.RawQuery = q.Values().Encode()
 
 	stage = "EncodeRequest"
@@ -3584,14 +6926,14 @@ func (c *Client) sendListPrepaidAssets(ctx context.Context, params ListPrepaidAs
 		type bitset = [1]uint8
 		var satisfied bitset
 		{
-			stage = "Security:BearerAuth"
-			switch err := c.securityBearerAuth(ctx, ListPrepaidAssetsOperation, r); {
+			stage = "Security:ProjectAuth"
+			switch err := c.securityProjectAuth(ctx, ListProjectUsageChargesOperation, r); {
 			case err == nil: // if NO error
 				satisfied[0] |= 1 << 0
 			case errors.Is(err, ogenerrors.ErrSkipClientSecurity):
 				// Skip this security.
 			default:
-				return res, errors.Wrap(err, "security \"BearerAuth\"")
+				return res, errors.Wrap(err, "security \"ProjectAuth\"")
 			}
 		}
 
@@ -3628,7 +6970,558 @@ func (c *Client) sendListPrepaidAssets(ctx context.Context, params ListPrepaidAs
 	}()
 
 	stage = "DecodeResponse"
-	result, err := decodeListPrepaidAssetsResponse(resp)
+	result, err := decodeListProjectUsageChargesResponse(resp)
+	if err != nil {
+		return res, errors.Wrap(err, "decode response")
+	}
+
+	return result, nil
+}
+
+// ListRefunds invokes list-refunds operation.
+//
+// GET /account/v1/refunds
+func (c *Client) ListRefunds(ctx context.Context, params ListRefundsParams) (*RefundList, error) {
+	res, err := c.sendListRefunds(ctx, params)
+	return res, err
+}
+
+func (c *Client) sendListRefunds(ctx context.Context, params ListRefundsParams) (res *RefundList, err error) {
+	otelAttrs := []attribute.KeyValue{
+		otelogen.OperationID("list-refunds"),
+		semconv.HTTPRequestMethodKey.String("GET"),
+		semconv.URLTemplateKey.String("/account/v1/refunds"),
+	}
+	otelAttrs = append(otelAttrs, c.cfg.Attributes...)
+
+	// Run stopwatch.
+	startTime := time.Now()
+	defer func() {
+		// Use floating point division here for higher precision (instead of Millisecond method).
+		elapsedDuration := time.Since(startTime)
+		c.duration.Record(ctx, float64(elapsedDuration)/float64(time.Millisecond), metric.WithAttributes(otelAttrs...))
+	}()
+
+	// Increment request counter.
+	c.requests.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
+
+	// Start a span for this request.
+	ctx, span := c.cfg.Tracer.Start(ctx, ListRefundsOperation,
+		trace.WithAttributes(otelAttrs...),
+		clientSpanKind,
+	)
+	// Track stage for error reporting.
+	var stage string
+	defer func() {
+		if err != nil {
+			span.RecordError(err)
+			span.SetStatus(codes.Error, stage)
+			c.errors.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
+		}
+		span.End()
+	}()
+
+	stage = "BuildURL"
+	u := uri.Clone(c.requestURL(ctx))
+	var pathParts [1]string
+	pathParts[0] = "/account/v1/refunds"
+	uri.AddPathParts(u, pathParts[:]...)
+
+	stage = "EncodeQueryParams"
+	q := uri.NewQueryEncoder()
+	{
+		// Encode "page" parameter.
+		cfg := uri.QueryParameterEncodingConfig{
+			Name:    "page",
+			Style:   uri.QueryStyleForm,
+			Explode: true,
+		}
+
+		if err := q.EncodeParam(cfg, func(e uri.Encoder) error {
+			if val, ok := params.Page.Get(); ok {
+				return e.EncodeValue(conv.Int32ToString(val))
+			}
+			return nil
+		}); err != nil {
+			return res, errors.Wrap(err, "encode query")
+		}
+	}
+	{
+		// Encode "page_size" parameter.
+		cfg := uri.QueryParameterEncodingConfig{
+			Name:    "page_size",
+			Style:   uri.QueryStyleForm,
+			Explode: true,
+		}
+
+		if err := q.EncodeParam(cfg, func(e uri.Encoder) error {
+			if val, ok := params.PageSize.Get(); ok {
+				return e.EncodeValue(conv.Int32ToString(val))
+			}
+			return nil
+		}); err != nil {
+			return res, errors.Wrap(err, "encode query")
+		}
+	}
+	{
+		// Encode "billing_account_id" parameter.
+		cfg := uri.QueryParameterEncodingConfig{
+			Name:    "billing_account_id",
+			Style:   uri.QueryStyleForm,
+			Explode: true,
+		}
+
+		if err := q.EncodeParam(cfg, func(e uri.Encoder) error {
+			if val, ok := params.BillingAccountID.Get(); ok {
+				return e.EncodeValue(conv.Int64ToString(val))
+			}
+			return nil
+		}); err != nil {
+			return res, errors.Wrap(err, "encode query")
+		}
+	}
+	u.RawQuery = q.Values().Encode()
+
+	stage = "EncodeRequest"
+	r, err := ht.NewRequest(ctx, "GET", u)
+	if err != nil {
+		return res, errors.Wrap(err, "create request")
+	}
+
+	{
+		type bitset = [1]uint8
+		var satisfied bitset
+		{
+			stage = "Security:AccountAuth"
+			switch err := c.securityAccountAuth(ctx, ListRefundsOperation, r); {
+			case err == nil: // if NO error
+				satisfied[0] |= 1 << 0
+			case errors.Is(err, ogenerrors.ErrSkipClientSecurity):
+				// Skip this security.
+			default:
+				return res, errors.Wrap(err, "security \"AccountAuth\"")
+			}
+		}
+
+		if ok := func() bool {
+		nextRequirement:
+			for _, requirement := range []bitset{
+				{0b00000001},
+			} {
+				for i, mask := range requirement {
+					if satisfied[i]&mask != mask {
+						continue nextRequirement
+					}
+				}
+				return true
+			}
+			return false
+		}(); !ok {
+			return res, ogenerrors.ErrSecurityRequirementIsNotSatisfied
+		}
+	}
+
+	stage = "SendRequest"
+	resp, err := c.cfg.Client.Do(r)
+	if err != nil {
+		return res, errors.Wrap(err, "do request")
+	}
+	body := resp.Body
+	defer func() {
+		// Drain the body to EOF before closing, so the underlying
+		// connection can be reused by the Transport regardless of the
+		// response status code. See https://github.com/ogen-go/ogen/issues/1670.
+		_, _ = io.Copy(io.Discard, body)
+		_ = body.Close()
+	}()
+
+	stage = "DecodeResponse"
+	result, err := decodeListRefundsResponse(resp)
+	if err != nil {
+		return res, errors.Wrap(err, "decode response")
+	}
+
+	return result, nil
+}
+
+// ListSubscriptionItems invokes list-subscription-items operation.
+//
+// What has been bought, and when each renews.
+//
+// GET /account/v1/subscription-items
+func (c *Client) ListSubscriptionItems(ctx context.Context, params ListSubscriptionItemsParams) (*SubscriptionItemList, error) {
+	res, err := c.sendListSubscriptionItems(ctx, params)
+	return res, err
+}
+
+func (c *Client) sendListSubscriptionItems(ctx context.Context, params ListSubscriptionItemsParams) (res *SubscriptionItemList, err error) {
+	otelAttrs := []attribute.KeyValue{
+		otelogen.OperationID("list-subscription-items"),
+		semconv.HTTPRequestMethodKey.String("GET"),
+		semconv.URLTemplateKey.String("/account/v1/subscription-items"),
+	}
+	otelAttrs = append(otelAttrs, c.cfg.Attributes...)
+
+	// Run stopwatch.
+	startTime := time.Now()
+	defer func() {
+		// Use floating point division here for higher precision (instead of Millisecond method).
+		elapsedDuration := time.Since(startTime)
+		c.duration.Record(ctx, float64(elapsedDuration)/float64(time.Millisecond), metric.WithAttributes(otelAttrs...))
+	}()
+
+	// Increment request counter.
+	c.requests.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
+
+	// Start a span for this request.
+	ctx, span := c.cfg.Tracer.Start(ctx, ListSubscriptionItemsOperation,
+		trace.WithAttributes(otelAttrs...),
+		clientSpanKind,
+	)
+	// Track stage for error reporting.
+	var stage string
+	defer func() {
+		if err != nil {
+			span.RecordError(err)
+			span.SetStatus(codes.Error, stage)
+			c.errors.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
+		}
+		span.End()
+	}()
+
+	stage = "BuildURL"
+	u := uri.Clone(c.requestURL(ctx))
+	var pathParts [1]string
+	pathParts[0] = "/account/v1/subscription-items"
+	uri.AddPathParts(u, pathParts[:]...)
+
+	stage = "EncodeQueryParams"
+	q := uri.NewQueryEncoder()
+	{
+		// Encode "page" parameter.
+		cfg := uri.QueryParameterEncodingConfig{
+			Name:    "page",
+			Style:   uri.QueryStyleForm,
+			Explode: true,
+		}
+
+		if err := q.EncodeParam(cfg, func(e uri.Encoder) error {
+			if val, ok := params.Page.Get(); ok {
+				return e.EncodeValue(conv.Int32ToString(val))
+			}
+			return nil
+		}); err != nil {
+			return res, errors.Wrap(err, "encode query")
+		}
+	}
+	{
+		// Encode "page_size" parameter.
+		cfg := uri.QueryParameterEncodingConfig{
+			Name:    "page_size",
+			Style:   uri.QueryStyleForm,
+			Explode: true,
+		}
+
+		if err := q.EncodeParam(cfg, func(e uri.Encoder) error {
+			if val, ok := params.PageSize.Get(); ok {
+				return e.EncodeValue(conv.Int32ToString(val))
+			}
+			return nil
+		}); err != nil {
+			return res, errors.Wrap(err, "encode query")
+		}
+	}
+	{
+		// Encode "billing_account_id" parameter.
+		cfg := uri.QueryParameterEncodingConfig{
+			Name:    "billing_account_id",
+			Style:   uri.QueryStyleForm,
+			Explode: true,
+		}
+
+		if err := q.EncodeParam(cfg, func(e uri.Encoder) error {
+			if val, ok := params.BillingAccountID.Get(); ok {
+				return e.EncodeValue(conv.Int64ToString(val))
+			}
+			return nil
+		}); err != nil {
+			return res, errors.Wrap(err, "encode query")
+		}
+	}
+	{
+		// Encode "project_id" parameter.
+		cfg := uri.QueryParameterEncodingConfig{
+			Name:    "project_id",
+			Style:   uri.QueryStyleForm,
+			Explode: true,
+		}
+
+		if err := q.EncodeParam(cfg, func(e uri.Encoder) error {
+			if val, ok := params.ProjectID.Get(); ok {
+				return e.EncodeValue(conv.UUIDToString(val))
+			}
+			return nil
+		}); err != nil {
+			return res, errors.Wrap(err, "encode query")
+		}
+	}
+	{
+		// Encode "expiring_before" parameter.
+		cfg := uri.QueryParameterEncodingConfig{
+			Name:    "expiring_before",
+			Style:   uri.QueryStyleForm,
+			Explode: true,
+		}
+
+		if err := q.EncodeParam(cfg, func(e uri.Encoder) error {
+			if val, ok := params.ExpiringBefore.Get(); ok {
+				return e.EncodeValue(conv.DateTimeToString(val))
+			}
+			return nil
+		}); err != nil {
+			return res, errors.Wrap(err, "encode query")
+		}
+	}
+	u.RawQuery = q.Values().Encode()
+
+	stage = "EncodeRequest"
+	r, err := ht.NewRequest(ctx, "GET", u)
+	if err != nil {
+		return res, errors.Wrap(err, "create request")
+	}
+
+	{
+		type bitset = [1]uint8
+		var satisfied bitset
+		{
+			stage = "Security:AccountAuth"
+			switch err := c.securityAccountAuth(ctx, ListSubscriptionItemsOperation, r); {
+			case err == nil: // if NO error
+				satisfied[0] |= 1 << 0
+			case errors.Is(err, ogenerrors.ErrSkipClientSecurity):
+				// Skip this security.
+			default:
+				return res, errors.Wrap(err, "security \"AccountAuth\"")
+			}
+		}
+
+		if ok := func() bool {
+		nextRequirement:
+			for _, requirement := range []bitset{
+				{0b00000001},
+			} {
+				for i, mask := range requirement {
+					if satisfied[i]&mask != mask {
+						continue nextRequirement
+					}
+				}
+				return true
+			}
+			return false
+		}(); !ok {
+			return res, ogenerrors.ErrSecurityRequirementIsNotSatisfied
+		}
+	}
+
+	stage = "SendRequest"
+	resp, err := c.cfg.Client.Do(r)
+	if err != nil {
+		return res, errors.Wrap(err, "do request")
+	}
+	body := resp.Body
+	defer func() {
+		// Drain the body to EOF before closing, so the underlying
+		// connection can be reused by the Transport regardless of the
+		// response status code. See https://github.com/ogen-go/ogen/issues/1670.
+		_, _ = io.Copy(io.Discard, body)
+		_ = body.Close()
+	}()
+
+	stage = "DecodeResponse"
+	result, err := decodeListSubscriptionItemsResponse(resp)
+	if err != nil {
+		return res, errors.Wrap(err, "decode response")
+	}
+
+	return result, nil
+}
+
+// ListSubscriptions invokes list-subscriptions operation.
+//
+// GET /account/v1/subscriptions
+func (c *Client) ListSubscriptions(ctx context.Context, params ListSubscriptionsParams) (*SubscriptionList, error) {
+	res, err := c.sendListSubscriptions(ctx, params)
+	return res, err
+}
+
+func (c *Client) sendListSubscriptions(ctx context.Context, params ListSubscriptionsParams) (res *SubscriptionList, err error) {
+	otelAttrs := []attribute.KeyValue{
+		otelogen.OperationID("list-subscriptions"),
+		semconv.HTTPRequestMethodKey.String("GET"),
+		semconv.URLTemplateKey.String("/account/v1/subscriptions"),
+	}
+	otelAttrs = append(otelAttrs, c.cfg.Attributes...)
+
+	// Run stopwatch.
+	startTime := time.Now()
+	defer func() {
+		// Use floating point division here for higher precision (instead of Millisecond method).
+		elapsedDuration := time.Since(startTime)
+		c.duration.Record(ctx, float64(elapsedDuration)/float64(time.Millisecond), metric.WithAttributes(otelAttrs...))
+	}()
+
+	// Increment request counter.
+	c.requests.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
+
+	// Start a span for this request.
+	ctx, span := c.cfg.Tracer.Start(ctx, ListSubscriptionsOperation,
+		trace.WithAttributes(otelAttrs...),
+		clientSpanKind,
+	)
+	// Track stage for error reporting.
+	var stage string
+	defer func() {
+		if err != nil {
+			span.RecordError(err)
+			span.SetStatus(codes.Error, stage)
+			c.errors.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
+		}
+		span.End()
+	}()
+
+	stage = "BuildURL"
+	u := uri.Clone(c.requestURL(ctx))
+	var pathParts [1]string
+	pathParts[0] = "/account/v1/subscriptions"
+	uri.AddPathParts(u, pathParts[:]...)
+
+	stage = "EncodeQueryParams"
+	q := uri.NewQueryEncoder()
+	{
+		// Encode "page" parameter.
+		cfg := uri.QueryParameterEncodingConfig{
+			Name:    "page",
+			Style:   uri.QueryStyleForm,
+			Explode: true,
+		}
+
+		if err := q.EncodeParam(cfg, func(e uri.Encoder) error {
+			if val, ok := params.Page.Get(); ok {
+				return e.EncodeValue(conv.Int32ToString(val))
+			}
+			return nil
+		}); err != nil {
+			return res, errors.Wrap(err, "encode query")
+		}
+	}
+	{
+		// Encode "page_size" parameter.
+		cfg := uri.QueryParameterEncodingConfig{
+			Name:    "page_size",
+			Style:   uri.QueryStyleForm,
+			Explode: true,
+		}
+
+		if err := q.EncodeParam(cfg, func(e uri.Encoder) error {
+			if val, ok := params.PageSize.Get(); ok {
+				return e.EncodeValue(conv.Int32ToString(val))
+			}
+			return nil
+		}); err != nil {
+			return res, errors.Wrap(err, "encode query")
+		}
+	}
+	{
+		// Encode "billing_account_id" parameter.
+		cfg := uri.QueryParameterEncodingConfig{
+			Name:    "billing_account_id",
+			Style:   uri.QueryStyleForm,
+			Explode: true,
+		}
+
+		if err := q.EncodeParam(cfg, func(e uri.Encoder) error {
+			if val, ok := params.BillingAccountID.Get(); ok {
+				return e.EncodeValue(conv.Int64ToString(val))
+			}
+			return nil
+		}); err != nil {
+			return res, errors.Wrap(err, "encode query")
+		}
+	}
+	{
+		// Encode "project_id" parameter.
+		cfg := uri.QueryParameterEncodingConfig{
+			Name:    "project_id",
+			Style:   uri.QueryStyleForm,
+			Explode: true,
+		}
+
+		if err := q.EncodeParam(cfg, func(e uri.Encoder) error {
+			if val, ok := params.ProjectID.Get(); ok {
+				return e.EncodeValue(conv.UUIDToString(val))
+			}
+			return nil
+		}); err != nil {
+			return res, errors.Wrap(err, "encode query")
+		}
+	}
+	u.RawQuery = q.Values().Encode()
+
+	stage = "EncodeRequest"
+	r, err := ht.NewRequest(ctx, "GET", u)
+	if err != nil {
+		return res, errors.Wrap(err, "create request")
+	}
+
+	{
+		type bitset = [1]uint8
+		var satisfied bitset
+		{
+			stage = "Security:AccountAuth"
+			switch err := c.securityAccountAuth(ctx, ListSubscriptionsOperation, r); {
+			case err == nil: // if NO error
+				satisfied[0] |= 1 << 0
+			case errors.Is(err, ogenerrors.ErrSkipClientSecurity):
+				// Skip this security.
+			default:
+				return res, errors.Wrap(err, "security \"AccountAuth\"")
+			}
+		}
+
+		if ok := func() bool {
+		nextRequirement:
+			for _, requirement := range []bitset{
+				{0b00000001},
+			} {
+				for i, mask := range requirement {
+					if satisfied[i]&mask != mask {
+						continue nextRequirement
+					}
+				}
+				return true
+			}
+			return false
+		}(); !ok {
+			return res, ogenerrors.ErrSecurityRequirementIsNotSatisfied
+		}
+	}
+
+	stage = "SendRequest"
+	resp, err := c.cfg.Client.Do(r)
+	if err != nil {
+		return res, errors.Wrap(err, "do request")
+	}
+	body := resp.Body
+	defer func() {
+		// Drain the body to EOF before closing, so the underlying
+		// connection can be reused by the Transport regardless of the
+		// response status code. See https://github.com/ogen-go/ogen/issues/1670.
+		_, _ = io.Copy(io.Discard, body)
+		_ = body.Close()
+	}()
+
+	stage = "DecodeResponse"
+	result, err := decodeListSubscriptionsResponse(resp)
 	if err != nil {
 		return res, errors.Wrap(err, "decode response")
 	}
@@ -3638,14 +7531,7 @@ func (c *Client) sendListPrepaidAssets(ctx context.Context, params ListPrepaidAs
 
 // ListTopUps invokes list-top-ups operation.
 //
-// Every top-up this account has made, newest first.
-//
-// Reading one top-up requires already holding its identifier, and the only place that identifier
-// appears is the redirect that started it — so without this list a top-up becomes unfindable the
-// moment the browser tab is closed, which is exactly when somebody wants to check whether their money
-// arrived.
-//
-// GET /account/v1/billing-accounts/{accountKey}/top-ups
+// GET /account/v1/top-ups
 func (c *Client) ListTopUps(ctx context.Context, params ListTopUpsParams) (*TopUpList, error) {
 	res, err := c.sendListTopUps(ctx, params)
 	return res, err
@@ -3655,7 +7541,7 @@ func (c *Client) sendListTopUps(ctx context.Context, params ListTopUpsParams) (r
 	otelAttrs := []attribute.KeyValue{
 		otelogen.OperationID("list-top-ups"),
 		semconv.HTTPRequestMethodKey.String("GET"),
-		semconv.URLTemplateKey.String("/account/v1/billing-accounts/{accountKey}/top-ups"),
+		semconv.URLTemplateKey.String("/account/v1/top-ups"),
 	}
 	otelAttrs = append(otelAttrs, c.cfg.Attributes...)
 
@@ -3688,27 +7574,8 @@ func (c *Client) sendListTopUps(ctx context.Context, params ListTopUpsParams) (r
 
 	stage = "BuildURL"
 	u := uri.Clone(c.requestURL(ctx))
-	var pathParts [3]string
-	pathParts[0] = "/account/v1/billing-accounts/"
-	{
-		// Encode "accountKey" parameter.
-		e := uri.NewPathEncoder(uri.PathEncoderConfig{
-			Param:   "accountKey",
-			Style:   uri.PathStyleSimple,
-			Explode: false,
-		})
-		if err := func() error {
-			return e.EncodeValue(conv.StringToString(params.AccountKey))
-		}(); err != nil {
-			return res, errors.Wrap(err, "encode path")
-		}
-		encoded, err := e.Result()
-		if err != nil {
-			return res, errors.Wrap(err, "encode path")
-		}
-		pathParts[1] = encoded
-	}
-	pathParts[2] = "/top-ups"
+	var pathParts [1]string
+	pathParts[0] = "/account/v1/top-ups"
 	uri.AddPathParts(u, pathParts[:]...)
 
 	stage = "EncodeQueryParams"
@@ -3747,6 +7614,23 @@ func (c *Client) sendListTopUps(ctx context.Context, params ListTopUpsParams) (r
 			return res, errors.Wrap(err, "encode query")
 		}
 	}
+	{
+		// Encode "billing_account_id" parameter.
+		cfg := uri.QueryParameterEncodingConfig{
+			Name:    "billing_account_id",
+			Style:   uri.QueryStyleForm,
+			Explode: true,
+		}
+
+		if err := q.EncodeParam(cfg, func(e uri.Encoder) error {
+			if val, ok := params.BillingAccountID.Get(); ok {
+				return e.EncodeValue(conv.Int64ToString(val))
+			}
+			return nil
+		}); err != nil {
+			return res, errors.Wrap(err, "encode query")
+		}
+	}
 	u.RawQuery = q.Values().Encode()
 
 	stage = "EncodeRequest"
@@ -3759,14 +7643,14 @@ func (c *Client) sendListTopUps(ctx context.Context, params ListTopUpsParams) (r
 		type bitset = [1]uint8
 		var satisfied bitset
 		{
-			stage = "Security:BearerAuth"
-			switch err := c.securityBearerAuth(ctx, ListTopUpsOperation, r); {
+			stage = "Security:AccountAuth"
+			switch err := c.securityAccountAuth(ctx, ListTopUpsOperation, r); {
 			case err == nil: // if NO error
 				satisfied[0] |= 1 << 0
 			case errors.Is(err, ogenerrors.ErrSkipClientSecurity):
 				// Skip this security.
 			default:
-				return res, errors.Wrap(err, "security \"BearerAuth\"")
+				return res, errors.Wrap(err, "security \"AccountAuth\"")
 			}
 		}
 
@@ -3811,33 +7695,21 @@ func (c *Client) sendListTopUps(ctx context.Context, params ListTopUpsParams) (r
 	return result, nil
 }
 
-// PreviewPromotionCode invokes preview-promotion-code operation.
+// ListTransactions invokes list-transactions operation.
 //
-// Runs the same checks and the same arithmetic that placing the order will run, so the price shown
-// here and the price charged agree. Writing the calculation twice — once for the page and once for
-// the order — means they drift, and the visible form of that drift is a page saying "20 off" while
-// the full amount is taken.
+// Every movement of funds on the account.
 //
-// Nothing is redeemed. The allowance is only consumed when the order is actually placed.
-//
-// A code that cannot be used is rejected here with the reason, so the user learns it before filling in
-// the rest of the form rather than at the moment they press buy.
-//
-// Metered orders are rejected. They have no amount at this point — the money is worked out later
-// from usage. Applying a discount to a nil amount leaves the user believing they saved something while
-// the bill is unchanged.
-//
-// POST /account/v1/billing-accounts/{accountKey}/promotion-codes/preview
-func (c *Client) PreviewPromotionCode(ctx context.Context, request *PreviewPromotionCodeRequestBody, params PreviewPromotionCodeParams) (*PromotionPreview, error) {
-	res, err := c.sendPreviewPromotionCode(ctx, request, params)
+// GET /account/v1/transactions
+func (c *Client) ListTransactions(ctx context.Context, params ListTransactionsParams) (*TransactionList, error) {
+	res, err := c.sendListTransactions(ctx, params)
 	return res, err
 }
 
-func (c *Client) sendPreviewPromotionCode(ctx context.Context, request *PreviewPromotionCodeRequestBody, params PreviewPromotionCodeParams) (res *PromotionPreview, err error) {
+func (c *Client) sendListTransactions(ctx context.Context, params ListTransactionsParams) (res *TransactionList, err error) {
 	otelAttrs := []attribute.KeyValue{
-		otelogen.OperationID("preview-promotion-code"),
-		semconv.HTTPRequestMethodKey.String("POST"),
-		semconv.URLTemplateKey.String("/account/v1/billing-accounts/{accountKey}/promotion-codes/preview"),
+		otelogen.OperationID("list-transactions"),
+		semconv.HTTPRequestMethodKey.String("GET"),
+		semconv.URLTemplateKey.String("/account/v1/transactions"),
 	}
 	otelAttrs = append(otelAttrs, c.cfg.Attributes...)
 
@@ -3853,7 +7725,7 @@ func (c *Client) sendPreviewPromotionCode(ctx context.Context, request *PreviewP
 	c.requests.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
 
 	// Start a span for this request.
-	ctx, span := c.cfg.Tracer.Start(ctx, PreviewPromotionCodeOperation,
+	ctx, span := c.cfg.Tracer.Start(ctx, ListTransactionsOperation,
 		trace.WithAttributes(otelAttrs...),
 		clientSpanKind,
 	)
@@ -3870,221 +7742,91 @@ func (c *Client) sendPreviewPromotionCode(ctx context.Context, request *PreviewP
 
 	stage = "BuildURL"
 	u := uri.Clone(c.requestURL(ctx))
-	var pathParts [3]string
-	pathParts[0] = "/account/v1/billing-accounts/"
-	{
-		// Encode "accountKey" parameter.
-		e := uri.NewPathEncoder(uri.PathEncoderConfig{
-			Param:   "accountKey",
-			Style:   uri.PathStyleSimple,
-			Explode: false,
-		})
-		if err := func() error {
-			return e.EncodeValue(conv.StringToString(params.AccountKey))
-		}(); err != nil {
-			return res, errors.Wrap(err, "encode path")
-		}
-		encoded, err := e.Result()
-		if err != nil {
-			return res, errors.Wrap(err, "encode path")
-		}
-		pathParts[1] = encoded
-	}
-	pathParts[2] = "/promotion-codes/preview"
-	uri.AddPathParts(u, pathParts[:]...)
-
-	stage = "EncodeRequest"
-	r, err := ht.NewRequest(ctx, "POST", u)
-	if err != nil {
-		return res, errors.Wrap(err, "create request")
-	}
-	if err := encodePreviewPromotionCodeRequest(request, r); err != nil {
-		return res, errors.Wrap(err, "encode request")
-	}
-
-	{
-		type bitset = [1]uint8
-		var satisfied bitset
-		{
-			stage = "Security:BearerAuth"
-			switch err := c.securityBearerAuth(ctx, PreviewPromotionCodeOperation, r); {
-			case err == nil: // if NO error
-				satisfied[0] |= 1 << 0
-			case errors.Is(err, ogenerrors.ErrSkipClientSecurity):
-				// Skip this security.
-			default:
-				return res, errors.Wrap(err, "security \"BearerAuth\"")
-			}
-		}
-
-		if ok := func() bool {
-		nextRequirement:
-			for _, requirement := range []bitset{
-				{0b00000001},
-			} {
-				for i, mask := range requirement {
-					if satisfied[i]&mask != mask {
-						continue nextRequirement
-					}
-				}
-				return true
-			}
-			return false
-		}(); !ok {
-			return res, ogenerrors.ErrSecurityRequirementIsNotSatisfied
-		}
-	}
-
-	stage = "SendRequest"
-	resp, err := c.cfg.Client.Do(r)
-	if err != nil {
-		return res, errors.Wrap(err, "do request")
-	}
-	body := resp.Body
-	defer func() {
-		// Drain the body to EOF before closing, so the underlying
-		// connection can be reused by the Transport regardless of the
-		// response status code. See https://github.com/ogen-go/ogen/issues/1670.
-		_, _ = io.Copy(io.Discard, body)
-		_ = body.Close()
-	}()
-
-	stage = "DecodeResponse"
-	result, err := decodePreviewPromotionCodeResponse(resp)
-	if err != nil {
-		return res, errors.Wrap(err, "decode response")
-	}
-
-	return result, nil
-}
-
-// PurchaseOffer invokes purchase-offer operation.
-//
-// Puts the account on the plan this offer points at, taking one of its places if it has a limit.
-//
-// # A card has to be on file first
-//
-// Unless the offer points at a free plan. A paid plan is collected from the card on file and refuses
-// to start the subscription without one; that refusal arrives here as a precondition error rather than
-// as a conflict.
-//
-// # `timing` is required only when the account already has a plan
-//
-// Moving between plans immediately is what an upgrade wants — the customer paid more and wants it
-// now. Waiting for the end of the period is what a downgrade wants — they already paid for this one.
-// Neither is a safe default, and picking one silently gets the money wrong whenever the field is
-// forgotten.
-//
-// # Being refused says which rule refused
-//
-// Places gone, window closed, already used, not on the list — each needs the customer to do
-// something different, and several of them need them to do nothing at all. A single "not eligible"
-// sends everyone to support.
-//
-// # Retrying is safe
-//
-// A place is taken before the subscription is created, so a failure in between leaves the place held
-// rather than the discount given away. Retrying the same purchase finishes it instead of taking a
-// second place.
-//
-// POST /account/v1/billing-accounts/{accountKey}/offers/{offerKey}/purchase
-func (c *Client) PurchaseOffer(ctx context.Context, params PurchaseOfferParams) (*Purchase, error) {
-	res, err := c.sendPurchaseOffer(ctx, params)
-	return res, err
-}
-
-func (c *Client) sendPurchaseOffer(ctx context.Context, params PurchaseOfferParams) (res *Purchase, err error) {
-	otelAttrs := []attribute.KeyValue{
-		otelogen.OperationID("purchase-offer"),
-		semconv.HTTPRequestMethodKey.String("POST"),
-		semconv.URLTemplateKey.String("/account/v1/billing-accounts/{accountKey}/offers/{offerKey}/purchase"),
-	}
-	otelAttrs = append(otelAttrs, c.cfg.Attributes...)
-
-	// Run stopwatch.
-	startTime := time.Now()
-	defer func() {
-		// Use floating point division here for higher precision (instead of Millisecond method).
-		elapsedDuration := time.Since(startTime)
-		c.duration.Record(ctx, float64(elapsedDuration)/float64(time.Millisecond), metric.WithAttributes(otelAttrs...))
-	}()
-
-	// Increment request counter.
-	c.requests.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
-
-	// Start a span for this request.
-	ctx, span := c.cfg.Tracer.Start(ctx, PurchaseOfferOperation,
-		trace.WithAttributes(otelAttrs...),
-		clientSpanKind,
-	)
-	// Track stage for error reporting.
-	var stage string
-	defer func() {
-		if err != nil {
-			span.RecordError(err)
-			span.SetStatus(codes.Error, stage)
-			c.errors.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
-		}
-		span.End()
-	}()
-
-	stage = "BuildURL"
-	u := uri.Clone(c.requestURL(ctx))
-	var pathParts [5]string
-	pathParts[0] = "/account/v1/billing-accounts/"
-	{
-		// Encode "accountKey" parameter.
-		e := uri.NewPathEncoder(uri.PathEncoderConfig{
-			Param:   "accountKey",
-			Style:   uri.PathStyleSimple,
-			Explode: false,
-		})
-		if err := func() error {
-			return e.EncodeValue(conv.StringToString(params.AccountKey))
-		}(); err != nil {
-			return res, errors.Wrap(err, "encode path")
-		}
-		encoded, err := e.Result()
-		if err != nil {
-			return res, errors.Wrap(err, "encode path")
-		}
-		pathParts[1] = encoded
-	}
-	pathParts[2] = "/offers/"
-	{
-		// Encode "offerKey" parameter.
-		e := uri.NewPathEncoder(uri.PathEncoderConfig{
-			Param:   "offerKey",
-			Style:   uri.PathStyleSimple,
-			Explode: false,
-		})
-		if err := func() error {
-			return e.EncodeValue(conv.StringToString(params.OfferKey))
-		}(); err != nil {
-			return res, errors.Wrap(err, "encode path")
-		}
-		encoded, err := e.Result()
-		if err != nil {
-			return res, errors.Wrap(err, "encode path")
-		}
-		pathParts[3] = encoded
-	}
-	pathParts[4] = "/purchase"
+	var pathParts [1]string
+	pathParts[0] = "/account/v1/transactions"
 	uri.AddPathParts(u, pathParts[:]...)
 
 	stage = "EncodeQueryParams"
 	q := uri.NewQueryEncoder()
 	{
-		// Encode "timing" parameter.
+		// Encode "page" parameter.
 		cfg := uri.QueryParameterEncodingConfig{
-			Name:    "timing",
+			Name:    "page",
 			Style:   uri.QueryStyleForm,
 			Explode: true,
 		}
 
 		if err := q.EncodeParam(cfg, func(e uri.Encoder) error {
-			if val, ok := params.Timing.Get(); ok {
-				return e.EncodeValue(conv.StringToString(string(val)))
+			if val, ok := params.Page.Get(); ok {
+				return e.EncodeValue(conv.Int32ToString(val))
+			}
+			return nil
+		}); err != nil {
+			return res, errors.Wrap(err, "encode query")
+		}
+	}
+	{
+		// Encode "page_size" parameter.
+		cfg := uri.QueryParameterEncodingConfig{
+			Name:    "page_size",
+			Style:   uri.QueryStyleForm,
+			Explode: true,
+		}
+
+		if err := q.EncodeParam(cfg, func(e uri.Encoder) error {
+			if val, ok := params.PageSize.Get(); ok {
+				return e.EncodeValue(conv.Int32ToString(val))
+			}
+			return nil
+		}); err != nil {
+			return res, errors.Wrap(err, "encode query")
+		}
+	}
+	{
+		// Encode "billing_account_id" parameter.
+		cfg := uri.QueryParameterEncodingConfig{
+			Name:    "billing_account_id",
+			Style:   uri.QueryStyleForm,
+			Explode: true,
+		}
+
+		if err := q.EncodeParam(cfg, func(e uri.Encoder) error {
+			if val, ok := params.BillingAccountID.Get(); ok {
+				return e.EncodeValue(conv.Int64ToString(val))
+			}
+			return nil
+		}); err != nil {
+			return res, errors.Wrap(err, "encode query")
+		}
+	}
+	{
+		// Encode "from" parameter.
+		cfg := uri.QueryParameterEncodingConfig{
+			Name:    "from",
+			Style:   uri.QueryStyleForm,
+			Explode: true,
+		}
+
+		if err := q.EncodeParam(cfg, func(e uri.Encoder) error {
+			if val, ok := params.From.Get(); ok {
+				return e.EncodeValue(conv.DateTimeToString(val))
+			}
+			return nil
+		}); err != nil {
+			return res, errors.Wrap(err, "encode query")
+		}
+	}
+	{
+		// Encode "to" parameter.
+		cfg := uri.QueryParameterEncodingConfig{
+			Name:    "to",
+			Style:   uri.QueryStyleForm,
+			Explode: true,
+		}
+
+		if err := q.EncodeParam(cfg, func(e uri.Encoder) error {
+			if val, ok := params.To.Get(); ok {
+				return e.EncodeValue(conv.DateTimeToString(val))
 			}
 			return nil
 		}); err != nil {
@@ -4094,7 +7836,7 @@ func (c *Client) sendPurchaseOffer(ctx context.Context, params PurchaseOfferPara
 	u.RawQuery = q.Values().Encode()
 
 	stage = "EncodeRequest"
-	r, err := ht.NewRequest(ctx, "POST", u)
+	r, err := ht.NewRequest(ctx, "GET", u)
 	if err != nil {
 		return res, errors.Wrap(err, "create request")
 	}
@@ -4103,14 +7845,14 @@ func (c *Client) sendPurchaseOffer(ctx context.Context, params PurchaseOfferPara
 		type bitset = [1]uint8
 		var satisfied bitset
 		{
-			stage = "Security:BearerAuth"
-			switch err := c.securityBearerAuth(ctx, PurchaseOfferOperation, r); {
+			stage = "Security:AccountAuth"
+			switch err := c.securityAccountAuth(ctx, ListTransactionsOperation, r); {
 			case err == nil: // if NO error
 				satisfied[0] |= 1 << 0
 			case errors.Is(err, ogenerrors.ErrSkipClientSecurity):
 				// Skip this security.
 			default:
-				return res, errors.Wrap(err, "security \"BearerAuth\"")
+				return res, errors.Wrap(err, "security \"AccountAuth\"")
 			}
 		}
 
@@ -4147,7 +7889,7 @@ func (c *Client) sendPurchaseOffer(ctx context.Context, params PurchaseOfferPara
 	}()
 
 	stage = "DecodeResponse"
-	result, err := decodePurchaseOfferResponse(resp)
+	result, err := decodeListTransactionsResponse(resp)
 	if err != nil {
 		return res, errors.Wrap(err, "decode response")
 	}
@@ -4155,46 +7897,22 @@ func (c *Client) sendPurchaseOffer(ctx context.Context, params PurchaseOfferPara
 	return result, nil
 }
 
-// QuoteProjectUsage invokes quote-project-usage operation.
+// ListUsageCharges invokes list-usage-charges operation.
 //
-// Prices a set of usages against whatever plan pays for this project, and returns every intermediate
-// step rather than a single number.
+// Includes charges that have not been invoiced yet, which is how the current month's spending is seen
+// before the invoice is issued.
 //
-// # Why by project rather than by billing account
-//
-// The page that needs this is the one where somebody is about to create a machine, and all it has is a
-// project. Which account pays for that project is billing's own bookkeeping — asking the caller to
-// resolve it first would put that mapping into a page that otherwise has no business knowing accounts
-// exist.
-//
-// # Quantities are raw
-//
-// Seconds, token counts, GiB-seconds: the amount a service reports. Conversion happens here, which is
-// why services keep no conversion tables of their own and why the caller must not do the arithmetic
-// itself.
-//
-// Name each usage by `service` and `product_id` rather than by key: the key is a hash of a convention
-// that has exactly one implementation on purpose.
-//
-// # It is an estimate
-//
-// The engine computes the real amount; this reproduces the same rules. Every step comes back for that
-// reason — a single number that disagrees with the bill says nothing about which step was wrong.
-//
-// `404` means the project has no billing account, or its account is on no plan. Both are worth
-// showing: nothing can be created in either case, because admission refuses it.
-//
-// POST /account/v1/projects/{projectId}/quote
-func (c *Client) QuoteProjectUsage(ctx context.Context, request *QuoteRequest, params QuoteProjectUsageParams) (*Quote, error) {
-	res, err := c.sendQuoteProjectUsage(ctx, request, params)
+// GET /account/v1/usage-charges
+func (c *Client) ListUsageCharges(ctx context.Context, params ListUsageChargesParams) (*UsageChargeList, error) {
+	res, err := c.sendListUsageCharges(ctx, params)
 	return res, err
 }
 
-func (c *Client) sendQuoteProjectUsage(ctx context.Context, request *QuoteRequest, params QuoteProjectUsageParams) (res *Quote, err error) {
+func (c *Client) sendListUsageCharges(ctx context.Context, params ListUsageChargesParams) (res *UsageChargeList, err error) {
 	otelAttrs := []attribute.KeyValue{
-		otelogen.OperationID("quote-project-usage"),
-		semconv.HTTPRequestMethodKey.String("POST"),
-		semconv.URLTemplateKey.String("/account/v1/projects/{projectId}/quote"),
+		otelogen.OperationID("list-usage-charges"),
+		semconv.HTTPRequestMethodKey.String("GET"),
+		semconv.URLTemplateKey.String("/account/v1/usage-charges"),
 	}
 	otelAttrs = append(otelAttrs, c.cfg.Attributes...)
 
@@ -4210,7 +7928,249 @@ func (c *Client) sendQuoteProjectUsage(ctx context.Context, request *QuoteReques
 	c.requests.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
 
 	// Start a span for this request.
-	ctx, span := c.cfg.Tracer.Start(ctx, QuoteProjectUsageOperation,
+	ctx, span := c.cfg.Tracer.Start(ctx, ListUsageChargesOperation,
+		trace.WithAttributes(otelAttrs...),
+		clientSpanKind,
+	)
+	// Track stage for error reporting.
+	var stage string
+	defer func() {
+		if err != nil {
+			span.RecordError(err)
+			span.SetStatus(codes.Error, stage)
+			c.errors.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
+		}
+		span.End()
+	}()
+
+	stage = "BuildURL"
+	u := uri.Clone(c.requestURL(ctx))
+	var pathParts [1]string
+	pathParts[0] = "/account/v1/usage-charges"
+	uri.AddPathParts(u, pathParts[:]...)
+
+	stage = "EncodeQueryParams"
+	q := uri.NewQueryEncoder()
+	{
+		// Encode "page" parameter.
+		cfg := uri.QueryParameterEncodingConfig{
+			Name:    "page",
+			Style:   uri.QueryStyleForm,
+			Explode: true,
+		}
+
+		if err := q.EncodeParam(cfg, func(e uri.Encoder) error {
+			if val, ok := params.Page.Get(); ok {
+				return e.EncodeValue(conv.Int32ToString(val))
+			}
+			return nil
+		}); err != nil {
+			return res, errors.Wrap(err, "encode query")
+		}
+	}
+	{
+		// Encode "page_size" parameter.
+		cfg := uri.QueryParameterEncodingConfig{
+			Name:    "page_size",
+			Style:   uri.QueryStyleForm,
+			Explode: true,
+		}
+
+		if err := q.EncodeParam(cfg, func(e uri.Encoder) error {
+			if val, ok := params.PageSize.Get(); ok {
+				return e.EncodeValue(conv.Int32ToString(val))
+			}
+			return nil
+		}); err != nil {
+			return res, errors.Wrap(err, "encode query")
+		}
+	}
+	{
+		// Encode "billing_account_id" parameter.
+		cfg := uri.QueryParameterEncodingConfig{
+			Name:    "billing_account_id",
+			Style:   uri.QueryStyleForm,
+			Explode: true,
+		}
+
+		if err := q.EncodeParam(cfg, func(e uri.Encoder) error {
+			if val, ok := params.BillingAccountID.Get(); ok {
+				return e.EncodeValue(conv.Int64ToString(val))
+			}
+			return nil
+		}); err != nil {
+			return res, errors.Wrap(err, "encode query")
+		}
+	}
+	{
+		// Encode "project_id" parameter.
+		cfg := uri.QueryParameterEncodingConfig{
+			Name:    "project_id",
+			Style:   uri.QueryStyleForm,
+			Explode: true,
+		}
+
+		if err := q.EncodeParam(cfg, func(e uri.Encoder) error {
+			if val, ok := params.ProjectID.Get(); ok {
+				return e.EncodeValue(conv.UUIDToString(val))
+			}
+			return nil
+		}); err != nil {
+			return res, errors.Wrap(err, "encode query")
+		}
+	}
+	{
+		// Encode "resource_id" parameter.
+		cfg := uri.QueryParameterEncodingConfig{
+			Name:    "resource_id",
+			Style:   uri.QueryStyleForm,
+			Explode: true,
+		}
+
+		if err := q.EncodeParam(cfg, func(e uri.Encoder) error {
+			if val, ok := params.ResourceID.Get(); ok {
+				return e.EncodeValue(conv.StringToString(val))
+			}
+			return nil
+		}); err != nil {
+			return res, errors.Wrap(err, "encode query")
+		}
+	}
+	{
+		// Encode "from" parameter.
+		cfg := uri.QueryParameterEncodingConfig{
+			Name:    "from",
+			Style:   uri.QueryStyleForm,
+			Explode: true,
+		}
+
+		if err := q.EncodeParam(cfg, func(e uri.Encoder) error {
+			if val, ok := params.From.Get(); ok {
+				return e.EncodeValue(conv.DateTimeToString(val))
+			}
+			return nil
+		}); err != nil {
+			return res, errors.Wrap(err, "encode query")
+		}
+	}
+	{
+		// Encode "to" parameter.
+		cfg := uri.QueryParameterEncodingConfig{
+			Name:    "to",
+			Style:   uri.QueryStyleForm,
+			Explode: true,
+		}
+
+		if err := q.EncodeParam(cfg, func(e uri.Encoder) error {
+			if val, ok := params.To.Get(); ok {
+				return e.EncodeValue(conv.DateTimeToString(val))
+			}
+			return nil
+		}); err != nil {
+			return res, errors.Wrap(err, "encode query")
+		}
+	}
+	u.RawQuery = q.Values().Encode()
+
+	stage = "EncodeRequest"
+	r, err := ht.NewRequest(ctx, "GET", u)
+	if err != nil {
+		return res, errors.Wrap(err, "create request")
+	}
+
+	{
+		type bitset = [1]uint8
+		var satisfied bitset
+		{
+			stage = "Security:AccountAuth"
+			switch err := c.securityAccountAuth(ctx, ListUsageChargesOperation, r); {
+			case err == nil: // if NO error
+				satisfied[0] |= 1 << 0
+			case errors.Is(err, ogenerrors.ErrSkipClientSecurity):
+				// Skip this security.
+			default:
+				return res, errors.Wrap(err, "security \"AccountAuth\"")
+			}
+		}
+
+		if ok := func() bool {
+		nextRequirement:
+			for _, requirement := range []bitset{
+				{0b00000001},
+			} {
+				for i, mask := range requirement {
+					if satisfied[i]&mask != mask {
+						continue nextRequirement
+					}
+				}
+				return true
+			}
+			return false
+		}(); !ok {
+			return res, ogenerrors.ErrSecurityRequirementIsNotSatisfied
+		}
+	}
+
+	stage = "SendRequest"
+	resp, err := c.cfg.Client.Do(r)
+	if err != nil {
+		return res, errors.Wrap(err, "do request")
+	}
+	body := resp.Body
+	defer func() {
+		// Drain the body to EOF before closing, so the underlying
+		// connection can be reused by the Transport regardless of the
+		// response status code. See https://github.com/ogen-go/ogen/issues/1670.
+		_, _ = io.Copy(io.Discard, body)
+		_ = body.Close()
+	}()
+
+	stage = "DecodeResponse"
+	result, err := decodeListUsageChargesResponse(resp)
+	if err != nil {
+		return res, errors.Wrap(err, "decode response")
+	}
+
+	return result, nil
+}
+
+// PayInvoice invokes pay-invoice operation.
+//
+// Applies the account balance first, then charges the remainder to a payment method. Give
+// `payment_method_id` to choose one, or omit it to use the default.
+//
+// Returns a checkout address when the provider requires the cardholder to confirm the payment; the
+// invoice is marked paid once the provider confirms it.
+//
+// Calling this on an invoice that is already paid returns the invoice unchanged.
+//
+// POST /account/v1/invoices/{invoiceId}/pay
+func (c *Client) PayInvoice(ctx context.Context, request OptPayRequest, params PayInvoiceParams) (*PaymentResult, error) {
+	res, err := c.sendPayInvoice(ctx, request, params)
+	return res, err
+}
+
+func (c *Client) sendPayInvoice(ctx context.Context, request OptPayRequest, params PayInvoiceParams) (res *PaymentResult, err error) {
+	otelAttrs := []attribute.KeyValue{
+		otelogen.OperationID("pay-invoice"),
+		semconv.HTTPRequestMethodKey.String("POST"),
+		semconv.URLTemplateKey.String("/account/v1/invoices/{invoiceId}/pay"),
+	}
+	otelAttrs = append(otelAttrs, c.cfg.Attributes...)
+
+	// Run stopwatch.
+	startTime := time.Now()
+	defer func() {
+		// Use floating point division here for higher precision (instead of Millisecond method).
+		elapsedDuration := time.Since(startTime)
+		c.duration.Record(ctx, float64(elapsedDuration)/float64(time.Millisecond), metric.WithAttributes(otelAttrs...))
+	}()
+
+	// Increment request counter.
+	c.requests.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
+
+	// Start a span for this request.
+	ctx, span := c.cfg.Tracer.Start(ctx, PayInvoiceOperation,
 		trace.WithAttributes(otelAttrs...),
 		clientSpanKind,
 	)
@@ -4228,16 +8188,16 @@ func (c *Client) sendQuoteProjectUsage(ctx context.Context, request *QuoteReques
 	stage = "BuildURL"
 	u := uri.Clone(c.requestURL(ctx))
 	var pathParts [3]string
-	pathParts[0] = "/account/v1/projects/"
+	pathParts[0] = "/account/v1/invoices/"
 	{
-		// Encode "projectId" parameter.
+		// Encode "invoiceId" parameter.
 		e := uri.NewPathEncoder(uri.PathEncoderConfig{
-			Param:   "projectId",
+			Param:   "invoiceId",
 			Style:   uri.PathStyleSimple,
 			Explode: false,
 		})
 		if err := func() error {
-			return e.EncodeValue(conv.UUIDToString(params.ProjectId))
+			return e.EncodeValue(conv.UUIDToString(params.InvoiceId))
 		}(); err != nil {
 			return res, errors.Wrap(err, "encode path")
 		}
@@ -4247,7 +8207,7 @@ func (c *Client) sendQuoteProjectUsage(ctx context.Context, request *QuoteReques
 		}
 		pathParts[1] = encoded
 	}
-	pathParts[2] = "/quote"
+	pathParts[2] = "/pay"
 	uri.AddPathParts(u, pathParts[:]...)
 
 	stage = "EncodeRequest"
@@ -4255,7 +8215,7 @@ func (c *Client) sendQuoteProjectUsage(ctx context.Context, request *QuoteReques
 	if err != nil {
 		return res, errors.Wrap(err, "create request")
 	}
-	if err := encodeQuoteProjectUsageRequest(request, r); err != nil {
+	if err := encodePayInvoiceRequest(request, r); err != nil {
 		return res, errors.Wrap(err, "encode request")
 	}
 
@@ -4263,14 +8223,14 @@ func (c *Client) sendQuoteProjectUsage(ctx context.Context, request *QuoteReques
 		type bitset = [1]uint8
 		var satisfied bitset
 		{
-			stage = "Security:BearerAuth"
-			switch err := c.securityBearerAuth(ctx, QuoteProjectUsageOperation, r); {
+			stage = "Security:AccountAuth"
+			switch err := c.securityAccountAuth(ctx, PayInvoiceOperation, r); {
 			case err == nil: // if NO error
 				satisfied[0] |= 1 << 0
 			case errors.Is(err, ogenerrors.ErrSkipClientSecurity):
 				// Skip this security.
 			default:
-				return res, errors.Wrap(err, "security \"BearerAuth\"")
+				return res, errors.Wrap(err, "security \"AccountAuth\"")
 			}
 		}
 
@@ -4307,7 +8267,7 @@ func (c *Client) sendQuoteProjectUsage(ctx context.Context, request *QuoteReques
 	}()
 
 	stage = "DecodeResponse"
-	result, err := decodeQuoteProjectUsageResponse(resp)
+	result, err := decodePayInvoiceResponse(resp)
 	if err != nil {
 		return res, errors.Wrap(err, "decode response")
 	}
@@ -4315,41 +8275,24 @@ func (c *Client) sendQuoteProjectUsage(ctx context.Context, request *QuoteReques
 	return result, nil
 }
 
-// QuoteUsage invokes quote-usage operation.
+// PayOrder invokes pay-order operation.
 //
-// Prices a set of usages against whatever plan this account is currently on, and returns every
-// intermediate step rather than a single number.
+// Use this to resume an order whose checkout was interrupted.
 //
-// # What it is for
+// An order reserves both funds and stock for a limited time. Once that reservation expires the order
+// can no longer be paid and must be placed again; `reservation_expires_at` on the order states when.
 //
-// Showing someone what a machine will cost before they create it. The console asks for the usage a
-// machine of that shape produces in an hour, and gets back what that hour costs them — on their
-// plan, with their discounts.
-//
-// # Quantities are raw
-//
-// Seconds, token counts, GiB-seconds: the amount a service reports. Conversion happens here, which is
-// why services keep no conversion tables of their own and why the console must not do the arithmetic
-// itself.
-//
-// # It is an estimate
-//
-// The engine computes the real amount; this reproduces the same rules. Every step comes back for that
-// reason — a single number that disagrees with the bill says nothing about which step was wrong.
-//
-// `404` means this account is not on any plan, and there is therefore nothing to price against.
-//
-// POST /account/v1/billing-accounts/{accountKey}/quote
-func (c *Client) QuoteUsage(ctx context.Context, request *QuoteRequest, params QuoteUsageParams) (*Quote, error) {
-	res, err := c.sendQuoteUsage(ctx, request, params)
+// POST /account/v1/orders/{orderId}/pay
+func (c *Client) PayOrder(ctx context.Context, request OptPayRequest, params PayOrderParams) (*PaymentResult, error) {
+	res, err := c.sendPayOrder(ctx, request, params)
 	return res, err
 }
 
-func (c *Client) sendQuoteUsage(ctx context.Context, request *QuoteRequest, params QuoteUsageParams) (res *Quote, err error) {
+func (c *Client) sendPayOrder(ctx context.Context, request OptPayRequest, params PayOrderParams) (res *PaymentResult, err error) {
 	otelAttrs := []attribute.KeyValue{
-		otelogen.OperationID("quote-usage"),
+		otelogen.OperationID("pay-order"),
 		semconv.HTTPRequestMethodKey.String("POST"),
-		semconv.URLTemplateKey.String("/account/v1/billing-accounts/{accountKey}/quote"),
+		semconv.URLTemplateKey.String("/account/v1/orders/{orderId}/pay"),
 	}
 	otelAttrs = append(otelAttrs, c.cfg.Attributes...)
 
@@ -4365,7 +8308,7 @@ func (c *Client) sendQuoteUsage(ctx context.Context, request *QuoteRequest, para
 	c.requests.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
 
 	// Start a span for this request.
-	ctx, span := c.cfg.Tracer.Start(ctx, QuoteUsageOperation,
+	ctx, span := c.cfg.Tracer.Start(ctx, PayOrderOperation,
 		trace.WithAttributes(otelAttrs...),
 		clientSpanKind,
 	)
@@ -4383,16 +8326,16 @@ func (c *Client) sendQuoteUsage(ctx context.Context, request *QuoteRequest, para
 	stage = "BuildURL"
 	u := uri.Clone(c.requestURL(ctx))
 	var pathParts [3]string
-	pathParts[0] = "/account/v1/billing-accounts/"
+	pathParts[0] = "/account/v1/orders/"
 	{
-		// Encode "accountKey" parameter.
+		// Encode "orderId" parameter.
 		e := uri.NewPathEncoder(uri.PathEncoderConfig{
-			Param:   "accountKey",
+			Param:   "orderId",
 			Style:   uri.PathStyleSimple,
 			Explode: false,
 		})
 		if err := func() error {
-			return e.EncodeValue(conv.StringToString(params.AccountKey))
+			return e.EncodeValue(conv.UUIDToString(params.OrderId))
 		}(); err != nil {
 			return res, errors.Wrap(err, "encode path")
 		}
@@ -4402,7 +8345,7 @@ func (c *Client) sendQuoteUsage(ctx context.Context, request *QuoteRequest, para
 		}
 		pathParts[1] = encoded
 	}
-	pathParts[2] = "/quote"
+	pathParts[2] = "/pay"
 	uri.AddPathParts(u, pathParts[:]...)
 
 	stage = "EncodeRequest"
@@ -4410,7 +8353,7 @@ func (c *Client) sendQuoteUsage(ctx context.Context, request *QuoteRequest, para
 	if err != nil {
 		return res, errors.Wrap(err, "create request")
 	}
-	if err := encodeQuoteUsageRequest(request, r); err != nil {
+	if err := encodePayOrderRequest(request, r); err != nil {
 		return res, errors.Wrap(err, "encode request")
 	}
 
@@ -4418,14 +8361,14 @@ func (c *Client) sendQuoteUsage(ctx context.Context, request *QuoteRequest, para
 		type bitset = [1]uint8
 		var satisfied bitset
 		{
-			stage = "Security:BearerAuth"
-			switch err := c.securityBearerAuth(ctx, QuoteUsageOperation, r); {
+			stage = "Security:AccountAuth"
+			switch err := c.securityAccountAuth(ctx, PayOrderOperation, r); {
 			case err == nil: // if NO error
 				satisfied[0] |= 1 << 0
 			case errors.Is(err, ogenerrors.ErrSkipClientSecurity):
 				// Skip this security.
 			default:
-				return res, errors.Wrap(err, "security \"BearerAuth\"")
+				return res, errors.Wrap(err, "security \"AccountAuth\"")
 			}
 		}
 
@@ -4462,7 +8405,7 @@ func (c *Client) sendQuoteUsage(ctx context.Context, request *QuoteRequest, para
 	}()
 
 	stage = "DecodeResponse"
-	result, err := decodeQuoteUsageResponse(resp)
+	result, err := decodePayOrderResponse(resp)
 	if err != nil {
 		return res, errors.Wrap(err, "decode response")
 	}
@@ -4470,920 +8413,22 @@ func (c *Client) sendQuoteUsage(ctx context.Context, request *QuoteRequest, para
 	return result, nil
 }
 
-// ReadBillingAccountBalance invokes read-billing-account-balance operation.
+// PreviewCode invokes preview-code operation.
 //
-// What is left on the account.
+// Nothing is recorded and the code is not consumed. Use it to show the customer the effect before they
+// commit.
 //
-// The figure is the live balance: usage that has been reported but not yet settled is already
-// subtracted. The settled figure is larger, and the difference is precisely what the holder has just
-// spent — showing that instead would tell them they can afford something they cannot.
-//
-// An account that has never been topped up reports `"0"` — not an absent field, and not an empty
-// string.
-//
-// GET /account/v1/billing-accounts/{accountKey}/balance
-func (c *Client) ReadBillingAccountBalance(ctx context.Context, params ReadBillingAccountBalanceParams) (*Balance, error) {
-	res, err := c.sendReadBillingAccountBalance(ctx, params)
+// POST /account/v1/codes/preview
+func (c *Client) PreviewCode(ctx context.Context, request *CodeRequest) (*CodePreview, error) {
+	res, err := c.sendPreviewCode(ctx, request)
 	return res, err
 }
 
-func (c *Client) sendReadBillingAccountBalance(ctx context.Context, params ReadBillingAccountBalanceParams) (res *Balance, err error) {
+func (c *Client) sendPreviewCode(ctx context.Context, request *CodeRequest) (res *CodePreview, err error) {
 	otelAttrs := []attribute.KeyValue{
-		otelogen.OperationID("read-billing-account-balance"),
-		semconv.HTTPRequestMethodKey.String("GET"),
-		semconv.URLTemplateKey.String("/account/v1/billing-accounts/{accountKey}/balance"),
-	}
-	otelAttrs = append(otelAttrs, c.cfg.Attributes...)
-
-	// Run stopwatch.
-	startTime := time.Now()
-	defer func() {
-		// Use floating point division here for higher precision (instead of Millisecond method).
-		elapsedDuration := time.Since(startTime)
-		c.duration.Record(ctx, float64(elapsedDuration)/float64(time.Millisecond), metric.WithAttributes(otelAttrs...))
-	}()
-
-	// Increment request counter.
-	c.requests.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
-
-	// Start a span for this request.
-	ctx, span := c.cfg.Tracer.Start(ctx, ReadBillingAccountBalanceOperation,
-		trace.WithAttributes(otelAttrs...),
-		clientSpanKind,
-	)
-	// Track stage for error reporting.
-	var stage string
-	defer func() {
-		if err != nil {
-			span.RecordError(err)
-			span.SetStatus(codes.Error, stage)
-			c.errors.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
-		}
-		span.End()
-	}()
-
-	stage = "BuildURL"
-	u := uri.Clone(c.requestURL(ctx))
-	var pathParts [3]string
-	pathParts[0] = "/account/v1/billing-accounts/"
-	{
-		// Encode "accountKey" parameter.
-		e := uri.NewPathEncoder(uri.PathEncoderConfig{
-			Param:   "accountKey",
-			Style:   uri.PathStyleSimple,
-			Explode: false,
-		})
-		if err := func() error {
-			return e.EncodeValue(conv.StringToString(params.AccountKey))
-		}(); err != nil {
-			return res, errors.Wrap(err, "encode path")
-		}
-		encoded, err := e.Result()
-		if err != nil {
-			return res, errors.Wrap(err, "encode path")
-		}
-		pathParts[1] = encoded
-	}
-	pathParts[2] = "/balance"
-	uri.AddPathParts(u, pathParts[:]...)
-
-	stage = "EncodeRequest"
-	r, err := ht.NewRequest(ctx, "GET", u)
-	if err != nil {
-		return res, errors.Wrap(err, "create request")
-	}
-
-	{
-		type bitset = [1]uint8
-		var satisfied bitset
-		{
-			stage = "Security:BearerAuth"
-			switch err := c.securityBearerAuth(ctx, ReadBillingAccountBalanceOperation, r); {
-			case err == nil: // if NO error
-				satisfied[0] |= 1 << 0
-			case errors.Is(err, ogenerrors.ErrSkipClientSecurity):
-				// Skip this security.
-			default:
-				return res, errors.Wrap(err, "security \"BearerAuth\"")
-			}
-		}
-
-		if ok := func() bool {
-		nextRequirement:
-			for _, requirement := range []bitset{
-				{0b00000001},
-			} {
-				for i, mask := range requirement {
-					if satisfied[i]&mask != mask {
-						continue nextRequirement
-					}
-				}
-				return true
-			}
-			return false
-		}(); !ok {
-			return res, ogenerrors.ErrSecurityRequirementIsNotSatisfied
-		}
-	}
-
-	stage = "SendRequest"
-	resp, err := c.cfg.Client.Do(r)
-	if err != nil {
-		return res, errors.Wrap(err, "do request")
-	}
-	body := resp.Body
-	defer func() {
-		// Drain the body to EOF before closing, so the underlying
-		// connection can be reused by the Transport regardless of the
-		// response status code. See https://github.com/ogen-go/ogen/issues/1670.
-		_, _ = io.Copy(io.Discard, body)
-		_ = body.Close()
-	}()
-
-	stage = "DecodeResponse"
-	result, err := decodeReadBillingAccountBalanceResponse(resp)
-	if err != nil {
-		return res, errors.Wrap(err, "decode response")
-	}
-
-	return result, nil
-}
-
-// ReadBillingAccountBalanceMovement invokes read-billing-account-balance-movement operation.
-//
-// Opening balance, money in, money out, closing balance — for the current calendar month.
-//
-// The four add up: `closing = opening + income - spending`. That is the point of the endpoint. The
-// balance alone answers "how much is left" and cannot answer "how did it get there", which is what
-// somebody watching their balance shrink is actually asking. Four figures that add up can be checked
-// by the holder; a single figure can only be taken on faith or queried with support.
-//
-// `closing` is computed from the other three rather than read separately. Reading the current balance
-// for it would leave the equation off by whatever was booked between the two reads — and an equation
-// that is off by a few cents is worse than no equation, because it puts the ledger itself in doubt.
-//
-// The window is the calendar month, not the engine's billing period. This is the month a person means
-// when they say "this month"; the billing anchor is an internal recurrence that happens to line up.
-//
-// A month with no movement reports opening equal to closing and zero on both sides — not all zeroes,
-// which would read as "your money is gone".
-//
-// GET /account/v1/billing-accounts/{accountKey}/balance/movement
-func (c *Client) ReadBillingAccountBalanceMovement(ctx context.Context, params ReadBillingAccountBalanceMovementParams) (*BalanceMovement, error) {
-	res, err := c.sendReadBillingAccountBalanceMovement(ctx, params)
-	return res, err
-}
-
-func (c *Client) sendReadBillingAccountBalanceMovement(ctx context.Context, params ReadBillingAccountBalanceMovementParams) (res *BalanceMovement, err error) {
-	otelAttrs := []attribute.KeyValue{
-		otelogen.OperationID("read-billing-account-balance-movement"),
-		semconv.HTTPRequestMethodKey.String("GET"),
-		semconv.URLTemplateKey.String("/account/v1/billing-accounts/{accountKey}/balance/movement"),
-	}
-	otelAttrs = append(otelAttrs, c.cfg.Attributes...)
-
-	// Run stopwatch.
-	startTime := time.Now()
-	defer func() {
-		// Use floating point division here for higher precision (instead of Millisecond method).
-		elapsedDuration := time.Since(startTime)
-		c.duration.Record(ctx, float64(elapsedDuration)/float64(time.Millisecond), metric.WithAttributes(otelAttrs...))
-	}()
-
-	// Increment request counter.
-	c.requests.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
-
-	// Start a span for this request.
-	ctx, span := c.cfg.Tracer.Start(ctx, ReadBillingAccountBalanceMovementOperation,
-		trace.WithAttributes(otelAttrs...),
-		clientSpanKind,
-	)
-	// Track stage for error reporting.
-	var stage string
-	defer func() {
-		if err != nil {
-			span.RecordError(err)
-			span.SetStatus(codes.Error, stage)
-			c.errors.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
-		}
-		span.End()
-	}()
-
-	stage = "BuildURL"
-	u := uri.Clone(c.requestURL(ctx))
-	var pathParts [3]string
-	pathParts[0] = "/account/v1/billing-accounts/"
-	{
-		// Encode "accountKey" parameter.
-		e := uri.NewPathEncoder(uri.PathEncoderConfig{
-			Param:   "accountKey",
-			Style:   uri.PathStyleSimple,
-			Explode: false,
-		})
-		if err := func() error {
-			return e.EncodeValue(conv.StringToString(params.AccountKey))
-		}(); err != nil {
-			return res, errors.Wrap(err, "encode path")
-		}
-		encoded, err := e.Result()
-		if err != nil {
-			return res, errors.Wrap(err, "encode path")
-		}
-		pathParts[1] = encoded
-	}
-	pathParts[2] = "/balance/movement"
-	uri.AddPathParts(u, pathParts[:]...)
-
-	stage = "EncodeRequest"
-	r, err := ht.NewRequest(ctx, "GET", u)
-	if err != nil {
-		return res, errors.Wrap(err, "create request")
-	}
-
-	{
-		type bitset = [1]uint8
-		var satisfied bitset
-		{
-			stage = "Security:BearerAuth"
-			switch err := c.securityBearerAuth(ctx, ReadBillingAccountBalanceMovementOperation, r); {
-			case err == nil: // if NO error
-				satisfied[0] |= 1 << 0
-			case errors.Is(err, ogenerrors.ErrSkipClientSecurity):
-				// Skip this security.
-			default:
-				return res, errors.Wrap(err, "security \"BearerAuth\"")
-			}
-		}
-
-		if ok := func() bool {
-		nextRequirement:
-			for _, requirement := range []bitset{
-				{0b00000001},
-			} {
-				for i, mask := range requirement {
-					if satisfied[i]&mask != mask {
-						continue nextRequirement
-					}
-				}
-				return true
-			}
-			return false
-		}(); !ok {
-			return res, ogenerrors.ErrSecurityRequirementIsNotSatisfied
-		}
-	}
-
-	stage = "SendRequest"
-	resp, err := c.cfg.Client.Do(r)
-	if err != nil {
-		return res, errors.Wrap(err, "do request")
-	}
-	body := resp.Body
-	defer func() {
-		// Drain the body to EOF before closing, so the underlying
-		// connection can be reused by the Transport regardless of the
-		// response status code. See https://github.com/ogen-go/ogen/issues/1670.
-		_, _ = io.Copy(io.Discard, body)
-		_ = body.Close()
-	}()
-
-	stage = "DecodeResponse"
-	result, err := decodeReadBillingAccountBalanceMovementResponse(resp)
-	if err != nil {
-		return res, errors.Wrap(err, "decode response")
-	}
-
-	return result, nil
-}
-
-// ReadProjectBillingAccount invokes read-project-billing-account operation.
-//
-// The account a project's resources are charged to, resolved from the project rather than guessed.
-//
-// # Why a console needs this
-//
-// Everything in a console happens inside a project, while billing accounts belong to a person — and
-// a person can have many. Showing "the first one" next to a sentence like you are overdrawn, new
-// resources will be refused pairs one account's balance with another account's rule. Both directions
-// are wrong and one of them is silent: the figures look healthy while creating anything is refused,
-// and the refusal names a reason the page just contradicted.
-//
-// # Being a member is enough to ask, but not to see the money
-//
-// The answer is the account's identity, not its balance. A project's members are not necessarily the
-// people paying for it — a company account can pay for a project someone else works in — and their
-// balance is not those members' business. Whoever owns the account reads the figures from the balance
-// route as before; `owned_by_me` says which case this is, so a page can tell "you are overdrawn" apart
-// from "ask whoever pays for this project".
-//
-// # A project with no account is a normal state, and it answers 404
-//
-// A project nobody has bound yet cannot create resources at all — admission refuses it. That is
-// worth saying plainly ("this project has no billing account, bind one") rather than falling back to
-// some other account of theirs, which is how the wrong-account problem started.
-//
-// GET /account/v1/projects/{projectId}/billing-account
-func (c *Client) ReadProjectBillingAccount(ctx context.Context, params ReadProjectBillingAccountParams) (*ProjectBillingAccount, error) {
-	res, err := c.sendReadProjectBillingAccount(ctx, params)
-	return res, err
-}
-
-func (c *Client) sendReadProjectBillingAccount(ctx context.Context, params ReadProjectBillingAccountParams) (res *ProjectBillingAccount, err error) {
-	otelAttrs := []attribute.KeyValue{
-		otelogen.OperationID("read-project-billing-account"),
-		semconv.HTTPRequestMethodKey.String("GET"),
-		semconv.URLTemplateKey.String("/account/v1/projects/{projectId}/billing-account"),
-	}
-	otelAttrs = append(otelAttrs, c.cfg.Attributes...)
-
-	// Run stopwatch.
-	startTime := time.Now()
-	defer func() {
-		// Use floating point division here for higher precision (instead of Millisecond method).
-		elapsedDuration := time.Since(startTime)
-		c.duration.Record(ctx, float64(elapsedDuration)/float64(time.Millisecond), metric.WithAttributes(otelAttrs...))
-	}()
-
-	// Increment request counter.
-	c.requests.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
-
-	// Start a span for this request.
-	ctx, span := c.cfg.Tracer.Start(ctx, ReadProjectBillingAccountOperation,
-		trace.WithAttributes(otelAttrs...),
-		clientSpanKind,
-	)
-	// Track stage for error reporting.
-	var stage string
-	defer func() {
-		if err != nil {
-			span.RecordError(err)
-			span.SetStatus(codes.Error, stage)
-			c.errors.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
-		}
-		span.End()
-	}()
-
-	stage = "BuildURL"
-	u := uri.Clone(c.requestURL(ctx))
-	var pathParts [3]string
-	pathParts[0] = "/account/v1/projects/"
-	{
-		// Encode "projectId" parameter.
-		e := uri.NewPathEncoder(uri.PathEncoderConfig{
-			Param:   "projectId",
-			Style:   uri.PathStyleSimple,
-			Explode: false,
-		})
-		if err := func() error {
-			return e.EncodeValue(conv.UUIDToString(params.ProjectId))
-		}(); err != nil {
-			return res, errors.Wrap(err, "encode path")
-		}
-		encoded, err := e.Result()
-		if err != nil {
-			return res, errors.Wrap(err, "encode path")
-		}
-		pathParts[1] = encoded
-	}
-	pathParts[2] = "/billing-account"
-	uri.AddPathParts(u, pathParts[:]...)
-
-	stage = "EncodeRequest"
-	r, err := ht.NewRequest(ctx, "GET", u)
-	if err != nil {
-		return res, errors.Wrap(err, "create request")
-	}
-
-	{
-		type bitset = [1]uint8
-		var satisfied bitset
-		{
-			stage = "Security:BearerAuth"
-			switch err := c.securityBearerAuth(ctx, ReadProjectBillingAccountOperation, r); {
-			case err == nil: // if NO error
-				satisfied[0] |= 1 << 0
-			case errors.Is(err, ogenerrors.ErrSkipClientSecurity):
-				// Skip this security.
-			default:
-				return res, errors.Wrap(err, "security \"BearerAuth\"")
-			}
-		}
-
-		if ok := func() bool {
-		nextRequirement:
-			for _, requirement := range []bitset{
-				{0b00000001},
-			} {
-				for i, mask := range requirement {
-					if satisfied[i]&mask != mask {
-						continue nextRequirement
-					}
-				}
-				return true
-			}
-			return false
-		}(); !ok {
-			return res, ogenerrors.ErrSecurityRequirementIsNotSatisfied
-		}
-	}
-
-	stage = "SendRequest"
-	resp, err := c.cfg.Client.Do(r)
-	if err != nil {
-		return res, errors.Wrap(err, "do request")
-	}
-	body := resp.Body
-	defer func() {
-		// Drain the body to EOF before closing, so the underlying
-		// connection can be reused by the Transport regardless of the
-		// response status code. See https://github.com/ogen-go/ogen/issues/1670.
-		_, _ = io.Copy(io.Discard, body)
-		_ = body.Close()
-	}()
-
-	stage = "DecodeResponse"
-	result, err := decodeReadProjectBillingAccountResponse(resp)
-	if err != nil {
-		return res, errors.Wrap(err, "decode response")
-	}
-
-	return result, nil
-}
-
-// ReadSubscription invokes read-subscription operation.
-//
-// `404` means no plan, which is worth showing rather than hiding: an account without one is refused
-// admission, so nothing can be allocated in it.
-//
-// A subscription that has been cancelled but has not reached the end of its period still counts as
-// being on a plan — it is still serving, still billing, and the period has already been paid for.
-//
-// GET /account/v1/billing-accounts/{accountKey}/subscription
-func (c *Client) ReadSubscription(ctx context.Context, params ReadSubscriptionParams) (*Subscription, error) {
-	res, err := c.sendReadSubscription(ctx, params)
-	return res, err
-}
-
-func (c *Client) sendReadSubscription(ctx context.Context, params ReadSubscriptionParams) (res *Subscription, err error) {
-	otelAttrs := []attribute.KeyValue{
-		otelogen.OperationID("read-subscription"),
-		semconv.HTTPRequestMethodKey.String("GET"),
-		semconv.URLTemplateKey.String("/account/v1/billing-accounts/{accountKey}/subscription"),
-	}
-	otelAttrs = append(otelAttrs, c.cfg.Attributes...)
-
-	// Run stopwatch.
-	startTime := time.Now()
-	defer func() {
-		// Use floating point division here for higher precision (instead of Millisecond method).
-		elapsedDuration := time.Since(startTime)
-		c.duration.Record(ctx, float64(elapsedDuration)/float64(time.Millisecond), metric.WithAttributes(otelAttrs...))
-	}()
-
-	// Increment request counter.
-	c.requests.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
-
-	// Start a span for this request.
-	ctx, span := c.cfg.Tracer.Start(ctx, ReadSubscriptionOperation,
-		trace.WithAttributes(otelAttrs...),
-		clientSpanKind,
-	)
-	// Track stage for error reporting.
-	var stage string
-	defer func() {
-		if err != nil {
-			span.RecordError(err)
-			span.SetStatus(codes.Error, stage)
-			c.errors.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
-		}
-		span.End()
-	}()
-
-	stage = "BuildURL"
-	u := uri.Clone(c.requestURL(ctx))
-	var pathParts [3]string
-	pathParts[0] = "/account/v1/billing-accounts/"
-	{
-		// Encode "accountKey" parameter.
-		e := uri.NewPathEncoder(uri.PathEncoderConfig{
-			Param:   "accountKey",
-			Style:   uri.PathStyleSimple,
-			Explode: false,
-		})
-		if err := func() error {
-			return e.EncodeValue(conv.StringToString(params.AccountKey))
-		}(); err != nil {
-			return res, errors.Wrap(err, "encode path")
-		}
-		encoded, err := e.Result()
-		if err != nil {
-			return res, errors.Wrap(err, "encode path")
-		}
-		pathParts[1] = encoded
-	}
-	pathParts[2] = "/subscription"
-	uri.AddPathParts(u, pathParts[:]...)
-
-	stage = "EncodeRequest"
-	r, err := ht.NewRequest(ctx, "GET", u)
-	if err != nil {
-		return res, errors.Wrap(err, "create request")
-	}
-
-	{
-		type bitset = [1]uint8
-		var satisfied bitset
-		{
-			stage = "Security:BearerAuth"
-			switch err := c.securityBearerAuth(ctx, ReadSubscriptionOperation, r); {
-			case err == nil: // if NO error
-				satisfied[0] |= 1 << 0
-			case errors.Is(err, ogenerrors.ErrSkipClientSecurity):
-				// Skip this security.
-			default:
-				return res, errors.Wrap(err, "security \"BearerAuth\"")
-			}
-		}
-
-		if ok := func() bool {
-		nextRequirement:
-			for _, requirement := range []bitset{
-				{0b00000001},
-			} {
-				for i, mask := range requirement {
-					if satisfied[i]&mask != mask {
-						continue nextRequirement
-					}
-				}
-				return true
-			}
-			return false
-		}(); !ok {
-			return res, ogenerrors.ErrSecurityRequirementIsNotSatisfied
-		}
-	}
-
-	stage = "SendRequest"
-	resp, err := c.cfg.Client.Do(r)
-	if err != nil {
-		return res, errors.Wrap(err, "do request")
-	}
-	body := resp.Body
-	defer func() {
-		// Drain the body to EOF before closing, so the underlying
-		// connection can be reused by the Transport regardless of the
-		// response status code. See https://github.com/ogen-go/ogen/issues/1670.
-		_, _ = io.Copy(io.Discard, body)
-		_ = body.Close()
-	}()
-
-	stage = "DecodeResponse"
-	result, err := decodeReadSubscriptionResponse(resp)
-	if err != nil {
-		return res, errors.Wrap(err, "decode response")
-	}
-
-	return result, nil
-}
-
-// ReadTopUp invokes read-top-up operation.
-//
-// Credit arrives asynchronously, shortly after the payment provider confirms the money. Coming back
-// from the payment page the balance has usually not moved yet, and without this there is no way to
-// tell "it is on its way" from "it failed" — the only recourse is refreshing the balance and
-// guessing.
-//
-// `settled` means the credit has landed. `pending` means the money arrived and the credit has not been
-// issued yet, or the payment method is an asynchronous one and the money itself is still in transit.
-//
-// GET /account/v1/billing-accounts/{accountKey}/top-ups/{paymentId}
-func (c *Client) ReadTopUp(ctx context.Context, params ReadTopUpParams) (*TopUpStatus, error) {
-	res, err := c.sendReadTopUp(ctx, params)
-	return res, err
-}
-
-func (c *Client) sendReadTopUp(ctx context.Context, params ReadTopUpParams) (res *TopUpStatus, err error) {
-	otelAttrs := []attribute.KeyValue{
-		otelogen.OperationID("read-top-up"),
-		semconv.HTTPRequestMethodKey.String("GET"),
-		semconv.URLTemplateKey.String("/account/v1/billing-accounts/{accountKey}/top-ups/{paymentId}"),
-	}
-	otelAttrs = append(otelAttrs, c.cfg.Attributes...)
-
-	// Run stopwatch.
-	startTime := time.Now()
-	defer func() {
-		// Use floating point division here for higher precision (instead of Millisecond method).
-		elapsedDuration := time.Since(startTime)
-		c.duration.Record(ctx, float64(elapsedDuration)/float64(time.Millisecond), metric.WithAttributes(otelAttrs...))
-	}()
-
-	// Increment request counter.
-	c.requests.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
-
-	// Start a span for this request.
-	ctx, span := c.cfg.Tracer.Start(ctx, ReadTopUpOperation,
-		trace.WithAttributes(otelAttrs...),
-		clientSpanKind,
-	)
-	// Track stage for error reporting.
-	var stage string
-	defer func() {
-		if err != nil {
-			span.RecordError(err)
-			span.SetStatus(codes.Error, stage)
-			c.errors.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
-		}
-		span.End()
-	}()
-
-	stage = "BuildURL"
-	u := uri.Clone(c.requestURL(ctx))
-	var pathParts [4]string
-	pathParts[0] = "/account/v1/billing-accounts/"
-	{
-		// Encode "accountKey" parameter.
-		e := uri.NewPathEncoder(uri.PathEncoderConfig{
-			Param:   "accountKey",
-			Style:   uri.PathStyleSimple,
-			Explode: false,
-		})
-		if err := func() error {
-			return e.EncodeValue(conv.StringToString(params.AccountKey))
-		}(); err != nil {
-			return res, errors.Wrap(err, "encode path")
-		}
-		encoded, err := e.Result()
-		if err != nil {
-			return res, errors.Wrap(err, "encode path")
-		}
-		pathParts[1] = encoded
-	}
-	pathParts[2] = "/top-ups/"
-	{
-		// Encode "paymentId" parameter.
-		e := uri.NewPathEncoder(uri.PathEncoderConfig{
-			Param:   "paymentId",
-			Style:   uri.PathStyleSimple,
-			Explode: false,
-		})
-		if err := func() error {
-			return e.EncodeValue(conv.StringToString(params.PaymentId))
-		}(); err != nil {
-			return res, errors.Wrap(err, "encode path")
-		}
-		encoded, err := e.Result()
-		if err != nil {
-			return res, errors.Wrap(err, "encode path")
-		}
-		pathParts[3] = encoded
-	}
-	uri.AddPathParts(u, pathParts[:]...)
-
-	stage = "EncodeRequest"
-	r, err := ht.NewRequest(ctx, "GET", u)
-	if err != nil {
-		return res, errors.Wrap(err, "create request")
-	}
-
-	{
-		type bitset = [1]uint8
-		var satisfied bitset
-		{
-			stage = "Security:BearerAuth"
-			switch err := c.securityBearerAuth(ctx, ReadTopUpOperation, r); {
-			case err == nil: // if NO error
-				satisfied[0] |= 1 << 0
-			case errors.Is(err, ogenerrors.ErrSkipClientSecurity):
-				// Skip this security.
-			default:
-				return res, errors.Wrap(err, "security \"BearerAuth\"")
-			}
-		}
-
-		if ok := func() bool {
-		nextRequirement:
-			for _, requirement := range []bitset{
-				{0b00000001},
-			} {
-				for i, mask := range requirement {
-					if satisfied[i]&mask != mask {
-						continue nextRequirement
-					}
-				}
-				return true
-			}
-			return false
-		}(); !ok {
-			return res, ogenerrors.ErrSecurityRequirementIsNotSatisfied
-		}
-	}
-
-	stage = "SendRequest"
-	resp, err := c.cfg.Client.Do(r)
-	if err != nil {
-		return res, errors.Wrap(err, "do request")
-	}
-	body := resp.Body
-	defer func() {
-		// Drain the body to EOF before closing, so the underlying
-		// connection can be reused by the Transport regardless of the
-		// response status code. See https://github.com/ogen-go/ogen/issues/1670.
-		_, _ = io.Copy(io.Discard, body)
-		_ = body.Close()
-	}()
-
-	stage = "DecodeResponse"
-	result, err := decodeReadTopUpResponse(resp)
-	if err != nil {
-		return res, errors.Wrap(err, "decode response")
-	}
-
-	return result, nil
-}
-
-// RemovePaymentMethod invokes remove-payment-method operation.
-//
-// Detaches it from this account. Removing the last one is allowed.
-//
-// # Why removing the last one is not blocked
-//
-// Blocking it leaves an account holder who wants to stop paying with no way out. The cost of allowing
-// it is that later invoices cannot be collected — and that path has notice, a grace period and a way
-// back. A card that cannot be removed is a dead end.
-//
-// DELETE /account/v1/billing-accounts/{accountKey}/payment-methods/{paymentMethodId}
-func (c *Client) RemovePaymentMethod(ctx context.Context, params RemovePaymentMethodParams) error {
-	_, err := c.sendRemovePaymentMethod(ctx, params)
-	return err
-}
-
-func (c *Client) sendRemovePaymentMethod(ctx context.Context, params RemovePaymentMethodParams) (res *RemovePaymentMethodNoContent, err error) {
-	otelAttrs := []attribute.KeyValue{
-		otelogen.OperationID("remove-payment-method"),
-		semconv.HTTPRequestMethodKey.String("DELETE"),
-		semconv.URLTemplateKey.String("/account/v1/billing-accounts/{accountKey}/payment-methods/{paymentMethodId}"),
-	}
-	otelAttrs = append(otelAttrs, c.cfg.Attributes...)
-
-	// Run stopwatch.
-	startTime := time.Now()
-	defer func() {
-		// Use floating point division here for higher precision (instead of Millisecond method).
-		elapsedDuration := time.Since(startTime)
-		c.duration.Record(ctx, float64(elapsedDuration)/float64(time.Millisecond), metric.WithAttributes(otelAttrs...))
-	}()
-
-	// Increment request counter.
-	c.requests.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
-
-	// Start a span for this request.
-	ctx, span := c.cfg.Tracer.Start(ctx, RemovePaymentMethodOperation,
-		trace.WithAttributes(otelAttrs...),
-		clientSpanKind,
-	)
-	// Track stage for error reporting.
-	var stage string
-	defer func() {
-		if err != nil {
-			span.RecordError(err)
-			span.SetStatus(codes.Error, stage)
-			c.errors.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
-		}
-		span.End()
-	}()
-
-	stage = "BuildURL"
-	u := uri.Clone(c.requestURL(ctx))
-	var pathParts [4]string
-	pathParts[0] = "/account/v1/billing-accounts/"
-	{
-		// Encode "accountKey" parameter.
-		e := uri.NewPathEncoder(uri.PathEncoderConfig{
-			Param:   "accountKey",
-			Style:   uri.PathStyleSimple,
-			Explode: false,
-		})
-		if err := func() error {
-			return e.EncodeValue(conv.StringToString(params.AccountKey))
-		}(); err != nil {
-			return res, errors.Wrap(err, "encode path")
-		}
-		encoded, err := e.Result()
-		if err != nil {
-			return res, errors.Wrap(err, "encode path")
-		}
-		pathParts[1] = encoded
-	}
-	pathParts[2] = "/payment-methods/"
-	{
-		// Encode "paymentMethodId" parameter.
-		e := uri.NewPathEncoder(uri.PathEncoderConfig{
-			Param:   "paymentMethodId",
-			Style:   uri.PathStyleSimple,
-			Explode: false,
-		})
-		if err := func() error {
-			return e.EncodeValue(conv.StringToString(params.PaymentMethodId))
-		}(); err != nil {
-			return res, errors.Wrap(err, "encode path")
-		}
-		encoded, err := e.Result()
-		if err != nil {
-			return res, errors.Wrap(err, "encode path")
-		}
-		pathParts[3] = encoded
-	}
-	uri.AddPathParts(u, pathParts[:]...)
-
-	stage = "EncodeRequest"
-	r, err := ht.NewRequest(ctx, "DELETE", u)
-	if err != nil {
-		return res, errors.Wrap(err, "create request")
-	}
-
-	{
-		type bitset = [1]uint8
-		var satisfied bitset
-		{
-			stage = "Security:BearerAuth"
-			switch err := c.securityBearerAuth(ctx, RemovePaymentMethodOperation, r); {
-			case err == nil: // if NO error
-				satisfied[0] |= 1 << 0
-			case errors.Is(err, ogenerrors.ErrSkipClientSecurity):
-				// Skip this security.
-			default:
-				return res, errors.Wrap(err, "security \"BearerAuth\"")
-			}
-		}
-
-		if ok := func() bool {
-		nextRequirement:
-			for _, requirement := range []bitset{
-				{0b00000001},
-			} {
-				for i, mask := range requirement {
-					if satisfied[i]&mask != mask {
-						continue nextRequirement
-					}
-				}
-				return true
-			}
-			return false
-		}(); !ok {
-			return res, ogenerrors.ErrSecurityRequirementIsNotSatisfied
-		}
-	}
-
-	stage = "SendRequest"
-	resp, err := c.cfg.Client.Do(r)
-	if err != nil {
-		return res, errors.Wrap(err, "do request")
-	}
-	body := resp.Body
-	defer func() {
-		// Drain the body to EOF before closing, so the underlying
-		// connection can be reused by the Transport regardless of the
-		// response status code. See https://github.com/ogen-go/ogen/issues/1670.
-		_, _ = io.Copy(io.Discard, body)
-		_ = body.Close()
-	}()
-
-	stage = "DecodeResponse"
-	result, err := decodeRemovePaymentMethodResponse(resp)
-	if err != nil {
-		return res, errors.Wrap(err, "decode response")
-	}
-
-	return result, nil
-}
-
-// RenewPrepaidAsset invokes renew-prepaid-asset operation.
-//
-// Extends a term by one more period, paid for out of the account's balance right now.
-//
-// The new expiry is the old one plus the term, not now plus the term. Renewing three days early would
-// otherwise throw those three days away, and renewing after the expiry would quietly reward the delay.
-// Neither shows up as an error — the date on the account looks self-consistent either way, and only
-// the customer notices.
-//
-// `term` does not have to match what was bought originally: a monthly machine can be renewed for a
-// year.
-//
-// Refused when the balance does not cover it. The alternative — placing the order and letting the
-// account go negative — turns a renewal the customer chose into a debt they did not.
-//
-// POST /account/v1/billing-accounts/{accountKey}/prepaid-assets/{assetId}/renew
-func (c *Client) RenewPrepaidAsset(ctx context.Context, request *RenewRequestBody, params RenewPrepaidAssetParams) (*PrepaidAsset, error) {
-	res, err := c.sendRenewPrepaidAsset(ctx, request, params)
-	return res, err
-}
-
-func (c *Client) sendRenewPrepaidAsset(ctx context.Context, request *RenewRequestBody, params RenewPrepaidAssetParams) (res *PrepaidAsset, err error) {
-	otelAttrs := []attribute.KeyValue{
-		otelogen.OperationID("renew-prepaid-asset"),
+		otelogen.OperationID("preview-code"),
 		semconv.HTTPRequestMethodKey.String("POST"),
-		semconv.URLTemplateKey.String("/account/v1/billing-accounts/{accountKey}/prepaid-assets/{assetId}/renew"),
+		semconv.URLTemplateKey.String("/account/v1/codes/preview"),
 	}
 	otelAttrs = append(otelAttrs, c.cfg.Attributes...)
 
@@ -5399,7 +8444,7 @@ func (c *Client) sendRenewPrepaidAsset(ctx context.Context, request *RenewReques
 	c.requests.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
 
 	// Start a span for this request.
-	ctx, span := c.cfg.Tracer.Start(ctx, RenewPrepaidAssetOperation,
+	ctx, span := c.cfg.Tracer.Start(ctx, PreviewCodeOperation,
 		trace.WithAttributes(otelAttrs...),
 		clientSpanKind,
 	)
@@ -5416,46 +8461,8 @@ func (c *Client) sendRenewPrepaidAsset(ctx context.Context, request *RenewReques
 
 	stage = "BuildURL"
 	u := uri.Clone(c.requestURL(ctx))
-	var pathParts [5]string
-	pathParts[0] = "/account/v1/billing-accounts/"
-	{
-		// Encode "accountKey" parameter.
-		e := uri.NewPathEncoder(uri.PathEncoderConfig{
-			Param:   "accountKey",
-			Style:   uri.PathStyleSimple,
-			Explode: false,
-		})
-		if err := func() error {
-			return e.EncodeValue(conv.StringToString(params.AccountKey))
-		}(); err != nil {
-			return res, errors.Wrap(err, "encode path")
-		}
-		encoded, err := e.Result()
-		if err != nil {
-			return res, errors.Wrap(err, "encode path")
-		}
-		pathParts[1] = encoded
-	}
-	pathParts[2] = "/prepaid-assets/"
-	{
-		// Encode "assetId" parameter.
-		e := uri.NewPathEncoder(uri.PathEncoderConfig{
-			Param:   "assetId",
-			Style:   uri.PathStyleSimple,
-			Explode: false,
-		})
-		if err := func() error {
-			return e.EncodeValue(conv.UUIDToString(params.AssetId))
-		}(); err != nil {
-			return res, errors.Wrap(err, "encode path")
-		}
-		encoded, err := e.Result()
-		if err != nil {
-			return res, errors.Wrap(err, "encode path")
-		}
-		pathParts[3] = encoded
-	}
-	pathParts[4] = "/renew"
+	var pathParts [1]string
+	pathParts[0] = "/account/v1/codes/preview"
 	uri.AddPathParts(u, pathParts[:]...)
 
 	stage = "EncodeRequest"
@@ -5463,7 +8470,7 @@ func (c *Client) sendRenewPrepaidAsset(ctx context.Context, request *RenewReques
 	if err != nil {
 		return res, errors.Wrap(err, "create request")
 	}
-	if err := encodeRenewPrepaidAssetRequest(request, r); err != nil {
+	if err := encodePreviewCodeRequest(request, r); err != nil {
 		return res, errors.Wrap(err, "encode request")
 	}
 
@@ -5471,14 +8478,14 @@ func (c *Client) sendRenewPrepaidAsset(ctx context.Context, request *RenewReques
 		type bitset = [1]uint8
 		var satisfied bitset
 		{
-			stage = "Security:BearerAuth"
-			switch err := c.securityBearerAuth(ctx, RenewPrepaidAssetOperation, r); {
+			stage = "Security:AccountAuth"
+			switch err := c.securityAccountAuth(ctx, PreviewCodeOperation, r); {
 			case err == nil: // if NO error
 				satisfied[0] |= 1 << 0
 			case errors.Is(err, ogenerrors.ErrSkipClientSecurity):
 				// Skip this security.
 			default:
-				return res, errors.Wrap(err, "security \"BearerAuth\"")
+				return res, errors.Wrap(err, "security \"AccountAuth\"")
 			}
 		}
 
@@ -5515,7 +8522,401 @@ func (c *Client) sendRenewPrepaidAsset(ctx context.Context, request *RenewReques
 	}()
 
 	stage = "DecodeResponse"
-	result, err := decodeRenewPrepaidAssetResponse(resp)
+	result, err := decodePreviewCodeResponse(resp)
+	if err != nil {
+		return res, errors.Wrap(err, "decode response")
+	}
+
+	return result, nil
+}
+
+// RedeemCode invokes redeem-code operation.
+//
+// A voucher code adds credit to the account. A discount code records the entitlement, which is then
+// applied to the next qualifying purchase.
+//
+// A code that has already been redeemed by this account is refused rather than redeemed a second time.
+//
+// POST /account/v1/codes/redeem
+func (c *Client) RedeemCode(ctx context.Context, request *CodeRedeem) (*CodeRedeemResult, error) {
+	res, err := c.sendRedeemCode(ctx, request)
+	return res, err
+}
+
+func (c *Client) sendRedeemCode(ctx context.Context, request *CodeRedeem) (res *CodeRedeemResult, err error) {
+	otelAttrs := []attribute.KeyValue{
+		otelogen.OperationID("redeem-code"),
+		semconv.HTTPRequestMethodKey.String("POST"),
+		semconv.URLTemplateKey.String("/account/v1/codes/redeem"),
+	}
+	otelAttrs = append(otelAttrs, c.cfg.Attributes...)
+
+	// Run stopwatch.
+	startTime := time.Now()
+	defer func() {
+		// Use floating point division here for higher precision (instead of Millisecond method).
+		elapsedDuration := time.Since(startTime)
+		c.duration.Record(ctx, float64(elapsedDuration)/float64(time.Millisecond), metric.WithAttributes(otelAttrs...))
+	}()
+
+	// Increment request counter.
+	c.requests.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
+
+	// Start a span for this request.
+	ctx, span := c.cfg.Tracer.Start(ctx, RedeemCodeOperation,
+		trace.WithAttributes(otelAttrs...),
+		clientSpanKind,
+	)
+	// Track stage for error reporting.
+	var stage string
+	defer func() {
+		if err != nil {
+			span.RecordError(err)
+			span.SetStatus(codes.Error, stage)
+			c.errors.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
+		}
+		span.End()
+	}()
+
+	stage = "BuildURL"
+	u := uri.Clone(c.requestURL(ctx))
+	var pathParts [1]string
+	pathParts[0] = "/account/v1/codes/redeem"
+	uri.AddPathParts(u, pathParts[:]...)
+
+	stage = "EncodeRequest"
+	r, err := ht.NewRequest(ctx, "POST", u)
+	if err != nil {
+		return res, errors.Wrap(err, "create request")
+	}
+	if err := encodeRedeemCodeRequest(request, r); err != nil {
+		return res, errors.Wrap(err, "encode request")
+	}
+
+	{
+		type bitset = [1]uint8
+		var satisfied bitset
+		{
+			stage = "Security:AccountAuth"
+			switch err := c.securityAccountAuth(ctx, RedeemCodeOperation, r); {
+			case err == nil: // if NO error
+				satisfied[0] |= 1 << 0
+			case errors.Is(err, ogenerrors.ErrSkipClientSecurity):
+				// Skip this security.
+			default:
+				return res, errors.Wrap(err, "security \"AccountAuth\"")
+			}
+		}
+
+		if ok := func() bool {
+		nextRequirement:
+			for _, requirement := range []bitset{
+				{0b00000001},
+			} {
+				for i, mask := range requirement {
+					if satisfied[i]&mask != mask {
+						continue nextRequirement
+					}
+				}
+				return true
+			}
+			return false
+		}(); !ok {
+			return res, ogenerrors.ErrSecurityRequirementIsNotSatisfied
+		}
+	}
+
+	stage = "SendRequest"
+	resp, err := c.cfg.Client.Do(r)
+	if err != nil {
+		return res, errors.Wrap(err, "do request")
+	}
+	body := resp.Body
+	defer func() {
+		// Drain the body to EOF before closing, so the underlying
+		// connection can be reused by the Transport regardless of the
+		// response status code. See https://github.com/ogen-go/ogen/issues/1670.
+		_, _ = io.Copy(io.Discard, body)
+		_ = body.Close()
+	}()
+
+	stage = "DecodeResponse"
+	result, err := decodeRedeemCodeResponse(resp)
+	if err != nil {
+		return res, errors.Wrap(err, "decode response")
+	}
+
+	return result, nil
+}
+
+// RenewSubscriptionItem invokes renew-subscription-item operation.
+//
+// Extends the paid period from its current end, not from today, so renewing early does not shorten
+// what has already been paid for.
+//
+// The price charged is the one in effect at the moment of renewal, which may differ from what was paid
+// for the current period.
+//
+// POST /account/v1/subscription-items/{itemId}/renew
+func (c *Client) RenewSubscriptionItem(ctx context.Context, request *RenewRequest, params RenewSubscriptionItemParams) (*PaymentResult, error) {
+	res, err := c.sendRenewSubscriptionItem(ctx, request, params)
+	return res, err
+}
+
+func (c *Client) sendRenewSubscriptionItem(ctx context.Context, request *RenewRequest, params RenewSubscriptionItemParams) (res *PaymentResult, err error) {
+	otelAttrs := []attribute.KeyValue{
+		otelogen.OperationID("renew-subscription-item"),
+		semconv.HTTPRequestMethodKey.String("POST"),
+		semconv.URLTemplateKey.String("/account/v1/subscription-items/{itemId}/renew"),
+	}
+	otelAttrs = append(otelAttrs, c.cfg.Attributes...)
+
+	// Run stopwatch.
+	startTime := time.Now()
+	defer func() {
+		// Use floating point division here for higher precision (instead of Millisecond method).
+		elapsedDuration := time.Since(startTime)
+		c.duration.Record(ctx, float64(elapsedDuration)/float64(time.Millisecond), metric.WithAttributes(otelAttrs...))
+	}()
+
+	// Increment request counter.
+	c.requests.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
+
+	// Start a span for this request.
+	ctx, span := c.cfg.Tracer.Start(ctx, RenewSubscriptionItemOperation,
+		trace.WithAttributes(otelAttrs...),
+		clientSpanKind,
+	)
+	// Track stage for error reporting.
+	var stage string
+	defer func() {
+		if err != nil {
+			span.RecordError(err)
+			span.SetStatus(codes.Error, stage)
+			c.errors.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
+		}
+		span.End()
+	}()
+
+	stage = "BuildURL"
+	u := uri.Clone(c.requestURL(ctx))
+	var pathParts [3]string
+	pathParts[0] = "/account/v1/subscription-items/"
+	{
+		// Encode "itemId" parameter.
+		e := uri.NewPathEncoder(uri.PathEncoderConfig{
+			Param:   "itemId",
+			Style:   uri.PathStyleSimple,
+			Explode: false,
+		})
+		if err := func() error {
+			return e.EncodeValue(conv.UUIDToString(params.ItemId))
+		}(); err != nil {
+			return res, errors.Wrap(err, "encode path")
+		}
+		encoded, err := e.Result()
+		if err != nil {
+			return res, errors.Wrap(err, "encode path")
+		}
+		pathParts[1] = encoded
+	}
+	pathParts[2] = "/renew"
+	uri.AddPathParts(u, pathParts[:]...)
+
+	stage = "EncodeRequest"
+	r, err := ht.NewRequest(ctx, "POST", u)
+	if err != nil {
+		return res, errors.Wrap(err, "create request")
+	}
+	if err := encodeRenewSubscriptionItemRequest(request, r); err != nil {
+		return res, errors.Wrap(err, "encode request")
+	}
+
+	{
+		type bitset = [1]uint8
+		var satisfied bitset
+		{
+			stage = "Security:AccountAuth"
+			switch err := c.securityAccountAuth(ctx, RenewSubscriptionItemOperation, r); {
+			case err == nil: // if NO error
+				satisfied[0] |= 1 << 0
+			case errors.Is(err, ogenerrors.ErrSkipClientSecurity):
+				// Skip this security.
+			default:
+				return res, errors.Wrap(err, "security \"AccountAuth\"")
+			}
+		}
+
+		if ok := func() bool {
+		nextRequirement:
+			for _, requirement := range []bitset{
+				{0b00000001},
+			} {
+				for i, mask := range requirement {
+					if satisfied[i]&mask != mask {
+						continue nextRequirement
+					}
+				}
+				return true
+			}
+			return false
+		}(); !ok {
+			return res, ogenerrors.ErrSecurityRequirementIsNotSatisfied
+		}
+	}
+
+	stage = "SendRequest"
+	resp, err := c.cfg.Client.Do(r)
+	if err != nil {
+		return res, errors.Wrap(err, "do request")
+	}
+	body := resp.Body
+	defer func() {
+		// Drain the body to EOF before closing, so the underlying
+		// connection can be reused by the Transport regardless of the
+		// response status code. See https://github.com/ogen-go/ogen/issues/1670.
+		_, _ = io.Copy(io.Discard, body)
+		_ = body.Close()
+	}()
+
+	stage = "DecodeResponse"
+	result, err := decodeRenewSubscriptionItemResponse(resp)
+	if err != nil {
+		return res, errors.Wrap(err, "decode response")
+	}
+
+	return result, nil
+}
+
+// SetAutoRenew invokes set-auto-renew operation.
+//
+// When on, the account balance is charged at the renewal date. Turning it off lets the current period
+// run to its end and stops the resource afterwards.
+//
+// PUT /account/v1/subscription-items/{itemId}/auto-renew
+func (c *Client) SetAutoRenew(ctx context.Context, request *AutoRenewSet, params SetAutoRenewParams) (*SubscriptionItem, error) {
+	res, err := c.sendSetAutoRenew(ctx, request, params)
+	return res, err
+}
+
+func (c *Client) sendSetAutoRenew(ctx context.Context, request *AutoRenewSet, params SetAutoRenewParams) (res *SubscriptionItem, err error) {
+	otelAttrs := []attribute.KeyValue{
+		otelogen.OperationID("set-auto-renew"),
+		semconv.HTTPRequestMethodKey.String("PUT"),
+		semconv.URLTemplateKey.String("/account/v1/subscription-items/{itemId}/auto-renew"),
+	}
+	otelAttrs = append(otelAttrs, c.cfg.Attributes...)
+
+	// Run stopwatch.
+	startTime := time.Now()
+	defer func() {
+		// Use floating point division here for higher precision (instead of Millisecond method).
+		elapsedDuration := time.Since(startTime)
+		c.duration.Record(ctx, float64(elapsedDuration)/float64(time.Millisecond), metric.WithAttributes(otelAttrs...))
+	}()
+
+	// Increment request counter.
+	c.requests.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
+
+	// Start a span for this request.
+	ctx, span := c.cfg.Tracer.Start(ctx, SetAutoRenewOperation,
+		trace.WithAttributes(otelAttrs...),
+		clientSpanKind,
+	)
+	// Track stage for error reporting.
+	var stage string
+	defer func() {
+		if err != nil {
+			span.RecordError(err)
+			span.SetStatus(codes.Error, stage)
+			c.errors.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
+		}
+		span.End()
+	}()
+
+	stage = "BuildURL"
+	u := uri.Clone(c.requestURL(ctx))
+	var pathParts [3]string
+	pathParts[0] = "/account/v1/subscription-items/"
+	{
+		// Encode "itemId" parameter.
+		e := uri.NewPathEncoder(uri.PathEncoderConfig{
+			Param:   "itemId",
+			Style:   uri.PathStyleSimple,
+			Explode: false,
+		})
+		if err := func() error {
+			return e.EncodeValue(conv.UUIDToString(params.ItemId))
+		}(); err != nil {
+			return res, errors.Wrap(err, "encode path")
+		}
+		encoded, err := e.Result()
+		if err != nil {
+			return res, errors.Wrap(err, "encode path")
+		}
+		pathParts[1] = encoded
+	}
+	pathParts[2] = "/auto-renew"
+	uri.AddPathParts(u, pathParts[:]...)
+
+	stage = "EncodeRequest"
+	r, err := ht.NewRequest(ctx, "PUT", u)
+	if err != nil {
+		return res, errors.Wrap(err, "create request")
+	}
+	if err := encodeSetAutoRenewRequest(request, r); err != nil {
+		return res, errors.Wrap(err, "encode request")
+	}
+
+	{
+		type bitset = [1]uint8
+		var satisfied bitset
+		{
+			stage = "Security:AccountAuth"
+			switch err := c.securityAccountAuth(ctx, SetAutoRenewOperation, r); {
+			case err == nil: // if NO error
+				satisfied[0] |= 1 << 0
+			case errors.Is(err, ogenerrors.ErrSkipClientSecurity):
+				// Skip this security.
+			default:
+				return res, errors.Wrap(err, "security \"AccountAuth\"")
+			}
+		}
+
+		if ok := func() bool {
+		nextRequirement:
+			for _, requirement := range []bitset{
+				{0b00000001},
+			} {
+				for i, mask := range requirement {
+					if satisfied[i]&mask != mask {
+						continue nextRequirement
+					}
+				}
+				return true
+			}
+			return false
+		}(); !ok {
+			return res, ogenerrors.ErrSecurityRequirementIsNotSatisfied
+		}
+	}
+
+	stage = "SendRequest"
+	resp, err := c.cfg.Client.Do(r)
+	if err != nil {
+		return res, errors.Wrap(err, "do request")
+	}
+	body := resp.Body
+	defer func() {
+		// Drain the body to EOF before closing, so the underlying
+		// connection can be reused by the Transport regardless of the
+		// response status code. See https://github.com/ogen-go/ogen/issues/1670.
+		_, _ = io.Copy(io.Discard, body)
+		_ = body.Close()
+	}()
+
+	stage = "DecodeResponse"
+	result, err := decodeSetAutoRenewResponse(resp)
 	if err != nil {
 		return res, errors.Wrap(err, "decode response")
 	}
@@ -5525,25 +8926,19 @@ func (c *Client) sendRenewPrepaidAsset(ctx context.Context, request *RenewReques
 
 // SetDefaultPaymentMethod invokes set-default-payment-method operation.
 //
-// Makes this the method an invoice is collected from.
+// Choose which method is used automatically.
 //
-// # It is stored at the provider, not here
-//
-// The charge itself reads that setting from the provider, so keeping a second copy here would create
-// two answers to the same question. When they disagree the visible symptom is that the account holder
-// changed the default and the charge still went to the old one.
-//
-// PUT /account/v1/billing-accounts/{accountKey}/payment-methods/{paymentMethodId}/default
-func (c *Client) SetDefaultPaymentMethod(ctx context.Context, params SetDefaultPaymentMethodParams) error {
-	_, err := c.sendSetDefaultPaymentMethod(ctx, params)
-	return err
+// PUT /account/v1/payment-methods/{paymentMethodId}/default
+func (c *Client) SetDefaultPaymentMethod(ctx context.Context, params SetDefaultPaymentMethodParams) (*PaymentMethod, error) {
+	res, err := c.sendSetDefaultPaymentMethod(ctx, params)
+	return res, err
 }
 
-func (c *Client) sendSetDefaultPaymentMethod(ctx context.Context, params SetDefaultPaymentMethodParams) (res *SetDefaultPaymentMethodNoContent, err error) {
+func (c *Client) sendSetDefaultPaymentMethod(ctx context.Context, params SetDefaultPaymentMethodParams) (res *PaymentMethod, err error) {
 	otelAttrs := []attribute.KeyValue{
 		otelogen.OperationID("set-default-payment-method"),
 		semconv.HTTPRequestMethodKey.String("PUT"),
-		semconv.URLTemplateKey.String("/account/v1/billing-accounts/{accountKey}/payment-methods/{paymentMethodId}/default"),
+		semconv.URLTemplateKey.String("/account/v1/payment-methods/{paymentMethodId}/default"),
 	}
 	otelAttrs = append(otelAttrs, c.cfg.Attributes...)
 
@@ -5576,17 +8971,17 @@ func (c *Client) sendSetDefaultPaymentMethod(ctx context.Context, params SetDefa
 
 	stage = "BuildURL"
 	u := uri.Clone(c.requestURL(ctx))
-	var pathParts [5]string
-	pathParts[0] = "/account/v1/billing-accounts/"
+	var pathParts [3]string
+	pathParts[0] = "/account/v1/payment-methods/"
 	{
-		// Encode "accountKey" parameter.
+		// Encode "paymentMethodId" parameter.
 		e := uri.NewPathEncoder(uri.PathEncoderConfig{
-			Param:   "accountKey",
+			Param:   "paymentMethodId",
 			Style:   uri.PathStyleSimple,
 			Explode: false,
 		})
 		if err := func() error {
-			return e.EncodeValue(conv.StringToString(params.AccountKey))
+			return e.EncodeValue(conv.UUIDToString(params.PaymentMethodId))
 		}(); err != nil {
 			return res, errors.Wrap(err, "encode path")
 		}
@@ -5596,26 +8991,7 @@ func (c *Client) sendSetDefaultPaymentMethod(ctx context.Context, params SetDefa
 		}
 		pathParts[1] = encoded
 	}
-	pathParts[2] = "/payment-methods/"
-	{
-		// Encode "paymentMethodId" parameter.
-		e := uri.NewPathEncoder(uri.PathEncoderConfig{
-			Param:   "paymentMethodId",
-			Style:   uri.PathStyleSimple,
-			Explode: false,
-		})
-		if err := func() error {
-			return e.EncodeValue(conv.StringToString(params.PaymentMethodId))
-		}(); err != nil {
-			return res, errors.Wrap(err, "encode path")
-		}
-		encoded, err := e.Result()
-		if err != nil {
-			return res, errors.Wrap(err, "encode path")
-		}
-		pathParts[3] = encoded
-	}
-	pathParts[4] = "/default"
+	pathParts[2] = "/default"
 	uri.AddPathParts(u, pathParts[:]...)
 
 	stage = "EncodeRequest"
@@ -5628,14 +9004,14 @@ func (c *Client) sendSetDefaultPaymentMethod(ctx context.Context, params SetDefa
 		type bitset = [1]uint8
 		var satisfied bitset
 		{
-			stage = "Security:BearerAuth"
-			switch err := c.securityBearerAuth(ctx, SetDefaultPaymentMethodOperation, r); {
+			stage = "Security:AccountAuth"
+			switch err := c.securityAccountAuth(ctx, SetDefaultPaymentMethodOperation, r); {
 			case err == nil: // if NO error
 				satisfied[0] |= 1 << 0
 			case errors.Is(err, ogenerrors.ErrSkipClientSecurity):
 				// Skip this security.
 			default:
-				return res, errors.Wrap(err, "security \"BearerAuth\"")
+				return res, errors.Wrap(err, "security \"AccountAuth\"")
 			}
 		}
 
@@ -5680,26 +9056,22 @@ func (c *Client) sendSetDefaultPaymentMethod(ctx context.Context, params SetDefa
 	return result, nil
 }
 
-// SetPrepaidAutoRenew invokes set-prepaid-auto-renew operation.
+// SetProjectAutoRenew invokes set-project-auto-renew operation.
 //
-// With it on, billing places the renewal order itself a few days before the period runs out, paying
-// from the account's balance.
+// Automatic renewal draws on the paying account's balance, which a project member may commit. Paying
+// by card requires the account owner and is done from the billing centre.
 //
-// Not enough balance is not an error here. The switch only says what to attempt; whether the money is
-// there is settled at renewal time, and the customer is told either way — told it renewed, or told
-// it could not and by when it will expire.
-//
-// PUT /account/v1/billing-accounts/{accountKey}/prepaid-assets/{assetId}/auto-renew
-func (c *Client) SetPrepaidAutoRenew(ctx context.Context, request *AutoRenewRequestBody, params SetPrepaidAutoRenewParams) (*PrepaidAsset, error) {
-	res, err := c.sendSetPrepaidAutoRenew(ctx, request, params)
+// PUT /api/v1/projects/{projectId}/subscription-items/{itemId}/auto-renew
+func (c *Client) SetProjectAutoRenew(ctx context.Context, request *AutoRenewSet, params SetProjectAutoRenewParams) (*SubscriptionItem, error) {
+	res, err := c.sendSetProjectAutoRenew(ctx, request, params)
 	return res, err
 }
 
-func (c *Client) sendSetPrepaidAutoRenew(ctx context.Context, request *AutoRenewRequestBody, params SetPrepaidAutoRenewParams) (res *PrepaidAsset, err error) {
+func (c *Client) sendSetProjectAutoRenew(ctx context.Context, request *AutoRenewSet, params SetProjectAutoRenewParams) (res *SubscriptionItem, err error) {
 	otelAttrs := []attribute.KeyValue{
-		otelogen.OperationID("set-prepaid-auto-renew"),
+		otelogen.OperationID("set-project-auto-renew"),
 		semconv.HTTPRequestMethodKey.String("PUT"),
-		semconv.URLTemplateKey.String("/account/v1/billing-accounts/{accountKey}/prepaid-assets/{assetId}/auto-renew"),
+		semconv.URLTemplateKey.String("/api/v1/projects/{projectId}/subscription-items/{itemId}/auto-renew"),
 	}
 	otelAttrs = append(otelAttrs, c.cfg.Attributes...)
 
@@ -5715,7 +9087,7 @@ func (c *Client) sendSetPrepaidAutoRenew(ctx context.Context, request *AutoRenew
 	c.requests.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
 
 	// Start a span for this request.
-	ctx, span := c.cfg.Tracer.Start(ctx, SetPrepaidAutoRenewOperation,
+	ctx, span := c.cfg.Tracer.Start(ctx, SetProjectAutoRenewOperation,
 		trace.WithAttributes(otelAttrs...),
 		clientSpanKind,
 	)
@@ -5733,16 +9105,16 @@ func (c *Client) sendSetPrepaidAutoRenew(ctx context.Context, request *AutoRenew
 	stage = "BuildURL"
 	u := uri.Clone(c.requestURL(ctx))
 	var pathParts [5]string
-	pathParts[0] = "/account/v1/billing-accounts/"
+	pathParts[0] = "/api/v1/projects/"
 	{
-		// Encode "accountKey" parameter.
+		// Encode "projectId" parameter.
 		e := uri.NewPathEncoder(uri.PathEncoderConfig{
-			Param:   "accountKey",
+			Param:   "projectId",
 			Style:   uri.PathStyleSimple,
 			Explode: false,
 		})
 		if err := func() error {
-			return e.EncodeValue(conv.StringToString(params.AccountKey))
+			return e.EncodeValue(conv.UUIDToString(params.ProjectId))
 		}(); err != nil {
 			return res, errors.Wrap(err, "encode path")
 		}
@@ -5752,16 +9124,16 @@ func (c *Client) sendSetPrepaidAutoRenew(ctx context.Context, request *AutoRenew
 		}
 		pathParts[1] = encoded
 	}
-	pathParts[2] = "/prepaid-assets/"
+	pathParts[2] = "/subscription-items/"
 	{
-		// Encode "assetId" parameter.
+		// Encode "itemId" parameter.
 		e := uri.NewPathEncoder(uri.PathEncoderConfig{
-			Param:   "assetId",
+			Param:   "itemId",
 			Style:   uri.PathStyleSimple,
 			Explode: false,
 		})
 		if err := func() error {
-			return e.EncodeValue(conv.UUIDToString(params.AssetId))
+			return e.EncodeValue(conv.UUIDToString(params.ItemId))
 		}(); err != nil {
 			return res, errors.Wrap(err, "encode path")
 		}
@@ -5779,7 +9151,7 @@ func (c *Client) sendSetPrepaidAutoRenew(ctx context.Context, request *AutoRenew
 	if err != nil {
 		return res, errors.Wrap(err, "create request")
 	}
-	if err := encodeSetPrepaidAutoRenewRequest(request, r); err != nil {
+	if err := encodeSetProjectAutoRenewRequest(request, r); err != nil {
 		return res, errors.Wrap(err, "encode request")
 	}
 
@@ -5787,14 +9159,14 @@ func (c *Client) sendSetPrepaidAutoRenew(ctx context.Context, request *AutoRenew
 		type bitset = [1]uint8
 		var satisfied bitset
 		{
-			stage = "Security:BearerAuth"
-			switch err := c.securityBearerAuth(ctx, SetPrepaidAutoRenewOperation, r); {
+			stage = "Security:ProjectAuth"
+			switch err := c.securityProjectAuth(ctx, SetProjectAutoRenewOperation, r); {
 			case err == nil: // if NO error
 				satisfied[0] |= 1 << 0
 			case errors.Is(err, ogenerrors.ErrSkipClientSecurity):
 				// Skip this security.
 			default:
-				return res, errors.Wrap(err, "security \"BearerAuth\"")
+				return res, errors.Wrap(err, "security \"ProjectAuth\"")
 			}
 		}
 
@@ -5831,7 +9203,7 @@ func (c *Client) sendSetPrepaidAutoRenew(ctx context.Context, request *AutoRenew
 	}()
 
 	stage = "DecodeResponse"
-	result, err := decodeSetPrepaidAutoRenewResponse(resp)
+	result, err := decodeSetProjectAutoRenewResponse(resp)
 	if err != nil {
 		return res, errors.Wrap(err, "decode response")
 	}
@@ -5839,40 +9211,27 @@ func (c *Client) sendSetPrepaidAutoRenew(ctx context.Context, request *AutoRenew
 	return result, nil
 }
 
-// StartPaymentMethodSetup invokes start-payment-method-setup operation.
+// SetProjectPayer invokes set-project-payer operation.
 //
-// Starts a session for adding a method, and returns the secret the browser needs to mount the
-// provider's own form.
+// Charges already recorded remain with the account that was paying when they occurred, and are still
+// invoiced to it. Metered resources are settled up to the moment of the change.
 //
-// # The form is embedded, not a redirect
+// Periods already paid for are unaffected; renewals are charged to the new account.
 //
-// The returned `client_secret` initialises the provider's JavaScript, which renders its form inside an
-// iframe on this platform's own page. No card data reaches this platform — the number goes from the
-// browser straight to the provider, exactly as it would on a redirect — but the account holder never
-// leaves the console.
+// The request is refused while the current account has an unpaid invoice, and — once the project
+// holds subscriptions — while the new account uses a different currency.
 //
-// A redirect would take them to a page with someone else's branding in the middle of adding a payment
-// method, which is the moment they are most likely to abandon it.
-//
-// # This is a prerequisite for buying a plan, not a convenience
-//
-// A plan is charged by invoice, and the invoice is collected from a method on file. Discovering that
-// none exists at purchase time turns a missing payment method into a rejection whose wording is about
-// something else entirely.
-//
-// It is not a prerequisite for topping up: a top-up collects the money there and then.
-//
-// POST /account/v1/billing-accounts/{accountKey}/payment-methods
-func (c *Client) StartPaymentMethodSetup(ctx context.Context, params StartPaymentMethodSetupParams) (*PaymentMethodSetupSession, error) {
-	res, err := c.sendStartPaymentMethodSetup(ctx, params)
+// PUT /account/v1/projects/{projectId}/billing-account
+func (c *Client) SetProjectPayer(ctx context.Context, request *ProjectPayerSet, params SetProjectPayerParams) (*ProjectBinding, error) {
+	res, err := c.sendSetProjectPayer(ctx, request, params)
 	return res, err
 }
 
-func (c *Client) sendStartPaymentMethodSetup(ctx context.Context, params StartPaymentMethodSetupParams) (res *PaymentMethodSetupSession, err error) {
+func (c *Client) sendSetProjectPayer(ctx context.Context, request *ProjectPayerSet, params SetProjectPayerParams) (res *ProjectBinding, err error) {
 	otelAttrs := []attribute.KeyValue{
-		otelogen.OperationID("start-payment-method-setup"),
-		semconv.HTTPRequestMethodKey.String("POST"),
-		semconv.URLTemplateKey.String("/account/v1/billing-accounts/{accountKey}/payment-methods"),
+		otelogen.OperationID("set-project-payer"),
+		semconv.HTTPRequestMethodKey.String("PUT"),
+		semconv.URLTemplateKey.String("/account/v1/projects/{projectId}/billing-account"),
 	}
 	otelAttrs = append(otelAttrs, c.cfg.Attributes...)
 
@@ -5888,7 +9247,7 @@ func (c *Client) sendStartPaymentMethodSetup(ctx context.Context, params StartPa
 	c.requests.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
 
 	// Start a span for this request.
-	ctx, span := c.cfg.Tracer.Start(ctx, StartPaymentMethodSetupOperation,
+	ctx, span := c.cfg.Tracer.Start(ctx, SetProjectPayerOperation,
 		trace.WithAttributes(otelAttrs...),
 		clientSpanKind,
 	)
@@ -5906,314 +9265,7 @@ func (c *Client) sendStartPaymentMethodSetup(ctx context.Context, params StartPa
 	stage = "BuildURL"
 	u := uri.Clone(c.requestURL(ctx))
 	var pathParts [3]string
-	pathParts[0] = "/account/v1/billing-accounts/"
-	{
-		// Encode "accountKey" parameter.
-		e := uri.NewPathEncoder(uri.PathEncoderConfig{
-			Param:   "accountKey",
-			Style:   uri.PathStyleSimple,
-			Explode: false,
-		})
-		if err := func() error {
-			return e.EncodeValue(conv.StringToString(params.AccountKey))
-		}(); err != nil {
-			return res, errors.Wrap(err, "encode path")
-		}
-		encoded, err := e.Result()
-		if err != nil {
-			return res, errors.Wrap(err, "encode path")
-		}
-		pathParts[1] = encoded
-	}
-	pathParts[2] = "/payment-methods"
-	uri.AddPathParts(u, pathParts[:]...)
-
-	stage = "EncodeRequest"
-	r, err := ht.NewRequest(ctx, "POST", u)
-	if err != nil {
-		return res, errors.Wrap(err, "create request")
-	}
-
-	{
-		type bitset = [1]uint8
-		var satisfied bitset
-		{
-			stage = "Security:BearerAuth"
-			switch err := c.securityBearerAuth(ctx, StartPaymentMethodSetupOperation, r); {
-			case err == nil: // if NO error
-				satisfied[0] |= 1 << 0
-			case errors.Is(err, ogenerrors.ErrSkipClientSecurity):
-				// Skip this security.
-			default:
-				return res, errors.Wrap(err, "security \"BearerAuth\"")
-			}
-		}
-
-		if ok := func() bool {
-		nextRequirement:
-			for _, requirement := range []bitset{
-				{0b00000001},
-			} {
-				for i, mask := range requirement {
-					if satisfied[i]&mask != mask {
-						continue nextRequirement
-					}
-				}
-				return true
-			}
-			return false
-		}(); !ok {
-			return res, ogenerrors.ErrSecurityRequirementIsNotSatisfied
-		}
-	}
-
-	stage = "SendRequest"
-	resp, err := c.cfg.Client.Do(r)
-	if err != nil {
-		return res, errors.Wrap(err, "do request")
-	}
-	body := resp.Body
-	defer func() {
-		// Drain the body to EOF before closing, so the underlying
-		// connection can be reused by the Transport regardless of the
-		// response status code. See https://github.com/ogen-go/ogen/issues/1670.
-		_, _ = io.Copy(io.Discard, body)
-		_ = body.Close()
-	}()
-
-	stage = "DecodeResponse"
-	result, err := decodeStartPaymentMethodSetupResponse(resp)
-	if err != nil {
-		return res, errors.Wrap(err, "decode response")
-	}
-
-	return result, nil
-}
-
-// StartTopUp invokes start-top-up operation.
-//
-// Begins adding money to this account. Returns a URL to send the browser to; the card is entered
-// there, on the payment provider's own page.
-//
-// No card data ever reaches this platform, in any field, in any log. That is the entire reason this
-// returns a redirect instead of accepting card details.
-//
-// Credit is not added here. It is added once the payment provider confirms the money arrived, which
-// happens out of band and usually within seconds. The balance is unchanged when this call returns, and
-// polling it immediately will show the old figure.
-//
-// That ordering is deliberate. Credit is spendable as soon as it exists, so anything added before the
-// charge succeeds is money the holder can spend against a payment that then fails.
-//
-// Abandoning the page costs nothing; nothing is created on the account until the money arrives.
-//
-// POST /account/v1/billing-accounts/{accountKey}/top-ups
-func (c *Client) StartTopUp(ctx context.Context, request *StartTopUpRequestBody, params StartTopUpParams) (*TopUpSession, error) {
-	res, err := c.sendStartTopUp(ctx, request, params)
-	return res, err
-}
-
-func (c *Client) sendStartTopUp(ctx context.Context, request *StartTopUpRequestBody, params StartTopUpParams) (res *TopUpSession, err error) {
-	otelAttrs := []attribute.KeyValue{
-		otelogen.OperationID("start-top-up"),
-		semconv.HTTPRequestMethodKey.String("POST"),
-		semconv.URLTemplateKey.String("/account/v1/billing-accounts/{accountKey}/top-ups"),
-	}
-	otelAttrs = append(otelAttrs, c.cfg.Attributes...)
-
-	// Run stopwatch.
-	startTime := time.Now()
-	defer func() {
-		// Use floating point division here for higher precision (instead of Millisecond method).
-		elapsedDuration := time.Since(startTime)
-		c.duration.Record(ctx, float64(elapsedDuration)/float64(time.Millisecond), metric.WithAttributes(otelAttrs...))
-	}()
-
-	// Increment request counter.
-	c.requests.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
-
-	// Start a span for this request.
-	ctx, span := c.cfg.Tracer.Start(ctx, StartTopUpOperation,
-		trace.WithAttributes(otelAttrs...),
-		clientSpanKind,
-	)
-	// Track stage for error reporting.
-	var stage string
-	defer func() {
-		if err != nil {
-			span.RecordError(err)
-			span.SetStatus(codes.Error, stage)
-			c.errors.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
-		}
-		span.End()
-	}()
-
-	stage = "BuildURL"
-	u := uri.Clone(c.requestURL(ctx))
-	var pathParts [3]string
-	pathParts[0] = "/account/v1/billing-accounts/"
-	{
-		// Encode "accountKey" parameter.
-		e := uri.NewPathEncoder(uri.PathEncoderConfig{
-			Param:   "accountKey",
-			Style:   uri.PathStyleSimple,
-			Explode: false,
-		})
-		if err := func() error {
-			return e.EncodeValue(conv.StringToString(params.AccountKey))
-		}(); err != nil {
-			return res, errors.Wrap(err, "encode path")
-		}
-		encoded, err := e.Result()
-		if err != nil {
-			return res, errors.Wrap(err, "encode path")
-		}
-		pathParts[1] = encoded
-	}
-	pathParts[2] = "/top-ups"
-	uri.AddPathParts(u, pathParts[:]...)
-
-	stage = "EncodeRequest"
-	r, err := ht.NewRequest(ctx, "POST", u)
-	if err != nil {
-		return res, errors.Wrap(err, "create request")
-	}
-	if err := encodeStartTopUpRequest(request, r); err != nil {
-		return res, errors.Wrap(err, "encode request")
-	}
-
-	{
-		type bitset = [1]uint8
-		var satisfied bitset
-		{
-			stage = "Security:BearerAuth"
-			switch err := c.securityBearerAuth(ctx, StartTopUpOperation, r); {
-			case err == nil: // if NO error
-				satisfied[0] |= 1 << 0
-			case errors.Is(err, ogenerrors.ErrSkipClientSecurity):
-				// Skip this security.
-			default:
-				return res, errors.Wrap(err, "security \"BearerAuth\"")
-			}
-		}
-
-		if ok := func() bool {
-		nextRequirement:
-			for _, requirement := range []bitset{
-				{0b00000001},
-			} {
-				for i, mask := range requirement {
-					if satisfied[i]&mask != mask {
-						continue nextRequirement
-					}
-				}
-				return true
-			}
-			return false
-		}(); !ok {
-			return res, ogenerrors.ErrSecurityRequirementIsNotSatisfied
-		}
-	}
-
-	stage = "SendRequest"
-	resp, err := c.cfg.Client.Do(r)
-	if err != nil {
-		return res, errors.Wrap(err, "do request")
-	}
-	body := resp.Body
-	defer func() {
-		// Drain the body to EOF before closing, so the underlying
-		// connection can be reused by the Transport regardless of the
-		// response status code. See https://github.com/ogen-go/ogen/issues/1670.
-		_, _ = io.Copy(io.Discard, body)
-		_ = body.Close()
-	}()
-
-	stage = "DecodeResponse"
-	result, err := decodeStartTopUpResponse(resp)
-	if err != nil {
-		return res, errors.Wrap(err, "decode response")
-	}
-
-	return result, nil
-}
-
-// UnbindProjectFromBillingAccount invokes unbind-project-from-billing-account operation.
-//
-// Unbinds the project from this account. Nothing pays for it afterwards, and everything in it is
-// refused admission until some account takes it on — no new machines, no forwarded requests.
-//
-// That consequence is the reason this exists rather than an argument against it: a project bound to
-// the wrong account has no other way out, and moving it to another of the caller's accounts is not a
-// correction when the answer is that this account should not be paying for it at all.
-//
-// Charges already accrued stay where they are. They were incurred while this account held the project,
-// and an invoice has to keep pointing at what it was based on.
-//
-// DELETE /account/v1/billing-accounts/{accountKey}/projects/{projectId}
-func (c *Client) UnbindProjectFromBillingAccount(ctx context.Context, params UnbindProjectFromBillingAccountParams) error {
-	_, err := c.sendUnbindProjectFromBillingAccount(ctx, params)
-	return err
-}
-
-func (c *Client) sendUnbindProjectFromBillingAccount(ctx context.Context, params UnbindProjectFromBillingAccountParams) (res *UnbindProjectFromBillingAccountNoContent, err error) {
-	otelAttrs := []attribute.KeyValue{
-		otelogen.OperationID("unbind-project-from-billing-account"),
-		semconv.HTTPRequestMethodKey.String("DELETE"),
-		semconv.URLTemplateKey.String("/account/v1/billing-accounts/{accountKey}/projects/{projectId}"),
-	}
-	otelAttrs = append(otelAttrs, c.cfg.Attributes...)
-
-	// Run stopwatch.
-	startTime := time.Now()
-	defer func() {
-		// Use floating point division here for higher precision (instead of Millisecond method).
-		elapsedDuration := time.Since(startTime)
-		c.duration.Record(ctx, float64(elapsedDuration)/float64(time.Millisecond), metric.WithAttributes(otelAttrs...))
-	}()
-
-	// Increment request counter.
-	c.requests.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
-
-	// Start a span for this request.
-	ctx, span := c.cfg.Tracer.Start(ctx, UnbindProjectFromBillingAccountOperation,
-		trace.WithAttributes(otelAttrs...),
-		clientSpanKind,
-	)
-	// Track stage for error reporting.
-	var stage string
-	defer func() {
-		if err != nil {
-			span.RecordError(err)
-			span.SetStatus(codes.Error, stage)
-			c.errors.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
-		}
-		span.End()
-	}()
-
-	stage = "BuildURL"
-	u := uri.Clone(c.requestURL(ctx))
-	var pathParts [4]string
-	pathParts[0] = "/account/v1/billing-accounts/"
-	{
-		// Encode "accountKey" parameter.
-		e := uri.NewPathEncoder(uri.PathEncoderConfig{
-			Param:   "accountKey",
-			Style:   uri.PathStyleSimple,
-			Explode: false,
-		})
-		if err := func() error {
-			return e.EncodeValue(conv.StringToString(params.AccountKey))
-		}(); err != nil {
-			return res, errors.Wrap(err, "encode path")
-		}
-		encoded, err := e.Result()
-		if err != nil {
-			return res, errors.Wrap(err, "encode path")
-		}
-		pathParts[1] = encoded
-	}
-	pathParts[2] = "/projects/"
+	pathParts[0] = "/account/v1/projects/"
 	{
 		// Encode "projectId" parameter.
 		e := uri.NewPathEncoder(uri.PathEncoderConfig{
@@ -6230,28 +9282,32 @@ func (c *Client) sendUnbindProjectFromBillingAccount(ctx context.Context, params
 		if err != nil {
 			return res, errors.Wrap(err, "encode path")
 		}
-		pathParts[3] = encoded
+		pathParts[1] = encoded
 	}
+	pathParts[2] = "/billing-account"
 	uri.AddPathParts(u, pathParts[:]...)
 
 	stage = "EncodeRequest"
-	r, err := ht.NewRequest(ctx, "DELETE", u)
+	r, err := ht.NewRequest(ctx, "PUT", u)
 	if err != nil {
 		return res, errors.Wrap(err, "create request")
+	}
+	if err := encodeSetProjectPayerRequest(request, r); err != nil {
+		return res, errors.Wrap(err, "encode request")
 	}
 
 	{
 		type bitset = [1]uint8
 		var satisfied bitset
 		{
-			stage = "Security:BearerAuth"
-			switch err := c.securityBearerAuth(ctx, UnbindProjectFromBillingAccountOperation, r); {
+			stage = "Security:AccountAuth"
+			switch err := c.securityAccountAuth(ctx, SetProjectPayerOperation, r); {
 			case err == nil: // if NO error
 				satisfied[0] |= 1 << 0
 			case errors.Is(err, ogenerrors.ErrSkipClientSecurity):
 				// Skip this security.
 			default:
-				return res, errors.Wrap(err, "security \"BearerAuth\"")
+				return res, errors.Wrap(err, "security \"AccountAuth\"")
 			}
 		}
 
@@ -6288,7 +9344,281 @@ func (c *Client) sendUnbindProjectFromBillingAccount(ctx context.Context, params
 	}()
 
 	stage = "DecodeResponse"
-	result, err := decodeUnbindProjectFromBillingAccountResponse(resp)
+	result, err := decodeSetProjectPayerResponse(resp)
+	if err != nil {
+		return res, errors.Wrap(err, "decode response")
+	}
+
+	return result, nil
+}
+
+// SettleProjectUsage invokes settle-project-usage operation.
+//
+// Metered usage is normally invoiced at the end of the month. This issues an invoice for everything
+// charged to the project so far, to the account currently paying for it.
+//
+// Use it before unbinding a project, or to obtain a settled figure part-way through a month. Calling
+// it again when nothing is outstanding has no effect.
+//
+// POST /account/v1/projects/{projectId}/billing-account/settle
+func (c *Client) SettleProjectUsage(ctx context.Context, params SettleProjectUsageParams) (*SettleResult, error) {
+	res, err := c.sendSettleProjectUsage(ctx, params)
+	return res, err
+}
+
+func (c *Client) sendSettleProjectUsage(ctx context.Context, params SettleProjectUsageParams) (res *SettleResult, err error) {
+	otelAttrs := []attribute.KeyValue{
+		otelogen.OperationID("settle-project-usage"),
+		semconv.HTTPRequestMethodKey.String("POST"),
+		semconv.URLTemplateKey.String("/account/v1/projects/{projectId}/billing-account/settle"),
+	}
+	otelAttrs = append(otelAttrs, c.cfg.Attributes...)
+
+	// Run stopwatch.
+	startTime := time.Now()
+	defer func() {
+		// Use floating point division here for higher precision (instead of Millisecond method).
+		elapsedDuration := time.Since(startTime)
+		c.duration.Record(ctx, float64(elapsedDuration)/float64(time.Millisecond), metric.WithAttributes(otelAttrs...))
+	}()
+
+	// Increment request counter.
+	c.requests.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
+
+	// Start a span for this request.
+	ctx, span := c.cfg.Tracer.Start(ctx, SettleProjectUsageOperation,
+		trace.WithAttributes(otelAttrs...),
+		clientSpanKind,
+	)
+	// Track stage for error reporting.
+	var stage string
+	defer func() {
+		if err != nil {
+			span.RecordError(err)
+			span.SetStatus(codes.Error, stage)
+			c.errors.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
+		}
+		span.End()
+	}()
+
+	stage = "BuildURL"
+	u := uri.Clone(c.requestURL(ctx))
+	var pathParts [3]string
+	pathParts[0] = "/account/v1/projects/"
+	{
+		// Encode "projectId" parameter.
+		e := uri.NewPathEncoder(uri.PathEncoderConfig{
+			Param:   "projectId",
+			Style:   uri.PathStyleSimple,
+			Explode: false,
+		})
+		if err := func() error {
+			return e.EncodeValue(conv.UUIDToString(params.ProjectId))
+		}(); err != nil {
+			return res, errors.Wrap(err, "encode path")
+		}
+		encoded, err := e.Result()
+		if err != nil {
+			return res, errors.Wrap(err, "encode path")
+		}
+		pathParts[1] = encoded
+	}
+	pathParts[2] = "/billing-account/settle"
+	uri.AddPathParts(u, pathParts[:]...)
+
+	stage = "EncodeRequest"
+	r, err := ht.NewRequest(ctx, "POST", u)
+	if err != nil {
+		return res, errors.Wrap(err, "create request")
+	}
+
+	{
+		type bitset = [1]uint8
+		var satisfied bitset
+		{
+			stage = "Security:AccountAuth"
+			switch err := c.securityAccountAuth(ctx, SettleProjectUsageOperation, r); {
+			case err == nil: // if NO error
+				satisfied[0] |= 1 << 0
+			case errors.Is(err, ogenerrors.ErrSkipClientSecurity):
+				// Skip this security.
+			default:
+				return res, errors.Wrap(err, "security \"AccountAuth\"")
+			}
+		}
+
+		if ok := func() bool {
+		nextRequirement:
+			for _, requirement := range []bitset{
+				{0b00000001},
+			} {
+				for i, mask := range requirement {
+					if satisfied[i]&mask != mask {
+						continue nextRequirement
+					}
+				}
+				return true
+			}
+			return false
+		}(); !ok {
+			return res, ogenerrors.ErrSecurityRequirementIsNotSatisfied
+		}
+	}
+
+	stage = "SendRequest"
+	resp, err := c.cfg.Client.Do(r)
+	if err != nil {
+		return res, errors.Wrap(err, "do request")
+	}
+	body := resp.Body
+	defer func() {
+		// Drain the body to EOF before closing, so the underlying
+		// connection can be reused by the Transport regardless of the
+		// response status code. See https://github.com/ogen-go/ogen/issues/1670.
+		_, _ = io.Copy(io.Discard, body)
+		_ = body.Close()
+	}()
+
+	stage = "DecodeResponse"
+	result, err := decodeSettleProjectUsageResponse(resp)
+	if err != nil {
+		return res, errors.Wrap(err, "decode response")
+	}
+
+	return result, nil
+}
+
+// UnbindProjectPayer invokes unbind-project-payer operation.
+//
+// Permitted only when the project has nothing left to charge: no resources accruing charges, no
+// subscriptions still running, no usage awaiting invoicing, and no unpaid invoice on the account.
+//
+// Usage that has not yet been invoiced is settled by calling
+// `POST /account/v1/projects/{projectId}/billing-account/settle` first.
+//
+// After this the project cannot create resources until an account is chosen again.
+//
+// DELETE /account/v1/projects/{projectId}/billing-account
+func (c *Client) UnbindProjectPayer(ctx context.Context, params UnbindProjectPayerParams) error {
+	_, err := c.sendUnbindProjectPayer(ctx, params)
+	return err
+}
+
+func (c *Client) sendUnbindProjectPayer(ctx context.Context, params UnbindProjectPayerParams) (res *UnbindProjectPayerNoContent, err error) {
+	otelAttrs := []attribute.KeyValue{
+		otelogen.OperationID("unbind-project-payer"),
+		semconv.HTTPRequestMethodKey.String("DELETE"),
+		semconv.URLTemplateKey.String("/account/v1/projects/{projectId}/billing-account"),
+	}
+	otelAttrs = append(otelAttrs, c.cfg.Attributes...)
+
+	// Run stopwatch.
+	startTime := time.Now()
+	defer func() {
+		// Use floating point division here for higher precision (instead of Millisecond method).
+		elapsedDuration := time.Since(startTime)
+		c.duration.Record(ctx, float64(elapsedDuration)/float64(time.Millisecond), metric.WithAttributes(otelAttrs...))
+	}()
+
+	// Increment request counter.
+	c.requests.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
+
+	// Start a span for this request.
+	ctx, span := c.cfg.Tracer.Start(ctx, UnbindProjectPayerOperation,
+		trace.WithAttributes(otelAttrs...),
+		clientSpanKind,
+	)
+	// Track stage for error reporting.
+	var stage string
+	defer func() {
+		if err != nil {
+			span.RecordError(err)
+			span.SetStatus(codes.Error, stage)
+			c.errors.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
+		}
+		span.End()
+	}()
+
+	stage = "BuildURL"
+	u := uri.Clone(c.requestURL(ctx))
+	var pathParts [3]string
+	pathParts[0] = "/account/v1/projects/"
+	{
+		// Encode "projectId" parameter.
+		e := uri.NewPathEncoder(uri.PathEncoderConfig{
+			Param:   "projectId",
+			Style:   uri.PathStyleSimple,
+			Explode: false,
+		})
+		if err := func() error {
+			return e.EncodeValue(conv.UUIDToString(params.ProjectId))
+		}(); err != nil {
+			return res, errors.Wrap(err, "encode path")
+		}
+		encoded, err := e.Result()
+		if err != nil {
+			return res, errors.Wrap(err, "encode path")
+		}
+		pathParts[1] = encoded
+	}
+	pathParts[2] = "/billing-account"
+	uri.AddPathParts(u, pathParts[:]...)
+
+	stage = "EncodeRequest"
+	r, err := ht.NewRequest(ctx, "DELETE", u)
+	if err != nil {
+		return res, errors.Wrap(err, "create request")
+	}
+
+	{
+		type bitset = [1]uint8
+		var satisfied bitset
+		{
+			stage = "Security:AccountAuth"
+			switch err := c.securityAccountAuth(ctx, UnbindProjectPayerOperation, r); {
+			case err == nil: // if NO error
+				satisfied[0] |= 1 << 0
+			case errors.Is(err, ogenerrors.ErrSkipClientSecurity):
+				// Skip this security.
+			default:
+				return res, errors.Wrap(err, "security \"AccountAuth\"")
+			}
+		}
+
+		if ok := func() bool {
+		nextRequirement:
+			for _, requirement := range []bitset{
+				{0b00000001},
+			} {
+				for i, mask := range requirement {
+					if satisfied[i]&mask != mask {
+						continue nextRequirement
+					}
+				}
+				return true
+			}
+			return false
+		}(); !ok {
+			return res, ogenerrors.ErrSecurityRequirementIsNotSatisfied
+		}
+	}
+
+	stage = "SendRequest"
+	resp, err := c.cfg.Client.Do(r)
+	if err != nil {
+		return res, errors.Wrap(err, "do request")
+	}
+	body := resp.Body
+	defer func() {
+		// Drain the body to EOF before closing, so the underlying
+		// connection can be reused by the Transport regardless of the
+		// response status code. See https://github.com/ogen-go/ogen/issues/1670.
+		_, _ = io.Copy(io.Discard, body)
+		_ = body.Close()
+	}()
+
+	stage = "DecodeResponse"
+	result, err := decodeUnbindProjectPayerResponse(resp)
 	if err != nil {
 		return res, errors.Wrap(err, "decode response")
 	}
@@ -6298,23 +9628,22 @@ func (c *Client) sendUnbindProjectFromBillingAccount(ctx context.Context, params
 
 // UpdateBillingAccount invokes update-billing-account operation.
 //
-// Changes the display name. Nothing else about the account can be changed here.
+// The legal name, address and tax identifier are copied onto each invoice when it is issued. Changing
+// them here affects invoices issued afterwards, not those already sent.
 //
-// The key is not among the fields and never will be: ownership is stated by the key, and invoices
-// already issued refer to it. The name is what tells two accounts apart in a list, so a mistake made
-// while creating one is otherwise permanent.
+// The currency cannot be changed.
 //
-// PUT /account/v1/billing-accounts/{accountKey}
-func (c *Client) UpdateBillingAccount(ctx context.Context, request *UpdateBillingAccountRequestBody, params UpdateBillingAccountParams) (*BillingAccount, error) {
+// PATCH /account/v1/billing-accounts/{accountId}
+func (c *Client) UpdateBillingAccount(ctx context.Context, request *BillingAccountUpdate, params UpdateBillingAccountParams) (*BillingAccount, error) {
 	res, err := c.sendUpdateBillingAccount(ctx, request, params)
 	return res, err
 }
 
-func (c *Client) sendUpdateBillingAccount(ctx context.Context, request *UpdateBillingAccountRequestBody, params UpdateBillingAccountParams) (res *BillingAccount, err error) {
+func (c *Client) sendUpdateBillingAccount(ctx context.Context, request *BillingAccountUpdate, params UpdateBillingAccountParams) (res *BillingAccount, err error) {
 	otelAttrs := []attribute.KeyValue{
 		otelogen.OperationID("update-billing-account"),
-		semconv.HTTPRequestMethodKey.String("PUT"),
-		semconv.URLTemplateKey.String("/account/v1/billing-accounts/{accountKey}"),
+		semconv.HTTPRequestMethodKey.String("PATCH"),
+		semconv.URLTemplateKey.String("/account/v1/billing-accounts/{accountId}"),
 	}
 	otelAttrs = append(otelAttrs, c.cfg.Attributes...)
 
@@ -6350,14 +9679,14 @@ func (c *Client) sendUpdateBillingAccount(ctx context.Context, request *UpdateBi
 	var pathParts [2]string
 	pathParts[0] = "/account/v1/billing-accounts/"
 	{
-		// Encode "accountKey" parameter.
+		// Encode "accountId" parameter.
 		e := uri.NewPathEncoder(uri.PathEncoderConfig{
-			Param:   "accountKey",
+			Param:   "accountId",
 			Style:   uri.PathStyleSimple,
 			Explode: false,
 		})
 		if err := func() error {
-			return e.EncodeValue(conv.StringToString(params.AccountKey))
+			return e.EncodeValue(conv.Int64ToString(params.AccountId))
 		}(); err != nil {
 			return res, errors.Wrap(err, "encode path")
 		}
@@ -6370,7 +9699,7 @@ func (c *Client) sendUpdateBillingAccount(ctx context.Context, request *UpdateBi
 	uri.AddPathParts(u, pathParts[:]...)
 
 	stage = "EncodeRequest"
-	r, err := ht.NewRequest(ctx, "PUT", u)
+	r, err := ht.NewRequest(ctx, "PATCH", u)
 	if err != nil {
 		return res, errors.Wrap(err, "create request")
 	}
@@ -6382,14 +9711,14 @@ func (c *Client) sendUpdateBillingAccount(ctx context.Context, request *UpdateBi
 		type bitset = [1]uint8
 		var satisfied bitset
 		{
-			stage = "Security:BearerAuth"
-			switch err := c.securityBearerAuth(ctx, UpdateBillingAccountOperation, r); {
+			stage = "Security:AccountAuth"
+			switch err := c.securityAccountAuth(ctx, UpdateBillingAccountOperation, r); {
 			case err == nil: // if NO error
 				satisfied[0] |= 1 << 0
 			case errors.Is(err, ogenerrors.ErrSkipClientSecurity):
 				// Skip this security.
 			default:
-				return res, errors.Wrap(err, "security \"BearerAuth\"")
+				return res, errors.Wrap(err, "security \"AccountAuth\"")
 			}
 		}
 

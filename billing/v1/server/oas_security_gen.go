@@ -13,11 +13,14 @@ import (
 
 // SecurityHandler is handler for security parameters.
 type SecurityHandler interface {
-	// HandleBearerAuth handles bearerAuth security.
-	// The account token: the one obtained by signing in at auth.leaflow.net. It says who you are and names
-	// no project, which is what this API needs — a billing account belongs to a person, not to a
-	// project. A project token is never accepted here.
-	HandleBearerAuth(ctx context.Context, operationName OperationName, t BearerAuth) (context.Context, error)
+	// HandleAccountAuth handles accountAuth security.
+	// An account token, obtained by signing in at auth.leaflow.net. A project token is not accepted on
+	// `/account/v1/`.
+	HandleAccountAuth(ctx context.Context, operationName OperationName, t AccountAuth) (context.Context, error)
+	// HandleProjectAuth handles projectAuth security.
+	// A project token issued by IAM for a project the caller belongs to. Accepted only on
+	// `/api/v1/projects/{projectId}/`.
+	HandleProjectAuth(ctx context.Context, operationName OperationName, t ProjectAuth) (context.Context, error)
 }
 
 func findAuthorization(h http.Header, prefix string) (string, bool) {
@@ -35,58 +38,61 @@ func findAuthorization(h http.Header, prefix string) (string, bool) {
 	return "", false
 }
 
-// operationRolesBearerAuth is a private map storing roles per operation.
-var operationRolesBearerAuth = map[string][]string{
-	BindProjectToBillingAccountOperation:       []string{},
-	CancelSubscriptionOperation:                []string{},
-	CreateBillingAccountOperation:              []string{},
-	GetBillingAccountOperation:                 []string{},
-	GetChargeUsageOperation:                    []string{},
-	GetInvoiceOperation:                        []string{},
-	GetOrderOperation:                          []string{},
-	KeepSubscriptionOperation:                  []string{},
-	ListAccountRefundsOperation:                []string{},
-	ListAccountVouchersOperation:               []string{},
-	ListBillingAccountsOperation:               []string{},
-	ListChargesOperation:                       []string{},
-	ListCreditTransactionsOperation:            []string{},
-	ListInvoicesOperation:                      []string{},
-	ListOffersOperation:                        []string{},
-	ListOrdersOperation:                        []string{},
-	ListPaymentMethodsOperation:                []string{},
-	ListPrepaidAssetsOperation:                 []string{},
-	ListTopUpsOperation:                        []string{},
-	PreviewPromotionCodeOperation:              []string{},
-	PurchaseOfferOperation:                     []string{},
-	QuoteProjectUsageOperation:                 []string{},
-	QuoteUsageOperation:                        []string{},
-	ReadBillingAccountBalanceOperation:         []string{},
-	ReadBillingAccountBalanceMovementOperation: []string{},
-	ReadProjectBillingAccountOperation:         []string{},
-	ReadSubscriptionOperation:                  []string{},
-	ReadTopUpOperation:                         []string{},
-	RemovePaymentMethodOperation:               []string{},
-	RenewPrepaidAssetOperation:                 []string{},
-	SetDefaultPaymentMethodOperation:           []string{},
-	SetPrepaidAutoRenewOperation:               []string{},
-	StartPaymentMethodSetupOperation:           []string{},
-	StartTopUpOperation:                        []string{},
-	UnbindProjectFromBillingAccountOperation:   []string{},
-	UpdateBillingAccountOperation:              []string{},
+// operationRolesAccountAuth is a private map storing roles per operation.
+var operationRolesAccountAuth = map[string][]string{
+	CreateBillingAccountOperation:      []string{},
+	CreatePaymentMethodSetupOperation:  []string{},
+	CreateTopUpOperation:               []string{},
+	DeletePaymentMethodOperation:       []string{},
+	FindProjectPayerOperation:          []string{},
+	GetAccountBalanceOperation:         []string{},
+	GetBillingAccountOperation:         []string{},
+	GetInvoiceOperation:                []string{},
+	GetOrderOperation:                  []string{},
+	GetTopUpOperation:                  []string{},
+	ListAllocationsOperation:           []string{},
+	ListAllowanceConsumptionsOperation: []string{},
+	ListAllowancesOperation:            []string{},
+	ListBillingAccountsOperation:       []string{},
+	ListCreditGrantsOperation:          []string{},
+	ListEntitlementsOperation:          []string{},
+	ListInvoiceItemsOperation:          []string{},
+	ListInvoicesOperation:              []string{},
+	ListOrderItemsOperation:            []string{},
+	ListOrdersOperation:                []string{},
+	ListPaidProjectsOperation:          []string{},
+	ListPaymentMethodsOperation:        []string{},
+	ListRefundsOperation:               []string{},
+	ListSubscriptionItemsOperation:     []string{},
+	ListSubscriptionsOperation:         []string{},
+	ListTopUpsOperation:                []string{},
+	ListTransactionsOperation:          []string{},
+	ListUsageChargesOperation:          []string{},
+	PayInvoiceOperation:                []string{},
+	PayOrderOperation:                  []string{},
+	PreviewCodeOperation:               []string{},
+	RedeemCodeOperation:                []string{},
+	RenewSubscriptionItemOperation:     []string{},
+	SetAutoRenewOperation:              []string{},
+	SetDefaultPaymentMethodOperation:   []string{},
+	SetProjectPayerOperation:           []string{},
+	SettleProjectUsageOperation:        []string{},
+	UnbindProjectPayerOperation:        []string{},
+	UpdateBillingAccountOperation:      []string{},
 }
 
-// GetRolesForBearerAuth returns the required roles for the given operation.
+// GetRolesForAccountAuth returns the required roles for the given operation.
 //
 // This is useful for authorization scenarios where you need to know which roles
 // are required for an operation.
 //
 // Example:
 //
-//	requiredRoles := GetRolesForBearerAuth(AddPetOperation)
+//	requiredRoles := GetRolesForAccountAuth(AddPetOperation)
 //
 // Returns nil if the operation has no role requirements or if the operation is unknown.
-func GetRolesForBearerAuth(operation string) []string {
-	roles, ok := operationRolesBearerAuth[operation]
+func GetRolesForAccountAuth(operation string) []string {
+	roles, ok := operationRolesAccountAuth[operation]
 	if !ok {
 		return nil
 	}
@@ -96,15 +102,70 @@ func GetRolesForBearerAuth(operation string) []string {
 	return result
 }
 
-func (s *Server) securityBearerAuth(ctx context.Context, operationName OperationName, req *http.Request) (context.Context, bool, error) {
-	var t BearerAuth
+// operationRolesProjectAuth is a private map storing roles per operation.
+var operationRolesProjectAuth = map[string][]string{
+	CreateProjectQuoteOperation:           []string{},
+	GetProjectBillingAccountOperation:     []string{},
+	GetProjectOrderOperation:              []string{},
+	ListProjectActiveResourcesOperation:   []string{},
+	ListProjectAllowancesOperation:        []string{},
+	ListProjectEntitlementsOperation:      []string{},
+	ListProjectOrderItemsOperation:        []string{},
+	ListProjectOrdersOperation:            []string{},
+	ListProjectSpendOperation:             []string{},
+	ListProjectSubscriptionItemsOperation: []string{},
+	ListProjectSubscriptionsOperation:     []string{},
+	ListProjectUsageChargesOperation:      []string{},
+	SetProjectAutoRenewOperation:          []string{},
+}
+
+// GetRolesForProjectAuth returns the required roles for the given operation.
+//
+// This is useful for authorization scenarios where you need to know which roles
+// are required for an operation.
+//
+// Example:
+//
+//	requiredRoles := GetRolesForProjectAuth(AddPetOperation)
+//
+// Returns nil if the operation has no role requirements or if the operation is unknown.
+func GetRolesForProjectAuth(operation string) []string {
+	roles, ok := operationRolesProjectAuth[operation]
+	if !ok {
+		return nil
+	}
+	// Return a copy to prevent external modification
+	result := make([]string, len(roles))
+	copy(result, roles)
+	return result
+}
+
+func (s *Server) securityAccountAuth(ctx context.Context, operationName OperationName, req *http.Request) (context.Context, bool, error) {
+	var t AccountAuth
 	token, ok := findAuthorization(req.Header, "Bearer")
 	if !ok {
 		return ctx, false, nil
 	}
 	t.Token = token
-	t.Roles = operationRolesBearerAuth[operationName]
-	rctx, err := s.sec.HandleBearerAuth(ctx, operationName, t)
+	t.Roles = operationRolesAccountAuth[operationName]
+	rctx, err := s.sec.HandleAccountAuth(ctx, operationName, t)
+	if errors.Is(err, ogenerrors.ErrSkipServerSecurity) {
+		return nil, false, nil
+	} else if err != nil {
+		return nil, false, err
+	}
+	return rctx, true, err
+}
+
+func (s *Server) securityProjectAuth(ctx context.Context, operationName OperationName, req *http.Request) (context.Context, bool, error) {
+	var t ProjectAuth
+	token, ok := findAuthorization(req.Header, "Bearer")
+	if !ok {
+		return ctx, false, nil
+	}
+	t.Token = token
+	t.Roles = operationRolesProjectAuth[operationName]
+	rctx, err := s.sec.HandleProjectAuth(ctx, operationName, t)
 	if errors.Is(err, ogenerrors.ErrSkipServerSecurity) {
 		return nil, false, nil
 	} else if err != nil {
@@ -115,17 +176,28 @@ func (s *Server) securityBearerAuth(ctx context.Context, operationName Operation
 
 // SecuritySource is provider of security values (tokens, passwords, etc.).
 type SecuritySource interface {
-	// BearerAuth provides bearerAuth security value.
-	// The account token: the one obtained by signing in at auth.leaflow.net. It says who you are and names
-	// no project, which is what this API needs — a billing account belongs to a person, not to a
-	// project. A project token is never accepted here.
-	BearerAuth(ctx context.Context, operationName OperationName) (BearerAuth, error)
+	// AccountAuth provides accountAuth security value.
+	// An account token, obtained by signing in at auth.leaflow.net. A project token is not accepted on
+	// `/account/v1/`.
+	AccountAuth(ctx context.Context, operationName OperationName) (AccountAuth, error)
+	// ProjectAuth provides projectAuth security value.
+	// A project token issued by IAM for a project the caller belongs to. Accepted only on
+	// `/api/v1/projects/{projectId}/`.
+	ProjectAuth(ctx context.Context, operationName OperationName) (ProjectAuth, error)
 }
 
-func (s *Client) securityBearerAuth(ctx context.Context, operationName OperationName, req *http.Request) error {
-	t, err := s.sec.BearerAuth(ctx, operationName)
+func (s *Client) securityAccountAuth(ctx context.Context, operationName OperationName, req *http.Request) error {
+	t, err := s.sec.AccountAuth(ctx, operationName)
 	if err != nil {
-		return errors.Wrap(err, "security source \"BearerAuth\"")
+		return errors.Wrap(err, "security source \"AccountAuth\"")
+	}
+	req.Header.Set("Authorization", "Bearer "+t.Token)
+	return nil
+}
+func (s *Client) securityProjectAuth(ctx context.Context, operationName OperationName, req *http.Request) error {
+	t, err := s.sec.ProjectAuth(ctx, operationName)
+	if err != nil {
+		return errors.Wrap(err, "security source \"ProjectAuth\"")
 	}
 	req.Header.Set("Authorization", "Bearer "+t.Token)
 	return nil
