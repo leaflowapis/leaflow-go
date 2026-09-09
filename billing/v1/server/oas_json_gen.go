@@ -2302,12 +2302,24 @@ func (s *BillingAccount) encodeFields(e *jx.Encoder) {
 		s.Status.Encode(e)
 	}
 	{
+		if s.GraceAmount.Set {
+			e.FieldStart("grace_amount")
+			s.GraceAmount.Encode(e)
+		}
+	}
+	{
+		if s.GracePeriodSeconds.Set {
+			e.FieldStart("grace_period_seconds")
+			s.GracePeriodSeconds.Encode(e)
+		}
+	}
+	{
 		e.FieldStart("created_at")
 		json.EncodeDateTime(e, s.CreatedAt)
 	}
 }
 
-var jsonFieldsNameOfBillingAccount = [14]string{
+var jsonFieldsNameOfBillingAccount = [16]string{
 	0:  "id",
 	1:  "name",
 	2:  "legal_name",
@@ -2321,7 +2333,9 @@ var jsonFieldsNameOfBillingAccount = [14]string{
 	10: "tax_id",
 	11: "currency",
 	12: "status",
-	13: "created_at",
+	13: "grace_amount",
+	14: "grace_period_seconds",
+	15: "created_at",
 }
 
 // Decode decodes BillingAccount from json.
@@ -2467,8 +2481,28 @@ func (s *BillingAccount) Decode(d *jx.Decoder) error {
 			}(); err != nil {
 				return errors.Wrap(err, "decode field \"status\"")
 			}
+		case "grace_amount":
+			if err := func() error {
+				s.GraceAmount.Reset()
+				if err := s.GraceAmount.Decode(d); err != nil {
+					return err
+				}
+				return nil
+			}(); err != nil {
+				return errors.Wrap(err, "decode field \"grace_amount\"")
+			}
+		case "grace_period_seconds":
+			if err := func() error {
+				s.GracePeriodSeconds.Reset()
+				if err := s.GracePeriodSeconds.Decode(d); err != nil {
+					return err
+				}
+				return nil
+			}(); err != nil {
+				return errors.Wrap(err, "decode field \"grace_period_seconds\"")
+			}
 		case "created_at":
-			requiredBitSet[1] |= 1 << 5
+			requiredBitSet[1] |= 1 << 7
 			if err := func() error {
 				v, err := json.DecodeDateTime(d)
 				s.CreatedAt = v
@@ -2490,7 +2524,7 @@ func (s *BillingAccount) Decode(d *jx.Decoder) error {
 	var failures []validate.FieldError
 	for i, mask := range [2]uint8{
 		0b00000001,
-		0b00111000,
+		0b10011000,
 	} {
 		if result := (requiredBitSet[i] & mask) ^ mask; result != 0 {
 			// Mask only required fields and check equality to mask using XOR.

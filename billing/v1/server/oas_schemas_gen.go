@@ -1050,9 +1050,15 @@ type BillingAccount struct {
 	AddressCountry OptString `json:"address_country"`
 	TaxID          OptString `json:"tax_id"`
 	// Fixed when the account was opened.
-	Currency  string               `json:"currency"`
-	Status    BillingAccountStatus `json:"status"`
-	CreatedAt time.Time            `json:"created_at"`
+	Currency string               `json:"currency"`
+	Status   BillingAccountStatus `json:"status"`
+	// How far past the suspension threshold this account may go before its resources are suspended. "0"
+	// means none: the account is suspended as soon as it crosses the threshold.
+	GraceAmount OptString `json:"grace_amount"`
+	// How long this account has to top up after crossing the suspension threshold. 0 means none. Whichever
+	// runs out first — this or grace_amount — ends the grace.
+	GracePeriodSeconds OptInt64  `json:"grace_period_seconds"`
+	CreatedAt          time.Time `json:"created_at"`
 }
 
 // GetID returns the value of ID.
@@ -1118,6 +1124,16 @@ func (s *BillingAccount) GetCurrency() string {
 // GetStatus returns the value of Status.
 func (s *BillingAccount) GetStatus() BillingAccountStatus {
 	return s.Status
+}
+
+// GetGraceAmount returns the value of GraceAmount.
+func (s *BillingAccount) GetGraceAmount() OptString {
+	return s.GraceAmount
+}
+
+// GetGracePeriodSeconds returns the value of GracePeriodSeconds.
+func (s *BillingAccount) GetGracePeriodSeconds() OptInt64 {
+	return s.GracePeriodSeconds
 }
 
 // GetCreatedAt returns the value of CreatedAt.
@@ -1188,6 +1204,16 @@ func (s *BillingAccount) SetCurrency(val string) {
 // SetStatus sets the value of Status.
 func (s *BillingAccount) SetStatus(val BillingAccountStatus) {
 	s.Status = val
+}
+
+// SetGraceAmount sets the value of GraceAmount.
+func (s *BillingAccount) SetGraceAmount(val OptString) {
+	s.GraceAmount = val
+}
+
+// SetGracePeriodSeconds sets the value of GracePeriodSeconds.
+func (s *BillingAccount) SetGracePeriodSeconds(val OptInt64) {
+	s.GracePeriodSeconds = val
 }
 
 // SetCreatedAt sets the value of CreatedAt.

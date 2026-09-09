@@ -1145,7 +1145,15 @@ type BillingAccount struct {
 
 	// Email Where invoices are sent.
 	Email *string `json:"email,omitempty"`
-	Id    int64   `json:"id"`
+
+	// GraceAmount How far past the suspension threshold this account may go before its resources are
+	// suspended. "0" means none: the account is suspended as soon as it crosses the threshold.
+	GraceAmount *string `json:"grace_amount,omitempty"`
+
+	// GracePeriodSeconds How long this account has to top up after crossing the suspension threshold.
+	// 0 means none. Whichever runs out first — this or grace_amount — ends the grace.
+	GracePeriodSeconds *int64 `json:"grace_period_seconds,omitempty"`
+	Id                 int64  `json:"id"`
 
 	// LegalName The name invoices are made out to. Copied onto each invoice when it is issued.
 	LegalName *string `json:"legal_name,omitempty"`
