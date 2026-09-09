@@ -1968,7 +1968,11 @@ type Quote struct {
 	Lines    []QuoteLineResult   `json:"lines,omitempty"`
 
 	// Total What would be owed in total. Amounts to be returned are not netted off it.
-	Total Money `json:"total"`
+	//
+	// Null when any line could not be priced. What would be owed is not knowable then, and a
+	// total that silently left the unpriced lines out would read as a smaller bill rather than
+	// an incomplete one — the per-line `priced` flag is easy to skip, a missing total is not.
+	Total *Money `json:"total,omitempty"`
 
 	// TotalRefundable What would be returned in total.
 	TotalRefundable *Money `json:"total_refundable,omitempty"`

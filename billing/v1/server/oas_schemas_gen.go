@@ -5597,6 +5597,74 @@ func (o OptNilInt) Or(d int) int {
 	return d
 }
 
+// NewOptNilMoney returns new OptNilMoney with value set to v.
+func NewOptNilMoney(v Money) OptNilMoney {
+	return OptNilMoney{
+		Value: v,
+		Set:   true,
+	}
+}
+
+// OptNilMoney is optional nullable Money.
+type OptNilMoney struct {
+	Value Money
+	Set   bool
+	Null  bool
+}
+
+// IsSet returns true if OptNilMoney was set.
+func (o OptNilMoney) IsSet() bool { return o.Set }
+
+// Reset unsets value.
+func (o *OptNilMoney) Reset() {
+	var v Money
+	o.Value = v
+	o.Set = false
+	o.Null = false
+}
+
+// SetTo sets value to v.
+func (o *OptNilMoney) SetTo(v Money) {
+	o.Set = true
+	o.Null = false
+	o.Value = v
+}
+
+// IsNull returns true if value is Null.
+func (o OptNilMoney) IsNull() bool { return o.Null }
+
+// SetToNull sets value to null.
+func (o *OptNilMoney) SetToNull() {
+	o.Set = true
+	o.Null = true
+	var v Money
+	o.Value = v
+}
+
+// IsEmpty returns true if the field was omitted from the payload (not Set and not Null).
+func (o OptNilMoney) IsEmpty() bool {
+	return !o.Set && !o.Null
+}
+
+// Get returns value and boolean that denotes whether value was set.
+func (o OptNilMoney) Get() (v Money, ok bool) {
+	if o.Null {
+		return v, false
+	}
+	if !o.Set {
+		return v, false
+	}
+	return o.Value, true
+}
+
+// Or returns value if set, or given parameter if does not.
+func (o OptNilMoney) Or(d Money) Money {
+	if v, ok := o.Get(); ok {
+		return v
+	}
+	return d
+}
+
 // NewOptNilString returns new OptNilString with value set to v.
 func NewOptNilString(v string) OptNilString {
 	return OptNilString{
@@ -7514,7 +7582,11 @@ type Quote struct {
 	Lines   []QuoteLineResult   `json:"lines"`
 	Changes []QuoteChangeResult `json:"changes"`
 	// What would be owed in total. Amounts to be returned are not netted off it.
-	Total Money `json:"total"`
+	//
+	// Null when any line could not be priced. What would be owed is not knowable then, and a total that
+	// silently left the unpriced lines out would read as a smaller bill rather than an incomplete one —
+	// the per-line `priced` flag is easy to skip, a missing total is not.
+	Total OptNilMoney `json:"total"`
 	// What would be returned in total.
 	TotalRefundable OptMoney `json:"total_refundable"`
 	Currency        string   `json:"currency"`
@@ -7531,7 +7603,7 @@ func (s *Quote) GetChanges() []QuoteChangeResult {
 }
 
 // GetTotal returns the value of Total.
-func (s *Quote) GetTotal() Money {
+func (s *Quote) GetTotal() OptNilMoney {
 	return s.Total
 }
 
@@ -7556,7 +7628,7 @@ func (s *Quote) SetChanges(val []QuoteChangeResult) {
 }
 
 // SetTotal sets the value of Total.
-func (s *Quote) SetTotal(val Money) {
+func (s *Quote) SetTotal(val OptNilMoney) {
 	s.Total = val
 }
 
