@@ -72,6 +72,7 @@ var operationRolesAccountAuth = map[string][]string{
 	ListUsageChargesOperation:          []string{},
 	PayInvoiceOperation:                []string{},
 	PayOrderOperation:                  []string{},
+	PayTogetherOperation:               []string{},
 	PreviewCodeOperation:               []string{},
 	RedeemCodeOperation:                []string{},
 	RenewSubscriptionItemOperation:     []string{},

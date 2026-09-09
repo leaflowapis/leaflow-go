@@ -6769,6 +6769,58 @@ func (s *PayRequest) SetReturnURL(val OptString) {
 	s.ReturnURL = val
 }
 
+// Name at least one invoice or order. They must all belong to the same account and share its currency;
+// anything else is refused rather than partly paid.
+// Ref: #/components/schemas/PayTogetherRequest
+type PayTogetherRequest struct {
+	InvoiceIds []uuid.UUID `json:"invoice_ids"`
+	OrderIds   []uuid.UUID `json:"order_ids"`
+	ReturnURL  OptString   `json:"return_url"`
+	// Required when the provider is involved, because that is where the money moves. The same key returns
+	// the same checkout address instead of opening a second one.
+	IdempotencyKey OptString `json:"idempotency_key"`
+}
+
+// GetInvoiceIds returns the value of InvoiceIds.
+func (s *PayTogetherRequest) GetInvoiceIds() []uuid.UUID {
+	return s.InvoiceIds
+}
+
+// GetOrderIds returns the value of OrderIds.
+func (s *PayTogetherRequest) GetOrderIds() []uuid.UUID {
+	return s.OrderIds
+}
+
+// GetReturnURL returns the value of ReturnURL.
+func (s *PayTogetherRequest) GetReturnURL() OptString {
+	return s.ReturnURL
+}
+
+// GetIdempotencyKey returns the value of IdempotencyKey.
+func (s *PayTogetherRequest) GetIdempotencyKey() OptString {
+	return s.IdempotencyKey
+}
+
+// SetInvoiceIds sets the value of InvoiceIds.
+func (s *PayTogetherRequest) SetInvoiceIds(val []uuid.UUID) {
+	s.InvoiceIds = val
+}
+
+// SetOrderIds sets the value of OrderIds.
+func (s *PayTogetherRequest) SetOrderIds(val []uuid.UUID) {
+	s.OrderIds = val
+}
+
+// SetReturnURL sets the value of ReturnURL.
+func (s *PayTogetherRequest) SetReturnURL(val OptString) {
+	s.ReturnURL = val
+}
+
+// SetIdempotencyKey sets the value of IdempotencyKey.
+func (s *PayTogetherRequest) SetIdempotencyKey(val OptString) {
+	s.IdempotencyKey = val
+}
+
 // Ref: #/components/schemas/PaymentMethod
 type PaymentMethod struct {
 	ID               uuid.UUID           `json:"id"`

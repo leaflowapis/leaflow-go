@@ -31,10 +31,10 @@ var (
 	rn19AllowedHeaders = map[string]string{
 		"GET": "Authorization",
 	}
-	rn82AllowedHeaders = map[string]string{
+	rn84AllowedHeaders = map[string]string{
 		"POST": "Authorization,Content-Type",
 	}
-	rn84AllowedHeaders = map[string]string{
+	rn86AllowedHeaders = map[string]string{
 		"POST": "Authorization,Content-Type",
 	}
 	rn50AllowedHeaders = map[string]string{
@@ -82,8 +82,11 @@ var (
 	rn12AllowedHeaders = map[string]string{
 		"DELETE": "Authorization",
 	}
-	rn90AllowedHeaders = map[string]string{
+	rn92AllowedHeaders = map[string]string{
 		"PUT": "Authorization",
+	}
+	rn82AllowedHeaders = map[string]string{
+		"POST": "Authorization,Content-Type",
 	}
 	rn58AllowedHeaders = map[string]string{
 		"GET": "Authorization",
@@ -93,7 +96,7 @@ var (
 		"GET":    "Authorization",
 		"PUT":    "Authorization,Content-Type",
 	}
-	rn94AllowedHeaders = map[string]string{
+	rn96AllowedHeaders = map[string]string{
 		"POST": "Authorization",
 	}
 	rn72AllowedHeaders = map[string]string{
@@ -103,10 +106,10 @@ var (
 	rn73AllowedHeaders = map[string]string{
 		"GET": "Authorization",
 	}
-	rn89AllowedHeaders = map[string]string{
+	rn91AllowedHeaders = map[string]string{
 		"PUT": "Authorization,Content-Type",
 	}
-	rn87AllowedHeaders = map[string]string{
+	rn89AllowedHeaders = map[string]string{
 		"POST": "Authorization,Content-Type",
 	}
 	rn75AllowedHeaders = map[string]string{
@@ -155,7 +158,7 @@ var (
 	rn68AllowedHeaders = map[string]string{
 		"GET": "Authorization",
 	}
-	rn93AllowedHeaders = map[string]string{
+	rn95AllowedHeaders = map[string]string{
 		"PUT": "Authorization,Content-Type",
 	}
 	rn70AllowedHeaders = map[string]string{
@@ -507,7 +510,7 @@ func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 									default:
 										s.notAllowed(w, r, notAllowedParams{
 											allowedMethods: "POST",
-											allowedHeaders: rn82AllowedHeaders,
+											allowedHeaders: rn84AllowedHeaders,
 											acceptPost:     "application/json",
 											acceptPatch:    "",
 										})
@@ -532,7 +535,7 @@ func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 									default:
 										s.notAllowed(w, r, notAllowedParams{
 											allowedMethods: "POST",
-											allowedHeaders: rn84AllowedHeaders,
+											allowedHeaders: rn86AllowedHeaders,
 											acceptPost:     "application/json",
 											acceptPatch:    "",
 										})
@@ -923,88 +926,34 @@ func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 							break
 						}
 						switch elem[0] {
-						case 'a': // Prefix: "ayment-methods"
+						case 'a': // Prefix: "ayment"
 
-							if l := len("ayment-methods"); len(elem) >= l && elem[0:l] == "ayment-methods" {
+							if l := len("ayment"); len(elem) >= l && elem[0:l] == "ayment" {
 								elem = elem[l:]
 							} else {
 								break
 							}
 
 							if len(elem) == 0 {
-								switch r.Method {
-								case "GET":
-									s.handleListPaymentMethodsRequest([0]string{}, elemIsEscaped, w, r)
-								default:
-									s.notAllowed(w, r, notAllowedParams{
-										allowedMethods: "GET",
-										allowedHeaders: rn59AllowedHeaders,
-										acceptPost:     "",
-										acceptPatch:    "",
-									})
-								}
-
-								return
+								break
 							}
 							switch elem[0] {
-							case '/': // Prefix: "/"
+							case '-': // Prefix: "-methods"
 
-								if l := len("/"); len(elem) >= l && elem[0:l] == "/" {
+								if l := len("-methods"); len(elem) >= l && elem[0:l] == "-methods" {
 									elem = elem[l:]
 								} else {
 									break
 								}
 
 								if len(elem) == 0 {
-									break
-								}
-								switch elem[0] {
-								case 's': // Prefix: "setup"
-									origElem := elem
-									if l := len("setup"); len(elem) >= l && elem[0:l] == "setup" {
-										elem = elem[l:]
-									} else {
-										break
-									}
-
-									if len(elem) == 0 {
-										// Leaf node.
-										switch r.Method {
-										case "POST":
-											s.handleCreatePaymentMethodSetupRequest([0]string{}, elemIsEscaped, w, r)
-										default:
-											s.notAllowed(w, r, notAllowedParams{
-												allowedMethods: "POST",
-												allowedHeaders: rn5AllowedHeaders,
-												acceptPost:     "application/json",
-												acceptPatch:    "",
-											})
-										}
-
-										return
-									}
-
-									elem = origElem
-								}
-								// Param: "paymentMethodId"
-								// Match until "/"
-								idx := strings.IndexByte(elem, '/')
-								if idx < 0 {
-									idx = len(elem)
-								}
-								args[0] = elem[:idx]
-								elem = elem[idx:]
-
-								if len(elem) == 0 {
 									switch r.Method {
-									case "DELETE":
-										s.handleDeletePaymentMethodRequest([1]string{
-											args[0],
-										}, elemIsEscaped, w, r)
+									case "GET":
+										s.handleListPaymentMethodsRequest([0]string{}, elemIsEscaped, w, r)
 									default:
 										s.notAllowed(w, r, notAllowedParams{
-											allowedMethods: "DELETE",
-											allowedHeaders: rn12AllowedHeaders,
+											allowedMethods: "GET",
+											allowedHeaders: rn59AllowedHeaders,
 											acceptPost:     "",
 											acceptPatch:    "",
 										})
@@ -1013,25 +962,64 @@ func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 									return
 								}
 								switch elem[0] {
-								case '/': // Prefix: "/default"
+								case '/': // Prefix: "/"
 
-									if l := len("/default"); len(elem) >= l && elem[0:l] == "/default" {
+									if l := len("/"); len(elem) >= l && elem[0:l] == "/" {
 										elem = elem[l:]
 									} else {
 										break
 									}
 
 									if len(elem) == 0 {
-										// Leaf node.
+										break
+									}
+									switch elem[0] {
+									case 's': // Prefix: "setup"
+										origElem := elem
+										if l := len("setup"); len(elem) >= l && elem[0:l] == "setup" {
+											elem = elem[l:]
+										} else {
+											break
+										}
+
+										if len(elem) == 0 {
+											// Leaf node.
+											switch r.Method {
+											case "POST":
+												s.handleCreatePaymentMethodSetupRequest([0]string{}, elemIsEscaped, w, r)
+											default:
+												s.notAllowed(w, r, notAllowedParams{
+													allowedMethods: "POST",
+													allowedHeaders: rn5AllowedHeaders,
+													acceptPost:     "application/json",
+													acceptPatch:    "",
+												})
+											}
+
+											return
+										}
+
+										elem = origElem
+									}
+									// Param: "paymentMethodId"
+									// Match until "/"
+									idx := strings.IndexByte(elem, '/')
+									if idx < 0 {
+										idx = len(elem)
+									}
+									args[0] = elem[:idx]
+									elem = elem[idx:]
+
+									if len(elem) == 0 {
 										switch r.Method {
-										case "PUT":
-											s.handleSetDefaultPaymentMethodRequest([1]string{
+										case "DELETE":
+											s.handleDeletePaymentMethodRequest([1]string{
 												args[0],
 											}, elemIsEscaped, w, r)
 										default:
 											s.notAllowed(w, r, notAllowedParams{
-												allowedMethods: "PUT",
-												allowedHeaders: rn90AllowedHeaders,
+												allowedMethods: "DELETE",
+												allowedHeaders: rn12AllowedHeaders,
 												acceptPost:     "",
 												acceptPatch:    "",
 											})
@@ -1039,7 +1027,61 @@ func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 
 										return
 									}
+									switch elem[0] {
+									case '/': // Prefix: "/default"
 
+										if l := len("/default"); len(elem) >= l && elem[0:l] == "/default" {
+											elem = elem[l:]
+										} else {
+											break
+										}
+
+										if len(elem) == 0 {
+											// Leaf node.
+											switch r.Method {
+											case "PUT":
+												s.handleSetDefaultPaymentMethodRequest([1]string{
+													args[0],
+												}, elemIsEscaped, w, r)
+											default:
+												s.notAllowed(w, r, notAllowedParams{
+													allowedMethods: "PUT",
+													allowedHeaders: rn92AllowedHeaders,
+													acceptPost:     "",
+													acceptPatch:    "",
+												})
+											}
+
+											return
+										}
+
+									}
+
+								}
+
+							case 's': // Prefix: "s"
+
+								if l := len("s"); len(elem) >= l && elem[0:l] == "s" {
+									elem = elem[l:]
+								} else {
+									break
+								}
+
+								if len(elem) == 0 {
+									// Leaf node.
+									switch r.Method {
+									case "POST":
+										s.handlePayTogetherRequest([0]string{}, elemIsEscaped, w, r)
+									default:
+										s.notAllowed(w, r, notAllowedParams{
+											allowedMethods: "POST",
+											allowedHeaders: rn82AllowedHeaders,
+											acceptPost:     "application/json",
+											acceptPatch:    "",
+										})
+									}
+
+									return
 								}
 
 							}
@@ -1141,7 +1183,7 @@ func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 											default:
 												s.notAllowed(w, r, notAllowedParams{
 													allowedMethods: "POST",
-													allowedHeaders: rn94AllowedHeaders,
+													allowedHeaders: rn96AllowedHeaders,
 													acceptPost:     "",
 													acceptPatch:    "",
 												})
@@ -1272,7 +1314,7 @@ func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 											default:
 												s.notAllowed(w, r, notAllowedParams{
 													allowedMethods: "PUT",
-													allowedHeaders: rn89AllowedHeaders,
+													allowedHeaders: rn91AllowedHeaders,
 													acceptPost:     "",
 													acceptPatch:    "",
 												})
@@ -1299,7 +1341,7 @@ func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 											default:
 												s.notAllowed(w, r, notAllowedParams{
 													allowedMethods: "POST",
-													allowedHeaders: rn87AllowedHeaders,
+													allowedHeaders: rn89AllowedHeaders,
 													acceptPost:     "application/json",
 													acceptPatch:    "",
 												})
@@ -1864,7 +1906,7 @@ func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 												default:
 													s.notAllowed(w, r, notAllowedParams{
 														allowedMethods: "PUT",
-														allowedHeaders: rn93AllowedHeaders,
+														allowedHeaders: rn95AllowedHeaders,
 														acceptPost:     "",
 														acceptPatch:    "",
 													})
@@ -2951,111 +2993,98 @@ func (s *Server) FindPath(method string, u *url.URL) (r Route, _ bool) {
 							break
 						}
 						switch elem[0] {
-						case 'a': // Prefix: "ayment-methods"
+						case 'a': // Prefix: "ayment"
 
-							if l := len("ayment-methods"); len(elem) >= l && elem[0:l] == "ayment-methods" {
+							if l := len("ayment"); len(elem) >= l && elem[0:l] == "ayment" {
 								elem = elem[l:]
 							} else {
 								break
 							}
 
 							if len(elem) == 0 {
-								switch method {
-								case "GET":
-									r.name = ListPaymentMethodsOperation
-									r.summary = ""
-									r.operationID = "list-payment-methods"
-									r.operationGroup = ""
-									r.pathPattern = "/account/v1/payment-methods"
-									r.args = args
-									r.count = 0
-									return r, true
-								default:
-									return
-								}
+								break
 							}
 							switch elem[0] {
-							case '/': // Prefix: "/"
+							case '-': // Prefix: "-methods"
 
-								if l := len("/"); len(elem) >= l && elem[0:l] == "/" {
+								if l := len("-methods"); len(elem) >= l && elem[0:l] == "-methods" {
 									elem = elem[l:]
 								} else {
 									break
 								}
 
 								if len(elem) == 0 {
-									break
-								}
-								switch elem[0] {
-								case 's': // Prefix: "setup"
-									origElem := elem
-									if l := len("setup"); len(elem) >= l && elem[0:l] == "setup" {
-										elem = elem[l:]
-									} else {
-										break
-									}
-
-									if len(elem) == 0 {
-										// Leaf node.
-										switch method {
-										case "POST":
-											r.name = CreatePaymentMethodSetupOperation
-											r.summary = "Begin adding a payment method"
-											r.operationID = "create-payment-method-setup"
-											r.operationGroup = ""
-											r.pathPattern = "/account/v1/payment-methods/setup"
-											r.args = args
-											r.count = 0
-											return r, true
-										default:
-											return
-										}
-									}
-
-									elem = origElem
-								}
-								// Param: "paymentMethodId"
-								// Match until "/"
-								idx := strings.IndexByte(elem, '/')
-								if idx < 0 {
-									idx = len(elem)
-								}
-								args[0] = elem[:idx]
-								elem = elem[idx:]
-
-								if len(elem) == 0 {
 									switch method {
-									case "DELETE":
-										r.name = DeletePaymentMethodOperation
-										r.summary = "Remove a payment method"
-										r.operationID = "delete-payment-method"
+									case "GET":
+										r.name = ListPaymentMethodsOperation
+										r.summary = ""
+										r.operationID = "list-payment-methods"
 										r.operationGroup = ""
-										r.pathPattern = "/account/v1/payment-methods/{paymentMethodId}"
+										r.pathPattern = "/account/v1/payment-methods"
 										r.args = args
-										r.count = 1
+										r.count = 0
 										return r, true
 									default:
 										return
 									}
 								}
 								switch elem[0] {
-								case '/': // Prefix: "/default"
+								case '/': // Prefix: "/"
 
-									if l := len("/default"); len(elem) >= l && elem[0:l] == "/default" {
+									if l := len("/"); len(elem) >= l && elem[0:l] == "/" {
 										elem = elem[l:]
 									} else {
 										break
 									}
 
 									if len(elem) == 0 {
-										// Leaf node.
+										break
+									}
+									switch elem[0] {
+									case 's': // Prefix: "setup"
+										origElem := elem
+										if l := len("setup"); len(elem) >= l && elem[0:l] == "setup" {
+											elem = elem[l:]
+										} else {
+											break
+										}
+
+										if len(elem) == 0 {
+											// Leaf node.
+											switch method {
+											case "POST":
+												r.name = CreatePaymentMethodSetupOperation
+												r.summary = "Begin adding a payment method"
+												r.operationID = "create-payment-method-setup"
+												r.operationGroup = ""
+												r.pathPattern = "/account/v1/payment-methods/setup"
+												r.args = args
+												r.count = 0
+												return r, true
+											default:
+												return
+											}
+										}
+
+										elem = origElem
+									}
+									// Param: "paymentMethodId"
+									// Match until "/"
+									idx := strings.IndexByte(elem, '/')
+									if idx < 0 {
+										idx = len(elem)
+									}
+									args[0] = elem[:idx]
+									elem = elem[idx:]
+
+									if len(elem) == 0 {
 										switch method {
-										case "PUT":
-											r.name = SetDefaultPaymentMethodOperation
-											r.summary = "Choose which method is used automatically"
-											r.operationID = "set-default-payment-method"
+										case "DELETE":
+											r.name = DeletePaymentMethodOperation
+											r.summary = "Remove a payment method"
+											r.operationID = "delete-payment-method"
 											r.operationGroup = ""
-											r.pathPattern = "/account/v1/payment-methods/{paymentMethodId}/default"
+											r.pathPattern = "/account/v1/payment-methods/{paymentMethodId}"
 											r.args = args
 											r.count = 1
 											return r, true
@@ -3063,7 +3092,59 @@ func (s *Server) FindPath(method string, u *url.URL) (r Route, _ bool) {
 											return
 										}
 									}
+									switch elem[0] {
+									case '/': // Prefix: "/default"
 
+										if l := len("/default"); len(elem) >= l && elem[0:l] == "/default" {
+											elem = elem[l:]
+										} else {
+											break
+										}
+
+										if len(elem) == 0 {
+											// Leaf node.
+											switch method {
+											case "PUT":
+												r.name = SetDefaultPaymentMethodOperation
+												r.summary = "Choose which method is used automatically"
+												r.operationID = "set-default-payment-method"
+												r.operationGroup = ""
+												r.pathPattern = "/account/v1/payment-methods/{paymentMethodId}/default"
+												r.args = args
+												r.count = 1
+												return r, true
+											default:
+												return
+											}
+										}
+
+									}
+
+								}
+
+							case 's': // Prefix: "s"
+
+								if l := len("s"); len(elem) >= l && elem[0:l] == "s" {
+									elem = elem[l:]
+								} else {
+									break
+								}
+
+								if len(elem) == 0 {
+									// Leaf node.
+									switch method {
+									case "POST":
+										r.name = PayTogetherOperation
+										r.summary = "Pay several outstanding invoices and orders at once"
+										r.operationID = "pay-together"
+										r.operationGroup = ""
+										r.pathPattern = "/account/v1/payments"
+										r.args = args
+										r.count = 0
+										return r, true
+									default:
+										return
+									}
 								}
 
 							}

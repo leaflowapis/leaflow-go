@@ -55,6 +55,7 @@ const (
 	ListUsageChargesOperation             OperationName = "ListUsageCharges"
 	PayInvoiceOperation                   OperationName = "PayInvoice"
 	PayOrderOperation                     OperationName = "PayOrder"
+	PayTogetherOperation                  OperationName = "PayTogether"
 	PreviewCodeOperation                  OperationName = "PreviewCode"
 	RedeemCodeOperation                   OperationName = "RedeemCode"
 	RenewSubscriptionItemOperation        OperationName = "RenewSubscriptionItem"

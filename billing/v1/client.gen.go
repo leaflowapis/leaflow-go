@@ -1786,6 +1786,17 @@ type PayRequest struct {
 	UseBalance *bool `json:"use_balance,omitempty"`
 }
 
+// PayTogetherRequest Name at least one invoice or order. They must all belong to the same account and share
+// its currency; anything else is refused rather than partly paid.
+type PayTogetherRequest struct {
+	// IdempotencyKey Required when the provider is involved, because that is where the money moves. The
+	// same key returns the same checkout address instead of opening a second one.
+	IdempotencyKey *string              `json:"idempotency_key,omitempty"`
+	InvoiceIds     []openapi_types.UUID `json:"invoice_ids,omitempty"`
+	OrderIds       []openapi_types.UUID `json:"order_ids,omitempty"`
+	ReturnUrl      *string              `json:"return_url,omitempty"`
+}
+
 // PaymentMethod defines model for PaymentMethod.
 type PaymentMethod struct {
 	BillingAccountId int64               `json:"billing_account_id"`
@@ -3050,6 +3061,9 @@ type PayOrderJSONRequestBody = PayRequest
 // CreatePaymentMethodSetupJSONRequestBody defines body for CreatePaymentMethodSetup for application/json ContentType.
 type CreatePaymentMethodSetupJSONRequestBody = PaymentMethodSetup
 
+// PayTogetherJSONRequestBody defines body for PayTogether for application/json ContentType.
+type PayTogetherJSONRequestBody = PayTogetherRequest
+
 // SetProjectPayerJSONRequestBody defines body for SetProjectPayer for application/json ContentType.
 type SetProjectPayerJSONRequestBody = ProjectPayerSet
 
@@ -3464,6 +3478,48 @@ type ClientInterface interface {
 	//
 	// Corresponds with PUT /account/v1/payment-methods/{paymentMethodId}/default (the `SetDefaultPaymentMethod` operationId).
 	SetDefaultPaymentMethod(ctx context.Context, paymentMethodId PaymentMethodId, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// PayTogetherWithBody Pay several outstanding invoices and orders at once
+	//
+	// All of them or none. Nothing is settled unless everything named here can be, so a
+	// partial result is not a state this can leave behind.
+	//
+	// The balance is not split across the two cases: either it covers the whole total and
+	// everything is settled from it, or it is left untouched and the full total is collected
+	// through the provider. It is never partly spent against an unpaid remainder.
+	//
+	// When the provider is needed, this returns a checkout address and settles nothing.
+	// Call it again once the payment has landed — the balance then covers the total and the
+	// same call settles everything.
+	//
+	// Anything already paid is skipped rather than refused, so a repeated call after a
+	// partial success is safe.
+	//
+	// Takes any type of body and a specified content type.
+	//
+	// Corresponds with POST /account/v1/payments (the `PayTogether` operationId).
+	PayTogetherWithBody(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// PayTogether Pay several outstanding invoices and orders at once
+	//
+	// All of them or none. Nothing is settled unless everything named here can be, so a
+	// partial result is not a state this can leave behind.
+	//
+	// The balance is not split across the two cases: either it covers the whole total and
+	// everything is settled from it, or it is left untouched and the full total is collected
+	// through the provider. It is never partly spent against an unpaid remainder.
+	//
+	// When the provider is needed, this returns a checkout address and settles nothing.
+	// Call it again once the payment has landed — the balance then covers the total and the
+	// same call settles everything.
+	//
+	// Anything already paid is skipped rather than refused, so a repeated call after a
+	// partial success is safe.
+	//
+	// Takes a body of the `application/json` content type.
+	//
+	// Corresponds with POST /account/v1/payments (the `PayTogether` operationId).
+	PayTogether(ctx context.Context, body PayTogetherJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
 
 	// ListPaidProjects The projects your accounts pay for
 	//
@@ -4503,6 +4559,68 @@ func (c *Client) DeletePaymentMethod(ctx context.Context, paymentMethodId Paymen
 // Corresponds with PUT /account/v1/payment-methods/{paymentMethodId}/default (the `SetDefaultPaymentMethod` operationId).
 func (c *Client) SetDefaultPaymentMethod(ctx context.Context, paymentMethodId PaymentMethodId, reqEditors ...RequestEditorFn) (*http.Response, error) {
 	req, err := NewSetDefaultPaymentMethodRequest(c.Server, paymentMethodId)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+// PayTogetherWithBody Pay several outstanding invoices and orders at once
+//
+// All of them or none. Nothing is settled unless everything named here can be, so a
+// partial result is not a state this can leave behind.
+//
+// The balance is not split across the two cases: either it covers the whole total and
+// everything is settled from it, or it is left untouched and the full total is collected
+// through the provider. It is never partly spent against an unpaid remainder.
+//
+// When the provider is needed, this returns a checkout address and settles nothing.
+// Call it again once the payment has landed — the balance then covers the total and the
+// same call settles everything.
+//
+// Anything already paid is skipped rather than refused, so a repeated call after a
+// partial success is safe.
+//
+// Takes any type of body and a specified content type.
+//
+// Corresponds with POST /account/v1/payments (the `PayTogether` operationId).
+func (c *Client) PayTogetherWithBody(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewPayTogetherRequestWithBody(c.Server, contentType, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+// PayTogether Pay several outstanding invoices and orders at once
+//
+// All of them or none. Nothing is settled unless everything named here can be, so a
+// partial result is not a state this can leave behind.
+//
+// The balance is not split across the two cases: either it covers the whole total and
+// everything is settled from it, or it is left untouched and the full total is collected
+// through the provider. It is never partly spent against an unpaid remainder.
+//
+// When the provider is needed, this returns a checkout address and settles nothing.
+// Call it again once the payment has landed — the balance then covers the total and the
+// same call settles everything.
+//
+// Anything already paid is skipped rather than refused, so a repeated call after a
+// partial success is safe.
+//
+// Takes a body of the `application/json` content type.
+//
+// Corresponds with POST /account/v1/payments (the `PayTogether` operationId).
+func (c *Client) PayTogether(ctx context.Context, body PayTogetherJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewPayTogetherRequest(c.Server, body)
 	if err != nil {
 		return nil, err
 	}
@@ -6901,6 +7019,46 @@ func NewSetDefaultPaymentMethodRequest(server string, paymentMethodId PaymentMet
 	if err != nil {
 		return nil, err
 	}
+
+	return req, nil
+}
+
+// NewPayTogetherRequest calls the generic PayTogether builder with application/json body
+func NewPayTogetherRequest(server string, body PayTogetherJSONRequestBody) (*http.Request, error) {
+	var bodyReader io.Reader
+	buf, err := json.Marshal(body)
+	if err != nil {
+		return nil, err
+	}
+	bodyReader = bytes.NewReader(buf)
+	return NewPayTogetherRequestWithBody(server, "application/json", bodyReader)
+}
+
+// NewPayTogetherRequestWithBody constructs an http.Request for the PayTogether method, with any body, and a specified content type
+func NewPayTogetherRequestWithBody(server string, contentType string, body io.Reader) (*http.Request, error) {
+	var err error
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/account/v1/payments")
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest(http.MethodPost, queryURL.String(), body)
+	if err != nil {
+		return nil, err
+	}
+
+	req.Header.Add("Content-Type", contentType)
 
 	return req, nil
 }
@@ -9772,6 +9930,48 @@ type ClientWithResponsesInterface interface {
 	// Corresponds with PUT /account/v1/payment-methods/{paymentMethodId}/default (the `SetDefaultPaymentMethod` operationId).
 	SetDefaultPaymentMethodWithResponse(ctx context.Context, paymentMethodId PaymentMethodId, reqEditors ...RequestEditorFn) (*SetDefaultPaymentMethodResponse, error)
 
+	// PayTogetherWithBodyWithResponse Pay several outstanding invoices and orders at once
+	//
+	// All of them or none. Nothing is settled unless everything named here can be, so a
+	// partial result is not a state this can leave behind.
+	//
+	// The balance is not split across the two cases: either it covers the whole total and
+	// everything is settled from it, or it is left untouched and the full total is collected
+	// through the provider. It is never partly spent against an unpaid remainder.
+	//
+	// When the provider is needed, this returns a checkout address and settles nothing.
+	// Call it again once the payment has landed — the balance then covers the total and the
+	// same call settles everything.
+	//
+	// Anything already paid is skipped rather than refused, so a repeated call after a
+	// partial success is safe.
+	//
+	// Takes any type of body and a specified content type, and returns a wrapper object for the known response body format(s).
+	//
+	// Corresponds with POST /account/v1/payments (the `PayTogether` operationId).
+	PayTogetherWithBodyWithResponse(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*PayTogetherResponse, error)
+
+	// PayTogetherWithResponse Pay several outstanding invoices and orders at once
+	//
+	// All of them or none. Nothing is settled unless everything named here can be, so a
+	// partial result is not a state this can leave behind.
+	//
+	// The balance is not split across the two cases: either it covers the whole total and
+	// everything is settled from it, or it is left untouched and the full total is collected
+	// through the provider. It is never partly spent against an unpaid remainder.
+	//
+	// When the provider is needed, this returns a checkout address and settles nothing.
+	// Call it again once the payment has landed — the balance then covers the total and the
+	// same call settles everything.
+	//
+	// Anything already paid is skipped rather than refused, so a repeated call after a
+	// partial success is safe.
+	//
+	// Takes a body of the `application/json` content type, and returns a wrapper object for the known response body format(s).
+	//
+	// Corresponds with POST /account/v1/payments (the `PayTogether` operationId).
+	PayTogetherWithResponse(ctx context.Context, body PayTogetherJSONRequestBody, reqEditors ...RequestEditorFn) (*PayTogetherResponse, error)
+
 	// ListPaidProjectsWithResponse The projects your accounts pay for
 	//
 	// Returns a wrapper object for the known response body format(s).
@@ -11460,6 +11660,54 @@ func (r SetDefaultPaymentMethodResponse) StatusCode() int {
 
 // ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
 func (r SetDefaultPaymentMethodResponse) ContentType() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Header.Get("Content-Type")
+	}
+	return ""
+}
+
+type PayTogetherResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	// JSON200 the response for an HTTP 200 `application/json` response
+	JSON200 *PaymentResult
+	// JSONDefault the response for an HTTP default `application/json` response
+	JSONDefault *Error
+}
+
+// GetJSON200 returns the response for an HTTP 200 `application/json` response
+func (r PayTogetherResponse) GetJSON200() *PaymentResult {
+	return r.JSON200
+}
+
+// GetJSONDefault returns the response for an HTTP default `application/json` response
+func (r PayTogetherResponse) GetJSONDefault() *Error {
+	return r.JSONDefault
+}
+
+// GetBody returns the raw response body bytes
+func (r PayTogetherResponse) GetBody() []byte {
+	return r.Body
+}
+
+// Status returns HTTPResponse.Status
+func (r PayTogetherResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r PayTogetherResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+// ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
+func (r PayTogetherResponse) ContentType() string {
 	if r.HTTPResponse != nil {
 		return r.HTTPResponse.Header.Get("Content-Type")
 	}
@@ -13700,6 +13948,60 @@ func (c *ClientWithResponses) SetDefaultPaymentMethodWithResponse(ctx context.Co
 	return ParseSetDefaultPaymentMethodResponse(rsp)
 }
 
+// PayTogetherWithBodyWithResponse Pay several outstanding invoices and orders at once
+//
+// All of them or none. Nothing is settled unless everything named here can be, so a
+// partial result is not a state this can leave behind.
+//
+// The balance is not split across the two cases: either it covers the whole total and
+// everything is settled from it, or it is left untouched and the full total is collected
+// through the provider. It is never partly spent against an unpaid remainder.
+//
+// When the provider is needed, this returns a checkout address and settles nothing.
+// Call it again once the payment has landed — the balance then covers the total and the
+// same call settles everything.
+//
+// Anything already paid is skipped rather than refused, so a repeated call after a
+// partial success is safe.
+//
+// Takes any type of body and a specified content type, and returns a wrapper object for the known response body format(s).
+//
+// Corresponds with POST /account/v1/payments (the `PayTogether` operationId).
+func (c *ClientWithResponses) PayTogetherWithBodyWithResponse(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*PayTogetherResponse, error) {
+	rsp, err := c.PayTogetherWithBody(ctx, contentType, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParsePayTogetherResponse(rsp)
+}
+
+// PayTogetherWithResponse Pay several outstanding invoices and orders at once
+//
+// All of them or none. Nothing is settled unless everything named here can be, so a
+// partial result is not a state this can leave behind.
+//
+// The balance is not split across the two cases: either it covers the whole total and
+// everything is settled from it, or it is left untouched and the full total is collected
+// through the provider. It is never partly spent against an unpaid remainder.
+//
+// When the provider is needed, this returns a checkout address and settles nothing.
+// Call it again once the payment has landed — the balance then covers the total and the
+// same call settles everything.
+//
+// Anything already paid is skipped rather than refused, so a repeated call after a
+// partial success is safe.
+//
+// Takes a body of the `application/json` content type, and returns a wrapper object for the known response body format(s).
+//
+// Corresponds with POST /account/v1/payments (the `PayTogether` operationId).
+func (c *ClientWithResponses) PayTogetherWithResponse(ctx context.Context, body PayTogetherJSONRequestBody, reqEditors ...RequestEditorFn) (*PayTogetherResponse, error) {
+	rsp, err := c.PayTogether(ctx, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParsePayTogetherResponse(rsp)
+}
+
 // ListPaidProjectsWithResponse The projects your accounts pay for
 //
 // Returns a wrapper object for the known response body format(s).
@@ -15241,6 +15543,39 @@ func ParseSetDefaultPaymentMethodResponse(rsp *http.Response) (*SetDefaultPaymen
 	switch {
 	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
 		var dest PaymentMethod
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && true:
+		var dest Error
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSONDefault = &dest
+
+	}
+
+	return response, nil
+}
+
+// ParsePayTogetherResponse parses an HTTP response from a PayTogetherWithResponse call
+func ParsePayTogetherResponse(rsp *http.Response) (*PayTogetherResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &PayTogetherResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest PaymentResult
 		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
 			return nil, err
 		}

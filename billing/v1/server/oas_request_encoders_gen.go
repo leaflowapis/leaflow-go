@@ -120,6 +120,20 @@ func encodePayOrderRequest(
 	return nil
 }
 
+func encodePayTogetherRequest(
+	req *PayTogetherRequest,
+	r *http.Request,
+) error {
+	const contentType = "application/json"
+	e := new(jx.Encoder)
+	{
+		req.Encode(e)
+	}
+	encoded := e.Bytes()
+	ht.SetBody(r, bytes.NewReader(encoded), contentType)
+	return nil
+}
+
 func encodePreviewCodeRequest(
 	req *CodeRequest,
 	r *http.Request,

@@ -10657,6 +10657,146 @@ func (s *PayRequest) UnmarshalJSON(data []byte) error {
 }
 
 // Encode implements json.Marshaler.
+func (s *PayTogetherRequest) Encode(e *jx.Encoder) {
+	e.ObjStart()
+	s.encodeFields(e)
+	e.ObjEnd()
+}
+
+// encodeFields encodes fields.
+func (s *PayTogetherRequest) encodeFields(e *jx.Encoder) {
+	{
+		if s.InvoiceIds != nil {
+			e.FieldStart("invoice_ids")
+			e.ArrStart()
+			for _, elem := range s.InvoiceIds {
+				json.EncodeUUID(e, elem)
+			}
+			e.ArrEnd()
+		}
+	}
+	{
+		if s.OrderIds != nil {
+			e.FieldStart("order_ids")
+			e.ArrStart()
+			for _, elem := range s.OrderIds {
+				json.EncodeUUID(e, elem)
+			}
+			e.ArrEnd()
+		}
+	}
+	{
+		if s.ReturnURL.Set {
+			e.FieldStart("return_url")
+			s.ReturnURL.Encode(e)
+		}
+	}
+	{
+		if s.IdempotencyKey.Set {
+			e.FieldStart("idempotency_key")
+			s.IdempotencyKey.Encode(e)
+		}
+	}
+}
+
+var jsonFieldsNameOfPayTogetherRequest = [4]string{
+	0: "invoice_ids",
+	1: "order_ids",
+	2: "return_url",
+	3: "idempotency_key",
+}
+
+// Decode decodes PayTogetherRequest from json.
+func (s *PayTogetherRequest) Decode(d *jx.Decoder) error {
+	if s == nil {
+		return errors.New("invalid: unable to decode PayTogetherRequest to nil")
+	}
+
+	if err := d.ObjBytes(func(d *jx.Decoder, k []byte) error {
+		switch string(k) {
+		case "invoice_ids":
+			if err := func() error {
+				s.InvoiceIds = make([]uuid.UUID, 0)
+				if err := d.Arr(func(d *jx.Decoder) error {
+					var elem uuid.UUID
+					v, err := json.DecodeUUID(d)
+					elem = v
+					if err != nil {
+						return err
+					}
+					s.InvoiceIds = append(s.InvoiceIds, elem)
+					return nil
+				}); err != nil {
+					return err
+				}
+				return nil
+			}(); err != nil {
+				return errors.Wrap(err, "decode field \"invoice_ids\"")
+			}
+		case "order_ids":
+			if err := func() error {
+				s.OrderIds = make([]uuid.UUID, 0)
+				if err := d.Arr(func(d *jx.Decoder) error {
+					var elem uuid.UUID
+					v, err := json.DecodeUUID(d)
+					elem = v
+					if err != nil {
+						return err
+					}
+					s.OrderIds = append(s.OrderIds, elem)
+					return nil
+				}); err != nil {
+					return err
+				}
+				return nil
+			}(); err != nil {
+				return errors.Wrap(err, "decode field \"order_ids\"")
+			}
+		case "return_url":
+			if err := func() error {
+				s.ReturnURL.Reset()
+				if err := s.ReturnURL.Decode(d); err != nil {
+					return err
+				}
+				return nil
+			}(); err != nil {
+				return errors.Wrap(err, "decode field \"return_url\"")
+			}
+		case "idempotency_key":
+			if err := func() error {
+				s.IdempotencyKey.Reset()
+				if err := s.IdempotencyKey.Decode(d); err != nil {
+					return err
+				}
+				return nil
+			}(); err != nil {
+				return errors.Wrap(err, "decode field \"idempotency_key\"")
+			}
+		default:
+			return errors.Errorf("unexpected field %q", k)
+		}
+		return nil
+	}); err != nil {
+		return errors.Wrap(err, "decode PayTogetherRequest")
+	}
+
+	return nil
+}
+
+// MarshalJSON implements stdjson.Marshaler.
+func (s *PayTogetherRequest) MarshalJSON() ([]byte, error) {
+	e := jx.Encoder{}
+	s.Encode(&e)
+	return e.Bytes(), nil
+}
+
+// UnmarshalJSON implements stdjson.Unmarshaler.
+func (s *PayTogetherRequest) UnmarshalJSON(data []byte) error {
+	d := jx.DecodeBytes(data)
+	return s.Decode(d)
+}
+
+// Encode implements json.Marshaler.
 func (s *PaymentMethod) Encode(e *jx.Encoder) {
 	e.ObjStart()
 	s.encodeFields(e)

@@ -367,6 +367,23 @@ type Handler interface {
 	//
 	// POST /account/v1/orders/{orderId}/pay
 	PayOrder(ctx context.Context, req OptPayRequest, params PayOrderParams) (*PaymentResult, error)
+	// PayTogether implements pay-together operation.
+	//
+	// All of them or none. Nothing is settled unless everything named here can be, so a partial result is
+	// not a state this can leave behind.
+	//
+	// The balance is not split across the two cases: either it covers the whole total and everything is
+	// settled from it, or it is left untouched and the full total is collected through the provider. It is
+	// never partly spent against an unpaid remainder.
+	//
+	// When the provider is needed, this returns a checkout address and settles nothing. Call it again once
+	// the payment has landed — the balance then covers the total and the same call settles everything.
+	//
+	// Anything already paid is skipped rather than refused, so a repeated call after a partial success is
+	// safe.
+	//
+	// POST /account/v1/payments
+	PayTogether(ctx context.Context, req *PayTogetherRequest) (*PaymentResult, error)
 	// PreviewCode implements preview-code operation.
 	//
 	// Nothing is recorded and the code is not consumed. Use it to show the customer the effect before they

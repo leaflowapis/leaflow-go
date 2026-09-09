@@ -388,6 +388,23 @@ type Invoker interface {
 	//
 	// POST /account/v1/orders/{orderId}/pay
 	PayOrder(ctx context.Context, request OptPayRequest, params PayOrderParams) (*PaymentResult, error)
+	// PayTogether invokes pay-together operation.
+	//
+	// All of them or none. Nothing is settled unless everything named here can be, so a partial result is
+	// not a state this can leave behind.
+	//
+	// The balance is not split across the two cases: either it covers the whole total and everything is
+	// settled from it, or it is left untouched and the full total is collected through the provider. It is
+	// never partly spent against an unpaid remainder.
+	//
+	// When the provider is needed, this returns a checkout address and settles nothing. Call it again once
+	// the payment has landed — the balance then covers the total and the same call settles everything.
+	//
+	// Anything already paid is skipped rather than refused, so a repeated call after a partial success is
+	// safe.
+	//
+	// POST /account/v1/payments
+	PayTogether(ctx context.Context, request *PayTogetherRequest) (*PaymentResult, error)
 	// PreviewCode invokes preview-code operation.
 	//
 	// Nothing is recorded and the code is not consumed. Use it to show the customer the effect before they
@@ -8777,6 +8794,133 @@ func (c *Client) sendPayOrder(ctx context.Context, request OptPayRequest, params
 
 	stage = "DecodeResponse"
 	result, err := decodePayOrderResponse(resp)
+	if err != nil {
+		return res, errors.Wrap(err, "decode response")
+	}
+
+	return result, nil
+}
+
+// PayTogether invokes pay-together operation.
+//
+// All of them or none. Nothing is settled unless everything named here can be, so a partial result is
+// not a state this can leave behind.
+//
+// The balance is not split across the two cases: either it covers the whole total and everything is
+// settled from it, or it is left untouched and the full total is collected through the provider. It is
+// never partly spent against an unpaid remainder.
+//
+// When the provider is needed, this returns a checkout address and settles nothing. Call it again once
+// the payment has landed — the balance then covers the total and the same call settles everything.
+//
+// Anything already paid is skipped rather than refused, so a repeated call after a partial success is
+// safe.
+//
+// POST /account/v1/payments
+func (c *Client) PayTogether(ctx context.Context, request *PayTogetherRequest) (*PaymentResult, error) {
+	res, err := c.sendPayTogether(ctx, request)
+	return res, err
+}
+
+func (c *Client) sendPayTogether(ctx context.Context, request *PayTogetherRequest) (res *PaymentResult, err error) {
+	otelAttrs := []attribute.KeyValue{
+		otelogen.OperationID("pay-together"),
+		semconv.HTTPRequestMethodKey.String("POST"),
+		semconv.URLTemplateKey.String("/account/v1/payments"),
+	}
+	otelAttrs = append(otelAttrs, c.cfg.Attributes...)
+
+	// Run stopwatch.
+	startTime := time.Now()
+	defer func() {
+		// Use floating point division here for higher precision (instead of Millisecond method).
+		elapsedDuration := time.Since(startTime)
+		c.duration.Record(ctx, float64(elapsedDuration)/float64(time.Millisecond), metric.WithAttributes(otelAttrs...))
+	}()
+
+	// Increment request counter.
+	c.requests.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
+
+	// Start a span for this request.
+	ctx, span := c.cfg.Tracer.Start(ctx, PayTogetherOperation,
+		trace.WithAttributes(otelAttrs...),
+		clientSpanKind,
+	)
+	// Track stage for error reporting.
+	var stage string
+	defer func() {
+		if err != nil {
+			span.RecordError(err)
+			span.SetStatus(codes.Error, stage)
+			c.errors.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
+		}
+		span.End()
+	}()
+
+	stage = "BuildURL"
+	u := uri.Clone(c.requestURL(ctx))
+	var pathParts [1]string
+	pathParts[0] = "/account/v1/payments"
+	uri.AddPathParts(u, pathParts[:]...)
+
+	stage = "EncodeRequest"
+	r, err := ht.NewRequest(ctx, "POST", u)
+	if err != nil {
+		return res, errors.Wrap(err, "create request")
+	}
+	if err := encodePayTogetherRequest(request, r); err != nil {
+		return res, errors.Wrap(err, "encode request")
+	}
+
+	{
+		type bitset = [1]uint8
+		var satisfied bitset
+		{
+			stage = "Security:AccountAuth"
+			switch err := c.securityAccountAuth(ctx, PayTogetherOperation, r); {
+			case err == nil: // if NO error
+				satisfied[0] |= 1 << 0
+			case errors.Is(err, ogenerrors.ErrSkipClientSecurity):
+				// Skip this security.
+			default:
+				return res, errors.Wrap(err, "security \"AccountAuth\"")
+			}
+		}
+
+		if ok := func() bool {
+		nextRequirement:
+			for _, requirement := range []bitset{
+				{0b00000001},
+			} {
+				for i, mask := range requirement {
+					if satisfied[i]&mask != mask {
+						continue nextRequirement
+					}
+				}
+				return true
+			}
+			return false
+		}(); !ok {
+			return res, ogenerrors.ErrSecurityRequirementIsNotSatisfied
+		}
+	}
+
+	stage = "SendRequest"
+	resp, err := c.cfg.Client.Do(r)
+	if err != nil {
+		return res, errors.Wrap(err, "do request")
+	}
+	body := resp.Body
+	defer func() {
+		// Drain the body to EOF before closing, so the underlying
+		// connection can be reused by the Transport regardless of the
+		// response status code. See https://github.com/ogen-go/ogen/issues/1670.
+		_, _ = io.Copy(io.Discard, body)
+		_ = body.Close()
+	}()
+
+	stage = "DecodeResponse"
+	result, err := decodePayTogetherResponse(resp)
 	if err != nil {
 		return res, errors.Wrap(err, "decode response")
 	}
