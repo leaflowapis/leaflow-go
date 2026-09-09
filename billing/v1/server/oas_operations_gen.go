@@ -56,6 +56,7 @@ const (
 	PreviewCodeOperation                  OperationName = "PreviewCode"
 	RedeemCodeOperation                   OperationName = "RedeemCode"
 	RenewSubscriptionItemOperation        OperationName = "RenewSubscriptionItem"
+	RequestRefundOperation                OperationName = "RequestRefund"
 	SetAutoRenewOperation                 OperationName = "SetAutoRenew"
 	SetDefaultPaymentMethodOperation      OperationName = "SetDefaultPaymentMethod"
 	SetProjectAutoRenewOperation          OperationName = "SetProjectAutoRenew"

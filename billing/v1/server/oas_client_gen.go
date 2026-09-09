@@ -387,6 +387,20 @@ type Invoker interface {
 	//
 	// POST /account/v1/subscription-items/{itemId}/renew
 	RenewSubscriptionItem(ctx context.Context, request *RenewRequest, params RenewSubscriptionItemParams) (*PaymentResult, error)
+	// RequestRefund invokes request-refund operation.
+	//
+	// Refunding ends the subscription and reclaims whatever it provisioned. That is the difference from
+	// letting a period lapse: a lapsed period keeps the machine around for a while so that topping up
+	// brings it back, whereas a refund returns the money and therefore cannot leave the thing running.
+	//
+	// What can be refunded, for how long, and how much, is decided here rather than by the caller. A
+	// request outside those bounds is refused with the reason.
+	//
+	// The money goes back the way it came: card charges to the card, balance to the balance, credit to
+	// credit. A grant never turns into cash.
+	//
+	// POST /account/v1/refunds
+	RequestRefund(ctx context.Context, request *RefundRequest) (*Refund, error)
 	// SetAutoRenew invokes set-auto-renew operation.
 	//
 	// When on, the account balance is charged at the renewal date. Turning it off lets the current period
@@ -8781,6 +8795,130 @@ func (c *Client) sendRenewSubscriptionItem(ctx context.Context, request *RenewRe
 
 	stage = "DecodeResponse"
 	result, err := decodeRenewSubscriptionItemResponse(resp)
+	if err != nil {
+		return res, errors.Wrap(err, "decode response")
+	}
+
+	return result, nil
+}
+
+// RequestRefund invokes request-refund operation.
+//
+// Refunding ends the subscription and reclaims whatever it provisioned. That is the difference from
+// letting a period lapse: a lapsed period keeps the machine around for a while so that topping up
+// brings it back, whereas a refund returns the money and therefore cannot leave the thing running.
+//
+// What can be refunded, for how long, and how much, is decided here rather than by the caller. A
+// request outside those bounds is refused with the reason.
+//
+// The money goes back the way it came: card charges to the card, balance to the balance, credit to
+// credit. A grant never turns into cash.
+//
+// POST /account/v1/refunds
+func (c *Client) RequestRefund(ctx context.Context, request *RefundRequest) (*Refund, error) {
+	res, err := c.sendRequestRefund(ctx, request)
+	return res, err
+}
+
+func (c *Client) sendRequestRefund(ctx context.Context, request *RefundRequest) (res *Refund, err error) {
+	otelAttrs := []attribute.KeyValue{
+		otelogen.OperationID("request-refund"),
+		semconv.HTTPRequestMethodKey.String("POST"),
+		semconv.URLTemplateKey.String("/account/v1/refunds"),
+	}
+	otelAttrs = append(otelAttrs, c.cfg.Attributes...)
+
+	// Run stopwatch.
+	startTime := time.Now()
+	defer func() {
+		// Use floating point division here for higher precision (instead of Millisecond method).
+		elapsedDuration := time.Since(startTime)
+		c.duration.Record(ctx, float64(elapsedDuration)/float64(time.Millisecond), metric.WithAttributes(otelAttrs...))
+	}()
+
+	// Increment request counter.
+	c.requests.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
+
+	// Start a span for this request.
+	ctx, span := c.cfg.Tracer.Start(ctx, RequestRefundOperation,
+		trace.WithAttributes(otelAttrs...),
+		clientSpanKind,
+	)
+	// Track stage for error reporting.
+	var stage string
+	defer func() {
+		if err != nil {
+			span.RecordError(err)
+			span.SetStatus(codes.Error, stage)
+			c.errors.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
+		}
+		span.End()
+	}()
+
+	stage = "BuildURL"
+	u := uri.Clone(c.requestURL(ctx))
+	var pathParts [1]string
+	pathParts[0] = "/account/v1/refunds"
+	uri.AddPathParts(u, pathParts[:]...)
+
+	stage = "EncodeRequest"
+	r, err := ht.NewRequest(ctx, "POST", u)
+	if err != nil {
+		return res, errors.Wrap(err, "create request")
+	}
+	if err := encodeRequestRefundRequest(request, r); err != nil {
+		return res, errors.Wrap(err, "encode request")
+	}
+
+	{
+		type bitset = [1]uint8
+		var satisfied bitset
+		{
+			stage = "Security:AccountAuth"
+			switch err := c.securityAccountAuth(ctx, RequestRefundOperation, r); {
+			case err == nil: // if NO error
+				satisfied[0] |= 1 << 0
+			case errors.Is(err, ogenerrors.ErrSkipClientSecurity):
+				// Skip this security.
+			default:
+				return res, errors.Wrap(err, "security \"AccountAuth\"")
+			}
+		}
+
+		if ok := func() bool {
+		nextRequirement:
+			for _, requirement := range []bitset{
+				{0b00000001},
+			} {
+				for i, mask := range requirement {
+					if satisfied[i]&mask != mask {
+						continue nextRequirement
+					}
+				}
+				return true
+			}
+			return false
+		}(); !ok {
+			return res, ogenerrors.ErrSecurityRequirementIsNotSatisfied
+		}
+	}
+
+	stage = "SendRequest"
+	resp, err := c.cfg.Client.Do(r)
+	if err != nil {
+		return res, errors.Wrap(err, "do request")
+	}
+	body := resp.Body
+	defer func() {
+		// Drain the body to EOF before closing, so the underlying
+		// connection can be reused by the Transport regardless of the
+		// response status code. See https://github.com/ogen-go/ogen/issues/1670.
+		_, _ = io.Copy(io.Discard, body)
+		_ = body.Close()
+	}()
+
+	stage = "DecodeResponse"
+	result, err := decodeRequestRefundResponse(resp)
 	if err != nil {
 		return res, errors.Wrap(err, "decode response")
 	}

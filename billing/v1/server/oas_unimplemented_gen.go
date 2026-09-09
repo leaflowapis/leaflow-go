@@ -521,6 +521,23 @@ func (UnimplementedHandler) RenewSubscriptionItem(ctx context.Context, req *Rene
 	return r, ht.ErrNotImplemented
 }
 
+// RequestRefund implements request-refund operation.
+//
+// Refunding ends the subscription and reclaims whatever it provisioned. That is the difference from
+// letting a period lapse: a lapsed period keeps the machine around for a while so that topping up
+// brings it back, whereas a refund returns the money and therefore cannot leave the thing running.
+//
+// What can be refunded, for how long, and how much, is decided here rather than by the caller. A
+// request outside those bounds is refused with the reason.
+//
+// The money goes back the way it came: card charges to the card, balance to the balance, credit to
+// credit. A grant never turns into cash.
+//
+// POST /account/v1/refunds
+func (UnimplementedHandler) RequestRefund(ctx context.Context, req *RefundRequest) (r *Refund, _ error) {
+	return r, ht.ErrNotImplemented
+}
+
 // SetAutoRenew implements set-auto-renew operation.
 //
 // When on, the account balance is charged at the renewal date. Turning it off lets the current period

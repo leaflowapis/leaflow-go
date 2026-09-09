@@ -3668,7 +3668,7 @@ type Invoice struct {
 	ID               uuid.UUID `json:"id"`
 	BillingAccountID int64     `json:"billing_account_id"`
 	// Numbered per account and per month.
-	Number OptString `json:"number"`
+	Number string `json:"number"`
 	// What produced it — metered usage for a period, a purchase, or a correction.
 	Type           OptInvoiceType `json:"type"`
 	Currency       string         `json:"currency"`
@@ -3709,7 +3709,7 @@ func (s *Invoice) GetBillingAccountID() int64 {
 }
 
 // GetNumber returns the value of Number.
-func (s *Invoice) GetNumber() OptString {
+func (s *Invoice) GetNumber() string {
 	return s.Number
 }
 
@@ -3829,7 +3829,7 @@ func (s *Invoice) SetBillingAccountID(val int64) {
 }
 
 // SetNumber sets the value of Number.
-func (s *Invoice) SetNumber(val OptString) {
+func (s *Invoice) SetNumber(val string) {
 	s.Number = val
 }
 
@@ -5824,6 +5824,52 @@ func (o OptQuoteLinePriceType) Or(d QuoteLinePriceType) QuoteLinePriceType {
 	return d
 }
 
+// NewOptQuoteLineResultUnpricedReason returns new OptQuoteLineResultUnpricedReason with value set to v.
+func NewOptQuoteLineResultUnpricedReason(v QuoteLineResultUnpricedReason) OptQuoteLineResultUnpricedReason {
+	return OptQuoteLineResultUnpricedReason{
+		Value: v,
+		Set:   true,
+	}
+}
+
+// OptQuoteLineResultUnpricedReason is optional QuoteLineResultUnpricedReason.
+type OptQuoteLineResultUnpricedReason struct {
+	Value QuoteLineResultUnpricedReason
+	Set   bool
+}
+
+// IsSet returns true if OptQuoteLineResultUnpricedReason was set.
+func (o OptQuoteLineResultUnpricedReason) IsSet() bool { return o.Set }
+
+// Reset unsets value.
+func (o *OptQuoteLineResultUnpricedReason) Reset() {
+	var v QuoteLineResultUnpricedReason
+	o.Value = v
+	o.Set = false
+}
+
+// SetTo sets value to v.
+func (o *OptQuoteLineResultUnpricedReason) SetTo(v QuoteLineResultUnpricedReason) {
+	o.Set = true
+	o.Value = v
+}
+
+// Get returns value and boolean that denotes whether value was set.
+func (o OptQuoteLineResultUnpricedReason) Get() (v QuoteLineResultUnpricedReason, ok bool) {
+	if !o.Set {
+		return v, false
+	}
+	return o.Value, true
+}
+
+// Or returns value if set, or given parameter if does not.
+func (o OptQuoteLineResultUnpricedReason) Or(d QuoteLineResultUnpricedReason) QuoteLineResultUnpricedReason {
+	if v, ok := o.Get(); ok {
+		return v
+	}
+	return d
+}
+
 // NewOptRefundDestination returns new OptRefundDestination with value set to v.
 func NewOptRefundDestination(v RefundDestination) OptRefundDestination {
 	return OptRefundDestination{
@@ -7798,15 +7844,30 @@ func (s *QuoteLinePriceType) UnmarshalText(data []byte) error {
 type QuoteLineResult struct {
 	// Which line of the request this answers.
 	Index int `json:"index"`
-	// The price selected. Always returned, including when the request identified the item indirectly, so
-	// that the choice can be confirmed.
-	PriceID    uuid.UUID `json:"price_id"`
+	// Whether a price was found for this line. Read this before anything else.
+	//
+	// A single item with no price no longer fails the whole request. A catalogue almost always has
+	// something not yet priced, and refusing the request would leave no way to render a list in which a
+	// few entries are simply not on sale.
+	//
+	// When false, `price_id`, `unit_amount` and `amount` are absent and `unpriced_reason` states what is
+	// missing.
+	Priced bool `json:"priced"`
+	// Why no price was found; `none` while `priced` is true.
+	//
+	// The last four are told apart because their remedies differ: the price points at no price list, the
+	// list holds no rate for that meter, that exact combination of attributes is not configured, or it is
+	// configured but nothing is in effect at the moment asked about.
+	UnpricedReason OptQuoteLineResultUnpricedReason `json:"unpriced_reason"`
+	// The price selected. Returned whenever `priced` is true, including when the request identified the
+	// item indirectly, so that the choice can be confirmed.
+	PriceID    OptUUID   `json:"price_id"`
 	PlanName   OptString `json:"plan_name"`
 	UnitAmount OptMoney  `json:"unit_amount"`
 	Quantity   OptString `json:"quantity"`
 	// Not rounded. Round only for display.
-	Amount   Money  `json:"amount"`
-	Currency string `json:"currency"`
+	Amount   OptMoney `json:"amount"`
+	Currency string   `json:"currency"`
 }
 
 // GetIndex returns the value of Index.
@@ -7814,8 +7875,18 @@ func (s *QuoteLineResult) GetIndex() int {
 	return s.Index
 }
 
+// GetPriced returns the value of Priced.
+func (s *QuoteLineResult) GetPriced() bool {
+	return s.Priced
+}
+
+// GetUnpricedReason returns the value of UnpricedReason.
+func (s *QuoteLineResult) GetUnpricedReason() OptQuoteLineResultUnpricedReason {
+	return s.UnpricedReason
+}
+
 // GetPriceID returns the value of PriceID.
-func (s *QuoteLineResult) GetPriceID() uuid.UUID {
+func (s *QuoteLineResult) GetPriceID() OptUUID {
 	return s.PriceID
 }
 
@@ -7835,7 +7906,7 @@ func (s *QuoteLineResult) GetQuantity() OptString {
 }
 
 // GetAmount returns the value of Amount.
-func (s *QuoteLineResult) GetAmount() Money {
+func (s *QuoteLineResult) GetAmount() OptMoney {
 	return s.Amount
 }
 
@@ -7849,8 +7920,18 @@ func (s *QuoteLineResult) SetIndex(val int) {
 	s.Index = val
 }
 
+// SetPriced sets the value of Priced.
+func (s *QuoteLineResult) SetPriced(val bool) {
+	s.Priced = val
+}
+
+// SetUnpricedReason sets the value of UnpricedReason.
+func (s *QuoteLineResult) SetUnpricedReason(val OptQuoteLineResultUnpricedReason) {
+	s.UnpricedReason = val
+}
+
 // SetPriceID sets the value of PriceID.
-func (s *QuoteLineResult) SetPriceID(val uuid.UUID) {
+func (s *QuoteLineResult) SetPriceID(val OptUUID) {
 	s.PriceID = val
 }
 
@@ -7870,13 +7951,87 @@ func (s *QuoteLineResult) SetQuantity(val OptString) {
 }
 
 // SetAmount sets the value of Amount.
-func (s *QuoteLineResult) SetAmount(val Money) {
+func (s *QuoteLineResult) SetAmount(val OptMoney) {
 	s.Amount = val
 }
 
 // SetCurrency sets the value of Currency.
 func (s *QuoteLineResult) SetCurrency(val string) {
 	s.Currency = val
+}
+
+// Why no price was found; `none` while `priced` is true.
+//
+// The last four are told apart because their remedies differ: the price points at no price list, the
+// list holds no rate for that meter, that exact combination of attributes is not configured, or it is
+// configured but nothing is in effect at the moment asked about.
+type QuoteLineResultUnpricedReason string
+
+const (
+	QuoteLineResultUnpricedReasonNone            QuoteLineResultUnpricedReason = "none"
+	QuoteLineResultUnpricedReasonNoPrice         QuoteLineResultUnpricedReason = "no_price"
+	QuoteLineResultUnpricedReasonNoRateCard      QuoteLineResultUnpricedReason = "no_rate_card"
+	QuoteLineResultUnpricedReasonNoMeter         QuoteLineResultUnpricedReason = "no_meter"
+	QuoteLineResultUnpricedReasonNoDimensions    QuoteLineResultUnpricedReason = "no_dimensions"
+	QuoteLineResultUnpricedReasonNoEffectiveRule QuoteLineResultUnpricedReason = "no_effective_rule"
+)
+
+// AllValues returns all QuoteLineResultUnpricedReason values.
+func (QuoteLineResultUnpricedReason) AllValues() []QuoteLineResultUnpricedReason {
+	return []QuoteLineResultUnpricedReason{
+		QuoteLineResultUnpricedReasonNone,
+		QuoteLineResultUnpricedReasonNoPrice,
+		QuoteLineResultUnpricedReasonNoRateCard,
+		QuoteLineResultUnpricedReasonNoMeter,
+		QuoteLineResultUnpricedReasonNoDimensions,
+		QuoteLineResultUnpricedReasonNoEffectiveRule,
+	}
+}
+
+// MarshalText implements encoding.TextMarshaler.
+func (s QuoteLineResultUnpricedReason) MarshalText() ([]byte, error) {
+	switch s {
+	case QuoteLineResultUnpricedReasonNone:
+		return []byte(s), nil
+	case QuoteLineResultUnpricedReasonNoPrice:
+		return []byte(s), nil
+	case QuoteLineResultUnpricedReasonNoRateCard:
+		return []byte(s), nil
+	case QuoteLineResultUnpricedReasonNoMeter:
+		return []byte(s), nil
+	case QuoteLineResultUnpricedReasonNoDimensions:
+		return []byte(s), nil
+	case QuoteLineResultUnpricedReasonNoEffectiveRule:
+		return []byte(s), nil
+	default:
+		return nil, errors.Errorf("invalid value: %q", s)
+	}
+}
+
+// UnmarshalText implements encoding.TextUnmarshaler.
+func (s *QuoteLineResultUnpricedReason) UnmarshalText(data []byte) error {
+	switch QuoteLineResultUnpricedReason(data) {
+	case QuoteLineResultUnpricedReasonNone:
+		*s = QuoteLineResultUnpricedReasonNone
+		return nil
+	case QuoteLineResultUnpricedReasonNoPrice:
+		*s = QuoteLineResultUnpricedReasonNoPrice
+		return nil
+	case QuoteLineResultUnpricedReasonNoRateCard:
+		*s = QuoteLineResultUnpricedReasonNoRateCard
+		return nil
+	case QuoteLineResultUnpricedReasonNoMeter:
+		*s = QuoteLineResultUnpricedReasonNoMeter
+		return nil
+	case QuoteLineResultUnpricedReasonNoDimensions:
+		*s = QuoteLineResultUnpricedReasonNoDimensions
+		return nil
+	case QuoteLineResultUnpricedReasonNoEffectiveRule:
+		*s = QuoteLineResultUnpricedReasonNoEffectiveRule
+		return nil
+	default:
+		return errors.Errorf("invalid value: %q", data)
+	}
 }
 
 // Give `lines` to price new purchases, or `changes` to price alterations to what is already running.
@@ -7913,7 +8068,7 @@ type Refund struct {
 	BillingAccountID OptInt64   `json:"billing_account_id"`
 	InvoiceID        OptNilUUID `json:"invoice_id"`
 	OrderID          OptNilUUID `json:"order_id"`
-	RequestedAmount  OptMoney   `json:"requested_amount"`
+	RequestedAmount  Money      `json:"requested_amount"`
 	// What has actually been returned.
 	SettledAmount OptMoney `json:"settled_amount"`
 	Currency      string   `json:"currency"`
@@ -7945,7 +8100,7 @@ func (s *Refund) GetOrderID() OptNilUUID {
 }
 
 // GetRequestedAmount returns the value of RequestedAmount.
-func (s *Refund) GetRequestedAmount() OptMoney {
+func (s *Refund) GetRequestedAmount() Money {
 	return s.RequestedAmount
 }
 
@@ -8000,7 +8155,7 @@ func (s *Refund) SetOrderID(val OptNilUUID) {
 }
 
 // SetRequestedAmount sets the value of RequestedAmount.
-func (s *Refund) SetRequestedAmount(val OptMoney) {
+func (s *Refund) SetRequestedAmount(val Money) {
 	s.RequestedAmount = val
 }
 
@@ -8100,6 +8255,83 @@ func (s *RefundList) SetItems(val []Refund) {
 // SetTotalCount sets the value of TotalCount.
 func (s *RefundList) SetTotalCount(val OptInt64) {
 	s.TotalCount = val
+}
+
+// Name exactly one of the three targets. Naming none leaves the amount undecided; naming two leaves it
+// ambiguous, and both would have to be resolved by guessing.
+// Ref: #/components/schemas/RefundRequest
+type RefundRequest struct {
+	InvoiceID OptUUID `json:"invoice_id"`
+	OrderID   OptUUID `json:"order_id"`
+	// The period to end early. Use this to give back a prepaid term that still has time left on it.
+	SubscriptionPeriodID OptUUID `json:"subscription_period_id"`
+	// How much to give back. Absent asks for everything still refundable on the target.
+	//
+	// More than what remains is refused rather than reduced to the remainder: a caller asking for more
+	// than it can have has miscounted, and quietly giving it less hides that.
+	Amount         OptMoney `json:"amount"`
+	Reason         string   `json:"reason"`
+	IdempotencyKey string   `json:"idempotency_key"`
+}
+
+// GetInvoiceID returns the value of InvoiceID.
+func (s *RefundRequest) GetInvoiceID() OptUUID {
+	return s.InvoiceID
+}
+
+// GetOrderID returns the value of OrderID.
+func (s *RefundRequest) GetOrderID() OptUUID {
+	return s.OrderID
+}
+
+// GetSubscriptionPeriodID returns the value of SubscriptionPeriodID.
+func (s *RefundRequest) GetSubscriptionPeriodID() OptUUID {
+	return s.SubscriptionPeriodID
+}
+
+// GetAmount returns the value of Amount.
+func (s *RefundRequest) GetAmount() OptMoney {
+	return s.Amount
+}
+
+// GetReason returns the value of Reason.
+func (s *RefundRequest) GetReason() string {
+	return s.Reason
+}
+
+// GetIdempotencyKey returns the value of IdempotencyKey.
+func (s *RefundRequest) GetIdempotencyKey() string {
+	return s.IdempotencyKey
+}
+
+// SetInvoiceID sets the value of InvoiceID.
+func (s *RefundRequest) SetInvoiceID(val OptUUID) {
+	s.InvoiceID = val
+}
+
+// SetOrderID sets the value of OrderID.
+func (s *RefundRequest) SetOrderID(val OptUUID) {
+	s.OrderID = val
+}
+
+// SetSubscriptionPeriodID sets the value of SubscriptionPeriodID.
+func (s *RefundRequest) SetSubscriptionPeriodID(val OptUUID) {
+	s.SubscriptionPeriodID = val
+}
+
+// SetAmount sets the value of Amount.
+func (s *RefundRequest) SetAmount(val OptMoney) {
+	s.Amount = val
+}
+
+// SetReason sets the value of Reason.
+func (s *RefundRequest) SetReason(val string) {
+	s.Reason = val
+}
+
+// SetIdempotencyKey sets the value of IdempotencyKey.
+func (s *RefundRequest) SetIdempotencyKey(val string) {
+	s.IdempotencyKey = val
 }
 
 type RefundStatus string
@@ -8899,7 +9131,13 @@ func (s *TopUp) SetCreatedAt(val time.Time) {
 // Ref: #/components/schemas/TopUpCreate
 type TopUpCreate struct {
 	BillingAccountID int64 `json:"billing_account_id"`
-	// In the account's currency.
+	// In the account's currency, and no finer than that currency's smallest unit: two decimals for most,
+	// none for the yen. A finer amount is refused here rather than at the checkout page, where the payer
+	// would see the provider's own wording instead of an explanation.
+	//
+	// There is a minimum, which differs by currency. Below it the provider's fee exceeds the top-up
+	// itself, so such a payment costs more to accept than it brings. The minimum in force is returned with
+	// the rejection.
 	Amount Money `json:"amount"`
 	// Charge a saved method instead of opening a checkout page.
 	PaymentMethodID OptUUID `json:"payment_method_id"`

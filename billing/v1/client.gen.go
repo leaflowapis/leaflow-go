@@ -637,6 +637,36 @@ func (e QuoteLinePriceType) Valid() bool {
 	}
 }
 
+// Defines values for QuoteLineResultUnpricedReason.
+const (
+	QuoteLineResultUnpricedReasonNoDimensions    QuoteLineResultUnpricedReason = "no_dimensions"
+	QuoteLineResultUnpricedReasonNoEffectiveRule QuoteLineResultUnpricedReason = "no_effective_rule"
+	QuoteLineResultUnpricedReasonNoMeter         QuoteLineResultUnpricedReason = "no_meter"
+	QuoteLineResultUnpricedReasonNoPrice         QuoteLineResultUnpricedReason = "no_price"
+	QuoteLineResultUnpricedReasonNoRateCard      QuoteLineResultUnpricedReason = "no_rate_card"
+	QuoteLineResultUnpricedReasonNone            QuoteLineResultUnpricedReason = "none"
+)
+
+// Valid indicates whether the value is a known member of the QuoteLineResultUnpricedReason enum.
+func (e QuoteLineResultUnpricedReason) Valid() bool {
+	switch e {
+	case QuoteLineResultUnpricedReasonNoDimensions:
+		return true
+	case QuoteLineResultUnpricedReasonNoEffectiveRule:
+		return true
+	case QuoteLineResultUnpricedReasonNoMeter:
+		return true
+	case QuoteLineResultUnpricedReasonNoPrice:
+		return true
+	case QuoteLineResultUnpricedReasonNoRateCard:
+		return true
+	case QuoteLineResultUnpricedReasonNone:
+		return true
+	default:
+		return false
+	}
+}
+
 // Defines values for RefundDestination.
 const (
 	Balance  RefundDestination = "balance"
@@ -1518,7 +1548,7 @@ type Invoice struct {
 	Id             openapi_types.UUID `json:"id"`
 
 	// Number Numbered per account and per month.
-	Number *string    `json:"number,omitempty"`
+	Number string     `json:"number"`
 	PaidAt *time.Time `json:"paid_at,omitempty"`
 
 	// PeriodEnd Exclusive.
@@ -1966,21 +1996,47 @@ type QuoteLinePriceType string
 // QuoteLineResult defines model for QuoteLineResult.
 type QuoteLineResult struct {
 	// Amount Not rounded. Round only for display.
-	Amount   Money  `json:"amount"`
+	Amount   *Money `json:"amount,omitempty"`
 	Currency string `json:"currency"`
 
 	// Index Which line of the request this answers.
 	Index    int     `json:"index"`
 	PlanName *string `json:"plan_name,omitempty"`
 
-	// PriceId The price selected. Always returned, including when the request identified the item
-	// indirectly, so that the choice can be confirmed.
-	PriceId  openapi_types.UUID `json:"price_id"`
-	Quantity *string            `json:"quantity,omitempty"`
+	// PriceId The price selected. Returned whenever `priced` is true, including when the
+	// request identified the item indirectly, so that the choice can be confirmed.
+	PriceId *openapi_types.UUID `json:"price_id,omitempty"`
+
+	// Priced Whether a price was found for this line. Read this before anything else.
+	//
+	// A single item with no price no longer fails the whole request. A catalogue
+	// almost always has something not yet priced, and refusing the request would
+	// leave no way to render a list in which a few entries are simply not on sale.
+	//
+	// When false, `price_id`, `unit_amount` and `amount` are absent and
+	// `unpriced_reason` states what is missing.
+	Priced   bool    `json:"priced"`
+	Quantity *string `json:"quantity,omitempty"`
 
 	// UnitAmount A decimal string, in the currency stated alongside it.
 	UnitAmount *Money `json:"unit_amount,omitempty"`
+
+	// UnpricedReason Why no price was found; `none` while `priced` is true.
+	//
+	// The last four are told apart because their remedies differ: the price points
+	// at no price list, the list holds no rate for that meter, that exact combination
+	// of attributes is not configured, or it is configured but nothing is in effect
+	// at the moment asked about.
+	UnpricedReason *QuoteLineResultUnpricedReason `json:"unpriced_reason,omitempty"`
 }
+
+// QuoteLineResultUnpricedReason Why no price was found; `none` while `priced` is true.
+//
+// The last four are told apart because their remedies differ: the price points
+// at no price list, the list holds no rate for that meter, that exact combination
+// of attributes is not configured, or it is configured but nothing is in effect
+// at the moment asked about.
+type QuoteLineResultUnpricedReason string
 
 // QuoteRequest Give `lines` to price new purchases, or `changes` to price alterations to what is
 // already running. Both may appear in one request; the total covers everything.
@@ -2003,7 +2059,7 @@ type Refund struct {
 	Reason      *string             `json:"reason,omitempty"`
 
 	// RequestedAmount A decimal string, in the currency stated alongside it.
-	RequestedAmount *Money `json:"requested_amount,omitempty"`
+	RequestedAmount Money `json:"requested_amount"`
 
 	// SettledAmount What has actually been returned.
 	SettledAmount *Money       `json:"settled_amount,omitempty"`
@@ -2020,6 +2076,25 @@ type RefundStatus string
 type RefundList struct {
 	Items      []Refund `json:"items"`
 	TotalCount *int64   `json:"total_count,omitempty"`
+}
+
+// RefundRequest Name exactly one of the three targets. Naming none leaves the amount undecided;
+// naming two leaves it ambiguous, and both would have to be resolved by guessing.
+type RefundRequest struct {
+	// Amount How much to give back. Absent asks for everything still refundable on the target.
+	//
+	// More than what remains is refused rather than reduced to the remainder: a caller
+	// asking for more than it can have has miscounted, and quietly giving it less
+	// hides that.
+	Amount         *Money              `json:"amount,omitempty"`
+	IdempotencyKey string              `json:"idempotency_key"`
+	InvoiceId      *openapi_types.UUID `json:"invoice_id,omitempty"`
+	OrderId        *openapi_types.UUID `json:"order_id,omitempty"`
+	Reason         string              `json:"reason"`
+
+	// SubscriptionPeriodId The period to end early. Use this to give back a prepaid term that still has
+	// time left on it.
+	SubscriptionPeriodId *openapi_types.UUID `json:"subscription_period_id,omitempty"`
 }
 
 // RenewRequest defines model for RenewRequest.
@@ -2153,7 +2228,14 @@ type TopUpStatus string
 
 // TopUpCreate defines model for TopUpCreate.
 type TopUpCreate struct {
-	// Amount In the account's currency.
+	// Amount In the account's currency, and no finer than that currency's smallest unit:
+	// two decimals for most, none for the yen. A finer amount is refused here rather
+	// than at the checkout page, where the payer would see the provider's own wording
+	// instead of an explanation.
+	//
+	// There is a minimum, which differs by currency. Below it the provider's fee
+	// exceeds the top-up itself, so such a payment costs more to accept than it brings.
+	// The minimum in force is returned with the rejection.
 	Amount           Money `json:"amount"`
 	BillingAccountId int64 `json:"billing_account_id"`
 
@@ -2760,6 +2842,9 @@ type CreatePaymentMethodSetupJSONRequestBody = PaymentMethodSetup
 // SetProjectPayerJSONRequestBody defines body for SetProjectPayer for application/json ContentType.
 type SetProjectPayerJSONRequestBody = ProjectPayerSet
 
+// RequestRefundJSONRequestBody defines body for RequestRefund for application/json ContentType.
+type RequestRefundJSONRequestBody = RefundRequest
+
 // SetAutoRenewJSONRequestBody defines body for SetAutoRenew for application/json ContentType.
 type SetAutoRenewJSONRequestBody = AutoRenewSet
 
@@ -3206,6 +3291,42 @@ type ClientInterface interface {
 
 	// ListRefunds performs a GET /account/v1/refunds (the `ListRefunds` operationId) request.
 	ListRefunds(ctx context.Context, params *ListRefundsParams, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// RequestRefundWithBody Ask for a refund
+	//
+	// Refunding ends the subscription and reclaims whatever it provisioned. That is the
+	// difference from letting a period lapse: a lapsed period keeps the machine around
+	// for a while so that topping up brings it back, whereas a refund returns the money
+	// and therefore cannot leave the thing running.
+	//
+	// What can be refunded, for how long, and how much, is decided here rather than by
+	// the caller. A request outside those bounds is refused with the reason.
+	//
+	// The money goes back the way it came: card charges to the card, balance to the
+	// balance, credit to credit. A grant never turns into cash.
+	//
+	// Takes any type of body and a specified content type.
+	//
+	// Corresponds with POST /account/v1/refunds (the `RequestRefund` operationId).
+	RequestRefundWithBody(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// RequestRefund Ask for a refund
+	//
+	// Refunding ends the subscription and reclaims whatever it provisioned. That is the
+	// difference from letting a period lapse: a lapsed period keeps the machine around
+	// for a while so that topping up brings it back, whereas a refund returns the money
+	// and therefore cannot leave the thing running.
+	//
+	// What can be refunded, for how long, and how much, is decided here rather than by
+	// the caller. A request outside those bounds is refused with the reason.
+	//
+	// The money goes back the way it came: card charges to the card, balance to the
+	// balance, credit to credit. A grant never turns into cash.
+	//
+	// Takes a body of the `application/json` content type.
+	//
+	// Corresponds with POST /account/v1/refunds (the `RequestRefund` operationId).
+	RequestRefund(ctx context.Context, body RequestRefundJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
 
 	// ListSubscriptionItems What has been bought, and when each renews
 	//
@@ -4227,6 +4348,62 @@ func (c *Client) SettleProjectUsage(ctx context.Context, projectId ProjectId, re
 // ListRefunds performs a GET /account/v1/refunds (the `ListRefunds` operationId) request.
 func (c *Client) ListRefunds(ctx context.Context, params *ListRefundsParams, reqEditors ...RequestEditorFn) (*http.Response, error) {
 	req, err := NewListRefundsRequest(c.Server, params)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+// RequestRefundWithBody Ask for a refund
+//
+// Refunding ends the subscription and reclaims whatever it provisioned. That is the
+// difference from letting a period lapse: a lapsed period keeps the machine around
+// for a while so that topping up brings it back, whereas a refund returns the money
+// and therefore cannot leave the thing running.
+//
+// What can be refunded, for how long, and how much, is decided here rather than by
+// the caller. A request outside those bounds is refused with the reason.
+//
+// The money goes back the way it came: card charges to the card, balance to the
+// balance, credit to credit. A grant never turns into cash.
+//
+// Takes any type of body and a specified content type.
+//
+// Corresponds with POST /account/v1/refunds (the `RequestRefund` operationId).
+func (c *Client) RequestRefundWithBody(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewRequestRefundRequestWithBody(c.Server, contentType, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+// RequestRefund Ask for a refund
+//
+// Refunding ends the subscription and reclaims whatever it provisioned. That is the
+// difference from letting a period lapse: a lapsed period keeps the machine around
+// for a while so that topping up brings it back, whereas a refund returns the money
+// and therefore cannot leave the thing running.
+//
+// What can be refunded, for how long, and how much, is decided here rather than by
+// the caller. A request outside those bounds is refused with the reason.
+//
+// The money goes back the way it came: card charges to the card, balance to the
+// balance, credit to credit. A grant never turns into cash.
+//
+// Takes a body of the `application/json` content type.
+//
+// Corresponds with POST /account/v1/refunds (the `RequestRefund` operationId).
+func (c *Client) RequestRefund(ctx context.Context, body RequestRefundJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewRequestRefundRequest(c.Server, body)
 	if err != nil {
 		return nil, err
 	}
@@ -6654,6 +6831,46 @@ func NewListRefundsRequest(server string, params *ListRefundsParams) (*http.Requ
 	if err != nil {
 		return nil, err
 	}
+
+	return req, nil
+}
+
+// NewRequestRefundRequest calls the generic RequestRefund builder with application/json body
+func NewRequestRefundRequest(server string, body RequestRefundJSONRequestBody) (*http.Request, error) {
+	var bodyReader io.Reader
+	buf, err := json.Marshal(body)
+	if err != nil {
+		return nil, err
+	}
+	bodyReader = bytes.NewReader(buf)
+	return NewRequestRefundRequestWithBody(server, "application/json", bodyReader)
+}
+
+// NewRequestRefundRequestWithBody constructs an http.Request for the RequestRefund method, with any body, and a specified content type
+func NewRequestRefundRequestWithBody(server string, contentType string, body io.Reader) (*http.Request, error) {
+	var err error
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/account/v1/refunds")
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest(http.MethodPost, queryURL.String(), body)
+	if err != nil {
+		return nil, err
+	}
+
+	req.Header.Add("Content-Type", contentType)
 
 	return req, nil
 }
@@ -9200,6 +9417,42 @@ type ClientWithResponsesInterface interface {
 	// Returns a wrapper object for the known response body format(s).
 	ListRefundsWithResponse(ctx context.Context, params *ListRefundsParams, reqEditors ...RequestEditorFn) (*ListRefundsResponse, error)
 
+	// RequestRefundWithBodyWithResponse Ask for a refund
+	//
+	// Refunding ends the subscription and reclaims whatever it provisioned. That is the
+	// difference from letting a period lapse: a lapsed period keeps the machine around
+	// for a while so that topping up brings it back, whereas a refund returns the money
+	// and therefore cannot leave the thing running.
+	//
+	// What can be refunded, for how long, and how much, is decided here rather than by
+	// the caller. A request outside those bounds is refused with the reason.
+	//
+	// The money goes back the way it came: card charges to the card, balance to the
+	// balance, credit to credit. A grant never turns into cash.
+	//
+	// Takes any type of body and a specified content type, and returns a wrapper object for the known response body format(s).
+	//
+	// Corresponds with POST /account/v1/refunds (the `RequestRefund` operationId).
+	RequestRefundWithBodyWithResponse(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*RequestRefundResponse, error)
+
+	// RequestRefundWithResponse Ask for a refund
+	//
+	// Refunding ends the subscription and reclaims whatever it provisioned. That is the
+	// difference from letting a period lapse: a lapsed period keeps the machine around
+	// for a while so that topping up brings it back, whereas a refund returns the money
+	// and therefore cannot leave the thing running.
+	//
+	// What can be refunded, for how long, and how much, is decided here rather than by
+	// the caller. A request outside those bounds is refused with the reason.
+	//
+	// The money goes back the way it came: card charges to the card, balance to the
+	// balance, credit to credit. A grant never turns into cash.
+	//
+	// Takes a body of the `application/json` content type, and returns a wrapper object for the known response body format(s).
+	//
+	// Corresponds with POST /account/v1/refunds (the `RequestRefund` operationId).
+	RequestRefundWithResponse(ctx context.Context, body RequestRefundJSONRequestBody, reqEditors ...RequestEditorFn) (*RequestRefundResponse, error)
+
 	// ListSubscriptionItemsWithResponse What has been bought, and when each renews
 	//
 	// Returns a wrapper object for the known response body format(s).
@@ -10957,6 +11210,54 @@ func (r ListRefundsResponse) StatusCode() int {
 
 // ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
 func (r ListRefundsResponse) ContentType() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Header.Get("Content-Type")
+	}
+	return ""
+}
+
+type RequestRefundResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	// JSON201 the response for an HTTP 201 `application/json` response
+	JSON201 *Refund
+	// JSONDefault the response for an HTTP default `application/json` response
+	JSONDefault *Error
+}
+
+// GetJSON201 returns the response for an HTTP 201 `application/json` response
+func (r RequestRefundResponse) GetJSON201() *Refund {
+	return r.JSON201
+}
+
+// GetJSONDefault returns the response for an HTTP default `application/json` response
+func (r RequestRefundResponse) GetJSONDefault() *Error {
+	return r.JSONDefault
+}
+
+// GetBody returns the raw response body bytes
+func (r RequestRefundResponse) GetBody() []byte {
+	return r.Body
+}
+
+// Status returns HTTPResponse.Status
+func (r RequestRefundResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r RequestRefundResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+// ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
+func (r RequestRefundResponse) ContentType() string {
 	if r.HTTPResponse != nil {
 		return r.HTTPResponse.Header.Get("Content-Type")
 	}
@@ -12942,6 +13243,54 @@ func (c *ClientWithResponses) ListRefundsWithResponse(ctx context.Context, param
 	return ParseListRefundsResponse(rsp)
 }
 
+// RequestRefundWithBodyWithResponse Ask for a refund
+//
+// Refunding ends the subscription and reclaims whatever it provisioned. That is the
+// difference from letting a period lapse: a lapsed period keeps the machine around
+// for a while so that topping up brings it back, whereas a refund returns the money
+// and therefore cannot leave the thing running.
+//
+// What can be refunded, for how long, and how much, is decided here rather than by
+// the caller. A request outside those bounds is refused with the reason.
+//
+// The money goes back the way it came: card charges to the card, balance to the
+// balance, credit to credit. A grant never turns into cash.
+//
+// Takes any type of body and a specified content type, and returns a wrapper object for the known response body format(s).
+//
+// Corresponds with POST /account/v1/refunds (the `RequestRefund` operationId).
+func (c *ClientWithResponses) RequestRefundWithBodyWithResponse(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*RequestRefundResponse, error) {
+	rsp, err := c.RequestRefundWithBody(ctx, contentType, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseRequestRefundResponse(rsp)
+}
+
+// RequestRefundWithResponse Ask for a refund
+//
+// Refunding ends the subscription and reclaims whatever it provisioned. That is the
+// difference from letting a period lapse: a lapsed period keeps the machine around
+// for a while so that topping up brings it back, whereas a refund returns the money
+// and therefore cannot leave the thing running.
+//
+// What can be refunded, for how long, and how much, is decided here rather than by
+// the caller. A request outside those bounds is refused with the reason.
+//
+// The money goes back the way it came: card charges to the card, balance to the
+// balance, credit to credit. A grant never turns into cash.
+//
+// Takes a body of the `application/json` content type, and returns a wrapper object for the known response body format(s).
+//
+// Corresponds with POST /account/v1/refunds (the `RequestRefund` operationId).
+func (c *ClientWithResponses) RequestRefundWithResponse(ctx context.Context, body RequestRefundJSONRequestBody, reqEditors ...RequestEditorFn) (*RequestRefundResponse, error) {
+	rsp, err := c.RequestRefund(ctx, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseRequestRefundResponse(rsp)
+}
+
 // ListSubscriptionItemsWithResponse What has been bought, and when each renews
 //
 // Returns a wrapper object for the known response body format(s).
@@ -14445,6 +14794,39 @@ func ParseListRefundsResponse(rsp *http.Response) (*ListRefundsResponse, error) 
 			return nil, err
 		}
 		response.JSON200 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && true:
+		var dest Error
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSONDefault = &dest
+
+	}
+
+	return response, nil
+}
+
+// ParseRequestRefundResponse parses an HTTP response from a RequestRefundWithResponse call
+func ParseRequestRefundResponse(rsp *http.Response) (*RequestRefundResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &RequestRefundResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 201:
+		var dest Refund
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON201 = &dest
 
 	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && true:
 		var dest Error

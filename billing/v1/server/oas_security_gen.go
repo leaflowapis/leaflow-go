@@ -73,6 +73,7 @@ var operationRolesAccountAuth = map[string][]string{
 	PreviewCodeOperation:               []string{},
 	RedeemCodeOperation:                []string{},
 	RenewSubscriptionItemOperation:     []string{},
+	RequestRefundOperation:             []string{},
 	SetAutoRenewOperation:              []string{},
 	SetDefaultPaymentMethodOperation:   []string{},
 	SetProjectPayerOperation:           []string{},

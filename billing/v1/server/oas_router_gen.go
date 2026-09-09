@@ -91,7 +91,8 @@ var (
 		"POST": "Authorization",
 	}
 	rn68AllowedHeaders = map[string]string{
-		"GET": "Authorization",
+		"GET":  "Authorization",
+		"POST": "Authorization,Content-Type",
 	}
 	rn69AllowedHeaders = map[string]string{
 		"GET": "Authorization",
@@ -1110,11 +1111,13 @@ func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 							switch r.Method {
 							case "GET":
 								s.handleListRefundsRequest([0]string{}, elemIsEscaped, w, r)
+							case "POST":
+								s.handleRequestRefundRequest([0]string{}, elemIsEscaped, w, r)
 							default:
 								s.notAllowed(w, r, notAllowedParams{
-									allowedMethods: "GET",
+									allowedMethods: "GET,POST",
 									allowedHeaders: rn68AllowedHeaders,
-									acceptPost:     "",
+									acceptPost:     "application/json",
 									acceptPatch:    "",
 								})
 							}
@@ -3090,6 +3093,15 @@ func (s *Server) FindPath(method string, u *url.URL) (r Route, _ bool) {
 								r.name = ListRefundsOperation
 								r.summary = ""
 								r.operationID = "list-refunds"
+								r.operationGroup = ""
+								r.pathPattern = "/account/v1/refunds"
+								r.args = args
+								r.count = 0
+								return r, true
+							case "POST":
+								r.name = RequestRefundOperation
+								r.summary = "Ask for a refund"
+								r.operationID = "request-refund"
 								r.operationGroup = ""
 								r.pathPattern = "/account/v1/refunds"
 								r.args = args
