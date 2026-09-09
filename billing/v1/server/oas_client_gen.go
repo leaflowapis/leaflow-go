@@ -53,8 +53,8 @@ type Invoker interface {
 	CreateEstimate(ctx context.Context, request *EstimateRequest) (*Quote, error)
 	// CreatePaymentMethodSetup invokes create-payment-method-setup operation.
 	//
-	// Returns an address at which the payment provider collects the card details. Nothing is charged. The
-	// method appears in the list once the provider confirms it.
+	// Returns what is needed to hand the browser over to the payment provider's own card form. Nothing is
+	// charged, and the method appears in the list once the provider confirms it.
 	//
 	// Card numbers are never sent to or stored by this service.
 	//
@@ -109,10 +109,35 @@ type Invoker interface {
 	//
 	// GET /account/v1/invoices/{invoiceId}
 	GetInvoice(ctx context.Context, params GetInvoiceParams) (*Invoice, error)
+	// GetInvoiceRefundQuote invokes get-invoice-refund-quote operation.
+	//
+	// Show this before asking for a refund. Nothing is recorded and nothing is reserved; the answer
+	// follows from what has been paid and what has already been returned, so it may be read as often as
+	// required.
+	//
+	// `refundable_amount` is `"0"` once nothing is left, which is also the answer for an invoice already
+	// refunded in full.
+	//
+	// GET /account/v1/invoices/{invoiceId}/refund-quote
+	GetInvoiceRefundQuote(ctx context.Context, params GetInvoiceRefundQuoteParams) (*RefundQuote, error)
 	// GetOrder invokes get-order operation.
 	//
 	// GET /account/v1/orders/{orderId}
 	GetOrder(ctx context.Context, params GetOrderParams) (*Order, error)
+	// GetOrderRefundQuote invokes get-order-refund-quote operation.
+	//
+	// Show this before asking for a refund. Nothing is recorded and nothing is reserved; the answer
+	// follows from what has been paid and what has already been returned, so it may be read as often as
+	// required.
+	//
+	// `refundable_amount` is `"0"` once nothing is left, which is also the answer for an order already
+	// refunded in full.
+	//
+	// Refunding an order also ends what it bought and reclaims whatever it provisioned. That is not
+	// reflected in the amounts here.
+	//
+	// GET /account/v1/orders/{orderId}/refund-quote
+	GetOrderRefundQuote(ctx context.Context, params GetOrderRefundQuoteParams) (*RefundQuote, error)
 	// GetProjectBillingAccount invokes get-project-billing-account operation.
 	//
 	// A deliberately narrow view: the payer's identity, its currency, and how much can still be spent.
@@ -137,6 +162,8 @@ type Invoker interface {
 	//
 	// Give `source_id` to follow one top-up or grant through to everything it paid for. Give `target_id`
 	// to see which sources paid for one line of an invoice.
+	//
+	// Give `source_type` on its own to separate what cash paid for from what granted credit paid for.
 	//
 	// GET /account/v1/allocations
 	ListAllocations(ctx context.Context, params ListAllocationsParams) (*AllocationList, error)
@@ -718,8 +745,8 @@ func (c *Client) sendCreateEstimate(ctx context.Context, request *EstimateReques
 
 // CreatePaymentMethodSetup invokes create-payment-method-setup operation.
 //
-// Returns an address at which the payment provider collects the card details. Nothing is charged. The
-// method appears in the list once the provider confirms it.
+// Returns what is needed to hand the browser over to the payment provider's own card form. Nothing is
+// charged, and the method appears in the list once the provider confirms it.
 //
 // Card numbers are never sent to or stored by this service.
 //
@@ -1750,6 +1777,143 @@ func (c *Client) sendGetInvoice(ctx context.Context, params GetInvoiceParams) (r
 	return result, nil
 }
 
+// GetInvoiceRefundQuote invokes get-invoice-refund-quote operation.
+//
+// Show this before asking for a refund. Nothing is recorded and nothing is reserved; the answer
+// follows from what has been paid and what has already been returned, so it may be read as often as
+// required.
+//
+// `refundable_amount` is `"0"` once nothing is left, which is also the answer for an invoice already
+// refunded in full.
+//
+// GET /account/v1/invoices/{invoiceId}/refund-quote
+func (c *Client) GetInvoiceRefundQuote(ctx context.Context, params GetInvoiceRefundQuoteParams) (*RefundQuote, error) {
+	res, err := c.sendGetInvoiceRefundQuote(ctx, params)
+	return res, err
+}
+
+func (c *Client) sendGetInvoiceRefundQuote(ctx context.Context, params GetInvoiceRefundQuoteParams) (res *RefundQuote, err error) {
+	otelAttrs := []attribute.KeyValue{
+		otelogen.OperationID("get-invoice-refund-quote"),
+		semconv.HTTPRequestMethodKey.String("GET"),
+		semconv.URLTemplateKey.String("/account/v1/invoices/{invoiceId}/refund-quote"),
+	}
+	otelAttrs = append(otelAttrs, c.cfg.Attributes...)
+
+	// Run stopwatch.
+	startTime := time.Now()
+	defer func() {
+		// Use floating point division here for higher precision (instead of Millisecond method).
+		elapsedDuration := time.Since(startTime)
+		c.duration.Record(ctx, float64(elapsedDuration)/float64(time.Millisecond), metric.WithAttributes(otelAttrs...))
+	}()
+
+	// Increment request counter.
+	c.requests.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
+
+	// Start a span for this request.
+	ctx, span := c.cfg.Tracer.Start(ctx, GetInvoiceRefundQuoteOperation,
+		trace.WithAttributes(otelAttrs...),
+		clientSpanKind,
+	)
+	// Track stage for error reporting.
+	var stage string
+	defer func() {
+		if err != nil {
+			span.RecordError(err)
+			span.SetStatus(codes.Error, stage)
+			c.errors.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
+		}
+		span.End()
+	}()
+
+	stage = "BuildURL"
+	u := uri.Clone(c.requestURL(ctx))
+	var pathParts [3]string
+	pathParts[0] = "/account/v1/invoices/"
+	{
+		// Encode "invoiceId" parameter.
+		e := uri.NewPathEncoder(uri.PathEncoderConfig{
+			Param:   "invoiceId",
+			Style:   uri.PathStyleSimple,
+			Explode: false,
+		})
+		if err := func() error {
+			return e.EncodeValue(conv.UUIDToString(params.InvoiceId))
+		}(); err != nil {
+			return res, errors.Wrap(err, "encode path")
+		}
+		encoded, err := e.Result()
+		if err != nil {
+			return res, errors.Wrap(err, "encode path")
+		}
+		pathParts[1] = encoded
+	}
+	pathParts[2] = "/refund-quote"
+	uri.AddPathParts(u, pathParts[:]...)
+
+	stage = "EncodeRequest"
+	r, err := ht.NewRequest(ctx, "GET", u)
+	if err != nil {
+		return res, errors.Wrap(err, "create request")
+	}
+
+	{
+		type bitset = [1]uint8
+		var satisfied bitset
+		{
+			stage = "Security:AccountAuth"
+			switch err := c.securityAccountAuth(ctx, GetInvoiceRefundQuoteOperation, r); {
+			case err == nil: // if NO error
+				satisfied[0] |= 1 << 0
+			case errors.Is(err, ogenerrors.ErrSkipClientSecurity):
+				// Skip this security.
+			default:
+				return res, errors.Wrap(err, "security \"AccountAuth\"")
+			}
+		}
+
+		if ok := func() bool {
+		nextRequirement:
+			for _, requirement := range []bitset{
+				{0b00000001},
+			} {
+				for i, mask := range requirement {
+					if satisfied[i]&mask != mask {
+						continue nextRequirement
+					}
+				}
+				return true
+			}
+			return false
+		}(); !ok {
+			return res, ogenerrors.ErrSecurityRequirementIsNotSatisfied
+		}
+	}
+
+	stage = "SendRequest"
+	resp, err := c.cfg.Client.Do(r)
+	if err != nil {
+		return res, errors.Wrap(err, "do request")
+	}
+	body := resp.Body
+	defer func() {
+		// Drain the body to EOF before closing, so the underlying
+		// connection can be reused by the Transport regardless of the
+		// response status code. See https://github.com/ogen-go/ogen/issues/1670.
+		_, _ = io.Copy(io.Discard, body)
+		_ = body.Close()
+	}()
+
+	stage = "DecodeResponse"
+	result, err := decodeGetInvoiceRefundQuoteResponse(resp)
+	if err != nil {
+		return res, errors.Wrap(err, "decode response")
+	}
+
+	return result, nil
+}
+
 // GetOrder invokes get-order operation.
 //
 // GET /account/v1/orders/{orderId}
@@ -1872,6 +2036,146 @@ func (c *Client) sendGetOrder(ctx context.Context, params GetOrderParams) (res *
 
 	stage = "DecodeResponse"
 	result, err := decodeGetOrderResponse(resp)
+	if err != nil {
+		return res, errors.Wrap(err, "decode response")
+	}
+
+	return result, nil
+}
+
+// GetOrderRefundQuote invokes get-order-refund-quote operation.
+//
+// Show this before asking for a refund. Nothing is recorded and nothing is reserved; the answer
+// follows from what has been paid and what has already been returned, so it may be read as often as
+// required.
+//
+// `refundable_amount` is `"0"` once nothing is left, which is also the answer for an order already
+// refunded in full.
+//
+// Refunding an order also ends what it bought and reclaims whatever it provisioned. That is not
+// reflected in the amounts here.
+//
+// GET /account/v1/orders/{orderId}/refund-quote
+func (c *Client) GetOrderRefundQuote(ctx context.Context, params GetOrderRefundQuoteParams) (*RefundQuote, error) {
+	res, err := c.sendGetOrderRefundQuote(ctx, params)
+	return res, err
+}
+
+func (c *Client) sendGetOrderRefundQuote(ctx context.Context, params GetOrderRefundQuoteParams) (res *RefundQuote, err error) {
+	otelAttrs := []attribute.KeyValue{
+		otelogen.OperationID("get-order-refund-quote"),
+		semconv.HTTPRequestMethodKey.String("GET"),
+		semconv.URLTemplateKey.String("/account/v1/orders/{orderId}/refund-quote"),
+	}
+	otelAttrs = append(otelAttrs, c.cfg.Attributes...)
+
+	// Run stopwatch.
+	startTime := time.Now()
+	defer func() {
+		// Use floating point division here for higher precision (instead of Millisecond method).
+		elapsedDuration := time.Since(startTime)
+		c.duration.Record(ctx, float64(elapsedDuration)/float64(time.Millisecond), metric.WithAttributes(otelAttrs...))
+	}()
+
+	// Increment request counter.
+	c.requests.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
+
+	// Start a span for this request.
+	ctx, span := c.cfg.Tracer.Start(ctx, GetOrderRefundQuoteOperation,
+		trace.WithAttributes(otelAttrs...),
+		clientSpanKind,
+	)
+	// Track stage for error reporting.
+	var stage string
+	defer func() {
+		if err != nil {
+			span.RecordError(err)
+			span.SetStatus(codes.Error, stage)
+			c.errors.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
+		}
+		span.End()
+	}()
+
+	stage = "BuildURL"
+	u := uri.Clone(c.requestURL(ctx))
+	var pathParts [3]string
+	pathParts[0] = "/account/v1/orders/"
+	{
+		// Encode "orderId" parameter.
+		e := uri.NewPathEncoder(uri.PathEncoderConfig{
+			Param:   "orderId",
+			Style:   uri.PathStyleSimple,
+			Explode: false,
+		})
+		if err := func() error {
+			return e.EncodeValue(conv.UUIDToString(params.OrderId))
+		}(); err != nil {
+			return res, errors.Wrap(err, "encode path")
+		}
+		encoded, err := e.Result()
+		if err != nil {
+			return res, errors.Wrap(err, "encode path")
+		}
+		pathParts[1] = encoded
+	}
+	pathParts[2] = "/refund-quote"
+	uri.AddPathParts(u, pathParts[:]...)
+
+	stage = "EncodeRequest"
+	r, err := ht.NewRequest(ctx, "GET", u)
+	if err != nil {
+		return res, errors.Wrap(err, "create request")
+	}
+
+	{
+		type bitset = [1]uint8
+		var satisfied bitset
+		{
+			stage = "Security:AccountAuth"
+			switch err := c.securityAccountAuth(ctx, GetOrderRefundQuoteOperation, r); {
+			case err == nil: // if NO error
+				satisfied[0] |= 1 << 0
+			case errors.Is(err, ogenerrors.ErrSkipClientSecurity):
+				// Skip this security.
+			default:
+				return res, errors.Wrap(err, "security \"AccountAuth\"")
+			}
+		}
+
+		if ok := func() bool {
+		nextRequirement:
+			for _, requirement := range []bitset{
+				{0b00000001},
+			} {
+				for i, mask := range requirement {
+					if satisfied[i]&mask != mask {
+						continue nextRequirement
+					}
+				}
+				return true
+			}
+			return false
+		}(); !ok {
+			return res, ogenerrors.ErrSecurityRequirementIsNotSatisfied
+		}
+	}
+
+	stage = "SendRequest"
+	resp, err := c.cfg.Client.Do(r)
+	if err != nil {
+		return res, errors.Wrap(err, "do request")
+	}
+	body := resp.Body
+	defer func() {
+		// Drain the body to EOF before closing, so the underlying
+		// connection can be reused by the Transport regardless of the
+		// response status code. See https://github.com/ogen-go/ogen/issues/1670.
+		_, _ = io.Copy(io.Discard, body)
+		_ = body.Close()
+	}()
+
+	stage = "DecodeResponse"
+	result, err := decodeGetOrderRefundQuoteResponse(resp)
 	if err != nil {
 		return res, errors.Wrap(err, "decode response")
 	}
@@ -2299,6 +2603,8 @@ func (c *Client) sendGetTopUp(ctx context.Context, params GetTopUpParams) (res *
 // Give `source_id` to follow one top-up or grant through to everything it paid for. Give `target_id`
 // to see which sources paid for one line of an invoice.
 //
+// Give `source_type` on its own to separate what cash paid for from what granted credit paid for.
+//
 // GET /account/v1/allocations
 func (c *Client) ListAllocations(ctx context.Context, params ListAllocationsParams) (*AllocationList, error) {
 	res, err := c.sendListAllocations(ctx, params)
@@ -2393,6 +2699,23 @@ func (c *Client) sendListAllocations(ctx context.Context, params ListAllocations
 		if err := q.EncodeParam(cfg, func(e uri.Encoder) error {
 			if val, ok := params.BillingAccountID.Get(); ok {
 				return e.EncodeValue(conv.Int64ToString(val))
+			}
+			return nil
+		}); err != nil {
+			return res, errors.Wrap(err, "encode query")
+		}
+	}
+	{
+		// Encode "source_type" parameter.
+		cfg := uri.QueryParameterEncodingConfig{
+			Name:    "source_type",
+			Style:   uri.QueryStyleForm,
+			Explode: true,
+		}
+
+		if err := q.EncodeParam(cfg, func(e uri.Encoder) error {
+			if val, ok := params.SourceType.Get(); ok {
+				return e.EncodeValue(conv.StringToString(string(val)))
 			}
 			return nil
 		}); err != nil {
@@ -6878,6 +7201,23 @@ func (c *Client) sendListProjectUsageCharges(ctx context.Context, params ListPro
 		}
 	}
 	{
+		// Encode "product_key" parameter.
+		cfg := uri.QueryParameterEncodingConfig{
+			Name:    "product_key",
+			Style:   uri.QueryStyleForm,
+			Explode: true,
+		}
+
+		if err := q.EncodeParam(cfg, func(e uri.Encoder) error {
+			if val, ok := params.ProductKey.Get(); ok {
+				return e.EncodeValue(conv.StringToString(val))
+			}
+			return nil
+		}); err != nil {
+			return res, errors.Wrap(err, "encode query")
+		}
+	}
+	{
 		// Encode "meter_key" parameter.
 		cfg := uri.QueryParameterEncodingConfig{
 			Name:    "meter_key",
@@ -8027,6 +8367,23 @@ func (c *Client) sendListUsageCharges(ctx context.Context, params ListUsageCharg
 		if err := q.EncodeParam(cfg, func(e uri.Encoder) error {
 			if val, ok := params.ProjectID.Get(); ok {
 				return e.EncodeValue(conv.UUIDToString(val))
+			}
+			return nil
+		}); err != nil {
+			return res, errors.Wrap(err, "encode query")
+		}
+	}
+	{
+		// Encode "product_key" parameter.
+		cfg := uri.QueryParameterEncodingConfig{
+			Name:    "product_key",
+			Style:   uri.QueryStyleForm,
+			Explode: true,
+		}
+
+		if err := q.EncodeParam(cfg, func(e uri.Encoder) error {
+			if val, ok := params.ProductKey.Get(); ok {
+				return e.EncodeValue(conv.StringToString(val))
 			}
 			return nil
 		}); err != nil {

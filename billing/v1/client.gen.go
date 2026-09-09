@@ -78,19 +78,19 @@ func (e AllocationTargetType) Valid() bool {
 
 // Defines values for AllowanceSourceType.
 const (
-	AllowanceSourceTypeIncluded    AllowanceSourceType = "included"
-	AllowanceSourceTypePackage     AllowanceSourceType = "package"
-	AllowanceSourceTypePromotional AllowanceSourceType = "promotional"
+	Included    AllowanceSourceType = "included"
+	Package     AllowanceSourceType = "package"
+	Promotional AllowanceSourceType = "promotional"
 )
 
 // Valid indicates whether the value is a known member of the AllowanceSourceType enum.
 func (e AllowanceSourceType) Valid() bool {
 	switch e {
-	case AllowanceSourceTypeIncluded:
+	case Included:
 		return true
-	case AllowanceSourceTypePackage:
+	case Package:
 		return true
-	case AllowanceSourceTypePromotional:
+	case Promotional:
 		return true
 	default:
 		return false
@@ -190,6 +190,7 @@ func (e CatalogPricePeriod) Valid() bool {
 // Defines values for CatalogPriceTiersMode.
 const (
 	CatalogPriceTiersModeGraduated CatalogPriceTiersMode = "graduated"
+	CatalogPriceTiersModeNone      CatalogPriceTiersMode = "none"
 	CatalogPriceTiersModeVolume    CatalogPriceTiersMode = "volume"
 )
 
@@ -197,6 +198,8 @@ const (
 func (e CatalogPriceTiersMode) Valid() bool {
 	switch e {
 	case CatalogPriceTiersModeGraduated:
+		return true
+	case CatalogPriceTiersModeNone:
 		return true
 	case CatalogPriceTiersModeVolume:
 		return true
@@ -336,20 +339,20 @@ func (e CodeRejection) Valid() bool {
 
 // Defines values for CreditGrantSourceType.
 const (
-	CreditGrantSourceTypeCompensation CreditGrantSourceType = "compensation"
-	CreditGrantSourceTypeMembership   CreditGrantSourceType = "membership"
-	CreditGrantSourceTypePromotional  CreditGrantSourceType = "promotional"
-	CreditGrantSourceTypeVoucher      CreditGrantSourceType = "voucher"
+	CreditGrantSourceTypeManual     CreditGrantSourceType = "manual"
+	CreditGrantSourceTypeMembership CreditGrantSourceType = "membership"
+	CreditGrantSourceTypePromotion  CreditGrantSourceType = "promotion"
+	CreditGrantSourceTypeVoucher    CreditGrantSourceType = "voucher"
 )
 
 // Valid indicates whether the value is a known member of the CreditGrantSourceType enum.
 func (e CreditGrantSourceType) Valid() bool {
 	switch e {
-	case CreditGrantSourceTypeCompensation:
+	case CreditGrantSourceTypeManual:
 		return true
 	case CreditGrantSourceTypeMembership:
 		return true
-	case CreditGrantSourceTypePromotional:
+	case CreditGrantSourceTypePromotion:
 		return true
 	case CreditGrantSourceTypeVoucher:
 		return true
@@ -360,10 +363,10 @@ func (e CreditGrantSourceType) Valid() bool {
 
 // Defines values for CreditGrantStatus.
 const (
-	CreditGrantStatusActive    CreditGrantStatus = "active"
-	CreditGrantStatusExhausted CreditGrantStatus = "exhausted"
-	CreditGrantStatusExpired   CreditGrantStatus = "expired"
-	CreditGrantStatusVoided    CreditGrantStatus = "voided"
+	CreditGrantStatusActive   CreditGrantStatus = "active"
+	CreditGrantStatusDepleted CreditGrantStatus = "depleted"
+	CreditGrantStatusExpired  CreditGrantStatus = "expired"
+	CreditGrantStatusVoided   CreditGrantStatus = "voided"
 )
 
 // Valid indicates whether the value is a known member of the CreditGrantStatus enum.
@@ -371,7 +374,7 @@ func (e CreditGrantStatus) Valid() bool {
 	switch e {
 	case CreditGrantStatusActive:
 		return true
-	case CreditGrantStatusExhausted:
+	case CreditGrantStatusDepleted:
 		return true
 	case CreditGrantStatusExpired:
 		return true
@@ -669,16 +672,16 @@ func (e QuoteLineResultUnpricedReason) Valid() bool {
 
 // Defines values for RefundDestination.
 const (
-	Balance  RefundDestination = "balance"
-	Provider RefundDestination = "provider"
+	RefundDestinationBalance  RefundDestination = "balance"
+	RefundDestinationProvider RefundDestination = "provider"
 )
 
 // Valid indicates whether the value is a known member of the RefundDestination enum.
 func (e RefundDestination) Valid() bool {
 	switch e {
-	case Balance:
+	case RefundDestinationBalance:
 		return true
-	case Provider:
+	case RefundDestinationProvider:
 		return true
 	default:
 		return false
@@ -687,9 +690,10 @@ func (e RefundDestination) Valid() bool {
 
 // Defines values for RefundStatus.
 const (
-	RefundStatusFailed    RefundStatus = "failed"
-	RefundStatusPending   RefundStatus = "pending"
-	RefundStatusSucceeded RefundStatus = "succeeded"
+	RefundStatusFailed     RefundStatus = "failed"
+	RefundStatusPending    RefundStatus = "pending"
+	RefundStatusProcessing RefundStatus = "processing"
+	RefundStatusSucceeded  RefundStatus = "succeeded"
 )
 
 // Valid indicates whether the value is a known member of the RefundStatus enum.
@@ -699,7 +703,48 @@ func (e RefundStatus) Valid() bool {
 		return true
 	case RefundStatusPending:
 		return true
+	case RefundStatusProcessing:
+		return true
 	case RefundStatusSucceeded:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for RefundQuoteDestination.
+const (
+	RefundQuoteDestinationBalance  RefundQuoteDestination = "balance"
+	RefundQuoteDestinationProvider RefundQuoteDestination = "provider"
+)
+
+// Valid indicates whether the value is a known member of the RefundQuoteDestination enum.
+func (e RefundQuoteDestination) Valid() bool {
+	switch e {
+	case RefundQuoteDestinationBalance:
+		return true
+	case RefundQuoteDestinationProvider:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for RefundSourceType.
+const (
+	RefundSourceTypeCash    RefundSourceType = "cash"
+	RefundSourceTypeCredit  RefundSourceType = "credit"
+	RefundSourceTypeVoucher RefundSourceType = "voucher"
+)
+
+// Valid indicates whether the value is a known member of the RefundSourceType enum.
+func (e RefundSourceType) Valid() bool {
+	switch e {
+	case RefundSourceTypeCash:
+		return true
+	case RefundSourceTypeCredit:
+		return true
+	case RefundSourceTypeVoucher:
 		return true
 	default:
 		return false
@@ -708,9 +753,11 @@ func (e RefundStatus) Valid() bool {
 
 // Defines values for SubscriptionStatus.
 const (
-	SubscriptionStatusActive    SubscriptionStatus = "active"
-	SubscriptionStatusCancelled SubscriptionStatus = "cancelled"
-	SubscriptionStatusSuspended SubscriptionStatus = "suspended"
+	SubscriptionStatusActive     SubscriptionStatus = "active"
+	SubscriptionStatusCanceled   SubscriptionStatus = "canceled"
+	SubscriptionStatusPending    SubscriptionStatus = "pending"
+	SubscriptionStatusSuspended  SubscriptionStatus = "suspended"
+	SubscriptionStatusTerminated SubscriptionStatus = "terminated"
 )
 
 // Valid indicates whether the value is a known member of the SubscriptionStatus enum.
@@ -718,9 +765,13 @@ func (e SubscriptionStatus) Valid() bool {
 	switch e {
 	case SubscriptionStatusActive:
 		return true
-	case SubscriptionStatusCancelled:
+	case SubscriptionStatusCanceled:
+		return true
+	case SubscriptionStatusPending:
 		return true
 	case SubscriptionStatusSuspended:
+		return true
+	case SubscriptionStatusTerminated:
 		return true
 	default:
 		return false
@@ -730,7 +781,7 @@ func (e SubscriptionStatus) Valid() bool {
 // Defines values for SubscriptionItemStatus.
 const (
 	SubscriptionItemStatusActive     SubscriptionItemStatus = "active"
-	SubscriptionItemStatusCancelled  SubscriptionItemStatus = "cancelled"
+	SubscriptionItemStatusCanceled   SubscriptionItemStatus = "canceled"
 	SubscriptionItemStatusPending    SubscriptionItemStatus = "pending"
 	SubscriptionItemStatusSuspended  SubscriptionItemStatus = "suspended"
 	SubscriptionItemStatusTerminated SubscriptionItemStatus = "terminated"
@@ -741,7 +792,7 @@ func (e SubscriptionItemStatus) Valid() bool {
 	switch e {
 	case SubscriptionItemStatusActive:
 		return true
-	case SubscriptionItemStatusCancelled:
+	case SubscriptionItemStatusCanceled:
 		return true
 	case SubscriptionItemStatusPending:
 		return true
@@ -777,7 +828,6 @@ func (e TopUpStatus) Valid() bool {
 
 // Defines values for TransactionStatus.
 const (
-	TransactionStatusCanceled  TransactionStatus = "canceled"
 	TransactionStatusFailed    TransactionStatus = "failed"
 	TransactionStatusPending   TransactionStatus = "pending"
 	TransactionStatusSucceeded TransactionStatus = "succeeded"
@@ -786,8 +836,6 @@ const (
 // Valid indicates whether the value is a known member of the TransactionStatus enum.
 func (e TransactionStatus) Valid() bool {
 	switch e {
-	case TransactionStatusCanceled:
-		return true
 	case TransactionStatusFailed:
 		return true
 	case TransactionStatusPending:
@@ -823,6 +871,24 @@ func (e TransactionType) Valid() bool {
 	}
 }
 
+// Defines values for ListAllocationsParamsSourceType.
+const (
+	ListAllocationsParamsSourceTypeCreditGrant ListAllocationsParamsSourceType = "credit_grant"
+	ListAllocationsParamsSourceTypeTransaction ListAllocationsParamsSourceType = "transaction"
+)
+
+// Valid indicates whether the value is a known member of the ListAllocationsParamsSourceType enum.
+func (e ListAllocationsParamsSourceType) Valid() bool {
+	switch e {
+	case ListAllocationsParamsSourceTypeCreditGrant:
+		return true
+	case ListAllocationsParamsSourceTypeTransaction:
+		return true
+	default:
+		return false
+	}
+}
+
 // Defines values for ListAllowancesParamsStatus.
 const (
 	ListAllowancesParamsStatusActive   ListAllowancesParamsStatus = "active"
@@ -849,10 +915,10 @@ func (e ListAllowancesParamsStatus) Valid() bool {
 
 // Defines values for ListCreditGrantsParamsStatus.
 const (
-	ListCreditGrantsParamsStatusActive    ListCreditGrantsParamsStatus = "active"
-	ListCreditGrantsParamsStatusExhausted ListCreditGrantsParamsStatus = "exhausted"
-	ListCreditGrantsParamsStatusExpired   ListCreditGrantsParamsStatus = "expired"
-	ListCreditGrantsParamsStatusVoided    ListCreditGrantsParamsStatus = "voided"
+	ListCreditGrantsParamsStatusActive   ListCreditGrantsParamsStatus = "active"
+	ListCreditGrantsParamsStatusDepleted ListCreditGrantsParamsStatus = "depleted"
+	ListCreditGrantsParamsStatusExpired  ListCreditGrantsParamsStatus = "expired"
+	ListCreditGrantsParamsStatusVoided   ListCreditGrantsParamsStatus = "voided"
 )
 
 // Valid indicates whether the value is a known member of the ListCreditGrantsParamsStatus enum.
@@ -860,7 +926,7 @@ func (e ListCreditGrantsParamsStatus) Valid() bool {
 	switch e {
 	case ListCreditGrantsParamsStatusActive:
 		return true
-	case ListCreditGrantsParamsStatusExhausted:
+	case ListCreditGrantsParamsStatusDepleted:
 		return true
 	case ListCreditGrantsParamsStatusExpired:
 		return true
@@ -952,18 +1018,14 @@ type Allocation struct {
 	AllocatedAt time.Time `json:"allocated_at"`
 
 	// Amount A decimal string, in the currency stated alongside it.
-	Amount     Money              `json:"amount"`
-	Currency   string             `json:"currency"`
-	Id         openapi_types.UUID `json:"id"`
-	ReversedAt *time.Time         `json:"reversed_at,omitempty"`
-
-	// SourceDescription A readable line, such as "Top-up of 100.00 on 3 September".
-	SourceDescription *string              `json:"source_description,omitempty"`
-	SourceId          openapi_types.UUID   `json:"source_id"`
-	SourceType        AllocationSourceType `json:"source_type"`
-	TargetDescription *string              `json:"target_description,omitempty"`
-	TargetId          openapi_types.UUID   `json:"target_id"`
-	TargetType        AllocationTargetType `json:"target_type"`
+	Amount     Money                `json:"amount"`
+	Currency   string               `json:"currency"`
+	Id         openapi_types.UUID   `json:"id"`
+	ReversedAt *time.Time           `json:"reversed_at,omitempty"`
+	SourceId   openapi_types.UUID   `json:"source_id"`
+	SourceType AllocationSourceType `json:"source_type"`
+	TargetId   openapi_types.UUID   `json:"target_id"`
+	TargetType AllocationTargetType `json:"target_type"`
 }
 
 // AllocationSourceType defines model for Allocation.SourceType.
@@ -989,6 +1051,11 @@ type Allowance struct {
 
 	// Priority Lower is drawn on first. Included quantities sit ahead of purchased packs.
 	Priority *int `json:"priority,omitempty"`
+
+	// ProductKey Which service it covers, such as `compute`. Read it alongside `meter_key`: a meter
+	// name is unique only within its own service, so two allowances for `egress_bytes`
+	// may belong to different services and cover different traffic.
+	ProductKey string `json:"product_key"`
 
 	// Quantity How much was granted.
 	Quantity string `json:"quantity"`
@@ -1172,8 +1239,10 @@ type CatalogPrice struct {
 	// Tiers Present for `tiered`, in ascending order.
 	Tiers []Tier `json:"tiers,omitempty"`
 
-	// TiersMode Present for `tiered`. `graduated` charges each band at its own rate; `volume`
-	// charges everything at the rate of the band the total falls in.
+	// TiersMode `none` for a price that is not tiered, which is most of them.
+	//
+	// Otherwise `graduated` charges each band at its own rate, and `volume` charges
+	// everything at the rate of the band the total falls in.
 	TiersMode *CatalogPriceTiersMode `json:"tiers_mode,omitempty"`
 
 	// Type `metered` charges for what is used, `prepaid` buys a period in advance, `one_time`
@@ -1191,8 +1260,10 @@ type CatalogPriceBillingScheme string
 // CatalogPricePeriod defines model for CatalogPrice.Period.
 type CatalogPricePeriod string
 
-// CatalogPriceTiersMode Present for `tiered`. `graduated` charges each band at its own rate; `volume`
-// charges everything at the rate of the band the total falls in.
+// CatalogPriceTiersMode `none` for a price that is not tiered, which is most of them.
+//
+// Otherwise `graduated` charges each band at its own rate, and `volume` charges
+// everything at the rate of the band the total falls in.
 type CatalogPriceTiersMode string
 
 // CatalogPriceType `metered` charges for what is used, `prepaid` buys a period in advance, `one_time`
@@ -1405,14 +1476,18 @@ type CreditGrant struct {
 	Name             string             `json:"name"`
 
 	// RemainingAmount A decimal string, in the currency stated alongside it.
-	RemainingAmount Money                  `json:"remaining_amount"`
-	SourceType      *CreditGrantSourceType `json:"source_type,omitempty"`
-	Status          CreditGrantStatus      `json:"status"`
-	ValidFrom       time.Time              `json:"valid_from"`
-	ValidUntil      *time.Time             `json:"valid_until,omitempty"`
+	RemainingAmount Money `json:"remaining_amount"`
+
+	// SourceType Where it came from. `voucher` was redeemed from a code and carries its own
+	// restrictions; `manual` was issued directly, typically to put something right.
+	SourceType *CreditGrantSourceType `json:"source_type,omitempty"`
+	Status     CreditGrantStatus      `json:"status"`
+	ValidFrom  time.Time              `json:"valid_from"`
+	ValidUntil *time.Time             `json:"valid_until,omitempty"`
 }
 
-// CreditGrantSourceType defines model for CreditGrant.SourceType.
+// CreditGrantSourceType Where it came from. `voucher` was redeemed from a code and carries its own
+// restrictions; `manual` was issued directly, typically to put something right.
 type CreditGrantSourceType string
 
 // CreditGrantStatus defines model for CreditGrant.Status.
@@ -1739,12 +1814,22 @@ type PaymentMethodSetup struct {
 	ReturnUrl        *string `json:"return_url,omitempty"`
 }
 
-// PaymentMethodSetupResult defines model for PaymentMethodSetupResult.
+// PaymentMethodSetupResult What the payment provider's browser library needs in order to collect a card. There is
+// no address to redirect to: the form is rendered in the page, and the card goes straight
+// from the browser to the provider.
 type PaymentMethodSetupResult struct {
-	ExpiresAt *time.Time `json:"expires_at,omitempty"`
+	// ClientSecret Authorises this one attempt with the provider, and nothing else. Pass it to the
+	// provider's library; it is not an API credential and grants no access here.
+	ClientSecret string     `json:"client_secret"`
+	ExpiresAt    *time.Time `json:"expires_at,omitempty"`
 
-	// SetupUrl Where the payer enters their card details.
-	SetupUrl string `json:"setup_url"`
+	// PublishableKey The provider's public key to initialise its library with. It differs between test
+	// and live, so read it from here rather than compiling it in.
+	PublishableKey string `json:"publishable_key"`
+
+	// SetupId The provider's identifier for this attempt. Use it to tell a reloaded page apart
+	// from a second attempt.
+	SetupId string `json:"setup_id"`
 }
 
 // PaymentResult defines model for PaymentResult.
@@ -2052,24 +2137,38 @@ type Refund struct {
 	Currency         string    `json:"currency"`
 
 	// Destination Where the cash went.
-	Destination *RefundDestination  `json:"destination,omitempty"`
-	Id          openapi_types.UUID  `json:"id"`
-	InvoiceId   *openapi_types.UUID `json:"invoice_id,omitempty"`
-	OrderId     *openapi_types.UUID `json:"order_id,omitempty"`
-	Reason      *string             `json:"reason,omitempty"`
+	Destination *RefundDestination `json:"destination,omitempty"`
+
+	// FeeAmount Withheld from what reaches the payer. It applies only to cash returned to a payment
+	// method, so it is zero when `destination` is `balance`, and it is never taken out of
+	// credit or a voucher.
+	//
+	// `settled_amount` is the amount put back against what was paid; the payer receives
+	// that less this.
+	FeeAmount *Money              `json:"fee_amount,omitempty"`
+	Id        openapi_types.UUID  `json:"id"`
+	InvoiceId *openapi_types.UUID `json:"invoice_id,omitempty"`
+	OrderId   *openapi_types.UUID `json:"order_id,omitempty"`
+	Reason    *string             `json:"reason,omitempty"`
 
 	// RequestedAmount A decimal string, in the currency stated alongside it.
 	RequestedAmount Money `json:"requested_amount"`
 
 	// SettledAmount What has actually been returned.
-	SettledAmount *Money       `json:"settled_amount,omitempty"`
-	Status        RefundStatus `json:"status"`
+	SettledAmount *Money `json:"settled_amount,omitempty"`
+
+	// Status `pending` — accepted, not yet sent to the payment provider. `processing` — with the
+	// provider and awaiting its answer, which takes days for some methods. Neither is
+	// final, and neither means the money has moved.
+	Status RefundStatus `json:"status"`
 }
 
 // RefundDestination Where the cash went.
 type RefundDestination string
 
-// RefundStatus defines model for Refund.Status.
+// RefundStatus `pending` — accepted, not yet sent to the payment provider. `processing` — with the
+// provider and awaiting its answer, which takes days for some methods. Neither is
+// final, and neither means the money has moved.
 type RefundStatus string
 
 // RefundList defines model for RefundList.
@@ -2077,6 +2176,43 @@ type RefundList struct {
 	Items      []Refund `json:"items"`
 	TotalCount *int64   `json:"total_count,omitempty"`
 }
+
+// RefundQuote What a full refund would return, and where each part of it would go.
+type RefundQuote struct {
+	Currency string `json:"currency"`
+
+	// Destination Where the cash part would go. `provider` returns it to the method it was paid
+	// with; `balance` credits the account instead, which is the answer whenever the cash
+	// came from more than one place or never went through a provider at all.
+	Destination RefundQuoteDestination `json:"destination"`
+
+	// FeeAmount Withheld from the cash part. Zero when `destination` is `balance`, and never taken
+	// out of credit or a voucher.
+	FeeAmount Money `json:"fee_amount"`
+
+	// NetAmount `refundable_amount` less `fee_amount`.
+	NetAmount Money `json:"net_amount"`
+
+	// RefundableAmount The most that can still be returned, before any fee.
+	RefundableAmount Money `json:"refundable_amount"`
+
+	// SelfServiceUntil The last moment a refund can be asked for here. Measured from when the purchase was
+	// paid for, not from today. Absent when this cannot be refunded without support at
+	// all — metered usage, for one, which is never self-service.
+	SelfServiceUntil *time.Time `json:"self_service_until,omitempty"`
+
+	// Sources How `refundable_amount` splits by where the money came from. The amounts sum to it.
+	//
+	// Show this rather than a single figure. A part returned as credit or as a voucher
+	// does not appear on a card statement, so a customer told only the net amount will
+	// ask why less than that arrived.
+	Sources []RefundSource `json:"sources"`
+}
+
+// RefundQuoteDestination Where the cash part would go. `provider` returns it to the method it was paid
+// with; `balance` credits the account instead, which is the answer whenever the cash
+// came from more than one place or never went through a provider at all.
+type RefundQuoteDestination string
 
 // RefundRequest Name exactly one of the three targets. Naming none leaves the amount undecided;
 // naming two leaves it ambiguous, and both would have to be resolved by guessing.
@@ -2096,6 +2232,22 @@ type RefundRequest struct {
 	// time left on it.
 	SubscriptionPeriodId *openapi_types.UUID `json:"subscription_period_id,omitempty"`
 }
+
+// RefundSource defines model for RefundSource.
+type RefundSource struct {
+	// Amount A decimal string, in the currency stated alongside it.
+	Amount Money `json:"amount"`
+
+	// Type Where this part of the money came from, and therefore where it goes back to.
+	// Only `cash` can reach a card or a spendable balance; credit and vouchers return
+	// to themselves and never become cash.
+	Type RefundSourceType `json:"type"`
+}
+
+// RefundSourceType Where this part of the money came from, and therefore where it goes back to.
+// Only `cash` can reach a card or a spendable balance; credit and vouchers return
+// to themselves and never become cash.
+type RefundSourceType string
 
 // RenewRequest defines model for RenewRequest.
 type RenewRequest struct {
@@ -2151,10 +2303,14 @@ type Subscription struct {
 	// ProjectId Which project this is for. Absent when it was bought at account level, such as a
 	// membership, which belongs to no single project.
 	ProjectId *openapi_types.UUID `json:"project_id,omitempty"`
-	Status    SubscriptionStatus  `json:"status"`
+
+	// Status `pending` is a subscription created by an order that has not completed, so it
+	// appears in the list before anything under it is running.
+	Status SubscriptionStatus `json:"status"`
 }
 
-// SubscriptionStatus defines model for Subscription.Status.
+// SubscriptionStatus `pending` is a subscription created by an order that has not completed, so it
+// appears in the list before anything under it is running.
 type SubscriptionStatus string
 
 // SubscriptionItem defines model for SubscriptionItem.
@@ -2209,21 +2365,50 @@ type Tier struct {
 
 // TopUp defines model for TopUp.
 type TopUp struct {
-	// Amount A decimal string, in the currency stated alongside it.
+	// Amount What is credited to the account, in the account's own currency.
 	Amount           Money `json:"amount"`
 	BillingAccountId int64 `json:"billing_account_id"`
 
 	// CheckoutUrl Where the payer completes the payment. Absent once it has completed.
-	CheckoutUrl *string            `json:"checkout_url,omitempty"`
-	CreatedAt   time.Time          `json:"created_at"`
-	Currency    string             `json:"currency"`
-	Id          openapi_types.UUID `json:"id"`
+	CheckoutUrl *string   `json:"checkout_url,omitempty"`
+	CreatedAt   time.Time `json:"created_at"`
+	Currency    string    `json:"currency"`
+
+	// FailureReason Why it did not go through. Present with `failed`.
+	FailureReason *string            `json:"failure_reason,omitempty"`
+	Id            openapi_types.UUID `json:"id"`
+
+	// PresentmentAmount What was charged, in `presentment_currency`. It will not equal `amount`, and it is
+	// the figure that appears on the payer's card or wallet statement.
+	PresentmentAmount *Money `json:"presentment_amount,omitempty"`
+
+	// PresentmentCurrency The currency the payer was actually charged in, when the checkout page collected a
+	// local one. Absent when it was the same as the account's.
+	PresentmentCurrency *string `json:"presentment_currency,omitempty"`
+
+	// Provider Which payment provider collected it.
+	Provider *string `json:"provider,omitempty"`
+
+	// RemainingAmount How much of this top-up has not been spent yet. This is the part that can still be
+	// returned to where it was paid from.
+	RemainingAmount *Money `json:"remaining_amount,omitempty"`
+
+	// SettledAt When the funds arrived. Later than `created_at` — by days for a bank transfer — so
+	// reconciling against a statement uses this rather than the moment it was started.
+	// Absent until the payment completes.
+	SettledAt *time.Time `json:"settled_at,omitempty"`
 
 	// Status `pending` until the payment provider confirms. The balance increases on `succeeded`.
+	//
+	// A checkout the payer abandoned ends up `failed` too, with `failure_reason` saying
+	// so. Nothing was charged in that case.
 	Status TopUpStatus `json:"status"`
 }
 
 // TopUpStatus `pending` until the payment provider confirms. The balance increases on `succeeded`.
+//
+// A checkout the payer abandoned ends up `failed` too, with `failure_reason` saying
+// so. Nothing was charged in that case.
 type TopUpStatus string
 
 // TopUpCreate defines model for TopUpCreate.
@@ -2272,6 +2457,10 @@ type Transaction struct {
 
 	// Status `pending` is a payment still with the provider. Only one may be pending against any
 	// one invoice or order.
+	//
+	// `failed` covers a payment the provider refused and one the payer walked away from
+	// alike; `failure_reason` says which. There is no separate cancelled state, because
+	// what to do next is the same either way — start a new one.
 	Status TransactionStatus `json:"status"`
 
 	// Type What moved the money. These are the events that change the account's cash balance.
@@ -2283,6 +2472,10 @@ type Transaction struct {
 
 // TransactionStatus `pending` is a payment still with the provider. Only one may be pending against any
 // one invoice or order.
+//
+// `failed` covers a payment the provider refused and one the payer walked away from
+// alike; `failure_reason` says which. There is no separate cancelled state, because
+// what to do next is the same either way — start a new one.
 type TransactionStatus string
 
 // TransactionList defines model for TransactionList.
@@ -2406,10 +2599,16 @@ type ListAllocationsParams struct {
 	PageSize *PageSize `form:"page_size,omitempty" json:"page_size,omitempty"`
 
 	// BillingAccountId Restrict to one of your accounts. All of them when omitted.
-	BillingAccountId *AccountIdQuery     `form:"billing_account_id,omitempty" json:"billing_account_id,omitempty"`
-	SourceId         *openapi_types.UUID `form:"source_id,omitempty" json:"source_id,omitempty"`
-	TargetId         *openapi_types.UUID `form:"target_id,omitempty" json:"target_id,omitempty"`
+	BillingAccountId *AccountIdQuery `form:"billing_account_id,omitempty" json:"billing_account_id,omitempty"`
+
+	// SourceType `transaction` is money paid in, `credit_grant` is granted credit or a voucher.
+	SourceType *ListAllocationsParamsSourceType `form:"source_type,omitempty" json:"source_type,omitempty"`
+	SourceId   *openapi_types.UUID              `form:"source_id,omitempty" json:"source_id,omitempty"`
+	TargetId   *openapi_types.UUID              `form:"target_id,omitempty" json:"target_id,omitempty"`
 }
+
+// ListAllocationsParamsSourceType defines parameters for ListAllocations.
+type ListAllocationsParamsSourceType string
 
 // ListAllowancesParams defines parameters for ListAllowances.
 type ListAllowancesParams struct {
@@ -2631,8 +2830,11 @@ type ListUsageChargesParams struct {
 	// BillingAccountId Restrict to one of your accounts. All of them when omitted.
 	BillingAccountId *AccountIdQuery     `form:"billing_account_id,omitempty" json:"billing_account_id,omitempty"`
 	ProjectId        *openapi_types.UUID `form:"project_id,omitempty" json:"project_id,omitempty"`
-	ResourceId       *string             `form:"resource_id,omitempty" json:"resource_id,omitempty"`
-	From             *From               `form:"from,omitempty" json:"from,omitempty"`
+
+	// ProductKey Restrict to one service, such as `compute`.
+	ProductKey *string `form:"product_key,omitempty" json:"product_key,omitempty"`
+	ResourceId *string `form:"resource_id,omitempty" json:"resource_id,omitempty"`
+	From       *From   `form:"from,omitempty" json:"from,omitempty"`
 
 	// To Exclusive.
 	To *To `form:"to,omitempty" json:"to,omitempty"`
@@ -2742,8 +2944,13 @@ type ListProjectUsageChargesParams struct {
 	// PageSize How many per page, 100 at most.
 	PageSize   *PageSize `form:"page_size,omitempty" json:"page_size,omitempty"`
 	ResourceId *string   `form:"resource_id,omitempty" json:"resource_id,omitempty"`
-	MeterKey   *string   `form:"meter_key,omitempty" json:"meter_key,omitempty"`
-	From       *From     `form:"from,omitempty" json:"from,omitempty"`
+
+	// ProductKey Restrict to one service, such as `compute`. Give it alongside `meter_key`: a meter
+	// name is unique only within its own service, and more than one service may measure
+	// `traffic_bytes`, so `meter_key` on its own can return charges from several.
+	ProductKey *string `form:"product_key,omitempty" json:"product_key,omitempty"`
+	MeterKey   *string `form:"meter_key,omitempty" json:"meter_key,omitempty"`
+	From       *From   `form:"from,omitempty" json:"from,omitempty"`
 
 	// To Exclusive.
 	To *To `form:"to,omitempty" json:"to,omitempty"`
@@ -2942,6 +3149,9 @@ type ClientInterface interface {
 	// Give `source_id` to follow one top-up or grant through to everything it paid for. Give
 	// `target_id` to see which sources paid for one line of an invoice.
 	//
+	// Give `source_type` on its own to separate what cash paid for from what granted credit
+	// paid for.
+	//
 	// Corresponds with GET /account/v1/allocations (the `ListAllocations` operationId).
 	ListAllocations(ctx context.Context, params *ListAllocationsParams, reqEditors ...RequestEditorFn) (*http.Response, error)
 
@@ -3138,6 +3348,18 @@ type ClientInterface interface {
 	// Corresponds with POST /account/v1/invoices/{invoiceId}/pay (the `PayInvoice` operationId).
 	PayInvoice(ctx context.Context, invoiceId InvoiceId, body PayInvoiceJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
 
+	// GetInvoiceRefundQuote What refunding this invoice would give back
+	//
+	// Show this before asking for a refund. Nothing is recorded and nothing is reserved; the
+	// answer follows from what has been paid and what has already been returned, so it may
+	// be read as often as required.
+	//
+	// `refundable_amount` is `"0"` once nothing is left, which is also the answer for an
+	// invoice already refunded in full.
+	//
+	// Corresponds with GET /account/v1/invoices/{invoiceId}/refund-quote (the `GetInvoiceRefundQuote` operationId).
+	GetInvoiceRefundQuote(ctx context.Context, invoiceId InvoiceId, reqEditors ...RequestEditorFn) (*http.Response, error)
+
 	// ListOrders Purchases made against your accounts
 	//
 	// An order in `pending` still owes money; `amount_due` states how much and
@@ -3182,13 +3404,29 @@ type ClientInterface interface {
 	// Corresponds with POST /account/v1/orders/{orderId}/pay (the `PayOrder` operationId).
 	PayOrder(ctx context.Context, orderId OrderId, body PayOrderJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
 
+	// GetOrderRefundQuote What refunding this order would give back
+	//
+	// Show this before asking for a refund. Nothing is recorded and nothing is reserved; the
+	// answer follows from what has been paid and what has already been returned, so it may
+	// be read as often as required.
+	//
+	// `refundable_amount` is `"0"` once nothing is left, which is also the answer for an
+	// order already refunded in full.
+	//
+	// Refunding an order also ends what it bought and reclaims whatever it provisioned. That
+	// is not reflected in the amounts here.
+	//
+	// Corresponds with GET /account/v1/orders/{orderId}/refund-quote (the `GetOrderRefundQuote` operationId).
+	GetOrderRefundQuote(ctx context.Context, orderId OrderId, reqEditors ...RequestEditorFn) (*http.Response, error)
+
 	// ListPaymentMethods performs a GET /account/v1/payment-methods (the `ListPaymentMethods` operationId) request.
 	ListPaymentMethods(ctx context.Context, params *ListPaymentMethodsParams, reqEditors ...RequestEditorFn) (*http.Response, error)
 
 	// CreatePaymentMethodSetupWithBody Begin adding a payment method
 	//
-	// Returns an address at which the payment provider collects the card details. Nothing is
-	// charged. The method appears in the list once the provider confirms it.
+	// Returns what is needed to hand the browser over to the payment provider's own card
+	// form. Nothing is charged, and the method appears in the list once the provider
+	// confirms it.
 	//
 	// Card numbers are never sent to or stored by this service.
 	//
@@ -3199,8 +3437,9 @@ type ClientInterface interface {
 
 	// CreatePaymentMethodSetup Begin adding a payment method
 	//
-	// Returns an address at which the payment provider collects the card details. Nothing is
-	// charged. The method appears in the list once the provider confirms it.
+	// Returns what is needed to hand the browser over to the payment provider's own card
+	// form. Nothing is charged, and the method appears in the list once the provider
+	// confirms it.
 	//
 	// Card numbers are never sent to or stored by this service.
 	//
@@ -3628,6 +3867,9 @@ type ClientInterface interface {
 // Give `source_id` to follow one top-up or grant through to everything it paid for. Give
 // `target_id` to see which sources paid for one line of an invoice.
 //
+// Give `source_type` on its own to separate what cash paid for from what granted credit
+// paid for.
+//
 // Corresponds with GET /account/v1/allocations (the `ListAllocations` operationId).
 func (c *Client) ListAllocations(ctx context.Context, params *ListAllocationsParams, reqEditors ...RequestEditorFn) (*http.Response, error) {
 	req, err := NewListAllocationsRequest(c.Server, params)
@@ -4034,6 +4276,28 @@ func (c *Client) PayInvoice(ctx context.Context, invoiceId InvoiceId, body PayIn
 	return c.Client.Do(req)
 }
 
+// GetInvoiceRefundQuote What refunding this invoice would give back
+//
+// Show this before asking for a refund. Nothing is recorded and nothing is reserved; the
+// answer follows from what has been paid and what has already been returned, so it may
+// be read as often as required.
+//
+// `refundable_amount` is `"0"` once nothing is left, which is also the answer for an
+// invoice already refunded in full.
+//
+// Corresponds with GET /account/v1/invoices/{invoiceId}/refund-quote (the `GetInvoiceRefundQuote` operationId).
+func (c *Client) GetInvoiceRefundQuote(ctx context.Context, invoiceId InvoiceId, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewGetInvoiceRefundQuoteRequest(c.Server, invoiceId)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
 // ListOrders Purchases made against your accounts
 //
 // An order in `pending` still owes money; `amount_due` states how much and
@@ -4128,6 +4392,31 @@ func (c *Client) PayOrder(ctx context.Context, orderId OrderId, body PayOrderJSO
 	return c.Client.Do(req)
 }
 
+// GetOrderRefundQuote What refunding this order would give back
+//
+// Show this before asking for a refund. Nothing is recorded and nothing is reserved; the
+// answer follows from what has been paid and what has already been returned, so it may
+// be read as often as required.
+//
+// `refundable_amount` is `"0"` once nothing is left, which is also the answer for an
+// order already refunded in full.
+//
+// Refunding an order also ends what it bought and reclaims whatever it provisioned. That
+// is not reflected in the amounts here.
+//
+// Corresponds with GET /account/v1/orders/{orderId}/refund-quote (the `GetOrderRefundQuote` operationId).
+func (c *Client) GetOrderRefundQuote(ctx context.Context, orderId OrderId, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewGetOrderRefundQuoteRequest(c.Server, orderId)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
 // ListPaymentMethods performs a GET /account/v1/payment-methods (the `ListPaymentMethods` operationId) request.
 func (c *Client) ListPaymentMethods(ctx context.Context, params *ListPaymentMethodsParams, reqEditors ...RequestEditorFn) (*http.Response, error) {
 	req, err := NewListPaymentMethodsRequest(c.Server, params)
@@ -4143,8 +4432,9 @@ func (c *Client) ListPaymentMethods(ctx context.Context, params *ListPaymentMeth
 
 // CreatePaymentMethodSetupWithBody Begin adding a payment method
 //
-// Returns an address at which the payment provider collects the card details. Nothing is
-// charged. The method appears in the list once the provider confirms it.
+// Returns what is needed to hand the browser over to the payment provider's own card
+// form. Nothing is charged, and the method appears in the list once the provider
+// confirms it.
 //
 // Card numbers are never sent to or stored by this service.
 //
@@ -4165,8 +4455,9 @@ func (c *Client) CreatePaymentMethodSetupWithBody(ctx context.Context, contentTy
 
 // CreatePaymentMethodSetup Begin adding a payment method
 //
-// Returns an address at which the payment provider collects the card details. Nothing is
-// charged. The method appears in the list once the provider confirms it.
+// Returns what is needed to hand the browser over to the payment provider's own card
+// form. Nothing is charged, and the method appears in the list once the provider
+// confirms it.
 //
 // Card numbers are never sent to or stored by this service.
 //
@@ -5093,6 +5384,18 @@ func NewListAllocationsRequest(server string, params *ListAllocationsParams) (*h
 		if params.BillingAccountId != nil {
 
 			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "billing_account_id", *params.BillingAccountId, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "integer", Format: "int64"}); err != nil {
+				return nil, err
+			} else {
+				for _, qp := range strings.Split(queryFrag, "&") {
+					rawQueryFragments = append(rawQueryFragments, qp)
+				}
+			}
+
+		}
+
+		if params.SourceType != nil {
+
+			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "source_type", *params.SourceType, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "string", Format: ""}); err != nil {
 				return nil, err
 			} else {
 				for _, qp := range strings.Split(queryFrag, "&") {
@@ -6064,6 +6367,40 @@ func NewPayInvoiceRequestWithBody(server string, invoiceId InvoiceId, contentTyp
 	return req, nil
 }
 
+// NewGetInvoiceRefundQuoteRequest constructs an http.Request for the GetInvoiceRefundQuote method
+func NewGetInvoiceRefundQuoteRequest(server string, invoiceId InvoiceId) (*http.Request, error) {
+	var err error
+
+	var pathParam0 string
+
+	pathParam0, err = runtime.StyleParamWithOptions("simple", false, "invoiceId", invoiceId, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: "uuid"})
+	if err != nil {
+		return nil, err
+	}
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/account/v1/invoices/%s/refund-quote", pathParam0)
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest(http.MethodGet, queryURL.String(), nil)
+	if err != nil {
+		return nil, err
+	}
+
+	return req, nil
+}
+
 // NewListOrdersRequest constructs an http.Request for the ListOrders method
 func NewListOrdersRequest(server string, params *ListOrdersParams) (*http.Request, error) {
 	var err error
@@ -6340,6 +6677,40 @@ func NewPayOrderRequestWithBody(server string, orderId OrderId, contentType stri
 	}
 
 	req.Header.Add("Content-Type", contentType)
+
+	return req, nil
+}
+
+// NewGetOrderRefundQuoteRequest constructs an http.Request for the GetOrderRefundQuote method
+func NewGetOrderRefundQuoteRequest(server string, orderId OrderId) (*http.Request, error) {
+	var err error
+
+	var pathParam0 string
+
+	pathParam0, err = runtime.StyleParamWithOptions("simple", false, "orderId", orderId, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: "uuid"})
+	if err != nil {
+		return nil, err
+	}
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/account/v1/orders/%s/refund-quote", pathParam0)
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest(http.MethodGet, queryURL.String(), nil)
+	if err != nil {
+		return nil, err
+	}
 
 	return req, nil
 }
@@ -7491,6 +7862,18 @@ func NewListUsageChargesRequest(server string, params *ListUsageChargesParams) (
 
 		}
 
+		if params.ProductKey != nil {
+
+			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "product_key", *params.ProductKey, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			} else {
+				for _, qp := range strings.Split(queryFrag, "&") {
+					rawQueryFragments = append(rawQueryFragments, qp)
+				}
+			}
+
+		}
+
 		if params.ResourceId != nil {
 
 			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "resource_id", *params.ResourceId, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "string", Format: ""}); err != nil {
@@ -8503,6 +8886,18 @@ func NewListProjectUsageChargesRequest(server string, projectId ProjectId, param
 
 		}
 
+		if params.ProductKey != nil {
+
+			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "product_key", *params.ProductKey, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			} else {
+				for _, qp := range strings.Split(queryFrag, "&") {
+					rawQueryFragments = append(rawQueryFragments, qp)
+				}
+			}
+
+		}
+
 		if params.MeterKey != nil {
 
 			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "meter_key", *params.MeterKey, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "string", Format: ""}); err != nil {
@@ -9023,6 +9418,9 @@ type ClientWithResponsesInterface interface {
 	// Give `source_id` to follow one top-up or grant through to everything it paid for. Give
 	// `target_id` to see which sources paid for one line of an invoice.
 	//
+	// Give `source_type` on its own to separate what cash paid for from what granted credit
+	// paid for.
+	//
 	// Returns a wrapper object for the known response body format(s).
 	//
 	// Corresponds with GET /account/v1/allocations (the `ListAllocations` operationId).
@@ -9241,6 +9639,20 @@ type ClientWithResponsesInterface interface {
 	// Corresponds with POST /account/v1/invoices/{invoiceId}/pay (the `PayInvoice` operationId).
 	PayInvoiceWithResponse(ctx context.Context, invoiceId InvoiceId, body PayInvoiceJSONRequestBody, reqEditors ...RequestEditorFn) (*PayInvoiceResponse, error)
 
+	// GetInvoiceRefundQuoteWithResponse What refunding this invoice would give back
+	//
+	// Show this before asking for a refund. Nothing is recorded and nothing is reserved; the
+	// answer follows from what has been paid and what has already been returned, so it may
+	// be read as often as required.
+	//
+	// `refundable_amount` is `"0"` once nothing is left, which is also the answer for an
+	// invoice already refunded in full.
+	//
+	// Returns a wrapper object for the known response body format(s).
+	//
+	// Corresponds with GET /account/v1/invoices/{invoiceId}/refund-quote (the `GetInvoiceRefundQuote` operationId).
+	GetInvoiceRefundQuoteWithResponse(ctx context.Context, invoiceId InvoiceId, reqEditors ...RequestEditorFn) (*GetInvoiceRefundQuoteResponse, error)
+
 	// ListOrdersWithResponse Purchases made against your accounts
 	//
 	// An order in `pending` still owes money; `amount_due` states how much and
@@ -9291,6 +9703,23 @@ type ClientWithResponsesInterface interface {
 	// Corresponds with POST /account/v1/orders/{orderId}/pay (the `PayOrder` operationId).
 	PayOrderWithResponse(ctx context.Context, orderId OrderId, body PayOrderJSONRequestBody, reqEditors ...RequestEditorFn) (*PayOrderResponse, error)
 
+	// GetOrderRefundQuoteWithResponse What refunding this order would give back
+	//
+	// Show this before asking for a refund. Nothing is recorded and nothing is reserved; the
+	// answer follows from what has been paid and what has already been returned, so it may
+	// be read as often as required.
+	//
+	// `refundable_amount` is `"0"` once nothing is left, which is also the answer for an
+	// order already refunded in full.
+	//
+	// Refunding an order also ends what it bought and reclaims whatever it provisioned. That
+	// is not reflected in the amounts here.
+	//
+	// Returns a wrapper object for the known response body format(s).
+	//
+	// Corresponds with GET /account/v1/orders/{orderId}/refund-quote (the `GetOrderRefundQuote` operationId).
+	GetOrderRefundQuoteWithResponse(ctx context.Context, orderId OrderId, reqEditors ...RequestEditorFn) (*GetOrderRefundQuoteResponse, error)
+
 	// ListPaymentMethodsWithResponse performs a GET /account/v1/payment-methods (the `ListPaymentMethods` operationId) request.
 	//
 	// Returns a wrapper object for the known response body format(s).
@@ -9298,8 +9727,9 @@ type ClientWithResponsesInterface interface {
 
 	// CreatePaymentMethodSetupWithBodyWithResponse Begin adding a payment method
 	//
-	// Returns an address at which the payment provider collects the card details. Nothing is
-	// charged. The method appears in the list once the provider confirms it.
+	// Returns what is needed to hand the browser over to the payment provider's own card
+	// form. Nothing is charged, and the method appears in the list once the provider
+	// confirms it.
 	//
 	// Card numbers are never sent to or stored by this service.
 	//
@@ -9310,8 +9740,9 @@ type ClientWithResponsesInterface interface {
 
 	// CreatePaymentMethodSetupWithResponse Begin adding a payment method
 	//
-	// Returns an address at which the payment provider collects the card details. Nothing is
-	// charged. The method appears in the list once the provider confirms it.
+	// Returns what is needed to hand the browser over to the payment provider's own card
+	// form. Nothing is charged, and the method appears in the list once the provider
+	// confirms it.
 	//
 	// Card numbers are never sent to or stored by this service.
 	//
@@ -10558,6 +10989,54 @@ func (r PayInvoiceResponse) ContentType() string {
 	return ""
 }
 
+type GetInvoiceRefundQuoteResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	// JSON200 the response for an HTTP 200 `application/json` response
+	JSON200 *RefundQuote
+	// JSONDefault the response for an HTTP default `application/json` response
+	JSONDefault *Error
+}
+
+// GetJSON200 returns the response for an HTTP 200 `application/json` response
+func (r GetInvoiceRefundQuoteResponse) GetJSON200() *RefundQuote {
+	return r.JSON200
+}
+
+// GetJSONDefault returns the response for an HTTP default `application/json` response
+func (r GetInvoiceRefundQuoteResponse) GetJSONDefault() *Error {
+	return r.JSONDefault
+}
+
+// GetBody returns the raw response body bytes
+func (r GetInvoiceRefundQuoteResponse) GetBody() []byte {
+	return r.Body
+}
+
+// Status returns HTTPResponse.Status
+func (r GetInvoiceRefundQuoteResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r GetInvoiceRefundQuoteResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+// ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
+func (r GetInvoiceRefundQuoteResponse) ContentType() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Header.Get("Content-Type")
+	}
+	return ""
+}
+
 type ListOrdersResponse struct {
 	Body         []byte
 	HTTPResponse *http.Response
@@ -10744,6 +11223,54 @@ func (r PayOrderResponse) StatusCode() int {
 
 // ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
 func (r PayOrderResponse) ContentType() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Header.Get("Content-Type")
+	}
+	return ""
+}
+
+type GetOrderRefundQuoteResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	// JSON200 the response for an HTTP 200 `application/json` response
+	JSON200 *RefundQuote
+	// JSONDefault the response for an HTTP default `application/json` response
+	JSONDefault *Error
+}
+
+// GetJSON200 returns the response for an HTTP 200 `application/json` response
+func (r GetOrderRefundQuoteResponse) GetJSON200() *RefundQuote {
+	return r.JSON200
+}
+
+// GetJSONDefault returns the response for an HTTP default `application/json` response
+func (r GetOrderRefundQuoteResponse) GetJSONDefault() *Error {
+	return r.JSONDefault
+}
+
+// GetBody returns the raw response body bytes
+func (r GetOrderRefundQuoteResponse) GetBody() []byte {
+	return r.Body
+}
+
+// Status returns HTTPResponse.Status
+func (r GetOrderRefundQuoteResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r GetOrderRefundQuoteResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+// ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
+func (r GetOrderRefundQuoteResponse) ContentType() string {
 	if r.HTTPResponse != nil {
 		return r.HTTPResponse.Header.Get("Content-Type")
 	}
@@ -12621,6 +13148,9 @@ func (r ListCatalogRatesResponse) ContentType() string {
 // Give `source_id` to follow one top-up or grant through to everything it paid for. Give
 // `target_id` to see which sources paid for one line of an invoice.
 //
+// Give `source_type` on its own to separate what cash paid for from what granted credit
+// paid for.
+//
 // Returns a wrapper object for the known response body format(s).
 //
 // Corresponds with GET /account/v1/allocations (the `ListAllocations` operationId).
@@ -12965,6 +13495,26 @@ func (c *ClientWithResponses) PayInvoiceWithResponse(ctx context.Context, invoic
 	return ParsePayInvoiceResponse(rsp)
 }
 
+// GetInvoiceRefundQuoteWithResponse What refunding this invoice would give back
+//
+// Show this before asking for a refund. Nothing is recorded and nothing is reserved; the
+// answer follows from what has been paid and what has already been returned, so it may
+// be read as often as required.
+//
+// `refundable_amount` is `"0"` once nothing is left, which is also the answer for an
+// invoice already refunded in full.
+//
+// Returns a wrapper object for the known response body format(s).
+//
+// Corresponds with GET /account/v1/invoices/{invoiceId}/refund-quote (the `GetInvoiceRefundQuote` operationId).
+func (c *ClientWithResponses) GetInvoiceRefundQuoteWithResponse(ctx context.Context, invoiceId InvoiceId, reqEditors ...RequestEditorFn) (*GetInvoiceRefundQuoteResponse, error) {
+	rsp, err := c.GetInvoiceRefundQuote(ctx, invoiceId, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseGetInvoiceRefundQuoteResponse(rsp)
+}
+
 // ListOrdersWithResponse Purchases made against your accounts
 //
 // An order in `pending` still owes money; `amount_due` states how much and
@@ -13045,6 +13595,29 @@ func (c *ClientWithResponses) PayOrderWithResponse(ctx context.Context, orderId 
 	return ParsePayOrderResponse(rsp)
 }
 
+// GetOrderRefundQuoteWithResponse What refunding this order would give back
+//
+// Show this before asking for a refund. Nothing is recorded and nothing is reserved; the
+// answer follows from what has been paid and what has already been returned, so it may
+// be read as often as required.
+//
+// `refundable_amount` is `"0"` once nothing is left, which is also the answer for an
+// order already refunded in full.
+//
+// Refunding an order also ends what it bought and reclaims whatever it provisioned. That
+// is not reflected in the amounts here.
+//
+// Returns a wrapper object for the known response body format(s).
+//
+// Corresponds with GET /account/v1/orders/{orderId}/refund-quote (the `GetOrderRefundQuote` operationId).
+func (c *ClientWithResponses) GetOrderRefundQuoteWithResponse(ctx context.Context, orderId OrderId, reqEditors ...RequestEditorFn) (*GetOrderRefundQuoteResponse, error) {
+	rsp, err := c.GetOrderRefundQuote(ctx, orderId, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseGetOrderRefundQuoteResponse(rsp)
+}
+
 // ListPaymentMethodsWithResponse performs a GET /account/v1/payment-methods (the `ListPaymentMethods` operationId) request.
 //
 // Returns a wrapper object for the known response body format(s).
@@ -13058,8 +13631,9 @@ func (c *ClientWithResponses) ListPaymentMethodsWithResponse(ctx context.Context
 
 // CreatePaymentMethodSetupWithBodyWithResponse Begin adding a payment method
 //
-// Returns an address at which the payment provider collects the card details. Nothing is
-// charged. The method appears in the list once the provider confirms it.
+// Returns what is needed to hand the browser over to the payment provider's own card
+// form. Nothing is charged, and the method appears in the list once the provider
+// confirms it.
 //
 // Card numbers are never sent to or stored by this service.
 //
@@ -13076,8 +13650,9 @@ func (c *ClientWithResponses) CreatePaymentMethodSetupWithBodyWithResponse(ctx c
 
 // CreatePaymentMethodSetupWithResponse Begin adding a payment method
 //
-// Returns an address at which the payment provider collects the card details. Nothing is
-// charged. The method appears in the list once the provider confirms it.
+// Returns what is needed to hand the browser over to the payment provider's own card
+// form. Nothing is charged, and the method appears in the list once the provider
+// confirms it.
 //
 // Card numbers are never sent to or stored by this service.
 //
@@ -14353,6 +14928,39 @@ func ParsePayInvoiceResponse(rsp *http.Response) (*PayInvoiceResponse, error) {
 	return response, nil
 }
 
+// ParseGetInvoiceRefundQuoteResponse parses an HTTP response from a GetInvoiceRefundQuoteWithResponse call
+func ParseGetInvoiceRefundQuoteResponse(rsp *http.Response) (*GetInvoiceRefundQuoteResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &GetInvoiceRefundQuoteResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest RefundQuote
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && true:
+		var dest Error
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSONDefault = &dest
+
+	}
+
+	return response, nil
+}
+
 // ParseListOrdersResponse parses an HTTP response from a ListOrdersWithResponse call
 func ParseListOrdersResponse(rsp *http.Response) (*ListOrdersResponse, error) {
 	bodyBytes, err := io.ReadAll(rsp.Body)
@@ -14468,6 +15076,39 @@ func ParsePayOrderResponse(rsp *http.Response) (*PayOrderResponse, error) {
 	switch {
 	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
 		var dest PaymentResult
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && true:
+		var dest Error
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSONDefault = &dest
+
+	}
+
+	return response, nil
+}
+
+// ParseGetOrderRefundQuoteResponse parses an HTTP response from a GetOrderRefundQuoteWithResponse call
+func ParseGetOrderRefundQuoteResponse(rsp *http.Response) (*GetOrderRefundQuoteResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &GetOrderRefundQuoteResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest RefundQuote
 		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
 			return nil, err
 		}

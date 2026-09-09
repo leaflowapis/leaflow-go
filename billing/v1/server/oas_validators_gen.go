@@ -1090,6 +1090,8 @@ func (s CatalogPricePeriod) Validate() error {
 
 func (s CatalogPriceTiersMode) Validate() error {
 	switch s {
+	case "none":
+		return nil
 	case "graduated":
 		return nil
 	case "volume":
@@ -1680,11 +1682,11 @@ func (s *CreditGrantList) Validate() error {
 
 func (s CreditGrantSourceType) Validate() error {
 	switch s {
-	case "promotional":
+	case "promotion":
 		return nil
 	case "voucher":
 		return nil
-	case "compensation":
+	case "manual":
 		return nil
 	case "membership":
 		return nil
@@ -1697,7 +1699,7 @@ func (s CreditGrantStatus) Validate() error {
 	switch s {
 	case "active":
 		return nil
-	case "exhausted":
+	case "depleted":
 		return nil
 	case "expired":
 		return nil
@@ -2036,6 +2038,17 @@ func (s InvoiceType) Validate() error {
 	}
 }
 
+func (s ListAllocationsSourceType) Validate() error {
+	switch s {
+	case "transaction":
+		return nil
+	case "credit_grant":
+		return nil
+	default:
+		return errors.Errorf("invalid value: %v", s)
+	}
+}
+
 func (s ListAllowancesStatus) Validate() error {
 	switch s {
 	case "active":
@@ -2055,7 +2068,7 @@ func (s ListCreditGrantsStatus) Validate() error {
 	switch s {
 	case "active":
 		return nil
-	case "exhausted":
+	case "depleted":
 		return nil
 	case "expired":
 		return nil
@@ -2682,6 +2695,68 @@ func (s *RefundList) Validate() error {
 	return nil
 }
 
+func (s *RefundQuote) Validate() error {
+	if s == nil {
+		return validate.ErrNilPointer
+	}
+
+	var failures []validate.FieldError
+	if err := func() error {
+		if err := s.Destination.Validate(); err != nil {
+			return err
+		}
+		return nil
+	}(); err != nil {
+		failures = append(failures, validate.FieldError{
+			Name:  "destination",
+			Error: err,
+		})
+	}
+	if err := func() error {
+		if s.Sources == nil {
+			return errors.New("nil is invalid value")
+		}
+		var failures []validate.FieldError
+		for i, elem := range s.Sources {
+			if err := func() error {
+				if err := elem.Validate(); err != nil {
+					return err
+				}
+				return nil
+			}(); err != nil {
+				failures = append(failures, validate.FieldError{
+					Name:  fmt.Sprintf("[%d]", i),
+					Error: err,
+				})
+			}
+		}
+		if len(failures) > 0 {
+			return &validate.Error{Fields: failures}
+		}
+		return nil
+	}(); err != nil {
+		failures = append(failures, validate.FieldError{
+			Name:  "sources",
+			Error: err,
+		})
+	}
+	if len(failures) > 0 {
+		return &validate.Error{Fields: failures}
+	}
+	return nil
+}
+
+func (s RefundQuoteDestination) Validate() error {
+	switch s {
+	case "balance":
+		return nil
+	case "provider":
+		return nil
+	default:
+		return errors.Errorf("invalid value: %v", s)
+	}
+}
+
 func (s *RefundRequest) Validate() error {
 	if s == nil {
 		return validate.ErrNilPointer
@@ -2740,9 +2815,47 @@ func (s *RefundRequest) Validate() error {
 	return nil
 }
 
+func (s *RefundSource) Validate() error {
+	if s == nil {
+		return validate.ErrNilPointer
+	}
+
+	var failures []validate.FieldError
+	if err := func() error {
+		if err := s.Type.Validate(); err != nil {
+			return err
+		}
+		return nil
+	}(); err != nil {
+		failures = append(failures, validate.FieldError{
+			Name:  "type",
+			Error: err,
+		})
+	}
+	if len(failures) > 0 {
+		return &validate.Error{Fields: failures}
+	}
+	return nil
+}
+
+func (s RefundSourceType) Validate() error {
+	switch s {
+	case "cash":
+		return nil
+	case "credit":
+		return nil
+	case "voucher":
+		return nil
+	default:
+		return errors.Errorf("invalid value: %v", s)
+	}
+}
+
 func (s RefundStatus) Validate() error {
 	switch s {
 	case "pending":
+		return nil
+	case "processing":
 		return nil
 	case "succeeded":
 		return nil
@@ -2933,7 +3046,7 @@ func (s SubscriptionItemStatus) Validate() error {
 		return nil
 	case "suspended":
 		return nil
-	case "cancelled":
+	case "canceled":
 		return nil
 	case "terminated":
 		return nil
@@ -2984,11 +3097,15 @@ func (s *SubscriptionList) Validate() error {
 
 func (s SubscriptionStatus) Validate() error {
 	switch s {
+	case "pending":
+		return nil
 	case "active":
 		return nil
 	case "suspended":
 		return nil
-	case "cancelled":
+	case "canceled":
+		return nil
+	case "terminated":
 		return nil
 	default:
 		return errors.Errorf("invalid value: %v", s)
@@ -3187,8 +3304,6 @@ func (s TransactionStatus) Validate() error {
 	case "succeeded":
 		return nil
 	case "failed":
-		return nil
-	case "canceled":
 		return nil
 	default:
 		return errors.Errorf("invalid value: %v", s)

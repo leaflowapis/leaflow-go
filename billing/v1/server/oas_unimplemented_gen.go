@@ -43,8 +43,8 @@ func (UnimplementedHandler) CreateEstimate(ctx context.Context, req *EstimateReq
 
 // CreatePaymentMethodSetup implements create-payment-method-setup operation.
 //
-// Returns an address at which the payment provider collects the card details. Nothing is charged. The
-// method appears in the list once the provider confirms it.
+// Returns what is needed to hand the browser over to the payment provider's own card form. Nothing is
+// charged, and the method appears in the list once the provider confirms it.
 //
 // Card numbers are never sent to or stored by this service.
 //
@@ -123,10 +123,41 @@ func (UnimplementedHandler) GetInvoice(ctx context.Context, params GetInvoicePar
 	return r, ht.ErrNotImplemented
 }
 
+// GetInvoiceRefundQuote implements get-invoice-refund-quote operation.
+//
+// Show this before asking for a refund. Nothing is recorded and nothing is reserved; the answer
+// follows from what has been paid and what has already been returned, so it may be read as often as
+// required.
+//
+// `refundable_amount` is `"0"` once nothing is left, which is also the answer for an invoice already
+// refunded in full.
+//
+// GET /account/v1/invoices/{invoiceId}/refund-quote
+func (UnimplementedHandler) GetInvoiceRefundQuote(ctx context.Context, params GetInvoiceRefundQuoteParams) (r *RefundQuote, _ error) {
+	return r, ht.ErrNotImplemented
+}
+
 // GetOrder implements get-order operation.
 //
 // GET /account/v1/orders/{orderId}
 func (UnimplementedHandler) GetOrder(ctx context.Context, params GetOrderParams) (r *Order, _ error) {
+	return r, ht.ErrNotImplemented
+}
+
+// GetOrderRefundQuote implements get-order-refund-quote operation.
+//
+// Show this before asking for a refund. Nothing is recorded and nothing is reserved; the answer
+// follows from what has been paid and what has already been returned, so it may be read as often as
+// required.
+//
+// `refundable_amount` is `"0"` once nothing is left, which is also the answer for an order already
+// refunded in full.
+//
+// Refunding an order also ends what it bought and reclaims whatever it provisioned. That is not
+// reflected in the amounts here.
+//
+// GET /account/v1/orders/{orderId}/refund-quote
+func (UnimplementedHandler) GetOrderRefundQuote(ctx context.Context, params GetOrderRefundQuoteParams) (r *RefundQuote, _ error) {
 	return r, ht.ErrNotImplemented
 }
 
@@ -163,6 +194,8 @@ func (UnimplementedHandler) GetTopUp(ctx context.Context, params GetTopUpParams)
 //
 // Give `source_id` to follow one top-up or grant through to everything it paid for. Give `target_id`
 // to see which sources paid for one line of an invoice.
+//
+// Give `source_type` on its own to separate what cash paid for from what granted credit paid for.
 //
 // GET /account/v1/allocations
 func (UnimplementedHandler) ListAllocations(ctx context.Context, params ListAllocationsParams) (r *AllocationList, _ error) {

@@ -339,18 +339,15 @@ func (s *ActiveResourceStatus) UnmarshalText(data []byte) error {
 
 // Ref: #/components/schemas/Allocation
 type Allocation struct {
-	ID         uuid.UUID            `json:"id"`
-	SourceType AllocationSourceType `json:"source_type"`
-	SourceID   uuid.UUID            `json:"source_id"`
-	// A readable line, such as "Top-up of 100.00 on 3 September".
-	SourceDescription OptString            `json:"source_description"`
-	TargetType        AllocationTargetType `json:"target_type"`
-	TargetID          uuid.UUID            `json:"target_id"`
-	TargetDescription OptString            `json:"target_description"`
-	Amount            Money                `json:"amount"`
-	Currency          string               `json:"currency"`
-	AllocatedAt       time.Time            `json:"allocated_at"`
-	ReversedAt        OptNilDateTime       `json:"reversed_at"`
+	ID          uuid.UUID            `json:"id"`
+	SourceType  AllocationSourceType `json:"source_type"`
+	SourceID    uuid.UUID            `json:"source_id"`
+	TargetType  AllocationTargetType `json:"target_type"`
+	TargetID    uuid.UUID            `json:"target_id"`
+	Amount      Money                `json:"amount"`
+	Currency    string               `json:"currency"`
+	AllocatedAt time.Time            `json:"allocated_at"`
+	ReversedAt  OptNilDateTime       `json:"reversed_at"`
 }
 
 // GetID returns the value of ID.
@@ -368,11 +365,6 @@ func (s *Allocation) GetSourceID() uuid.UUID {
 	return s.SourceID
 }
 
-// GetSourceDescription returns the value of SourceDescription.
-func (s *Allocation) GetSourceDescription() OptString {
-	return s.SourceDescription
-}
-
 // GetTargetType returns the value of TargetType.
 func (s *Allocation) GetTargetType() AllocationTargetType {
 	return s.TargetType
@@ -381,11 +373,6 @@ func (s *Allocation) GetTargetType() AllocationTargetType {
 // GetTargetID returns the value of TargetID.
 func (s *Allocation) GetTargetID() uuid.UUID {
 	return s.TargetID
-}
-
-// GetTargetDescription returns the value of TargetDescription.
-func (s *Allocation) GetTargetDescription() OptString {
-	return s.TargetDescription
 }
 
 // GetAmount returns the value of Amount.
@@ -423,11 +410,6 @@ func (s *Allocation) SetSourceID(val uuid.UUID) {
 	s.SourceID = val
 }
 
-// SetSourceDescription sets the value of SourceDescription.
-func (s *Allocation) SetSourceDescription(val OptString) {
-	s.SourceDescription = val
-}
-
 // SetTargetType sets the value of TargetType.
 func (s *Allocation) SetTargetType(val AllocationTargetType) {
 	s.TargetType = val
@@ -436,11 +418,6 @@ func (s *Allocation) SetTargetType(val AllocationTargetType) {
 // SetTargetID sets the value of TargetID.
 func (s *Allocation) SetTargetID(val uuid.UUID) {
 	s.TargetID = val
-}
-
-// SetTargetDescription sets the value of TargetDescription.
-func (s *Allocation) SetTargetDescription(val OptString) {
-	s.TargetDescription = val
 }
 
 // SetAmount sets the value of Amount.
@@ -582,6 +559,10 @@ func (s *AllocationTargetType) UnmarshalText(data []byte) error {
 type Allowance struct {
 	ID               uuid.UUID `json:"id"`
 	BillingAccountID OptInt64  `json:"billing_account_id"`
+	// Which service it covers, such as `compute`. Read it alongside `meter_key`: a meter name is unique
+	// only within its own service, so two allowances for `egress_bytes` may belong to different services
+	// and cover different traffic.
+	ProductKey string `json:"product_key"`
 	// What it covers, such as `egress_bytes`.
 	MeterKey string `json:"meter_key"`
 	// The unit it is counted in, such as `MiB`.
@@ -611,6 +592,11 @@ func (s *Allowance) GetID() uuid.UUID {
 // GetBillingAccountID returns the value of BillingAccountID.
 func (s *Allowance) GetBillingAccountID() OptInt64 {
 	return s.BillingAccountID
+}
+
+// GetProductKey returns the value of ProductKey.
+func (s *Allowance) GetProductKey() string {
+	return s.ProductKey
 }
 
 // GetMeterKey returns the value of MeterKey.
@@ -671,6 +657,11 @@ func (s *Allowance) SetID(val uuid.UUID) {
 // SetBillingAccountID sets the value of BillingAccountID.
 func (s *Allowance) SetBillingAccountID(val OptInt64) {
 	s.BillingAccountID = val
+}
+
+// SetProductKey sets the value of ProductKey.
+func (s *Allowance) SetProductKey(val string) {
+	s.ProductKey = val
 }
 
 // SetMeterKey sets the value of MeterKey.
@@ -1587,8 +1578,10 @@ type CatalogPrice struct {
 	BillingScheme CatalogPriceBillingScheme `json:"billing_scheme"`
 	// Present for `per_unit`.
 	UnitAmount OptMoney `json:"unit_amount"`
-	// Present for `tiered`. `graduated` charges each band at its own rate; `volume` charges everything at
-	// the rate of the band the total falls in.
+	// `none` for a price that is not tiered, which is most of them.
+	//
+	// Otherwise `graduated` charges each band at its own rate, and `volume` charges everything at the rate
+	// of the band the total falls in.
 	TiersMode OptCatalogPriceTiersMode `json:"tiers_mode"`
 	// Present for `tiered`, in ascending order.
 	Tiers []Tier `json:"tiers"`
@@ -1904,11 +1897,14 @@ func (s *CatalogPricePeriod) UnmarshalText(data []byte) error {
 	}
 }
 
-// Present for `tiered`. `graduated` charges each band at its own rate; `volume` charges everything at
-// the rate of the band the total falls in.
+// `none` for a price that is not tiered, which is most of them.
+//
+// Otherwise `graduated` charges each band at its own rate, and `volume` charges everything at the rate
+// of the band the total falls in.
 type CatalogPriceTiersMode string
 
 const (
+	CatalogPriceTiersModeNone      CatalogPriceTiersMode = "none"
 	CatalogPriceTiersModeGraduated CatalogPriceTiersMode = "graduated"
 	CatalogPriceTiersModeVolume    CatalogPriceTiersMode = "volume"
 )
@@ -1916,6 +1912,7 @@ const (
 // AllValues returns all CatalogPriceTiersMode values.
 func (CatalogPriceTiersMode) AllValues() []CatalogPriceTiersMode {
 	return []CatalogPriceTiersMode{
+		CatalogPriceTiersModeNone,
 		CatalogPriceTiersModeGraduated,
 		CatalogPriceTiersModeVolume,
 	}
@@ -1924,6 +1921,8 @@ func (CatalogPriceTiersMode) AllValues() []CatalogPriceTiersMode {
 // MarshalText implements encoding.TextMarshaler.
 func (s CatalogPriceTiersMode) MarshalText() ([]byte, error) {
 	switch s {
+	case CatalogPriceTiersModeNone:
+		return []byte(s), nil
 	case CatalogPriceTiersModeGraduated:
 		return []byte(s), nil
 	case CatalogPriceTiersModeVolume:
@@ -1936,6 +1935,9 @@ func (s CatalogPriceTiersMode) MarshalText() ([]byte, error) {
 // UnmarshalText implements encoding.TextUnmarshaler.
 func (s *CatalogPriceTiersMode) UnmarshalText(data []byte) error {
 	switch CatalogPriceTiersMode(data) {
+	case CatalogPriceTiersModeNone:
+		*s = CatalogPriceTiersModeNone
+		return nil
 	case CatalogPriceTiersModeGraduated:
 		*s = CatalogPriceTiersModeGraduated
 		return nil
@@ -2940,13 +2942,15 @@ func (s *CodeRequest) SetRenewalOf(val []uuid.UUID) {
 
 // Ref: #/components/schemas/CreditGrant
 type CreditGrant struct {
-	ID               uuid.UUID                `json:"id"`
-	BillingAccountID OptInt64                 `json:"billing_account_id"`
-	SourceType       OptCreditGrantSourceType `json:"source_type"`
-	Name             string                   `json:"name"`
-	Amount           Money                    `json:"amount"`
-	RemainingAmount  Money                    `json:"remaining_amount"`
-	Currency         string                   `json:"currency"`
+	ID               uuid.UUID `json:"id"`
+	BillingAccountID OptInt64  `json:"billing_account_id"`
+	// Where it came from. `voucher` was redeemed from a code and carries its own restrictions; `manual`
+	// was issued directly, typically to put something right.
+	SourceType      OptCreditGrantSourceType `json:"source_type"`
+	Name            string                   `json:"name"`
+	Amount          Money                    `json:"amount"`
+	RemainingAmount Money                    `json:"remaining_amount"`
+	Currency        string                   `json:"currency"`
 	// What this credit may pay for. No restrictions means anything on the account.
 	AppliesTo OptApplicability `json:"applies_to"`
 	// The restrictions in one sentence, ready to display.
@@ -3102,21 +3106,23 @@ func (s *CreditGrantList) SetTotalCount(val OptInt64) {
 	s.TotalCount = val
 }
 
+// Where it came from. `voucher` was redeemed from a code and carries its own restrictions; `manual`
+// was issued directly, typically to put something right.
 type CreditGrantSourceType string
 
 const (
-	CreditGrantSourceTypePromotional  CreditGrantSourceType = "promotional"
-	CreditGrantSourceTypeVoucher      CreditGrantSourceType = "voucher"
-	CreditGrantSourceTypeCompensation CreditGrantSourceType = "compensation"
-	CreditGrantSourceTypeMembership   CreditGrantSourceType = "membership"
+	CreditGrantSourceTypePromotion  CreditGrantSourceType = "promotion"
+	CreditGrantSourceTypeVoucher    CreditGrantSourceType = "voucher"
+	CreditGrantSourceTypeManual     CreditGrantSourceType = "manual"
+	CreditGrantSourceTypeMembership CreditGrantSourceType = "membership"
 )
 
 // AllValues returns all CreditGrantSourceType values.
 func (CreditGrantSourceType) AllValues() []CreditGrantSourceType {
 	return []CreditGrantSourceType{
-		CreditGrantSourceTypePromotional,
+		CreditGrantSourceTypePromotion,
 		CreditGrantSourceTypeVoucher,
-		CreditGrantSourceTypeCompensation,
+		CreditGrantSourceTypeManual,
 		CreditGrantSourceTypeMembership,
 	}
 }
@@ -3124,11 +3130,11 @@ func (CreditGrantSourceType) AllValues() []CreditGrantSourceType {
 // MarshalText implements encoding.TextMarshaler.
 func (s CreditGrantSourceType) MarshalText() ([]byte, error) {
 	switch s {
-	case CreditGrantSourceTypePromotional:
+	case CreditGrantSourceTypePromotion:
 		return []byte(s), nil
 	case CreditGrantSourceTypeVoucher:
 		return []byte(s), nil
-	case CreditGrantSourceTypeCompensation:
+	case CreditGrantSourceTypeManual:
 		return []byte(s), nil
 	case CreditGrantSourceTypeMembership:
 		return []byte(s), nil
@@ -3140,14 +3146,14 @@ func (s CreditGrantSourceType) MarshalText() ([]byte, error) {
 // UnmarshalText implements encoding.TextUnmarshaler.
 func (s *CreditGrantSourceType) UnmarshalText(data []byte) error {
 	switch CreditGrantSourceType(data) {
-	case CreditGrantSourceTypePromotional:
-		*s = CreditGrantSourceTypePromotional
+	case CreditGrantSourceTypePromotion:
+		*s = CreditGrantSourceTypePromotion
 		return nil
 	case CreditGrantSourceTypeVoucher:
 		*s = CreditGrantSourceTypeVoucher
 		return nil
-	case CreditGrantSourceTypeCompensation:
-		*s = CreditGrantSourceTypeCompensation
+	case CreditGrantSourceTypeManual:
+		*s = CreditGrantSourceTypeManual
 		return nil
 	case CreditGrantSourceTypeMembership:
 		*s = CreditGrantSourceTypeMembership
@@ -3160,17 +3166,17 @@ func (s *CreditGrantSourceType) UnmarshalText(data []byte) error {
 type CreditGrantStatus string
 
 const (
-	CreditGrantStatusActive    CreditGrantStatus = "active"
-	CreditGrantStatusExhausted CreditGrantStatus = "exhausted"
-	CreditGrantStatusExpired   CreditGrantStatus = "expired"
-	CreditGrantStatusVoided    CreditGrantStatus = "voided"
+	CreditGrantStatusActive   CreditGrantStatus = "active"
+	CreditGrantStatusDepleted CreditGrantStatus = "depleted"
+	CreditGrantStatusExpired  CreditGrantStatus = "expired"
+	CreditGrantStatusVoided   CreditGrantStatus = "voided"
 )
 
 // AllValues returns all CreditGrantStatus values.
 func (CreditGrantStatus) AllValues() []CreditGrantStatus {
 	return []CreditGrantStatus{
 		CreditGrantStatusActive,
-		CreditGrantStatusExhausted,
+		CreditGrantStatusDepleted,
 		CreditGrantStatusExpired,
 		CreditGrantStatusVoided,
 	}
@@ -3181,7 +3187,7 @@ func (s CreditGrantStatus) MarshalText() ([]byte, error) {
 	switch s {
 	case CreditGrantStatusActive:
 		return []byte(s), nil
-	case CreditGrantStatusExhausted:
+	case CreditGrantStatusDepleted:
 		return []byte(s), nil
 	case CreditGrantStatusExpired:
 		return []byte(s), nil
@@ -3198,8 +3204,8 @@ func (s *CreditGrantStatus) UnmarshalText(data []byte) error {
 	case CreditGrantStatusActive:
 		*s = CreditGrantStatusActive
 		return nil
-	case CreditGrantStatusExhausted:
-		*s = CreditGrantStatusExhausted
+	case CreditGrantStatusDepleted:
+		*s = CreditGrantStatusDepleted
 		return nil
 	case CreditGrantStatusExpired:
 		*s = CreditGrantStatusExpired
@@ -4314,6 +4320,47 @@ func (s *InvoiceType) UnmarshalText(data []byte) error {
 	}
 }
 
+type ListAllocationsSourceType string
+
+const (
+	ListAllocationsSourceTypeTransaction ListAllocationsSourceType = "transaction"
+	ListAllocationsSourceTypeCreditGrant ListAllocationsSourceType = "credit_grant"
+)
+
+// AllValues returns all ListAllocationsSourceType values.
+func (ListAllocationsSourceType) AllValues() []ListAllocationsSourceType {
+	return []ListAllocationsSourceType{
+		ListAllocationsSourceTypeTransaction,
+		ListAllocationsSourceTypeCreditGrant,
+	}
+}
+
+// MarshalText implements encoding.TextMarshaler.
+func (s ListAllocationsSourceType) MarshalText() ([]byte, error) {
+	switch s {
+	case ListAllocationsSourceTypeTransaction:
+		return []byte(s), nil
+	case ListAllocationsSourceTypeCreditGrant:
+		return []byte(s), nil
+	default:
+		return nil, errors.Errorf("invalid value: %q", s)
+	}
+}
+
+// UnmarshalText implements encoding.TextUnmarshaler.
+func (s *ListAllocationsSourceType) UnmarshalText(data []byte) error {
+	switch ListAllocationsSourceType(data) {
+	case ListAllocationsSourceTypeTransaction:
+		*s = ListAllocationsSourceTypeTransaction
+		return nil
+	case ListAllocationsSourceTypeCreditGrant:
+		*s = ListAllocationsSourceTypeCreditGrant
+		return nil
+	default:
+		return errors.Errorf("invalid value: %q", data)
+	}
+}
+
 type ListAllowancesStatus string
 
 const (
@@ -4372,17 +4419,17 @@ func (s *ListAllowancesStatus) UnmarshalText(data []byte) error {
 type ListCreditGrantsStatus string
 
 const (
-	ListCreditGrantsStatusActive    ListCreditGrantsStatus = "active"
-	ListCreditGrantsStatusExhausted ListCreditGrantsStatus = "exhausted"
-	ListCreditGrantsStatusExpired   ListCreditGrantsStatus = "expired"
-	ListCreditGrantsStatusVoided    ListCreditGrantsStatus = "voided"
+	ListCreditGrantsStatusActive   ListCreditGrantsStatus = "active"
+	ListCreditGrantsStatusDepleted ListCreditGrantsStatus = "depleted"
+	ListCreditGrantsStatusExpired  ListCreditGrantsStatus = "expired"
+	ListCreditGrantsStatusVoided   ListCreditGrantsStatus = "voided"
 )
 
 // AllValues returns all ListCreditGrantsStatus values.
 func (ListCreditGrantsStatus) AllValues() []ListCreditGrantsStatus {
 	return []ListCreditGrantsStatus{
 		ListCreditGrantsStatusActive,
-		ListCreditGrantsStatusExhausted,
+		ListCreditGrantsStatusDepleted,
 		ListCreditGrantsStatusExpired,
 		ListCreditGrantsStatusVoided,
 	}
@@ -4393,7 +4440,7 @@ func (s ListCreditGrantsStatus) MarshalText() ([]byte, error) {
 	switch s {
 	case ListCreditGrantsStatusActive:
 		return []byte(s), nil
-	case ListCreditGrantsStatusExhausted:
+	case ListCreditGrantsStatusDepleted:
 		return []byte(s), nil
 	case ListCreditGrantsStatusExpired:
 		return []byte(s), nil
@@ -4410,8 +4457,8 @@ func (s *ListCreditGrantsStatus) UnmarshalText(data []byte) error {
 	case ListCreditGrantsStatusActive:
 		*s = ListCreditGrantsStatusActive
 		return nil
-	case ListCreditGrantsStatusExhausted:
-		*s = ListCreditGrantsStatusExhausted
+	case ListCreditGrantsStatusDepleted:
+		*s = ListCreditGrantsStatusDepleted
 		return nil
 	case ListCreditGrantsStatusExpired:
 		*s = ListCreditGrantsStatusExpired
@@ -5178,6 +5225,52 @@ func (o OptInvoiceType) Get() (v InvoiceType, ok bool) {
 
 // Or returns value if set, or given parameter if does not.
 func (o OptInvoiceType) Or(d InvoiceType) InvoiceType {
+	if v, ok := o.Get(); ok {
+		return v
+	}
+	return d
+}
+
+// NewOptListAllocationsSourceType returns new OptListAllocationsSourceType with value set to v.
+func NewOptListAllocationsSourceType(v ListAllocationsSourceType) OptListAllocationsSourceType {
+	return OptListAllocationsSourceType{
+		Value: v,
+		Set:   true,
+	}
+}
+
+// OptListAllocationsSourceType is optional ListAllocationsSourceType.
+type OptListAllocationsSourceType struct {
+	Value ListAllocationsSourceType
+	Set   bool
+}
+
+// IsSet returns true if OptListAllocationsSourceType was set.
+func (o OptListAllocationsSourceType) IsSet() bool { return o.Set }
+
+// Reset unsets value.
+func (o *OptListAllocationsSourceType) Reset() {
+	var v ListAllocationsSourceType
+	o.Value = v
+	o.Set = false
+}
+
+// SetTo sets value to v.
+func (o *OptListAllocationsSourceType) SetTo(v ListAllocationsSourceType) {
+	o.Set = true
+	o.Value = v
+}
+
+// Get returns value and boolean that denotes whether value was set.
+func (o OptListAllocationsSourceType) Get() (v ListAllocationsSourceType, ok bool) {
+	if !o.Set {
+		return v, false
+	}
+	return o.Value, true
+}
+
+// Or returns value if set, or given parameter if does not.
+func (o OptListAllocationsSourceType) Or(d ListAllocationsSourceType) ListAllocationsSourceType {
 	if v, ok := o.Get(); ok {
 		return v
 	}
@@ -6763,16 +6856,36 @@ func (s *PaymentMethodSetup) SetReturnURL(val OptString) {
 	s.ReturnURL = val
 }
 
+// What the payment provider's browser library needs in order to collect a card. There is no address to
+// redirect to: the form is rendered in the page, and the card goes straight from the browser to the
+// provider.
 // Ref: #/components/schemas/PaymentMethodSetupResult
 type PaymentMethodSetupResult struct {
-	// Where the payer enters their card details.
-	SetupURL  string      `json:"setup_url"`
-	ExpiresAt OptDateTime `json:"expires_at"`
+	// The provider's identifier for this attempt. Use it to tell a reloaded page apart from a second
+	// attempt.
+	SetupID string `json:"setup_id"`
+	// Authorises this one attempt with the provider, and nothing else. Pass it to the provider's library;
+	// it is not an API credential and grants no access here.
+	ClientSecret string `json:"client_secret"`
+	// The provider's public key to initialise its library with. It differs between test and live, so read
+	// it from here rather than compiling it in.
+	PublishableKey string      `json:"publishable_key"`
+	ExpiresAt      OptDateTime `json:"expires_at"`
 }
 
-// GetSetupURL returns the value of SetupURL.
-func (s *PaymentMethodSetupResult) GetSetupURL() string {
-	return s.SetupURL
+// GetSetupID returns the value of SetupID.
+func (s *PaymentMethodSetupResult) GetSetupID() string {
+	return s.SetupID
+}
+
+// GetClientSecret returns the value of ClientSecret.
+func (s *PaymentMethodSetupResult) GetClientSecret() string {
+	return s.ClientSecret
+}
+
+// GetPublishableKey returns the value of PublishableKey.
+func (s *PaymentMethodSetupResult) GetPublishableKey() string {
+	return s.PublishableKey
 }
 
 // GetExpiresAt returns the value of ExpiresAt.
@@ -6780,9 +6893,19 @@ func (s *PaymentMethodSetupResult) GetExpiresAt() OptDateTime {
 	return s.ExpiresAt
 }
 
-// SetSetupURL sets the value of SetupURL.
-func (s *PaymentMethodSetupResult) SetSetupURL(val string) {
-	s.SetupURL = val
+// SetSetupID sets the value of SetupID.
+func (s *PaymentMethodSetupResult) SetSetupID(val string) {
+	s.SetupID = val
+}
+
+// SetClientSecret sets the value of ClientSecret.
+func (s *PaymentMethodSetupResult) SetClientSecret(val string) {
+	s.ClientSecret = val
+}
+
+// SetPublishableKey sets the value of PublishableKey.
+func (s *PaymentMethodSetupResult) SetPublishableKey(val string) {
+	s.PublishableKey = val
 }
 
 // SetExpiresAt sets the value of ExpiresAt.
@@ -8071,12 +8194,20 @@ type Refund struct {
 	RequestedAmount  Money      `json:"requested_amount"`
 	// What has actually been returned.
 	SettledAmount OptMoney `json:"settled_amount"`
-	Currency      string   `json:"currency"`
+	// Withheld from what reaches the payer. It applies only to cash returned to a payment method, so it is
+	// zero when `destination` is `balance`, and it is never taken out of credit or a voucher.
+	//
+	// `settled_amount` is the amount put back against what was paid; the payer receives that less this.
+	FeeAmount OptMoney `json:"fee_amount"`
+	Currency  string   `json:"currency"`
 	// Where the cash went.
 	Destination OptRefundDestination `json:"destination"`
-	Status      RefundStatus         `json:"status"`
-	Reason      OptString            `json:"reason"`
-	CreatedAt   time.Time            `json:"created_at"`
+	// `pending` — accepted, not yet sent to the payment provider. `processing` — with the provider and
+	// awaiting its answer, which takes days for some methods. Neither is final, and neither means the
+	// money has moved.
+	Status    RefundStatus `json:"status"`
+	Reason    OptString    `json:"reason"`
+	CreatedAt time.Time    `json:"created_at"`
 }
 
 // GetID returns the value of ID.
@@ -8107,6 +8238,11 @@ func (s *Refund) GetRequestedAmount() Money {
 // GetSettledAmount returns the value of SettledAmount.
 func (s *Refund) GetSettledAmount() OptMoney {
 	return s.SettledAmount
+}
+
+// GetFeeAmount returns the value of FeeAmount.
+func (s *Refund) GetFeeAmount() OptMoney {
+	return s.FeeAmount
 }
 
 // GetCurrency returns the value of Currency.
@@ -8162,6 +8298,11 @@ func (s *Refund) SetRequestedAmount(val Money) {
 // SetSettledAmount sets the value of SettledAmount.
 func (s *Refund) SetSettledAmount(val OptMoney) {
 	s.SettledAmount = val
+}
+
+// SetFeeAmount sets the value of FeeAmount.
+func (s *Refund) SetFeeAmount(val OptMoney) {
+	s.FeeAmount = val
 }
 
 // SetCurrency sets the value of Currency.
@@ -8257,6 +8398,146 @@ func (s *RefundList) SetTotalCount(val OptInt64) {
 	s.TotalCount = val
 }
 
+// What a full refund would return, and where each part of it would go.
+// Ref: #/components/schemas/RefundQuote
+type RefundQuote struct {
+	// The most that can still be returned, before any fee.
+	RefundableAmount Money `json:"refundable_amount"`
+	// Withheld from the cash part. Zero when `destination` is `balance`, and never taken out of credit or
+	// a voucher.
+	FeeAmount Money `json:"fee_amount"`
+	// `refundable_amount` less `fee_amount`.
+	NetAmount Money  `json:"net_amount"`
+	Currency  string `json:"currency"`
+	// Where the cash part would go. `provider` returns it to the method it was paid with; `balance`
+	// credits the account instead, which is the answer whenever the cash came from more than one place or
+	// never went through a provider at all.
+	Destination RefundQuoteDestination `json:"destination"`
+	// How `refundable_amount` splits by where the money came from. The amounts sum to it.
+	//
+	// Show this rather than a single figure. A part returned as credit or as a voucher does not appear on
+	// a card statement, so a customer told only the net amount will ask why less than that arrived.
+	Sources []RefundSource `json:"sources"`
+	// The last moment a refund can be asked for here. Measured from when the purchase was paid for, not
+	// from today. Absent when this cannot be refunded without support at all — metered usage, for one,
+	// which is never self-service.
+	SelfServiceUntil OptNilDateTime `json:"self_service_until"`
+}
+
+// GetRefundableAmount returns the value of RefundableAmount.
+func (s *RefundQuote) GetRefundableAmount() Money {
+	return s.RefundableAmount
+}
+
+// GetFeeAmount returns the value of FeeAmount.
+func (s *RefundQuote) GetFeeAmount() Money {
+	return s.FeeAmount
+}
+
+// GetNetAmount returns the value of NetAmount.
+func (s *RefundQuote) GetNetAmount() Money {
+	return s.NetAmount
+}
+
+// GetCurrency returns the value of Currency.
+func (s *RefundQuote) GetCurrency() string {
+	return s.Currency
+}
+
+// GetDestination returns the value of Destination.
+func (s *RefundQuote) GetDestination() RefundQuoteDestination {
+	return s.Destination
+}
+
+// GetSources returns the value of Sources.
+func (s *RefundQuote) GetSources() []RefundSource {
+	return s.Sources
+}
+
+// GetSelfServiceUntil returns the value of SelfServiceUntil.
+func (s *RefundQuote) GetSelfServiceUntil() OptNilDateTime {
+	return s.SelfServiceUntil
+}
+
+// SetRefundableAmount sets the value of RefundableAmount.
+func (s *RefundQuote) SetRefundableAmount(val Money) {
+	s.RefundableAmount = val
+}
+
+// SetFeeAmount sets the value of FeeAmount.
+func (s *RefundQuote) SetFeeAmount(val Money) {
+	s.FeeAmount = val
+}
+
+// SetNetAmount sets the value of NetAmount.
+func (s *RefundQuote) SetNetAmount(val Money) {
+	s.NetAmount = val
+}
+
+// SetCurrency sets the value of Currency.
+func (s *RefundQuote) SetCurrency(val string) {
+	s.Currency = val
+}
+
+// SetDestination sets the value of Destination.
+func (s *RefundQuote) SetDestination(val RefundQuoteDestination) {
+	s.Destination = val
+}
+
+// SetSources sets the value of Sources.
+func (s *RefundQuote) SetSources(val []RefundSource) {
+	s.Sources = val
+}
+
+// SetSelfServiceUntil sets the value of SelfServiceUntil.
+func (s *RefundQuote) SetSelfServiceUntil(val OptNilDateTime) {
+	s.SelfServiceUntil = val
+}
+
+// Where the cash part would go. `provider` returns it to the method it was paid with; `balance`
+// credits the account instead, which is the answer whenever the cash came from more than one place or
+// never went through a provider at all.
+type RefundQuoteDestination string
+
+const (
+	RefundQuoteDestinationBalance  RefundQuoteDestination = "balance"
+	RefundQuoteDestinationProvider RefundQuoteDestination = "provider"
+)
+
+// AllValues returns all RefundQuoteDestination values.
+func (RefundQuoteDestination) AllValues() []RefundQuoteDestination {
+	return []RefundQuoteDestination{
+		RefundQuoteDestinationBalance,
+		RefundQuoteDestinationProvider,
+	}
+}
+
+// MarshalText implements encoding.TextMarshaler.
+func (s RefundQuoteDestination) MarshalText() ([]byte, error) {
+	switch s {
+	case RefundQuoteDestinationBalance:
+		return []byte(s), nil
+	case RefundQuoteDestinationProvider:
+		return []byte(s), nil
+	default:
+		return nil, errors.Errorf("invalid value: %q", s)
+	}
+}
+
+// UnmarshalText implements encoding.TextUnmarshaler.
+func (s *RefundQuoteDestination) UnmarshalText(data []byte) error {
+	switch RefundQuoteDestination(data) {
+	case RefundQuoteDestinationBalance:
+		*s = RefundQuoteDestinationBalance
+		return nil
+	case RefundQuoteDestinationProvider:
+		*s = RefundQuoteDestinationProvider
+		return nil
+	default:
+		return errors.Errorf("invalid value: %q", data)
+	}
+}
+
 // Name exactly one of the three targets. Naming none leaves the amount undecided; naming two leaves it
 // ambiguous, and both would have to be resolved by guessing.
 // Ref: #/components/schemas/RefundRequest
@@ -8334,18 +8615,101 @@ func (s *RefundRequest) SetIdempotencyKey(val string) {
 	s.IdempotencyKey = val
 }
 
+// Ref: #/components/schemas/RefundSource
+type RefundSource struct {
+	// Where this part of the money came from, and therefore where it goes back to. Only `cash` can reach a
+	// card or a spendable balance; credit and vouchers return to themselves and never become cash.
+	Type   RefundSourceType `json:"type"`
+	Amount Money            `json:"amount"`
+}
+
+// GetType returns the value of Type.
+func (s *RefundSource) GetType() RefundSourceType {
+	return s.Type
+}
+
+// GetAmount returns the value of Amount.
+func (s *RefundSource) GetAmount() Money {
+	return s.Amount
+}
+
+// SetType sets the value of Type.
+func (s *RefundSource) SetType(val RefundSourceType) {
+	s.Type = val
+}
+
+// SetAmount sets the value of Amount.
+func (s *RefundSource) SetAmount(val Money) {
+	s.Amount = val
+}
+
+// Where this part of the money came from, and therefore where it goes back to. Only `cash` can reach a
+// card or a spendable balance; credit and vouchers return to themselves and never become cash.
+type RefundSourceType string
+
+const (
+	RefundSourceTypeCash    RefundSourceType = "cash"
+	RefundSourceTypeCredit  RefundSourceType = "credit"
+	RefundSourceTypeVoucher RefundSourceType = "voucher"
+)
+
+// AllValues returns all RefundSourceType values.
+func (RefundSourceType) AllValues() []RefundSourceType {
+	return []RefundSourceType{
+		RefundSourceTypeCash,
+		RefundSourceTypeCredit,
+		RefundSourceTypeVoucher,
+	}
+}
+
+// MarshalText implements encoding.TextMarshaler.
+func (s RefundSourceType) MarshalText() ([]byte, error) {
+	switch s {
+	case RefundSourceTypeCash:
+		return []byte(s), nil
+	case RefundSourceTypeCredit:
+		return []byte(s), nil
+	case RefundSourceTypeVoucher:
+		return []byte(s), nil
+	default:
+		return nil, errors.Errorf("invalid value: %q", s)
+	}
+}
+
+// UnmarshalText implements encoding.TextUnmarshaler.
+func (s *RefundSourceType) UnmarshalText(data []byte) error {
+	switch RefundSourceType(data) {
+	case RefundSourceTypeCash:
+		*s = RefundSourceTypeCash
+		return nil
+	case RefundSourceTypeCredit:
+		*s = RefundSourceTypeCredit
+		return nil
+	case RefundSourceTypeVoucher:
+		*s = RefundSourceTypeVoucher
+		return nil
+	default:
+		return errors.Errorf("invalid value: %q", data)
+	}
+}
+
+// `pending` — accepted, not yet sent to the payment provider. `processing` — with the provider and
+// awaiting its answer, which takes days for some methods. Neither is final, and neither means the
+// money has moved.
 type RefundStatus string
 
 const (
-	RefundStatusPending   RefundStatus = "pending"
-	RefundStatusSucceeded RefundStatus = "succeeded"
-	RefundStatusFailed    RefundStatus = "failed"
+	RefundStatusPending    RefundStatus = "pending"
+	RefundStatusProcessing RefundStatus = "processing"
+	RefundStatusSucceeded  RefundStatus = "succeeded"
+	RefundStatusFailed     RefundStatus = "failed"
 )
 
 // AllValues returns all RefundStatus values.
 func (RefundStatus) AllValues() []RefundStatus {
 	return []RefundStatus{
 		RefundStatusPending,
+		RefundStatusProcessing,
 		RefundStatusSucceeded,
 		RefundStatusFailed,
 	}
@@ -8355,6 +8719,8 @@ func (RefundStatus) AllValues() []RefundStatus {
 func (s RefundStatus) MarshalText() ([]byte, error) {
 	switch s {
 	case RefundStatusPending:
+		return []byte(s), nil
+	case RefundStatusProcessing:
 		return []byte(s), nil
 	case RefundStatusSucceeded:
 		return []byte(s), nil
@@ -8370,6 +8736,9 @@ func (s *RefundStatus) UnmarshalText(data []byte) error {
 	switch RefundStatus(data) {
 	case RefundStatusPending:
 		*s = RefundStatusPending
+		return nil
+	case RefundStatusProcessing:
+		*s = RefundStatusProcessing
 		return nil
 	case RefundStatusSucceeded:
 		*s = RefundStatusSucceeded
@@ -8605,12 +8974,14 @@ type Subscription struct {
 	ID uuid.UUID `json:"id"`
 	// Which project this is for. Absent when it was bought at account level, such as a membership, which
 	// belongs to no single project.
-	ProjectID        OptNilUUID         `json:"project_id"`
-	BillingAccountID OptInt64           `json:"billing_account_id"`
-	ProductID        uuid.UUID          `json:"product_id"`
-	ProductKey       OptString          `json:"product_key"`
-	Status           SubscriptionStatus `json:"status"`
-	ItemCount        OptInt64           `json:"item_count"`
+	ProjectID        OptNilUUID `json:"project_id"`
+	BillingAccountID OptInt64   `json:"billing_account_id"`
+	ProductID        uuid.UUID  `json:"product_id"`
+	ProductKey       OptString  `json:"product_key"`
+	// `pending` is a subscription created by an order that has not completed, so it appears in the list
+	// before anything under it is running.
+	Status    SubscriptionStatus `json:"status"`
+	ItemCount OptInt64           `json:"item_count"`
 }
 
 // GetID returns the value of ID.
@@ -8876,7 +9247,7 @@ const (
 	SubscriptionItemStatusPending    SubscriptionItemStatus = "pending"
 	SubscriptionItemStatusActive     SubscriptionItemStatus = "active"
 	SubscriptionItemStatusSuspended  SubscriptionItemStatus = "suspended"
-	SubscriptionItemStatusCancelled  SubscriptionItemStatus = "cancelled"
+	SubscriptionItemStatusCanceled   SubscriptionItemStatus = "canceled"
 	SubscriptionItemStatusTerminated SubscriptionItemStatus = "terminated"
 )
 
@@ -8886,7 +9257,7 @@ func (SubscriptionItemStatus) AllValues() []SubscriptionItemStatus {
 		SubscriptionItemStatusPending,
 		SubscriptionItemStatusActive,
 		SubscriptionItemStatusSuspended,
-		SubscriptionItemStatusCancelled,
+		SubscriptionItemStatusCanceled,
 		SubscriptionItemStatusTerminated,
 	}
 }
@@ -8900,7 +9271,7 @@ func (s SubscriptionItemStatus) MarshalText() ([]byte, error) {
 		return []byte(s), nil
 	case SubscriptionItemStatusSuspended:
 		return []byte(s), nil
-	case SubscriptionItemStatusCancelled:
+	case SubscriptionItemStatusCanceled:
 		return []byte(s), nil
 	case SubscriptionItemStatusTerminated:
 		return []byte(s), nil
@@ -8921,8 +9292,8 @@ func (s *SubscriptionItemStatus) UnmarshalText(data []byte) error {
 	case SubscriptionItemStatusSuspended:
 		*s = SubscriptionItemStatusSuspended
 		return nil
-	case SubscriptionItemStatusCancelled:
-		*s = SubscriptionItemStatusCancelled
+	case SubscriptionItemStatusCanceled:
+		*s = SubscriptionItemStatusCanceled
 		return nil
 	case SubscriptionItemStatusTerminated:
 		*s = SubscriptionItemStatusTerminated
@@ -8958,31 +9329,41 @@ func (s *SubscriptionList) SetTotalCount(val OptInt64) {
 	s.TotalCount = val
 }
 
+// `pending` is a subscription created by an order that has not completed, so it appears in the list
+// before anything under it is running.
 type SubscriptionStatus string
 
 const (
-	SubscriptionStatusActive    SubscriptionStatus = "active"
-	SubscriptionStatusSuspended SubscriptionStatus = "suspended"
-	SubscriptionStatusCancelled SubscriptionStatus = "cancelled"
+	SubscriptionStatusPending    SubscriptionStatus = "pending"
+	SubscriptionStatusActive     SubscriptionStatus = "active"
+	SubscriptionStatusSuspended  SubscriptionStatus = "suspended"
+	SubscriptionStatusCanceled   SubscriptionStatus = "canceled"
+	SubscriptionStatusTerminated SubscriptionStatus = "terminated"
 )
 
 // AllValues returns all SubscriptionStatus values.
 func (SubscriptionStatus) AllValues() []SubscriptionStatus {
 	return []SubscriptionStatus{
+		SubscriptionStatusPending,
 		SubscriptionStatusActive,
 		SubscriptionStatusSuspended,
-		SubscriptionStatusCancelled,
+		SubscriptionStatusCanceled,
+		SubscriptionStatusTerminated,
 	}
 }
 
 // MarshalText implements encoding.TextMarshaler.
 func (s SubscriptionStatus) MarshalText() ([]byte, error) {
 	switch s {
+	case SubscriptionStatusPending:
+		return []byte(s), nil
 	case SubscriptionStatusActive:
 		return []byte(s), nil
 	case SubscriptionStatusSuspended:
 		return []byte(s), nil
-	case SubscriptionStatusCancelled:
+	case SubscriptionStatusCanceled:
+		return []byte(s), nil
+	case SubscriptionStatusTerminated:
 		return []byte(s), nil
 	default:
 		return nil, errors.Errorf("invalid value: %q", s)
@@ -8992,14 +9373,20 @@ func (s SubscriptionStatus) MarshalText() ([]byte, error) {
 // UnmarshalText implements encoding.TextUnmarshaler.
 func (s *SubscriptionStatus) UnmarshalText(data []byte) error {
 	switch SubscriptionStatus(data) {
+	case SubscriptionStatusPending:
+		*s = SubscriptionStatusPending
+		return nil
 	case SubscriptionStatusActive:
 		*s = SubscriptionStatusActive
 		return nil
 	case SubscriptionStatusSuspended:
 		*s = SubscriptionStatusSuspended
 		return nil
-	case SubscriptionStatusCancelled:
-		*s = SubscriptionStatusCancelled
+	case SubscriptionStatusCanceled:
+		*s = SubscriptionStatusCanceled
+		return nil
+	case SubscriptionStatusTerminated:
+		*s = SubscriptionStatusTerminated
 		return nil
 	default:
 		return errors.Errorf("invalid value: %q", data)
@@ -9049,13 +9436,34 @@ func (s *Tier) SetFlatAmount(val OptMoney) {
 type TopUp struct {
 	ID               uuid.UUID `json:"id"`
 	BillingAccountID int64     `json:"billing_account_id"`
-	Amount           Money     `json:"amount"`
-	Currency         string    `json:"currency"`
+	// What is credited to the account, in the account's own currency.
+	Amount   Money  `json:"amount"`
+	Currency string `json:"currency"`
+	// How much of this top-up has not been spent yet. This is the part that can still be returned to where
+	// it was paid from.
+	RemainingAmount OptMoney `json:"remaining_amount"`
 	// `pending` until the payment provider confirms. The balance increases on `succeeded`.
+	//
+	// A checkout the payer abandoned ends up `failed` too, with `failure_reason` saying so. Nothing was
+	// charged in that case.
 	Status TopUpStatus `json:"status"`
+	// Which payment provider collected it.
+	Provider OptString `json:"provider"`
+	// The currency the payer was actually charged in, when the checkout page collected a local one. Absent
+	// when it was the same as the account's.
+	PresentmentCurrency OptString `json:"presentment_currency"`
+	// What was charged, in `presentment_currency`. It will not equal `amount`, and it is the figure that
+	// appears on the payer's card or wallet statement.
+	PresentmentAmount OptMoney `json:"presentment_amount"`
+	// Why it did not go through. Present with `failed`.
+	FailureReason OptString `json:"failure_reason"`
 	// Where the payer completes the payment. Absent once it has completed.
 	CheckoutURL OptString `json:"checkout_url"`
 	CreatedAt   time.Time `json:"created_at"`
+	// When the funds arrived. Later than `created_at` — by days for a bank transfer — so reconciling
+	// against a statement uses this rather than the moment it was started. Absent until the payment
+	// completes.
+	SettledAt OptNilDateTime `json:"settled_at"`
 }
 
 // GetID returns the value of ID.
@@ -9078,9 +9486,34 @@ func (s *TopUp) GetCurrency() string {
 	return s.Currency
 }
 
+// GetRemainingAmount returns the value of RemainingAmount.
+func (s *TopUp) GetRemainingAmount() OptMoney {
+	return s.RemainingAmount
+}
+
 // GetStatus returns the value of Status.
 func (s *TopUp) GetStatus() TopUpStatus {
 	return s.Status
+}
+
+// GetProvider returns the value of Provider.
+func (s *TopUp) GetProvider() OptString {
+	return s.Provider
+}
+
+// GetPresentmentCurrency returns the value of PresentmentCurrency.
+func (s *TopUp) GetPresentmentCurrency() OptString {
+	return s.PresentmentCurrency
+}
+
+// GetPresentmentAmount returns the value of PresentmentAmount.
+func (s *TopUp) GetPresentmentAmount() OptMoney {
+	return s.PresentmentAmount
+}
+
+// GetFailureReason returns the value of FailureReason.
+func (s *TopUp) GetFailureReason() OptString {
+	return s.FailureReason
 }
 
 // GetCheckoutURL returns the value of CheckoutURL.
@@ -9091,6 +9524,11 @@ func (s *TopUp) GetCheckoutURL() OptString {
 // GetCreatedAt returns the value of CreatedAt.
 func (s *TopUp) GetCreatedAt() time.Time {
 	return s.CreatedAt
+}
+
+// GetSettledAt returns the value of SettledAt.
+func (s *TopUp) GetSettledAt() OptNilDateTime {
+	return s.SettledAt
 }
 
 // SetID sets the value of ID.
@@ -9113,9 +9551,34 @@ func (s *TopUp) SetCurrency(val string) {
 	s.Currency = val
 }
 
+// SetRemainingAmount sets the value of RemainingAmount.
+func (s *TopUp) SetRemainingAmount(val OptMoney) {
+	s.RemainingAmount = val
+}
+
 // SetStatus sets the value of Status.
 func (s *TopUp) SetStatus(val TopUpStatus) {
 	s.Status = val
+}
+
+// SetProvider sets the value of Provider.
+func (s *TopUp) SetProvider(val OptString) {
+	s.Provider = val
+}
+
+// SetPresentmentCurrency sets the value of PresentmentCurrency.
+func (s *TopUp) SetPresentmentCurrency(val OptString) {
+	s.PresentmentCurrency = val
+}
+
+// SetPresentmentAmount sets the value of PresentmentAmount.
+func (s *TopUp) SetPresentmentAmount(val OptMoney) {
+	s.PresentmentAmount = val
+}
+
+// SetFailureReason sets the value of FailureReason.
+func (s *TopUp) SetFailureReason(val OptString) {
+	s.FailureReason = val
 }
 
 // SetCheckoutURL sets the value of CheckoutURL.
@@ -9126,6 +9589,11 @@ func (s *TopUp) SetCheckoutURL(val OptString) {
 // SetCreatedAt sets the value of CreatedAt.
 func (s *TopUp) SetCreatedAt(val time.Time) {
 	s.CreatedAt = val
+}
+
+// SetSettledAt sets the value of SettledAt.
+func (s *TopUp) SetSettledAt(val OptNilDateTime) {
+	s.SettledAt = val
 }
 
 // Ref: #/components/schemas/TopUpCreate
@@ -9224,6 +9692,9 @@ func (s *TopUpList) SetTotalCount(val OptInt64) {
 }
 
 // `pending` until the payment provider confirms. The balance increases on `succeeded`.
+//
+// A checkout the payer abandoned ends up `failed` too, with `failure_reason` saying so. Nothing was
+// charged in that case.
 type TopUpStatus string
 
 const (
@@ -9286,6 +9757,10 @@ type Transaction struct {
 	OrderID   OptNilUUID `json:"order_id"`
 	// `pending` is a payment still with the provider. Only one may be pending against any one invoice or
 	// order.
+	//
+	// `failed` covers a payment the provider refused and one the payer walked away from alike;
+	// `failure_reason` says which. There is no separate cancelled state, because what to do next is the
+	// same either way — start a new one.
 	Status    TransactionStatus `json:"status"`
 	CreatedAt time.Time         `json:"created_at"`
 }
@@ -9418,13 +9893,16 @@ func (s *TransactionList) SetTotalCount(val OptInt64) {
 
 // `pending` is a payment still with the provider. Only one may be pending against any one invoice or
 // order.
+//
+// `failed` covers a payment the provider refused and one the payer walked away from alike;
+// `failure_reason` says which. There is no separate cancelled state, because what to do next is the
+// same either way — start a new one.
 type TransactionStatus string
 
 const (
 	TransactionStatusPending   TransactionStatus = "pending"
 	TransactionStatusSucceeded TransactionStatus = "succeeded"
 	TransactionStatusFailed    TransactionStatus = "failed"
-	TransactionStatusCanceled  TransactionStatus = "canceled"
 )
 
 // AllValues returns all TransactionStatus values.
@@ -9433,7 +9911,6 @@ func (TransactionStatus) AllValues() []TransactionStatus {
 		TransactionStatusPending,
 		TransactionStatusSucceeded,
 		TransactionStatusFailed,
-		TransactionStatusCanceled,
 	}
 }
 
@@ -9445,8 +9922,6 @@ func (s TransactionStatus) MarshalText() ([]byte, error) {
 	case TransactionStatusSucceeded:
 		return []byte(s), nil
 	case TransactionStatusFailed:
-		return []byte(s), nil
-	case TransactionStatusCanceled:
 		return []byte(s), nil
 	default:
 		return nil, errors.Errorf("invalid value: %q", s)
@@ -9464,9 +9939,6 @@ func (s *TransactionStatus) UnmarshalText(data []byte) error {
 		return nil
 	case TransactionStatusFailed:
 		*s = TransactionStatusFailed
-		return nil
-	case TransactionStatusCanceled:
-		*s = TransactionStatusCanceled
 		return nil
 	default:
 		return errors.Errorf("invalid value: %q", data)
