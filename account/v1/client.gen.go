@@ -293,6 +293,7 @@ type AcceptConsentsRequestBody struct {
 
 // AcceptInvitationByTokenRequestBody defines model for AcceptInvitationByTokenRequestBody.
 type AcceptInvitationByTokenRequestBody struct {
+	// Token The token carried by the invitation link
 	Token string `json:"token"`
 }
 
@@ -303,22 +304,22 @@ type AcceptedInvitationResponseBody struct {
 
 // AccountResource defines model for AccountResource.
 type AccountResource struct {
-	// Country ISO 3166-1 alpha-2。这两个字段是后加的，注册时才开始要求填——已经注册过的人这里 是空串，让他们在设置里补，补之前一切照常。
+	// Country ISO 3166-1 alpha-2. Empty on an account that registered before this was required; such an account continues to work and can set it from the settings page
 	Country         *string    `json:"country,omitempty"`
 	CreatedAt       time.Time  `json:"created_at"`
 	Email           string     `json:"email"`
 	EmailVerifiedAt *time.Time `json:"email_verified_at"`
 
-	// FirstName 来自登录信息，可能为空
+	// FirstName Taken from the sign-in claims; may be empty
 	FirstName string `json:"first_name"`
 
-	// Id 身份提供方签发的 subject
+	// Id The subject issued by the identity provider
 	Id string `json:"id"`
 
-	// LastName 来自登录信息，可能为空
+	// LastName Taken from the sign-in claims; may be empty
 	LastName string `json:"last_name"`
 
-	// Locale 为空表示没设过，那时按请求头（Accept-Language）走，两者都没有才用平台默认
+	// Locale Empty while never set, in which case `Accept-Language` applies, and the platform default when that is absent as well
 	Locale            *string               `json:"locale,omitempty"`
 	PendingAgreements []AgreementResource   `json:"pending_agreements"`
 	Status            AccountResourceStatus `json:"status"`
@@ -334,14 +335,14 @@ type AgreementListResponseBody struct {
 
 // AgreementResource defines model for AgreementResource.
 type AgreementResource struct {
-	// EffectiveAt 从这一刻起注册必须同意这一版
+	// EffectiveAt From this moment on, registration requires this version
 	EffectiveAt time.Time             `json:"effective_at"`
 	Type        AgreementResourceType `json:"type"`
 
-	// Url 正文发布在哪
+	// Url Where the text is published
 	Url string `json:"url"`
 
-	// Version 同意时原样回传这个值
+	// Version Send this value back unchanged when consenting
 	Version string `json:"version"`
 }
 
@@ -366,13 +367,13 @@ type ConsentListResponseBody struct {
 type ConsentResource struct {
 	ConsentedAt time.Time `json:"consented_at"`
 
-	// Method OFFLINE 是线下签的，由运营录入
+	// Method OFFLINE is a consent given off the platform and recorded by an operator
 	Method  ConsentResourceMethod `json:"method"`
 	Type    ConsentResourceType   `json:"type"`
 	Version string                `json:"version"`
 }
 
-// ConsentResourceMethod OFFLINE 是线下签的，由运营录入
+// ConsentResourceMethod OFFLINE is a consent given off the platform and recorded by an operator
 type ConsentResourceMethod string
 
 // ConsentResourceType defines model for ConsentResource.Type.
@@ -380,10 +381,10 @@ type ConsentResourceType string
 
 // CountryOption defines model for CountryOption.
 type CountryOption struct {
-	// Code ISO 3166-1 alpha-2，注册时原样回传
+	// Code ISO 3166-1 alpha-2, sent back unchanged at registration
 	Code string `json:"code"`
 
-	// Name 按 Accept-Language 渲染的名字
+	// Name The name rendered according to `Accept-Language`
 	Name string `json:"name"`
 }
 
@@ -401,10 +402,10 @@ type GrantResource struct {
 	Admin bool `json:"admin"`
 	Owner bool `json:"owner"`
 
-	// Roles 持有的角色编码，只用于展示
+	// Roles The role codes held, for display only
 	Roles []string `json:"roles"`
 
-	// Rules 他全部策略编译出来的规则。**不要自己遍历它做判定**——拿它配上自己那份权限目录交给 pkg/rbac：那里面的顺序（所有者不可被 deny、deny 优先于管理员、带资源范围的规则不 参与项目级判定）每一条都对着一种会静默放行的写法。
+	// Rules **Do not walk these rules to reach a decision.** They are compiled from every policy that applies to the caller, and serve to render what a user may do. Each request is decided by the service handling it
 	Rules []RuleResource `json:"rules"`
 }
 
@@ -412,27 +413,26 @@ type GrantResource struct {
 type IdentityVerificationResource struct {
 	RejectReason string `json:"reject_reason"`
 
-	// Status PERSONAL 和 ENTERPRISE 是两类主体而不是两个等级，别拿它们比大小
+	// Status PERSONAL and ENTERPRISE are two kinds of subject rather than two levels, and are not ordered
 	Status      IdentityVerificationResourceStatus `json:"status"`
 	SubmittedAt *time.Time                         `json:"submitted_at"`
 	VerifiedAt  *time.Time                         `json:"verified_at"`
 }
 
-// IdentityVerificationResourceStatus PERSONAL 和 ENTERPRISE 是两类主体而不是两个等级，别拿它们比大小
+// IdentityVerificationResourceStatus PERSONAL and ENTERPRISE are two kinds of subject rather than two levels, and are not ordered
 type IdentityVerificationResourceStatus string
 
-// InvitationPreviewResource 一封邀请在被接受之前能给出的全部信息。
-// 它比 InvitationResource 少两样：要约 id 和完整的收件地址。id 不给是因为持有令牌不等于 这封要约列在你名下——真正列在你名下的那些走 list-my-invitations，那条是认过身份的。
+// InvitationPreviewResource What an invitation states before it is accepted. It carries neither the invitation id nor the full recipient address; the invitations listed against the current account are returned by `list-my-invitations`
 type InvitationPreviewResource struct {
-	// EmailMasked 打过码的收件地址，只够收件人认出「这是发给我的」
+	// EmailMasked The masked recipient address, enough for the recipient to recognise it
 	EmailMasked string    `json:"email_masked"`
 	ExpiresAt   time.Time `json:"expires_at"`
 
-	// InvitedByName 邀请人的显示名，姓名都空时是他的邮箱
+	// InvitedByName The display name of the sender, or their email address when no name is set
 	InvitedByName string `json:"invited_by_name"`
 	ProjectName   string `json:"project_name"`
 
-	// RoleNames 接受之后会拿到的角色，显示名
+	// RoleNames The display names of the roles granted on acceptance
 	RoleNames []string `json:"role_names"`
 }
 
@@ -443,64 +443,63 @@ type InvitationResource struct {
 	ExpiresAt time.Time          `json:"expires_at"`
 	Id        openapi_types.UUID `json:"id"`
 
-	// InvitedBy 发出这份要约的账号 id
+	// InvitedBy The id of the account that issued the invitation
 	InvitedBy string `json:"invited_by"`
 
-	// InvitedByName 发出这份要约的人的显示名，姓名都空时是他的邮箱。它是读取那一刻的事实，不是发信时的快照
+	// InvitedByName The display name of that account, or its email address when no name is set. It reflects the value at the time of reading rather than at the time the invitation was sent
 	InvitedByName string             `json:"invited_by_name"`
 	ProjectId     openapi_types.UUID `json:"project_id"`
 
-	// ProjectName 目标项目的名字。
-	// 它在这里，而这一度是刻意不给的——理由是「没接受就不是成员，而名字只有成员能读」。 那条克制在这个场景下站不住：邀请邮件正文里就写着项目名，收件人早就知道了，而一个 只显示 uuid 的邀请列表让人没法判断该不该接受。
+	// ProjectName The name of the target project
 	ProjectName string `json:"project_name"`
 
-	// RoleNames 上面那些编码的显示名，按同样的顺序。读者看的是「管理员」，不是 ADMIN
+	// RoleNames The display names of those codes, in the same order
 	RoleNames []string `json:"role_names"`
 
-	// Roles 兑现时会授予的角色编码
+	// Roles The role codes granted on acceptance
 	Roles []string `json:"roles"`
 }
 
 // LanguageOption defines model for LanguageOption.
 type LanguageOption struct {
-	// Code 界面和邮件用哪种语言。它和 country 是两件事，不能互相推——一个在香港的人可能读简体， 一个在美国的人可能读繁体。
+	// Code The language used for the interface and for email. It is independent of `country`, and neither can be inferred from the other
 	Code Locale `json:"code"`
 
-	// Name 这种语言的自称，用它自己写（「简体中文」「繁體中文（香港）」「English」）。不跟着 Accept-Language 变——一个只看得懂繁体的人，在一个全简体的列表里找不到自己那一项。
+	// Name The endonym of the language, written in that language itself. It does not follow `Accept-Language`
 	Name string `json:"name"`
 }
 
 // LengthAwarePageInvitationResource defines model for LengthAwarePageInvitationResource.
 type LengthAwarePageInvitationResource struct {
-	// Items 这一页的内容
+	// Items The items in this page
 	Items []InvitationResource `json:"items"`
 
-	// Limit 这一页最多几条，回显请求里的值
+	// Limit Maximum number of items in this page, echoing the request
 	Limit int64 `json:"limit"`
 
-	// Offset 跳过了多少条，回显请求里的值
+	// Offset Number of items skipped, echoing the request
 	Offset int64 `json:"offset"`
 
-	// Total 命中的总条数，不只是这一页
+	// Total Total number of matches, not only this page
 	Total int64 `json:"total"`
 }
 
 // LengthAwarePageProjectAccessResource defines model for LengthAwarePageProjectAccessResource.
 type LengthAwarePageProjectAccessResource struct {
-	// Items 这一页的内容
+	// Items The items in this page
 	Items []ProjectAccessResource `json:"items"`
 
-	// Limit 这一页最多几条，回显请求里的值
+	// Limit Maximum number of items in this page, echoing the request
 	Limit int64 `json:"limit"`
 
-	// Offset 跳过了多少条，回显请求里的值
+	// Offset Number of items skipped, echoing the request
 	Offset int64 `json:"offset"`
 
-	// Total 命中的总条数，不只是这一页
+	// Total Total number of matches, not only this page
 	Total int64 `json:"total"`
 }
 
-// Locale 界面和邮件用哪种语言。它和 country 是两件事，不能互相推——一个在香港的人可能读简体， 一个在美国的人可能读繁体。
+// Locale The language used for the interface and for email. It is independent of `country`, and neither can be inferred from the other
 type Locale string
 
 // LocaleOptionsResource defines model for LocaleOptionsResource.
@@ -521,14 +520,14 @@ type ProjectResource struct {
 	CreatedAt time.Time `json:"created_at"`
 	CreatedBy string    `json:"created_by"`
 
-	// DeletedAt 盖上墓碑的那一刻
+	// DeletedAt When the project was deleted
 	DeletedAt   *time.Time            `json:"deleted_at"`
 	Description string                `json:"description"`
 	Id          openapi_types.UUID    `json:"id"`
 	Name        string                `json:"name"`
 	Status      ProjectResourceStatus `json:"status"`
 
-	// StatusReason 给人看的，不参与任何查询
+	// StatusReason Written for a reader; it takes part in no query
 	StatusReason string    `json:"status_reason"`
 	UpdatedAt    time.Time `json:"updated_at"`
 }
@@ -536,45 +535,24 @@ type ProjectResource struct {
 // ProjectResourceStatus defines model for ProjectResource.Status.
 type ProjectResourceStatus string
 
-// ProjectTokenResponseBody defines model for ProjectTokenResponseBody.
-type ProjectTokenResponseBody struct {
-	// ExpiresAt 过期时刻。到点之前拿用户身份再换一张，别等第一个 401
-	ExpiresAt time.Time `json:"expires_at"`
-
-	// ExpiresIn 还能活多少秒
-	ExpiresIn int64 `json:"expires_in"`
-
-	// Grant **这一份是此刻的快照，不在令牌里，也不要缓存它。** 它只用来决定界面上画什么；真正的判定每次都要重新问
-	Grant GrantResource `json:"grant"`
-
-	// Project 顺带带上项目本身，省掉换完之后立刻再查一次
-	Project ProjectResource `json:"project"`
-
-	// Token 项目令牌，放进 Authorization: Bearer 里用
-	Token string `json:"token"`
-
-	// TokenType 固定是 Bearer
-	TokenType string `json:"token_type"`
-}
-
 // RegisterRequestBody defines model for RegisterRequestBody.
 type RegisterRequestBody struct {
-	// Consents 当前生效的必签文件全部要在里面，版本号要和 GET /api/v1/agreements 给的一致
+	// Consents Must cover every agreement currently in force, at the versions returned by GET /account/v1/agreements
 	Consents []ConsentBody `json:"consents"`
 
-	// Country ISO 3166-1 alpha-2（CN、HK、US）。必须是现实世界里真实存在的国家或地区——EU、ZZ 这类在标准里有位置但不是国家的代码会被拒。存代码不存名字：名字是本地化的，存下来 的那份只会是某一种语言的。
+	// Country ISO 3166-1 alpha-2 (CN, HK, US). Must denote a country or territory that exists; codes such as EU and ZZ hold a place in the standard without denoting one and are refused
 	Country string `json:"country"`
 
-	// Locale 界面和邮件用哪种语言。它和 country 是两件事，不能互相推——一个在香港的人可能读简体， 一个在美国的人可能读繁体。
+	// Locale The language used for the interface and for email. It is independent of `country`, and neither can be inferred from the other
 	Locale Locale `json:"locale"`
 }
 
 // ResourceRefResource defines model for ResourceRefResource.
 type ResourceRefResource struct {
-	// Id 是字符串而不是 uuid：dns 的 zone 标识是一个域名，而且它根本不在 IAM 的库里。匹配 语义是 glob，所以 *.example.com 能表达一批子域名；uuid 和域名都不含 glob 元字符， 对它们来说这就是精确相等。
+	// Id A string rather than a UUID; a DNS zone, for one, is named by its domain. Matching is glob, so `*.example.com` covers a set of subdomains, while a value carrying no glob metacharacter matches exactly
 	Id string `json:"id"`
 
-	// Type 形如 compute:instance、dns:zone，和权限名同一个命名空间
+	// Type Of the form compute:instance or dns:zone, in the same namespace as permission names
 	Type string `json:"type"`
 }
 
@@ -582,82 +560,103 @@ type ResourceRefResource struct {
 type RuleResource struct {
 	Effect RuleResourceEffect `json:"effect"`
 
-	// Permissions 支持尾部通配（compute:instance.*），通配必须带服务前缀
+	// Permissions A trailing wildcard is supported (compute:instance.*), and must carry the service prefix
 	Permissions []string `json:"permissions"`
 
-	// Resources 为空表示这条规则在整个项目范围内成立；非空则表示它只在这些资源上成立，而那意味着 它回答不了项目级的问题。
+	// Resources Empty means the rule holds across the whole project. While it is not empty the rule holds only on those resources, and therefore answers no project-level question
 	Resources []ResourceRefResource `json:"resources"`
 }
 
 // RuleResourceEffect defines model for RuleResource.Effect.
 type RuleResourceEffect string
 
+// ScopedTokenResponseBody defines model for ScopedTokenResponseBody.
+type ScopedTokenResponseBody struct {
+	// ExpiresAt When the token expires. Exchange for a new one before then rather than waiting for the first 401
+	ExpiresAt time.Time `json:"expires_at"`
+
+	// ExpiresIn Seconds remaining before expiry
+	ExpiresIn int64 `json:"expires_in"`
+
+	// Grant **A snapshot taken at the moment of the exchange. It is not carried in the token, and must not be cached.** It serves to render what a user may do; each request is decided again
+	Grant GrantResource `json:"grant"`
+
+	// Project The project itself, so that no further lookup is needed after the exchange
+	Project ProjectResource `json:"project"`
+
+	// Token The scoped token, to be sent as `Authorization: Bearer`
+	Token string `json:"token"`
+
+	// TokenType Always `Bearer`
+	TokenType string `json:"token_type"`
+}
+
 // SettingsResource defines model for SettingsResource.
 type SettingsResource struct {
-	// MaxMembersPerProject 一个项目最多几个成员，0 表示不限
+	// MaxMembersPerProject Maximum number of members a project may hold; 0 means unlimited
 	MaxMembersPerProject int64 `json:"max_members_per_project"`
 
-	// MaxProjectsPerUser 你最多能当几个项目的所有者，0 表示不限。已删除的项目不算在内
+	// MaxProjectsPerUser Maximum number of projects an account may own; 0 means unlimited. Deleted projects do not count
 	MaxProjectsPerUser int64 `json:"max_projects_per_user"`
 
-	// ProjectCreationMode VERIFIED_ONLY 要求先过实名，审核中不算
+	// ProjectCreationMode VERIFIED_ONLY requires identity verification to have completed; a submission under review does not qualify
 	ProjectCreationMode SettingsResourceProjectCreationMode `json:"project_creation_mode"`
 
-	// RegistrationMode INVITE_ONLY 是只收手上有项目邀请的邮箱
+	// RegistrationMode INVITE_ONLY accepts only an email address holding a project invitation
 	RegistrationMode SettingsResourceRegistrationMode `json:"registration_mode"`
 }
 
-// SettingsResourceProjectCreationMode VERIFIED_ONLY 要求先过实名，审核中不算
+// SettingsResourceProjectCreationMode VERIFIED_ONLY requires identity verification to have completed; a submission under review does not qualify
 type SettingsResourceProjectCreationMode string
 
-// SettingsResourceRegistrationMode INVITE_ONLY 是只收手上有项目邀请的邮箱
+// SettingsResourceRegistrationMode INVITE_ONLY accepts only an email address holding a project invitation
 type SettingsResourceRegistrationMode string
 
 // SubmitIdentityVerificationRequestBody defines model for SubmitIdentityVerificationRequestBody.
 type SubmitIdentityVerificationRequestBody struct {
-	// IdNumber 证件号码。同上，而且同一个号码不能挂在两个账号上
+	// IdNumber The document number. It is returned by no endpoint, and one number cannot be attached to two accounts
 	IdNumber string `json:"id_number"`
 
-	// RealName 真实姓名。敏感个人信息，加密入库，任何接口都不会再把它读出来
+	// RealName The legal name. It is returned by no endpoint
 	RealName string `json:"real_name"`
 }
 
-// UpdateAccountRequestBody 两个字段都是「不传就不动」。设置页上它们是两个独立的控件，用户可能只改其中一个；做成 整体替换的话，一次只想改语言的提交会把国家清掉，而那种丢失不报错。
+// UpdateAccountRequestBody Both fields are optional, and an omitted field is left unchanged
 type UpdateAccountRequestBody struct {
-	// Country 同注册时那个 country
+	// Country As at registration
 	Country *string `json:"country,omitempty"`
 
-	// Locale 界面和邮件用哪种语言。它和 country 是两件事，不能互相推——一个在香港的人可能读简体， 一个在美国的人可能读繁体。
+	// Locale The language used for the interface and for email. It is independent of `country`, and neither can be inferred from the other
 	Locale *Locale `json:"locale,omitempty"`
 }
 
 // PreviewInvitationByTokenParams defines parameters for PreviewInvitationByToken.
 type PreviewInvitationByTokenParams struct {
-	// Token 邀请链接里那串令牌
+	// Token The token carried by the invitation link
 	Token string `form:"token" json:"token"`
 }
 
 // ListMyInvitationsParams defines parameters for ListMyInvitations.
 type ListMyInvitationsParams struct {
-	// Limit 这一页最多返回多少条
+	// Limit Maximum number of items in this page
 	Limit *int64 `form:"limit,omitempty" json:"limit,omitempty"`
 
-	// Offset 跳过多少条。要翻得更深请改用游标翻页的接口
+	// Offset Number of items to skip. Use the cursor-paged endpoint to page deeper
 	Offset *int64 `form:"offset,omitempty" json:"offset,omitempty"`
 }
 
 // ListProjectsParams defines parameters for ListProjects.
 type ListProjectsParams struct {
-	// Limit 这一页最多返回多少条
+	// Limit Maximum number of items in this page
 	Limit *int64 `form:"limit,omitempty" json:"limit,omitempty"`
 
-	// Offset 跳过多少条。要翻得更深请改用游标翻页的接口
+	// Offset Number of items to skip. Use the cursor-paged endpoint to page deeper
 	Offset *int64 `form:"offset,omitempty" json:"offset,omitempty"`
 
-	// Keyword 按名称或描述模糊匹配
+	// Keyword Matches against name or description
 	Keyword *string `form:"keyword,omitempty" json:"keyword,omitempty"`
 
-	// Status 按对外状态过滤。不传时不返回已删除的项目
+	// Status Filters by external status. Deleted projects are excluded while this is absent
 	Status *ListProjectsParamsStatus `form:"status,omitempty" json:"status,omitempty"`
 }
 
@@ -756,225 +755,227 @@ func WithRequestEditorFn(fn RequestEditorFn) ClientOption {
 // The interface specification for the client above.
 type ClientInterface interface {
 
-	// ListAgreements 列出注册必须同意的文件
+	// ListAgreements List the agreements registration requires
 	//
-	// 注册页显示它，用户同意之后把每一项的 `type` 和 `version` 原样回传给 `POST /api/v1/register`。
+	// No token required. Send the `type` and `version` of each one back unchanged to `POST /account/v1/register`.
 	//
-	// 不需要令牌。还没有任何文件生效时返回空数组，那时注册不需要提交 `consents`。
+	// The array is empty while no agreement is in force, and registration then takes no `consents`.
 	//
 	// Corresponds with GET /account/v1/agreements (the `ListAgreements` operationId).
 	ListAgreements(ctx context.Context, reqEditors ...RequestEditorFn) (*http.Response, error)
 
-	// PreviewInvitationByToken 看一眼这封邀请是谁发的、加入哪儿、什么角色
+	// PreviewInvitationByToken Preview an invitation by its token
 	//
-	// 免认证，而且是有意的：点邮件里那条链接的人多半还没登录，甚至还没有账号。要他先注册再 告诉他这是谁发来的、加入哪个项目，等于让他在不知道要加入什么的情况下决定要不要注册。
-	// 它不多泄露任何东西。 这三样——项目名、邀请人、角色——邮件正文里已经写着了，而读得到 这个令牌的人就是收得到那封邮件的人。同一个令牌本来就能把持有者加进项目（见 `accept-invitation-by-token`），读一个项目名比那件事轻得多。
-	// 收件地址打了码（`t***@example.com`）。 不打码的话，这个接口就成了「拿一个令牌反查它 当初寄给了哪个地址」——而那是邮件正文里没有、持有者也未必知道的一件事。
-	// 令牌不存在、已经用过、被撤回、过期，四种情况同一个 404 和同一句话。分开报会把它变成 一个可以拿来试令牌的探针，而这个接口免认证，任何人都试得起。
-	// 它不在 `/me` 下面，隔壁那两条接受要约的在。 `/me` 的意思是「按这次请求的身份认出来 的、属于我的那些」，而这条路上没有身份——持有令牌的人未必是收件人本人。挂在 `/me` 下面会让读的人以为它认过身份，而那正是这条路唯一不做的事。
+	// No token required: whoever follows the link in an invitation email has usually not signed in, and may hold no account at all.
+	//
+	// The recipient address is masked (`t***@example.com`).
+	//
+	// A token that does not exist, one already redeemed, one revoked and one expired all answer the same 404.
 	//
 	// Corresponds with GET /account/v1/invitations/by-token (the `PreviewInvitationByToken` operationId).
 	PreviewInvitationByToken(ctx context.Context, params *PreviewInvitationByTokenParams, reqEditors ...RequestEditorFn) (*http.Response, error)
 
-	// ListLocales 注册页要用的国家/地区和语言清单
+	// ListLocales List countries and languages for registration
 	//
-	// 免认证：注册页在还没有账号的时候就要画出这两个下拉框。
-	// 国家名和排序都跟着 `Accept-Language` 走——一个英文用户看到的是 China 而不是「中国」， 而顺序按那种语言自己的规则（中文按拼音，英文按字母），不是按码点。头缺失时用简体中文。
-	// 清单来自 CLDR，不是我们自己维护的一份：ISO 3166 每年都改，而抄下来的那份不会跟着改。 已经退役的代码（苏联、南斯拉夫）和不是地方的代码（欧盟、联合国）都不在里面。
+	// No token required: the registration page renders both lists before an account exists.
+	//
+	// Country names and their order follow `Accept-Language`. A name is rendered in the requested language and the list is ordered by the rules of that language rather than by code point. Simplified Chinese applies when the header is absent.
+	//
+	// Retired codes such as the Soviet Union and Yugoslavia, and codes that denote no country such as the European Union, are not listed.
 	//
 	// Corresponds with GET /account/v1/locales (the `ListLocales` operationId).
 	ListLocales(ctx context.Context, reqEditors ...RequestEditorFn) (*http.Response, error)
 
-	// GetAccount 查看当前账号
+	// GetAccount Get the current account
 	//
-	// `pending_agreements` 是还没同意的文件，非空就要先引导用户同意，再调 `POST /api/v1/me/consents`。.
+	// `pending_agreements` holds the agreements not yet consented to. While it is not empty, obtain consent and call `POST /account/v1/me/consents`.
 	//
 	// Corresponds with GET /account/v1/me (the `GetAccount` operationId).
 	GetAccount(ctx context.Context, reqEditors ...RequestEditorFn) (*http.Response, error)
 
-	// UpdateAccountWithBody 改当前账号的国家/地区和语言
+	// UpdateAccountWithBody Update the country and language of the current account
 	//
-	// 姓名和邮箱不在这里改：它们来自身份提供方，改了会在下一次登录同步时被覆盖回去。.
+	// The name and email address cannot be changed here. They come from the identity provider, and a change would be overwritten at the next sign-in.
 	//
 	// Takes any type of body and a specified content type.
 	//
 	// Corresponds with PATCH /account/v1/me (the `UpdateAccount` operationId).
 	UpdateAccountWithBody(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
 
-	// UpdateAccount 改当前账号的国家/地区和语言
+	// UpdateAccount Update the country and language of the current account
 	//
-	// 姓名和邮箱不在这里改：它们来自身份提供方，改了会在下一次登录同步时被覆盖回去。.
+	// The name and email address cannot be changed here. They come from the identity provider, and a change would be overwritten at the next sign-in.
 	//
 	// Takes a body of the `application/json` content type.
 	//
 	// Corresponds with PATCH /account/v1/me (the `UpdateAccount` operationId).
 	UpdateAccount(ctx context.Context, body UpdateAccountJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
 
-	// ListConsents 列出我同意过的文件
+	// ListConsents List the agreements the caller has consented to
 	//
-	// 全部记录，最新的在前，包括已经不是当前版本的那些。.
+	// Every record, most recent first, including versions that are no longer current.
 	//
 	// Corresponds with GET /account/v1/me/consents (the `ListConsents` operationId).
 	ListConsents(ctx context.Context, reqEditors ...RequestEditorFn) (*http.Response, error)
 
-	// AcceptAgreementsWithBody 同意条款
+	// AcceptAgreementsWithBody Consent to the current agreements
 	//
-	// 条款改版之后用它重新同意，`GET /api/v1/me` 的 `pending_agreements` 非空时就该调。
+	// Call this once a new version is published, which is whenever `pending_agreements` on `GET /account/v1/me` is not empty.
 	//
-	// 只收当前生效的版本，签旧版答 409。重复提交同一版不报错，第一次那条记录会留着。
+	// Only the version currently in force is accepted; consenting to an earlier one answers 409. Submitting the same version twice is not an error and leaves the first record in place.
 	//
 	// Takes any type of body and a specified content type.
 	//
 	// Corresponds with POST /account/v1/me/consents (the `AcceptAgreements` operationId).
 	AcceptAgreementsWithBody(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
 
-	// AcceptAgreements 同意条款
+	// AcceptAgreements Consent to the current agreements
 	//
-	// 条款改版之后用它重新同意，`GET /api/v1/me` 的 `pending_agreements` 非空时就该调。
+	// Call this once a new version is published, which is whenever `pending_agreements` on `GET /account/v1/me` is not empty.
 	//
-	// 只收当前生效的版本，签旧版答 409。重复提交同一版不报错，第一次那条记录会留着。
+	// Only the version currently in force is accepted; consenting to an earlier one answers 409. Submitting the same version twice is not an error and leaves the first record in place.
 	//
 	// Takes a body of the `application/json` content type.
 	//
 	// Corresponds with POST /account/v1/me/consents (the `AcceptAgreements` operationId).
 	AcceptAgreements(ctx context.Context, body AcceptAgreementsJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
 
-	// GetIdentityVerification 查看实名核验状态
+	// GetIdentityVerification Get identity verification status
 	//
-	// 没交过材料时答 UNVERIFIED，不是 404。姓名和证件号不会出现在任何响应里。.
+	// The status is `UNVERIFIED` rather than 404 when nothing has been submitted. The legal name and the document number appear in no response.
 	//
 	// Corresponds with GET /account/v1/me/identity-verification (the `GetIdentityVerification` operationId).
 	GetIdentityVerification(ctx context.Context, reqEditors ...RequestEditorFn) (*http.Response, error)
 
-	// SubmitIdentityVerificationWithBody 提交实名核验材料
+	// SubmitIdentityVerificationWithBody Submit identity verification
 	//
-	// 已经在等人审的和已经核过的都会被拒。被驳回之后可以改了再交。.
+	// A submission awaiting review, and an account already verified, are both refused. A rejected submission may be corrected and sent again.
 	//
 	// Takes any type of body and a specified content type.
 	//
 	// Corresponds with POST /account/v1/me/identity-verification (the `SubmitIdentityVerification` operationId).
 	SubmitIdentityVerificationWithBody(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
 
-	// SubmitIdentityVerification 提交实名核验材料
+	// SubmitIdentityVerification Submit identity verification
 	//
-	// 已经在等人审的和已经核过的都会被拒。被驳回之后可以改了再交。.
+	// A submission awaiting review, and an account already verified, are both refused. A rejected submission may be corrected and sent again.
 	//
 	// Takes a body of the `application/json` content type.
 	//
 	// Corresponds with POST /account/v1/me/identity-verification (the `SubmitIdentityVerification` operationId).
 	SubmitIdentityVerification(ctx context.Context, body SubmitIdentityVerificationJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
 
-	// ListMyInvitations 列出寄给我的要约
+	// ListMyInvitations List invitations addressed to the caller
 	//
-	// 按当前账号的邮箱查，因为要约是寄给一个地址的——被邀请的人当时可能还没注册。.
+	// Matched against the email address of the current account.
 	//
 	// Corresponds with GET /account/v1/me/invitations (the `ListMyInvitations` operationId).
 	ListMyInvitations(ctx context.Context, params *ListMyInvitationsParams, reqEditors ...RequestEditorFn) (*http.Response, error)
 
-	// AcceptInvitationByTokenWithBody 顺着邀请链接接受
+	// AcceptInvitationByTokenWithBody Accept an invitation by its token
 	//
-	// token 对不上和这份要约已经不作数了是同一个回答：持有者对这两种情况能做的事完全一样，分开报会把这个接口变成一个可以拿来试 token 的探针。.
+	// A token that does not match, and an invitation that no longer stands, answer the same way.
 	//
 	// Takes any type of body and a specified content type.
 	//
 	// Corresponds with POST /account/v1/me/invitations/accept (the `AcceptInvitationByToken` operationId).
 	AcceptInvitationByTokenWithBody(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
 
-	// AcceptInvitationByToken 顺着邀请链接接受
+	// AcceptInvitationByToken Accept an invitation by its token
 	//
-	// token 对不上和这份要约已经不作数了是同一个回答：持有者对这两种情况能做的事完全一样，分开报会把这个接口变成一个可以拿来试 token 的探针。.
+	// A token that does not match, and an invitation that no longer stands, answer the same way.
 	//
 	// Takes a body of the `application/json` content type.
 	//
 	// Corresponds with POST /account/v1/me/invitations/accept (the `AcceptInvitationByToken` operationId).
 	AcceptInvitationByToken(ctx context.Context, body AcceptInvitationByTokenJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
 
-	// AcceptInvitation 接受一份列在我名下的要约
+	// AcceptInvitation Accept an invitation listed against the caller
 	//
-	// 不需要 token：token 证明的是「你就是这份要约寄给的那个人」，而当前账号的邮箱对得上这份要约，证明的是同一件事。.
+	// No token is required; the invitation is addressed to the email address of the current account.
 	//
 	// Corresponds with POST /account/v1/me/invitations/{invitationId}/accept (the `AcceptInvitation` operationId).
 	AcceptInvitation(ctx context.Context, invitationId openapi_types.UUID, reqEditors ...RequestEditorFn) (*http.Response, error)
 
-	// ListProjects 列出我参与的项目
+	// ListProjects List the projects the caller belongs to
 	//
-	// 默认不含已删除的项目——那些是已经不存在了的东西，要看必须明确用 status=DELETED 点名。.
+	// Deleted projects are excluded unless `status=DELETED` asks for them by name.
 	//
 	// Corresponds with GET /account/v1/projects (the `ListProjects` operationId).
 	ListProjects(ctx context.Context, params *ListProjectsParams, reqEditors ...RequestEditorFn) (*http.Response, error)
 
-	// CreateProjectWithBody 建一个项目
+	// CreateProjectWithBody Create a project
 	//
-	// 建的人就是所有者。项目会连带预置 OWNER、ADMIN 两个内置角色和一个空权限的 member 角色。.
+	// The caller becomes its owner. The project is created with the built-in `OWNER` and `ADMIN` roles and a `member` role carrying no permissions.
 	//
 	// Takes any type of body and a specified content type.
 	//
 	// Corresponds with POST /account/v1/projects (the `CreateProject` operationId).
 	CreateProjectWithBody(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
 
-	// CreateProject 建一个项目
+	// CreateProject Create a project
 	//
-	// 建的人就是所有者。项目会连带预置 OWNER、ADMIN 两个内置角色和一个空权限的 member 角色。.
+	// The caller becomes its owner. The project is created with the built-in `OWNER` and `ADMIN` roles and a `member` role carrying no permissions.
 	//
 	// Takes a body of the `application/json` content type.
 	//
 	// Corresponds with POST /account/v1/projects (the `CreateProject` operationId).
 	CreateProject(ctx context.Context, body CreateProjectJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
 
-	// ExchangeProjectToken 换一张项目令牌
+	// CreateScopedToken Exchange the access token for a scoped token
 	//
-	// 选定一个项目后，用账号令牌换取该项目的令牌。
+	// Once a project has been chosen, exchange the access token for a scoped token for that project.
 	//
-	// **只接受 auth.leaflow.net 签发的账号令牌，不接受项目令牌。** 项目令牌过期后，先在 auth.leaflow.net 续期账号令牌，再重新调用这个接口。
+	// **Only an access token issued by auth.leaflow.net is accepted; a scoped token is not.** Once a scoped token has expired, obtain a fresh access token at auth.leaflow.net and call this endpoint again.
 	//
-	// 换取时会确认账号可用、项目存在，且**调用者是该项目的成员**。非成员无法换取。
+	// The exchange confirms that the account is usable, that the project exists, and that the caller is a member of it. A caller who is not a member obtains no token.
 	//
-	// 令牌只表明身份（用户与项目），**不包含权限**：权限在每次请求时实时判定，所以角色调整立即生效，不必等待令牌过期。
+	// A scoped token states identity only — the user and the project — and **carries no permissions**. Permissions are evaluated on every request, so a change of role takes effect immediately rather than at the next expiry.
 	//
-	// 项目处于停用、封禁或删除中时**仍可换取令牌**：这些状态限制的是写入，不影响查看项目当前状况。
+	// A project that is suspended, banned or being deleted still issues tokens; those states restrict writes, and the project remains readable.
 	//
-	// Corresponds with POST /account/v1/projects/{projectId}/token (the `ExchangeProjectToken` operationId).
-	ExchangeProjectToken(ctx context.Context, projectId openapi_types.UUID, reqEditors ...RequestEditorFn) (*http.Response, error)
+	// Corresponds with POST /account/v1/projects/{projectId}/scoped-tokens (the `CreateScopedToken` operationId).
+	CreateScopedToken(ctx context.Context, projectId openapi_types.UUID, reqEditors ...RequestEditorFn) (*http.Response, error)
 
-	// RegisterWithBody 注册账号
+	// RegisterWithBody Register an account
 	//
-	// 在 auth.leaflow.net 登录之后调它，带上账号令牌。姓名和邮箱取自登录信息，不从请求体收。
+	// Call this after signing in at auth.leaflow.net, carrying the access token. The name and email address are taken from the sign-in claims and are not read from the request body.
 	//
-	// `consents` 要覆盖 `GET /api/v1/agreements` 返回的每一份，版本号也要一致；漏一份答 400，版本对不上答 409（多半是页面开着的时候条款改版了，重新拉一次清单即可）。已经注册过的答 409。
+	// `consents` must cover every agreement returned by `GET /account/v1/agreements`, at the same versions. A missing agreement answers 400 and a stale version answers 409, in which case fetch the list again. An account that already exists answers 409.
 	//
 	// Takes any type of body and a specified content type.
 	//
 	// Corresponds with POST /account/v1/register (the `Register` operationId).
 	RegisterWithBody(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
 
-	// Register 注册账号
+	// Register Register an account
 	//
-	// 在 auth.leaflow.net 登录之后调它，带上账号令牌。姓名和邮箱取自登录信息，不从请求体收。
+	// Call this after signing in at auth.leaflow.net, carrying the access token. The name and email address are taken from the sign-in claims and are not read from the request body.
 	//
-	// `consents` 要覆盖 `GET /api/v1/agreements` 返回的每一份，版本号也要一致；漏一份答 400，版本对不上答 409（多半是页面开着的时候条款改版了，重新拉一次清单即可）。已经注册过的答 409。
+	// `consents` must cover every agreement returned by `GET /account/v1/agreements`, at the same versions. A missing agreement answers 400 and a stale version answers 409, in which case fetch the list again. An account that already exists answers 409.
 	//
 	// Takes a body of the `application/json` content type.
 	//
 	// Corresponds with POST /account/v1/register (the `Register` operationId).
 	Register(ctx context.Context, body RegisterJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
 
-	// GetSettings 这个平台现在收不收人
+	// GetSettings Get registration and project creation settings
 	//
-	// 注册页和「新建项目」按钮用它决定画什么。不需要令牌。
+	// No token required.
 	//
-	// `registration_mode` 不是 `OPEN` 时 `POST /account/v1/register` 会答 403：`CLOSED` 是整个关着，`INVITE_ONLY` 是只收手上有项目邀请的邮箱。`project_creation_mode` 同理，`VERIFIED_ONLY` 要先过实名。
+	// While `registration_mode` is not `OPEN`, `POST /account/v1/register` answers 403: `CLOSED` refuses everyone, and `INVITE_ONLY` accepts only an email address holding a project invitation. `project_creation_mode` behaves the same way, and `VERIFIED_ONLY` requires identity verification to have completed.
 	//
-	// 两条配额是 0 表示不限。它们只用来提前提示，真正的判定在写入那一刻。
+	// Both quotas are `0` when unlimited. The decision itself is made at the moment of writing.
 	//
 	// Corresponds with GET /account/v1/settings (the `GetSettings` operationId).
 	GetSettings(ctx context.Context, reqEditors ...RequestEditorFn) (*http.Response, error)
 }
 
-// ListAgreements 列出注册必须同意的文件
+// ListAgreements List the agreements registration requires
 //
-// 注册页显示它，用户同意之后把每一项的 `type` 和 `version` 原样回传给 `POST /api/v1/register`。
+// No token required. Send the `type` and `version` of each one back unchanged to `POST /account/v1/register`.
 //
-// 不需要令牌。还没有任何文件生效时返回空数组，那时注册不需要提交 `consents`。
+// The array is empty while no agreement is in force, and registration then takes no `consents`.
 //
 // Corresponds with GET /account/v1/agreements (the `ListAgreements` operationId).
 func (c *Client) ListAgreements(ctx context.Context, reqEditors ...RequestEditorFn) (*http.Response, error) {
@@ -989,13 +990,13 @@ func (c *Client) ListAgreements(ctx context.Context, reqEditors ...RequestEditor
 	return c.Client.Do(req)
 }
 
-// PreviewInvitationByToken 看一眼这封邀请是谁发的、加入哪儿、什么角色
+// PreviewInvitationByToken Preview an invitation by its token
 //
-// 免认证，而且是有意的：点邮件里那条链接的人多半还没登录，甚至还没有账号。要他先注册再 告诉他这是谁发来的、加入哪个项目，等于让他在不知道要加入什么的情况下决定要不要注册。
-// 它不多泄露任何东西。 这三样——项目名、邀请人、角色——邮件正文里已经写着了，而读得到 这个令牌的人就是收得到那封邮件的人。同一个令牌本来就能把持有者加进项目（见 `accept-invitation-by-token`），读一个项目名比那件事轻得多。
-// 收件地址打了码（`t***@example.com`）。 不打码的话，这个接口就成了「拿一个令牌反查它 当初寄给了哪个地址」——而那是邮件正文里没有、持有者也未必知道的一件事。
-// 令牌不存在、已经用过、被撤回、过期，四种情况同一个 404 和同一句话。分开报会把它变成 一个可以拿来试令牌的探针，而这个接口免认证，任何人都试得起。
-// 它不在 `/me` 下面，隔壁那两条接受要约的在。 `/me` 的意思是「按这次请求的身份认出来 的、属于我的那些」，而这条路上没有身份——持有令牌的人未必是收件人本人。挂在 `/me` 下面会让读的人以为它认过身份，而那正是这条路唯一不做的事。
+// No token required: whoever follows the link in an invitation email has usually not signed in, and may hold no account at all.
+//
+// The recipient address is masked (`t***@example.com`).
+//
+// A token that does not exist, one already redeemed, one revoked and one expired all answer the same 404.
 //
 // Corresponds with GET /account/v1/invitations/by-token (the `PreviewInvitationByToken` operationId).
 func (c *Client) PreviewInvitationByToken(ctx context.Context, params *PreviewInvitationByTokenParams, reqEditors ...RequestEditorFn) (*http.Response, error) {
@@ -1010,11 +1011,13 @@ func (c *Client) PreviewInvitationByToken(ctx context.Context, params *PreviewIn
 	return c.Client.Do(req)
 }
 
-// ListLocales 注册页要用的国家/地区和语言清单
+// ListLocales List countries and languages for registration
 //
-// 免认证：注册页在还没有账号的时候就要画出这两个下拉框。
-// 国家名和排序都跟着 `Accept-Language` 走——一个英文用户看到的是 China 而不是「中国」， 而顺序按那种语言自己的规则（中文按拼音，英文按字母），不是按码点。头缺失时用简体中文。
-// 清单来自 CLDR，不是我们自己维护的一份：ISO 3166 每年都改，而抄下来的那份不会跟着改。 已经退役的代码（苏联、南斯拉夫）和不是地方的代码（欧盟、联合国）都不在里面。
+// No token required: the registration page renders both lists before an account exists.
+//
+// Country names and their order follow `Accept-Language`. A name is rendered in the requested language and the list is ordered by the rules of that language rather than by code point. Simplified Chinese applies when the header is absent.
+//
+// Retired codes such as the Soviet Union and Yugoslavia, and codes that denote no country such as the European Union, are not listed.
 //
 // Corresponds with GET /account/v1/locales (the `ListLocales` operationId).
 func (c *Client) ListLocales(ctx context.Context, reqEditors ...RequestEditorFn) (*http.Response, error) {
@@ -1029,9 +1032,9 @@ func (c *Client) ListLocales(ctx context.Context, reqEditors ...RequestEditorFn)
 	return c.Client.Do(req)
 }
 
-// GetAccount 查看当前账号
+// GetAccount Get the current account
 //
-// `pending_agreements` 是还没同意的文件，非空就要先引导用户同意，再调 `POST /api/v1/me/consents`。.
+// `pending_agreements` holds the agreements not yet consented to. While it is not empty, obtain consent and call `POST /account/v1/me/consents`.
 //
 // Corresponds with GET /account/v1/me (the `GetAccount` operationId).
 func (c *Client) GetAccount(ctx context.Context, reqEditors ...RequestEditorFn) (*http.Response, error) {
@@ -1046,9 +1049,9 @@ func (c *Client) GetAccount(ctx context.Context, reqEditors ...RequestEditorFn) 
 	return c.Client.Do(req)
 }
 
-// UpdateAccountWithBody 改当前账号的国家/地区和语言
+// UpdateAccountWithBody Update the country and language of the current account
 //
-// 姓名和邮箱不在这里改：它们来自身份提供方，改了会在下一次登录同步时被覆盖回去。.
+// The name and email address cannot be changed here. They come from the identity provider, and a change would be overwritten at the next sign-in.
 //
 // Takes any type of body and a specified content type.
 //
@@ -1065,9 +1068,9 @@ func (c *Client) UpdateAccountWithBody(ctx context.Context, contentType string, 
 	return c.Client.Do(req)
 }
 
-// UpdateAccount 改当前账号的国家/地区和语言
+// UpdateAccount Update the country and language of the current account
 //
-// 姓名和邮箱不在这里改：它们来自身份提供方，改了会在下一次登录同步时被覆盖回去。.
+// The name and email address cannot be changed here. They come from the identity provider, and a change would be overwritten at the next sign-in.
 //
 // Takes a body of the `application/json` content type.
 //
@@ -1084,9 +1087,9 @@ func (c *Client) UpdateAccount(ctx context.Context, body UpdateAccountJSONReques
 	return c.Client.Do(req)
 }
 
-// ListConsents 列出我同意过的文件
+// ListConsents List the agreements the caller has consented to
 //
-// 全部记录，最新的在前，包括已经不是当前版本的那些。.
+// Every record, most recent first, including versions that are no longer current.
 //
 // Corresponds with GET /account/v1/me/consents (the `ListConsents` operationId).
 func (c *Client) ListConsents(ctx context.Context, reqEditors ...RequestEditorFn) (*http.Response, error) {
@@ -1101,11 +1104,11 @@ func (c *Client) ListConsents(ctx context.Context, reqEditors ...RequestEditorFn
 	return c.Client.Do(req)
 }
 
-// AcceptAgreementsWithBody 同意条款
+// AcceptAgreementsWithBody Consent to the current agreements
 //
-// 条款改版之后用它重新同意，`GET /api/v1/me` 的 `pending_agreements` 非空时就该调。
+// Call this once a new version is published, which is whenever `pending_agreements` on `GET /account/v1/me` is not empty.
 //
-// 只收当前生效的版本，签旧版答 409。重复提交同一版不报错，第一次那条记录会留着。
+// Only the version currently in force is accepted; consenting to an earlier one answers 409. Submitting the same version twice is not an error and leaves the first record in place.
 //
 // Takes any type of body and a specified content type.
 //
@@ -1122,11 +1125,11 @@ func (c *Client) AcceptAgreementsWithBody(ctx context.Context, contentType strin
 	return c.Client.Do(req)
 }
 
-// AcceptAgreements 同意条款
+// AcceptAgreements Consent to the current agreements
 //
-// 条款改版之后用它重新同意，`GET /api/v1/me` 的 `pending_agreements` 非空时就该调。
+// Call this once a new version is published, which is whenever `pending_agreements` on `GET /account/v1/me` is not empty.
 //
-// 只收当前生效的版本，签旧版答 409。重复提交同一版不报错，第一次那条记录会留着。
+// Only the version currently in force is accepted; consenting to an earlier one answers 409. Submitting the same version twice is not an error and leaves the first record in place.
 //
 // Takes a body of the `application/json` content type.
 //
@@ -1143,9 +1146,9 @@ func (c *Client) AcceptAgreements(ctx context.Context, body AcceptAgreementsJSON
 	return c.Client.Do(req)
 }
 
-// GetIdentityVerification 查看实名核验状态
+// GetIdentityVerification Get identity verification status
 //
-// 没交过材料时答 UNVERIFIED，不是 404。姓名和证件号不会出现在任何响应里。.
+// The status is `UNVERIFIED` rather than 404 when nothing has been submitted. The legal name and the document number appear in no response.
 //
 // Corresponds with GET /account/v1/me/identity-verification (the `GetIdentityVerification` operationId).
 func (c *Client) GetIdentityVerification(ctx context.Context, reqEditors ...RequestEditorFn) (*http.Response, error) {
@@ -1160,9 +1163,9 @@ func (c *Client) GetIdentityVerification(ctx context.Context, reqEditors ...Requ
 	return c.Client.Do(req)
 }
 
-// SubmitIdentityVerificationWithBody 提交实名核验材料
+// SubmitIdentityVerificationWithBody Submit identity verification
 //
-// 已经在等人审的和已经核过的都会被拒。被驳回之后可以改了再交。.
+// A submission awaiting review, and an account already verified, are both refused. A rejected submission may be corrected and sent again.
 //
 // Takes any type of body and a specified content type.
 //
@@ -1179,9 +1182,9 @@ func (c *Client) SubmitIdentityVerificationWithBody(ctx context.Context, content
 	return c.Client.Do(req)
 }
 
-// SubmitIdentityVerification 提交实名核验材料
+// SubmitIdentityVerification Submit identity verification
 //
-// 已经在等人审的和已经核过的都会被拒。被驳回之后可以改了再交。.
+// A submission awaiting review, and an account already verified, are both refused. A rejected submission may be corrected and sent again.
 //
 // Takes a body of the `application/json` content type.
 //
@@ -1198,9 +1201,9 @@ func (c *Client) SubmitIdentityVerification(ctx context.Context, body SubmitIden
 	return c.Client.Do(req)
 }
 
-// ListMyInvitations 列出寄给我的要约
+// ListMyInvitations List invitations addressed to the caller
 //
-// 按当前账号的邮箱查，因为要约是寄给一个地址的——被邀请的人当时可能还没注册。.
+// Matched against the email address of the current account.
 //
 // Corresponds with GET /account/v1/me/invitations (the `ListMyInvitations` operationId).
 func (c *Client) ListMyInvitations(ctx context.Context, params *ListMyInvitationsParams, reqEditors ...RequestEditorFn) (*http.Response, error) {
@@ -1215,9 +1218,9 @@ func (c *Client) ListMyInvitations(ctx context.Context, params *ListMyInvitation
 	return c.Client.Do(req)
 }
 
-// AcceptInvitationByTokenWithBody 顺着邀请链接接受
+// AcceptInvitationByTokenWithBody Accept an invitation by its token
 //
-// token 对不上和这份要约已经不作数了是同一个回答：持有者对这两种情况能做的事完全一样，分开报会把这个接口变成一个可以拿来试 token 的探针。.
+// A token that does not match, and an invitation that no longer stands, answer the same way.
 //
 // Takes any type of body and a specified content type.
 //
@@ -1234,9 +1237,9 @@ func (c *Client) AcceptInvitationByTokenWithBody(ctx context.Context, contentTyp
 	return c.Client.Do(req)
 }
 
-// AcceptInvitationByToken 顺着邀请链接接受
+// AcceptInvitationByToken Accept an invitation by its token
 //
-// token 对不上和这份要约已经不作数了是同一个回答：持有者对这两种情况能做的事完全一样，分开报会把这个接口变成一个可以拿来试 token 的探针。.
+// A token that does not match, and an invitation that no longer stands, answer the same way.
 //
 // Takes a body of the `application/json` content type.
 //
@@ -1253,9 +1256,9 @@ func (c *Client) AcceptInvitationByToken(ctx context.Context, body AcceptInvitat
 	return c.Client.Do(req)
 }
 
-// AcceptInvitation 接受一份列在我名下的要约
+// AcceptInvitation Accept an invitation listed against the caller
 //
-// 不需要 token：token 证明的是「你就是这份要约寄给的那个人」，而当前账号的邮箱对得上这份要约，证明的是同一件事。.
+// No token is required; the invitation is addressed to the email address of the current account.
 //
 // Corresponds with POST /account/v1/me/invitations/{invitationId}/accept (the `AcceptInvitation` operationId).
 func (c *Client) AcceptInvitation(ctx context.Context, invitationId openapi_types.UUID, reqEditors ...RequestEditorFn) (*http.Response, error) {
@@ -1270,9 +1273,9 @@ func (c *Client) AcceptInvitation(ctx context.Context, invitationId openapi_type
 	return c.Client.Do(req)
 }
 
-// ListProjects 列出我参与的项目
+// ListProjects List the projects the caller belongs to
 //
-// 默认不含已删除的项目——那些是已经不存在了的东西，要看必须明确用 status=DELETED 点名。.
+// Deleted projects are excluded unless `status=DELETED` asks for them by name.
 //
 // Corresponds with GET /account/v1/projects (the `ListProjects` operationId).
 func (c *Client) ListProjects(ctx context.Context, params *ListProjectsParams, reqEditors ...RequestEditorFn) (*http.Response, error) {
@@ -1287,9 +1290,9 @@ func (c *Client) ListProjects(ctx context.Context, params *ListProjectsParams, r
 	return c.Client.Do(req)
 }
 
-// CreateProjectWithBody 建一个项目
+// CreateProjectWithBody Create a project
 //
-// 建的人就是所有者。项目会连带预置 OWNER、ADMIN 两个内置角色和一个空权限的 member 角色。.
+// The caller becomes its owner. The project is created with the built-in `OWNER` and `ADMIN` roles and a `member` role carrying no permissions.
 //
 // Takes any type of body and a specified content type.
 //
@@ -1306,9 +1309,9 @@ func (c *Client) CreateProjectWithBody(ctx context.Context, contentType string, 
 	return c.Client.Do(req)
 }
 
-// CreateProject 建一个项目
+// CreateProject Create a project
 //
-// 建的人就是所有者。项目会连带预置 OWNER、ADMIN 两个内置角色和一个空权限的 member 角色。.
+// The caller becomes its owner. The project is created with the built-in `OWNER` and `ADMIN` roles and a `member` role carrying no permissions.
 //
 // Takes a body of the `application/json` content type.
 //
@@ -1325,21 +1328,21 @@ func (c *Client) CreateProject(ctx context.Context, body CreateProjectJSONReques
 	return c.Client.Do(req)
 }
 
-// ExchangeProjectToken 换一张项目令牌
+// CreateScopedToken Exchange the access token for a scoped token
 //
-// 选定一个项目后，用账号令牌换取该项目的令牌。
+// Once a project has been chosen, exchange the access token for a scoped token for that project.
 //
-// **只接受 auth.leaflow.net 签发的账号令牌，不接受项目令牌。** 项目令牌过期后，先在 auth.leaflow.net 续期账号令牌，再重新调用这个接口。
+// **Only an access token issued by auth.leaflow.net is accepted; a scoped token is not.** Once a scoped token has expired, obtain a fresh access token at auth.leaflow.net and call this endpoint again.
 //
-// 换取时会确认账号可用、项目存在，且**调用者是该项目的成员**。非成员无法换取。
+// The exchange confirms that the account is usable, that the project exists, and that the caller is a member of it. A caller who is not a member obtains no token.
 //
-// 令牌只表明身份（用户与项目），**不包含权限**：权限在每次请求时实时判定，所以角色调整立即生效，不必等待令牌过期。
+// A scoped token states identity only — the user and the project — and **carries no permissions**. Permissions are evaluated on every request, so a change of role takes effect immediately rather than at the next expiry.
 //
-// 项目处于停用、封禁或删除中时**仍可换取令牌**：这些状态限制的是写入，不影响查看项目当前状况。
+// A project that is suspended, banned or being deleted still issues tokens; those states restrict writes, and the project remains readable.
 //
-// Corresponds with POST /account/v1/projects/{projectId}/token (the `ExchangeProjectToken` operationId).
-func (c *Client) ExchangeProjectToken(ctx context.Context, projectId openapi_types.UUID, reqEditors ...RequestEditorFn) (*http.Response, error) {
-	req, err := NewExchangeProjectTokenRequest(c.Server, projectId)
+// Corresponds with POST /account/v1/projects/{projectId}/scoped-tokens (the `CreateScopedToken` operationId).
+func (c *Client) CreateScopedToken(ctx context.Context, projectId openapi_types.UUID, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewCreateScopedTokenRequest(c.Server, projectId)
 	if err != nil {
 		return nil, err
 	}
@@ -1350,11 +1353,11 @@ func (c *Client) ExchangeProjectToken(ctx context.Context, projectId openapi_typ
 	return c.Client.Do(req)
 }
 
-// RegisterWithBody 注册账号
+// RegisterWithBody Register an account
 //
-// 在 auth.leaflow.net 登录之后调它，带上账号令牌。姓名和邮箱取自登录信息，不从请求体收。
+// Call this after signing in at auth.leaflow.net, carrying the access token. The name and email address are taken from the sign-in claims and are not read from the request body.
 //
-// `consents` 要覆盖 `GET /api/v1/agreements` 返回的每一份，版本号也要一致；漏一份答 400，版本对不上答 409（多半是页面开着的时候条款改版了，重新拉一次清单即可）。已经注册过的答 409。
+// `consents` must cover every agreement returned by `GET /account/v1/agreements`, at the same versions. A missing agreement answers 400 and a stale version answers 409, in which case fetch the list again. An account that already exists answers 409.
 //
 // Takes any type of body and a specified content type.
 //
@@ -1371,11 +1374,11 @@ func (c *Client) RegisterWithBody(ctx context.Context, contentType string, body 
 	return c.Client.Do(req)
 }
 
-// Register 注册账号
+// Register Register an account
 //
-// 在 auth.leaflow.net 登录之后调它，带上账号令牌。姓名和邮箱取自登录信息，不从请求体收。
+// Call this after signing in at auth.leaflow.net, carrying the access token. The name and email address are taken from the sign-in claims and are not read from the request body.
 //
-// `consents` 要覆盖 `GET /api/v1/agreements` 返回的每一份，版本号也要一致；漏一份答 400，版本对不上答 409（多半是页面开着的时候条款改版了，重新拉一次清单即可）。已经注册过的答 409。
+// `consents` must cover every agreement returned by `GET /account/v1/agreements`, at the same versions. A missing agreement answers 400 and a stale version answers 409, in which case fetch the list again. An account that already exists answers 409.
 //
 // Takes a body of the `application/json` content type.
 //
@@ -1392,13 +1395,13 @@ func (c *Client) Register(ctx context.Context, body RegisterJSONRequestBody, req
 	return c.Client.Do(req)
 }
 
-// GetSettings 这个平台现在收不收人
+// GetSettings Get registration and project creation settings
 //
-// 注册页和「新建项目」按钮用它决定画什么。不需要令牌。
+// No token required.
 //
-// `registration_mode` 不是 `OPEN` 时 `POST /account/v1/register` 会答 403：`CLOSED` 是整个关着，`INVITE_ONLY` 是只收手上有项目邀请的邮箱。`project_creation_mode` 同理，`VERIFIED_ONLY` 要先过实名。
+// While `registration_mode` is not `OPEN`, `POST /account/v1/register` answers 403: `CLOSED` refuses everyone, and `INVITE_ONLY` accepts only an email address holding a project invitation. `project_creation_mode` behaves the same way, and `VERIFIED_ONLY` requires identity verification to have completed.
 //
-// 两条配额是 0 表示不限。它们只用来提前提示，真正的判定在写入那一刻。
+// Both quotas are `0` when unlimited. The decision itself is made at the moment of writing.
 //
 // Corresponds with GET /account/v1/settings (the `GetSettings` operationId).
 func (c *Client) GetSettings(ctx context.Context, reqEditors ...RequestEditorFn) (*http.Response, error) {
@@ -1988,8 +1991,8 @@ func NewCreateProjectRequestWithBody(server string, contentType string, body io.
 	return req, nil
 }
 
-// NewExchangeProjectTokenRequest constructs an http.Request for the ExchangeProjectToken method
-func NewExchangeProjectTokenRequest(server string, projectId openapi_types.UUID) (*http.Request, error) {
+// NewCreateScopedTokenRequest constructs an http.Request for the CreateScopedToken method
+func NewCreateScopedTokenRequest(server string, projectId openapi_types.UUID) (*http.Request, error) {
 	var err error
 
 	var pathParam0 string
@@ -2004,7 +2007,7 @@ func NewExchangeProjectTokenRequest(server string, projectId openapi_types.UUID)
 		return nil, err
 	}
 
-	operationPath := fmt.Sprintf("/account/v1/projects/%s/token", pathParam0)
+	operationPath := fmt.Sprintf("/account/v1/projects/%s/scoped-tokens", pathParam0)
 	if operationPath[0] == '/' {
 		operationPath = "." + operationPath
 	}
@@ -2133,235 +2136,237 @@ func WithBaseURL(baseURL string) ClientOption {
 // ClientWithResponsesInterface is the interface specification for the client with responses above.
 type ClientWithResponsesInterface interface {
 
-	// ListAgreementsWithResponse 列出注册必须同意的文件
+	// ListAgreementsWithResponse List the agreements registration requires
 	//
-	// 注册页显示它，用户同意之后把每一项的 `type` 和 `version` 原样回传给 `POST /api/v1/register`。
+	// No token required. Send the `type` and `version` of each one back unchanged to `POST /account/v1/register`.
 	//
-	// 不需要令牌。还没有任何文件生效时返回空数组，那时注册不需要提交 `consents`。
+	// The array is empty while no agreement is in force, and registration then takes no `consents`.
 	//
 	// Returns a wrapper object for the known response body format(s).
 	//
 	// Corresponds with GET /account/v1/agreements (the `ListAgreements` operationId).
 	ListAgreementsWithResponse(ctx context.Context, reqEditors ...RequestEditorFn) (*ListAgreementsResponse, error)
 
-	// PreviewInvitationByTokenWithResponse 看一眼这封邀请是谁发的、加入哪儿、什么角色
+	// PreviewInvitationByTokenWithResponse Preview an invitation by its token
 	//
-	// 免认证，而且是有意的：点邮件里那条链接的人多半还没登录，甚至还没有账号。要他先注册再 告诉他这是谁发来的、加入哪个项目，等于让他在不知道要加入什么的情况下决定要不要注册。
-	// 它不多泄露任何东西。 这三样——项目名、邀请人、角色——邮件正文里已经写着了，而读得到 这个令牌的人就是收得到那封邮件的人。同一个令牌本来就能把持有者加进项目（见 `accept-invitation-by-token`），读一个项目名比那件事轻得多。
-	// 收件地址打了码（`t***@example.com`）。 不打码的话，这个接口就成了「拿一个令牌反查它 当初寄给了哪个地址」——而那是邮件正文里没有、持有者也未必知道的一件事。
-	// 令牌不存在、已经用过、被撤回、过期，四种情况同一个 404 和同一句话。分开报会把它变成 一个可以拿来试令牌的探针，而这个接口免认证，任何人都试得起。
-	// 它不在 `/me` 下面，隔壁那两条接受要约的在。 `/me` 的意思是「按这次请求的身份认出来 的、属于我的那些」，而这条路上没有身份——持有令牌的人未必是收件人本人。挂在 `/me` 下面会让读的人以为它认过身份，而那正是这条路唯一不做的事。
+	// No token required: whoever follows the link in an invitation email has usually not signed in, and may hold no account at all.
+	//
+	// The recipient address is masked (`t***@example.com`).
+	//
+	// A token that does not exist, one already redeemed, one revoked and one expired all answer the same 404.
 	//
 	// Returns a wrapper object for the known response body format(s).
 	//
 	// Corresponds with GET /account/v1/invitations/by-token (the `PreviewInvitationByToken` operationId).
 	PreviewInvitationByTokenWithResponse(ctx context.Context, params *PreviewInvitationByTokenParams, reqEditors ...RequestEditorFn) (*PreviewInvitationByTokenResponse, error)
 
-	// ListLocalesWithResponse 注册页要用的国家/地区和语言清单
+	// ListLocalesWithResponse List countries and languages for registration
 	//
-	// 免认证：注册页在还没有账号的时候就要画出这两个下拉框。
-	// 国家名和排序都跟着 `Accept-Language` 走——一个英文用户看到的是 China 而不是「中国」， 而顺序按那种语言自己的规则（中文按拼音，英文按字母），不是按码点。头缺失时用简体中文。
-	// 清单来自 CLDR，不是我们自己维护的一份：ISO 3166 每年都改，而抄下来的那份不会跟着改。 已经退役的代码（苏联、南斯拉夫）和不是地方的代码（欧盟、联合国）都不在里面。
+	// No token required: the registration page renders both lists before an account exists.
+	//
+	// Country names and their order follow `Accept-Language`. A name is rendered in the requested language and the list is ordered by the rules of that language rather than by code point. Simplified Chinese applies when the header is absent.
+	//
+	// Retired codes such as the Soviet Union and Yugoslavia, and codes that denote no country such as the European Union, are not listed.
 	//
 	// Returns a wrapper object for the known response body format(s).
 	//
 	// Corresponds with GET /account/v1/locales (the `ListLocales` operationId).
 	ListLocalesWithResponse(ctx context.Context, reqEditors ...RequestEditorFn) (*ListLocalesResponse, error)
 
-	// GetAccountWithResponse 查看当前账号
+	// GetAccountWithResponse Get the current account
 	//
-	// `pending_agreements` 是还没同意的文件，非空就要先引导用户同意，再调 `POST /api/v1/me/consents`。.
+	// `pending_agreements` holds the agreements not yet consented to. While it is not empty, obtain consent and call `POST /account/v1/me/consents`.
 	//
 	// Returns a wrapper object for the known response body format(s).
 	//
 	// Corresponds with GET /account/v1/me (the `GetAccount` operationId).
 	GetAccountWithResponse(ctx context.Context, reqEditors ...RequestEditorFn) (*GetAccountResponse, error)
 
-	// UpdateAccountWithBodyWithResponse 改当前账号的国家/地区和语言
+	// UpdateAccountWithBodyWithResponse Update the country and language of the current account
 	//
-	// 姓名和邮箱不在这里改：它们来自身份提供方，改了会在下一次登录同步时被覆盖回去。.
+	// The name and email address cannot be changed here. They come from the identity provider, and a change would be overwritten at the next sign-in.
 	//
 	// Takes any type of body and a specified content type, and returns a wrapper object for the known response body format(s).
 	//
 	// Corresponds with PATCH /account/v1/me (the `UpdateAccount` operationId).
 	UpdateAccountWithBodyWithResponse(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*UpdateAccountResponse, error)
 
-	// UpdateAccountWithResponse 改当前账号的国家/地区和语言
+	// UpdateAccountWithResponse Update the country and language of the current account
 	//
-	// 姓名和邮箱不在这里改：它们来自身份提供方，改了会在下一次登录同步时被覆盖回去。.
+	// The name and email address cannot be changed here. They come from the identity provider, and a change would be overwritten at the next sign-in.
 	//
 	// Takes a body of the `application/json` content type, and returns a wrapper object for the known response body format(s).
 	//
 	// Corresponds with PATCH /account/v1/me (the `UpdateAccount` operationId).
 	UpdateAccountWithResponse(ctx context.Context, body UpdateAccountJSONRequestBody, reqEditors ...RequestEditorFn) (*UpdateAccountResponse, error)
 
-	// ListConsentsWithResponse 列出我同意过的文件
+	// ListConsentsWithResponse List the agreements the caller has consented to
 	//
-	// 全部记录，最新的在前，包括已经不是当前版本的那些。.
+	// Every record, most recent first, including versions that are no longer current.
 	//
 	// Returns a wrapper object for the known response body format(s).
 	//
 	// Corresponds with GET /account/v1/me/consents (the `ListConsents` operationId).
 	ListConsentsWithResponse(ctx context.Context, reqEditors ...RequestEditorFn) (*ListConsentsResponse, error)
 
-	// AcceptAgreementsWithBodyWithResponse 同意条款
+	// AcceptAgreementsWithBodyWithResponse Consent to the current agreements
 	//
-	// 条款改版之后用它重新同意，`GET /api/v1/me` 的 `pending_agreements` 非空时就该调。
+	// Call this once a new version is published, which is whenever `pending_agreements` on `GET /account/v1/me` is not empty.
 	//
-	// 只收当前生效的版本，签旧版答 409。重复提交同一版不报错，第一次那条记录会留着。
+	// Only the version currently in force is accepted; consenting to an earlier one answers 409. Submitting the same version twice is not an error and leaves the first record in place.
 	//
 	// Takes any type of body and a specified content type, and returns a wrapper object for the known response body format(s).
 	//
 	// Corresponds with POST /account/v1/me/consents (the `AcceptAgreements` operationId).
 	AcceptAgreementsWithBodyWithResponse(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*AcceptAgreementsResponse, error)
 
-	// AcceptAgreementsWithResponse 同意条款
+	// AcceptAgreementsWithResponse Consent to the current agreements
 	//
-	// 条款改版之后用它重新同意，`GET /api/v1/me` 的 `pending_agreements` 非空时就该调。
+	// Call this once a new version is published, which is whenever `pending_agreements` on `GET /account/v1/me` is not empty.
 	//
-	// 只收当前生效的版本，签旧版答 409。重复提交同一版不报错，第一次那条记录会留着。
+	// Only the version currently in force is accepted; consenting to an earlier one answers 409. Submitting the same version twice is not an error and leaves the first record in place.
 	//
 	// Takes a body of the `application/json` content type, and returns a wrapper object for the known response body format(s).
 	//
 	// Corresponds with POST /account/v1/me/consents (the `AcceptAgreements` operationId).
 	AcceptAgreementsWithResponse(ctx context.Context, body AcceptAgreementsJSONRequestBody, reqEditors ...RequestEditorFn) (*AcceptAgreementsResponse, error)
 
-	// GetIdentityVerificationWithResponse 查看实名核验状态
+	// GetIdentityVerificationWithResponse Get identity verification status
 	//
-	// 没交过材料时答 UNVERIFIED，不是 404。姓名和证件号不会出现在任何响应里。.
+	// The status is `UNVERIFIED` rather than 404 when nothing has been submitted. The legal name and the document number appear in no response.
 	//
 	// Returns a wrapper object for the known response body format(s).
 	//
 	// Corresponds with GET /account/v1/me/identity-verification (the `GetIdentityVerification` operationId).
 	GetIdentityVerificationWithResponse(ctx context.Context, reqEditors ...RequestEditorFn) (*GetIdentityVerificationResponse, error)
 
-	// SubmitIdentityVerificationWithBodyWithResponse 提交实名核验材料
+	// SubmitIdentityVerificationWithBodyWithResponse Submit identity verification
 	//
-	// 已经在等人审的和已经核过的都会被拒。被驳回之后可以改了再交。.
+	// A submission awaiting review, and an account already verified, are both refused. A rejected submission may be corrected and sent again.
 	//
 	// Takes any type of body and a specified content type, and returns a wrapper object for the known response body format(s).
 	//
 	// Corresponds with POST /account/v1/me/identity-verification (the `SubmitIdentityVerification` operationId).
 	SubmitIdentityVerificationWithBodyWithResponse(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*SubmitIdentityVerificationResponse, error)
 
-	// SubmitIdentityVerificationWithResponse 提交实名核验材料
+	// SubmitIdentityVerificationWithResponse Submit identity verification
 	//
-	// 已经在等人审的和已经核过的都会被拒。被驳回之后可以改了再交。.
+	// A submission awaiting review, and an account already verified, are both refused. A rejected submission may be corrected and sent again.
 	//
 	// Takes a body of the `application/json` content type, and returns a wrapper object for the known response body format(s).
 	//
 	// Corresponds with POST /account/v1/me/identity-verification (the `SubmitIdentityVerification` operationId).
 	SubmitIdentityVerificationWithResponse(ctx context.Context, body SubmitIdentityVerificationJSONRequestBody, reqEditors ...RequestEditorFn) (*SubmitIdentityVerificationResponse, error)
 
-	// ListMyInvitationsWithResponse 列出寄给我的要约
+	// ListMyInvitationsWithResponse List invitations addressed to the caller
 	//
-	// 按当前账号的邮箱查，因为要约是寄给一个地址的——被邀请的人当时可能还没注册。.
+	// Matched against the email address of the current account.
 	//
 	// Returns a wrapper object for the known response body format(s).
 	//
 	// Corresponds with GET /account/v1/me/invitations (the `ListMyInvitations` operationId).
 	ListMyInvitationsWithResponse(ctx context.Context, params *ListMyInvitationsParams, reqEditors ...RequestEditorFn) (*ListMyInvitationsResponse, error)
 
-	// AcceptInvitationByTokenWithBodyWithResponse 顺着邀请链接接受
+	// AcceptInvitationByTokenWithBodyWithResponse Accept an invitation by its token
 	//
-	// token 对不上和这份要约已经不作数了是同一个回答：持有者对这两种情况能做的事完全一样，分开报会把这个接口变成一个可以拿来试 token 的探针。.
+	// A token that does not match, and an invitation that no longer stands, answer the same way.
 	//
 	// Takes any type of body and a specified content type, and returns a wrapper object for the known response body format(s).
 	//
 	// Corresponds with POST /account/v1/me/invitations/accept (the `AcceptInvitationByToken` operationId).
 	AcceptInvitationByTokenWithBodyWithResponse(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*AcceptInvitationByTokenResponse, error)
 
-	// AcceptInvitationByTokenWithResponse 顺着邀请链接接受
+	// AcceptInvitationByTokenWithResponse Accept an invitation by its token
 	//
-	// token 对不上和这份要约已经不作数了是同一个回答：持有者对这两种情况能做的事完全一样，分开报会把这个接口变成一个可以拿来试 token 的探针。.
+	// A token that does not match, and an invitation that no longer stands, answer the same way.
 	//
 	// Takes a body of the `application/json` content type, and returns a wrapper object for the known response body format(s).
 	//
 	// Corresponds with POST /account/v1/me/invitations/accept (the `AcceptInvitationByToken` operationId).
 	AcceptInvitationByTokenWithResponse(ctx context.Context, body AcceptInvitationByTokenJSONRequestBody, reqEditors ...RequestEditorFn) (*AcceptInvitationByTokenResponse, error)
 
-	// AcceptInvitationWithResponse 接受一份列在我名下的要约
+	// AcceptInvitationWithResponse Accept an invitation listed against the caller
 	//
-	// 不需要 token：token 证明的是「你就是这份要约寄给的那个人」，而当前账号的邮箱对得上这份要约，证明的是同一件事。.
+	// No token is required; the invitation is addressed to the email address of the current account.
 	//
 	// Returns a wrapper object for the known response body format(s).
 	//
 	// Corresponds with POST /account/v1/me/invitations/{invitationId}/accept (the `AcceptInvitation` operationId).
 	AcceptInvitationWithResponse(ctx context.Context, invitationId openapi_types.UUID, reqEditors ...RequestEditorFn) (*AcceptInvitationResponse, error)
 
-	// ListProjectsWithResponse 列出我参与的项目
+	// ListProjectsWithResponse List the projects the caller belongs to
 	//
-	// 默认不含已删除的项目——那些是已经不存在了的东西，要看必须明确用 status=DELETED 点名。.
+	// Deleted projects are excluded unless `status=DELETED` asks for them by name.
 	//
 	// Returns a wrapper object for the known response body format(s).
 	//
 	// Corresponds with GET /account/v1/projects (the `ListProjects` operationId).
 	ListProjectsWithResponse(ctx context.Context, params *ListProjectsParams, reqEditors ...RequestEditorFn) (*ListProjectsResponse, error)
 
-	// CreateProjectWithBodyWithResponse 建一个项目
+	// CreateProjectWithBodyWithResponse Create a project
 	//
-	// 建的人就是所有者。项目会连带预置 OWNER、ADMIN 两个内置角色和一个空权限的 member 角色。.
+	// The caller becomes its owner. The project is created with the built-in `OWNER` and `ADMIN` roles and a `member` role carrying no permissions.
 	//
 	// Takes any type of body and a specified content type, and returns a wrapper object for the known response body format(s).
 	//
 	// Corresponds with POST /account/v1/projects (the `CreateProject` operationId).
 	CreateProjectWithBodyWithResponse(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*CreateProjectResponse, error)
 
-	// CreateProjectWithResponse 建一个项目
+	// CreateProjectWithResponse Create a project
 	//
-	// 建的人就是所有者。项目会连带预置 OWNER、ADMIN 两个内置角色和一个空权限的 member 角色。.
+	// The caller becomes its owner. The project is created with the built-in `OWNER` and `ADMIN` roles and a `member` role carrying no permissions.
 	//
 	// Takes a body of the `application/json` content type, and returns a wrapper object for the known response body format(s).
 	//
 	// Corresponds with POST /account/v1/projects (the `CreateProject` operationId).
 	CreateProjectWithResponse(ctx context.Context, body CreateProjectJSONRequestBody, reqEditors ...RequestEditorFn) (*CreateProjectResponse, error)
 
-	// ExchangeProjectTokenWithResponse 换一张项目令牌
+	// CreateScopedTokenWithResponse Exchange the access token for a scoped token
 	//
-	// 选定一个项目后，用账号令牌换取该项目的令牌。
+	// Once a project has been chosen, exchange the access token for a scoped token for that project.
 	//
-	// **只接受 auth.leaflow.net 签发的账号令牌，不接受项目令牌。** 项目令牌过期后，先在 auth.leaflow.net 续期账号令牌，再重新调用这个接口。
+	// **Only an access token issued by auth.leaflow.net is accepted; a scoped token is not.** Once a scoped token has expired, obtain a fresh access token at auth.leaflow.net and call this endpoint again.
 	//
-	// 换取时会确认账号可用、项目存在，且**调用者是该项目的成员**。非成员无法换取。
+	// The exchange confirms that the account is usable, that the project exists, and that the caller is a member of it. A caller who is not a member obtains no token.
 	//
-	// 令牌只表明身份（用户与项目），**不包含权限**：权限在每次请求时实时判定，所以角色调整立即生效，不必等待令牌过期。
+	// A scoped token states identity only — the user and the project — and **carries no permissions**. Permissions are evaluated on every request, so a change of role takes effect immediately rather than at the next expiry.
 	//
-	// 项目处于停用、封禁或删除中时**仍可换取令牌**：这些状态限制的是写入，不影响查看项目当前状况。
+	// A project that is suspended, banned or being deleted still issues tokens; those states restrict writes, and the project remains readable.
 	//
 	// Returns a wrapper object for the known response body format(s).
 	//
-	// Corresponds with POST /account/v1/projects/{projectId}/token (the `ExchangeProjectToken` operationId).
-	ExchangeProjectTokenWithResponse(ctx context.Context, projectId openapi_types.UUID, reqEditors ...RequestEditorFn) (*ExchangeProjectTokenResponse, error)
+	// Corresponds with POST /account/v1/projects/{projectId}/scoped-tokens (the `CreateScopedToken` operationId).
+	CreateScopedTokenWithResponse(ctx context.Context, projectId openapi_types.UUID, reqEditors ...RequestEditorFn) (*CreateScopedTokenResponse, error)
 
-	// RegisterWithBodyWithResponse 注册账号
+	// RegisterWithBodyWithResponse Register an account
 	//
-	// 在 auth.leaflow.net 登录之后调它，带上账号令牌。姓名和邮箱取自登录信息，不从请求体收。
+	// Call this after signing in at auth.leaflow.net, carrying the access token. The name and email address are taken from the sign-in claims and are not read from the request body.
 	//
-	// `consents` 要覆盖 `GET /api/v1/agreements` 返回的每一份，版本号也要一致；漏一份答 400，版本对不上答 409（多半是页面开着的时候条款改版了，重新拉一次清单即可）。已经注册过的答 409。
+	// `consents` must cover every agreement returned by `GET /account/v1/agreements`, at the same versions. A missing agreement answers 400 and a stale version answers 409, in which case fetch the list again. An account that already exists answers 409.
 	//
 	// Takes any type of body and a specified content type, and returns a wrapper object for the known response body format(s).
 	//
 	// Corresponds with POST /account/v1/register (the `Register` operationId).
 	RegisterWithBodyWithResponse(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*RegisterResponse, error)
 
-	// RegisterWithResponse 注册账号
+	// RegisterWithResponse Register an account
 	//
-	// 在 auth.leaflow.net 登录之后调它，带上账号令牌。姓名和邮箱取自登录信息，不从请求体收。
+	// Call this after signing in at auth.leaflow.net, carrying the access token. The name and email address are taken from the sign-in claims and are not read from the request body.
 	//
-	// `consents` 要覆盖 `GET /api/v1/agreements` 返回的每一份，版本号也要一致；漏一份答 400，版本对不上答 409（多半是页面开着的时候条款改版了，重新拉一次清单即可）。已经注册过的答 409。
+	// `consents` must cover every agreement returned by `GET /account/v1/agreements`, at the same versions. A missing agreement answers 400 and a stale version answers 409, in which case fetch the list again. An account that already exists answers 409.
 	//
 	// Takes a body of the `application/json` content type, and returns a wrapper object for the known response body format(s).
 	//
 	// Corresponds with POST /account/v1/register (the `Register` operationId).
 	RegisterWithResponse(ctx context.Context, body RegisterJSONRequestBody, reqEditors ...RequestEditorFn) (*RegisterResponse, error)
 
-	// GetSettingsWithResponse 这个平台现在收不收人
+	// GetSettingsWithResponse Get registration and project creation settings
 	//
-	// 注册页和「新建项目」按钮用它决定画什么。不需要令牌。
+	// No token required.
 	//
-	// `registration_mode` 不是 `OPEN` 时 `POST /account/v1/register` 会答 403：`CLOSED` 是整个关着，`INVITE_ONLY` 是只收手上有项目邀请的邮箱。`project_creation_mode` 同理，`VERIFIED_ONLY` 要先过实名。
+	// While `registration_mode` is not `OPEN`, `POST /account/v1/register` answers 403: `CLOSED` refuses everyone, and `INVITE_ONLY` accepts only an email address holding a project invitation. `project_creation_mode` behaves the same way, and `VERIFIED_ONLY` requires identity verification to have completed.
 	//
-	// 两条配额是 0 表示不限。它们只用来提前提示，真正的判定在写入那一刻。
+	// Both quotas are `0` when unlimited. The decision itself is made at the moment of writing.
 	//
 	// Returns a wrapper object for the known response body format(s).
 	//
@@ -3041,32 +3046,32 @@ func (r CreateProjectResponse) ContentType() string {
 	return ""
 }
 
-type ExchangeProjectTokenResponse struct {
+type CreateScopedTokenResponse struct {
 	Body         []byte
 	HTTPResponse *http.Response
 	// JSON201 the response for an HTTP 201 `application/json` response
-	JSON201 *ProjectTokenResponseBody
+	JSON201 *ScopedTokenResponseBody
 	// JSONDefault the response for an HTTP default `application/json` response
 	JSONDefault *Error
 }
 
 // GetJSON201 returns the response for an HTTP 201 `application/json` response
-func (r ExchangeProjectTokenResponse) GetJSON201() *ProjectTokenResponseBody {
+func (r CreateScopedTokenResponse) GetJSON201() *ScopedTokenResponseBody {
 	return r.JSON201
 }
 
 // GetJSONDefault returns the response for an HTTP default `application/json` response
-func (r ExchangeProjectTokenResponse) GetJSONDefault() *Error {
+func (r CreateScopedTokenResponse) GetJSONDefault() *Error {
 	return r.JSONDefault
 }
 
 // GetBody returns the raw response body bytes
-func (r ExchangeProjectTokenResponse) GetBody() []byte {
+func (r CreateScopedTokenResponse) GetBody() []byte {
 	return r.Body
 }
 
 // Status returns HTTPResponse.Status
-func (r ExchangeProjectTokenResponse) Status() string {
+func (r CreateScopedTokenResponse) Status() string {
 	if r.HTTPResponse != nil {
 		return r.HTTPResponse.Status
 	}
@@ -3074,7 +3079,7 @@ func (r ExchangeProjectTokenResponse) Status() string {
 }
 
 // StatusCode returns HTTPResponse.StatusCode
-func (r ExchangeProjectTokenResponse) StatusCode() int {
+func (r CreateScopedTokenResponse) StatusCode() int {
 	if r.HTTPResponse != nil {
 		return r.HTTPResponse.StatusCode
 	}
@@ -3082,7 +3087,7 @@ func (r ExchangeProjectTokenResponse) StatusCode() int {
 }
 
 // ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
-func (r ExchangeProjectTokenResponse) ContentType() string {
+func (r CreateScopedTokenResponse) ContentType() string {
 	if r.HTTPResponse != nil {
 		return r.HTTPResponse.Header.Get("Content-Type")
 	}
@@ -3185,11 +3190,11 @@ func (r GetSettingsResponse) ContentType() string {
 	return ""
 }
 
-// ListAgreementsWithResponse 列出注册必须同意的文件
+// ListAgreementsWithResponse List the agreements registration requires
 //
-// 注册页显示它，用户同意之后把每一项的 `type` 和 `version` 原样回传给 `POST /api/v1/register`。
+// No token required. Send the `type` and `version` of each one back unchanged to `POST /account/v1/register`.
 //
-// 不需要令牌。还没有任何文件生效时返回空数组，那时注册不需要提交 `consents`。
+// The array is empty while no agreement is in force, and registration then takes no `consents`.
 //
 // Returns a wrapper object for the known response body format(s).
 //
@@ -3202,13 +3207,13 @@ func (c *ClientWithResponses) ListAgreementsWithResponse(ctx context.Context, re
 	return ParseListAgreementsResponse(rsp)
 }
 
-// PreviewInvitationByTokenWithResponse 看一眼这封邀请是谁发的、加入哪儿、什么角色
+// PreviewInvitationByTokenWithResponse Preview an invitation by its token
 //
-// 免认证，而且是有意的：点邮件里那条链接的人多半还没登录，甚至还没有账号。要他先注册再 告诉他这是谁发来的、加入哪个项目，等于让他在不知道要加入什么的情况下决定要不要注册。
-// 它不多泄露任何东西。 这三样——项目名、邀请人、角色——邮件正文里已经写着了，而读得到 这个令牌的人就是收得到那封邮件的人。同一个令牌本来就能把持有者加进项目（见 `accept-invitation-by-token`），读一个项目名比那件事轻得多。
-// 收件地址打了码（`t***@example.com`）。 不打码的话，这个接口就成了「拿一个令牌反查它 当初寄给了哪个地址」——而那是邮件正文里没有、持有者也未必知道的一件事。
-// 令牌不存在、已经用过、被撤回、过期，四种情况同一个 404 和同一句话。分开报会把它变成 一个可以拿来试令牌的探针，而这个接口免认证，任何人都试得起。
-// 它不在 `/me` 下面，隔壁那两条接受要约的在。 `/me` 的意思是「按这次请求的身份认出来 的、属于我的那些」，而这条路上没有身份——持有令牌的人未必是收件人本人。挂在 `/me` 下面会让读的人以为它认过身份，而那正是这条路唯一不做的事。
+// No token required: whoever follows the link in an invitation email has usually not signed in, and may hold no account at all.
+//
+// The recipient address is masked (`t***@example.com`).
+//
+// A token that does not exist, one already redeemed, one revoked and one expired all answer the same 404.
 //
 // Returns a wrapper object for the known response body format(s).
 //
@@ -3221,11 +3226,13 @@ func (c *ClientWithResponses) PreviewInvitationByTokenWithResponse(ctx context.C
 	return ParsePreviewInvitationByTokenResponse(rsp)
 }
 
-// ListLocalesWithResponse 注册页要用的国家/地区和语言清单
+// ListLocalesWithResponse List countries and languages for registration
 //
-// 免认证：注册页在还没有账号的时候就要画出这两个下拉框。
-// 国家名和排序都跟着 `Accept-Language` 走——一个英文用户看到的是 China 而不是「中国」， 而顺序按那种语言自己的规则（中文按拼音，英文按字母），不是按码点。头缺失时用简体中文。
-// 清单来自 CLDR，不是我们自己维护的一份：ISO 3166 每年都改，而抄下来的那份不会跟着改。 已经退役的代码（苏联、南斯拉夫）和不是地方的代码（欧盟、联合国）都不在里面。
+// No token required: the registration page renders both lists before an account exists.
+//
+// Country names and their order follow `Accept-Language`. A name is rendered in the requested language and the list is ordered by the rules of that language rather than by code point. Simplified Chinese applies when the header is absent.
+//
+// Retired codes such as the Soviet Union and Yugoslavia, and codes that denote no country such as the European Union, are not listed.
 //
 // Returns a wrapper object for the known response body format(s).
 //
@@ -3238,9 +3245,9 @@ func (c *ClientWithResponses) ListLocalesWithResponse(ctx context.Context, reqEd
 	return ParseListLocalesResponse(rsp)
 }
 
-// GetAccountWithResponse 查看当前账号
+// GetAccountWithResponse Get the current account
 //
-// `pending_agreements` 是还没同意的文件，非空就要先引导用户同意，再调 `POST /api/v1/me/consents`。.
+// `pending_agreements` holds the agreements not yet consented to. While it is not empty, obtain consent and call `POST /account/v1/me/consents`.
 //
 // Returns a wrapper object for the known response body format(s).
 //
@@ -3253,9 +3260,9 @@ func (c *ClientWithResponses) GetAccountWithResponse(ctx context.Context, reqEdi
 	return ParseGetAccountResponse(rsp)
 }
 
-// UpdateAccountWithBodyWithResponse 改当前账号的国家/地区和语言
+// UpdateAccountWithBodyWithResponse Update the country and language of the current account
 //
-// 姓名和邮箱不在这里改：它们来自身份提供方，改了会在下一次登录同步时被覆盖回去。.
+// The name and email address cannot be changed here. They come from the identity provider, and a change would be overwritten at the next sign-in.
 //
 // Takes any type of body and a specified content type, and returns a wrapper object for the known response body format(s).
 //
@@ -3268,9 +3275,9 @@ func (c *ClientWithResponses) UpdateAccountWithBodyWithResponse(ctx context.Cont
 	return ParseUpdateAccountResponse(rsp)
 }
 
-// UpdateAccountWithResponse 改当前账号的国家/地区和语言
+// UpdateAccountWithResponse Update the country and language of the current account
 //
-// 姓名和邮箱不在这里改：它们来自身份提供方，改了会在下一次登录同步时被覆盖回去。.
+// The name and email address cannot be changed here. They come from the identity provider, and a change would be overwritten at the next sign-in.
 //
 // Takes a body of the `application/json` content type, and returns a wrapper object for the known response body format(s).
 //
@@ -3283,9 +3290,9 @@ func (c *ClientWithResponses) UpdateAccountWithResponse(ctx context.Context, bod
 	return ParseUpdateAccountResponse(rsp)
 }
 
-// ListConsentsWithResponse 列出我同意过的文件
+// ListConsentsWithResponse List the agreements the caller has consented to
 //
-// 全部记录，最新的在前，包括已经不是当前版本的那些。.
+// Every record, most recent first, including versions that are no longer current.
 //
 // Returns a wrapper object for the known response body format(s).
 //
@@ -3298,11 +3305,11 @@ func (c *ClientWithResponses) ListConsentsWithResponse(ctx context.Context, reqE
 	return ParseListConsentsResponse(rsp)
 }
 
-// AcceptAgreementsWithBodyWithResponse 同意条款
+// AcceptAgreementsWithBodyWithResponse Consent to the current agreements
 //
-// 条款改版之后用它重新同意，`GET /api/v1/me` 的 `pending_agreements` 非空时就该调。
+// Call this once a new version is published, which is whenever `pending_agreements` on `GET /account/v1/me` is not empty.
 //
-// 只收当前生效的版本，签旧版答 409。重复提交同一版不报错，第一次那条记录会留着。
+// Only the version currently in force is accepted; consenting to an earlier one answers 409. Submitting the same version twice is not an error and leaves the first record in place.
 //
 // Takes any type of body and a specified content type, and returns a wrapper object for the known response body format(s).
 //
@@ -3315,11 +3322,11 @@ func (c *ClientWithResponses) AcceptAgreementsWithBodyWithResponse(ctx context.C
 	return ParseAcceptAgreementsResponse(rsp)
 }
 
-// AcceptAgreementsWithResponse 同意条款
+// AcceptAgreementsWithResponse Consent to the current agreements
 //
-// 条款改版之后用它重新同意，`GET /api/v1/me` 的 `pending_agreements` 非空时就该调。
+// Call this once a new version is published, which is whenever `pending_agreements` on `GET /account/v1/me` is not empty.
 //
-// 只收当前生效的版本，签旧版答 409。重复提交同一版不报错，第一次那条记录会留着。
+// Only the version currently in force is accepted; consenting to an earlier one answers 409. Submitting the same version twice is not an error and leaves the first record in place.
 //
 // Takes a body of the `application/json` content type, and returns a wrapper object for the known response body format(s).
 //
@@ -3332,9 +3339,9 @@ func (c *ClientWithResponses) AcceptAgreementsWithResponse(ctx context.Context, 
 	return ParseAcceptAgreementsResponse(rsp)
 }
 
-// GetIdentityVerificationWithResponse 查看实名核验状态
+// GetIdentityVerificationWithResponse Get identity verification status
 //
-// 没交过材料时答 UNVERIFIED，不是 404。姓名和证件号不会出现在任何响应里。.
+// The status is `UNVERIFIED` rather than 404 when nothing has been submitted. The legal name and the document number appear in no response.
 //
 // Returns a wrapper object for the known response body format(s).
 //
@@ -3347,9 +3354,9 @@ func (c *ClientWithResponses) GetIdentityVerificationWithResponse(ctx context.Co
 	return ParseGetIdentityVerificationResponse(rsp)
 }
 
-// SubmitIdentityVerificationWithBodyWithResponse 提交实名核验材料
+// SubmitIdentityVerificationWithBodyWithResponse Submit identity verification
 //
-// 已经在等人审的和已经核过的都会被拒。被驳回之后可以改了再交。.
+// A submission awaiting review, and an account already verified, are both refused. A rejected submission may be corrected and sent again.
 //
 // Takes any type of body and a specified content type, and returns a wrapper object for the known response body format(s).
 //
@@ -3362,9 +3369,9 @@ func (c *ClientWithResponses) SubmitIdentityVerificationWithBodyWithResponse(ctx
 	return ParseSubmitIdentityVerificationResponse(rsp)
 }
 
-// SubmitIdentityVerificationWithResponse 提交实名核验材料
+// SubmitIdentityVerificationWithResponse Submit identity verification
 //
-// 已经在等人审的和已经核过的都会被拒。被驳回之后可以改了再交。.
+// A submission awaiting review, and an account already verified, are both refused. A rejected submission may be corrected and sent again.
 //
 // Takes a body of the `application/json` content type, and returns a wrapper object for the known response body format(s).
 //
@@ -3377,9 +3384,9 @@ func (c *ClientWithResponses) SubmitIdentityVerificationWithResponse(ctx context
 	return ParseSubmitIdentityVerificationResponse(rsp)
 }
 
-// ListMyInvitationsWithResponse 列出寄给我的要约
+// ListMyInvitationsWithResponse List invitations addressed to the caller
 //
-// 按当前账号的邮箱查，因为要约是寄给一个地址的——被邀请的人当时可能还没注册。.
+// Matched against the email address of the current account.
 //
 // Returns a wrapper object for the known response body format(s).
 //
@@ -3392,9 +3399,9 @@ func (c *ClientWithResponses) ListMyInvitationsWithResponse(ctx context.Context,
 	return ParseListMyInvitationsResponse(rsp)
 }
 
-// AcceptInvitationByTokenWithBodyWithResponse 顺着邀请链接接受
+// AcceptInvitationByTokenWithBodyWithResponse Accept an invitation by its token
 //
-// token 对不上和这份要约已经不作数了是同一个回答：持有者对这两种情况能做的事完全一样，分开报会把这个接口变成一个可以拿来试 token 的探针。.
+// A token that does not match, and an invitation that no longer stands, answer the same way.
 //
 // Takes any type of body and a specified content type, and returns a wrapper object for the known response body format(s).
 //
@@ -3407,9 +3414,9 @@ func (c *ClientWithResponses) AcceptInvitationByTokenWithBodyWithResponse(ctx co
 	return ParseAcceptInvitationByTokenResponse(rsp)
 }
 
-// AcceptInvitationByTokenWithResponse 顺着邀请链接接受
+// AcceptInvitationByTokenWithResponse Accept an invitation by its token
 //
-// token 对不上和这份要约已经不作数了是同一个回答：持有者对这两种情况能做的事完全一样，分开报会把这个接口变成一个可以拿来试 token 的探针。.
+// A token that does not match, and an invitation that no longer stands, answer the same way.
 //
 // Takes a body of the `application/json` content type, and returns a wrapper object for the known response body format(s).
 //
@@ -3422,9 +3429,9 @@ func (c *ClientWithResponses) AcceptInvitationByTokenWithResponse(ctx context.Co
 	return ParseAcceptInvitationByTokenResponse(rsp)
 }
 
-// AcceptInvitationWithResponse 接受一份列在我名下的要约
+// AcceptInvitationWithResponse Accept an invitation listed against the caller
 //
-// 不需要 token：token 证明的是「你就是这份要约寄给的那个人」，而当前账号的邮箱对得上这份要约，证明的是同一件事。.
+// No token is required; the invitation is addressed to the email address of the current account.
 //
 // Returns a wrapper object for the known response body format(s).
 //
@@ -3437,9 +3444,9 @@ func (c *ClientWithResponses) AcceptInvitationWithResponse(ctx context.Context, 
 	return ParseAcceptInvitationResponse(rsp)
 }
 
-// ListProjectsWithResponse 列出我参与的项目
+// ListProjectsWithResponse List the projects the caller belongs to
 //
-// 默认不含已删除的项目——那些是已经不存在了的东西，要看必须明确用 status=DELETED 点名。.
+// Deleted projects are excluded unless `status=DELETED` asks for them by name.
 //
 // Returns a wrapper object for the known response body format(s).
 //
@@ -3452,9 +3459,9 @@ func (c *ClientWithResponses) ListProjectsWithResponse(ctx context.Context, para
 	return ParseListProjectsResponse(rsp)
 }
 
-// CreateProjectWithBodyWithResponse 建一个项目
+// CreateProjectWithBodyWithResponse Create a project
 //
-// 建的人就是所有者。项目会连带预置 OWNER、ADMIN 两个内置角色和一个空权限的 member 角色。.
+// The caller becomes its owner. The project is created with the built-in `OWNER` and `ADMIN` roles and a `member` role carrying no permissions.
 //
 // Takes any type of body and a specified content type, and returns a wrapper object for the known response body format(s).
 //
@@ -3467,9 +3474,9 @@ func (c *ClientWithResponses) CreateProjectWithBodyWithResponse(ctx context.Cont
 	return ParseCreateProjectResponse(rsp)
 }
 
-// CreateProjectWithResponse 建一个项目
+// CreateProjectWithResponse Create a project
 //
-// 建的人就是所有者。项目会连带预置 OWNER、ADMIN 两个内置角色和一个空权限的 member 角色。.
+// The caller becomes its owner. The project is created with the built-in `OWNER` and `ADMIN` roles and a `member` role carrying no permissions.
 //
 // Takes a body of the `application/json` content type, and returns a wrapper object for the known response body format(s).
 //
@@ -3482,34 +3489,34 @@ func (c *ClientWithResponses) CreateProjectWithResponse(ctx context.Context, bod
 	return ParseCreateProjectResponse(rsp)
 }
 
-// ExchangeProjectTokenWithResponse 换一张项目令牌
+// CreateScopedTokenWithResponse Exchange the access token for a scoped token
 //
-// 选定一个项目后，用账号令牌换取该项目的令牌。
+// Once a project has been chosen, exchange the access token for a scoped token for that project.
 //
-// **只接受 auth.leaflow.net 签发的账号令牌，不接受项目令牌。** 项目令牌过期后，先在 auth.leaflow.net 续期账号令牌，再重新调用这个接口。
+// **Only an access token issued by auth.leaflow.net is accepted; a scoped token is not.** Once a scoped token has expired, obtain a fresh access token at auth.leaflow.net and call this endpoint again.
 //
-// 换取时会确认账号可用、项目存在，且**调用者是该项目的成员**。非成员无法换取。
+// The exchange confirms that the account is usable, that the project exists, and that the caller is a member of it. A caller who is not a member obtains no token.
 //
-// 令牌只表明身份（用户与项目），**不包含权限**：权限在每次请求时实时判定，所以角色调整立即生效，不必等待令牌过期。
+// A scoped token states identity only — the user and the project — and **carries no permissions**. Permissions are evaluated on every request, so a change of role takes effect immediately rather than at the next expiry.
 //
-// 项目处于停用、封禁或删除中时**仍可换取令牌**：这些状态限制的是写入，不影响查看项目当前状况。
+// A project that is suspended, banned or being deleted still issues tokens; those states restrict writes, and the project remains readable.
 //
 // Returns a wrapper object for the known response body format(s).
 //
-// Corresponds with POST /account/v1/projects/{projectId}/token (the `ExchangeProjectToken` operationId).
-func (c *ClientWithResponses) ExchangeProjectTokenWithResponse(ctx context.Context, projectId openapi_types.UUID, reqEditors ...RequestEditorFn) (*ExchangeProjectTokenResponse, error) {
-	rsp, err := c.ExchangeProjectToken(ctx, projectId, reqEditors...)
+// Corresponds with POST /account/v1/projects/{projectId}/scoped-tokens (the `CreateScopedToken` operationId).
+func (c *ClientWithResponses) CreateScopedTokenWithResponse(ctx context.Context, projectId openapi_types.UUID, reqEditors ...RequestEditorFn) (*CreateScopedTokenResponse, error) {
+	rsp, err := c.CreateScopedToken(ctx, projectId, reqEditors...)
 	if err != nil {
 		return nil, err
 	}
-	return ParseExchangeProjectTokenResponse(rsp)
+	return ParseCreateScopedTokenResponse(rsp)
 }
 
-// RegisterWithBodyWithResponse 注册账号
+// RegisterWithBodyWithResponse Register an account
 //
-// 在 auth.leaflow.net 登录之后调它，带上账号令牌。姓名和邮箱取自登录信息，不从请求体收。
+// Call this after signing in at auth.leaflow.net, carrying the access token. The name and email address are taken from the sign-in claims and are not read from the request body.
 //
-// `consents` 要覆盖 `GET /api/v1/agreements` 返回的每一份，版本号也要一致；漏一份答 400，版本对不上答 409（多半是页面开着的时候条款改版了，重新拉一次清单即可）。已经注册过的答 409。
+// `consents` must cover every agreement returned by `GET /account/v1/agreements`, at the same versions. A missing agreement answers 400 and a stale version answers 409, in which case fetch the list again. An account that already exists answers 409.
 //
 // Takes any type of body and a specified content type, and returns a wrapper object for the known response body format(s).
 //
@@ -3522,11 +3529,11 @@ func (c *ClientWithResponses) RegisterWithBodyWithResponse(ctx context.Context, 
 	return ParseRegisterResponse(rsp)
 }
 
-// RegisterWithResponse 注册账号
+// RegisterWithResponse Register an account
 //
-// 在 auth.leaflow.net 登录之后调它，带上账号令牌。姓名和邮箱取自登录信息，不从请求体收。
+// Call this after signing in at auth.leaflow.net, carrying the access token. The name and email address are taken from the sign-in claims and are not read from the request body.
 //
-// `consents` 要覆盖 `GET /api/v1/agreements` 返回的每一份，版本号也要一致；漏一份答 400，版本对不上答 409（多半是页面开着的时候条款改版了，重新拉一次清单即可）。已经注册过的答 409。
+// `consents` must cover every agreement returned by `GET /account/v1/agreements`, at the same versions. A missing agreement answers 400 and a stale version answers 409, in which case fetch the list again. An account that already exists answers 409.
 //
 // Takes a body of the `application/json` content type, and returns a wrapper object for the known response body format(s).
 //
@@ -3539,13 +3546,13 @@ func (c *ClientWithResponses) RegisterWithResponse(ctx context.Context, body Reg
 	return ParseRegisterResponse(rsp)
 }
 
-// GetSettingsWithResponse 这个平台现在收不收人
+// GetSettingsWithResponse Get registration and project creation settings
 //
-// 注册页和「新建项目」按钮用它决定画什么。不需要令牌。
+// No token required.
 //
-// `registration_mode` 不是 `OPEN` 时 `POST /account/v1/register` 会答 403：`CLOSED` 是整个关着，`INVITE_ONLY` 是只收手上有项目邀请的邮箱。`project_creation_mode` 同理，`VERIFIED_ONLY` 要先过实名。
+// While `registration_mode` is not `OPEN`, `POST /account/v1/register` answers 403: `CLOSED` refuses everyone, and `INVITE_ONLY` accepts only an email address holding a project invitation. `project_creation_mode` behaves the same way, and `VERIFIED_ONLY` requires identity verification to have completed.
 //
-// 两条配额是 0 表示不限。它们只用来提前提示，真正的判定在写入那一刻。
+// Both quotas are `0` when unlimited. The decision itself is made at the moment of writing.
 //
 // Returns a wrapper object for the known response body format(s).
 //
@@ -4020,22 +4027,22 @@ func ParseCreateProjectResponse(rsp *http.Response) (*CreateProjectResponse, err
 	return response, nil
 }
 
-// ParseExchangeProjectTokenResponse parses an HTTP response from a ExchangeProjectTokenWithResponse call
-func ParseExchangeProjectTokenResponse(rsp *http.Response) (*ExchangeProjectTokenResponse, error) {
+// ParseCreateScopedTokenResponse parses an HTTP response from a CreateScopedTokenWithResponse call
+func ParseCreateScopedTokenResponse(rsp *http.Response) (*CreateScopedTokenResponse, error) {
 	bodyBytes, err := io.ReadAll(rsp.Body)
 	defer func() { _ = rsp.Body.Close() }()
 	if err != nil {
 		return nil, err
 	}
 
-	response := &ExchangeProjectTokenResponse{
+	response := &CreateScopedTokenResponse{
 		Body:         bodyBytes,
 		HTTPResponse: rsp,
 	}
 
 	switch {
 	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 201:
-		var dest ProjectTokenResponseBody
+		var dest ScopedTokenResponseBody
 		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
 			return nil, err
 		}

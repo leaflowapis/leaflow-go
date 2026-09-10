@@ -14,12 +14,21 @@ import (
 // SecurityHandler is handler for security parameters.
 type SecurityHandler interface {
 	// HandleAccountAuth handles accountAuth security.
-	// An account token, obtained by signing in at auth.leaflow.net. A project token is not accepted on
-	// `/account/v1/`.
+	// The access token issued by auth.leaflow.net. It states who the caller is and names no project.
+	//
+	// Use it to list the projects the caller belongs to and to obtain a scoped token.
 	HandleAccountAuth(ctx context.Context, operationName OperationName, t AccountAuth) (context.Context, error)
 	// HandleProjectAuth handles projectAuth security.
-	// A project token issued by IAM for a project the caller belongs to. Accepted only on
-	// `/api/v1/projects/{projectId}/`.
+	// A scoped token issued by IAM. Sign in at auth.leaflow.net to obtain an access token, then exchange
+	// it for a scoped token (`POST /account/v1/projects/{projectId}/scoped-tokens`).
+	//
+	// A scoped token states both the current user and the current project. Neither the path nor the
+	// headers carry a `project_id`.
+	//
+	// `TOKEN_MISSING` means no token was sent. `TOKEN_EXPIRED` means the scoped token has expired;
+	// exchange the access token for a new one without signing in again. `TOKEN_INVALID` means the token
+	// did not verify. `NOT_A_MEMBER` means the account is not a member of the project. `USER_SUSPENDED`
+	// and `USER_BANNED` mean the account itself is barred from operating.
 	HandleProjectAuth(ctx context.Context, operationName OperationName, t ProjectAuth) (context.Context, error)
 }
 
@@ -182,12 +191,21 @@ func (s *Server) securityProjectAuth(ctx context.Context, operationName Operatio
 // SecuritySource is provider of security values (tokens, passwords, etc.).
 type SecuritySource interface {
 	// AccountAuth provides accountAuth security value.
-	// An account token, obtained by signing in at auth.leaflow.net. A project token is not accepted on
-	// `/account/v1/`.
+	// The access token issued by auth.leaflow.net. It states who the caller is and names no project.
+	//
+	// Use it to list the projects the caller belongs to and to obtain a scoped token.
 	AccountAuth(ctx context.Context, operationName OperationName) (AccountAuth, error)
 	// ProjectAuth provides projectAuth security value.
-	// A project token issued by IAM for a project the caller belongs to. Accepted only on
-	// `/api/v1/projects/{projectId}/`.
+	// A scoped token issued by IAM. Sign in at auth.leaflow.net to obtain an access token, then exchange
+	// it for a scoped token (`POST /account/v1/projects/{projectId}/scoped-tokens`).
+	//
+	// A scoped token states both the current user and the current project. Neither the path nor the
+	// headers carry a `project_id`.
+	//
+	// `TOKEN_MISSING` means no token was sent. `TOKEN_EXPIRED` means the scoped token has expired;
+	// exchange the access token for a new one without signing in again. `TOKEN_INVALID` means the token
+	// did not verify. `NOT_A_MEMBER` means the account is not a member of the project. `USER_SUSPENDED`
+	// and `USER_BANNED` mean the account itself is barred from operating.
 	ProjectAuth(ctx context.Context, operationName OperationName) (ProjectAuth, error)
 }
 

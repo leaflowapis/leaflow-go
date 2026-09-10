@@ -7,16 +7,17 @@ import (
 	openapi_types "github.com/oapi-codegen/runtime/types"
 )
 
-// PlacedOrder A billable order was created. Read it from the billing API to find out what is owed and
-// whether anything still has to be paid.
+// PlacedOrder A billable order has been created. Read it from the billing API to find out what is
+// owed and whether payment is still required.
 //
-// Only the identifier is returned. Amounts are not repeated here: the order already
-// carries them, and a second copy of the figure a customer is about to be charged is a
-// copy that can disagree with the first.
+// Only the identifier is returned. Amounts and state are not repeated here; the order
+// itself is the single source for them.
 type PlacedOrder struct {
-	// OrderId Pass it to the billing API to read the order, and to pay it.
+	// OrderId Identifies the order. Use it to read the order and, where payment is required,
+	// to pay it.
 	//
-	// An order exists even when nothing is owed — a free plan, or one covered entirely by
-	// granted credit. It will already be settled, so there is no separate case to handle.
+	// An order is created even when nothing is owed, such as a plan with no charge or one
+	// covered entirely by granted credit. Such an order is already settled, and no
+	// payment step applies.
 	OrderId openapi_types.UUID `json:"order_id"`
 }

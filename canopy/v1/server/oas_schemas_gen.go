@@ -17,25 +17,26 @@ func (s *ErrorStatusCode) Error() string {
 
 // Ref: #/components/schemas/APIKeyResource
 type APIKeyResource struct {
-	// Restrict_models 为 false 时无意义.
+	// Carries no meaning while `restrict_models` is false.
 	AllowedModels []string  `json:"allowed_models"`
 	CreatedAt     time.Time `json:"created_at"`
-	// 建这把 key 的人.
+	// Who created the key.
 	CreatedBy uuid.UUID `json:"created_by"`
-	// 到期时间；null 表示永不过期.
+	// When the key expires. Null means it never expires.
 	ExpiresAt NilDateTime `json:"expires_at"`
 	ID        uuid.UUID   `json:"id"`
-	// 明文的后四位.
+	// The last four characters of the plaintext.
 	LastFour string `json:"last_four"`
-	// 最后一次成功用它转发的时刻，精度约一分钟.
+	// When the key was last used to forward a request successfully, accurate to about a minute.
 	LastUsedAt NilDateTime `json:"last_used_at"`
 	Name       string      `json:"name"`
-	// 明文的前几位，用来在列表里辨认.
+	// The leading characters of the plaintext, by which a key is recognised in a list.
 	Prefix string `json:"prefix"`
-	// True 时只允许 allowed_models 里的模型.
+	// While true, only the models listed in `allowed_models` are permitted.
 	RestrictModels bool                 `json:"restrict_models"`
 	Status         APIKeyResourceStatus `json:"status"`
-	// True 表示这把 key 因项目停服被停，需要项目恢复后才能再用.
+	// True indicates that the key was disabled because its project is suspended, and that the project has
+	// to be restored before the key can be used again.
 	Suspended bool `json:"suspended"`
 }
 
@@ -330,13 +331,13 @@ func (s *BearerAuth) SetRoles(val []string) {
 
 // Ref: #/components/schemas/CreateAPIKeyRequestBody
 type CreateAPIKeyRequestBody struct {
-	// Restrict_models 为 false 时忽略.
+	// Ignored while `restrict_models` is false.
 	AllowedModels OptNilStringArray `json:"allowed_models"`
-	// 到期时间；不填表示永不过期.
+	// When the key expires. Omitted means it never expires.
 	ExpiresAt OptNilDateTime `json:"expires_at"`
-	// 给自己看的名字，比如「CI」「生产」.
+	// A name for the holder's own use, such as CI or Production.
 	Name string `json:"name"`
-	// True 时只允许 allowed_models 里的模型.
+	// While true, only the models listed in `allowed_models` are permitted.
 	RestrictModels OptBool `json:"restrict_models"`
 }
 
@@ -382,9 +383,9 @@ func (s *CreateAPIKeyRequestBody) SetRestrictModels(val OptBool) {
 
 // Ref: #/components/schemas/CursorPageRequestResource
 type CursorPageRequestResource struct {
-	// 这一页的内容.
+	// The items in this page.
 	Items []RequestResource `json:"items"`
-	// 下一页的游标；为空表示已经到底.
+	// The cursor for the next page. Empty on the last page.
 	NextCursor string `json:"next_cursor"`
 }
 
@@ -456,9 +457,35 @@ func (s *Error) SetStatus(val int64) {
 	s.Status = val
 }
 
-type ErrorMeta map[string]jx.Raw
+type ErrorMeta struct {
+	// Present on every response whose `code` is `VALIDATION_FAILED`, and on no other response.
+	Violations      []Violation `json:"violations"`
+	AdditionalProps ErrorMetaAdditional
+}
 
-func (s *ErrorMeta) init() ErrorMeta {
+// GetViolations returns the value of Violations.
+func (s *ErrorMeta) GetViolations() []Violation {
+	return s.Violations
+}
+
+// GetAdditionalProps returns the value of AdditionalProps.
+func (s *ErrorMeta) GetAdditionalProps() ErrorMetaAdditional {
+	return s.AdditionalProps
+}
+
+// SetViolations sets the value of Violations.
+func (s *ErrorMeta) SetViolations(val []Violation) {
+	s.Violations = val
+}
+
+// SetAdditionalProps sets the value of AdditionalProps.
+func (s *ErrorMeta) SetAdditionalProps(val ErrorMetaAdditional) {
+	s.AdditionalProps = val
+}
+
+type ErrorMetaAdditional map[string]jx.Raw
+
+func (s *ErrorMetaAdditional) init() ErrorMetaAdditional {
 	m := *s
 	if m == nil {
 		m = map[string]jx.Raw{}
@@ -493,7 +520,7 @@ func (s *ErrorStatusCode) SetResponse(val Error) {
 	s.Response = val
 }
 
-// 只看这个状态的.
+// Restricts the result to the specified status.
 type GetUsageSummaryStatus string
 
 const (
@@ -556,7 +583,7 @@ func (s *GetUsageSummaryStatus) UnmarshalText(data []byte) error {
 	}
 }
 
-// 只看这个状态的.
+// Restricts the result to the specified status.
 type GetUsageTimelineStatus string
 
 const (
@@ -621,27 +648,28 @@ func (s *GetUsageTimelineStatus) UnmarshalText(data []byte) error {
 
 // Ref: #/components/schemas/IssuedAPIKeyResource
 type IssuedAPIKeyResource struct {
-	// Restrict_models 为 false 时无意义.
+	// Carries no meaning while `restrict_models` is false.
 	AllowedModels []string  `json:"allowed_models"`
 	CreatedAt     time.Time `json:"created_at"`
-	// 建这把 key 的人.
+	// Who created the key.
 	CreatedBy uuid.UUID `json:"created_by"`
-	// 到期时间；null 表示永不过期.
+	// When the key expires. Null means it never expires.
 	ExpiresAt NilDateTime `json:"expires_at"`
 	ID        uuid.UUID   `json:"id"`
-	// 明文的后四位.
+	// The last four characters of the plaintext.
 	LastFour string `json:"last_four"`
-	// 最后一次成功用它转发的时刻，精度约一分钟.
+	// When the key was last used to forward a request successfully, accurate to about a minute.
 	LastUsedAt NilDateTime `json:"last_used_at"`
 	Name       string      `json:"name"`
-	// 明文的前几位，用来在列表里辨认.
+	// The leading characters of the plaintext, by which a key is recognised in a list.
 	Prefix string `json:"prefix"`
-	// True 时只允许 allowed_models 里的模型.
+	// While true, only the models listed in `allowed_models` are permitted.
 	RestrictModels bool `json:"restrict_models"`
-	// 完整的 key，只在这一次响应里出现，请立即保存.
+	// The complete key, returned in this response only. Store it immediately.
 	Secret string                     `json:"secret"`
 	Status IssuedAPIKeyResourceStatus `json:"status"`
-	// True 表示这把 key 因项目停服被停，需要项目恢复后才能再用.
+	// True indicates that the key was disabled because its project is suspended, and that the project has
+	// to be restored before the key can be used again.
 	Suspended bool `json:"suspended"`
 }
 
@@ -825,13 +853,13 @@ func (s *IssuedAPIKeyResourceStatus) UnmarshalText(data []byte) error {
 
 // Ref: #/components/schemas/LengthAwarePageAPIKeyResource
 type LengthAwarePageAPIKeyResource struct {
-	// 这一页的内容.
+	// The items in this page.
 	Items []APIKeyResource `json:"items"`
-	// 这一页最多几条，回显请求里的值.
+	// Maximum number of items in this page, echoing the request.
 	Limit int64 `json:"limit"`
-	// 跳过了多少条，回显请求里的值.
+	// Number of items skipped, echoing the request.
 	Offset int64 `json:"offset"`
-	// 命中的总条数，不只是这一页.
+	// Total number of matches, not only this page.
 	Total int64 `json:"total"`
 }
 
@@ -875,7 +903,7 @@ func (s *LengthAwarePageAPIKeyResource) SetTotal(val int64) {
 	s.Total = val
 }
 
-// 只看这个状态的；不传表示全部.
+// Restricts the result to the specified status. Every status is returned while this is absent.
 type ListAPIKeysStatus string
 
 const (
@@ -924,7 +952,7 @@ func (s *ListAPIKeysStatus) UnmarshalText(data []byte) error {
 	}
 }
 
-// 只看这个状态的.
+// Restricts the result to the specified status.
 type ListRequestsStatus string
 
 const (
@@ -987,7 +1015,7 @@ func (s *ListRequestsStatus) UnmarshalText(data []byte) error {
 	}
 }
 
-// 只看这个状态的.
+// Restricts the result to the specified status.
 type ListUsageByAPIKeyStatus string
 
 const (
@@ -1050,7 +1078,7 @@ func (s *ListUsageByAPIKeyStatus) UnmarshalText(data []byte) error {
 	}
 }
 
-// 只看这个状态的.
+// Restricts the result to the specified status.
 type ListUsageByModelStatus string
 
 const (
@@ -1130,16 +1158,16 @@ func (s *ModelListResponseBody) SetItems(val []ModelResource) {
 
 // Ref: #/components/schemas/ModelResource
 type ModelResource struct {
-	// 上下文窗口，仅供客户端提示，服务端不据此截断.
+	// The context window. Advisory only; the server does not truncate on its basis.
 	ContextLength int64  `json:"context_length"`
 	DisplayName   string `json:"display_name"`
-	// 同一系列聚在一起用，如 claude、gpt、gemini.
+	// Groups the models of one family together, such as claude, gpt or gemini.
 	Family string `json:"family"`
-	// 请求体里 model 字段要填的那个字符串.
+	// The string to send in the `model` field of the request body.
 	ID string `json:"id"`
-	// 最大输出，仅供客户端提示.
+	// The maximum output length. Advisory only.
 	MaxOutputTokens int64 `json:"max_output_tokens"`
-	// Reasoning_effort 能填的值；空表示不支持.
+	// The values accepted for `reasoning_effort`. Empty means it is not supported.
 	ReasoningTiers    []string            `json:"reasoning_tiers"`
 	Status            ModelResourceStatus `json:"status"`
 	SupportsReasoning bool                `json:"supports_reasoning"`
@@ -2171,16 +2199,17 @@ func (o OptString) Or(d string) string {
 // Ref: #/components/schemas/RequestResource
 type RequestResource struct {
 	APIKeyID uuid.UUID `json:"api_key_id"`
-	// 命中上游前缀缓存的部分，比普通输入便宜一个数量级.
+	// The portion served from the upstream prefix cache, which costs an order of magnitude less than
+	// ordinary input.
 	CacheReadTokens  int64 `json:"cache_read_tokens"`
 	CacheWriteTokens int64 `json:"cache_write_tokens"`
-	// 失败时的错误码；成功时为空.
+	// The error code on failure. Empty on success.
 	ErrorCode    string      `json:"error_code"`
 	FinishedAt   NilDateTime `json:"finished_at"`
 	FirstTokenAt NilDateTime `json:"first_token_at"`
 	ID           uuid.UUID   `json:"id"`
 	InputTokens  int64       `json:"input_tokens"`
-	// 请求里写的模型名.
+	// The model named in the request.
 	ModelID         string                `json:"model_id"`
 	OutputTokens    int64                 `json:"output_tokens"`
 	ReasoningTokens int64                 `json:"reasoning_tokens"`
@@ -2188,11 +2217,12 @@ type RequestResource struct {
 	StartedAt       time.Time             `json:"started_at"`
 	Status          RequestResourceStatus `json:"status"`
 	Stream          bool                  `json:"stream"`
-	// 上游那边的请求 id，报障时提供给我们.
+	// The id of the request on the upstream side. Quote it when reporting a problem.
 	UpstreamRequestID string `json:"upstream_request_id"`
-	// 上游返回的 HTTP 状态码；0 表示没打到上游.
+	// The HTTP status returned upstream. 0 indicates that the request never reached it.
 	UpstreamStatus int64 `json:"upstream_status"`
-	// Upstream 是上游报的，estimated 是我们按字符类估的.
+	// Upstream means the figures were reported by the provider; estimated means they were derived from the
+	// character classes of the payload.
 	UsageSource RequestResourceUsageSource `json:"usage_source"`
 }
 
@@ -2438,7 +2468,8 @@ func (s *RequestResourceStatus) UnmarshalText(data []byte) error {
 	}
 }
 
-// Upstream 是上游报的，estimated 是我们按字符类估的.
+// Upstream means the figures were reported by the provider; estimated means they were derived from the
+// character classes of the payload.
 type RequestResourceUsageSource string
 
 const (
@@ -2560,9 +2591,9 @@ func (s *TotalsResource) SetRequests(val int64) {
 // Ref: #/components/schemas/UpdateAPIKeyRequestBody
 type UpdateAPIKeyRequestBody struct {
 	AllowedModels OptNilStringArray `json:"allowed_models"`
-	// True 表示改成永不过期.
+	// True removes the expiry.
 	ClearExpiry OptBool `json:"clear_expiry"`
-	// 改到期时间；要改成永不过期请用 clear_expiry.
+	// Sets the expiry. To remove it, use `clear_expiry`.
 	ExpiresAt      OptNilDateTime `json:"expires_at"`
 	Name           OptNilString   `json:"name"`
 	RestrictModels OptNilBool     `json:"restrict_models"`
@@ -2622,13 +2653,13 @@ func (s *UpdateAPIKeyRequestBody) SetRestrictModels(val OptNilBool) {
 type UsageBucketResource struct {
 	CacheReadTokens  int64 `json:"cache_read_tokens"`
 	CacheWriteTokens int64 `json:"cache_write_tokens"`
-	// 这一段的起点，含.
+	// Start of the bucket, inclusive.
 	From            time.Time `json:"from"`
 	InputTokens     int64     `json:"input_tokens"`
 	OutputTokens    int64     `json:"output_tokens"`
 	ReasoningTokens int64     `json:"reasoning_tokens"`
 	Requests        int64     `json:"requests"`
-	// 这一段的终点，不含.
+	// End of the bucket, exclusive.
 	To time.Time `json:"to"`
 }
 
@@ -2725,4 +2756,48 @@ func (s *UsageTimelineResponseBody) GetItems() []UsageBucketResource {
 // SetItems sets the value of Items.
 func (s *UsageTimelineResponseBody) SetItems(val []UsageBucketResource) {
 	s.Items = val
+}
+
+// A single mismatch between the request and the contract.
+//
+// Use `field` to locate the input, `rule` to decide what to tell the user, and `reason` only for
+// diagnostics.
+// Ref: #/components/schemas/Violation
+type Violation struct {
+	// Dot-separated path to the field, such as `name` or `schedule.0.start_time_seconds`.
+	Field string `json:"field"`
+	// The JSON Schema keyword that failed, such as `minLength`, `minimum` or `pattern`.
+	Rule string `json:"rule"`
+	// The validator's own wording, in English. Intended for diagnostics; do not display it to end users.
+	Reason OptString `json:"reason"`
+}
+
+// GetField returns the value of Field.
+func (s *Violation) GetField() string {
+	return s.Field
+}
+
+// GetRule returns the value of Rule.
+func (s *Violation) GetRule() string {
+	return s.Rule
+}
+
+// GetReason returns the value of Reason.
+func (s *Violation) GetReason() OptString {
+	return s.Reason
+}
+
+// SetField sets the value of Field.
+func (s *Violation) SetField(val string) {
+	s.Field = val
+}
+
+// SetRule sets the value of Rule.
+func (s *Violation) SetRule(val string) {
+	s.Rule = val
+}
+
+// SetReason sets the value of Reason.
+func (s *Violation) SetReason(val OptString) {
+	s.Reason = val
 }

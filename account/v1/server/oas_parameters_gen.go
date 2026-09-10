@@ -80,12 +80,12 @@ func decodeAcceptInvitationParams(args [1]string, argsEscaped bool, r *http.Requ
 	return params, nil
 }
 
-// ExchangeProjectTokenParams is parameters of exchange-project-token operation.
-type ExchangeProjectTokenParams struct {
+// CreateScopedTokenParams is parameters of create-scoped-token operation.
+type CreateScopedTokenParams struct {
 	ProjectId uuid.UUID
 }
 
-func unpackExchangeProjectTokenParams(packed middleware.Parameters) (params ExchangeProjectTokenParams) {
+func unpackCreateScopedTokenParams(packed middleware.Parameters) (params CreateScopedTokenParams) {
 	{
 		key := middleware.ParameterKey{
 			Name: "projectId",
@@ -96,7 +96,7 @@ func unpackExchangeProjectTokenParams(packed middleware.Parameters) (params Exch
 	return params
 }
 
-func decodeExchangeProjectTokenParams(args [1]string, argsEscaped bool, r *http.Request) (params ExchangeProjectTokenParams, _ error) {
+func decodeCreateScopedTokenParams(args [1]string, argsEscaped bool, r *http.Request) (params CreateScopedTokenParams, _ error) {
 	// Decode path: projectId.
 	if err := func() error {
 		param := args[0]
@@ -147,9 +147,9 @@ func decodeExchangeProjectTokenParams(args [1]string, argsEscaped bool, r *http.
 
 // ListMyInvitationsParams is parameters of list-my-invitations operation.
 type ListMyInvitationsParams struct {
-	// 这一页最多返回多少条.
+	// Maximum number of items in this page.
 	Limit OptInt64 `json:",omitempty,omitzero"`
-	// 跳过多少条。要翻得更深请改用游标翻页的接口.
+	// Number of items to skip. Use the cursor-paged endpoint to page deeper.
 	Offset OptInt64 `json:",omitempty,omitzero"`
 }
 
@@ -319,13 +319,13 @@ func decodeListMyInvitationsParams(args [0]string, argsEscaped bool, r *http.Req
 
 // ListProjectsParams is parameters of list-projects operation.
 type ListProjectsParams struct {
-	// 这一页最多返回多少条.
+	// Maximum number of items in this page.
 	Limit OptInt64 `json:",omitempty,omitzero"`
-	// 跳过多少条。要翻得更深请改用游标翻页的接口.
+	// Number of items to skip. Use the cursor-paged endpoint to page deeper.
 	Offset OptInt64 `json:",omitempty,omitzero"`
-	// 按名称或描述模糊匹配.
+	// Matches against name or description.
 	Keyword OptString `json:",omitempty,omitzero"`
-	// 按对外状态过滤。不传时不返回已删除的项目.
+	// Filters by external status. Deleted projects are excluded while this is absent.
 	Status OptListProjectsStatus `json:",omitempty,omitzero"`
 }
 
@@ -637,7 +637,7 @@ func decodeListProjectsParams(args [0]string, argsEscaped bool, r *http.Request)
 
 // PreviewInvitationByTokenParams is parameters of preview-invitation-by-token operation.
 type PreviewInvitationByTokenParams struct {
-	// 邀请链接里那串令牌.
+	// The token carried by the invitation link.
 	Token string
 }
 

@@ -363,15 +363,15 @@ func decodeGetRequestParams(args [1]string, argsEscaped bool, r *http.Request) (
 
 // GetUsageSummaryParams is parameters of get-usage-summary operation.
 type GetUsageSummaryParams struct {
-	// 起点，含。RFC 3339，带时区偏移.
+	// Start of the range, inclusive. RFC 3339, carrying a timezone offset.
 	From time.Time
-	// 终点，不含。RFC 3339，带时区偏移.
+	// End of the range, exclusive. RFC 3339, carrying a timezone offset.
 	To time.Time
-	// 只看这个模型.
+	// Restricts the result to the specified model.
 	ModelID OptString `json:",omitempty,omitzero"`
-	// 只看这把 key.
+	// Restricts the result to the specified API key.
 	APIKeyID OptString `json:",omitempty,omitzero"`
-	// 只看这个状态的.
+	// Restricts the result to the specified status.
 	Status OptGetUsageSummaryStatus `json:",omitempty,omitzero"`
 }
 
@@ -664,17 +664,18 @@ func decodeGetUsageSummaryParams(args [0]string, argsEscaped bool, r *http.Reque
 
 // GetUsageTimelineParams is parameters of get-usage-timeline operation.
 type GetUsageTimelineParams struct {
-	// 起点，含。RFC 3339，带时区偏移.
+	// Start of the range, inclusive. RFC 3339, carrying a timezone offset.
 	From time.Time
-	// 终点，不含。RFC 3339，带时区偏移.
+	// End of the range, exclusive. RFC 3339, carrying a timezone offset.
 	To time.Time
-	// 只看这个模型.
+	// Restricts the result to the specified model.
 	ModelID OptString `json:",omitempty,omitzero"`
-	// 只看这把 key.
+	// Restricts the result to the specified API key.
 	APIKeyID OptString `json:",omitempty,omitzero"`
-	// 只看这个状态的.
+	// Restricts the result to the specified status.
 	Status OptGetUsageTimelineStatus `json:",omitempty,omitzero"`
-	// 每段多长，Go 的时长写法，如 1h、24h。段数上限 100.
+	// The length of each bucket, written as a duration such as 1h or 24h. The number of buckets is limited
+	// to 100.
 	Bucket OptString `json:",omitempty,omitzero"`
 }
 
@@ -1049,11 +1050,11 @@ func decodeGetUsageTimelineParams(args [0]string, argsEscaped bool, r *http.Requ
 
 // ListAPIKeysParams is parameters of list-api-keys operation.
 type ListAPIKeysParams struct {
-	// 这一页最多返回多少条.
+	// Maximum number of items in this page.
 	Limit OptInt64 `json:",omitempty,omitzero"`
-	// 跳过多少条。要翻得更深请改用游标翻页的接口.
+	// Number of items to skip. Use the cursor-paged endpoint to page deeper.
 	Offset OptInt64 `json:",omitempty,omitzero"`
-	// 只看这个状态的；不传表示全部.
+	// Restricts the result to the specified status. Every status is returned while this is absent.
 	Status OptListAPIKeysStatus `json:",omitempty,omitzero"`
 }
 
@@ -1288,19 +1289,19 @@ func decodeListAPIKeysParams(args [0]string, argsEscaped bool, r *http.Request) 
 
 // ListRequestsParams is parameters of list-requests operation.
 type ListRequestsParams struct {
-	// 起点，含。RFC 3339，带时区偏移.
+	// Start of the range, inclusive. RFC 3339, carrying a timezone offset.
 	From time.Time
-	// 终点，不含。RFC 3339，带时区偏移.
+	// End of the range, exclusive. RFC 3339, carrying a timezone offset.
 	To time.Time
-	// 只看这个模型.
+	// Restricts the result to the specified model.
 	ModelID OptString `json:",omitempty,omitzero"`
-	// 只看这把 key.
+	// Restricts the result to the specified API key.
 	APIKeyID OptString `json:",omitempty,omitzero"`
-	// 只看这个状态的.
+	// Restricts the result to the specified status.
 	Status OptListRequestsStatus `json:",omitempty,omitzero"`
-	// 这一页最多返回多少条.
+	// Maximum number of items in this page.
 	Limit OptInt64 `json:",omitempty,omitzero"`
-	// 上一页返回的 next_cursor；首页不填.
+	// The `next_cursor` returned by the previous page. Omitted on the first page.
 	Cursor OptString `json:",omitempty,omitzero"`
 }
 
@@ -1750,15 +1751,15 @@ func decodeListRequestsParams(args [0]string, argsEscaped bool, r *http.Request)
 
 // ListUsageByAPIKeyParams is parameters of list-usage-by-api-key operation.
 type ListUsageByAPIKeyParams struct {
-	// 起点，含。RFC 3339，带时区偏移.
+	// Start of the range, inclusive. RFC 3339, carrying a timezone offset.
 	From time.Time
-	// 终点，不含。RFC 3339，带时区偏移.
+	// End of the range, exclusive. RFC 3339, carrying a timezone offset.
 	To time.Time
-	// 只看这个模型.
+	// Restricts the result to the specified model.
 	ModelID OptString `json:",omitempty,omitzero"`
-	// 只看这把 key.
+	// Restricts the result to the specified API key.
 	APIKeyID OptString `json:",omitempty,omitzero"`
-	// 只看这个状态的.
+	// Restricts the result to the specified status.
 	Status OptListUsageByAPIKeyStatus `json:",omitempty,omitzero"`
 }
 
@@ -2051,15 +2052,15 @@ func decodeListUsageByAPIKeyParams(args [0]string, argsEscaped bool, r *http.Req
 
 // ListUsageByModelParams is parameters of list-usage-by-model operation.
 type ListUsageByModelParams struct {
-	// 起点，含。RFC 3339，带时区偏移.
+	// Start of the range, inclusive. RFC 3339, carrying a timezone offset.
 	From time.Time
-	// 终点，不含。RFC 3339，带时区偏移.
+	// End of the range, exclusive. RFC 3339, carrying a timezone offset.
 	To time.Time
-	// 只看这个模型.
+	// Restricts the result to the specified model.
 	ModelID OptString `json:",omitempty,omitzero"`
-	// 只看这把 key.
+	// Restricts the result to the specified API key.
 	APIKeyID OptString `json:",omitempty,omitzero"`
-	// 只看这个状态的.
+	// Restricts the result to the specified status.
 	Status OptListUsageByModelStatus `json:",omitempty,omitzero"`
 }
 

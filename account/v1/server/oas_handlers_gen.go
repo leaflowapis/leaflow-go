@@ -35,11 +35,11 @@ func (c *codeRecorder) Unwrap() http.ResponseWriter {
 
 // handleAcceptAgreementsRequest handles accept-agreements operation.
 //
-// 条款改版之后用它重新同意，`GET /api/v1/me` 的 `pending_agreements`
-// 非空时就该调。
+// Call this once a new version is published, which is whenever `pending_agreements` on
+// `GET /account/v1/me` is not empty.
 //
-// 只收当前生效的版本，签旧版答
-// 409。重复提交同一版不报错，第一次那条记录会留着。.
+// Only the version currently in force is accepted; consenting to an earlier one answers 409.
+// Submitting the same version twice is not an error and leaves the first record in place.
 //
 // POST /account/v1/me/consents
 func (s *Server) handleAcceptAgreementsRequest(args [0]string, argsEscaped bool, w http.ResponseWriter, r *http.Request) {
@@ -182,7 +182,7 @@ func (s *Server) handleAcceptAgreementsRequest(args [0]string, argsEscaped bool,
 		mreq := middleware.Request{
 			Context:          ctx,
 			OperationName:    AcceptAgreementsOperation,
-			OperationSummary: "同意条款",
+			OperationSummary: "Consent to the current agreements",
 			OperationID:      "accept-agreements",
 			Body:             request,
 			RawBody:          rawBody,
@@ -239,8 +239,7 @@ func (s *Server) handleAcceptAgreementsRequest(args [0]string, argsEscaped bool,
 
 // handleAcceptInvitationRequest handles accept-invitation operation.
 //
-// 不需要 token：token
-// 证明的是「你就是这份要约寄给的那个人」，而当前账号的邮箱对得上这份要约，证明的是同一件事。.
+// No token is required; the invitation is addressed to the email address of the current account.
 //
 // POST /account/v1/me/invitations/{invitationId}/accept
 func (s *Server) handleAcceptInvitationRequest(args [1]string, argsEscaped bool, w http.ResponseWriter, r *http.Request) {
@@ -378,7 +377,7 @@ func (s *Server) handleAcceptInvitationRequest(args [1]string, argsEscaped bool,
 		mreq := middleware.Request{
 			Context:          ctx,
 			OperationName:    AcceptInvitationOperation,
-			OperationSummary: "接受一份列在我名下的要约",
+			OperationSummary: "Accept an invitation listed against the caller",
 			OperationID:      "accept-invitation",
 			Body:             nil,
 			RawBody:          rawBody,
@@ -440,9 +439,7 @@ func (s *Server) handleAcceptInvitationRequest(args [1]string, argsEscaped bool,
 
 // handleAcceptInvitationByTokenRequest handles accept-invitation-by-token operation.
 //
-// Token
-// 对不上和这份要约已经不作数了是同一个回答：持有者对这两种情况能做的事完全一样，分开报会把这个接口变成一个可以拿来试
-// token 的探针。.
+// A token that does not match, and an invitation that no longer stands, answer the same way.
 //
 // POST /account/v1/me/invitations/accept
 func (s *Server) handleAcceptInvitationByTokenRequest(args [0]string, argsEscaped bool, w http.ResponseWriter, r *http.Request) {
@@ -585,7 +582,7 @@ func (s *Server) handleAcceptInvitationByTokenRequest(args [0]string, argsEscape
 		mreq := middleware.Request{
 			Context:          ctx,
 			OperationName:    AcceptInvitationByTokenOperation,
-			OperationSummary: "顺着邀请链接接受",
+			OperationSummary: "Accept an invitation by its token",
 			OperationID:      "accept-invitation-by-token",
 			Body:             request,
 			RawBody:          rawBody,
@@ -642,8 +639,8 @@ func (s *Server) handleAcceptInvitationByTokenRequest(args [0]string, argsEscape
 
 // handleCreateProjectRequest handles create-project operation.
 //
-// 建的人就是所有者。项目会连带预置 OWNER、ADMIN
-// 两个内置角色和一个空权限的 member 角色。.
+// The caller becomes its owner. The project is created with the built-in `OWNER` and `ADMIN` roles and
+// a `member` role carrying no permissions.
 //
 // POST /account/v1/projects
 func (s *Server) handleCreateProjectRequest(args [0]string, argsEscaped bool, w http.ResponseWriter, r *http.Request) {
@@ -786,7 +783,7 @@ func (s *Server) handleCreateProjectRequest(args [0]string, argsEscaped bool, w 
 		mreq := middleware.Request{
 			Context:          ctx,
 			OperationName:    CreateProjectOperation,
-			OperationSummary: "建一个项目",
+			OperationSummary: "Create a project",
 			OperationID:      "create-project",
 			Body:             request,
 			RawBody:          rawBody,
@@ -841,33 +838,37 @@ func (s *Server) handleCreateProjectRequest(args [0]string, argsEscaped bool, w 
 	}
 }
 
-// handleExchangeProjectTokenRequest handles exchange-project-token operation.
+// handleCreateScopedTokenRequest handles create-scoped-token operation.
 //
-// 选定一个项目后，用账号令牌换取该项目的令牌。
+// Once a project has been chosen, exchange the access token for a scoped token for that project.
 //
-// 只接受 auth.leaflow.net 签发的账号令牌，不接受项目令牌。
-// 项目令牌过期后，先在 auth.leaflow.net 续期账号令牌，再重新调用这个接口。
+// Only an access token issued by auth.leaflow.net is accepted; a scoped token is not. Once a scoped
+// token has expired, obtain a fresh access token at auth.leaflow.net and call this endpoint again.
 //
-// 换取时会确认账号可用、项目存在，且调用者是该项目的成员。非成员无法换取。
+// The exchange confirms that the account is usable, that the project exists, and that the caller is a
+// member of it. A caller who is not a member obtains no token.
 //
-// 令牌只表明身份（用户与项目），不包含权限：权限在每次请求时实时判定，所以角色调整立即生效，不必等待令牌过期。
+// A scoped token states identity only — the user and the project — and carries no permissions.
+// Permissions are evaluated on every request, so a change of role takes effect immediately rather than
+// at the next expiry.
 //
-// 项目处于停用、封禁或删除中时仍可换取令牌：这些状态限制的是写入，不影响查看项目当前状况。.
+// A project that is suspended, banned or being deleted still issues tokens; those states restrict
+// writes, and the project remains readable.
 //
-// POST /account/v1/projects/{projectId}/token
-func (s *Server) handleExchangeProjectTokenRequest(args [1]string, argsEscaped bool, w http.ResponseWriter, r *http.Request) {
+// POST /account/v1/projects/{projectId}/scoped-tokens
+func (s *Server) handleCreateScopedTokenRequest(args [1]string, argsEscaped bool, w http.ResponseWriter, r *http.Request) {
 	statusWriter := &codeRecorder{ResponseWriter: w}
 	w = statusWriter
 	otelAttrs := []attribute.KeyValue{
-		otelogen.OperationID("exchange-project-token"),
+		otelogen.OperationID("create-scoped-token"),
 		semconv.HTTPRequestMethodKey.String("POST"),
-		semconv.HTTPRouteKey.String("/account/v1/projects/{projectId}/token"),
+		semconv.HTTPRouteKey.String("/account/v1/projects/{projectId}/scoped-tokens"),
 	}
 	// Add attributes from config.
 	otelAttrs = append(otelAttrs, s.cfg.Attributes...)
 
 	// Start a span for this request.
-	ctx, span := s.cfg.Tracer.Start(r.Context(), ExchangeProjectTokenOperation,
+	ctx, span := s.cfg.Tracer.Start(r.Context(), CreateScopedTokenOperation,
 		trace.WithAttributes(otelAttrs...),
 		serverSpanKind,
 	)
@@ -922,15 +923,15 @@ func (s *Server) handleExchangeProjectTokenRequest(args [1]string, argsEscaped b
 		}
 		err          error
 		opErrContext = ogenerrors.OperationContext{
-			Name: ExchangeProjectTokenOperation,
-			ID:   "exchange-project-token",
+			Name: CreateScopedTokenOperation,
+			ID:   "create-scoped-token",
 		}
 	)
 	{
 		type bitset = [1]uint8
 		var satisfied bitset
 		{
-			sctx, ok, err := s.securityBearerAuth(ctx, ExchangeProjectTokenOperation, r)
+			sctx, ok, err := s.securityBearerAuth(ctx, CreateScopedTokenOperation, r)
 			if err != nil {
 				err = &ogenerrors.SecurityError{
 					OperationContext: opErrContext,
@@ -972,7 +973,7 @@ func (s *Server) handleExchangeProjectTokenRequest(args [1]string, argsEscaped b
 			return
 		}
 	}
-	params, err := decodeExchangeProjectTokenParams(args, argsEscaped, r)
+	params, err := decodeCreateScopedTokenParams(args, argsEscaped, r)
 	if err != nil {
 		err = &ogenerrors.DecodeParamsError{
 			OperationContext: opErrContext,
@@ -985,13 +986,13 @@ func (s *Server) handleExchangeProjectTokenRequest(args [1]string, argsEscaped b
 
 	var rawBody []byte
 
-	var response *ProjectTokenResponseBody
+	var response *ScopedTokenResponseBody
 	if m := s.cfg.Middleware; m != nil {
 		mreq := middleware.Request{
 			Context:          ctx,
-			OperationName:    ExchangeProjectTokenOperation,
-			OperationSummary: "换一张项目令牌",
-			OperationID:      "exchange-project-token",
+			OperationName:    CreateScopedTokenOperation,
+			OperationSummary: "Exchange the access token for a scoped token",
+			OperationID:      "create-scoped-token",
 			Body:             nil,
 			RawBody:          rawBody,
 			Params: middleware.Parameters{
@@ -1005,8 +1006,8 @@ func (s *Server) handleExchangeProjectTokenRequest(args [1]string, argsEscaped b
 
 		type (
 			Request  = struct{}
-			Params   = ExchangeProjectTokenParams
-			Response = *ProjectTokenResponseBody
+			Params   = CreateScopedTokenParams
+			Response = *ScopedTokenResponseBody
 		)
 		response, err = middleware.HookMiddleware[
 			Request,
@@ -1015,14 +1016,14 @@ func (s *Server) handleExchangeProjectTokenRequest(args [1]string, argsEscaped b
 		](
 			m,
 			mreq,
-			unpackExchangeProjectTokenParams,
+			unpackCreateScopedTokenParams,
 			func(ctx context.Context, request Request, params Params) (response Response, err error) {
-				response, err = s.h.ExchangeProjectToken(ctx, params)
+				response, err = s.h.CreateScopedToken(ctx, params)
 				return response, err
 			},
 		)
 	} else {
-		response, err = s.h.ExchangeProjectToken(ctx, params)
+		response, err = s.h.CreateScopedToken(ctx, params)
 	}
 	if err != nil {
 		if errRes, ok := errors.Into[*ErrorStatusCode](err); ok {
@@ -1041,7 +1042,7 @@ func (s *Server) handleExchangeProjectTokenRequest(args [1]string, argsEscaped b
 		return
 	}
 
-	if err := encodeExchangeProjectTokenResponse(response, w, span); err != nil {
+	if err := encodeCreateScopedTokenResponse(response, w, span); err != nil {
 		defer recordError("EncodeResponse", err)
 		if !errors.Is(err, ht.ErrInternalServerErrorResponse) {
 			s.cfg.ErrorHandler(ctx, w, r, err)
@@ -1052,8 +1053,8 @@ func (s *Server) handleExchangeProjectTokenRequest(args [1]string, argsEscaped b
 
 // handleGetAccountRequest handles get-account operation.
 //
-// `pending_agreements` 是还没同意的文件，非空就要先引导用户同意，再调
-// `POST /api/v1/me/consents`。.
+// `pending_agreements` holds the agreements not yet consented to. While it is not empty, obtain
+// consent and call `POST /account/v1/me/consents`.
 //
 // GET /account/v1/me
 func (s *Server) handleGetAccountRequest(args [0]string, argsEscaped bool, w http.ResponseWriter, r *http.Request) {
@@ -1181,7 +1182,7 @@ func (s *Server) handleGetAccountRequest(args [0]string, argsEscaped bool, w htt
 		mreq := middleware.Request{
 			Context:          ctx,
 			OperationName:    GetAccountOperation,
-			OperationSummary: "查看当前账号",
+			OperationSummary: "Get the current account",
 			OperationID:      "get-account",
 			Body:             nil,
 			RawBody:          rawBody,
@@ -1238,7 +1239,8 @@ func (s *Server) handleGetAccountRequest(args [0]string, argsEscaped bool, w htt
 
 // handleGetIdentityVerificationRequest handles get-identity-verification operation.
 //
-// 没交过材料时答 UNVERIFIED，不是 404。姓名和证件号不会出现在任何响应里。.
+// The status is `UNVERIFIED` rather than 404 when nothing has been submitted. The legal name and the
+// document number appear in no response.
 //
 // GET /account/v1/me/identity-verification
 func (s *Server) handleGetIdentityVerificationRequest(args [0]string, argsEscaped bool, w http.ResponseWriter, r *http.Request) {
@@ -1366,7 +1368,7 @@ func (s *Server) handleGetIdentityVerificationRequest(args [0]string, argsEscape
 		mreq := middleware.Request{
 			Context:          ctx,
 			OperationName:    GetIdentityVerificationOperation,
-			OperationSummary: "查看实名核验状态",
+			OperationSummary: "Get identity verification status",
 			OperationID:      "get-identity-verification",
 			Body:             nil,
 			RawBody:          rawBody,
@@ -1423,13 +1425,14 @@ func (s *Server) handleGetIdentityVerificationRequest(args [0]string, argsEscape
 
 // handleGetSettingsRequest handles get-settings operation.
 //
-// 注册页和「新建项目」按钮用它决定画什么。不需要令牌。
+// No token required.
 //
-// `registration_mode` 不是 `OPEN` 时 `POST /account/v1/register` 会答 403：`CLOSED`
-// 是整个关着，`INVITE_ONLY` 是只收手上有项目邀请的邮箱。`project_creation_mode`
-// 同理，`VERIFIED_ONLY` 要先过实名。
+// While `registration_mode` is not `OPEN`, `POST /account/v1/register` answers 403: `CLOSED` refuses
+// everyone, and `INVITE_ONLY` accepts only an email address holding a project invitation.
+// `project_creation_mode` behaves the same way, and `VERIFIED_ONLY` requires identity verification to
+// have completed.
 //
-// 两条配额是 0 表示不限。它们只用来提前提示，真正的判定在写入那一刻。.
+// Both quotas are `0` when unlimited. The decision itself is made at the moment of writing.
 //
 // GET /account/v1/settings
 func (s *Server) handleGetSettingsRequest(args [0]string, argsEscaped bool, w http.ResponseWriter, r *http.Request) {
@@ -1507,7 +1510,7 @@ func (s *Server) handleGetSettingsRequest(args [0]string, argsEscaped bool, w ht
 		mreq := middleware.Request{
 			Context:          ctx,
 			OperationName:    GetSettingsOperation,
-			OperationSummary: "这个平台现在收不收人",
+			OperationSummary: "Get registration and project creation settings",
 			OperationID:      "get-settings",
 			Body:             nil,
 			RawBody:          rawBody,
@@ -1564,11 +1567,10 @@ func (s *Server) handleGetSettingsRequest(args [0]string, argsEscaped bool, w ht
 
 // handleListAgreementsRequest handles list-agreements operation.
 //
-// 注册页显示它，用户同意之后把每一项的 `type` 和 `version` 原样回传给
-// `POST /api/v1/register`。
+// No token required. Send the `type` and `version` of each one back unchanged to
+// `POST /account/v1/register`.
 //
-// 不需要令牌。还没有任何文件生效时返回空数组，那时注册不需要提交
-// `consents`。.
+// The array is empty while no agreement is in force, and registration then takes no `consents`.
 //
 // GET /account/v1/agreements
 func (s *Server) handleListAgreementsRequest(args [0]string, argsEscaped bool, w http.ResponseWriter, r *http.Request) {
@@ -1646,7 +1648,7 @@ func (s *Server) handleListAgreementsRequest(args [0]string, argsEscaped bool, w
 		mreq := middleware.Request{
 			Context:          ctx,
 			OperationName:    ListAgreementsOperation,
-			OperationSummary: "列出注册必须同意的文件",
+			OperationSummary: "List the agreements registration requires",
 			OperationID:      "list-agreements",
 			Body:             nil,
 			RawBody:          rawBody,
@@ -1703,7 +1705,7 @@ func (s *Server) handleListAgreementsRequest(args [0]string, argsEscaped bool, w
 
 // handleListConsentsRequest handles list-consents operation.
 //
-// 全部记录，最新的在前，包括已经不是当前版本的那些。.
+// Every record, most recent first, including versions that are no longer current.
 //
 // GET /account/v1/me/consents
 func (s *Server) handleListConsentsRequest(args [0]string, argsEscaped bool, w http.ResponseWriter, r *http.Request) {
@@ -1831,7 +1833,7 @@ func (s *Server) handleListConsentsRequest(args [0]string, argsEscaped bool, w h
 		mreq := middleware.Request{
 			Context:          ctx,
 			OperationName:    ListConsentsOperation,
-			OperationSummary: "列出我同意过的文件",
+			OperationSummary: "List the agreements the caller has consented to",
 			OperationID:      "list-consents",
 			Body:             nil,
 			RawBody:          rawBody,
@@ -1888,13 +1890,14 @@ func (s *Server) handleListConsentsRequest(args [0]string, argsEscaped bool, w h
 
 // handleListLocalesRequest handles list-locales operation.
 //
-// 免认证：注册页在还没有账号的时候就要画出这两个下拉框。
-// 国家名和排序都跟着 `Accept-Language` 走——一个英文用户看到的是 China
-// 而不是「中国」，
-// 而顺序按那种语言自己的规则（中文按拼音，英文按字母），不是按码点。头缺失时用简体中文。
-// 清单来自 CLDR，不是我们自己维护的一份：ISO 3166
-// 每年都改，而抄下来的那份不会跟着改。
-// 已经退役的代码（苏联、南斯拉夫）和不是地方的代码（欧盟、联合国）都不在里面。.
+// No token required: the registration page renders both lists before an account exists.
+//
+// Country names and their order follow `Accept-Language`. A name is rendered in the requested language
+// and the list is ordered by the rules of that language rather than by code point. Simplified Chinese
+// applies when the header is absent.
+//
+// Retired codes such as the Soviet Union and Yugoslavia, and codes that denote no country such as the
+// European Union, are not listed.
 //
 // GET /account/v1/locales
 func (s *Server) handleListLocalesRequest(args [0]string, argsEscaped bool, w http.ResponseWriter, r *http.Request) {
@@ -1972,7 +1975,7 @@ func (s *Server) handleListLocalesRequest(args [0]string, argsEscaped bool, w ht
 		mreq := middleware.Request{
 			Context:          ctx,
 			OperationName:    ListLocalesOperation,
-			OperationSummary: "注册页要用的国家/地区和语言清单",
+			OperationSummary: "List countries and languages for registration",
 			OperationID:      "list-locales",
 			Body:             nil,
 			RawBody:          rawBody,
@@ -2029,7 +2032,7 @@ func (s *Server) handleListLocalesRequest(args [0]string, argsEscaped bool, w ht
 
 // handleListMyInvitationsRequest handles list-my-invitations operation.
 //
-// 按当前账号的邮箱查，因为要约是寄给一个地址的——被邀请的人当时可能还没注册。.
+// Matched against the email address of the current account.
 //
 // GET /account/v1/me/invitations
 func (s *Server) handleListMyInvitationsRequest(args [0]string, argsEscaped bool, w http.ResponseWriter, r *http.Request) {
@@ -2167,7 +2170,7 @@ func (s *Server) handleListMyInvitationsRequest(args [0]string, argsEscaped bool
 		mreq := middleware.Request{
 			Context:          ctx,
 			OperationName:    ListMyInvitationsOperation,
-			OperationSummary: "列出寄给我的要约",
+			OperationSummary: "List invitations addressed to the caller",
 			OperationID:      "list-my-invitations",
 			Body:             nil,
 			RawBody:          rawBody,
@@ -2233,8 +2236,7 @@ func (s *Server) handleListMyInvitationsRequest(args [0]string, argsEscaped bool
 
 // handleListProjectsRequest handles list-projects operation.
 //
-// 默认不含已删除的项目——那些是已经不存在了的东西，要看必须明确用
-// status=DELETED 点名。.
+// Deleted projects are excluded unless `status=DELETED` asks for them by name.
 //
 // GET /account/v1/projects
 func (s *Server) handleListProjectsRequest(args [0]string, argsEscaped bool, w http.ResponseWriter, r *http.Request) {
@@ -2372,7 +2374,7 @@ func (s *Server) handleListProjectsRequest(args [0]string, argsEscaped bool, w h
 		mreq := middleware.Request{
 			Context:          ctx,
 			OperationName:    ListProjectsOperation,
-			OperationSummary: "列出我参与的项目",
+			OperationSummary: "List the projects the caller belongs to",
 			OperationID:      "list-projects",
 			Body:             nil,
 			RawBody:          rawBody,
@@ -2446,22 +2448,13 @@ func (s *Server) handleListProjectsRequest(args [0]string, argsEscaped bool, w h
 
 // handlePreviewInvitationByTokenRequest handles preview-invitation-by-token operation.
 //
-// 免认证，而且是有意的：点邮件里那条链接的人多半还没登录，甚至还没有账号。要他先注册再
-// 告诉他这是谁发来的、加入哪个项目，等于让他在不知道要加入什么的情况下决定要不要注册。
-// 它不多泄露任何东西。
-// 这三样——项目名、邀请人、角色——邮件正文里已经写着了，而读得到
-// 这个令牌的人就是收得到那封邮件的人。同一个令牌本来就能把持有者加进项目（见
-// `accept-invitation-by-token`），读一个项目名比那件事轻得多。
-// 收件地址打了码（`t***@example.com`）。
-// 不打码的话，这个接口就成了「拿一个令牌反查它
-// 当初寄给了哪个地址」——而那是邮件正文里没有、持有者也未必知道的一件事。
-// 令牌不存在、已经用过、被撤回、过期，四种情况同一个 404
-// 和同一句话。分开报会把它变成
-// 一个可以拿来试令牌的探针，而这个接口免认证，任何人都试得起。 它不在
-// `/me` 下面，隔壁那两条接受要约的在。 `/me`
-// 的意思是「按这次请求的身份认出来
-// 的、属于我的那些」，而这条路上没有身份——持有令牌的人未必是收件人本人。挂在
-// `/me` 下面会让读的人以为它认过身份，而那正是这条路唯一不做的事。.
+// No token required: whoever follows the link in an invitation email has usually not signed in, and
+// may hold no account at all.
+//
+// The recipient address is masked (`t***@example.com`).
+//
+// A token that does not exist, one already redeemed, one revoked and one expired all answer the same
+// 404.
 //
 // GET /account/v1/invitations/by-token
 func (s *Server) handlePreviewInvitationByTokenRequest(args [0]string, argsEscaped bool, w http.ResponseWriter, r *http.Request) {
@@ -2553,7 +2546,7 @@ func (s *Server) handlePreviewInvitationByTokenRequest(args [0]string, argsEscap
 		mreq := middleware.Request{
 			Context:          ctx,
 			OperationName:    PreviewInvitationByTokenOperation,
-			OperationSummary: "看一眼这封邀请是谁发的、加入哪儿、什么角色",
+			OperationSummary: "Preview an invitation by its token",
 			OperationID:      "preview-invitation-by-token",
 			Body:             nil,
 			RawBody:          rawBody,
@@ -2615,13 +2608,12 @@ func (s *Server) handlePreviewInvitationByTokenRequest(args [0]string, argsEscap
 
 // handleRegisterRequest handles register operation.
 //
-// 在 auth.leaflow.net
-// 登录之后调它，带上账号令牌。姓名和邮箱取自登录信息，不从请求体收。
+// Call this after signing in at auth.leaflow.net, carrying the access token. The name and email
+// address are taken from the sign-in claims and are not read from the request body.
 //
-// `consents` 要覆盖 `GET /api/v1/agreements`
-// 返回的每一份，版本号也要一致；漏一份答 400，版本对不上答
-// 409（多半是页面开着的时候条款改版了，重新拉一次清单即可）。已经注册过的答
-// 409。.
+// `consents` must cover every agreement returned by `GET /account/v1/agreements`, at the same
+// versions. A missing agreement answers 400 and a stale version answers 409, in which case fetch the
+// list again. An account that already exists answers 409.
 //
 // POST /account/v1/register
 func (s *Server) handleRegisterRequest(args [0]string, argsEscaped bool, w http.ResponseWriter, r *http.Request) {
@@ -2764,7 +2756,7 @@ func (s *Server) handleRegisterRequest(args [0]string, argsEscaped bool, w http.
 		mreq := middleware.Request{
 			Context:          ctx,
 			OperationName:    RegisterOperation,
-			OperationSummary: "注册账号",
+			OperationSummary: "Register an account",
 			OperationID:      "register",
 			Body:             request,
 			RawBody:          rawBody,
@@ -2821,7 +2813,8 @@ func (s *Server) handleRegisterRequest(args [0]string, argsEscaped bool, w http.
 
 // handleSubmitIdentityVerificationRequest handles submit-identity-verification operation.
 //
-// 已经在等人审的和已经核过的都会被拒。被驳回之后可以改了再交。.
+// A submission awaiting review, and an account already verified, are both refused. A rejected
+// submission may be corrected and sent again.
 //
 // POST /account/v1/me/identity-verification
 func (s *Server) handleSubmitIdentityVerificationRequest(args [0]string, argsEscaped bool, w http.ResponseWriter, r *http.Request) {
@@ -2964,7 +2957,7 @@ func (s *Server) handleSubmitIdentityVerificationRequest(args [0]string, argsEsc
 		mreq := middleware.Request{
 			Context:          ctx,
 			OperationName:    SubmitIdentityVerificationOperation,
-			OperationSummary: "提交实名核验材料",
+			OperationSummary: "Submit identity verification",
 			OperationID:      "submit-identity-verification",
 			Body:             request,
 			RawBody:          rawBody,
@@ -3021,7 +3014,8 @@ func (s *Server) handleSubmitIdentityVerificationRequest(args [0]string, argsEsc
 
 // handleUpdateAccountRequest handles update-account operation.
 //
-// 姓名和邮箱不在这里改：它们来自身份提供方，改了会在下一次登录同步时被覆盖回去。.
+// The name and email address cannot be changed here. They come from the identity provider, and a
+// change would be overwritten at the next sign-in.
 //
 // PATCH /account/v1/me
 func (s *Server) handleUpdateAccountRequest(args [0]string, argsEscaped bool, w http.ResponseWriter, r *http.Request) {
@@ -3164,7 +3158,7 @@ func (s *Server) handleUpdateAccountRequest(args [0]string, argsEscaped bool, w 
 		mreq := middleware.Request{
 			Context:          ctx,
 			OperationName:    UpdateAccountOperation,
-			OperationSummary: "改当前账号的国家/地区和语言",
+			OperationSummary: "Update the country and language of the current account",
 			OperationID:      "update-account",
 			Body:             request,
 			RawBody:          rawBody,

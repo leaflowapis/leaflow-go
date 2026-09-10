@@ -381,7 +381,7 @@ func decodeCreateProjectResponse(resp *http.Response) (res *ProjectAccessResourc
 	return res, errors.Wrap(defRes, "error")
 }
 
-func decodeExchangeProjectTokenResponse(resp *http.Response) (res *ProjectTokenResponseBody, _ error) {
+func decodeCreateScopedTokenResponse(resp *http.Response) (res *ScopedTokenResponseBody, _ error) {
 	switch resp.StatusCode {
 	case 201:
 		// Code 201.
@@ -397,7 +397,7 @@ func decodeExchangeProjectTokenResponse(resp *http.Response) (res *ProjectTokenR
 			}
 			d := jx.DecodeBytes(buf)
 
-			var response ProjectTokenResponseBody
+			var response ScopedTokenResponseBody
 			if err := func() error {
 				if err := response.Decode(d); err != nil {
 					return err

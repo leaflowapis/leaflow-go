@@ -288,32 +288,32 @@ func (e GetUsageTimelineParamsStatus) Valid() bool {
 
 // APIKeyResource defines model for APIKeyResource.
 type APIKeyResource struct {
-	// AllowedModels restrict_models 为 false 时无意义
+	// AllowedModels Carries no meaning while `restrict_models` is false
 	AllowedModels []string  `json:"allowed_models"`
 	CreatedAt     time.Time `json:"created_at"`
 
-	// CreatedBy 建这把 key 的人
+	// CreatedBy Who created the key
 	CreatedBy openapi_types.UUID `json:"created_by"`
 
-	// ExpiresAt 到期时间；null 表示永不过期
+	// ExpiresAt When the key expires. Null means it never expires
 	ExpiresAt *time.Time         `json:"expires_at"`
 	Id        openapi_types.UUID `json:"id"`
 
-	// LastFour 明文的后四位
+	// LastFour The last four characters of the plaintext
 	LastFour string `json:"last_four"`
 
-	// LastUsedAt 最后一次成功用它转发的时刻，精度约一分钟
+	// LastUsedAt When the key was last used to forward a request successfully, accurate to about a minute
 	LastUsedAt *time.Time `json:"last_used_at"`
 	Name       string     `json:"name"`
 
-	// Prefix 明文的前几位，用来在列表里辨认
+	// Prefix The leading characters of the plaintext, by which a key is recognised in a list
 	Prefix string `json:"prefix"`
 
-	// RestrictModels true 时只允许 allowed_models 里的模型
+	// RestrictModels While true, only the models listed in `allowed_models` are permitted
 	RestrictModels bool                 `json:"restrict_models"`
 	Status         APIKeyResourceStatus `json:"status"`
 
-	// Suspended true 表示这把 key 因项目停服被停，需要项目恢复后才能再用
+	// Suspended True indicates that the key was disabled because its project is suspended, and that the project has to be restored before the key can be used again
 	Suspended bool `json:"suspended"`
 }
 
@@ -338,25 +338,25 @@ type APIKeyUsageResource struct {
 
 // CreateAPIKeyRequestBody defines model for CreateAPIKeyRequestBody.
 type CreateAPIKeyRequestBody struct {
-	// AllowedModels restrict_models 为 false 时忽略
+	// AllowedModels Ignored while `restrict_models` is false
 	AllowedModels []string `json:"allowed_models,omitempty"`
 
-	// ExpiresAt 到期时间；不填表示永不过期
+	// ExpiresAt When the key expires. Omitted means it never expires
 	ExpiresAt *time.Time `json:"expires_at,omitempty"`
 
-	// Name 给自己看的名字，比如「CI」「生产」
+	// Name A name for the holder's own use, such as CI or Production
 	Name string `json:"name"`
 
-	// RestrictModels true 时只允许 allowed_models 里的模型
+	// RestrictModels While true, only the models listed in `allowed_models` are permitted
 	RestrictModels *bool `json:"restrict_models,omitempty"`
 }
 
 // CursorPageRequestResource defines model for CursorPageRequestResource.
 type CursorPageRequestResource struct {
-	// Items 这一页的内容
+	// Items The items in this page
 	Items []RequestResource `json:"items"`
 
-	// NextCursor 下一页的游标；为空表示已经到底
+	// NextCursor The cursor for the next page. Empty on the last page
 	NextCursor string `json:"next_cursor"`
 }
 
@@ -365,35 +365,35 @@ type Error = externalRef0.Error
 
 // IssuedAPIKeyResource defines model for IssuedAPIKeyResource.
 type IssuedAPIKeyResource struct {
-	// AllowedModels restrict_models 为 false 时无意义
+	// AllowedModels Carries no meaning while `restrict_models` is false
 	AllowedModels []string  `json:"allowed_models"`
 	CreatedAt     time.Time `json:"created_at"`
 
-	// CreatedBy 建这把 key 的人
+	// CreatedBy Who created the key
 	CreatedBy openapi_types.UUID `json:"created_by"`
 
-	// ExpiresAt 到期时间；null 表示永不过期
+	// ExpiresAt When the key expires. Null means it never expires
 	ExpiresAt *time.Time         `json:"expires_at"`
 	Id        openapi_types.UUID `json:"id"`
 
-	// LastFour 明文的后四位
+	// LastFour The last four characters of the plaintext
 	LastFour string `json:"last_four"`
 
-	// LastUsedAt 最后一次成功用它转发的时刻，精度约一分钟
+	// LastUsedAt When the key was last used to forward a request successfully, accurate to about a minute
 	LastUsedAt *time.Time `json:"last_used_at"`
 	Name       string     `json:"name"`
 
-	// Prefix 明文的前几位，用来在列表里辨认
+	// Prefix The leading characters of the plaintext, by which a key is recognised in a list
 	Prefix string `json:"prefix"`
 
-	// RestrictModels true 时只允许 allowed_models 里的模型
+	// RestrictModels While true, only the models listed in `allowed_models` are permitted
 	RestrictModels bool `json:"restrict_models"`
 
-	// Secret 完整的 key，**只在这一次响应里出现**，请立即保存
+	// Secret The complete key, **returned in this response only**. Store it immediately
 	Secret string                     `json:"secret"`
 	Status IssuedAPIKeyResourceStatus `json:"status"`
 
-	// Suspended true 表示这把 key 因项目停服被停，需要项目恢复后才能再用
+	// Suspended True indicates that the key was disabled because its project is suspended, and that the project has to be restored before the key can be used again
 	Suspended bool `json:"suspended"`
 }
 
@@ -402,16 +402,16 @@ type IssuedAPIKeyResourceStatus string
 
 // LengthAwarePageAPIKeyResource defines model for LengthAwarePageAPIKeyResource.
 type LengthAwarePageAPIKeyResource struct {
-	// Items 这一页的内容
+	// Items The items in this page
 	Items []APIKeyResource `json:"items"`
 
-	// Limit 这一页最多几条，回显请求里的值
+	// Limit Maximum number of items in this page, echoing the request
 	Limit int64 `json:"limit"`
 
-	// Offset 跳过了多少条，回显请求里的值
+	// Offset Number of items skipped, echoing the request
 	Offset int64 `json:"offset"`
 
-	// Total 命中的总条数，不只是这一页
+	// Total Total number of matches, not only this page
 	Total int64 `json:"total"`
 }
 
@@ -422,20 +422,20 @@ type ModelListResponseBody struct {
 
 // ModelResource defines model for ModelResource.
 type ModelResource struct {
-	// ContextLength 上下文窗口，仅供客户端提示，服务端不据此截断
+	// ContextLength The context window. Advisory only; the server does not truncate on its basis
 	ContextLength int64  `json:"context_length"`
 	DisplayName   string `json:"display_name"`
 
-	// Family 同一系列聚在一起用，如 claude、gpt、gemini
+	// Family Groups the models of one family together, such as claude, gpt or gemini
 	Family string `json:"family"`
 
-	// Id 请求体里 model 字段要填的那个字符串
+	// Id The string to send in the `model` field of the request body
 	Id string `json:"id"`
 
-	// MaxOutputTokens 最大输出，仅供客户端提示
+	// MaxOutputTokens The maximum output length. Advisory only
 	MaxOutputTokens int64 `json:"max_output_tokens"`
 
-	// ReasoningTiers reasoning_effort 能填的值；空表示不支持
+	// ReasoningTiers The values accepted for `reasoning_effort`. Empty means it is not supported
 	ReasoningTiers    []string            `json:"reasoning_tiers"`
 	Status            ModelResourceStatus `json:"status"`
 	SupportsReasoning bool                `json:"supports_reasoning"`
@@ -466,18 +466,18 @@ type ModelUsageResource struct {
 type RequestResource struct {
 	ApiKeyId openapi_types.UUID `json:"api_key_id"`
 
-	// CacheReadTokens 命中上游前缀缓存的部分，比普通输入便宜一个数量级
+	// CacheReadTokens The portion served from the upstream prefix cache, which costs an order of magnitude less than ordinary input
 	CacheReadTokens  int64 `json:"cache_read_tokens"`
 	CacheWriteTokens int64 `json:"cache_write_tokens"`
 
-	// ErrorCode 失败时的错误码；成功时为空
+	// ErrorCode The error code on failure. Empty on success
 	ErrorCode    string             `json:"error_code"`
 	FinishedAt   *time.Time         `json:"finished_at"`
 	FirstTokenAt *time.Time         `json:"first_token_at"`
 	Id           openapi_types.UUID `json:"id"`
 	InputTokens  int64              `json:"input_tokens"`
 
-	// ModelId 请求里写的模型名
+	// ModelId The model named in the request
 	ModelId         string                `json:"model_id"`
 	OutputTokens    int64                 `json:"output_tokens"`
 	ReasoningTokens int64                 `json:"reasoning_tokens"`
@@ -486,20 +486,20 @@ type RequestResource struct {
 	Status          RequestResourceStatus `json:"status"`
 	Stream          bool                  `json:"stream"`
 
-	// UpstreamRequestId 上游那边的请求 id，报障时提供给我们
+	// UpstreamRequestId The id of the request on the upstream side. Quote it when reporting a problem
 	UpstreamRequestId string `json:"upstream_request_id"`
 
-	// UpstreamStatus 上游返回的 HTTP 状态码；0 表示没打到上游
+	// UpstreamStatus The HTTP status returned upstream. 0 indicates that the request never reached it
 	UpstreamStatus int64 `json:"upstream_status"`
 
-	// UsageSource upstream 是上游报的，estimated 是我们按字符类估的
+	// UsageSource upstream means the figures were reported by the provider; estimated means they were derived from the character classes of the payload
 	UsageSource RequestResourceUsageSource `json:"usage_source"`
 }
 
 // RequestResourceStatus defines model for RequestResource.Status.
 type RequestResourceStatus string
 
-// RequestResourceUsageSource upstream 是上游报的，estimated 是我们按字符类估的
+// RequestResourceUsageSource upstream means the figures were reported by the provider; estimated means they were derived from the character classes of the payload
 type RequestResourceUsageSource string
 
 // TotalsResource defines model for TotalsResource.
@@ -516,10 +516,10 @@ type TotalsResource struct {
 type UpdateAPIKeyRequestBody struct {
 	AllowedModels []string `json:"allowed_models,omitempty"`
 
-	// ClearExpiry true 表示改成永不过期
+	// ClearExpiry True removes the expiry
 	ClearExpiry *bool `json:"clear_expiry,omitempty"`
 
-	// ExpiresAt 改到期时间；要改成永不过期请用 clear_expiry
+	// ExpiresAt Sets the expiry. To remove it, use `clear_expiry`
 	ExpiresAt      *time.Time `json:"expires_at,omitempty"`
 	Name           *string    `json:"name,omitempty"`
 	RestrictModels *bool      `json:"restrict_models,omitempty"`
@@ -530,14 +530,14 @@ type UsageBucketResource struct {
 	CacheReadTokens  int64 `json:"cache_read_tokens"`
 	CacheWriteTokens int64 `json:"cache_write_tokens"`
 
-	// From 这一段的起点，含
+	// From Start of the bucket, inclusive
 	From            time.Time `json:"from"`
 	InputTokens     int64     `json:"input_tokens"`
 	OutputTokens    int64     `json:"output_tokens"`
 	ReasoningTokens int64     `json:"reasoning_tokens"`
 	Requests        int64     `json:"requests"`
 
-	// To 这一段的终点，不含
+	// To End of the bucket, exclusive
 	To time.Time `json:"to"`
 }
 
@@ -548,13 +548,13 @@ type UsageTimelineResponseBody struct {
 
 // ListApiKeysParams defines parameters for ListApiKeys.
 type ListApiKeysParams struct {
-	// Limit 这一页最多返回多少条
+	// Limit Maximum number of items in this page
 	Limit *int64 `form:"limit,omitempty" json:"limit,omitempty"`
 
-	// Offset 跳过多少条。要翻得更深请改用游标翻页的接口
+	// Offset Number of items to skip. Use the cursor-paged endpoint to page deeper
 	Offset *int64 `form:"offset,omitempty" json:"offset,omitempty"`
 
-	// Status 只看这个状态的；不传表示全部
+	// Status Restricts the result to the specified status. Every status is returned while this is absent
 	Status *ListApiKeysParamsStatus `form:"status,omitempty" json:"status,omitempty"`
 }
 
@@ -563,25 +563,25 @@ type ListApiKeysParamsStatus string
 
 // ListRequestsParams defines parameters for ListRequests.
 type ListRequestsParams struct {
-	// From 起点，含。RFC 3339，带时区偏移
+	// From Start of the range, inclusive. RFC 3339, carrying a timezone offset
 	From time.Time `form:"from" json:"from"`
 
-	// To 终点，不含。RFC 3339，带时区偏移
+	// To End of the range, exclusive. RFC 3339, carrying a timezone offset
 	To time.Time `form:"to" json:"to"`
 
-	// ModelId 只看这个模型
+	// ModelId Restricts the result to the specified model
 	ModelId *string `form:"model_id,omitempty" json:"model_id,omitempty"`
 
-	// ApiKeyId 只看这把 key
+	// ApiKeyId Restricts the result to the specified API key
 	ApiKeyId *string `form:"api_key_id,omitempty" json:"api_key_id,omitempty"`
 
-	// Status 只看这个状态的
+	// Status Restricts the result to the specified status
 	Status *ListRequestsParamsStatus `form:"status,omitempty" json:"status,omitempty"`
 
-	// Limit 这一页最多返回多少条
+	// Limit Maximum number of items in this page
 	Limit *int64 `form:"limit,omitempty" json:"limit,omitempty"`
 
-	// Cursor 上一页返回的 next_cursor；首页不填
+	// Cursor The `next_cursor` returned by the previous page. Omitted on the first page
 	Cursor *string `form:"cursor,omitempty" json:"cursor,omitempty"`
 }
 
@@ -590,19 +590,19 @@ type ListRequestsParamsStatus string
 
 // ListUsageByApiKeyParams defines parameters for ListUsageByApiKey.
 type ListUsageByApiKeyParams struct {
-	// From 起点，含。RFC 3339，带时区偏移
+	// From Start of the range, inclusive. RFC 3339, carrying a timezone offset
 	From time.Time `form:"from" json:"from"`
 
-	// To 终点，不含。RFC 3339，带时区偏移
+	// To End of the range, exclusive. RFC 3339, carrying a timezone offset
 	To time.Time `form:"to" json:"to"`
 
-	// ModelId 只看这个模型
+	// ModelId Restricts the result to the specified model
 	ModelId *string `form:"model_id,omitempty" json:"model_id,omitempty"`
 
-	// ApiKeyId 只看这把 key
+	// ApiKeyId Restricts the result to the specified API key
 	ApiKeyId *string `form:"api_key_id,omitempty" json:"api_key_id,omitempty"`
 
-	// Status 只看这个状态的
+	// Status Restricts the result to the specified status
 	Status *ListUsageByApiKeyParamsStatus `form:"status,omitempty" json:"status,omitempty"`
 }
 
@@ -611,19 +611,19 @@ type ListUsageByApiKeyParamsStatus string
 
 // ListUsageByModelParams defines parameters for ListUsageByModel.
 type ListUsageByModelParams struct {
-	// From 起点，含。RFC 3339，带时区偏移
+	// From Start of the range, inclusive. RFC 3339, carrying a timezone offset
 	From time.Time `form:"from" json:"from"`
 
-	// To 终点，不含。RFC 3339，带时区偏移
+	// To End of the range, exclusive. RFC 3339, carrying a timezone offset
 	To time.Time `form:"to" json:"to"`
 
-	// ModelId 只看这个模型
+	// ModelId Restricts the result to the specified model
 	ModelId *string `form:"model_id,omitempty" json:"model_id,omitempty"`
 
-	// ApiKeyId 只看这把 key
+	// ApiKeyId Restricts the result to the specified API key
 	ApiKeyId *string `form:"api_key_id,omitempty" json:"api_key_id,omitempty"`
 
-	// Status 只看这个状态的
+	// Status Restricts the result to the specified status
 	Status *ListUsageByModelParamsStatus `form:"status,omitempty" json:"status,omitempty"`
 }
 
@@ -632,19 +632,19 @@ type ListUsageByModelParamsStatus string
 
 // GetUsageSummaryParams defines parameters for GetUsageSummary.
 type GetUsageSummaryParams struct {
-	// From 起点，含。RFC 3339，带时区偏移
+	// From Start of the range, inclusive. RFC 3339, carrying a timezone offset
 	From time.Time `form:"from" json:"from"`
 
-	// To 终点，不含。RFC 3339，带时区偏移
+	// To End of the range, exclusive. RFC 3339, carrying a timezone offset
 	To time.Time `form:"to" json:"to"`
 
-	// ModelId 只看这个模型
+	// ModelId Restricts the result to the specified model
 	ModelId *string `form:"model_id,omitempty" json:"model_id,omitempty"`
 
-	// ApiKeyId 只看这把 key
+	// ApiKeyId Restricts the result to the specified API key
 	ApiKeyId *string `form:"api_key_id,omitempty" json:"api_key_id,omitempty"`
 
-	// Status 只看这个状态的
+	// Status Restricts the result to the specified status
 	Status *GetUsageSummaryParamsStatus `form:"status,omitempty" json:"status,omitempty"`
 }
 
@@ -653,22 +653,22 @@ type GetUsageSummaryParamsStatus string
 
 // GetUsageTimelineParams defines parameters for GetUsageTimeline.
 type GetUsageTimelineParams struct {
-	// From 起点，含。RFC 3339，带时区偏移
+	// From Start of the range, inclusive. RFC 3339, carrying a timezone offset
 	From time.Time `form:"from" json:"from"`
 
-	// To 终点，不含。RFC 3339，带时区偏移
+	// To End of the range, exclusive. RFC 3339, carrying a timezone offset
 	To time.Time `form:"to" json:"to"`
 
-	// ModelId 只看这个模型
+	// ModelId Restricts the result to the specified model
 	ModelId *string `form:"model_id,omitempty" json:"model_id,omitempty"`
 
-	// ApiKeyId 只看这把 key
+	// ApiKeyId Restricts the result to the specified API key
 	ApiKeyId *string `form:"api_key_id,omitempty" json:"api_key_id,omitempty"`
 
-	// Status 只看这个状态的
+	// Status Restricts the result to the specified status
 	Status *GetUsageTimelineParamsStatus `form:"status,omitempty" json:"status,omitempty"`
 
-	// Bucket 每段多长，Go 的时长写法，如 1h、24h。段数上限 100
+	// Bucket The length of each bucket, written as a duration such as 1h or 24h. The number of buckets is limited to 100
 	Bucket *string `form:"bucket,omitempty" json:"bucket,omitempty"`
 }
 
@@ -755,153 +755,153 @@ func WithRequestEditorFn(fn RequestEditorFn) ClientOption {
 // The interface specification for the client above.
 type ClientInterface interface {
 
-	// ListApiKeys 列出 API Key
+	// ListApiKeys List API keys
 	//
 	// Corresponds with GET /api/v1/keys (the `ListApiKeys` operationId).
 	ListApiKeys(ctx context.Context, params *ListApiKeysParams, reqEditors ...RequestEditorFn) (*http.Response, error)
 
-	// CreateApiKeyWithBody 签发一把 API Key
+	// CreateApiKeyWithBody Issue an API key
 	//
-	// 响应里的 `secret` 是完整的 key，**只在这一次出现**——服务端只存它的哈希，之后任何接口都不会再返回它。丢了只能撤销重建。
+	// The `secret` in the response is the complete key and **appears in this response only**. It is returned by no other endpoint, and a key that has been lost has to be revoked and reissued.
 	//
-	// 把它填进 `OPENAI_API_KEY` 一类的地方即可，转发接口同时接受 OpenAI、Anthropic、Gemini 三种调用格式。
+	// Supply it wherever a value such as `OPENAI_API_KEY` is expected. The forwarding endpoints accept the OpenAI, Anthropic and Gemini request formats alike.
 	//
 	// Takes any type of body and a specified content type.
 	//
 	// Corresponds with POST /api/v1/keys (the `CreateApiKey` operationId).
 	CreateApiKeyWithBody(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
 
-	// CreateApiKey 签发一把 API Key
+	// CreateApiKey Issue an API key
 	//
-	// 响应里的 `secret` 是完整的 key，**只在这一次出现**——服务端只存它的哈希，之后任何接口都不会再返回它。丢了只能撤销重建。
+	// The `secret` in the response is the complete key and **appears in this response only**. It is returned by no other endpoint, and a key that has been lost has to be revoked and reissued.
 	//
-	// 把它填进 `OPENAI_API_KEY` 一类的地方即可，转发接口同时接受 OpenAI、Anthropic、Gemini 三种调用格式。
+	// Supply it wherever a value such as `OPENAI_API_KEY` is expected. The forwarding endpoints accept the OpenAI, Anthropic and Gemini request formats alike.
 	//
 	// Takes a body of the `application/json` content type.
 	//
 	// Corresponds with POST /api/v1/keys (the `CreateApiKey` operationId).
 	CreateApiKey(ctx context.Context, body CreateApiKeyJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
 
-	// GetApiKey 查看 API Key
+	// GetApiKey Get an API key
 	//
 	// Corresponds with GET /api/v1/keys/{keyId} (the `GetApiKey` operationId).
 	GetApiKey(ctx context.Context, keyId openapi_types.UUID, reqEditors ...RequestEditorFn) (*http.Response, error)
 
-	// UpdateApiKeyWithBody 修改 API Key
+	// UpdateApiKeyWithBody Update an API key
 	//
-	// 只改属性，不改状态——启用、停用、撤销各有自己的接口。
+	// Attributes only. Enabling, disabling and revoking each have their own endpoint.
 	//
-	// 没提到的字段保持不变。要把到期时间改成「永不过期」请传 `clear_expiry: true`，而不是把 `expires_at` 传成 null。
+	// A field that is not supplied is left unchanged. To remove an expiry, send `clear_expiry` as true rather than a null `expires_at`.
 	//
-	// 已撤销的 key 不接受任何修改。
+	// A revoked key accepts no modification.
 	//
 	// Takes any type of body and a specified content type.
 	//
 	// Corresponds with PATCH /api/v1/keys/{keyId} (the `UpdateApiKey` operationId).
 	UpdateApiKeyWithBody(ctx context.Context, keyId openapi_types.UUID, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
 
-	// UpdateApiKey 修改 API Key
+	// UpdateApiKey Update an API key
 	//
-	// 只改属性，不改状态——启用、停用、撤销各有自己的接口。
+	// Attributes only. Enabling, disabling and revoking each have their own endpoint.
 	//
-	// 没提到的字段保持不变。要把到期时间改成「永不过期」请传 `clear_expiry: true`，而不是把 `expires_at` 传成 null。
+	// A field that is not supplied is left unchanged. To remove an expiry, send `clear_expiry` as true rather than a null `expires_at`.
 	//
-	// 已撤销的 key 不接受任何修改。
+	// A revoked key accepts no modification.
 	//
 	// Takes a body of the `application/json` content type.
 	//
 	// Corresponds with PATCH /api/v1/keys/{keyId} (the `UpdateApiKey` operationId).
 	UpdateApiKey(ctx context.Context, keyId openapi_types.UUID, body UpdateApiKeyJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
 
-	// DisableApiKey 停用 API Key
+	// DisableApiKey Disable an API key
 	//
-	// 临时停用，随时可以启用回来。要永久失效请用撤销。.
+	// A temporary measure; the key may be enabled again at any time. Use revocation to invalidate it permanently.
 	//
 	// Corresponds with POST /api/v1/keys/{keyId}/disable (the `DisableApiKey` operationId).
 	DisableApiKey(ctx context.Context, keyId openapi_types.UUID, reqEditors ...RequestEditorFn) (*http.Response, error)
 
-	// EnableApiKey 启用 API Key
+	// EnableApiKey Enable an API key
 	//
-	// 两种情况开不回来：已撤销的（`API_KEY_REVOKED`），以及因项目停服被停的（`API_KEY_PROJECT_SUSPENDED`，响应里 `suspended` 为 true）。后者要等项目恢复。.
+	// Two cases cannot be enabled again. A revoked key answers `API_KEY_REVOKED`, and a key disabled because its project is suspended answers `API_KEY_PROJECT_SUSPENDED` with `suspended` set to true; the latter requires the project to be restored first.
 	//
 	// Corresponds with POST /api/v1/keys/{keyId}/enable (the `EnableApiKey` operationId).
 	EnableApiKey(ctx context.Context, keyId openapi_types.UUID, reqEditors ...RequestEditorFn) (*http.Response, error)
 
-	// RevokeApiKey 撤销 API Key
+	// RevokeApiKey Revoke an API key
 	//
-	// **不可逆。** 用于这把 key 泄露了的情况——比如被提交进了仓库。
+	// **Irreversible.** It is intended for a key that has been exposed, such as one committed to a repository.
 	//
-	// 记录不删除：这把 key 在被撤销前打了多少请求仍然查得到，那正是出事之后要看的。
+	// The record is retained, so the requests the key issued before it was revoked remain readable.
 	//
-	// 只是想临时停一下请用停用。
+	// Use disabling for a temporary measure.
 	//
 	// Corresponds with POST /api/v1/keys/{keyId}/revoke (the `RevokeApiKey` operationId).
 	RevokeApiKey(ctx context.Context, keyId openapi_types.UUID, reqEditors ...RequestEditorFn) (*http.Response, error)
 
-	// ListModels 列出可用模型
+	// ListModels List the available models
 	//
-	// 已下架（`retired`）的模型不出现在这里，但仍然查得到——见查看单个模型。
+	// A model that has been retired does not appear here, while it remains readable individually.
 	//
-	// `context_length` 和 `max_output_tokens` 仅供客户端提示：服务端不据此截断，请求体原样转给上游。
+	// `context_length` and `max_output_tokens` are advisory. The server does not truncate on their basis, and the request body is forwarded upstream unchanged.
 	//
 	// Corresponds with GET /api/v1/models (the `ListModels` operationId).
 	ListModels(ctx context.Context, reqEditors ...RequestEditorFn) (*http.Response, error)
 
-	// GetModel 查看模型
+	// GetModel Get a model
 	//
-	// 已下架的模型在这里查得到，但转发时会被拒（`MODEL_RETIRED`）——这和「这个模型不存在」是两件事，前者说明它曾经有过。.
+	// A model that has been retired remains readable here, while forwarding to it is refused with `MODEL_RETIRED`. That is distinct from a model that does not exist.
 	//
 	// Corresponds with GET /api/v1/models/{modelId} (the `GetModel` operationId).
 	GetModel(ctx context.Context, modelId string, reqEditors ...RequestEditorFn) (*http.Response, error)
 
-	// ListRequests 列出请求流水
+	// ListRequests List request records
 	//
-	// 游标翻页，按时间倒序。`next_cursor` 为空表示已经到底。
+	// Cursor-paged, most recent first. An empty `next_cursor` indicates the last page.
 	//
-	// **不返回请求体和响应体**——canopy 一张表都不存它们。排障请提供 `upstream_request_id`。
+	// **The request and response bodies are not returned**; they are not recorded. Quote the `upstream_request_id` when reporting a problem.
 	//
-	// `usage_source` 为 `estimated` 表示上游这次没给用量，那几个数是我们按字符类估的。
+	// A `usage_source` of `estimated` indicates that the upstream provider reported no usage for that request, and that the figures are derived from the character classes of the payload.
 	//
 	// Corresponds with GET /api/v1/requests (the `ListRequests` operationId).
 	ListRequests(ctx context.Context, params *ListRequestsParams, reqEditors ...RequestEditorFn) (*http.Response, error)
 
-	// GetRequest 查看单条流水
+	// GetRequest Get a single request record
 	//
 	// Corresponds with GET /api/v1/requests/{requestId} (the `GetRequest` operationId).
 	GetRequest(ctx context.Context, requestId openapi_types.UUID, reqEditors ...RequestEditorFn) (*http.Response, error)
 
-	// ListUsageByApiKey 按 API Key 看用量
+	// ListUsageByApiKey Get usage by API key
 	//
-	// 用来回答「哪把 key 在烧钱」。已撤销的 key 仍然出现在这里——它在被撤销前的用量正是要看的东西。.
+	// Answers which key is consuming the budget. A key that has been revoked still appears, since the usage it accrued beforehand is part of that answer.
 	//
 	// Corresponds with GET /api/v1/usage/by-api-key (the `ListUsageByApiKey` operationId).
 	ListUsageByApiKey(ctx context.Context, params *ListUsageByApiKeyParams, reqEditors ...RequestEditorFn) (*http.Response, error)
 
-	// ListUsageByModel 按模型看用量
+	// ListUsageByModel Get usage by model
 	//
 	// Corresponds with GET /api/v1/usage/by-model (the `ListUsageByModel` operationId).
 	ListUsageByModel(ctx context.Context, params *ListUsageByModelParams, reqEditors ...RequestEditorFn) (*http.Response, error)
 
-	// GetUsageSummary 用量合计
+	// GetUsageSummary Get total usage
 	//
-	// `from` / `to` 必填，跨度不超过 31 天。两者带时区偏移，传 `2026-08-01T00:00:00+08:00` 得到的就是东八区那一刻起算。
+	// `from` and `to` are required and may span no more than 31 days. Both carry a timezone offset, so `2026-08-01T00:00:00+08:00` starts at that instant in UTC+8.
 	//
-	// 五档 token 分开给：缓存命中的读取比普通输入便宜一个数量级，合成一个总数就再也拆不开了。
+	// The five token classes are reported separately. A cache read costs an order of magnitude less than ordinary input, and a single total cannot be decomposed again.
 	//
 	// Corresponds with GET /api/v1/usage/summary (the `GetUsageSummary` operationId).
 	GetUsageSummary(ctx context.Context, params *GetUsageSummaryParams, reqEditors ...RequestEditorFn) (*http.Response, error)
 
-	// GetUsageTimeline 用量曲线
+	// GetUsageTimeline Get a usage series
 	//
-	// 从 `from` 起按 `bucket` 切段，最后一段可能不满。段数上限 100。
+	// Divided into buckets of `bucket`, starting at `from`. The final bucket may be partial, and the number of buckets is limited to 100.
 	//
-	// 要按本地日切分就把 `from` 传成本地时间的零点（带偏移）、`bucket` 传 `24h`——服务端不猜时区。
+	// To divide by local day, send `from` as midnight in local time with its offset and `bucket` as `24h`. The server does not infer a timezone.
 	//
 	// Corresponds with GET /api/v1/usage/timeline (the `GetUsageTimeline` operationId).
 	GetUsageTimeline(ctx context.Context, params *GetUsageTimelineParams, reqEditors ...RequestEditorFn) (*http.Response, error)
 }
 
-// ListApiKeys 列出 API Key
+// ListApiKeys List API keys
 //
 // Corresponds with GET /api/v1/keys (the `ListApiKeys` operationId).
 func (c *Client) ListApiKeys(ctx context.Context, params *ListApiKeysParams, reqEditors ...RequestEditorFn) (*http.Response, error) {
@@ -916,11 +916,11 @@ func (c *Client) ListApiKeys(ctx context.Context, params *ListApiKeysParams, req
 	return c.Client.Do(req)
 }
 
-// CreateApiKeyWithBody 签发一把 API Key
+// CreateApiKeyWithBody Issue an API key
 //
-// 响应里的 `secret` 是完整的 key，**只在这一次出现**——服务端只存它的哈希，之后任何接口都不会再返回它。丢了只能撤销重建。
+// The `secret` in the response is the complete key and **appears in this response only**. It is returned by no other endpoint, and a key that has been lost has to be revoked and reissued.
 //
-// 把它填进 `OPENAI_API_KEY` 一类的地方即可，转发接口同时接受 OpenAI、Anthropic、Gemini 三种调用格式。
+// Supply it wherever a value such as `OPENAI_API_KEY` is expected. The forwarding endpoints accept the OpenAI, Anthropic and Gemini request formats alike.
 //
 // Takes any type of body and a specified content type.
 //
@@ -937,11 +937,11 @@ func (c *Client) CreateApiKeyWithBody(ctx context.Context, contentType string, b
 	return c.Client.Do(req)
 }
 
-// CreateApiKey 签发一把 API Key
+// CreateApiKey Issue an API key
 //
-// 响应里的 `secret` 是完整的 key，**只在这一次出现**——服务端只存它的哈希，之后任何接口都不会再返回它。丢了只能撤销重建。
+// The `secret` in the response is the complete key and **appears in this response only**. It is returned by no other endpoint, and a key that has been lost has to be revoked and reissued.
 //
-// 把它填进 `OPENAI_API_KEY` 一类的地方即可，转发接口同时接受 OpenAI、Anthropic、Gemini 三种调用格式。
+// Supply it wherever a value such as `OPENAI_API_KEY` is expected. The forwarding endpoints accept the OpenAI, Anthropic and Gemini request formats alike.
 //
 // Takes a body of the `application/json` content type.
 //
@@ -958,7 +958,7 @@ func (c *Client) CreateApiKey(ctx context.Context, body CreateApiKeyJSONRequestB
 	return c.Client.Do(req)
 }
 
-// GetApiKey 查看 API Key
+// GetApiKey Get an API key
 //
 // Corresponds with GET /api/v1/keys/{keyId} (the `GetApiKey` operationId).
 func (c *Client) GetApiKey(ctx context.Context, keyId openapi_types.UUID, reqEditors ...RequestEditorFn) (*http.Response, error) {
@@ -973,13 +973,13 @@ func (c *Client) GetApiKey(ctx context.Context, keyId openapi_types.UUID, reqEdi
 	return c.Client.Do(req)
 }
 
-// UpdateApiKeyWithBody 修改 API Key
+// UpdateApiKeyWithBody Update an API key
 //
-// 只改属性，不改状态——启用、停用、撤销各有自己的接口。
+// Attributes only. Enabling, disabling and revoking each have their own endpoint.
 //
-// 没提到的字段保持不变。要把到期时间改成「永不过期」请传 `clear_expiry: true`，而不是把 `expires_at` 传成 null。
+// A field that is not supplied is left unchanged. To remove an expiry, send `clear_expiry` as true rather than a null `expires_at`.
 //
-// 已撤销的 key 不接受任何修改。
+// A revoked key accepts no modification.
 //
 // Takes any type of body and a specified content type.
 //
@@ -996,13 +996,13 @@ func (c *Client) UpdateApiKeyWithBody(ctx context.Context, keyId openapi_types.U
 	return c.Client.Do(req)
 }
 
-// UpdateApiKey 修改 API Key
+// UpdateApiKey Update an API key
 //
-// 只改属性，不改状态——启用、停用、撤销各有自己的接口。
+// Attributes only. Enabling, disabling and revoking each have their own endpoint.
 //
-// 没提到的字段保持不变。要把到期时间改成「永不过期」请传 `clear_expiry: true`，而不是把 `expires_at` 传成 null。
+// A field that is not supplied is left unchanged. To remove an expiry, send `clear_expiry` as true rather than a null `expires_at`.
 //
-// 已撤销的 key 不接受任何修改。
+// A revoked key accepts no modification.
 //
 // Takes a body of the `application/json` content type.
 //
@@ -1019,9 +1019,9 @@ func (c *Client) UpdateApiKey(ctx context.Context, keyId openapi_types.UUID, bod
 	return c.Client.Do(req)
 }
 
-// DisableApiKey 停用 API Key
+// DisableApiKey Disable an API key
 //
-// 临时停用，随时可以启用回来。要永久失效请用撤销。.
+// A temporary measure; the key may be enabled again at any time. Use revocation to invalidate it permanently.
 //
 // Corresponds with POST /api/v1/keys/{keyId}/disable (the `DisableApiKey` operationId).
 func (c *Client) DisableApiKey(ctx context.Context, keyId openapi_types.UUID, reqEditors ...RequestEditorFn) (*http.Response, error) {
@@ -1036,9 +1036,9 @@ func (c *Client) DisableApiKey(ctx context.Context, keyId openapi_types.UUID, re
 	return c.Client.Do(req)
 }
 
-// EnableApiKey 启用 API Key
+// EnableApiKey Enable an API key
 //
-// 两种情况开不回来：已撤销的（`API_KEY_REVOKED`），以及因项目停服被停的（`API_KEY_PROJECT_SUSPENDED`，响应里 `suspended` 为 true）。后者要等项目恢复。.
+// Two cases cannot be enabled again. A revoked key answers `API_KEY_REVOKED`, and a key disabled because its project is suspended answers `API_KEY_PROJECT_SUSPENDED` with `suspended` set to true; the latter requires the project to be restored first.
 //
 // Corresponds with POST /api/v1/keys/{keyId}/enable (the `EnableApiKey` operationId).
 func (c *Client) EnableApiKey(ctx context.Context, keyId openapi_types.UUID, reqEditors ...RequestEditorFn) (*http.Response, error) {
@@ -1053,13 +1053,13 @@ func (c *Client) EnableApiKey(ctx context.Context, keyId openapi_types.UUID, req
 	return c.Client.Do(req)
 }
 
-// RevokeApiKey 撤销 API Key
+// RevokeApiKey Revoke an API key
 //
-// **不可逆。** 用于这把 key 泄露了的情况——比如被提交进了仓库。
+// **Irreversible.** It is intended for a key that has been exposed, such as one committed to a repository.
 //
-// 记录不删除：这把 key 在被撤销前打了多少请求仍然查得到，那正是出事之后要看的。
+// The record is retained, so the requests the key issued before it was revoked remain readable.
 //
-// 只是想临时停一下请用停用。
+// Use disabling for a temporary measure.
 //
 // Corresponds with POST /api/v1/keys/{keyId}/revoke (the `RevokeApiKey` operationId).
 func (c *Client) RevokeApiKey(ctx context.Context, keyId openapi_types.UUID, reqEditors ...RequestEditorFn) (*http.Response, error) {
@@ -1074,11 +1074,11 @@ func (c *Client) RevokeApiKey(ctx context.Context, keyId openapi_types.UUID, req
 	return c.Client.Do(req)
 }
 
-// ListModels 列出可用模型
+// ListModels List the available models
 //
-// 已下架（`retired`）的模型不出现在这里，但仍然查得到——见查看单个模型。
+// A model that has been retired does not appear here, while it remains readable individually.
 //
-// `context_length` 和 `max_output_tokens` 仅供客户端提示：服务端不据此截断，请求体原样转给上游。
+// `context_length` and `max_output_tokens` are advisory. The server does not truncate on their basis, and the request body is forwarded upstream unchanged.
 //
 // Corresponds with GET /api/v1/models (the `ListModels` operationId).
 func (c *Client) ListModels(ctx context.Context, reqEditors ...RequestEditorFn) (*http.Response, error) {
@@ -1093,9 +1093,9 @@ func (c *Client) ListModels(ctx context.Context, reqEditors ...RequestEditorFn) 
 	return c.Client.Do(req)
 }
 
-// GetModel 查看模型
+// GetModel Get a model
 //
-// 已下架的模型在这里查得到，但转发时会被拒（`MODEL_RETIRED`）——这和「这个模型不存在」是两件事，前者说明它曾经有过。.
+// A model that has been retired remains readable here, while forwarding to it is refused with `MODEL_RETIRED`. That is distinct from a model that does not exist.
 //
 // Corresponds with GET /api/v1/models/{modelId} (the `GetModel` operationId).
 func (c *Client) GetModel(ctx context.Context, modelId string, reqEditors ...RequestEditorFn) (*http.Response, error) {
@@ -1110,13 +1110,13 @@ func (c *Client) GetModel(ctx context.Context, modelId string, reqEditors ...Req
 	return c.Client.Do(req)
 }
 
-// ListRequests 列出请求流水
+// ListRequests List request records
 //
-// 游标翻页，按时间倒序。`next_cursor` 为空表示已经到底。
+// Cursor-paged, most recent first. An empty `next_cursor` indicates the last page.
 //
-// **不返回请求体和响应体**——canopy 一张表都不存它们。排障请提供 `upstream_request_id`。
+// **The request and response bodies are not returned**; they are not recorded. Quote the `upstream_request_id` when reporting a problem.
 //
-// `usage_source` 为 `estimated` 表示上游这次没给用量，那几个数是我们按字符类估的。
+// A `usage_source` of `estimated` indicates that the upstream provider reported no usage for that request, and that the figures are derived from the character classes of the payload.
 //
 // Corresponds with GET /api/v1/requests (the `ListRequests` operationId).
 func (c *Client) ListRequests(ctx context.Context, params *ListRequestsParams, reqEditors ...RequestEditorFn) (*http.Response, error) {
@@ -1131,7 +1131,7 @@ func (c *Client) ListRequests(ctx context.Context, params *ListRequestsParams, r
 	return c.Client.Do(req)
 }
 
-// GetRequest 查看单条流水
+// GetRequest Get a single request record
 //
 // Corresponds with GET /api/v1/requests/{requestId} (the `GetRequest` operationId).
 func (c *Client) GetRequest(ctx context.Context, requestId openapi_types.UUID, reqEditors ...RequestEditorFn) (*http.Response, error) {
@@ -1146,9 +1146,9 @@ func (c *Client) GetRequest(ctx context.Context, requestId openapi_types.UUID, r
 	return c.Client.Do(req)
 }
 
-// ListUsageByApiKey 按 API Key 看用量
+// ListUsageByApiKey Get usage by API key
 //
-// 用来回答「哪把 key 在烧钱」。已撤销的 key 仍然出现在这里——它在被撤销前的用量正是要看的东西。.
+// Answers which key is consuming the budget. A key that has been revoked still appears, since the usage it accrued beforehand is part of that answer.
 //
 // Corresponds with GET /api/v1/usage/by-api-key (the `ListUsageByApiKey` operationId).
 func (c *Client) ListUsageByApiKey(ctx context.Context, params *ListUsageByApiKeyParams, reqEditors ...RequestEditorFn) (*http.Response, error) {
@@ -1163,7 +1163,7 @@ func (c *Client) ListUsageByApiKey(ctx context.Context, params *ListUsageByApiKe
 	return c.Client.Do(req)
 }
 
-// ListUsageByModel 按模型看用量
+// ListUsageByModel Get usage by model
 //
 // Corresponds with GET /api/v1/usage/by-model (the `ListUsageByModel` operationId).
 func (c *Client) ListUsageByModel(ctx context.Context, params *ListUsageByModelParams, reqEditors ...RequestEditorFn) (*http.Response, error) {
@@ -1178,11 +1178,11 @@ func (c *Client) ListUsageByModel(ctx context.Context, params *ListUsageByModelP
 	return c.Client.Do(req)
 }
 
-// GetUsageSummary 用量合计
+// GetUsageSummary Get total usage
 //
-// `from` / `to` 必填，跨度不超过 31 天。两者带时区偏移，传 `2026-08-01T00:00:00+08:00` 得到的就是东八区那一刻起算。
+// `from` and `to` are required and may span no more than 31 days. Both carry a timezone offset, so `2026-08-01T00:00:00+08:00` starts at that instant in UTC+8.
 //
-// 五档 token 分开给：缓存命中的读取比普通输入便宜一个数量级，合成一个总数就再也拆不开了。
+// The five token classes are reported separately. A cache read costs an order of magnitude less than ordinary input, and a single total cannot be decomposed again.
 //
 // Corresponds with GET /api/v1/usage/summary (the `GetUsageSummary` operationId).
 func (c *Client) GetUsageSummary(ctx context.Context, params *GetUsageSummaryParams, reqEditors ...RequestEditorFn) (*http.Response, error) {
@@ -1197,11 +1197,11 @@ func (c *Client) GetUsageSummary(ctx context.Context, params *GetUsageSummaryPar
 	return c.Client.Do(req)
 }
 
-// GetUsageTimeline 用量曲线
+// GetUsageTimeline Get a usage series
 //
-// 从 `from` 起按 `bucket` 切段，最后一段可能不满。段数上限 100。
+// Divided into buckets of `bucket`, starting at `from`. The final bucket may be partial, and the number of buckets is limited to 100.
 //
-// 要按本地日切分就把 `from` 传成本地时间的零点（带偏移）、`bucket` 传 `24h`——服务端不猜时区。
+// To divide by local day, send `from` as midnight in local time with its offset and `bucket` as `24h`. The server does not infer a timezone.
 //
 // Corresponds with GET /api/v1/usage/timeline (the `GetUsageTimeline` operationId).
 func (c *Client) GetUsageTimeline(ctx context.Context, params *GetUsageTimelineParams, reqEditors ...RequestEditorFn) (*http.Response, error) {
@@ -2162,171 +2162,171 @@ func WithBaseURL(baseURL string) ClientOption {
 // ClientWithResponsesInterface is the interface specification for the client with responses above.
 type ClientWithResponsesInterface interface {
 
-	// ListApiKeysWithResponse 列出 API Key
+	// ListApiKeysWithResponse List API keys
 	//
 	// Returns a wrapper object for the known response body format(s).
 	//
 	// Corresponds with GET /api/v1/keys (the `ListApiKeys` operationId).
 	ListApiKeysWithResponse(ctx context.Context, params *ListApiKeysParams, reqEditors ...RequestEditorFn) (*ListApiKeysResponse, error)
 
-	// CreateApiKeyWithBodyWithResponse 签发一把 API Key
+	// CreateApiKeyWithBodyWithResponse Issue an API key
 	//
-	// 响应里的 `secret` 是完整的 key，**只在这一次出现**——服务端只存它的哈希，之后任何接口都不会再返回它。丢了只能撤销重建。
+	// The `secret` in the response is the complete key and **appears in this response only**. It is returned by no other endpoint, and a key that has been lost has to be revoked and reissued.
 	//
-	// 把它填进 `OPENAI_API_KEY` 一类的地方即可，转发接口同时接受 OpenAI、Anthropic、Gemini 三种调用格式。
+	// Supply it wherever a value such as `OPENAI_API_KEY` is expected. The forwarding endpoints accept the OpenAI, Anthropic and Gemini request formats alike.
 	//
 	// Takes any type of body and a specified content type, and returns a wrapper object for the known response body format(s).
 	//
 	// Corresponds with POST /api/v1/keys (the `CreateApiKey` operationId).
 	CreateApiKeyWithBodyWithResponse(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*CreateApiKeyResponse, error)
 
-	// CreateApiKeyWithResponse 签发一把 API Key
+	// CreateApiKeyWithResponse Issue an API key
 	//
-	// 响应里的 `secret` 是完整的 key，**只在这一次出现**——服务端只存它的哈希，之后任何接口都不会再返回它。丢了只能撤销重建。
+	// The `secret` in the response is the complete key and **appears in this response only**. It is returned by no other endpoint, and a key that has been lost has to be revoked and reissued.
 	//
-	// 把它填进 `OPENAI_API_KEY` 一类的地方即可，转发接口同时接受 OpenAI、Anthropic、Gemini 三种调用格式。
+	// Supply it wherever a value such as `OPENAI_API_KEY` is expected. The forwarding endpoints accept the OpenAI, Anthropic and Gemini request formats alike.
 	//
 	// Takes a body of the `application/json` content type, and returns a wrapper object for the known response body format(s).
 	//
 	// Corresponds with POST /api/v1/keys (the `CreateApiKey` operationId).
 	CreateApiKeyWithResponse(ctx context.Context, body CreateApiKeyJSONRequestBody, reqEditors ...RequestEditorFn) (*CreateApiKeyResponse, error)
 
-	// GetApiKeyWithResponse 查看 API Key
+	// GetApiKeyWithResponse Get an API key
 	//
 	// Returns a wrapper object for the known response body format(s).
 	//
 	// Corresponds with GET /api/v1/keys/{keyId} (the `GetApiKey` operationId).
 	GetApiKeyWithResponse(ctx context.Context, keyId openapi_types.UUID, reqEditors ...RequestEditorFn) (*GetApiKeyResponse, error)
 
-	// UpdateApiKeyWithBodyWithResponse 修改 API Key
+	// UpdateApiKeyWithBodyWithResponse Update an API key
 	//
-	// 只改属性，不改状态——启用、停用、撤销各有自己的接口。
+	// Attributes only. Enabling, disabling and revoking each have their own endpoint.
 	//
-	// 没提到的字段保持不变。要把到期时间改成「永不过期」请传 `clear_expiry: true`，而不是把 `expires_at` 传成 null。
+	// A field that is not supplied is left unchanged. To remove an expiry, send `clear_expiry` as true rather than a null `expires_at`.
 	//
-	// 已撤销的 key 不接受任何修改。
+	// A revoked key accepts no modification.
 	//
 	// Takes any type of body and a specified content type, and returns a wrapper object for the known response body format(s).
 	//
 	// Corresponds with PATCH /api/v1/keys/{keyId} (the `UpdateApiKey` operationId).
 	UpdateApiKeyWithBodyWithResponse(ctx context.Context, keyId openapi_types.UUID, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*UpdateApiKeyResponse, error)
 
-	// UpdateApiKeyWithResponse 修改 API Key
+	// UpdateApiKeyWithResponse Update an API key
 	//
-	// 只改属性，不改状态——启用、停用、撤销各有自己的接口。
+	// Attributes only. Enabling, disabling and revoking each have their own endpoint.
 	//
-	// 没提到的字段保持不变。要把到期时间改成「永不过期」请传 `clear_expiry: true`，而不是把 `expires_at` 传成 null。
+	// A field that is not supplied is left unchanged. To remove an expiry, send `clear_expiry` as true rather than a null `expires_at`.
 	//
-	// 已撤销的 key 不接受任何修改。
+	// A revoked key accepts no modification.
 	//
 	// Takes a body of the `application/json` content type, and returns a wrapper object for the known response body format(s).
 	//
 	// Corresponds with PATCH /api/v1/keys/{keyId} (the `UpdateApiKey` operationId).
 	UpdateApiKeyWithResponse(ctx context.Context, keyId openapi_types.UUID, body UpdateApiKeyJSONRequestBody, reqEditors ...RequestEditorFn) (*UpdateApiKeyResponse, error)
 
-	// DisableApiKeyWithResponse 停用 API Key
+	// DisableApiKeyWithResponse Disable an API key
 	//
-	// 临时停用，随时可以启用回来。要永久失效请用撤销。.
+	// A temporary measure; the key may be enabled again at any time. Use revocation to invalidate it permanently.
 	//
 	// Returns a wrapper object for the known response body format(s).
 	//
 	// Corresponds with POST /api/v1/keys/{keyId}/disable (the `DisableApiKey` operationId).
 	DisableApiKeyWithResponse(ctx context.Context, keyId openapi_types.UUID, reqEditors ...RequestEditorFn) (*DisableApiKeyResponse, error)
 
-	// EnableApiKeyWithResponse 启用 API Key
+	// EnableApiKeyWithResponse Enable an API key
 	//
-	// 两种情况开不回来：已撤销的（`API_KEY_REVOKED`），以及因项目停服被停的（`API_KEY_PROJECT_SUSPENDED`，响应里 `suspended` 为 true）。后者要等项目恢复。.
+	// Two cases cannot be enabled again. A revoked key answers `API_KEY_REVOKED`, and a key disabled because its project is suspended answers `API_KEY_PROJECT_SUSPENDED` with `suspended` set to true; the latter requires the project to be restored first.
 	//
 	// Returns a wrapper object for the known response body format(s).
 	//
 	// Corresponds with POST /api/v1/keys/{keyId}/enable (the `EnableApiKey` operationId).
 	EnableApiKeyWithResponse(ctx context.Context, keyId openapi_types.UUID, reqEditors ...RequestEditorFn) (*EnableApiKeyResponse, error)
 
-	// RevokeApiKeyWithResponse 撤销 API Key
+	// RevokeApiKeyWithResponse Revoke an API key
 	//
-	// **不可逆。** 用于这把 key 泄露了的情况——比如被提交进了仓库。
+	// **Irreversible.** It is intended for a key that has been exposed, such as one committed to a repository.
 	//
-	// 记录不删除：这把 key 在被撤销前打了多少请求仍然查得到，那正是出事之后要看的。
+	// The record is retained, so the requests the key issued before it was revoked remain readable.
 	//
-	// 只是想临时停一下请用停用。
+	// Use disabling for a temporary measure.
 	//
 	// Returns a wrapper object for the known response body format(s).
 	//
 	// Corresponds with POST /api/v1/keys/{keyId}/revoke (the `RevokeApiKey` operationId).
 	RevokeApiKeyWithResponse(ctx context.Context, keyId openapi_types.UUID, reqEditors ...RequestEditorFn) (*RevokeApiKeyResponse, error)
 
-	// ListModelsWithResponse 列出可用模型
+	// ListModelsWithResponse List the available models
 	//
-	// 已下架（`retired`）的模型不出现在这里，但仍然查得到——见查看单个模型。
+	// A model that has been retired does not appear here, while it remains readable individually.
 	//
-	// `context_length` 和 `max_output_tokens` 仅供客户端提示：服务端不据此截断，请求体原样转给上游。
+	// `context_length` and `max_output_tokens` are advisory. The server does not truncate on their basis, and the request body is forwarded upstream unchanged.
 	//
 	// Returns a wrapper object for the known response body format(s).
 	//
 	// Corresponds with GET /api/v1/models (the `ListModels` operationId).
 	ListModelsWithResponse(ctx context.Context, reqEditors ...RequestEditorFn) (*ListModelsResponse, error)
 
-	// GetModelWithResponse 查看模型
+	// GetModelWithResponse Get a model
 	//
-	// 已下架的模型在这里查得到，但转发时会被拒（`MODEL_RETIRED`）——这和「这个模型不存在」是两件事，前者说明它曾经有过。.
+	// A model that has been retired remains readable here, while forwarding to it is refused with `MODEL_RETIRED`. That is distinct from a model that does not exist.
 	//
 	// Returns a wrapper object for the known response body format(s).
 	//
 	// Corresponds with GET /api/v1/models/{modelId} (the `GetModel` operationId).
 	GetModelWithResponse(ctx context.Context, modelId string, reqEditors ...RequestEditorFn) (*GetModelResponse, error)
 
-	// ListRequestsWithResponse 列出请求流水
+	// ListRequestsWithResponse List request records
 	//
-	// 游标翻页，按时间倒序。`next_cursor` 为空表示已经到底。
+	// Cursor-paged, most recent first. An empty `next_cursor` indicates the last page.
 	//
-	// **不返回请求体和响应体**——canopy 一张表都不存它们。排障请提供 `upstream_request_id`。
+	// **The request and response bodies are not returned**; they are not recorded. Quote the `upstream_request_id` when reporting a problem.
 	//
-	// `usage_source` 为 `estimated` 表示上游这次没给用量，那几个数是我们按字符类估的。
+	// A `usage_source` of `estimated` indicates that the upstream provider reported no usage for that request, and that the figures are derived from the character classes of the payload.
 	//
 	// Returns a wrapper object for the known response body format(s).
 	//
 	// Corresponds with GET /api/v1/requests (the `ListRequests` operationId).
 	ListRequestsWithResponse(ctx context.Context, params *ListRequestsParams, reqEditors ...RequestEditorFn) (*ListRequestsResponse, error)
 
-	// GetRequestWithResponse 查看单条流水
+	// GetRequestWithResponse Get a single request record
 	//
 	// Returns a wrapper object for the known response body format(s).
 	//
 	// Corresponds with GET /api/v1/requests/{requestId} (the `GetRequest` operationId).
 	GetRequestWithResponse(ctx context.Context, requestId openapi_types.UUID, reqEditors ...RequestEditorFn) (*GetRequestResponse, error)
 
-	// ListUsageByApiKeyWithResponse 按 API Key 看用量
+	// ListUsageByApiKeyWithResponse Get usage by API key
 	//
-	// 用来回答「哪把 key 在烧钱」。已撤销的 key 仍然出现在这里——它在被撤销前的用量正是要看的东西。.
+	// Answers which key is consuming the budget. A key that has been revoked still appears, since the usage it accrued beforehand is part of that answer.
 	//
 	// Returns a wrapper object for the known response body format(s).
 	//
 	// Corresponds with GET /api/v1/usage/by-api-key (the `ListUsageByApiKey` operationId).
 	ListUsageByApiKeyWithResponse(ctx context.Context, params *ListUsageByApiKeyParams, reqEditors ...RequestEditorFn) (*ListUsageByApiKeyResponse, error)
 
-	// ListUsageByModelWithResponse 按模型看用量
+	// ListUsageByModelWithResponse Get usage by model
 	//
 	// Returns a wrapper object for the known response body format(s).
 	//
 	// Corresponds with GET /api/v1/usage/by-model (the `ListUsageByModel` operationId).
 	ListUsageByModelWithResponse(ctx context.Context, params *ListUsageByModelParams, reqEditors ...RequestEditorFn) (*ListUsageByModelResponse, error)
 
-	// GetUsageSummaryWithResponse 用量合计
+	// GetUsageSummaryWithResponse Get total usage
 	//
-	// `from` / `to` 必填，跨度不超过 31 天。两者带时区偏移，传 `2026-08-01T00:00:00+08:00` 得到的就是东八区那一刻起算。
+	// `from` and `to` are required and may span no more than 31 days. Both carry a timezone offset, so `2026-08-01T00:00:00+08:00` starts at that instant in UTC+8.
 	//
-	// 五档 token 分开给：缓存命中的读取比普通输入便宜一个数量级，合成一个总数就再也拆不开了。
+	// The five token classes are reported separately. A cache read costs an order of magnitude less than ordinary input, and a single total cannot be decomposed again.
 	//
 	// Returns a wrapper object for the known response body format(s).
 	//
 	// Corresponds with GET /api/v1/usage/summary (the `GetUsageSummary` operationId).
 	GetUsageSummaryWithResponse(ctx context.Context, params *GetUsageSummaryParams, reqEditors ...RequestEditorFn) (*GetUsageSummaryResponse, error)
 
-	// GetUsageTimelineWithResponse 用量曲线
+	// GetUsageTimelineWithResponse Get a usage series
 	//
-	// 从 `from` 起按 `bucket` 切段，最后一段可能不满。段数上限 100。
+	// Divided into buckets of `bucket`, starting at `from`. The final bucket may be partial, and the number of buckets is limited to 100.
 	//
-	// 要按本地日切分就把 `from` 传成本地时间的零点（带偏移）、`bucket` 传 `24h`——服务端不猜时区。
+	// To divide by local day, send `from` as midnight in local time with its offset and `bucket` as `24h`. The server does not infer a timezone.
 	//
 	// Returns a wrapper object for the known response body format(s).
 	//
@@ -3054,7 +3054,7 @@ func (r GetUsageTimelineResponse) ContentType() string {
 	return ""
 }
 
-// ListApiKeysWithResponse 列出 API Key
+// ListApiKeysWithResponse List API keys
 //
 // Returns a wrapper object for the known response body format(s).
 //
@@ -3067,11 +3067,11 @@ func (c *ClientWithResponses) ListApiKeysWithResponse(ctx context.Context, param
 	return ParseListApiKeysResponse(rsp)
 }
 
-// CreateApiKeyWithBodyWithResponse 签发一把 API Key
+// CreateApiKeyWithBodyWithResponse Issue an API key
 //
-// 响应里的 `secret` 是完整的 key，**只在这一次出现**——服务端只存它的哈希，之后任何接口都不会再返回它。丢了只能撤销重建。
+// The `secret` in the response is the complete key and **appears in this response only**. It is returned by no other endpoint, and a key that has been lost has to be revoked and reissued.
 //
-// 把它填进 `OPENAI_API_KEY` 一类的地方即可，转发接口同时接受 OpenAI、Anthropic、Gemini 三种调用格式。
+// Supply it wherever a value such as `OPENAI_API_KEY` is expected. The forwarding endpoints accept the OpenAI, Anthropic and Gemini request formats alike.
 //
 // Takes any type of body and a specified content type, and returns a wrapper object for the known response body format(s).
 //
@@ -3084,11 +3084,11 @@ func (c *ClientWithResponses) CreateApiKeyWithBodyWithResponse(ctx context.Conte
 	return ParseCreateApiKeyResponse(rsp)
 }
 
-// CreateApiKeyWithResponse 签发一把 API Key
+// CreateApiKeyWithResponse Issue an API key
 //
-// 响应里的 `secret` 是完整的 key，**只在这一次出现**——服务端只存它的哈希，之后任何接口都不会再返回它。丢了只能撤销重建。
+// The `secret` in the response is the complete key and **appears in this response only**. It is returned by no other endpoint, and a key that has been lost has to be revoked and reissued.
 //
-// 把它填进 `OPENAI_API_KEY` 一类的地方即可，转发接口同时接受 OpenAI、Anthropic、Gemini 三种调用格式。
+// Supply it wherever a value such as `OPENAI_API_KEY` is expected. The forwarding endpoints accept the OpenAI, Anthropic and Gemini request formats alike.
 //
 // Takes a body of the `application/json` content type, and returns a wrapper object for the known response body format(s).
 //
@@ -3101,7 +3101,7 @@ func (c *ClientWithResponses) CreateApiKeyWithResponse(ctx context.Context, body
 	return ParseCreateApiKeyResponse(rsp)
 }
 
-// GetApiKeyWithResponse 查看 API Key
+// GetApiKeyWithResponse Get an API key
 //
 // Returns a wrapper object for the known response body format(s).
 //
@@ -3114,13 +3114,13 @@ func (c *ClientWithResponses) GetApiKeyWithResponse(ctx context.Context, keyId o
 	return ParseGetApiKeyResponse(rsp)
 }
 
-// UpdateApiKeyWithBodyWithResponse 修改 API Key
+// UpdateApiKeyWithBodyWithResponse Update an API key
 //
-// 只改属性，不改状态——启用、停用、撤销各有自己的接口。
+// Attributes only. Enabling, disabling and revoking each have their own endpoint.
 //
-// 没提到的字段保持不变。要把到期时间改成「永不过期」请传 `clear_expiry: true`，而不是把 `expires_at` 传成 null。
+// A field that is not supplied is left unchanged. To remove an expiry, send `clear_expiry` as true rather than a null `expires_at`.
 //
-// 已撤销的 key 不接受任何修改。
+// A revoked key accepts no modification.
 //
 // Takes any type of body and a specified content type, and returns a wrapper object for the known response body format(s).
 //
@@ -3133,13 +3133,13 @@ func (c *ClientWithResponses) UpdateApiKeyWithBodyWithResponse(ctx context.Conte
 	return ParseUpdateApiKeyResponse(rsp)
 }
 
-// UpdateApiKeyWithResponse 修改 API Key
+// UpdateApiKeyWithResponse Update an API key
 //
-// 只改属性，不改状态——启用、停用、撤销各有自己的接口。
+// Attributes only. Enabling, disabling and revoking each have their own endpoint.
 //
-// 没提到的字段保持不变。要把到期时间改成「永不过期」请传 `clear_expiry: true`，而不是把 `expires_at` 传成 null。
+// A field that is not supplied is left unchanged. To remove an expiry, send `clear_expiry` as true rather than a null `expires_at`.
 //
-// 已撤销的 key 不接受任何修改。
+// A revoked key accepts no modification.
 //
 // Takes a body of the `application/json` content type, and returns a wrapper object for the known response body format(s).
 //
@@ -3152,9 +3152,9 @@ func (c *ClientWithResponses) UpdateApiKeyWithResponse(ctx context.Context, keyI
 	return ParseUpdateApiKeyResponse(rsp)
 }
 
-// DisableApiKeyWithResponse 停用 API Key
+// DisableApiKeyWithResponse Disable an API key
 //
-// 临时停用，随时可以启用回来。要永久失效请用撤销。.
+// A temporary measure; the key may be enabled again at any time. Use revocation to invalidate it permanently.
 //
 // Returns a wrapper object for the known response body format(s).
 //
@@ -3167,9 +3167,9 @@ func (c *ClientWithResponses) DisableApiKeyWithResponse(ctx context.Context, key
 	return ParseDisableApiKeyResponse(rsp)
 }
 
-// EnableApiKeyWithResponse 启用 API Key
+// EnableApiKeyWithResponse Enable an API key
 //
-// 两种情况开不回来：已撤销的（`API_KEY_REVOKED`），以及因项目停服被停的（`API_KEY_PROJECT_SUSPENDED`，响应里 `suspended` 为 true）。后者要等项目恢复。.
+// Two cases cannot be enabled again. A revoked key answers `API_KEY_REVOKED`, and a key disabled because its project is suspended answers `API_KEY_PROJECT_SUSPENDED` with `suspended` set to true; the latter requires the project to be restored first.
 //
 // Returns a wrapper object for the known response body format(s).
 //
@@ -3182,13 +3182,13 @@ func (c *ClientWithResponses) EnableApiKeyWithResponse(ctx context.Context, keyI
 	return ParseEnableApiKeyResponse(rsp)
 }
 
-// RevokeApiKeyWithResponse 撤销 API Key
+// RevokeApiKeyWithResponse Revoke an API key
 //
-// **不可逆。** 用于这把 key 泄露了的情况——比如被提交进了仓库。
+// **Irreversible.** It is intended for a key that has been exposed, such as one committed to a repository.
 //
-// 记录不删除：这把 key 在被撤销前打了多少请求仍然查得到，那正是出事之后要看的。
+// The record is retained, so the requests the key issued before it was revoked remain readable.
 //
-// 只是想临时停一下请用停用。
+// Use disabling for a temporary measure.
 //
 // Returns a wrapper object for the known response body format(s).
 //
@@ -3201,11 +3201,11 @@ func (c *ClientWithResponses) RevokeApiKeyWithResponse(ctx context.Context, keyI
 	return ParseRevokeApiKeyResponse(rsp)
 }
 
-// ListModelsWithResponse 列出可用模型
+// ListModelsWithResponse List the available models
 //
-// 已下架（`retired`）的模型不出现在这里，但仍然查得到——见查看单个模型。
+// A model that has been retired does not appear here, while it remains readable individually.
 //
-// `context_length` 和 `max_output_tokens` 仅供客户端提示：服务端不据此截断，请求体原样转给上游。
+// `context_length` and `max_output_tokens` are advisory. The server does not truncate on their basis, and the request body is forwarded upstream unchanged.
 //
 // Returns a wrapper object for the known response body format(s).
 //
@@ -3218,9 +3218,9 @@ func (c *ClientWithResponses) ListModelsWithResponse(ctx context.Context, reqEdi
 	return ParseListModelsResponse(rsp)
 }
 
-// GetModelWithResponse 查看模型
+// GetModelWithResponse Get a model
 //
-// 已下架的模型在这里查得到，但转发时会被拒（`MODEL_RETIRED`）——这和「这个模型不存在」是两件事，前者说明它曾经有过。.
+// A model that has been retired remains readable here, while forwarding to it is refused with `MODEL_RETIRED`. That is distinct from a model that does not exist.
 //
 // Returns a wrapper object for the known response body format(s).
 //
@@ -3233,13 +3233,13 @@ func (c *ClientWithResponses) GetModelWithResponse(ctx context.Context, modelId 
 	return ParseGetModelResponse(rsp)
 }
 
-// ListRequestsWithResponse 列出请求流水
+// ListRequestsWithResponse List request records
 //
-// 游标翻页，按时间倒序。`next_cursor` 为空表示已经到底。
+// Cursor-paged, most recent first. An empty `next_cursor` indicates the last page.
 //
-// **不返回请求体和响应体**——canopy 一张表都不存它们。排障请提供 `upstream_request_id`。
+// **The request and response bodies are not returned**; they are not recorded. Quote the `upstream_request_id` when reporting a problem.
 //
-// `usage_source` 为 `estimated` 表示上游这次没给用量，那几个数是我们按字符类估的。
+// A `usage_source` of `estimated` indicates that the upstream provider reported no usage for that request, and that the figures are derived from the character classes of the payload.
 //
 // Returns a wrapper object for the known response body format(s).
 //
@@ -3252,7 +3252,7 @@ func (c *ClientWithResponses) ListRequestsWithResponse(ctx context.Context, para
 	return ParseListRequestsResponse(rsp)
 }
 
-// GetRequestWithResponse 查看单条流水
+// GetRequestWithResponse Get a single request record
 //
 // Returns a wrapper object for the known response body format(s).
 //
@@ -3265,9 +3265,9 @@ func (c *ClientWithResponses) GetRequestWithResponse(ctx context.Context, reques
 	return ParseGetRequestResponse(rsp)
 }
 
-// ListUsageByApiKeyWithResponse 按 API Key 看用量
+// ListUsageByApiKeyWithResponse Get usage by API key
 //
-// 用来回答「哪把 key 在烧钱」。已撤销的 key 仍然出现在这里——它在被撤销前的用量正是要看的东西。.
+// Answers which key is consuming the budget. A key that has been revoked still appears, since the usage it accrued beforehand is part of that answer.
 //
 // Returns a wrapper object for the known response body format(s).
 //
@@ -3280,7 +3280,7 @@ func (c *ClientWithResponses) ListUsageByApiKeyWithResponse(ctx context.Context,
 	return ParseListUsageByApiKeyResponse(rsp)
 }
 
-// ListUsageByModelWithResponse 按模型看用量
+// ListUsageByModelWithResponse Get usage by model
 //
 // Returns a wrapper object for the known response body format(s).
 //
@@ -3293,11 +3293,11 @@ func (c *ClientWithResponses) ListUsageByModelWithResponse(ctx context.Context, 
 	return ParseListUsageByModelResponse(rsp)
 }
 
-// GetUsageSummaryWithResponse 用量合计
+// GetUsageSummaryWithResponse Get total usage
 //
-// `from` / `to` 必填，跨度不超过 31 天。两者带时区偏移，传 `2026-08-01T00:00:00+08:00` 得到的就是东八区那一刻起算。
+// `from` and `to` are required and may span no more than 31 days. Both carry a timezone offset, so `2026-08-01T00:00:00+08:00` starts at that instant in UTC+8.
 //
-// 五档 token 分开给：缓存命中的读取比普通输入便宜一个数量级，合成一个总数就再也拆不开了。
+// The five token classes are reported separately. A cache read costs an order of magnitude less than ordinary input, and a single total cannot be decomposed again.
 //
 // Returns a wrapper object for the known response body format(s).
 //
@@ -3310,11 +3310,11 @@ func (c *ClientWithResponses) GetUsageSummaryWithResponse(ctx context.Context, p
 	return ParseGetUsageSummaryResponse(rsp)
 }
 
-// GetUsageTimelineWithResponse 用量曲线
+// GetUsageTimelineWithResponse Get a usage series
 //
-// 从 `from` 起按 `bucket` 切段，最后一段可能不满。段数上限 100。
+// Divided into buckets of `bucket`, starting at `from`. The final bucket may be partial, and the number of buckets is limited to 100.
 //
-// 要按本地日切分就把 `from` 传成本地时间的零点（带偏移）、`bucket` 传 `24h`——服务端不猜时区。
+// To divide by local day, send `from` as midnight in local time with its offset and `bucket` as `24h`. The server does not infer a timezone.
 //
 // Returns a wrapper object for the known response body format(s).
 //

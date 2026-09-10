@@ -434,9 +434,9 @@ func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 						break
 					}
 					switch elem[0] {
-					case '/': // Prefix: "/token"
+					case '/': // Prefix: "/scoped-tokens"
 
-						if l := len("/token"); len(elem) >= l && elem[0:l] == "/token" {
+						if l := len("/scoped-tokens"); len(elem) >= l && elem[0:l] == "/scoped-tokens" {
 							elem = elem[l:]
 						} else {
 							break
@@ -446,7 +446,7 @@ func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 							// Leaf node.
 							switch r.Method {
 							case "POST":
-								s.handleExchangeProjectTokenRequest([1]string{
+								s.handleCreateScopedTokenRequest([1]string{
 									args[0],
 								}, elemIsEscaped, w, r)
 							default:
@@ -628,7 +628,7 @@ func (s *Server) FindPath(method string, u *url.URL) (r Route, _ bool) {
 					switch method {
 					case "GET":
 						r.name = ListAgreementsOperation
-						r.summary = "列出注册必须同意的文件"
+						r.summary = "List the agreements registration requires"
 						r.operationID = "list-agreements"
 						r.operationGroup = ""
 						r.pathPattern = "/account/v1/agreements"
@@ -653,7 +653,7 @@ func (s *Server) FindPath(method string, u *url.URL) (r Route, _ bool) {
 					switch method {
 					case "GET":
 						r.name = PreviewInvitationByTokenOperation
-						r.summary = "看一眼这封邀请是谁发的、加入哪儿、什么角色"
+						r.summary = "Preview an invitation by its token"
 						r.operationID = "preview-invitation-by-token"
 						r.operationGroup = ""
 						r.pathPattern = "/account/v1/invitations/by-token"
@@ -678,7 +678,7 @@ func (s *Server) FindPath(method string, u *url.URL) (r Route, _ bool) {
 					switch method {
 					case "GET":
 						r.name = ListLocalesOperation
-						r.summary = "注册页要用的国家/地区和语言清单"
+						r.summary = "List countries and languages for registration"
 						r.operationID = "list-locales"
 						r.operationGroup = ""
 						r.pathPattern = "/account/v1/locales"
@@ -702,7 +702,7 @@ func (s *Server) FindPath(method string, u *url.URL) (r Route, _ bool) {
 					switch method {
 					case "GET":
 						r.name = GetAccountOperation
-						r.summary = "查看当前账号"
+						r.summary = "Get the current account"
 						r.operationID = "get-account"
 						r.operationGroup = ""
 						r.pathPattern = "/account/v1/me"
@@ -711,7 +711,7 @@ func (s *Server) FindPath(method string, u *url.URL) (r Route, _ bool) {
 						return r, true
 					case "PATCH":
 						r.name = UpdateAccountOperation
-						r.summary = "改当前账号的国家/地区和语言"
+						r.summary = "Update the country and language of the current account"
 						r.operationID = "update-account"
 						r.operationGroup = ""
 						r.pathPattern = "/account/v1/me"
@@ -748,7 +748,7 @@ func (s *Server) FindPath(method string, u *url.URL) (r Route, _ bool) {
 							switch method {
 							case "GET":
 								r.name = ListConsentsOperation
-								r.summary = "列出我同意过的文件"
+								r.summary = "List the agreements the caller has consented to"
 								r.operationID = "list-consents"
 								r.operationGroup = ""
 								r.pathPattern = "/account/v1/me/consents"
@@ -757,7 +757,7 @@ func (s *Server) FindPath(method string, u *url.URL) (r Route, _ bool) {
 								return r, true
 							case "POST":
 								r.name = AcceptAgreementsOperation
-								r.summary = "同意条款"
+								r.summary = "Consent to the current agreements"
 								r.operationID = "accept-agreements"
 								r.operationGroup = ""
 								r.pathPattern = "/account/v1/me/consents"
@@ -794,7 +794,7 @@ func (s *Server) FindPath(method string, u *url.URL) (r Route, _ bool) {
 								switch method {
 								case "GET":
 									r.name = GetIdentityVerificationOperation
-									r.summary = "查看实名核验状态"
+									r.summary = "Get identity verification status"
 									r.operationID = "get-identity-verification"
 									r.operationGroup = ""
 									r.pathPattern = "/account/v1/me/identity-verification"
@@ -803,7 +803,7 @@ func (s *Server) FindPath(method string, u *url.URL) (r Route, _ bool) {
 									return r, true
 								case "POST":
 									r.name = SubmitIdentityVerificationOperation
-									r.summary = "提交实名核验材料"
+									r.summary = "Submit identity verification"
 									r.operationID = "submit-identity-verification"
 									r.operationGroup = ""
 									r.pathPattern = "/account/v1/me/identity-verification"
@@ -827,7 +827,7 @@ func (s *Server) FindPath(method string, u *url.URL) (r Route, _ bool) {
 								switch method {
 								case "GET":
 									r.name = ListMyInvitationsOperation
-									r.summary = "列出寄给我的要约"
+									r.summary = "List invitations addressed to the caller"
 									r.operationID = "list-my-invitations"
 									r.operationGroup = ""
 									r.pathPattern = "/account/v1/me/invitations"
@@ -864,7 +864,7 @@ func (s *Server) FindPath(method string, u *url.URL) (r Route, _ bool) {
 										switch method {
 										case "POST":
 											r.name = AcceptInvitationByTokenOperation
-											r.summary = "顺着邀请链接接受"
+											r.summary = "Accept an invitation by its token"
 											r.operationID = "accept-invitation-by-token"
 											r.operationGroup = ""
 											r.pathPattern = "/account/v1/me/invitations/accept"
@@ -904,7 +904,7 @@ func (s *Server) FindPath(method string, u *url.URL) (r Route, _ bool) {
 										switch method {
 										case "POST":
 											r.name = AcceptInvitationOperation
-											r.summary = "接受一份列在我名下的要约"
+											r.summary = "Accept an invitation listed against the caller"
 											r.operationID = "accept-invitation"
 											r.operationGroup = ""
 											r.pathPattern = "/account/v1/me/invitations/{invitationId}/accept"
@@ -938,7 +938,7 @@ func (s *Server) FindPath(method string, u *url.URL) (r Route, _ bool) {
 					switch method {
 					case "GET":
 						r.name = ListProjectsOperation
-						r.summary = "列出我参与的项目"
+						r.summary = "List the projects the caller belongs to"
 						r.operationID = "list-projects"
 						r.operationGroup = ""
 						r.pathPattern = "/account/v1/projects"
@@ -947,7 +947,7 @@ func (s *Server) FindPath(method string, u *url.URL) (r Route, _ bool) {
 						return r, true
 					case "POST":
 						r.name = CreateProjectOperation
-						r.summary = "建一个项目"
+						r.summary = "Create a project"
 						r.operationID = "create-project"
 						r.operationGroup = ""
 						r.pathPattern = "/account/v1/projects"
@@ -980,9 +980,9 @@ func (s *Server) FindPath(method string, u *url.URL) (r Route, _ bool) {
 						break
 					}
 					switch elem[0] {
-					case '/': // Prefix: "/token"
+					case '/': // Prefix: "/scoped-tokens"
 
-						if l := len("/token"); len(elem) >= l && elem[0:l] == "/token" {
+						if l := len("/scoped-tokens"); len(elem) >= l && elem[0:l] == "/scoped-tokens" {
 							elem = elem[l:]
 						} else {
 							break
@@ -992,11 +992,11 @@ func (s *Server) FindPath(method string, u *url.URL) (r Route, _ bool) {
 							// Leaf node.
 							switch method {
 							case "POST":
-								r.name = ExchangeProjectTokenOperation
-								r.summary = "换一张项目令牌"
-								r.operationID = "exchange-project-token"
+								r.name = CreateScopedTokenOperation
+								r.summary = "Exchange the access token for a scoped token"
+								r.operationID = "create-scoped-token"
 								r.operationGroup = ""
-								r.pathPattern = "/account/v1/projects/{projectId}/token"
+								r.pathPattern = "/account/v1/projects/{projectId}/scoped-tokens"
 								r.args = args
 								r.count = 1
 								return r, true
@@ -1022,7 +1022,7 @@ func (s *Server) FindPath(method string, u *url.URL) (r Route, _ bool) {
 					switch method {
 					case "POST":
 						r.name = RegisterOperation
-						r.summary = "注册账号"
+						r.summary = "Register an account"
 						r.operationID = "register"
 						r.operationGroup = ""
 						r.pathPattern = "/account/v1/register"
@@ -1047,7 +1047,7 @@ func (s *Server) FindPath(method string, u *url.URL) (r Route, _ bool) {
 					switch method {
 					case "GET":
 						r.name = GetSettingsOperation
-						r.summary = "这个平台现在收不收人"
+						r.summary = "Get registration and project creation settings"
 						r.operationID = "get-settings"
 						r.operationGroup = ""
 						r.pathPattern = "/account/v1/settings"

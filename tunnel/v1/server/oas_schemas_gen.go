@@ -88,9 +88,35 @@ func (s *Error) SetStatus(val int64) {
 	s.Status = val
 }
 
-type ErrorMeta map[string]jx.Raw
+type ErrorMeta struct {
+	// Present on every response whose `code` is `VALIDATION_FAILED`, and on no other response.
+	Violations      []Violation `json:"violations"`
+	AdditionalProps ErrorMetaAdditional
+}
 
-func (s *ErrorMeta) init() ErrorMeta {
+// GetViolations returns the value of Violations.
+func (s *ErrorMeta) GetViolations() []Violation {
+	return s.Violations
+}
+
+// GetAdditionalProps returns the value of AdditionalProps.
+func (s *ErrorMeta) GetAdditionalProps() ErrorMetaAdditional {
+	return s.AdditionalProps
+}
+
+// SetViolations sets the value of Violations.
+func (s *ErrorMeta) SetViolations(val []Violation) {
+	s.Violations = val
+}
+
+// SetAdditionalProps sets the value of AdditionalProps.
+func (s *ErrorMeta) SetAdditionalProps(val ErrorMetaAdditional) {
+	s.AdditionalProps = val
+}
+
+type ErrorMetaAdditional map[string]jx.Raw
+
+func (s *ErrorMetaAdditional) init() ErrorMetaAdditional {
 	m := *s
 	if m == nil {
 		m = map[string]jx.Raw{}
@@ -310,10 +336,12 @@ func (o OptString) Or(d string) string {
 
 // Ref: #/components/schemas/SubscriptionResource
 type SubscriptionResource struct {
-	// Ready 表示节点已全部下发；preparing 表示仍在下发——此时链接照样可用.
+	// Ready means every node has been distributed; preparing means distribution is still under way, and
+	// the link works either way.
 	Status    SubscriptionResourceStatus `json:"status"`
 	UpdatedAt time.Time                  `json:"updated_at"`
-	// 订阅地址。这是一条长期有效的凭据，等同于密码，请勿转发或截图分享.
+	// The subscription address. It is a long-lived credential equivalent to a password; do not forward it
+	// or share a screenshot of it.
 	URL     string `json:"url"`
 	Version int64  `json:"version"`
 }
@@ -358,7 +386,8 @@ func (s *SubscriptionResource) SetVersion(val int64) {
 	s.Version = val
 }
 
-// Ready 表示节点已全部下发；preparing 表示仍在下发——此时链接照样可用.
+// Ready means every node has been distributed; preparing means distribution is still under way, and
+// the link works either way.
 type SubscriptionResourceStatus string
 
 const (
@@ -400,12 +429,13 @@ func (s *SubscriptionResourceStatus) UnmarshalText(data []byte) error {
 	}
 }
 
-// 当前项目那条四层隧道。它只回答一个问题：生成过没有。.
+// The layer 4 tunnel of the current project. It answers a single question — whether the tunnel has
+// been generated.
 // Ref: #/components/schemas/TunnelResource
 type TunnelResource struct {
 	CreatedAt time.Time `json:"created_at"`
-	// 隧道当前是否可用。为 false
-	// 表示被平台停用（欠费、违规或项目停服），需要先处理停用的原因.
+	// Whether the tunnel is currently usable. false means the platform has disabled it — for an unpaid
+	// balance, a violation, or a suspended project — and the cause has to be resolved first.
 	Enabled bool      `json:"enabled"`
 	ID      uuid.UUID `json:"id"`
 }
@@ -480,21 +510,21 @@ func (s *UsageDayResource) SetRawBytes(val int64) {
 
 // Ref: #/components/schemas/UsageResource
 type UsageResource struct {
-	// 按线路倍率折算后的用量，配额比对以此为准.
+	// Usage after the multiplier of each route has been applied. Quota is measured against this value.
 	BilledBytes int64 `json:"billed_bytes"`
 	OverQuota   bool  `json:"over_quota"`
-	// 本期计费周期的结束日（YYYY-MM-DD）.
+	// Last day of the current billing period (YYYY-MM-DD).
 	PeriodEnd string `json:"period_end"`
-	// 本期计费周期的起始日（YYYY-MM-DD）.
+	// First day of the current billing period (YYYY-MM-DD).
 	PeriodStart string `json:"period_start"`
-	// 上游给出的真实配额，0 表示不限量.
+	// The quota in force; 0 means unlimited.
 	QuotaBytes int64 `json:"quota_bytes"`
-	// 上游判定超额的时刻；null 表示未超额.
+	// When the quota was found to be exceeded; null while it has not been.
 	QuotaExceededAt NilDateTime `json:"quota_exceeded_at"`
-	// 实际传输的字节，不用于配额比对.
+	// Bytes actually transferred. Quota is not measured against this value.
 	RawBytes    int64 `json:"raw_bytes"`
 	UploadBytes int64 `json:"upload_bytes"`
-	// 上游给出的用量百分比.
+	// Usage as a percentage of the quota.
 	UsagePercent float64 `json:"usage_percent"`
 }
 
@@ -590,7 +620,7 @@ func (s *UsageResource) SetUsagePercent(val float64) {
 
 // Ref: #/components/schemas/UsageSeriesResource
 type UsageSeriesResource struct {
-	// 上游实际采用的天数，可能被它夹到 1–365.
+	// The number of days actually covered, which may have been clamped to the range 1–365.
 	Days   int64              `json:"days"`
 	Points []UsageDayResource `json:"points"`
 }
@@ -613,4 +643,48 @@ func (s *UsageSeriesResource) SetDays(val int64) {
 // SetPoints sets the value of Points.
 func (s *UsageSeriesResource) SetPoints(val []UsageDayResource) {
 	s.Points = val
+}
+
+// A single mismatch between the request and the contract.
+//
+// Use `field` to locate the input, `rule` to decide what to tell the user, and `reason` only for
+// diagnostics.
+// Ref: #/components/schemas/Violation
+type Violation struct {
+	// Dot-separated path to the field, such as `name` or `schedule.0.start_time_seconds`.
+	Field string `json:"field"`
+	// The JSON Schema keyword that failed, such as `minLength`, `minimum` or `pattern`.
+	Rule string `json:"rule"`
+	// The validator's own wording, in English. Intended for diagnostics; do not display it to end users.
+	Reason OptString `json:"reason"`
+}
+
+// GetField returns the value of Field.
+func (s *Violation) GetField() string {
+	return s.Field
+}
+
+// GetRule returns the value of Rule.
+func (s *Violation) GetRule() string {
+	return s.Rule
+}
+
+// GetReason returns the value of Reason.
+func (s *Violation) GetReason() OptString {
+	return s.Reason
+}
+
+// SetField sets the value of Field.
+func (s *Violation) SetField(val string) {
+	s.Field = val
+}
+
+// SetRule sets the value of Rule.
+func (s *Violation) SetRule(val string) {
+	s.Rule = val
+}
+
+// SetReason sets the value of Reason.
+func (s *Violation) SetReason(val OptString) {
+	s.Reason = val
 }

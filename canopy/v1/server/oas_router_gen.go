@@ -633,7 +633,7 @@ func (s *Server) FindPath(method string, u *url.URL) (r Route, _ bool) {
 					switch method {
 					case "GET":
 						r.name = ListAPIKeysOperation
-						r.summary = "列出 API Key"
+						r.summary = "List API keys"
 						r.operationID = "list-api-keys"
 						r.operationGroup = ""
 						r.pathPattern = "/api/v1/keys"
@@ -642,7 +642,7 @@ func (s *Server) FindPath(method string, u *url.URL) (r Route, _ bool) {
 						return r, true
 					case "POST":
 						r.name = CreateAPIKeyOperation
-						r.summary = "签发一把 API Key"
+						r.summary = "Issue an API key"
 						r.operationID = "create-api-key"
 						r.operationGroup = ""
 						r.pathPattern = "/api/v1/keys"
@@ -675,7 +675,7 @@ func (s *Server) FindPath(method string, u *url.URL) (r Route, _ bool) {
 						switch method {
 						case "GET":
 							r.name = GetAPIKeyOperation
-							r.summary = "查看 API Key"
+							r.summary = "Get an API key"
 							r.operationID = "get-api-key"
 							r.operationGroup = ""
 							r.pathPattern = "/api/v1/keys/{keyId}"
@@ -684,7 +684,7 @@ func (s *Server) FindPath(method string, u *url.URL) (r Route, _ bool) {
 							return r, true
 						case "PATCH":
 							r.name = UpdateAPIKeyOperation
-							r.summary = "修改 API Key"
+							r.summary = "Update an API key"
 							r.operationID = "update-api-key"
 							r.operationGroup = ""
 							r.pathPattern = "/api/v1/keys/{keyId}"
@@ -721,7 +721,7 @@ func (s *Server) FindPath(method string, u *url.URL) (r Route, _ bool) {
 								switch method {
 								case "POST":
 									r.name = DisableAPIKeyOperation
-									r.summary = "停用 API Key"
+									r.summary = "Disable an API key"
 									r.operationID = "disable-api-key"
 									r.operationGroup = ""
 									r.pathPattern = "/api/v1/keys/{keyId}/disable"
@@ -746,7 +746,7 @@ func (s *Server) FindPath(method string, u *url.URL) (r Route, _ bool) {
 								switch method {
 								case "POST":
 									r.name = EnableAPIKeyOperation
-									r.summary = "启用 API Key"
+									r.summary = "Enable an API key"
 									r.operationID = "enable-api-key"
 									r.operationGroup = ""
 									r.pathPattern = "/api/v1/keys/{keyId}/enable"
@@ -771,7 +771,7 @@ func (s *Server) FindPath(method string, u *url.URL) (r Route, _ bool) {
 								switch method {
 								case "POST":
 									r.name = RevokeAPIKeyOperation
-									r.summary = "撤销 API Key"
+									r.summary = "Revoke an API key"
 									r.operationID = "revoke-api-key"
 									r.operationGroup = ""
 									r.pathPattern = "/api/v1/keys/{keyId}/revoke"
@@ -801,7 +801,7 @@ func (s *Server) FindPath(method string, u *url.URL) (r Route, _ bool) {
 					switch method {
 					case "GET":
 						r.name = ListModelsOperation
-						r.summary = "列出可用模型"
+						r.summary = "List the available models"
 						r.operationID = "list-models"
 						r.operationGroup = ""
 						r.pathPattern = "/api/v1/models"
@@ -835,7 +835,7 @@ func (s *Server) FindPath(method string, u *url.URL) (r Route, _ bool) {
 						switch method {
 						case "GET":
 							r.name = GetModelOperation
-							r.summary = "查看模型"
+							r.summary = "Get a model"
 							r.operationID = "get-model"
 							r.operationGroup = ""
 							r.pathPattern = "/api/v1/models/{modelId}"
@@ -861,7 +861,7 @@ func (s *Server) FindPath(method string, u *url.URL) (r Route, _ bool) {
 					switch method {
 					case "GET":
 						r.name = ListRequestsOperation
-						r.summary = "列出请求流水"
+						r.summary = "List request records"
 						r.operationID = "list-requests"
 						r.operationGroup = ""
 						r.pathPattern = "/api/v1/requests"
@@ -895,7 +895,7 @@ func (s *Server) FindPath(method string, u *url.URL) (r Route, _ bool) {
 						switch method {
 						case "GET":
 							r.name = GetRequestOperation
-							r.summary = "查看单条流水"
+							r.summary = "Get a single request record"
 							r.operationID = "get-request"
 							r.operationGroup = ""
 							r.pathPattern = "/api/v1/requests/{requestId}"
@@ -946,7 +946,7 @@ func (s *Server) FindPath(method string, u *url.URL) (r Route, _ bool) {
 							switch method {
 							case "GET":
 								r.name = ListUsageByAPIKeyOperation
-								r.summary = "按 API Key 看用量"
+								r.summary = "Get usage by API key"
 								r.operationID = "list-usage-by-api-key"
 								r.operationGroup = ""
 								r.pathPattern = "/api/v1/usage/by-api-key"
@@ -971,7 +971,7 @@ func (s *Server) FindPath(method string, u *url.URL) (r Route, _ bool) {
 							switch method {
 							case "GET":
 								r.name = ListUsageByModelOperation
-								r.summary = "按模型看用量"
+								r.summary = "Get usage by model"
 								r.operationID = "list-usage-by-model"
 								r.operationGroup = ""
 								r.pathPattern = "/api/v1/usage/by-model"
@@ -998,7 +998,7 @@ func (s *Server) FindPath(method string, u *url.URL) (r Route, _ bool) {
 						switch method {
 						case "GET":
 							r.name = GetUsageSummaryOperation
-							r.summary = "用量合计"
+							r.summary = "Get total usage"
 							r.operationID = "get-usage-summary"
 							r.operationGroup = ""
 							r.pathPattern = "/api/v1/usage/summary"
@@ -1023,7 +1023,7 @@ func (s *Server) FindPath(method string, u *url.URL) (r Route, _ bool) {
 						switch method {
 						case "GET":
 							r.name = GetUsageTimelineOperation
-							r.summary = "用量曲线"
+							r.summary = "Get a usage series"
 							r.operationID = "get-usage-timeline"
 							r.operationGroup = ""
 							r.pathPattern = "/api/v1/usage/timeline"

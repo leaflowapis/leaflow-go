@@ -15,11 +15,11 @@ var _ Handler = UnimplementedHandler{}
 
 // CreateAPIKey implements create-api-key operation.
 //
-// 响应里的 `secret` 是完整的
-// key，只在这一次出现——服务端只存它的哈希，之后任何接口都不会再返回它。丢了只能撤销重建。
+// The `secret` in the response is the complete key and appears in this response only. It is returned
+// by no other endpoint, and a key that has been lost has to be revoked and reissued.
 //
-// 把它填进 `OPENAI_API_KEY` 一类的地方即可，转发接口同时接受
-// OpenAI、Anthropic、Gemini 三种调用格式。.
+// Supply it wherever a value such as `OPENAI_API_KEY` is expected. The forwarding endpoints accept the
+// OpenAI, Anthropic and Gemini request formats alike.
 //
 // POST /api/v1/keys
 func (UnimplementedHandler) CreateAPIKey(ctx context.Context, req *CreateAPIKeyRequestBody) (r *IssuedAPIKeyResource, _ error) {
@@ -28,7 +28,8 @@ func (UnimplementedHandler) CreateAPIKey(ctx context.Context, req *CreateAPIKeyR
 
 // DisableAPIKey implements disable-api-key operation.
 //
-// 临时停用，随时可以启用回来。要永久失效请用撤销。.
+// A temporary measure; the key may be enabled again at any time. Use revocation to invalidate it
+// permanently.
 //
 // POST /api/v1/keys/{keyId}/disable
 func (UnimplementedHandler) DisableAPIKey(ctx context.Context, params DisableAPIKeyParams) (r *APIKeyResource, _ error) {
@@ -37,8 +38,9 @@ func (UnimplementedHandler) DisableAPIKey(ctx context.Context, params DisableAPI
 
 // EnableAPIKey implements enable-api-key operation.
 //
-// 两种情况开不回来：已撤销的（`API_KEY_REVOKED`），以及因项目停服被停的（`API_KEY_PROJECT_SUSPENDED`，响应里
-// `suspended` 为 true）。后者要等项目恢复。.
+// Two cases cannot be enabled again. A revoked key answers `API_KEY_REVOKED`, and a key disabled
+// because its project is suspended answers `API_KEY_PROJECT_SUSPENDED` with `suspended` set to true;
+// the latter requires the project to be restored first.
 //
 // POST /api/v1/keys/{keyId}/enable
 func (UnimplementedHandler) EnableAPIKey(ctx context.Context, params EnableAPIKeyParams) (r *APIKeyResource, _ error) {
@@ -47,7 +49,7 @@ func (UnimplementedHandler) EnableAPIKey(ctx context.Context, params EnableAPIKe
 
 // GetAPIKey implements get-api-key operation.
 //
-// 查看 API Key.
+// Get an API key.
 //
 // GET /api/v1/keys/{keyId}
 func (UnimplementedHandler) GetAPIKey(ctx context.Context, params GetAPIKeyParams) (r *APIKeyResource, _ error) {
@@ -56,7 +58,8 @@ func (UnimplementedHandler) GetAPIKey(ctx context.Context, params GetAPIKeyParam
 
 // GetModel implements get-model operation.
 //
-// 已下架的模型在这里查得到，但转发时会被拒（`MODEL_RETIRED`）——这和「这个模型不存在」是两件事，前者说明它曾经有过。.
+// A model that has been retired remains readable here, while forwarding to it is refused with
+// `MODEL_RETIRED`. That is distinct from a model that does not exist.
 //
 // GET /api/v1/models/{modelId}
 func (UnimplementedHandler) GetModel(ctx context.Context, params GetModelParams) (r *ModelResource, _ error) {
@@ -65,7 +68,7 @@ func (UnimplementedHandler) GetModel(ctx context.Context, params GetModelParams)
 
 // GetRequest implements get-request operation.
 //
-// 查看单条流水.
+// Get a single request record.
 //
 // GET /api/v1/requests/{requestId}
 func (UnimplementedHandler) GetRequest(ctx context.Context, params GetRequestParams) (r *RequestResource, _ error) {
@@ -74,11 +77,11 @@ func (UnimplementedHandler) GetRequest(ctx context.Context, params GetRequestPar
 
 // GetUsageSummary implements get-usage-summary operation.
 //
-// `from` / `to` 必填，跨度不超过 31 天。两者带时区偏移，传
-// `2026-08-01T00:00:00+08:00` 得到的就是东八区那一刻起算。
+// `from` and `to` are required and may span no more than 31 days. Both carry a timezone offset, so
+// `2026-08-01T00:00:00+08:00` starts at that instant in UTC+8.
 //
-// 五档 token
-// 分开给：缓存命中的读取比普通输入便宜一个数量级，合成一个总数就再也拆不开了。.
+// The five token classes are reported separately. A cache read costs an order of magnitude less than
+// ordinary input, and a single total cannot be decomposed again.
 //
 // GET /api/v1/usage/summary
 func (UnimplementedHandler) GetUsageSummary(ctx context.Context, params GetUsageSummaryParams) (r *TotalsResource, _ error) {
@@ -87,10 +90,11 @@ func (UnimplementedHandler) GetUsageSummary(ctx context.Context, params GetUsage
 
 // GetUsageTimeline implements get-usage-timeline operation.
 //
-// 从 `from` 起按 `bucket` 切段，最后一段可能不满。段数上限 100。
+// Divided into buckets of `bucket`, starting at `from`. The final bucket may be partial, and the
+// number of buckets is limited to 100.
 //
-// 要按本地日切分就把 `from` 传成本地时间的零点（带偏移）、`bucket` 传
-// `24h`——服务端不猜时区。.
+// To divide by local day, send `from` as midnight in local time with its offset and `bucket` as `24h`.
+// The server does not infer a timezone.
 //
 // GET /api/v1/usage/timeline
 func (UnimplementedHandler) GetUsageTimeline(ctx context.Context, params GetUsageTimelineParams) (r *UsageTimelineResponseBody, _ error) {
@@ -99,7 +103,7 @@ func (UnimplementedHandler) GetUsageTimeline(ctx context.Context, params GetUsag
 
 // ListAPIKeys implements list-api-keys operation.
 //
-// 列出 API Key.
+// List API keys.
 //
 // GET /api/v1/keys
 func (UnimplementedHandler) ListAPIKeys(ctx context.Context, params ListAPIKeysParams) (r *LengthAwarePageAPIKeyResource, _ error) {
@@ -108,10 +112,10 @@ func (UnimplementedHandler) ListAPIKeys(ctx context.Context, params ListAPIKeysP
 
 // ListModels implements list-models operation.
 //
-// 已下架（`retired`）的模型不出现在这里，但仍然查得到——见查看单个模型。
+// A model that has been retired does not appear here, while it remains readable individually.
 //
-// `context_length` 和 `max_output_tokens`
-// 仅供客户端提示：服务端不据此截断，请求体原样转给上游。.
+// `context_length` and `max_output_tokens` are advisory. The server does not truncate on their basis,
+// and the request body is forwarded upstream unchanged.
 //
 // GET /api/v1/models
 func (UnimplementedHandler) ListModels(ctx context.Context) (r *ModelListResponseBody, _ error) {
@@ -120,13 +124,13 @@ func (UnimplementedHandler) ListModels(ctx context.Context) (r *ModelListRespons
 
 // ListRequests implements list-requests operation.
 //
-// 游标翻页，按时间倒序。`next_cursor` 为空表示已经到底。
+// Cursor-paged, most recent first. An empty `next_cursor` indicates the last page.
 //
-// 不返回请求体和响应体——canopy 一张表都不存它们。排障请提供
-// `upstream_request_id`。
+// The request and response bodies are not returned; they are not recorded. Quote the
+// `upstream_request_id` when reporting a problem.
 //
-// `usage_source` 为 `estimated`
-// 表示上游这次没给用量，那几个数是我们按字符类估的。.
+// A `usage_source` of `estimated` indicates that the upstream provider reported no usage for that
+// request, and that the figures are derived from the character classes of the payload.
 //
 // GET /api/v1/requests
 func (UnimplementedHandler) ListRequests(ctx context.Context, params ListRequestsParams) (r *CursorPageRequestResource, _ error) {
@@ -135,8 +139,8 @@ func (UnimplementedHandler) ListRequests(ctx context.Context, params ListRequest
 
 // ListUsageByAPIKey implements list-usage-by-api-key operation.
 //
-// 用来回答「哪把 key 在烧钱」。已撤销的 key
-// 仍然出现在这里——它在被撤销前的用量正是要看的东西。.
+// Answers which key is consuming the budget. A key that has been revoked still appears, since the
+// usage it accrued beforehand is part of that answer.
 //
 // GET /api/v1/usage/by-api-key
 func (UnimplementedHandler) ListUsageByAPIKey(ctx context.Context, params ListUsageByAPIKeyParams) (r *APIKeyUsageListResponseBody, _ error) {
@@ -145,7 +149,7 @@ func (UnimplementedHandler) ListUsageByAPIKey(ctx context.Context, params ListUs
 
 // ListUsageByModel implements list-usage-by-model operation.
 //
-// 按模型看用量.
+// Get usage by model.
 //
 // GET /api/v1/usage/by-model
 func (UnimplementedHandler) ListUsageByModel(ctx context.Context, params ListUsageByModelParams) (r *ModelUsageListResponseBody, _ error) {
@@ -154,12 +158,11 @@ func (UnimplementedHandler) ListUsageByModel(ctx context.Context, params ListUsa
 
 // RevokeAPIKey implements revoke-api-key operation.
 //
-// 不可逆。 用于这把 key 泄露了的情况——比如被提交进了仓库。
+// Irreversible. It is intended for a key that has been exposed, such as one committed to a repository.
 //
-// 记录不删除：这把 key
-// 在被撤销前打了多少请求仍然查得到，那正是出事之后要看的。
+// The record is retained, so the requests the key issued before it was revoked remain readable.
 //
-// 只是想临时停一下请用停用。.
+// Use disabling for a temporary measure.
 //
 // POST /api/v1/keys/{keyId}/revoke
 func (UnimplementedHandler) RevokeAPIKey(ctx context.Context, params RevokeAPIKeyParams) (r *APIKeyResource, _ error) {
@@ -168,12 +171,12 @@ func (UnimplementedHandler) RevokeAPIKey(ctx context.Context, params RevokeAPIKe
 
 // UpdateAPIKey implements update-api-key operation.
 //
-// 只改属性，不改状态——启用、停用、撤销各有自己的接口。
+// Attributes only. Enabling, disabling and revoking each have their own endpoint.
 //
-// 没提到的字段保持不变。要把到期时间改成「永不过期」请传
-// `clear_expiry: true`，而不是把 `expires_at` 传成 null。
+// A field that is not supplied is left unchanged. To remove an expiry, send `clear_expiry` as true
+// rather than a null `expires_at`.
 //
-// 已撤销的 key 不接受任何修改。.
+// A revoked key accepts no modification.
 //
 // PATCH /api/v1/keys/{keyId}
 func (UnimplementedHandler) UpdateAPIKey(ctx context.Context, req *UpdateAPIKeyRequestBody, params UpdateAPIKeyParams) (r *APIKeyResource, _ error) {

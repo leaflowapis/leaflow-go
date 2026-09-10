@@ -31,11 +31,10 @@ func trimTrailingSlashes(u *url.URL) {
 type Invoker interface {
 	// AttachPolicy invokes attach-policy operation.
 	//
-	// 它建的是附加策略——要么带资源范围，要么方向是 deny。一条不限资源的
-	// allow 是基础策略，每个成员只有一条，改它走 set-member-roles 和
-	// set-member-permissions。roles 里不能有 OWNER 或
-	// ADMIN：它们是规则而不是权限集合，「限定在三台机器上的所有者」讲不通。要
-	// iam:members.manage。.
+	// This creates an additional policy, which either carries a resource scope or has `deny` as its
+	// effect. An `allow` covering every resource is a base policy, of which each member holds exactly one,
+	// and it is changed with set-member-roles and set-member-permissions. `roles` cannot contain `OWNER`
+	// or `ADMIN`. Requires `iam:members.manage`.
 	//
 	// POST /api/v1/policies
 	AttachPolicy(ctx context.Context, request *AttachPolicyRequestBody) (*PolicyResource, error)
@@ -56,180 +55,186 @@ type Invoker interface {
 	BatchGetMembers(ctx context.Context, request *BatchGetMembersRequestBody) (*BatchGetMembersResponseBody, error)
 	// CreateRole invokes create-role operation.
 	//
-	// 建一个角色.
+	// Create a role.
 	//
 	// POST /api/v1/roles
 	CreateRole(ctx context.Context, request *CreateRoleRequestBody) (*RoleResource, error)
 	// CreateSSHKey invokes create-ssh-key operation.
 	//
-	// Owner=me 是自己的，是成员就能加；owner=project 是项目公用的，要
-	// iam:ssh_keys.manage —— 它会进这个项目之后开出来的每一台机器。.
+	// `owner=me` adds a key of the caller's own, which any member may do. `owner=project` adds a key
+	// shared by the project, requires `iam:ssh_keys.manage`, and lands on every machine created in the
+	// project afterwards.
 	//
 	// POST /api/v1/ssh-keys
 	CreateSSHKey(ctx context.Context, request *CreateSSHKeyRequestBody) (*SSHKeyResource, error)
 	// DeleteProject invokes delete-project operation.
 	//
-	// 只有所有者能做，而且没有回头路：项目进入
-	// DELETING，各服务开始清掉它下面的资源。项目行本身永远留着——查一个删掉的项目查得到，答案是它没了，而不是一个
-	// 404。.
+	// Only the owner can do this, and it cannot be undone. The project enters DELETING and each service
+	// begins removing the resources under it. The project itself remains readable afterwards, answering
+	// that it is gone rather than 404.
 	//
 	// DELETE /api/v1/project
 	DeleteProject(ctx context.Context) (*ProjectAccessResource, error)
 	// DeleteRole invokes delete-role operation.
 	//
-	// 还有人持有时会被拒。级联摘掉那些绑定等于把每个持有者悄悄降级——请求里没有一个字说了这件事，事后也查不到。.
+	// Refused while anyone still holds it. Cascading the removal would quietly demote every holder.
 	//
 	// DELETE /api/v1/roles/{code}
 	DeleteRole(ctx context.Context, params DeleteRoleParams) error
 	// DetachPolicy invokes detach-policy operation.
 	//
-	// 基础策略摘不掉——它是这个成员角色的落点，删了它这个人就不再持有任何角色，而「让他离开这个项目」是
-	// remove-member 的事。要 iam:members.manage。.
+	// A base policy cannot be detached; it is where a member's roles sit. Use remove-member to take
+	// someone out of the project. Requires `iam:members.manage`.
 	//
 	// DELETE /api/v1/policies/{policyId}
 	DetachPolicy(ctx context.Context, params DetachPolicyParams) error
 	// GetPolicy invokes get-policy operation.
 	//
-	// 和 list-policies
-	// 同一条规则，在项目里就看得到：谁被授了什么也是「这个项目有谁」的一部分，读它不需要额外的权限。.
+	// Visible to any member, on the same rule as list-policies; no further permission is required.
 	//
 	// GET /api/v1/policies/{policyId}
 	GetPolicy(ctx context.Context, params GetPolicyParams) (*PolicyResource, error)
 	// GetProject invokes get-project operation.
 	//
-	// 在项目里就看得到，不需要额外的读权限。.
+	// Visible to any member; no further permission is required.
 	//
 	// GET /api/v1/project
 	GetProject(ctx context.Context) (*ProjectAccessResource, error)
 	// GetProjectMembership invokes get-project-membership operation.
 	//
-	// 只给事实，不给结论：这里没有 allowed，因为 IAM
-	// 不知道你要做的是哪个操作——哪个操作需要哪条权限那份目录属于各个服务，判断在它们那边。.
+	// Facts rather than a conclusion. There is no `allowed` field here, because each service holds the
+	// catalogue mapping its operations to permissions and decides on its own.
 	//
 	// GET /api/v1/membership
 	GetProjectMembership(ctx context.Context) (*MembershipResource, error)
 	// GetRole invokes get-role operation.
 	//
-	// 查看一个角色.
+	// Get a role.
 	//
 	// GET /api/v1/roles/{code}
 	GetRole(ctx context.Context, params GetRoleParams) (*RoleResource, error)
 	// GetSSHKey invokes get-ssh-key operation.
 	//
-	// 查看一把公钥.
+	// Get an SSH key.
 	//
 	// GET /api/v1/ssh-keys/{keyId}
 	GetSSHKey(ctx context.Context, params GetSSHKeyParams) (*SSHKeyResource, error)
 	// IssueInvitation invokes issue-invitation operation.
 	//
-	// 要约站 14
-	// 天。有上限是因为里面那些角色是按发出那一刻的项目校验的，一份活得比它所依据的安排还久的要约会授出现在没人打算授的权限。.
+	// An invitation stands for 14 days. The roles it carries are validated against the project as it stood
+	// when the invitation was sent, so it expires rather than outliving the arrangement it rests on.
 	//
 	// POST /api/v1/invitations
 	IssueInvitation(ctx context.Context, request *IssueInvitationRequestBody) (*IssuedInvitationResponseBody, error)
 	// ListMembers invokes list-members operation.
 	//
-	// 列出项目成员.
+	// List the members of a project.
 	//
 	// GET /api/v1/members
 	ListMembers(ctx context.Context, params ListMembersParams) (*LengthAwarePageMemberResource, error)
 	// ListPermissions invokes list-permissions operation.
 	//
-	// 各服务在启动时把自己那份目录注册进 IAM（和 AddFinalizer
-	// 同一段代码），所以这里是一份汇总，不只是 IAM 自己那几条。IAM
-	// 不用它做判定——判定在各服务自己那边，拿 Grant
-	// 配它自己那份目录算；这份汇总只是让界面画得出勾选框，它落后一个版本只会让界面上少几条可选项，不会让判定出错。一个还没启动过的服务，它的权限不在这里。.
+	// Each service registers its own catalogue with IAM at start-up, so this is the platform-wide list
+	// rather than the permissions of IAM alone. IAM does not decide anything with it — each service
+	// decides using the caller's grant together with its own catalogue, and this list only serves to
+	// render the choices. A service that has never started does not appear here.
 	//
 	// GET /api/v1/permissions
 	ListPermissions(ctx context.Context) (*CatalogListResponseBody, error)
 	// ListPolicies invokes list-policies operation.
 	//
-	// 在项目里就看得到，和成员列表同一条规则：谁被授了什么也是「这个项目有谁」的一部分。.
+	// Visible to any member, on the same rule as the member list. What has been granted to whom is part of
+	// who is in the project.
 	//
 	// GET /api/v1/policies
 	ListPolicies(ctx context.Context, params ListPoliciesParams) (*PolicyListResponseBody, error)
 	// ListProjectInvitations invokes list-project-invitations operation.
 	//
-	// 在项目里就看得到，和成员列表同一条规则：谁被请了也是「这个项目有谁」的一部分。.
+	// Visible to any member, on the same rule as the member list. Who has been invited is part of who is
+	// in the project.
 	//
 	// GET /api/v1/invitations
 	ListProjectInvitations(ctx context.Context, params ListProjectInvitationsParams) (*LengthAwarePageInvitationResource, error)
 	// ListRoles invokes list-roles operation.
 	//
-	// 列出项目里的角色.
+	// List the roles in this project.
 	//
 	// GET /api/v1/roles
 	ListRoles(ctx context.Context) (*RoleListResponseBody, error)
 	// ListSSHKeys invokes list-ssh-keys operation.
 	//
-	// 归成员的和归项目的都在里面，靠每一条上的 owner_user_id 区分。.
+	// Both the keys belonging to members and the keys belonging to the project are listed; the
+	// `owner_user_id` on each one tells them apart.
 	//
 	// GET /api/v1/ssh-keys
 	ListSSHKeys(ctx context.Context, params ListSSHKeysParams) (*LengthAwarePageSSHKeyResource, error)
 	// RemoveMember invokes remove-member operation.
 	//
-	// 移除别人要
-	// iam:members.manage；退出只要求自己在这个项目里——任何人都可能被拉进一个项目，那么任何人就得能出去。所有者两条路都不行，先转移所有权。.
+	// Removing someone else requires `iam:members.manage`; leaving requires only membership of the
+	// project. The owner can do neither, and has to transfer ownership first.
 	//
 	// DELETE /api/v1/members/{userId}
 	RemoveMember(ctx context.Context, params RemoveMemberParams) error
 	// RenameSSHKey invokes rename-ssh-key operation.
 	//
-	// 只有名字能改：公钥、类型、指纹是同一样东西的三种说法，改其中一个会让这一行描述一把并不存在的钥匙。.
+	// Only the name can change. The key, its type and its fingerprint are three statements about one
+	// thing, and changing one of them would leave the row describing a key that does not exist.
 	//
 	// PATCH /api/v1/ssh-keys/{keyId}
 	RenameSSHKey(ctx context.Context, request *RenameSSHKeyRequestBody, params RenameSSHKeyParams) (*SSHKeyResource, error)
 	// RevokeInvitation invokes revoke-invitation operation.
 	//
-	// 撤回一份还没被兑现的要约.
+	// Withdraw an invitation that has not been redeemed.
 	//
 	// DELETE /api/v1/invitations/{invitationId}
 	RevokeInvitation(ctx context.Context, params RevokeInvitationParams) error
 	// RevokeSSHKey invokes revoke-ssh-key operation.
 	//
-	// 行留着，状态变成 REVOKED。事故之后要问的是当时信任的是哪把钥匙。.
+	// The row remains and its status becomes `REVOKED`, so it stays answerable afterwards which key was
+	// trusted at the time.
 	//
 	// DELETE /api/v1/ssh-keys/{keyId}
 	RevokeSSHKey(ctx context.Context, params RevokeSSHKeyParams) (*SSHKeyResource, error)
 	// SetMemberPermissions invokes set-member-permissions operation.
 	//
-	// 整体替换基础策略上直挂的那些权限。直挂让「给某个人临时开一条」不必先造一个只有他一个人持有的角色，但它不会随角色调整而更新，所以它适合一次性的、说得出理由的授予——角色仍然是主要的组织方式。要
-	// iam:members.manage。.
+	// Replaces, in full, the permissions attached directly to the base policy. A direct permission grants
+	// one person something without creating a role only they hold, and it does not follow later changes to
+	// any role. Requires `iam:members.manage`.
 	//
 	// PUT /api/v1/members/{userId}/permissions
 	SetMemberPermissions(ctx context.Context, request *SetMemberPermissionsRequestBody, params SetMemberPermissionsParams) (*PolicyResource, error)
 	// SetMemberRoles invokes set-member-roles operation.
 	//
-	// 整体替换而不是增删：调用方拿到的就是一份完整清单，让它自己算差集只会让「我以为我取消了那个角色」这种事变得可能。所有者身上的
-	// OWNER 不受影响。.
+	// The list is replaced in full rather than added to or removed from. The `OWNER` role of the owner is
+	// unaffected.
 	//
 	// PUT /api/v1/members/{userId}/roles
 	SetMemberRoles(ctx context.Context, request *SetMemberRolesRequestBody, params SetMemberRolesParams) (*MemberResource, error)
 	// TransferProjectOwnership invokes transfer-project-ownership operation.
 	//
-	// OWNER
-	// 唯一的移动方式，只有所有者本人能发起——能像普通角色那样授予的话，任何管理员都可以顺手把自己变成所有者。.
+	// The only way `OWNER` moves, and only the owner can initiate it.
 	//
 	// POST /api/v1/transfer-ownership
 	TransferProjectOwnership(ctx context.Context, request *TransferOwnershipRequestBody) (*OwnershipTransferResponseBody, error)
 	// UpdatePolicy invokes update-policy operation.
 	//
-	// 整体替换而不是逐字段改：resources、roles、permissions
-	// 各自整份覆盖，没发的那份就是空的——只有「这就是这条策略现在的全貌」这一种语义说得清一次写入到底收回了什么。改不动的是策略的种类：基础策略（不限资源的
-	// allow）加不上资源范围，这个成员的角色就存在它上面，给它加个范围等于让他在别的资源上什么都不是；一条带范围的策略反过来也不能把范围清空变成基础策略，那个位置每个成员只有一条。要换种类就删了重建。要
-	// iam:members.manage。.
+	// Replaced in full rather than field by field — `resources`, `roles` and `permissions` are each
+	// overwritten, and an omitted one becomes empty. The kind of a policy cannot change — a base policy
+	// (an `allow` covering every resource) cannot take a resource scope, and a scoped policy cannot have
+	// its scope cleared. Delete and recreate to change the kind. Requires `iam:members.manage`.
 	//
 	// PUT /api/v1/policies/{policyId}
 	UpdatePolicy(ctx context.Context, request *UpdatePolicyRequestBody, params UpdatePolicyParams) (*PolicyResource, error)
 	// UpdateProject invokes update-project operation.
 	//
-	// 改项目的名称与描述.
+	// Update the name and description of a project.
 	//
 	// PATCH /api/v1/project
 	UpdateProject(ctx context.Context, request *UpdateProjectRequestBody) (*ProjectAccessResource, error)
 	// UpdateRole invokes update-role operation.
 	//
-	// 名称、描述和权限整体替换。改完会在同一个事务里重新编译持有它的每一个成员——角色的权限变了，就是那些人的权限变了，而下一次请求是拿编译结果判定的。.
+	// The name, the description and the permissions are replaced in full. Every member holding the role is
+	// recompiled in the same transaction, so the change takes effect on the next request.
 	//
 	// PUT /api/v1/roles/{code}
 	UpdateRole(ctx context.Context, request *UpdateRoleRequestBody, params UpdateRoleParams) (*RoleResource, error)
@@ -278,11 +283,10 @@ func (c *Client) requestURL(ctx context.Context) *url.URL {
 
 // AttachPolicy invokes attach-policy operation.
 //
-// 它建的是附加策略——要么带资源范围，要么方向是 deny。一条不限资源的
-// allow 是基础策略，每个成员只有一条，改它走 set-member-roles 和
-// set-member-permissions。roles 里不能有 OWNER 或
-// ADMIN：它们是规则而不是权限集合，「限定在三台机器上的所有者」讲不通。要
-// iam:members.manage。.
+// This creates an additional policy, which either carries a resource scope or has `deny` as its
+// effect. An `allow` covering every resource is a base policy, of which each member holds exactly one,
+// and it is changed with set-member-roles and set-member-permissions. `roles` cannot contain `OWNER`
+// or `ADMIN`. Requires `iam:members.manage`.
 //
 // POST /api/v1/policies
 func (c *Client) AttachPolicy(ctx context.Context, request *AttachPolicyRequestBody) (*PolicyResource, error) {
@@ -523,7 +527,7 @@ func (c *Client) sendBatchGetMembers(ctx context.Context, request *BatchGetMembe
 
 // CreateRole invokes create-role operation.
 //
-// 建一个角色.
+// Create a role.
 //
 // POST /api/v1/roles
 func (c *Client) CreateRole(ctx context.Context, request *CreateRoleRequestBody) (*RoleResource, error) {
@@ -639,8 +643,9 @@ func (c *Client) sendCreateRole(ctx context.Context, request *CreateRoleRequestB
 
 // CreateSSHKey invokes create-ssh-key operation.
 //
-// Owner=me 是自己的，是成员就能加；owner=project 是项目公用的，要
-// iam:ssh_keys.manage —— 它会进这个项目之后开出来的每一台机器。.
+// `owner=me` adds a key of the caller's own, which any member may do. `owner=project` adds a key
+// shared by the project, requires `iam:ssh_keys.manage`, and lands on every machine created in the
+// project afterwards.
 //
 // POST /api/v1/ssh-keys
 func (c *Client) CreateSSHKey(ctx context.Context, request *CreateSSHKeyRequestBody) (*SSHKeyResource, error) {
@@ -756,9 +761,9 @@ func (c *Client) sendCreateSSHKey(ctx context.Context, request *CreateSSHKeyRequ
 
 // DeleteProject invokes delete-project operation.
 //
-// 只有所有者能做，而且没有回头路：项目进入
-// DELETING，各服务开始清掉它下面的资源。项目行本身永远留着——查一个删掉的项目查得到，答案是它没了，而不是一个
-// 404。.
+// Only the owner can do this, and it cannot be undone. The project enters DELETING and each service
+// begins removing the resources under it. The project itself remains readable afterwards, answering
+// that it is gone rather than 404.
 //
 // DELETE /api/v1/project
 func (c *Client) DeleteProject(ctx context.Context) (*ProjectAccessResource, error) {
@@ -871,7 +876,7 @@ func (c *Client) sendDeleteProject(ctx context.Context) (res *ProjectAccessResou
 
 // DeleteRole invokes delete-role operation.
 //
-// 还有人持有时会被拒。级联摘掉那些绑定等于把每个持有者悄悄降级——请求里没有一个字说了这件事，事后也查不到。.
+// Refused while anyone still holds it. Cascading the removal would quietly demote every holder.
 //
 // DELETE /api/v1/roles/{code}
 func (c *Client) DeleteRole(ctx context.Context, params DeleteRoleParams) error {
@@ -1002,8 +1007,8 @@ func (c *Client) sendDeleteRole(ctx context.Context, params DeleteRoleParams) (r
 
 // DetachPolicy invokes detach-policy operation.
 //
-// 基础策略摘不掉——它是这个成员角色的落点，删了它这个人就不再持有任何角色，而「让他离开这个项目」是
-// remove-member 的事。要 iam:members.manage。.
+// A base policy cannot be detached; it is where a member's roles sit. Use remove-member to take
+// someone out of the project. Requires `iam:members.manage`.
 //
 // DELETE /api/v1/policies/{policyId}
 func (c *Client) DetachPolicy(ctx context.Context, params DetachPolicyParams) error {
@@ -1134,8 +1139,7 @@ func (c *Client) sendDetachPolicy(ctx context.Context, params DetachPolicyParams
 
 // GetPolicy invokes get-policy operation.
 //
-// 和 list-policies
-// 同一条规则，在项目里就看得到：谁被授了什么也是「这个项目有谁」的一部分，读它不需要额外的权限。.
+// Visible to any member, on the same rule as list-policies; no further permission is required.
 //
 // GET /api/v1/policies/{policyId}
 func (c *Client) GetPolicy(ctx context.Context, params GetPolicyParams) (*PolicyResource, error) {
@@ -1266,7 +1270,7 @@ func (c *Client) sendGetPolicy(ctx context.Context, params GetPolicyParams) (res
 
 // GetProject invokes get-project operation.
 //
-// 在项目里就看得到，不需要额外的读权限。.
+// Visible to any member; no further permission is required.
 //
 // GET /api/v1/project
 func (c *Client) GetProject(ctx context.Context) (*ProjectAccessResource, error) {
@@ -1379,8 +1383,8 @@ func (c *Client) sendGetProject(ctx context.Context) (res *ProjectAccessResource
 
 // GetProjectMembership invokes get-project-membership operation.
 //
-// 只给事实，不给结论：这里没有 allowed，因为 IAM
-// 不知道你要做的是哪个操作——哪个操作需要哪条权限那份目录属于各个服务，判断在它们那边。.
+// Facts rather than a conclusion. There is no `allowed` field here, because each service holds the
+// catalogue mapping its operations to permissions and decides on its own.
 //
 // GET /api/v1/membership
 func (c *Client) GetProjectMembership(ctx context.Context) (*MembershipResource, error) {
@@ -1493,7 +1497,7 @@ func (c *Client) sendGetProjectMembership(ctx context.Context) (res *MembershipR
 
 // GetRole invokes get-role operation.
 //
-// 查看一个角色.
+// Get a role.
 //
 // GET /api/v1/roles/{code}
 func (c *Client) GetRole(ctx context.Context, params GetRoleParams) (*RoleResource, error) {
@@ -1624,7 +1628,7 @@ func (c *Client) sendGetRole(ctx context.Context, params GetRoleParams) (res *Ro
 
 // GetSSHKey invokes get-ssh-key operation.
 //
-// 查看一把公钥.
+// Get an SSH key.
 //
 // GET /api/v1/ssh-keys/{keyId}
 func (c *Client) GetSSHKey(ctx context.Context, params GetSSHKeyParams) (*SSHKeyResource, error) {
@@ -1755,8 +1759,8 @@ func (c *Client) sendGetSSHKey(ctx context.Context, params GetSSHKeyParams) (res
 
 // IssueInvitation invokes issue-invitation operation.
 //
-// 要约站 14
-// 天。有上限是因为里面那些角色是按发出那一刻的项目校验的，一份活得比它所依据的安排还久的要约会授出现在没人打算授的权限。.
+// An invitation stands for 14 days. The roles it carries are validated against the project as it stood
+// when the invitation was sent, so it expires rather than outliving the arrangement it rests on.
 //
 // POST /api/v1/invitations
 func (c *Client) IssueInvitation(ctx context.Context, request *IssueInvitationRequestBody) (*IssuedInvitationResponseBody, error) {
@@ -1872,7 +1876,7 @@ func (c *Client) sendIssueInvitation(ctx context.Context, request *IssueInvitati
 
 // ListMembers invokes list-members operation.
 //
-// 列出项目成员.
+// List the members of a project.
 //
 // GET /api/v1/members
 func (c *Client) ListMembers(ctx context.Context, params ListMembersParams) (*LengthAwarePageMemberResource, error) {
@@ -2040,10 +2044,10 @@ func (c *Client) sendListMembers(ctx context.Context, params ListMembersParams) 
 
 // ListPermissions invokes list-permissions operation.
 //
-// 各服务在启动时把自己那份目录注册进 IAM（和 AddFinalizer
-// 同一段代码），所以这里是一份汇总，不只是 IAM 自己那几条。IAM
-// 不用它做判定——判定在各服务自己那边，拿 Grant
-// 配它自己那份目录算；这份汇总只是让界面画得出勾选框，它落后一个版本只会让界面上少几条可选项，不会让判定出错。一个还没启动过的服务，它的权限不在这里。.
+// Each service registers its own catalogue with IAM at start-up, so this is the platform-wide list
+// rather than the permissions of IAM alone. IAM does not decide anything with it — each service
+// decides using the caller's grant together with its own catalogue, and this list only serves to
+// render the choices. A service that has never started does not appear here.
 //
 // GET /api/v1/permissions
 func (c *Client) ListPermissions(ctx context.Context) (*CatalogListResponseBody, error) {
@@ -2123,7 +2127,8 @@ func (c *Client) sendListPermissions(ctx context.Context) (res *CatalogListRespo
 
 // ListPolicies invokes list-policies operation.
 //
-// 在项目里就看得到，和成员列表同一条规则：谁被授了什么也是「这个项目有谁」的一部分。.
+// Visible to any member, on the same rule as the member list. What has been granted to whom is part of
+// who is in the project.
 //
 // GET /api/v1/policies
 func (c *Client) ListPolicies(ctx context.Context, params ListPoliciesParams) (*PolicyListResponseBody, error) {
@@ -2257,7 +2262,8 @@ func (c *Client) sendListPolicies(ctx context.Context, params ListPoliciesParams
 
 // ListProjectInvitations invokes list-project-invitations operation.
 //
-// 在项目里就看得到，和成员列表同一条规则：谁被请了也是「这个项目有谁」的一部分。.
+// Visible to any member, on the same rule as the member list. Who has been invited is part of who is
+// in the project.
 //
 // GET /api/v1/invitations
 func (c *Client) ListProjectInvitations(ctx context.Context, params ListProjectInvitationsParams) (*LengthAwarePageInvitationResource, error) {
@@ -2408,7 +2414,7 @@ func (c *Client) sendListProjectInvitations(ctx context.Context, params ListProj
 
 // ListRoles invokes list-roles operation.
 //
-// 列出项目里的角色.
+// List the roles in this project.
 //
 // GET /api/v1/roles
 func (c *Client) ListRoles(ctx context.Context) (*RoleListResponseBody, error) {
@@ -2521,7 +2527,8 @@ func (c *Client) sendListRoles(ctx context.Context) (res *RoleListResponseBody, 
 
 // ListSSHKeys invokes list-ssh-keys operation.
 //
-// 归成员的和归项目的都在里面，靠每一条上的 owner_user_id 区分。.
+// Both the keys belonging to members and the keys belonging to the project are listed; the
+// `owner_user_id` on each one tells them apart.
 //
 // GET /api/v1/ssh-keys
 func (c *Client) ListSSHKeys(ctx context.Context, params ListSSHKeysParams) (*LengthAwarePageSSHKeyResource, error) {
@@ -2706,8 +2713,8 @@ func (c *Client) sendListSSHKeys(ctx context.Context, params ListSSHKeysParams) 
 
 // RemoveMember invokes remove-member operation.
 //
-// 移除别人要
-// iam:members.manage；退出只要求自己在这个项目里——任何人都可能被拉进一个项目，那么任何人就得能出去。所有者两条路都不行，先转移所有权。.
+// Removing someone else requires `iam:members.manage`; leaving requires only membership of the
+// project. The owner can do neither, and has to transfer ownership first.
 //
 // DELETE /api/v1/members/{userId}
 func (c *Client) RemoveMember(ctx context.Context, params RemoveMemberParams) error {
@@ -2838,7 +2845,8 @@ func (c *Client) sendRemoveMember(ctx context.Context, params RemoveMemberParams
 
 // RenameSSHKey invokes rename-ssh-key operation.
 //
-// 只有名字能改：公钥、类型、指纹是同一样东西的三种说法，改其中一个会让这一行描述一把并不存在的钥匙。.
+// Only the name can change. The key, its type and its fingerprint are three statements about one
+// thing, and changing one of them would leave the row describing a key that does not exist.
 //
 // PATCH /api/v1/ssh-keys/{keyId}
 func (c *Client) RenameSSHKey(ctx context.Context, request *RenameSSHKeyRequestBody, params RenameSSHKeyParams) (*SSHKeyResource, error) {
@@ -2972,7 +2980,7 @@ func (c *Client) sendRenameSSHKey(ctx context.Context, request *RenameSSHKeyRequ
 
 // RevokeInvitation invokes revoke-invitation operation.
 //
-// 撤回一份还没被兑现的要约.
+// Withdraw an invitation that has not been redeemed.
 //
 // DELETE /api/v1/invitations/{invitationId}
 func (c *Client) RevokeInvitation(ctx context.Context, params RevokeInvitationParams) error {
@@ -3103,7 +3111,8 @@ func (c *Client) sendRevokeInvitation(ctx context.Context, params RevokeInvitati
 
 // RevokeSSHKey invokes revoke-ssh-key operation.
 //
-// 行留着，状态变成 REVOKED。事故之后要问的是当时信任的是哪把钥匙。.
+// The row remains and its status becomes `REVOKED`, so it stays answerable afterwards which key was
+// trusted at the time.
 //
 // DELETE /api/v1/ssh-keys/{keyId}
 func (c *Client) RevokeSSHKey(ctx context.Context, params RevokeSSHKeyParams) (*SSHKeyResource, error) {
@@ -3234,8 +3243,9 @@ func (c *Client) sendRevokeSSHKey(ctx context.Context, params RevokeSSHKeyParams
 
 // SetMemberPermissions invokes set-member-permissions operation.
 //
-// 整体替换基础策略上直挂的那些权限。直挂让「给某个人临时开一条」不必先造一个只有他一个人持有的角色，但它不会随角色调整而更新，所以它适合一次性的、说得出理由的授予——角色仍然是主要的组织方式。要
-// iam:members.manage。.
+// Replaces, in full, the permissions attached directly to the base policy. A direct permission grants
+// one person something without creating a role only they hold, and it does not follow later changes to
+// any role. Requires `iam:members.manage`.
 //
 // PUT /api/v1/members/{userId}/permissions
 func (c *Client) SetMemberPermissions(ctx context.Context, request *SetMemberPermissionsRequestBody, params SetMemberPermissionsParams) (*PolicyResource, error) {
@@ -3370,8 +3380,8 @@ func (c *Client) sendSetMemberPermissions(ctx context.Context, request *SetMembe
 
 // SetMemberRoles invokes set-member-roles operation.
 //
-// 整体替换而不是增删：调用方拿到的就是一份完整清单，让它自己算差集只会让「我以为我取消了那个角色」这种事变得可能。所有者身上的
-// OWNER 不受影响。.
+// The list is replaced in full rather than added to or removed from. The `OWNER` role of the owner is
+// unaffected.
 //
 // PUT /api/v1/members/{userId}/roles
 func (c *Client) SetMemberRoles(ctx context.Context, request *SetMemberRolesRequestBody, params SetMemberRolesParams) (*MemberResource, error) {
@@ -3506,8 +3516,7 @@ func (c *Client) sendSetMemberRoles(ctx context.Context, request *SetMemberRoles
 
 // TransferProjectOwnership invokes transfer-project-ownership operation.
 //
-// OWNER
-// 唯一的移动方式，只有所有者本人能发起——能像普通角色那样授予的话，任何管理员都可以顺手把自己变成所有者。.
+// The only way `OWNER` moves, and only the owner can initiate it.
 //
 // POST /api/v1/transfer-ownership
 func (c *Client) TransferProjectOwnership(ctx context.Context, request *TransferOwnershipRequestBody) (*OwnershipTransferResponseBody, error) {
@@ -3623,10 +3632,10 @@ func (c *Client) sendTransferProjectOwnership(ctx context.Context, request *Tran
 
 // UpdatePolicy invokes update-policy operation.
 //
-// 整体替换而不是逐字段改：resources、roles、permissions
-// 各自整份覆盖，没发的那份就是空的——只有「这就是这条策略现在的全貌」这一种语义说得清一次写入到底收回了什么。改不动的是策略的种类：基础策略（不限资源的
-// allow）加不上资源范围，这个成员的角色就存在它上面，给它加个范围等于让他在别的资源上什么都不是；一条带范围的策略反过来也不能把范围清空变成基础策略，那个位置每个成员只有一条。要换种类就删了重建。要
-// iam:members.manage。.
+// Replaced in full rather than field by field — `resources`, `roles` and `permissions` are each
+// overwritten, and an omitted one becomes empty. The kind of a policy cannot change — a base policy
+// (an `allow` covering every resource) cannot take a resource scope, and a scoped policy cannot have
+// its scope cleared. Delete and recreate to change the kind. Requires `iam:members.manage`.
 //
 // PUT /api/v1/policies/{policyId}
 func (c *Client) UpdatePolicy(ctx context.Context, request *UpdatePolicyRequestBody, params UpdatePolicyParams) (*PolicyResource, error) {
@@ -3760,7 +3769,7 @@ func (c *Client) sendUpdatePolicy(ctx context.Context, request *UpdatePolicyRequ
 
 // UpdateProject invokes update-project operation.
 //
-// 改项目的名称与描述.
+// Update the name and description of a project.
 //
 // PATCH /api/v1/project
 func (c *Client) UpdateProject(ctx context.Context, request *UpdateProjectRequestBody) (*ProjectAccessResource, error) {
@@ -3876,7 +3885,8 @@ func (c *Client) sendUpdateProject(ctx context.Context, request *UpdateProjectRe
 
 // UpdateRole invokes update-role operation.
 //
-// 名称、描述和权限整体替换。改完会在同一个事务里重新编译持有它的每一个成员——角色的权限变了，就是那些人的权限变了，而下一次请求是拿编译结果判定的。.
+// The name, the description and the permissions are replaced in full. Every member holding the role is
+// recompiled in the same transaction, so the change takes effect on the next request.
 //
 // PUT /api/v1/roles/{code}
 func (c *Client) UpdateRole(ctx context.Context, request *UpdateRoleRequestBody, params UpdateRoleParams) (*RoleResource, error) {

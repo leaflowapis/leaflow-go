@@ -32,6 +32,7 @@ func (s *AcceptConsentsRequestBody) SetConsents(val []ConsentBody) {
 
 // Ref: #/components/schemas/AcceptInvitationByTokenRequestBody
 type AcceptInvitationByTokenRequestBody struct {
+	// The token carried by the invitation link.
 	Token string `json:"token"`
 }
 
@@ -65,17 +66,17 @@ type AccountResource struct {
 	CreatedAt       time.Time   `json:"created_at"`
 	Email           string      `json:"email"`
 	EmailVerifiedAt NilDateTime `json:"email_verified_at"`
-	// 来自登录信息，可能为空.
+	// Taken from the sign-in claims; may be empty.
 	FirstName string `json:"first_name"`
-	// 身份提供方签发的 subject.
+	// The subject issued by the identity provider.
 	ID string `json:"id"`
-	// 来自登录信息，可能为空.
+	// Taken from the sign-in claims; may be empty.
 	LastName string `json:"last_name"`
-	// ISO 3166-1
-	// alpha-2。这两个字段是后加的，注册时才开始要求填——已经注册过的人这里
-	// 是空串，让他们在设置里补，补之前一切照常。.
+	// ISO 3166-1 alpha-2. Empty on an account that registered before this was required; such an account
+	// continues to work and can set it from the settings page.
 	Country OptString `json:"country"`
-	// 为空表示没设过，那时按请求头（Accept-Language）走，两者都没有才用平台默认.
+	// Empty while never set, in which case `Accept-Language` applies, and the platform default when that
+	// is absent as well.
 	Locale            OptString             `json:"locale"`
 	PendingAgreements []AgreementResource   `json:"pending_agreements"`
 	Status            AccountResourceStatus `json:"status"`
@@ -253,12 +254,12 @@ func (s *AgreementListResponseBody) SetItems(val []AgreementResource) {
 
 // Ref: #/components/schemas/AgreementResource
 type AgreementResource struct {
-	// 从这一刻起注册必须同意这一版.
+	// From this moment on, registration requires this version.
 	EffectiveAt time.Time             `json:"effective_at"`
 	Type        AgreementResourceType `json:"type"`
-	// 正文发布在哪.
+	// Where the text is published.
 	URL string `json:"url"`
-	// 同意时原样回传这个值.
+	// Send this value back unchanged when consenting.
 	Version string `json:"version"`
 }
 
@@ -467,7 +468,7 @@ func (s *ConsentListResponseBody) SetItems(val []ConsentResource) {
 // Ref: #/components/schemas/ConsentResource
 type ConsentResource struct {
 	ConsentedAt time.Time `json:"consented_at"`
-	// OFFLINE 是线下签的，由运营录入.
+	// OFFLINE is a consent given off the platform and recorded by an operator.
 	Method  ConsentResourceMethod `json:"method"`
 	Type    ConsentResourceType   `json:"type"`
 	Version string                `json:"version"`
@@ -513,7 +514,7 @@ func (s *ConsentResource) SetVersion(val string) {
 	s.Version = val
 }
 
-// OFFLINE 是线下签的，由运营录入.
+// OFFLINE is a consent given off the platform and recorded by an operator.
 type ConsentResourceMethod string
 
 const (
@@ -605,9 +606,9 @@ func (s *ConsentResourceType) UnmarshalText(data []byte) error {
 
 // Ref: #/components/schemas/CountryOption
 type CountryOption struct {
-	// ISO 3166-1 alpha-2，注册时原样回传.
+	// ISO 3166-1 alpha-2, sent back unchanged at registration.
 	Code string `json:"code"`
-	// 按 Accept-Language 渲染的名字.
+	// The name rendered according to `Accept-Language`.
 	Name string `json:"name"`
 }
 
@@ -705,9 +706,35 @@ func (s *Error) SetStatus(val int64) {
 	s.Status = val
 }
 
-type ErrorMeta map[string]jx.Raw
+type ErrorMeta struct {
+	// Present on every response whose `code` is `VALIDATION_FAILED`, and on no other response.
+	Violations      []Violation `json:"violations"`
+	AdditionalProps ErrorMetaAdditional
+}
 
-func (s *ErrorMeta) init() ErrorMeta {
+// GetViolations returns the value of Violations.
+func (s *ErrorMeta) GetViolations() []Violation {
+	return s.Violations
+}
+
+// GetAdditionalProps returns the value of AdditionalProps.
+func (s *ErrorMeta) GetAdditionalProps() ErrorMetaAdditional {
+	return s.AdditionalProps
+}
+
+// SetViolations sets the value of Violations.
+func (s *ErrorMeta) SetViolations(val []Violation) {
+	s.Violations = val
+}
+
+// SetAdditionalProps sets the value of AdditionalProps.
+func (s *ErrorMeta) SetAdditionalProps(val ErrorMetaAdditional) {
+	s.AdditionalProps = val
+}
+
+type ErrorMetaAdditional map[string]jx.Raw
+
+func (s *ErrorMetaAdditional) init() ErrorMetaAdditional {
 	m := *s
 	if m == nil {
 		m = map[string]jx.Raw{}
@@ -746,12 +773,10 @@ func (s *ErrorStatusCode) SetResponse(val Error) {
 type GrantResource struct {
 	Admin bool `json:"admin"`
 	Owner bool `json:"owner"`
-	// 持有的角色编码，只用于展示.
+	// The role codes held, for display only.
 	Roles []string `json:"roles"`
-	// 他全部策略编译出来的规则。不要自己遍历它做判定——拿它配上自己那份权限目录交给
-	// pkg/rbac：那里面的顺序（所有者不可被 deny、deny
-	// 优先于管理员、带资源范围的规则不
-	// 参与项目级判定）每一条都对着一种会静默放行的写法。.
+	// Do not walk these rules to reach a decision. They are compiled from every policy that applies to the
+	// caller, and serve to render what a user may do. Each request is decided by the service handling it.
 	Rules []RuleResource `json:"rules"`
 }
 
@@ -798,7 +823,7 @@ func (s *GrantResource) SetRules(val []RuleResource) {
 // Ref: #/components/schemas/IdentityVerificationResource
 type IdentityVerificationResource struct {
 	RejectReason string `json:"reject_reason"`
-	// PERSONAL 和 ENTERPRISE 是两类主体而不是两个等级，别拿它们比大小.
+	// PERSONAL and ENTERPRISE are two kinds of subject rather than two levels, and are not ordered.
 	Status      IdentityVerificationResourceStatus `json:"status"`
 	SubmittedAt NilDateTime                        `json:"submitted_at"`
 	VerifiedAt  NilDateTime                        `json:"verified_at"`
@@ -844,7 +869,7 @@ func (s *IdentityVerificationResource) SetVerifiedAt(val NilDateTime) {
 	s.VerifiedAt = val
 }
 
-// PERSONAL 和 ENTERPRISE 是两类主体而不是两个等级，别拿它们比大小.
+// PERSONAL and ENTERPRISE are two kinds of subject rather than two levels, and are not ordered.
 type IdentityVerificationResourceStatus string
 
 const (
@@ -907,19 +932,18 @@ func (s *IdentityVerificationResourceStatus) UnmarshalText(data []byte) error {
 	}
 }
 
-// 一封邀请在被接受之前能给出的全部信息。 它比 InvitationResource
-// 少两样：要约 id 和完整的收件地址。id 不给是因为持有令牌不等于
-// 这封要约列在你名下——真正列在你名下的那些走
-// list-my-invitations，那条是认过身份的。.
+// What an invitation states before it is accepted. It carries neither the invitation id nor the full
+// recipient address; the invitations listed against the current account are returned by
+// `list-my-invitations`.
 // Ref: #/components/schemas/InvitationPreviewResource
 type InvitationPreviewResource struct {
-	// 打过码的收件地址，只够收件人认出「这是发给我的」.
+	// The masked recipient address, enough for the recipient to recognise it.
 	EmailMasked string    `json:"email_masked"`
 	ExpiresAt   time.Time `json:"expires_at"`
-	// 邀请人的显示名，姓名都空时是他的邮箱.
+	// The display name of the sender, or their email address when no name is set.
 	InvitedByName string `json:"invited_by_name"`
 	ProjectName   string `json:"project_name"`
-	// 接受之后会拿到的角色，显示名.
+	// The display names of the roles granted on acceptance.
 	RoleNames []string `json:"role_names"`
 }
 
@@ -979,19 +1003,17 @@ type InvitationResource struct {
 	Email     string    `json:"email"`
 	ExpiresAt time.Time `json:"expires_at"`
 	ID        uuid.UUID `json:"id"`
-	// 发出这份要约的账号 id.
+	// The id of the account that issued the invitation.
 	InvitedBy string `json:"invited_by"`
-	// 发出这份要约的人的显示名，姓名都空时是他的邮箱。它是读取那一刻的事实，不是发信时的快照.
+	// The display name of that account, or its email address when no name is set. It reflects the value at
+	// the time of reading rather than at the time the invitation was sent.
 	InvitedByName string    `json:"invited_by_name"`
 	ProjectID     uuid.UUID `json:"project_id"`
-	// 目标项目的名字。
-	// 它在这里，而这一度是刻意不给的——理由是「没接受就不是成员，而名字只有成员能读」。
-	// 那条克制在这个场景下站不住：邀请邮件正文里就写着项目名，收件人早就知道了，而一个
-	// 只显示 uuid 的邀请列表让人没法判断该不该接受。.
+	// The name of the target project.
 	ProjectName string `json:"project_name"`
-	// 兑现时会授予的角色编码.
+	// The role codes granted on acceptance.
 	Roles []string `json:"roles"`
-	// 上面那些编码的显示名，按同样的顺序。读者看的是「管理员」，不是 ADMIN.
+	// The display names of those codes, in the same order.
 	RoleNames []string `json:"role_names"`
 }
 
@@ -1098,9 +1120,7 @@ func (s *InvitationResource) SetRoleNames(val []string) {
 // Ref: #/components/schemas/LanguageOption
 type LanguageOption struct {
 	Code Locale `json:"code"`
-	// 这种语言的自称，用它自己写（「简体中文」「繁體中文（香港）」「English」）。不跟着
-	// Accept-Language
-	// 变——一个只看得懂繁体的人，在一个全简体的列表里找不到自己那一项。.
+	// The endonym of the language, written in that language itself. It does not follow `Accept-Language`.
 	Name string `json:"name"`
 }
 
@@ -1126,13 +1146,13 @@ func (s *LanguageOption) SetName(val string) {
 
 // Ref: #/components/schemas/LengthAwarePageInvitationResource
 type LengthAwarePageInvitationResource struct {
-	// 这一页的内容.
+	// The items in this page.
 	Items []InvitationResource `json:"items"`
-	// 这一页最多几条，回显请求里的值.
+	// Maximum number of items in this page, echoing the request.
 	Limit int64 `json:"limit"`
-	// 跳过了多少条，回显请求里的值.
+	// Number of items skipped, echoing the request.
 	Offset int64 `json:"offset"`
-	// 命中的总条数，不只是这一页.
+	// Total number of matches, not only this page.
 	Total int64 `json:"total"`
 }
 
@@ -1178,13 +1198,13 @@ func (s *LengthAwarePageInvitationResource) SetTotal(val int64) {
 
 // Ref: #/components/schemas/LengthAwarePageProjectAccessResource
 type LengthAwarePageProjectAccessResource struct {
-	// 这一页的内容.
+	// The items in this page.
 	Items []ProjectAccessResource `json:"items"`
-	// 这一页最多几条，回显请求里的值.
+	// Maximum number of items in this page, echoing the request.
 	Limit int64 `json:"limit"`
-	// 跳过了多少条，回显请求里的值.
+	// Number of items skipped, echoing the request.
 	Offset int64 `json:"offset"`
-	// 命中的总条数，不只是这一页.
+	// Total number of matches, not only this page.
 	Total int64 `json:"total"`
 }
 
@@ -1228,7 +1248,7 @@ func (s *LengthAwarePageProjectAccessResource) SetTotal(val int64) {
 	s.Total = val
 }
 
-// 按对外状态过滤。不传时不返回已删除的项目.
+// Filters by external status. Deleted projects are excluded while this is absent.
 type ListProjectsStatus string
 
 const (
@@ -1291,9 +1311,8 @@ func (s *ListProjectsStatus) UnmarshalText(data []byte) error {
 	}
 }
 
-// 界面和邮件用哪种语言。它和 country
-// 是两件事，不能互相推——一个在香港的人可能读简体，
-// 一个在美国的人可能读繁体。.
+// The language used for the interface and for email. It is independent of `country`, and neither can
+// be inferred from the other.
 // Ref: #/components/schemas/Locale
 type Locale string
 
@@ -1675,13 +1694,13 @@ type ProjectResource struct {
 	BanReason string    `json:"ban_reason"`
 	CreatedAt time.Time `json:"created_at"`
 	CreatedBy string    `json:"created_by"`
-	// 盖上墓碑的那一刻.
+	// When the project was deleted.
 	DeletedAt   NilDateTime           `json:"deleted_at"`
 	Description string                `json:"description"`
 	ID          uuid.UUID             `json:"id"`
 	Name        string                `json:"name"`
 	Status      ProjectResourceStatus `json:"status"`
-	// 给人看的，不参与任何查询.
+	// Written for a reader; it takes part in no query.
 	StatusReason string    `json:"status_reason"`
 	UpdatedAt    time.Time `json:"updated_at"`
 }
@@ -1848,91 +1867,13 @@ func (s *ProjectResourceStatus) UnmarshalText(data []byte) error {
 	}
 }
 
-// Ref: #/components/schemas/ProjectTokenResponseBody
-type ProjectTokenResponseBody struct {
-	// 过期时刻。到点之前拿用户身份再换一张，别等第一个 401.
-	ExpiresAt time.Time `json:"expires_at"`
-	// 还能活多少秒.
-	ExpiresIn int64 `json:"expires_in"`
-	// 这一份是此刻的快照，不在令牌里，也不要缓存它。
-	// 它只用来决定界面上画什么；真正的判定每次都要重新问.
-	Grant GrantResource `json:"grant"`
-	// 顺带带上项目本身，省掉换完之后立刻再查一次.
-	Project ProjectResource `json:"project"`
-	// 项目令牌，放进 Authorization: Bearer 里用.
-	Token string `json:"token"`
-	// 固定是 Bearer.
-	TokenType string `json:"token_type"`
-}
-
-// GetExpiresAt returns the value of ExpiresAt.
-func (s *ProjectTokenResponseBody) GetExpiresAt() time.Time {
-	return s.ExpiresAt
-}
-
-// GetExpiresIn returns the value of ExpiresIn.
-func (s *ProjectTokenResponseBody) GetExpiresIn() int64 {
-	return s.ExpiresIn
-}
-
-// GetGrant returns the value of Grant.
-func (s *ProjectTokenResponseBody) GetGrant() GrantResource {
-	return s.Grant
-}
-
-// GetProject returns the value of Project.
-func (s *ProjectTokenResponseBody) GetProject() ProjectResource {
-	return s.Project
-}
-
-// GetToken returns the value of Token.
-func (s *ProjectTokenResponseBody) GetToken() string {
-	return s.Token
-}
-
-// GetTokenType returns the value of TokenType.
-func (s *ProjectTokenResponseBody) GetTokenType() string {
-	return s.TokenType
-}
-
-// SetExpiresAt sets the value of ExpiresAt.
-func (s *ProjectTokenResponseBody) SetExpiresAt(val time.Time) {
-	s.ExpiresAt = val
-}
-
-// SetExpiresIn sets the value of ExpiresIn.
-func (s *ProjectTokenResponseBody) SetExpiresIn(val int64) {
-	s.ExpiresIn = val
-}
-
-// SetGrant sets the value of Grant.
-func (s *ProjectTokenResponseBody) SetGrant(val GrantResource) {
-	s.Grant = val
-}
-
-// SetProject sets the value of Project.
-func (s *ProjectTokenResponseBody) SetProject(val ProjectResource) {
-	s.Project = val
-}
-
-// SetToken sets the value of Token.
-func (s *ProjectTokenResponseBody) SetToken(val string) {
-	s.Token = val
-}
-
-// SetTokenType sets the value of TokenType.
-func (s *ProjectTokenResponseBody) SetTokenType(val string) {
-	s.TokenType = val
-}
-
 // Ref: #/components/schemas/RegisterRequestBody
 type RegisterRequestBody struct {
-	// 当前生效的必签文件全部要在里面，版本号要和 GET /api/v1/agreements 给的一致.
+	// Must cover every agreement currently in force, at the versions returned by GET
+	// /account/v1/agreements.
 	Consents []ConsentBody `json:"consents"`
-	// ISO 3166-1
-	// alpha-2（CN、HK、US）。必须是现实世界里真实存在的国家或地区——EU、ZZ
-	// 这类在标准里有位置但不是国家的代码会被拒。存代码不存名字：名字是本地化的，存下来
-	// 的那份只会是某一种语言的。.
+	// ISO 3166-1 alpha-2 (CN, HK, US). Must denote a country or territory that exists; codes such as EU
+	// and ZZ hold a place in the standard without denoting one and are refused.
 	Country string `json:"country"`
 	Locale  Locale `json:"locale"`
 }
@@ -1969,11 +1910,11 @@ func (s *RegisterRequestBody) SetLocale(val Locale) {
 
 // Ref: #/components/schemas/ResourceRefResource
 type ResourceRefResource struct {
-	// 是字符串而不是 uuid：dns 的 zone 标识是一个域名，而且它根本不在 IAM
-	// 的库里。匹配 语义是 glob，所以 *.example.com 能表达一批子域名；uuid
-	// 和域名都不含 glob 元字符， 对它们来说这就是精确相等。.
+	// A string rather than a UUID; a DNS zone, for one, is named by its domain. Matching is glob, so
+	// `*.example.com` covers a set of subdomains, while a value carrying no glob metacharacter matches
+	// exactly.
 	ID string `json:"id"`
-	// 形如 compute:instance、dns:zone，和权限名同一个命名空间.
+	// Of the form compute:instance or dns:zone, in the same namespace as permission names.
 	Type string `json:"type"`
 }
 
@@ -2000,10 +1941,10 @@ func (s *ResourceRefResource) SetType(val string) {
 // Ref: #/components/schemas/RuleResource
 type RuleResource struct {
 	Effect RuleResourceEffect `json:"effect"`
-	// 支持尾部通配（compute:instance.*），通配必须带服务前缀.
+	// A trailing wildcard is supported (compute:instance.*), and must carry the service prefix.
 	Permissions []string `json:"permissions"`
-	// 为空表示这条规则在整个项目范围内成立；非空则表示它只在这些资源上成立，而那意味着
-	// 它回答不了项目级的问题。.
+	// Empty means the rule holds across the whole project. While it is not empty the rule holds only on
+	// those resources, and therefore answers no project-level question.
 	Resources []ResourceRefResource `json:"resources"`
 }
 
@@ -2078,15 +2019,93 @@ func (s *RuleResourceEffect) UnmarshalText(data []byte) error {
 	}
 }
 
+// Ref: #/components/schemas/ScopedTokenResponseBody
+type ScopedTokenResponseBody struct {
+	// When the token expires. Exchange for a new one before then rather than waiting for the first 401.
+	ExpiresAt time.Time `json:"expires_at"`
+	// Seconds remaining before expiry.
+	ExpiresIn int64 `json:"expires_in"`
+	// A snapshot taken at the moment of the exchange. It is not carried in the token, and must not be
+	// cached. It serves to render what a user may do; each request is decided again.
+	Grant GrantResource `json:"grant"`
+	// The project itself, so that no further lookup is needed after the exchange.
+	Project ProjectResource `json:"project"`
+	// The scoped token, to be sent as `Authorization: Bearer`.
+	Token string `json:"token"`
+	// Always `Bearer`.
+	TokenType string `json:"token_type"`
+}
+
+// GetExpiresAt returns the value of ExpiresAt.
+func (s *ScopedTokenResponseBody) GetExpiresAt() time.Time {
+	return s.ExpiresAt
+}
+
+// GetExpiresIn returns the value of ExpiresIn.
+func (s *ScopedTokenResponseBody) GetExpiresIn() int64 {
+	return s.ExpiresIn
+}
+
+// GetGrant returns the value of Grant.
+func (s *ScopedTokenResponseBody) GetGrant() GrantResource {
+	return s.Grant
+}
+
+// GetProject returns the value of Project.
+func (s *ScopedTokenResponseBody) GetProject() ProjectResource {
+	return s.Project
+}
+
+// GetToken returns the value of Token.
+func (s *ScopedTokenResponseBody) GetToken() string {
+	return s.Token
+}
+
+// GetTokenType returns the value of TokenType.
+func (s *ScopedTokenResponseBody) GetTokenType() string {
+	return s.TokenType
+}
+
+// SetExpiresAt sets the value of ExpiresAt.
+func (s *ScopedTokenResponseBody) SetExpiresAt(val time.Time) {
+	s.ExpiresAt = val
+}
+
+// SetExpiresIn sets the value of ExpiresIn.
+func (s *ScopedTokenResponseBody) SetExpiresIn(val int64) {
+	s.ExpiresIn = val
+}
+
+// SetGrant sets the value of Grant.
+func (s *ScopedTokenResponseBody) SetGrant(val GrantResource) {
+	s.Grant = val
+}
+
+// SetProject sets the value of Project.
+func (s *ScopedTokenResponseBody) SetProject(val ProjectResource) {
+	s.Project = val
+}
+
+// SetToken sets the value of Token.
+func (s *ScopedTokenResponseBody) SetToken(val string) {
+	s.Token = val
+}
+
+// SetTokenType sets the value of TokenType.
+func (s *ScopedTokenResponseBody) SetTokenType(val string) {
+	s.TokenType = val
+}
+
 // Ref: #/components/schemas/SettingsResource
 type SettingsResource struct {
-	// 一个项目最多几个成员，0 表示不限.
+	// Maximum number of members a project may hold; 0 means unlimited.
 	MaxMembersPerProject int64 `json:"max_members_per_project"`
-	// 你最多能当几个项目的所有者，0 表示不限。已删除的项目不算在内.
+	// Maximum number of projects an account may own; 0 means unlimited. Deleted projects do not count.
 	MaxProjectsPerUser int64 `json:"max_projects_per_user"`
-	// VERIFIED_ONLY 要求先过实名，审核中不算.
+	// VERIFIED_ONLY requires identity verification to have completed; a submission under review does not
+	// qualify.
 	ProjectCreationMode SettingsResourceProjectCreationMode `json:"project_creation_mode"`
-	// INVITE_ONLY 是只收手上有项目邀请的邮箱.
+	// INVITE_ONLY accepts only an email address holding a project invitation.
 	RegistrationMode SettingsResourceRegistrationMode `json:"registration_mode"`
 }
 
@@ -2130,7 +2149,8 @@ func (s *SettingsResource) SetRegistrationMode(val SettingsResourceRegistrationM
 	s.RegistrationMode = val
 }
 
-// VERIFIED_ONLY 要求先过实名，审核中不算.
+// VERIFIED_ONLY requires identity verification to have completed; a submission under review does not
+// qualify.
 type SettingsResourceProjectCreationMode string
 
 const (
@@ -2179,7 +2199,7 @@ func (s *SettingsResourceProjectCreationMode) UnmarshalText(data []byte) error {
 	}
 }
 
-// INVITE_ONLY 是只收手上有项目邀请的邮箱.
+// INVITE_ONLY accepts only an email address holding a project invitation.
 type SettingsResourceRegistrationMode string
 
 const (
@@ -2230,9 +2250,10 @@ func (s *SettingsResourceRegistrationMode) UnmarshalText(data []byte) error {
 
 // Ref: #/components/schemas/SubmitIdentityVerificationRequestBody
 type SubmitIdentityVerificationRequestBody struct {
-	// 证件号码。同上，而且同一个号码不能挂在两个账号上.
+	// The document number. It is returned by no endpoint, and one number cannot be attached to two
+	// accounts.
 	IDNumber string `json:"id_number"`
-	// 真实姓名。敏感个人信息，加密入库，任何接口都不会再把它读出来.
+	// The legal name. It is returned by no endpoint.
 	RealName string `json:"real_name"`
 }
 
@@ -2256,11 +2277,10 @@ func (s *SubmitIdentityVerificationRequestBody) SetRealName(val string) {
 	s.RealName = val
 }
 
-// 两个字段都是「不传就不动」。设置页上它们是两个独立的控件，用户可能只改其中一个；做成
-// 整体替换的话，一次只想改语言的提交会把国家清掉，而那种丢失不报错。.
+// Both fields are optional, and an omitted field is left unchanged.
 // Ref: #/components/schemas/UpdateAccountRequestBody
 type UpdateAccountRequestBody struct {
-	// 同注册时那个 country.
+	// As at registration.
 	Country OptString `json:"country"`
 	Locale  OptLocale `json:"locale"`
 }
@@ -2283,4 +2303,48 @@ func (s *UpdateAccountRequestBody) SetCountry(val OptString) {
 // SetLocale sets the value of Locale.
 func (s *UpdateAccountRequestBody) SetLocale(val OptLocale) {
 	s.Locale = val
+}
+
+// A single mismatch between the request and the contract.
+//
+// Use `field` to locate the input, `rule` to decide what to tell the user, and `reason` only for
+// diagnostics.
+// Ref: #/components/schemas/Violation
+type Violation struct {
+	// Dot-separated path to the field, such as `name` or `schedule.0.start_time_seconds`.
+	Field string `json:"field"`
+	// The JSON Schema keyword that failed, such as `minLength`, `minimum` or `pattern`.
+	Rule string `json:"rule"`
+	// The validator's own wording, in English. Intended for diagnostics; do not display it to end users.
+	Reason OptString `json:"reason"`
+}
+
+// GetField returns the value of Field.
+func (s *Violation) GetField() string {
+	return s.Field
+}
+
+// GetRule returns the value of Rule.
+func (s *Violation) GetRule() string {
+	return s.Rule
+}
+
+// GetReason returns the value of Reason.
+func (s *Violation) GetReason() OptString {
+	return s.Reason
+}
+
+// SetField sets the value of Field.
+func (s *Violation) SetField(val string) {
+	s.Field = val
+}
+
+// SetRule sets the value of Rule.
+func (s *Violation) SetRule(val string) {
+	s.Rule = val
+}
+
+// SetReason sets the value of Reason.
+func (s *Violation) SetReason(val OptString) {
+	s.Reason = val
 }

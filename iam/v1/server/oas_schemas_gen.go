@@ -17,18 +17,18 @@ func (s *ErrorStatusCode) Error() string {
 
 // Ref: #/components/schemas/AttachPolicyRequestBody
 type AttachPolicyRequestBody struct {
-	// 给人看的理由。一条附加策略事后最难回答的是「当初为什么开这一条」.
+	// Why it was granted, written for a reader.
 	Description OptString                     `json:"description"`
 	Effect      AttachPolicyRequestBodyEffect `json:"effect"`
-	// 直挂的权限名，用它就不必为一个人临时造一个只有他持有的角色.
+	// Permission names attached directly, which avoids creating a role only one person holds.
 	Permissions OptNilStringArray `json:"permissions"`
-	// 这条策略只在这些资源上成立。留空只有配合 deny
-	// 才讲得通——一条不限资源的 allow 是基础策略，那一条已经有了.
+	// The policy holds only on these resources. Leaving it empty makes sense only together with `deny`,
+	// since an `allow` covering every resource is the base policy, which already exists.
 	Resources OptNilResourceRefResourceArray `json:"resources"`
-	// 必须是这个项目已经定义的角色。OWNER 和 ADMIN
-	// 不行——它们是规则而不是权限集合，「限定在三台机器上的所有者」讲不通.
+	// Each must be a role already defined in this project. `OWNER` and `ADMIN` are not accepted, being
+	// rules rather than sets of permissions.
 	Roles OptNilStringArray `json:"roles"`
-	// 必须已经是这个项目的成员.
+	// Must already be a member of this project.
 	UserID string `json:"user_id"`
 }
 
@@ -209,7 +209,7 @@ func (s *CatalogListResponseBody) SetItems(val []CatalogResource) {
 // Ref: #/components/schemas/CatalogResource
 type CatalogResource struct {
 	Permissions []PermissionResource `json:"permissions"`
-	// 这个服务声明的资源类型。带资源范围的规则只落得到它们上面——一个没有被声明过的类型没人认得，限定在它上面的规则谁都判不出来.
+	// The resource types this service declares. A scoped rule can only land on one of them.
 	ResourceTypes []ResourceTypeResource `json:"resource_types"`
 	Service       string                 `json:"service"`
 }
@@ -246,11 +246,13 @@ func (s *CatalogResource) SetService(val string) {
 
 // Ref: #/components/schemas/CreateRoleRequestBody
 type CreateRoleRequestBody struct {
-	// 小写字母开头，可含数字和下划线。建好之后不能改——成员绑定和邀请都指着它.
+	// Begins with a lower-case letter and may contain digits and underscores. It cannot be changed once
+	// created, as member bindings and invitations refer to it.
 	Code        string    `json:"code"`
 	Description OptString `json:"description"`
 	Name        string    `json:"name"`
-	// 权限名。OwnerOnly 的那几条会被拒绝：绑上去也不会生效.
+	// A permission name. The ones reserved for the owner are refused, since attaching them would have no
+	// effect.
 	Permissions OptNilStringArray `json:"permissions"`
 }
 
@@ -297,11 +299,12 @@ func (s *CreateRoleRequestBody) SetPermissions(val OptNilStringArray) {
 // Ref: #/components/schemas/CreateSSHKeyRequestBody
 type CreateSSHKeyRequestBody struct {
 	Name string `json:"name"`
-	// 这把钥匙归谁.
+	// Who this key belongs to.
 	Owner OptCreateSSHKeyRequestBodyOwner `json:"owner"`
-	// OpenSSH 格式的公钥。类型和指纹从它算出来，都不可改.
+	// The public key in OpenSSH format. The type and the fingerprint are derived from it and cannot be
+	// changed.
 	PublicKey string `json:"public_key"`
-	// 用途标签，比如 ci、bastion.
+	// A purpose label, such as ci or bastion.
 	Purposes OptNilStringArray `json:"purposes"`
 }
 
@@ -345,7 +348,7 @@ func (s *CreateSSHKeyRequestBody) SetPurposes(val OptNilStringArray) {
 	s.Purposes = val
 }
 
-// 这把钥匙归谁.
+// Who this key belongs to.
 type CreateSSHKeyRequestBodyOwner string
 
 const (
@@ -441,9 +444,35 @@ func (s *Error) SetStatus(val int64) {
 	s.Status = val
 }
 
-type ErrorMeta map[string]jx.Raw
+type ErrorMeta struct {
+	// Present on every response whose `code` is `VALIDATION_FAILED`, and on no other response.
+	Violations      []Violation `json:"violations"`
+	AdditionalProps ErrorMetaAdditional
+}
 
-func (s *ErrorMeta) init() ErrorMeta {
+// GetViolations returns the value of Violations.
+func (s *ErrorMeta) GetViolations() []Violation {
+	return s.Violations
+}
+
+// GetAdditionalProps returns the value of AdditionalProps.
+func (s *ErrorMeta) GetAdditionalProps() ErrorMetaAdditional {
+	return s.AdditionalProps
+}
+
+// SetViolations sets the value of Violations.
+func (s *ErrorMeta) SetViolations(val []Violation) {
+	s.Violations = val
+}
+
+// SetAdditionalProps sets the value of AdditionalProps.
+func (s *ErrorMeta) SetAdditionalProps(val ErrorMetaAdditional) {
+	s.AdditionalProps = val
+}
+
+type ErrorMetaAdditional map[string]jx.Raw
+
+func (s *ErrorMetaAdditional) init() ErrorMetaAdditional {
 	m := *s
 	if m == nil {
 		m = map[string]jx.Raw{}
@@ -482,11 +511,10 @@ func (s *ErrorStatusCode) SetResponse(val Error) {
 type GrantResource struct {
 	Admin bool `json:"admin"`
 	Owner bool `json:"owner"`
-	// 持有的角色编码，只用于展示.
+	// The role codes held, for display only.
 	Roles []string `json:"roles"`
-	// 他全部策略编译出来的规则。不要自己遍历它做判定——拿它配上自己那份权限目录交给
-	// pkg/rbac：owner 不可被 deny、deny 优先于
-	// admin、带资源范围的规则不参与项目级判定，那里面的顺序每一条都对着一种会静默放行的写法.
+	// The rules compiled from every policy that applies. Do not walk them to reach a decision. They are
+	// here to render what a user may do; each request is decided by the service handling it.
 	Rules []RuleResource `json:"rules"`
 }
 
@@ -538,7 +566,7 @@ type InvitationResource struct {
 	ID        uuid.UUID `json:"id"`
 	InvitedBy string    `json:"invited_by"`
 	ProjectID uuid.UUID `json:"project_id"`
-	// 兑现时会授予的角色编码.
+	// The role codes granted on redemption.
 	Roles []string `json:"roles"`
 }
 
@@ -615,7 +643,8 @@ func (s *InvitationResource) SetRoles(val []string) {
 // Ref: #/components/schemas/IssueInvitationRequestBody
 type IssueInvitationRequestBody struct {
 	Email string `json:"email"`
-	// 兑现时授予的角色编码。必须是这个项目已经定义的，OWNER 不行.
+	// The role codes granted on redemption. Each must already be defined in this project, and `OWNER` is
+	// not accepted.
 	Roles []string `json:"roles"`
 }
 
@@ -642,7 +671,8 @@ func (s *IssueInvitationRequestBody) SetRoles(val []string) {
 // Ref: #/components/schemas/IssuedInvitationResponseBody
 type IssuedInvitationResponseBody struct {
 	Invitation InvitationResource `json:"invitation"`
-	// 兑现用的明文，只在这一次响应里出现。库里只有它的哈希，丢了只能撤销重发.
+	// The token that redeems the invitation, returned in this response only. If it is lost, withdraw the
+	// invitation and send another.
 	Token string `json:"token"`
 }
 
@@ -668,13 +698,13 @@ func (s *IssuedInvitationResponseBody) SetToken(val string) {
 
 // Ref: #/components/schemas/LengthAwarePageInvitationResource
 type LengthAwarePageInvitationResource struct {
-	// 这一页的内容.
+	// The items in this page.
 	Items []InvitationResource `json:"items"`
-	// 这一页最多几条，回显请求里的值.
+	// Maximum number of items in this page, echoing the request.
 	Limit int64 `json:"limit"`
-	// 跳过了多少条，回显请求里的值.
+	// Number of items skipped, echoing the request.
 	Offset int64 `json:"offset"`
-	// 命中的总条数，不只是这一页.
+	// Total number of matches, not only this page.
 	Total int64 `json:"total"`
 }
 
@@ -720,13 +750,13 @@ func (s *LengthAwarePageInvitationResource) SetTotal(val int64) {
 
 // Ref: #/components/schemas/LengthAwarePageMemberResource
 type LengthAwarePageMemberResource struct {
-	// 这一页的内容.
+	// The items in this page.
 	Items []MemberResource `json:"items"`
-	// 这一页最多几条，回显请求里的值.
+	// Maximum number of items in this page, echoing the request.
 	Limit int64 `json:"limit"`
-	// 跳过了多少条，回显请求里的值.
+	// Number of items skipped, echoing the request.
 	Offset int64 `json:"offset"`
-	// 命中的总条数，不只是这一页.
+	// Total number of matches, not only this page.
 	Total int64 `json:"total"`
 }
 
@@ -772,13 +802,13 @@ func (s *LengthAwarePageMemberResource) SetTotal(val int64) {
 
 // Ref: #/components/schemas/LengthAwarePageSSHKeyResource
 type LengthAwarePageSSHKeyResource struct {
-	// 这一页的内容.
+	// The items in this page.
 	Items []SSHKeyResource `json:"items"`
-	// 这一页最多几条，回显请求里的值.
+	// Maximum number of items in this page, echoing the request.
 	Limit int64 `json:"limit"`
-	// 跳过了多少条，回显请求里的值.
+	// Number of items skipped, echoing the request.
 	Offset int64 `json:"offset"`
-	// 命中的总条数，不只是这一页.
+	// Total number of matches, not only this page.
 	Total int64 `json:"total"`
 }
 
@@ -822,7 +852,7 @@ func (s *LengthAwarePageSSHKeyResource) SetTotal(val int64) {
 	s.Total = val
 }
 
-// 不传时两种都返回.
+// Both kinds are returned while this is absent.
 type ListSSHKeysStatus string
 
 const (
@@ -1419,7 +1449,8 @@ func (o OptString) Or(d string) string {
 
 // Ref: #/components/schemas/OwnershipTransferResponseBody
 type OwnershipTransferResponseBody struct {
-	// 原所有者。他保留其余的角色——转让的是所有权，不是把人踢出去.
+	// The former owner, who keeps every other role held. Ownership is transferred rather than the person
+	// removed.
 	From MemberResource `json:"from"`
 	To   MemberResource `json:"to"`
 }
@@ -1446,16 +1477,17 @@ func (s *OwnershipTransferResponseBody) SetTo(val MemberResource) {
 
 // Ref: #/components/schemas/PermissionResource
 type PermissionResource struct {
-	// 权限的代码，形如
-	// compute:instance.delete。这里没有展示名：一条权限对人显示成什么字是本地化的，服务端存一份的话那一份只会是某一种语言，而读它的人可能读别的语言。译名归渲染它的那一层；它没跟上时界面显示的就是这个代码——一个自解释的降级，而且看得见.
+	// The code of the permission, such as compute:instance.delete. There is no display name here — what
+	// a permission reads as is localised, and translation belongs to the layer rendering it. Until a
+	// translation catches up, the code itself is what is shown.
 	Name string `json:"name"`
-	// 只有项目所有者能做，绑到自定义角色上也不会生效.
+	// Reserved for the project owner. Attaching it to a custom role has no effect.
 	OwnerOnly bool `json:"owner_only"`
-	// 这条权限的判定对象是哪类资源，空表示它是项目级的。它不必等于操作对象本身——compute
-	// 的 route 表上没有 project_id，隔离本来就经父网络传递，所以 compute:route.create
-	// 的判定对象是
-	// compute:private_network。非空同时意味着这条权限可以被限定到具体实例；create
-	// 和 list 一律留空.
+	// The kind of resource this permission is decided against; empty means it is decided at project level.
+	// It need not be the object being operated on — a compute route carries no project_id and is
+	// isolated through its parent network, so compute:route.create is decided against
+	// compute:private_network. A non-empty value also means the permission can be scoped to particular
+	// instances; create and list are always empty.
 	ResourceType string `json:"resource_type"`
 }
 
@@ -1506,20 +1538,20 @@ func (s *PolicyListResponseBody) SetItems(val []PolicyResource) {
 
 // Ref: #/components/schemas/PolicyResource
 type PolicyResource struct {
-	// 基础策略是方向
-	// allow、不限资源的那一条，每个成员恰好一条，装的是他的常规角色。改它走
-	// PUT /members/{userId}/roles 和 PUT /members/{userId}/permissions.
+	// The base policy is the one whose effect is `allow` and which covers every resource. Each member
+	// holds exactly one, and it carries their ordinary roles. Change it with PUT /members/{userId}/roles
+	// and PUT /members/{userId}/permissions.
 	Base      bool      `json:"base"`
 	CreatedAt time.Time `json:"created_at"`
-	// 给人看的理由。一条附加策略事后最难回答的是「当初为什么开这一条」.
+	// Why it was granted, written for a reader.
 	Description string               `json:"description"`
 	Effect      PolicyResourceEffect `json:"effect"`
 	ID          uuid.UUID            `json:"id"`
-	// 直挂在这个人身上的权限名，不经过角色.
+	// Permission names attached directly to this person, without passing through a role.
 	Permissions []string `json:"permissions"`
-	// 为空表示整个项目范围.
+	// Empty means the whole project.
 	Resources []ResourceRefResource `json:"resources"`
-	// 这条策略带上的角色编码.
+	// The role codes this policy carries.
 	Roles     []string  `json:"roles"`
 	UpdatedAt time.Time `json:"updated_at"`
 	UserID    string    `json:"user_id"`
@@ -1697,13 +1729,13 @@ type ProjectResource struct {
 	BanReason string    `json:"ban_reason"`
 	CreatedAt time.Time `json:"created_at"`
 	CreatedBy string    `json:"created_by"`
-	// 盖上墓碑的那一刻.
+	// When the project was deleted.
 	DeletedAt   NilDateTime           `json:"deleted_at"`
 	Description string                `json:"description"`
 	ID          uuid.UUID             `json:"id"`
 	Name        string                `json:"name"`
 	Status      ProjectResourceStatus `json:"status"`
-	// 给人看的，不参与任何查询.
+	// Written for a reader; it takes part in no query.
 	StatusReason string    `json:"status_reason"`
 	UpdatedAt    time.Time `json:"updated_at"`
 }
@@ -1965,11 +1997,11 @@ func (s *ResolvedMemberResource) SetUserID(val string) {
 
 // Ref: #/components/schemas/ResourceRefResource
 type ResourceRefResource struct {
-	// 是字符串不是 uuid：dns 的 zone 标识是域名，而且不在 IAM 库里。匹配语义是
-	// glob，所以 *.example.com 能表达一批子域名；uuid 和域名都不含 glob
-	// 元字符，对它们来说就是精确相等.
+	// A string rather than a UUID; a DNS zone is named by its domain, which IAM does not hold. Matching is
+	// glob, so `*.example.com` covers a set of subdomains, while a value carrying no glob metacharacter
+	// matches exactly.
 	ID string `json:"id"`
-	// 形如 compute:instance、dns:zone，和权限名同一个命名空间.
+	// Of the form compute:instance or dns:zone, in the same namespace as permission names.
 	Type string `json:"type"`
 }
 
@@ -1995,8 +2027,8 @@ func (s *ResourceRefResource) SetType(val string) {
 
 // Ref: #/components/schemas/ResourceTypeResource
 type ResourceTypeResource struct {
-	// 资源类型的代码，形如
-	// dns:zone。同样没有展示名：它该显示成「托管域名」还是「Zone」由渲染它的那一层按读者的语言决定.
+	// The code of the resource type, such as dns:zone. There is no display name here either; what it reads
+	// as is decided by the layer rendering it.
 	Name string `json:"name"`
 }
 
@@ -2030,7 +2062,7 @@ func (s *RoleListResponseBody) SetItems(val []RoleResource) {
 
 // Ref: #/components/schemas/RoleResource
 type RoleResource struct {
-	// 内置角色不可删、不可改权限：OWNER 和 ADMIN 的语义写在代码里.
+	// A built-in role can be neither deleted nor have its permissions changed.
 	Builtin     bool      `json:"builtin"`
 	Code        string    `json:"code"`
 	CreatedAt   time.Time `json:"created_at"`
@@ -2113,11 +2145,11 @@ func (s *RoleResource) SetUpdatedAt(val time.Time) {
 // Ref: #/components/schemas/RuleResource
 type RuleResource struct {
 	Effect RuleResourceEffect `json:"effect"`
-	// 权限名，支持尾部通配（compute:instance.*）。通配必须带服务前缀——一条光秃秃的
-	// *
-	// 会把日后新上线的服务的操作也一起授出去，而那件事发生的时候没有任何人在场.
+	// A permission name, with a trailing wildcard supported (compute:instance.*). A wildcard must carry
+	// the service prefix; a bare wildcard would also grant the operations of services that go live later.
 	Permissions []string `json:"permissions"`
-	// 为空表示整个项目范围；非空表示这条规则只在这些资源上成立，而那意味着它回答不了项目级的问题.
+	// Empty means the rule holds across the whole project. A non-empty value means it holds only on those
+	// resources, and therefore answers no project-level question.
 	Resources []ResourceRefResource `json:"resources"`
 }
 
@@ -2196,15 +2228,15 @@ func (s *RuleResourceEffect) UnmarshalText(data []byte) error {
 type SSHKeyResource struct {
 	CreatedAt   time.Time `json:"created_at"`
 	Fingerprint string    `json:"fingerprint"`
-	// 平台生成并保管的那把。它的私钥不对外提供.
+	// The key the platform generates and holds. Its private key is not handed out.
 	HasPrivateKey bool      `json:"has_private_key"`
 	ID            uuid.UUID `json:"id"`
 	KeyType       string    `json:"key_type"`
 	Name          string    `json:"name"`
-	// 归属人；不给表示这把钥匙归项目本身.
+	// Who the key belongs to. Absent means it belongs to the project itself.
 	OwnerUserID OptString `json:"owner_user_id"`
 	PublicKey   string    `json:"public_key"`
-	// 用途标签。平台自己生成的那把是 platform.
+	// A purpose label. The key the platform generates carries `platform`.
 	Purposes []string             `json:"purposes"`
 	Status   SSHKeyResourceStatus `json:"status"`
 }
@@ -2352,7 +2384,8 @@ func (s *SSHKeyResourceStatus) UnmarshalText(data []byte) error {
 
 // Ref: #/components/schemas/SetMemberPermissionsRequestBody
 type SetMemberPermissionsRequestBody struct {
-	// 这个人应当直挂的全部权限名，整体替换。角色给的那些不在这里，也不会被这次写入碰到.
+	// Every permission name to be attached directly to this person, replaced in full. The permissions a
+	// role grants are neither listed here nor touched by this write.
 	Permissions []string `json:"permissions"`
 }
 
@@ -2368,7 +2401,7 @@ func (s *SetMemberPermissionsRequestBody) SetPermissions(val []string) {
 
 // Ref: #/components/schemas/SetMemberRolesRequestBody
 type SetMemberRolesRequestBody struct {
-	// 这个人应当持有的全部角色编码。OWNER 不能出现在这里.
+	// Every role code this person is to hold. `OWNER` cannot appear here.
 	Roles []string `json:"roles"`
 }
 
@@ -2384,7 +2417,7 @@ func (s *SetMemberRolesRequestBody) SetRoles(val []string) {
 
 // Ref: #/components/schemas/TransferOwnershipRequestBody
 type TransferOwnershipRequestBody struct {
-	// 接手的人必须已经是这个项目的成员.
+	// The recipient must already be a member of this project.
 	ToUserID string `json:"to_user_id"`
 }
 
@@ -2400,18 +2433,23 @@ func (s *TransferOwnershipRequestBody) SetToUserID(val string) {
 
 // Ref: #/components/schemas/UpdatePolicyRequestBody
 type UpdatePolicyRequestBody struct {
-	// 给人看的理由。它和这次改动一起替换，不然留下来的会是一句解释着上一个版本的话.
+	// Why it was granted, written for a reader. It is replaced together with the change, so that what
+	// remains does not explain an earlier version.
 	Description OptString `json:"description"`
-	// 必须和这条策略当前的方向一致。方向改不动——那不是「改一条策略」，是一次意思完全相反的授权决定，改它的人多半以为自己在收紧，而读这行数据的下一个人看到的是一条方向和当初授予时不同、说明文字却还是旧的策略。仍然要求发这个字段而不是干脆不收，是因为整体替换的语义是「这就是这条策略现在的全貌」：少一个字段的话，调用方以为自己把
-	// deny 改成了 allow，而服务端默默忽略了它。不一致时返回
-	// PROJECT_POLICY_EFFECT_IMMUTABLE.
+	// Must match the current effect of the policy. The effect itself cannot be changed; delete the policy
+	// and create another instead. It is still required in the request because the write replaces the
+	// policy in full, and omitting it would let a caller believe an effect had been changed while the
+	// field was ignored. A mismatch answers PROJECT_POLICY_EFFECT_IMMUTABLE.
 	Effect UpdatePolicyRequestBodyEffect `json:"effect"`
-	// 直挂的权限名，整份替换。没列进来的就是被收回了——它不是往上加一条.
+	// Permission names attached directly, replaced in full. Anything not listed is withdrawn rather than
+	// kept.
 	Permissions OptNilStringArray `json:"permissions"`
-	// 这条策略的资源范围，整份替换。范围内容能改，有没有范围改不了：基础策略加不上范围，带范围的也清不空——清空之后它就是基础策略的形状，而那个位置每个成员只有一条.
+	// The resource scope of this policy, replaced in full. What the scope contains can change; whether the
+	// policy has one cannot. A base policy cannot take a scope, and a scoped policy cannot have its scope
+	// cleared.
 	Resources OptNilResourceRefResourceArray `json:"resources"`
-	// 必须是这个项目已经定义的角色，整份替换。和挂上去那次一样不能有 OWNER
-	// 或 ADMIN.
+	// Each must be a role already defined in this project, replaced in full. As when attaching, `OWNER`
+	// and `ADMIN` are not accepted.
 	Roles OptNilStringArray `json:"roles"`
 }
 
@@ -2465,9 +2503,10 @@ func (s *UpdatePolicyRequestBody) SetRoles(val OptNilStringArray) {
 	s.Roles = val
 }
 
-// 必须和这条策略当前的方向一致。方向改不动——那不是「改一条策略」，是一次意思完全相反的授权决定，改它的人多半以为自己在收紧，而读这行数据的下一个人看到的是一条方向和当初授予时不同、说明文字却还是旧的策略。仍然要求发这个字段而不是干脆不收，是因为整体替换的语义是「这就是这条策略现在的全貌」：少一个字段的话，调用方以为自己把
-// deny 改成了 allow，而服务端默默忽略了它。不一致时返回
-// PROJECT_POLICY_EFFECT_IMMUTABLE.
+// Must match the current effect of the policy. The effect itself cannot be changed; delete the policy
+// and create another instead. It is still required in the request because the write replaces the
+// policy in full, and omitting it would let a caller believe an effect had been changed while the
+// field was ignored. A mismatch answers PROJECT_POLICY_EFFECT_IMMUTABLE.
 type UpdatePolicyRequestBodyEffect string
 
 const (
@@ -2570,4 +2609,48 @@ func (s *UpdateRoleRequestBody) SetName(val string) {
 // SetPermissions sets the value of Permissions.
 func (s *UpdateRoleRequestBody) SetPermissions(val OptNilStringArray) {
 	s.Permissions = val
+}
+
+// A single mismatch between the request and the contract.
+//
+// Use `field` to locate the input, `rule` to decide what to tell the user, and `reason` only for
+// diagnostics.
+// Ref: #/components/schemas/Violation
+type Violation struct {
+	// Dot-separated path to the field, such as `name` or `schedule.0.start_time_seconds`.
+	Field string `json:"field"`
+	// The JSON Schema keyword that failed, such as `minLength`, `minimum` or `pattern`.
+	Rule string `json:"rule"`
+	// The validator's own wording, in English. Intended for diagnostics; do not display it to end users.
+	Reason OptString `json:"reason"`
+}
+
+// GetField returns the value of Field.
+func (s *Violation) GetField() string {
+	return s.Field
+}
+
+// GetRule returns the value of Rule.
+func (s *Violation) GetRule() string {
+	return s.Rule
+}
+
+// GetReason returns the value of Reason.
+func (s *Violation) GetReason() OptString {
+	return s.Reason
+}
+
+// SetField sets the value of Field.
+func (s *Violation) SetField(val string) {
+	s.Field = val
+}
+
+// SetRule sets the value of Rule.
+func (s *Violation) SetRule(val string) {
+	s.Rule = val
+}
+
+// SetReason sets the value of Reason.
+func (s *Violation) SetReason(val OptString) {
+	s.Reason = val
 }

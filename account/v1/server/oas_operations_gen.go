@@ -10,7 +10,7 @@ const (
 	AcceptInvitationOperation           OperationName = "AcceptInvitation"
 	AcceptInvitationByTokenOperation    OperationName = "AcceptInvitationByToken"
 	CreateProjectOperation              OperationName = "CreateProject"
-	ExchangeProjectTokenOperation       OperationName = "ExchangeProjectToken"
+	CreateScopedTokenOperation          OperationName = "CreateScopedToken"
 	GetAccountOperation                 OperationName = "GetAccount"
 	GetIdentityVerificationOperation    OperationName = "GetIdentityVerification"
 	GetSettingsOperation                OperationName = "GetSettings"

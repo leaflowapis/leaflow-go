@@ -64,7 +64,7 @@ func encodeCreateProjectResponse(response *ProjectAccessResource, w http.Respons
 	return nil
 }
 
-func encodeExchangeProjectTokenResponse(response *ProjectTokenResponseBody, w http.ResponseWriter, span trace.Span) error {
+func encodeCreateScopedTokenResponse(response *ScopedTokenResponseBody, w http.ResponseWriter, span trace.Span) error {
 	w.Header().Set("Content-Type", "application/json; charset=utf-8")
 	w.WriteHeader(201)
 

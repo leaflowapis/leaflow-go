@@ -309,7 +309,7 @@ func (s *Server) FindPath(method string, u *url.URL) (r Route, _ bool) {
 				switch method {
 				case "GET":
 					r.name = GetL4TunnelOperation
-					r.summary = "查看本项目的四层隧道"
+					r.summary = "Get the layer 4 tunnel of the current project"
 					r.operationID = "get-l4-tunnel"
 					r.operationGroup = ""
 					r.pathPattern = "/api/v1/tunnel/l4"
@@ -318,7 +318,7 @@ func (s *Server) FindPath(method string, u *url.URL) (r Route, _ bool) {
 					return r, true
 				case "POST":
 					r.name = GenerateL4TunnelOperation
-					r.summary = "生成四层隧道"
+					r.summary = "Generate the layer 4 tunnel"
 					r.operationID = "generate-l4-tunnel"
 					r.operationGroup = ""
 					r.pathPattern = "/api/v1/tunnel/l4"
@@ -354,7 +354,7 @@ func (s *Server) FindPath(method string, u *url.URL) (r Route, _ bool) {
 						switch method {
 						case "GET":
 							r.name = GetL4TunnelSubscriptionOperation
-							r.summary = "获取订阅地址"
+							r.summary = "Get the subscription address"
 							r.operationID = "get-l4-tunnel-subscription"
 							r.operationGroup = ""
 							r.pathPattern = "/api/v1/tunnel/l4/subscription"
@@ -379,7 +379,7 @@ func (s *Server) FindPath(method string, u *url.URL) (r Route, _ bool) {
 							switch method {
 							case "POST":
 								r.name = RotateL4TunnelSubscriptionOperation
-								r.summary = "重置订阅地址与节点密码"
+								r.summary = "Rotate the subscription address and the node passwords"
 								r.operationID = "rotate-l4-tunnel-subscription"
 								r.operationGroup = ""
 								r.pathPattern = "/api/v1/tunnel/l4/subscription/rotate"
@@ -405,7 +405,7 @@ func (s *Server) FindPath(method string, u *url.URL) (r Route, _ bool) {
 						switch method {
 						case "GET":
 							r.name = GetL4TunnelUsageOperation
-							r.summary = "查看本期用量"
+							r.summary = "Get the usage of the current period"
 							r.operationID = "get-l4-tunnel-usage"
 							r.operationGroup = ""
 							r.pathPattern = "/api/v1/tunnel/l4/usage"
@@ -430,7 +430,7 @@ func (s *Server) FindPath(method string, u *url.URL) (r Route, _ bool) {
 							switch method {
 							case "GET":
 								r.name = ListL4TunnelUsageSeriesOperation
-								r.summary = "查看按天用量"
+								r.summary = "Get daily usage"
 								r.operationID = "list-l4-tunnel-usage-series"
 								r.operationGroup = ""
 								r.pathPattern = "/api/v1/tunnel/l4/usage/series"

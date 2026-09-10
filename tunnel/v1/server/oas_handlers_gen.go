@@ -35,9 +35,9 @@ func (c *codeRecorder) Unwrap() http.ResponseWriter {
 
 // handleGenerateL4TunnelRequest handles generate-l4-tunnel operation.
 //
-// 幂等：已经有了再调一次返回同一条，不报错。按钮被点两次是安全的。
+// Idempotent: calling it again returns the existing tunnel rather than an error.
 //
-// 生成之后请调订阅接口取地址，本接口不返回它。.
+// Read the address from the subscription endpoint afterwards; it is not returned here.
 //
 // POST /api/v1/tunnel/l4
 func (s *Server) handleGenerateL4TunnelRequest(args [0]string, argsEscaped bool, w http.ResponseWriter, r *http.Request) {
@@ -165,7 +165,7 @@ func (s *Server) handleGenerateL4TunnelRequest(args [0]string, argsEscaped bool,
 		mreq := middleware.Request{
 			Context:          ctx,
 			OperationName:    GenerateL4TunnelOperation,
-			OperationSummary: "生成四层隧道",
+			OperationSummary: "Generate the layer 4 tunnel",
 			OperationID:      "generate-l4-tunnel",
 			Body:             nil,
 			RawBody:          rawBody,
@@ -222,13 +222,13 @@ func (s *Server) handleGenerateL4TunnelRequest(args [0]string, argsEscaped bool,
 
 // handleGetL4TunnelRequest handles get-l4-tunnel operation.
 //
-// 还没生成过时返回
-// `TUNNEL_NOT_FOUND`——首屏据此决定画「生成订阅链接」那个按钮还是画结果。
+// `TUNNEL_NOT_FOUND` means no tunnel has been generated yet.
 //
-// 项目未获开放时返回 403
-// `TUNNEL_NOT_ENTITLED`，那是另一件事：控制台据此把四层隧道的入口整个收起来，而不是画那个按钮。
+// 403 `TUNNEL_NOT_ENTITLED` states something else: the project has not been entitled to layer 4 at
+// all.
 //
-// 订阅地址、用量、配额各有自己的接口，这里不重复返回。.
+// The subscription address, the usage and the quota each have their own endpoint and are not repeated
+// here.
 //
 // GET /api/v1/tunnel/l4
 func (s *Server) handleGetL4TunnelRequest(args [0]string, argsEscaped bool, w http.ResponseWriter, r *http.Request) {
@@ -356,7 +356,7 @@ func (s *Server) handleGetL4TunnelRequest(args [0]string, argsEscaped bool, w ht
 		mreq := middleware.Request{
 			Context:          ctx,
 			OperationName:    GetL4TunnelOperation,
-			OperationSummary: "查看本项目的四层隧道",
+			OperationSummary: "Get the layer 4 tunnel of the current project",
 			OperationID:      "get-l4-tunnel",
 			Body:             nil,
 			RawBody:          rawBody,
@@ -413,13 +413,14 @@ func (s *Server) handleGetL4TunnelRequest(args [0]string, argsEscaped bool, w ht
 
 // handleGetL4TunnelSubscriptionRequest handles get-l4-tunnel-subscription operation.
 //
-// 这条 URL 是凭据，等同于密码。
-// 拿着它就能取到这个项目的全部节点和密码，所以它只在这一个接口里出现，一次一条——不进任何列表，也不在隧道详情里。
+// This URL is a credential, equivalent to a password. It yields every node of the project along with
+// their passwords. It is returned here alone, and appears neither in the tunnel itself nor in any
+// list.
 //
-// 客户端不应在用户主动请求之前调用它：这个接口的每一次调用都会被记进操作日志。
+// Do not call this endpoint before the user asks for the address.
 //
-// `status` 为 `preparing`
-// 时链接照样有效，内容会在拉取那一刻重新派生。它只该影响页面上说什么。.
+// A `status` of `preparing` leaves the link usable; its contents are derived at the moment it is
+// fetched.
 //
 // GET /api/v1/tunnel/l4/subscription
 func (s *Server) handleGetL4TunnelSubscriptionRequest(args [0]string, argsEscaped bool, w http.ResponseWriter, r *http.Request) {
@@ -547,7 +548,7 @@ func (s *Server) handleGetL4TunnelSubscriptionRequest(args [0]string, argsEscape
 		mreq := middleware.Request{
 			Context:          ctx,
 			OperationName:    GetL4TunnelSubscriptionOperation,
-			OperationSummary: "获取订阅地址",
+			OperationSummary: "Get the subscription address",
 			OperationID:      "get-l4-tunnel-subscription",
 			Body:             nil,
 			RawBody:          rawBody,
@@ -604,11 +605,11 @@ func (s *Server) handleGetL4TunnelSubscriptionRequest(args [0]string, argsEscape
 
 // handleGetL4TunnelUsageRequest handles get-l4-tunnel-usage operation.
 //
-// 实时查询，不经过缓存。
+// Read live.
 //
-// 判断是否超额只看 `billed_bytes`：线路可以设置倍率（如 1.5× 或
-// 0×），`raw_bytes` 是实际传输量，两者不一定相等。`quota_bytes` 为 0
-// 表示不限量。.
+// Only `billed_bytes` decides whether the quota is exceeded: a route may carry a multiplier such as
+// 1.5× or 0×, so `raw_bytes`, the volume actually transferred, need not equal it. A `quota_bytes` of
+// 0 means unlimited.
 //
 // GET /api/v1/tunnel/l4/usage
 func (s *Server) handleGetL4TunnelUsageRequest(args [0]string, argsEscaped bool, w http.ResponseWriter, r *http.Request) {
@@ -736,7 +737,7 @@ func (s *Server) handleGetL4TunnelUsageRequest(args [0]string, argsEscaped bool,
 		mreq := middleware.Request{
 			Context:          ctx,
 			OperationName:    GetL4TunnelUsageOperation,
-			OperationSummary: "查看本期用量",
+			OperationSummary: "Get the usage of the current period",
 			OperationID:      "get-l4-tunnel-usage",
 			Body:             nil,
 			RawBody:          rawBody,
@@ -793,9 +794,11 @@ func (s *Server) handleGetL4TunnelUsageRequest(args [0]string, argsEscaped bool,
 
 // handleListL4TunnelUsageSeriesRequest handles list-l4-tunnel-usage-series operation.
 //
-// 按自然日切分。没有流量的日子不会出现在结果里（不补零），画图那一侧要自己补齐日期轴——否则一段没人用的日子会被画成一条直接连过去的线，看起来像那几天一直在匀速跑流量。
+// Cut by calendar day. A day carrying no traffic is absent rather than zero, so a chart has to fill
+// the date axis itself.
 //
-// 把这里的天加起来不等于本期用量，这是有意的：本期按计费周期切，而且「重置本期用量」只作用于本期，日汇总一行都不删。.
+// These days do not sum to the usage of the current period, which is cut by billing period. Resetting
+// the usage of the current period leaves every daily total in place.
 //
 // GET /api/v1/tunnel/l4/usage/series
 func (s *Server) handleListL4TunnelUsageSeriesRequest(args [0]string, argsEscaped bool, w http.ResponseWriter, r *http.Request) {
@@ -933,7 +936,7 @@ func (s *Server) handleListL4TunnelUsageSeriesRequest(args [0]string, argsEscape
 		mreq := middleware.Request{
 			Context:          ctx,
 			OperationName:    ListL4TunnelUsageSeriesOperation,
-			OperationSummary: "查看按天用量",
+			OperationSummary: "Get daily usage",
 			OperationID:      "list-l4-tunnel-usage-series",
 			Body:             nil,
 			RawBody:          rawBody,
@@ -995,14 +998,17 @@ func (s *Server) handleListL4TunnelUsageSeriesRequest(args [0]string, argsEscape
 
 // handleRotateL4TunnelSubscriptionRequest handles rotate-l4-tunnel-subscription operation.
 //
-// 这是凭据泄露时的处置手段，会让已分发出去的每一份订阅立即失效。
+// This is the remedy for an exposed credential, and every subscription already distributed stops
+// working at once.
 //
-// 订阅 token
-// 和节点密码同时更换，所有客户端都必须重新拉取一次订阅才能继续使用。调用前请确认这确实是想要的结果。
+// The subscription token and the node passwords are replaced together, so every client has to fetch
+// the subscription again before it can carry on. Confirm that this is the intended outcome before
+// calling.
 //
-// 隧道被平台停用时无法重置（`TUNNEL_DISABLED_FOR_ROTATE`），需要先处理停用的原因。
+// A tunnel disabled by the platform cannot be rotated (`TUNNEL_DISABLED_FOR_ROTATE`); resolve the
+// cause first.
 //
-// 重置后请调订阅接口取新地址，本接口不返回它。.
+// Read the new address from the subscription endpoint afterwards; it is not returned here.
 //
 // POST /api/v1/tunnel/l4/subscription/rotate
 func (s *Server) handleRotateL4TunnelSubscriptionRequest(args [0]string, argsEscaped bool, w http.ResponseWriter, r *http.Request) {
@@ -1130,7 +1136,7 @@ func (s *Server) handleRotateL4TunnelSubscriptionRequest(args [0]string, argsEsc
 		mreq := middleware.Request{
 			Context:          ctx,
 			OperationName:    RotateL4TunnelSubscriptionOperation,
-			OperationSummary: "重置订阅地址与节点密码",
+			OperationSummary: "Rotate the subscription address and the node passwords",
 			OperationID:      "rotate-l4-tunnel-subscription",
 			Body:             nil,
 			RawBody:          rawBody,

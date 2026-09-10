@@ -174,20 +174,20 @@ func (e ListSshKeysParamsStatus) Valid() bool {
 
 // AttachPolicyRequestBody defines model for AttachPolicyRequestBody.
 type AttachPolicyRequestBody struct {
-	// Description 给人看的理由。一条附加策略事后最难回答的是「当初为什么开这一条」
+	// Description Why it was granted, written for a reader
 	Description *string                       `json:"description,omitempty"`
 	Effect      AttachPolicyRequestBodyEffect `json:"effect"`
 
-	// Permissions 直挂的权限名，用它就不必为一个人临时造一个只有他持有的角色
+	// Permissions Permission names attached directly, which avoids creating a role only one person holds
 	Permissions []string `json:"permissions,omitempty"`
 
-	// Resources 这条策略只在这些资源上成立。留空只有配合 deny 才讲得通——一条不限资源的 allow 是基础策略，那一条已经有了
+	// Resources The policy holds only on these resources. Leaving it empty makes sense only together with `deny`, since an `allow` covering every resource is the base policy, which already exists
 	Resources []ResourceRefResource `json:"resources,omitempty"`
 
-	// Roles 必须是这个项目已经定义的角色。OWNER 和 ADMIN 不行——它们是规则而不是权限集合，「限定在三台机器上的所有者」讲不通
+	// Roles Each must be a role already defined in this project. `OWNER` and `ADMIN` are not accepted, being rules rather than sets of permissions
 	Roles []string `json:"roles,omitempty"`
 
-	// UserId 必须已经是这个项目的成员
+	// UserId Must already be a member of this project
 	UserId string `json:"user_id"`
 }
 
@@ -215,19 +215,19 @@ type CatalogListResponseBody struct {
 type CatalogResource struct {
 	Permissions []PermissionResource `json:"permissions"`
 
-	// ResourceTypes 这个服务声明的资源类型。带资源范围的规则只落得到它们上面——一个没有被声明过的类型没人认得，限定在它上面的规则谁都判不出来
+	// ResourceTypes The resource types this service declares. A scoped rule can only land on one of them
 	ResourceTypes []ResourceTypeResource `json:"resource_types"`
 	Service       string                 `json:"service"`
 }
 
 // CreateRoleRequestBody defines model for CreateRoleRequestBody.
 type CreateRoleRequestBody struct {
-	// Code 小写字母开头，可含数字和下划线。建好之后不能改——成员绑定和邀请都指着它
+	// Code Begins with a lower-case letter and may contain digits and underscores. It cannot be changed once created, as member bindings and invitations refer to it
 	Code        string  `json:"code"`
 	Description *string `json:"description,omitempty"`
 	Name        string  `json:"name"`
 
-	// Permissions 权限名。OwnerOnly 的那几条会被拒绝：绑上去也不会生效
+	// Permissions A permission name. The ones reserved for the owner are refused, since attaching them would have no effect
 	Permissions []string `json:"permissions,omitempty"`
 }
 
@@ -235,17 +235,17 @@ type CreateRoleRequestBody struct {
 type CreateSSHKeyRequestBody struct {
 	Name string `json:"name"`
 
-	// Owner 这把钥匙归谁
+	// Owner Who this key belongs to
 	Owner *CreateSSHKeyRequestBodyOwner `json:"owner,omitempty"`
 
-	// PublicKey OpenSSH 格式的公钥。类型和指纹从它算出来，都不可改
+	// PublicKey The public key in OpenSSH format. The type and the fingerprint are derived from it and cannot be changed
 	PublicKey string `json:"public_key"`
 
-	// Purposes 用途标签，比如 ci、bastion
+	// Purposes A purpose label, such as ci or bastion
 	Purposes []string `json:"purposes,omitempty"`
 }
 
-// CreateSSHKeyRequestBodyOwner 这把钥匙归谁
+// CreateSSHKeyRequestBodyOwner Who this key belongs to
 type CreateSSHKeyRequestBodyOwner string
 
 // Error defines model for Error.
@@ -256,10 +256,10 @@ type GrantResource struct {
 	Admin bool `json:"admin"`
 	Owner bool `json:"owner"`
 
-	// Roles 持有的角色编码，只用于展示
+	// Roles The role codes held, for display only
 	Roles []string `json:"roles"`
 
-	// Rules 他全部策略编译出来的规则。**不要自己遍历它做判定**——拿它配上自己那份权限目录交给 pkg/rbac：owner 不可被 deny、deny 优先于 admin、带资源范围的规则不参与项目级判定，那里面的顺序每一条都对着一种会静默放行的写法
+	// Rules **The rules compiled from every policy that applies. Do not walk them to reach a decision.** They are here to render what a user may do; each request is decided by the service handling it
 	Rules []RuleResource `json:"rules"`
 }
 
@@ -272,7 +272,7 @@ type InvitationResource struct {
 	InvitedBy string             `json:"invited_by"`
 	ProjectId openapi_types.UUID `json:"project_id"`
 
-	// Roles 兑现时会授予的角色编码
+	// Roles The role codes granted on redemption
 	Roles []string `json:"roles"`
 }
 
@@ -280,7 +280,7 @@ type InvitationResource struct {
 type IssueInvitationRequestBody struct {
 	Email openapi_types.Email `json:"email"`
 
-	// Roles 兑现时授予的角色编码。必须是这个项目已经定义的，OWNER 不行
+	// Roles The role codes granted on redemption. Each must already be defined in this project, and `OWNER` is not accepted
 	Roles []string `json:"roles"`
 }
 
@@ -288,52 +288,52 @@ type IssueInvitationRequestBody struct {
 type IssuedInvitationResponseBody struct {
 	Invitation InvitationResource `json:"invitation"`
 
-	// Token 兑现用的明文，**只在这一次响应里出现**。库里只有它的哈希，丢了只能撤销重发
+	// Token The token that redeems the invitation, **returned in this response only**. If it is lost, withdraw the invitation and send another
 	Token string `json:"token"`
 }
 
 // LengthAwarePageInvitationResource defines model for LengthAwarePageInvitationResource.
 type LengthAwarePageInvitationResource struct {
-	// Items 这一页的内容
+	// Items The items in this page
 	Items []InvitationResource `json:"items"`
 
-	// Limit 这一页最多几条，回显请求里的值
+	// Limit Maximum number of items in this page, echoing the request
 	Limit int64 `json:"limit"`
 
-	// Offset 跳过了多少条，回显请求里的值
+	// Offset Number of items skipped, echoing the request
 	Offset int64 `json:"offset"`
 
-	// Total 命中的总条数，不只是这一页
+	// Total Total number of matches, not only this page
 	Total int64 `json:"total"`
 }
 
 // LengthAwarePageMemberResource defines model for LengthAwarePageMemberResource.
 type LengthAwarePageMemberResource struct {
-	// Items 这一页的内容
+	// Items The items in this page
 	Items []MemberResource `json:"items"`
 
-	// Limit 这一页最多几条，回显请求里的值
+	// Limit Maximum number of items in this page, echoing the request
 	Limit int64 `json:"limit"`
 
-	// Offset 跳过了多少条，回显请求里的值
+	// Offset Number of items skipped, echoing the request
 	Offset int64 `json:"offset"`
 
-	// Total 命中的总条数，不只是这一页
+	// Total Total number of matches, not only this page
 	Total int64 `json:"total"`
 }
 
 // LengthAwarePageSSHKeyResource defines model for LengthAwarePageSSHKeyResource.
 type LengthAwarePageSSHKeyResource struct {
-	// Items 这一页的内容
+	// Items The items in this page
 	Items []SSHKeyResource `json:"items"`
 
-	// Limit 这一页最多几条，回显请求里的值
+	// Limit Maximum number of items in this page, echoing the request
 	Limit int64 `json:"limit"`
 
-	// Offset 跳过了多少条，回显请求里的值
+	// Offset Number of items skipped, echoing the request
 	Offset int64 `json:"offset"`
 
-	// Total 命中的总条数，不只是这一页
+	// Total Total number of matches, not only this page
 	Total int64 `json:"total"`
 }
 
@@ -360,20 +360,20 @@ type MembershipResource struct {
 
 // OwnershipTransferResponseBody defines model for OwnershipTransferResponseBody.
 type OwnershipTransferResponseBody struct {
-	// From 原所有者。他保留其余的角色——转让的是所有权，不是把人踢出去
+	// From The former owner, who keeps every other role held. Ownership is transferred rather than the person removed
 	From MemberResource `json:"from"`
 	To   MemberResource `json:"to"`
 }
 
 // PermissionResource defines model for PermissionResource.
 type PermissionResource struct {
-	// Name 权限的代码，形如 compute:instance.delete。**这里没有展示名**：一条权限对人显示成什么字是本地化的，服务端存一份的话那一份只会是某一种语言，而读它的人可能读别的语言。译名归渲染它的那一层；它没跟上时界面显示的就是这个代码——一个自解释的降级，而且看得见
+	// Name The code of the permission, such as compute:instance.delete. **There is no display name here** — what a permission reads as is localised, and translation belongs to the layer rendering it. Until a translation catches up, the code itself is what is shown
 	Name string `json:"name"`
 
-	// OwnerOnly 只有项目所有者能做，绑到自定义角色上也不会生效
+	// OwnerOnly Reserved for the project owner. Attaching it to a custom role has no effect
 	OwnerOnly bool `json:"owner_only"`
 
-	// ResourceType 这条权限的判定对象是哪类资源，空表示它是项目级的。**它不必等于操作对象本身**——compute 的 route 表上没有 project_id，隔离本来就经父网络传递，所以 compute:route.create 的判定对象是 compute:private_network。非空同时意味着这条权限可以被限定到具体实例；create 和 list 一律留空
+	// ResourceType The kind of resource this permission is decided against; empty means it is decided at project level. **It need not be the object being operated on** — a compute route carries no project_id and is isolated through its parent network, so compute:route.create is decided against compute:private_network. A non-empty value also means the permission can be scoped to particular instances; create and list are always empty
 	ResourceType string `json:"resource_type"`
 }
 
@@ -384,22 +384,22 @@ type PolicyListResponseBody struct {
 
 // PolicyResource defines model for PolicyResource.
 type PolicyResource struct {
-	// Base 基础策略是方向 allow、不限资源的那一条，每个成员恰好一条，装的是他的常规角色。改它走 PUT /members/{userId}/roles 和 PUT /members/{userId}/permissions
+	// Base The base policy is the one whose effect is `allow` and which covers every resource. Each member holds exactly one, and it carries their ordinary roles. Change it with PUT /members/{userId}/roles and PUT /members/{userId}/permissions
 	Base      bool      `json:"base"`
 	CreatedAt time.Time `json:"created_at"`
 
-	// Description 给人看的理由。一条附加策略事后最难回答的是「当初为什么开这一条」
+	// Description Why it was granted, written for a reader
 	Description string               `json:"description"`
 	Effect      PolicyResourceEffect `json:"effect"`
 	Id          openapi_types.UUID   `json:"id"`
 
-	// Permissions 直挂在这个人身上的权限名，不经过角色
+	// Permissions Permission names attached directly to this person, without passing through a role
 	Permissions []string `json:"permissions"`
 
-	// Resources 为空表示整个项目范围
+	// Resources Empty means the whole project
 	Resources []ResourceRefResource `json:"resources"`
 
-	// Roles 这条策略带上的角色编码
+	// Roles The role codes this policy carries
 	Roles     []string  `json:"roles"`
 	UpdatedAt time.Time `json:"updated_at"`
 	UserId    string    `json:"user_id"`
@@ -420,14 +420,14 @@ type ProjectResource struct {
 	CreatedAt time.Time `json:"created_at"`
 	CreatedBy string    `json:"created_by"`
 
-	// DeletedAt 盖上墓碑的那一刻
+	// DeletedAt When the project was deleted
 	DeletedAt   *time.Time            `json:"deleted_at"`
 	Description string                `json:"description"`
 	Id          openapi_types.UUID    `json:"id"`
 	Name        string                `json:"name"`
 	Status      ProjectResourceStatus `json:"status"`
 
-	// StatusReason 给人看的，不参与任何查询
+	// StatusReason Written for a reader; it takes part in no query
 	StatusReason string    `json:"status_reason"`
 	UpdatedAt    time.Time `json:"updated_at"`
 }
@@ -455,16 +455,16 @@ type ResolvedMemberResource struct {
 
 // ResourceRefResource defines model for ResourceRefResource.
 type ResourceRefResource struct {
-	// Id 是字符串不是 uuid：dns 的 zone 标识是域名，而且不在 IAM 库里。匹配语义是 glob，所以 *.example.com 能表达一批子域名；uuid 和域名都不含 glob 元字符，对它们来说就是精确相等
+	// Id A string rather than a UUID; a DNS zone is named by its domain, which IAM does not hold. Matching is glob, so `*.example.com` covers a set of subdomains, while a value carrying no glob metacharacter matches exactly
 	Id string `json:"id"`
 
-	// Type 形如 compute:instance、dns:zone，和权限名同一个命名空间
+	// Type Of the form compute:instance or dns:zone, in the same namespace as permission names
 	Type string `json:"type"`
 }
 
 // ResourceTypeResource defines model for ResourceTypeResource.
 type ResourceTypeResource struct {
-	// Name 资源类型的代码，形如 dns:zone。同样没有展示名：它该显示成「托管域名」还是「Zone」由渲染它的那一层按读者的语言决定
+	// Name The code of the resource type, such as dns:zone. There is no display name here either; what it reads as is decided by the layer rendering it
 	Name string `json:"name"`
 }
 
@@ -475,7 +475,7 @@ type RoleListResponseBody struct {
 
 // RoleResource defines model for RoleResource.
 type RoleResource struct {
-	// Builtin 内置角色不可删、不可改权限：OWNER 和 ADMIN 的语义写在代码里
+	// Builtin A built-in role can be neither deleted nor have its permissions changed
 	Builtin     bool      `json:"builtin"`
 	Code        string    `json:"code"`
 	CreatedAt   time.Time `json:"created_at"`
@@ -489,10 +489,10 @@ type RoleResource struct {
 type RuleResource struct {
 	Effect RuleResourceEffect `json:"effect"`
 
-	// Permissions 权限名，支持尾部通配（compute:instance.*）。通配必须带服务前缀——一条光秃秃的 * 会把日后新上线的服务的操作也一起授出去，而那件事发生的时候没有任何人在场
+	// Permissions A permission name, with a trailing wildcard supported (compute:instance.*). A wildcard must carry the service prefix; a bare wildcard would also grant the operations of services that go live later
 	Permissions []string `json:"permissions"`
 
-	// Resources 为空表示整个项目范围；非空表示这条规则只在这些资源上成立，而那意味着它回答不了项目级的问题
+	// Resources Empty means the rule holds across the whole project. A non-empty value means it holds only on those resources, and therefore answers no project-level question
 	Resources []ResourceRefResource `json:"resources"`
 }
 
@@ -504,17 +504,17 @@ type SSHKeyResource struct {
 	CreatedAt   time.Time `json:"created_at"`
 	Fingerprint string    `json:"fingerprint"`
 
-	// HasPrivateKey 平台生成并保管的那把。它的私钥不对外提供
+	// HasPrivateKey The key the platform generates and holds. Its private key is not handed out
 	HasPrivateKey bool               `json:"has_private_key"`
 	Id            openapi_types.UUID `json:"id"`
 	KeyType       string             `json:"key_type"`
 	Name          string             `json:"name"`
 
-	// OwnerUserId 归属人；不给表示这把钥匙归项目本身
+	// OwnerUserId Who the key belongs to. Absent means it belongs to the project itself
 	OwnerUserId *string `json:"owner_user_id,omitempty"`
 	PublicKey   string  `json:"public_key"`
 
-	// Purposes 用途标签。平台自己生成的那把是 platform
+	// Purposes A purpose label. The key the platform generates carries `platform`
 	Purposes []string             `json:"purposes"`
 	Status   SSHKeyResourceStatus `json:"status"`
 }
@@ -524,41 +524,41 @@ type SSHKeyResourceStatus string
 
 // SetMemberPermissionsRequestBody defines model for SetMemberPermissionsRequestBody.
 type SetMemberPermissionsRequestBody struct {
-	// Permissions 这个人应当直挂的**全部**权限名，整体替换。角色给的那些不在这里，也不会被这次写入碰到
+	// Permissions **Every** permission name to be attached directly to this person, replaced in full. The permissions a role grants are neither listed here nor touched by this write
 	Permissions []string `json:"permissions"`
 }
 
 // SetMemberRolesRequestBody defines model for SetMemberRolesRequestBody.
 type SetMemberRolesRequestBody struct {
-	// Roles 这个人应当持有的**全部**角色编码。OWNER 不能出现在这里
+	// Roles **Every** role code this person is to hold. `OWNER` cannot appear here
 	Roles []string `json:"roles"`
 }
 
 // TransferOwnershipRequestBody defines model for TransferOwnershipRequestBody.
 type TransferOwnershipRequestBody struct {
-	// ToUserId 接手的人必须已经是这个项目的成员
+	// ToUserId The recipient must already be a member of this project
 	ToUserId string `json:"to_user_id"`
 }
 
 // UpdatePolicyRequestBody defines model for UpdatePolicyRequestBody.
 type UpdatePolicyRequestBody struct {
-	// Description 给人看的理由。它和这次改动一起替换，不然留下来的会是一句解释着上一个版本的话
+	// Description Why it was granted, written for a reader. It is replaced together with the change, so that what remains does not explain an earlier version
 	Description *string `json:"description,omitempty"`
 
-	// Effect 必须和这条策略当前的方向一致。方向改不动——那不是「改一条策略」，是一次意思完全相反的授权决定，改它的人多半以为自己在收紧，而读这行数据的下一个人看到的是一条方向和当初授予时不同、说明文字却还是旧的策略。仍然要求发这个字段而不是干脆不收，是因为整体替换的语义是「这就是这条策略现在的全貌」：少一个字段的话，调用方以为自己把 deny 改成了 allow，而服务端默默忽略了它。不一致时返回 PROJECT_POLICY_EFFECT_IMMUTABLE
+	// Effect Must match the current effect of the policy. The effect itself cannot be changed; delete the policy and create another instead. It is still required in the request because the write replaces the policy in full, and omitting it would let a caller believe an effect had been changed while the field was ignored. A mismatch answers PROJECT_POLICY_EFFECT_IMMUTABLE
 	Effect UpdatePolicyRequestBodyEffect `json:"effect"`
 
-	// Permissions 直挂的权限名，整份替换。没列进来的就是被收回了——它不是往上加一条
+	// Permissions Permission names attached directly, replaced in full. Anything not listed is withdrawn rather than kept
 	Permissions []string `json:"permissions,omitempty"`
 
-	// Resources 这条策略的资源范围，整份替换。范围内容能改，有没有范围改不了：基础策略加不上范围，带范围的也清不空——清空之后它就是基础策略的形状，而那个位置每个成员只有一条
+	// Resources The resource scope of this policy, replaced in full. What the scope contains can change; whether the policy has one cannot. A base policy cannot take a scope, and a scoped policy cannot have its scope cleared
 	Resources []ResourceRefResource `json:"resources,omitempty"`
 
-	// Roles 必须是这个项目已经定义的角色，整份替换。和挂上去那次一样不能有 OWNER 或 ADMIN
+	// Roles Each must be a role already defined in this project, replaced in full. As when attaching, `OWNER` and `ADMIN` are not accepted
 	Roles []string `json:"roles,omitempty"`
 }
 
-// UpdatePolicyRequestBodyEffect 必须和这条策略当前的方向一致。方向改不动——那不是「改一条策略」，是一次意思完全相反的授权决定，改它的人多半以为自己在收紧，而读这行数据的下一个人看到的是一条方向和当初授予时不同、说明文字却还是旧的策略。仍然要求发这个字段而不是干脆不收，是因为整体替换的语义是「这就是这条策略现在的全貌」：少一个字段的话，调用方以为自己把 deny 改成了 allow，而服务端默默忽略了它。不一致时返回 PROJECT_POLICY_EFFECT_IMMUTABLE
+// UpdatePolicyRequestBodyEffect Must match the current effect of the policy. The effect itself cannot be changed; delete the policy and create another instead. It is still required in the request because the write replaces the policy in full, and omitting it would let a caller believe an effect had been changed while the field was ignored. A mismatch answers PROJECT_POLICY_EFFECT_IMMUTABLE
 type UpdatePolicyRequestBodyEffect string
 
 // UpdateProjectRequestBody defines model for UpdateProjectRequestBody.
@@ -576,43 +576,43 @@ type UpdateRoleRequestBody struct {
 
 // ListProjectInvitationsParams defines parameters for ListProjectInvitations.
 type ListProjectInvitationsParams struct {
-	// Limit 这一页最多返回多少条
+	// Limit Maximum number of items in this page
 	Limit *int64 `form:"limit,omitempty" json:"limit,omitempty"`
 
-	// Offset 跳过多少条。要翻得更深请改用游标翻页的接口
+	// Offset Number of items to skip. Use the cursor-paged endpoint to page deeper
 	Offset *int64 `form:"offset,omitempty" json:"offset,omitempty"`
 }
 
 // ListMembersParams defines parameters for ListMembers.
 type ListMembersParams struct {
-	// Limit 这一页最多返回多少条
+	// Limit Maximum number of items in this page
 	Limit *int64 `form:"limit,omitempty" json:"limit,omitempty"`
 
-	// Offset 跳过多少条。要翻得更深请改用游标翻页的接口
+	// Offset Number of items to skip. Use the cursor-paged endpoint to page deeper
 	Offset *int64 `form:"offset,omitempty" json:"offset,omitempty"`
 
-	// Keyword 按用户 ID、邮箱或姓名模糊匹配
+	// Keyword Matches against user id, email address or name
 	Keyword *string `form:"keyword,omitempty" json:"keyword,omitempty"`
 }
 
 // ListPoliciesParams defines parameters for ListPolicies.
 type ListPoliciesParams struct {
-	// UserId 只看这个人身上的。不传表示整个项目的
+	// UserId Restricts the result to one person. Omitting it covers the whole project
 	UserId *string `form:"userId,omitempty" json:"userId,omitempty"`
 }
 
 // ListSshKeysParams defines parameters for ListSshKeys.
 type ListSshKeysParams struct {
-	// Limit 这一页最多返回多少条
+	// Limit Maximum number of items in this page
 	Limit *int64 `form:"limit,omitempty" json:"limit,omitempty"`
 
-	// Offset 跳过多少条。要翻得更深请改用游标翻页的接口
+	// Offset Number of items to skip. Use the cursor-paged endpoint to page deeper
 	Offset *int64 `form:"offset,omitempty" json:"offset,omitempty"`
 
-	// Status 不传时两种都返回
+	// Status Both kinds are returned while this is absent
 	Status *ListSshKeysParamsStatus `form:"status,omitempty" json:"status,omitempty"`
 
-	// Purpose 只列挂着这个用途的钥匙。平台自己生成的那把是 platform
+	// Purpose Lists only the keys carrying this purpose. The key the platform generates carries `platform`
 	Purpose *string `form:"purpose,omitempty" json:"purpose,omitempty"`
 }
 
@@ -729,78 +729,78 @@ func WithRequestEditorFn(fn RequestEditorFn) ClientOption {
 // The interface specification for the client above.
 type ClientInterface interface {
 
-	// ListProjectInvitations 列出这个项目还在等的要约
+	// ListProjectInvitations List the invitations this project is still waiting on
 	//
-	// 在项目里就看得到，和成员列表同一条规则：谁被请了也是「这个项目有谁」的一部分。.
+	// Visible to any member, on the same rule as the member list. Who has been invited is part of who is in the project.
 	//
 	// Corresponds with GET /api/v1/invitations (the `ListProjectInvitations` operationId).
 	ListProjectInvitations(ctx context.Context, params *ListProjectInvitationsParams, reqEditors ...RequestEditorFn) (*http.Response, error)
 
-	// IssueInvitationWithBody 发出一份邀请
+	// IssueInvitationWithBody Send an invitation
 	//
-	// 要约站 14 天。有上限是因为里面那些角色是按发出那一刻的项目校验的，一份活得比它所依据的安排还久的要约会授出现在没人打算授的权限。.
+	// An invitation stands for 14 days. The roles it carries are validated against the project as it stood when the invitation was sent, so it expires rather than outliving the arrangement it rests on.
 	//
 	// Takes any type of body and a specified content type.
 	//
 	// Corresponds with POST /api/v1/invitations (the `IssueInvitation` operationId).
 	IssueInvitationWithBody(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
 
-	// IssueInvitation 发出一份邀请
+	// IssueInvitation Send an invitation
 	//
-	// 要约站 14 天。有上限是因为里面那些角色是按发出那一刻的项目校验的，一份活得比它所依据的安排还久的要约会授出现在没人打算授的权限。.
+	// An invitation stands for 14 days. The roles it carries are validated against the project as it stood when the invitation was sent, so it expires rather than outliving the arrangement it rests on.
 	//
 	// Takes a body of the `application/json` content type.
 	//
 	// Corresponds with POST /api/v1/invitations (the `IssueInvitation` operationId).
 	IssueInvitation(ctx context.Context, body IssueInvitationJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
 
-	// RevokeInvitation 撤回一份还没被兑现的要约
+	// RevokeInvitation Withdraw an invitation that has not been redeemed
 	//
 	// Corresponds with DELETE /api/v1/invitations/{invitationId} (the `RevokeInvitation` operationId).
 	RevokeInvitation(ctx context.Context, invitationId openapi_types.UUID, reqEditors ...RequestEditorFn) (*http.Response, error)
 
-	// ListMembers 列出项目成员
+	// ListMembers List the members of a project
 	//
 	// Corresponds with GET /api/v1/members (the `ListMembers` operationId).
 	ListMembers(ctx context.Context, params *ListMembersParams, reqEditors ...RequestEditorFn) (*http.Response, error)
 
-	// RemoveMember 移除成员，或者自己退出
+	// RemoveMember Remove a member, or leave the project
 	//
-	// 移除别人要 iam:members.manage；退出只要求自己在这个项目里——任何人都可能被拉进一个项目，那么任何人就得能出去。所有者两条路都不行，先转移所有权。
+	// Removing someone else requires `iam:members.manage`; leaving requires only membership of the project. The owner can do neither, and has to transfer ownership first.
 	//
 	// Corresponds with DELETE /api/v1/members/{userId} (the `RemoveMember` operationId).
 	RemoveMember(ctx context.Context, userId string, reqEditors ...RequestEditorFn) (*http.Response, error)
 
-	// SetMemberPermissionsWithBody 设置一个成员直挂的权限
+	// SetMemberPermissionsWithBody Set the permissions attached directly to a member
 	//
-	// 整体替换基础策略上直挂的那些权限。直挂让「给某个人临时开一条」不必先造一个只有他一个人持有的角色，但它不会随角色调整而更新，所以它适合一次性的、说得出理由的授予——角色仍然是主要的组织方式。要 iam:members.manage。
+	// Replaces, in full, the permissions attached directly to the base policy. A direct permission grants one person something without creating a role only they hold, and it does not follow later changes to any role. Requires `iam:members.manage`.
 	//
 	// Takes any type of body and a specified content type.
 	//
 	// Corresponds with PUT /api/v1/members/{userId}/permissions (the `SetMemberPermissions` operationId).
 	SetMemberPermissionsWithBody(ctx context.Context, userId string, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
 
-	// SetMemberPermissions 设置一个成员直挂的权限
+	// SetMemberPermissions Set the permissions attached directly to a member
 	//
-	// 整体替换基础策略上直挂的那些权限。直挂让「给某个人临时开一条」不必先造一个只有他一个人持有的角色，但它不会随角色调整而更新，所以它适合一次性的、说得出理由的授予——角色仍然是主要的组织方式。要 iam:members.manage。
+	// Replaces, in full, the permissions attached directly to the base policy. A direct permission grants one person something without creating a role only they hold, and it does not follow later changes to any role. Requires `iam:members.manage`.
 	//
 	// Takes a body of the `application/json` content type.
 	//
 	// Corresponds with PUT /api/v1/members/{userId}/permissions (the `SetMemberPermissions` operationId).
 	SetMemberPermissions(ctx context.Context, userId string, body SetMemberPermissionsJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
 
-	// SetMemberRolesWithBody 设置一个成员持有的角色
+	// SetMemberRolesWithBody Set the roles a member holds
 	//
-	// 整体替换而不是增删：调用方拿到的就是一份完整清单，让它自己算差集只会让「我以为我取消了那个角色」这种事变得可能。所有者身上的 OWNER 不受影响。.
+	// The list is replaced in full rather than added to or removed from. The `OWNER` role of the owner is unaffected.
 	//
 	// Takes any type of body and a specified content type.
 	//
 	// Corresponds with PUT /api/v1/members/{userId}/roles (the `SetMemberRoles` operationId).
 	SetMemberRolesWithBody(ctx context.Context, userId string, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
 
-	// SetMemberRoles 设置一个成员持有的角色
+	// SetMemberRoles Set the roles a member holds
 	//
-	// 整体替换而不是增删：调用方拿到的就是一份完整清单，让它自己算差集只会让「我以为我取消了那个角色」这种事变得可能。所有者身上的 OWNER 不受影响。.
+	// The list is replaced in full rather than added to or removed from. The `OWNER` role of the owner is unaffected.
 	//
 	// Takes a body of the `application/json` content type.
 	//
@@ -833,221 +833,221 @@ type ClientInterface interface {
 	// Corresponds with POST /api/v1/members:batchGet (the `BatchGetMembers` operationId).
 	BatchGetMembers(ctx context.Context, body BatchGetMembersJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
 
-	// GetProjectMembership 查看我在这个项目里的身份
+	// GetProjectMembership Get the caller's standing in this project
 	//
-	// 只给事实，不给结论：这里没有 allowed，因为 IAM 不知道你要做的是哪个操作——哪个操作需要哪条权限那份目录属于各个服务，判断在它们那边。.
+	// Facts rather than a conclusion. There is no `allowed` field here, because each service holds the catalogue mapping its operations to permissions and decides on its own.
 	//
 	// Corresponds with GET /api/v1/membership (the `GetProjectMembership` operationId).
 	GetProjectMembership(ctx context.Context, reqEditors ...RequestEditorFn) (*http.Response, error)
 
-	// ListPermissions 列出全平台可授予的权限
+	// ListPermissions List every permission the platform can grant
 	//
-	// 各服务在启动时把自己那份目录注册进 IAM（和 AddFinalizer 同一段代码），所以这里是一份汇总，不只是 IAM 自己那几条。**IAM 不用它做判定**——判定在各服务自己那边，拿 Grant 配它自己那份目录算；这份汇总只是让界面画得出勾选框，它落后一个版本只会让界面上少几条可选项，不会让判定出错。一个还没启动过的服务，它的权限不在这里。.
+	// Each service registers its own catalogue with IAM at start-up, so this is the platform-wide list rather than the permissions of IAM alone. **IAM does not decide anything with it** — each service decides using the caller's grant together with its own catalogue, and this list only serves to render the choices. A service that has never started does not appear here.
 	//
 	// Corresponds with GET /api/v1/permissions (the `ListPermissions` operationId).
 	ListPermissions(ctx context.Context, reqEditors ...RequestEditorFn) (*http.Response, error)
 
-	// ListPolicies 列出这个项目里的策略
+	// ListPolicies List the policies in this project
 	//
-	// 在项目里就看得到，和成员列表同一条规则：谁被授了什么也是「这个项目有谁」的一部分。.
+	// Visible to any member, on the same rule as the member list. What has been granted to whom is part of who is in the project.
 	//
 	// Corresponds with GET /api/v1/policies (the `ListPolicies` operationId).
 	ListPolicies(ctx context.Context, params *ListPoliciesParams, reqEditors ...RequestEditorFn) (*http.Response, error)
 
-	// AttachPolicyWithBody 附加一条策略
+	// AttachPolicyWithBody Attach a policy
 	//
-	// 它建的是**附加**策略——要么带资源范围，要么方向是 deny。一条不限资源的 allow 是基础策略，每个成员只有一条，改它走 set-member-roles 和 set-member-permissions。roles 里不能有 OWNER 或 ADMIN：它们是规则而不是权限集合，「限定在三台机器上的所有者」讲不通。要 iam:members.manage。
+	// This creates an **additional** policy, which either carries a resource scope or has `deny` as its effect. An `allow` covering every resource is a base policy, of which each member holds exactly one, and it is changed with set-member-roles and set-member-permissions. `roles` cannot contain `OWNER` or `ADMIN`. Requires `iam:members.manage`.
 	//
 	// Takes any type of body and a specified content type.
 	//
 	// Corresponds with POST /api/v1/policies (the `AttachPolicy` operationId).
 	AttachPolicyWithBody(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
 
-	// AttachPolicy 附加一条策略
+	// AttachPolicy Attach a policy
 	//
-	// 它建的是**附加**策略——要么带资源范围，要么方向是 deny。一条不限资源的 allow 是基础策略，每个成员只有一条，改它走 set-member-roles 和 set-member-permissions。roles 里不能有 OWNER 或 ADMIN：它们是规则而不是权限集合，「限定在三台机器上的所有者」讲不通。要 iam:members.manage。
+	// This creates an **additional** policy, which either carries a resource scope or has `deny` as its effect. An `allow` covering every resource is a base policy, of which each member holds exactly one, and it is changed with set-member-roles and set-member-permissions. `roles` cannot contain `OWNER` or `ADMIN`. Requires `iam:members.manage`.
 	//
 	// Takes a body of the `application/json` content type.
 	//
 	// Corresponds with POST /api/v1/policies (the `AttachPolicy` operationId).
 	AttachPolicy(ctx context.Context, body AttachPolicyJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
 
-	// DetachPolicy 摘掉一条策略
+	// DetachPolicy Detach a policy
 	//
-	// 基础策略摘不掉——它是这个成员角色的落点，删了它这个人就不再持有任何角色，而「让他离开这个项目」是 remove-member 的事。要 iam:members.manage。
+	// A base policy cannot be detached; it is where a member's roles sit. Use remove-member to take someone out of the project. Requires `iam:members.manage`.
 	//
 	// Corresponds with DELETE /api/v1/policies/{policyId} (the `DetachPolicy` operationId).
 	DetachPolicy(ctx context.Context, policyId openapi_types.UUID, reqEditors ...RequestEditorFn) (*http.Response, error)
 
-	// GetPolicy 查看一条策略
+	// GetPolicy Get a policy
 	//
-	// 和 list-policies 同一条规则，在项目里就看得到：谁被授了什么也是「这个项目有谁」的一部分，读它不需要额外的权限。.
+	// Visible to any member, on the same rule as list-policies; no further permission is required.
 	//
 	// Corresponds with GET /api/v1/policies/{policyId} (the `GetPolicy` operationId).
 	GetPolicy(ctx context.Context, policyId openapi_types.UUID, reqEditors ...RequestEditorFn) (*http.Response, error)
 
-	// UpdatePolicyWithBody 改一条策略
+	// UpdatePolicyWithBody Update a policy
 	//
-	// 整体替换而不是逐字段改：resources、roles、permissions 各自整份覆盖，没发的那份就是空的——只有「这就是这条策略现在的全貌」这一种语义说得清一次写入到底收回了什么。改不动的是策略的**种类**：基础策略（不限资源的 allow）加不上资源范围，这个成员的角色就存在它上面，给它加个范围等于让他在别的资源上什么都不是；一条带范围的策略反过来也不能把范围清空变成基础策略，那个位置每个成员只有一条。要换种类就删了重建。要 iam:members.manage。
+	// Replaced in full rather than field by field — `resources`, `roles` and `permissions` are each overwritten, and an omitted one becomes empty. The **kind** of a policy cannot change — a base policy (an `allow` covering every resource) cannot take a resource scope, and a scoped policy cannot have its scope cleared. Delete and recreate to change the kind. Requires `iam:members.manage`.
 	//
 	// Takes any type of body and a specified content type.
 	//
 	// Corresponds with PUT /api/v1/policies/{policyId} (the `UpdatePolicy` operationId).
 	UpdatePolicyWithBody(ctx context.Context, policyId openapi_types.UUID, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
 
-	// UpdatePolicy 改一条策略
+	// UpdatePolicy Update a policy
 	//
-	// 整体替换而不是逐字段改：resources、roles、permissions 各自整份覆盖，没发的那份就是空的——只有「这就是这条策略现在的全貌」这一种语义说得清一次写入到底收回了什么。改不动的是策略的**种类**：基础策略（不限资源的 allow）加不上资源范围，这个成员的角色就存在它上面，给它加个范围等于让他在别的资源上什么都不是；一条带范围的策略反过来也不能把范围清空变成基础策略，那个位置每个成员只有一条。要换种类就删了重建。要 iam:members.manage。
+	// Replaced in full rather than field by field — `resources`, `roles` and `permissions` are each overwritten, and an omitted one becomes empty. The **kind** of a policy cannot change — a base policy (an `allow` covering every resource) cannot take a resource scope, and a scoped policy cannot have its scope cleared. Delete and recreate to change the kind. Requires `iam:members.manage`.
 	//
 	// Takes a body of the `application/json` content type.
 	//
 	// Corresponds with PUT /api/v1/policies/{policyId} (the `UpdatePolicy` operationId).
 	UpdatePolicy(ctx context.Context, policyId openapi_types.UUID, body UpdatePolicyJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
 
-	// DeleteProject 删除项目
+	// DeleteProject Delete a project
 	//
-	// 只有所有者能做，而且没有回头路：项目进入 DELETING，各服务开始清掉它下面的资源。项目行本身永远留着——查一个删掉的项目查得到，答案是它没了，而不是一个 404。.
+	// Only the owner can do this, and it cannot be undone. The project enters DELETING and each service begins removing the resources under it. The project itself remains readable afterwards, answering that it is gone rather than 404.
 	//
 	// Corresponds with DELETE /api/v1/project (the `DeleteProject` operationId).
 	DeleteProject(ctx context.Context, reqEditors ...RequestEditorFn) (*http.Response, error)
 
-	// GetProject 查看一个项目
+	// GetProject Get a project
 	//
-	// 在项目里就看得到，不需要额外的读权限。.
+	// Visible to any member; no further permission is required.
 	//
 	// Corresponds with GET /api/v1/project (the `GetProject` operationId).
 	GetProject(ctx context.Context, reqEditors ...RequestEditorFn) (*http.Response, error)
 
-	// UpdateProjectWithBody 改项目的名称与描述
+	// UpdateProjectWithBody Update the name and description of a project
 	//
 	// Takes any type of body and a specified content type.
 	//
 	// Corresponds with PATCH /api/v1/project (the `UpdateProject` operationId).
 	UpdateProjectWithBody(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
 
-	// UpdateProject 改项目的名称与描述
+	// UpdateProject Update the name and description of a project
 	//
 	// Takes a body of the `application/json` content type.
 	//
 	// Corresponds with PATCH /api/v1/project (the `UpdateProject` operationId).
 	UpdateProject(ctx context.Context, body UpdateProjectJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
 
-	// ListRoles 列出项目里的角色
+	// ListRoles List the roles in this project
 	//
 	// Corresponds with GET /api/v1/roles (the `ListRoles` operationId).
 	ListRoles(ctx context.Context, reqEditors ...RequestEditorFn) (*http.Response, error)
 
-	// CreateRoleWithBody 建一个角色
+	// CreateRoleWithBody Create a role
 	//
 	// Takes any type of body and a specified content type.
 	//
 	// Corresponds with POST /api/v1/roles (the `CreateRole` operationId).
 	CreateRoleWithBody(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
 
-	// CreateRole 建一个角色
+	// CreateRole Create a role
 	//
 	// Takes a body of the `application/json` content type.
 	//
 	// Corresponds with POST /api/v1/roles (the `CreateRole` operationId).
 	CreateRole(ctx context.Context, body CreateRoleJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
 
-	// DeleteRole 删一个角色
+	// DeleteRole Delete a role
 	//
-	// 还有人持有时会被拒。级联摘掉那些绑定等于把每个持有者悄悄降级——请求里没有一个字说了这件事，事后也查不到。.
+	// Refused while anyone still holds it. Cascading the removal would quietly demote every holder.
 	//
 	// Corresponds with DELETE /api/v1/roles/{code} (the `DeleteRole` operationId).
 	DeleteRole(ctx context.Context, code string, reqEditors ...RequestEditorFn) (*http.Response, error)
 
-	// GetRole 查看一个角色
+	// GetRole Get a role
 	//
 	// Corresponds with GET /api/v1/roles/{code} (the `GetRole` operationId).
 	GetRole(ctx context.Context, code string, reqEditors ...RequestEditorFn) (*http.Response, error)
 
-	// UpdateRoleWithBody 改一个角色
+	// UpdateRoleWithBody Update a role
 	//
-	// 名称、描述和权限整体替换。改完会在同一个事务里重新编译持有它的每一个成员——角色的权限变了，就是那些人的权限变了，而下一次请求是拿编译结果判定的。.
+	// The name, the description and the permissions are replaced in full. Every member holding the role is recompiled in the same transaction, so the change takes effect on the next request.
 	//
 	// Takes any type of body and a specified content type.
 	//
 	// Corresponds with PUT /api/v1/roles/{code} (the `UpdateRole` operationId).
 	UpdateRoleWithBody(ctx context.Context, code string, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
 
-	// UpdateRole 改一个角色
+	// UpdateRole Update a role
 	//
-	// 名称、描述和权限整体替换。改完会在同一个事务里重新编译持有它的每一个成员——角色的权限变了，就是那些人的权限变了，而下一次请求是拿编译结果判定的。.
+	// The name, the description and the permissions are replaced in full. Every member holding the role is recompiled in the same transaction, so the change takes effect on the next request.
 	//
 	// Takes a body of the `application/json` content type.
 	//
 	// Corresponds with PUT /api/v1/roles/{code} (the `UpdateRole` operationId).
 	UpdateRole(ctx context.Context, code string, body UpdateRoleJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
 
-	// ListSshKeys 列出这个项目的公钥
+	// ListSshKeys List the SSH keys of this project
 	//
-	// 归成员的和归项目的都在里面，靠每一条上的 owner_user_id 区分。.
+	// Both the keys belonging to members and the keys belonging to the project are listed; the `owner_user_id` on each one tells them apart.
 	//
 	// Corresponds with GET /api/v1/ssh-keys (the `ListSshKeys` operationId).
 	ListSshKeys(ctx context.Context, params *ListSshKeysParams, reqEditors ...RequestEditorFn) (*http.Response, error)
 
-	// CreateSshKeyWithBody 添加一把公钥
+	// CreateSshKeyWithBody Add an SSH key
 	//
-	// owner=me 是自己的，是成员就能加；owner=project 是项目公用的，要 iam:ssh_keys.manage —— 它会进这个项目之后开出来的每一台机器。
+	// `owner=me` adds a key of the caller's own, which any member may do. `owner=project` adds a key shared by the project, requires `iam:ssh_keys.manage`, and lands on every machine created in the project afterwards.
 	//
 	// Takes any type of body and a specified content type.
 	//
 	// Corresponds with POST /api/v1/ssh-keys (the `CreateSshKey` operationId).
 	CreateSshKeyWithBody(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
 
-	// CreateSshKey 添加一把公钥
+	// CreateSshKey Add an SSH key
 	//
-	// owner=me 是自己的，是成员就能加；owner=project 是项目公用的，要 iam:ssh_keys.manage —— 它会进这个项目之后开出来的每一台机器。
+	// `owner=me` adds a key of the caller's own, which any member may do. `owner=project` adds a key shared by the project, requires `iam:ssh_keys.manage`, and lands on every machine created in the project afterwards.
 	//
 	// Takes a body of the `application/json` content type.
 	//
 	// Corresponds with POST /api/v1/ssh-keys (the `CreateSshKey` operationId).
 	CreateSshKey(ctx context.Context, body CreateSshKeyJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
 
-	// RevokeSshKey 吊销一把公钥
+	// RevokeSshKey Revoke an SSH key
 	//
-	// 行留着，状态变成 REVOKED。事故之后要问的是当时信任的是哪把钥匙。.
+	// The row remains and its status becomes `REVOKED`, so it stays answerable afterwards which key was trusted at the time.
 	//
 	// Corresponds with DELETE /api/v1/ssh-keys/{keyId} (the `RevokeSshKey` operationId).
 	RevokeSshKey(ctx context.Context, keyId openapi_types.UUID, reqEditors ...RequestEditorFn) (*http.Response, error)
 
-	// GetSshKey 查看一把公钥
+	// GetSshKey Get an SSH key
 	//
 	// Corresponds with GET /api/v1/ssh-keys/{keyId} (the `GetSshKey` operationId).
 	GetSshKey(ctx context.Context, keyId openapi_types.UUID, reqEditors ...RequestEditorFn) (*http.Response, error)
 
-	// RenameSshKeyWithBody 给公钥改名
+	// RenameSshKeyWithBody Rename an SSH key
 	//
-	// 只有名字能改：公钥、类型、指纹是同一样东西的三种说法，改其中一个会让这一行描述一把并不存在的钥匙。.
+	// Only the name can change. The key, its type and its fingerprint are three statements about one thing, and changing one of them would leave the row describing a key that does not exist.
 	//
 	// Takes any type of body and a specified content type.
 	//
 	// Corresponds with PATCH /api/v1/ssh-keys/{keyId} (the `RenameSshKey` operationId).
 	RenameSshKeyWithBody(ctx context.Context, keyId openapi_types.UUID, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
 
-	// RenameSshKey 给公钥改名
+	// RenameSshKey Rename an SSH key
 	//
-	// 只有名字能改：公钥、类型、指纹是同一样东西的三种说法，改其中一个会让这一行描述一把并不存在的钥匙。.
+	// Only the name can change. The key, its type and its fingerprint are three statements about one thing, and changing one of them would leave the row describing a key that does not exist.
 	//
 	// Takes a body of the `application/json` content type.
 	//
 	// Corresponds with PATCH /api/v1/ssh-keys/{keyId} (the `RenameSshKey` operationId).
 	RenameSshKey(ctx context.Context, keyId openapi_types.UUID, body RenameSshKeyJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
 
-	// TransferProjectOwnershipWithBody 转移项目所有权
+	// TransferProjectOwnershipWithBody Transfer ownership of a project
 	//
-	// OWNER 唯一的移动方式，只有所有者本人能发起——能像普通角色那样授予的话，任何管理员都可以顺手把自己变成所有者。.
+	// The only way `OWNER` moves, and only the owner can initiate it.
 	//
 	// Takes any type of body and a specified content type.
 	//
 	// Corresponds with POST /api/v1/transfer-ownership (the `TransferProjectOwnership` operationId).
 	TransferProjectOwnershipWithBody(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
 
-	// TransferProjectOwnership 转移项目所有权
+	// TransferProjectOwnership Transfer ownership of a project
 	//
-	// OWNER 唯一的移动方式，只有所有者本人能发起——能像普通角色那样授予的话，任何管理员都可以顺手把自己变成所有者。.
+	// The only way `OWNER` moves, and only the owner can initiate it.
 	//
 	// Takes a body of the `application/json` content type.
 	//
@@ -1055,9 +1055,9 @@ type ClientInterface interface {
 	TransferProjectOwnership(ctx context.Context, body TransferProjectOwnershipJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
 }
 
-// ListProjectInvitations 列出这个项目还在等的要约
+// ListProjectInvitations List the invitations this project is still waiting on
 //
-// 在项目里就看得到，和成员列表同一条规则：谁被请了也是「这个项目有谁」的一部分。.
+// Visible to any member, on the same rule as the member list. Who has been invited is part of who is in the project.
 //
 // Corresponds with GET /api/v1/invitations (the `ListProjectInvitations` operationId).
 func (c *Client) ListProjectInvitations(ctx context.Context, params *ListProjectInvitationsParams, reqEditors ...RequestEditorFn) (*http.Response, error) {
@@ -1072,9 +1072,9 @@ func (c *Client) ListProjectInvitations(ctx context.Context, params *ListProject
 	return c.Client.Do(req)
 }
 
-// IssueInvitationWithBody 发出一份邀请
+// IssueInvitationWithBody Send an invitation
 //
-// 要约站 14 天。有上限是因为里面那些角色是按发出那一刻的项目校验的，一份活得比它所依据的安排还久的要约会授出现在没人打算授的权限。.
+// An invitation stands for 14 days. The roles it carries are validated against the project as it stood when the invitation was sent, so it expires rather than outliving the arrangement it rests on.
 //
 // Takes any type of body and a specified content type.
 //
@@ -1091,9 +1091,9 @@ func (c *Client) IssueInvitationWithBody(ctx context.Context, contentType string
 	return c.Client.Do(req)
 }
 
-// IssueInvitation 发出一份邀请
+// IssueInvitation Send an invitation
 //
-// 要约站 14 天。有上限是因为里面那些角色是按发出那一刻的项目校验的，一份活得比它所依据的安排还久的要约会授出现在没人打算授的权限。.
+// An invitation stands for 14 days. The roles it carries are validated against the project as it stood when the invitation was sent, so it expires rather than outliving the arrangement it rests on.
 //
 // Takes a body of the `application/json` content type.
 //
@@ -1110,7 +1110,7 @@ func (c *Client) IssueInvitation(ctx context.Context, body IssueInvitationJSONRe
 	return c.Client.Do(req)
 }
 
-// RevokeInvitation 撤回一份还没被兑现的要约
+// RevokeInvitation Withdraw an invitation that has not been redeemed
 //
 // Corresponds with DELETE /api/v1/invitations/{invitationId} (the `RevokeInvitation` operationId).
 func (c *Client) RevokeInvitation(ctx context.Context, invitationId openapi_types.UUID, reqEditors ...RequestEditorFn) (*http.Response, error) {
@@ -1125,7 +1125,7 @@ func (c *Client) RevokeInvitation(ctx context.Context, invitationId openapi_type
 	return c.Client.Do(req)
 }
 
-// ListMembers 列出项目成员
+// ListMembers List the members of a project
 //
 // Corresponds with GET /api/v1/members (the `ListMembers` operationId).
 func (c *Client) ListMembers(ctx context.Context, params *ListMembersParams, reqEditors ...RequestEditorFn) (*http.Response, error) {
@@ -1140,9 +1140,9 @@ func (c *Client) ListMembers(ctx context.Context, params *ListMembersParams, req
 	return c.Client.Do(req)
 }
 
-// RemoveMember 移除成员，或者自己退出
+// RemoveMember Remove a member, or leave the project
 //
-// 移除别人要 iam:members.manage；退出只要求自己在这个项目里——任何人都可能被拉进一个项目，那么任何人就得能出去。所有者两条路都不行，先转移所有权。
+// Removing someone else requires `iam:members.manage`; leaving requires only membership of the project. The owner can do neither, and has to transfer ownership first.
 //
 // Corresponds with DELETE /api/v1/members/{userId} (the `RemoveMember` operationId).
 func (c *Client) RemoveMember(ctx context.Context, userId string, reqEditors ...RequestEditorFn) (*http.Response, error) {
@@ -1157,9 +1157,9 @@ func (c *Client) RemoveMember(ctx context.Context, userId string, reqEditors ...
 	return c.Client.Do(req)
 }
 
-// SetMemberPermissionsWithBody 设置一个成员直挂的权限
+// SetMemberPermissionsWithBody Set the permissions attached directly to a member
 //
-// 整体替换基础策略上直挂的那些权限。直挂让「给某个人临时开一条」不必先造一个只有他一个人持有的角色，但它不会随角色调整而更新，所以它适合一次性的、说得出理由的授予——角色仍然是主要的组织方式。要 iam:members.manage。
+// Replaces, in full, the permissions attached directly to the base policy. A direct permission grants one person something without creating a role only they hold, and it does not follow later changes to any role. Requires `iam:members.manage`.
 //
 // Takes any type of body and a specified content type.
 //
@@ -1176,9 +1176,9 @@ func (c *Client) SetMemberPermissionsWithBody(ctx context.Context, userId string
 	return c.Client.Do(req)
 }
 
-// SetMemberPermissions 设置一个成员直挂的权限
+// SetMemberPermissions Set the permissions attached directly to a member
 //
-// 整体替换基础策略上直挂的那些权限。直挂让「给某个人临时开一条」不必先造一个只有他一个人持有的角色，但它不会随角色调整而更新，所以它适合一次性的、说得出理由的授予——角色仍然是主要的组织方式。要 iam:members.manage。
+// Replaces, in full, the permissions attached directly to the base policy. A direct permission grants one person something without creating a role only they hold, and it does not follow later changes to any role. Requires `iam:members.manage`.
 //
 // Takes a body of the `application/json` content type.
 //
@@ -1195,9 +1195,9 @@ func (c *Client) SetMemberPermissions(ctx context.Context, userId string, body S
 	return c.Client.Do(req)
 }
 
-// SetMemberRolesWithBody 设置一个成员持有的角色
+// SetMemberRolesWithBody Set the roles a member holds
 //
-// 整体替换而不是增删：调用方拿到的就是一份完整清单，让它自己算差集只会让「我以为我取消了那个角色」这种事变得可能。所有者身上的 OWNER 不受影响。.
+// The list is replaced in full rather than added to or removed from. The `OWNER` role of the owner is unaffected.
 //
 // Takes any type of body and a specified content type.
 //
@@ -1214,9 +1214,9 @@ func (c *Client) SetMemberRolesWithBody(ctx context.Context, userId string, cont
 	return c.Client.Do(req)
 }
 
-// SetMemberRoles 设置一个成员持有的角色
+// SetMemberRoles Set the roles a member holds
 //
-// 整体替换而不是增删：调用方拿到的就是一份完整清单，让它自己算差集只会让「我以为我取消了那个角色」这种事变得可能。所有者身上的 OWNER 不受影响。.
+// The list is replaced in full rather than added to or removed from. The `OWNER` role of the owner is unaffected.
 //
 // Takes a body of the `application/json` content type.
 //
@@ -1279,9 +1279,9 @@ func (c *Client) BatchGetMembers(ctx context.Context, body BatchGetMembersJSONRe
 	return c.Client.Do(req)
 }
 
-// GetProjectMembership 查看我在这个项目里的身份
+// GetProjectMembership Get the caller's standing in this project
 //
-// 只给事实，不给结论：这里没有 allowed，因为 IAM 不知道你要做的是哪个操作——哪个操作需要哪条权限那份目录属于各个服务，判断在它们那边。.
+// Facts rather than a conclusion. There is no `allowed` field here, because each service holds the catalogue mapping its operations to permissions and decides on its own.
 //
 // Corresponds with GET /api/v1/membership (the `GetProjectMembership` operationId).
 func (c *Client) GetProjectMembership(ctx context.Context, reqEditors ...RequestEditorFn) (*http.Response, error) {
@@ -1296,9 +1296,9 @@ func (c *Client) GetProjectMembership(ctx context.Context, reqEditors ...Request
 	return c.Client.Do(req)
 }
 
-// ListPermissions 列出全平台可授予的权限
+// ListPermissions List every permission the platform can grant
 //
-// 各服务在启动时把自己那份目录注册进 IAM（和 AddFinalizer 同一段代码），所以这里是一份汇总，不只是 IAM 自己那几条。**IAM 不用它做判定**——判定在各服务自己那边，拿 Grant 配它自己那份目录算；这份汇总只是让界面画得出勾选框，它落后一个版本只会让界面上少几条可选项，不会让判定出错。一个还没启动过的服务，它的权限不在这里。.
+// Each service registers its own catalogue with IAM at start-up, so this is the platform-wide list rather than the permissions of IAM alone. **IAM does not decide anything with it** — each service decides using the caller's grant together with its own catalogue, and this list only serves to render the choices. A service that has never started does not appear here.
 //
 // Corresponds with GET /api/v1/permissions (the `ListPermissions` operationId).
 func (c *Client) ListPermissions(ctx context.Context, reqEditors ...RequestEditorFn) (*http.Response, error) {
@@ -1313,9 +1313,9 @@ func (c *Client) ListPermissions(ctx context.Context, reqEditors ...RequestEdito
 	return c.Client.Do(req)
 }
 
-// ListPolicies 列出这个项目里的策略
+// ListPolicies List the policies in this project
 //
-// 在项目里就看得到，和成员列表同一条规则：谁被授了什么也是「这个项目有谁」的一部分。.
+// Visible to any member, on the same rule as the member list. What has been granted to whom is part of who is in the project.
 //
 // Corresponds with GET /api/v1/policies (the `ListPolicies` operationId).
 func (c *Client) ListPolicies(ctx context.Context, params *ListPoliciesParams, reqEditors ...RequestEditorFn) (*http.Response, error) {
@@ -1330,9 +1330,9 @@ func (c *Client) ListPolicies(ctx context.Context, params *ListPoliciesParams, r
 	return c.Client.Do(req)
 }
 
-// AttachPolicyWithBody 附加一条策略
+// AttachPolicyWithBody Attach a policy
 //
-// 它建的是**附加**策略——要么带资源范围，要么方向是 deny。一条不限资源的 allow 是基础策略，每个成员只有一条，改它走 set-member-roles 和 set-member-permissions。roles 里不能有 OWNER 或 ADMIN：它们是规则而不是权限集合，「限定在三台机器上的所有者」讲不通。要 iam:members.manage。
+// This creates an **additional** policy, which either carries a resource scope or has `deny` as its effect. An `allow` covering every resource is a base policy, of which each member holds exactly one, and it is changed with set-member-roles and set-member-permissions. `roles` cannot contain `OWNER` or `ADMIN`. Requires `iam:members.manage`.
 //
 // Takes any type of body and a specified content type.
 //
@@ -1349,9 +1349,9 @@ func (c *Client) AttachPolicyWithBody(ctx context.Context, contentType string, b
 	return c.Client.Do(req)
 }
 
-// AttachPolicy 附加一条策略
+// AttachPolicy Attach a policy
 //
-// 它建的是**附加**策略——要么带资源范围，要么方向是 deny。一条不限资源的 allow 是基础策略，每个成员只有一条，改它走 set-member-roles 和 set-member-permissions。roles 里不能有 OWNER 或 ADMIN：它们是规则而不是权限集合，「限定在三台机器上的所有者」讲不通。要 iam:members.manage。
+// This creates an **additional** policy, which either carries a resource scope or has `deny` as its effect. An `allow` covering every resource is a base policy, of which each member holds exactly one, and it is changed with set-member-roles and set-member-permissions. `roles` cannot contain `OWNER` or `ADMIN`. Requires `iam:members.manage`.
 //
 // Takes a body of the `application/json` content type.
 //
@@ -1368,9 +1368,9 @@ func (c *Client) AttachPolicy(ctx context.Context, body AttachPolicyJSONRequestB
 	return c.Client.Do(req)
 }
 
-// DetachPolicy 摘掉一条策略
+// DetachPolicy Detach a policy
 //
-// 基础策略摘不掉——它是这个成员角色的落点，删了它这个人就不再持有任何角色，而「让他离开这个项目」是 remove-member 的事。要 iam:members.manage。
+// A base policy cannot be detached; it is where a member's roles sit. Use remove-member to take someone out of the project. Requires `iam:members.manage`.
 //
 // Corresponds with DELETE /api/v1/policies/{policyId} (the `DetachPolicy` operationId).
 func (c *Client) DetachPolicy(ctx context.Context, policyId openapi_types.UUID, reqEditors ...RequestEditorFn) (*http.Response, error) {
@@ -1385,9 +1385,9 @@ func (c *Client) DetachPolicy(ctx context.Context, policyId openapi_types.UUID, 
 	return c.Client.Do(req)
 }
 
-// GetPolicy 查看一条策略
+// GetPolicy Get a policy
 //
-// 和 list-policies 同一条规则，在项目里就看得到：谁被授了什么也是「这个项目有谁」的一部分，读它不需要额外的权限。.
+// Visible to any member, on the same rule as list-policies; no further permission is required.
 //
 // Corresponds with GET /api/v1/policies/{policyId} (the `GetPolicy` operationId).
 func (c *Client) GetPolicy(ctx context.Context, policyId openapi_types.UUID, reqEditors ...RequestEditorFn) (*http.Response, error) {
@@ -1402,9 +1402,9 @@ func (c *Client) GetPolicy(ctx context.Context, policyId openapi_types.UUID, req
 	return c.Client.Do(req)
 }
 
-// UpdatePolicyWithBody 改一条策略
+// UpdatePolicyWithBody Update a policy
 //
-// 整体替换而不是逐字段改：resources、roles、permissions 各自整份覆盖，没发的那份就是空的——只有「这就是这条策略现在的全貌」这一种语义说得清一次写入到底收回了什么。改不动的是策略的**种类**：基础策略（不限资源的 allow）加不上资源范围，这个成员的角色就存在它上面，给它加个范围等于让他在别的资源上什么都不是；一条带范围的策略反过来也不能把范围清空变成基础策略，那个位置每个成员只有一条。要换种类就删了重建。要 iam:members.manage。
+// Replaced in full rather than field by field — `resources`, `roles` and `permissions` are each overwritten, and an omitted one becomes empty. The **kind** of a policy cannot change — a base policy (an `allow` covering every resource) cannot take a resource scope, and a scoped policy cannot have its scope cleared. Delete and recreate to change the kind. Requires `iam:members.manage`.
 //
 // Takes any type of body and a specified content type.
 //
@@ -1421,9 +1421,9 @@ func (c *Client) UpdatePolicyWithBody(ctx context.Context, policyId openapi_type
 	return c.Client.Do(req)
 }
 
-// UpdatePolicy 改一条策略
+// UpdatePolicy Update a policy
 //
-// 整体替换而不是逐字段改：resources、roles、permissions 各自整份覆盖，没发的那份就是空的——只有「这就是这条策略现在的全貌」这一种语义说得清一次写入到底收回了什么。改不动的是策略的**种类**：基础策略（不限资源的 allow）加不上资源范围，这个成员的角色就存在它上面，给它加个范围等于让他在别的资源上什么都不是；一条带范围的策略反过来也不能把范围清空变成基础策略，那个位置每个成员只有一条。要换种类就删了重建。要 iam:members.manage。
+// Replaced in full rather than field by field — `resources`, `roles` and `permissions` are each overwritten, and an omitted one becomes empty. The **kind** of a policy cannot change — a base policy (an `allow` covering every resource) cannot take a resource scope, and a scoped policy cannot have its scope cleared. Delete and recreate to change the kind. Requires `iam:members.manage`.
 //
 // Takes a body of the `application/json` content type.
 //
@@ -1440,9 +1440,9 @@ func (c *Client) UpdatePolicy(ctx context.Context, policyId openapi_types.UUID, 
 	return c.Client.Do(req)
 }
 
-// DeleteProject 删除项目
+// DeleteProject Delete a project
 //
-// 只有所有者能做，而且没有回头路：项目进入 DELETING，各服务开始清掉它下面的资源。项目行本身永远留着——查一个删掉的项目查得到，答案是它没了，而不是一个 404。.
+// Only the owner can do this, and it cannot be undone. The project enters DELETING and each service begins removing the resources under it. The project itself remains readable afterwards, answering that it is gone rather than 404.
 //
 // Corresponds with DELETE /api/v1/project (the `DeleteProject` operationId).
 func (c *Client) DeleteProject(ctx context.Context, reqEditors ...RequestEditorFn) (*http.Response, error) {
@@ -1457,9 +1457,9 @@ func (c *Client) DeleteProject(ctx context.Context, reqEditors ...RequestEditorF
 	return c.Client.Do(req)
 }
 
-// GetProject 查看一个项目
+// GetProject Get a project
 //
-// 在项目里就看得到，不需要额外的读权限。.
+// Visible to any member; no further permission is required.
 //
 // Corresponds with GET /api/v1/project (the `GetProject` operationId).
 func (c *Client) GetProject(ctx context.Context, reqEditors ...RequestEditorFn) (*http.Response, error) {
@@ -1474,7 +1474,7 @@ func (c *Client) GetProject(ctx context.Context, reqEditors ...RequestEditorFn) 
 	return c.Client.Do(req)
 }
 
-// UpdateProjectWithBody 改项目的名称与描述
+// UpdateProjectWithBody Update the name and description of a project
 //
 // Takes any type of body and a specified content type.
 //
@@ -1491,7 +1491,7 @@ func (c *Client) UpdateProjectWithBody(ctx context.Context, contentType string, 
 	return c.Client.Do(req)
 }
 
-// UpdateProject 改项目的名称与描述
+// UpdateProject Update the name and description of a project
 //
 // Takes a body of the `application/json` content type.
 //
@@ -1508,7 +1508,7 @@ func (c *Client) UpdateProject(ctx context.Context, body UpdateProjectJSONReques
 	return c.Client.Do(req)
 }
 
-// ListRoles 列出项目里的角色
+// ListRoles List the roles in this project
 //
 // Corresponds with GET /api/v1/roles (the `ListRoles` operationId).
 func (c *Client) ListRoles(ctx context.Context, reqEditors ...RequestEditorFn) (*http.Response, error) {
@@ -1523,7 +1523,7 @@ func (c *Client) ListRoles(ctx context.Context, reqEditors ...RequestEditorFn) (
 	return c.Client.Do(req)
 }
 
-// CreateRoleWithBody 建一个角色
+// CreateRoleWithBody Create a role
 //
 // Takes any type of body and a specified content type.
 //
@@ -1540,7 +1540,7 @@ func (c *Client) CreateRoleWithBody(ctx context.Context, contentType string, bod
 	return c.Client.Do(req)
 }
 
-// CreateRole 建一个角色
+// CreateRole Create a role
 //
 // Takes a body of the `application/json` content type.
 //
@@ -1557,9 +1557,9 @@ func (c *Client) CreateRole(ctx context.Context, body CreateRoleJSONRequestBody,
 	return c.Client.Do(req)
 }
 
-// DeleteRole 删一个角色
+// DeleteRole Delete a role
 //
-// 还有人持有时会被拒。级联摘掉那些绑定等于把每个持有者悄悄降级——请求里没有一个字说了这件事，事后也查不到。.
+// Refused while anyone still holds it. Cascading the removal would quietly demote every holder.
 //
 // Corresponds with DELETE /api/v1/roles/{code} (the `DeleteRole` operationId).
 func (c *Client) DeleteRole(ctx context.Context, code string, reqEditors ...RequestEditorFn) (*http.Response, error) {
@@ -1574,7 +1574,7 @@ func (c *Client) DeleteRole(ctx context.Context, code string, reqEditors ...Requ
 	return c.Client.Do(req)
 }
 
-// GetRole 查看一个角色
+// GetRole Get a role
 //
 // Corresponds with GET /api/v1/roles/{code} (the `GetRole` operationId).
 func (c *Client) GetRole(ctx context.Context, code string, reqEditors ...RequestEditorFn) (*http.Response, error) {
@@ -1589,9 +1589,9 @@ func (c *Client) GetRole(ctx context.Context, code string, reqEditors ...Request
 	return c.Client.Do(req)
 }
 
-// UpdateRoleWithBody 改一个角色
+// UpdateRoleWithBody Update a role
 //
-// 名称、描述和权限整体替换。改完会在同一个事务里重新编译持有它的每一个成员——角色的权限变了，就是那些人的权限变了，而下一次请求是拿编译结果判定的。.
+// The name, the description and the permissions are replaced in full. Every member holding the role is recompiled in the same transaction, so the change takes effect on the next request.
 //
 // Takes any type of body and a specified content type.
 //
@@ -1608,9 +1608,9 @@ func (c *Client) UpdateRoleWithBody(ctx context.Context, code string, contentTyp
 	return c.Client.Do(req)
 }
 
-// UpdateRole 改一个角色
+// UpdateRole Update a role
 //
-// 名称、描述和权限整体替换。改完会在同一个事务里重新编译持有它的每一个成员——角色的权限变了，就是那些人的权限变了，而下一次请求是拿编译结果判定的。.
+// The name, the description and the permissions are replaced in full. Every member holding the role is recompiled in the same transaction, so the change takes effect on the next request.
 //
 // Takes a body of the `application/json` content type.
 //
@@ -1627,9 +1627,9 @@ func (c *Client) UpdateRole(ctx context.Context, code string, body UpdateRoleJSO
 	return c.Client.Do(req)
 }
 
-// ListSshKeys 列出这个项目的公钥
+// ListSshKeys List the SSH keys of this project
 //
-// 归成员的和归项目的都在里面，靠每一条上的 owner_user_id 区分。.
+// Both the keys belonging to members and the keys belonging to the project are listed; the `owner_user_id` on each one tells them apart.
 //
 // Corresponds with GET /api/v1/ssh-keys (the `ListSshKeys` operationId).
 func (c *Client) ListSshKeys(ctx context.Context, params *ListSshKeysParams, reqEditors ...RequestEditorFn) (*http.Response, error) {
@@ -1644,9 +1644,9 @@ func (c *Client) ListSshKeys(ctx context.Context, params *ListSshKeysParams, req
 	return c.Client.Do(req)
 }
 
-// CreateSshKeyWithBody 添加一把公钥
+// CreateSshKeyWithBody Add an SSH key
 //
-// owner=me 是自己的，是成员就能加；owner=project 是项目公用的，要 iam:ssh_keys.manage —— 它会进这个项目之后开出来的每一台机器。
+// `owner=me` adds a key of the caller's own, which any member may do. `owner=project` adds a key shared by the project, requires `iam:ssh_keys.manage`, and lands on every machine created in the project afterwards.
 //
 // Takes any type of body and a specified content type.
 //
@@ -1663,9 +1663,9 @@ func (c *Client) CreateSshKeyWithBody(ctx context.Context, contentType string, b
 	return c.Client.Do(req)
 }
 
-// CreateSshKey 添加一把公钥
+// CreateSshKey Add an SSH key
 //
-// owner=me 是自己的，是成员就能加；owner=project 是项目公用的，要 iam:ssh_keys.manage —— 它会进这个项目之后开出来的每一台机器。
+// `owner=me` adds a key of the caller's own, which any member may do. `owner=project` adds a key shared by the project, requires `iam:ssh_keys.manage`, and lands on every machine created in the project afterwards.
 //
 // Takes a body of the `application/json` content type.
 //
@@ -1682,9 +1682,9 @@ func (c *Client) CreateSshKey(ctx context.Context, body CreateSshKeyJSONRequestB
 	return c.Client.Do(req)
 }
 
-// RevokeSshKey 吊销一把公钥
+// RevokeSshKey Revoke an SSH key
 //
-// 行留着，状态变成 REVOKED。事故之后要问的是当时信任的是哪把钥匙。.
+// The row remains and its status becomes `REVOKED`, so it stays answerable afterwards which key was trusted at the time.
 //
 // Corresponds with DELETE /api/v1/ssh-keys/{keyId} (the `RevokeSshKey` operationId).
 func (c *Client) RevokeSshKey(ctx context.Context, keyId openapi_types.UUID, reqEditors ...RequestEditorFn) (*http.Response, error) {
@@ -1699,7 +1699,7 @@ func (c *Client) RevokeSshKey(ctx context.Context, keyId openapi_types.UUID, req
 	return c.Client.Do(req)
 }
 
-// GetSshKey 查看一把公钥
+// GetSshKey Get an SSH key
 //
 // Corresponds with GET /api/v1/ssh-keys/{keyId} (the `GetSshKey` operationId).
 func (c *Client) GetSshKey(ctx context.Context, keyId openapi_types.UUID, reqEditors ...RequestEditorFn) (*http.Response, error) {
@@ -1714,9 +1714,9 @@ func (c *Client) GetSshKey(ctx context.Context, keyId openapi_types.UUID, reqEdi
 	return c.Client.Do(req)
 }
 
-// RenameSshKeyWithBody 给公钥改名
+// RenameSshKeyWithBody Rename an SSH key
 //
-// 只有名字能改：公钥、类型、指纹是同一样东西的三种说法，改其中一个会让这一行描述一把并不存在的钥匙。.
+// Only the name can change. The key, its type and its fingerprint are three statements about one thing, and changing one of them would leave the row describing a key that does not exist.
 //
 // Takes any type of body and a specified content type.
 //
@@ -1733,9 +1733,9 @@ func (c *Client) RenameSshKeyWithBody(ctx context.Context, keyId openapi_types.U
 	return c.Client.Do(req)
 }
 
-// RenameSshKey 给公钥改名
+// RenameSshKey Rename an SSH key
 //
-// 只有名字能改：公钥、类型、指纹是同一样东西的三种说法，改其中一个会让这一行描述一把并不存在的钥匙。.
+// Only the name can change. The key, its type and its fingerprint are three statements about one thing, and changing one of them would leave the row describing a key that does not exist.
 //
 // Takes a body of the `application/json` content type.
 //
@@ -1752,9 +1752,9 @@ func (c *Client) RenameSshKey(ctx context.Context, keyId openapi_types.UUID, bod
 	return c.Client.Do(req)
 }
 
-// TransferProjectOwnershipWithBody 转移项目所有权
+// TransferProjectOwnershipWithBody Transfer ownership of a project
 //
-// OWNER 唯一的移动方式，只有所有者本人能发起——能像普通角色那样授予的话，任何管理员都可以顺手把自己变成所有者。.
+// The only way `OWNER` moves, and only the owner can initiate it.
 //
 // Takes any type of body and a specified content type.
 //
@@ -1771,9 +1771,9 @@ func (c *Client) TransferProjectOwnershipWithBody(ctx context.Context, contentTy
 	return c.Client.Do(req)
 }
 
-// TransferProjectOwnership 转移项目所有权
+// TransferProjectOwnership Transfer ownership of a project
 //
-// OWNER 唯一的移动方式，只有所有者本人能发起——能像普通角色那样授予的话，任何管理员都可以顺手把自己变成所有者。.
+// The only way `OWNER` moves, and only the owner can initiate it.
 //
 // Takes a body of the `application/json` content type.
 //
@@ -3044,86 +3044,86 @@ func WithBaseURL(baseURL string) ClientOption {
 // ClientWithResponsesInterface is the interface specification for the client with responses above.
 type ClientWithResponsesInterface interface {
 
-	// ListProjectInvitationsWithResponse 列出这个项目还在等的要约
+	// ListProjectInvitationsWithResponse List the invitations this project is still waiting on
 	//
-	// 在项目里就看得到，和成员列表同一条规则：谁被请了也是「这个项目有谁」的一部分。.
+	// Visible to any member, on the same rule as the member list. Who has been invited is part of who is in the project.
 	//
 	// Returns a wrapper object for the known response body format(s).
 	//
 	// Corresponds with GET /api/v1/invitations (the `ListProjectInvitations` operationId).
 	ListProjectInvitationsWithResponse(ctx context.Context, params *ListProjectInvitationsParams, reqEditors ...RequestEditorFn) (*ListProjectInvitationsResponse, error)
 
-	// IssueInvitationWithBodyWithResponse 发出一份邀请
+	// IssueInvitationWithBodyWithResponse Send an invitation
 	//
-	// 要约站 14 天。有上限是因为里面那些角色是按发出那一刻的项目校验的，一份活得比它所依据的安排还久的要约会授出现在没人打算授的权限。.
+	// An invitation stands for 14 days. The roles it carries are validated against the project as it stood when the invitation was sent, so it expires rather than outliving the arrangement it rests on.
 	//
 	// Takes any type of body and a specified content type, and returns a wrapper object for the known response body format(s).
 	//
 	// Corresponds with POST /api/v1/invitations (the `IssueInvitation` operationId).
 	IssueInvitationWithBodyWithResponse(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*IssueInvitationResponse, error)
 
-	// IssueInvitationWithResponse 发出一份邀请
+	// IssueInvitationWithResponse Send an invitation
 	//
-	// 要约站 14 天。有上限是因为里面那些角色是按发出那一刻的项目校验的，一份活得比它所依据的安排还久的要约会授出现在没人打算授的权限。.
+	// An invitation stands for 14 days. The roles it carries are validated against the project as it stood when the invitation was sent, so it expires rather than outliving the arrangement it rests on.
 	//
 	// Takes a body of the `application/json` content type, and returns a wrapper object for the known response body format(s).
 	//
 	// Corresponds with POST /api/v1/invitations (the `IssueInvitation` operationId).
 	IssueInvitationWithResponse(ctx context.Context, body IssueInvitationJSONRequestBody, reqEditors ...RequestEditorFn) (*IssueInvitationResponse, error)
 
-	// RevokeInvitationWithResponse 撤回一份还没被兑现的要约
+	// RevokeInvitationWithResponse Withdraw an invitation that has not been redeemed
 	//
 	// Returns a wrapper object for the known response body format(s).
 	//
 	// Corresponds with DELETE /api/v1/invitations/{invitationId} (the `RevokeInvitation` operationId).
 	RevokeInvitationWithResponse(ctx context.Context, invitationId openapi_types.UUID, reqEditors ...RequestEditorFn) (*RevokeInvitationResponse, error)
 
-	// ListMembersWithResponse 列出项目成员
+	// ListMembersWithResponse List the members of a project
 	//
 	// Returns a wrapper object for the known response body format(s).
 	//
 	// Corresponds with GET /api/v1/members (the `ListMembers` operationId).
 	ListMembersWithResponse(ctx context.Context, params *ListMembersParams, reqEditors ...RequestEditorFn) (*ListMembersResponse, error)
 
-	// RemoveMemberWithResponse 移除成员，或者自己退出
+	// RemoveMemberWithResponse Remove a member, or leave the project
 	//
-	// 移除别人要 iam:members.manage；退出只要求自己在这个项目里——任何人都可能被拉进一个项目，那么任何人就得能出去。所有者两条路都不行，先转移所有权。
+	// Removing someone else requires `iam:members.manage`; leaving requires only membership of the project. The owner can do neither, and has to transfer ownership first.
 	//
 	// Returns a wrapper object for the known response body format(s).
 	//
 	// Corresponds with DELETE /api/v1/members/{userId} (the `RemoveMember` operationId).
 	RemoveMemberWithResponse(ctx context.Context, userId string, reqEditors ...RequestEditorFn) (*RemoveMemberResponse, error)
 
-	// SetMemberPermissionsWithBodyWithResponse 设置一个成员直挂的权限
+	// SetMemberPermissionsWithBodyWithResponse Set the permissions attached directly to a member
 	//
-	// 整体替换基础策略上直挂的那些权限。直挂让「给某个人临时开一条」不必先造一个只有他一个人持有的角色，但它不会随角色调整而更新，所以它适合一次性的、说得出理由的授予——角色仍然是主要的组织方式。要 iam:members.manage。
+	// Replaces, in full, the permissions attached directly to the base policy. A direct permission grants one person something without creating a role only they hold, and it does not follow later changes to any role. Requires `iam:members.manage`.
 	//
 	// Takes any type of body and a specified content type, and returns a wrapper object for the known response body format(s).
 	//
 	// Corresponds with PUT /api/v1/members/{userId}/permissions (the `SetMemberPermissions` operationId).
 	SetMemberPermissionsWithBodyWithResponse(ctx context.Context, userId string, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*SetMemberPermissionsResponse, error)
 
-	// SetMemberPermissionsWithResponse 设置一个成员直挂的权限
+	// SetMemberPermissionsWithResponse Set the permissions attached directly to a member
 	//
-	// 整体替换基础策略上直挂的那些权限。直挂让「给某个人临时开一条」不必先造一个只有他一个人持有的角色，但它不会随角色调整而更新，所以它适合一次性的、说得出理由的授予——角色仍然是主要的组织方式。要 iam:members.manage。
+	// Replaces, in full, the permissions attached directly to the base policy. A direct permission grants one person something without creating a role only they hold, and it does not follow later changes to any role. Requires `iam:members.manage`.
 	//
 	// Takes a body of the `application/json` content type, and returns a wrapper object for the known response body format(s).
 	//
 	// Corresponds with PUT /api/v1/members/{userId}/permissions (the `SetMemberPermissions` operationId).
 	SetMemberPermissionsWithResponse(ctx context.Context, userId string, body SetMemberPermissionsJSONRequestBody, reqEditors ...RequestEditorFn) (*SetMemberPermissionsResponse, error)
 
-	// SetMemberRolesWithBodyWithResponse 设置一个成员持有的角色
+	// SetMemberRolesWithBodyWithResponse Set the roles a member holds
 	//
-	// 整体替换而不是增删：调用方拿到的就是一份完整清单，让它自己算差集只会让「我以为我取消了那个角色」这种事变得可能。所有者身上的 OWNER 不受影响。.
+	// The list is replaced in full rather than added to or removed from. The `OWNER` role of the owner is unaffected.
 	//
 	// Takes any type of body and a specified content type, and returns a wrapper object for the known response body format(s).
 	//
 	// Corresponds with PUT /api/v1/members/{userId}/roles (the `SetMemberRoles` operationId).
 	SetMemberRolesWithBodyWithResponse(ctx context.Context, userId string, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*SetMemberRolesResponse, error)
 
-	// SetMemberRolesWithResponse 设置一个成员持有的角色
+	// SetMemberRolesWithResponse Set the roles a member holds
 	//
-	// 整体替换而不是增删：调用方拿到的就是一份完整清单，让它自己算差集只会让「我以为我取消了那个角色」这种事变得可能。所有者身上的 OWNER 不受影响。.
+	// The list is replaced in full rather than added to or removed from. The `OWNER` role of the owner is unaffected.
 	//
 	// Takes a body of the `application/json` content type, and returns a wrapper object for the known response body format(s).
 	//
@@ -3156,247 +3156,247 @@ type ClientWithResponsesInterface interface {
 	// Corresponds with POST /api/v1/members:batchGet (the `BatchGetMembers` operationId).
 	BatchGetMembersWithResponse(ctx context.Context, body BatchGetMembersJSONRequestBody, reqEditors ...RequestEditorFn) (*BatchGetMembersResponse, error)
 
-	// GetProjectMembershipWithResponse 查看我在这个项目里的身份
+	// GetProjectMembershipWithResponse Get the caller's standing in this project
 	//
-	// 只给事实，不给结论：这里没有 allowed，因为 IAM 不知道你要做的是哪个操作——哪个操作需要哪条权限那份目录属于各个服务，判断在它们那边。.
+	// Facts rather than a conclusion. There is no `allowed` field here, because each service holds the catalogue mapping its operations to permissions and decides on its own.
 	//
 	// Returns a wrapper object for the known response body format(s).
 	//
 	// Corresponds with GET /api/v1/membership (the `GetProjectMembership` operationId).
 	GetProjectMembershipWithResponse(ctx context.Context, reqEditors ...RequestEditorFn) (*GetProjectMembershipResponse, error)
 
-	// ListPermissionsWithResponse 列出全平台可授予的权限
+	// ListPermissionsWithResponse List every permission the platform can grant
 	//
-	// 各服务在启动时把自己那份目录注册进 IAM（和 AddFinalizer 同一段代码），所以这里是一份汇总，不只是 IAM 自己那几条。**IAM 不用它做判定**——判定在各服务自己那边，拿 Grant 配它自己那份目录算；这份汇总只是让界面画得出勾选框，它落后一个版本只会让界面上少几条可选项，不会让判定出错。一个还没启动过的服务，它的权限不在这里。.
+	// Each service registers its own catalogue with IAM at start-up, so this is the platform-wide list rather than the permissions of IAM alone. **IAM does not decide anything with it** — each service decides using the caller's grant together with its own catalogue, and this list only serves to render the choices. A service that has never started does not appear here.
 	//
 	// Returns a wrapper object for the known response body format(s).
 	//
 	// Corresponds with GET /api/v1/permissions (the `ListPermissions` operationId).
 	ListPermissionsWithResponse(ctx context.Context, reqEditors ...RequestEditorFn) (*ListPermissionsResponse, error)
 
-	// ListPoliciesWithResponse 列出这个项目里的策略
+	// ListPoliciesWithResponse List the policies in this project
 	//
-	// 在项目里就看得到，和成员列表同一条规则：谁被授了什么也是「这个项目有谁」的一部分。.
+	// Visible to any member, on the same rule as the member list. What has been granted to whom is part of who is in the project.
 	//
 	// Returns a wrapper object for the known response body format(s).
 	//
 	// Corresponds with GET /api/v1/policies (the `ListPolicies` operationId).
 	ListPoliciesWithResponse(ctx context.Context, params *ListPoliciesParams, reqEditors ...RequestEditorFn) (*ListPoliciesResponse, error)
 
-	// AttachPolicyWithBodyWithResponse 附加一条策略
+	// AttachPolicyWithBodyWithResponse Attach a policy
 	//
-	// 它建的是**附加**策略——要么带资源范围，要么方向是 deny。一条不限资源的 allow 是基础策略，每个成员只有一条，改它走 set-member-roles 和 set-member-permissions。roles 里不能有 OWNER 或 ADMIN：它们是规则而不是权限集合，「限定在三台机器上的所有者」讲不通。要 iam:members.manage。
+	// This creates an **additional** policy, which either carries a resource scope or has `deny` as its effect. An `allow` covering every resource is a base policy, of which each member holds exactly one, and it is changed with set-member-roles and set-member-permissions. `roles` cannot contain `OWNER` or `ADMIN`. Requires `iam:members.manage`.
 	//
 	// Takes any type of body and a specified content type, and returns a wrapper object for the known response body format(s).
 	//
 	// Corresponds with POST /api/v1/policies (the `AttachPolicy` operationId).
 	AttachPolicyWithBodyWithResponse(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*AttachPolicyResponse, error)
 
-	// AttachPolicyWithResponse 附加一条策略
+	// AttachPolicyWithResponse Attach a policy
 	//
-	// 它建的是**附加**策略——要么带资源范围，要么方向是 deny。一条不限资源的 allow 是基础策略，每个成员只有一条，改它走 set-member-roles 和 set-member-permissions。roles 里不能有 OWNER 或 ADMIN：它们是规则而不是权限集合，「限定在三台机器上的所有者」讲不通。要 iam:members.manage。
+	// This creates an **additional** policy, which either carries a resource scope or has `deny` as its effect. An `allow` covering every resource is a base policy, of which each member holds exactly one, and it is changed with set-member-roles and set-member-permissions. `roles` cannot contain `OWNER` or `ADMIN`. Requires `iam:members.manage`.
 	//
 	// Takes a body of the `application/json` content type, and returns a wrapper object for the known response body format(s).
 	//
 	// Corresponds with POST /api/v1/policies (the `AttachPolicy` operationId).
 	AttachPolicyWithResponse(ctx context.Context, body AttachPolicyJSONRequestBody, reqEditors ...RequestEditorFn) (*AttachPolicyResponse, error)
 
-	// DetachPolicyWithResponse 摘掉一条策略
+	// DetachPolicyWithResponse Detach a policy
 	//
-	// 基础策略摘不掉——它是这个成员角色的落点，删了它这个人就不再持有任何角色，而「让他离开这个项目」是 remove-member 的事。要 iam:members.manage。
+	// A base policy cannot be detached; it is where a member's roles sit. Use remove-member to take someone out of the project. Requires `iam:members.manage`.
 	//
 	// Returns a wrapper object for the known response body format(s).
 	//
 	// Corresponds with DELETE /api/v1/policies/{policyId} (the `DetachPolicy` operationId).
 	DetachPolicyWithResponse(ctx context.Context, policyId openapi_types.UUID, reqEditors ...RequestEditorFn) (*DetachPolicyResponse, error)
 
-	// GetPolicyWithResponse 查看一条策略
+	// GetPolicyWithResponse Get a policy
 	//
-	// 和 list-policies 同一条规则，在项目里就看得到：谁被授了什么也是「这个项目有谁」的一部分，读它不需要额外的权限。.
+	// Visible to any member, on the same rule as list-policies; no further permission is required.
 	//
 	// Returns a wrapper object for the known response body format(s).
 	//
 	// Corresponds with GET /api/v1/policies/{policyId} (the `GetPolicy` operationId).
 	GetPolicyWithResponse(ctx context.Context, policyId openapi_types.UUID, reqEditors ...RequestEditorFn) (*GetPolicyResponse, error)
 
-	// UpdatePolicyWithBodyWithResponse 改一条策略
+	// UpdatePolicyWithBodyWithResponse Update a policy
 	//
-	// 整体替换而不是逐字段改：resources、roles、permissions 各自整份覆盖，没发的那份就是空的——只有「这就是这条策略现在的全貌」这一种语义说得清一次写入到底收回了什么。改不动的是策略的**种类**：基础策略（不限资源的 allow）加不上资源范围，这个成员的角色就存在它上面，给它加个范围等于让他在别的资源上什么都不是；一条带范围的策略反过来也不能把范围清空变成基础策略，那个位置每个成员只有一条。要换种类就删了重建。要 iam:members.manage。
+	// Replaced in full rather than field by field — `resources`, `roles` and `permissions` are each overwritten, and an omitted one becomes empty. The **kind** of a policy cannot change — a base policy (an `allow` covering every resource) cannot take a resource scope, and a scoped policy cannot have its scope cleared. Delete and recreate to change the kind. Requires `iam:members.manage`.
 	//
 	// Takes any type of body and a specified content type, and returns a wrapper object for the known response body format(s).
 	//
 	// Corresponds with PUT /api/v1/policies/{policyId} (the `UpdatePolicy` operationId).
 	UpdatePolicyWithBodyWithResponse(ctx context.Context, policyId openapi_types.UUID, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*UpdatePolicyResponse, error)
 
-	// UpdatePolicyWithResponse 改一条策略
+	// UpdatePolicyWithResponse Update a policy
 	//
-	// 整体替换而不是逐字段改：resources、roles、permissions 各自整份覆盖，没发的那份就是空的——只有「这就是这条策略现在的全貌」这一种语义说得清一次写入到底收回了什么。改不动的是策略的**种类**：基础策略（不限资源的 allow）加不上资源范围，这个成员的角色就存在它上面，给它加个范围等于让他在别的资源上什么都不是；一条带范围的策略反过来也不能把范围清空变成基础策略，那个位置每个成员只有一条。要换种类就删了重建。要 iam:members.manage。
+	// Replaced in full rather than field by field — `resources`, `roles` and `permissions` are each overwritten, and an omitted one becomes empty. The **kind** of a policy cannot change — a base policy (an `allow` covering every resource) cannot take a resource scope, and a scoped policy cannot have its scope cleared. Delete and recreate to change the kind. Requires `iam:members.manage`.
 	//
 	// Takes a body of the `application/json` content type, and returns a wrapper object for the known response body format(s).
 	//
 	// Corresponds with PUT /api/v1/policies/{policyId} (the `UpdatePolicy` operationId).
 	UpdatePolicyWithResponse(ctx context.Context, policyId openapi_types.UUID, body UpdatePolicyJSONRequestBody, reqEditors ...RequestEditorFn) (*UpdatePolicyResponse, error)
 
-	// DeleteProjectWithResponse 删除项目
+	// DeleteProjectWithResponse Delete a project
 	//
-	// 只有所有者能做，而且没有回头路：项目进入 DELETING，各服务开始清掉它下面的资源。项目行本身永远留着——查一个删掉的项目查得到，答案是它没了，而不是一个 404。.
+	// Only the owner can do this, and it cannot be undone. The project enters DELETING and each service begins removing the resources under it. The project itself remains readable afterwards, answering that it is gone rather than 404.
 	//
 	// Returns a wrapper object for the known response body format(s).
 	//
 	// Corresponds with DELETE /api/v1/project (the `DeleteProject` operationId).
 	DeleteProjectWithResponse(ctx context.Context, reqEditors ...RequestEditorFn) (*DeleteProjectResponse, error)
 
-	// GetProjectWithResponse 查看一个项目
+	// GetProjectWithResponse Get a project
 	//
-	// 在项目里就看得到，不需要额外的读权限。.
+	// Visible to any member; no further permission is required.
 	//
 	// Returns a wrapper object for the known response body format(s).
 	//
 	// Corresponds with GET /api/v1/project (the `GetProject` operationId).
 	GetProjectWithResponse(ctx context.Context, reqEditors ...RequestEditorFn) (*GetProjectResponse, error)
 
-	// UpdateProjectWithBodyWithResponse 改项目的名称与描述
+	// UpdateProjectWithBodyWithResponse Update the name and description of a project
 	//
 	// Takes any type of body and a specified content type, and returns a wrapper object for the known response body format(s).
 	//
 	// Corresponds with PATCH /api/v1/project (the `UpdateProject` operationId).
 	UpdateProjectWithBodyWithResponse(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*UpdateProjectResponse, error)
 
-	// UpdateProjectWithResponse 改项目的名称与描述
+	// UpdateProjectWithResponse Update the name and description of a project
 	//
 	// Takes a body of the `application/json` content type, and returns a wrapper object for the known response body format(s).
 	//
 	// Corresponds with PATCH /api/v1/project (the `UpdateProject` operationId).
 	UpdateProjectWithResponse(ctx context.Context, body UpdateProjectJSONRequestBody, reqEditors ...RequestEditorFn) (*UpdateProjectResponse, error)
 
-	// ListRolesWithResponse 列出项目里的角色
+	// ListRolesWithResponse List the roles in this project
 	//
 	// Returns a wrapper object for the known response body format(s).
 	//
 	// Corresponds with GET /api/v1/roles (the `ListRoles` operationId).
 	ListRolesWithResponse(ctx context.Context, reqEditors ...RequestEditorFn) (*ListRolesResponse, error)
 
-	// CreateRoleWithBodyWithResponse 建一个角色
+	// CreateRoleWithBodyWithResponse Create a role
 	//
 	// Takes any type of body and a specified content type, and returns a wrapper object for the known response body format(s).
 	//
 	// Corresponds with POST /api/v1/roles (the `CreateRole` operationId).
 	CreateRoleWithBodyWithResponse(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*CreateRoleResponse, error)
 
-	// CreateRoleWithResponse 建一个角色
+	// CreateRoleWithResponse Create a role
 	//
 	// Takes a body of the `application/json` content type, and returns a wrapper object for the known response body format(s).
 	//
 	// Corresponds with POST /api/v1/roles (the `CreateRole` operationId).
 	CreateRoleWithResponse(ctx context.Context, body CreateRoleJSONRequestBody, reqEditors ...RequestEditorFn) (*CreateRoleResponse, error)
 
-	// DeleteRoleWithResponse 删一个角色
+	// DeleteRoleWithResponse Delete a role
 	//
-	// 还有人持有时会被拒。级联摘掉那些绑定等于把每个持有者悄悄降级——请求里没有一个字说了这件事，事后也查不到。.
+	// Refused while anyone still holds it. Cascading the removal would quietly demote every holder.
 	//
 	// Returns a wrapper object for the known response body format(s).
 	//
 	// Corresponds with DELETE /api/v1/roles/{code} (the `DeleteRole` operationId).
 	DeleteRoleWithResponse(ctx context.Context, code string, reqEditors ...RequestEditorFn) (*DeleteRoleResponse, error)
 
-	// GetRoleWithResponse 查看一个角色
+	// GetRoleWithResponse Get a role
 	//
 	// Returns a wrapper object for the known response body format(s).
 	//
 	// Corresponds with GET /api/v1/roles/{code} (the `GetRole` operationId).
 	GetRoleWithResponse(ctx context.Context, code string, reqEditors ...RequestEditorFn) (*GetRoleResponse, error)
 
-	// UpdateRoleWithBodyWithResponse 改一个角色
+	// UpdateRoleWithBodyWithResponse Update a role
 	//
-	// 名称、描述和权限整体替换。改完会在同一个事务里重新编译持有它的每一个成员——角色的权限变了，就是那些人的权限变了，而下一次请求是拿编译结果判定的。.
+	// The name, the description and the permissions are replaced in full. Every member holding the role is recompiled in the same transaction, so the change takes effect on the next request.
 	//
 	// Takes any type of body and a specified content type, and returns a wrapper object for the known response body format(s).
 	//
 	// Corresponds with PUT /api/v1/roles/{code} (the `UpdateRole` operationId).
 	UpdateRoleWithBodyWithResponse(ctx context.Context, code string, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*UpdateRoleResponse, error)
 
-	// UpdateRoleWithResponse 改一个角色
+	// UpdateRoleWithResponse Update a role
 	//
-	// 名称、描述和权限整体替换。改完会在同一个事务里重新编译持有它的每一个成员——角色的权限变了，就是那些人的权限变了，而下一次请求是拿编译结果判定的。.
+	// The name, the description and the permissions are replaced in full. Every member holding the role is recompiled in the same transaction, so the change takes effect on the next request.
 	//
 	// Takes a body of the `application/json` content type, and returns a wrapper object for the known response body format(s).
 	//
 	// Corresponds with PUT /api/v1/roles/{code} (the `UpdateRole` operationId).
 	UpdateRoleWithResponse(ctx context.Context, code string, body UpdateRoleJSONRequestBody, reqEditors ...RequestEditorFn) (*UpdateRoleResponse, error)
 
-	// ListSshKeysWithResponse 列出这个项目的公钥
+	// ListSshKeysWithResponse List the SSH keys of this project
 	//
-	// 归成员的和归项目的都在里面，靠每一条上的 owner_user_id 区分。.
+	// Both the keys belonging to members and the keys belonging to the project are listed; the `owner_user_id` on each one tells them apart.
 	//
 	// Returns a wrapper object for the known response body format(s).
 	//
 	// Corresponds with GET /api/v1/ssh-keys (the `ListSshKeys` operationId).
 	ListSshKeysWithResponse(ctx context.Context, params *ListSshKeysParams, reqEditors ...RequestEditorFn) (*ListSshKeysResponse, error)
 
-	// CreateSshKeyWithBodyWithResponse 添加一把公钥
+	// CreateSshKeyWithBodyWithResponse Add an SSH key
 	//
-	// owner=me 是自己的，是成员就能加；owner=project 是项目公用的，要 iam:ssh_keys.manage —— 它会进这个项目之后开出来的每一台机器。
+	// `owner=me` adds a key of the caller's own, which any member may do. `owner=project` adds a key shared by the project, requires `iam:ssh_keys.manage`, and lands on every machine created in the project afterwards.
 	//
 	// Takes any type of body and a specified content type, and returns a wrapper object for the known response body format(s).
 	//
 	// Corresponds with POST /api/v1/ssh-keys (the `CreateSshKey` operationId).
 	CreateSshKeyWithBodyWithResponse(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*CreateSshKeyResponse, error)
 
-	// CreateSshKeyWithResponse 添加一把公钥
+	// CreateSshKeyWithResponse Add an SSH key
 	//
-	// owner=me 是自己的，是成员就能加；owner=project 是项目公用的，要 iam:ssh_keys.manage —— 它会进这个项目之后开出来的每一台机器。
+	// `owner=me` adds a key of the caller's own, which any member may do. `owner=project` adds a key shared by the project, requires `iam:ssh_keys.manage`, and lands on every machine created in the project afterwards.
 	//
 	// Takes a body of the `application/json` content type, and returns a wrapper object for the known response body format(s).
 	//
 	// Corresponds with POST /api/v1/ssh-keys (the `CreateSshKey` operationId).
 	CreateSshKeyWithResponse(ctx context.Context, body CreateSshKeyJSONRequestBody, reqEditors ...RequestEditorFn) (*CreateSshKeyResponse, error)
 
-	// RevokeSshKeyWithResponse 吊销一把公钥
+	// RevokeSshKeyWithResponse Revoke an SSH key
 	//
-	// 行留着，状态变成 REVOKED。事故之后要问的是当时信任的是哪把钥匙。.
+	// The row remains and its status becomes `REVOKED`, so it stays answerable afterwards which key was trusted at the time.
 	//
 	// Returns a wrapper object for the known response body format(s).
 	//
 	// Corresponds with DELETE /api/v1/ssh-keys/{keyId} (the `RevokeSshKey` operationId).
 	RevokeSshKeyWithResponse(ctx context.Context, keyId openapi_types.UUID, reqEditors ...RequestEditorFn) (*RevokeSshKeyResponse, error)
 
-	// GetSshKeyWithResponse 查看一把公钥
+	// GetSshKeyWithResponse Get an SSH key
 	//
 	// Returns a wrapper object for the known response body format(s).
 	//
 	// Corresponds with GET /api/v1/ssh-keys/{keyId} (the `GetSshKey` operationId).
 	GetSshKeyWithResponse(ctx context.Context, keyId openapi_types.UUID, reqEditors ...RequestEditorFn) (*GetSshKeyResponse, error)
 
-	// RenameSshKeyWithBodyWithResponse 给公钥改名
+	// RenameSshKeyWithBodyWithResponse Rename an SSH key
 	//
-	// 只有名字能改：公钥、类型、指纹是同一样东西的三种说法，改其中一个会让这一行描述一把并不存在的钥匙。.
+	// Only the name can change. The key, its type and its fingerprint are three statements about one thing, and changing one of them would leave the row describing a key that does not exist.
 	//
 	// Takes any type of body and a specified content type, and returns a wrapper object for the known response body format(s).
 	//
 	// Corresponds with PATCH /api/v1/ssh-keys/{keyId} (the `RenameSshKey` operationId).
 	RenameSshKeyWithBodyWithResponse(ctx context.Context, keyId openapi_types.UUID, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*RenameSshKeyResponse, error)
 
-	// RenameSshKeyWithResponse 给公钥改名
+	// RenameSshKeyWithResponse Rename an SSH key
 	//
-	// 只有名字能改：公钥、类型、指纹是同一样东西的三种说法，改其中一个会让这一行描述一把并不存在的钥匙。.
+	// Only the name can change. The key, its type and its fingerprint are three statements about one thing, and changing one of them would leave the row describing a key that does not exist.
 	//
 	// Takes a body of the `application/json` content type, and returns a wrapper object for the known response body format(s).
 	//
 	// Corresponds with PATCH /api/v1/ssh-keys/{keyId} (the `RenameSshKey` operationId).
 	RenameSshKeyWithResponse(ctx context.Context, keyId openapi_types.UUID, body RenameSshKeyJSONRequestBody, reqEditors ...RequestEditorFn) (*RenameSshKeyResponse, error)
 
-	// TransferProjectOwnershipWithBodyWithResponse 转移项目所有权
+	// TransferProjectOwnershipWithBodyWithResponse Transfer ownership of a project
 	//
-	// OWNER 唯一的移动方式，只有所有者本人能发起——能像普通角色那样授予的话，任何管理员都可以顺手把自己变成所有者。.
+	// The only way `OWNER` moves, and only the owner can initiate it.
 	//
 	// Takes any type of body and a specified content type, and returns a wrapper object for the known response body format(s).
 	//
 	// Corresponds with POST /api/v1/transfer-ownership (the `TransferProjectOwnership` operationId).
 	TransferProjectOwnershipWithBodyWithResponse(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*TransferProjectOwnershipResponse, error)
 
-	// TransferProjectOwnershipWithResponse 转移项目所有权
+	// TransferProjectOwnershipWithResponse Transfer ownership of a project
 	//
-	// OWNER 唯一的移动方式，只有所有者本人能发起——能像普通角色那样授予的话，任何管理员都可以顺手把自己变成所有者。.
+	// The only way `OWNER` moves, and only the owner can initiate it.
 	//
 	// Takes a body of the `application/json` content type, and returns a wrapper object for the known response body format(s).
 	//
@@ -4768,9 +4768,9 @@ func (r TransferProjectOwnershipResponse) ContentType() string {
 	return ""
 }
 
-// ListProjectInvitationsWithResponse 列出这个项目还在等的要约
+// ListProjectInvitationsWithResponse List the invitations this project is still waiting on
 //
-// 在项目里就看得到，和成员列表同一条规则：谁被请了也是「这个项目有谁」的一部分。.
+// Visible to any member, on the same rule as the member list. Who has been invited is part of who is in the project.
 //
 // Returns a wrapper object for the known response body format(s).
 //
@@ -4783,9 +4783,9 @@ func (c *ClientWithResponses) ListProjectInvitationsWithResponse(ctx context.Con
 	return ParseListProjectInvitationsResponse(rsp)
 }
 
-// IssueInvitationWithBodyWithResponse 发出一份邀请
+// IssueInvitationWithBodyWithResponse Send an invitation
 //
-// 要约站 14 天。有上限是因为里面那些角色是按发出那一刻的项目校验的，一份活得比它所依据的安排还久的要约会授出现在没人打算授的权限。.
+// An invitation stands for 14 days. The roles it carries are validated against the project as it stood when the invitation was sent, so it expires rather than outliving the arrangement it rests on.
 //
 // Takes any type of body and a specified content type, and returns a wrapper object for the known response body format(s).
 //
@@ -4798,9 +4798,9 @@ func (c *ClientWithResponses) IssueInvitationWithBodyWithResponse(ctx context.Co
 	return ParseIssueInvitationResponse(rsp)
 }
 
-// IssueInvitationWithResponse 发出一份邀请
+// IssueInvitationWithResponse Send an invitation
 //
-// 要约站 14 天。有上限是因为里面那些角色是按发出那一刻的项目校验的，一份活得比它所依据的安排还久的要约会授出现在没人打算授的权限。.
+// An invitation stands for 14 days. The roles it carries are validated against the project as it stood when the invitation was sent, so it expires rather than outliving the arrangement it rests on.
 //
 // Takes a body of the `application/json` content type, and returns a wrapper object for the known response body format(s).
 //
@@ -4813,7 +4813,7 @@ func (c *ClientWithResponses) IssueInvitationWithResponse(ctx context.Context, b
 	return ParseIssueInvitationResponse(rsp)
 }
 
-// RevokeInvitationWithResponse 撤回一份还没被兑现的要约
+// RevokeInvitationWithResponse Withdraw an invitation that has not been redeemed
 //
 // Returns a wrapper object for the known response body format(s).
 //
@@ -4826,7 +4826,7 @@ func (c *ClientWithResponses) RevokeInvitationWithResponse(ctx context.Context, 
 	return ParseRevokeInvitationResponse(rsp)
 }
 
-// ListMembersWithResponse 列出项目成员
+// ListMembersWithResponse List the members of a project
 //
 // Returns a wrapper object for the known response body format(s).
 //
@@ -4839,9 +4839,9 @@ func (c *ClientWithResponses) ListMembersWithResponse(ctx context.Context, param
 	return ParseListMembersResponse(rsp)
 }
 
-// RemoveMemberWithResponse 移除成员，或者自己退出
+// RemoveMemberWithResponse Remove a member, or leave the project
 //
-// 移除别人要 iam:members.manage；退出只要求自己在这个项目里——任何人都可能被拉进一个项目，那么任何人就得能出去。所有者两条路都不行，先转移所有权。
+// Removing someone else requires `iam:members.manage`; leaving requires only membership of the project. The owner can do neither, and has to transfer ownership first.
 //
 // Returns a wrapper object for the known response body format(s).
 //
@@ -4854,9 +4854,9 @@ func (c *ClientWithResponses) RemoveMemberWithResponse(ctx context.Context, user
 	return ParseRemoveMemberResponse(rsp)
 }
 
-// SetMemberPermissionsWithBodyWithResponse 设置一个成员直挂的权限
+// SetMemberPermissionsWithBodyWithResponse Set the permissions attached directly to a member
 //
-// 整体替换基础策略上直挂的那些权限。直挂让「给某个人临时开一条」不必先造一个只有他一个人持有的角色，但它不会随角色调整而更新，所以它适合一次性的、说得出理由的授予——角色仍然是主要的组织方式。要 iam:members.manage。
+// Replaces, in full, the permissions attached directly to the base policy. A direct permission grants one person something without creating a role only they hold, and it does not follow later changes to any role. Requires `iam:members.manage`.
 //
 // Takes any type of body and a specified content type, and returns a wrapper object for the known response body format(s).
 //
@@ -4869,9 +4869,9 @@ func (c *ClientWithResponses) SetMemberPermissionsWithBodyWithResponse(ctx conte
 	return ParseSetMemberPermissionsResponse(rsp)
 }
 
-// SetMemberPermissionsWithResponse 设置一个成员直挂的权限
+// SetMemberPermissionsWithResponse Set the permissions attached directly to a member
 //
-// 整体替换基础策略上直挂的那些权限。直挂让「给某个人临时开一条」不必先造一个只有他一个人持有的角色，但它不会随角色调整而更新，所以它适合一次性的、说得出理由的授予——角色仍然是主要的组织方式。要 iam:members.manage。
+// Replaces, in full, the permissions attached directly to the base policy. A direct permission grants one person something without creating a role only they hold, and it does not follow later changes to any role. Requires `iam:members.manage`.
 //
 // Takes a body of the `application/json` content type, and returns a wrapper object for the known response body format(s).
 //
@@ -4884,9 +4884,9 @@ func (c *ClientWithResponses) SetMemberPermissionsWithResponse(ctx context.Conte
 	return ParseSetMemberPermissionsResponse(rsp)
 }
 
-// SetMemberRolesWithBodyWithResponse 设置一个成员持有的角色
+// SetMemberRolesWithBodyWithResponse Set the roles a member holds
 //
-// 整体替换而不是增删：调用方拿到的就是一份完整清单，让它自己算差集只会让「我以为我取消了那个角色」这种事变得可能。所有者身上的 OWNER 不受影响。.
+// The list is replaced in full rather than added to or removed from. The `OWNER` role of the owner is unaffected.
 //
 // Takes any type of body and a specified content type, and returns a wrapper object for the known response body format(s).
 //
@@ -4899,9 +4899,9 @@ func (c *ClientWithResponses) SetMemberRolesWithBodyWithResponse(ctx context.Con
 	return ParseSetMemberRolesResponse(rsp)
 }
 
-// SetMemberRolesWithResponse 设置一个成员持有的角色
+// SetMemberRolesWithResponse Set the roles a member holds
 //
-// 整体替换而不是增删：调用方拿到的就是一份完整清单，让它自己算差集只会让「我以为我取消了那个角色」这种事变得可能。所有者身上的 OWNER 不受影响。.
+// The list is replaced in full rather than added to or removed from. The `OWNER` role of the owner is unaffected.
 //
 // Takes a body of the `application/json` content type, and returns a wrapper object for the known response body format(s).
 //
@@ -4952,9 +4952,9 @@ func (c *ClientWithResponses) BatchGetMembersWithResponse(ctx context.Context, b
 	return ParseBatchGetMembersResponse(rsp)
 }
 
-// GetProjectMembershipWithResponse 查看我在这个项目里的身份
+// GetProjectMembershipWithResponse Get the caller's standing in this project
 //
-// 只给事实，不给结论：这里没有 allowed，因为 IAM 不知道你要做的是哪个操作——哪个操作需要哪条权限那份目录属于各个服务，判断在它们那边。.
+// Facts rather than a conclusion. There is no `allowed` field here, because each service holds the catalogue mapping its operations to permissions and decides on its own.
 //
 // Returns a wrapper object for the known response body format(s).
 //
@@ -4967,9 +4967,9 @@ func (c *ClientWithResponses) GetProjectMembershipWithResponse(ctx context.Conte
 	return ParseGetProjectMembershipResponse(rsp)
 }
 
-// ListPermissionsWithResponse 列出全平台可授予的权限
+// ListPermissionsWithResponse List every permission the platform can grant
 //
-// 各服务在启动时把自己那份目录注册进 IAM（和 AddFinalizer 同一段代码），所以这里是一份汇总，不只是 IAM 自己那几条。**IAM 不用它做判定**——判定在各服务自己那边，拿 Grant 配它自己那份目录算；这份汇总只是让界面画得出勾选框，它落后一个版本只会让界面上少几条可选项，不会让判定出错。一个还没启动过的服务，它的权限不在这里。.
+// Each service registers its own catalogue with IAM at start-up, so this is the platform-wide list rather than the permissions of IAM alone. **IAM does not decide anything with it** — each service decides using the caller's grant together with its own catalogue, and this list only serves to render the choices. A service that has never started does not appear here.
 //
 // Returns a wrapper object for the known response body format(s).
 //
@@ -4982,9 +4982,9 @@ func (c *ClientWithResponses) ListPermissionsWithResponse(ctx context.Context, r
 	return ParseListPermissionsResponse(rsp)
 }
 
-// ListPoliciesWithResponse 列出这个项目里的策略
+// ListPoliciesWithResponse List the policies in this project
 //
-// 在项目里就看得到，和成员列表同一条规则：谁被授了什么也是「这个项目有谁」的一部分。.
+// Visible to any member, on the same rule as the member list. What has been granted to whom is part of who is in the project.
 //
 // Returns a wrapper object for the known response body format(s).
 //
@@ -4997,9 +4997,9 @@ func (c *ClientWithResponses) ListPoliciesWithResponse(ctx context.Context, para
 	return ParseListPoliciesResponse(rsp)
 }
 
-// AttachPolicyWithBodyWithResponse 附加一条策略
+// AttachPolicyWithBodyWithResponse Attach a policy
 //
-// 它建的是**附加**策略——要么带资源范围，要么方向是 deny。一条不限资源的 allow 是基础策略，每个成员只有一条，改它走 set-member-roles 和 set-member-permissions。roles 里不能有 OWNER 或 ADMIN：它们是规则而不是权限集合，「限定在三台机器上的所有者」讲不通。要 iam:members.manage。
+// This creates an **additional** policy, which either carries a resource scope or has `deny` as its effect. An `allow` covering every resource is a base policy, of which each member holds exactly one, and it is changed with set-member-roles and set-member-permissions. `roles` cannot contain `OWNER` or `ADMIN`. Requires `iam:members.manage`.
 //
 // Takes any type of body and a specified content type, and returns a wrapper object for the known response body format(s).
 //
@@ -5012,9 +5012,9 @@ func (c *ClientWithResponses) AttachPolicyWithBodyWithResponse(ctx context.Conte
 	return ParseAttachPolicyResponse(rsp)
 }
 
-// AttachPolicyWithResponse 附加一条策略
+// AttachPolicyWithResponse Attach a policy
 //
-// 它建的是**附加**策略——要么带资源范围，要么方向是 deny。一条不限资源的 allow 是基础策略，每个成员只有一条，改它走 set-member-roles 和 set-member-permissions。roles 里不能有 OWNER 或 ADMIN：它们是规则而不是权限集合，「限定在三台机器上的所有者」讲不通。要 iam:members.manage。
+// This creates an **additional** policy, which either carries a resource scope or has `deny` as its effect. An `allow` covering every resource is a base policy, of which each member holds exactly one, and it is changed with set-member-roles and set-member-permissions. `roles` cannot contain `OWNER` or `ADMIN`. Requires `iam:members.manage`.
 //
 // Takes a body of the `application/json` content type, and returns a wrapper object for the known response body format(s).
 //
@@ -5027,9 +5027,9 @@ func (c *ClientWithResponses) AttachPolicyWithResponse(ctx context.Context, body
 	return ParseAttachPolicyResponse(rsp)
 }
 
-// DetachPolicyWithResponse 摘掉一条策略
+// DetachPolicyWithResponse Detach a policy
 //
-// 基础策略摘不掉——它是这个成员角色的落点，删了它这个人就不再持有任何角色，而「让他离开这个项目」是 remove-member 的事。要 iam:members.manage。
+// A base policy cannot be detached; it is where a member's roles sit. Use remove-member to take someone out of the project. Requires `iam:members.manage`.
 //
 // Returns a wrapper object for the known response body format(s).
 //
@@ -5042,9 +5042,9 @@ func (c *ClientWithResponses) DetachPolicyWithResponse(ctx context.Context, poli
 	return ParseDetachPolicyResponse(rsp)
 }
 
-// GetPolicyWithResponse 查看一条策略
+// GetPolicyWithResponse Get a policy
 //
-// 和 list-policies 同一条规则，在项目里就看得到：谁被授了什么也是「这个项目有谁」的一部分，读它不需要额外的权限。.
+// Visible to any member, on the same rule as list-policies; no further permission is required.
 //
 // Returns a wrapper object for the known response body format(s).
 //
@@ -5057,9 +5057,9 @@ func (c *ClientWithResponses) GetPolicyWithResponse(ctx context.Context, policyI
 	return ParseGetPolicyResponse(rsp)
 }
 
-// UpdatePolicyWithBodyWithResponse 改一条策略
+// UpdatePolicyWithBodyWithResponse Update a policy
 //
-// 整体替换而不是逐字段改：resources、roles、permissions 各自整份覆盖，没发的那份就是空的——只有「这就是这条策略现在的全貌」这一种语义说得清一次写入到底收回了什么。改不动的是策略的**种类**：基础策略（不限资源的 allow）加不上资源范围，这个成员的角色就存在它上面，给它加个范围等于让他在别的资源上什么都不是；一条带范围的策略反过来也不能把范围清空变成基础策略，那个位置每个成员只有一条。要换种类就删了重建。要 iam:members.manage。
+// Replaced in full rather than field by field — `resources`, `roles` and `permissions` are each overwritten, and an omitted one becomes empty. The **kind** of a policy cannot change — a base policy (an `allow` covering every resource) cannot take a resource scope, and a scoped policy cannot have its scope cleared. Delete and recreate to change the kind. Requires `iam:members.manage`.
 //
 // Takes any type of body and a specified content type, and returns a wrapper object for the known response body format(s).
 //
@@ -5072,9 +5072,9 @@ func (c *ClientWithResponses) UpdatePolicyWithBodyWithResponse(ctx context.Conte
 	return ParseUpdatePolicyResponse(rsp)
 }
 
-// UpdatePolicyWithResponse 改一条策略
+// UpdatePolicyWithResponse Update a policy
 //
-// 整体替换而不是逐字段改：resources、roles、permissions 各自整份覆盖，没发的那份就是空的——只有「这就是这条策略现在的全貌」这一种语义说得清一次写入到底收回了什么。改不动的是策略的**种类**：基础策略（不限资源的 allow）加不上资源范围，这个成员的角色就存在它上面，给它加个范围等于让他在别的资源上什么都不是；一条带范围的策略反过来也不能把范围清空变成基础策略，那个位置每个成员只有一条。要换种类就删了重建。要 iam:members.manage。
+// Replaced in full rather than field by field — `resources`, `roles` and `permissions` are each overwritten, and an omitted one becomes empty. The **kind** of a policy cannot change — a base policy (an `allow` covering every resource) cannot take a resource scope, and a scoped policy cannot have its scope cleared. Delete and recreate to change the kind. Requires `iam:members.manage`.
 //
 // Takes a body of the `application/json` content type, and returns a wrapper object for the known response body format(s).
 //
@@ -5087,9 +5087,9 @@ func (c *ClientWithResponses) UpdatePolicyWithResponse(ctx context.Context, poli
 	return ParseUpdatePolicyResponse(rsp)
 }
 
-// DeleteProjectWithResponse 删除项目
+// DeleteProjectWithResponse Delete a project
 //
-// 只有所有者能做，而且没有回头路：项目进入 DELETING，各服务开始清掉它下面的资源。项目行本身永远留着——查一个删掉的项目查得到，答案是它没了，而不是一个 404。.
+// Only the owner can do this, and it cannot be undone. The project enters DELETING and each service begins removing the resources under it. The project itself remains readable afterwards, answering that it is gone rather than 404.
 //
 // Returns a wrapper object for the known response body format(s).
 //
@@ -5102,9 +5102,9 @@ func (c *ClientWithResponses) DeleteProjectWithResponse(ctx context.Context, req
 	return ParseDeleteProjectResponse(rsp)
 }
 
-// GetProjectWithResponse 查看一个项目
+// GetProjectWithResponse Get a project
 //
-// 在项目里就看得到，不需要额外的读权限。.
+// Visible to any member; no further permission is required.
 //
 // Returns a wrapper object for the known response body format(s).
 //
@@ -5117,7 +5117,7 @@ func (c *ClientWithResponses) GetProjectWithResponse(ctx context.Context, reqEdi
 	return ParseGetProjectResponse(rsp)
 }
 
-// UpdateProjectWithBodyWithResponse 改项目的名称与描述
+// UpdateProjectWithBodyWithResponse Update the name and description of a project
 //
 // Takes any type of body and a specified content type, and returns a wrapper object for the known response body format(s).
 //
@@ -5130,7 +5130,7 @@ func (c *ClientWithResponses) UpdateProjectWithBodyWithResponse(ctx context.Cont
 	return ParseUpdateProjectResponse(rsp)
 }
 
-// UpdateProjectWithResponse 改项目的名称与描述
+// UpdateProjectWithResponse Update the name and description of a project
 //
 // Takes a body of the `application/json` content type, and returns a wrapper object for the known response body format(s).
 //
@@ -5143,7 +5143,7 @@ func (c *ClientWithResponses) UpdateProjectWithResponse(ctx context.Context, bod
 	return ParseUpdateProjectResponse(rsp)
 }
 
-// ListRolesWithResponse 列出项目里的角色
+// ListRolesWithResponse List the roles in this project
 //
 // Returns a wrapper object for the known response body format(s).
 //
@@ -5156,7 +5156,7 @@ func (c *ClientWithResponses) ListRolesWithResponse(ctx context.Context, reqEdit
 	return ParseListRolesResponse(rsp)
 }
 
-// CreateRoleWithBodyWithResponse 建一个角色
+// CreateRoleWithBodyWithResponse Create a role
 //
 // Takes any type of body and a specified content type, and returns a wrapper object for the known response body format(s).
 //
@@ -5169,7 +5169,7 @@ func (c *ClientWithResponses) CreateRoleWithBodyWithResponse(ctx context.Context
 	return ParseCreateRoleResponse(rsp)
 }
 
-// CreateRoleWithResponse 建一个角色
+// CreateRoleWithResponse Create a role
 //
 // Takes a body of the `application/json` content type, and returns a wrapper object for the known response body format(s).
 //
@@ -5182,9 +5182,9 @@ func (c *ClientWithResponses) CreateRoleWithResponse(ctx context.Context, body C
 	return ParseCreateRoleResponse(rsp)
 }
 
-// DeleteRoleWithResponse 删一个角色
+// DeleteRoleWithResponse Delete a role
 //
-// 还有人持有时会被拒。级联摘掉那些绑定等于把每个持有者悄悄降级——请求里没有一个字说了这件事，事后也查不到。.
+// Refused while anyone still holds it. Cascading the removal would quietly demote every holder.
 //
 // Returns a wrapper object for the known response body format(s).
 //
@@ -5197,7 +5197,7 @@ func (c *ClientWithResponses) DeleteRoleWithResponse(ctx context.Context, code s
 	return ParseDeleteRoleResponse(rsp)
 }
 
-// GetRoleWithResponse 查看一个角色
+// GetRoleWithResponse Get a role
 //
 // Returns a wrapper object for the known response body format(s).
 //
@@ -5210,9 +5210,9 @@ func (c *ClientWithResponses) GetRoleWithResponse(ctx context.Context, code stri
 	return ParseGetRoleResponse(rsp)
 }
 
-// UpdateRoleWithBodyWithResponse 改一个角色
+// UpdateRoleWithBodyWithResponse Update a role
 //
-// 名称、描述和权限整体替换。改完会在同一个事务里重新编译持有它的每一个成员——角色的权限变了，就是那些人的权限变了，而下一次请求是拿编译结果判定的。.
+// The name, the description and the permissions are replaced in full. Every member holding the role is recompiled in the same transaction, so the change takes effect on the next request.
 //
 // Takes any type of body and a specified content type, and returns a wrapper object for the known response body format(s).
 //
@@ -5225,9 +5225,9 @@ func (c *ClientWithResponses) UpdateRoleWithBodyWithResponse(ctx context.Context
 	return ParseUpdateRoleResponse(rsp)
 }
 
-// UpdateRoleWithResponse 改一个角色
+// UpdateRoleWithResponse Update a role
 //
-// 名称、描述和权限整体替换。改完会在同一个事务里重新编译持有它的每一个成员——角色的权限变了，就是那些人的权限变了，而下一次请求是拿编译结果判定的。.
+// The name, the description and the permissions are replaced in full. Every member holding the role is recompiled in the same transaction, so the change takes effect on the next request.
 //
 // Takes a body of the `application/json` content type, and returns a wrapper object for the known response body format(s).
 //
@@ -5240,9 +5240,9 @@ func (c *ClientWithResponses) UpdateRoleWithResponse(ctx context.Context, code s
 	return ParseUpdateRoleResponse(rsp)
 }
 
-// ListSshKeysWithResponse 列出这个项目的公钥
+// ListSshKeysWithResponse List the SSH keys of this project
 //
-// 归成员的和归项目的都在里面，靠每一条上的 owner_user_id 区分。.
+// Both the keys belonging to members and the keys belonging to the project are listed; the `owner_user_id` on each one tells them apart.
 //
 // Returns a wrapper object for the known response body format(s).
 //
@@ -5255,9 +5255,9 @@ func (c *ClientWithResponses) ListSshKeysWithResponse(ctx context.Context, param
 	return ParseListSshKeysResponse(rsp)
 }
 
-// CreateSshKeyWithBodyWithResponse 添加一把公钥
+// CreateSshKeyWithBodyWithResponse Add an SSH key
 //
-// owner=me 是自己的，是成员就能加；owner=project 是项目公用的，要 iam:ssh_keys.manage —— 它会进这个项目之后开出来的每一台机器。
+// `owner=me` adds a key of the caller's own, which any member may do. `owner=project` adds a key shared by the project, requires `iam:ssh_keys.manage`, and lands on every machine created in the project afterwards.
 //
 // Takes any type of body and a specified content type, and returns a wrapper object for the known response body format(s).
 //
@@ -5270,9 +5270,9 @@ func (c *ClientWithResponses) CreateSshKeyWithBodyWithResponse(ctx context.Conte
 	return ParseCreateSshKeyResponse(rsp)
 }
 
-// CreateSshKeyWithResponse 添加一把公钥
+// CreateSshKeyWithResponse Add an SSH key
 //
-// owner=me 是自己的，是成员就能加；owner=project 是项目公用的，要 iam:ssh_keys.manage —— 它会进这个项目之后开出来的每一台机器。
+// `owner=me` adds a key of the caller's own, which any member may do. `owner=project` adds a key shared by the project, requires `iam:ssh_keys.manage`, and lands on every machine created in the project afterwards.
 //
 // Takes a body of the `application/json` content type, and returns a wrapper object for the known response body format(s).
 //
@@ -5285,9 +5285,9 @@ func (c *ClientWithResponses) CreateSshKeyWithResponse(ctx context.Context, body
 	return ParseCreateSshKeyResponse(rsp)
 }
 
-// RevokeSshKeyWithResponse 吊销一把公钥
+// RevokeSshKeyWithResponse Revoke an SSH key
 //
-// 行留着，状态变成 REVOKED。事故之后要问的是当时信任的是哪把钥匙。.
+// The row remains and its status becomes `REVOKED`, so it stays answerable afterwards which key was trusted at the time.
 //
 // Returns a wrapper object for the known response body format(s).
 //
@@ -5300,7 +5300,7 @@ func (c *ClientWithResponses) RevokeSshKeyWithResponse(ctx context.Context, keyI
 	return ParseRevokeSshKeyResponse(rsp)
 }
 
-// GetSshKeyWithResponse 查看一把公钥
+// GetSshKeyWithResponse Get an SSH key
 //
 // Returns a wrapper object for the known response body format(s).
 //
@@ -5313,9 +5313,9 @@ func (c *ClientWithResponses) GetSshKeyWithResponse(ctx context.Context, keyId o
 	return ParseGetSshKeyResponse(rsp)
 }
 
-// RenameSshKeyWithBodyWithResponse 给公钥改名
+// RenameSshKeyWithBodyWithResponse Rename an SSH key
 //
-// 只有名字能改：公钥、类型、指纹是同一样东西的三种说法，改其中一个会让这一行描述一把并不存在的钥匙。.
+// Only the name can change. The key, its type and its fingerprint are three statements about one thing, and changing one of them would leave the row describing a key that does not exist.
 //
 // Takes any type of body and a specified content type, and returns a wrapper object for the known response body format(s).
 //
@@ -5328,9 +5328,9 @@ func (c *ClientWithResponses) RenameSshKeyWithBodyWithResponse(ctx context.Conte
 	return ParseRenameSshKeyResponse(rsp)
 }
 
-// RenameSshKeyWithResponse 给公钥改名
+// RenameSshKeyWithResponse Rename an SSH key
 //
-// 只有名字能改：公钥、类型、指纹是同一样东西的三种说法，改其中一个会让这一行描述一把并不存在的钥匙。.
+// Only the name can change. The key, its type and its fingerprint are three statements about one thing, and changing one of them would leave the row describing a key that does not exist.
 //
 // Takes a body of the `application/json` content type, and returns a wrapper object for the known response body format(s).
 //
@@ -5343,9 +5343,9 @@ func (c *ClientWithResponses) RenameSshKeyWithResponse(ctx context.Context, keyI
 	return ParseRenameSshKeyResponse(rsp)
 }
 
-// TransferProjectOwnershipWithBodyWithResponse 转移项目所有权
+// TransferProjectOwnershipWithBodyWithResponse Transfer ownership of a project
 //
-// OWNER 唯一的移动方式，只有所有者本人能发起——能像普通角色那样授予的话，任何管理员都可以顺手把自己变成所有者。.
+// The only way `OWNER` moves, and only the owner can initiate it.
 //
 // Takes any type of body and a specified content type, and returns a wrapper object for the known response body format(s).
 //
@@ -5358,9 +5358,9 @@ func (c *ClientWithResponses) TransferProjectOwnershipWithBodyWithResponse(ctx c
 	return ParseTransferProjectOwnershipResponse(rsp)
 }
 
-// TransferProjectOwnershipWithResponse 转移项目所有权
+// TransferProjectOwnershipWithResponse Transfer ownership of a project
 //
-// OWNER 唯一的移动方式，只有所有者本人能发起——能像普通角色那样授予的话，任何管理员都可以顺手把自己变成所有者。.
+// The only way `OWNER` moves, and only the owner can initiate it.
 //
 // Takes a body of the `application/json` content type, and returns a wrapper object for the known response body format(s).
 //

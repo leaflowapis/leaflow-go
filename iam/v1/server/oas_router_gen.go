@@ -790,7 +790,7 @@ func (s *Server) FindPath(method string, u *url.URL) (r Route, _ bool) {
 					switch method {
 					case "GET":
 						r.name = ListProjectInvitationsOperation
-						r.summary = "列出这个项目还在等的要约"
+						r.summary = "List the invitations this project is still waiting on"
 						r.operationID = "list-project-invitations"
 						r.operationGroup = ""
 						r.pathPattern = "/api/v1/invitations"
@@ -799,7 +799,7 @@ func (s *Server) FindPath(method string, u *url.URL) (r Route, _ bool) {
 						return r, true
 					case "POST":
 						r.name = IssueInvitationOperation
-						r.summary = "发出一份邀请"
+						r.summary = "Send an invitation"
 						r.operationID = "issue-invitation"
 						r.operationGroup = ""
 						r.pathPattern = "/api/v1/invitations"
@@ -833,7 +833,7 @@ func (s *Server) FindPath(method string, u *url.URL) (r Route, _ bool) {
 						switch method {
 						case "DELETE":
 							r.name = RevokeInvitationOperation
-							r.summary = "撤回一份还没被兑现的要约"
+							r.summary = "Withdraw an invitation that has not been redeemed"
 							r.operationID = "revoke-invitation"
 							r.operationGroup = ""
 							r.pathPattern = "/api/v1/invitations/{invitationId}"
@@ -859,7 +859,7 @@ func (s *Server) FindPath(method string, u *url.URL) (r Route, _ bool) {
 					switch method {
 					case "GET":
 						r.name = ListMembersOperation
-						r.summary = "列出项目成员"
+						r.summary = "List the members of a project"
 						r.operationID = "list-members"
 						r.operationGroup = ""
 						r.pathPattern = "/api/v1/members"
@@ -892,7 +892,7 @@ func (s *Server) FindPath(method string, u *url.URL) (r Route, _ bool) {
 						switch method {
 						case "DELETE":
 							r.name = RemoveMemberOperation
-							r.summary = "移除成员，或者自己退出"
+							r.summary = "Remove a member, or leave the project"
 							r.operationID = "remove-member"
 							r.operationGroup = ""
 							r.pathPattern = "/api/v1/members/{userId}"
@@ -929,7 +929,7 @@ func (s *Server) FindPath(method string, u *url.URL) (r Route, _ bool) {
 								switch method {
 								case "PUT":
 									r.name = SetMemberPermissionsOperation
-									r.summary = "设置一个成员直挂的权限"
+									r.summary = "Set the permissions attached directly to a member"
 									r.operationID = "set-member-permissions"
 									r.operationGroup = ""
 									r.pathPattern = "/api/v1/members/{userId}/permissions"
@@ -954,7 +954,7 @@ func (s *Server) FindPath(method string, u *url.URL) (r Route, _ bool) {
 								switch method {
 								case "PUT":
 									r.name = SetMemberRolesOperation
-									r.summary = "设置一个成员持有的角色"
+									r.summary = "Set the roles a member holds"
 									r.operationID = "set-member-roles"
 									r.operationGroup = ""
 									r.pathPattern = "/api/v1/members/{userId}/roles"
@@ -1008,7 +1008,7 @@ func (s *Server) FindPath(method string, u *url.URL) (r Route, _ bool) {
 						switch method {
 						case "GET":
 							r.name = GetProjectMembershipOperation
-							r.summary = "查看我在这个项目里的身份"
+							r.summary = "Get the caller's standing in this project"
 							r.operationID = "get-project-membership"
 							r.operationGroup = ""
 							r.pathPattern = "/api/v1/membership"
@@ -1047,7 +1047,7 @@ func (s *Server) FindPath(method string, u *url.URL) (r Route, _ bool) {
 						switch method {
 						case "GET":
 							r.name = ListPermissionsOperation
-							r.summary = "列出全平台可授予的权限"
+							r.summary = "List every permission the platform can grant"
 							r.operationID = "list-permissions"
 							r.operationGroup = ""
 							r.pathPattern = "/api/v1/permissions"
@@ -1071,7 +1071,7 @@ func (s *Server) FindPath(method string, u *url.URL) (r Route, _ bool) {
 						switch method {
 						case "GET":
 							r.name = ListPoliciesOperation
-							r.summary = "列出这个项目里的策略"
+							r.summary = "List the policies in this project"
 							r.operationID = "list-policies"
 							r.operationGroup = ""
 							r.pathPattern = "/api/v1/policies"
@@ -1080,7 +1080,7 @@ func (s *Server) FindPath(method string, u *url.URL) (r Route, _ bool) {
 							return r, true
 						case "POST":
 							r.name = AttachPolicyOperation
-							r.summary = "附加一条策略"
+							r.summary = "Attach a policy"
 							r.operationID = "attach-policy"
 							r.operationGroup = ""
 							r.pathPattern = "/api/v1/policies"
@@ -1114,7 +1114,7 @@ func (s *Server) FindPath(method string, u *url.URL) (r Route, _ bool) {
 							switch method {
 							case "DELETE":
 								r.name = DetachPolicyOperation
-								r.summary = "摘掉一条策略"
+								r.summary = "Detach a policy"
 								r.operationID = "detach-policy"
 								r.operationGroup = ""
 								r.pathPattern = "/api/v1/policies/{policyId}"
@@ -1123,7 +1123,7 @@ func (s *Server) FindPath(method string, u *url.URL) (r Route, _ bool) {
 								return r, true
 							case "GET":
 								r.name = GetPolicyOperation
-								r.summary = "查看一条策略"
+								r.summary = "Get a policy"
 								r.operationID = "get-policy"
 								r.operationGroup = ""
 								r.pathPattern = "/api/v1/policies/{policyId}"
@@ -1132,7 +1132,7 @@ func (s *Server) FindPath(method string, u *url.URL) (r Route, _ bool) {
 								return r, true
 							case "PUT":
 								r.name = UpdatePolicyOperation
-								r.summary = "改一条策略"
+								r.summary = "Update a policy"
 								r.operationID = "update-policy"
 								r.operationGroup = ""
 								r.pathPattern = "/api/v1/policies/{policyId}"
@@ -1159,7 +1159,7 @@ func (s *Server) FindPath(method string, u *url.URL) (r Route, _ bool) {
 						switch method {
 						case "DELETE":
 							r.name = DeleteProjectOperation
-							r.summary = "删除项目"
+							r.summary = "Delete a project"
 							r.operationID = "delete-project"
 							r.operationGroup = ""
 							r.pathPattern = "/api/v1/project"
@@ -1168,7 +1168,7 @@ func (s *Server) FindPath(method string, u *url.URL) (r Route, _ bool) {
 							return r, true
 						case "GET":
 							r.name = GetProjectOperation
-							r.summary = "查看一个项目"
+							r.summary = "Get a project"
 							r.operationID = "get-project"
 							r.operationGroup = ""
 							r.pathPattern = "/api/v1/project"
@@ -1177,7 +1177,7 @@ func (s *Server) FindPath(method string, u *url.URL) (r Route, _ bool) {
 							return r, true
 						case "PATCH":
 							r.name = UpdateProjectOperation
-							r.summary = "改项目的名称与描述"
+							r.summary = "Update the name and description of a project"
 							r.operationID = "update-project"
 							r.operationGroup = ""
 							r.pathPattern = "/api/v1/project"
@@ -1203,7 +1203,7 @@ func (s *Server) FindPath(method string, u *url.URL) (r Route, _ bool) {
 					switch method {
 					case "GET":
 						r.name = ListRolesOperation
-						r.summary = "列出项目里的角色"
+						r.summary = "List the roles in this project"
 						r.operationID = "list-roles"
 						r.operationGroup = ""
 						r.pathPattern = "/api/v1/roles"
@@ -1212,7 +1212,7 @@ func (s *Server) FindPath(method string, u *url.URL) (r Route, _ bool) {
 						return r, true
 					case "POST":
 						r.name = CreateRoleOperation
-						r.summary = "建一个角色"
+						r.summary = "Create a role"
 						r.operationID = "create-role"
 						r.operationGroup = ""
 						r.pathPattern = "/api/v1/roles"
@@ -1246,7 +1246,7 @@ func (s *Server) FindPath(method string, u *url.URL) (r Route, _ bool) {
 						switch method {
 						case "DELETE":
 							r.name = DeleteRoleOperation
-							r.summary = "删一个角色"
+							r.summary = "Delete a role"
 							r.operationID = "delete-role"
 							r.operationGroup = ""
 							r.pathPattern = "/api/v1/roles/{code}"
@@ -1255,7 +1255,7 @@ func (s *Server) FindPath(method string, u *url.URL) (r Route, _ bool) {
 							return r, true
 						case "GET":
 							r.name = GetRoleOperation
-							r.summary = "查看一个角色"
+							r.summary = "Get a role"
 							r.operationID = "get-role"
 							r.operationGroup = ""
 							r.pathPattern = "/api/v1/roles/{code}"
@@ -1264,7 +1264,7 @@ func (s *Server) FindPath(method string, u *url.URL) (r Route, _ bool) {
 							return r, true
 						case "PUT":
 							r.name = UpdateRoleOperation
-							r.summary = "改一个角色"
+							r.summary = "Update a role"
 							r.operationID = "update-role"
 							r.operationGroup = ""
 							r.pathPattern = "/api/v1/roles/{code}"
@@ -1290,7 +1290,7 @@ func (s *Server) FindPath(method string, u *url.URL) (r Route, _ bool) {
 					switch method {
 					case "GET":
 						r.name = ListSSHKeysOperation
-						r.summary = "列出这个项目的公钥"
+						r.summary = "List the SSH keys of this project"
 						r.operationID = "list-ssh-keys"
 						r.operationGroup = ""
 						r.pathPattern = "/api/v1/ssh-keys"
@@ -1299,7 +1299,7 @@ func (s *Server) FindPath(method string, u *url.URL) (r Route, _ bool) {
 						return r, true
 					case "POST":
 						r.name = CreateSSHKeyOperation
-						r.summary = "添加一把公钥"
+						r.summary = "Add an SSH key"
 						r.operationID = "create-ssh-key"
 						r.operationGroup = ""
 						r.pathPattern = "/api/v1/ssh-keys"
@@ -1333,7 +1333,7 @@ func (s *Server) FindPath(method string, u *url.URL) (r Route, _ bool) {
 						switch method {
 						case "DELETE":
 							r.name = RevokeSSHKeyOperation
-							r.summary = "吊销一把公钥"
+							r.summary = "Revoke an SSH key"
 							r.operationID = "revoke-ssh-key"
 							r.operationGroup = ""
 							r.pathPattern = "/api/v1/ssh-keys/{keyId}"
@@ -1342,7 +1342,7 @@ func (s *Server) FindPath(method string, u *url.URL) (r Route, _ bool) {
 							return r, true
 						case "GET":
 							r.name = GetSSHKeyOperation
-							r.summary = "查看一把公钥"
+							r.summary = "Get an SSH key"
 							r.operationID = "get-ssh-key"
 							r.operationGroup = ""
 							r.pathPattern = "/api/v1/ssh-keys/{keyId}"
@@ -1351,7 +1351,7 @@ func (s *Server) FindPath(method string, u *url.URL) (r Route, _ bool) {
 							return r, true
 						case "PATCH":
 							r.name = RenameSSHKeyOperation
-							r.summary = "给公钥改名"
+							r.summary = "Rename an SSH key"
 							r.operationID = "rename-ssh-key"
 							r.operationGroup = ""
 							r.pathPattern = "/api/v1/ssh-keys/{keyId}"
@@ -1378,7 +1378,7 @@ func (s *Server) FindPath(method string, u *url.URL) (r Route, _ bool) {
 					switch method {
 					case "POST":
 						r.name = TransferProjectOwnershipOperation
-						r.summary = "转移项目所有权"
+						r.summary = "Transfer ownership of a project"
 						r.operationID = "transfer-project-ownership"
 						r.operationGroup = ""
 						r.pathPattern = "/api/v1/transfer-ownership"

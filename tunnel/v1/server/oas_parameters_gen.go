@@ -15,8 +15,8 @@ import (
 
 // ListL4TunnelUsageSeriesParams is parameters of list-l4-tunnel-usage-series operation.
 type ListL4TunnelUsageSeriesParams struct {
-	// 取最近多少天。0 表示用上游的默认值（30）——上游只接受
-	// 1–365，超出会被它夹住.
+	// How many days to cover. 0 requests the default of 30; the range accepted is 1–365, and a larger
+	// value is clamped to it.
 	Days OptInt64 `json:",omitempty,omitzero"`
 }
 

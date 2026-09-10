@@ -14,8 +14,9 @@ import (
 // SecurityHandler is handler for security parameters.
 type SecurityHandler interface {
 	// HandleBearerAuth handles bearerAuth security.
-	// 账号令牌。在 auth.leaflow.net
-	// 登录拿到的那张，只说明你是谁，不带任何项目；用它列出参与的项目，并换取项目令牌。.
+	// The access token issued by auth.leaflow.net. It states who the caller is and names no project.
+	//
+	// Use it to list the projects the caller belongs to and to obtain a scoped token.
 	HandleBearerAuth(ctx context.Context, operationName OperationName, t BearerAuth) (context.Context, error)
 }
 
@@ -40,7 +41,7 @@ var operationRolesBearerAuth = map[string][]string{
 	AcceptInvitationOperation:           []string{},
 	AcceptInvitationByTokenOperation:    []string{},
 	CreateProjectOperation:              []string{},
-	ExchangeProjectTokenOperation:       []string{},
+	CreateScopedTokenOperation:          []string{},
 	GetAccountOperation:                 []string{},
 	GetIdentityVerificationOperation:    []string{},
 	ListConsentsOperation:               []string{},
@@ -92,8 +93,9 @@ func (s *Server) securityBearerAuth(ctx context.Context, operationName Operation
 // SecuritySource is provider of security values (tokens, passwords, etc.).
 type SecuritySource interface {
 	// BearerAuth provides bearerAuth security value.
-	// 账号令牌。在 auth.leaflow.net
-	// 登录拿到的那张，只说明你是谁，不带任何项目；用它列出参与的项目，并换取项目令牌。.
+	// The access token issued by auth.leaflow.net. It states who the caller is and names no project.
+	//
+	// Use it to list the projects the caller belongs to and to obtain a scoped token.
 	BearerAuth(ctx context.Context, operationName OperationName) (BearerAuth, error)
 }
 

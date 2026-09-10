@@ -14,9 +14,16 @@ import (
 // SecurityHandler is handler for security parameters.
 type SecurityHandler interface {
 	// HandleBearerAuth handles bearerAuth security.
-	// 项目令牌。先在 auth.leaflow.net 登录拿到账号令牌，再用它向 IAM
-	// 换取项目令牌（POST
-	// /account/v1/projects/{projectId}/token）——一张项目令牌同时说明当前用户和当前项目。.
+	// A scoped token issued by IAM. Sign in at auth.leaflow.net to obtain an access token, then exchange
+	// it for a scoped token (`POST /account/v1/projects/{projectId}/scoped-tokens`).
+	//
+	// A scoped token states both the current user and the current project. Neither the path nor the
+	// headers carry a `project_id`.
+	//
+	// `TOKEN_MISSING` means no token was sent. `TOKEN_EXPIRED` means the scoped token has expired;
+	// exchange the access token for a new one without signing in again. `TOKEN_INVALID` means the token
+	// did not verify. `NOT_A_MEMBER` means the account is not a member of the project. `USER_SUSPENDED`
+	// and `USER_BANNED` mean the account itself is barred from operating.
 	HandleBearerAuth(ctx context.Context, operationName OperationName, t BearerAuth) (context.Context, error)
 }
 
@@ -86,9 +93,16 @@ func (s *Server) securityBearerAuth(ctx context.Context, operationName Operation
 // SecuritySource is provider of security values (tokens, passwords, etc.).
 type SecuritySource interface {
 	// BearerAuth provides bearerAuth security value.
-	// 项目令牌。先在 auth.leaflow.net 登录拿到账号令牌，再用它向 IAM
-	// 换取项目令牌（POST
-	// /account/v1/projects/{projectId}/token）——一张项目令牌同时说明当前用户和当前项目。.
+	// A scoped token issued by IAM. Sign in at auth.leaflow.net to obtain an access token, then exchange
+	// it for a scoped token (`POST /account/v1/projects/{projectId}/scoped-tokens`).
+	//
+	// A scoped token states both the current user and the current project. Neither the path nor the
+	// headers carry a `project_id`.
+	//
+	// `TOKEN_MISSING` means no token was sent. `TOKEN_EXPIRED` means the scoped token has expired;
+	// exchange the access token for a new one without signing in again. `TOKEN_INVALID` means the token
+	// did not verify. `NOT_A_MEMBER` means the account is not a member of the project. `USER_SUSPENDED`
+	// and `USER_BANNED` mean the account itself is barred from operating.
 	BearerAuth(ctx context.Context, operationName OperationName) (BearerAuth, error)
 }
 

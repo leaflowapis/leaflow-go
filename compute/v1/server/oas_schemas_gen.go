@@ -1733,9 +1733,35 @@ func (s *Error) SetStatus(val int64) {
 func (*Error) createDiskRes()     {}
 func (*Error) launchInstanceRes() {}
 
-type ErrorMeta map[string]jx.Raw
+type ErrorMeta struct {
+	// Present on every response whose `code` is `VALIDATION_FAILED`, and on no other response.
+	Violations      []Violation `json:"violations"`
+	AdditionalProps ErrorMetaAdditional
+}
 
-func (s *ErrorMeta) init() ErrorMeta {
+// GetViolations returns the value of Violations.
+func (s *ErrorMeta) GetViolations() []Violation {
+	return s.Violations
+}
+
+// GetAdditionalProps returns the value of AdditionalProps.
+func (s *ErrorMeta) GetAdditionalProps() ErrorMetaAdditional {
+	return s.AdditionalProps
+}
+
+// SetViolations sets the value of Violations.
+func (s *ErrorMeta) SetViolations(val []Violation) {
+	s.Violations = val
+}
+
+// SetAdditionalProps sets the value of AdditionalProps.
+func (s *ErrorMeta) SetAdditionalProps(val ErrorMetaAdditional) {
+	s.AdditionalProps = val
+}
+
+type ErrorMetaAdditional map[string]jx.Raw
+
+func (s *ErrorMetaAdditional) init() ErrorMetaAdditional {
 	m := *s
 	if m == nil {
 		m = map[string]jx.Raw{}
@@ -5829,6 +5855,50 @@ func (SubnetResourceIPVersion) AllValues() []SubnetResourceIPVersion {
 		SubnetResourceIPVersion4,
 		SubnetResourceIPVersion6,
 	}
+}
+
+// A single mismatch between the request and the contract.
+//
+// Use `field` to locate the input, `rule` to decide what to tell the user, and `reason` only for
+// diagnostics.
+// Ref: #/components/schemas/Violation
+type Violation struct {
+	// Dot-separated path to the field, such as `name` or `schedule.0.start_time_seconds`.
+	Field string `json:"field"`
+	// The JSON Schema keyword that failed, such as `minLength`, `minimum` or `pattern`.
+	Rule string `json:"rule"`
+	// The validator's own wording, in English. Intended for diagnostics; do not display it to end users.
+	Reason OptString `json:"reason"`
+}
+
+// GetField returns the value of Field.
+func (s *Violation) GetField() string {
+	return s.Field
+}
+
+// GetRule returns the value of Rule.
+func (s *Violation) GetRule() string {
+	return s.Rule
+}
+
+// GetReason returns the value of Reason.
+func (s *Violation) GetReason() OptString {
+	return s.Reason
+}
+
+// SetField sets the value of Field.
+func (s *Violation) SetField(val string) {
+	s.Field = val
+}
+
+// SetRule sets the value of Rule.
+func (s *Violation) SetRule(val string) {
+	s.Rule = val
+}
+
+// SetReason sets the value of Reason.
+func (s *Violation) SetReason(val OptString) {
+	s.Reason = val
 }
 
 // Ref: #/components/schemas/ZoneListResponseBody

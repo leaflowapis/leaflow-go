@@ -382,11 +382,11 @@ func decodeGetSSHKeyParams(args [1]string, argsEscaped bool, r *http.Request) (p
 
 // ListMembersParams is parameters of list-members operation.
 type ListMembersParams struct {
-	// 这一页最多返回多少条.
+	// Maximum number of items in this page.
 	Limit OptInt64 `json:",omitempty,omitzero"`
-	// 跳过多少条。要翻得更深请改用游标翻页的接口.
+	// Number of items to skip. Use the cursor-paged endpoint to page deeper.
 	Offset OptInt64 `json:",omitempty,omitzero"`
-	// 按用户 ID、邮箱或姓名模糊匹配.
+	// Matches against user id, email address or name.
 	Keyword OptString `json:",omitempty,omitzero"`
 }
 
@@ -633,7 +633,7 @@ func decodeListMembersParams(args [0]string, argsEscaped bool, r *http.Request) 
 
 // ListPoliciesParams is parameters of list-policies operation.
 type ListPoliciesParams struct {
-	// 只看这个人身上的。不传表示整个项目的.
+	// Restricts the result to one person. Omitting it covers the whole project.
 	UserId OptString `json:",omitempty,omitzero"`
 }
 
@@ -725,9 +725,9 @@ func decodeListPoliciesParams(args [0]string, argsEscaped bool, r *http.Request)
 
 // ListProjectInvitationsParams is parameters of list-project-invitations operation.
 type ListProjectInvitationsParams struct {
-	// 这一页最多返回多少条.
+	// Maximum number of items in this page.
 	Limit OptInt64 `json:",omitempty,omitzero"`
-	// 跳过多少条。要翻得更深请改用游标翻页的接口.
+	// Number of items to skip. Use the cursor-paged endpoint to page deeper.
 	Offset OptInt64 `json:",omitempty,omitzero"`
 }
 
@@ -897,13 +897,13 @@ func decodeListProjectInvitationsParams(args [0]string, argsEscaped bool, r *htt
 
 // ListSSHKeysParams is parameters of list-ssh-keys operation.
 type ListSSHKeysParams struct {
-	// 这一页最多返回多少条.
+	// Maximum number of items in this page.
 	Limit OptInt64 `json:",omitempty,omitzero"`
-	// 跳过多少条。要翻得更深请改用游标翻页的接口.
+	// Number of items to skip. Use the cursor-paged endpoint to page deeper.
 	Offset OptInt64 `json:",omitempty,omitzero"`
-	// 不传时两种都返回.
+	// Both kinds are returned while this is absent.
 	Status OptListSSHKeysStatus `json:",omitempty,omitzero"`
-	// 只列挂着这个用途的钥匙。平台自己生成的那把是 platform.
+	// Lists only the keys carrying this purpose. The key the platform generates carries `platform`.
 	Purpose OptString `json:",omitempty,omitzero"`
 }
 

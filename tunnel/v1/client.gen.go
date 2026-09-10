@@ -41,23 +41,23 @@ type Error = externalRef0.Error
 
 // SubscriptionResource defines model for SubscriptionResource.
 type SubscriptionResource struct {
-	// Status ready 表示节点已全部下发；preparing 表示仍在下发——此时链接照样可用
+	// Status ready means every node has been distributed; preparing means distribution is still under way, and the link works either way
 	Status    SubscriptionResourceStatus `json:"status"`
 	UpdatedAt time.Time                  `json:"updated_at"`
 
-	// Url 订阅地址。这是一条长期有效的凭据，等同于密码，请勿转发或截图分享
+	// Url The subscription address. It is a long-lived credential equivalent to a password; do not forward it or share a screenshot of it
 	Url     string `json:"url"`
 	Version int64  `json:"version"`
 }
 
-// SubscriptionResourceStatus ready 表示节点已全部下发；preparing 表示仍在下发——此时链接照样可用
+// SubscriptionResourceStatus ready means every node has been distributed; preparing means distribution is still under way, and the link works either way
 type SubscriptionResourceStatus string
 
-// TunnelResource 当前项目那条四层隧道。它只回答一个问题：生成过没有。
+// TunnelResource The layer 4 tunnel of the current project. It answers a single question — whether the tunnel has been generated
 type TunnelResource struct {
 	CreatedAt time.Time `json:"created_at"`
 
-	// Enabled 隧道当前是否可用。为 false 表示被平台停用（欠费、违规或项目停服），需要先处理停用的原因
+	// Enabled Whether the tunnel is currently usable. false means the platform has disabled it — for an unpaid balance, a violation, or a suspended project — and the cause has to be resolved first
 	Enabled bool               `json:"enabled"`
 	Id      openapi_types.UUID `json:"id"`
 }
@@ -73,40 +73,40 @@ type UsageDayResource struct {
 
 // UsageResource defines model for UsageResource.
 type UsageResource struct {
-	// BilledBytes 按线路倍率折算后的用量，配额比对以此为准
+	// BilledBytes Usage after the multiplier of each route has been applied. Quota is measured against this value
 	BilledBytes int64 `json:"billed_bytes"`
 	OverQuota   bool  `json:"over_quota"`
 
-	// PeriodEnd 本期计费周期的结束日（YYYY-MM-DD）
+	// PeriodEnd Last day of the current billing period (YYYY-MM-DD)
 	PeriodEnd string `json:"period_end"`
 
-	// PeriodStart 本期计费周期的起始日（YYYY-MM-DD）
+	// PeriodStart First day of the current billing period (YYYY-MM-DD)
 	PeriodStart string `json:"period_start"`
 
-	// QuotaBytes 上游给出的真实配额，0 表示不限量
+	// QuotaBytes The quota in force; 0 means unlimited
 	QuotaBytes int64 `json:"quota_bytes"`
 
-	// QuotaExceededAt 上游判定超额的时刻；null 表示未超额
+	// QuotaExceededAt When the quota was found to be exceeded; null while it has not been
 	QuotaExceededAt *time.Time `json:"quota_exceeded_at"`
 
-	// RawBytes 实际传输的字节，不用于配额比对
+	// RawBytes Bytes actually transferred. Quota is not measured against this value
 	RawBytes    int64 `json:"raw_bytes"`
 	UploadBytes int64 `json:"upload_bytes"`
 
-	// UsagePercent 上游给出的用量百分比
+	// UsagePercent Usage as a percentage of the quota
 	UsagePercent float64 `json:"usage_percent"`
 }
 
 // UsageSeriesResource defines model for UsageSeriesResource.
 type UsageSeriesResource struct {
-	// Days 上游实际采用的天数，可能被它夹到 1–365
+	// Days The number of days actually covered, which may have been clamped to the range 1–365
 	Days   int64              `json:"days"`
 	Points []UsageDayResource `json:"points"`
 }
 
 // ListL4TunnelUsageSeriesParams defines parameters for ListL4TunnelUsageSeries.
 type ListL4TunnelUsageSeriesParams struct {
-	// Days 取最近多少天。0 表示用上游的默认值（30）——上游只接受 1–365，超出会被它夹住
+	// Days How many days to cover. 0 requests the default of 30; the range accepted is 1–365, and a larger value is clamped to it
 	Days *int64 `form:"days,omitempty" json:"days,omitempty"`
 }
 
@@ -184,76 +184,76 @@ func WithRequestEditorFn(fn RequestEditorFn) ClientOption {
 // The interface specification for the client above.
 type ClientInterface interface {
 
-	// GetL4Tunnel 查看本项目的四层隧道
+	// GetL4Tunnel Get the layer 4 tunnel of the current project
 	//
-	// 还没生成过时返回 `TUNNEL_NOT_FOUND`——首屏据此决定画「生成订阅链接」那个按钮还是画结果。
+	// `TUNNEL_NOT_FOUND` means no tunnel has been generated yet.
 	//
-	// 项目未获开放时返回 403 `TUNNEL_NOT_ENTITLED`，那是另一件事：控制台据此把四层隧道的入口整个收起来，而不是画那个按钮。
+	// 403 `TUNNEL_NOT_ENTITLED` states something else: the project has not been entitled to layer 4 at all.
 	//
-	// 订阅地址、用量、配额各有自己的接口，这里不重复返回。
+	// The subscription address, the usage and the quota each have their own endpoint and are not repeated here.
 	//
 	// Corresponds with GET /api/v1/tunnel/l4 (the `GetL4Tunnel` operationId).
 	GetL4Tunnel(ctx context.Context, reqEditors ...RequestEditorFn) (*http.Response, error)
 
-	// GenerateL4Tunnel 生成四层隧道
+	// GenerateL4Tunnel Generate the layer 4 tunnel
 	//
-	// **幂等**：已经有了再调一次返回同一条，不报错。按钮被点两次是安全的。
+	// **Idempotent**: calling it again returns the existing tunnel rather than an error.
 	//
-	// 生成之后请调订阅接口取地址，本接口不返回它。
+	// Read the address from the subscription endpoint afterwards; it is not returned here.
 	//
 	// Corresponds with POST /api/v1/tunnel/l4 (the `GenerateL4Tunnel` operationId).
 	GenerateL4Tunnel(ctx context.Context, reqEditors ...RequestEditorFn) (*http.Response, error)
 
-	// GetL4TunnelSubscription 获取订阅地址
+	// GetL4TunnelSubscription Get the subscription address
 	//
-	// **这条 URL 是凭据，等同于密码。** 拿着它就能取到这个项目的全部节点和密码，所以它只在这一个接口里出现，一次一条——不进任何列表，也不在隧道详情里。
+	// **This URL is a credential, equivalent to a password.** It yields every node of the project along with their passwords. It is returned here alone, and appears neither in the tunnel itself nor in any list.
 	//
-	// 客户端不应在用户主动请求之前调用它：这个接口的每一次调用都会被记进操作日志。
+	// Do not call this endpoint before the user asks for the address.
 	//
-	// `status` 为 `preparing` 时链接**照样有效**，内容会在拉取那一刻重新派生。它只该影响页面上说什么。
+	// A `status` of `preparing` leaves the link usable; its contents are derived at the moment it is fetched.
 	//
 	// Corresponds with GET /api/v1/tunnel/l4/subscription (the `GetL4TunnelSubscription` operationId).
 	GetL4TunnelSubscription(ctx context.Context, reqEditors ...RequestEditorFn) (*http.Response, error)
 
-	// RotateL4TunnelSubscription 重置订阅地址与节点密码
+	// RotateL4TunnelSubscription Rotate the subscription address and the node passwords
 	//
-	// **这是凭据泄露时的处置手段，会让已分发出去的每一份订阅立即失效。**
+	// **This is the remedy for an exposed credential, and every subscription already distributed stops working at once.**
 	//
-	// 订阅 token 和节点密码同时更换，所有客户端都必须重新拉取一次订阅才能继续使用。调用前请确认这确实是想要的结果。
+	// The subscription token and the node passwords are replaced together, so every client has to fetch the subscription again before it can carry on. Confirm that this is the intended outcome before calling.
 	//
-	// 隧道被平台停用时无法重置（`TUNNEL_DISABLED_FOR_ROTATE`），需要先处理停用的原因。
+	// A tunnel disabled by the platform cannot be rotated (`TUNNEL_DISABLED_FOR_ROTATE`); resolve the cause first.
 	//
-	// 重置后请调订阅接口取新地址，**本接口不返回它**。
+	// Read the new address from the subscription endpoint afterwards; **it is not returned here**.
 	//
 	// Corresponds with POST /api/v1/tunnel/l4/subscription/rotate (the `RotateL4TunnelSubscription` operationId).
 	RotateL4TunnelSubscription(ctx context.Context, reqEditors ...RequestEditorFn) (*http.Response, error)
 
-	// GetL4TunnelUsage 查看本期用量
+	// GetL4TunnelUsage Get the usage of the current period
 	//
-	// 实时查询，不经过缓存。
+	// Read live.
 	//
-	// 判断是否超额只看 `billed_bytes`：线路可以设置倍率（如 1.5× 或 0×），`raw_bytes` 是实际传输量，两者不一定相等。`quota_bytes` 为 0 表示不限量。
+	// Only `billed_bytes` decides whether the quota is exceeded: a route may carry a multiplier such as 1.5× or 0×, so `raw_bytes`, the volume actually transferred, need not equal it. A `quota_bytes` of 0 means unlimited.
 	//
 	// Corresponds with GET /api/v1/tunnel/l4/usage (the `GetL4TunnelUsage` operationId).
 	GetL4TunnelUsage(ctx context.Context, reqEditors ...RequestEditorFn) (*http.Response, error)
 
-	// ListL4TunnelUsageSeries 查看按天用量
+	// ListL4TunnelUsageSeries Get daily usage
 	//
-	// 按自然日切分。没有流量的日子不会出现在结果里（不补零），画图那一侧要自己补齐日期轴——否则一段没人用的日子会被画成一条直接连过去的线，看起来像那几天一直在匀速跑流量。
+	// Cut by calendar day. A day carrying no traffic is absent rather than zero, so a chart has to fill the date axis itself.
 	//
-	// 把这里的天加起来**不等于**本期用量，这是有意的：本期按计费周期切，而且「重置本期用量」只作用于本期，日汇总一行都不删。
+	// These days do not sum to the usage of the current period, which is cut by billing period. Resetting the usage of the current period leaves every daily total in place.
 	//
 	// Corresponds with GET /api/v1/tunnel/l4/usage/series (the `ListL4TunnelUsageSeries` operationId).
 	ListL4TunnelUsageSeries(ctx context.Context, params *ListL4TunnelUsageSeriesParams, reqEditors ...RequestEditorFn) (*http.Response, error)
 }
 
-// GetL4Tunnel 查看本项目的四层隧道
+// GetL4Tunnel Get the layer 4 tunnel of the current project
 //
-// 还没生成过时返回 `TUNNEL_NOT_FOUND`——首屏据此决定画「生成订阅链接」那个按钮还是画结果。
+// `TUNNEL_NOT_FOUND` means no tunnel has been generated yet.
 //
-// 项目未获开放时返回 403 `TUNNEL_NOT_ENTITLED`，那是另一件事：控制台据此把四层隧道的入口整个收起来，而不是画那个按钮。
+// 403 `TUNNEL_NOT_ENTITLED` states something else: the project has not been entitled to layer 4 at all.
 //
-// 订阅地址、用量、配额各有自己的接口，这里不重复返回。
+// The subscription address, the usage and the quota each have their own endpoint and are not repeated here.
 //
 // Corresponds with GET /api/v1/tunnel/l4 (the `GetL4Tunnel` operationId).
 func (c *Client) GetL4Tunnel(ctx context.Context, reqEditors ...RequestEditorFn) (*http.Response, error) {
@@ -268,11 +268,11 @@ func (c *Client) GetL4Tunnel(ctx context.Context, reqEditors ...RequestEditorFn)
 	return c.Client.Do(req)
 }
 
-// GenerateL4Tunnel 生成四层隧道
+// GenerateL4Tunnel Generate the layer 4 tunnel
 //
-// **幂等**：已经有了再调一次返回同一条，不报错。按钮被点两次是安全的。
+// **Idempotent**: calling it again returns the existing tunnel rather than an error.
 //
-// 生成之后请调订阅接口取地址，本接口不返回它。
+// Read the address from the subscription endpoint afterwards; it is not returned here.
 //
 // Corresponds with POST /api/v1/tunnel/l4 (the `GenerateL4Tunnel` operationId).
 func (c *Client) GenerateL4Tunnel(ctx context.Context, reqEditors ...RequestEditorFn) (*http.Response, error) {
@@ -287,13 +287,13 @@ func (c *Client) GenerateL4Tunnel(ctx context.Context, reqEditors ...RequestEdit
 	return c.Client.Do(req)
 }
 
-// GetL4TunnelSubscription 获取订阅地址
+// GetL4TunnelSubscription Get the subscription address
 //
-// **这条 URL 是凭据，等同于密码。** 拿着它就能取到这个项目的全部节点和密码，所以它只在这一个接口里出现，一次一条——不进任何列表，也不在隧道详情里。
+// **This URL is a credential, equivalent to a password.** It yields every node of the project along with their passwords. It is returned here alone, and appears neither in the tunnel itself nor in any list.
 //
-// 客户端不应在用户主动请求之前调用它：这个接口的每一次调用都会被记进操作日志。
+// Do not call this endpoint before the user asks for the address.
 //
-// `status` 为 `preparing` 时链接**照样有效**，内容会在拉取那一刻重新派生。它只该影响页面上说什么。
+// A `status` of `preparing` leaves the link usable; its contents are derived at the moment it is fetched.
 //
 // Corresponds with GET /api/v1/tunnel/l4/subscription (the `GetL4TunnelSubscription` operationId).
 func (c *Client) GetL4TunnelSubscription(ctx context.Context, reqEditors ...RequestEditorFn) (*http.Response, error) {
@@ -308,15 +308,15 @@ func (c *Client) GetL4TunnelSubscription(ctx context.Context, reqEditors ...Requ
 	return c.Client.Do(req)
 }
 
-// RotateL4TunnelSubscription 重置订阅地址与节点密码
+// RotateL4TunnelSubscription Rotate the subscription address and the node passwords
 //
-// **这是凭据泄露时的处置手段，会让已分发出去的每一份订阅立即失效。**
+// **This is the remedy for an exposed credential, and every subscription already distributed stops working at once.**
 //
-// 订阅 token 和节点密码同时更换，所有客户端都必须重新拉取一次订阅才能继续使用。调用前请确认这确实是想要的结果。
+// The subscription token and the node passwords are replaced together, so every client has to fetch the subscription again before it can carry on. Confirm that this is the intended outcome before calling.
 //
-// 隧道被平台停用时无法重置（`TUNNEL_DISABLED_FOR_ROTATE`），需要先处理停用的原因。
+// A tunnel disabled by the platform cannot be rotated (`TUNNEL_DISABLED_FOR_ROTATE`); resolve the cause first.
 //
-// 重置后请调订阅接口取新地址，**本接口不返回它**。
+// Read the new address from the subscription endpoint afterwards; **it is not returned here**.
 //
 // Corresponds with POST /api/v1/tunnel/l4/subscription/rotate (the `RotateL4TunnelSubscription` operationId).
 func (c *Client) RotateL4TunnelSubscription(ctx context.Context, reqEditors ...RequestEditorFn) (*http.Response, error) {
@@ -331,11 +331,11 @@ func (c *Client) RotateL4TunnelSubscription(ctx context.Context, reqEditors ...R
 	return c.Client.Do(req)
 }
 
-// GetL4TunnelUsage 查看本期用量
+// GetL4TunnelUsage Get the usage of the current period
 //
-// 实时查询，不经过缓存。
+// Read live.
 //
-// 判断是否超额只看 `billed_bytes`：线路可以设置倍率（如 1.5× 或 0×），`raw_bytes` 是实际传输量，两者不一定相等。`quota_bytes` 为 0 表示不限量。
+// Only `billed_bytes` decides whether the quota is exceeded: a route may carry a multiplier such as 1.5× or 0×, so `raw_bytes`, the volume actually transferred, need not equal it. A `quota_bytes` of 0 means unlimited.
 //
 // Corresponds with GET /api/v1/tunnel/l4/usage (the `GetL4TunnelUsage` operationId).
 func (c *Client) GetL4TunnelUsage(ctx context.Context, reqEditors ...RequestEditorFn) (*http.Response, error) {
@@ -350,11 +350,11 @@ func (c *Client) GetL4TunnelUsage(ctx context.Context, reqEditors ...RequestEdit
 	return c.Client.Do(req)
 }
 
-// ListL4TunnelUsageSeries 查看按天用量
+// ListL4TunnelUsageSeries Get daily usage
 //
-// 按自然日切分。没有流量的日子不会出现在结果里（不补零），画图那一侧要自己补齐日期轴——否则一段没人用的日子会被画成一条直接连过去的线，看起来像那几天一直在匀速跑流量。
+// Cut by calendar day. A day carrying no traffic is absent rather than zero, so a chart has to fill the date axis itself.
 //
-// 把这里的天加起来**不等于**本期用量，这是有意的：本期按计费周期切，而且「重置本期用量」只作用于本期，日汇总一行都不删。
+// These days do not sum to the usage of the current period, which is cut by billing period. Resetting the usage of the current period leaves every daily total in place.
 //
 // Corresponds with GET /api/v1/tunnel/l4/usage/series (the `ListL4TunnelUsageSeries` operationId).
 func (c *Client) ListL4TunnelUsageSeries(ctx context.Context, params *ListL4TunnelUsageSeriesParams, reqEditors ...RequestEditorFn) (*http.Response, error) {
@@ -602,74 +602,74 @@ func WithBaseURL(baseURL string) ClientOption {
 // ClientWithResponsesInterface is the interface specification for the client with responses above.
 type ClientWithResponsesInterface interface {
 
-	// GetL4TunnelWithResponse 查看本项目的四层隧道
+	// GetL4TunnelWithResponse Get the layer 4 tunnel of the current project
 	//
-	// 还没生成过时返回 `TUNNEL_NOT_FOUND`——首屏据此决定画「生成订阅链接」那个按钮还是画结果。
+	// `TUNNEL_NOT_FOUND` means no tunnel has been generated yet.
 	//
-	// 项目未获开放时返回 403 `TUNNEL_NOT_ENTITLED`，那是另一件事：控制台据此把四层隧道的入口整个收起来，而不是画那个按钮。
+	// 403 `TUNNEL_NOT_ENTITLED` states something else: the project has not been entitled to layer 4 at all.
 	//
-	// 订阅地址、用量、配额各有自己的接口，这里不重复返回。
+	// The subscription address, the usage and the quota each have their own endpoint and are not repeated here.
 	//
 	// Returns a wrapper object for the known response body format(s).
 	//
 	// Corresponds with GET /api/v1/tunnel/l4 (the `GetL4Tunnel` operationId).
 	GetL4TunnelWithResponse(ctx context.Context, reqEditors ...RequestEditorFn) (*GetL4TunnelResponse, error)
 
-	// GenerateL4TunnelWithResponse 生成四层隧道
+	// GenerateL4TunnelWithResponse Generate the layer 4 tunnel
 	//
-	// **幂等**：已经有了再调一次返回同一条，不报错。按钮被点两次是安全的。
+	// **Idempotent**: calling it again returns the existing tunnel rather than an error.
 	//
-	// 生成之后请调订阅接口取地址，本接口不返回它。
+	// Read the address from the subscription endpoint afterwards; it is not returned here.
 	//
 	// Returns a wrapper object for the known response body format(s).
 	//
 	// Corresponds with POST /api/v1/tunnel/l4 (the `GenerateL4Tunnel` operationId).
 	GenerateL4TunnelWithResponse(ctx context.Context, reqEditors ...RequestEditorFn) (*GenerateL4TunnelResponse, error)
 
-	// GetL4TunnelSubscriptionWithResponse 获取订阅地址
+	// GetL4TunnelSubscriptionWithResponse Get the subscription address
 	//
-	// **这条 URL 是凭据，等同于密码。** 拿着它就能取到这个项目的全部节点和密码，所以它只在这一个接口里出现，一次一条——不进任何列表，也不在隧道详情里。
+	// **This URL is a credential, equivalent to a password.** It yields every node of the project along with their passwords. It is returned here alone, and appears neither in the tunnel itself nor in any list.
 	//
-	// 客户端不应在用户主动请求之前调用它：这个接口的每一次调用都会被记进操作日志。
+	// Do not call this endpoint before the user asks for the address.
 	//
-	// `status` 为 `preparing` 时链接**照样有效**，内容会在拉取那一刻重新派生。它只该影响页面上说什么。
+	// A `status` of `preparing` leaves the link usable; its contents are derived at the moment it is fetched.
 	//
 	// Returns a wrapper object for the known response body format(s).
 	//
 	// Corresponds with GET /api/v1/tunnel/l4/subscription (the `GetL4TunnelSubscription` operationId).
 	GetL4TunnelSubscriptionWithResponse(ctx context.Context, reqEditors ...RequestEditorFn) (*GetL4TunnelSubscriptionResponse, error)
 
-	// RotateL4TunnelSubscriptionWithResponse 重置订阅地址与节点密码
+	// RotateL4TunnelSubscriptionWithResponse Rotate the subscription address and the node passwords
 	//
-	// **这是凭据泄露时的处置手段，会让已分发出去的每一份订阅立即失效。**
+	// **This is the remedy for an exposed credential, and every subscription already distributed stops working at once.**
 	//
-	// 订阅 token 和节点密码同时更换，所有客户端都必须重新拉取一次订阅才能继续使用。调用前请确认这确实是想要的结果。
+	// The subscription token and the node passwords are replaced together, so every client has to fetch the subscription again before it can carry on. Confirm that this is the intended outcome before calling.
 	//
-	// 隧道被平台停用时无法重置（`TUNNEL_DISABLED_FOR_ROTATE`），需要先处理停用的原因。
+	// A tunnel disabled by the platform cannot be rotated (`TUNNEL_DISABLED_FOR_ROTATE`); resolve the cause first.
 	//
-	// 重置后请调订阅接口取新地址，**本接口不返回它**。
+	// Read the new address from the subscription endpoint afterwards; **it is not returned here**.
 	//
 	// Returns a wrapper object for the known response body format(s).
 	//
 	// Corresponds with POST /api/v1/tunnel/l4/subscription/rotate (the `RotateL4TunnelSubscription` operationId).
 	RotateL4TunnelSubscriptionWithResponse(ctx context.Context, reqEditors ...RequestEditorFn) (*RotateL4TunnelSubscriptionResponse, error)
 
-	// GetL4TunnelUsageWithResponse 查看本期用量
+	// GetL4TunnelUsageWithResponse Get the usage of the current period
 	//
-	// 实时查询，不经过缓存。
+	// Read live.
 	//
-	// 判断是否超额只看 `billed_bytes`：线路可以设置倍率（如 1.5× 或 0×），`raw_bytes` 是实际传输量，两者不一定相等。`quota_bytes` 为 0 表示不限量。
+	// Only `billed_bytes` decides whether the quota is exceeded: a route may carry a multiplier such as 1.5× or 0×, so `raw_bytes`, the volume actually transferred, need not equal it. A `quota_bytes` of 0 means unlimited.
 	//
 	// Returns a wrapper object for the known response body format(s).
 	//
 	// Corresponds with GET /api/v1/tunnel/l4/usage (the `GetL4TunnelUsage` operationId).
 	GetL4TunnelUsageWithResponse(ctx context.Context, reqEditors ...RequestEditorFn) (*GetL4TunnelUsageResponse, error)
 
-	// ListL4TunnelUsageSeriesWithResponse 查看按天用量
+	// ListL4TunnelUsageSeriesWithResponse Get daily usage
 	//
-	// 按自然日切分。没有流量的日子不会出现在结果里（不补零），画图那一侧要自己补齐日期轴——否则一段没人用的日子会被画成一条直接连过去的线，看起来像那几天一直在匀速跑流量。
+	// Cut by calendar day. A day carrying no traffic is absent rather than zero, so a chart has to fill the date axis itself.
 	//
-	// 把这里的天加起来**不等于**本期用量，这是有意的：本期按计费周期切，而且「重置本期用量」只作用于本期，日汇总一行都不删。
+	// These days do not sum to the usage of the current period, which is cut by billing period. Resetting the usage of the current period leaves every daily total in place.
 	//
 	// Returns a wrapper object for the known response body format(s).
 	//
@@ -965,13 +965,13 @@ func (r ListL4TunnelUsageSeriesResponse) ContentType() string {
 	return ""
 }
 
-// GetL4TunnelWithResponse 查看本项目的四层隧道
+// GetL4TunnelWithResponse Get the layer 4 tunnel of the current project
 //
-// 还没生成过时返回 `TUNNEL_NOT_FOUND`——首屏据此决定画「生成订阅链接」那个按钮还是画结果。
+// `TUNNEL_NOT_FOUND` means no tunnel has been generated yet.
 //
-// 项目未获开放时返回 403 `TUNNEL_NOT_ENTITLED`，那是另一件事：控制台据此把四层隧道的入口整个收起来，而不是画那个按钮。
+// 403 `TUNNEL_NOT_ENTITLED` states something else: the project has not been entitled to layer 4 at all.
 //
-// 订阅地址、用量、配额各有自己的接口，这里不重复返回。
+// The subscription address, the usage and the quota each have their own endpoint and are not repeated here.
 //
 // Returns a wrapper object for the known response body format(s).
 //
@@ -984,11 +984,11 @@ func (c *ClientWithResponses) GetL4TunnelWithResponse(ctx context.Context, reqEd
 	return ParseGetL4TunnelResponse(rsp)
 }
 
-// GenerateL4TunnelWithResponse 生成四层隧道
+// GenerateL4TunnelWithResponse Generate the layer 4 tunnel
 //
-// **幂等**：已经有了再调一次返回同一条，不报错。按钮被点两次是安全的。
+// **Idempotent**: calling it again returns the existing tunnel rather than an error.
 //
-// 生成之后请调订阅接口取地址，本接口不返回它。
+// Read the address from the subscription endpoint afterwards; it is not returned here.
 //
 // Returns a wrapper object for the known response body format(s).
 //
@@ -1001,13 +1001,13 @@ func (c *ClientWithResponses) GenerateL4TunnelWithResponse(ctx context.Context, 
 	return ParseGenerateL4TunnelResponse(rsp)
 }
 
-// GetL4TunnelSubscriptionWithResponse 获取订阅地址
+// GetL4TunnelSubscriptionWithResponse Get the subscription address
 //
-// **这条 URL 是凭据，等同于密码。** 拿着它就能取到这个项目的全部节点和密码，所以它只在这一个接口里出现，一次一条——不进任何列表，也不在隧道详情里。
+// **This URL is a credential, equivalent to a password.** It yields every node of the project along with their passwords. It is returned here alone, and appears neither in the tunnel itself nor in any list.
 //
-// 客户端不应在用户主动请求之前调用它：这个接口的每一次调用都会被记进操作日志。
+// Do not call this endpoint before the user asks for the address.
 //
-// `status` 为 `preparing` 时链接**照样有效**，内容会在拉取那一刻重新派生。它只该影响页面上说什么。
+// A `status` of `preparing` leaves the link usable; its contents are derived at the moment it is fetched.
 //
 // Returns a wrapper object for the known response body format(s).
 //
@@ -1020,15 +1020,15 @@ func (c *ClientWithResponses) GetL4TunnelSubscriptionWithResponse(ctx context.Co
 	return ParseGetL4TunnelSubscriptionResponse(rsp)
 }
 
-// RotateL4TunnelSubscriptionWithResponse 重置订阅地址与节点密码
+// RotateL4TunnelSubscriptionWithResponse Rotate the subscription address and the node passwords
 //
-// **这是凭据泄露时的处置手段，会让已分发出去的每一份订阅立即失效。**
+// **This is the remedy for an exposed credential, and every subscription already distributed stops working at once.**
 //
-// 订阅 token 和节点密码同时更换，所有客户端都必须重新拉取一次订阅才能继续使用。调用前请确认这确实是想要的结果。
+// The subscription token and the node passwords are replaced together, so every client has to fetch the subscription again before it can carry on. Confirm that this is the intended outcome before calling.
 //
-// 隧道被平台停用时无法重置（`TUNNEL_DISABLED_FOR_ROTATE`），需要先处理停用的原因。
+// A tunnel disabled by the platform cannot be rotated (`TUNNEL_DISABLED_FOR_ROTATE`); resolve the cause first.
 //
-// 重置后请调订阅接口取新地址，**本接口不返回它**。
+// Read the new address from the subscription endpoint afterwards; **it is not returned here**.
 //
 // Returns a wrapper object for the known response body format(s).
 //
@@ -1041,11 +1041,11 @@ func (c *ClientWithResponses) RotateL4TunnelSubscriptionWithResponse(ctx context
 	return ParseRotateL4TunnelSubscriptionResponse(rsp)
 }
 
-// GetL4TunnelUsageWithResponse 查看本期用量
+// GetL4TunnelUsageWithResponse Get the usage of the current period
 //
-// 实时查询，不经过缓存。
+// Read live.
 //
-// 判断是否超额只看 `billed_bytes`：线路可以设置倍率（如 1.5× 或 0×），`raw_bytes` 是实际传输量，两者不一定相等。`quota_bytes` 为 0 表示不限量。
+// Only `billed_bytes` decides whether the quota is exceeded: a route may carry a multiplier such as 1.5× or 0×, so `raw_bytes`, the volume actually transferred, need not equal it. A `quota_bytes` of 0 means unlimited.
 //
 // Returns a wrapper object for the known response body format(s).
 //
@@ -1058,11 +1058,11 @@ func (c *ClientWithResponses) GetL4TunnelUsageWithResponse(ctx context.Context, 
 	return ParseGetL4TunnelUsageResponse(rsp)
 }
 
-// ListL4TunnelUsageSeriesWithResponse 查看按天用量
+// ListL4TunnelUsageSeriesWithResponse Get daily usage
 //
-// 按自然日切分。没有流量的日子不会出现在结果里（不补零），画图那一侧要自己补齐日期轴——否则一段没人用的日子会被画成一条直接连过去的线，看起来像那几天一直在匀速跑流量。
+// Cut by calendar day. A day carrying no traffic is absent rather than zero, so a chart has to fill the date axis itself.
 //
-// 把这里的天加起来**不等于**本期用量，这是有意的：本期按计费周期切，而且「重置本期用量」只作用于本期，日汇总一行都不删。
+// These days do not sum to the usage of the current period, which is cut by billing period. Resetting the usage of the current period leaves every daily total in place.
 //
 // Returns a wrapper object for the known response body format(s).
 //
