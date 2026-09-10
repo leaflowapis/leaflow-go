@@ -1746,6 +1746,10 @@ type Order struct {
 	GrossAmount *Money             `json:"gross_amount,omitempty"`
 	Id          openapi_types.UUID `json:"id"`
 
+	// Items What was bought. Present on a single order and on every order in a list, so a list
+	// can be rendered without a further request per row.
+	Items []OrderItem `json:"items,omitempty"`
+
 	// ProjectId Which project it was bought for. Absent for a purchase made at account level, such
 	// as a membership.
 	ProjectId *openapi_types.UUID `json:"project_id,omitempty"`
@@ -1789,14 +1793,20 @@ type OrderItem struct {
 	Id          openapi_types.UUID  `json:"id"`
 	OrderId     *openapi_types.UUID `json:"order_id,omitempty"`
 
+	// PlanId Which plan was bought.
+	PlanId *openapi_types.UUID `json:"plan_id,omitempty"`
+
 	// PlanName What it was called when bought. It does not follow later catalogue renames and is
 	// not translated.
-	PlanName           *string            `json:"plan_name,omitempty"`
-	PriceId            openapi_types.UUID `json:"price_id"`
-	Quantity           string             `json:"quantity"`
-	ResourceId         *string            `json:"resource_id,omitempty"`
-	ServicePeriodEnd   *time.Time         `json:"service_period_end,omitempty"`
-	ServicePeriodStart *time.Time         `json:"service_period_start,omitempty"`
+	PlanName *string            `json:"plan_name,omitempty"`
+	PriceId  openapi_types.UUID `json:"price_id"`
+
+	// ProductId Which service this line belongs to.
+	ProductId          *openapi_types.UUID `json:"product_id,omitempty"`
+	Quantity           string              `json:"quantity"`
+	ResourceId         *string             `json:"resource_id,omitempty"`
+	ServicePeriodEnd   *time.Time          `json:"service_period_end,omitempty"`
+	ServicePeriodStart *time.Time          `json:"service_period_start,omitempty"`
 
 	// UnitAmount A decimal string, in the currency stated alongside it.
 	UnitAmount *Money `json:"unit_amount,omitempty"`

@@ -6367,6 +6367,9 @@ type Order struct {
 	// and has to be placed again. Absent once the order is settled.
 	ReservationExpiresAt OptNilDateTime `json:"reservation_expires_at"`
 	CreatedAt            time.Time      `json:"created_at"`
+	// What was bought. Present on a single order and on every order in a list, so a list can be rendered
+	// without a further request per row.
+	Items []OrderItem `json:"items"`
 }
 
 // GetID returns the value of ID.
@@ -6444,6 +6447,11 @@ func (s *Order) GetCreatedAt() time.Time {
 	return s.CreatedAt
 }
 
+// GetItems returns the value of Items.
+func (s *Order) GetItems() []OrderItem {
+	return s.Items
+}
+
 // SetID sets the value of ID.
 func (s *Order) SetID(val uuid.UUID) {
 	s.ID = val
@@ -6519,6 +6527,11 @@ func (s *Order) SetCreatedAt(val time.Time) {
 	s.CreatedAt = val
 }
 
+// SetItems sets the value of Items.
+func (s *Order) SetItems(val []OrderItem) {
+	s.Items = val
+}
+
 // When a plan change takes effect. `none` on anything that is not a change.
 //
 // `period_end` orders stay pending until the current paid period runs out. Renewing in the meantime
@@ -6576,6 +6589,10 @@ type OrderItem struct {
 	ID      uuid.UUID `json:"id"`
 	OrderID OptUUID   `json:"order_id"`
 	PriceID uuid.UUID `json:"price_id"`
+	// Which service this line belongs to.
+	ProductID OptUUID `json:"product_id"`
+	// Which plan was bought.
+	PlanID OptUUID `json:"plan_id"`
 	// What it was called when bought. It does not follow later catalogue renames and is not translated.
 	PlanName           OptString      `json:"plan_name"`
 	ResourceID         OptString      `json:"resource_id"`
@@ -6602,6 +6619,16 @@ func (s *OrderItem) GetOrderID() OptUUID {
 // GetPriceID returns the value of PriceID.
 func (s *OrderItem) GetPriceID() uuid.UUID {
 	return s.PriceID
+}
+
+// GetProductID returns the value of ProductID.
+func (s *OrderItem) GetProductID() OptUUID {
+	return s.ProductID
+}
+
+// GetPlanID returns the value of PlanID.
+func (s *OrderItem) GetPlanID() OptUUID {
+	return s.PlanID
 }
 
 // GetPlanName returns the value of PlanName.
@@ -6667,6 +6694,16 @@ func (s *OrderItem) SetOrderID(val OptUUID) {
 // SetPriceID sets the value of PriceID.
 func (s *OrderItem) SetPriceID(val uuid.UUID) {
 	s.PriceID = val
+}
+
+// SetProductID sets the value of ProductID.
+func (s *OrderItem) SetProductID(val OptUUID) {
+	s.ProductID = val
+}
+
+// SetPlanID sets the value of PlanID.
+func (s *OrderItem) SetPlanID(val OptUUID) {
+	s.PlanID = val
 }
 
 // SetPlanName sets the value of PlanName.
