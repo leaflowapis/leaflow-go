@@ -71,6 +71,7 @@ var operationRolesBearerAuth = map[string][]string{
 	EnablePrivateNetworkIpv6Operation:  []string{},
 	GetBackupOperation:                 []string{},
 	GetDiskOperation:                   []string{},
+	GetDiskTypeOperation:               []string{},
 	GetFloatingIPOperation:             []string{},
 	GetInstanceOperation:               []string{},
 	GetInstanceConsoleOutputOperation:  []string{},

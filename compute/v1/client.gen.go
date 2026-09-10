@@ -1963,6 +1963,13 @@ type ClientInterface interface {
 	// Corresponds with GET /api/v1/disk-types (the `ListDiskTypes` operationId).
 	ListDiskTypes(ctx context.Context, params *ListDiskTypesParams, reqEditors ...RequestEditorFn) (*http.Response, error)
 
+	// GetDiskType Get a disk type
+	//
+	// Retrieve capacity and performance constraints for an existing disk, including system disk types and types withdrawn from sale.
+	//
+	// Corresponds with GET /api/v1/disk-types/{diskTypeId} (the `GetDiskType` operationId).
+	GetDiskType(ctx context.Context, diskTypeId openapi_types.UUID, reqEditors ...RequestEditorFn) (*http.Response, error)
+
 	// ListDisks List disks
 	//
 	// When both `region_code` and `availability_zone` are supplied, only disks attachable to an instance at that location are returned.
@@ -3182,6 +3189,23 @@ func (c *Client) RestoreBackup(ctx context.Context, backupId openapi_types.UUID,
 // Corresponds with GET /api/v1/disk-types (the `ListDiskTypes` operationId).
 func (c *Client) ListDiskTypes(ctx context.Context, params *ListDiskTypesParams, reqEditors ...RequestEditorFn) (*http.Response, error) {
 	req, err := NewListDiskTypesRequest(c.Server, params)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+// GetDiskType Get a disk type
+//
+// Retrieve capacity and performance constraints for an existing disk, including system disk types and types withdrawn from sale.
+//
+// Corresponds with GET /api/v1/disk-types/{diskTypeId} (the `GetDiskType` operationId).
+func (c *Client) GetDiskType(ctx context.Context, diskTypeId openapi_types.UUID, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewGetDiskTypeRequest(c.Server, diskTypeId)
 	if err != nil {
 		return nil, err
 	}
@@ -5648,6 +5672,40 @@ func NewListDiskTypesRequest(server string, params *ListDiskTypesParams) (*http.
 			rawQueryFragments = append(rawQueryFragments, encoded)
 		}
 		queryURL.RawQuery = strings.Join(rawQueryFragments, "&")
+	}
+
+	req, err := http.NewRequest(http.MethodGet, queryURL.String(), nil)
+	if err != nil {
+		return nil, err
+	}
+
+	return req, nil
+}
+
+// NewGetDiskTypeRequest constructs an http.Request for the GetDiskType method
+func NewGetDiskTypeRequest(server string, diskTypeId openapi_types.UUID) (*http.Request, error) {
+	var err error
+
+	var pathParam0 string
+
+	pathParam0, err = runtime.StyleParamWithOptions("simple", false, "diskTypeId", diskTypeId, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: "uuid"})
+	if err != nil {
+		return nil, err
+	}
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/api/v1/disk-types/%s", pathParam0)
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
 	}
 
 	req, err := http.NewRequest(http.MethodGet, queryURL.String(), nil)
@@ -9194,6 +9252,15 @@ type ClientWithResponsesInterface interface {
 	// Corresponds with GET /api/v1/disk-types (the `ListDiskTypes` operationId).
 	ListDiskTypesWithResponse(ctx context.Context, params *ListDiskTypesParams, reqEditors ...RequestEditorFn) (*ListDiskTypesResponse, error)
 
+	// GetDiskTypeWithResponse Get a disk type
+	//
+	// Retrieve capacity and performance constraints for an existing disk, including system disk types and types withdrawn from sale.
+	//
+	// Returns a wrapper object for the known response body format(s).
+	//
+	// Corresponds with GET /api/v1/disk-types/{diskTypeId} (the `GetDiskType` operationId).
+	GetDiskTypeWithResponse(ctx context.Context, diskTypeId openapi_types.UUID, reqEditors ...RequestEditorFn) (*GetDiskTypeResponse, error)
+
 	// ListDisksWithResponse List disks
 	//
 	// When both `region_code` and `availability_zone` are supplied, only disks attachable to an instance at that location are returned.
@@ -10658,6 +10725,54 @@ func (r ListDiskTypesResponse) StatusCode() int {
 
 // ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
 func (r ListDiskTypesResponse) ContentType() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Header.Get("Content-Type")
+	}
+	return ""
+}
+
+type GetDiskTypeResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	// JSON200 the response for an HTTP 200 `application/json` response
+	JSON200 *DiskTypeResource
+	// JSONDefault the response for an HTTP default `application/json` response
+	JSONDefault *Error
+}
+
+// GetJSON200 returns the response for an HTTP 200 `application/json` response
+func (r GetDiskTypeResponse) GetJSON200() *DiskTypeResource {
+	return r.JSON200
+}
+
+// GetJSONDefault returns the response for an HTTP default `application/json` response
+func (r GetDiskTypeResponse) GetJSONDefault() *Error {
+	return r.JSONDefault
+}
+
+// GetBody returns the raw response body bytes
+func (r GetDiskTypeResponse) GetBody() []byte {
+	return r.Body
+}
+
+// Status returns HTTPResponse.Status
+func (r GetDiskTypeResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r GetDiskTypeResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+// ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
+func (r GetDiskTypeResponse) ContentType() string {
 	if r.HTTPResponse != nil {
 		return r.HTTPResponse.Header.Get("Content-Type")
 	}
@@ -14638,6 +14753,21 @@ func (c *ClientWithResponses) ListDiskTypesWithResponse(ctx context.Context, par
 	return ParseListDiskTypesResponse(rsp)
 }
 
+// GetDiskTypeWithResponse Get a disk type
+//
+// Retrieve capacity and performance constraints for an existing disk, including system disk types and types withdrawn from sale.
+//
+// Returns a wrapper object for the known response body format(s).
+//
+// Corresponds with GET /api/v1/disk-types/{diskTypeId} (the `GetDiskType` operationId).
+func (c *ClientWithResponses) GetDiskTypeWithResponse(ctx context.Context, diskTypeId openapi_types.UUID, reqEditors ...RequestEditorFn) (*GetDiskTypeResponse, error) {
+	rsp, err := c.GetDiskType(ctx, diskTypeId, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseGetDiskTypeResponse(rsp)
+}
+
 // ListDisksWithResponse List disks
 //
 // When both `region_code` and `availability_zone` are supplied, only disks attachable to an instance at that location are returned.
@@ -16660,6 +16790,39 @@ func ParseListDiskTypesResponse(rsp *http.Response) (*ListDiskTypesResponse, err
 	switch {
 	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
 		var dest DiskTypeListResponseBody
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && true:
+		var dest Error
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSONDefault = &dest
+
+	}
+
+	return response, nil
+}
+
+// ParseGetDiskTypeResponse parses an HTTP response from a GetDiskTypeWithResponse call
+func ParseGetDiskTypeResponse(rsp *http.Response) (*GetDiskTypeResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &GetDiskTypeResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest DiskTypeResource
 		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
 			return nil, err
 		}

@@ -389,6 +389,16 @@ func (UnimplementedHandler) GetDisk(ctx context.Context, params GetDiskParams) (
 	return r, ht.ErrNotImplemented
 }
 
+// GetDiskType implements get-disk-type operation.
+//
+// Retrieve capacity and performance constraints for an existing disk, including system disk types and
+// types withdrawn from sale.
+//
+// GET /api/v1/disk-types/{diskTypeId}
+func (UnimplementedHandler) GetDiskType(ctx context.Context, params GetDiskTypeParams) (r *DiskTypeResource, _ error) {
+	return r, ht.ErrNotImplemented
+}
+
 // GetFloatingIP implements get-floating-ip operation.
 //
 // Retrieve a floating IP.

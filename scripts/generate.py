@@ -92,7 +92,12 @@ SHARED_OUTPUT_OPTIONS = {**{"skip-prune": True}}
 # 生成器对外部 $ref **拒绝内联**，要求你说清它对应哪个 Go 包（--import-mapping）。那比内联好：
 # 内联的话十三份契约会得到十三个长得一样的 Go 类型，调用方拿 compute 的 Error 去喂一个收 iam
 # Error 的函数会编译不过——而它们本来就是同一个东西。
-SHARED_SPEC = "type/v1/error.yaml"
+# 一组，不是一份。共用类型不止错误那一个形状 —— PlacedOrder 是业务服务建完一笔账回给调用方的
+# 句柄，它同样不属于任何单个服务。
+#
+# 写成一份的时候，第二个共用形状只有两条路：塞进 error.yaml（那个文件名就开始说谎），
+# 或者在每份契约里各抄一遍（那正是这个目录存在要消灭的东西）。
+SHARED_SPECS = ("type/v1/error.yaml", "type/v1/order.yaml")
 SHARED_PACKAGE = "github.com/leaflowapis/leaflow-go/type/v1"
 
 # prefer-skip-optional-pointer-on-container-types
@@ -178,10 +183,14 @@ def main():
         # 共用类型先生成：各服务的包会 import 它。
         shared_out = ROOT / "type" / "v1"
         shutil.rmtree(shared_out, ignore_errors=True)
-        codegen(CONTRACTS / SHARED_SPEC, "typev1", shared_out / "types.gen.go",
-                SHARED_GENERATE, scratch, options=SHARED_OUTPUT_OPTIONS)
+        # 每份共用契约出一个文件，全部落在同一个包里。共用一个输出文件名的话，
+        # 后生成的那份会把前一份覆盖掉，而两份都「生成成功」了。
+        for spec in SHARED_SPECS:
+            name = pathlib.Path(spec).stem
+            codegen(CONTRACTS / spec, "typev1", shared_out / f"{name}.gen.go",
+                    SHARED_GENERATE, scratch, options=SHARED_OUTPUT_OPTIONS)
+            print(f"{spec:24} → type/v1")
         write_module("type")
-        print(f"{SHARED_SPEC:24} → type/v1")
 
         for contract in specs:
             version = contract.parent.name
@@ -195,7 +204,7 @@ def main():
             shutil.rmtree(out, ignore_errors=True)
 
             # 相对路径按契约文件自己的位置算：<服务>/<版本>/openapi.yaml 到共用类型是 ../../
-            mapping = {f"../../{SHARED_SPEC}": SHARED_PACKAGE}
+            mapping = {f"../../{spec}": SHARED_PACKAGE for spec in SHARED_SPECS}
             # 客户端两套都由 oapi-codegen 出：外部用户装的是它，而 ogen 的客户端形状不同——
             # 换掉是对下游的破坏性改动，和服务端那件事无关，不该被它捎带着做。
             codegen(contract, package, out / "client.gen.go", CLIENT_GENERATE, scratch, mapping)

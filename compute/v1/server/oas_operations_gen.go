@@ -40,6 +40,7 @@ const (
 	EnablePrivateNetworkIpv6Operation  OperationName = "EnablePrivateNetworkIpv6"
 	GetBackupOperation                 OperationName = "GetBackup"
 	GetDiskOperation                   OperationName = "GetDisk"
+	GetDiskTypeOperation               OperationName = "GetDiskType"
 	GetFloatingIPOperation             OperationName = "GetFloatingIP"
 	GetInstanceOperation               OperationName = "GetInstance"
 	GetInstanceConsoleOutputOperation  OperationName = "GetInstanceConsoleOutput"

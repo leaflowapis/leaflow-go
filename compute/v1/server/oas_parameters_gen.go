@@ -2023,6 +2023,71 @@ func decodeGetDiskParams(args [1]string, argsEscaped bool, r *http.Request) (par
 	return params, nil
 }
 
+// GetDiskTypeParams is parameters of get-disk-type operation.
+type GetDiskTypeParams struct {
+	DiskTypeId uuid.UUID
+}
+
+func unpackGetDiskTypeParams(packed middleware.Parameters) (params GetDiskTypeParams) {
+	{
+		key := middleware.ParameterKey{
+			Name: "diskTypeId",
+			In:   "path",
+		}
+		params.DiskTypeId = packed[key].(uuid.UUID)
+	}
+	return params
+}
+
+func decodeGetDiskTypeParams(args [1]string, argsEscaped bool, r *http.Request) (params GetDiskTypeParams, _ error) {
+	// Decode path: diskTypeId.
+	if err := func() error {
+		param := args[0]
+		if argsEscaped {
+			unescaped, err := url.PathUnescape(args[0])
+			if err != nil {
+				return errors.Wrap(err, "unescape path")
+			}
+			param = unescaped
+		}
+		if len(param) > 0 {
+			d := uri.NewPathDecoder(uri.PathDecoderConfig{
+				Param:   "diskTypeId",
+				Value:   param,
+				Style:   uri.PathStyleSimple,
+				Explode: false,
+			})
+
+			if err := func() error {
+				val, err := d.DecodeValue()
+				if err != nil {
+					return err
+				}
+
+				c, err := conv.ToUUID(val)
+				if err != nil {
+					return err
+				}
+
+				params.DiskTypeId = c
+				return nil
+			}(); err != nil {
+				return err
+			}
+		} else {
+			return validate.ErrFieldRequired
+		}
+		return nil
+	}(); err != nil {
+		return params, &ogenerrors.DecodeParamError{
+			Name: "diskTypeId",
+			In:   "path",
+			Err:  err,
+		}
+	}
+	return params, nil
+}
+
 // GetFloatingIPParams is parameters of get-floating-ip operation.
 type GetFloatingIPParams struct {
 	FloatingIpId uuid.UUID

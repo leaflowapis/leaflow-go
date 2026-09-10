@@ -282,6 +282,13 @@ type Handler interface {
 	//
 	// GET /api/v1/disks/{diskId}
 	GetDisk(ctx context.Context, params GetDiskParams) (*DiskResource, error)
+	// GetDiskType implements get-disk-type operation.
+	//
+	// Retrieve capacity and performance constraints for an existing disk, including system disk types and
+	// types withdrawn from sale.
+	//
+	// GET /api/v1/disk-types/{diskTypeId}
+	GetDiskType(ctx context.Context, params GetDiskTypeParams) (*DiskTypeResource, error)
 	// GetFloatingIP implements get-floating-ip operation.
 	//
 	// Retrieve a floating IP.
