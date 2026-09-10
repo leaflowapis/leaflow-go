@@ -115,7 +115,7 @@ func (UnimplementedHandler) FindProjectPayer(ctx context.Context, params FindPro
 
 // GetAccountBalance implements get-account-balance operation.
 //
-// What the account holds and what it can still spend.
+// Get account balance.
 //
 // GET /account/v1/billing-accounts/{accountId}/balance
 func (UnimplementedHandler) GetAccountBalance(ctx context.Context, params GetAccountBalanceParams) (r *AccountBalance, _ error) {
@@ -124,12 +124,16 @@ func (UnimplementedHandler) GetAccountBalance(ctx context.Context, params GetAcc
 
 // GetBillingAccount implements get-billing-account operation.
 //
+// Get billing account.
+//
 // GET /account/v1/billing-accounts/{accountId}
 func (UnimplementedHandler) GetBillingAccount(ctx context.Context, params GetBillingAccountParams) (r *BillingAccount, _ error) {
 	return r, ht.ErrNotImplemented
 }
 
 // GetInvoice implements get-invoice operation.
+//
+// Get invoice.
 //
 // GET /account/v1/invoices/{invoiceId}
 func (UnimplementedHandler) GetInvoice(ctx context.Context, params GetInvoiceParams) (r *Invoice, _ error) {
@@ -151,6 +155,8 @@ func (UnimplementedHandler) GetInvoiceRefundQuote(ctx context.Context, params Ge
 }
 
 // GetOrder implements get-order operation.
+//
+// Get order.
 //
 // GET /account/v1/orders/{orderId}
 func (UnimplementedHandler) GetOrder(ctx context.Context, params GetOrderParams) (r *Order, _ error) {
@@ -189,6 +195,8 @@ func (UnimplementedHandler) GetProjectBillingAccount(ctx context.Context, params
 
 // GetProjectOrder implements get-project-order operation.
 //
+// Get project order.
+//
 // GET /api/v1/projects/{projectId}/orders/{orderId}
 func (UnimplementedHandler) GetProjectOrder(ctx context.Context, params GetProjectOrderParams) (r *Order, _ error) {
 	return r, ht.ErrNotImplemented
@@ -196,7 +204,7 @@ func (UnimplementedHandler) GetProjectOrder(ctx context.Context, params GetProje
 
 // GetTopUp implements get-top-up operation.
 //
-// Whether a payment has completed.
+// Get top up.
 //
 // GET /account/v1/top-ups/{topUpId}
 func (UnimplementedHandler) GetTopUp(ctx context.Context, params GetTopUpParams) (r *TopUp, _ error) {
@@ -246,7 +254,7 @@ func (UnimplementedHandler) ListAllowances(ctx context.Context, params ListAllow
 
 // ListBillingAccounts implements list-billing-accounts operation.
 //
-// The billing accounts you own.
+// List billing accounts.
 //
 // GET /account/v1/billing-accounts
 func (UnimplementedHandler) ListBillingAccounts(ctx context.Context, params ListBillingAccountsParams) (r *BillingAccountList, _ error) {
@@ -255,7 +263,7 @@ func (UnimplementedHandler) ListBillingAccounts(ctx context.Context, params List
 
 // ListCatalogPlans implements list-catalog-plans operation.
 //
-// What can be bought under one service.
+// List catalog plans.
 //
 // GET /catalog/v1/products/{productId}/plans
 func (UnimplementedHandler) ListCatalogPlans(ctx context.Context, params ListCatalogPlansParams) (r ListCatalogPlansRes, _ error) {
@@ -274,7 +282,7 @@ func (UnimplementedHandler) ListCatalogPrices(ctx context.Context, params ListCa
 
 // ListCatalogProducts implements list-catalog-products operation.
 //
-// The services the platform sells.
+// List catalog products.
 //
 // GET /catalog/v1/products
 func (UnimplementedHandler) ListCatalogProducts(ctx context.Context, params ListCatalogProductsParams) (r ListCatalogProductsRes, _ error) {
@@ -316,7 +324,7 @@ func (UnimplementedHandler) ListEntitlements(ctx context.Context, params ListEnt
 
 // ListInvoiceItems implements list-invoice-items operation.
 //
-// What an invoice is made up of.
+// List invoice items.
 //
 // GET /account/v1/invoices/{invoiceId}/items
 func (UnimplementedHandler) ListInvoiceItems(ctx context.Context, params ListInvoiceItemsParams) (r *InvoiceItemList, _ error) {
@@ -324,6 +332,8 @@ func (UnimplementedHandler) ListInvoiceItems(ctx context.Context, params ListInv
 }
 
 // ListInvoices implements list-invoices operation.
+//
+// List invoices.
 //
 // GET /account/v1/invoices
 func (UnimplementedHandler) ListInvoices(ctx context.Context, params ListInvoicesParams) (r *InvoiceList, _ error) {
@@ -351,7 +361,7 @@ func (UnimplementedHandler) ListOrders(ctx context.Context, params ListOrdersPar
 
 // ListPaidProjects implements list-paid-projects operation.
 //
-// The projects your accounts pay for.
+// List paid projects.
 //
 // GET /account/v1/projects
 func (UnimplementedHandler) ListPaidProjects(ctx context.Context, params ListPaidProjectsParams) (r *ProjectBindingList, _ error) {
@@ -359,6 +369,8 @@ func (UnimplementedHandler) ListPaidProjects(ctx context.Context, params ListPai
 }
 
 // ListPaymentMethods implements list-payment-methods operation.
+//
+// List payment methods.
 //
 // GET /account/v1/payment-methods
 func (UnimplementedHandler) ListPaymentMethods(ctx context.Context, params ListPaymentMethodsParams) (r *PaymentMethodList, _ error) {
@@ -399,7 +411,7 @@ func (UnimplementedHandler) ListProjectEntitlements(ctx context.Context, params 
 
 // ListProjectOrderItems implements list-project-order-items operation.
 //
-// What an order is made up of.
+// List project order items.
 //
 // GET /api/v1/projects/{projectId}/orders/{orderId}/items
 func (UnimplementedHandler) ListProjectOrderItems(ctx context.Context, params ListProjectOrderItemsParams) (r *OrderItemList, _ error) {
@@ -430,7 +442,7 @@ func (UnimplementedHandler) ListProjectSpend(ctx context.Context, params ListPro
 
 // ListProjectSubscriptionItems implements list-project-subscription-items operation.
 //
-// What this project has bought, and when each renews.
+// List project subscription items.
 //
 // GET /api/v1/projects/{projectId}/subscription-items
 func (UnimplementedHandler) ListProjectSubscriptionItems(ctx context.Context, params ListProjectSubscriptionItemsParams) (r *SubscriptionItemList, _ error) {
@@ -439,7 +451,7 @@ func (UnimplementedHandler) ListProjectSubscriptionItems(ctx context.Context, pa
 
 // ListProjectSubscriptions implements list-project-subscriptions operation.
 //
-// Which services this project has enabled.
+// List project subscriptions.
 //
 // GET /api/v1/projects/{projectId}/subscriptions
 func (UnimplementedHandler) ListProjectSubscriptions(ctx context.Context, params ListProjectSubscriptionsParams) (r *SubscriptionList, _ error) {
@@ -458,6 +470,8 @@ func (UnimplementedHandler) ListProjectUsageCharges(ctx context.Context, params 
 
 // ListRefunds implements list-refunds operation.
 //
+// List refunds.
+//
 // GET /account/v1/refunds
 func (UnimplementedHandler) ListRefunds(ctx context.Context, params ListRefundsParams) (r *RefundList, _ error) {
 	return r, ht.ErrNotImplemented
@@ -465,7 +479,7 @@ func (UnimplementedHandler) ListRefunds(ctx context.Context, params ListRefundsP
 
 // ListSubscriptionItems implements list-subscription-items operation.
 //
-// What has been bought, and when each renews.
+// List subscription items.
 //
 // GET /account/v1/subscription-items
 func (UnimplementedHandler) ListSubscriptionItems(ctx context.Context, params ListSubscriptionItemsParams) (r *SubscriptionItemList, _ error) {
@@ -474,12 +488,16 @@ func (UnimplementedHandler) ListSubscriptionItems(ctx context.Context, params Li
 
 // ListSubscriptions implements list-subscriptions operation.
 //
+// List subscriptions.
+//
 // GET /account/v1/subscriptions
 func (UnimplementedHandler) ListSubscriptions(ctx context.Context, params ListSubscriptionsParams) (r *SubscriptionList, _ error) {
 	return r, ht.ErrNotImplemented
 }
 
 // ListTopUps implements list-top-ups operation.
+//
+// List top ups.
 //
 // GET /account/v1/top-ups
 func (UnimplementedHandler) ListTopUps(ctx context.Context, params ListTopUpsParams) (r *TopUpList, _ error) {
@@ -488,7 +506,7 @@ func (UnimplementedHandler) ListTopUps(ctx context.Context, params ListTopUpsPar
 
 // ListTransactions implements list-transactions operation.
 //
-// Every movement of funds on the account.
+// List transactions.
 //
 // GET /account/v1/transactions
 func (UnimplementedHandler) ListTransactions(ctx context.Context, params ListTransactionsParams) (r *TransactionList, _ error) {
@@ -616,7 +634,7 @@ func (UnimplementedHandler) SetAutoRenew(ctx context.Context, req *AutoRenewSet,
 
 // SetDefaultPaymentMethod implements set-default-payment-method operation.
 //
-// Choose which method is used automatically.
+// Set default payment method.
 //
 // PUT /account/v1/payment-methods/{paymentMethodId}/default
 func (UnimplementedHandler) SetDefaultPaymentMethod(ctx context.Context, params SetDefaultPaymentMethodParams) (r *PaymentMethod, _ error) {

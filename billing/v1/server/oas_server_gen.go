@@ -86,15 +86,19 @@ type Handler interface {
 	FindProjectPayer(ctx context.Context, params FindProjectPayerParams) (*ProjectBinding, error)
 	// GetAccountBalance implements get-account-balance operation.
 	//
-	// What the account holds and what it can still spend.
+	// Get account balance.
 	//
 	// GET /account/v1/billing-accounts/{accountId}/balance
 	GetAccountBalance(ctx context.Context, params GetAccountBalanceParams) (*AccountBalance, error)
 	// GetBillingAccount implements get-billing-account operation.
 	//
+	// Get billing account.
+	//
 	// GET /account/v1/billing-accounts/{accountId}
 	GetBillingAccount(ctx context.Context, params GetBillingAccountParams) (*BillingAccount, error)
 	// GetInvoice implements get-invoice operation.
+	//
+	// Get invoice.
 	//
 	// GET /account/v1/invoices/{invoiceId}
 	GetInvoice(ctx context.Context, params GetInvoiceParams) (*Invoice, error)
@@ -110,6 +114,8 @@ type Handler interface {
 	// GET /account/v1/invoices/{invoiceId}/refund-quote
 	GetInvoiceRefundQuote(ctx context.Context, params GetInvoiceRefundQuoteParams) (*RefundQuote, error)
 	// GetOrder implements get-order operation.
+	//
+	// Get order.
 	//
 	// GET /account/v1/orders/{orderId}
 	GetOrder(ctx context.Context, params GetOrderParams) (*Order, error)
@@ -139,11 +145,13 @@ type Handler interface {
 	GetProjectBillingAccount(ctx context.Context, params GetProjectBillingAccountParams) (*ProjectPayer, error)
 	// GetProjectOrder implements get-project-order operation.
 	//
+	// Get project order.
+	//
 	// GET /api/v1/projects/{projectId}/orders/{orderId}
 	GetProjectOrder(ctx context.Context, params GetProjectOrderParams) (*Order, error)
 	// GetTopUp implements get-top-up operation.
 	//
-	// Whether a payment has completed.
+	// Get top up.
 	//
 	// GET /account/v1/top-ups/{topUpId}
 	GetTopUp(ctx context.Context, params GetTopUpParams) (*TopUp, error)
@@ -181,13 +189,13 @@ type Handler interface {
 	ListAllowances(ctx context.Context, params ListAllowancesParams) (*AllowanceList, error)
 	// ListBillingAccounts implements list-billing-accounts operation.
 	//
-	// The billing accounts you own.
+	// List billing accounts.
 	//
 	// GET /account/v1/billing-accounts
 	ListBillingAccounts(ctx context.Context, params ListBillingAccountsParams) (*BillingAccountList, error)
 	// ListCatalogPlans implements list-catalog-plans operation.
 	//
-	// What can be bought under one service.
+	// List catalog plans.
 	//
 	// GET /catalog/v1/products/{productId}/plans
 	ListCatalogPlans(ctx context.Context, params ListCatalogPlansParams) (ListCatalogPlansRes, error)
@@ -200,7 +208,7 @@ type Handler interface {
 	ListCatalogPrices(ctx context.Context, params ListCatalogPricesParams) (ListCatalogPricesRes, error)
 	// ListCatalogProducts implements list-catalog-products operation.
 	//
-	// The services the platform sells.
+	// List catalog products.
 	//
 	// GET /catalog/v1/products
 	ListCatalogProducts(ctx context.Context, params ListCatalogProductsParams) (ListCatalogProductsRes, error)
@@ -230,11 +238,13 @@ type Handler interface {
 	ListEntitlements(ctx context.Context, params ListEntitlementsParams) (*EntitlementList, error)
 	// ListInvoiceItems implements list-invoice-items operation.
 	//
-	// What an invoice is made up of.
+	// List invoice items.
 	//
 	// GET /account/v1/invoices/{invoiceId}/items
 	ListInvoiceItems(ctx context.Context, params ListInvoiceItemsParams) (*InvoiceItemList, error)
 	// ListInvoices implements list-invoices operation.
+	//
+	// List invoices.
 	//
 	// GET /account/v1/invoices
 	ListInvoices(ctx context.Context, params ListInvoicesParams) (*InvoiceList, error)
@@ -253,11 +263,13 @@ type Handler interface {
 	ListOrders(ctx context.Context, params ListOrdersParams) (*OrderList, error)
 	// ListPaidProjects implements list-paid-projects operation.
 	//
-	// The projects your accounts pay for.
+	// List paid projects.
 	//
 	// GET /account/v1/projects
 	ListPaidProjects(ctx context.Context, params ListPaidProjectsParams) (*ProjectBindingList, error)
 	// ListPaymentMethods implements list-payment-methods operation.
+	//
+	// List payment methods.
 	//
 	// GET /account/v1/payment-methods
 	ListPaymentMethods(ctx context.Context, params ListPaymentMethodsParams) (*PaymentMethodList, error)
@@ -286,7 +298,7 @@ type Handler interface {
 	ListProjectEntitlements(ctx context.Context, params ListProjectEntitlementsParams) (*EntitlementList, error)
 	// ListProjectOrderItems implements list-project-order-items operation.
 	//
-	// What an order is made up of.
+	// List project order items.
 	//
 	// GET /api/v1/projects/{projectId}/orders/{orderId}/items
 	ListProjectOrderItems(ctx context.Context, params ListProjectOrderItemsParams) (*OrderItemList, error)
@@ -308,13 +320,13 @@ type Handler interface {
 	ListProjectSpend(ctx context.Context, params ListProjectSpendParams) (*SpendRowList, error)
 	// ListProjectSubscriptionItems implements list-project-subscription-items operation.
 	//
-	// What this project has bought, and when each renews.
+	// List project subscription items.
 	//
 	// GET /api/v1/projects/{projectId}/subscription-items
 	ListProjectSubscriptionItems(ctx context.Context, params ListProjectSubscriptionItemsParams) (*SubscriptionItemList, error)
 	// ListProjectSubscriptions implements list-project-subscriptions operation.
 	//
-	// Which services this project has enabled.
+	// List project subscriptions.
 	//
 	// GET /api/v1/projects/{projectId}/subscriptions
 	ListProjectSubscriptions(ctx context.Context, params ListProjectSubscriptionsParams) (*SubscriptionList, error)
@@ -327,25 +339,31 @@ type Handler interface {
 	ListProjectUsageCharges(ctx context.Context, params ListProjectUsageChargesParams) (*UsageChargeList, error)
 	// ListRefunds implements list-refunds operation.
 	//
+	// List refunds.
+	//
 	// GET /account/v1/refunds
 	ListRefunds(ctx context.Context, params ListRefundsParams) (*RefundList, error)
 	// ListSubscriptionItems implements list-subscription-items operation.
 	//
-	// What has been bought, and when each renews.
+	// List subscription items.
 	//
 	// GET /account/v1/subscription-items
 	ListSubscriptionItems(ctx context.Context, params ListSubscriptionItemsParams) (*SubscriptionItemList, error)
 	// ListSubscriptions implements list-subscriptions operation.
 	//
+	// List subscriptions.
+	//
 	// GET /account/v1/subscriptions
 	ListSubscriptions(ctx context.Context, params ListSubscriptionsParams) (*SubscriptionList, error)
 	// ListTopUps implements list-top-ups operation.
+	//
+	// List top ups.
 	//
 	// GET /account/v1/top-ups
 	ListTopUps(ctx context.Context, params ListTopUpsParams) (*TopUpList, error)
 	// ListTransactions implements list-transactions operation.
 	//
-	// Every movement of funds on the account.
+	// List transactions.
 	//
 	// GET /account/v1/transactions
 	ListTransactions(ctx context.Context, params ListTransactionsParams) (*TransactionList, error)
@@ -443,7 +461,7 @@ type Handler interface {
 	SetAutoRenew(ctx context.Context, req *AutoRenewSet, params SetAutoRenewParams) (*SubscriptionItem, error)
 	// SetDefaultPaymentMethod implements set-default-payment-method operation.
 	//
-	// Choose which method is used automatically.
+	// Set default payment method.
 	//
 	// PUT /account/v1/payment-methods/{paymentMethodId}/default
 	SetDefaultPaymentMethod(ctx context.Context, params SetDefaultPaymentMethodParams) (*PaymentMethod, error)

@@ -177,7 +177,7 @@ func (s *Server) handleCancelScheduledChangeRequest(args [1]string, argsEscaped 
 		mreq := middleware.Request{
 			Context:          ctx,
 			OperationName:    CancelScheduledChangeOperation,
-			OperationSummary: "Call off a plan change that has not taken effect yet",
+			OperationSummary: "Cancel scheduled change",
 			OperationID:      "cancel-scheduled-change",
 			Body:             nil,
 			RawBody:          rawBody,
@@ -385,7 +385,7 @@ func (s *Server) handleCreateBillingAccountRequest(args [0]string, argsEscaped b
 		mreq := middleware.Request{
 			Context:          ctx,
 			OperationName:    CreateBillingAccountOperation,
-			OperationSummary: "Open a billing account",
+			OperationSummary: "Create billing account",
 			OperationID:      "create-billing-account",
 			Body:             request,
 			RawBody:          rawBody,
@@ -546,7 +546,7 @@ func (s *Server) handleCreateEstimateRequest(args [0]string, argsEscaped bool, w
 		mreq := middleware.Request{
 			Context:          ctx,
 			OperationName:    CreateEstimateOperation,
-			OperationSummary: "Estimate a purchase without signing in",
+			OperationSummary: "Estimate a basket",
 			OperationID:      "create-estimate",
 			Body:             request,
 			RawBody:          rawBody,
@@ -749,7 +749,7 @@ func (s *Server) handleCreatePaymentMethodSetupRequest(args [0]string, argsEscap
 		mreq := middleware.Request{
 			Context:          ctx,
 			OperationName:    CreatePaymentMethodSetupOperation,
-			OperationSummary: "Begin adding a payment method",
+			OperationSummary: "Create payment method setup",
 			OperationID:      "create-payment-method-setup",
 			Body:             request,
 			RawBody:          rawBody,
@@ -965,7 +965,7 @@ func (s *Server) handleCreateProjectQuoteRequest(args [1]string, argsEscaped boo
 		mreq := middleware.Request{
 			Context:          ctx,
 			OperationName:    CreateProjectQuoteOperation,
-			OperationSummary: "Price a purchase before making it",
+			OperationSummary: "Quote for a project",
 			OperationID:      "create-project-quote",
 			Body:             request,
 			RawBody:          rawBody,
@@ -1174,7 +1174,7 @@ func (s *Server) handleCreateTopUpRequest(args [0]string, argsEscaped bool, w ht
 		mreq := middleware.Request{
 			Context:          ctx,
 			OperationName:    CreateTopUpOperation,
-			OperationSummary: "Add funds to an account",
+			OperationSummary: "Create top up",
 			OperationID:      "create-top-up",
 			Body:             request,
 			RawBody:          rawBody,
@@ -1370,7 +1370,7 @@ func (s *Server) handleDeletePaymentMethodRequest(args [1]string, argsEscaped bo
 		mreq := middleware.Request{
 			Context:          ctx,
 			OperationName:    DeletePaymentMethodOperation,
-			OperationSummary: "Remove a payment method",
+			OperationSummary: "Delete payment method",
 			OperationID:      "delete-payment-method",
 			Body:             nil,
 			RawBody:          rawBody,
@@ -1570,7 +1570,7 @@ func (s *Server) handleFindProjectPayerRequest(args [1]string, argsEscaped bool,
 		mreq := middleware.Request{
 			Context:          ctx,
 			OperationName:    FindProjectPayerOperation,
-			OperationSummary: "Which account pays for a project",
+			OperationSummary: "Find project payer",
 			OperationID:      "find-project-payer",
 			Body:             nil,
 			RawBody:          rawBody,
@@ -1632,7 +1632,7 @@ func (s *Server) handleFindProjectPayerRequest(args [1]string, argsEscaped bool,
 
 // handleGetAccountBalanceRequest handles get-account-balance operation.
 //
-// What the account holds and what it can still spend.
+// Get account balance.
 //
 // GET /account/v1/billing-accounts/{accountId}/balance
 func (s *Server) handleGetAccountBalanceRequest(args [1]string, argsEscaped bool, w http.ResponseWriter, r *http.Request) {
@@ -1770,7 +1770,7 @@ func (s *Server) handleGetAccountBalanceRequest(args [1]string, argsEscaped bool
 		mreq := middleware.Request{
 			Context:          ctx,
 			OperationName:    GetAccountBalanceOperation,
-			OperationSummary: "What the account holds and what it can still spend",
+			OperationSummary: "Get account balance",
 			OperationID:      "get-account-balance",
 			Body:             nil,
 			RawBody:          rawBody,
@@ -1831,6 +1831,8 @@ func (s *Server) handleGetAccountBalanceRequest(args [1]string, argsEscaped bool
 }
 
 // handleGetBillingAccountRequest handles get-billing-account operation.
+//
+// Get billing account.
 //
 // GET /account/v1/billing-accounts/{accountId}
 func (s *Server) handleGetBillingAccountRequest(args [1]string, argsEscaped bool, w http.ResponseWriter, r *http.Request) {
@@ -1968,7 +1970,7 @@ func (s *Server) handleGetBillingAccountRequest(args [1]string, argsEscaped bool
 		mreq := middleware.Request{
 			Context:          ctx,
 			OperationName:    GetBillingAccountOperation,
-			OperationSummary: "",
+			OperationSummary: "Get billing account",
 			OperationID:      "get-billing-account",
 			Body:             nil,
 			RawBody:          rawBody,
@@ -2029,6 +2031,8 @@ func (s *Server) handleGetBillingAccountRequest(args [1]string, argsEscaped bool
 }
 
 // handleGetInvoiceRequest handles get-invoice operation.
+//
+// Get invoice.
 //
 // GET /account/v1/invoices/{invoiceId}
 func (s *Server) handleGetInvoiceRequest(args [1]string, argsEscaped bool, w http.ResponseWriter, r *http.Request) {
@@ -2166,7 +2170,7 @@ func (s *Server) handleGetInvoiceRequest(args [1]string, argsEscaped bool, w htt
 		mreq := middleware.Request{
 			Context:          ctx,
 			OperationName:    GetInvoiceOperation,
-			OperationSummary: "",
+			OperationSummary: "Get invoice",
 			OperationID:      "get-invoice",
 			Body:             nil,
 			RawBody:          rawBody,
@@ -2371,7 +2375,7 @@ func (s *Server) handleGetInvoiceRefundQuoteRequest(args [1]string, argsEscaped 
 		mreq := middleware.Request{
 			Context:          ctx,
 			OperationName:    GetInvoiceRefundQuoteOperation,
-			OperationSummary: "What refunding this invoice would give back",
+			OperationSummary: "Get invoice refund quote",
 			OperationID:      "get-invoice-refund-quote",
 			Body:             nil,
 			RawBody:          rawBody,
@@ -2432,6 +2436,8 @@ func (s *Server) handleGetInvoiceRefundQuoteRequest(args [1]string, argsEscaped 
 }
 
 // handleGetOrderRequest handles get-order operation.
+//
+// Get order.
 //
 // GET /account/v1/orders/{orderId}
 func (s *Server) handleGetOrderRequest(args [1]string, argsEscaped bool, w http.ResponseWriter, r *http.Request) {
@@ -2569,7 +2575,7 @@ func (s *Server) handleGetOrderRequest(args [1]string, argsEscaped bool, w http.
 		mreq := middleware.Request{
 			Context:          ctx,
 			OperationName:    GetOrderOperation,
-			OperationSummary: "",
+			OperationSummary: "Get order",
 			OperationID:      "get-order",
 			Body:             nil,
 			RawBody:          rawBody,
@@ -2777,7 +2783,7 @@ func (s *Server) handleGetOrderRefundQuoteRequest(args [1]string, argsEscaped bo
 		mreq := middleware.Request{
 			Context:          ctx,
 			OperationName:    GetOrderRefundQuoteOperation,
-			OperationSummary: "What refunding this order would give back",
+			OperationSummary: "Get order refund quote",
 			OperationID:      "get-order-refund-quote",
 			Body:             nil,
 			RawBody:          rawBody,
@@ -2981,7 +2987,7 @@ func (s *Server) handleGetProjectBillingAccountRequest(args [1]string, argsEscap
 		mreq := middleware.Request{
 			Context:          ctx,
 			OperationName:    GetProjectBillingAccountOperation,
-			OperationSummary: "Who pays for this project, and how much is left",
+			OperationSummary: "Get project billing account",
 			OperationID:      "get-project-billing-account",
 			Body:             nil,
 			RawBody:          rawBody,
@@ -3042,6 +3048,8 @@ func (s *Server) handleGetProjectBillingAccountRequest(args [1]string, argsEscap
 }
 
 // handleGetProjectOrderRequest handles get-project-order operation.
+//
+// Get project order.
 //
 // GET /api/v1/projects/{projectId}/orders/{orderId}
 func (s *Server) handleGetProjectOrderRequest(args [2]string, argsEscaped bool, w http.ResponseWriter, r *http.Request) {
@@ -3179,7 +3187,7 @@ func (s *Server) handleGetProjectOrderRequest(args [2]string, argsEscaped bool, 
 		mreq := middleware.Request{
 			Context:          ctx,
 			OperationName:    GetProjectOrderOperation,
-			OperationSummary: "",
+			OperationSummary: "Get project order",
 			OperationID:      "get-project-order",
 			Body:             nil,
 			RawBody:          rawBody,
@@ -3245,7 +3253,7 @@ func (s *Server) handleGetProjectOrderRequest(args [2]string, argsEscaped bool, 
 
 // handleGetTopUpRequest handles get-top-up operation.
 //
-// Whether a payment has completed.
+// Get top up.
 //
 // GET /account/v1/top-ups/{topUpId}
 func (s *Server) handleGetTopUpRequest(args [1]string, argsEscaped bool, w http.ResponseWriter, r *http.Request) {
@@ -3383,7 +3391,7 @@ func (s *Server) handleGetTopUpRequest(args [1]string, argsEscaped bool, w http.
 		mreq := middleware.Request{
 			Context:          ctx,
 			OperationName:    GetTopUpOperation,
-			OperationSummary: "Whether a payment has completed",
+			OperationSummary: "Get top up",
 			OperationID:      "get-top-up",
 			Body:             nil,
 			RawBody:          rawBody,
@@ -3586,7 +3594,7 @@ func (s *Server) handleListAllocationsRequest(args [0]string, argsEscaped bool, 
 		mreq := middleware.Request{
 			Context:          ctx,
 			OperationName:    ListAllocationsOperation,
-			OperationSummary: "Where each amount went",
+			OperationSummary: "List allocations",
 			OperationID:      "list-allocations",
 			Body:             nil,
 			RawBody:          rawBody,
@@ -3807,7 +3815,7 @@ func (s *Server) handleListAllowanceConsumptionsRequest(args [1]string, argsEsca
 		mreq := middleware.Request{
 			Context:          ctx,
 			OperationName:    ListAllowanceConsumptionsOperation,
-			OperationSummary: "What has been used from one quantity",
+			OperationSummary: "List allowance consumptions",
 			OperationID:      "list-allowance-consumptions",
 			Body:             nil,
 			RawBody:          rawBody,
@@ -4025,7 +4033,7 @@ func (s *Server) handleListAllowancesRequest(args [0]string, argsEscaped bool, w
 		mreq := middleware.Request{
 			Context:          ctx,
 			OperationName:    ListAllowancesOperation,
-			OperationSummary: "Included and purchased quantities, and what is left",
+			OperationSummary: "List allowances",
 			OperationID:      "list-allowances",
 			Body:             nil,
 			RawBody:          rawBody,
@@ -4103,7 +4111,7 @@ func (s *Server) handleListAllowancesRequest(args [0]string, argsEscaped bool, w
 
 // handleListBillingAccountsRequest handles list-billing-accounts operation.
 //
-// The billing accounts you own.
+// List billing accounts.
 //
 // GET /account/v1/billing-accounts
 func (s *Server) handleListBillingAccountsRequest(args [0]string, argsEscaped bool, w http.ResponseWriter, r *http.Request) {
@@ -4241,7 +4249,7 @@ func (s *Server) handleListBillingAccountsRequest(args [0]string, argsEscaped bo
 		mreq := middleware.Request{
 			Context:          ctx,
 			OperationName:    ListBillingAccountsOperation,
-			OperationSummary: "The billing accounts you own",
+			OperationSummary: "List billing accounts",
 			OperationID:      "list-billing-accounts",
 			Body:             nil,
 			RawBody:          rawBody,
@@ -4307,7 +4315,7 @@ func (s *Server) handleListBillingAccountsRequest(args [0]string, argsEscaped bo
 
 // handleListCatalogPlansRequest handles list-catalog-plans operation.
 //
-// What can be bought under one service.
+// List catalog plans.
 //
 // GET /catalog/v1/products/{productId}/plans
 func (s *Server) handleListCatalogPlansRequest(args [1]string, argsEscaped bool, w http.ResponseWriter, r *http.Request) {
@@ -4399,7 +4407,7 @@ func (s *Server) handleListCatalogPlansRequest(args [1]string, argsEscaped bool,
 		mreq := middleware.Request{
 			Context:          ctx,
 			OperationName:    ListCatalogPlansOperation,
-			OperationSummary: "What can be bought under one service",
+			OperationSummary: "List catalog plans",
 			OperationID:      "list-catalog-plans",
 			Body:             nil,
 			RawBody:          rawBody,
@@ -4566,7 +4574,7 @@ func (s *Server) handleListCatalogPricesRequest(args [1]string, argsEscaped bool
 		mreq := middleware.Request{
 			Context:          ctx,
 			OperationName:    ListCatalogPricesOperation,
-			OperationSummary: "The ways one plan can be bought",
+			OperationSummary: "List catalog prices",
 			OperationID:      "list-catalog-prices",
 			Body:             nil,
 			RawBody:          rawBody,
@@ -4644,7 +4652,7 @@ func (s *Server) handleListCatalogPricesRequest(args [1]string, argsEscaped bool
 
 // handleListCatalogProductsRequest handles list-catalog-products operation.
 //
-// The services the platform sells.
+// List catalog products.
 //
 // GET /catalog/v1/products
 func (s *Server) handleListCatalogProductsRequest(args [0]string, argsEscaped bool, w http.ResponseWriter, r *http.Request) {
@@ -4736,7 +4744,7 @@ func (s *Server) handleListCatalogProductsRequest(args [0]string, argsEscaped bo
 		mreq := middleware.Request{
 			Context:          ctx,
 			OperationName:    ListCatalogProductsOperation,
-			OperationSummary: "The services the platform sells",
+			OperationSummary: "List catalog products",
 			OperationID:      "list-catalog-products",
 			Body:             nil,
 			RawBody:          rawBody,
@@ -4899,7 +4907,7 @@ func (s *Server) handleListCatalogRatesRequest(args [1]string, argsEscaped bool,
 		mreq := middleware.Request{
 			Context:          ctx,
 			OperationName:    ListCatalogRatesOperation,
-			OperationSummary: "The rates on a published price list",
+			OperationSummary: "List catalog rates",
 			OperationID:      "list-catalog-rates",
 			Body:             nil,
 			RawBody:          rawBody,
@@ -5120,7 +5128,7 @@ func (s *Server) handleListCreditGrantsRequest(args [0]string, argsEscaped bool,
 		mreq := middleware.Request{
 			Context:          ctx,
 			OperationName:    ListCreditGrantsOperation,
-			OperationSummary: "Credit and vouchers held on the account",
+			OperationSummary: "List credit grants",
 			OperationID:      "list-credit-grants",
 			Body:             nil,
 			RawBody:          rawBody,
@@ -5336,7 +5344,7 @@ func (s *Server) handleListEntitlementsRequest(args [0]string, argsEscaped bool,
 		mreq := middleware.Request{
 			Context:          ctx,
 			OperationName:    ListEntitlementsOperation,
-			OperationSummary: "What your accounts can currently use",
+			OperationSummary: "List entitlements",
 			OperationID:      "list-entitlements",
 			Body:             nil,
 			RawBody:          rawBody,
@@ -5410,7 +5418,7 @@ func (s *Server) handleListEntitlementsRequest(args [0]string, argsEscaped bool,
 
 // handleListInvoiceItemsRequest handles list-invoice-items operation.
 //
-// What an invoice is made up of.
+// List invoice items.
 //
 // GET /account/v1/invoices/{invoiceId}/items
 func (s *Server) handleListInvoiceItemsRequest(args [1]string, argsEscaped bool, w http.ResponseWriter, r *http.Request) {
@@ -5548,7 +5556,7 @@ func (s *Server) handleListInvoiceItemsRequest(args [1]string, argsEscaped bool,
 		mreq := middleware.Request{
 			Context:          ctx,
 			OperationName:    ListInvoiceItemsOperation,
-			OperationSummary: "What an invoice is made up of",
+			OperationSummary: "List invoice items",
 			OperationID:      "list-invoice-items",
 			Body:             nil,
 			RawBody:          rawBody,
@@ -5617,6 +5625,8 @@ func (s *Server) handleListInvoiceItemsRequest(args [1]string, argsEscaped bool,
 }
 
 // handleListInvoicesRequest handles list-invoices operation.
+//
+// List invoices.
 //
 // GET /account/v1/invoices
 func (s *Server) handleListInvoicesRequest(args [0]string, argsEscaped bool, w http.ResponseWriter, r *http.Request) {
@@ -5754,7 +5764,7 @@ func (s *Server) handleListInvoicesRequest(args [0]string, argsEscaped bool, w h
 		mreq := middleware.Request{
 			Context:          ctx,
 			OperationName:    ListInvoicesOperation,
-			OperationSummary: "",
+			OperationSummary: "List invoices",
 			OperationID:      "list-invoices",
 			Body:             nil,
 			RawBody:          rawBody,
@@ -5974,7 +5984,7 @@ func (s *Server) handleListOrderItemsRequest(args [1]string, argsEscaped bool, w
 		mreq := middleware.Request{
 			Context:          ctx,
 			OperationName:    ListOrderItemsOperation,
-			OperationSummary: "What an order is made up of",
+			OperationSummary: "List order items",
 			OperationID:      "list-order-items",
 			Body:             nil,
 			RawBody:          rawBody,
@@ -6183,7 +6193,7 @@ func (s *Server) handleListOrdersRequest(args [0]string, argsEscaped bool, w htt
 		mreq := middleware.Request{
 			Context:          ctx,
 			OperationName:    ListOrdersOperation,
-			OperationSummary: "Purchases made against your accounts",
+			OperationSummary: "List orders",
 			OperationID:      "list-orders",
 			Body:             nil,
 			RawBody:          rawBody,
@@ -6269,7 +6279,7 @@ func (s *Server) handleListOrdersRequest(args [0]string, argsEscaped bool, w htt
 
 // handleListPaidProjectsRequest handles list-paid-projects operation.
 //
-// The projects your accounts pay for.
+// List paid projects.
 //
 // GET /account/v1/projects
 func (s *Server) handleListPaidProjectsRequest(args [0]string, argsEscaped bool, w http.ResponseWriter, r *http.Request) {
@@ -6407,7 +6417,7 @@ func (s *Server) handleListPaidProjectsRequest(args [0]string, argsEscaped bool,
 		mreq := middleware.Request{
 			Context:          ctx,
 			OperationName:    ListPaidProjectsOperation,
-			OperationSummary: "The projects your accounts pay for",
+			OperationSummary: "List paid projects",
 			OperationID:      "list-paid-projects",
 			Body:             nil,
 			RawBody:          rawBody,
@@ -6476,6 +6486,8 @@ func (s *Server) handleListPaidProjectsRequest(args [0]string, argsEscaped bool,
 }
 
 // handleListPaymentMethodsRequest handles list-payment-methods operation.
+//
+// List payment methods.
 //
 // GET /account/v1/payment-methods
 func (s *Server) handleListPaymentMethodsRequest(args [0]string, argsEscaped bool, w http.ResponseWriter, r *http.Request) {
@@ -6613,7 +6625,7 @@ func (s *Server) handleListPaymentMethodsRequest(args [0]string, argsEscaped boo
 		mreq := middleware.Request{
 			Context:          ctx,
 			OperationName:    ListPaymentMethodsOperation,
-			OperationSummary: "",
+			OperationSummary: "List payment methods",
 			OperationID:      "list-payment-methods",
 			Body:             nil,
 			RawBody:          rawBody,
@@ -6821,7 +6833,7 @@ func (s *Server) handleListProjectActiveResourcesRequest(args [1]string, argsEsc
 		mreq := middleware.Request{
 			Context:          ctx,
 			OperationName:    ListProjectActiveResourcesOperation,
-			OperationSummary: "What is accruing charges right now",
+			OperationSummary: "List project active resources",
 			OperationID:      "list-project-active-resources",
 			Body:             nil,
 			RawBody:          rawBody,
@@ -7034,7 +7046,7 @@ func (s *Server) handleListProjectAllowancesRequest(args [1]string, argsEscaped 
 		mreq := middleware.Request{
 			Context:          ctx,
 			OperationName:    ListProjectAllowancesOperation,
-			OperationSummary: "Quantities this project can draw on",
+			OperationSummary: "List project allowances",
 			OperationID:      "list-project-allowances",
 			Body:             nil,
 			RawBody:          rawBody,
@@ -7250,7 +7262,7 @@ func (s *Server) handleListProjectEntitlementsRequest(args [1]string, argsEscape
 		mreq := middleware.Request{
 			Context:          ctx,
 			OperationName:    ListProjectEntitlementsOperation,
-			OperationSummary: "What this project can currently use",
+			OperationSummary: "List project entitlements",
 			OperationID:      "list-project-entitlements",
 			Body:             nil,
 			RawBody:          rawBody,
@@ -7324,7 +7336,7 @@ func (s *Server) handleListProjectEntitlementsRequest(args [1]string, argsEscape
 
 // handleListProjectOrderItemsRequest handles list-project-order-items operation.
 //
-// What an order is made up of.
+// List project order items.
 //
 // GET /api/v1/projects/{projectId}/orders/{orderId}/items
 func (s *Server) handleListProjectOrderItemsRequest(args [2]string, argsEscaped bool, w http.ResponseWriter, r *http.Request) {
@@ -7462,7 +7474,7 @@ func (s *Server) handleListProjectOrderItemsRequest(args [2]string, argsEscaped 
 		mreq := middleware.Request{
 			Context:          ctx,
 			OperationName:    ListProjectOrderItemsOperation,
-			OperationSummary: "What an order is made up of",
+			OperationSummary: "List project order items",
 			OperationID:      "list-project-order-items",
 			Body:             nil,
 			RawBody:          rawBody,
@@ -7675,7 +7687,7 @@ func (s *Server) handleListProjectOrdersRequest(args [1]string, argsEscaped bool
 		mreq := middleware.Request{
 			Context:          ctx,
 			OperationName:    ListProjectOrdersOperation,
-			OperationSummary: "Purchases made for this project",
+			OperationSummary: "List project orders",
 			OperationID:      "list-project-orders",
 			Body:             nil,
 			RawBody:          rawBody,
@@ -7898,7 +7910,7 @@ func (s *Server) handleListProjectSpendRequest(args [1]string, argsEscaped bool,
 		mreq := middleware.Request{
 			Context:          ctx,
 			OperationName:    ListProjectSpendOperation,
-			OperationSummary: "What this project spent, grouped",
+			OperationSummary: "List project spend",
 			OperationID:      "list-project-spend",
 			Body:             nil,
 			RawBody:          rawBody,
@@ -7984,7 +7996,7 @@ func (s *Server) handleListProjectSpendRequest(args [1]string, argsEscaped bool,
 
 // handleListProjectSubscriptionItemsRequest handles list-project-subscription-items operation.
 //
-// What this project has bought, and when each renews.
+// List project subscription items.
 //
 // GET /api/v1/projects/{projectId}/subscription-items
 func (s *Server) handleListProjectSubscriptionItemsRequest(args [1]string, argsEscaped bool, w http.ResponseWriter, r *http.Request) {
@@ -8122,7 +8134,7 @@ func (s *Server) handleListProjectSubscriptionItemsRequest(args [1]string, argsE
 		mreq := middleware.Request{
 			Context:          ctx,
 			OperationName:    ListProjectSubscriptionItemsOperation,
-			OperationSummary: "What this project has bought, and when each renews",
+			OperationSummary: "List project subscription items",
 			OperationID:      "list-project-subscription-items",
 			Body:             nil,
 			RawBody:          rawBody,
@@ -8196,7 +8208,7 @@ func (s *Server) handleListProjectSubscriptionItemsRequest(args [1]string, argsE
 
 // handleListProjectSubscriptionsRequest handles list-project-subscriptions operation.
 //
-// Which services this project has enabled.
+// List project subscriptions.
 //
 // GET /api/v1/projects/{projectId}/subscriptions
 func (s *Server) handleListProjectSubscriptionsRequest(args [1]string, argsEscaped bool, w http.ResponseWriter, r *http.Request) {
@@ -8334,7 +8346,7 @@ func (s *Server) handleListProjectSubscriptionsRequest(args [1]string, argsEscap
 		mreq := middleware.Request{
 			Context:          ctx,
 			OperationName:    ListProjectSubscriptionsOperation,
-			OperationSummary: "Which services this project has enabled",
+			OperationSummary: "List project subscriptions",
 			OperationID:      "list-project-subscriptions",
 			Body:             nil,
 			RawBody:          rawBody,
@@ -8543,7 +8555,7 @@ func (s *Server) handleListProjectUsageChargesRequest(args [1]string, argsEscape
 		mreq := middleware.Request{
 			Context:          ctx,
 			OperationName:    ListProjectUsageChargesOperation,
-			OperationSummary: "Metered charges for this project, line by line",
+			OperationSummary: "List project usage charges",
 			OperationID:      "list-project-usage-charges",
 			Body:             nil,
 			RawBody:          rawBody,
@@ -8632,6 +8644,8 @@ func (s *Server) handleListProjectUsageChargesRequest(args [1]string, argsEscape
 }
 
 // handleListRefundsRequest handles list-refunds operation.
+//
+// List refunds.
 //
 // GET /account/v1/refunds
 func (s *Server) handleListRefundsRequest(args [0]string, argsEscaped bool, w http.ResponseWriter, r *http.Request) {
@@ -8769,7 +8783,7 @@ func (s *Server) handleListRefundsRequest(args [0]string, argsEscaped bool, w ht
 		mreq := middleware.Request{
 			Context:          ctx,
 			OperationName:    ListRefundsOperation,
-			OperationSummary: "",
+			OperationSummary: "List refunds",
 			OperationID:      "list-refunds",
 			Body:             nil,
 			RawBody:          rawBody,
@@ -8839,7 +8853,7 @@ func (s *Server) handleListRefundsRequest(args [0]string, argsEscaped bool, w ht
 
 // handleListSubscriptionItemsRequest handles list-subscription-items operation.
 //
-// What has been bought, and when each renews.
+// List subscription items.
 //
 // GET /account/v1/subscription-items
 func (s *Server) handleListSubscriptionItemsRequest(args [0]string, argsEscaped bool, w http.ResponseWriter, r *http.Request) {
@@ -8977,7 +8991,7 @@ func (s *Server) handleListSubscriptionItemsRequest(args [0]string, argsEscaped 
 		mreq := middleware.Request{
 			Context:          ctx,
 			OperationName:    ListSubscriptionItemsOperation,
-			OperationSummary: "What has been bought, and when each renews",
+			OperationSummary: "List subscription items",
 			OperationID:      "list-subscription-items",
 			Body:             nil,
 			RawBody:          rawBody,
@@ -9054,6 +9068,8 @@ func (s *Server) handleListSubscriptionItemsRequest(args [0]string, argsEscaped 
 }
 
 // handleListSubscriptionsRequest handles list-subscriptions operation.
+//
+// List subscriptions.
 //
 // GET /account/v1/subscriptions
 func (s *Server) handleListSubscriptionsRequest(args [0]string, argsEscaped bool, w http.ResponseWriter, r *http.Request) {
@@ -9191,7 +9207,7 @@ func (s *Server) handleListSubscriptionsRequest(args [0]string, argsEscaped bool
 		mreq := middleware.Request{
 			Context:          ctx,
 			OperationName:    ListSubscriptionsOperation,
-			OperationSummary: "",
+			OperationSummary: "List subscriptions",
 			OperationID:      "list-subscriptions",
 			Body:             nil,
 			RawBody:          rawBody,
@@ -9264,6 +9280,8 @@ func (s *Server) handleListSubscriptionsRequest(args [0]string, argsEscaped bool
 }
 
 // handleListTopUpsRequest handles list-top-ups operation.
+//
+// List top ups.
 //
 // GET /account/v1/top-ups
 func (s *Server) handleListTopUpsRequest(args [0]string, argsEscaped bool, w http.ResponseWriter, r *http.Request) {
@@ -9401,7 +9419,7 @@ func (s *Server) handleListTopUpsRequest(args [0]string, argsEscaped bool, w htt
 		mreq := middleware.Request{
 			Context:          ctx,
 			OperationName:    ListTopUpsOperation,
-			OperationSummary: "",
+			OperationSummary: "List top ups",
 			OperationID:      "list-top-ups",
 			Body:             nil,
 			RawBody:          rawBody,
@@ -9471,7 +9489,7 @@ func (s *Server) handleListTopUpsRequest(args [0]string, argsEscaped bool, w htt
 
 // handleListTransactionsRequest handles list-transactions operation.
 //
-// Every movement of funds on the account.
+// List transactions.
 //
 // GET /account/v1/transactions
 func (s *Server) handleListTransactionsRequest(args [0]string, argsEscaped bool, w http.ResponseWriter, r *http.Request) {
@@ -9609,7 +9627,7 @@ func (s *Server) handleListTransactionsRequest(args [0]string, argsEscaped bool,
 		mreq := middleware.Request{
 			Context:          ctx,
 			OperationName:    ListTransactionsOperation,
-			OperationSummary: "Every movement of funds on the account",
+			OperationSummary: "List transactions",
 			OperationID:      "list-transactions",
 			Body:             nil,
 			RawBody:          rawBody,
@@ -9826,7 +9844,7 @@ func (s *Server) handleListUsageChargesRequest(args [0]string, argsEscaped bool,
 		mreq := middleware.Request{
 			Context:          ctx,
 			OperationName:    ListUsageChargesOperation,
-			OperationSummary: "Metered charges, line by line",
+			OperationSummary: "List usage charges",
 			OperationID:      "list-usage-charges",
 			Body:             nil,
 			RawBody:          rawBody,
@@ -10075,7 +10093,7 @@ func (s *Server) handlePayInvoiceRequest(args [1]string, argsEscaped bool, w htt
 		mreq := middleware.Request{
 			Context:          ctx,
 			OperationName:    PayInvoiceOperation,
-			OperationSummary: "Pay an outstanding invoice",
+			OperationSummary: "Pay invoice",
 			OperationID:      "pay-invoice",
 			Body:             request,
 			RawBody:          rawBody,
@@ -10293,7 +10311,7 @@ func (s *Server) handlePayOrderRequest(args [1]string, argsEscaped bool, w http.
 		mreq := middleware.Request{
 			Context:          ctx,
 			OperationName:    PayOrderOperation,
-			OperationSummary: "Complete payment for an order",
+			OperationSummary: "Pay order",
 			OperationID:      "pay-order",
 			Body:             request,
 			RawBody:          rawBody,
@@ -10509,7 +10527,7 @@ func (s *Server) handlePayTogetherRequest(args [0]string, argsEscaped bool, w ht
 		mreq := middleware.Request{
 			Context:          ctx,
 			OperationName:    PayTogetherOperation,
-			OperationSummary: "Pay several outstanding invoices and orders at once",
+			OperationSummary: "Pay together",
 			OperationID:      "pay-together",
 			Body:             request,
 			RawBody:          rawBody,
@@ -10710,7 +10728,7 @@ func (s *Server) handlePreviewCodeRequest(args [0]string, argsEscaped bool, w ht
 		mreq := middleware.Request{
 			Context:          ctx,
 			OperationName:    PreviewCodeOperation,
-			OperationSummary: "Check what a code would give you",
+			OperationSummary: "Preview code",
 			OperationID:      "preview-code",
 			Body:             request,
 			RawBody:          rawBody,
@@ -10913,7 +10931,7 @@ func (s *Server) handleRedeemCodeRequest(args [0]string, argsEscaped bool, w htt
 		mreq := middleware.Request{
 			Context:          ctx,
 			OperationName:    RedeemCodeOperation,
-			OperationSummary: "Redeem a code",
+			OperationSummary: "Redeem code",
 			OperationID:      "redeem-code",
 			Body:             request,
 			RawBody:          rawBody,
@@ -11127,7 +11145,7 @@ func (s *Server) handleRenewSubscriptionItemRequest(args [1]string, argsEscaped 
 		mreq := middleware.Request{
 			Context:          ctx,
 			OperationName:    RenewSubscriptionItemOperation,
-			OperationSummary: "Renew now rather than waiting for the renewal date",
+			OperationSummary: "Renew subscription item",
 			OperationID:      "renew-subscription-item",
 			Body:             request,
 			RawBody:          rawBody,
@@ -11340,7 +11358,7 @@ func (s *Server) handleRequestRefundRequest(args [0]string, argsEscaped bool, w 
 		mreq := middleware.Request{
 			Context:          ctx,
 			OperationName:    RequestRefundOperation,
-			OperationSummary: "Ask for a refund",
+			OperationSummary: "Request refund",
 			OperationID:      "request-refund",
 			Body:             request,
 			RawBody:          rawBody,
@@ -11551,7 +11569,7 @@ func (s *Server) handleSetAutoRenewRequest(args [1]string, argsEscaped bool, w h
 		mreq := middleware.Request{
 			Context:          ctx,
 			OperationName:    SetAutoRenewOperation,
-			OperationSummary: "Turn automatic renewal on or off",
+			OperationSummary: "Set auto renew",
 			OperationID:      "set-auto-renew",
 			Body:             request,
 			RawBody:          rawBody,
@@ -11613,7 +11631,7 @@ func (s *Server) handleSetAutoRenewRequest(args [1]string, argsEscaped bool, w h
 
 // handleSetDefaultPaymentMethodRequest handles set-default-payment-method operation.
 //
-// Choose which method is used automatically.
+// Set default payment method.
 //
 // PUT /account/v1/payment-methods/{paymentMethodId}/default
 func (s *Server) handleSetDefaultPaymentMethodRequest(args [1]string, argsEscaped bool, w http.ResponseWriter, r *http.Request) {
@@ -11751,7 +11769,7 @@ func (s *Server) handleSetDefaultPaymentMethodRequest(args [1]string, argsEscape
 		mreq := middleware.Request{
 			Context:          ctx,
 			OperationName:    SetDefaultPaymentMethodOperation,
-			OperationSummary: "Choose which method is used automatically",
+			OperationSummary: "Set default payment method",
 			OperationID:      "set-default-payment-method",
 			Body:             nil,
 			RawBody:          rawBody,
@@ -11967,7 +11985,7 @@ func (s *Server) handleSetProjectAutoRenewRequest(args [2]string, argsEscaped bo
 		mreq := middleware.Request{
 			Context:          ctx,
 			OperationName:    SetProjectAutoRenewOperation,
-			OperationSummary: "Turn automatic renewal on or off",
+			OperationSummary: "Set project auto renew",
 			OperationID:      "set-project-auto-renew",
 			Body:             request,
 			RawBody:          rawBody,
@@ -12192,7 +12210,7 @@ func (s *Server) handleSetProjectPayerRequest(args [1]string, argsEscaped bool, 
 		mreq := middleware.Request{
 			Context:          ctx,
 			OperationName:    SetProjectPayerOperation,
-			OperationSummary: "Choose which account pays for a project",
+			OperationSummary: "Set project payer",
 			OperationID:      "set-project-payer",
 			Body:             request,
 			RawBody:          rawBody,
@@ -12396,7 +12414,7 @@ func (s *Server) handleSettleProjectUsageRequest(args [1]string, argsEscaped boo
 		mreq := middleware.Request{
 			Context:          ctx,
 			OperationName:    SettleProjectUsageOperation,
-			OperationSummary: "Invoice a project's outstanding usage now",
+			OperationSummary: "Settle project usage",
 			OperationID:      "settle-project-usage",
 			Body:             nil,
 			RawBody:          rawBody,
@@ -12602,7 +12620,7 @@ func (s *Server) handleUnbindProjectPayerRequest(args [1]string, argsEscaped boo
 		mreq := middleware.Request{
 			Context:          ctx,
 			OperationName:    UnbindProjectPayerOperation,
-			OperationSummary: "Stop paying for a project",
+			OperationSummary: "Unbind project payer",
 			OperationID:      "unbind-project-payer",
 			Body:             nil,
 			RawBody:          rawBody,
@@ -12820,7 +12838,7 @@ func (s *Server) handleUpdateBillingAccountRequest(args [1]string, argsEscaped b
 		mreq := middleware.Request{
 			Context:          ctx,
 			OperationName:    UpdateBillingAccountOperation,
-			OperationSummary: "Change the account's details",
+			OperationSummary: "Update billing account",
 			OperationID:      "update-billing-account",
 			Body:             request,
 			RawBody:          rawBody,

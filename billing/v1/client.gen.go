@@ -504,6 +504,7 @@ func (e OrderChangeEffective) Valid() bool {
 
 // Defines values for OrderType.
 const (
+	OrderTypeAdopt    OrderType = "adopt"
 	OrderTypeChange   OrderType = "change"
 	OrderTypePurchase OrderType = "purchase"
 	OrderTypeRenew    OrderType = "renew"
@@ -512,6 +513,8 @@ const (
 // Valid indicates whether the value is a known member of the OrderType enum.
 func (e OrderType) Valid() bool {
 	switch e {
+	case OrderTypeAdopt:
+		return true
 	case OrderTypeChange:
 		return true
 	case OrderTypePurchase:
@@ -1018,7 +1021,7 @@ type ActiveResource struct {
 	Quantity   string `json:"quantity"`
 	ResourceId string `json:"resource_id"`
 
-	// ResourceType What it is
+	// ResourceType What it is, as its own service names it.
 	ResourceType *string              `json:"resource_type,omitempty"`
 	StartedAt    time.Time            `json:"started_at"`
 	Status       ActiveResourceStatus `json:"status"`
@@ -1262,7 +1265,7 @@ type CatalogPrice struct {
 	// SetupFee A decimal string, in the currency stated alongside it.
 	SetupFee *Money `json:"setup_fee,omitempty"`
 
-	// Term For prepaid prices
+	// Term For prepaid prices, how many periods one purchase covers.
 	Term *int `json:"term,omitempty"`
 
 	// Tiers Present for `tiered`, in ascending order.
@@ -1767,7 +1770,10 @@ type Order struct {
 	// longer be paid and has to be placed again. Absent once the order is settled.
 	ReservationExpiresAt *time.Time `json:"reservation_expires_at,omitempty"`
 	State                OrderState `json:"state"`
-	Type                 OrderType  `json:"type"`
+
+	// Type `adopt` brings a resource that already existed under billing. It charges nothing at
+	// the time and starts billing from the moment agreed.
+	Type OrderType `json:"type"`
 }
 
 // OrderChangeEffective When a plan change takes effect. `none` on anything that is not a change.
@@ -1776,7 +1782,8 @@ type Order struct {
 // the meantime moves that moment along with it.
 type OrderChangeEffective string
 
-// OrderType defines model for Order.Type.
+// OrderType `adopt` brings a resource that already existed under billing. It charges nothing at
+// the time and starts billing from the moment agreed.
 type OrderType string
 
 // OrderItem defines model for OrderItem.
@@ -1802,11 +1809,15 @@ type OrderItem struct {
 	PriceId  openapi_types.UUID `json:"price_id"`
 
 	// ProductId Which service this line belongs to.
-	ProductId          *openapi_types.UUID `json:"product_id,omitempty"`
-	Quantity           string              `json:"quantity"`
-	ResourceId         *string             `json:"resource_id,omitempty"`
-	ServicePeriodEnd   *time.Time          `json:"service_period_end,omitempty"`
-	ServicePeriodStart *time.Time          `json:"service_period_start,omitempty"`
+	ProductId *openapi_types.UUID `json:"product_id,omitempty"`
+
+	// ProductKey How that service is named, such as `compute`. Read from the catalogue rather than
+	// recorded on the line, so it always matches the service it points at.
+	ProductKey         *string    `json:"product_key,omitempty"`
+	Quantity           string     `json:"quantity"`
+	ResourceId         *string    `json:"resource_id,omitempty"`
+	ServicePeriodEnd   *time.Time `json:"service_period_end,omitempty"`
+	ServicePeriodStart *time.Time `json:"service_period_start,omitempty"`
 
 	// UnitAmount A decimal string, in the currency stated alongside it.
 	UnitAmount *Money `json:"unit_amount,omitempty"`
@@ -2523,7 +2534,7 @@ type Transaction struct {
 	InvoiceId        *openapi_types.UUID `json:"invoice_id,omitempty"`
 	OrderId          *openapi_types.UUID `json:"order_id,omitempty"`
 
-	// Reason Why
+	// Reason Why the money moved, on a manual adjustment.
 	Reason *string `json:"reason,omitempty"`
 
 	// Status `pending` is a payment still with the provider. Only one may be pending against any
@@ -3218,7 +3229,7 @@ func WithRequestEditorFn(fn RequestEditorFn) ClientOption {
 // The interface specification for the client above.
 type ClientInterface interface {
 
-	// ListAllocations Where each amount went
+	// ListAllocations List allocations
 	//
 	// Give `source_id` to follow one top-up or grant through to everything it paid for. Give
 	// `target_id` to see which sources paid for one line of an invoice.
@@ -3229,7 +3240,7 @@ type ClientInterface interface {
 	// Corresponds with GET /account/v1/allocations (the `ListAllocations` operationId).
 	ListAllocations(ctx context.Context, params *ListAllocationsParams, reqEditors ...RequestEditorFn) (*http.Response, error)
 
-	// ListAllowances Included and purchased quantities, and what is left
+	// ListAllowances List allowances
 	//
 	// A quantity rather than an amount of money: bytes, seconds or tokens that are used before
 	// anything is charged for.
@@ -3246,7 +3257,7 @@ type ClientInterface interface {
 	// Corresponds with GET /account/v1/allowances (the `ListAllowances` operationId).
 	ListAllowances(ctx context.Context, params *ListAllowancesParams, reqEditors ...RequestEditorFn) (*http.Response, error)
 
-	// ListAllowanceConsumptions What has been used from one quantity
+	// ListAllowanceConsumptions List allowance consumptions
 	//
 	// Each entry names the charge it covered, so the granted amount, what has been used and
 	// what remains all reconcile.
@@ -3254,12 +3265,12 @@ type ClientInterface interface {
 	// Corresponds with GET /account/v1/allowances/{allowanceId}/consumptions (the `ListAllowanceConsumptions` operationId).
 	ListAllowanceConsumptions(ctx context.Context, allowanceId openapi_types.UUID, params *ListAllowanceConsumptionsParams, reqEditors ...RequestEditorFn) (*http.Response, error)
 
-	// ListBillingAccounts The billing accounts you own
+	// ListBillingAccounts List billing accounts
 	//
 	// Corresponds with GET /account/v1/billing-accounts (the `ListBillingAccounts` operationId).
 	ListBillingAccounts(ctx context.Context, params *ListBillingAccountsParams, reqEditors ...RequestEditorFn) (*http.Response, error)
 
-	// CreateBillingAccountWithBody Open a billing account
+	// CreateBillingAccountWithBody Create billing account
 	//
 	// The currency is chosen here and cannot be changed afterwards. Everything charged to the
 	// account — prices, orders, invoices, balance — is denominated in it.
@@ -3271,7 +3282,7 @@ type ClientInterface interface {
 	// Corresponds with POST /account/v1/billing-accounts (the `CreateBillingAccount` operationId).
 	CreateBillingAccountWithBody(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
 
-	// CreateBillingAccount Open a billing account
+	// CreateBillingAccount Create billing account
 	//
 	// The currency is chosen here and cannot be changed afterwards. Everything charged to the
 	// account — prices, orders, invoices, balance — is denominated in it.
@@ -3283,10 +3294,12 @@ type ClientInterface interface {
 	// Corresponds with POST /account/v1/billing-accounts (the `CreateBillingAccount` operationId).
 	CreateBillingAccount(ctx context.Context, body CreateBillingAccountJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
 
-	// GetBillingAccount performs a GET /account/v1/billing-accounts/{accountId} (the `GetBillingAccount` operationId) request.
+	// GetBillingAccount Get billing account
+	//
+	// Corresponds with GET /account/v1/billing-accounts/{accountId} (the `GetBillingAccount` operationId).
 	GetBillingAccount(ctx context.Context, accountId AccountId, reqEditors ...RequestEditorFn) (*http.Response, error)
 
-	// UpdateBillingAccountWithBody Change the account's details
+	// UpdateBillingAccountWithBody Update billing account
 	//
 	// The legal name, address and tax identifier are copied onto each invoice when it is
 	// issued. Changing them here affects invoices issued afterwards, not those already sent.
@@ -3298,7 +3311,7 @@ type ClientInterface interface {
 	// Corresponds with PATCH /account/v1/billing-accounts/{accountId} (the `UpdateBillingAccount` operationId).
 	UpdateBillingAccountWithBody(ctx context.Context, accountId AccountId, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
 
-	// UpdateBillingAccount Change the account's details
+	// UpdateBillingAccount Update billing account
 	//
 	// The legal name, address and tax identifier are copied onto each invoice when it is
 	// issued. Changing them here affects invoices issued afterwards, not those already sent.
@@ -3310,12 +3323,12 @@ type ClientInterface interface {
 	// Corresponds with PATCH /account/v1/billing-accounts/{accountId} (the `UpdateBillingAccount` operationId).
 	UpdateBillingAccount(ctx context.Context, accountId AccountId, body UpdateBillingAccountJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
 
-	// GetAccountBalance What the account holds and what it can still spend
+	// GetAccountBalance Get account balance
 	//
 	// Corresponds with GET /account/v1/billing-accounts/{accountId}/balance (the `GetAccountBalance` operationId).
 	GetAccountBalance(ctx context.Context, accountId AccountId, reqEditors ...RequestEditorFn) (*http.Response, error)
 
-	// PreviewCodeWithBody Check what a code would give you
+	// PreviewCodeWithBody Preview code
 	//
 	// Nothing is recorded and the code is not consumed. Use it to show the customer the effect
 	// before they commit.
@@ -3325,7 +3338,7 @@ type ClientInterface interface {
 	// Corresponds with POST /account/v1/codes/preview (the `PreviewCode` operationId).
 	PreviewCodeWithBody(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
 
-	// PreviewCode Check what a code would give you
+	// PreviewCode Preview code
 	//
 	// Nothing is recorded and the code is not consumed. Use it to show the customer the effect
 	// before they commit.
@@ -3335,7 +3348,7 @@ type ClientInterface interface {
 	// Corresponds with POST /account/v1/codes/preview (the `PreviewCode` operationId).
 	PreviewCode(ctx context.Context, body PreviewCodeJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
 
-	// RedeemCodeWithBody Redeem a code
+	// RedeemCodeWithBody Redeem code
 	//
 	// A voucher code adds credit to the account. A discount code records the entitlement, which
 	// is then applied to the next qualifying purchase.
@@ -3348,7 +3361,7 @@ type ClientInterface interface {
 	// Corresponds with POST /account/v1/codes/redeem (the `RedeemCode` operationId).
 	RedeemCodeWithBody(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
 
-	// RedeemCode Redeem a code
+	// RedeemCode Redeem code
 	//
 	// A voucher code adds credit to the account. A discount code records the entitlement, which
 	// is then applied to the next qualifying purchase.
@@ -3361,7 +3374,7 @@ type ClientInterface interface {
 	// Corresponds with POST /account/v1/codes/redeem (the `RedeemCode` operationId).
 	RedeemCode(ctx context.Context, body RedeemCodeJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
 
-	// ListCreditGrants Credit and vouchers held on the account
+	// ListCreditGrants List credit grants
 	//
 	// Each grant shows what remains and what it may be used for. Credit is spent before cash
 	// and cannot be withdrawn.
@@ -3369,7 +3382,7 @@ type ClientInterface interface {
 	// Corresponds with GET /account/v1/credit-grants (the `ListCreditGrants` operationId).
 	ListCreditGrants(ctx context.Context, params *ListCreditGrantsParams, reqEditors ...RequestEditorFn) (*http.Response, error)
 
-	// ListEntitlements What your accounts can currently use
+	// ListEntitlements List entitlements
 	//
 	// Capabilities that come with what has been bought. A capability that is not held simply
 	// does not appear, so that "this does not exist" and "this has not been bought" cannot be
@@ -3381,18 +3394,22 @@ type ClientInterface interface {
 	// Corresponds with GET /account/v1/entitlements (the `ListEntitlements` operationId).
 	ListEntitlements(ctx context.Context, params *ListEntitlementsParams, reqEditors ...RequestEditorFn) (*http.Response, error)
 
-	// ListInvoices performs a GET /account/v1/invoices (the `ListInvoices` operationId) request.
+	// ListInvoices List invoices
+	//
+	// Corresponds with GET /account/v1/invoices (the `ListInvoices` operationId).
 	ListInvoices(ctx context.Context, params *ListInvoicesParams, reqEditors ...RequestEditorFn) (*http.Response, error)
 
-	// GetInvoice performs a GET /account/v1/invoices/{invoiceId} (the `GetInvoice` operationId) request.
+	// GetInvoice Get invoice
+	//
+	// Corresponds with GET /account/v1/invoices/{invoiceId} (the `GetInvoice` operationId).
 	GetInvoice(ctx context.Context, invoiceId InvoiceId, reqEditors ...RequestEditorFn) (*http.Response, error)
 
-	// ListInvoiceItems What an invoice is made up of
+	// ListInvoiceItems List invoice items
 	//
 	// Corresponds with GET /account/v1/invoices/{invoiceId}/items (the `ListInvoiceItems` operationId).
 	ListInvoiceItems(ctx context.Context, invoiceId InvoiceId, params *ListInvoiceItemsParams, reqEditors ...RequestEditorFn) (*http.Response, error)
 
-	// PayInvoiceWithBody Pay an outstanding invoice
+	// PayInvoiceWithBody Pay invoice
 	//
 	// Applies the account balance first, then charges the remainder to a payment method. Give
 	// `payment_method_id` to choose one, or omit it to use the default.
@@ -3407,7 +3424,7 @@ type ClientInterface interface {
 	// Corresponds with POST /account/v1/invoices/{invoiceId}/pay (the `PayInvoice` operationId).
 	PayInvoiceWithBody(ctx context.Context, invoiceId InvoiceId, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
 
-	// PayInvoice Pay an outstanding invoice
+	// PayInvoice Pay invoice
 	//
 	// Applies the account balance first, then charges the remainder to a payment method. Give
 	// `payment_method_id` to choose one, or omit it to use the default.
@@ -3422,7 +3439,7 @@ type ClientInterface interface {
 	// Corresponds with POST /account/v1/invoices/{invoiceId}/pay (the `PayInvoice` operationId).
 	PayInvoice(ctx context.Context, invoiceId InvoiceId, body PayInvoiceJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
 
-	// GetInvoiceRefundQuote What refunding this invoice would give back
+	// GetInvoiceRefundQuote Get invoice refund quote
 	//
 	// Show this before asking for a refund. Nothing is recorded and nothing is reserved; the
 	// answer follows from what has been paid and what has already been returned, so it may
@@ -3434,7 +3451,7 @@ type ClientInterface interface {
 	// Corresponds with GET /account/v1/invoices/{invoiceId}/refund-quote (the `GetInvoiceRefundQuote` operationId).
 	GetInvoiceRefundQuote(ctx context.Context, invoiceId InvoiceId, reqEditors ...RequestEditorFn) (*http.Response, error)
 
-	// ListOrders Purchases made against your accounts
+	// ListOrders List orders
 	//
 	// An order in `pending` still owes money; `amount_due` states how much and
 	// `reservation_expires_at` states how long it can still be paid.
@@ -3442,10 +3459,12 @@ type ClientInterface interface {
 	// Corresponds with GET /account/v1/orders (the `ListOrders` operationId).
 	ListOrders(ctx context.Context, params *ListOrdersParams, reqEditors ...RequestEditorFn) (*http.Response, error)
 
-	// GetOrder performs a GET /account/v1/orders/{orderId} (the `GetOrder` operationId) request.
+	// GetOrder Get order
+	//
+	// Corresponds with GET /account/v1/orders/{orderId} (the `GetOrder` operationId).
 	GetOrder(ctx context.Context, orderId OrderId, reqEditors ...RequestEditorFn) (*http.Response, error)
 
-	// CancelScheduledChange Call off a plan change that has not taken effect yet
+	// CancelScheduledChange Cancel scheduled change
 	//
 	// Only for a change scheduled for the end of the period, and only while it is still
 	// pending. An immediate change has already happened by the time it is placed, and there is
@@ -3457,14 +3476,14 @@ type ClientInterface interface {
 	// Corresponds with POST /account/v1/orders/{orderId}/cancel (the `CancelScheduledChange` operationId).
 	CancelScheduledChange(ctx context.Context, orderId OrderId, reqEditors ...RequestEditorFn) (*http.Response, error)
 
-	// ListOrderItems What an order is made up of
+	// ListOrderItems List order items
 	//
 	// One entry per item bought, with the price charged and the period it covers.
 	//
 	// Corresponds with GET /account/v1/orders/{orderId}/items (the `ListOrderItems` operationId).
 	ListOrderItems(ctx context.Context, orderId OrderId, params *ListOrderItemsParams, reqEditors ...RequestEditorFn) (*http.Response, error)
 
-	// PayOrderWithBody Complete payment for an order
+	// PayOrderWithBody Pay order
 	//
 	// Use this to resume an order whose checkout was interrupted.
 	//
@@ -3477,7 +3496,7 @@ type ClientInterface interface {
 	// Corresponds with POST /account/v1/orders/{orderId}/pay (the `PayOrder` operationId).
 	PayOrderWithBody(ctx context.Context, orderId OrderId, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
 
-	// PayOrder Complete payment for an order
+	// PayOrder Pay order
 	//
 	// Use this to resume an order whose checkout was interrupted.
 	//
@@ -3490,7 +3509,7 @@ type ClientInterface interface {
 	// Corresponds with POST /account/v1/orders/{orderId}/pay (the `PayOrder` operationId).
 	PayOrder(ctx context.Context, orderId OrderId, body PayOrderJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
 
-	// GetOrderRefundQuote What refunding this order would give back
+	// GetOrderRefundQuote Get order refund quote
 	//
 	// Show this before asking for a refund. Nothing is recorded and nothing is reserved; the
 	// answer follows from what has been paid and what has already been returned, so it may
@@ -3505,10 +3524,12 @@ type ClientInterface interface {
 	// Corresponds with GET /account/v1/orders/{orderId}/refund-quote (the `GetOrderRefundQuote` operationId).
 	GetOrderRefundQuote(ctx context.Context, orderId OrderId, reqEditors ...RequestEditorFn) (*http.Response, error)
 
-	// ListPaymentMethods performs a GET /account/v1/payment-methods (the `ListPaymentMethods` operationId) request.
+	// ListPaymentMethods List payment methods
+	//
+	// Corresponds with GET /account/v1/payment-methods (the `ListPaymentMethods` operationId).
 	ListPaymentMethods(ctx context.Context, params *ListPaymentMethodsParams, reqEditors ...RequestEditorFn) (*http.Response, error)
 
-	// CreatePaymentMethodSetupWithBody Begin adding a payment method
+	// CreatePaymentMethodSetupWithBody Create payment method setup
 	//
 	// Returns what is needed to hand the browser over to the payment provider's own card
 	// form. Nothing is charged, and the method appears in the list once the provider
@@ -3521,7 +3542,7 @@ type ClientInterface interface {
 	// Corresponds with POST /account/v1/payment-methods/setup (the `CreatePaymentMethodSetup` operationId).
 	CreatePaymentMethodSetupWithBody(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
 
-	// CreatePaymentMethodSetup Begin adding a payment method
+	// CreatePaymentMethodSetup Create payment method setup
 	//
 	// Returns what is needed to hand the browser over to the payment provider's own card
 	// form. Nothing is charged, and the method appears in the list once the provider
@@ -3534,7 +3555,7 @@ type ClientInterface interface {
 	// Corresponds with POST /account/v1/payment-methods/setup (the `CreatePaymentMethodSetup` operationId).
 	CreatePaymentMethodSetup(ctx context.Context, body CreatePaymentMethodSetupJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
 
-	// DeletePaymentMethod Remove a payment method
+	// DeletePaymentMethod Delete payment method
 	//
 	// Refused when it is the only method on an account that has resources billed by the hour,
 	// as there would be nothing left to charge when the balance runs out.
@@ -3542,12 +3563,12 @@ type ClientInterface interface {
 	// Corresponds with DELETE /account/v1/payment-methods/{paymentMethodId} (the `DeletePaymentMethod` operationId).
 	DeletePaymentMethod(ctx context.Context, paymentMethodId PaymentMethodId, reqEditors ...RequestEditorFn) (*http.Response, error)
 
-	// SetDefaultPaymentMethod Choose which method is used automatically
+	// SetDefaultPaymentMethod Set default payment method
 	//
 	// Corresponds with PUT /account/v1/payment-methods/{paymentMethodId}/default (the `SetDefaultPaymentMethod` operationId).
 	SetDefaultPaymentMethod(ctx context.Context, paymentMethodId PaymentMethodId, reqEditors ...RequestEditorFn) (*http.Response, error)
 
-	// PayTogetherWithBody Pay several outstanding invoices and orders at once
+	// PayTogetherWithBody Pay together
 	//
 	// All of them or none. Nothing is settled unless everything named here can be, so a
 	// partial result is not a state this can leave behind.
@@ -3568,7 +3589,7 @@ type ClientInterface interface {
 	// Corresponds with POST /account/v1/payments (the `PayTogether` operationId).
 	PayTogetherWithBody(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
 
-	// PayTogether Pay several outstanding invoices and orders at once
+	// PayTogether Pay together
 	//
 	// All of them or none. Nothing is settled unless everything named here can be, so a
 	// partial result is not a state this can leave behind.
@@ -3589,12 +3610,12 @@ type ClientInterface interface {
 	// Corresponds with POST /account/v1/payments (the `PayTogether` operationId).
 	PayTogether(ctx context.Context, body PayTogetherJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
 
-	// ListPaidProjects The projects your accounts pay for
+	// ListPaidProjects List paid projects
 	//
 	// Corresponds with GET /account/v1/projects (the `ListPaidProjects` operationId).
 	ListPaidProjects(ctx context.Context, params *ListPaidProjectsParams, reqEditors ...RequestEditorFn) (*http.Response, error)
 
-	// UnbindProjectPayer Stop paying for a project
+	// UnbindProjectPayer Unbind project payer
 	//
 	// Permitted only when the project has nothing left to charge: no resources accruing
 	// charges, no subscriptions still running, no usage awaiting invoicing, and no unpaid
@@ -3608,14 +3629,14 @@ type ClientInterface interface {
 	// Corresponds with DELETE /account/v1/projects/{projectId}/billing-account (the `UnbindProjectPayer` operationId).
 	UnbindProjectPayer(ctx context.Context, projectId ProjectId, reqEditors ...RequestEditorFn) (*http.Response, error)
 
-	// FindProjectPayer Which account pays for a project
+	// FindProjectPayer Find project payer
 	//
 	// Returns 404 when no account pays for it. No resources can be created until one does.
 	//
 	// Corresponds with GET /account/v1/projects/{projectId}/billing-account (the `FindProjectPayer` operationId).
 	FindProjectPayer(ctx context.Context, projectId ProjectId, reqEditors ...RequestEditorFn) (*http.Response, error)
 
-	// SetProjectPayerWithBody Choose which account pays for a project
+	// SetProjectPayerWithBody Set project payer
 	//
 	// Charges already recorded remain with the account that was paying when they occurred, and
 	// are still invoiced to it. Metered resources are settled up to the moment of the change.
@@ -3630,7 +3651,7 @@ type ClientInterface interface {
 	// Corresponds with PUT /account/v1/projects/{projectId}/billing-account (the `SetProjectPayer` operationId).
 	SetProjectPayerWithBody(ctx context.Context, projectId ProjectId, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
 
-	// SetProjectPayer Choose which account pays for a project
+	// SetProjectPayer Set project payer
 	//
 	// Charges already recorded remain with the account that was paying when they occurred, and
 	// are still invoiced to it. Metered resources are settled up to the moment of the change.
@@ -3645,7 +3666,7 @@ type ClientInterface interface {
 	// Corresponds with PUT /account/v1/projects/{projectId}/billing-account (the `SetProjectPayer` operationId).
 	SetProjectPayer(ctx context.Context, projectId ProjectId, body SetProjectPayerJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
 
-	// SettleProjectUsage Invoice a project's outstanding usage now
+	// SettleProjectUsage Settle project usage
 	//
 	// Metered usage is normally invoiced at the end of the month. This issues an invoice for
 	// everything charged to the project so far, to the account currently paying for it.
@@ -3656,10 +3677,12 @@ type ClientInterface interface {
 	// Corresponds with POST /account/v1/projects/{projectId}/billing-account/settle (the `SettleProjectUsage` operationId).
 	SettleProjectUsage(ctx context.Context, projectId ProjectId, reqEditors ...RequestEditorFn) (*http.Response, error)
 
-	// ListRefunds performs a GET /account/v1/refunds (the `ListRefunds` operationId) request.
+	// ListRefunds List refunds
+	//
+	// Corresponds with GET /account/v1/refunds (the `ListRefunds` operationId).
 	ListRefunds(ctx context.Context, params *ListRefundsParams, reqEditors ...RequestEditorFn) (*http.Response, error)
 
-	// RequestRefundWithBody Ask for a refund
+	// RequestRefundWithBody Request refund
 	//
 	// Refunding ends the subscription and reclaims whatever it provisioned. That is the
 	// difference from letting a period lapse: a lapsed period keeps the machine around
@@ -3677,7 +3700,7 @@ type ClientInterface interface {
 	// Corresponds with POST /account/v1/refunds (the `RequestRefund` operationId).
 	RequestRefundWithBody(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
 
-	// RequestRefund Ask for a refund
+	// RequestRefund Request refund
 	//
 	// Refunding ends the subscription and reclaims whatever it provisioned. That is the
 	// difference from letting a period lapse: a lapsed period keeps the machine around
@@ -3695,12 +3718,12 @@ type ClientInterface interface {
 	// Corresponds with POST /account/v1/refunds (the `RequestRefund` operationId).
 	RequestRefund(ctx context.Context, body RequestRefundJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
 
-	// ListSubscriptionItems What has been bought, and when each renews
+	// ListSubscriptionItems List subscription items
 	//
 	// Corresponds with GET /account/v1/subscription-items (the `ListSubscriptionItems` operationId).
 	ListSubscriptionItems(ctx context.Context, params *ListSubscriptionItemsParams, reqEditors ...RequestEditorFn) (*http.Response, error)
 
-	// SetAutoRenewWithBody Turn automatic renewal on or off
+	// SetAutoRenewWithBody Set auto renew
 	//
 	// When on, the account balance is charged at the renewal date. Turning it off lets the
 	// current period run to its end and stops the resource afterwards.
@@ -3710,7 +3733,7 @@ type ClientInterface interface {
 	// Corresponds with PUT /account/v1/subscription-items/{itemId}/auto-renew (the `SetAutoRenew` operationId).
 	SetAutoRenewWithBody(ctx context.Context, itemId ItemId, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
 
-	// SetAutoRenew Turn automatic renewal on or off
+	// SetAutoRenew Set auto renew
 	//
 	// When on, the account balance is charged at the renewal date. Turning it off lets the
 	// current period run to its end and stops the resource afterwards.
@@ -3720,7 +3743,7 @@ type ClientInterface interface {
 	// Corresponds with PUT /account/v1/subscription-items/{itemId}/auto-renew (the `SetAutoRenew` operationId).
 	SetAutoRenew(ctx context.Context, itemId ItemId, body SetAutoRenewJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
 
-	// RenewSubscriptionItemWithBody Renew now rather than waiting for the renewal date
+	// RenewSubscriptionItemWithBody Renew subscription item
 	//
 	// Extends the paid period from its current end, not from today, so renewing early does not
 	// shorten what has already been paid for.
@@ -3733,7 +3756,7 @@ type ClientInterface interface {
 	// Corresponds with POST /account/v1/subscription-items/{itemId}/renew (the `RenewSubscriptionItem` operationId).
 	RenewSubscriptionItemWithBody(ctx context.Context, itemId ItemId, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
 
-	// RenewSubscriptionItem Renew now rather than waiting for the renewal date
+	// RenewSubscriptionItem Renew subscription item
 	//
 	// Extends the paid period from its current end, not from today, so renewing early does not
 	// shorten what has already been paid for.
@@ -3746,13 +3769,17 @@ type ClientInterface interface {
 	// Corresponds with POST /account/v1/subscription-items/{itemId}/renew (the `RenewSubscriptionItem` operationId).
 	RenewSubscriptionItem(ctx context.Context, itemId ItemId, body RenewSubscriptionItemJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
 
-	// ListSubscriptions performs a GET /account/v1/subscriptions (the `ListSubscriptions` operationId) request.
+	// ListSubscriptions List subscriptions
+	//
+	// Corresponds with GET /account/v1/subscriptions (the `ListSubscriptions` operationId).
 	ListSubscriptions(ctx context.Context, params *ListSubscriptionsParams, reqEditors ...RequestEditorFn) (*http.Response, error)
 
-	// ListTopUps performs a GET /account/v1/top-ups (the `ListTopUps` operationId) request.
+	// ListTopUps List top ups
+	//
+	// Corresponds with GET /account/v1/top-ups (the `ListTopUps` operationId).
 	ListTopUps(ctx context.Context, params *ListTopUpsParams, reqEditors ...RequestEditorFn) (*http.Response, error)
 
-	// CreateTopUpWithBody Add funds to an account
+	// CreateTopUpWithBody Create top up
 	//
 	// Returns a checkout address. The balance increases when the payment provider confirms the
 	// payment, which may be after this call returns.
@@ -3765,7 +3792,7 @@ type ClientInterface interface {
 	// Corresponds with POST /account/v1/top-ups (the `CreateTopUp` operationId).
 	CreateTopUpWithBody(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
 
-	// CreateTopUp Add funds to an account
+	// CreateTopUp Create top up
 	//
 	// Returns a checkout address. The balance increases when the payment provider confirms the
 	// payment, which may be after this call returns.
@@ -3778,17 +3805,17 @@ type ClientInterface interface {
 	// Corresponds with POST /account/v1/top-ups (the `CreateTopUp` operationId).
 	CreateTopUp(ctx context.Context, body CreateTopUpJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
 
-	// GetTopUp Whether a payment has completed
+	// GetTopUp Get top up
 	//
 	// Corresponds with GET /account/v1/top-ups/{topUpId} (the `GetTopUp` operationId).
 	GetTopUp(ctx context.Context, topUpId openapi_types.UUID, reqEditors ...RequestEditorFn) (*http.Response, error)
 
-	// ListTransactions Every movement of funds on the account
+	// ListTransactions List transactions
 	//
 	// Corresponds with GET /account/v1/transactions (the `ListTransactions` operationId).
 	ListTransactions(ctx context.Context, params *ListTransactionsParams, reqEditors ...RequestEditorFn) (*http.Response, error)
 
-	// ListUsageCharges Metered charges, line by line
+	// ListUsageCharges List usage charges
 	//
 	// Includes charges that have not been invoiced yet, which is how the current month's
 	// spending is seen before the invoice is issued.
@@ -3796,14 +3823,14 @@ type ClientInterface interface {
 	// Corresponds with GET /account/v1/usage-charges (the `ListUsageCharges` operationId).
 	ListUsageCharges(ctx context.Context, params *ListUsageChargesParams, reqEditors ...RequestEditorFn) (*http.Response, error)
 
-	// ListProjectActiveResources What is accruing charges right now
+	// ListProjectActiveResources List project active resources
 	//
 	// A resource that is running but does not appear here is not being charged for.
 	//
 	// Corresponds with GET /api/v1/projects/{projectId}/active-resources (the `ListProjectActiveResources` operationId).
 	ListProjectActiveResources(ctx context.Context, projectId ProjectId, params *ListProjectActiveResourcesParams, reqEditors ...RequestEditorFn) (*http.Response, error)
 
-	// ListProjectAllowances Quantities this project can draw on
+	// ListProjectAllowances List project allowances
 	//
 	// These belong to the paying account and are shared with every other project it pays for,
 	// so what is left here may be consumed elsewhere.
@@ -3811,7 +3838,7 @@ type ClientInterface interface {
 	// Corresponds with GET /api/v1/projects/{projectId}/allowances (the `ListProjectAllowances` operationId).
 	ListProjectAllowances(ctx context.Context, projectId ProjectId, params *ListProjectAllowancesParams, reqEditors ...RequestEditorFn) (*http.Response, error)
 
-	// GetProjectBillingAccount Who pays for this project, and how much is left
+	// GetProjectBillingAccount Get project billing account
 	//
 	// A deliberately narrow view: the payer's identity, its currency, and how much can still
 	// be spent. Cards, invoices and transaction history are not included; they belong to the
@@ -3823,7 +3850,7 @@ type ClientInterface interface {
 	// Corresponds with GET /api/v1/projects/{projectId}/billing-account (the `GetProjectBillingAccount` operationId).
 	GetProjectBillingAccount(ctx context.Context, projectId ProjectId, reqEditors ...RequestEditorFn) (*http.Response, error)
 
-	// ListProjectEntitlements What this project can currently use
+	// ListProjectEntitlements List project entitlements
 	//
 	// Includes capabilities bought for this project and those the paying account holds at
 	// account level.
@@ -3835,7 +3862,7 @@ type ClientInterface interface {
 	// Corresponds with GET /api/v1/projects/{projectId}/entitlements (the `ListProjectEntitlements` operationId).
 	ListProjectEntitlements(ctx context.Context, projectId ProjectId, params *ListProjectEntitlementsParams, reqEditors ...RequestEditorFn) (*http.Response, error)
 
-	// ListProjectOrders Purchases made for this project
+	// ListProjectOrders List project orders
 	//
 	// An order awaiting payment shows what is outstanding. Paying it is done from the billing
 	// centre by the account owner.
@@ -3843,15 +3870,17 @@ type ClientInterface interface {
 	// Corresponds with GET /api/v1/projects/{projectId}/orders (the `ListProjectOrders` operationId).
 	ListProjectOrders(ctx context.Context, projectId ProjectId, params *ListProjectOrdersParams, reqEditors ...RequestEditorFn) (*http.Response, error)
 
-	// GetProjectOrder performs a GET /api/v1/projects/{projectId}/orders/{orderId} (the `GetProjectOrder` operationId) request.
+	// GetProjectOrder Get project order
+	//
+	// Corresponds with GET /api/v1/projects/{projectId}/orders/{orderId} (the `GetProjectOrder` operationId).
 	GetProjectOrder(ctx context.Context, projectId ProjectId, orderId OrderId, reqEditors ...RequestEditorFn) (*http.Response, error)
 
-	// ListProjectOrderItems What an order is made up of
+	// ListProjectOrderItems List project order items
 	//
 	// Corresponds with GET /api/v1/projects/{projectId}/orders/{orderId}/items (the `ListProjectOrderItems` operationId).
 	ListProjectOrderItems(ctx context.Context, projectId ProjectId, orderId OrderId, params *ListProjectOrderItemsParams, reqEditors ...RequestEditorFn) (*http.Response, error)
 
-	// CreateProjectQuoteWithBody Price a purchase before making it
+	// CreateProjectQuoteWithBody Quote for a project
 	//
 	// Priced in the paying account's currency, and at any rate negotiated for that account.
 	// Nothing is reserved and nothing is recorded, so this may be called as often as required.
@@ -3867,7 +3896,7 @@ type ClientInterface interface {
 	// Corresponds with POST /api/v1/projects/{projectId}/quotes (the `CreateProjectQuote` operationId).
 	CreateProjectQuoteWithBody(ctx context.Context, projectId ProjectId, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
 
-	// CreateProjectQuote Price a purchase before making it
+	// CreateProjectQuote Quote for a project
 	//
 	// Priced in the paying account's currency, and at any rate negotiated for that account.
 	// Nothing is reserved and nothing is recorded, so this may be called as often as required.
@@ -3883,7 +3912,7 @@ type ClientInterface interface {
 	// Corresponds with POST /api/v1/projects/{projectId}/quotes (the `CreateProjectQuote` operationId).
 	CreateProjectQuote(ctx context.Context, projectId ProjectId, body CreateProjectQuoteJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
 
-	// ListProjectSpend What this project spent, grouped
+	// ListProjectSpend List project spend
 	//
 	// Covers a closed time range. Both bounds are required: a total without a stated period
 	// cannot be reconciled against an invoice.
@@ -3893,12 +3922,12 @@ type ClientInterface interface {
 	// Corresponds with GET /api/v1/projects/{projectId}/spend (the `ListProjectSpend` operationId).
 	ListProjectSpend(ctx context.Context, projectId ProjectId, params *ListProjectSpendParams, reqEditors ...RequestEditorFn) (*http.Response, error)
 
-	// ListProjectSubscriptionItems What this project has bought, and when each renews
+	// ListProjectSubscriptionItems List project subscription items
 	//
 	// Corresponds with GET /api/v1/projects/{projectId}/subscription-items (the `ListProjectSubscriptionItems` operationId).
 	ListProjectSubscriptionItems(ctx context.Context, projectId ProjectId, params *ListProjectSubscriptionItemsParams, reqEditors ...RequestEditorFn) (*http.Response, error)
 
-	// SetProjectAutoRenewWithBody Turn automatic renewal on or off
+	// SetProjectAutoRenewWithBody Set project auto renew
 	//
 	// Automatic renewal draws on the paying account's balance, which a project member may
 	// commit. Paying by card requires the account owner and is done from the billing centre.
@@ -3908,7 +3937,7 @@ type ClientInterface interface {
 	// Corresponds with PUT /api/v1/projects/{projectId}/subscription-items/{itemId}/auto-renew (the `SetProjectAutoRenew` operationId).
 	SetProjectAutoRenewWithBody(ctx context.Context, projectId ProjectId, itemId ItemId, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
 
-	// SetProjectAutoRenew Turn automatic renewal on or off
+	// SetProjectAutoRenew Set project auto renew
 	//
 	// Automatic renewal draws on the paying account's balance, which a project member may
 	// commit. Paying by card requires the account owner and is done from the billing centre.
@@ -3918,12 +3947,12 @@ type ClientInterface interface {
 	// Corresponds with PUT /api/v1/projects/{projectId}/subscription-items/{itemId}/auto-renew (the `SetProjectAutoRenew` operationId).
 	SetProjectAutoRenew(ctx context.Context, projectId ProjectId, itemId ItemId, body SetProjectAutoRenewJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
 
-	// ListProjectSubscriptions Which services this project has enabled
+	// ListProjectSubscriptions List project subscriptions
 	//
 	// Corresponds with GET /api/v1/projects/{projectId}/subscriptions (the `ListProjectSubscriptions` operationId).
 	ListProjectSubscriptions(ctx context.Context, projectId ProjectId, params *ListProjectSubscriptionsParams, reqEditors ...RequestEditorFn) (*http.Response, error)
 
-	// ListProjectUsageCharges Metered charges for this project, line by line
+	// ListProjectUsageCharges List project usage charges
 	//
 	// The individual charges behind the figures in `/spend`. Amounts here sum to the totals
 	// reported there over the same period.
@@ -3931,7 +3960,7 @@ type ClientInterface interface {
 	// Corresponds with GET /api/v1/projects/{projectId}/usage-charges (the `ListProjectUsageCharges` operationId).
 	ListProjectUsageCharges(ctx context.Context, projectId ProjectId, params *ListProjectUsageChargesParams, reqEditors ...RequestEditorFn) (*http.Response, error)
 
-	// CreateEstimateWithBody Estimate a purchase without signing in
+	// CreateEstimateWithBody Estimate a basket
 	//
 	// Uses public list prices. Nothing is reserved and nothing is recorded, so this may be
 	// called as often as required.
@@ -3947,7 +3976,7 @@ type ClientInterface interface {
 	// Corresponds with POST /catalog/v1/estimates (the `CreateEstimate` operationId).
 	CreateEstimateWithBody(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
 
-	// CreateEstimate Estimate a purchase without signing in
+	// CreateEstimate Estimate a basket
 	//
 	// Uses public list prices. Nothing is reserved and nothing is recorded, so this may be
 	// called as often as required.
@@ -3963,7 +3992,7 @@ type ClientInterface interface {
 	// Corresponds with POST /catalog/v1/estimates (the `CreateEstimate` operationId).
 	CreateEstimate(ctx context.Context, body CreateEstimateJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
 
-	// ListCatalogPrices The ways one plan can be bought
+	// ListCatalogPrices List catalog prices
 	//
 	// Public list prices only. An account holding a negotiated agreement may be charged less;
 	// it is never charged more.
@@ -3971,17 +4000,17 @@ type ClientInterface interface {
 	// Corresponds with GET /catalog/v1/plans/{planId}/prices (the `ListCatalogPrices` operationId).
 	ListCatalogPrices(ctx context.Context, planId PlanId, params *ListCatalogPricesParams, reqEditors ...RequestEditorFn) (*http.Response, error)
 
-	// ListCatalogProducts The services the platform sells
+	// ListCatalogProducts List catalog products
 	//
 	// Corresponds with GET /catalog/v1/products (the `ListCatalogProducts` operationId).
 	ListCatalogProducts(ctx context.Context, params *ListCatalogProductsParams, reqEditors ...RequestEditorFn) (*http.Response, error)
 
-	// ListCatalogPlans What can be bought under one service
+	// ListCatalogPlans List catalog plans
 	//
 	// Corresponds with GET /catalog/v1/products/{productId}/plans (the `ListCatalogPlans` operationId).
 	ListCatalogPlans(ctx context.Context, productId ProductId, params *ListCatalogPlansParams, reqEditors ...RequestEditorFn) (*http.Response, error)
 
-	// ListCatalogRates The rates on a published price list
+	// ListCatalogRates List catalog rates
 	//
 	// Only public price lists are readable here. A list written for a single agreement is not,
 	// and its identifier cannot be used to reach it.
@@ -3990,7 +4019,7 @@ type ClientInterface interface {
 	ListCatalogRates(ctx context.Context, rateCardId RateCardId, params *ListCatalogRatesParams, reqEditors ...RequestEditorFn) (*http.Response, error)
 }
 
-// ListAllocations Where each amount went
+// ListAllocations List allocations
 //
 // Give `source_id` to follow one top-up or grant through to everything it paid for. Give
 // `target_id` to see which sources paid for one line of an invoice.
@@ -4011,7 +4040,7 @@ func (c *Client) ListAllocations(ctx context.Context, params *ListAllocationsPar
 	return c.Client.Do(req)
 }
 
-// ListAllowances Included and purchased quantities, and what is left
+// ListAllowances List allowances
 //
 // A quantity rather than an amount of money: bytes, seconds or tokens that are used before
 // anything is charged for.
@@ -4038,7 +4067,7 @@ func (c *Client) ListAllowances(ctx context.Context, params *ListAllowancesParam
 	return c.Client.Do(req)
 }
 
-// ListAllowanceConsumptions What has been used from one quantity
+// ListAllowanceConsumptions List allowance consumptions
 //
 // Each entry names the charge it covered, so the granted amount, what has been used and
 // what remains all reconcile.
@@ -4056,7 +4085,7 @@ func (c *Client) ListAllowanceConsumptions(ctx context.Context, allowanceId open
 	return c.Client.Do(req)
 }
 
-// ListBillingAccounts The billing accounts you own
+// ListBillingAccounts List billing accounts
 //
 // Corresponds with GET /account/v1/billing-accounts (the `ListBillingAccounts` operationId).
 func (c *Client) ListBillingAccounts(ctx context.Context, params *ListBillingAccountsParams, reqEditors ...RequestEditorFn) (*http.Response, error) {
@@ -4071,7 +4100,7 @@ func (c *Client) ListBillingAccounts(ctx context.Context, params *ListBillingAcc
 	return c.Client.Do(req)
 }
 
-// CreateBillingAccountWithBody Open a billing account
+// CreateBillingAccountWithBody Create billing account
 //
 // The currency is chosen here and cannot be changed afterwards. Everything charged to the
 // account — prices, orders, invoices, balance — is denominated in it.
@@ -4093,7 +4122,7 @@ func (c *Client) CreateBillingAccountWithBody(ctx context.Context, contentType s
 	return c.Client.Do(req)
 }
 
-// CreateBillingAccount Open a billing account
+// CreateBillingAccount Create billing account
 //
 // The currency is chosen here and cannot be changed afterwards. Everything charged to the
 // account — prices, orders, invoices, balance — is denominated in it.
@@ -4115,7 +4144,9 @@ func (c *Client) CreateBillingAccount(ctx context.Context, body CreateBillingAcc
 	return c.Client.Do(req)
 }
 
-// GetBillingAccount performs a GET /account/v1/billing-accounts/{accountId} (the `GetBillingAccount` operationId) request.
+// GetBillingAccount Get billing account
+//
+// Corresponds with GET /account/v1/billing-accounts/{accountId} (the `GetBillingAccount` operationId).
 func (c *Client) GetBillingAccount(ctx context.Context, accountId AccountId, reqEditors ...RequestEditorFn) (*http.Response, error) {
 	req, err := NewGetBillingAccountRequest(c.Server, accountId)
 	if err != nil {
@@ -4128,7 +4159,7 @@ func (c *Client) GetBillingAccount(ctx context.Context, accountId AccountId, req
 	return c.Client.Do(req)
 }
 
-// UpdateBillingAccountWithBody Change the account's details
+// UpdateBillingAccountWithBody Update billing account
 //
 // The legal name, address and tax identifier are copied onto each invoice when it is
 // issued. Changing them here affects invoices issued afterwards, not those already sent.
@@ -4150,7 +4181,7 @@ func (c *Client) UpdateBillingAccountWithBody(ctx context.Context, accountId Acc
 	return c.Client.Do(req)
 }
 
-// UpdateBillingAccount Change the account's details
+// UpdateBillingAccount Update billing account
 //
 // The legal name, address and tax identifier are copied onto each invoice when it is
 // issued. Changing them here affects invoices issued afterwards, not those already sent.
@@ -4172,7 +4203,7 @@ func (c *Client) UpdateBillingAccount(ctx context.Context, accountId AccountId, 
 	return c.Client.Do(req)
 }
 
-// GetAccountBalance What the account holds and what it can still spend
+// GetAccountBalance Get account balance
 //
 // Corresponds with GET /account/v1/billing-accounts/{accountId}/balance (the `GetAccountBalance` operationId).
 func (c *Client) GetAccountBalance(ctx context.Context, accountId AccountId, reqEditors ...RequestEditorFn) (*http.Response, error) {
@@ -4187,7 +4218,7 @@ func (c *Client) GetAccountBalance(ctx context.Context, accountId AccountId, req
 	return c.Client.Do(req)
 }
 
-// PreviewCodeWithBody Check what a code would give you
+// PreviewCodeWithBody Preview code
 //
 // Nothing is recorded and the code is not consumed. Use it to show the customer the effect
 // before they commit.
@@ -4207,7 +4238,7 @@ func (c *Client) PreviewCodeWithBody(ctx context.Context, contentType string, bo
 	return c.Client.Do(req)
 }
 
-// PreviewCode Check what a code would give you
+// PreviewCode Preview code
 //
 // Nothing is recorded and the code is not consumed. Use it to show the customer the effect
 // before they commit.
@@ -4227,7 +4258,7 @@ func (c *Client) PreviewCode(ctx context.Context, body PreviewCodeJSONRequestBod
 	return c.Client.Do(req)
 }
 
-// RedeemCodeWithBody Redeem a code
+// RedeemCodeWithBody Redeem code
 //
 // A voucher code adds credit to the account. A discount code records the entitlement, which
 // is then applied to the next qualifying purchase.
@@ -4250,7 +4281,7 @@ func (c *Client) RedeemCodeWithBody(ctx context.Context, contentType string, bod
 	return c.Client.Do(req)
 }
 
-// RedeemCode Redeem a code
+// RedeemCode Redeem code
 //
 // A voucher code adds credit to the account. A discount code records the entitlement, which
 // is then applied to the next qualifying purchase.
@@ -4273,7 +4304,7 @@ func (c *Client) RedeemCode(ctx context.Context, body RedeemCodeJSONRequestBody,
 	return c.Client.Do(req)
 }
 
-// ListCreditGrants Credit and vouchers held on the account
+// ListCreditGrants List credit grants
 //
 // Each grant shows what remains and what it may be used for. Credit is spent before cash
 // and cannot be withdrawn.
@@ -4291,7 +4322,7 @@ func (c *Client) ListCreditGrants(ctx context.Context, params *ListCreditGrantsP
 	return c.Client.Do(req)
 }
 
-// ListEntitlements What your accounts can currently use
+// ListEntitlements List entitlements
 //
 // Capabilities that come with what has been bought. A capability that is not held simply
 // does not appear, so that "this does not exist" and "this has not been bought" cannot be
@@ -4313,7 +4344,9 @@ func (c *Client) ListEntitlements(ctx context.Context, params *ListEntitlementsP
 	return c.Client.Do(req)
 }
 
-// ListInvoices performs a GET /account/v1/invoices (the `ListInvoices` operationId) request.
+// ListInvoices List invoices
+//
+// Corresponds with GET /account/v1/invoices (the `ListInvoices` operationId).
 func (c *Client) ListInvoices(ctx context.Context, params *ListInvoicesParams, reqEditors ...RequestEditorFn) (*http.Response, error) {
 	req, err := NewListInvoicesRequest(c.Server, params)
 	if err != nil {
@@ -4326,7 +4359,9 @@ func (c *Client) ListInvoices(ctx context.Context, params *ListInvoicesParams, r
 	return c.Client.Do(req)
 }
 
-// GetInvoice performs a GET /account/v1/invoices/{invoiceId} (the `GetInvoice` operationId) request.
+// GetInvoice Get invoice
+//
+// Corresponds with GET /account/v1/invoices/{invoiceId} (the `GetInvoice` operationId).
 func (c *Client) GetInvoice(ctx context.Context, invoiceId InvoiceId, reqEditors ...RequestEditorFn) (*http.Response, error) {
 	req, err := NewGetInvoiceRequest(c.Server, invoiceId)
 	if err != nil {
@@ -4339,7 +4374,7 @@ func (c *Client) GetInvoice(ctx context.Context, invoiceId InvoiceId, reqEditors
 	return c.Client.Do(req)
 }
 
-// ListInvoiceItems What an invoice is made up of
+// ListInvoiceItems List invoice items
 //
 // Corresponds with GET /account/v1/invoices/{invoiceId}/items (the `ListInvoiceItems` operationId).
 func (c *Client) ListInvoiceItems(ctx context.Context, invoiceId InvoiceId, params *ListInvoiceItemsParams, reqEditors ...RequestEditorFn) (*http.Response, error) {
@@ -4354,7 +4389,7 @@ func (c *Client) ListInvoiceItems(ctx context.Context, invoiceId InvoiceId, para
 	return c.Client.Do(req)
 }
 
-// PayInvoiceWithBody Pay an outstanding invoice
+// PayInvoiceWithBody Pay invoice
 //
 // Applies the account balance first, then charges the remainder to a payment method. Give
 // `payment_method_id` to choose one, or omit it to use the default.
@@ -4379,7 +4414,7 @@ func (c *Client) PayInvoiceWithBody(ctx context.Context, invoiceId InvoiceId, co
 	return c.Client.Do(req)
 }
 
-// PayInvoice Pay an outstanding invoice
+// PayInvoice Pay invoice
 //
 // Applies the account balance first, then charges the remainder to a payment method. Give
 // `payment_method_id` to choose one, or omit it to use the default.
@@ -4404,7 +4439,7 @@ func (c *Client) PayInvoice(ctx context.Context, invoiceId InvoiceId, body PayIn
 	return c.Client.Do(req)
 }
 
-// GetInvoiceRefundQuote What refunding this invoice would give back
+// GetInvoiceRefundQuote Get invoice refund quote
 //
 // Show this before asking for a refund. Nothing is recorded and nothing is reserved; the
 // answer follows from what has been paid and what has already been returned, so it may
@@ -4426,7 +4461,7 @@ func (c *Client) GetInvoiceRefundQuote(ctx context.Context, invoiceId InvoiceId,
 	return c.Client.Do(req)
 }
 
-// ListOrders Purchases made against your accounts
+// ListOrders List orders
 //
 // An order in `pending` still owes money; `amount_due` states how much and
 // `reservation_expires_at` states how long it can still be paid.
@@ -4444,7 +4479,9 @@ func (c *Client) ListOrders(ctx context.Context, params *ListOrdersParams, reqEd
 	return c.Client.Do(req)
 }
 
-// GetOrder performs a GET /account/v1/orders/{orderId} (the `GetOrder` operationId) request.
+// GetOrder Get order
+//
+// Corresponds with GET /account/v1/orders/{orderId} (the `GetOrder` operationId).
 func (c *Client) GetOrder(ctx context.Context, orderId OrderId, reqEditors ...RequestEditorFn) (*http.Response, error) {
 	req, err := NewGetOrderRequest(c.Server, orderId)
 	if err != nil {
@@ -4457,7 +4494,7 @@ func (c *Client) GetOrder(ctx context.Context, orderId OrderId, reqEditors ...Re
 	return c.Client.Do(req)
 }
 
-// CancelScheduledChange Call off a plan change that has not taken effect yet
+// CancelScheduledChange Cancel scheduled change
 //
 // Only for a change scheduled for the end of the period, and only while it is still
 // pending. An immediate change has already happened by the time it is placed, and there is
@@ -4479,7 +4516,7 @@ func (c *Client) CancelScheduledChange(ctx context.Context, orderId OrderId, req
 	return c.Client.Do(req)
 }
 
-// ListOrderItems What an order is made up of
+// ListOrderItems List order items
 //
 // One entry per item bought, with the price charged and the period it covers.
 //
@@ -4496,7 +4533,7 @@ func (c *Client) ListOrderItems(ctx context.Context, orderId OrderId, params *Li
 	return c.Client.Do(req)
 }
 
-// PayOrderWithBody Complete payment for an order
+// PayOrderWithBody Pay order
 //
 // Use this to resume an order whose checkout was interrupted.
 //
@@ -4519,7 +4556,7 @@ func (c *Client) PayOrderWithBody(ctx context.Context, orderId OrderId, contentT
 	return c.Client.Do(req)
 }
 
-// PayOrder Complete payment for an order
+// PayOrder Pay order
 //
 // Use this to resume an order whose checkout was interrupted.
 //
@@ -4542,7 +4579,7 @@ func (c *Client) PayOrder(ctx context.Context, orderId OrderId, body PayOrderJSO
 	return c.Client.Do(req)
 }
 
-// GetOrderRefundQuote What refunding this order would give back
+// GetOrderRefundQuote Get order refund quote
 //
 // Show this before asking for a refund. Nothing is recorded and nothing is reserved; the
 // answer follows from what has been paid and what has already been returned, so it may
@@ -4567,7 +4604,9 @@ func (c *Client) GetOrderRefundQuote(ctx context.Context, orderId OrderId, reqEd
 	return c.Client.Do(req)
 }
 
-// ListPaymentMethods performs a GET /account/v1/payment-methods (the `ListPaymentMethods` operationId) request.
+// ListPaymentMethods List payment methods
+//
+// Corresponds with GET /account/v1/payment-methods (the `ListPaymentMethods` operationId).
 func (c *Client) ListPaymentMethods(ctx context.Context, params *ListPaymentMethodsParams, reqEditors ...RequestEditorFn) (*http.Response, error) {
 	req, err := NewListPaymentMethodsRequest(c.Server, params)
 	if err != nil {
@@ -4580,7 +4619,7 @@ func (c *Client) ListPaymentMethods(ctx context.Context, params *ListPaymentMeth
 	return c.Client.Do(req)
 }
 
-// CreatePaymentMethodSetupWithBody Begin adding a payment method
+// CreatePaymentMethodSetupWithBody Create payment method setup
 //
 // Returns what is needed to hand the browser over to the payment provider's own card
 // form. Nothing is charged, and the method appears in the list once the provider
@@ -4603,7 +4642,7 @@ func (c *Client) CreatePaymentMethodSetupWithBody(ctx context.Context, contentTy
 	return c.Client.Do(req)
 }
 
-// CreatePaymentMethodSetup Begin adding a payment method
+// CreatePaymentMethodSetup Create payment method setup
 //
 // Returns what is needed to hand the browser over to the payment provider's own card
 // form. Nothing is charged, and the method appears in the list once the provider
@@ -4626,7 +4665,7 @@ func (c *Client) CreatePaymentMethodSetup(ctx context.Context, body CreatePaymen
 	return c.Client.Do(req)
 }
 
-// DeletePaymentMethod Remove a payment method
+// DeletePaymentMethod Delete payment method
 //
 // Refused when it is the only method on an account that has resources billed by the hour,
 // as there would be nothing left to charge when the balance runs out.
@@ -4644,7 +4683,7 @@ func (c *Client) DeletePaymentMethod(ctx context.Context, paymentMethodId Paymen
 	return c.Client.Do(req)
 }
 
-// SetDefaultPaymentMethod Choose which method is used automatically
+// SetDefaultPaymentMethod Set default payment method
 //
 // Corresponds with PUT /account/v1/payment-methods/{paymentMethodId}/default (the `SetDefaultPaymentMethod` operationId).
 func (c *Client) SetDefaultPaymentMethod(ctx context.Context, paymentMethodId PaymentMethodId, reqEditors ...RequestEditorFn) (*http.Response, error) {
@@ -4659,7 +4698,7 @@ func (c *Client) SetDefaultPaymentMethod(ctx context.Context, paymentMethodId Pa
 	return c.Client.Do(req)
 }
 
-// PayTogetherWithBody Pay several outstanding invoices and orders at once
+// PayTogetherWithBody Pay together
 //
 // All of them or none. Nothing is settled unless everything named here can be, so a
 // partial result is not a state this can leave behind.
@@ -4690,7 +4729,7 @@ func (c *Client) PayTogetherWithBody(ctx context.Context, contentType string, bo
 	return c.Client.Do(req)
 }
 
-// PayTogether Pay several outstanding invoices and orders at once
+// PayTogether Pay together
 //
 // All of them or none. Nothing is settled unless everything named here can be, so a
 // partial result is not a state this can leave behind.
@@ -4721,7 +4760,7 @@ func (c *Client) PayTogether(ctx context.Context, body PayTogetherJSONRequestBod
 	return c.Client.Do(req)
 }
 
-// ListPaidProjects The projects your accounts pay for
+// ListPaidProjects List paid projects
 //
 // Corresponds with GET /account/v1/projects (the `ListPaidProjects` operationId).
 func (c *Client) ListPaidProjects(ctx context.Context, params *ListPaidProjectsParams, reqEditors ...RequestEditorFn) (*http.Response, error) {
@@ -4736,7 +4775,7 @@ func (c *Client) ListPaidProjects(ctx context.Context, params *ListPaidProjectsP
 	return c.Client.Do(req)
 }
 
-// UnbindProjectPayer Stop paying for a project
+// UnbindProjectPayer Unbind project payer
 //
 // Permitted only when the project has nothing left to charge: no resources accruing
 // charges, no subscriptions still running, no usage awaiting invoicing, and no unpaid
@@ -4760,7 +4799,7 @@ func (c *Client) UnbindProjectPayer(ctx context.Context, projectId ProjectId, re
 	return c.Client.Do(req)
 }
 
-// FindProjectPayer Which account pays for a project
+// FindProjectPayer Find project payer
 //
 // Returns 404 when no account pays for it. No resources can be created until one does.
 //
@@ -4777,7 +4816,7 @@ func (c *Client) FindProjectPayer(ctx context.Context, projectId ProjectId, reqE
 	return c.Client.Do(req)
 }
 
-// SetProjectPayerWithBody Choose which account pays for a project
+// SetProjectPayerWithBody Set project payer
 //
 // Charges already recorded remain with the account that was paying when they occurred, and
 // are still invoiced to it. Metered resources are settled up to the moment of the change.
@@ -4802,7 +4841,7 @@ func (c *Client) SetProjectPayerWithBody(ctx context.Context, projectId ProjectI
 	return c.Client.Do(req)
 }
 
-// SetProjectPayer Choose which account pays for a project
+// SetProjectPayer Set project payer
 //
 // Charges already recorded remain with the account that was paying when they occurred, and
 // are still invoiced to it. Metered resources are settled up to the moment of the change.
@@ -4827,7 +4866,7 @@ func (c *Client) SetProjectPayer(ctx context.Context, projectId ProjectId, body 
 	return c.Client.Do(req)
 }
 
-// SettleProjectUsage Invoice a project's outstanding usage now
+// SettleProjectUsage Settle project usage
 //
 // Metered usage is normally invoiced at the end of the month. This issues an invoice for
 // everything charged to the project so far, to the account currently paying for it.
@@ -4848,7 +4887,9 @@ func (c *Client) SettleProjectUsage(ctx context.Context, projectId ProjectId, re
 	return c.Client.Do(req)
 }
 
-// ListRefunds performs a GET /account/v1/refunds (the `ListRefunds` operationId) request.
+// ListRefunds List refunds
+//
+// Corresponds with GET /account/v1/refunds (the `ListRefunds` operationId).
 func (c *Client) ListRefunds(ctx context.Context, params *ListRefundsParams, reqEditors ...RequestEditorFn) (*http.Response, error) {
 	req, err := NewListRefundsRequest(c.Server, params)
 	if err != nil {
@@ -4861,7 +4902,7 @@ func (c *Client) ListRefunds(ctx context.Context, params *ListRefundsParams, req
 	return c.Client.Do(req)
 }
 
-// RequestRefundWithBody Ask for a refund
+// RequestRefundWithBody Request refund
 //
 // Refunding ends the subscription and reclaims whatever it provisioned. That is the
 // difference from letting a period lapse: a lapsed period keeps the machine around
@@ -4889,7 +4930,7 @@ func (c *Client) RequestRefundWithBody(ctx context.Context, contentType string, 
 	return c.Client.Do(req)
 }
 
-// RequestRefund Ask for a refund
+// RequestRefund Request refund
 //
 // Refunding ends the subscription and reclaims whatever it provisioned. That is the
 // difference from letting a period lapse: a lapsed period keeps the machine around
@@ -4917,7 +4958,7 @@ func (c *Client) RequestRefund(ctx context.Context, body RequestRefundJSONReques
 	return c.Client.Do(req)
 }
 
-// ListSubscriptionItems What has been bought, and when each renews
+// ListSubscriptionItems List subscription items
 //
 // Corresponds with GET /account/v1/subscription-items (the `ListSubscriptionItems` operationId).
 func (c *Client) ListSubscriptionItems(ctx context.Context, params *ListSubscriptionItemsParams, reqEditors ...RequestEditorFn) (*http.Response, error) {
@@ -4932,7 +4973,7 @@ func (c *Client) ListSubscriptionItems(ctx context.Context, params *ListSubscrip
 	return c.Client.Do(req)
 }
 
-// SetAutoRenewWithBody Turn automatic renewal on or off
+// SetAutoRenewWithBody Set auto renew
 //
 // When on, the account balance is charged at the renewal date. Turning it off lets the
 // current period run to its end and stops the resource afterwards.
@@ -4952,7 +4993,7 @@ func (c *Client) SetAutoRenewWithBody(ctx context.Context, itemId ItemId, conten
 	return c.Client.Do(req)
 }
 
-// SetAutoRenew Turn automatic renewal on or off
+// SetAutoRenew Set auto renew
 //
 // When on, the account balance is charged at the renewal date. Turning it off lets the
 // current period run to its end and stops the resource afterwards.
@@ -4972,7 +5013,7 @@ func (c *Client) SetAutoRenew(ctx context.Context, itemId ItemId, body SetAutoRe
 	return c.Client.Do(req)
 }
 
-// RenewSubscriptionItemWithBody Renew now rather than waiting for the renewal date
+// RenewSubscriptionItemWithBody Renew subscription item
 //
 // Extends the paid period from its current end, not from today, so renewing early does not
 // shorten what has already been paid for.
@@ -4995,7 +5036,7 @@ func (c *Client) RenewSubscriptionItemWithBody(ctx context.Context, itemId ItemI
 	return c.Client.Do(req)
 }
 
-// RenewSubscriptionItem Renew now rather than waiting for the renewal date
+// RenewSubscriptionItem Renew subscription item
 //
 // Extends the paid period from its current end, not from today, so renewing early does not
 // shorten what has already been paid for.
@@ -5018,7 +5059,9 @@ func (c *Client) RenewSubscriptionItem(ctx context.Context, itemId ItemId, body 
 	return c.Client.Do(req)
 }
 
-// ListSubscriptions performs a GET /account/v1/subscriptions (the `ListSubscriptions` operationId) request.
+// ListSubscriptions List subscriptions
+//
+// Corresponds with GET /account/v1/subscriptions (the `ListSubscriptions` operationId).
 func (c *Client) ListSubscriptions(ctx context.Context, params *ListSubscriptionsParams, reqEditors ...RequestEditorFn) (*http.Response, error) {
 	req, err := NewListSubscriptionsRequest(c.Server, params)
 	if err != nil {
@@ -5031,7 +5074,9 @@ func (c *Client) ListSubscriptions(ctx context.Context, params *ListSubscription
 	return c.Client.Do(req)
 }
 
-// ListTopUps performs a GET /account/v1/top-ups (the `ListTopUps` operationId) request.
+// ListTopUps List top ups
+//
+// Corresponds with GET /account/v1/top-ups (the `ListTopUps` operationId).
 func (c *Client) ListTopUps(ctx context.Context, params *ListTopUpsParams, reqEditors ...RequestEditorFn) (*http.Response, error) {
 	req, err := NewListTopUpsRequest(c.Server, params)
 	if err != nil {
@@ -5044,7 +5089,7 @@ func (c *Client) ListTopUps(ctx context.Context, params *ListTopUpsParams, reqEd
 	return c.Client.Do(req)
 }
 
-// CreateTopUpWithBody Add funds to an account
+// CreateTopUpWithBody Create top up
 //
 // Returns a checkout address. The balance increases when the payment provider confirms the
 // payment, which may be after this call returns.
@@ -5067,7 +5112,7 @@ func (c *Client) CreateTopUpWithBody(ctx context.Context, contentType string, bo
 	return c.Client.Do(req)
 }
 
-// CreateTopUp Add funds to an account
+// CreateTopUp Create top up
 //
 // Returns a checkout address. The balance increases when the payment provider confirms the
 // payment, which may be after this call returns.
@@ -5090,7 +5135,7 @@ func (c *Client) CreateTopUp(ctx context.Context, body CreateTopUpJSONRequestBod
 	return c.Client.Do(req)
 }
 
-// GetTopUp Whether a payment has completed
+// GetTopUp Get top up
 //
 // Corresponds with GET /account/v1/top-ups/{topUpId} (the `GetTopUp` operationId).
 func (c *Client) GetTopUp(ctx context.Context, topUpId openapi_types.UUID, reqEditors ...RequestEditorFn) (*http.Response, error) {
@@ -5105,7 +5150,7 @@ func (c *Client) GetTopUp(ctx context.Context, topUpId openapi_types.UUID, reqEd
 	return c.Client.Do(req)
 }
 
-// ListTransactions Every movement of funds on the account
+// ListTransactions List transactions
 //
 // Corresponds with GET /account/v1/transactions (the `ListTransactions` operationId).
 func (c *Client) ListTransactions(ctx context.Context, params *ListTransactionsParams, reqEditors ...RequestEditorFn) (*http.Response, error) {
@@ -5120,7 +5165,7 @@ func (c *Client) ListTransactions(ctx context.Context, params *ListTransactionsP
 	return c.Client.Do(req)
 }
 
-// ListUsageCharges Metered charges, line by line
+// ListUsageCharges List usage charges
 //
 // Includes charges that have not been invoiced yet, which is how the current month's
 // spending is seen before the invoice is issued.
@@ -5138,7 +5183,7 @@ func (c *Client) ListUsageCharges(ctx context.Context, params *ListUsageChargesP
 	return c.Client.Do(req)
 }
 
-// ListProjectActiveResources What is accruing charges right now
+// ListProjectActiveResources List project active resources
 //
 // A resource that is running but does not appear here is not being charged for.
 //
@@ -5155,7 +5200,7 @@ func (c *Client) ListProjectActiveResources(ctx context.Context, projectId Proje
 	return c.Client.Do(req)
 }
 
-// ListProjectAllowances Quantities this project can draw on
+// ListProjectAllowances List project allowances
 //
 // These belong to the paying account and are shared with every other project it pays for,
 // so what is left here may be consumed elsewhere.
@@ -5173,7 +5218,7 @@ func (c *Client) ListProjectAllowances(ctx context.Context, projectId ProjectId,
 	return c.Client.Do(req)
 }
 
-// GetProjectBillingAccount Who pays for this project, and how much is left
+// GetProjectBillingAccount Get project billing account
 //
 // A deliberately narrow view: the payer's identity, its currency, and how much can still
 // be spent. Cards, invoices and transaction history are not included; they belong to the
@@ -5195,7 +5240,7 @@ func (c *Client) GetProjectBillingAccount(ctx context.Context, projectId Project
 	return c.Client.Do(req)
 }
 
-// ListProjectEntitlements What this project can currently use
+// ListProjectEntitlements List project entitlements
 //
 // Includes capabilities bought for this project and those the paying account holds at
 // account level.
@@ -5217,7 +5262,7 @@ func (c *Client) ListProjectEntitlements(ctx context.Context, projectId ProjectI
 	return c.Client.Do(req)
 }
 
-// ListProjectOrders Purchases made for this project
+// ListProjectOrders List project orders
 //
 // An order awaiting payment shows what is outstanding. Paying it is done from the billing
 // centre by the account owner.
@@ -5235,7 +5280,9 @@ func (c *Client) ListProjectOrders(ctx context.Context, projectId ProjectId, par
 	return c.Client.Do(req)
 }
 
-// GetProjectOrder performs a GET /api/v1/projects/{projectId}/orders/{orderId} (the `GetProjectOrder` operationId) request.
+// GetProjectOrder Get project order
+//
+// Corresponds with GET /api/v1/projects/{projectId}/orders/{orderId} (the `GetProjectOrder` operationId).
 func (c *Client) GetProjectOrder(ctx context.Context, projectId ProjectId, orderId OrderId, reqEditors ...RequestEditorFn) (*http.Response, error) {
 	req, err := NewGetProjectOrderRequest(c.Server, projectId, orderId)
 	if err != nil {
@@ -5248,7 +5295,7 @@ func (c *Client) GetProjectOrder(ctx context.Context, projectId ProjectId, order
 	return c.Client.Do(req)
 }
 
-// ListProjectOrderItems What an order is made up of
+// ListProjectOrderItems List project order items
 //
 // Corresponds with GET /api/v1/projects/{projectId}/orders/{orderId}/items (the `ListProjectOrderItems` operationId).
 func (c *Client) ListProjectOrderItems(ctx context.Context, projectId ProjectId, orderId OrderId, params *ListProjectOrderItemsParams, reqEditors ...RequestEditorFn) (*http.Response, error) {
@@ -5263,7 +5310,7 @@ func (c *Client) ListProjectOrderItems(ctx context.Context, projectId ProjectId,
 	return c.Client.Do(req)
 }
 
-// CreateProjectQuoteWithBody Price a purchase before making it
+// CreateProjectQuoteWithBody Quote for a project
 //
 // Priced in the paying account's currency, and at any rate negotiated for that account.
 // Nothing is reserved and nothing is recorded, so this may be called as often as required.
@@ -5289,7 +5336,7 @@ func (c *Client) CreateProjectQuoteWithBody(ctx context.Context, projectId Proje
 	return c.Client.Do(req)
 }
 
-// CreateProjectQuote Price a purchase before making it
+// CreateProjectQuote Quote for a project
 //
 // Priced in the paying account's currency, and at any rate negotiated for that account.
 // Nothing is reserved and nothing is recorded, so this may be called as often as required.
@@ -5315,7 +5362,7 @@ func (c *Client) CreateProjectQuote(ctx context.Context, projectId ProjectId, bo
 	return c.Client.Do(req)
 }
 
-// ListProjectSpend What this project spent, grouped
+// ListProjectSpend List project spend
 //
 // Covers a closed time range. Both bounds are required: a total without a stated period
 // cannot be reconciled against an invoice.
@@ -5335,7 +5382,7 @@ func (c *Client) ListProjectSpend(ctx context.Context, projectId ProjectId, para
 	return c.Client.Do(req)
 }
 
-// ListProjectSubscriptionItems What this project has bought, and when each renews
+// ListProjectSubscriptionItems List project subscription items
 //
 // Corresponds with GET /api/v1/projects/{projectId}/subscription-items (the `ListProjectSubscriptionItems` operationId).
 func (c *Client) ListProjectSubscriptionItems(ctx context.Context, projectId ProjectId, params *ListProjectSubscriptionItemsParams, reqEditors ...RequestEditorFn) (*http.Response, error) {
@@ -5350,7 +5397,7 @@ func (c *Client) ListProjectSubscriptionItems(ctx context.Context, projectId Pro
 	return c.Client.Do(req)
 }
 
-// SetProjectAutoRenewWithBody Turn automatic renewal on or off
+// SetProjectAutoRenewWithBody Set project auto renew
 //
 // Automatic renewal draws on the paying account's balance, which a project member may
 // commit. Paying by card requires the account owner and is done from the billing centre.
@@ -5370,7 +5417,7 @@ func (c *Client) SetProjectAutoRenewWithBody(ctx context.Context, projectId Proj
 	return c.Client.Do(req)
 }
 
-// SetProjectAutoRenew Turn automatic renewal on or off
+// SetProjectAutoRenew Set project auto renew
 //
 // Automatic renewal draws on the paying account's balance, which a project member may
 // commit. Paying by card requires the account owner and is done from the billing centre.
@@ -5390,7 +5437,7 @@ func (c *Client) SetProjectAutoRenew(ctx context.Context, projectId ProjectId, i
 	return c.Client.Do(req)
 }
 
-// ListProjectSubscriptions Which services this project has enabled
+// ListProjectSubscriptions List project subscriptions
 //
 // Corresponds with GET /api/v1/projects/{projectId}/subscriptions (the `ListProjectSubscriptions` operationId).
 func (c *Client) ListProjectSubscriptions(ctx context.Context, projectId ProjectId, params *ListProjectSubscriptionsParams, reqEditors ...RequestEditorFn) (*http.Response, error) {
@@ -5405,7 +5452,7 @@ func (c *Client) ListProjectSubscriptions(ctx context.Context, projectId Project
 	return c.Client.Do(req)
 }
 
-// ListProjectUsageCharges Metered charges for this project, line by line
+// ListProjectUsageCharges List project usage charges
 //
 // The individual charges behind the figures in `/spend`. Amounts here sum to the totals
 // reported there over the same period.
@@ -5423,7 +5470,7 @@ func (c *Client) ListProjectUsageCharges(ctx context.Context, projectId ProjectI
 	return c.Client.Do(req)
 }
 
-// CreateEstimateWithBody Estimate a purchase without signing in
+// CreateEstimateWithBody Estimate a basket
 //
 // Uses public list prices. Nothing is reserved and nothing is recorded, so this may be
 // called as often as required.
@@ -5449,7 +5496,7 @@ func (c *Client) CreateEstimateWithBody(ctx context.Context, contentType string,
 	return c.Client.Do(req)
 }
 
-// CreateEstimate Estimate a purchase without signing in
+// CreateEstimate Estimate a basket
 //
 // Uses public list prices. Nothing is reserved and nothing is recorded, so this may be
 // called as often as required.
@@ -5475,7 +5522,7 @@ func (c *Client) CreateEstimate(ctx context.Context, body CreateEstimateJSONRequ
 	return c.Client.Do(req)
 }
 
-// ListCatalogPrices The ways one plan can be bought
+// ListCatalogPrices List catalog prices
 //
 // Public list prices only. An account holding a negotiated agreement may be charged less;
 // it is never charged more.
@@ -5493,7 +5540,7 @@ func (c *Client) ListCatalogPrices(ctx context.Context, planId PlanId, params *L
 	return c.Client.Do(req)
 }
 
-// ListCatalogProducts The services the platform sells
+// ListCatalogProducts List catalog products
 //
 // Corresponds with GET /catalog/v1/products (the `ListCatalogProducts` operationId).
 func (c *Client) ListCatalogProducts(ctx context.Context, params *ListCatalogProductsParams, reqEditors ...RequestEditorFn) (*http.Response, error) {
@@ -5508,7 +5555,7 @@ func (c *Client) ListCatalogProducts(ctx context.Context, params *ListCatalogPro
 	return c.Client.Do(req)
 }
 
-// ListCatalogPlans What can be bought under one service
+// ListCatalogPlans List catalog plans
 //
 // Corresponds with GET /catalog/v1/products/{productId}/plans (the `ListCatalogPlans` operationId).
 func (c *Client) ListCatalogPlans(ctx context.Context, productId ProductId, params *ListCatalogPlansParams, reqEditors ...RequestEditorFn) (*http.Response, error) {
@@ -5523,7 +5570,7 @@ func (c *Client) ListCatalogPlans(ctx context.Context, productId ProductId, para
 	return c.Client.Do(req)
 }
 
-// ListCatalogRates The rates on a published price list
+// ListCatalogRates List catalog rates
 //
 // Only public price lists are readable here. A list written for a single agreement is not,
 // and its identifier cannot be used to reach it.
@@ -9699,7 +9746,7 @@ func WithBaseURL(baseURL string) ClientOption {
 // ClientWithResponsesInterface is the interface specification for the client with responses above.
 type ClientWithResponsesInterface interface {
 
-	// ListAllocationsWithResponse Where each amount went
+	// ListAllocationsWithResponse List allocations
 	//
 	// Give `source_id` to follow one top-up or grant through to everything it paid for. Give
 	// `target_id` to see which sources paid for one line of an invoice.
@@ -9712,7 +9759,7 @@ type ClientWithResponsesInterface interface {
 	// Corresponds with GET /account/v1/allocations (the `ListAllocations` operationId).
 	ListAllocationsWithResponse(ctx context.Context, params *ListAllocationsParams, reqEditors ...RequestEditorFn) (*ListAllocationsResponse, error)
 
-	// ListAllowancesWithResponse Included and purchased quantities, and what is left
+	// ListAllowancesWithResponse List allowances
 	//
 	// A quantity rather than an amount of money: bytes, seconds or tokens that are used before
 	// anything is charged for.
@@ -9731,7 +9778,7 @@ type ClientWithResponsesInterface interface {
 	// Corresponds with GET /account/v1/allowances (the `ListAllowances` operationId).
 	ListAllowancesWithResponse(ctx context.Context, params *ListAllowancesParams, reqEditors ...RequestEditorFn) (*ListAllowancesResponse, error)
 
-	// ListAllowanceConsumptionsWithResponse What has been used from one quantity
+	// ListAllowanceConsumptionsWithResponse List allowance consumptions
 	//
 	// Each entry names the charge it covered, so the granted amount, what has been used and
 	// what remains all reconcile.
@@ -9741,14 +9788,14 @@ type ClientWithResponsesInterface interface {
 	// Corresponds with GET /account/v1/allowances/{allowanceId}/consumptions (the `ListAllowanceConsumptions` operationId).
 	ListAllowanceConsumptionsWithResponse(ctx context.Context, allowanceId openapi_types.UUID, params *ListAllowanceConsumptionsParams, reqEditors ...RequestEditorFn) (*ListAllowanceConsumptionsResponse, error)
 
-	// ListBillingAccountsWithResponse The billing accounts you own
+	// ListBillingAccountsWithResponse List billing accounts
 	//
 	// Returns a wrapper object for the known response body format(s).
 	//
 	// Corresponds with GET /account/v1/billing-accounts (the `ListBillingAccounts` operationId).
 	ListBillingAccountsWithResponse(ctx context.Context, params *ListBillingAccountsParams, reqEditors ...RequestEditorFn) (*ListBillingAccountsResponse, error)
 
-	// CreateBillingAccountWithBodyWithResponse Open a billing account
+	// CreateBillingAccountWithBodyWithResponse Create billing account
 	//
 	// The currency is chosen here and cannot be changed afterwards. Everything charged to the
 	// account — prices, orders, invoices, balance — is denominated in it.
@@ -9760,7 +9807,7 @@ type ClientWithResponsesInterface interface {
 	// Corresponds with POST /account/v1/billing-accounts (the `CreateBillingAccount` operationId).
 	CreateBillingAccountWithBodyWithResponse(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*CreateBillingAccountResponse, error)
 
-	// CreateBillingAccountWithResponse Open a billing account
+	// CreateBillingAccountWithResponse Create billing account
 	//
 	// The currency is chosen here and cannot be changed afterwards. Everything charged to the
 	// account — prices, orders, invoices, balance — is denominated in it.
@@ -9772,12 +9819,14 @@ type ClientWithResponsesInterface interface {
 	// Corresponds with POST /account/v1/billing-accounts (the `CreateBillingAccount` operationId).
 	CreateBillingAccountWithResponse(ctx context.Context, body CreateBillingAccountJSONRequestBody, reqEditors ...RequestEditorFn) (*CreateBillingAccountResponse, error)
 
-	// GetBillingAccountWithResponse performs a GET /account/v1/billing-accounts/{accountId} (the `GetBillingAccount` operationId) request.
+	// GetBillingAccountWithResponse Get billing account
 	//
 	// Returns a wrapper object for the known response body format(s).
+	//
+	// Corresponds with GET /account/v1/billing-accounts/{accountId} (the `GetBillingAccount` operationId).
 	GetBillingAccountWithResponse(ctx context.Context, accountId AccountId, reqEditors ...RequestEditorFn) (*GetBillingAccountResponse, error)
 
-	// UpdateBillingAccountWithBodyWithResponse Change the account's details
+	// UpdateBillingAccountWithBodyWithResponse Update billing account
 	//
 	// The legal name, address and tax identifier are copied onto each invoice when it is
 	// issued. Changing them here affects invoices issued afterwards, not those already sent.
@@ -9789,7 +9838,7 @@ type ClientWithResponsesInterface interface {
 	// Corresponds with PATCH /account/v1/billing-accounts/{accountId} (the `UpdateBillingAccount` operationId).
 	UpdateBillingAccountWithBodyWithResponse(ctx context.Context, accountId AccountId, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*UpdateBillingAccountResponse, error)
 
-	// UpdateBillingAccountWithResponse Change the account's details
+	// UpdateBillingAccountWithResponse Update billing account
 	//
 	// The legal name, address and tax identifier are copied onto each invoice when it is
 	// issued. Changing them here affects invoices issued afterwards, not those already sent.
@@ -9801,14 +9850,14 @@ type ClientWithResponsesInterface interface {
 	// Corresponds with PATCH /account/v1/billing-accounts/{accountId} (the `UpdateBillingAccount` operationId).
 	UpdateBillingAccountWithResponse(ctx context.Context, accountId AccountId, body UpdateBillingAccountJSONRequestBody, reqEditors ...RequestEditorFn) (*UpdateBillingAccountResponse, error)
 
-	// GetAccountBalanceWithResponse What the account holds and what it can still spend
+	// GetAccountBalanceWithResponse Get account balance
 	//
 	// Returns a wrapper object for the known response body format(s).
 	//
 	// Corresponds with GET /account/v1/billing-accounts/{accountId}/balance (the `GetAccountBalance` operationId).
 	GetAccountBalanceWithResponse(ctx context.Context, accountId AccountId, reqEditors ...RequestEditorFn) (*GetAccountBalanceResponse, error)
 
-	// PreviewCodeWithBodyWithResponse Check what a code would give you
+	// PreviewCodeWithBodyWithResponse Preview code
 	//
 	// Nothing is recorded and the code is not consumed. Use it to show the customer the effect
 	// before they commit.
@@ -9818,7 +9867,7 @@ type ClientWithResponsesInterface interface {
 	// Corresponds with POST /account/v1/codes/preview (the `PreviewCode` operationId).
 	PreviewCodeWithBodyWithResponse(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*PreviewCodeResponse, error)
 
-	// PreviewCodeWithResponse Check what a code would give you
+	// PreviewCodeWithResponse Preview code
 	//
 	// Nothing is recorded and the code is not consumed. Use it to show the customer the effect
 	// before they commit.
@@ -9828,7 +9877,7 @@ type ClientWithResponsesInterface interface {
 	// Corresponds with POST /account/v1/codes/preview (the `PreviewCode` operationId).
 	PreviewCodeWithResponse(ctx context.Context, body PreviewCodeJSONRequestBody, reqEditors ...RequestEditorFn) (*PreviewCodeResponse, error)
 
-	// RedeemCodeWithBodyWithResponse Redeem a code
+	// RedeemCodeWithBodyWithResponse Redeem code
 	//
 	// A voucher code adds credit to the account. A discount code records the entitlement, which
 	// is then applied to the next qualifying purchase.
@@ -9841,7 +9890,7 @@ type ClientWithResponsesInterface interface {
 	// Corresponds with POST /account/v1/codes/redeem (the `RedeemCode` operationId).
 	RedeemCodeWithBodyWithResponse(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*RedeemCodeResponse, error)
 
-	// RedeemCodeWithResponse Redeem a code
+	// RedeemCodeWithResponse Redeem code
 	//
 	// A voucher code adds credit to the account. A discount code records the entitlement, which
 	// is then applied to the next qualifying purchase.
@@ -9854,7 +9903,7 @@ type ClientWithResponsesInterface interface {
 	// Corresponds with POST /account/v1/codes/redeem (the `RedeemCode` operationId).
 	RedeemCodeWithResponse(ctx context.Context, body RedeemCodeJSONRequestBody, reqEditors ...RequestEditorFn) (*RedeemCodeResponse, error)
 
-	// ListCreditGrantsWithResponse Credit and vouchers held on the account
+	// ListCreditGrantsWithResponse List credit grants
 	//
 	// Each grant shows what remains and what it may be used for. Credit is spent before cash
 	// and cannot be withdrawn.
@@ -9864,7 +9913,7 @@ type ClientWithResponsesInterface interface {
 	// Corresponds with GET /account/v1/credit-grants (the `ListCreditGrants` operationId).
 	ListCreditGrantsWithResponse(ctx context.Context, params *ListCreditGrantsParams, reqEditors ...RequestEditorFn) (*ListCreditGrantsResponse, error)
 
-	// ListEntitlementsWithResponse What your accounts can currently use
+	// ListEntitlementsWithResponse List entitlements
 	//
 	// Capabilities that come with what has been bought. A capability that is not held simply
 	// does not appear, so that "this does not exist" and "this has not been bought" cannot be
@@ -9878,24 +9927,28 @@ type ClientWithResponsesInterface interface {
 	// Corresponds with GET /account/v1/entitlements (the `ListEntitlements` operationId).
 	ListEntitlementsWithResponse(ctx context.Context, params *ListEntitlementsParams, reqEditors ...RequestEditorFn) (*ListEntitlementsResponse, error)
 
-	// ListInvoicesWithResponse performs a GET /account/v1/invoices (the `ListInvoices` operationId) request.
+	// ListInvoicesWithResponse List invoices
 	//
 	// Returns a wrapper object for the known response body format(s).
+	//
+	// Corresponds with GET /account/v1/invoices (the `ListInvoices` operationId).
 	ListInvoicesWithResponse(ctx context.Context, params *ListInvoicesParams, reqEditors ...RequestEditorFn) (*ListInvoicesResponse, error)
 
-	// GetInvoiceWithResponse performs a GET /account/v1/invoices/{invoiceId} (the `GetInvoice` operationId) request.
+	// GetInvoiceWithResponse Get invoice
 	//
 	// Returns a wrapper object for the known response body format(s).
+	//
+	// Corresponds with GET /account/v1/invoices/{invoiceId} (the `GetInvoice` operationId).
 	GetInvoiceWithResponse(ctx context.Context, invoiceId InvoiceId, reqEditors ...RequestEditorFn) (*GetInvoiceResponse, error)
 
-	// ListInvoiceItemsWithResponse What an invoice is made up of
+	// ListInvoiceItemsWithResponse List invoice items
 	//
 	// Returns a wrapper object for the known response body format(s).
 	//
 	// Corresponds with GET /account/v1/invoices/{invoiceId}/items (the `ListInvoiceItems` operationId).
 	ListInvoiceItemsWithResponse(ctx context.Context, invoiceId InvoiceId, params *ListInvoiceItemsParams, reqEditors ...RequestEditorFn) (*ListInvoiceItemsResponse, error)
 
-	// PayInvoiceWithBodyWithResponse Pay an outstanding invoice
+	// PayInvoiceWithBodyWithResponse Pay invoice
 	//
 	// Applies the account balance first, then charges the remainder to a payment method. Give
 	// `payment_method_id` to choose one, or omit it to use the default.
@@ -9910,7 +9963,7 @@ type ClientWithResponsesInterface interface {
 	// Corresponds with POST /account/v1/invoices/{invoiceId}/pay (the `PayInvoice` operationId).
 	PayInvoiceWithBodyWithResponse(ctx context.Context, invoiceId InvoiceId, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*PayInvoiceResponse, error)
 
-	// PayInvoiceWithResponse Pay an outstanding invoice
+	// PayInvoiceWithResponse Pay invoice
 	//
 	// Applies the account balance first, then charges the remainder to a payment method. Give
 	// `payment_method_id` to choose one, or omit it to use the default.
@@ -9925,7 +9978,7 @@ type ClientWithResponsesInterface interface {
 	// Corresponds with POST /account/v1/invoices/{invoiceId}/pay (the `PayInvoice` operationId).
 	PayInvoiceWithResponse(ctx context.Context, invoiceId InvoiceId, body PayInvoiceJSONRequestBody, reqEditors ...RequestEditorFn) (*PayInvoiceResponse, error)
 
-	// GetInvoiceRefundQuoteWithResponse What refunding this invoice would give back
+	// GetInvoiceRefundQuoteWithResponse Get invoice refund quote
 	//
 	// Show this before asking for a refund. Nothing is recorded and nothing is reserved; the
 	// answer follows from what has been paid and what has already been returned, so it may
@@ -9939,7 +9992,7 @@ type ClientWithResponsesInterface interface {
 	// Corresponds with GET /account/v1/invoices/{invoiceId}/refund-quote (the `GetInvoiceRefundQuote` operationId).
 	GetInvoiceRefundQuoteWithResponse(ctx context.Context, invoiceId InvoiceId, reqEditors ...RequestEditorFn) (*GetInvoiceRefundQuoteResponse, error)
 
-	// ListOrdersWithResponse Purchases made against your accounts
+	// ListOrdersWithResponse List orders
 	//
 	// An order in `pending` still owes money; `amount_due` states how much and
 	// `reservation_expires_at` states how long it can still be paid.
@@ -9949,12 +10002,14 @@ type ClientWithResponsesInterface interface {
 	// Corresponds with GET /account/v1/orders (the `ListOrders` operationId).
 	ListOrdersWithResponse(ctx context.Context, params *ListOrdersParams, reqEditors ...RequestEditorFn) (*ListOrdersResponse, error)
 
-	// GetOrderWithResponse performs a GET /account/v1/orders/{orderId} (the `GetOrder` operationId) request.
+	// GetOrderWithResponse Get order
 	//
 	// Returns a wrapper object for the known response body format(s).
+	//
+	// Corresponds with GET /account/v1/orders/{orderId} (the `GetOrder` operationId).
 	GetOrderWithResponse(ctx context.Context, orderId OrderId, reqEditors ...RequestEditorFn) (*GetOrderResponse, error)
 
-	// CancelScheduledChangeWithResponse Call off a plan change that has not taken effect yet
+	// CancelScheduledChangeWithResponse Cancel scheduled change
 	//
 	// Only for a change scheduled for the end of the period, and only while it is still
 	// pending. An immediate change has already happened by the time it is placed, and there is
@@ -9968,7 +10023,7 @@ type ClientWithResponsesInterface interface {
 	// Corresponds with POST /account/v1/orders/{orderId}/cancel (the `CancelScheduledChange` operationId).
 	CancelScheduledChangeWithResponse(ctx context.Context, orderId OrderId, reqEditors ...RequestEditorFn) (*CancelScheduledChangeResponse, error)
 
-	// ListOrderItemsWithResponse What an order is made up of
+	// ListOrderItemsWithResponse List order items
 	//
 	// One entry per item bought, with the price charged and the period it covers.
 	//
@@ -9977,7 +10032,7 @@ type ClientWithResponsesInterface interface {
 	// Corresponds with GET /account/v1/orders/{orderId}/items (the `ListOrderItems` operationId).
 	ListOrderItemsWithResponse(ctx context.Context, orderId OrderId, params *ListOrderItemsParams, reqEditors ...RequestEditorFn) (*ListOrderItemsResponse, error)
 
-	// PayOrderWithBodyWithResponse Complete payment for an order
+	// PayOrderWithBodyWithResponse Pay order
 	//
 	// Use this to resume an order whose checkout was interrupted.
 	//
@@ -9990,7 +10045,7 @@ type ClientWithResponsesInterface interface {
 	// Corresponds with POST /account/v1/orders/{orderId}/pay (the `PayOrder` operationId).
 	PayOrderWithBodyWithResponse(ctx context.Context, orderId OrderId, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*PayOrderResponse, error)
 
-	// PayOrderWithResponse Complete payment for an order
+	// PayOrderWithResponse Pay order
 	//
 	// Use this to resume an order whose checkout was interrupted.
 	//
@@ -10003,7 +10058,7 @@ type ClientWithResponsesInterface interface {
 	// Corresponds with POST /account/v1/orders/{orderId}/pay (the `PayOrder` operationId).
 	PayOrderWithResponse(ctx context.Context, orderId OrderId, body PayOrderJSONRequestBody, reqEditors ...RequestEditorFn) (*PayOrderResponse, error)
 
-	// GetOrderRefundQuoteWithResponse What refunding this order would give back
+	// GetOrderRefundQuoteWithResponse Get order refund quote
 	//
 	// Show this before asking for a refund. Nothing is recorded and nothing is reserved; the
 	// answer follows from what has been paid and what has already been returned, so it may
@@ -10020,12 +10075,14 @@ type ClientWithResponsesInterface interface {
 	// Corresponds with GET /account/v1/orders/{orderId}/refund-quote (the `GetOrderRefundQuote` operationId).
 	GetOrderRefundQuoteWithResponse(ctx context.Context, orderId OrderId, reqEditors ...RequestEditorFn) (*GetOrderRefundQuoteResponse, error)
 
-	// ListPaymentMethodsWithResponse performs a GET /account/v1/payment-methods (the `ListPaymentMethods` operationId) request.
+	// ListPaymentMethodsWithResponse List payment methods
 	//
 	// Returns a wrapper object for the known response body format(s).
+	//
+	// Corresponds with GET /account/v1/payment-methods (the `ListPaymentMethods` operationId).
 	ListPaymentMethodsWithResponse(ctx context.Context, params *ListPaymentMethodsParams, reqEditors ...RequestEditorFn) (*ListPaymentMethodsResponse, error)
 
-	// CreatePaymentMethodSetupWithBodyWithResponse Begin adding a payment method
+	// CreatePaymentMethodSetupWithBodyWithResponse Create payment method setup
 	//
 	// Returns what is needed to hand the browser over to the payment provider's own card
 	// form. Nothing is charged, and the method appears in the list once the provider
@@ -10038,7 +10095,7 @@ type ClientWithResponsesInterface interface {
 	// Corresponds with POST /account/v1/payment-methods/setup (the `CreatePaymentMethodSetup` operationId).
 	CreatePaymentMethodSetupWithBodyWithResponse(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*CreatePaymentMethodSetupResponse, error)
 
-	// CreatePaymentMethodSetupWithResponse Begin adding a payment method
+	// CreatePaymentMethodSetupWithResponse Create payment method setup
 	//
 	// Returns what is needed to hand the browser over to the payment provider's own card
 	// form. Nothing is charged, and the method appears in the list once the provider
@@ -10051,7 +10108,7 @@ type ClientWithResponsesInterface interface {
 	// Corresponds with POST /account/v1/payment-methods/setup (the `CreatePaymentMethodSetup` operationId).
 	CreatePaymentMethodSetupWithResponse(ctx context.Context, body CreatePaymentMethodSetupJSONRequestBody, reqEditors ...RequestEditorFn) (*CreatePaymentMethodSetupResponse, error)
 
-	// DeletePaymentMethodWithResponse Remove a payment method
+	// DeletePaymentMethodWithResponse Delete payment method
 	//
 	// Refused when it is the only method on an account that has resources billed by the hour,
 	// as there would be nothing left to charge when the balance runs out.
@@ -10061,14 +10118,14 @@ type ClientWithResponsesInterface interface {
 	// Corresponds with DELETE /account/v1/payment-methods/{paymentMethodId} (the `DeletePaymentMethod` operationId).
 	DeletePaymentMethodWithResponse(ctx context.Context, paymentMethodId PaymentMethodId, reqEditors ...RequestEditorFn) (*DeletePaymentMethodResponse, error)
 
-	// SetDefaultPaymentMethodWithResponse Choose which method is used automatically
+	// SetDefaultPaymentMethodWithResponse Set default payment method
 	//
 	// Returns a wrapper object for the known response body format(s).
 	//
 	// Corresponds with PUT /account/v1/payment-methods/{paymentMethodId}/default (the `SetDefaultPaymentMethod` operationId).
 	SetDefaultPaymentMethodWithResponse(ctx context.Context, paymentMethodId PaymentMethodId, reqEditors ...RequestEditorFn) (*SetDefaultPaymentMethodResponse, error)
 
-	// PayTogetherWithBodyWithResponse Pay several outstanding invoices and orders at once
+	// PayTogetherWithBodyWithResponse Pay together
 	//
 	// All of them or none. Nothing is settled unless everything named here can be, so a
 	// partial result is not a state this can leave behind.
@@ -10089,7 +10146,7 @@ type ClientWithResponsesInterface interface {
 	// Corresponds with POST /account/v1/payments (the `PayTogether` operationId).
 	PayTogetherWithBodyWithResponse(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*PayTogetherResponse, error)
 
-	// PayTogetherWithResponse Pay several outstanding invoices and orders at once
+	// PayTogetherWithResponse Pay together
 	//
 	// All of them or none. Nothing is settled unless everything named here can be, so a
 	// partial result is not a state this can leave behind.
@@ -10110,14 +10167,14 @@ type ClientWithResponsesInterface interface {
 	// Corresponds with POST /account/v1/payments (the `PayTogether` operationId).
 	PayTogetherWithResponse(ctx context.Context, body PayTogetherJSONRequestBody, reqEditors ...RequestEditorFn) (*PayTogetherResponse, error)
 
-	// ListPaidProjectsWithResponse The projects your accounts pay for
+	// ListPaidProjectsWithResponse List paid projects
 	//
 	// Returns a wrapper object for the known response body format(s).
 	//
 	// Corresponds with GET /account/v1/projects (the `ListPaidProjects` operationId).
 	ListPaidProjectsWithResponse(ctx context.Context, params *ListPaidProjectsParams, reqEditors ...RequestEditorFn) (*ListPaidProjectsResponse, error)
 
-	// UnbindProjectPayerWithResponse Stop paying for a project
+	// UnbindProjectPayerWithResponse Unbind project payer
 	//
 	// Permitted only when the project has nothing left to charge: no resources accruing
 	// charges, no subscriptions still running, no usage awaiting invoicing, and no unpaid
@@ -10133,7 +10190,7 @@ type ClientWithResponsesInterface interface {
 	// Corresponds with DELETE /account/v1/projects/{projectId}/billing-account (the `UnbindProjectPayer` operationId).
 	UnbindProjectPayerWithResponse(ctx context.Context, projectId ProjectId, reqEditors ...RequestEditorFn) (*UnbindProjectPayerResponse, error)
 
-	// FindProjectPayerWithResponse Which account pays for a project
+	// FindProjectPayerWithResponse Find project payer
 	//
 	// Returns 404 when no account pays for it. No resources can be created until one does.
 	//
@@ -10142,7 +10199,7 @@ type ClientWithResponsesInterface interface {
 	// Corresponds with GET /account/v1/projects/{projectId}/billing-account (the `FindProjectPayer` operationId).
 	FindProjectPayerWithResponse(ctx context.Context, projectId ProjectId, reqEditors ...RequestEditorFn) (*FindProjectPayerResponse, error)
 
-	// SetProjectPayerWithBodyWithResponse Choose which account pays for a project
+	// SetProjectPayerWithBodyWithResponse Set project payer
 	//
 	// Charges already recorded remain with the account that was paying when they occurred, and
 	// are still invoiced to it. Metered resources are settled up to the moment of the change.
@@ -10157,7 +10214,7 @@ type ClientWithResponsesInterface interface {
 	// Corresponds with PUT /account/v1/projects/{projectId}/billing-account (the `SetProjectPayer` operationId).
 	SetProjectPayerWithBodyWithResponse(ctx context.Context, projectId ProjectId, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*SetProjectPayerResponse, error)
 
-	// SetProjectPayerWithResponse Choose which account pays for a project
+	// SetProjectPayerWithResponse Set project payer
 	//
 	// Charges already recorded remain with the account that was paying when they occurred, and
 	// are still invoiced to it. Metered resources are settled up to the moment of the change.
@@ -10172,7 +10229,7 @@ type ClientWithResponsesInterface interface {
 	// Corresponds with PUT /account/v1/projects/{projectId}/billing-account (the `SetProjectPayer` operationId).
 	SetProjectPayerWithResponse(ctx context.Context, projectId ProjectId, body SetProjectPayerJSONRequestBody, reqEditors ...RequestEditorFn) (*SetProjectPayerResponse, error)
 
-	// SettleProjectUsageWithResponse Invoice a project's outstanding usage now
+	// SettleProjectUsageWithResponse Settle project usage
 	//
 	// Metered usage is normally invoiced at the end of the month. This issues an invoice for
 	// everything charged to the project so far, to the account currently paying for it.
@@ -10185,12 +10242,14 @@ type ClientWithResponsesInterface interface {
 	// Corresponds with POST /account/v1/projects/{projectId}/billing-account/settle (the `SettleProjectUsage` operationId).
 	SettleProjectUsageWithResponse(ctx context.Context, projectId ProjectId, reqEditors ...RequestEditorFn) (*SettleProjectUsageResponse, error)
 
-	// ListRefundsWithResponse performs a GET /account/v1/refunds (the `ListRefunds` operationId) request.
+	// ListRefundsWithResponse List refunds
 	//
 	// Returns a wrapper object for the known response body format(s).
+	//
+	// Corresponds with GET /account/v1/refunds (the `ListRefunds` operationId).
 	ListRefundsWithResponse(ctx context.Context, params *ListRefundsParams, reqEditors ...RequestEditorFn) (*ListRefundsResponse, error)
 
-	// RequestRefundWithBodyWithResponse Ask for a refund
+	// RequestRefundWithBodyWithResponse Request refund
 	//
 	// Refunding ends the subscription and reclaims whatever it provisioned. That is the
 	// difference from letting a period lapse: a lapsed period keeps the machine around
@@ -10208,7 +10267,7 @@ type ClientWithResponsesInterface interface {
 	// Corresponds with POST /account/v1/refunds (the `RequestRefund` operationId).
 	RequestRefundWithBodyWithResponse(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*RequestRefundResponse, error)
 
-	// RequestRefundWithResponse Ask for a refund
+	// RequestRefundWithResponse Request refund
 	//
 	// Refunding ends the subscription and reclaims whatever it provisioned. That is the
 	// difference from letting a period lapse: a lapsed period keeps the machine around
@@ -10226,14 +10285,14 @@ type ClientWithResponsesInterface interface {
 	// Corresponds with POST /account/v1/refunds (the `RequestRefund` operationId).
 	RequestRefundWithResponse(ctx context.Context, body RequestRefundJSONRequestBody, reqEditors ...RequestEditorFn) (*RequestRefundResponse, error)
 
-	// ListSubscriptionItemsWithResponse What has been bought, and when each renews
+	// ListSubscriptionItemsWithResponse List subscription items
 	//
 	// Returns a wrapper object for the known response body format(s).
 	//
 	// Corresponds with GET /account/v1/subscription-items (the `ListSubscriptionItems` operationId).
 	ListSubscriptionItemsWithResponse(ctx context.Context, params *ListSubscriptionItemsParams, reqEditors ...RequestEditorFn) (*ListSubscriptionItemsResponse, error)
 
-	// SetAutoRenewWithBodyWithResponse Turn automatic renewal on or off
+	// SetAutoRenewWithBodyWithResponse Set auto renew
 	//
 	// When on, the account balance is charged at the renewal date. Turning it off lets the
 	// current period run to its end and stops the resource afterwards.
@@ -10243,7 +10302,7 @@ type ClientWithResponsesInterface interface {
 	// Corresponds with PUT /account/v1/subscription-items/{itemId}/auto-renew (the `SetAutoRenew` operationId).
 	SetAutoRenewWithBodyWithResponse(ctx context.Context, itemId ItemId, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*SetAutoRenewResponse, error)
 
-	// SetAutoRenewWithResponse Turn automatic renewal on or off
+	// SetAutoRenewWithResponse Set auto renew
 	//
 	// When on, the account balance is charged at the renewal date. Turning it off lets the
 	// current period run to its end and stops the resource afterwards.
@@ -10253,7 +10312,7 @@ type ClientWithResponsesInterface interface {
 	// Corresponds with PUT /account/v1/subscription-items/{itemId}/auto-renew (the `SetAutoRenew` operationId).
 	SetAutoRenewWithResponse(ctx context.Context, itemId ItemId, body SetAutoRenewJSONRequestBody, reqEditors ...RequestEditorFn) (*SetAutoRenewResponse, error)
 
-	// RenewSubscriptionItemWithBodyWithResponse Renew now rather than waiting for the renewal date
+	// RenewSubscriptionItemWithBodyWithResponse Renew subscription item
 	//
 	// Extends the paid period from its current end, not from today, so renewing early does not
 	// shorten what has already been paid for.
@@ -10266,7 +10325,7 @@ type ClientWithResponsesInterface interface {
 	// Corresponds with POST /account/v1/subscription-items/{itemId}/renew (the `RenewSubscriptionItem` operationId).
 	RenewSubscriptionItemWithBodyWithResponse(ctx context.Context, itemId ItemId, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*RenewSubscriptionItemResponse, error)
 
-	// RenewSubscriptionItemWithResponse Renew now rather than waiting for the renewal date
+	// RenewSubscriptionItemWithResponse Renew subscription item
 	//
 	// Extends the paid period from its current end, not from today, so renewing early does not
 	// shorten what has already been paid for.
@@ -10279,17 +10338,21 @@ type ClientWithResponsesInterface interface {
 	// Corresponds with POST /account/v1/subscription-items/{itemId}/renew (the `RenewSubscriptionItem` operationId).
 	RenewSubscriptionItemWithResponse(ctx context.Context, itemId ItemId, body RenewSubscriptionItemJSONRequestBody, reqEditors ...RequestEditorFn) (*RenewSubscriptionItemResponse, error)
 
-	// ListSubscriptionsWithResponse performs a GET /account/v1/subscriptions (the `ListSubscriptions` operationId) request.
+	// ListSubscriptionsWithResponse List subscriptions
 	//
 	// Returns a wrapper object for the known response body format(s).
+	//
+	// Corresponds with GET /account/v1/subscriptions (the `ListSubscriptions` operationId).
 	ListSubscriptionsWithResponse(ctx context.Context, params *ListSubscriptionsParams, reqEditors ...RequestEditorFn) (*ListSubscriptionsResponse, error)
 
-	// ListTopUpsWithResponse performs a GET /account/v1/top-ups (the `ListTopUps` operationId) request.
+	// ListTopUpsWithResponse List top ups
 	//
 	// Returns a wrapper object for the known response body format(s).
+	//
+	// Corresponds with GET /account/v1/top-ups (the `ListTopUps` operationId).
 	ListTopUpsWithResponse(ctx context.Context, params *ListTopUpsParams, reqEditors ...RequestEditorFn) (*ListTopUpsResponse, error)
 
-	// CreateTopUpWithBodyWithResponse Add funds to an account
+	// CreateTopUpWithBodyWithResponse Create top up
 	//
 	// Returns a checkout address. The balance increases when the payment provider confirms the
 	// payment, which may be after this call returns.
@@ -10302,7 +10365,7 @@ type ClientWithResponsesInterface interface {
 	// Corresponds with POST /account/v1/top-ups (the `CreateTopUp` operationId).
 	CreateTopUpWithBodyWithResponse(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*CreateTopUpResponse, error)
 
-	// CreateTopUpWithResponse Add funds to an account
+	// CreateTopUpWithResponse Create top up
 	//
 	// Returns a checkout address. The balance increases when the payment provider confirms the
 	// payment, which may be after this call returns.
@@ -10315,21 +10378,21 @@ type ClientWithResponsesInterface interface {
 	// Corresponds with POST /account/v1/top-ups (the `CreateTopUp` operationId).
 	CreateTopUpWithResponse(ctx context.Context, body CreateTopUpJSONRequestBody, reqEditors ...RequestEditorFn) (*CreateTopUpResponse, error)
 
-	// GetTopUpWithResponse Whether a payment has completed
+	// GetTopUpWithResponse Get top up
 	//
 	// Returns a wrapper object for the known response body format(s).
 	//
 	// Corresponds with GET /account/v1/top-ups/{topUpId} (the `GetTopUp` operationId).
 	GetTopUpWithResponse(ctx context.Context, topUpId openapi_types.UUID, reqEditors ...RequestEditorFn) (*GetTopUpResponse, error)
 
-	// ListTransactionsWithResponse Every movement of funds on the account
+	// ListTransactionsWithResponse List transactions
 	//
 	// Returns a wrapper object for the known response body format(s).
 	//
 	// Corresponds with GET /account/v1/transactions (the `ListTransactions` operationId).
 	ListTransactionsWithResponse(ctx context.Context, params *ListTransactionsParams, reqEditors ...RequestEditorFn) (*ListTransactionsResponse, error)
 
-	// ListUsageChargesWithResponse Metered charges, line by line
+	// ListUsageChargesWithResponse List usage charges
 	//
 	// Includes charges that have not been invoiced yet, which is how the current month's
 	// spending is seen before the invoice is issued.
@@ -10339,7 +10402,7 @@ type ClientWithResponsesInterface interface {
 	// Corresponds with GET /account/v1/usage-charges (the `ListUsageCharges` operationId).
 	ListUsageChargesWithResponse(ctx context.Context, params *ListUsageChargesParams, reqEditors ...RequestEditorFn) (*ListUsageChargesResponse, error)
 
-	// ListProjectActiveResourcesWithResponse What is accruing charges right now
+	// ListProjectActiveResourcesWithResponse List project active resources
 	//
 	// A resource that is running but does not appear here is not being charged for.
 	//
@@ -10348,7 +10411,7 @@ type ClientWithResponsesInterface interface {
 	// Corresponds with GET /api/v1/projects/{projectId}/active-resources (the `ListProjectActiveResources` operationId).
 	ListProjectActiveResourcesWithResponse(ctx context.Context, projectId ProjectId, params *ListProjectActiveResourcesParams, reqEditors ...RequestEditorFn) (*ListProjectActiveResourcesResponse, error)
 
-	// ListProjectAllowancesWithResponse Quantities this project can draw on
+	// ListProjectAllowancesWithResponse List project allowances
 	//
 	// These belong to the paying account and are shared with every other project it pays for,
 	// so what is left here may be consumed elsewhere.
@@ -10358,7 +10421,7 @@ type ClientWithResponsesInterface interface {
 	// Corresponds with GET /api/v1/projects/{projectId}/allowances (the `ListProjectAllowances` operationId).
 	ListProjectAllowancesWithResponse(ctx context.Context, projectId ProjectId, params *ListProjectAllowancesParams, reqEditors ...RequestEditorFn) (*ListProjectAllowancesResponse, error)
 
-	// GetProjectBillingAccountWithResponse Who pays for this project, and how much is left
+	// GetProjectBillingAccountWithResponse Get project billing account
 	//
 	// A deliberately narrow view: the payer's identity, its currency, and how much can still
 	// be spent. Cards, invoices and transaction history are not included; they belong to the
@@ -10372,7 +10435,7 @@ type ClientWithResponsesInterface interface {
 	// Corresponds with GET /api/v1/projects/{projectId}/billing-account (the `GetProjectBillingAccount` operationId).
 	GetProjectBillingAccountWithResponse(ctx context.Context, projectId ProjectId, reqEditors ...RequestEditorFn) (*GetProjectBillingAccountResponse, error)
 
-	// ListProjectEntitlementsWithResponse What this project can currently use
+	// ListProjectEntitlementsWithResponse List project entitlements
 	//
 	// Includes capabilities bought for this project and those the paying account holds at
 	// account level.
@@ -10386,7 +10449,7 @@ type ClientWithResponsesInterface interface {
 	// Corresponds with GET /api/v1/projects/{projectId}/entitlements (the `ListProjectEntitlements` operationId).
 	ListProjectEntitlementsWithResponse(ctx context.Context, projectId ProjectId, params *ListProjectEntitlementsParams, reqEditors ...RequestEditorFn) (*ListProjectEntitlementsResponse, error)
 
-	// ListProjectOrdersWithResponse Purchases made for this project
+	// ListProjectOrdersWithResponse List project orders
 	//
 	// An order awaiting payment shows what is outstanding. Paying it is done from the billing
 	// centre by the account owner.
@@ -10396,19 +10459,21 @@ type ClientWithResponsesInterface interface {
 	// Corresponds with GET /api/v1/projects/{projectId}/orders (the `ListProjectOrders` operationId).
 	ListProjectOrdersWithResponse(ctx context.Context, projectId ProjectId, params *ListProjectOrdersParams, reqEditors ...RequestEditorFn) (*ListProjectOrdersResponse, error)
 
-	// GetProjectOrderWithResponse performs a GET /api/v1/projects/{projectId}/orders/{orderId} (the `GetProjectOrder` operationId) request.
+	// GetProjectOrderWithResponse Get project order
 	//
 	// Returns a wrapper object for the known response body format(s).
+	//
+	// Corresponds with GET /api/v1/projects/{projectId}/orders/{orderId} (the `GetProjectOrder` operationId).
 	GetProjectOrderWithResponse(ctx context.Context, projectId ProjectId, orderId OrderId, reqEditors ...RequestEditorFn) (*GetProjectOrderResponse, error)
 
-	// ListProjectOrderItemsWithResponse What an order is made up of
+	// ListProjectOrderItemsWithResponse List project order items
 	//
 	// Returns a wrapper object for the known response body format(s).
 	//
 	// Corresponds with GET /api/v1/projects/{projectId}/orders/{orderId}/items (the `ListProjectOrderItems` operationId).
 	ListProjectOrderItemsWithResponse(ctx context.Context, projectId ProjectId, orderId OrderId, params *ListProjectOrderItemsParams, reqEditors ...RequestEditorFn) (*ListProjectOrderItemsResponse, error)
 
-	// CreateProjectQuoteWithBodyWithResponse Price a purchase before making it
+	// CreateProjectQuoteWithBodyWithResponse Quote for a project
 	//
 	// Priced in the paying account's currency, and at any rate negotiated for that account.
 	// Nothing is reserved and nothing is recorded, so this may be called as often as required.
@@ -10424,7 +10489,7 @@ type ClientWithResponsesInterface interface {
 	// Corresponds with POST /api/v1/projects/{projectId}/quotes (the `CreateProjectQuote` operationId).
 	CreateProjectQuoteWithBodyWithResponse(ctx context.Context, projectId ProjectId, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*CreateProjectQuoteResponse, error)
 
-	// CreateProjectQuoteWithResponse Price a purchase before making it
+	// CreateProjectQuoteWithResponse Quote for a project
 	//
 	// Priced in the paying account's currency, and at any rate negotiated for that account.
 	// Nothing is reserved and nothing is recorded, so this may be called as often as required.
@@ -10440,7 +10505,7 @@ type ClientWithResponsesInterface interface {
 	// Corresponds with POST /api/v1/projects/{projectId}/quotes (the `CreateProjectQuote` operationId).
 	CreateProjectQuoteWithResponse(ctx context.Context, projectId ProjectId, body CreateProjectQuoteJSONRequestBody, reqEditors ...RequestEditorFn) (*CreateProjectQuoteResponse, error)
 
-	// ListProjectSpendWithResponse What this project spent, grouped
+	// ListProjectSpendWithResponse List project spend
 	//
 	// Covers a closed time range. Both bounds are required: a total without a stated period
 	// cannot be reconciled against an invoice.
@@ -10452,14 +10517,14 @@ type ClientWithResponsesInterface interface {
 	// Corresponds with GET /api/v1/projects/{projectId}/spend (the `ListProjectSpend` operationId).
 	ListProjectSpendWithResponse(ctx context.Context, projectId ProjectId, params *ListProjectSpendParams, reqEditors ...RequestEditorFn) (*ListProjectSpendResponse, error)
 
-	// ListProjectSubscriptionItemsWithResponse What this project has bought, and when each renews
+	// ListProjectSubscriptionItemsWithResponse List project subscription items
 	//
 	// Returns a wrapper object for the known response body format(s).
 	//
 	// Corresponds with GET /api/v1/projects/{projectId}/subscription-items (the `ListProjectSubscriptionItems` operationId).
 	ListProjectSubscriptionItemsWithResponse(ctx context.Context, projectId ProjectId, params *ListProjectSubscriptionItemsParams, reqEditors ...RequestEditorFn) (*ListProjectSubscriptionItemsResponse, error)
 
-	// SetProjectAutoRenewWithBodyWithResponse Turn automatic renewal on or off
+	// SetProjectAutoRenewWithBodyWithResponse Set project auto renew
 	//
 	// Automatic renewal draws on the paying account's balance, which a project member may
 	// commit. Paying by card requires the account owner and is done from the billing centre.
@@ -10469,7 +10534,7 @@ type ClientWithResponsesInterface interface {
 	// Corresponds with PUT /api/v1/projects/{projectId}/subscription-items/{itemId}/auto-renew (the `SetProjectAutoRenew` operationId).
 	SetProjectAutoRenewWithBodyWithResponse(ctx context.Context, projectId ProjectId, itemId ItemId, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*SetProjectAutoRenewResponse, error)
 
-	// SetProjectAutoRenewWithResponse Turn automatic renewal on or off
+	// SetProjectAutoRenewWithResponse Set project auto renew
 	//
 	// Automatic renewal draws on the paying account's balance, which a project member may
 	// commit. Paying by card requires the account owner and is done from the billing centre.
@@ -10479,14 +10544,14 @@ type ClientWithResponsesInterface interface {
 	// Corresponds with PUT /api/v1/projects/{projectId}/subscription-items/{itemId}/auto-renew (the `SetProjectAutoRenew` operationId).
 	SetProjectAutoRenewWithResponse(ctx context.Context, projectId ProjectId, itemId ItemId, body SetProjectAutoRenewJSONRequestBody, reqEditors ...RequestEditorFn) (*SetProjectAutoRenewResponse, error)
 
-	// ListProjectSubscriptionsWithResponse Which services this project has enabled
+	// ListProjectSubscriptionsWithResponse List project subscriptions
 	//
 	// Returns a wrapper object for the known response body format(s).
 	//
 	// Corresponds with GET /api/v1/projects/{projectId}/subscriptions (the `ListProjectSubscriptions` operationId).
 	ListProjectSubscriptionsWithResponse(ctx context.Context, projectId ProjectId, params *ListProjectSubscriptionsParams, reqEditors ...RequestEditorFn) (*ListProjectSubscriptionsResponse, error)
 
-	// ListProjectUsageChargesWithResponse Metered charges for this project, line by line
+	// ListProjectUsageChargesWithResponse List project usage charges
 	//
 	// The individual charges behind the figures in `/spend`. Amounts here sum to the totals
 	// reported there over the same period.
@@ -10496,7 +10561,7 @@ type ClientWithResponsesInterface interface {
 	// Corresponds with GET /api/v1/projects/{projectId}/usage-charges (the `ListProjectUsageCharges` operationId).
 	ListProjectUsageChargesWithResponse(ctx context.Context, projectId ProjectId, params *ListProjectUsageChargesParams, reqEditors ...RequestEditorFn) (*ListProjectUsageChargesResponse, error)
 
-	// CreateEstimateWithBodyWithResponse Estimate a purchase without signing in
+	// CreateEstimateWithBodyWithResponse Estimate a basket
 	//
 	// Uses public list prices. Nothing is reserved and nothing is recorded, so this may be
 	// called as often as required.
@@ -10512,7 +10577,7 @@ type ClientWithResponsesInterface interface {
 	// Corresponds with POST /catalog/v1/estimates (the `CreateEstimate` operationId).
 	CreateEstimateWithBodyWithResponse(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*CreateEstimateResponse, error)
 
-	// CreateEstimateWithResponse Estimate a purchase without signing in
+	// CreateEstimateWithResponse Estimate a basket
 	//
 	// Uses public list prices. Nothing is reserved and nothing is recorded, so this may be
 	// called as often as required.
@@ -10528,7 +10593,7 @@ type ClientWithResponsesInterface interface {
 	// Corresponds with POST /catalog/v1/estimates (the `CreateEstimate` operationId).
 	CreateEstimateWithResponse(ctx context.Context, body CreateEstimateJSONRequestBody, reqEditors ...RequestEditorFn) (*CreateEstimateResponse, error)
 
-	// ListCatalogPricesWithResponse The ways one plan can be bought
+	// ListCatalogPricesWithResponse List catalog prices
 	//
 	// Public list prices only. An account holding a negotiated agreement may be charged less;
 	// it is never charged more.
@@ -10538,21 +10603,21 @@ type ClientWithResponsesInterface interface {
 	// Corresponds with GET /catalog/v1/plans/{planId}/prices (the `ListCatalogPrices` operationId).
 	ListCatalogPricesWithResponse(ctx context.Context, planId PlanId, params *ListCatalogPricesParams, reqEditors ...RequestEditorFn) (*ListCatalogPricesResponse, error)
 
-	// ListCatalogProductsWithResponse The services the platform sells
+	// ListCatalogProductsWithResponse List catalog products
 	//
 	// Returns a wrapper object for the known response body format(s).
 	//
 	// Corresponds with GET /catalog/v1/products (the `ListCatalogProducts` operationId).
 	ListCatalogProductsWithResponse(ctx context.Context, params *ListCatalogProductsParams, reqEditors ...RequestEditorFn) (*ListCatalogProductsResponse, error)
 
-	// ListCatalogPlansWithResponse What can be bought under one service
+	// ListCatalogPlansWithResponse List catalog plans
 	//
 	// Returns a wrapper object for the known response body format(s).
 	//
 	// Corresponds with GET /catalog/v1/products/{productId}/plans (the `ListCatalogPlans` operationId).
 	ListCatalogPlansWithResponse(ctx context.Context, productId ProductId, params *ListCatalogPlansParams, reqEditors ...RequestEditorFn) (*ListCatalogPlansResponse, error)
 
-	// ListCatalogRatesWithResponse The rates on a published price list
+	// ListCatalogRatesWithResponse List catalog rates
 	//
 	// Only public price lists are readable here. A list written for a single agreement is not,
 	// and its identifier cannot be used to reach it.
@@ -13581,7 +13646,7 @@ func (r ListCatalogRatesResponse) ContentType() string {
 	return ""
 }
 
-// ListAllocationsWithResponse Where each amount went
+// ListAllocationsWithResponse List allocations
 //
 // Give `source_id` to follow one top-up or grant through to everything it paid for. Give
 // `target_id` to see which sources paid for one line of an invoice.
@@ -13600,7 +13665,7 @@ func (c *ClientWithResponses) ListAllocationsWithResponse(ctx context.Context, p
 	return ParseListAllocationsResponse(rsp)
 }
 
-// ListAllowancesWithResponse Included and purchased quantities, and what is left
+// ListAllowancesWithResponse List allowances
 //
 // A quantity rather than an amount of money: bytes, seconds or tokens that are used before
 // anything is charged for.
@@ -13625,7 +13690,7 @@ func (c *ClientWithResponses) ListAllowancesWithResponse(ctx context.Context, pa
 	return ParseListAllowancesResponse(rsp)
 }
 
-// ListAllowanceConsumptionsWithResponse What has been used from one quantity
+// ListAllowanceConsumptionsWithResponse List allowance consumptions
 //
 // Each entry names the charge it covered, so the granted amount, what has been used and
 // what remains all reconcile.
@@ -13641,7 +13706,7 @@ func (c *ClientWithResponses) ListAllowanceConsumptionsWithResponse(ctx context.
 	return ParseListAllowanceConsumptionsResponse(rsp)
 }
 
-// ListBillingAccountsWithResponse The billing accounts you own
+// ListBillingAccountsWithResponse List billing accounts
 //
 // Returns a wrapper object for the known response body format(s).
 //
@@ -13654,7 +13719,7 @@ func (c *ClientWithResponses) ListBillingAccountsWithResponse(ctx context.Contex
 	return ParseListBillingAccountsResponse(rsp)
 }
 
-// CreateBillingAccountWithBodyWithResponse Open a billing account
+// CreateBillingAccountWithBodyWithResponse Create billing account
 //
 // The currency is chosen here and cannot be changed afterwards. Everything charged to the
 // account — prices, orders, invoices, balance — is denominated in it.
@@ -13672,7 +13737,7 @@ func (c *ClientWithResponses) CreateBillingAccountWithBodyWithResponse(ctx conte
 	return ParseCreateBillingAccountResponse(rsp)
 }
 
-// CreateBillingAccountWithResponse Open a billing account
+// CreateBillingAccountWithResponse Create billing account
 //
 // The currency is chosen here and cannot be changed afterwards. Everything charged to the
 // account — prices, orders, invoices, balance — is denominated in it.
@@ -13690,9 +13755,11 @@ func (c *ClientWithResponses) CreateBillingAccountWithResponse(ctx context.Conte
 	return ParseCreateBillingAccountResponse(rsp)
 }
 
-// GetBillingAccountWithResponse performs a GET /account/v1/billing-accounts/{accountId} (the `GetBillingAccount` operationId) request.
+// GetBillingAccountWithResponse Get billing account
 //
 // Returns a wrapper object for the known response body format(s).
+//
+// Corresponds with GET /account/v1/billing-accounts/{accountId} (the `GetBillingAccount` operationId).
 func (c *ClientWithResponses) GetBillingAccountWithResponse(ctx context.Context, accountId AccountId, reqEditors ...RequestEditorFn) (*GetBillingAccountResponse, error) {
 	rsp, err := c.GetBillingAccount(ctx, accountId, reqEditors...)
 	if err != nil {
@@ -13701,7 +13768,7 @@ func (c *ClientWithResponses) GetBillingAccountWithResponse(ctx context.Context,
 	return ParseGetBillingAccountResponse(rsp)
 }
 
-// UpdateBillingAccountWithBodyWithResponse Change the account's details
+// UpdateBillingAccountWithBodyWithResponse Update billing account
 //
 // The legal name, address and tax identifier are copied onto each invoice when it is
 // issued. Changing them here affects invoices issued afterwards, not those already sent.
@@ -13719,7 +13786,7 @@ func (c *ClientWithResponses) UpdateBillingAccountWithBodyWithResponse(ctx conte
 	return ParseUpdateBillingAccountResponse(rsp)
 }
 
-// UpdateBillingAccountWithResponse Change the account's details
+// UpdateBillingAccountWithResponse Update billing account
 //
 // The legal name, address and tax identifier are copied onto each invoice when it is
 // issued. Changing them here affects invoices issued afterwards, not those already sent.
@@ -13737,7 +13804,7 @@ func (c *ClientWithResponses) UpdateBillingAccountWithResponse(ctx context.Conte
 	return ParseUpdateBillingAccountResponse(rsp)
 }
 
-// GetAccountBalanceWithResponse What the account holds and what it can still spend
+// GetAccountBalanceWithResponse Get account balance
 //
 // Returns a wrapper object for the known response body format(s).
 //
@@ -13750,7 +13817,7 @@ func (c *ClientWithResponses) GetAccountBalanceWithResponse(ctx context.Context,
 	return ParseGetAccountBalanceResponse(rsp)
 }
 
-// PreviewCodeWithBodyWithResponse Check what a code would give you
+// PreviewCodeWithBodyWithResponse Preview code
 //
 // Nothing is recorded and the code is not consumed. Use it to show the customer the effect
 // before they commit.
@@ -13766,7 +13833,7 @@ func (c *ClientWithResponses) PreviewCodeWithBodyWithResponse(ctx context.Contex
 	return ParsePreviewCodeResponse(rsp)
 }
 
-// PreviewCodeWithResponse Check what a code would give you
+// PreviewCodeWithResponse Preview code
 //
 // Nothing is recorded and the code is not consumed. Use it to show the customer the effect
 // before they commit.
@@ -13782,7 +13849,7 @@ func (c *ClientWithResponses) PreviewCodeWithResponse(ctx context.Context, body 
 	return ParsePreviewCodeResponse(rsp)
 }
 
-// RedeemCodeWithBodyWithResponse Redeem a code
+// RedeemCodeWithBodyWithResponse Redeem code
 //
 // A voucher code adds credit to the account. A discount code records the entitlement, which
 // is then applied to the next qualifying purchase.
@@ -13801,7 +13868,7 @@ func (c *ClientWithResponses) RedeemCodeWithBodyWithResponse(ctx context.Context
 	return ParseRedeemCodeResponse(rsp)
 }
 
-// RedeemCodeWithResponse Redeem a code
+// RedeemCodeWithResponse Redeem code
 //
 // A voucher code adds credit to the account. A discount code records the entitlement, which
 // is then applied to the next qualifying purchase.
@@ -13820,7 +13887,7 @@ func (c *ClientWithResponses) RedeemCodeWithResponse(ctx context.Context, body R
 	return ParseRedeemCodeResponse(rsp)
 }
 
-// ListCreditGrantsWithResponse Credit and vouchers held on the account
+// ListCreditGrantsWithResponse List credit grants
 //
 // Each grant shows what remains and what it may be used for. Credit is spent before cash
 // and cannot be withdrawn.
@@ -13836,7 +13903,7 @@ func (c *ClientWithResponses) ListCreditGrantsWithResponse(ctx context.Context, 
 	return ParseListCreditGrantsResponse(rsp)
 }
 
-// ListEntitlementsWithResponse What your accounts can currently use
+// ListEntitlementsWithResponse List entitlements
 //
 // Capabilities that come with what has been bought. A capability that is not held simply
 // does not appear, so that "this does not exist" and "this has not been bought" cannot be
@@ -13856,9 +13923,11 @@ func (c *ClientWithResponses) ListEntitlementsWithResponse(ctx context.Context, 
 	return ParseListEntitlementsResponse(rsp)
 }
 
-// ListInvoicesWithResponse performs a GET /account/v1/invoices (the `ListInvoices` operationId) request.
+// ListInvoicesWithResponse List invoices
 //
 // Returns a wrapper object for the known response body format(s).
+//
+// Corresponds with GET /account/v1/invoices (the `ListInvoices` operationId).
 func (c *ClientWithResponses) ListInvoicesWithResponse(ctx context.Context, params *ListInvoicesParams, reqEditors ...RequestEditorFn) (*ListInvoicesResponse, error) {
 	rsp, err := c.ListInvoices(ctx, params, reqEditors...)
 	if err != nil {
@@ -13867,9 +13936,11 @@ func (c *ClientWithResponses) ListInvoicesWithResponse(ctx context.Context, para
 	return ParseListInvoicesResponse(rsp)
 }
 
-// GetInvoiceWithResponse performs a GET /account/v1/invoices/{invoiceId} (the `GetInvoice` operationId) request.
+// GetInvoiceWithResponse Get invoice
 //
 // Returns a wrapper object for the known response body format(s).
+//
+// Corresponds with GET /account/v1/invoices/{invoiceId} (the `GetInvoice` operationId).
 func (c *ClientWithResponses) GetInvoiceWithResponse(ctx context.Context, invoiceId InvoiceId, reqEditors ...RequestEditorFn) (*GetInvoiceResponse, error) {
 	rsp, err := c.GetInvoice(ctx, invoiceId, reqEditors...)
 	if err != nil {
@@ -13878,7 +13949,7 @@ func (c *ClientWithResponses) GetInvoiceWithResponse(ctx context.Context, invoic
 	return ParseGetInvoiceResponse(rsp)
 }
 
-// ListInvoiceItemsWithResponse What an invoice is made up of
+// ListInvoiceItemsWithResponse List invoice items
 //
 // Returns a wrapper object for the known response body format(s).
 //
@@ -13891,7 +13962,7 @@ func (c *ClientWithResponses) ListInvoiceItemsWithResponse(ctx context.Context, 
 	return ParseListInvoiceItemsResponse(rsp)
 }
 
-// PayInvoiceWithBodyWithResponse Pay an outstanding invoice
+// PayInvoiceWithBodyWithResponse Pay invoice
 //
 // Applies the account balance first, then charges the remainder to a payment method. Give
 // `payment_method_id` to choose one, or omit it to use the default.
@@ -13912,7 +13983,7 @@ func (c *ClientWithResponses) PayInvoiceWithBodyWithResponse(ctx context.Context
 	return ParsePayInvoiceResponse(rsp)
 }
 
-// PayInvoiceWithResponse Pay an outstanding invoice
+// PayInvoiceWithResponse Pay invoice
 //
 // Applies the account balance first, then charges the remainder to a payment method. Give
 // `payment_method_id` to choose one, or omit it to use the default.
@@ -13933,7 +14004,7 @@ func (c *ClientWithResponses) PayInvoiceWithResponse(ctx context.Context, invoic
 	return ParsePayInvoiceResponse(rsp)
 }
 
-// GetInvoiceRefundQuoteWithResponse What refunding this invoice would give back
+// GetInvoiceRefundQuoteWithResponse Get invoice refund quote
 //
 // Show this before asking for a refund. Nothing is recorded and nothing is reserved; the
 // answer follows from what has been paid and what has already been returned, so it may
@@ -13953,7 +14024,7 @@ func (c *ClientWithResponses) GetInvoiceRefundQuoteWithResponse(ctx context.Cont
 	return ParseGetInvoiceRefundQuoteResponse(rsp)
 }
 
-// ListOrdersWithResponse Purchases made against your accounts
+// ListOrdersWithResponse List orders
 //
 // An order in `pending` still owes money; `amount_due` states how much and
 // `reservation_expires_at` states how long it can still be paid.
@@ -13969,9 +14040,11 @@ func (c *ClientWithResponses) ListOrdersWithResponse(ctx context.Context, params
 	return ParseListOrdersResponse(rsp)
 }
 
-// GetOrderWithResponse performs a GET /account/v1/orders/{orderId} (the `GetOrder` operationId) request.
+// GetOrderWithResponse Get order
 //
 // Returns a wrapper object for the known response body format(s).
+//
+// Corresponds with GET /account/v1/orders/{orderId} (the `GetOrder` operationId).
 func (c *ClientWithResponses) GetOrderWithResponse(ctx context.Context, orderId OrderId, reqEditors ...RequestEditorFn) (*GetOrderResponse, error) {
 	rsp, err := c.GetOrder(ctx, orderId, reqEditors...)
 	if err != nil {
@@ -13980,7 +14053,7 @@ func (c *ClientWithResponses) GetOrderWithResponse(ctx context.Context, orderId 
 	return ParseGetOrderResponse(rsp)
 }
 
-// CancelScheduledChangeWithResponse Call off a plan change that has not taken effect yet
+// CancelScheduledChangeWithResponse Cancel scheduled change
 //
 // Only for a change scheduled for the end of the period, and only while it is still
 // pending. An immediate change has already happened by the time it is placed, and there is
@@ -14000,7 +14073,7 @@ func (c *ClientWithResponses) CancelScheduledChangeWithResponse(ctx context.Cont
 	return ParseCancelScheduledChangeResponse(rsp)
 }
 
-// ListOrderItemsWithResponse What an order is made up of
+// ListOrderItemsWithResponse List order items
 //
 // One entry per item bought, with the price charged and the period it covers.
 //
@@ -14015,7 +14088,7 @@ func (c *ClientWithResponses) ListOrderItemsWithResponse(ctx context.Context, or
 	return ParseListOrderItemsResponse(rsp)
 }
 
-// PayOrderWithBodyWithResponse Complete payment for an order
+// PayOrderWithBodyWithResponse Pay order
 //
 // Use this to resume an order whose checkout was interrupted.
 //
@@ -14034,7 +14107,7 @@ func (c *ClientWithResponses) PayOrderWithBodyWithResponse(ctx context.Context, 
 	return ParsePayOrderResponse(rsp)
 }
 
-// PayOrderWithResponse Complete payment for an order
+// PayOrderWithResponse Pay order
 //
 // Use this to resume an order whose checkout was interrupted.
 //
@@ -14053,7 +14126,7 @@ func (c *ClientWithResponses) PayOrderWithResponse(ctx context.Context, orderId 
 	return ParsePayOrderResponse(rsp)
 }
 
-// GetOrderRefundQuoteWithResponse What refunding this order would give back
+// GetOrderRefundQuoteWithResponse Get order refund quote
 //
 // Show this before asking for a refund. Nothing is recorded and nothing is reserved; the
 // answer follows from what has been paid and what has already been returned, so it may
@@ -14076,9 +14149,11 @@ func (c *ClientWithResponses) GetOrderRefundQuoteWithResponse(ctx context.Contex
 	return ParseGetOrderRefundQuoteResponse(rsp)
 }
 
-// ListPaymentMethodsWithResponse performs a GET /account/v1/payment-methods (the `ListPaymentMethods` operationId) request.
+// ListPaymentMethodsWithResponse List payment methods
 //
 // Returns a wrapper object for the known response body format(s).
+//
+// Corresponds with GET /account/v1/payment-methods (the `ListPaymentMethods` operationId).
 func (c *ClientWithResponses) ListPaymentMethodsWithResponse(ctx context.Context, params *ListPaymentMethodsParams, reqEditors ...RequestEditorFn) (*ListPaymentMethodsResponse, error) {
 	rsp, err := c.ListPaymentMethods(ctx, params, reqEditors...)
 	if err != nil {
@@ -14087,7 +14162,7 @@ func (c *ClientWithResponses) ListPaymentMethodsWithResponse(ctx context.Context
 	return ParseListPaymentMethodsResponse(rsp)
 }
 
-// CreatePaymentMethodSetupWithBodyWithResponse Begin adding a payment method
+// CreatePaymentMethodSetupWithBodyWithResponse Create payment method setup
 //
 // Returns what is needed to hand the browser over to the payment provider's own card
 // form. Nothing is charged, and the method appears in the list once the provider
@@ -14106,7 +14181,7 @@ func (c *ClientWithResponses) CreatePaymentMethodSetupWithBodyWithResponse(ctx c
 	return ParseCreatePaymentMethodSetupResponse(rsp)
 }
 
-// CreatePaymentMethodSetupWithResponse Begin adding a payment method
+// CreatePaymentMethodSetupWithResponse Create payment method setup
 //
 // Returns what is needed to hand the browser over to the payment provider's own card
 // form. Nothing is charged, and the method appears in the list once the provider
@@ -14125,7 +14200,7 @@ func (c *ClientWithResponses) CreatePaymentMethodSetupWithResponse(ctx context.C
 	return ParseCreatePaymentMethodSetupResponse(rsp)
 }
 
-// DeletePaymentMethodWithResponse Remove a payment method
+// DeletePaymentMethodWithResponse Delete payment method
 //
 // Refused when it is the only method on an account that has resources billed by the hour,
 // as there would be nothing left to charge when the balance runs out.
@@ -14141,7 +14216,7 @@ func (c *ClientWithResponses) DeletePaymentMethodWithResponse(ctx context.Contex
 	return ParseDeletePaymentMethodResponse(rsp)
 }
 
-// SetDefaultPaymentMethodWithResponse Choose which method is used automatically
+// SetDefaultPaymentMethodWithResponse Set default payment method
 //
 // Returns a wrapper object for the known response body format(s).
 //
@@ -14154,7 +14229,7 @@ func (c *ClientWithResponses) SetDefaultPaymentMethodWithResponse(ctx context.Co
 	return ParseSetDefaultPaymentMethodResponse(rsp)
 }
 
-// PayTogetherWithBodyWithResponse Pay several outstanding invoices and orders at once
+// PayTogetherWithBodyWithResponse Pay together
 //
 // All of them or none. Nothing is settled unless everything named here can be, so a
 // partial result is not a state this can leave behind.
@@ -14181,7 +14256,7 @@ func (c *ClientWithResponses) PayTogetherWithBodyWithResponse(ctx context.Contex
 	return ParsePayTogetherResponse(rsp)
 }
 
-// PayTogetherWithResponse Pay several outstanding invoices and orders at once
+// PayTogetherWithResponse Pay together
 //
 // All of them or none. Nothing is settled unless everything named here can be, so a
 // partial result is not a state this can leave behind.
@@ -14208,7 +14283,7 @@ func (c *ClientWithResponses) PayTogetherWithResponse(ctx context.Context, body 
 	return ParsePayTogetherResponse(rsp)
 }
 
-// ListPaidProjectsWithResponse The projects your accounts pay for
+// ListPaidProjectsWithResponse List paid projects
 //
 // Returns a wrapper object for the known response body format(s).
 //
@@ -14221,7 +14296,7 @@ func (c *ClientWithResponses) ListPaidProjectsWithResponse(ctx context.Context, 
 	return ParseListPaidProjectsResponse(rsp)
 }
 
-// UnbindProjectPayerWithResponse Stop paying for a project
+// UnbindProjectPayerWithResponse Unbind project payer
 //
 // Permitted only when the project has nothing left to charge: no resources accruing
 // charges, no subscriptions still running, no usage awaiting invoicing, and no unpaid
@@ -14243,7 +14318,7 @@ func (c *ClientWithResponses) UnbindProjectPayerWithResponse(ctx context.Context
 	return ParseUnbindProjectPayerResponse(rsp)
 }
 
-// FindProjectPayerWithResponse Which account pays for a project
+// FindProjectPayerWithResponse Find project payer
 //
 // Returns 404 when no account pays for it. No resources can be created until one does.
 //
@@ -14258,7 +14333,7 @@ func (c *ClientWithResponses) FindProjectPayerWithResponse(ctx context.Context, 
 	return ParseFindProjectPayerResponse(rsp)
 }
 
-// SetProjectPayerWithBodyWithResponse Choose which account pays for a project
+// SetProjectPayerWithBodyWithResponse Set project payer
 //
 // Charges already recorded remain with the account that was paying when they occurred, and
 // are still invoiced to it. Metered resources are settled up to the moment of the change.
@@ -14279,7 +14354,7 @@ func (c *ClientWithResponses) SetProjectPayerWithBodyWithResponse(ctx context.Co
 	return ParseSetProjectPayerResponse(rsp)
 }
 
-// SetProjectPayerWithResponse Choose which account pays for a project
+// SetProjectPayerWithResponse Set project payer
 //
 // Charges already recorded remain with the account that was paying when they occurred, and
 // are still invoiced to it. Metered resources are settled up to the moment of the change.
@@ -14300,7 +14375,7 @@ func (c *ClientWithResponses) SetProjectPayerWithResponse(ctx context.Context, p
 	return ParseSetProjectPayerResponse(rsp)
 }
 
-// SettleProjectUsageWithResponse Invoice a project's outstanding usage now
+// SettleProjectUsageWithResponse Settle project usage
 //
 // Metered usage is normally invoiced at the end of the month. This issues an invoice for
 // everything charged to the project so far, to the account currently paying for it.
@@ -14319,9 +14394,11 @@ func (c *ClientWithResponses) SettleProjectUsageWithResponse(ctx context.Context
 	return ParseSettleProjectUsageResponse(rsp)
 }
 
-// ListRefundsWithResponse performs a GET /account/v1/refunds (the `ListRefunds` operationId) request.
+// ListRefundsWithResponse List refunds
 //
 // Returns a wrapper object for the known response body format(s).
+//
+// Corresponds with GET /account/v1/refunds (the `ListRefunds` operationId).
 func (c *ClientWithResponses) ListRefundsWithResponse(ctx context.Context, params *ListRefundsParams, reqEditors ...RequestEditorFn) (*ListRefundsResponse, error) {
 	rsp, err := c.ListRefunds(ctx, params, reqEditors...)
 	if err != nil {
@@ -14330,7 +14407,7 @@ func (c *ClientWithResponses) ListRefundsWithResponse(ctx context.Context, param
 	return ParseListRefundsResponse(rsp)
 }
 
-// RequestRefundWithBodyWithResponse Ask for a refund
+// RequestRefundWithBodyWithResponse Request refund
 //
 // Refunding ends the subscription and reclaims whatever it provisioned. That is the
 // difference from letting a period lapse: a lapsed period keeps the machine around
@@ -14354,7 +14431,7 @@ func (c *ClientWithResponses) RequestRefundWithBodyWithResponse(ctx context.Cont
 	return ParseRequestRefundResponse(rsp)
 }
 
-// RequestRefundWithResponse Ask for a refund
+// RequestRefundWithResponse Request refund
 //
 // Refunding ends the subscription and reclaims whatever it provisioned. That is the
 // difference from letting a period lapse: a lapsed period keeps the machine around
@@ -14378,7 +14455,7 @@ func (c *ClientWithResponses) RequestRefundWithResponse(ctx context.Context, bod
 	return ParseRequestRefundResponse(rsp)
 }
 
-// ListSubscriptionItemsWithResponse What has been bought, and when each renews
+// ListSubscriptionItemsWithResponse List subscription items
 //
 // Returns a wrapper object for the known response body format(s).
 //
@@ -14391,7 +14468,7 @@ func (c *ClientWithResponses) ListSubscriptionItemsWithResponse(ctx context.Cont
 	return ParseListSubscriptionItemsResponse(rsp)
 }
 
-// SetAutoRenewWithBodyWithResponse Turn automatic renewal on or off
+// SetAutoRenewWithBodyWithResponse Set auto renew
 //
 // When on, the account balance is charged at the renewal date. Turning it off lets the
 // current period run to its end and stops the resource afterwards.
@@ -14407,7 +14484,7 @@ func (c *ClientWithResponses) SetAutoRenewWithBodyWithResponse(ctx context.Conte
 	return ParseSetAutoRenewResponse(rsp)
 }
 
-// SetAutoRenewWithResponse Turn automatic renewal on or off
+// SetAutoRenewWithResponse Set auto renew
 //
 // When on, the account balance is charged at the renewal date. Turning it off lets the
 // current period run to its end and stops the resource afterwards.
@@ -14423,7 +14500,7 @@ func (c *ClientWithResponses) SetAutoRenewWithResponse(ctx context.Context, item
 	return ParseSetAutoRenewResponse(rsp)
 }
 
-// RenewSubscriptionItemWithBodyWithResponse Renew now rather than waiting for the renewal date
+// RenewSubscriptionItemWithBodyWithResponse Renew subscription item
 //
 // Extends the paid period from its current end, not from today, so renewing early does not
 // shorten what has already been paid for.
@@ -14442,7 +14519,7 @@ func (c *ClientWithResponses) RenewSubscriptionItemWithBodyWithResponse(ctx cont
 	return ParseRenewSubscriptionItemResponse(rsp)
 }
 
-// RenewSubscriptionItemWithResponse Renew now rather than waiting for the renewal date
+// RenewSubscriptionItemWithResponse Renew subscription item
 //
 // Extends the paid period from its current end, not from today, so renewing early does not
 // shorten what has already been paid for.
@@ -14461,9 +14538,11 @@ func (c *ClientWithResponses) RenewSubscriptionItemWithResponse(ctx context.Cont
 	return ParseRenewSubscriptionItemResponse(rsp)
 }
 
-// ListSubscriptionsWithResponse performs a GET /account/v1/subscriptions (the `ListSubscriptions` operationId) request.
+// ListSubscriptionsWithResponse List subscriptions
 //
 // Returns a wrapper object for the known response body format(s).
+//
+// Corresponds with GET /account/v1/subscriptions (the `ListSubscriptions` operationId).
 func (c *ClientWithResponses) ListSubscriptionsWithResponse(ctx context.Context, params *ListSubscriptionsParams, reqEditors ...RequestEditorFn) (*ListSubscriptionsResponse, error) {
 	rsp, err := c.ListSubscriptions(ctx, params, reqEditors...)
 	if err != nil {
@@ -14472,9 +14551,11 @@ func (c *ClientWithResponses) ListSubscriptionsWithResponse(ctx context.Context,
 	return ParseListSubscriptionsResponse(rsp)
 }
 
-// ListTopUpsWithResponse performs a GET /account/v1/top-ups (the `ListTopUps` operationId) request.
+// ListTopUpsWithResponse List top ups
 //
 // Returns a wrapper object for the known response body format(s).
+//
+// Corresponds with GET /account/v1/top-ups (the `ListTopUps` operationId).
 func (c *ClientWithResponses) ListTopUpsWithResponse(ctx context.Context, params *ListTopUpsParams, reqEditors ...RequestEditorFn) (*ListTopUpsResponse, error) {
 	rsp, err := c.ListTopUps(ctx, params, reqEditors...)
 	if err != nil {
@@ -14483,7 +14564,7 @@ func (c *ClientWithResponses) ListTopUpsWithResponse(ctx context.Context, params
 	return ParseListTopUpsResponse(rsp)
 }
 
-// CreateTopUpWithBodyWithResponse Add funds to an account
+// CreateTopUpWithBodyWithResponse Create top up
 //
 // Returns a checkout address. The balance increases when the payment provider confirms the
 // payment, which may be after this call returns.
@@ -14502,7 +14583,7 @@ func (c *ClientWithResponses) CreateTopUpWithBodyWithResponse(ctx context.Contex
 	return ParseCreateTopUpResponse(rsp)
 }
 
-// CreateTopUpWithResponse Add funds to an account
+// CreateTopUpWithResponse Create top up
 //
 // Returns a checkout address. The balance increases when the payment provider confirms the
 // payment, which may be after this call returns.
@@ -14521,7 +14602,7 @@ func (c *ClientWithResponses) CreateTopUpWithResponse(ctx context.Context, body 
 	return ParseCreateTopUpResponse(rsp)
 }
 
-// GetTopUpWithResponse Whether a payment has completed
+// GetTopUpWithResponse Get top up
 //
 // Returns a wrapper object for the known response body format(s).
 //
@@ -14534,7 +14615,7 @@ func (c *ClientWithResponses) GetTopUpWithResponse(ctx context.Context, topUpId 
 	return ParseGetTopUpResponse(rsp)
 }
 
-// ListTransactionsWithResponse Every movement of funds on the account
+// ListTransactionsWithResponse List transactions
 //
 // Returns a wrapper object for the known response body format(s).
 //
@@ -14547,7 +14628,7 @@ func (c *ClientWithResponses) ListTransactionsWithResponse(ctx context.Context, 
 	return ParseListTransactionsResponse(rsp)
 }
 
-// ListUsageChargesWithResponse Metered charges, line by line
+// ListUsageChargesWithResponse List usage charges
 //
 // Includes charges that have not been invoiced yet, which is how the current month's
 // spending is seen before the invoice is issued.
@@ -14563,7 +14644,7 @@ func (c *ClientWithResponses) ListUsageChargesWithResponse(ctx context.Context, 
 	return ParseListUsageChargesResponse(rsp)
 }
 
-// ListProjectActiveResourcesWithResponse What is accruing charges right now
+// ListProjectActiveResourcesWithResponse List project active resources
 //
 // A resource that is running but does not appear here is not being charged for.
 //
@@ -14578,7 +14659,7 @@ func (c *ClientWithResponses) ListProjectActiveResourcesWithResponse(ctx context
 	return ParseListProjectActiveResourcesResponse(rsp)
 }
 
-// ListProjectAllowancesWithResponse Quantities this project can draw on
+// ListProjectAllowancesWithResponse List project allowances
 //
 // These belong to the paying account and are shared with every other project it pays for,
 // so what is left here may be consumed elsewhere.
@@ -14594,7 +14675,7 @@ func (c *ClientWithResponses) ListProjectAllowancesWithResponse(ctx context.Cont
 	return ParseListProjectAllowancesResponse(rsp)
 }
 
-// GetProjectBillingAccountWithResponse Who pays for this project, and how much is left
+// GetProjectBillingAccountWithResponse Get project billing account
 //
 // A deliberately narrow view: the payer's identity, its currency, and how much can still
 // be spent. Cards, invoices and transaction history are not included; they belong to the
@@ -14614,7 +14695,7 @@ func (c *ClientWithResponses) GetProjectBillingAccountWithResponse(ctx context.C
 	return ParseGetProjectBillingAccountResponse(rsp)
 }
 
-// ListProjectEntitlementsWithResponse What this project can currently use
+// ListProjectEntitlementsWithResponse List project entitlements
 //
 // Includes capabilities bought for this project and those the paying account holds at
 // account level.
@@ -14634,7 +14715,7 @@ func (c *ClientWithResponses) ListProjectEntitlementsWithResponse(ctx context.Co
 	return ParseListProjectEntitlementsResponse(rsp)
 }
 
-// ListProjectOrdersWithResponse Purchases made for this project
+// ListProjectOrdersWithResponse List project orders
 //
 // An order awaiting payment shows what is outstanding. Paying it is done from the billing
 // centre by the account owner.
@@ -14650,9 +14731,11 @@ func (c *ClientWithResponses) ListProjectOrdersWithResponse(ctx context.Context,
 	return ParseListProjectOrdersResponse(rsp)
 }
 
-// GetProjectOrderWithResponse performs a GET /api/v1/projects/{projectId}/orders/{orderId} (the `GetProjectOrder` operationId) request.
+// GetProjectOrderWithResponse Get project order
 //
 // Returns a wrapper object for the known response body format(s).
+//
+// Corresponds with GET /api/v1/projects/{projectId}/orders/{orderId} (the `GetProjectOrder` operationId).
 func (c *ClientWithResponses) GetProjectOrderWithResponse(ctx context.Context, projectId ProjectId, orderId OrderId, reqEditors ...RequestEditorFn) (*GetProjectOrderResponse, error) {
 	rsp, err := c.GetProjectOrder(ctx, projectId, orderId, reqEditors...)
 	if err != nil {
@@ -14661,7 +14744,7 @@ func (c *ClientWithResponses) GetProjectOrderWithResponse(ctx context.Context, p
 	return ParseGetProjectOrderResponse(rsp)
 }
 
-// ListProjectOrderItemsWithResponse What an order is made up of
+// ListProjectOrderItemsWithResponse List project order items
 //
 // Returns a wrapper object for the known response body format(s).
 //
@@ -14674,7 +14757,7 @@ func (c *ClientWithResponses) ListProjectOrderItemsWithResponse(ctx context.Cont
 	return ParseListProjectOrderItemsResponse(rsp)
 }
 
-// CreateProjectQuoteWithBodyWithResponse Price a purchase before making it
+// CreateProjectQuoteWithBodyWithResponse Quote for a project
 //
 // Priced in the paying account's currency, and at any rate negotiated for that account.
 // Nothing is reserved and nothing is recorded, so this may be called as often as required.
@@ -14696,7 +14779,7 @@ func (c *ClientWithResponses) CreateProjectQuoteWithBodyWithResponse(ctx context
 	return ParseCreateProjectQuoteResponse(rsp)
 }
 
-// CreateProjectQuoteWithResponse Price a purchase before making it
+// CreateProjectQuoteWithResponse Quote for a project
 //
 // Priced in the paying account's currency, and at any rate negotiated for that account.
 // Nothing is reserved and nothing is recorded, so this may be called as often as required.
@@ -14718,7 +14801,7 @@ func (c *ClientWithResponses) CreateProjectQuoteWithResponse(ctx context.Context
 	return ParseCreateProjectQuoteResponse(rsp)
 }
 
-// ListProjectSpendWithResponse What this project spent, grouped
+// ListProjectSpendWithResponse List project spend
 //
 // Covers a closed time range. Both bounds are required: a total without a stated period
 // cannot be reconciled against an invoice.
@@ -14736,7 +14819,7 @@ func (c *ClientWithResponses) ListProjectSpendWithResponse(ctx context.Context, 
 	return ParseListProjectSpendResponse(rsp)
 }
 
-// ListProjectSubscriptionItemsWithResponse What this project has bought, and when each renews
+// ListProjectSubscriptionItemsWithResponse List project subscription items
 //
 // Returns a wrapper object for the known response body format(s).
 //
@@ -14749,7 +14832,7 @@ func (c *ClientWithResponses) ListProjectSubscriptionItemsWithResponse(ctx conte
 	return ParseListProjectSubscriptionItemsResponse(rsp)
 }
 
-// SetProjectAutoRenewWithBodyWithResponse Turn automatic renewal on or off
+// SetProjectAutoRenewWithBodyWithResponse Set project auto renew
 //
 // Automatic renewal draws on the paying account's balance, which a project member may
 // commit. Paying by card requires the account owner and is done from the billing centre.
@@ -14765,7 +14848,7 @@ func (c *ClientWithResponses) SetProjectAutoRenewWithBodyWithResponse(ctx contex
 	return ParseSetProjectAutoRenewResponse(rsp)
 }
 
-// SetProjectAutoRenewWithResponse Turn automatic renewal on or off
+// SetProjectAutoRenewWithResponse Set project auto renew
 //
 // Automatic renewal draws on the paying account's balance, which a project member may
 // commit. Paying by card requires the account owner and is done from the billing centre.
@@ -14781,7 +14864,7 @@ func (c *ClientWithResponses) SetProjectAutoRenewWithResponse(ctx context.Contex
 	return ParseSetProjectAutoRenewResponse(rsp)
 }
 
-// ListProjectSubscriptionsWithResponse Which services this project has enabled
+// ListProjectSubscriptionsWithResponse List project subscriptions
 //
 // Returns a wrapper object for the known response body format(s).
 //
@@ -14794,7 +14877,7 @@ func (c *ClientWithResponses) ListProjectSubscriptionsWithResponse(ctx context.C
 	return ParseListProjectSubscriptionsResponse(rsp)
 }
 
-// ListProjectUsageChargesWithResponse Metered charges for this project, line by line
+// ListProjectUsageChargesWithResponse List project usage charges
 //
 // The individual charges behind the figures in `/spend`. Amounts here sum to the totals
 // reported there over the same period.
@@ -14810,7 +14893,7 @@ func (c *ClientWithResponses) ListProjectUsageChargesWithResponse(ctx context.Co
 	return ParseListProjectUsageChargesResponse(rsp)
 }
 
-// CreateEstimateWithBodyWithResponse Estimate a purchase without signing in
+// CreateEstimateWithBodyWithResponse Estimate a basket
 //
 // Uses public list prices. Nothing is reserved and nothing is recorded, so this may be
 // called as often as required.
@@ -14832,7 +14915,7 @@ func (c *ClientWithResponses) CreateEstimateWithBodyWithResponse(ctx context.Con
 	return ParseCreateEstimateResponse(rsp)
 }
 
-// CreateEstimateWithResponse Estimate a purchase without signing in
+// CreateEstimateWithResponse Estimate a basket
 //
 // Uses public list prices. Nothing is reserved and nothing is recorded, so this may be
 // called as often as required.
@@ -14854,7 +14937,7 @@ func (c *ClientWithResponses) CreateEstimateWithResponse(ctx context.Context, bo
 	return ParseCreateEstimateResponse(rsp)
 }
 
-// ListCatalogPricesWithResponse The ways one plan can be bought
+// ListCatalogPricesWithResponse List catalog prices
 //
 // Public list prices only. An account holding a negotiated agreement may be charged less;
 // it is never charged more.
@@ -14870,7 +14953,7 @@ func (c *ClientWithResponses) ListCatalogPricesWithResponse(ctx context.Context,
 	return ParseListCatalogPricesResponse(rsp)
 }
 
-// ListCatalogProductsWithResponse The services the platform sells
+// ListCatalogProductsWithResponse List catalog products
 //
 // Returns a wrapper object for the known response body format(s).
 //
@@ -14883,7 +14966,7 @@ func (c *ClientWithResponses) ListCatalogProductsWithResponse(ctx context.Contex
 	return ParseListCatalogProductsResponse(rsp)
 }
 
-// ListCatalogPlansWithResponse What can be bought under one service
+// ListCatalogPlansWithResponse List catalog plans
 //
 // Returns a wrapper object for the known response body format(s).
 //
@@ -14896,7 +14979,7 @@ func (c *ClientWithResponses) ListCatalogPlansWithResponse(ctx context.Context, 
 	return ParseListCatalogPlansResponse(rsp)
 }
 
-// ListCatalogRatesWithResponse The rates on a published price list
+// ListCatalogRatesWithResponse List catalog rates
 //
 // Only public price lists are readable here. A list written for a single agreement is not,
 // and its identifier cannot be used to reach it.

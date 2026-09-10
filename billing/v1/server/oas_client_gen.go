@@ -107,15 +107,19 @@ type Invoker interface {
 	FindProjectPayer(ctx context.Context, params FindProjectPayerParams) (*ProjectBinding, error)
 	// GetAccountBalance invokes get-account-balance operation.
 	//
-	// What the account holds and what it can still spend.
+	// Get account balance.
 	//
 	// GET /account/v1/billing-accounts/{accountId}/balance
 	GetAccountBalance(ctx context.Context, params GetAccountBalanceParams) (*AccountBalance, error)
 	// GetBillingAccount invokes get-billing-account operation.
 	//
+	// Get billing account.
+	//
 	// GET /account/v1/billing-accounts/{accountId}
 	GetBillingAccount(ctx context.Context, params GetBillingAccountParams) (*BillingAccount, error)
 	// GetInvoice invokes get-invoice operation.
+	//
+	// Get invoice.
 	//
 	// GET /account/v1/invoices/{invoiceId}
 	GetInvoice(ctx context.Context, params GetInvoiceParams) (*Invoice, error)
@@ -131,6 +135,8 @@ type Invoker interface {
 	// GET /account/v1/invoices/{invoiceId}/refund-quote
 	GetInvoiceRefundQuote(ctx context.Context, params GetInvoiceRefundQuoteParams) (*RefundQuote, error)
 	// GetOrder invokes get-order operation.
+	//
+	// Get order.
 	//
 	// GET /account/v1/orders/{orderId}
 	GetOrder(ctx context.Context, params GetOrderParams) (*Order, error)
@@ -160,11 +166,13 @@ type Invoker interface {
 	GetProjectBillingAccount(ctx context.Context, params GetProjectBillingAccountParams) (*ProjectPayer, error)
 	// GetProjectOrder invokes get-project-order operation.
 	//
+	// Get project order.
+	//
 	// GET /api/v1/projects/{projectId}/orders/{orderId}
 	GetProjectOrder(ctx context.Context, params GetProjectOrderParams) (*Order, error)
 	// GetTopUp invokes get-top-up operation.
 	//
-	// Whether a payment has completed.
+	// Get top up.
 	//
 	// GET /account/v1/top-ups/{topUpId}
 	GetTopUp(ctx context.Context, params GetTopUpParams) (*TopUp, error)
@@ -202,13 +210,13 @@ type Invoker interface {
 	ListAllowances(ctx context.Context, params ListAllowancesParams) (*AllowanceList, error)
 	// ListBillingAccounts invokes list-billing-accounts operation.
 	//
-	// The billing accounts you own.
+	// List billing accounts.
 	//
 	// GET /account/v1/billing-accounts
 	ListBillingAccounts(ctx context.Context, params ListBillingAccountsParams) (*BillingAccountList, error)
 	// ListCatalogPlans invokes list-catalog-plans operation.
 	//
-	// What can be bought under one service.
+	// List catalog plans.
 	//
 	// GET /catalog/v1/products/{productId}/plans
 	ListCatalogPlans(ctx context.Context, params ListCatalogPlansParams) (ListCatalogPlansRes, error)
@@ -221,7 +229,7 @@ type Invoker interface {
 	ListCatalogPrices(ctx context.Context, params ListCatalogPricesParams) (ListCatalogPricesRes, error)
 	// ListCatalogProducts invokes list-catalog-products operation.
 	//
-	// The services the platform sells.
+	// List catalog products.
 	//
 	// GET /catalog/v1/products
 	ListCatalogProducts(ctx context.Context, params ListCatalogProductsParams) (ListCatalogProductsRes, error)
@@ -251,11 +259,13 @@ type Invoker interface {
 	ListEntitlements(ctx context.Context, params ListEntitlementsParams) (*EntitlementList, error)
 	// ListInvoiceItems invokes list-invoice-items operation.
 	//
-	// What an invoice is made up of.
+	// List invoice items.
 	//
 	// GET /account/v1/invoices/{invoiceId}/items
 	ListInvoiceItems(ctx context.Context, params ListInvoiceItemsParams) (*InvoiceItemList, error)
 	// ListInvoices invokes list-invoices operation.
+	//
+	// List invoices.
 	//
 	// GET /account/v1/invoices
 	ListInvoices(ctx context.Context, params ListInvoicesParams) (*InvoiceList, error)
@@ -274,11 +284,13 @@ type Invoker interface {
 	ListOrders(ctx context.Context, params ListOrdersParams) (*OrderList, error)
 	// ListPaidProjects invokes list-paid-projects operation.
 	//
-	// The projects your accounts pay for.
+	// List paid projects.
 	//
 	// GET /account/v1/projects
 	ListPaidProjects(ctx context.Context, params ListPaidProjectsParams) (*ProjectBindingList, error)
 	// ListPaymentMethods invokes list-payment-methods operation.
+	//
+	// List payment methods.
 	//
 	// GET /account/v1/payment-methods
 	ListPaymentMethods(ctx context.Context, params ListPaymentMethodsParams) (*PaymentMethodList, error)
@@ -307,7 +319,7 @@ type Invoker interface {
 	ListProjectEntitlements(ctx context.Context, params ListProjectEntitlementsParams) (*EntitlementList, error)
 	// ListProjectOrderItems invokes list-project-order-items operation.
 	//
-	// What an order is made up of.
+	// List project order items.
 	//
 	// GET /api/v1/projects/{projectId}/orders/{orderId}/items
 	ListProjectOrderItems(ctx context.Context, params ListProjectOrderItemsParams) (*OrderItemList, error)
@@ -329,13 +341,13 @@ type Invoker interface {
 	ListProjectSpend(ctx context.Context, params ListProjectSpendParams) (*SpendRowList, error)
 	// ListProjectSubscriptionItems invokes list-project-subscription-items operation.
 	//
-	// What this project has bought, and when each renews.
+	// List project subscription items.
 	//
 	// GET /api/v1/projects/{projectId}/subscription-items
 	ListProjectSubscriptionItems(ctx context.Context, params ListProjectSubscriptionItemsParams) (*SubscriptionItemList, error)
 	// ListProjectSubscriptions invokes list-project-subscriptions operation.
 	//
-	// Which services this project has enabled.
+	// List project subscriptions.
 	//
 	// GET /api/v1/projects/{projectId}/subscriptions
 	ListProjectSubscriptions(ctx context.Context, params ListProjectSubscriptionsParams) (*SubscriptionList, error)
@@ -348,25 +360,31 @@ type Invoker interface {
 	ListProjectUsageCharges(ctx context.Context, params ListProjectUsageChargesParams) (*UsageChargeList, error)
 	// ListRefunds invokes list-refunds operation.
 	//
+	// List refunds.
+	//
 	// GET /account/v1/refunds
 	ListRefunds(ctx context.Context, params ListRefundsParams) (*RefundList, error)
 	// ListSubscriptionItems invokes list-subscription-items operation.
 	//
-	// What has been bought, and when each renews.
+	// List subscription items.
 	//
 	// GET /account/v1/subscription-items
 	ListSubscriptionItems(ctx context.Context, params ListSubscriptionItemsParams) (*SubscriptionItemList, error)
 	// ListSubscriptions invokes list-subscriptions operation.
 	//
+	// List subscriptions.
+	//
 	// GET /account/v1/subscriptions
 	ListSubscriptions(ctx context.Context, params ListSubscriptionsParams) (*SubscriptionList, error)
 	// ListTopUps invokes list-top-ups operation.
+	//
+	// List top ups.
 	//
 	// GET /account/v1/top-ups
 	ListTopUps(ctx context.Context, params ListTopUpsParams) (*TopUpList, error)
 	// ListTransactions invokes list-transactions operation.
 	//
-	// Every movement of funds on the account.
+	// List transactions.
 	//
 	// GET /account/v1/transactions
 	ListTransactions(ctx context.Context, params ListTransactionsParams) (*TransactionList, error)
@@ -464,7 +482,7 @@ type Invoker interface {
 	SetAutoRenew(ctx context.Context, request *AutoRenewSet, params SetAutoRenewParams) (*SubscriptionItem, error)
 	// SetDefaultPaymentMethod invokes set-default-payment-method operation.
 	//
-	// Choose which method is used automatically.
+	// Set default payment method.
 	//
 	// PUT /account/v1/payment-methods/{paymentMethodId}/default
 	SetDefaultPaymentMethod(ctx context.Context, params SetDefaultPaymentMethodParams) (*PaymentMethod, error)
@@ -1552,7 +1570,7 @@ func (c *Client) sendFindProjectPayer(ctx context.Context, params FindProjectPay
 
 // GetAccountBalance invokes get-account-balance operation.
 //
-// What the account holds and what it can still spend.
+// Get account balance.
 //
 // GET /account/v1/billing-accounts/{accountId}/balance
 func (c *Client) GetAccountBalance(ctx context.Context, params GetAccountBalanceParams) (*AccountBalance, error) {
@@ -1684,6 +1702,8 @@ func (c *Client) sendGetAccountBalance(ctx context.Context, params GetAccountBal
 
 // GetBillingAccount invokes get-billing-account operation.
 //
+// Get billing account.
+//
 // GET /account/v1/billing-accounts/{accountId}
 func (c *Client) GetBillingAccount(ctx context.Context, params GetBillingAccountParams) (*BillingAccount, error) {
 	res, err := c.sendGetBillingAccount(ctx, params)
@@ -1812,6 +1832,8 @@ func (c *Client) sendGetBillingAccount(ctx context.Context, params GetBillingAcc
 }
 
 // GetInvoice invokes get-invoice operation.
+//
+// Get invoice.
 //
 // GET /account/v1/invoices/{invoiceId}
 func (c *Client) GetInvoice(ctx context.Context, params GetInvoiceParams) (*Invoice, error) {
@@ -2078,6 +2100,8 @@ func (c *Client) sendGetInvoiceRefundQuote(ctx context.Context, params GetInvoic
 }
 
 // GetOrder invokes get-order operation.
+//
+// Get order.
 //
 // GET /account/v1/orders/{orderId}
 func (c *Client) GetOrder(ctx context.Context, params GetOrderParams) (*Order, error) {
@@ -2484,6 +2508,8 @@ func (c *Client) sendGetProjectBillingAccount(ctx context.Context, params GetPro
 
 // GetProjectOrder invokes get-project-order operation.
 //
+// Get project order.
+//
 // GET /api/v1/projects/{projectId}/orders/{orderId}
 func (c *Client) GetProjectOrder(ctx context.Context, params GetProjectOrderParams) (*Order, error) {
 	res, err := c.sendGetProjectOrder(ctx, params)
@@ -2632,7 +2658,7 @@ func (c *Client) sendGetProjectOrder(ctx context.Context, params GetProjectOrder
 
 // GetTopUp invokes get-top-up operation.
 //
-// Whether a payment has completed.
+// Get top up.
 //
 // GET /account/v1/top-ups/{topUpId}
 func (c *Client) GetTopUp(ctx context.Context, params GetTopUpParams) (*TopUp, error) {
@@ -3368,7 +3394,7 @@ func (c *Client) sendListAllowances(ctx context.Context, params ListAllowancesPa
 
 // ListBillingAccounts invokes list-billing-accounts operation.
 //
-// The billing accounts you own.
+// List billing accounts.
 //
 // GET /account/v1/billing-accounts
 func (c *Client) ListBillingAccounts(ctx context.Context, params ListBillingAccountsParams) (*BillingAccountList, error) {
@@ -3519,7 +3545,7 @@ func (c *Client) sendListBillingAccounts(ctx context.Context, params ListBilling
 
 // ListCatalogPlans invokes list-catalog-plans operation.
 //
-// What can be bought under one service.
+// List catalog plans.
 //
 // GET /catalog/v1/products/{productId}/plans
 func (c *Client) ListCatalogPlans(ctx context.Context, params ListCatalogPlansParams) (ListCatalogPlansRes, error) {
@@ -3845,7 +3871,7 @@ func (c *Client) sendListCatalogPrices(ctx context.Context, params ListCatalogPr
 
 // ListCatalogProducts invokes list-catalog-products operation.
 //
-// The services the platform sells.
+// List catalog products.
 //
 // GET /catalog/v1/products
 func (c *Client) ListCatalogProducts(ctx context.Context, params ListCatalogProductsParams) (ListCatalogProductsRes, error) {
@@ -4544,7 +4570,7 @@ func (c *Client) sendListEntitlements(ctx context.Context, params ListEntitlemen
 
 // ListInvoiceItems invokes list-invoice-items operation.
 //
-// What an invoice is made up of.
+// List invoice items.
 //
 // GET /account/v1/invoices/{invoiceId}/items
 func (c *Client) ListInvoiceItems(ctx context.Context, params ListInvoiceItemsParams) (*InvoiceItemList, error) {
@@ -4713,6 +4739,8 @@ func (c *Client) sendListInvoiceItems(ctx context.Context, params ListInvoiceIte
 }
 
 // ListInvoices invokes list-invoices operation.
+//
+// List invoices.
 //
 // GET /account/v1/invoices
 func (c *Client) ListInvoices(ctx context.Context, params ListInvoicesParams) (*InvoiceList, error) {
@@ -5338,7 +5366,7 @@ func (c *Client) sendListOrders(ctx context.Context, params ListOrdersParams) (r
 
 // ListPaidProjects invokes list-paid-projects operation.
 //
-// The projects your accounts pay for.
+// List paid projects.
 //
 // GET /account/v1/projects
 func (c *Client) ListPaidProjects(ctx context.Context, params ListPaidProjectsParams) (*ProjectBindingList, error) {
@@ -5505,6 +5533,8 @@ func (c *Client) sendListPaidProjects(ctx context.Context, params ListPaidProjec
 }
 
 // ListPaymentMethods invokes list-payment-methods operation.
+//
+// List payment methods.
 //
 // GET /account/v1/payment-methods
 func (c *Client) ListPaymentMethods(ctx context.Context, params ListPaymentMethodsParams) (*PaymentMethodList, error) {
@@ -6238,7 +6268,7 @@ func (c *Client) sendListProjectEntitlements(ctx context.Context, params ListPro
 
 // ListProjectOrderItems invokes list-project-order-items operation.
 //
-// What an order is made up of.
+// List project order items.
 //
 // GET /api/v1/projects/{projectId}/orders/{orderId}/items
 func (c *Client) ListProjectOrderItems(ctx context.Context, params ListProjectOrderItemsParams) (*OrderItemList, error) {
@@ -6884,7 +6914,7 @@ func (c *Client) sendListProjectSpend(ctx context.Context, params ListProjectSpe
 
 // ListProjectSubscriptionItems invokes list-project-subscription-items operation.
 //
-// What this project has bought, and when each renews.
+// List project subscription items.
 //
 // GET /api/v1/projects/{projectId}/subscription-items
 func (c *Client) ListProjectSubscriptionItems(ctx context.Context, params ListProjectSubscriptionItemsParams) (*SubscriptionItemList, error) {
@@ -7071,7 +7101,7 @@ func (c *Client) sendListProjectSubscriptionItems(ctx context.Context, params Li
 
 // ListProjectSubscriptions invokes list-project-subscriptions operation.
 //
-// Which services this project has enabled.
+// List project subscriptions.
 //
 // GET /api/v1/projects/{projectId}/subscriptions
 func (c *Client) ListProjectSubscriptions(ctx context.Context, params ListProjectSubscriptionsParams) (*SubscriptionList, error) {
@@ -7497,6 +7527,8 @@ func (c *Client) sendListProjectUsageCharges(ctx context.Context, params ListPro
 
 // ListRefunds invokes list-refunds operation.
 //
+// List refunds.
+//
 // GET /account/v1/refunds
 func (c *Client) ListRefunds(ctx context.Context, params ListRefundsParams) (*RefundList, error) {
 	res, err := c.sendListRefunds(ctx, params)
@@ -7663,7 +7695,7 @@ func (c *Client) sendListRefunds(ctx context.Context, params ListRefundsParams) 
 
 // ListSubscriptionItems invokes list-subscription-items operation.
 //
-// What has been bought, and when each renews.
+// List subscription items.
 //
 // GET /account/v1/subscription-items
 func (c *Client) ListSubscriptionItems(ctx context.Context, params ListSubscriptionItemsParams) (*SubscriptionItemList, error) {
@@ -7865,6 +7897,8 @@ func (c *Client) sendListSubscriptionItems(ctx context.Context, params ListSubsc
 
 // ListSubscriptions invokes list-subscriptions operation.
 //
+// List subscriptions.
+//
 // GET /account/v1/subscriptions
 func (c *Client) ListSubscriptions(ctx context.Context, params ListSubscriptionsParams) (*SubscriptionList, error) {
 	res, err := c.sendListSubscriptions(ctx, params)
@@ -8048,6 +8082,8 @@ func (c *Client) sendListSubscriptions(ctx context.Context, params ListSubscript
 
 // ListTopUps invokes list-top-ups operation.
 //
+// List top ups.
+//
 // GET /account/v1/top-ups
 func (c *Client) ListTopUps(ctx context.Context, params ListTopUpsParams) (*TopUpList, error) {
 	res, err := c.sendListTopUps(ctx, params)
@@ -8214,7 +8250,7 @@ func (c *Client) sendListTopUps(ctx context.Context, params ListTopUpsParams) (r
 
 // ListTransactions invokes list-transactions operation.
 //
-// Every movement of funds on the account.
+// List transactions.
 //
 // GET /account/v1/transactions
 func (c *Client) ListTransactions(ctx context.Context, params ListTransactionsParams) (*TransactionList, error) {
@@ -9711,7 +9747,7 @@ func (c *Client) sendSetAutoRenew(ctx context.Context, request *AutoRenewSet, pa
 
 // SetDefaultPaymentMethod invokes set-default-payment-method operation.
 //
-// Choose which method is used automatically.
+// Set default payment method.
 //
 // PUT /account/v1/payment-methods/{paymentMethodId}/default
 func (c *Client) SetDefaultPaymentMethod(ctx context.Context, params SetDefaultPaymentMethodParams) (*PaymentMethod, error) {

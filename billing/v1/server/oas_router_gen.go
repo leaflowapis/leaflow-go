@@ -2391,7 +2391,7 @@ func (s *Server) FindPath(method string, u *url.URL) (r Route, _ bool) {
 								switch method {
 								case "GET":
 									r.name = ListAllocationsOperation
-									r.summary = "Where each amount went"
+									r.summary = "List allocations"
 									r.operationID = "list-allocations"
 									r.operationGroup = ""
 									r.pathPattern = "/account/v1/allocations"
@@ -2415,7 +2415,7 @@ func (s *Server) FindPath(method string, u *url.URL) (r Route, _ bool) {
 								switch method {
 								case "GET":
 									r.name = ListAllowancesOperation
-									r.summary = "Included and purchased quantities, and what is left"
+									r.summary = "List allowances"
 									r.operationID = "list-allowances"
 									r.operationGroup = ""
 									r.pathPattern = "/account/v1/allowances"
@@ -2461,7 +2461,7 @@ func (s *Server) FindPath(method string, u *url.URL) (r Route, _ bool) {
 										switch method {
 										case "GET":
 											r.name = ListAllowanceConsumptionsOperation
-											r.summary = "What has been used from one quantity"
+											r.summary = "List allowance consumptions"
 											r.operationID = "list-allowance-consumptions"
 											r.operationGroup = ""
 											r.pathPattern = "/account/v1/allowances/{allowanceId}/consumptions"
@@ -2491,7 +2491,7 @@ func (s *Server) FindPath(method string, u *url.URL) (r Route, _ bool) {
 							switch method {
 							case "GET":
 								r.name = ListBillingAccountsOperation
-								r.summary = "The billing accounts you own"
+								r.summary = "List billing accounts"
 								r.operationID = "list-billing-accounts"
 								r.operationGroup = ""
 								r.pathPattern = "/account/v1/billing-accounts"
@@ -2500,7 +2500,7 @@ func (s *Server) FindPath(method string, u *url.URL) (r Route, _ bool) {
 								return r, true
 							case "POST":
 								r.name = CreateBillingAccountOperation
-								r.summary = "Open a billing account"
+								r.summary = "Create billing account"
 								r.operationID = "create-billing-account"
 								r.operationGroup = ""
 								r.pathPattern = "/account/v1/billing-accounts"
@@ -2533,7 +2533,7 @@ func (s *Server) FindPath(method string, u *url.URL) (r Route, _ bool) {
 								switch method {
 								case "GET":
 									r.name = GetBillingAccountOperation
-									r.summary = ""
+									r.summary = "Get billing account"
 									r.operationID = "get-billing-account"
 									r.operationGroup = ""
 									r.pathPattern = "/account/v1/billing-accounts/{accountId}"
@@ -2542,7 +2542,7 @@ func (s *Server) FindPath(method string, u *url.URL) (r Route, _ bool) {
 									return r, true
 								case "PATCH":
 									r.name = UpdateBillingAccountOperation
-									r.summary = "Change the account's details"
+									r.summary = "Update billing account"
 									r.operationID = "update-billing-account"
 									r.operationGroup = ""
 									r.pathPattern = "/account/v1/billing-accounts/{accountId}"
@@ -2567,7 +2567,7 @@ func (s *Server) FindPath(method string, u *url.URL) (r Route, _ bool) {
 									switch method {
 									case "GET":
 										r.name = GetAccountBalanceOperation
-										r.summary = "What the account holds and what it can still spend"
+										r.summary = "Get account balance"
 										r.operationID = "get-account-balance"
 										r.operationGroup = ""
 										r.pathPattern = "/account/v1/billing-accounts/{accountId}/balance"
@@ -2620,7 +2620,7 @@ func (s *Server) FindPath(method string, u *url.URL) (r Route, _ bool) {
 									switch method {
 									case "POST":
 										r.name = PreviewCodeOperation
-										r.summary = "Check what a code would give you"
+										r.summary = "Preview code"
 										r.operationID = "preview-code"
 										r.operationGroup = ""
 										r.pathPattern = "/account/v1/codes/preview"
@@ -2645,7 +2645,7 @@ func (s *Server) FindPath(method string, u *url.URL) (r Route, _ bool) {
 									switch method {
 									case "POST":
 										r.name = RedeemCodeOperation
-										r.summary = "Redeem a code"
+										r.summary = "Redeem code"
 										r.operationID = "redeem-code"
 										r.operationGroup = ""
 										r.pathPattern = "/account/v1/codes/redeem"
@@ -2672,7 +2672,7 @@ func (s *Server) FindPath(method string, u *url.URL) (r Route, _ bool) {
 								switch method {
 								case "GET":
 									r.name = ListCreditGrantsOperation
-									r.summary = "Credit and vouchers held on the account"
+									r.summary = "List credit grants"
 									r.operationID = "list-credit-grants"
 									r.operationGroup = ""
 									r.pathPattern = "/account/v1/credit-grants"
@@ -2699,7 +2699,7 @@ func (s *Server) FindPath(method string, u *url.URL) (r Route, _ bool) {
 							switch method {
 							case "GET":
 								r.name = ListEntitlementsOperation
-								r.summary = "What your accounts can currently use"
+								r.summary = "List entitlements"
 								r.operationID = "list-entitlements"
 								r.operationGroup = ""
 								r.pathPattern = "/account/v1/entitlements"
@@ -2723,7 +2723,7 @@ func (s *Server) FindPath(method string, u *url.URL) (r Route, _ bool) {
 							switch method {
 							case "GET":
 								r.name = ListInvoicesOperation
-								r.summary = ""
+								r.summary = "List invoices"
 								r.operationID = "list-invoices"
 								r.operationGroup = ""
 								r.pathPattern = "/account/v1/invoices"
@@ -2756,7 +2756,7 @@ func (s *Server) FindPath(method string, u *url.URL) (r Route, _ bool) {
 								switch method {
 								case "GET":
 									r.name = GetInvoiceOperation
-									r.summary = ""
+									r.summary = "Get invoice"
 									r.operationID = "get-invoice"
 									r.operationGroup = ""
 									r.pathPattern = "/account/v1/invoices/{invoiceId}"
@@ -2793,7 +2793,7 @@ func (s *Server) FindPath(method string, u *url.URL) (r Route, _ bool) {
 										switch method {
 										case "GET":
 											r.name = ListInvoiceItemsOperation
-											r.summary = "What an invoice is made up of"
+											r.summary = "List invoice items"
 											r.operationID = "list-invoice-items"
 											r.operationGroup = ""
 											r.pathPattern = "/account/v1/invoices/{invoiceId}/items"
@@ -2818,7 +2818,7 @@ func (s *Server) FindPath(method string, u *url.URL) (r Route, _ bool) {
 										switch method {
 										case "POST":
 											r.name = PayInvoiceOperation
-											r.summary = "Pay an outstanding invoice"
+											r.summary = "Pay invoice"
 											r.operationID = "pay-invoice"
 											r.operationGroup = ""
 											r.pathPattern = "/account/v1/invoices/{invoiceId}/pay"
@@ -2843,7 +2843,7 @@ func (s *Server) FindPath(method string, u *url.URL) (r Route, _ bool) {
 										switch method {
 										case "GET":
 											r.name = GetInvoiceRefundQuoteOperation
-											r.summary = "What refunding this invoice would give back"
+											r.summary = "Get invoice refund quote"
 											r.operationID = "get-invoice-refund-quote"
 											r.operationGroup = ""
 											r.pathPattern = "/account/v1/invoices/{invoiceId}/refund-quote"
@@ -2873,7 +2873,7 @@ func (s *Server) FindPath(method string, u *url.URL) (r Route, _ bool) {
 							switch method {
 							case "GET":
 								r.name = ListOrdersOperation
-								r.summary = "Purchases made against your accounts"
+								r.summary = "List orders"
 								r.operationID = "list-orders"
 								r.operationGroup = ""
 								r.pathPattern = "/account/v1/orders"
@@ -2906,7 +2906,7 @@ func (s *Server) FindPath(method string, u *url.URL) (r Route, _ bool) {
 								switch method {
 								case "GET":
 									r.name = GetOrderOperation
-									r.summary = ""
+									r.summary = "Get order"
 									r.operationID = "get-order"
 									r.operationGroup = ""
 									r.pathPattern = "/account/v1/orders/{orderId}"
@@ -2943,7 +2943,7 @@ func (s *Server) FindPath(method string, u *url.URL) (r Route, _ bool) {
 										switch method {
 										case "POST":
 											r.name = CancelScheduledChangeOperation
-											r.summary = "Call off a plan change that has not taken effect yet"
+											r.summary = "Cancel scheduled change"
 											r.operationID = "cancel-scheduled-change"
 											r.operationGroup = ""
 											r.pathPattern = "/account/v1/orders/{orderId}/cancel"
@@ -2968,7 +2968,7 @@ func (s *Server) FindPath(method string, u *url.URL) (r Route, _ bool) {
 										switch method {
 										case "GET":
 											r.name = ListOrderItemsOperation
-											r.summary = "What an order is made up of"
+											r.summary = "List order items"
 											r.operationID = "list-order-items"
 											r.operationGroup = ""
 											r.pathPattern = "/account/v1/orders/{orderId}/items"
@@ -2993,7 +2993,7 @@ func (s *Server) FindPath(method string, u *url.URL) (r Route, _ bool) {
 										switch method {
 										case "POST":
 											r.name = PayOrderOperation
-											r.summary = "Complete payment for an order"
+											r.summary = "Pay order"
 											r.operationID = "pay-order"
 											r.operationGroup = ""
 											r.pathPattern = "/account/v1/orders/{orderId}/pay"
@@ -3018,7 +3018,7 @@ func (s *Server) FindPath(method string, u *url.URL) (r Route, _ bool) {
 										switch method {
 										case "GET":
 											r.name = GetOrderRefundQuoteOperation
-											r.summary = "What refunding this order would give back"
+											r.summary = "Get order refund quote"
 											r.operationID = "get-order-refund-quote"
 											r.operationGroup = ""
 											r.pathPattern = "/account/v1/orders/{orderId}/refund-quote"
@@ -3072,7 +3072,7 @@ func (s *Server) FindPath(method string, u *url.URL) (r Route, _ bool) {
 									switch method {
 									case "GET":
 										r.name = ListPaymentMethodsOperation
-										r.summary = ""
+										r.summary = "List payment methods"
 										r.operationID = "list-payment-methods"
 										r.operationGroup = ""
 										r.pathPattern = "/account/v1/payment-methods"
@@ -3109,7 +3109,7 @@ func (s *Server) FindPath(method string, u *url.URL) (r Route, _ bool) {
 											switch method {
 											case "POST":
 												r.name = CreatePaymentMethodSetupOperation
-												r.summary = "Begin adding a payment method"
+												r.summary = "Create payment method setup"
 												r.operationID = "create-payment-method-setup"
 												r.operationGroup = ""
 												r.pathPattern = "/account/v1/payment-methods/setup"
@@ -3136,7 +3136,7 @@ func (s *Server) FindPath(method string, u *url.URL) (r Route, _ bool) {
 										switch method {
 										case "DELETE":
 											r.name = DeletePaymentMethodOperation
-											r.summary = "Remove a payment method"
+											r.summary = "Delete payment method"
 											r.operationID = "delete-payment-method"
 											r.operationGroup = ""
 											r.pathPattern = "/account/v1/payment-methods/{paymentMethodId}"
@@ -3161,7 +3161,7 @@ func (s *Server) FindPath(method string, u *url.URL) (r Route, _ bool) {
 											switch method {
 											case "PUT":
 												r.name = SetDefaultPaymentMethodOperation
-												r.summary = "Choose which method is used automatically"
+												r.summary = "Set default payment method"
 												r.operationID = "set-default-payment-method"
 												r.operationGroup = ""
 												r.pathPattern = "/account/v1/payment-methods/{paymentMethodId}/default"
@@ -3190,7 +3190,7 @@ func (s *Server) FindPath(method string, u *url.URL) (r Route, _ bool) {
 									switch method {
 									case "POST":
 										r.name = PayTogetherOperation
-										r.summary = "Pay several outstanding invoices and orders at once"
+										r.summary = "Pay together"
 										r.operationID = "pay-together"
 										r.operationGroup = ""
 										r.pathPattern = "/account/v1/payments"
@@ -3216,7 +3216,7 @@ func (s *Server) FindPath(method string, u *url.URL) (r Route, _ bool) {
 								switch method {
 								case "GET":
 									r.name = ListPaidProjectsOperation
-									r.summary = "The projects your accounts pay for"
+									r.summary = "List paid projects"
 									r.operationID = "list-paid-projects"
 									r.operationGroup = ""
 									r.pathPattern = "/account/v1/projects"
@@ -3261,7 +3261,7 @@ func (s *Server) FindPath(method string, u *url.URL) (r Route, _ bool) {
 										switch method {
 										case "DELETE":
 											r.name = UnbindProjectPayerOperation
-											r.summary = "Stop paying for a project"
+											r.summary = "Unbind project payer"
 											r.operationID = "unbind-project-payer"
 											r.operationGroup = ""
 											r.pathPattern = "/account/v1/projects/{projectId}/billing-account"
@@ -3270,7 +3270,7 @@ func (s *Server) FindPath(method string, u *url.URL) (r Route, _ bool) {
 											return r, true
 										case "GET":
 											r.name = FindProjectPayerOperation
-											r.summary = "Which account pays for a project"
+											r.summary = "Find project payer"
 											r.operationID = "find-project-payer"
 											r.operationGroup = ""
 											r.pathPattern = "/account/v1/projects/{projectId}/billing-account"
@@ -3279,7 +3279,7 @@ func (s *Server) FindPath(method string, u *url.URL) (r Route, _ bool) {
 											return r, true
 										case "PUT":
 											r.name = SetProjectPayerOperation
-											r.summary = "Choose which account pays for a project"
+											r.summary = "Set project payer"
 											r.operationID = "set-project-payer"
 											r.operationGroup = ""
 											r.pathPattern = "/account/v1/projects/{projectId}/billing-account"
@@ -3304,7 +3304,7 @@ func (s *Server) FindPath(method string, u *url.URL) (r Route, _ bool) {
 											switch method {
 											case "POST":
 												r.name = SettleProjectUsageOperation
-												r.summary = "Invoice a project's outstanding usage now"
+												r.summary = "Settle project usage"
 												r.operationID = "settle-project-usage"
 												r.operationGroup = ""
 												r.pathPattern = "/account/v1/projects/{projectId}/billing-account/settle"
@@ -3337,7 +3337,7 @@ func (s *Server) FindPath(method string, u *url.URL) (r Route, _ bool) {
 							switch method {
 							case "GET":
 								r.name = ListRefundsOperation
-								r.summary = ""
+								r.summary = "List refunds"
 								r.operationID = "list-refunds"
 								r.operationGroup = ""
 								r.pathPattern = "/account/v1/refunds"
@@ -3346,7 +3346,7 @@ func (s *Server) FindPath(method string, u *url.URL) (r Route, _ bool) {
 								return r, true
 							case "POST":
 								r.name = RequestRefundOperation
-								r.summary = "Ask for a refund"
+								r.summary = "Request refund"
 								r.operationID = "request-refund"
 								r.operationGroup = ""
 								r.pathPattern = "/account/v1/refunds"
@@ -3382,7 +3382,7 @@ func (s *Server) FindPath(method string, u *url.URL) (r Route, _ bool) {
 								switch method {
 								case "GET":
 									r.name = ListSubscriptionItemsOperation
-									r.summary = "What has been bought, and when each renews"
+									r.summary = "List subscription items"
 									r.operationID = "list-subscription-items"
 									r.operationGroup = ""
 									r.pathPattern = "/account/v1/subscription-items"
@@ -3440,7 +3440,7 @@ func (s *Server) FindPath(method string, u *url.URL) (r Route, _ bool) {
 											switch method {
 											case "PUT":
 												r.name = SetAutoRenewOperation
-												r.summary = "Turn automatic renewal on or off"
+												r.summary = "Set auto renew"
 												r.operationID = "set-auto-renew"
 												r.operationGroup = ""
 												r.pathPattern = "/account/v1/subscription-items/{itemId}/auto-renew"
@@ -3465,7 +3465,7 @@ func (s *Server) FindPath(method string, u *url.URL) (r Route, _ bool) {
 											switch method {
 											case "POST":
 												r.name = RenewSubscriptionItemOperation
-												r.summary = "Renew now rather than waiting for the renewal date"
+												r.summary = "Renew subscription item"
 												r.operationID = "renew-subscription-item"
 												r.operationGroup = ""
 												r.pathPattern = "/account/v1/subscription-items/{itemId}/renew"
@@ -3496,7 +3496,7 @@ func (s *Server) FindPath(method string, u *url.URL) (r Route, _ bool) {
 								switch method {
 								case "GET":
 									r.name = ListSubscriptionsOperation
-									r.summary = ""
+									r.summary = "List subscriptions"
 									r.operationID = "list-subscriptions"
 									r.operationGroup = ""
 									r.pathPattern = "/account/v1/subscriptions"
@@ -3534,7 +3534,7 @@ func (s *Server) FindPath(method string, u *url.URL) (r Route, _ bool) {
 								switch method {
 								case "GET":
 									r.name = ListTopUpsOperation
-									r.summary = ""
+									r.summary = "List top ups"
 									r.operationID = "list-top-ups"
 									r.operationGroup = ""
 									r.pathPattern = "/account/v1/top-ups"
@@ -3543,7 +3543,7 @@ func (s *Server) FindPath(method string, u *url.URL) (r Route, _ bool) {
 									return r, true
 								case "POST":
 									r.name = CreateTopUpOperation
-									r.summary = "Add funds to an account"
+									r.summary = "Create top up"
 									r.operationID = "create-top-up"
 									r.operationGroup = ""
 									r.pathPattern = "/account/v1/top-ups"
@@ -3577,7 +3577,7 @@ func (s *Server) FindPath(method string, u *url.URL) (r Route, _ bool) {
 									switch method {
 									case "GET":
 										r.name = GetTopUpOperation
-										r.summary = "Whether a payment has completed"
+										r.summary = "Get top up"
 										r.operationID = "get-top-up"
 										r.operationGroup = ""
 										r.pathPattern = "/account/v1/top-ups/{topUpId}"
@@ -3604,7 +3604,7 @@ func (s *Server) FindPath(method string, u *url.URL) (r Route, _ bool) {
 								switch method {
 								case "GET":
 									r.name = ListTransactionsOperation
-									r.summary = "Every movement of funds on the account"
+									r.summary = "List transactions"
 									r.operationID = "list-transactions"
 									r.operationGroup = ""
 									r.pathPattern = "/account/v1/transactions"
@@ -3631,7 +3631,7 @@ func (s *Server) FindPath(method string, u *url.URL) (r Route, _ bool) {
 							switch method {
 							case "GET":
 								r.name = ListUsageChargesOperation
-								r.summary = "Metered charges, line by line"
+								r.summary = "List usage charges"
 								r.operationID = "list-usage-charges"
 								r.operationGroup = ""
 								r.pathPattern = "/account/v1/usage-charges"
@@ -3703,7 +3703,7 @@ func (s *Server) FindPath(method string, u *url.URL) (r Route, _ bool) {
 									switch method {
 									case "GET":
 										r.name = ListProjectActiveResourcesOperation
-										r.summary = "What is accruing charges right now"
+										r.summary = "List project active resources"
 										r.operationID = "list-project-active-resources"
 										r.operationGroup = ""
 										r.pathPattern = "/api/v1/projects/{projectId}/active-resources"
@@ -3728,7 +3728,7 @@ func (s *Server) FindPath(method string, u *url.URL) (r Route, _ bool) {
 									switch method {
 									case "GET":
 										r.name = ListProjectAllowancesOperation
-										r.summary = "Quantities this project can draw on"
+										r.summary = "List project allowances"
 										r.operationID = "list-project-allowances"
 										r.operationGroup = ""
 										r.pathPattern = "/api/v1/projects/{projectId}/allowances"
@@ -3755,7 +3755,7 @@ func (s *Server) FindPath(method string, u *url.URL) (r Route, _ bool) {
 								switch method {
 								case "GET":
 									r.name = GetProjectBillingAccountOperation
-									r.summary = "Who pays for this project, and how much is left"
+									r.summary = "Get project billing account"
 									r.operationID = "get-project-billing-account"
 									r.operationGroup = ""
 									r.pathPattern = "/api/v1/projects/{projectId}/billing-account"
@@ -3780,7 +3780,7 @@ func (s *Server) FindPath(method string, u *url.URL) (r Route, _ bool) {
 								switch method {
 								case "GET":
 									r.name = ListProjectEntitlementsOperation
-									r.summary = "What this project can currently use"
+									r.summary = "List project entitlements"
 									r.operationID = "list-project-entitlements"
 									r.operationGroup = ""
 									r.pathPattern = "/api/v1/projects/{projectId}/entitlements"
@@ -3804,7 +3804,7 @@ func (s *Server) FindPath(method string, u *url.URL) (r Route, _ bool) {
 								switch method {
 								case "GET":
 									r.name = ListProjectOrdersOperation
-									r.summary = "Purchases made for this project"
+									r.summary = "List project orders"
 									r.operationID = "list-project-orders"
 									r.operationGroup = ""
 									r.pathPattern = "/api/v1/projects/{projectId}/orders"
@@ -3837,7 +3837,7 @@ func (s *Server) FindPath(method string, u *url.URL) (r Route, _ bool) {
 									switch method {
 									case "GET":
 										r.name = GetProjectOrderOperation
-										r.summary = ""
+										r.summary = "Get project order"
 										r.operationID = "get-project-order"
 										r.operationGroup = ""
 										r.pathPattern = "/api/v1/projects/{projectId}/orders/{orderId}"
@@ -3862,7 +3862,7 @@ func (s *Server) FindPath(method string, u *url.URL) (r Route, _ bool) {
 										switch method {
 										case "GET":
 											r.name = ListProjectOrderItemsOperation
-											r.summary = "What an order is made up of"
+											r.summary = "List project order items"
 											r.operationID = "list-project-order-items"
 											r.operationGroup = ""
 											r.pathPattern = "/api/v1/projects/{projectId}/orders/{orderId}/items"
@@ -3891,7 +3891,7 @@ func (s *Server) FindPath(method string, u *url.URL) (r Route, _ bool) {
 								switch method {
 								case "POST":
 									r.name = CreateProjectQuoteOperation
-									r.summary = "Price a purchase before making it"
+									r.summary = "Quote for a project"
 									r.operationID = "create-project-quote"
 									r.operationGroup = ""
 									r.pathPattern = "/api/v1/projects/{projectId}/quotes"
@@ -3928,7 +3928,7 @@ func (s *Server) FindPath(method string, u *url.URL) (r Route, _ bool) {
 									switch method {
 									case "GET":
 										r.name = ListProjectSpendOperation
-										r.summary = "What this project spent, grouped"
+										r.summary = "List project spend"
 										r.operationID = "list-project-spend"
 										r.operationGroup = ""
 										r.pathPattern = "/api/v1/projects/{projectId}/spend"
@@ -3964,7 +3964,7 @@ func (s *Server) FindPath(method string, u *url.URL) (r Route, _ bool) {
 										switch method {
 										case "GET":
 											r.name = ListProjectSubscriptionItemsOperation
-											r.summary = "What this project has bought, and when each renews"
+											r.summary = "List project subscription items"
 											r.operationID = "list-project-subscription-items"
 											r.operationGroup = ""
 											r.pathPattern = "/api/v1/projects/{projectId}/subscription-items"
@@ -4010,7 +4010,7 @@ func (s *Server) FindPath(method string, u *url.URL) (r Route, _ bool) {
 												switch method {
 												case "PUT":
 													r.name = SetProjectAutoRenewOperation
-													r.summary = "Turn automatic renewal on or off"
+													r.summary = "Set project auto renew"
 													r.operationID = "set-project-auto-renew"
 													r.operationGroup = ""
 													r.pathPattern = "/api/v1/projects/{projectId}/subscription-items/{itemId}/auto-renew"
@@ -4039,7 +4039,7 @@ func (s *Server) FindPath(method string, u *url.URL) (r Route, _ bool) {
 										switch method {
 										case "GET":
 											r.name = ListProjectSubscriptionsOperation
-											r.summary = "Which services this project has enabled"
+											r.summary = "List project subscriptions"
 											r.operationID = "list-project-subscriptions"
 											r.operationGroup = ""
 											r.pathPattern = "/api/v1/projects/{projectId}/subscriptions"
@@ -4068,7 +4068,7 @@ func (s *Server) FindPath(method string, u *url.URL) (r Route, _ bool) {
 								switch method {
 								case "GET":
 									r.name = ListProjectUsageChargesOperation
-									r.summary = "Metered charges for this project, line by line"
+									r.summary = "List project usage charges"
 									r.operationID = "list-project-usage-charges"
 									r.operationGroup = ""
 									r.pathPattern = "/api/v1/projects/{projectId}/usage-charges"
@@ -4111,7 +4111,7 @@ func (s *Server) FindPath(method string, u *url.URL) (r Route, _ bool) {
 						switch method {
 						case "POST":
 							r.name = CreateEstimateOperation
-							r.summary = "Estimate a purchase without signing in"
+							r.summary = "Estimate a basket"
 							r.operationID = "create-estimate"
 							r.operationGroup = ""
 							r.pathPattern = "/catalog/v1/estimates"
@@ -4169,7 +4169,7 @@ func (s *Server) FindPath(method string, u *url.URL) (r Route, _ bool) {
 								switch method {
 								case "GET":
 									r.name = ListCatalogPricesOperation
-									r.summary = "The ways one plan can be bought"
+									r.summary = "List catalog prices"
 									r.operationID = "list-catalog-prices"
 									r.operationGroup = ""
 									r.pathPattern = "/catalog/v1/plans/{planId}/prices"
@@ -4195,7 +4195,7 @@ func (s *Server) FindPath(method string, u *url.URL) (r Route, _ bool) {
 							switch method {
 							case "GET":
 								r.name = ListCatalogProductsOperation
-								r.summary = "The services the platform sells"
+								r.summary = "List catalog products"
 								r.operationID = "list-catalog-products"
 								r.operationGroup = ""
 								r.pathPattern = "/catalog/v1/products"
@@ -4241,7 +4241,7 @@ func (s *Server) FindPath(method string, u *url.URL) (r Route, _ bool) {
 									switch method {
 									case "GET":
 										r.name = ListCatalogPlansOperation
-										r.summary = "What can be bought under one service"
+										r.summary = "List catalog plans"
 										r.operationID = "list-catalog-plans"
 										r.operationGroup = ""
 										r.pathPattern = "/catalog/v1/products/{productId}/plans"
@@ -4293,7 +4293,7 @@ func (s *Server) FindPath(method string, u *url.URL) (r Route, _ bool) {
 							switch method {
 							case "GET":
 								r.name = ListCatalogRatesOperation
-								r.summary = "The rates on a published price list"
+								r.summary = "List catalog rates"
 								r.operationID = "list-catalog-rates"
 								r.operationGroup = ""
 								r.pathPattern = "/catalog/v1/rate-cards/{rateCardId}/rules"

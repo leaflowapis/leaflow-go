@@ -2245,6 +2245,8 @@ func (s OrderType) Validate() error {
 		return nil
 	case "change":
 		return nil
+	case "adopt":
+		return nil
 	default:
 		return errors.Errorf("invalid value: %v", s)
 	}

@@ -146,7 +146,7 @@ func (s *AccountBalance) SetSpendable(val Money) {
 type ActiveResource struct {
 	ResourceID string `json:"resource_id"`
 	ProductKey string `json:"product_key"`
-	// What it is.
+	// What it is, as its own service names it.
 	ResourceType OptString `json:"resource_type"`
 	MeterKey     string    `json:"meter_key"`
 	Unit         OptString `json:"unit"`
@@ -1618,7 +1618,7 @@ type CatalogPrice struct {
 	Allowances []IncludedAllowance `json:"allowances"`
 	// Capabilities that buying this price makes available.
 	Features []IncludedFeature `json:"features"`
-	// For prepaid prices.
+	// For prepaid prices, how many periods one purchase covers.
 	Term     OptInt                `json:"term"`
 	Period   OptCatalogPricePeriod `json:"period"`
 	SetupFee OptMoney              `json:"setup_fee"`
@@ -6344,11 +6344,13 @@ type Order struct {
 	ProjectID        OptNilUUID `json:"project_id"`
 	BillingAccountID OptInt64   `json:"billing_account_id"`
 	Currency         string     `json:"currency"`
-	Type             OrderType  `json:"type"`
-	State            OrderState `json:"state"`
-	GrossAmount      OptMoney   `json:"gross_amount"`
-	DiscountAmount   OptMoney   `json:"discount_amount"`
-	Amount           Money      `json:"amount"`
+	// `adopt` brings a resource that already existed under billing. It charges nothing at the time and
+	// starts billing from the moment agreed.
+	Type           OrderType  `json:"type"`
+	State          OrderState `json:"state"`
+	GrossAmount    OptMoney   `json:"gross_amount"`
+	DiscountAmount OptMoney   `json:"discount_amount"`
+	Amount         Money      `json:"amount"`
 	// What is still outstanding. Zero once paid.
 	AmountDue OptMoney `json:"amount_due"`
 	// How much of `refundable_amount` has already gone back.
@@ -6591,6 +6593,9 @@ type OrderItem struct {
 	PriceID uuid.UUID `json:"price_id"`
 	// Which service this line belongs to.
 	ProductID OptUUID `json:"product_id"`
+	// How that service is named, such as `compute`. Read from the catalogue rather than recorded on the
+	// line, so it always matches the service it points at.
+	ProductKey OptString `json:"product_key"`
 	// Which plan was bought.
 	PlanID OptUUID `json:"plan_id"`
 	// What it was called when bought. It does not follow later catalogue renames and is not translated.
@@ -6624,6 +6629,11 @@ func (s *OrderItem) GetPriceID() uuid.UUID {
 // GetProductID returns the value of ProductID.
 func (s *OrderItem) GetProductID() OptUUID {
 	return s.ProductID
+}
+
+// GetProductKey returns the value of ProductKey.
+func (s *OrderItem) GetProductKey() OptString {
+	return s.ProductKey
 }
 
 // GetPlanID returns the value of PlanID.
@@ -6699,6 +6709,11 @@ func (s *OrderItem) SetPriceID(val uuid.UUID) {
 // SetProductID sets the value of ProductID.
 func (s *OrderItem) SetProductID(val OptUUID) {
 	s.ProductID = val
+}
+
+// SetProductKey sets the value of ProductKey.
+func (s *OrderItem) SetProductKey(val OptString) {
+	s.ProductKey = val
 }
 
 // SetPlanID sets the value of PlanID.
@@ -6871,12 +6886,15 @@ func (s *OrderState) UnmarshalText(data []byte) error {
 	}
 }
 
+// `adopt` brings a resource that already existed under billing. It charges nothing at the time and
+// starts billing from the moment agreed.
 type OrderType string
 
 const (
 	OrderTypePurchase OrderType = "purchase"
 	OrderTypeRenew    OrderType = "renew"
 	OrderTypeChange   OrderType = "change"
+	OrderTypeAdopt    OrderType = "adopt"
 )
 
 // AllValues returns all OrderType values.
@@ -6885,6 +6903,7 @@ func (OrderType) AllValues() []OrderType {
 		OrderTypePurchase,
 		OrderTypeRenew,
 		OrderTypeChange,
+		OrderTypeAdopt,
 	}
 }
 
@@ -6896,6 +6915,8 @@ func (s OrderType) MarshalText() ([]byte, error) {
 	case OrderTypeRenew:
 		return []byte(s), nil
 	case OrderTypeChange:
+		return []byte(s), nil
+	case OrderTypeAdopt:
 		return []byte(s), nil
 	default:
 		return nil, errors.Errorf("invalid value: %q", s)
@@ -6913,6 +6934,9 @@ func (s *OrderType) UnmarshalText(data []byte) error {
 		return nil
 	case OrderTypeChange:
 		*s = OrderTypeChange
+		return nil
+	case OrderTypeAdopt:
+		*s = OrderTypeAdopt
 		return nil
 	default:
 		return errors.Errorf("invalid value: %q", data)
@@ -10069,7 +10093,7 @@ type Transaction struct {
 	// Signed. Positive increases the balance, negative reduces it.
 	Amount   Money  `json:"amount"`
 	Currency string `json:"currency"`
-	// Why.
+	// Why the money moved, on a manual adjustment.
 	Reason    OptString  `json:"reason"`
 	InvoiceID OptNilUUID `json:"invoice_id"`
 	OrderID   OptNilUUID `json:"order_id"`
