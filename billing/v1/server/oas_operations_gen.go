@@ -6,6 +6,7 @@ package billingv1server
 type OperationName = string
 
 const (
+	CancelScheduledChangeOperation        OperationName = "CancelScheduledChange"
 	CreateBillingAccountOperation         OperationName = "CreateBillingAccount"
 	CreateEstimateOperation               OperationName = "CreateEstimate"
 	CreatePaymentMethodSetupOperation     OperationName = "CreatePaymentMethodSetup"

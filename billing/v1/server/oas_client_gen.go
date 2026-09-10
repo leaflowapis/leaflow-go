@@ -29,6 +29,16 @@ func trimTrailingSlashes(u *url.URL) {
 
 // Invoker invokes operations described by OpenAPI v3 specification.
 type Invoker interface {
+	// CancelScheduledChange invokes cancel-scheduled-change operation.
+	//
+	// Only for a change scheduled for the end of the period, and only while it is still pending. An
+	// immediate change has already happened by the time it is placed, and there is nothing to call off.
+	//
+	// Nothing was charged or returned when it was scheduled, so nothing moves here either. The
+	// subscription keeps running on what it is on now, and the item is free to be changed again.
+	//
+	// POST /account/v1/orders/{orderId}/cancel
+	CancelScheduledChange(ctx context.Context, params CancelScheduledChangeParams) (*Order, error)
 	// CreateBillingAccount invokes create-billing-account operation.
 	//
 	// The currency is chosen here and cannot be changed afterwards. Everything charged to the account —
@@ -549,6 +559,142 @@ func (c *Client) requestURL(ctx context.Context) *url.URL {
 		return c.serverURL
 	}
 	return u
+}
+
+// CancelScheduledChange invokes cancel-scheduled-change operation.
+//
+// Only for a change scheduled for the end of the period, and only while it is still pending. An
+// immediate change has already happened by the time it is placed, and there is nothing to call off.
+//
+// Nothing was charged or returned when it was scheduled, so nothing moves here either. The
+// subscription keeps running on what it is on now, and the item is free to be changed again.
+//
+// POST /account/v1/orders/{orderId}/cancel
+func (c *Client) CancelScheduledChange(ctx context.Context, params CancelScheduledChangeParams) (*Order, error) {
+	res, err := c.sendCancelScheduledChange(ctx, params)
+	return res, err
+}
+
+func (c *Client) sendCancelScheduledChange(ctx context.Context, params CancelScheduledChangeParams) (res *Order, err error) {
+	otelAttrs := []attribute.KeyValue{
+		otelogen.OperationID("cancel-scheduled-change"),
+		semconv.HTTPRequestMethodKey.String("POST"),
+		semconv.URLTemplateKey.String("/account/v1/orders/{orderId}/cancel"),
+	}
+	otelAttrs = append(otelAttrs, c.cfg.Attributes...)
+
+	// Run stopwatch.
+	startTime := time.Now()
+	defer func() {
+		// Use floating point division here for higher precision (instead of Millisecond method).
+		elapsedDuration := time.Since(startTime)
+		c.duration.Record(ctx, float64(elapsedDuration)/float64(time.Millisecond), metric.WithAttributes(otelAttrs...))
+	}()
+
+	// Increment request counter.
+	c.requests.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
+
+	// Start a span for this request.
+	ctx, span := c.cfg.Tracer.Start(ctx, CancelScheduledChangeOperation,
+		trace.WithAttributes(otelAttrs...),
+		clientSpanKind,
+	)
+	// Track stage for error reporting.
+	var stage string
+	defer func() {
+		if err != nil {
+			span.RecordError(err)
+			span.SetStatus(codes.Error, stage)
+			c.errors.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
+		}
+		span.End()
+	}()
+
+	stage = "BuildURL"
+	u := uri.Clone(c.requestURL(ctx))
+	var pathParts [3]string
+	pathParts[0] = "/account/v1/orders/"
+	{
+		// Encode "orderId" parameter.
+		e := uri.NewPathEncoder(uri.PathEncoderConfig{
+			Param:   "orderId",
+			Style:   uri.PathStyleSimple,
+			Explode: false,
+		})
+		if err := func() error {
+			return e.EncodeValue(conv.UUIDToString(params.OrderId))
+		}(); err != nil {
+			return res, errors.Wrap(err, "encode path")
+		}
+		encoded, err := e.Result()
+		if err != nil {
+			return res, errors.Wrap(err, "encode path")
+		}
+		pathParts[1] = encoded
+	}
+	pathParts[2] = "/cancel"
+	uri.AddPathParts(u, pathParts[:]...)
+
+	stage = "EncodeRequest"
+	r, err := ht.NewRequest(ctx, "POST", u)
+	if err != nil {
+		return res, errors.Wrap(err, "create request")
+	}
+
+	{
+		type bitset = [1]uint8
+		var satisfied bitset
+		{
+			stage = "Security:AccountAuth"
+			switch err := c.securityAccountAuth(ctx, CancelScheduledChangeOperation, r); {
+			case err == nil: // if NO error
+				satisfied[0] |= 1 << 0
+			case errors.Is(err, ogenerrors.ErrSkipClientSecurity):
+				// Skip this security.
+			default:
+				return res, errors.Wrap(err, "security \"AccountAuth\"")
+			}
+		}
+
+		if ok := func() bool {
+		nextRequirement:
+			for _, requirement := range []bitset{
+				{0b00000001},
+			} {
+				for i, mask := range requirement {
+					if satisfied[i]&mask != mask {
+						continue nextRequirement
+					}
+				}
+				return true
+			}
+			return false
+		}(); !ok {
+			return res, ogenerrors.ErrSecurityRequirementIsNotSatisfied
+		}
+	}
+
+	stage = "SendRequest"
+	resp, err := c.cfg.Client.Do(r)
+	if err != nil {
+		return res, errors.Wrap(err, "do request")
+	}
+	body := resp.Body
+	defer func() {
+		// Drain the body to EOF before closing, so the underlying
+		// connection can be reused by the Transport regardless of the
+		// response status code. See https://github.com/ogen-go/ogen/issues/1670.
+		_, _ = io.Copy(io.Discard, body)
+		_ = body.Close()
+	}()
+
+	stage = "DecodeResponse"
+	result, err := decodeCancelScheduledChangeResponse(resp)
+	if err != nil {
+		return res, errors.Wrap(err, "decode response")
+	}
+
+	return result, nil
 }
 
 // CreateBillingAccount invokes create-billing-account operation.

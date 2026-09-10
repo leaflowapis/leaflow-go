@@ -40,6 +40,7 @@ func findAuthorization(h http.Header, prefix string) (string, bool) {
 
 // operationRolesAccountAuth is a private map storing roles per operation.
 var operationRolesAccountAuth = map[string][]string{
+	CancelScheduledChangeOperation:     []string{},
 	CreateBillingAccountOperation:      []string{},
 	CreatePaymentMethodSetupOperation:  []string{},
 	CreateTopUpOperation:               []string{},

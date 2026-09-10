@@ -16,6 +16,71 @@ import (
 	"github.com/ogen-go/ogen/validate"
 )
 
+// CancelScheduledChangeParams is parameters of cancel-scheduled-change operation.
+type CancelScheduledChangeParams struct {
+	OrderId uuid.UUID
+}
+
+func unpackCancelScheduledChangeParams(packed middleware.Parameters) (params CancelScheduledChangeParams) {
+	{
+		key := middleware.ParameterKey{
+			Name: "orderId",
+			In:   "path",
+		}
+		params.OrderId = packed[key].(uuid.UUID)
+	}
+	return params
+}
+
+func decodeCancelScheduledChangeParams(args [1]string, argsEscaped bool, r *http.Request) (params CancelScheduledChangeParams, _ error) {
+	// Decode path: orderId.
+	if err := func() error {
+		param := args[0]
+		if argsEscaped {
+			unescaped, err := url.PathUnescape(args[0])
+			if err != nil {
+				return errors.Wrap(err, "unescape path")
+			}
+			param = unescaped
+		}
+		if len(param) > 0 {
+			d := uri.NewPathDecoder(uri.PathDecoderConfig{
+				Param:   "orderId",
+				Value:   param,
+				Style:   uri.PathStyleSimple,
+				Explode: false,
+			})
+
+			if err := func() error {
+				val, err := d.DecodeValue()
+				if err != nil {
+					return err
+				}
+
+				c, err := conv.ToUUID(val)
+				if err != nil {
+					return err
+				}
+
+				params.OrderId = c
+				return nil
+			}(); err != nil {
+				return err
+			}
+		} else {
+			return validate.ErrFieldRequired
+		}
+		return nil
+	}(); err != nil {
+		return params, &ogenerrors.DecodeParamError{
+			Name: "orderId",
+			In:   "path",
+			Err:  err,
+		}
+	}
+	return params, nil
+}
+
 // CreateProjectQuoteParams is parameters of create-project-quote operation.
 type CreateProjectQuoteParams struct {
 	ProjectId uuid.UUID

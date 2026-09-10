@@ -8,6 +8,16 @@ import (
 
 // Handler handles operations described by OpenAPI v3 specification.
 type Handler interface {
+	// CancelScheduledChange implements cancel-scheduled-change operation.
+	//
+	// Only for a change scheduled for the end of the period, and only while it is still pending. An
+	// immediate change has already happened by the time it is placed, and there is nothing to call off.
+	//
+	// Nothing was charged or returned when it was scheduled, so nothing moves here either. The
+	// subscription keeps running on what it is on now, and the item is free to be changed again.
+	//
+	// POST /account/v1/orders/{orderId}/cancel
+	CancelScheduledChange(ctx context.Context, params CancelScheduledChangeParams) (*Order, error)
 	// CreateBillingAccount implements create-billing-account operation.
 	//
 	// The currency is chosen here and cannot be changed afterwards. Everything charged to the account —

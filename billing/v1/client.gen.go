@@ -3435,6 +3435,18 @@ type ClientInterface interface {
 	// GetOrder performs a GET /account/v1/orders/{orderId} (the `GetOrder` operationId) request.
 	GetOrder(ctx context.Context, orderId OrderId, reqEditors ...RequestEditorFn) (*http.Response, error)
 
+	// CancelScheduledChange Call off a plan change that has not taken effect yet
+	//
+	// Only for a change scheduled for the end of the period, and only while it is still
+	// pending. An immediate change has already happened by the time it is placed, and there is
+	// nothing to call off.
+	//
+	// Nothing was charged or returned when it was scheduled, so nothing moves here either. The
+	// subscription keeps running on what it is on now, and the item is free to be changed again.
+	//
+	// Corresponds with POST /account/v1/orders/{orderId}/cancel (the `CancelScheduledChange` operationId).
+	CancelScheduledChange(ctx context.Context, orderId OrderId, reqEditors ...RequestEditorFn) (*http.Response, error)
+
 	// ListOrderItems What an order is made up of
 	//
 	// One entry per item bought, with the price charged and the period it covers.
@@ -4425,6 +4437,28 @@ func (c *Client) ListOrders(ctx context.Context, params *ListOrdersParams, reqEd
 // GetOrder performs a GET /account/v1/orders/{orderId} (the `GetOrder` operationId) request.
 func (c *Client) GetOrder(ctx context.Context, orderId OrderId, reqEditors ...RequestEditorFn) (*http.Response, error) {
 	req, err := NewGetOrderRequest(c.Server, orderId)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+// CancelScheduledChange Call off a plan change that has not taken effect yet
+//
+// Only for a change scheduled for the end of the period, and only while it is still
+// pending. An immediate change has already happened by the time it is placed, and there is
+// nothing to call off.
+//
+// Nothing was charged or returned when it was scheduled, so nothing moves here either. The
+// subscription keeps running on what it is on now, and the item is free to be changed again.
+//
+// Corresponds with POST /account/v1/orders/{orderId}/cancel (the `CancelScheduledChange` operationId).
+func (c *Client) CancelScheduledChange(ctx context.Context, orderId OrderId, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewCancelScheduledChangeRequest(c.Server, orderId)
 	if err != nil {
 		return nil, err
 	}
@@ -6722,6 +6756,40 @@ func NewGetOrderRequest(server string, orderId OrderId) (*http.Request, error) {
 	}
 
 	req, err := http.NewRequest(http.MethodGet, queryURL.String(), nil)
+	if err != nil {
+		return nil, err
+	}
+
+	return req, nil
+}
+
+// NewCancelScheduledChangeRequest constructs an http.Request for the CancelScheduledChange method
+func NewCancelScheduledChangeRequest(server string, orderId OrderId) (*http.Request, error) {
+	var err error
+
+	var pathParam0 string
+
+	pathParam0, err = runtime.StyleParamWithOptions("simple", false, "orderId", orderId, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: "uuid"})
+	if err != nil {
+		return nil, err
+	}
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/account/v1/orders/%s/cancel", pathParam0)
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest(http.MethodPost, queryURL.String(), nil)
 	if err != nil {
 		return nil, err
 	}
@@ -9876,6 +9944,20 @@ type ClientWithResponsesInterface interface {
 	// Returns a wrapper object for the known response body format(s).
 	GetOrderWithResponse(ctx context.Context, orderId OrderId, reqEditors ...RequestEditorFn) (*GetOrderResponse, error)
 
+	// CancelScheduledChangeWithResponse Call off a plan change that has not taken effect yet
+	//
+	// Only for a change scheduled for the end of the period, and only while it is still
+	// pending. An immediate change has already happened by the time it is placed, and there is
+	// nothing to call off.
+	//
+	// Nothing was charged or returned when it was scheduled, so nothing moves here either. The
+	// subscription keeps running on what it is on now, and the item is free to be changed again.
+	//
+	// Returns a wrapper object for the known response body format(s).
+	//
+	// Corresponds with POST /account/v1/orders/{orderId}/cancel (the `CancelScheduledChange` operationId).
+	CancelScheduledChangeWithResponse(ctx context.Context, orderId OrderId, reqEditors ...RequestEditorFn) (*CancelScheduledChangeResponse, error)
+
 	// ListOrderItemsWithResponse What an order is made up of
 	//
 	// One entry per item bought, with the price charged and the period it covers.
@@ -11377,6 +11459,54 @@ func (r GetOrderResponse) StatusCode() int {
 
 // ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
 func (r GetOrderResponse) ContentType() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Header.Get("Content-Type")
+	}
+	return ""
+}
+
+type CancelScheduledChangeResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	// JSON200 the response for an HTTP 200 `application/json` response
+	JSON200 *Order
+	// JSONDefault the response for an HTTP default `application/json` response
+	JSONDefault *Error
+}
+
+// GetJSON200 returns the response for an HTTP 200 `application/json` response
+func (r CancelScheduledChangeResponse) GetJSON200() *Order {
+	return r.JSON200
+}
+
+// GetJSONDefault returns the response for an HTTP default `application/json` response
+func (r CancelScheduledChangeResponse) GetJSONDefault() *Error {
+	return r.JSONDefault
+}
+
+// GetBody returns the raw response body bytes
+func (r CancelScheduledChangeResponse) GetBody() []byte {
+	return r.Body
+}
+
+// Status returns HTTPResponse.Status
+func (r CancelScheduledChangeResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r CancelScheduledChangeResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+// ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
+func (r CancelScheduledChangeResponse) ContentType() string {
 	if r.HTTPResponse != nil {
 		return r.HTTPResponse.Header.Get("Content-Type")
 	}
@@ -13840,6 +13970,26 @@ func (c *ClientWithResponses) GetOrderWithResponse(ctx context.Context, orderId 
 	return ParseGetOrderResponse(rsp)
 }
 
+// CancelScheduledChangeWithResponse Call off a plan change that has not taken effect yet
+//
+// Only for a change scheduled for the end of the period, and only while it is still
+// pending. An immediate change has already happened by the time it is placed, and there is
+// nothing to call off.
+//
+// Nothing was charged or returned when it was scheduled, so nothing moves here either. The
+// subscription keeps running on what it is on now, and the item is free to be changed again.
+//
+// Returns a wrapper object for the known response body format(s).
+//
+// Corresponds with POST /account/v1/orders/{orderId}/cancel (the `CancelScheduledChange` operationId).
+func (c *ClientWithResponses) CancelScheduledChangeWithResponse(ctx context.Context, orderId OrderId, reqEditors ...RequestEditorFn) (*CancelScheduledChangeResponse, error) {
+	rsp, err := c.CancelScheduledChange(ctx, orderId, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseCancelScheduledChangeResponse(rsp)
+}
+
 // ListOrderItemsWithResponse What an order is made up of
 //
 // One entry per item bought, with the price charged and the period it covers.
@@ -15355,6 +15505,39 @@ func ParseGetOrderResponse(rsp *http.Response) (*GetOrderResponse, error) {
 	}
 
 	response := &GetOrderResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest Order
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && true:
+		var dest Error
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSONDefault = &dest
+
+	}
+
+	return response, nil
+}
+
+// ParseCancelScheduledChangeResponse parses an HTTP response from a CancelScheduledChangeWithResponse call
+func ParseCancelScheduledChangeResponse(rsp *http.Response) (*CancelScheduledChangeResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &CancelScheduledChangeResponse{
 		Body:         bodyBytes,
 		HTTPResponse: rsp,
 	}
