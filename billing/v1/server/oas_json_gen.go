@@ -9327,6 +9327,39 @@ func (s *OptNilUUID) UnmarshalJSON(data []byte) error {
 	return s.Decode(d)
 }
 
+// Encode encodes OrderChangeEffective as json.
+func (o OptOrderChangeEffective) Encode(e *jx.Encoder) {
+	if !o.Set {
+		return
+	}
+	e.Str(string(o.Value))
+}
+
+// Decode decodes OrderChangeEffective from json.
+func (o *OptOrderChangeEffective) Decode(d *jx.Decoder) error {
+	if o == nil {
+		return errors.New("invalid: unable to decode OptOrderChangeEffective to nil")
+	}
+	o.Set = true
+	if err := o.Value.Decode(d); err != nil {
+		return err
+	}
+	return nil
+}
+
+// MarshalJSON implements stdjson.Marshaler.
+func (s OptOrderChangeEffective) MarshalJSON() ([]byte, error) {
+	e := jx.Encoder{}
+	s.Encode(&e)
+	return e.Bytes(), nil
+}
+
+// UnmarshalJSON implements stdjson.Unmarshaler.
+func (s *OptOrderChangeEffective) UnmarshalJSON(data []byte) error {
+	d := jx.DecodeBytes(data)
+	return s.Decode(d)
+}
+
 // Encode encodes OrderState as json.
 func (o OptOrderState) Encode(e *jx.Encoder) {
 	if !o.Set {
@@ -9730,6 +9763,18 @@ func (s *Order) encodeFields(e *jx.Encoder) {
 		}
 	}
 	{
+		if s.ChangeEffective.Set {
+			e.FieldStart("change_effective")
+			s.ChangeEffective.Encode(e)
+		}
+	}
+	{
+		if s.RefundableAmount.Set {
+			e.FieldStart("refundable_amount")
+			s.RefundableAmount.Encode(e)
+		}
+	}
+	{
 		if s.ReservationExpiresAt.Set {
 			e.FieldStart("reservation_expires_at")
 			s.ReservationExpiresAt.Encode(e, json.EncodeDateTime)
@@ -9741,7 +9786,7 @@ func (s *Order) encodeFields(e *jx.Encoder) {
 	}
 }
 
-var jsonFieldsNameOfOrder = [13]string{
+var jsonFieldsNameOfOrder = [15]string{
 	0:  "id",
 	1:  "project_id",
 	2:  "billing_account_id",
@@ -9753,8 +9798,10 @@ var jsonFieldsNameOfOrder = [13]string{
 	8:  "amount",
 	9:  "amount_due",
 	10: "refunded_amount",
-	11: "reservation_expires_at",
-	12: "created_at",
+	11: "change_effective",
+	12: "refundable_amount",
+	13: "reservation_expires_at",
+	14: "created_at",
 }
 
 // Decode decodes Order from json.
@@ -9880,6 +9927,26 @@ func (s *Order) Decode(d *jx.Decoder) error {
 			}(); err != nil {
 				return errors.Wrap(err, "decode field \"refunded_amount\"")
 			}
+		case "change_effective":
+			if err := func() error {
+				s.ChangeEffective.Reset()
+				if err := s.ChangeEffective.Decode(d); err != nil {
+					return err
+				}
+				return nil
+			}(); err != nil {
+				return errors.Wrap(err, "decode field \"change_effective\"")
+			}
+		case "refundable_amount":
+			if err := func() error {
+				s.RefundableAmount.Reset()
+				if err := s.RefundableAmount.Decode(d); err != nil {
+					return err
+				}
+				return nil
+			}(); err != nil {
+				return errors.Wrap(err, "decode field \"refundable_amount\"")
+			}
 		case "reservation_expires_at":
 			if err := func() error {
 				s.ReservationExpiresAt.Reset()
@@ -9891,7 +9958,7 @@ func (s *Order) Decode(d *jx.Decoder) error {
 				return errors.Wrap(err, "decode field \"reservation_expires_at\"")
 			}
 		case "created_at":
-			requiredBitSet[1] |= 1 << 4
+			requiredBitSet[1] |= 1 << 6
 			if err := func() error {
 				v, err := json.DecodeDateTime(d)
 				s.CreatedAt = v
@@ -9913,7 +9980,7 @@ func (s *Order) Decode(d *jx.Decoder) error {
 	var failures []validate.FieldError
 	for i, mask := range [2]uint8{
 		0b00111001,
-		0b00010001,
+		0b01000001,
 	} {
 		if result := (requiredBitSet[i] & mask) ^ mask; result != 0 {
 			// Mask only required fields and check equality to mask using XOR.
@@ -9955,6 +10022,48 @@ func (s *Order) MarshalJSON() ([]byte, error) {
 
 // UnmarshalJSON implements stdjson.Unmarshaler.
 func (s *Order) UnmarshalJSON(data []byte) error {
+	d := jx.DecodeBytes(data)
+	return s.Decode(d)
+}
+
+// Encode encodes OrderChangeEffective as json.
+func (s OrderChangeEffective) Encode(e *jx.Encoder) {
+	e.Str(string(s))
+}
+
+// Decode decodes OrderChangeEffective from json.
+func (s *OrderChangeEffective) Decode(d *jx.Decoder) error {
+	if s == nil {
+		return errors.New("invalid: unable to decode OrderChangeEffective to nil")
+	}
+	v, err := d.StrBytes()
+	if err != nil {
+		return err
+	}
+	// Try to use constant string.
+	switch OrderChangeEffective(v) {
+	case OrderChangeEffectiveNone:
+		*s = OrderChangeEffectiveNone
+	case OrderChangeEffectiveImmediate:
+		*s = OrderChangeEffectiveImmediate
+	case OrderChangeEffectivePeriodEnd:
+		*s = OrderChangeEffectivePeriodEnd
+	default:
+		*s = OrderChangeEffective(v)
+	}
+
+	return nil
+}
+
+// MarshalJSON implements stdjson.Marshaler.
+func (s OrderChangeEffective) MarshalJSON() ([]byte, error) {
+	e := jx.Encoder{}
+	s.Encode(&e)
+	return e.Bytes(), nil
+}
+
+// UnmarshalJSON implements stdjson.Unmarshaler.
+func (s *OrderChangeEffective) UnmarshalJSON(data []byte) error {
 	d := jx.DecodeBytes(data)
 	return s.Decode(d)
 }

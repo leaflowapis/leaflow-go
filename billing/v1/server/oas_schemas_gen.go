@@ -5827,6 +5827,52 @@ func (o OptNilUUID) Or(d uuid.UUID) uuid.UUID {
 	return d
 }
 
+// NewOptOrderChangeEffective returns new OptOrderChangeEffective with value set to v.
+func NewOptOrderChangeEffective(v OrderChangeEffective) OptOrderChangeEffective {
+	return OptOrderChangeEffective{
+		Value: v,
+		Set:   true,
+	}
+}
+
+// OptOrderChangeEffective is optional OrderChangeEffective.
+type OptOrderChangeEffective struct {
+	Value OrderChangeEffective
+	Set   bool
+}
+
+// IsSet returns true if OptOrderChangeEffective was set.
+func (o OptOrderChangeEffective) IsSet() bool { return o.Set }
+
+// Reset unsets value.
+func (o *OptOrderChangeEffective) Reset() {
+	var v OrderChangeEffective
+	o.Value = v
+	o.Set = false
+}
+
+// SetTo sets value to v.
+func (o *OptOrderChangeEffective) SetTo(v OrderChangeEffective) {
+	o.Set = true
+	o.Value = v
+}
+
+// Get returns value and boolean that denotes whether value was set.
+func (o OptOrderChangeEffective) Get() (v OrderChangeEffective, ok bool) {
+	if !o.Set {
+		return v, false
+	}
+	return o.Value, true
+}
+
+// Or returns value if set, or given parameter if does not.
+func (o OptOrderChangeEffective) Or(d OrderChangeEffective) OrderChangeEffective {
+	if v, ok := o.Get(); ok {
+		return v
+	}
+	return d
+}
+
 // NewOptOrderState returns new OptOrderState with value set to v.
 func NewOptOrderState(v OrderState) OptOrderState {
 	return OptOrderState{
@@ -6301,9 +6347,18 @@ type Order struct {
 	Amount           Money      `json:"amount"`
 	// What is still outstanding. Zero once paid.
 	AmountDue OptMoney `json:"amount_due"`
-	// Returned as part of a downgrade. It is returned to the sources that originally paid rather than
-	// deducted from `amount`.
+	// How much of `refundable_amount` has already gone back.
 	RefundedAmount OptMoney `json:"refunded_amount"`
+	// When a plan change takes effect. `none` on anything that is not a change.
+	//
+	// `period_end` orders stay pending until the current paid period runs out. Renewing in the meantime
+	// moves that moment along with it.
+	ChangeEffective OptOrderChangeEffective `json:"change_effective"`
+	// What a downgrade gives back. It is returned to the sources that originally paid rather than deducted
+	// from `amount`, so paying with granted credit gives back credit.
+	//
+	// Always "0" on a `period_end` change: nothing is left of the period at its end.
+	RefundableAmount OptMoney `json:"refundable_amount"`
 	// When the funds and any stock held for this order are released. After this it can no longer be paid
 	// and has to be placed again. Absent once the order is settled.
 	ReservationExpiresAt OptNilDateTime `json:"reservation_expires_at"`
@@ -6363,6 +6418,16 @@ func (s *Order) GetAmountDue() OptMoney {
 // GetRefundedAmount returns the value of RefundedAmount.
 func (s *Order) GetRefundedAmount() OptMoney {
 	return s.RefundedAmount
+}
+
+// GetChangeEffective returns the value of ChangeEffective.
+func (s *Order) GetChangeEffective() OptOrderChangeEffective {
+	return s.ChangeEffective
+}
+
+// GetRefundableAmount returns the value of RefundableAmount.
+func (s *Order) GetRefundableAmount() OptMoney {
+	return s.RefundableAmount
 }
 
 // GetReservationExpiresAt returns the value of ReservationExpiresAt.
@@ -6430,6 +6495,16 @@ func (s *Order) SetRefundedAmount(val OptMoney) {
 	s.RefundedAmount = val
 }
 
+// SetChangeEffective sets the value of ChangeEffective.
+func (s *Order) SetChangeEffective(val OptOrderChangeEffective) {
+	s.ChangeEffective = val
+}
+
+// SetRefundableAmount sets the value of RefundableAmount.
+func (s *Order) SetRefundableAmount(val OptMoney) {
+	s.RefundableAmount = val
+}
+
 // SetReservationExpiresAt sets the value of ReservationExpiresAt.
 func (s *Order) SetReservationExpiresAt(val OptNilDateTime) {
 	s.ReservationExpiresAt = val
@@ -6438,6 +6513,58 @@ func (s *Order) SetReservationExpiresAt(val OptNilDateTime) {
 // SetCreatedAt sets the value of CreatedAt.
 func (s *Order) SetCreatedAt(val time.Time) {
 	s.CreatedAt = val
+}
+
+// When a plan change takes effect. `none` on anything that is not a change.
+//
+// `period_end` orders stay pending until the current paid period runs out. Renewing in the meantime
+// moves that moment along with it.
+type OrderChangeEffective string
+
+const (
+	OrderChangeEffectiveNone      OrderChangeEffective = "none"
+	OrderChangeEffectiveImmediate OrderChangeEffective = "immediate"
+	OrderChangeEffectivePeriodEnd OrderChangeEffective = "period_end"
+)
+
+// AllValues returns all OrderChangeEffective values.
+func (OrderChangeEffective) AllValues() []OrderChangeEffective {
+	return []OrderChangeEffective{
+		OrderChangeEffectiveNone,
+		OrderChangeEffectiveImmediate,
+		OrderChangeEffectivePeriodEnd,
+	}
+}
+
+// MarshalText implements encoding.TextMarshaler.
+func (s OrderChangeEffective) MarshalText() ([]byte, error) {
+	switch s {
+	case OrderChangeEffectiveNone:
+		return []byte(s), nil
+	case OrderChangeEffectiveImmediate:
+		return []byte(s), nil
+	case OrderChangeEffectivePeriodEnd:
+		return []byte(s), nil
+	default:
+		return nil, errors.Errorf("invalid value: %q", s)
+	}
+}
+
+// UnmarshalText implements encoding.TextUnmarshaler.
+func (s *OrderChangeEffective) UnmarshalText(data []byte) error {
+	switch OrderChangeEffective(data) {
+	case OrderChangeEffectiveNone:
+		*s = OrderChangeEffectiveNone
+		return nil
+	case OrderChangeEffectiveImmediate:
+		*s = OrderChangeEffectiveImmediate
+		return nil
+	case OrderChangeEffectivePeriodEnd:
+		*s = OrderChangeEffectivePeriodEnd
+		return nil
+	default:
+		return errors.Errorf("invalid value: %q", data)
+	}
 }
 
 // Ref: #/components/schemas/OrderItem

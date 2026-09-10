@@ -387,19 +387,19 @@ func (e CreditGrantStatus) Valid() bool {
 
 // Defines values for IncludedAllowanceExpiry.
 const (
-	Days      IncludedAllowanceExpiry = "days"
-	Never     IncludedAllowanceExpiry = "never"
-	PeriodEnd IncludedAllowanceExpiry = "period_end"
+	IncludedAllowanceExpiryDays      IncludedAllowanceExpiry = "days"
+	IncludedAllowanceExpiryNever     IncludedAllowanceExpiry = "never"
+	IncludedAllowanceExpiryPeriodEnd IncludedAllowanceExpiry = "period_end"
 )
 
 // Valid indicates whether the value is a known member of the IncludedAllowanceExpiry enum.
 func (e IncludedAllowanceExpiry) Valid() bool {
 	switch e {
-	case Days:
+	case IncludedAllowanceExpiryDays:
 		return true
-	case Never:
+	case IncludedAllowanceExpiryNever:
 		return true
-	case PeriodEnd:
+	case IncludedAllowanceExpiryPeriodEnd:
 		return true
 	default:
 		return false
@@ -475,6 +475,27 @@ func (e InvoiceStatus) Valid() bool {
 	case InvoiceStatusUncollectible:
 		return true
 	case InvoiceStatusVoid:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for OrderChangeEffective.
+const (
+	OrderChangeEffectiveImmediate OrderChangeEffective = "immediate"
+	OrderChangeEffectiveNone      OrderChangeEffective = "none"
+	OrderChangeEffectivePeriodEnd OrderChangeEffective = "period_end"
+)
+
+// Valid indicates whether the value is a known member of the OrderChangeEffective enum.
+func (e OrderChangeEffective) Valid() bool {
+	switch e {
+	case OrderChangeEffectiveImmediate:
+		return true
+	case OrderChangeEffectiveNone:
+		return true
+	case OrderChangeEffectivePeriodEnd:
 		return true
 	default:
 		return false
@@ -1707,10 +1728,16 @@ type Order struct {
 	Amount Money `json:"amount"`
 
 	// AmountDue What is still outstanding. Zero once paid.
-	AmountDue        *Money    `json:"amount_due,omitempty"`
-	BillingAccountId *int64    `json:"billing_account_id,omitempty"`
-	CreatedAt        time.Time `json:"created_at"`
-	Currency         string    `json:"currency"`
+	AmountDue        *Money `json:"amount_due,omitempty"`
+	BillingAccountId *int64 `json:"billing_account_id,omitempty"`
+
+	// ChangeEffective When a plan change takes effect. `none` on anything that is not a change.
+	//
+	// `period_end` orders stay pending until the current paid period runs out. Renewing in
+	// the meantime moves that moment along with it.
+	ChangeEffective *OrderChangeEffective `json:"change_effective,omitempty"`
+	CreatedAt       time.Time             `json:"created_at"`
+	Currency        string                `json:"currency"`
 
 	// DiscountAmount A decimal string, in the currency stated alongside it.
 	DiscountAmount *Money `json:"discount_amount,omitempty"`
@@ -1723,8 +1750,13 @@ type Order struct {
 	// as a membership.
 	ProjectId *openapi_types.UUID `json:"project_id,omitempty"`
 
-	// RefundedAmount Returned as part of a downgrade. It is returned to the sources that originally paid
-	// rather than deducted from `amount`.
+	// RefundableAmount What a downgrade gives back. It is returned to the sources that originally paid
+	// rather than deducted from `amount`, so paying with granted credit gives back credit.
+	//
+	// Always "0" on a `period_end` change: nothing is left of the period at its end.
+	RefundableAmount *Money `json:"refundable_amount,omitempty"`
+
+	// RefundedAmount How much of `refundable_amount` has already gone back.
 	RefundedAmount *Money `json:"refunded_amount,omitempty"`
 
 	// ReservationExpiresAt When the funds and any stock held for this order are released. After this it can no
@@ -1733,6 +1765,12 @@ type Order struct {
 	State                OrderState `json:"state"`
 	Type                 OrderType  `json:"type"`
 }
+
+// OrderChangeEffective When a plan change takes effect. `none` on anything that is not a change.
+//
+// `period_end` orders stay pending until the current paid period runs out. Renewing in
+// the meantime moves that moment along with it.
+type OrderChangeEffective string
 
 // OrderType defines model for Order.Type.
 type OrderType string
