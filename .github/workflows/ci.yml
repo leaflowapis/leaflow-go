@@ -23,12 +23,24 @@ jobs:
           go-version: '1.27'
       - run: pip install pyyaml
 
+      # 先 add -A 再比对暂存区：`git diff` 只看已跟踪的文件，而新增一个服务时它的
+      # defaults.gen.go 属于未跟踪，遗漏提交同样为绿。
       - name: 生成产物与契约一致
         run: |
           python3 scripts/generate.py
-          if ! git diff --quiet; then
+          git add -A
+          if ! git diff --cached --quiet; then
             echo "::error::契约已变更但生成产物未更新。执行 python3 scripts/generate.py 后提交。" >&2
-            git --no-pager diff --stat >&2
+            git --no-pager diff --cached --stat >&2
+            exit 1
+          fi
+
+      - name: 产物已格式化
+        run: |
+          unformatted=$(gofmt -l . | grep -v '^leaflowapis/' || true)
+          if [ -n "$unformatted" ]; then
+            echo "::error::以下文件未经 gofmt 格式化。" >&2
+            echo "$unformatted" >&2
             exit 1
           fi
 

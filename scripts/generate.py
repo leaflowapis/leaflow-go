@@ -152,6 +152,56 @@ require (
 """
 
 
+# DEFAULTS_GO 是那两个不必传地址的构造函数。
+#
+# oapi-codegen 生成的 NewClient 把 server 作为必填的第一个参数，而这个值在契约的 servers[0]
+# 里已经写明了。让每个调用方重新声明一遍，等于把一个确定的值变成一个可以填错的参数：填错得到
+# 的是一个合法但指向别处的 URL，编译期查不出来，运行期表现为 404 或者连不上。
+#
+# 所以地址不作为常量导出，而是包在构造函数里。要指向别处（本地服务、预发）用 oapi-codegen
+# 自己那个 WithBaseURL —— 覆盖是个明确的动作，不该和「正常使用」写成同一种形状。
+#
+# 一个服务一个 host，不是网关加路径前缀：IAM 与 monitoring 都占着 /api/v1/projects/{id}/…，
+# 只看路径分不出一次调用发给谁。因此地址按服务生成，不做成一张全局表。
+DEFAULTS_GO = """// Code generated from the contract's servers[0]. DO NOT EDIT.
+
+package {package}
+
+const defaultServer = "{url}"
+
+// New returns a Client for the {service} service. Pass WithBaseURL to override the address.
+func New(opts ...ClientOption) (*Client, error) {{
+	return NewClient(defaultServer, opts...)
+}}
+
+// NewWithResponses returns a ClientWithResponses for the {service} service.
+func NewWithResponses(opts ...ClientOption) (*ClientWithResponses, error) {{
+	return NewClientWithResponses(defaultServer, opts...)
+}}
+"""
+
+
+def write_defaults(contract, service, package, out):
+    """把契约的 servers[0] 包进 New 与 NewWithResponses。
+
+    契约没有声明 servers 时不写，只在 stderr 上留一句。缺地址是契约那边的疏漏，而让整个
+    SDK 的生成因为一个服务停下来，代价与收益不相称。那个服务仍然有 oapi-codegen 生成的
+    NewClient，只是要自己传地址。
+    """
+    document = yaml.safe_load(contract.read_text(encoding="utf-8"))
+    servers = document.get("servers") or []
+    url = servers[0].get("url") if servers else None
+    if not url:
+        print(f"{contract.relative_to(CONTRACTS)}: 未声明 servers，不生成 New",
+              file=sys.stderr)
+        return
+
+    path = out / "defaults.gen.go"
+    path.write_text(DEFAULTS_GO.format(package=package, service=service, url=url),
+                    encoding="utf-8")
+    subprocess.run(["gofmt", "-w", str(path)], check=True)
+
+
 def write_module(service):
     """没有 go.mod 时给这个服务补一份。
 
@@ -208,6 +258,8 @@ def main():
             # 客户端两套都由 oapi-codegen 出：外部用户装的是它，而 ogen 的客户端形状不同——
             # 换掉是对下游的破坏性改动，和服务端那件事无关，不该被它捎带着做。
             codegen(contract, package, out / "client.gen.go", CLIENT_GENERATE, scratch, mapping)
+
+            write_defaults(contract, service, package, out)
 
             ogen.generate(contract, f"{package}server", out / "server")
 
