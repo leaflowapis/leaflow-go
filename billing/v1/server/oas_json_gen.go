@@ -3477,6 +3477,24 @@ func (s *CatalogPrice) encodeFields(e *jx.Encoder) {
 		}
 	}
 	{
+		if s.MinQuantity.Set {
+			e.FieldStart("min_quantity")
+			s.MinQuantity.Encode(e)
+		}
+	}
+	{
+		if s.MaxQuantity.Set {
+			e.FieldStart("max_quantity")
+			s.MaxQuantity.Encode(e)
+		}
+	}
+	{
+		if s.QuantityStep.Set {
+			e.FieldStart("quantity_step")
+			s.QuantityStep.Encode(e)
+		}
+	}
+	{
 		if s.Allowances != nil {
 			e.FieldStart("allowances")
 			e.ArrStart()
@@ -3516,7 +3534,7 @@ func (s *CatalogPrice) encodeFields(e *jx.Encoder) {
 	}
 }
 
-var jsonFieldsNameOfCatalogPrice = [14]string{
+var jsonFieldsNameOfCatalogPrice = [17]string{
 	0:  "id",
 	1:  "plan_id",
 	2:  "currency",
@@ -3526,11 +3544,14 @@ var jsonFieldsNameOfCatalogPrice = [14]string{
 	6:  "tiers_mode",
 	7:  "tiers",
 	8:  "rate_card_id",
-	9:  "allowances",
-	10: "features",
-	11: "term",
-	12: "period",
-	13: "setup_fee",
+	9:  "min_quantity",
+	10: "max_quantity",
+	11: "quantity_step",
+	12: "allowances",
+	13: "features",
+	14: "term",
+	15: "period",
+	16: "setup_fee",
 }
 
 // Decode decodes CatalogPrice from json.
@@ -3538,7 +3559,7 @@ func (s *CatalogPrice) Decode(d *jx.Decoder) error {
 	if s == nil {
 		return errors.New("invalid: unable to decode CatalogPrice to nil")
 	}
-	var requiredBitSet [2]uint8
+	var requiredBitSet [3]uint8
 
 	if err := d.ObjBytes(func(d *jx.Decoder, k []byte) error {
 		switch string(k) {
@@ -3645,6 +3666,36 @@ func (s *CatalogPrice) Decode(d *jx.Decoder) error {
 			}(); err != nil {
 				return errors.Wrap(err, "decode field \"rate_card_id\"")
 			}
+		case "min_quantity":
+			if err := func() error {
+				s.MinQuantity.Reset()
+				if err := s.MinQuantity.Decode(d); err != nil {
+					return err
+				}
+				return nil
+			}(); err != nil {
+				return errors.Wrap(err, "decode field \"min_quantity\"")
+			}
+		case "max_quantity":
+			if err := func() error {
+				s.MaxQuantity.Reset()
+				if err := s.MaxQuantity.Decode(d); err != nil {
+					return err
+				}
+				return nil
+			}(); err != nil {
+				return errors.Wrap(err, "decode field \"max_quantity\"")
+			}
+		case "quantity_step":
+			if err := func() error {
+				s.QuantityStep.Reset()
+				if err := s.QuantityStep.Decode(d); err != nil {
+					return err
+				}
+				return nil
+			}(); err != nil {
+				return errors.Wrap(err, "decode field \"quantity_step\"")
+			}
 		case "allowances":
 			if err := func() error {
 				s.Allowances = make([]IncludedAllowance, 0)
@@ -3718,8 +3769,9 @@ func (s *CatalogPrice) Decode(d *jx.Decoder) error {
 	}
 	// Validate required fields.
 	var failures []validate.FieldError
-	for i, mask := range [2]uint8{
+	for i, mask := range [3]uint8{
 		0b00011111,
+		0b00000000,
 		0b00000000,
 	} {
 		if result := (requiredBitSet[i] & mask) ^ mask; result != 0 {

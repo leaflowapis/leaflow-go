@@ -1613,6 +1613,15 @@ type CatalogPrice struct {
 	Tiers []Tier `json:"tiers"`
 	// For `rated` prices, the price list the rates are read from.
 	RateCardID OptUUID `json:"rate_card_id"`
+	// The smallest quantity that can be bought. Absent means no lower bound.
+	MinQuantity OptMoney `json:"min_quantity"`
+	// The largest quantity that can be bought. Absent means no upper bound.
+	//
+	// An order beyond it is refused with its own code, apart from the codes for running out of stock and
+	// for exceeding what the infrastructure allows.
+	MaxQuantity OptMoney `json:"max_quantity"`
+	// Quantities must be a multiple of this. Absent means any quantity within the bounds.
+	QuantityStep OptMoney `json:"quantity_step"`
 	// Quantities included when this price is bought — the traffic or requests that are used before
 	// anything is charged for.
 	Allowances []IncludedAllowance `json:"allowances"`
@@ -1667,6 +1676,21 @@ func (s *CatalogPrice) GetTiers() []Tier {
 // GetRateCardID returns the value of RateCardID.
 func (s *CatalogPrice) GetRateCardID() OptUUID {
 	return s.RateCardID
+}
+
+// GetMinQuantity returns the value of MinQuantity.
+func (s *CatalogPrice) GetMinQuantity() OptMoney {
+	return s.MinQuantity
+}
+
+// GetMaxQuantity returns the value of MaxQuantity.
+func (s *CatalogPrice) GetMaxQuantity() OptMoney {
+	return s.MaxQuantity
+}
+
+// GetQuantityStep returns the value of QuantityStep.
+func (s *CatalogPrice) GetQuantityStep() OptMoney {
+	return s.QuantityStep
 }
 
 // GetAllowances returns the value of Allowances.
@@ -1737,6 +1761,21 @@ func (s *CatalogPrice) SetTiers(val []Tier) {
 // SetRateCardID sets the value of RateCardID.
 func (s *CatalogPrice) SetRateCardID(val OptUUID) {
 	s.RateCardID = val
+}
+
+// SetMinQuantity sets the value of MinQuantity.
+func (s *CatalogPrice) SetMinQuantity(val OptMoney) {
+	s.MinQuantity = val
+}
+
+// SetMaxQuantity sets the value of MaxQuantity.
+func (s *CatalogPrice) SetMaxQuantity(val OptMoney) {
+	s.MaxQuantity = val
+}
+
+// SetQuantityStep sets the value of QuantityStep.
+func (s *CatalogPrice) SetQuantityStep(val OptMoney) {
+	s.QuantityStep = val
 }
 
 // SetAllowances sets the value of Allowances.

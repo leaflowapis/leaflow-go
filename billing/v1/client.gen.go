@@ -1254,10 +1254,22 @@ type CatalogPrice struct {
 	Currency      string                    `json:"currency"`
 
 	// Features Capabilities that buying this price makes available.
-	Features []IncludedFeature   `json:"features,omitempty"`
-	Id       openapi_types.UUID  `json:"id"`
-	Period   *CatalogPricePeriod `json:"period,omitempty"`
-	PlanId   openapi_types.UUID  `json:"plan_id"`
+	Features []IncludedFeature  `json:"features,omitempty"`
+	Id       openapi_types.UUID `json:"id"`
+
+	// MaxQuantity The largest quantity that can be bought. Absent means no upper bound.
+	//
+	// An order beyond it is refused with its own code, apart from the codes for running
+	// out of stock and for exceeding what the infrastructure allows.
+	MaxQuantity *Money `json:"max_quantity,omitempty"`
+
+	// MinQuantity The smallest quantity that can be bought. Absent means no lower bound.
+	MinQuantity *Money              `json:"min_quantity,omitempty"`
+	Period      *CatalogPricePeriod `json:"period,omitempty"`
+	PlanId      openapi_types.UUID  `json:"plan_id"`
+
+	// QuantityStep Quantities must be a multiple of this. Absent means any quantity within the bounds.
+	QuantityStep *Money `json:"quantity_step,omitempty"`
 
 	// RateCardId For `rated` prices, the price list the rates are read from.
 	RateCardId *openapi_types.UUID `json:"rate_card_id,omitempty"`
