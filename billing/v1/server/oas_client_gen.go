@@ -3295,16 +3295,16 @@ func (c *Client) sendListAllowances(ctx context.Context, params ListAllowancesPa
 		}
 	}
 	{
-		// Encode "meter_key" parameter.
+		// Encode "meter" parameter.
 		cfg := uri.QueryParameterEncodingConfig{
-			Name:    "meter_key",
-			Style:   uri.QueryStyleForm,
+			Name:    "meter",
+			Style:   uri.QueryStyleDeepObject,
 			Explode: true,
 		}
 
 		if err := q.EncodeParam(cfg, func(e uri.Encoder) error {
-			if val, ok := params.MeterKey.Get(); ok {
-				return e.EncodeValue(conv.StringToString(val))
+			if val, ok := params.Meter.Get(); ok {
+				return val.EncodeURI(e)
 			}
 			return nil
 		}); err != nil {
@@ -3322,6 +3322,23 @@ func (c *Client) sendListAllowances(ctx context.Context, params ListAllowancesPa
 		if err := q.EncodeParam(cfg, func(e uri.Encoder) error {
 			if val, ok := params.Status.Get(); ok {
 				return e.EncodeValue(conv.StringToString(string(val)))
+			}
+			return nil
+		}); err != nil {
+			return res, errors.Wrap(err, "encode query")
+		}
+	}
+	{
+		// Encode "product" parameter.
+		cfg := uri.QueryParameterEncodingConfig{
+			Name:    "product",
+			Style:   uri.QueryStyleDeepObject,
+			Explode: true,
+		}
+
+		if err := q.EncodeParam(cfg, func(e uri.Encoder) error {
+			if val, ok := params.Product.Get(); ok {
+				return val.EncodeURI(e)
 			}
 			return nil
 		}); err != nil {
@@ -4112,16 +4129,16 @@ func (c *Client) sendListCatalogRates(ctx context.Context, params ListCatalogRat
 		}
 	}
 	{
-		// Encode "meter_key" parameter.
+		// Encode "meter" parameter.
 		cfg := uri.QueryParameterEncodingConfig{
-			Name:    "meter_key",
-			Style:   uri.QueryStyleForm,
+			Name:    "meter",
+			Style:   uri.QueryStyleDeepObject,
 			Explode: true,
 		}
 
 		if err := q.EncodeParam(cfg, func(e uri.Encoder) error {
-			if val, ok := params.MeterKey.Get(); ok {
-				return e.EncodeValue(conv.StringToString(val))
+			if val, ok := params.Meter.Get(); ok {
+				return val.EncodeURI(e)
 			}
 			return nil
 		}); err != nil {
@@ -5995,16 +6012,33 @@ func (c *Client) sendListProjectAllowances(ctx context.Context, params ListProje
 		}
 	}
 	{
-		// Encode "meter_key" parameter.
+		// Encode "meter" parameter.
 		cfg := uri.QueryParameterEncodingConfig{
-			Name:    "meter_key",
-			Style:   uri.QueryStyleForm,
+			Name:    "meter",
+			Style:   uri.QueryStyleDeepObject,
 			Explode: true,
 		}
 
 		if err := q.EncodeParam(cfg, func(e uri.Encoder) error {
-			if val, ok := params.MeterKey.Get(); ok {
-				return e.EncodeValue(conv.StringToString(val))
+			if val, ok := params.Meter.Get(); ok {
+				return val.EncodeURI(e)
+			}
+			return nil
+		}); err != nil {
+			return res, errors.Wrap(err, "encode query")
+		}
+	}
+	{
+		// Encode "product" parameter.
+		cfg := uri.QueryParameterEncodingConfig{
+			Name:    "product",
+			Style:   uri.QueryStyleDeepObject,
+			Explode: true,
+		}
+
+		if err := q.EncodeParam(cfg, func(e uri.Encoder) error {
+			if val, ok := params.Product.Get(); ok {
+				return val.EncodeURI(e)
 			}
 			return nil
 		}); err != nil {
@@ -6186,16 +6220,16 @@ func (c *Client) sendListProjectEntitlements(ctx context.Context, params ListPro
 		}
 	}
 	{
-		// Encode "product_key" parameter.
+		// Encode "product" parameter.
 		cfg := uri.QueryParameterEncodingConfig{
-			Name:    "product_key",
-			Style:   uri.QueryStyleForm,
+			Name:    "product",
+			Style:   uri.QueryStyleDeepObject,
 			Explode: true,
 		}
 
 		if err := q.EncodeParam(cfg, func(e uri.Encoder) error {
-			if val, ok := params.ProductKey.Get(); ok {
-				return e.EncodeValue(conv.StringToString(val))
+			if val, ok := params.Product.Get(); ok {
+				return val.EncodeURI(e)
 			}
 			return nil
 		}); err != nil {
@@ -6798,16 +6832,16 @@ func (c *Client) sendListProjectSpend(ctx context.Context, params ListProjectSpe
 		}
 	}
 	{
-		// Encode "product_key" parameter.
+		// Encode "product" parameter.
 		cfg := uri.QueryParameterEncodingConfig{
-			Name:    "product_key",
-			Style:   uri.QueryStyleForm,
+			Name:    "product",
+			Style:   uri.QueryStyleDeepObject,
 			Explode: true,
 		}
 
 		if err := q.EncodeParam(cfg, func(e uri.Encoder) error {
-			if val, ok := params.ProductKey.Get(); ok {
-				return e.EncodeValue(conv.StringToString(val))
+			if val, ok := params.Product.Get(); ok {
+				return val.EncodeURI(e)
 			}
 			return nil
 		}); err != nil {
@@ -7394,16 +7428,16 @@ func (c *Client) sendListProjectUsageCharges(ctx context.Context, params ListPro
 		}
 	}
 	{
-		// Encode "product_key" parameter.
+		// Encode "product" parameter.
 		cfg := uri.QueryParameterEncodingConfig{
-			Name:    "product_key",
-			Style:   uri.QueryStyleForm,
+			Name:    "product",
+			Style:   uri.QueryStyleDeepObject,
 			Explode: true,
 		}
 
 		if err := q.EncodeParam(cfg, func(e uri.Encoder) error {
-			if val, ok := params.ProductKey.Get(); ok {
-				return e.EncodeValue(conv.StringToString(val))
+			if val, ok := params.Product.Get(); ok {
+				return val.EncodeURI(e)
 			}
 			return nil
 		}); err != nil {
@@ -7411,16 +7445,16 @@ func (c *Client) sendListProjectUsageCharges(ctx context.Context, params ListPro
 		}
 	}
 	{
-		// Encode "meter_key" parameter.
+		// Encode "meter" parameter.
 		cfg := uri.QueryParameterEncodingConfig{
-			Name:    "meter_key",
-			Style:   uri.QueryStyleForm,
+			Name:    "meter",
+			Style:   uri.QueryStyleDeepObject,
 			Explode: true,
 		}
 
 		if err := q.EncodeParam(cfg, func(e uri.Encoder) error {
-			if val, ok := params.MeterKey.Get(); ok {
-				return e.EncodeValue(conv.StringToString(val))
+			if val, ok := params.Meter.Get(); ok {
+				return val.EncodeURI(e)
 			}
 			return nil
 		}); err != nil {
@@ -8573,16 +8607,16 @@ func (c *Client) sendListUsageCharges(ctx context.Context, params ListUsageCharg
 		}
 	}
 	{
-		// Encode "product_key" parameter.
+		// Encode "product" parameter.
 		cfg := uri.QueryParameterEncodingConfig{
-			Name:    "product_key",
-			Style:   uri.QueryStyleForm,
+			Name:    "product",
+			Style:   uri.QueryStyleDeepObject,
 			Explode: true,
 		}
 
 		if err := q.EncodeParam(cfg, func(e uri.Encoder) error {
-			if val, ok := params.ProductKey.Get(); ok {
-				return e.EncodeValue(conv.StringToString(val))
+			if val, ok := params.Product.Get(); ok {
+				return val.EncodeURI(e)
 			}
 			return nil
 		}); err != nil {

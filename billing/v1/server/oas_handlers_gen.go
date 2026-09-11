@@ -4051,13 +4051,17 @@ func (s *Server) handleListAllowancesRequest(args [0]string, argsEscaped bool, w
 					In:   "query",
 				}: params.BillingAccountID,
 				{
-					Name: "meter_key",
+					Name: "meter",
 					In:   "query",
-				}: params.MeterKey,
+				}: params.Meter,
 				{
 					Name: "status",
 					In:   "query",
 				}: params.Status,
+				{
+					Name: "product",
+					In:   "query",
+				}: params.Product,
 			},
 			Raw: r,
 		}
@@ -4925,9 +4929,9 @@ func (s *Server) handleListCatalogRatesRequest(args [1]string, argsEscaped bool,
 					In:   "header",
 				}: params.IfNoneMatch,
 				{
-					Name: "meter_key",
+					Name: "meter",
 					In:   "query",
-				}: params.MeterKey,
+				}: params.Meter,
 				{
 					Name: "at",
 					In:   "query",
@@ -7060,9 +7064,13 @@ func (s *Server) handleListProjectAllowancesRequest(args [1]string, argsEscaped 
 					In:   "query",
 				}: params.PageSize,
 				{
-					Name: "meter_key",
+					Name: "meter",
 					In:   "query",
-				}: params.MeterKey,
+				}: params.Meter,
+				{
+					Name: "product",
+					In:   "query",
+				}: params.Product,
 				{
 					Name: "projectId",
 					In:   "path",
@@ -7276,9 +7284,9 @@ func (s *Server) handleListProjectEntitlementsRequest(args [1]string, argsEscape
 					In:   "query",
 				}: params.PageSize,
 				{
-					Name: "product_key",
+					Name: "product",
 					In:   "query",
-				}: params.ProductKey,
+				}: params.Product,
 				{
 					Name: "projectId",
 					In:   "path",
@@ -7928,9 +7936,9 @@ func (s *Server) handleListProjectSpendRequest(args [1]string, argsEscaped bool,
 					In:   "query",
 				}: params.GroupBy,
 				{
-					Name: "product_key",
+					Name: "product",
 					In:   "query",
-				}: params.ProductKey,
+				}: params.Product,
 				{
 					Name: "page",
 					In:   "query",
@@ -8573,13 +8581,13 @@ func (s *Server) handleListProjectUsageChargesRequest(args [1]string, argsEscape
 					In:   "query",
 				}: params.ResourceID,
 				{
-					Name: "product_key",
+					Name: "product",
 					In:   "query",
-				}: params.ProductKey,
+				}: params.Product,
 				{
-					Name: "meter_key",
+					Name: "meter",
 					In:   "query",
-				}: params.MeterKey,
+				}: params.Meter,
 				{
 					Name: "from",
 					In:   "query",
@@ -9866,9 +9874,9 @@ func (s *Server) handleListUsageChargesRequest(args [0]string, argsEscaped bool,
 					In:   "query",
 				}: params.ProjectID,
 				{
-					Name: "product_key",
+					Name: "product",
 					In:   "query",
-				}: params.ProductKey,
+				}: params.Product,
 				{
 					Name: "resource_id",
 					In:   "query",

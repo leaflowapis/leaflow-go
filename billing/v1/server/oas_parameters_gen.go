@@ -1529,9 +1529,12 @@ type ListAllowancesParams struct {
 	// How many per page, 100 at most.
 	PageSize OptInt32 `json:",omitempty,omitzero"`
 	// Restrict to one of your accounts. All of them when omitted.
-	BillingAccountID OptInt64                `json:",omitempty,omitzero"`
-	MeterKey         OptString               `json:",omitempty,omitzero"`
-	Status           OptListAllowancesStatus `json:",omitempty,omitzero"`
+	BillingAccountID OptInt64 `json:",omitempty,omitzero"`
+	// Filter by ID or lookup key. A lookup key is scoped to the product.
+	Meter  OptObjectReference      `json:",omitempty,omitzero"`
+	Status OptListAllowancesStatus `json:",omitempty,omitzero"`
+	// Filter by ID or lookup key. A lookup key is scoped to the product.
+	Product OptObjectReference `json:",omitempty,omitzero"`
 }
 
 func unpackListAllowancesParams(packed middleware.Parameters) (params ListAllowancesParams) {
@@ -1564,11 +1567,11 @@ func unpackListAllowancesParams(packed middleware.Parameters) (params ListAllowa
 	}
 	{
 		key := middleware.ParameterKey{
-			Name: "meter_key",
+			Name: "meter",
 			In:   "query",
 		}
 		if v, ok := packed[key]; ok {
-			params.MeterKey = v.(OptString)
+			params.Meter = v.(OptObjectReference)
 		}
 	}
 	{
@@ -1578,6 +1581,15 @@ func unpackListAllowancesParams(packed middleware.Parameters) (params ListAllowa
 		}
 		if v, ok := packed[key]; ok {
 			params.Status = v.(OptListAllowancesStatus)
+		}
+	}
+	{
+		key := middleware.ParameterKey{
+			Name: "product",
+			In:   "query",
+		}
+		if v, ok := packed[key]; ok {
+			params.Product = v.(OptObjectReference)
 		}
 	}
 	return params
@@ -1758,43 +1770,48 @@ func decodeListAllowancesParams(args [0]string, argsEscaped bool, r *http.Reques
 			Err:  err,
 		}
 	}
-	// Decode query: meter_key.
+	// Decode query: meter.
 	if err := func() error {
 		cfg := uri.QueryParameterDecodingConfig{
-			Name:    "meter_key",
-			Style:   uri.QueryStyleForm,
+			Name:    "meter",
+			Style:   uri.QueryStyleDeepObject,
 			Explode: true,
+			Fields:  []uri.QueryParameterObjectField{{Name: "id", Required: false}, {Name: "lookup_key", Required: false}},
 		}
 
 		if err := q.HasParam(cfg); err == nil {
 			if err := q.DecodeParam(cfg, func(d uri.Decoder) error {
-				var paramsDotMeterKeyVal string
+				var paramsDotMeterVal ObjectReference
 				if err := func() error {
-					val, err := d.DecodeValue()
-					if err != nil {
-						return err
-					}
-
-					c, err := conv.ToString(val)
-					if err != nil {
-						return err
-					}
-
-					paramsDotMeterKeyVal = c
-					return nil
+					return paramsDotMeterVal.DecodeURI(d)
 				}(); err != nil {
 					return err
 				}
-				params.MeterKey.SetTo(paramsDotMeterKeyVal)
+				params.Meter.SetTo(paramsDotMeterVal)
 				return nil
 			}); err != nil {
+				return err
+			}
+			if err := func() error {
+				if value, ok := params.Meter.Get(); ok {
+					if err := func() error {
+						if err := value.Validate(); err != nil {
+							return err
+						}
+						return nil
+					}(); err != nil {
+						return err
+					}
+				}
+				return nil
+			}(); err != nil {
 				return err
 			}
 		}
 		return nil
 	}(); err != nil {
 		return params, &ogenerrors.DecodeParamError{
-			Name: "meter_key",
+			Name: "meter",
 			In:   "query",
 			Err:  err,
 		}
@@ -1851,6 +1868,52 @@ func decodeListAllowancesParams(args [0]string, argsEscaped bool, r *http.Reques
 	}(); err != nil {
 		return params, &ogenerrors.DecodeParamError{
 			Name: "status",
+			In:   "query",
+			Err:  err,
+		}
+	}
+	// Decode query: product.
+	if err := func() error {
+		cfg := uri.QueryParameterDecodingConfig{
+			Name:    "product",
+			Style:   uri.QueryStyleDeepObject,
+			Explode: true,
+			Fields:  []uri.QueryParameterObjectField{{Name: "id", Required: false}, {Name: "lookup_key", Required: false}},
+		}
+
+		if err := q.HasParam(cfg); err == nil {
+			if err := q.DecodeParam(cfg, func(d uri.Decoder) error {
+				var paramsDotProductVal ObjectReference
+				if err := func() error {
+					return paramsDotProductVal.DecodeURI(d)
+				}(); err != nil {
+					return err
+				}
+				params.Product.SetTo(paramsDotProductVal)
+				return nil
+			}); err != nil {
+				return err
+			}
+			if err := func() error {
+				if value, ok := params.Product.Get(); ok {
+					if err := func() error {
+						if err := value.Validate(); err != nil {
+							return err
+						}
+						return nil
+					}(); err != nil {
+						return err
+					}
+				}
+				return nil
+			}(); err != nil {
+				return err
+			}
+		}
+		return nil
+	}(); err != nil {
+		return params, &ogenerrors.DecodeParamError{
+			Name: "product",
 			In:   "query",
 			Err:  err,
 		}
@@ -2860,7 +2923,8 @@ type ListCatalogRatesParams struct {
 	// Worth sending on every catalogue read: the listings are public, unauthenticated and cached at the
 	// edge, so a repeat read costs one round trip and no transfer.
 	IfNoneMatch OptString `json:",omitempty,omitzero"`
-	MeterKey    OptString `json:",omitempty,omitzero"`
+	// Filter by ID or lookup key. A lookup key is scoped to the product.
+	Meter OptObjectReference `json:",omitempty,omitzero"`
 	// Return the rates in effect at this moment. Defaults to now.
 	At         OptDateTime `json:",omitempty,omitzero"`
 	RateCardId uuid.UUID
@@ -2896,11 +2960,11 @@ func unpackListCatalogRatesParams(packed middleware.Parameters) (params ListCata
 	}
 	{
 		key := middleware.ParameterKey{
-			Name: "meter_key",
+			Name: "meter",
 			In:   "query",
 		}
 		if v, ok := packed[key]; ok {
-			params.MeterKey = v.(OptString)
+			params.Meter = v.(OptObjectReference)
 		}
 	}
 	{
@@ -3096,43 +3160,48 @@ func decodeListCatalogRatesParams(args [1]string, argsEscaped bool, r *http.Requ
 			Err:  err,
 		}
 	}
-	// Decode query: meter_key.
+	// Decode query: meter.
 	if err := func() error {
 		cfg := uri.QueryParameterDecodingConfig{
-			Name:    "meter_key",
-			Style:   uri.QueryStyleForm,
+			Name:    "meter",
+			Style:   uri.QueryStyleDeepObject,
 			Explode: true,
+			Fields:  []uri.QueryParameterObjectField{{Name: "id", Required: false}, {Name: "lookup_key", Required: false}},
 		}
 
 		if err := q.HasParam(cfg); err == nil {
 			if err := q.DecodeParam(cfg, func(d uri.Decoder) error {
-				var paramsDotMeterKeyVal string
+				var paramsDotMeterVal ObjectReference
 				if err := func() error {
-					val, err := d.DecodeValue()
-					if err != nil {
-						return err
-					}
-
-					c, err := conv.ToString(val)
-					if err != nil {
-						return err
-					}
-
-					paramsDotMeterKeyVal = c
-					return nil
+					return paramsDotMeterVal.DecodeURI(d)
 				}(); err != nil {
 					return err
 				}
-				params.MeterKey.SetTo(paramsDotMeterKeyVal)
+				params.Meter.SetTo(paramsDotMeterVal)
 				return nil
 			}); err != nil {
+				return err
+			}
+			if err := func() error {
+				if value, ok := params.Meter.Get(); ok {
+					if err := func() error {
+						if err := value.Validate(); err != nil {
+							return err
+						}
+						return nil
+					}(); err != nil {
+						return err
+					}
+				}
+				return nil
+			}(); err != nil {
 				return err
 			}
 		}
 		return nil
 	}(); err != nil {
 		return params, &ogenerrors.DecodeParamError{
-			Name: "meter_key",
+			Name: "meter",
 			In:   "query",
 			Err:  err,
 		}
@@ -5762,8 +5831,11 @@ type ListProjectAllowancesParams struct {
 	// 1-based page number; the first page when omitted.
 	Page OptInt32 `json:",omitempty,omitzero"`
 	// How many per page, 100 at most.
-	PageSize  OptInt32  `json:",omitempty,omitzero"`
-	MeterKey  OptString `json:",omitempty,omitzero"`
+	PageSize OptInt32 `json:",omitempty,omitzero"`
+	// Filter by ID or lookup key. A lookup key is scoped to the product.
+	Meter OptObjectReference `json:",omitempty,omitzero"`
+	// Filter by ID or lookup key. A lookup key is scoped to the product.
+	Product   OptObjectReference `json:",omitempty,omitzero"`
 	ProjectId uuid.UUID
 }
 
@@ -5788,11 +5860,20 @@ func unpackListProjectAllowancesParams(packed middleware.Parameters) (params Lis
 	}
 	{
 		key := middleware.ParameterKey{
-			Name: "meter_key",
+			Name: "meter",
 			In:   "query",
 		}
 		if v, ok := packed[key]; ok {
-			params.MeterKey = v.(OptString)
+			params.Meter = v.(OptObjectReference)
+		}
+	}
+	{
+		key := middleware.ParameterKey{
+			Name: "product",
+			In:   "query",
+		}
+		if v, ok := packed[key]; ok {
+			params.Product = v.(OptObjectReference)
 		}
 	}
 	{
@@ -5939,43 +6020,94 @@ func decodeListProjectAllowancesParams(args [1]string, argsEscaped bool, r *http
 			Err:  err,
 		}
 	}
-	// Decode query: meter_key.
+	// Decode query: meter.
 	if err := func() error {
 		cfg := uri.QueryParameterDecodingConfig{
-			Name:    "meter_key",
-			Style:   uri.QueryStyleForm,
+			Name:    "meter",
+			Style:   uri.QueryStyleDeepObject,
 			Explode: true,
+			Fields:  []uri.QueryParameterObjectField{{Name: "id", Required: false}, {Name: "lookup_key", Required: false}},
 		}
 
 		if err := q.HasParam(cfg); err == nil {
 			if err := q.DecodeParam(cfg, func(d uri.Decoder) error {
-				var paramsDotMeterKeyVal string
+				var paramsDotMeterVal ObjectReference
 				if err := func() error {
-					val, err := d.DecodeValue()
-					if err != nil {
-						return err
-					}
-
-					c, err := conv.ToString(val)
-					if err != nil {
-						return err
-					}
-
-					paramsDotMeterKeyVal = c
-					return nil
+					return paramsDotMeterVal.DecodeURI(d)
 				}(); err != nil {
 					return err
 				}
-				params.MeterKey.SetTo(paramsDotMeterKeyVal)
+				params.Meter.SetTo(paramsDotMeterVal)
 				return nil
 			}); err != nil {
+				return err
+			}
+			if err := func() error {
+				if value, ok := params.Meter.Get(); ok {
+					if err := func() error {
+						if err := value.Validate(); err != nil {
+							return err
+						}
+						return nil
+					}(); err != nil {
+						return err
+					}
+				}
+				return nil
+			}(); err != nil {
 				return err
 			}
 		}
 		return nil
 	}(); err != nil {
 		return params, &ogenerrors.DecodeParamError{
-			Name: "meter_key",
+			Name: "meter",
+			In:   "query",
+			Err:  err,
+		}
+	}
+	// Decode query: product.
+	if err := func() error {
+		cfg := uri.QueryParameterDecodingConfig{
+			Name:    "product",
+			Style:   uri.QueryStyleDeepObject,
+			Explode: true,
+			Fields:  []uri.QueryParameterObjectField{{Name: "id", Required: false}, {Name: "lookup_key", Required: false}},
+		}
+
+		if err := q.HasParam(cfg); err == nil {
+			if err := q.DecodeParam(cfg, func(d uri.Decoder) error {
+				var paramsDotProductVal ObjectReference
+				if err := func() error {
+					return paramsDotProductVal.DecodeURI(d)
+				}(); err != nil {
+					return err
+				}
+				params.Product.SetTo(paramsDotProductVal)
+				return nil
+			}); err != nil {
+				return err
+			}
+			if err := func() error {
+				if value, ok := params.Product.Get(); ok {
+					if err := func() error {
+						if err := value.Validate(); err != nil {
+							return err
+						}
+						return nil
+					}(); err != nil {
+						return err
+					}
+				}
+				return nil
+			}(); err != nil {
+				return err
+			}
+		}
+		return nil
+	}(); err != nil {
+		return params, &ogenerrors.DecodeParamError{
+			Name: "product",
 			In:   "query",
 			Err:  err,
 		}
@@ -6033,9 +6165,10 @@ type ListProjectEntitlementsParams struct {
 	// 1-based page number; the first page when omitted.
 	Page OptInt32 `json:",omitempty,omitzero"`
 	// How many per page, 100 at most.
-	PageSize   OptInt32  `json:",omitempty,omitzero"`
-	ProductKey OptString `json:",omitempty,omitzero"`
-	ProjectId  uuid.UUID
+	PageSize OptInt32 `json:",omitempty,omitzero"`
+	// Filter by ID or lookup key. A lookup key is scoped to the product.
+	Product   OptObjectReference `json:",omitempty,omitzero"`
+	ProjectId uuid.UUID
 }
 
 func unpackListProjectEntitlementsParams(packed middleware.Parameters) (params ListProjectEntitlementsParams) {
@@ -6059,11 +6192,11 @@ func unpackListProjectEntitlementsParams(packed middleware.Parameters) (params L
 	}
 	{
 		key := middleware.ParameterKey{
-			Name: "product_key",
+			Name: "product",
 			In:   "query",
 		}
 		if v, ok := packed[key]; ok {
-			params.ProductKey = v.(OptString)
+			params.Product = v.(OptObjectReference)
 		}
 	}
 	{
@@ -6210,43 +6343,48 @@ func decodeListProjectEntitlementsParams(args [1]string, argsEscaped bool, r *ht
 			Err:  err,
 		}
 	}
-	// Decode query: product_key.
+	// Decode query: product.
 	if err := func() error {
 		cfg := uri.QueryParameterDecodingConfig{
-			Name:    "product_key",
-			Style:   uri.QueryStyleForm,
+			Name:    "product",
+			Style:   uri.QueryStyleDeepObject,
 			Explode: true,
+			Fields:  []uri.QueryParameterObjectField{{Name: "id", Required: false}, {Name: "lookup_key", Required: false}},
 		}
 
 		if err := q.HasParam(cfg); err == nil {
 			if err := q.DecodeParam(cfg, func(d uri.Decoder) error {
-				var paramsDotProductKeyVal string
+				var paramsDotProductVal ObjectReference
 				if err := func() error {
-					val, err := d.DecodeValue()
-					if err != nil {
-						return err
-					}
-
-					c, err := conv.ToString(val)
-					if err != nil {
-						return err
-					}
-
-					paramsDotProductKeyVal = c
-					return nil
+					return paramsDotProductVal.DecodeURI(d)
 				}(); err != nil {
 					return err
 				}
-				params.ProductKey.SetTo(paramsDotProductKeyVal)
+				params.Product.SetTo(paramsDotProductVal)
 				return nil
 			}); err != nil {
+				return err
+			}
+			if err := func() error {
+				if value, ok := params.Product.Get(); ok {
+					if err := func() error {
+						if err := value.Validate(); err != nil {
+							return err
+						}
+						return nil
+					}(); err != nil {
+						return err
+					}
+				}
+				return nil
+			}(); err != nil {
 				return err
 			}
 		}
 		return nil
 	}(); err != nil {
 		return params, &ogenerrors.DecodeParamError{
-			Name: "product_key",
+			Name: "product",
 			In:   "query",
 			Err:  err,
 		}
@@ -6969,8 +7107,9 @@ type ListProjectSpendParams struct {
 	// `resource` groups by the resource each charge names. Items billed under their own identifier — a
 	// disk, a public address — appear as their own rows rather than under the machine they are attached
 	// to, since the relationship between them is known to the owning service and not here.
-	GroupBy    OptListProjectSpendGroupBy `json:",omitempty,omitzero"`
-	ProductKey OptString                  `json:",omitempty,omitzero"`
+	GroupBy OptListProjectSpendGroupBy `json:",omitempty,omitzero"`
+	// Filter by ID or lookup key. A lookup key is scoped to the product.
+	Product OptObjectReference `json:",omitempty,omitzero"`
 	// 1-based page number; the first page when omitted.
 	Page OptInt32 `json:",omitempty,omitzero"`
 	// How many per page, 100 at most.
@@ -7004,11 +7143,11 @@ func unpackListProjectSpendParams(packed middleware.Parameters) (params ListProj
 	}
 	{
 		key := middleware.ParameterKey{
-			Name: "product_key",
+			Name: "product",
 			In:   "query",
 		}
 		if v, ok := packed[key]; ok {
-			params.ProductKey = v.(OptString)
+			params.Product = v.(OptObjectReference)
 		}
 	}
 	{
@@ -7174,43 +7313,48 @@ func decodeListProjectSpendParams(args [1]string, argsEscaped bool, r *http.Requ
 			Err:  err,
 		}
 	}
-	// Decode query: product_key.
+	// Decode query: product.
 	if err := func() error {
 		cfg := uri.QueryParameterDecodingConfig{
-			Name:    "product_key",
-			Style:   uri.QueryStyleForm,
+			Name:    "product",
+			Style:   uri.QueryStyleDeepObject,
 			Explode: true,
+			Fields:  []uri.QueryParameterObjectField{{Name: "id", Required: false}, {Name: "lookup_key", Required: false}},
 		}
 
 		if err := q.HasParam(cfg); err == nil {
 			if err := q.DecodeParam(cfg, func(d uri.Decoder) error {
-				var paramsDotProductKeyVal string
+				var paramsDotProductVal ObjectReference
 				if err := func() error {
-					val, err := d.DecodeValue()
-					if err != nil {
-						return err
-					}
-
-					c, err := conv.ToString(val)
-					if err != nil {
-						return err
-					}
-
-					paramsDotProductKeyVal = c
-					return nil
+					return paramsDotProductVal.DecodeURI(d)
 				}(); err != nil {
 					return err
 				}
-				params.ProductKey.SetTo(paramsDotProductKeyVal)
+				params.Product.SetTo(paramsDotProductVal)
 				return nil
 			}); err != nil {
+				return err
+			}
+			if err := func() error {
+				if value, ok := params.Product.Get(); ok {
+					if err := func() error {
+						if err := value.Validate(); err != nil {
+							return err
+						}
+						return nil
+					}(); err != nil {
+						return err
+					}
+				}
+				return nil
+			}(); err != nil {
 				return err
 			}
 		}
 		return nil
 	}(); err != nil {
 		return params, &ogenerrors.DecodeParamError{
-			Name: "product_key",
+			Name: "product",
 			In:   "query",
 			Err:  err,
 		}
@@ -7893,12 +8037,11 @@ type ListProjectUsageChargesParams struct {
 	// How many per page, 100 at most.
 	PageSize   OptInt32  `json:",omitempty,omitzero"`
 	ResourceID OptString `json:",omitempty,omitzero"`
-	// Restrict to one service, such as `compute`. Give it alongside `meter_key`: a meter name is unique
-	// only within its own service, and more than one service may measure `traffic_bytes`, so `meter_key`
-	// on its own can return charges from several.
-	ProductKey OptString   `json:",omitempty,omitzero"`
-	MeterKey   OptString   `json:",omitempty,omitzero"`
-	From       OptDateTime `json:",omitempty,omitzero"`
+	// Filter by ID or lookup key. A lookup key is scoped to the product.
+	Product OptObjectReference `json:",omitempty,omitzero"`
+	// Filter by ID or lookup key. A lookup key is scoped to the product.
+	Meter OptObjectReference `json:",omitempty,omitzero"`
+	From  OptDateTime        `json:",omitempty,omitzero"`
 	// Exclusive.
 	To        OptDateTime `json:",omitempty,omitzero"`
 	ProjectId uuid.UUID
@@ -7934,20 +8077,20 @@ func unpackListProjectUsageChargesParams(packed middleware.Parameters) (params L
 	}
 	{
 		key := middleware.ParameterKey{
-			Name: "product_key",
+			Name: "product",
 			In:   "query",
 		}
 		if v, ok := packed[key]; ok {
-			params.ProductKey = v.(OptString)
+			params.Product = v.(OptObjectReference)
 		}
 	}
 	{
 		key := middleware.ParameterKey{
-			Name: "meter_key",
+			Name: "meter",
 			In:   "query",
 		}
 		if v, ok := packed[key]; ok {
-			params.MeterKey = v.(OptString)
+			params.Meter = v.(OptObjectReference)
 		}
 	}
 	{
@@ -8153,84 +8296,94 @@ func decodeListProjectUsageChargesParams(args [1]string, argsEscaped bool, r *ht
 			Err:  err,
 		}
 	}
-	// Decode query: product_key.
+	// Decode query: product.
 	if err := func() error {
 		cfg := uri.QueryParameterDecodingConfig{
-			Name:    "product_key",
-			Style:   uri.QueryStyleForm,
+			Name:    "product",
+			Style:   uri.QueryStyleDeepObject,
 			Explode: true,
+			Fields:  []uri.QueryParameterObjectField{{Name: "id", Required: false}, {Name: "lookup_key", Required: false}},
 		}
 
 		if err := q.HasParam(cfg); err == nil {
 			if err := q.DecodeParam(cfg, func(d uri.Decoder) error {
-				var paramsDotProductKeyVal string
+				var paramsDotProductVal ObjectReference
 				if err := func() error {
-					val, err := d.DecodeValue()
-					if err != nil {
-						return err
-					}
-
-					c, err := conv.ToString(val)
-					if err != nil {
-						return err
-					}
-
-					paramsDotProductKeyVal = c
-					return nil
+					return paramsDotProductVal.DecodeURI(d)
 				}(); err != nil {
 					return err
 				}
-				params.ProductKey.SetTo(paramsDotProductKeyVal)
+				params.Product.SetTo(paramsDotProductVal)
 				return nil
 			}); err != nil {
+				return err
+			}
+			if err := func() error {
+				if value, ok := params.Product.Get(); ok {
+					if err := func() error {
+						if err := value.Validate(); err != nil {
+							return err
+						}
+						return nil
+					}(); err != nil {
+						return err
+					}
+				}
+				return nil
+			}(); err != nil {
 				return err
 			}
 		}
 		return nil
 	}(); err != nil {
 		return params, &ogenerrors.DecodeParamError{
-			Name: "product_key",
+			Name: "product",
 			In:   "query",
 			Err:  err,
 		}
 	}
-	// Decode query: meter_key.
+	// Decode query: meter.
 	if err := func() error {
 		cfg := uri.QueryParameterDecodingConfig{
-			Name:    "meter_key",
-			Style:   uri.QueryStyleForm,
+			Name:    "meter",
+			Style:   uri.QueryStyleDeepObject,
 			Explode: true,
+			Fields:  []uri.QueryParameterObjectField{{Name: "id", Required: false}, {Name: "lookup_key", Required: false}},
 		}
 
 		if err := q.HasParam(cfg); err == nil {
 			if err := q.DecodeParam(cfg, func(d uri.Decoder) error {
-				var paramsDotMeterKeyVal string
+				var paramsDotMeterVal ObjectReference
 				if err := func() error {
-					val, err := d.DecodeValue()
-					if err != nil {
-						return err
-					}
-
-					c, err := conv.ToString(val)
-					if err != nil {
-						return err
-					}
-
-					paramsDotMeterKeyVal = c
-					return nil
+					return paramsDotMeterVal.DecodeURI(d)
 				}(); err != nil {
 					return err
 				}
-				params.MeterKey.SetTo(paramsDotMeterKeyVal)
+				params.Meter.SetTo(paramsDotMeterVal)
 				return nil
 			}); err != nil {
+				return err
+			}
+			if err := func() error {
+				if value, ok := params.Meter.Get(); ok {
+					if err := func() error {
+						if err := value.Validate(); err != nil {
+							return err
+						}
+						return nil
+					}(); err != nil {
+						return err
+					}
+				}
+				return nil
+			}(); err != nil {
 				return err
 			}
 		}
 		return nil
 	}(); err != nil {
 		return params, &ogenerrors.DecodeParamError{
-			Name: "meter_key",
+			Name: "meter",
 			In:   "query",
 			Err:  err,
 		}
@@ -9725,10 +9878,10 @@ type ListUsageChargesParams struct {
 	// Restrict to one of your accounts. All of them when omitted.
 	BillingAccountID OptInt64 `json:",omitempty,omitzero"`
 	ProjectID        OptUUID  `json:",omitempty,omitzero"`
-	// Restrict to one service, such as `compute`.
-	ProductKey OptString   `json:",omitempty,omitzero"`
-	ResourceID OptString   `json:",omitempty,omitzero"`
-	From       OptDateTime `json:",omitempty,omitzero"`
+	// Filter by ID or lookup key. A lookup key is scoped to the product.
+	Product    OptObjectReference `json:",omitempty,omitzero"`
+	ResourceID OptString          `json:",omitempty,omitzero"`
+	From       OptDateTime        `json:",omitempty,omitzero"`
 	// Exclusive.
 	To OptDateTime `json:",omitempty,omitzero"`
 }
@@ -9772,11 +9925,11 @@ func unpackListUsageChargesParams(packed middleware.Parameters) (params ListUsag
 	}
 	{
 		key := middleware.ParameterKey{
-			Name: "product_key",
+			Name: "product",
 			In:   "query",
 		}
 		if v, ok := packed[key]; ok {
-			params.ProductKey = v.(OptString)
+			params.Product = v.(OptObjectReference)
 		}
 	}
 	{
@@ -10025,43 +10178,48 @@ func decodeListUsageChargesParams(args [0]string, argsEscaped bool, r *http.Requ
 			Err:  err,
 		}
 	}
-	// Decode query: product_key.
+	// Decode query: product.
 	if err := func() error {
 		cfg := uri.QueryParameterDecodingConfig{
-			Name:    "product_key",
-			Style:   uri.QueryStyleForm,
+			Name:    "product",
+			Style:   uri.QueryStyleDeepObject,
 			Explode: true,
+			Fields:  []uri.QueryParameterObjectField{{Name: "id", Required: false}, {Name: "lookup_key", Required: false}},
 		}
 
 		if err := q.HasParam(cfg); err == nil {
 			if err := q.DecodeParam(cfg, func(d uri.Decoder) error {
-				var paramsDotProductKeyVal string
+				var paramsDotProductVal ObjectReference
 				if err := func() error {
-					val, err := d.DecodeValue()
-					if err != nil {
-						return err
-					}
-
-					c, err := conv.ToString(val)
-					if err != nil {
-						return err
-					}
-
-					paramsDotProductKeyVal = c
-					return nil
+					return paramsDotProductVal.DecodeURI(d)
 				}(); err != nil {
 					return err
 				}
-				params.ProductKey.SetTo(paramsDotProductKeyVal)
+				params.Product.SetTo(paramsDotProductVal)
 				return nil
 			}); err != nil {
+				return err
+			}
+			if err := func() error {
+				if value, ok := params.Product.Get(); ok {
+					if err := func() error {
+						if err := value.Validate(); err != nil {
+							return err
+						}
+						return nil
+					}(); err != nil {
+						return err
+					}
+				}
+				return nil
+			}(); err != nil {
 				return err
 			}
 		}
 		return nil
 	}(); err != nil {
 		return params, &ogenerrors.DecodeParamError{
-			Name: "product_key",
+			Name: "product",
 			In:   "query",
 			Err:  err,
 		}

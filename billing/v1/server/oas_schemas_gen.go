@@ -144,12 +144,12 @@ func (s *AccountBalance) SetSpendable(val Money) {
 // A resource currently accruing charges by the second.
 // Ref: #/components/schemas/ActiveResource
 type ActiveResource struct {
-	ResourceID string `json:"resource_id"`
-	ProductKey string `json:"product_key"`
+	ResourceID string         `json:"resource_id"`
+	Product    ObjectIdentity `json:"product"`
 	// What it is, as its own service names it.
-	ResourceType OptString `json:"resource_type"`
-	MeterKey     string    `json:"meter_key"`
-	Unit         OptString `json:"unit"`
+	ResourceType OptString      `json:"resource_type"`
+	Meter        ObjectIdentity `json:"meter"`
+	Unit         OptString      `json:"unit"`
 	// How much is held — cores, MiB, cards. Not how much has been used.
 	Quantity   string                      `json:"quantity"`
 	Dimensions OptActiveResourceDimensions `json:"dimensions"`
@@ -164,9 +164,9 @@ func (s *ActiveResource) GetResourceID() string {
 	return s.ResourceID
 }
 
-// GetProductKey returns the value of ProductKey.
-func (s *ActiveResource) GetProductKey() string {
-	return s.ProductKey
+// GetProduct returns the value of Product.
+func (s *ActiveResource) GetProduct() ObjectIdentity {
+	return s.Product
 }
 
 // GetResourceType returns the value of ResourceType.
@@ -174,9 +174,9 @@ func (s *ActiveResource) GetResourceType() OptString {
 	return s.ResourceType
 }
 
-// GetMeterKey returns the value of MeterKey.
-func (s *ActiveResource) GetMeterKey() string {
-	return s.MeterKey
+// GetMeter returns the value of Meter.
+func (s *ActiveResource) GetMeter() ObjectIdentity {
+	return s.Meter
 }
 
 // GetUnit returns the value of Unit.
@@ -214,9 +214,9 @@ func (s *ActiveResource) SetResourceID(val string) {
 	s.ResourceID = val
 }
 
-// SetProductKey sets the value of ProductKey.
-func (s *ActiveResource) SetProductKey(val string) {
-	s.ProductKey = val
+// SetProduct sets the value of Product.
+func (s *ActiveResource) SetProduct(val ObjectIdentity) {
+	s.Product = val
 }
 
 // SetResourceType sets the value of ResourceType.
@@ -224,9 +224,9 @@ func (s *ActiveResource) SetResourceType(val OptString) {
 	s.ResourceType = val
 }
 
-// SetMeterKey sets the value of MeterKey.
-func (s *ActiveResource) SetMeterKey(val string) {
-	s.MeterKey = val
+// SetMeter sets the value of Meter.
+func (s *ActiveResource) SetMeter(val ObjectIdentity) {
+	s.Meter = val
 }
 
 // SetUnit sets the value of Unit.
@@ -557,14 +557,14 @@ func (s *AllocationTargetType) UnmarshalText(data []byte) error {
 
 // Ref: #/components/schemas/Allowance
 type Allowance struct {
-	ID               uuid.UUID `json:"id"`
-	BillingAccountID OptInt64  `json:"billing_account_id"`
-	// Which service it covers, such as `compute`. Read it alongside `meter_key`: a meter name is unique
-	// only within its own service, so two allowances for `egress_bytes` may belong to different services
-	// and cover different traffic.
-	ProductKey string `json:"product_key"`
-	// What it covers, such as `egress_bytes`.
-	MeterKey string `json:"meter_key"`
+	// Allowed values for selected meter dimensions, such as region or storage class. Every specified
+	// dimension must match one listed value. Omitted dimensions are unrestricted. An empty map covers all
+	// dimensions of this meter.
+	DimensionValues  OptAllowanceDimensionValues `json:"dimension_values"`
+	ID               uuid.UUID                   `json:"id"`
+	BillingAccountID OptInt64                    `json:"billing_account_id"`
+	Product          ObjectIdentity              `json:"product"`
+	Meter            ObjectIdentity              `json:"meter"`
 	// The unit it is counted in, such as `MiB`.
 	Unit OptString `json:"unit"`
 	// `included` came with a recurring purchase, `package` was bought on its own such as a traffic pack,
@@ -584,6 +584,11 @@ type Allowance struct {
 	ValidUntil OptNilDateTime `json:"valid_until"`
 }
 
+// GetDimensionValues returns the value of DimensionValues.
+func (s *Allowance) GetDimensionValues() OptAllowanceDimensionValues {
+	return s.DimensionValues
+}
+
 // GetID returns the value of ID.
 func (s *Allowance) GetID() uuid.UUID {
 	return s.ID
@@ -594,14 +599,14 @@ func (s *Allowance) GetBillingAccountID() OptInt64 {
 	return s.BillingAccountID
 }
 
-// GetProductKey returns the value of ProductKey.
-func (s *Allowance) GetProductKey() string {
-	return s.ProductKey
+// GetProduct returns the value of Product.
+func (s *Allowance) GetProduct() ObjectIdentity {
+	return s.Product
 }
 
-// GetMeterKey returns the value of MeterKey.
-func (s *Allowance) GetMeterKey() string {
-	return s.MeterKey
+// GetMeter returns the value of Meter.
+func (s *Allowance) GetMeter() ObjectIdentity {
+	return s.Meter
 }
 
 // GetUnit returns the value of Unit.
@@ -649,6 +654,11 @@ func (s *Allowance) GetValidUntil() OptNilDateTime {
 	return s.ValidUntil
 }
 
+// SetDimensionValues sets the value of DimensionValues.
+func (s *Allowance) SetDimensionValues(val OptAllowanceDimensionValues) {
+	s.DimensionValues = val
+}
+
 // SetID sets the value of ID.
 func (s *Allowance) SetID(val uuid.UUID) {
 	s.ID = val
@@ -659,14 +669,14 @@ func (s *Allowance) SetBillingAccountID(val OptInt64) {
 	s.BillingAccountID = val
 }
 
-// SetProductKey sets the value of ProductKey.
-func (s *Allowance) SetProductKey(val string) {
-	s.ProductKey = val
+// SetProduct sets the value of Product.
+func (s *Allowance) SetProduct(val ObjectIdentity) {
+	s.Product = val
 }
 
-// SetMeterKey sets the value of MeterKey.
-func (s *Allowance) SetMeterKey(val string) {
-	s.MeterKey = val
+// SetMeter sets the value of Meter.
+func (s *Allowance) SetMeter(val ObjectIdentity) {
+	s.Meter = val
 }
 
 // SetUnit sets the value of Unit.
@@ -716,12 +726,12 @@ func (s *Allowance) SetValidUntil(val OptNilDateTime) {
 
 // Ref: #/components/schemas/AllowanceConsumption
 type AllowanceConsumption struct {
-	ID            uuid.UUID      `json:"id"`
-	UsageChargeID OptUUID        `json:"usage_charge_id"`
-	MeterKey      OptString      `json:"meter_key"`
-	Quantity      string         `json:"quantity"`
-	ConsumedAt    time.Time      `json:"consumed_at"`
-	ReversedAt    OptNilDateTime `json:"reversed_at"`
+	ID            uuid.UUID         `json:"id"`
+	UsageChargeID OptUUID           `json:"usage_charge_id"`
+	Meter         OptObjectIdentity `json:"meter"`
+	Quantity      string            `json:"quantity"`
+	ConsumedAt    time.Time         `json:"consumed_at"`
+	ReversedAt    OptNilDateTime    `json:"reversed_at"`
 }
 
 // GetID returns the value of ID.
@@ -734,9 +744,9 @@ func (s *AllowanceConsumption) GetUsageChargeID() OptUUID {
 	return s.UsageChargeID
 }
 
-// GetMeterKey returns the value of MeterKey.
-func (s *AllowanceConsumption) GetMeterKey() OptString {
-	return s.MeterKey
+// GetMeter returns the value of Meter.
+func (s *AllowanceConsumption) GetMeter() OptObjectIdentity {
+	return s.Meter
 }
 
 // GetQuantity returns the value of Quantity.
@@ -764,9 +774,9 @@ func (s *AllowanceConsumption) SetUsageChargeID(val OptUUID) {
 	s.UsageChargeID = val
 }
 
-// SetMeterKey sets the value of MeterKey.
-func (s *AllowanceConsumption) SetMeterKey(val OptString) {
-	s.MeterKey = val
+// SetMeter sets the value of Meter.
+func (s *AllowanceConsumption) SetMeter(val OptObjectIdentity) {
+	s.Meter = val
 }
 
 // SetQuantity sets the value of Quantity.
@@ -808,6 +818,20 @@ func (s *AllowanceConsumptionList) SetItems(val []AllowanceConsumption) {
 // SetTotalCount sets the value of TotalCount.
 func (s *AllowanceConsumptionList) SetTotalCount(val OptInt64) {
 	s.TotalCount = val
+}
+
+// Allowed values for selected meter dimensions, such as region or storage class. Every specified
+// dimension must match one listed value. Omitted dimensions are unrestricted. An empty map covers all
+// dimensions of this meter.
+type AllowanceDimensionValues map[string][]string
+
+func (s *AllowanceDimensionValues) init() AllowanceDimensionValues {
+	m := *s
+	if m == nil {
+		m = map[string][]string{}
+		*s = m
+	}
+	return m
 }
 
 // Ref: #/components/schemas/AllowanceList
@@ -948,23 +972,23 @@ func (s *AllowanceStatus) UnmarshalText(data []byte) error {
 // the qualifying lines only, not the order total.
 // Ref: #/components/schemas/Applicability
 type Applicability struct {
-	ProductKeys []string            `json:"product_keys"`
-	PlanKeys    []string            `json:"plan_keys"`
-	PriceTypes  []string            `json:"price_types"`
-	Operations  []PurchaseOperation `json:"operations"`
+	ProductIds []uuid.UUID         `json:"product_ids"`
+	PlanIds    []uuid.UUID         `json:"plan_ids"`
+	PriceTypes []string            `json:"price_types"`
+	Operations []PurchaseOperation `json:"operations"`
 	// Restricted to your first purchase of a covered product.
 	FirstPurchaseOnly OptBool  `json:"first_purchase_only"`
 	MinAmount         OptMoney `json:"min_amount"`
 }
 
-// GetProductKeys returns the value of ProductKeys.
-func (s *Applicability) GetProductKeys() []string {
-	return s.ProductKeys
+// GetProductIds returns the value of ProductIds.
+func (s *Applicability) GetProductIds() []uuid.UUID {
+	return s.ProductIds
 }
 
-// GetPlanKeys returns the value of PlanKeys.
-func (s *Applicability) GetPlanKeys() []string {
-	return s.PlanKeys
+// GetPlanIds returns the value of PlanIds.
+func (s *Applicability) GetPlanIds() []uuid.UUID {
+	return s.PlanIds
 }
 
 // GetPriceTypes returns the value of PriceTypes.
@@ -987,14 +1011,14 @@ func (s *Applicability) GetMinAmount() OptMoney {
 	return s.MinAmount
 }
 
-// SetProductKeys sets the value of ProductKeys.
-func (s *Applicability) SetProductKeys(val []string) {
-	s.ProductKeys = val
+// SetProductIds sets the value of ProductIds.
+func (s *Applicability) SetProductIds(val []uuid.UUID) {
+	s.ProductIds = val
 }
 
-// SetPlanKeys sets the value of PlanKeys.
-func (s *Applicability) SetPlanKeys(val []string) {
-	s.PlanKeys = val
+// SetPlanIds sets the value of PlanIds.
+func (s *Applicability) SetPlanIds(val []uuid.UUID) {
+	s.PlanIds = val
 }
 
 // SetPriceTypes sets the value of PriceTypes.
@@ -1594,9 +1618,12 @@ func (*CatalogPlanListHeaders) listCatalogPlansRes() {}
 
 // Ref: #/components/schemas/CatalogPrice
 type CatalogPrice struct {
-	ID       uuid.UUID `json:"id"`
-	PlanID   uuid.UUID `json:"plan_id"`
-	Currency string    `json:"currency"`
+	// External lookup alias within the service. Existing references use the price ID.
+	LookupKey OptString `json:"lookup_key"`
+	ProductID OptUUID   `json:"product_id"`
+	ID        uuid.UUID `json:"id"`
+	PlanID    uuid.UUID `json:"plan_id"`
+	Currency  string    `json:"currency"`
 	// `metered` charges for what is used, `prepaid` buys a period in advance, `one_time` charges once.
 	Type CatalogPriceType `json:"type"`
 	// How the amount is arrived at. `rated` means the rate depends on attributes such as region or machine
@@ -1631,6 +1658,16 @@ type CatalogPrice struct {
 	Term     OptInt                `json:"term"`
 	Period   OptCatalogPricePeriod `json:"period"`
 	SetupFee OptMoney              `json:"setup_fee"`
+}
+
+// GetLookupKey returns the value of LookupKey.
+func (s *CatalogPrice) GetLookupKey() OptString {
+	return s.LookupKey
+}
+
+// GetProductID returns the value of ProductID.
+func (s *CatalogPrice) GetProductID() OptUUID {
+	return s.ProductID
 }
 
 // GetID returns the value of ID.
@@ -1716,6 +1753,16 @@ func (s *CatalogPrice) GetPeriod() OptCatalogPricePeriod {
 // GetSetupFee returns the value of SetupFee.
 func (s *CatalogPrice) GetSetupFee() OptMoney {
 	return s.SetupFee
+}
+
+// SetLookupKey sets the value of LookupKey.
+func (s *CatalogPrice) SetLookupKey(val OptString) {
+	s.LookupKey = val
+}
+
+// SetProductID sets the value of ProductID.
+func (s *CatalogPrice) SetProductID(val OptUUID) {
+	s.ProductID = val
 }
 
 // SetID sets the value of ID.
@@ -2189,8 +2236,7 @@ func (*CatalogProductListHeaders) listCatalogProductsRes() {}
 
 // Ref: #/components/schemas/CatalogRate
 type CatalogRate struct {
-	// What is being measured.
-	MeterKey string `json:"meter_key"`
+	Meter ObjectIdentity `json:"meter"`
 	// The unit readings arrive in, such as `core-second`.
 	Unit OptString `json:"unit"`
 	// The attributes this rate applies to, such as region and machine type.
@@ -2207,9 +2253,9 @@ type CatalogRate struct {
 	EffectiveTo   OptNilDateTime `json:"effective_to"`
 }
 
-// GetMeterKey returns the value of MeterKey.
-func (s *CatalogRate) GetMeterKey() string {
-	return s.MeterKey
+// GetMeter returns the value of Meter.
+func (s *CatalogRate) GetMeter() ObjectIdentity {
+	return s.Meter
 }
 
 // GetUnit returns the value of Unit.
@@ -2257,9 +2303,9 @@ func (s *CatalogRate) GetEffectiveTo() OptNilDateTime {
 	return s.EffectiveTo
 }
 
-// SetMeterKey sets the value of MeterKey.
-func (s *CatalogRate) SetMeterKey(val string) {
-	s.MeterKey = val
+// SetMeter sets the value of Meter.
+func (s *CatalogRate) SetMeter(val ObjectIdentity) {
+	s.Meter = val
 }
 
 // SetUnit sets the value of Unit.
@@ -3288,12 +3334,10 @@ type DeletePaymentMethodNoContent struct{}
 
 // Ref: #/components/schemas/Entitlement
 type Entitlement struct {
-	// Which service. Read it alongside `feature_key`, which is unique only within its service.
-	ProductKey string `json:"product_key"`
-	// What calling code tests against.
-	FeatureKey string    `json:"feature_key"`
-	Name       OptString `json:"name"`
-	Enabled    bool      `json:"enabled"`
+	Product ObjectIdentity `json:"product"`
+	Feature ObjectIdentity `json:"feature"`
+	Name    OptString      `json:"name"`
+	Enabled bool           `json:"enabled"`
 	// Whether its use is counted. `false` means no limit — the plan providing it grants it without a cap
 	// — and `remaining_quantity` should not be read in that case.
 	//
@@ -3313,14 +3357,14 @@ type Entitlement struct {
 	ExpiresAt OptNilDateTime `json:"expires_at"`
 }
 
-// GetProductKey returns the value of ProductKey.
-func (s *Entitlement) GetProductKey() string {
-	return s.ProductKey
+// GetProduct returns the value of Product.
+func (s *Entitlement) GetProduct() ObjectIdentity {
+	return s.Product
 }
 
-// GetFeatureKey returns the value of FeatureKey.
-func (s *Entitlement) GetFeatureKey() string {
-	return s.FeatureKey
+// GetFeature returns the value of Feature.
+func (s *Entitlement) GetFeature() ObjectIdentity {
+	return s.Feature
 }
 
 // GetName returns the value of Name.
@@ -3353,14 +3397,14 @@ func (s *Entitlement) GetExpiresAt() OptNilDateTime {
 	return s.ExpiresAt
 }
 
-// SetProductKey sets the value of ProductKey.
-func (s *Entitlement) SetProductKey(val string) {
-	s.ProductKey = val
+// SetProduct sets the value of Product.
+func (s *Entitlement) SetProduct(val ObjectIdentity) {
+	s.Product = val
 }
 
-// SetFeatureKey sets the value of FeatureKey.
-func (s *Entitlement) SetFeatureKey(val string) {
-	s.FeatureKey = val
+// SetFeature sets the value of Feature.
+func (s *Entitlement) SetFeature(val ObjectIdentity) {
+	s.Feature = val
 }
 
 // SetName sets the value of Name.
@@ -3537,8 +3581,12 @@ func (s *EstimateRequest) SetLines(val []QuoteLine) {
 
 // Ref: #/components/schemas/IncludedAllowance
 type IncludedAllowance struct {
-	MeterKey string    `json:"meter_key"`
-	Unit     OptString `json:"unit"`
+	// Allowed values for selected meter dimensions, such as region or storage class. Every specified
+	// dimension must match one listed value. Omitted dimensions are unrestricted. An empty map covers all
+	// dimensions of this meter.
+	DimensionValues OptIncludedAllowanceDimensionValues `json:"dimension_values"`
+	Meter           ObjectIdentity                      `json:"meter"`
+	Unit            OptString                           `json:"unit"`
 	// How much is included.
 	Quantity string `json:"quantity"`
 	// `period_end` lasts as long as the period it came with. `days` lasts a fixed number of days from
@@ -3548,9 +3596,14 @@ type IncludedAllowance struct {
 	ValidDays OptInt `json:"valid_days"`
 }
 
-// GetMeterKey returns the value of MeterKey.
-func (s *IncludedAllowance) GetMeterKey() string {
-	return s.MeterKey
+// GetDimensionValues returns the value of DimensionValues.
+func (s *IncludedAllowance) GetDimensionValues() OptIncludedAllowanceDimensionValues {
+	return s.DimensionValues
+}
+
+// GetMeter returns the value of Meter.
+func (s *IncludedAllowance) GetMeter() ObjectIdentity {
+	return s.Meter
 }
 
 // GetUnit returns the value of Unit.
@@ -3573,9 +3626,14 @@ func (s *IncludedAllowance) GetValidDays() OptInt {
 	return s.ValidDays
 }
 
-// SetMeterKey sets the value of MeterKey.
-func (s *IncludedAllowance) SetMeterKey(val string) {
-	s.MeterKey = val
+// SetDimensionValues sets the value of DimensionValues.
+func (s *IncludedAllowance) SetDimensionValues(val OptIncludedAllowanceDimensionValues) {
+	s.DimensionValues = val
+}
+
+// SetMeter sets the value of Meter.
+func (s *IncludedAllowance) SetMeter(val ObjectIdentity) {
+	s.Meter = val
 }
 
 // SetUnit sets the value of Unit.
@@ -3596,6 +3654,20 @@ func (s *IncludedAllowance) SetExpiry(val IncludedAllowanceExpiry) {
 // SetValidDays sets the value of ValidDays.
 func (s *IncludedAllowance) SetValidDays(val OptInt) {
 	s.ValidDays = val
+}
+
+// Allowed values for selected meter dimensions, such as region or storage class. Every specified
+// dimension must match one listed value. Omitted dimensions are unrestricted. An empty map covers all
+// dimensions of this meter.
+type IncludedAllowanceDimensionValues map[string][]string
+
+func (s *IncludedAllowanceDimensionValues) init() IncludedAllowanceDimensionValues {
+	m := *s
+	if m == nil {
+		m = map[string][]string{}
+		*s = m
+	}
+	return m
 }
 
 // `period_end` lasts as long as the period it came with. `days` lasts a fixed number of days from
@@ -3650,7 +3722,7 @@ func (s *IncludedAllowanceExpiry) UnmarshalText(data []byte) error {
 
 // Ref: #/components/schemas/IncludedFeature
 type IncludedFeature struct {
-	FeatureKey       string          `json:"feature_key"`
+	Feature          ObjectIdentity  `json:"feature"`
 	Name             string          `json:"name"`
 	NameTranslations OptTranslations `json:"name_translations"`
 	Description      OptString       `json:"description"`
@@ -3668,9 +3740,9 @@ type IncludedFeature struct {
 	Unit OptString `json:"unit"`
 }
 
-// GetFeatureKey returns the value of FeatureKey.
-func (s *IncludedFeature) GetFeatureKey() string {
-	return s.FeatureKey
+// GetFeature returns the value of Feature.
+func (s *IncludedFeature) GetFeature() ObjectIdentity {
+	return s.Feature
 }
 
 // GetName returns the value of Name.
@@ -3703,9 +3775,9 @@ func (s *IncludedFeature) GetUnit() OptString {
 	return s.Unit
 }
 
-// SetFeatureKey sets the value of FeatureKey.
-func (s *IncludedFeature) SetFeatureKey(val string) {
-	s.FeatureKey = val
+// SetFeature sets the value of Feature.
+func (s *IncludedFeature) SetFeature(val ObjectIdentity) {
+	s.Feature = val
 }
 
 // SetName sets the value of Name.
@@ -4610,6 +4682,59 @@ func (*NotModified) listCatalogPricesRes()   {}
 func (*NotModified) listCatalogProductsRes() {}
 func (*NotModified) listCatalogRatesRes()    {}
 
+// Ref: #/components/schemas/ObjectIdentity
+type ObjectIdentity struct {
+	ID        uuid.UUID `json:"id"`
+	LookupKey OptString `json:"lookup_key"`
+}
+
+// GetID returns the value of ID.
+func (s *ObjectIdentity) GetID() uuid.UUID {
+	return s.ID
+}
+
+// GetLookupKey returns the value of LookupKey.
+func (s *ObjectIdentity) GetLookupKey() OptString {
+	return s.LookupKey
+}
+
+// SetID sets the value of ID.
+func (s *ObjectIdentity) SetID(val uuid.UUID) {
+	s.ID = val
+}
+
+// SetLookupKey sets the value of LookupKey.
+func (s *ObjectIdentity) SetLookupKey(val OptString) {
+	s.LookupKey = val
+}
+
+// Identify an object by ID or lookup key, exactly one. A lookup key requires the owning product.
+// Ref: #/components/schemas/ObjectReference
+type ObjectReference struct {
+	ID        OptUUID   `json:"id"`
+	LookupKey OptString `json:"lookup_key"`
+}
+
+// GetID returns the value of ID.
+func (s *ObjectReference) GetID() OptUUID {
+	return s.ID
+}
+
+// GetLookupKey returns the value of LookupKey.
+func (s *ObjectReference) GetLookupKey() OptString {
+	return s.LookupKey
+}
+
+// SetID sets the value of ID.
+func (s *ObjectReference) SetID(val OptUUID) {
+	s.ID = val
+}
+
+// SetLookupKey sets the value of LookupKey.
+func (s *ObjectReference) SetLookupKey(val OptString) {
+	s.LookupKey = val
+}
+
 // NewOptActiveResourceDimensions returns new OptActiveResourceDimensions with value set to v.
 func NewOptActiveResourceDimensions(v ActiveResourceDimensions) OptActiveResourceDimensions {
 	return OptActiveResourceDimensions{
@@ -4650,6 +4775,52 @@ func (o OptActiveResourceDimensions) Get() (v ActiveResourceDimensions, ok bool)
 
 // Or returns value if set, or given parameter if does not.
 func (o OptActiveResourceDimensions) Or(d ActiveResourceDimensions) ActiveResourceDimensions {
+	if v, ok := o.Get(); ok {
+		return v
+	}
+	return d
+}
+
+// NewOptAllowanceDimensionValues returns new OptAllowanceDimensionValues with value set to v.
+func NewOptAllowanceDimensionValues(v AllowanceDimensionValues) OptAllowanceDimensionValues {
+	return OptAllowanceDimensionValues{
+		Value: v,
+		Set:   true,
+	}
+}
+
+// OptAllowanceDimensionValues is optional AllowanceDimensionValues.
+type OptAllowanceDimensionValues struct {
+	Value AllowanceDimensionValues
+	Set   bool
+}
+
+// IsSet returns true if OptAllowanceDimensionValues was set.
+func (o OptAllowanceDimensionValues) IsSet() bool { return o.Set }
+
+// Reset unsets value.
+func (o *OptAllowanceDimensionValues) Reset() {
+	var v AllowanceDimensionValues
+	o.Value = v
+	o.Set = false
+}
+
+// SetTo sets value to v.
+func (o *OptAllowanceDimensionValues) SetTo(v AllowanceDimensionValues) {
+	o.Set = true
+	o.Value = v
+}
+
+// Get returns value and boolean that denotes whether value was set.
+func (o OptAllowanceDimensionValues) Get() (v AllowanceDimensionValues, ok bool) {
+	if !o.Set {
+		return v, false
+	}
+	return o.Value, true
+}
+
+// Or returns value if set, or given parameter if does not.
+func (o OptAllowanceDimensionValues) Or(d AllowanceDimensionValues) AllowanceDimensionValues {
 	if v, ok := o.Get(); ok {
 		return v
 	}
@@ -5018,6 +5189,52 @@ func (o OptErrorMeta) Get() (v ErrorMeta, ok bool) {
 
 // Or returns value if set, or given parameter if does not.
 func (o OptErrorMeta) Or(d ErrorMeta) ErrorMeta {
+	if v, ok := o.Get(); ok {
+		return v
+	}
+	return d
+}
+
+// NewOptIncludedAllowanceDimensionValues returns new OptIncludedAllowanceDimensionValues with value set to v.
+func NewOptIncludedAllowanceDimensionValues(v IncludedAllowanceDimensionValues) OptIncludedAllowanceDimensionValues {
+	return OptIncludedAllowanceDimensionValues{
+		Value: v,
+		Set:   true,
+	}
+}
+
+// OptIncludedAllowanceDimensionValues is optional IncludedAllowanceDimensionValues.
+type OptIncludedAllowanceDimensionValues struct {
+	Value IncludedAllowanceDimensionValues
+	Set   bool
+}
+
+// IsSet returns true if OptIncludedAllowanceDimensionValues was set.
+func (o OptIncludedAllowanceDimensionValues) IsSet() bool { return o.Set }
+
+// Reset unsets value.
+func (o *OptIncludedAllowanceDimensionValues) Reset() {
+	var v IncludedAllowanceDimensionValues
+	o.Value = v
+	o.Set = false
+}
+
+// SetTo sets value to v.
+func (o *OptIncludedAllowanceDimensionValues) SetTo(v IncludedAllowanceDimensionValues) {
+	o.Set = true
+	o.Value = v
+}
+
+// Get returns value and boolean that denotes whether value was set.
+func (o OptIncludedAllowanceDimensionValues) Get() (v IncludedAllowanceDimensionValues, ok bool) {
+	if !o.Set {
+		return v, false
+	}
+	return o.Value, true
+}
+
+// Or returns value if set, or given parameter if does not.
+func (o OptIncludedAllowanceDimensionValues) Or(d IncludedAllowanceDimensionValues) IncludedAllowanceDimensionValues {
 	if v, ok := o.Get(); ok {
 		return v
 	}
@@ -5870,6 +6087,98 @@ func (o OptNilUUID) Or(d uuid.UUID) uuid.UUID {
 	return d
 }
 
+// NewOptObjectIdentity returns new OptObjectIdentity with value set to v.
+func NewOptObjectIdentity(v ObjectIdentity) OptObjectIdentity {
+	return OptObjectIdentity{
+		Value: v,
+		Set:   true,
+	}
+}
+
+// OptObjectIdentity is optional ObjectIdentity.
+type OptObjectIdentity struct {
+	Value ObjectIdentity
+	Set   bool
+}
+
+// IsSet returns true if OptObjectIdentity was set.
+func (o OptObjectIdentity) IsSet() bool { return o.Set }
+
+// Reset unsets value.
+func (o *OptObjectIdentity) Reset() {
+	var v ObjectIdentity
+	o.Value = v
+	o.Set = false
+}
+
+// SetTo sets value to v.
+func (o *OptObjectIdentity) SetTo(v ObjectIdentity) {
+	o.Set = true
+	o.Value = v
+}
+
+// Get returns value and boolean that denotes whether value was set.
+func (o OptObjectIdentity) Get() (v ObjectIdentity, ok bool) {
+	if !o.Set {
+		return v, false
+	}
+	return o.Value, true
+}
+
+// Or returns value if set, or given parameter if does not.
+func (o OptObjectIdentity) Or(d ObjectIdentity) ObjectIdentity {
+	if v, ok := o.Get(); ok {
+		return v
+	}
+	return d
+}
+
+// NewOptObjectReference returns new OptObjectReference with value set to v.
+func NewOptObjectReference(v ObjectReference) OptObjectReference {
+	return OptObjectReference{
+		Value: v,
+		Set:   true,
+	}
+}
+
+// OptObjectReference is optional ObjectReference.
+type OptObjectReference struct {
+	Value ObjectReference
+	Set   bool
+}
+
+// IsSet returns true if OptObjectReference was set.
+func (o OptObjectReference) IsSet() bool { return o.Set }
+
+// Reset unsets value.
+func (o *OptObjectReference) Reset() {
+	var v ObjectReference
+	o.Value = v
+	o.Set = false
+}
+
+// SetTo sets value to v.
+func (o *OptObjectReference) SetTo(v ObjectReference) {
+	o.Set = true
+	o.Value = v
+}
+
+// Get returns value and boolean that denotes whether value was set.
+func (o OptObjectReference) Get() (v ObjectReference, ok bool) {
+	if !o.Set {
+		return v, false
+	}
+	return o.Value, true
+}
+
+// Or returns value if set, or given parameter if does not.
+func (o OptObjectReference) Or(d ObjectReference) ObjectReference {
+	if v, ok := o.Get(); ok {
+		return v
+	}
+	return d
+}
+
 // NewOptOrderChangeEffective returns new OptOrderChangeEffective with value set to v.
 func NewOptOrderChangeEffective(v OrderChangeEffective) OptOrderChangeEffective {
 	return OptOrderChangeEffective{
@@ -6631,10 +6940,8 @@ type OrderItem struct {
 	OrderID OptUUID   `json:"order_id"`
 	PriceID uuid.UUID `json:"price_id"`
 	// Which service this line belongs to.
-	ProductID OptUUID `json:"product_id"`
-	// How that service is named, such as `compute`. Read from the catalogue rather than recorded on the
-	// line, so it always matches the service it points at.
-	ProductKey OptString `json:"product_key"`
+	ProductID OptUUID           `json:"product_id"`
+	Product   OptObjectIdentity `json:"product"`
 	// Which plan was bought.
 	PlanID OptUUID `json:"plan_id"`
 	// What it was called when bought. It does not follow later catalogue renames and is not translated.
@@ -6670,9 +6977,9 @@ func (s *OrderItem) GetProductID() OptUUID {
 	return s.ProductID
 }
 
-// GetProductKey returns the value of ProductKey.
-func (s *OrderItem) GetProductKey() OptString {
-	return s.ProductKey
+// GetProduct returns the value of Product.
+func (s *OrderItem) GetProduct() OptObjectIdentity {
+	return s.Product
 }
 
 // GetPlanID returns the value of PlanID.
@@ -6750,9 +7057,9 @@ func (s *OrderItem) SetProductID(val OptUUID) {
 	s.ProductID = val
 }
 
-// SetProductKey sets the value of ProductKey.
-func (s *OrderItem) SetProductKey(val OptString) {
-	s.ProductKey = val
+// SetProduct sets the value of Product.
+func (s *OrderItem) SetProduct(val OptObjectIdentity) {
+	s.Product = val
 }
 
 // SetPlanID sets the value of PlanID.
@@ -7951,18 +8258,13 @@ func (s *Quote) SetCurrency(val string) {
 	s.Currency = val
 }
 
-// Price a change to something already running, rather than a new purchase.
-//
-// The result states what is still owed for the period already paid for, what the new configuration
-// costs for the remainder, and the difference in either direction.
+// Estimate a change to a subscription item using a target plan or price.
 // Ref: #/components/schemas/QuoteChange
 type QuoteChange struct {
 	// What is being changed.
-	SubscriptionItemID uuid.UUID `json:"subscription_item_id"`
-	// The price to move to. Identify it here, or by `service_product_id` below. Supplying both, or
-	// neither, is refused.
-	PriceID          OptUUID   `json:"price_id"`
-	ServiceProductID OptString `json:"service_product_id"`
+	SubscriptionItemID uuid.UUID          `json:"subscription_item_id"`
+	Price              OptObjectReference `json:"price"`
+	Plan               OptObjectReference `json:"plan"`
 	// The new quantity. The current one is kept when omitted.
 	Quantity OptString `json:"quantity"`
 	// When the change would take effect. Defaults to now. Charging is split at this moment: before it at
@@ -7975,14 +8277,14 @@ func (s *QuoteChange) GetSubscriptionItemID() uuid.UUID {
 	return s.SubscriptionItemID
 }
 
-// GetPriceID returns the value of PriceID.
-func (s *QuoteChange) GetPriceID() OptUUID {
-	return s.PriceID
+// GetPrice returns the value of Price.
+func (s *QuoteChange) GetPrice() OptObjectReference {
+	return s.Price
 }
 
-// GetServiceProductID returns the value of ServiceProductID.
-func (s *QuoteChange) GetServiceProductID() OptString {
-	return s.ServiceProductID
+// GetPlan returns the value of Plan.
+func (s *QuoteChange) GetPlan() OptObjectReference {
+	return s.Plan
 }
 
 // GetQuantity returns the value of Quantity.
@@ -8000,14 +8302,14 @@ func (s *QuoteChange) SetSubscriptionItemID(val uuid.UUID) {
 	s.SubscriptionItemID = val
 }
 
-// SetPriceID sets the value of PriceID.
-func (s *QuoteChange) SetPriceID(val OptUUID) {
-	s.PriceID = val
+// SetPrice sets the value of Price.
+func (s *QuoteChange) SetPrice(val OptObjectReference) {
+	s.Price = val
 }
 
-// SetServiceProductID sets the value of ServiceProductID.
-func (s *QuoteChange) SetServiceProductID(val OptString) {
-	s.ServiceProductID = val
+// SetPlan sets the value of Plan.
+func (s *QuoteChange) SetPlan(val OptObjectReference) {
+	s.Plan = val
 }
 
 // SetQuantity sets the value of Quantity.
@@ -8144,18 +8446,14 @@ func (s *QuoteChangeResult) SetCurrency(val string) {
 	s.Currency = val
 }
 
-// Identify what to price either by `price_id`, or by `product_key` together with `service_product_id`.
-// Supplying both, or neither, is refused.
+// Identify a price directly, or select a price for a plan. Lookup keys are scoped to the product.
+// Account quotes apply applicable contract prices.
 // Ref: #/components/schemas/QuoteLine
 type QuoteLine struct {
-	PriceID OptUUID `json:"price_id"`
-	// The service, such as `compute`.
-	ProductKey OptString `json:"product_key"`
-	// How the owning service identifies the item, such as a machine type.
-	ServiceProductID OptString `json:"service_product_id"`
-	// Required for a metered price whose price list covers more than one meter, so that the intended one
-	// is unambiguous.
-	MeterKey OptString `json:"meter_key"`
+	Price   OptObjectReference `json:"price"`
+	Product OptObjectReference `json:"product"`
+	Plan    OptObjectReference `json:"plan"`
+	Meter   OptObjectReference `json:"meter"`
 	// The attributes the price depends on — region, instance type, token class.
 	//
 	// Required when the price draws its rates from a price list, which is how anything sold by region or
@@ -8165,12 +8463,7 @@ type QuoteLine struct {
 	// Every attribute the meter declares must be present. A combination with no rate covering it is
 	// refused rather than priced at zero.
 	Dimensions OptQuoteLineDimensions `json:"dimensions"`
-	// Which way of buying. Required when the item is sold in more than one way — the same item may be
-	// offered metered, prepaid and as a one-off pack, and the pair `product_key` + `service_product_id`
-	// names only the item, not the way.
-	//
-	// Omit it when the item is sold one way only. If what is given matches no price, or still leaves more
-	// than one candidate, the request is refused rather than resolved by guessing.
+	// Narrows the selection when a plan offers more than one billing type.
 	PriceType OptQuoteLinePriceType `json:"price_type"`
 	// For prepaid items, such as `1_month` or `1_year`. Required when the item is offered for more than
 	// one period.
@@ -8181,24 +8474,24 @@ type QuoteLine struct {
 	DurationSeconds OptInt64 `json:"duration_seconds"`
 }
 
-// GetPriceID returns the value of PriceID.
-func (s *QuoteLine) GetPriceID() OptUUID {
-	return s.PriceID
+// GetPrice returns the value of Price.
+func (s *QuoteLine) GetPrice() OptObjectReference {
+	return s.Price
 }
 
-// GetProductKey returns the value of ProductKey.
-func (s *QuoteLine) GetProductKey() OptString {
-	return s.ProductKey
+// GetProduct returns the value of Product.
+func (s *QuoteLine) GetProduct() OptObjectReference {
+	return s.Product
 }
 
-// GetServiceProductID returns the value of ServiceProductID.
-func (s *QuoteLine) GetServiceProductID() OptString {
-	return s.ServiceProductID
+// GetPlan returns the value of Plan.
+func (s *QuoteLine) GetPlan() OptObjectReference {
+	return s.Plan
 }
 
-// GetMeterKey returns the value of MeterKey.
-func (s *QuoteLine) GetMeterKey() OptString {
-	return s.MeterKey
+// GetMeter returns the value of Meter.
+func (s *QuoteLine) GetMeter() OptObjectReference {
+	return s.Meter
 }
 
 // GetDimensions returns the value of Dimensions.
@@ -8226,24 +8519,24 @@ func (s *QuoteLine) GetDurationSeconds() OptInt64 {
 	return s.DurationSeconds
 }
 
-// SetPriceID sets the value of PriceID.
-func (s *QuoteLine) SetPriceID(val OptUUID) {
-	s.PriceID = val
+// SetPrice sets the value of Price.
+func (s *QuoteLine) SetPrice(val OptObjectReference) {
+	s.Price = val
 }
 
-// SetProductKey sets the value of ProductKey.
-func (s *QuoteLine) SetProductKey(val OptString) {
-	s.ProductKey = val
+// SetProduct sets the value of Product.
+func (s *QuoteLine) SetProduct(val OptObjectReference) {
+	s.Product = val
 }
 
-// SetServiceProductID sets the value of ServiceProductID.
-func (s *QuoteLine) SetServiceProductID(val OptString) {
-	s.ServiceProductID = val
+// SetPlan sets the value of Plan.
+func (s *QuoteLine) SetPlan(val OptObjectReference) {
+	s.Plan = val
 }
 
-// SetMeterKey sets the value of MeterKey.
-func (s *QuoteLine) SetMeterKey(val OptString) {
-	s.MeterKey = val
+// SetMeter sets the value of Meter.
+func (s *QuoteLine) SetMeter(val OptObjectReference) {
+	s.Meter = val
 }
 
 // SetDimensions sets the value of Dimensions.
@@ -8290,12 +8583,7 @@ func (s *QuoteLineDimensions) init() QuoteLineDimensions {
 	return m
 }
 
-// Which way of buying. Required when the item is sold in more than one way — the same item may be
-// offered metered, prepaid and as a one-off pack, and the pair `product_key` + `service_product_id`
-// names only the item, not the way.
-//
-// Omit it when the item is sold one way only. If what is given matches no price, or still leaves more
-// than one candidate, the request is refused rather than resolved by guessing.
+// Narrows the selection when a plan offers more than one billing type.
 type QuoteLinePriceType string
 
 const (
@@ -9232,18 +9520,18 @@ func (s *SettleResult) SetCurrency(val string) {
 
 // Ref: #/components/schemas/SpendRow
 type SpendRow struct {
-	ProductKey OptString `json:"product_key"`
-	PlanID     OptUUID   `json:"plan_id"`
-	PlanName   OptString `json:"plan_name"`
+	Product  OptObjectIdentity `json:"product"`
+	PlanID   OptUUID           `json:"plan_id"`
+	PlanName OptString         `json:"plan_name"`
 	// Present only when grouped by resource.
 	ResourceID OptString `json:"resource_id"`
 	Amount     Money     `json:"amount"`
 	Currency   string    `json:"currency"`
 }
 
-// GetProductKey returns the value of ProductKey.
-func (s *SpendRow) GetProductKey() OptString {
-	return s.ProductKey
+// GetProduct returns the value of Product.
+func (s *SpendRow) GetProduct() OptObjectIdentity {
+	return s.Product
 }
 
 // GetPlanID returns the value of PlanID.
@@ -9271,9 +9559,9 @@ func (s *SpendRow) GetCurrency() string {
 	return s.Currency
 }
 
-// SetProductKey sets the value of ProductKey.
-func (s *SpendRow) SetProductKey(val OptString) {
-	s.ProductKey = val
+// SetProduct sets the value of Product.
+func (s *SpendRow) SetProduct(val OptObjectIdentity) {
+	s.Product = val
 }
 
 // SetPlanID sets the value of PlanID.
@@ -9355,10 +9643,10 @@ type Subscription struct {
 	ID uuid.UUID `json:"id"`
 	// Which project this is for. Absent when it was bought at account level, such as a membership, which
 	// belongs to no single project.
-	ProjectID        OptNilUUID `json:"project_id"`
-	BillingAccountID OptInt64   `json:"billing_account_id"`
-	ProductID        uuid.UUID  `json:"product_id"`
-	ProductKey       OptString  `json:"product_key"`
+	ProjectID        OptNilUUID        `json:"project_id"`
+	BillingAccountID OptInt64          `json:"billing_account_id"`
+	ProductID        uuid.UUID         `json:"product_id"`
+	Product          OptObjectIdentity `json:"product"`
 	// `pending` is a subscription created by an order that has not completed, so it appears in the list
 	// before anything under it is running.
 	Status    SubscriptionStatus `json:"status"`
@@ -9385,9 +9673,9 @@ func (s *Subscription) GetProductID() uuid.UUID {
 	return s.ProductID
 }
 
-// GetProductKey returns the value of ProductKey.
-func (s *Subscription) GetProductKey() OptString {
-	return s.ProductKey
+// GetProduct returns the value of Product.
+func (s *Subscription) GetProduct() OptObjectIdentity {
+	return s.Product
 }
 
 // GetStatus returns the value of Status.
@@ -9420,9 +9708,9 @@ func (s *Subscription) SetProductID(val uuid.UUID) {
 	s.ProductID = val
 }
 
-// SetProductKey sets the value of ProductKey.
-func (s *Subscription) SetProductKey(val OptString) {
-	s.ProductKey = val
+// SetProduct sets the value of Product.
+func (s *Subscription) SetProduct(val OptObjectIdentity) {
+	s.Product = val
 }
 
 // SetStatus sets the value of Status.
@@ -9441,13 +9729,13 @@ type SubscriptionItem struct {
 	SubscriptionID OptUUID   `json:"subscription_id"`
 	// Which project this is for. Absent when it was bought at account level, such as a membership, which
 	// belongs to no single project.
-	ProjectID  OptNilUUID `json:"project_id"`
-	ProductKey OptString  `json:"product_key"`
-	PlanID     uuid.UUID  `json:"plan_id"`
-	PlanName   OptString  `json:"plan_name"`
-	PriceID    uuid.UUID  `json:"price_id"`
-	ResourceID OptString  `json:"resource_id"`
-	Quantity   string     `json:"quantity"`
+	ProjectID  OptNilUUID        `json:"project_id"`
+	Product    OptObjectIdentity `json:"product"`
+	PlanID     uuid.UUID         `json:"plan_id"`
+	PlanName   OptString         `json:"plan_name"`
+	PriceID    uuid.UUID         `json:"price_id"`
+	ResourceID OptString         `json:"resource_id"`
+	Quantity   string            `json:"quantity"`
 	// Present for prepaid items. Absent for metered ones, which have no end date.
 	PaidUntil OptNilDateTime         `json:"paid_until"`
 	AutoRenew OptBool                `json:"auto_renew"`
@@ -9471,9 +9759,9 @@ func (s *SubscriptionItem) GetProjectID() OptNilUUID {
 	return s.ProjectID
 }
 
-// GetProductKey returns the value of ProductKey.
-func (s *SubscriptionItem) GetProductKey() OptString {
-	return s.ProductKey
+// GetProduct returns the value of Product.
+func (s *SubscriptionItem) GetProduct() OptObjectIdentity {
+	return s.Product
 }
 
 // GetPlanID returns the value of PlanID.
@@ -9541,9 +9829,9 @@ func (s *SubscriptionItem) SetProjectID(val OptNilUUID) {
 	s.ProjectID = val
 }
 
-// SetProductKey sets the value of ProductKey.
-func (s *SubscriptionItem) SetProductKey(val OptString) {
-	s.ProductKey = val
+// SetProduct sets the value of Product.
+func (s *SubscriptionItem) SetProduct(val OptObjectIdentity) {
+	s.Product = val
 }
 
 // SetPlanID sets the value of PlanID.
@@ -10405,14 +10693,13 @@ type UnbindProjectPayerNoContent struct{}
 
 // Ref: #/components/schemas/UsageCharge
 type UsageCharge struct {
-	ID         uuid.UUID `json:"id"`
-	ProjectID  OptUUID   `json:"project_id"`
-	ProductKey string    `json:"product_key"`
+	ID        uuid.UUID      `json:"id"`
+	ProjectID OptUUID        `json:"project_id"`
+	Product   ObjectIdentity `json:"product"`
 	// Which resource this was charged for. Empty for charges not tied to one.
-	ResourceID OptString `json:"resource_id"`
-	// What was measured, such as `instance_seconds`.
-	MeterKey string    `json:"meter_key"`
-	Unit     OptString `json:"unit"`
+	ResourceID OptString      `json:"resource_id"`
+	Meter      ObjectIdentity `json:"meter"`
+	Unit       OptString      `json:"unit"`
 	// The attributes the rate was chosen by, such as region and machine type.
 	Dimensions  OptUsageChargeDimensions `json:"dimensions"`
 	WindowStart time.Time                `json:"window_start"`
@@ -10441,9 +10728,9 @@ func (s *UsageCharge) GetProjectID() OptUUID {
 	return s.ProjectID
 }
 
-// GetProductKey returns the value of ProductKey.
-func (s *UsageCharge) GetProductKey() string {
-	return s.ProductKey
+// GetProduct returns the value of Product.
+func (s *UsageCharge) GetProduct() ObjectIdentity {
+	return s.Product
 }
 
 // GetResourceID returns the value of ResourceID.
@@ -10451,9 +10738,9 @@ func (s *UsageCharge) GetResourceID() OptString {
 	return s.ResourceID
 }
 
-// GetMeterKey returns the value of MeterKey.
-func (s *UsageCharge) GetMeterKey() string {
-	return s.MeterKey
+// GetMeter returns the value of Meter.
+func (s *UsageCharge) GetMeter() ObjectIdentity {
+	return s.Meter
 }
 
 // GetUnit returns the value of Unit.
@@ -10521,9 +10808,9 @@ func (s *UsageCharge) SetProjectID(val OptUUID) {
 	s.ProjectID = val
 }
 
-// SetProductKey sets the value of ProductKey.
-func (s *UsageCharge) SetProductKey(val string) {
-	s.ProductKey = val
+// SetProduct sets the value of Product.
+func (s *UsageCharge) SetProduct(val ObjectIdentity) {
+	s.Product = val
 }
 
 // SetResourceID sets the value of ResourceID.
@@ -10531,9 +10818,9 @@ func (s *UsageCharge) SetResourceID(val OptString) {
 	s.ResourceID = val
 }
 
-// SetMeterKey sets the value of MeterKey.
-func (s *UsageCharge) SetMeterKey(val string) {
-	s.MeterKey = val
+// SetMeter sets the value of Meter.
+func (s *UsageCharge) SetMeter(val ObjectIdentity) {
+	s.Meter = val
 }
 
 // SetUnit sets the value of Unit.

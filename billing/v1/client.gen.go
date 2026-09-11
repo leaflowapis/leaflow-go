@@ -1013,9 +1013,9 @@ type ActiveResource struct {
 	Dimensions map[string]string `json:"dimensions,omitempty"`
 
 	// LastBilledUntil Charges are settled up to this moment.
-	LastBilledUntil *time.Time `json:"last_billed_until,omitempty"`
-	MeterKey        string     `json:"meter_key"`
-	ProductKey      string     `json:"product_key"`
+	LastBilledUntil *time.Time     `json:"last_billed_until,omitempty"`
+	Meter           ObjectIdentity `json:"meter"`
+	Product         ObjectIdentity `json:"product"`
 
 	// Quantity How much is held — cores, MiB, cards. Not how much has been used.
 	Quantity   string `json:"quantity"`
@@ -1066,20 +1066,19 @@ type AllocationList struct {
 
 // Allowance defines model for Allowance.
 type Allowance struct {
-	BillingAccountId *int64             `json:"billing_account_id,omitempty"`
-	Id               openapi_types.UUID `json:"id"`
+	BillingAccountId *int64 `json:"billing_account_id,omitempty"`
 
-	// MeterKey What it covers, such as `egress_bytes`.
-	MeterKey string `json:"meter_key"`
-	Name     string `json:"name"`
+	// DimensionValues Allowed values for selected meter dimensions, such as region or storage class.
+	// Every specified dimension must match one listed value. Omitted dimensions are
+	// unrestricted. An empty map covers all dimensions of this meter.
+	DimensionValues map[string][]string `json:"dimension_values,omitempty"`
+	Id              openapi_types.UUID  `json:"id"`
+	Meter           ObjectIdentity      `json:"meter"`
+	Name            string              `json:"name"`
 
 	// Priority Lower is drawn on first. Included quantities sit ahead of purchased packs.
-	Priority *int `json:"priority,omitempty"`
-
-	// ProductKey Which service it covers, such as `compute`. Read it alongside `meter_key`: a meter
-	// name is unique only within its own service, so two allowances for `egress_bytes`
-	// may belong to different services and cover different traffic.
-	ProductKey string `json:"product_key"`
+	Priority *int           `json:"priority,omitempty"`
+	Product  ObjectIdentity `json:"product"`
 
 	// Quantity How much was granted.
 	Quantity string `json:"quantity"`
@@ -1112,7 +1111,7 @@ type AllowanceStatus string
 type AllowanceConsumption struct {
 	ConsumedAt    time.Time           `json:"consumed_at"`
 	Id            openapi_types.UUID  `json:"id"`
-	MeterKey      *string             `json:"meter_key,omitempty"`
+	Meter         *ObjectIdentity     `json:"meter,omitempty"`
 	Quantity      string              `json:"quantity"`
 	ReversedAt    *time.Time          `json:"reversed_at,omitempty"`
 	UsageChargeId *openapi_types.UUID `json:"usage_charge_id,omitempty"`
@@ -1140,11 +1139,11 @@ type Applicability struct {
 	FirstPurchaseOnly *bool `json:"first_purchase_only,omitempty"`
 
 	// MinAmount A decimal string, in the currency stated alongside it.
-	MinAmount   *Money              `json:"min_amount,omitempty"`
-	Operations  []PurchaseOperation `json:"operations,omitempty"`
-	PlanKeys    []string            `json:"plan_keys,omitempty"`
-	PriceTypes  []string            `json:"price_types,omitempty"`
-	ProductKeys []string            `json:"product_keys,omitempty"`
+	MinAmount  *Money               `json:"min_amount,omitempty"`
+	Operations []PurchaseOperation  `json:"operations,omitempty"`
+	PlanIds    []openapi_types.UUID `json:"plan_ids,omitempty"`
+	PriceTypes []string             `json:"price_types,omitempty"`
+	ProductIds []openapi_types.UUID `json:"product_ids,omitempty"`
 }
 
 // AutoRenewSet defines model for AutoRenewSet.
@@ -1257,6 +1256,9 @@ type CatalogPrice struct {
 	Features []IncludedFeature  `json:"features,omitempty"`
 	Id       openapi_types.UUID `json:"id"`
 
+	// LookupKey External lookup alias within the service. Existing references use the price ID.
+	LookupKey *string `json:"lookup_key,omitempty"`
+
 	// MaxQuantity The largest quantity that can be bought. Absent means no upper bound.
 	//
 	// An order beyond it is refused with its own code, apart from the codes for running
@@ -1267,6 +1269,7 @@ type CatalogPrice struct {
 	MinQuantity *Money              `json:"min_quantity,omitempty"`
 	Period      *CatalogPricePeriod `json:"period,omitempty"`
 	PlanId      openapi_types.UUID  `json:"plan_id"`
+	ProductId   *openapi_types.UUID `json:"product_id,omitempty"`
 
 	// QuantityStep Quantities must be a multiple of this. Absent means any quantity within the bounds.
 	QuantityStep *Money `json:"quantity_step,omitempty"`
@@ -1347,13 +1350,11 @@ type CatalogRate struct {
 	Currency string `json:"currency"`
 
 	// Dimensions The attributes this rate applies to, such as region and machine type.
-	Dimensions    map[string]string `json:"dimensions"`
-	EffectiveFrom time.Time         `json:"effective_from"`
-	EffectiveTo   *time.Time        `json:"effective_to,omitempty"`
-
-	// MeterKey What is being measured.
-	MeterKey     string                  `json:"meter_key"`
-	PricingModel CatalogRatePricingModel `json:"pricing_model"`
+	Dimensions    map[string]string       `json:"dimensions"`
+	EffectiveFrom time.Time               `json:"effective_from"`
+	EffectiveTo   *time.Time              `json:"effective_to,omitempty"`
+	Meter         ObjectIdentity          `json:"meter"`
+	PricingModel  CatalogRatePricingModel `json:"pricing_model"`
 
 	// Tiers Present for `graduated` and `volume`, in ascending order.
 	Tiers []Tier `json:"tiers,omitempty"`
@@ -1549,10 +1550,8 @@ type Entitlement struct {
 
 	// ExpiresAt When the subscription providing it ends. Absent for a metered subscription, which
 	// has no end date.
-	ExpiresAt *time.Time `json:"expires_at,omitempty"`
-
-	// FeatureKey What calling code tests against.
-	FeatureKey string `json:"feature_key"`
+	ExpiresAt *time.Time     `json:"expires_at,omitempty"`
+	Feature   ObjectIdentity `json:"feature"`
 
 	// Metered Whether its use is counted. **`false` means no limit** — the plan providing it
 	// grants it without a cap — and `remaining_quantity` should not be read in that case.
@@ -1560,12 +1559,9 @@ type Entitlement struct {
 	// A capped capability whose quantity has run out keeps `metered` true with
 	// `remaining_quantity` of `"0"`. Exhausted and uncapped are therefore always
 	// distinguishable.
-	Metered bool    `json:"metered"`
-	Name    *string `json:"name,omitempty"`
-
-	// ProductKey Which service. Read it alongside `feature_key`, which is unique only within its
-	// service.
-	ProductKey string `json:"product_key"`
+	Metered bool           `json:"metered"`
+	Name    *string        `json:"name,omitempty"`
+	Product ObjectIdentity `json:"product"`
 
 	// RemainingQuantity How much is left, as a decimal string. Meaningful only when `metered` is true.
 	// `"0"` once exhausted, never negative.
@@ -1597,10 +1593,15 @@ type EstimateRequest struct {
 
 // IncludedAllowance defines model for IncludedAllowance.
 type IncludedAllowance struct {
+	// DimensionValues Allowed values for selected meter dimensions, such as region or storage class.
+	// Every specified dimension must match one listed value. Omitted dimensions are
+	// unrestricted. An empty map covers all dimensions of this meter.
+	DimensionValues map[string][]string `json:"dimension_values,omitempty"`
+
 	// Expiry `period_end` lasts as long as the period it came with. `days` lasts a fixed number
 	// of days from purchase. `never` does not lapse.
-	Expiry   IncludedAllowanceExpiry `json:"expiry"`
-	MeterKey string                  `json:"meter_key"`
+	Expiry IncludedAllowanceExpiry `json:"expiry"`
+	Meter  ObjectIdentity          `json:"meter"`
 
 	// Quantity How much is included.
 	Quantity string  `json:"quantity"`
@@ -1616,8 +1617,8 @@ type IncludedAllowanceExpiry string
 
 // IncludedFeature defines model for IncludedFeature.
 type IncludedFeature struct {
-	Description *string `json:"description,omitempty"`
-	FeatureKey  string  `json:"feature_key"`
+	Description *string        `json:"description,omitempty"`
+	Feature     ObjectIdentity `json:"feature"`
 
 	// IncludedQuantity How much is included, as a decimal string. Present when `unlimited` is false.
 	IncludedQuantity *string `json:"included_quantity,omitempty"`
@@ -1737,6 +1738,18 @@ type InvoiceStatus string
 // Money A decimal string, in the currency stated alongside it.
 type Money = string
 
+// ObjectIdentity defines model for ObjectIdentity.
+type ObjectIdentity struct {
+	Id        openapi_types.UUID `json:"id"`
+	LookupKey *string            `json:"lookup_key,omitempty"`
+}
+
+// ObjectReference Identify an object by ID or lookup key, exactly one. A lookup key requires the owning product.
+type ObjectReference struct {
+	Id        *openapi_types.UUID `json:"id,omitempty"`
+	LookupKey *string             `json:"lookup_key,omitempty"`
+}
+
 // Order defines model for Order.
 type Order struct {
 	// Amount A decimal string, in the currency stated alongside it.
@@ -1819,17 +1832,14 @@ type OrderItem struct {
 	// not translated.
 	PlanName *string            `json:"plan_name,omitempty"`
 	PriceId  openapi_types.UUID `json:"price_id"`
+	Product  *ObjectIdentity    `json:"product,omitempty"`
 
 	// ProductId Which service this line belongs to.
-	ProductId *openapi_types.UUID `json:"product_id,omitempty"`
-
-	// ProductKey How that service is named, such as `compute`. Read from the catalogue rather than
-	// recorded on the line, so it always matches the service it points at.
-	ProductKey         *string    `json:"product_key,omitempty"`
-	Quantity           string     `json:"quantity"`
-	ResourceId         *string    `json:"resource_id,omitempty"`
-	ServicePeriodEnd   *time.Time `json:"service_period_end,omitempty"`
-	ServicePeriodStart *time.Time `json:"service_period_start,omitempty"`
+	ProductId          *openapi_types.UUID `json:"product_id,omitempty"`
+	Quantity           string              `json:"quantity"`
+	ResourceId         *string             `json:"resource_id,omitempty"`
+	ServicePeriodEnd   *time.Time          `json:"service_period_end,omitempty"`
+	ServicePeriodStart *time.Time          `json:"service_period_start,omitempty"`
 
 	// UnitAmount A decimal string, in the currency stated alongside it.
 	UnitAmount *Money `json:"unit_amount,omitempty"`
@@ -2068,22 +2078,20 @@ type Quote struct {
 	TotalRefundable *Money `json:"total_refundable,omitempty"`
 }
 
-// QuoteChange Price a change to something already running, rather than a new purchase.
-//
-// The result states what is still owed for the period already paid for, what the new
-// configuration costs for the remainder, and the difference in either direction.
+// QuoteChange Estimate a change to a subscription item using a target plan or price.
 type QuoteChange struct {
 	// EffectiveAt When the change would take effect. Defaults to now. Charging is split at this
 	// moment: before it at the old configuration, after it at the new one.
 	EffectiveAt *time.Time `json:"effective_at,omitempty"`
 
-	// PriceId The price to move to. Identify it here, or by `service_product_id` below. Supplying
-	// both, or neither, is refused.
-	PriceId *openapi_types.UUID `json:"price_id,omitempty"`
+	// Plan Identify an object by ID or lookup key, exactly one. A lookup key requires the owning product.
+	Plan *ObjectReference `json:"plan,omitempty"`
+
+	// Price Identify an object by ID or lookup key, exactly one. A lookup key requires the owning product.
+	Price *ObjectReference `json:"price,omitempty"`
 
 	// Quantity The new quantity. The current one is kept when omitted.
-	Quantity         *string `json:"quantity,omitempty"`
-	ServiceProductId *string `json:"service_product_id,omitempty"`
+	Quantity *string `json:"quantity,omitempty"`
 
 	// SubscriptionItemId What is being changed.
 	SubscriptionItemId openapi_types.UUID `json:"subscription_item_id"`
@@ -2120,8 +2128,7 @@ type QuoteChangeResult struct {
 	UnusedCredit *Money `json:"unused_credit,omitempty"`
 }
 
-// QuoteLine Identify what to price either by `price_id`, or by `product_key` together with
-// `service_product_id`. Supplying both, or neither, is refused.
+// QuoteLine Identify a price directly, or select a price for a plan. Lookup keys are scoped to the product. Account quotes apply applicable contract prices.
 type QuoteLine struct {
 	// BillingPeriod For prepaid items, such as `1_month` or `1_year`. Required when the item is offered
 	// for more than one period.
@@ -2141,35 +2148,24 @@ type QuoteLine struct {
 	// this much per month" to be shown before anything exists.
 	DurationSeconds *int64 `json:"duration_seconds,omitempty"`
 
-	// MeterKey Required for a metered price whose price list covers more than one meter, so that
-	// the intended one is unambiguous.
-	MeterKey *string             `json:"meter_key,omitempty"`
-	PriceId  *openapi_types.UUID `json:"price_id,omitempty"`
+	// Meter Identify an object by ID or lookup key, exactly one. A lookup key requires the owning product.
+	Meter *ObjectReference `json:"meter,omitempty"`
 
-	// PriceType Which way of buying. Required when the item is sold in more than one way — the
-	// same item may be offered metered, prepaid and as a one-off pack, and the pair
-	// `product_key` + `service_product_id` names only the item, not the way.
-	//
-	// Omit it when the item is sold one way only. If what is given matches no price, or
-	// still leaves more than one candidate, the request is refused rather than resolved
-	// by guessing.
+	// Plan Identify an object by ID or lookup key, exactly one. A lookup key requires the owning product.
+	Plan *ObjectReference `json:"plan,omitempty"`
+
+	// Price Identify an object by ID or lookup key, exactly one. A lookup key requires the owning product.
+	Price *ObjectReference `json:"price,omitempty"`
+
+	// PriceType Narrows the selection when a plan offers more than one billing type.
 	PriceType *QuoteLinePriceType `json:"price_type,omitempty"`
 
-	// ProductKey The service, such as `compute`.
-	ProductKey *string `json:"product_key,omitempty"`
-	Quantity   string  `json:"quantity"`
-
-	// ServiceProductId How the owning service identifies the item, such as a machine type.
-	ServiceProductId *string `json:"service_product_id,omitempty"`
+	// Product Identify an object by ID or lookup key, exactly one. A lookup key requires the owning product.
+	Product  *ObjectReference `json:"product,omitempty"`
+	Quantity string           `json:"quantity"`
 }
 
-// QuoteLinePriceType Which way of buying. Required when the item is sold in more than one way — the
-// same item may be offered metered, prepaid and as a one-off pack, and the pair
-// `product_key` + `service_product_id` names only the item, not the way.
-//
-// Omit it when the item is sold one way only. If what is given matches no price, or
-// still leaves more than one candidate, the request is refused rather than resolved
-// by guessing.
+// QuoteLinePriceType Narrows the selection when a plan offers more than one billing type.
 type QuoteLinePriceType string
 
 // QuoteLineResult defines model for QuoteLineResult.
@@ -2366,11 +2362,11 @@ type SettleResult struct {
 // SpendRow defines model for SpendRow.
 type SpendRow struct {
 	// Amount A decimal string, in the currency stated alongside it.
-	Amount     Money               `json:"amount"`
-	Currency   string              `json:"currency"`
-	PlanId     *openapi_types.UUID `json:"plan_id,omitempty"`
-	PlanName   *string             `json:"plan_name,omitempty"`
-	ProductKey *string             `json:"product_key,omitempty"`
+	Amount   Money               `json:"amount"`
+	Currency string              `json:"currency"`
+	PlanId   *openapi_types.UUID `json:"plan_id,omitempty"`
+	PlanName *string             `json:"plan_name,omitempty"`
+	Product  *ObjectIdentity     `json:"product,omitempty"`
 
 	// ResourceId Present only when grouped by resource.
 	ResourceId *string `json:"resource_id,omitempty"`
@@ -2391,8 +2387,8 @@ type Subscription struct {
 	BillingAccountId *int64             `json:"billing_account_id,omitempty"`
 	Id               openapi_types.UUID `json:"id"`
 	ItemCount        *int64             `json:"item_count,omitempty"`
+	Product          *ObjectIdentity    `json:"product,omitempty"`
 	ProductId        openapi_types.UUID `json:"product_id"`
-	ProductKey       *string            `json:"product_key,omitempty"`
 
 	// ProjectId Which project this is for. Absent when it was bought at account level, such as a
 	// membership, which belongs to no single project.
@@ -2414,11 +2410,11 @@ type SubscriptionItem struct {
 	Id        openapi_types.UUID `json:"id"`
 
 	// PaidUntil Present for prepaid items. Absent for metered ones, which have no end date.
-	PaidUntil  *time.Time         `json:"paid_until,omitempty"`
-	PlanId     openapi_types.UUID `json:"plan_id"`
-	PlanName   *string            `json:"plan_name,omitempty"`
-	PriceId    openapi_types.UUID `json:"price_id"`
-	ProductKey *string            `json:"product_key,omitempty"`
+	PaidUntil *time.Time         `json:"paid_until,omitempty"`
+	PlanId    openapi_types.UUID `json:"plan_id"`
+	PlanName  *string            `json:"plan_name,omitempty"`
+	PriceId   openapi_types.UUID `json:"price_id"`
+	Product   *ObjectIdentity    `json:"product,omitempty"`
 
 	// ProjectId Which project this is for. Absent when it was bought at account level, such as a
 	// membership, which belongs to no single project.
@@ -2606,11 +2602,9 @@ type UsageCharge struct {
 
 	// InvoiceId Absent until the period is invoiced.
 	InvoiceId *openapi_types.UUID `json:"invoice_id,omitempty"`
-
-	// MeterKey What was measured, such as `instance_seconds`.
-	MeterKey   string              `json:"meter_key"`
-	ProductKey string              `json:"product_key"`
-	ProjectId  *openapi_types.UUID `json:"project_id,omitempty"`
+	Meter     ObjectIdentity      `json:"meter"`
+	Product   ObjectIdentity      `json:"product"`
+	ProjectId *openapi_types.UUID `json:"project_id,omitempty"`
 
 	// Quantity What was charged for — the gross quantity less the part covered.
 	Quantity string `json:"quantity"`
@@ -2713,9 +2707,14 @@ type ListAllowancesParams struct {
 	PageSize *PageSize `form:"page_size,omitempty" json:"page_size,omitempty"`
 
 	// BillingAccountId Restrict to one of your accounts. All of them when omitted.
-	BillingAccountId *AccountIdQuery             `form:"billing_account_id,omitempty" json:"billing_account_id,omitempty"`
-	MeterKey         *string                     `form:"meter_key,omitempty" json:"meter_key,omitempty"`
-	Status           *ListAllowancesParamsStatus `form:"status,omitempty" json:"status,omitempty"`
+	BillingAccountId *AccountIdQuery `form:"billing_account_id,omitempty" json:"billing_account_id,omitempty"`
+
+	// Meter Filter by ID or lookup key. A lookup key is scoped to the product.
+	Meter  *ObjectReference            `json:"meter,omitempty"`
+	Status *ListAllowancesParamsStatus `form:"status,omitempty" json:"status,omitempty"`
+
+	// Product Filter by ID or lookup key. A lookup key is scoped to the product.
+	Product *ObjectReference `json:"product,omitempty"`
 }
 
 // ListAllowancesParamsStatus defines parameters for ListAllowances.
@@ -2925,10 +2924,10 @@ type ListUsageChargesParams struct {
 	BillingAccountId *AccountIdQuery     `form:"billing_account_id,omitempty" json:"billing_account_id,omitempty"`
 	ProjectId        *openapi_types.UUID `form:"project_id,omitempty" json:"project_id,omitempty"`
 
-	// ProductKey Restrict to one service, such as `compute`.
-	ProductKey *string `form:"product_key,omitempty" json:"product_key,omitempty"`
-	ResourceId *string `form:"resource_id,omitempty" json:"resource_id,omitempty"`
-	From       *From   `form:"from,omitempty" json:"from,omitempty"`
+	// Product Filter by ID or lookup key. A lookup key is scoped to the product.
+	Product    *ObjectReference `json:"product,omitempty"`
+	ResourceId *string          `form:"resource_id,omitempty" json:"resource_id,omitempty"`
+	From       *From            `form:"from,omitempty" json:"from,omitempty"`
 
 	// To Exclusive.
 	To *To `form:"to,omitempty" json:"to,omitempty"`
@@ -2951,7 +2950,12 @@ type ListProjectAllowancesParams struct {
 
 	// PageSize How many per page, 100 at most.
 	PageSize *PageSize `form:"page_size,omitempty" json:"page_size,omitempty"`
-	MeterKey *string   `form:"meter_key,omitempty" json:"meter_key,omitempty"`
+
+	// Meter Filter by ID or lookup key. A lookup key is scoped to the product.
+	Meter *ObjectReference `json:"meter,omitempty"`
+
+	// Product Filter by ID or lookup key. A lookup key is scoped to the product.
+	Product *ObjectReference `json:"product,omitempty"`
 }
 
 // ListProjectEntitlementsParams defines parameters for ListProjectEntitlements.
@@ -2960,8 +2964,10 @@ type ListProjectEntitlementsParams struct {
 	Page *Page `form:"page,omitempty" json:"page,omitempty"`
 
 	// PageSize How many per page, 100 at most.
-	PageSize   *PageSize `form:"page_size,omitempty" json:"page_size,omitempty"`
-	ProductKey *string   `form:"product_key,omitempty" json:"product_key,omitempty"`
+	PageSize *PageSize `form:"page_size,omitempty" json:"page_size,omitempty"`
+
+	// Product Filter by ID or lookup key. A lookup key is scoped to the product.
+	Product *ObjectReference `json:"product,omitempty"`
 }
 
 // ListProjectOrdersParams defines parameters for ListProjectOrders.
@@ -2998,8 +3004,10 @@ type ListProjectSpendParams struct {
 	// identifier — a disk, a public address — appear as their own rows rather than under
 	// the machine they are attached to, since the relationship between them is known to
 	// the owning service and not here.
-	GroupBy    *ListProjectSpendParamsGroupBy `form:"group_by,omitempty" json:"group_by,omitempty"`
-	ProductKey *string                        `form:"product_key,omitempty" json:"product_key,omitempty"`
+	GroupBy *ListProjectSpendParamsGroupBy `form:"group_by,omitempty" json:"group_by,omitempty"`
+
+	// Product Filter by ID or lookup key. A lookup key is scoped to the product.
+	Product *ObjectReference `json:"product,omitempty"`
 
 	// Page 1-based page number; the first page when omitted.
 	Page *Page `form:"page,omitempty" json:"page,omitempty"`
@@ -3039,12 +3047,12 @@ type ListProjectUsageChargesParams struct {
 	PageSize   *PageSize `form:"page_size,omitempty" json:"page_size,omitempty"`
 	ResourceId *string   `form:"resource_id,omitempty" json:"resource_id,omitempty"`
 
-	// ProductKey Restrict to one service, such as `compute`. Give it alongside `meter_key`: a meter
-	// name is unique only within its own service, and more than one service may measure
-	// `traffic_bytes`, so `meter_key` on its own can return charges from several.
-	ProductKey *string `form:"product_key,omitempty" json:"product_key,omitempty"`
-	MeterKey   *string `form:"meter_key,omitempty" json:"meter_key,omitempty"`
-	From       *From   `form:"from,omitempty" json:"from,omitempty"`
+	// Product Filter by ID or lookup key. A lookup key is scoped to the product.
+	Product *ObjectReference `json:"product,omitempty"`
+
+	// Meter Filter by ID or lookup key. A lookup key is scoped to the product.
+	Meter *ObjectReference `json:"meter,omitempty"`
+	From  *From            `form:"from,omitempty" json:"from,omitempty"`
 
 	// To Exclusive.
 	To *To `form:"to,omitempty" json:"to,omitempty"`
@@ -3106,7 +3114,9 @@ type ListCatalogRatesParams struct {
 
 	// PageSize How many per page, 100 at most.
 	PageSize *PageSize `form:"page_size,omitempty" json:"page_size,omitempty"`
-	MeterKey *string   `form:"meter_key,omitempty" json:"meter_key,omitempty"`
+
+	// Meter Filter by ID or lookup key. A lookup key is scoped to the product.
+	Meter *ObjectReference `json:"meter,omitempty"`
 
 	// At Return the rates in effect at this moment. Defaults to now.
 	At *time.Time `form:"at,omitempty" json:"at,omitempty"`
@@ -5778,9 +5788,9 @@ func NewListAllowancesRequest(server string, params *ListAllowancesParams) (*htt
 
 		}
 
-		if params.MeterKey != nil {
+		if params.Meter != nil {
 
-			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "meter_key", *params.MeterKey, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "string", Format: ""}); err != nil {
+			if queryFrag, err := runtime.StyleParamWithOptions("deepObject", true, "meter", *params.Meter, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "object", Format: ""}); err != nil {
 				return nil, err
 			} else {
 				for _, qp := range strings.Split(queryFrag, "&") {
@@ -5793,6 +5803,18 @@ func NewListAllowancesRequest(server string, params *ListAllowancesParams) (*htt
 		if params.Status != nil {
 
 			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "status", *params.Status, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			} else {
+				for _, qp := range strings.Split(queryFrag, "&") {
+					rawQueryFragments = append(rawQueryFragments, qp)
+				}
+			}
+
+		}
+
+		if params.Product != nil {
+
+			if queryFrag, err := runtime.StyleParamWithOptions("deepObject", true, "product", *params.Product, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "object", Format: ""}); err != nil {
 				return nil, err
 			} else {
 				for _, qp := range strings.Split(queryFrag, "&") {
@@ -8207,9 +8229,9 @@ func NewListUsageChargesRequest(server string, params *ListUsageChargesParams) (
 
 		}
 
-		if params.ProductKey != nil {
+		if params.Product != nil {
 
-			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "product_key", *params.ProductKey, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "string", Format: ""}); err != nil {
+			if queryFrag, err := runtime.StyleParamWithOptions("deepObject", true, "product", *params.Product, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "object", Format: ""}); err != nil {
 				return nil, err
 			} else {
 				for _, qp := range strings.Split(queryFrag, "&") {
@@ -8413,9 +8435,21 @@ func NewListProjectAllowancesRequest(server string, projectId ProjectId, params 
 
 		}
 
-		if params.MeterKey != nil {
+		if params.Meter != nil {
 
-			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "meter_key", *params.MeterKey, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "string", Format: ""}); err != nil {
+			if queryFrag, err := runtime.StyleParamWithOptions("deepObject", true, "meter", *params.Meter, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "object", Format: ""}); err != nil {
+				return nil, err
+			} else {
+				for _, qp := range strings.Split(queryFrag, "&") {
+					rawQueryFragments = append(rawQueryFragments, qp)
+				}
+			}
+
+		}
+
+		if params.Product != nil {
+
+			if queryFrag, err := runtime.StyleParamWithOptions("deepObject", true, "product", *params.Product, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "object", Format: ""}); err != nil {
 				return nil, err
 			} else {
 				for _, qp := range strings.Split(queryFrag, "&") {
@@ -8532,9 +8566,9 @@ func NewListProjectEntitlementsRequest(server string, projectId ProjectId, param
 
 		}
 
-		if params.ProductKey != nil {
+		if params.Product != nil {
 
-			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "product_key", *params.ProductKey, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "string", Format: ""}); err != nil {
+			if queryFrag, err := runtime.StyleParamWithOptions("deepObject", true, "product", *params.Product, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "object", Format: ""}); err != nil {
 				return nil, err
 			} else {
 				for _, qp := range strings.Split(queryFrag, "&") {
@@ -8898,9 +8932,9 @@ func NewListProjectSpendRequest(server string, projectId ProjectId, params *List
 
 		}
 
-		if params.ProductKey != nil {
+		if params.Product != nil {
 
-			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "product_key", *params.ProductKey, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "string", Format: ""}); err != nil {
+			if queryFrag, err := runtime.StyleParamWithOptions("deepObject", true, "product", *params.Product, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "object", Format: ""}); err != nil {
 				return nil, err
 			} else {
 				for _, qp := range strings.Split(queryFrag, "&") {
@@ -9231,9 +9265,9 @@ func NewListProjectUsageChargesRequest(server string, projectId ProjectId, param
 
 		}
 
-		if params.ProductKey != nil {
+		if params.Product != nil {
 
-			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "product_key", *params.ProductKey, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "string", Format: ""}); err != nil {
+			if queryFrag, err := runtime.StyleParamWithOptions("deepObject", true, "product", *params.Product, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "object", Format: ""}); err != nil {
 				return nil, err
 			} else {
 				for _, qp := range strings.Split(queryFrag, "&") {
@@ -9243,9 +9277,9 @@ func NewListProjectUsageChargesRequest(server string, projectId ProjectId, param
 
 		}
 
-		if params.MeterKey != nil {
+		if params.Meter != nil {
 
-			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "meter_key", *params.MeterKey, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "string", Format: ""}); err != nil {
+			if queryFrag, err := runtime.StyleParamWithOptions("deepObject", true, "meter", *params.Meter, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "object", Format: ""}); err != nil {
 				return nil, err
 			} else {
 				for _, qp := range strings.Split(queryFrag, "&") {
@@ -9661,9 +9695,9 @@ func NewListCatalogRatesRequest(server string, rateCardId RateCardId, params *Li
 
 		}
 
-		if params.MeterKey != nil {
+		if params.Meter != nil {
 
-			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "meter_key", *params.MeterKey, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "string", Format: ""}); err != nil {
+			if queryFrag, err := runtime.StyleParamWithOptions("deepObject", true, "meter", *params.Meter, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "object", Format: ""}); err != nil {
 				return nil, err
 			} else {
 				for _, qp := range strings.Split(queryFrag, "&") {

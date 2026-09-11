@@ -188,6 +188,24 @@ func (s *Allowance) Validate() error {
 
 	var failures []validate.FieldError
 	if err := func() error {
+		if value, ok := s.DimensionValues.Get(); ok {
+			if err := func() error {
+				if err := value.Validate(); err != nil {
+					return err
+				}
+				return nil
+			}(); err != nil {
+				return err
+			}
+		}
+		return nil
+	}(); err != nil {
+		failures = append(failures, validate.FieldError{
+			Name:  "dimension_values",
+			Error: err,
+		})
+	}
+	if err := func() error {
 		if err := s.SourceType.Validate(); err != nil {
 			return err
 		}
@@ -232,6 +250,68 @@ func (s *AllowanceConsumptionList) Validate() error {
 			Error: err,
 		})
 	}
+	if len(failures) > 0 {
+		return &validate.Error{Fields: failures}
+	}
+	return nil
+}
+
+func (s AllowanceDimensionValues) Validate() error {
+	var failures []validate.FieldError
+	for key, elem := range s {
+		if err := func() error {
+			if elem == nil {
+				return errors.New("nil is invalid value")
+			}
+			if err := (validate.Array{
+				MinLength:    1,
+				MinLengthSet: true,
+				MaxLength:    0,
+				MaxLengthSet: false,
+			}).ValidateLength(len(elem)); err != nil {
+				return errors.Wrap(err, "array")
+			}
+			if err := validate.UniqueItems(elem); err != nil {
+				return errors.Wrap(err, "array")
+			}
+			var failures []validate.FieldError
+			for i, elem := range elem {
+				if err := func() error {
+					if err := (validate.String{
+						MinLength:     1,
+						MinLengthSet:  true,
+						MaxLength:     0,
+						MaxLengthSet:  false,
+						Email:         false,
+						Hostname:      false,
+						Regex:         nil,
+						MinNumeric:    0,
+						MinNumericSet: false,
+						MaxNumeric:    0,
+						MaxNumericSet: false,
+					}).Validate(string(elem)); err != nil {
+						return errors.Wrap(err, "string")
+					}
+					return nil
+				}(); err != nil {
+					failures = append(failures, validate.FieldError{
+						Name:  fmt.Sprintf("[%d]", i),
+						Error: err,
+					})
+				}
+			}
+			if len(failures) > 0 {
+				return &validate.Error{Fields: failures}
+			}
+			return nil
+		}(); err != nil {
+			failures = append(failures, validate.FieldError{
+				Name:  key,
+				Error: err,
+			})
+		}
+	}
+
 	if len(failures) > 0 {
 		return &validate.Error{Fields: failures}
 	}
@@ -909,6 +989,36 @@ func (s *CatalogPrice) Validate() error {
 
 	var failures []validate.FieldError
 	if err := func() error {
+		if value, ok := s.LookupKey.Get(); ok {
+			if err := func() error {
+				if err := (validate.String{
+					MinLength:     1,
+					MinLengthSet:  true,
+					MaxLength:     128,
+					MaxLengthSet:  true,
+					Email:         false,
+					Hostname:      false,
+					Regex:         nil,
+					MinNumeric:    0,
+					MinNumericSet: false,
+					MaxNumeric:    0,
+					MaxNumericSet: false,
+				}).Validate(string(value)); err != nil {
+					return errors.Wrap(err, "string")
+				}
+				return nil
+			}(); err != nil {
+				return err
+			}
+		}
+		return nil
+	}(); err != nil {
+		failures = append(failures, validate.FieldError{
+			Name:  "lookup_key",
+			Error: err,
+		})
+	}
+	if err := func() error {
 		if err := s.Type.Validate(); err != nil {
 			return err
 		}
@@ -1549,6 +1659,23 @@ func (s *CodeRequest) Validate() error {
 		}).ValidateLength(len(s.Changes)); err != nil {
 			return errors.Wrap(err, "array")
 		}
+		var failures []validate.FieldError
+		for i, elem := range s.Changes {
+			if err := func() error {
+				if err := elem.Validate(); err != nil {
+					return err
+				}
+				return nil
+			}(); err != nil {
+				failures = append(failures, validate.FieldError{
+					Name:  fmt.Sprintf("[%d]", i),
+					Error: err,
+				})
+			}
+		}
+		if len(failures) > 0 {
+			return &validate.Error{Fields: failures}
+		}
 		return nil
 	}(); err != nil {
 		failures = append(failures, validate.FieldError{
@@ -1811,6 +1938,24 @@ func (s *IncludedAllowance) Validate() error {
 
 	var failures []validate.FieldError
 	if err := func() error {
+		if value, ok := s.DimensionValues.Get(); ok {
+			if err := func() error {
+				if err := value.Validate(); err != nil {
+					return err
+				}
+				return nil
+			}(); err != nil {
+				return err
+			}
+		}
+		return nil
+	}(); err != nil {
+		failures = append(failures, validate.FieldError{
+			Name:  "dimension_values",
+			Error: err,
+		})
+	}
+	if err := func() error {
 		if err := s.Expiry.Validate(); err != nil {
 			return err
 		}
@@ -1821,6 +1966,68 @@ func (s *IncludedAllowance) Validate() error {
 			Error: err,
 		})
 	}
+	if len(failures) > 0 {
+		return &validate.Error{Fields: failures}
+	}
+	return nil
+}
+
+func (s IncludedAllowanceDimensionValues) Validate() error {
+	var failures []validate.FieldError
+	for key, elem := range s {
+		if err := func() error {
+			if elem == nil {
+				return errors.New("nil is invalid value")
+			}
+			if err := (validate.Array{
+				MinLength:    1,
+				MinLengthSet: true,
+				MaxLength:    0,
+				MaxLengthSet: false,
+			}).ValidateLength(len(elem)); err != nil {
+				return errors.Wrap(err, "array")
+			}
+			if err := validate.UniqueItems(elem); err != nil {
+				return errors.Wrap(err, "array")
+			}
+			var failures []validate.FieldError
+			for i, elem := range elem {
+				if err := func() error {
+					if err := (validate.String{
+						MinLength:     1,
+						MinLengthSet:  true,
+						MaxLength:     0,
+						MaxLengthSet:  false,
+						Email:         false,
+						Hostname:      false,
+						Regex:         nil,
+						MinNumeric:    0,
+						MinNumericSet: false,
+						MaxNumeric:    0,
+						MaxNumericSet: false,
+					}).Validate(string(elem)); err != nil {
+						return errors.Wrap(err, "string")
+					}
+					return nil
+				}(); err != nil {
+					failures = append(failures, validate.FieldError{
+						Name:  fmt.Sprintf("[%d]", i),
+						Error: err,
+					})
+				}
+			}
+			if len(failures) > 0 {
+				return &validate.Error{Fields: failures}
+			}
+			return nil
+		}(); err != nil {
+			failures = append(failures, validate.FieldError{
+				Name:  key,
+				Error: err,
+			})
+		}
+	}
+
 	if len(failures) > 0 {
 		return &validate.Error{Fields: failures}
 	}
@@ -2090,6 +2297,48 @@ func (s ListProjectSpendGroupBy) Validate() error {
 	default:
 		return errors.Errorf("invalid value: %v", s)
 	}
+}
+
+func (s *ObjectReference) Validate() error {
+	if s == nil {
+		return validate.ErrNilPointer
+	}
+
+	var failures []validate.FieldError
+	if err := func() error {
+		if value, ok := s.LookupKey.Get(); ok {
+			if err := func() error {
+				if err := (validate.String{
+					MinLength:     1,
+					MinLengthSet:  true,
+					MaxLength:     128,
+					MaxLengthSet:  true,
+					Email:         false,
+					Hostname:      false,
+					Regex:         nil,
+					MinNumeric:    0,
+					MinNumericSet: false,
+					MaxNumeric:    0,
+					MaxNumericSet: false,
+				}).Validate(string(value)); err != nil {
+					return errors.Wrap(err, "string")
+				}
+				return nil
+			}(); err != nil {
+				return err
+			}
+		}
+		return nil
+	}(); err != nil {
+		failures = append(failures, validate.FieldError{
+			Name:  "lookup_key",
+			Error: err,
+		})
+	}
+	if len(failures) > 0 {
+		return &validate.Error{Fields: failures}
+	}
+	return nil
 }
 
 func (s *Order) Validate() error {
@@ -2557,12 +2806,132 @@ func (s *Quote) Validate() error {
 	return nil
 }
 
+func (s *QuoteChange) Validate() error {
+	if s == nil {
+		return validate.ErrNilPointer
+	}
+
+	var failures []validate.FieldError
+	if err := func() error {
+		if value, ok := s.Price.Get(); ok {
+			if err := func() error {
+				if err := value.Validate(); err != nil {
+					return err
+				}
+				return nil
+			}(); err != nil {
+				return err
+			}
+		}
+		return nil
+	}(); err != nil {
+		failures = append(failures, validate.FieldError{
+			Name:  "price",
+			Error: err,
+		})
+	}
+	if err := func() error {
+		if value, ok := s.Plan.Get(); ok {
+			if err := func() error {
+				if err := value.Validate(); err != nil {
+					return err
+				}
+				return nil
+			}(); err != nil {
+				return err
+			}
+		}
+		return nil
+	}(); err != nil {
+		failures = append(failures, validate.FieldError{
+			Name:  "plan",
+			Error: err,
+		})
+	}
+	if len(failures) > 0 {
+		return &validate.Error{Fields: failures}
+	}
+	return nil
+}
+
 func (s *QuoteLine) Validate() error {
 	if s == nil {
 		return validate.ErrNilPointer
 	}
 
 	var failures []validate.FieldError
+	if err := func() error {
+		if value, ok := s.Price.Get(); ok {
+			if err := func() error {
+				if err := value.Validate(); err != nil {
+					return err
+				}
+				return nil
+			}(); err != nil {
+				return err
+			}
+		}
+		return nil
+	}(); err != nil {
+		failures = append(failures, validate.FieldError{
+			Name:  "price",
+			Error: err,
+		})
+	}
+	if err := func() error {
+		if value, ok := s.Product.Get(); ok {
+			if err := func() error {
+				if err := value.Validate(); err != nil {
+					return err
+				}
+				return nil
+			}(); err != nil {
+				return err
+			}
+		}
+		return nil
+	}(); err != nil {
+		failures = append(failures, validate.FieldError{
+			Name:  "product",
+			Error: err,
+		})
+	}
+	if err := func() error {
+		if value, ok := s.Plan.Get(); ok {
+			if err := func() error {
+				if err := value.Validate(); err != nil {
+					return err
+				}
+				return nil
+			}(); err != nil {
+				return err
+			}
+		}
+		return nil
+	}(); err != nil {
+		failures = append(failures, validate.FieldError{
+			Name:  "plan",
+			Error: err,
+		})
+	}
+	if err := func() error {
+		if value, ok := s.Meter.Get(); ok {
+			if err := func() error {
+				if err := value.Validate(); err != nil {
+					return err
+				}
+				return nil
+			}(); err != nil {
+				return err
+			}
+		}
+		return nil
+	}(); err != nil {
+		failures = append(failures, validate.FieldError{
+			Name:  "meter",
+			Error: err,
+		})
+	}
 	if err := func() error {
 		if value, ok := s.PriceType.Get(); ok {
 			if err := func() error {
@@ -2702,6 +3071,23 @@ func (s *QuoteRequest) Validate() error {
 			MaxLengthSet: true,
 		}).ValidateLength(len(s.Changes)); err != nil {
 			return errors.Wrap(err, "array")
+		}
+		var failures []validate.FieldError
+		for i, elem := range s.Changes {
+			if err := func() error {
+				if err := elem.Validate(); err != nil {
+					return err
+				}
+				return nil
+			}(); err != nil {
+				failures = append(failures, validate.FieldError{
+					Name:  fmt.Sprintf("[%d]", i),
+					Error: err,
+				})
+			}
+		}
+		if len(failures) > 0 {
+			return &validate.Error{Fields: failures}
 		}
 		return nil
 	}(); err != nil {
