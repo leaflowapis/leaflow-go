@@ -1668,8 +1668,11 @@ type Invoice struct {
 	Id             openapi_types.UUID `json:"id"`
 
 	// Number Numbered per account and per month.
-	Number string     `json:"number"`
-	PaidAt *time.Time `json:"paid_at,omitempty"`
+	Number string `json:"number"`
+
+	// OrderId The purchase that produced this invoice. Absent on usage invoices.
+	OrderId *openapi_types.UUID `json:"order_id,omitempty"`
+	PaidAt  *time.Time          `json:"paid_at,omitempty"`
 
 	// PeriodEnd Exclusive.
 	PeriodEnd   time.Time     `json:"period_end"`
@@ -1703,15 +1706,27 @@ type InvoiceItem struct {
 
 	// Description The wording as recorded when the invoice was issued. It is not re-translated
 	// afterwards, so that an invoice continues to read as it did when it was sent.
-	Description string              `json:"description"`
-	Id          openapi_types.UUID  `json:"id"`
+	Description string `json:"description"`
+
+	// DiscountAmount Discount applied to this line before tax.
+	DiscountAmount *string            `json:"discount_amount,omitempty"`
+	Id             openapi_types.UUID `json:"id"`
+
+	// OrderItemId The original order line. Refunds follow that line's original payment sources.
+	OrderItemId *openapi_types.UUID `json:"order_item_id,omitempty"`
 	PeriodEnd   *time.Time          `json:"period_end,omitempty"`
 	PeriodStart *time.Time          `json:"period_start,omitempty"`
 	ProjectId   *openapi_types.UUID `json:"project_id,omitempty"`
 	Quantity    *string             `json:"quantity,omitempty"`
 	ResourceId  *string             `json:"resource_id,omitempty"`
-	Type        *InvoiceItemType    `json:"type,omitempty"`
-	Unit        *string             `json:"unit,omitempty"`
+
+	// TaxAmount Tax on the discounted line, including tax already included in the price.
+	TaxAmount *string `json:"tax_amount,omitempty"`
+
+	// TaxIncludedAmount The part of tax_amount already included in amount.
+	TaxIncludedAmount *string          `json:"tax_included_amount,omitempty"`
+	Type              *InvoiceItemType `json:"type,omitempty"`
+	Unit              *string          `json:"unit,omitempty"`
 
 	// UnitAmount A decimal string, in the currency stated alongside it.
 	UnitAmount *Money `json:"unit_amount,omitempty"`
@@ -1796,6 +1811,12 @@ type Order struct {
 	ReservationExpiresAt *time.Time `json:"reservation_expires_at,omitempty"`
 	State                OrderState `json:"state"`
 
+	// TaxAmount Total tax after discounts, including any tax already included in the price.
+	TaxAmount *string `json:"tax_amount,omitempty"`
+
+	// TaxIncludedAmount The part of tax_amount already included in gross_amount; it is not charged again.
+	TaxIncludedAmount *string `json:"tax_included_amount,omitempty"`
+
 	// Type `adopt` brings a resource that already existed under billing. It charges nothing at
 	// the time and starts billing from the moment agreed.
 	Type OrderType `json:"type"`
@@ -1840,6 +1861,12 @@ type OrderItem struct {
 	ResourceId         *string             `json:"resource_id,omitempty"`
 	ServicePeriodEnd   *time.Time          `json:"service_period_end,omitempty"`
 	ServicePeriodStart *time.Time          `json:"service_period_start,omitempty"`
+
+	// TaxAmount Total tax after discounts, including any tax already included in the price.
+	TaxAmount *string `json:"tax_amount,omitempty"`
+
+	// TaxIncludedAmount The part of tax_amount already included in gross_amount; it is not charged again.
+	TaxIncludedAmount *string `json:"tax_included_amount,omitempty"`
 
 	// UnitAmount A decimal string, in the currency stated alongside it.
 	UnitAmount *Money `json:"unit_amount,omitempty"`
@@ -2123,6 +2150,12 @@ type QuoteChangeResult struct {
 	RefundableAmount   Money              `json:"refundable_amount"`
 	SubscriptionItemId openapi_types.UUID `json:"subscription_item_id"`
 
+	// TaxAmount Tax included in the account quote. Absent in public catalogue estimates.
+	TaxAmount *Money `json:"tax_amount,omitempty"`
+
+	// TaxIncludedAmount Tax already included in the displayed price.
+	TaxIncludedAmount *Money `json:"tax_included_amount,omitempty"`
+
 	// UnusedCredit What remains unused of the period already paid for, valued at the price it was
 	// bought at rather than at today's price.
 	UnusedCredit *Money `json:"unused_credit,omitempty"`
@@ -2192,6 +2225,12 @@ type QuoteLineResult struct {
 	// `unpriced_reason` states what is missing.
 	Priced   bool    `json:"priced"`
 	Quantity *string `json:"quantity,omitempty"`
+
+	// TaxAmount Tax included in the account quote. Absent in public catalogue estimates.
+	TaxAmount *Money `json:"tax_amount,omitempty"`
+
+	// TaxIncludedAmount Tax already included in the displayed price.
+	TaxIncludedAmount *Money `json:"tax_included_amount,omitempty"`
 
 	// UnitAmount A decimal string, in the currency stated alongside it.
 	UnitAmount *Money `json:"unit_amount,omitempty"`

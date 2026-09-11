@@ -3812,6 +3812,8 @@ func (s *IncludedFeature) SetUnit(val OptString) {
 
 // Ref: #/components/schemas/Invoice
 type Invoice struct {
+	// The purchase that produced this invoice. Absent on usage invoices.
+	OrderID          OptUUID   `json:"order_id"`
 	ID               uuid.UUID `json:"id"`
 	BillingAccountID int64     `json:"billing_account_id"`
 	// Numbered per account and per month.
@@ -3843,6 +3845,11 @@ type Invoice struct {
 	CustomerAddressPostalCode OptString      `json:"customer_address_postal_code"`
 	CustomerAddressCountry    OptString      `json:"customer_address_country"`
 	PaidAt                    OptNilDateTime `json:"paid_at"`
+}
+
+// GetOrderID returns the value of OrderID.
+func (s *Invoice) GetOrderID() OptUUID {
+	return s.OrderID
 }
 
 // GetID returns the value of ID.
@@ -3963,6 +3970,11 @@ func (s *Invoice) GetCustomerAddressCountry() OptString {
 // GetPaidAt returns the value of PaidAt.
 func (s *Invoice) GetPaidAt() OptNilDateTime {
 	return s.PaidAt
+}
+
+// SetOrderID sets the value of OrderID.
+func (s *Invoice) SetOrderID(val OptUUID) {
+	s.OrderID = val
 }
 
 // SetID sets the value of ID.
@@ -4087,10 +4099,18 @@ func (s *Invoice) SetPaidAt(val OptNilDateTime) {
 
 // Ref: #/components/schemas/InvoiceItem
 type InvoiceItem struct {
-	ID         uuid.UUID          `json:"id"`
-	Type       OptInvoiceItemType `json:"type"`
-	ProjectID  OptNilUUID         `json:"project_id"`
-	ResourceID OptString          `json:"resource_id"`
+	// Discount applied to this line before tax.
+	DiscountAmount OptString `json:"discount_amount"`
+	// Tax on the discounted line, including tax already included in the price.
+	TaxAmount OptString `json:"tax_amount"`
+	// The part of tax_amount already included in amount.
+	TaxIncludedAmount OptString `json:"tax_included_amount"`
+	// The original order line. Refunds follow that line's original payment sources.
+	OrderItemID OptUUID            `json:"order_item_id"`
+	ID          uuid.UUID          `json:"id"`
+	Type        OptInvoiceItemType `json:"type"`
+	ProjectID   OptNilUUID         `json:"project_id"`
+	ResourceID  OptString          `json:"resource_id"`
 	// The wording as recorded when the invoice was issued. It is not re-translated afterwards, so that an
 	// invoice continues to read as it did when it was sent.
 	Description string    `json:"description"`
@@ -4103,6 +4123,26 @@ type InvoiceItem struct {
 	Currency         string         `json:"currency"`
 	PeriodStart      OptNilDateTime `json:"period_start"`
 	PeriodEnd        OptNilDateTime `json:"period_end"`
+}
+
+// GetDiscountAmount returns the value of DiscountAmount.
+func (s *InvoiceItem) GetDiscountAmount() OptString {
+	return s.DiscountAmount
+}
+
+// GetTaxAmount returns the value of TaxAmount.
+func (s *InvoiceItem) GetTaxAmount() OptString {
+	return s.TaxAmount
+}
+
+// GetTaxIncludedAmount returns the value of TaxIncludedAmount.
+func (s *InvoiceItem) GetTaxIncludedAmount() OptString {
+	return s.TaxIncludedAmount
+}
+
+// GetOrderItemID returns the value of OrderItemID.
+func (s *InvoiceItem) GetOrderItemID() OptUUID {
+	return s.OrderItemID
 }
 
 // GetID returns the value of ID.
@@ -4168,6 +4208,26 @@ func (s *InvoiceItem) GetPeriodStart() OptNilDateTime {
 // GetPeriodEnd returns the value of PeriodEnd.
 func (s *InvoiceItem) GetPeriodEnd() OptNilDateTime {
 	return s.PeriodEnd
+}
+
+// SetDiscountAmount sets the value of DiscountAmount.
+func (s *InvoiceItem) SetDiscountAmount(val OptString) {
+	s.DiscountAmount = val
+}
+
+// SetTaxAmount sets the value of TaxAmount.
+func (s *InvoiceItem) SetTaxAmount(val OptString) {
+	s.TaxAmount = val
+}
+
+// SetTaxIncludedAmount sets the value of TaxIncludedAmount.
+func (s *InvoiceItem) SetTaxIncludedAmount(val OptString) {
+	s.TaxIncludedAmount = val
+}
+
+// SetOrderItemID sets the value of OrderItemID.
+func (s *InvoiceItem) SetOrderItemID(val OptUUID) {
+	s.OrderItemID = val
 }
 
 // SetID sets the value of ID.
@@ -6687,7 +6747,11 @@ func (o OptUsageChargeDimensions) Or(d UsageChargeDimensions) UsageChargeDimensi
 
 // Ref: #/components/schemas/Order
 type Order struct {
-	ID uuid.UUID `json:"id"`
+	// Total tax after discounts, including any tax already included in the price.
+	TaxAmount OptString `json:"tax_amount"`
+	// The part of tax_amount already included in gross_amount; it is not charged again.
+	TaxIncludedAmount OptString `json:"tax_included_amount"`
+	ID                uuid.UUID `json:"id"`
 	// Which project it was bought for. Absent for a purchase made at account level, such as a membership.
 	ProjectID        OptNilUUID `json:"project_id"`
 	BillingAccountID OptInt64   `json:"billing_account_id"`
@@ -6720,6 +6784,16 @@ type Order struct {
 	// What was bought. Present on a single order and on every order in a list, so a list can be rendered
 	// without a further request per row.
 	Items []OrderItem `json:"items"`
+}
+
+// GetTaxAmount returns the value of TaxAmount.
+func (s *Order) GetTaxAmount() OptString {
+	return s.TaxAmount
+}
+
+// GetTaxIncludedAmount returns the value of TaxIncludedAmount.
+func (s *Order) GetTaxIncludedAmount() OptString {
+	return s.TaxIncludedAmount
 }
 
 // GetID returns the value of ID.
@@ -6800,6 +6874,16 @@ func (s *Order) GetCreatedAt() time.Time {
 // GetItems returns the value of Items.
 func (s *Order) GetItems() []OrderItem {
 	return s.Items
+}
+
+// SetTaxAmount sets the value of TaxAmount.
+func (s *Order) SetTaxAmount(val OptString) {
+	s.TaxAmount = val
+}
+
+// SetTaxIncludedAmount sets the value of TaxIncludedAmount.
+func (s *Order) SetTaxIncludedAmount(val OptString) {
+	s.TaxIncludedAmount = val
 }
 
 // SetID sets the value of ID.
@@ -6936,9 +7020,13 @@ func (s *OrderChangeEffective) UnmarshalText(data []byte) error {
 
 // Ref: #/components/schemas/OrderItem
 type OrderItem struct {
-	ID      uuid.UUID `json:"id"`
-	OrderID OptUUID   `json:"order_id"`
-	PriceID uuid.UUID `json:"price_id"`
+	// Total tax after discounts, including any tax already included in the price.
+	TaxAmount OptString `json:"tax_amount"`
+	// The part of tax_amount already included in gross_amount; it is not charged again.
+	TaxIncludedAmount OptString `json:"tax_included_amount"`
+	ID                uuid.UUID `json:"id"`
+	OrderID           OptUUID   `json:"order_id"`
+	PriceID           uuid.UUID `json:"price_id"`
 	// Which service this line belongs to.
 	ProductID OptUUID           `json:"product_id"`
 	Product   OptObjectIdentity `json:"product"`
@@ -6955,6 +7043,16 @@ type OrderItem struct {
 	Currency           string         `json:"currency"`
 	ServicePeriodStart OptNilDateTime `json:"service_period_start"`
 	ServicePeriodEnd   OptNilDateTime `json:"service_period_end"`
+}
+
+// GetTaxAmount returns the value of TaxAmount.
+func (s *OrderItem) GetTaxAmount() OptString {
+	return s.TaxAmount
+}
+
+// GetTaxIncludedAmount returns the value of TaxIncludedAmount.
+func (s *OrderItem) GetTaxIncludedAmount() OptString {
+	return s.TaxIncludedAmount
 }
 
 // GetID returns the value of ID.
@@ -7035,6 +7133,16 @@ func (s *OrderItem) GetServicePeriodStart() OptNilDateTime {
 // GetServicePeriodEnd returns the value of ServicePeriodEnd.
 func (s *OrderItem) GetServicePeriodEnd() OptNilDateTime {
 	return s.ServicePeriodEnd
+}
+
+// SetTaxAmount sets the value of TaxAmount.
+func (s *OrderItem) SetTaxAmount(val OptString) {
+	s.TaxAmount = val
+}
+
+// SetTaxIncludedAmount sets the value of TaxIncludedAmount.
+func (s *OrderItem) SetTaxIncludedAmount(val OptString) {
+	s.TaxIncludedAmount = val
 }
 
 // SetID sets the value of ID.
@@ -8324,6 +8432,10 @@ func (s *QuoteChange) SetEffectiveAt(val OptDateTime) {
 
 // Ref: #/components/schemas/QuoteChangeResult
 type QuoteChangeResult struct {
+	// Tax included in the account quote. Absent in public catalogue estimates.
+	TaxAmount OptMoney `json:"tax_amount"`
+	// Tax already included in the displayed price.
+	TaxIncludedAmount  OptMoney  `json:"tax_included_amount"`
 	Index              int       `json:"index"`
 	SubscriptionItemID uuid.UUID `json:"subscription_item_id"`
 	// The price that would apply. Always returned.
@@ -8344,6 +8456,16 @@ type QuoteChangeResult struct {
 	// price.
 	PeriodEnd OptDateTime `json:"period_end"`
 	Currency  string      `json:"currency"`
+}
+
+// GetTaxAmount returns the value of TaxAmount.
+func (s *QuoteChangeResult) GetTaxAmount() OptMoney {
+	return s.TaxAmount
+}
+
+// GetTaxIncludedAmount returns the value of TaxIncludedAmount.
+func (s *QuoteChangeResult) GetTaxIncludedAmount() OptMoney {
+	return s.TaxIncludedAmount
 }
 
 // GetIndex returns the value of Index.
@@ -8394,6 +8516,16 @@ func (s *QuoteChangeResult) GetPeriodEnd() OptDateTime {
 // GetCurrency returns the value of Currency.
 func (s *QuoteChangeResult) GetCurrency() string {
 	return s.Currency
+}
+
+// SetTaxAmount sets the value of TaxAmount.
+func (s *QuoteChangeResult) SetTaxAmount(val OptMoney) {
+	s.TaxAmount = val
+}
+
+// SetTaxIncludedAmount sets the value of TaxIncludedAmount.
+func (s *QuoteChangeResult) SetTaxIncludedAmount(val OptMoney) {
+	s.TaxIncludedAmount = val
 }
 
 // SetIndex sets the value of Index.
@@ -8634,6 +8766,10 @@ func (s *QuoteLinePriceType) UnmarshalText(data []byte) error {
 
 // Ref: #/components/schemas/QuoteLineResult
 type QuoteLineResult struct {
+	// Tax included in the account quote. Absent in public catalogue estimates.
+	TaxAmount OptMoney `json:"tax_amount"`
+	// Tax already included in the displayed price.
+	TaxIncludedAmount OptMoney `json:"tax_included_amount"`
 	// Which line of the request this answers.
 	Index int `json:"index"`
 	// Whether a price was found for this line. Read this before anything else.
@@ -8660,6 +8796,16 @@ type QuoteLineResult struct {
 	// Not rounded. Round only for display.
 	Amount   OptMoney `json:"amount"`
 	Currency string   `json:"currency"`
+}
+
+// GetTaxAmount returns the value of TaxAmount.
+func (s *QuoteLineResult) GetTaxAmount() OptMoney {
+	return s.TaxAmount
+}
+
+// GetTaxIncludedAmount returns the value of TaxIncludedAmount.
+func (s *QuoteLineResult) GetTaxIncludedAmount() OptMoney {
+	return s.TaxIncludedAmount
 }
 
 // GetIndex returns the value of Index.
@@ -8705,6 +8851,16 @@ func (s *QuoteLineResult) GetAmount() OptMoney {
 // GetCurrency returns the value of Currency.
 func (s *QuoteLineResult) GetCurrency() string {
 	return s.Currency
+}
+
+// SetTaxAmount sets the value of TaxAmount.
+func (s *QuoteLineResult) SetTaxAmount(val OptMoney) {
+	s.TaxAmount = val
+}
+
+// SetTaxIncludedAmount sets the value of TaxIncludedAmount.
+func (s *QuoteLineResult) SetTaxIncludedAmount(val OptMoney) {
+	s.TaxIncludedAmount = val
 }
 
 // SetIndex sets the value of Index.
