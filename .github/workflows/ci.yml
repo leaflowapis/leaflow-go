@@ -46,7 +46,15 @@ jobs:
 
       - name: 逐模块编译
         run: |
-          for mod in $(find . -name go.mod -not -path './leaflowapis/*' | xargs -n1 dirname | sort); do
-            echo "── $mod"
-            (cd "$mod" && go build ./... && go vet ./...)
+          if [[ "$GITHUB_REF_TYPE" == "tag" ]]; then
+            module="${GITHUB_REF_NAME%/v*}"
+            [[ "$module" =~ ^[a-z][a-z0-9_-]*$ ]] && test -f "$module/go.mod"
+            modules=("$module")
+          else
+            modules=()
+            for file in */go.mod; do modules+=("${file%/go.mod}"); done
+          fi
+          for module in "${modules[@]}"; do
+            echo "── $module"
+            (cd "$module" && go build ./... && go vet ./...)
           done

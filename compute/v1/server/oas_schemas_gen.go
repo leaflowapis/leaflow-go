@@ -15,52 +15,6 @@ func (s *ErrorStatusCode) Error() string {
 	return fmt.Sprintf("code %d: %+v", s.StatusCode, s.Response)
 }
 
-// Ref: #/components/schemas/AllocateFloatingIPRequestBody
-type AllocateFloatingIPRequestBody struct {
-	// The address to allocate. Allocated by the platform when omitted.
-	Address OptString `json:"address"`
-	// The bandwidth ceiling of this address, in Mbit/s, applied to both directions.
-	//
-	// Required, and there is no "unlimited": an address with no ceiling runs at line rate and is charged
-	// nothing for the traffic, while the address itself bills normally — so the invoice looks correct
-	// and nothing anywhere reports it.
-	//
-	// It is billed separately from the address, per Mbit/s-hour, and appears as its own line on the order.
-	// Changing it later goes through the bandwidth endpoint.
-	BandwidthMbps    int64     `json:"bandwidth_mbps"`
-	PrivateNetworkID uuid.UUID `json:"private_network_id"`
-}
-
-// GetAddress returns the value of Address.
-func (s *AllocateFloatingIPRequestBody) GetAddress() OptString {
-	return s.Address
-}
-
-// GetBandwidthMbps returns the value of BandwidthMbps.
-func (s *AllocateFloatingIPRequestBody) GetBandwidthMbps() int64 {
-	return s.BandwidthMbps
-}
-
-// GetPrivateNetworkID returns the value of PrivateNetworkID.
-func (s *AllocateFloatingIPRequestBody) GetPrivateNetworkID() uuid.UUID {
-	return s.PrivateNetworkID
-}
-
-// SetAddress sets the value of Address.
-func (s *AllocateFloatingIPRequestBody) SetAddress(val OptString) {
-	s.Address = val
-}
-
-// SetBandwidthMbps sets the value of BandwidthMbps.
-func (s *AllocateFloatingIPRequestBody) SetBandwidthMbps(val int64) {
-	s.BandwidthMbps = val
-}
-
-// SetPrivateNetworkID sets the value of PrivateNetworkID.
-func (s *AllocateFloatingIPRequestBody) SetPrivateNetworkID(val uuid.UUID) {
-	s.PrivateNetworkID = val
-}
-
 // Ref: #/components/schemas/AttachDiskRequestBody
 type AttachDiskRequestBody struct {
 	DiskID uuid.UUID `json:"disk_id"`
@@ -106,178 +60,6 @@ func (s *AttachPortRequestBody) SetPortID(val uuid.UUID) {
 	s.PortID = val
 }
 
-// Ref: #/components/schemas/BackupListResponseBody
-type BackupListResponseBody struct {
-	Items []BackupResource `json:"items"`
-}
-
-// GetItems returns the value of Items.
-func (s *BackupListResponseBody) GetItems() []BackupResource {
-	return s.Items
-}
-
-// SetItems sets the value of Items.
-func (s *BackupListResponseBody) SetItems(val []BackupResource) {
-	s.Items = val
-}
-
-// Ref: #/components/schemas/BackupResource
-type BackupResource struct {
-	// Availability zone of the source disk. A restore may target another zone in the same region.
-	AvailabilityZone string    `json:"availability_zone"`
-	CreatedAt        time.Time `json:"created_at"`
-	ID               uuid.UUID `json:"id"`
-	Name             string    `json:"name"`
-	RegionCode       string    `json:"region_code"`
-	// Capacity of the source disk when the backup was created. A restored disk cannot be smaller than this.
-	SizeGB int64 `json:"size_gb"`
-	// The disk this backup was taken from. The backup remains usable after that disk is deleted.
-	SourceDiskID uuid.UUID            `json:"source_disk_id"`
-	Status       BackupResourceStatus `json:"status"`
-}
-
-// GetAvailabilityZone returns the value of AvailabilityZone.
-func (s *BackupResource) GetAvailabilityZone() string {
-	return s.AvailabilityZone
-}
-
-// GetCreatedAt returns the value of CreatedAt.
-func (s *BackupResource) GetCreatedAt() time.Time {
-	return s.CreatedAt
-}
-
-// GetID returns the value of ID.
-func (s *BackupResource) GetID() uuid.UUID {
-	return s.ID
-}
-
-// GetName returns the value of Name.
-func (s *BackupResource) GetName() string {
-	return s.Name
-}
-
-// GetRegionCode returns the value of RegionCode.
-func (s *BackupResource) GetRegionCode() string {
-	return s.RegionCode
-}
-
-// GetSizeGB returns the value of SizeGB.
-func (s *BackupResource) GetSizeGB() int64 {
-	return s.SizeGB
-}
-
-// GetSourceDiskID returns the value of SourceDiskID.
-func (s *BackupResource) GetSourceDiskID() uuid.UUID {
-	return s.SourceDiskID
-}
-
-// GetStatus returns the value of Status.
-func (s *BackupResource) GetStatus() BackupResourceStatus {
-	return s.Status
-}
-
-// SetAvailabilityZone sets the value of AvailabilityZone.
-func (s *BackupResource) SetAvailabilityZone(val string) {
-	s.AvailabilityZone = val
-}
-
-// SetCreatedAt sets the value of CreatedAt.
-func (s *BackupResource) SetCreatedAt(val time.Time) {
-	s.CreatedAt = val
-}
-
-// SetID sets the value of ID.
-func (s *BackupResource) SetID(val uuid.UUID) {
-	s.ID = val
-}
-
-// SetName sets the value of Name.
-func (s *BackupResource) SetName(val string) {
-	s.Name = val
-}
-
-// SetRegionCode sets the value of RegionCode.
-func (s *BackupResource) SetRegionCode(val string) {
-	s.RegionCode = val
-}
-
-// SetSizeGB sets the value of SizeGB.
-func (s *BackupResource) SetSizeGB(val int64) {
-	s.SizeGB = val
-}
-
-// SetSourceDiskID sets the value of SourceDiskID.
-func (s *BackupResource) SetSourceDiskID(val uuid.UUID) {
-	s.SourceDiskID = val
-}
-
-// SetStatus sets the value of Status.
-func (s *BackupResource) SetStatus(val BackupResourceStatus) {
-	s.Status = val
-}
-
-type BackupResourceStatus string
-
-const (
-	BackupResourceStatusProvisioning BackupResourceStatus = "provisioning"
-	BackupResourceStatusAvailable    BackupResourceStatus = "available"
-	BackupResourceStatusRestoring    BackupResourceStatus = "restoring"
-	BackupResourceStatusDeleting     BackupResourceStatus = "deleting"
-	BackupResourceStatusError        BackupResourceStatus = "error"
-)
-
-// AllValues returns all BackupResourceStatus values.
-func (BackupResourceStatus) AllValues() []BackupResourceStatus {
-	return []BackupResourceStatus{
-		BackupResourceStatusProvisioning,
-		BackupResourceStatusAvailable,
-		BackupResourceStatusRestoring,
-		BackupResourceStatusDeleting,
-		BackupResourceStatusError,
-	}
-}
-
-// MarshalText implements encoding.TextMarshaler.
-func (s BackupResourceStatus) MarshalText() ([]byte, error) {
-	switch s {
-	case BackupResourceStatusProvisioning:
-		return []byte(s), nil
-	case BackupResourceStatusAvailable:
-		return []byte(s), nil
-	case BackupResourceStatusRestoring:
-		return []byte(s), nil
-	case BackupResourceStatusDeleting:
-		return []byte(s), nil
-	case BackupResourceStatusError:
-		return []byte(s), nil
-	default:
-		return nil, errors.Errorf("invalid value: %q", s)
-	}
-}
-
-// UnmarshalText implements encoding.TextUnmarshaler.
-func (s *BackupResourceStatus) UnmarshalText(data []byte) error {
-	switch BackupResourceStatus(data) {
-	case BackupResourceStatusProvisioning:
-		*s = BackupResourceStatusProvisioning
-		return nil
-	case BackupResourceStatusAvailable:
-		*s = BackupResourceStatusAvailable
-		return nil
-	case BackupResourceStatusRestoring:
-		*s = BackupResourceStatusRestoring
-		return nil
-	case BackupResourceStatusDeleting:
-		*s = BackupResourceStatusDeleting
-		return nil
-	case BackupResourceStatusError:
-		*s = BackupResourceStatusError
-		return nil
-	default:
-		return errors.Errorf("invalid value: %q", data)
-	}
-}
-
 type BearerAuth struct {
 	Token string
 	Roles []string
@@ -303,19 +85,32 @@ func (s *BearerAuth) SetRoles(val []string) {
 	s.Roles = val
 }
 
-// Ref: #/components/schemas/BindFloatingIPRequestBody
-type BindFloatingIPRequestBody struct {
-	PortID uuid.UUID `json:"port_id"`
+// Specify exactly one of id or lookup_key. A lookup key is scoped to the product of the resource
+// service.
+// Ref: #/components/schemas/CatalogReference
+type CatalogReference struct {
+	ID        OptUUID   `json:"id"`
+	LookupKey OptString `json:"lookup_key"`
 }
 
-// GetPortID returns the value of PortID.
-func (s *BindFloatingIPRequestBody) GetPortID() uuid.UUID {
-	return s.PortID
+// GetID returns the value of ID.
+func (s *CatalogReference) GetID() OptUUID {
+	return s.ID
 }
 
-// SetPortID sets the value of PortID.
-func (s *BindFloatingIPRequestBody) SetPortID(val uuid.UUID) {
-	s.PortID = val
+// GetLookupKey returns the value of LookupKey.
+func (s *CatalogReference) GetLookupKey() OptString {
+	return s.LookupKey
+}
+
+// SetID sets the value of ID.
+func (s *CatalogReference) SetID(val OptUUID) {
+	s.ID = val
+}
+
+// SetLookupKey sets the value of LookupKey.
+func (s *CatalogReference) SetLookupKey(val OptString) {
+	s.LookupKey = val
 }
 
 // Ref: #/components/schemas/CommandResultResponseBody
@@ -414,261 +209,6 @@ func (s *ConsoleResponseBody) SetConsoleURL(val string) {
 	s.ConsoleURL = val
 }
 
-// Ref: #/components/schemas/CreateBackupRequestBody
-type CreateBackupRequestBody struct {
-	DiskID uuid.UUID `json:"disk_id"`
-	Name   string    `json:"name"`
-}
-
-// GetDiskID returns the value of DiskID.
-func (s *CreateBackupRequestBody) GetDiskID() uuid.UUID {
-	return s.DiskID
-}
-
-// GetName returns the value of Name.
-func (s *CreateBackupRequestBody) GetName() string {
-	return s.Name
-}
-
-// SetDiskID sets the value of DiskID.
-func (s *CreateBackupRequestBody) SetDiskID(val uuid.UUID) {
-	s.DiskID = val
-}
-
-// SetName sets the value of Name.
-func (s *CreateBackupRequestBody) SetName(val string) {
-	s.Name = val
-}
-
-// Ref: #/components/schemas/CreateDiskRequestBody
-type CreateDiskRequestBody struct {
-	// A promotion code to apply to this order. Case and surrounding whitespace do not matter.
-	//
-	// An unusable code is rejected outright rather than quietly ignored: somebody who typed a code is
-	// buying at the discounted price, and letting it through silently means they pay full price expecting
-	// the discount, with nothing anywhere saying so.
-	//
-	// The discount applies to the lines the campaign covers, not the whole order — typically the
-	// instance type and memory, not the system disk, the address, or traffic. Preview it first at
-	// `POST /account/v1/billing-accounts/{accountKey}/promotion-codes/preview` to show the customer what
-	// will actually be charged.
-	//
-	// Metered orders reject any code: there is no amount to discount at this point.
-	PromotionCode OptString `json:"promotion_code"`
-	// "This is the same click". Generate one when the dialog opens — not when it is submitted — and
-	// send the same one on every retry of that action.
-	//
-	// Optional, and what happens without it is worth knowing: two identical requests inside the same
-	// minute are treated as one, because there is nothing else to tell a double-click apart from a
-	// deliberate second order. Sending your own key removes that guess entirely.
-	IdempotencyKey OptString `json:"idempotency_key"`
-	// A disk type currently on sale. A withdrawn one is rejected even though its identifier still resolves.
-	DiskTypeID uuid.UUID `json:"disk_type_id"`
-	Name       string    `json:"name"`
-	SizeGB     int64     `json:"size_gb"`
-	// Restore from this snapshot. When given, the capacity need only be no smaller than the snapshot.
-	SnapshotID OptUUID `json:"snapshot_id"`
-	// Buy the disk outright for this long, as an ISO 8601 duration (P1M, P1Y). Billed by the hour when
-	// omitted.
-	//
-	// A disk bought outright can still be expanded: the difference is prorated over the days left in the
-	// term, and the expiry date does not move. It is stopped, not deleted, when the term runs out — the
-	// data stays and comes back once renewed.
-	Term OptString `json:"term"`
-	// How to pay for a term bought outright. Only meaningful together with `term`.
-	//
-	// `balance` takes it from the account balance and either succeeds or refuses on the spot. `online`
-	// returns a `checkout_url` instead and creates nothing — the resource is only created once the money
-	// arrives and the customer comes back to place it again. That last part is deliberate: a successful
-	// payment should not silently turn into a machine, because between paying and returning they may have
-	// changed their mind.
-	//
-	// Online payment is not a second wallet. What arrives lands in the balance first and the order is
-	// settled from there, so money topped up and money paid at checkout are the same pool.
-	PaymentMethod OptCreateDiskRequestBodyPaymentMethod `json:"payment_method"`
-}
-
-// GetPromotionCode returns the value of PromotionCode.
-func (s *CreateDiskRequestBody) GetPromotionCode() OptString {
-	return s.PromotionCode
-}
-
-// GetIdempotencyKey returns the value of IdempotencyKey.
-func (s *CreateDiskRequestBody) GetIdempotencyKey() OptString {
-	return s.IdempotencyKey
-}
-
-// GetDiskTypeID returns the value of DiskTypeID.
-func (s *CreateDiskRequestBody) GetDiskTypeID() uuid.UUID {
-	return s.DiskTypeID
-}
-
-// GetName returns the value of Name.
-func (s *CreateDiskRequestBody) GetName() string {
-	return s.Name
-}
-
-// GetSizeGB returns the value of SizeGB.
-func (s *CreateDiskRequestBody) GetSizeGB() int64 {
-	return s.SizeGB
-}
-
-// GetSnapshotID returns the value of SnapshotID.
-func (s *CreateDiskRequestBody) GetSnapshotID() OptUUID {
-	return s.SnapshotID
-}
-
-// GetTerm returns the value of Term.
-func (s *CreateDiskRequestBody) GetTerm() OptString {
-	return s.Term
-}
-
-// GetPaymentMethod returns the value of PaymentMethod.
-func (s *CreateDiskRequestBody) GetPaymentMethod() OptCreateDiskRequestBodyPaymentMethod {
-	return s.PaymentMethod
-}
-
-// SetPromotionCode sets the value of PromotionCode.
-func (s *CreateDiskRequestBody) SetPromotionCode(val OptString) {
-	s.PromotionCode = val
-}
-
-// SetIdempotencyKey sets the value of IdempotencyKey.
-func (s *CreateDiskRequestBody) SetIdempotencyKey(val OptString) {
-	s.IdempotencyKey = val
-}
-
-// SetDiskTypeID sets the value of DiskTypeID.
-func (s *CreateDiskRequestBody) SetDiskTypeID(val uuid.UUID) {
-	s.DiskTypeID = val
-}
-
-// SetName sets the value of Name.
-func (s *CreateDiskRequestBody) SetName(val string) {
-	s.Name = val
-}
-
-// SetSizeGB sets the value of SizeGB.
-func (s *CreateDiskRequestBody) SetSizeGB(val int64) {
-	s.SizeGB = val
-}
-
-// SetSnapshotID sets the value of SnapshotID.
-func (s *CreateDiskRequestBody) SetSnapshotID(val OptUUID) {
-	s.SnapshotID = val
-}
-
-// SetTerm sets the value of Term.
-func (s *CreateDiskRequestBody) SetTerm(val OptString) {
-	s.Term = val
-}
-
-// SetPaymentMethod sets the value of PaymentMethod.
-func (s *CreateDiskRequestBody) SetPaymentMethod(val OptCreateDiskRequestBodyPaymentMethod) {
-	s.PaymentMethod = val
-}
-
-// How to pay for a term bought outright. Only meaningful together with `term`.
-//
-// `balance` takes it from the account balance and either succeeds or refuses on the spot. `online`
-// returns a `checkout_url` instead and creates nothing — the resource is only created once the money
-// arrives and the customer comes back to place it again. That last part is deliberate: a successful
-// payment should not silently turn into a machine, because between paying and returning they may have
-// changed their mind.
-//
-// Online payment is not a second wallet. What arrives lands in the balance first and the order is
-// settled from there, so money topped up and money paid at checkout are the same pool.
-type CreateDiskRequestBodyPaymentMethod string
-
-const (
-	CreateDiskRequestBodyPaymentMethodBalance CreateDiskRequestBodyPaymentMethod = "balance"
-	CreateDiskRequestBodyPaymentMethodOnline  CreateDiskRequestBodyPaymentMethod = "online"
-)
-
-// AllValues returns all CreateDiskRequestBodyPaymentMethod values.
-func (CreateDiskRequestBodyPaymentMethod) AllValues() []CreateDiskRequestBodyPaymentMethod {
-	return []CreateDiskRequestBodyPaymentMethod{
-		CreateDiskRequestBodyPaymentMethodBalance,
-		CreateDiskRequestBodyPaymentMethodOnline,
-	}
-}
-
-// MarshalText implements encoding.TextMarshaler.
-func (s CreateDiskRequestBodyPaymentMethod) MarshalText() ([]byte, error) {
-	switch s {
-	case CreateDiskRequestBodyPaymentMethodBalance:
-		return []byte(s), nil
-	case CreateDiskRequestBodyPaymentMethodOnline:
-		return []byte(s), nil
-	default:
-		return nil, errors.Errorf("invalid value: %q", s)
-	}
-}
-
-// UnmarshalText implements encoding.TextUnmarshaler.
-func (s *CreateDiskRequestBodyPaymentMethod) UnmarshalText(data []byte) error {
-	switch CreateDiskRequestBodyPaymentMethod(data) {
-	case CreateDiskRequestBodyPaymentMethodBalance:
-		*s = CreateDiskRequestBodyPaymentMethodBalance
-		return nil
-	case CreateDiskRequestBodyPaymentMethodOnline:
-		*s = CreateDiskRequestBodyPaymentMethodOnline
-		return nil
-	default:
-		return errors.Errorf("invalid value: %q", data)
-	}
-}
-
-// Ref: #/components/schemas/CreatePortRequestBody
-type CreatePortRequestBody struct {
-	Name OptString `json:"name"`
-	// The private address to assign. Allocated automatically when omitted.
-	PrivateIP OptString `json:"private_ip"`
-	// At least one, and all must belong to the same private network.
-	SecurityGroupIds []uuid.UUID `json:"security_group_ids"`
-	SubnetID         uuid.UUID   `json:"subnet_id"`
-}
-
-// GetName returns the value of Name.
-func (s *CreatePortRequestBody) GetName() OptString {
-	return s.Name
-}
-
-// GetPrivateIP returns the value of PrivateIP.
-func (s *CreatePortRequestBody) GetPrivateIP() OptString {
-	return s.PrivateIP
-}
-
-// GetSecurityGroupIds returns the value of SecurityGroupIds.
-func (s *CreatePortRequestBody) GetSecurityGroupIds() []uuid.UUID {
-	return s.SecurityGroupIds
-}
-
-// GetSubnetID returns the value of SubnetID.
-func (s *CreatePortRequestBody) GetSubnetID() uuid.UUID {
-	return s.SubnetID
-}
-
-// SetName sets the value of Name.
-func (s *CreatePortRequestBody) SetName(val OptString) {
-	s.Name = val
-}
-
-// SetPrivateIP sets the value of PrivateIP.
-func (s *CreatePortRequestBody) SetPrivateIP(val OptString) {
-	s.PrivateIP = val
-}
-
-// SetSecurityGroupIds sets the value of SecurityGroupIds.
-func (s *CreatePortRequestBody) SetSecurityGroupIds(val []uuid.UUID) {
-	s.SecurityGroupIds = val
-}
-
-// SetSubnetID sets the value of SubnetID.
-func (s *CreatePortRequestBody) SetSubnetID(val uuid.UUID) {
-	s.SubnetID = val
-}
-
 // Ref: #/components/schemas/CreatePrivateImageRequestBody
 type CreatePrivateImageRequestBody struct {
 	// Captured from the system disk of this instance; data disks are not included.
@@ -696,991 +236,11 @@ func (s *CreatePrivateImageRequestBody) SetName(val string) {
 	s.Name = val
 }
 
-// Ref: #/components/schemas/CreatePrivateNetworkRequestBody
-type CreatePrivateNetworkRequestBody struct {
-	// Must be an RFC 1918 private CIDR with a prefix length between /8 and /24, for example `10.0.0.0/16`.
-	Cidr       string `json:"cidr"`
-	Name       string `json:"name"`
-	RegionCode string `json:"region_code"`
-}
-
-// GetCidr returns the value of Cidr.
-func (s *CreatePrivateNetworkRequestBody) GetCidr() string {
-	return s.Cidr
-}
-
-// GetName returns the value of Name.
-func (s *CreatePrivateNetworkRequestBody) GetName() string {
-	return s.Name
-}
-
-// GetRegionCode returns the value of RegionCode.
-func (s *CreatePrivateNetworkRequestBody) GetRegionCode() string {
-	return s.RegionCode
-}
-
-// SetCidr sets the value of Cidr.
-func (s *CreatePrivateNetworkRequestBody) SetCidr(val string) {
-	s.Cidr = val
-}
-
-// SetName sets the value of Name.
-func (s *CreatePrivateNetworkRequestBody) SetName(val string) {
-	s.Name = val
-}
-
-// SetRegionCode sets the value of RegionCode.
-func (s *CreatePrivateNetworkRequestBody) SetRegionCode(val string) {
-	s.RegionCode = val
-}
-
-// Ref: #/components/schemas/CreateRouteRequestBody
-type CreateRouteRequestBody struct {
-	Description OptString `json:"description"`
-	// Destination CIDR. It cannot be `0.0.0.0/0`, nor the CIDR of a subnet of this network.
-	Destination string `json:"destination"`
-	// Private address of an instance; must fall inside a subnet of this private network.
-	Nexthop string `json:"nexthop"`
-}
-
-// GetDescription returns the value of Description.
-func (s *CreateRouteRequestBody) GetDescription() OptString {
-	return s.Description
-}
-
-// GetDestination returns the value of Destination.
-func (s *CreateRouteRequestBody) GetDestination() string {
-	return s.Destination
-}
-
-// GetNexthop returns the value of Nexthop.
-func (s *CreateRouteRequestBody) GetNexthop() string {
-	return s.Nexthop
-}
-
-// SetDescription sets the value of Description.
-func (s *CreateRouteRequestBody) SetDescription(val OptString) {
-	s.Description = val
-}
-
-// SetDestination sets the value of Destination.
-func (s *CreateRouteRequestBody) SetDestination(val string) {
-	s.Destination = val
-}
-
-// SetNexthop sets the value of Nexthop.
-func (s *CreateRouteRequestBody) SetNexthop(val string) {
-	s.Nexthop = val
-}
-
-// Ref: #/components/schemas/CreateSecurityGroupRequestBody
-type CreateSecurityGroupRequestBody struct {
-	Description      OptString `json:"description"`
-	Name             string    `json:"name"`
-	PrivateNetworkID uuid.UUID `json:"private_network_id"`
-}
-
-// GetDescription returns the value of Description.
-func (s *CreateSecurityGroupRequestBody) GetDescription() OptString {
-	return s.Description
-}
-
-// GetName returns the value of Name.
-func (s *CreateSecurityGroupRequestBody) GetName() string {
-	return s.Name
-}
-
-// GetPrivateNetworkID returns the value of PrivateNetworkID.
-func (s *CreateSecurityGroupRequestBody) GetPrivateNetworkID() uuid.UUID {
-	return s.PrivateNetworkID
-}
-
-// SetDescription sets the value of Description.
-func (s *CreateSecurityGroupRequestBody) SetDescription(val OptString) {
-	s.Description = val
-}
-
-// SetName sets the value of Name.
-func (s *CreateSecurityGroupRequestBody) SetName(val string) {
-	s.Name = val
-}
-
-// SetPrivateNetworkID sets the value of PrivateNetworkID.
-func (s *CreateSecurityGroupRequestBody) SetPrivateNetworkID(val uuid.UUID) {
-	s.PrivateNetworkID = val
-}
-
-// Ref: #/components/schemas/CreateSecurityRuleRequestBody
-type CreateSecurityRuleRequestBody struct {
-	Description OptString                              `json:"description"`
-	Direction   CreateSecurityRuleRequestBodyDirection `json:"direction"`
-	Ethertype   CreateSecurityRuleRequestBodyEthertype `json:"ethertype"`
-	// Denotes the ICMP code (0–255) rather than a port when the protocol is ICMP.
-	PortRangeMax OptNilInt64 `json:"port_range_max"`
-	// Denotes the ICMP type (0–255) rather than a port when the protocol is ICMP.
-	PortRangeMin OptNilInt64 `json:"port_range_min"`
-	// For example `tcp`, `udp`, `icmp` or `ipv6-icmp`. All protocols when omitted.
-	Protocol OptString `json:"protocol"`
-	// Equivalent to `0.0.0.0/0` or `::/0` when omitted.
-	RemoteIPPrefix OptString `json:"remote_ip_prefix"`
-}
-
-// GetDescription returns the value of Description.
-func (s *CreateSecurityRuleRequestBody) GetDescription() OptString {
-	return s.Description
-}
-
-// GetDirection returns the value of Direction.
-func (s *CreateSecurityRuleRequestBody) GetDirection() CreateSecurityRuleRequestBodyDirection {
-	return s.Direction
-}
-
-// GetEthertype returns the value of Ethertype.
-func (s *CreateSecurityRuleRequestBody) GetEthertype() CreateSecurityRuleRequestBodyEthertype {
-	return s.Ethertype
-}
-
-// GetPortRangeMax returns the value of PortRangeMax.
-func (s *CreateSecurityRuleRequestBody) GetPortRangeMax() OptNilInt64 {
-	return s.PortRangeMax
-}
-
-// GetPortRangeMin returns the value of PortRangeMin.
-func (s *CreateSecurityRuleRequestBody) GetPortRangeMin() OptNilInt64 {
-	return s.PortRangeMin
-}
-
-// GetProtocol returns the value of Protocol.
-func (s *CreateSecurityRuleRequestBody) GetProtocol() OptString {
-	return s.Protocol
-}
-
-// GetRemoteIPPrefix returns the value of RemoteIPPrefix.
-func (s *CreateSecurityRuleRequestBody) GetRemoteIPPrefix() OptString {
-	return s.RemoteIPPrefix
-}
-
-// SetDescription sets the value of Description.
-func (s *CreateSecurityRuleRequestBody) SetDescription(val OptString) {
-	s.Description = val
-}
-
-// SetDirection sets the value of Direction.
-func (s *CreateSecurityRuleRequestBody) SetDirection(val CreateSecurityRuleRequestBodyDirection) {
-	s.Direction = val
-}
-
-// SetEthertype sets the value of Ethertype.
-func (s *CreateSecurityRuleRequestBody) SetEthertype(val CreateSecurityRuleRequestBodyEthertype) {
-	s.Ethertype = val
-}
-
-// SetPortRangeMax sets the value of PortRangeMax.
-func (s *CreateSecurityRuleRequestBody) SetPortRangeMax(val OptNilInt64) {
-	s.PortRangeMax = val
-}
-
-// SetPortRangeMin sets the value of PortRangeMin.
-func (s *CreateSecurityRuleRequestBody) SetPortRangeMin(val OptNilInt64) {
-	s.PortRangeMin = val
-}
-
-// SetProtocol sets the value of Protocol.
-func (s *CreateSecurityRuleRequestBody) SetProtocol(val OptString) {
-	s.Protocol = val
-}
-
-// SetRemoteIPPrefix sets the value of RemoteIPPrefix.
-func (s *CreateSecurityRuleRequestBody) SetRemoteIPPrefix(val OptString) {
-	s.RemoteIPPrefix = val
-}
-
-type CreateSecurityRuleRequestBodyDirection string
-
-const (
-	CreateSecurityRuleRequestBodyDirectionIngress CreateSecurityRuleRequestBodyDirection = "ingress"
-	CreateSecurityRuleRequestBodyDirectionEgress  CreateSecurityRuleRequestBodyDirection = "egress"
-)
-
-// AllValues returns all CreateSecurityRuleRequestBodyDirection values.
-func (CreateSecurityRuleRequestBodyDirection) AllValues() []CreateSecurityRuleRequestBodyDirection {
-	return []CreateSecurityRuleRequestBodyDirection{
-		CreateSecurityRuleRequestBodyDirectionIngress,
-		CreateSecurityRuleRequestBodyDirectionEgress,
-	}
-}
-
-// MarshalText implements encoding.TextMarshaler.
-func (s CreateSecurityRuleRequestBodyDirection) MarshalText() ([]byte, error) {
-	switch s {
-	case CreateSecurityRuleRequestBodyDirectionIngress:
-		return []byte(s), nil
-	case CreateSecurityRuleRequestBodyDirectionEgress:
-		return []byte(s), nil
-	default:
-		return nil, errors.Errorf("invalid value: %q", s)
-	}
-}
-
-// UnmarshalText implements encoding.TextUnmarshaler.
-func (s *CreateSecurityRuleRequestBodyDirection) UnmarshalText(data []byte) error {
-	switch CreateSecurityRuleRequestBodyDirection(data) {
-	case CreateSecurityRuleRequestBodyDirectionIngress:
-		*s = CreateSecurityRuleRequestBodyDirectionIngress
-		return nil
-	case CreateSecurityRuleRequestBodyDirectionEgress:
-		*s = CreateSecurityRuleRequestBodyDirectionEgress
-		return nil
-	default:
-		return errors.Errorf("invalid value: %q", data)
-	}
-}
-
-type CreateSecurityRuleRequestBodyEthertype string
-
-const (
-	CreateSecurityRuleRequestBodyEthertypeIPv4 CreateSecurityRuleRequestBodyEthertype = "IPv4"
-	CreateSecurityRuleRequestBodyEthertypeIPv6 CreateSecurityRuleRequestBodyEthertype = "IPv6"
-)
-
-// AllValues returns all CreateSecurityRuleRequestBodyEthertype values.
-func (CreateSecurityRuleRequestBodyEthertype) AllValues() []CreateSecurityRuleRequestBodyEthertype {
-	return []CreateSecurityRuleRequestBodyEthertype{
-		CreateSecurityRuleRequestBodyEthertypeIPv4,
-		CreateSecurityRuleRequestBodyEthertypeIPv6,
-	}
-}
-
-// MarshalText implements encoding.TextMarshaler.
-func (s CreateSecurityRuleRequestBodyEthertype) MarshalText() ([]byte, error) {
-	switch s {
-	case CreateSecurityRuleRequestBodyEthertypeIPv4:
-		return []byte(s), nil
-	case CreateSecurityRuleRequestBodyEthertypeIPv6:
-		return []byte(s), nil
-	default:
-		return nil, errors.Errorf("invalid value: %q", s)
-	}
-}
-
-// UnmarshalText implements encoding.TextUnmarshaler.
-func (s *CreateSecurityRuleRequestBodyEthertype) UnmarshalText(data []byte) error {
-	switch CreateSecurityRuleRequestBodyEthertype(data) {
-	case CreateSecurityRuleRequestBodyEthertypeIPv4:
-		*s = CreateSecurityRuleRequestBodyEthertypeIPv4
-		return nil
-	case CreateSecurityRuleRequestBodyEthertypeIPv6:
-		*s = CreateSecurityRuleRequestBodyEthertypeIPv6
-		return nil
-	default:
-		return errors.Errorf("invalid value: %q", data)
-	}
-}
-
-// Ref: #/components/schemas/CreateSnapshotRequestBody
-type CreateSnapshotRequestBody struct {
-	DiskID uuid.UUID `json:"disk_id"`
-	Name   string    `json:"name"`
-}
-
-// GetDiskID returns the value of DiskID.
-func (s *CreateSnapshotRequestBody) GetDiskID() uuid.UUID {
-	return s.DiskID
-}
-
-// GetName returns the value of Name.
-func (s *CreateSnapshotRequestBody) GetName() string {
-	return s.Name
-}
-
-// SetDiskID sets the value of DiskID.
-func (s *CreateSnapshotRequestBody) SetDiskID(val uuid.UUID) {
-	s.DiskID = val
-}
-
-// SetName sets the value of Name.
-func (s *CreateSnapshotRequestBody) SetName(val string) {
-	s.Name = val
-}
-
-// Ref: #/components/schemas/CreateSubnetRequestBody
-type CreateSubnetRequestBody struct {
-	// Must fall inside the CIDR of the private network and must not overlap an existing subnet.
-	Cidr string `json:"cidr"`
-	Name string `json:"name"`
-}
-
-// GetCidr returns the value of Cidr.
-func (s *CreateSubnetRequestBody) GetCidr() string {
-	return s.Cidr
-}
-
-// GetName returns the value of Name.
-func (s *CreateSubnetRequestBody) GetName() string {
-	return s.Name
-}
-
-// SetCidr sets the value of Cidr.
-func (s *CreateSubnetRequestBody) SetCidr(val string) {
-	s.Cidr = val
-}
-
-// SetName sets the value of Name.
-func (s *CreateSubnetRequestBody) SetName(val string) {
-	s.Name = val
-}
-
-// DeleteBackupNoContent is response for DeleteBackup operation.
-type DeleteBackupNoContent struct{}
-
-// DeleteDiskNoContent is response for DeleteDisk operation.
-type DeleteDiskNoContent struct{}
-
 // DeleteInstanceNoContent is response for DeleteInstance operation.
 type DeleteInstanceNoContent struct{}
 
-// DeletePortNoContent is response for DeletePort operation.
-type DeletePortNoContent struct{}
-
 // DeletePrivateImageNoContent is response for DeletePrivateImage operation.
 type DeletePrivateImageNoContent struct{}
-
-// DeletePrivateNetworkNoContent is response for DeletePrivateNetwork operation.
-type DeletePrivateNetworkNoContent struct{}
-
-// DeleteRouteNoContent is response for DeleteRoute operation.
-type DeleteRouteNoContent struct{}
-
-// DeleteSecurityGroupNoContent is response for DeleteSecurityGroup operation.
-type DeleteSecurityGroupNoContent struct{}
-
-// DeleteSecurityGroupRuleNoContent is response for DeleteSecurityGroupRule operation.
-type DeleteSecurityGroupRuleNoContent struct{}
-
-// DeleteSnapshotNoContent is response for DeleteSnapshot operation.
-type DeleteSnapshotNoContent struct{}
-
-// DeleteSubnetNoContent is response for DeleteSubnet operation.
-type DeleteSubnetNoContent struct{}
-
-// DisablePrivateNetworkIpv6NoContent is response for DisablePrivateNetworkIpv6 operation.
-type DisablePrivateNetworkIpv6NoContent struct{}
-
-// Ref: #/components/schemas/DiskListResponseBody
-type DiskListResponseBody struct {
-	Items []DiskResource `json:"items"`
-}
-
-// GetItems returns the value of Items.
-func (s *DiskListResponseBody) GetItems() []DiskResource {
-	return s.Items
-}
-
-// SetItems sets the value of Items.
-func (s *DiskListResponseBody) SetItems(val []DiskResource) {
-	s.Items = val
-}
-
-// Ref: #/components/schemas/DiskResource
-type DiskResource struct {
-	AttachedInstanceID NilString `json:"attached_instance_id"`
-	// Availability zone the disk actually resides in. An instance must be in the same zone to attach it.
-	AvailabilityZone string    `json:"availability_zone"`
-	CreatedAt        time.Time `json:"created_at"`
-	// Device name assigned by the system, as seen inside the instance.
-	Device     NilString `json:"device"`
-	DiskTypeID uuid.UUID `json:"disk_type_id"`
-	ID         uuid.UUID `json:"id"`
-	// A system disk is released with its instance and can be neither detached nor deleted individually.
-	IsSystem   bool   `json:"is_system"`
-	Name       string `json:"name"`
-	RegionCode string `json:"region_code"`
-	SizeGB     int64  `json:"size_gb"`
-	// IOPS this disk is allowed. Null when its type is not rate-limited.
-	//
-	// Computed from the disk's own capacity, so it grows when the disk is grown — but see the note on
-	// the resize endpoint: growing a disk that is attached is refused, precisely because the new figure
-	// would not take effect until it was attached again.
-	Iops NilInt64 `json:"iops"`
-	// Throughput this disk is allowed, in bytes per second. Null when its type is not rate-limited.
-	ThroughputBytesPerSec NilInt64           `json:"throughput_bytes_per_sec"`
-	Status                DiskResourceStatus `json:"status"`
-	// How this disk is paid for. `postpaid` is billed by the hour for as long as it exists; `prepaid` was
-	// bought outright for a term.
-	//
-	// Not the term. How long it was bought for belongs to the order, not to the disk: renewing can change
-	// it, and a machine bought for a year and then renewed for a month is still a prepaid machine. Ask
-	// billing for the term and the expiry — they live there, and they are the only two values a renewal
-	// moves.
-	ChargeType DiskResourceChargeType `json:"charge_type"`
-}
-
-// GetAttachedInstanceID returns the value of AttachedInstanceID.
-func (s *DiskResource) GetAttachedInstanceID() NilString {
-	return s.AttachedInstanceID
-}
-
-// GetAvailabilityZone returns the value of AvailabilityZone.
-func (s *DiskResource) GetAvailabilityZone() string {
-	return s.AvailabilityZone
-}
-
-// GetCreatedAt returns the value of CreatedAt.
-func (s *DiskResource) GetCreatedAt() time.Time {
-	return s.CreatedAt
-}
-
-// GetDevice returns the value of Device.
-func (s *DiskResource) GetDevice() NilString {
-	return s.Device
-}
-
-// GetDiskTypeID returns the value of DiskTypeID.
-func (s *DiskResource) GetDiskTypeID() uuid.UUID {
-	return s.DiskTypeID
-}
-
-// GetID returns the value of ID.
-func (s *DiskResource) GetID() uuid.UUID {
-	return s.ID
-}
-
-// GetIsSystem returns the value of IsSystem.
-func (s *DiskResource) GetIsSystem() bool {
-	return s.IsSystem
-}
-
-// GetName returns the value of Name.
-func (s *DiskResource) GetName() string {
-	return s.Name
-}
-
-// GetRegionCode returns the value of RegionCode.
-func (s *DiskResource) GetRegionCode() string {
-	return s.RegionCode
-}
-
-// GetSizeGB returns the value of SizeGB.
-func (s *DiskResource) GetSizeGB() int64 {
-	return s.SizeGB
-}
-
-// GetIops returns the value of Iops.
-func (s *DiskResource) GetIops() NilInt64 {
-	return s.Iops
-}
-
-// GetThroughputBytesPerSec returns the value of ThroughputBytesPerSec.
-func (s *DiskResource) GetThroughputBytesPerSec() NilInt64 {
-	return s.ThroughputBytesPerSec
-}
-
-// GetStatus returns the value of Status.
-func (s *DiskResource) GetStatus() DiskResourceStatus {
-	return s.Status
-}
-
-// GetChargeType returns the value of ChargeType.
-func (s *DiskResource) GetChargeType() DiskResourceChargeType {
-	return s.ChargeType
-}
-
-// SetAttachedInstanceID sets the value of AttachedInstanceID.
-func (s *DiskResource) SetAttachedInstanceID(val NilString) {
-	s.AttachedInstanceID = val
-}
-
-// SetAvailabilityZone sets the value of AvailabilityZone.
-func (s *DiskResource) SetAvailabilityZone(val string) {
-	s.AvailabilityZone = val
-}
-
-// SetCreatedAt sets the value of CreatedAt.
-func (s *DiskResource) SetCreatedAt(val time.Time) {
-	s.CreatedAt = val
-}
-
-// SetDevice sets the value of Device.
-func (s *DiskResource) SetDevice(val NilString) {
-	s.Device = val
-}
-
-// SetDiskTypeID sets the value of DiskTypeID.
-func (s *DiskResource) SetDiskTypeID(val uuid.UUID) {
-	s.DiskTypeID = val
-}
-
-// SetID sets the value of ID.
-func (s *DiskResource) SetID(val uuid.UUID) {
-	s.ID = val
-}
-
-// SetIsSystem sets the value of IsSystem.
-func (s *DiskResource) SetIsSystem(val bool) {
-	s.IsSystem = val
-}
-
-// SetName sets the value of Name.
-func (s *DiskResource) SetName(val string) {
-	s.Name = val
-}
-
-// SetRegionCode sets the value of RegionCode.
-func (s *DiskResource) SetRegionCode(val string) {
-	s.RegionCode = val
-}
-
-// SetSizeGB sets the value of SizeGB.
-func (s *DiskResource) SetSizeGB(val int64) {
-	s.SizeGB = val
-}
-
-// SetIops sets the value of Iops.
-func (s *DiskResource) SetIops(val NilInt64) {
-	s.Iops = val
-}
-
-// SetThroughputBytesPerSec sets the value of ThroughputBytesPerSec.
-func (s *DiskResource) SetThroughputBytesPerSec(val NilInt64) {
-	s.ThroughputBytesPerSec = val
-}
-
-// SetStatus sets the value of Status.
-func (s *DiskResource) SetStatus(val DiskResourceStatus) {
-	s.Status = val
-}
-
-// SetChargeType sets the value of ChargeType.
-func (s *DiskResource) SetChargeType(val DiskResourceChargeType) {
-	s.ChargeType = val
-}
-
-func (*DiskResource) createDiskRes() {}
-
-// How this disk is paid for. `postpaid` is billed by the hour for as long as it exists; `prepaid` was
-// bought outright for a term.
-//
-// Not the term. How long it was bought for belongs to the order, not to the disk: renewing can change
-// it, and a machine bought for a year and then renewed for a month is still a prepaid machine. Ask
-// billing for the term and the expiry — they live there, and they are the only two values a renewal
-// moves.
-type DiskResourceChargeType string
-
-const (
-	DiskResourceChargeTypePostpaid DiskResourceChargeType = "postpaid"
-	DiskResourceChargeTypePrepaid  DiskResourceChargeType = "prepaid"
-)
-
-// AllValues returns all DiskResourceChargeType values.
-func (DiskResourceChargeType) AllValues() []DiskResourceChargeType {
-	return []DiskResourceChargeType{
-		DiskResourceChargeTypePostpaid,
-		DiskResourceChargeTypePrepaid,
-	}
-}
-
-// MarshalText implements encoding.TextMarshaler.
-func (s DiskResourceChargeType) MarshalText() ([]byte, error) {
-	switch s {
-	case DiskResourceChargeTypePostpaid:
-		return []byte(s), nil
-	case DiskResourceChargeTypePrepaid:
-		return []byte(s), nil
-	default:
-		return nil, errors.Errorf("invalid value: %q", s)
-	}
-}
-
-// UnmarshalText implements encoding.TextUnmarshaler.
-func (s *DiskResourceChargeType) UnmarshalText(data []byte) error {
-	switch DiskResourceChargeType(data) {
-	case DiskResourceChargeTypePostpaid:
-		*s = DiskResourceChargeTypePostpaid
-		return nil
-	case DiskResourceChargeTypePrepaid:
-		*s = DiskResourceChargeTypePrepaid
-		return nil
-	default:
-		return errors.Errorf("invalid value: %q", data)
-	}
-}
-
-type DiskResourceStatus string
-
-const (
-	DiskResourceStatusProvisioning DiskResourceStatus = "provisioning"
-	DiskResourceStatusAvailable    DiskResourceStatus = "available"
-	DiskResourceStatusAttaching    DiskResourceStatus = "attaching"
-	DiskResourceStatusInUse        DiskResourceStatus = "in_use"
-	DiskResourceStatusDetaching    DiskResourceStatus = "detaching"
-	DiskResourceStatusResizing     DiskResourceStatus = "resizing"
-	DiskResourceStatusReverting    DiskResourceStatus = "reverting"
-	DiskResourceStatusRestoring    DiskResourceStatus = "restoring"
-	DiskResourceStatusReleasing    DiskResourceStatus = "releasing"
-	DiskResourceStatusDeleting     DiskResourceStatus = "deleting"
-	DiskResourceStatusError        DiskResourceStatus = "error"
-)
-
-// AllValues returns all DiskResourceStatus values.
-func (DiskResourceStatus) AllValues() []DiskResourceStatus {
-	return []DiskResourceStatus{
-		DiskResourceStatusProvisioning,
-		DiskResourceStatusAvailable,
-		DiskResourceStatusAttaching,
-		DiskResourceStatusInUse,
-		DiskResourceStatusDetaching,
-		DiskResourceStatusResizing,
-		DiskResourceStatusReverting,
-		DiskResourceStatusRestoring,
-		DiskResourceStatusReleasing,
-		DiskResourceStatusDeleting,
-		DiskResourceStatusError,
-	}
-}
-
-// MarshalText implements encoding.TextMarshaler.
-func (s DiskResourceStatus) MarshalText() ([]byte, error) {
-	switch s {
-	case DiskResourceStatusProvisioning:
-		return []byte(s), nil
-	case DiskResourceStatusAvailable:
-		return []byte(s), nil
-	case DiskResourceStatusAttaching:
-		return []byte(s), nil
-	case DiskResourceStatusInUse:
-		return []byte(s), nil
-	case DiskResourceStatusDetaching:
-		return []byte(s), nil
-	case DiskResourceStatusResizing:
-		return []byte(s), nil
-	case DiskResourceStatusReverting:
-		return []byte(s), nil
-	case DiskResourceStatusRestoring:
-		return []byte(s), nil
-	case DiskResourceStatusReleasing:
-		return []byte(s), nil
-	case DiskResourceStatusDeleting:
-		return []byte(s), nil
-	case DiskResourceStatusError:
-		return []byte(s), nil
-	default:
-		return nil, errors.Errorf("invalid value: %q", s)
-	}
-}
-
-// UnmarshalText implements encoding.TextUnmarshaler.
-func (s *DiskResourceStatus) UnmarshalText(data []byte) error {
-	switch DiskResourceStatus(data) {
-	case DiskResourceStatusProvisioning:
-		*s = DiskResourceStatusProvisioning
-		return nil
-	case DiskResourceStatusAvailable:
-		*s = DiskResourceStatusAvailable
-		return nil
-	case DiskResourceStatusAttaching:
-		*s = DiskResourceStatusAttaching
-		return nil
-	case DiskResourceStatusInUse:
-		*s = DiskResourceStatusInUse
-		return nil
-	case DiskResourceStatusDetaching:
-		*s = DiskResourceStatusDetaching
-		return nil
-	case DiskResourceStatusResizing:
-		*s = DiskResourceStatusResizing
-		return nil
-	case DiskResourceStatusReverting:
-		*s = DiskResourceStatusReverting
-		return nil
-	case DiskResourceStatusRestoring:
-		*s = DiskResourceStatusRestoring
-		return nil
-	case DiskResourceStatusReleasing:
-		*s = DiskResourceStatusReleasing
-		return nil
-	case DiskResourceStatusDeleting:
-		*s = DiskResourceStatusDeleting
-		return nil
-	case DiskResourceStatusError:
-		*s = DiskResourceStatusError
-		return nil
-	default:
-		return errors.Errorf("invalid value: %q", data)
-	}
-}
-
-// Ref: #/components/schemas/DiskTypeListResponseBody
-type DiskTypeListResponseBody struct {
-	Items []DiskTypeResource `json:"items"`
-}
-
-// GetItems returns the value of Items.
-func (s *DiskTypeListResponseBody) GetItems() []DiskTypeResource {
-	return s.Items
-}
-
-// SetItems sets the value of Items.
-func (s *DiskTypeListResponseBody) SetItems(val []DiskTypeResource) {
-	s.Items = val
-}
-
-// Ref: #/components/schemas/DiskTypeResource
-type DiskTypeResource struct {
-	AvailabilityZoneCode string    `json:"availability_zone_code"`
-	ID                   uuid.UUID `json:"id"`
-	// IOPS a disk of `min_size_gb` gets. Null when this type is not rate-limited.
-	//
-	// Performance grows with capacity, so this and `iops_at_max_size` are the two ends of the range. The
-	// exact figure for the size actually bought appears on the disk itself once it exists.
-	IopsAtMinSize NilInt64 `json:"iops_at_min_size"`
-	// IOPS a disk of `max_size_gb` gets. Null when this type is not rate-limited.
-	IopsAtMaxSize NilInt64              `json:"iops_at_max_size"`
-	MaxSizeGB     int64                 `json:"max_size_gb"`
-	Media         DiskTypeResourceMedia `json:"media"`
-	MinSizeGB     int64                 `json:"min_size_gb"`
-	Name          string                `json:"name"`
-	RegionCode    string                `json:"region_code"`
-	StepGB        int64                 `json:"step_gb"`
-	// Throughput a disk of `min_size_gb` gets, in bytes per second. Null when this type is not
-	// rate-limited.
-	//
-	// Bytes rather than MiB so the number needs no rounding on the way out; divide by 1048576 for MiB/s at
-	// the point of display.
-	ThroughputAtMinSize NilInt64 `json:"throughput_at_min_size"`
-	// Throughput a disk of `max_size_gb` gets, in bytes per second. Null when this type is not
-	// rate-limited.
-	ThroughputAtMaxSize NilInt64 `json:"throughput_at_max_size"`
-	// Whether any capacity is left in this type's pool.
-	//
-	// The same shape as on an instance type, but it answers less here: a disk is sold by the GiB, so "not
-	// sold out" does not mean the size being asked for fits. `remaining` is the field that decides that,
-	// and this one only says whether the pool is empty outright.
-	//
-	// It reflects a limit set by operations, not what the storage backend physically has — raising the
-	// limit does not create capacity, and a type that is not sold out can still fail to create if the
-	// backend is full.
-	//
-	// Advisory: it is read when the list is built, and capacity can be taken between that read and the
-	// order. The order is what actually refuses.
-	SoldOut bool `json:"sold_out"`
-	// How much capacity is left, in GiB. Absent when this type is not limited at all.
-	//
-	// Unlike an instance type, where this is a count of machines, here it is an amount of storage — and
-	// it is the number that bounds the size a customer may ask for. A picker that offers sizes above it
-	// produces orders that are refused after the customer has chosen everything else.
-	//
-	// Absent is not zero and not "unknown": a type with no limit simply has no number to show. Reporting
-	// it as a number would need a sentinel, and any sentinel eventually gets compared against a real size.
-	Remaining OptInt64 `json:"remaining"`
-	// What buying this type outright costs, per term. Empty means this type is only sold by the hour.
-	//
-	// The amount is per GiB for the whole term, not the price of one disk: a disk's size is chosen by the
-	// customer, so the total is this figure times the size. That differs from an instance type, where the
-	// same field is the price of one machine — the unit follows what the product is sold by, and the
-	// order is priced the same way.
-	//
-	// Advisory, like `sold_out`: it is read when the list is built. The order is what fixes the price, and
-	// it refuses rather than falling back to hourly if the term is not sold.
-	PrepaidPrices []PrepaidPrice `json:"prepaid_prices"`
-}
-
-// GetAvailabilityZoneCode returns the value of AvailabilityZoneCode.
-func (s *DiskTypeResource) GetAvailabilityZoneCode() string {
-	return s.AvailabilityZoneCode
-}
-
-// GetID returns the value of ID.
-func (s *DiskTypeResource) GetID() uuid.UUID {
-	return s.ID
-}
-
-// GetIopsAtMinSize returns the value of IopsAtMinSize.
-func (s *DiskTypeResource) GetIopsAtMinSize() NilInt64 {
-	return s.IopsAtMinSize
-}
-
-// GetIopsAtMaxSize returns the value of IopsAtMaxSize.
-func (s *DiskTypeResource) GetIopsAtMaxSize() NilInt64 {
-	return s.IopsAtMaxSize
-}
-
-// GetMaxSizeGB returns the value of MaxSizeGB.
-func (s *DiskTypeResource) GetMaxSizeGB() int64 {
-	return s.MaxSizeGB
-}
-
-// GetMedia returns the value of Media.
-func (s *DiskTypeResource) GetMedia() DiskTypeResourceMedia {
-	return s.Media
-}
-
-// GetMinSizeGB returns the value of MinSizeGB.
-func (s *DiskTypeResource) GetMinSizeGB() int64 {
-	return s.MinSizeGB
-}
-
-// GetName returns the value of Name.
-func (s *DiskTypeResource) GetName() string {
-	return s.Name
-}
-
-// GetRegionCode returns the value of RegionCode.
-func (s *DiskTypeResource) GetRegionCode() string {
-	return s.RegionCode
-}
-
-// GetStepGB returns the value of StepGB.
-func (s *DiskTypeResource) GetStepGB() int64 {
-	return s.StepGB
-}
-
-// GetThroughputAtMinSize returns the value of ThroughputAtMinSize.
-func (s *DiskTypeResource) GetThroughputAtMinSize() NilInt64 {
-	return s.ThroughputAtMinSize
-}
-
-// GetThroughputAtMaxSize returns the value of ThroughputAtMaxSize.
-func (s *DiskTypeResource) GetThroughputAtMaxSize() NilInt64 {
-	return s.ThroughputAtMaxSize
-}
-
-// GetSoldOut returns the value of SoldOut.
-func (s *DiskTypeResource) GetSoldOut() bool {
-	return s.SoldOut
-}
-
-// GetRemaining returns the value of Remaining.
-func (s *DiskTypeResource) GetRemaining() OptInt64 {
-	return s.Remaining
-}
-
-// GetPrepaidPrices returns the value of PrepaidPrices.
-func (s *DiskTypeResource) GetPrepaidPrices() []PrepaidPrice {
-	return s.PrepaidPrices
-}
-
-// SetAvailabilityZoneCode sets the value of AvailabilityZoneCode.
-func (s *DiskTypeResource) SetAvailabilityZoneCode(val string) {
-	s.AvailabilityZoneCode = val
-}
-
-// SetID sets the value of ID.
-func (s *DiskTypeResource) SetID(val uuid.UUID) {
-	s.ID = val
-}
-
-// SetIopsAtMinSize sets the value of IopsAtMinSize.
-func (s *DiskTypeResource) SetIopsAtMinSize(val NilInt64) {
-	s.IopsAtMinSize = val
-}
-
-// SetIopsAtMaxSize sets the value of IopsAtMaxSize.
-func (s *DiskTypeResource) SetIopsAtMaxSize(val NilInt64) {
-	s.IopsAtMaxSize = val
-}
-
-// SetMaxSizeGB sets the value of MaxSizeGB.
-func (s *DiskTypeResource) SetMaxSizeGB(val int64) {
-	s.MaxSizeGB = val
-}
-
-// SetMedia sets the value of Media.
-func (s *DiskTypeResource) SetMedia(val DiskTypeResourceMedia) {
-	s.Media = val
-}
-
-// SetMinSizeGB sets the value of MinSizeGB.
-func (s *DiskTypeResource) SetMinSizeGB(val int64) {
-	s.MinSizeGB = val
-}
-
-// SetName sets the value of Name.
-func (s *DiskTypeResource) SetName(val string) {
-	s.Name = val
-}
-
-// SetRegionCode sets the value of RegionCode.
-func (s *DiskTypeResource) SetRegionCode(val string) {
-	s.RegionCode = val
-}
-
-// SetStepGB sets the value of StepGB.
-func (s *DiskTypeResource) SetStepGB(val int64) {
-	s.StepGB = val
-}
-
-// SetThroughputAtMinSize sets the value of ThroughputAtMinSize.
-func (s *DiskTypeResource) SetThroughputAtMinSize(val NilInt64) {
-	s.ThroughputAtMinSize = val
-}
-
-// SetThroughputAtMaxSize sets the value of ThroughputAtMaxSize.
-func (s *DiskTypeResource) SetThroughputAtMaxSize(val NilInt64) {
-	s.ThroughputAtMaxSize = val
-}
-
-// SetSoldOut sets the value of SoldOut.
-func (s *DiskTypeResource) SetSoldOut(val bool) {
-	s.SoldOut = val
-}
-
-// SetRemaining sets the value of Remaining.
-func (s *DiskTypeResource) SetRemaining(val OptInt64) {
-	s.Remaining = val
-}
-
-// SetPrepaidPrices sets the value of PrepaidPrices.
-func (s *DiskTypeResource) SetPrepaidPrices(val []PrepaidPrice) {
-	s.PrepaidPrices = val
-}
-
-type DiskTypeResourceMedia string
-
-const (
-	DiskTypeResourceMediaSsd  DiskTypeResourceMedia = "ssd"
-	DiskTypeResourceMediaHdd  DiskTypeResourceMedia = "hdd"
-	DiskTypeResourceMediaNvme DiskTypeResourceMedia = "nvme"
-)
-
-// AllValues returns all DiskTypeResourceMedia values.
-func (DiskTypeResourceMedia) AllValues() []DiskTypeResourceMedia {
-	return []DiskTypeResourceMedia{
-		DiskTypeResourceMediaSsd,
-		DiskTypeResourceMediaHdd,
-		DiskTypeResourceMediaNvme,
-	}
-}
-
-// MarshalText implements encoding.TextMarshaler.
-func (s DiskTypeResourceMedia) MarshalText() ([]byte, error) {
-	switch s {
-	case DiskTypeResourceMediaSsd:
-		return []byte(s), nil
-	case DiskTypeResourceMediaHdd:
-		return []byte(s), nil
-	case DiskTypeResourceMediaNvme:
-		return []byte(s), nil
-	default:
-		return nil, errors.Errorf("invalid value: %q", s)
-	}
-}
-
-// UnmarshalText implements encoding.TextUnmarshaler.
-func (s *DiskTypeResourceMedia) UnmarshalText(data []byte) error {
-	switch DiskTypeResourceMedia(data) {
-	case DiskTypeResourceMediaSsd:
-		*s = DiskTypeResourceMediaSsd
-		return nil
-	case DiskTypeResourceMediaHdd:
-		*s = DiskTypeResourceMediaHdd
-		return nil
-	case DiskTypeResourceMediaNvme:
-		*s = DiskTypeResourceMediaNvme
-		return nil
-	default:
-		return errors.Errorf("invalid value: %q", data)
-	}
-}
 
 // Ref: #/components/schemas/Error
 type Error struct {
@@ -1732,9 +292,6 @@ func (s *Error) SetStatus(val int64) {
 	s.Status = val
 }
 
-func (*Error) createDiskRes()     {}
-func (*Error) launchInstanceRes() {}
-
 // What a given `code` carries alongside the message. The keys depend on the code, and a client that
 // does not recognise one ignores it.
 type ErrorMeta map[string]jx.Raw
@@ -1774,258 +331,12 @@ func (s *ErrorStatusCode) SetResponse(val Error) {
 	s.Response = val
 }
 
-// Ref: #/components/schemas/FloatingIPListResponseBody
-type FloatingIPListResponseBody struct {
-	Items []FloatingIPResource `json:"items"`
-}
-
-// GetItems returns the value of Items.
-func (s *FloatingIPListResponseBody) GetItems() []FloatingIPResource {
-	return s.Items
-}
-
-// SetItems sets the value of Items.
-func (s *FloatingIPListResponseBody) SetItems(val []FloatingIPResource) {
-	s.Items = val
-}
-
-// Ref: #/components/schemas/FloatingIPResource
-type FloatingIPResource struct {
-	Address         string      `json:"address"`
-	AttachedFixedIP NilString   `json:"attached_fixed_ip"`
-	AttachedPortID  NilString   `json:"attached_port_id"`
-	BandwidthMbps   NilInt64    `json:"bandwidth_mbps"`
-	CreatedAt       time.Time   `json:"created_at"`
-	DetachedAt      NilDateTime `json:"detached_at"`
-	ID              uuid.UUID   `json:"id"`
-	RegionCode      string      `json:"region_code"`
-	// `idle` means the address is not bound to a network interface.
-	Status FloatingIPResourceStatus `json:"status"`
-}
-
-// GetAddress returns the value of Address.
-func (s *FloatingIPResource) GetAddress() string {
-	return s.Address
-}
-
-// GetAttachedFixedIP returns the value of AttachedFixedIP.
-func (s *FloatingIPResource) GetAttachedFixedIP() NilString {
-	return s.AttachedFixedIP
-}
-
-// GetAttachedPortID returns the value of AttachedPortID.
-func (s *FloatingIPResource) GetAttachedPortID() NilString {
-	return s.AttachedPortID
-}
-
-// GetBandwidthMbps returns the value of BandwidthMbps.
-func (s *FloatingIPResource) GetBandwidthMbps() NilInt64 {
-	return s.BandwidthMbps
-}
-
-// GetCreatedAt returns the value of CreatedAt.
-func (s *FloatingIPResource) GetCreatedAt() time.Time {
-	return s.CreatedAt
-}
-
-// GetDetachedAt returns the value of DetachedAt.
-func (s *FloatingIPResource) GetDetachedAt() NilDateTime {
-	return s.DetachedAt
-}
-
-// GetID returns the value of ID.
-func (s *FloatingIPResource) GetID() uuid.UUID {
-	return s.ID
-}
-
-// GetRegionCode returns the value of RegionCode.
-func (s *FloatingIPResource) GetRegionCode() string {
-	return s.RegionCode
-}
-
-// GetStatus returns the value of Status.
-func (s *FloatingIPResource) GetStatus() FloatingIPResourceStatus {
-	return s.Status
-}
-
-// SetAddress sets the value of Address.
-func (s *FloatingIPResource) SetAddress(val string) {
-	s.Address = val
-}
-
-// SetAttachedFixedIP sets the value of AttachedFixedIP.
-func (s *FloatingIPResource) SetAttachedFixedIP(val NilString) {
-	s.AttachedFixedIP = val
-}
-
-// SetAttachedPortID sets the value of AttachedPortID.
-func (s *FloatingIPResource) SetAttachedPortID(val NilString) {
-	s.AttachedPortID = val
-}
-
-// SetBandwidthMbps sets the value of BandwidthMbps.
-func (s *FloatingIPResource) SetBandwidthMbps(val NilInt64) {
-	s.BandwidthMbps = val
-}
-
-// SetCreatedAt sets the value of CreatedAt.
-func (s *FloatingIPResource) SetCreatedAt(val time.Time) {
-	s.CreatedAt = val
-}
-
-// SetDetachedAt sets the value of DetachedAt.
-func (s *FloatingIPResource) SetDetachedAt(val NilDateTime) {
-	s.DetachedAt = val
-}
-
-// SetID sets the value of ID.
-func (s *FloatingIPResource) SetID(val uuid.UUID) {
-	s.ID = val
-}
-
-// SetRegionCode sets the value of RegionCode.
-func (s *FloatingIPResource) SetRegionCode(val string) {
-	s.RegionCode = val
-}
-
-// SetStatus sets the value of Status.
-func (s *FloatingIPResource) SetStatus(val FloatingIPResourceStatus) {
-	s.Status = val
-}
-
-// `idle` means the address is not bound to a network interface.
-type FloatingIPResourceStatus string
-
-const (
-	FloatingIPResourceStatusIdle  FloatingIPResourceStatus = "idle"
-	FloatingIPResourceStatusBound FloatingIPResourceStatus = "bound"
-)
-
-// AllValues returns all FloatingIPResourceStatus values.
-func (FloatingIPResourceStatus) AllValues() []FloatingIPResourceStatus {
-	return []FloatingIPResourceStatus{
-		FloatingIPResourceStatusIdle,
-		FloatingIPResourceStatusBound,
-	}
-}
-
-// MarshalText implements encoding.TextMarshaler.
-func (s FloatingIPResourceStatus) MarshalText() ([]byte, error) {
-	switch s {
-	case FloatingIPResourceStatusIdle:
-		return []byte(s), nil
-	case FloatingIPResourceStatusBound:
-		return []byte(s), nil
-	default:
-		return nil, errors.Errorf("invalid value: %q", s)
-	}
-}
-
-// UnmarshalText implements encoding.TextUnmarshaler.
-func (s *FloatingIPResourceStatus) UnmarshalText(data []byte) error {
-	switch FloatingIPResourceStatus(data) {
-	case FloatingIPResourceStatusIdle:
-		*s = FloatingIPResourceStatusIdle
-		return nil
-	case FloatingIPResourceStatusBound:
-		*s = FloatingIPResourceStatusBound
-		return nil
-	default:
-		return errors.Errorf("invalid value: %q", data)
-	}
-}
-
-// Ref: #/components/schemas/IPv6ResponseBody
-type IPv6ResponseBody struct {
-	// The allocated /64 prefix; empty while IPv6 is disabled.
-	Cidr    string `json:"cidr"`
-	Enabled bool   `json:"enabled"`
-	// `active` means IPv6 is fully available.
-	Status IPv6ResponseBodyStatus `json:"status"`
-}
-
-// GetCidr returns the value of Cidr.
-func (s *IPv6ResponseBody) GetCidr() string {
-	return s.Cidr
-}
-
-// GetEnabled returns the value of Enabled.
-func (s *IPv6ResponseBody) GetEnabled() bool {
-	return s.Enabled
-}
-
-// GetStatus returns the value of Status.
-func (s *IPv6ResponseBody) GetStatus() IPv6ResponseBodyStatus {
-	return s.Status
-}
-
-// SetCidr sets the value of Cidr.
-func (s *IPv6ResponseBody) SetCidr(val string) {
-	s.Cidr = val
-}
-
-// SetEnabled sets the value of Enabled.
-func (s *IPv6ResponseBody) SetEnabled(val bool) {
-	s.Enabled = val
-}
-
-// SetStatus sets the value of Status.
-func (s *IPv6ResponseBody) SetStatus(val IPv6ResponseBodyStatus) {
-	s.Status = val
-}
-
-// `active` means IPv6 is fully available.
-type IPv6ResponseBodyStatus string
-
-const (
-	IPv6ResponseBodyStatusPending  IPv6ResponseBodyStatus = "pending"
-	IPv6ResponseBodyStatusActive   IPv6ResponseBodyStatus = "active"
-	IPv6ResponseBodyStatusDraining IPv6ResponseBodyStatus = "draining"
-)
-
-// AllValues returns all IPv6ResponseBodyStatus values.
-func (IPv6ResponseBodyStatus) AllValues() []IPv6ResponseBodyStatus {
-	return []IPv6ResponseBodyStatus{
-		IPv6ResponseBodyStatusPending,
-		IPv6ResponseBodyStatusActive,
-		IPv6ResponseBodyStatusDraining,
-	}
-}
-
-// MarshalText implements encoding.TextMarshaler.
-func (s IPv6ResponseBodyStatus) MarshalText() ([]byte, error) {
-	switch s {
-	case IPv6ResponseBodyStatusPending:
-		return []byte(s), nil
-	case IPv6ResponseBodyStatusActive:
-		return []byte(s), nil
-	case IPv6ResponseBodyStatusDraining:
-		return []byte(s), nil
-	default:
-		return nil, errors.Errorf("invalid value: %q", s)
-	}
-}
-
-// UnmarshalText implements encoding.TextUnmarshaler.
-func (s *IPv6ResponseBodyStatus) UnmarshalText(data []byte) error {
-	switch IPv6ResponseBodyStatus(data) {
-	case IPv6ResponseBodyStatusPending:
-		*s = IPv6ResponseBodyStatusPending
-		return nil
-	case IPv6ResponseBodyStatusActive:
-		*s = IPv6ResponseBodyStatusActive
-		return nil
-	case IPv6ResponseBodyStatusDraining:
-		*s = IPv6ResponseBodyStatusDraining
-		return nil
-	default:
-		return errors.Errorf("invalid value: %q", data)
-	}
-}
-
 // Ref: #/components/schemas/ImageListResponseBody
 type ImageListResponseBody struct {
-	Items []ImageResource `json:"items"`
+	Items      []ImageResource `json:"items"`
+	Page       int64           `json:"page"`
+	PageSize   int64           `json:"page_size"`
+	TotalCount OptInt64        `json:"total_count"`
 }
 
 // GetItems returns the value of Items.
@@ -2033,9 +344,39 @@ func (s *ImageListResponseBody) GetItems() []ImageResource {
 	return s.Items
 }
 
+// GetPage returns the value of Page.
+func (s *ImageListResponseBody) GetPage() int64 {
+	return s.Page
+}
+
+// GetPageSize returns the value of PageSize.
+func (s *ImageListResponseBody) GetPageSize() int64 {
+	return s.PageSize
+}
+
+// GetTotalCount returns the value of TotalCount.
+func (s *ImageListResponseBody) GetTotalCount() OptInt64 {
+	return s.TotalCount
+}
+
 // SetItems sets the value of Items.
 func (s *ImageListResponseBody) SetItems(val []ImageResource) {
 	s.Items = val
+}
+
+// SetPage sets the value of Page.
+func (s *ImageListResponseBody) SetPage(val int64) {
+	s.Page = val
+}
+
+// SetPageSize sets the value of PageSize.
+func (s *ImageListResponseBody) SetPageSize(val int64) {
+	s.PageSize = val
+}
+
+// SetTotalCount sets the value of TotalCount.
+func (s *ImageListResponseBody) SetTotalCount(val OptInt64) {
+	s.TotalCount = val
 }
 
 // Ref: #/components/schemas/ImageResource
@@ -2043,13 +384,13 @@ type ImageResource struct {
 	Architecture string    `json:"architecture"`
 	ID           uuid.UUID `json:"id"`
 	// The account this image lets you log in as. The password set at creation belongs to this account.
-	LoginUsername string `json:"login_username"`
-	MinDiskGB     int64  `json:"min_disk_gb"`
-	MinRAMMB      int64  `json:"min_ram_mb"`
-	Name          string `json:"name"`
-	OsFamily      string `json:"os_family"`
-	OsVersion     string `json:"os_version"`
-	RegionCode    string `json:"region_code"`
+	LoginUsername string    `json:"login_username"`
+	MinDiskGB     int64     `json:"min_disk_gb"`
+	MinRAMMB      int64     `json:"min_ram_mb"`
+	Name          string    `json:"name"`
+	OsFamily      string    `json:"os_family"`
+	OsVersion     string    `json:"os_version"`
+	RegionID      uuid.UUID `json:"region_id"`
 	// False means a new password can only be set by rebuilding an instance created from this image.
 	SupportsPasswordReset bool `json:"supports_password_reset"`
 }
@@ -2094,9 +435,9 @@ func (s *ImageResource) GetOsVersion() string {
 	return s.OsVersion
 }
 
-// GetRegionCode returns the value of RegionCode.
-func (s *ImageResource) GetRegionCode() string {
-	return s.RegionCode
+// GetRegionID returns the value of RegionID.
+func (s *ImageResource) GetRegionID() uuid.UUID {
+	return s.RegionID
 }
 
 // GetSupportsPasswordReset returns the value of SupportsPasswordReset.
@@ -2144,9 +485,9 @@ func (s *ImageResource) SetOsVersion(val string) {
 	s.OsVersion = val
 }
 
-// SetRegionCode sets the value of RegionCode.
-func (s *ImageResource) SetRegionCode(val string) {
-	s.RegionCode = val
+// SetRegionID sets the value of RegionID.
+func (s *ImageResource) SetRegionID(val uuid.UUID) {
+	s.RegionID = val
 }
 
 // SetSupportsPasswordReset sets the value of SupportsPasswordReset.
@@ -2156,7 +497,10 @@ func (s *ImageResource) SetSupportsPasswordReset(val bool) {
 
 // Ref: #/components/schemas/InstanceListResponseBody
 type InstanceListResponseBody struct {
-	Items []InstanceResource `json:"items"`
+	Items      []InstanceResource `json:"items"`
+	Page       int64              `json:"page"`
+	PageSize   int64              `json:"page_size"`
+	TotalCount OptInt64           `json:"total_count"`
 }
 
 // GetItems returns the value of Items.
@@ -2164,15 +508,319 @@ func (s *InstanceListResponseBody) GetItems() []InstanceResource {
 	return s.Items
 }
 
+// GetPage returns the value of Page.
+func (s *InstanceListResponseBody) GetPage() int64 {
+	return s.Page
+}
+
+// GetPageSize returns the value of PageSize.
+func (s *InstanceListResponseBody) GetPageSize() int64 {
+	return s.PageSize
+}
+
+// GetTotalCount returns the value of TotalCount.
+func (s *InstanceListResponseBody) GetTotalCount() OptInt64 {
+	return s.TotalCount
+}
+
 // SetItems sets the value of Items.
 func (s *InstanceListResponseBody) SetItems(val []InstanceResource) {
 	s.Items = val
 }
 
+// SetPage sets the value of Page.
+func (s *InstanceListResponseBody) SetPage(val int64) {
+	s.Page = val
+}
+
+// SetPageSize sets the value of PageSize.
+func (s *InstanceListResponseBody) SetPageSize(val int64) {
+	s.PageSize = val
+}
+
+// SetTotalCount sets the value of TotalCount.
+func (s *InstanceListResponseBody) SetTotalCount(val OptInt64) {
+	s.TotalCount = val
+}
+
+// The durable action currently being processed or most recently completed. Success requires observed
+// completion; accepting a provider command is not success.
+// Ref: #/components/schemas/InstanceOperation
+type InstanceOperation struct {
+	ID          uuid.UUID              `json:"id"`
+	Type        InstanceOperationType  `json:"type"`
+	State       InstanceOperationState `json:"state"`
+	Phase       string                 `json:"phase"`
+	Generation  int64                  `json:"generation"`
+	FailureCode OptString              `json:"failure_code"`
+	CreatedAt   time.Time              `json:"created_at"`
+	UpdatedAt   time.Time              `json:"updated_at"`
+}
+
+// GetID returns the value of ID.
+func (s *InstanceOperation) GetID() uuid.UUID {
+	return s.ID
+}
+
+// GetType returns the value of Type.
+func (s *InstanceOperation) GetType() InstanceOperationType {
+	return s.Type
+}
+
+// GetState returns the value of State.
+func (s *InstanceOperation) GetState() InstanceOperationState {
+	return s.State
+}
+
+// GetPhase returns the value of Phase.
+func (s *InstanceOperation) GetPhase() string {
+	return s.Phase
+}
+
+// GetGeneration returns the value of Generation.
+func (s *InstanceOperation) GetGeneration() int64 {
+	return s.Generation
+}
+
+// GetFailureCode returns the value of FailureCode.
+func (s *InstanceOperation) GetFailureCode() OptString {
+	return s.FailureCode
+}
+
+// GetCreatedAt returns the value of CreatedAt.
+func (s *InstanceOperation) GetCreatedAt() time.Time {
+	return s.CreatedAt
+}
+
+// GetUpdatedAt returns the value of UpdatedAt.
+func (s *InstanceOperation) GetUpdatedAt() time.Time {
+	return s.UpdatedAt
+}
+
+// SetID sets the value of ID.
+func (s *InstanceOperation) SetID(val uuid.UUID) {
+	s.ID = val
+}
+
+// SetType sets the value of Type.
+func (s *InstanceOperation) SetType(val InstanceOperationType) {
+	s.Type = val
+}
+
+// SetState sets the value of State.
+func (s *InstanceOperation) SetState(val InstanceOperationState) {
+	s.State = val
+}
+
+// SetPhase sets the value of Phase.
+func (s *InstanceOperation) SetPhase(val string) {
+	s.Phase = val
+}
+
+// SetGeneration sets the value of Generation.
+func (s *InstanceOperation) SetGeneration(val int64) {
+	s.Generation = val
+}
+
+// SetFailureCode sets the value of FailureCode.
+func (s *InstanceOperation) SetFailureCode(val OptString) {
+	s.FailureCode = val
+}
+
+// SetCreatedAt sets the value of CreatedAt.
+func (s *InstanceOperation) SetCreatedAt(val time.Time) {
+	s.CreatedAt = val
+}
+
+// SetUpdatedAt sets the value of UpdatedAt.
+func (s *InstanceOperation) SetUpdatedAt(val time.Time) {
+	s.UpdatedAt = val
+}
+
+type InstanceOperationState string
+
+const (
+	InstanceOperationStatePending   InstanceOperationState = "pending"
+	InstanceOperationStateRunning   InstanceOperationState = "running"
+	InstanceOperationStateWaiting   InstanceOperationState = "waiting"
+	InstanceOperationStateSucceeded InstanceOperationState = "succeeded"
+	InstanceOperationStateFailed    InstanceOperationState = "failed"
+)
+
+// AllValues returns all InstanceOperationState values.
+func (InstanceOperationState) AllValues() []InstanceOperationState {
+	return []InstanceOperationState{
+		InstanceOperationStatePending,
+		InstanceOperationStateRunning,
+		InstanceOperationStateWaiting,
+		InstanceOperationStateSucceeded,
+		InstanceOperationStateFailed,
+	}
+}
+
+// MarshalText implements encoding.TextMarshaler.
+func (s InstanceOperationState) MarshalText() ([]byte, error) {
+	switch s {
+	case InstanceOperationStatePending:
+		return []byte(s), nil
+	case InstanceOperationStateRunning:
+		return []byte(s), nil
+	case InstanceOperationStateWaiting:
+		return []byte(s), nil
+	case InstanceOperationStateSucceeded:
+		return []byte(s), nil
+	case InstanceOperationStateFailed:
+		return []byte(s), nil
+	default:
+		return nil, errors.Errorf("invalid value: %q", s)
+	}
+}
+
+// UnmarshalText implements encoding.TextUnmarshaler.
+func (s *InstanceOperationState) UnmarshalText(data []byte) error {
+	switch InstanceOperationState(data) {
+	case InstanceOperationStatePending:
+		*s = InstanceOperationStatePending
+		return nil
+	case InstanceOperationStateRunning:
+		*s = InstanceOperationStateRunning
+		return nil
+	case InstanceOperationStateWaiting:
+		*s = InstanceOperationStateWaiting
+		return nil
+	case InstanceOperationStateSucceeded:
+		*s = InstanceOperationStateSucceeded
+		return nil
+	case InstanceOperationStateFailed:
+		*s = InstanceOperationStateFailed
+		return nil
+	default:
+		return errors.Errorf("invalid value: %q", data)
+	}
+}
+
+type InstanceOperationType string
+
+const (
+	InstanceOperationTypeCreate        InstanceOperationType = "create"
+	InstanceOperationTypeStart         InstanceOperationType = "start"
+	InstanceOperationTypeStop          InstanceOperationType = "stop"
+	InstanceOperationTypeReboot        InstanceOperationType = "reboot"
+	InstanceOperationTypeRebuild       InstanceOperationType = "rebuild"
+	InstanceOperationTypeResize        InstanceOperationType = "resize"
+	InstanceOperationTypeConfirmResize InstanceOperationType = "confirm_resize"
+	InstanceOperationTypeRevertResize  InstanceOperationType = "revert_resize"
+	InstanceOperationTypeAttachDisk    InstanceOperationType = "attach_disk"
+	InstanceOperationTypeDetachDisk    InstanceOperationType = "detach_disk"
+	InstanceOperationTypeAttachPort    InstanceOperationType = "attach_port"
+	InstanceOperationTypeDetachPort    InstanceOperationType = "detach_port"
+	InstanceOperationTypeDelete        InstanceOperationType = "delete"
+)
+
+// AllValues returns all InstanceOperationType values.
+func (InstanceOperationType) AllValues() []InstanceOperationType {
+	return []InstanceOperationType{
+		InstanceOperationTypeCreate,
+		InstanceOperationTypeStart,
+		InstanceOperationTypeStop,
+		InstanceOperationTypeReboot,
+		InstanceOperationTypeRebuild,
+		InstanceOperationTypeResize,
+		InstanceOperationTypeConfirmResize,
+		InstanceOperationTypeRevertResize,
+		InstanceOperationTypeAttachDisk,
+		InstanceOperationTypeDetachDisk,
+		InstanceOperationTypeAttachPort,
+		InstanceOperationTypeDetachPort,
+		InstanceOperationTypeDelete,
+	}
+}
+
+// MarshalText implements encoding.TextMarshaler.
+func (s InstanceOperationType) MarshalText() ([]byte, error) {
+	switch s {
+	case InstanceOperationTypeCreate:
+		return []byte(s), nil
+	case InstanceOperationTypeStart:
+		return []byte(s), nil
+	case InstanceOperationTypeStop:
+		return []byte(s), nil
+	case InstanceOperationTypeReboot:
+		return []byte(s), nil
+	case InstanceOperationTypeRebuild:
+		return []byte(s), nil
+	case InstanceOperationTypeResize:
+		return []byte(s), nil
+	case InstanceOperationTypeConfirmResize:
+		return []byte(s), nil
+	case InstanceOperationTypeRevertResize:
+		return []byte(s), nil
+	case InstanceOperationTypeAttachDisk:
+		return []byte(s), nil
+	case InstanceOperationTypeDetachDisk:
+		return []byte(s), nil
+	case InstanceOperationTypeAttachPort:
+		return []byte(s), nil
+	case InstanceOperationTypeDetachPort:
+		return []byte(s), nil
+	case InstanceOperationTypeDelete:
+		return []byte(s), nil
+	default:
+		return nil, errors.Errorf("invalid value: %q", s)
+	}
+}
+
+// UnmarshalText implements encoding.TextUnmarshaler.
+func (s *InstanceOperationType) UnmarshalText(data []byte) error {
+	switch InstanceOperationType(data) {
+	case InstanceOperationTypeCreate:
+		*s = InstanceOperationTypeCreate
+		return nil
+	case InstanceOperationTypeStart:
+		*s = InstanceOperationTypeStart
+		return nil
+	case InstanceOperationTypeStop:
+		*s = InstanceOperationTypeStop
+		return nil
+	case InstanceOperationTypeReboot:
+		*s = InstanceOperationTypeReboot
+		return nil
+	case InstanceOperationTypeRebuild:
+		*s = InstanceOperationTypeRebuild
+		return nil
+	case InstanceOperationTypeResize:
+		*s = InstanceOperationTypeResize
+		return nil
+	case InstanceOperationTypeConfirmResize:
+		*s = InstanceOperationTypeConfirmResize
+		return nil
+	case InstanceOperationTypeRevertResize:
+		*s = InstanceOperationTypeRevertResize
+		return nil
+	case InstanceOperationTypeAttachDisk:
+		*s = InstanceOperationTypeAttachDisk
+		return nil
+	case InstanceOperationTypeDetachDisk:
+		*s = InstanceOperationTypeDetachDisk
+		return nil
+	case InstanceOperationTypeAttachPort:
+		*s = InstanceOperationTypeAttachPort
+		return nil
+	case InstanceOperationTypeDetachPort:
+		*s = InstanceOperationTypeDetachPort
+		return nil
+	case InstanceOperationTypeDelete:
+		*s = InstanceOperationTypeDelete
+		return nil
+	default:
+		return errors.Errorf("invalid value: %q", data)
+	}
+}
+
 // Ref: #/components/schemas/InstanceResource
 type InstanceResource struct {
-	AvailabilityZone string    `json:"availability_zone"`
-	CreatedAt        time.Time `json:"created_at"`
+	AvailabilityZoneID uuid.UUID `json:"availability_zone_id"`
+	CreatedAt          time.Time `json:"created_at"`
 	// Hostname inside the instance; equals the instance id.
 	Hostname string    `json:"hostname"`
 	ID       uuid.UUID `json:"id"`
@@ -2202,42 +850,38 @@ type InstanceResource struct {
 	// Private network of the primary network interface.
 	PrivateNetworkID NilString `json:"private_network_id"`
 	// Floating IPv4 addresses bound to the primary network interface; an empty array when none are bound.
-	PublicIps  []string `json:"public_ips"`
-	RegionCode string   `json:"region_code"`
-	// Only `running` and `stopped` accept commands. Every other value means the instance is changing, and
-	// start, stop, reboot, resize, rebuild and password reset are all rejected.
-	//
-	// `transitioning` is the fallback for a change that falls into none of the categories above. It does
-	// not indicate an error; keep polling.
-	//
-	// `resize_verifying` is not transient: the instance is running on the new size and stays there until
-	// the resize is confirmed or reverted, with both sizes billed in the meantime.
+	PublicIps []string  `json:"public_ips"`
+	RegionID  uuid.UUID `json:"region_id"`
+	// Observed VM lifecycle state. This does not indicate the latest requested action or whether a
+	// business restriction applies.
 	Status InstanceResourceStatus `json:"status"`
 	// Subnet of the primary network interface.
-	SubnetID NilString `json:"subnet_id"`
-	// Non-empty once the platform has suspended the instance, which must be lifted before any operation.
-	SuspendedAt NilDateTime `json:"suspended_at"`
-	UpdatedAt   time.Time   `json:"updated_at"`
-	// How this instance is paid for. `postpaid` is billed by the hour for as long as it exists; `prepaid`
-	// was bought outright for a term.
-	//
-	// Not the term. How long it was bought for belongs to the order, not to the instance: renewing can
-	// change it, and a machine bought for a year and then renewed for a month is still a prepaid machine.
-	// Ask billing for the term and the expiry — they live there, and they are the only two values a
-	// renewal moves.
-	ChargeType InstanceResourceChargeType `json:"charge_type"`
+	SubnetID  NilString `json:"subnet_id"`
+	UpdatedAt time.Time `json:"updated_at"`
 	// The order this instance was bought under, in billing's own identifiers. Empty when the deployment
 	// has no billing wired in.
 	//
 	// Kept so the question can be answered later. "Why was I charged for this" is asked days after the
 	// fact, and an order id handed back only in the launch response is one the person who needs it never
 	// had.
-	BillingOrderID string `json:"billing_order_id"`
+	BillingOrderID      string                       `json:"billing_order_id"`
+	SubscriptionItemIds []uuid.UUID                  `json:"subscription_item_ids"`
+	DesiredState        InstanceResourceDesiredState `json:"desired_state"`
+	PowerState          InstanceResourcePowerState   `json:"power_state"`
+	// Current provider task, such as scheduling, networking, block_device_mapping or spawning. none means
+	// no task; unknown tasks remain observable and do not imply failure.
+	TaskState  string `json:"task_state"`
+	Generation int64  `json:"generation"`
+	// Timestamp of the last successful provider observation. An unreachable provider does not erase the
+	// last observation or prove deletion.
+	ObservedAt   OptDateTime           `json:"observed_at"`
+	Operation    OptInstanceOperation  `json:"operation"`
+	Restrictions []InstanceRestriction `json:"restrictions"`
 }
 
-// GetAvailabilityZone returns the value of AvailabilityZone.
-func (s *InstanceResource) GetAvailabilityZone() string {
-	return s.AvailabilityZone
+// GetAvailabilityZoneID returns the value of AvailabilityZoneID.
+func (s *InstanceResource) GetAvailabilityZoneID() uuid.UUID {
+	return s.AvailabilityZoneID
 }
 
 // GetCreatedAt returns the value of CreatedAt.
@@ -2320,9 +964,9 @@ func (s *InstanceResource) GetPublicIps() []string {
 	return s.PublicIps
 }
 
-// GetRegionCode returns the value of RegionCode.
-func (s *InstanceResource) GetRegionCode() string {
-	return s.RegionCode
+// GetRegionID returns the value of RegionID.
+func (s *InstanceResource) GetRegionID() uuid.UUID {
+	return s.RegionID
 }
 
 // GetStatus returns the value of Status.
@@ -2335,19 +979,9 @@ func (s *InstanceResource) GetSubnetID() NilString {
 	return s.SubnetID
 }
 
-// GetSuspendedAt returns the value of SuspendedAt.
-func (s *InstanceResource) GetSuspendedAt() NilDateTime {
-	return s.SuspendedAt
-}
-
 // GetUpdatedAt returns the value of UpdatedAt.
 func (s *InstanceResource) GetUpdatedAt() time.Time {
 	return s.UpdatedAt
-}
-
-// GetChargeType returns the value of ChargeType.
-func (s *InstanceResource) GetChargeType() InstanceResourceChargeType {
-	return s.ChargeType
 }
 
 // GetBillingOrderID returns the value of BillingOrderID.
@@ -2355,9 +989,49 @@ func (s *InstanceResource) GetBillingOrderID() string {
 	return s.BillingOrderID
 }
 
-// SetAvailabilityZone sets the value of AvailabilityZone.
-func (s *InstanceResource) SetAvailabilityZone(val string) {
-	s.AvailabilityZone = val
+// GetSubscriptionItemIds returns the value of SubscriptionItemIds.
+func (s *InstanceResource) GetSubscriptionItemIds() []uuid.UUID {
+	return s.SubscriptionItemIds
+}
+
+// GetDesiredState returns the value of DesiredState.
+func (s *InstanceResource) GetDesiredState() InstanceResourceDesiredState {
+	return s.DesiredState
+}
+
+// GetPowerState returns the value of PowerState.
+func (s *InstanceResource) GetPowerState() InstanceResourcePowerState {
+	return s.PowerState
+}
+
+// GetTaskState returns the value of TaskState.
+func (s *InstanceResource) GetTaskState() string {
+	return s.TaskState
+}
+
+// GetGeneration returns the value of Generation.
+func (s *InstanceResource) GetGeneration() int64 {
+	return s.Generation
+}
+
+// GetObservedAt returns the value of ObservedAt.
+func (s *InstanceResource) GetObservedAt() OptDateTime {
+	return s.ObservedAt
+}
+
+// GetOperation returns the value of Operation.
+func (s *InstanceResource) GetOperation() OptInstanceOperation {
+	return s.Operation
+}
+
+// GetRestrictions returns the value of Restrictions.
+func (s *InstanceResource) GetRestrictions() []InstanceRestriction {
+	return s.Restrictions
+}
+
+// SetAvailabilityZoneID sets the value of AvailabilityZoneID.
+func (s *InstanceResource) SetAvailabilityZoneID(val uuid.UUID) {
+	s.AvailabilityZoneID = val
 }
 
 // SetCreatedAt sets the value of CreatedAt.
@@ -2440,9 +1114,9 @@ func (s *InstanceResource) SetPublicIps(val []string) {
 	s.PublicIps = val
 }
 
-// SetRegionCode sets the value of RegionCode.
-func (s *InstanceResource) SetRegionCode(val string) {
-	s.RegionCode = val
+// SetRegionID sets the value of RegionID.
+func (s *InstanceResource) SetRegionID(val uuid.UUID) {
+	s.RegionID = val
 }
 
 // SetStatus sets the value of Status.
@@ -2455,19 +1129,9 @@ func (s *InstanceResource) SetSubnetID(val NilString) {
 	s.SubnetID = val
 }
 
-// SetSuspendedAt sets the value of SuspendedAt.
-func (s *InstanceResource) SetSuspendedAt(val NilDateTime) {
-	s.SuspendedAt = val
-}
-
 // SetUpdatedAt sets the value of UpdatedAt.
 func (s *InstanceResource) SetUpdatedAt(val time.Time) {
 	s.UpdatedAt = val
-}
-
-// SetChargeType sets the value of ChargeType.
-func (s *InstanceResource) SetChargeType(val InstanceResourceChargeType) {
-	s.ChargeType = val
 }
 
 // SetBillingOrderID sets the value of BillingOrderID.
@@ -2475,34 +1139,71 @@ func (s *InstanceResource) SetBillingOrderID(val string) {
 	s.BillingOrderID = val
 }
 
-// How this instance is paid for. `postpaid` is billed by the hour for as long as it exists; `prepaid`
-// was bought outright for a term.
-//
-// Not the term. How long it was bought for belongs to the order, not to the instance: renewing can
-// change it, and a machine bought for a year and then renewed for a month is still a prepaid machine.
-// Ask billing for the term and the expiry — they live there, and they are the only two values a
-// renewal moves.
-type InstanceResourceChargeType string
+// SetSubscriptionItemIds sets the value of SubscriptionItemIds.
+func (s *InstanceResource) SetSubscriptionItemIds(val []uuid.UUID) {
+	s.SubscriptionItemIds = val
+}
+
+// SetDesiredState sets the value of DesiredState.
+func (s *InstanceResource) SetDesiredState(val InstanceResourceDesiredState) {
+	s.DesiredState = val
+}
+
+// SetPowerState sets the value of PowerState.
+func (s *InstanceResource) SetPowerState(val InstanceResourcePowerState) {
+	s.PowerState = val
+}
+
+// SetTaskState sets the value of TaskState.
+func (s *InstanceResource) SetTaskState(val string) {
+	s.TaskState = val
+}
+
+// SetGeneration sets the value of Generation.
+func (s *InstanceResource) SetGeneration(val int64) {
+	s.Generation = val
+}
+
+// SetObservedAt sets the value of ObservedAt.
+func (s *InstanceResource) SetObservedAt(val OptDateTime) {
+	s.ObservedAt = val
+}
+
+// SetOperation sets the value of Operation.
+func (s *InstanceResource) SetOperation(val OptInstanceOperation) {
+	s.Operation = val
+}
+
+// SetRestrictions sets the value of Restrictions.
+func (s *InstanceResource) SetRestrictions(val []InstanceRestriction) {
+	s.Restrictions = val
+}
+
+type InstanceResourceDesiredState string
 
 const (
-	InstanceResourceChargeTypePostpaid InstanceResourceChargeType = "postpaid"
-	InstanceResourceChargeTypePrepaid  InstanceResourceChargeType = "prepaid"
+	InstanceResourceDesiredStateRunning InstanceResourceDesiredState = "running"
+	InstanceResourceDesiredStateStopped InstanceResourceDesiredState = "stopped"
+	InstanceResourceDesiredStateDeleted InstanceResourceDesiredState = "deleted"
 )
 
-// AllValues returns all InstanceResourceChargeType values.
-func (InstanceResourceChargeType) AllValues() []InstanceResourceChargeType {
-	return []InstanceResourceChargeType{
-		InstanceResourceChargeTypePostpaid,
-		InstanceResourceChargeTypePrepaid,
+// AllValues returns all InstanceResourceDesiredState values.
+func (InstanceResourceDesiredState) AllValues() []InstanceResourceDesiredState {
+	return []InstanceResourceDesiredState{
+		InstanceResourceDesiredStateRunning,
+		InstanceResourceDesiredStateStopped,
+		InstanceResourceDesiredStateDeleted,
 	}
 }
 
 // MarshalText implements encoding.TextMarshaler.
-func (s InstanceResourceChargeType) MarshalText() ([]byte, error) {
+func (s InstanceResourceDesiredState) MarshalText() ([]byte, error) {
 	switch s {
-	case InstanceResourceChargeTypePostpaid:
+	case InstanceResourceDesiredStateRunning:
 		return []byte(s), nil
-	case InstanceResourceChargeTypePrepaid:
+	case InstanceResourceDesiredStateStopped:
+		return []byte(s), nil
+	case InstanceResourceDesiredStateDeleted:
 		return []byte(s), nil
 	default:
 		return nil, errors.Errorf("invalid value: %q", s)
@@ -2510,13 +1211,16 @@ func (s InstanceResourceChargeType) MarshalText() ([]byte, error) {
 }
 
 // UnmarshalText implements encoding.TextUnmarshaler.
-func (s *InstanceResourceChargeType) UnmarshalText(data []byte) error {
-	switch InstanceResourceChargeType(data) {
-	case InstanceResourceChargeTypePostpaid:
-		*s = InstanceResourceChargeTypePostpaid
+func (s *InstanceResourceDesiredState) UnmarshalText(data []byte) error {
+	switch InstanceResourceDesiredState(data) {
+	case InstanceResourceDesiredStateRunning:
+		*s = InstanceResourceDesiredStateRunning
 		return nil
-	case InstanceResourceChargeTypePrepaid:
-		*s = InstanceResourceChargeTypePrepaid
+	case InstanceResourceDesiredStateStopped:
+		*s = InstanceResourceDesiredStateStopped
+		return nil
+	case InstanceResourceDesiredStateDeleted:
+		*s = InstanceResourceDesiredStateDeleted
 		return nil
 	default:
 		return errors.Errorf("invalid value: %q", data)
@@ -2535,75 +1239,153 @@ func (s *InstanceResourceLabels) init() InstanceResourceLabels {
 	return m
 }
 
-// Only `running` and `stopped` accept commands. Every other value means the instance is changing, and
-// start, stop, reboot, resize, rebuild and password reset are all rejected.
-//
-// `transitioning` is the fallback for a change that falls into none of the categories above. It does
-// not indicate an error; keep polling.
-//
-// `resize_verifying` is not transient: the instance is running on the new size and stays there until
-// the resize is confirmed or reverted, with both sizes billed in the meantime.
+type InstanceResourcePowerState string
+
+const (
+	InstanceResourcePowerStateNoState   InstanceResourcePowerState = "no_state"
+	InstanceResourcePowerStateRunning   InstanceResourcePowerState = "running"
+	InstanceResourcePowerStatePaused    InstanceResourcePowerState = "paused"
+	InstanceResourcePowerStateShutdown  InstanceResourcePowerState = "shutdown"
+	InstanceResourcePowerStateCrashed   InstanceResourcePowerState = "crashed"
+	InstanceResourcePowerStateSuspended InstanceResourcePowerState = "suspended"
+	InstanceResourcePowerStateUnknown   InstanceResourcePowerState = "unknown"
+)
+
+// AllValues returns all InstanceResourcePowerState values.
+func (InstanceResourcePowerState) AllValues() []InstanceResourcePowerState {
+	return []InstanceResourcePowerState{
+		InstanceResourcePowerStateNoState,
+		InstanceResourcePowerStateRunning,
+		InstanceResourcePowerStatePaused,
+		InstanceResourcePowerStateShutdown,
+		InstanceResourcePowerStateCrashed,
+		InstanceResourcePowerStateSuspended,
+		InstanceResourcePowerStateUnknown,
+	}
+}
+
+// MarshalText implements encoding.TextMarshaler.
+func (s InstanceResourcePowerState) MarshalText() ([]byte, error) {
+	switch s {
+	case InstanceResourcePowerStateNoState:
+		return []byte(s), nil
+	case InstanceResourcePowerStateRunning:
+		return []byte(s), nil
+	case InstanceResourcePowerStatePaused:
+		return []byte(s), nil
+	case InstanceResourcePowerStateShutdown:
+		return []byte(s), nil
+	case InstanceResourcePowerStateCrashed:
+		return []byte(s), nil
+	case InstanceResourcePowerStateSuspended:
+		return []byte(s), nil
+	case InstanceResourcePowerStateUnknown:
+		return []byte(s), nil
+	default:
+		return nil, errors.Errorf("invalid value: %q", s)
+	}
+}
+
+// UnmarshalText implements encoding.TextUnmarshaler.
+func (s *InstanceResourcePowerState) UnmarshalText(data []byte) error {
+	switch InstanceResourcePowerState(data) {
+	case InstanceResourcePowerStateNoState:
+		*s = InstanceResourcePowerStateNoState
+		return nil
+	case InstanceResourcePowerStateRunning:
+		*s = InstanceResourcePowerStateRunning
+		return nil
+	case InstanceResourcePowerStatePaused:
+		*s = InstanceResourcePowerStatePaused
+		return nil
+	case InstanceResourcePowerStateShutdown:
+		*s = InstanceResourcePowerStateShutdown
+		return nil
+	case InstanceResourcePowerStateCrashed:
+		*s = InstanceResourcePowerStateCrashed
+		return nil
+	case InstanceResourcePowerStateSuspended:
+		*s = InstanceResourcePowerStateSuspended
+		return nil
+	case InstanceResourcePowerStateUnknown:
+		*s = InstanceResourcePowerStateUnknown
+		return nil
+	default:
+		return errors.Errorf("invalid value: %q", data)
+	}
+}
+
+// Observed VM lifecycle state. This does not indicate the latest requested action or whether a
+// business restriction applies.
 type InstanceResourceStatus string
 
 const (
-	InstanceResourceStatusProvisioning    InstanceResourceStatus = "provisioning"
-	InstanceResourceStatusRunning         InstanceResourceStatus = "running"
-	InstanceResourceStatusStopped         InstanceResourceStatus = "stopped"
-	InstanceResourceStatusStarting        InstanceResourceStatus = "starting"
-	InstanceResourceStatusStopping        InstanceResourceStatus = "stopping"
-	InstanceResourceStatusRebooting       InstanceResourceStatus = "rebooting"
-	InstanceResourceStatusTransitioning   InstanceResourceStatus = "transitioning"
-	InstanceResourceStatusResizing        InstanceResourceStatus = "resizing"
-	InstanceResourceStatusResizeVerifying InstanceResourceStatus = "resize_verifying"
-	InstanceResourceStatusError           InstanceResourceStatus = "error"
-	InstanceResourceStatusDeleting        InstanceResourceStatus = "deleting"
-	InstanceResourceStatusSuspended       InstanceResourceStatus = "suspended"
+	InstanceResourceStatusPending          InstanceResourceStatus = "pending"
+	InstanceResourceStatusBuilding         InstanceResourceStatus = "building"
+	InstanceResourceStatusActive           InstanceResourceStatus = "active"
+	InstanceResourceStatusStopped          InstanceResourceStatus = "stopped"
+	InstanceResourceStatusPaused           InstanceResourceStatus = "paused"
+	InstanceResourceStatusSuspended        InstanceResourceStatus = "suspended"
+	InstanceResourceStatusShelved          InstanceResourceStatus = "shelved"
+	InstanceResourceStatusShelvedOffloaded InstanceResourceStatus = "shelved_offloaded"
+	InstanceResourceStatusRescued          InstanceResourceStatus = "rescued"
+	InstanceResourceStatusResized          InstanceResourceStatus = "resized"
+	InstanceResourceStatusDeleting         InstanceResourceStatus = "deleting"
+	InstanceResourceStatusDeleted          InstanceResourceStatus = "deleted"
+	InstanceResourceStatusError            InstanceResourceStatus = "error"
+	InstanceResourceStatusUnknown          InstanceResourceStatus = "unknown"
 )
 
 // AllValues returns all InstanceResourceStatus values.
 func (InstanceResourceStatus) AllValues() []InstanceResourceStatus {
 	return []InstanceResourceStatus{
-		InstanceResourceStatusProvisioning,
-		InstanceResourceStatusRunning,
+		InstanceResourceStatusPending,
+		InstanceResourceStatusBuilding,
+		InstanceResourceStatusActive,
 		InstanceResourceStatusStopped,
-		InstanceResourceStatusStarting,
-		InstanceResourceStatusStopping,
-		InstanceResourceStatusRebooting,
-		InstanceResourceStatusTransitioning,
-		InstanceResourceStatusResizing,
-		InstanceResourceStatusResizeVerifying,
-		InstanceResourceStatusError,
-		InstanceResourceStatusDeleting,
+		InstanceResourceStatusPaused,
 		InstanceResourceStatusSuspended,
+		InstanceResourceStatusShelved,
+		InstanceResourceStatusShelvedOffloaded,
+		InstanceResourceStatusRescued,
+		InstanceResourceStatusResized,
+		InstanceResourceStatusDeleting,
+		InstanceResourceStatusDeleted,
+		InstanceResourceStatusError,
+		InstanceResourceStatusUnknown,
 	}
 }
 
 // MarshalText implements encoding.TextMarshaler.
 func (s InstanceResourceStatus) MarshalText() ([]byte, error) {
 	switch s {
-	case InstanceResourceStatusProvisioning:
+	case InstanceResourceStatusPending:
 		return []byte(s), nil
-	case InstanceResourceStatusRunning:
+	case InstanceResourceStatusBuilding:
+		return []byte(s), nil
+	case InstanceResourceStatusActive:
 		return []byte(s), nil
 	case InstanceResourceStatusStopped:
 		return []byte(s), nil
-	case InstanceResourceStatusStarting:
+	case InstanceResourceStatusPaused:
 		return []byte(s), nil
-	case InstanceResourceStatusStopping:
+	case InstanceResourceStatusSuspended:
 		return []byte(s), nil
-	case InstanceResourceStatusRebooting:
+	case InstanceResourceStatusShelved:
 		return []byte(s), nil
-	case InstanceResourceStatusTransitioning:
+	case InstanceResourceStatusShelvedOffloaded:
 		return []byte(s), nil
-	case InstanceResourceStatusResizing:
+	case InstanceResourceStatusRescued:
 		return []byte(s), nil
-	case InstanceResourceStatusResizeVerifying:
-		return []byte(s), nil
-	case InstanceResourceStatusError:
+	case InstanceResourceStatusResized:
 		return []byte(s), nil
 	case InstanceResourceStatusDeleting:
 		return []byte(s), nil
-	case InstanceResourceStatusSuspended:
+	case InstanceResourceStatusDeleted:
+		return []byte(s), nil
+	case InstanceResourceStatusError:
+		return []byte(s), nil
+	case InstanceResourceStatusUnknown:
 		return []byte(s), nil
 	default:
 		return nil, errors.Errorf("invalid value: %q", s)
@@ -2613,41 +1395,156 @@ func (s InstanceResourceStatus) MarshalText() ([]byte, error) {
 // UnmarshalText implements encoding.TextUnmarshaler.
 func (s *InstanceResourceStatus) UnmarshalText(data []byte) error {
 	switch InstanceResourceStatus(data) {
-	case InstanceResourceStatusProvisioning:
-		*s = InstanceResourceStatusProvisioning
+	case InstanceResourceStatusPending:
+		*s = InstanceResourceStatusPending
 		return nil
-	case InstanceResourceStatusRunning:
-		*s = InstanceResourceStatusRunning
+	case InstanceResourceStatusBuilding:
+		*s = InstanceResourceStatusBuilding
+		return nil
+	case InstanceResourceStatusActive:
+		*s = InstanceResourceStatusActive
 		return nil
 	case InstanceResourceStatusStopped:
 		*s = InstanceResourceStatusStopped
 		return nil
-	case InstanceResourceStatusStarting:
-		*s = InstanceResourceStatusStarting
+	case InstanceResourceStatusPaused:
+		*s = InstanceResourceStatusPaused
 		return nil
-	case InstanceResourceStatusStopping:
-		*s = InstanceResourceStatusStopping
+	case InstanceResourceStatusSuspended:
+		*s = InstanceResourceStatusSuspended
 		return nil
-	case InstanceResourceStatusRebooting:
-		*s = InstanceResourceStatusRebooting
+	case InstanceResourceStatusShelved:
+		*s = InstanceResourceStatusShelved
 		return nil
-	case InstanceResourceStatusTransitioning:
-		*s = InstanceResourceStatusTransitioning
+	case InstanceResourceStatusShelvedOffloaded:
+		*s = InstanceResourceStatusShelvedOffloaded
 		return nil
-	case InstanceResourceStatusResizing:
-		*s = InstanceResourceStatusResizing
+	case InstanceResourceStatusRescued:
+		*s = InstanceResourceStatusRescued
 		return nil
-	case InstanceResourceStatusResizeVerifying:
-		*s = InstanceResourceStatusResizeVerifying
-		return nil
-	case InstanceResourceStatusError:
-		*s = InstanceResourceStatusError
+	case InstanceResourceStatusResized:
+		*s = InstanceResourceStatusResized
 		return nil
 	case InstanceResourceStatusDeleting:
 		*s = InstanceResourceStatusDeleting
 		return nil
-	case InstanceResourceStatusSuspended:
-		*s = InstanceResourceStatusSuspended
+	case InstanceResourceStatusDeleted:
+		*s = InstanceResourceStatusDeleted
+		return nil
+	case InstanceResourceStatusError:
+		*s = InstanceResourceStatusError
+		return nil
+	case InstanceResourceStatusUnknown:
+		*s = InstanceResourceStatusUnknown
+		return nil
+	default:
+		return errors.Errorf("invalid value: %q", data)
+	}
+}
+
+// An independent restriction on use. Removing one restriction never removes another source’s
+// restriction or changes the user’s desired power state.
+// Ref: #/components/schemas/InstanceRestriction
+type InstanceRestriction struct {
+	ID         uuid.UUID                 `json:"id"`
+	Source     InstanceRestrictionSource `json:"source"`
+	SourceID   string                    `json:"source_id"`
+	ReasonCode string                    `json:"reason_code"`
+	CreatedAt  time.Time                 `json:"created_at"`
+}
+
+// GetID returns the value of ID.
+func (s *InstanceRestriction) GetID() uuid.UUID {
+	return s.ID
+}
+
+// GetSource returns the value of Source.
+func (s *InstanceRestriction) GetSource() InstanceRestrictionSource {
+	return s.Source
+}
+
+// GetSourceID returns the value of SourceID.
+func (s *InstanceRestriction) GetSourceID() string {
+	return s.SourceID
+}
+
+// GetReasonCode returns the value of ReasonCode.
+func (s *InstanceRestriction) GetReasonCode() string {
+	return s.ReasonCode
+}
+
+// GetCreatedAt returns the value of CreatedAt.
+func (s *InstanceRestriction) GetCreatedAt() time.Time {
+	return s.CreatedAt
+}
+
+// SetID sets the value of ID.
+func (s *InstanceRestriction) SetID(val uuid.UUID) {
+	s.ID = val
+}
+
+// SetSource sets the value of Source.
+func (s *InstanceRestriction) SetSource(val InstanceRestrictionSource) {
+	s.Source = val
+}
+
+// SetSourceID sets the value of SourceID.
+func (s *InstanceRestriction) SetSourceID(val string) {
+	s.SourceID = val
+}
+
+// SetReasonCode sets the value of ReasonCode.
+func (s *InstanceRestriction) SetReasonCode(val string) {
+	s.ReasonCode = val
+}
+
+// SetCreatedAt sets the value of CreatedAt.
+func (s *InstanceRestriction) SetCreatedAt(val time.Time) {
+	s.CreatedAt = val
+}
+
+type InstanceRestrictionSource string
+
+const (
+	InstanceRestrictionSourceBilling  InstanceRestrictionSource = "billing"
+	InstanceRestrictionSourceIam      InstanceRestrictionSource = "iam"
+	InstanceRestrictionSourceOperator InstanceRestrictionSource = "operator"
+)
+
+// AllValues returns all InstanceRestrictionSource values.
+func (InstanceRestrictionSource) AllValues() []InstanceRestrictionSource {
+	return []InstanceRestrictionSource{
+		InstanceRestrictionSourceBilling,
+		InstanceRestrictionSourceIam,
+		InstanceRestrictionSourceOperator,
+	}
+}
+
+// MarshalText implements encoding.TextMarshaler.
+func (s InstanceRestrictionSource) MarshalText() ([]byte, error) {
+	switch s {
+	case InstanceRestrictionSourceBilling:
+		return []byte(s), nil
+	case InstanceRestrictionSourceIam:
+		return []byte(s), nil
+	case InstanceRestrictionSourceOperator:
+		return []byte(s), nil
+	default:
+		return nil, errors.Errorf("invalid value: %q", s)
+	}
+}
+
+// UnmarshalText implements encoding.TextUnmarshaler.
+func (s *InstanceRestrictionSource) UnmarshalText(data []byte) error {
+	switch InstanceRestrictionSource(data) {
+	case InstanceRestrictionSourceBilling:
+		*s = InstanceRestrictionSourceBilling
+		return nil
+	case InstanceRestrictionSourceIam:
+		*s = InstanceRestrictionSourceIam
+		return nil
+	case InstanceRestrictionSourceOperator:
+		*s = InstanceRestrictionSourceOperator
 		return nil
 	default:
 		return errors.Errorf("invalid value: %q", data)
@@ -2656,7 +1553,10 @@ func (s *InstanceResourceStatus) UnmarshalText(data []byte) error {
 
 // Ref: #/components/schemas/InstanceTypeListResponseBody
 type InstanceTypeListResponseBody struct {
-	Items []InstanceTypeResource `json:"items"`
+	Items      []InstanceTypeResource `json:"items"`
+	Page       int64                  `json:"page"`
+	PageSize   int64                  `json:"page_size"`
+	TotalCount OptInt64               `json:"total_count"`
 }
 
 // GetItems returns the value of Items.
@@ -2664,16 +1564,45 @@ func (s *InstanceTypeListResponseBody) GetItems() []InstanceTypeResource {
 	return s.Items
 }
 
+// GetPage returns the value of Page.
+func (s *InstanceTypeListResponseBody) GetPage() int64 {
+	return s.Page
+}
+
+// GetPageSize returns the value of PageSize.
+func (s *InstanceTypeListResponseBody) GetPageSize() int64 {
+	return s.PageSize
+}
+
+// GetTotalCount returns the value of TotalCount.
+func (s *InstanceTypeListResponseBody) GetTotalCount() OptInt64 {
+	return s.TotalCount
+}
+
 // SetItems sets the value of Items.
 func (s *InstanceTypeListResponseBody) SetItems(val []InstanceTypeResource) {
 	s.Items = val
 }
 
+// SetPage sets the value of Page.
+func (s *InstanceTypeListResponseBody) SetPage(val int64) {
+	s.Page = val
+}
+
+// SetPageSize sets the value of PageSize.
+func (s *InstanceTypeListResponseBody) SetPageSize(val int64) {
+	s.PageSize = val
+}
+
+// SetTotalCount sets the value of TotalCount.
+func (s *InstanceTypeListResponseBody) SetTotalCount(val OptInt64) {
+	s.TotalCount = val
+}
+
 // Ref: #/components/schemas/InstanceTypeResource
 type InstanceTypeResource struct {
-	// Availability zone of this instance type. A disk must be in the same zone to be attached.
-	AvailabilityZoneCode string    `json:"availability_zone_code"`
-	ID                   uuid.UUID `json:"id"`
+	AvailabilityZoneID uuid.UUID `json:"availability_zone_id"`
+	ID                 uuid.UUID `json:"id"`
 	// The most public bandwidth a machine of this type may be given, in Mbps. Asking for more when
 	// creating a machine, or raising a bound address past it, is refused.
 	//
@@ -2686,42 +1615,21 @@ type InstanceTypeResource struct {
 	// them, not shared between them. `max_ports` says how many it may have.
 	NetworkEgressKbps NilInt64 `json:"network_egress_kbps"`
 	// Inbound ceiling of each network interface, in kbps. Null when this type is not rate-limited.
-	NetworkIngressKbps NilInt64 `json:"network_ingress_kbps"`
-	MaxFloatingIps     int64    `json:"max_floating_ips"`
-	MaxPorts           int64    `json:"max_ports"`
-	Name               string   `json:"name"`
-	RAMMB              int64    `json:"ram_mb"`
-	RegionCode         string   `json:"region_code"`
-	Vcpus              int64    `json:"vcpus"`
-	// Whether this type can be ordered right now.
-	//
-	// It reflects a limit set by operations, not what the cloud can physically schedule — raising the
-	// limit does not create capacity that is not there, and a type that is not sold out can still fail to
-	// start if the zone is full.
-	//
-	// It is advisory: it is read when the list is built, and the last one can be taken between that read
-	// and the order. The order is what actually refuses.
-	SoldOut bool `json:"sold_out"`
-	// How many more may be created. Absent when this type is not limited at all.
-	//
-	// Absent is not zero and not "unknown": a type with no limit simply has no number to show. Reporting
-	// it as a number would need a sentinel, and any sentinel eventually gets compared against a real
-	// count.
-	Remaining OptInt64 `json:"remaining"`
-	// What buying this type outright costs, per term. Empty means this type is only sold by the hour.
-	//
-	// The hourly price is not here and is not missing: it is made of finer parts than the type (cores and
-	// memory are priced separately, and the type itself does not appear in the rate card at all), so there
-	// is no single number to show. A term price is one number because a term is one purchase.
-	//
-	// Advisory, like `sold_out`: it is read when the list is built. The order is what fixes the price, and
-	// it refuses rather than falling back to hourly if the term is not sold.
-	PrepaidPrices []PrepaidPrice `json:"prepaid_prices"`
+	NetworkIngressKbps NilInt64  `json:"network_ingress_kbps"`
+	MaxFloatingIps     int64     `json:"max_floating_ips"`
+	MaxPorts           int64     `json:"max_ports"`
+	Name               string    `json:"name"`
+	RAMMB              int64     `json:"ram_mb"`
+	RegionID           uuid.UUID `json:"region_id"`
+	Vcpus              int64     `json:"vcpus"`
+	// The Billing Plan for this type. Read its available prices from Billing; resource capacity and
+	// sellable quota are evaluated when placing the order.
+	BillingPlanID uuid.UUID `json:"billing_plan_id"`
 }
 
-// GetAvailabilityZoneCode returns the value of AvailabilityZoneCode.
-func (s *InstanceTypeResource) GetAvailabilityZoneCode() string {
-	return s.AvailabilityZoneCode
+// GetAvailabilityZoneID returns the value of AvailabilityZoneID.
+func (s *InstanceTypeResource) GetAvailabilityZoneID() uuid.UUID {
+	return s.AvailabilityZoneID
 }
 
 // GetID returns the value of ID.
@@ -2764,9 +1672,9 @@ func (s *InstanceTypeResource) GetRAMMB() int64 {
 	return s.RAMMB
 }
 
-// GetRegionCode returns the value of RegionCode.
-func (s *InstanceTypeResource) GetRegionCode() string {
-	return s.RegionCode
+// GetRegionID returns the value of RegionID.
+func (s *InstanceTypeResource) GetRegionID() uuid.UUID {
+	return s.RegionID
 }
 
 // GetVcpus returns the value of Vcpus.
@@ -2774,24 +1682,14 @@ func (s *InstanceTypeResource) GetVcpus() int64 {
 	return s.Vcpus
 }
 
-// GetSoldOut returns the value of SoldOut.
-func (s *InstanceTypeResource) GetSoldOut() bool {
-	return s.SoldOut
+// GetBillingPlanID returns the value of BillingPlanID.
+func (s *InstanceTypeResource) GetBillingPlanID() uuid.UUID {
+	return s.BillingPlanID
 }
 
-// GetRemaining returns the value of Remaining.
-func (s *InstanceTypeResource) GetRemaining() OptInt64 {
-	return s.Remaining
-}
-
-// GetPrepaidPrices returns the value of PrepaidPrices.
-func (s *InstanceTypeResource) GetPrepaidPrices() []PrepaidPrice {
-	return s.PrepaidPrices
-}
-
-// SetAvailabilityZoneCode sets the value of AvailabilityZoneCode.
-func (s *InstanceTypeResource) SetAvailabilityZoneCode(val string) {
-	s.AvailabilityZoneCode = val
+// SetAvailabilityZoneID sets the value of AvailabilityZoneID.
+func (s *InstanceTypeResource) SetAvailabilityZoneID(val uuid.UUID) {
+	s.AvailabilityZoneID = val
 }
 
 // SetID sets the value of ID.
@@ -2834,9 +1732,9 @@ func (s *InstanceTypeResource) SetRAMMB(val int64) {
 	s.RAMMB = val
 }
 
-// SetRegionCode sets the value of RegionCode.
-func (s *InstanceTypeResource) SetRegionCode(val string) {
-	s.RegionCode = val
+// SetRegionID sets the value of RegionID.
+func (s *InstanceTypeResource) SetRegionID(val uuid.UUID) {
+	s.RegionID = val
 }
 
 // SetVcpus sets the value of Vcpus.
@@ -2844,43 +1742,13 @@ func (s *InstanceTypeResource) SetVcpus(val int64) {
 	s.Vcpus = val
 }
 
-// SetSoldOut sets the value of SoldOut.
-func (s *InstanceTypeResource) SetSoldOut(val bool) {
-	s.SoldOut = val
-}
-
-// SetRemaining sets the value of Remaining.
-func (s *InstanceTypeResource) SetRemaining(val OptInt64) {
-	s.Remaining = val
-}
-
-// SetPrepaidPrices sets the value of PrepaidPrices.
-func (s *InstanceTypeResource) SetPrepaidPrices(val []PrepaidPrice) {
-	s.PrepaidPrices = val
+// SetBillingPlanID sets the value of BillingPlanID.
+func (s *InstanceTypeResource) SetBillingPlanID(val uuid.UUID) {
+	s.BillingPlanID = val
 }
 
 // Ref: #/components/schemas/LaunchInstanceRequestBody
 type LaunchInstanceRequestBody struct {
-	// A promotion code to apply to this order. Case and surrounding whitespace do not matter.
-	//
-	// An unusable code is rejected outright rather than quietly ignored: somebody who typed a code is
-	// buying at the discounted price, and letting it through silently means they pay full price expecting
-	// the discount, with nothing anywhere saying so.
-	//
-	// The discount applies to the lines the campaign covers, not the whole order — typically the
-	// instance type and memory, not the system disk, the address, or traffic. Preview it first at
-	// `POST /account/v1/billing-accounts/{accountKey}/promotion-codes/preview` to show the customer what
-	// will actually be charged.
-	//
-	// Metered orders reject any code: there is no amount to discount at this point.
-	PromotionCode OptString `json:"promotion_code"`
-	// "This is the same click". Generate one when the dialog opens — not when it is submitted — and
-	// send the same one on every retry of that action.
-	//
-	// Optional, and what happens without it is worth knowing: two identical requests inside the same
-	// minute are treated as one, because there is nothing else to tell a double-click apart from a
-	// deliberate second order. Sending your own key removes that guess entirely.
-	IdempotencyKey OptString `json:"idempotency_key"`
 	// Bind a floating IP you already hold, instead of allocating a new one. It must be idle and in the
 	// same region.
 	//
@@ -2893,31 +1761,6 @@ type LaunchInstanceRequestBody struct {
 	//
 	// Only one instance can be created when it is used — one address binds to one interface.
 	FloatingIPID OptUUID `json:"floating_ip_id"`
-	// Give this instance a public address with this much bandwidth, in Mbit/s. Omitted or 0 means no
-	// public address.
-	//
-	// Mutually exclusive with `floating_ip_id`, which binds one you already hold.
-	//
-	// The bandwidth is what says whether an address is wanted, rather than a separate flag, because an
-	// address with no ceiling would run at line rate and be charged nothing for the traffic — while the
-	// address itself bills normally and the invoice looks correct.
-	//
-	// The address and its bandwidth are two lines on the same order as the instance and its system disk
-	// — one purchase with one total — and everything is created together or not at all: if any step
-	// fails, the address goes back to the pool and no instance is created. Asking for an address
-	// separately afterwards is still possible, but then they are separate purchases, and a failure in
-	// between leaves an instance you cannot reach.
-	//
-	// Both lines are always billed by the hour, even when the instance is bought outright for a term: a
-	// public IPv4 is a scarce resource the platform keeps holding for as long as you have it, so it is not
-	// something that can be paid for once.
-	//
-	// Which address you get is not a choice here. Use the floating IP endpoints to claim a particular
-	// address and bind it, which is what getting a known address back after a migration needs.
-	//
-	// Rejected together with `port_id` when that interface already has a floating IP: an interface carries
-	// one IPv4, and one IPv4 takes one floating IP. Attach another interface to hold a second address.
-	BandwidthMbps OptInt64 `json:"bandwidth_mbps"`
 	// Number of instances to create; 1 when omitted. Names are numbered automatically for several.
 	Count OptInt64 `json:"count"`
 	// Have the platform generate a random password, returned only in this response.
@@ -2944,66 +1787,21 @@ type LaunchInstanceRequestBody struct {
 	PortID OptUUID `json:"port_id"`
 	// A private image. Exactly one of this, `image_id` and `boot_disk_id`.
 	PrivateImageID OptUUID `json:"private_image_id"`
-	// How to pay for a term bought outright. Only meaningful together with `term`.
-	//
-	// `balance` takes it from the account balance and either succeeds or refuses on the spot. `online`
-	// returns a `checkout_url` instead and creates nothing — the resource is only created once the money
-	// arrives and the customer comes back to place it again. That last part is deliberate: a successful
-	// payment should not silently turn into a machine, because between paying and returning they may have
-	// changed their mind.
-	//
-	// Online payment is not a second wallet. What arrives lands in the balance first and the order is
-	// settled from there, so money topped up and money paid at checkout are the same pool.
-	PaymentMethod OptLaunchInstanceRequestBodyPaymentMethod `json:"payment_method"`
-	// Buy the instance outright for this long, as an ISO 8601 duration (P1M, P1Y). Billed by the hour when
-	// omitted.
-	//
-	// The money is taken from the balance when the order is placed, at the price the catalogue reported
-	// for this type and term. If that term is not on sale for this type the request is refused — it is
-	// never quietly sold by the hour instead, because the customer who asked for a year would find out
-	// only from the bill.
-	//
-	// The system disk is bought for the same term, because it is the same purchase: an instance bought for
-	// a year whose disk is billed hourly is a bill nobody would predict from what they clicked. A term is
-	// therefore refused together with `boot_disk_id`, where the disk already exists and is already billed
-	// its own way.
-	//
-	// A public address asked for with `assign_public_ip` stays hourly regardless — it cannot be bought
-	// outright — so one order can carry both.
-	//
-	// When the term runs out the instance is stopped, not deleted, and starts again once it is renewed.
-	// Renewal lives in the billing console, across every product, because what a customer needs to see is
-	// everything expiring this month rather than one product at a time.
-	Term OptString `json:"term"`
-	// System disk capacity in GB. Chosen automatically from the requirement of the image and the platform
-	// minimum when omitted. Ignored with `boot_disk_id`, since that disk already has its capacity.
-	RootDiskGB OptInt64 `json:"root_disk_gb"`
 	// Required when a primary network interface is created, at least one; the default security group is
 	// not applied automatically. Ignored together with `port_id`, as the security groups of that interface
 	// were fixed when it was created.
 	SecurityGroupIds OptNilUUIDArray `json:"security_group_ids"`
 	// Create the primary network interface in this subnet. Exactly one of this and `port_id`.
-	SubnetID OptUUID `json:"subnet_id"`
-}
-
-// GetPromotionCode returns the value of PromotionCode.
-func (s *LaunchInstanceRequestBody) GetPromotionCode() OptString {
-	return s.PromotionCode
-}
-
-// GetIdempotencyKey returns the value of IdempotencyKey.
-func (s *LaunchInstanceRequestBody) GetIdempotencyKey() OptString {
-	return s.IdempotencyKey
+	SubnetID   OptUUID          `json:"subnet_id"`
+	Order      OrderOptions     `json:"order"`
+	Price      CatalogReference `json:"price"`
+	BootDisk   OptNewBootDisk   `json:"boot_disk"`
+	FloatingIP OptNewFloatingIP `json:"floating_ip"`
 }
 
 // GetFloatingIPID returns the value of FloatingIPID.
 func (s *LaunchInstanceRequestBody) GetFloatingIPID() OptUUID {
 	return s.FloatingIPID
-}
-
-// GetBandwidthMbps returns the value of BandwidthMbps.
-func (s *LaunchInstanceRequestBody) GetBandwidthMbps() OptInt64 {
-	return s.BandwidthMbps
 }
 
 // GetCount returns the value of Count.
@@ -3056,21 +1854,6 @@ func (s *LaunchInstanceRequestBody) GetPrivateImageID() OptUUID {
 	return s.PrivateImageID
 }
 
-// GetPaymentMethod returns the value of PaymentMethod.
-func (s *LaunchInstanceRequestBody) GetPaymentMethod() OptLaunchInstanceRequestBodyPaymentMethod {
-	return s.PaymentMethod
-}
-
-// GetTerm returns the value of Term.
-func (s *LaunchInstanceRequestBody) GetTerm() OptString {
-	return s.Term
-}
-
-// GetRootDiskGB returns the value of RootDiskGB.
-func (s *LaunchInstanceRequestBody) GetRootDiskGB() OptInt64 {
-	return s.RootDiskGB
-}
-
 // GetSecurityGroupIds returns the value of SecurityGroupIds.
 func (s *LaunchInstanceRequestBody) GetSecurityGroupIds() OptNilUUIDArray {
 	return s.SecurityGroupIds
@@ -3081,24 +1864,29 @@ func (s *LaunchInstanceRequestBody) GetSubnetID() OptUUID {
 	return s.SubnetID
 }
 
-// SetPromotionCode sets the value of PromotionCode.
-func (s *LaunchInstanceRequestBody) SetPromotionCode(val OptString) {
-	s.PromotionCode = val
+// GetOrder returns the value of Order.
+func (s *LaunchInstanceRequestBody) GetOrder() OrderOptions {
+	return s.Order
 }
 
-// SetIdempotencyKey sets the value of IdempotencyKey.
-func (s *LaunchInstanceRequestBody) SetIdempotencyKey(val OptString) {
-	s.IdempotencyKey = val
+// GetPrice returns the value of Price.
+func (s *LaunchInstanceRequestBody) GetPrice() CatalogReference {
+	return s.Price
+}
+
+// GetBootDisk returns the value of BootDisk.
+func (s *LaunchInstanceRequestBody) GetBootDisk() OptNewBootDisk {
+	return s.BootDisk
+}
+
+// GetFloatingIP returns the value of FloatingIP.
+func (s *LaunchInstanceRequestBody) GetFloatingIP() OptNewFloatingIP {
+	return s.FloatingIP
 }
 
 // SetFloatingIPID sets the value of FloatingIPID.
 func (s *LaunchInstanceRequestBody) SetFloatingIPID(val OptUUID) {
 	s.FloatingIPID = val
-}
-
-// SetBandwidthMbps sets the value of BandwidthMbps.
-func (s *LaunchInstanceRequestBody) SetBandwidthMbps(val OptInt64) {
-	s.BandwidthMbps = val
 }
 
 // SetCount sets the value of Count.
@@ -3151,21 +1939,6 @@ func (s *LaunchInstanceRequestBody) SetPrivateImageID(val OptUUID) {
 	s.PrivateImageID = val
 }
 
-// SetPaymentMethod sets the value of PaymentMethod.
-func (s *LaunchInstanceRequestBody) SetPaymentMethod(val OptLaunchInstanceRequestBodyPaymentMethod) {
-	s.PaymentMethod = val
-}
-
-// SetTerm sets the value of Term.
-func (s *LaunchInstanceRequestBody) SetTerm(val OptString) {
-	s.Term = val
-}
-
-// SetRootDiskGB sets the value of RootDiskGB.
-func (s *LaunchInstanceRequestBody) SetRootDiskGB(val OptInt64) {
-	s.RootDiskGB = val
-}
-
 // SetSecurityGroupIds sets the value of SecurityGroupIds.
 func (s *LaunchInstanceRequestBody) SetSecurityGroupIds(val OptNilUUIDArray) {
 	s.SecurityGroupIds = val
@@ -3176,198 +1949,142 @@ func (s *LaunchInstanceRequestBody) SetSubnetID(val OptUUID) {
 	s.SubnetID = val
 }
 
-// How to pay for a term bought outright. Only meaningful together with `term`.
-//
-// `balance` takes it from the account balance and either succeeds or refuses on the spot. `online`
-// returns a `checkout_url` instead and creates nothing — the resource is only created once the money
-// arrives and the customer comes back to place it again. That last part is deliberate: a successful
-// payment should not silently turn into a machine, because between paying and returning they may have
-// changed their mind.
-//
-// Online payment is not a second wallet. What arrives lands in the balance first and the order is
-// settled from there, so money topped up and money paid at checkout are the same pool.
-type LaunchInstanceRequestBodyPaymentMethod string
-
-const (
-	LaunchInstanceRequestBodyPaymentMethodBalance LaunchInstanceRequestBodyPaymentMethod = "balance"
-	LaunchInstanceRequestBodyPaymentMethodOnline  LaunchInstanceRequestBodyPaymentMethod = "online"
-)
-
-// AllValues returns all LaunchInstanceRequestBodyPaymentMethod values.
-func (LaunchInstanceRequestBodyPaymentMethod) AllValues() []LaunchInstanceRequestBodyPaymentMethod {
-	return []LaunchInstanceRequestBodyPaymentMethod{
-		LaunchInstanceRequestBodyPaymentMethodBalance,
-		LaunchInstanceRequestBodyPaymentMethodOnline,
-	}
+// SetOrder sets the value of Order.
+func (s *LaunchInstanceRequestBody) SetOrder(val OrderOptions) {
+	s.Order = val
 }
 
-// MarshalText implements encoding.TextMarshaler.
-func (s LaunchInstanceRequestBodyPaymentMethod) MarshalText() ([]byte, error) {
-	switch s {
-	case LaunchInstanceRequestBodyPaymentMethodBalance:
-		return []byte(s), nil
-	case LaunchInstanceRequestBodyPaymentMethodOnline:
-		return []byte(s), nil
-	default:
-		return nil, errors.Errorf("invalid value: %q", s)
-	}
+// SetPrice sets the value of Price.
+func (s *LaunchInstanceRequestBody) SetPrice(val CatalogReference) {
+	s.Price = val
 }
 
-// UnmarshalText implements encoding.TextUnmarshaler.
-func (s *LaunchInstanceRequestBodyPaymentMethod) UnmarshalText(data []byte) error {
-	switch LaunchInstanceRequestBodyPaymentMethod(data) {
-	case LaunchInstanceRequestBodyPaymentMethodBalance:
-		*s = LaunchInstanceRequestBodyPaymentMethodBalance
-		return nil
-	case LaunchInstanceRequestBodyPaymentMethodOnline:
-		*s = LaunchInstanceRequestBodyPaymentMethodOnline
-		return nil
-	default:
-		return errors.Errorf("invalid value: %q", data)
-	}
+// SetBootDisk sets the value of BootDisk.
+func (s *LaunchInstanceRequestBody) SetBootDisk(val OptNewBootDisk) {
+	s.BootDisk = val
+}
+
+// SetFloatingIP sets the value of FloatingIP.
+func (s *LaunchInstanceRequestBody) SetFloatingIP(val OptNewFloatingIP) {
+	s.FloatingIP = val
 }
 
 // Ref: #/components/schemas/LaunchInstanceResponseBody
 type LaunchInstanceResponseBody struct {
-	// The orders these instances were bought under, in the same order as `instances`.
-	//
-	// One per instance, not one per request. A batch of three places three orders, because each machine is
-	// ordered as it is created — stopping halfway leaves the machines already made, and they each have
-	// to be paid for. A caller showing "your order" for a batch has to show all of them.
-	//
-	// Empty when the deployment has no billing wired in, and on the `checkout_url` branch where nothing
-	// was created yet.
-	//
-	// Given so the caller can point at the transaction. Creating a resource takes money — by the hour
-	// from that moment for a metered one, in full from the balance for a prepaid one — and until now the
-	// only thing handed back was the resource itself. Somebody asking "why was I charged" had nothing to
-	// open.
-	OrderIds OptNilUUIDArray `json:"order_ids"`
-	// Non-empty when only some of the instances were created, stating why the sequence stopped.
-	Failure NilString `json:"failure"`
-	// Returned in request order; an array even for a single instance.
-	Instances []InstanceResource `json:"instances"`
-	// Returned only in this response; store it immediately. All instances of a batch share it.
-	Password string `json:"password"`
-	// Present only when `payment_method` was `online`: nothing was created. Send the customer here to pay.
-	//
-	// What comes back is not a resource but a bill to settle. Treating this response as a success and
-	// moving on is how something gets handed over without the money arriving — and it looks exactly like
-	// a normal creation from the outside.
-	CheckoutURL OptString `json:"checkout_url"`
+	Order PlacedOrder `json:"order"`
+	// Present only if generation was requested; store it securely. Idempotent retries do not generate
+	// another password.
+	Password OptString `json:"password"`
 }
 
-// GetOrderIds returns the value of OrderIds.
-func (s *LaunchInstanceResponseBody) GetOrderIds() OptNilUUIDArray {
-	return s.OrderIds
-}
-
-// GetFailure returns the value of Failure.
-func (s *LaunchInstanceResponseBody) GetFailure() NilString {
-	return s.Failure
-}
-
-// GetInstances returns the value of Instances.
-func (s *LaunchInstanceResponseBody) GetInstances() []InstanceResource {
-	return s.Instances
+// GetOrder returns the value of Order.
+func (s *LaunchInstanceResponseBody) GetOrder() PlacedOrder {
+	return s.Order
 }
 
 // GetPassword returns the value of Password.
-func (s *LaunchInstanceResponseBody) GetPassword() string {
+func (s *LaunchInstanceResponseBody) GetPassword() OptString {
 	return s.Password
 }
 
-// GetCheckoutURL returns the value of CheckoutURL.
-func (s *LaunchInstanceResponseBody) GetCheckoutURL() OptString {
-	return s.CheckoutURL
-}
-
-// SetOrderIds sets the value of OrderIds.
-func (s *LaunchInstanceResponseBody) SetOrderIds(val OptNilUUIDArray) {
-	s.OrderIds = val
-}
-
-// SetFailure sets the value of Failure.
-func (s *LaunchInstanceResponseBody) SetFailure(val NilString) {
-	s.Failure = val
-}
-
-// SetInstances sets the value of Instances.
-func (s *LaunchInstanceResponseBody) SetInstances(val []InstanceResource) {
-	s.Instances = val
+// SetOrder sets the value of Order.
+func (s *LaunchInstanceResponseBody) SetOrder(val PlacedOrder) {
+	s.Order = val
 }
 
 // SetPassword sets the value of Password.
-func (s *LaunchInstanceResponseBody) SetPassword(val string) {
+func (s *LaunchInstanceResponseBody) SetPassword(val OptString) {
 	s.Password = val
 }
 
-// SetCheckoutURL sets the value of CheckoutURL.
-func (s *LaunchInstanceResponseBody) SetCheckoutURL(val OptString) {
-	s.CheckoutURL = val
+// Storage creates and bills this system disk as a separate order line. Required when booting from an
+// image; mutually exclusive with boot_disk_id. The selected disk type must be attachable in the
+// instance location.
+// Ref: #/components/schemas/NewBootDisk
+type NewBootDisk struct {
+	DiskTypeID         uuid.UUID        `json:"disk_type_id"`
+	SizeGB             int64            `json:"size_gb"`
+	Price              CatalogReference `json:"price"`
+	DeleteWithInstance OptBool          `json:"delete_with_instance"`
 }
 
-func (*LaunchInstanceResponseBody) launchInstanceRes() {}
-
-// Ref: #/components/schemas/NextFreeCidrResponseBody
-type NextFreeCidrResponseBody struct {
-	// Empty when the private network has no free CIDR left for that prefix length.
-	Cidr string `json:"cidr"`
+// GetDiskTypeID returns the value of DiskTypeID.
+func (s *NewBootDisk) GetDiskTypeID() uuid.UUID {
+	return s.DiskTypeID
 }
 
-// GetCidr returns the value of Cidr.
-func (s *NextFreeCidrResponseBody) GetCidr() string {
-	return s.Cidr
+// GetSizeGB returns the value of SizeGB.
+func (s *NewBootDisk) GetSizeGB() int64 {
+	return s.SizeGB
 }
 
-// SetCidr sets the value of Cidr.
-func (s *NextFreeCidrResponseBody) SetCidr(val string) {
-	s.Cidr = val
+// GetPrice returns the value of Price.
+func (s *NewBootDisk) GetPrice() CatalogReference {
+	return s.Price
 }
 
-// NewNilDateTime returns new NilDateTime with value set to v.
-func NewNilDateTime(v time.Time) NilDateTime {
-	return NilDateTime{
-		Value: v,
-	}
+// GetDeleteWithInstance returns the value of DeleteWithInstance.
+func (s *NewBootDisk) GetDeleteWithInstance() OptBool {
+	return s.DeleteWithInstance
 }
 
-// NilDateTime is nullable time.Time.
-type NilDateTime struct {
-	Value time.Time
-	Null  bool
+// SetDiskTypeID sets the value of DiskTypeID.
+func (s *NewBootDisk) SetDiskTypeID(val uuid.UUID) {
+	s.DiskTypeID = val
 }
 
-// SetTo sets value to v.
-func (o *NilDateTime) SetTo(v time.Time) {
-	o.Null = false
-	o.Value = v
+// SetSizeGB sets the value of SizeGB.
+func (s *NewBootDisk) SetSizeGB(val int64) {
+	s.SizeGB = val
 }
 
-// IsNull returns true if value is Null.
-func (o NilDateTime) IsNull() bool { return o.Null }
-
-// SetToNull sets value to null.
-func (o *NilDateTime) SetToNull() {
-	o.Null = true
-	var v time.Time
-	o.Value = v
+// SetPrice sets the value of Price.
+func (s *NewBootDisk) SetPrice(val CatalogReference) {
+	s.Price = val
 }
 
-// Get returns value and boolean that denotes whether value was set.
-func (o NilDateTime) Get() (v time.Time, ok bool) {
-	if o.Null {
-		return v, false
-	}
-	return o.Value, true
+// SetDeleteWithInstance sets the value of DeleteWithInstance.
+func (s *NewBootDisk) SetDeleteWithInstance(val OptBool) {
+	s.DeleteWithInstance = val
 }
 
-// Or returns value if set, or given parameter if does not.
-func (o NilDateTime) Or(d time.Time) time.Time {
-	if v, ok := o.Get(); ok {
-		return v
-	}
-	return d
+// Fabric creates an address and bandwidth subscription in the same purchase. Mutually exclusive with
+// floating_ip_id. Fabric owns the address and its retention policy.
+// Ref: #/components/schemas/NewFloatingIP
+type NewFloatingIP struct {
+	Price          CatalogReference `json:"price"`
+	BandwidthPrice CatalogReference `json:"bandwidth_price"`
+	BandwidthMbps  int64            `json:"bandwidth_mbps"`
+}
+
+// GetPrice returns the value of Price.
+func (s *NewFloatingIP) GetPrice() CatalogReference {
+	return s.Price
+}
+
+// GetBandwidthPrice returns the value of BandwidthPrice.
+func (s *NewFloatingIP) GetBandwidthPrice() CatalogReference {
+	return s.BandwidthPrice
+}
+
+// GetBandwidthMbps returns the value of BandwidthMbps.
+func (s *NewFloatingIP) GetBandwidthMbps() int64 {
+	return s.BandwidthMbps
+}
+
+// SetPrice sets the value of Price.
+func (s *NewFloatingIP) SetPrice(val CatalogReference) {
+	s.Price = val
+}
+
+// SetBandwidthPrice sets the value of BandwidthPrice.
+func (s *NewFloatingIP) SetBandwidthPrice(val CatalogReference) {
+	s.BandwidthPrice = val
+}
+
+// SetBandwidthMbps sets the value of BandwidthMbps.
+func (s *NewFloatingIP) SetBandwidthMbps(val int64) {
+	s.BandwidthMbps = val
 }
 
 // NewNilInt64 returns new NilInt64 with value set to v.
@@ -3507,8 +2224,10 @@ func (o NilUUID) Or(d uuid.UUID) uuid.UUID {
 
 // Ref: #/components/schemas/OperationLogListResponseBody
 type OperationLogListResponseBody struct {
-	Items []OperationLogResource `json:"items"`
-	Total int64                  `json:"total"`
+	Items      []OperationLogResource `json:"items"`
+	Page       int64                  `json:"page"`
+	PageSize   int64                  `json:"page_size"`
+	TotalCount OptInt64               `json:"total_count"`
 }
 
 // GetItems returns the value of Items.
@@ -3516,9 +2235,19 @@ func (s *OperationLogListResponseBody) GetItems() []OperationLogResource {
 	return s.Items
 }
 
-// GetTotal returns the value of Total.
-func (s *OperationLogListResponseBody) GetTotal() int64 {
-	return s.Total
+// GetPage returns the value of Page.
+func (s *OperationLogListResponseBody) GetPage() int64 {
+	return s.Page
+}
+
+// GetPageSize returns the value of PageSize.
+func (s *OperationLogListResponseBody) GetPageSize() int64 {
+	return s.PageSize
+}
+
+// GetTotalCount returns the value of TotalCount.
+func (s *OperationLogListResponseBody) GetTotalCount() OptInt64 {
+	return s.TotalCount
 }
 
 // SetItems sets the value of Items.
@@ -3526,9 +2255,19 @@ func (s *OperationLogListResponseBody) SetItems(val []OperationLogResource) {
 	s.Items = val
 }
 
-// SetTotal sets the value of Total.
-func (s *OperationLogListResponseBody) SetTotal(val int64) {
-	s.Total = val
+// SetPage sets the value of Page.
+func (s *OperationLogListResponseBody) SetPage(val int64) {
+	s.Page = val
+}
+
+// SetPageSize sets the value of PageSize.
+func (s *OperationLogListResponseBody) SetPageSize(val int64) {
+	s.PageSize = val
+}
+
+// SetTotalCount sets the value of TotalCount.
+func (s *OperationLogListResponseBody) SetTotalCount(val OptInt64) {
+	s.TotalCount = val
 }
 
 // Ref: #/components/schemas/OperationLogResource
@@ -3551,8 +2290,8 @@ type OperationLogResource struct {
 	Failure NilString `json:"failure"`
 	ID      uuid.UUID `json:"id"`
 	// Path and query parameters of the request. Fields such as passwords are redacted.
-	Payload    OperationLogResourcePayload `json:"payload"`
-	RegionCode NilString                   `json:"region_code"`
+	Payload  OperationLogResourcePayload `json:"payload"`
+	RegionID NilUUID                     `json:"region_id"`
 	// Empty for create operations: the id of the new resource is in the response, not in the request path.
 	SubjectID   string `json:"subject_id"`
 	SubjectType string `json:"subject_type"`
@@ -3599,9 +2338,9 @@ func (s *OperationLogResource) GetPayload() OperationLogResourcePayload {
 	return s.Payload
 }
 
-// GetRegionCode returns the value of RegionCode.
-func (s *OperationLogResource) GetRegionCode() NilString {
-	return s.RegionCode
+// GetRegionID returns the value of RegionID.
+func (s *OperationLogResource) GetRegionID() NilUUID {
+	return s.RegionID
 }
 
 // GetSubjectID returns the value of SubjectID.
@@ -3659,9 +2398,9 @@ func (s *OperationLogResource) SetPayload(val OperationLogResourcePayload) {
 	s.Payload = val
 }
 
-// SetRegionCode sets the value of RegionCode.
-func (s *OperationLogResource) SetRegionCode(val NilString) {
-	s.RegionCode = val
+// SetRegionID sets the value of RegionID.
+func (s *OperationLogResource) SetRegionID(val NilUUID) {
+	s.RegionID = val
 }
 
 // SetSubjectID sets the value of SubjectID.
@@ -3737,38 +2476,38 @@ func (o OptBool) Or(d bool) bool {
 	return d
 }
 
-// NewOptCreateDiskRequestBodyPaymentMethod returns new OptCreateDiskRequestBodyPaymentMethod with value set to v.
-func NewOptCreateDiskRequestBodyPaymentMethod(v CreateDiskRequestBodyPaymentMethod) OptCreateDiskRequestBodyPaymentMethod {
-	return OptCreateDiskRequestBodyPaymentMethod{
+// NewOptDateTime returns new OptDateTime with value set to v.
+func NewOptDateTime(v time.Time) OptDateTime {
+	return OptDateTime{
 		Value: v,
 		Set:   true,
 	}
 }
 
-// OptCreateDiskRequestBodyPaymentMethod is optional CreateDiskRequestBodyPaymentMethod.
-type OptCreateDiskRequestBodyPaymentMethod struct {
-	Value CreateDiskRequestBodyPaymentMethod
+// OptDateTime is optional time.Time.
+type OptDateTime struct {
+	Value time.Time
 	Set   bool
 }
 
-// IsSet returns true if OptCreateDiskRequestBodyPaymentMethod was set.
-func (o OptCreateDiskRequestBodyPaymentMethod) IsSet() bool { return o.Set }
+// IsSet returns true if OptDateTime was set.
+func (o OptDateTime) IsSet() bool { return o.Set }
 
 // Reset unsets value.
-func (o *OptCreateDiskRequestBodyPaymentMethod) Reset() {
-	var v CreateDiskRequestBodyPaymentMethod
+func (o *OptDateTime) Reset() {
+	var v time.Time
 	o.Value = v
 	o.Set = false
 }
 
 // SetTo sets value to v.
-func (o *OptCreateDiskRequestBodyPaymentMethod) SetTo(v CreateDiskRequestBodyPaymentMethod) {
+func (o *OptDateTime) SetTo(v time.Time) {
 	o.Set = true
 	o.Value = v
 }
 
 // Get returns value and boolean that denotes whether value was set.
-func (o OptCreateDiskRequestBodyPaymentMethod) Get() (v CreateDiskRequestBodyPaymentMethod, ok bool) {
+func (o OptDateTime) Get() (v time.Time, ok bool) {
 	if !o.Set {
 		return v, false
 	}
@@ -3776,7 +2515,7 @@ func (o OptCreateDiskRequestBodyPaymentMethod) Get() (v CreateDiskRequestBodyPay
 }
 
 // Or returns value if set, or given parameter if does not.
-func (o OptCreateDiskRequestBodyPaymentMethod) Or(d CreateDiskRequestBodyPaymentMethod) CreateDiskRequestBodyPaymentMethod {
+func (o OptDateTime) Or(d time.Time) time.Time {
 	if v, ok := o.Get(); ok {
 		return v
 	}
@@ -3829,6 +2568,52 @@ func (o OptErrorMeta) Or(d ErrorMeta) ErrorMeta {
 	return d
 }
 
+// NewOptInstanceOperation returns new OptInstanceOperation with value set to v.
+func NewOptInstanceOperation(v InstanceOperation) OptInstanceOperation {
+	return OptInstanceOperation{
+		Value: v,
+		Set:   true,
+	}
+}
+
+// OptInstanceOperation is optional InstanceOperation.
+type OptInstanceOperation struct {
+	Value InstanceOperation
+	Set   bool
+}
+
+// IsSet returns true if OptInstanceOperation was set.
+func (o OptInstanceOperation) IsSet() bool { return o.Set }
+
+// Reset unsets value.
+func (o *OptInstanceOperation) Reset() {
+	var v InstanceOperation
+	o.Value = v
+	o.Set = false
+}
+
+// SetTo sets value to v.
+func (o *OptInstanceOperation) SetTo(v InstanceOperation) {
+	o.Set = true
+	o.Value = v
+}
+
+// Get returns value and boolean that denotes whether value was set.
+func (o OptInstanceOperation) Get() (v InstanceOperation, ok bool) {
+	if !o.Set {
+		return v, false
+	}
+	return o.Value, true
+}
+
+// Or returns value if set, or given parameter if does not.
+func (o OptInstanceOperation) Or(d InstanceOperation) InstanceOperation {
+	if v, ok := o.Get(); ok {
+		return v
+	}
+	return d
+}
+
 // NewOptInt64 returns new OptInt64 with value set to v.
 func NewOptInt64(v int64) OptInt64 {
 	return OptInt64{
@@ -3875,38 +2660,38 @@ func (o OptInt64) Or(d int64) int64 {
 	return d
 }
 
-// NewOptLaunchInstanceRequestBodyPaymentMethod returns new OptLaunchInstanceRequestBodyPaymentMethod with value set to v.
-func NewOptLaunchInstanceRequestBodyPaymentMethod(v LaunchInstanceRequestBodyPaymentMethod) OptLaunchInstanceRequestBodyPaymentMethod {
-	return OptLaunchInstanceRequestBodyPaymentMethod{
+// NewOptNewBootDisk returns new OptNewBootDisk with value set to v.
+func NewOptNewBootDisk(v NewBootDisk) OptNewBootDisk {
+	return OptNewBootDisk{
 		Value: v,
 		Set:   true,
 	}
 }
 
-// OptLaunchInstanceRequestBodyPaymentMethod is optional LaunchInstanceRequestBodyPaymentMethod.
-type OptLaunchInstanceRequestBodyPaymentMethod struct {
-	Value LaunchInstanceRequestBodyPaymentMethod
+// OptNewBootDisk is optional NewBootDisk.
+type OptNewBootDisk struct {
+	Value NewBootDisk
 	Set   bool
 }
 
-// IsSet returns true if OptLaunchInstanceRequestBodyPaymentMethod was set.
-func (o OptLaunchInstanceRequestBodyPaymentMethod) IsSet() bool { return o.Set }
+// IsSet returns true if OptNewBootDisk was set.
+func (o OptNewBootDisk) IsSet() bool { return o.Set }
 
 // Reset unsets value.
-func (o *OptLaunchInstanceRequestBodyPaymentMethod) Reset() {
-	var v LaunchInstanceRequestBodyPaymentMethod
+func (o *OptNewBootDisk) Reset() {
+	var v NewBootDisk
 	o.Value = v
 	o.Set = false
 }
 
 // SetTo sets value to v.
-func (o *OptLaunchInstanceRequestBodyPaymentMethod) SetTo(v LaunchInstanceRequestBodyPaymentMethod) {
+func (o *OptNewBootDisk) SetTo(v NewBootDisk) {
 	o.Set = true
 	o.Value = v
 }
 
 // Get returns value and boolean that denotes whether value was set.
-func (o OptLaunchInstanceRequestBodyPaymentMethod) Get() (v LaunchInstanceRequestBodyPaymentMethod, ok bool) {
+func (o OptNewBootDisk) Get() (v NewBootDisk, ok bool) {
 	if !o.Set {
 		return v, false
 	}
@@ -3914,67 +2699,45 @@ func (o OptLaunchInstanceRequestBodyPaymentMethod) Get() (v LaunchInstanceReques
 }
 
 // Or returns value if set, or given parameter if does not.
-func (o OptLaunchInstanceRequestBodyPaymentMethod) Or(d LaunchInstanceRequestBodyPaymentMethod) LaunchInstanceRequestBodyPaymentMethod {
+func (o OptNewBootDisk) Or(d NewBootDisk) NewBootDisk {
 	if v, ok := o.Get(); ok {
 		return v
 	}
 	return d
 }
 
-// NewOptNilInt64 returns new OptNilInt64 with value set to v.
-func NewOptNilInt64(v int64) OptNilInt64 {
-	return OptNilInt64{
+// NewOptNewFloatingIP returns new OptNewFloatingIP with value set to v.
+func NewOptNewFloatingIP(v NewFloatingIP) OptNewFloatingIP {
+	return OptNewFloatingIP{
 		Value: v,
 		Set:   true,
 	}
 }
 
-// OptNilInt64 is optional nullable int64.
-type OptNilInt64 struct {
-	Value int64
+// OptNewFloatingIP is optional NewFloatingIP.
+type OptNewFloatingIP struct {
+	Value NewFloatingIP
 	Set   bool
-	Null  bool
 }
 
-// IsSet returns true if OptNilInt64 was set.
-func (o OptNilInt64) IsSet() bool { return o.Set }
+// IsSet returns true if OptNewFloatingIP was set.
+func (o OptNewFloatingIP) IsSet() bool { return o.Set }
 
 // Reset unsets value.
-func (o *OptNilInt64) Reset() {
-	var v int64
+func (o *OptNewFloatingIP) Reset() {
+	var v NewFloatingIP
 	o.Value = v
 	o.Set = false
-	o.Null = false
 }
 
 // SetTo sets value to v.
-func (o *OptNilInt64) SetTo(v int64) {
+func (o *OptNewFloatingIP) SetTo(v NewFloatingIP) {
 	o.Set = true
-	o.Null = false
 	o.Value = v
-}
-
-// IsNull returns true if value is Null.
-func (o OptNilInt64) IsNull() bool { return o.Null }
-
-// SetToNull sets value to null.
-func (o *OptNilInt64) SetToNull() {
-	o.Set = true
-	o.Null = true
-	var v int64
-	o.Value = v
-}
-
-// IsEmpty returns true if the field was omitted from the payload (not Set and not Null).
-func (o OptNilInt64) IsEmpty() bool {
-	return !o.Set && !o.Null
 }
 
 // Get returns value and boolean that denotes whether value was set.
-func (o OptNilInt64) Get() (v int64, ok bool) {
-	if o.Null {
-		return v, false
-	}
+func (o OptNewFloatingIP) Get() (v NewFloatingIP, ok bool) {
 	if !o.Set {
 		return v, false
 	}
@@ -3982,7 +2745,7 @@ func (o OptNilInt64) Get() (v int64, ok bool) {
 }
 
 // Or returns value if set, or given parameter if does not.
-func (o OptNilInt64) Or(d int64) int64 {
+func (o OptNewFloatingIP) Or(d NewFloatingIP) NewFloatingIP {
 	if v, ok := o.Get(); ok {
 		return v
 	}
@@ -4051,6 +2814,52 @@ func (o OptNilUUIDArray) Get() (v []uuid.UUID, ok bool) {
 
 // Or returns value if set, or given parameter if does not.
 func (o OptNilUUIDArray) Or(d []uuid.UUID) []uuid.UUID {
+	if v, ok := o.Get(); ok {
+		return v
+	}
+	return d
+}
+
+// NewOptPaymentPlan returns new OptPaymentPlan with value set to v.
+func NewOptPaymentPlan(v PaymentPlan) OptPaymentPlan {
+	return OptPaymentPlan{
+		Value: v,
+		Set:   true,
+	}
+}
+
+// OptPaymentPlan is optional PaymentPlan.
+type OptPaymentPlan struct {
+	Value PaymentPlan
+	Set   bool
+}
+
+// IsSet returns true if OptPaymentPlan was set.
+func (o OptPaymentPlan) IsSet() bool { return o.Set }
+
+// Reset unsets value.
+func (o *OptPaymentPlan) Reset() {
+	var v PaymentPlan
+	o.Value = v
+	o.Set = false
+}
+
+// SetTo sets value to v.
+func (o *OptPaymentPlan) SetTo(v PaymentPlan) {
+	o.Set = true
+	o.Value = v
+}
+
+// Get returns value and boolean that denotes whether value was set.
+func (o OptPaymentPlan) Get() (v PaymentPlan, ok bool) {
+	if !o.Set {
+		return v, false
+	}
+	return o.Value, true
+}
+
+// Or returns value if set, or given parameter if does not.
+func (o OptPaymentPlan) Or(d PaymentPlan) PaymentPlan {
 	if v, ok := o.Get(); ok {
 		return v
 	}
@@ -4149,182 +2958,141 @@ func (o OptUUID) Or(d uuid.UUID) uuid.UUID {
 	return d
 }
 
-// Ref: #/components/schemas/PortListResponseBody
-type PortListResponseBody struct {
-	Items []PortResource `json:"items"`
+// Reuse the same key for retries of the same purchase. Reusing it with a different request fails.
+// Billing selects contract pricing, applies eligible grants and promotions, and owns payment
+// challenges and expiry.
+// Ref: #/components/schemas/OrderOptions
+type OrderOptions struct {
+	IdempotencyKey string         `json:"idempotency_key"`
+	PaymentPlan    OptPaymentPlan `json:"payment_plan"`
+	ExpectedAmount OptString      `json:"expected_amount"`
+	RedemptionCode OptString      `json:"redemption_code"`
 }
 
-// GetItems returns the value of Items.
-func (s *PortListResponseBody) GetItems() []PortResource {
-	return s.Items
+// GetIdempotencyKey returns the value of IdempotencyKey.
+func (s *OrderOptions) GetIdempotencyKey() string {
+	return s.IdempotencyKey
 }
 
-// SetItems sets the value of Items.
-func (s *PortListResponseBody) SetItems(val []PortResource) {
-	s.Items = val
+// GetPaymentPlan returns the value of PaymentPlan.
+func (s *OrderOptions) GetPaymentPlan() OptPaymentPlan {
+	return s.PaymentPlan
 }
 
-// Ref: #/components/schemas/PortResource
-type PortResource struct {
-	AttachedInstanceID NilString `json:"attached_instance_id"`
-	ID                 uuid.UUID `json:"id"`
-	Ipv6Address        NilString `json:"ipv6_address"`
-	// A primary network interface is created and released with its instance and cannot be detached
-	// individually.
-	IsPrimary        bool      `json:"is_primary"`
-	MAC              NilString `json:"mac"`
-	Name             string    `json:"name"`
-	PrivateIP        NilString `json:"private_ip"`
-	PrivateNetworkID uuid.UUID `json:"private_network_id"`
-	// Floating IPv4 addresses bound to this network interface; an empty array when none are bound.
-	PublicIps []string  `json:"public_ips"`
-	SubnetID  uuid.UUID `json:"subnet_id"`
+// GetExpectedAmount returns the value of ExpectedAmount.
+func (s *OrderOptions) GetExpectedAmount() OptString {
+	return s.ExpectedAmount
 }
 
-// GetAttachedInstanceID returns the value of AttachedInstanceID.
-func (s *PortResource) GetAttachedInstanceID() NilString {
-	return s.AttachedInstanceID
+// GetRedemptionCode returns the value of RedemptionCode.
+func (s *OrderOptions) GetRedemptionCode() OptString {
+	return s.RedemptionCode
 }
 
-// GetID returns the value of ID.
-func (s *PortResource) GetID() uuid.UUID {
-	return s.ID
+// SetIdempotencyKey sets the value of IdempotencyKey.
+func (s *OrderOptions) SetIdempotencyKey(val string) {
+	s.IdempotencyKey = val
 }
 
-// GetIpv6Address returns the value of Ipv6Address.
-func (s *PortResource) GetIpv6Address() NilString {
-	return s.Ipv6Address
+// SetPaymentPlan sets the value of PaymentPlan.
+func (s *OrderOptions) SetPaymentPlan(val OptPaymentPlan) {
+	s.PaymentPlan = val
 }
 
-// GetIsPrimary returns the value of IsPrimary.
-func (s *PortResource) GetIsPrimary() bool {
-	return s.IsPrimary
+// SetExpectedAmount sets the value of ExpectedAmount.
+func (s *OrderOptions) SetExpectedAmount(val OptString) {
+	s.ExpectedAmount = val
 }
 
-// GetMAC returns the value of MAC.
-func (s *PortResource) GetMAC() NilString {
-	return s.MAC
+// SetRedemptionCode sets the value of RedemptionCode.
+func (s *OrderOptions) SetRedemptionCode(val OptString) {
+	s.RedemptionCode = val
 }
 
-// GetName returns the value of Name.
-func (s *PortResource) GetName() string {
-	return s.Name
+// Requested funding split. This does not select a card or payment provider; complete payment through
+// Billing.
+// Ref: #/components/schemas/PaymentPlan
+type PaymentPlan struct {
+	BalanceAmount  string `json:"balance_amount"`
+	ProviderAmount string `json:"provider_amount"`
 }
 
-// GetPrivateIP returns the value of PrivateIP.
-func (s *PortResource) GetPrivateIP() NilString {
-	return s.PrivateIP
+// GetBalanceAmount returns the value of BalanceAmount.
+func (s *PaymentPlan) GetBalanceAmount() string {
+	return s.BalanceAmount
 }
 
-// GetPrivateNetworkID returns the value of PrivateNetworkID.
-func (s *PortResource) GetPrivateNetworkID() uuid.UUID {
-	return s.PrivateNetworkID
+// GetProviderAmount returns the value of ProviderAmount.
+func (s *PaymentPlan) GetProviderAmount() string {
+	return s.ProviderAmount
 }
 
-// GetPublicIps returns the value of PublicIps.
-func (s *PortResource) GetPublicIps() []string {
-	return s.PublicIps
+// SetBalanceAmount sets the value of BalanceAmount.
+func (s *PaymentPlan) SetBalanceAmount(val string) {
+	s.BalanceAmount = val
 }
 
-// GetSubnetID returns the value of SubnetID.
-func (s *PortResource) GetSubnetID() uuid.UUID {
-	return s.SubnetID
+// SetProviderAmount sets the value of ProviderAmount.
+func (s *PaymentPlan) SetProviderAmount(val string) {
+	s.ProviderAmount = val
 }
 
-// SetAttachedInstanceID sets the value of AttachedInstanceID.
-func (s *PortResource) SetAttachedInstanceID(val NilString) {
-	s.AttachedInstanceID = val
+// A billable order has been created. Read it from the billing API to find out what is owed and whether
+// payment is still required.
+//
+// Only the identifier is returned. Amounts and state are not repeated here; the order itself is the
+// single source for them.
+// Ref: #/components/schemas/PlacedOrder
+type PlacedOrder struct {
+	// Identifies the order. Use it to read the order and, where payment is required, to pay it.
+	//
+	// An order is created even when nothing is owed, such as a plan with no charge or one covered entirely
+	// by granted credit. Such an order is already settled, and no payment step applies.
+	OrderID uuid.UUID `json:"order_id"`
 }
 
-// SetID sets the value of ID.
-func (s *PortResource) SetID(val uuid.UUID) {
-	s.ID = val
+// GetOrderID returns the value of OrderID.
+func (s *PlacedOrder) GetOrderID() uuid.UUID {
+	return s.OrderID
 }
 
-// SetIpv6Address sets the value of Ipv6Address.
-func (s *PortResource) SetIpv6Address(val NilString) {
-	s.Ipv6Address = val
+// SetOrderID sets the value of OrderID.
+func (s *PlacedOrder) SetOrderID(val uuid.UUID) {
+	s.OrderID = val
 }
 
-// SetIsPrimary sets the value of IsPrimary.
-func (s *PortResource) SetIsPrimary(val bool) {
-	s.IsPrimary = val
+// Ref: #/components/schemas/PowerRequest
+type PowerRequest struct {
+	IdempotencyKey     string   `json:"idempotency_key"`
+	ExpectedGeneration OptInt64 `json:"expected_generation"`
 }
 
-// SetMAC sets the value of MAC.
-func (s *PortResource) SetMAC(val NilString) {
-	s.MAC = val
+// GetIdempotencyKey returns the value of IdempotencyKey.
+func (s *PowerRequest) GetIdempotencyKey() string {
+	return s.IdempotencyKey
 }
 
-// SetName sets the value of Name.
-func (s *PortResource) SetName(val string) {
-	s.Name = val
+// GetExpectedGeneration returns the value of ExpectedGeneration.
+func (s *PowerRequest) GetExpectedGeneration() OptInt64 {
+	return s.ExpectedGeneration
 }
 
-// SetPrivateIP sets the value of PrivateIP.
-func (s *PortResource) SetPrivateIP(val NilString) {
-	s.PrivateIP = val
+// SetIdempotencyKey sets the value of IdempotencyKey.
+func (s *PowerRequest) SetIdempotencyKey(val string) {
+	s.IdempotencyKey = val
 }
 
-// SetPrivateNetworkID sets the value of PrivateNetworkID.
-func (s *PortResource) SetPrivateNetworkID(val uuid.UUID) {
-	s.PrivateNetworkID = val
-}
-
-// SetPublicIps sets the value of PublicIps.
-func (s *PortResource) SetPublicIps(val []string) {
-	s.PublicIps = val
-}
-
-// SetSubnetID sets the value of SubnetID.
-func (s *PortResource) SetSubnetID(val uuid.UUID) {
-	s.SubnetID = val
-}
-
-// Ref: #/components/schemas/PrepaidPrice
-type PrepaidPrice struct {
-	// An ISO 8601 duration (P1M, P1Y). A duration rather than a number of months: months are not the same
-	// length, and storing a number leaves whoever reads it to decide what it means.
-	Term string `json:"term"`
-	// A decimal string, not a float. Money that survives a round trip through binary floating point is
-	// money that stops adding up.
-	Amount   string `json:"amount"`
-	Currency string `json:"currency"`
-}
-
-// GetTerm returns the value of Term.
-func (s *PrepaidPrice) GetTerm() string {
-	return s.Term
-}
-
-// GetAmount returns the value of Amount.
-func (s *PrepaidPrice) GetAmount() string {
-	return s.Amount
-}
-
-// GetCurrency returns the value of Currency.
-func (s *PrepaidPrice) GetCurrency() string {
-	return s.Currency
-}
-
-// SetTerm sets the value of Term.
-func (s *PrepaidPrice) SetTerm(val string) {
-	s.Term = val
-}
-
-// SetAmount sets the value of Amount.
-func (s *PrepaidPrice) SetAmount(val string) {
-	s.Amount = val
-}
-
-// SetCurrency sets the value of Currency.
-func (s *PrepaidPrice) SetCurrency(val string) {
-	s.Currency = val
+// SetExpectedGeneration sets the value of ExpectedGeneration.
+func (s *PowerRequest) SetExpectedGeneration(val OptInt64) {
+	s.ExpectedGeneration = val
 }
 
 // Ref: #/components/schemas/PrivateImageListResponseBody
 type PrivateImageListResponseBody struct {
-	Items []PrivateImageResource `json:"items"`
+	Items      []PrivateImageResource `json:"items"`
+	Page       int64                  `json:"page"`
+	PageSize   int64                  `json:"page_size"`
+	TotalCount OptInt64               `json:"total_count"`
 }
 
 // GetItems returns the value of Items.
@@ -4332,9 +3100,39 @@ func (s *PrivateImageListResponseBody) GetItems() []PrivateImageResource {
 	return s.Items
 }
 
+// GetPage returns the value of Page.
+func (s *PrivateImageListResponseBody) GetPage() int64 {
+	return s.Page
+}
+
+// GetPageSize returns the value of PageSize.
+func (s *PrivateImageListResponseBody) GetPageSize() int64 {
+	return s.PageSize
+}
+
+// GetTotalCount returns the value of TotalCount.
+func (s *PrivateImageListResponseBody) GetTotalCount() OptInt64 {
+	return s.TotalCount
+}
+
 // SetItems sets the value of Items.
 func (s *PrivateImageListResponseBody) SetItems(val []PrivateImageResource) {
 	s.Items = val
+}
+
+// SetPage sets the value of Page.
+func (s *PrivateImageListResponseBody) SetPage(val int64) {
+	s.Page = val
+}
+
+// SetPageSize sets the value of PageSize.
+func (s *PrivateImageListResponseBody) SetPageSize(val int64) {
+	s.PageSize = val
+}
+
+// SetTotalCount sets the value of TotalCount.
+func (s *PrivateImageListResponseBody) SetTotalCount(val OptInt64) {
+	s.TotalCount = val
 }
 
 // Ref: #/components/schemas/PrivateImageResource
@@ -4349,12 +3147,11 @@ type PrivateImageResource struct {
 	// The system disk of an instance created from this image cannot be smaller than this.
 	MinDiskGB int64 `json:"min_disk_gb"`
 	// The instance type of an instance created from this image must have at least this much memory.
-	MinRAMMB  int64  `json:"min_ram_mb"`
-	Name      string `json:"name"`
-	OsFamily  string `json:"os_family"`
-	OsVersion string `json:"os_version"`
-	// An image can only be used in the region that holds it.
-	RegionCode string `json:"region_code"`
+	MinRAMMB  int64     `json:"min_ram_mb"`
+	Name      string    `json:"name"`
+	OsFamily  string    `json:"os_family"`
+	OsVersion string    `json:"os_version"`
+	RegionID  uuid.UUID `json:"region_id"`
 	// Storage occupied by the image; 0 until the capture completes.
 	SizeBytes int64 `json:"size_bytes"`
 	// The instance this image was captured from. The image remains usable after that instance is released.
@@ -4414,9 +3211,9 @@ func (s *PrivateImageResource) GetOsVersion() string {
 	return s.OsVersion
 }
 
-// GetRegionCode returns the value of RegionCode.
-func (s *PrivateImageResource) GetRegionCode() string {
-	return s.RegionCode
+// GetRegionID returns the value of RegionID.
+func (s *PrivateImageResource) GetRegionID() uuid.UUID {
+	return s.RegionID
 }
 
 // GetSizeBytes returns the value of SizeBytes.
@@ -4489,9 +3286,9 @@ func (s *PrivateImageResource) SetOsVersion(val string) {
 	s.OsVersion = val
 }
 
-// SetRegionCode sets the value of RegionCode.
-func (s *PrivateImageResource) SetRegionCode(val string) {
-	s.RegionCode = val
+// SetRegionID sets the value of RegionID.
+func (s *PrivateImageResource) SetRegionID(val uuid.UUID) {
+	s.RegionID = val
 }
 
 // SetSizeBytes sets the value of SizeBytes.
@@ -4570,154 +3367,6 @@ func (s *PrivateImageResourceStatus) UnmarshalText(data []byte) error {
 		return nil
 	case PrivateImageResourceStatusError:
 		*s = PrivateImageResourceStatusError
-		return nil
-	default:
-		return errors.Errorf("invalid value: %q", data)
-	}
-}
-
-// Ref: #/components/schemas/PrivateNetworkListResponseBody
-type PrivateNetworkListResponseBody struct {
-	Items []PrivateNetworkResource `json:"items"`
-}
-
-// GetItems returns the value of Items.
-func (s *PrivateNetworkListResponseBody) GetItems() []PrivateNetworkResource {
-	return s.Items
-}
-
-// SetItems sets the value of Items.
-func (s *PrivateNetworkListResponseBody) SetItems(val []PrivateNetworkResource) {
-	s.Items = val
-}
-
-// Ref: #/components/schemas/PrivateNetworkResource
-type PrivateNetworkResource struct {
-	Cidr               string                       `json:"cidr"`
-	CreatedAt          time.Time                    `json:"created_at"`
-	HasInternetGateway bool                         `json:"has_internet_gateway"`
-	ID                 uuid.UUID                    `json:"id"`
-	Name               string                       `json:"name"`
-	RegionCode         string                       `json:"region_code"`
-	Status             PrivateNetworkResourceStatus `json:"status"`
-	UpdatedAt          time.Time                    `json:"updated_at"`
-}
-
-// GetCidr returns the value of Cidr.
-func (s *PrivateNetworkResource) GetCidr() string {
-	return s.Cidr
-}
-
-// GetCreatedAt returns the value of CreatedAt.
-func (s *PrivateNetworkResource) GetCreatedAt() time.Time {
-	return s.CreatedAt
-}
-
-// GetHasInternetGateway returns the value of HasInternetGateway.
-func (s *PrivateNetworkResource) GetHasInternetGateway() bool {
-	return s.HasInternetGateway
-}
-
-// GetID returns the value of ID.
-func (s *PrivateNetworkResource) GetID() uuid.UUID {
-	return s.ID
-}
-
-// GetName returns the value of Name.
-func (s *PrivateNetworkResource) GetName() string {
-	return s.Name
-}
-
-// GetRegionCode returns the value of RegionCode.
-func (s *PrivateNetworkResource) GetRegionCode() string {
-	return s.RegionCode
-}
-
-// GetStatus returns the value of Status.
-func (s *PrivateNetworkResource) GetStatus() PrivateNetworkResourceStatus {
-	return s.Status
-}
-
-// GetUpdatedAt returns the value of UpdatedAt.
-func (s *PrivateNetworkResource) GetUpdatedAt() time.Time {
-	return s.UpdatedAt
-}
-
-// SetCidr sets the value of Cidr.
-func (s *PrivateNetworkResource) SetCidr(val string) {
-	s.Cidr = val
-}
-
-// SetCreatedAt sets the value of CreatedAt.
-func (s *PrivateNetworkResource) SetCreatedAt(val time.Time) {
-	s.CreatedAt = val
-}
-
-// SetHasInternetGateway sets the value of HasInternetGateway.
-func (s *PrivateNetworkResource) SetHasInternetGateway(val bool) {
-	s.HasInternetGateway = val
-}
-
-// SetID sets the value of ID.
-func (s *PrivateNetworkResource) SetID(val uuid.UUID) {
-	s.ID = val
-}
-
-// SetName sets the value of Name.
-func (s *PrivateNetworkResource) SetName(val string) {
-	s.Name = val
-}
-
-// SetRegionCode sets the value of RegionCode.
-func (s *PrivateNetworkResource) SetRegionCode(val string) {
-	s.RegionCode = val
-}
-
-// SetStatus sets the value of Status.
-func (s *PrivateNetworkResource) SetStatus(val PrivateNetworkResourceStatus) {
-	s.Status = val
-}
-
-// SetUpdatedAt sets the value of UpdatedAt.
-func (s *PrivateNetworkResource) SetUpdatedAt(val time.Time) {
-	s.UpdatedAt = val
-}
-
-type PrivateNetworkResourceStatus string
-
-const (
-	PrivateNetworkResourceStatusAvailable PrivateNetworkResourceStatus = "available"
-	PrivateNetworkResourceStatusError     PrivateNetworkResourceStatus = "error"
-)
-
-// AllValues returns all PrivateNetworkResourceStatus values.
-func (PrivateNetworkResourceStatus) AllValues() []PrivateNetworkResourceStatus {
-	return []PrivateNetworkResourceStatus{
-		PrivateNetworkResourceStatusAvailable,
-		PrivateNetworkResourceStatusError,
-	}
-}
-
-// MarshalText implements encoding.TextMarshaler.
-func (s PrivateNetworkResourceStatus) MarshalText() ([]byte, error) {
-	switch s {
-	case PrivateNetworkResourceStatusAvailable:
-		return []byte(s), nil
-	case PrivateNetworkResourceStatusError:
-		return []byte(s), nil
-	default:
-		return nil, errors.Errorf("invalid value: %q", s)
-	}
-}
-
-// UnmarshalText implements encoding.TextUnmarshaler.
-func (s *PrivateNetworkResourceStatus) UnmarshalText(data []byte) error {
-	switch PrivateNetworkResourceStatus(data) {
-	case PrivateNetworkResourceStatusAvailable:
-		*s = PrivateNetworkResourceStatusAvailable
-		return nil
-	case PrivateNetworkResourceStatusError:
-		*s = PrivateNetworkResourceStatusError
 		return nil
 	default:
 		return errors.Errorf("invalid value: %q", data)
@@ -4819,91 +3468,6 @@ func (s *RebuildInstanceResponseBody) SetPassword(val string) {
 	s.Password = val
 }
 
-// Ref: #/components/schemas/RegionListResponseBody
-type RegionListResponseBody struct {
-	Items []RegionResource `json:"items"`
-}
-
-// GetItems returns the value of Items.
-func (s *RegionListResponseBody) GetItems() []RegionResource {
-	return s.Items
-}
-
-// SetItems sets the value of Items.
-func (s *RegionListResponseBody) SetItems(val []RegionResource) {
-	s.Items = val
-}
-
-// Ref: #/components/schemas/RegionResource
-type RegionResource struct {
-	Code        string `json:"code"`
-	CountryCode string `json:"country_code"`
-	Name        string `json:"name"`
-}
-
-// GetCode returns the value of Code.
-func (s *RegionResource) GetCode() string {
-	return s.Code
-}
-
-// GetCountryCode returns the value of CountryCode.
-func (s *RegionResource) GetCountryCode() string {
-	return s.CountryCode
-}
-
-// GetName returns the value of Name.
-func (s *RegionResource) GetName() string {
-	return s.Name
-}
-
-// SetCode sets the value of Code.
-func (s *RegionResource) SetCode(val string) {
-	s.Code = val
-}
-
-// SetCountryCode sets the value of CountryCode.
-func (s *RegionResource) SetCountryCode(val string) {
-	s.CountryCode = val
-}
-
-// SetName sets the value of Name.
-func (s *RegionResource) SetName(val string) {
-	s.Name = val
-}
-
-// ReleaseFloatingIPNoContent is response for ReleaseFloatingIP operation.
-type ReleaseFloatingIPNoContent struct{}
-
-// Ref: #/components/schemas/RenameBackupRequestBody
-type RenameBackupRequestBody struct {
-	Name string `json:"name"`
-}
-
-// GetName returns the value of Name.
-func (s *RenameBackupRequestBody) GetName() string {
-	return s.Name
-}
-
-// SetName sets the value of Name.
-func (s *RenameBackupRequestBody) SetName(val string) {
-	s.Name = val
-}
-
-// Ref: #/components/schemas/RenameDiskRequestBody
-type RenameDiskRequestBody struct {
-	Name string `json:"name"`
-}
-
-// GetName returns the value of Name.
-func (s *RenameDiskRequestBody) GetName() string {
-	return s.Name
-}
-
-// SetName sets the value of Name.
-func (s *RenameDiskRequestBody) SetName(val string) {
-	s.Name = val
-}
-
 // Ref: #/components/schemas/RenameInstanceRequestBody
 type RenameInstanceRequestBody struct {
 	Name string `json:"name"`
@@ -4931,51 +3495,6 @@ func (s *RenamePrivateImageRequestBody) GetName() string {
 
 // SetName sets the value of Name.
 func (s *RenamePrivateImageRequestBody) SetName(val string) {
-	s.Name = val
-}
-
-// Ref: #/components/schemas/RenamePrivateNetworkRequestBody
-type RenamePrivateNetworkRequestBody struct {
-	Name string `json:"name"`
-}
-
-// GetName returns the value of Name.
-func (s *RenamePrivateNetworkRequestBody) GetName() string {
-	return s.Name
-}
-
-// SetName sets the value of Name.
-func (s *RenamePrivateNetworkRequestBody) SetName(val string) {
-	s.Name = val
-}
-
-// Ref: #/components/schemas/RenameSecurityGroupRequestBody
-type RenameSecurityGroupRequestBody struct {
-	Name string `json:"name"`
-}
-
-// GetName returns the value of Name.
-func (s *RenameSecurityGroupRequestBody) GetName() string {
-	return s.Name
-}
-
-// SetName sets the value of Name.
-func (s *RenameSecurityGroupRequestBody) SetName(val string) {
-	s.Name = val
-}
-
-// Ref: #/components/schemas/RenameSnapshotRequestBody
-type RenameSnapshotRequestBody struct {
-	Name string `json:"name"`
-}
-
-// GetName returns the value of Name.
-func (s *RenameSnapshotRequestBody) GetName() string {
-	return s.Name
-}
-
-// SetName sets the value of Name.
-func (s *RenameSnapshotRequestBody) SetName(val string) {
 	s.Name = val
 }
 
@@ -5024,26 +3543,12 @@ func (s *ResetPasswordResponseBody) SetPassword(val string) {
 	s.Password = val
 }
 
-// Ref: #/components/schemas/ResizeDiskRequestBody
-type ResizeDiskRequestBody struct {
-	// Must be larger than the current capacity.
-	SizeGB int64 `json:"size_gb"`
-}
-
-// GetSizeGB returns the value of SizeGB.
-func (s *ResizeDiskRequestBody) GetSizeGB() int64 {
-	return s.SizeGB
-}
-
-// SetSizeGB sets the value of SizeGB.
-func (s *ResizeDiskRequestBody) SetSizeGB(val int64) {
-	s.SizeGB = val
-}
-
 // Ref: #/components/schemas/ResizeInstanceRequestBody
 type ResizeInstanceRequestBody struct {
 	// Must be in the same region and availability zone as the current instance type.
-	InstanceTypeID uuid.UUID `json:"instance_type_id"`
+	InstanceTypeID uuid.UUID        `json:"instance_type_id"`
+	Order          OrderOptions     `json:"order"`
+	Price          CatalogReference `json:"price"`
 }
 
 // GetInstanceTypeID returns the value of InstanceTypeID.
@@ -5051,139 +3556,411 @@ func (s *ResizeInstanceRequestBody) GetInstanceTypeID() uuid.UUID {
 	return s.InstanceTypeID
 }
 
+// GetOrder returns the value of Order.
+func (s *ResizeInstanceRequestBody) GetOrder() OrderOptions {
+	return s.Order
+}
+
+// GetPrice returns the value of Price.
+func (s *ResizeInstanceRequestBody) GetPrice() CatalogReference {
+	return s.Price
+}
+
 // SetInstanceTypeID sets the value of InstanceTypeID.
 func (s *ResizeInstanceRequestBody) SetInstanceTypeID(val uuid.UUID) {
 	s.InstanceTypeID = val
 }
 
-// Ref: #/components/schemas/RestoreBackupRequestBody
-type RestoreBackupRequestBody struct {
-	// May differ from the availability zone of the source disk, but must be in the same region. It has to
-	// be on sale — restoring creates a new disk, so a withdrawn type is rejected here as well.
-	DiskTypeID uuid.UUID `json:"disk_type_id"`
-	Name       string    `json:"name"`
-	// Matches the size of the backup when omitted. When given, it must not be smaller than the backup.
-	SizeGB OptInt64 `json:"size_gb"`
+// SetOrder sets the value of Order.
+func (s *ResizeInstanceRequestBody) SetOrder(val OrderOptions) {
+	s.Order = val
 }
 
-// GetDiskTypeID returns the value of DiskTypeID.
-func (s *RestoreBackupRequestBody) GetDiskTypeID() uuid.UUID {
-	return s.DiskTypeID
+// SetPrice sets the value of Price.
+func (s *ResizeInstanceRequestBody) SetPrice(val CatalogReference) {
+	s.Price = val
 }
 
-// GetName returns the value of Name.
-func (s *RestoreBackupRequestBody) GetName() string {
-	return s.Name
+// The consumer’s desired dependency. usage_id identifies the corresponding claim in the owning
+// service; actual attachment state is read from that service.
+// Ref: #/components/schemas/ResourceDependency
+type ResourceDependency struct {
+	UsageID            uuid.UUID                      `json:"usage_id"`
+	Resource           ResourceReference              `json:"resource"`
+	Purpose            string                         `json:"purpose"`
+	DesiredState       ResourceDependencyDesiredState `json:"desired_state"`
+	DeleteWithConsumer bool                           `json:"delete_with_consumer"`
+	Generation         int64                          `json:"generation"`
 }
 
-// GetSizeGB returns the value of SizeGB.
-func (s *RestoreBackupRequestBody) GetSizeGB() OptInt64 {
-	return s.SizeGB
+// GetUsageID returns the value of UsageID.
+func (s *ResourceDependency) GetUsageID() uuid.UUID {
+	return s.UsageID
 }
 
-// SetDiskTypeID sets the value of DiskTypeID.
-func (s *RestoreBackupRequestBody) SetDiskTypeID(val uuid.UUID) {
-	s.DiskTypeID = val
+// GetResource returns the value of Resource.
+func (s *ResourceDependency) GetResource() ResourceReference {
+	return s.Resource
 }
 
-// SetName sets the value of Name.
-func (s *RestoreBackupRequestBody) SetName(val string) {
-	s.Name = val
+// GetPurpose returns the value of Purpose.
+func (s *ResourceDependency) GetPurpose() string {
+	return s.Purpose
 }
 
-// SetSizeGB sets the value of SizeGB.
-func (s *RestoreBackupRequestBody) SetSizeGB(val OptInt64) {
-	s.SizeGB = val
+// GetDesiredState returns the value of DesiredState.
+func (s *ResourceDependency) GetDesiredState() ResourceDependencyDesiredState {
+	return s.DesiredState
 }
 
-// Ref: #/components/schemas/RevertDiskRequestBody
-type RevertDiskRequestBody struct {
-	// Must be the most recent snapshot of the disk.
-	SnapshotID uuid.UUID `json:"snapshot_id"`
+// GetDeleteWithConsumer returns the value of DeleteWithConsumer.
+func (s *ResourceDependency) GetDeleteWithConsumer() bool {
+	return s.DeleteWithConsumer
 }
 
-// GetSnapshotID returns the value of SnapshotID.
-func (s *RevertDiskRequestBody) GetSnapshotID() uuid.UUID {
-	return s.SnapshotID
+// GetGeneration returns the value of Generation.
+func (s *ResourceDependency) GetGeneration() int64 {
+	return s.Generation
 }
 
-// SetSnapshotID sets the value of SnapshotID.
-func (s *RevertDiskRequestBody) SetSnapshotID(val uuid.UUID) {
-	s.SnapshotID = val
+// SetUsageID sets the value of UsageID.
+func (s *ResourceDependency) SetUsageID(val uuid.UUID) {
+	s.UsageID = val
 }
 
-// Ref: #/components/schemas/RouteListResponseBody
-type RouteListResponseBody struct {
-	Items []RouteResource `json:"items"`
+// SetResource sets the value of Resource.
+func (s *ResourceDependency) SetResource(val ResourceReference) {
+	s.Resource = val
+}
+
+// SetPurpose sets the value of Purpose.
+func (s *ResourceDependency) SetPurpose(val string) {
+	s.Purpose = val
+}
+
+// SetDesiredState sets the value of DesiredState.
+func (s *ResourceDependency) SetDesiredState(val ResourceDependencyDesiredState) {
+	s.DesiredState = val
+}
+
+// SetDeleteWithConsumer sets the value of DeleteWithConsumer.
+func (s *ResourceDependency) SetDeleteWithConsumer(val bool) {
+	s.DeleteWithConsumer = val
+}
+
+// SetGeneration sets the value of Generation.
+func (s *ResourceDependency) SetGeneration(val int64) {
+	s.Generation = val
+}
+
+type ResourceDependencyDesiredState string
+
+const (
+	ResourceDependencyDesiredStatePresent ResourceDependencyDesiredState = "present"
+	ResourceDependencyDesiredStateAbsent  ResourceDependencyDesiredState = "absent"
+)
+
+// AllValues returns all ResourceDependencyDesiredState values.
+func (ResourceDependencyDesiredState) AllValues() []ResourceDependencyDesiredState {
+	return []ResourceDependencyDesiredState{
+		ResourceDependencyDesiredStatePresent,
+		ResourceDependencyDesiredStateAbsent,
+	}
+}
+
+// MarshalText implements encoding.TextMarshaler.
+func (s ResourceDependencyDesiredState) MarshalText() ([]byte, error) {
+	switch s {
+	case ResourceDependencyDesiredStatePresent:
+		return []byte(s), nil
+	case ResourceDependencyDesiredStateAbsent:
+		return []byte(s), nil
+	default:
+		return nil, errors.Errorf("invalid value: %q", s)
+	}
+}
+
+// UnmarshalText implements encoding.TextUnmarshaler.
+func (s *ResourceDependencyDesiredState) UnmarshalText(data []byte) error {
+	switch ResourceDependencyDesiredState(data) {
+	case ResourceDependencyDesiredStatePresent:
+		*s = ResourceDependencyDesiredStatePresent
+		return nil
+	case ResourceDependencyDesiredStateAbsent:
+		*s = ResourceDependencyDesiredStateAbsent
+		return nil
+	default:
+		return errors.Errorf("invalid value: %q", data)
+	}
+}
+
+// Ref: #/components/schemas/ResourceDependencyList
+type ResourceDependencyList struct {
+	Items      []ResourceDependency `json:"items"`
+	Page       int64                `json:"page"`
+	PageSize   int64                `json:"page_size"`
+	TotalCount OptInt64             `json:"total_count"`
 }
 
 // GetItems returns the value of Items.
-func (s *RouteListResponseBody) GetItems() []RouteResource {
+func (s *ResourceDependencyList) GetItems() []ResourceDependency {
 	return s.Items
 }
 
+// GetPage returns the value of Page.
+func (s *ResourceDependencyList) GetPage() int64 {
+	return s.Page
+}
+
+// GetPageSize returns the value of PageSize.
+func (s *ResourceDependencyList) GetPageSize() int64 {
+	return s.PageSize
+}
+
+// GetTotalCount returns the value of TotalCount.
+func (s *ResourceDependencyList) GetTotalCount() OptInt64 {
+	return s.TotalCount
+}
+
 // SetItems sets the value of Items.
-func (s *RouteListResponseBody) SetItems(val []RouteResource) {
+func (s *ResourceDependencyList) SetItems(val []ResourceDependency) {
 	s.Items = val
 }
 
-// Ref: #/components/schemas/RouteResource
-type RouteResource struct {
-	CreatedAt   time.Time `json:"created_at"`
-	Description string    `json:"description"`
-	Destination string    `json:"destination"`
-	ID          uuid.UUID `json:"id"`
-	Nexthop     string    `json:"nexthop"`
+// SetPage sets the value of Page.
+func (s *ResourceDependencyList) SetPage(val int64) {
+	s.Page = val
 }
 
-// GetCreatedAt returns the value of CreatedAt.
-func (s *RouteResource) GetCreatedAt() time.Time {
-	return s.CreatedAt
+// SetPageSize sets the value of PageSize.
+func (s *ResourceDependencyList) SetPageSize(val int64) {
+	s.PageSize = val
 }
 
-// GetDescription returns the value of Description.
-func (s *RouteResource) GetDescription() string {
-	return s.Description
+// SetTotalCount sets the value of TotalCount.
+func (s *ResourceDependencyList) SetTotalCount(val OptInt64) {
+	s.TotalCount = val
 }
 
-// GetDestination returns the value of Destination.
-func (s *RouteResource) GetDestination() string {
-	return s.Destination
+// A resource identified within its owning service. The project is taken from the containing usage or
+// request.
+// Ref: #/components/schemas/ResourceReference
+type ResourceReference struct {
+	Service string    `json:"service"`
+	Type    string    `json:"type"`
+	ID      uuid.UUID `json:"id"`
+}
+
+// GetService returns the value of Service.
+func (s *ResourceReference) GetService() string {
+	return s.Service
+}
+
+// GetType returns the value of Type.
+func (s *ResourceReference) GetType() string {
+	return s.Type
 }
 
 // GetID returns the value of ID.
-func (s *RouteResource) GetID() uuid.UUID {
+func (s *ResourceReference) GetID() uuid.UUID {
 	return s.ID
 }
 
-// GetNexthop returns the value of Nexthop.
-func (s *RouteResource) GetNexthop() string {
-	return s.Nexthop
+// SetService sets the value of Service.
+func (s *ResourceReference) SetService(val string) {
+	s.Service = val
 }
 
-// SetCreatedAt sets the value of CreatedAt.
-func (s *RouteResource) SetCreatedAt(val time.Time) {
-	s.CreatedAt = val
-}
-
-// SetDescription sets the value of Description.
-func (s *RouteResource) SetDescription(val string) {
-	s.Description = val
-}
-
-// SetDestination sets the value of Destination.
-func (s *RouteResource) SetDestination(val string) {
-	s.Destination = val
+// SetType sets the value of Type.
+func (s *ResourceReference) SetType(val string) {
+	s.Type = val
 }
 
 // SetID sets the value of ID.
-func (s *RouteResource) SetID(val uuid.UUID) {
+func (s *ResourceReference) SetID(val uuid.UUID) {
 	s.ID = val
 }
 
-// SetNexthop sets the value of Nexthop.
-func (s *RouteResource) SetNexthop(val string) {
-	s.Nexthop = val
+// An authoritative claim held by the resource owner. Reserved, active and releasing claims all prevent
+// idle reclamation. Stopped consumers retain their claims. Released claims remain readable.
+// Ref: #/components/schemas/ResourceUsage
+type ResourceUsage struct {
+	ID          uuid.UUID          `json:"id"`
+	ProjectID   uuid.UUID          `json:"project_id"`
+	Resource    ResourceReference  `json:"resource"`
+	Consumer    ResourceReference  `json:"consumer"`
+	Purpose     string             `json:"purpose"`
+	State       ResourceUsageState `json:"state"`
+	Generation  int64              `json:"generation"`
+	OperationID uuid.UUID          `json:"operation_id"`
+	CreatedAt   time.Time          `json:"created_at"`
+	UpdatedAt   time.Time          `json:"updated_at"`
+	ReleasedAt  OptDateTime        `json:"released_at"`
+}
+
+// GetID returns the value of ID.
+func (s *ResourceUsage) GetID() uuid.UUID {
+	return s.ID
+}
+
+// GetProjectID returns the value of ProjectID.
+func (s *ResourceUsage) GetProjectID() uuid.UUID {
+	return s.ProjectID
+}
+
+// GetResource returns the value of Resource.
+func (s *ResourceUsage) GetResource() ResourceReference {
+	return s.Resource
+}
+
+// GetConsumer returns the value of Consumer.
+func (s *ResourceUsage) GetConsumer() ResourceReference {
+	return s.Consumer
+}
+
+// GetPurpose returns the value of Purpose.
+func (s *ResourceUsage) GetPurpose() string {
+	return s.Purpose
+}
+
+// GetState returns the value of State.
+func (s *ResourceUsage) GetState() ResourceUsageState {
+	return s.State
+}
+
+// GetGeneration returns the value of Generation.
+func (s *ResourceUsage) GetGeneration() int64 {
+	return s.Generation
+}
+
+// GetOperationID returns the value of OperationID.
+func (s *ResourceUsage) GetOperationID() uuid.UUID {
+	return s.OperationID
+}
+
+// GetCreatedAt returns the value of CreatedAt.
+func (s *ResourceUsage) GetCreatedAt() time.Time {
+	return s.CreatedAt
+}
+
+// GetUpdatedAt returns the value of UpdatedAt.
+func (s *ResourceUsage) GetUpdatedAt() time.Time {
+	return s.UpdatedAt
+}
+
+// GetReleasedAt returns the value of ReleasedAt.
+func (s *ResourceUsage) GetReleasedAt() OptDateTime {
+	return s.ReleasedAt
+}
+
+// SetID sets the value of ID.
+func (s *ResourceUsage) SetID(val uuid.UUID) {
+	s.ID = val
+}
+
+// SetProjectID sets the value of ProjectID.
+func (s *ResourceUsage) SetProjectID(val uuid.UUID) {
+	s.ProjectID = val
+}
+
+// SetResource sets the value of Resource.
+func (s *ResourceUsage) SetResource(val ResourceReference) {
+	s.Resource = val
+}
+
+// SetConsumer sets the value of Consumer.
+func (s *ResourceUsage) SetConsumer(val ResourceReference) {
+	s.Consumer = val
+}
+
+// SetPurpose sets the value of Purpose.
+func (s *ResourceUsage) SetPurpose(val string) {
+	s.Purpose = val
+}
+
+// SetState sets the value of State.
+func (s *ResourceUsage) SetState(val ResourceUsageState) {
+	s.State = val
+}
+
+// SetGeneration sets the value of Generation.
+func (s *ResourceUsage) SetGeneration(val int64) {
+	s.Generation = val
+}
+
+// SetOperationID sets the value of OperationID.
+func (s *ResourceUsage) SetOperationID(val uuid.UUID) {
+	s.OperationID = val
+}
+
+// SetCreatedAt sets the value of CreatedAt.
+func (s *ResourceUsage) SetCreatedAt(val time.Time) {
+	s.CreatedAt = val
+}
+
+// SetUpdatedAt sets the value of UpdatedAt.
+func (s *ResourceUsage) SetUpdatedAt(val time.Time) {
+	s.UpdatedAt = val
+}
+
+// SetReleasedAt sets the value of ReleasedAt.
+func (s *ResourceUsage) SetReleasedAt(val OptDateTime) {
+	s.ReleasedAt = val
+}
+
+type ResourceUsageState string
+
+const (
+	ResourceUsageStateReserved  ResourceUsageState = "reserved"
+	ResourceUsageStateActive    ResourceUsageState = "active"
+	ResourceUsageStateReleasing ResourceUsageState = "releasing"
+	ResourceUsageStateReleased  ResourceUsageState = "released"
+)
+
+// AllValues returns all ResourceUsageState values.
+func (ResourceUsageState) AllValues() []ResourceUsageState {
+	return []ResourceUsageState{
+		ResourceUsageStateReserved,
+		ResourceUsageStateActive,
+		ResourceUsageStateReleasing,
+		ResourceUsageStateReleased,
+	}
+}
+
+// MarshalText implements encoding.TextMarshaler.
+func (s ResourceUsageState) MarshalText() ([]byte, error) {
+	switch s {
+	case ResourceUsageStateReserved:
+		return []byte(s), nil
+	case ResourceUsageStateActive:
+		return []byte(s), nil
+	case ResourceUsageStateReleasing:
+		return []byte(s), nil
+	case ResourceUsageStateReleased:
+		return []byte(s), nil
+	default:
+		return nil, errors.Errorf("invalid value: %q", s)
+	}
+}
+
+// UnmarshalText implements encoding.TextUnmarshaler.
+func (s *ResourceUsageState) UnmarshalText(data []byte) error {
+	switch ResourceUsageState(data) {
+	case ResourceUsageStateReserved:
+		*s = ResourceUsageStateReserved
+		return nil
+	case ResourceUsageStateActive:
+		*s = ResourceUsageStateActive
+		return nil
+	case ResourceUsageStateReleasing:
+		*s = ResourceUsageStateReleasing
+		return nil
+	case ResourceUsageStateReleased:
+		*s = ResourceUsageStateReleased
+		return nil
+	default:
+		return errors.Errorf("invalid value: %q", data)
+	}
 }
 
 // Ref: #/components/schemas/RunCommandRequestBody
@@ -5212,310 +3989,6 @@ func (s *RunCommandRequestBody) SetCommand(val string) {
 // SetTimeoutSeconds sets the value of TimeoutSeconds.
 func (s *RunCommandRequestBody) SetTimeoutSeconds(val OptInt64) {
 	s.TimeoutSeconds = val
-}
-
-// Ref: #/components/schemas/SecurityGroupListResponseBody
-type SecurityGroupListResponseBody struct {
-	Items []SecurityGroupResource `json:"items"`
-}
-
-// GetItems returns the value of Items.
-func (s *SecurityGroupListResponseBody) GetItems() []SecurityGroupResource {
-	return s.Items
-}
-
-// SetItems sets the value of Items.
-func (s *SecurityGroupListResponseBody) SetItems(val []SecurityGroupResource) {
-	s.Items = val
-}
-
-// Ref: #/components/schemas/SecurityGroupResource
-type SecurityGroupResource struct {
-	CreatedAt   time.Time `json:"created_at"`
-	Description string    `json:"description"`
-	ID          uuid.UUID `json:"id"`
-	// The default security group is released with its private network and cannot be deleted individually.
-	IsDefault        bool      `json:"is_default"`
-	Name             string    `json:"name"`
-	PrivateNetworkID uuid.UUID `json:"private_network_id"`
-}
-
-// GetCreatedAt returns the value of CreatedAt.
-func (s *SecurityGroupResource) GetCreatedAt() time.Time {
-	return s.CreatedAt
-}
-
-// GetDescription returns the value of Description.
-func (s *SecurityGroupResource) GetDescription() string {
-	return s.Description
-}
-
-// GetID returns the value of ID.
-func (s *SecurityGroupResource) GetID() uuid.UUID {
-	return s.ID
-}
-
-// GetIsDefault returns the value of IsDefault.
-func (s *SecurityGroupResource) GetIsDefault() bool {
-	return s.IsDefault
-}
-
-// GetName returns the value of Name.
-func (s *SecurityGroupResource) GetName() string {
-	return s.Name
-}
-
-// GetPrivateNetworkID returns the value of PrivateNetworkID.
-func (s *SecurityGroupResource) GetPrivateNetworkID() uuid.UUID {
-	return s.PrivateNetworkID
-}
-
-// SetCreatedAt sets the value of CreatedAt.
-func (s *SecurityGroupResource) SetCreatedAt(val time.Time) {
-	s.CreatedAt = val
-}
-
-// SetDescription sets the value of Description.
-func (s *SecurityGroupResource) SetDescription(val string) {
-	s.Description = val
-}
-
-// SetID sets the value of ID.
-func (s *SecurityGroupResource) SetID(val uuid.UUID) {
-	s.ID = val
-}
-
-// SetIsDefault sets the value of IsDefault.
-func (s *SecurityGroupResource) SetIsDefault(val bool) {
-	s.IsDefault = val
-}
-
-// SetName sets the value of Name.
-func (s *SecurityGroupResource) SetName(val string) {
-	s.Name = val
-}
-
-// SetPrivateNetworkID sets the value of PrivateNetworkID.
-func (s *SecurityGroupResource) SetPrivateNetworkID(val uuid.UUID) {
-	s.PrivateNetworkID = val
-}
-
-// Ref: #/components/schemas/SecurityRuleListResponseBody
-type SecurityRuleListResponseBody struct {
-	Items []SecurityRuleResource `json:"items"`
-}
-
-// GetItems returns the value of Items.
-func (s *SecurityRuleListResponseBody) GetItems() []SecurityRuleResource {
-	return s.Items
-}
-
-// SetItems sets the value of Items.
-func (s *SecurityRuleListResponseBody) SetItems(val []SecurityRuleResource) {
-	s.Items = val
-}
-
-// Ref: #/components/schemas/SecurityRuleResource
-type SecurityRuleResource struct {
-	CreatedAt   time.Time                     `json:"created_at"`
-	Description string                        `json:"description"`
-	Direction   SecurityRuleResourceDirection `json:"direction"`
-	Ethertype   SecurityRuleResourceEthertype `json:"ethertype"`
-	ID          uuid.UUID                     `json:"id"`
-	// Denotes the ICMP code rather than a port when the protocol is ICMP.
-	PortRangeMax NilInt64 `json:"port_range_max"`
-	// Denotes the ICMP type rather than a port when the protocol is ICMP.
-	PortRangeMin   NilInt64  `json:"port_range_min"`
-	Protocol       NilString `json:"protocol"`
-	RemoteIPPrefix NilString `json:"remote_ip_prefix"`
-}
-
-// GetCreatedAt returns the value of CreatedAt.
-func (s *SecurityRuleResource) GetCreatedAt() time.Time {
-	return s.CreatedAt
-}
-
-// GetDescription returns the value of Description.
-func (s *SecurityRuleResource) GetDescription() string {
-	return s.Description
-}
-
-// GetDirection returns the value of Direction.
-func (s *SecurityRuleResource) GetDirection() SecurityRuleResourceDirection {
-	return s.Direction
-}
-
-// GetEthertype returns the value of Ethertype.
-func (s *SecurityRuleResource) GetEthertype() SecurityRuleResourceEthertype {
-	return s.Ethertype
-}
-
-// GetID returns the value of ID.
-func (s *SecurityRuleResource) GetID() uuid.UUID {
-	return s.ID
-}
-
-// GetPortRangeMax returns the value of PortRangeMax.
-func (s *SecurityRuleResource) GetPortRangeMax() NilInt64 {
-	return s.PortRangeMax
-}
-
-// GetPortRangeMin returns the value of PortRangeMin.
-func (s *SecurityRuleResource) GetPortRangeMin() NilInt64 {
-	return s.PortRangeMin
-}
-
-// GetProtocol returns the value of Protocol.
-func (s *SecurityRuleResource) GetProtocol() NilString {
-	return s.Protocol
-}
-
-// GetRemoteIPPrefix returns the value of RemoteIPPrefix.
-func (s *SecurityRuleResource) GetRemoteIPPrefix() NilString {
-	return s.RemoteIPPrefix
-}
-
-// SetCreatedAt sets the value of CreatedAt.
-func (s *SecurityRuleResource) SetCreatedAt(val time.Time) {
-	s.CreatedAt = val
-}
-
-// SetDescription sets the value of Description.
-func (s *SecurityRuleResource) SetDescription(val string) {
-	s.Description = val
-}
-
-// SetDirection sets the value of Direction.
-func (s *SecurityRuleResource) SetDirection(val SecurityRuleResourceDirection) {
-	s.Direction = val
-}
-
-// SetEthertype sets the value of Ethertype.
-func (s *SecurityRuleResource) SetEthertype(val SecurityRuleResourceEthertype) {
-	s.Ethertype = val
-}
-
-// SetID sets the value of ID.
-func (s *SecurityRuleResource) SetID(val uuid.UUID) {
-	s.ID = val
-}
-
-// SetPortRangeMax sets the value of PortRangeMax.
-func (s *SecurityRuleResource) SetPortRangeMax(val NilInt64) {
-	s.PortRangeMax = val
-}
-
-// SetPortRangeMin sets the value of PortRangeMin.
-func (s *SecurityRuleResource) SetPortRangeMin(val NilInt64) {
-	s.PortRangeMin = val
-}
-
-// SetProtocol sets the value of Protocol.
-func (s *SecurityRuleResource) SetProtocol(val NilString) {
-	s.Protocol = val
-}
-
-// SetRemoteIPPrefix sets the value of RemoteIPPrefix.
-func (s *SecurityRuleResource) SetRemoteIPPrefix(val NilString) {
-	s.RemoteIPPrefix = val
-}
-
-type SecurityRuleResourceDirection string
-
-const (
-	SecurityRuleResourceDirectionIngress SecurityRuleResourceDirection = "ingress"
-	SecurityRuleResourceDirectionEgress  SecurityRuleResourceDirection = "egress"
-)
-
-// AllValues returns all SecurityRuleResourceDirection values.
-func (SecurityRuleResourceDirection) AllValues() []SecurityRuleResourceDirection {
-	return []SecurityRuleResourceDirection{
-		SecurityRuleResourceDirectionIngress,
-		SecurityRuleResourceDirectionEgress,
-	}
-}
-
-// MarshalText implements encoding.TextMarshaler.
-func (s SecurityRuleResourceDirection) MarshalText() ([]byte, error) {
-	switch s {
-	case SecurityRuleResourceDirectionIngress:
-		return []byte(s), nil
-	case SecurityRuleResourceDirectionEgress:
-		return []byte(s), nil
-	default:
-		return nil, errors.Errorf("invalid value: %q", s)
-	}
-}
-
-// UnmarshalText implements encoding.TextUnmarshaler.
-func (s *SecurityRuleResourceDirection) UnmarshalText(data []byte) error {
-	switch SecurityRuleResourceDirection(data) {
-	case SecurityRuleResourceDirectionIngress:
-		*s = SecurityRuleResourceDirectionIngress
-		return nil
-	case SecurityRuleResourceDirectionEgress:
-		*s = SecurityRuleResourceDirectionEgress
-		return nil
-	default:
-		return errors.Errorf("invalid value: %q", data)
-	}
-}
-
-type SecurityRuleResourceEthertype string
-
-const (
-	SecurityRuleResourceEthertypeIPv4 SecurityRuleResourceEthertype = "IPv4"
-	SecurityRuleResourceEthertypeIPv6 SecurityRuleResourceEthertype = "IPv6"
-)
-
-// AllValues returns all SecurityRuleResourceEthertype values.
-func (SecurityRuleResourceEthertype) AllValues() []SecurityRuleResourceEthertype {
-	return []SecurityRuleResourceEthertype{
-		SecurityRuleResourceEthertypeIPv4,
-		SecurityRuleResourceEthertypeIPv6,
-	}
-}
-
-// MarshalText implements encoding.TextMarshaler.
-func (s SecurityRuleResourceEthertype) MarshalText() ([]byte, error) {
-	switch s {
-	case SecurityRuleResourceEthertypeIPv4:
-		return []byte(s), nil
-	case SecurityRuleResourceEthertypeIPv6:
-		return []byte(s), nil
-	default:
-		return nil, errors.Errorf("invalid value: %q", s)
-	}
-}
-
-// UnmarshalText implements encoding.TextUnmarshaler.
-func (s *SecurityRuleResourceEthertype) UnmarshalText(data []byte) error {
-	switch SecurityRuleResourceEthertype(data) {
-	case SecurityRuleResourceEthertypeIPv4:
-		*s = SecurityRuleResourceEthertypeIPv4
-		return nil
-	case SecurityRuleResourceEthertypeIPv6:
-		*s = SecurityRuleResourceEthertypeIPv6
-		return nil
-	default:
-		return errors.Errorf("invalid value: %q", data)
-	}
-}
-
-// Ref: #/components/schemas/SetBandwidthRequestBody
-type SetBandwidthRequestBody struct {
-	// Applied to both directions.
-	Mbps int64 `json:"mbps"`
-}
-
-// GetMbps returns the value of Mbps.
-func (s *SetBandwidthRequestBody) GetMbps() int64 {
-	return s.Mbps
-}
-
-// SetMbps sets the value of Mbps.
-func (s *SetBandwidthRequestBody) SetMbps(val int64) {
-	s.Mbps = val
 }
 
 // Ref: #/components/schemas/SetInstanceLabelsRequestBody
@@ -5562,316 +4035,4 @@ func (s *SetInstanceNotesRequestBody) GetNotes() string {
 // SetNotes sets the value of Notes.
 func (s *SetInstanceNotesRequestBody) SetNotes(val string) {
 	s.Notes = val
-}
-
-// Ref: #/components/schemas/SnapshotListResponseBody
-type SnapshotListResponseBody struct {
-	Items []SnapshotResource `json:"items"`
-}
-
-// GetItems returns the value of Items.
-func (s *SnapshotListResponseBody) GetItems() []SnapshotResource {
-	return s.Items
-}
-
-// SetItems sets the value of Items.
-func (s *SnapshotListResponseBody) SetItems(val []SnapshotResource) {
-	s.Items = val
-}
-
-// Ref: #/components/schemas/SnapshotResource
-type SnapshotResource struct {
-	// A disk restored from this snapshot must reside in this availability zone.
-	AvailabilityZone string    `json:"availability_zone"`
-	CreatedAt        time.Time `json:"created_at"`
-	DiskID           uuid.UUID `json:"disk_id"`
-	ID               uuid.UUID `json:"id"`
-	Name             string    `json:"name"`
-	RegionCode       string    `json:"region_code"`
-	// Capacity of the source disk when the snapshot was created. A disk restored from it cannot be smaller.
-	SizeGB int64                  `json:"size_gb"`
-	Status SnapshotResourceStatus `json:"status"`
-}
-
-// GetAvailabilityZone returns the value of AvailabilityZone.
-func (s *SnapshotResource) GetAvailabilityZone() string {
-	return s.AvailabilityZone
-}
-
-// GetCreatedAt returns the value of CreatedAt.
-func (s *SnapshotResource) GetCreatedAt() time.Time {
-	return s.CreatedAt
-}
-
-// GetDiskID returns the value of DiskID.
-func (s *SnapshotResource) GetDiskID() uuid.UUID {
-	return s.DiskID
-}
-
-// GetID returns the value of ID.
-func (s *SnapshotResource) GetID() uuid.UUID {
-	return s.ID
-}
-
-// GetName returns the value of Name.
-func (s *SnapshotResource) GetName() string {
-	return s.Name
-}
-
-// GetRegionCode returns the value of RegionCode.
-func (s *SnapshotResource) GetRegionCode() string {
-	return s.RegionCode
-}
-
-// GetSizeGB returns the value of SizeGB.
-func (s *SnapshotResource) GetSizeGB() int64 {
-	return s.SizeGB
-}
-
-// GetStatus returns the value of Status.
-func (s *SnapshotResource) GetStatus() SnapshotResourceStatus {
-	return s.Status
-}
-
-// SetAvailabilityZone sets the value of AvailabilityZone.
-func (s *SnapshotResource) SetAvailabilityZone(val string) {
-	s.AvailabilityZone = val
-}
-
-// SetCreatedAt sets the value of CreatedAt.
-func (s *SnapshotResource) SetCreatedAt(val time.Time) {
-	s.CreatedAt = val
-}
-
-// SetDiskID sets the value of DiskID.
-func (s *SnapshotResource) SetDiskID(val uuid.UUID) {
-	s.DiskID = val
-}
-
-// SetID sets the value of ID.
-func (s *SnapshotResource) SetID(val uuid.UUID) {
-	s.ID = val
-}
-
-// SetName sets the value of Name.
-func (s *SnapshotResource) SetName(val string) {
-	s.Name = val
-}
-
-// SetRegionCode sets the value of RegionCode.
-func (s *SnapshotResource) SetRegionCode(val string) {
-	s.RegionCode = val
-}
-
-// SetSizeGB sets the value of SizeGB.
-func (s *SnapshotResource) SetSizeGB(val int64) {
-	s.SizeGB = val
-}
-
-// SetStatus sets the value of Status.
-func (s *SnapshotResource) SetStatus(val SnapshotResourceStatus) {
-	s.Status = val
-}
-
-type SnapshotResourceStatus string
-
-const (
-	SnapshotResourceStatusProvisioning SnapshotResourceStatus = "provisioning"
-	SnapshotResourceStatusAvailable    SnapshotResourceStatus = "available"
-	SnapshotResourceStatusRestoring    SnapshotResourceStatus = "restoring"
-	SnapshotResourceStatusDeleting     SnapshotResourceStatus = "deleting"
-	SnapshotResourceStatusError        SnapshotResourceStatus = "error"
-)
-
-// AllValues returns all SnapshotResourceStatus values.
-func (SnapshotResourceStatus) AllValues() []SnapshotResourceStatus {
-	return []SnapshotResourceStatus{
-		SnapshotResourceStatusProvisioning,
-		SnapshotResourceStatusAvailable,
-		SnapshotResourceStatusRestoring,
-		SnapshotResourceStatusDeleting,
-		SnapshotResourceStatusError,
-	}
-}
-
-// MarshalText implements encoding.TextMarshaler.
-func (s SnapshotResourceStatus) MarshalText() ([]byte, error) {
-	switch s {
-	case SnapshotResourceStatusProvisioning:
-		return []byte(s), nil
-	case SnapshotResourceStatusAvailable:
-		return []byte(s), nil
-	case SnapshotResourceStatusRestoring:
-		return []byte(s), nil
-	case SnapshotResourceStatusDeleting:
-		return []byte(s), nil
-	case SnapshotResourceStatusError:
-		return []byte(s), nil
-	default:
-		return nil, errors.Errorf("invalid value: %q", s)
-	}
-}
-
-// UnmarshalText implements encoding.TextUnmarshaler.
-func (s *SnapshotResourceStatus) UnmarshalText(data []byte) error {
-	switch SnapshotResourceStatus(data) {
-	case SnapshotResourceStatusProvisioning:
-		*s = SnapshotResourceStatusProvisioning
-		return nil
-	case SnapshotResourceStatusAvailable:
-		*s = SnapshotResourceStatusAvailable
-		return nil
-	case SnapshotResourceStatusRestoring:
-		*s = SnapshotResourceStatusRestoring
-		return nil
-	case SnapshotResourceStatusDeleting:
-		*s = SnapshotResourceStatusDeleting
-		return nil
-	case SnapshotResourceStatusError:
-		*s = SnapshotResourceStatusError
-		return nil
-	default:
-		return errors.Errorf("invalid value: %q", data)
-	}
-}
-
-// Ref: #/components/schemas/SubnetListResponseBody
-type SubnetListResponseBody struct {
-	Items []SubnetResource `json:"items"`
-}
-
-// GetItems returns the value of Items.
-func (s *SubnetListResponseBody) GetItems() []SubnetResource {
-	return s.Items
-}
-
-// SetItems sets the value of Items.
-func (s *SubnetListResponseBody) SetItems(val []SubnetResource) {
-	s.Items = val
-}
-
-// Ref: #/components/schemas/SubnetResource
-type SubnetResource struct {
-	Cidr             string                  `json:"cidr"`
-	GatewayIP        NilString               `json:"gateway_ip"`
-	ID               uuid.UUID               `json:"id"`
-	IPVersion        SubnetResourceIPVersion `json:"ip_version"`
-	Name             string                  `json:"name"`
-	PrivateNetworkID uuid.UUID               `json:"private_network_id"`
-}
-
-// GetCidr returns the value of Cidr.
-func (s *SubnetResource) GetCidr() string {
-	return s.Cidr
-}
-
-// GetGatewayIP returns the value of GatewayIP.
-func (s *SubnetResource) GetGatewayIP() NilString {
-	return s.GatewayIP
-}
-
-// GetID returns the value of ID.
-func (s *SubnetResource) GetID() uuid.UUID {
-	return s.ID
-}
-
-// GetIPVersion returns the value of IPVersion.
-func (s *SubnetResource) GetIPVersion() SubnetResourceIPVersion {
-	return s.IPVersion
-}
-
-// GetName returns the value of Name.
-func (s *SubnetResource) GetName() string {
-	return s.Name
-}
-
-// GetPrivateNetworkID returns the value of PrivateNetworkID.
-func (s *SubnetResource) GetPrivateNetworkID() uuid.UUID {
-	return s.PrivateNetworkID
-}
-
-// SetCidr sets the value of Cidr.
-func (s *SubnetResource) SetCidr(val string) {
-	s.Cidr = val
-}
-
-// SetGatewayIP sets the value of GatewayIP.
-func (s *SubnetResource) SetGatewayIP(val NilString) {
-	s.GatewayIP = val
-}
-
-// SetID sets the value of ID.
-func (s *SubnetResource) SetID(val uuid.UUID) {
-	s.ID = val
-}
-
-// SetIPVersion sets the value of IPVersion.
-func (s *SubnetResource) SetIPVersion(val SubnetResourceIPVersion) {
-	s.IPVersion = val
-}
-
-// SetName sets the value of Name.
-func (s *SubnetResource) SetName(val string) {
-	s.Name = val
-}
-
-// SetPrivateNetworkID sets the value of PrivateNetworkID.
-func (s *SubnetResource) SetPrivateNetworkID(val uuid.UUID) {
-	s.PrivateNetworkID = val
-}
-
-type SubnetResourceIPVersion int64
-
-const (
-	SubnetResourceIPVersion4 SubnetResourceIPVersion = 4
-	SubnetResourceIPVersion6 SubnetResourceIPVersion = 6
-)
-
-// AllValues returns all SubnetResourceIPVersion values.
-func (SubnetResourceIPVersion) AllValues() []SubnetResourceIPVersion {
-	return []SubnetResourceIPVersion{
-		SubnetResourceIPVersion4,
-		SubnetResourceIPVersion6,
-	}
-}
-
-// Ref: #/components/schemas/ZoneListResponseBody
-type ZoneListResponseBody struct {
-	Items []ZoneResource `json:"items"`
-}
-
-// GetItems returns the value of Items.
-func (s *ZoneListResponseBody) GetItems() []ZoneResource {
-	return s.Items
-}
-
-// SetItems sets the value of Items.
-func (s *ZoneListResponseBody) SetItems(val []ZoneResource) {
-	s.Items = val
-}
-
-// Ref: #/components/schemas/ZoneResource
-type ZoneResource struct {
-	Code string `json:"code"`
-	Name string `json:"name"`
-}
-
-// GetCode returns the value of Code.
-func (s *ZoneResource) GetCode() string {
-	return s.Code
-}
-
-// GetName returns the value of Name.
-func (s *ZoneResource) GetName() string {
-	return s.Name
-}
-
-// SetCode sets the value of Code.
-func (s *ZoneResource) SetCode(val string) {
-	s.Code = val
-}
-
-// SetName sets the value of Name.
-func (s *ZoneResource) SetName(val string) {
-	s.Name = val
 }

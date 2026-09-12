@@ -8,41 +8,27 @@ import (
 
 // Handler handles operations described by OpenAPI v3 specification.
 type Handler interface {
-	// AllocateFloatingIP implements allocate-floating-ip operation.
-	//
-	// If the private network is not yet connected to the internet, connectivity is established as part of
-	// this call.
-	//
-	// IPv6 is not requested through this endpoint. IPv6 addresses are assigned to instances by the private
-	// network; enable IPv6 on that network instead.
-	//
-	// POST /api/v1/floating-ips
-	AllocateFloatingIP(ctx context.Context, req *AllocateFloatingIPRequestBody) (*FloatingIPResource, error)
 	// AttachDisk implements attach-disk operation.
 	//
 	// The disk must be in the same region and availability zone as the instance. Partition it and mount
 	// the file system inside the instance once it is attached.
 	//
 	// POST /api/v1/instances/{instanceId}/disks
-	AttachDisk(ctx context.Context, req *AttachDiskRequestBody, params AttachDiskParams) (*DiskResource, error)
+	AttachDisk(ctx context.Context, req *AttachDiskRequestBody, params AttachDiskParams) (*ResourceDependency, error)
 	// AttachInstanceFloatingIP implements attach-instance-floating-ip operation.
 	//
-	// The floating IP is bound to the primary network interface of the instance.
+	// Requests a binding change on the instance’s primary Fabric port. The returned Fabric usage claim
+	// identifies the port-to-address relationship; Compute does not own the address. An accepted release
+	// can still be releasing until the provider confirms removal.
 	//
 	// POST /api/v1/instances/{instanceId}/floating-ips
-	AttachInstanceFloatingIP(ctx context.Context, req *AttachFloatingIPRequestBody, params AttachInstanceFloatingIPParams) (*FloatingIPResource, error)
+	AttachInstanceFloatingIP(ctx context.Context, req *AttachFloatingIPRequestBody, params AttachInstanceFloatingIPParams) (*ResourceUsage, error)
 	// AttachPort implements attach-port operation.
 	//
 	// Attach a network interface.
 	//
 	// POST /api/v1/instances/{instanceId}/ports
-	AttachPort(ctx context.Context, req *AttachPortRequestBody, params AttachPortParams) (*PortResource, error)
-	// BindFloatingIP implements bind-floating-ip operation.
-	//
-	// Bind a floating IP to a network interface.
-	//
-	// PUT /api/v1/floating-ips/{floatingIpId}/binding
-	BindFloatingIP(ctx context.Context, req *BindFloatingIPRequestBody, params BindFloatingIPParams) (*FloatingIPResource, error)
+	AttachPort(ctx context.Context, req *AttachPortRequestBody, params AttachPortParams) (*ResourceDependency, error)
 	// ConfirmInstanceResize implements confirm-instance-resize operation.
 	//
 	// Releases the resources held by the previous size. `pending_instance_type_id` becomes the type in
@@ -50,38 +36,6 @@ type Handler interface {
 	//
 	// POST /api/v1/instances/{instanceId}/resize/confirm
 	ConfirmInstanceResize(ctx context.Context, params ConfirmInstanceResizeParams) (*InstanceResource, error)
-	// CreateBackup implements create-backup operation.
-	//
-	// A backup is a complete copy of a disk held in separate storage: it remains restorable after the
-	// source disk is deleted, and can be restored to another availability zone in the same region. A
-	// snapshot offers neither capability, as it resides in the same storage as the source disk and
-	// prevents that disk from being deleted while it exists.
-	//
-	// Disks attached to a running instance, including system disks, can be backed up.
-	//
-	// The duration depends on the amount of data. The backup is not complete when this endpoint returns;
-	// poll the retrieve endpoint.
-	//
-	// POST /api/v1/backups
-	CreateBackup(ctx context.Context, req *CreateBackupRequestBody) (*BackupResource, error)
-	// CreateDisk implements create-disk operation.
-	//
-	// The disk is created in the availability zone of the selected disk type, and an instance must reside
-	// in the same zone to attach it. Choosing the disk type therefore determines the zone.
-	//
-	// A disk type that has been withdrawn is rejected with `DISK_TYPE_RETIRED`, even though its identifier
-	// still resolves. Withdrawn types stop appearing in the disk type listing; disks already bought on one
-	// keep working and can still be resized.
-	//
-	// POST /api/v1/disks
-	CreateDisk(ctx context.Context, req *CreateDiskRequestBody) (CreateDiskRes, error)
-	// CreatePort implements create-port operation.
-	//
-	// The new network interface is not attached to any instance. Primary network interfaces are not
-	// created here; they are created with the instance.
-	//
-	// POST /api/v1/ports
-	CreatePort(ctx context.Context, req *CreatePortRequestBody) (*PortResource, error)
 	// CreatePrivateImage implements create-private-image operation.
 	//
 	// Captured from the system disk of the instance; data disks are not included. The resulting image can
@@ -105,68 +59,6 @@ type Handler interface {
 	//
 	// POST /api/v1/private-images
 	CreatePrivateImage(ctx context.Context, req *CreatePrivateImageRequestBody) (*PrivateImageResource, error)
-	// CreatePrivateNetwork implements create-private-network operation.
-	//
-	// Creates a network, a router and a default security group in one call. The default security group
-	// denies all inbound traffic and permits all outbound traffic.
-	//
-	// POST /api/v1/private-networks
-	CreatePrivateNetwork(ctx context.Context, req *CreatePrivateNetworkRequestBody) (*PrivateNetworkResource, error)
-	// CreateRoute implements create-route operation.
-	//
-	// Three forms that would sever connectivity are rejected: a destination of `0.0.0.0/0`, which
-	// overrides the default route and takes every floating IP offline immediately; a destination equal to
-	// the CIDR of a subnet, which overrides its directly connected route; and a next hop equal to the
-	// gateway of a subnet, which points back at the router itself.
-	//
-	// POST /api/v1/private-networks/{privateNetworkId}/routes
-	CreateRoute(ctx context.Context, req *CreateRouteRequestBody, params CreateRouteParams) (*RouteResource, error)
-	// CreateSecurityGroup implements create-security-group operation.
-	//
-	// A new security group carries one rule, permitting ICMP fragmentation-needed messages (type 3, code
-	// 4). Without it path MTU discovery fails, which presents as connections that establish and then stall
-	// on large packets.
-	//
-	// POST /api/v1/security-groups
-	CreateSecurityGroup(ctx context.Context, req *CreateSecurityGroupRequestBody) (*SecurityGroupResource, error)
-	// CreateSecurityGroupRule implements create-security-group-rule operation.
-	//
-	// Adding an identical rule twice is rejected. For that comparison `0.0.0.0/0`, `::/0` and an omitted
-	// value are treated as equivalent.
-	//
-	// POST /api/v1/security-groups/{securityGroupId}/rules
-	CreateSecurityGroupRule(ctx context.Context, req *CreateSecurityRuleRequestBody, params CreateSecurityGroupRuleParams) (*SecurityRuleResource, error)
-	// CreateSnapshot implements create-snapshot operation.
-	//
-	// Disks attached to a running instance can be snapshotted. A snapshot records the state of the block
-	// device at a point in time and may be inconsistent at the file-system level, so run `sync` inside the
-	// instance first where the data matters.
-	//
-	// A snapshot of a system disk cannot be used to revert that system disk: reverting requires the disk
-	// to be detached, and a system disk cannot be detached. It can be used to create a new data disk. To
-	// preserve and restore an entire system, use a private image; for a copy that crosses availability
-	// zones and survives deletion of the disk, use a backup.
-	//
-	// POST /api/v1/snapshots
-	CreateSnapshot(ctx context.Context, req *CreateSnapshotRequestBody) (*SnapshotResource, error)
-	// CreateSubnet implements create-subnet operation.
-	//
-	// Create a subnet.
-	//
-	// POST /api/v1/private-networks/{privateNetworkId}/subnets
-	CreateSubnet(ctx context.Context, req *CreateSubnetRequestBody, params CreateSubnetParams) (*SubnetResource, error)
-	// DeleteBackup implements delete-backup operation.
-	//
-	// Independent of the source disk: deletion succeeds whether or not that disk still exists.
-	//
-	// DELETE /api/v1/backups/{backupId}
-	DeleteBackup(ctx context.Context, params DeleteBackupParams) error
-	// DeleteDisk implements delete-disk operation.
-	//
-	// Deletion is rejected while the disk is attached, or while snapshots created from it still exist.
-	//
-	// DELETE /api/v1/disks/{diskId}
-	DeleteDisk(ctx context.Context, params DeleteDiskParams) error
 	// DeleteInstance implements delete-instance operation.
 	//
 	// The system disk is deleted with the instance, and snapshots created from the system disk are deleted
@@ -178,13 +70,6 @@ type Handler interface {
 	//
 	// DELETE /api/v1/instances/{instanceId}
 	DeleteInstance(ctx context.Context, params DeleteInstanceParams) error
-	// DeletePort implements delete-port operation.
-	//
-	// The primary network interface cannot be deleted on its own, as it is released with the instance. A
-	// network interface still attached to an instance cannot be deleted either.
-	//
-	// DELETE /api/v1/ports/{portId}
-	DeletePort(ctx context.Context, params DeletePortParams) error
 	// DeletePrivateImage implements delete-private-image operation.
 	//
 	// Deletion is rejected while instances created from the image still exist, as they need it in order to
@@ -194,107 +79,27 @@ type Handler interface {
 	//
 	// DELETE /api/v1/private-images/{privateImageId}
 	DeletePrivateImage(ctx context.Context, params DeletePrivateImageParams) error
-	// DeletePrivateNetwork implements delete-private-network operation.
-	//
-	// Release is rejected while instances or network interfaces remain in the network. IPv6, the router
-	// and the security groups are released with it.
-	//
-	// DELETE /api/v1/private-networks/{privateNetworkId}
-	DeletePrivateNetwork(ctx context.Context, params DeletePrivateNetworkParams) error
-	// DeleteRoute implements delete-route operation.
-	//
-	// Delete a static route.
-	//
-	// DELETE /api/v1/private-networks/{privateNetworkId}/routes/{routeId}
-	DeleteRoute(ctx context.Context, params DeleteRouteParams) error
-	// DeleteSecurityGroup implements delete-security-group operation.
-	//
-	// The default security group cannot be deleted, as it is released with the private network. A security
-	// group still referenced by a network interface cannot be deleted either.
-	//
-	// DELETE /api/v1/security-groups/{securityGroupId}
-	DeleteSecurityGroup(ctx context.Context, params DeleteSecurityGroupParams) error
-	// DeleteSecurityGroupRule implements delete-security-group-rule operation.
-	//
-	// Delete a security group rule.
-	//
-	// DELETE /api/v1/security-groups/{securityGroupId}/rules/{ruleId}
-	DeleteSecurityGroupRule(ctx context.Context, params DeleteSecurityGroupRuleParams) error
-	// DeleteSnapshot implements delete-snapshot operation.
-	//
-	// Delete a snapshot.
-	//
-	// DELETE /api/v1/snapshots/{snapshotId}
-	DeleteSnapshot(ctx context.Context, params DeleteSnapshotParams) error
-	// DeleteSubnet implements delete-subnet operation.
-	//
-	// Deletion is rejected while network interfaces remain in the subnet, or while a static route has a
-	// next hop inside its CIDR.
-	//
-	// DELETE /api/v1/private-networks/{privateNetworkId}/subnets/{subnetId}
-	DeleteSubnet(ctx context.Context, params DeleteSubnetParams) error
 	// DetachDisk implements detach-disk operation.
 	//
 	// Unmount the device inside the instance before calling this endpoint. Forcibly detaching a file
 	// system that is being written to corrupts data.
 	//
 	// DELETE /api/v1/instances/{instanceId}/disks/{diskId}
-	DetachDisk(ctx context.Context, params DetachDiskParams) (*DiskResource, error)
+	DetachDisk(ctx context.Context, params DetachDiskParams) (*ResourceDependency, error)
 	// DetachInstanceFloatingIP implements detach-instance-floating-ip operation.
 	//
-	// Unbind the floating IP of an instance.
+	// Requests a binding change on the instance’s primary Fabric port. The returned Fabric usage claim
+	// identifies the port-to-address relationship; Compute does not own the address. An accepted release
+	// can still be releasing until the provider confirms removal.
 	//
 	// DELETE /api/v1/instances/{instanceId}/floating-ips/{floatingIpId}
-	DetachInstanceFloatingIP(ctx context.Context, params DetachInstanceFloatingIPParams) (*FloatingIPResource, error)
+	DetachInstanceFloatingIP(ctx context.Context, params DetachInstanceFloatingIPParams) (*ResourceUsage, error)
 	// DetachPort implements detach-port operation.
 	//
 	// The primary network interface cannot be detached; the instance would lose its network address.
 	//
 	// DELETE /api/v1/instances/{instanceId}/ports/{portId}
-	DetachPort(ctx context.Context, params DetachPortParams) (*PortResource, error)
-	// DisablePrivateNetworkIpv6 implements disable-private-network-ipv6 operation.
-	//
-	// A released prefix is not re-allocated immediately.
-	//
-	// DELETE /api/v1/private-networks/{privateNetworkId}/ipv6
-	DisablePrivateNetworkIpv6(ctx context.Context, params DisablePrivateNetworkIpv6Params) error
-	// EnablePrivateNetworkIpv6 implements enable-private-network-ipv6 operation.
-	//
-	// Allocates an IPv6 prefix to the private network. Addresses are assigned to instances by the network
-	// itself, can be neither requested nor released individually, and consume no public IPv4 address.
-	//
-	// If the private network is not yet connected to the internet, connectivity is established as part of
-	// this call.
-	//
-	// POST /api/v1/private-networks/{privateNetworkId}/ipv6
-	EnablePrivateNetworkIpv6(ctx context.Context, params EnablePrivateNetworkIpv6Params) (*IPv6ResponseBody, error)
-	// GetBackup implements get-backup operation.
-	//
-	// Queries the current state of the backup, which makes it slower but more accurate than the list
-	// endpoint. Use it to poll creation progress.
-	//
-	// GET /api/v1/backups/{backupId}
-	GetBackup(ctx context.Context, params GetBackupParams) (*BackupResource, error)
-	// GetDisk implements get-disk operation.
-	//
-	// Queries the current state of the disk, which makes it slower but more accurate than the list
-	// endpoint.
-	//
-	// GET /api/v1/disks/{diskId}
-	GetDisk(ctx context.Context, params GetDiskParams) (*DiskResource, error)
-	// GetDiskType implements get-disk-type operation.
-	//
-	// Retrieve capacity and performance constraints for an existing disk, including system disk types and
-	// types withdrawn from sale.
-	//
-	// GET /api/v1/disk-types/{diskTypeId}
-	GetDiskType(ctx context.Context, params GetDiskTypeParams) (*DiskTypeResource, error)
-	// GetFloatingIP implements get-floating-ip operation.
-	//
-	// Retrieve a floating IP.
-	//
-	// GET /api/v1/floating-ips/{floatingIpId}
-	GetFloatingIP(ctx context.Context, params GetFloatingIPParams) (*FloatingIPResource, error)
+	DetachPort(ctx context.Context, params DetachPortParams) (*ResourceDependency, error)
 	// GetInstance implements get-instance operation.
 	//
 	// Queries the current state of the instance, which makes it slower but more accurate than the list
@@ -318,101 +123,19 @@ type Handler interface {
 	//
 	// GET /api/v1/private-images/{privateImageId}
 	GetPrivateImage(ctx context.Context, params GetPrivateImageParams) (*PrivateImageResource, error)
-	// GetPrivateNetwork implements get-private-network operation.
-	//
-	// Retrieve a private network.
-	//
-	// GET /api/v1/private-networks/{privateNetworkId}
-	GetPrivateNetwork(ctx context.Context, params GetPrivateNetworkParams) (*PrivateNetworkResource, error)
-	// GetPrivateNetworkIpv6 implements get-private-network-ipv6 operation.
-	//
-	// Retrieve the IPv6 configuration of a private network.
-	//
-	// GET /api/v1/private-networks/{privateNetworkId}/ipv6
-	GetPrivateNetworkIpv6(ctx context.Context, params GetPrivateNetworkIpv6Params) (*IPv6ResponseBody, error)
-	// GetSecurityGroup implements get-security-group operation.
-	//
-	// Retrieve a security group.
-	//
-	// GET /api/v1/security-groups/{securityGroupId}
-	GetSecurityGroup(ctx context.Context, params GetSecurityGroupParams) (*SecurityGroupResource, error)
-	// GetSnapshot implements get-snapshot operation.
-	//
-	// Retrieve a snapshot.
-	//
-	// GET /api/v1/snapshots/{snapshotId}
-	GetSnapshot(ctx context.Context, params GetSnapshotParams) (*SnapshotResource, error)
 	// LaunchInstance implements launch-instance operation.
 	//
-	// A password must be set in the request. The request is rejected otherwise, since the resulting
-	// instance would be unreachable. The platform can generate one, in which case it is returned only in
-	// this response.
-	//
-	// `count` creates several instances at once, 20 at most. Names are numbered `-1`, `-2` automatically
-	// and all instances share one password. `instances` in the response is always an array, including for
-	// a single instance.
-	//
-	// Instances are created one by one in order. If the sequence stops part way through, because of a
-	// quota limit for example, the instances already created are kept and `failure` states why it stopped.
-	// A failure on the first instance is treated as a failure of the whole request and no instance is
-	// created.
-	//
-	// Exactly one source must be given: `image_id` for a platform image, `private_image_id` for a private
-	// image, or `boot_disk_id` to boot a disk you already have. Supplying more than one, or none, is
-	// rejected.
-	//
-	// A platform image that has been withdrawn is rejected with `IMAGE_RETIRED`, and an instance type that
-	// has been withdrawn with `INSTANCE_TYPE_RETIRED` — in both cases the identifier still resolves.
-	// Withdrawn entries stop appearing in their listing, so an identifier held in a script, a template or
-	// an earlier order is the way this is usually hit: reread the listing and pick another. Instances
-	// already running either are unaffected, and one on a withdrawn image can still be rebuilt onto it.
-	//
-	// `boot_disk_id` recovers an instance that can no longer be repaired from the inside. Snapshot its
-	// disk, restore that snapshot into a new disk, attach the new disk to another instance and repair it
-	// there, then create an instance from it. That disk is not deleted when the instance is released; it
-	// is detached and returned to you.
-	//
-	// Instances are created in the availability zone of the instance type. Disks to be attached later must
-	// reside in the same zone.
-	//
-	// Creation is not complete when this endpoint returns and `status` is `provisioning`. Poll GET to
-	// observe the outcome.
+	// Creates a Billing order, including for metered pricing. The price must belong to the resource’s
+	// Billing Plan; applicable contract pricing is resolved by Billing. Technical capacity is checked
+	// before sellable quota is reserved. Provisioning continues automatically after payment; do not submit
+	// a new purchase after paying. Reuse the original idempotency key after an uncertain response. Exactly
+	// one of image_id, private_image_id or boot_disk_id is required, and exactly one of port_id or
+	// subnet_id. Existing ports, boot disks or floating IPs require count=1. Image boots require
+	// boot_disk; existing disks retain their own subscription. Resource lines for Compute, Storage and
+	// Fabric remain separate subscriptions on the same order.
 	//
 	// POST /api/v1/instances
-	LaunchInstance(ctx context.Context, req *LaunchInstanceRequestBody) (LaunchInstanceRes, error)
-	// ListAvailabilityZones implements list-availability-zones operation.
-	//
-	// A disk and an instance must reside in the same availability zone to be attached. Confirm the zone
-	// before creating either.
-	//
-	// GET /api/v1/regions/{regionCode}/availability-zones
-	ListAvailabilityZones(ctx context.Context, params ListAvailabilityZonesParams) (*ZoneListResponseBody, error)
-	// ListBackups implements list-backups operation.
-	//
-	// List backups.
-	//
-	// GET /api/v1/backups
-	ListBackups(ctx context.Context, params ListBackupsParams) (*BackupListResponseBody, error)
-	// ListDiskTypes implements list-disk-types operation.
-	//
-	// Only disk types currently on sale are listed. A withdrawn one disappears from here and can no longer
-	// be bought, while the disks already on it keep working and can still be resized.
-	//
-	// GET /api/v1/disk-types
-	ListDiskTypes(ctx context.Context, params ListDiskTypesParams) (*DiskTypeListResponseBody, error)
-	// ListDisks implements list-disks operation.
-	//
-	// When both `region_code` and `availability_zone` are supplied, only disks attachable to an instance
-	// at that location are returned.
-	//
-	// GET /api/v1/disks
-	ListDisks(ctx context.Context, params ListDisksParams) (*DiskListResponseBody, error)
-	// ListFloatingIps implements list-floating-ips operation.
-	//
-	// List floating IPs.
-	//
-	// GET /api/v1/floating-ips
-	ListFloatingIps(ctx context.Context) (*FloatingIPListResponseBody, error)
+	LaunchInstance(ctx context.Context, req *LaunchInstanceRequestBody) (*LaunchInstanceResponseBody, error)
 	// ListImages implements list-images operation.
 	//
 	// An image whose `min_ram_mb` exceeds the memory of the selected instance type cannot boot. Filter the
@@ -424,18 +147,25 @@ type Handler interface {
 	//
 	// GET /api/v1/images
 	ListImages(ctx context.Context, params ListImagesParams) (*ImageListResponseBody, error)
+	// ListInstanceDependencies implements list-instance-dependencies operation.
+	//
+	// Desired dependencies recorded by Compute. usage_id resolves the corresponding claim in Fabric or
+	// Storage. These records remain present while an instance is stopped or suspended.
+	//
+	// GET /api/v1/instances/{instanceId}/dependencies
+	ListInstanceDependencies(ctx context.Context, params ListInstanceDependenciesParams) (*ResourceDependencyList, error)
 	// ListInstanceDisks implements list-instance-disks operation.
 	//
 	// List the disks attached to an instance.
 	//
 	// GET /api/v1/instances/{instanceId}/disks
-	ListInstanceDisks(ctx context.Context, params ListInstanceDisksParams) (*DiskListResponseBody, error)
+	ListInstanceDisks(ctx context.Context, params ListInstanceDisksParams) (*ResourceDependencyList, error)
 	// ListInstancePorts implements list-instance-ports operation.
 	//
 	// List the network interfaces of an instance.
 	//
 	// GET /api/v1/instances/{instanceId}/ports
-	ListInstancePorts(ctx context.Context, params ListInstancePortsParams) (*PortListResponseBody, error)
+	ListInstancePorts(ctx context.Context, params ListInstancePortsParams) (*ResourceDependencyList, error)
 	// ListInstanceTypes implements list-instance-types operation.
 	//
 	// Only instance types currently on sale are listed. A withdrawn one disappears from here and can no
@@ -464,61 +194,12 @@ type Handler interface {
 	//
 	// GET /api/v1/operation-logs
 	ListOperationLogs(ctx context.Context, params ListOperationLogsParams) (*OperationLogListResponseBody, error)
-	// ListPorts implements list-ports operation.
-	//
-	// List network interfaces.
-	//
-	// GET /api/v1/ports
-	ListPorts(ctx context.Context) (*PortListResponseBody, error)
 	// ListPrivateImages implements list-private-images operation.
 	//
 	// List private images.
 	//
 	// GET /api/v1/private-images
 	ListPrivateImages(ctx context.Context, params ListPrivateImagesParams) (*PrivateImageListResponseBody, error)
-	// ListPrivateNetworks implements list-private-networks operation.
-	//
-	// List private networks.
-	//
-	// GET /api/v1/private-networks
-	ListPrivateNetworks(ctx context.Context, params ListPrivateNetworksParams) (*PrivateNetworkListResponseBody, error)
-	// ListRegions implements list-regions operation.
-	//
-	// List available regions.
-	//
-	// GET /api/v1/regions
-	ListRegions(ctx context.Context) (*RegionListResponseBody, error)
-	// ListRoutes implements list-routes operation.
-	//
-	// List static routes.
-	//
-	// GET /api/v1/private-networks/{privateNetworkId}/routes
-	ListRoutes(ctx context.Context, params ListRoutesParams) (*RouteListResponseBody, error)
-	// ListSecurityGroupRules implements list-security-group-rules operation.
-	//
-	// List security group rules.
-	//
-	// GET /api/v1/security-groups/{securityGroupId}/rules
-	ListSecurityGroupRules(ctx context.Context, params ListSecurityGroupRulesParams) (*SecurityRuleListResponseBody, error)
-	// ListSecurityGroups implements list-security-groups operation.
-	//
-	// List security groups.
-	//
-	// GET /api/v1/security-groups
-	ListSecurityGroups(ctx context.Context, params ListSecurityGroupsParams) (*SecurityGroupListResponseBody, error)
-	// ListSnapshots implements list-snapshots operation.
-	//
-	// List snapshots.
-	//
-	// GET /api/v1/snapshots
-	ListSnapshots(ctx context.Context, params ListSnapshotsParams) (*SnapshotListResponseBody, error)
-	// ListSubnets implements list-subnets operation.
-	//
-	// IPv6 subnets are included, with `ip_version` 6. They are created when IPv6 is enabled and cannot be
-	// deleted individually.
-	//
-	// GET /api/v1/private-networks/{privateNetworkId}/subnets
-	ListSubnets(ctx context.Context, params ListSubnetsParams) (*SubnetListResponseBody, error)
 	// OpenInstanceConsole implements open-instance-console operation.
 	//
 	// Operates the instance directly from a browser and does not require the instance to be reachable over
@@ -557,27 +238,6 @@ type Handler interface {
 	//
 	// POST /api/v1/instances/{instanceId}/rebuild
 	RebuildInstance(ctx context.Context, req *RebuildInstanceRequestBody, params RebuildInstanceParams) (*RebuildInstanceResponseBody, error)
-	// ReleaseFloatingIP implements release-floating-ip operation.
-	//
-	// A released address enters a cooldown period before it is allocated again, so that DNS records and
-	// allow-lists still pointing at it do not break immediately. The same address therefore cannot be
-	// re-allocated for some time after release. Proceed with care.
-	//
-	// DELETE /api/v1/floating-ips/{floatingIpId}
-	ReleaseFloatingIP(ctx context.Context, params ReleaseFloatingIPParams) error
-	// RenameBackup implements rename-backup operation.
-	//
-	// Rename a backup.
-	//
-	// PATCH /api/v1/backups/{backupId}
-	RenameBackup(ctx context.Context, req *RenameBackupRequestBody, params RenameBackupParams) (*BackupResource, error)
-	// RenameDisk implements rename-disk operation.
-	//
-	// Changes the name only. Use the resize endpoint for capacity; type and availability zone are
-	// immutable.
-	//
-	// PATCH /api/v1/disks/{diskId}
-	RenameDisk(ctx context.Context, req *RenameDiskRequestBody, params RenameDiskParams) (*DiskResource, error)
 	// RenameInstance implements rename-instance operation.
 	//
 	// Changes the display name only. The hostname inside the instance is unchanged; it equals the instance
@@ -591,24 +251,6 @@ type Handler interface {
 	//
 	// PATCH /api/v1/private-images/{privateImageId}
 	RenamePrivateImage(ctx context.Context, req *RenamePrivateImageRequestBody, params RenamePrivateImageParams) (*PrivateImageResource, error)
-	// RenamePrivateNetwork implements rename-private-network operation.
-	//
-	// Changes the display name only. The CIDR, the routes and the internet gateway are immutable.
-	//
-	// PATCH /api/v1/private-networks/{privateNetworkId}
-	RenamePrivateNetwork(ctx context.Context, req *RenamePrivateNetworkRequestBody, params RenamePrivateNetworkParams) (*PrivateNetworkResource, error)
-	// RenameSecurityGroup implements rename-security-group operation.
-	//
-	// Changes the name only. Use the rule endpoints to change rules.
-	//
-	// PATCH /api/v1/security-groups/{securityGroupId}
-	RenameSecurityGroup(ctx context.Context, req *RenameSecurityGroupRequestBody, params RenameSecurityGroupParams) (*SecurityGroupResource, error)
-	// RenameSnapshot implements rename-snapshot operation.
-	//
-	// Rename a snapshot.
-	//
-	// PATCH /api/v1/snapshots/{snapshotId}
-	RenameSnapshot(ctx context.Context, req *RenameSnapshotRequestBody, params RenameSnapshotParams) (*SnapshotResource, error)
 	// ResetInstancePassword implements reset-instance-password operation.
 	//
 	// Changes the root password without a reboot. The instance must be running.
@@ -621,66 +263,15 @@ type Handler interface {
 	//
 	// POST /api/v1/instances/{instanceId}/password
 	ResetInstancePassword(ctx context.Context, req *ResetPasswordRequestBody, params ResetInstancePasswordParams) (*ResetPasswordResponseBody, error)
-	// ResizeDisk implements resize-disk operation.
-	//
-	// Capacity can only be increased; shrinking is not supported. Extend the file system inside the
-	// instance once the resize completes.
-	//
-	// A data disk whose performance grows with its size has to be detached first. The storage backend
-	// decides a volume's limit when the volume is attached and never revisits it, so growing one that is
-	// attached would give you the capacity immediately and leave the speed at the old size's figure —
-	// indefinitely, and stopping the instance does not help. Rather than take the money for performance
-	// that does not arrive, this is refused with `DISK_RESIZE_NEEDS_DETACH`; detach the disk, resize it,
-	// and attach it again.
-	//
-	// It is only refused when the two sizes really would differ in speed. A disk whose type has no QoS
-	// level, or whose performance has already reached the type's ceiling, grows online as before.
-	//
-	// A system disk is the exception and grows online, because a root volume cannot be detached at all.
-	// Its performance does not change with size for exactly that reason — system disk types are required
-	// to carry a level that does not scale.
-	//
-	// POST /api/v1/disks/{diskId}/resize
-	ResizeDisk(ctx context.Context, req *ResizeDiskRequestBody, params ResizeDiskParams) (*DiskResource, error)
 	// ResizeInstance implements resize-instance operation.
 	//
-	// Only an instance type in the same region and availability zone can be selected, as attached disks
-	// cannot follow the instance elsewhere.
-	//
-	// A resize has two steps. This endpoint restarts the instance on the new size and the status becomes
-	// `resize_verifying`, at which point the confirm or revert endpoint must be called. Until confirmation
-	// the target type is recorded in `pending_instance_type_id`, while `instance_type_id` remains the type
-	// in effect and billed.
-	//
-	// Both sizes hold resources while the resize is unconfirmed. Confirm promptly once the status becomes
-	// `resize_verifying`.
+	// Creates a Billing order, including for metered pricing. The price must belong to the resource’s
+	// Billing Plan; applicable contract pricing is resolved by Billing. Technical capacity is checked
+	// before sellable quota is reserved. Provisioning continues automatically after payment; do not submit
+	// a new purchase after paying. Reuse the original idempotency key after an uncertain response.
 	//
 	// POST /api/v1/instances/{instanceId}/resize
-	ResizeInstance(ctx context.Context, req *ResizeInstanceRequestBody, params ResizeInstanceParams) (*InstanceResource, error)
-	// RestoreBackup implements restore-backup operation.
-	//
-	// Restores onto a newly created disk. The source disk is unaffected and need not still exist.
-	//
-	// The target disk type may belong to another availability zone of the same region, and its capacity
-	// must not be smaller than the backup. The disk cannot be attached until the restore completes; poll
-	// the disk retrieve endpoint.
-	//
-	// POST /api/v1/backups/{backupId}/restore
-	RestoreBackup(ctx context.Context, req *RestoreBackupRequestBody, params RestoreBackupParams) (*DiskResource, error)
-	// RevertDisk implements revert-disk operation.
-	//
-	// Restores the contents of the disk to the moment the snapshot was taken. All data written after that
-	// moment is lost and cannot be recovered.
-	//
-	// Three restrictions apply: only the most recent snapshot of the disk can be reverted to; the disk
-	// must be detached from its instance first; and a disk resized since the snapshot was taken cannot be
-	// reverted. To return to an earlier point in time, or to keep the existing disk, create a new disk
-	// from the snapshot instead.
-	//
-	// The revert is not complete when this endpoint returns; poll the retrieve endpoint.
-	//
-	// POST /api/v1/disks/{diskId}/revert
-	RevertDisk(ctx context.Context, req *RevertDiskRequestBody, params RevertDiskParams) (*DiskResource, error)
+	ResizeInstance(ctx context.Context, req *ResizeInstanceRequestBody, params ResizeInstanceParams) (*PlacedOrder, error)
 	// RevertInstanceResize implements revert-instance-resize operation.
 	//
 	// The instance returns to its previous size, `pending_instance_type_id` is discarded, and billing is
@@ -720,18 +311,6 @@ type Handler interface {
 	//
 	// POST /api/v1/instances/{instanceId}/commands
 	RunInstanceCommand(ctx context.Context, req *RunCommandRequestBody, params RunInstanceCommandParams) (*CommandResultResponseBody, error)
-	// SetFloatingIPBandwidth implements set-floating-ip-bandwidth operation.
-	//
-	// Limits both directions at once. Limiting egress alone does not prevent ingress traffic from
-	// saturating the uplink.
-	//
-	// While the address is bound to an instance, the ceiling has to fit that instance type's
-	// `max_bandwidth_mbps`; asking for more is refused with `INSTANCE_BANDWIDTH_CEILING`. An address bound
-	// to nothing is not checked against any type — there is none to check against — and is checked
-	// again when it is attached.
-	//
-	// PUT /api/v1/floating-ips/{floatingIpId}/bandwidth
-	SetFloatingIPBandwidth(ctx context.Context, req *SetBandwidthRequestBody, params SetFloatingIPBandwidthParams) (*FloatingIPResource, error)
 	// SetInstanceLabels implements set-instance-labels operation.
 	//
 	// Records what this instance is for, as key-value pairs. Nothing on the platform reads them.
@@ -755,39 +334,20 @@ type Handler interface {
 	SetInstanceNotes(ctx context.Context, req *SetInstanceNotesRequestBody, params SetInstanceNotesParams) (*InstanceResource, error)
 	// StartInstance implements start-instance operation.
 	//
-	// An instance suspended by the platform must be unsuspended first.
-	//
-	// This endpoint returns immediately and the `status` it returns is the transient `starting`. Poll the
-	// instance until it settles at `running`.
+	// Records the desired power state. An in-flight shutdown is allowed to finish before a subsequent
+	// start. Outstanding restrictions can prevent starting. A stopped VM retains its Fabric and Storage
+	// claims. Inspect operation, task_state, power_state and observed_at to determine completion.
 	//
 	// POST /api/v1/instances/{instanceId}/start
-	StartInstance(ctx context.Context, params StartInstanceParams) (*InstanceResource, error)
+	StartInstance(ctx context.Context, req *PowerRequest, params StartInstanceParams) (*InstanceResource, error)
 	// StopInstance implements stop-instance operation.
 	//
-	// The operating system is asked to shut down and is powered off once it does, or once it stops
-	// responding for long enough. Stopping does not release the instance: it keeps its disks, its
-	// addresses and its name, and starts again where it left off.
-	//
-	// An instance suspended by the platform must be unsuspended first.
-	//
-	// This endpoint returns immediately and the `status` it returns is the transient `stopping`. Poll the
-	// instance until it settles at `stopped`.
+	// Records the desired power state. An in-flight shutdown is allowed to finish before a subsequent
+	// start. Outstanding restrictions can prevent starting. A stopped VM retains its Fabric and Storage
+	// claims. Inspect operation, task_state, power_state and observed_at to determine completion.
 	//
 	// POST /api/v1/instances/{instanceId}/stop
-	StopInstance(ctx context.Context, params StopInstanceParams) (*InstanceResource, error)
-	// SuggestSubnetCidr implements suggest-subnet-cidr operation.
-	//
-	// The returned value is a suggestion and is validated again when the subnet is created. It exists to
-	// avoid errors when computing the next free CIDR by hand.
-	//
-	// GET /api/v1/private-networks/{privateNetworkId}/subnets/next-free-cidr
-	SuggestSubnetCidr(ctx context.Context, params SuggestSubnetCidrParams) (*NextFreeCidrResponseBody, error)
-	// UnbindFloatingIP implements unbind-floating-ip operation.
-	//
-	// The address remains held by the project and simply no longer points at any network interface.
-	//
-	// DELETE /api/v1/floating-ips/{floatingIpId}/binding
-	UnbindFloatingIP(ctx context.Context, params UnbindFloatingIPParams) (*FloatingIPResource, error)
+	StopInstance(ctx context.Context, req *PowerRequest, params StopInstanceParams) (*InstanceResource, error)
 	// NewError creates *ErrorStatusCode from error returned by handler.
 	//
 	// Used for common default response.

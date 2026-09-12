@@ -7,6 +7,28 @@ import (
 	openapi_types "github.com/oapi-codegen/runtime/types"
 )
 
+// CatalogReference Specify exactly one of id or lookup_key. A lookup key is scoped to the product of the resource service.
+type CatalogReference struct {
+	Id        *openapi_types.UUID `json:"id,omitempty"`
+	LookupKey *string             `json:"lookup_key,omitempty"`
+}
+
+// OrderOptions Reuse the same key for retries of the same purchase. Reusing it with a different request fails. Billing selects contract pricing, applies eligible grants and promotions, and owns payment challenges and expiry.
+type OrderOptions struct {
+	ExpectedAmount *string `json:"expected_amount,omitempty"`
+	IdempotencyKey string  `json:"idempotency_key"`
+
+	// PaymentPlan Requested funding split. This does not select a card or payment provider; complete payment through Billing.
+	PaymentPlan    *PaymentPlan `json:"payment_plan,omitempty"`
+	RedemptionCode *string      `json:"redemption_code,omitempty"`
+}
+
+// PaymentPlan Requested funding split. This does not select a card or payment provider; complete payment through Billing.
+type PaymentPlan struct {
+	BalanceAmount  string `json:"balance_amount"`
+	ProviderAmount string `json:"provider_amount"`
+}
+
 // PlacedOrder A billable order has been created. Read it from the billing API to find out what is
 // owed and whether payment is still required.
 //

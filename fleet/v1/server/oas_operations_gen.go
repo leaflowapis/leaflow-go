@@ -6,6 +6,8 @@ package fleetv1server
 type OperationName = string
 
 const (
+	GetAvailabilityZoneOperation   OperationName = "GetAvailabilityZone"
+	GetRegionOperation             OperationName = "GetRegion"
 	ListAvailabilityZonesOperation OperationName = "ListAvailabilityZones"
 	ListRegionsOperation           OperationName = "ListRegions"
 )

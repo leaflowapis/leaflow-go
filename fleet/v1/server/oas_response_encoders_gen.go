@@ -12,7 +12,7 @@ import (
 	"go.opentelemetry.io/otel/trace"
 )
 
-func encodeListAvailabilityZonesResponse(response *AvailabilityZoneListResponseBody, w http.ResponseWriter, span trace.Span) error {
+func encodeGetAvailabilityZoneResponse(response *AvailabilityZone, w http.ResponseWriter, span trace.Span) error {
 	w.Header().Set("Content-Type", "application/json; charset=utf-8")
 	w.WriteHeader(200)
 
@@ -25,7 +25,33 @@ func encodeListAvailabilityZonesResponse(response *AvailabilityZoneListResponseB
 	return nil
 }
 
-func encodeListRegionsResponse(response *RegionListResponseBody, w http.ResponseWriter, span trace.Span) error {
+func encodeGetRegionResponse(response *Region, w http.ResponseWriter, span trace.Span) error {
+	w.Header().Set("Content-Type", "application/json; charset=utf-8")
+	w.WriteHeader(200)
+
+	e := new(jx.Encoder)
+	response.Encode(e)
+	if _, err := e.WriteTo(w); err != nil {
+		return errors.Wrap(err, "write")
+	}
+
+	return nil
+}
+
+func encodeListAvailabilityZonesResponse(response *AvailabilityZoneList, w http.ResponseWriter, span trace.Span) error {
+	w.Header().Set("Content-Type", "application/json; charset=utf-8")
+	w.WriteHeader(200)
+
+	e := new(jx.Encoder)
+	response.Encode(e)
+	if _, err := e.WriteTo(w); err != nil {
+		return errors.Wrap(err, "write")
+	}
+
+	return nil
+}
+
+func encodeListRegionsResponse(response *RegionList, w http.ResponseWriter, span trace.Span) error {
 	w.Header().Set("Content-Type", "application/json; charset=utf-8")
 	w.WriteHeader(200)
 

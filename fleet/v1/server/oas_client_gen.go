@@ -29,26 +29,31 @@ func trimTrailingSlashes(u *url.URL) {
 
 // Invoker invokes operations described by OpenAPI v3 specification.
 type Invoker interface {
+	// GetAvailabilityZone invokes get-availability-zone operation.
+	//
+	// Get availability zone.
+	//
+	// GET /api/v1/regions/{regionId}/availability-zones/{availabilityZoneId}
+	GetAvailabilityZone(ctx context.Context, params GetAvailabilityZoneParams) (*AvailabilityZone, error)
+	// GetRegion invokes get-region operation.
+	//
+	// Get region.
+	//
+	// GET /api/v1/regions/{regionId}
+	GetRegion(ctx context.Context, params GetRegionParams) (*Region, error)
 	// ListAvailabilityZones invokes list-availability-zones operation.
 	//
-	// Lists every availability zone of this region that is currently open to new orders, in display order.
+	// List availability zones.
 	//
-	// Resources are generally required to share an availability zone in order to be attached to one
-	// another, so confirm the zone before creating either side.
-	//
-	// A region that exists but is not open to new orders is reported as not found, exactly as an unknown
-	// code is: both mean that nothing can be created there.
-	//
-	// GET /api/v1/regions/{regionCode}/availability-zones
-	ListAvailabilityZones(ctx context.Context, params ListAvailabilityZonesParams) (*AvailabilityZoneListResponseBody, error)
+	// GET /api/v1/regions/{regionId}/availability-zones
+	ListAvailabilityZones(ctx context.Context, params ListAvailabilityZonesParams) (*AvailabilityZoneList, error)
 	// ListRegions invokes list-regions operation.
 	//
-	// Lists every region currently open to new orders, in display order.
-	//
-	// The list is the same for every caller and changes rarely.
+	// Lists available, draining and retired regions; pending locations are visible only to operators.
+	// Filter status=available to offer new placement choices.
 	//
 	// GET /api/v1/regions
-	ListRegions(ctx context.Context) (*RegionListResponseBody, error)
+	ListRegions(ctx context.Context, params ListRegionsParams) (*RegionList, error)
 }
 
 // Client implements OAS client.
@@ -92,27 +97,302 @@ func (c *Client) requestURL(ctx context.Context) *url.URL {
 	return u
 }
 
+// GetAvailabilityZone invokes get-availability-zone operation.
+//
+// Get availability zone.
+//
+// GET /api/v1/regions/{regionId}/availability-zones/{availabilityZoneId}
+func (c *Client) GetAvailabilityZone(ctx context.Context, params GetAvailabilityZoneParams) (*AvailabilityZone, error) {
+	res, err := c.sendGetAvailabilityZone(ctx, params)
+	return res, err
+}
+
+func (c *Client) sendGetAvailabilityZone(ctx context.Context, params GetAvailabilityZoneParams) (res *AvailabilityZone, err error) {
+	otelAttrs := []attribute.KeyValue{
+		otelogen.OperationID("get-availability-zone"),
+		semconv.HTTPRequestMethodKey.String("GET"),
+		semconv.URLTemplateKey.String("/api/v1/regions/{regionId}/availability-zones/{availabilityZoneId}"),
+	}
+	otelAttrs = append(otelAttrs, c.cfg.Attributes...)
+
+	// Run stopwatch.
+	startTime := time.Now()
+	defer func() {
+		// Use floating point division here for higher precision (instead of Millisecond method).
+		elapsedDuration := time.Since(startTime)
+		c.duration.Record(ctx, float64(elapsedDuration)/float64(time.Millisecond), metric.WithAttributes(otelAttrs...))
+	}()
+
+	// Increment request counter.
+	c.requests.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
+
+	// Start a span for this request.
+	ctx, span := c.cfg.Tracer.Start(ctx, GetAvailabilityZoneOperation,
+		trace.WithAttributes(otelAttrs...),
+		clientSpanKind,
+	)
+	// Track stage for error reporting.
+	var stage string
+	defer func() {
+		if err != nil {
+			span.RecordError(err)
+			span.SetStatus(codes.Error, stage)
+			c.errors.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
+		}
+		span.End()
+	}()
+
+	stage = "BuildURL"
+	u := uri.Clone(c.requestURL(ctx))
+	var pathParts [4]string
+	pathParts[0] = "/api/v1/regions/"
+	{
+		// Encode "regionId" parameter.
+		e := uri.NewPathEncoder(uri.PathEncoderConfig{
+			Param:   "regionId",
+			Style:   uri.PathStyleSimple,
+			Explode: false,
+		})
+		if err := func() error {
+			return e.EncodeValue(conv.UUIDToString(params.RegionId))
+		}(); err != nil {
+			return res, errors.Wrap(err, "encode path")
+		}
+		encoded, err := e.Result()
+		if err != nil {
+			return res, errors.Wrap(err, "encode path")
+		}
+		pathParts[1] = encoded
+	}
+	pathParts[2] = "/availability-zones/"
+	{
+		// Encode "availabilityZoneId" parameter.
+		e := uri.NewPathEncoder(uri.PathEncoderConfig{
+			Param:   "availabilityZoneId",
+			Style:   uri.PathStyleSimple,
+			Explode: false,
+		})
+		if err := func() error {
+			return e.EncodeValue(conv.UUIDToString(params.AvailabilityZoneId))
+		}(); err != nil {
+			return res, errors.Wrap(err, "encode path")
+		}
+		encoded, err := e.Result()
+		if err != nil {
+			return res, errors.Wrap(err, "encode path")
+		}
+		pathParts[3] = encoded
+	}
+	uri.AddPathParts(u, pathParts[:]...)
+
+	stage = "EncodeRequest"
+	r, err := ht.NewRequest(ctx, "GET", u)
+	if err != nil {
+		return res, errors.Wrap(err, "create request")
+	}
+
+	{
+		type bitset = [1]uint8
+		var satisfied bitset
+		{
+			stage = "Security:BearerAuth"
+			switch err := c.securityBearerAuth(ctx, GetAvailabilityZoneOperation, r); {
+			case err == nil: // if NO error
+				satisfied[0] |= 1 << 0
+			case errors.Is(err, ogenerrors.ErrSkipClientSecurity):
+				// Skip this security.
+			default:
+				return res, errors.Wrap(err, "security \"BearerAuth\"")
+			}
+		}
+
+		if ok := func() bool {
+		nextRequirement:
+			for _, requirement := range []bitset{
+				{0b00000001},
+			} {
+				for i, mask := range requirement {
+					if satisfied[i]&mask != mask {
+						continue nextRequirement
+					}
+				}
+				return true
+			}
+			return false
+		}(); !ok {
+			return res, ogenerrors.ErrSecurityRequirementIsNotSatisfied
+		}
+	}
+
+	stage = "SendRequest"
+	resp, err := c.cfg.Client.Do(r)
+	if err != nil {
+		return res, errors.Wrap(err, "do request")
+	}
+	body := resp.Body
+	defer func() {
+		// Drain the body to EOF before closing, so the underlying
+		// connection can be reused by the Transport regardless of the
+		// response status code. See https://github.com/ogen-go/ogen/issues/1670.
+		_, _ = io.Copy(io.Discard, body)
+		_ = body.Close()
+	}()
+
+	stage = "DecodeResponse"
+	result, err := decodeGetAvailabilityZoneResponse(resp)
+	if err != nil {
+		return res, errors.Wrap(err, "decode response")
+	}
+
+	return result, nil
+}
+
+// GetRegion invokes get-region operation.
+//
+// Get region.
+//
+// GET /api/v1/regions/{regionId}
+func (c *Client) GetRegion(ctx context.Context, params GetRegionParams) (*Region, error) {
+	res, err := c.sendGetRegion(ctx, params)
+	return res, err
+}
+
+func (c *Client) sendGetRegion(ctx context.Context, params GetRegionParams) (res *Region, err error) {
+	otelAttrs := []attribute.KeyValue{
+		otelogen.OperationID("get-region"),
+		semconv.HTTPRequestMethodKey.String("GET"),
+		semconv.URLTemplateKey.String("/api/v1/regions/{regionId}"),
+	}
+	otelAttrs = append(otelAttrs, c.cfg.Attributes...)
+
+	// Run stopwatch.
+	startTime := time.Now()
+	defer func() {
+		// Use floating point division here for higher precision (instead of Millisecond method).
+		elapsedDuration := time.Since(startTime)
+		c.duration.Record(ctx, float64(elapsedDuration)/float64(time.Millisecond), metric.WithAttributes(otelAttrs...))
+	}()
+
+	// Increment request counter.
+	c.requests.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
+
+	// Start a span for this request.
+	ctx, span := c.cfg.Tracer.Start(ctx, GetRegionOperation,
+		trace.WithAttributes(otelAttrs...),
+		clientSpanKind,
+	)
+	// Track stage for error reporting.
+	var stage string
+	defer func() {
+		if err != nil {
+			span.RecordError(err)
+			span.SetStatus(codes.Error, stage)
+			c.errors.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
+		}
+		span.End()
+	}()
+
+	stage = "BuildURL"
+	u := uri.Clone(c.requestURL(ctx))
+	var pathParts [2]string
+	pathParts[0] = "/api/v1/regions/"
+	{
+		// Encode "regionId" parameter.
+		e := uri.NewPathEncoder(uri.PathEncoderConfig{
+			Param:   "regionId",
+			Style:   uri.PathStyleSimple,
+			Explode: false,
+		})
+		if err := func() error {
+			return e.EncodeValue(conv.UUIDToString(params.RegionId))
+		}(); err != nil {
+			return res, errors.Wrap(err, "encode path")
+		}
+		encoded, err := e.Result()
+		if err != nil {
+			return res, errors.Wrap(err, "encode path")
+		}
+		pathParts[1] = encoded
+	}
+	uri.AddPathParts(u, pathParts[:]...)
+
+	stage = "EncodeRequest"
+	r, err := ht.NewRequest(ctx, "GET", u)
+	if err != nil {
+		return res, errors.Wrap(err, "create request")
+	}
+
+	{
+		type bitset = [1]uint8
+		var satisfied bitset
+		{
+			stage = "Security:BearerAuth"
+			switch err := c.securityBearerAuth(ctx, GetRegionOperation, r); {
+			case err == nil: // if NO error
+				satisfied[0] |= 1 << 0
+			case errors.Is(err, ogenerrors.ErrSkipClientSecurity):
+				// Skip this security.
+			default:
+				return res, errors.Wrap(err, "security \"BearerAuth\"")
+			}
+		}
+
+		if ok := func() bool {
+		nextRequirement:
+			for _, requirement := range []bitset{
+				{0b00000001},
+			} {
+				for i, mask := range requirement {
+					if satisfied[i]&mask != mask {
+						continue nextRequirement
+					}
+				}
+				return true
+			}
+			return false
+		}(); !ok {
+			return res, ogenerrors.ErrSecurityRequirementIsNotSatisfied
+		}
+	}
+
+	stage = "SendRequest"
+	resp, err := c.cfg.Client.Do(r)
+	if err != nil {
+		return res, errors.Wrap(err, "do request")
+	}
+	body := resp.Body
+	defer func() {
+		// Drain the body to EOF before closing, so the underlying
+		// connection can be reused by the Transport regardless of the
+		// response status code. See https://github.com/ogen-go/ogen/issues/1670.
+		_, _ = io.Copy(io.Discard, body)
+		_ = body.Close()
+	}()
+
+	stage = "DecodeResponse"
+	result, err := decodeGetRegionResponse(resp)
+	if err != nil {
+		return res, errors.Wrap(err, "decode response")
+	}
+
+	return result, nil
+}
+
 // ListAvailabilityZones invokes list-availability-zones operation.
 //
-// Lists every availability zone of this region that is currently open to new orders, in display order.
+// List availability zones.
 //
-// Resources are generally required to share an availability zone in order to be attached to one
-// another, so confirm the zone before creating either side.
-//
-// A region that exists but is not open to new orders is reported as not found, exactly as an unknown
-// code is: both mean that nothing can be created there.
-//
-// GET /api/v1/regions/{regionCode}/availability-zones
-func (c *Client) ListAvailabilityZones(ctx context.Context, params ListAvailabilityZonesParams) (*AvailabilityZoneListResponseBody, error) {
+// GET /api/v1/regions/{regionId}/availability-zones
+func (c *Client) ListAvailabilityZones(ctx context.Context, params ListAvailabilityZonesParams) (*AvailabilityZoneList, error) {
 	res, err := c.sendListAvailabilityZones(ctx, params)
 	return res, err
 }
 
-func (c *Client) sendListAvailabilityZones(ctx context.Context, params ListAvailabilityZonesParams) (res *AvailabilityZoneListResponseBody, err error) {
+func (c *Client) sendListAvailabilityZones(ctx context.Context, params ListAvailabilityZonesParams) (res *AvailabilityZoneList, err error) {
 	otelAttrs := []attribute.KeyValue{
 		otelogen.OperationID("list-availability-zones"),
 		semconv.HTTPRequestMethodKey.String("GET"),
-		semconv.URLTemplateKey.String("/api/v1/regions/{regionCode}/availability-zones"),
+		semconv.URLTemplateKey.String("/api/v1/regions/{regionId}/availability-zones"),
 	}
 	otelAttrs = append(otelAttrs, c.cfg.Attributes...)
 
@@ -148,14 +428,14 @@ func (c *Client) sendListAvailabilityZones(ctx context.Context, params ListAvail
 	var pathParts [3]string
 	pathParts[0] = "/api/v1/regions/"
 	{
-		// Encode "regionCode" parameter.
+		// Encode "regionId" parameter.
 		e := uri.NewPathEncoder(uri.PathEncoderConfig{
-			Param:   "regionCode",
+			Param:   "regionId",
 			Style:   uri.PathStyleSimple,
 			Explode: false,
 		})
 		if err := func() error {
-			return e.EncodeValue(conv.StringToString(params.RegionCode))
+			return e.EncodeValue(conv.UUIDToString(params.RegionId))
 		}(); err != nil {
 			return res, errors.Wrap(err, "encode path")
 		}
@@ -167,6 +447,78 @@ func (c *Client) sendListAvailabilityZones(ctx context.Context, params ListAvail
 	}
 	pathParts[2] = "/availability-zones"
 	uri.AddPathParts(u, pathParts[:]...)
+
+	stage = "EncodeQueryParams"
+	q := uri.NewQueryEncoder()
+	{
+		// Encode "page" parameter.
+		cfg := uri.QueryParameterEncodingConfig{
+			Name:    "page",
+			Style:   uri.QueryStyleForm,
+			Explode: true,
+		}
+
+		if err := q.EncodeParam(cfg, func(e uri.Encoder) error {
+			if val, ok := params.Page.Get(); ok {
+				return e.EncodeValue(conv.Int64ToString(val))
+			}
+			return nil
+		}); err != nil {
+			return res, errors.Wrap(err, "encode query")
+		}
+	}
+	{
+		// Encode "page_size" parameter.
+		cfg := uri.QueryParameterEncodingConfig{
+			Name:    "page_size",
+			Style:   uri.QueryStyleForm,
+			Explode: true,
+		}
+
+		if err := q.EncodeParam(cfg, func(e uri.Encoder) error {
+			if val, ok := params.PageSize.Get(); ok {
+				return e.EncodeValue(conv.Int64ToString(val))
+			}
+			return nil
+		}); err != nil {
+			return res, errors.Wrap(err, "encode query")
+		}
+	}
+	{
+		// Encode "status" parameter.
+		cfg := uri.QueryParameterEncodingConfig{
+			Name:    "status",
+			Style:   uri.QueryStyleForm,
+			Explode: true,
+		}
+
+		if err := q.EncodeParam(cfg, func(e uri.Encoder) error {
+			if val, ok := params.Status.Get(); ok {
+				return e.EncodeValue(conv.StringToString(string(val)))
+			}
+			return nil
+		}); err != nil {
+			return res, errors.Wrap(err, "encode query")
+		}
+	}
+	{
+		// Encode "lookup_key" parameter.
+		cfg := uri.QueryParameterEncodingConfig{
+			Name:    "lookup_key",
+			Style:   uri.QueryStyleForm,
+			Explode: true,
+		}
+
+		if err := q.EncodeParam(cfg, func(e uri.Encoder) error {
+			if val, ok := params.LookupKey.Get(); ok {
+				return e.EncodeValue(conv.StringToString(val))
+			}
+			return nil
+		}); err != nil {
+			return res, errors.Wrap(err, "encode query")
+		}
+	}
+	u.RawQuery = q.Values().Encode()
 
 	stage = "EncodeRequest"
 	r, err := ht.NewRequest(ctx, "GET", u)
@@ -232,17 +584,16 @@ func (c *Client) sendListAvailabilityZones(ctx context.Context, params ListAvail
 
 // ListRegions invokes list-regions operation.
 //
-// Lists every region currently open to new orders, in display order.
-//
-// The list is the same for every caller and changes rarely.
+// Lists available, draining and retired regions; pending locations are visible only to operators.
+// Filter status=available to offer new placement choices.
 //
 // GET /api/v1/regions
-func (c *Client) ListRegions(ctx context.Context) (*RegionListResponseBody, error) {
-	res, err := c.sendListRegions(ctx)
+func (c *Client) ListRegions(ctx context.Context, params ListRegionsParams) (*RegionList, error) {
+	res, err := c.sendListRegions(ctx, params)
 	return res, err
 }
 
-func (c *Client) sendListRegions(ctx context.Context) (res *RegionListResponseBody, err error) {
+func (c *Client) sendListRegions(ctx context.Context, params ListRegionsParams) (res *RegionList, err error) {
 	otelAttrs := []attribute.KeyValue{
 		otelogen.OperationID("list-regions"),
 		semconv.HTTPRequestMethodKey.String("GET"),
@@ -282,6 +633,78 @@ func (c *Client) sendListRegions(ctx context.Context) (res *RegionListResponseBo
 	var pathParts [1]string
 	pathParts[0] = "/api/v1/regions"
 	uri.AddPathParts(u, pathParts[:]...)
+
+	stage = "EncodeQueryParams"
+	q := uri.NewQueryEncoder()
+	{
+		// Encode "page" parameter.
+		cfg := uri.QueryParameterEncodingConfig{
+			Name:    "page",
+			Style:   uri.QueryStyleForm,
+			Explode: true,
+		}
+
+		if err := q.EncodeParam(cfg, func(e uri.Encoder) error {
+			if val, ok := params.Page.Get(); ok {
+				return e.EncodeValue(conv.Int64ToString(val))
+			}
+			return nil
+		}); err != nil {
+			return res, errors.Wrap(err, "encode query")
+		}
+	}
+	{
+		// Encode "page_size" parameter.
+		cfg := uri.QueryParameterEncodingConfig{
+			Name:    "page_size",
+			Style:   uri.QueryStyleForm,
+			Explode: true,
+		}
+
+		if err := q.EncodeParam(cfg, func(e uri.Encoder) error {
+			if val, ok := params.PageSize.Get(); ok {
+				return e.EncodeValue(conv.Int64ToString(val))
+			}
+			return nil
+		}); err != nil {
+			return res, errors.Wrap(err, "encode query")
+		}
+	}
+	{
+		// Encode "status" parameter.
+		cfg := uri.QueryParameterEncodingConfig{
+			Name:    "status",
+			Style:   uri.QueryStyleForm,
+			Explode: true,
+		}
+
+		if err := q.EncodeParam(cfg, func(e uri.Encoder) error {
+			if val, ok := params.Status.Get(); ok {
+				return e.EncodeValue(conv.StringToString(string(val)))
+			}
+			return nil
+		}); err != nil {
+			return res, errors.Wrap(err, "encode query")
+		}
+	}
+	{
+		// Encode "lookup_key" parameter.
+		cfg := uri.QueryParameterEncodingConfig{
+			Name:    "lookup_key",
+			Style:   uri.QueryStyleForm,
+			Explode: true,
+		}
+
+		if err := q.EncodeParam(cfg, func(e uri.Encoder) error {
+			if val, ok := params.LookupKey.Get(); ok {
+				return e.EncodeValue(conv.StringToString(val))
+			}
+			return nil
+		}); err != nil {
+			return res, errors.Wrap(err, "encode query")
+		}
+	}
+	u.RawQuery = q.Values().Encode()
 
 	stage = "EncodeRequest"
 	r, err := ht.NewRequest(ctx, "GET", u)

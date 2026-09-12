@@ -13,29 +13,40 @@ type UnimplementedHandler struct{}
 
 var _ Handler = UnimplementedHandler{}
 
+// GetAvailabilityZone implements get-availability-zone operation.
+//
+// Get availability zone.
+//
+// GET /api/v1/regions/{regionId}/availability-zones/{availabilityZoneId}
+func (UnimplementedHandler) GetAvailabilityZone(ctx context.Context, params GetAvailabilityZoneParams) (r *AvailabilityZone, _ error) {
+	return r, ht.ErrNotImplemented
+}
+
+// GetRegion implements get-region operation.
+//
+// Get region.
+//
+// GET /api/v1/regions/{regionId}
+func (UnimplementedHandler) GetRegion(ctx context.Context, params GetRegionParams) (r *Region, _ error) {
+	return r, ht.ErrNotImplemented
+}
+
 // ListAvailabilityZones implements list-availability-zones operation.
 //
-// Lists every availability zone of this region that is currently open to new orders, in display order.
+// List availability zones.
 //
-// Resources are generally required to share an availability zone in order to be attached to one
-// another, so confirm the zone before creating either side.
-//
-// A region that exists but is not open to new orders is reported as not found, exactly as an unknown
-// code is: both mean that nothing can be created there.
-//
-// GET /api/v1/regions/{regionCode}/availability-zones
-func (UnimplementedHandler) ListAvailabilityZones(ctx context.Context, params ListAvailabilityZonesParams) (r *AvailabilityZoneListResponseBody, _ error) {
+// GET /api/v1/regions/{regionId}/availability-zones
+func (UnimplementedHandler) ListAvailabilityZones(ctx context.Context, params ListAvailabilityZonesParams) (r *AvailabilityZoneList, _ error) {
 	return r, ht.ErrNotImplemented
 }
 
 // ListRegions implements list-regions operation.
 //
-// Lists every region currently open to new orders, in display order.
-//
-// The list is the same for every caller and changes rarely.
+// Lists available, draining and retired regions; pending locations are visible only to operators.
+// Filter status=available to offer new placement choices.
 //
 // GET /api/v1/regions
-func (UnimplementedHandler) ListRegions(ctx context.Context) (r *RegionListResponseBody, _ error) {
+func (UnimplementedHandler) ListRegions(ctx context.Context, params ListRegionsParams) (r *RegionList, _ error) {
 	return r, ht.ErrNotImplemented
 }
 

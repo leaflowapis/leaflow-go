@@ -13,35 +13,24 @@ type UnimplementedHandler struct{}
 
 var _ Handler = UnimplementedHandler{}
 
-// AllocateFloatingIP implements allocate-floating-ip operation.
-//
-// If the private network is not yet connected to the internet, connectivity is established as part of
-// this call.
-//
-// IPv6 is not requested through this endpoint. IPv6 addresses are assigned to instances by the private
-// network; enable IPv6 on that network instead.
-//
-// POST /api/v1/floating-ips
-func (UnimplementedHandler) AllocateFloatingIP(ctx context.Context, req *AllocateFloatingIPRequestBody) (r *FloatingIPResource, _ error) {
-	return r, ht.ErrNotImplemented
-}
-
 // AttachDisk implements attach-disk operation.
 //
 // The disk must be in the same region and availability zone as the instance. Partition it and mount
 // the file system inside the instance once it is attached.
 //
 // POST /api/v1/instances/{instanceId}/disks
-func (UnimplementedHandler) AttachDisk(ctx context.Context, req *AttachDiskRequestBody, params AttachDiskParams) (r *DiskResource, _ error) {
+func (UnimplementedHandler) AttachDisk(ctx context.Context, req *AttachDiskRequestBody, params AttachDiskParams) (r *ResourceDependency, _ error) {
 	return r, ht.ErrNotImplemented
 }
 
 // AttachInstanceFloatingIP implements attach-instance-floating-ip operation.
 //
-// The floating IP is bound to the primary network interface of the instance.
+// Requests a binding change on the instance’s primary Fabric port. The returned Fabric usage claim
+// identifies the port-to-address relationship; Compute does not own the address. An accepted release
+// can still be releasing until the provider confirms removal.
 //
 // POST /api/v1/instances/{instanceId}/floating-ips
-func (UnimplementedHandler) AttachInstanceFloatingIP(ctx context.Context, req *AttachFloatingIPRequestBody, params AttachInstanceFloatingIPParams) (r *FloatingIPResource, _ error) {
+func (UnimplementedHandler) AttachInstanceFloatingIP(ctx context.Context, req *AttachFloatingIPRequestBody, params AttachInstanceFloatingIPParams) (r *ResourceUsage, _ error) {
 	return r, ht.ErrNotImplemented
 }
 
@@ -50,16 +39,7 @@ func (UnimplementedHandler) AttachInstanceFloatingIP(ctx context.Context, req *A
 // Attach a network interface.
 //
 // POST /api/v1/instances/{instanceId}/ports
-func (UnimplementedHandler) AttachPort(ctx context.Context, req *AttachPortRequestBody, params AttachPortParams) (r *PortResource, _ error) {
-	return r, ht.ErrNotImplemented
-}
-
-// BindFloatingIP implements bind-floating-ip operation.
-//
-// Bind a floating IP to a network interface.
-//
-// PUT /api/v1/floating-ips/{floatingIpId}/binding
-func (UnimplementedHandler) BindFloatingIP(ctx context.Context, req *BindFloatingIPRequestBody, params BindFloatingIPParams) (r *FloatingIPResource, _ error) {
+func (UnimplementedHandler) AttachPort(ctx context.Context, req *AttachPortRequestBody, params AttachPortParams) (r *ResourceDependency, _ error) {
 	return r, ht.ErrNotImplemented
 }
 
@@ -70,47 +50,6 @@ func (UnimplementedHandler) BindFloatingIP(ctx context.Context, req *BindFloatin
 //
 // POST /api/v1/instances/{instanceId}/resize/confirm
 func (UnimplementedHandler) ConfirmInstanceResize(ctx context.Context, params ConfirmInstanceResizeParams) (r *InstanceResource, _ error) {
-	return r, ht.ErrNotImplemented
-}
-
-// CreateBackup implements create-backup operation.
-//
-// A backup is a complete copy of a disk held in separate storage: it remains restorable after the
-// source disk is deleted, and can be restored to another availability zone in the same region. A
-// snapshot offers neither capability, as it resides in the same storage as the source disk and
-// prevents that disk from being deleted while it exists.
-//
-// Disks attached to a running instance, including system disks, can be backed up.
-//
-// The duration depends on the amount of data. The backup is not complete when this endpoint returns;
-// poll the retrieve endpoint.
-//
-// POST /api/v1/backups
-func (UnimplementedHandler) CreateBackup(ctx context.Context, req *CreateBackupRequestBody) (r *BackupResource, _ error) {
-	return r, ht.ErrNotImplemented
-}
-
-// CreateDisk implements create-disk operation.
-//
-// The disk is created in the availability zone of the selected disk type, and an instance must reside
-// in the same zone to attach it. Choosing the disk type therefore determines the zone.
-//
-// A disk type that has been withdrawn is rejected with `DISK_TYPE_RETIRED`, even though its identifier
-// still resolves. Withdrawn types stop appearing in the disk type listing; disks already bought on one
-// keep working and can still be resized.
-//
-// POST /api/v1/disks
-func (UnimplementedHandler) CreateDisk(ctx context.Context, req *CreateDiskRequestBody) (r CreateDiskRes, _ error) {
-	return r, ht.ErrNotImplemented
-}
-
-// CreatePort implements create-port operation.
-//
-// The new network interface is not attached to any instance. Primary network interfaces are not
-// created here; they are created with the instance.
-//
-// POST /api/v1/ports
-func (UnimplementedHandler) CreatePort(ctx context.Context, req *CreatePortRequestBody) (r *PortResource, _ error) {
 	return r, ht.ErrNotImplemented
 }
 
@@ -140,92 +79,6 @@ func (UnimplementedHandler) CreatePrivateImage(ctx context.Context, req *CreateP
 	return r, ht.ErrNotImplemented
 }
 
-// CreatePrivateNetwork implements create-private-network operation.
-//
-// Creates a network, a router and a default security group in one call. The default security group
-// denies all inbound traffic and permits all outbound traffic.
-//
-// POST /api/v1/private-networks
-func (UnimplementedHandler) CreatePrivateNetwork(ctx context.Context, req *CreatePrivateNetworkRequestBody) (r *PrivateNetworkResource, _ error) {
-	return r, ht.ErrNotImplemented
-}
-
-// CreateRoute implements create-route operation.
-//
-// Three forms that would sever connectivity are rejected: a destination of `0.0.0.0/0`, which
-// overrides the default route and takes every floating IP offline immediately; a destination equal to
-// the CIDR of a subnet, which overrides its directly connected route; and a next hop equal to the
-// gateway of a subnet, which points back at the router itself.
-//
-// POST /api/v1/private-networks/{privateNetworkId}/routes
-func (UnimplementedHandler) CreateRoute(ctx context.Context, req *CreateRouteRequestBody, params CreateRouteParams) (r *RouteResource, _ error) {
-	return r, ht.ErrNotImplemented
-}
-
-// CreateSecurityGroup implements create-security-group operation.
-//
-// A new security group carries one rule, permitting ICMP fragmentation-needed messages (type 3, code
-// 4). Without it path MTU discovery fails, which presents as connections that establish and then stall
-// on large packets.
-//
-// POST /api/v1/security-groups
-func (UnimplementedHandler) CreateSecurityGroup(ctx context.Context, req *CreateSecurityGroupRequestBody) (r *SecurityGroupResource, _ error) {
-	return r, ht.ErrNotImplemented
-}
-
-// CreateSecurityGroupRule implements create-security-group-rule operation.
-//
-// Adding an identical rule twice is rejected. For that comparison `0.0.0.0/0`, `::/0` and an omitted
-// value are treated as equivalent.
-//
-// POST /api/v1/security-groups/{securityGroupId}/rules
-func (UnimplementedHandler) CreateSecurityGroupRule(ctx context.Context, req *CreateSecurityRuleRequestBody, params CreateSecurityGroupRuleParams) (r *SecurityRuleResource, _ error) {
-	return r, ht.ErrNotImplemented
-}
-
-// CreateSnapshot implements create-snapshot operation.
-//
-// Disks attached to a running instance can be snapshotted. A snapshot records the state of the block
-// device at a point in time and may be inconsistent at the file-system level, so run `sync` inside the
-// instance first where the data matters.
-//
-// A snapshot of a system disk cannot be used to revert that system disk: reverting requires the disk
-// to be detached, and a system disk cannot be detached. It can be used to create a new data disk. To
-// preserve and restore an entire system, use a private image; for a copy that crosses availability
-// zones and survives deletion of the disk, use a backup.
-//
-// POST /api/v1/snapshots
-func (UnimplementedHandler) CreateSnapshot(ctx context.Context, req *CreateSnapshotRequestBody) (r *SnapshotResource, _ error) {
-	return r, ht.ErrNotImplemented
-}
-
-// CreateSubnet implements create-subnet operation.
-//
-// Create a subnet.
-//
-// POST /api/v1/private-networks/{privateNetworkId}/subnets
-func (UnimplementedHandler) CreateSubnet(ctx context.Context, req *CreateSubnetRequestBody, params CreateSubnetParams) (r *SubnetResource, _ error) {
-	return r, ht.ErrNotImplemented
-}
-
-// DeleteBackup implements delete-backup operation.
-//
-// Independent of the source disk: deletion succeeds whether or not that disk still exists.
-//
-// DELETE /api/v1/backups/{backupId}
-func (UnimplementedHandler) DeleteBackup(ctx context.Context, params DeleteBackupParams) error {
-	return ht.ErrNotImplemented
-}
-
-// DeleteDisk implements delete-disk operation.
-//
-// Deletion is rejected while the disk is attached, or while snapshots created from it still exist.
-//
-// DELETE /api/v1/disks/{diskId}
-func (UnimplementedHandler) DeleteDisk(ctx context.Context, params DeleteDiskParams) error {
-	return ht.ErrNotImplemented
-}
-
 // DeleteInstance implements delete-instance operation.
 //
 // The system disk is deleted with the instance, and snapshots created from the system disk are deleted
@@ -237,16 +90,6 @@ func (UnimplementedHandler) DeleteDisk(ctx context.Context, params DeleteDiskPar
 //
 // DELETE /api/v1/instances/{instanceId}
 func (UnimplementedHandler) DeleteInstance(ctx context.Context, params DeleteInstanceParams) error {
-	return ht.ErrNotImplemented
-}
-
-// DeletePort implements delete-port operation.
-//
-// The primary network interface cannot be deleted on its own, as it is released with the instance. A
-// network interface still attached to an instance cannot be deleted either.
-//
-// DELETE /api/v1/ports/{portId}
-func (UnimplementedHandler) DeletePort(ctx context.Context, params DeletePortParams) error {
 	return ht.ErrNotImplemented
 }
 
@@ -262,79 +105,24 @@ func (UnimplementedHandler) DeletePrivateImage(ctx context.Context, params Delet
 	return ht.ErrNotImplemented
 }
 
-// DeletePrivateNetwork implements delete-private-network operation.
-//
-// Release is rejected while instances or network interfaces remain in the network. IPv6, the router
-// and the security groups are released with it.
-//
-// DELETE /api/v1/private-networks/{privateNetworkId}
-func (UnimplementedHandler) DeletePrivateNetwork(ctx context.Context, params DeletePrivateNetworkParams) error {
-	return ht.ErrNotImplemented
-}
-
-// DeleteRoute implements delete-route operation.
-//
-// Delete a static route.
-//
-// DELETE /api/v1/private-networks/{privateNetworkId}/routes/{routeId}
-func (UnimplementedHandler) DeleteRoute(ctx context.Context, params DeleteRouteParams) error {
-	return ht.ErrNotImplemented
-}
-
-// DeleteSecurityGroup implements delete-security-group operation.
-//
-// The default security group cannot be deleted, as it is released with the private network. A security
-// group still referenced by a network interface cannot be deleted either.
-//
-// DELETE /api/v1/security-groups/{securityGroupId}
-func (UnimplementedHandler) DeleteSecurityGroup(ctx context.Context, params DeleteSecurityGroupParams) error {
-	return ht.ErrNotImplemented
-}
-
-// DeleteSecurityGroupRule implements delete-security-group-rule operation.
-//
-// Delete a security group rule.
-//
-// DELETE /api/v1/security-groups/{securityGroupId}/rules/{ruleId}
-func (UnimplementedHandler) DeleteSecurityGroupRule(ctx context.Context, params DeleteSecurityGroupRuleParams) error {
-	return ht.ErrNotImplemented
-}
-
-// DeleteSnapshot implements delete-snapshot operation.
-//
-// Delete a snapshot.
-//
-// DELETE /api/v1/snapshots/{snapshotId}
-func (UnimplementedHandler) DeleteSnapshot(ctx context.Context, params DeleteSnapshotParams) error {
-	return ht.ErrNotImplemented
-}
-
-// DeleteSubnet implements delete-subnet operation.
-//
-// Deletion is rejected while network interfaces remain in the subnet, or while a static route has a
-// next hop inside its CIDR.
-//
-// DELETE /api/v1/private-networks/{privateNetworkId}/subnets/{subnetId}
-func (UnimplementedHandler) DeleteSubnet(ctx context.Context, params DeleteSubnetParams) error {
-	return ht.ErrNotImplemented
-}
-
 // DetachDisk implements detach-disk operation.
 //
 // Unmount the device inside the instance before calling this endpoint. Forcibly detaching a file
 // system that is being written to corrupts data.
 //
 // DELETE /api/v1/instances/{instanceId}/disks/{diskId}
-func (UnimplementedHandler) DetachDisk(ctx context.Context, params DetachDiskParams) (r *DiskResource, _ error) {
+func (UnimplementedHandler) DetachDisk(ctx context.Context, params DetachDiskParams) (r *ResourceDependency, _ error) {
 	return r, ht.ErrNotImplemented
 }
 
 // DetachInstanceFloatingIP implements detach-instance-floating-ip operation.
 //
-// Unbind the floating IP of an instance.
+// Requests a binding change on the instance’s primary Fabric port. The returned Fabric usage claim
+// identifies the port-to-address relationship; Compute does not own the address. An accepted release
+// can still be releasing until the provider confirms removal.
 //
 // DELETE /api/v1/instances/{instanceId}/floating-ips/{floatingIpId}
-func (UnimplementedHandler) DetachInstanceFloatingIP(ctx context.Context, params DetachInstanceFloatingIPParams) (r *FloatingIPResource, _ error) {
+func (UnimplementedHandler) DetachInstanceFloatingIP(ctx context.Context, params DetachInstanceFloatingIPParams) (r *ResourceUsage, _ error) {
 	return r, ht.ErrNotImplemented
 }
 
@@ -343,68 +131,7 @@ func (UnimplementedHandler) DetachInstanceFloatingIP(ctx context.Context, params
 // The primary network interface cannot be detached; the instance would lose its network address.
 //
 // DELETE /api/v1/instances/{instanceId}/ports/{portId}
-func (UnimplementedHandler) DetachPort(ctx context.Context, params DetachPortParams) (r *PortResource, _ error) {
-	return r, ht.ErrNotImplemented
-}
-
-// DisablePrivateNetworkIpv6 implements disable-private-network-ipv6 operation.
-//
-// A released prefix is not re-allocated immediately.
-//
-// DELETE /api/v1/private-networks/{privateNetworkId}/ipv6
-func (UnimplementedHandler) DisablePrivateNetworkIpv6(ctx context.Context, params DisablePrivateNetworkIpv6Params) error {
-	return ht.ErrNotImplemented
-}
-
-// EnablePrivateNetworkIpv6 implements enable-private-network-ipv6 operation.
-//
-// Allocates an IPv6 prefix to the private network. Addresses are assigned to instances by the network
-// itself, can be neither requested nor released individually, and consume no public IPv4 address.
-//
-// If the private network is not yet connected to the internet, connectivity is established as part of
-// this call.
-//
-// POST /api/v1/private-networks/{privateNetworkId}/ipv6
-func (UnimplementedHandler) EnablePrivateNetworkIpv6(ctx context.Context, params EnablePrivateNetworkIpv6Params) (r *IPv6ResponseBody, _ error) {
-	return r, ht.ErrNotImplemented
-}
-
-// GetBackup implements get-backup operation.
-//
-// Queries the current state of the backup, which makes it slower but more accurate than the list
-// endpoint. Use it to poll creation progress.
-//
-// GET /api/v1/backups/{backupId}
-func (UnimplementedHandler) GetBackup(ctx context.Context, params GetBackupParams) (r *BackupResource, _ error) {
-	return r, ht.ErrNotImplemented
-}
-
-// GetDisk implements get-disk operation.
-//
-// Queries the current state of the disk, which makes it slower but more accurate than the list
-// endpoint.
-//
-// GET /api/v1/disks/{diskId}
-func (UnimplementedHandler) GetDisk(ctx context.Context, params GetDiskParams) (r *DiskResource, _ error) {
-	return r, ht.ErrNotImplemented
-}
-
-// GetDiskType implements get-disk-type operation.
-//
-// Retrieve capacity and performance constraints for an existing disk, including system disk types and
-// types withdrawn from sale.
-//
-// GET /api/v1/disk-types/{diskTypeId}
-func (UnimplementedHandler) GetDiskType(ctx context.Context, params GetDiskTypeParams) (r *DiskTypeResource, _ error) {
-	return r, ht.ErrNotImplemented
-}
-
-// GetFloatingIP implements get-floating-ip operation.
-//
-// Retrieve a floating IP.
-//
-// GET /api/v1/floating-ips/{floatingIpId}
-func (UnimplementedHandler) GetFloatingIP(ctx context.Context, params GetFloatingIPParams) (r *FloatingIPResource, _ error) {
+func (UnimplementedHandler) DetachPort(ctx context.Context, params DetachPortParams) (r *ResourceDependency, _ error) {
 	return r, ht.ErrNotImplemented
 }
 
@@ -440,128 +167,19 @@ func (UnimplementedHandler) GetPrivateImage(ctx context.Context, params GetPriva
 	return r, ht.ErrNotImplemented
 }
 
-// GetPrivateNetwork implements get-private-network operation.
-//
-// Retrieve a private network.
-//
-// GET /api/v1/private-networks/{privateNetworkId}
-func (UnimplementedHandler) GetPrivateNetwork(ctx context.Context, params GetPrivateNetworkParams) (r *PrivateNetworkResource, _ error) {
-	return r, ht.ErrNotImplemented
-}
-
-// GetPrivateNetworkIpv6 implements get-private-network-ipv6 operation.
-//
-// Retrieve the IPv6 configuration of a private network.
-//
-// GET /api/v1/private-networks/{privateNetworkId}/ipv6
-func (UnimplementedHandler) GetPrivateNetworkIpv6(ctx context.Context, params GetPrivateNetworkIpv6Params) (r *IPv6ResponseBody, _ error) {
-	return r, ht.ErrNotImplemented
-}
-
-// GetSecurityGroup implements get-security-group operation.
-//
-// Retrieve a security group.
-//
-// GET /api/v1/security-groups/{securityGroupId}
-func (UnimplementedHandler) GetSecurityGroup(ctx context.Context, params GetSecurityGroupParams) (r *SecurityGroupResource, _ error) {
-	return r, ht.ErrNotImplemented
-}
-
-// GetSnapshot implements get-snapshot operation.
-//
-// Retrieve a snapshot.
-//
-// GET /api/v1/snapshots/{snapshotId}
-func (UnimplementedHandler) GetSnapshot(ctx context.Context, params GetSnapshotParams) (r *SnapshotResource, _ error) {
-	return r, ht.ErrNotImplemented
-}
-
 // LaunchInstance implements launch-instance operation.
 //
-// A password must be set in the request. The request is rejected otherwise, since the resulting
-// instance would be unreachable. The platform can generate one, in which case it is returned only in
-// this response.
-//
-// `count` creates several instances at once, 20 at most. Names are numbered `-1`, `-2` automatically
-// and all instances share one password. `instances` in the response is always an array, including for
-// a single instance.
-//
-// Instances are created one by one in order. If the sequence stops part way through, because of a
-// quota limit for example, the instances already created are kept and `failure` states why it stopped.
-// A failure on the first instance is treated as a failure of the whole request and no instance is
-// created.
-//
-// Exactly one source must be given: `image_id` for a platform image, `private_image_id` for a private
-// image, or `boot_disk_id` to boot a disk you already have. Supplying more than one, or none, is
-// rejected.
-//
-// A platform image that has been withdrawn is rejected with `IMAGE_RETIRED`, and an instance type that
-// has been withdrawn with `INSTANCE_TYPE_RETIRED` — in both cases the identifier still resolves.
-// Withdrawn entries stop appearing in their listing, so an identifier held in a script, a template or
-// an earlier order is the way this is usually hit: reread the listing and pick another. Instances
-// already running either are unaffected, and one on a withdrawn image can still be rebuilt onto it.
-//
-// `boot_disk_id` recovers an instance that can no longer be repaired from the inside. Snapshot its
-// disk, restore that snapshot into a new disk, attach the new disk to another instance and repair it
-// there, then create an instance from it. That disk is not deleted when the instance is released; it
-// is detached and returned to you.
-//
-// Instances are created in the availability zone of the instance type. Disks to be attached later must
-// reside in the same zone.
-//
-// Creation is not complete when this endpoint returns and `status` is `provisioning`. Poll GET to
-// observe the outcome.
+// Creates a Billing order, including for metered pricing. The price must belong to the resource’s
+// Billing Plan; applicable contract pricing is resolved by Billing. Technical capacity is checked
+// before sellable quota is reserved. Provisioning continues automatically after payment; do not submit
+// a new purchase after paying. Reuse the original idempotency key after an uncertain response. Exactly
+// one of image_id, private_image_id or boot_disk_id is required, and exactly one of port_id or
+// subnet_id. Existing ports, boot disks or floating IPs require count=1. Image boots require
+// boot_disk; existing disks retain their own subscription. Resource lines for Compute, Storage and
+// Fabric remain separate subscriptions on the same order.
 //
 // POST /api/v1/instances
-func (UnimplementedHandler) LaunchInstance(ctx context.Context, req *LaunchInstanceRequestBody) (r LaunchInstanceRes, _ error) {
-	return r, ht.ErrNotImplemented
-}
-
-// ListAvailabilityZones implements list-availability-zones operation.
-//
-// A disk and an instance must reside in the same availability zone to be attached. Confirm the zone
-// before creating either.
-//
-// GET /api/v1/regions/{regionCode}/availability-zones
-func (UnimplementedHandler) ListAvailabilityZones(ctx context.Context, params ListAvailabilityZonesParams) (r *ZoneListResponseBody, _ error) {
-	return r, ht.ErrNotImplemented
-}
-
-// ListBackups implements list-backups operation.
-//
-// List backups.
-//
-// GET /api/v1/backups
-func (UnimplementedHandler) ListBackups(ctx context.Context, params ListBackupsParams) (r *BackupListResponseBody, _ error) {
-	return r, ht.ErrNotImplemented
-}
-
-// ListDiskTypes implements list-disk-types operation.
-//
-// Only disk types currently on sale are listed. A withdrawn one disappears from here and can no longer
-// be bought, while the disks already on it keep working and can still be resized.
-//
-// GET /api/v1/disk-types
-func (UnimplementedHandler) ListDiskTypes(ctx context.Context, params ListDiskTypesParams) (r *DiskTypeListResponseBody, _ error) {
-	return r, ht.ErrNotImplemented
-}
-
-// ListDisks implements list-disks operation.
-//
-// When both `region_code` and `availability_zone` are supplied, only disks attachable to an instance
-// at that location are returned.
-//
-// GET /api/v1/disks
-func (UnimplementedHandler) ListDisks(ctx context.Context, params ListDisksParams) (r *DiskListResponseBody, _ error) {
-	return r, ht.ErrNotImplemented
-}
-
-// ListFloatingIps implements list-floating-ips operation.
-//
-// List floating IPs.
-//
-// GET /api/v1/floating-ips
-func (UnimplementedHandler) ListFloatingIps(ctx context.Context) (r *FloatingIPListResponseBody, _ error) {
+func (UnimplementedHandler) LaunchInstance(ctx context.Context, req *LaunchInstanceRequestBody) (r *LaunchInstanceResponseBody, _ error) {
 	return r, ht.ErrNotImplemented
 }
 
@@ -579,12 +197,22 @@ func (UnimplementedHandler) ListImages(ctx context.Context, params ListImagesPar
 	return r, ht.ErrNotImplemented
 }
 
+// ListInstanceDependencies implements list-instance-dependencies operation.
+//
+// Desired dependencies recorded by Compute. usage_id resolves the corresponding claim in Fabric or
+// Storage. These records remain present while an instance is stopped or suspended.
+//
+// GET /api/v1/instances/{instanceId}/dependencies
+func (UnimplementedHandler) ListInstanceDependencies(ctx context.Context, params ListInstanceDependenciesParams) (r *ResourceDependencyList, _ error) {
+	return r, ht.ErrNotImplemented
+}
+
 // ListInstanceDisks implements list-instance-disks operation.
 //
 // List the disks attached to an instance.
 //
 // GET /api/v1/instances/{instanceId}/disks
-func (UnimplementedHandler) ListInstanceDisks(ctx context.Context, params ListInstanceDisksParams) (r *DiskListResponseBody, _ error) {
+func (UnimplementedHandler) ListInstanceDisks(ctx context.Context, params ListInstanceDisksParams) (r *ResourceDependencyList, _ error) {
 	return r, ht.ErrNotImplemented
 }
 
@@ -593,7 +221,7 @@ func (UnimplementedHandler) ListInstanceDisks(ctx context.Context, params ListIn
 // List the network interfaces of an instance.
 //
 // GET /api/v1/instances/{instanceId}/ports
-func (UnimplementedHandler) ListInstancePorts(ctx context.Context, params ListInstancePortsParams) (r *PortListResponseBody, _ error) {
+func (UnimplementedHandler) ListInstancePorts(ctx context.Context, params ListInstancePortsParams) (r *ResourceDependencyList, _ error) {
 	return r, ht.ErrNotImplemented
 }
 
@@ -634,85 +262,12 @@ func (UnimplementedHandler) ListOperationLogs(ctx context.Context, params ListOp
 	return r, ht.ErrNotImplemented
 }
 
-// ListPorts implements list-ports operation.
-//
-// List network interfaces.
-//
-// GET /api/v1/ports
-func (UnimplementedHandler) ListPorts(ctx context.Context) (r *PortListResponseBody, _ error) {
-	return r, ht.ErrNotImplemented
-}
-
 // ListPrivateImages implements list-private-images operation.
 //
 // List private images.
 //
 // GET /api/v1/private-images
 func (UnimplementedHandler) ListPrivateImages(ctx context.Context, params ListPrivateImagesParams) (r *PrivateImageListResponseBody, _ error) {
-	return r, ht.ErrNotImplemented
-}
-
-// ListPrivateNetworks implements list-private-networks operation.
-//
-// List private networks.
-//
-// GET /api/v1/private-networks
-func (UnimplementedHandler) ListPrivateNetworks(ctx context.Context, params ListPrivateNetworksParams) (r *PrivateNetworkListResponseBody, _ error) {
-	return r, ht.ErrNotImplemented
-}
-
-// ListRegions implements list-regions operation.
-//
-// List available regions.
-//
-// GET /api/v1/regions
-func (UnimplementedHandler) ListRegions(ctx context.Context) (r *RegionListResponseBody, _ error) {
-	return r, ht.ErrNotImplemented
-}
-
-// ListRoutes implements list-routes operation.
-//
-// List static routes.
-//
-// GET /api/v1/private-networks/{privateNetworkId}/routes
-func (UnimplementedHandler) ListRoutes(ctx context.Context, params ListRoutesParams) (r *RouteListResponseBody, _ error) {
-	return r, ht.ErrNotImplemented
-}
-
-// ListSecurityGroupRules implements list-security-group-rules operation.
-//
-// List security group rules.
-//
-// GET /api/v1/security-groups/{securityGroupId}/rules
-func (UnimplementedHandler) ListSecurityGroupRules(ctx context.Context, params ListSecurityGroupRulesParams) (r *SecurityRuleListResponseBody, _ error) {
-	return r, ht.ErrNotImplemented
-}
-
-// ListSecurityGroups implements list-security-groups operation.
-//
-// List security groups.
-//
-// GET /api/v1/security-groups
-func (UnimplementedHandler) ListSecurityGroups(ctx context.Context, params ListSecurityGroupsParams) (r *SecurityGroupListResponseBody, _ error) {
-	return r, ht.ErrNotImplemented
-}
-
-// ListSnapshots implements list-snapshots operation.
-//
-// List snapshots.
-//
-// GET /api/v1/snapshots
-func (UnimplementedHandler) ListSnapshots(ctx context.Context, params ListSnapshotsParams) (r *SnapshotListResponseBody, _ error) {
-	return r, ht.ErrNotImplemented
-}
-
-// ListSubnets implements list-subnets operation.
-//
-// IPv6 subnets are included, with `ip_version` 6. They are created when IPv6 is enabled and cannot be
-// deleted individually.
-//
-// GET /api/v1/private-networks/{privateNetworkId}/subnets
-func (UnimplementedHandler) ListSubnets(ctx context.Context, params ListSubnetsParams) (r *SubnetListResponseBody, _ error) {
 	return r, ht.ErrNotImplemented
 }
 
@@ -763,36 +318,6 @@ func (UnimplementedHandler) RebuildInstance(ctx context.Context, req *RebuildIns
 	return r, ht.ErrNotImplemented
 }
 
-// ReleaseFloatingIP implements release-floating-ip operation.
-//
-// A released address enters a cooldown period before it is allocated again, so that DNS records and
-// allow-lists still pointing at it do not break immediately. The same address therefore cannot be
-// re-allocated for some time after release. Proceed with care.
-//
-// DELETE /api/v1/floating-ips/{floatingIpId}
-func (UnimplementedHandler) ReleaseFloatingIP(ctx context.Context, params ReleaseFloatingIPParams) error {
-	return ht.ErrNotImplemented
-}
-
-// RenameBackup implements rename-backup operation.
-//
-// Rename a backup.
-//
-// PATCH /api/v1/backups/{backupId}
-func (UnimplementedHandler) RenameBackup(ctx context.Context, req *RenameBackupRequestBody, params RenameBackupParams) (r *BackupResource, _ error) {
-	return r, ht.ErrNotImplemented
-}
-
-// RenameDisk implements rename-disk operation.
-//
-// Changes the name only. Use the resize endpoint for capacity; type and availability zone are
-// immutable.
-//
-// PATCH /api/v1/disks/{diskId}
-func (UnimplementedHandler) RenameDisk(ctx context.Context, req *RenameDiskRequestBody, params RenameDiskParams) (r *DiskResource, _ error) {
-	return r, ht.ErrNotImplemented
-}
-
 // RenameInstance implements rename-instance operation.
 //
 // Changes the display name only. The hostname inside the instance is unchanged; it equals the instance
@@ -812,33 +337,6 @@ func (UnimplementedHandler) RenamePrivateImage(ctx context.Context, req *RenameP
 	return r, ht.ErrNotImplemented
 }
 
-// RenamePrivateNetwork implements rename-private-network operation.
-//
-// Changes the display name only. The CIDR, the routes and the internet gateway are immutable.
-//
-// PATCH /api/v1/private-networks/{privateNetworkId}
-func (UnimplementedHandler) RenamePrivateNetwork(ctx context.Context, req *RenamePrivateNetworkRequestBody, params RenamePrivateNetworkParams) (r *PrivateNetworkResource, _ error) {
-	return r, ht.ErrNotImplemented
-}
-
-// RenameSecurityGroup implements rename-security-group operation.
-//
-// Changes the name only. Use the rule endpoints to change rules.
-//
-// PATCH /api/v1/security-groups/{securityGroupId}
-func (UnimplementedHandler) RenameSecurityGroup(ctx context.Context, req *RenameSecurityGroupRequestBody, params RenameSecurityGroupParams) (r *SecurityGroupResource, _ error) {
-	return r, ht.ErrNotImplemented
-}
-
-// RenameSnapshot implements rename-snapshot operation.
-//
-// Rename a snapshot.
-//
-// PATCH /api/v1/snapshots/{snapshotId}
-func (UnimplementedHandler) RenameSnapshot(ctx context.Context, req *RenameSnapshotRequestBody, params RenameSnapshotParams) (r *SnapshotResource, _ error) {
-	return r, ht.ErrNotImplemented
-}
-
 // ResetInstancePassword implements reset-instance-password operation.
 //
 // Changes the root password without a reboot. The instance must be running.
@@ -854,75 +352,15 @@ func (UnimplementedHandler) ResetInstancePassword(ctx context.Context, req *Rese
 	return r, ht.ErrNotImplemented
 }
 
-// ResizeDisk implements resize-disk operation.
-//
-// Capacity can only be increased; shrinking is not supported. Extend the file system inside the
-// instance once the resize completes.
-//
-// A data disk whose performance grows with its size has to be detached first. The storage backend
-// decides a volume's limit when the volume is attached and never revisits it, so growing one that is
-// attached would give you the capacity immediately and leave the speed at the old size's figure —
-// indefinitely, and stopping the instance does not help. Rather than take the money for performance
-// that does not arrive, this is refused with `DISK_RESIZE_NEEDS_DETACH`; detach the disk, resize it,
-// and attach it again.
-//
-// It is only refused when the two sizes really would differ in speed. A disk whose type has no QoS
-// level, or whose performance has already reached the type's ceiling, grows online as before.
-//
-// A system disk is the exception and grows online, because a root volume cannot be detached at all.
-// Its performance does not change with size for exactly that reason — system disk types are required
-// to carry a level that does not scale.
-//
-// POST /api/v1/disks/{diskId}/resize
-func (UnimplementedHandler) ResizeDisk(ctx context.Context, req *ResizeDiskRequestBody, params ResizeDiskParams) (r *DiskResource, _ error) {
-	return r, ht.ErrNotImplemented
-}
-
 // ResizeInstance implements resize-instance operation.
 //
-// Only an instance type in the same region and availability zone can be selected, as attached disks
-// cannot follow the instance elsewhere.
-//
-// A resize has two steps. This endpoint restarts the instance on the new size and the status becomes
-// `resize_verifying`, at which point the confirm or revert endpoint must be called. Until confirmation
-// the target type is recorded in `pending_instance_type_id`, while `instance_type_id` remains the type
-// in effect and billed.
-//
-// Both sizes hold resources while the resize is unconfirmed. Confirm promptly once the status becomes
-// `resize_verifying`.
+// Creates a Billing order, including for metered pricing. The price must belong to the resource’s
+// Billing Plan; applicable contract pricing is resolved by Billing. Technical capacity is checked
+// before sellable quota is reserved. Provisioning continues automatically after payment; do not submit
+// a new purchase after paying. Reuse the original idempotency key after an uncertain response.
 //
 // POST /api/v1/instances/{instanceId}/resize
-func (UnimplementedHandler) ResizeInstance(ctx context.Context, req *ResizeInstanceRequestBody, params ResizeInstanceParams) (r *InstanceResource, _ error) {
-	return r, ht.ErrNotImplemented
-}
-
-// RestoreBackup implements restore-backup operation.
-//
-// Restores onto a newly created disk. The source disk is unaffected and need not still exist.
-//
-// The target disk type may belong to another availability zone of the same region, and its capacity
-// must not be smaller than the backup. The disk cannot be attached until the restore completes; poll
-// the disk retrieve endpoint.
-//
-// POST /api/v1/backups/{backupId}/restore
-func (UnimplementedHandler) RestoreBackup(ctx context.Context, req *RestoreBackupRequestBody, params RestoreBackupParams) (r *DiskResource, _ error) {
-	return r, ht.ErrNotImplemented
-}
-
-// RevertDisk implements revert-disk operation.
-//
-// Restores the contents of the disk to the moment the snapshot was taken. All data written after that
-// moment is lost and cannot be recovered.
-//
-// Three restrictions apply: only the most recent snapshot of the disk can be reverted to; the disk
-// must be detached from its instance first; and a disk resized since the snapshot was taken cannot be
-// reverted. To return to an earlier point in time, or to keep the existing disk, create a new disk
-// from the snapshot instead.
-//
-// The revert is not complete when this endpoint returns; poll the retrieve endpoint.
-//
-// POST /api/v1/disks/{diskId}/revert
-func (UnimplementedHandler) RevertDisk(ctx context.Context, req *RevertDiskRequestBody, params RevertDiskParams) (r *DiskResource, _ error) {
+func (UnimplementedHandler) ResizeInstance(ctx context.Context, req *ResizeInstanceRequestBody, params ResizeInstanceParams) (r *PlacedOrder, _ error) {
 	return r, ht.ErrNotImplemented
 }
 
@@ -971,21 +409,6 @@ func (UnimplementedHandler) RunInstanceCommand(ctx context.Context, req *RunComm
 	return r, ht.ErrNotImplemented
 }
 
-// SetFloatingIPBandwidth implements set-floating-ip-bandwidth operation.
-//
-// Limits both directions at once. Limiting egress alone does not prevent ingress traffic from
-// saturating the uplink.
-//
-// While the address is bound to an instance, the ceiling has to fit that instance type's
-// `max_bandwidth_mbps`; asking for more is refused with `INSTANCE_BANDWIDTH_CEILING`. An address bound
-// to nothing is not checked against any type — there is none to check against — and is checked
-// again when it is attached.
-//
-// PUT /api/v1/floating-ips/{floatingIpId}/bandwidth
-func (UnimplementedHandler) SetFloatingIPBandwidth(ctx context.Context, req *SetBandwidthRequestBody, params SetFloatingIPBandwidthParams) (r *FloatingIPResource, _ error) {
-	return r, ht.ErrNotImplemented
-}
-
 // SetInstanceLabels implements set-instance-labels operation.
 //
 // Records what this instance is for, as key-value pairs. Nothing on the platform reads them.
@@ -1015,48 +438,23 @@ func (UnimplementedHandler) SetInstanceNotes(ctx context.Context, req *SetInstan
 
 // StartInstance implements start-instance operation.
 //
-// An instance suspended by the platform must be unsuspended first.
-//
-// This endpoint returns immediately and the `status` it returns is the transient `starting`. Poll the
-// instance until it settles at `running`.
+// Records the desired power state. An in-flight shutdown is allowed to finish before a subsequent
+// start. Outstanding restrictions can prevent starting. A stopped VM retains its Fabric and Storage
+// claims. Inspect operation, task_state, power_state and observed_at to determine completion.
 //
 // POST /api/v1/instances/{instanceId}/start
-func (UnimplementedHandler) StartInstance(ctx context.Context, params StartInstanceParams) (r *InstanceResource, _ error) {
+func (UnimplementedHandler) StartInstance(ctx context.Context, req *PowerRequest, params StartInstanceParams) (r *InstanceResource, _ error) {
 	return r, ht.ErrNotImplemented
 }
 
 // StopInstance implements stop-instance operation.
 //
-// The operating system is asked to shut down and is powered off once it does, or once it stops
-// responding for long enough. Stopping does not release the instance: it keeps its disks, its
-// addresses and its name, and starts again where it left off.
-//
-// An instance suspended by the platform must be unsuspended first.
-//
-// This endpoint returns immediately and the `status` it returns is the transient `stopping`. Poll the
-// instance until it settles at `stopped`.
+// Records the desired power state. An in-flight shutdown is allowed to finish before a subsequent
+// start. Outstanding restrictions can prevent starting. A stopped VM retains its Fabric and Storage
+// claims. Inspect operation, task_state, power_state and observed_at to determine completion.
 //
 // POST /api/v1/instances/{instanceId}/stop
-func (UnimplementedHandler) StopInstance(ctx context.Context, params StopInstanceParams) (r *InstanceResource, _ error) {
-	return r, ht.ErrNotImplemented
-}
-
-// SuggestSubnetCidr implements suggest-subnet-cidr operation.
-//
-// The returned value is a suggestion and is validated again when the subnet is created. It exists to
-// avoid errors when computing the next free CIDR by hand.
-//
-// GET /api/v1/private-networks/{privateNetworkId}/subnets/next-free-cidr
-func (UnimplementedHandler) SuggestSubnetCidr(ctx context.Context, params SuggestSubnetCidrParams) (r *NextFreeCidrResponseBody, _ error) {
-	return r, ht.ErrNotImplemented
-}
-
-// UnbindFloatingIP implements unbind-floating-ip operation.
-//
-// The address remains held by the project and simply no longer points at any network interface.
-//
-// DELETE /api/v1/floating-ips/{floatingIpId}/binding
-func (UnimplementedHandler) UnbindFloatingIP(ctx context.Context, params UnbindFloatingIPParams) (r *FloatingIPResource, _ error) {
+func (UnimplementedHandler) StopInstance(ctx context.Context, req *PowerRequest, params StopInstanceParams) (r *InstanceResource, _ error) {
 	return r, ht.ErrNotImplemented
 }
 

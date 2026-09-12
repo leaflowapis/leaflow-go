@@ -3,17 +3,17 @@
 package computev1server
 
 // setDefaults set default value of fields.
-func (s *CreateDiskRequestBody) setDefaults() {
+func (s *LaunchInstanceRequestBody) setDefaults() {
 	{
-		val := CreateDiskRequestBodyPaymentMethod("balance")
-		s.PaymentMethod.SetTo(val)
+		val := int64(1)
+		s.Count.SetTo(val)
 	}
 }
 
 // setDefaults set default value of fields.
-func (s *LaunchInstanceRequestBody) setDefaults() {
+func (s *NewBootDisk) setDefaults() {
 	{
-		val := LaunchInstanceRequestBodyPaymentMethod("balance")
-		s.PaymentMethod.SetTo(val)
+		val := bool(true)
+		s.DeleteWithInstance.SetTo(val)
 	}
 }

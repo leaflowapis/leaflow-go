@@ -11,40 +11,181 @@ import (
 	"net/http"
 	"net/url"
 	"strings"
+	"time"
 
 	externalRef0 "github.com/leaflowapis/leaflow-go/type/v1"
 	"github.com/oapi-codegen/runtime"
+	openapi_types "github.com/oapi-codegen/runtime/types"
 )
 
-// AvailabilityZoneListResponseBody defines model for AvailabilityZoneListResponseBody.
-type AvailabilityZoneListResponseBody struct {
-	Items []AvailabilityZoneResource `json:"items"`
+// Defines values for AvailabilityZoneStatus.
+const (
+	AvailabilityZoneStatusAvailable AvailabilityZoneStatus = "available"
+	AvailabilityZoneStatusDraining  AvailabilityZoneStatus = "draining"
+	AvailabilityZoneStatusPending   AvailabilityZoneStatus = "pending"
+	AvailabilityZoneStatusRetired   AvailabilityZoneStatus = "retired"
+)
+
+// Valid indicates whether the value is a known member of the AvailabilityZoneStatus enum.
+func (e AvailabilityZoneStatus) Valid() bool {
+	switch e {
+	case AvailabilityZoneStatusAvailable:
+		return true
+	case AvailabilityZoneStatusDraining:
+		return true
+	case AvailabilityZoneStatusPending:
+		return true
+	case AvailabilityZoneStatusRetired:
+		return true
+	default:
+		return false
+	}
 }
 
-// AvailabilityZoneResource defines model for AvailabilityZoneResource.
-type AvailabilityZoneResource struct {
-	// Code Stable identifier of the availability zone, used wherever an availability zone has to be named
-	Code string `json:"code"`
-	Name string `json:"name"`
+// Defines values for RegionStatus.
+const (
+	RegionStatusAvailable RegionStatus = "available"
+	RegionStatusDraining  RegionStatus = "draining"
+	RegionStatusPending   RegionStatus = "pending"
+	RegionStatusRetired   RegionStatus = "retired"
+)
+
+// Valid indicates whether the value is a known member of the RegionStatus enum.
+func (e RegionStatus) Valid() bool {
+	switch e {
+	case RegionStatusAvailable:
+		return true
+	case RegionStatusDraining:
+		return true
+	case RegionStatusPending:
+		return true
+	case RegionStatusRetired:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for ListRegionsParamsStatus.
+const (
+	ListRegionsParamsStatusAvailable ListRegionsParamsStatus = "available"
+	ListRegionsParamsStatusDraining  ListRegionsParamsStatus = "draining"
+	ListRegionsParamsStatusPending   ListRegionsParamsStatus = "pending"
+	ListRegionsParamsStatusRetired   ListRegionsParamsStatus = "retired"
+)
+
+// Valid indicates whether the value is a known member of the ListRegionsParamsStatus enum.
+func (e ListRegionsParamsStatus) Valid() bool {
+	switch e {
+	case ListRegionsParamsStatusAvailable:
+		return true
+	case ListRegionsParamsStatusDraining:
+		return true
+	case ListRegionsParamsStatusPending:
+		return true
+	case ListRegionsParamsStatusRetired:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for ListAvailabilityZonesParamsStatus.
+const (
+	ListAvailabilityZonesParamsStatusAvailable ListAvailabilityZonesParamsStatus = "available"
+	ListAvailabilityZonesParamsStatusDraining  ListAvailabilityZonesParamsStatus = "draining"
+	ListAvailabilityZonesParamsStatusPending   ListAvailabilityZonesParamsStatus = "pending"
+	ListAvailabilityZonesParamsStatusRetired   ListAvailabilityZonesParamsStatus = "retired"
+)
+
+// Valid indicates whether the value is a known member of the ListAvailabilityZonesParamsStatus enum.
+func (e ListAvailabilityZonesParamsStatus) Valid() bool {
+	switch e {
+	case ListAvailabilityZonesParamsStatusAvailable:
+		return true
+	case ListAvailabilityZonesParamsStatusDraining:
+		return true
+	case ListAvailabilityZonesParamsStatusPending:
+		return true
+	case ListAvailabilityZonesParamsStatusRetired:
+		return true
+	default:
+		return false
+	}
+}
+
+// AvailabilityZone defines model for AvailabilityZone.
+type AvailabilityZone struct {
+	CreatedAt        time.Time              `json:"created_at"`
+	Id               openapi_types.UUID     `json:"id"`
+	LookupKey        string                 `json:"lookup_key"`
+	Name             string                 `json:"name"`
+	NameTranslations map[string]string      `json:"name_translations,omitempty"`
+	RegionId         openapi_types.UUID     `json:"region_id"`
+	Sort             int64                  `json:"sort"`
+	Status           AvailabilityZoneStatus `json:"status"`
+	UpdatedAt        time.Time              `json:"updated_at"`
+}
+
+// AvailabilityZoneStatus defines model for AvailabilityZone.Status.
+type AvailabilityZoneStatus string
+
+// AvailabilityZoneList defines model for AvailabilityZoneList.
+type AvailabilityZoneList struct {
+	Items      []AvailabilityZone `json:"items"`
+	Page       int64              `json:"page"`
+	PageSize   int64              `json:"page_size"`
+	TotalCount *int64             `json:"total_count,omitempty"`
 }
 
 // Error defines model for Error.
 type Error = externalRef0.Error
 
-// RegionListResponseBody defines model for RegionListResponseBody.
-type RegionListResponseBody struct {
-	Items []RegionResource `json:"items"`
+// Region defines model for Region.
+type Region struct {
+	CountryCode      string             `json:"country_code"`
+	CreatedAt        time.Time          `json:"created_at"`
+	Id               openapi_types.UUID `json:"id"`
+	LookupKey        string             `json:"lookup_key"`
+	Name             string             `json:"name"`
+	NameTranslations map[string]string  `json:"name_translations,omitempty"`
+	Sort             int64              `json:"sort"`
+	Status           RegionStatus       `json:"status"`
+	UpdatedAt        time.Time          `json:"updated_at"`
 }
 
-// RegionResource defines model for RegionResource.
-type RegionResource struct {
-	// Code Stable identifier of the region, used wherever a region has to be named
-	Code string `json:"code"`
+// RegionStatus defines model for Region.Status.
+type RegionStatus string
 
-	// CountryCode ISO 3166-1 alpha-2 code of the country this region is in
-	CountryCode string `json:"country_code"`
-	Name        string `json:"name"`
+// RegionList defines model for RegionList.
+type RegionList struct {
+	Items      []Region `json:"items"`
+	Page       int64    `json:"page"`
+	PageSize   int64    `json:"page_size"`
+	TotalCount *int64   `json:"total_count,omitempty"`
 }
+
+// ListRegionsParams defines parameters for ListRegions.
+type ListRegionsParams struct {
+	Page      *int64                   `form:"page,omitempty" json:"page,omitempty"`
+	PageSize  *int64                   `form:"page_size,omitempty" json:"page_size,omitempty"`
+	Status    *ListRegionsParamsStatus `form:"status,omitempty" json:"status,omitempty"`
+	LookupKey *string                  `form:"lookup_key,omitempty" json:"lookup_key,omitempty"`
+}
+
+// ListRegionsParamsStatus defines parameters for ListRegions.
+type ListRegionsParamsStatus string
+
+// ListAvailabilityZonesParams defines parameters for ListAvailabilityZones.
+type ListAvailabilityZonesParams struct {
+	Page      *int64                             `form:"page,omitempty" json:"page,omitempty"`
+	PageSize  *int64                             `form:"page_size,omitempty" json:"page_size,omitempty"`
+	Status    *ListAvailabilityZonesParamsStatus `form:"status,omitempty" json:"status,omitempty"`
+	LookupKey *string                            `form:"lookup_key,omitempty" json:"lookup_key,omitempty"`
+}
+
+// ListAvailabilityZonesParamsStatus defines parameters for ListAvailabilityZones.
+type ListAvailabilityZonesParamsStatus string
 
 // RequestEditorFn is the function signature for the RequestEditor callback function
 type RequestEditorFn func(ctx context.Context, req *http.Request) error
@@ -120,36 +261,36 @@ func WithRequestEditorFn(fn RequestEditorFn) ClientOption {
 // The interface specification for the client above.
 type ClientInterface interface {
 
-	// ListRegions List available regions
+	// ListRegions List regions
 	//
-	// Lists every region currently open to new orders, in display order.
-	//
-	// The list is the same for every caller and changes rarely.
+	// Lists available, draining and retired regions; pending locations are visible only to operators. Filter status=available to offer new placement choices.
 	//
 	// Corresponds with GET /api/v1/regions (the `ListRegions` operationId).
-	ListRegions(ctx context.Context, reqEditors ...RequestEditorFn) (*http.Response, error)
+	ListRegions(ctx context.Context, params *ListRegionsParams, reqEditors ...RequestEditorFn) (*http.Response, error)
 
-	// ListAvailabilityZones List the availability zones of a region
+	// GetRegion Get region
 	//
-	// Lists every availability zone of this region that is currently open to new orders, in display order.
+	// Corresponds with GET /api/v1/regions/{regionId} (the `GetRegion` operationId).
+	GetRegion(ctx context.Context, regionId openapi_types.UUID, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// ListAvailabilityZones List availability zones
 	//
-	// Resources are generally required to share an availability zone in order to be attached to one another, so confirm the zone before creating either side.
+	// Corresponds with GET /api/v1/regions/{regionId}/availability-zones (the `ListAvailabilityZones` operationId).
+	ListAvailabilityZones(ctx context.Context, regionId openapi_types.UUID, params *ListAvailabilityZonesParams, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// GetAvailabilityZone Get availability zone
 	//
-	// A region that exists but is not open to new orders is reported as not found, exactly as an unknown code is: both mean that nothing can be created there.
-	//
-	// Corresponds with GET /api/v1/regions/{regionCode}/availability-zones (the `ListAvailabilityZones` operationId).
-	ListAvailabilityZones(ctx context.Context, regionCode string, reqEditors ...RequestEditorFn) (*http.Response, error)
+	// Corresponds with GET /api/v1/regions/{regionId}/availability-zones/{availabilityZoneId} (the `GetAvailabilityZone` operationId).
+	GetAvailabilityZone(ctx context.Context, regionId openapi_types.UUID, availabilityZoneId openapi_types.UUID, reqEditors ...RequestEditorFn) (*http.Response, error)
 }
 
-// ListRegions List available regions
+// ListRegions List regions
 //
-// Lists every region currently open to new orders, in display order.
-//
-// The list is the same for every caller and changes rarely.
+// Lists available, draining and retired regions; pending locations are visible only to operators. Filter status=available to offer new placement choices.
 //
 // Corresponds with GET /api/v1/regions (the `ListRegions` operationId).
-func (c *Client) ListRegions(ctx context.Context, reqEditors ...RequestEditorFn) (*http.Response, error) {
-	req, err := NewListRegionsRequest(c.Server)
+func (c *Client) ListRegions(ctx context.Context, params *ListRegionsParams, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewListRegionsRequest(c.Server, params)
 	if err != nil {
 		return nil, err
 	}
@@ -160,17 +301,41 @@ func (c *Client) ListRegions(ctx context.Context, reqEditors ...RequestEditorFn)
 	return c.Client.Do(req)
 }
 
-// ListAvailabilityZones List the availability zones of a region
+// GetRegion Get region
 //
-// Lists every availability zone of this region that is currently open to new orders, in display order.
+// Corresponds with GET /api/v1/regions/{regionId} (the `GetRegion` operationId).
+func (c *Client) GetRegion(ctx context.Context, regionId openapi_types.UUID, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewGetRegionRequest(c.Server, regionId)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+// ListAvailabilityZones List availability zones
 //
-// Resources are generally required to share an availability zone in order to be attached to one another, so confirm the zone before creating either side.
+// Corresponds with GET /api/v1/regions/{regionId}/availability-zones (the `ListAvailabilityZones` operationId).
+func (c *Client) ListAvailabilityZones(ctx context.Context, regionId openapi_types.UUID, params *ListAvailabilityZonesParams, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewListAvailabilityZonesRequest(c.Server, regionId, params)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+// GetAvailabilityZone Get availability zone
 //
-// A region that exists but is not open to new orders is reported as not found, exactly as an unknown code is: both mean that nothing can be created there.
-//
-// Corresponds with GET /api/v1/regions/{regionCode}/availability-zones (the `ListAvailabilityZones` operationId).
-func (c *Client) ListAvailabilityZones(ctx context.Context, regionCode string, reqEditors ...RequestEditorFn) (*http.Response, error) {
-	req, err := NewListAvailabilityZonesRequest(c.Server, regionCode)
+// Corresponds with GET /api/v1/regions/{regionId}/availability-zones/{availabilityZoneId} (the `GetAvailabilityZone` operationId).
+func (c *Client) GetAvailabilityZone(ctx context.Context, regionId openapi_types.UUID, availabilityZoneId openapi_types.UUID, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewGetAvailabilityZoneRequest(c.Server, regionId, availabilityZoneId)
 	if err != nil {
 		return nil, err
 	}
@@ -182,7 +347,7 @@ func (c *Client) ListAvailabilityZones(ctx context.Context, regionCode string, r
 }
 
 // NewListRegionsRequest constructs an http.Request for the ListRegions method
-func NewListRegionsRequest(server string) (*http.Request, error) {
+func NewListRegionsRequest(server string, params *ListRegionsParams) (*http.Request, error) {
 	var err error
 
 	serverURL, err := url.Parse(server)
@@ -191,6 +356,103 @@ func NewListRegionsRequest(server string) (*http.Request, error) {
 	}
 
 	operationPath := fmt.Sprintf("/api/v1/regions")
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	if params != nil {
+		// queryValues collects non-styled parameters (passthrough, JSON)
+		// that are safe to round-trip through url.Values.Encode().
+		queryValues := queryURL.Query()
+		// rawQueryFragments collects pre-encoded query fragments from
+		// styled parameters, preserving literal commas as delimiters
+		// per the OpenAPI spec (e.g. "color=blue,black,brown").
+		var rawQueryFragments []string
+
+		if params.Page != nil {
+
+			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "page", *params.Page, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "integer", Format: "int64"}); err != nil {
+				return nil, err
+			} else {
+				for _, qp := range strings.Split(queryFrag, "&") {
+					rawQueryFragments = append(rawQueryFragments, qp)
+				}
+			}
+
+		}
+
+		if params.PageSize != nil {
+
+			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "page_size", *params.PageSize, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "integer", Format: "int64"}); err != nil {
+				return nil, err
+			} else {
+				for _, qp := range strings.Split(queryFrag, "&") {
+					rawQueryFragments = append(rawQueryFragments, qp)
+				}
+			}
+
+		}
+
+		if params.Status != nil {
+
+			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "status", *params.Status, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			} else {
+				for _, qp := range strings.Split(queryFrag, "&") {
+					rawQueryFragments = append(rawQueryFragments, qp)
+				}
+			}
+
+		}
+
+		if params.LookupKey != nil {
+
+			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "lookup_key", *params.LookupKey, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			} else {
+				for _, qp := range strings.Split(queryFrag, "&") {
+					rawQueryFragments = append(rawQueryFragments, qp)
+				}
+			}
+
+		}
+
+		if encoded := queryValues.Encode(); encoded != "" {
+			rawQueryFragments = append(rawQueryFragments, encoded)
+		}
+		queryURL.RawQuery = strings.Join(rawQueryFragments, "&")
+	}
+
+	req, err := http.NewRequest(http.MethodGet, queryURL.String(), nil)
+	if err != nil {
+		return nil, err
+	}
+
+	return req, nil
+}
+
+// NewGetRegionRequest constructs an http.Request for the GetRegion method
+func NewGetRegionRequest(server string, regionId openapi_types.UUID) (*http.Request, error) {
+	var err error
+
+	var pathParam0 string
+
+	pathParam0, err = runtime.StyleParamWithOptions("simple", false, "regionId", regionId, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: "uuid"})
+	if err != nil {
+		return nil, err
+	}
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/api/v1/regions/%s", pathParam0)
 	if operationPath[0] == '/' {
 		operationPath = "." + operationPath
 	}
@@ -209,12 +471,12 @@ func NewListRegionsRequest(server string) (*http.Request, error) {
 }
 
 // NewListAvailabilityZonesRequest constructs an http.Request for the ListAvailabilityZones method
-func NewListAvailabilityZonesRequest(server string, regionCode string) (*http.Request, error) {
+func NewListAvailabilityZonesRequest(server string, regionId openapi_types.UUID, params *ListAvailabilityZonesParams) (*http.Request, error) {
 	var err error
 
 	var pathParam0 string
 
-	pathParam0, err = runtime.StyleParamWithOptions("simple", false, "regionCode", regionCode, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: ""})
+	pathParam0, err = runtime.StyleParamWithOptions("simple", false, "regionId", regionId, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: "uuid"})
 	if err != nil {
 		return nil, err
 	}
@@ -225,6 +487,110 @@ func NewListAvailabilityZonesRequest(server string, regionCode string) (*http.Re
 	}
 
 	operationPath := fmt.Sprintf("/api/v1/regions/%s/availability-zones", pathParam0)
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	if params != nil {
+		// queryValues collects non-styled parameters (passthrough, JSON)
+		// that are safe to round-trip through url.Values.Encode().
+		queryValues := queryURL.Query()
+		// rawQueryFragments collects pre-encoded query fragments from
+		// styled parameters, preserving literal commas as delimiters
+		// per the OpenAPI spec (e.g. "color=blue,black,brown").
+		var rawQueryFragments []string
+
+		if params.Page != nil {
+
+			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "page", *params.Page, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "integer", Format: "int64"}); err != nil {
+				return nil, err
+			} else {
+				for _, qp := range strings.Split(queryFrag, "&") {
+					rawQueryFragments = append(rawQueryFragments, qp)
+				}
+			}
+
+		}
+
+		if params.PageSize != nil {
+
+			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "page_size", *params.PageSize, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "integer", Format: "int64"}); err != nil {
+				return nil, err
+			} else {
+				for _, qp := range strings.Split(queryFrag, "&") {
+					rawQueryFragments = append(rawQueryFragments, qp)
+				}
+			}
+
+		}
+
+		if params.Status != nil {
+
+			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "status", *params.Status, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			} else {
+				for _, qp := range strings.Split(queryFrag, "&") {
+					rawQueryFragments = append(rawQueryFragments, qp)
+				}
+			}
+
+		}
+
+		if params.LookupKey != nil {
+
+			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "lookup_key", *params.LookupKey, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			} else {
+				for _, qp := range strings.Split(queryFrag, "&") {
+					rawQueryFragments = append(rawQueryFragments, qp)
+				}
+			}
+
+		}
+
+		if encoded := queryValues.Encode(); encoded != "" {
+			rawQueryFragments = append(rawQueryFragments, encoded)
+		}
+		queryURL.RawQuery = strings.Join(rawQueryFragments, "&")
+	}
+
+	req, err := http.NewRequest(http.MethodGet, queryURL.String(), nil)
+	if err != nil {
+		return nil, err
+	}
+
+	return req, nil
+}
+
+// NewGetAvailabilityZoneRequest constructs an http.Request for the GetAvailabilityZone method
+func NewGetAvailabilityZoneRequest(server string, regionId openapi_types.UUID, availabilityZoneId openapi_types.UUID) (*http.Request, error) {
+	var err error
+
+	var pathParam0 string
+
+	pathParam0, err = runtime.StyleParamWithOptions("simple", false, "regionId", regionId, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: "uuid"})
+	if err != nil {
+		return nil, err
+	}
+
+	var pathParam1 string
+
+	pathParam1, err = runtime.StyleParamWithOptions("simple", false, "availabilityZoneId", availabilityZoneId, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: "uuid"})
+	if err != nil {
+		return nil, err
+	}
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/api/v1/regions/%s/availability-zones/%s", pathParam0, pathParam1)
 	if operationPath[0] == '/' {
 		operationPath = "." + operationPath
 	}
@@ -286,42 +652,48 @@ func WithBaseURL(baseURL string) ClientOption {
 // ClientWithResponsesInterface is the interface specification for the client with responses above.
 type ClientWithResponsesInterface interface {
 
-	// ListRegionsWithResponse List available regions
+	// ListRegionsWithResponse List regions
 	//
-	// Lists every region currently open to new orders, in display order.
-	//
-	// The list is the same for every caller and changes rarely.
+	// Lists available, draining and retired regions; pending locations are visible only to operators. Filter status=available to offer new placement choices.
 	//
 	// Returns a wrapper object for the known response body format(s).
 	//
 	// Corresponds with GET /api/v1/regions (the `ListRegions` operationId).
-	ListRegionsWithResponse(ctx context.Context, reqEditors ...RequestEditorFn) (*ListRegionsResponse, error)
+	ListRegionsWithResponse(ctx context.Context, params *ListRegionsParams, reqEditors ...RequestEditorFn) (*ListRegionsResponse, error)
 
-	// ListAvailabilityZonesWithResponse List the availability zones of a region
-	//
-	// Lists every availability zone of this region that is currently open to new orders, in display order.
-	//
-	// Resources are generally required to share an availability zone in order to be attached to one another, so confirm the zone before creating either side.
-	//
-	// A region that exists but is not open to new orders is reported as not found, exactly as an unknown code is: both mean that nothing can be created there.
+	// GetRegionWithResponse Get region
 	//
 	// Returns a wrapper object for the known response body format(s).
 	//
-	// Corresponds with GET /api/v1/regions/{regionCode}/availability-zones (the `ListAvailabilityZones` operationId).
-	ListAvailabilityZonesWithResponse(ctx context.Context, regionCode string, reqEditors ...RequestEditorFn) (*ListAvailabilityZonesResponse, error)
+	// Corresponds with GET /api/v1/regions/{regionId} (the `GetRegion` operationId).
+	GetRegionWithResponse(ctx context.Context, regionId openapi_types.UUID, reqEditors ...RequestEditorFn) (*GetRegionResponse, error)
+
+	// ListAvailabilityZonesWithResponse List availability zones
+	//
+	// Returns a wrapper object for the known response body format(s).
+	//
+	// Corresponds with GET /api/v1/regions/{regionId}/availability-zones (the `ListAvailabilityZones` operationId).
+	ListAvailabilityZonesWithResponse(ctx context.Context, regionId openapi_types.UUID, params *ListAvailabilityZonesParams, reqEditors ...RequestEditorFn) (*ListAvailabilityZonesResponse, error)
+
+	// GetAvailabilityZoneWithResponse Get availability zone
+	//
+	// Returns a wrapper object for the known response body format(s).
+	//
+	// Corresponds with GET /api/v1/regions/{regionId}/availability-zones/{availabilityZoneId} (the `GetAvailabilityZone` operationId).
+	GetAvailabilityZoneWithResponse(ctx context.Context, regionId openapi_types.UUID, availabilityZoneId openapi_types.UUID, reqEditors ...RequestEditorFn) (*GetAvailabilityZoneResponse, error)
 }
 
 type ListRegionsResponse struct {
 	Body         []byte
 	HTTPResponse *http.Response
 	// JSON200 the response for an HTTP 200 `application/json` response
-	JSON200 *RegionListResponseBody
+	JSON200 *RegionList
 	// JSONDefault the response for an HTTP default `application/json` response
 	JSONDefault *Error
 }
 
 // GetJSON200 returns the response for an HTTP 200 `application/json` response
-func (r ListRegionsResponse) GetJSON200() *RegionListResponseBody {
+func (r ListRegionsResponse) GetJSON200() *RegionList {
 	return r.JSON200
 }
 
@@ -359,17 +731,65 @@ func (r ListRegionsResponse) ContentType() string {
 	return ""
 }
 
-type ListAvailabilityZonesResponse struct {
+type GetRegionResponse struct {
 	Body         []byte
 	HTTPResponse *http.Response
 	// JSON200 the response for an HTTP 200 `application/json` response
-	JSON200 *AvailabilityZoneListResponseBody
+	JSON200 *Region
 	// JSONDefault the response for an HTTP default `application/json` response
 	JSONDefault *Error
 }
 
 // GetJSON200 returns the response for an HTTP 200 `application/json` response
-func (r ListAvailabilityZonesResponse) GetJSON200() *AvailabilityZoneListResponseBody {
+func (r GetRegionResponse) GetJSON200() *Region {
+	return r.JSON200
+}
+
+// GetJSONDefault returns the response for an HTTP default `application/json` response
+func (r GetRegionResponse) GetJSONDefault() *Error {
+	return r.JSONDefault
+}
+
+// GetBody returns the raw response body bytes
+func (r GetRegionResponse) GetBody() []byte {
+	return r.Body
+}
+
+// Status returns HTTPResponse.Status
+func (r GetRegionResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r GetRegionResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+// ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
+func (r GetRegionResponse) ContentType() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Header.Get("Content-Type")
+	}
+	return ""
+}
+
+type ListAvailabilityZonesResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	// JSON200 the response for an HTTP 200 `application/json` response
+	JSON200 *AvailabilityZoneList
+	// JSONDefault the response for an HTTP default `application/json` response
+	JSONDefault *Error
+}
+
+// GetJSON200 returns the response for an HTTP 200 `application/json` response
+func (r ListAvailabilityZonesResponse) GetJSON200() *AvailabilityZoneList {
 	return r.JSON200
 }
 
@@ -407,40 +827,106 @@ func (r ListAvailabilityZonesResponse) ContentType() string {
 	return ""
 }
 
-// ListRegionsWithResponse List available regions
+type GetAvailabilityZoneResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	// JSON200 the response for an HTTP 200 `application/json` response
+	JSON200 *AvailabilityZone
+	// JSONDefault the response for an HTTP default `application/json` response
+	JSONDefault *Error
+}
+
+// GetJSON200 returns the response for an HTTP 200 `application/json` response
+func (r GetAvailabilityZoneResponse) GetJSON200() *AvailabilityZone {
+	return r.JSON200
+}
+
+// GetJSONDefault returns the response for an HTTP default `application/json` response
+func (r GetAvailabilityZoneResponse) GetJSONDefault() *Error {
+	return r.JSONDefault
+}
+
+// GetBody returns the raw response body bytes
+func (r GetAvailabilityZoneResponse) GetBody() []byte {
+	return r.Body
+}
+
+// Status returns HTTPResponse.Status
+func (r GetAvailabilityZoneResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r GetAvailabilityZoneResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+// ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
+func (r GetAvailabilityZoneResponse) ContentType() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Header.Get("Content-Type")
+	}
+	return ""
+}
+
+// ListRegionsWithResponse List regions
 //
-// Lists every region currently open to new orders, in display order.
-//
-// The list is the same for every caller and changes rarely.
+// Lists available, draining and retired regions; pending locations are visible only to operators. Filter status=available to offer new placement choices.
 //
 // Returns a wrapper object for the known response body format(s).
 //
 // Corresponds with GET /api/v1/regions (the `ListRegions` operationId).
-func (c *ClientWithResponses) ListRegionsWithResponse(ctx context.Context, reqEditors ...RequestEditorFn) (*ListRegionsResponse, error) {
-	rsp, err := c.ListRegions(ctx, reqEditors...)
+func (c *ClientWithResponses) ListRegionsWithResponse(ctx context.Context, params *ListRegionsParams, reqEditors ...RequestEditorFn) (*ListRegionsResponse, error) {
+	rsp, err := c.ListRegions(ctx, params, reqEditors...)
 	if err != nil {
 		return nil, err
 	}
 	return ParseListRegionsResponse(rsp)
 }
 
-// ListAvailabilityZonesWithResponse List the availability zones of a region
-//
-// Lists every availability zone of this region that is currently open to new orders, in display order.
-//
-// Resources are generally required to share an availability zone in order to be attached to one another, so confirm the zone before creating either side.
-//
-// A region that exists but is not open to new orders is reported as not found, exactly as an unknown code is: both mean that nothing can be created there.
+// GetRegionWithResponse Get region
 //
 // Returns a wrapper object for the known response body format(s).
 //
-// Corresponds with GET /api/v1/regions/{regionCode}/availability-zones (the `ListAvailabilityZones` operationId).
-func (c *ClientWithResponses) ListAvailabilityZonesWithResponse(ctx context.Context, regionCode string, reqEditors ...RequestEditorFn) (*ListAvailabilityZonesResponse, error) {
-	rsp, err := c.ListAvailabilityZones(ctx, regionCode, reqEditors...)
+// Corresponds with GET /api/v1/regions/{regionId} (the `GetRegion` operationId).
+func (c *ClientWithResponses) GetRegionWithResponse(ctx context.Context, regionId openapi_types.UUID, reqEditors ...RequestEditorFn) (*GetRegionResponse, error) {
+	rsp, err := c.GetRegion(ctx, regionId, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseGetRegionResponse(rsp)
+}
+
+// ListAvailabilityZonesWithResponse List availability zones
+//
+// Returns a wrapper object for the known response body format(s).
+//
+// Corresponds with GET /api/v1/regions/{regionId}/availability-zones (the `ListAvailabilityZones` operationId).
+func (c *ClientWithResponses) ListAvailabilityZonesWithResponse(ctx context.Context, regionId openapi_types.UUID, params *ListAvailabilityZonesParams, reqEditors ...RequestEditorFn) (*ListAvailabilityZonesResponse, error) {
+	rsp, err := c.ListAvailabilityZones(ctx, regionId, params, reqEditors...)
 	if err != nil {
 		return nil, err
 	}
 	return ParseListAvailabilityZonesResponse(rsp)
+}
+
+// GetAvailabilityZoneWithResponse Get availability zone
+//
+// Returns a wrapper object for the known response body format(s).
+//
+// Corresponds with GET /api/v1/regions/{regionId}/availability-zones/{availabilityZoneId} (the `GetAvailabilityZone` operationId).
+func (c *ClientWithResponses) GetAvailabilityZoneWithResponse(ctx context.Context, regionId openapi_types.UUID, availabilityZoneId openapi_types.UUID, reqEditors ...RequestEditorFn) (*GetAvailabilityZoneResponse, error) {
+	rsp, err := c.GetAvailabilityZone(ctx, regionId, availabilityZoneId, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseGetAvailabilityZoneResponse(rsp)
 }
 
 // ParseListRegionsResponse parses an HTTP response from a ListRegionsWithResponse call
@@ -458,7 +944,40 @@ func ParseListRegionsResponse(rsp *http.Response) (*ListRegionsResponse, error) 
 
 	switch {
 	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
-		var dest RegionListResponseBody
+		var dest RegionList
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && true:
+		var dest Error
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSONDefault = &dest
+
+	}
+
+	return response, nil
+}
+
+// ParseGetRegionResponse parses an HTTP response from a GetRegionWithResponse call
+func ParseGetRegionResponse(rsp *http.Response) (*GetRegionResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &GetRegionResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest Region
 		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
 			return nil, err
 		}
@@ -491,7 +1010,40 @@ func ParseListAvailabilityZonesResponse(rsp *http.Response) (*ListAvailabilityZo
 
 	switch {
 	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
-		var dest AvailabilityZoneListResponseBody
+		var dest AvailabilityZoneList
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && true:
+		var dest Error
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSONDefault = &dest
+
+	}
+
+	return response, nil
+}
+
+// ParseGetAvailabilityZoneResponse parses an HTTP response from a GetAvailabilityZoneWithResponse call
+func ParseGetAvailabilityZoneResponse(rsp *http.Response) (*GetAvailabilityZoneResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &GetAvailabilityZoneResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest AvailabilityZone
 		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
 			return nil, err
 		}

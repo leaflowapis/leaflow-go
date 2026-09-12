@@ -8,26 +8,31 @@ import (
 
 // Handler handles operations described by OpenAPI v3 specification.
 type Handler interface {
+	// GetAvailabilityZone implements get-availability-zone operation.
+	//
+	// Get availability zone.
+	//
+	// GET /api/v1/regions/{regionId}/availability-zones/{availabilityZoneId}
+	GetAvailabilityZone(ctx context.Context, params GetAvailabilityZoneParams) (*AvailabilityZone, error)
+	// GetRegion implements get-region operation.
+	//
+	// Get region.
+	//
+	// GET /api/v1/regions/{regionId}
+	GetRegion(ctx context.Context, params GetRegionParams) (*Region, error)
 	// ListAvailabilityZones implements list-availability-zones operation.
 	//
-	// Lists every availability zone of this region that is currently open to new orders, in display order.
+	// List availability zones.
 	//
-	// Resources are generally required to share an availability zone in order to be attached to one
-	// another, so confirm the zone before creating either side.
-	//
-	// A region that exists but is not open to new orders is reported as not found, exactly as an unknown
-	// code is: both mean that nothing can be created there.
-	//
-	// GET /api/v1/regions/{regionCode}/availability-zones
-	ListAvailabilityZones(ctx context.Context, params ListAvailabilityZonesParams) (*AvailabilityZoneListResponseBody, error)
+	// GET /api/v1/regions/{regionId}/availability-zones
+	ListAvailabilityZones(ctx context.Context, params ListAvailabilityZonesParams) (*AvailabilityZoneList, error)
 	// ListRegions implements list-regions operation.
 	//
-	// Lists every region currently open to new orders, in display order.
-	//
-	// The list is the same for every caller and changes rarely.
+	// Lists available, draining and retired regions; pending locations are visible only to operators.
+	// Filter status=available to offer new placement choices.
 	//
 	// GET /api/v1/regions
-	ListRegions(ctx context.Context) (*RegionListResponseBody, error)
+	ListRegions(ctx context.Context, params ListRegionsParams) (*RegionList, error)
 	// NewError creates *ErrorStatusCode from error returned by handler.
 	//
 	// Used for common default response.

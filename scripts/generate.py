@@ -97,7 +97,7 @@ SHARED_OUTPUT_OPTIONS = {**{"skip-prune": True}}
 #
 # 写成一份的时候，第二个共用形状只有两条路：塞进 error.yaml（那个文件名就开始说谎），
 # 或者在每份契约里各抄一遍（那正是这个目录存在要消灭的东西）。
-SHARED_SPECS = ("type/v1/error.yaml", "type/v1/order.yaml")
+SHARED_SPECS = ("type/v1/error.yaml", "type/v1/order.yaml", "type/v1/resource.yaml")
 SHARED_PACKAGE = "github.com/leaflowapis/leaflow-go/type/v1"
 
 # prefer-skip-optional-pointer-on-container-types
