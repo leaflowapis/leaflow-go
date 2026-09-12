@@ -144,8 +144,10 @@ func (s *AccountBalance) SetSpendable(val Money) {
 // A resource currently accruing charges by the second.
 // Ref: #/components/schemas/ActiveResource
 type ActiveResource struct {
-	ResourceID string         `json:"resource_id"`
-	Product    ObjectIdentity `json:"product"`
+	// The metered subscription item charged for this resource; null for shared service usage.
+	SubscriptionItemID OptNilUUID     `json:"subscription_item_id"`
+	ResourceID         string         `json:"resource_id"`
+	Product            ObjectIdentity `json:"product"`
 	// What it is, as its own service names it.
 	ResourceType OptString      `json:"resource_type"`
 	Meter        ObjectIdentity `json:"meter"`
@@ -157,6 +159,11 @@ type ActiveResource struct {
 	StartedAt  time.Time                   `json:"started_at"`
 	// Charges are settled up to this moment.
 	LastBilledUntil OptDateTime `json:"last_billed_until"`
+}
+
+// GetSubscriptionItemID returns the value of SubscriptionItemID.
+func (s *ActiveResource) GetSubscriptionItemID() OptNilUUID {
+	return s.SubscriptionItemID
 }
 
 // GetResourceID returns the value of ResourceID.
@@ -207,6 +214,11 @@ func (s *ActiveResource) GetStartedAt() time.Time {
 // GetLastBilledUntil returns the value of LastBilledUntil.
 func (s *ActiveResource) GetLastBilledUntil() OptDateTime {
 	return s.LastBilledUntil
+}
+
+// SetSubscriptionItemID sets the value of SubscriptionItemID.
+func (s *ActiveResource) SetSubscriptionItemID(val OptNilUUID) {
+	s.SubscriptionItemID = val
 }
 
 // SetResourceID sets the value of ResourceID.
@@ -6285,6 +6297,52 @@ func (o OptOrderChangeEffective) Or(d OrderChangeEffective) OrderChangeEffective
 	return d
 }
 
+// NewOptOrderItemPriceType returns new OptOrderItemPriceType with value set to v.
+func NewOptOrderItemPriceType(v OrderItemPriceType) OptOrderItemPriceType {
+	return OptOrderItemPriceType{
+		Value: v,
+		Set:   true,
+	}
+}
+
+// OptOrderItemPriceType is optional OrderItemPriceType.
+type OptOrderItemPriceType struct {
+	Value OrderItemPriceType
+	Set   bool
+}
+
+// IsSet returns true if OptOrderItemPriceType was set.
+func (o OptOrderItemPriceType) IsSet() bool { return o.Set }
+
+// Reset unsets value.
+func (o *OptOrderItemPriceType) Reset() {
+	var v OrderItemPriceType
+	o.Value = v
+	o.Set = false
+}
+
+// SetTo sets value to v.
+func (o *OptOrderItemPriceType) SetTo(v OrderItemPriceType) {
+	o.Set = true
+	o.Value = v
+}
+
+// Get returns value and boolean that denotes whether value was set.
+func (o OptOrderItemPriceType) Get() (v OrderItemPriceType, ok bool) {
+	if !o.Set {
+		return v, false
+	}
+	return o.Value, true
+}
+
+// Or returns value if set, or given parameter if does not.
+func (o OptOrderItemPriceType) Or(d OrderItemPriceType) OrderItemPriceType {
+	if v, ok := o.Get(); ok {
+		return v
+	}
+	return d
+}
+
 // NewOptOrderState returns new OptOrderState with value set to v.
 func NewOptOrderState(v OrderState) OptOrderState {
 	return OptOrderState{
@@ -7020,6 +7078,8 @@ func (s *OrderChangeEffective) UnmarshalText(data []byte) error {
 
 // Ref: #/components/schemas/OrderItem
 type OrderItem struct {
+	// The payment timing of the selected price.
+	PriceType OptOrderItemPriceType `json:"price_type"`
 	// Total tax after discounts, including any tax already included in the price.
 	TaxAmount OptString `json:"tax_amount"`
 	// The part of tax_amount already included in gross_amount; it is not charged again.
@@ -7043,6 +7103,11 @@ type OrderItem struct {
 	Currency           string         `json:"currency"`
 	ServicePeriodStart OptNilDateTime `json:"service_period_start"`
 	ServicePeriodEnd   OptNilDateTime `json:"service_period_end"`
+}
+
+// GetPriceType returns the value of PriceType.
+func (s *OrderItem) GetPriceType() OptOrderItemPriceType {
+	return s.PriceType
 }
 
 // GetTaxAmount returns the value of TaxAmount.
@@ -7133,6 +7198,11 @@ func (s *OrderItem) GetServicePeriodStart() OptNilDateTime {
 // GetServicePeriodEnd returns the value of ServicePeriodEnd.
 func (s *OrderItem) GetServicePeriodEnd() OptNilDateTime {
 	return s.ServicePeriodEnd
+}
+
+// SetPriceType sets the value of PriceType.
+func (s *OrderItem) SetPriceType(val OptOrderItemPriceType) {
+	s.PriceType = val
 }
 
 // SetTaxAmount sets the value of TaxAmount.
@@ -7249,6 +7319,55 @@ func (s *OrderItemList) SetItems(val []OrderItem) {
 // SetTotalCount sets the value of TotalCount.
 func (s *OrderItemList) SetTotalCount(val OptInt64) {
 	s.TotalCount = val
+}
+
+// The payment timing of the selected price.
+type OrderItemPriceType string
+
+const (
+	OrderItemPriceTypeMetered OrderItemPriceType = "metered"
+	OrderItemPriceTypePrepaid OrderItemPriceType = "prepaid"
+	OrderItemPriceTypeOneTime OrderItemPriceType = "one_time"
+)
+
+// AllValues returns all OrderItemPriceType values.
+func (OrderItemPriceType) AllValues() []OrderItemPriceType {
+	return []OrderItemPriceType{
+		OrderItemPriceTypeMetered,
+		OrderItemPriceTypePrepaid,
+		OrderItemPriceTypeOneTime,
+	}
+}
+
+// MarshalText implements encoding.TextMarshaler.
+func (s OrderItemPriceType) MarshalText() ([]byte, error) {
+	switch s {
+	case OrderItemPriceTypeMetered:
+		return []byte(s), nil
+	case OrderItemPriceTypePrepaid:
+		return []byte(s), nil
+	case OrderItemPriceTypeOneTime:
+		return []byte(s), nil
+	default:
+		return nil, errors.Errorf("invalid value: %q", s)
+	}
+}
+
+// UnmarshalText implements encoding.TextUnmarshaler.
+func (s *OrderItemPriceType) UnmarshalText(data []byte) error {
+	switch OrderItemPriceType(data) {
+	case OrderItemPriceTypeMetered:
+		*s = OrderItemPriceTypeMetered
+		return nil
+	case OrderItemPriceTypePrepaid:
+		*s = OrderItemPriceTypePrepaid
+		return nil
+	case OrderItemPriceTypeOneTime:
+		*s = OrderItemPriceTypeOneTime
+		return nil
+	default:
+		return errors.Errorf("invalid value: %q", data)
+	}
 }
 
 // Ref: #/components/schemas/OrderList

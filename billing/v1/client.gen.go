@@ -526,6 +526,27 @@ func (e OrderType) Valid() bool {
 	}
 }
 
+// Defines values for OrderItemPriceType.
+const (
+	OrderItemPriceTypeMetered OrderItemPriceType = "metered"
+	OrderItemPriceTypeOneTime OrderItemPriceType = "one_time"
+	OrderItemPriceTypePrepaid OrderItemPriceType = "prepaid"
+)
+
+// Valid indicates whether the value is a known member of the OrderItemPriceType enum.
+func (e OrderItemPriceType) Valid() bool {
+	switch e {
+	case OrderItemPriceTypeMetered:
+		return true
+	case OrderItemPriceTypeOneTime:
+		return true
+	case OrderItemPriceTypePrepaid:
+		return true
+	default:
+		return false
+	}
+}
+
 // Defines values for OrderState.
 const (
 	OrderStateCanceled  OrderState = "canceled"
@@ -1025,7 +1046,10 @@ type ActiveResource struct {
 	ResourceType *string              `json:"resource_type,omitempty"`
 	StartedAt    time.Time            `json:"started_at"`
 	Status       ActiveResourceStatus `json:"status"`
-	Unit         *string              `json:"unit,omitempty"`
+
+	// SubscriptionItemId The metered subscription item charged for this resource; null for shared service usage.
+	SubscriptionItemId *openapi_types.UUID `json:"subscription_item_id,omitempty"`
+	Unit               *string             `json:"unit,omitempty"`
 }
 
 // ActiveResourceStatus defines model for ActiveResource.Status.
@@ -1853,7 +1877,10 @@ type OrderItem struct {
 	// not translated.
 	PlanName *string            `json:"plan_name,omitempty"`
 	PriceId  openapi_types.UUID `json:"price_id"`
-	Product  *ObjectIdentity    `json:"product,omitempty"`
+
+	// PriceType The payment timing of the selected price.
+	PriceType *OrderItemPriceType `json:"price_type,omitempty"`
+	Product   *ObjectIdentity     `json:"product,omitempty"`
 
 	// ProductId Which service this line belongs to.
 	ProductId          *openapi_types.UUID `json:"product_id,omitempty"`
@@ -1871,6 +1898,9 @@ type OrderItem struct {
 	// UnitAmount A decimal string, in the currency stated alongside it.
 	UnitAmount *Money `json:"unit_amount,omitempty"`
 }
+
+// OrderItemPriceType The payment timing of the selected price.
+type OrderItemPriceType string
 
 // OrderItemList defines model for OrderItemList.
 type OrderItemList struct {
