@@ -279,3 +279,12 @@ type ResourceUsageList struct {
 	// Pagination Pagination metadata for stable numbered pages. total_count is returned only when the operation can determine it without an unbounded scan.
 	Pagination OffsetPagination `json:"pagination"`
 }
+
+// Cursor defines model for Cursor.
+type Cursor = string
+
+// Page defines model for Page.
+type Page = int64
+
+// PageSize defines model for PageSize.
+type PageSize = int64

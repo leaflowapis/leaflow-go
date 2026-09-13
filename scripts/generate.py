@@ -231,6 +231,7 @@ def write_shared_contract(scratch):
     documents independently reusable while producing one coherent Go package.
     """
     schemas = {}
+    parameters = {}
     names = {f"./{pathlib.Path(spec).name}" for spec in SHARED_SPECS}
 
     def rewrite(value):
@@ -252,12 +253,16 @@ def write_shared_contract(scratch):
             if name in schemas:
                 raise ValueError(f"duplicate shared schema: {name}")
             schemas[name] = rewrite(schema)
+        for name, parameter in (document.get("components", {}).get("parameters", {}) or {}).items():
+            if name in parameters:
+                raise ValueError(f"duplicate shared parameter: {name}")
+            parameters[name] = rewrite(parameter)
 
     document = {
         "openapi": "3.1.0",
         "info": {"title": "Leaflow shared types", "version": "v1"},
         "paths": {},
-        "components": {"schemas": schemas},
+        "components": {"schemas": schemas, "parameters": parameters},
     }
     output = scratch / "shared-types.yaml"
     output.write_text(yaml.safe_dump(document, sort_keys=False), encoding="utf-8")
