@@ -7627,7 +7627,7 @@ func (s *ResourceUsage) encodeFields(e *jx.Encoder) {
 	}
 	{
 		e.FieldStart("operation_id")
-		json.EncodeUUID(e, s.OperationID)
+		e.Str(s.OperationID)
 	}
 	{
 		e.FieldStart("created_at")
@@ -7749,8 +7749,8 @@ func (s *ResourceUsage) Decode(d *jx.Decoder) error {
 		case "operation_id":
 			requiredBitSet[0] |= 1 << 7
 			if err := func() error {
-				v, err := json.DecodeUUID(d)
-				s.OperationID = v
+				v, err := d.Str()
+				s.OperationID = string(v)
 				if err != nil {
 					return err
 				}

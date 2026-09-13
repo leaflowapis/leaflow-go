@@ -3809,7 +3809,7 @@ type ResourceUsage struct {
 	Purpose     string             `json:"purpose"`
 	State       ResourceUsageState `json:"state"`
 	Generation  int64              `json:"generation"`
-	OperationID uuid.UUID          `json:"operation_id"`
+	OperationID string             `json:"operation_id"`
 	CreatedAt   time.Time          `json:"created_at"`
 	UpdatedAt   time.Time          `json:"updated_at"`
 	ReleasedAt  OptDateTime        `json:"released_at"`
@@ -3851,7 +3851,7 @@ func (s *ResourceUsage) GetGeneration() int64 {
 }
 
 // GetOperationID returns the value of OperationID.
-func (s *ResourceUsage) GetOperationID() uuid.UUID {
+func (s *ResourceUsage) GetOperationID() string {
 	return s.OperationID
 }
 
@@ -3906,7 +3906,7 @@ func (s *ResourceUsage) SetGeneration(val int64) {
 }
 
 // SetOperationID sets the value of OperationID.
-func (s *ResourceUsage) SetOperationID(val uuid.UUID) {
+func (s *ResourceUsage) SetOperationID(val string) {
 	s.OperationID = val
 }
 
