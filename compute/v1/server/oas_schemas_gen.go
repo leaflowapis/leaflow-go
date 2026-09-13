@@ -2222,6 +2222,45 @@ func (o NilUUID) Or(d uuid.UUID) uuid.UUID {
 	return d
 }
 
+// Pagination metadata for stable numbered pages. total_count is returned only when the operation can
+// determine it without an unbounded scan.
+// Ref: #/components/schemas/OffsetPagination
+type OffsetPagination struct {
+	Page       int64    `json:"page"`
+	PageSize   int64    `json:"page_size"`
+	TotalCount OptInt64 `json:"total_count"`
+}
+
+// GetPage returns the value of Page.
+func (s *OffsetPagination) GetPage() int64 {
+	return s.Page
+}
+
+// GetPageSize returns the value of PageSize.
+func (s *OffsetPagination) GetPageSize() int64 {
+	return s.PageSize
+}
+
+// GetTotalCount returns the value of TotalCount.
+func (s *OffsetPagination) GetTotalCount() OptInt64 {
+	return s.TotalCount
+}
+
+// SetPage sets the value of Page.
+func (s *OffsetPagination) SetPage(val int64) {
+	s.Page = val
+}
+
+// SetPageSize sets the value of PageSize.
+func (s *OffsetPagination) SetPageSize(val int64) {
+	s.PageSize = val
+}
+
+// SetTotalCount sets the value of TotalCount.
+func (s *OffsetPagination) SetTotalCount(val OptInt64) {
+	s.TotalCount = val
+}
+
 // Ref: #/components/schemas/OperationLogListResponseBody
 type OperationLogListResponseBody struct {
 	Items      []OperationLogResource `json:"items"`
@@ -3697,9 +3736,7 @@ func (s *ResourceDependencyDesiredState) UnmarshalText(data []byte) error {
 // Ref: #/components/schemas/ResourceDependencyList
 type ResourceDependencyList struct {
 	Items      []ResourceDependency `json:"items"`
-	Page       int64                `json:"page"`
-	PageSize   int64                `json:"page_size"`
-	TotalCount OptInt64             `json:"total_count"`
+	Pagination OffsetPagination     `json:"pagination"`
 }
 
 // GetItems returns the value of Items.
@@ -3707,19 +3744,9 @@ func (s *ResourceDependencyList) GetItems() []ResourceDependency {
 	return s.Items
 }
 
-// GetPage returns the value of Page.
-func (s *ResourceDependencyList) GetPage() int64 {
-	return s.Page
-}
-
-// GetPageSize returns the value of PageSize.
-func (s *ResourceDependencyList) GetPageSize() int64 {
-	return s.PageSize
-}
-
-// GetTotalCount returns the value of TotalCount.
-func (s *ResourceDependencyList) GetTotalCount() OptInt64 {
-	return s.TotalCount
+// GetPagination returns the value of Pagination.
+func (s *ResourceDependencyList) GetPagination() OffsetPagination {
+	return s.Pagination
 }
 
 // SetItems sets the value of Items.
@@ -3727,19 +3754,9 @@ func (s *ResourceDependencyList) SetItems(val []ResourceDependency) {
 	s.Items = val
 }
 
-// SetPage sets the value of Page.
-func (s *ResourceDependencyList) SetPage(val int64) {
-	s.Page = val
-}
-
-// SetPageSize sets the value of PageSize.
-func (s *ResourceDependencyList) SetPageSize(val int64) {
-	s.PageSize = val
-}
-
-// SetTotalCount sets the value of TotalCount.
-func (s *ResourceDependencyList) SetTotalCount(val OptInt64) {
-	s.TotalCount = val
+// SetPagination sets the value of Pagination.
+func (s *ResourceDependencyList) SetPagination(val OffsetPagination) {
+	s.Pagination = val
 }
 
 // A resource identified within its owning service. The project is taken from the containing usage or

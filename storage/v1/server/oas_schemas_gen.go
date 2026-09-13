@@ -131,10 +131,8 @@ func (s *Attachment) SetUpdatedAt(val time.Time) {
 
 // Ref: #/components/schemas/AttachmentList
 type AttachmentList struct {
-	Items      []Attachment `json:"items"`
-	Page       int64        `json:"page"`
-	PageSize   int64        `json:"page_size"`
-	TotalCount OptInt64     `json:"total_count"`
+	Items      []Attachment     `json:"items"`
+	Pagination OffsetPagination `json:"pagination"`
 }
 
 // GetItems returns the value of Items.
@@ -142,19 +140,9 @@ func (s *AttachmentList) GetItems() []Attachment {
 	return s.Items
 }
 
-// GetPage returns the value of Page.
-func (s *AttachmentList) GetPage() int64 {
-	return s.Page
-}
-
-// GetPageSize returns the value of PageSize.
-func (s *AttachmentList) GetPageSize() int64 {
-	return s.PageSize
-}
-
-// GetTotalCount returns the value of TotalCount.
-func (s *AttachmentList) GetTotalCount() OptInt64 {
-	return s.TotalCount
+// GetPagination returns the value of Pagination.
+func (s *AttachmentList) GetPagination() OffsetPagination {
+	return s.Pagination
 }
 
 // SetItems sets the value of Items.
@@ -162,19 +150,9 @@ func (s *AttachmentList) SetItems(val []Attachment) {
 	s.Items = val
 }
 
-// SetPage sets the value of Page.
-func (s *AttachmentList) SetPage(val int64) {
-	s.Page = val
-}
-
-// SetPageSize sets the value of PageSize.
-func (s *AttachmentList) SetPageSize(val int64) {
-	s.PageSize = val
-}
-
-// SetTotalCount sets the value of TotalCount.
-func (s *AttachmentList) SetTotalCount(val OptInt64) {
-	s.TotalCount = val
+// SetPagination sets the value of Pagination.
+func (s *AttachmentList) SetPagination(val OffsetPagination) {
+	s.Pagination = val
 }
 
 type AttachmentState string
@@ -1847,10 +1825,8 @@ func (s *ResourceUsage) SetReleasedAt(val OptDateTime) {
 
 // Ref: #/components/schemas/ResourceUsageList
 type ResourceUsageList struct {
-	Items      []ResourceUsage `json:"items"`
-	Page       int64           `json:"page"`
-	PageSize   int64           `json:"page_size"`
-	TotalCount OptInt64        `json:"total_count"`
+	Items      []ResourceUsage  `json:"items"`
+	Pagination OffsetPagination `json:"pagination"`
 }
 
 // GetItems returns the value of Items.
@@ -1858,19 +1834,9 @@ func (s *ResourceUsageList) GetItems() []ResourceUsage {
 	return s.Items
 }
 
-// GetPage returns the value of Page.
-func (s *ResourceUsageList) GetPage() int64 {
-	return s.Page
-}
-
-// GetPageSize returns the value of PageSize.
-func (s *ResourceUsageList) GetPageSize() int64 {
-	return s.PageSize
-}
-
-// GetTotalCount returns the value of TotalCount.
-func (s *ResourceUsageList) GetTotalCount() OptInt64 {
-	return s.TotalCount
+// GetPagination returns the value of Pagination.
+func (s *ResourceUsageList) GetPagination() OffsetPagination {
+	return s.Pagination
 }
 
 // SetItems sets the value of Items.
@@ -1878,19 +1844,9 @@ func (s *ResourceUsageList) SetItems(val []ResourceUsage) {
 	s.Items = val
 }
 
-// SetPage sets the value of Page.
-func (s *ResourceUsageList) SetPage(val int64) {
-	s.Page = val
-}
-
-// SetPageSize sets the value of PageSize.
-func (s *ResourceUsageList) SetPageSize(val int64) {
-	s.PageSize = val
-}
-
-// SetTotalCount sets the value of TotalCount.
-func (s *ResourceUsageList) SetTotalCount(val OptInt64) {
-	s.TotalCount = val
+// SetPagination sets the value of Pagination.
+func (s *ResourceUsageList) SetPagination(val OffsetPagination) {
+	s.Pagination = val
 }
 
 type ResourceUsageState string

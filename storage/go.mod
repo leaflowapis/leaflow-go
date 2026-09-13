@@ -38,5 +38,5 @@ require (
 require (
 	github.com/apapsch/go-jsonmerge/v2 v2.0.0 // indirect
 	github.com/google/uuid v1.6.0
-	github.com/leaflowapis/leaflow-go/type v0.11.0
+	github.com/leaflowapis/leaflow-go/type v0.13.0
 )
