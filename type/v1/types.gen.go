@@ -130,16 +130,77 @@ type AttachmentState string
 
 // AttachmentList defines model for AttachmentList.
 type AttachmentList struct {
-	Items      []Attachment `json:"items"`
-	Page       int64        `json:"page"`
-	PageSize   int64        `json:"page_size"`
-	TotalCount *int64       `json:"total_count,omitempty"`
+	Items []Attachment `json:"items"`
+
+	// Pagination Pagination metadata for stable numbered pages. total_count is returned only when the operation can determine it without an unbounded scan.
+	Pagination OffsetPagination `json:"pagination"`
+}
+
+// CatalogReference Specify exactly one of id or lookup_key. A lookup key is scoped to the product of the resource service.
+type CatalogReference struct {
+	Id        *openapi_types.UUID `json:"id,omitempty"`
+	LookupKey *string             `json:"lookup_key,omitempty"`
+}
+
+// CursorPagination Pagination metadata for keyset traversal. Pass next_cursor as cursor to read the following page; null means there is no following page.
+type CursorPagination struct {
+	NextCursor *string `json:"next_cursor,omitempty"`
+	PageSize   int64   `json:"page_size"`
+}
+
+// Error defines model for Error.
+type Error struct {
+	Code    *string `json:"code,omitempty"`
+	Message string  `json:"message"`
+
+	// Meta What a given `code` carries alongside the message. The keys depend on the code,
+	// and a client that does not recognise one ignores it.
+	Meta   map[string]interface{} `json:"meta,omitempty"`
+	Status int64                  `json:"status"`
 }
 
 // IdlePolicy Automatic reclamation is disabled by default. When enabled, retention starts after the last live claim is confirmed released. Traffic, IO and consumer heartbeats do not affect eligibility.
 type IdlePolicy struct {
 	Enabled          bool  `json:"enabled"`
 	RetentionSeconds int64 `json:"retention_seconds"`
+}
+
+// OffsetPagination Pagination metadata for stable numbered pages. total_count is returned only when the operation can determine it without an unbounded scan.
+type OffsetPagination struct {
+	Page       int64  `json:"page"`
+	PageSize   int64  `json:"page_size"`
+	TotalCount *int64 `json:"total_count,omitempty"`
+}
+
+// OrderOptions Reuse the same key for retries of the same purchase. Reusing it with a different request fails. Billing selects contract pricing, applies eligible grants and promotions, and owns payment challenges and expiry.
+type OrderOptions struct {
+	ExpectedAmount *string `json:"expected_amount,omitempty"`
+	IdempotencyKey string  `json:"idempotency_key"`
+
+	// PaymentPlan Requested funding split. This does not select a card or payment provider; complete payment through Billing.
+	PaymentPlan    *PaymentPlan `json:"payment_plan,omitempty"`
+	RedemptionCode *string      `json:"redemption_code,omitempty"`
+}
+
+// PaymentPlan Requested funding split. This does not select a card or payment provider; complete payment through Billing.
+type PaymentPlan struct {
+	BalanceAmount  string `json:"balance_amount"`
+	ProviderAmount string `json:"provider_amount"`
+}
+
+// PlacedOrder A billable order has been created. Read it from the billing API to find out what is
+// owed and whether payment is still required.
+//
+// Only the identifier is returned. Amounts and state are not repeated here; the order
+// itself is the single source for them.
+type PlacedOrder struct {
+	// OrderId Identifies the order. Use it to read the order and, where payment is required,
+	// to pay it.
+	//
+	// An order is created even when nothing is owed, such as a plan with no charge or one
+	// covered entirely by granted credit. Such an order is already settled, and no
+	// payment step applies.
+	OrderId openapi_types.UUID `json:"order_id"`
 }
 
 // ReclamationState defines model for ReclamationState.
@@ -177,10 +238,10 @@ type ResourceDependencyDesiredState string
 
 // ResourceDependencyList defines model for ResourceDependencyList.
 type ResourceDependencyList struct {
-	Items      []ResourceDependency `json:"items"`
-	Page       int64                `json:"page"`
-	PageSize   int64                `json:"page_size"`
-	TotalCount *int64               `json:"total_count,omitempty"`
+	Items []ResourceDependency `json:"items"`
+
+	// Pagination Pagination metadata for stable numbered pages. total_count is returned only when the operation can determine it without an unbounded scan.
+	Pagination OffsetPagination `json:"pagination"`
 }
 
 // ResourceReference A resource identified within its owning service. The project is taken from the containing usage or request.
@@ -213,8 +274,8 @@ type ResourceUsageState string
 
 // ResourceUsageList defines model for ResourceUsageList.
 type ResourceUsageList struct {
-	Items      []ResourceUsage `json:"items"`
-	Page       int64           `json:"page"`
-	PageSize   int64           `json:"page_size"`
-	TotalCount *int64          `json:"total_count,omitempty"`
+	Items []ResourceUsage `json:"items"`
+
+	// Pagination Pagination metadata for stable numbered pages. total_count is returned only when the operation can determine it without an unbounded scan.
+	Pagination OffsetPagination `json:"pagination"`
 }

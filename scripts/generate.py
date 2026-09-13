@@ -221,6 +221,49 @@ def write_module(service):
     path.write_text(GO_MOD.format(service=service), encoding="utf-8")
 
 
+def write_shared_contract(scratch):
+    """Combine shared type documents before generating their one Go package.
+
+    A shared schema may refer to another shared document (for example,
+    resource.yaml uses OffsetPagination). Each generated file still belongs to
+    typev1, so mapping that reference as an external Go import would make the
+    package import itself. Combining the schemas first keeps the OpenAPI
+    documents independently reusable while producing one coherent Go package.
+    """
+    schemas = {}
+    names = {f"./{pathlib.Path(spec).name}" for spec in SHARED_SPECS}
+
+    def rewrite(value):
+        if isinstance(value, list):
+            return [rewrite(item) for item in value]
+        if not isinstance(value, dict):
+            return value
+        copied = {key: rewrite(item) for key, item in value.items()}
+        ref = copied.get("$ref")
+        if isinstance(ref, str):
+            target, separator, fragment = ref.partition("#")
+            if separator and target in names:
+                copied["$ref"] = f"#{fragment}"
+        return copied
+
+    for spec in SHARED_SPECS:
+        document = yaml.safe_load((CONTRACTS / spec).read_text(encoding="utf-8"))
+        for name, schema in (document.get("components", {}).get("schemas", {}) or {}).items():
+            if name in schemas:
+                raise ValueError(f"duplicate shared schema: {name}")
+            schemas[name] = rewrite(schema)
+
+    document = {
+        "openapi": "3.1.0",
+        "info": {"title": "Leaflow shared types", "version": "v1"},
+        "paths": {},
+        "components": {"schemas": schemas},
+    }
+    output = scratch / "shared-types.yaml"
+    output.write_text(yaml.safe_dump(document, sort_keys=False), encoding="utf-8")
+    return output
+
+
 def main():
     contracts.fetch(CONTRACTS_REMOTE, CONTRACTS_ROOT)
     specs = sorted(CONTRACTS.glob("*/*/openapi.yaml"))
@@ -233,13 +276,11 @@ def main():
         # 共用类型先生成：各服务的包会 import 它。
         shared_out = ROOT / "type" / "v1"
         shutil.rmtree(shared_out, ignore_errors=True)
-        # 每份共用契约出一个文件，全部落在同一个包里。共用一个输出文件名的话，
-        # 后生成的那份会把前一份覆盖掉，而两份都「生成成功」了。
-        for spec in SHARED_SPECS:
-            name = pathlib.Path(spec).stem
-            codegen(CONTRACTS / spec, "typev1", shared_out / f"{name}.gen.go",
-                    SHARED_GENERATE, scratch, options=SHARED_OUTPUT_OPTIONS)
-            print(f"{spec:24} → type/v1")
+        # 共享类型本身也会互相引用。先合成一份 OpenAPI 文档再生成，避免 typev1
+        # 为了引用自己的 OffsetPagination 而产生自引用 import。
+        codegen(write_shared_contract(scratch), "typev1", shared_out / "types.gen.go",
+                SHARED_GENERATE, scratch, options=SHARED_OUTPUT_OPTIONS)
+        print("shared types             → type/v1")
         write_module("type")
 
         for contract in specs:
