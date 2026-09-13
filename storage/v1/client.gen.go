@@ -19,87 +19,60 @@ import (
 	openapi_types "github.com/oapi-codegen/runtime/types"
 )
 
-// Defines values for BackupResourceStatus.
+// Defines values for DiskStatus.
 const (
-	BackupResourceStatusAvailable    BackupResourceStatus = "available"
-	BackupResourceStatusDeleting     BackupResourceStatus = "deleting"
-	BackupResourceStatusError        BackupResourceStatus = "error"
-	BackupResourceStatusProvisioning BackupResourceStatus = "provisioning"
-	BackupResourceStatusRestoring    BackupResourceStatus = "restoring"
+	DiskStatusAttaching    DiskStatus = "attaching"
+	DiskStatusAvailable    DiskStatus = "available"
+	DiskStatusDeleting     DiskStatus = "deleting"
+	DiskStatusDetaching    DiskStatus = "detaching"
+	DiskStatusError        DiskStatus = "error"
+	DiskStatusInUse        DiskStatus = "in_use"
+	DiskStatusProvisioning DiskStatus = "provisioning"
+	DiskStatusReleasing    DiskStatus = "releasing"
+	DiskStatusResizing     DiskStatus = "resizing"
+	DiskStatusRestoring    DiskStatus = "restoring"
+	DiskStatusReverting    DiskStatus = "reverting"
 )
 
-// Valid indicates whether the value is a known member of the BackupResourceStatus enum.
-func (e BackupResourceStatus) Valid() bool {
+// Valid indicates whether the value is a known member of the DiskStatus enum.
+func (e DiskStatus) Valid() bool {
 	switch e {
-	case BackupResourceStatusAvailable:
+	case DiskStatusAttaching:
 		return true
-	case BackupResourceStatusDeleting:
+	case DiskStatusAvailable:
 		return true
-	case BackupResourceStatusError:
+	case DiskStatusDeleting:
 		return true
-	case BackupResourceStatusProvisioning:
+	case DiskStatusDetaching:
 		return true
-	case BackupResourceStatusRestoring:
+	case DiskStatusError:
+		return true
+	case DiskStatusInUse:
+		return true
+	case DiskStatusProvisioning:
+		return true
+	case DiskStatusReleasing:
+		return true
+	case DiskStatusResizing:
+		return true
+	case DiskStatusRestoring:
+		return true
+	case DiskStatusReverting:
 		return true
 	default:
 		return false
 	}
 }
 
-// Defines values for DiskResourceStatus.
+// Defines values for DiskTypeMedia.
 const (
-	DiskResourceStatusAttaching    DiskResourceStatus = "attaching"
-	DiskResourceStatusAvailable    DiskResourceStatus = "available"
-	DiskResourceStatusDeleting     DiskResourceStatus = "deleting"
-	DiskResourceStatusDetaching    DiskResourceStatus = "detaching"
-	DiskResourceStatusError        DiskResourceStatus = "error"
-	DiskResourceStatusInUse        DiskResourceStatus = "in_use"
-	DiskResourceStatusProvisioning DiskResourceStatus = "provisioning"
-	DiskResourceStatusReleasing    DiskResourceStatus = "releasing"
-	DiskResourceStatusResizing     DiskResourceStatus = "resizing"
-	DiskResourceStatusRestoring    DiskResourceStatus = "restoring"
-	DiskResourceStatusReverting    DiskResourceStatus = "reverting"
+	Hdd  DiskTypeMedia = "hdd"
+	Nvme DiskTypeMedia = "nvme"
+	Ssd  DiskTypeMedia = "ssd"
 )
 
-// Valid indicates whether the value is a known member of the DiskResourceStatus enum.
-func (e DiskResourceStatus) Valid() bool {
-	switch e {
-	case DiskResourceStatusAttaching:
-		return true
-	case DiskResourceStatusAvailable:
-		return true
-	case DiskResourceStatusDeleting:
-		return true
-	case DiskResourceStatusDetaching:
-		return true
-	case DiskResourceStatusError:
-		return true
-	case DiskResourceStatusInUse:
-		return true
-	case DiskResourceStatusProvisioning:
-		return true
-	case DiskResourceStatusReleasing:
-		return true
-	case DiskResourceStatusResizing:
-		return true
-	case DiskResourceStatusRestoring:
-		return true
-	case DiskResourceStatusReverting:
-		return true
-	default:
-		return false
-	}
-}
-
-// Defines values for DiskTypeResourceMedia.
-const (
-	Hdd  DiskTypeResourceMedia = "hdd"
-	Nvme DiskTypeResourceMedia = "nvme"
-	Ssd  DiskTypeResourceMedia = "ssd"
-)
-
-// Valid indicates whether the value is a known member of the DiskTypeResourceMedia enum.
-func (e DiskTypeResourceMedia) Valid() bool {
+// Valid indicates whether the value is a known member of the DiskTypeMedia enum.
+func (e DiskTypeMedia) Valid() bool {
 	switch e {
 	case Hdd:
 		return true
@@ -112,416 +85,248 @@ func (e DiskTypeResourceMedia) Valid() bool {
 	}
 }
 
-// Defines values for SnapshotResourceStatus.
+// Defines values for ResourceType.
 const (
-	SnapshotResourceStatusAvailable    SnapshotResourceStatus = "available"
-	SnapshotResourceStatusDeleting     SnapshotResourceStatus = "deleting"
-	SnapshotResourceStatusError        SnapshotResourceStatus = "error"
-	SnapshotResourceStatusProvisioning SnapshotResourceStatus = "provisioning"
-	SnapshotResourceStatusRestoring    SnapshotResourceStatus = "restoring"
+	ResourceTypeDisk ResourceType = "disk"
 )
 
-// Valid indicates whether the value is a known member of the SnapshotResourceStatus enum.
-func (e SnapshotResourceStatus) Valid() bool {
+// Valid indicates whether the value is a known member of the ResourceType enum.
+func (e ResourceType) Valid() bool {
 	switch e {
-	case SnapshotResourceStatusAvailable:
-		return true
-	case SnapshotResourceStatusDeleting:
-		return true
-	case SnapshotResourceStatusError:
-		return true
-	case SnapshotResourceStatusProvisioning:
-		return true
-	case SnapshotResourceStatusRestoring:
+	case ResourceTypeDisk:
 		return true
 	default:
 		return false
 	}
 }
 
-// Attachment defines model for Attachment.
-type Attachment = externalRef0.Attachment
+// Defines values for ResourceTypePath.
+const (
+	ResourceTypePathDisk ResourceTypePath = "disk"
+)
 
-// AttachmentList defines model for AttachmentList.
-type AttachmentList = externalRef0.AttachmentList
-
-// BackupListResponseBody defines model for BackupListResponseBody.
-type BackupListResponseBody struct {
-	Items      []BackupResource `json:"items"`
-	Page       int64            `json:"page"`
-	PageSize   int64            `json:"page_size"`
-	TotalCount *int64           `json:"total_count,omitempty"`
+// Valid indicates whether the value is a known member of the ResourceTypePath enum.
+func (e ResourceTypePath) Valid() bool {
+	switch e {
+	case ResourceTypePathDisk:
+		return true
+	default:
+		return false
+	}
 }
 
-// BackupResource defines model for BackupResource.
-type BackupResource struct {
-	AvailabilityZoneId openapi_types.UUID `json:"availability_zone_id"`
-	CreatedAt          time.Time          `json:"created_at"`
-	Id                 openapi_types.UUID `json:"id"`
-	Name               string             `json:"name"`
-	RegionId           openapi_types.UUID `json:"region_id"`
+// Defines values for ListResourceUsagesParamsResourceType.
+const (
+	ListResourceUsagesParamsResourceTypeDisk ListResourceUsagesParamsResourceType = "disk"
+)
 
-	// SizeGb Capacity of the source disk when the backup was created. A restored disk cannot be smaller than this
-	SizeGb int64 `json:"size_gb"`
-
-	// SourceDiskId The disk this backup was taken from. The backup remains usable after that disk is deleted
-	SourceDiskId        openapi_types.UUID   `json:"source_disk_id"`
-	Status              BackupResourceStatus `json:"status"`
-	SubscriptionItemIds []openapi_types.UUID `json:"subscription_item_ids,omitempty"`
+// Valid indicates whether the value is a known member of the ListResourceUsagesParamsResourceType enum.
+func (e ListResourceUsagesParamsResourceType) Valid() bool {
+	switch e {
+	case ListResourceUsagesParamsResourceTypeDisk:
+		return true
+	default:
+		return false
+	}
 }
 
-// BackupResourceStatus defines model for BackupResource.Status.
-type BackupResourceStatus string
+// Defines values for SetResourceIdlePolicyParamsResourceType.
+const (
+	SetResourceIdlePolicyParamsResourceTypeDisk SetResourceIdlePolicyParamsResourceType = "disk"
+)
+
+// Valid indicates whether the value is a known member of the SetResourceIdlePolicyParamsResourceType enum.
+func (e SetResourceIdlePolicyParamsResourceType) Valid() bool {
+	switch e {
+	case SetResourceIdlePolicyParamsResourceTypeDisk:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for GetResourceReclamationParamsResourceType.
+const (
+	GetResourceReclamationParamsResourceTypeDisk GetResourceReclamationParamsResourceType = "disk"
+)
+
+// Valid indicates whether the value is a known member of the GetResourceReclamationParamsResourceType enum.
+func (e GetResourceReclamationParamsResourceType) Valid() bool {
+	switch e {
+	case GetResourceReclamationParamsResourceTypeDisk:
+		return true
+	default:
+		return false
+	}
+}
 
 // CatalogReference Specify exactly one of id or lookup_key. A lookup key is scoped to the product of the resource service.
 type CatalogReference = externalRef0.CatalogReference
 
-// CreateBackupRequestBody defines model for CreateBackupRequestBody.
-type CreateBackupRequestBody struct {
-	DiskId openapi_types.UUID `json:"disk_id"`
-	Name   string             `json:"name"`
-
-	// Order Reuse the same key for retries of the same purchase. Reusing it with a different request fails. Billing selects contract pricing, applies eligible grants and promotions, and owns payment challenges and expiry.
-	Order OrderOptions `json:"order"`
-
-	// Price Specify exactly one of id or lookup_key. A lookup key is scoped to the product of the resource service.
-	Price CatalogReference `json:"price"`
-}
-
-// CreateDiskRequestBody defines model for CreateDiskRequestBody.
-type CreateDiskRequestBody struct {
-	// DiskTypeId A disk type currently on sale. A withdrawn one is rejected even though its identifier still resolves
+// CreateDiskRequest defines model for CreateDiskRequest.
+type CreateDiskRequest struct {
 	DiskTypeId openapi_types.UUID `json:"disk_type_id"`
 	Name       string             `json:"name"`
 
 	// Order Reuse the same key for retries of the same purchase. Reusing it with a different request fails. Billing selects contract pricing, applies eligible grants and promotions, and owns payment challenges and expiry.
-	Order OrderOptions `json:"order"`
+	Order externalRef0.OrderOptions `json:"order"`
 
 	// Price Specify exactly one of id or lookup_key. A lookup key is scoped to the product of the resource service.
 	Price  CatalogReference `json:"price"`
 	SizeGb int64            `json:"size_gb"`
-
-	// SnapshotId Restore from this snapshot. When given, the capacity need only be no smaller than the snapshot
-	SnapshotId *openapi_types.UUID `json:"snapshot_id,omitempty"`
 }
 
-// CreateSnapshotRequestBody defines model for CreateSnapshotRequestBody.
-type CreateSnapshotRequestBody struct {
-	DiskId openapi_types.UUID `json:"disk_id"`
-	Name   string             `json:"name"`
-
-	// Order Reuse the same key for retries of the same purchase. Reusing it with a different request fails. Billing selects contract pricing, applies eligible grants and promotions, and owns payment challenges and expiry.
-	Order OrderOptions `json:"order"`
-
-	// Price Specify exactly one of id or lookup_key. A lookup key is scoped to the product of the resource service.
-	Price CatalogReference `json:"price"`
-}
-
-// DiskListResponseBody defines model for DiskListResponseBody.
-type DiskListResponseBody struct {
-	Items      []DiskResource `json:"items"`
-	Page       int64          `json:"page"`
-	PageSize   int64          `json:"page_size"`
-	TotalCount *int64         `json:"total_count,omitempty"`
-}
-
-// DiskResource defines model for DiskResource.
-type DiskResource struct {
+// Disk defines model for Disk.
+type Disk struct {
 	AvailabilityZoneId openapi_types.UUID `json:"availability_zone_id"`
 	CreatedAt          time.Time          `json:"created_at"`
+	DeletedAt          *time.Time         `json:"deleted_at,omitempty"`
 	DiskTypeId         openapi_types.UUID `json:"disk_type_id"`
 	Id                 openapi_types.UUID `json:"id"`
-
-	// Iops IOPS this disk is allowed. Null when its type is not rate-limited.
-	//
-	// Computed from the disk's own capacity, so it grows when the disk is grown — but see the
-	// note on the resize endpoint: growing a disk that is attached is refused, precisely because
-	// the new figure would not take effect until it was attached again.
-	Iops                *int64               `json:"iops"`
-	Name                string               `json:"name"`
-	RegionId            openapi_types.UUID   `json:"region_id"`
-	SizeGb              int64                `json:"size_gb"`
-	Status              DiskResourceStatus   `json:"status"`
-	SubscriptionItemIds []openapi_types.UUID `json:"subscription_item_ids,omitempty"`
-
-	// ThroughputBytesPerSec Throughput this disk is allowed, in bytes per second. Null when its type is not rate-limited
-	ThroughputBytesPerSec *int64 `json:"throughput_bytes_per_sec"`
+	Name               string             `json:"name"`
+	RegionId           openapi_types.UUID `json:"region_id"`
+	SizeGb             int64              `json:"size_gb"`
+	Status             DiskStatus         `json:"status"`
+	UpdatedAt          time.Time          `json:"updated_at"`
 }
 
-// DiskResourceStatus defines model for DiskResource.Status.
-type DiskResourceStatus string
+// DiskStatus defines model for Disk.Status.
+type DiskStatus string
 
-// DiskTypeListResponseBody defines model for DiskTypeListResponseBody.
-type DiskTypeListResponseBody struct {
-	Items      []DiskTypeResource `json:"items"`
-	Page       int64              `json:"page"`
-	PageSize   int64              `json:"page_size"`
-	TotalCount *int64             `json:"total_count,omitempty"`
+// DiskList defines model for DiskList.
+type DiskList struct {
+	Items []Disk `json:"items"`
+
+	// Pagination Pagination metadata for stable numbered pages. total_count is returned only when the operation can determine it without an unbounded scan.
+	Pagination externalRef0.OffsetPagination `json:"pagination"`
 }
 
-// DiskTypeResource defines model for DiskTypeResource.
-type DiskTypeResource struct {
+// DiskType defines model for DiskType.
+type DiskType struct {
 	AvailabilityZoneId openapi_types.UUID `json:"availability_zone_id"`
-
-	// BillingPlanId The Billing Plan for this type. Read its available prices from Billing; resource capacity and sellable quota are evaluated when placing the order.
-	BillingPlanId openapi_types.UUID `json:"billing_plan_id"`
-	Id            openapi_types.UUID `json:"id"`
-
-	// IopsAtMaxSize IOPS a disk of `max_size_gb` gets. Null when this type is not rate-limited
-	IopsAtMaxSize *int64 `json:"iops_at_max_size"`
-
-	// IopsAtMinSize IOPS a disk of `min_size_gb` gets. Null when this type is not rate-limited.
-	//
-	// Performance grows with capacity, so this and `iops_at_max_size` are the two ends of the
-	// range. The exact figure for the size actually bought appears on the disk itself once it
-	// exists.
-	IopsAtMinSize *int64                `json:"iops_at_min_size"`
-	MaxSizeGb     int64                 `json:"max_size_gb"`
-	Media         DiskTypeResourceMedia `json:"media"`
-	MinSizeGb     int64                 `json:"min_size_gb"`
-	Name          string                `json:"name"`
-	RegionId      openapi_types.UUID    `json:"region_id"`
-	StepGb        int64                 `json:"step_gb"`
-
-	// ThroughputAtMaxSize Throughput a disk of `max_size_gb` gets, in bytes per second. Null when this type is not rate-limited
-	ThroughputAtMaxSize *int64 `json:"throughput_at_max_size"`
-
-	// ThroughputAtMinSize Throughput a disk of `min_size_gb` gets, in **bytes per second**. Null when this type is
-	// not rate-limited.
-	//
-	// Bytes rather than MiB so the number needs no rounding on the way out; divide by 1048576
-	// for MiB/s at the point of display.
-	ThroughputAtMinSize *int64 `json:"throughput_at_min_size"`
+	BillingPlanId      openapi_types.UUID `json:"billing_plan_id"`
+	ForSystem          bool               `json:"for_system"`
+	Id                 openapi_types.UUID `json:"id"`
+	LookupKey          string             `json:"lookup_key"`
+	MaxSizeGb          int64              `json:"max_size_gb"`
+	Media              DiskTypeMedia      `json:"media"`
+	MinSizeGb          int64              `json:"min_size_gb"`
+	Name               string             `json:"name"`
+	RegionId           openapi_types.UUID `json:"region_id"`
+	StepGb             int64              `json:"step_gb"`
 }
 
-// DiskTypeResourceMedia defines model for DiskTypeResource.Media.
-type DiskTypeResourceMedia string
+// DiskTypeMedia defines model for DiskType.Media.
+type DiskTypeMedia string
+
+// DiskTypeList defines model for DiskTypeList.
+type DiskTypeList struct {
+	Items []DiskType `json:"items"`
+
+	// Pagination Pagination metadata for stable numbered pages. total_count is returned only when the operation can determine it without an unbounded scan.
+	Pagination externalRef0.OffsetPagination `json:"pagination"`
+}
+
+// RenameRequest defines model for RenameRequest.
+type RenameRequest struct {
+	Name string `json:"name"`
+}
+
+// AttachmentID defines model for AttachmentID.
+type AttachmentID = openapi_types.UUID
+
+// AvailabilityZoneIDOptional defines model for AvailabilityZoneIDOptional.
+type AvailabilityZoneIDOptional = openapi_types.UUID
+
+// DiskID defines model for DiskID.
+type DiskID = openapi_types.UUID
+
+// DiskTypeID defines model for DiskTypeID.
+type DiskTypeID = openapi_types.UUID
+
+// IncludeDetached defines model for IncludeDetached.
+type IncludeDetached = bool
+
+// IncludeReleased defines model for IncludeReleased.
+type IncludeReleased = bool
+
+// RegionID defines model for RegionID.
+type RegionID = openapi_types.UUID
+
+// RegionIDOptional defines model for RegionIDOptional.
+type RegionIDOptional = openapi_types.UUID
+
+// ResourceID defines model for ResourceID.
+type ResourceID = openapi_types.UUID
+
+// ResourceIDPath defines model for ResourceIDPath.
+type ResourceIDPath = openapi_types.UUID
+
+// ResourceType defines model for ResourceType.
+type ResourceType string
+
+// ResourceTypePath defines model for ResourceTypePath.
+type ResourceTypePath string
+
+// UsageID defines model for UsageID.
+type UsageID = openapi_types.UUID
 
 // Error defines model for Error.
 type Error = externalRef0.Error
 
-// IdlePolicy Automatic reclamation is disabled by default. When enabled, retention starts after the last live claim is confirmed released. Traffic, IO and consumer heartbeats do not affect eligibility.
-type IdlePolicy = externalRef0.IdlePolicy
-
-// OperationLogListResponseBody defines model for OperationLogListResponseBody.
-type OperationLogListResponseBody struct {
-	Items      []OperationLogResource `json:"items"`
-	Page       int64                  `json:"page"`
-	PageSize   int64                  `json:"page_size"`
-	TotalCount *int64                 `json:"total_count,omitempty"`
-}
-
-// OperationLogResource defines model for OperationLogResource.
-type OperationLogResource struct {
-	// Action Name of the operation; matches the operation id of the endpoint
-	Action string `json:"action"`
-
-	// Actor The user who initiated the operation. Empty when the platform performed it
-	Actor *string `json:"actor"`
-
-	// ActorName The name this user went by at the time of the operation, recorded alongside the operation itself. It is not refreshed afterwards: the record states who acted then, and a name read today is a statement about a different moment.
-	//
-	// Null on entries recorded before this field existed, and on entries performed by the platform. An empty string means the account had no name recorded.
-	ActorName *string `json:"actor_name"`
-
-	// ByPlatform True when the operation was performed by the platform
-	ByPlatform bool      `json:"by_platform"`
-	CreatedAt  time.Time `json:"created_at"`
-
-	// Failure Brief reason for the failure
-	Failure *string            `json:"failure"`
-	Id      openapi_types.UUID `json:"id"`
-
-	// Payload Path and query parameters of the request. Fields such as passwords are redacted
-	Payload  map[string]interface{} `json:"payload"`
-	RegionId *openapi_types.UUID    `json:"region_id"`
-
-	// SubjectId Empty for create operations: the id of the new resource is in the response, not in the request path
-	SubjectId   string `json:"subject_id"`
-	SubjectType string `json:"subject_type"`
-	Succeeded   bool   `json:"succeeded"`
-}
-
-// OrderOptions Reuse the same key for retries of the same purchase. Reusing it with a different request fails. Billing selects contract pricing, applies eligible grants and promotions, and owns payment challenges and expiry.
-type OrderOptions = externalRef0.OrderOptions
-
-// PlacedOrder A billable order has been created. Read it from the billing API to find out what is
-// owed and whether payment is still required.
-//
-// Only the identifier is returned. Amounts and state are not repeated here; the order
-// itself is the single source for them.
-type PlacedOrder = externalRef0.PlacedOrder
-
-// ReclamationState defines model for ReclamationState.
-type ReclamationState = externalRef0.ReclamationState
-
-// RenameBackupRequestBody defines model for RenameBackupRequestBody.
-type RenameBackupRequestBody struct {
-	Name string `json:"name"`
-}
-
-// RenameDiskRequestBody defines model for RenameDiskRequestBody.
-type RenameDiskRequestBody struct {
-	Name string `json:"name"`
-}
-
-// RenameSnapshotRequestBody defines model for RenameSnapshotRequestBody.
-type RenameSnapshotRequestBody struct {
-	Name string `json:"name"`
-}
-
-// ResizeDiskRequestBody defines model for ResizeDiskRequestBody.
-type ResizeDiskRequestBody struct {
-	// Order Reuse the same key for retries of the same purchase. Reusing it with a different request fails. Billing selects contract pricing, applies eligible grants and promotions, and owns payment challenges and expiry.
-	Order OrderOptions `json:"order"`
-
-	// Price Specify exactly one of id or lookup_key. A lookup key is scoped to the product of the resource service.
-	Price CatalogReference `json:"price"`
-
-	// SizeGb Must be larger than the current capacity
-	SizeGb int64 `json:"size_gb"`
-}
-
-// ResourceUsage An authoritative claim held by the resource owner. Reserved, active and releasing claims all prevent idle reclamation. Stopped consumers retain their claims. Released claims remain readable.
-type ResourceUsage = externalRef0.ResourceUsage
-
-// ResourceUsageList defines model for ResourceUsageList.
-type ResourceUsageList = externalRef0.ResourceUsageList
-
-// RestoreBackupRequestBody defines model for RestoreBackupRequestBody.
-type RestoreBackupRequestBody struct {
-	// DiskTypeId May differ from the availability zone of the source disk, but must be in the same region. It has to be on sale — restoring creates a new disk, so a withdrawn type is rejected here as well
-	DiskTypeId openapi_types.UUID `json:"disk_type_id"`
-	Name       string             `json:"name"`
-
-	// Order Reuse the same key for retries of the same purchase. Reusing it with a different request fails. Billing selects contract pricing, applies eligible grants and promotions, and owns payment challenges and expiry.
-	Order OrderOptions `json:"order"`
-
-	// Price Specify exactly one of id or lookup_key. A lookup key is scoped to the product of the resource service.
-	Price CatalogReference `json:"price"`
-
-	// SizeGb Matches the size of the backup when omitted. When given, it must not be smaller than the backup
-	SizeGb *int64 `json:"size_gb,omitempty"`
-}
-
-// RevertDiskRequestBody defines model for RevertDiskRequestBody.
-type RevertDiskRequestBody struct {
-	// SnapshotId Must be the most recent snapshot of the disk
-	SnapshotId openapi_types.UUID `json:"snapshot_id"`
-}
-
-// SnapshotListResponseBody defines model for SnapshotListResponseBody.
-type SnapshotListResponseBody struct {
-	Items      []SnapshotResource `json:"items"`
-	Page       int64              `json:"page"`
-	PageSize   int64              `json:"page_size"`
-	TotalCount *int64             `json:"total_count,omitempty"`
-}
-
-// SnapshotResource defines model for SnapshotResource.
-type SnapshotResource struct {
-	AvailabilityZoneId openapi_types.UUID `json:"availability_zone_id"`
-	CreatedAt          time.Time          `json:"created_at"`
-	DiskId             openapi_types.UUID `json:"disk_id"`
-	Id                 openapi_types.UUID `json:"id"`
-	Name               string             `json:"name"`
-	RegionId           openapi_types.UUID `json:"region_id"`
-
-	// SizeGb Capacity of the source disk when the snapshot was created. A disk restored from it cannot be smaller
-	SizeGb              int64                  `json:"size_gb"`
-	Status              SnapshotResourceStatus `json:"status"`
-	SubscriptionItemIds []openapi_types.UUID   `json:"subscription_item_ids,omitempty"`
-}
-
-// SnapshotResourceStatus defines model for SnapshotResource.Status.
-type SnapshotResourceStatus string
-
-// ListBackupsParams defines parameters for ListBackups.
-type ListBackupsParams struct {
-	// DiskId Return only the backups of this disk
-	DiskId   *openapi_types.UUID `form:"disk_id,omitempty" json:"disk_id,omitempty"`
-	Page     *int64              `form:"page,omitempty" json:"page,omitempty"`
-	PageSize *int64              `form:"page_size,omitempty" json:"page_size,omitempty"`
-}
-
 // ListDiskTypesParams defines parameters for ListDiskTypes.
 type ListDiskTypesParams struct {
-	RegionId openapi_types.UUID `form:"region_id" json:"region_id"`
-	Page     *int64             `form:"page,omitempty" json:"page,omitempty"`
-	PageSize *int64             `form:"page_size,omitempty" json:"page_size,omitempty"`
+	RegionId RegionID               `form:"region_id" json:"region_id"`
+	Page     *externalRef0.Page     `form:"page,omitempty" json:"page,omitempty"`
+	PageSize *externalRef0.PageSize `form:"page_size,omitempty" json:"page_size,omitempty"`
 }
 
 // ListDisksParams defines parameters for ListDisks.
 type ListDisksParams struct {
-	RegionId *openapi_types.UUID `form:"region_id,omitempty" json:"region_id,omitempty"`
+	RegionId           *RegionIDOptional           `form:"region_id,omitempty" json:"region_id,omitempty"`
+	AvailabilityZoneId *AvailabilityZoneIDOptional `form:"availability_zone_id,omitempty" json:"availability_zone_id,omitempty"`
+	Page               *externalRef0.Page          `form:"page,omitempty" json:"page,omitempty"`
+	PageSize           *externalRef0.PageSize      `form:"page_size,omitempty" json:"page_size,omitempty"`
+}
 
-	// AvailabilityZoneId Supplied together with `region_id` to filter attachable disks
-	AvailabilityZoneId *openapi_types.UUID `form:"availability_zone_id,omitempty" json:"availability_zone_id,omitempty"`
-	Page               *int64              `form:"page,omitempty" json:"page,omitempty"`
-	PageSize           *int64              `form:"page_size,omitempty" json:"page_size,omitempty"`
+// DeleteDiskParams defines parameters for DeleteDisk.
+type DeleteDiskParams struct {
+	IdempotencyKey string `form:"idempotency_key" json:"idempotency_key"`
 }
 
 // ListDiskAttachmentsParams defines parameters for ListDiskAttachments.
 type ListDiskAttachmentsParams struct {
-	Page            *int64 `form:"page,omitempty" json:"page,omitempty"`
-	PageSize        *int64 `form:"page_size,omitempty" json:"page_size,omitempty"`
-	IncludeDetached *bool  `form:"include_detached,omitempty" json:"include_detached,omitempty"`
-}
-
-// ListOperationLogsParams defines parameters for ListOperationLogs.
-type ListOperationLogsParams struct {
-	// Action Return a single kind of operation; the value matches the operation id of the endpoint
-	Action   *string `form:"action,omitempty" json:"action,omitempty"`
-	Page     *int64  `form:"page,omitempty" json:"page,omitempty"`
-	PageSize *int64  `form:"page_size,omitempty" json:"page_size,omitempty"`
+	IncludeDetached *IncludeDetached       `form:"include_detached,omitempty" json:"include_detached,omitempty"`
+	Page            *externalRef0.Page     `form:"page,omitempty" json:"page,omitempty"`
+	PageSize        *externalRef0.PageSize `form:"page_size,omitempty" json:"page_size,omitempty"`
 }
 
 // ListResourceUsagesParams defines parameters for ListResourceUsages.
 type ListResourceUsagesParams struct {
-	ResourceType    string             `form:"resource_type" json:"resource_type"`
-	ResourceId      openapi_types.UUID `form:"resource_id" json:"resource_id"`
-	IncludeReleased *bool              `form:"include_released,omitempty" json:"include_released,omitempty"`
-	Page            *int64             `form:"page,omitempty" json:"page,omitempty"`
-	PageSize        *int64             `form:"page_size,omitempty" json:"page_size,omitempty"`
+	ResourceType    ListResourceUsagesParamsResourceType `form:"resource_type" json:"resource_type"`
+	ResourceId      ResourceID                           `form:"resource_id" json:"resource_id"`
+	IncludeReleased *IncludeReleased                     `form:"include_released,omitempty" json:"include_released,omitempty"`
+	Page            *externalRef0.Page                   `form:"page,omitempty" json:"page,omitempty"`
+	PageSize        *externalRef0.PageSize               `form:"page_size,omitempty" json:"page_size,omitempty"`
 }
 
-// ListSnapshotsParams defines parameters for ListSnapshots.
-type ListSnapshotsParams struct {
-	// DiskId Return only the snapshots of this disk
-	DiskId   *openapi_types.UUID `form:"disk_id,omitempty" json:"disk_id,omitempty"`
-	Page     *int64              `form:"page,omitempty" json:"page,omitempty"`
-	PageSize *int64              `form:"page_size,omitempty" json:"page_size,omitempty"`
-}
+// ListResourceUsagesParamsResourceType defines parameters for ListResourceUsages.
+type ListResourceUsagesParamsResourceType string
 
-// CreateBackupJSONRequestBody defines body for CreateBackup for application/json ContentType.
-type CreateBackupJSONRequestBody = CreateBackupRequestBody
+// SetResourceIdlePolicyParamsResourceType defines parameters for SetResourceIdlePolicy.
+type SetResourceIdlePolicyParamsResourceType string
 
-// RenameBackupJSONRequestBody defines body for RenameBackup for application/json ContentType.
-type RenameBackupJSONRequestBody = RenameBackupRequestBody
-
-// RestoreBackupJSONRequestBody defines body for RestoreBackup for application/json ContentType.
-type RestoreBackupJSONRequestBody = RestoreBackupRequestBody
+// GetResourceReclamationParamsResourceType defines parameters for GetResourceReclamation.
+type GetResourceReclamationParamsResourceType string
 
 // CreateDiskJSONRequestBody defines body for CreateDisk for application/json ContentType.
-type CreateDiskJSONRequestBody = CreateDiskRequestBody
+type CreateDiskJSONRequestBody = CreateDiskRequest
 
 // RenameDiskJSONRequestBody defines body for RenameDisk for application/json ContentType.
-type RenameDiskJSONRequestBody = RenameDiskRequestBody
-
-// ResizeDiskJSONRequestBody defines body for ResizeDisk for application/json ContentType.
-type ResizeDiskJSONRequestBody = ResizeDiskRequestBody
-
-// RevertDiskJSONRequestBody defines body for RevertDisk for application/json ContentType.
-type RevertDiskJSONRequestBody = RevertDiskRequestBody
+type RenameDiskJSONRequestBody = RenameRequest
 
 // SetResourceIdlePolicyJSONRequestBody defines body for SetResourceIdlePolicy for application/json ContentType.
-type SetResourceIdlePolicyJSONRequestBody = IdlePolicy
-
-// CreateSnapshotJSONRequestBody defines body for CreateSnapshot for application/json ContentType.
-type CreateSnapshotJSONRequestBody = CreateSnapshotRequestBody
-
-// RenameSnapshotJSONRequestBody defines body for RenameSnapshot for application/json ContentType.
-type RenameSnapshotJSONRequestBody = RenameSnapshotRequestBody
+type SetResourceIdlePolicyJSONRequestBody = externalRef0.IdlePolicy
 
 // RequestEditorFn is the function signature for the RequestEditor callback function
 type RequestEditorFn func(ctx context.Context, req *http.Request) error
@@ -597,113 +402,38 @@ func WithRequestEditorFn(fn RequestEditorFn) ClientOption {
 // The interface specification for the client above.
 type ClientInterface interface {
 
-	// GetAttachment Get attachment
+	// GetAttachment Get a disk attachment
 	//
 	// Corresponds with GET /api/v1/attachments/{attachmentId} (the `GetAttachment` operationId).
-	GetAttachment(ctx context.Context, attachmentId openapi_types.UUID, reqEditors ...RequestEditorFn) (*http.Response, error)
-
-	// ListBackups List backups
-	//
-	// Corresponds with GET /api/v1/backups (the `ListBackups` operationId).
-	ListBackups(ctx context.Context, params *ListBackupsParams, reqEditors ...RequestEditorFn) (*http.Response, error)
-
-	// CreateBackupWithBody Create a backup
-	//
-	// Creates a Billing order, including for metered pricing. The price must belong to the resource’s Billing Plan; applicable contract pricing is resolved by Billing. Technical capacity is checked before sellable quota is reserved. Provisioning continues automatically after payment; do not submit a new purchase after paying. Reuse the original idempotency key after an uncertain response.
-	//
-	// Takes any type of body and a specified content type.
-	//
-	// Corresponds with POST /api/v1/backups (the `CreateBackup` operationId).
-	CreateBackupWithBody(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
-
-	// CreateBackup Create a backup
-	//
-	// Creates a Billing order, including for metered pricing. The price must belong to the resource’s Billing Plan; applicable contract pricing is resolved by Billing. Technical capacity is checked before sellable quota is reserved. Provisioning continues automatically after payment; do not submit a new purchase after paying. Reuse the original idempotency key after an uncertain response.
-	//
-	// Takes a body of the `application/json` content type.
-	//
-	// Corresponds with POST /api/v1/backups (the `CreateBackup` operationId).
-	CreateBackup(ctx context.Context, body CreateBackupJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
-
-	// DeleteBackup Delete a backup
-	//
-	// Independent of the source disk: deletion succeeds whether or not that disk still exists.
-	//
-	// Corresponds with DELETE /api/v1/backups/{backupId} (the `DeleteBackup` operationId).
-	DeleteBackup(ctx context.Context, backupId openapi_types.UUID, reqEditors ...RequestEditorFn) (*http.Response, error)
-
-	// GetBackup Retrieve a backup
-	//
-	// Queries the current state of the backup, which makes it slower but more accurate than the list endpoint. Use it to poll creation progress.
-	//
-	// Corresponds with GET /api/v1/backups/{backupId} (the `GetBackup` operationId).
-	GetBackup(ctx context.Context, backupId openapi_types.UUID, reqEditors ...RequestEditorFn) (*http.Response, error)
-
-	// RenameBackupWithBody Rename a backup
-	//
-	// Takes any type of body and a specified content type.
-	//
-	// Corresponds with PATCH /api/v1/backups/{backupId} (the `RenameBackup` operationId).
-	RenameBackupWithBody(ctx context.Context, backupId openapi_types.UUID, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
-
-	// RenameBackup Rename a backup
-	//
-	// Takes a body of the `application/json` content type.
-	//
-	// Corresponds with PATCH /api/v1/backups/{backupId} (the `RenameBackup` operationId).
-	RenameBackup(ctx context.Context, backupId openapi_types.UUID, body RenameBackupJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
-
-	// RestoreBackupWithBody Restore from a backup
-	//
-	// Creates a Billing order, including for metered pricing. The price must belong to the resource’s Billing Plan; applicable contract pricing is resolved by Billing. Technical capacity is checked before sellable quota is reserved. Provisioning continues automatically after payment; do not submit a new purchase after paying. Reuse the original idempotency key after an uncertain response.
-	//
-	// Takes any type of body and a specified content type.
-	//
-	// Corresponds with POST /api/v1/backups/{backupId}/restore (the `RestoreBackup` operationId).
-	RestoreBackupWithBody(ctx context.Context, backupId openapi_types.UUID, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
-
-	// RestoreBackup Restore from a backup
-	//
-	// Creates a Billing order, including for metered pricing. The price must belong to the resource’s Billing Plan; applicable contract pricing is resolved by Billing. Technical capacity is checked before sellable quota is reserved. Provisioning continues automatically after payment; do not submit a new purchase after paying. Reuse the original idempotency key after an uncertain response.
-	//
-	// Takes a body of the `application/json` content type.
-	//
-	// Corresponds with POST /api/v1/backups/{backupId}/restore (the `RestoreBackup` operationId).
-	RestoreBackup(ctx context.Context, backupId openapi_types.UUID, body RestoreBackupJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
+	GetAttachment(ctx context.Context, attachmentId AttachmentID, reqEditors ...RequestEditorFn) (*http.Response, error)
 
 	// ListDiskTypes List disk types on sale
-	//
-	// Only disk types currently on sale are listed. A withdrawn one disappears from here and can no longer be bought, while the disks already on it keep working and can still be resized.
 	//
 	// Corresponds with GET /api/v1/disk-types (the `ListDiskTypes` operationId).
 	ListDiskTypes(ctx context.Context, params *ListDiskTypesParams, reqEditors ...RequestEditorFn) (*http.Response, error)
 
 	// GetDiskType Get a disk type
 	//
-	// Retrieve capacity and performance constraints for an existing disk, including system disk types and types withdrawn from sale.
-	//
 	// Corresponds with GET /api/v1/disk-types/{diskTypeId} (the `GetDiskType` operationId).
-	GetDiskType(ctx context.Context, diskTypeId openapi_types.UUID, reqEditors ...RequestEditorFn) (*http.Response, error)
+	GetDiskType(ctx context.Context, diskTypeId DiskTypeID, reqEditors ...RequestEditorFn) (*http.Response, error)
 
-	// ListDisks List disks
-	//
-	// Lists disks in the current project. Use resource-usages to inspect consumers and pending reservations.
+	// ListDisks List disks in the current project
 	//
 	// Corresponds with GET /api/v1/disks (the `ListDisks` operationId).
 	ListDisks(ctx context.Context, params *ListDisksParams, reqEditors ...RequestEditorFn) (*http.Response, error)
 
-	// CreateDiskWithBody Create a disk
+	// CreateDiskWithBody Create a disk purchase
 	//
-	// Creates a Billing order, including for metered pricing. The price must belong to the resource’s Billing Plan; applicable contract pricing is resolved by Billing. Technical capacity is checked before sellable quota is reserved. Provisioning continues automatically after payment; do not submit a new purchase after paying. Reuse the original idempotency key after an uncertain response.
+	// Checks Fleet capacity, creates the local disk intent, and places a Billing order. Reuse the same idempotency key after an uncertain response. Billing resolves contract pricing, sellable quota, grants, payment challenges, and expiry.
 	//
 	// Takes any type of body and a specified content type.
 	//
 	// Corresponds with POST /api/v1/disks (the `CreateDisk` operationId).
 	CreateDiskWithBody(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
 
-	// CreateDisk Create a disk
+	// CreateDisk Create a disk purchase
 	//
-	// Creates a Billing order, including for metered pricing. The price must belong to the resource’s Billing Plan; applicable contract pricing is resolved by Billing. Technical capacity is checked before sellable quota is reserved. Provisioning continues automatically after payment; do not submit a new purchase after paying. Reuse the original idempotency key after an uncertain response.
+	// Checks Fleet capacity, creates the local disk intent, and places a Billing order. Reuse the same idempotency key after an uncertain response. Billing resolves contract pricing, sellable quota, grants, payment challenges, and expiry.
 	//
 	// Takes a body of the `application/json` content type.
 	//
@@ -712,185 +442,75 @@ type ClientInterface interface {
 
 	// DeleteDisk Delete a disk
 	//
-	// Deletion is rejected while the disk is attached, or while snapshots created from it still exist.
+	// Deletion is asynchronous and is rejected while the disk has a live attachment or another live resource claim. Billing ends resource-bound subscriptions only after Cinder confirms deletion.
 	//
 	// Corresponds with DELETE /api/v1/disks/{diskId} (the `DeleteDisk` operationId).
-	DeleteDisk(ctx context.Context, diskId openapi_types.UUID, reqEditors ...RequestEditorFn) (*http.Response, error)
+	DeleteDisk(ctx context.Context, diskId DiskID, params *DeleteDiskParams, reqEditors ...RequestEditorFn) (*http.Response, error)
 
-	// GetDisk Retrieve a disk
-	//
-	// Returns the disk and its observed state. Read its attachments for consumers, device names and pending attachment operations.
+	// GetDisk Get a disk
 	//
 	// Corresponds with GET /api/v1/disks/{diskId} (the `GetDisk` operationId).
-	GetDisk(ctx context.Context, diskId openapi_types.UUID, reqEditors ...RequestEditorFn) (*http.Response, error)
+	GetDisk(ctx context.Context, diskId DiskID, reqEditors ...RequestEditorFn) (*http.Response, error)
 
 	// RenameDiskWithBody Rename a disk
 	//
-	// Changes the name only. Use the resize endpoint for capacity; type and availability zone are immutable.
-	//
 	// Takes any type of body and a specified content type.
 	//
 	// Corresponds with PATCH /api/v1/disks/{diskId} (the `RenameDisk` operationId).
-	RenameDiskWithBody(ctx context.Context, diskId openapi_types.UUID, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
+	RenameDiskWithBody(ctx context.Context, diskId DiskID, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
 
 	// RenameDisk Rename a disk
 	//
-	// Changes the name only. Use the resize endpoint for capacity; type and availability zone are immutable.
-	//
 	// Takes a body of the `application/json` content type.
 	//
 	// Corresponds with PATCH /api/v1/disks/{diskId} (the `RenameDisk` operationId).
-	RenameDisk(ctx context.Context, diskId openapi_types.UUID, body RenameDiskJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
-
-	// ResizeDiskWithBody Resize a disk
-	//
-	// Creates a Billing order, including for metered pricing. The price must belong to the resource’s Billing Plan; applicable contract pricing is resolved by Billing. Technical capacity is checked before sellable quota is reserved. Provisioning continues automatically after payment; do not submit a new purchase after paying. Reuse the original idempotency key after an uncertain response.
-	//
-	// Takes any type of body and a specified content type.
-	//
-	// Corresponds with POST /api/v1/disks/{diskId}/resize (the `ResizeDisk` operationId).
-	ResizeDiskWithBody(ctx context.Context, diskId openapi_types.UUID, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
-
-	// ResizeDisk Resize a disk
-	//
-	// Creates a Billing order, including for metered pricing. The price must belong to the resource’s Billing Plan; applicable contract pricing is resolved by Billing. Technical capacity is checked before sellable quota is reserved. Provisioning continues automatically after payment; do not submit a new purchase after paying. Reuse the original idempotency key after an uncertain response.
-	//
-	// Takes a body of the `application/json` content type.
-	//
-	// Corresponds with POST /api/v1/disks/{diskId}/resize (the `ResizeDisk` operationId).
-	ResizeDisk(ctx context.Context, diskId openapi_types.UUID, body ResizeDiskJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
-
-	// RevertDiskWithBody Revert to a snapshot
-	//
-	// Restores the contents of the disk to the moment the snapshot was taken. **All data written after that moment is lost and cannot be recovered.**
-	//
-	// Three restrictions apply: only the most recent snapshot of the disk can be reverted to; the disk must be detached from its instance first; and a disk resized since the snapshot was taken cannot be reverted. To return to an earlier point in time, or to keep the existing disk, create a new disk from the snapshot instead.
-	//
-	// The revert is not complete when this endpoint returns; poll the retrieve endpoint.
-	//
-	// Takes any type of body and a specified content type.
-	//
-	// Corresponds with POST /api/v1/disks/{diskId}/revert (the `RevertDisk` operationId).
-	RevertDiskWithBody(ctx context.Context, diskId openapi_types.UUID, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
-
-	// RevertDisk Revert to a snapshot
-	//
-	// Restores the contents of the disk to the moment the snapshot was taken. **All data written after that moment is lost and cannot be recovered.**
-	//
-	// Three restrictions apply: only the most recent snapshot of the disk can be reverted to; the disk must be detached from its instance first; and a disk resized since the snapshot was taken cannot be reverted. To return to an earlier point in time, or to keep the existing disk, create a new disk from the snapshot instead.
-	//
-	// The revert is not complete when this endpoint returns; poll the retrieve endpoint.
-	//
-	// Takes a body of the `application/json` content type.
-	//
-	// Corresponds with POST /api/v1/disks/{diskId}/revert (the `RevertDisk` operationId).
-	RevertDisk(ctx context.Context, diskId openapi_types.UUID, body RevertDiskJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
+	RenameDisk(ctx context.Context, diskId DiskID, body RenameDiskJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
 
 	// ListDiskAttachments List disk attachments
 	//
-	// Actual attachment state, including operations whose provider outcome is unknown. Use usage_id to locate the corresponding blocking claim.
-	//
-	// Corresponds with GET /api/v1/disks/{resourceId}/attachments (the `ListDiskAttachments` operationId).
-	ListDiskAttachments(ctx context.Context, resourceId openapi_types.UUID, params *ListDiskAttachmentsParams, reqEditors ...RequestEditorFn) (*http.Response, error)
-
-	// ListOperationLogs List the operation log of the project
-	//
-	// Records every write operation in the project: who performed it, when, on what, and whether it succeeded. Read operations are not recorded.
-	//
-	// **Operations performed by the platform are included, but the individual operator is not disclosed** and `by_platform` is true. Suspension for non-payment and bans for abuse are examples: the time at which an instance was stopped by the platform is needed, whereas the operator is internal information.
-	//
-	// Fields such as passwords are replaced with a placeholder as the record is written and never appear in `payload`.
-	//
-	// Corresponds with GET /api/v1/operation-logs (the `ListOperationLogs` operationId).
-	ListOperationLogs(ctx context.Context, params *ListOperationLogsParams, reqEditors ...RequestEditorFn) (*http.Response, error)
+	// Corresponds with GET /api/v1/disks/{diskId}/attachments (the `ListDiskAttachments` operationId).
+	ListDiskAttachments(ctx context.Context, diskId DiskID, params *ListDiskAttachmentsParams, reqEditors ...RequestEditorFn) (*http.Response, error)
 
 	// ListResourceUsages List resource usages
 	//
-	// Lists direct consumers, including pending reservations and claims being released. The resource must be readable by the caller. Historical released claims are included only when requested.
+	// Lists direct consumers and pending reservations for a resource readable in the current project.
 	//
 	// Corresponds with GET /api/v1/resource-usages (the `ListResourceUsages` operationId).
 	ListResourceUsages(ctx context.Context, params *ListResourceUsagesParams, reqEditors ...RequestEditorFn) (*http.Response, error)
 
-	// GetResourceUsage Get resource usage
+	// GetResourceUsage Get a resource usage
 	//
 	// Corresponds with GET /api/v1/resource-usages/{usageId} (the `GetResourceUsage` operationId).
-	GetResourceUsage(ctx context.Context, usageId openapi_types.UUID, reqEditors ...RequestEditorFn) (*http.Response, error)
+	GetResourceUsage(ctx context.Context, usageId UsageID, reqEditors ...RequestEditorFn) (*http.Response, error)
 
 	// SetResourceIdlePolicyWithBody Set resource idle policy
 	//
-	// Requires permission to delete this resource. Enabling schedules reclamation only after the resource is continuously unreferenced for the requested retention. Existing claims, attachments and unfinished operations always prevent reclamation.
+	// Enabling automatic cleanup starts a fresh retention interval after the last live claim is released. Existing claims and pending operations always block reclamation.
 	//
 	// Takes any type of body and a specified content type.
 	//
 	// Corresponds with PUT /api/v1/resources/{resourceType}/{resourceId}/idle-policy (the `SetResourceIdlePolicy` operationId).
-	SetResourceIdlePolicyWithBody(ctx context.Context, resourceType string, resourceId openapi_types.UUID, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
+	SetResourceIdlePolicyWithBody(ctx context.Context, resourceType SetResourceIdlePolicyParamsResourceType, resourceId ResourceIDPath, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
 
 	// SetResourceIdlePolicy Set resource idle policy
 	//
-	// Requires permission to delete this resource. Enabling schedules reclamation only after the resource is continuously unreferenced for the requested retention. Existing claims, attachments and unfinished operations always prevent reclamation.
+	// Enabling automatic cleanup starts a fresh retention interval after the last live claim is released. Existing claims and pending operations always block reclamation.
 	//
 	// Takes a body of the `application/json` content type.
 	//
 	// Corresponds with PUT /api/v1/resources/{resourceType}/{resourceId}/idle-policy (the `SetResourceIdlePolicy` operationId).
-	SetResourceIdlePolicy(ctx context.Context, resourceType string, resourceId openapi_types.UUID, body SetResourceIdlePolicyJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
+	SetResourceIdlePolicy(ctx context.Context, resourceType SetResourceIdlePolicyParamsResourceType, resourceId ResourceIDPath, body SetResourceIdlePolicyJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
 
-	// GetResourceReclamation Get resource reclamation
+	// GetResourceReclamation Get resource reclamation state
 	//
 	// Corresponds with GET /api/v1/resources/{resourceType}/{resourceId}/reclamation (the `GetResourceReclamation` operationId).
-	GetResourceReclamation(ctx context.Context, resourceType string, resourceId openapi_types.UUID, reqEditors ...RequestEditorFn) (*http.Response, error)
-
-	// ListSnapshots List snapshots
-	//
-	// Corresponds with GET /api/v1/snapshots (the `ListSnapshots` operationId).
-	ListSnapshots(ctx context.Context, params *ListSnapshotsParams, reqEditors ...RequestEditorFn) (*http.Response, error)
-
-	// CreateSnapshotWithBody Create a snapshot
-	//
-	// Creates a Billing order, including for metered pricing. The price must belong to the resource’s Billing Plan; applicable contract pricing is resolved by Billing. Technical capacity is checked before sellable quota is reserved. Provisioning continues automatically after payment; do not submit a new purchase after paying. Reuse the original idempotency key after an uncertain response.
-	//
-	// Takes any type of body and a specified content type.
-	//
-	// Corresponds with POST /api/v1/snapshots (the `CreateSnapshot` operationId).
-	CreateSnapshotWithBody(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
-
-	// CreateSnapshot Create a snapshot
-	//
-	// Creates a Billing order, including for metered pricing. The price must belong to the resource’s Billing Plan; applicable contract pricing is resolved by Billing. Technical capacity is checked before sellable quota is reserved. Provisioning continues automatically after payment; do not submit a new purchase after paying. Reuse the original idempotency key after an uncertain response.
-	//
-	// Takes a body of the `application/json` content type.
-	//
-	// Corresponds with POST /api/v1/snapshots (the `CreateSnapshot` operationId).
-	CreateSnapshot(ctx context.Context, body CreateSnapshotJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
-
-	// DeleteSnapshot Delete a snapshot
-	//
-	// Corresponds with DELETE /api/v1/snapshots/{snapshotId} (the `DeleteSnapshot` operationId).
-	DeleteSnapshot(ctx context.Context, snapshotId openapi_types.UUID, reqEditors ...RequestEditorFn) (*http.Response, error)
-
-	// GetSnapshot Retrieve a snapshot
-	//
-	// Corresponds with GET /api/v1/snapshots/{snapshotId} (the `GetSnapshot` operationId).
-	GetSnapshot(ctx context.Context, snapshotId openapi_types.UUID, reqEditors ...RequestEditorFn) (*http.Response, error)
-
-	// RenameSnapshotWithBody Rename a snapshot
-	//
-	// Takes any type of body and a specified content type.
-	//
-	// Corresponds with PATCH /api/v1/snapshots/{snapshotId} (the `RenameSnapshot` operationId).
-	RenameSnapshotWithBody(ctx context.Context, snapshotId openapi_types.UUID, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
-
-	// RenameSnapshot Rename a snapshot
-	//
-	// Takes a body of the `application/json` content type.
-	//
-	// Corresponds with PATCH /api/v1/snapshots/{snapshotId} (the `RenameSnapshot` operationId).
-	RenameSnapshot(ctx context.Context, snapshotId openapi_types.UUID, body RenameSnapshotJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
+	GetResourceReclamation(ctx context.Context, resourceType GetResourceReclamationParamsResourceType, resourceId ResourceIDPath, reqEditors ...RequestEditorFn) (*http.Response, error)
 }
 
-// GetAttachment Get attachment
+// GetAttachment Get a disk attachment
 //
 // Corresponds with GET /api/v1/attachments/{attachmentId} (the `GetAttachment` operationId).
-func (c *Client) GetAttachment(ctx context.Context, attachmentId openapi_types.UUID, reqEditors ...RequestEditorFn) (*http.Response, error) {
+func (c *Client) GetAttachment(ctx context.Context, attachmentId AttachmentID, reqEditors ...RequestEditorFn) (*http.Response, error) {
 	req, err := NewGetAttachmentRequest(c.Server, attachmentId)
 	if err != nil {
 		return nil, err
@@ -902,168 +522,7 @@ func (c *Client) GetAttachment(ctx context.Context, attachmentId openapi_types.U
 	return c.Client.Do(req)
 }
 
-// ListBackups List backups
-//
-// Corresponds with GET /api/v1/backups (the `ListBackups` operationId).
-func (c *Client) ListBackups(ctx context.Context, params *ListBackupsParams, reqEditors ...RequestEditorFn) (*http.Response, error) {
-	req, err := NewListBackupsRequest(c.Server, params)
-	if err != nil {
-		return nil, err
-	}
-	req = req.WithContext(ctx)
-	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
-		return nil, err
-	}
-	return c.Client.Do(req)
-}
-
-// CreateBackupWithBody Create a backup
-//
-// Creates a Billing order, including for metered pricing. The price must belong to the resource’s Billing Plan; applicable contract pricing is resolved by Billing. Technical capacity is checked before sellable quota is reserved. Provisioning continues automatically after payment; do not submit a new purchase after paying. Reuse the original idempotency key after an uncertain response.
-//
-// Takes any type of body and a specified content type.
-//
-// Corresponds with POST /api/v1/backups (the `CreateBackup` operationId).
-func (c *Client) CreateBackupWithBody(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
-	req, err := NewCreateBackupRequestWithBody(c.Server, contentType, body)
-	if err != nil {
-		return nil, err
-	}
-	req = req.WithContext(ctx)
-	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
-		return nil, err
-	}
-	return c.Client.Do(req)
-}
-
-// CreateBackup Create a backup
-//
-// Creates a Billing order, including for metered pricing. The price must belong to the resource’s Billing Plan; applicable contract pricing is resolved by Billing. Technical capacity is checked before sellable quota is reserved. Provisioning continues automatically after payment; do not submit a new purchase after paying. Reuse the original idempotency key after an uncertain response.
-//
-// Takes a body of the `application/json` content type.
-//
-// Corresponds with POST /api/v1/backups (the `CreateBackup` operationId).
-func (c *Client) CreateBackup(ctx context.Context, body CreateBackupJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
-	req, err := NewCreateBackupRequest(c.Server, body)
-	if err != nil {
-		return nil, err
-	}
-	req = req.WithContext(ctx)
-	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
-		return nil, err
-	}
-	return c.Client.Do(req)
-}
-
-// DeleteBackup Delete a backup
-//
-// Independent of the source disk: deletion succeeds whether or not that disk still exists.
-//
-// Corresponds with DELETE /api/v1/backups/{backupId} (the `DeleteBackup` operationId).
-func (c *Client) DeleteBackup(ctx context.Context, backupId openapi_types.UUID, reqEditors ...RequestEditorFn) (*http.Response, error) {
-	req, err := NewDeleteBackupRequest(c.Server, backupId)
-	if err != nil {
-		return nil, err
-	}
-	req = req.WithContext(ctx)
-	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
-		return nil, err
-	}
-	return c.Client.Do(req)
-}
-
-// GetBackup Retrieve a backup
-//
-// Queries the current state of the backup, which makes it slower but more accurate than the list endpoint. Use it to poll creation progress.
-//
-// Corresponds with GET /api/v1/backups/{backupId} (the `GetBackup` operationId).
-func (c *Client) GetBackup(ctx context.Context, backupId openapi_types.UUID, reqEditors ...RequestEditorFn) (*http.Response, error) {
-	req, err := NewGetBackupRequest(c.Server, backupId)
-	if err != nil {
-		return nil, err
-	}
-	req = req.WithContext(ctx)
-	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
-		return nil, err
-	}
-	return c.Client.Do(req)
-}
-
-// RenameBackupWithBody Rename a backup
-//
-// Takes any type of body and a specified content type.
-//
-// Corresponds with PATCH /api/v1/backups/{backupId} (the `RenameBackup` operationId).
-func (c *Client) RenameBackupWithBody(ctx context.Context, backupId openapi_types.UUID, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
-	req, err := NewRenameBackupRequestWithBody(c.Server, backupId, contentType, body)
-	if err != nil {
-		return nil, err
-	}
-	req = req.WithContext(ctx)
-	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
-		return nil, err
-	}
-	return c.Client.Do(req)
-}
-
-// RenameBackup Rename a backup
-//
-// Takes a body of the `application/json` content type.
-//
-// Corresponds with PATCH /api/v1/backups/{backupId} (the `RenameBackup` operationId).
-func (c *Client) RenameBackup(ctx context.Context, backupId openapi_types.UUID, body RenameBackupJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
-	req, err := NewRenameBackupRequest(c.Server, backupId, body)
-	if err != nil {
-		return nil, err
-	}
-	req = req.WithContext(ctx)
-	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
-		return nil, err
-	}
-	return c.Client.Do(req)
-}
-
-// RestoreBackupWithBody Restore from a backup
-//
-// Creates a Billing order, including for metered pricing. The price must belong to the resource’s Billing Plan; applicable contract pricing is resolved by Billing. Technical capacity is checked before sellable quota is reserved. Provisioning continues automatically after payment; do not submit a new purchase after paying. Reuse the original idempotency key after an uncertain response.
-//
-// Takes any type of body and a specified content type.
-//
-// Corresponds with POST /api/v1/backups/{backupId}/restore (the `RestoreBackup` operationId).
-func (c *Client) RestoreBackupWithBody(ctx context.Context, backupId openapi_types.UUID, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
-	req, err := NewRestoreBackupRequestWithBody(c.Server, backupId, contentType, body)
-	if err != nil {
-		return nil, err
-	}
-	req = req.WithContext(ctx)
-	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
-		return nil, err
-	}
-	return c.Client.Do(req)
-}
-
-// RestoreBackup Restore from a backup
-//
-// Creates a Billing order, including for metered pricing. The price must belong to the resource’s Billing Plan; applicable contract pricing is resolved by Billing. Technical capacity is checked before sellable quota is reserved. Provisioning continues automatically after payment; do not submit a new purchase after paying. Reuse the original idempotency key after an uncertain response.
-//
-// Takes a body of the `application/json` content type.
-//
-// Corresponds with POST /api/v1/backups/{backupId}/restore (the `RestoreBackup` operationId).
-func (c *Client) RestoreBackup(ctx context.Context, backupId openapi_types.UUID, body RestoreBackupJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
-	req, err := NewRestoreBackupRequest(c.Server, backupId, body)
-	if err != nil {
-		return nil, err
-	}
-	req = req.WithContext(ctx)
-	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
-		return nil, err
-	}
-	return c.Client.Do(req)
-}
-
 // ListDiskTypes List disk types on sale
-//
-// Only disk types currently on sale are listed. A withdrawn one disappears from here and can no longer be bought, while the disks already on it keep working and can still be resized.
 //
 // Corresponds with GET /api/v1/disk-types (the `ListDiskTypes` operationId).
 func (c *Client) ListDiskTypes(ctx context.Context, params *ListDiskTypesParams, reqEditors ...RequestEditorFn) (*http.Response, error) {
@@ -1080,10 +539,8 @@ func (c *Client) ListDiskTypes(ctx context.Context, params *ListDiskTypesParams,
 
 // GetDiskType Get a disk type
 //
-// Retrieve capacity and performance constraints for an existing disk, including system disk types and types withdrawn from sale.
-//
 // Corresponds with GET /api/v1/disk-types/{diskTypeId} (the `GetDiskType` operationId).
-func (c *Client) GetDiskType(ctx context.Context, diskTypeId openapi_types.UUID, reqEditors ...RequestEditorFn) (*http.Response, error) {
+func (c *Client) GetDiskType(ctx context.Context, diskTypeId DiskTypeID, reqEditors ...RequestEditorFn) (*http.Response, error) {
 	req, err := NewGetDiskTypeRequest(c.Server, diskTypeId)
 	if err != nil {
 		return nil, err
@@ -1095,9 +552,7 @@ func (c *Client) GetDiskType(ctx context.Context, diskTypeId openapi_types.UUID,
 	return c.Client.Do(req)
 }
 
-// ListDisks List disks
-//
-// Lists disks in the current project. Use resource-usages to inspect consumers and pending reservations.
+// ListDisks List disks in the current project
 //
 // Corresponds with GET /api/v1/disks (the `ListDisks` operationId).
 func (c *Client) ListDisks(ctx context.Context, params *ListDisksParams, reqEditors ...RequestEditorFn) (*http.Response, error) {
@@ -1112,9 +567,9 @@ func (c *Client) ListDisks(ctx context.Context, params *ListDisksParams, reqEdit
 	return c.Client.Do(req)
 }
 
-// CreateDiskWithBody Create a disk
+// CreateDiskWithBody Create a disk purchase
 //
-// Creates a Billing order, including for metered pricing. The price must belong to the resource’s Billing Plan; applicable contract pricing is resolved by Billing. Technical capacity is checked before sellable quota is reserved. Provisioning continues automatically after payment; do not submit a new purchase after paying. Reuse the original idempotency key after an uncertain response.
+// Checks Fleet capacity, creates the local disk intent, and places a Billing order. Reuse the same idempotency key after an uncertain response. Billing resolves contract pricing, sellable quota, grants, payment challenges, and expiry.
 //
 // Takes any type of body and a specified content type.
 //
@@ -1131,9 +586,9 @@ func (c *Client) CreateDiskWithBody(ctx context.Context, contentType string, bod
 	return c.Client.Do(req)
 }
 
-// CreateDisk Create a disk
+// CreateDisk Create a disk purchase
 //
-// Creates a Billing order, including for metered pricing. The price must belong to the resource’s Billing Plan; applicable contract pricing is resolved by Billing. Technical capacity is checked before sellable quota is reserved. Provisioning continues automatically after payment; do not submit a new purchase after paying. Reuse the original idempotency key after an uncertain response.
+// Checks Fleet capacity, creates the local disk intent, and places a Billing order. Reuse the same idempotency key after an uncertain response. Billing resolves contract pricing, sellable quota, grants, payment challenges, and expiry.
 //
 // Takes a body of the `application/json` content type.
 //
@@ -1152,11 +607,11 @@ func (c *Client) CreateDisk(ctx context.Context, body CreateDiskJSONRequestBody,
 
 // DeleteDisk Delete a disk
 //
-// Deletion is rejected while the disk is attached, or while snapshots created from it still exist.
+// Deletion is asynchronous and is rejected while the disk has a live attachment or another live resource claim. Billing ends resource-bound subscriptions only after Cinder confirms deletion.
 //
 // Corresponds with DELETE /api/v1/disks/{diskId} (the `DeleteDisk` operationId).
-func (c *Client) DeleteDisk(ctx context.Context, diskId openapi_types.UUID, reqEditors ...RequestEditorFn) (*http.Response, error) {
-	req, err := NewDeleteDiskRequest(c.Server, diskId)
+func (c *Client) DeleteDisk(ctx context.Context, diskId DiskID, params *DeleteDiskParams, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewDeleteDiskRequest(c.Server, diskId, params)
 	if err != nil {
 		return nil, err
 	}
@@ -1167,12 +622,10 @@ func (c *Client) DeleteDisk(ctx context.Context, diskId openapi_types.UUID, reqE
 	return c.Client.Do(req)
 }
 
-// GetDisk Retrieve a disk
-//
-// Returns the disk and its observed state. Read its attachments for consumers, device names and pending attachment operations.
+// GetDisk Get a disk
 //
 // Corresponds with GET /api/v1/disks/{diskId} (the `GetDisk` operationId).
-func (c *Client) GetDisk(ctx context.Context, diskId openapi_types.UUID, reqEditors ...RequestEditorFn) (*http.Response, error) {
+func (c *Client) GetDisk(ctx context.Context, diskId DiskID, reqEditors ...RequestEditorFn) (*http.Response, error) {
 	req, err := NewGetDiskRequest(c.Server, diskId)
 	if err != nil {
 		return nil, err
@@ -1186,12 +639,10 @@ func (c *Client) GetDisk(ctx context.Context, diskId openapi_types.UUID, reqEdit
 
 // RenameDiskWithBody Rename a disk
 //
-// Changes the name only. Use the resize endpoint for capacity; type and availability zone are immutable.
-//
 // Takes any type of body and a specified content type.
 //
 // Corresponds with PATCH /api/v1/disks/{diskId} (the `RenameDisk` operationId).
-func (c *Client) RenameDiskWithBody(ctx context.Context, diskId openapi_types.UUID, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
+func (c *Client) RenameDiskWithBody(ctx context.Context, diskId DiskID, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
 	req, err := NewRenameDiskRequestWithBody(c.Server, diskId, contentType, body)
 	if err != nil {
 		return nil, err
@@ -1205,97 +656,11 @@ func (c *Client) RenameDiskWithBody(ctx context.Context, diskId openapi_types.UU
 
 // RenameDisk Rename a disk
 //
-// Changes the name only. Use the resize endpoint for capacity; type and availability zone are immutable.
-//
 // Takes a body of the `application/json` content type.
 //
 // Corresponds with PATCH /api/v1/disks/{diskId} (the `RenameDisk` operationId).
-func (c *Client) RenameDisk(ctx context.Context, diskId openapi_types.UUID, body RenameDiskJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
+func (c *Client) RenameDisk(ctx context.Context, diskId DiskID, body RenameDiskJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
 	req, err := NewRenameDiskRequest(c.Server, diskId, body)
-	if err != nil {
-		return nil, err
-	}
-	req = req.WithContext(ctx)
-	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
-		return nil, err
-	}
-	return c.Client.Do(req)
-}
-
-// ResizeDiskWithBody Resize a disk
-//
-// Creates a Billing order, including for metered pricing. The price must belong to the resource’s Billing Plan; applicable contract pricing is resolved by Billing. Technical capacity is checked before sellable quota is reserved. Provisioning continues automatically after payment; do not submit a new purchase after paying. Reuse the original idempotency key after an uncertain response.
-//
-// Takes any type of body and a specified content type.
-//
-// Corresponds with POST /api/v1/disks/{diskId}/resize (the `ResizeDisk` operationId).
-func (c *Client) ResizeDiskWithBody(ctx context.Context, diskId openapi_types.UUID, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
-	req, err := NewResizeDiskRequestWithBody(c.Server, diskId, contentType, body)
-	if err != nil {
-		return nil, err
-	}
-	req = req.WithContext(ctx)
-	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
-		return nil, err
-	}
-	return c.Client.Do(req)
-}
-
-// ResizeDisk Resize a disk
-//
-// Creates a Billing order, including for metered pricing. The price must belong to the resource’s Billing Plan; applicable contract pricing is resolved by Billing. Technical capacity is checked before sellable quota is reserved. Provisioning continues automatically after payment; do not submit a new purchase after paying. Reuse the original idempotency key after an uncertain response.
-//
-// Takes a body of the `application/json` content type.
-//
-// Corresponds with POST /api/v1/disks/{diskId}/resize (the `ResizeDisk` operationId).
-func (c *Client) ResizeDisk(ctx context.Context, diskId openapi_types.UUID, body ResizeDiskJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
-	req, err := NewResizeDiskRequest(c.Server, diskId, body)
-	if err != nil {
-		return nil, err
-	}
-	req = req.WithContext(ctx)
-	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
-		return nil, err
-	}
-	return c.Client.Do(req)
-}
-
-// RevertDiskWithBody Revert to a snapshot
-//
-// Restores the contents of the disk to the moment the snapshot was taken. **All data written after that moment is lost and cannot be recovered.**
-//
-// Three restrictions apply: only the most recent snapshot of the disk can be reverted to; the disk must be detached from its instance first; and a disk resized since the snapshot was taken cannot be reverted. To return to an earlier point in time, or to keep the existing disk, create a new disk from the snapshot instead.
-//
-// The revert is not complete when this endpoint returns; poll the retrieve endpoint.
-//
-// Takes any type of body and a specified content type.
-//
-// Corresponds with POST /api/v1/disks/{diskId}/revert (the `RevertDisk` operationId).
-func (c *Client) RevertDiskWithBody(ctx context.Context, diskId openapi_types.UUID, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
-	req, err := NewRevertDiskRequestWithBody(c.Server, diskId, contentType, body)
-	if err != nil {
-		return nil, err
-	}
-	req = req.WithContext(ctx)
-	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
-		return nil, err
-	}
-	return c.Client.Do(req)
-}
-
-// RevertDisk Revert to a snapshot
-//
-// Restores the contents of the disk to the moment the snapshot was taken. **All data written after that moment is lost and cannot be recovered.**
-//
-// Three restrictions apply: only the most recent snapshot of the disk can be reverted to; the disk must be detached from its instance first; and a disk resized since the snapshot was taken cannot be reverted. To return to an earlier point in time, or to keep the existing disk, create a new disk from the snapshot instead.
-//
-// The revert is not complete when this endpoint returns; poll the retrieve endpoint.
-//
-// Takes a body of the `application/json` content type.
-//
-// Corresponds with POST /api/v1/disks/{diskId}/revert (the `RevertDisk` operationId).
-func (c *Client) RevertDisk(ctx context.Context, diskId openapi_types.UUID, body RevertDiskJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
-	req, err := NewRevertDiskRequest(c.Server, diskId, body)
 	if err != nil {
 		return nil, err
 	}
@@ -1308,32 +673,9 @@ func (c *Client) RevertDisk(ctx context.Context, diskId openapi_types.UUID, body
 
 // ListDiskAttachments List disk attachments
 //
-// Actual attachment state, including operations whose provider outcome is unknown. Use usage_id to locate the corresponding blocking claim.
-//
-// Corresponds with GET /api/v1/disks/{resourceId}/attachments (the `ListDiskAttachments` operationId).
-func (c *Client) ListDiskAttachments(ctx context.Context, resourceId openapi_types.UUID, params *ListDiskAttachmentsParams, reqEditors ...RequestEditorFn) (*http.Response, error) {
-	req, err := NewListDiskAttachmentsRequest(c.Server, resourceId, params)
-	if err != nil {
-		return nil, err
-	}
-	req = req.WithContext(ctx)
-	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
-		return nil, err
-	}
-	return c.Client.Do(req)
-}
-
-// ListOperationLogs List the operation log of the project
-//
-// Records every write operation in the project: who performed it, when, on what, and whether it succeeded. Read operations are not recorded.
-//
-// **Operations performed by the platform are included, but the individual operator is not disclosed** and `by_platform` is true. Suspension for non-payment and bans for abuse are examples: the time at which an instance was stopped by the platform is needed, whereas the operator is internal information.
-//
-// Fields such as passwords are replaced with a placeholder as the record is written and never appear in `payload`.
-//
-// Corresponds with GET /api/v1/operation-logs (the `ListOperationLogs` operationId).
-func (c *Client) ListOperationLogs(ctx context.Context, params *ListOperationLogsParams, reqEditors ...RequestEditorFn) (*http.Response, error) {
-	req, err := NewListOperationLogsRequest(c.Server, params)
+// Corresponds with GET /api/v1/disks/{diskId}/attachments (the `ListDiskAttachments` operationId).
+func (c *Client) ListDiskAttachments(ctx context.Context, diskId DiskID, params *ListDiskAttachmentsParams, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewListDiskAttachmentsRequest(c.Server, diskId, params)
 	if err != nil {
 		return nil, err
 	}
@@ -1346,7 +688,7 @@ func (c *Client) ListOperationLogs(ctx context.Context, params *ListOperationLog
 
 // ListResourceUsages List resource usages
 //
-// Lists direct consumers, including pending reservations and claims being released. The resource must be readable by the caller. Historical released claims are included only when requested.
+// Lists direct consumers and pending reservations for a resource readable in the current project.
 //
 // Corresponds with GET /api/v1/resource-usages (the `ListResourceUsages` operationId).
 func (c *Client) ListResourceUsages(ctx context.Context, params *ListResourceUsagesParams, reqEditors ...RequestEditorFn) (*http.Response, error) {
@@ -1361,10 +703,10 @@ func (c *Client) ListResourceUsages(ctx context.Context, params *ListResourceUsa
 	return c.Client.Do(req)
 }
 
-// GetResourceUsage Get resource usage
+// GetResourceUsage Get a resource usage
 //
 // Corresponds with GET /api/v1/resource-usages/{usageId} (the `GetResourceUsage` operationId).
-func (c *Client) GetResourceUsage(ctx context.Context, usageId openapi_types.UUID, reqEditors ...RequestEditorFn) (*http.Response, error) {
+func (c *Client) GetResourceUsage(ctx context.Context, usageId UsageID, reqEditors ...RequestEditorFn) (*http.Response, error) {
 	req, err := NewGetResourceUsageRequest(c.Server, usageId)
 	if err != nil {
 		return nil, err
@@ -1378,12 +720,12 @@ func (c *Client) GetResourceUsage(ctx context.Context, usageId openapi_types.UUI
 
 // SetResourceIdlePolicyWithBody Set resource idle policy
 //
-// Requires permission to delete this resource. Enabling schedules reclamation only after the resource is continuously unreferenced for the requested retention. Existing claims, attachments and unfinished operations always prevent reclamation.
+// Enabling automatic cleanup starts a fresh retention interval after the last live claim is released. Existing claims and pending operations always block reclamation.
 //
 // Takes any type of body and a specified content type.
 //
 // Corresponds with PUT /api/v1/resources/{resourceType}/{resourceId}/idle-policy (the `SetResourceIdlePolicy` operationId).
-func (c *Client) SetResourceIdlePolicyWithBody(ctx context.Context, resourceType string, resourceId openapi_types.UUID, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
+func (c *Client) SetResourceIdlePolicyWithBody(ctx context.Context, resourceType SetResourceIdlePolicyParamsResourceType, resourceId ResourceIDPath, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
 	req, err := NewSetResourceIdlePolicyRequestWithBody(c.Server, resourceType, resourceId, contentType, body)
 	if err != nil {
 		return nil, err
@@ -1397,12 +739,12 @@ func (c *Client) SetResourceIdlePolicyWithBody(ctx context.Context, resourceType
 
 // SetResourceIdlePolicy Set resource idle policy
 //
-// Requires permission to delete this resource. Enabling schedules reclamation only after the resource is continuously unreferenced for the requested retention. Existing claims, attachments and unfinished operations always prevent reclamation.
+// Enabling automatic cleanup starts a fresh retention interval after the last live claim is released. Existing claims and pending operations always block reclamation.
 //
 // Takes a body of the `application/json` content type.
 //
 // Corresponds with PUT /api/v1/resources/{resourceType}/{resourceId}/idle-policy (the `SetResourceIdlePolicy` operationId).
-func (c *Client) SetResourceIdlePolicy(ctx context.Context, resourceType string, resourceId openapi_types.UUID, body SetResourceIdlePolicyJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
+func (c *Client) SetResourceIdlePolicy(ctx context.Context, resourceType SetResourceIdlePolicyParamsResourceType, resourceId ResourceIDPath, body SetResourceIdlePolicyJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
 	req, err := NewSetResourceIdlePolicyRequest(c.Server, resourceType, resourceId, body)
 	if err != nil {
 		return nil, err
@@ -1414,10 +756,10 @@ func (c *Client) SetResourceIdlePolicy(ctx context.Context, resourceType string,
 	return c.Client.Do(req)
 }
 
-// GetResourceReclamation Get resource reclamation
+// GetResourceReclamation Get resource reclamation state
 //
 // Corresponds with GET /api/v1/resources/{resourceType}/{resourceId}/reclamation (the `GetResourceReclamation` operationId).
-func (c *Client) GetResourceReclamation(ctx context.Context, resourceType string, resourceId openapi_types.UUID, reqEditors ...RequestEditorFn) (*http.Response, error) {
+func (c *Client) GetResourceReclamation(ctx context.Context, resourceType GetResourceReclamationParamsResourceType, resourceId ResourceIDPath, reqEditors ...RequestEditorFn) (*http.Response, error) {
 	req, err := NewGetResourceReclamationRequest(c.Server, resourceType, resourceId)
 	if err != nil {
 		return nil, err
@@ -1429,125 +771,8 @@ func (c *Client) GetResourceReclamation(ctx context.Context, resourceType string
 	return c.Client.Do(req)
 }
 
-// ListSnapshots List snapshots
-//
-// Corresponds with GET /api/v1/snapshots (the `ListSnapshots` operationId).
-func (c *Client) ListSnapshots(ctx context.Context, params *ListSnapshotsParams, reqEditors ...RequestEditorFn) (*http.Response, error) {
-	req, err := NewListSnapshotsRequest(c.Server, params)
-	if err != nil {
-		return nil, err
-	}
-	req = req.WithContext(ctx)
-	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
-		return nil, err
-	}
-	return c.Client.Do(req)
-}
-
-// CreateSnapshotWithBody Create a snapshot
-//
-// Creates a Billing order, including for metered pricing. The price must belong to the resource’s Billing Plan; applicable contract pricing is resolved by Billing. Technical capacity is checked before sellable quota is reserved. Provisioning continues automatically after payment; do not submit a new purchase after paying. Reuse the original idempotency key after an uncertain response.
-//
-// Takes any type of body and a specified content type.
-//
-// Corresponds with POST /api/v1/snapshots (the `CreateSnapshot` operationId).
-func (c *Client) CreateSnapshotWithBody(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
-	req, err := NewCreateSnapshotRequestWithBody(c.Server, contentType, body)
-	if err != nil {
-		return nil, err
-	}
-	req = req.WithContext(ctx)
-	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
-		return nil, err
-	}
-	return c.Client.Do(req)
-}
-
-// CreateSnapshot Create a snapshot
-//
-// Creates a Billing order, including for metered pricing. The price must belong to the resource’s Billing Plan; applicable contract pricing is resolved by Billing. Technical capacity is checked before sellable quota is reserved. Provisioning continues automatically after payment; do not submit a new purchase after paying. Reuse the original idempotency key after an uncertain response.
-//
-// Takes a body of the `application/json` content type.
-//
-// Corresponds with POST /api/v1/snapshots (the `CreateSnapshot` operationId).
-func (c *Client) CreateSnapshot(ctx context.Context, body CreateSnapshotJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
-	req, err := NewCreateSnapshotRequest(c.Server, body)
-	if err != nil {
-		return nil, err
-	}
-	req = req.WithContext(ctx)
-	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
-		return nil, err
-	}
-	return c.Client.Do(req)
-}
-
-// DeleteSnapshot Delete a snapshot
-//
-// Corresponds with DELETE /api/v1/snapshots/{snapshotId} (the `DeleteSnapshot` operationId).
-func (c *Client) DeleteSnapshot(ctx context.Context, snapshotId openapi_types.UUID, reqEditors ...RequestEditorFn) (*http.Response, error) {
-	req, err := NewDeleteSnapshotRequest(c.Server, snapshotId)
-	if err != nil {
-		return nil, err
-	}
-	req = req.WithContext(ctx)
-	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
-		return nil, err
-	}
-	return c.Client.Do(req)
-}
-
-// GetSnapshot Retrieve a snapshot
-//
-// Corresponds with GET /api/v1/snapshots/{snapshotId} (the `GetSnapshot` operationId).
-func (c *Client) GetSnapshot(ctx context.Context, snapshotId openapi_types.UUID, reqEditors ...RequestEditorFn) (*http.Response, error) {
-	req, err := NewGetSnapshotRequest(c.Server, snapshotId)
-	if err != nil {
-		return nil, err
-	}
-	req = req.WithContext(ctx)
-	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
-		return nil, err
-	}
-	return c.Client.Do(req)
-}
-
-// RenameSnapshotWithBody Rename a snapshot
-//
-// Takes any type of body and a specified content type.
-//
-// Corresponds with PATCH /api/v1/snapshots/{snapshotId} (the `RenameSnapshot` operationId).
-func (c *Client) RenameSnapshotWithBody(ctx context.Context, snapshotId openapi_types.UUID, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
-	req, err := NewRenameSnapshotRequestWithBody(c.Server, snapshotId, contentType, body)
-	if err != nil {
-		return nil, err
-	}
-	req = req.WithContext(ctx)
-	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
-		return nil, err
-	}
-	return c.Client.Do(req)
-}
-
-// RenameSnapshot Rename a snapshot
-//
-// Takes a body of the `application/json` content type.
-//
-// Corresponds with PATCH /api/v1/snapshots/{snapshotId} (the `RenameSnapshot` operationId).
-func (c *Client) RenameSnapshot(ctx context.Context, snapshotId openapi_types.UUID, body RenameSnapshotJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
-	req, err := NewRenameSnapshotRequest(c.Server, snapshotId, body)
-	if err != nil {
-		return nil, err
-	}
-	req = req.WithContext(ctx)
-	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
-		return nil, err
-	}
-	return c.Client.Do(req)
-}
-
 // NewGetAttachmentRequest constructs an http.Request for the GetAttachment method
-func NewGetAttachmentRequest(server string, attachmentId openapi_types.UUID) (*http.Request, error) {
+func NewGetAttachmentRequest(server string, attachmentId AttachmentID) (*http.Request, error) {
 	var err error
 
 	var pathParam0 string
@@ -1580,286 +805,6 @@ func NewGetAttachmentRequest(server string, attachmentId openapi_types.UUID) (*h
 	return req, nil
 }
 
-// NewListBackupsRequest constructs an http.Request for the ListBackups method
-func NewListBackupsRequest(server string, params *ListBackupsParams) (*http.Request, error) {
-	var err error
-
-	serverURL, err := url.Parse(server)
-	if err != nil {
-		return nil, err
-	}
-
-	operationPath := fmt.Sprintf("/api/v1/backups")
-	if operationPath[0] == '/' {
-		operationPath = "." + operationPath
-	}
-
-	queryURL, err := serverURL.Parse(operationPath)
-	if err != nil {
-		return nil, err
-	}
-
-	if params != nil {
-		// queryValues collects non-styled parameters (passthrough, JSON)
-		// that are safe to round-trip through url.Values.Encode().
-		queryValues := queryURL.Query()
-		// rawQueryFragments collects pre-encoded query fragments from
-		// styled parameters, preserving literal commas as delimiters
-		// per the OpenAPI spec (e.g. "color=blue,black,brown").
-		var rawQueryFragments []string
-
-		if params.DiskId != nil {
-
-			if queryFrag, err := runtime.StyleParamWithOptions("form", false, "disk_id", *params.DiskId, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "string", Format: "uuid"}); err != nil {
-				return nil, err
-			} else {
-				for _, qp := range strings.Split(queryFrag, "&") {
-					rawQueryFragments = append(rawQueryFragments, qp)
-				}
-			}
-
-		}
-
-		if params.Page != nil {
-
-			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "page", *params.Page, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "integer", Format: "int64"}); err != nil {
-				return nil, err
-			} else {
-				for _, qp := range strings.Split(queryFrag, "&") {
-					rawQueryFragments = append(rawQueryFragments, qp)
-				}
-			}
-
-		}
-
-		if params.PageSize != nil {
-
-			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "page_size", *params.PageSize, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "integer", Format: "int64"}); err != nil {
-				return nil, err
-			} else {
-				for _, qp := range strings.Split(queryFrag, "&") {
-					rawQueryFragments = append(rawQueryFragments, qp)
-				}
-			}
-
-		}
-
-		if encoded := queryValues.Encode(); encoded != "" {
-			rawQueryFragments = append(rawQueryFragments, encoded)
-		}
-		queryURL.RawQuery = strings.Join(rawQueryFragments, "&")
-	}
-
-	req, err := http.NewRequest(http.MethodGet, queryURL.String(), nil)
-	if err != nil {
-		return nil, err
-	}
-
-	return req, nil
-}
-
-// NewCreateBackupRequest calls the generic CreateBackup builder with application/json body
-func NewCreateBackupRequest(server string, body CreateBackupJSONRequestBody) (*http.Request, error) {
-	var bodyReader io.Reader
-	buf, err := json.Marshal(body)
-	if err != nil {
-		return nil, err
-	}
-	bodyReader = bytes.NewReader(buf)
-	return NewCreateBackupRequestWithBody(server, "application/json", bodyReader)
-}
-
-// NewCreateBackupRequestWithBody constructs an http.Request for the CreateBackup method, with any body, and a specified content type
-func NewCreateBackupRequestWithBody(server string, contentType string, body io.Reader) (*http.Request, error) {
-	var err error
-
-	serverURL, err := url.Parse(server)
-	if err != nil {
-		return nil, err
-	}
-
-	operationPath := fmt.Sprintf("/api/v1/backups")
-	if operationPath[0] == '/' {
-		operationPath = "." + operationPath
-	}
-
-	queryURL, err := serverURL.Parse(operationPath)
-	if err != nil {
-		return nil, err
-	}
-
-	req, err := http.NewRequest(http.MethodPost, queryURL.String(), body)
-	if err != nil {
-		return nil, err
-	}
-
-	req.Header.Add("Content-Type", contentType)
-
-	return req, nil
-}
-
-// NewDeleteBackupRequest constructs an http.Request for the DeleteBackup method
-func NewDeleteBackupRequest(server string, backupId openapi_types.UUID) (*http.Request, error) {
-	var err error
-
-	var pathParam0 string
-
-	pathParam0, err = runtime.StyleParamWithOptions("simple", false, "backupId", backupId, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: "uuid"})
-	if err != nil {
-		return nil, err
-	}
-
-	serverURL, err := url.Parse(server)
-	if err != nil {
-		return nil, err
-	}
-
-	operationPath := fmt.Sprintf("/api/v1/backups/%s", pathParam0)
-	if operationPath[0] == '/' {
-		operationPath = "." + operationPath
-	}
-
-	queryURL, err := serverURL.Parse(operationPath)
-	if err != nil {
-		return nil, err
-	}
-
-	req, err := http.NewRequest(http.MethodDelete, queryURL.String(), nil)
-	if err != nil {
-		return nil, err
-	}
-
-	return req, nil
-}
-
-// NewGetBackupRequest constructs an http.Request for the GetBackup method
-func NewGetBackupRequest(server string, backupId openapi_types.UUID) (*http.Request, error) {
-	var err error
-
-	var pathParam0 string
-
-	pathParam0, err = runtime.StyleParamWithOptions("simple", false, "backupId", backupId, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: "uuid"})
-	if err != nil {
-		return nil, err
-	}
-
-	serverURL, err := url.Parse(server)
-	if err != nil {
-		return nil, err
-	}
-
-	operationPath := fmt.Sprintf("/api/v1/backups/%s", pathParam0)
-	if operationPath[0] == '/' {
-		operationPath = "." + operationPath
-	}
-
-	queryURL, err := serverURL.Parse(operationPath)
-	if err != nil {
-		return nil, err
-	}
-
-	req, err := http.NewRequest(http.MethodGet, queryURL.String(), nil)
-	if err != nil {
-		return nil, err
-	}
-
-	return req, nil
-}
-
-// NewRenameBackupRequest calls the generic RenameBackup builder with application/json body
-func NewRenameBackupRequest(server string, backupId openapi_types.UUID, body RenameBackupJSONRequestBody) (*http.Request, error) {
-	var bodyReader io.Reader
-	buf, err := json.Marshal(body)
-	if err != nil {
-		return nil, err
-	}
-	bodyReader = bytes.NewReader(buf)
-	return NewRenameBackupRequestWithBody(server, backupId, "application/json", bodyReader)
-}
-
-// NewRenameBackupRequestWithBody constructs an http.Request for the RenameBackup method, with any body, and a specified content type
-func NewRenameBackupRequestWithBody(server string, backupId openapi_types.UUID, contentType string, body io.Reader) (*http.Request, error) {
-	var err error
-
-	var pathParam0 string
-
-	pathParam0, err = runtime.StyleParamWithOptions("simple", false, "backupId", backupId, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: "uuid"})
-	if err != nil {
-		return nil, err
-	}
-
-	serverURL, err := url.Parse(server)
-	if err != nil {
-		return nil, err
-	}
-
-	operationPath := fmt.Sprintf("/api/v1/backups/%s", pathParam0)
-	if operationPath[0] == '/' {
-		operationPath = "." + operationPath
-	}
-
-	queryURL, err := serverURL.Parse(operationPath)
-	if err != nil {
-		return nil, err
-	}
-
-	req, err := http.NewRequest(http.MethodPatch, queryURL.String(), body)
-	if err != nil {
-		return nil, err
-	}
-
-	req.Header.Add("Content-Type", contentType)
-
-	return req, nil
-}
-
-// NewRestoreBackupRequest calls the generic RestoreBackup builder with application/json body
-func NewRestoreBackupRequest(server string, backupId openapi_types.UUID, body RestoreBackupJSONRequestBody) (*http.Request, error) {
-	var bodyReader io.Reader
-	buf, err := json.Marshal(body)
-	if err != nil {
-		return nil, err
-	}
-	bodyReader = bytes.NewReader(buf)
-	return NewRestoreBackupRequestWithBody(server, backupId, "application/json", bodyReader)
-}
-
-// NewRestoreBackupRequestWithBody constructs an http.Request for the RestoreBackup method, with any body, and a specified content type
-func NewRestoreBackupRequestWithBody(server string, backupId openapi_types.UUID, contentType string, body io.Reader) (*http.Request, error) {
-	var err error
-
-	var pathParam0 string
-
-	pathParam0, err = runtime.StyleParamWithOptions("simple", false, "backupId", backupId, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: "uuid"})
-	if err != nil {
-		return nil, err
-	}
-
-	serverURL, err := url.Parse(server)
-	if err != nil {
-		return nil, err
-	}
-
-	operationPath := fmt.Sprintf("/api/v1/backups/%s/restore", pathParam0)
-	if operationPath[0] == '/' {
-		operationPath = "." + operationPath
-	}
-
-	queryURL, err := serverURL.Parse(operationPath)
-	if err != nil {
-		return nil, err
-	}
-
-	req, err := http.NewRequest(http.MethodPost, queryURL.String(), body)
-	if err != nil {
-		return nil, err
-	}
-
-	req.Header.Add("Content-Type", contentType)
-
-	return req, nil
-}
-
 // NewListDiskTypesRequest constructs an http.Request for the ListDiskTypes method
 func NewListDiskTypesRequest(server string, params *ListDiskTypesParams) (*http.Request, error) {
 	var err error
@@ -1888,7 +833,7 @@ func NewListDiskTypesRequest(server string, params *ListDiskTypesParams) (*http.
 		// per the OpenAPI spec (e.g. "color=blue,black,brown").
 		var rawQueryFragments []string
 
-		if queryFrag, err := runtime.StyleParamWithOptions("form", false, "region_id", params.RegionId, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "string", Format: "uuid"}); err != nil {
+		if queryFrag, err := runtime.StyleParamWithOptions("form", true, "region_id", params.RegionId, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "string", Format: "uuid"}); err != nil {
 			return nil, err
 		} else {
 			for _, qp := range strings.Split(queryFrag, "&") {
@@ -1935,7 +880,7 @@ func NewListDiskTypesRequest(server string, params *ListDiskTypesParams) (*http.
 }
 
 // NewGetDiskTypeRequest constructs an http.Request for the GetDiskType method
-func NewGetDiskTypeRequest(server string, diskTypeId openapi_types.UUID) (*http.Request, error) {
+func NewGetDiskTypeRequest(server string, diskTypeId DiskTypeID) (*http.Request, error) {
 	var err error
 
 	var pathParam0 string
@@ -1998,7 +943,7 @@ func NewListDisksRequest(server string, params *ListDisksParams) (*http.Request,
 
 		if params.RegionId != nil {
 
-			if queryFrag, err := runtime.StyleParamWithOptions("form", false, "region_id", *params.RegionId, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "string", Format: "uuid"}); err != nil {
+			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "region_id", *params.RegionId, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "string", Format: "uuid"}); err != nil {
 				return nil, err
 			} else {
 				for _, qp := range strings.Split(queryFrag, "&") {
@@ -2010,7 +955,7 @@ func NewListDisksRequest(server string, params *ListDisksParams) (*http.Request,
 
 		if params.AvailabilityZoneId != nil {
 
-			if queryFrag, err := runtime.StyleParamWithOptions("form", false, "availability_zone_id", *params.AvailabilityZoneId, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "string", Format: "uuid"}); err != nil {
+			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "availability_zone_id", *params.AvailabilityZoneId, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "string", Format: "uuid"}); err != nil {
 				return nil, err
 			} else {
 				for _, qp := range strings.Split(queryFrag, "&") {
@@ -2099,7 +1044,7 @@ func NewCreateDiskRequestWithBody(server string, contentType string, body io.Rea
 }
 
 // NewDeleteDiskRequest constructs an http.Request for the DeleteDisk method
-func NewDeleteDiskRequest(server string, diskId openapi_types.UUID) (*http.Request, error) {
+func NewDeleteDiskRequest(server string, diskId DiskID, params *DeleteDiskParams) (*http.Request, error) {
 	var err error
 
 	var pathParam0 string
@@ -2124,6 +1069,29 @@ func NewDeleteDiskRequest(server string, diskId openapi_types.UUID) (*http.Reque
 		return nil, err
 	}
 
+	if params != nil {
+		// queryValues collects non-styled parameters (passthrough, JSON)
+		// that are safe to round-trip through url.Values.Encode().
+		queryValues := queryURL.Query()
+		// rawQueryFragments collects pre-encoded query fragments from
+		// styled parameters, preserving literal commas as delimiters
+		// per the OpenAPI spec (e.g. "color=blue,black,brown").
+		var rawQueryFragments []string
+
+		if queryFrag, err := runtime.StyleParamWithOptions("form", true, "idempotency_key", params.IdempotencyKey, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "string", Format: ""}); err != nil {
+			return nil, err
+		} else {
+			for _, qp := range strings.Split(queryFrag, "&") {
+				rawQueryFragments = append(rawQueryFragments, qp)
+			}
+		}
+
+		if encoded := queryValues.Encode(); encoded != "" {
+			rawQueryFragments = append(rawQueryFragments, encoded)
+		}
+		queryURL.RawQuery = strings.Join(rawQueryFragments, "&")
+	}
+
 	req, err := http.NewRequest(http.MethodDelete, queryURL.String(), nil)
 	if err != nil {
 		return nil, err
@@ -2133,7 +1101,7 @@ func NewDeleteDiskRequest(server string, diskId openapi_types.UUID) (*http.Reque
 }
 
 // NewGetDiskRequest constructs an http.Request for the GetDisk method
-func NewGetDiskRequest(server string, diskId openapi_types.UUID) (*http.Request, error) {
+func NewGetDiskRequest(server string, diskId DiskID) (*http.Request, error) {
 	var err error
 
 	var pathParam0 string
@@ -2167,7 +1135,7 @@ func NewGetDiskRequest(server string, diskId openapi_types.UUID) (*http.Request,
 }
 
 // NewRenameDiskRequest calls the generic RenameDisk builder with application/json body
-func NewRenameDiskRequest(server string, diskId openapi_types.UUID, body RenameDiskJSONRequestBody) (*http.Request, error) {
+func NewRenameDiskRequest(server string, diskId DiskID, body RenameDiskJSONRequestBody) (*http.Request, error) {
 	var bodyReader io.Reader
 	buf, err := json.Marshal(body)
 	if err != nil {
@@ -2178,7 +1146,7 @@ func NewRenameDiskRequest(server string, diskId openapi_types.UUID, body RenameD
 }
 
 // NewRenameDiskRequestWithBody constructs an http.Request for the RenameDisk method, with any body, and a specified content type
-func NewRenameDiskRequestWithBody(server string, diskId openapi_types.UUID, contentType string, body io.Reader) (*http.Request, error) {
+func NewRenameDiskRequestWithBody(server string, diskId DiskID, contentType string, body io.Reader) (*http.Request, error) {
 	var err error
 
 	var pathParam0 string
@@ -2213,107 +1181,13 @@ func NewRenameDiskRequestWithBody(server string, diskId openapi_types.UUID, cont
 	return req, nil
 }
 
-// NewResizeDiskRequest calls the generic ResizeDisk builder with application/json body
-func NewResizeDiskRequest(server string, diskId openapi_types.UUID, body ResizeDiskJSONRequestBody) (*http.Request, error) {
-	var bodyReader io.Reader
-	buf, err := json.Marshal(body)
-	if err != nil {
-		return nil, err
-	}
-	bodyReader = bytes.NewReader(buf)
-	return NewResizeDiskRequestWithBody(server, diskId, "application/json", bodyReader)
-}
-
-// NewResizeDiskRequestWithBody constructs an http.Request for the ResizeDisk method, with any body, and a specified content type
-func NewResizeDiskRequestWithBody(server string, diskId openapi_types.UUID, contentType string, body io.Reader) (*http.Request, error) {
-	var err error
-
-	var pathParam0 string
-
-	pathParam0, err = runtime.StyleParamWithOptions("simple", false, "diskId", diskId, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: "uuid"})
-	if err != nil {
-		return nil, err
-	}
-
-	serverURL, err := url.Parse(server)
-	if err != nil {
-		return nil, err
-	}
-
-	operationPath := fmt.Sprintf("/api/v1/disks/%s/resize", pathParam0)
-	if operationPath[0] == '/' {
-		operationPath = "." + operationPath
-	}
-
-	queryURL, err := serverURL.Parse(operationPath)
-	if err != nil {
-		return nil, err
-	}
-
-	req, err := http.NewRequest(http.MethodPost, queryURL.String(), body)
-	if err != nil {
-		return nil, err
-	}
-
-	req.Header.Add("Content-Type", contentType)
-
-	return req, nil
-}
-
-// NewRevertDiskRequest calls the generic RevertDisk builder with application/json body
-func NewRevertDiskRequest(server string, diskId openapi_types.UUID, body RevertDiskJSONRequestBody) (*http.Request, error) {
-	var bodyReader io.Reader
-	buf, err := json.Marshal(body)
-	if err != nil {
-		return nil, err
-	}
-	bodyReader = bytes.NewReader(buf)
-	return NewRevertDiskRequestWithBody(server, diskId, "application/json", bodyReader)
-}
-
-// NewRevertDiskRequestWithBody constructs an http.Request for the RevertDisk method, with any body, and a specified content type
-func NewRevertDiskRequestWithBody(server string, diskId openapi_types.UUID, contentType string, body io.Reader) (*http.Request, error) {
-	var err error
-
-	var pathParam0 string
-
-	pathParam0, err = runtime.StyleParamWithOptions("simple", false, "diskId", diskId, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: "uuid"})
-	if err != nil {
-		return nil, err
-	}
-
-	serverURL, err := url.Parse(server)
-	if err != nil {
-		return nil, err
-	}
-
-	operationPath := fmt.Sprintf("/api/v1/disks/%s/revert", pathParam0)
-	if operationPath[0] == '/' {
-		operationPath = "." + operationPath
-	}
-
-	queryURL, err := serverURL.Parse(operationPath)
-	if err != nil {
-		return nil, err
-	}
-
-	req, err := http.NewRequest(http.MethodPost, queryURL.String(), body)
-	if err != nil {
-		return nil, err
-	}
-
-	req.Header.Add("Content-Type", contentType)
-
-	return req, nil
-}
-
 // NewListDiskAttachmentsRequest constructs an http.Request for the ListDiskAttachments method
-func NewListDiskAttachmentsRequest(server string, resourceId openapi_types.UUID, params *ListDiskAttachmentsParams) (*http.Request, error) {
+func NewListDiskAttachmentsRequest(server string, diskId DiskID, params *ListDiskAttachmentsParams) (*http.Request, error) {
 	var err error
 
 	var pathParam0 string
 
-	pathParam0, err = runtime.StyleParamWithOptions("simple", false, "resourceId", resourceId, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: "uuid"})
+	pathParam0, err = runtime.StyleParamWithOptions("simple", false, "diskId", diskId, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: "uuid"})
 	if err != nil {
 		return nil, err
 	}
@@ -2342,87 +1216,9 @@ func NewListDiskAttachmentsRequest(server string, resourceId openapi_types.UUID,
 		// per the OpenAPI spec (e.g. "color=blue,black,brown").
 		var rawQueryFragments []string
 
-		if params.Page != nil {
-
-			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "page", *params.Page, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "integer", Format: "int64"}); err != nil {
-				return nil, err
-			} else {
-				for _, qp := range strings.Split(queryFrag, "&") {
-					rawQueryFragments = append(rawQueryFragments, qp)
-				}
-			}
-
-		}
-
-		if params.PageSize != nil {
-
-			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "page_size", *params.PageSize, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "integer", Format: "int64"}); err != nil {
-				return nil, err
-			} else {
-				for _, qp := range strings.Split(queryFrag, "&") {
-					rawQueryFragments = append(rawQueryFragments, qp)
-				}
-			}
-
-		}
-
 		if params.IncludeDetached != nil {
 
 			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "include_detached", *params.IncludeDetached, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "boolean", Format: ""}); err != nil {
-				return nil, err
-			} else {
-				for _, qp := range strings.Split(queryFrag, "&") {
-					rawQueryFragments = append(rawQueryFragments, qp)
-				}
-			}
-
-		}
-
-		if encoded := queryValues.Encode(); encoded != "" {
-			rawQueryFragments = append(rawQueryFragments, encoded)
-		}
-		queryURL.RawQuery = strings.Join(rawQueryFragments, "&")
-	}
-
-	req, err := http.NewRequest(http.MethodGet, queryURL.String(), nil)
-	if err != nil {
-		return nil, err
-	}
-
-	return req, nil
-}
-
-// NewListOperationLogsRequest constructs an http.Request for the ListOperationLogs method
-func NewListOperationLogsRequest(server string, params *ListOperationLogsParams) (*http.Request, error) {
-	var err error
-
-	serverURL, err := url.Parse(server)
-	if err != nil {
-		return nil, err
-	}
-
-	operationPath := fmt.Sprintf("/api/v1/operation-logs")
-	if operationPath[0] == '/' {
-		operationPath = "." + operationPath
-	}
-
-	queryURL, err := serverURL.Parse(operationPath)
-	if err != nil {
-		return nil, err
-	}
-
-	if params != nil {
-		// queryValues collects non-styled parameters (passthrough, JSON)
-		// that are safe to round-trip through url.Values.Encode().
-		queryValues := queryURL.Query()
-		// rawQueryFragments collects pre-encoded query fragments from
-		// styled parameters, preserving literal commas as delimiters
-		// per the OpenAPI spec (e.g. "color=blue,black,brown").
-		var rawQueryFragments []string
-
-		if params.Action != nil {
-
-			if queryFrag, err := runtime.StyleParamWithOptions("form", false, "action", *params.Action, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "string", Format: ""}); err != nil {
 				return nil, err
 			} else {
 				for _, qp := range strings.Split(queryFrag, "&") {
@@ -2565,7 +1361,7 @@ func NewListResourceUsagesRequest(server string, params *ListResourceUsagesParam
 }
 
 // NewGetResourceUsageRequest constructs an http.Request for the GetResourceUsage method
-func NewGetResourceUsageRequest(server string, usageId openapi_types.UUID) (*http.Request, error) {
+func NewGetResourceUsageRequest(server string, usageId UsageID) (*http.Request, error) {
 	var err error
 
 	var pathParam0 string
@@ -2599,7 +1395,7 @@ func NewGetResourceUsageRequest(server string, usageId openapi_types.UUID) (*htt
 }
 
 // NewSetResourceIdlePolicyRequest calls the generic SetResourceIdlePolicy builder with application/json body
-func NewSetResourceIdlePolicyRequest(server string, resourceType string, resourceId openapi_types.UUID, body SetResourceIdlePolicyJSONRequestBody) (*http.Request, error) {
+func NewSetResourceIdlePolicyRequest(server string, resourceType SetResourceIdlePolicyParamsResourceType, resourceId ResourceIDPath, body SetResourceIdlePolicyJSONRequestBody) (*http.Request, error) {
 	var bodyReader io.Reader
 	buf, err := json.Marshal(body)
 	if err != nil {
@@ -2610,7 +1406,7 @@ func NewSetResourceIdlePolicyRequest(server string, resourceType string, resourc
 }
 
 // NewSetResourceIdlePolicyRequestWithBody constructs an http.Request for the SetResourceIdlePolicy method, with any body, and a specified content type
-func NewSetResourceIdlePolicyRequestWithBody(server string, resourceType string, resourceId openapi_types.UUID, contentType string, body io.Reader) (*http.Request, error) {
+func NewSetResourceIdlePolicyRequestWithBody(server string, resourceType SetResourceIdlePolicyParamsResourceType, resourceId ResourceIDPath, contentType string, body io.Reader) (*http.Request, error) {
 	var err error
 
 	var pathParam0 string
@@ -2653,7 +1449,7 @@ func NewSetResourceIdlePolicyRequestWithBody(server string, resourceType string,
 }
 
 // NewGetResourceReclamationRequest constructs an http.Request for the GetResourceReclamation method
-func NewGetResourceReclamationRequest(server string, resourceType string, resourceId openapi_types.UUID) (*http.Request, error) {
+func NewGetResourceReclamationRequest(server string, resourceType GetResourceReclamationParamsResourceType, resourceId ResourceIDPath) (*http.Request, error) {
 	var err error
 
 	var pathParam0 string
@@ -2689,239 +1485,6 @@ func NewGetResourceReclamationRequest(server string, resourceType string, resour
 	if err != nil {
 		return nil, err
 	}
-
-	return req, nil
-}
-
-// NewListSnapshotsRequest constructs an http.Request for the ListSnapshots method
-func NewListSnapshotsRequest(server string, params *ListSnapshotsParams) (*http.Request, error) {
-	var err error
-
-	serverURL, err := url.Parse(server)
-	if err != nil {
-		return nil, err
-	}
-
-	operationPath := fmt.Sprintf("/api/v1/snapshots")
-	if operationPath[0] == '/' {
-		operationPath = "." + operationPath
-	}
-
-	queryURL, err := serverURL.Parse(operationPath)
-	if err != nil {
-		return nil, err
-	}
-
-	if params != nil {
-		// queryValues collects non-styled parameters (passthrough, JSON)
-		// that are safe to round-trip through url.Values.Encode().
-		queryValues := queryURL.Query()
-		// rawQueryFragments collects pre-encoded query fragments from
-		// styled parameters, preserving literal commas as delimiters
-		// per the OpenAPI spec (e.g. "color=blue,black,brown").
-		var rawQueryFragments []string
-
-		if params.DiskId != nil {
-
-			if queryFrag, err := runtime.StyleParamWithOptions("form", false, "disk_id", *params.DiskId, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "string", Format: "uuid"}); err != nil {
-				return nil, err
-			} else {
-				for _, qp := range strings.Split(queryFrag, "&") {
-					rawQueryFragments = append(rawQueryFragments, qp)
-				}
-			}
-
-		}
-
-		if params.Page != nil {
-
-			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "page", *params.Page, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "integer", Format: "int64"}); err != nil {
-				return nil, err
-			} else {
-				for _, qp := range strings.Split(queryFrag, "&") {
-					rawQueryFragments = append(rawQueryFragments, qp)
-				}
-			}
-
-		}
-
-		if params.PageSize != nil {
-
-			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "page_size", *params.PageSize, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "integer", Format: "int64"}); err != nil {
-				return nil, err
-			} else {
-				for _, qp := range strings.Split(queryFrag, "&") {
-					rawQueryFragments = append(rawQueryFragments, qp)
-				}
-			}
-
-		}
-
-		if encoded := queryValues.Encode(); encoded != "" {
-			rawQueryFragments = append(rawQueryFragments, encoded)
-		}
-		queryURL.RawQuery = strings.Join(rawQueryFragments, "&")
-	}
-
-	req, err := http.NewRequest(http.MethodGet, queryURL.String(), nil)
-	if err != nil {
-		return nil, err
-	}
-
-	return req, nil
-}
-
-// NewCreateSnapshotRequest calls the generic CreateSnapshot builder with application/json body
-func NewCreateSnapshotRequest(server string, body CreateSnapshotJSONRequestBody) (*http.Request, error) {
-	var bodyReader io.Reader
-	buf, err := json.Marshal(body)
-	if err != nil {
-		return nil, err
-	}
-	bodyReader = bytes.NewReader(buf)
-	return NewCreateSnapshotRequestWithBody(server, "application/json", bodyReader)
-}
-
-// NewCreateSnapshotRequestWithBody constructs an http.Request for the CreateSnapshot method, with any body, and a specified content type
-func NewCreateSnapshotRequestWithBody(server string, contentType string, body io.Reader) (*http.Request, error) {
-	var err error
-
-	serverURL, err := url.Parse(server)
-	if err != nil {
-		return nil, err
-	}
-
-	operationPath := fmt.Sprintf("/api/v1/snapshots")
-	if operationPath[0] == '/' {
-		operationPath = "." + operationPath
-	}
-
-	queryURL, err := serverURL.Parse(operationPath)
-	if err != nil {
-		return nil, err
-	}
-
-	req, err := http.NewRequest(http.MethodPost, queryURL.String(), body)
-	if err != nil {
-		return nil, err
-	}
-
-	req.Header.Add("Content-Type", contentType)
-
-	return req, nil
-}
-
-// NewDeleteSnapshotRequest constructs an http.Request for the DeleteSnapshot method
-func NewDeleteSnapshotRequest(server string, snapshotId openapi_types.UUID) (*http.Request, error) {
-	var err error
-
-	var pathParam0 string
-
-	pathParam0, err = runtime.StyleParamWithOptions("simple", false, "snapshotId", snapshotId, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: "uuid"})
-	if err != nil {
-		return nil, err
-	}
-
-	serverURL, err := url.Parse(server)
-	if err != nil {
-		return nil, err
-	}
-
-	operationPath := fmt.Sprintf("/api/v1/snapshots/%s", pathParam0)
-	if operationPath[0] == '/' {
-		operationPath = "." + operationPath
-	}
-
-	queryURL, err := serverURL.Parse(operationPath)
-	if err != nil {
-		return nil, err
-	}
-
-	req, err := http.NewRequest(http.MethodDelete, queryURL.String(), nil)
-	if err != nil {
-		return nil, err
-	}
-
-	return req, nil
-}
-
-// NewGetSnapshotRequest constructs an http.Request for the GetSnapshot method
-func NewGetSnapshotRequest(server string, snapshotId openapi_types.UUID) (*http.Request, error) {
-	var err error
-
-	var pathParam0 string
-
-	pathParam0, err = runtime.StyleParamWithOptions("simple", false, "snapshotId", snapshotId, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: "uuid"})
-	if err != nil {
-		return nil, err
-	}
-
-	serverURL, err := url.Parse(server)
-	if err != nil {
-		return nil, err
-	}
-
-	operationPath := fmt.Sprintf("/api/v1/snapshots/%s", pathParam0)
-	if operationPath[0] == '/' {
-		operationPath = "." + operationPath
-	}
-
-	queryURL, err := serverURL.Parse(operationPath)
-	if err != nil {
-		return nil, err
-	}
-
-	req, err := http.NewRequest(http.MethodGet, queryURL.String(), nil)
-	if err != nil {
-		return nil, err
-	}
-
-	return req, nil
-}
-
-// NewRenameSnapshotRequest calls the generic RenameSnapshot builder with application/json body
-func NewRenameSnapshotRequest(server string, snapshotId openapi_types.UUID, body RenameSnapshotJSONRequestBody) (*http.Request, error) {
-	var bodyReader io.Reader
-	buf, err := json.Marshal(body)
-	if err != nil {
-		return nil, err
-	}
-	bodyReader = bytes.NewReader(buf)
-	return NewRenameSnapshotRequestWithBody(server, snapshotId, "application/json", bodyReader)
-}
-
-// NewRenameSnapshotRequestWithBody constructs an http.Request for the RenameSnapshot method, with any body, and a specified content type
-func NewRenameSnapshotRequestWithBody(server string, snapshotId openapi_types.UUID, contentType string, body io.Reader) (*http.Request, error) {
-	var err error
-
-	var pathParam0 string
-
-	pathParam0, err = runtime.StyleParamWithOptions("simple", false, "snapshotId", snapshotId, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: "uuid"})
-	if err != nil {
-		return nil, err
-	}
-
-	serverURL, err := url.Parse(server)
-	if err != nil {
-		return nil, err
-	}
-
-	operationPath := fmt.Sprintf("/api/v1/snapshots/%s", pathParam0)
-	if operationPath[0] == '/' {
-		operationPath = "." + operationPath
-	}
-
-	queryURL, err := serverURL.Parse(operationPath)
-	if err != nil {
-		return nil, err
-	}
-
-	req, err := http.NewRequest(http.MethodPatch, queryURL.String(), body)
-	if err != nil {
-		return nil, err
-	}
-
-	req.Header.Add("Content-Type", contentType)
 
 	return req, nil
 }
@@ -2970,91 +1533,14 @@ func WithBaseURL(baseURL string) ClientOption {
 // ClientWithResponsesInterface is the interface specification for the client with responses above.
 type ClientWithResponsesInterface interface {
 
-	// GetAttachmentWithResponse Get attachment
+	// GetAttachmentWithResponse Get a disk attachment
 	//
 	// Returns a wrapper object for the known response body format(s).
 	//
 	// Corresponds with GET /api/v1/attachments/{attachmentId} (the `GetAttachment` operationId).
-	GetAttachmentWithResponse(ctx context.Context, attachmentId openapi_types.UUID, reqEditors ...RequestEditorFn) (*GetAttachmentResponse, error)
-
-	// ListBackupsWithResponse List backups
-	//
-	// Returns a wrapper object for the known response body format(s).
-	//
-	// Corresponds with GET /api/v1/backups (the `ListBackups` operationId).
-	ListBackupsWithResponse(ctx context.Context, params *ListBackupsParams, reqEditors ...RequestEditorFn) (*ListBackupsResponse, error)
-
-	// CreateBackupWithBodyWithResponse Create a backup
-	//
-	// Creates a Billing order, including for metered pricing. The price must belong to the resource’s Billing Plan; applicable contract pricing is resolved by Billing. Technical capacity is checked before sellable quota is reserved. Provisioning continues automatically after payment; do not submit a new purchase after paying. Reuse the original idempotency key after an uncertain response.
-	//
-	// Takes any type of body and a specified content type, and returns a wrapper object for the known response body format(s).
-	//
-	// Corresponds with POST /api/v1/backups (the `CreateBackup` operationId).
-	CreateBackupWithBodyWithResponse(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*CreateBackupResponse, error)
-
-	// CreateBackupWithResponse Create a backup
-	//
-	// Creates a Billing order, including for metered pricing. The price must belong to the resource’s Billing Plan; applicable contract pricing is resolved by Billing. Technical capacity is checked before sellable quota is reserved. Provisioning continues automatically after payment; do not submit a new purchase after paying. Reuse the original idempotency key after an uncertain response.
-	//
-	// Takes a body of the `application/json` content type, and returns a wrapper object for the known response body format(s).
-	//
-	// Corresponds with POST /api/v1/backups (the `CreateBackup` operationId).
-	CreateBackupWithResponse(ctx context.Context, body CreateBackupJSONRequestBody, reqEditors ...RequestEditorFn) (*CreateBackupResponse, error)
-
-	// DeleteBackupWithResponse Delete a backup
-	//
-	// Independent of the source disk: deletion succeeds whether or not that disk still exists.
-	//
-	// Returns a wrapper object for the known response body format(s).
-	//
-	// Corresponds with DELETE /api/v1/backups/{backupId} (the `DeleteBackup` operationId).
-	DeleteBackupWithResponse(ctx context.Context, backupId openapi_types.UUID, reqEditors ...RequestEditorFn) (*DeleteBackupResponse, error)
-
-	// GetBackupWithResponse Retrieve a backup
-	//
-	// Queries the current state of the backup, which makes it slower but more accurate than the list endpoint. Use it to poll creation progress.
-	//
-	// Returns a wrapper object for the known response body format(s).
-	//
-	// Corresponds with GET /api/v1/backups/{backupId} (the `GetBackup` operationId).
-	GetBackupWithResponse(ctx context.Context, backupId openapi_types.UUID, reqEditors ...RequestEditorFn) (*GetBackupResponse, error)
-
-	// RenameBackupWithBodyWithResponse Rename a backup
-	//
-	// Takes any type of body and a specified content type, and returns a wrapper object for the known response body format(s).
-	//
-	// Corresponds with PATCH /api/v1/backups/{backupId} (the `RenameBackup` operationId).
-	RenameBackupWithBodyWithResponse(ctx context.Context, backupId openapi_types.UUID, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*RenameBackupResponse, error)
-
-	// RenameBackupWithResponse Rename a backup
-	//
-	// Takes a body of the `application/json` content type, and returns a wrapper object for the known response body format(s).
-	//
-	// Corresponds with PATCH /api/v1/backups/{backupId} (the `RenameBackup` operationId).
-	RenameBackupWithResponse(ctx context.Context, backupId openapi_types.UUID, body RenameBackupJSONRequestBody, reqEditors ...RequestEditorFn) (*RenameBackupResponse, error)
-
-	// RestoreBackupWithBodyWithResponse Restore from a backup
-	//
-	// Creates a Billing order, including for metered pricing. The price must belong to the resource’s Billing Plan; applicable contract pricing is resolved by Billing. Technical capacity is checked before sellable quota is reserved. Provisioning continues automatically after payment; do not submit a new purchase after paying. Reuse the original idempotency key after an uncertain response.
-	//
-	// Takes any type of body and a specified content type, and returns a wrapper object for the known response body format(s).
-	//
-	// Corresponds with POST /api/v1/backups/{backupId}/restore (the `RestoreBackup` operationId).
-	RestoreBackupWithBodyWithResponse(ctx context.Context, backupId openapi_types.UUID, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*RestoreBackupResponse, error)
-
-	// RestoreBackupWithResponse Restore from a backup
-	//
-	// Creates a Billing order, including for metered pricing. The price must belong to the resource’s Billing Plan; applicable contract pricing is resolved by Billing. Technical capacity is checked before sellable quota is reserved. Provisioning continues automatically after payment; do not submit a new purchase after paying. Reuse the original idempotency key after an uncertain response.
-	//
-	// Takes a body of the `application/json` content type, and returns a wrapper object for the known response body format(s).
-	//
-	// Corresponds with POST /api/v1/backups/{backupId}/restore (the `RestoreBackup` operationId).
-	RestoreBackupWithResponse(ctx context.Context, backupId openapi_types.UUID, body RestoreBackupJSONRequestBody, reqEditors ...RequestEditorFn) (*RestoreBackupResponse, error)
+	GetAttachmentWithResponse(ctx context.Context, attachmentId AttachmentID, reqEditors ...RequestEditorFn) (*GetAttachmentResponse, error)
 
 	// ListDiskTypesWithResponse List disk types on sale
-	//
-	// Only disk types currently on sale are listed. A withdrawn one disappears from here and can no longer be bought, while the disks already on it keep working and can still be resized.
 	//
 	// Returns a wrapper object for the known response body format(s).
 	//
@@ -3063,34 +1549,30 @@ type ClientWithResponsesInterface interface {
 
 	// GetDiskTypeWithResponse Get a disk type
 	//
-	// Retrieve capacity and performance constraints for an existing disk, including system disk types and types withdrawn from sale.
-	//
 	// Returns a wrapper object for the known response body format(s).
 	//
 	// Corresponds with GET /api/v1/disk-types/{diskTypeId} (the `GetDiskType` operationId).
-	GetDiskTypeWithResponse(ctx context.Context, diskTypeId openapi_types.UUID, reqEditors ...RequestEditorFn) (*GetDiskTypeResponse, error)
+	GetDiskTypeWithResponse(ctx context.Context, diskTypeId DiskTypeID, reqEditors ...RequestEditorFn) (*GetDiskTypeResponse, error)
 
-	// ListDisksWithResponse List disks
-	//
-	// Lists disks in the current project. Use resource-usages to inspect consumers and pending reservations.
+	// ListDisksWithResponse List disks in the current project
 	//
 	// Returns a wrapper object for the known response body format(s).
 	//
 	// Corresponds with GET /api/v1/disks (the `ListDisks` operationId).
 	ListDisksWithResponse(ctx context.Context, params *ListDisksParams, reqEditors ...RequestEditorFn) (*ListDisksResponse, error)
 
-	// CreateDiskWithBodyWithResponse Create a disk
+	// CreateDiskWithBodyWithResponse Create a disk purchase
 	//
-	// Creates a Billing order, including for metered pricing. The price must belong to the resource’s Billing Plan; applicable contract pricing is resolved by Billing. Technical capacity is checked before sellable quota is reserved. Provisioning continues automatically after payment; do not submit a new purchase after paying. Reuse the original idempotency key after an uncertain response.
+	// Checks Fleet capacity, creates the local disk intent, and places a Billing order. Reuse the same idempotency key after an uncertain response. Billing resolves contract pricing, sellable quota, grants, payment challenges, and expiry.
 	//
 	// Takes any type of body and a specified content type, and returns a wrapper object for the known response body format(s).
 	//
 	// Corresponds with POST /api/v1/disks (the `CreateDisk` operationId).
 	CreateDiskWithBodyWithResponse(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*CreateDiskResponse, error)
 
-	// CreateDiskWithResponse Create a disk
+	// CreateDiskWithResponse Create a disk purchase
 	//
-	// Creates a Billing order, including for metered pricing. The price must belong to the resource’s Billing Plan; applicable contract pricing is resolved by Billing. Technical capacity is checked before sellable quota is reserved. Provisioning continues automatically after payment; do not submit a new purchase after paying. Reuse the original idempotency key after an uncertain response.
+	// Checks Fleet capacity, creates the local disk intent, and places a Billing order. Reuse the same idempotency key after an uncertain response. Billing resolves contract pricing, sellable quota, grants, payment challenges, and expiry.
 	//
 	// Takes a body of the `application/json` content type, and returns a wrapper object for the known response body format(s).
 	//
@@ -3099,212 +1581,94 @@ type ClientWithResponsesInterface interface {
 
 	// DeleteDiskWithResponse Delete a disk
 	//
-	// Deletion is rejected while the disk is attached, or while snapshots created from it still exist.
+	// Deletion is asynchronous and is rejected while the disk has a live attachment or another live resource claim. Billing ends resource-bound subscriptions only after Cinder confirms deletion.
 	//
 	// Returns a wrapper object for the known response body format(s).
 	//
 	// Corresponds with DELETE /api/v1/disks/{diskId} (the `DeleteDisk` operationId).
-	DeleteDiskWithResponse(ctx context.Context, diskId openapi_types.UUID, reqEditors ...RequestEditorFn) (*DeleteDiskResponse, error)
+	DeleteDiskWithResponse(ctx context.Context, diskId DiskID, params *DeleteDiskParams, reqEditors ...RequestEditorFn) (*DeleteDiskResponse, error)
 
-	// GetDiskWithResponse Retrieve a disk
-	//
-	// Returns the disk and its observed state. Read its attachments for consumers, device names and pending attachment operations.
+	// GetDiskWithResponse Get a disk
 	//
 	// Returns a wrapper object for the known response body format(s).
 	//
 	// Corresponds with GET /api/v1/disks/{diskId} (the `GetDisk` operationId).
-	GetDiskWithResponse(ctx context.Context, diskId openapi_types.UUID, reqEditors ...RequestEditorFn) (*GetDiskResponse, error)
+	GetDiskWithResponse(ctx context.Context, diskId DiskID, reqEditors ...RequestEditorFn) (*GetDiskResponse, error)
 
 	// RenameDiskWithBodyWithResponse Rename a disk
 	//
-	// Changes the name only. Use the resize endpoint for capacity; type and availability zone are immutable.
-	//
 	// Takes any type of body and a specified content type, and returns a wrapper object for the known response body format(s).
 	//
 	// Corresponds with PATCH /api/v1/disks/{diskId} (the `RenameDisk` operationId).
-	RenameDiskWithBodyWithResponse(ctx context.Context, diskId openapi_types.UUID, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*RenameDiskResponse, error)
+	RenameDiskWithBodyWithResponse(ctx context.Context, diskId DiskID, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*RenameDiskResponse, error)
 
 	// RenameDiskWithResponse Rename a disk
 	//
-	// Changes the name only. Use the resize endpoint for capacity; type and availability zone are immutable.
-	//
 	// Takes a body of the `application/json` content type, and returns a wrapper object for the known response body format(s).
 	//
 	// Corresponds with PATCH /api/v1/disks/{diskId} (the `RenameDisk` operationId).
-	RenameDiskWithResponse(ctx context.Context, diskId openapi_types.UUID, body RenameDiskJSONRequestBody, reqEditors ...RequestEditorFn) (*RenameDiskResponse, error)
-
-	// ResizeDiskWithBodyWithResponse Resize a disk
-	//
-	// Creates a Billing order, including for metered pricing. The price must belong to the resource’s Billing Plan; applicable contract pricing is resolved by Billing. Technical capacity is checked before sellable quota is reserved. Provisioning continues automatically after payment; do not submit a new purchase after paying. Reuse the original idempotency key after an uncertain response.
-	//
-	// Takes any type of body and a specified content type, and returns a wrapper object for the known response body format(s).
-	//
-	// Corresponds with POST /api/v1/disks/{diskId}/resize (the `ResizeDisk` operationId).
-	ResizeDiskWithBodyWithResponse(ctx context.Context, diskId openapi_types.UUID, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*ResizeDiskResponse, error)
-
-	// ResizeDiskWithResponse Resize a disk
-	//
-	// Creates a Billing order, including for metered pricing. The price must belong to the resource’s Billing Plan; applicable contract pricing is resolved by Billing. Technical capacity is checked before sellable quota is reserved. Provisioning continues automatically after payment; do not submit a new purchase after paying. Reuse the original idempotency key after an uncertain response.
-	//
-	// Takes a body of the `application/json` content type, and returns a wrapper object for the known response body format(s).
-	//
-	// Corresponds with POST /api/v1/disks/{diskId}/resize (the `ResizeDisk` operationId).
-	ResizeDiskWithResponse(ctx context.Context, diskId openapi_types.UUID, body ResizeDiskJSONRequestBody, reqEditors ...RequestEditorFn) (*ResizeDiskResponse, error)
-
-	// RevertDiskWithBodyWithResponse Revert to a snapshot
-	//
-	// Restores the contents of the disk to the moment the snapshot was taken. **All data written after that moment is lost and cannot be recovered.**
-	//
-	// Three restrictions apply: only the most recent snapshot of the disk can be reverted to; the disk must be detached from its instance first; and a disk resized since the snapshot was taken cannot be reverted. To return to an earlier point in time, or to keep the existing disk, create a new disk from the snapshot instead.
-	//
-	// The revert is not complete when this endpoint returns; poll the retrieve endpoint.
-	//
-	// Takes any type of body and a specified content type, and returns a wrapper object for the known response body format(s).
-	//
-	// Corresponds with POST /api/v1/disks/{diskId}/revert (the `RevertDisk` operationId).
-	RevertDiskWithBodyWithResponse(ctx context.Context, diskId openapi_types.UUID, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*RevertDiskResponse, error)
-
-	// RevertDiskWithResponse Revert to a snapshot
-	//
-	// Restores the contents of the disk to the moment the snapshot was taken. **All data written after that moment is lost and cannot be recovered.**
-	//
-	// Three restrictions apply: only the most recent snapshot of the disk can be reverted to; the disk must be detached from its instance first; and a disk resized since the snapshot was taken cannot be reverted. To return to an earlier point in time, or to keep the existing disk, create a new disk from the snapshot instead.
-	//
-	// The revert is not complete when this endpoint returns; poll the retrieve endpoint.
-	//
-	// Takes a body of the `application/json` content type, and returns a wrapper object for the known response body format(s).
-	//
-	// Corresponds with POST /api/v1/disks/{diskId}/revert (the `RevertDisk` operationId).
-	RevertDiskWithResponse(ctx context.Context, diskId openapi_types.UUID, body RevertDiskJSONRequestBody, reqEditors ...RequestEditorFn) (*RevertDiskResponse, error)
+	RenameDiskWithResponse(ctx context.Context, diskId DiskID, body RenameDiskJSONRequestBody, reqEditors ...RequestEditorFn) (*RenameDiskResponse, error)
 
 	// ListDiskAttachmentsWithResponse List disk attachments
 	//
-	// Actual attachment state, including operations whose provider outcome is unknown. Use usage_id to locate the corresponding blocking claim.
-	//
 	// Returns a wrapper object for the known response body format(s).
 	//
-	// Corresponds with GET /api/v1/disks/{resourceId}/attachments (the `ListDiskAttachments` operationId).
-	ListDiskAttachmentsWithResponse(ctx context.Context, resourceId openapi_types.UUID, params *ListDiskAttachmentsParams, reqEditors ...RequestEditorFn) (*ListDiskAttachmentsResponse, error)
-
-	// ListOperationLogsWithResponse List the operation log of the project
-	//
-	// Records every write operation in the project: who performed it, when, on what, and whether it succeeded. Read operations are not recorded.
-	//
-	// **Operations performed by the platform are included, but the individual operator is not disclosed** and `by_platform` is true. Suspension for non-payment and bans for abuse are examples: the time at which an instance was stopped by the platform is needed, whereas the operator is internal information.
-	//
-	// Fields such as passwords are replaced with a placeholder as the record is written and never appear in `payload`.
-	//
-	// Returns a wrapper object for the known response body format(s).
-	//
-	// Corresponds with GET /api/v1/operation-logs (the `ListOperationLogs` operationId).
-	ListOperationLogsWithResponse(ctx context.Context, params *ListOperationLogsParams, reqEditors ...RequestEditorFn) (*ListOperationLogsResponse, error)
+	// Corresponds with GET /api/v1/disks/{diskId}/attachments (the `ListDiskAttachments` operationId).
+	ListDiskAttachmentsWithResponse(ctx context.Context, diskId DiskID, params *ListDiskAttachmentsParams, reqEditors ...RequestEditorFn) (*ListDiskAttachmentsResponse, error)
 
 	// ListResourceUsagesWithResponse List resource usages
 	//
-	// Lists direct consumers, including pending reservations and claims being released. The resource must be readable by the caller. Historical released claims are included only when requested.
+	// Lists direct consumers and pending reservations for a resource readable in the current project.
 	//
 	// Returns a wrapper object for the known response body format(s).
 	//
 	// Corresponds with GET /api/v1/resource-usages (the `ListResourceUsages` operationId).
 	ListResourceUsagesWithResponse(ctx context.Context, params *ListResourceUsagesParams, reqEditors ...RequestEditorFn) (*ListResourceUsagesResponse, error)
 
-	// GetResourceUsageWithResponse Get resource usage
+	// GetResourceUsageWithResponse Get a resource usage
 	//
 	// Returns a wrapper object for the known response body format(s).
 	//
 	// Corresponds with GET /api/v1/resource-usages/{usageId} (the `GetResourceUsage` operationId).
-	GetResourceUsageWithResponse(ctx context.Context, usageId openapi_types.UUID, reqEditors ...RequestEditorFn) (*GetResourceUsageResponse, error)
+	GetResourceUsageWithResponse(ctx context.Context, usageId UsageID, reqEditors ...RequestEditorFn) (*GetResourceUsageResponse, error)
 
 	// SetResourceIdlePolicyWithBodyWithResponse Set resource idle policy
 	//
-	// Requires permission to delete this resource. Enabling schedules reclamation only after the resource is continuously unreferenced for the requested retention. Existing claims, attachments and unfinished operations always prevent reclamation.
+	// Enabling automatic cleanup starts a fresh retention interval after the last live claim is released. Existing claims and pending operations always block reclamation.
 	//
 	// Takes any type of body and a specified content type, and returns a wrapper object for the known response body format(s).
 	//
 	// Corresponds with PUT /api/v1/resources/{resourceType}/{resourceId}/idle-policy (the `SetResourceIdlePolicy` operationId).
-	SetResourceIdlePolicyWithBodyWithResponse(ctx context.Context, resourceType string, resourceId openapi_types.UUID, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*SetResourceIdlePolicyResponse, error)
+	SetResourceIdlePolicyWithBodyWithResponse(ctx context.Context, resourceType SetResourceIdlePolicyParamsResourceType, resourceId ResourceIDPath, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*SetResourceIdlePolicyResponse, error)
 
 	// SetResourceIdlePolicyWithResponse Set resource idle policy
 	//
-	// Requires permission to delete this resource. Enabling schedules reclamation only after the resource is continuously unreferenced for the requested retention. Existing claims, attachments and unfinished operations always prevent reclamation.
+	// Enabling automatic cleanup starts a fresh retention interval after the last live claim is released. Existing claims and pending operations always block reclamation.
 	//
 	// Takes a body of the `application/json` content type, and returns a wrapper object for the known response body format(s).
 	//
 	// Corresponds with PUT /api/v1/resources/{resourceType}/{resourceId}/idle-policy (the `SetResourceIdlePolicy` operationId).
-	SetResourceIdlePolicyWithResponse(ctx context.Context, resourceType string, resourceId openapi_types.UUID, body SetResourceIdlePolicyJSONRequestBody, reqEditors ...RequestEditorFn) (*SetResourceIdlePolicyResponse, error)
+	SetResourceIdlePolicyWithResponse(ctx context.Context, resourceType SetResourceIdlePolicyParamsResourceType, resourceId ResourceIDPath, body SetResourceIdlePolicyJSONRequestBody, reqEditors ...RequestEditorFn) (*SetResourceIdlePolicyResponse, error)
 
-	// GetResourceReclamationWithResponse Get resource reclamation
+	// GetResourceReclamationWithResponse Get resource reclamation state
 	//
 	// Returns a wrapper object for the known response body format(s).
 	//
 	// Corresponds with GET /api/v1/resources/{resourceType}/{resourceId}/reclamation (the `GetResourceReclamation` operationId).
-	GetResourceReclamationWithResponse(ctx context.Context, resourceType string, resourceId openapi_types.UUID, reqEditors ...RequestEditorFn) (*GetResourceReclamationResponse, error)
-
-	// ListSnapshotsWithResponse List snapshots
-	//
-	// Returns a wrapper object for the known response body format(s).
-	//
-	// Corresponds with GET /api/v1/snapshots (the `ListSnapshots` operationId).
-	ListSnapshotsWithResponse(ctx context.Context, params *ListSnapshotsParams, reqEditors ...RequestEditorFn) (*ListSnapshotsResponse, error)
-
-	// CreateSnapshotWithBodyWithResponse Create a snapshot
-	//
-	// Creates a Billing order, including for metered pricing. The price must belong to the resource’s Billing Plan; applicable contract pricing is resolved by Billing. Technical capacity is checked before sellable quota is reserved. Provisioning continues automatically after payment; do not submit a new purchase after paying. Reuse the original idempotency key after an uncertain response.
-	//
-	// Takes any type of body and a specified content type, and returns a wrapper object for the known response body format(s).
-	//
-	// Corresponds with POST /api/v1/snapshots (the `CreateSnapshot` operationId).
-	CreateSnapshotWithBodyWithResponse(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*CreateSnapshotResponse, error)
-
-	// CreateSnapshotWithResponse Create a snapshot
-	//
-	// Creates a Billing order, including for metered pricing. The price must belong to the resource’s Billing Plan; applicable contract pricing is resolved by Billing. Technical capacity is checked before sellable quota is reserved. Provisioning continues automatically after payment; do not submit a new purchase after paying. Reuse the original idempotency key after an uncertain response.
-	//
-	// Takes a body of the `application/json` content type, and returns a wrapper object for the known response body format(s).
-	//
-	// Corresponds with POST /api/v1/snapshots (the `CreateSnapshot` operationId).
-	CreateSnapshotWithResponse(ctx context.Context, body CreateSnapshotJSONRequestBody, reqEditors ...RequestEditorFn) (*CreateSnapshotResponse, error)
-
-	// DeleteSnapshotWithResponse Delete a snapshot
-	//
-	// Returns a wrapper object for the known response body format(s).
-	//
-	// Corresponds with DELETE /api/v1/snapshots/{snapshotId} (the `DeleteSnapshot` operationId).
-	DeleteSnapshotWithResponse(ctx context.Context, snapshotId openapi_types.UUID, reqEditors ...RequestEditorFn) (*DeleteSnapshotResponse, error)
-
-	// GetSnapshotWithResponse Retrieve a snapshot
-	//
-	// Returns a wrapper object for the known response body format(s).
-	//
-	// Corresponds with GET /api/v1/snapshots/{snapshotId} (the `GetSnapshot` operationId).
-	GetSnapshotWithResponse(ctx context.Context, snapshotId openapi_types.UUID, reqEditors ...RequestEditorFn) (*GetSnapshotResponse, error)
-
-	// RenameSnapshotWithBodyWithResponse Rename a snapshot
-	//
-	// Takes any type of body and a specified content type, and returns a wrapper object for the known response body format(s).
-	//
-	// Corresponds with PATCH /api/v1/snapshots/{snapshotId} (the `RenameSnapshot` operationId).
-	RenameSnapshotWithBodyWithResponse(ctx context.Context, snapshotId openapi_types.UUID, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*RenameSnapshotResponse, error)
-
-	// RenameSnapshotWithResponse Rename a snapshot
-	//
-	// Takes a body of the `application/json` content type, and returns a wrapper object for the known response body format(s).
-	//
-	// Corresponds with PATCH /api/v1/snapshots/{snapshotId} (the `RenameSnapshot` operationId).
-	RenameSnapshotWithResponse(ctx context.Context, snapshotId openapi_types.UUID, body RenameSnapshotJSONRequestBody, reqEditors ...RequestEditorFn) (*RenameSnapshotResponse, error)
+	GetResourceReclamationWithResponse(ctx context.Context, resourceType GetResourceReclamationParamsResourceType, resourceId ResourceIDPath, reqEditors ...RequestEditorFn) (*GetResourceReclamationResponse, error)
 }
 
 type GetAttachmentResponse struct {
 	Body         []byte
 	HTTPResponse *http.Response
 	// JSON200 the response for an HTTP 200 `application/json` response
-	JSON200 *Attachment
+	JSON200 *externalRef0.Attachment
 	// JSONDefault the response for an HTTP default `application/json` response
 	JSONDefault *Error
 }
 
 // GetJSON200 returns the response for an HTTP 200 `application/json` response
-func (r GetAttachmentResponse) GetJSON200() *Attachment {
+func (r GetAttachmentResponse) GetJSON200() *externalRef0.Attachment {
 	return r.JSON200
 }
 
@@ -3342,298 +1706,17 @@ func (r GetAttachmentResponse) ContentType() string {
 	return ""
 }
 
-type ListBackupsResponse struct {
-	Body         []byte
-	HTTPResponse *http.Response
-	// JSON200 the response for an HTTP 200 `application/json` response
-	JSON200 *BackupListResponseBody
-	// JSONDefault the response for an HTTP default `application/json` response
-	JSONDefault *Error
-}
-
-// GetJSON200 returns the response for an HTTP 200 `application/json` response
-func (r ListBackupsResponse) GetJSON200() *BackupListResponseBody {
-	return r.JSON200
-}
-
-// GetJSONDefault returns the response for an HTTP default `application/json` response
-func (r ListBackupsResponse) GetJSONDefault() *Error {
-	return r.JSONDefault
-}
-
-// GetBody returns the raw response body bytes
-func (r ListBackupsResponse) GetBody() []byte {
-	return r.Body
-}
-
-// Status returns HTTPResponse.Status
-func (r ListBackupsResponse) Status() string {
-	if r.HTTPResponse != nil {
-		return r.HTTPResponse.Status
-	}
-	return http.StatusText(0)
-}
-
-// StatusCode returns HTTPResponse.StatusCode
-func (r ListBackupsResponse) StatusCode() int {
-	if r.HTTPResponse != nil {
-		return r.HTTPResponse.StatusCode
-	}
-	return 0
-}
-
-// ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
-func (r ListBackupsResponse) ContentType() string {
-	if r.HTTPResponse != nil {
-		return r.HTTPResponse.Header.Get("Content-Type")
-	}
-	return ""
-}
-
-type CreateBackupResponse struct {
-	Body         []byte
-	HTTPResponse *http.Response
-	// JSON202 the response for an HTTP 202 `application/json` response
-	JSON202 *PlacedOrder
-	// JSONDefault the response for an HTTP default `application/json` response
-	JSONDefault *Error
-}
-
-// GetJSON202 returns the response for an HTTP 202 `application/json` response
-func (r CreateBackupResponse) GetJSON202() *PlacedOrder {
-	return r.JSON202
-}
-
-// GetJSONDefault returns the response for an HTTP default `application/json` response
-func (r CreateBackupResponse) GetJSONDefault() *Error {
-	return r.JSONDefault
-}
-
-// GetBody returns the raw response body bytes
-func (r CreateBackupResponse) GetBody() []byte {
-	return r.Body
-}
-
-// Status returns HTTPResponse.Status
-func (r CreateBackupResponse) Status() string {
-	if r.HTTPResponse != nil {
-		return r.HTTPResponse.Status
-	}
-	return http.StatusText(0)
-}
-
-// StatusCode returns HTTPResponse.StatusCode
-func (r CreateBackupResponse) StatusCode() int {
-	if r.HTTPResponse != nil {
-		return r.HTTPResponse.StatusCode
-	}
-	return 0
-}
-
-// ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
-func (r CreateBackupResponse) ContentType() string {
-	if r.HTTPResponse != nil {
-		return r.HTTPResponse.Header.Get("Content-Type")
-	}
-	return ""
-}
-
-type DeleteBackupResponse struct {
-	Body         []byte
-	HTTPResponse *http.Response
-	// JSONDefault the response for an HTTP default `application/json` response
-	JSONDefault *Error
-}
-
-// GetJSONDefault returns the response for an HTTP default `application/json` response
-func (r DeleteBackupResponse) GetJSONDefault() *Error {
-	return r.JSONDefault
-}
-
-// GetBody returns the raw response body bytes
-func (r DeleteBackupResponse) GetBody() []byte {
-	return r.Body
-}
-
-// Status returns HTTPResponse.Status
-func (r DeleteBackupResponse) Status() string {
-	if r.HTTPResponse != nil {
-		return r.HTTPResponse.Status
-	}
-	return http.StatusText(0)
-}
-
-// StatusCode returns HTTPResponse.StatusCode
-func (r DeleteBackupResponse) StatusCode() int {
-	if r.HTTPResponse != nil {
-		return r.HTTPResponse.StatusCode
-	}
-	return 0
-}
-
-// ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
-func (r DeleteBackupResponse) ContentType() string {
-	if r.HTTPResponse != nil {
-		return r.HTTPResponse.Header.Get("Content-Type")
-	}
-	return ""
-}
-
-type GetBackupResponse struct {
-	Body         []byte
-	HTTPResponse *http.Response
-	// JSON200 the response for an HTTP 200 `application/json` response
-	JSON200 *BackupResource
-	// JSONDefault the response for an HTTP default `application/json` response
-	JSONDefault *Error
-}
-
-// GetJSON200 returns the response for an HTTP 200 `application/json` response
-func (r GetBackupResponse) GetJSON200() *BackupResource {
-	return r.JSON200
-}
-
-// GetJSONDefault returns the response for an HTTP default `application/json` response
-func (r GetBackupResponse) GetJSONDefault() *Error {
-	return r.JSONDefault
-}
-
-// GetBody returns the raw response body bytes
-func (r GetBackupResponse) GetBody() []byte {
-	return r.Body
-}
-
-// Status returns HTTPResponse.Status
-func (r GetBackupResponse) Status() string {
-	if r.HTTPResponse != nil {
-		return r.HTTPResponse.Status
-	}
-	return http.StatusText(0)
-}
-
-// StatusCode returns HTTPResponse.StatusCode
-func (r GetBackupResponse) StatusCode() int {
-	if r.HTTPResponse != nil {
-		return r.HTTPResponse.StatusCode
-	}
-	return 0
-}
-
-// ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
-func (r GetBackupResponse) ContentType() string {
-	if r.HTTPResponse != nil {
-		return r.HTTPResponse.Header.Get("Content-Type")
-	}
-	return ""
-}
-
-type RenameBackupResponse struct {
-	Body         []byte
-	HTTPResponse *http.Response
-	// JSON200 the response for an HTTP 200 `application/json` response
-	JSON200 *BackupResource
-	// JSONDefault the response for an HTTP default `application/json` response
-	JSONDefault *Error
-}
-
-// GetJSON200 returns the response for an HTTP 200 `application/json` response
-func (r RenameBackupResponse) GetJSON200() *BackupResource {
-	return r.JSON200
-}
-
-// GetJSONDefault returns the response for an HTTP default `application/json` response
-func (r RenameBackupResponse) GetJSONDefault() *Error {
-	return r.JSONDefault
-}
-
-// GetBody returns the raw response body bytes
-func (r RenameBackupResponse) GetBody() []byte {
-	return r.Body
-}
-
-// Status returns HTTPResponse.Status
-func (r RenameBackupResponse) Status() string {
-	if r.HTTPResponse != nil {
-		return r.HTTPResponse.Status
-	}
-	return http.StatusText(0)
-}
-
-// StatusCode returns HTTPResponse.StatusCode
-func (r RenameBackupResponse) StatusCode() int {
-	if r.HTTPResponse != nil {
-		return r.HTTPResponse.StatusCode
-	}
-	return 0
-}
-
-// ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
-func (r RenameBackupResponse) ContentType() string {
-	if r.HTTPResponse != nil {
-		return r.HTTPResponse.Header.Get("Content-Type")
-	}
-	return ""
-}
-
-type RestoreBackupResponse struct {
-	Body         []byte
-	HTTPResponse *http.Response
-	// JSON202 the response for an HTTP 202 `application/json` response
-	JSON202 *PlacedOrder
-	// JSONDefault the response for an HTTP default `application/json` response
-	JSONDefault *Error
-}
-
-// GetJSON202 returns the response for an HTTP 202 `application/json` response
-func (r RestoreBackupResponse) GetJSON202() *PlacedOrder {
-	return r.JSON202
-}
-
-// GetJSONDefault returns the response for an HTTP default `application/json` response
-func (r RestoreBackupResponse) GetJSONDefault() *Error {
-	return r.JSONDefault
-}
-
-// GetBody returns the raw response body bytes
-func (r RestoreBackupResponse) GetBody() []byte {
-	return r.Body
-}
-
-// Status returns HTTPResponse.Status
-func (r RestoreBackupResponse) Status() string {
-	if r.HTTPResponse != nil {
-		return r.HTTPResponse.Status
-	}
-	return http.StatusText(0)
-}
-
-// StatusCode returns HTTPResponse.StatusCode
-func (r RestoreBackupResponse) StatusCode() int {
-	if r.HTTPResponse != nil {
-		return r.HTTPResponse.StatusCode
-	}
-	return 0
-}
-
-// ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
-func (r RestoreBackupResponse) ContentType() string {
-	if r.HTTPResponse != nil {
-		return r.HTTPResponse.Header.Get("Content-Type")
-	}
-	return ""
-}
-
 type ListDiskTypesResponse struct {
 	Body         []byte
 	HTTPResponse *http.Response
 	// JSON200 the response for an HTTP 200 `application/json` response
-	JSON200 *DiskTypeListResponseBody
+	JSON200 *DiskTypeList
 	// JSONDefault the response for an HTTP default `application/json` response
 	JSONDefault *Error
 }
 
 // GetJSON200 returns the response for an HTTP 200 `application/json` response
-func (r ListDiskTypesResponse) GetJSON200() *DiskTypeListResponseBody {
+func (r ListDiskTypesResponse) GetJSON200() *DiskTypeList {
 	return r.JSON200
 }
 
@@ -3675,13 +1758,13 @@ type GetDiskTypeResponse struct {
 	Body         []byte
 	HTTPResponse *http.Response
 	// JSON200 the response for an HTTP 200 `application/json` response
-	JSON200 *DiskTypeResource
+	JSON200 *DiskType
 	// JSONDefault the response for an HTTP default `application/json` response
 	JSONDefault *Error
 }
 
 // GetJSON200 returns the response for an HTTP 200 `application/json` response
-func (r GetDiskTypeResponse) GetJSON200() *DiskTypeResource {
+func (r GetDiskTypeResponse) GetJSON200() *DiskType {
 	return r.JSON200
 }
 
@@ -3723,13 +1806,13 @@ type ListDisksResponse struct {
 	Body         []byte
 	HTTPResponse *http.Response
 	// JSON200 the response for an HTTP 200 `application/json` response
-	JSON200 *DiskListResponseBody
+	JSON200 *DiskList
 	// JSONDefault the response for an HTTP default `application/json` response
 	JSONDefault *Error
 }
 
 // GetJSON200 returns the response for an HTTP 200 `application/json` response
-func (r ListDisksResponse) GetJSON200() *DiskListResponseBody {
+func (r ListDisksResponse) GetJSON200() *DiskList {
 	return r.JSON200
 }
 
@@ -3771,13 +1854,13 @@ type CreateDiskResponse struct {
 	Body         []byte
 	HTTPResponse *http.Response
 	// JSON202 the response for an HTTP 202 `application/json` response
-	JSON202 *PlacedOrder
+	JSON202 *externalRef0.PlacedOrder
 	// JSONDefault the response for an HTTP default `application/json` response
 	JSONDefault *Error
 }
 
 // GetJSON202 returns the response for an HTTP 202 `application/json` response
-func (r CreateDiskResponse) GetJSON202() *PlacedOrder {
+func (r CreateDiskResponse) GetJSON202() *externalRef0.PlacedOrder {
 	return r.JSON202
 }
 
@@ -3860,13 +1943,13 @@ type GetDiskResponse struct {
 	Body         []byte
 	HTTPResponse *http.Response
 	// JSON200 the response for an HTTP 200 `application/json` response
-	JSON200 *DiskResource
+	JSON200 *Disk
 	// JSONDefault the response for an HTTP default `application/json` response
 	JSONDefault *Error
 }
 
 // GetJSON200 returns the response for an HTTP 200 `application/json` response
-func (r GetDiskResponse) GetJSON200() *DiskResource {
+func (r GetDiskResponse) GetJSON200() *Disk {
 	return r.JSON200
 }
 
@@ -3908,13 +1991,13 @@ type RenameDiskResponse struct {
 	Body         []byte
 	HTTPResponse *http.Response
 	// JSON200 the response for an HTTP 200 `application/json` response
-	JSON200 *DiskResource
+	JSON200 *Disk
 	// JSONDefault the response for an HTTP default `application/json` response
 	JSONDefault *Error
 }
 
 // GetJSON200 returns the response for an HTTP 200 `application/json` response
-func (r RenameDiskResponse) GetJSON200() *DiskResource {
+func (r RenameDiskResponse) GetJSON200() *Disk {
 	return r.JSON200
 }
 
@@ -3952,113 +2035,17 @@ func (r RenameDiskResponse) ContentType() string {
 	return ""
 }
 
-type ResizeDiskResponse struct {
-	Body         []byte
-	HTTPResponse *http.Response
-	// JSON202 the response for an HTTP 202 `application/json` response
-	JSON202 *PlacedOrder
-	// JSONDefault the response for an HTTP default `application/json` response
-	JSONDefault *Error
-}
-
-// GetJSON202 returns the response for an HTTP 202 `application/json` response
-func (r ResizeDiskResponse) GetJSON202() *PlacedOrder {
-	return r.JSON202
-}
-
-// GetJSONDefault returns the response for an HTTP default `application/json` response
-func (r ResizeDiskResponse) GetJSONDefault() *Error {
-	return r.JSONDefault
-}
-
-// GetBody returns the raw response body bytes
-func (r ResizeDiskResponse) GetBody() []byte {
-	return r.Body
-}
-
-// Status returns HTTPResponse.Status
-func (r ResizeDiskResponse) Status() string {
-	if r.HTTPResponse != nil {
-		return r.HTTPResponse.Status
-	}
-	return http.StatusText(0)
-}
-
-// StatusCode returns HTTPResponse.StatusCode
-func (r ResizeDiskResponse) StatusCode() int {
-	if r.HTTPResponse != nil {
-		return r.HTTPResponse.StatusCode
-	}
-	return 0
-}
-
-// ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
-func (r ResizeDiskResponse) ContentType() string {
-	if r.HTTPResponse != nil {
-		return r.HTTPResponse.Header.Get("Content-Type")
-	}
-	return ""
-}
-
-type RevertDiskResponse struct {
-	Body         []byte
-	HTTPResponse *http.Response
-	// JSON200 the response for an HTTP 200 `application/json` response
-	JSON200 *DiskResource
-	// JSONDefault the response for an HTTP default `application/json` response
-	JSONDefault *Error
-}
-
-// GetJSON200 returns the response for an HTTP 200 `application/json` response
-func (r RevertDiskResponse) GetJSON200() *DiskResource {
-	return r.JSON200
-}
-
-// GetJSONDefault returns the response for an HTTP default `application/json` response
-func (r RevertDiskResponse) GetJSONDefault() *Error {
-	return r.JSONDefault
-}
-
-// GetBody returns the raw response body bytes
-func (r RevertDiskResponse) GetBody() []byte {
-	return r.Body
-}
-
-// Status returns HTTPResponse.Status
-func (r RevertDiskResponse) Status() string {
-	if r.HTTPResponse != nil {
-		return r.HTTPResponse.Status
-	}
-	return http.StatusText(0)
-}
-
-// StatusCode returns HTTPResponse.StatusCode
-func (r RevertDiskResponse) StatusCode() int {
-	if r.HTTPResponse != nil {
-		return r.HTTPResponse.StatusCode
-	}
-	return 0
-}
-
-// ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
-func (r RevertDiskResponse) ContentType() string {
-	if r.HTTPResponse != nil {
-		return r.HTTPResponse.Header.Get("Content-Type")
-	}
-	return ""
-}
-
 type ListDiskAttachmentsResponse struct {
 	Body         []byte
 	HTTPResponse *http.Response
 	// JSON200 the response for an HTTP 200 `application/json` response
-	JSON200 *AttachmentList
+	JSON200 *externalRef0.AttachmentList
 	// JSONDefault the response for an HTTP default `application/json` response
 	JSONDefault *Error
 }
 
 // GetJSON200 returns the response for an HTTP 200 `application/json` response
-func (r ListDiskAttachmentsResponse) GetJSON200() *AttachmentList {
+func (r ListDiskAttachmentsResponse) GetJSON200() *externalRef0.AttachmentList {
 	return r.JSON200
 }
 
@@ -4096,65 +2083,17 @@ func (r ListDiskAttachmentsResponse) ContentType() string {
 	return ""
 }
 
-type ListOperationLogsResponse struct {
-	Body         []byte
-	HTTPResponse *http.Response
-	// JSON200 the response for an HTTP 200 `application/json` response
-	JSON200 *OperationLogListResponseBody
-	// JSONDefault the response for an HTTP default `application/json` response
-	JSONDefault *Error
-}
-
-// GetJSON200 returns the response for an HTTP 200 `application/json` response
-func (r ListOperationLogsResponse) GetJSON200() *OperationLogListResponseBody {
-	return r.JSON200
-}
-
-// GetJSONDefault returns the response for an HTTP default `application/json` response
-func (r ListOperationLogsResponse) GetJSONDefault() *Error {
-	return r.JSONDefault
-}
-
-// GetBody returns the raw response body bytes
-func (r ListOperationLogsResponse) GetBody() []byte {
-	return r.Body
-}
-
-// Status returns HTTPResponse.Status
-func (r ListOperationLogsResponse) Status() string {
-	if r.HTTPResponse != nil {
-		return r.HTTPResponse.Status
-	}
-	return http.StatusText(0)
-}
-
-// StatusCode returns HTTPResponse.StatusCode
-func (r ListOperationLogsResponse) StatusCode() int {
-	if r.HTTPResponse != nil {
-		return r.HTTPResponse.StatusCode
-	}
-	return 0
-}
-
-// ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
-func (r ListOperationLogsResponse) ContentType() string {
-	if r.HTTPResponse != nil {
-		return r.HTTPResponse.Header.Get("Content-Type")
-	}
-	return ""
-}
-
 type ListResourceUsagesResponse struct {
 	Body         []byte
 	HTTPResponse *http.Response
 	// JSON200 the response for an HTTP 200 `application/json` response
-	JSON200 *ResourceUsageList
+	JSON200 *externalRef0.ResourceUsageList
 	// JSONDefault the response for an HTTP default `application/json` response
 	JSONDefault *Error
 }
 
 // GetJSON200 returns the response for an HTTP 200 `application/json` response
-func (r ListResourceUsagesResponse) GetJSON200() *ResourceUsageList {
+func (r ListResourceUsagesResponse) GetJSON200() *externalRef0.ResourceUsageList {
 	return r.JSON200
 }
 
@@ -4196,13 +2135,13 @@ type GetResourceUsageResponse struct {
 	Body         []byte
 	HTTPResponse *http.Response
 	// JSON200 the response for an HTTP 200 `application/json` response
-	JSON200 *ResourceUsage
+	JSON200 *externalRef0.ResourceUsage
 	// JSONDefault the response for an HTTP default `application/json` response
 	JSONDefault *Error
 }
 
 // GetJSON200 returns the response for an HTTP 200 `application/json` response
-func (r GetResourceUsageResponse) GetJSON200() *ResourceUsage {
+func (r GetResourceUsageResponse) GetJSON200() *externalRef0.ResourceUsage {
 	return r.JSON200
 }
 
@@ -4244,13 +2183,13 @@ type SetResourceIdlePolicyResponse struct {
 	Body         []byte
 	HTTPResponse *http.Response
 	// JSON200 the response for an HTTP 200 `application/json` response
-	JSON200 *ReclamationState
+	JSON200 *externalRef0.ReclamationState
 	// JSONDefault the response for an HTTP default `application/json` response
 	JSONDefault *Error
 }
 
 // GetJSON200 returns the response for an HTTP 200 `application/json` response
-func (r SetResourceIdlePolicyResponse) GetJSON200() *ReclamationState {
+func (r SetResourceIdlePolicyResponse) GetJSON200() *externalRef0.ReclamationState {
 	return r.JSON200
 }
 
@@ -4292,13 +2231,13 @@ type GetResourceReclamationResponse struct {
 	Body         []byte
 	HTTPResponse *http.Response
 	// JSON200 the response for an HTTP 200 `application/json` response
-	JSON200 *ReclamationState
+	JSON200 *externalRef0.ReclamationState
 	// JSONDefault the response for an HTTP default `application/json` response
 	JSONDefault *Error
 }
 
 // GetJSON200 returns the response for an HTTP 200 `application/json` response
-func (r GetResourceReclamationResponse) GetJSON200() *ReclamationState {
+func (r GetResourceReclamationResponse) GetJSON200() *externalRef0.ReclamationState {
 	return r.JSON200
 }
 
@@ -4336,245 +2275,12 @@ func (r GetResourceReclamationResponse) ContentType() string {
 	return ""
 }
 
-type ListSnapshotsResponse struct {
-	Body         []byte
-	HTTPResponse *http.Response
-	// JSON200 the response for an HTTP 200 `application/json` response
-	JSON200 *SnapshotListResponseBody
-	// JSONDefault the response for an HTTP default `application/json` response
-	JSONDefault *Error
-}
-
-// GetJSON200 returns the response for an HTTP 200 `application/json` response
-func (r ListSnapshotsResponse) GetJSON200() *SnapshotListResponseBody {
-	return r.JSON200
-}
-
-// GetJSONDefault returns the response for an HTTP default `application/json` response
-func (r ListSnapshotsResponse) GetJSONDefault() *Error {
-	return r.JSONDefault
-}
-
-// GetBody returns the raw response body bytes
-func (r ListSnapshotsResponse) GetBody() []byte {
-	return r.Body
-}
-
-// Status returns HTTPResponse.Status
-func (r ListSnapshotsResponse) Status() string {
-	if r.HTTPResponse != nil {
-		return r.HTTPResponse.Status
-	}
-	return http.StatusText(0)
-}
-
-// StatusCode returns HTTPResponse.StatusCode
-func (r ListSnapshotsResponse) StatusCode() int {
-	if r.HTTPResponse != nil {
-		return r.HTTPResponse.StatusCode
-	}
-	return 0
-}
-
-// ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
-func (r ListSnapshotsResponse) ContentType() string {
-	if r.HTTPResponse != nil {
-		return r.HTTPResponse.Header.Get("Content-Type")
-	}
-	return ""
-}
-
-type CreateSnapshotResponse struct {
-	Body         []byte
-	HTTPResponse *http.Response
-	// JSON202 the response for an HTTP 202 `application/json` response
-	JSON202 *PlacedOrder
-	// JSONDefault the response for an HTTP default `application/json` response
-	JSONDefault *Error
-}
-
-// GetJSON202 returns the response for an HTTP 202 `application/json` response
-func (r CreateSnapshotResponse) GetJSON202() *PlacedOrder {
-	return r.JSON202
-}
-
-// GetJSONDefault returns the response for an HTTP default `application/json` response
-func (r CreateSnapshotResponse) GetJSONDefault() *Error {
-	return r.JSONDefault
-}
-
-// GetBody returns the raw response body bytes
-func (r CreateSnapshotResponse) GetBody() []byte {
-	return r.Body
-}
-
-// Status returns HTTPResponse.Status
-func (r CreateSnapshotResponse) Status() string {
-	if r.HTTPResponse != nil {
-		return r.HTTPResponse.Status
-	}
-	return http.StatusText(0)
-}
-
-// StatusCode returns HTTPResponse.StatusCode
-func (r CreateSnapshotResponse) StatusCode() int {
-	if r.HTTPResponse != nil {
-		return r.HTTPResponse.StatusCode
-	}
-	return 0
-}
-
-// ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
-func (r CreateSnapshotResponse) ContentType() string {
-	if r.HTTPResponse != nil {
-		return r.HTTPResponse.Header.Get("Content-Type")
-	}
-	return ""
-}
-
-type DeleteSnapshotResponse struct {
-	Body         []byte
-	HTTPResponse *http.Response
-	// JSONDefault the response for an HTTP default `application/json` response
-	JSONDefault *Error
-}
-
-// GetJSONDefault returns the response for an HTTP default `application/json` response
-func (r DeleteSnapshotResponse) GetJSONDefault() *Error {
-	return r.JSONDefault
-}
-
-// GetBody returns the raw response body bytes
-func (r DeleteSnapshotResponse) GetBody() []byte {
-	return r.Body
-}
-
-// Status returns HTTPResponse.Status
-func (r DeleteSnapshotResponse) Status() string {
-	if r.HTTPResponse != nil {
-		return r.HTTPResponse.Status
-	}
-	return http.StatusText(0)
-}
-
-// StatusCode returns HTTPResponse.StatusCode
-func (r DeleteSnapshotResponse) StatusCode() int {
-	if r.HTTPResponse != nil {
-		return r.HTTPResponse.StatusCode
-	}
-	return 0
-}
-
-// ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
-func (r DeleteSnapshotResponse) ContentType() string {
-	if r.HTTPResponse != nil {
-		return r.HTTPResponse.Header.Get("Content-Type")
-	}
-	return ""
-}
-
-type GetSnapshotResponse struct {
-	Body         []byte
-	HTTPResponse *http.Response
-	// JSON200 the response for an HTTP 200 `application/json` response
-	JSON200 *SnapshotResource
-	// JSONDefault the response for an HTTP default `application/json` response
-	JSONDefault *Error
-}
-
-// GetJSON200 returns the response for an HTTP 200 `application/json` response
-func (r GetSnapshotResponse) GetJSON200() *SnapshotResource {
-	return r.JSON200
-}
-
-// GetJSONDefault returns the response for an HTTP default `application/json` response
-func (r GetSnapshotResponse) GetJSONDefault() *Error {
-	return r.JSONDefault
-}
-
-// GetBody returns the raw response body bytes
-func (r GetSnapshotResponse) GetBody() []byte {
-	return r.Body
-}
-
-// Status returns HTTPResponse.Status
-func (r GetSnapshotResponse) Status() string {
-	if r.HTTPResponse != nil {
-		return r.HTTPResponse.Status
-	}
-	return http.StatusText(0)
-}
-
-// StatusCode returns HTTPResponse.StatusCode
-func (r GetSnapshotResponse) StatusCode() int {
-	if r.HTTPResponse != nil {
-		return r.HTTPResponse.StatusCode
-	}
-	return 0
-}
-
-// ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
-func (r GetSnapshotResponse) ContentType() string {
-	if r.HTTPResponse != nil {
-		return r.HTTPResponse.Header.Get("Content-Type")
-	}
-	return ""
-}
-
-type RenameSnapshotResponse struct {
-	Body         []byte
-	HTTPResponse *http.Response
-	// JSON200 the response for an HTTP 200 `application/json` response
-	JSON200 *SnapshotResource
-	// JSONDefault the response for an HTTP default `application/json` response
-	JSONDefault *Error
-}
-
-// GetJSON200 returns the response for an HTTP 200 `application/json` response
-func (r RenameSnapshotResponse) GetJSON200() *SnapshotResource {
-	return r.JSON200
-}
-
-// GetJSONDefault returns the response for an HTTP default `application/json` response
-func (r RenameSnapshotResponse) GetJSONDefault() *Error {
-	return r.JSONDefault
-}
-
-// GetBody returns the raw response body bytes
-func (r RenameSnapshotResponse) GetBody() []byte {
-	return r.Body
-}
-
-// Status returns HTTPResponse.Status
-func (r RenameSnapshotResponse) Status() string {
-	if r.HTTPResponse != nil {
-		return r.HTTPResponse.Status
-	}
-	return http.StatusText(0)
-}
-
-// StatusCode returns HTTPResponse.StatusCode
-func (r RenameSnapshotResponse) StatusCode() int {
-	if r.HTTPResponse != nil {
-		return r.HTTPResponse.StatusCode
-	}
-	return 0
-}
-
-// ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
-func (r RenameSnapshotResponse) ContentType() string {
-	if r.HTTPResponse != nil {
-		return r.HTTPResponse.Header.Get("Content-Type")
-	}
-	return ""
-}
-
-// GetAttachmentWithResponse Get attachment
+// GetAttachmentWithResponse Get a disk attachment
 //
 // Returns a wrapper object for the known response body format(s).
 //
 // Corresponds with GET /api/v1/attachments/{attachmentId} (the `GetAttachment` operationId).
-func (c *ClientWithResponses) GetAttachmentWithResponse(ctx context.Context, attachmentId openapi_types.UUID, reqEditors ...RequestEditorFn) (*GetAttachmentResponse, error) {
+func (c *ClientWithResponses) GetAttachmentWithResponse(ctx context.Context, attachmentId AttachmentID, reqEditors ...RequestEditorFn) (*GetAttachmentResponse, error) {
 	rsp, err := c.GetAttachment(ctx, attachmentId, reqEditors...)
 	if err != nil {
 		return nil, err
@@ -4582,138 +2288,7 @@ func (c *ClientWithResponses) GetAttachmentWithResponse(ctx context.Context, att
 	return ParseGetAttachmentResponse(rsp)
 }
 
-// ListBackupsWithResponse List backups
-//
-// Returns a wrapper object for the known response body format(s).
-//
-// Corresponds with GET /api/v1/backups (the `ListBackups` operationId).
-func (c *ClientWithResponses) ListBackupsWithResponse(ctx context.Context, params *ListBackupsParams, reqEditors ...RequestEditorFn) (*ListBackupsResponse, error) {
-	rsp, err := c.ListBackups(ctx, params, reqEditors...)
-	if err != nil {
-		return nil, err
-	}
-	return ParseListBackupsResponse(rsp)
-}
-
-// CreateBackupWithBodyWithResponse Create a backup
-//
-// Creates a Billing order, including for metered pricing. The price must belong to the resource’s Billing Plan; applicable contract pricing is resolved by Billing. Technical capacity is checked before sellable quota is reserved. Provisioning continues automatically after payment; do not submit a new purchase after paying. Reuse the original idempotency key after an uncertain response.
-//
-// Takes any type of body and a specified content type, and returns a wrapper object for the known response body format(s).
-//
-// Corresponds with POST /api/v1/backups (the `CreateBackup` operationId).
-func (c *ClientWithResponses) CreateBackupWithBodyWithResponse(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*CreateBackupResponse, error) {
-	rsp, err := c.CreateBackupWithBody(ctx, contentType, body, reqEditors...)
-	if err != nil {
-		return nil, err
-	}
-	return ParseCreateBackupResponse(rsp)
-}
-
-// CreateBackupWithResponse Create a backup
-//
-// Creates a Billing order, including for metered pricing. The price must belong to the resource’s Billing Plan; applicable contract pricing is resolved by Billing. Technical capacity is checked before sellable quota is reserved. Provisioning continues automatically after payment; do not submit a new purchase after paying. Reuse the original idempotency key after an uncertain response.
-//
-// Takes a body of the `application/json` content type, and returns a wrapper object for the known response body format(s).
-//
-// Corresponds with POST /api/v1/backups (the `CreateBackup` operationId).
-func (c *ClientWithResponses) CreateBackupWithResponse(ctx context.Context, body CreateBackupJSONRequestBody, reqEditors ...RequestEditorFn) (*CreateBackupResponse, error) {
-	rsp, err := c.CreateBackup(ctx, body, reqEditors...)
-	if err != nil {
-		return nil, err
-	}
-	return ParseCreateBackupResponse(rsp)
-}
-
-// DeleteBackupWithResponse Delete a backup
-//
-// Independent of the source disk: deletion succeeds whether or not that disk still exists.
-//
-// Returns a wrapper object for the known response body format(s).
-//
-// Corresponds with DELETE /api/v1/backups/{backupId} (the `DeleteBackup` operationId).
-func (c *ClientWithResponses) DeleteBackupWithResponse(ctx context.Context, backupId openapi_types.UUID, reqEditors ...RequestEditorFn) (*DeleteBackupResponse, error) {
-	rsp, err := c.DeleteBackup(ctx, backupId, reqEditors...)
-	if err != nil {
-		return nil, err
-	}
-	return ParseDeleteBackupResponse(rsp)
-}
-
-// GetBackupWithResponse Retrieve a backup
-//
-// Queries the current state of the backup, which makes it slower but more accurate than the list endpoint. Use it to poll creation progress.
-//
-// Returns a wrapper object for the known response body format(s).
-//
-// Corresponds with GET /api/v1/backups/{backupId} (the `GetBackup` operationId).
-func (c *ClientWithResponses) GetBackupWithResponse(ctx context.Context, backupId openapi_types.UUID, reqEditors ...RequestEditorFn) (*GetBackupResponse, error) {
-	rsp, err := c.GetBackup(ctx, backupId, reqEditors...)
-	if err != nil {
-		return nil, err
-	}
-	return ParseGetBackupResponse(rsp)
-}
-
-// RenameBackupWithBodyWithResponse Rename a backup
-//
-// Takes any type of body and a specified content type, and returns a wrapper object for the known response body format(s).
-//
-// Corresponds with PATCH /api/v1/backups/{backupId} (the `RenameBackup` operationId).
-func (c *ClientWithResponses) RenameBackupWithBodyWithResponse(ctx context.Context, backupId openapi_types.UUID, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*RenameBackupResponse, error) {
-	rsp, err := c.RenameBackupWithBody(ctx, backupId, contentType, body, reqEditors...)
-	if err != nil {
-		return nil, err
-	}
-	return ParseRenameBackupResponse(rsp)
-}
-
-// RenameBackupWithResponse Rename a backup
-//
-// Takes a body of the `application/json` content type, and returns a wrapper object for the known response body format(s).
-//
-// Corresponds with PATCH /api/v1/backups/{backupId} (the `RenameBackup` operationId).
-func (c *ClientWithResponses) RenameBackupWithResponse(ctx context.Context, backupId openapi_types.UUID, body RenameBackupJSONRequestBody, reqEditors ...RequestEditorFn) (*RenameBackupResponse, error) {
-	rsp, err := c.RenameBackup(ctx, backupId, body, reqEditors...)
-	if err != nil {
-		return nil, err
-	}
-	return ParseRenameBackupResponse(rsp)
-}
-
-// RestoreBackupWithBodyWithResponse Restore from a backup
-//
-// Creates a Billing order, including for metered pricing. The price must belong to the resource’s Billing Plan; applicable contract pricing is resolved by Billing. Technical capacity is checked before sellable quota is reserved. Provisioning continues automatically after payment; do not submit a new purchase after paying. Reuse the original idempotency key after an uncertain response.
-//
-// Takes any type of body and a specified content type, and returns a wrapper object for the known response body format(s).
-//
-// Corresponds with POST /api/v1/backups/{backupId}/restore (the `RestoreBackup` operationId).
-func (c *ClientWithResponses) RestoreBackupWithBodyWithResponse(ctx context.Context, backupId openapi_types.UUID, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*RestoreBackupResponse, error) {
-	rsp, err := c.RestoreBackupWithBody(ctx, backupId, contentType, body, reqEditors...)
-	if err != nil {
-		return nil, err
-	}
-	return ParseRestoreBackupResponse(rsp)
-}
-
-// RestoreBackupWithResponse Restore from a backup
-//
-// Creates a Billing order, including for metered pricing. The price must belong to the resource’s Billing Plan; applicable contract pricing is resolved by Billing. Technical capacity is checked before sellable quota is reserved. Provisioning continues automatically after payment; do not submit a new purchase after paying. Reuse the original idempotency key after an uncertain response.
-//
-// Takes a body of the `application/json` content type, and returns a wrapper object for the known response body format(s).
-//
-// Corresponds with POST /api/v1/backups/{backupId}/restore (the `RestoreBackup` operationId).
-func (c *ClientWithResponses) RestoreBackupWithResponse(ctx context.Context, backupId openapi_types.UUID, body RestoreBackupJSONRequestBody, reqEditors ...RequestEditorFn) (*RestoreBackupResponse, error) {
-	rsp, err := c.RestoreBackup(ctx, backupId, body, reqEditors...)
-	if err != nil {
-		return nil, err
-	}
-	return ParseRestoreBackupResponse(rsp)
-}
-
 // ListDiskTypesWithResponse List disk types on sale
-//
-// Only disk types currently on sale are listed. A withdrawn one disappears from here and can no longer be bought, while the disks already on it keep working and can still be resized.
 //
 // Returns a wrapper object for the known response body format(s).
 //
@@ -4728,12 +2303,10 @@ func (c *ClientWithResponses) ListDiskTypesWithResponse(ctx context.Context, par
 
 // GetDiskTypeWithResponse Get a disk type
 //
-// Retrieve capacity and performance constraints for an existing disk, including system disk types and types withdrawn from sale.
-//
 // Returns a wrapper object for the known response body format(s).
 //
 // Corresponds with GET /api/v1/disk-types/{diskTypeId} (the `GetDiskType` operationId).
-func (c *ClientWithResponses) GetDiskTypeWithResponse(ctx context.Context, diskTypeId openapi_types.UUID, reqEditors ...RequestEditorFn) (*GetDiskTypeResponse, error) {
+func (c *ClientWithResponses) GetDiskTypeWithResponse(ctx context.Context, diskTypeId DiskTypeID, reqEditors ...RequestEditorFn) (*GetDiskTypeResponse, error) {
 	rsp, err := c.GetDiskType(ctx, diskTypeId, reqEditors...)
 	if err != nil {
 		return nil, err
@@ -4741,9 +2314,7 @@ func (c *ClientWithResponses) GetDiskTypeWithResponse(ctx context.Context, diskT
 	return ParseGetDiskTypeResponse(rsp)
 }
 
-// ListDisksWithResponse List disks
-//
-// Lists disks in the current project. Use resource-usages to inspect consumers and pending reservations.
+// ListDisksWithResponse List disks in the current project
 //
 // Returns a wrapper object for the known response body format(s).
 //
@@ -4756,9 +2327,9 @@ func (c *ClientWithResponses) ListDisksWithResponse(ctx context.Context, params 
 	return ParseListDisksResponse(rsp)
 }
 
-// CreateDiskWithBodyWithResponse Create a disk
+// CreateDiskWithBodyWithResponse Create a disk purchase
 //
-// Creates a Billing order, including for metered pricing. The price must belong to the resource’s Billing Plan; applicable contract pricing is resolved by Billing. Technical capacity is checked before sellable quota is reserved. Provisioning continues automatically after payment; do not submit a new purchase after paying. Reuse the original idempotency key after an uncertain response.
+// Checks Fleet capacity, creates the local disk intent, and places a Billing order. Reuse the same idempotency key after an uncertain response. Billing resolves contract pricing, sellable quota, grants, payment challenges, and expiry.
 //
 // Takes any type of body and a specified content type, and returns a wrapper object for the known response body format(s).
 //
@@ -4771,9 +2342,9 @@ func (c *ClientWithResponses) CreateDiskWithBodyWithResponse(ctx context.Context
 	return ParseCreateDiskResponse(rsp)
 }
 
-// CreateDiskWithResponse Create a disk
+// CreateDiskWithResponse Create a disk purchase
 //
-// Creates a Billing order, including for metered pricing. The price must belong to the resource’s Billing Plan; applicable contract pricing is resolved by Billing. Technical capacity is checked before sellable quota is reserved. Provisioning continues automatically after payment; do not submit a new purchase after paying. Reuse the original idempotency key after an uncertain response.
+// Checks Fleet capacity, creates the local disk intent, and places a Billing order. Reuse the same idempotency key after an uncertain response. Billing resolves contract pricing, sellable quota, grants, payment challenges, and expiry.
 //
 // Takes a body of the `application/json` content type, and returns a wrapper object for the known response body format(s).
 //
@@ -4788,27 +2359,25 @@ func (c *ClientWithResponses) CreateDiskWithResponse(ctx context.Context, body C
 
 // DeleteDiskWithResponse Delete a disk
 //
-// Deletion is rejected while the disk is attached, or while snapshots created from it still exist.
+// Deletion is asynchronous and is rejected while the disk has a live attachment or another live resource claim. Billing ends resource-bound subscriptions only after Cinder confirms deletion.
 //
 // Returns a wrapper object for the known response body format(s).
 //
 // Corresponds with DELETE /api/v1/disks/{diskId} (the `DeleteDisk` operationId).
-func (c *ClientWithResponses) DeleteDiskWithResponse(ctx context.Context, diskId openapi_types.UUID, reqEditors ...RequestEditorFn) (*DeleteDiskResponse, error) {
-	rsp, err := c.DeleteDisk(ctx, diskId, reqEditors...)
+func (c *ClientWithResponses) DeleteDiskWithResponse(ctx context.Context, diskId DiskID, params *DeleteDiskParams, reqEditors ...RequestEditorFn) (*DeleteDiskResponse, error) {
+	rsp, err := c.DeleteDisk(ctx, diskId, params, reqEditors...)
 	if err != nil {
 		return nil, err
 	}
 	return ParseDeleteDiskResponse(rsp)
 }
 
-// GetDiskWithResponse Retrieve a disk
-//
-// Returns the disk and its observed state. Read its attachments for consumers, device names and pending attachment operations.
+// GetDiskWithResponse Get a disk
 //
 // Returns a wrapper object for the known response body format(s).
 //
 // Corresponds with GET /api/v1/disks/{diskId} (the `GetDisk` operationId).
-func (c *ClientWithResponses) GetDiskWithResponse(ctx context.Context, diskId openapi_types.UUID, reqEditors ...RequestEditorFn) (*GetDiskResponse, error) {
+func (c *ClientWithResponses) GetDiskWithResponse(ctx context.Context, diskId DiskID, reqEditors ...RequestEditorFn) (*GetDiskResponse, error) {
 	rsp, err := c.GetDisk(ctx, diskId, reqEditors...)
 	if err != nil {
 		return nil, err
@@ -4818,12 +2387,10 @@ func (c *ClientWithResponses) GetDiskWithResponse(ctx context.Context, diskId op
 
 // RenameDiskWithBodyWithResponse Rename a disk
 //
-// Changes the name only. Use the resize endpoint for capacity; type and availability zone are immutable.
-//
 // Takes any type of body and a specified content type, and returns a wrapper object for the known response body format(s).
 //
 // Corresponds with PATCH /api/v1/disks/{diskId} (the `RenameDisk` operationId).
-func (c *ClientWithResponses) RenameDiskWithBodyWithResponse(ctx context.Context, diskId openapi_types.UUID, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*RenameDiskResponse, error) {
+func (c *ClientWithResponses) RenameDiskWithBodyWithResponse(ctx context.Context, diskId DiskID, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*RenameDiskResponse, error) {
 	rsp, err := c.RenameDiskWithBody(ctx, diskId, contentType, body, reqEditors...)
 	if err != nil {
 		return nil, err
@@ -4833,12 +2400,10 @@ func (c *ClientWithResponses) RenameDiskWithBodyWithResponse(ctx context.Context
 
 // RenameDiskWithResponse Rename a disk
 //
-// Changes the name only. Use the resize endpoint for capacity; type and availability zone are immutable.
-//
 // Takes a body of the `application/json` content type, and returns a wrapper object for the known response body format(s).
 //
 // Corresponds with PATCH /api/v1/disks/{diskId} (the `RenameDisk` operationId).
-func (c *ClientWithResponses) RenameDiskWithResponse(ctx context.Context, diskId openapi_types.UUID, body RenameDiskJSONRequestBody, reqEditors ...RequestEditorFn) (*RenameDiskResponse, error) {
+func (c *ClientWithResponses) RenameDiskWithResponse(ctx context.Context, diskId DiskID, body RenameDiskJSONRequestBody, reqEditors ...RequestEditorFn) (*RenameDiskResponse, error) {
 	rsp, err := c.RenameDisk(ctx, diskId, body, reqEditors...)
 	if err != nil {
 		return nil, err
@@ -4846,111 +2411,22 @@ func (c *ClientWithResponses) RenameDiskWithResponse(ctx context.Context, diskId
 	return ParseRenameDiskResponse(rsp)
 }
 
-// ResizeDiskWithBodyWithResponse Resize a disk
-//
-// Creates a Billing order, including for metered pricing. The price must belong to the resource’s Billing Plan; applicable contract pricing is resolved by Billing. Technical capacity is checked before sellable quota is reserved. Provisioning continues automatically after payment; do not submit a new purchase after paying. Reuse the original idempotency key after an uncertain response.
-//
-// Takes any type of body and a specified content type, and returns a wrapper object for the known response body format(s).
-//
-// Corresponds with POST /api/v1/disks/{diskId}/resize (the `ResizeDisk` operationId).
-func (c *ClientWithResponses) ResizeDiskWithBodyWithResponse(ctx context.Context, diskId openapi_types.UUID, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*ResizeDiskResponse, error) {
-	rsp, err := c.ResizeDiskWithBody(ctx, diskId, contentType, body, reqEditors...)
-	if err != nil {
-		return nil, err
-	}
-	return ParseResizeDiskResponse(rsp)
-}
-
-// ResizeDiskWithResponse Resize a disk
-//
-// Creates a Billing order, including for metered pricing. The price must belong to the resource’s Billing Plan; applicable contract pricing is resolved by Billing. Technical capacity is checked before sellable quota is reserved. Provisioning continues automatically after payment; do not submit a new purchase after paying. Reuse the original idempotency key after an uncertain response.
-//
-// Takes a body of the `application/json` content type, and returns a wrapper object for the known response body format(s).
-//
-// Corresponds with POST /api/v1/disks/{diskId}/resize (the `ResizeDisk` operationId).
-func (c *ClientWithResponses) ResizeDiskWithResponse(ctx context.Context, diskId openapi_types.UUID, body ResizeDiskJSONRequestBody, reqEditors ...RequestEditorFn) (*ResizeDiskResponse, error) {
-	rsp, err := c.ResizeDisk(ctx, diskId, body, reqEditors...)
-	if err != nil {
-		return nil, err
-	}
-	return ParseResizeDiskResponse(rsp)
-}
-
-// RevertDiskWithBodyWithResponse Revert to a snapshot
-//
-// Restores the contents of the disk to the moment the snapshot was taken. **All data written after that moment is lost and cannot be recovered.**
-//
-// Three restrictions apply: only the most recent snapshot of the disk can be reverted to; the disk must be detached from its instance first; and a disk resized since the snapshot was taken cannot be reverted. To return to an earlier point in time, or to keep the existing disk, create a new disk from the snapshot instead.
-//
-// The revert is not complete when this endpoint returns; poll the retrieve endpoint.
-//
-// Takes any type of body and a specified content type, and returns a wrapper object for the known response body format(s).
-//
-// Corresponds with POST /api/v1/disks/{diskId}/revert (the `RevertDisk` operationId).
-func (c *ClientWithResponses) RevertDiskWithBodyWithResponse(ctx context.Context, diskId openapi_types.UUID, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*RevertDiskResponse, error) {
-	rsp, err := c.RevertDiskWithBody(ctx, diskId, contentType, body, reqEditors...)
-	if err != nil {
-		return nil, err
-	}
-	return ParseRevertDiskResponse(rsp)
-}
-
-// RevertDiskWithResponse Revert to a snapshot
-//
-// Restores the contents of the disk to the moment the snapshot was taken. **All data written after that moment is lost and cannot be recovered.**
-//
-// Three restrictions apply: only the most recent snapshot of the disk can be reverted to; the disk must be detached from its instance first; and a disk resized since the snapshot was taken cannot be reverted. To return to an earlier point in time, or to keep the existing disk, create a new disk from the snapshot instead.
-//
-// The revert is not complete when this endpoint returns; poll the retrieve endpoint.
-//
-// Takes a body of the `application/json` content type, and returns a wrapper object for the known response body format(s).
-//
-// Corresponds with POST /api/v1/disks/{diskId}/revert (the `RevertDisk` operationId).
-func (c *ClientWithResponses) RevertDiskWithResponse(ctx context.Context, diskId openapi_types.UUID, body RevertDiskJSONRequestBody, reqEditors ...RequestEditorFn) (*RevertDiskResponse, error) {
-	rsp, err := c.RevertDisk(ctx, diskId, body, reqEditors...)
-	if err != nil {
-		return nil, err
-	}
-	return ParseRevertDiskResponse(rsp)
-}
-
 // ListDiskAttachmentsWithResponse List disk attachments
-//
-// Actual attachment state, including operations whose provider outcome is unknown. Use usage_id to locate the corresponding blocking claim.
 //
 // Returns a wrapper object for the known response body format(s).
 //
-// Corresponds with GET /api/v1/disks/{resourceId}/attachments (the `ListDiskAttachments` operationId).
-func (c *ClientWithResponses) ListDiskAttachmentsWithResponse(ctx context.Context, resourceId openapi_types.UUID, params *ListDiskAttachmentsParams, reqEditors ...RequestEditorFn) (*ListDiskAttachmentsResponse, error) {
-	rsp, err := c.ListDiskAttachments(ctx, resourceId, params, reqEditors...)
+// Corresponds with GET /api/v1/disks/{diskId}/attachments (the `ListDiskAttachments` operationId).
+func (c *ClientWithResponses) ListDiskAttachmentsWithResponse(ctx context.Context, diskId DiskID, params *ListDiskAttachmentsParams, reqEditors ...RequestEditorFn) (*ListDiskAttachmentsResponse, error) {
+	rsp, err := c.ListDiskAttachments(ctx, diskId, params, reqEditors...)
 	if err != nil {
 		return nil, err
 	}
 	return ParseListDiskAttachmentsResponse(rsp)
 }
 
-// ListOperationLogsWithResponse List the operation log of the project
-//
-// Records every write operation in the project: who performed it, when, on what, and whether it succeeded. Read operations are not recorded.
-//
-// **Operations performed by the platform are included, but the individual operator is not disclosed** and `by_platform` is true. Suspension for non-payment and bans for abuse are examples: the time at which an instance was stopped by the platform is needed, whereas the operator is internal information.
-//
-// Fields such as passwords are replaced with a placeholder as the record is written and never appear in `payload`.
-//
-// Returns a wrapper object for the known response body format(s).
-//
-// Corresponds with GET /api/v1/operation-logs (the `ListOperationLogs` operationId).
-func (c *ClientWithResponses) ListOperationLogsWithResponse(ctx context.Context, params *ListOperationLogsParams, reqEditors ...RequestEditorFn) (*ListOperationLogsResponse, error) {
-	rsp, err := c.ListOperationLogs(ctx, params, reqEditors...)
-	if err != nil {
-		return nil, err
-	}
-	return ParseListOperationLogsResponse(rsp)
-}
-
 // ListResourceUsagesWithResponse List resource usages
 //
-// Lists direct consumers, including pending reservations and claims being released. The resource must be readable by the caller. Historical released claims are included only when requested.
+// Lists direct consumers and pending reservations for a resource readable in the current project.
 //
 // Returns a wrapper object for the known response body format(s).
 //
@@ -4963,12 +2439,12 @@ func (c *ClientWithResponses) ListResourceUsagesWithResponse(ctx context.Context
 	return ParseListResourceUsagesResponse(rsp)
 }
 
-// GetResourceUsageWithResponse Get resource usage
+// GetResourceUsageWithResponse Get a resource usage
 //
 // Returns a wrapper object for the known response body format(s).
 //
 // Corresponds with GET /api/v1/resource-usages/{usageId} (the `GetResourceUsage` operationId).
-func (c *ClientWithResponses) GetResourceUsageWithResponse(ctx context.Context, usageId openapi_types.UUID, reqEditors ...RequestEditorFn) (*GetResourceUsageResponse, error) {
+func (c *ClientWithResponses) GetResourceUsageWithResponse(ctx context.Context, usageId UsageID, reqEditors ...RequestEditorFn) (*GetResourceUsageResponse, error) {
 	rsp, err := c.GetResourceUsage(ctx, usageId, reqEditors...)
 	if err != nil {
 		return nil, err
@@ -4978,12 +2454,12 @@ func (c *ClientWithResponses) GetResourceUsageWithResponse(ctx context.Context, 
 
 // SetResourceIdlePolicyWithBodyWithResponse Set resource idle policy
 //
-// Requires permission to delete this resource. Enabling schedules reclamation only after the resource is continuously unreferenced for the requested retention. Existing claims, attachments and unfinished operations always prevent reclamation.
+// Enabling automatic cleanup starts a fresh retention interval after the last live claim is released. Existing claims and pending operations always block reclamation.
 //
 // Takes any type of body and a specified content type, and returns a wrapper object for the known response body format(s).
 //
 // Corresponds with PUT /api/v1/resources/{resourceType}/{resourceId}/idle-policy (the `SetResourceIdlePolicy` operationId).
-func (c *ClientWithResponses) SetResourceIdlePolicyWithBodyWithResponse(ctx context.Context, resourceType string, resourceId openapi_types.UUID, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*SetResourceIdlePolicyResponse, error) {
+func (c *ClientWithResponses) SetResourceIdlePolicyWithBodyWithResponse(ctx context.Context, resourceType SetResourceIdlePolicyParamsResourceType, resourceId ResourceIDPath, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*SetResourceIdlePolicyResponse, error) {
 	rsp, err := c.SetResourceIdlePolicyWithBody(ctx, resourceType, resourceId, contentType, body, reqEditors...)
 	if err != nil {
 		return nil, err
@@ -4993,12 +2469,12 @@ func (c *ClientWithResponses) SetResourceIdlePolicyWithBodyWithResponse(ctx cont
 
 // SetResourceIdlePolicyWithResponse Set resource idle policy
 //
-// Requires permission to delete this resource. Enabling schedules reclamation only after the resource is continuously unreferenced for the requested retention. Existing claims, attachments and unfinished operations always prevent reclamation.
+// Enabling automatic cleanup starts a fresh retention interval after the last live claim is released. Existing claims and pending operations always block reclamation.
 //
 // Takes a body of the `application/json` content type, and returns a wrapper object for the known response body format(s).
 //
 // Corresponds with PUT /api/v1/resources/{resourceType}/{resourceId}/idle-policy (the `SetResourceIdlePolicy` operationId).
-func (c *ClientWithResponses) SetResourceIdlePolicyWithResponse(ctx context.Context, resourceType string, resourceId openapi_types.UUID, body SetResourceIdlePolicyJSONRequestBody, reqEditors ...RequestEditorFn) (*SetResourceIdlePolicyResponse, error) {
+func (c *ClientWithResponses) SetResourceIdlePolicyWithResponse(ctx context.Context, resourceType SetResourceIdlePolicyParamsResourceType, resourceId ResourceIDPath, body SetResourceIdlePolicyJSONRequestBody, reqEditors ...RequestEditorFn) (*SetResourceIdlePolicyResponse, error) {
 	rsp, err := c.SetResourceIdlePolicy(ctx, resourceType, resourceId, body, reqEditors...)
 	if err != nil {
 		return nil, err
@@ -5006,112 +2482,17 @@ func (c *ClientWithResponses) SetResourceIdlePolicyWithResponse(ctx context.Cont
 	return ParseSetResourceIdlePolicyResponse(rsp)
 }
 
-// GetResourceReclamationWithResponse Get resource reclamation
+// GetResourceReclamationWithResponse Get resource reclamation state
 //
 // Returns a wrapper object for the known response body format(s).
 //
 // Corresponds with GET /api/v1/resources/{resourceType}/{resourceId}/reclamation (the `GetResourceReclamation` operationId).
-func (c *ClientWithResponses) GetResourceReclamationWithResponse(ctx context.Context, resourceType string, resourceId openapi_types.UUID, reqEditors ...RequestEditorFn) (*GetResourceReclamationResponse, error) {
+func (c *ClientWithResponses) GetResourceReclamationWithResponse(ctx context.Context, resourceType GetResourceReclamationParamsResourceType, resourceId ResourceIDPath, reqEditors ...RequestEditorFn) (*GetResourceReclamationResponse, error) {
 	rsp, err := c.GetResourceReclamation(ctx, resourceType, resourceId, reqEditors...)
 	if err != nil {
 		return nil, err
 	}
 	return ParseGetResourceReclamationResponse(rsp)
-}
-
-// ListSnapshotsWithResponse List snapshots
-//
-// Returns a wrapper object for the known response body format(s).
-//
-// Corresponds with GET /api/v1/snapshots (the `ListSnapshots` operationId).
-func (c *ClientWithResponses) ListSnapshotsWithResponse(ctx context.Context, params *ListSnapshotsParams, reqEditors ...RequestEditorFn) (*ListSnapshotsResponse, error) {
-	rsp, err := c.ListSnapshots(ctx, params, reqEditors...)
-	if err != nil {
-		return nil, err
-	}
-	return ParseListSnapshotsResponse(rsp)
-}
-
-// CreateSnapshotWithBodyWithResponse Create a snapshot
-//
-// Creates a Billing order, including for metered pricing. The price must belong to the resource’s Billing Plan; applicable contract pricing is resolved by Billing. Technical capacity is checked before sellable quota is reserved. Provisioning continues automatically after payment; do not submit a new purchase after paying. Reuse the original idempotency key after an uncertain response.
-//
-// Takes any type of body and a specified content type, and returns a wrapper object for the known response body format(s).
-//
-// Corresponds with POST /api/v1/snapshots (the `CreateSnapshot` operationId).
-func (c *ClientWithResponses) CreateSnapshotWithBodyWithResponse(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*CreateSnapshotResponse, error) {
-	rsp, err := c.CreateSnapshotWithBody(ctx, contentType, body, reqEditors...)
-	if err != nil {
-		return nil, err
-	}
-	return ParseCreateSnapshotResponse(rsp)
-}
-
-// CreateSnapshotWithResponse Create a snapshot
-//
-// Creates a Billing order, including for metered pricing. The price must belong to the resource’s Billing Plan; applicable contract pricing is resolved by Billing. Technical capacity is checked before sellable quota is reserved. Provisioning continues automatically after payment; do not submit a new purchase after paying. Reuse the original idempotency key after an uncertain response.
-//
-// Takes a body of the `application/json` content type, and returns a wrapper object for the known response body format(s).
-//
-// Corresponds with POST /api/v1/snapshots (the `CreateSnapshot` operationId).
-func (c *ClientWithResponses) CreateSnapshotWithResponse(ctx context.Context, body CreateSnapshotJSONRequestBody, reqEditors ...RequestEditorFn) (*CreateSnapshotResponse, error) {
-	rsp, err := c.CreateSnapshot(ctx, body, reqEditors...)
-	if err != nil {
-		return nil, err
-	}
-	return ParseCreateSnapshotResponse(rsp)
-}
-
-// DeleteSnapshotWithResponse Delete a snapshot
-//
-// Returns a wrapper object for the known response body format(s).
-//
-// Corresponds with DELETE /api/v1/snapshots/{snapshotId} (the `DeleteSnapshot` operationId).
-func (c *ClientWithResponses) DeleteSnapshotWithResponse(ctx context.Context, snapshotId openapi_types.UUID, reqEditors ...RequestEditorFn) (*DeleteSnapshotResponse, error) {
-	rsp, err := c.DeleteSnapshot(ctx, snapshotId, reqEditors...)
-	if err != nil {
-		return nil, err
-	}
-	return ParseDeleteSnapshotResponse(rsp)
-}
-
-// GetSnapshotWithResponse Retrieve a snapshot
-//
-// Returns a wrapper object for the known response body format(s).
-//
-// Corresponds with GET /api/v1/snapshots/{snapshotId} (the `GetSnapshot` operationId).
-func (c *ClientWithResponses) GetSnapshotWithResponse(ctx context.Context, snapshotId openapi_types.UUID, reqEditors ...RequestEditorFn) (*GetSnapshotResponse, error) {
-	rsp, err := c.GetSnapshot(ctx, snapshotId, reqEditors...)
-	if err != nil {
-		return nil, err
-	}
-	return ParseGetSnapshotResponse(rsp)
-}
-
-// RenameSnapshotWithBodyWithResponse Rename a snapshot
-//
-// Takes any type of body and a specified content type, and returns a wrapper object for the known response body format(s).
-//
-// Corresponds with PATCH /api/v1/snapshots/{snapshotId} (the `RenameSnapshot` operationId).
-func (c *ClientWithResponses) RenameSnapshotWithBodyWithResponse(ctx context.Context, snapshotId openapi_types.UUID, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*RenameSnapshotResponse, error) {
-	rsp, err := c.RenameSnapshotWithBody(ctx, snapshotId, contentType, body, reqEditors...)
-	if err != nil {
-		return nil, err
-	}
-	return ParseRenameSnapshotResponse(rsp)
-}
-
-// RenameSnapshotWithResponse Rename a snapshot
-//
-// Takes a body of the `application/json` content type, and returns a wrapper object for the known response body format(s).
-//
-// Corresponds with PATCH /api/v1/snapshots/{snapshotId} (the `RenameSnapshot` operationId).
-func (c *ClientWithResponses) RenameSnapshotWithResponse(ctx context.Context, snapshotId openapi_types.UUID, body RenameSnapshotJSONRequestBody, reqEditors ...RequestEditorFn) (*RenameSnapshotResponse, error) {
-	rsp, err := c.RenameSnapshot(ctx, snapshotId, body, reqEditors...)
-	if err != nil {
-		return nil, err
-	}
-	return ParseRenameSnapshotResponse(rsp)
 }
 
 // ParseGetAttachmentResponse parses an HTTP response from a GetAttachmentWithResponse call
@@ -5129,205 +2510,11 @@ func ParseGetAttachmentResponse(rsp *http.Response) (*GetAttachmentResponse, err
 
 	switch {
 	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
-		var dest Attachment
+		var dest externalRef0.Attachment
 		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
 			return nil, err
 		}
 		response.JSON200 = &dest
-
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && true:
-		var dest Error
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSONDefault = &dest
-
-	}
-
-	return response, nil
-}
-
-// ParseListBackupsResponse parses an HTTP response from a ListBackupsWithResponse call
-func ParseListBackupsResponse(rsp *http.Response) (*ListBackupsResponse, error) {
-	bodyBytes, err := io.ReadAll(rsp.Body)
-	defer func() { _ = rsp.Body.Close() }()
-	if err != nil {
-		return nil, err
-	}
-
-	response := &ListBackupsResponse{
-		Body:         bodyBytes,
-		HTTPResponse: rsp,
-	}
-
-	switch {
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
-		var dest BackupListResponseBody
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSON200 = &dest
-
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && true:
-		var dest Error
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSONDefault = &dest
-
-	}
-
-	return response, nil
-}
-
-// ParseCreateBackupResponse parses an HTTP response from a CreateBackupWithResponse call
-func ParseCreateBackupResponse(rsp *http.Response) (*CreateBackupResponse, error) {
-	bodyBytes, err := io.ReadAll(rsp.Body)
-	defer func() { _ = rsp.Body.Close() }()
-	if err != nil {
-		return nil, err
-	}
-
-	response := &CreateBackupResponse{
-		Body:         bodyBytes,
-		HTTPResponse: rsp,
-	}
-
-	switch {
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 202:
-		var dest PlacedOrder
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSON202 = &dest
-
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && true:
-		var dest Error
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSONDefault = &dest
-
-	}
-
-	return response, nil
-}
-
-// ParseDeleteBackupResponse parses an HTTP response from a DeleteBackupWithResponse call
-func ParseDeleteBackupResponse(rsp *http.Response) (*DeleteBackupResponse, error) {
-	bodyBytes, err := io.ReadAll(rsp.Body)
-	defer func() { _ = rsp.Body.Close() }()
-	if err != nil {
-		return nil, err
-	}
-
-	response := &DeleteBackupResponse{
-		Body:         bodyBytes,
-		HTTPResponse: rsp,
-	}
-
-	switch {
-	case rsp.StatusCode == 204:
-		break // No content-type
-
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && true:
-		var dest Error
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSONDefault = &dest
-
-	}
-
-	return response, nil
-}
-
-// ParseGetBackupResponse parses an HTTP response from a GetBackupWithResponse call
-func ParseGetBackupResponse(rsp *http.Response) (*GetBackupResponse, error) {
-	bodyBytes, err := io.ReadAll(rsp.Body)
-	defer func() { _ = rsp.Body.Close() }()
-	if err != nil {
-		return nil, err
-	}
-
-	response := &GetBackupResponse{
-		Body:         bodyBytes,
-		HTTPResponse: rsp,
-	}
-
-	switch {
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
-		var dest BackupResource
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSON200 = &dest
-
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && true:
-		var dest Error
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSONDefault = &dest
-
-	}
-
-	return response, nil
-}
-
-// ParseRenameBackupResponse parses an HTTP response from a RenameBackupWithResponse call
-func ParseRenameBackupResponse(rsp *http.Response) (*RenameBackupResponse, error) {
-	bodyBytes, err := io.ReadAll(rsp.Body)
-	defer func() { _ = rsp.Body.Close() }()
-	if err != nil {
-		return nil, err
-	}
-
-	response := &RenameBackupResponse{
-		Body:         bodyBytes,
-		HTTPResponse: rsp,
-	}
-
-	switch {
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
-		var dest BackupResource
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSON200 = &dest
-
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && true:
-		var dest Error
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSONDefault = &dest
-
-	}
-
-	return response, nil
-}
-
-// ParseRestoreBackupResponse parses an HTTP response from a RestoreBackupWithResponse call
-func ParseRestoreBackupResponse(rsp *http.Response) (*RestoreBackupResponse, error) {
-	bodyBytes, err := io.ReadAll(rsp.Body)
-	defer func() { _ = rsp.Body.Close() }()
-	if err != nil {
-		return nil, err
-	}
-
-	response := &RestoreBackupResponse{
-		Body:         bodyBytes,
-		HTTPResponse: rsp,
-	}
-
-	switch {
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 202:
-		var dest PlacedOrder
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSON202 = &dest
 
 	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && true:
 		var dest Error
@@ -5356,7 +2543,7 @@ func ParseListDiskTypesResponse(rsp *http.Response) (*ListDiskTypesResponse, err
 
 	switch {
 	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
-		var dest DiskTypeListResponseBody
+		var dest DiskTypeList
 		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
 			return nil, err
 		}
@@ -5389,7 +2576,7 @@ func ParseGetDiskTypeResponse(rsp *http.Response) (*GetDiskTypeResponse, error) 
 
 	switch {
 	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
-		var dest DiskTypeResource
+		var dest DiskType
 		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
 			return nil, err
 		}
@@ -5422,7 +2609,7 @@ func ParseListDisksResponse(rsp *http.Response) (*ListDisksResponse, error) {
 
 	switch {
 	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
-		var dest DiskListResponseBody
+		var dest DiskList
 		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
 			return nil, err
 		}
@@ -5455,7 +2642,7 @@ func ParseCreateDiskResponse(rsp *http.Response) (*CreateDiskResponse, error) {
 
 	switch {
 	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 202:
-		var dest PlacedOrder
+		var dest externalRef0.PlacedOrder
 		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
 			return nil, err
 		}
@@ -5517,7 +2704,7 @@ func ParseGetDiskResponse(rsp *http.Response) (*GetDiskResponse, error) {
 
 	switch {
 	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
-		var dest DiskResource
+		var dest Disk
 		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
 			return nil, err
 		}
@@ -5550,73 +2737,7 @@ func ParseRenameDiskResponse(rsp *http.Response) (*RenameDiskResponse, error) {
 
 	switch {
 	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
-		var dest DiskResource
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSON200 = &dest
-
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && true:
-		var dest Error
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSONDefault = &dest
-
-	}
-
-	return response, nil
-}
-
-// ParseResizeDiskResponse parses an HTTP response from a ResizeDiskWithResponse call
-func ParseResizeDiskResponse(rsp *http.Response) (*ResizeDiskResponse, error) {
-	bodyBytes, err := io.ReadAll(rsp.Body)
-	defer func() { _ = rsp.Body.Close() }()
-	if err != nil {
-		return nil, err
-	}
-
-	response := &ResizeDiskResponse{
-		Body:         bodyBytes,
-		HTTPResponse: rsp,
-	}
-
-	switch {
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 202:
-		var dest PlacedOrder
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSON202 = &dest
-
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && true:
-		var dest Error
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSONDefault = &dest
-
-	}
-
-	return response, nil
-}
-
-// ParseRevertDiskResponse parses an HTTP response from a RevertDiskWithResponse call
-func ParseRevertDiskResponse(rsp *http.Response) (*RevertDiskResponse, error) {
-	bodyBytes, err := io.ReadAll(rsp.Body)
-	defer func() { _ = rsp.Body.Close() }()
-	if err != nil {
-		return nil, err
-	}
-
-	response := &RevertDiskResponse{
-		Body:         bodyBytes,
-		HTTPResponse: rsp,
-	}
-
-	switch {
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
-		var dest DiskResource
+		var dest Disk
 		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
 			return nil, err
 		}
@@ -5649,40 +2770,7 @@ func ParseListDiskAttachmentsResponse(rsp *http.Response) (*ListDiskAttachmentsR
 
 	switch {
 	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
-		var dest AttachmentList
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSON200 = &dest
-
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && true:
-		var dest Error
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSONDefault = &dest
-
-	}
-
-	return response, nil
-}
-
-// ParseListOperationLogsResponse parses an HTTP response from a ListOperationLogsWithResponse call
-func ParseListOperationLogsResponse(rsp *http.Response) (*ListOperationLogsResponse, error) {
-	bodyBytes, err := io.ReadAll(rsp.Body)
-	defer func() { _ = rsp.Body.Close() }()
-	if err != nil {
-		return nil, err
-	}
-
-	response := &ListOperationLogsResponse{
-		Body:         bodyBytes,
-		HTTPResponse: rsp,
-	}
-
-	switch {
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
-		var dest OperationLogListResponseBody
+		var dest externalRef0.AttachmentList
 		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
 			return nil, err
 		}
@@ -5715,7 +2803,7 @@ func ParseListResourceUsagesResponse(rsp *http.Response) (*ListResourceUsagesRes
 
 	switch {
 	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
-		var dest ResourceUsageList
+		var dest externalRef0.ResourceUsageList
 		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
 			return nil, err
 		}
@@ -5748,7 +2836,7 @@ func ParseGetResourceUsageResponse(rsp *http.Response) (*GetResourceUsageRespons
 
 	switch {
 	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
-		var dest ResourceUsage
+		var dest externalRef0.ResourceUsage
 		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
 			return nil, err
 		}
@@ -5781,7 +2869,7 @@ func ParseSetResourceIdlePolicyResponse(rsp *http.Response) (*SetResourceIdlePol
 
 	switch {
 	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
-		var dest ReclamationState
+		var dest externalRef0.ReclamationState
 		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
 			return nil, err
 		}
@@ -5814,168 +2902,7 @@ func ParseGetResourceReclamationResponse(rsp *http.Response) (*GetResourceReclam
 
 	switch {
 	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
-		var dest ReclamationState
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSON200 = &dest
-
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && true:
-		var dest Error
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSONDefault = &dest
-
-	}
-
-	return response, nil
-}
-
-// ParseListSnapshotsResponse parses an HTTP response from a ListSnapshotsWithResponse call
-func ParseListSnapshotsResponse(rsp *http.Response) (*ListSnapshotsResponse, error) {
-	bodyBytes, err := io.ReadAll(rsp.Body)
-	defer func() { _ = rsp.Body.Close() }()
-	if err != nil {
-		return nil, err
-	}
-
-	response := &ListSnapshotsResponse{
-		Body:         bodyBytes,
-		HTTPResponse: rsp,
-	}
-
-	switch {
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
-		var dest SnapshotListResponseBody
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSON200 = &dest
-
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && true:
-		var dest Error
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSONDefault = &dest
-
-	}
-
-	return response, nil
-}
-
-// ParseCreateSnapshotResponse parses an HTTP response from a CreateSnapshotWithResponse call
-func ParseCreateSnapshotResponse(rsp *http.Response) (*CreateSnapshotResponse, error) {
-	bodyBytes, err := io.ReadAll(rsp.Body)
-	defer func() { _ = rsp.Body.Close() }()
-	if err != nil {
-		return nil, err
-	}
-
-	response := &CreateSnapshotResponse{
-		Body:         bodyBytes,
-		HTTPResponse: rsp,
-	}
-
-	switch {
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 202:
-		var dest PlacedOrder
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSON202 = &dest
-
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && true:
-		var dest Error
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSONDefault = &dest
-
-	}
-
-	return response, nil
-}
-
-// ParseDeleteSnapshotResponse parses an HTTP response from a DeleteSnapshotWithResponse call
-func ParseDeleteSnapshotResponse(rsp *http.Response) (*DeleteSnapshotResponse, error) {
-	bodyBytes, err := io.ReadAll(rsp.Body)
-	defer func() { _ = rsp.Body.Close() }()
-	if err != nil {
-		return nil, err
-	}
-
-	response := &DeleteSnapshotResponse{
-		Body:         bodyBytes,
-		HTTPResponse: rsp,
-	}
-
-	switch {
-	case rsp.StatusCode == 204:
-		break // No content-type
-
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && true:
-		var dest Error
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSONDefault = &dest
-
-	}
-
-	return response, nil
-}
-
-// ParseGetSnapshotResponse parses an HTTP response from a GetSnapshotWithResponse call
-func ParseGetSnapshotResponse(rsp *http.Response) (*GetSnapshotResponse, error) {
-	bodyBytes, err := io.ReadAll(rsp.Body)
-	defer func() { _ = rsp.Body.Close() }()
-	if err != nil {
-		return nil, err
-	}
-
-	response := &GetSnapshotResponse{
-		Body:         bodyBytes,
-		HTTPResponse: rsp,
-	}
-
-	switch {
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
-		var dest SnapshotResource
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSON200 = &dest
-
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && true:
-		var dest Error
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSONDefault = &dest
-
-	}
-
-	return response, nil
-}
-
-// ParseRenameSnapshotResponse parses an HTTP response from a RenameSnapshotWithResponse call
-func ParseRenameSnapshotResponse(rsp *http.Response) (*RenameSnapshotResponse, error) {
-	bodyBytes, err := io.ReadAll(rsp.Body)
-	defer func() { _ = rsp.Body.Close() }()
-	if err != nil {
-		return nil, err
-	}
-
-	response := &RenameSnapshotResponse{
-		Body:         bodyBytes,
-		HTTPResponse: rsp,
-	}
-
-	switch {
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
-		var dest SnapshotResource
+		var dest externalRef0.ReclamationState
 		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
 			return nil, err
 		}

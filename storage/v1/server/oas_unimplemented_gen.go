@@ -13,111 +13,57 @@ type UnimplementedHandler struct{}
 
 var _ Handler = UnimplementedHandler{}
 
-// CreateBackup implements create-backup operation.
-//
-// Creates a Billing order, including for metered pricing. The price must belong to the resource’s
-// Billing Plan; applicable contract pricing is resolved by Billing. Technical capacity is checked
-// before sellable quota is reserved. Provisioning continues automatically after payment; do not submit
-// a new purchase after paying. Reuse the original idempotency key after an uncertain response.
-//
-// POST /api/v1/backups
-func (UnimplementedHandler) CreateBackup(ctx context.Context, req *CreateBackupRequestBody) (r *PlacedOrder, _ error) {
-	return r, ht.ErrNotImplemented
-}
-
 // CreateDisk implements create-disk operation.
 //
-// Creates a Billing order, including for metered pricing. The price must belong to the resource’s
-// Billing Plan; applicable contract pricing is resolved by Billing. Technical capacity is checked
-// before sellable quota is reserved. Provisioning continues automatically after payment; do not submit
-// a new purchase after paying. Reuse the original idempotency key after an uncertain response.
+// Checks Fleet capacity, creates the local disk intent, and places a Billing order. Reuse the same
+// idempotency key after an uncertain response. Billing resolves contract pricing, sellable quota,
+// grants, payment challenges, and expiry.
 //
 // POST /api/v1/disks
-func (UnimplementedHandler) CreateDisk(ctx context.Context, req *CreateDiskRequestBody) (r *PlacedOrder, _ error) {
+func (UnimplementedHandler) CreateDisk(ctx context.Context, req *CreateDiskRequest) (r *PlacedOrder, _ error) {
 	return r, ht.ErrNotImplemented
-}
-
-// CreateSnapshot implements create-snapshot operation.
-//
-// Creates a Billing order, including for metered pricing. The price must belong to the resource’s
-// Billing Plan; applicable contract pricing is resolved by Billing. Technical capacity is checked
-// before sellable quota is reserved. Provisioning continues automatically after payment; do not submit
-// a new purchase after paying. Reuse the original idempotency key after an uncertain response.
-//
-// POST /api/v1/snapshots
-func (UnimplementedHandler) CreateSnapshot(ctx context.Context, req *CreateSnapshotRequestBody) (r *PlacedOrder, _ error) {
-	return r, ht.ErrNotImplemented
-}
-
-// DeleteBackup implements delete-backup operation.
-//
-// Independent of the source disk: deletion succeeds whether or not that disk still exists.
-//
-// DELETE /api/v1/backups/{backupId}
-func (UnimplementedHandler) DeleteBackup(ctx context.Context, params DeleteBackupParams) error {
-	return ht.ErrNotImplemented
 }
 
 // DeleteDisk implements delete-disk operation.
 //
-// Deletion is rejected while the disk is attached, or while snapshots created from it still exist.
+// Deletion is asynchronous and is rejected while the disk has a live attachment or another live
+// resource claim. Billing ends resource-bound subscriptions only after Cinder confirms deletion.
 //
 // DELETE /api/v1/disks/{diskId}
 func (UnimplementedHandler) DeleteDisk(ctx context.Context, params DeleteDiskParams) error {
 	return ht.ErrNotImplemented
 }
 
-// DeleteSnapshot implements delete-snapshot operation.
-//
-// Delete a snapshot.
-//
-// DELETE /api/v1/snapshots/{snapshotId}
-func (UnimplementedHandler) DeleteSnapshot(ctx context.Context, params DeleteSnapshotParams) error {
-	return ht.ErrNotImplemented
-}
-
 // GetAttachment implements get-attachment operation.
 //
-// Get attachment.
+// Get a disk attachment.
 //
 // GET /api/v1/attachments/{attachmentId}
 func (UnimplementedHandler) GetAttachment(ctx context.Context, params GetAttachmentParams) (r *Attachment, _ error) {
 	return r, ht.ErrNotImplemented
 }
 
-// GetBackup implements get-backup operation.
-//
-// Queries the current state of the backup, which makes it slower but more accurate than the list
-// endpoint. Use it to poll creation progress.
-//
-// GET /api/v1/backups/{backupId}
-func (UnimplementedHandler) GetBackup(ctx context.Context, params GetBackupParams) (r *BackupResource, _ error) {
-	return r, ht.ErrNotImplemented
-}
-
 // GetDisk implements get-disk operation.
 //
-// Returns the disk and its observed state. Read its attachments for consumers, device names and
-// pending attachment operations.
+// Get a disk.
 //
 // GET /api/v1/disks/{diskId}
-func (UnimplementedHandler) GetDisk(ctx context.Context, params GetDiskParams) (r *DiskResource, _ error) {
+func (UnimplementedHandler) GetDisk(ctx context.Context, params GetDiskParams) (r *Disk, _ error) {
 	return r, ht.ErrNotImplemented
 }
 
 // GetDiskType implements get-disk-type operation.
 //
-// Retrieve capacity and performance constraints for an existing disk, including system disk types and
-// types withdrawn from sale.
+// Get a disk type.
 //
 // GET /api/v1/disk-types/{diskTypeId}
-func (UnimplementedHandler) GetDiskType(ctx context.Context, params GetDiskTypeParams) (r *DiskTypeResource, _ error) {
+func (UnimplementedHandler) GetDiskType(ctx context.Context, params GetDiskTypeParams) (r *DiskType, _ error) {
 	return r, ht.ErrNotImplemented
 }
 
 // GetResourceReclamation implements get-resource-reclamation operation.
 //
-// Get resource reclamation.
+// Get resource reclamation state.
 //
 // GET /api/v1/resources/{resourceType}/{resourceId}/reclamation
 func (UnimplementedHandler) GetResourceReclamation(ctx context.Context, params GetResourceReclamationParams) (r *ReclamationState, _ error) {
@@ -126,171 +72,62 @@ func (UnimplementedHandler) GetResourceReclamation(ctx context.Context, params G
 
 // GetResourceUsage implements get-resource-usage operation.
 //
-// Get resource usage.
+// Get a resource usage.
 //
 // GET /api/v1/resource-usages/{usageId}
 func (UnimplementedHandler) GetResourceUsage(ctx context.Context, params GetResourceUsageParams) (r *ResourceUsage, _ error) {
 	return r, ht.ErrNotImplemented
 }
 
-// GetSnapshot implements get-snapshot operation.
-//
-// Retrieve a snapshot.
-//
-// GET /api/v1/snapshots/{snapshotId}
-func (UnimplementedHandler) GetSnapshot(ctx context.Context, params GetSnapshotParams) (r *SnapshotResource, _ error) {
-	return r, ht.ErrNotImplemented
-}
-
-// ListBackups implements list-backups operation.
-//
-// List backups.
-//
-// GET /api/v1/backups
-func (UnimplementedHandler) ListBackups(ctx context.Context, params ListBackupsParams) (r *BackupListResponseBody, _ error) {
-	return r, ht.ErrNotImplemented
-}
-
 // ListDiskAttachments implements list-disk-attachments operation.
 //
-// Actual attachment state, including operations whose provider outcome is unknown. Use usage_id to
-// locate the corresponding blocking claim.
+// List disk attachments.
 //
-// GET /api/v1/disks/{resourceId}/attachments
+// GET /api/v1/disks/{diskId}/attachments
 func (UnimplementedHandler) ListDiskAttachments(ctx context.Context, params ListDiskAttachmentsParams) (r *AttachmentList, _ error) {
 	return r, ht.ErrNotImplemented
 }
 
 // ListDiskTypes implements list-disk-types operation.
 //
-// Only disk types currently on sale are listed. A withdrawn one disappears from here and can no longer
-// be bought, while the disks already on it keep working and can still be resized.
+// List disk types on sale.
 //
 // GET /api/v1/disk-types
-func (UnimplementedHandler) ListDiskTypes(ctx context.Context, params ListDiskTypesParams) (r *DiskTypeListResponseBody, _ error) {
+func (UnimplementedHandler) ListDiskTypes(ctx context.Context, params ListDiskTypesParams) (r *DiskTypeList, _ error) {
 	return r, ht.ErrNotImplemented
 }
 
 // ListDisks implements list-disks operation.
 //
-// Lists disks in the current project. Use resource-usages to inspect consumers and pending
-// reservations.
+// List disks in the current project.
 //
 // GET /api/v1/disks
-func (UnimplementedHandler) ListDisks(ctx context.Context, params ListDisksParams) (r *DiskListResponseBody, _ error) {
-	return r, ht.ErrNotImplemented
-}
-
-// ListOperationLogs implements list-operation-logs operation.
-//
-// Records every write operation in the project: who performed it, when, on what, and whether it
-// succeeded. Read operations are not recorded.
-//
-// Operations performed by the platform are included, but the individual operator is not disclosed and
-// `by_platform` is true. Suspension for non-payment and bans for abuse are examples: the time at which
-// an instance was stopped by the platform is needed, whereas the operator is internal information.
-//
-// Fields such as passwords are replaced with a placeholder as the record is written and never appear
-// in `payload`.
-//
-// GET /api/v1/operation-logs
-func (UnimplementedHandler) ListOperationLogs(ctx context.Context, params ListOperationLogsParams) (r *OperationLogListResponseBody, _ error) {
+func (UnimplementedHandler) ListDisks(ctx context.Context, params ListDisksParams) (r *DiskList, _ error) {
 	return r, ht.ErrNotImplemented
 }
 
 // ListResourceUsages implements list-resource-usages operation.
 //
-// Lists direct consumers, including pending reservations and claims being released. The resource must
-// be readable by the caller. Historical released claims are included only when requested.
+// Lists direct consumers and pending reservations for a resource readable in the current project.
 //
 // GET /api/v1/resource-usages
 func (UnimplementedHandler) ListResourceUsages(ctx context.Context, params ListResourceUsagesParams) (r *ResourceUsageList, _ error) {
 	return r, ht.ErrNotImplemented
 }
 
-// ListSnapshots implements list-snapshots operation.
-//
-// List snapshots.
-//
-// GET /api/v1/snapshots
-func (UnimplementedHandler) ListSnapshots(ctx context.Context, params ListSnapshotsParams) (r *SnapshotListResponseBody, _ error) {
-	return r, ht.ErrNotImplemented
-}
-
-// RenameBackup implements rename-backup operation.
-//
-// Rename a backup.
-//
-// PATCH /api/v1/backups/{backupId}
-func (UnimplementedHandler) RenameBackup(ctx context.Context, req *RenameBackupRequestBody, params RenameBackupParams) (r *BackupResource, _ error) {
-	return r, ht.ErrNotImplemented
-}
-
 // RenameDisk implements rename-disk operation.
 //
-// Changes the name only. Use the resize endpoint for capacity; type and availability zone are
-// immutable.
+// Rename a disk.
 //
 // PATCH /api/v1/disks/{diskId}
-func (UnimplementedHandler) RenameDisk(ctx context.Context, req *RenameDiskRequestBody, params RenameDiskParams) (r *DiskResource, _ error) {
-	return r, ht.ErrNotImplemented
-}
-
-// RenameSnapshot implements rename-snapshot operation.
-//
-// Rename a snapshot.
-//
-// PATCH /api/v1/snapshots/{snapshotId}
-func (UnimplementedHandler) RenameSnapshot(ctx context.Context, req *RenameSnapshotRequestBody, params RenameSnapshotParams) (r *SnapshotResource, _ error) {
-	return r, ht.ErrNotImplemented
-}
-
-// ResizeDisk implements resize-disk operation.
-//
-// Creates a Billing order, including for metered pricing. The price must belong to the resource’s
-// Billing Plan; applicable contract pricing is resolved by Billing. Technical capacity is checked
-// before sellable quota is reserved. Provisioning continues automatically after payment; do not submit
-// a new purchase after paying. Reuse the original idempotency key after an uncertain response.
-//
-// POST /api/v1/disks/{diskId}/resize
-func (UnimplementedHandler) ResizeDisk(ctx context.Context, req *ResizeDiskRequestBody, params ResizeDiskParams) (r *PlacedOrder, _ error) {
-	return r, ht.ErrNotImplemented
-}
-
-// RestoreBackup implements restore-backup operation.
-//
-// Creates a Billing order, including for metered pricing. The price must belong to the resource’s
-// Billing Plan; applicable contract pricing is resolved by Billing. Technical capacity is checked
-// before sellable quota is reserved. Provisioning continues automatically after payment; do not submit
-// a new purchase after paying. Reuse the original idempotency key after an uncertain response.
-//
-// POST /api/v1/backups/{backupId}/restore
-func (UnimplementedHandler) RestoreBackup(ctx context.Context, req *RestoreBackupRequestBody, params RestoreBackupParams) (r *PlacedOrder, _ error) {
-	return r, ht.ErrNotImplemented
-}
-
-// RevertDisk implements revert-disk operation.
-//
-// Restores the contents of the disk to the moment the snapshot was taken. All data written after that
-// moment is lost and cannot be recovered.
-//
-// Three restrictions apply: only the most recent snapshot of the disk can be reverted to; the disk
-// must be detached from its instance first; and a disk resized since the snapshot was taken cannot be
-// reverted. To return to an earlier point in time, or to keep the existing disk, create a new disk
-// from the snapshot instead.
-//
-// The revert is not complete when this endpoint returns; poll the retrieve endpoint.
-//
-// POST /api/v1/disks/{diskId}/revert
-func (UnimplementedHandler) RevertDisk(ctx context.Context, req *RevertDiskRequestBody, params RevertDiskParams) (r *DiskResource, _ error) {
+func (UnimplementedHandler) RenameDisk(ctx context.Context, req *RenameRequest, params RenameDiskParams) (r *Disk, _ error) {
 	return r, ht.ErrNotImplemented
 }
 
 // SetResourceIdlePolicy implements set-resource-idle-policy operation.
 //
-// Requires permission to delete this resource. Enabling schedules reclamation only after the resource
-// is continuously unreferenced for the requested retention. Existing claims, attachments and
-// unfinished operations always prevent reclamation.
+// Enabling automatic cleanup starts a fresh retention interval after the last live claim is released.
+// Existing claims and pending operations always block reclamation.
 //
 // PUT /api/v1/resources/{resourceType}/{resourceId}/idle-policy
 func (UnimplementedHandler) SetResourceIdlePolicy(ctx context.Context, req *IdlePolicy, params SetResourceIdlePolicyParams) (r *ReclamationState, _ error) {

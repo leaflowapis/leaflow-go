@@ -12,19 +12,6 @@ import (
 	"go.opentelemetry.io/otel/trace"
 )
 
-func encodeCreateBackupResponse(response *PlacedOrder, w http.ResponseWriter, span trace.Span) error {
-	w.Header().Set("Content-Type", "application/json; charset=utf-8")
-	w.WriteHeader(202)
-
-	e := new(jx.Encoder)
-	response.Encode(e)
-	if _, err := e.WriteTo(w); err != nil {
-		return errors.Wrap(err, "write")
-	}
-
-	return nil
-}
-
 func encodeCreateDiskResponse(response *PlacedOrder, w http.ResponseWriter, span trace.Span) error {
 	w.Header().Set("Content-Type", "application/json; charset=utf-8")
 	w.WriteHeader(202)
@@ -38,32 +25,7 @@ func encodeCreateDiskResponse(response *PlacedOrder, w http.ResponseWriter, span
 	return nil
 }
 
-func encodeCreateSnapshotResponse(response *PlacedOrder, w http.ResponseWriter, span trace.Span) error {
-	w.Header().Set("Content-Type", "application/json; charset=utf-8")
-	w.WriteHeader(202)
-
-	e := new(jx.Encoder)
-	response.Encode(e)
-	if _, err := e.WriteTo(w); err != nil {
-		return errors.Wrap(err, "write")
-	}
-
-	return nil
-}
-
-func encodeDeleteBackupResponse(response *DeleteBackupNoContent, w http.ResponseWriter, span trace.Span) error {
-	w.WriteHeader(204)
-
-	return nil
-}
-
 func encodeDeleteDiskResponse(response *DeleteDiskNoContent, w http.ResponseWriter, span trace.Span) error {
-	w.WriteHeader(204)
-
-	return nil
-}
-
-func encodeDeleteSnapshotResponse(response *DeleteSnapshotNoContent, w http.ResponseWriter, span trace.Span) error {
 	w.WriteHeader(204)
 
 	return nil
@@ -82,7 +44,7 @@ func encodeGetAttachmentResponse(response *Attachment, w http.ResponseWriter, sp
 	return nil
 }
 
-func encodeGetBackupResponse(response *BackupResource, w http.ResponseWriter, span trace.Span) error {
+func encodeGetDiskResponse(response *Disk, w http.ResponseWriter, span trace.Span) error {
 	w.Header().Set("Content-Type", "application/json; charset=utf-8")
 	w.WriteHeader(200)
 
@@ -95,20 +57,7 @@ func encodeGetBackupResponse(response *BackupResource, w http.ResponseWriter, sp
 	return nil
 }
 
-func encodeGetDiskResponse(response *DiskResource, w http.ResponseWriter, span trace.Span) error {
-	w.Header().Set("Content-Type", "application/json; charset=utf-8")
-	w.WriteHeader(200)
-
-	e := new(jx.Encoder)
-	response.Encode(e)
-	if _, err := e.WriteTo(w); err != nil {
-		return errors.Wrap(err, "write")
-	}
-
-	return nil
-}
-
-func encodeGetDiskTypeResponse(response *DiskTypeResource, w http.ResponseWriter, span trace.Span) error {
+func encodeGetDiskTypeResponse(response *DiskType, w http.ResponseWriter, span trace.Span) error {
 	w.Header().Set("Content-Type", "application/json; charset=utf-8")
 	w.WriteHeader(200)
 
@@ -147,32 +96,6 @@ func encodeGetResourceUsageResponse(response *ResourceUsage, w http.ResponseWrit
 	return nil
 }
 
-func encodeGetSnapshotResponse(response *SnapshotResource, w http.ResponseWriter, span trace.Span) error {
-	w.Header().Set("Content-Type", "application/json; charset=utf-8")
-	w.WriteHeader(200)
-
-	e := new(jx.Encoder)
-	response.Encode(e)
-	if _, err := e.WriteTo(w); err != nil {
-		return errors.Wrap(err, "write")
-	}
-
-	return nil
-}
-
-func encodeListBackupsResponse(response *BackupListResponseBody, w http.ResponseWriter, span trace.Span) error {
-	w.Header().Set("Content-Type", "application/json; charset=utf-8")
-	w.WriteHeader(200)
-
-	e := new(jx.Encoder)
-	response.Encode(e)
-	if _, err := e.WriteTo(w); err != nil {
-		return errors.Wrap(err, "write")
-	}
-
-	return nil
-}
-
 func encodeListDiskAttachmentsResponse(response *AttachmentList, w http.ResponseWriter, span trace.Span) error {
 	w.Header().Set("Content-Type", "application/json; charset=utf-8")
 	w.WriteHeader(200)
@@ -186,7 +109,7 @@ func encodeListDiskAttachmentsResponse(response *AttachmentList, w http.Response
 	return nil
 }
 
-func encodeListDiskTypesResponse(response *DiskTypeListResponseBody, w http.ResponseWriter, span trace.Span) error {
+func encodeListDiskTypesResponse(response *DiskTypeList, w http.ResponseWriter, span trace.Span) error {
 	w.Header().Set("Content-Type", "application/json; charset=utf-8")
 	w.WriteHeader(200)
 
@@ -199,20 +122,7 @@ func encodeListDiskTypesResponse(response *DiskTypeListResponseBody, w http.Resp
 	return nil
 }
 
-func encodeListDisksResponse(response *DiskListResponseBody, w http.ResponseWriter, span trace.Span) error {
-	w.Header().Set("Content-Type", "application/json; charset=utf-8")
-	w.WriteHeader(200)
-
-	e := new(jx.Encoder)
-	response.Encode(e)
-	if _, err := e.WriteTo(w); err != nil {
-		return errors.Wrap(err, "write")
-	}
-
-	return nil
-}
-
-func encodeListOperationLogsResponse(response *OperationLogListResponseBody, w http.ResponseWriter, span trace.Span) error {
+func encodeListDisksResponse(response *DiskList, w http.ResponseWriter, span trace.Span) error {
 	w.Header().Set("Content-Type", "application/json; charset=utf-8")
 	w.WriteHeader(200)
 
@@ -238,85 +148,7 @@ func encodeListResourceUsagesResponse(response *ResourceUsageList, w http.Respon
 	return nil
 }
 
-func encodeListSnapshotsResponse(response *SnapshotListResponseBody, w http.ResponseWriter, span trace.Span) error {
-	w.Header().Set("Content-Type", "application/json; charset=utf-8")
-	w.WriteHeader(200)
-
-	e := new(jx.Encoder)
-	response.Encode(e)
-	if _, err := e.WriteTo(w); err != nil {
-		return errors.Wrap(err, "write")
-	}
-
-	return nil
-}
-
-func encodeRenameBackupResponse(response *BackupResource, w http.ResponseWriter, span trace.Span) error {
-	w.Header().Set("Content-Type", "application/json; charset=utf-8")
-	w.WriteHeader(200)
-
-	e := new(jx.Encoder)
-	response.Encode(e)
-	if _, err := e.WriteTo(w); err != nil {
-		return errors.Wrap(err, "write")
-	}
-
-	return nil
-}
-
-func encodeRenameDiskResponse(response *DiskResource, w http.ResponseWriter, span trace.Span) error {
-	w.Header().Set("Content-Type", "application/json; charset=utf-8")
-	w.WriteHeader(200)
-
-	e := new(jx.Encoder)
-	response.Encode(e)
-	if _, err := e.WriteTo(w); err != nil {
-		return errors.Wrap(err, "write")
-	}
-
-	return nil
-}
-
-func encodeRenameSnapshotResponse(response *SnapshotResource, w http.ResponseWriter, span trace.Span) error {
-	w.Header().Set("Content-Type", "application/json; charset=utf-8")
-	w.WriteHeader(200)
-
-	e := new(jx.Encoder)
-	response.Encode(e)
-	if _, err := e.WriteTo(w); err != nil {
-		return errors.Wrap(err, "write")
-	}
-
-	return nil
-}
-
-func encodeResizeDiskResponse(response *PlacedOrder, w http.ResponseWriter, span trace.Span) error {
-	w.Header().Set("Content-Type", "application/json; charset=utf-8")
-	w.WriteHeader(202)
-
-	e := new(jx.Encoder)
-	response.Encode(e)
-	if _, err := e.WriteTo(w); err != nil {
-		return errors.Wrap(err, "write")
-	}
-
-	return nil
-}
-
-func encodeRestoreBackupResponse(response *PlacedOrder, w http.ResponseWriter, span trace.Span) error {
-	w.Header().Set("Content-Type", "application/json; charset=utf-8")
-	w.WriteHeader(202)
-
-	e := new(jx.Encoder)
-	response.Encode(e)
-	if _, err := e.WriteTo(w); err != nil {
-		return errors.Wrap(err, "write")
-	}
-
-	return nil
-}
-
-func encodeRevertDiskResponse(response *DiskResource, w http.ResponseWriter, span trace.Span) error {
+func encodeRenameDiskResponse(response *Disk, w http.ResponseWriter, span trace.Span) error {
 	w.Header().Set("Content-Type", "application/json; charset=utf-8")
 	w.WriteHeader(200)
 

@@ -29,206 +29,85 @@ func trimTrailingSlashes(u *url.URL) {
 
 // Invoker invokes operations described by OpenAPI v3 specification.
 type Invoker interface {
-	// CreateBackup invokes create-backup operation.
-	//
-	// Creates a Billing order, including for metered pricing. The price must belong to the resource’s
-	// Billing Plan; applicable contract pricing is resolved by Billing. Technical capacity is checked
-	// before sellable quota is reserved. Provisioning continues automatically after payment; do not submit
-	// a new purchase after paying. Reuse the original idempotency key after an uncertain response.
-	//
-	// POST /api/v1/backups
-	CreateBackup(ctx context.Context, request *CreateBackupRequestBody) (*PlacedOrder, error)
 	// CreateDisk invokes create-disk operation.
 	//
-	// Creates a Billing order, including for metered pricing. The price must belong to the resource’s
-	// Billing Plan; applicable contract pricing is resolved by Billing. Technical capacity is checked
-	// before sellable quota is reserved. Provisioning continues automatically after payment; do not submit
-	// a new purchase after paying. Reuse the original idempotency key after an uncertain response.
+	// Checks Fleet capacity, creates the local disk intent, and places a Billing order. Reuse the same
+	// idempotency key after an uncertain response. Billing resolves contract pricing, sellable quota,
+	// grants, payment challenges, and expiry.
 	//
 	// POST /api/v1/disks
-	CreateDisk(ctx context.Context, request *CreateDiskRequestBody) (*PlacedOrder, error)
-	// CreateSnapshot invokes create-snapshot operation.
-	//
-	// Creates a Billing order, including for metered pricing. The price must belong to the resource’s
-	// Billing Plan; applicable contract pricing is resolved by Billing. Technical capacity is checked
-	// before sellable quota is reserved. Provisioning continues automatically after payment; do not submit
-	// a new purchase after paying. Reuse the original idempotency key after an uncertain response.
-	//
-	// POST /api/v1/snapshots
-	CreateSnapshot(ctx context.Context, request *CreateSnapshotRequestBody) (*PlacedOrder, error)
-	// DeleteBackup invokes delete-backup operation.
-	//
-	// Independent of the source disk: deletion succeeds whether or not that disk still exists.
-	//
-	// DELETE /api/v1/backups/{backupId}
-	DeleteBackup(ctx context.Context, params DeleteBackupParams) error
+	CreateDisk(ctx context.Context, request *CreateDiskRequest) (*PlacedOrder, error)
 	// DeleteDisk invokes delete-disk operation.
 	//
-	// Deletion is rejected while the disk is attached, or while snapshots created from it still exist.
+	// Deletion is asynchronous and is rejected while the disk has a live attachment or another live
+	// resource claim. Billing ends resource-bound subscriptions only after Cinder confirms deletion.
 	//
 	// DELETE /api/v1/disks/{diskId}
 	DeleteDisk(ctx context.Context, params DeleteDiskParams) error
-	// DeleteSnapshot invokes delete-snapshot operation.
-	//
-	// Delete a snapshot.
-	//
-	// DELETE /api/v1/snapshots/{snapshotId}
-	DeleteSnapshot(ctx context.Context, params DeleteSnapshotParams) error
 	// GetAttachment invokes get-attachment operation.
 	//
-	// Get attachment.
+	// Get a disk attachment.
 	//
 	// GET /api/v1/attachments/{attachmentId}
 	GetAttachment(ctx context.Context, params GetAttachmentParams) (*Attachment, error)
-	// GetBackup invokes get-backup operation.
-	//
-	// Queries the current state of the backup, which makes it slower but more accurate than the list
-	// endpoint. Use it to poll creation progress.
-	//
-	// GET /api/v1/backups/{backupId}
-	GetBackup(ctx context.Context, params GetBackupParams) (*BackupResource, error)
 	// GetDisk invokes get-disk operation.
 	//
-	// Returns the disk and its observed state. Read its attachments for consumers, device names and
-	// pending attachment operations.
+	// Get a disk.
 	//
 	// GET /api/v1/disks/{diskId}
-	GetDisk(ctx context.Context, params GetDiskParams) (*DiskResource, error)
+	GetDisk(ctx context.Context, params GetDiskParams) (*Disk, error)
 	// GetDiskType invokes get-disk-type operation.
 	//
-	// Retrieve capacity and performance constraints for an existing disk, including system disk types and
-	// types withdrawn from sale.
+	// Get a disk type.
 	//
 	// GET /api/v1/disk-types/{diskTypeId}
-	GetDiskType(ctx context.Context, params GetDiskTypeParams) (*DiskTypeResource, error)
+	GetDiskType(ctx context.Context, params GetDiskTypeParams) (*DiskType, error)
 	// GetResourceReclamation invokes get-resource-reclamation operation.
 	//
-	// Get resource reclamation.
+	// Get resource reclamation state.
 	//
 	// GET /api/v1/resources/{resourceType}/{resourceId}/reclamation
 	GetResourceReclamation(ctx context.Context, params GetResourceReclamationParams) (*ReclamationState, error)
 	// GetResourceUsage invokes get-resource-usage operation.
 	//
-	// Get resource usage.
+	// Get a resource usage.
 	//
 	// GET /api/v1/resource-usages/{usageId}
 	GetResourceUsage(ctx context.Context, params GetResourceUsageParams) (*ResourceUsage, error)
-	// GetSnapshot invokes get-snapshot operation.
-	//
-	// Retrieve a snapshot.
-	//
-	// GET /api/v1/snapshots/{snapshotId}
-	GetSnapshot(ctx context.Context, params GetSnapshotParams) (*SnapshotResource, error)
-	// ListBackups invokes list-backups operation.
-	//
-	// List backups.
-	//
-	// GET /api/v1/backups
-	ListBackups(ctx context.Context, params ListBackupsParams) (*BackupListResponseBody, error)
 	// ListDiskAttachments invokes list-disk-attachments operation.
 	//
-	// Actual attachment state, including operations whose provider outcome is unknown. Use usage_id to
-	// locate the corresponding blocking claim.
+	// List disk attachments.
 	//
-	// GET /api/v1/disks/{resourceId}/attachments
+	// GET /api/v1/disks/{diskId}/attachments
 	ListDiskAttachments(ctx context.Context, params ListDiskAttachmentsParams) (*AttachmentList, error)
 	// ListDiskTypes invokes list-disk-types operation.
 	//
-	// Only disk types currently on sale are listed. A withdrawn one disappears from here and can no longer
-	// be bought, while the disks already on it keep working and can still be resized.
+	// List disk types on sale.
 	//
 	// GET /api/v1/disk-types
-	ListDiskTypes(ctx context.Context, params ListDiskTypesParams) (*DiskTypeListResponseBody, error)
+	ListDiskTypes(ctx context.Context, params ListDiskTypesParams) (*DiskTypeList, error)
 	// ListDisks invokes list-disks operation.
 	//
-	// Lists disks in the current project. Use resource-usages to inspect consumers and pending
-	// reservations.
+	// List disks in the current project.
 	//
 	// GET /api/v1/disks
-	ListDisks(ctx context.Context, params ListDisksParams) (*DiskListResponseBody, error)
-	// ListOperationLogs invokes list-operation-logs operation.
-	//
-	// Records every write operation in the project: who performed it, when, on what, and whether it
-	// succeeded. Read operations are not recorded.
-	//
-	// Operations performed by the platform are included, but the individual operator is not disclosed and
-	// `by_platform` is true. Suspension for non-payment and bans for abuse are examples: the time at which
-	// an instance was stopped by the platform is needed, whereas the operator is internal information.
-	//
-	// Fields such as passwords are replaced with a placeholder as the record is written and never appear
-	// in `payload`.
-	//
-	// GET /api/v1/operation-logs
-	ListOperationLogs(ctx context.Context, params ListOperationLogsParams) (*OperationLogListResponseBody, error)
+	ListDisks(ctx context.Context, params ListDisksParams) (*DiskList, error)
 	// ListResourceUsages invokes list-resource-usages operation.
 	//
-	// Lists direct consumers, including pending reservations and claims being released. The resource must
-	// be readable by the caller. Historical released claims are included only when requested.
+	// Lists direct consumers and pending reservations for a resource readable in the current project.
 	//
 	// GET /api/v1/resource-usages
 	ListResourceUsages(ctx context.Context, params ListResourceUsagesParams) (*ResourceUsageList, error)
-	// ListSnapshots invokes list-snapshots operation.
-	//
-	// List snapshots.
-	//
-	// GET /api/v1/snapshots
-	ListSnapshots(ctx context.Context, params ListSnapshotsParams) (*SnapshotListResponseBody, error)
-	// RenameBackup invokes rename-backup operation.
-	//
-	// Rename a backup.
-	//
-	// PATCH /api/v1/backups/{backupId}
-	RenameBackup(ctx context.Context, request *RenameBackupRequestBody, params RenameBackupParams) (*BackupResource, error)
 	// RenameDisk invokes rename-disk operation.
 	//
-	// Changes the name only. Use the resize endpoint for capacity; type and availability zone are
-	// immutable.
+	// Rename a disk.
 	//
 	// PATCH /api/v1/disks/{diskId}
-	RenameDisk(ctx context.Context, request *RenameDiskRequestBody, params RenameDiskParams) (*DiskResource, error)
-	// RenameSnapshot invokes rename-snapshot operation.
-	//
-	// Rename a snapshot.
-	//
-	// PATCH /api/v1/snapshots/{snapshotId}
-	RenameSnapshot(ctx context.Context, request *RenameSnapshotRequestBody, params RenameSnapshotParams) (*SnapshotResource, error)
-	// ResizeDisk invokes resize-disk operation.
-	//
-	// Creates a Billing order, including for metered pricing. The price must belong to the resource’s
-	// Billing Plan; applicable contract pricing is resolved by Billing. Technical capacity is checked
-	// before sellable quota is reserved. Provisioning continues automatically after payment; do not submit
-	// a new purchase after paying. Reuse the original idempotency key after an uncertain response.
-	//
-	// POST /api/v1/disks/{diskId}/resize
-	ResizeDisk(ctx context.Context, request *ResizeDiskRequestBody, params ResizeDiskParams) (*PlacedOrder, error)
-	// RestoreBackup invokes restore-backup operation.
-	//
-	// Creates a Billing order, including for metered pricing. The price must belong to the resource’s
-	// Billing Plan; applicable contract pricing is resolved by Billing. Technical capacity is checked
-	// before sellable quota is reserved. Provisioning continues automatically after payment; do not submit
-	// a new purchase after paying. Reuse the original idempotency key after an uncertain response.
-	//
-	// POST /api/v1/backups/{backupId}/restore
-	RestoreBackup(ctx context.Context, request *RestoreBackupRequestBody, params RestoreBackupParams) (*PlacedOrder, error)
-	// RevertDisk invokes revert-disk operation.
-	//
-	// Restores the contents of the disk to the moment the snapshot was taken. All data written after that
-	// moment is lost and cannot be recovered.
-	//
-	// Three restrictions apply: only the most recent snapshot of the disk can be reverted to; the disk
-	// must be detached from its instance first; and a disk resized since the snapshot was taken cannot be
-	// reverted. To return to an earlier point in time, or to keep the existing disk, create a new disk
-	// from the snapshot instead.
-	//
-	// The revert is not complete when this endpoint returns; poll the retrieve endpoint.
-	//
-	// POST /api/v1/disks/{diskId}/revert
-	RevertDisk(ctx context.Context, request *RevertDiskRequestBody, params RevertDiskParams) (*DiskResource, error)
+	RenameDisk(ctx context.Context, request *RenameRequest, params RenameDiskParams) (*Disk, error)
 	// SetResourceIdlePolicy invokes set-resource-idle-policy operation.
 	//
-	// Requires permission to delete this resource. Enabling schedules reclamation only after the resource
-	// is continuously unreferenced for the requested retention. Existing claims, attachments and
-	// unfinished operations always prevent reclamation.
+	// Enabling automatic cleanup starts a fresh retention interval after the last live claim is released.
+	// Existing claims and pending operations always block reclamation.
 	//
 	// PUT /api/v1/resources/{resourceType}/{resourceId}/idle-policy
 	SetResourceIdlePolicy(ctx context.Context, request *IdlePolicy, params SetResourceIdlePolicyParams) (*ReclamationState, error)
@@ -275,139 +154,19 @@ func (c *Client) requestURL(ctx context.Context) *url.URL {
 	return u
 }
 
-// CreateBackup invokes create-backup operation.
-//
-// Creates a Billing order, including for metered pricing. The price must belong to the resource’s
-// Billing Plan; applicable contract pricing is resolved by Billing. Technical capacity is checked
-// before sellable quota is reserved. Provisioning continues automatically after payment; do not submit
-// a new purchase after paying. Reuse the original idempotency key after an uncertain response.
-//
-// POST /api/v1/backups
-func (c *Client) CreateBackup(ctx context.Context, request *CreateBackupRequestBody) (*PlacedOrder, error) {
-	res, err := c.sendCreateBackup(ctx, request)
-	return res, err
-}
-
-func (c *Client) sendCreateBackup(ctx context.Context, request *CreateBackupRequestBody) (res *PlacedOrder, err error) {
-	otelAttrs := []attribute.KeyValue{
-		otelogen.OperationID("create-backup"),
-		semconv.HTTPRequestMethodKey.String("POST"),
-		semconv.URLTemplateKey.String("/api/v1/backups"),
-	}
-	otelAttrs = append(otelAttrs, c.cfg.Attributes...)
-
-	// Run stopwatch.
-	startTime := time.Now()
-	defer func() {
-		// Use floating point division here for higher precision (instead of Millisecond method).
-		elapsedDuration := time.Since(startTime)
-		c.duration.Record(ctx, float64(elapsedDuration)/float64(time.Millisecond), metric.WithAttributes(otelAttrs...))
-	}()
-
-	// Increment request counter.
-	c.requests.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
-
-	// Start a span for this request.
-	ctx, span := c.cfg.Tracer.Start(ctx, CreateBackupOperation,
-		trace.WithAttributes(otelAttrs...),
-		clientSpanKind,
-	)
-	// Track stage for error reporting.
-	var stage string
-	defer func() {
-		if err != nil {
-			span.RecordError(err)
-			span.SetStatus(codes.Error, stage)
-			c.errors.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
-		}
-		span.End()
-	}()
-
-	stage = "BuildURL"
-	u := uri.Clone(c.requestURL(ctx))
-	var pathParts [1]string
-	pathParts[0] = "/api/v1/backups"
-	uri.AddPathParts(u, pathParts[:]...)
-
-	stage = "EncodeRequest"
-	r, err := ht.NewRequest(ctx, "POST", u)
-	if err != nil {
-		return res, errors.Wrap(err, "create request")
-	}
-	if err := encodeCreateBackupRequest(request, r); err != nil {
-		return res, errors.Wrap(err, "encode request")
-	}
-
-	{
-		type bitset = [1]uint8
-		var satisfied bitset
-		{
-			stage = "Security:BearerAuth"
-			switch err := c.securityBearerAuth(ctx, CreateBackupOperation, r); {
-			case err == nil: // if NO error
-				satisfied[0] |= 1 << 0
-			case errors.Is(err, ogenerrors.ErrSkipClientSecurity):
-				// Skip this security.
-			default:
-				return res, errors.Wrap(err, "security \"BearerAuth\"")
-			}
-		}
-
-		if ok := func() bool {
-		nextRequirement:
-			for _, requirement := range []bitset{
-				{0b00000001},
-			} {
-				for i, mask := range requirement {
-					if satisfied[i]&mask != mask {
-						continue nextRequirement
-					}
-				}
-				return true
-			}
-			return false
-		}(); !ok {
-			return res, ogenerrors.ErrSecurityRequirementIsNotSatisfied
-		}
-	}
-
-	stage = "SendRequest"
-	resp, err := c.cfg.Client.Do(r)
-	if err != nil {
-		return res, errors.Wrap(err, "do request")
-	}
-	body := resp.Body
-	defer func() {
-		// Drain the body to EOF before closing, so the underlying
-		// connection can be reused by the Transport regardless of the
-		// response status code. See https://github.com/ogen-go/ogen/issues/1670.
-		_, _ = io.Copy(io.Discard, body)
-		_ = body.Close()
-	}()
-
-	stage = "DecodeResponse"
-	result, err := decodeCreateBackupResponse(resp)
-	if err != nil {
-		return res, errors.Wrap(err, "decode response")
-	}
-
-	return result, nil
-}
-
 // CreateDisk invokes create-disk operation.
 //
-// Creates a Billing order, including for metered pricing. The price must belong to the resource’s
-// Billing Plan; applicable contract pricing is resolved by Billing. Technical capacity is checked
-// before sellable quota is reserved. Provisioning continues automatically after payment; do not submit
-// a new purchase after paying. Reuse the original idempotency key after an uncertain response.
+// Checks Fleet capacity, creates the local disk intent, and places a Billing order. Reuse the same
+// idempotency key after an uncertain response. Billing resolves contract pricing, sellable quota,
+// grants, payment challenges, and expiry.
 //
 // POST /api/v1/disks
-func (c *Client) CreateDisk(ctx context.Context, request *CreateDiskRequestBody) (*PlacedOrder, error) {
+func (c *Client) CreateDisk(ctx context.Context, request *CreateDiskRequest) (*PlacedOrder, error) {
 	res, err := c.sendCreateDisk(ctx, request)
 	return res, err
 }
 
-func (c *Client) sendCreateDisk(ctx context.Context, request *CreateDiskRequestBody) (res *PlacedOrder, err error) {
+func (c *Client) sendCreateDisk(ctx context.Context, request *CreateDiskRequest) (res *PlacedOrder, err error) {
 	otelAttrs := []attribute.KeyValue{
 		otelogen.OperationID("create-disk"),
 		semconv.HTTPRequestMethodKey.String("POST"),
@@ -513,259 +272,10 @@ func (c *Client) sendCreateDisk(ctx context.Context, request *CreateDiskRequestB
 	return result, nil
 }
 
-// CreateSnapshot invokes create-snapshot operation.
-//
-// Creates a Billing order, including for metered pricing. The price must belong to the resource’s
-// Billing Plan; applicable contract pricing is resolved by Billing. Technical capacity is checked
-// before sellable quota is reserved. Provisioning continues automatically after payment; do not submit
-// a new purchase after paying. Reuse the original idempotency key after an uncertain response.
-//
-// POST /api/v1/snapshots
-func (c *Client) CreateSnapshot(ctx context.Context, request *CreateSnapshotRequestBody) (*PlacedOrder, error) {
-	res, err := c.sendCreateSnapshot(ctx, request)
-	return res, err
-}
-
-func (c *Client) sendCreateSnapshot(ctx context.Context, request *CreateSnapshotRequestBody) (res *PlacedOrder, err error) {
-	otelAttrs := []attribute.KeyValue{
-		otelogen.OperationID("create-snapshot"),
-		semconv.HTTPRequestMethodKey.String("POST"),
-		semconv.URLTemplateKey.String("/api/v1/snapshots"),
-	}
-	otelAttrs = append(otelAttrs, c.cfg.Attributes...)
-
-	// Run stopwatch.
-	startTime := time.Now()
-	defer func() {
-		// Use floating point division here for higher precision (instead of Millisecond method).
-		elapsedDuration := time.Since(startTime)
-		c.duration.Record(ctx, float64(elapsedDuration)/float64(time.Millisecond), metric.WithAttributes(otelAttrs...))
-	}()
-
-	// Increment request counter.
-	c.requests.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
-
-	// Start a span for this request.
-	ctx, span := c.cfg.Tracer.Start(ctx, CreateSnapshotOperation,
-		trace.WithAttributes(otelAttrs...),
-		clientSpanKind,
-	)
-	// Track stage for error reporting.
-	var stage string
-	defer func() {
-		if err != nil {
-			span.RecordError(err)
-			span.SetStatus(codes.Error, stage)
-			c.errors.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
-		}
-		span.End()
-	}()
-
-	stage = "BuildURL"
-	u := uri.Clone(c.requestURL(ctx))
-	var pathParts [1]string
-	pathParts[0] = "/api/v1/snapshots"
-	uri.AddPathParts(u, pathParts[:]...)
-
-	stage = "EncodeRequest"
-	r, err := ht.NewRequest(ctx, "POST", u)
-	if err != nil {
-		return res, errors.Wrap(err, "create request")
-	}
-	if err := encodeCreateSnapshotRequest(request, r); err != nil {
-		return res, errors.Wrap(err, "encode request")
-	}
-
-	{
-		type bitset = [1]uint8
-		var satisfied bitset
-		{
-			stage = "Security:BearerAuth"
-			switch err := c.securityBearerAuth(ctx, CreateSnapshotOperation, r); {
-			case err == nil: // if NO error
-				satisfied[0] |= 1 << 0
-			case errors.Is(err, ogenerrors.ErrSkipClientSecurity):
-				// Skip this security.
-			default:
-				return res, errors.Wrap(err, "security \"BearerAuth\"")
-			}
-		}
-
-		if ok := func() bool {
-		nextRequirement:
-			for _, requirement := range []bitset{
-				{0b00000001},
-			} {
-				for i, mask := range requirement {
-					if satisfied[i]&mask != mask {
-						continue nextRequirement
-					}
-				}
-				return true
-			}
-			return false
-		}(); !ok {
-			return res, ogenerrors.ErrSecurityRequirementIsNotSatisfied
-		}
-	}
-
-	stage = "SendRequest"
-	resp, err := c.cfg.Client.Do(r)
-	if err != nil {
-		return res, errors.Wrap(err, "do request")
-	}
-	body := resp.Body
-	defer func() {
-		// Drain the body to EOF before closing, so the underlying
-		// connection can be reused by the Transport regardless of the
-		// response status code. See https://github.com/ogen-go/ogen/issues/1670.
-		_, _ = io.Copy(io.Discard, body)
-		_ = body.Close()
-	}()
-
-	stage = "DecodeResponse"
-	result, err := decodeCreateSnapshotResponse(resp)
-	if err != nil {
-		return res, errors.Wrap(err, "decode response")
-	}
-
-	return result, nil
-}
-
-// DeleteBackup invokes delete-backup operation.
-//
-// Independent of the source disk: deletion succeeds whether or not that disk still exists.
-//
-// DELETE /api/v1/backups/{backupId}
-func (c *Client) DeleteBackup(ctx context.Context, params DeleteBackupParams) error {
-	_, err := c.sendDeleteBackup(ctx, params)
-	return err
-}
-
-func (c *Client) sendDeleteBackup(ctx context.Context, params DeleteBackupParams) (res *DeleteBackupNoContent, err error) {
-	otelAttrs := []attribute.KeyValue{
-		otelogen.OperationID("delete-backup"),
-		semconv.HTTPRequestMethodKey.String("DELETE"),
-		semconv.URLTemplateKey.String("/api/v1/backups/{backupId}"),
-	}
-	otelAttrs = append(otelAttrs, c.cfg.Attributes...)
-
-	// Run stopwatch.
-	startTime := time.Now()
-	defer func() {
-		// Use floating point division here for higher precision (instead of Millisecond method).
-		elapsedDuration := time.Since(startTime)
-		c.duration.Record(ctx, float64(elapsedDuration)/float64(time.Millisecond), metric.WithAttributes(otelAttrs...))
-	}()
-
-	// Increment request counter.
-	c.requests.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
-
-	// Start a span for this request.
-	ctx, span := c.cfg.Tracer.Start(ctx, DeleteBackupOperation,
-		trace.WithAttributes(otelAttrs...),
-		clientSpanKind,
-	)
-	// Track stage for error reporting.
-	var stage string
-	defer func() {
-		if err != nil {
-			span.RecordError(err)
-			span.SetStatus(codes.Error, stage)
-			c.errors.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
-		}
-		span.End()
-	}()
-
-	stage = "BuildURL"
-	u := uri.Clone(c.requestURL(ctx))
-	var pathParts [2]string
-	pathParts[0] = "/api/v1/backups/"
-	{
-		// Encode "backupId" parameter.
-		e := uri.NewPathEncoder(uri.PathEncoderConfig{
-			Param:   "backupId",
-			Style:   uri.PathStyleSimple,
-			Explode: false,
-		})
-		if err := func() error {
-			return e.EncodeValue(conv.UUIDToString(params.BackupId))
-		}(); err != nil {
-			return res, errors.Wrap(err, "encode path")
-		}
-		encoded, err := e.Result()
-		if err != nil {
-			return res, errors.Wrap(err, "encode path")
-		}
-		pathParts[1] = encoded
-	}
-	uri.AddPathParts(u, pathParts[:]...)
-
-	stage = "EncodeRequest"
-	r, err := ht.NewRequest(ctx, "DELETE", u)
-	if err != nil {
-		return res, errors.Wrap(err, "create request")
-	}
-
-	{
-		type bitset = [1]uint8
-		var satisfied bitset
-		{
-			stage = "Security:BearerAuth"
-			switch err := c.securityBearerAuth(ctx, DeleteBackupOperation, r); {
-			case err == nil: // if NO error
-				satisfied[0] |= 1 << 0
-			case errors.Is(err, ogenerrors.ErrSkipClientSecurity):
-				// Skip this security.
-			default:
-				return res, errors.Wrap(err, "security \"BearerAuth\"")
-			}
-		}
-
-		if ok := func() bool {
-		nextRequirement:
-			for _, requirement := range []bitset{
-				{0b00000001},
-			} {
-				for i, mask := range requirement {
-					if satisfied[i]&mask != mask {
-						continue nextRequirement
-					}
-				}
-				return true
-			}
-			return false
-		}(); !ok {
-			return res, ogenerrors.ErrSecurityRequirementIsNotSatisfied
-		}
-	}
-
-	stage = "SendRequest"
-	resp, err := c.cfg.Client.Do(r)
-	if err != nil {
-		return res, errors.Wrap(err, "do request")
-	}
-	body := resp.Body
-	defer func() {
-		// Drain the body to EOF before closing, so the underlying
-		// connection can be reused by the Transport regardless of the
-		// response status code. See https://github.com/ogen-go/ogen/issues/1670.
-		_, _ = io.Copy(io.Discard, body)
-		_ = body.Close()
-	}()
-
-	stage = "DecodeResponse"
-	result, err := decodeDeleteBackupResponse(resp)
-	if err != nil {
-		return res, errors.Wrap(err, "decode response")
-	}
-
-	return result, nil
-}
-
 // DeleteDisk invokes delete-disk operation.
 //
-// Deletion is rejected while the disk is attached, or while snapshots created from it still exist.
+// Deletion is asynchronous and is rejected while the disk has a live attachment or another live
+// resource claim. Billing ends resource-bound subscriptions only after Cinder confirms deletion.
 //
 // DELETE /api/v1/disks/{diskId}
 func (c *Client) DeleteDisk(ctx context.Context, params DeleteDiskParams) error {
@@ -832,6 +342,24 @@ func (c *Client) sendDeleteDisk(ctx context.Context, params DeleteDiskParams) (r
 	}
 	uri.AddPathParts(u, pathParts[:]...)
 
+	stage = "EncodeQueryParams"
+	q := uri.NewQueryEncoder()
+	{
+		// Encode "idempotency_key" parameter.
+		cfg := uri.QueryParameterEncodingConfig{
+			Name:    "idempotency_key",
+			Style:   uri.QueryStyleForm,
+			Explode: true,
+		}
+
+		if err := q.EncodeParam(cfg, func(e uri.Encoder) error {
+			return e.EncodeValue(conv.StringToString(params.IdempotencyKey))
+		}); err != nil {
+			return res, errors.Wrap(err, "encode query")
+		}
+	}
+	u.RawQuery = q.Values().Encode()
+
 	stage = "EncodeRequest"
 	r, err := ht.NewRequest(ctx, "DELETE", u)
 	if err != nil {
@@ -894,140 +422,9 @@ func (c *Client) sendDeleteDisk(ctx context.Context, params DeleteDiskParams) (r
 	return result, nil
 }
 
-// DeleteSnapshot invokes delete-snapshot operation.
-//
-// Delete a snapshot.
-//
-// DELETE /api/v1/snapshots/{snapshotId}
-func (c *Client) DeleteSnapshot(ctx context.Context, params DeleteSnapshotParams) error {
-	_, err := c.sendDeleteSnapshot(ctx, params)
-	return err
-}
-
-func (c *Client) sendDeleteSnapshot(ctx context.Context, params DeleteSnapshotParams) (res *DeleteSnapshotNoContent, err error) {
-	otelAttrs := []attribute.KeyValue{
-		otelogen.OperationID("delete-snapshot"),
-		semconv.HTTPRequestMethodKey.String("DELETE"),
-		semconv.URLTemplateKey.String("/api/v1/snapshots/{snapshotId}"),
-	}
-	otelAttrs = append(otelAttrs, c.cfg.Attributes...)
-
-	// Run stopwatch.
-	startTime := time.Now()
-	defer func() {
-		// Use floating point division here for higher precision (instead of Millisecond method).
-		elapsedDuration := time.Since(startTime)
-		c.duration.Record(ctx, float64(elapsedDuration)/float64(time.Millisecond), metric.WithAttributes(otelAttrs...))
-	}()
-
-	// Increment request counter.
-	c.requests.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
-
-	// Start a span for this request.
-	ctx, span := c.cfg.Tracer.Start(ctx, DeleteSnapshotOperation,
-		trace.WithAttributes(otelAttrs...),
-		clientSpanKind,
-	)
-	// Track stage for error reporting.
-	var stage string
-	defer func() {
-		if err != nil {
-			span.RecordError(err)
-			span.SetStatus(codes.Error, stage)
-			c.errors.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
-		}
-		span.End()
-	}()
-
-	stage = "BuildURL"
-	u := uri.Clone(c.requestURL(ctx))
-	var pathParts [2]string
-	pathParts[0] = "/api/v1/snapshots/"
-	{
-		// Encode "snapshotId" parameter.
-		e := uri.NewPathEncoder(uri.PathEncoderConfig{
-			Param:   "snapshotId",
-			Style:   uri.PathStyleSimple,
-			Explode: false,
-		})
-		if err := func() error {
-			return e.EncodeValue(conv.UUIDToString(params.SnapshotId))
-		}(); err != nil {
-			return res, errors.Wrap(err, "encode path")
-		}
-		encoded, err := e.Result()
-		if err != nil {
-			return res, errors.Wrap(err, "encode path")
-		}
-		pathParts[1] = encoded
-	}
-	uri.AddPathParts(u, pathParts[:]...)
-
-	stage = "EncodeRequest"
-	r, err := ht.NewRequest(ctx, "DELETE", u)
-	if err != nil {
-		return res, errors.Wrap(err, "create request")
-	}
-
-	{
-		type bitset = [1]uint8
-		var satisfied bitset
-		{
-			stage = "Security:BearerAuth"
-			switch err := c.securityBearerAuth(ctx, DeleteSnapshotOperation, r); {
-			case err == nil: // if NO error
-				satisfied[0] |= 1 << 0
-			case errors.Is(err, ogenerrors.ErrSkipClientSecurity):
-				// Skip this security.
-			default:
-				return res, errors.Wrap(err, "security \"BearerAuth\"")
-			}
-		}
-
-		if ok := func() bool {
-		nextRequirement:
-			for _, requirement := range []bitset{
-				{0b00000001},
-			} {
-				for i, mask := range requirement {
-					if satisfied[i]&mask != mask {
-						continue nextRequirement
-					}
-				}
-				return true
-			}
-			return false
-		}(); !ok {
-			return res, ogenerrors.ErrSecurityRequirementIsNotSatisfied
-		}
-	}
-
-	stage = "SendRequest"
-	resp, err := c.cfg.Client.Do(r)
-	if err != nil {
-		return res, errors.Wrap(err, "do request")
-	}
-	body := resp.Body
-	defer func() {
-		// Drain the body to EOF before closing, so the underlying
-		// connection can be reused by the Transport regardless of the
-		// response status code. See https://github.com/ogen-go/ogen/issues/1670.
-		_, _ = io.Copy(io.Discard, body)
-		_ = body.Close()
-	}()
-
-	stage = "DecodeResponse"
-	result, err := decodeDeleteSnapshotResponse(resp)
-	if err != nil {
-		return res, errors.Wrap(err, "decode response")
-	}
-
-	return result, nil
-}
-
 // GetAttachment invokes get-attachment operation.
 //
-// Get attachment.
+// Get a disk attachment.
 //
 // GET /api/v1/attachments/{attachmentId}
 func (c *Client) GetAttachment(ctx context.Context, params GetAttachmentParams) (*Attachment, error) {
@@ -1156,150 +553,17 @@ func (c *Client) sendGetAttachment(ctx context.Context, params GetAttachmentPara
 	return result, nil
 }
 
-// GetBackup invokes get-backup operation.
-//
-// Queries the current state of the backup, which makes it slower but more accurate than the list
-// endpoint. Use it to poll creation progress.
-//
-// GET /api/v1/backups/{backupId}
-func (c *Client) GetBackup(ctx context.Context, params GetBackupParams) (*BackupResource, error) {
-	res, err := c.sendGetBackup(ctx, params)
-	return res, err
-}
-
-func (c *Client) sendGetBackup(ctx context.Context, params GetBackupParams) (res *BackupResource, err error) {
-	otelAttrs := []attribute.KeyValue{
-		otelogen.OperationID("get-backup"),
-		semconv.HTTPRequestMethodKey.String("GET"),
-		semconv.URLTemplateKey.String("/api/v1/backups/{backupId}"),
-	}
-	otelAttrs = append(otelAttrs, c.cfg.Attributes...)
-
-	// Run stopwatch.
-	startTime := time.Now()
-	defer func() {
-		// Use floating point division here for higher precision (instead of Millisecond method).
-		elapsedDuration := time.Since(startTime)
-		c.duration.Record(ctx, float64(elapsedDuration)/float64(time.Millisecond), metric.WithAttributes(otelAttrs...))
-	}()
-
-	// Increment request counter.
-	c.requests.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
-
-	// Start a span for this request.
-	ctx, span := c.cfg.Tracer.Start(ctx, GetBackupOperation,
-		trace.WithAttributes(otelAttrs...),
-		clientSpanKind,
-	)
-	// Track stage for error reporting.
-	var stage string
-	defer func() {
-		if err != nil {
-			span.RecordError(err)
-			span.SetStatus(codes.Error, stage)
-			c.errors.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
-		}
-		span.End()
-	}()
-
-	stage = "BuildURL"
-	u := uri.Clone(c.requestURL(ctx))
-	var pathParts [2]string
-	pathParts[0] = "/api/v1/backups/"
-	{
-		// Encode "backupId" parameter.
-		e := uri.NewPathEncoder(uri.PathEncoderConfig{
-			Param:   "backupId",
-			Style:   uri.PathStyleSimple,
-			Explode: false,
-		})
-		if err := func() error {
-			return e.EncodeValue(conv.UUIDToString(params.BackupId))
-		}(); err != nil {
-			return res, errors.Wrap(err, "encode path")
-		}
-		encoded, err := e.Result()
-		if err != nil {
-			return res, errors.Wrap(err, "encode path")
-		}
-		pathParts[1] = encoded
-	}
-	uri.AddPathParts(u, pathParts[:]...)
-
-	stage = "EncodeRequest"
-	r, err := ht.NewRequest(ctx, "GET", u)
-	if err != nil {
-		return res, errors.Wrap(err, "create request")
-	}
-
-	{
-		type bitset = [1]uint8
-		var satisfied bitset
-		{
-			stage = "Security:BearerAuth"
-			switch err := c.securityBearerAuth(ctx, GetBackupOperation, r); {
-			case err == nil: // if NO error
-				satisfied[0] |= 1 << 0
-			case errors.Is(err, ogenerrors.ErrSkipClientSecurity):
-				// Skip this security.
-			default:
-				return res, errors.Wrap(err, "security \"BearerAuth\"")
-			}
-		}
-
-		if ok := func() bool {
-		nextRequirement:
-			for _, requirement := range []bitset{
-				{0b00000001},
-			} {
-				for i, mask := range requirement {
-					if satisfied[i]&mask != mask {
-						continue nextRequirement
-					}
-				}
-				return true
-			}
-			return false
-		}(); !ok {
-			return res, ogenerrors.ErrSecurityRequirementIsNotSatisfied
-		}
-	}
-
-	stage = "SendRequest"
-	resp, err := c.cfg.Client.Do(r)
-	if err != nil {
-		return res, errors.Wrap(err, "do request")
-	}
-	body := resp.Body
-	defer func() {
-		// Drain the body to EOF before closing, so the underlying
-		// connection can be reused by the Transport regardless of the
-		// response status code. See https://github.com/ogen-go/ogen/issues/1670.
-		_, _ = io.Copy(io.Discard, body)
-		_ = body.Close()
-	}()
-
-	stage = "DecodeResponse"
-	result, err := decodeGetBackupResponse(resp)
-	if err != nil {
-		return res, errors.Wrap(err, "decode response")
-	}
-
-	return result, nil
-}
-
 // GetDisk invokes get-disk operation.
 //
-// Returns the disk and its observed state. Read its attachments for consumers, device names and
-// pending attachment operations.
+// Get a disk.
 //
 // GET /api/v1/disks/{diskId}
-func (c *Client) GetDisk(ctx context.Context, params GetDiskParams) (*DiskResource, error) {
+func (c *Client) GetDisk(ctx context.Context, params GetDiskParams) (*Disk, error) {
 	res, err := c.sendGetDisk(ctx, params)
 	return res, err
 }
 
-func (c *Client) sendGetDisk(ctx context.Context, params GetDiskParams) (res *DiskResource, err error) {
+func (c *Client) sendGetDisk(ctx context.Context, params GetDiskParams) (res *Disk, err error) {
 	otelAttrs := []attribute.KeyValue{
 		otelogen.OperationID("get-disk"),
 		semconv.HTTPRequestMethodKey.String("GET"),
@@ -1422,16 +686,15 @@ func (c *Client) sendGetDisk(ctx context.Context, params GetDiskParams) (res *Di
 
 // GetDiskType invokes get-disk-type operation.
 //
-// Retrieve capacity and performance constraints for an existing disk, including system disk types and
-// types withdrawn from sale.
+// Get a disk type.
 //
 // GET /api/v1/disk-types/{diskTypeId}
-func (c *Client) GetDiskType(ctx context.Context, params GetDiskTypeParams) (*DiskTypeResource, error) {
+func (c *Client) GetDiskType(ctx context.Context, params GetDiskTypeParams) (*DiskType, error) {
 	res, err := c.sendGetDiskType(ctx, params)
 	return res, err
 }
 
-func (c *Client) sendGetDiskType(ctx context.Context, params GetDiskTypeParams) (res *DiskTypeResource, err error) {
+func (c *Client) sendGetDiskType(ctx context.Context, params GetDiskTypeParams) (res *DiskType, err error) {
 	otelAttrs := []attribute.KeyValue{
 		otelogen.OperationID("get-disk-type"),
 		semconv.HTTPRequestMethodKey.String("GET"),
@@ -1554,7 +817,7 @@ func (c *Client) sendGetDiskType(ctx context.Context, params GetDiskTypeParams) 
 
 // GetResourceReclamation invokes get-resource-reclamation operation.
 //
-// Get resource reclamation.
+// Get resource reclamation state.
 //
 // GET /api/v1/resources/{resourceType}/{resourceId}/reclamation
 func (c *Client) GetResourceReclamation(ctx context.Context, params GetResourceReclamationParams) (*ReclamationState, error) {
@@ -1609,7 +872,7 @@ func (c *Client) sendGetResourceReclamation(ctx context.Context, params GetResou
 			Explode: false,
 		})
 		if err := func() error {
-			return e.EncodeValue(conv.StringToString(params.ResourceType))
+			return e.EncodeValue(conv.StringToString(string(params.ResourceType)))
 		}(); err != nil {
 			return res, errors.Wrap(err, "encode path")
 		}
@@ -1705,7 +968,7 @@ func (c *Client) sendGetResourceReclamation(ctx context.Context, params GetResou
 
 // GetResourceUsage invokes get-resource-usage operation.
 //
-// Get resource usage.
+// Get a resource usage.
 //
 // GET /api/v1/resource-usages/{usageId}
 func (c *Client) GetResourceUsage(ctx context.Context, params GetResourceUsageParams) (*ResourceUsage, error) {
@@ -1834,311 +1097,11 @@ func (c *Client) sendGetResourceUsage(ctx context.Context, params GetResourceUsa
 	return result, nil
 }
 
-// GetSnapshot invokes get-snapshot operation.
-//
-// Retrieve a snapshot.
-//
-// GET /api/v1/snapshots/{snapshotId}
-func (c *Client) GetSnapshot(ctx context.Context, params GetSnapshotParams) (*SnapshotResource, error) {
-	res, err := c.sendGetSnapshot(ctx, params)
-	return res, err
-}
-
-func (c *Client) sendGetSnapshot(ctx context.Context, params GetSnapshotParams) (res *SnapshotResource, err error) {
-	otelAttrs := []attribute.KeyValue{
-		otelogen.OperationID("get-snapshot"),
-		semconv.HTTPRequestMethodKey.String("GET"),
-		semconv.URLTemplateKey.String("/api/v1/snapshots/{snapshotId}"),
-	}
-	otelAttrs = append(otelAttrs, c.cfg.Attributes...)
-
-	// Run stopwatch.
-	startTime := time.Now()
-	defer func() {
-		// Use floating point division here for higher precision (instead of Millisecond method).
-		elapsedDuration := time.Since(startTime)
-		c.duration.Record(ctx, float64(elapsedDuration)/float64(time.Millisecond), metric.WithAttributes(otelAttrs...))
-	}()
-
-	// Increment request counter.
-	c.requests.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
-
-	// Start a span for this request.
-	ctx, span := c.cfg.Tracer.Start(ctx, GetSnapshotOperation,
-		trace.WithAttributes(otelAttrs...),
-		clientSpanKind,
-	)
-	// Track stage for error reporting.
-	var stage string
-	defer func() {
-		if err != nil {
-			span.RecordError(err)
-			span.SetStatus(codes.Error, stage)
-			c.errors.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
-		}
-		span.End()
-	}()
-
-	stage = "BuildURL"
-	u := uri.Clone(c.requestURL(ctx))
-	var pathParts [2]string
-	pathParts[0] = "/api/v1/snapshots/"
-	{
-		// Encode "snapshotId" parameter.
-		e := uri.NewPathEncoder(uri.PathEncoderConfig{
-			Param:   "snapshotId",
-			Style:   uri.PathStyleSimple,
-			Explode: false,
-		})
-		if err := func() error {
-			return e.EncodeValue(conv.UUIDToString(params.SnapshotId))
-		}(); err != nil {
-			return res, errors.Wrap(err, "encode path")
-		}
-		encoded, err := e.Result()
-		if err != nil {
-			return res, errors.Wrap(err, "encode path")
-		}
-		pathParts[1] = encoded
-	}
-	uri.AddPathParts(u, pathParts[:]...)
-
-	stage = "EncodeRequest"
-	r, err := ht.NewRequest(ctx, "GET", u)
-	if err != nil {
-		return res, errors.Wrap(err, "create request")
-	}
-
-	{
-		type bitset = [1]uint8
-		var satisfied bitset
-		{
-			stage = "Security:BearerAuth"
-			switch err := c.securityBearerAuth(ctx, GetSnapshotOperation, r); {
-			case err == nil: // if NO error
-				satisfied[0] |= 1 << 0
-			case errors.Is(err, ogenerrors.ErrSkipClientSecurity):
-				// Skip this security.
-			default:
-				return res, errors.Wrap(err, "security \"BearerAuth\"")
-			}
-		}
-
-		if ok := func() bool {
-		nextRequirement:
-			for _, requirement := range []bitset{
-				{0b00000001},
-			} {
-				for i, mask := range requirement {
-					if satisfied[i]&mask != mask {
-						continue nextRequirement
-					}
-				}
-				return true
-			}
-			return false
-		}(); !ok {
-			return res, ogenerrors.ErrSecurityRequirementIsNotSatisfied
-		}
-	}
-
-	stage = "SendRequest"
-	resp, err := c.cfg.Client.Do(r)
-	if err != nil {
-		return res, errors.Wrap(err, "do request")
-	}
-	body := resp.Body
-	defer func() {
-		// Drain the body to EOF before closing, so the underlying
-		// connection can be reused by the Transport regardless of the
-		// response status code. See https://github.com/ogen-go/ogen/issues/1670.
-		_, _ = io.Copy(io.Discard, body)
-		_ = body.Close()
-	}()
-
-	stage = "DecodeResponse"
-	result, err := decodeGetSnapshotResponse(resp)
-	if err != nil {
-		return res, errors.Wrap(err, "decode response")
-	}
-
-	return result, nil
-}
-
-// ListBackups invokes list-backups operation.
-//
-// List backups.
-//
-// GET /api/v1/backups
-func (c *Client) ListBackups(ctx context.Context, params ListBackupsParams) (*BackupListResponseBody, error) {
-	res, err := c.sendListBackups(ctx, params)
-	return res, err
-}
-
-func (c *Client) sendListBackups(ctx context.Context, params ListBackupsParams) (res *BackupListResponseBody, err error) {
-	otelAttrs := []attribute.KeyValue{
-		otelogen.OperationID("list-backups"),
-		semconv.HTTPRequestMethodKey.String("GET"),
-		semconv.URLTemplateKey.String("/api/v1/backups"),
-	}
-	otelAttrs = append(otelAttrs, c.cfg.Attributes...)
-
-	// Run stopwatch.
-	startTime := time.Now()
-	defer func() {
-		// Use floating point division here for higher precision (instead of Millisecond method).
-		elapsedDuration := time.Since(startTime)
-		c.duration.Record(ctx, float64(elapsedDuration)/float64(time.Millisecond), metric.WithAttributes(otelAttrs...))
-	}()
-
-	// Increment request counter.
-	c.requests.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
-
-	// Start a span for this request.
-	ctx, span := c.cfg.Tracer.Start(ctx, ListBackupsOperation,
-		trace.WithAttributes(otelAttrs...),
-		clientSpanKind,
-	)
-	// Track stage for error reporting.
-	var stage string
-	defer func() {
-		if err != nil {
-			span.RecordError(err)
-			span.SetStatus(codes.Error, stage)
-			c.errors.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
-		}
-		span.End()
-	}()
-
-	stage = "BuildURL"
-	u := uri.Clone(c.requestURL(ctx))
-	var pathParts [1]string
-	pathParts[0] = "/api/v1/backups"
-	uri.AddPathParts(u, pathParts[:]...)
-
-	stage = "EncodeQueryParams"
-	q := uri.NewQueryEncoder()
-	{
-		// Encode "disk_id" parameter.
-		cfg := uri.QueryParameterEncodingConfig{
-			Name:    "disk_id",
-			Style:   uri.QueryStyleForm,
-			Explode: false,
-		}
-
-		if err := q.EncodeParam(cfg, func(e uri.Encoder) error {
-			if val, ok := params.DiskID.Get(); ok {
-				return e.EncodeValue(conv.UUIDToString(val))
-			}
-			return nil
-		}); err != nil {
-			return res, errors.Wrap(err, "encode query")
-		}
-	}
-	{
-		// Encode "page" parameter.
-		cfg := uri.QueryParameterEncodingConfig{
-			Name:    "page",
-			Style:   uri.QueryStyleForm,
-			Explode: true,
-		}
-
-		if err := q.EncodeParam(cfg, func(e uri.Encoder) error {
-			if val, ok := params.Page.Get(); ok {
-				return e.EncodeValue(conv.Int64ToString(val))
-			}
-			return nil
-		}); err != nil {
-			return res, errors.Wrap(err, "encode query")
-		}
-	}
-	{
-		// Encode "page_size" parameter.
-		cfg := uri.QueryParameterEncodingConfig{
-			Name:    "page_size",
-			Style:   uri.QueryStyleForm,
-			Explode: true,
-		}
-
-		if err := q.EncodeParam(cfg, func(e uri.Encoder) error {
-			if val, ok := params.PageSize.Get(); ok {
-				return e.EncodeValue(conv.Int64ToString(val))
-			}
-			return nil
-		}); err != nil {
-			return res, errors.Wrap(err, "encode query")
-		}
-	}
-	u.RawQuery = q.Values().Encode()
-
-	stage = "EncodeRequest"
-	r, err := ht.NewRequest(ctx, "GET", u)
-	if err != nil {
-		return res, errors.Wrap(err, "create request")
-	}
-
-	{
-		type bitset = [1]uint8
-		var satisfied bitset
-		{
-			stage = "Security:BearerAuth"
-			switch err := c.securityBearerAuth(ctx, ListBackupsOperation, r); {
-			case err == nil: // if NO error
-				satisfied[0] |= 1 << 0
-			case errors.Is(err, ogenerrors.ErrSkipClientSecurity):
-				// Skip this security.
-			default:
-				return res, errors.Wrap(err, "security \"BearerAuth\"")
-			}
-		}
-
-		if ok := func() bool {
-		nextRequirement:
-			for _, requirement := range []bitset{
-				{0b00000001},
-			} {
-				for i, mask := range requirement {
-					if satisfied[i]&mask != mask {
-						continue nextRequirement
-					}
-				}
-				return true
-			}
-			return false
-		}(); !ok {
-			return res, ogenerrors.ErrSecurityRequirementIsNotSatisfied
-		}
-	}
-
-	stage = "SendRequest"
-	resp, err := c.cfg.Client.Do(r)
-	if err != nil {
-		return res, errors.Wrap(err, "do request")
-	}
-	body := resp.Body
-	defer func() {
-		// Drain the body to EOF before closing, so the underlying
-		// connection can be reused by the Transport regardless of the
-		// response status code. See https://github.com/ogen-go/ogen/issues/1670.
-		_, _ = io.Copy(io.Discard, body)
-		_ = body.Close()
-	}()
-
-	stage = "DecodeResponse"
-	result, err := decodeListBackupsResponse(resp)
-	if err != nil {
-		return res, errors.Wrap(err, "decode response")
-	}
-
-	return result, nil
-}
-
 // ListDiskAttachments invokes list-disk-attachments operation.
 //
-// Actual attachment state, including operations whose provider outcome is unknown. Use usage_id to
-// locate the corresponding blocking claim.
+// List disk attachments.
 //
-// GET /api/v1/disks/{resourceId}/attachments
+// GET /api/v1/disks/{diskId}/attachments
 func (c *Client) ListDiskAttachments(ctx context.Context, params ListDiskAttachmentsParams) (*AttachmentList, error) {
 	res, err := c.sendListDiskAttachments(ctx, params)
 	return res, err
@@ -2148,7 +1111,7 @@ func (c *Client) sendListDiskAttachments(ctx context.Context, params ListDiskAtt
 	otelAttrs := []attribute.KeyValue{
 		otelogen.OperationID("list-disk-attachments"),
 		semconv.HTTPRequestMethodKey.String("GET"),
-		semconv.URLTemplateKey.String("/api/v1/disks/{resourceId}/attachments"),
+		semconv.URLTemplateKey.String("/api/v1/disks/{diskId}/attachments"),
 	}
 	otelAttrs = append(otelAttrs, c.cfg.Attributes...)
 
@@ -2184,14 +1147,14 @@ func (c *Client) sendListDiskAttachments(ctx context.Context, params ListDiskAtt
 	var pathParts [3]string
 	pathParts[0] = "/api/v1/disks/"
 	{
-		// Encode "resourceId" parameter.
+		// Encode "diskId" parameter.
 		e := uri.NewPathEncoder(uri.PathEncoderConfig{
-			Param:   "resourceId",
+			Param:   "diskId",
 			Style:   uri.PathStyleSimple,
 			Explode: false,
 		})
 		if err := func() error {
-			return e.EncodeValue(conv.UUIDToString(params.ResourceId))
+			return e.EncodeValue(conv.UUIDToString(params.DiskId))
 		}(); err != nil {
 			return res, errors.Wrap(err, "encode path")
 		}
@@ -2206,6 +1169,23 @@ func (c *Client) sendListDiskAttachments(ctx context.Context, params ListDiskAtt
 
 	stage = "EncodeQueryParams"
 	q := uri.NewQueryEncoder()
+	{
+		// Encode "include_detached" parameter.
+		cfg := uri.QueryParameterEncodingConfig{
+			Name:    "include_detached",
+			Style:   uri.QueryStyleForm,
+			Explode: true,
+		}
+
+		if err := q.EncodeParam(cfg, func(e uri.Encoder) error {
+			if val, ok := params.IncludeDetached.Get(); ok {
+				return e.EncodeValue(conv.BoolToString(val))
+			}
+			return nil
+		}); err != nil {
+			return res, errors.Wrap(err, "encode query")
+		}
+	}
 	{
 		// Encode "page" parameter.
 		cfg := uri.QueryParameterEncodingConfig{
@@ -2234,23 +1214,6 @@ func (c *Client) sendListDiskAttachments(ctx context.Context, params ListDiskAtt
 		if err := q.EncodeParam(cfg, func(e uri.Encoder) error {
 			if val, ok := params.PageSize.Get(); ok {
 				return e.EncodeValue(conv.Int64ToString(val))
-			}
-			return nil
-		}); err != nil {
-			return res, errors.Wrap(err, "encode query")
-		}
-	}
-	{
-		// Encode "include_detached" parameter.
-		cfg := uri.QueryParameterEncodingConfig{
-			Name:    "include_detached",
-			Style:   uri.QueryStyleForm,
-			Explode: true,
-		}
-
-		if err := q.EncodeParam(cfg, func(e uri.Encoder) error {
-			if val, ok := params.IncludeDetached.Get(); ok {
-				return e.EncodeValue(conv.BoolToString(val))
 			}
 			return nil
 		}); err != nil {
@@ -2323,16 +1286,15 @@ func (c *Client) sendListDiskAttachments(ctx context.Context, params ListDiskAtt
 
 // ListDiskTypes invokes list-disk-types operation.
 //
-// Only disk types currently on sale are listed. A withdrawn one disappears from here and can no longer
-// be bought, while the disks already on it keep working and can still be resized.
+// List disk types on sale.
 //
 // GET /api/v1/disk-types
-func (c *Client) ListDiskTypes(ctx context.Context, params ListDiskTypesParams) (*DiskTypeListResponseBody, error) {
+func (c *Client) ListDiskTypes(ctx context.Context, params ListDiskTypesParams) (*DiskTypeList, error) {
 	res, err := c.sendListDiskTypes(ctx, params)
 	return res, err
 }
 
-func (c *Client) sendListDiskTypes(ctx context.Context, params ListDiskTypesParams) (res *DiskTypeListResponseBody, err error) {
+func (c *Client) sendListDiskTypes(ctx context.Context, params ListDiskTypesParams) (res *DiskTypeList, err error) {
 	otelAttrs := []attribute.KeyValue{
 		otelogen.OperationID("list-disk-types"),
 		semconv.HTTPRequestMethodKey.String("GET"),
@@ -2380,7 +1342,7 @@ func (c *Client) sendListDiskTypes(ctx context.Context, params ListDiskTypesPara
 		cfg := uri.QueryParameterEncodingConfig{
 			Name:    "region_id",
 			Style:   uri.QueryStyleForm,
-			Explode: false,
+			Explode: true,
 		}
 
 		if err := q.EncodeParam(cfg, func(e uri.Encoder) error {
@@ -2489,16 +1451,15 @@ func (c *Client) sendListDiskTypes(ctx context.Context, params ListDiskTypesPara
 
 // ListDisks invokes list-disks operation.
 //
-// Lists disks in the current project. Use resource-usages to inspect consumers and pending
-// reservations.
+// List disks in the current project.
 //
 // GET /api/v1/disks
-func (c *Client) ListDisks(ctx context.Context, params ListDisksParams) (*DiskListResponseBody, error) {
+func (c *Client) ListDisks(ctx context.Context, params ListDisksParams) (*DiskList, error) {
 	res, err := c.sendListDisks(ctx, params)
 	return res, err
 }
 
-func (c *Client) sendListDisks(ctx context.Context, params ListDisksParams) (res *DiskListResponseBody, err error) {
+func (c *Client) sendListDisks(ctx context.Context, params ListDisksParams) (res *DiskList, err error) {
 	otelAttrs := []attribute.KeyValue{
 		otelogen.OperationID("list-disks"),
 		semconv.HTTPRequestMethodKey.String("GET"),
@@ -2546,7 +1507,7 @@ func (c *Client) sendListDisks(ctx context.Context, params ListDisksParams) (res
 		cfg := uri.QueryParameterEncodingConfig{
 			Name:    "region_id",
 			Style:   uri.QueryStyleForm,
-			Explode: false,
+			Explode: true,
 		}
 
 		if err := q.EncodeParam(cfg, func(e uri.Encoder) error {
@@ -2563,7 +1524,7 @@ func (c *Client) sendListDisks(ctx context.Context, params ListDisksParams) (res
 		cfg := uri.QueryParameterEncodingConfig{
 			Name:    "availability_zone_id",
 			Style:   uri.QueryStyleForm,
-			Explode: false,
+			Explode: true,
 		}
 
 		if err := q.EncodeParam(cfg, func(e uri.Encoder) error {
@@ -2673,186 +1634,9 @@ func (c *Client) sendListDisks(ctx context.Context, params ListDisksParams) (res
 	return result, nil
 }
 
-// ListOperationLogs invokes list-operation-logs operation.
-//
-// Records every write operation in the project: who performed it, when, on what, and whether it
-// succeeded. Read operations are not recorded.
-//
-// Operations performed by the platform are included, but the individual operator is not disclosed and
-// `by_platform` is true. Suspension for non-payment and bans for abuse are examples: the time at which
-// an instance was stopped by the platform is needed, whereas the operator is internal information.
-//
-// Fields such as passwords are replaced with a placeholder as the record is written and never appear
-// in `payload`.
-//
-// GET /api/v1/operation-logs
-func (c *Client) ListOperationLogs(ctx context.Context, params ListOperationLogsParams) (*OperationLogListResponseBody, error) {
-	res, err := c.sendListOperationLogs(ctx, params)
-	return res, err
-}
-
-func (c *Client) sendListOperationLogs(ctx context.Context, params ListOperationLogsParams) (res *OperationLogListResponseBody, err error) {
-	otelAttrs := []attribute.KeyValue{
-		otelogen.OperationID("list-operation-logs"),
-		semconv.HTTPRequestMethodKey.String("GET"),
-		semconv.URLTemplateKey.String("/api/v1/operation-logs"),
-	}
-	otelAttrs = append(otelAttrs, c.cfg.Attributes...)
-
-	// Run stopwatch.
-	startTime := time.Now()
-	defer func() {
-		// Use floating point division here for higher precision (instead of Millisecond method).
-		elapsedDuration := time.Since(startTime)
-		c.duration.Record(ctx, float64(elapsedDuration)/float64(time.Millisecond), metric.WithAttributes(otelAttrs...))
-	}()
-
-	// Increment request counter.
-	c.requests.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
-
-	// Start a span for this request.
-	ctx, span := c.cfg.Tracer.Start(ctx, ListOperationLogsOperation,
-		trace.WithAttributes(otelAttrs...),
-		clientSpanKind,
-	)
-	// Track stage for error reporting.
-	var stage string
-	defer func() {
-		if err != nil {
-			span.RecordError(err)
-			span.SetStatus(codes.Error, stage)
-			c.errors.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
-		}
-		span.End()
-	}()
-
-	stage = "BuildURL"
-	u := uri.Clone(c.requestURL(ctx))
-	var pathParts [1]string
-	pathParts[0] = "/api/v1/operation-logs"
-	uri.AddPathParts(u, pathParts[:]...)
-
-	stage = "EncodeQueryParams"
-	q := uri.NewQueryEncoder()
-	{
-		// Encode "action" parameter.
-		cfg := uri.QueryParameterEncodingConfig{
-			Name:    "action",
-			Style:   uri.QueryStyleForm,
-			Explode: false,
-		}
-
-		if err := q.EncodeParam(cfg, func(e uri.Encoder) error {
-			if val, ok := params.Action.Get(); ok {
-				return e.EncodeValue(conv.StringToString(val))
-			}
-			return nil
-		}); err != nil {
-			return res, errors.Wrap(err, "encode query")
-		}
-	}
-	{
-		// Encode "page" parameter.
-		cfg := uri.QueryParameterEncodingConfig{
-			Name:    "page",
-			Style:   uri.QueryStyleForm,
-			Explode: true,
-		}
-
-		if err := q.EncodeParam(cfg, func(e uri.Encoder) error {
-			if val, ok := params.Page.Get(); ok {
-				return e.EncodeValue(conv.Int64ToString(val))
-			}
-			return nil
-		}); err != nil {
-			return res, errors.Wrap(err, "encode query")
-		}
-	}
-	{
-		// Encode "page_size" parameter.
-		cfg := uri.QueryParameterEncodingConfig{
-			Name:    "page_size",
-			Style:   uri.QueryStyleForm,
-			Explode: true,
-		}
-
-		if err := q.EncodeParam(cfg, func(e uri.Encoder) error {
-			if val, ok := params.PageSize.Get(); ok {
-				return e.EncodeValue(conv.Int64ToString(val))
-			}
-			return nil
-		}); err != nil {
-			return res, errors.Wrap(err, "encode query")
-		}
-	}
-	u.RawQuery = q.Values().Encode()
-
-	stage = "EncodeRequest"
-	r, err := ht.NewRequest(ctx, "GET", u)
-	if err != nil {
-		return res, errors.Wrap(err, "create request")
-	}
-
-	{
-		type bitset = [1]uint8
-		var satisfied bitset
-		{
-			stage = "Security:BearerAuth"
-			switch err := c.securityBearerAuth(ctx, ListOperationLogsOperation, r); {
-			case err == nil: // if NO error
-				satisfied[0] |= 1 << 0
-			case errors.Is(err, ogenerrors.ErrSkipClientSecurity):
-				// Skip this security.
-			default:
-				return res, errors.Wrap(err, "security \"BearerAuth\"")
-			}
-		}
-
-		if ok := func() bool {
-		nextRequirement:
-			for _, requirement := range []bitset{
-				{0b00000001},
-			} {
-				for i, mask := range requirement {
-					if satisfied[i]&mask != mask {
-						continue nextRequirement
-					}
-				}
-				return true
-			}
-			return false
-		}(); !ok {
-			return res, ogenerrors.ErrSecurityRequirementIsNotSatisfied
-		}
-	}
-
-	stage = "SendRequest"
-	resp, err := c.cfg.Client.Do(r)
-	if err != nil {
-		return res, errors.Wrap(err, "do request")
-	}
-	body := resp.Body
-	defer func() {
-		// Drain the body to EOF before closing, so the underlying
-		// connection can be reused by the Transport regardless of the
-		// response status code. See https://github.com/ogen-go/ogen/issues/1670.
-		_, _ = io.Copy(io.Discard, body)
-		_ = body.Close()
-	}()
-
-	stage = "DecodeResponse"
-	result, err := decodeListOperationLogsResponse(resp)
-	if err != nil {
-		return res, errors.Wrap(err, "decode response")
-	}
-
-	return result, nil
-}
-
 // ListResourceUsages invokes list-resource-usages operation.
 //
-// Lists direct consumers, including pending reservations and claims being released. The resource must
-// be readable by the caller. Historical released claims are included only when requested.
+// Lists direct consumers and pending reservations for a resource readable in the current project.
 //
 // GET /api/v1/resource-usages
 func (c *Client) ListResourceUsages(ctx context.Context, params ListResourceUsagesParams) (*ResourceUsageList, error) {
@@ -2912,7 +1696,7 @@ func (c *Client) sendListResourceUsages(ctx context.Context, params ListResource
 		}
 
 		if err := q.EncodeParam(cfg, func(e uri.Encoder) error {
-			return e.EncodeValue(conv.StringToString(params.ResourceType))
+			return e.EncodeValue(conv.StringToString(string(params.ResourceType)))
 		}); err != nil {
 			return res, errors.Wrap(err, "encode query")
 		}
@@ -3046,320 +1830,17 @@ func (c *Client) sendListResourceUsages(ctx context.Context, params ListResource
 	return result, nil
 }
 
-// ListSnapshots invokes list-snapshots operation.
-//
-// List snapshots.
-//
-// GET /api/v1/snapshots
-func (c *Client) ListSnapshots(ctx context.Context, params ListSnapshotsParams) (*SnapshotListResponseBody, error) {
-	res, err := c.sendListSnapshots(ctx, params)
-	return res, err
-}
-
-func (c *Client) sendListSnapshots(ctx context.Context, params ListSnapshotsParams) (res *SnapshotListResponseBody, err error) {
-	otelAttrs := []attribute.KeyValue{
-		otelogen.OperationID("list-snapshots"),
-		semconv.HTTPRequestMethodKey.String("GET"),
-		semconv.URLTemplateKey.String("/api/v1/snapshots"),
-	}
-	otelAttrs = append(otelAttrs, c.cfg.Attributes...)
-
-	// Run stopwatch.
-	startTime := time.Now()
-	defer func() {
-		// Use floating point division here for higher precision (instead of Millisecond method).
-		elapsedDuration := time.Since(startTime)
-		c.duration.Record(ctx, float64(elapsedDuration)/float64(time.Millisecond), metric.WithAttributes(otelAttrs...))
-	}()
-
-	// Increment request counter.
-	c.requests.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
-
-	// Start a span for this request.
-	ctx, span := c.cfg.Tracer.Start(ctx, ListSnapshotsOperation,
-		trace.WithAttributes(otelAttrs...),
-		clientSpanKind,
-	)
-	// Track stage for error reporting.
-	var stage string
-	defer func() {
-		if err != nil {
-			span.RecordError(err)
-			span.SetStatus(codes.Error, stage)
-			c.errors.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
-		}
-		span.End()
-	}()
-
-	stage = "BuildURL"
-	u := uri.Clone(c.requestURL(ctx))
-	var pathParts [1]string
-	pathParts[0] = "/api/v1/snapshots"
-	uri.AddPathParts(u, pathParts[:]...)
-
-	stage = "EncodeQueryParams"
-	q := uri.NewQueryEncoder()
-	{
-		// Encode "disk_id" parameter.
-		cfg := uri.QueryParameterEncodingConfig{
-			Name:    "disk_id",
-			Style:   uri.QueryStyleForm,
-			Explode: false,
-		}
-
-		if err := q.EncodeParam(cfg, func(e uri.Encoder) error {
-			if val, ok := params.DiskID.Get(); ok {
-				return e.EncodeValue(conv.UUIDToString(val))
-			}
-			return nil
-		}); err != nil {
-			return res, errors.Wrap(err, "encode query")
-		}
-	}
-	{
-		// Encode "page" parameter.
-		cfg := uri.QueryParameterEncodingConfig{
-			Name:    "page",
-			Style:   uri.QueryStyleForm,
-			Explode: true,
-		}
-
-		if err := q.EncodeParam(cfg, func(e uri.Encoder) error {
-			if val, ok := params.Page.Get(); ok {
-				return e.EncodeValue(conv.Int64ToString(val))
-			}
-			return nil
-		}); err != nil {
-			return res, errors.Wrap(err, "encode query")
-		}
-	}
-	{
-		// Encode "page_size" parameter.
-		cfg := uri.QueryParameterEncodingConfig{
-			Name:    "page_size",
-			Style:   uri.QueryStyleForm,
-			Explode: true,
-		}
-
-		if err := q.EncodeParam(cfg, func(e uri.Encoder) error {
-			if val, ok := params.PageSize.Get(); ok {
-				return e.EncodeValue(conv.Int64ToString(val))
-			}
-			return nil
-		}); err != nil {
-			return res, errors.Wrap(err, "encode query")
-		}
-	}
-	u.RawQuery = q.Values().Encode()
-
-	stage = "EncodeRequest"
-	r, err := ht.NewRequest(ctx, "GET", u)
-	if err != nil {
-		return res, errors.Wrap(err, "create request")
-	}
-
-	{
-		type bitset = [1]uint8
-		var satisfied bitset
-		{
-			stage = "Security:BearerAuth"
-			switch err := c.securityBearerAuth(ctx, ListSnapshotsOperation, r); {
-			case err == nil: // if NO error
-				satisfied[0] |= 1 << 0
-			case errors.Is(err, ogenerrors.ErrSkipClientSecurity):
-				// Skip this security.
-			default:
-				return res, errors.Wrap(err, "security \"BearerAuth\"")
-			}
-		}
-
-		if ok := func() bool {
-		nextRequirement:
-			for _, requirement := range []bitset{
-				{0b00000001},
-			} {
-				for i, mask := range requirement {
-					if satisfied[i]&mask != mask {
-						continue nextRequirement
-					}
-				}
-				return true
-			}
-			return false
-		}(); !ok {
-			return res, ogenerrors.ErrSecurityRequirementIsNotSatisfied
-		}
-	}
-
-	stage = "SendRequest"
-	resp, err := c.cfg.Client.Do(r)
-	if err != nil {
-		return res, errors.Wrap(err, "do request")
-	}
-	body := resp.Body
-	defer func() {
-		// Drain the body to EOF before closing, so the underlying
-		// connection can be reused by the Transport regardless of the
-		// response status code. See https://github.com/ogen-go/ogen/issues/1670.
-		_, _ = io.Copy(io.Discard, body)
-		_ = body.Close()
-	}()
-
-	stage = "DecodeResponse"
-	result, err := decodeListSnapshotsResponse(resp)
-	if err != nil {
-		return res, errors.Wrap(err, "decode response")
-	}
-
-	return result, nil
-}
-
-// RenameBackup invokes rename-backup operation.
-//
-// Rename a backup.
-//
-// PATCH /api/v1/backups/{backupId}
-func (c *Client) RenameBackup(ctx context.Context, request *RenameBackupRequestBody, params RenameBackupParams) (*BackupResource, error) {
-	res, err := c.sendRenameBackup(ctx, request, params)
-	return res, err
-}
-
-func (c *Client) sendRenameBackup(ctx context.Context, request *RenameBackupRequestBody, params RenameBackupParams) (res *BackupResource, err error) {
-	otelAttrs := []attribute.KeyValue{
-		otelogen.OperationID("rename-backup"),
-		semconv.HTTPRequestMethodKey.String("PATCH"),
-		semconv.URLTemplateKey.String("/api/v1/backups/{backupId}"),
-	}
-	otelAttrs = append(otelAttrs, c.cfg.Attributes...)
-
-	// Run stopwatch.
-	startTime := time.Now()
-	defer func() {
-		// Use floating point division here for higher precision (instead of Millisecond method).
-		elapsedDuration := time.Since(startTime)
-		c.duration.Record(ctx, float64(elapsedDuration)/float64(time.Millisecond), metric.WithAttributes(otelAttrs...))
-	}()
-
-	// Increment request counter.
-	c.requests.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
-
-	// Start a span for this request.
-	ctx, span := c.cfg.Tracer.Start(ctx, RenameBackupOperation,
-		trace.WithAttributes(otelAttrs...),
-		clientSpanKind,
-	)
-	// Track stage for error reporting.
-	var stage string
-	defer func() {
-		if err != nil {
-			span.RecordError(err)
-			span.SetStatus(codes.Error, stage)
-			c.errors.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
-		}
-		span.End()
-	}()
-
-	stage = "BuildURL"
-	u := uri.Clone(c.requestURL(ctx))
-	var pathParts [2]string
-	pathParts[0] = "/api/v1/backups/"
-	{
-		// Encode "backupId" parameter.
-		e := uri.NewPathEncoder(uri.PathEncoderConfig{
-			Param:   "backupId",
-			Style:   uri.PathStyleSimple,
-			Explode: false,
-		})
-		if err := func() error {
-			return e.EncodeValue(conv.UUIDToString(params.BackupId))
-		}(); err != nil {
-			return res, errors.Wrap(err, "encode path")
-		}
-		encoded, err := e.Result()
-		if err != nil {
-			return res, errors.Wrap(err, "encode path")
-		}
-		pathParts[1] = encoded
-	}
-	uri.AddPathParts(u, pathParts[:]...)
-
-	stage = "EncodeRequest"
-	r, err := ht.NewRequest(ctx, "PATCH", u)
-	if err != nil {
-		return res, errors.Wrap(err, "create request")
-	}
-	if err := encodeRenameBackupRequest(request, r); err != nil {
-		return res, errors.Wrap(err, "encode request")
-	}
-
-	{
-		type bitset = [1]uint8
-		var satisfied bitset
-		{
-			stage = "Security:BearerAuth"
-			switch err := c.securityBearerAuth(ctx, RenameBackupOperation, r); {
-			case err == nil: // if NO error
-				satisfied[0] |= 1 << 0
-			case errors.Is(err, ogenerrors.ErrSkipClientSecurity):
-				// Skip this security.
-			default:
-				return res, errors.Wrap(err, "security \"BearerAuth\"")
-			}
-		}
-
-		if ok := func() bool {
-		nextRequirement:
-			for _, requirement := range []bitset{
-				{0b00000001},
-			} {
-				for i, mask := range requirement {
-					if satisfied[i]&mask != mask {
-						continue nextRequirement
-					}
-				}
-				return true
-			}
-			return false
-		}(); !ok {
-			return res, ogenerrors.ErrSecurityRequirementIsNotSatisfied
-		}
-	}
-
-	stage = "SendRequest"
-	resp, err := c.cfg.Client.Do(r)
-	if err != nil {
-		return res, errors.Wrap(err, "do request")
-	}
-	body := resp.Body
-	defer func() {
-		// Drain the body to EOF before closing, so the underlying
-		// connection can be reused by the Transport regardless of the
-		// response status code. See https://github.com/ogen-go/ogen/issues/1670.
-		_, _ = io.Copy(io.Discard, body)
-		_ = body.Close()
-	}()
-
-	stage = "DecodeResponse"
-	result, err := decodeRenameBackupResponse(resp)
-	if err != nil {
-		return res, errors.Wrap(err, "decode response")
-	}
-
-	return result, nil
-}
-
 // RenameDisk invokes rename-disk operation.
 //
-// Changes the name only. Use the resize endpoint for capacity; type and availability zone are
-// immutable.
+// Rename a disk.
 //
 // PATCH /api/v1/disks/{diskId}
-func (c *Client) RenameDisk(ctx context.Context, request *RenameDiskRequestBody, params RenameDiskParams) (*DiskResource, error) {
+func (c *Client) RenameDisk(ctx context.Context, request *RenameRequest, params RenameDiskParams) (*Disk, error) {
 	res, err := c.sendRenameDisk(ctx, request, params)
 	return res, err
 }
 
-func (c *Client) sendRenameDisk(ctx context.Context, request *RenameDiskRequestBody, params RenameDiskParams) (res *DiskResource, err error) {
+func (c *Client) sendRenameDisk(ctx context.Context, request *RenameRequest, params RenameDiskParams) (res *Disk, err error) {
 	otelAttrs := []attribute.KeyValue{
 		otelogen.OperationID("rename-disk"),
 		semconv.HTTPRequestMethodKey.String("PATCH"),
@@ -3483,564 +1964,10 @@ func (c *Client) sendRenameDisk(ctx context.Context, request *RenameDiskRequestB
 	return result, nil
 }
 
-// RenameSnapshot invokes rename-snapshot operation.
-//
-// Rename a snapshot.
-//
-// PATCH /api/v1/snapshots/{snapshotId}
-func (c *Client) RenameSnapshot(ctx context.Context, request *RenameSnapshotRequestBody, params RenameSnapshotParams) (*SnapshotResource, error) {
-	res, err := c.sendRenameSnapshot(ctx, request, params)
-	return res, err
-}
-
-func (c *Client) sendRenameSnapshot(ctx context.Context, request *RenameSnapshotRequestBody, params RenameSnapshotParams) (res *SnapshotResource, err error) {
-	otelAttrs := []attribute.KeyValue{
-		otelogen.OperationID("rename-snapshot"),
-		semconv.HTTPRequestMethodKey.String("PATCH"),
-		semconv.URLTemplateKey.String("/api/v1/snapshots/{snapshotId}"),
-	}
-	otelAttrs = append(otelAttrs, c.cfg.Attributes...)
-
-	// Run stopwatch.
-	startTime := time.Now()
-	defer func() {
-		// Use floating point division here for higher precision (instead of Millisecond method).
-		elapsedDuration := time.Since(startTime)
-		c.duration.Record(ctx, float64(elapsedDuration)/float64(time.Millisecond), metric.WithAttributes(otelAttrs...))
-	}()
-
-	// Increment request counter.
-	c.requests.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
-
-	// Start a span for this request.
-	ctx, span := c.cfg.Tracer.Start(ctx, RenameSnapshotOperation,
-		trace.WithAttributes(otelAttrs...),
-		clientSpanKind,
-	)
-	// Track stage for error reporting.
-	var stage string
-	defer func() {
-		if err != nil {
-			span.RecordError(err)
-			span.SetStatus(codes.Error, stage)
-			c.errors.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
-		}
-		span.End()
-	}()
-
-	stage = "BuildURL"
-	u := uri.Clone(c.requestURL(ctx))
-	var pathParts [2]string
-	pathParts[0] = "/api/v1/snapshots/"
-	{
-		// Encode "snapshotId" parameter.
-		e := uri.NewPathEncoder(uri.PathEncoderConfig{
-			Param:   "snapshotId",
-			Style:   uri.PathStyleSimple,
-			Explode: false,
-		})
-		if err := func() error {
-			return e.EncodeValue(conv.UUIDToString(params.SnapshotId))
-		}(); err != nil {
-			return res, errors.Wrap(err, "encode path")
-		}
-		encoded, err := e.Result()
-		if err != nil {
-			return res, errors.Wrap(err, "encode path")
-		}
-		pathParts[1] = encoded
-	}
-	uri.AddPathParts(u, pathParts[:]...)
-
-	stage = "EncodeRequest"
-	r, err := ht.NewRequest(ctx, "PATCH", u)
-	if err != nil {
-		return res, errors.Wrap(err, "create request")
-	}
-	if err := encodeRenameSnapshotRequest(request, r); err != nil {
-		return res, errors.Wrap(err, "encode request")
-	}
-
-	{
-		type bitset = [1]uint8
-		var satisfied bitset
-		{
-			stage = "Security:BearerAuth"
-			switch err := c.securityBearerAuth(ctx, RenameSnapshotOperation, r); {
-			case err == nil: // if NO error
-				satisfied[0] |= 1 << 0
-			case errors.Is(err, ogenerrors.ErrSkipClientSecurity):
-				// Skip this security.
-			default:
-				return res, errors.Wrap(err, "security \"BearerAuth\"")
-			}
-		}
-
-		if ok := func() bool {
-		nextRequirement:
-			for _, requirement := range []bitset{
-				{0b00000001},
-			} {
-				for i, mask := range requirement {
-					if satisfied[i]&mask != mask {
-						continue nextRequirement
-					}
-				}
-				return true
-			}
-			return false
-		}(); !ok {
-			return res, ogenerrors.ErrSecurityRequirementIsNotSatisfied
-		}
-	}
-
-	stage = "SendRequest"
-	resp, err := c.cfg.Client.Do(r)
-	if err != nil {
-		return res, errors.Wrap(err, "do request")
-	}
-	body := resp.Body
-	defer func() {
-		// Drain the body to EOF before closing, so the underlying
-		// connection can be reused by the Transport regardless of the
-		// response status code. See https://github.com/ogen-go/ogen/issues/1670.
-		_, _ = io.Copy(io.Discard, body)
-		_ = body.Close()
-	}()
-
-	stage = "DecodeResponse"
-	result, err := decodeRenameSnapshotResponse(resp)
-	if err != nil {
-		return res, errors.Wrap(err, "decode response")
-	}
-
-	return result, nil
-}
-
-// ResizeDisk invokes resize-disk operation.
-//
-// Creates a Billing order, including for metered pricing. The price must belong to the resource’s
-// Billing Plan; applicable contract pricing is resolved by Billing. Technical capacity is checked
-// before sellable quota is reserved. Provisioning continues automatically after payment; do not submit
-// a new purchase after paying. Reuse the original idempotency key after an uncertain response.
-//
-// POST /api/v1/disks/{diskId}/resize
-func (c *Client) ResizeDisk(ctx context.Context, request *ResizeDiskRequestBody, params ResizeDiskParams) (*PlacedOrder, error) {
-	res, err := c.sendResizeDisk(ctx, request, params)
-	return res, err
-}
-
-func (c *Client) sendResizeDisk(ctx context.Context, request *ResizeDiskRequestBody, params ResizeDiskParams) (res *PlacedOrder, err error) {
-	otelAttrs := []attribute.KeyValue{
-		otelogen.OperationID("resize-disk"),
-		semconv.HTTPRequestMethodKey.String("POST"),
-		semconv.URLTemplateKey.String("/api/v1/disks/{diskId}/resize"),
-	}
-	otelAttrs = append(otelAttrs, c.cfg.Attributes...)
-
-	// Run stopwatch.
-	startTime := time.Now()
-	defer func() {
-		// Use floating point division here for higher precision (instead of Millisecond method).
-		elapsedDuration := time.Since(startTime)
-		c.duration.Record(ctx, float64(elapsedDuration)/float64(time.Millisecond), metric.WithAttributes(otelAttrs...))
-	}()
-
-	// Increment request counter.
-	c.requests.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
-
-	// Start a span for this request.
-	ctx, span := c.cfg.Tracer.Start(ctx, ResizeDiskOperation,
-		trace.WithAttributes(otelAttrs...),
-		clientSpanKind,
-	)
-	// Track stage for error reporting.
-	var stage string
-	defer func() {
-		if err != nil {
-			span.RecordError(err)
-			span.SetStatus(codes.Error, stage)
-			c.errors.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
-		}
-		span.End()
-	}()
-
-	stage = "BuildURL"
-	u := uri.Clone(c.requestURL(ctx))
-	var pathParts [3]string
-	pathParts[0] = "/api/v1/disks/"
-	{
-		// Encode "diskId" parameter.
-		e := uri.NewPathEncoder(uri.PathEncoderConfig{
-			Param:   "diskId",
-			Style:   uri.PathStyleSimple,
-			Explode: false,
-		})
-		if err := func() error {
-			return e.EncodeValue(conv.UUIDToString(params.DiskId))
-		}(); err != nil {
-			return res, errors.Wrap(err, "encode path")
-		}
-		encoded, err := e.Result()
-		if err != nil {
-			return res, errors.Wrap(err, "encode path")
-		}
-		pathParts[1] = encoded
-	}
-	pathParts[2] = "/resize"
-	uri.AddPathParts(u, pathParts[:]...)
-
-	stage = "EncodeRequest"
-	r, err := ht.NewRequest(ctx, "POST", u)
-	if err != nil {
-		return res, errors.Wrap(err, "create request")
-	}
-	if err := encodeResizeDiskRequest(request, r); err != nil {
-		return res, errors.Wrap(err, "encode request")
-	}
-
-	{
-		type bitset = [1]uint8
-		var satisfied bitset
-		{
-			stage = "Security:BearerAuth"
-			switch err := c.securityBearerAuth(ctx, ResizeDiskOperation, r); {
-			case err == nil: // if NO error
-				satisfied[0] |= 1 << 0
-			case errors.Is(err, ogenerrors.ErrSkipClientSecurity):
-				// Skip this security.
-			default:
-				return res, errors.Wrap(err, "security \"BearerAuth\"")
-			}
-		}
-
-		if ok := func() bool {
-		nextRequirement:
-			for _, requirement := range []bitset{
-				{0b00000001},
-			} {
-				for i, mask := range requirement {
-					if satisfied[i]&mask != mask {
-						continue nextRequirement
-					}
-				}
-				return true
-			}
-			return false
-		}(); !ok {
-			return res, ogenerrors.ErrSecurityRequirementIsNotSatisfied
-		}
-	}
-
-	stage = "SendRequest"
-	resp, err := c.cfg.Client.Do(r)
-	if err != nil {
-		return res, errors.Wrap(err, "do request")
-	}
-	body := resp.Body
-	defer func() {
-		// Drain the body to EOF before closing, so the underlying
-		// connection can be reused by the Transport regardless of the
-		// response status code. See https://github.com/ogen-go/ogen/issues/1670.
-		_, _ = io.Copy(io.Discard, body)
-		_ = body.Close()
-	}()
-
-	stage = "DecodeResponse"
-	result, err := decodeResizeDiskResponse(resp)
-	if err != nil {
-		return res, errors.Wrap(err, "decode response")
-	}
-
-	return result, nil
-}
-
-// RestoreBackup invokes restore-backup operation.
-//
-// Creates a Billing order, including for metered pricing. The price must belong to the resource’s
-// Billing Plan; applicable contract pricing is resolved by Billing. Technical capacity is checked
-// before sellable quota is reserved. Provisioning continues automatically after payment; do not submit
-// a new purchase after paying. Reuse the original idempotency key after an uncertain response.
-//
-// POST /api/v1/backups/{backupId}/restore
-func (c *Client) RestoreBackup(ctx context.Context, request *RestoreBackupRequestBody, params RestoreBackupParams) (*PlacedOrder, error) {
-	res, err := c.sendRestoreBackup(ctx, request, params)
-	return res, err
-}
-
-func (c *Client) sendRestoreBackup(ctx context.Context, request *RestoreBackupRequestBody, params RestoreBackupParams) (res *PlacedOrder, err error) {
-	otelAttrs := []attribute.KeyValue{
-		otelogen.OperationID("restore-backup"),
-		semconv.HTTPRequestMethodKey.String("POST"),
-		semconv.URLTemplateKey.String("/api/v1/backups/{backupId}/restore"),
-	}
-	otelAttrs = append(otelAttrs, c.cfg.Attributes...)
-
-	// Run stopwatch.
-	startTime := time.Now()
-	defer func() {
-		// Use floating point division here for higher precision (instead of Millisecond method).
-		elapsedDuration := time.Since(startTime)
-		c.duration.Record(ctx, float64(elapsedDuration)/float64(time.Millisecond), metric.WithAttributes(otelAttrs...))
-	}()
-
-	// Increment request counter.
-	c.requests.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
-
-	// Start a span for this request.
-	ctx, span := c.cfg.Tracer.Start(ctx, RestoreBackupOperation,
-		trace.WithAttributes(otelAttrs...),
-		clientSpanKind,
-	)
-	// Track stage for error reporting.
-	var stage string
-	defer func() {
-		if err != nil {
-			span.RecordError(err)
-			span.SetStatus(codes.Error, stage)
-			c.errors.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
-		}
-		span.End()
-	}()
-
-	stage = "BuildURL"
-	u := uri.Clone(c.requestURL(ctx))
-	var pathParts [3]string
-	pathParts[0] = "/api/v1/backups/"
-	{
-		// Encode "backupId" parameter.
-		e := uri.NewPathEncoder(uri.PathEncoderConfig{
-			Param:   "backupId",
-			Style:   uri.PathStyleSimple,
-			Explode: false,
-		})
-		if err := func() error {
-			return e.EncodeValue(conv.UUIDToString(params.BackupId))
-		}(); err != nil {
-			return res, errors.Wrap(err, "encode path")
-		}
-		encoded, err := e.Result()
-		if err != nil {
-			return res, errors.Wrap(err, "encode path")
-		}
-		pathParts[1] = encoded
-	}
-	pathParts[2] = "/restore"
-	uri.AddPathParts(u, pathParts[:]...)
-
-	stage = "EncodeRequest"
-	r, err := ht.NewRequest(ctx, "POST", u)
-	if err != nil {
-		return res, errors.Wrap(err, "create request")
-	}
-	if err := encodeRestoreBackupRequest(request, r); err != nil {
-		return res, errors.Wrap(err, "encode request")
-	}
-
-	{
-		type bitset = [1]uint8
-		var satisfied bitset
-		{
-			stage = "Security:BearerAuth"
-			switch err := c.securityBearerAuth(ctx, RestoreBackupOperation, r); {
-			case err == nil: // if NO error
-				satisfied[0] |= 1 << 0
-			case errors.Is(err, ogenerrors.ErrSkipClientSecurity):
-				// Skip this security.
-			default:
-				return res, errors.Wrap(err, "security \"BearerAuth\"")
-			}
-		}
-
-		if ok := func() bool {
-		nextRequirement:
-			for _, requirement := range []bitset{
-				{0b00000001},
-			} {
-				for i, mask := range requirement {
-					if satisfied[i]&mask != mask {
-						continue nextRequirement
-					}
-				}
-				return true
-			}
-			return false
-		}(); !ok {
-			return res, ogenerrors.ErrSecurityRequirementIsNotSatisfied
-		}
-	}
-
-	stage = "SendRequest"
-	resp, err := c.cfg.Client.Do(r)
-	if err != nil {
-		return res, errors.Wrap(err, "do request")
-	}
-	body := resp.Body
-	defer func() {
-		// Drain the body to EOF before closing, so the underlying
-		// connection can be reused by the Transport regardless of the
-		// response status code. See https://github.com/ogen-go/ogen/issues/1670.
-		_, _ = io.Copy(io.Discard, body)
-		_ = body.Close()
-	}()
-
-	stage = "DecodeResponse"
-	result, err := decodeRestoreBackupResponse(resp)
-	if err != nil {
-		return res, errors.Wrap(err, "decode response")
-	}
-
-	return result, nil
-}
-
-// RevertDisk invokes revert-disk operation.
-//
-// Restores the contents of the disk to the moment the snapshot was taken. All data written after that
-// moment is lost and cannot be recovered.
-//
-// Three restrictions apply: only the most recent snapshot of the disk can be reverted to; the disk
-// must be detached from its instance first; and a disk resized since the snapshot was taken cannot be
-// reverted. To return to an earlier point in time, or to keep the existing disk, create a new disk
-// from the snapshot instead.
-//
-// The revert is not complete when this endpoint returns; poll the retrieve endpoint.
-//
-// POST /api/v1/disks/{diskId}/revert
-func (c *Client) RevertDisk(ctx context.Context, request *RevertDiskRequestBody, params RevertDiskParams) (*DiskResource, error) {
-	res, err := c.sendRevertDisk(ctx, request, params)
-	return res, err
-}
-
-func (c *Client) sendRevertDisk(ctx context.Context, request *RevertDiskRequestBody, params RevertDiskParams) (res *DiskResource, err error) {
-	otelAttrs := []attribute.KeyValue{
-		otelogen.OperationID("revert-disk"),
-		semconv.HTTPRequestMethodKey.String("POST"),
-		semconv.URLTemplateKey.String("/api/v1/disks/{diskId}/revert"),
-	}
-	otelAttrs = append(otelAttrs, c.cfg.Attributes...)
-
-	// Run stopwatch.
-	startTime := time.Now()
-	defer func() {
-		// Use floating point division here for higher precision (instead of Millisecond method).
-		elapsedDuration := time.Since(startTime)
-		c.duration.Record(ctx, float64(elapsedDuration)/float64(time.Millisecond), metric.WithAttributes(otelAttrs...))
-	}()
-
-	// Increment request counter.
-	c.requests.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
-
-	// Start a span for this request.
-	ctx, span := c.cfg.Tracer.Start(ctx, RevertDiskOperation,
-		trace.WithAttributes(otelAttrs...),
-		clientSpanKind,
-	)
-	// Track stage for error reporting.
-	var stage string
-	defer func() {
-		if err != nil {
-			span.RecordError(err)
-			span.SetStatus(codes.Error, stage)
-			c.errors.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
-		}
-		span.End()
-	}()
-
-	stage = "BuildURL"
-	u := uri.Clone(c.requestURL(ctx))
-	var pathParts [3]string
-	pathParts[0] = "/api/v1/disks/"
-	{
-		// Encode "diskId" parameter.
-		e := uri.NewPathEncoder(uri.PathEncoderConfig{
-			Param:   "diskId",
-			Style:   uri.PathStyleSimple,
-			Explode: false,
-		})
-		if err := func() error {
-			return e.EncodeValue(conv.UUIDToString(params.DiskId))
-		}(); err != nil {
-			return res, errors.Wrap(err, "encode path")
-		}
-		encoded, err := e.Result()
-		if err != nil {
-			return res, errors.Wrap(err, "encode path")
-		}
-		pathParts[1] = encoded
-	}
-	pathParts[2] = "/revert"
-	uri.AddPathParts(u, pathParts[:]...)
-
-	stage = "EncodeRequest"
-	r, err := ht.NewRequest(ctx, "POST", u)
-	if err != nil {
-		return res, errors.Wrap(err, "create request")
-	}
-	if err := encodeRevertDiskRequest(request, r); err != nil {
-		return res, errors.Wrap(err, "encode request")
-	}
-
-	{
-		type bitset = [1]uint8
-		var satisfied bitset
-		{
-			stage = "Security:BearerAuth"
-			switch err := c.securityBearerAuth(ctx, RevertDiskOperation, r); {
-			case err == nil: // if NO error
-				satisfied[0] |= 1 << 0
-			case errors.Is(err, ogenerrors.ErrSkipClientSecurity):
-				// Skip this security.
-			default:
-				return res, errors.Wrap(err, "security \"BearerAuth\"")
-			}
-		}
-
-		if ok := func() bool {
-		nextRequirement:
-			for _, requirement := range []bitset{
-				{0b00000001},
-			} {
-				for i, mask := range requirement {
-					if satisfied[i]&mask != mask {
-						continue nextRequirement
-					}
-				}
-				return true
-			}
-			return false
-		}(); !ok {
-			return res, ogenerrors.ErrSecurityRequirementIsNotSatisfied
-		}
-	}
-
-	stage = "SendRequest"
-	resp, err := c.cfg.Client.Do(r)
-	if err != nil {
-		return res, errors.Wrap(err, "do request")
-	}
-	body := resp.Body
-	defer func() {
-		// Drain the body to EOF before closing, so the underlying
-		// connection can be reused by the Transport regardless of the
-		// response status code. See https://github.com/ogen-go/ogen/issues/1670.
-		_, _ = io.Copy(io.Discard, body)
-		_ = body.Close()
-	}()
-
-	stage = "DecodeResponse"
-	result, err := decodeRevertDiskResponse(resp)
-	if err != nil {
-		return res, errors.Wrap(err, "decode response")
-	}
-
-	return result, nil
-}
-
 // SetResourceIdlePolicy invokes set-resource-idle-policy operation.
 //
-// Requires permission to delete this resource. Enabling schedules reclamation only after the resource
-// is continuously unreferenced for the requested retention. Existing claims, attachments and
-// unfinished operations always prevent reclamation.
+// Enabling automatic cleanup starts a fresh retention interval after the last live claim is released.
+// Existing claims and pending operations always block reclamation.
 //
 // PUT /api/v1/resources/{resourceType}/{resourceId}/idle-policy
 func (c *Client) SetResourceIdlePolicy(ctx context.Context, request *IdlePolicy, params SetResourceIdlePolicyParams) (*ReclamationState, error) {
@@ -4095,7 +2022,7 @@ func (c *Client) sendSetResourceIdlePolicy(ctx context.Context, request *IdlePol
 			Explode: false,
 		})
 		if err := func() error {
-			return e.EncodeValue(conv.StringToString(params.ResourceType))
+			return e.EncodeValue(conv.StringToString(string(params.ResourceType)))
 		}(); err != nil {
 			return res, errors.Wrap(err, "encode path")
 		}

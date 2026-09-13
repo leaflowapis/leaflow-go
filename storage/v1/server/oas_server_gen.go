@@ -8,206 +8,85 @@ import (
 
 // Handler handles operations described by OpenAPI v3 specification.
 type Handler interface {
-	// CreateBackup implements create-backup operation.
-	//
-	// Creates a Billing order, including for metered pricing. The price must belong to the resource’s
-	// Billing Plan; applicable contract pricing is resolved by Billing. Technical capacity is checked
-	// before sellable quota is reserved. Provisioning continues automatically after payment; do not submit
-	// a new purchase after paying. Reuse the original idempotency key after an uncertain response.
-	//
-	// POST /api/v1/backups
-	CreateBackup(ctx context.Context, req *CreateBackupRequestBody) (*PlacedOrder, error)
 	// CreateDisk implements create-disk operation.
 	//
-	// Creates a Billing order, including for metered pricing. The price must belong to the resource’s
-	// Billing Plan; applicable contract pricing is resolved by Billing. Technical capacity is checked
-	// before sellable quota is reserved. Provisioning continues automatically after payment; do not submit
-	// a new purchase after paying. Reuse the original idempotency key after an uncertain response.
+	// Checks Fleet capacity, creates the local disk intent, and places a Billing order. Reuse the same
+	// idempotency key after an uncertain response. Billing resolves contract pricing, sellable quota,
+	// grants, payment challenges, and expiry.
 	//
 	// POST /api/v1/disks
-	CreateDisk(ctx context.Context, req *CreateDiskRequestBody) (*PlacedOrder, error)
-	// CreateSnapshot implements create-snapshot operation.
-	//
-	// Creates a Billing order, including for metered pricing. The price must belong to the resource’s
-	// Billing Plan; applicable contract pricing is resolved by Billing. Technical capacity is checked
-	// before sellable quota is reserved. Provisioning continues automatically after payment; do not submit
-	// a new purchase after paying. Reuse the original idempotency key after an uncertain response.
-	//
-	// POST /api/v1/snapshots
-	CreateSnapshot(ctx context.Context, req *CreateSnapshotRequestBody) (*PlacedOrder, error)
-	// DeleteBackup implements delete-backup operation.
-	//
-	// Independent of the source disk: deletion succeeds whether or not that disk still exists.
-	//
-	// DELETE /api/v1/backups/{backupId}
-	DeleteBackup(ctx context.Context, params DeleteBackupParams) error
+	CreateDisk(ctx context.Context, req *CreateDiskRequest) (*PlacedOrder, error)
 	// DeleteDisk implements delete-disk operation.
 	//
-	// Deletion is rejected while the disk is attached, or while snapshots created from it still exist.
+	// Deletion is asynchronous and is rejected while the disk has a live attachment or another live
+	// resource claim. Billing ends resource-bound subscriptions only after Cinder confirms deletion.
 	//
 	// DELETE /api/v1/disks/{diskId}
 	DeleteDisk(ctx context.Context, params DeleteDiskParams) error
-	// DeleteSnapshot implements delete-snapshot operation.
-	//
-	// Delete a snapshot.
-	//
-	// DELETE /api/v1/snapshots/{snapshotId}
-	DeleteSnapshot(ctx context.Context, params DeleteSnapshotParams) error
 	// GetAttachment implements get-attachment operation.
 	//
-	// Get attachment.
+	// Get a disk attachment.
 	//
 	// GET /api/v1/attachments/{attachmentId}
 	GetAttachment(ctx context.Context, params GetAttachmentParams) (*Attachment, error)
-	// GetBackup implements get-backup operation.
-	//
-	// Queries the current state of the backup, which makes it slower but more accurate than the list
-	// endpoint. Use it to poll creation progress.
-	//
-	// GET /api/v1/backups/{backupId}
-	GetBackup(ctx context.Context, params GetBackupParams) (*BackupResource, error)
 	// GetDisk implements get-disk operation.
 	//
-	// Returns the disk and its observed state. Read its attachments for consumers, device names and
-	// pending attachment operations.
+	// Get a disk.
 	//
 	// GET /api/v1/disks/{diskId}
-	GetDisk(ctx context.Context, params GetDiskParams) (*DiskResource, error)
+	GetDisk(ctx context.Context, params GetDiskParams) (*Disk, error)
 	// GetDiskType implements get-disk-type operation.
 	//
-	// Retrieve capacity and performance constraints for an existing disk, including system disk types and
-	// types withdrawn from sale.
+	// Get a disk type.
 	//
 	// GET /api/v1/disk-types/{diskTypeId}
-	GetDiskType(ctx context.Context, params GetDiskTypeParams) (*DiskTypeResource, error)
+	GetDiskType(ctx context.Context, params GetDiskTypeParams) (*DiskType, error)
 	// GetResourceReclamation implements get-resource-reclamation operation.
 	//
-	// Get resource reclamation.
+	// Get resource reclamation state.
 	//
 	// GET /api/v1/resources/{resourceType}/{resourceId}/reclamation
 	GetResourceReclamation(ctx context.Context, params GetResourceReclamationParams) (*ReclamationState, error)
 	// GetResourceUsage implements get-resource-usage operation.
 	//
-	// Get resource usage.
+	// Get a resource usage.
 	//
 	// GET /api/v1/resource-usages/{usageId}
 	GetResourceUsage(ctx context.Context, params GetResourceUsageParams) (*ResourceUsage, error)
-	// GetSnapshot implements get-snapshot operation.
-	//
-	// Retrieve a snapshot.
-	//
-	// GET /api/v1/snapshots/{snapshotId}
-	GetSnapshot(ctx context.Context, params GetSnapshotParams) (*SnapshotResource, error)
-	// ListBackups implements list-backups operation.
-	//
-	// List backups.
-	//
-	// GET /api/v1/backups
-	ListBackups(ctx context.Context, params ListBackupsParams) (*BackupListResponseBody, error)
 	// ListDiskAttachments implements list-disk-attachments operation.
 	//
-	// Actual attachment state, including operations whose provider outcome is unknown. Use usage_id to
-	// locate the corresponding blocking claim.
+	// List disk attachments.
 	//
-	// GET /api/v1/disks/{resourceId}/attachments
+	// GET /api/v1/disks/{diskId}/attachments
 	ListDiskAttachments(ctx context.Context, params ListDiskAttachmentsParams) (*AttachmentList, error)
 	// ListDiskTypes implements list-disk-types operation.
 	//
-	// Only disk types currently on sale are listed. A withdrawn one disappears from here and can no longer
-	// be bought, while the disks already on it keep working and can still be resized.
+	// List disk types on sale.
 	//
 	// GET /api/v1/disk-types
-	ListDiskTypes(ctx context.Context, params ListDiskTypesParams) (*DiskTypeListResponseBody, error)
+	ListDiskTypes(ctx context.Context, params ListDiskTypesParams) (*DiskTypeList, error)
 	// ListDisks implements list-disks operation.
 	//
-	// Lists disks in the current project. Use resource-usages to inspect consumers and pending
-	// reservations.
+	// List disks in the current project.
 	//
 	// GET /api/v1/disks
-	ListDisks(ctx context.Context, params ListDisksParams) (*DiskListResponseBody, error)
-	// ListOperationLogs implements list-operation-logs operation.
-	//
-	// Records every write operation in the project: who performed it, when, on what, and whether it
-	// succeeded. Read operations are not recorded.
-	//
-	// Operations performed by the platform are included, but the individual operator is not disclosed and
-	// `by_platform` is true. Suspension for non-payment and bans for abuse are examples: the time at which
-	// an instance was stopped by the platform is needed, whereas the operator is internal information.
-	//
-	// Fields such as passwords are replaced with a placeholder as the record is written and never appear
-	// in `payload`.
-	//
-	// GET /api/v1/operation-logs
-	ListOperationLogs(ctx context.Context, params ListOperationLogsParams) (*OperationLogListResponseBody, error)
+	ListDisks(ctx context.Context, params ListDisksParams) (*DiskList, error)
 	// ListResourceUsages implements list-resource-usages operation.
 	//
-	// Lists direct consumers, including pending reservations and claims being released. The resource must
-	// be readable by the caller. Historical released claims are included only when requested.
+	// Lists direct consumers and pending reservations for a resource readable in the current project.
 	//
 	// GET /api/v1/resource-usages
 	ListResourceUsages(ctx context.Context, params ListResourceUsagesParams) (*ResourceUsageList, error)
-	// ListSnapshots implements list-snapshots operation.
-	//
-	// List snapshots.
-	//
-	// GET /api/v1/snapshots
-	ListSnapshots(ctx context.Context, params ListSnapshotsParams) (*SnapshotListResponseBody, error)
-	// RenameBackup implements rename-backup operation.
-	//
-	// Rename a backup.
-	//
-	// PATCH /api/v1/backups/{backupId}
-	RenameBackup(ctx context.Context, req *RenameBackupRequestBody, params RenameBackupParams) (*BackupResource, error)
 	// RenameDisk implements rename-disk operation.
 	//
-	// Changes the name only. Use the resize endpoint for capacity; type and availability zone are
-	// immutable.
+	// Rename a disk.
 	//
 	// PATCH /api/v1/disks/{diskId}
-	RenameDisk(ctx context.Context, req *RenameDiskRequestBody, params RenameDiskParams) (*DiskResource, error)
-	// RenameSnapshot implements rename-snapshot operation.
-	//
-	// Rename a snapshot.
-	//
-	// PATCH /api/v1/snapshots/{snapshotId}
-	RenameSnapshot(ctx context.Context, req *RenameSnapshotRequestBody, params RenameSnapshotParams) (*SnapshotResource, error)
-	// ResizeDisk implements resize-disk operation.
-	//
-	// Creates a Billing order, including for metered pricing. The price must belong to the resource’s
-	// Billing Plan; applicable contract pricing is resolved by Billing. Technical capacity is checked
-	// before sellable quota is reserved. Provisioning continues automatically after payment; do not submit
-	// a new purchase after paying. Reuse the original idempotency key after an uncertain response.
-	//
-	// POST /api/v1/disks/{diskId}/resize
-	ResizeDisk(ctx context.Context, req *ResizeDiskRequestBody, params ResizeDiskParams) (*PlacedOrder, error)
-	// RestoreBackup implements restore-backup operation.
-	//
-	// Creates a Billing order, including for metered pricing. The price must belong to the resource’s
-	// Billing Plan; applicable contract pricing is resolved by Billing. Technical capacity is checked
-	// before sellable quota is reserved. Provisioning continues automatically after payment; do not submit
-	// a new purchase after paying. Reuse the original idempotency key after an uncertain response.
-	//
-	// POST /api/v1/backups/{backupId}/restore
-	RestoreBackup(ctx context.Context, req *RestoreBackupRequestBody, params RestoreBackupParams) (*PlacedOrder, error)
-	// RevertDisk implements revert-disk operation.
-	//
-	// Restores the contents of the disk to the moment the snapshot was taken. All data written after that
-	// moment is lost and cannot be recovered.
-	//
-	// Three restrictions apply: only the most recent snapshot of the disk can be reverted to; the disk
-	// must be detached from its instance first; and a disk resized since the snapshot was taken cannot be
-	// reverted. To return to an earlier point in time, or to keep the existing disk, create a new disk
-	// from the snapshot instead.
-	//
-	// The revert is not complete when this endpoint returns; poll the retrieve endpoint.
-	//
-	// POST /api/v1/disks/{diskId}/revert
-	RevertDisk(ctx context.Context, req *RevertDiskRequestBody, params RevertDiskParams) (*DiskResource, error)
+	RenameDisk(ctx context.Context, req *RenameRequest, params RenameDiskParams) (*Disk, error)
 	// SetResourceIdlePolicy implements set-resource-idle-policy operation.
 	//
-	// Requires permission to delete this resource. Enabling schedules reclamation only after the resource
-	// is continuously unreferenced for the requested retention. Existing claims, attachments and
-	// unfinished operations always prevent reclamation.
+	// Enabling automatic cleanup starts a fresh retention interval after the last live claim is released.
+	// Existing claims and pending operations always block reclamation.
 	//
 	// PUT /api/v1/resources/{resourceType}/{resourceId}/idle-policy
 	SetResourceIdlePolicy(ctx context.Context, req *IdlePolicy, params SetResourceIdlePolicyParams) (*ReclamationState, error)

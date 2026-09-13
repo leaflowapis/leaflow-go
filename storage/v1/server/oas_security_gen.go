@@ -44,32 +44,18 @@ func findAuthorization(h http.Header, prefix string) (string, bool) {
 
 // operationRolesBearerAuth is a private map storing roles per operation.
 var operationRolesBearerAuth = map[string][]string{
-	CreateBackupOperation:           []string{},
 	CreateDiskOperation:             []string{},
-	CreateSnapshotOperation:         []string{},
-	DeleteBackupOperation:           []string{},
 	DeleteDiskOperation:             []string{},
-	DeleteSnapshotOperation:         []string{},
 	GetAttachmentOperation:          []string{},
-	GetBackupOperation:              []string{},
 	GetDiskOperation:                []string{},
 	GetDiskTypeOperation:            []string{},
 	GetResourceReclamationOperation: []string{},
 	GetResourceUsageOperation:       []string{},
-	GetSnapshotOperation:            []string{},
-	ListBackupsOperation:            []string{},
 	ListDiskAttachmentsOperation:    []string{},
 	ListDiskTypesOperation:          []string{},
 	ListDisksOperation:              []string{},
-	ListOperationLogsOperation:      []string{},
 	ListResourceUsagesOperation:     []string{},
-	ListSnapshotsOperation:          []string{},
-	RenameBackupOperation:           []string{},
 	RenameDiskOperation:             []string{},
-	RenameSnapshotOperation:         []string{},
-	ResizeDiskOperation:             []string{},
-	RestoreBackupOperation:          []string{},
-	RevertDiskOperation:             []string{},
 	SetResourceIdlePolicyOperation:  []string{},
 }
 

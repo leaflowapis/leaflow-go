@@ -246,221 +246,6 @@ func (s *AttachmentState) UnmarshalText(data []byte) error {
 	}
 }
 
-// Ref: #/components/schemas/BackupListResponseBody
-type BackupListResponseBody struct {
-	Items      []BackupResource `json:"items"`
-	Page       int64            `json:"page"`
-	PageSize   int64            `json:"page_size"`
-	TotalCount OptInt64         `json:"total_count"`
-}
-
-// GetItems returns the value of Items.
-func (s *BackupListResponseBody) GetItems() []BackupResource {
-	return s.Items
-}
-
-// GetPage returns the value of Page.
-func (s *BackupListResponseBody) GetPage() int64 {
-	return s.Page
-}
-
-// GetPageSize returns the value of PageSize.
-func (s *BackupListResponseBody) GetPageSize() int64 {
-	return s.PageSize
-}
-
-// GetTotalCount returns the value of TotalCount.
-func (s *BackupListResponseBody) GetTotalCount() OptInt64 {
-	return s.TotalCount
-}
-
-// SetItems sets the value of Items.
-func (s *BackupListResponseBody) SetItems(val []BackupResource) {
-	s.Items = val
-}
-
-// SetPage sets the value of Page.
-func (s *BackupListResponseBody) SetPage(val int64) {
-	s.Page = val
-}
-
-// SetPageSize sets the value of PageSize.
-func (s *BackupListResponseBody) SetPageSize(val int64) {
-	s.PageSize = val
-}
-
-// SetTotalCount sets the value of TotalCount.
-func (s *BackupListResponseBody) SetTotalCount(val OptInt64) {
-	s.TotalCount = val
-}
-
-// Ref: #/components/schemas/BackupResource
-type BackupResource struct {
-	AvailabilityZoneID uuid.UUID `json:"availability_zone_id"`
-	CreatedAt          time.Time `json:"created_at"`
-	ID                 uuid.UUID `json:"id"`
-	Name               string    `json:"name"`
-	RegionID           uuid.UUID `json:"region_id"`
-	// Capacity of the source disk when the backup was created. A restored disk cannot be smaller than this.
-	SizeGB int64 `json:"size_gb"`
-	// The disk this backup was taken from. The backup remains usable after that disk is deleted.
-	SourceDiskID        uuid.UUID            `json:"source_disk_id"`
-	Status              BackupResourceStatus `json:"status"`
-	SubscriptionItemIds []uuid.UUID          `json:"subscription_item_ids"`
-}
-
-// GetAvailabilityZoneID returns the value of AvailabilityZoneID.
-func (s *BackupResource) GetAvailabilityZoneID() uuid.UUID {
-	return s.AvailabilityZoneID
-}
-
-// GetCreatedAt returns the value of CreatedAt.
-func (s *BackupResource) GetCreatedAt() time.Time {
-	return s.CreatedAt
-}
-
-// GetID returns the value of ID.
-func (s *BackupResource) GetID() uuid.UUID {
-	return s.ID
-}
-
-// GetName returns the value of Name.
-func (s *BackupResource) GetName() string {
-	return s.Name
-}
-
-// GetRegionID returns the value of RegionID.
-func (s *BackupResource) GetRegionID() uuid.UUID {
-	return s.RegionID
-}
-
-// GetSizeGB returns the value of SizeGB.
-func (s *BackupResource) GetSizeGB() int64 {
-	return s.SizeGB
-}
-
-// GetSourceDiskID returns the value of SourceDiskID.
-func (s *BackupResource) GetSourceDiskID() uuid.UUID {
-	return s.SourceDiskID
-}
-
-// GetStatus returns the value of Status.
-func (s *BackupResource) GetStatus() BackupResourceStatus {
-	return s.Status
-}
-
-// GetSubscriptionItemIds returns the value of SubscriptionItemIds.
-func (s *BackupResource) GetSubscriptionItemIds() []uuid.UUID {
-	return s.SubscriptionItemIds
-}
-
-// SetAvailabilityZoneID sets the value of AvailabilityZoneID.
-func (s *BackupResource) SetAvailabilityZoneID(val uuid.UUID) {
-	s.AvailabilityZoneID = val
-}
-
-// SetCreatedAt sets the value of CreatedAt.
-func (s *BackupResource) SetCreatedAt(val time.Time) {
-	s.CreatedAt = val
-}
-
-// SetID sets the value of ID.
-func (s *BackupResource) SetID(val uuid.UUID) {
-	s.ID = val
-}
-
-// SetName sets the value of Name.
-func (s *BackupResource) SetName(val string) {
-	s.Name = val
-}
-
-// SetRegionID sets the value of RegionID.
-func (s *BackupResource) SetRegionID(val uuid.UUID) {
-	s.RegionID = val
-}
-
-// SetSizeGB sets the value of SizeGB.
-func (s *BackupResource) SetSizeGB(val int64) {
-	s.SizeGB = val
-}
-
-// SetSourceDiskID sets the value of SourceDiskID.
-func (s *BackupResource) SetSourceDiskID(val uuid.UUID) {
-	s.SourceDiskID = val
-}
-
-// SetStatus sets the value of Status.
-func (s *BackupResource) SetStatus(val BackupResourceStatus) {
-	s.Status = val
-}
-
-// SetSubscriptionItemIds sets the value of SubscriptionItemIds.
-func (s *BackupResource) SetSubscriptionItemIds(val []uuid.UUID) {
-	s.SubscriptionItemIds = val
-}
-
-type BackupResourceStatus string
-
-const (
-	BackupResourceStatusProvisioning BackupResourceStatus = "provisioning"
-	BackupResourceStatusAvailable    BackupResourceStatus = "available"
-	BackupResourceStatusRestoring    BackupResourceStatus = "restoring"
-	BackupResourceStatusDeleting     BackupResourceStatus = "deleting"
-	BackupResourceStatusError        BackupResourceStatus = "error"
-)
-
-// AllValues returns all BackupResourceStatus values.
-func (BackupResourceStatus) AllValues() []BackupResourceStatus {
-	return []BackupResourceStatus{
-		BackupResourceStatusProvisioning,
-		BackupResourceStatusAvailable,
-		BackupResourceStatusRestoring,
-		BackupResourceStatusDeleting,
-		BackupResourceStatusError,
-	}
-}
-
-// MarshalText implements encoding.TextMarshaler.
-func (s BackupResourceStatus) MarshalText() ([]byte, error) {
-	switch s {
-	case BackupResourceStatusProvisioning:
-		return []byte(s), nil
-	case BackupResourceStatusAvailable:
-		return []byte(s), nil
-	case BackupResourceStatusRestoring:
-		return []byte(s), nil
-	case BackupResourceStatusDeleting:
-		return []byte(s), nil
-	case BackupResourceStatusError:
-		return []byte(s), nil
-	default:
-		return nil, errors.Errorf("invalid value: %q", s)
-	}
-}
-
-// UnmarshalText implements encoding.TextUnmarshaler.
-func (s *BackupResourceStatus) UnmarshalText(data []byte) error {
-	switch BackupResourceStatus(data) {
-	case BackupResourceStatusProvisioning:
-		*s = BackupResourceStatusProvisioning
-		return nil
-	case BackupResourceStatusAvailable:
-		*s = BackupResourceStatusAvailable
-		return nil
-	case BackupResourceStatusRestoring:
-		*s = BackupResourceStatusRestoring
-		return nil
-	case BackupResourceStatusDeleting:
-		*s = BackupResourceStatusDeleting
-		return nil
-	case BackupResourceStatusError:
-		*s = BackupResourceStatusError
-		return nil
-	default:
-		return errors.Errorf("invalid value: %q", data)
-	}
-}
-
 type BearerAuth struct {
 	Token string
 	Roles []string
@@ -514,419 +299,265 @@ func (s *CatalogReference) SetLookupKey(val OptString) {
 	s.LookupKey = val
 }
 
-// Ref: #/components/schemas/CreateBackupRequestBody
-type CreateBackupRequestBody struct {
-	DiskID uuid.UUID        `json:"disk_id"`
-	Name   string           `json:"name"`
-	Order  OrderOptions     `json:"order"`
-	Price  CatalogReference `json:"price"`
-}
-
-// GetDiskID returns the value of DiskID.
-func (s *CreateBackupRequestBody) GetDiskID() uuid.UUID {
-	return s.DiskID
-}
-
-// GetName returns the value of Name.
-func (s *CreateBackupRequestBody) GetName() string {
-	return s.Name
-}
-
-// GetOrder returns the value of Order.
-func (s *CreateBackupRequestBody) GetOrder() OrderOptions {
-	return s.Order
-}
-
-// GetPrice returns the value of Price.
-func (s *CreateBackupRequestBody) GetPrice() CatalogReference {
-	return s.Price
-}
-
-// SetDiskID sets the value of DiskID.
-func (s *CreateBackupRequestBody) SetDiskID(val uuid.UUID) {
-	s.DiskID = val
-}
-
-// SetName sets the value of Name.
-func (s *CreateBackupRequestBody) SetName(val string) {
-	s.Name = val
-}
-
-// SetOrder sets the value of Order.
-func (s *CreateBackupRequestBody) SetOrder(val OrderOptions) {
-	s.Order = val
-}
-
-// SetPrice sets the value of Price.
-func (s *CreateBackupRequestBody) SetPrice(val CatalogReference) {
-	s.Price = val
-}
-
-// Ref: #/components/schemas/CreateDiskRequestBody
-type CreateDiskRequestBody struct {
-	// A disk type currently on sale. A withdrawn one is rejected even though its identifier still resolves.
-	DiskTypeID uuid.UUID `json:"disk_type_id"`
-	Name       string    `json:"name"`
-	SizeGB     int64     `json:"size_gb"`
-	// Restore from this snapshot. When given, the capacity need only be no smaller than the snapshot.
-	SnapshotID OptUUID          `json:"snapshot_id"`
-	Order      OrderOptions     `json:"order"`
+// Ref: #/components/schemas/CreateDiskRequest
+type CreateDiskRequest struct {
+	DiskTypeID uuid.UUID        `json:"disk_type_id"`
+	Name       string           `json:"name"`
+	SizeGB     int64            `json:"size_gb"`
 	Price      CatalogReference `json:"price"`
+	Order      OrderOptions     `json:"order"`
 }
 
 // GetDiskTypeID returns the value of DiskTypeID.
-func (s *CreateDiskRequestBody) GetDiskTypeID() uuid.UUID {
+func (s *CreateDiskRequest) GetDiskTypeID() uuid.UUID {
 	return s.DiskTypeID
 }
 
 // GetName returns the value of Name.
-func (s *CreateDiskRequestBody) GetName() string {
+func (s *CreateDiskRequest) GetName() string {
 	return s.Name
 }
 
 // GetSizeGB returns the value of SizeGB.
-func (s *CreateDiskRequestBody) GetSizeGB() int64 {
+func (s *CreateDiskRequest) GetSizeGB() int64 {
 	return s.SizeGB
 }
 
-// GetSnapshotID returns the value of SnapshotID.
-func (s *CreateDiskRequestBody) GetSnapshotID() OptUUID {
-	return s.SnapshotID
-}
-
-// GetOrder returns the value of Order.
-func (s *CreateDiskRequestBody) GetOrder() OrderOptions {
-	return s.Order
-}
-
 // GetPrice returns the value of Price.
-func (s *CreateDiskRequestBody) GetPrice() CatalogReference {
+func (s *CreateDiskRequest) GetPrice() CatalogReference {
 	return s.Price
 }
 
+// GetOrder returns the value of Order.
+func (s *CreateDiskRequest) GetOrder() OrderOptions {
+	return s.Order
+}
+
 // SetDiskTypeID sets the value of DiskTypeID.
-func (s *CreateDiskRequestBody) SetDiskTypeID(val uuid.UUID) {
+func (s *CreateDiskRequest) SetDiskTypeID(val uuid.UUID) {
 	s.DiskTypeID = val
 }
 
 // SetName sets the value of Name.
-func (s *CreateDiskRequestBody) SetName(val string) {
+func (s *CreateDiskRequest) SetName(val string) {
 	s.Name = val
 }
 
 // SetSizeGB sets the value of SizeGB.
-func (s *CreateDiskRequestBody) SetSizeGB(val int64) {
+func (s *CreateDiskRequest) SetSizeGB(val int64) {
 	s.SizeGB = val
 }
 
-// SetSnapshotID sets the value of SnapshotID.
-func (s *CreateDiskRequestBody) SetSnapshotID(val OptUUID) {
-	s.SnapshotID = val
-}
-
-// SetOrder sets the value of Order.
-func (s *CreateDiskRequestBody) SetOrder(val OrderOptions) {
-	s.Order = val
-}
-
 // SetPrice sets the value of Price.
-func (s *CreateDiskRequestBody) SetPrice(val CatalogReference) {
+func (s *CreateDiskRequest) SetPrice(val CatalogReference) {
 	s.Price = val
 }
 
-// Ref: #/components/schemas/CreateSnapshotRequestBody
-type CreateSnapshotRequestBody struct {
-	DiskID uuid.UUID        `json:"disk_id"`
-	Name   string           `json:"name"`
-	Order  OrderOptions     `json:"order"`
-	Price  CatalogReference `json:"price"`
-}
-
-// GetDiskID returns the value of DiskID.
-func (s *CreateSnapshotRequestBody) GetDiskID() uuid.UUID {
-	return s.DiskID
-}
-
-// GetName returns the value of Name.
-func (s *CreateSnapshotRequestBody) GetName() string {
-	return s.Name
-}
-
-// GetOrder returns the value of Order.
-func (s *CreateSnapshotRequestBody) GetOrder() OrderOptions {
-	return s.Order
-}
-
-// GetPrice returns the value of Price.
-func (s *CreateSnapshotRequestBody) GetPrice() CatalogReference {
-	return s.Price
-}
-
-// SetDiskID sets the value of DiskID.
-func (s *CreateSnapshotRequestBody) SetDiskID(val uuid.UUID) {
-	s.DiskID = val
-}
-
-// SetName sets the value of Name.
-func (s *CreateSnapshotRequestBody) SetName(val string) {
-	s.Name = val
-}
-
 // SetOrder sets the value of Order.
-func (s *CreateSnapshotRequestBody) SetOrder(val OrderOptions) {
+func (s *CreateDiskRequest) SetOrder(val OrderOptions) {
 	s.Order = val
 }
-
-// SetPrice sets the value of Price.
-func (s *CreateSnapshotRequestBody) SetPrice(val CatalogReference) {
-	s.Price = val
-}
-
-// DeleteBackupNoContent is response for DeleteBackup operation.
-type DeleteBackupNoContent struct{}
 
 // DeleteDiskNoContent is response for DeleteDisk operation.
 type DeleteDiskNoContent struct{}
 
-// DeleteSnapshotNoContent is response for DeleteSnapshot operation.
-type DeleteSnapshotNoContent struct{}
-
-// Ref: #/components/schemas/DiskListResponseBody
-type DiskListResponseBody struct {
-	Items      []DiskResource `json:"items"`
-	Page       int64          `json:"page"`
-	PageSize   int64          `json:"page_size"`
-	TotalCount OptInt64       `json:"total_count"`
-}
-
-// GetItems returns the value of Items.
-func (s *DiskListResponseBody) GetItems() []DiskResource {
-	return s.Items
-}
-
-// GetPage returns the value of Page.
-func (s *DiskListResponseBody) GetPage() int64 {
-	return s.Page
-}
-
-// GetPageSize returns the value of PageSize.
-func (s *DiskListResponseBody) GetPageSize() int64 {
-	return s.PageSize
-}
-
-// GetTotalCount returns the value of TotalCount.
-func (s *DiskListResponseBody) GetTotalCount() OptInt64 {
-	return s.TotalCount
-}
-
-// SetItems sets the value of Items.
-func (s *DiskListResponseBody) SetItems(val []DiskResource) {
-	s.Items = val
-}
-
-// SetPage sets the value of Page.
-func (s *DiskListResponseBody) SetPage(val int64) {
-	s.Page = val
-}
-
-// SetPageSize sets the value of PageSize.
-func (s *DiskListResponseBody) SetPageSize(val int64) {
-	s.PageSize = val
-}
-
-// SetTotalCount sets the value of TotalCount.
-func (s *DiskListResponseBody) SetTotalCount(val OptInt64) {
-	s.TotalCount = val
-}
-
-// Ref: #/components/schemas/DiskResource
-type DiskResource struct {
-	AvailabilityZoneID uuid.UUID `json:"availability_zone_id"`
-	CreatedAt          time.Time `json:"created_at"`
-	DiskTypeID         uuid.UUID `json:"disk_type_id"`
-	ID                 uuid.UUID `json:"id"`
-	Name               string    `json:"name"`
-	RegionID           uuid.UUID `json:"region_id"`
-	SizeGB             int64     `json:"size_gb"`
-	// IOPS this disk is allowed. Null when its type is not rate-limited.
-	//
-	// Computed from the disk's own capacity, so it grows when the disk is grown — but see the note on
-	// the resize endpoint: growing a disk that is attached is refused, precisely because the new figure
-	// would not take effect until it was attached again.
-	Iops NilInt64 `json:"iops"`
-	// Throughput this disk is allowed, in bytes per second. Null when its type is not rate-limited.
-	ThroughputBytesPerSec NilInt64           `json:"throughput_bytes_per_sec"`
-	Status                DiskResourceStatus `json:"status"`
-	SubscriptionItemIds   []uuid.UUID        `json:"subscription_item_ids"`
-}
-
-// GetAvailabilityZoneID returns the value of AvailabilityZoneID.
-func (s *DiskResource) GetAvailabilityZoneID() uuid.UUID {
-	return s.AvailabilityZoneID
-}
-
-// GetCreatedAt returns the value of CreatedAt.
-func (s *DiskResource) GetCreatedAt() time.Time {
-	return s.CreatedAt
-}
-
-// GetDiskTypeID returns the value of DiskTypeID.
-func (s *DiskResource) GetDiskTypeID() uuid.UUID {
-	return s.DiskTypeID
+// Ref: #/components/schemas/Disk
+type Disk struct {
+	ID                 uuid.UUID      `json:"id"`
+	Name               string         `json:"name"`
+	RegionID           uuid.UUID      `json:"region_id"`
+	AvailabilityZoneID uuid.UUID      `json:"availability_zone_id"`
+	DiskTypeID         uuid.UUID      `json:"disk_type_id"`
+	SizeGB             int64          `json:"size_gb"`
+	Status             DiskStatus     `json:"status"`
+	CreatedAt          time.Time      `json:"created_at"`
+	UpdatedAt          time.Time      `json:"updated_at"`
+	DeletedAt          OptNilDateTime `json:"deleted_at"`
 }
 
 // GetID returns the value of ID.
-func (s *DiskResource) GetID() uuid.UUID {
+func (s *Disk) GetID() uuid.UUID {
 	return s.ID
 }
 
 // GetName returns the value of Name.
-func (s *DiskResource) GetName() string {
+func (s *Disk) GetName() string {
 	return s.Name
 }
 
 // GetRegionID returns the value of RegionID.
-func (s *DiskResource) GetRegionID() uuid.UUID {
+func (s *Disk) GetRegionID() uuid.UUID {
 	return s.RegionID
 }
 
+// GetAvailabilityZoneID returns the value of AvailabilityZoneID.
+func (s *Disk) GetAvailabilityZoneID() uuid.UUID {
+	return s.AvailabilityZoneID
+}
+
+// GetDiskTypeID returns the value of DiskTypeID.
+func (s *Disk) GetDiskTypeID() uuid.UUID {
+	return s.DiskTypeID
+}
+
 // GetSizeGB returns the value of SizeGB.
-func (s *DiskResource) GetSizeGB() int64 {
+func (s *Disk) GetSizeGB() int64 {
 	return s.SizeGB
 }
 
-// GetIops returns the value of Iops.
-func (s *DiskResource) GetIops() NilInt64 {
-	return s.Iops
-}
-
-// GetThroughputBytesPerSec returns the value of ThroughputBytesPerSec.
-func (s *DiskResource) GetThroughputBytesPerSec() NilInt64 {
-	return s.ThroughputBytesPerSec
-}
-
 // GetStatus returns the value of Status.
-func (s *DiskResource) GetStatus() DiskResourceStatus {
+func (s *Disk) GetStatus() DiskStatus {
 	return s.Status
 }
 
-// GetSubscriptionItemIds returns the value of SubscriptionItemIds.
-func (s *DiskResource) GetSubscriptionItemIds() []uuid.UUID {
-	return s.SubscriptionItemIds
+// GetCreatedAt returns the value of CreatedAt.
+func (s *Disk) GetCreatedAt() time.Time {
+	return s.CreatedAt
 }
 
-// SetAvailabilityZoneID sets the value of AvailabilityZoneID.
-func (s *DiskResource) SetAvailabilityZoneID(val uuid.UUID) {
-	s.AvailabilityZoneID = val
+// GetUpdatedAt returns the value of UpdatedAt.
+func (s *Disk) GetUpdatedAt() time.Time {
+	return s.UpdatedAt
 }
 
-// SetCreatedAt sets the value of CreatedAt.
-func (s *DiskResource) SetCreatedAt(val time.Time) {
-	s.CreatedAt = val
-}
-
-// SetDiskTypeID sets the value of DiskTypeID.
-func (s *DiskResource) SetDiskTypeID(val uuid.UUID) {
-	s.DiskTypeID = val
+// GetDeletedAt returns the value of DeletedAt.
+func (s *Disk) GetDeletedAt() OptNilDateTime {
+	return s.DeletedAt
 }
 
 // SetID sets the value of ID.
-func (s *DiskResource) SetID(val uuid.UUID) {
+func (s *Disk) SetID(val uuid.UUID) {
 	s.ID = val
 }
 
 // SetName sets the value of Name.
-func (s *DiskResource) SetName(val string) {
+func (s *Disk) SetName(val string) {
 	s.Name = val
 }
 
 // SetRegionID sets the value of RegionID.
-func (s *DiskResource) SetRegionID(val uuid.UUID) {
+func (s *Disk) SetRegionID(val uuid.UUID) {
 	s.RegionID = val
 }
 
+// SetAvailabilityZoneID sets the value of AvailabilityZoneID.
+func (s *Disk) SetAvailabilityZoneID(val uuid.UUID) {
+	s.AvailabilityZoneID = val
+}
+
+// SetDiskTypeID sets the value of DiskTypeID.
+func (s *Disk) SetDiskTypeID(val uuid.UUID) {
+	s.DiskTypeID = val
+}
+
 // SetSizeGB sets the value of SizeGB.
-func (s *DiskResource) SetSizeGB(val int64) {
+func (s *Disk) SetSizeGB(val int64) {
 	s.SizeGB = val
 }
 
-// SetIops sets the value of Iops.
-func (s *DiskResource) SetIops(val NilInt64) {
-	s.Iops = val
-}
-
-// SetThroughputBytesPerSec sets the value of ThroughputBytesPerSec.
-func (s *DiskResource) SetThroughputBytesPerSec(val NilInt64) {
-	s.ThroughputBytesPerSec = val
-}
-
 // SetStatus sets the value of Status.
-func (s *DiskResource) SetStatus(val DiskResourceStatus) {
+func (s *Disk) SetStatus(val DiskStatus) {
 	s.Status = val
 }
 
-// SetSubscriptionItemIds sets the value of SubscriptionItemIds.
-func (s *DiskResource) SetSubscriptionItemIds(val []uuid.UUID) {
-	s.SubscriptionItemIds = val
+// SetCreatedAt sets the value of CreatedAt.
+func (s *Disk) SetCreatedAt(val time.Time) {
+	s.CreatedAt = val
 }
 
-type DiskResourceStatus string
+// SetUpdatedAt sets the value of UpdatedAt.
+func (s *Disk) SetUpdatedAt(val time.Time) {
+	s.UpdatedAt = val
+}
+
+// SetDeletedAt sets the value of DeletedAt.
+func (s *Disk) SetDeletedAt(val OptNilDateTime) {
+	s.DeletedAt = val
+}
+
+// Ref: #/components/schemas/DiskList
+type DiskList struct {
+	Items      []Disk           `json:"items"`
+	Pagination OffsetPagination `json:"pagination"`
+}
+
+// GetItems returns the value of Items.
+func (s *DiskList) GetItems() []Disk {
+	return s.Items
+}
+
+// GetPagination returns the value of Pagination.
+func (s *DiskList) GetPagination() OffsetPagination {
+	return s.Pagination
+}
+
+// SetItems sets the value of Items.
+func (s *DiskList) SetItems(val []Disk) {
+	s.Items = val
+}
+
+// SetPagination sets the value of Pagination.
+func (s *DiskList) SetPagination(val OffsetPagination) {
+	s.Pagination = val
+}
+
+type DiskStatus string
 
 const (
-	DiskResourceStatusProvisioning DiskResourceStatus = "provisioning"
-	DiskResourceStatusAvailable    DiskResourceStatus = "available"
-	DiskResourceStatusAttaching    DiskResourceStatus = "attaching"
-	DiskResourceStatusInUse        DiskResourceStatus = "in_use"
-	DiskResourceStatusDetaching    DiskResourceStatus = "detaching"
-	DiskResourceStatusResizing     DiskResourceStatus = "resizing"
-	DiskResourceStatusReverting    DiskResourceStatus = "reverting"
-	DiskResourceStatusRestoring    DiskResourceStatus = "restoring"
-	DiskResourceStatusReleasing    DiskResourceStatus = "releasing"
-	DiskResourceStatusDeleting     DiskResourceStatus = "deleting"
-	DiskResourceStatusError        DiskResourceStatus = "error"
+	DiskStatusProvisioning DiskStatus = "provisioning"
+	DiskStatusAvailable    DiskStatus = "available"
+	DiskStatusAttaching    DiskStatus = "attaching"
+	DiskStatusInUse        DiskStatus = "in_use"
+	DiskStatusDetaching    DiskStatus = "detaching"
+	DiskStatusResizing     DiskStatus = "resizing"
+	DiskStatusReverting    DiskStatus = "reverting"
+	DiskStatusRestoring    DiskStatus = "restoring"
+	DiskStatusReleasing    DiskStatus = "releasing"
+	DiskStatusDeleting     DiskStatus = "deleting"
+	DiskStatusError        DiskStatus = "error"
 )
 
-// AllValues returns all DiskResourceStatus values.
-func (DiskResourceStatus) AllValues() []DiskResourceStatus {
-	return []DiskResourceStatus{
-		DiskResourceStatusProvisioning,
-		DiskResourceStatusAvailable,
-		DiskResourceStatusAttaching,
-		DiskResourceStatusInUse,
-		DiskResourceStatusDetaching,
-		DiskResourceStatusResizing,
-		DiskResourceStatusReverting,
-		DiskResourceStatusRestoring,
-		DiskResourceStatusReleasing,
-		DiskResourceStatusDeleting,
-		DiskResourceStatusError,
+// AllValues returns all DiskStatus values.
+func (DiskStatus) AllValues() []DiskStatus {
+	return []DiskStatus{
+		DiskStatusProvisioning,
+		DiskStatusAvailable,
+		DiskStatusAttaching,
+		DiskStatusInUse,
+		DiskStatusDetaching,
+		DiskStatusResizing,
+		DiskStatusReverting,
+		DiskStatusRestoring,
+		DiskStatusReleasing,
+		DiskStatusDeleting,
+		DiskStatusError,
 	}
 }
 
 // MarshalText implements encoding.TextMarshaler.
-func (s DiskResourceStatus) MarshalText() ([]byte, error) {
+func (s DiskStatus) MarshalText() ([]byte, error) {
 	switch s {
-	case DiskResourceStatusProvisioning:
+	case DiskStatusProvisioning:
 		return []byte(s), nil
-	case DiskResourceStatusAvailable:
+	case DiskStatusAvailable:
 		return []byte(s), nil
-	case DiskResourceStatusAttaching:
+	case DiskStatusAttaching:
 		return []byte(s), nil
-	case DiskResourceStatusInUse:
+	case DiskStatusInUse:
 		return []byte(s), nil
-	case DiskResourceStatusDetaching:
+	case DiskStatusDetaching:
 		return []byte(s), nil
-	case DiskResourceStatusResizing:
+	case DiskStatusResizing:
 		return []byte(s), nil
-	case DiskResourceStatusReverting:
+	case DiskStatusReverting:
 		return []byte(s), nil
-	case DiskResourceStatusRestoring:
+	case DiskStatusRestoring:
 		return []byte(s), nil
-	case DiskResourceStatusReleasing:
+	case DiskStatusReleasing:
 		return []byte(s), nil
-	case DiskResourceStatusDeleting:
+	case DiskStatusDeleting:
 		return []byte(s), nil
-	case DiskResourceStatusError:
+	case DiskStatusError:
 		return []byte(s), nil
 	default:
 		return nil, errors.Errorf("invalid value: %q", s)
@@ -934,280 +565,222 @@ func (s DiskResourceStatus) MarshalText() ([]byte, error) {
 }
 
 // UnmarshalText implements encoding.TextUnmarshaler.
-func (s *DiskResourceStatus) UnmarshalText(data []byte) error {
-	switch DiskResourceStatus(data) {
-	case DiskResourceStatusProvisioning:
-		*s = DiskResourceStatusProvisioning
+func (s *DiskStatus) UnmarshalText(data []byte) error {
+	switch DiskStatus(data) {
+	case DiskStatusProvisioning:
+		*s = DiskStatusProvisioning
 		return nil
-	case DiskResourceStatusAvailable:
-		*s = DiskResourceStatusAvailable
+	case DiskStatusAvailable:
+		*s = DiskStatusAvailable
 		return nil
-	case DiskResourceStatusAttaching:
-		*s = DiskResourceStatusAttaching
+	case DiskStatusAttaching:
+		*s = DiskStatusAttaching
 		return nil
-	case DiskResourceStatusInUse:
-		*s = DiskResourceStatusInUse
+	case DiskStatusInUse:
+		*s = DiskStatusInUse
 		return nil
-	case DiskResourceStatusDetaching:
-		*s = DiskResourceStatusDetaching
+	case DiskStatusDetaching:
+		*s = DiskStatusDetaching
 		return nil
-	case DiskResourceStatusResizing:
-		*s = DiskResourceStatusResizing
+	case DiskStatusResizing:
+		*s = DiskStatusResizing
 		return nil
-	case DiskResourceStatusReverting:
-		*s = DiskResourceStatusReverting
+	case DiskStatusReverting:
+		*s = DiskStatusReverting
 		return nil
-	case DiskResourceStatusRestoring:
-		*s = DiskResourceStatusRestoring
+	case DiskStatusRestoring:
+		*s = DiskStatusRestoring
 		return nil
-	case DiskResourceStatusReleasing:
-		*s = DiskResourceStatusReleasing
+	case DiskStatusReleasing:
+		*s = DiskStatusReleasing
 		return nil
-	case DiskResourceStatusDeleting:
-		*s = DiskResourceStatusDeleting
+	case DiskStatusDeleting:
+		*s = DiskStatusDeleting
 		return nil
-	case DiskResourceStatusError:
-		*s = DiskResourceStatusError
+	case DiskStatusError:
+		*s = DiskStatusError
 		return nil
 	default:
 		return errors.Errorf("invalid value: %q", data)
 	}
 }
 
-// Ref: #/components/schemas/DiskTypeListResponseBody
-type DiskTypeListResponseBody struct {
-	Items      []DiskTypeResource `json:"items"`
-	Page       int64              `json:"page"`
-	PageSize   int64              `json:"page_size"`
-	TotalCount OptInt64           `json:"total_count"`
-}
-
-// GetItems returns the value of Items.
-func (s *DiskTypeListResponseBody) GetItems() []DiskTypeResource {
-	return s.Items
-}
-
-// GetPage returns the value of Page.
-func (s *DiskTypeListResponseBody) GetPage() int64 {
-	return s.Page
-}
-
-// GetPageSize returns the value of PageSize.
-func (s *DiskTypeListResponseBody) GetPageSize() int64 {
-	return s.PageSize
-}
-
-// GetTotalCount returns the value of TotalCount.
-func (s *DiskTypeListResponseBody) GetTotalCount() OptInt64 {
-	return s.TotalCount
-}
-
-// SetItems sets the value of Items.
-func (s *DiskTypeListResponseBody) SetItems(val []DiskTypeResource) {
-	s.Items = val
-}
-
-// SetPage sets the value of Page.
-func (s *DiskTypeListResponseBody) SetPage(val int64) {
-	s.Page = val
-}
-
-// SetPageSize sets the value of PageSize.
-func (s *DiskTypeListResponseBody) SetPageSize(val int64) {
-	s.PageSize = val
-}
-
-// SetTotalCount sets the value of TotalCount.
-func (s *DiskTypeListResponseBody) SetTotalCount(val OptInt64) {
-	s.TotalCount = val
-}
-
-// Ref: #/components/schemas/DiskTypeResource
-type DiskTypeResource struct {
-	AvailabilityZoneID uuid.UUID `json:"availability_zone_id"`
-	ID                 uuid.UUID `json:"id"`
-	// IOPS a disk of `min_size_gb` gets. Null when this type is not rate-limited.
-	//
-	// Performance grows with capacity, so this and `iops_at_max_size` are the two ends of the range. The
-	// exact figure for the size actually bought appears on the disk itself once it exists.
-	IopsAtMinSize NilInt64 `json:"iops_at_min_size"`
-	// IOPS a disk of `max_size_gb` gets. Null when this type is not rate-limited.
-	IopsAtMaxSize NilInt64              `json:"iops_at_max_size"`
-	MaxSizeGB     int64                 `json:"max_size_gb"`
-	Media         DiskTypeResourceMedia `json:"media"`
-	MinSizeGB     int64                 `json:"min_size_gb"`
-	Name          string                `json:"name"`
-	RegionID      uuid.UUID             `json:"region_id"`
-	StepGB        int64                 `json:"step_gb"`
-	// Throughput a disk of `min_size_gb` gets, in bytes per second. Null when this type is not
-	// rate-limited.
-	//
-	// Bytes rather than MiB so the number needs no rounding on the way out; divide by 1048576 for MiB/s at
-	// the point of display.
-	ThroughputAtMinSize NilInt64 `json:"throughput_at_min_size"`
-	// Throughput a disk of `max_size_gb` gets, in bytes per second. Null when this type is not
-	// rate-limited.
-	ThroughputAtMaxSize NilInt64 `json:"throughput_at_max_size"`
-	// The Billing Plan for this type. Read its available prices from Billing; resource capacity and
-	// sellable quota are evaluated when placing the order.
-	BillingPlanID uuid.UUID `json:"billing_plan_id"`
-}
-
-// GetAvailabilityZoneID returns the value of AvailabilityZoneID.
-func (s *DiskTypeResource) GetAvailabilityZoneID() uuid.UUID {
-	return s.AvailabilityZoneID
+// Ref: #/components/schemas/DiskType
+type DiskType struct {
+	ID                 uuid.UUID     `json:"id"`
+	LookupKey          string        `json:"lookup_key"`
+	Name               string        `json:"name"`
+	Media              DiskTypeMedia `json:"media"`
+	RegionID           uuid.UUID     `json:"region_id"`
+	AvailabilityZoneID uuid.UUID     `json:"availability_zone_id"`
+	MinSizeGB          int64         `json:"min_size_gb"`
+	MaxSizeGB          int64         `json:"max_size_gb"`
+	StepGB             int64         `json:"step_gb"`
+	ForSystem          bool          `json:"for_system"`
+	BillingPlanID      uuid.UUID     `json:"billing_plan_id"`
 }
 
 // GetID returns the value of ID.
-func (s *DiskTypeResource) GetID() uuid.UUID {
+func (s *DiskType) GetID() uuid.UUID {
 	return s.ID
 }
 
-// GetIopsAtMinSize returns the value of IopsAtMinSize.
-func (s *DiskTypeResource) GetIopsAtMinSize() NilInt64 {
-	return s.IopsAtMinSize
-}
-
-// GetIopsAtMaxSize returns the value of IopsAtMaxSize.
-func (s *DiskTypeResource) GetIopsAtMaxSize() NilInt64 {
-	return s.IopsAtMaxSize
-}
-
-// GetMaxSizeGB returns the value of MaxSizeGB.
-func (s *DiskTypeResource) GetMaxSizeGB() int64 {
-	return s.MaxSizeGB
-}
-
-// GetMedia returns the value of Media.
-func (s *DiskTypeResource) GetMedia() DiskTypeResourceMedia {
-	return s.Media
-}
-
-// GetMinSizeGB returns the value of MinSizeGB.
-func (s *DiskTypeResource) GetMinSizeGB() int64 {
-	return s.MinSizeGB
+// GetLookupKey returns the value of LookupKey.
+func (s *DiskType) GetLookupKey() string {
+	return s.LookupKey
 }
 
 // GetName returns the value of Name.
-func (s *DiskTypeResource) GetName() string {
+func (s *DiskType) GetName() string {
 	return s.Name
 }
 
+// GetMedia returns the value of Media.
+func (s *DiskType) GetMedia() DiskTypeMedia {
+	return s.Media
+}
+
 // GetRegionID returns the value of RegionID.
-func (s *DiskTypeResource) GetRegionID() uuid.UUID {
+func (s *DiskType) GetRegionID() uuid.UUID {
 	return s.RegionID
 }
 
+// GetAvailabilityZoneID returns the value of AvailabilityZoneID.
+func (s *DiskType) GetAvailabilityZoneID() uuid.UUID {
+	return s.AvailabilityZoneID
+}
+
+// GetMinSizeGB returns the value of MinSizeGB.
+func (s *DiskType) GetMinSizeGB() int64 {
+	return s.MinSizeGB
+}
+
+// GetMaxSizeGB returns the value of MaxSizeGB.
+func (s *DiskType) GetMaxSizeGB() int64 {
+	return s.MaxSizeGB
+}
+
 // GetStepGB returns the value of StepGB.
-func (s *DiskTypeResource) GetStepGB() int64 {
+func (s *DiskType) GetStepGB() int64 {
 	return s.StepGB
 }
 
-// GetThroughputAtMinSize returns the value of ThroughputAtMinSize.
-func (s *DiskTypeResource) GetThroughputAtMinSize() NilInt64 {
-	return s.ThroughputAtMinSize
-}
-
-// GetThroughputAtMaxSize returns the value of ThroughputAtMaxSize.
-func (s *DiskTypeResource) GetThroughputAtMaxSize() NilInt64 {
-	return s.ThroughputAtMaxSize
+// GetForSystem returns the value of ForSystem.
+func (s *DiskType) GetForSystem() bool {
+	return s.ForSystem
 }
 
 // GetBillingPlanID returns the value of BillingPlanID.
-func (s *DiskTypeResource) GetBillingPlanID() uuid.UUID {
+func (s *DiskType) GetBillingPlanID() uuid.UUID {
 	return s.BillingPlanID
 }
 
-// SetAvailabilityZoneID sets the value of AvailabilityZoneID.
-func (s *DiskTypeResource) SetAvailabilityZoneID(val uuid.UUID) {
-	s.AvailabilityZoneID = val
-}
-
 // SetID sets the value of ID.
-func (s *DiskTypeResource) SetID(val uuid.UUID) {
+func (s *DiskType) SetID(val uuid.UUID) {
 	s.ID = val
 }
 
-// SetIopsAtMinSize sets the value of IopsAtMinSize.
-func (s *DiskTypeResource) SetIopsAtMinSize(val NilInt64) {
-	s.IopsAtMinSize = val
-}
-
-// SetIopsAtMaxSize sets the value of IopsAtMaxSize.
-func (s *DiskTypeResource) SetIopsAtMaxSize(val NilInt64) {
-	s.IopsAtMaxSize = val
-}
-
-// SetMaxSizeGB sets the value of MaxSizeGB.
-func (s *DiskTypeResource) SetMaxSizeGB(val int64) {
-	s.MaxSizeGB = val
-}
-
-// SetMedia sets the value of Media.
-func (s *DiskTypeResource) SetMedia(val DiskTypeResourceMedia) {
-	s.Media = val
-}
-
-// SetMinSizeGB sets the value of MinSizeGB.
-func (s *DiskTypeResource) SetMinSizeGB(val int64) {
-	s.MinSizeGB = val
+// SetLookupKey sets the value of LookupKey.
+func (s *DiskType) SetLookupKey(val string) {
+	s.LookupKey = val
 }
 
 // SetName sets the value of Name.
-func (s *DiskTypeResource) SetName(val string) {
+func (s *DiskType) SetName(val string) {
 	s.Name = val
 }
 
+// SetMedia sets the value of Media.
+func (s *DiskType) SetMedia(val DiskTypeMedia) {
+	s.Media = val
+}
+
 // SetRegionID sets the value of RegionID.
-func (s *DiskTypeResource) SetRegionID(val uuid.UUID) {
+func (s *DiskType) SetRegionID(val uuid.UUID) {
 	s.RegionID = val
 }
 
+// SetAvailabilityZoneID sets the value of AvailabilityZoneID.
+func (s *DiskType) SetAvailabilityZoneID(val uuid.UUID) {
+	s.AvailabilityZoneID = val
+}
+
+// SetMinSizeGB sets the value of MinSizeGB.
+func (s *DiskType) SetMinSizeGB(val int64) {
+	s.MinSizeGB = val
+}
+
+// SetMaxSizeGB sets the value of MaxSizeGB.
+func (s *DiskType) SetMaxSizeGB(val int64) {
+	s.MaxSizeGB = val
+}
+
 // SetStepGB sets the value of StepGB.
-func (s *DiskTypeResource) SetStepGB(val int64) {
+func (s *DiskType) SetStepGB(val int64) {
 	s.StepGB = val
 }
 
-// SetThroughputAtMinSize sets the value of ThroughputAtMinSize.
-func (s *DiskTypeResource) SetThroughputAtMinSize(val NilInt64) {
-	s.ThroughputAtMinSize = val
-}
-
-// SetThroughputAtMaxSize sets the value of ThroughputAtMaxSize.
-func (s *DiskTypeResource) SetThroughputAtMaxSize(val NilInt64) {
-	s.ThroughputAtMaxSize = val
+// SetForSystem sets the value of ForSystem.
+func (s *DiskType) SetForSystem(val bool) {
+	s.ForSystem = val
 }
 
 // SetBillingPlanID sets the value of BillingPlanID.
-func (s *DiskTypeResource) SetBillingPlanID(val uuid.UUID) {
+func (s *DiskType) SetBillingPlanID(val uuid.UUID) {
 	s.BillingPlanID = val
 }
 
-type DiskTypeResourceMedia string
+// Ref: #/components/schemas/DiskTypeList
+type DiskTypeList struct {
+	Items      []DiskType       `json:"items"`
+	Pagination OffsetPagination `json:"pagination"`
+}
+
+// GetItems returns the value of Items.
+func (s *DiskTypeList) GetItems() []DiskType {
+	return s.Items
+}
+
+// GetPagination returns the value of Pagination.
+func (s *DiskTypeList) GetPagination() OffsetPagination {
+	return s.Pagination
+}
+
+// SetItems sets the value of Items.
+func (s *DiskTypeList) SetItems(val []DiskType) {
+	s.Items = val
+}
+
+// SetPagination sets the value of Pagination.
+func (s *DiskTypeList) SetPagination(val OffsetPagination) {
+	s.Pagination = val
+}
+
+type DiskTypeMedia string
 
 const (
-	DiskTypeResourceMediaSsd  DiskTypeResourceMedia = "ssd"
-	DiskTypeResourceMediaHdd  DiskTypeResourceMedia = "hdd"
-	DiskTypeResourceMediaNvme DiskTypeResourceMedia = "nvme"
+	DiskTypeMediaSsd  DiskTypeMedia = "ssd"
+	DiskTypeMediaHdd  DiskTypeMedia = "hdd"
+	DiskTypeMediaNvme DiskTypeMedia = "nvme"
 )
 
-// AllValues returns all DiskTypeResourceMedia values.
-func (DiskTypeResourceMedia) AllValues() []DiskTypeResourceMedia {
-	return []DiskTypeResourceMedia{
-		DiskTypeResourceMediaSsd,
-		DiskTypeResourceMediaHdd,
-		DiskTypeResourceMediaNvme,
+// AllValues returns all DiskTypeMedia values.
+func (DiskTypeMedia) AllValues() []DiskTypeMedia {
+	return []DiskTypeMedia{
+		DiskTypeMediaSsd,
+		DiskTypeMediaHdd,
+		DiskTypeMediaNvme,
 	}
 }
 
 // MarshalText implements encoding.TextMarshaler.
-func (s DiskTypeResourceMedia) MarshalText() ([]byte, error) {
+func (s DiskTypeMedia) MarshalText() ([]byte, error) {
 	switch s {
-	case DiskTypeResourceMediaSsd:
+	case DiskTypeMediaSsd:
 		return []byte(s), nil
-	case DiskTypeResourceMediaHdd:
+	case DiskTypeMediaHdd:
 		return []byte(s), nil
-	case DiskTypeResourceMediaNvme:
+	case DiskTypeMediaNvme:
 		return []byte(s), nil
 	default:
 		return nil, errors.Errorf("invalid value: %q", s)
@@ -1215,16 +788,16 @@ func (s DiskTypeResourceMedia) MarshalText() ([]byte, error) {
 }
 
 // UnmarshalText implements encoding.TextUnmarshaler.
-func (s *DiskTypeResourceMedia) UnmarshalText(data []byte) error {
-	switch DiskTypeResourceMedia(data) {
-	case DiskTypeResourceMediaSsd:
-		*s = DiskTypeResourceMediaSsd
+func (s *DiskTypeMedia) UnmarshalText(data []byte) error {
+	switch DiskTypeMedia(data) {
+	case DiskTypeMediaSsd:
+		*s = DiskTypeMediaSsd
 		return nil
-	case DiskTypeResourceMediaHdd:
-		*s = DiskTypeResourceMediaHdd
+	case DiskTypeMediaHdd:
+		*s = DiskTypeMediaHdd
 		return nil
-	case DiskTypeResourceMediaNvme:
-		*s = DiskTypeResourceMediaNvme
+	case DiskTypeMediaNvme:
+		*s = DiskTypeMediaNvme
 		return nil
 	default:
 		return errors.Errorf("invalid value: %q", data)
@@ -1348,347 +921,43 @@ func (s *IdlePolicy) SetRetentionSeconds(val int64) {
 	s.RetentionSeconds = val
 }
 
-// NewNilInt64 returns new NilInt64 with value set to v.
-func NewNilInt64(v int64) NilInt64 {
-	return NilInt64{
-		Value: v,
-	}
-}
-
-// NilInt64 is nullable int64.
-type NilInt64 struct {
-	Value int64
-	Null  bool
-}
-
-// SetTo sets value to v.
-func (o *NilInt64) SetTo(v int64) {
-	o.Null = false
-	o.Value = v
-}
-
-// IsNull returns true if value is Null.
-func (o NilInt64) IsNull() bool { return o.Null }
-
-// SetToNull sets value to null.
-func (o *NilInt64) SetToNull() {
-	o.Null = true
-	var v int64
-	o.Value = v
-}
-
-// Get returns value and boolean that denotes whether value was set.
-func (o NilInt64) Get() (v int64, ok bool) {
-	if o.Null {
-		return v, false
-	}
-	return o.Value, true
-}
-
-// Or returns value if set, or given parameter if does not.
-func (o NilInt64) Or(d int64) int64 {
-	if v, ok := o.Get(); ok {
-		return v
-	}
-	return d
-}
-
-// NewNilString returns new NilString with value set to v.
-func NewNilString(v string) NilString {
-	return NilString{
-		Value: v,
-	}
-}
-
-// NilString is nullable string.
-type NilString struct {
-	Value string
-	Null  bool
-}
-
-// SetTo sets value to v.
-func (o *NilString) SetTo(v string) {
-	o.Null = false
-	o.Value = v
-}
-
-// IsNull returns true if value is Null.
-func (o NilString) IsNull() bool { return o.Null }
-
-// SetToNull sets value to null.
-func (o *NilString) SetToNull() {
-	o.Null = true
-	var v string
-	o.Value = v
-}
-
-// Get returns value and boolean that denotes whether value was set.
-func (o NilString) Get() (v string, ok bool) {
-	if o.Null {
-		return v, false
-	}
-	return o.Value, true
-}
-
-// Or returns value if set, or given parameter if does not.
-func (o NilString) Or(d string) string {
-	if v, ok := o.Get(); ok {
-		return v
-	}
-	return d
-}
-
-// NewNilUUID returns new NilUUID with value set to v.
-func NewNilUUID(v uuid.UUID) NilUUID {
-	return NilUUID{
-		Value: v,
-	}
-}
-
-// NilUUID is nullable uuid.UUID.
-type NilUUID struct {
-	Value uuid.UUID
-	Null  bool
-}
-
-// SetTo sets value to v.
-func (o *NilUUID) SetTo(v uuid.UUID) {
-	o.Null = false
-	o.Value = v
-}
-
-// IsNull returns true if value is Null.
-func (o NilUUID) IsNull() bool { return o.Null }
-
-// SetToNull sets value to null.
-func (o *NilUUID) SetToNull() {
-	o.Null = true
-	var v uuid.UUID
-	o.Value = v
-}
-
-// Get returns value and boolean that denotes whether value was set.
-func (o NilUUID) Get() (v uuid.UUID, ok bool) {
-	if o.Null {
-		return v, false
-	}
-	return o.Value, true
-}
-
-// Or returns value if set, or given parameter if does not.
-func (o NilUUID) Or(d uuid.UUID) uuid.UUID {
-	if v, ok := o.Get(); ok {
-		return v
-	}
-	return d
-}
-
-// Ref: #/components/schemas/OperationLogListResponseBody
-type OperationLogListResponseBody struct {
-	Items      []OperationLogResource `json:"items"`
-	Page       int64                  `json:"page"`
-	PageSize   int64                  `json:"page_size"`
-	TotalCount OptInt64               `json:"total_count"`
-}
-
-// GetItems returns the value of Items.
-func (s *OperationLogListResponseBody) GetItems() []OperationLogResource {
-	return s.Items
+// Pagination metadata for stable numbered pages. total_count is returned only when the operation can
+// determine it without an unbounded scan.
+// Ref: #/components/schemas/OffsetPagination
+type OffsetPagination struct {
+	Page       int64    `json:"page"`
+	PageSize   int64    `json:"page_size"`
+	TotalCount OptInt64 `json:"total_count"`
 }
 
 // GetPage returns the value of Page.
-func (s *OperationLogListResponseBody) GetPage() int64 {
+func (s *OffsetPagination) GetPage() int64 {
 	return s.Page
 }
 
 // GetPageSize returns the value of PageSize.
-func (s *OperationLogListResponseBody) GetPageSize() int64 {
+func (s *OffsetPagination) GetPageSize() int64 {
 	return s.PageSize
 }
 
 // GetTotalCount returns the value of TotalCount.
-func (s *OperationLogListResponseBody) GetTotalCount() OptInt64 {
+func (s *OffsetPagination) GetTotalCount() OptInt64 {
 	return s.TotalCount
 }
 
-// SetItems sets the value of Items.
-func (s *OperationLogListResponseBody) SetItems(val []OperationLogResource) {
-	s.Items = val
-}
-
 // SetPage sets the value of Page.
-func (s *OperationLogListResponseBody) SetPage(val int64) {
+func (s *OffsetPagination) SetPage(val int64) {
 	s.Page = val
 }
 
 // SetPageSize sets the value of PageSize.
-func (s *OperationLogListResponseBody) SetPageSize(val int64) {
+func (s *OffsetPagination) SetPageSize(val int64) {
 	s.PageSize = val
 }
 
 // SetTotalCount sets the value of TotalCount.
-func (s *OperationLogListResponseBody) SetTotalCount(val OptInt64) {
+func (s *OffsetPagination) SetTotalCount(val OptInt64) {
 	s.TotalCount = val
-}
-
-// Ref: #/components/schemas/OperationLogResource
-type OperationLogResource struct {
-	// Name of the operation; matches the operation id of the endpoint.
-	Action string `json:"action"`
-	// The user who initiated the operation. Empty when the platform performed it.
-	Actor NilString `json:"actor"`
-	// The name this user went by at the time of the operation, recorded alongside the operation itself. It
-	// is not refreshed afterwards: the record states who acted then, and a name read today is a statement
-	// about a different moment.
-	//
-	// Null on entries recorded before this field existed, and on entries performed by the platform. An
-	// empty string means the account had no name recorded.
-	ActorName NilString `json:"actor_name"`
-	// True when the operation was performed by the platform.
-	ByPlatform bool      `json:"by_platform"`
-	CreatedAt  time.Time `json:"created_at"`
-	// Brief reason for the failure.
-	Failure NilString `json:"failure"`
-	ID      uuid.UUID `json:"id"`
-	// Path and query parameters of the request. Fields such as passwords are redacted.
-	Payload  OperationLogResourcePayload `json:"payload"`
-	RegionID NilUUID                     `json:"region_id"`
-	// Empty for create operations: the id of the new resource is in the response, not in the request path.
-	SubjectID   string `json:"subject_id"`
-	SubjectType string `json:"subject_type"`
-	Succeeded   bool   `json:"succeeded"`
-}
-
-// GetAction returns the value of Action.
-func (s *OperationLogResource) GetAction() string {
-	return s.Action
-}
-
-// GetActor returns the value of Actor.
-func (s *OperationLogResource) GetActor() NilString {
-	return s.Actor
-}
-
-// GetActorName returns the value of ActorName.
-func (s *OperationLogResource) GetActorName() NilString {
-	return s.ActorName
-}
-
-// GetByPlatform returns the value of ByPlatform.
-func (s *OperationLogResource) GetByPlatform() bool {
-	return s.ByPlatform
-}
-
-// GetCreatedAt returns the value of CreatedAt.
-func (s *OperationLogResource) GetCreatedAt() time.Time {
-	return s.CreatedAt
-}
-
-// GetFailure returns the value of Failure.
-func (s *OperationLogResource) GetFailure() NilString {
-	return s.Failure
-}
-
-// GetID returns the value of ID.
-func (s *OperationLogResource) GetID() uuid.UUID {
-	return s.ID
-}
-
-// GetPayload returns the value of Payload.
-func (s *OperationLogResource) GetPayload() OperationLogResourcePayload {
-	return s.Payload
-}
-
-// GetRegionID returns the value of RegionID.
-func (s *OperationLogResource) GetRegionID() NilUUID {
-	return s.RegionID
-}
-
-// GetSubjectID returns the value of SubjectID.
-func (s *OperationLogResource) GetSubjectID() string {
-	return s.SubjectID
-}
-
-// GetSubjectType returns the value of SubjectType.
-func (s *OperationLogResource) GetSubjectType() string {
-	return s.SubjectType
-}
-
-// GetSucceeded returns the value of Succeeded.
-func (s *OperationLogResource) GetSucceeded() bool {
-	return s.Succeeded
-}
-
-// SetAction sets the value of Action.
-func (s *OperationLogResource) SetAction(val string) {
-	s.Action = val
-}
-
-// SetActor sets the value of Actor.
-func (s *OperationLogResource) SetActor(val NilString) {
-	s.Actor = val
-}
-
-// SetActorName sets the value of ActorName.
-func (s *OperationLogResource) SetActorName(val NilString) {
-	s.ActorName = val
-}
-
-// SetByPlatform sets the value of ByPlatform.
-func (s *OperationLogResource) SetByPlatform(val bool) {
-	s.ByPlatform = val
-}
-
-// SetCreatedAt sets the value of CreatedAt.
-func (s *OperationLogResource) SetCreatedAt(val time.Time) {
-	s.CreatedAt = val
-}
-
-// SetFailure sets the value of Failure.
-func (s *OperationLogResource) SetFailure(val NilString) {
-	s.Failure = val
-}
-
-// SetID sets the value of ID.
-func (s *OperationLogResource) SetID(val uuid.UUID) {
-	s.ID = val
-}
-
-// SetPayload sets the value of Payload.
-func (s *OperationLogResource) SetPayload(val OperationLogResourcePayload) {
-	s.Payload = val
-}
-
-// SetRegionID sets the value of RegionID.
-func (s *OperationLogResource) SetRegionID(val NilUUID) {
-	s.RegionID = val
-}
-
-// SetSubjectID sets the value of SubjectID.
-func (s *OperationLogResource) SetSubjectID(val string) {
-	s.SubjectID = val
-}
-
-// SetSubjectType sets the value of SubjectType.
-func (s *OperationLogResource) SetSubjectType(val string) {
-	s.SubjectType = val
-}
-
-// SetSucceeded sets the value of Succeeded.
-func (s *OperationLogResource) SetSucceeded(val bool) {
-	s.Succeeded = val
-}
-
-// Path and query parameters of the request. Fields such as passwords are redacted.
-type OperationLogResourcePayload map[string]jx.Raw
-
-func (s *OperationLogResourcePayload) init() OperationLogResourcePayload {
-	m := *s
-	if m == nil {
-		m = map[string]jx.Raw{}
-		*s = m
-	}
-	return m
 }
 
 // NewOptBool returns new OptBool with value set to v.
@@ -1869,6 +1138,74 @@ func (o OptInt64) Get() (v int64, ok bool) {
 
 // Or returns value if set, or given parameter if does not.
 func (o OptInt64) Or(d int64) int64 {
+	if v, ok := o.Get(); ok {
+		return v
+	}
+	return d
+}
+
+// NewOptNilDateTime returns new OptNilDateTime with value set to v.
+func NewOptNilDateTime(v time.Time) OptNilDateTime {
+	return OptNilDateTime{
+		Value: v,
+		Set:   true,
+	}
+}
+
+// OptNilDateTime is optional nullable time.Time.
+type OptNilDateTime struct {
+	Value time.Time
+	Set   bool
+	Null  bool
+}
+
+// IsSet returns true if OptNilDateTime was set.
+func (o OptNilDateTime) IsSet() bool { return o.Set }
+
+// Reset unsets value.
+func (o *OptNilDateTime) Reset() {
+	var v time.Time
+	o.Value = v
+	o.Set = false
+	o.Null = false
+}
+
+// SetTo sets value to v.
+func (o *OptNilDateTime) SetTo(v time.Time) {
+	o.Set = true
+	o.Null = false
+	o.Value = v
+}
+
+// IsNull returns true if value is Null.
+func (o OptNilDateTime) IsNull() bool { return o.Null }
+
+// SetToNull sets value to null.
+func (o *OptNilDateTime) SetToNull() {
+	o.Set = true
+	o.Null = true
+	var v time.Time
+	o.Value = v
+}
+
+// IsEmpty returns true if the field was omitted from the payload (not Set and not Null).
+func (o OptNilDateTime) IsEmpty() bool {
+	return !o.Set && !o.Null
+}
+
+// Get returns value and boolean that denotes whether value was set.
+func (o OptNilDateTime) Get() (v time.Time, ok bool) {
+	if o.Null {
+		return v, false
+	}
+	if !o.Set {
+		return v, false
+	}
+	return o.Value, true
+}
+
+// Or returns value if set, or given parameter if does not.
+func (o OptNilDateTime) Or(d time.Time) time.Time {
 	if v, ok := o.Get(); ok {
 		return v
 	}
@@ -2259,87 +1596,19 @@ func (s *ReclamationStateStatus) UnmarshalText(data []byte) error {
 	}
 }
 
-// Ref: #/components/schemas/RenameBackupRequestBody
-type RenameBackupRequestBody struct {
+// Ref: #/components/schemas/RenameRequest
+type RenameRequest struct {
 	Name string `json:"name"`
 }
 
 // GetName returns the value of Name.
-func (s *RenameBackupRequestBody) GetName() string {
+func (s *RenameRequest) GetName() string {
 	return s.Name
 }
 
 // SetName sets the value of Name.
-func (s *RenameBackupRequestBody) SetName(val string) {
+func (s *RenameRequest) SetName(val string) {
 	s.Name = val
-}
-
-// Ref: #/components/schemas/RenameDiskRequestBody
-type RenameDiskRequestBody struct {
-	Name string `json:"name"`
-}
-
-// GetName returns the value of Name.
-func (s *RenameDiskRequestBody) GetName() string {
-	return s.Name
-}
-
-// SetName sets the value of Name.
-func (s *RenameDiskRequestBody) SetName(val string) {
-	s.Name = val
-}
-
-// Ref: #/components/schemas/RenameSnapshotRequestBody
-type RenameSnapshotRequestBody struct {
-	Name string `json:"name"`
-}
-
-// GetName returns the value of Name.
-func (s *RenameSnapshotRequestBody) GetName() string {
-	return s.Name
-}
-
-// SetName sets the value of Name.
-func (s *RenameSnapshotRequestBody) SetName(val string) {
-	s.Name = val
-}
-
-// Ref: #/components/schemas/ResizeDiskRequestBody
-type ResizeDiskRequestBody struct {
-	// Must be larger than the current capacity.
-	SizeGB int64            `json:"size_gb"`
-	Order  OrderOptions     `json:"order"`
-	Price  CatalogReference `json:"price"`
-}
-
-// GetSizeGB returns the value of SizeGB.
-func (s *ResizeDiskRequestBody) GetSizeGB() int64 {
-	return s.SizeGB
-}
-
-// GetOrder returns the value of Order.
-func (s *ResizeDiskRequestBody) GetOrder() OrderOptions {
-	return s.Order
-}
-
-// GetPrice returns the value of Price.
-func (s *ResizeDiskRequestBody) GetPrice() CatalogReference {
-	return s.Price
-}
-
-// SetSizeGB sets the value of SizeGB.
-func (s *ResizeDiskRequestBody) SetSizeGB(val int64) {
-	s.SizeGB = val
-}
-
-// SetOrder sets the value of Order.
-func (s *ResizeDiskRequestBody) SetOrder(val OrderOptions) {
-	s.Order = val
-}
-
-// SetPrice sets the value of Price.
-func (s *ResizeDiskRequestBody) SetPrice(val CatalogReference) {
-	s.Price = val
 }
 
 // A resource identified within its owning service. The project is taken from the containing usage or
@@ -2379,6 +1648,74 @@ func (s *ResourceReference) SetType(val string) {
 // SetID sets the value of ID.
 func (s *ResourceReference) SetID(val uuid.UUID) {
 	s.ID = val
+}
+
+type ResourceType string
+
+const (
+	ResourceTypeDisk ResourceType = "disk"
+)
+
+// AllValues returns all ResourceType values.
+func (ResourceType) AllValues() []ResourceType {
+	return []ResourceType{
+		ResourceTypeDisk,
+	}
+}
+
+// MarshalText implements encoding.TextMarshaler.
+func (s ResourceType) MarshalText() ([]byte, error) {
+	switch s {
+	case ResourceTypeDisk:
+		return []byte(s), nil
+	default:
+		return nil, errors.Errorf("invalid value: %q", s)
+	}
+}
+
+// UnmarshalText implements encoding.TextUnmarshaler.
+func (s *ResourceType) UnmarshalText(data []byte) error {
+	switch ResourceType(data) {
+	case ResourceTypeDisk:
+		*s = ResourceTypeDisk
+		return nil
+	default:
+		return errors.Errorf("invalid value: %q", data)
+	}
+}
+
+type ResourceTypePath string
+
+const (
+	ResourceTypePathDisk ResourceTypePath = "disk"
+)
+
+// AllValues returns all ResourceTypePath values.
+func (ResourceTypePath) AllValues() []ResourceTypePath {
+	return []ResourceTypePath{
+		ResourceTypePathDisk,
+	}
+}
+
+// MarshalText implements encoding.TextMarshaler.
+func (s ResourceTypePath) MarshalText() ([]byte, error) {
+	switch s {
+	case ResourceTypePathDisk:
+		return []byte(s), nil
+	default:
+		return nil, errors.Errorf("invalid value: %q", s)
+	}
+}
+
+// UnmarshalText implements encoding.TextUnmarshaler.
+func (s *ResourceTypePath) UnmarshalText(data []byte) error {
+	switch ResourceTypePath(data) {
+	case ResourceTypePathDisk:
+		*s = ResourceTypePathDisk
+		return nil
+	default:
+		return errors.Errorf("invalid value: %q", data)
+	}
 }
 
 // An authoritative claim held by the resource owner. Reserved, active and releasing claims all prevent
@@ -2605,298 +1942,6 @@ func (s *ResourceUsageState) UnmarshalText(data []byte) error {
 		return nil
 	case ResourceUsageStateReleased:
 		*s = ResourceUsageStateReleased
-		return nil
-	default:
-		return errors.Errorf("invalid value: %q", data)
-	}
-}
-
-// Ref: #/components/schemas/RestoreBackupRequestBody
-type RestoreBackupRequestBody struct {
-	// May differ from the availability zone of the source disk, but must be in the same region. It has to
-	// be on sale — restoring creates a new disk, so a withdrawn type is rejected here as well.
-	DiskTypeID uuid.UUID `json:"disk_type_id"`
-	Name       string    `json:"name"`
-	// Matches the size of the backup when omitted. When given, it must not be smaller than the backup.
-	SizeGB OptInt64         `json:"size_gb"`
-	Order  OrderOptions     `json:"order"`
-	Price  CatalogReference `json:"price"`
-}
-
-// GetDiskTypeID returns the value of DiskTypeID.
-func (s *RestoreBackupRequestBody) GetDiskTypeID() uuid.UUID {
-	return s.DiskTypeID
-}
-
-// GetName returns the value of Name.
-func (s *RestoreBackupRequestBody) GetName() string {
-	return s.Name
-}
-
-// GetSizeGB returns the value of SizeGB.
-func (s *RestoreBackupRequestBody) GetSizeGB() OptInt64 {
-	return s.SizeGB
-}
-
-// GetOrder returns the value of Order.
-func (s *RestoreBackupRequestBody) GetOrder() OrderOptions {
-	return s.Order
-}
-
-// GetPrice returns the value of Price.
-func (s *RestoreBackupRequestBody) GetPrice() CatalogReference {
-	return s.Price
-}
-
-// SetDiskTypeID sets the value of DiskTypeID.
-func (s *RestoreBackupRequestBody) SetDiskTypeID(val uuid.UUID) {
-	s.DiskTypeID = val
-}
-
-// SetName sets the value of Name.
-func (s *RestoreBackupRequestBody) SetName(val string) {
-	s.Name = val
-}
-
-// SetSizeGB sets the value of SizeGB.
-func (s *RestoreBackupRequestBody) SetSizeGB(val OptInt64) {
-	s.SizeGB = val
-}
-
-// SetOrder sets the value of Order.
-func (s *RestoreBackupRequestBody) SetOrder(val OrderOptions) {
-	s.Order = val
-}
-
-// SetPrice sets the value of Price.
-func (s *RestoreBackupRequestBody) SetPrice(val CatalogReference) {
-	s.Price = val
-}
-
-// Ref: #/components/schemas/RevertDiskRequestBody
-type RevertDiskRequestBody struct {
-	// Must be the most recent snapshot of the disk.
-	SnapshotID uuid.UUID `json:"snapshot_id"`
-}
-
-// GetSnapshotID returns the value of SnapshotID.
-func (s *RevertDiskRequestBody) GetSnapshotID() uuid.UUID {
-	return s.SnapshotID
-}
-
-// SetSnapshotID sets the value of SnapshotID.
-func (s *RevertDiskRequestBody) SetSnapshotID(val uuid.UUID) {
-	s.SnapshotID = val
-}
-
-// Ref: #/components/schemas/SnapshotListResponseBody
-type SnapshotListResponseBody struct {
-	Items      []SnapshotResource `json:"items"`
-	Page       int64              `json:"page"`
-	PageSize   int64              `json:"page_size"`
-	TotalCount OptInt64           `json:"total_count"`
-}
-
-// GetItems returns the value of Items.
-func (s *SnapshotListResponseBody) GetItems() []SnapshotResource {
-	return s.Items
-}
-
-// GetPage returns the value of Page.
-func (s *SnapshotListResponseBody) GetPage() int64 {
-	return s.Page
-}
-
-// GetPageSize returns the value of PageSize.
-func (s *SnapshotListResponseBody) GetPageSize() int64 {
-	return s.PageSize
-}
-
-// GetTotalCount returns the value of TotalCount.
-func (s *SnapshotListResponseBody) GetTotalCount() OptInt64 {
-	return s.TotalCount
-}
-
-// SetItems sets the value of Items.
-func (s *SnapshotListResponseBody) SetItems(val []SnapshotResource) {
-	s.Items = val
-}
-
-// SetPage sets the value of Page.
-func (s *SnapshotListResponseBody) SetPage(val int64) {
-	s.Page = val
-}
-
-// SetPageSize sets the value of PageSize.
-func (s *SnapshotListResponseBody) SetPageSize(val int64) {
-	s.PageSize = val
-}
-
-// SetTotalCount sets the value of TotalCount.
-func (s *SnapshotListResponseBody) SetTotalCount(val OptInt64) {
-	s.TotalCount = val
-}
-
-// Ref: #/components/schemas/SnapshotResource
-type SnapshotResource struct {
-	AvailabilityZoneID uuid.UUID `json:"availability_zone_id"`
-	CreatedAt          time.Time `json:"created_at"`
-	DiskID             uuid.UUID `json:"disk_id"`
-	ID                 uuid.UUID `json:"id"`
-	Name               string    `json:"name"`
-	RegionID           uuid.UUID `json:"region_id"`
-	// Capacity of the source disk when the snapshot was created. A disk restored from it cannot be smaller.
-	SizeGB              int64                  `json:"size_gb"`
-	Status              SnapshotResourceStatus `json:"status"`
-	SubscriptionItemIds []uuid.UUID            `json:"subscription_item_ids"`
-}
-
-// GetAvailabilityZoneID returns the value of AvailabilityZoneID.
-func (s *SnapshotResource) GetAvailabilityZoneID() uuid.UUID {
-	return s.AvailabilityZoneID
-}
-
-// GetCreatedAt returns the value of CreatedAt.
-func (s *SnapshotResource) GetCreatedAt() time.Time {
-	return s.CreatedAt
-}
-
-// GetDiskID returns the value of DiskID.
-func (s *SnapshotResource) GetDiskID() uuid.UUID {
-	return s.DiskID
-}
-
-// GetID returns the value of ID.
-func (s *SnapshotResource) GetID() uuid.UUID {
-	return s.ID
-}
-
-// GetName returns the value of Name.
-func (s *SnapshotResource) GetName() string {
-	return s.Name
-}
-
-// GetRegionID returns the value of RegionID.
-func (s *SnapshotResource) GetRegionID() uuid.UUID {
-	return s.RegionID
-}
-
-// GetSizeGB returns the value of SizeGB.
-func (s *SnapshotResource) GetSizeGB() int64 {
-	return s.SizeGB
-}
-
-// GetStatus returns the value of Status.
-func (s *SnapshotResource) GetStatus() SnapshotResourceStatus {
-	return s.Status
-}
-
-// GetSubscriptionItemIds returns the value of SubscriptionItemIds.
-func (s *SnapshotResource) GetSubscriptionItemIds() []uuid.UUID {
-	return s.SubscriptionItemIds
-}
-
-// SetAvailabilityZoneID sets the value of AvailabilityZoneID.
-func (s *SnapshotResource) SetAvailabilityZoneID(val uuid.UUID) {
-	s.AvailabilityZoneID = val
-}
-
-// SetCreatedAt sets the value of CreatedAt.
-func (s *SnapshotResource) SetCreatedAt(val time.Time) {
-	s.CreatedAt = val
-}
-
-// SetDiskID sets the value of DiskID.
-func (s *SnapshotResource) SetDiskID(val uuid.UUID) {
-	s.DiskID = val
-}
-
-// SetID sets the value of ID.
-func (s *SnapshotResource) SetID(val uuid.UUID) {
-	s.ID = val
-}
-
-// SetName sets the value of Name.
-func (s *SnapshotResource) SetName(val string) {
-	s.Name = val
-}
-
-// SetRegionID sets the value of RegionID.
-func (s *SnapshotResource) SetRegionID(val uuid.UUID) {
-	s.RegionID = val
-}
-
-// SetSizeGB sets the value of SizeGB.
-func (s *SnapshotResource) SetSizeGB(val int64) {
-	s.SizeGB = val
-}
-
-// SetStatus sets the value of Status.
-func (s *SnapshotResource) SetStatus(val SnapshotResourceStatus) {
-	s.Status = val
-}
-
-// SetSubscriptionItemIds sets the value of SubscriptionItemIds.
-func (s *SnapshotResource) SetSubscriptionItemIds(val []uuid.UUID) {
-	s.SubscriptionItemIds = val
-}
-
-type SnapshotResourceStatus string
-
-const (
-	SnapshotResourceStatusProvisioning SnapshotResourceStatus = "provisioning"
-	SnapshotResourceStatusAvailable    SnapshotResourceStatus = "available"
-	SnapshotResourceStatusRestoring    SnapshotResourceStatus = "restoring"
-	SnapshotResourceStatusDeleting     SnapshotResourceStatus = "deleting"
-	SnapshotResourceStatusError        SnapshotResourceStatus = "error"
-)
-
-// AllValues returns all SnapshotResourceStatus values.
-func (SnapshotResourceStatus) AllValues() []SnapshotResourceStatus {
-	return []SnapshotResourceStatus{
-		SnapshotResourceStatusProvisioning,
-		SnapshotResourceStatusAvailable,
-		SnapshotResourceStatusRestoring,
-		SnapshotResourceStatusDeleting,
-		SnapshotResourceStatusError,
-	}
-}
-
-// MarshalText implements encoding.TextMarshaler.
-func (s SnapshotResourceStatus) MarshalText() ([]byte, error) {
-	switch s {
-	case SnapshotResourceStatusProvisioning:
-		return []byte(s), nil
-	case SnapshotResourceStatusAvailable:
-		return []byte(s), nil
-	case SnapshotResourceStatusRestoring:
-		return []byte(s), nil
-	case SnapshotResourceStatusDeleting:
-		return []byte(s), nil
-	case SnapshotResourceStatusError:
-		return []byte(s), nil
-	default:
-		return nil, errors.Errorf("invalid value: %q", s)
-	}
-}
-
-// UnmarshalText implements encoding.TextUnmarshaler.
-func (s *SnapshotResourceStatus) UnmarshalText(data []byte) error {
-	switch SnapshotResourceStatus(data) {
-	case SnapshotResourceStatusProvisioning:
-		*s = SnapshotResourceStatusProvisioning
-		return nil
-	case SnapshotResourceStatusAvailable:
-		*s = SnapshotResourceStatusAvailable
-		return nil
-	case SnapshotResourceStatusRestoring:
-		*s = SnapshotResourceStatusRestoring
-		return nil
-	case SnapshotResourceStatusDeleting:
-		*s = SnapshotResourceStatusDeleting
-		return nil
-	case SnapshotResourceStatusError:
-		*s = SnapshotResourceStatusError
 		return nil
 	default:
 		return errors.Errorf("invalid value: %q", data)
