@@ -53,9 +53,9 @@ type Invoker interface {
 	CreatePort(ctx context.Context, request *CreatePortRequestBody) (*PortResource, error)
 	// CreatePrivateNetwork invokes create-private-network operation.
 	//
-	// Starts creation of a network, router and default security group. The returned resource is
-	// `provisioning` until all three are ready. Reuse the same idempotency key after an uncertain
-	// response.
+	// Creates a ready-to-use private network. The response is returned only after the network is ready for
+	// use. If the client loses the response, repeat this request with the same idempotency key to obtain
+	// its final result.
 	//
 	// POST /api/v1/private-networks
 	CreatePrivateNetwork(ctx context.Context, request *CreatePrivateNetworkRequestBody) (*PrivateNetworkResource, error)
@@ -730,9 +730,9 @@ func (c *Client) sendCreatePort(ctx context.Context, request *CreatePortRequestB
 
 // CreatePrivateNetwork invokes create-private-network operation.
 //
-// Starts creation of a network, router and default security group. The returned resource is
-// `provisioning` until all three are ready. Reuse the same idempotency key after an uncertain
-// response.
+// Creates a ready-to-use private network. The response is returned only after the network is ready for
+// use. If the client loses the response, repeat this request with the same idempotency key to obtain
+// its final result.
 //
 // POST /api/v1/private-networks
 func (c *Client) CreatePrivateNetwork(ctx context.Context, request *CreatePrivateNetworkRequestBody) (*PrivateNetworkResource, error) {

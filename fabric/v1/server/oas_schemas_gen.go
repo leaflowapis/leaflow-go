@@ -2299,9 +2299,7 @@ type PrivateNetworkResource struct {
 	ID                 uuid.UUID `json:"id"`
 	Name               string    `json:"name"`
 	RegionID           uuid.UUID `json:"region_id"`
-	// `provisioning` means provider resources are still being created.
-	Status    PrivateNetworkResourceStatus `json:"status"`
-	UpdatedAt time.Time                    `json:"updated_at"`
+	UpdatedAt          time.Time `json:"updated_at"`
 }
 
 // GetCidr returns the value of Cidr.
@@ -2332,11 +2330,6 @@ func (s *PrivateNetworkResource) GetName() string {
 // GetRegionID returns the value of RegionID.
 func (s *PrivateNetworkResource) GetRegionID() uuid.UUID {
 	return s.RegionID
-}
-
-// GetStatus returns the value of Status.
-func (s *PrivateNetworkResource) GetStatus() PrivateNetworkResourceStatus {
-	return s.Status
 }
 
 // GetUpdatedAt returns the value of UpdatedAt.
@@ -2374,63 +2367,9 @@ func (s *PrivateNetworkResource) SetRegionID(val uuid.UUID) {
 	s.RegionID = val
 }
 
-// SetStatus sets the value of Status.
-func (s *PrivateNetworkResource) SetStatus(val PrivateNetworkResourceStatus) {
-	s.Status = val
-}
-
 // SetUpdatedAt sets the value of UpdatedAt.
 func (s *PrivateNetworkResource) SetUpdatedAt(val time.Time) {
 	s.UpdatedAt = val
-}
-
-// `provisioning` means provider resources are still being created.
-type PrivateNetworkResourceStatus string
-
-const (
-	PrivateNetworkResourceStatusProvisioning PrivateNetworkResourceStatus = "provisioning"
-	PrivateNetworkResourceStatusAvailable    PrivateNetworkResourceStatus = "available"
-	PrivateNetworkResourceStatusError        PrivateNetworkResourceStatus = "error"
-)
-
-// AllValues returns all PrivateNetworkResourceStatus values.
-func (PrivateNetworkResourceStatus) AllValues() []PrivateNetworkResourceStatus {
-	return []PrivateNetworkResourceStatus{
-		PrivateNetworkResourceStatusProvisioning,
-		PrivateNetworkResourceStatusAvailable,
-		PrivateNetworkResourceStatusError,
-	}
-}
-
-// MarshalText implements encoding.TextMarshaler.
-func (s PrivateNetworkResourceStatus) MarshalText() ([]byte, error) {
-	switch s {
-	case PrivateNetworkResourceStatusProvisioning:
-		return []byte(s), nil
-	case PrivateNetworkResourceStatusAvailable:
-		return []byte(s), nil
-	case PrivateNetworkResourceStatusError:
-		return []byte(s), nil
-	default:
-		return nil, errors.Errorf("invalid value: %q", s)
-	}
-}
-
-// UnmarshalText implements encoding.TextUnmarshaler.
-func (s *PrivateNetworkResourceStatus) UnmarshalText(data []byte) error {
-	switch PrivateNetworkResourceStatus(data) {
-	case PrivateNetworkResourceStatusProvisioning:
-		*s = PrivateNetworkResourceStatusProvisioning
-		return nil
-	case PrivateNetworkResourceStatusAvailable:
-		*s = PrivateNetworkResourceStatusAvailable
-		return nil
-	case PrivateNetworkResourceStatusError:
-		*s = PrivateNetworkResourceStatusError
-		return nil
-	default:
-		return errors.Errorf("invalid value: %q", data)
-	}
 }
 
 // Ref: #/components/schemas/ReclamationState

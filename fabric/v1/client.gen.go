@@ -94,27 +94,6 @@ func (e IPv6ResponseBodyStatus) Valid() bool {
 	}
 }
 
-// Defines values for PrivateNetworkResourceStatus.
-const (
-	PrivateNetworkResourceStatusAvailable    PrivateNetworkResourceStatus = "available"
-	PrivateNetworkResourceStatusError        PrivateNetworkResourceStatus = "error"
-	PrivateNetworkResourceStatusProvisioning PrivateNetworkResourceStatus = "provisioning"
-)
-
-// Valid indicates whether the value is a known member of the PrivateNetworkResourceStatus enum.
-func (e PrivateNetworkResourceStatus) Valid() bool {
-	switch e {
-	case PrivateNetworkResourceStatusAvailable:
-		return true
-	case PrivateNetworkResourceStatusError:
-		return true
-	case PrivateNetworkResourceStatusProvisioning:
-		return true
-	default:
-		return false
-	}
-}
-
 // Defines values for SecurityRuleResourceDirection.
 const (
 	SecurityRuleResourceDirectionEgress  SecurityRuleResourceDirection = "egress"
@@ -414,14 +393,8 @@ type PrivateNetworkResource struct {
 	Id                 openapi_types.UUID `json:"id"`
 	Name               string             `json:"name"`
 	RegionId           openapi_types.UUID `json:"region_id"`
-
-	// Status `provisioning` means provider resources are still being created.
-	Status    PrivateNetworkResourceStatus `json:"status"`
-	UpdatedAt time.Time                    `json:"updated_at"`
+	UpdatedAt          time.Time          `json:"updated_at"`
 }
-
-// PrivateNetworkResourceStatus `provisioning` means provider resources are still being created.
-type PrivateNetworkResourceStatus string
 
 // ReclamationState defines model for ReclamationState.
 type ReclamationState = externalRef0.ReclamationState
@@ -869,7 +842,7 @@ type ClientInterface interface {
 
 	// CreatePrivateNetworkWithBody Create a private network
 	//
-	// Starts creation of a network, router and default security group. The returned resource is `provisioning` until all three are ready. Reuse the same idempotency key after an uncertain response.
+	// Creates a ready-to-use private network. The response is returned only after the network is ready for use. If the client loses the response, repeat this request with the same idempotency key to obtain its final result.
 	//
 	// Takes any type of body and a specified content type.
 	//
@@ -878,7 +851,7 @@ type ClientInterface interface {
 
 	// CreatePrivateNetwork Create a private network
 	//
-	// Starts creation of a network, router and default security group. The returned resource is `provisioning` until all three are ready. Reuse the same idempotency key after an uncertain response.
+	// Creates a ready-to-use private network. The response is returned only after the network is ready for use. If the client loses the response, repeat this request with the same idempotency key to obtain its final result.
 	//
 	// Takes a body of the `application/json` content type.
 	//
@@ -1445,7 +1418,7 @@ func (c *Client) ListPrivateNetworks(ctx context.Context, params *ListPrivateNet
 
 // CreatePrivateNetworkWithBody Create a private network
 //
-// Starts creation of a network, router and default security group. The returned resource is `provisioning` until all three are ready. Reuse the same idempotency key after an uncertain response.
+// Creates a ready-to-use private network. The response is returned only after the network is ready for use. If the client loses the response, repeat this request with the same idempotency key to obtain its final result.
 //
 // Takes any type of body and a specified content type.
 //
@@ -1464,7 +1437,7 @@ func (c *Client) CreatePrivateNetworkWithBody(ctx context.Context, contentType s
 
 // CreatePrivateNetwork Create a private network
 //
-// Starts creation of a network, router and default security group. The returned resource is `provisioning` until all three are ready. Reuse the same idempotency key after an uncertain response.
+// Creates a ready-to-use private network. The response is returned only after the network is ready for use. If the client loses the response, repeat this request with the same idempotency key to obtain its final result.
 //
 // Takes a body of the `application/json` content type.
 //
@@ -4256,7 +4229,7 @@ type ClientWithResponsesInterface interface {
 
 	// CreatePrivateNetworkWithBodyWithResponse Create a private network
 	//
-	// Starts creation of a network, router and default security group. The returned resource is `provisioning` until all three are ready. Reuse the same idempotency key after an uncertain response.
+	// Creates a ready-to-use private network. The response is returned only after the network is ready for use. If the client loses the response, repeat this request with the same idempotency key to obtain its final result.
 	//
 	// Takes any type of body and a specified content type, and returns a wrapper object for the known response body format(s).
 	//
@@ -4265,7 +4238,7 @@ type ClientWithResponsesInterface interface {
 
 	// CreatePrivateNetworkWithResponse Create a private network
 	//
-	// Starts creation of a network, router and default security group. The returned resource is `provisioning` until all three are ready. Reuse the same idempotency key after an uncertain response.
+	// Creates a ready-to-use private network. The response is returned only after the network is ready for use. If the client loses the response, repeat this request with the same idempotency key to obtain its final result.
 	//
 	// Takes a body of the `application/json` content type, and returns a wrapper object for the known response body format(s).
 	//
@@ -6726,7 +6699,7 @@ func (c *ClientWithResponses) ListPrivateNetworksWithResponse(ctx context.Contex
 
 // CreatePrivateNetworkWithBodyWithResponse Create a private network
 //
-// Starts creation of a network, router and default security group. The returned resource is `provisioning` until all three are ready. Reuse the same idempotency key after an uncertain response.
+// Creates a ready-to-use private network. The response is returned only after the network is ready for use. If the client loses the response, repeat this request with the same idempotency key to obtain its final result.
 //
 // Takes any type of body and a specified content type, and returns a wrapper object for the known response body format(s).
 //
@@ -6741,7 +6714,7 @@ func (c *ClientWithResponses) CreatePrivateNetworkWithBodyWithResponse(ctx conte
 
 // CreatePrivateNetworkWithResponse Create a private network
 //
-// Starts creation of a network, router and default security group. The returned resource is `provisioning` until all three are ready. Reuse the same idempotency key after an uncertain response.
+// Creates a ready-to-use private network. The response is returned only after the network is ready for use. If the client loses the response, repeat this request with the same idempotency key to obtain its final result.
 //
 // Takes a body of the `application/json` content type, and returns a wrapper object for the known response body format(s).
 //
