@@ -977,15 +977,20 @@ func (s *CreatePrivateNetworkRequestBody) encodeFields(e *jx.Encoder) {
 		e.Str(s.Name)
 	}
 	{
+		e.FieldStart("idempotency_key")
+		e.Str(s.IdempotencyKey)
+	}
+	{
 		e.FieldStart("region_id")
 		json.EncodeUUID(e, s.RegionID)
 	}
 }
 
-var jsonFieldsNameOfCreatePrivateNetworkRequestBody = [3]string{
+var jsonFieldsNameOfCreatePrivateNetworkRequestBody = [4]string{
 	0: "cidr",
 	1: "name",
-	2: "region_id",
+	2: "idempotency_key",
+	3: "region_id",
 }
 
 // Decode decodes CreatePrivateNetworkRequestBody from json.
@@ -1021,8 +1026,20 @@ func (s *CreatePrivateNetworkRequestBody) Decode(d *jx.Decoder) error {
 			}(); err != nil {
 				return errors.Wrap(err, "decode field \"name\"")
 			}
-		case "region_id":
+		case "idempotency_key":
 			requiredBitSet[0] |= 1 << 2
+			if err := func() error {
+				v, err := d.Str()
+				s.IdempotencyKey = string(v)
+				if err != nil {
+					return err
+				}
+				return nil
+			}(); err != nil {
+				return errors.Wrap(err, "decode field \"idempotency_key\"")
+			}
+		case "region_id":
+			requiredBitSet[0] |= 1 << 3
 			if err := func() error {
 				v, err := json.DecodeUUID(d)
 				s.RegionID = v
@@ -1043,7 +1060,7 @@ func (s *CreatePrivateNetworkRequestBody) Decode(d *jx.Decoder) error {
 	// Validate required fields.
 	var failures []validate.FieldError
 	for i, mask := range [1]uint8{
-		0b00000111,
+		0b00001111,
 	} {
 		if result := (requiredBitSet[i] & mask) ^ mask; result != 0 {
 			// Mask only required fields and check equality to mask using XOR.
@@ -4963,6 +4980,8 @@ func (s *PrivateNetworkResourceStatus) Decode(d *jx.Decoder) error {
 	}
 	// Try to use constant string.
 	switch PrivateNetworkResourceStatus(v) {
+	case PrivateNetworkResourceStatusProvisioning:
+		*s = PrivateNetworkResourceStatusProvisioning
 	case PrivateNetworkResourceStatusAvailable:
 		*s = PrivateNetworkResourceStatusAvailable
 	case PrivateNetworkResourceStatusError:

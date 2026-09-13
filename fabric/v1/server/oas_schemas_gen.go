@@ -418,9 +418,11 @@ func (s *CreatePortRequestBody) SetSubnetID(val uuid.UUID) {
 // Ref: #/components/schemas/CreatePrivateNetworkRequestBody
 type CreatePrivateNetworkRequestBody struct {
 	// Must be an RFC 1918 private CIDR with a prefix length between /8 and /24, for example `10.0.0.0/16`.
-	Cidr     string    `json:"cidr"`
-	Name     string    `json:"name"`
-	RegionID uuid.UUID `json:"region_id"`
+	Cidr string `json:"cidr"`
+	Name string `json:"name"`
+	// Reuse this key only when retrying the same private network request.
+	IdempotencyKey string    `json:"idempotency_key"`
+	RegionID       uuid.UUID `json:"region_id"`
 }
 
 // GetCidr returns the value of Cidr.
@@ -431,6 +433,11 @@ func (s *CreatePrivateNetworkRequestBody) GetCidr() string {
 // GetName returns the value of Name.
 func (s *CreatePrivateNetworkRequestBody) GetName() string {
 	return s.Name
+}
+
+// GetIdempotencyKey returns the value of IdempotencyKey.
+func (s *CreatePrivateNetworkRequestBody) GetIdempotencyKey() string {
+	return s.IdempotencyKey
 }
 
 // GetRegionID returns the value of RegionID.
@@ -446,6 +453,11 @@ func (s *CreatePrivateNetworkRequestBody) SetCidr(val string) {
 // SetName sets the value of Name.
 func (s *CreatePrivateNetworkRequestBody) SetName(val string) {
 	s.Name = val
+}
+
+// SetIdempotencyKey sets the value of IdempotencyKey.
+func (s *CreatePrivateNetworkRequestBody) SetIdempotencyKey(val string) {
+	s.IdempotencyKey = val
 }
 
 // SetRegionID sets the value of RegionID.
@@ -2281,14 +2293,15 @@ func (s *PrivateNetworkListResponseBody) SetTotalCount(val OptInt64) {
 
 // Ref: #/components/schemas/PrivateNetworkResource
 type PrivateNetworkResource struct {
-	Cidr               string                       `json:"cidr"`
-	CreatedAt          time.Time                    `json:"created_at"`
-	HasInternetGateway bool                         `json:"has_internet_gateway"`
-	ID                 uuid.UUID                    `json:"id"`
-	Name               string                       `json:"name"`
-	RegionID           uuid.UUID                    `json:"region_id"`
-	Status             PrivateNetworkResourceStatus `json:"status"`
-	UpdatedAt          time.Time                    `json:"updated_at"`
+	Cidr               string    `json:"cidr"`
+	CreatedAt          time.Time `json:"created_at"`
+	HasInternetGateway bool      `json:"has_internet_gateway"`
+	ID                 uuid.UUID `json:"id"`
+	Name               string    `json:"name"`
+	RegionID           uuid.UUID `json:"region_id"`
+	// `provisioning` means provider resources are still being created.
+	Status    PrivateNetworkResourceStatus `json:"status"`
+	UpdatedAt time.Time                    `json:"updated_at"`
 }
 
 // GetCidr returns the value of Cidr.
@@ -2371,16 +2384,19 @@ func (s *PrivateNetworkResource) SetUpdatedAt(val time.Time) {
 	s.UpdatedAt = val
 }
 
+// `provisioning` means provider resources are still being created.
 type PrivateNetworkResourceStatus string
 
 const (
-	PrivateNetworkResourceStatusAvailable PrivateNetworkResourceStatus = "available"
-	PrivateNetworkResourceStatusError     PrivateNetworkResourceStatus = "error"
+	PrivateNetworkResourceStatusProvisioning PrivateNetworkResourceStatus = "provisioning"
+	PrivateNetworkResourceStatusAvailable    PrivateNetworkResourceStatus = "available"
+	PrivateNetworkResourceStatusError        PrivateNetworkResourceStatus = "error"
 )
 
 // AllValues returns all PrivateNetworkResourceStatus values.
 func (PrivateNetworkResourceStatus) AllValues() []PrivateNetworkResourceStatus {
 	return []PrivateNetworkResourceStatus{
+		PrivateNetworkResourceStatusProvisioning,
 		PrivateNetworkResourceStatusAvailable,
 		PrivateNetworkResourceStatusError,
 	}
@@ -2389,6 +2405,8 @@ func (PrivateNetworkResourceStatus) AllValues() []PrivateNetworkResourceStatus {
 // MarshalText implements encoding.TextMarshaler.
 func (s PrivateNetworkResourceStatus) MarshalText() ([]byte, error) {
 	switch s {
+	case PrivateNetworkResourceStatusProvisioning:
+		return []byte(s), nil
 	case PrivateNetworkResourceStatusAvailable:
 		return []byte(s), nil
 	case PrivateNetworkResourceStatusError:
@@ -2401,6 +2419,9 @@ func (s PrivateNetworkResourceStatus) MarshalText() ([]byte, error) {
 // UnmarshalText implements encoding.TextUnmarshaler.
 func (s *PrivateNetworkResourceStatus) UnmarshalText(data []byte) error {
 	switch PrivateNetworkResourceStatus(data) {
+	case PrivateNetworkResourceStatusProvisioning:
+		*s = PrivateNetworkResourceStatusProvisioning
+		return nil
 	case PrivateNetworkResourceStatusAvailable:
 		*s = PrivateNetworkResourceStatusAvailable
 		return nil

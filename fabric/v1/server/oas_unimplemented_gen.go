@@ -46,8 +46,9 @@ func (UnimplementedHandler) CreatePort(ctx context.Context, req *CreatePortReque
 
 // CreatePrivateNetwork implements create-private-network operation.
 //
-// Creates a network, a router and a default security group in one call. The default security group
-// denies all inbound traffic and permits all outbound traffic.
+// Starts creation of a network, router and default security group. The returned resource is
+// `provisioning` until all three are ready. Reuse the same idempotency key after an uncertain
+// response.
 //
 // POST /api/v1/private-networks
 func (UnimplementedHandler) CreatePrivateNetwork(ctx context.Context, req *CreatePrivateNetworkRequestBody) (r *PrivateNetworkResource, _ error) {

@@ -96,8 +96,9 @@ func (e IPv6ResponseBodyStatus) Valid() bool {
 
 // Defines values for PrivateNetworkResourceStatus.
 const (
-	PrivateNetworkResourceStatusAvailable PrivateNetworkResourceStatus = "available"
-	PrivateNetworkResourceStatusError     PrivateNetworkResourceStatus = "error"
+	PrivateNetworkResourceStatusAvailable    PrivateNetworkResourceStatus = "available"
+	PrivateNetworkResourceStatusError        PrivateNetworkResourceStatus = "error"
+	PrivateNetworkResourceStatusProvisioning PrivateNetworkResourceStatus = "provisioning"
 )
 
 // Valid indicates whether the value is a known member of the PrivateNetworkResourceStatus enum.
@@ -106,6 +107,8 @@ func (e PrivateNetworkResourceStatus) Valid() bool {
 	case PrivateNetworkResourceStatusAvailable:
 		return true
 	case PrivateNetworkResourceStatusError:
+		return true
+	case PrivateNetworkResourceStatusProvisioning:
 		return true
 	default:
 		return false
@@ -214,9 +217,12 @@ type CreatePortRequestBody struct {
 // CreatePrivateNetworkRequestBody defines model for CreatePrivateNetworkRequestBody.
 type CreatePrivateNetworkRequestBody struct {
 	// Cidr Must be an RFC 1918 private CIDR with a prefix length between /8 and /24, for example `10.0.0.0/16`
-	Cidr     string             `json:"cidr"`
-	Name     string             `json:"name"`
-	RegionId openapi_types.UUID `json:"region_id"`
+	Cidr string `json:"cidr"`
+
+	// IdempotencyKey Reuse this key only when retrying the same private network request.
+	IdempotencyKey string             `json:"idempotency_key"`
+	Name           string             `json:"name"`
+	RegionId       openapi_types.UUID `json:"region_id"`
 }
 
 // CreateRouteRequestBody defines model for CreateRouteRequestBody.
@@ -402,17 +408,19 @@ type PrivateNetworkListResponseBody struct {
 
 // PrivateNetworkResource defines model for PrivateNetworkResource.
 type PrivateNetworkResource struct {
-	Cidr               string                       `json:"cidr"`
-	CreatedAt          time.Time                    `json:"created_at"`
-	HasInternetGateway bool                         `json:"has_internet_gateway"`
-	Id                 openapi_types.UUID           `json:"id"`
-	Name               string                       `json:"name"`
-	RegionId           openapi_types.UUID           `json:"region_id"`
-	Status             PrivateNetworkResourceStatus `json:"status"`
-	UpdatedAt          time.Time                    `json:"updated_at"`
+	Cidr               string             `json:"cidr"`
+	CreatedAt          time.Time          `json:"created_at"`
+	HasInternetGateway bool               `json:"has_internet_gateway"`
+	Id                 openapi_types.UUID `json:"id"`
+	Name               string             `json:"name"`
+	RegionId           openapi_types.UUID `json:"region_id"`
+
+	// Status `provisioning` means provider resources are still being created.
+	Status    PrivateNetworkResourceStatus `json:"status"`
+	UpdatedAt time.Time                    `json:"updated_at"`
 }
 
-// PrivateNetworkResourceStatus defines model for PrivateNetworkResource.Status.
+// PrivateNetworkResourceStatus `provisioning` means provider resources are still being created.
 type PrivateNetworkResourceStatus string
 
 // ReclamationState defines model for ReclamationState.
@@ -861,7 +869,7 @@ type ClientInterface interface {
 
 	// CreatePrivateNetworkWithBody Create a private network
 	//
-	// Creates a network, a router and a default security group in one call. The default security group denies all inbound traffic and permits all outbound traffic.
+	// Starts creation of a network, router and default security group. The returned resource is `provisioning` until all three are ready. Reuse the same idempotency key after an uncertain response.
 	//
 	// Takes any type of body and a specified content type.
 	//
@@ -870,7 +878,7 @@ type ClientInterface interface {
 
 	// CreatePrivateNetwork Create a private network
 	//
-	// Creates a network, a router and a default security group in one call. The default security group denies all inbound traffic and permits all outbound traffic.
+	// Starts creation of a network, router and default security group. The returned resource is `provisioning` until all three are ready. Reuse the same idempotency key after an uncertain response.
 	//
 	// Takes a body of the `application/json` content type.
 	//
@@ -1437,7 +1445,7 @@ func (c *Client) ListPrivateNetworks(ctx context.Context, params *ListPrivateNet
 
 // CreatePrivateNetworkWithBody Create a private network
 //
-// Creates a network, a router and a default security group in one call. The default security group denies all inbound traffic and permits all outbound traffic.
+// Starts creation of a network, router and default security group. The returned resource is `provisioning` until all three are ready. Reuse the same idempotency key after an uncertain response.
 //
 // Takes any type of body and a specified content type.
 //
@@ -1456,7 +1464,7 @@ func (c *Client) CreatePrivateNetworkWithBody(ctx context.Context, contentType s
 
 // CreatePrivateNetwork Create a private network
 //
-// Creates a network, a router and a default security group in one call. The default security group denies all inbound traffic and permits all outbound traffic.
+// Starts creation of a network, router and default security group. The returned resource is `provisioning` until all three are ready. Reuse the same idempotency key after an uncertain response.
 //
 // Takes a body of the `application/json` content type.
 //
@@ -4248,7 +4256,7 @@ type ClientWithResponsesInterface interface {
 
 	// CreatePrivateNetworkWithBodyWithResponse Create a private network
 	//
-	// Creates a network, a router and a default security group in one call. The default security group denies all inbound traffic and permits all outbound traffic.
+	// Starts creation of a network, router and default security group. The returned resource is `provisioning` until all three are ready. Reuse the same idempotency key after an uncertain response.
 	//
 	// Takes any type of body and a specified content type, and returns a wrapper object for the known response body format(s).
 	//
@@ -4257,7 +4265,7 @@ type ClientWithResponsesInterface interface {
 
 	// CreatePrivateNetworkWithResponse Create a private network
 	//
-	// Creates a network, a router and a default security group in one call. The default security group denies all inbound traffic and permits all outbound traffic.
+	// Starts creation of a network, router and default security group. The returned resource is `provisioning` until all three are ready. Reuse the same idempotency key after an uncertain response.
 	//
 	// Takes a body of the `application/json` content type, and returns a wrapper object for the known response body format(s).
 	//
@@ -6718,7 +6726,7 @@ func (c *ClientWithResponses) ListPrivateNetworksWithResponse(ctx context.Contex
 
 // CreatePrivateNetworkWithBodyWithResponse Create a private network
 //
-// Creates a network, a router and a default security group in one call. The default security group denies all inbound traffic and permits all outbound traffic.
+// Starts creation of a network, router and default security group. The returned resource is `provisioning` until all three are ready. Reuse the same idempotency key after an uncertain response.
 //
 // Takes any type of body and a specified content type, and returns a wrapper object for the known response body format(s).
 //
@@ -6733,7 +6741,7 @@ func (c *ClientWithResponses) CreatePrivateNetworkWithBodyWithResponse(ctx conte
 
 // CreatePrivateNetworkWithResponse Create a private network
 //
-// Creates a network, a router and a default security group in one call. The default security group denies all inbound traffic and permits all outbound traffic.
+// Starts creation of a network, router and default security group. The returned resource is `provisioning` until all three are ready. Reuse the same idempotency key after an uncertain response.
 //
 // Takes a body of the `application/json` content type, and returns a wrapper object for the known response body format(s).
 //

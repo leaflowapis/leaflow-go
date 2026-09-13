@@ -426,6 +426,29 @@ func (s *CreatePrivateNetworkRequestBody) Validate() error {
 			Error: err,
 		})
 	}
+	if err := func() error {
+		if err := (validate.String{
+			MinLength:     8,
+			MinLengthSet:  true,
+			MaxLength:     128,
+			MaxLengthSet:  true,
+			Email:         false,
+			Hostname:      false,
+			Regex:         nil,
+			MinNumeric:    0,
+			MinNumericSet: false,
+			MaxNumeric:    0,
+			MaxNumericSet: false,
+		}).Validate(string(s.IdempotencyKey)); err != nil {
+			return errors.Wrap(err, "string")
+		}
+		return nil
+	}(); err != nil {
+		failures = append(failures, validate.FieldError{
+			Name:  "idempotency_key",
+			Error: err,
+		})
+	}
 	if len(failures) > 0 {
 		return &validate.Error{Fields: failures}
 	}
@@ -1576,6 +1599,8 @@ func (s *PrivateNetworkResource) Validate() error {
 
 func (s PrivateNetworkResourceStatus) Validate() error {
 	switch s {
+	case "provisioning":
+		return nil
 	case "available":
 		return nil
 	case "error":
