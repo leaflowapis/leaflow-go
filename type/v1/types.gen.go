@@ -258,7 +258,7 @@ type ResourceUsage struct {
 	CreatedAt   time.Time          `json:"created_at"`
 	Generation  int64              `json:"generation"`
 	Id          openapi_types.UUID `json:"id"`
-	OperationId openapi_types.UUID `json:"operation_id"`
+	OperationId string             `json:"operation_id"`
 	ProjectId   openapi_types.UUID `json:"project_id"`
 	Purpose     string             `json:"purpose"`
 	ReleasedAt  *time.Time         `json:"released_at,omitempty"`
