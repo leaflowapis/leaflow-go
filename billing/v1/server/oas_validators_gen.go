@@ -3798,6 +3798,8 @@ func (s TopUpStatus) Validate() error {
 	switch s {
 	case "pending":
 		return nil
+	case "requires_action":
+		return nil
 	case "succeeded":
 		return nil
 	case "failed":

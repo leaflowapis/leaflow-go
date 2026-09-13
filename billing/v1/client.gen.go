@@ -852,9 +852,10 @@ func (e SubscriptionItemStatus) Valid() bool {
 
 // Defines values for TopUpStatus.
 const (
-	TopUpStatusFailed    TopUpStatus = "failed"
-	TopUpStatusPending   TopUpStatus = "pending"
-	TopUpStatusSucceeded TopUpStatus = "succeeded"
+	TopUpStatusFailed         TopUpStatus = "failed"
+	TopUpStatusPending        TopUpStatus = "pending"
+	TopUpStatusRequiresAction TopUpStatus = "requires_action"
+	TopUpStatusSucceeded      TopUpStatus = "succeeded"
 )
 
 // Valid indicates whether the value is a known member of the TopUpStatus enum.
@@ -863,6 +864,8 @@ func (e TopUpStatus) Valid() bool {
 	case TopUpStatusFailed:
 		return true
 	case TopUpStatusPending:
+		return true
+	case TopUpStatusRequiresAction:
 		return true
 	case TopUpStatusSucceeded:
 		return true
@@ -2004,7 +2007,10 @@ type PaymentResult struct {
 	BalanceApplied *Money `json:"balance_applied,omitempty"`
 
 	// CheckoutUrl Present with `requires_action`.
-	CheckoutUrl   *string             `json:"checkout_url,omitempty"`
+	CheckoutUrl *string `json:"checkout_url,omitempty"`
+
+	// ClientSecret Provider client secret for completing this same payment attempt in the browser.
+	ClientSecret  *string             `json:"client_secret,omitempty"`
 	Currency      string              `json:"currency"`
 	FailureReason *string             `json:"failure_reason,omitempty"`
 	InvoiceId     *openapi_types.UUID `json:"invoice_id,omitempty"`
@@ -2013,6 +2019,9 @@ type PaymentResult struct {
 	// PaymentAttemptId This attempt. The same identifier comes back while it is still in flight, which is
 	// how a repeated call is told apart from a genuine second payment.
 	PaymentAttemptId openapi_types.UUID `json:"payment_attempt_id"`
+
+	// PublishableKey Provider publishable key used with client_secret.
+	PublishableKey *string `json:"publishable_key,omitempty"`
 
 	// Retriable Whether paying again is worth attempting. False for a refusal that will keep
 	// happening — a closed account, an amount over a limit — so that a client does not
@@ -2529,9 +2538,12 @@ type TopUp struct {
 	BillingAccountId int64 `json:"billing_account_id"`
 
 	// CheckoutUrl Where the payer completes the payment. Absent once it has completed.
-	CheckoutUrl *string   `json:"checkout_url,omitempty"`
-	CreatedAt   time.Time `json:"created_at"`
-	Currency    string    `json:"currency"`
+	CheckoutUrl *string `json:"checkout_url,omitempty"`
+
+	// ClientSecret Provider client secret for completing this same payment attempt in the browser.
+	ClientSecret *string   `json:"client_secret,omitempty"`
+	CreatedAt    time.Time `json:"created_at"`
+	Currency     string    `json:"currency"`
 
 	// FailureReason Why it did not go through. Present with `failed`.
 	FailureReason *string            `json:"failure_reason,omitempty"`
@@ -2547,6 +2559,9 @@ type TopUp struct {
 
 	// Provider Which payment provider collected it.
 	Provider *string `json:"provider,omitempty"`
+
+	// PublishableKey Provider publishable key used with client_secret.
+	PublishableKey *string `json:"publishable_key,omitempty"`
 
 	// RemainingAmount How much of this top-up has not been spent yet. This is the part that can still be
 	// returned to where it was paid from.

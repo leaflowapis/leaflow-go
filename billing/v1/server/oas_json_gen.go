@@ -12560,6 +12560,18 @@ func (s *PaymentResult) encodeFields(e *jx.Encoder) {
 		}
 	}
 	{
+		if s.ClientSecret.Set {
+			e.FieldStart("client_secret")
+			s.ClientSecret.Encode(e)
+		}
+	}
+	{
+		if s.PublishableKey.Set {
+			e.FieldStart("publishable_key")
+			s.PublishableKey.Encode(e)
+		}
+	}
+	{
 		if s.Retriable.Set {
 			e.FieldStart("retriable")
 			s.Retriable.Encode(e)
@@ -12591,7 +12603,7 @@ func (s *PaymentResult) encodeFields(e *jx.Encoder) {
 	}
 }
 
-var jsonFieldsNameOfPaymentResult = [12]string{
+var jsonFieldsNameOfPaymentResult = [14]string{
 	0:  "payment_attempt_id",
 	1:  "status",
 	2:  "amount_paid",
@@ -12599,11 +12611,13 @@ var jsonFieldsNameOfPaymentResult = [12]string{
 	4:  "currency",
 	5:  "balance_applied",
 	6:  "checkout_url",
-	7:  "retriable",
-	8:  "retry_after",
-	9:  "invoice_id",
-	10: "order_id",
-	11: "failure_reason",
+	7:  "client_secret",
+	8:  "publishable_key",
+	9:  "retriable",
+	10: "retry_after",
+	11: "invoice_id",
+	12: "order_id",
+	13: "failure_reason",
 }
 
 // Decode decodes PaymentResult from json.
@@ -12688,6 +12702,26 @@ func (s *PaymentResult) Decode(d *jx.Decoder) error {
 				return nil
 			}(); err != nil {
 				return errors.Wrap(err, "decode field \"checkout_url\"")
+			}
+		case "client_secret":
+			if err := func() error {
+				s.ClientSecret.Reset()
+				if err := s.ClientSecret.Decode(d); err != nil {
+					return err
+				}
+				return nil
+			}(); err != nil {
+				return errors.Wrap(err, "decode field \"client_secret\"")
+			}
+		case "publishable_key":
+			if err := func() error {
+				s.PublishableKey.Reset()
+				if err := s.PublishableKey.Decode(d); err != nil {
+					return err
+				}
+				return nil
+			}(); err != nil {
+				return errors.Wrap(err, "decode field \"publishable_key\"")
 			}
 		case "retriable":
 			if err := func() error {
@@ -17611,6 +17645,18 @@ func (s *TopUp) encodeFields(e *jx.Encoder) {
 		}
 	}
 	{
+		if s.ClientSecret.Set {
+			e.FieldStart("client_secret")
+			s.ClientSecret.Encode(e)
+		}
+	}
+	{
+		if s.PublishableKey.Set {
+			e.FieldStart("publishable_key")
+			s.PublishableKey.Encode(e)
+		}
+	}
+	{
 		e.FieldStart("created_at")
 		json.EncodeDateTime(e, s.CreatedAt)
 	}
@@ -17622,7 +17668,7 @@ func (s *TopUp) encodeFields(e *jx.Encoder) {
 	}
 }
 
-var jsonFieldsNameOfTopUp = [13]string{
+var jsonFieldsNameOfTopUp = [15]string{
 	0:  "id",
 	1:  "billing_account_id",
 	2:  "amount",
@@ -17634,8 +17680,10 @@ var jsonFieldsNameOfTopUp = [13]string{
 	8:  "presentment_amount",
 	9:  "failure_reason",
 	10: "checkout_url",
-	11: "created_at",
-	12: "settled_at",
+	11: "client_secret",
+	12: "publishable_key",
+	13: "created_at",
+	14: "settled_at",
 }
 
 // Decode decodes TopUp from json.
@@ -17763,8 +17811,28 @@ func (s *TopUp) Decode(d *jx.Decoder) error {
 			}(); err != nil {
 				return errors.Wrap(err, "decode field \"checkout_url\"")
 			}
+		case "client_secret":
+			if err := func() error {
+				s.ClientSecret.Reset()
+				if err := s.ClientSecret.Decode(d); err != nil {
+					return err
+				}
+				return nil
+			}(); err != nil {
+				return errors.Wrap(err, "decode field \"client_secret\"")
+			}
+		case "publishable_key":
+			if err := func() error {
+				s.PublishableKey.Reset()
+				if err := s.PublishableKey.Decode(d); err != nil {
+					return err
+				}
+				return nil
+			}(); err != nil {
+				return errors.Wrap(err, "decode field \"publishable_key\"")
+			}
 		case "created_at":
-			requiredBitSet[1] |= 1 << 3
+			requiredBitSet[1] |= 1 << 5
 			if err := func() error {
 				v, err := json.DecodeDateTime(d)
 				s.CreatedAt = v
@@ -17796,7 +17864,7 @@ func (s *TopUp) Decode(d *jx.Decoder) error {
 	var failures []validate.FieldError
 	for i, mask := range [2]uint8{
 		0b00101111,
-		0b00001000,
+		0b00100000,
 	} {
 		if result := (requiredBitSet[i] & mask) ^ mask; result != 0 {
 			// Mask only required fields and check equality to mask using XOR.
@@ -18145,6 +18213,8 @@ func (s *TopUpStatus) Decode(d *jx.Decoder) error {
 	switch TopUpStatus(v) {
 	case TopUpStatusPending:
 		*s = TopUpStatusPending
+	case TopUpStatusRequiresAction:
+		*s = TopUpStatusRequiresAction
 	case TopUpStatusSucceeded:
 		*s = TopUpStatusSucceeded
 	case TopUpStatusFailed:

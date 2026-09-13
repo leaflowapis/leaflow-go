@@ -7889,6 +7889,10 @@ type PaymentResult struct {
 	BalanceApplied OptMoney `json:"balance_applied"`
 	// Present with `requires_action`.
 	CheckoutURL OptString `json:"checkout_url"`
+	// Provider client secret for completing this same payment attempt in the browser.
+	ClientSecret OptString `json:"client_secret"`
+	// Provider publishable key used with client_secret.
+	PublishableKey OptString `json:"publishable_key"`
 	// Whether paying again is worth attempting. False for a refusal that will keep happening — a closed
 	// account, an amount over a limit — so that a client does not retry in a loop.
 	Retriable OptBool `json:"retriable"`
@@ -7932,6 +7936,16 @@ func (s *PaymentResult) GetBalanceApplied() OptMoney {
 // GetCheckoutURL returns the value of CheckoutURL.
 func (s *PaymentResult) GetCheckoutURL() OptString {
 	return s.CheckoutURL
+}
+
+// GetClientSecret returns the value of ClientSecret.
+func (s *PaymentResult) GetClientSecret() OptString {
+	return s.ClientSecret
+}
+
+// GetPublishableKey returns the value of PublishableKey.
+func (s *PaymentResult) GetPublishableKey() OptString {
+	return s.PublishableKey
 }
 
 // GetRetriable returns the value of Retriable.
@@ -7992,6 +8006,16 @@ func (s *PaymentResult) SetBalanceApplied(val OptMoney) {
 // SetCheckoutURL sets the value of CheckoutURL.
 func (s *PaymentResult) SetCheckoutURL(val OptString) {
 	s.CheckoutURL = val
+}
+
+// SetClientSecret sets the value of ClientSecret.
+func (s *PaymentResult) SetClientSecret(val OptString) {
+	s.ClientSecret = val
+}
+
+// SetPublishableKey sets the value of PublishableKey.
+func (s *PaymentResult) SetPublishableKey(val OptString) {
+	s.PublishableKey = val
 }
 
 // SetRetriable sets the value of Retriable.
@@ -10403,7 +10427,11 @@ type TopUp struct {
 	FailureReason OptString `json:"failure_reason"`
 	// Where the payer completes the payment. Absent once it has completed.
 	CheckoutURL OptString `json:"checkout_url"`
-	CreatedAt   time.Time `json:"created_at"`
+	// Provider client secret for completing this same payment attempt in the browser.
+	ClientSecret OptString `json:"client_secret"`
+	// Provider publishable key used with client_secret.
+	PublishableKey OptString `json:"publishable_key"`
+	CreatedAt      time.Time `json:"created_at"`
 	// When the funds arrived. Later than `created_at` — by days for a bank transfer — so reconciling
 	// against a statement uses this rather than the moment it was started. Absent until the payment
 	// completes.
@@ -10463,6 +10491,16 @@ func (s *TopUp) GetFailureReason() OptString {
 // GetCheckoutURL returns the value of CheckoutURL.
 func (s *TopUp) GetCheckoutURL() OptString {
 	return s.CheckoutURL
+}
+
+// GetClientSecret returns the value of ClientSecret.
+func (s *TopUp) GetClientSecret() OptString {
+	return s.ClientSecret
+}
+
+// GetPublishableKey returns the value of PublishableKey.
+func (s *TopUp) GetPublishableKey() OptString {
+	return s.PublishableKey
 }
 
 // GetCreatedAt returns the value of CreatedAt.
@@ -10528,6 +10566,16 @@ func (s *TopUp) SetFailureReason(val OptString) {
 // SetCheckoutURL sets the value of CheckoutURL.
 func (s *TopUp) SetCheckoutURL(val OptString) {
 	s.CheckoutURL = val
+}
+
+// SetClientSecret sets the value of ClientSecret.
+func (s *TopUp) SetClientSecret(val OptString) {
+	s.ClientSecret = val
+}
+
+// SetPublishableKey sets the value of PublishableKey.
+func (s *TopUp) SetPublishableKey(val OptString) {
+	s.PublishableKey = val
 }
 
 // SetCreatedAt sets the value of CreatedAt.
@@ -10642,15 +10690,17 @@ func (s *TopUpList) SetTotalCount(val OptInt64) {
 type TopUpStatus string
 
 const (
-	TopUpStatusPending   TopUpStatus = "pending"
-	TopUpStatusSucceeded TopUpStatus = "succeeded"
-	TopUpStatusFailed    TopUpStatus = "failed"
+	TopUpStatusPending        TopUpStatus = "pending"
+	TopUpStatusRequiresAction TopUpStatus = "requires_action"
+	TopUpStatusSucceeded      TopUpStatus = "succeeded"
+	TopUpStatusFailed         TopUpStatus = "failed"
 )
 
 // AllValues returns all TopUpStatus values.
 func (TopUpStatus) AllValues() []TopUpStatus {
 	return []TopUpStatus{
 		TopUpStatusPending,
+		TopUpStatusRequiresAction,
 		TopUpStatusSucceeded,
 		TopUpStatusFailed,
 	}
@@ -10660,6 +10710,8 @@ func (TopUpStatus) AllValues() []TopUpStatus {
 func (s TopUpStatus) MarshalText() ([]byte, error) {
 	switch s {
 	case TopUpStatusPending:
+		return []byte(s), nil
+	case TopUpStatusRequiresAction:
 		return []byte(s), nil
 	case TopUpStatusSucceeded:
 		return []byte(s), nil
@@ -10675,6 +10727,9 @@ func (s *TopUpStatus) UnmarshalText(data []byte) error {
 	switch TopUpStatus(data) {
 	case TopUpStatusPending:
 		*s = TopUpStatusPending
+		return nil
+	case TopUpStatusRequiresAction:
+		*s = TopUpStatusRequiresAction
 		return nil
 	case TopUpStatusSucceeded:
 		*s = TopUpStatusSucceeded
