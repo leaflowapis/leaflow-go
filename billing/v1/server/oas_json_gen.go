@@ -11492,6 +11492,12 @@ func (s *Order) Encode(e *jx.Encoder) {
 // encodeFields encodes fields.
 func (s *Order) encodeFields(e *jx.Encoder) {
 	{
+		if s.FulfillmentStartedAt.Set {
+			e.FieldStart("fulfillment_started_at")
+			s.FulfillmentStartedAt.Encode(e, json.EncodeDateTime)
+		}
+	}
+	{
 		if s.TaxAmount.Set {
 			e.FieldStart("tax_amount")
 			s.TaxAmount.Encode(e)
@@ -11593,25 +11599,26 @@ func (s *Order) encodeFields(e *jx.Encoder) {
 	}
 }
 
-var jsonFieldsNameOfOrder = [18]string{
-	0:  "tax_amount",
-	1:  "tax_included_amount",
-	2:  "id",
-	3:  "project_id",
-	4:  "billing_account_id",
-	5:  "currency",
-	6:  "type",
-	7:  "state",
-	8:  "gross_amount",
-	9:  "discount_amount",
-	10: "amount",
-	11: "amount_due",
-	12: "refunded_amount",
-	13: "change_effective",
-	14: "refundable_amount",
-	15: "reservation_expires_at",
-	16: "created_at",
-	17: "items",
+var jsonFieldsNameOfOrder = [19]string{
+	0:  "fulfillment_started_at",
+	1:  "tax_amount",
+	2:  "tax_included_amount",
+	3:  "id",
+	4:  "project_id",
+	5:  "billing_account_id",
+	6:  "currency",
+	7:  "type",
+	8:  "state",
+	9:  "gross_amount",
+	10: "discount_amount",
+	11: "amount",
+	12: "amount_due",
+	13: "refunded_amount",
+	14: "change_effective",
+	15: "refundable_amount",
+	16: "reservation_expires_at",
+	17: "created_at",
+	18: "items",
 }
 
 // Decode decodes Order from json.
@@ -11623,6 +11630,16 @@ func (s *Order) Decode(d *jx.Decoder) error {
 
 	if err := d.ObjBytes(func(d *jx.Decoder, k []byte) error {
 		switch string(k) {
+		case "fulfillment_started_at":
+			if err := func() error {
+				s.FulfillmentStartedAt.Reset()
+				if err := s.FulfillmentStartedAt.Decode(d, json.DecodeDateTime); err != nil {
+					return err
+				}
+				return nil
+			}(); err != nil {
+				return errors.Wrap(err, "decode field \"fulfillment_started_at\"")
+			}
 		case "tax_amount":
 			if err := func() error {
 				s.TaxAmount.Reset()
@@ -11644,7 +11661,7 @@ func (s *Order) Decode(d *jx.Decoder) error {
 				return errors.Wrap(err, "decode field \"tax_included_amount\"")
 			}
 		case "id":
-			requiredBitSet[0] |= 1 << 2
+			requiredBitSet[0] |= 1 << 3
 			if err := func() error {
 				v, err := json.DecodeUUID(d)
 				s.ID = v
@@ -11676,7 +11693,7 @@ func (s *Order) Decode(d *jx.Decoder) error {
 				return errors.Wrap(err, "decode field \"billing_account_id\"")
 			}
 		case "currency":
-			requiredBitSet[0] |= 1 << 5
+			requiredBitSet[0] |= 1 << 6
 			if err := func() error {
 				v, err := d.Str()
 				s.Currency = string(v)
@@ -11688,7 +11705,7 @@ func (s *Order) Decode(d *jx.Decoder) error {
 				return errors.Wrap(err, "decode field \"currency\"")
 			}
 		case "type":
-			requiredBitSet[0] |= 1 << 6
+			requiredBitSet[0] |= 1 << 7
 			if err := func() error {
 				if err := s.Type.Decode(d); err != nil {
 					return err
@@ -11698,7 +11715,7 @@ func (s *Order) Decode(d *jx.Decoder) error {
 				return errors.Wrap(err, "decode field \"type\"")
 			}
 		case "state":
-			requiredBitSet[0] |= 1 << 7
+			requiredBitSet[1] |= 1 << 0
 			if err := func() error {
 				if err := s.State.Decode(d); err != nil {
 					return err
@@ -11728,7 +11745,7 @@ func (s *Order) Decode(d *jx.Decoder) error {
 				return errors.Wrap(err, "decode field \"discount_amount\"")
 			}
 		case "amount":
-			requiredBitSet[1] |= 1 << 2
+			requiredBitSet[1] |= 1 << 3
 			if err := func() error {
 				if err := s.Amount.Decode(d); err != nil {
 					return err
@@ -11788,7 +11805,7 @@ func (s *Order) Decode(d *jx.Decoder) error {
 				return errors.Wrap(err, "decode field \"reservation_expires_at\"")
 			}
 		case "created_at":
-			requiredBitSet[2] |= 1 << 0
+			requiredBitSet[2] |= 1 << 1
 			if err := func() error {
 				v, err := json.DecodeDateTime(d)
 				s.CreatedAt = v
@@ -11826,9 +11843,9 @@ func (s *Order) Decode(d *jx.Decoder) error {
 	// Validate required fields.
 	var failures []validate.FieldError
 	for i, mask := range [3]uint8{
-		0b11100100,
-		0b00000100,
-		0b00000001,
+		0b11001000,
+		0b00001001,
+		0b00000010,
 	} {
 		if result := (requiredBitSet[i] & mask) ^ mask; result != 0 {
 			// Mask only required fields and check equality to mask using XOR.

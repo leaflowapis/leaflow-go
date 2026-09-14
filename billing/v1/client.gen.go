@@ -2106,6 +2106,9 @@ type Order struct {
 	// DiscountAmount A decimal string, in the currency stated alongside it.
 	DiscountAmount *Money `json:"discount_amount,omitempty"`
 
+	// FulfillmentStartedAt When fulfillment began. Funds and sellable quota remain reserved until success or confirmed failure; this order can no longer be canceled.
+	FulfillmentStartedAt *time.Time `json:"fulfillment_started_at,omitempty"`
+
 	// GrossAmount A decimal string, in the currency stated alongside it.
 	GrossAmount *Money             `json:"gross_amount,omitempty"`
 	Id          openapi_types.UUID `json:"id"`
@@ -2127,8 +2130,8 @@ type Order struct {
 	// RefundedAmount How much of `refundable_amount` has already gone back.
 	RefundedAmount *Money `json:"refunded_amount,omitempty"`
 
-	// ReservationExpiresAt When the funds and any stock held for this order are released. After this it can no
-	// longer be paid and has to be placed again. Absent once the order is settled.
+	// ReservationExpiresAt The deadline to pay and begin fulfillment. Absent after fulfillment starts or the order
+	// ends. Once fulfillment starts, its reservations remain held until success or confirmed failure.
 	ReservationExpiresAt *time.Time `json:"reservation_expires_at,omitempty"`
 	State                OrderState `json:"state"`
 

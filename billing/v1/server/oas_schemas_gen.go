@@ -7479,6 +7479,9 @@ func (o OptUsageChargeDimensions) Or(d UsageChargeDimensions) UsageChargeDimensi
 
 // Ref: #/components/schemas/Order
 type Order struct {
+	// When fulfillment began. Funds and sellable quota remain reserved until success or confirmed failure;
+	// this order can no longer be canceled.
+	FulfillmentStartedAt OptNilDateTime `json:"fulfillment_started_at"`
 	// Total tax after discounts, including any tax already included in the price.
 	TaxAmount OptString `json:"tax_amount"`
 	// The part of tax_amount already included in gross_amount; it is not charged again.
@@ -7509,13 +7512,18 @@ type Order struct {
 	//
 	// Always "0" on a `period_end` change: nothing is left of the period at its end.
 	RefundableAmount OptMoney `json:"refundable_amount"`
-	// When the funds and any stock held for this order are released. After this it can no longer be paid
-	// and has to be placed again. Absent once the order is settled.
+	// The deadline to pay and begin fulfillment. Absent after fulfillment starts or the order ends. Once
+	// fulfillment starts, its reservations remain held until success or confirmed failure.
 	ReservationExpiresAt OptNilDateTime `json:"reservation_expires_at"`
 	CreatedAt            time.Time      `json:"created_at"`
 	// What was bought. Present on a single order and on every order in a list, so a list can be rendered
 	// without a further request per row.
 	Items []OrderItem `json:"items"`
+}
+
+// GetFulfillmentStartedAt returns the value of FulfillmentStartedAt.
+func (s *Order) GetFulfillmentStartedAt() OptNilDateTime {
+	return s.FulfillmentStartedAt
 }
 
 // GetTaxAmount returns the value of TaxAmount.
@@ -7606,6 +7614,11 @@ func (s *Order) GetCreatedAt() time.Time {
 // GetItems returns the value of Items.
 func (s *Order) GetItems() []OrderItem {
 	return s.Items
+}
+
+// SetFulfillmentStartedAt sets the value of FulfillmentStartedAt.
+func (s *Order) SetFulfillmentStartedAt(val OptNilDateTime) {
+	s.FulfillmentStartedAt = val
 }
 
 // SetTaxAmount sets the value of TaxAmount.
