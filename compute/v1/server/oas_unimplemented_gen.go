@@ -760,13 +760,11 @@ func (UnimplementedHandler) RebuildInstance(ctx context.Context, req *RebuildIns
 
 // ReleaseFloatingIP implements release-floating-ip operation.
 //
-// A released address enters a cooldown period before it is allocated again, so that DNS records and
-// allow-lists still pointing at it do not break immediately. The same address therefore cannot be
-// re-allocated for some time after release. Proceed with care.
+// Releases the floating IP after unbinding it. Completion is reported by the returned task.
 //
 // DELETE /api/v1/floating-ips/{floatingIpId}
-func (UnimplementedHandler) ReleaseFloatingIP(ctx context.Context, params ReleaseFloatingIPParams) error {
-	return ht.ErrNotImplemented
+func (UnimplementedHandler) ReleaseFloatingIP(ctx context.Context, params ReleaseFloatingIPParams) (r *Task, _ error) {
+	return r, ht.ErrNotImplemented
 }
 
 // RenameBackup implements rename-backup operation.

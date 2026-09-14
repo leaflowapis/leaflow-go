@@ -14302,9 +14302,7 @@ func (s *Server) handleRebuildInstanceRequest(args [1]string, argsEscaped bool, 
 
 // handleReleaseFloatingIPRequest handles release-floating-ip operation.
 //
-// A released address enters a cooldown period before it is allocated again, so that DNS records and
-// allow-lists still pointing at it do not break immediately. The same address therefore cannot be
-// re-allocated for some time after release. Proceed with care.
+// Releases the floating IP after unbinding it. Completion is reported by the returned task.
 //
 // DELETE /api/v1/floating-ips/{floatingIpId}
 func (s *Server) handleReleaseFloatingIPRequest(args [1]string, argsEscaped bool, w http.ResponseWriter, r *http.Request) {
@@ -14437,7 +14435,7 @@ func (s *Server) handleReleaseFloatingIPRequest(args [1]string, argsEscaped bool
 
 	var rawBody []byte
 
-	var response *ReleaseFloatingIPNoContent
+	var response *Task
 	if m := s.cfg.Middleware; m != nil {
 		mreq := middleware.Request{
 			Context:          ctx,
@@ -14462,7 +14460,7 @@ func (s *Server) handleReleaseFloatingIPRequest(args [1]string, argsEscaped bool
 		type (
 			Request  = struct{}
 			Params   = ReleaseFloatingIPParams
-			Response = *ReleaseFloatingIPNoContent
+			Response = *Task
 		)
 		response, err = middleware.HookMiddleware[
 			Request,
@@ -14473,12 +14471,12 @@ func (s *Server) handleReleaseFloatingIPRequest(args [1]string, argsEscaped bool
 			mreq,
 			unpackReleaseFloatingIPParams,
 			func(ctx context.Context, request Request, params Params) (response Response, err error) {
-				err = s.h.ReleaseFloatingIP(ctx, params)
+				response, err = s.h.ReleaseFloatingIP(ctx, params)
 				return response, err
 			},
 		)
 	} else {
-		err = s.h.ReleaseFloatingIP(ctx, params)
+		response, err = s.h.ReleaseFloatingIP(ctx, params)
 	}
 	if err != nil {
 		if errRes, ok := errors.Into[*ErrorStatusCode](err); ok {

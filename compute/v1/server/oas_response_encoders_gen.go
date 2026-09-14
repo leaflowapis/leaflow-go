@@ -878,8 +878,15 @@ func encodeRebuildInstanceResponse(response *RebuildInstanceResponseBody, w http
 	return nil
 }
 
-func encodeReleaseFloatingIPResponse(response *ReleaseFloatingIPNoContent, w http.ResponseWriter, span trace.Span) error {
-	w.WriteHeader(204)
+func encodeReleaseFloatingIPResponse(response *Task, w http.ResponseWriter, span trace.Span) error {
+	w.Header().Set("Content-Type", "application/json; charset=utf-8")
+	w.WriteHeader(202)
+
+	e := new(jx.Encoder)
+	response.Encode(e)
+	if _, err := e.WriteTo(w); err != nil {
+		return errors.Wrap(err, "write")
+	}
 
 	return nil
 }

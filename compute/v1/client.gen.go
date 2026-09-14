@@ -184,24 +184,6 @@ func (e DiskResourceAccessState) Valid() bool {
 	}
 }
 
-// Defines values for DiskResourceChargeType.
-const (
-	Postpaid DiskResourceChargeType = "postpaid"
-	Prepaid  DiskResourceChargeType = "prepaid"
-)
-
-// Valid indicates whether the value is a known member of the DiskResourceChargeType enum.
-func (e DiskResourceChargeType) Valid() bool {
-	switch e {
-	case Postpaid:
-		return true
-	case Prepaid:
-		return true
-	default:
-		return false
-	}
-}
-
 // Defines values for DiskResourceStatus.
 const (
 	DiskResourceStatusAttaching    DiskResourceStatus = "attaching"
@@ -343,6 +325,33 @@ func (e FloatingIPResourceStatus) Valid() bool {
 	case FloatingIPResourceStatusPending:
 		return true
 	case FloatingIPResourceStatusUnknown:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for IPv4BindingState.
+const (
+	IPv4BindingStateBinding   IPv4BindingState = "binding"
+	IPv4BindingStateBound     IPv4BindingState = "bound"
+	IPv4BindingStateReleased  IPv4BindingState = "released"
+	IPv4BindingStateUnbinding IPv4BindingState = "unbinding"
+	IPv4BindingStateUnknown   IPv4BindingState = "unknown"
+)
+
+// Valid indicates whether the value is a known member of the IPv4BindingState enum.
+func (e IPv4BindingState) Valid() bool {
+	switch e {
+	case IPv4BindingStateBinding:
+		return true
+	case IPv4BindingStateBound:
+		return true
+	case IPv4BindingStateReleased:
+		return true
+	case IPv4BindingStateUnbinding:
+		return true
+	case IPv4BindingStateUnknown:
 		return true
 	default:
 		return false
@@ -601,6 +610,33 @@ func (e PortAttachmentState) Valid() bool {
 	}
 }
 
+// Defines values for PortResourceStatus.
+const (
+	PortResourceStatusAvailable PortResourceStatus = "available"
+	PortResourceStatusDeleting  PortResourceStatus = "deleting"
+	PortResourceStatusError     PortResourceStatus = "error"
+	PortResourceStatusPending   PortResourceStatus = "pending"
+	PortResourceStatusUnknown   PortResourceStatus = "unknown"
+)
+
+// Valid indicates whether the value is a known member of the PortResourceStatus enum.
+func (e PortResourceStatus) Valid() bool {
+	switch e {
+	case PortResourceStatusAvailable:
+		return true
+	case PortResourceStatusDeleting:
+		return true
+	case PortResourceStatusError:
+		return true
+	case PortResourceStatusPending:
+		return true
+	case PortResourceStatusUnknown:
+		return true
+	default:
+		return false
+	}
+}
+
 // Defines values for PrivateImageResourceAccessState.
 const (
 	PrivateImageResourceAccessStateEnabled     PrivateImageResourceAccessState = "enabled"
@@ -839,25 +875,27 @@ type BackupListResponseBody struct {
 
 // BackupResource defines model for BackupResource.
 type BackupResource struct {
-	AccessState *BackupResourceAccessState `json:"access_state,omitempty"`
-
-	// AvailabilityZoneId Availability zone of the source disk. A restore may target another zone in the same region
-	AvailabilityZoneId openapi_types.UUID  `json:"availability_zone_id"`
-	CreatedAt          time.Time           `json:"created_at"`
-	Id                 openapi_types.UUID  `json:"id"`
-	Name               string              `json:"name"`
-	OrderId            *openapi_types.UUID `json:"order_id,omitempty"`
-	PriceId            *openapi_types.UUID `json:"price_id,omitempty"`
-	RegionId           openapi_types.UUID  `json:"region_id"`
+	AccessState *BackupResourceAccessState `json:"access_state"`
+	CreatedAt   time.Time                  `json:"created_at"`
+	Generation  int64                      `json:"generation"`
+	Id          openapi_types.UUID         `json:"id"`
+	Name        string                     `json:"name"`
+	ObservedAt  *time.Time                 `json:"observed_at"`
+	OrderId     *openapi_types.UUID        `json:"order_id"`
+	PriceId     *openapi_types.UUID        `json:"price_id"`
+	RegionId    openapi_types.UUID         `json:"region_id"`
 
 	// SizeGb Capacity of the source disk when the backup was created. A restored disk cannot be smaller than this
 	SizeGb int64 `json:"size_gb"`
 
+	// SourceAvailabilityZoneId Availability zone of the source disk. A restore may target another zone in the same region
+	SourceAvailabilityZoneId openapi_types.UUID `json:"source_availability_zone_id"`
+
 	// SourceDiskId The disk this backup was taken from. The backup remains usable after that disk is deleted
 	SourceDiskId       openapi_types.UUID   `json:"source_disk_id"`
 	Status             BackupResourceStatus `json:"status"`
-	SubscriptionItemId *openapi_types.UUID  `json:"subscription_item_id,omitempty"`
-	Task               *Task                `json:"task,omitempty"`
+	SubscriptionItemId *openapi_types.UUID  `json:"subscription_item_id"`
+	Task               *Task                `json:"task"`
 }
 
 // BackupResourceAccessState defines model for BackupResource.AccessState.
@@ -1028,6 +1066,7 @@ type DiskAttachment struct {
 	AttachedAt         *time.Time          `json:"attached_at"`
 	DeleteWithInstance bool                `json:"delete_with_instance"`
 	DetachedAt         *time.Time          `json:"detached_at"`
+	Device             *string             `json:"device"`
 	DiskId             openapi_types.UUID  `json:"disk_id"`
 	Id                 openapi_types.UUID  `json:"id"`
 	InstanceId         openapi_types.UUID  `json:"instance_id"`
@@ -1057,23 +1096,15 @@ type DiskListResponseBody struct {
 
 // DiskResource defines model for DiskResource.
 type DiskResource struct {
-	AccessState *DiskResourceAccessState `json:"access_state,omitempty"`
+	AccessState *DiskResourceAccessState `json:"access_state"`
 	Attachment  *DiskAttachment          `json:"attachment,omitempty"`
 
 	// AvailabilityZoneId Availability zone the disk actually resides in. An instance must be in the same zone to attach it
 	AvailabilityZoneId openapi_types.UUID `json:"availability_zone_id"`
-
-	// ChargeType How this disk is paid for. `postpaid` is billed by the hour for as long as it exists;
-	// `prepaid` was bought outright for a term.
-	//
-	// **Not the term.** How long it was bought for belongs to the order, not to the disk:
-	// renewing can change it, and a machine bought for a year and then renewed for a month is
-	// still a prepaid machine. Ask billing for the term and the expiry — they live there, and
-	// they are the only two values a renewal moves.
-	ChargeType DiskResourceChargeType `json:"charge_type"`
-	CreatedAt  time.Time              `json:"created_at"`
-	DiskTypeId openapi_types.UUID     `json:"disk_type_id"`
-	Id         openapi_types.UUID     `json:"id"`
+	CreatedAt          time.Time          `json:"created_at"`
+	DiskTypeId         openapi_types.UUID `json:"disk_type_id"`
+	Generation         int64              `json:"generation"`
+	Id                 openapi_types.UUID `json:"id"`
 
 	// Iops IOPS this disk is allowed. Null when its type is not rate-limited.
 	//
@@ -1082,13 +1113,14 @@ type DiskResource struct {
 	// the new figure would not take effect until it was attached again.
 	Iops               *int64              `json:"iops"`
 	Name               string              `json:"name"`
-	OrderId            *openapi_types.UUID `json:"order_id,omitempty"`
-	PriceId            *openapi_types.UUID `json:"price_id,omitempty"`
+	ObservedAt         *time.Time          `json:"observed_at"`
+	OrderId            *openapi_types.UUID `json:"order_id"`
+	PriceId            *openapi_types.UUID `json:"price_id"`
 	RegionId           openapi_types.UUID  `json:"region_id"`
 	SizeGb             int64               `json:"size_gb"`
 	Status             DiskResourceStatus  `json:"status"`
-	SubscriptionItemId *openapi_types.UUID `json:"subscription_item_id,omitempty"`
-	Task               *Task               `json:"task,omitempty"`
+	SubscriptionItemId *openapi_types.UUID `json:"subscription_item_id"`
+	Task               *Task               `json:"task"`
 
 	// ThroughputBytesPerSec Throughput this disk is allowed, in bytes per second. Null when its type is not rate-limited
 	ThroughputBytesPerSec *int64 `json:"throughput_bytes_per_sec"`
@@ -1096,15 +1128,6 @@ type DiskResource struct {
 
 // DiskResourceAccessState defines model for DiskResource.AccessState.
 type DiskResourceAccessState string
-
-// DiskResourceChargeType How this disk is paid for. `postpaid` is billed by the hour for as long as it exists;
-// `prepaid` was bought outright for a term.
-//
-// **Not the term.** How long it was bought for belongs to the order, not to the disk:
-// renewing can change it, and a machine bought for a year and then renewed for a month is
-// still a prepaid machine. Ask billing for the term and the expiry — they live there, and
-// they are the only two values a renewal moves.
-type DiskResourceChargeType string
 
 // DiskResourceStatus defines model for DiskResource.Status.
 type DiskResourceStatus string
@@ -1116,8 +1139,9 @@ type DiskTypeListResponseBody struct {
 
 // DiskTypeResource defines model for DiskTypeResource.
 type DiskTypeResource struct {
-	AvailabilityZoneId openapi_types.UUID `json:"availability_zone_id"`
-	Id                 openapi_types.UUID `json:"id"`
+	AvailabilityZoneId openapi_types.UUID  `json:"availability_zone_id"`
+	BackupPlanId       *openapi_types.UUID `json:"backup_plan_id"`
+	Id                 openapi_types.UUID  `json:"id"`
 
 	// IopsAtMaxSize IOPS a disk of `max_size_gb` gets. Null when this type is not rate-limited
 	IopsAtMaxSize *int64 `json:"iops_at_max_size"`
@@ -1127,54 +1151,19 @@ type DiskTypeResource struct {
 	// Performance grows with capacity, so this and `iops_at_max_size` are the two ends of the
 	// range. The exact figure for the size actually bought appears on the disk itself once it
 	// exists.
-	IopsAtMinSize *int64                `json:"iops_at_min_size"`
-	LookupKey     *string               `json:"lookup_key,omitempty"`
-	MaxSizeGb     int64                 `json:"max_size_gb"`
-	Media         DiskTypeResourceMedia `json:"media"`
-	MinSizeGb     int64                 `json:"min_size_gb"`
-	Name          string                `json:"name"`
-	PlanId        *openapi_types.UUID   `json:"plan_id,omitempty"`
-
-	// PrepaidPrices What buying this type outright costs, per term. Empty means this type is only sold by the
-	// hour.
-	//
-	// **The amount is per GiB for the whole term**, not the price of one disk: a disk's size is
-	// chosen by the customer, so the total is this figure times the size. That differs from an
-	// instance type, where the same field is the price of one machine — the unit follows what
-	// the product is sold by, and the order is priced the same way.
-	//
-	// Advisory, like `sold_out`: it is read when the list is built. The order is what fixes the
-	// price, and it refuses rather than falling back to hourly if the term is not sold.
-	PrepaidPrices []PrepaidPrice      `json:"prepaid_prices,omitempty"`
-	ProductId     *openapi_types.UUID `json:"product_id,omitempty"`
-	RegionId      openapi_types.UUID  `json:"region_id"`
-
-	// Remaining How much capacity is left, **in GiB**. Absent when this type is not limited at all.
-	//
-	// Unlike an instance type, where this is a count of machines, here it is an amount of
-	// storage — and it is the number that bounds the size a customer may ask for. A picker that
-	// offers sizes above it produces orders that are refused after the customer has chosen
-	// everything else.
-	//
-	// Absent is not zero and not "unknown": a type with no limit simply has no number to show.
-	// Reporting it as a number would need a sentinel, and any sentinel eventually gets compared
-	// against a real size.
-	Remaining *int64 `json:"remaining,omitempty"`
-
-	// SoldOut Whether any capacity is left in this type's pool.
-	//
-	// The same shape as on an instance type, but it answers less here: a disk is sold by the
-	// GiB, so "not sold out" does not mean the size being asked for fits. `remaining` is the
-	// field that decides that, and this one only says whether the pool is empty outright.
-	//
-	// It reflects a limit set by operations, not what the storage backend physically has —
-	// raising the limit does not create capacity, and a type that is not sold out can still fail
-	// to create if the backend is full.
-	//
-	// Advisory: it is read when the list is built, and capacity can be taken between that read
-	// and the order. The order is what actually refuses.
-	SoldOut bool  `json:"sold_out"`
-	StepGb  int64 `json:"step_gb"`
+	IopsAtMinSize      *int64                `json:"iops_at_min_size"`
+	LookupKey          string                `json:"lookup_key"`
+	MaxSizeGb          int64                 `json:"max_size_gb"`
+	Media              DiskTypeResourceMedia `json:"media"`
+	MinSizeGb          int64                 `json:"min_size_gb"`
+	Name               string                `json:"name"`
+	NameTranslations   map[string]string     `json:"name_translations"`
+	PlanId             *openapi_types.UUID   `json:"plan_id"`
+	PrivateImagePlanId *openapi_types.UUID   `json:"private_image_plan_id"`
+	ProductId          *openapi_types.UUID   `json:"product_id"`
+	RegionId           openapi_types.UUID    `json:"region_id"`
+	SnapshotPlanId     *openapi_types.UUID   `json:"snapshot_plan_id"`
+	StepGb             int64                 `json:"step_gb"`
 
 	// ThroughputAtMaxSize Throughput a disk of `max_size_gb` gets, in bytes per second. Null when this type is not rate-limited
 	ThroughputAtMaxSize *int64 `json:"throughput_at_max_size"`
@@ -1200,24 +1189,24 @@ type FloatingIPListResponseBody struct {
 
 // FloatingIPResource defines model for FloatingIPResource.
 type FloatingIPResource struct {
-	AccessState                 *FloatingIPResourceAccessState          `json:"access_state,omitempty"`
+	AccessState                 *FloatingIPResourceAccessState          `json:"access_state"`
 	Address                     string                                  `json:"address"`
-	AttachedFixedIp             *string                                 `json:"attached_fixed_ip"`
-	AttachedPortId              *string                                 `json:"attached_port_id"`
-	BandwidthAccessState        *FloatingIPResourceBandwidthAccessState `json:"bandwidth_access_state,omitempty"`
+	BandwidthAccessState        *FloatingIPResourceBandwidthAccessState `json:"bandwidth_access_state"`
 	BandwidthMbps               *int64                                  `json:"bandwidth_mbps"`
-	BandwidthOrderId            *openapi_types.UUID                     `json:"bandwidth_order_id,omitempty"`
-	BandwidthPriceId            *openapi_types.UUID                     `json:"bandwidth_price_id,omitempty"`
-	BandwidthSubscriptionItemId *openapi_types.UUID                     `json:"bandwidth_subscription_item_id,omitempty"`
+	BandwidthOrderId            *openapi_types.UUID                     `json:"bandwidth_order_id"`
+	BandwidthPriceId            *openapi_types.UUID                     `json:"bandwidth_price_id"`
+	BandwidthSubscriptionItemId *openapi_types.UUID                     `json:"bandwidth_subscription_item_id"`
+	Binding                     *IPv4Binding                            `json:"binding"`
 	CreatedAt                   time.Time                               `json:"created_at"`
-	DetachedAt                  *time.Time                              `json:"detached_at"`
+	Generation                  int64                                   `json:"generation"`
 	Id                          openapi_types.UUID                      `json:"id"`
-	OrderId                     *openapi_types.UUID                     `json:"order_id,omitempty"`
-	PriceId                     *openapi_types.UUID                     `json:"price_id,omitempty"`
+	ObservedAt                  *time.Time                              `json:"observed_at"`
+	OrderId                     *openapi_types.UUID                     `json:"order_id"`
+	PriceId                     *openapi_types.UUID                     `json:"price_id"`
 	RegionId                    openapi_types.UUID                      `json:"region_id"`
 	Status                      FloatingIPResourceStatus                `json:"status"`
-	SubscriptionItemId          *openapi_types.UUID                     `json:"subscription_item_id,omitempty"`
-	Task                        *Task                                   `json:"task,omitempty"`
+	SubscriptionItemId          *openapi_types.UUID                     `json:"subscription_item_id"`
+	Task                        *Task                                   `json:"task"`
 }
 
 // FloatingIPResourceAccessState defines model for FloatingIPResource.AccessState.
@@ -1228,6 +1217,22 @@ type FloatingIPResourceBandwidthAccessState string
 
 // FloatingIPResourceStatus defines model for FloatingIPResource.Status.
 type FloatingIPResourceStatus string
+
+// IPv4Binding defines model for IPv4Binding.
+type IPv4Binding struct {
+	Address          string             `json:"address"`
+	BoundAt          *time.Time         `json:"bound_at"`
+	FixedIp          string             `json:"fixed_ip"`
+	Id               openapi_types.UUID `json:"id"`
+	Ipv4AllocationId openapi_types.UUID `json:"ipv4_allocation_id"`
+	PortAddressId    openapi_types.UUID `json:"port_address_id"`
+	ReleasedAt       *time.Time         `json:"released_at"`
+	State            IPv4BindingState   `json:"state"`
+	UnboundAt        *time.Time         `json:"unbound_at"`
+}
+
+// IPv4BindingState defines model for IPv4Binding.State.
+type IPv4BindingState string
 
 // IPv4PoolListResponseBody defines model for IPv4PoolListResponseBody.
 type IPv4PoolListResponseBody struct {
@@ -1297,7 +1302,7 @@ type InstanceListResponseBody struct {
 
 // InstanceResource defines model for InstanceResource.
 type InstanceResource struct {
-	AccessState        *InstanceResourceAccessState `json:"access_state,omitempty"`
+	AccessState        *InstanceResourceAccessState `json:"access_state"`
 	AvailabilityZoneId openapi_types.UUID           `json:"availability_zone_id"`
 	CreatedAt          time.Time                    `json:"created_at"`
 	DesiredState       InstanceResourceDesiredState `json:"desired_state"`
@@ -1324,22 +1329,18 @@ type InstanceResource struct {
 	Name          string `json:"name"`
 
 	// Notes A free-text note about this instance. Empty when never set
-	Notes string `json:"notes"`
-
-	// ObservedAt Timestamp of the last successful provider observation. An unreachable provider does not erase the last observation or prove deletion.
-	ObservedAt *time.Time                 `json:"observed_at,omitempty"`
+	Notes      string                     `json:"notes"`
+	ObservedAt *time.Time                 `json:"observed_at"`
 	OrderId    *openapi_types.UUID        `json:"order_id"`
 	PowerState InstanceResourcePowerState `json:"power_state"`
-	PriceId    *openapi_types.UUID        `json:"price_id,omitempty"`
+	PriceId    *openapi_types.UUID        `json:"price_id"`
 
 	// PrivateImageId Non-empty when the instance was created from a private image
 	PrivateImageId *openapi_types.UUID `json:"private_image_id"`
 
 	// PrivateIp Private address of the instance
-	PrivateIp *string `json:"private_ip"`
-
-	// PrivateNetworkId Private network of the primary network interface
-	PrivateNetworkId *string `json:"private_network_id"`
+	PrivateIp        *string             `json:"private_ip"`
+	PrivateNetworkId *openapi_types.UUID `json:"private_network_id"`
 
 	// PublicIps Floating IPv4 addresses bound to the primary network interface; an empty array when none are bound
 	PublicIps    []string              `json:"public_ips"`
@@ -1347,13 +1348,11 @@ type InstanceResource struct {
 	Restrictions []InstanceRestriction `json:"restrictions"`
 
 	// SourceDiskId Non-empty when the instance was created from a disk you already had, instead of from an image
-	SourceDiskId *openapi_types.UUID    `json:"source_disk_id"`
-	Status       InstanceResourceStatus `json:"status"`
-
-	// SubnetId Subnet of the primary network interface
-	SubnetId           *string             `json:"subnet_id"`
-	SubscriptionItemId *openapi_types.UUID `json:"subscription_item_id,omitempty"`
-	Task               *Task               `json:"task,omitempty"`
+	SourceDiskId       *openapi_types.UUID    `json:"source_disk_id"`
+	Status             InstanceResourceStatus `json:"status"`
+	SubnetId           *openapi_types.UUID    `json:"subnet_id"`
+	SubscriptionItemId *openapi_types.UUID    `json:"subscription_item_id"`
+	Task               *Task                  `json:"task"`
 
 	// TaskState Current provider task, such as scheduling, networking, block_device_mapping or spawning. none means no task; unknown tasks remain observable and do not imply failure.
 	TaskState string    `json:"task_state"`
@@ -1396,17 +1395,18 @@ type InstanceTypeListResponseBody struct {
 type InstanceTypeResource struct {
 	AvailabilityZoneId openapi_types.UUID `json:"availability_zone_id"`
 	Id                 openapi_types.UUID `json:"id"`
-	LookupKey          *string            `json:"lookup_key,omitempty"`
+	LookupKey          string             `json:"lookup_key"`
 
 	// MaxBandwidthMbps The most public bandwidth a machine of this type may be given, in Mbps. Asking for more
 	// when creating a machine, or raising a bound address past it, is refused.
 	//
 	// A ceiling on what can be bought, not a speed. How fast the machine's own interfaces run is
 	// `network_egress_kbps` / `network_ingress_kbps`.
-	MaxBandwidthMbps int64  `json:"max_bandwidth_mbps"`
-	MaxFloatingIps   int64  `json:"max_floating_ips"`
-	MaxPorts         int64  `json:"max_ports"`
-	Name             string `json:"name"`
+	MaxBandwidthMbps int64             `json:"max_bandwidth_mbps"`
+	MaxFloatingIps   int64             `json:"max_floating_ips"`
+	MaxPorts         int64             `json:"max_ports"`
+	Name             string            `json:"name"`
+	NameTranslations map[string]string `json:"name_translations"`
 
 	// NetworkEgressKbps Outbound ceiling of **each** network interface, in kbps. Null when this type is not
 	// rate-limited.
@@ -1418,7 +1418,7 @@ type InstanceTypeResource struct {
 	// NetworkIngressKbps Inbound ceiling of each network interface, in kbps. Null when this type is not rate-limited
 	NetworkIngressKbps *int64              `json:"network_ingress_kbps"`
 	PlanId             *openapi_types.UUID `json:"plan_id"`
-	ProductId          *openapi_types.UUID `json:"product_id,omitempty"`
+	ProductId          *openapi_types.UUID `json:"product_id"`
 	RamMb              int64               `json:"ram_mb"`
 	RegionId           openapi_types.UUID  `json:"region_id"`
 	Vcpus              int64               `json:"vcpus"`
@@ -1626,30 +1626,24 @@ type PortListResponseBody struct {
 type PortResource struct {
 	Addresses        []PortAddress      `json:"addresses,omitempty"`
 	Attachment       *PortAttachment    `json:"attachment,omitempty"`
+	Generation       int64              `json:"generation"`
 	Id               openapi_types.UUID `json:"id"`
 	Mac              *string            `json:"mac"`
 	Name             string             `json:"name"`
+	ObservedAt       *time.Time         `json:"observed_at"`
 	PrivateNetworkId openapi_types.UUID `json:"private_network_id"`
 
 	// PublicIps Floating IPv4 addresses bound to this network interface; an empty array when none are bound
-	PublicIps []string `json:"public_ips"`
+	PublicIps []string           `json:"public_ips"`
+	Status    PortResourceStatus `json:"status"`
 }
+
+// PortResourceStatus defines model for PortResource.Status.
+type PortResourceStatus string
 
 // PowerRequest defines model for PowerRequest.
 type PowerRequest struct {
 	ExpectedGeneration *int64 `json:"expected_generation,omitempty"`
-}
-
-// PrepaidPrice defines model for PrepaidPrice.
-type PrepaidPrice struct {
-	// Amount A decimal string, not a float. Money that survives a round trip through binary floating
-	// point is money that stops adding up.
-	Amount   string `json:"amount"`
-	Currency string `json:"currency"`
-
-	// Term An ISO 8601 duration (P1M, P1Y). A duration rather than a number of months: months are not
-	// the same length, and storing a number leaves whoever reads it to decide what it means.
-	Term string `json:"term"`
 }
 
 // PrivateImageListResponseBody defines model for PrivateImageListResponseBody.
@@ -1662,13 +1656,14 @@ type PrivateImageListResponseBody struct {
 
 // PrivateImageResource defines model for PrivateImageResource.
 type PrivateImageResource struct {
-	AccessState  *PrivateImageResourceAccessState `json:"access_state,omitempty"`
+	AccessState  *PrivateImageResourceAccessState `json:"access_state"`
 	Architecture string                           `json:"architecture"`
 	CreatedAt    time.Time                        `json:"created_at"`
 
 	// Failure Reason the capture failed; non-empty only when `status` is `error`
-	Failure *string            `json:"failure"`
-	Id      openapi_types.UUID `json:"id"`
+	Failure    *string            `json:"failure"`
+	Generation int64              `json:"generation"`
+	Id         openapi_types.UUID `json:"id"`
 
 	// LoginUsername The account this image lets you log in as. The password set at creation belongs to this account
 	LoginUsername string `json:"login_username"`
@@ -1677,13 +1672,14 @@ type PrivateImageResource struct {
 	MinDiskGb int64 `json:"min_disk_gb"`
 
 	// MinRamMb The instance type of an instance created from this image must have at least this much memory
-	MinRamMb  int64               `json:"min_ram_mb"`
-	Name      string              `json:"name"`
-	OrderId   *openapi_types.UUID `json:"order_id,omitempty"`
-	OsFamily  string              `json:"os_family"`
-	OsVersion string              `json:"os_version"`
-	PriceId   *openapi_types.UUID `json:"price_id,omitempty"`
-	RegionId  openapi_types.UUID  `json:"region_id"`
+	MinRamMb   int64               `json:"min_ram_mb"`
+	Name       string              `json:"name"`
+	ObservedAt *time.Time          `json:"observed_at"`
+	OrderId    *openapi_types.UUID `json:"order_id"`
+	OsFamily   string              `json:"os_family"`
+	OsVersion  string              `json:"os_version"`
+	PriceId    *openapi_types.UUID `json:"price_id"`
+	RegionId   openapi_types.UUID  `json:"region_id"`
 
 	// SizeBytes Storage occupied by the image; 0 until the capture completes
 	SizeBytes int64 `json:"size_bytes"`
@@ -1691,11 +1687,11 @@ type PrivateImageResource struct {
 	// SourceInstanceId The instance this image was captured from. The image remains usable after that instance is released
 	SourceInstanceId   *openapi_types.UUID        `json:"source_instance_id"`
 	Status             PrivateImageResourceStatus `json:"status"`
-	SubscriptionItemId *openapi_types.UUID        `json:"subscription_item_id,omitempty"`
+	SubscriptionItemId *openapi_types.UUID        `json:"subscription_item_id"`
 
 	// SupportsPasswordReset False means a new password can only be set by rebuilding an instance created from this image
 	SupportsPasswordReset bool  `json:"supports_password_reset"`
-	Task                  *Task `json:"task,omitempty"`
+	Task                  *Task `json:"task"`
 }
 
 // PrivateImageResourceAccessState defines model for PrivateImageResource.AccessState.
@@ -1958,23 +1954,25 @@ type SnapshotListResponseBody struct {
 
 // SnapshotResource defines model for SnapshotResource.
 type SnapshotResource struct {
-	AccessState *SnapshotResourceAccessState `json:"access_state,omitempty"`
+	AccessState *SnapshotResourceAccessState `json:"access_state"`
 
 	// AvailabilityZoneId A disk restored from this snapshot must reside in this availability zone
 	AvailabilityZoneId openapi_types.UUID  `json:"availability_zone_id"`
 	CreatedAt          time.Time           `json:"created_at"`
 	DiskId             openapi_types.UUID  `json:"disk_id"`
+	Generation         int64               `json:"generation"`
 	Id                 openapi_types.UUID  `json:"id"`
 	Name               string              `json:"name"`
-	OrderId            *openapi_types.UUID `json:"order_id,omitempty"`
-	PriceId            *openapi_types.UUID `json:"price_id,omitempty"`
+	ObservedAt         *time.Time          `json:"observed_at"`
+	OrderId            *openapi_types.UUID `json:"order_id"`
+	PriceId            *openapi_types.UUID `json:"price_id"`
 	RegionId           openapi_types.UUID  `json:"region_id"`
 
 	// SizeGb Capacity of the source disk when the snapshot was created. A disk restored from it cannot be smaller
 	SizeGb             int64                  `json:"size_gb"`
 	Status             SnapshotResourceStatus `json:"status"`
-	SubscriptionItemId *openapi_types.UUID    `json:"subscription_item_id,omitempty"`
-	Task               *Task                  `json:"task,omitempty"`
+	SubscriptionItemId *openapi_types.UUID    `json:"subscription_item_id"`
+	Task               *Task                  `json:"task"`
 }
 
 // SnapshotResourceAccessState defines model for SnapshotResource.AccessState.
@@ -2828,7 +2826,7 @@ type ClientInterface interface {
 
 	// ReleaseFloatingIp Release a floating IP
 	//
-	// A released address enters a cooldown period before it is allocated again, so that DNS records and allow-lists still pointing at it do not break immediately. **The same address therefore cannot be re-allocated** for some time after release. Proceed with care.
+	// Releases the floating IP after unbinding it. Completion is reported by the returned task.
 	//
 	// Corresponds with DELETE /api/v1/floating-ips/{floatingIpId} (the `ReleaseFloatingIp` operationId).
 	ReleaseFloatingIp(ctx context.Context, floatingIpId openapi_types.UUID, params *ReleaseFloatingIpParams, reqEditors ...RequestEditorFn) (*http.Response, error)
@@ -4208,7 +4206,7 @@ func (c *Client) AllocateFloatingIp(ctx context.Context, body AllocateFloatingIp
 
 // ReleaseFloatingIp Release a floating IP
 //
-// A released address enters a cooldown period before it is allocated again, so that DNS records and allow-lists still pointing at it do not break immediately. **The same address therefore cannot be re-allocated** for some time after release. Proceed with care.
+// Releases the floating IP after unbinding it. Completion is reported by the returned task.
 //
 // Corresponds with DELETE /api/v1/floating-ips/{floatingIpId} (the `ReleaseFloatingIp` operationId).
 func (c *Client) ReleaseFloatingIp(ctx context.Context, floatingIpId openapi_types.UUID, params *ReleaseFloatingIpParams, reqEditors ...RequestEditorFn) (*http.Response, error) {
@@ -11074,7 +11072,7 @@ type ClientWithResponsesInterface interface {
 
 	// ReleaseFloatingIpWithResponse Release a floating IP
 	//
-	// A released address enters a cooldown period before it is allocated again, so that DNS records and allow-lists still pointing at it do not break immediately. **The same address therefore cannot be re-allocated** for some time after release. Proceed with care.
+	// Releases the floating IP after unbinding it. Completion is reported by the returned task.
 	//
 	// Returns a wrapper object for the known response body format(s).
 	//
@@ -12881,8 +12879,15 @@ func (r AllocateFloatingIpResponse) ContentType() string {
 type ReleaseFloatingIpResponse struct {
 	Body         []byte
 	HTTPResponse *http.Response
+	// JSON202 the response for an HTTP 202 `application/json` response
+	JSON202 *Task
 	// JSONDefault the response for an HTTP default `application/json` response
 	JSONDefault *Error
+}
+
+// GetJSON202 returns the response for an HTTP 202 `application/json` response
+func (r ReleaseFloatingIpResponse) GetJSON202() *Task {
+	return r.JSON202
 }
 
 // GetJSONDefault returns the response for an HTTP default `application/json` response
@@ -16783,7 +16788,7 @@ func (c *ClientWithResponses) AllocateFloatingIpWithResponse(ctx context.Context
 
 // ReleaseFloatingIpWithResponse Release a floating IP
 //
-// A released address enters a cooldown period before it is allocated again, so that DNS records and allow-lists still pointing at it do not break immediately. **The same address therefore cannot be re-allocated** for some time after release. Proceed with care.
+// Releases the floating IP after unbinding it. Completion is reported by the returned task.
 //
 // Returns a wrapper object for the known response body format(s).
 //
@@ -18957,8 +18962,12 @@ func ParseReleaseFloatingIpResponse(rsp *http.Response) (*ReleaseFloatingIpRespo
 	}
 
 	switch {
-	case rsp.StatusCode == 204:
-		break // No content-type
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 202:
+		var dest Task
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON202 = &dest
 
 	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && true:
 		var dest Error

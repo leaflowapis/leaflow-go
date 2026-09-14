@@ -569,12 +569,10 @@ type Invoker interface {
 	RebuildInstance(ctx context.Context, request *RebuildInstanceRequestBody, params RebuildInstanceParams) (*RebuildInstanceResponseBody, error)
 	// ReleaseFloatingIP invokes release-floating-ip operation.
 	//
-	// A released address enters a cooldown period before it is allocated again, so that DNS records and
-	// allow-lists still pointing at it do not break immediately. The same address therefore cannot be
-	// re-allocated for some time after release. Proceed with care.
+	// Releases the floating IP after unbinding it. Completion is reported by the returned task.
 	//
 	// DELETE /api/v1/floating-ips/{floatingIpId}
-	ReleaseFloatingIP(ctx context.Context, params ReleaseFloatingIPParams) error
+	ReleaseFloatingIP(ctx context.Context, params ReleaseFloatingIPParams) (*Task, error)
 	// RenameBackup invokes rename-backup operation.
 	//
 	// Rename a backup.
@@ -10748,17 +10746,15 @@ func (c *Client) sendRebuildInstance(ctx context.Context, request *RebuildInstan
 
 // ReleaseFloatingIP invokes release-floating-ip operation.
 //
-// A released address enters a cooldown period before it is allocated again, so that DNS records and
-// allow-lists still pointing at it do not break immediately. The same address therefore cannot be
-// re-allocated for some time after release. Proceed with care.
+// Releases the floating IP after unbinding it. Completion is reported by the returned task.
 //
 // DELETE /api/v1/floating-ips/{floatingIpId}
-func (c *Client) ReleaseFloatingIP(ctx context.Context, params ReleaseFloatingIPParams) error {
-	_, err := c.sendReleaseFloatingIP(ctx, params)
-	return err
+func (c *Client) ReleaseFloatingIP(ctx context.Context, params ReleaseFloatingIPParams) (*Task, error) {
+	res, err := c.sendReleaseFloatingIP(ctx, params)
+	return res, err
 }
 
-func (c *Client) sendReleaseFloatingIP(ctx context.Context, params ReleaseFloatingIPParams) (res *ReleaseFloatingIPNoContent, err error) {
+func (c *Client) sendReleaseFloatingIP(ctx context.Context, params ReleaseFloatingIPParams) (res *Task, err error) {
 	otelAttrs := []attribute.KeyValue{
 		otelogen.OperationID("release-floating-ip"),
 		semconv.HTTPRequestMethodKey.String("DELETE"),
