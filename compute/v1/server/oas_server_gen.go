@@ -31,7 +31,7 @@ type Handler interface {
 	// confirmation of the binding change.
 	//
 	// POST /api/v1/instances/{instanceId}/floating-ips
-	AttachInstanceFloatingIP(ctx context.Context, req *AttachFloatingIPRequestBody, params AttachInstanceFloatingIPParams) (*Task, error)
+	AttachInstanceFloatingIP(ctx context.Context, req *AttachFloatingIPRequestBody, params AttachInstanceFloatingIPParams) (*FloatingIPResource, error)
 	// AttachPort implements attach-port operation.
 	//
 	// Attach a network interface.
@@ -82,7 +82,7 @@ type Handler interface {
 	// created here; they are created with the instance.
 	//
 	// POST /api/v1/ports
-	CreatePort(ctx context.Context, req *CreatePortRequestBody, params CreatePortParams) (*PortResource, error)
+	CreatePort(ctx context.Context, req *CreatePortRequestBody) (*PortResource, error)
 	// CreatePrivateImage implements create-private-image operation.
 	//
 	// Captured from the system disk of the instance; data disks are not included. The resulting image can
@@ -112,7 +112,7 @@ type Handler interface {
 	// denies all inbound traffic and permits all outbound traffic.
 	//
 	// POST /api/v1/private-networks
-	CreatePrivateNetwork(ctx context.Context, req *CreatePrivateNetworkRequestBody, params CreatePrivateNetworkParams) (*PrivateNetworkResource, error)
+	CreatePrivateNetwork(ctx context.Context, req *CreatePrivateNetworkRequestBody) (*PrivateNetworkResource, error)
 	// CreateRoute implements create-route operation.
 	//
 	// Three forms that would sever connectivity are rejected: a destination of `0.0.0.0/0`, which
@@ -129,7 +129,7 @@ type Handler interface {
 	// on large packets.
 	//
 	// POST /api/v1/security-groups
-	CreateSecurityGroup(ctx context.Context, req *CreateSecurityGroupRequestBody, params CreateSecurityGroupParams) (*SecurityGroupResource, error)
+	CreateSecurityGroup(ctx context.Context, req *CreateSecurityGroupRequestBody) (*SecurityGroupResource, error)
 	// CreateSecurityGroupRule implements create-security-group-rule operation.
 	//
 	// Adding an identical rule twice is rejected. For that comparison `0.0.0.0/0`, `::/0` and an omitted
@@ -247,7 +247,7 @@ type Handler interface {
 	// confirmation of the binding change.
 	//
 	// DELETE /api/v1/instances/{instanceId}/floating-ips/{floatingIpId}
-	DetachInstanceFloatingIP(ctx context.Context, params DetachInstanceFloatingIPParams) (*Task, error)
+	DetachInstanceFloatingIP(ctx context.Context, params DetachInstanceFloatingIPParams) (*FloatingIPResource, error)
 	// DetachPort implements detach-port operation.
 	//
 	// The primary network interface cannot be detached; the instance would lose its network address.

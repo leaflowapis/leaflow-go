@@ -188,10 +188,10 @@ func decodeAttachDiskResponse(resp *http.Response) (res *Task, _ error) {
 	return res, errors.Wrap(defRes, "error")
 }
 
-func decodeAttachInstanceFloatingIPResponse(resp *http.Response) (res *Task, _ error) {
+func decodeAttachInstanceFloatingIPResponse(resp *http.Response) (res *FloatingIPResource, _ error) {
 	switch resp.StatusCode {
-	case 202:
-		// Code 202.
+	case 200:
+		// Code 200.
 		ct, _, err := mime.ParseMediaType(resp.Header.Get("Content-Type"))
 		if err != nil {
 			return res, errors.Wrap(err, "parse media type")
@@ -204,7 +204,7 @@ func decodeAttachInstanceFloatingIPResponse(resp *http.Response) (res *Task, _ e
 			}
 			d := jx.DecodeBytes(buf)
 
-			var response Task
+			var response FloatingIPResource
 			if err := func() error {
 				if err := response.Decode(d); err != nil {
 					return err
@@ -2315,10 +2315,10 @@ func decodeDetachDiskResponse(resp *http.Response) (res *Task, _ error) {
 	return res, errors.Wrap(defRes, "error")
 }
 
-func decodeDetachInstanceFloatingIPResponse(resp *http.Response) (res *Task, _ error) {
+func decodeDetachInstanceFloatingIPResponse(resp *http.Response) (res *FloatingIPResource, _ error) {
 	switch resp.StatusCode {
-	case 202:
-		// Code 202.
+	case 200:
+		// Code 200.
 		ct, _, err := mime.ParseMediaType(resp.Header.Get("Content-Type"))
 		if err != nil {
 			return res, errors.Wrap(err, "parse media type")
@@ -2331,7 +2331,7 @@ func decodeDetachInstanceFloatingIPResponse(resp *http.Response) (res *Task, _ e
 			}
 			d := jx.DecodeBytes(buf)
 
-			var response Task
+			var response FloatingIPResource
 			if err := func() error {
 				if err := response.Decode(d); err != nil {
 					return err

@@ -42,7 +42,7 @@ func (UnimplementedHandler) AttachDisk(ctx context.Context, req *AttachDiskReque
 // confirmation of the binding change.
 //
 // POST /api/v1/instances/{instanceId}/floating-ips
-func (UnimplementedHandler) AttachInstanceFloatingIP(ctx context.Context, req *AttachFloatingIPRequestBody, params AttachInstanceFloatingIPParams) (r *Task, _ error) {
+func (UnimplementedHandler) AttachInstanceFloatingIP(ctx context.Context, req *AttachFloatingIPRequestBody, params AttachInstanceFloatingIPParams) (r *FloatingIPResource, _ error) {
 	return r, ht.ErrNotImplemented
 }
 
@@ -111,7 +111,7 @@ func (UnimplementedHandler) CreateDisk(ctx context.Context, req *CreateDiskReque
 // created here; they are created with the instance.
 //
 // POST /api/v1/ports
-func (UnimplementedHandler) CreatePort(ctx context.Context, req *CreatePortRequestBody, params CreatePortParams) (r *PortResource, _ error) {
+func (UnimplementedHandler) CreatePort(ctx context.Context, req *CreatePortRequestBody) (r *PortResource, _ error) {
 	return r, ht.ErrNotImplemented
 }
 
@@ -147,7 +147,7 @@ func (UnimplementedHandler) CreatePrivateImage(ctx context.Context, req *CreateP
 // denies all inbound traffic and permits all outbound traffic.
 //
 // POST /api/v1/private-networks
-func (UnimplementedHandler) CreatePrivateNetwork(ctx context.Context, req *CreatePrivateNetworkRequestBody, params CreatePrivateNetworkParams) (r *PrivateNetworkResource, _ error) {
+func (UnimplementedHandler) CreatePrivateNetwork(ctx context.Context, req *CreatePrivateNetworkRequestBody) (r *PrivateNetworkResource, _ error) {
 	return r, ht.ErrNotImplemented
 }
 
@@ -170,7 +170,7 @@ func (UnimplementedHandler) CreateRoute(ctx context.Context, req *CreateRouteReq
 // on large packets.
 //
 // POST /api/v1/security-groups
-func (UnimplementedHandler) CreateSecurityGroup(ctx context.Context, req *CreateSecurityGroupRequestBody, params CreateSecurityGroupParams) (r *SecurityGroupResource, _ error) {
+func (UnimplementedHandler) CreateSecurityGroup(ctx context.Context, req *CreateSecurityGroupRequestBody) (r *SecurityGroupResource, _ error) {
 	return r, ht.ErrNotImplemented
 }
 
@@ -336,7 +336,7 @@ func (UnimplementedHandler) DetachDisk(ctx context.Context, params DetachDiskPar
 // confirmation of the binding change.
 //
 // DELETE /api/v1/instances/{instanceId}/floating-ips/{floatingIpId}
-func (UnimplementedHandler) DetachInstanceFloatingIP(ctx context.Context, params DetachInstanceFloatingIPParams) (r *Task, _ error) {
+func (UnimplementedHandler) DetachInstanceFloatingIP(ctx context.Context, params DetachInstanceFloatingIPParams) (r *FloatingIPResource, _ error) {
 	return r, ht.ErrNotImplemented
 }
 

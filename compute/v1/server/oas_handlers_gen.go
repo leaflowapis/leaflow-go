@@ -608,7 +608,7 @@ func (s *Server) handleAttachInstanceFloatingIPRequest(args [1]string, argsEscap
 		}
 	}()
 
-	var response *Task
+	var response *FloatingIPResource
 	if m := s.cfg.Middleware; m != nil {
 		mreq := middleware.Request{
 			Context:          ctx,
@@ -622,10 +622,6 @@ func (s *Server) handleAttachInstanceFloatingIPRequest(args [1]string, argsEscap
 					Name: "instanceId",
 					In:   "path",
 				}: params.InstanceId,
-				{
-					Name: "Idempotency-Key",
-					In:   "header",
-				}: params.IdempotencyKey,
 			},
 			Raw: r,
 		}
@@ -633,7 +629,7 @@ func (s *Server) handleAttachInstanceFloatingIPRequest(args [1]string, argsEscap
 		type (
 			Request  = *AttachFloatingIPRequestBody
 			Params   = AttachInstanceFloatingIPParams
-			Response = *Task
+			Response = *FloatingIPResource
 		)
 		response, err = middleware.HookMiddleware[
 			Request,
@@ -1060,10 +1056,6 @@ func (s *Server) handleBindFloatingIPRequest(args [1]string, argsEscaped bool, w
 					Name: "floatingIpId",
 					In:   "path",
 				}: params.FloatingIpId,
-				{
-					Name: "Idempotency-Key",
-					In:   "header",
-				}: params.IdempotencyKey,
 			},
 			Raw: r,
 		}
@@ -1856,16 +1848,6 @@ func (s *Server) handleCreatePortRequest(args [0]string, argsEscaped bool, w htt
 			return
 		}
 	}
-	params, err := decodeCreatePortParams(args, argsEscaped, r)
-	if err != nil {
-		err = &ogenerrors.DecodeParamsError{
-			OperationContext: opErrContext,
-			Err:              err,
-		}
-		defer recordError("DecodeParams", err)
-		s.cfg.ErrorHandler(ctx, w, r, err)
-		return
-	}
 
 	var rawBody []byte
 	request, rawBody, close, err := s.decodeCreatePortRequest(r)
@@ -1893,18 +1875,13 @@ func (s *Server) handleCreatePortRequest(args [0]string, argsEscaped bool, w htt
 			OperationID:      "create-port",
 			Body:             request,
 			RawBody:          rawBody,
-			Params: middleware.Parameters{
-				{
-					Name: "Idempotency-Key",
-					In:   "header",
-				}: params.IdempotencyKey,
-			},
-			Raw: r,
+			Params:           middleware.Parameters{},
+			Raw:              r,
 		}
 
 		type (
 			Request  = *CreatePortRequestBody
-			Params   = CreatePortParams
+			Params   = struct{}
 			Response = *PortResource
 		)
 		response, err = middleware.HookMiddleware[
@@ -1914,14 +1891,14 @@ func (s *Server) handleCreatePortRequest(args [0]string, argsEscaped bool, w htt
 		](
 			m,
 			mreq,
-			unpackCreatePortParams,
+			nil,
 			func(ctx context.Context, request Request, params Params) (response Response, err error) {
-				response, err = s.h.CreatePort(ctx, request, params)
+				response, err = s.h.CreatePort(ctx, request)
 				return response, err
 			},
 		)
 	} else {
-		response, err = s.h.CreatePort(ctx, request, params)
+		response, err = s.h.CreatePort(ctx, request)
 	}
 	if err != nil {
 		if errRes, ok := errors.Into[*ErrorStatusCode](err); ok {
@@ -2289,16 +2266,6 @@ func (s *Server) handleCreatePrivateNetworkRequest(args [0]string, argsEscaped b
 			return
 		}
 	}
-	params, err := decodeCreatePrivateNetworkParams(args, argsEscaped, r)
-	if err != nil {
-		err = &ogenerrors.DecodeParamsError{
-			OperationContext: opErrContext,
-			Err:              err,
-		}
-		defer recordError("DecodeParams", err)
-		s.cfg.ErrorHandler(ctx, w, r, err)
-		return
-	}
 
 	var rawBody []byte
 	request, rawBody, close, err := s.decodeCreatePrivateNetworkRequest(r)
@@ -2326,18 +2293,13 @@ func (s *Server) handleCreatePrivateNetworkRequest(args [0]string, argsEscaped b
 			OperationID:      "create-private-network",
 			Body:             request,
 			RawBody:          rawBody,
-			Params: middleware.Parameters{
-				{
-					Name: "Idempotency-Key",
-					In:   "header",
-				}: params.IdempotencyKey,
-			},
-			Raw: r,
+			Params:           middleware.Parameters{},
+			Raw:              r,
 		}
 
 		type (
 			Request  = *CreatePrivateNetworkRequestBody
-			Params   = CreatePrivateNetworkParams
+			Params   = struct{}
 			Response = *PrivateNetworkResource
 		)
 		response, err = middleware.HookMiddleware[
@@ -2347,14 +2309,14 @@ func (s *Server) handleCreatePrivateNetworkRequest(args [0]string, argsEscaped b
 		](
 			m,
 			mreq,
-			unpackCreatePrivateNetworkParams,
+			nil,
 			func(ctx context.Context, request Request, params Params) (response Response, err error) {
-				response, err = s.h.CreatePrivateNetwork(ctx, request, params)
+				response, err = s.h.CreatePrivateNetwork(ctx, request)
 				return response, err
 			},
 		)
 	} else {
-		response, err = s.h.CreatePrivateNetwork(ctx, request, params)
+		response, err = s.h.CreatePrivateNetwork(ctx, request)
 	}
 	if err != nil {
 		if errRes, ok := errors.Into[*ErrorStatusCode](err); ok {
@@ -2549,10 +2511,6 @@ func (s *Server) handleCreateRouteRequest(args [1]string, argsEscaped bool, w ht
 					Name: "privateNetworkId",
 					In:   "path",
 				}: params.PrivateNetworkId,
-				{
-					Name: "Idempotency-Key",
-					In:   "header",
-				}: params.IdempotencyKey,
 			},
 			Raw: r,
 		}
@@ -2728,16 +2686,6 @@ func (s *Server) handleCreateSecurityGroupRequest(args [0]string, argsEscaped bo
 			return
 		}
 	}
-	params, err := decodeCreateSecurityGroupParams(args, argsEscaped, r)
-	if err != nil {
-		err = &ogenerrors.DecodeParamsError{
-			OperationContext: opErrContext,
-			Err:              err,
-		}
-		defer recordError("DecodeParams", err)
-		s.cfg.ErrorHandler(ctx, w, r, err)
-		return
-	}
 
 	var rawBody []byte
 	request, rawBody, close, err := s.decodeCreateSecurityGroupRequest(r)
@@ -2765,18 +2713,13 @@ func (s *Server) handleCreateSecurityGroupRequest(args [0]string, argsEscaped bo
 			OperationID:      "create-security-group",
 			Body:             request,
 			RawBody:          rawBody,
-			Params: middleware.Parameters{
-				{
-					Name: "Idempotency-Key",
-					In:   "header",
-				}: params.IdempotencyKey,
-			},
-			Raw: r,
+			Params:           middleware.Parameters{},
+			Raw:              r,
 		}
 
 		type (
 			Request  = *CreateSecurityGroupRequestBody
-			Params   = CreateSecurityGroupParams
+			Params   = struct{}
 			Response = *SecurityGroupResource
 		)
 		response, err = middleware.HookMiddleware[
@@ -2786,14 +2729,14 @@ func (s *Server) handleCreateSecurityGroupRequest(args [0]string, argsEscaped bo
 		](
 			m,
 			mreq,
-			unpackCreateSecurityGroupParams,
+			nil,
 			func(ctx context.Context, request Request, params Params) (response Response, err error) {
-				response, err = s.h.CreateSecurityGroup(ctx, request, params)
+				response, err = s.h.CreateSecurityGroup(ctx, request)
 				return response, err
 			},
 		)
 	} else {
-		response, err = s.h.CreateSecurityGroup(ctx, request, params)
+		response, err = s.h.CreateSecurityGroup(ctx, request)
 	}
 	if err != nil {
 		if errRes, ok := errors.Into[*ErrorStatusCode](err); ok {
@@ -2986,10 +2929,6 @@ func (s *Server) handleCreateSecurityGroupRuleRequest(args [1]string, argsEscape
 					Name: "securityGroupId",
 					In:   "path",
 				}: params.SecurityGroupId,
-				{
-					Name: "Idempotency-Key",
-					In:   "header",
-				}: params.IdempotencyKey,
 			},
 			Raw: r,
 		}
@@ -3412,10 +3351,6 @@ func (s *Server) handleCreateSubnetRequest(args [1]string, argsEscaped bool, w h
 					Name: "privateNetworkId",
 					In:   "path",
 				}: params.PrivateNetworkId,
-				{
-					Name: "Idempotency-Key",
-					In:   "header",
-				}: params.IdempotencyKey,
 			},
 			Raw: r,
 		}
@@ -4234,10 +4169,6 @@ func (s *Server) handleDeletePortRequest(args [1]string, argsEscaped bool, w htt
 					Name: "portId",
 					In:   "path",
 				}: params.PortId,
-				{
-					Name: "Idempotency-Key",
-					In:   "header",
-				}: params.IdempotencyKey,
 			},
 			Raw: r,
 		}
@@ -4646,10 +4577,6 @@ func (s *Server) handleDeletePrivateNetworkRequest(args [1]string, argsEscaped b
 					Name: "privateNetworkId",
 					In:   "path",
 				}: params.PrivateNetworkId,
-				{
-					Name: "Idempotency-Key",
-					In:   "header",
-				}: params.IdempotencyKey,
 			},
 			Raw: r,
 		}
@@ -4854,10 +4781,6 @@ func (s *Server) handleDeleteRouteRequest(args [2]string, argsEscaped bool, w ht
 					Name: "routeId",
 					In:   "path",
 				}: params.RouteId,
-				{
-					Name: "Idempotency-Key",
-					In:   "header",
-				}: params.IdempotencyKey,
 			},
 			Raw: r,
 		}
@@ -5059,10 +4982,6 @@ func (s *Server) handleDeleteSecurityGroupRequest(args [1]string, argsEscaped bo
 					Name: "securityGroupId",
 					In:   "path",
 				}: params.SecurityGroupId,
-				{
-					Name: "Idempotency-Key",
-					In:   "header",
-				}: params.IdempotencyKey,
 			},
 			Raw: r,
 		}
@@ -5267,10 +5186,6 @@ func (s *Server) handleDeleteSecurityGroupRuleRequest(args [2]string, argsEscape
 					Name: "ruleId",
 					In:   "path",
 				}: params.RuleId,
-				{
-					Name: "Idempotency-Key",
-					In:   "header",
-				}: params.IdempotencyKey,
 			},
 			Raw: r,
 		}
@@ -5680,10 +5595,6 @@ func (s *Server) handleDeleteSubnetRequest(args [2]string, argsEscaped bool, w h
 					Name: "subnetId",
 					In:   "path",
 				}: params.SubnetId,
-				{
-					Name: "Idempotency-Key",
-					In:   "header",
-				}: params.IdempotencyKey,
 			},
 			Raw: r,
 		}
@@ -6080,7 +5991,7 @@ func (s *Server) handleDetachInstanceFloatingIPRequest(args [2]string, argsEscap
 
 	var rawBody []byte
 
-	var response *Task
+	var response *FloatingIPResource
 	if m := s.cfg.Middleware; m != nil {
 		mreq := middleware.Request{
 			Context:          ctx,
@@ -6098,10 +6009,6 @@ func (s *Server) handleDetachInstanceFloatingIPRequest(args [2]string, argsEscap
 					Name: "floatingIpId",
 					In:   "path",
 				}: params.FloatingIpId,
-				{
-					Name: "Idempotency-Key",
-					In:   "header",
-				}: params.IdempotencyKey,
 			},
 			Raw: r,
 		}
@@ -6109,7 +6016,7 @@ func (s *Server) handleDetachInstanceFloatingIPRequest(args [2]string, argsEscap
 		type (
 			Request  = struct{}
 			Params   = DetachInstanceFloatingIPParams
-			Response = *Task
+			Response = *FloatingIPResource
 		)
 		response, err = middleware.HookMiddleware[
 			Request,
@@ -6510,10 +6417,6 @@ func (s *Server) handleDisablePrivateNetworkIpv6Request(args [1]string, argsEsca
 					Name: "privateNetworkId",
 					In:   "path",
 				}: params.PrivateNetworkId,
-				{
-					Name: "Idempotency-Key",
-					In:   "header",
-				}: params.IdempotencyKey,
 			},
 			Raw: r,
 		}
@@ -6718,10 +6621,6 @@ func (s *Server) handleEnablePrivateNetworkIpv6Request(args [1]string, argsEscap
 					Name: "privateNetworkId",
 					In:   "path",
 				}: params.PrivateNetworkId,
-				{
-					Name: "Idempotency-Key",
-					In:   "header",
-				}: params.IdempotencyKey,
 			},
 			Raw: r,
 		}
@@ -13791,10 +13690,6 @@ func (s *Server) handleOpenInstanceConsoleRequest(args [1]string, argsEscaped bo
 					Name: "instanceId",
 					In:   "path",
 				}: params.InstanceId,
-				{
-					Name: "Idempotency-Key",
-					In:   "header",
-				}: params.IdempotencyKey,
 			},
 			Raw: r,
 		}
@@ -14245,10 +14140,6 @@ func (s *Server) handleRebuildInstanceRequest(args [1]string, argsEscaped bool, 
 					Name: "instanceId",
 					In:   "path",
 				}: params.InstanceId,
-				{
-					Name: "Idempotency-Key",
-					In:   "header",
-				}: params.IdempotencyKey,
 			},
 			Raw: r,
 		}
@@ -14668,10 +14559,6 @@ func (s *Server) handleRenameBackupRequest(args [1]string, argsEscaped bool, w h
 					Name: "backupId",
 					In:   "path",
 				}: params.BackupId,
-				{
-					Name: "Idempotency-Key",
-					In:   "header",
-				}: params.IdempotencyKey,
 			},
 			Raw: r,
 		}
@@ -14888,10 +14775,6 @@ func (s *Server) handleRenameDiskRequest(args [1]string, argsEscaped bool, w htt
 					Name: "diskId",
 					In:   "path",
 				}: params.DiskId,
-				{
-					Name: "Idempotency-Key",
-					In:   "header",
-				}: params.IdempotencyKey,
 			},
 			Raw: r,
 		}
@@ -15108,10 +14991,6 @@ func (s *Server) handleRenameInstanceRequest(args [1]string, argsEscaped bool, w
 					Name: "instanceId",
 					In:   "path",
 				}: params.InstanceId,
-				{
-					Name: "Idempotency-Key",
-					In:   "header",
-				}: params.IdempotencyKey,
 			},
 			Raw: r,
 		}
@@ -15327,10 +15206,6 @@ func (s *Server) handleRenamePrivateImageRequest(args [1]string, argsEscaped boo
 					Name: "privateImageId",
 					In:   "path",
 				}: params.PrivateImageId,
-				{
-					Name: "Idempotency-Key",
-					In:   "header",
-				}: params.IdempotencyKey,
 			},
 			Raw: r,
 		}
@@ -15546,10 +15421,6 @@ func (s *Server) handleRenamePrivateNetworkRequest(args [1]string, argsEscaped b
 					Name: "privateNetworkId",
 					In:   "path",
 				}: params.PrivateNetworkId,
-				{
-					Name: "Idempotency-Key",
-					In:   "header",
-				}: params.IdempotencyKey,
 			},
 			Raw: r,
 		}
@@ -15765,10 +15636,6 @@ func (s *Server) handleRenameSecurityGroupRequest(args [1]string, argsEscaped bo
 					Name: "securityGroupId",
 					In:   "path",
 				}: params.SecurityGroupId,
-				{
-					Name: "Idempotency-Key",
-					In:   "header",
-				}: params.IdempotencyKey,
 			},
 			Raw: r,
 		}
@@ -15984,10 +15851,6 @@ func (s *Server) handleRenameSnapshotRequest(args [1]string, argsEscaped bool, w
 					Name: "snapshotId",
 					In:   "path",
 				}: params.SnapshotId,
-				{
-					Name: "Idempotency-Key",
-					In:   "header",
-				}: params.IdempotencyKey,
 			},
 			Raw: r,
 		}
@@ -16209,10 +16072,6 @@ func (s *Server) handleResetInstancePasswordRequest(args [1]string, argsEscaped 
 					Name: "instanceId",
 					In:   "path",
 				}: params.InstanceId,
-				{
-					Name: "Idempotency-Key",
-					In:   "header",
-				}: params.IdempotencyKey,
 			},
 			Raw: r,
 		}
@@ -17553,10 +17412,6 @@ func (s *Server) handleRunInstanceCommandRequest(args [1]string, argsEscaped boo
 					Name: "instanceId",
 					In:   "path",
 				}: params.InstanceId,
-				{
-					Name: "Idempotency-Key",
-					In:   "header",
-				}: params.IdempotencyKey,
 			},
 			Raw: r,
 		}
@@ -17997,10 +17852,6 @@ func (s *Server) handleSetInstanceLabelsRequest(args [1]string, argsEscaped bool
 					Name: "instanceId",
 					In:   "path",
 				}: params.InstanceId,
-				{
-					Name: "Idempotency-Key",
-					In:   "header",
-				}: params.IdempotencyKey,
 			},
 			Raw: r,
 		}
@@ -18221,10 +18072,6 @@ func (s *Server) handleSetInstanceNotesRequest(args [1]string, argsEscaped bool,
 					Name: "instanceId",
 					In:   "path",
 				}: params.InstanceId,
-				{
-					Name: "Idempotency-Key",
-					In:   "header",
-				}: params.IdempotencyKey,
 			},
 			Raw: r,
 		}
@@ -19074,10 +18921,6 @@ func (s *Server) handleUnbindFloatingIPRequest(args [1]string, argsEscaped bool,
 					Name: "floatingIpId",
 					In:   "path",
 				}: params.FloatingIpId,
-				{
-					Name: "Idempotency-Key",
-					In:   "header",
-				}: params.IdempotencyKey,
 			},
 			Raw: r,
 		}

@@ -52,7 +52,7 @@ type Invoker interface {
 	// confirmation of the binding change.
 	//
 	// POST /api/v1/instances/{instanceId}/floating-ips
-	AttachInstanceFloatingIP(ctx context.Context, request *AttachFloatingIPRequestBody, params AttachInstanceFloatingIPParams) (*Task, error)
+	AttachInstanceFloatingIP(ctx context.Context, request *AttachFloatingIPRequestBody, params AttachInstanceFloatingIPParams) (*FloatingIPResource, error)
 	// AttachPort invokes attach-port operation.
 	//
 	// Attach a network interface.
@@ -103,7 +103,7 @@ type Invoker interface {
 	// created here; they are created with the instance.
 	//
 	// POST /api/v1/ports
-	CreatePort(ctx context.Context, request *CreatePortRequestBody, params CreatePortParams) (*PortResource, error)
+	CreatePort(ctx context.Context, request *CreatePortRequestBody) (*PortResource, error)
 	// CreatePrivateImage invokes create-private-image operation.
 	//
 	// Captured from the system disk of the instance; data disks are not included. The resulting image can
@@ -133,7 +133,7 @@ type Invoker interface {
 	// denies all inbound traffic and permits all outbound traffic.
 	//
 	// POST /api/v1/private-networks
-	CreatePrivateNetwork(ctx context.Context, request *CreatePrivateNetworkRequestBody, params CreatePrivateNetworkParams) (*PrivateNetworkResource, error)
+	CreatePrivateNetwork(ctx context.Context, request *CreatePrivateNetworkRequestBody) (*PrivateNetworkResource, error)
 	// CreateRoute invokes create-route operation.
 	//
 	// Three forms that would sever connectivity are rejected: a destination of `0.0.0.0/0`, which
@@ -150,7 +150,7 @@ type Invoker interface {
 	// on large packets.
 	//
 	// POST /api/v1/security-groups
-	CreateSecurityGroup(ctx context.Context, request *CreateSecurityGroupRequestBody, params CreateSecurityGroupParams) (*SecurityGroupResource, error)
+	CreateSecurityGroup(ctx context.Context, request *CreateSecurityGroupRequestBody) (*SecurityGroupResource, error)
 	// CreateSecurityGroupRule invokes create-security-group-rule operation.
 	//
 	// Adding an identical rule twice is rejected. For that comparison `0.0.0.0/0`, `::/0` and an omitted
@@ -268,7 +268,7 @@ type Invoker interface {
 	// confirmation of the binding change.
 	//
 	// DELETE /api/v1/instances/{instanceId}/floating-ips/{floatingIpId}
-	DetachInstanceFloatingIP(ctx context.Context, params DetachInstanceFloatingIPParams) (*Task, error)
+	DetachInstanceFloatingIP(ctx context.Context, params DetachInstanceFloatingIPParams) (*FloatingIPResource, error)
 	// DetachPort invokes detach-port operation.
 	//
 	// The primary network interface cannot be detached; the instance would lose its network address.
@@ -1105,12 +1105,12 @@ func (c *Client) sendAttachDisk(ctx context.Context, request *AttachDiskRequestB
 // confirmation of the binding change.
 //
 // POST /api/v1/instances/{instanceId}/floating-ips
-func (c *Client) AttachInstanceFloatingIP(ctx context.Context, request *AttachFloatingIPRequestBody, params AttachInstanceFloatingIPParams) (*Task, error) {
+func (c *Client) AttachInstanceFloatingIP(ctx context.Context, request *AttachFloatingIPRequestBody, params AttachInstanceFloatingIPParams) (*FloatingIPResource, error) {
 	res, err := c.sendAttachInstanceFloatingIP(ctx, request, params)
 	return res, err
 }
 
-func (c *Client) sendAttachInstanceFloatingIP(ctx context.Context, request *AttachFloatingIPRequestBody, params AttachInstanceFloatingIPParams) (res *Task, err error) {
+func (c *Client) sendAttachInstanceFloatingIP(ctx context.Context, request *AttachFloatingIPRequestBody, params AttachInstanceFloatingIPParams) (res *FloatingIPResource, err error) {
 	otelAttrs := []attribute.KeyValue{
 		otelogen.OperationID("attach-instance-floating-ip"),
 		semconv.HTTPRequestMethodKey.String("POST"),
@@ -1177,20 +1177,6 @@ func (c *Client) sendAttachInstanceFloatingIP(ctx context.Context, request *Atta
 	}
 	if err := encodeAttachInstanceFloatingIPRequest(request, r); err != nil {
 		return res, errors.Wrap(err, "encode request")
-	}
-
-	stage = "EncodeHeaderParams"
-	h := uri.NewHeaderEncoder(r.Header)
-	{
-		cfg := uri.HeaderParameterEncodingConfig{
-			Name:    "Idempotency-Key",
-			Explode: false,
-		}
-		if err := h.EncodeParam(cfg, func(e uri.Encoder) error {
-			return e.EncodeValue(conv.StringToString(params.IdempotencyKey))
-		}); err != nil {
-			return res, errors.Wrap(err, "encode header")
-		}
 	}
 
 	{
@@ -1475,20 +1461,6 @@ func (c *Client) sendBindFloatingIP(ctx context.Context, request *BindFloatingIP
 	}
 	if err := encodeBindFloatingIPRequest(request, r); err != nil {
 		return res, errors.Wrap(err, "encode request")
-	}
-
-	stage = "EncodeHeaderParams"
-	h := uri.NewHeaderEncoder(r.Header)
-	{
-		cfg := uri.HeaderParameterEncodingConfig{
-			Name:    "Idempotency-Key",
-			Explode: false,
-		}
-		if err := h.EncodeParam(cfg, func(e uri.Encoder) error {
-			return e.EncodeValue(conv.StringToString(params.IdempotencyKey))
-		}); err != nil {
-			return res, errors.Wrap(err, "encode header")
-		}
 	}
 
 	{
@@ -1945,12 +1917,12 @@ func (c *Client) sendCreateDisk(ctx context.Context, request *CreateDiskRequestB
 // created here; they are created with the instance.
 //
 // POST /api/v1/ports
-func (c *Client) CreatePort(ctx context.Context, request *CreatePortRequestBody, params CreatePortParams) (*PortResource, error) {
-	res, err := c.sendCreatePort(ctx, request, params)
+func (c *Client) CreatePort(ctx context.Context, request *CreatePortRequestBody) (*PortResource, error) {
+	res, err := c.sendCreatePort(ctx, request)
 	return res, err
 }
 
-func (c *Client) sendCreatePort(ctx context.Context, request *CreatePortRequestBody, params CreatePortParams) (res *PortResource, err error) {
+func (c *Client) sendCreatePort(ctx context.Context, request *CreatePortRequestBody) (res *PortResource, err error) {
 	otelAttrs := []attribute.KeyValue{
 		otelogen.OperationID("create-port"),
 		semconv.HTTPRequestMethodKey.String("POST"),
@@ -1998,20 +1970,6 @@ func (c *Client) sendCreatePort(ctx context.Context, request *CreatePortRequestB
 	}
 	if err := encodeCreatePortRequest(request, r); err != nil {
 		return res, errors.Wrap(err, "encode request")
-	}
-
-	stage = "EncodeHeaderParams"
-	h := uri.NewHeaderEncoder(r.Header)
-	{
-		cfg := uri.HeaderParameterEncodingConfig{
-			Name:    "Idempotency-Key",
-			Explode: false,
-		}
-		if err := h.EncodeParam(cfg, func(e uri.Encoder) error {
-			return e.EncodeValue(conv.StringToString(params.IdempotencyKey))
-		}); err != nil {
-			return res, errors.Wrap(err, "encode header")
-		}
 	}
 
 	{
@@ -2209,12 +2167,12 @@ func (c *Client) sendCreatePrivateImage(ctx context.Context, request *CreatePriv
 // denies all inbound traffic and permits all outbound traffic.
 //
 // POST /api/v1/private-networks
-func (c *Client) CreatePrivateNetwork(ctx context.Context, request *CreatePrivateNetworkRequestBody, params CreatePrivateNetworkParams) (*PrivateNetworkResource, error) {
-	res, err := c.sendCreatePrivateNetwork(ctx, request, params)
+func (c *Client) CreatePrivateNetwork(ctx context.Context, request *CreatePrivateNetworkRequestBody) (*PrivateNetworkResource, error) {
+	res, err := c.sendCreatePrivateNetwork(ctx, request)
 	return res, err
 }
 
-func (c *Client) sendCreatePrivateNetwork(ctx context.Context, request *CreatePrivateNetworkRequestBody, params CreatePrivateNetworkParams) (res *PrivateNetworkResource, err error) {
+func (c *Client) sendCreatePrivateNetwork(ctx context.Context, request *CreatePrivateNetworkRequestBody) (res *PrivateNetworkResource, err error) {
 	otelAttrs := []attribute.KeyValue{
 		otelogen.OperationID("create-private-network"),
 		semconv.HTTPRequestMethodKey.String("POST"),
@@ -2262,20 +2220,6 @@ func (c *Client) sendCreatePrivateNetwork(ctx context.Context, request *CreatePr
 	}
 	if err := encodeCreatePrivateNetworkRequest(request, r); err != nil {
 		return res, errors.Wrap(err, "encode request")
-	}
-
-	stage = "EncodeHeaderParams"
-	h := uri.NewHeaderEncoder(r.Header)
-	{
-		cfg := uri.HeaderParameterEncodingConfig{
-			Name:    "Idempotency-Key",
-			Explode: false,
-		}
-		if err := h.EncodeParam(cfg, func(e uri.Encoder) error {
-			return e.EncodeValue(conv.StringToString(params.IdempotencyKey))
-		}); err != nil {
-			return res, errors.Wrap(err, "encode header")
-		}
 	}
 
 	{
@@ -2416,20 +2360,6 @@ func (c *Client) sendCreateRoute(ctx context.Context, request *CreateRouteReques
 		return res, errors.Wrap(err, "encode request")
 	}
 
-	stage = "EncodeHeaderParams"
-	h := uri.NewHeaderEncoder(r.Header)
-	{
-		cfg := uri.HeaderParameterEncodingConfig{
-			Name:    "Idempotency-Key",
-			Explode: false,
-		}
-		if err := h.EncodeParam(cfg, func(e uri.Encoder) error {
-			return e.EncodeValue(conv.StringToString(params.IdempotencyKey))
-		}); err != nil {
-			return res, errors.Wrap(err, "encode header")
-		}
-	}
-
 	{
 		type bitset = [1]uint8
 		var satisfied bitset
@@ -2493,12 +2423,12 @@ func (c *Client) sendCreateRoute(ctx context.Context, request *CreateRouteReques
 // on large packets.
 //
 // POST /api/v1/security-groups
-func (c *Client) CreateSecurityGroup(ctx context.Context, request *CreateSecurityGroupRequestBody, params CreateSecurityGroupParams) (*SecurityGroupResource, error) {
-	res, err := c.sendCreateSecurityGroup(ctx, request, params)
+func (c *Client) CreateSecurityGroup(ctx context.Context, request *CreateSecurityGroupRequestBody) (*SecurityGroupResource, error) {
+	res, err := c.sendCreateSecurityGroup(ctx, request)
 	return res, err
 }
 
-func (c *Client) sendCreateSecurityGroup(ctx context.Context, request *CreateSecurityGroupRequestBody, params CreateSecurityGroupParams) (res *SecurityGroupResource, err error) {
+func (c *Client) sendCreateSecurityGroup(ctx context.Context, request *CreateSecurityGroupRequestBody) (res *SecurityGroupResource, err error) {
 	otelAttrs := []attribute.KeyValue{
 		otelogen.OperationID("create-security-group"),
 		semconv.HTTPRequestMethodKey.String("POST"),
@@ -2546,20 +2476,6 @@ func (c *Client) sendCreateSecurityGroup(ctx context.Context, request *CreateSec
 	}
 	if err := encodeCreateSecurityGroupRequest(request, r); err != nil {
 		return res, errors.Wrap(err, "encode request")
-	}
-
-	stage = "EncodeHeaderParams"
-	h := uri.NewHeaderEncoder(r.Header)
-	{
-		cfg := uri.HeaderParameterEncodingConfig{
-			Name:    "Idempotency-Key",
-			Explode: false,
-		}
-		if err := h.EncodeParam(cfg, func(e uri.Encoder) error {
-			return e.EncodeValue(conv.StringToString(params.IdempotencyKey))
-		}); err != nil {
-			return res, errors.Wrap(err, "encode header")
-		}
 	}
 
 	{
@@ -2696,20 +2612,6 @@ func (c *Client) sendCreateSecurityGroupRule(ctx context.Context, request *Creat
 	}
 	if err := encodeCreateSecurityGroupRuleRequest(request, r); err != nil {
 		return res, errors.Wrap(err, "encode request")
-	}
-
-	stage = "EncodeHeaderParams"
-	h := uri.NewHeaderEncoder(r.Header)
-	{
-		cfg := uri.HeaderParameterEncodingConfig{
-			Name:    "Idempotency-Key",
-			Explode: false,
-		}
-		if err := h.EncodeParam(cfg, func(e uri.Encoder) error {
-			return e.EncodeValue(conv.StringToString(params.IdempotencyKey))
-		}); err != nil {
-			return res, errors.Wrap(err, "encode header")
-		}
 	}
 
 	{
@@ -2968,20 +2870,6 @@ func (c *Client) sendCreateSubnet(ctx context.Context, request *CreateSubnetRequ
 	}
 	if err := encodeCreateSubnetRequest(request, r); err != nil {
 		return res, errors.Wrap(err, "encode request")
-	}
-
-	stage = "EncodeHeaderParams"
-	h := uri.NewHeaderEncoder(r.Header)
-	{
-		cfg := uri.HeaderParameterEncodingConfig{
-			Name:    "Idempotency-Key",
-			Explode: false,
-		}
-		if err := h.EncodeParam(cfg, func(e uri.Encoder) error {
-			return e.EncodeValue(conv.StringToString(params.IdempotencyKey))
-		}); err != nil {
-			return res, errors.Wrap(err, "encode header")
-		}
 	}
 
 	{
@@ -3556,20 +3444,6 @@ func (c *Client) sendDeletePort(ctx context.Context, params DeletePortParams) (r
 		return res, errors.Wrap(err, "create request")
 	}
 
-	stage = "EncodeHeaderParams"
-	h := uri.NewHeaderEncoder(r.Header)
-	{
-		cfg := uri.HeaderParameterEncodingConfig{
-			Name:    "Idempotency-Key",
-			Explode: false,
-		}
-		if err := h.EncodeParam(cfg, func(e uri.Encoder) error {
-			return e.EncodeValue(conv.StringToString(params.IdempotencyKey))
-		}); err != nil {
-			return res, errors.Wrap(err, "encode header")
-		}
-	}
-
 	{
 		type bitset = [1]uint8
 		var satisfied bitset
@@ -3850,20 +3724,6 @@ func (c *Client) sendDeletePrivateNetwork(ctx context.Context, params DeletePriv
 		return res, errors.Wrap(err, "create request")
 	}
 
-	stage = "EncodeHeaderParams"
-	h := uri.NewHeaderEncoder(r.Header)
-	{
-		cfg := uri.HeaderParameterEncodingConfig{
-			Name:    "Idempotency-Key",
-			Explode: false,
-		}
-		if err := h.EncodeParam(cfg, func(e uri.Encoder) error {
-			return e.EncodeValue(conv.StringToString(params.IdempotencyKey))
-		}); err != nil {
-			return res, errors.Wrap(err, "encode header")
-		}
-	}
-
 	{
 		type bitset = [1]uint8
 		var satisfied bitset
@@ -4014,20 +3874,6 @@ func (c *Client) sendDeleteRoute(ctx context.Context, params DeleteRouteParams) 
 		return res, errors.Wrap(err, "create request")
 	}
 
-	stage = "EncodeHeaderParams"
-	h := uri.NewHeaderEncoder(r.Header)
-	{
-		cfg := uri.HeaderParameterEncodingConfig{
-			Name:    "Idempotency-Key",
-			Explode: false,
-		}
-		if err := h.EncodeParam(cfg, func(e uri.Encoder) error {
-			return e.EncodeValue(conv.StringToString(params.IdempotencyKey))
-		}); err != nil {
-			return res, errors.Wrap(err, "encode header")
-		}
-	}
-
 	{
 		type bitset = [1]uint8
 		var satisfied bitset
@@ -4158,20 +4004,6 @@ func (c *Client) sendDeleteSecurityGroup(ctx context.Context, params DeleteSecur
 	r, err := ht.NewRequest(ctx, "DELETE", u)
 	if err != nil {
 		return res, errors.Wrap(err, "create request")
-	}
-
-	stage = "EncodeHeaderParams"
-	h := uri.NewHeaderEncoder(r.Header)
-	{
-		cfg := uri.HeaderParameterEncodingConfig{
-			Name:    "Idempotency-Key",
-			Explode: false,
-		}
-		if err := h.EncodeParam(cfg, func(e uri.Encoder) error {
-			return e.EncodeValue(conv.StringToString(params.IdempotencyKey))
-		}); err != nil {
-			return res, errors.Wrap(err, "encode header")
-		}
 	}
 
 	{
@@ -4322,20 +4154,6 @@ func (c *Client) sendDeleteSecurityGroupRule(ctx context.Context, params DeleteS
 	r, err := ht.NewRequest(ctx, "DELETE", u)
 	if err != nil {
 		return res, errors.Wrap(err, "create request")
-	}
-
-	stage = "EncodeHeaderParams"
-	h := uri.NewHeaderEncoder(r.Header)
-	{
-		cfg := uri.HeaderParameterEncodingConfig{
-			Name:    "Idempotency-Key",
-			Explode: false,
-		}
-		if err := h.EncodeParam(cfg, func(e uri.Encoder) error {
-			return e.EncodeValue(conv.StringToString(params.IdempotencyKey))
-		}); err != nil {
-			return res, errors.Wrap(err, "encode header")
-		}
 	}
 
 	{
@@ -4634,20 +4452,6 @@ func (c *Client) sendDeleteSubnet(ctx context.Context, params DeleteSubnetParams
 		return res, errors.Wrap(err, "create request")
 	}
 
-	stage = "EncodeHeaderParams"
-	h := uri.NewHeaderEncoder(r.Header)
-	{
-		cfg := uri.HeaderParameterEncodingConfig{
-			Name:    "Idempotency-Key",
-			Explode: false,
-		}
-		if err := h.EncodeParam(cfg, func(e uri.Encoder) error {
-			return e.EncodeValue(conv.StringToString(params.IdempotencyKey))
-		}); err != nil {
-			return res, errors.Wrap(err, "encode header")
-		}
-	}
-
 	{
 		type bitset = [1]uint8
 		var satisfied bitset
@@ -4875,12 +4679,12 @@ func (c *Client) sendDetachDisk(ctx context.Context, params DetachDiskParams) (r
 // confirmation of the binding change.
 //
 // DELETE /api/v1/instances/{instanceId}/floating-ips/{floatingIpId}
-func (c *Client) DetachInstanceFloatingIP(ctx context.Context, params DetachInstanceFloatingIPParams) (*Task, error) {
+func (c *Client) DetachInstanceFloatingIP(ctx context.Context, params DetachInstanceFloatingIPParams) (*FloatingIPResource, error) {
 	res, err := c.sendDetachInstanceFloatingIP(ctx, params)
 	return res, err
 }
 
-func (c *Client) sendDetachInstanceFloatingIP(ctx context.Context, params DetachInstanceFloatingIPParams) (res *Task, err error) {
+func (c *Client) sendDetachInstanceFloatingIP(ctx context.Context, params DetachInstanceFloatingIPParams) (res *FloatingIPResource, err error) {
 	otelAttrs := []attribute.KeyValue{
 		otelogen.OperationID("detach-instance-floating-ip"),
 		semconv.HTTPRequestMethodKey.String("DELETE"),
@@ -4962,20 +4766,6 @@ func (c *Client) sendDetachInstanceFloatingIP(ctx context.Context, params Detach
 	r, err := ht.NewRequest(ctx, "DELETE", u)
 	if err != nil {
 		return res, errors.Wrap(err, "create request")
-	}
-
-	stage = "EncodeHeaderParams"
-	h := uri.NewHeaderEncoder(r.Header)
-	{
-		cfg := uri.HeaderParameterEncodingConfig{
-			Name:    "Idempotency-Key",
-			Explode: false,
-		}
-		if err := h.EncodeParam(cfg, func(e uri.Encoder) error {
-			return e.EncodeValue(conv.StringToString(params.IdempotencyKey))
-		}); err != nil {
-			return res, errors.Wrap(err, "encode header")
-		}
 	}
 
 	{
@@ -5274,20 +5064,6 @@ func (c *Client) sendDisablePrivateNetworkIpv6(ctx context.Context, params Disab
 		return res, errors.Wrap(err, "create request")
 	}
 
-	stage = "EncodeHeaderParams"
-	h := uri.NewHeaderEncoder(r.Header)
-	{
-		cfg := uri.HeaderParameterEncodingConfig{
-			Name:    "Idempotency-Key",
-			Explode: false,
-		}
-		if err := h.EncodeParam(cfg, func(e uri.Encoder) error {
-			return e.EncodeValue(conv.StringToString(params.IdempotencyKey))
-		}); err != nil {
-			return res, errors.Wrap(err, "encode header")
-		}
-	}
-
 	{
 		type bitset = [1]uint8
 		var satisfied bitset
@@ -5422,20 +5198,6 @@ func (c *Client) sendEnablePrivateNetworkIpv6(ctx context.Context, params Enable
 	r, err := ht.NewRequest(ctx, "POST", u)
 	if err != nil {
 		return res, errors.Wrap(err, "create request")
-	}
-
-	stage = "EncodeHeaderParams"
-	h := uri.NewHeaderEncoder(r.Header)
-	{
-		cfg := uri.HeaderParameterEncodingConfig{
-			Name:    "Idempotency-Key",
-			Explode: false,
-		}
-		if err := h.EncodeParam(cfg, func(e uri.Encoder) error {
-			return e.EncodeValue(conv.StringToString(params.IdempotencyKey))
-		}); err != nil {
-			return res, errors.Wrap(err, "encode header")
-		}
 	}
 
 	{
@@ -10360,20 +10122,6 @@ func (c *Client) sendOpenInstanceConsole(ctx context.Context, params OpenInstanc
 		return res, errors.Wrap(err, "create request")
 	}
 
-	stage = "EncodeHeaderParams"
-	h := uri.NewHeaderEncoder(r.Header)
-	{
-		cfg := uri.HeaderParameterEncodingConfig{
-			Name:    "Idempotency-Key",
-			Explode: false,
-		}
-		if err := h.EncodeParam(cfg, func(e uri.Encoder) error {
-			return e.EncodeValue(conv.StringToString(params.IdempotencyKey))
-		}); err != nil {
-			return res, errors.Wrap(err, "encode header")
-		}
-	}
-
 	{
 		type bitset = [1]uint8
 		var satisfied bitset
@@ -10674,20 +10422,6 @@ func (c *Client) sendRebuildInstance(ctx context.Context, request *RebuildInstan
 		return res, errors.Wrap(err, "encode request")
 	}
 
-	stage = "EncodeHeaderParams"
-	h := uri.NewHeaderEncoder(r.Header)
-	{
-		cfg := uri.HeaderParameterEncodingConfig{
-			Name:    "Idempotency-Key",
-			Explode: false,
-		}
-		if err := h.EncodeParam(cfg, func(e uri.Encoder) error {
-			return e.EncodeValue(conv.StringToString(params.IdempotencyKey))
-		}); err != nil {
-			return res, errors.Wrap(err, "encode header")
-		}
-	}
-
 	{
 		type bitset = [1]uint8
 		var satisfied bitset
@@ -10967,20 +10701,6 @@ func (c *Client) sendRenameBackup(ctx context.Context, request *RenameBackupRequ
 		return res, errors.Wrap(err, "encode request")
 	}
 
-	stage = "EncodeHeaderParams"
-	h := uri.NewHeaderEncoder(r.Header)
-	{
-		cfg := uri.HeaderParameterEncodingConfig{
-			Name:    "Idempotency-Key",
-			Explode: false,
-		}
-		if err := h.EncodeParam(cfg, func(e uri.Encoder) error {
-			return e.EncodeValue(conv.StringToString(params.IdempotencyKey))
-		}); err != nil {
-			return res, errors.Wrap(err, "encode header")
-		}
-	}
-
 	{
 		type bitset = [1]uint8
 		var satisfied bitset
@@ -11114,20 +10834,6 @@ func (c *Client) sendRenameDisk(ctx context.Context, request *RenameDiskRequestB
 	}
 	if err := encodeRenameDiskRequest(request, r); err != nil {
 		return res, errors.Wrap(err, "encode request")
-	}
-
-	stage = "EncodeHeaderParams"
-	h := uri.NewHeaderEncoder(r.Header)
-	{
-		cfg := uri.HeaderParameterEncodingConfig{
-			Name:    "Idempotency-Key",
-			Explode: false,
-		}
-		if err := h.EncodeParam(cfg, func(e uri.Encoder) error {
-			return e.EncodeValue(conv.StringToString(params.IdempotencyKey))
-		}); err != nil {
-			return res, errors.Wrap(err, "encode header")
-		}
 	}
 
 	{
@@ -11265,20 +10971,6 @@ func (c *Client) sendRenameInstance(ctx context.Context, request *RenameInstance
 		return res, errors.Wrap(err, "encode request")
 	}
 
-	stage = "EncodeHeaderParams"
-	h := uri.NewHeaderEncoder(r.Header)
-	{
-		cfg := uri.HeaderParameterEncodingConfig{
-			Name:    "Idempotency-Key",
-			Explode: false,
-		}
-		if err := h.EncodeParam(cfg, func(e uri.Encoder) error {
-			return e.EncodeValue(conv.StringToString(params.IdempotencyKey))
-		}); err != nil {
-			return res, errors.Wrap(err, "encode header")
-		}
-	}
-
 	{
 		type bitset = [1]uint8
 		var satisfied bitset
@@ -11411,20 +11103,6 @@ func (c *Client) sendRenamePrivateImage(ctx context.Context, request *RenamePriv
 	}
 	if err := encodeRenamePrivateImageRequest(request, r); err != nil {
 		return res, errors.Wrap(err, "encode request")
-	}
-
-	stage = "EncodeHeaderParams"
-	h := uri.NewHeaderEncoder(r.Header)
-	{
-		cfg := uri.HeaderParameterEncodingConfig{
-			Name:    "Idempotency-Key",
-			Explode: false,
-		}
-		if err := h.EncodeParam(cfg, func(e uri.Encoder) error {
-			return e.EncodeValue(conv.StringToString(params.IdempotencyKey))
-		}); err != nil {
-			return res, errors.Wrap(err, "encode header")
-		}
 	}
 
 	{
@@ -11561,20 +11239,6 @@ func (c *Client) sendRenamePrivateNetwork(ctx context.Context, request *RenamePr
 		return res, errors.Wrap(err, "encode request")
 	}
 
-	stage = "EncodeHeaderParams"
-	h := uri.NewHeaderEncoder(r.Header)
-	{
-		cfg := uri.HeaderParameterEncodingConfig{
-			Name:    "Idempotency-Key",
-			Explode: false,
-		}
-		if err := h.EncodeParam(cfg, func(e uri.Encoder) error {
-			return e.EncodeValue(conv.StringToString(params.IdempotencyKey))
-		}); err != nil {
-			return res, errors.Wrap(err, "encode header")
-		}
-	}
-
 	{
 		type bitset = [1]uint8
 		var satisfied bitset
@@ -11709,20 +11373,6 @@ func (c *Client) sendRenameSecurityGroup(ctx context.Context, request *RenameSec
 		return res, errors.Wrap(err, "encode request")
 	}
 
-	stage = "EncodeHeaderParams"
-	h := uri.NewHeaderEncoder(r.Header)
-	{
-		cfg := uri.HeaderParameterEncodingConfig{
-			Name:    "Idempotency-Key",
-			Explode: false,
-		}
-		if err := h.EncodeParam(cfg, func(e uri.Encoder) error {
-			return e.EncodeValue(conv.StringToString(params.IdempotencyKey))
-		}); err != nil {
-			return res, errors.Wrap(err, "encode header")
-		}
-	}
-
 	{
 		type bitset = [1]uint8
 		var satisfied bitset
@@ -11855,20 +11505,6 @@ func (c *Client) sendRenameSnapshot(ctx context.Context, request *RenameSnapshot
 	}
 	if err := encodeRenameSnapshotRequest(request, r); err != nil {
 		return res, errors.Wrap(err, "encode request")
-	}
-
-	stage = "EncodeHeaderParams"
-	h := uri.NewHeaderEncoder(r.Header)
-	{
-		cfg := uri.HeaderParameterEncodingConfig{
-			Name:    "Idempotency-Key",
-			Explode: false,
-		}
-		if err := h.EncodeParam(cfg, func(e uri.Encoder) error {
-			return e.EncodeValue(conv.StringToString(params.IdempotencyKey))
-		}); err != nil {
-			return res, errors.Wrap(err, "encode header")
-		}
 	}
 
 	{
@@ -12010,20 +11646,6 @@ func (c *Client) sendResetInstancePassword(ctx context.Context, request *ResetPa
 	}
 	if err := encodeResetInstancePasswordRequest(request, r); err != nil {
 		return res, errors.Wrap(err, "encode request")
-	}
-
-	stage = "EncodeHeaderParams"
-	h := uri.NewHeaderEncoder(r.Header)
-	{
-		cfg := uri.HeaderParameterEncodingConfig{
-			Name:    "Idempotency-Key",
-			Explode: false,
-		}
-		if err := h.EncodeParam(cfg, func(e uri.Encoder) error {
-			return e.EncodeValue(conv.StringToString(params.IdempotencyKey))
-		}); err != nil {
-			return res, errors.Wrap(err, "encode header")
-		}
 	}
 
 	{
@@ -12918,20 +12540,6 @@ func (c *Client) sendRunInstanceCommand(ctx context.Context, request *RunCommand
 		return res, errors.Wrap(err, "encode request")
 	}
 
-	stage = "EncodeHeaderParams"
-	h := uri.NewHeaderEncoder(r.Header)
-	{
-		cfg := uri.HeaderParameterEncodingConfig{
-			Name:    "Idempotency-Key",
-			Explode: false,
-		}
-		if err := h.EncodeParam(cfg, func(e uri.Encoder) error {
-			return e.EncodeValue(conv.StringToString(params.IdempotencyKey))
-		}); err != nil {
-			return res, errors.Wrap(err, "encode header")
-		}
-	}
-
 	{
 		type bitset = [1]uint8
 		var satisfied bitset
@@ -13212,20 +12820,6 @@ func (c *Client) sendSetInstanceLabels(ctx context.Context, request *SetInstance
 		return res, errors.Wrap(err, "encode request")
 	}
 
-	stage = "EncodeHeaderParams"
-	h := uri.NewHeaderEncoder(r.Header)
-	{
-		cfg := uri.HeaderParameterEncodingConfig{
-			Name:    "Idempotency-Key",
-			Explode: false,
-		}
-		if err := h.EncodeParam(cfg, func(e uri.Encoder) error {
-			return e.EncodeValue(conv.StringToString(params.IdempotencyKey))
-		}); err != nil {
-			return res, errors.Wrap(err, "encode header")
-		}
-	}
-
 	{
 		type bitset = [1]uint8
 		var satisfied bitset
@@ -13364,20 +12958,6 @@ func (c *Client) sendSetInstanceNotes(ctx context.Context, request *SetInstanceN
 	}
 	if err := encodeSetInstanceNotesRequest(request, r); err != nil {
 		return res, errors.Wrap(err, "encode request")
-	}
-
-	stage = "EncodeHeaderParams"
-	h := uri.NewHeaderEncoder(r.Header)
-	{
-		cfg := uri.HeaderParameterEncodingConfig{
-			Name:    "Idempotency-Key",
-			Explode: false,
-		}
-		if err := h.EncodeParam(cfg, func(e uri.Encoder) error {
-			return e.EncodeValue(conv.StringToString(params.IdempotencyKey))
-		}); err != nil {
-			return res, errors.Wrap(err, "encode header")
-		}
 	}
 
 	{
@@ -13968,20 +13548,6 @@ func (c *Client) sendUnbindFloatingIP(ctx context.Context, params UnbindFloating
 	r, err := ht.NewRequest(ctx, "DELETE", u)
 	if err != nil {
 		return res, errors.Wrap(err, "create request")
-	}
-
-	stage = "EncodeHeaderParams"
-	h := uri.NewHeaderEncoder(r.Header)
-	{
-		cfg := uri.HeaderParameterEncodingConfig{
-			Name:    "Idempotency-Key",
-			Explode: false,
-		}
-		if err := h.EncodeParam(cfg, func(e uri.Encoder) error {
-			return e.EncodeValue(conv.StringToString(params.IdempotencyKey))
-		}); err != nil {
-			return res, errors.Wrap(err, "encode header")
-		}
 	}
 
 	{

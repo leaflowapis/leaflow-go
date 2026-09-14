@@ -2026,12 +2026,6 @@ type DeleteBackupParams struct {
 	IdempotencyKey string `json:"Idempotency-Key"`
 }
 
-// RenameBackupParams defines parameters for RenameBackup.
-type RenameBackupParams struct {
-	// IdempotencyKey Reuse the same key for retries of the same action. A different request with the same key is rejected.
-	IdempotencyKey string `json:"Idempotency-Key"`
-}
-
 // ListDiskTypesParams defines parameters for ListDiskTypes.
 type ListDiskTypesParams struct {
 	RegionId openapi_types.UUID `form:"region_id" json:"region_id"`
@@ -2051,12 +2045,6 @@ type DeleteDiskParams struct {
 	IdempotencyKey string `json:"Idempotency-Key"`
 }
 
-// RenameDiskParams defines parameters for RenameDisk.
-type RenameDiskParams struct {
-	// IdempotencyKey Reuse the same key for retries of the same action. A different request with the same key is rejected.
-	IdempotencyKey string `json:"Idempotency-Key"`
-}
-
 // RevertDiskParams defines parameters for RevertDisk.
 type RevertDiskParams struct {
 	// IdempotencyKey Reuse the same key for retries of the same action. A different request with the same key is rejected.
@@ -2065,18 +2053,6 @@ type RevertDiskParams struct {
 
 // ReleaseFloatingIpParams defines parameters for ReleaseFloatingIp.
 type ReleaseFloatingIpParams struct {
-	// IdempotencyKey Reuse the same key for retries of the same action. A different request with the same key is rejected.
-	IdempotencyKey string `json:"Idempotency-Key"`
-}
-
-// UnbindFloatingIpParams defines parameters for UnbindFloatingIp.
-type UnbindFloatingIpParams struct {
-	// IdempotencyKey Reuse the same key for retries of the same action. A different request with the same key is rejected.
-	IdempotencyKey string `json:"Idempotency-Key"`
-}
-
-// BindFloatingIpParams defines parameters for BindFloatingIp.
-type BindFloatingIpParams struct {
 	// IdempotencyKey Reuse the same key for retries of the same action. A different request with the same key is rejected.
 	IdempotencyKey string `json:"Idempotency-Key"`
 }
@@ -2109,24 +2085,6 @@ type DeleteInstanceParams struct {
 	IdempotencyKey string `json:"Idempotency-Key"`
 }
 
-// RenameInstanceParams defines parameters for RenameInstance.
-type RenameInstanceParams struct {
-	// IdempotencyKey Reuse the same key for retries of the same action. A different request with the same key is rejected.
-	IdempotencyKey string `json:"Idempotency-Key"`
-}
-
-// RunInstanceCommandParams defines parameters for RunInstanceCommand.
-type RunInstanceCommandParams struct {
-	// IdempotencyKey Reuse the same key for retries of the same action. A different request with the same key is rejected.
-	IdempotencyKey string `json:"Idempotency-Key"`
-}
-
-// OpenInstanceConsoleParams defines parameters for OpenInstanceConsole.
-type OpenInstanceConsoleParams struct {
-	// IdempotencyKey Reuse the same key for retries of the same action. A different request with the same key is rejected.
-	IdempotencyKey string `json:"Idempotency-Key"`
-}
-
 // GetInstanceConsoleOutputParams defines parameters for GetInstanceConsoleOutput.
 type GetInstanceConsoleOutputParams struct {
 	// Lines Number of trailing lines to return; 0 returns the entire output
@@ -2151,36 +2109,6 @@ type DetachDiskParams struct {
 	IdempotencyKey string `json:"Idempotency-Key"`
 }
 
-// AttachInstanceFloatingIpParams defines parameters for AttachInstanceFloatingIp.
-type AttachInstanceFloatingIpParams struct {
-	// IdempotencyKey Reuse the same key for retries of the same action. A different request with the same key is rejected.
-	IdempotencyKey string `json:"Idempotency-Key"`
-}
-
-// DetachInstanceFloatingIpParams defines parameters for DetachInstanceFloatingIp.
-type DetachInstanceFloatingIpParams struct {
-	// IdempotencyKey Reuse the same key for retries of the same action. A different request with the same key is rejected.
-	IdempotencyKey string `json:"Idempotency-Key"`
-}
-
-// SetInstanceLabelsParams defines parameters for SetInstanceLabels.
-type SetInstanceLabelsParams struct {
-	// IdempotencyKey Reuse the same key for retries of the same action. A different request with the same key is rejected.
-	IdempotencyKey string `json:"Idempotency-Key"`
-}
-
-// SetInstanceNotesParams defines parameters for SetInstanceNotes.
-type SetInstanceNotesParams struct {
-	// IdempotencyKey Reuse the same key for retries of the same action. A different request with the same key is rejected.
-	IdempotencyKey string `json:"Idempotency-Key"`
-}
-
-// ResetInstancePasswordParams defines parameters for ResetInstancePassword.
-type ResetInstancePasswordParams struct {
-	// IdempotencyKey Reuse the same key for retries of the same action. A different request with the same key is rejected.
-	IdempotencyKey string `json:"Idempotency-Key"`
-}
-
 // ListInstancePortsParams defines parameters for ListInstancePorts.
 type ListInstancePortsParams struct {
 	Page     *int64 `form:"page,omitempty" json:"page,omitempty"`
@@ -2201,12 +2129,6 @@ type DetachPortParams struct {
 
 // RebootInstanceParams defines parameters for RebootInstance.
 type RebootInstanceParams struct {
-	// IdempotencyKey Reuse the same key for retries of the same action. A different request with the same key is rejected.
-	IdempotencyKey string `json:"Idempotency-Key"`
-}
-
-// RebuildInstanceParams defines parameters for RebuildInstance.
-type RebuildInstanceParams struct {
 	// IdempotencyKey Reuse the same key for retries of the same action. A different request with the same key is rejected.
 	IdempotencyKey string `json:"Idempotency-Key"`
 }
@@ -2250,18 +2172,6 @@ type ListOperationLogsParams struct {
 	PageSize *int64  `form:"page_size,omitempty" json:"page_size,omitempty"`
 }
 
-// CreatePortParams defines parameters for CreatePort.
-type CreatePortParams struct {
-	// IdempotencyKey Reuse the same key for retries of the same action. A different request with the same key is rejected.
-	IdempotencyKey string `json:"Idempotency-Key"`
-}
-
-// DeletePortParams defines parameters for DeletePort.
-type DeletePortParams struct {
-	// IdempotencyKey Reuse the same key for retries of the same action. A different request with the same key is rejected.
-	IdempotencyKey string `json:"Idempotency-Key"`
-}
-
 // ListPrivateImagesParams defines parameters for ListPrivateImages.
 type ListPrivateImagesParams struct {
 	// RegionId Return only the images of this region. An image can only be used in the region that holds it
@@ -2276,75 +2186,15 @@ type DeletePrivateImageParams struct {
 	IdempotencyKey string `json:"Idempotency-Key"`
 }
 
-// RenamePrivateImageParams defines parameters for RenamePrivateImage.
-type RenamePrivateImageParams struct {
-	// IdempotencyKey Reuse the same key for retries of the same action. A different request with the same key is rejected.
-	IdempotencyKey string `json:"Idempotency-Key"`
-}
-
 // ListPrivateNetworksParams defines parameters for ListPrivateNetworks.
 type ListPrivateNetworksParams struct {
 	// RegionId Returns every region when omitted
 	RegionId *openapi_types.UUID `form:"region_id,omitempty" json:"region_id,omitempty"`
 }
 
-// CreatePrivateNetworkParams defines parameters for CreatePrivateNetwork.
-type CreatePrivateNetworkParams struct {
-	// IdempotencyKey Reuse the same key for retries of the same action. A different request with the same key is rejected.
-	IdempotencyKey string `json:"Idempotency-Key"`
-}
-
-// DeletePrivateNetworkParams defines parameters for DeletePrivateNetwork.
-type DeletePrivateNetworkParams struct {
-	// IdempotencyKey Reuse the same key for retries of the same action. A different request with the same key is rejected.
-	IdempotencyKey string `json:"Idempotency-Key"`
-}
-
-// RenamePrivateNetworkParams defines parameters for RenamePrivateNetwork.
-type RenamePrivateNetworkParams struct {
-	// IdempotencyKey Reuse the same key for retries of the same action. A different request with the same key is rejected.
-	IdempotencyKey string `json:"Idempotency-Key"`
-}
-
-// DisablePrivateNetworkIpv6Params defines parameters for DisablePrivateNetworkIpv6.
-type DisablePrivateNetworkIpv6Params struct {
-	// IdempotencyKey Reuse the same key for retries of the same action. A different request with the same key is rejected.
-	IdempotencyKey string `json:"Idempotency-Key"`
-}
-
-// EnablePrivateNetworkIpv6Params defines parameters for EnablePrivateNetworkIpv6.
-type EnablePrivateNetworkIpv6Params struct {
-	// IdempotencyKey Reuse the same key for retries of the same action. A different request with the same key is rejected.
-	IdempotencyKey string `json:"Idempotency-Key"`
-}
-
-// CreateRouteParams defines parameters for CreateRoute.
-type CreateRouteParams struct {
-	// IdempotencyKey Reuse the same key for retries of the same action. A different request with the same key is rejected.
-	IdempotencyKey string `json:"Idempotency-Key"`
-}
-
-// DeleteRouteParams defines parameters for DeleteRoute.
-type DeleteRouteParams struct {
-	// IdempotencyKey Reuse the same key for retries of the same action. A different request with the same key is rejected.
-	IdempotencyKey string `json:"Idempotency-Key"`
-}
-
-// CreateSubnetParams defines parameters for CreateSubnet.
-type CreateSubnetParams struct {
-	// IdempotencyKey Reuse the same key for retries of the same action. A different request with the same key is rejected.
-	IdempotencyKey string `json:"Idempotency-Key"`
-}
-
 // SuggestSubnetCidrParams defines parameters for SuggestSubnetCidr.
 type SuggestSubnetCidrParams struct {
 	PrefixLength *int64 `form:"prefix_length,omitempty" json:"prefix_length,omitempty"`
-}
-
-// DeleteSubnetParams defines parameters for DeleteSubnet.
-type DeleteSubnetParams struct {
-	// IdempotencyKey Reuse the same key for retries of the same action. A different request with the same key is rejected.
-	IdempotencyKey string `json:"Idempotency-Key"`
 }
 
 // ListSecurityGroupsParams defines parameters for ListSecurityGroups.
@@ -2355,36 +2205,6 @@ type ListSecurityGroupsParams struct {
 	PrivateNetworkId *string `form:"private_network_id,omitempty" json:"private_network_id,omitempty"`
 }
 
-// CreateSecurityGroupParams defines parameters for CreateSecurityGroup.
-type CreateSecurityGroupParams struct {
-	// IdempotencyKey Reuse the same key for retries of the same action. A different request with the same key is rejected.
-	IdempotencyKey string `json:"Idempotency-Key"`
-}
-
-// DeleteSecurityGroupParams defines parameters for DeleteSecurityGroup.
-type DeleteSecurityGroupParams struct {
-	// IdempotencyKey Reuse the same key for retries of the same action. A different request with the same key is rejected.
-	IdempotencyKey string `json:"Idempotency-Key"`
-}
-
-// RenameSecurityGroupParams defines parameters for RenameSecurityGroup.
-type RenameSecurityGroupParams struct {
-	// IdempotencyKey Reuse the same key for retries of the same action. A different request with the same key is rejected.
-	IdempotencyKey string `json:"Idempotency-Key"`
-}
-
-// CreateSecurityGroupRuleParams defines parameters for CreateSecurityGroupRule.
-type CreateSecurityGroupRuleParams struct {
-	// IdempotencyKey Reuse the same key for retries of the same action. A different request with the same key is rejected.
-	IdempotencyKey string `json:"Idempotency-Key"`
-}
-
-// DeleteSecurityGroupRuleParams defines parameters for DeleteSecurityGroupRule.
-type DeleteSecurityGroupRuleParams struct {
-	// IdempotencyKey Reuse the same key for retries of the same action. A different request with the same key is rejected.
-	IdempotencyKey string `json:"Idempotency-Key"`
-}
-
 // ListSnapshotsParams defines parameters for ListSnapshots.
 type ListSnapshotsParams struct {
 	// DiskId Return only the snapshots of this disk
@@ -2393,12 +2213,6 @@ type ListSnapshotsParams struct {
 
 // DeleteSnapshotParams defines parameters for DeleteSnapshot.
 type DeleteSnapshotParams struct {
-	// IdempotencyKey Reuse the same key for retries of the same action. A different request with the same key is rejected.
-	IdempotencyKey string `json:"Idempotency-Key"`
-}
-
-// RenameSnapshotParams defines parameters for RenameSnapshot.
-type RenameSnapshotParams struct {
 	// IdempotencyKey Reuse the same key for retries of the same action. A different request with the same key is rejected.
 	IdempotencyKey string `json:"Idempotency-Key"`
 }
@@ -2635,14 +2449,14 @@ type ClientInterface interface {
 	// Takes any type of body and a specified content type.
 	//
 	// Corresponds with PATCH /api/v1/backups/{backupId} (the `RenameBackup` operationId).
-	RenameBackupWithBody(ctx context.Context, backupId openapi_types.UUID, params *RenameBackupParams, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
+	RenameBackupWithBody(ctx context.Context, backupId openapi_types.UUID, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
 
 	// RenameBackup Rename a backup
 	//
 	// Takes a body of the `application/json` content type.
 	//
 	// Corresponds with PATCH /api/v1/backups/{backupId} (the `RenameBackup` operationId).
-	RenameBackup(ctx context.Context, backupId openapi_types.UUID, params *RenameBackupParams, body RenameBackupJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
+	RenameBackup(ctx context.Context, backupId openapi_types.UUID, body RenameBackupJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
 
 	// RestoreBackupWithBody Restore from a backup
 	//
@@ -2730,7 +2544,7 @@ type ClientInterface interface {
 	// Takes any type of body and a specified content type.
 	//
 	// Corresponds with PATCH /api/v1/disks/{diskId} (the `RenameDisk` operationId).
-	RenameDiskWithBody(ctx context.Context, diskId openapi_types.UUID, params *RenameDiskParams, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
+	RenameDiskWithBody(ctx context.Context, diskId openapi_types.UUID, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
 
 	// RenameDisk Rename a disk
 	//
@@ -2739,7 +2553,7 @@ type ClientInterface interface {
 	// Takes a body of the `application/json` content type.
 	//
 	// Corresponds with PATCH /api/v1/disks/{diskId} (the `RenameDisk` operationId).
-	RenameDisk(ctx context.Context, diskId openapi_types.UUID, params *RenameDiskParams, body RenameDiskJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
+	RenameDisk(ctx context.Context, diskId openapi_types.UUID, body RenameDiskJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
 
 	// ResizeDiskWithBody Resize a disk
 	//
@@ -2863,21 +2677,21 @@ type ClientInterface interface {
 	// The address remains held by the project and simply no longer points at any network interface.
 	//
 	// Corresponds with DELETE /api/v1/floating-ips/{floatingIpId}/binding (the `UnbindFloatingIp` operationId).
-	UnbindFloatingIp(ctx context.Context, floatingIpId openapi_types.UUID, params *UnbindFloatingIpParams, reqEditors ...RequestEditorFn) (*http.Response, error)
+	UnbindFloatingIp(ctx context.Context, floatingIpId openapi_types.UUID, reqEditors ...RequestEditorFn) (*http.Response, error)
 
 	// BindFloatingIpWithBody Bind a floating IP to a network interface
 	//
 	// Takes any type of body and a specified content type.
 	//
 	// Corresponds with PUT /api/v1/floating-ips/{floatingIpId}/binding (the `BindFloatingIp` operationId).
-	BindFloatingIpWithBody(ctx context.Context, floatingIpId openapi_types.UUID, params *BindFloatingIpParams, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
+	BindFloatingIpWithBody(ctx context.Context, floatingIpId openapi_types.UUID, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
 
 	// BindFloatingIp Bind a floating IP to a network interface
 	//
 	// Takes a body of the `application/json` content type.
 	//
 	// Corresponds with PUT /api/v1/floating-ips/{floatingIpId}/binding (the `BindFloatingIp` operationId).
-	BindFloatingIp(ctx context.Context, floatingIpId openapi_types.UUID, params *BindFloatingIpParams, body BindFloatingIpJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
+	BindFloatingIp(ctx context.Context, floatingIpId openapi_types.UUID, body BindFloatingIpJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
 
 	// ListImages List images on sale
 	//
@@ -2943,7 +2757,7 @@ type ClientInterface interface {
 	// Takes any type of body and a specified content type.
 	//
 	// Corresponds with PATCH /api/v1/instances/{instanceId} (the `RenameInstance` operationId).
-	RenameInstanceWithBody(ctx context.Context, instanceId openapi_types.UUID, params *RenameInstanceParams, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
+	RenameInstanceWithBody(ctx context.Context, instanceId openapi_types.UUID, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
 
 	// RenameInstance Rename an instance
 	//
@@ -2952,7 +2766,7 @@ type ClientInterface interface {
 	// Takes a body of the `application/json` content type.
 	//
 	// Corresponds with PATCH /api/v1/instances/{instanceId} (the `RenameInstance` operationId).
-	RenameInstance(ctx context.Context, instanceId openapi_types.UUID, params *RenameInstanceParams, body RenameInstanceJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
+	RenameInstance(ctx context.Context, instanceId openapi_types.UUID, body RenameInstanceJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
 
 	// RunInstanceCommandWithBody Run a command on an instance
 	//
@@ -2977,7 +2791,7 @@ type ClientInterface interface {
 	// Takes any type of body and a specified content type.
 	//
 	// Corresponds with POST /api/v1/instances/{instanceId}/commands (the `RunInstanceCommand` operationId).
-	RunInstanceCommandWithBody(ctx context.Context, instanceId openapi_types.UUID, params *RunInstanceCommandParams, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
+	RunInstanceCommandWithBody(ctx context.Context, instanceId openapi_types.UUID, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
 
 	// RunInstanceCommand Run a command on an instance
 	//
@@ -3002,7 +2816,7 @@ type ClientInterface interface {
 	// Takes a body of the `application/json` content type.
 	//
 	// Corresponds with POST /api/v1/instances/{instanceId}/commands (the `RunInstanceCommand` operationId).
-	RunInstanceCommand(ctx context.Context, instanceId openapi_types.UUID, params *RunInstanceCommandParams, body RunInstanceCommandJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
+	RunInstanceCommand(ctx context.Context, instanceId openapi_types.UUID, body RunInstanceCommandJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
 
 	// OpenInstanceConsole Open a remote console
 	//
@@ -3011,7 +2825,7 @@ type ClientInterface interface {
 	// The returned address is single-use and expires within minutes. **Do not cache it**; request a new one before each use.
 	//
 	// Corresponds with POST /api/v1/instances/{instanceId}/console (the `OpenInstanceConsole` operationId).
-	OpenInstanceConsole(ctx context.Context, instanceId openapi_types.UUID, params *OpenInstanceConsoleParams, reqEditors ...RequestEditorFn) (*http.Response, error)
+	OpenInstanceConsole(ctx context.Context, instanceId openapi_types.UUID, reqEditors ...RequestEditorFn) (*http.Response, error)
 
 	// GetInstanceConsoleOutput Read the console output
 	//
@@ -3059,7 +2873,7 @@ type ClientInterface interface {
 	// Takes any type of body and a specified content type.
 	//
 	// Corresponds with POST /api/v1/instances/{instanceId}/floating-ips (the `AttachInstanceFloatingIp` operationId).
-	AttachInstanceFloatingIpWithBody(ctx context.Context, instanceId openapi_types.UUID, params *AttachInstanceFloatingIpParams, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
+	AttachInstanceFloatingIpWithBody(ctx context.Context, instanceId openapi_types.UUID, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
 
 	// AttachInstanceFloatingIp Bind a floating IP to an instance
 	//
@@ -3068,14 +2882,14 @@ type ClientInterface interface {
 	// Takes a body of the `application/json` content type.
 	//
 	// Corresponds with POST /api/v1/instances/{instanceId}/floating-ips (the `AttachInstanceFloatingIp` operationId).
-	AttachInstanceFloatingIp(ctx context.Context, instanceId openapi_types.UUID, params *AttachInstanceFloatingIpParams, body AttachInstanceFloatingIpJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
+	AttachInstanceFloatingIp(ctx context.Context, instanceId openapi_types.UUID, body AttachInstanceFloatingIpJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
 
 	// DetachInstanceFloatingIp Unbind the floating IP of an instance
 	//
 	// Changes the public IP binding on the instance's primary network interface. The returned task tracks confirmation of the binding change.
 	//
 	// Corresponds with DELETE /api/v1/instances/{instanceId}/floating-ips/{floatingIpId} (the `DetachInstanceFloatingIp` operationId).
-	DetachInstanceFloatingIp(ctx context.Context, instanceId openapi_types.UUID, floatingIpId openapi_types.UUID, params *DetachInstanceFloatingIpParams, reqEditors ...RequestEditorFn) (*http.Response, error)
+	DetachInstanceFloatingIp(ctx context.Context, instanceId openapi_types.UUID, floatingIpId openapi_types.UUID, reqEditors ...RequestEditorFn) (*http.Response, error)
 
 	// SetInstanceLabelsWithBody Replace an instance's labels
 	//
@@ -3088,7 +2902,7 @@ type ClientInterface interface {
 	// Takes any type of body and a specified content type.
 	//
 	// Corresponds with PUT /api/v1/instances/{instanceId}/labels (the `SetInstanceLabels` operationId).
-	SetInstanceLabelsWithBody(ctx context.Context, instanceId openapi_types.UUID, params *SetInstanceLabelsParams, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
+	SetInstanceLabelsWithBody(ctx context.Context, instanceId openapi_types.UUID, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
 
 	// SetInstanceLabels Replace an instance's labels
 	//
@@ -3101,7 +2915,7 @@ type ClientInterface interface {
 	// Takes a body of the `application/json` content type.
 	//
 	// Corresponds with PUT /api/v1/instances/{instanceId}/labels (the `SetInstanceLabels` operationId).
-	SetInstanceLabels(ctx context.Context, instanceId openapi_types.UUID, params *SetInstanceLabelsParams, body SetInstanceLabelsJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
+	SetInstanceLabels(ctx context.Context, instanceId openapi_types.UUID, body SetInstanceLabelsJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
 
 	// SetInstanceNotesWithBody Replace an instance's note
 	//
@@ -3114,7 +2928,7 @@ type ClientInterface interface {
 	// Takes any type of body and a specified content type.
 	//
 	// Corresponds with PUT /api/v1/instances/{instanceId}/notes (the `SetInstanceNotes` operationId).
-	SetInstanceNotesWithBody(ctx context.Context, instanceId openapi_types.UUID, params *SetInstanceNotesParams, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
+	SetInstanceNotesWithBody(ctx context.Context, instanceId openapi_types.UUID, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
 
 	// SetInstanceNotes Replace an instance's note
 	//
@@ -3127,7 +2941,7 @@ type ClientInterface interface {
 	// Takes a body of the `application/json` content type.
 	//
 	// Corresponds with PUT /api/v1/instances/{instanceId}/notes (the `SetInstanceNotes` operationId).
-	SetInstanceNotes(ctx context.Context, instanceId openapi_types.UUID, params *SetInstanceNotesParams, body SetInstanceNotesJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
+	SetInstanceNotes(ctx context.Context, instanceId openapi_types.UUID, body SetInstanceNotesJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
 
 	// ResetInstancePasswordWithBody Reset the login password
 	//
@@ -3140,7 +2954,7 @@ type ClientInterface interface {
 	// Takes any type of body and a specified content type.
 	//
 	// Corresponds with POST /api/v1/instances/{instanceId}/password (the `ResetInstancePassword` operationId).
-	ResetInstancePasswordWithBody(ctx context.Context, instanceId openapi_types.UUID, params *ResetInstancePasswordParams, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
+	ResetInstancePasswordWithBody(ctx context.Context, instanceId openapi_types.UUID, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
 
 	// ResetInstancePassword Reset the login password
 	//
@@ -3153,7 +2967,7 @@ type ClientInterface interface {
 	// Takes a body of the `application/json` content type.
 	//
 	// Corresponds with POST /api/v1/instances/{instanceId}/password (the `ResetInstancePassword` operationId).
-	ResetInstancePassword(ctx context.Context, instanceId openapi_types.UUID, params *ResetInstancePasswordParams, body ResetInstancePasswordJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
+	ResetInstancePassword(ctx context.Context, instanceId openapi_types.UUID, body ResetInstancePasswordJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
 
 	// ListInstancePorts List the network interfaces of an instance
 	//
@@ -3224,7 +3038,7 @@ type ClientInterface interface {
 	// Takes any type of body and a specified content type.
 	//
 	// Corresponds with POST /api/v1/instances/{instanceId}/rebuild (the `RebuildInstance` operationId).
-	RebuildInstanceWithBody(ctx context.Context, instanceId openapi_types.UUID, params *RebuildInstanceParams, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
+	RebuildInstanceWithBody(ctx context.Context, instanceId openapi_types.UUID, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
 
 	// RebuildInstance Rebuild an instance
 	//
@@ -3235,7 +3049,7 @@ type ClientInterface interface {
 	// Takes a body of the `application/json` content type.
 	//
 	// Corresponds with POST /api/v1/instances/{instanceId}/rebuild (the `RebuildInstance` operationId).
-	RebuildInstance(ctx context.Context, instanceId openapi_types.UUID, params *RebuildInstanceParams, body RebuildInstanceJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
+	RebuildInstance(ctx context.Context, instanceId openapi_types.UUID, body RebuildInstanceJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
 
 	// ResizeInstanceWithBody Resize an instance
 	//
@@ -3335,7 +3149,7 @@ type ClientInterface interface {
 	// Takes any type of body and a specified content type.
 	//
 	// Corresponds with POST /api/v1/ports (the `CreatePort` operationId).
-	CreatePortWithBody(ctx context.Context, params *CreatePortParams, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
+	CreatePortWithBody(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
 
 	// CreatePort Create a network interface
 	//
@@ -3344,14 +3158,14 @@ type ClientInterface interface {
 	// Takes a body of the `application/json` content type.
 	//
 	// Corresponds with POST /api/v1/ports (the `CreatePort` operationId).
-	CreatePort(ctx context.Context, params *CreatePortParams, body CreatePortJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
+	CreatePort(ctx context.Context, body CreatePortJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
 
 	// DeletePort Delete a network interface
 	//
 	// The primary network interface cannot be deleted on its own, as it is released with the instance. A network interface still attached to an instance cannot be deleted either.
 	//
 	// Corresponds with DELETE /api/v1/ports/{portId} (the `DeletePort` operationId).
-	DeletePort(ctx context.Context, portId openapi_types.UUID, params *DeletePortParams, reqEditors ...RequestEditorFn) (*http.Response, error)
+	DeletePort(ctx context.Context, portId openapi_types.UUID, reqEditors ...RequestEditorFn) (*http.Response, error)
 
 	// ListPrivateImages List private images
 	//
@@ -3419,14 +3233,14 @@ type ClientInterface interface {
 	// Takes any type of body and a specified content type.
 	//
 	// Corresponds with PATCH /api/v1/private-images/{privateImageId} (the `RenamePrivateImage` operationId).
-	RenamePrivateImageWithBody(ctx context.Context, privateImageId openapi_types.UUID, params *RenamePrivateImageParams, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
+	RenamePrivateImageWithBody(ctx context.Context, privateImageId openapi_types.UUID, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
 
 	// RenamePrivateImage Rename a private image
 	//
 	// Takes a body of the `application/json` content type.
 	//
 	// Corresponds with PATCH /api/v1/private-images/{privateImageId} (the `RenamePrivateImage` operationId).
-	RenamePrivateImage(ctx context.Context, privateImageId openapi_types.UUID, params *RenamePrivateImageParams, body RenamePrivateImageJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
+	RenamePrivateImage(ctx context.Context, privateImageId openapi_types.UUID, body RenamePrivateImageJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
 
 	// ListPrivateNetworks List private networks
 	//
@@ -3440,7 +3254,7 @@ type ClientInterface interface {
 	// Takes any type of body and a specified content type.
 	//
 	// Corresponds with POST /api/v1/private-networks (the `CreatePrivateNetwork` operationId).
-	CreatePrivateNetworkWithBody(ctx context.Context, params *CreatePrivateNetworkParams, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
+	CreatePrivateNetworkWithBody(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
 
 	// CreatePrivateNetwork Create a private network
 	//
@@ -3449,14 +3263,14 @@ type ClientInterface interface {
 	// Takes a body of the `application/json` content type.
 	//
 	// Corresponds with POST /api/v1/private-networks (the `CreatePrivateNetwork` operationId).
-	CreatePrivateNetwork(ctx context.Context, params *CreatePrivateNetworkParams, body CreatePrivateNetworkJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
+	CreatePrivateNetwork(ctx context.Context, body CreatePrivateNetworkJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
 
 	// DeletePrivateNetwork Release a private network
 	//
 	// Release is rejected while instances or network interfaces remain in the network. IPv6, the router and the security groups are released with it.
 	//
 	// Corresponds with DELETE /api/v1/private-networks/{privateNetworkId} (the `DeletePrivateNetwork` operationId).
-	DeletePrivateNetwork(ctx context.Context, privateNetworkId openapi_types.UUID, params *DeletePrivateNetworkParams, reqEditors ...RequestEditorFn) (*http.Response, error)
+	DeletePrivateNetwork(ctx context.Context, privateNetworkId openapi_types.UUID, reqEditors ...RequestEditorFn) (*http.Response, error)
 
 	// GetPrivateNetwork Retrieve a private network
 	//
@@ -3470,7 +3284,7 @@ type ClientInterface interface {
 	// Takes any type of body and a specified content type.
 	//
 	// Corresponds with PATCH /api/v1/private-networks/{privateNetworkId} (the `RenamePrivateNetwork` operationId).
-	RenamePrivateNetworkWithBody(ctx context.Context, privateNetworkId openapi_types.UUID, params *RenamePrivateNetworkParams, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
+	RenamePrivateNetworkWithBody(ctx context.Context, privateNetworkId openapi_types.UUID, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
 
 	// RenamePrivateNetwork Rename a private network
 	//
@@ -3479,14 +3293,14 @@ type ClientInterface interface {
 	// Takes a body of the `application/json` content type.
 	//
 	// Corresponds with PATCH /api/v1/private-networks/{privateNetworkId} (the `RenamePrivateNetwork` operationId).
-	RenamePrivateNetwork(ctx context.Context, privateNetworkId openapi_types.UUID, params *RenamePrivateNetworkParams, body RenamePrivateNetworkJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
+	RenamePrivateNetwork(ctx context.Context, privateNetworkId openapi_types.UUID, body RenamePrivateNetworkJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
 
 	// DisablePrivateNetworkIpv6 Disable IPv6 on a private network
 	//
 	// A released prefix is not re-allocated immediately.
 	//
 	// Corresponds with DELETE /api/v1/private-networks/{privateNetworkId}/ipv6 (the `DisablePrivateNetworkIpv6` operationId).
-	DisablePrivateNetworkIpv6(ctx context.Context, privateNetworkId openapi_types.UUID, params *DisablePrivateNetworkIpv6Params, reqEditors ...RequestEditorFn) (*http.Response, error)
+	DisablePrivateNetworkIpv6(ctx context.Context, privateNetworkId openapi_types.UUID, reqEditors ...RequestEditorFn) (*http.Response, error)
 
 	// GetPrivateNetworkIpv6 Retrieve the IPv6 configuration of a private network
 	//
@@ -3500,7 +3314,7 @@ type ClientInterface interface {
 	// If the private network is not yet connected to the internet, connectivity is established as part of this call.
 	//
 	// Corresponds with POST /api/v1/private-networks/{privateNetworkId}/ipv6 (the `EnablePrivateNetworkIpv6` operationId).
-	EnablePrivateNetworkIpv6(ctx context.Context, privateNetworkId openapi_types.UUID, params *EnablePrivateNetworkIpv6Params, reqEditors ...RequestEditorFn) (*http.Response, error)
+	EnablePrivateNetworkIpv6(ctx context.Context, privateNetworkId openapi_types.UUID, reqEditors ...RequestEditorFn) (*http.Response, error)
 
 	// ListRoutes List static routes
 	//
@@ -3514,7 +3328,7 @@ type ClientInterface interface {
 	// Takes any type of body and a specified content type.
 	//
 	// Corresponds with POST /api/v1/private-networks/{privateNetworkId}/routes (the `CreateRoute` operationId).
-	CreateRouteWithBody(ctx context.Context, privateNetworkId openapi_types.UUID, params *CreateRouteParams, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
+	CreateRouteWithBody(ctx context.Context, privateNetworkId openapi_types.UUID, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
 
 	// CreateRoute Create a static route
 	//
@@ -3523,12 +3337,12 @@ type ClientInterface interface {
 	// Takes a body of the `application/json` content type.
 	//
 	// Corresponds with POST /api/v1/private-networks/{privateNetworkId}/routes (the `CreateRoute` operationId).
-	CreateRoute(ctx context.Context, privateNetworkId openapi_types.UUID, params *CreateRouteParams, body CreateRouteJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
+	CreateRoute(ctx context.Context, privateNetworkId openapi_types.UUID, body CreateRouteJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
 
 	// DeleteRoute Delete a static route
 	//
 	// Corresponds with DELETE /api/v1/private-networks/{privateNetworkId}/routes/{routeId} (the `DeleteRoute` operationId).
-	DeleteRoute(ctx context.Context, privateNetworkId openapi_types.UUID, routeId openapi_types.UUID, params *DeleteRouteParams, reqEditors ...RequestEditorFn) (*http.Response, error)
+	DeleteRoute(ctx context.Context, privateNetworkId openapi_types.UUID, routeId openapi_types.UUID, reqEditors ...RequestEditorFn) (*http.Response, error)
 
 	// ListSubnets List subnets
 	//
@@ -3542,14 +3356,14 @@ type ClientInterface interface {
 	// Takes any type of body and a specified content type.
 	//
 	// Corresponds with POST /api/v1/private-networks/{privateNetworkId}/subnets (the `CreateSubnet` operationId).
-	CreateSubnetWithBody(ctx context.Context, privateNetworkId openapi_types.UUID, params *CreateSubnetParams, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
+	CreateSubnetWithBody(ctx context.Context, privateNetworkId openapi_types.UUID, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
 
 	// CreateSubnet Create a subnet
 	//
 	// Takes a body of the `application/json` content type.
 	//
 	// Corresponds with POST /api/v1/private-networks/{privateNetworkId}/subnets (the `CreateSubnet` operationId).
-	CreateSubnet(ctx context.Context, privateNetworkId openapi_types.UUID, params *CreateSubnetParams, body CreateSubnetJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
+	CreateSubnet(ctx context.Context, privateNetworkId openapi_types.UUID, body CreateSubnetJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
 
 	// SuggestSubnetCidr Suggest the next free CIDR
 	//
@@ -3563,7 +3377,7 @@ type ClientInterface interface {
 	// Deletion is rejected while network interfaces remain in the subnet, or while a static route has a next hop inside its CIDR.
 	//
 	// Corresponds with DELETE /api/v1/private-networks/{privateNetworkId}/subnets/{subnetId} (the `DeleteSubnet` operationId).
-	DeleteSubnet(ctx context.Context, privateNetworkId openapi_types.UUID, subnetId openapi_types.UUID, params *DeleteSubnetParams, reqEditors ...RequestEditorFn) (*http.Response, error)
+	DeleteSubnet(ctx context.Context, privateNetworkId openapi_types.UUID, subnetId openapi_types.UUID, reqEditors ...RequestEditorFn) (*http.Response, error)
 
 	// ListRegions List available regions
 	//
@@ -3589,7 +3403,7 @@ type ClientInterface interface {
 	// Takes any type of body and a specified content type.
 	//
 	// Corresponds with POST /api/v1/security-groups (the `CreateSecurityGroup` operationId).
-	CreateSecurityGroupWithBody(ctx context.Context, params *CreateSecurityGroupParams, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
+	CreateSecurityGroupWithBody(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
 
 	// CreateSecurityGroup Create a security group
 	//
@@ -3598,14 +3412,14 @@ type ClientInterface interface {
 	// Takes a body of the `application/json` content type.
 	//
 	// Corresponds with POST /api/v1/security-groups (the `CreateSecurityGroup` operationId).
-	CreateSecurityGroup(ctx context.Context, params *CreateSecurityGroupParams, body CreateSecurityGroupJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
+	CreateSecurityGroup(ctx context.Context, body CreateSecurityGroupJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
 
 	// DeleteSecurityGroup Delete a security group
 	//
 	// The default security group cannot be deleted, as it is released with the private network. A security group still referenced by a network interface cannot be deleted either.
 	//
 	// Corresponds with DELETE /api/v1/security-groups/{securityGroupId} (the `DeleteSecurityGroup` operationId).
-	DeleteSecurityGroup(ctx context.Context, securityGroupId openapi_types.UUID, params *DeleteSecurityGroupParams, reqEditors ...RequestEditorFn) (*http.Response, error)
+	DeleteSecurityGroup(ctx context.Context, securityGroupId openapi_types.UUID, reqEditors ...RequestEditorFn) (*http.Response, error)
 
 	// GetSecurityGroup Retrieve a security group
 	//
@@ -3619,7 +3433,7 @@ type ClientInterface interface {
 	// Takes any type of body and a specified content type.
 	//
 	// Corresponds with PATCH /api/v1/security-groups/{securityGroupId} (the `RenameSecurityGroup` operationId).
-	RenameSecurityGroupWithBody(ctx context.Context, securityGroupId openapi_types.UUID, params *RenameSecurityGroupParams, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
+	RenameSecurityGroupWithBody(ctx context.Context, securityGroupId openapi_types.UUID, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
 
 	// RenameSecurityGroup Rename a security group
 	//
@@ -3628,7 +3442,7 @@ type ClientInterface interface {
 	// Takes a body of the `application/json` content type.
 	//
 	// Corresponds with PATCH /api/v1/security-groups/{securityGroupId} (the `RenameSecurityGroup` operationId).
-	RenameSecurityGroup(ctx context.Context, securityGroupId openapi_types.UUID, params *RenameSecurityGroupParams, body RenameSecurityGroupJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
+	RenameSecurityGroup(ctx context.Context, securityGroupId openapi_types.UUID, body RenameSecurityGroupJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
 
 	// ListSecurityGroupRules List security group rules
 	//
@@ -3642,7 +3456,7 @@ type ClientInterface interface {
 	// Takes any type of body and a specified content type.
 	//
 	// Corresponds with POST /api/v1/security-groups/{securityGroupId}/rules (the `CreateSecurityGroupRule` operationId).
-	CreateSecurityGroupRuleWithBody(ctx context.Context, securityGroupId openapi_types.UUID, params *CreateSecurityGroupRuleParams, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
+	CreateSecurityGroupRuleWithBody(ctx context.Context, securityGroupId openapi_types.UUID, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
 
 	// CreateSecurityGroupRule Create a security group rule
 	//
@@ -3651,12 +3465,12 @@ type ClientInterface interface {
 	// Takes a body of the `application/json` content type.
 	//
 	// Corresponds with POST /api/v1/security-groups/{securityGroupId}/rules (the `CreateSecurityGroupRule` operationId).
-	CreateSecurityGroupRule(ctx context.Context, securityGroupId openapi_types.UUID, params *CreateSecurityGroupRuleParams, body CreateSecurityGroupRuleJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
+	CreateSecurityGroupRule(ctx context.Context, securityGroupId openapi_types.UUID, body CreateSecurityGroupRuleJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
 
 	// DeleteSecurityGroupRule Delete a security group rule
 	//
 	// Corresponds with DELETE /api/v1/security-groups/{securityGroupId}/rules/{ruleId} (the `DeleteSecurityGroupRule` operationId).
-	DeleteSecurityGroupRule(ctx context.Context, securityGroupId openapi_types.UUID, ruleId openapi_types.UUID, params *DeleteSecurityGroupRuleParams, reqEditors ...RequestEditorFn) (*http.Response, error)
+	DeleteSecurityGroupRule(ctx context.Context, securityGroupId openapi_types.UUID, ruleId openapi_types.UUID, reqEditors ...RequestEditorFn) (*http.Response, error)
 
 	// ListSnapshots List snapshots
 	//
@@ -3700,14 +3514,14 @@ type ClientInterface interface {
 	// Takes any type of body and a specified content type.
 	//
 	// Corresponds with PATCH /api/v1/snapshots/{snapshotId} (the `RenameSnapshot` operationId).
-	RenameSnapshotWithBody(ctx context.Context, snapshotId openapi_types.UUID, params *RenameSnapshotParams, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
+	RenameSnapshotWithBody(ctx context.Context, snapshotId openapi_types.UUID, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
 
 	// RenameSnapshot Rename a snapshot
 	//
 	// Takes a body of the `application/json` content type.
 	//
 	// Corresponds with PATCH /api/v1/snapshots/{snapshotId} (the `RenameSnapshot` operationId).
-	RenameSnapshot(ctx context.Context, snapshotId openapi_types.UUID, params *RenameSnapshotParams, body RenameSnapshotJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
+	RenameSnapshot(ctx context.Context, snapshotId openapi_types.UUID, body RenameSnapshotJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
 
 	// GetTask Get a requested action
 	//
@@ -3815,8 +3629,8 @@ func (c *Client) GetBackup(ctx context.Context, backupId openapi_types.UUID, req
 // Takes any type of body and a specified content type.
 //
 // Corresponds with PATCH /api/v1/backups/{backupId} (the `RenameBackup` operationId).
-func (c *Client) RenameBackupWithBody(ctx context.Context, backupId openapi_types.UUID, params *RenameBackupParams, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
-	req, err := NewRenameBackupRequestWithBody(c.Server, backupId, params, contentType, body)
+func (c *Client) RenameBackupWithBody(ctx context.Context, backupId openapi_types.UUID, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewRenameBackupRequestWithBody(c.Server, backupId, contentType, body)
 	if err != nil {
 		return nil, err
 	}
@@ -3832,8 +3646,8 @@ func (c *Client) RenameBackupWithBody(ctx context.Context, backupId openapi_type
 // Takes a body of the `application/json` content type.
 //
 // Corresponds with PATCH /api/v1/backups/{backupId} (the `RenameBackup` operationId).
-func (c *Client) RenameBackup(ctx context.Context, backupId openapi_types.UUID, params *RenameBackupParams, body RenameBackupJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
-	req, err := NewRenameBackupRequest(c.Server, backupId, params, body)
+func (c *Client) RenameBackup(ctx context.Context, backupId openapi_types.UUID, body RenameBackupJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewRenameBackupRequest(c.Server, backupId, body)
 	if err != nil {
 		return nil, err
 	}
@@ -4020,8 +3834,8 @@ func (c *Client) GetDisk(ctx context.Context, diskId openapi_types.UUID, reqEdit
 // Takes any type of body and a specified content type.
 //
 // Corresponds with PATCH /api/v1/disks/{diskId} (the `RenameDisk` operationId).
-func (c *Client) RenameDiskWithBody(ctx context.Context, diskId openapi_types.UUID, params *RenameDiskParams, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
-	req, err := NewRenameDiskRequestWithBody(c.Server, diskId, params, contentType, body)
+func (c *Client) RenameDiskWithBody(ctx context.Context, diskId openapi_types.UUID, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewRenameDiskRequestWithBody(c.Server, diskId, contentType, body)
 	if err != nil {
 		return nil, err
 	}
@@ -4039,8 +3853,8 @@ func (c *Client) RenameDiskWithBody(ctx context.Context, diskId openapi_types.UU
 // Takes a body of the `application/json` content type.
 //
 // Corresponds with PATCH /api/v1/disks/{diskId} (the `RenameDisk` operationId).
-func (c *Client) RenameDisk(ctx context.Context, diskId openapi_types.UUID, params *RenameDiskParams, body RenameDiskJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
-	req, err := NewRenameDiskRequest(c.Server, diskId, params, body)
+func (c *Client) RenameDisk(ctx context.Context, diskId openapi_types.UUID, body RenameDiskJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewRenameDiskRequest(c.Server, diskId, body)
 	if err != nil {
 		return nil, err
 	}
@@ -4283,8 +4097,8 @@ func (c *Client) SetFloatingIpBandwidth(ctx context.Context, floatingIpId openap
 // The address remains held by the project and simply no longer points at any network interface.
 //
 // Corresponds with DELETE /api/v1/floating-ips/{floatingIpId}/binding (the `UnbindFloatingIp` operationId).
-func (c *Client) UnbindFloatingIp(ctx context.Context, floatingIpId openapi_types.UUID, params *UnbindFloatingIpParams, reqEditors ...RequestEditorFn) (*http.Response, error) {
-	req, err := NewUnbindFloatingIpRequest(c.Server, floatingIpId, params)
+func (c *Client) UnbindFloatingIp(ctx context.Context, floatingIpId openapi_types.UUID, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewUnbindFloatingIpRequest(c.Server, floatingIpId)
 	if err != nil {
 		return nil, err
 	}
@@ -4300,8 +4114,8 @@ func (c *Client) UnbindFloatingIp(ctx context.Context, floatingIpId openapi_type
 // Takes any type of body and a specified content type.
 //
 // Corresponds with PUT /api/v1/floating-ips/{floatingIpId}/binding (the `BindFloatingIp` operationId).
-func (c *Client) BindFloatingIpWithBody(ctx context.Context, floatingIpId openapi_types.UUID, params *BindFloatingIpParams, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
-	req, err := NewBindFloatingIpRequestWithBody(c.Server, floatingIpId, params, contentType, body)
+func (c *Client) BindFloatingIpWithBody(ctx context.Context, floatingIpId openapi_types.UUID, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewBindFloatingIpRequestWithBody(c.Server, floatingIpId, contentType, body)
 	if err != nil {
 		return nil, err
 	}
@@ -4317,8 +4131,8 @@ func (c *Client) BindFloatingIpWithBody(ctx context.Context, floatingIpId openap
 // Takes a body of the `application/json` content type.
 //
 // Corresponds with PUT /api/v1/floating-ips/{floatingIpId}/binding (the `BindFloatingIp` operationId).
-func (c *Client) BindFloatingIp(ctx context.Context, floatingIpId openapi_types.UUID, params *BindFloatingIpParams, body BindFloatingIpJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
-	req, err := NewBindFloatingIpRequest(c.Server, floatingIpId, params, body)
+func (c *Client) BindFloatingIp(ctx context.Context, floatingIpId openapi_types.UUID, body BindFloatingIpJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewBindFloatingIpRequest(c.Server, floatingIpId, body)
 	if err != nil {
 		return nil, err
 	}
@@ -4463,8 +4277,8 @@ func (c *Client) GetInstance(ctx context.Context, instanceId openapi_types.UUID,
 // Takes any type of body and a specified content type.
 //
 // Corresponds with PATCH /api/v1/instances/{instanceId} (the `RenameInstance` operationId).
-func (c *Client) RenameInstanceWithBody(ctx context.Context, instanceId openapi_types.UUID, params *RenameInstanceParams, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
-	req, err := NewRenameInstanceRequestWithBody(c.Server, instanceId, params, contentType, body)
+func (c *Client) RenameInstanceWithBody(ctx context.Context, instanceId openapi_types.UUID, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewRenameInstanceRequestWithBody(c.Server, instanceId, contentType, body)
 	if err != nil {
 		return nil, err
 	}
@@ -4482,8 +4296,8 @@ func (c *Client) RenameInstanceWithBody(ctx context.Context, instanceId openapi_
 // Takes a body of the `application/json` content type.
 //
 // Corresponds with PATCH /api/v1/instances/{instanceId} (the `RenameInstance` operationId).
-func (c *Client) RenameInstance(ctx context.Context, instanceId openapi_types.UUID, params *RenameInstanceParams, body RenameInstanceJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
-	req, err := NewRenameInstanceRequest(c.Server, instanceId, params, body)
+func (c *Client) RenameInstance(ctx context.Context, instanceId openapi_types.UUID, body RenameInstanceJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewRenameInstanceRequest(c.Server, instanceId, body)
 	if err != nil {
 		return nil, err
 	}
@@ -4517,8 +4331,8 @@ func (c *Client) RenameInstance(ctx context.Context, instanceId openapi_types.UU
 // Takes any type of body and a specified content type.
 //
 // Corresponds with POST /api/v1/instances/{instanceId}/commands (the `RunInstanceCommand` operationId).
-func (c *Client) RunInstanceCommandWithBody(ctx context.Context, instanceId openapi_types.UUID, params *RunInstanceCommandParams, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
-	req, err := NewRunInstanceCommandRequestWithBody(c.Server, instanceId, params, contentType, body)
+func (c *Client) RunInstanceCommandWithBody(ctx context.Context, instanceId openapi_types.UUID, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewRunInstanceCommandRequestWithBody(c.Server, instanceId, contentType, body)
 	if err != nil {
 		return nil, err
 	}
@@ -4552,8 +4366,8 @@ func (c *Client) RunInstanceCommandWithBody(ctx context.Context, instanceId open
 // Takes a body of the `application/json` content type.
 //
 // Corresponds with POST /api/v1/instances/{instanceId}/commands (the `RunInstanceCommand` operationId).
-func (c *Client) RunInstanceCommand(ctx context.Context, instanceId openapi_types.UUID, params *RunInstanceCommandParams, body RunInstanceCommandJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
-	req, err := NewRunInstanceCommandRequest(c.Server, instanceId, params, body)
+func (c *Client) RunInstanceCommand(ctx context.Context, instanceId openapi_types.UUID, body RunInstanceCommandJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewRunInstanceCommandRequest(c.Server, instanceId, body)
 	if err != nil {
 		return nil, err
 	}
@@ -4571,8 +4385,8 @@ func (c *Client) RunInstanceCommand(ctx context.Context, instanceId openapi_type
 // The returned address is single-use and expires within minutes. **Do not cache it**; request a new one before each use.
 //
 // Corresponds with POST /api/v1/instances/{instanceId}/console (the `OpenInstanceConsole` operationId).
-func (c *Client) OpenInstanceConsole(ctx context.Context, instanceId openapi_types.UUID, params *OpenInstanceConsoleParams, reqEditors ...RequestEditorFn) (*http.Response, error) {
-	req, err := NewOpenInstanceConsoleRequest(c.Server, instanceId, params)
+func (c *Client) OpenInstanceConsole(ctx context.Context, instanceId openapi_types.UUID, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewOpenInstanceConsoleRequest(c.Server, instanceId)
 	if err != nil {
 		return nil, err
 	}
@@ -4679,8 +4493,8 @@ func (c *Client) DetachDisk(ctx context.Context, instanceId openapi_types.UUID, 
 // Takes any type of body and a specified content type.
 //
 // Corresponds with POST /api/v1/instances/{instanceId}/floating-ips (the `AttachInstanceFloatingIp` operationId).
-func (c *Client) AttachInstanceFloatingIpWithBody(ctx context.Context, instanceId openapi_types.UUID, params *AttachInstanceFloatingIpParams, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
-	req, err := NewAttachInstanceFloatingIpRequestWithBody(c.Server, instanceId, params, contentType, body)
+func (c *Client) AttachInstanceFloatingIpWithBody(ctx context.Context, instanceId openapi_types.UUID, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewAttachInstanceFloatingIpRequestWithBody(c.Server, instanceId, contentType, body)
 	if err != nil {
 		return nil, err
 	}
@@ -4698,8 +4512,8 @@ func (c *Client) AttachInstanceFloatingIpWithBody(ctx context.Context, instanceI
 // Takes a body of the `application/json` content type.
 //
 // Corresponds with POST /api/v1/instances/{instanceId}/floating-ips (the `AttachInstanceFloatingIp` operationId).
-func (c *Client) AttachInstanceFloatingIp(ctx context.Context, instanceId openapi_types.UUID, params *AttachInstanceFloatingIpParams, body AttachInstanceFloatingIpJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
-	req, err := NewAttachInstanceFloatingIpRequest(c.Server, instanceId, params, body)
+func (c *Client) AttachInstanceFloatingIp(ctx context.Context, instanceId openapi_types.UUID, body AttachInstanceFloatingIpJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewAttachInstanceFloatingIpRequest(c.Server, instanceId, body)
 	if err != nil {
 		return nil, err
 	}
@@ -4715,8 +4529,8 @@ func (c *Client) AttachInstanceFloatingIp(ctx context.Context, instanceId openap
 // Changes the public IP binding on the instance's primary network interface. The returned task tracks confirmation of the binding change.
 //
 // Corresponds with DELETE /api/v1/instances/{instanceId}/floating-ips/{floatingIpId} (the `DetachInstanceFloatingIp` operationId).
-func (c *Client) DetachInstanceFloatingIp(ctx context.Context, instanceId openapi_types.UUID, floatingIpId openapi_types.UUID, params *DetachInstanceFloatingIpParams, reqEditors ...RequestEditorFn) (*http.Response, error) {
-	req, err := NewDetachInstanceFloatingIpRequest(c.Server, instanceId, floatingIpId, params)
+func (c *Client) DetachInstanceFloatingIp(ctx context.Context, instanceId openapi_types.UUID, floatingIpId openapi_types.UUID, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewDetachInstanceFloatingIpRequest(c.Server, instanceId, floatingIpId)
 	if err != nil {
 		return nil, err
 	}
@@ -4738,8 +4552,8 @@ func (c *Client) DetachInstanceFloatingIp(ctx context.Context, instanceId openap
 // Takes any type of body and a specified content type.
 //
 // Corresponds with PUT /api/v1/instances/{instanceId}/labels (the `SetInstanceLabels` operationId).
-func (c *Client) SetInstanceLabelsWithBody(ctx context.Context, instanceId openapi_types.UUID, params *SetInstanceLabelsParams, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
-	req, err := NewSetInstanceLabelsRequestWithBody(c.Server, instanceId, params, contentType, body)
+func (c *Client) SetInstanceLabelsWithBody(ctx context.Context, instanceId openapi_types.UUID, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewSetInstanceLabelsRequestWithBody(c.Server, instanceId, contentType, body)
 	if err != nil {
 		return nil, err
 	}
@@ -4761,8 +4575,8 @@ func (c *Client) SetInstanceLabelsWithBody(ctx context.Context, instanceId opena
 // Takes a body of the `application/json` content type.
 //
 // Corresponds with PUT /api/v1/instances/{instanceId}/labels (the `SetInstanceLabels` operationId).
-func (c *Client) SetInstanceLabels(ctx context.Context, instanceId openapi_types.UUID, params *SetInstanceLabelsParams, body SetInstanceLabelsJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
-	req, err := NewSetInstanceLabelsRequest(c.Server, instanceId, params, body)
+func (c *Client) SetInstanceLabels(ctx context.Context, instanceId openapi_types.UUID, body SetInstanceLabelsJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewSetInstanceLabelsRequest(c.Server, instanceId, body)
 	if err != nil {
 		return nil, err
 	}
@@ -4784,8 +4598,8 @@ func (c *Client) SetInstanceLabels(ctx context.Context, instanceId openapi_types
 // Takes any type of body and a specified content type.
 //
 // Corresponds with PUT /api/v1/instances/{instanceId}/notes (the `SetInstanceNotes` operationId).
-func (c *Client) SetInstanceNotesWithBody(ctx context.Context, instanceId openapi_types.UUID, params *SetInstanceNotesParams, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
-	req, err := NewSetInstanceNotesRequestWithBody(c.Server, instanceId, params, contentType, body)
+func (c *Client) SetInstanceNotesWithBody(ctx context.Context, instanceId openapi_types.UUID, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewSetInstanceNotesRequestWithBody(c.Server, instanceId, contentType, body)
 	if err != nil {
 		return nil, err
 	}
@@ -4807,8 +4621,8 @@ func (c *Client) SetInstanceNotesWithBody(ctx context.Context, instanceId openap
 // Takes a body of the `application/json` content type.
 //
 // Corresponds with PUT /api/v1/instances/{instanceId}/notes (the `SetInstanceNotes` operationId).
-func (c *Client) SetInstanceNotes(ctx context.Context, instanceId openapi_types.UUID, params *SetInstanceNotesParams, body SetInstanceNotesJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
-	req, err := NewSetInstanceNotesRequest(c.Server, instanceId, params, body)
+func (c *Client) SetInstanceNotes(ctx context.Context, instanceId openapi_types.UUID, body SetInstanceNotesJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewSetInstanceNotesRequest(c.Server, instanceId, body)
 	if err != nil {
 		return nil, err
 	}
@@ -4830,8 +4644,8 @@ func (c *Client) SetInstanceNotes(ctx context.Context, instanceId openapi_types.
 // Takes any type of body and a specified content type.
 //
 // Corresponds with POST /api/v1/instances/{instanceId}/password (the `ResetInstancePassword` operationId).
-func (c *Client) ResetInstancePasswordWithBody(ctx context.Context, instanceId openapi_types.UUID, params *ResetInstancePasswordParams, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
-	req, err := NewResetInstancePasswordRequestWithBody(c.Server, instanceId, params, contentType, body)
+func (c *Client) ResetInstancePasswordWithBody(ctx context.Context, instanceId openapi_types.UUID, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewResetInstancePasswordRequestWithBody(c.Server, instanceId, contentType, body)
 	if err != nil {
 		return nil, err
 	}
@@ -4853,8 +4667,8 @@ func (c *Client) ResetInstancePasswordWithBody(ctx context.Context, instanceId o
 // Takes a body of the `application/json` content type.
 //
 // Corresponds with POST /api/v1/instances/{instanceId}/password (the `ResetInstancePassword` operationId).
-func (c *Client) ResetInstancePassword(ctx context.Context, instanceId openapi_types.UUID, params *ResetInstancePasswordParams, body ResetInstancePasswordJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
-	req, err := NewResetInstancePasswordRequest(c.Server, instanceId, params, body)
+func (c *Client) ResetInstancePassword(ctx context.Context, instanceId openapi_types.UUID, body ResetInstancePasswordJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewResetInstancePasswordRequest(c.Server, instanceId, body)
 	if err != nil {
 		return nil, err
 	}
@@ -4994,8 +4808,8 @@ func (c *Client) RebootInstance(ctx context.Context, instanceId openapi_types.UU
 // Takes any type of body and a specified content type.
 //
 // Corresponds with POST /api/v1/instances/{instanceId}/rebuild (the `RebuildInstance` operationId).
-func (c *Client) RebuildInstanceWithBody(ctx context.Context, instanceId openapi_types.UUID, params *RebuildInstanceParams, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
-	req, err := NewRebuildInstanceRequestWithBody(c.Server, instanceId, params, contentType, body)
+func (c *Client) RebuildInstanceWithBody(ctx context.Context, instanceId openapi_types.UUID, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewRebuildInstanceRequestWithBody(c.Server, instanceId, contentType, body)
 	if err != nil {
 		return nil, err
 	}
@@ -5015,8 +4829,8 @@ func (c *Client) RebuildInstanceWithBody(ctx context.Context, instanceId openapi
 // Takes a body of the `application/json` content type.
 //
 // Corresponds with POST /api/v1/instances/{instanceId}/rebuild (the `RebuildInstance` operationId).
-func (c *Client) RebuildInstance(ctx context.Context, instanceId openapi_types.UUID, params *RebuildInstanceParams, body RebuildInstanceJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
-	req, err := NewRebuildInstanceRequest(c.Server, instanceId, params, body)
+func (c *Client) RebuildInstance(ctx context.Context, instanceId openapi_types.UUID, body RebuildInstanceJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewRebuildInstanceRequest(c.Server, instanceId, body)
 	if err != nil {
 		return nil, err
 	}
@@ -5235,8 +5049,8 @@ func (c *Client) ListPorts(ctx context.Context, reqEditors ...RequestEditorFn) (
 // Takes any type of body and a specified content type.
 //
 // Corresponds with POST /api/v1/ports (the `CreatePort` operationId).
-func (c *Client) CreatePortWithBody(ctx context.Context, params *CreatePortParams, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
-	req, err := NewCreatePortRequestWithBody(c.Server, params, contentType, body)
+func (c *Client) CreatePortWithBody(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewCreatePortRequestWithBody(c.Server, contentType, body)
 	if err != nil {
 		return nil, err
 	}
@@ -5254,8 +5068,8 @@ func (c *Client) CreatePortWithBody(ctx context.Context, params *CreatePortParam
 // Takes a body of the `application/json` content type.
 //
 // Corresponds with POST /api/v1/ports (the `CreatePort` operationId).
-func (c *Client) CreatePort(ctx context.Context, params *CreatePortParams, body CreatePortJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
-	req, err := NewCreatePortRequest(c.Server, params, body)
+func (c *Client) CreatePort(ctx context.Context, body CreatePortJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewCreatePortRequest(c.Server, body)
 	if err != nil {
 		return nil, err
 	}
@@ -5271,8 +5085,8 @@ func (c *Client) CreatePort(ctx context.Context, params *CreatePortParams, body 
 // The primary network interface cannot be deleted on its own, as it is released with the instance. A network interface still attached to an instance cannot be deleted either.
 //
 // Corresponds with DELETE /api/v1/ports/{portId} (the `DeletePort` operationId).
-func (c *Client) DeletePort(ctx context.Context, portId openapi_types.UUID, params *DeletePortParams, reqEditors ...RequestEditorFn) (*http.Response, error) {
-	req, err := NewDeletePortRequest(c.Server, portId, params)
+func (c *Client) DeletePort(ctx context.Context, portId openapi_types.UUID, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewDeletePortRequest(c.Server, portId)
 	if err != nil {
 		return nil, err
 	}
@@ -5399,8 +5213,8 @@ func (c *Client) GetPrivateImage(ctx context.Context, privateImageId openapi_typ
 // Takes any type of body and a specified content type.
 //
 // Corresponds with PATCH /api/v1/private-images/{privateImageId} (the `RenamePrivateImage` operationId).
-func (c *Client) RenamePrivateImageWithBody(ctx context.Context, privateImageId openapi_types.UUID, params *RenamePrivateImageParams, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
-	req, err := NewRenamePrivateImageRequestWithBody(c.Server, privateImageId, params, contentType, body)
+func (c *Client) RenamePrivateImageWithBody(ctx context.Context, privateImageId openapi_types.UUID, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewRenamePrivateImageRequestWithBody(c.Server, privateImageId, contentType, body)
 	if err != nil {
 		return nil, err
 	}
@@ -5416,8 +5230,8 @@ func (c *Client) RenamePrivateImageWithBody(ctx context.Context, privateImageId 
 // Takes a body of the `application/json` content type.
 //
 // Corresponds with PATCH /api/v1/private-images/{privateImageId} (the `RenamePrivateImage` operationId).
-func (c *Client) RenamePrivateImage(ctx context.Context, privateImageId openapi_types.UUID, params *RenamePrivateImageParams, body RenamePrivateImageJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
-	req, err := NewRenamePrivateImageRequest(c.Server, privateImageId, params, body)
+func (c *Client) RenamePrivateImage(ctx context.Context, privateImageId openapi_types.UUID, body RenamePrivateImageJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewRenamePrivateImageRequest(c.Server, privateImageId, body)
 	if err != nil {
 		return nil, err
 	}
@@ -5450,8 +5264,8 @@ func (c *Client) ListPrivateNetworks(ctx context.Context, params *ListPrivateNet
 // Takes any type of body and a specified content type.
 //
 // Corresponds with POST /api/v1/private-networks (the `CreatePrivateNetwork` operationId).
-func (c *Client) CreatePrivateNetworkWithBody(ctx context.Context, params *CreatePrivateNetworkParams, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
-	req, err := NewCreatePrivateNetworkRequestWithBody(c.Server, params, contentType, body)
+func (c *Client) CreatePrivateNetworkWithBody(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewCreatePrivateNetworkRequestWithBody(c.Server, contentType, body)
 	if err != nil {
 		return nil, err
 	}
@@ -5469,8 +5283,8 @@ func (c *Client) CreatePrivateNetworkWithBody(ctx context.Context, params *Creat
 // Takes a body of the `application/json` content type.
 //
 // Corresponds with POST /api/v1/private-networks (the `CreatePrivateNetwork` operationId).
-func (c *Client) CreatePrivateNetwork(ctx context.Context, params *CreatePrivateNetworkParams, body CreatePrivateNetworkJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
-	req, err := NewCreatePrivateNetworkRequest(c.Server, params, body)
+func (c *Client) CreatePrivateNetwork(ctx context.Context, body CreatePrivateNetworkJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewCreatePrivateNetworkRequest(c.Server, body)
 	if err != nil {
 		return nil, err
 	}
@@ -5486,8 +5300,8 @@ func (c *Client) CreatePrivateNetwork(ctx context.Context, params *CreatePrivate
 // Release is rejected while instances or network interfaces remain in the network. IPv6, the router and the security groups are released with it.
 //
 // Corresponds with DELETE /api/v1/private-networks/{privateNetworkId} (the `DeletePrivateNetwork` operationId).
-func (c *Client) DeletePrivateNetwork(ctx context.Context, privateNetworkId openapi_types.UUID, params *DeletePrivateNetworkParams, reqEditors ...RequestEditorFn) (*http.Response, error) {
-	req, err := NewDeletePrivateNetworkRequest(c.Server, privateNetworkId, params)
+func (c *Client) DeletePrivateNetwork(ctx context.Context, privateNetworkId openapi_types.UUID, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewDeletePrivateNetworkRequest(c.Server, privateNetworkId)
 	if err != nil {
 		return nil, err
 	}
@@ -5520,8 +5334,8 @@ func (c *Client) GetPrivateNetwork(ctx context.Context, privateNetworkId openapi
 // Takes any type of body and a specified content type.
 //
 // Corresponds with PATCH /api/v1/private-networks/{privateNetworkId} (the `RenamePrivateNetwork` operationId).
-func (c *Client) RenamePrivateNetworkWithBody(ctx context.Context, privateNetworkId openapi_types.UUID, params *RenamePrivateNetworkParams, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
-	req, err := NewRenamePrivateNetworkRequestWithBody(c.Server, privateNetworkId, params, contentType, body)
+func (c *Client) RenamePrivateNetworkWithBody(ctx context.Context, privateNetworkId openapi_types.UUID, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewRenamePrivateNetworkRequestWithBody(c.Server, privateNetworkId, contentType, body)
 	if err != nil {
 		return nil, err
 	}
@@ -5539,8 +5353,8 @@ func (c *Client) RenamePrivateNetworkWithBody(ctx context.Context, privateNetwor
 // Takes a body of the `application/json` content type.
 //
 // Corresponds with PATCH /api/v1/private-networks/{privateNetworkId} (the `RenamePrivateNetwork` operationId).
-func (c *Client) RenamePrivateNetwork(ctx context.Context, privateNetworkId openapi_types.UUID, params *RenamePrivateNetworkParams, body RenamePrivateNetworkJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
-	req, err := NewRenamePrivateNetworkRequest(c.Server, privateNetworkId, params, body)
+func (c *Client) RenamePrivateNetwork(ctx context.Context, privateNetworkId openapi_types.UUID, body RenamePrivateNetworkJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewRenamePrivateNetworkRequest(c.Server, privateNetworkId, body)
 	if err != nil {
 		return nil, err
 	}
@@ -5556,8 +5370,8 @@ func (c *Client) RenamePrivateNetwork(ctx context.Context, privateNetworkId open
 // A released prefix is not re-allocated immediately.
 //
 // Corresponds with DELETE /api/v1/private-networks/{privateNetworkId}/ipv6 (the `DisablePrivateNetworkIpv6` operationId).
-func (c *Client) DisablePrivateNetworkIpv6(ctx context.Context, privateNetworkId openapi_types.UUID, params *DisablePrivateNetworkIpv6Params, reqEditors ...RequestEditorFn) (*http.Response, error) {
-	req, err := NewDisablePrivateNetworkIpv6Request(c.Server, privateNetworkId, params)
+func (c *Client) DisablePrivateNetworkIpv6(ctx context.Context, privateNetworkId openapi_types.UUID, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewDisablePrivateNetworkIpv6Request(c.Server, privateNetworkId)
 	if err != nil {
 		return nil, err
 	}
@@ -5590,8 +5404,8 @@ func (c *Client) GetPrivateNetworkIpv6(ctx context.Context, privateNetworkId ope
 // If the private network is not yet connected to the internet, connectivity is established as part of this call.
 //
 // Corresponds with POST /api/v1/private-networks/{privateNetworkId}/ipv6 (the `EnablePrivateNetworkIpv6` operationId).
-func (c *Client) EnablePrivateNetworkIpv6(ctx context.Context, privateNetworkId openapi_types.UUID, params *EnablePrivateNetworkIpv6Params, reqEditors ...RequestEditorFn) (*http.Response, error) {
-	req, err := NewEnablePrivateNetworkIpv6Request(c.Server, privateNetworkId, params)
+func (c *Client) EnablePrivateNetworkIpv6(ctx context.Context, privateNetworkId openapi_types.UUID, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewEnablePrivateNetworkIpv6Request(c.Server, privateNetworkId)
 	if err != nil {
 		return nil, err
 	}
@@ -5624,8 +5438,8 @@ func (c *Client) ListRoutes(ctx context.Context, privateNetworkId openapi_types.
 // Takes any type of body and a specified content type.
 //
 // Corresponds with POST /api/v1/private-networks/{privateNetworkId}/routes (the `CreateRoute` operationId).
-func (c *Client) CreateRouteWithBody(ctx context.Context, privateNetworkId openapi_types.UUID, params *CreateRouteParams, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
-	req, err := NewCreateRouteRequestWithBody(c.Server, privateNetworkId, params, contentType, body)
+func (c *Client) CreateRouteWithBody(ctx context.Context, privateNetworkId openapi_types.UUID, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewCreateRouteRequestWithBody(c.Server, privateNetworkId, contentType, body)
 	if err != nil {
 		return nil, err
 	}
@@ -5643,8 +5457,8 @@ func (c *Client) CreateRouteWithBody(ctx context.Context, privateNetworkId opena
 // Takes a body of the `application/json` content type.
 //
 // Corresponds with POST /api/v1/private-networks/{privateNetworkId}/routes (the `CreateRoute` operationId).
-func (c *Client) CreateRoute(ctx context.Context, privateNetworkId openapi_types.UUID, params *CreateRouteParams, body CreateRouteJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
-	req, err := NewCreateRouteRequest(c.Server, privateNetworkId, params, body)
+func (c *Client) CreateRoute(ctx context.Context, privateNetworkId openapi_types.UUID, body CreateRouteJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewCreateRouteRequest(c.Server, privateNetworkId, body)
 	if err != nil {
 		return nil, err
 	}
@@ -5658,8 +5472,8 @@ func (c *Client) CreateRoute(ctx context.Context, privateNetworkId openapi_types
 // DeleteRoute Delete a static route
 //
 // Corresponds with DELETE /api/v1/private-networks/{privateNetworkId}/routes/{routeId} (the `DeleteRoute` operationId).
-func (c *Client) DeleteRoute(ctx context.Context, privateNetworkId openapi_types.UUID, routeId openapi_types.UUID, params *DeleteRouteParams, reqEditors ...RequestEditorFn) (*http.Response, error) {
-	req, err := NewDeleteRouteRequest(c.Server, privateNetworkId, routeId, params)
+func (c *Client) DeleteRoute(ctx context.Context, privateNetworkId openapi_types.UUID, routeId openapi_types.UUID, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewDeleteRouteRequest(c.Server, privateNetworkId, routeId)
 	if err != nil {
 		return nil, err
 	}
@@ -5692,8 +5506,8 @@ func (c *Client) ListSubnets(ctx context.Context, privateNetworkId openapi_types
 // Takes any type of body and a specified content type.
 //
 // Corresponds with POST /api/v1/private-networks/{privateNetworkId}/subnets (the `CreateSubnet` operationId).
-func (c *Client) CreateSubnetWithBody(ctx context.Context, privateNetworkId openapi_types.UUID, params *CreateSubnetParams, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
-	req, err := NewCreateSubnetRequestWithBody(c.Server, privateNetworkId, params, contentType, body)
+func (c *Client) CreateSubnetWithBody(ctx context.Context, privateNetworkId openapi_types.UUID, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewCreateSubnetRequestWithBody(c.Server, privateNetworkId, contentType, body)
 	if err != nil {
 		return nil, err
 	}
@@ -5709,8 +5523,8 @@ func (c *Client) CreateSubnetWithBody(ctx context.Context, privateNetworkId open
 // Takes a body of the `application/json` content type.
 //
 // Corresponds with POST /api/v1/private-networks/{privateNetworkId}/subnets (the `CreateSubnet` operationId).
-func (c *Client) CreateSubnet(ctx context.Context, privateNetworkId openapi_types.UUID, params *CreateSubnetParams, body CreateSubnetJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
-	req, err := NewCreateSubnetRequest(c.Server, privateNetworkId, params, body)
+func (c *Client) CreateSubnet(ctx context.Context, privateNetworkId openapi_types.UUID, body CreateSubnetJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewCreateSubnetRequest(c.Server, privateNetworkId, body)
 	if err != nil {
 		return nil, err
 	}
@@ -5743,8 +5557,8 @@ func (c *Client) SuggestSubnetCidr(ctx context.Context, privateNetworkId openapi
 // Deletion is rejected while network interfaces remain in the subnet, or while a static route has a next hop inside its CIDR.
 //
 // Corresponds with DELETE /api/v1/private-networks/{privateNetworkId}/subnets/{subnetId} (the `DeleteSubnet` operationId).
-func (c *Client) DeleteSubnet(ctx context.Context, privateNetworkId openapi_types.UUID, subnetId openapi_types.UUID, params *DeleteSubnetParams, reqEditors ...RequestEditorFn) (*http.Response, error) {
-	req, err := NewDeleteSubnetRequest(c.Server, privateNetworkId, subnetId, params)
+func (c *Client) DeleteSubnet(ctx context.Context, privateNetworkId openapi_types.UUID, subnetId openapi_types.UUID, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewDeleteSubnetRequest(c.Server, privateNetworkId, subnetId)
 	if err != nil {
 		return nil, err
 	}
@@ -5809,8 +5623,8 @@ func (c *Client) ListSecurityGroups(ctx context.Context, params *ListSecurityGro
 // Takes any type of body and a specified content type.
 //
 // Corresponds with POST /api/v1/security-groups (the `CreateSecurityGroup` operationId).
-func (c *Client) CreateSecurityGroupWithBody(ctx context.Context, params *CreateSecurityGroupParams, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
-	req, err := NewCreateSecurityGroupRequestWithBody(c.Server, params, contentType, body)
+func (c *Client) CreateSecurityGroupWithBody(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewCreateSecurityGroupRequestWithBody(c.Server, contentType, body)
 	if err != nil {
 		return nil, err
 	}
@@ -5828,8 +5642,8 @@ func (c *Client) CreateSecurityGroupWithBody(ctx context.Context, params *Create
 // Takes a body of the `application/json` content type.
 //
 // Corresponds with POST /api/v1/security-groups (the `CreateSecurityGroup` operationId).
-func (c *Client) CreateSecurityGroup(ctx context.Context, params *CreateSecurityGroupParams, body CreateSecurityGroupJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
-	req, err := NewCreateSecurityGroupRequest(c.Server, params, body)
+func (c *Client) CreateSecurityGroup(ctx context.Context, body CreateSecurityGroupJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewCreateSecurityGroupRequest(c.Server, body)
 	if err != nil {
 		return nil, err
 	}
@@ -5845,8 +5659,8 @@ func (c *Client) CreateSecurityGroup(ctx context.Context, params *CreateSecurity
 // The default security group cannot be deleted, as it is released with the private network. A security group still referenced by a network interface cannot be deleted either.
 //
 // Corresponds with DELETE /api/v1/security-groups/{securityGroupId} (the `DeleteSecurityGroup` operationId).
-func (c *Client) DeleteSecurityGroup(ctx context.Context, securityGroupId openapi_types.UUID, params *DeleteSecurityGroupParams, reqEditors ...RequestEditorFn) (*http.Response, error) {
-	req, err := NewDeleteSecurityGroupRequest(c.Server, securityGroupId, params)
+func (c *Client) DeleteSecurityGroup(ctx context.Context, securityGroupId openapi_types.UUID, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewDeleteSecurityGroupRequest(c.Server, securityGroupId)
 	if err != nil {
 		return nil, err
 	}
@@ -5879,8 +5693,8 @@ func (c *Client) GetSecurityGroup(ctx context.Context, securityGroupId openapi_t
 // Takes any type of body and a specified content type.
 //
 // Corresponds with PATCH /api/v1/security-groups/{securityGroupId} (the `RenameSecurityGroup` operationId).
-func (c *Client) RenameSecurityGroupWithBody(ctx context.Context, securityGroupId openapi_types.UUID, params *RenameSecurityGroupParams, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
-	req, err := NewRenameSecurityGroupRequestWithBody(c.Server, securityGroupId, params, contentType, body)
+func (c *Client) RenameSecurityGroupWithBody(ctx context.Context, securityGroupId openapi_types.UUID, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewRenameSecurityGroupRequestWithBody(c.Server, securityGroupId, contentType, body)
 	if err != nil {
 		return nil, err
 	}
@@ -5898,8 +5712,8 @@ func (c *Client) RenameSecurityGroupWithBody(ctx context.Context, securityGroupI
 // Takes a body of the `application/json` content type.
 //
 // Corresponds with PATCH /api/v1/security-groups/{securityGroupId} (the `RenameSecurityGroup` operationId).
-func (c *Client) RenameSecurityGroup(ctx context.Context, securityGroupId openapi_types.UUID, params *RenameSecurityGroupParams, body RenameSecurityGroupJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
-	req, err := NewRenameSecurityGroupRequest(c.Server, securityGroupId, params, body)
+func (c *Client) RenameSecurityGroup(ctx context.Context, securityGroupId openapi_types.UUID, body RenameSecurityGroupJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewRenameSecurityGroupRequest(c.Server, securityGroupId, body)
 	if err != nil {
 		return nil, err
 	}
@@ -5932,8 +5746,8 @@ func (c *Client) ListSecurityGroupRules(ctx context.Context, securityGroupId ope
 // Takes any type of body and a specified content type.
 //
 // Corresponds with POST /api/v1/security-groups/{securityGroupId}/rules (the `CreateSecurityGroupRule` operationId).
-func (c *Client) CreateSecurityGroupRuleWithBody(ctx context.Context, securityGroupId openapi_types.UUID, params *CreateSecurityGroupRuleParams, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
-	req, err := NewCreateSecurityGroupRuleRequestWithBody(c.Server, securityGroupId, params, contentType, body)
+func (c *Client) CreateSecurityGroupRuleWithBody(ctx context.Context, securityGroupId openapi_types.UUID, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewCreateSecurityGroupRuleRequestWithBody(c.Server, securityGroupId, contentType, body)
 	if err != nil {
 		return nil, err
 	}
@@ -5951,8 +5765,8 @@ func (c *Client) CreateSecurityGroupRuleWithBody(ctx context.Context, securityGr
 // Takes a body of the `application/json` content type.
 //
 // Corresponds with POST /api/v1/security-groups/{securityGroupId}/rules (the `CreateSecurityGroupRule` operationId).
-func (c *Client) CreateSecurityGroupRule(ctx context.Context, securityGroupId openapi_types.UUID, params *CreateSecurityGroupRuleParams, body CreateSecurityGroupRuleJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
-	req, err := NewCreateSecurityGroupRuleRequest(c.Server, securityGroupId, params, body)
+func (c *Client) CreateSecurityGroupRule(ctx context.Context, securityGroupId openapi_types.UUID, body CreateSecurityGroupRuleJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewCreateSecurityGroupRuleRequest(c.Server, securityGroupId, body)
 	if err != nil {
 		return nil, err
 	}
@@ -5966,8 +5780,8 @@ func (c *Client) CreateSecurityGroupRule(ctx context.Context, securityGroupId op
 // DeleteSecurityGroupRule Delete a security group rule
 //
 // Corresponds with DELETE /api/v1/security-groups/{securityGroupId}/rules/{ruleId} (the `DeleteSecurityGroupRule` operationId).
-func (c *Client) DeleteSecurityGroupRule(ctx context.Context, securityGroupId openapi_types.UUID, ruleId openapi_types.UUID, params *DeleteSecurityGroupRuleParams, reqEditors ...RequestEditorFn) (*http.Response, error) {
-	req, err := NewDeleteSecurityGroupRuleRequest(c.Server, securityGroupId, ruleId, params)
+func (c *Client) DeleteSecurityGroupRule(ctx context.Context, securityGroupId openapi_types.UUID, ruleId openapi_types.UUID, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewDeleteSecurityGroupRuleRequest(c.Server, securityGroupId, ruleId)
 	if err != nil {
 		return nil, err
 	}
@@ -6070,8 +5884,8 @@ func (c *Client) GetSnapshot(ctx context.Context, snapshotId openapi_types.UUID,
 // Takes any type of body and a specified content type.
 //
 // Corresponds with PATCH /api/v1/snapshots/{snapshotId} (the `RenameSnapshot` operationId).
-func (c *Client) RenameSnapshotWithBody(ctx context.Context, snapshotId openapi_types.UUID, params *RenameSnapshotParams, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
-	req, err := NewRenameSnapshotRequestWithBody(c.Server, snapshotId, params, contentType, body)
+func (c *Client) RenameSnapshotWithBody(ctx context.Context, snapshotId openapi_types.UUID, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewRenameSnapshotRequestWithBody(c.Server, snapshotId, contentType, body)
 	if err != nil {
 		return nil, err
 	}
@@ -6087,8 +5901,8 @@ func (c *Client) RenameSnapshotWithBody(ctx context.Context, snapshotId openapi_
 // Takes a body of the `application/json` content type.
 //
 // Corresponds with PATCH /api/v1/snapshots/{snapshotId} (the `RenameSnapshot` operationId).
-func (c *Client) RenameSnapshot(ctx context.Context, snapshotId openapi_types.UUID, params *RenameSnapshotParams, body RenameSnapshotJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
-	req, err := NewRenameSnapshotRequest(c.Server, snapshotId, params, body)
+func (c *Client) RenameSnapshot(ctx context.Context, snapshotId openapi_types.UUID, body RenameSnapshotJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewRenameSnapshotRequest(c.Server, snapshotId, body)
 	if err != nil {
 		return nil, err
 	}
@@ -6290,18 +6104,18 @@ func NewGetBackupRequest(server string, backupId openapi_types.UUID) (*http.Requ
 }
 
 // NewRenameBackupRequest calls the generic RenameBackup builder with application/json body
-func NewRenameBackupRequest(server string, backupId openapi_types.UUID, params *RenameBackupParams, body RenameBackupJSONRequestBody) (*http.Request, error) {
+func NewRenameBackupRequest(server string, backupId openapi_types.UUID, body RenameBackupJSONRequestBody) (*http.Request, error) {
 	var bodyReader io.Reader
 	buf, err := json.Marshal(body)
 	if err != nil {
 		return nil, err
 	}
 	bodyReader = bytes.NewReader(buf)
-	return NewRenameBackupRequestWithBody(server, backupId, params, "application/json", bodyReader)
+	return NewRenameBackupRequestWithBody(server, backupId, "application/json", bodyReader)
 }
 
 // NewRenameBackupRequestWithBody constructs an http.Request for the RenameBackup method, with any body, and a specified content type
-func NewRenameBackupRequestWithBody(server string, backupId openapi_types.UUID, params *RenameBackupParams, contentType string, body io.Reader) (*http.Request, error) {
+func NewRenameBackupRequestWithBody(server string, backupId openapi_types.UUID, contentType string, body io.Reader) (*http.Request, error) {
 	var err error
 
 	var pathParam0 string
@@ -6332,19 +6146,6 @@ func NewRenameBackupRequestWithBody(server string, backupId openapi_types.UUID, 
 	}
 
 	req.Header.Add("Content-Type", contentType)
-
-	if params != nil {
-
-		var headerParam0 string
-
-		headerParam0, err = runtime.StyleParamWithOptions("simple", false, "Idempotency-Key", params.IdempotencyKey, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationHeader, Type: "string", Format: ""})
-		if err != nil {
-			return nil, err
-		}
-
-		req.Header.Set("Idempotency-Key", headerParam0)
-
-	}
 
 	return req, nil
 }
@@ -6668,18 +6469,18 @@ func NewGetDiskRequest(server string, diskId openapi_types.UUID) (*http.Request,
 }
 
 // NewRenameDiskRequest calls the generic RenameDisk builder with application/json body
-func NewRenameDiskRequest(server string, diskId openapi_types.UUID, params *RenameDiskParams, body RenameDiskJSONRequestBody) (*http.Request, error) {
+func NewRenameDiskRequest(server string, diskId openapi_types.UUID, body RenameDiskJSONRequestBody) (*http.Request, error) {
 	var bodyReader io.Reader
 	buf, err := json.Marshal(body)
 	if err != nil {
 		return nil, err
 	}
 	bodyReader = bytes.NewReader(buf)
-	return NewRenameDiskRequestWithBody(server, diskId, params, "application/json", bodyReader)
+	return NewRenameDiskRequestWithBody(server, diskId, "application/json", bodyReader)
 }
 
 // NewRenameDiskRequestWithBody constructs an http.Request for the RenameDisk method, with any body, and a specified content type
-func NewRenameDiskRequestWithBody(server string, diskId openapi_types.UUID, params *RenameDiskParams, contentType string, body io.Reader) (*http.Request, error) {
+func NewRenameDiskRequestWithBody(server string, diskId openapi_types.UUID, contentType string, body io.Reader) (*http.Request, error) {
 	var err error
 
 	var pathParam0 string
@@ -6710,19 +6511,6 @@ func NewRenameDiskRequestWithBody(server string, diskId openapi_types.UUID, para
 	}
 
 	req.Header.Add("Content-Type", contentType)
-
-	if params != nil {
-
-		var headerParam0 string
-
-		headerParam0, err = runtime.StyleParamWithOptions("simple", false, "Idempotency-Key", params.IdempotencyKey, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationHeader, Type: "string", Format: ""})
-		if err != nil {
-			return nil, err
-		}
-
-		req.Header.Set("Idempotency-Key", headerParam0)
-
-	}
 
 	return req, nil
 }
@@ -7030,7 +6818,7 @@ func NewSetFloatingIpBandwidthRequestWithBody(server string, floatingIpId openap
 }
 
 // NewUnbindFloatingIpRequest constructs an http.Request for the UnbindFloatingIp method
-func NewUnbindFloatingIpRequest(server string, floatingIpId openapi_types.UUID, params *UnbindFloatingIpParams) (*http.Request, error) {
+func NewUnbindFloatingIpRequest(server string, floatingIpId openapi_types.UUID) (*http.Request, error) {
 	var err error
 
 	var pathParam0 string
@@ -7060,35 +6848,22 @@ func NewUnbindFloatingIpRequest(server string, floatingIpId openapi_types.UUID, 
 		return nil, err
 	}
 
-	if params != nil {
-
-		var headerParam0 string
-
-		headerParam0, err = runtime.StyleParamWithOptions("simple", false, "Idempotency-Key", params.IdempotencyKey, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationHeader, Type: "string", Format: ""})
-		if err != nil {
-			return nil, err
-		}
-
-		req.Header.Set("Idempotency-Key", headerParam0)
-
-	}
-
 	return req, nil
 }
 
 // NewBindFloatingIpRequest calls the generic BindFloatingIp builder with application/json body
-func NewBindFloatingIpRequest(server string, floatingIpId openapi_types.UUID, params *BindFloatingIpParams, body BindFloatingIpJSONRequestBody) (*http.Request, error) {
+func NewBindFloatingIpRequest(server string, floatingIpId openapi_types.UUID, body BindFloatingIpJSONRequestBody) (*http.Request, error) {
 	var bodyReader io.Reader
 	buf, err := json.Marshal(body)
 	if err != nil {
 		return nil, err
 	}
 	bodyReader = bytes.NewReader(buf)
-	return NewBindFloatingIpRequestWithBody(server, floatingIpId, params, "application/json", bodyReader)
+	return NewBindFloatingIpRequestWithBody(server, floatingIpId, "application/json", bodyReader)
 }
 
 // NewBindFloatingIpRequestWithBody constructs an http.Request for the BindFloatingIp method, with any body, and a specified content type
-func NewBindFloatingIpRequestWithBody(server string, floatingIpId openapi_types.UUID, params *BindFloatingIpParams, contentType string, body io.Reader) (*http.Request, error) {
+func NewBindFloatingIpRequestWithBody(server string, floatingIpId openapi_types.UUID, contentType string, body io.Reader) (*http.Request, error) {
 	var err error
 
 	var pathParam0 string
@@ -7119,19 +6894,6 @@ func NewBindFloatingIpRequestWithBody(server string, floatingIpId openapi_types.
 	}
 
 	req.Header.Add("Content-Type", contentType)
-
-	if params != nil {
-
-		var headerParam0 string
-
-		headerParam0, err = runtime.StyleParamWithOptions("simple", false, "Idempotency-Key", params.IdempotencyKey, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationHeader, Type: "string", Format: ""})
-		if err != nil {
-			return nil, err
-		}
-
-		req.Header.Set("Idempotency-Key", headerParam0)
-
-	}
 
 	return req, nil
 }
@@ -7484,18 +7246,18 @@ func NewGetInstanceRequest(server string, instanceId openapi_types.UUID) (*http.
 }
 
 // NewRenameInstanceRequest calls the generic RenameInstance builder with application/json body
-func NewRenameInstanceRequest(server string, instanceId openapi_types.UUID, params *RenameInstanceParams, body RenameInstanceJSONRequestBody) (*http.Request, error) {
+func NewRenameInstanceRequest(server string, instanceId openapi_types.UUID, body RenameInstanceJSONRequestBody) (*http.Request, error) {
 	var bodyReader io.Reader
 	buf, err := json.Marshal(body)
 	if err != nil {
 		return nil, err
 	}
 	bodyReader = bytes.NewReader(buf)
-	return NewRenameInstanceRequestWithBody(server, instanceId, params, "application/json", bodyReader)
+	return NewRenameInstanceRequestWithBody(server, instanceId, "application/json", bodyReader)
 }
 
 // NewRenameInstanceRequestWithBody constructs an http.Request for the RenameInstance method, with any body, and a specified content type
-func NewRenameInstanceRequestWithBody(server string, instanceId openapi_types.UUID, params *RenameInstanceParams, contentType string, body io.Reader) (*http.Request, error) {
+func NewRenameInstanceRequestWithBody(server string, instanceId openapi_types.UUID, contentType string, body io.Reader) (*http.Request, error) {
 	var err error
 
 	var pathParam0 string
@@ -7527,35 +7289,22 @@ func NewRenameInstanceRequestWithBody(server string, instanceId openapi_types.UU
 
 	req.Header.Add("Content-Type", contentType)
 
-	if params != nil {
-
-		var headerParam0 string
-
-		headerParam0, err = runtime.StyleParamWithOptions("simple", false, "Idempotency-Key", params.IdempotencyKey, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationHeader, Type: "string", Format: ""})
-		if err != nil {
-			return nil, err
-		}
-
-		req.Header.Set("Idempotency-Key", headerParam0)
-
-	}
-
 	return req, nil
 }
 
 // NewRunInstanceCommandRequest calls the generic RunInstanceCommand builder with application/json body
-func NewRunInstanceCommandRequest(server string, instanceId openapi_types.UUID, params *RunInstanceCommandParams, body RunInstanceCommandJSONRequestBody) (*http.Request, error) {
+func NewRunInstanceCommandRequest(server string, instanceId openapi_types.UUID, body RunInstanceCommandJSONRequestBody) (*http.Request, error) {
 	var bodyReader io.Reader
 	buf, err := json.Marshal(body)
 	if err != nil {
 		return nil, err
 	}
 	bodyReader = bytes.NewReader(buf)
-	return NewRunInstanceCommandRequestWithBody(server, instanceId, params, "application/json", bodyReader)
+	return NewRunInstanceCommandRequestWithBody(server, instanceId, "application/json", bodyReader)
 }
 
 // NewRunInstanceCommandRequestWithBody constructs an http.Request for the RunInstanceCommand method, with any body, and a specified content type
-func NewRunInstanceCommandRequestWithBody(server string, instanceId openapi_types.UUID, params *RunInstanceCommandParams, contentType string, body io.Reader) (*http.Request, error) {
+func NewRunInstanceCommandRequestWithBody(server string, instanceId openapi_types.UUID, contentType string, body io.Reader) (*http.Request, error) {
 	var err error
 
 	var pathParam0 string
@@ -7587,24 +7336,11 @@ func NewRunInstanceCommandRequestWithBody(server string, instanceId openapi_type
 
 	req.Header.Add("Content-Type", contentType)
 
-	if params != nil {
-
-		var headerParam0 string
-
-		headerParam0, err = runtime.StyleParamWithOptions("simple", false, "Idempotency-Key", params.IdempotencyKey, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationHeader, Type: "string", Format: ""})
-		if err != nil {
-			return nil, err
-		}
-
-		req.Header.Set("Idempotency-Key", headerParam0)
-
-	}
-
 	return req, nil
 }
 
 // NewOpenInstanceConsoleRequest constructs an http.Request for the OpenInstanceConsole method
-func NewOpenInstanceConsoleRequest(server string, instanceId openapi_types.UUID, params *OpenInstanceConsoleParams) (*http.Request, error) {
+func NewOpenInstanceConsoleRequest(server string, instanceId openapi_types.UUID) (*http.Request, error) {
 	var err error
 
 	var pathParam0 string
@@ -7632,19 +7368,6 @@ func NewOpenInstanceConsoleRequest(server string, instanceId openapi_types.UUID,
 	req, err := http.NewRequest(http.MethodPost, queryURL.String(), nil)
 	if err != nil {
 		return nil, err
-	}
-
-	if params != nil {
-
-		var headerParam0 string
-
-		headerParam0, err = runtime.StyleParamWithOptions("simple", false, "Idempotency-Key", params.IdempotencyKey, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationHeader, Type: "string", Format: ""})
-		if err != nil {
-			return nil, err
-		}
-
-		req.Header.Set("Idempotency-Key", headerParam0)
-
 	}
 
 	return req, nil
@@ -7899,18 +7622,18 @@ func NewDetachDiskRequest(server string, instanceId openapi_types.UUID, diskId o
 }
 
 // NewAttachInstanceFloatingIpRequest calls the generic AttachInstanceFloatingIp builder with application/json body
-func NewAttachInstanceFloatingIpRequest(server string, instanceId openapi_types.UUID, params *AttachInstanceFloatingIpParams, body AttachInstanceFloatingIpJSONRequestBody) (*http.Request, error) {
+func NewAttachInstanceFloatingIpRequest(server string, instanceId openapi_types.UUID, body AttachInstanceFloatingIpJSONRequestBody) (*http.Request, error) {
 	var bodyReader io.Reader
 	buf, err := json.Marshal(body)
 	if err != nil {
 		return nil, err
 	}
 	bodyReader = bytes.NewReader(buf)
-	return NewAttachInstanceFloatingIpRequestWithBody(server, instanceId, params, "application/json", bodyReader)
+	return NewAttachInstanceFloatingIpRequestWithBody(server, instanceId, "application/json", bodyReader)
 }
 
 // NewAttachInstanceFloatingIpRequestWithBody constructs an http.Request for the AttachInstanceFloatingIp method, with any body, and a specified content type
-func NewAttachInstanceFloatingIpRequestWithBody(server string, instanceId openapi_types.UUID, params *AttachInstanceFloatingIpParams, contentType string, body io.Reader) (*http.Request, error) {
+func NewAttachInstanceFloatingIpRequestWithBody(server string, instanceId openapi_types.UUID, contentType string, body io.Reader) (*http.Request, error) {
 	var err error
 
 	var pathParam0 string
@@ -7942,24 +7665,11 @@ func NewAttachInstanceFloatingIpRequestWithBody(server string, instanceId openap
 
 	req.Header.Add("Content-Type", contentType)
 
-	if params != nil {
-
-		var headerParam0 string
-
-		headerParam0, err = runtime.StyleParamWithOptions("simple", false, "Idempotency-Key", params.IdempotencyKey, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationHeader, Type: "string", Format: ""})
-		if err != nil {
-			return nil, err
-		}
-
-		req.Header.Set("Idempotency-Key", headerParam0)
-
-	}
-
 	return req, nil
 }
 
 // NewDetachInstanceFloatingIpRequest constructs an http.Request for the DetachInstanceFloatingIp method
-func NewDetachInstanceFloatingIpRequest(server string, instanceId openapi_types.UUID, floatingIpId openapi_types.UUID, params *DetachInstanceFloatingIpParams) (*http.Request, error) {
+func NewDetachInstanceFloatingIpRequest(server string, instanceId openapi_types.UUID, floatingIpId openapi_types.UUID) (*http.Request, error) {
 	var err error
 
 	var pathParam0 string
@@ -7996,35 +7706,22 @@ func NewDetachInstanceFloatingIpRequest(server string, instanceId openapi_types.
 		return nil, err
 	}
 
-	if params != nil {
-
-		var headerParam0 string
-
-		headerParam0, err = runtime.StyleParamWithOptions("simple", false, "Idempotency-Key", params.IdempotencyKey, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationHeader, Type: "string", Format: ""})
-		if err != nil {
-			return nil, err
-		}
-
-		req.Header.Set("Idempotency-Key", headerParam0)
-
-	}
-
 	return req, nil
 }
 
 // NewSetInstanceLabelsRequest calls the generic SetInstanceLabels builder with application/json body
-func NewSetInstanceLabelsRequest(server string, instanceId openapi_types.UUID, params *SetInstanceLabelsParams, body SetInstanceLabelsJSONRequestBody) (*http.Request, error) {
+func NewSetInstanceLabelsRequest(server string, instanceId openapi_types.UUID, body SetInstanceLabelsJSONRequestBody) (*http.Request, error) {
 	var bodyReader io.Reader
 	buf, err := json.Marshal(body)
 	if err != nil {
 		return nil, err
 	}
 	bodyReader = bytes.NewReader(buf)
-	return NewSetInstanceLabelsRequestWithBody(server, instanceId, params, "application/json", bodyReader)
+	return NewSetInstanceLabelsRequestWithBody(server, instanceId, "application/json", bodyReader)
 }
 
 // NewSetInstanceLabelsRequestWithBody constructs an http.Request for the SetInstanceLabels method, with any body, and a specified content type
-func NewSetInstanceLabelsRequestWithBody(server string, instanceId openapi_types.UUID, params *SetInstanceLabelsParams, contentType string, body io.Reader) (*http.Request, error) {
+func NewSetInstanceLabelsRequestWithBody(server string, instanceId openapi_types.UUID, contentType string, body io.Reader) (*http.Request, error) {
 	var err error
 
 	var pathParam0 string
@@ -8056,35 +7753,22 @@ func NewSetInstanceLabelsRequestWithBody(server string, instanceId openapi_types
 
 	req.Header.Add("Content-Type", contentType)
 
-	if params != nil {
-
-		var headerParam0 string
-
-		headerParam0, err = runtime.StyleParamWithOptions("simple", false, "Idempotency-Key", params.IdempotencyKey, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationHeader, Type: "string", Format: ""})
-		if err != nil {
-			return nil, err
-		}
-
-		req.Header.Set("Idempotency-Key", headerParam0)
-
-	}
-
 	return req, nil
 }
 
 // NewSetInstanceNotesRequest calls the generic SetInstanceNotes builder with application/json body
-func NewSetInstanceNotesRequest(server string, instanceId openapi_types.UUID, params *SetInstanceNotesParams, body SetInstanceNotesJSONRequestBody) (*http.Request, error) {
+func NewSetInstanceNotesRequest(server string, instanceId openapi_types.UUID, body SetInstanceNotesJSONRequestBody) (*http.Request, error) {
 	var bodyReader io.Reader
 	buf, err := json.Marshal(body)
 	if err != nil {
 		return nil, err
 	}
 	bodyReader = bytes.NewReader(buf)
-	return NewSetInstanceNotesRequestWithBody(server, instanceId, params, "application/json", bodyReader)
+	return NewSetInstanceNotesRequestWithBody(server, instanceId, "application/json", bodyReader)
 }
 
 // NewSetInstanceNotesRequestWithBody constructs an http.Request for the SetInstanceNotes method, with any body, and a specified content type
-func NewSetInstanceNotesRequestWithBody(server string, instanceId openapi_types.UUID, params *SetInstanceNotesParams, contentType string, body io.Reader) (*http.Request, error) {
+func NewSetInstanceNotesRequestWithBody(server string, instanceId openapi_types.UUID, contentType string, body io.Reader) (*http.Request, error) {
 	var err error
 
 	var pathParam0 string
@@ -8116,35 +7800,22 @@ func NewSetInstanceNotesRequestWithBody(server string, instanceId openapi_types.
 
 	req.Header.Add("Content-Type", contentType)
 
-	if params != nil {
-
-		var headerParam0 string
-
-		headerParam0, err = runtime.StyleParamWithOptions("simple", false, "Idempotency-Key", params.IdempotencyKey, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationHeader, Type: "string", Format: ""})
-		if err != nil {
-			return nil, err
-		}
-
-		req.Header.Set("Idempotency-Key", headerParam0)
-
-	}
-
 	return req, nil
 }
 
 // NewResetInstancePasswordRequest calls the generic ResetInstancePassword builder with application/json body
-func NewResetInstancePasswordRequest(server string, instanceId openapi_types.UUID, params *ResetInstancePasswordParams, body ResetInstancePasswordJSONRequestBody) (*http.Request, error) {
+func NewResetInstancePasswordRequest(server string, instanceId openapi_types.UUID, body ResetInstancePasswordJSONRequestBody) (*http.Request, error) {
 	var bodyReader io.Reader
 	buf, err := json.Marshal(body)
 	if err != nil {
 		return nil, err
 	}
 	bodyReader = bytes.NewReader(buf)
-	return NewResetInstancePasswordRequestWithBody(server, instanceId, params, "application/json", bodyReader)
+	return NewResetInstancePasswordRequestWithBody(server, instanceId, "application/json", bodyReader)
 }
 
 // NewResetInstancePasswordRequestWithBody constructs an http.Request for the ResetInstancePassword method, with any body, and a specified content type
-func NewResetInstancePasswordRequestWithBody(server string, instanceId openapi_types.UUID, params *ResetInstancePasswordParams, contentType string, body io.Reader) (*http.Request, error) {
+func NewResetInstancePasswordRequestWithBody(server string, instanceId openapi_types.UUID, contentType string, body io.Reader) (*http.Request, error) {
 	var err error
 
 	var pathParam0 string
@@ -8175,19 +7846,6 @@ func NewResetInstancePasswordRequestWithBody(server string, instanceId openapi_t
 	}
 
 	req.Header.Add("Content-Type", contentType)
-
-	if params != nil {
-
-		var headerParam0 string
-
-		headerParam0, err = runtime.StyleParamWithOptions("simple", false, "Idempotency-Key", params.IdempotencyKey, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationHeader, Type: "string", Format: ""})
-		if err != nil {
-			return nil, err
-		}
-
-		req.Header.Set("Idempotency-Key", headerParam0)
-
-	}
 
 	return req, nil
 }
@@ -8440,18 +8098,18 @@ func NewRebootInstanceRequestWithBody(server string, instanceId openapi_types.UU
 }
 
 // NewRebuildInstanceRequest calls the generic RebuildInstance builder with application/json body
-func NewRebuildInstanceRequest(server string, instanceId openapi_types.UUID, params *RebuildInstanceParams, body RebuildInstanceJSONRequestBody) (*http.Request, error) {
+func NewRebuildInstanceRequest(server string, instanceId openapi_types.UUID, body RebuildInstanceJSONRequestBody) (*http.Request, error) {
 	var bodyReader io.Reader
 	buf, err := json.Marshal(body)
 	if err != nil {
 		return nil, err
 	}
 	bodyReader = bytes.NewReader(buf)
-	return NewRebuildInstanceRequestWithBody(server, instanceId, params, "application/json", bodyReader)
+	return NewRebuildInstanceRequestWithBody(server, instanceId, "application/json", bodyReader)
 }
 
 // NewRebuildInstanceRequestWithBody constructs an http.Request for the RebuildInstance method, with any body, and a specified content type
-func NewRebuildInstanceRequestWithBody(server string, instanceId openapi_types.UUID, params *RebuildInstanceParams, contentType string, body io.Reader) (*http.Request, error) {
+func NewRebuildInstanceRequestWithBody(server string, instanceId openapi_types.UUID, contentType string, body io.Reader) (*http.Request, error) {
 	var err error
 
 	var pathParam0 string
@@ -8482,19 +8140,6 @@ func NewRebuildInstanceRequestWithBody(server string, instanceId openapi_types.U
 	}
 
 	req.Header.Add("Content-Type", contentType)
-
-	if params != nil {
-
-		var headerParam0 string
-
-		headerParam0, err = runtime.StyleParamWithOptions("simple", false, "Idempotency-Key", params.IdempotencyKey, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationHeader, Type: "string", Format: ""})
-		if err != nil {
-			return nil, err
-		}
-
-		req.Header.Set("Idempotency-Key", headerParam0)
-
-	}
 
 	return req, nil
 }
@@ -8940,18 +8585,18 @@ func NewListPortsRequest(server string) (*http.Request, error) {
 }
 
 // NewCreatePortRequest calls the generic CreatePort builder with application/json body
-func NewCreatePortRequest(server string, params *CreatePortParams, body CreatePortJSONRequestBody) (*http.Request, error) {
+func NewCreatePortRequest(server string, body CreatePortJSONRequestBody) (*http.Request, error) {
 	var bodyReader io.Reader
 	buf, err := json.Marshal(body)
 	if err != nil {
 		return nil, err
 	}
 	bodyReader = bytes.NewReader(buf)
-	return NewCreatePortRequestWithBody(server, params, "application/json", bodyReader)
+	return NewCreatePortRequestWithBody(server, "application/json", bodyReader)
 }
 
 // NewCreatePortRequestWithBody constructs an http.Request for the CreatePort method, with any body, and a specified content type
-func NewCreatePortRequestWithBody(server string, params *CreatePortParams, contentType string, body io.Reader) (*http.Request, error) {
+func NewCreatePortRequestWithBody(server string, contentType string, body io.Reader) (*http.Request, error) {
 	var err error
 
 	serverURL, err := url.Parse(server)
@@ -8976,24 +8621,11 @@ func NewCreatePortRequestWithBody(server string, params *CreatePortParams, conte
 
 	req.Header.Add("Content-Type", contentType)
 
-	if params != nil {
-
-		var headerParam0 string
-
-		headerParam0, err = runtime.StyleParamWithOptions("simple", false, "Idempotency-Key", params.IdempotencyKey, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationHeader, Type: "string", Format: ""})
-		if err != nil {
-			return nil, err
-		}
-
-		req.Header.Set("Idempotency-Key", headerParam0)
-
-	}
-
 	return req, nil
 }
 
 // NewDeletePortRequest constructs an http.Request for the DeletePort method
-func NewDeletePortRequest(server string, portId openapi_types.UUID, params *DeletePortParams) (*http.Request, error) {
+func NewDeletePortRequest(server string, portId openapi_types.UUID) (*http.Request, error) {
 	var err error
 
 	var pathParam0 string
@@ -9021,19 +8653,6 @@ func NewDeletePortRequest(server string, portId openapi_types.UUID, params *Dele
 	req, err := http.NewRequest(http.MethodDelete, queryURL.String(), nil)
 	if err != nil {
 		return nil, err
-	}
-
-	if params != nil {
-
-		var headerParam0 string
-
-		headerParam0, err = runtime.StyleParamWithOptions("simple", false, "Idempotency-Key", params.IdempotencyKey, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationHeader, Type: "string", Format: ""})
-		if err != nil {
-			return nil, err
-		}
-
-		req.Header.Set("Idempotency-Key", headerParam0)
-
 	}
 
 	return req, nil
@@ -9239,18 +8858,18 @@ func NewGetPrivateImageRequest(server string, privateImageId openapi_types.UUID)
 }
 
 // NewRenamePrivateImageRequest calls the generic RenamePrivateImage builder with application/json body
-func NewRenamePrivateImageRequest(server string, privateImageId openapi_types.UUID, params *RenamePrivateImageParams, body RenamePrivateImageJSONRequestBody) (*http.Request, error) {
+func NewRenamePrivateImageRequest(server string, privateImageId openapi_types.UUID, body RenamePrivateImageJSONRequestBody) (*http.Request, error) {
 	var bodyReader io.Reader
 	buf, err := json.Marshal(body)
 	if err != nil {
 		return nil, err
 	}
 	bodyReader = bytes.NewReader(buf)
-	return NewRenamePrivateImageRequestWithBody(server, privateImageId, params, "application/json", bodyReader)
+	return NewRenamePrivateImageRequestWithBody(server, privateImageId, "application/json", bodyReader)
 }
 
 // NewRenamePrivateImageRequestWithBody constructs an http.Request for the RenamePrivateImage method, with any body, and a specified content type
-func NewRenamePrivateImageRequestWithBody(server string, privateImageId openapi_types.UUID, params *RenamePrivateImageParams, contentType string, body io.Reader) (*http.Request, error) {
+func NewRenamePrivateImageRequestWithBody(server string, privateImageId openapi_types.UUID, contentType string, body io.Reader) (*http.Request, error) {
 	var err error
 
 	var pathParam0 string
@@ -9281,19 +8900,6 @@ func NewRenamePrivateImageRequestWithBody(server string, privateImageId openapi_
 	}
 
 	req.Header.Add("Content-Type", contentType)
-
-	if params != nil {
-
-		var headerParam0 string
-
-		headerParam0, err = runtime.StyleParamWithOptions("simple", false, "Idempotency-Key", params.IdempotencyKey, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationHeader, Type: "string", Format: ""})
-		if err != nil {
-			return nil, err
-		}
-
-		req.Header.Set("Idempotency-Key", headerParam0)
-
-	}
 
 	return req, nil
 }
@@ -9353,18 +8959,18 @@ func NewListPrivateNetworksRequest(server string, params *ListPrivateNetworksPar
 }
 
 // NewCreatePrivateNetworkRequest calls the generic CreatePrivateNetwork builder with application/json body
-func NewCreatePrivateNetworkRequest(server string, params *CreatePrivateNetworkParams, body CreatePrivateNetworkJSONRequestBody) (*http.Request, error) {
+func NewCreatePrivateNetworkRequest(server string, body CreatePrivateNetworkJSONRequestBody) (*http.Request, error) {
 	var bodyReader io.Reader
 	buf, err := json.Marshal(body)
 	if err != nil {
 		return nil, err
 	}
 	bodyReader = bytes.NewReader(buf)
-	return NewCreatePrivateNetworkRequestWithBody(server, params, "application/json", bodyReader)
+	return NewCreatePrivateNetworkRequestWithBody(server, "application/json", bodyReader)
 }
 
 // NewCreatePrivateNetworkRequestWithBody constructs an http.Request for the CreatePrivateNetwork method, with any body, and a specified content type
-func NewCreatePrivateNetworkRequestWithBody(server string, params *CreatePrivateNetworkParams, contentType string, body io.Reader) (*http.Request, error) {
+func NewCreatePrivateNetworkRequestWithBody(server string, contentType string, body io.Reader) (*http.Request, error) {
 	var err error
 
 	serverURL, err := url.Parse(server)
@@ -9389,24 +8995,11 @@ func NewCreatePrivateNetworkRequestWithBody(server string, params *CreatePrivate
 
 	req.Header.Add("Content-Type", contentType)
 
-	if params != nil {
-
-		var headerParam0 string
-
-		headerParam0, err = runtime.StyleParamWithOptions("simple", false, "Idempotency-Key", params.IdempotencyKey, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationHeader, Type: "string", Format: ""})
-		if err != nil {
-			return nil, err
-		}
-
-		req.Header.Set("Idempotency-Key", headerParam0)
-
-	}
-
 	return req, nil
 }
 
 // NewDeletePrivateNetworkRequest constructs an http.Request for the DeletePrivateNetwork method
-func NewDeletePrivateNetworkRequest(server string, privateNetworkId openapi_types.UUID, params *DeletePrivateNetworkParams) (*http.Request, error) {
+func NewDeletePrivateNetworkRequest(server string, privateNetworkId openapi_types.UUID) (*http.Request, error) {
 	var err error
 
 	var pathParam0 string
@@ -9434,19 +9027,6 @@ func NewDeletePrivateNetworkRequest(server string, privateNetworkId openapi_type
 	req, err := http.NewRequest(http.MethodDelete, queryURL.String(), nil)
 	if err != nil {
 		return nil, err
-	}
-
-	if params != nil {
-
-		var headerParam0 string
-
-		headerParam0, err = runtime.StyleParamWithOptions("simple", false, "Idempotency-Key", params.IdempotencyKey, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationHeader, Type: "string", Format: ""})
-		if err != nil {
-			return nil, err
-		}
-
-		req.Header.Set("Idempotency-Key", headerParam0)
-
 	}
 
 	return req, nil
@@ -9487,18 +9067,18 @@ func NewGetPrivateNetworkRequest(server string, privateNetworkId openapi_types.U
 }
 
 // NewRenamePrivateNetworkRequest calls the generic RenamePrivateNetwork builder with application/json body
-func NewRenamePrivateNetworkRequest(server string, privateNetworkId openapi_types.UUID, params *RenamePrivateNetworkParams, body RenamePrivateNetworkJSONRequestBody) (*http.Request, error) {
+func NewRenamePrivateNetworkRequest(server string, privateNetworkId openapi_types.UUID, body RenamePrivateNetworkJSONRequestBody) (*http.Request, error) {
 	var bodyReader io.Reader
 	buf, err := json.Marshal(body)
 	if err != nil {
 		return nil, err
 	}
 	bodyReader = bytes.NewReader(buf)
-	return NewRenamePrivateNetworkRequestWithBody(server, privateNetworkId, params, "application/json", bodyReader)
+	return NewRenamePrivateNetworkRequestWithBody(server, privateNetworkId, "application/json", bodyReader)
 }
 
 // NewRenamePrivateNetworkRequestWithBody constructs an http.Request for the RenamePrivateNetwork method, with any body, and a specified content type
-func NewRenamePrivateNetworkRequestWithBody(server string, privateNetworkId openapi_types.UUID, params *RenamePrivateNetworkParams, contentType string, body io.Reader) (*http.Request, error) {
+func NewRenamePrivateNetworkRequestWithBody(server string, privateNetworkId openapi_types.UUID, contentType string, body io.Reader) (*http.Request, error) {
 	var err error
 
 	var pathParam0 string
@@ -9530,24 +9110,11 @@ func NewRenamePrivateNetworkRequestWithBody(server string, privateNetworkId open
 
 	req.Header.Add("Content-Type", contentType)
 
-	if params != nil {
-
-		var headerParam0 string
-
-		headerParam0, err = runtime.StyleParamWithOptions("simple", false, "Idempotency-Key", params.IdempotencyKey, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationHeader, Type: "string", Format: ""})
-		if err != nil {
-			return nil, err
-		}
-
-		req.Header.Set("Idempotency-Key", headerParam0)
-
-	}
-
 	return req, nil
 }
 
 // NewDisablePrivateNetworkIpv6Request constructs an http.Request for the DisablePrivateNetworkIpv6 method
-func NewDisablePrivateNetworkIpv6Request(server string, privateNetworkId openapi_types.UUID, params *DisablePrivateNetworkIpv6Params) (*http.Request, error) {
+func NewDisablePrivateNetworkIpv6Request(server string, privateNetworkId openapi_types.UUID) (*http.Request, error) {
 	var err error
 
 	var pathParam0 string
@@ -9575,19 +9142,6 @@ func NewDisablePrivateNetworkIpv6Request(server string, privateNetworkId openapi
 	req, err := http.NewRequest(http.MethodDelete, queryURL.String(), nil)
 	if err != nil {
 		return nil, err
-	}
-
-	if params != nil {
-
-		var headerParam0 string
-
-		headerParam0, err = runtime.StyleParamWithOptions("simple", false, "Idempotency-Key", params.IdempotencyKey, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationHeader, Type: "string", Format: ""})
-		if err != nil {
-			return nil, err
-		}
-
-		req.Header.Set("Idempotency-Key", headerParam0)
-
 	}
 
 	return req, nil
@@ -9628,7 +9182,7 @@ func NewGetPrivateNetworkIpv6Request(server string, privateNetworkId openapi_typ
 }
 
 // NewEnablePrivateNetworkIpv6Request constructs an http.Request for the EnablePrivateNetworkIpv6 method
-func NewEnablePrivateNetworkIpv6Request(server string, privateNetworkId openapi_types.UUID, params *EnablePrivateNetworkIpv6Params) (*http.Request, error) {
+func NewEnablePrivateNetworkIpv6Request(server string, privateNetworkId openapi_types.UUID) (*http.Request, error) {
 	var err error
 
 	var pathParam0 string
@@ -9656,19 +9210,6 @@ func NewEnablePrivateNetworkIpv6Request(server string, privateNetworkId openapi_
 	req, err := http.NewRequest(http.MethodPost, queryURL.String(), nil)
 	if err != nil {
 		return nil, err
-	}
-
-	if params != nil {
-
-		var headerParam0 string
-
-		headerParam0, err = runtime.StyleParamWithOptions("simple", false, "Idempotency-Key", params.IdempotencyKey, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationHeader, Type: "string", Format: ""})
-		if err != nil {
-			return nil, err
-		}
-
-		req.Header.Set("Idempotency-Key", headerParam0)
-
 	}
 
 	return req, nil
@@ -9709,18 +9250,18 @@ func NewListRoutesRequest(server string, privateNetworkId openapi_types.UUID) (*
 }
 
 // NewCreateRouteRequest calls the generic CreateRoute builder with application/json body
-func NewCreateRouteRequest(server string, privateNetworkId openapi_types.UUID, params *CreateRouteParams, body CreateRouteJSONRequestBody) (*http.Request, error) {
+func NewCreateRouteRequest(server string, privateNetworkId openapi_types.UUID, body CreateRouteJSONRequestBody) (*http.Request, error) {
 	var bodyReader io.Reader
 	buf, err := json.Marshal(body)
 	if err != nil {
 		return nil, err
 	}
 	bodyReader = bytes.NewReader(buf)
-	return NewCreateRouteRequestWithBody(server, privateNetworkId, params, "application/json", bodyReader)
+	return NewCreateRouteRequestWithBody(server, privateNetworkId, "application/json", bodyReader)
 }
 
 // NewCreateRouteRequestWithBody constructs an http.Request for the CreateRoute method, with any body, and a specified content type
-func NewCreateRouteRequestWithBody(server string, privateNetworkId openapi_types.UUID, params *CreateRouteParams, contentType string, body io.Reader) (*http.Request, error) {
+func NewCreateRouteRequestWithBody(server string, privateNetworkId openapi_types.UUID, contentType string, body io.Reader) (*http.Request, error) {
 	var err error
 
 	var pathParam0 string
@@ -9752,24 +9293,11 @@ func NewCreateRouteRequestWithBody(server string, privateNetworkId openapi_types
 
 	req.Header.Add("Content-Type", contentType)
 
-	if params != nil {
-
-		var headerParam0 string
-
-		headerParam0, err = runtime.StyleParamWithOptions("simple", false, "Idempotency-Key", params.IdempotencyKey, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationHeader, Type: "string", Format: ""})
-		if err != nil {
-			return nil, err
-		}
-
-		req.Header.Set("Idempotency-Key", headerParam0)
-
-	}
-
 	return req, nil
 }
 
 // NewDeleteRouteRequest constructs an http.Request for the DeleteRoute method
-func NewDeleteRouteRequest(server string, privateNetworkId openapi_types.UUID, routeId openapi_types.UUID, params *DeleteRouteParams) (*http.Request, error) {
+func NewDeleteRouteRequest(server string, privateNetworkId openapi_types.UUID, routeId openapi_types.UUID) (*http.Request, error) {
 	var err error
 
 	var pathParam0 string
@@ -9804,19 +9332,6 @@ func NewDeleteRouteRequest(server string, privateNetworkId openapi_types.UUID, r
 	req, err := http.NewRequest(http.MethodDelete, queryURL.String(), nil)
 	if err != nil {
 		return nil, err
-	}
-
-	if params != nil {
-
-		var headerParam0 string
-
-		headerParam0, err = runtime.StyleParamWithOptions("simple", false, "Idempotency-Key", params.IdempotencyKey, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationHeader, Type: "string", Format: ""})
-		if err != nil {
-			return nil, err
-		}
-
-		req.Header.Set("Idempotency-Key", headerParam0)
-
 	}
 
 	return req, nil
@@ -9857,18 +9372,18 @@ func NewListSubnetsRequest(server string, privateNetworkId openapi_types.UUID) (
 }
 
 // NewCreateSubnetRequest calls the generic CreateSubnet builder with application/json body
-func NewCreateSubnetRequest(server string, privateNetworkId openapi_types.UUID, params *CreateSubnetParams, body CreateSubnetJSONRequestBody) (*http.Request, error) {
+func NewCreateSubnetRequest(server string, privateNetworkId openapi_types.UUID, body CreateSubnetJSONRequestBody) (*http.Request, error) {
 	var bodyReader io.Reader
 	buf, err := json.Marshal(body)
 	if err != nil {
 		return nil, err
 	}
 	bodyReader = bytes.NewReader(buf)
-	return NewCreateSubnetRequestWithBody(server, privateNetworkId, params, "application/json", bodyReader)
+	return NewCreateSubnetRequestWithBody(server, privateNetworkId, "application/json", bodyReader)
 }
 
 // NewCreateSubnetRequestWithBody constructs an http.Request for the CreateSubnet method, with any body, and a specified content type
-func NewCreateSubnetRequestWithBody(server string, privateNetworkId openapi_types.UUID, params *CreateSubnetParams, contentType string, body io.Reader) (*http.Request, error) {
+func NewCreateSubnetRequestWithBody(server string, privateNetworkId openapi_types.UUID, contentType string, body io.Reader) (*http.Request, error) {
 	var err error
 
 	var pathParam0 string
@@ -9899,19 +9414,6 @@ func NewCreateSubnetRequestWithBody(server string, privateNetworkId openapi_type
 	}
 
 	req.Header.Add("Content-Type", contentType)
-
-	if params != nil {
-
-		var headerParam0 string
-
-		headerParam0, err = runtime.StyleParamWithOptions("simple", false, "Idempotency-Key", params.IdempotencyKey, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationHeader, Type: "string", Format: ""})
-		if err != nil {
-			return nil, err
-		}
-
-		req.Header.Set("Idempotency-Key", headerParam0)
-
-	}
 
 	return req, nil
 }
@@ -9978,7 +9480,7 @@ func NewSuggestSubnetCidrRequest(server string, privateNetworkId openapi_types.U
 }
 
 // NewDeleteSubnetRequest constructs an http.Request for the DeleteSubnet method
-func NewDeleteSubnetRequest(server string, privateNetworkId openapi_types.UUID, subnetId openapi_types.UUID, params *DeleteSubnetParams) (*http.Request, error) {
+func NewDeleteSubnetRequest(server string, privateNetworkId openapi_types.UUID, subnetId openapi_types.UUID) (*http.Request, error) {
 	var err error
 
 	var pathParam0 string
@@ -10013,19 +9515,6 @@ func NewDeleteSubnetRequest(server string, privateNetworkId openapi_types.UUID, 
 	req, err := http.NewRequest(http.MethodDelete, queryURL.String(), nil)
 	if err != nil {
 		return nil, err
-	}
-
-	if params != nil {
-
-		var headerParam0 string
-
-		headerParam0, err = runtime.StyleParamWithOptions("simple", false, "Idempotency-Key", params.IdempotencyKey, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationHeader, Type: "string", Format: ""})
-		if err != nil {
-			return nil, err
-		}
-
-		req.Header.Set("Idempotency-Key", headerParam0)
-
 	}
 
 	return req, nil
@@ -10159,18 +9648,18 @@ func NewListSecurityGroupsRequest(server string, params *ListSecurityGroupsParam
 }
 
 // NewCreateSecurityGroupRequest calls the generic CreateSecurityGroup builder with application/json body
-func NewCreateSecurityGroupRequest(server string, params *CreateSecurityGroupParams, body CreateSecurityGroupJSONRequestBody) (*http.Request, error) {
+func NewCreateSecurityGroupRequest(server string, body CreateSecurityGroupJSONRequestBody) (*http.Request, error) {
 	var bodyReader io.Reader
 	buf, err := json.Marshal(body)
 	if err != nil {
 		return nil, err
 	}
 	bodyReader = bytes.NewReader(buf)
-	return NewCreateSecurityGroupRequestWithBody(server, params, "application/json", bodyReader)
+	return NewCreateSecurityGroupRequestWithBody(server, "application/json", bodyReader)
 }
 
 // NewCreateSecurityGroupRequestWithBody constructs an http.Request for the CreateSecurityGroup method, with any body, and a specified content type
-func NewCreateSecurityGroupRequestWithBody(server string, params *CreateSecurityGroupParams, contentType string, body io.Reader) (*http.Request, error) {
+func NewCreateSecurityGroupRequestWithBody(server string, contentType string, body io.Reader) (*http.Request, error) {
 	var err error
 
 	serverURL, err := url.Parse(server)
@@ -10195,24 +9684,11 @@ func NewCreateSecurityGroupRequestWithBody(server string, params *CreateSecurity
 
 	req.Header.Add("Content-Type", contentType)
 
-	if params != nil {
-
-		var headerParam0 string
-
-		headerParam0, err = runtime.StyleParamWithOptions("simple", false, "Idempotency-Key", params.IdempotencyKey, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationHeader, Type: "string", Format: ""})
-		if err != nil {
-			return nil, err
-		}
-
-		req.Header.Set("Idempotency-Key", headerParam0)
-
-	}
-
 	return req, nil
 }
 
 // NewDeleteSecurityGroupRequest constructs an http.Request for the DeleteSecurityGroup method
-func NewDeleteSecurityGroupRequest(server string, securityGroupId openapi_types.UUID, params *DeleteSecurityGroupParams) (*http.Request, error) {
+func NewDeleteSecurityGroupRequest(server string, securityGroupId openapi_types.UUID) (*http.Request, error) {
 	var err error
 
 	var pathParam0 string
@@ -10240,19 +9716,6 @@ func NewDeleteSecurityGroupRequest(server string, securityGroupId openapi_types.
 	req, err := http.NewRequest(http.MethodDelete, queryURL.String(), nil)
 	if err != nil {
 		return nil, err
-	}
-
-	if params != nil {
-
-		var headerParam0 string
-
-		headerParam0, err = runtime.StyleParamWithOptions("simple", false, "Idempotency-Key", params.IdempotencyKey, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationHeader, Type: "string", Format: ""})
-		if err != nil {
-			return nil, err
-		}
-
-		req.Header.Set("Idempotency-Key", headerParam0)
-
 	}
 
 	return req, nil
@@ -10293,18 +9756,18 @@ func NewGetSecurityGroupRequest(server string, securityGroupId openapi_types.UUI
 }
 
 // NewRenameSecurityGroupRequest calls the generic RenameSecurityGroup builder with application/json body
-func NewRenameSecurityGroupRequest(server string, securityGroupId openapi_types.UUID, params *RenameSecurityGroupParams, body RenameSecurityGroupJSONRequestBody) (*http.Request, error) {
+func NewRenameSecurityGroupRequest(server string, securityGroupId openapi_types.UUID, body RenameSecurityGroupJSONRequestBody) (*http.Request, error) {
 	var bodyReader io.Reader
 	buf, err := json.Marshal(body)
 	if err != nil {
 		return nil, err
 	}
 	bodyReader = bytes.NewReader(buf)
-	return NewRenameSecurityGroupRequestWithBody(server, securityGroupId, params, "application/json", bodyReader)
+	return NewRenameSecurityGroupRequestWithBody(server, securityGroupId, "application/json", bodyReader)
 }
 
 // NewRenameSecurityGroupRequestWithBody constructs an http.Request for the RenameSecurityGroup method, with any body, and a specified content type
-func NewRenameSecurityGroupRequestWithBody(server string, securityGroupId openapi_types.UUID, params *RenameSecurityGroupParams, contentType string, body io.Reader) (*http.Request, error) {
+func NewRenameSecurityGroupRequestWithBody(server string, securityGroupId openapi_types.UUID, contentType string, body io.Reader) (*http.Request, error) {
 	var err error
 
 	var pathParam0 string
@@ -10335,19 +9798,6 @@ func NewRenameSecurityGroupRequestWithBody(server string, securityGroupId openap
 	}
 
 	req.Header.Add("Content-Type", contentType)
-
-	if params != nil {
-
-		var headerParam0 string
-
-		headerParam0, err = runtime.StyleParamWithOptions("simple", false, "Idempotency-Key", params.IdempotencyKey, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationHeader, Type: "string", Format: ""})
-		if err != nil {
-			return nil, err
-		}
-
-		req.Header.Set("Idempotency-Key", headerParam0)
-
-	}
 
 	return req, nil
 }
@@ -10387,18 +9837,18 @@ func NewListSecurityGroupRulesRequest(server string, securityGroupId openapi_typ
 }
 
 // NewCreateSecurityGroupRuleRequest calls the generic CreateSecurityGroupRule builder with application/json body
-func NewCreateSecurityGroupRuleRequest(server string, securityGroupId openapi_types.UUID, params *CreateSecurityGroupRuleParams, body CreateSecurityGroupRuleJSONRequestBody) (*http.Request, error) {
+func NewCreateSecurityGroupRuleRequest(server string, securityGroupId openapi_types.UUID, body CreateSecurityGroupRuleJSONRequestBody) (*http.Request, error) {
 	var bodyReader io.Reader
 	buf, err := json.Marshal(body)
 	if err != nil {
 		return nil, err
 	}
 	bodyReader = bytes.NewReader(buf)
-	return NewCreateSecurityGroupRuleRequestWithBody(server, securityGroupId, params, "application/json", bodyReader)
+	return NewCreateSecurityGroupRuleRequestWithBody(server, securityGroupId, "application/json", bodyReader)
 }
 
 // NewCreateSecurityGroupRuleRequestWithBody constructs an http.Request for the CreateSecurityGroupRule method, with any body, and a specified content type
-func NewCreateSecurityGroupRuleRequestWithBody(server string, securityGroupId openapi_types.UUID, params *CreateSecurityGroupRuleParams, contentType string, body io.Reader) (*http.Request, error) {
+func NewCreateSecurityGroupRuleRequestWithBody(server string, securityGroupId openapi_types.UUID, contentType string, body io.Reader) (*http.Request, error) {
 	var err error
 
 	var pathParam0 string
@@ -10430,24 +9880,11 @@ func NewCreateSecurityGroupRuleRequestWithBody(server string, securityGroupId op
 
 	req.Header.Add("Content-Type", contentType)
 
-	if params != nil {
-
-		var headerParam0 string
-
-		headerParam0, err = runtime.StyleParamWithOptions("simple", false, "Idempotency-Key", params.IdempotencyKey, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationHeader, Type: "string", Format: ""})
-		if err != nil {
-			return nil, err
-		}
-
-		req.Header.Set("Idempotency-Key", headerParam0)
-
-	}
-
 	return req, nil
 }
 
 // NewDeleteSecurityGroupRuleRequest constructs an http.Request for the DeleteSecurityGroupRule method
-func NewDeleteSecurityGroupRuleRequest(server string, securityGroupId openapi_types.UUID, ruleId openapi_types.UUID, params *DeleteSecurityGroupRuleParams) (*http.Request, error) {
+func NewDeleteSecurityGroupRuleRequest(server string, securityGroupId openapi_types.UUID, ruleId openapi_types.UUID) (*http.Request, error) {
 	var err error
 
 	var pathParam0 string
@@ -10482,19 +9919,6 @@ func NewDeleteSecurityGroupRuleRequest(server string, securityGroupId openapi_ty
 	req, err := http.NewRequest(http.MethodDelete, queryURL.String(), nil)
 	if err != nil {
 		return nil, err
-	}
-
-	if params != nil {
-
-		var headerParam0 string
-
-		headerParam0, err = runtime.StyleParamWithOptions("simple", false, "Idempotency-Key", params.IdempotencyKey, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationHeader, Type: "string", Format: ""})
-		if err != nil {
-			return nil, err
-		}
-
-		req.Header.Set("Idempotency-Key", headerParam0)
-
 	}
 
 	return req, nil
@@ -10676,18 +10100,18 @@ func NewGetSnapshotRequest(server string, snapshotId openapi_types.UUID) (*http.
 }
 
 // NewRenameSnapshotRequest calls the generic RenameSnapshot builder with application/json body
-func NewRenameSnapshotRequest(server string, snapshotId openapi_types.UUID, params *RenameSnapshotParams, body RenameSnapshotJSONRequestBody) (*http.Request, error) {
+func NewRenameSnapshotRequest(server string, snapshotId openapi_types.UUID, body RenameSnapshotJSONRequestBody) (*http.Request, error) {
 	var bodyReader io.Reader
 	buf, err := json.Marshal(body)
 	if err != nil {
 		return nil, err
 	}
 	bodyReader = bytes.NewReader(buf)
-	return NewRenameSnapshotRequestWithBody(server, snapshotId, params, "application/json", bodyReader)
+	return NewRenameSnapshotRequestWithBody(server, snapshotId, "application/json", bodyReader)
 }
 
 // NewRenameSnapshotRequestWithBody constructs an http.Request for the RenameSnapshot method, with any body, and a specified content type
-func NewRenameSnapshotRequestWithBody(server string, snapshotId openapi_types.UUID, params *RenameSnapshotParams, contentType string, body io.Reader) (*http.Request, error) {
+func NewRenameSnapshotRequestWithBody(server string, snapshotId openapi_types.UUID, contentType string, body io.Reader) (*http.Request, error) {
 	var err error
 
 	var pathParam0 string
@@ -10718,19 +10142,6 @@ func NewRenameSnapshotRequestWithBody(server string, snapshotId openapi_types.UU
 	}
 
 	req.Header.Add("Content-Type", contentType)
-
-	if params != nil {
-
-		var headerParam0 string
-
-		headerParam0, err = runtime.StyleParamWithOptions("simple", false, "Idempotency-Key", params.IdempotencyKey, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationHeader, Type: "string", Format: ""})
-		if err != nil {
-			return nil, err
-		}
-
-		req.Header.Set("Idempotency-Key", headerParam0)
-
-	}
 
 	return req, nil
 }
@@ -10869,14 +10280,14 @@ type ClientWithResponsesInterface interface {
 	// Takes any type of body and a specified content type, and returns a wrapper object for the known response body format(s).
 	//
 	// Corresponds with PATCH /api/v1/backups/{backupId} (the `RenameBackup` operationId).
-	RenameBackupWithBodyWithResponse(ctx context.Context, backupId openapi_types.UUID, params *RenameBackupParams, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*RenameBackupResponse, error)
+	RenameBackupWithBodyWithResponse(ctx context.Context, backupId openapi_types.UUID, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*RenameBackupResponse, error)
 
 	// RenameBackupWithResponse Rename a backup
 	//
 	// Takes a body of the `application/json` content type, and returns a wrapper object for the known response body format(s).
 	//
 	// Corresponds with PATCH /api/v1/backups/{backupId} (the `RenameBackup` operationId).
-	RenameBackupWithResponse(ctx context.Context, backupId openapi_types.UUID, params *RenameBackupParams, body RenameBackupJSONRequestBody, reqEditors ...RequestEditorFn) (*RenameBackupResponse, error)
+	RenameBackupWithResponse(ctx context.Context, backupId openapi_types.UUID, body RenameBackupJSONRequestBody, reqEditors ...RequestEditorFn) (*RenameBackupResponse, error)
 
 	// RestoreBackupWithBodyWithResponse Restore from a backup
 	//
@@ -10974,7 +10385,7 @@ type ClientWithResponsesInterface interface {
 	// Takes any type of body and a specified content type, and returns a wrapper object for the known response body format(s).
 	//
 	// Corresponds with PATCH /api/v1/disks/{diskId} (the `RenameDisk` operationId).
-	RenameDiskWithBodyWithResponse(ctx context.Context, diskId openapi_types.UUID, params *RenameDiskParams, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*RenameDiskResponse, error)
+	RenameDiskWithBodyWithResponse(ctx context.Context, diskId openapi_types.UUID, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*RenameDiskResponse, error)
 
 	// RenameDiskWithResponse Rename a disk
 	//
@@ -10983,7 +10394,7 @@ type ClientWithResponsesInterface interface {
 	// Takes a body of the `application/json` content type, and returns a wrapper object for the known response body format(s).
 	//
 	// Corresponds with PATCH /api/v1/disks/{diskId} (the `RenameDisk` operationId).
-	RenameDiskWithResponse(ctx context.Context, diskId openapi_types.UUID, params *RenameDiskParams, body RenameDiskJSONRequestBody, reqEditors ...RequestEditorFn) (*RenameDiskResponse, error)
+	RenameDiskWithResponse(ctx context.Context, diskId openapi_types.UUID, body RenameDiskJSONRequestBody, reqEditors ...RequestEditorFn) (*RenameDiskResponse, error)
 
 	// ResizeDiskWithBodyWithResponse Resize a disk
 	//
@@ -11115,21 +10526,21 @@ type ClientWithResponsesInterface interface {
 	// Returns a wrapper object for the known response body format(s).
 	//
 	// Corresponds with DELETE /api/v1/floating-ips/{floatingIpId}/binding (the `UnbindFloatingIp` operationId).
-	UnbindFloatingIpWithResponse(ctx context.Context, floatingIpId openapi_types.UUID, params *UnbindFloatingIpParams, reqEditors ...RequestEditorFn) (*UnbindFloatingIpResponse, error)
+	UnbindFloatingIpWithResponse(ctx context.Context, floatingIpId openapi_types.UUID, reqEditors ...RequestEditorFn) (*UnbindFloatingIpResponse, error)
 
 	// BindFloatingIpWithBodyWithResponse Bind a floating IP to a network interface
 	//
 	// Takes any type of body and a specified content type, and returns a wrapper object for the known response body format(s).
 	//
 	// Corresponds with PUT /api/v1/floating-ips/{floatingIpId}/binding (the `BindFloatingIp` operationId).
-	BindFloatingIpWithBodyWithResponse(ctx context.Context, floatingIpId openapi_types.UUID, params *BindFloatingIpParams, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*BindFloatingIpResponse, error)
+	BindFloatingIpWithBodyWithResponse(ctx context.Context, floatingIpId openapi_types.UUID, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*BindFloatingIpResponse, error)
 
 	// BindFloatingIpWithResponse Bind a floating IP to a network interface
 	//
 	// Takes a body of the `application/json` content type, and returns a wrapper object for the known response body format(s).
 	//
 	// Corresponds with PUT /api/v1/floating-ips/{floatingIpId}/binding (the `BindFloatingIp` operationId).
-	BindFloatingIpWithResponse(ctx context.Context, floatingIpId openapi_types.UUID, params *BindFloatingIpParams, body BindFloatingIpJSONRequestBody, reqEditors ...RequestEditorFn) (*BindFloatingIpResponse, error)
+	BindFloatingIpWithResponse(ctx context.Context, floatingIpId openapi_types.UUID, body BindFloatingIpJSONRequestBody, reqEditors ...RequestEditorFn) (*BindFloatingIpResponse, error)
 
 	// ListImagesWithResponse List images on sale
 	//
@@ -11205,7 +10616,7 @@ type ClientWithResponsesInterface interface {
 	// Takes any type of body and a specified content type, and returns a wrapper object for the known response body format(s).
 	//
 	// Corresponds with PATCH /api/v1/instances/{instanceId} (the `RenameInstance` operationId).
-	RenameInstanceWithBodyWithResponse(ctx context.Context, instanceId openapi_types.UUID, params *RenameInstanceParams, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*RenameInstanceResponse, error)
+	RenameInstanceWithBodyWithResponse(ctx context.Context, instanceId openapi_types.UUID, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*RenameInstanceResponse, error)
 
 	// RenameInstanceWithResponse Rename an instance
 	//
@@ -11214,7 +10625,7 @@ type ClientWithResponsesInterface interface {
 	// Takes a body of the `application/json` content type, and returns a wrapper object for the known response body format(s).
 	//
 	// Corresponds with PATCH /api/v1/instances/{instanceId} (the `RenameInstance` operationId).
-	RenameInstanceWithResponse(ctx context.Context, instanceId openapi_types.UUID, params *RenameInstanceParams, body RenameInstanceJSONRequestBody, reqEditors ...RequestEditorFn) (*RenameInstanceResponse, error)
+	RenameInstanceWithResponse(ctx context.Context, instanceId openapi_types.UUID, body RenameInstanceJSONRequestBody, reqEditors ...RequestEditorFn) (*RenameInstanceResponse, error)
 
 	// RunInstanceCommandWithBodyWithResponse Run a command on an instance
 	//
@@ -11239,7 +10650,7 @@ type ClientWithResponsesInterface interface {
 	// Takes any type of body and a specified content type, and returns a wrapper object for the known response body format(s).
 	//
 	// Corresponds with POST /api/v1/instances/{instanceId}/commands (the `RunInstanceCommand` operationId).
-	RunInstanceCommandWithBodyWithResponse(ctx context.Context, instanceId openapi_types.UUID, params *RunInstanceCommandParams, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*RunInstanceCommandResponse, error)
+	RunInstanceCommandWithBodyWithResponse(ctx context.Context, instanceId openapi_types.UUID, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*RunInstanceCommandResponse, error)
 
 	// RunInstanceCommandWithResponse Run a command on an instance
 	//
@@ -11264,7 +10675,7 @@ type ClientWithResponsesInterface interface {
 	// Takes a body of the `application/json` content type, and returns a wrapper object for the known response body format(s).
 	//
 	// Corresponds with POST /api/v1/instances/{instanceId}/commands (the `RunInstanceCommand` operationId).
-	RunInstanceCommandWithResponse(ctx context.Context, instanceId openapi_types.UUID, params *RunInstanceCommandParams, body RunInstanceCommandJSONRequestBody, reqEditors ...RequestEditorFn) (*RunInstanceCommandResponse, error)
+	RunInstanceCommandWithResponse(ctx context.Context, instanceId openapi_types.UUID, body RunInstanceCommandJSONRequestBody, reqEditors ...RequestEditorFn) (*RunInstanceCommandResponse, error)
 
 	// OpenInstanceConsoleWithResponse Open a remote console
 	//
@@ -11275,7 +10686,7 @@ type ClientWithResponsesInterface interface {
 	// Returns a wrapper object for the known response body format(s).
 	//
 	// Corresponds with POST /api/v1/instances/{instanceId}/console (the `OpenInstanceConsole` operationId).
-	OpenInstanceConsoleWithResponse(ctx context.Context, instanceId openapi_types.UUID, params *OpenInstanceConsoleParams, reqEditors ...RequestEditorFn) (*OpenInstanceConsoleResponse, error)
+	OpenInstanceConsoleWithResponse(ctx context.Context, instanceId openapi_types.UUID, reqEditors ...RequestEditorFn) (*OpenInstanceConsoleResponse, error)
 
 	// GetInstanceConsoleOutputWithResponse Read the console output
 	//
@@ -11329,7 +10740,7 @@ type ClientWithResponsesInterface interface {
 	// Takes any type of body and a specified content type, and returns a wrapper object for the known response body format(s).
 	//
 	// Corresponds with POST /api/v1/instances/{instanceId}/floating-ips (the `AttachInstanceFloatingIp` operationId).
-	AttachInstanceFloatingIpWithBodyWithResponse(ctx context.Context, instanceId openapi_types.UUID, params *AttachInstanceFloatingIpParams, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*AttachInstanceFloatingIpResponse, error)
+	AttachInstanceFloatingIpWithBodyWithResponse(ctx context.Context, instanceId openapi_types.UUID, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*AttachInstanceFloatingIpResponse, error)
 
 	// AttachInstanceFloatingIpWithResponse Bind a floating IP to an instance
 	//
@@ -11338,7 +10749,7 @@ type ClientWithResponsesInterface interface {
 	// Takes a body of the `application/json` content type, and returns a wrapper object for the known response body format(s).
 	//
 	// Corresponds with POST /api/v1/instances/{instanceId}/floating-ips (the `AttachInstanceFloatingIp` operationId).
-	AttachInstanceFloatingIpWithResponse(ctx context.Context, instanceId openapi_types.UUID, params *AttachInstanceFloatingIpParams, body AttachInstanceFloatingIpJSONRequestBody, reqEditors ...RequestEditorFn) (*AttachInstanceFloatingIpResponse, error)
+	AttachInstanceFloatingIpWithResponse(ctx context.Context, instanceId openapi_types.UUID, body AttachInstanceFloatingIpJSONRequestBody, reqEditors ...RequestEditorFn) (*AttachInstanceFloatingIpResponse, error)
 
 	// DetachInstanceFloatingIpWithResponse Unbind the floating IP of an instance
 	//
@@ -11347,7 +10758,7 @@ type ClientWithResponsesInterface interface {
 	// Returns a wrapper object for the known response body format(s).
 	//
 	// Corresponds with DELETE /api/v1/instances/{instanceId}/floating-ips/{floatingIpId} (the `DetachInstanceFloatingIp` operationId).
-	DetachInstanceFloatingIpWithResponse(ctx context.Context, instanceId openapi_types.UUID, floatingIpId openapi_types.UUID, params *DetachInstanceFloatingIpParams, reqEditors ...RequestEditorFn) (*DetachInstanceFloatingIpResponse, error)
+	DetachInstanceFloatingIpWithResponse(ctx context.Context, instanceId openapi_types.UUID, floatingIpId openapi_types.UUID, reqEditors ...RequestEditorFn) (*DetachInstanceFloatingIpResponse, error)
 
 	// SetInstanceLabelsWithBodyWithResponse Replace an instance's labels
 	//
@@ -11360,7 +10771,7 @@ type ClientWithResponsesInterface interface {
 	// Takes any type of body and a specified content type, and returns a wrapper object for the known response body format(s).
 	//
 	// Corresponds with PUT /api/v1/instances/{instanceId}/labels (the `SetInstanceLabels` operationId).
-	SetInstanceLabelsWithBodyWithResponse(ctx context.Context, instanceId openapi_types.UUID, params *SetInstanceLabelsParams, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*SetInstanceLabelsResponse, error)
+	SetInstanceLabelsWithBodyWithResponse(ctx context.Context, instanceId openapi_types.UUID, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*SetInstanceLabelsResponse, error)
 
 	// SetInstanceLabelsWithResponse Replace an instance's labels
 	//
@@ -11373,7 +10784,7 @@ type ClientWithResponsesInterface interface {
 	// Takes a body of the `application/json` content type, and returns a wrapper object for the known response body format(s).
 	//
 	// Corresponds with PUT /api/v1/instances/{instanceId}/labels (the `SetInstanceLabels` operationId).
-	SetInstanceLabelsWithResponse(ctx context.Context, instanceId openapi_types.UUID, params *SetInstanceLabelsParams, body SetInstanceLabelsJSONRequestBody, reqEditors ...RequestEditorFn) (*SetInstanceLabelsResponse, error)
+	SetInstanceLabelsWithResponse(ctx context.Context, instanceId openapi_types.UUID, body SetInstanceLabelsJSONRequestBody, reqEditors ...RequestEditorFn) (*SetInstanceLabelsResponse, error)
 
 	// SetInstanceNotesWithBodyWithResponse Replace an instance's note
 	//
@@ -11386,7 +10797,7 @@ type ClientWithResponsesInterface interface {
 	// Takes any type of body and a specified content type, and returns a wrapper object for the known response body format(s).
 	//
 	// Corresponds with PUT /api/v1/instances/{instanceId}/notes (the `SetInstanceNotes` operationId).
-	SetInstanceNotesWithBodyWithResponse(ctx context.Context, instanceId openapi_types.UUID, params *SetInstanceNotesParams, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*SetInstanceNotesResponse, error)
+	SetInstanceNotesWithBodyWithResponse(ctx context.Context, instanceId openapi_types.UUID, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*SetInstanceNotesResponse, error)
 
 	// SetInstanceNotesWithResponse Replace an instance's note
 	//
@@ -11399,7 +10810,7 @@ type ClientWithResponsesInterface interface {
 	// Takes a body of the `application/json` content type, and returns a wrapper object for the known response body format(s).
 	//
 	// Corresponds with PUT /api/v1/instances/{instanceId}/notes (the `SetInstanceNotes` operationId).
-	SetInstanceNotesWithResponse(ctx context.Context, instanceId openapi_types.UUID, params *SetInstanceNotesParams, body SetInstanceNotesJSONRequestBody, reqEditors ...RequestEditorFn) (*SetInstanceNotesResponse, error)
+	SetInstanceNotesWithResponse(ctx context.Context, instanceId openapi_types.UUID, body SetInstanceNotesJSONRequestBody, reqEditors ...RequestEditorFn) (*SetInstanceNotesResponse, error)
 
 	// ResetInstancePasswordWithBodyWithResponse Reset the login password
 	//
@@ -11412,7 +10823,7 @@ type ClientWithResponsesInterface interface {
 	// Takes any type of body and a specified content type, and returns a wrapper object for the known response body format(s).
 	//
 	// Corresponds with POST /api/v1/instances/{instanceId}/password (the `ResetInstancePassword` operationId).
-	ResetInstancePasswordWithBodyWithResponse(ctx context.Context, instanceId openapi_types.UUID, params *ResetInstancePasswordParams, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*ResetInstancePasswordResponse, error)
+	ResetInstancePasswordWithBodyWithResponse(ctx context.Context, instanceId openapi_types.UUID, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*ResetInstancePasswordResponse, error)
 
 	// ResetInstancePasswordWithResponse Reset the login password
 	//
@@ -11425,7 +10836,7 @@ type ClientWithResponsesInterface interface {
 	// Takes a body of the `application/json` content type, and returns a wrapper object for the known response body format(s).
 	//
 	// Corresponds with POST /api/v1/instances/{instanceId}/password (the `ResetInstancePassword` operationId).
-	ResetInstancePasswordWithResponse(ctx context.Context, instanceId openapi_types.UUID, params *ResetInstancePasswordParams, body ResetInstancePasswordJSONRequestBody, reqEditors ...RequestEditorFn) (*ResetInstancePasswordResponse, error)
+	ResetInstancePasswordWithResponse(ctx context.Context, instanceId openapi_types.UUID, body ResetInstancePasswordJSONRequestBody, reqEditors ...RequestEditorFn) (*ResetInstancePasswordResponse, error)
 
 	// ListInstancePortsWithResponse List the network interfaces of an instance
 	//
@@ -11500,7 +10911,7 @@ type ClientWithResponsesInterface interface {
 	// Takes any type of body and a specified content type, and returns a wrapper object for the known response body format(s).
 	//
 	// Corresponds with POST /api/v1/instances/{instanceId}/rebuild (the `RebuildInstance` operationId).
-	RebuildInstanceWithBodyWithResponse(ctx context.Context, instanceId openapi_types.UUID, params *RebuildInstanceParams, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*RebuildInstanceResponse, error)
+	RebuildInstanceWithBodyWithResponse(ctx context.Context, instanceId openapi_types.UUID, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*RebuildInstanceResponse, error)
 
 	// RebuildInstanceWithResponse Rebuild an instance
 	//
@@ -11511,7 +10922,7 @@ type ClientWithResponsesInterface interface {
 	// Takes a body of the `application/json` content type, and returns a wrapper object for the known response body format(s).
 	//
 	// Corresponds with POST /api/v1/instances/{instanceId}/rebuild (the `RebuildInstance` operationId).
-	RebuildInstanceWithResponse(ctx context.Context, instanceId openapi_types.UUID, params *RebuildInstanceParams, body RebuildInstanceJSONRequestBody, reqEditors ...RequestEditorFn) (*RebuildInstanceResponse, error)
+	RebuildInstanceWithResponse(ctx context.Context, instanceId openapi_types.UUID, body RebuildInstanceJSONRequestBody, reqEditors ...RequestEditorFn) (*RebuildInstanceResponse, error)
 
 	// ResizeInstanceWithBodyWithResponse Resize an instance
 	//
@@ -11621,7 +11032,7 @@ type ClientWithResponsesInterface interface {
 	// Takes any type of body and a specified content type, and returns a wrapper object for the known response body format(s).
 	//
 	// Corresponds with POST /api/v1/ports (the `CreatePort` operationId).
-	CreatePortWithBodyWithResponse(ctx context.Context, params *CreatePortParams, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*CreatePortResponse, error)
+	CreatePortWithBodyWithResponse(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*CreatePortResponse, error)
 
 	// CreatePortWithResponse Create a network interface
 	//
@@ -11630,7 +11041,7 @@ type ClientWithResponsesInterface interface {
 	// Takes a body of the `application/json` content type, and returns a wrapper object for the known response body format(s).
 	//
 	// Corresponds with POST /api/v1/ports (the `CreatePort` operationId).
-	CreatePortWithResponse(ctx context.Context, params *CreatePortParams, body CreatePortJSONRequestBody, reqEditors ...RequestEditorFn) (*CreatePortResponse, error)
+	CreatePortWithResponse(ctx context.Context, body CreatePortJSONRequestBody, reqEditors ...RequestEditorFn) (*CreatePortResponse, error)
 
 	// DeletePortWithResponse Delete a network interface
 	//
@@ -11639,7 +11050,7 @@ type ClientWithResponsesInterface interface {
 	// Returns a wrapper object for the known response body format(s).
 	//
 	// Corresponds with DELETE /api/v1/ports/{portId} (the `DeletePort` operationId).
-	DeletePortWithResponse(ctx context.Context, portId openapi_types.UUID, params *DeletePortParams, reqEditors ...RequestEditorFn) (*DeletePortResponse, error)
+	DeletePortWithResponse(ctx context.Context, portId openapi_types.UUID, reqEditors ...RequestEditorFn) (*DeletePortResponse, error)
 
 	// ListPrivateImagesWithResponse List private images
 	//
@@ -11713,14 +11124,14 @@ type ClientWithResponsesInterface interface {
 	// Takes any type of body and a specified content type, and returns a wrapper object for the known response body format(s).
 	//
 	// Corresponds with PATCH /api/v1/private-images/{privateImageId} (the `RenamePrivateImage` operationId).
-	RenamePrivateImageWithBodyWithResponse(ctx context.Context, privateImageId openapi_types.UUID, params *RenamePrivateImageParams, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*RenamePrivateImageResponse, error)
+	RenamePrivateImageWithBodyWithResponse(ctx context.Context, privateImageId openapi_types.UUID, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*RenamePrivateImageResponse, error)
 
 	// RenamePrivateImageWithResponse Rename a private image
 	//
 	// Takes a body of the `application/json` content type, and returns a wrapper object for the known response body format(s).
 	//
 	// Corresponds with PATCH /api/v1/private-images/{privateImageId} (the `RenamePrivateImage` operationId).
-	RenamePrivateImageWithResponse(ctx context.Context, privateImageId openapi_types.UUID, params *RenamePrivateImageParams, body RenamePrivateImageJSONRequestBody, reqEditors ...RequestEditorFn) (*RenamePrivateImageResponse, error)
+	RenamePrivateImageWithResponse(ctx context.Context, privateImageId openapi_types.UUID, body RenamePrivateImageJSONRequestBody, reqEditors ...RequestEditorFn) (*RenamePrivateImageResponse, error)
 
 	// ListPrivateNetworksWithResponse List private networks
 	//
@@ -11736,7 +11147,7 @@ type ClientWithResponsesInterface interface {
 	// Takes any type of body and a specified content type, and returns a wrapper object for the known response body format(s).
 	//
 	// Corresponds with POST /api/v1/private-networks (the `CreatePrivateNetwork` operationId).
-	CreatePrivateNetworkWithBodyWithResponse(ctx context.Context, params *CreatePrivateNetworkParams, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*CreatePrivateNetworkResponse, error)
+	CreatePrivateNetworkWithBodyWithResponse(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*CreatePrivateNetworkResponse, error)
 
 	// CreatePrivateNetworkWithResponse Create a private network
 	//
@@ -11745,7 +11156,7 @@ type ClientWithResponsesInterface interface {
 	// Takes a body of the `application/json` content type, and returns a wrapper object for the known response body format(s).
 	//
 	// Corresponds with POST /api/v1/private-networks (the `CreatePrivateNetwork` operationId).
-	CreatePrivateNetworkWithResponse(ctx context.Context, params *CreatePrivateNetworkParams, body CreatePrivateNetworkJSONRequestBody, reqEditors ...RequestEditorFn) (*CreatePrivateNetworkResponse, error)
+	CreatePrivateNetworkWithResponse(ctx context.Context, body CreatePrivateNetworkJSONRequestBody, reqEditors ...RequestEditorFn) (*CreatePrivateNetworkResponse, error)
 
 	// DeletePrivateNetworkWithResponse Release a private network
 	//
@@ -11754,7 +11165,7 @@ type ClientWithResponsesInterface interface {
 	// Returns a wrapper object for the known response body format(s).
 	//
 	// Corresponds with DELETE /api/v1/private-networks/{privateNetworkId} (the `DeletePrivateNetwork` operationId).
-	DeletePrivateNetworkWithResponse(ctx context.Context, privateNetworkId openapi_types.UUID, params *DeletePrivateNetworkParams, reqEditors ...RequestEditorFn) (*DeletePrivateNetworkResponse, error)
+	DeletePrivateNetworkWithResponse(ctx context.Context, privateNetworkId openapi_types.UUID, reqEditors ...RequestEditorFn) (*DeletePrivateNetworkResponse, error)
 
 	// GetPrivateNetworkWithResponse Retrieve a private network
 	//
@@ -11770,7 +11181,7 @@ type ClientWithResponsesInterface interface {
 	// Takes any type of body and a specified content type, and returns a wrapper object for the known response body format(s).
 	//
 	// Corresponds with PATCH /api/v1/private-networks/{privateNetworkId} (the `RenamePrivateNetwork` operationId).
-	RenamePrivateNetworkWithBodyWithResponse(ctx context.Context, privateNetworkId openapi_types.UUID, params *RenamePrivateNetworkParams, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*RenamePrivateNetworkResponse, error)
+	RenamePrivateNetworkWithBodyWithResponse(ctx context.Context, privateNetworkId openapi_types.UUID, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*RenamePrivateNetworkResponse, error)
 
 	// RenamePrivateNetworkWithResponse Rename a private network
 	//
@@ -11779,7 +11190,7 @@ type ClientWithResponsesInterface interface {
 	// Takes a body of the `application/json` content type, and returns a wrapper object for the known response body format(s).
 	//
 	// Corresponds with PATCH /api/v1/private-networks/{privateNetworkId} (the `RenamePrivateNetwork` operationId).
-	RenamePrivateNetworkWithResponse(ctx context.Context, privateNetworkId openapi_types.UUID, params *RenamePrivateNetworkParams, body RenamePrivateNetworkJSONRequestBody, reqEditors ...RequestEditorFn) (*RenamePrivateNetworkResponse, error)
+	RenamePrivateNetworkWithResponse(ctx context.Context, privateNetworkId openapi_types.UUID, body RenamePrivateNetworkJSONRequestBody, reqEditors ...RequestEditorFn) (*RenamePrivateNetworkResponse, error)
 
 	// DisablePrivateNetworkIpv6WithResponse Disable IPv6 on a private network
 	//
@@ -11788,7 +11199,7 @@ type ClientWithResponsesInterface interface {
 	// Returns a wrapper object for the known response body format(s).
 	//
 	// Corresponds with DELETE /api/v1/private-networks/{privateNetworkId}/ipv6 (the `DisablePrivateNetworkIpv6` operationId).
-	DisablePrivateNetworkIpv6WithResponse(ctx context.Context, privateNetworkId openapi_types.UUID, params *DisablePrivateNetworkIpv6Params, reqEditors ...RequestEditorFn) (*DisablePrivateNetworkIpv6Response, error)
+	DisablePrivateNetworkIpv6WithResponse(ctx context.Context, privateNetworkId openapi_types.UUID, reqEditors ...RequestEditorFn) (*DisablePrivateNetworkIpv6Response, error)
 
 	// GetPrivateNetworkIpv6WithResponse Retrieve the IPv6 configuration of a private network
 	//
@@ -11806,7 +11217,7 @@ type ClientWithResponsesInterface interface {
 	// Returns a wrapper object for the known response body format(s).
 	//
 	// Corresponds with POST /api/v1/private-networks/{privateNetworkId}/ipv6 (the `EnablePrivateNetworkIpv6` operationId).
-	EnablePrivateNetworkIpv6WithResponse(ctx context.Context, privateNetworkId openapi_types.UUID, params *EnablePrivateNetworkIpv6Params, reqEditors ...RequestEditorFn) (*EnablePrivateNetworkIpv6Response, error)
+	EnablePrivateNetworkIpv6WithResponse(ctx context.Context, privateNetworkId openapi_types.UUID, reqEditors ...RequestEditorFn) (*EnablePrivateNetworkIpv6Response, error)
 
 	// ListRoutesWithResponse List static routes
 	//
@@ -11822,7 +11233,7 @@ type ClientWithResponsesInterface interface {
 	// Takes any type of body and a specified content type, and returns a wrapper object for the known response body format(s).
 	//
 	// Corresponds with POST /api/v1/private-networks/{privateNetworkId}/routes (the `CreateRoute` operationId).
-	CreateRouteWithBodyWithResponse(ctx context.Context, privateNetworkId openapi_types.UUID, params *CreateRouteParams, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*CreateRouteResponse, error)
+	CreateRouteWithBodyWithResponse(ctx context.Context, privateNetworkId openapi_types.UUID, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*CreateRouteResponse, error)
 
 	// CreateRouteWithResponse Create a static route
 	//
@@ -11831,14 +11242,14 @@ type ClientWithResponsesInterface interface {
 	// Takes a body of the `application/json` content type, and returns a wrapper object for the known response body format(s).
 	//
 	// Corresponds with POST /api/v1/private-networks/{privateNetworkId}/routes (the `CreateRoute` operationId).
-	CreateRouteWithResponse(ctx context.Context, privateNetworkId openapi_types.UUID, params *CreateRouteParams, body CreateRouteJSONRequestBody, reqEditors ...RequestEditorFn) (*CreateRouteResponse, error)
+	CreateRouteWithResponse(ctx context.Context, privateNetworkId openapi_types.UUID, body CreateRouteJSONRequestBody, reqEditors ...RequestEditorFn) (*CreateRouteResponse, error)
 
 	// DeleteRouteWithResponse Delete a static route
 	//
 	// Returns a wrapper object for the known response body format(s).
 	//
 	// Corresponds with DELETE /api/v1/private-networks/{privateNetworkId}/routes/{routeId} (the `DeleteRoute` operationId).
-	DeleteRouteWithResponse(ctx context.Context, privateNetworkId openapi_types.UUID, routeId openapi_types.UUID, params *DeleteRouteParams, reqEditors ...RequestEditorFn) (*DeleteRouteResponse, error)
+	DeleteRouteWithResponse(ctx context.Context, privateNetworkId openapi_types.UUID, routeId openapi_types.UUID, reqEditors ...RequestEditorFn) (*DeleteRouteResponse, error)
 
 	// ListSubnetsWithResponse List subnets
 	//
@@ -11854,14 +11265,14 @@ type ClientWithResponsesInterface interface {
 	// Takes any type of body and a specified content type, and returns a wrapper object for the known response body format(s).
 	//
 	// Corresponds with POST /api/v1/private-networks/{privateNetworkId}/subnets (the `CreateSubnet` operationId).
-	CreateSubnetWithBodyWithResponse(ctx context.Context, privateNetworkId openapi_types.UUID, params *CreateSubnetParams, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*CreateSubnetResponse, error)
+	CreateSubnetWithBodyWithResponse(ctx context.Context, privateNetworkId openapi_types.UUID, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*CreateSubnetResponse, error)
 
 	// CreateSubnetWithResponse Create a subnet
 	//
 	// Takes a body of the `application/json` content type, and returns a wrapper object for the known response body format(s).
 	//
 	// Corresponds with POST /api/v1/private-networks/{privateNetworkId}/subnets (the `CreateSubnet` operationId).
-	CreateSubnetWithResponse(ctx context.Context, privateNetworkId openapi_types.UUID, params *CreateSubnetParams, body CreateSubnetJSONRequestBody, reqEditors ...RequestEditorFn) (*CreateSubnetResponse, error)
+	CreateSubnetWithResponse(ctx context.Context, privateNetworkId openapi_types.UUID, body CreateSubnetJSONRequestBody, reqEditors ...RequestEditorFn) (*CreateSubnetResponse, error)
 
 	// SuggestSubnetCidrWithResponse Suggest the next free CIDR
 	//
@@ -11879,7 +11290,7 @@ type ClientWithResponsesInterface interface {
 	// Returns a wrapper object for the known response body format(s).
 	//
 	// Corresponds with DELETE /api/v1/private-networks/{privateNetworkId}/subnets/{subnetId} (the `DeleteSubnet` operationId).
-	DeleteSubnetWithResponse(ctx context.Context, privateNetworkId openapi_types.UUID, subnetId openapi_types.UUID, params *DeleteSubnetParams, reqEditors ...RequestEditorFn) (*DeleteSubnetResponse, error)
+	DeleteSubnetWithResponse(ctx context.Context, privateNetworkId openapi_types.UUID, subnetId openapi_types.UUID, reqEditors ...RequestEditorFn) (*DeleteSubnetResponse, error)
 
 	// ListRegionsWithResponse List available regions
 	//
@@ -11911,7 +11322,7 @@ type ClientWithResponsesInterface interface {
 	// Takes any type of body and a specified content type, and returns a wrapper object for the known response body format(s).
 	//
 	// Corresponds with POST /api/v1/security-groups (the `CreateSecurityGroup` operationId).
-	CreateSecurityGroupWithBodyWithResponse(ctx context.Context, params *CreateSecurityGroupParams, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*CreateSecurityGroupResponse, error)
+	CreateSecurityGroupWithBodyWithResponse(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*CreateSecurityGroupResponse, error)
 
 	// CreateSecurityGroupWithResponse Create a security group
 	//
@@ -11920,7 +11331,7 @@ type ClientWithResponsesInterface interface {
 	// Takes a body of the `application/json` content type, and returns a wrapper object for the known response body format(s).
 	//
 	// Corresponds with POST /api/v1/security-groups (the `CreateSecurityGroup` operationId).
-	CreateSecurityGroupWithResponse(ctx context.Context, params *CreateSecurityGroupParams, body CreateSecurityGroupJSONRequestBody, reqEditors ...RequestEditorFn) (*CreateSecurityGroupResponse, error)
+	CreateSecurityGroupWithResponse(ctx context.Context, body CreateSecurityGroupJSONRequestBody, reqEditors ...RequestEditorFn) (*CreateSecurityGroupResponse, error)
 
 	// DeleteSecurityGroupWithResponse Delete a security group
 	//
@@ -11929,7 +11340,7 @@ type ClientWithResponsesInterface interface {
 	// Returns a wrapper object for the known response body format(s).
 	//
 	// Corresponds with DELETE /api/v1/security-groups/{securityGroupId} (the `DeleteSecurityGroup` operationId).
-	DeleteSecurityGroupWithResponse(ctx context.Context, securityGroupId openapi_types.UUID, params *DeleteSecurityGroupParams, reqEditors ...RequestEditorFn) (*DeleteSecurityGroupResponse, error)
+	DeleteSecurityGroupWithResponse(ctx context.Context, securityGroupId openapi_types.UUID, reqEditors ...RequestEditorFn) (*DeleteSecurityGroupResponse, error)
 
 	// GetSecurityGroupWithResponse Retrieve a security group
 	//
@@ -11945,7 +11356,7 @@ type ClientWithResponsesInterface interface {
 	// Takes any type of body and a specified content type, and returns a wrapper object for the known response body format(s).
 	//
 	// Corresponds with PATCH /api/v1/security-groups/{securityGroupId} (the `RenameSecurityGroup` operationId).
-	RenameSecurityGroupWithBodyWithResponse(ctx context.Context, securityGroupId openapi_types.UUID, params *RenameSecurityGroupParams, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*RenameSecurityGroupResponse, error)
+	RenameSecurityGroupWithBodyWithResponse(ctx context.Context, securityGroupId openapi_types.UUID, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*RenameSecurityGroupResponse, error)
 
 	// RenameSecurityGroupWithResponse Rename a security group
 	//
@@ -11954,7 +11365,7 @@ type ClientWithResponsesInterface interface {
 	// Takes a body of the `application/json` content type, and returns a wrapper object for the known response body format(s).
 	//
 	// Corresponds with PATCH /api/v1/security-groups/{securityGroupId} (the `RenameSecurityGroup` operationId).
-	RenameSecurityGroupWithResponse(ctx context.Context, securityGroupId openapi_types.UUID, params *RenameSecurityGroupParams, body RenameSecurityGroupJSONRequestBody, reqEditors ...RequestEditorFn) (*RenameSecurityGroupResponse, error)
+	RenameSecurityGroupWithResponse(ctx context.Context, securityGroupId openapi_types.UUID, body RenameSecurityGroupJSONRequestBody, reqEditors ...RequestEditorFn) (*RenameSecurityGroupResponse, error)
 
 	// ListSecurityGroupRulesWithResponse List security group rules
 	//
@@ -11970,7 +11381,7 @@ type ClientWithResponsesInterface interface {
 	// Takes any type of body and a specified content type, and returns a wrapper object for the known response body format(s).
 	//
 	// Corresponds with POST /api/v1/security-groups/{securityGroupId}/rules (the `CreateSecurityGroupRule` operationId).
-	CreateSecurityGroupRuleWithBodyWithResponse(ctx context.Context, securityGroupId openapi_types.UUID, params *CreateSecurityGroupRuleParams, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*CreateSecurityGroupRuleResponse, error)
+	CreateSecurityGroupRuleWithBodyWithResponse(ctx context.Context, securityGroupId openapi_types.UUID, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*CreateSecurityGroupRuleResponse, error)
 
 	// CreateSecurityGroupRuleWithResponse Create a security group rule
 	//
@@ -11979,14 +11390,14 @@ type ClientWithResponsesInterface interface {
 	// Takes a body of the `application/json` content type, and returns a wrapper object for the known response body format(s).
 	//
 	// Corresponds with POST /api/v1/security-groups/{securityGroupId}/rules (the `CreateSecurityGroupRule` operationId).
-	CreateSecurityGroupRuleWithResponse(ctx context.Context, securityGroupId openapi_types.UUID, params *CreateSecurityGroupRuleParams, body CreateSecurityGroupRuleJSONRequestBody, reqEditors ...RequestEditorFn) (*CreateSecurityGroupRuleResponse, error)
+	CreateSecurityGroupRuleWithResponse(ctx context.Context, securityGroupId openapi_types.UUID, body CreateSecurityGroupRuleJSONRequestBody, reqEditors ...RequestEditorFn) (*CreateSecurityGroupRuleResponse, error)
 
 	// DeleteSecurityGroupRuleWithResponse Delete a security group rule
 	//
 	// Returns a wrapper object for the known response body format(s).
 	//
 	// Corresponds with DELETE /api/v1/security-groups/{securityGroupId}/rules/{ruleId} (the `DeleteSecurityGroupRule` operationId).
-	DeleteSecurityGroupRuleWithResponse(ctx context.Context, securityGroupId openapi_types.UUID, ruleId openapi_types.UUID, params *DeleteSecurityGroupRuleParams, reqEditors ...RequestEditorFn) (*DeleteSecurityGroupRuleResponse, error)
+	DeleteSecurityGroupRuleWithResponse(ctx context.Context, securityGroupId openapi_types.UUID, ruleId openapi_types.UUID, reqEditors ...RequestEditorFn) (*DeleteSecurityGroupRuleResponse, error)
 
 	// ListSnapshotsWithResponse List snapshots
 	//
@@ -12036,14 +11447,14 @@ type ClientWithResponsesInterface interface {
 	// Takes any type of body and a specified content type, and returns a wrapper object for the known response body format(s).
 	//
 	// Corresponds with PATCH /api/v1/snapshots/{snapshotId} (the `RenameSnapshot` operationId).
-	RenameSnapshotWithBodyWithResponse(ctx context.Context, snapshotId openapi_types.UUID, params *RenameSnapshotParams, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*RenameSnapshotResponse, error)
+	RenameSnapshotWithBodyWithResponse(ctx context.Context, snapshotId openapi_types.UUID, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*RenameSnapshotResponse, error)
 
 	// RenameSnapshotWithResponse Rename a snapshot
 	//
 	// Takes a body of the `application/json` content type, and returns a wrapper object for the known response body format(s).
 	//
 	// Corresponds with PATCH /api/v1/snapshots/{snapshotId} (the `RenameSnapshot` operationId).
-	RenameSnapshotWithResponse(ctx context.Context, snapshotId openapi_types.UUID, params *RenameSnapshotParams, body RenameSnapshotJSONRequestBody, reqEditors ...RequestEditorFn) (*RenameSnapshotResponse, error)
+	RenameSnapshotWithResponse(ctx context.Context, snapshotId openapi_types.UUID, body RenameSnapshotJSONRequestBody, reqEditors ...RequestEditorFn) (*RenameSnapshotResponse, error)
 
 	// GetTaskWithResponse Get a requested action
 	//
@@ -13743,15 +13154,15 @@ func (r DetachDiskResponse) ContentType() string {
 type AttachInstanceFloatingIpResponse struct {
 	Body         []byte
 	HTTPResponse *http.Response
-	// JSON202 the response for an HTTP 202 `application/json` response
-	JSON202 *Task
+	// JSON200 the response for an HTTP 200 `application/json` response
+	JSON200 *FloatingIPResource
 	// JSONDefault the response for an HTTP default `application/json` response
 	JSONDefault *Error
 }
 
-// GetJSON202 returns the response for an HTTP 202 `application/json` response
-func (r AttachInstanceFloatingIpResponse) GetJSON202() *Task {
-	return r.JSON202
+// GetJSON200 returns the response for an HTTP 200 `application/json` response
+func (r AttachInstanceFloatingIpResponse) GetJSON200() *FloatingIPResource {
+	return r.JSON200
 }
 
 // GetJSONDefault returns the response for an HTTP default `application/json` response
@@ -13791,15 +13202,15 @@ func (r AttachInstanceFloatingIpResponse) ContentType() string {
 type DetachInstanceFloatingIpResponse struct {
 	Body         []byte
 	HTTPResponse *http.Response
-	// JSON202 the response for an HTTP 202 `application/json` response
-	JSON202 *Task
+	// JSON200 the response for an HTTP 200 `application/json` response
+	JSON200 *FloatingIPResource
 	// JSONDefault the response for an HTTP default `application/json` response
 	JSONDefault *Error
 }
 
-// GetJSON202 returns the response for an HTTP 202 `application/json` response
-func (r DetachInstanceFloatingIpResponse) GetJSON202() *Task {
-	return r.JSON202
+// GetJSON200 returns the response for an HTTP 200 `application/json` response
+func (r DetachInstanceFloatingIpResponse) GetJSON200() *FloatingIPResource {
+	return r.JSON200
 }
 
 // GetJSONDefault returns the response for an HTTP default `application/json` response
@@ -16465,8 +15876,8 @@ func (c *ClientWithResponses) GetBackupWithResponse(ctx context.Context, backupI
 // Takes any type of body and a specified content type, and returns a wrapper object for the known response body format(s).
 //
 // Corresponds with PATCH /api/v1/backups/{backupId} (the `RenameBackup` operationId).
-func (c *ClientWithResponses) RenameBackupWithBodyWithResponse(ctx context.Context, backupId openapi_types.UUID, params *RenameBackupParams, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*RenameBackupResponse, error) {
-	rsp, err := c.RenameBackupWithBody(ctx, backupId, params, contentType, body, reqEditors...)
+func (c *ClientWithResponses) RenameBackupWithBodyWithResponse(ctx context.Context, backupId openapi_types.UUID, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*RenameBackupResponse, error) {
+	rsp, err := c.RenameBackupWithBody(ctx, backupId, contentType, body, reqEditors...)
 	if err != nil {
 		return nil, err
 	}
@@ -16478,8 +15889,8 @@ func (c *ClientWithResponses) RenameBackupWithBodyWithResponse(ctx context.Conte
 // Takes a body of the `application/json` content type, and returns a wrapper object for the known response body format(s).
 //
 // Corresponds with PATCH /api/v1/backups/{backupId} (the `RenameBackup` operationId).
-func (c *ClientWithResponses) RenameBackupWithResponse(ctx context.Context, backupId openapi_types.UUID, params *RenameBackupParams, body RenameBackupJSONRequestBody, reqEditors ...RequestEditorFn) (*RenameBackupResponse, error) {
-	rsp, err := c.RenameBackup(ctx, backupId, params, body, reqEditors...)
+func (c *ClientWithResponses) RenameBackupWithResponse(ctx context.Context, backupId openapi_types.UUID, body RenameBackupJSONRequestBody, reqEditors ...RequestEditorFn) (*RenameBackupResponse, error) {
+	rsp, err := c.RenameBackup(ctx, backupId, body, reqEditors...)
 	if err != nil {
 		return nil, err
 	}
@@ -16636,8 +16047,8 @@ func (c *ClientWithResponses) GetDiskWithResponse(ctx context.Context, diskId op
 // Takes any type of body and a specified content type, and returns a wrapper object for the known response body format(s).
 //
 // Corresponds with PATCH /api/v1/disks/{diskId} (the `RenameDisk` operationId).
-func (c *ClientWithResponses) RenameDiskWithBodyWithResponse(ctx context.Context, diskId openapi_types.UUID, params *RenameDiskParams, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*RenameDiskResponse, error) {
-	rsp, err := c.RenameDiskWithBody(ctx, diskId, params, contentType, body, reqEditors...)
+func (c *ClientWithResponses) RenameDiskWithBodyWithResponse(ctx context.Context, diskId openapi_types.UUID, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*RenameDiskResponse, error) {
+	rsp, err := c.RenameDiskWithBody(ctx, diskId, contentType, body, reqEditors...)
 	if err != nil {
 		return nil, err
 	}
@@ -16651,8 +16062,8 @@ func (c *ClientWithResponses) RenameDiskWithBodyWithResponse(ctx context.Context
 // Takes a body of the `application/json` content type, and returns a wrapper object for the known response body format(s).
 //
 // Corresponds with PATCH /api/v1/disks/{diskId} (the `RenameDisk` operationId).
-func (c *ClientWithResponses) RenameDiskWithResponse(ctx context.Context, diskId openapi_types.UUID, params *RenameDiskParams, body RenameDiskJSONRequestBody, reqEditors ...RequestEditorFn) (*RenameDiskResponse, error) {
-	rsp, err := c.RenameDisk(ctx, diskId, params, body, reqEditors...)
+func (c *ClientWithResponses) RenameDiskWithResponse(ctx context.Context, diskId openapi_types.UUID, body RenameDiskJSONRequestBody, reqEditors ...RequestEditorFn) (*RenameDiskResponse, error) {
+	rsp, err := c.RenameDisk(ctx, diskId, body, reqEditors...)
 	if err != nil {
 		return nil, err
 	}
@@ -16855,8 +16266,8 @@ func (c *ClientWithResponses) SetFloatingIpBandwidthWithResponse(ctx context.Con
 // Returns a wrapper object for the known response body format(s).
 //
 // Corresponds with DELETE /api/v1/floating-ips/{floatingIpId}/binding (the `UnbindFloatingIp` operationId).
-func (c *ClientWithResponses) UnbindFloatingIpWithResponse(ctx context.Context, floatingIpId openapi_types.UUID, params *UnbindFloatingIpParams, reqEditors ...RequestEditorFn) (*UnbindFloatingIpResponse, error) {
-	rsp, err := c.UnbindFloatingIp(ctx, floatingIpId, params, reqEditors...)
+func (c *ClientWithResponses) UnbindFloatingIpWithResponse(ctx context.Context, floatingIpId openapi_types.UUID, reqEditors ...RequestEditorFn) (*UnbindFloatingIpResponse, error) {
+	rsp, err := c.UnbindFloatingIp(ctx, floatingIpId, reqEditors...)
 	if err != nil {
 		return nil, err
 	}
@@ -16868,8 +16279,8 @@ func (c *ClientWithResponses) UnbindFloatingIpWithResponse(ctx context.Context, 
 // Takes any type of body and a specified content type, and returns a wrapper object for the known response body format(s).
 //
 // Corresponds with PUT /api/v1/floating-ips/{floatingIpId}/binding (the `BindFloatingIp` operationId).
-func (c *ClientWithResponses) BindFloatingIpWithBodyWithResponse(ctx context.Context, floatingIpId openapi_types.UUID, params *BindFloatingIpParams, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*BindFloatingIpResponse, error) {
-	rsp, err := c.BindFloatingIpWithBody(ctx, floatingIpId, params, contentType, body, reqEditors...)
+func (c *ClientWithResponses) BindFloatingIpWithBodyWithResponse(ctx context.Context, floatingIpId openapi_types.UUID, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*BindFloatingIpResponse, error) {
+	rsp, err := c.BindFloatingIpWithBody(ctx, floatingIpId, contentType, body, reqEditors...)
 	if err != nil {
 		return nil, err
 	}
@@ -16881,8 +16292,8 @@ func (c *ClientWithResponses) BindFloatingIpWithBodyWithResponse(ctx context.Con
 // Takes a body of the `application/json` content type, and returns a wrapper object for the known response body format(s).
 //
 // Corresponds with PUT /api/v1/floating-ips/{floatingIpId}/binding (the `BindFloatingIp` operationId).
-func (c *ClientWithResponses) BindFloatingIpWithResponse(ctx context.Context, floatingIpId openapi_types.UUID, params *BindFloatingIpParams, body BindFloatingIpJSONRequestBody, reqEditors ...RequestEditorFn) (*BindFloatingIpResponse, error) {
-	rsp, err := c.BindFloatingIp(ctx, floatingIpId, params, body, reqEditors...)
+func (c *ClientWithResponses) BindFloatingIpWithResponse(ctx context.Context, floatingIpId openapi_types.UUID, body BindFloatingIpJSONRequestBody, reqEditors ...RequestEditorFn) (*BindFloatingIpResponse, error) {
+	rsp, err := c.BindFloatingIp(ctx, floatingIpId, body, reqEditors...)
 	if err != nil {
 		return nil, err
 	}
@@ -17005,8 +16416,8 @@ func (c *ClientWithResponses) GetInstanceWithResponse(ctx context.Context, insta
 // Takes any type of body and a specified content type, and returns a wrapper object for the known response body format(s).
 //
 // Corresponds with PATCH /api/v1/instances/{instanceId} (the `RenameInstance` operationId).
-func (c *ClientWithResponses) RenameInstanceWithBodyWithResponse(ctx context.Context, instanceId openapi_types.UUID, params *RenameInstanceParams, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*RenameInstanceResponse, error) {
-	rsp, err := c.RenameInstanceWithBody(ctx, instanceId, params, contentType, body, reqEditors...)
+func (c *ClientWithResponses) RenameInstanceWithBodyWithResponse(ctx context.Context, instanceId openapi_types.UUID, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*RenameInstanceResponse, error) {
+	rsp, err := c.RenameInstanceWithBody(ctx, instanceId, contentType, body, reqEditors...)
 	if err != nil {
 		return nil, err
 	}
@@ -17020,8 +16431,8 @@ func (c *ClientWithResponses) RenameInstanceWithBodyWithResponse(ctx context.Con
 // Takes a body of the `application/json` content type, and returns a wrapper object for the known response body format(s).
 //
 // Corresponds with PATCH /api/v1/instances/{instanceId} (the `RenameInstance` operationId).
-func (c *ClientWithResponses) RenameInstanceWithResponse(ctx context.Context, instanceId openapi_types.UUID, params *RenameInstanceParams, body RenameInstanceJSONRequestBody, reqEditors ...RequestEditorFn) (*RenameInstanceResponse, error) {
-	rsp, err := c.RenameInstance(ctx, instanceId, params, body, reqEditors...)
+func (c *ClientWithResponses) RenameInstanceWithResponse(ctx context.Context, instanceId openapi_types.UUID, body RenameInstanceJSONRequestBody, reqEditors ...RequestEditorFn) (*RenameInstanceResponse, error) {
+	rsp, err := c.RenameInstance(ctx, instanceId, body, reqEditors...)
 	if err != nil {
 		return nil, err
 	}
@@ -17051,8 +16462,8 @@ func (c *ClientWithResponses) RenameInstanceWithResponse(ctx context.Context, in
 // Takes any type of body and a specified content type, and returns a wrapper object for the known response body format(s).
 //
 // Corresponds with POST /api/v1/instances/{instanceId}/commands (the `RunInstanceCommand` operationId).
-func (c *ClientWithResponses) RunInstanceCommandWithBodyWithResponse(ctx context.Context, instanceId openapi_types.UUID, params *RunInstanceCommandParams, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*RunInstanceCommandResponse, error) {
-	rsp, err := c.RunInstanceCommandWithBody(ctx, instanceId, params, contentType, body, reqEditors...)
+func (c *ClientWithResponses) RunInstanceCommandWithBodyWithResponse(ctx context.Context, instanceId openapi_types.UUID, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*RunInstanceCommandResponse, error) {
+	rsp, err := c.RunInstanceCommandWithBody(ctx, instanceId, contentType, body, reqEditors...)
 	if err != nil {
 		return nil, err
 	}
@@ -17082,8 +16493,8 @@ func (c *ClientWithResponses) RunInstanceCommandWithBodyWithResponse(ctx context
 // Takes a body of the `application/json` content type, and returns a wrapper object for the known response body format(s).
 //
 // Corresponds with POST /api/v1/instances/{instanceId}/commands (the `RunInstanceCommand` operationId).
-func (c *ClientWithResponses) RunInstanceCommandWithResponse(ctx context.Context, instanceId openapi_types.UUID, params *RunInstanceCommandParams, body RunInstanceCommandJSONRequestBody, reqEditors ...RequestEditorFn) (*RunInstanceCommandResponse, error) {
-	rsp, err := c.RunInstanceCommand(ctx, instanceId, params, body, reqEditors...)
+func (c *ClientWithResponses) RunInstanceCommandWithResponse(ctx context.Context, instanceId openapi_types.UUID, body RunInstanceCommandJSONRequestBody, reqEditors ...RequestEditorFn) (*RunInstanceCommandResponse, error) {
+	rsp, err := c.RunInstanceCommand(ctx, instanceId, body, reqEditors...)
 	if err != nil {
 		return nil, err
 	}
@@ -17099,8 +16510,8 @@ func (c *ClientWithResponses) RunInstanceCommandWithResponse(ctx context.Context
 // Returns a wrapper object for the known response body format(s).
 //
 // Corresponds with POST /api/v1/instances/{instanceId}/console (the `OpenInstanceConsole` operationId).
-func (c *ClientWithResponses) OpenInstanceConsoleWithResponse(ctx context.Context, instanceId openapi_types.UUID, params *OpenInstanceConsoleParams, reqEditors ...RequestEditorFn) (*OpenInstanceConsoleResponse, error) {
-	rsp, err := c.OpenInstanceConsole(ctx, instanceId, params, reqEditors...)
+func (c *ClientWithResponses) OpenInstanceConsoleWithResponse(ctx context.Context, instanceId openapi_types.UUID, reqEditors ...RequestEditorFn) (*OpenInstanceConsoleResponse, error) {
+	rsp, err := c.OpenInstanceConsole(ctx, instanceId, reqEditors...)
 	if err != nil {
 		return nil, err
 	}
@@ -17189,8 +16600,8 @@ func (c *ClientWithResponses) DetachDiskWithResponse(ctx context.Context, instan
 // Takes any type of body and a specified content type, and returns a wrapper object for the known response body format(s).
 //
 // Corresponds with POST /api/v1/instances/{instanceId}/floating-ips (the `AttachInstanceFloatingIp` operationId).
-func (c *ClientWithResponses) AttachInstanceFloatingIpWithBodyWithResponse(ctx context.Context, instanceId openapi_types.UUID, params *AttachInstanceFloatingIpParams, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*AttachInstanceFloatingIpResponse, error) {
-	rsp, err := c.AttachInstanceFloatingIpWithBody(ctx, instanceId, params, contentType, body, reqEditors...)
+func (c *ClientWithResponses) AttachInstanceFloatingIpWithBodyWithResponse(ctx context.Context, instanceId openapi_types.UUID, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*AttachInstanceFloatingIpResponse, error) {
+	rsp, err := c.AttachInstanceFloatingIpWithBody(ctx, instanceId, contentType, body, reqEditors...)
 	if err != nil {
 		return nil, err
 	}
@@ -17204,8 +16615,8 @@ func (c *ClientWithResponses) AttachInstanceFloatingIpWithBodyWithResponse(ctx c
 // Takes a body of the `application/json` content type, and returns a wrapper object for the known response body format(s).
 //
 // Corresponds with POST /api/v1/instances/{instanceId}/floating-ips (the `AttachInstanceFloatingIp` operationId).
-func (c *ClientWithResponses) AttachInstanceFloatingIpWithResponse(ctx context.Context, instanceId openapi_types.UUID, params *AttachInstanceFloatingIpParams, body AttachInstanceFloatingIpJSONRequestBody, reqEditors ...RequestEditorFn) (*AttachInstanceFloatingIpResponse, error) {
-	rsp, err := c.AttachInstanceFloatingIp(ctx, instanceId, params, body, reqEditors...)
+func (c *ClientWithResponses) AttachInstanceFloatingIpWithResponse(ctx context.Context, instanceId openapi_types.UUID, body AttachInstanceFloatingIpJSONRequestBody, reqEditors ...RequestEditorFn) (*AttachInstanceFloatingIpResponse, error) {
+	rsp, err := c.AttachInstanceFloatingIp(ctx, instanceId, body, reqEditors...)
 	if err != nil {
 		return nil, err
 	}
@@ -17219,8 +16630,8 @@ func (c *ClientWithResponses) AttachInstanceFloatingIpWithResponse(ctx context.C
 // Returns a wrapper object for the known response body format(s).
 //
 // Corresponds with DELETE /api/v1/instances/{instanceId}/floating-ips/{floatingIpId} (the `DetachInstanceFloatingIp` operationId).
-func (c *ClientWithResponses) DetachInstanceFloatingIpWithResponse(ctx context.Context, instanceId openapi_types.UUID, floatingIpId openapi_types.UUID, params *DetachInstanceFloatingIpParams, reqEditors ...RequestEditorFn) (*DetachInstanceFloatingIpResponse, error) {
-	rsp, err := c.DetachInstanceFloatingIp(ctx, instanceId, floatingIpId, params, reqEditors...)
+func (c *ClientWithResponses) DetachInstanceFloatingIpWithResponse(ctx context.Context, instanceId openapi_types.UUID, floatingIpId openapi_types.UUID, reqEditors ...RequestEditorFn) (*DetachInstanceFloatingIpResponse, error) {
+	rsp, err := c.DetachInstanceFloatingIp(ctx, instanceId, floatingIpId, reqEditors...)
 	if err != nil {
 		return nil, err
 	}
@@ -17238,8 +16649,8 @@ func (c *ClientWithResponses) DetachInstanceFloatingIpWithResponse(ctx context.C
 // Takes any type of body and a specified content type, and returns a wrapper object for the known response body format(s).
 //
 // Corresponds with PUT /api/v1/instances/{instanceId}/labels (the `SetInstanceLabels` operationId).
-func (c *ClientWithResponses) SetInstanceLabelsWithBodyWithResponse(ctx context.Context, instanceId openapi_types.UUID, params *SetInstanceLabelsParams, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*SetInstanceLabelsResponse, error) {
-	rsp, err := c.SetInstanceLabelsWithBody(ctx, instanceId, params, contentType, body, reqEditors...)
+func (c *ClientWithResponses) SetInstanceLabelsWithBodyWithResponse(ctx context.Context, instanceId openapi_types.UUID, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*SetInstanceLabelsResponse, error) {
+	rsp, err := c.SetInstanceLabelsWithBody(ctx, instanceId, contentType, body, reqEditors...)
 	if err != nil {
 		return nil, err
 	}
@@ -17257,8 +16668,8 @@ func (c *ClientWithResponses) SetInstanceLabelsWithBodyWithResponse(ctx context.
 // Takes a body of the `application/json` content type, and returns a wrapper object for the known response body format(s).
 //
 // Corresponds with PUT /api/v1/instances/{instanceId}/labels (the `SetInstanceLabels` operationId).
-func (c *ClientWithResponses) SetInstanceLabelsWithResponse(ctx context.Context, instanceId openapi_types.UUID, params *SetInstanceLabelsParams, body SetInstanceLabelsJSONRequestBody, reqEditors ...RequestEditorFn) (*SetInstanceLabelsResponse, error) {
-	rsp, err := c.SetInstanceLabels(ctx, instanceId, params, body, reqEditors...)
+func (c *ClientWithResponses) SetInstanceLabelsWithResponse(ctx context.Context, instanceId openapi_types.UUID, body SetInstanceLabelsJSONRequestBody, reqEditors ...RequestEditorFn) (*SetInstanceLabelsResponse, error) {
+	rsp, err := c.SetInstanceLabels(ctx, instanceId, body, reqEditors...)
 	if err != nil {
 		return nil, err
 	}
@@ -17276,8 +16687,8 @@ func (c *ClientWithResponses) SetInstanceLabelsWithResponse(ctx context.Context,
 // Takes any type of body and a specified content type, and returns a wrapper object for the known response body format(s).
 //
 // Corresponds with PUT /api/v1/instances/{instanceId}/notes (the `SetInstanceNotes` operationId).
-func (c *ClientWithResponses) SetInstanceNotesWithBodyWithResponse(ctx context.Context, instanceId openapi_types.UUID, params *SetInstanceNotesParams, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*SetInstanceNotesResponse, error) {
-	rsp, err := c.SetInstanceNotesWithBody(ctx, instanceId, params, contentType, body, reqEditors...)
+func (c *ClientWithResponses) SetInstanceNotesWithBodyWithResponse(ctx context.Context, instanceId openapi_types.UUID, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*SetInstanceNotesResponse, error) {
+	rsp, err := c.SetInstanceNotesWithBody(ctx, instanceId, contentType, body, reqEditors...)
 	if err != nil {
 		return nil, err
 	}
@@ -17295,8 +16706,8 @@ func (c *ClientWithResponses) SetInstanceNotesWithBodyWithResponse(ctx context.C
 // Takes a body of the `application/json` content type, and returns a wrapper object for the known response body format(s).
 //
 // Corresponds with PUT /api/v1/instances/{instanceId}/notes (the `SetInstanceNotes` operationId).
-func (c *ClientWithResponses) SetInstanceNotesWithResponse(ctx context.Context, instanceId openapi_types.UUID, params *SetInstanceNotesParams, body SetInstanceNotesJSONRequestBody, reqEditors ...RequestEditorFn) (*SetInstanceNotesResponse, error) {
-	rsp, err := c.SetInstanceNotes(ctx, instanceId, params, body, reqEditors...)
+func (c *ClientWithResponses) SetInstanceNotesWithResponse(ctx context.Context, instanceId openapi_types.UUID, body SetInstanceNotesJSONRequestBody, reqEditors ...RequestEditorFn) (*SetInstanceNotesResponse, error) {
+	rsp, err := c.SetInstanceNotes(ctx, instanceId, body, reqEditors...)
 	if err != nil {
 		return nil, err
 	}
@@ -17314,8 +16725,8 @@ func (c *ClientWithResponses) SetInstanceNotesWithResponse(ctx context.Context, 
 // Takes any type of body and a specified content type, and returns a wrapper object for the known response body format(s).
 //
 // Corresponds with POST /api/v1/instances/{instanceId}/password (the `ResetInstancePassword` operationId).
-func (c *ClientWithResponses) ResetInstancePasswordWithBodyWithResponse(ctx context.Context, instanceId openapi_types.UUID, params *ResetInstancePasswordParams, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*ResetInstancePasswordResponse, error) {
-	rsp, err := c.ResetInstancePasswordWithBody(ctx, instanceId, params, contentType, body, reqEditors...)
+func (c *ClientWithResponses) ResetInstancePasswordWithBodyWithResponse(ctx context.Context, instanceId openapi_types.UUID, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*ResetInstancePasswordResponse, error) {
+	rsp, err := c.ResetInstancePasswordWithBody(ctx, instanceId, contentType, body, reqEditors...)
 	if err != nil {
 		return nil, err
 	}
@@ -17333,8 +16744,8 @@ func (c *ClientWithResponses) ResetInstancePasswordWithBodyWithResponse(ctx cont
 // Takes a body of the `application/json` content type, and returns a wrapper object for the known response body format(s).
 //
 // Corresponds with POST /api/v1/instances/{instanceId}/password (the `ResetInstancePassword` operationId).
-func (c *ClientWithResponses) ResetInstancePasswordWithResponse(ctx context.Context, instanceId openapi_types.UUID, params *ResetInstancePasswordParams, body ResetInstancePasswordJSONRequestBody, reqEditors ...RequestEditorFn) (*ResetInstancePasswordResponse, error) {
-	rsp, err := c.ResetInstancePassword(ctx, instanceId, params, body, reqEditors...)
+func (c *ClientWithResponses) ResetInstancePasswordWithResponse(ctx context.Context, instanceId openapi_types.UUID, body ResetInstancePasswordJSONRequestBody, reqEditors ...RequestEditorFn) (*ResetInstancePasswordResponse, error) {
+	rsp, err := c.ResetInstancePassword(ctx, instanceId, body, reqEditors...)
 	if err != nil {
 		return nil, err
 	}
@@ -17450,8 +16861,8 @@ func (c *ClientWithResponses) RebootInstanceWithResponse(ctx context.Context, in
 // Takes any type of body and a specified content type, and returns a wrapper object for the known response body format(s).
 //
 // Corresponds with POST /api/v1/instances/{instanceId}/rebuild (the `RebuildInstance` operationId).
-func (c *ClientWithResponses) RebuildInstanceWithBodyWithResponse(ctx context.Context, instanceId openapi_types.UUID, params *RebuildInstanceParams, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*RebuildInstanceResponse, error) {
-	rsp, err := c.RebuildInstanceWithBody(ctx, instanceId, params, contentType, body, reqEditors...)
+func (c *ClientWithResponses) RebuildInstanceWithBodyWithResponse(ctx context.Context, instanceId openapi_types.UUID, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*RebuildInstanceResponse, error) {
+	rsp, err := c.RebuildInstanceWithBody(ctx, instanceId, contentType, body, reqEditors...)
 	if err != nil {
 		return nil, err
 	}
@@ -17467,8 +16878,8 @@ func (c *ClientWithResponses) RebuildInstanceWithBodyWithResponse(ctx context.Co
 // Takes a body of the `application/json` content type, and returns a wrapper object for the known response body format(s).
 //
 // Corresponds with POST /api/v1/instances/{instanceId}/rebuild (the `RebuildInstance` operationId).
-func (c *ClientWithResponses) RebuildInstanceWithResponse(ctx context.Context, instanceId openapi_types.UUID, params *RebuildInstanceParams, body RebuildInstanceJSONRequestBody, reqEditors ...RequestEditorFn) (*RebuildInstanceResponse, error) {
-	rsp, err := c.RebuildInstance(ctx, instanceId, params, body, reqEditors...)
+func (c *ClientWithResponses) RebuildInstanceWithResponse(ctx context.Context, instanceId openapi_types.UUID, body RebuildInstanceJSONRequestBody, reqEditors ...RequestEditorFn) (*RebuildInstanceResponse, error) {
+	rsp, err := c.RebuildInstance(ctx, instanceId, body, reqEditors...)
 	if err != nil {
 		return nil, err
 	}
@@ -17649,8 +17060,8 @@ func (c *ClientWithResponses) ListPortsWithResponse(ctx context.Context, reqEdit
 // Takes any type of body and a specified content type, and returns a wrapper object for the known response body format(s).
 //
 // Corresponds with POST /api/v1/ports (the `CreatePort` operationId).
-func (c *ClientWithResponses) CreatePortWithBodyWithResponse(ctx context.Context, params *CreatePortParams, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*CreatePortResponse, error) {
-	rsp, err := c.CreatePortWithBody(ctx, params, contentType, body, reqEditors...)
+func (c *ClientWithResponses) CreatePortWithBodyWithResponse(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*CreatePortResponse, error) {
+	rsp, err := c.CreatePortWithBody(ctx, contentType, body, reqEditors...)
 	if err != nil {
 		return nil, err
 	}
@@ -17664,8 +17075,8 @@ func (c *ClientWithResponses) CreatePortWithBodyWithResponse(ctx context.Context
 // Takes a body of the `application/json` content type, and returns a wrapper object for the known response body format(s).
 //
 // Corresponds with POST /api/v1/ports (the `CreatePort` operationId).
-func (c *ClientWithResponses) CreatePortWithResponse(ctx context.Context, params *CreatePortParams, body CreatePortJSONRequestBody, reqEditors ...RequestEditorFn) (*CreatePortResponse, error) {
-	rsp, err := c.CreatePort(ctx, params, body, reqEditors...)
+func (c *ClientWithResponses) CreatePortWithResponse(ctx context.Context, body CreatePortJSONRequestBody, reqEditors ...RequestEditorFn) (*CreatePortResponse, error) {
+	rsp, err := c.CreatePort(ctx, body, reqEditors...)
 	if err != nil {
 		return nil, err
 	}
@@ -17679,8 +17090,8 @@ func (c *ClientWithResponses) CreatePortWithResponse(ctx context.Context, params
 // Returns a wrapper object for the known response body format(s).
 //
 // Corresponds with DELETE /api/v1/ports/{portId} (the `DeletePort` operationId).
-func (c *ClientWithResponses) DeletePortWithResponse(ctx context.Context, portId openapi_types.UUID, params *DeletePortParams, reqEditors ...RequestEditorFn) (*DeletePortResponse, error) {
-	rsp, err := c.DeletePort(ctx, portId, params, reqEditors...)
+func (c *ClientWithResponses) DeletePortWithResponse(ctx context.Context, portId openapi_types.UUID, reqEditors ...RequestEditorFn) (*DeletePortResponse, error) {
+	rsp, err := c.DeletePort(ctx, portId, reqEditors...)
 	if err != nil {
 		return nil, err
 	}
@@ -17789,8 +17200,8 @@ func (c *ClientWithResponses) GetPrivateImageWithResponse(ctx context.Context, p
 // Takes any type of body and a specified content type, and returns a wrapper object for the known response body format(s).
 //
 // Corresponds with PATCH /api/v1/private-images/{privateImageId} (the `RenamePrivateImage` operationId).
-func (c *ClientWithResponses) RenamePrivateImageWithBodyWithResponse(ctx context.Context, privateImageId openapi_types.UUID, params *RenamePrivateImageParams, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*RenamePrivateImageResponse, error) {
-	rsp, err := c.RenamePrivateImageWithBody(ctx, privateImageId, params, contentType, body, reqEditors...)
+func (c *ClientWithResponses) RenamePrivateImageWithBodyWithResponse(ctx context.Context, privateImageId openapi_types.UUID, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*RenamePrivateImageResponse, error) {
+	rsp, err := c.RenamePrivateImageWithBody(ctx, privateImageId, contentType, body, reqEditors...)
 	if err != nil {
 		return nil, err
 	}
@@ -17802,8 +17213,8 @@ func (c *ClientWithResponses) RenamePrivateImageWithBodyWithResponse(ctx context
 // Takes a body of the `application/json` content type, and returns a wrapper object for the known response body format(s).
 //
 // Corresponds with PATCH /api/v1/private-images/{privateImageId} (the `RenamePrivateImage` operationId).
-func (c *ClientWithResponses) RenamePrivateImageWithResponse(ctx context.Context, privateImageId openapi_types.UUID, params *RenamePrivateImageParams, body RenamePrivateImageJSONRequestBody, reqEditors ...RequestEditorFn) (*RenamePrivateImageResponse, error) {
-	rsp, err := c.RenamePrivateImage(ctx, privateImageId, params, body, reqEditors...)
+func (c *ClientWithResponses) RenamePrivateImageWithResponse(ctx context.Context, privateImageId openapi_types.UUID, body RenamePrivateImageJSONRequestBody, reqEditors ...RequestEditorFn) (*RenamePrivateImageResponse, error) {
+	rsp, err := c.RenamePrivateImage(ctx, privateImageId, body, reqEditors...)
 	if err != nil {
 		return nil, err
 	}
@@ -17830,8 +17241,8 @@ func (c *ClientWithResponses) ListPrivateNetworksWithResponse(ctx context.Contex
 // Takes any type of body and a specified content type, and returns a wrapper object for the known response body format(s).
 //
 // Corresponds with POST /api/v1/private-networks (the `CreatePrivateNetwork` operationId).
-func (c *ClientWithResponses) CreatePrivateNetworkWithBodyWithResponse(ctx context.Context, params *CreatePrivateNetworkParams, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*CreatePrivateNetworkResponse, error) {
-	rsp, err := c.CreatePrivateNetworkWithBody(ctx, params, contentType, body, reqEditors...)
+func (c *ClientWithResponses) CreatePrivateNetworkWithBodyWithResponse(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*CreatePrivateNetworkResponse, error) {
+	rsp, err := c.CreatePrivateNetworkWithBody(ctx, contentType, body, reqEditors...)
 	if err != nil {
 		return nil, err
 	}
@@ -17845,8 +17256,8 @@ func (c *ClientWithResponses) CreatePrivateNetworkWithBodyWithResponse(ctx conte
 // Takes a body of the `application/json` content type, and returns a wrapper object for the known response body format(s).
 //
 // Corresponds with POST /api/v1/private-networks (the `CreatePrivateNetwork` operationId).
-func (c *ClientWithResponses) CreatePrivateNetworkWithResponse(ctx context.Context, params *CreatePrivateNetworkParams, body CreatePrivateNetworkJSONRequestBody, reqEditors ...RequestEditorFn) (*CreatePrivateNetworkResponse, error) {
-	rsp, err := c.CreatePrivateNetwork(ctx, params, body, reqEditors...)
+func (c *ClientWithResponses) CreatePrivateNetworkWithResponse(ctx context.Context, body CreatePrivateNetworkJSONRequestBody, reqEditors ...RequestEditorFn) (*CreatePrivateNetworkResponse, error) {
+	rsp, err := c.CreatePrivateNetwork(ctx, body, reqEditors...)
 	if err != nil {
 		return nil, err
 	}
@@ -17860,8 +17271,8 @@ func (c *ClientWithResponses) CreatePrivateNetworkWithResponse(ctx context.Conte
 // Returns a wrapper object for the known response body format(s).
 //
 // Corresponds with DELETE /api/v1/private-networks/{privateNetworkId} (the `DeletePrivateNetwork` operationId).
-func (c *ClientWithResponses) DeletePrivateNetworkWithResponse(ctx context.Context, privateNetworkId openapi_types.UUID, params *DeletePrivateNetworkParams, reqEditors ...RequestEditorFn) (*DeletePrivateNetworkResponse, error) {
-	rsp, err := c.DeletePrivateNetwork(ctx, privateNetworkId, params, reqEditors...)
+func (c *ClientWithResponses) DeletePrivateNetworkWithResponse(ctx context.Context, privateNetworkId openapi_types.UUID, reqEditors ...RequestEditorFn) (*DeletePrivateNetworkResponse, error) {
+	rsp, err := c.DeletePrivateNetwork(ctx, privateNetworkId, reqEditors...)
 	if err != nil {
 		return nil, err
 	}
@@ -17888,8 +17299,8 @@ func (c *ClientWithResponses) GetPrivateNetworkWithResponse(ctx context.Context,
 // Takes any type of body and a specified content type, and returns a wrapper object for the known response body format(s).
 //
 // Corresponds with PATCH /api/v1/private-networks/{privateNetworkId} (the `RenamePrivateNetwork` operationId).
-func (c *ClientWithResponses) RenamePrivateNetworkWithBodyWithResponse(ctx context.Context, privateNetworkId openapi_types.UUID, params *RenamePrivateNetworkParams, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*RenamePrivateNetworkResponse, error) {
-	rsp, err := c.RenamePrivateNetworkWithBody(ctx, privateNetworkId, params, contentType, body, reqEditors...)
+func (c *ClientWithResponses) RenamePrivateNetworkWithBodyWithResponse(ctx context.Context, privateNetworkId openapi_types.UUID, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*RenamePrivateNetworkResponse, error) {
+	rsp, err := c.RenamePrivateNetworkWithBody(ctx, privateNetworkId, contentType, body, reqEditors...)
 	if err != nil {
 		return nil, err
 	}
@@ -17903,8 +17314,8 @@ func (c *ClientWithResponses) RenamePrivateNetworkWithBodyWithResponse(ctx conte
 // Takes a body of the `application/json` content type, and returns a wrapper object for the known response body format(s).
 //
 // Corresponds with PATCH /api/v1/private-networks/{privateNetworkId} (the `RenamePrivateNetwork` operationId).
-func (c *ClientWithResponses) RenamePrivateNetworkWithResponse(ctx context.Context, privateNetworkId openapi_types.UUID, params *RenamePrivateNetworkParams, body RenamePrivateNetworkJSONRequestBody, reqEditors ...RequestEditorFn) (*RenamePrivateNetworkResponse, error) {
-	rsp, err := c.RenamePrivateNetwork(ctx, privateNetworkId, params, body, reqEditors...)
+func (c *ClientWithResponses) RenamePrivateNetworkWithResponse(ctx context.Context, privateNetworkId openapi_types.UUID, body RenamePrivateNetworkJSONRequestBody, reqEditors ...RequestEditorFn) (*RenamePrivateNetworkResponse, error) {
+	rsp, err := c.RenamePrivateNetwork(ctx, privateNetworkId, body, reqEditors...)
 	if err != nil {
 		return nil, err
 	}
@@ -17918,8 +17329,8 @@ func (c *ClientWithResponses) RenamePrivateNetworkWithResponse(ctx context.Conte
 // Returns a wrapper object for the known response body format(s).
 //
 // Corresponds with DELETE /api/v1/private-networks/{privateNetworkId}/ipv6 (the `DisablePrivateNetworkIpv6` operationId).
-func (c *ClientWithResponses) DisablePrivateNetworkIpv6WithResponse(ctx context.Context, privateNetworkId openapi_types.UUID, params *DisablePrivateNetworkIpv6Params, reqEditors ...RequestEditorFn) (*DisablePrivateNetworkIpv6Response, error) {
-	rsp, err := c.DisablePrivateNetworkIpv6(ctx, privateNetworkId, params, reqEditors...)
+func (c *ClientWithResponses) DisablePrivateNetworkIpv6WithResponse(ctx context.Context, privateNetworkId openapi_types.UUID, reqEditors ...RequestEditorFn) (*DisablePrivateNetworkIpv6Response, error) {
+	rsp, err := c.DisablePrivateNetworkIpv6(ctx, privateNetworkId, reqEditors...)
 	if err != nil {
 		return nil, err
 	}
@@ -17948,8 +17359,8 @@ func (c *ClientWithResponses) GetPrivateNetworkIpv6WithResponse(ctx context.Cont
 // Returns a wrapper object for the known response body format(s).
 //
 // Corresponds with POST /api/v1/private-networks/{privateNetworkId}/ipv6 (the `EnablePrivateNetworkIpv6` operationId).
-func (c *ClientWithResponses) EnablePrivateNetworkIpv6WithResponse(ctx context.Context, privateNetworkId openapi_types.UUID, params *EnablePrivateNetworkIpv6Params, reqEditors ...RequestEditorFn) (*EnablePrivateNetworkIpv6Response, error) {
-	rsp, err := c.EnablePrivateNetworkIpv6(ctx, privateNetworkId, params, reqEditors...)
+func (c *ClientWithResponses) EnablePrivateNetworkIpv6WithResponse(ctx context.Context, privateNetworkId openapi_types.UUID, reqEditors ...RequestEditorFn) (*EnablePrivateNetworkIpv6Response, error) {
+	rsp, err := c.EnablePrivateNetworkIpv6(ctx, privateNetworkId, reqEditors...)
 	if err != nil {
 		return nil, err
 	}
@@ -17976,8 +17387,8 @@ func (c *ClientWithResponses) ListRoutesWithResponse(ctx context.Context, privat
 // Takes any type of body and a specified content type, and returns a wrapper object for the known response body format(s).
 //
 // Corresponds with POST /api/v1/private-networks/{privateNetworkId}/routes (the `CreateRoute` operationId).
-func (c *ClientWithResponses) CreateRouteWithBodyWithResponse(ctx context.Context, privateNetworkId openapi_types.UUID, params *CreateRouteParams, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*CreateRouteResponse, error) {
-	rsp, err := c.CreateRouteWithBody(ctx, privateNetworkId, params, contentType, body, reqEditors...)
+func (c *ClientWithResponses) CreateRouteWithBodyWithResponse(ctx context.Context, privateNetworkId openapi_types.UUID, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*CreateRouteResponse, error) {
+	rsp, err := c.CreateRouteWithBody(ctx, privateNetworkId, contentType, body, reqEditors...)
 	if err != nil {
 		return nil, err
 	}
@@ -17991,8 +17402,8 @@ func (c *ClientWithResponses) CreateRouteWithBodyWithResponse(ctx context.Contex
 // Takes a body of the `application/json` content type, and returns a wrapper object for the known response body format(s).
 //
 // Corresponds with POST /api/v1/private-networks/{privateNetworkId}/routes (the `CreateRoute` operationId).
-func (c *ClientWithResponses) CreateRouteWithResponse(ctx context.Context, privateNetworkId openapi_types.UUID, params *CreateRouteParams, body CreateRouteJSONRequestBody, reqEditors ...RequestEditorFn) (*CreateRouteResponse, error) {
-	rsp, err := c.CreateRoute(ctx, privateNetworkId, params, body, reqEditors...)
+func (c *ClientWithResponses) CreateRouteWithResponse(ctx context.Context, privateNetworkId openapi_types.UUID, body CreateRouteJSONRequestBody, reqEditors ...RequestEditorFn) (*CreateRouteResponse, error) {
+	rsp, err := c.CreateRoute(ctx, privateNetworkId, body, reqEditors...)
 	if err != nil {
 		return nil, err
 	}
@@ -18004,8 +17415,8 @@ func (c *ClientWithResponses) CreateRouteWithResponse(ctx context.Context, priva
 // Returns a wrapper object for the known response body format(s).
 //
 // Corresponds with DELETE /api/v1/private-networks/{privateNetworkId}/routes/{routeId} (the `DeleteRoute` operationId).
-func (c *ClientWithResponses) DeleteRouteWithResponse(ctx context.Context, privateNetworkId openapi_types.UUID, routeId openapi_types.UUID, params *DeleteRouteParams, reqEditors ...RequestEditorFn) (*DeleteRouteResponse, error) {
-	rsp, err := c.DeleteRoute(ctx, privateNetworkId, routeId, params, reqEditors...)
+func (c *ClientWithResponses) DeleteRouteWithResponse(ctx context.Context, privateNetworkId openapi_types.UUID, routeId openapi_types.UUID, reqEditors ...RequestEditorFn) (*DeleteRouteResponse, error) {
+	rsp, err := c.DeleteRoute(ctx, privateNetworkId, routeId, reqEditors...)
 	if err != nil {
 		return nil, err
 	}
@@ -18032,8 +17443,8 @@ func (c *ClientWithResponses) ListSubnetsWithResponse(ctx context.Context, priva
 // Takes any type of body and a specified content type, and returns a wrapper object for the known response body format(s).
 //
 // Corresponds with POST /api/v1/private-networks/{privateNetworkId}/subnets (the `CreateSubnet` operationId).
-func (c *ClientWithResponses) CreateSubnetWithBodyWithResponse(ctx context.Context, privateNetworkId openapi_types.UUID, params *CreateSubnetParams, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*CreateSubnetResponse, error) {
-	rsp, err := c.CreateSubnetWithBody(ctx, privateNetworkId, params, contentType, body, reqEditors...)
+func (c *ClientWithResponses) CreateSubnetWithBodyWithResponse(ctx context.Context, privateNetworkId openapi_types.UUID, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*CreateSubnetResponse, error) {
+	rsp, err := c.CreateSubnetWithBody(ctx, privateNetworkId, contentType, body, reqEditors...)
 	if err != nil {
 		return nil, err
 	}
@@ -18045,8 +17456,8 @@ func (c *ClientWithResponses) CreateSubnetWithBodyWithResponse(ctx context.Conte
 // Takes a body of the `application/json` content type, and returns a wrapper object for the known response body format(s).
 //
 // Corresponds with POST /api/v1/private-networks/{privateNetworkId}/subnets (the `CreateSubnet` operationId).
-func (c *ClientWithResponses) CreateSubnetWithResponse(ctx context.Context, privateNetworkId openapi_types.UUID, params *CreateSubnetParams, body CreateSubnetJSONRequestBody, reqEditors ...RequestEditorFn) (*CreateSubnetResponse, error) {
-	rsp, err := c.CreateSubnet(ctx, privateNetworkId, params, body, reqEditors...)
+func (c *ClientWithResponses) CreateSubnetWithResponse(ctx context.Context, privateNetworkId openapi_types.UUID, body CreateSubnetJSONRequestBody, reqEditors ...RequestEditorFn) (*CreateSubnetResponse, error) {
+	rsp, err := c.CreateSubnet(ctx, privateNetworkId, body, reqEditors...)
 	if err != nil {
 		return nil, err
 	}
@@ -18075,8 +17486,8 @@ func (c *ClientWithResponses) SuggestSubnetCidrWithResponse(ctx context.Context,
 // Returns a wrapper object for the known response body format(s).
 //
 // Corresponds with DELETE /api/v1/private-networks/{privateNetworkId}/subnets/{subnetId} (the `DeleteSubnet` operationId).
-func (c *ClientWithResponses) DeleteSubnetWithResponse(ctx context.Context, privateNetworkId openapi_types.UUID, subnetId openapi_types.UUID, params *DeleteSubnetParams, reqEditors ...RequestEditorFn) (*DeleteSubnetResponse, error) {
-	rsp, err := c.DeleteSubnet(ctx, privateNetworkId, subnetId, params, reqEditors...)
+func (c *ClientWithResponses) DeleteSubnetWithResponse(ctx context.Context, privateNetworkId openapi_types.UUID, subnetId openapi_types.UUID, reqEditors ...RequestEditorFn) (*DeleteSubnetResponse, error) {
+	rsp, err := c.DeleteSubnet(ctx, privateNetworkId, subnetId, reqEditors...)
 	if err != nil {
 		return nil, err
 	}
@@ -18131,8 +17542,8 @@ func (c *ClientWithResponses) ListSecurityGroupsWithResponse(ctx context.Context
 // Takes any type of body and a specified content type, and returns a wrapper object for the known response body format(s).
 //
 // Corresponds with POST /api/v1/security-groups (the `CreateSecurityGroup` operationId).
-func (c *ClientWithResponses) CreateSecurityGroupWithBodyWithResponse(ctx context.Context, params *CreateSecurityGroupParams, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*CreateSecurityGroupResponse, error) {
-	rsp, err := c.CreateSecurityGroupWithBody(ctx, params, contentType, body, reqEditors...)
+func (c *ClientWithResponses) CreateSecurityGroupWithBodyWithResponse(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*CreateSecurityGroupResponse, error) {
+	rsp, err := c.CreateSecurityGroupWithBody(ctx, contentType, body, reqEditors...)
 	if err != nil {
 		return nil, err
 	}
@@ -18146,8 +17557,8 @@ func (c *ClientWithResponses) CreateSecurityGroupWithBodyWithResponse(ctx contex
 // Takes a body of the `application/json` content type, and returns a wrapper object for the known response body format(s).
 //
 // Corresponds with POST /api/v1/security-groups (the `CreateSecurityGroup` operationId).
-func (c *ClientWithResponses) CreateSecurityGroupWithResponse(ctx context.Context, params *CreateSecurityGroupParams, body CreateSecurityGroupJSONRequestBody, reqEditors ...RequestEditorFn) (*CreateSecurityGroupResponse, error) {
-	rsp, err := c.CreateSecurityGroup(ctx, params, body, reqEditors...)
+func (c *ClientWithResponses) CreateSecurityGroupWithResponse(ctx context.Context, body CreateSecurityGroupJSONRequestBody, reqEditors ...RequestEditorFn) (*CreateSecurityGroupResponse, error) {
+	rsp, err := c.CreateSecurityGroup(ctx, body, reqEditors...)
 	if err != nil {
 		return nil, err
 	}
@@ -18161,8 +17572,8 @@ func (c *ClientWithResponses) CreateSecurityGroupWithResponse(ctx context.Contex
 // Returns a wrapper object for the known response body format(s).
 //
 // Corresponds with DELETE /api/v1/security-groups/{securityGroupId} (the `DeleteSecurityGroup` operationId).
-func (c *ClientWithResponses) DeleteSecurityGroupWithResponse(ctx context.Context, securityGroupId openapi_types.UUID, params *DeleteSecurityGroupParams, reqEditors ...RequestEditorFn) (*DeleteSecurityGroupResponse, error) {
-	rsp, err := c.DeleteSecurityGroup(ctx, securityGroupId, params, reqEditors...)
+func (c *ClientWithResponses) DeleteSecurityGroupWithResponse(ctx context.Context, securityGroupId openapi_types.UUID, reqEditors ...RequestEditorFn) (*DeleteSecurityGroupResponse, error) {
+	rsp, err := c.DeleteSecurityGroup(ctx, securityGroupId, reqEditors...)
 	if err != nil {
 		return nil, err
 	}
@@ -18189,8 +17600,8 @@ func (c *ClientWithResponses) GetSecurityGroupWithResponse(ctx context.Context, 
 // Takes any type of body and a specified content type, and returns a wrapper object for the known response body format(s).
 //
 // Corresponds with PATCH /api/v1/security-groups/{securityGroupId} (the `RenameSecurityGroup` operationId).
-func (c *ClientWithResponses) RenameSecurityGroupWithBodyWithResponse(ctx context.Context, securityGroupId openapi_types.UUID, params *RenameSecurityGroupParams, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*RenameSecurityGroupResponse, error) {
-	rsp, err := c.RenameSecurityGroupWithBody(ctx, securityGroupId, params, contentType, body, reqEditors...)
+func (c *ClientWithResponses) RenameSecurityGroupWithBodyWithResponse(ctx context.Context, securityGroupId openapi_types.UUID, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*RenameSecurityGroupResponse, error) {
+	rsp, err := c.RenameSecurityGroupWithBody(ctx, securityGroupId, contentType, body, reqEditors...)
 	if err != nil {
 		return nil, err
 	}
@@ -18204,8 +17615,8 @@ func (c *ClientWithResponses) RenameSecurityGroupWithBodyWithResponse(ctx contex
 // Takes a body of the `application/json` content type, and returns a wrapper object for the known response body format(s).
 //
 // Corresponds with PATCH /api/v1/security-groups/{securityGroupId} (the `RenameSecurityGroup` operationId).
-func (c *ClientWithResponses) RenameSecurityGroupWithResponse(ctx context.Context, securityGroupId openapi_types.UUID, params *RenameSecurityGroupParams, body RenameSecurityGroupJSONRequestBody, reqEditors ...RequestEditorFn) (*RenameSecurityGroupResponse, error) {
-	rsp, err := c.RenameSecurityGroup(ctx, securityGroupId, params, body, reqEditors...)
+func (c *ClientWithResponses) RenameSecurityGroupWithResponse(ctx context.Context, securityGroupId openapi_types.UUID, body RenameSecurityGroupJSONRequestBody, reqEditors ...RequestEditorFn) (*RenameSecurityGroupResponse, error) {
+	rsp, err := c.RenameSecurityGroup(ctx, securityGroupId, body, reqEditors...)
 	if err != nil {
 		return nil, err
 	}
@@ -18232,8 +17643,8 @@ func (c *ClientWithResponses) ListSecurityGroupRulesWithResponse(ctx context.Con
 // Takes any type of body and a specified content type, and returns a wrapper object for the known response body format(s).
 //
 // Corresponds with POST /api/v1/security-groups/{securityGroupId}/rules (the `CreateSecurityGroupRule` operationId).
-func (c *ClientWithResponses) CreateSecurityGroupRuleWithBodyWithResponse(ctx context.Context, securityGroupId openapi_types.UUID, params *CreateSecurityGroupRuleParams, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*CreateSecurityGroupRuleResponse, error) {
-	rsp, err := c.CreateSecurityGroupRuleWithBody(ctx, securityGroupId, params, contentType, body, reqEditors...)
+func (c *ClientWithResponses) CreateSecurityGroupRuleWithBodyWithResponse(ctx context.Context, securityGroupId openapi_types.UUID, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*CreateSecurityGroupRuleResponse, error) {
+	rsp, err := c.CreateSecurityGroupRuleWithBody(ctx, securityGroupId, contentType, body, reqEditors...)
 	if err != nil {
 		return nil, err
 	}
@@ -18247,8 +17658,8 @@ func (c *ClientWithResponses) CreateSecurityGroupRuleWithBodyWithResponse(ctx co
 // Takes a body of the `application/json` content type, and returns a wrapper object for the known response body format(s).
 //
 // Corresponds with POST /api/v1/security-groups/{securityGroupId}/rules (the `CreateSecurityGroupRule` operationId).
-func (c *ClientWithResponses) CreateSecurityGroupRuleWithResponse(ctx context.Context, securityGroupId openapi_types.UUID, params *CreateSecurityGroupRuleParams, body CreateSecurityGroupRuleJSONRequestBody, reqEditors ...RequestEditorFn) (*CreateSecurityGroupRuleResponse, error) {
-	rsp, err := c.CreateSecurityGroupRule(ctx, securityGroupId, params, body, reqEditors...)
+func (c *ClientWithResponses) CreateSecurityGroupRuleWithResponse(ctx context.Context, securityGroupId openapi_types.UUID, body CreateSecurityGroupRuleJSONRequestBody, reqEditors ...RequestEditorFn) (*CreateSecurityGroupRuleResponse, error) {
+	rsp, err := c.CreateSecurityGroupRule(ctx, securityGroupId, body, reqEditors...)
 	if err != nil {
 		return nil, err
 	}
@@ -18260,8 +17671,8 @@ func (c *ClientWithResponses) CreateSecurityGroupRuleWithResponse(ctx context.Co
 // Returns a wrapper object for the known response body format(s).
 //
 // Corresponds with DELETE /api/v1/security-groups/{securityGroupId}/rules/{ruleId} (the `DeleteSecurityGroupRule` operationId).
-func (c *ClientWithResponses) DeleteSecurityGroupRuleWithResponse(ctx context.Context, securityGroupId openapi_types.UUID, ruleId openapi_types.UUID, params *DeleteSecurityGroupRuleParams, reqEditors ...RequestEditorFn) (*DeleteSecurityGroupRuleResponse, error) {
-	rsp, err := c.DeleteSecurityGroupRule(ctx, securityGroupId, ruleId, params, reqEditors...)
+func (c *ClientWithResponses) DeleteSecurityGroupRuleWithResponse(ctx context.Context, securityGroupId openapi_types.UUID, ruleId openapi_types.UUID, reqEditors ...RequestEditorFn) (*DeleteSecurityGroupRuleResponse, error) {
+	rsp, err := c.DeleteSecurityGroupRule(ctx, securityGroupId, ruleId, reqEditors...)
 	if err != nil {
 		return nil, err
 	}
@@ -18346,8 +17757,8 @@ func (c *ClientWithResponses) GetSnapshotWithResponse(ctx context.Context, snaps
 // Takes any type of body and a specified content type, and returns a wrapper object for the known response body format(s).
 //
 // Corresponds with PATCH /api/v1/snapshots/{snapshotId} (the `RenameSnapshot` operationId).
-func (c *ClientWithResponses) RenameSnapshotWithBodyWithResponse(ctx context.Context, snapshotId openapi_types.UUID, params *RenameSnapshotParams, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*RenameSnapshotResponse, error) {
-	rsp, err := c.RenameSnapshotWithBody(ctx, snapshotId, params, contentType, body, reqEditors...)
+func (c *ClientWithResponses) RenameSnapshotWithBodyWithResponse(ctx context.Context, snapshotId openapi_types.UUID, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*RenameSnapshotResponse, error) {
+	rsp, err := c.RenameSnapshotWithBody(ctx, snapshotId, contentType, body, reqEditors...)
 	if err != nil {
 		return nil, err
 	}
@@ -18359,8 +17770,8 @@ func (c *ClientWithResponses) RenameSnapshotWithBodyWithResponse(ctx context.Con
 // Takes a body of the `application/json` content type, and returns a wrapper object for the known response body format(s).
 //
 // Corresponds with PATCH /api/v1/snapshots/{snapshotId} (the `RenameSnapshot` operationId).
-func (c *ClientWithResponses) RenameSnapshotWithResponse(ctx context.Context, snapshotId openapi_types.UUID, params *RenameSnapshotParams, body RenameSnapshotJSONRequestBody, reqEditors ...RequestEditorFn) (*RenameSnapshotResponse, error) {
-	rsp, err := c.RenameSnapshot(ctx, snapshotId, params, body, reqEditors...)
+func (c *ClientWithResponses) RenameSnapshotWithResponse(ctx context.Context, snapshotId openapi_types.UUID, body RenameSnapshotJSONRequestBody, reqEditors ...RequestEditorFn) (*RenameSnapshotResponse, error) {
+	rsp, err := c.RenameSnapshot(ctx, snapshotId, body, reqEditors...)
 	if err != nil {
 		return nil, err
 	}
@@ -19556,12 +18967,12 @@ func ParseAttachInstanceFloatingIpResponse(rsp *http.Response) (*AttachInstanceF
 	}
 
 	switch {
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 202:
-		var dest Task
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest FloatingIPResource
 		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
 			return nil, err
 		}
-		response.JSON202 = &dest
+		response.JSON200 = &dest
 
 	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && true:
 		var dest Error
@@ -19589,12 +19000,12 @@ func ParseDetachInstanceFloatingIpResponse(rsp *http.Response) (*DetachInstanceF
 	}
 
 	switch {
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 202:
-		var dest Task
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest FloatingIPResource
 		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
 			return nil, err
 		}
-		response.JSON202 = &dest
+		response.JSON200 = &dest
 
 	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && true:
 		var dest Error

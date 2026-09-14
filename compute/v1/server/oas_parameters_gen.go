@@ -148,9 +148,6 @@ func decodeAttachDiskParams(args [1]string, argsEscaped bool, r *http.Request) (
 // AttachInstanceFloatingIPParams is parameters of attach-instance-floating-ip operation.
 type AttachInstanceFloatingIPParams struct {
 	InstanceId uuid.UUID
-	// Reuse the same key for retries of the same action. A different request with the same key is
-	// rejected.
-	IdempotencyKey string
 }
 
 func unpackAttachInstanceFloatingIPParams(packed middleware.Parameters) (params AttachInstanceFloatingIPParams) {
@@ -161,18 +158,10 @@ func unpackAttachInstanceFloatingIPParams(packed middleware.Parameters) (params 
 		}
 		params.InstanceId = packed[key].(uuid.UUID)
 	}
-	{
-		key := middleware.ParameterKey{
-			Name: "Idempotency-Key",
-			In:   "header",
-		}
-		params.IdempotencyKey = packed[key].(string)
-	}
 	return params
 }
 
 func decodeAttachInstanceFloatingIPParams(args [1]string, argsEscaped bool, r *http.Request) (params AttachInstanceFloatingIPParams, _ error) {
-	h := uri.NewHeaderDecoder(r.Header)
 	// Decode path: instanceId.
 	if err := func() error {
 		param := args[0]
@@ -215,60 +204,6 @@ func decodeAttachInstanceFloatingIPParams(args [1]string, argsEscaped bool, r *h
 		return params, &ogenerrors.DecodeParamError{
 			Name: "instanceId",
 			In:   "path",
-			Err:  err,
-		}
-	}
-	// Decode header: Idempotency-Key.
-	if err := func() error {
-		cfg := uri.HeaderParameterDecodingConfig{
-			Name:    "Idempotency-Key",
-			Explode: false,
-		}
-		if err := h.HasParam(cfg); err == nil {
-			if err := h.DecodeParam(cfg, func(d uri.Decoder) error {
-				val, err := d.DecodeValue()
-				if err != nil {
-					return err
-				}
-
-				c, err := conv.ToString(val)
-				if err != nil {
-					return err
-				}
-
-				params.IdempotencyKey = c
-				return nil
-			}); err != nil {
-				return err
-			}
-			if err := func() error {
-				if err := (validate.String{
-					MinLength:     1,
-					MinLengthSet:  true,
-					MaxLength:     255,
-					MaxLengthSet:  true,
-					Email:         false,
-					Hostname:      false,
-					Regex:         nil,
-					MinNumeric:    0,
-					MinNumericSet: false,
-					MaxNumeric:    0,
-					MaxNumericSet: false,
-				}).Validate(string(params.IdempotencyKey)); err != nil {
-					return errors.Wrap(err, "string")
-				}
-				return nil
-			}(); err != nil {
-				return err
-			}
-		} else {
-			return err
-		}
-		return nil
-	}(); err != nil {
-		return params, &ogenerrors.DecodeParamError{
-			Name: "Idempotency-Key",
-			In:   "header",
 			Err:  err,
 		}
 	}
@@ -408,9 +343,6 @@ func decodeAttachPortParams(args [1]string, argsEscaped bool, r *http.Request) (
 // BindFloatingIPParams is parameters of bind-floating-ip operation.
 type BindFloatingIPParams struct {
 	FloatingIpId uuid.UUID
-	// Reuse the same key for retries of the same action. A different request with the same key is
-	// rejected.
-	IdempotencyKey string
 }
 
 func unpackBindFloatingIPParams(packed middleware.Parameters) (params BindFloatingIPParams) {
@@ -421,18 +353,10 @@ func unpackBindFloatingIPParams(packed middleware.Parameters) (params BindFloati
 		}
 		params.FloatingIpId = packed[key].(uuid.UUID)
 	}
-	{
-		key := middleware.ParameterKey{
-			Name: "Idempotency-Key",
-			In:   "header",
-		}
-		params.IdempotencyKey = packed[key].(string)
-	}
 	return params
 }
 
 func decodeBindFloatingIPParams(args [1]string, argsEscaped bool, r *http.Request) (params BindFloatingIPParams, _ error) {
-	h := uri.NewHeaderDecoder(r.Header)
 	// Decode path: floatingIpId.
 	if err := func() error {
 		param := args[0]
@@ -475,60 +399,6 @@ func decodeBindFloatingIPParams(args [1]string, argsEscaped bool, r *http.Reques
 		return params, &ogenerrors.DecodeParamError{
 			Name: "floatingIpId",
 			In:   "path",
-			Err:  err,
-		}
-	}
-	// Decode header: Idempotency-Key.
-	if err := func() error {
-		cfg := uri.HeaderParameterDecodingConfig{
-			Name:    "Idempotency-Key",
-			Explode: false,
-		}
-		if err := h.HasParam(cfg); err == nil {
-			if err := h.DecodeParam(cfg, func(d uri.Decoder) error {
-				val, err := d.DecodeValue()
-				if err != nil {
-					return err
-				}
-
-				c, err := conv.ToString(val)
-				if err != nil {
-					return err
-				}
-
-				params.IdempotencyKey = c
-				return nil
-			}); err != nil {
-				return err
-			}
-			if err := func() error {
-				if err := (validate.String{
-					MinLength:     1,
-					MinLengthSet:  true,
-					MaxLength:     255,
-					MaxLengthSet:  true,
-					Email:         false,
-					Hostname:      false,
-					Regex:         nil,
-					MinNumeric:    0,
-					MinNumericSet: false,
-					MaxNumeric:    0,
-					MaxNumericSet: false,
-				}).Validate(string(params.IdempotencyKey)); err != nil {
-					return errors.Wrap(err, "string")
-				}
-				return nil
-			}(); err != nil {
-				return err
-			}
-		} else {
-			return err
-		}
-		return nil
-	}(); err != nil {
-		return params, &ogenerrors.DecodeParamError{
-			Name: "Idempotency-Key",
-			In:   "header",
 			Err:  err,
 		}
 	}
@@ -665,166 +535,9 @@ func decodeConfirmInstanceResizeParams(args [1]string, argsEscaped bool, r *http
 	return params, nil
 }
 
-// CreatePortParams is parameters of create-port operation.
-type CreatePortParams struct {
-	// Reuse the same key for retries of the same action. A different request with the same key is
-	// rejected.
-	IdempotencyKey string
-}
-
-func unpackCreatePortParams(packed middleware.Parameters) (params CreatePortParams) {
-	{
-		key := middleware.ParameterKey{
-			Name: "Idempotency-Key",
-			In:   "header",
-		}
-		params.IdempotencyKey = packed[key].(string)
-	}
-	return params
-}
-
-func decodeCreatePortParams(args [0]string, argsEscaped bool, r *http.Request) (params CreatePortParams, _ error) {
-	h := uri.NewHeaderDecoder(r.Header)
-	// Decode header: Idempotency-Key.
-	if err := func() error {
-		cfg := uri.HeaderParameterDecodingConfig{
-			Name:    "Idempotency-Key",
-			Explode: false,
-		}
-		if err := h.HasParam(cfg); err == nil {
-			if err := h.DecodeParam(cfg, func(d uri.Decoder) error {
-				val, err := d.DecodeValue()
-				if err != nil {
-					return err
-				}
-
-				c, err := conv.ToString(val)
-				if err != nil {
-					return err
-				}
-
-				params.IdempotencyKey = c
-				return nil
-			}); err != nil {
-				return err
-			}
-			if err := func() error {
-				if err := (validate.String{
-					MinLength:     1,
-					MinLengthSet:  true,
-					MaxLength:     255,
-					MaxLengthSet:  true,
-					Email:         false,
-					Hostname:      false,
-					Regex:         nil,
-					MinNumeric:    0,
-					MinNumericSet: false,
-					MaxNumeric:    0,
-					MaxNumericSet: false,
-				}).Validate(string(params.IdempotencyKey)); err != nil {
-					return errors.Wrap(err, "string")
-				}
-				return nil
-			}(); err != nil {
-				return err
-			}
-		} else {
-			return err
-		}
-		return nil
-	}(); err != nil {
-		return params, &ogenerrors.DecodeParamError{
-			Name: "Idempotency-Key",
-			In:   "header",
-			Err:  err,
-		}
-	}
-	return params, nil
-}
-
-// CreatePrivateNetworkParams is parameters of create-private-network operation.
-type CreatePrivateNetworkParams struct {
-	// Reuse the same key for retries of the same action. A different request with the same key is
-	// rejected.
-	IdempotencyKey string
-}
-
-func unpackCreatePrivateNetworkParams(packed middleware.Parameters) (params CreatePrivateNetworkParams) {
-	{
-		key := middleware.ParameterKey{
-			Name: "Idempotency-Key",
-			In:   "header",
-		}
-		params.IdempotencyKey = packed[key].(string)
-	}
-	return params
-}
-
-func decodeCreatePrivateNetworkParams(args [0]string, argsEscaped bool, r *http.Request) (params CreatePrivateNetworkParams, _ error) {
-	h := uri.NewHeaderDecoder(r.Header)
-	// Decode header: Idempotency-Key.
-	if err := func() error {
-		cfg := uri.HeaderParameterDecodingConfig{
-			Name:    "Idempotency-Key",
-			Explode: false,
-		}
-		if err := h.HasParam(cfg); err == nil {
-			if err := h.DecodeParam(cfg, func(d uri.Decoder) error {
-				val, err := d.DecodeValue()
-				if err != nil {
-					return err
-				}
-
-				c, err := conv.ToString(val)
-				if err != nil {
-					return err
-				}
-
-				params.IdempotencyKey = c
-				return nil
-			}); err != nil {
-				return err
-			}
-			if err := func() error {
-				if err := (validate.String{
-					MinLength:     1,
-					MinLengthSet:  true,
-					MaxLength:     255,
-					MaxLengthSet:  true,
-					Email:         false,
-					Hostname:      false,
-					Regex:         nil,
-					MinNumeric:    0,
-					MinNumericSet: false,
-					MaxNumeric:    0,
-					MaxNumericSet: false,
-				}).Validate(string(params.IdempotencyKey)); err != nil {
-					return errors.Wrap(err, "string")
-				}
-				return nil
-			}(); err != nil {
-				return err
-			}
-		} else {
-			return err
-		}
-		return nil
-	}(); err != nil {
-		return params, &ogenerrors.DecodeParamError{
-			Name: "Idempotency-Key",
-			In:   "header",
-			Err:  err,
-		}
-	}
-	return params, nil
-}
-
 // CreateRouteParams is parameters of create-route operation.
 type CreateRouteParams struct {
 	PrivateNetworkId uuid.UUID
-	// Reuse the same key for retries of the same action. A different request with the same key is
-	// rejected.
-	IdempotencyKey string
 }
 
 func unpackCreateRouteParams(packed middleware.Parameters) (params CreateRouteParams) {
@@ -835,18 +548,10 @@ func unpackCreateRouteParams(packed middleware.Parameters) (params CreateRoutePa
 		}
 		params.PrivateNetworkId = packed[key].(uuid.UUID)
 	}
-	{
-		key := middleware.ParameterKey{
-			Name: "Idempotency-Key",
-			In:   "header",
-		}
-		params.IdempotencyKey = packed[key].(string)
-	}
 	return params
 }
 
 func decodeCreateRouteParams(args [1]string, argsEscaped bool, r *http.Request) (params CreateRouteParams, _ error) {
-	h := uri.NewHeaderDecoder(r.Header)
 	// Decode path: privateNetworkId.
 	if err := func() error {
 		param := args[0]
@@ -892,146 +597,12 @@ func decodeCreateRouteParams(args [1]string, argsEscaped bool, r *http.Request) 
 			Err:  err,
 		}
 	}
-	// Decode header: Idempotency-Key.
-	if err := func() error {
-		cfg := uri.HeaderParameterDecodingConfig{
-			Name:    "Idempotency-Key",
-			Explode: false,
-		}
-		if err := h.HasParam(cfg); err == nil {
-			if err := h.DecodeParam(cfg, func(d uri.Decoder) error {
-				val, err := d.DecodeValue()
-				if err != nil {
-					return err
-				}
-
-				c, err := conv.ToString(val)
-				if err != nil {
-					return err
-				}
-
-				params.IdempotencyKey = c
-				return nil
-			}); err != nil {
-				return err
-			}
-			if err := func() error {
-				if err := (validate.String{
-					MinLength:     1,
-					MinLengthSet:  true,
-					MaxLength:     255,
-					MaxLengthSet:  true,
-					Email:         false,
-					Hostname:      false,
-					Regex:         nil,
-					MinNumeric:    0,
-					MinNumericSet: false,
-					MaxNumeric:    0,
-					MaxNumericSet: false,
-				}).Validate(string(params.IdempotencyKey)); err != nil {
-					return errors.Wrap(err, "string")
-				}
-				return nil
-			}(); err != nil {
-				return err
-			}
-		} else {
-			return err
-		}
-		return nil
-	}(); err != nil {
-		return params, &ogenerrors.DecodeParamError{
-			Name: "Idempotency-Key",
-			In:   "header",
-			Err:  err,
-		}
-	}
-	return params, nil
-}
-
-// CreateSecurityGroupParams is parameters of create-security-group operation.
-type CreateSecurityGroupParams struct {
-	// Reuse the same key for retries of the same action. A different request with the same key is
-	// rejected.
-	IdempotencyKey string
-}
-
-func unpackCreateSecurityGroupParams(packed middleware.Parameters) (params CreateSecurityGroupParams) {
-	{
-		key := middleware.ParameterKey{
-			Name: "Idempotency-Key",
-			In:   "header",
-		}
-		params.IdempotencyKey = packed[key].(string)
-	}
-	return params
-}
-
-func decodeCreateSecurityGroupParams(args [0]string, argsEscaped bool, r *http.Request) (params CreateSecurityGroupParams, _ error) {
-	h := uri.NewHeaderDecoder(r.Header)
-	// Decode header: Idempotency-Key.
-	if err := func() error {
-		cfg := uri.HeaderParameterDecodingConfig{
-			Name:    "Idempotency-Key",
-			Explode: false,
-		}
-		if err := h.HasParam(cfg); err == nil {
-			if err := h.DecodeParam(cfg, func(d uri.Decoder) error {
-				val, err := d.DecodeValue()
-				if err != nil {
-					return err
-				}
-
-				c, err := conv.ToString(val)
-				if err != nil {
-					return err
-				}
-
-				params.IdempotencyKey = c
-				return nil
-			}); err != nil {
-				return err
-			}
-			if err := func() error {
-				if err := (validate.String{
-					MinLength:     1,
-					MinLengthSet:  true,
-					MaxLength:     255,
-					MaxLengthSet:  true,
-					Email:         false,
-					Hostname:      false,
-					Regex:         nil,
-					MinNumeric:    0,
-					MinNumericSet: false,
-					MaxNumeric:    0,
-					MaxNumericSet: false,
-				}).Validate(string(params.IdempotencyKey)); err != nil {
-					return errors.Wrap(err, "string")
-				}
-				return nil
-			}(); err != nil {
-				return err
-			}
-		} else {
-			return err
-		}
-		return nil
-	}(); err != nil {
-		return params, &ogenerrors.DecodeParamError{
-			Name: "Idempotency-Key",
-			In:   "header",
-			Err:  err,
-		}
-	}
 	return params, nil
 }
 
 // CreateSecurityGroupRuleParams is parameters of create-security-group-rule operation.
 type CreateSecurityGroupRuleParams struct {
 	SecurityGroupId uuid.UUID
-	// Reuse the same key for retries of the same action. A different request with the same key is
-	// rejected.
-	IdempotencyKey string
 }
 
 func unpackCreateSecurityGroupRuleParams(packed middleware.Parameters) (params CreateSecurityGroupRuleParams) {
@@ -1042,18 +613,10 @@ func unpackCreateSecurityGroupRuleParams(packed middleware.Parameters) (params C
 		}
 		params.SecurityGroupId = packed[key].(uuid.UUID)
 	}
-	{
-		key := middleware.ParameterKey{
-			Name: "Idempotency-Key",
-			In:   "header",
-		}
-		params.IdempotencyKey = packed[key].(string)
-	}
 	return params
 }
 
 func decodeCreateSecurityGroupRuleParams(args [1]string, argsEscaped bool, r *http.Request) (params CreateSecurityGroupRuleParams, _ error) {
-	h := uri.NewHeaderDecoder(r.Header)
 	// Decode path: securityGroupId.
 	if err := func() error {
 		param := args[0]
@@ -1099,69 +662,12 @@ func decodeCreateSecurityGroupRuleParams(args [1]string, argsEscaped bool, r *ht
 			Err:  err,
 		}
 	}
-	// Decode header: Idempotency-Key.
-	if err := func() error {
-		cfg := uri.HeaderParameterDecodingConfig{
-			Name:    "Idempotency-Key",
-			Explode: false,
-		}
-		if err := h.HasParam(cfg); err == nil {
-			if err := h.DecodeParam(cfg, func(d uri.Decoder) error {
-				val, err := d.DecodeValue()
-				if err != nil {
-					return err
-				}
-
-				c, err := conv.ToString(val)
-				if err != nil {
-					return err
-				}
-
-				params.IdempotencyKey = c
-				return nil
-			}); err != nil {
-				return err
-			}
-			if err := func() error {
-				if err := (validate.String{
-					MinLength:     1,
-					MinLengthSet:  true,
-					MaxLength:     255,
-					MaxLengthSet:  true,
-					Email:         false,
-					Hostname:      false,
-					Regex:         nil,
-					MinNumeric:    0,
-					MinNumericSet: false,
-					MaxNumeric:    0,
-					MaxNumericSet: false,
-				}).Validate(string(params.IdempotencyKey)); err != nil {
-					return errors.Wrap(err, "string")
-				}
-				return nil
-			}(); err != nil {
-				return err
-			}
-		} else {
-			return err
-		}
-		return nil
-	}(); err != nil {
-		return params, &ogenerrors.DecodeParamError{
-			Name: "Idempotency-Key",
-			In:   "header",
-			Err:  err,
-		}
-	}
 	return params, nil
 }
 
 // CreateSubnetParams is parameters of create-subnet operation.
 type CreateSubnetParams struct {
 	PrivateNetworkId uuid.UUID
-	// Reuse the same key for retries of the same action. A different request with the same key is
-	// rejected.
-	IdempotencyKey string
 }
 
 func unpackCreateSubnetParams(packed middleware.Parameters) (params CreateSubnetParams) {
@@ -1172,18 +678,10 @@ func unpackCreateSubnetParams(packed middleware.Parameters) (params CreateSubnet
 		}
 		params.PrivateNetworkId = packed[key].(uuid.UUID)
 	}
-	{
-		key := middleware.ParameterKey{
-			Name: "Idempotency-Key",
-			In:   "header",
-		}
-		params.IdempotencyKey = packed[key].(string)
-	}
 	return params
 }
 
 func decodeCreateSubnetParams(args [1]string, argsEscaped bool, r *http.Request) (params CreateSubnetParams, _ error) {
-	h := uri.NewHeaderDecoder(r.Header)
 	// Decode path: privateNetworkId.
 	if err := func() error {
 		param := args[0]
@@ -1226,60 +724,6 @@ func decodeCreateSubnetParams(args [1]string, argsEscaped bool, r *http.Request)
 		return params, &ogenerrors.DecodeParamError{
 			Name: "privateNetworkId",
 			In:   "path",
-			Err:  err,
-		}
-	}
-	// Decode header: Idempotency-Key.
-	if err := func() error {
-		cfg := uri.HeaderParameterDecodingConfig{
-			Name:    "Idempotency-Key",
-			Explode: false,
-		}
-		if err := h.HasParam(cfg); err == nil {
-			if err := h.DecodeParam(cfg, func(d uri.Decoder) error {
-				val, err := d.DecodeValue()
-				if err != nil {
-					return err
-				}
-
-				c, err := conv.ToString(val)
-				if err != nil {
-					return err
-				}
-
-				params.IdempotencyKey = c
-				return nil
-			}); err != nil {
-				return err
-			}
-			if err := func() error {
-				if err := (validate.String{
-					MinLength:     1,
-					MinLengthSet:  true,
-					MaxLength:     255,
-					MaxLengthSet:  true,
-					Email:         false,
-					Hostname:      false,
-					Regex:         nil,
-					MinNumeric:    0,
-					MinNumericSet: false,
-					MaxNumeric:    0,
-					MaxNumericSet: false,
-				}).Validate(string(params.IdempotencyKey)); err != nil {
-					return errors.Wrap(err, "string")
-				}
-				return nil
-			}(); err != nil {
-				return err
-			}
-		} else {
-			return err
-		}
-		return nil
-	}(); err != nil {
-		return params, &ogenerrors.DecodeParamError{
-			Name: "Idempotency-Key",
-			In:   "header",
 			Err:  err,
 		}
 	}
@@ -1679,9 +1123,6 @@ func decodeDeleteInstanceParams(args [1]string, argsEscaped bool, r *http.Reques
 // DeletePortParams is parameters of delete-port operation.
 type DeletePortParams struct {
 	PortId uuid.UUID
-	// Reuse the same key for retries of the same action. A different request with the same key is
-	// rejected.
-	IdempotencyKey string
 }
 
 func unpackDeletePortParams(packed middleware.Parameters) (params DeletePortParams) {
@@ -1692,18 +1133,10 @@ func unpackDeletePortParams(packed middleware.Parameters) (params DeletePortPara
 		}
 		params.PortId = packed[key].(uuid.UUID)
 	}
-	{
-		key := middleware.ParameterKey{
-			Name: "Idempotency-Key",
-			In:   "header",
-		}
-		params.IdempotencyKey = packed[key].(string)
-	}
 	return params
 }
 
 func decodeDeletePortParams(args [1]string, argsEscaped bool, r *http.Request) (params DeletePortParams, _ error) {
-	h := uri.NewHeaderDecoder(r.Header)
 	// Decode path: portId.
 	if err := func() error {
 		param := args[0]
@@ -1746,60 +1179,6 @@ func decodeDeletePortParams(args [1]string, argsEscaped bool, r *http.Request) (
 		return params, &ogenerrors.DecodeParamError{
 			Name: "portId",
 			In:   "path",
-			Err:  err,
-		}
-	}
-	// Decode header: Idempotency-Key.
-	if err := func() error {
-		cfg := uri.HeaderParameterDecodingConfig{
-			Name:    "Idempotency-Key",
-			Explode: false,
-		}
-		if err := h.HasParam(cfg); err == nil {
-			if err := h.DecodeParam(cfg, func(d uri.Decoder) error {
-				val, err := d.DecodeValue()
-				if err != nil {
-					return err
-				}
-
-				c, err := conv.ToString(val)
-				if err != nil {
-					return err
-				}
-
-				params.IdempotencyKey = c
-				return nil
-			}); err != nil {
-				return err
-			}
-			if err := func() error {
-				if err := (validate.String{
-					MinLength:     1,
-					MinLengthSet:  true,
-					MaxLength:     255,
-					MaxLengthSet:  true,
-					Email:         false,
-					Hostname:      false,
-					Regex:         nil,
-					MinNumeric:    0,
-					MinNumericSet: false,
-					MaxNumeric:    0,
-					MaxNumericSet: false,
-				}).Validate(string(params.IdempotencyKey)); err != nil {
-					return errors.Wrap(err, "string")
-				}
-				return nil
-			}(); err != nil {
-				return err
-			}
-		} else {
-			return err
-		}
-		return nil
-	}(); err != nil {
-		return params, &ogenerrors.DecodeParamError{
-			Name: "Idempotency-Key",
-			In:   "header",
 			Err:  err,
 		}
 	}
@@ -1939,9 +1318,6 @@ func decodeDeletePrivateImageParams(args [1]string, argsEscaped bool, r *http.Re
 // DeletePrivateNetworkParams is parameters of delete-private-network operation.
 type DeletePrivateNetworkParams struct {
 	PrivateNetworkId uuid.UUID
-	// Reuse the same key for retries of the same action. A different request with the same key is
-	// rejected.
-	IdempotencyKey string
 }
 
 func unpackDeletePrivateNetworkParams(packed middleware.Parameters) (params DeletePrivateNetworkParams) {
@@ -1952,18 +1328,10 @@ func unpackDeletePrivateNetworkParams(packed middleware.Parameters) (params Dele
 		}
 		params.PrivateNetworkId = packed[key].(uuid.UUID)
 	}
-	{
-		key := middleware.ParameterKey{
-			Name: "Idempotency-Key",
-			In:   "header",
-		}
-		params.IdempotencyKey = packed[key].(string)
-	}
 	return params
 }
 
 func decodeDeletePrivateNetworkParams(args [1]string, argsEscaped bool, r *http.Request) (params DeletePrivateNetworkParams, _ error) {
-	h := uri.NewHeaderDecoder(r.Header)
 	// Decode path: privateNetworkId.
 	if err := func() error {
 		param := args[0]
@@ -2009,60 +1377,6 @@ func decodeDeletePrivateNetworkParams(args [1]string, argsEscaped bool, r *http.
 			Err:  err,
 		}
 	}
-	// Decode header: Idempotency-Key.
-	if err := func() error {
-		cfg := uri.HeaderParameterDecodingConfig{
-			Name:    "Idempotency-Key",
-			Explode: false,
-		}
-		if err := h.HasParam(cfg); err == nil {
-			if err := h.DecodeParam(cfg, func(d uri.Decoder) error {
-				val, err := d.DecodeValue()
-				if err != nil {
-					return err
-				}
-
-				c, err := conv.ToString(val)
-				if err != nil {
-					return err
-				}
-
-				params.IdempotencyKey = c
-				return nil
-			}); err != nil {
-				return err
-			}
-			if err := func() error {
-				if err := (validate.String{
-					MinLength:     1,
-					MinLengthSet:  true,
-					MaxLength:     255,
-					MaxLengthSet:  true,
-					Email:         false,
-					Hostname:      false,
-					Regex:         nil,
-					MinNumeric:    0,
-					MinNumericSet: false,
-					MaxNumeric:    0,
-					MaxNumericSet: false,
-				}).Validate(string(params.IdempotencyKey)); err != nil {
-					return errors.Wrap(err, "string")
-				}
-				return nil
-			}(); err != nil {
-				return err
-			}
-		} else {
-			return err
-		}
-		return nil
-	}(); err != nil {
-		return params, &ogenerrors.DecodeParamError{
-			Name: "Idempotency-Key",
-			In:   "header",
-			Err:  err,
-		}
-	}
 	return params, nil
 }
 
@@ -2070,9 +1384,6 @@ func decodeDeletePrivateNetworkParams(args [1]string, argsEscaped bool, r *http.
 type DeleteRouteParams struct {
 	PrivateNetworkId uuid.UUID
 	RouteId          uuid.UUID
-	// Reuse the same key for retries of the same action. A different request with the same key is
-	// rejected.
-	IdempotencyKey string
 }
 
 func unpackDeleteRouteParams(packed middleware.Parameters) (params DeleteRouteParams) {
@@ -2090,18 +1401,10 @@ func unpackDeleteRouteParams(packed middleware.Parameters) (params DeleteRoutePa
 		}
 		params.RouteId = packed[key].(uuid.UUID)
 	}
-	{
-		key := middleware.ParameterKey{
-			Name: "Idempotency-Key",
-			In:   "header",
-		}
-		params.IdempotencyKey = packed[key].(string)
-	}
 	return params
 }
 
 func decodeDeleteRouteParams(args [2]string, argsEscaped bool, r *http.Request) (params DeleteRouteParams, _ error) {
-	h := uri.NewHeaderDecoder(r.Header)
 	// Decode path: privateNetworkId.
 	if err := func() error {
 		param := args[0]
@@ -2192,69 +1495,12 @@ func decodeDeleteRouteParams(args [2]string, argsEscaped bool, r *http.Request) 
 			Err:  err,
 		}
 	}
-	// Decode header: Idempotency-Key.
-	if err := func() error {
-		cfg := uri.HeaderParameterDecodingConfig{
-			Name:    "Idempotency-Key",
-			Explode: false,
-		}
-		if err := h.HasParam(cfg); err == nil {
-			if err := h.DecodeParam(cfg, func(d uri.Decoder) error {
-				val, err := d.DecodeValue()
-				if err != nil {
-					return err
-				}
-
-				c, err := conv.ToString(val)
-				if err != nil {
-					return err
-				}
-
-				params.IdempotencyKey = c
-				return nil
-			}); err != nil {
-				return err
-			}
-			if err := func() error {
-				if err := (validate.String{
-					MinLength:     1,
-					MinLengthSet:  true,
-					MaxLength:     255,
-					MaxLengthSet:  true,
-					Email:         false,
-					Hostname:      false,
-					Regex:         nil,
-					MinNumeric:    0,
-					MinNumericSet: false,
-					MaxNumeric:    0,
-					MaxNumericSet: false,
-				}).Validate(string(params.IdempotencyKey)); err != nil {
-					return errors.Wrap(err, "string")
-				}
-				return nil
-			}(); err != nil {
-				return err
-			}
-		} else {
-			return err
-		}
-		return nil
-	}(); err != nil {
-		return params, &ogenerrors.DecodeParamError{
-			Name: "Idempotency-Key",
-			In:   "header",
-			Err:  err,
-		}
-	}
 	return params, nil
 }
 
 // DeleteSecurityGroupParams is parameters of delete-security-group operation.
 type DeleteSecurityGroupParams struct {
 	SecurityGroupId uuid.UUID
-	// Reuse the same key for retries of the same action. A different request with the same key is
-	// rejected.
-	IdempotencyKey string
 }
 
 func unpackDeleteSecurityGroupParams(packed middleware.Parameters) (params DeleteSecurityGroupParams) {
@@ -2265,18 +1511,10 @@ func unpackDeleteSecurityGroupParams(packed middleware.Parameters) (params Delet
 		}
 		params.SecurityGroupId = packed[key].(uuid.UUID)
 	}
-	{
-		key := middleware.ParameterKey{
-			Name: "Idempotency-Key",
-			In:   "header",
-		}
-		params.IdempotencyKey = packed[key].(string)
-	}
 	return params
 }
 
 func decodeDeleteSecurityGroupParams(args [1]string, argsEscaped bool, r *http.Request) (params DeleteSecurityGroupParams, _ error) {
-	h := uri.NewHeaderDecoder(r.Header)
 	// Decode path: securityGroupId.
 	if err := func() error {
 		param := args[0]
@@ -2322,60 +1560,6 @@ func decodeDeleteSecurityGroupParams(args [1]string, argsEscaped bool, r *http.R
 			Err:  err,
 		}
 	}
-	// Decode header: Idempotency-Key.
-	if err := func() error {
-		cfg := uri.HeaderParameterDecodingConfig{
-			Name:    "Idempotency-Key",
-			Explode: false,
-		}
-		if err := h.HasParam(cfg); err == nil {
-			if err := h.DecodeParam(cfg, func(d uri.Decoder) error {
-				val, err := d.DecodeValue()
-				if err != nil {
-					return err
-				}
-
-				c, err := conv.ToString(val)
-				if err != nil {
-					return err
-				}
-
-				params.IdempotencyKey = c
-				return nil
-			}); err != nil {
-				return err
-			}
-			if err := func() error {
-				if err := (validate.String{
-					MinLength:     1,
-					MinLengthSet:  true,
-					MaxLength:     255,
-					MaxLengthSet:  true,
-					Email:         false,
-					Hostname:      false,
-					Regex:         nil,
-					MinNumeric:    0,
-					MinNumericSet: false,
-					MaxNumeric:    0,
-					MaxNumericSet: false,
-				}).Validate(string(params.IdempotencyKey)); err != nil {
-					return errors.Wrap(err, "string")
-				}
-				return nil
-			}(); err != nil {
-				return err
-			}
-		} else {
-			return err
-		}
-		return nil
-	}(); err != nil {
-		return params, &ogenerrors.DecodeParamError{
-			Name: "Idempotency-Key",
-			In:   "header",
-			Err:  err,
-		}
-	}
 	return params, nil
 }
 
@@ -2383,9 +1567,6 @@ func decodeDeleteSecurityGroupParams(args [1]string, argsEscaped bool, r *http.R
 type DeleteSecurityGroupRuleParams struct {
 	SecurityGroupId uuid.UUID
 	RuleId          uuid.UUID
-	// Reuse the same key for retries of the same action. A different request with the same key is
-	// rejected.
-	IdempotencyKey string
 }
 
 func unpackDeleteSecurityGroupRuleParams(packed middleware.Parameters) (params DeleteSecurityGroupRuleParams) {
@@ -2403,18 +1584,10 @@ func unpackDeleteSecurityGroupRuleParams(packed middleware.Parameters) (params D
 		}
 		params.RuleId = packed[key].(uuid.UUID)
 	}
-	{
-		key := middleware.ParameterKey{
-			Name: "Idempotency-Key",
-			In:   "header",
-		}
-		params.IdempotencyKey = packed[key].(string)
-	}
 	return params
 }
 
 func decodeDeleteSecurityGroupRuleParams(args [2]string, argsEscaped bool, r *http.Request) (params DeleteSecurityGroupRuleParams, _ error) {
-	h := uri.NewHeaderDecoder(r.Header)
 	// Decode path: securityGroupId.
 	if err := func() error {
 		param := args[0]
@@ -2502,60 +1675,6 @@ func decodeDeleteSecurityGroupRuleParams(args [2]string, argsEscaped bool, r *ht
 		return params, &ogenerrors.DecodeParamError{
 			Name: "ruleId",
 			In:   "path",
-			Err:  err,
-		}
-	}
-	// Decode header: Idempotency-Key.
-	if err := func() error {
-		cfg := uri.HeaderParameterDecodingConfig{
-			Name:    "Idempotency-Key",
-			Explode: false,
-		}
-		if err := h.HasParam(cfg); err == nil {
-			if err := h.DecodeParam(cfg, func(d uri.Decoder) error {
-				val, err := d.DecodeValue()
-				if err != nil {
-					return err
-				}
-
-				c, err := conv.ToString(val)
-				if err != nil {
-					return err
-				}
-
-				params.IdempotencyKey = c
-				return nil
-			}); err != nil {
-				return err
-			}
-			if err := func() error {
-				if err := (validate.String{
-					MinLength:     1,
-					MinLengthSet:  true,
-					MaxLength:     255,
-					MaxLengthSet:  true,
-					Email:         false,
-					Hostname:      false,
-					Regex:         nil,
-					MinNumeric:    0,
-					MinNumericSet: false,
-					MaxNumeric:    0,
-					MaxNumericSet: false,
-				}).Validate(string(params.IdempotencyKey)); err != nil {
-					return errors.Wrap(err, "string")
-				}
-				return nil
-			}(); err != nil {
-				return err
-			}
-		} else {
-			return err
-		}
-		return nil
-	}(); err != nil {
-		return params, &ogenerrors.DecodeParamError{
-			Name: "Idempotency-Key",
-			In:   "header",
 			Err:  err,
 		}
 	}
@@ -2696,9 +1815,6 @@ func decodeDeleteSnapshotParams(args [1]string, argsEscaped bool, r *http.Reques
 type DeleteSubnetParams struct {
 	PrivateNetworkId uuid.UUID
 	SubnetId         uuid.UUID
-	// Reuse the same key for retries of the same action. A different request with the same key is
-	// rejected.
-	IdempotencyKey string
 }
 
 func unpackDeleteSubnetParams(packed middleware.Parameters) (params DeleteSubnetParams) {
@@ -2716,18 +1832,10 @@ func unpackDeleteSubnetParams(packed middleware.Parameters) (params DeleteSubnet
 		}
 		params.SubnetId = packed[key].(uuid.UUID)
 	}
-	{
-		key := middleware.ParameterKey{
-			Name: "Idempotency-Key",
-			In:   "header",
-		}
-		params.IdempotencyKey = packed[key].(string)
-	}
 	return params
 }
 
 func decodeDeleteSubnetParams(args [2]string, argsEscaped bool, r *http.Request) (params DeleteSubnetParams, _ error) {
-	h := uri.NewHeaderDecoder(r.Header)
 	// Decode path: privateNetworkId.
 	if err := func() error {
 		param := args[0]
@@ -2815,60 +1923,6 @@ func decodeDeleteSubnetParams(args [2]string, argsEscaped bool, r *http.Request)
 		return params, &ogenerrors.DecodeParamError{
 			Name: "subnetId",
 			In:   "path",
-			Err:  err,
-		}
-	}
-	// Decode header: Idempotency-Key.
-	if err := func() error {
-		cfg := uri.HeaderParameterDecodingConfig{
-			Name:    "Idempotency-Key",
-			Explode: false,
-		}
-		if err := h.HasParam(cfg); err == nil {
-			if err := h.DecodeParam(cfg, func(d uri.Decoder) error {
-				val, err := d.DecodeValue()
-				if err != nil {
-					return err
-				}
-
-				c, err := conv.ToString(val)
-				if err != nil {
-					return err
-				}
-
-				params.IdempotencyKey = c
-				return nil
-			}); err != nil {
-				return err
-			}
-			if err := func() error {
-				if err := (validate.String{
-					MinLength:     1,
-					MinLengthSet:  true,
-					MaxLength:     255,
-					MaxLengthSet:  true,
-					Email:         false,
-					Hostname:      false,
-					Regex:         nil,
-					MinNumeric:    0,
-					MinNumericSet: false,
-					MaxNumeric:    0,
-					MaxNumericSet: false,
-				}).Validate(string(params.IdempotencyKey)); err != nil {
-					return errors.Wrap(err, "string")
-				}
-				return nil
-			}(); err != nil {
-				return err
-			}
-		} else {
-			return err
-		}
-		return nil
-	}(); err != nil {
-		return params, &ogenerrors.DecodeParamError{
-			Name: "Idempotency-Key",
-			In:   "header",
 			Err:  err,
 		}
 	}
@@ -3062,9 +2116,6 @@ func decodeDetachDiskParams(args [2]string, argsEscaped bool, r *http.Request) (
 type DetachInstanceFloatingIPParams struct {
 	InstanceId   uuid.UUID
 	FloatingIpId uuid.UUID
-	// Reuse the same key for retries of the same action. A different request with the same key is
-	// rejected.
-	IdempotencyKey string
 }
 
 func unpackDetachInstanceFloatingIPParams(packed middleware.Parameters) (params DetachInstanceFloatingIPParams) {
@@ -3082,18 +2133,10 @@ func unpackDetachInstanceFloatingIPParams(packed middleware.Parameters) (params 
 		}
 		params.FloatingIpId = packed[key].(uuid.UUID)
 	}
-	{
-		key := middleware.ParameterKey{
-			Name: "Idempotency-Key",
-			In:   "header",
-		}
-		params.IdempotencyKey = packed[key].(string)
-	}
 	return params
 }
 
 func decodeDetachInstanceFloatingIPParams(args [2]string, argsEscaped bool, r *http.Request) (params DetachInstanceFloatingIPParams, _ error) {
-	h := uri.NewHeaderDecoder(r.Header)
 	// Decode path: instanceId.
 	if err := func() error {
 		param := args[0]
@@ -3181,60 +2224,6 @@ func decodeDetachInstanceFloatingIPParams(args [2]string, argsEscaped bool, r *h
 		return params, &ogenerrors.DecodeParamError{
 			Name: "floatingIpId",
 			In:   "path",
-			Err:  err,
-		}
-	}
-	// Decode header: Idempotency-Key.
-	if err := func() error {
-		cfg := uri.HeaderParameterDecodingConfig{
-			Name:    "Idempotency-Key",
-			Explode: false,
-		}
-		if err := h.HasParam(cfg); err == nil {
-			if err := h.DecodeParam(cfg, func(d uri.Decoder) error {
-				val, err := d.DecodeValue()
-				if err != nil {
-					return err
-				}
-
-				c, err := conv.ToString(val)
-				if err != nil {
-					return err
-				}
-
-				params.IdempotencyKey = c
-				return nil
-			}); err != nil {
-				return err
-			}
-			if err := func() error {
-				if err := (validate.String{
-					MinLength:     1,
-					MinLengthSet:  true,
-					MaxLength:     255,
-					MaxLengthSet:  true,
-					Email:         false,
-					Hostname:      false,
-					Regex:         nil,
-					MinNumeric:    0,
-					MinNumericSet: false,
-					MaxNumeric:    0,
-					MaxNumericSet: false,
-				}).Validate(string(params.IdempotencyKey)); err != nil {
-					return errors.Wrap(err, "string")
-				}
-				return nil
-			}(); err != nil {
-				return err
-			}
-		} else {
-			return err
-		}
-		return nil
-	}(); err != nil {
-		return params, &ogenerrors.DecodeParamError{
-			Name: "Idempotency-Key",
-			In:   "header",
 			Err:  err,
 		}
 	}
@@ -3427,9 +2416,6 @@ func decodeDetachPortParams(args [2]string, argsEscaped bool, r *http.Request) (
 // DisablePrivateNetworkIpv6Params is parameters of disable-private-network-ipv6 operation.
 type DisablePrivateNetworkIpv6Params struct {
 	PrivateNetworkId uuid.UUID
-	// Reuse the same key for retries of the same action. A different request with the same key is
-	// rejected.
-	IdempotencyKey string
 }
 
 func unpackDisablePrivateNetworkIpv6Params(packed middleware.Parameters) (params DisablePrivateNetworkIpv6Params) {
@@ -3440,18 +2426,10 @@ func unpackDisablePrivateNetworkIpv6Params(packed middleware.Parameters) (params
 		}
 		params.PrivateNetworkId = packed[key].(uuid.UUID)
 	}
-	{
-		key := middleware.ParameterKey{
-			Name: "Idempotency-Key",
-			In:   "header",
-		}
-		params.IdempotencyKey = packed[key].(string)
-	}
 	return params
 }
 
 func decodeDisablePrivateNetworkIpv6Params(args [1]string, argsEscaped bool, r *http.Request) (params DisablePrivateNetworkIpv6Params, _ error) {
-	h := uri.NewHeaderDecoder(r.Header)
 	// Decode path: privateNetworkId.
 	if err := func() error {
 		param := args[0]
@@ -3497,69 +2475,12 @@ func decodeDisablePrivateNetworkIpv6Params(args [1]string, argsEscaped bool, r *
 			Err:  err,
 		}
 	}
-	// Decode header: Idempotency-Key.
-	if err := func() error {
-		cfg := uri.HeaderParameterDecodingConfig{
-			Name:    "Idempotency-Key",
-			Explode: false,
-		}
-		if err := h.HasParam(cfg); err == nil {
-			if err := h.DecodeParam(cfg, func(d uri.Decoder) error {
-				val, err := d.DecodeValue()
-				if err != nil {
-					return err
-				}
-
-				c, err := conv.ToString(val)
-				if err != nil {
-					return err
-				}
-
-				params.IdempotencyKey = c
-				return nil
-			}); err != nil {
-				return err
-			}
-			if err := func() error {
-				if err := (validate.String{
-					MinLength:     1,
-					MinLengthSet:  true,
-					MaxLength:     255,
-					MaxLengthSet:  true,
-					Email:         false,
-					Hostname:      false,
-					Regex:         nil,
-					MinNumeric:    0,
-					MinNumericSet: false,
-					MaxNumeric:    0,
-					MaxNumericSet: false,
-				}).Validate(string(params.IdempotencyKey)); err != nil {
-					return errors.Wrap(err, "string")
-				}
-				return nil
-			}(); err != nil {
-				return err
-			}
-		} else {
-			return err
-		}
-		return nil
-	}(); err != nil {
-		return params, &ogenerrors.DecodeParamError{
-			Name: "Idempotency-Key",
-			In:   "header",
-			Err:  err,
-		}
-	}
 	return params, nil
 }
 
 // EnablePrivateNetworkIpv6Params is parameters of enable-private-network-ipv6 operation.
 type EnablePrivateNetworkIpv6Params struct {
 	PrivateNetworkId uuid.UUID
-	// Reuse the same key for retries of the same action. A different request with the same key is
-	// rejected.
-	IdempotencyKey string
 }
 
 func unpackEnablePrivateNetworkIpv6Params(packed middleware.Parameters) (params EnablePrivateNetworkIpv6Params) {
@@ -3570,18 +2491,10 @@ func unpackEnablePrivateNetworkIpv6Params(packed middleware.Parameters) (params 
 		}
 		params.PrivateNetworkId = packed[key].(uuid.UUID)
 	}
-	{
-		key := middleware.ParameterKey{
-			Name: "Idempotency-Key",
-			In:   "header",
-		}
-		params.IdempotencyKey = packed[key].(string)
-	}
 	return params
 }
 
 func decodeEnablePrivateNetworkIpv6Params(args [1]string, argsEscaped bool, r *http.Request) (params EnablePrivateNetworkIpv6Params, _ error) {
-	h := uri.NewHeaderDecoder(r.Header)
 	// Decode path: privateNetworkId.
 	if err := func() error {
 		param := args[0]
@@ -3624,60 +2537,6 @@ func decodeEnablePrivateNetworkIpv6Params(args [1]string, argsEscaped bool, r *h
 		return params, &ogenerrors.DecodeParamError{
 			Name: "privateNetworkId",
 			In:   "path",
-			Err:  err,
-		}
-	}
-	// Decode header: Idempotency-Key.
-	if err := func() error {
-		cfg := uri.HeaderParameterDecodingConfig{
-			Name:    "Idempotency-Key",
-			Explode: false,
-		}
-		if err := h.HasParam(cfg); err == nil {
-			if err := h.DecodeParam(cfg, func(d uri.Decoder) error {
-				val, err := d.DecodeValue()
-				if err != nil {
-					return err
-				}
-
-				c, err := conv.ToString(val)
-				if err != nil {
-					return err
-				}
-
-				params.IdempotencyKey = c
-				return nil
-			}); err != nil {
-				return err
-			}
-			if err := func() error {
-				if err := (validate.String{
-					MinLength:     1,
-					MinLengthSet:  true,
-					MaxLength:     255,
-					MaxLengthSet:  true,
-					Email:         false,
-					Hostname:      false,
-					Regex:         nil,
-					MinNumeric:    0,
-					MinNumericSet: false,
-					MaxNumeric:    0,
-					MaxNumericSet: false,
-				}).Validate(string(params.IdempotencyKey)); err != nil {
-					return errors.Wrap(err, "string")
-				}
-				return nil
-			}(); err != nil {
-				return err
-			}
-		} else {
-			return err
-		}
-		return nil
-	}(); err != nil {
-		return params, &ogenerrors.DecodeParamError{
-			Name: "Idempotency-Key",
-			In:   "header",
 			Err:  err,
 		}
 	}
@@ -7143,9 +6002,6 @@ func decodeListSubnetsParams(args [1]string, argsEscaped bool, r *http.Request) 
 // OpenInstanceConsoleParams is parameters of open-instance-console operation.
 type OpenInstanceConsoleParams struct {
 	InstanceId uuid.UUID
-	// Reuse the same key for retries of the same action. A different request with the same key is
-	// rejected.
-	IdempotencyKey string
 }
 
 func unpackOpenInstanceConsoleParams(packed middleware.Parameters) (params OpenInstanceConsoleParams) {
@@ -7156,18 +6012,10 @@ func unpackOpenInstanceConsoleParams(packed middleware.Parameters) (params OpenI
 		}
 		params.InstanceId = packed[key].(uuid.UUID)
 	}
-	{
-		key := middleware.ParameterKey{
-			Name: "Idempotency-Key",
-			In:   "header",
-		}
-		params.IdempotencyKey = packed[key].(string)
-	}
 	return params
 }
 
 func decodeOpenInstanceConsoleParams(args [1]string, argsEscaped bool, r *http.Request) (params OpenInstanceConsoleParams, _ error) {
-	h := uri.NewHeaderDecoder(r.Header)
 	// Decode path: instanceId.
 	if err := func() error {
 		param := args[0]
@@ -7210,60 +6058,6 @@ func decodeOpenInstanceConsoleParams(args [1]string, argsEscaped bool, r *http.R
 		return params, &ogenerrors.DecodeParamError{
 			Name: "instanceId",
 			In:   "path",
-			Err:  err,
-		}
-	}
-	// Decode header: Idempotency-Key.
-	if err := func() error {
-		cfg := uri.HeaderParameterDecodingConfig{
-			Name:    "Idempotency-Key",
-			Explode: false,
-		}
-		if err := h.HasParam(cfg); err == nil {
-			if err := h.DecodeParam(cfg, func(d uri.Decoder) error {
-				val, err := d.DecodeValue()
-				if err != nil {
-					return err
-				}
-
-				c, err := conv.ToString(val)
-				if err != nil {
-					return err
-				}
-
-				params.IdempotencyKey = c
-				return nil
-			}); err != nil {
-				return err
-			}
-			if err := func() error {
-				if err := (validate.String{
-					MinLength:     1,
-					MinLengthSet:  true,
-					MaxLength:     255,
-					MaxLengthSet:  true,
-					Email:         false,
-					Hostname:      false,
-					Regex:         nil,
-					MinNumeric:    0,
-					MinNumericSet: false,
-					MaxNumeric:    0,
-					MaxNumericSet: false,
-				}).Validate(string(params.IdempotencyKey)); err != nil {
-					return errors.Wrap(err, "string")
-				}
-				return nil
-			}(); err != nil {
-				return err
-			}
-		} else {
-			return err
-		}
-		return nil
-	}(); err != nil {
-		return params, &ogenerrors.DecodeParamError{
-			Name: "Idempotency-Key",
-			In:   "header",
 			Err:  err,
 		}
 	}
@@ -7403,9 +6197,6 @@ func decodeRebootInstanceParams(args [1]string, argsEscaped bool, r *http.Reques
 // RebuildInstanceParams is parameters of rebuild-instance operation.
 type RebuildInstanceParams struct {
 	InstanceId uuid.UUID
-	// Reuse the same key for retries of the same action. A different request with the same key is
-	// rejected.
-	IdempotencyKey string
 }
 
 func unpackRebuildInstanceParams(packed middleware.Parameters) (params RebuildInstanceParams) {
@@ -7416,18 +6207,10 @@ func unpackRebuildInstanceParams(packed middleware.Parameters) (params RebuildIn
 		}
 		params.InstanceId = packed[key].(uuid.UUID)
 	}
-	{
-		key := middleware.ParameterKey{
-			Name: "Idempotency-Key",
-			In:   "header",
-		}
-		params.IdempotencyKey = packed[key].(string)
-	}
 	return params
 }
 
 func decodeRebuildInstanceParams(args [1]string, argsEscaped bool, r *http.Request) (params RebuildInstanceParams, _ error) {
-	h := uri.NewHeaderDecoder(r.Header)
 	// Decode path: instanceId.
 	if err := func() error {
 		param := args[0]
@@ -7470,60 +6253,6 @@ func decodeRebuildInstanceParams(args [1]string, argsEscaped bool, r *http.Reque
 		return params, &ogenerrors.DecodeParamError{
 			Name: "instanceId",
 			In:   "path",
-			Err:  err,
-		}
-	}
-	// Decode header: Idempotency-Key.
-	if err := func() error {
-		cfg := uri.HeaderParameterDecodingConfig{
-			Name:    "Idempotency-Key",
-			Explode: false,
-		}
-		if err := h.HasParam(cfg); err == nil {
-			if err := h.DecodeParam(cfg, func(d uri.Decoder) error {
-				val, err := d.DecodeValue()
-				if err != nil {
-					return err
-				}
-
-				c, err := conv.ToString(val)
-				if err != nil {
-					return err
-				}
-
-				params.IdempotencyKey = c
-				return nil
-			}); err != nil {
-				return err
-			}
-			if err := func() error {
-				if err := (validate.String{
-					MinLength:     1,
-					MinLengthSet:  true,
-					MaxLength:     255,
-					MaxLengthSet:  true,
-					Email:         false,
-					Hostname:      false,
-					Regex:         nil,
-					MinNumeric:    0,
-					MinNumericSet: false,
-					MaxNumeric:    0,
-					MaxNumericSet: false,
-				}).Validate(string(params.IdempotencyKey)); err != nil {
-					return errors.Wrap(err, "string")
-				}
-				return nil
-			}(); err != nil {
-				return err
-			}
-		} else {
-			return err
-		}
-		return nil
-	}(); err != nil {
-		return params, &ogenerrors.DecodeParamError{
-			Name: "Idempotency-Key",
-			In:   "header",
 			Err:  err,
 		}
 	}
@@ -7663,9 +6392,6 @@ func decodeReleaseFloatingIPParams(args [1]string, argsEscaped bool, r *http.Req
 // RenameBackupParams is parameters of rename-backup operation.
 type RenameBackupParams struct {
 	BackupId uuid.UUID
-	// Reuse the same key for retries of the same action. A different request with the same key is
-	// rejected.
-	IdempotencyKey string
 }
 
 func unpackRenameBackupParams(packed middleware.Parameters) (params RenameBackupParams) {
@@ -7676,18 +6402,10 @@ func unpackRenameBackupParams(packed middleware.Parameters) (params RenameBackup
 		}
 		params.BackupId = packed[key].(uuid.UUID)
 	}
-	{
-		key := middleware.ParameterKey{
-			Name: "Idempotency-Key",
-			In:   "header",
-		}
-		params.IdempotencyKey = packed[key].(string)
-	}
 	return params
 }
 
 func decodeRenameBackupParams(args [1]string, argsEscaped bool, r *http.Request) (params RenameBackupParams, _ error) {
-	h := uri.NewHeaderDecoder(r.Header)
 	// Decode path: backupId.
 	if err := func() error {
 		param := args[0]
@@ -7733,69 +6451,12 @@ func decodeRenameBackupParams(args [1]string, argsEscaped bool, r *http.Request)
 			Err:  err,
 		}
 	}
-	// Decode header: Idempotency-Key.
-	if err := func() error {
-		cfg := uri.HeaderParameterDecodingConfig{
-			Name:    "Idempotency-Key",
-			Explode: false,
-		}
-		if err := h.HasParam(cfg); err == nil {
-			if err := h.DecodeParam(cfg, func(d uri.Decoder) error {
-				val, err := d.DecodeValue()
-				if err != nil {
-					return err
-				}
-
-				c, err := conv.ToString(val)
-				if err != nil {
-					return err
-				}
-
-				params.IdempotencyKey = c
-				return nil
-			}); err != nil {
-				return err
-			}
-			if err := func() error {
-				if err := (validate.String{
-					MinLength:     1,
-					MinLengthSet:  true,
-					MaxLength:     255,
-					MaxLengthSet:  true,
-					Email:         false,
-					Hostname:      false,
-					Regex:         nil,
-					MinNumeric:    0,
-					MinNumericSet: false,
-					MaxNumeric:    0,
-					MaxNumericSet: false,
-				}).Validate(string(params.IdempotencyKey)); err != nil {
-					return errors.Wrap(err, "string")
-				}
-				return nil
-			}(); err != nil {
-				return err
-			}
-		} else {
-			return err
-		}
-		return nil
-	}(); err != nil {
-		return params, &ogenerrors.DecodeParamError{
-			Name: "Idempotency-Key",
-			In:   "header",
-			Err:  err,
-		}
-	}
 	return params, nil
 }
 
 // RenameDiskParams is parameters of rename-disk operation.
 type RenameDiskParams struct {
 	DiskId uuid.UUID
-	// Reuse the same key for retries of the same action. A different request with the same key is
-	// rejected.
-	IdempotencyKey string
 }
 
 func unpackRenameDiskParams(packed middleware.Parameters) (params RenameDiskParams) {
@@ -7806,18 +6467,10 @@ func unpackRenameDiskParams(packed middleware.Parameters) (params RenameDiskPara
 		}
 		params.DiskId = packed[key].(uuid.UUID)
 	}
-	{
-		key := middleware.ParameterKey{
-			Name: "Idempotency-Key",
-			In:   "header",
-		}
-		params.IdempotencyKey = packed[key].(string)
-	}
 	return params
 }
 
 func decodeRenameDiskParams(args [1]string, argsEscaped bool, r *http.Request) (params RenameDiskParams, _ error) {
-	h := uri.NewHeaderDecoder(r.Header)
 	// Decode path: diskId.
 	if err := func() error {
 		param := args[0]
@@ -7863,69 +6516,12 @@ func decodeRenameDiskParams(args [1]string, argsEscaped bool, r *http.Request) (
 			Err:  err,
 		}
 	}
-	// Decode header: Idempotency-Key.
-	if err := func() error {
-		cfg := uri.HeaderParameterDecodingConfig{
-			Name:    "Idempotency-Key",
-			Explode: false,
-		}
-		if err := h.HasParam(cfg); err == nil {
-			if err := h.DecodeParam(cfg, func(d uri.Decoder) error {
-				val, err := d.DecodeValue()
-				if err != nil {
-					return err
-				}
-
-				c, err := conv.ToString(val)
-				if err != nil {
-					return err
-				}
-
-				params.IdempotencyKey = c
-				return nil
-			}); err != nil {
-				return err
-			}
-			if err := func() error {
-				if err := (validate.String{
-					MinLength:     1,
-					MinLengthSet:  true,
-					MaxLength:     255,
-					MaxLengthSet:  true,
-					Email:         false,
-					Hostname:      false,
-					Regex:         nil,
-					MinNumeric:    0,
-					MinNumericSet: false,
-					MaxNumeric:    0,
-					MaxNumericSet: false,
-				}).Validate(string(params.IdempotencyKey)); err != nil {
-					return errors.Wrap(err, "string")
-				}
-				return nil
-			}(); err != nil {
-				return err
-			}
-		} else {
-			return err
-		}
-		return nil
-	}(); err != nil {
-		return params, &ogenerrors.DecodeParamError{
-			Name: "Idempotency-Key",
-			In:   "header",
-			Err:  err,
-		}
-	}
 	return params, nil
 }
 
 // RenameInstanceParams is parameters of rename-instance operation.
 type RenameInstanceParams struct {
 	InstanceId uuid.UUID
-	// Reuse the same key for retries of the same action. A different request with the same key is
-	// rejected.
-	IdempotencyKey string
 }
 
 func unpackRenameInstanceParams(packed middleware.Parameters) (params RenameInstanceParams) {
@@ -7936,18 +6532,10 @@ func unpackRenameInstanceParams(packed middleware.Parameters) (params RenameInst
 		}
 		params.InstanceId = packed[key].(uuid.UUID)
 	}
-	{
-		key := middleware.ParameterKey{
-			Name: "Idempotency-Key",
-			In:   "header",
-		}
-		params.IdempotencyKey = packed[key].(string)
-	}
 	return params
 }
 
 func decodeRenameInstanceParams(args [1]string, argsEscaped bool, r *http.Request) (params RenameInstanceParams, _ error) {
-	h := uri.NewHeaderDecoder(r.Header)
 	// Decode path: instanceId.
 	if err := func() error {
 		param := args[0]
@@ -7993,69 +6581,12 @@ func decodeRenameInstanceParams(args [1]string, argsEscaped bool, r *http.Reques
 			Err:  err,
 		}
 	}
-	// Decode header: Idempotency-Key.
-	if err := func() error {
-		cfg := uri.HeaderParameterDecodingConfig{
-			Name:    "Idempotency-Key",
-			Explode: false,
-		}
-		if err := h.HasParam(cfg); err == nil {
-			if err := h.DecodeParam(cfg, func(d uri.Decoder) error {
-				val, err := d.DecodeValue()
-				if err != nil {
-					return err
-				}
-
-				c, err := conv.ToString(val)
-				if err != nil {
-					return err
-				}
-
-				params.IdempotencyKey = c
-				return nil
-			}); err != nil {
-				return err
-			}
-			if err := func() error {
-				if err := (validate.String{
-					MinLength:     1,
-					MinLengthSet:  true,
-					MaxLength:     255,
-					MaxLengthSet:  true,
-					Email:         false,
-					Hostname:      false,
-					Regex:         nil,
-					MinNumeric:    0,
-					MinNumericSet: false,
-					MaxNumeric:    0,
-					MaxNumericSet: false,
-				}).Validate(string(params.IdempotencyKey)); err != nil {
-					return errors.Wrap(err, "string")
-				}
-				return nil
-			}(); err != nil {
-				return err
-			}
-		} else {
-			return err
-		}
-		return nil
-	}(); err != nil {
-		return params, &ogenerrors.DecodeParamError{
-			Name: "Idempotency-Key",
-			In:   "header",
-			Err:  err,
-		}
-	}
 	return params, nil
 }
 
 // RenamePrivateImageParams is parameters of rename-private-image operation.
 type RenamePrivateImageParams struct {
 	PrivateImageId uuid.UUID
-	// Reuse the same key for retries of the same action. A different request with the same key is
-	// rejected.
-	IdempotencyKey string
 }
 
 func unpackRenamePrivateImageParams(packed middleware.Parameters) (params RenamePrivateImageParams) {
@@ -8066,18 +6597,10 @@ func unpackRenamePrivateImageParams(packed middleware.Parameters) (params Rename
 		}
 		params.PrivateImageId = packed[key].(uuid.UUID)
 	}
-	{
-		key := middleware.ParameterKey{
-			Name: "Idempotency-Key",
-			In:   "header",
-		}
-		params.IdempotencyKey = packed[key].(string)
-	}
 	return params
 }
 
 func decodeRenamePrivateImageParams(args [1]string, argsEscaped bool, r *http.Request) (params RenamePrivateImageParams, _ error) {
-	h := uri.NewHeaderDecoder(r.Header)
 	// Decode path: privateImageId.
 	if err := func() error {
 		param := args[0]
@@ -8123,69 +6646,12 @@ func decodeRenamePrivateImageParams(args [1]string, argsEscaped bool, r *http.Re
 			Err:  err,
 		}
 	}
-	// Decode header: Idempotency-Key.
-	if err := func() error {
-		cfg := uri.HeaderParameterDecodingConfig{
-			Name:    "Idempotency-Key",
-			Explode: false,
-		}
-		if err := h.HasParam(cfg); err == nil {
-			if err := h.DecodeParam(cfg, func(d uri.Decoder) error {
-				val, err := d.DecodeValue()
-				if err != nil {
-					return err
-				}
-
-				c, err := conv.ToString(val)
-				if err != nil {
-					return err
-				}
-
-				params.IdempotencyKey = c
-				return nil
-			}); err != nil {
-				return err
-			}
-			if err := func() error {
-				if err := (validate.String{
-					MinLength:     1,
-					MinLengthSet:  true,
-					MaxLength:     255,
-					MaxLengthSet:  true,
-					Email:         false,
-					Hostname:      false,
-					Regex:         nil,
-					MinNumeric:    0,
-					MinNumericSet: false,
-					MaxNumeric:    0,
-					MaxNumericSet: false,
-				}).Validate(string(params.IdempotencyKey)); err != nil {
-					return errors.Wrap(err, "string")
-				}
-				return nil
-			}(); err != nil {
-				return err
-			}
-		} else {
-			return err
-		}
-		return nil
-	}(); err != nil {
-		return params, &ogenerrors.DecodeParamError{
-			Name: "Idempotency-Key",
-			In:   "header",
-			Err:  err,
-		}
-	}
 	return params, nil
 }
 
 // RenamePrivateNetworkParams is parameters of rename-private-network operation.
 type RenamePrivateNetworkParams struct {
 	PrivateNetworkId uuid.UUID
-	// Reuse the same key for retries of the same action. A different request with the same key is
-	// rejected.
-	IdempotencyKey string
 }
 
 func unpackRenamePrivateNetworkParams(packed middleware.Parameters) (params RenamePrivateNetworkParams) {
@@ -8196,18 +6662,10 @@ func unpackRenamePrivateNetworkParams(packed middleware.Parameters) (params Rena
 		}
 		params.PrivateNetworkId = packed[key].(uuid.UUID)
 	}
-	{
-		key := middleware.ParameterKey{
-			Name: "Idempotency-Key",
-			In:   "header",
-		}
-		params.IdempotencyKey = packed[key].(string)
-	}
 	return params
 }
 
 func decodeRenamePrivateNetworkParams(args [1]string, argsEscaped bool, r *http.Request) (params RenamePrivateNetworkParams, _ error) {
-	h := uri.NewHeaderDecoder(r.Header)
 	// Decode path: privateNetworkId.
 	if err := func() error {
 		param := args[0]
@@ -8253,69 +6711,12 @@ func decodeRenamePrivateNetworkParams(args [1]string, argsEscaped bool, r *http.
 			Err:  err,
 		}
 	}
-	// Decode header: Idempotency-Key.
-	if err := func() error {
-		cfg := uri.HeaderParameterDecodingConfig{
-			Name:    "Idempotency-Key",
-			Explode: false,
-		}
-		if err := h.HasParam(cfg); err == nil {
-			if err := h.DecodeParam(cfg, func(d uri.Decoder) error {
-				val, err := d.DecodeValue()
-				if err != nil {
-					return err
-				}
-
-				c, err := conv.ToString(val)
-				if err != nil {
-					return err
-				}
-
-				params.IdempotencyKey = c
-				return nil
-			}); err != nil {
-				return err
-			}
-			if err := func() error {
-				if err := (validate.String{
-					MinLength:     1,
-					MinLengthSet:  true,
-					MaxLength:     255,
-					MaxLengthSet:  true,
-					Email:         false,
-					Hostname:      false,
-					Regex:         nil,
-					MinNumeric:    0,
-					MinNumericSet: false,
-					MaxNumeric:    0,
-					MaxNumericSet: false,
-				}).Validate(string(params.IdempotencyKey)); err != nil {
-					return errors.Wrap(err, "string")
-				}
-				return nil
-			}(); err != nil {
-				return err
-			}
-		} else {
-			return err
-		}
-		return nil
-	}(); err != nil {
-		return params, &ogenerrors.DecodeParamError{
-			Name: "Idempotency-Key",
-			In:   "header",
-			Err:  err,
-		}
-	}
 	return params, nil
 }
 
 // RenameSecurityGroupParams is parameters of rename-security-group operation.
 type RenameSecurityGroupParams struct {
 	SecurityGroupId uuid.UUID
-	// Reuse the same key for retries of the same action. A different request with the same key is
-	// rejected.
-	IdempotencyKey string
 }
 
 func unpackRenameSecurityGroupParams(packed middleware.Parameters) (params RenameSecurityGroupParams) {
@@ -8326,18 +6727,10 @@ func unpackRenameSecurityGroupParams(packed middleware.Parameters) (params Renam
 		}
 		params.SecurityGroupId = packed[key].(uuid.UUID)
 	}
-	{
-		key := middleware.ParameterKey{
-			Name: "Idempotency-Key",
-			In:   "header",
-		}
-		params.IdempotencyKey = packed[key].(string)
-	}
 	return params
 }
 
 func decodeRenameSecurityGroupParams(args [1]string, argsEscaped bool, r *http.Request) (params RenameSecurityGroupParams, _ error) {
-	h := uri.NewHeaderDecoder(r.Header)
 	// Decode path: securityGroupId.
 	if err := func() error {
 		param := args[0]
@@ -8383,69 +6776,12 @@ func decodeRenameSecurityGroupParams(args [1]string, argsEscaped bool, r *http.R
 			Err:  err,
 		}
 	}
-	// Decode header: Idempotency-Key.
-	if err := func() error {
-		cfg := uri.HeaderParameterDecodingConfig{
-			Name:    "Idempotency-Key",
-			Explode: false,
-		}
-		if err := h.HasParam(cfg); err == nil {
-			if err := h.DecodeParam(cfg, func(d uri.Decoder) error {
-				val, err := d.DecodeValue()
-				if err != nil {
-					return err
-				}
-
-				c, err := conv.ToString(val)
-				if err != nil {
-					return err
-				}
-
-				params.IdempotencyKey = c
-				return nil
-			}); err != nil {
-				return err
-			}
-			if err := func() error {
-				if err := (validate.String{
-					MinLength:     1,
-					MinLengthSet:  true,
-					MaxLength:     255,
-					MaxLengthSet:  true,
-					Email:         false,
-					Hostname:      false,
-					Regex:         nil,
-					MinNumeric:    0,
-					MinNumericSet: false,
-					MaxNumeric:    0,
-					MaxNumericSet: false,
-				}).Validate(string(params.IdempotencyKey)); err != nil {
-					return errors.Wrap(err, "string")
-				}
-				return nil
-			}(); err != nil {
-				return err
-			}
-		} else {
-			return err
-		}
-		return nil
-	}(); err != nil {
-		return params, &ogenerrors.DecodeParamError{
-			Name: "Idempotency-Key",
-			In:   "header",
-			Err:  err,
-		}
-	}
 	return params, nil
 }
 
 // RenameSnapshotParams is parameters of rename-snapshot operation.
 type RenameSnapshotParams struct {
 	SnapshotId uuid.UUID
-	// Reuse the same key for retries of the same action. A different request with the same key is
-	// rejected.
-	IdempotencyKey string
 }
 
 func unpackRenameSnapshotParams(packed middleware.Parameters) (params RenameSnapshotParams) {
@@ -8456,18 +6792,10 @@ func unpackRenameSnapshotParams(packed middleware.Parameters) (params RenameSnap
 		}
 		params.SnapshotId = packed[key].(uuid.UUID)
 	}
-	{
-		key := middleware.ParameterKey{
-			Name: "Idempotency-Key",
-			In:   "header",
-		}
-		params.IdempotencyKey = packed[key].(string)
-	}
 	return params
 }
 
 func decodeRenameSnapshotParams(args [1]string, argsEscaped bool, r *http.Request) (params RenameSnapshotParams, _ error) {
-	h := uri.NewHeaderDecoder(r.Header)
 	// Decode path: snapshotId.
 	if err := func() error {
 		param := args[0]
@@ -8513,69 +6841,12 @@ func decodeRenameSnapshotParams(args [1]string, argsEscaped bool, r *http.Reques
 			Err:  err,
 		}
 	}
-	// Decode header: Idempotency-Key.
-	if err := func() error {
-		cfg := uri.HeaderParameterDecodingConfig{
-			Name:    "Idempotency-Key",
-			Explode: false,
-		}
-		if err := h.HasParam(cfg); err == nil {
-			if err := h.DecodeParam(cfg, func(d uri.Decoder) error {
-				val, err := d.DecodeValue()
-				if err != nil {
-					return err
-				}
-
-				c, err := conv.ToString(val)
-				if err != nil {
-					return err
-				}
-
-				params.IdempotencyKey = c
-				return nil
-			}); err != nil {
-				return err
-			}
-			if err := func() error {
-				if err := (validate.String{
-					MinLength:     1,
-					MinLengthSet:  true,
-					MaxLength:     255,
-					MaxLengthSet:  true,
-					Email:         false,
-					Hostname:      false,
-					Regex:         nil,
-					MinNumeric:    0,
-					MinNumericSet: false,
-					MaxNumeric:    0,
-					MaxNumericSet: false,
-				}).Validate(string(params.IdempotencyKey)); err != nil {
-					return errors.Wrap(err, "string")
-				}
-				return nil
-			}(); err != nil {
-				return err
-			}
-		} else {
-			return err
-		}
-		return nil
-	}(); err != nil {
-		return params, &ogenerrors.DecodeParamError{
-			Name: "Idempotency-Key",
-			In:   "header",
-			Err:  err,
-		}
-	}
 	return params, nil
 }
 
 // ResetInstancePasswordParams is parameters of reset-instance-password operation.
 type ResetInstancePasswordParams struct {
 	InstanceId uuid.UUID
-	// Reuse the same key for retries of the same action. A different request with the same key is
-	// rejected.
-	IdempotencyKey string
 }
 
 func unpackResetInstancePasswordParams(packed middleware.Parameters) (params ResetInstancePasswordParams) {
@@ -8586,18 +6857,10 @@ func unpackResetInstancePasswordParams(packed middleware.Parameters) (params Res
 		}
 		params.InstanceId = packed[key].(uuid.UUID)
 	}
-	{
-		key := middleware.ParameterKey{
-			Name: "Idempotency-Key",
-			In:   "header",
-		}
-		params.IdempotencyKey = packed[key].(string)
-	}
 	return params
 }
 
 func decodeResetInstancePasswordParams(args [1]string, argsEscaped bool, r *http.Request) (params ResetInstancePasswordParams, _ error) {
-	h := uri.NewHeaderDecoder(r.Header)
 	// Decode path: instanceId.
 	if err := func() error {
 		param := args[0]
@@ -8640,60 +6903,6 @@ func decodeResetInstancePasswordParams(args [1]string, argsEscaped bool, r *http
 		return params, &ogenerrors.DecodeParamError{
 			Name: "instanceId",
 			In:   "path",
-			Err:  err,
-		}
-	}
-	// Decode header: Idempotency-Key.
-	if err := func() error {
-		cfg := uri.HeaderParameterDecodingConfig{
-			Name:    "Idempotency-Key",
-			Explode: false,
-		}
-		if err := h.HasParam(cfg); err == nil {
-			if err := h.DecodeParam(cfg, func(d uri.Decoder) error {
-				val, err := d.DecodeValue()
-				if err != nil {
-					return err
-				}
-
-				c, err := conv.ToString(val)
-				if err != nil {
-					return err
-				}
-
-				params.IdempotencyKey = c
-				return nil
-			}); err != nil {
-				return err
-			}
-			if err := func() error {
-				if err := (validate.String{
-					MinLength:     1,
-					MinLengthSet:  true,
-					MaxLength:     255,
-					MaxLengthSet:  true,
-					Email:         false,
-					Hostname:      false,
-					Regex:         nil,
-					MinNumeric:    0,
-					MinNumericSet: false,
-					MaxNumeric:    0,
-					MaxNumericSet: false,
-				}).Validate(string(params.IdempotencyKey)); err != nil {
-					return errors.Wrap(err, "string")
-				}
-				return nil
-			}(); err != nil {
-				return err
-			}
-		} else {
-			return err
-		}
-		return nil
-	}(); err != nil {
-		return params, &ogenerrors.DecodeParamError{
-			Name: "Idempotency-Key",
-			In:   "header",
 			Err:  err,
 		}
 	}
@@ -9158,9 +7367,6 @@ func decodeRevertInstanceResizeParams(args [1]string, argsEscaped bool, r *http.
 // RunInstanceCommandParams is parameters of run-instance-command operation.
 type RunInstanceCommandParams struct {
 	InstanceId uuid.UUID
-	// Reuse the same key for retries of the same action. A different request with the same key is
-	// rejected.
-	IdempotencyKey string
 }
 
 func unpackRunInstanceCommandParams(packed middleware.Parameters) (params RunInstanceCommandParams) {
@@ -9171,18 +7377,10 @@ func unpackRunInstanceCommandParams(packed middleware.Parameters) (params RunIns
 		}
 		params.InstanceId = packed[key].(uuid.UUID)
 	}
-	{
-		key := middleware.ParameterKey{
-			Name: "Idempotency-Key",
-			In:   "header",
-		}
-		params.IdempotencyKey = packed[key].(string)
-	}
 	return params
 }
 
 func decodeRunInstanceCommandParams(args [1]string, argsEscaped bool, r *http.Request) (params RunInstanceCommandParams, _ error) {
-	h := uri.NewHeaderDecoder(r.Header)
 	// Decode path: instanceId.
 	if err := func() error {
 		param := args[0]
@@ -9225,60 +7423,6 @@ func decodeRunInstanceCommandParams(args [1]string, argsEscaped bool, r *http.Re
 		return params, &ogenerrors.DecodeParamError{
 			Name: "instanceId",
 			In:   "path",
-			Err:  err,
-		}
-	}
-	// Decode header: Idempotency-Key.
-	if err := func() error {
-		cfg := uri.HeaderParameterDecodingConfig{
-			Name:    "Idempotency-Key",
-			Explode: false,
-		}
-		if err := h.HasParam(cfg); err == nil {
-			if err := h.DecodeParam(cfg, func(d uri.Decoder) error {
-				val, err := d.DecodeValue()
-				if err != nil {
-					return err
-				}
-
-				c, err := conv.ToString(val)
-				if err != nil {
-					return err
-				}
-
-				params.IdempotencyKey = c
-				return nil
-			}); err != nil {
-				return err
-			}
-			if err := func() error {
-				if err := (validate.String{
-					MinLength:     1,
-					MinLengthSet:  true,
-					MaxLength:     255,
-					MaxLengthSet:  true,
-					Email:         false,
-					Hostname:      false,
-					Regex:         nil,
-					MinNumeric:    0,
-					MinNumericSet: false,
-					MaxNumeric:    0,
-					MaxNumericSet: false,
-				}).Validate(string(params.IdempotencyKey)); err != nil {
-					return errors.Wrap(err, "string")
-				}
-				return nil
-			}(); err != nil {
-				return err
-			}
-		} else {
-			return err
-		}
-		return nil
-	}(); err != nil {
-		return params, &ogenerrors.DecodeParamError{
-			Name: "Idempotency-Key",
-			In:   "header",
 			Err:  err,
 		}
 	}
@@ -9353,9 +7497,6 @@ func decodeSetFloatingIPBandwidthParams(args [1]string, argsEscaped bool, r *htt
 // SetInstanceLabelsParams is parameters of set-instance-labels operation.
 type SetInstanceLabelsParams struct {
 	InstanceId uuid.UUID
-	// Reuse the same key for retries of the same action. A different request with the same key is
-	// rejected.
-	IdempotencyKey string
 }
 
 func unpackSetInstanceLabelsParams(packed middleware.Parameters) (params SetInstanceLabelsParams) {
@@ -9366,18 +7507,10 @@ func unpackSetInstanceLabelsParams(packed middleware.Parameters) (params SetInst
 		}
 		params.InstanceId = packed[key].(uuid.UUID)
 	}
-	{
-		key := middleware.ParameterKey{
-			Name: "Idempotency-Key",
-			In:   "header",
-		}
-		params.IdempotencyKey = packed[key].(string)
-	}
 	return params
 }
 
 func decodeSetInstanceLabelsParams(args [1]string, argsEscaped bool, r *http.Request) (params SetInstanceLabelsParams, _ error) {
-	h := uri.NewHeaderDecoder(r.Header)
 	// Decode path: instanceId.
 	if err := func() error {
 		param := args[0]
@@ -9423,69 +7556,12 @@ func decodeSetInstanceLabelsParams(args [1]string, argsEscaped bool, r *http.Req
 			Err:  err,
 		}
 	}
-	// Decode header: Idempotency-Key.
-	if err := func() error {
-		cfg := uri.HeaderParameterDecodingConfig{
-			Name:    "Idempotency-Key",
-			Explode: false,
-		}
-		if err := h.HasParam(cfg); err == nil {
-			if err := h.DecodeParam(cfg, func(d uri.Decoder) error {
-				val, err := d.DecodeValue()
-				if err != nil {
-					return err
-				}
-
-				c, err := conv.ToString(val)
-				if err != nil {
-					return err
-				}
-
-				params.IdempotencyKey = c
-				return nil
-			}); err != nil {
-				return err
-			}
-			if err := func() error {
-				if err := (validate.String{
-					MinLength:     1,
-					MinLengthSet:  true,
-					MaxLength:     255,
-					MaxLengthSet:  true,
-					Email:         false,
-					Hostname:      false,
-					Regex:         nil,
-					MinNumeric:    0,
-					MinNumericSet: false,
-					MaxNumeric:    0,
-					MaxNumericSet: false,
-				}).Validate(string(params.IdempotencyKey)); err != nil {
-					return errors.Wrap(err, "string")
-				}
-				return nil
-			}(); err != nil {
-				return err
-			}
-		} else {
-			return err
-		}
-		return nil
-	}(); err != nil {
-		return params, &ogenerrors.DecodeParamError{
-			Name: "Idempotency-Key",
-			In:   "header",
-			Err:  err,
-		}
-	}
 	return params, nil
 }
 
 // SetInstanceNotesParams is parameters of set-instance-notes operation.
 type SetInstanceNotesParams struct {
 	InstanceId uuid.UUID
-	// Reuse the same key for retries of the same action. A different request with the same key is
-	// rejected.
-	IdempotencyKey string
 }
 
 func unpackSetInstanceNotesParams(packed middleware.Parameters) (params SetInstanceNotesParams) {
@@ -9496,18 +7572,10 @@ func unpackSetInstanceNotesParams(packed middleware.Parameters) (params SetInsta
 		}
 		params.InstanceId = packed[key].(uuid.UUID)
 	}
-	{
-		key := middleware.ParameterKey{
-			Name: "Idempotency-Key",
-			In:   "header",
-		}
-		params.IdempotencyKey = packed[key].(string)
-	}
 	return params
 }
 
 func decodeSetInstanceNotesParams(args [1]string, argsEscaped bool, r *http.Request) (params SetInstanceNotesParams, _ error) {
-	h := uri.NewHeaderDecoder(r.Header)
 	// Decode path: instanceId.
 	if err := func() error {
 		param := args[0]
@@ -9550,60 +7618,6 @@ func decodeSetInstanceNotesParams(args [1]string, argsEscaped bool, r *http.Requ
 		return params, &ogenerrors.DecodeParamError{
 			Name: "instanceId",
 			In:   "path",
-			Err:  err,
-		}
-	}
-	// Decode header: Idempotency-Key.
-	if err := func() error {
-		cfg := uri.HeaderParameterDecodingConfig{
-			Name:    "Idempotency-Key",
-			Explode: false,
-		}
-		if err := h.HasParam(cfg); err == nil {
-			if err := h.DecodeParam(cfg, func(d uri.Decoder) error {
-				val, err := d.DecodeValue()
-				if err != nil {
-					return err
-				}
-
-				c, err := conv.ToString(val)
-				if err != nil {
-					return err
-				}
-
-				params.IdempotencyKey = c
-				return nil
-			}); err != nil {
-				return err
-			}
-			if err := func() error {
-				if err := (validate.String{
-					MinLength:     1,
-					MinLengthSet:  true,
-					MaxLength:     255,
-					MaxLengthSet:  true,
-					Email:         false,
-					Hostname:      false,
-					Regex:         nil,
-					MinNumeric:    0,
-					MinNumericSet: false,
-					MaxNumeric:    0,
-					MaxNumericSet: false,
-				}).Validate(string(params.IdempotencyKey)); err != nil {
-					return errors.Wrap(err, "string")
-				}
-				return nil
-			}(); err != nil {
-				return err
-			}
-		} else {
-			return err
-		}
-		return nil
-	}(); err != nil {
-		return params, &ogenerrors.DecodeParamError{
-			Name: "Idempotency-Key",
-			In:   "header",
 			Err:  err,
 		}
 	}
@@ -10020,9 +8034,6 @@ func decodeSuggestSubnetCidrParams(args [1]string, argsEscaped bool, r *http.Req
 // UnbindFloatingIPParams is parameters of unbind-floating-ip operation.
 type UnbindFloatingIPParams struct {
 	FloatingIpId uuid.UUID
-	// Reuse the same key for retries of the same action. A different request with the same key is
-	// rejected.
-	IdempotencyKey string
 }
 
 func unpackUnbindFloatingIPParams(packed middleware.Parameters) (params UnbindFloatingIPParams) {
@@ -10033,18 +8044,10 @@ func unpackUnbindFloatingIPParams(packed middleware.Parameters) (params UnbindFl
 		}
 		params.FloatingIpId = packed[key].(uuid.UUID)
 	}
-	{
-		key := middleware.ParameterKey{
-			Name: "Idempotency-Key",
-			In:   "header",
-		}
-		params.IdempotencyKey = packed[key].(string)
-	}
 	return params
 }
 
 func decodeUnbindFloatingIPParams(args [1]string, argsEscaped bool, r *http.Request) (params UnbindFloatingIPParams, _ error) {
-	h := uri.NewHeaderDecoder(r.Header)
 	// Decode path: floatingIpId.
 	if err := func() error {
 		param := args[0]
@@ -10087,60 +8090,6 @@ func decodeUnbindFloatingIPParams(args [1]string, argsEscaped bool, r *http.Requ
 		return params, &ogenerrors.DecodeParamError{
 			Name: "floatingIpId",
 			In:   "path",
-			Err:  err,
-		}
-	}
-	// Decode header: Idempotency-Key.
-	if err := func() error {
-		cfg := uri.HeaderParameterDecodingConfig{
-			Name:    "Idempotency-Key",
-			Explode: false,
-		}
-		if err := h.HasParam(cfg); err == nil {
-			if err := h.DecodeParam(cfg, func(d uri.Decoder) error {
-				val, err := d.DecodeValue()
-				if err != nil {
-					return err
-				}
-
-				c, err := conv.ToString(val)
-				if err != nil {
-					return err
-				}
-
-				params.IdempotencyKey = c
-				return nil
-			}); err != nil {
-				return err
-			}
-			if err := func() error {
-				if err := (validate.String{
-					MinLength:     1,
-					MinLengthSet:  true,
-					MaxLength:     255,
-					MaxLengthSet:  true,
-					Email:         false,
-					Hostname:      false,
-					Regex:         nil,
-					MinNumeric:    0,
-					MinNumericSet: false,
-					MaxNumeric:    0,
-					MaxNumericSet: false,
-				}).Validate(string(params.IdempotencyKey)); err != nil {
-					return errors.Wrap(err, "string")
-				}
-				return nil
-			}(); err != nil {
-				return err
-			}
-		} else {
-			return err
-		}
-		return nil
-	}(); err != nil {
-		return params, &ogenerrors.DecodeParamError{
-			Name: "Idempotency-Key",
-			In:   "header",
 			Err:  err,
 		}
 	}

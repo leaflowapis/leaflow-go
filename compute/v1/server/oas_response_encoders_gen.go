@@ -38,9 +38,9 @@ func encodeAttachDiskResponse(response *Task, w http.ResponseWriter, span trace.
 	return nil
 }
 
-func encodeAttachInstanceFloatingIPResponse(response *Task, w http.ResponseWriter, span trace.Span) error {
+func encodeAttachInstanceFloatingIPResponse(response *FloatingIPResource, w http.ResponseWriter, span trace.Span) error {
 	w.Header().Set("Content-Type", "application/json; charset=utf-8")
-	w.WriteHeader(202)
+	w.WriteHeader(200)
 
 	e := new(jx.Encoder)
 	response.Encode(e)
@@ -352,9 +352,9 @@ func encodeDetachDiskResponse(response *Task, w http.ResponseWriter, span trace.
 	return nil
 }
 
-func encodeDetachInstanceFloatingIPResponse(response *Task, w http.ResponseWriter, span trace.Span) error {
+func encodeDetachInstanceFloatingIPResponse(response *FloatingIPResource, w http.ResponseWriter, span trace.Span) error {
 	w.Header().Set("Content-Type", "application/json; charset=utf-8")
-	w.WriteHeader(202)
+	w.WriteHeader(200)
 
 	e := new(jx.Encoder)
 	response.Encode(e)
