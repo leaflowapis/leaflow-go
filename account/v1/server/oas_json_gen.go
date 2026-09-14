@@ -3589,6 +3589,14 @@ func (s *ProjectResource) Encode(e *jx.Encoder) {
 // encodeFields encodes fields.
 func (s *ProjectResource) encodeFields(e *jx.Encoder) {
 	{
+		e.FieldStart("locked_at")
+		s.LockedAt.Encode(e, json.EncodeDateTime)
+	}
+	{
+		e.FieldStart("lock_reason")
+		e.Str(s.LockReason)
+	}
+	{
 		e.FieldStart("ban_reason")
 		e.Str(s.BanReason)
 	}
@@ -3630,17 +3638,19 @@ func (s *ProjectResource) encodeFields(e *jx.Encoder) {
 	}
 }
 
-var jsonFieldsNameOfProjectResource = [10]string{
-	0: "ban_reason",
-	1: "created_at",
-	2: "created_by",
-	3: "deleted_at",
-	4: "description",
-	5: "id",
-	6: "name",
-	7: "status",
-	8: "status_reason",
-	9: "updated_at",
+var jsonFieldsNameOfProjectResource = [12]string{
+	0:  "locked_at",
+	1:  "lock_reason",
+	2:  "ban_reason",
+	3:  "created_at",
+	4:  "created_by",
+	5:  "deleted_at",
+	6:  "description",
+	7:  "id",
+	8:  "name",
+	9:  "status",
+	10: "status_reason",
+	11: "updated_at",
 }
 
 // Decode decodes ProjectResource from json.
@@ -3652,8 +3662,30 @@ func (s *ProjectResource) Decode(d *jx.Decoder) error {
 
 	if err := d.ObjBytes(func(d *jx.Decoder, k []byte) error {
 		switch string(k) {
-		case "ban_reason":
+		case "locked_at":
 			requiredBitSet[0] |= 1 << 0
+			if err := func() error {
+				if err := s.LockedAt.Decode(d, json.DecodeDateTime); err != nil {
+					return err
+				}
+				return nil
+			}(); err != nil {
+				return errors.Wrap(err, "decode field \"locked_at\"")
+			}
+		case "lock_reason":
+			requiredBitSet[0] |= 1 << 1
+			if err := func() error {
+				v, err := d.Str()
+				s.LockReason = string(v)
+				if err != nil {
+					return err
+				}
+				return nil
+			}(); err != nil {
+				return errors.Wrap(err, "decode field \"lock_reason\"")
+			}
+		case "ban_reason":
+			requiredBitSet[0] |= 1 << 2
 			if err := func() error {
 				v, err := d.Str()
 				s.BanReason = string(v)
@@ -3665,7 +3697,7 @@ func (s *ProjectResource) Decode(d *jx.Decoder) error {
 				return errors.Wrap(err, "decode field \"ban_reason\"")
 			}
 		case "created_at":
-			requiredBitSet[0] |= 1 << 1
+			requiredBitSet[0] |= 1 << 3
 			if err := func() error {
 				v, err := json.DecodeDateTime(d)
 				s.CreatedAt = v
@@ -3677,7 +3709,7 @@ func (s *ProjectResource) Decode(d *jx.Decoder) error {
 				return errors.Wrap(err, "decode field \"created_at\"")
 			}
 		case "created_by":
-			requiredBitSet[0] |= 1 << 2
+			requiredBitSet[0] |= 1 << 4
 			if err := func() error {
 				v, err := d.Str()
 				s.CreatedBy = string(v)
@@ -3689,7 +3721,7 @@ func (s *ProjectResource) Decode(d *jx.Decoder) error {
 				return errors.Wrap(err, "decode field \"created_by\"")
 			}
 		case "deleted_at":
-			requiredBitSet[0] |= 1 << 3
+			requiredBitSet[0] |= 1 << 5
 			if err := func() error {
 				if err := s.DeletedAt.Decode(d, json.DecodeDateTime); err != nil {
 					return err
@@ -3699,7 +3731,7 @@ func (s *ProjectResource) Decode(d *jx.Decoder) error {
 				return errors.Wrap(err, "decode field \"deleted_at\"")
 			}
 		case "description":
-			requiredBitSet[0] |= 1 << 4
+			requiredBitSet[0] |= 1 << 6
 			if err := func() error {
 				v, err := d.Str()
 				s.Description = string(v)
@@ -3711,7 +3743,7 @@ func (s *ProjectResource) Decode(d *jx.Decoder) error {
 				return errors.Wrap(err, "decode field \"description\"")
 			}
 		case "id":
-			requiredBitSet[0] |= 1 << 5
+			requiredBitSet[0] |= 1 << 7
 			if err := func() error {
 				v, err := json.DecodeUUID(d)
 				s.ID = v
@@ -3723,7 +3755,7 @@ func (s *ProjectResource) Decode(d *jx.Decoder) error {
 				return errors.Wrap(err, "decode field \"id\"")
 			}
 		case "name":
-			requiredBitSet[0] |= 1 << 6
+			requiredBitSet[1] |= 1 << 0
 			if err := func() error {
 				v, err := d.Str()
 				s.Name = string(v)
@@ -3735,7 +3767,7 @@ func (s *ProjectResource) Decode(d *jx.Decoder) error {
 				return errors.Wrap(err, "decode field \"name\"")
 			}
 		case "status":
-			requiredBitSet[0] |= 1 << 7
+			requiredBitSet[1] |= 1 << 1
 			if err := func() error {
 				if err := s.Status.Decode(d); err != nil {
 					return err
@@ -3745,7 +3777,7 @@ func (s *ProjectResource) Decode(d *jx.Decoder) error {
 				return errors.Wrap(err, "decode field \"status\"")
 			}
 		case "status_reason":
-			requiredBitSet[1] |= 1 << 0
+			requiredBitSet[1] |= 1 << 2
 			if err := func() error {
 				v, err := d.Str()
 				s.StatusReason = string(v)
@@ -3757,7 +3789,7 @@ func (s *ProjectResource) Decode(d *jx.Decoder) error {
 				return errors.Wrap(err, "decode field \"status_reason\"")
 			}
 		case "updated_at":
-			requiredBitSet[1] |= 1 << 1
+			requiredBitSet[1] |= 1 << 3
 			if err := func() error {
 				v, err := json.DecodeDateTime(d)
 				s.UpdatedAt = v
@@ -3779,7 +3811,7 @@ func (s *ProjectResource) Decode(d *jx.Decoder) error {
 	var failures []validate.FieldError
 	for i, mask := range [2]uint8{
 		0b11111111,
-		0b00000011,
+		0b00001111,
 	} {
 		if result := (requiredBitSet[i] & mask) ^ mask; result != 0 {
 			// Mask only required fields and check equality to mask using XOR.

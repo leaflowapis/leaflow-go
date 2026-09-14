@@ -521,11 +521,15 @@ type ProjectResource struct {
 	CreatedBy string    `json:"created_by"`
 
 	// DeletedAt When the project was deleted
-	DeletedAt   *time.Time            `json:"deleted_at"`
-	Description string                `json:"description"`
-	Id          openapi_types.UUID    `json:"id"`
-	Name        string                `json:"name"`
-	Status      ProjectResourceStatus `json:"status"`
+	DeletedAt   *time.Time         `json:"deleted_at"`
+	Description string             `json:"description"`
+	Id          openapi_types.UUID `json:"id"`
+	LockReason  string             `json:"lock_reason"`
+
+	// LockedAt A read-only management lock. Running resources and billing remain unchanged. Only an operator can release it.
+	LockedAt *time.Time            `json:"locked_at"`
+	Name     string                `json:"name"`
+	Status   ProjectResourceStatus `json:"status"`
 
 	// StatusReason Written for a reader; it takes part in no query
 	StatusReason string    `json:"status_reason"`

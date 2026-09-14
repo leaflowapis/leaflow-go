@@ -124,6 +124,19 @@ func encodeGetAccountBalanceResponse(response *AccountBalance, w http.ResponseWr
 	return nil
 }
 
+func encodeGetAccountProjectClosurePreviewResponse(response *ProjectClosurePreview, w http.ResponseWriter, span trace.Span) error {
+	w.Header().Set("Content-Type", "application/json; charset=utf-8")
+	w.WriteHeader(200)
+
+	e := new(jx.Encoder)
+	response.Encode(e)
+	if _, err := e.WriteTo(w); err != nil {
+		return errors.Wrap(err, "write")
+	}
+
+	return nil
+}
+
 func encodeGetBillingAccountResponse(response *BillingAccount, w http.ResponseWriter, span trace.Span) error {
 	w.Header().Set("Content-Type", "application/json; charset=utf-8")
 	w.WriteHeader(200)
@@ -190,6 +203,19 @@ func encodeGetOrderRefundQuoteResponse(response *RefundQuote, w http.ResponseWri
 }
 
 func encodeGetProjectBillingAccountResponse(response *ProjectPayer, w http.ResponseWriter, span trace.Span) error {
+	w.Header().Set("Content-Type", "application/json; charset=utf-8")
+	w.WriteHeader(200)
+
+	e := new(jx.Encoder)
+	response.Encode(e)
+	if _, err := e.WriteTo(w); err != nil {
+		return errors.Wrap(err, "write")
+	}
+
+	return nil
+}
+
+func encodeGetProjectClosurePreviewResponse(response *ProjectClosurePreview, w http.ResponseWriter, span trace.Span) error {
 	w.Header().Set("Content-Type", "application/json; charset=utf-8")
 	w.WriteHeader(200)
 
@@ -534,6 +560,19 @@ func encodeListCatalogRatesResponse(response ListCatalogRatesRes, w http.Respons
 	default:
 		return errors.Errorf("unexpected response type: %T", response)
 	}
+}
+
+func encodeListCommitmentsResponse(response *CommitmentList, w http.ResponseWriter, span trace.Span) error {
+	w.Header().Set("Content-Type", "application/json; charset=utf-8")
+	w.WriteHeader(200)
+
+	e := new(jx.Encoder)
+	response.Encode(e)
+	if _, err := e.WriteTo(w); err != nil {
+		return errors.Wrap(err, "write")
+	}
+
+	return nil
 }
 
 func encodeListCreditGrantsResponse(response *CreditGrantList, w http.ResponseWriter, span trace.Span) error {

@@ -90,6 +90,15 @@ type Handler interface {
 	//
 	// GET /account/v1/billing-accounts/{accountId}/balance
 	GetAccountBalance(ctx context.Context, params GetAccountBalanceParams) (*AccountBalance, error)
+	// GetAccountProjectClosurePreview implements get-account-project-closure-preview operation.
+	//
+	// Lists outstanding orders, subscriptions, metering and unfinished operations. Reports the next action
+	// and timing for each item. This read never performs cleanup or creates a closure request. Historical
+	// invoices and account-level purchases are retained. Billing approval alone does not prove that
+	// technical resources are absent.
+	//
+	// GET /account/v1/projects/{projectId}/closure-preview
+	GetAccountProjectClosurePreview(ctx context.Context, params GetAccountProjectClosurePreviewParams) (*ProjectClosurePreview, error)
 	// GetBillingAccount implements get-billing-account operation.
 	//
 	// Get billing account.
@@ -143,6 +152,15 @@ type Handler interface {
 	//
 	// GET /api/v1/projects/{projectId}/billing-account
 	GetProjectBillingAccount(ctx context.Context, params GetProjectBillingAccountParams) (*ProjectPayer, error)
+	// GetProjectClosurePreview implements get-project-closure-preview operation.
+	//
+	// Lists outstanding orders, subscriptions, metering and unfinished operations. Reports the next action
+	// and timing for each item. This read never performs cleanup or creates a closure request. Historical
+	// invoices and account-level purchases are retained. Billing approval alone does not prove that
+	// technical resources are absent.
+	//
+	// GET /api/v1/projects/{projectId}/closure-preview
+	GetProjectClosurePreview(ctx context.Context, params GetProjectClosurePreviewParams) (*ProjectClosurePreview, error)
 	// GetProjectOrder implements get-project-order operation.
 	//
 	// Get project order.
@@ -219,6 +237,12 @@ type Handler interface {
 	//
 	// GET /catalog/v1/rate-cards/{rateCardId}/rules
 	ListCatalogRates(ctx context.Context, params ListCatalogRatesParams) (ListCatalogRatesRes, error)
+	// ListCommitments implements ListCommitments operation.
+	//
+	// List account commercial commitments.
+	//
+	// GET /account/v1/commitments
+	ListCommitments(ctx context.Context, params ListCommitmentsParams) (*CommitmentList, error)
 	// ListCreditGrants implements list-credit-grants operation.
 	//
 	// Each grant shows what remains and what it may be used for. Credit is spent before cash and cannot be

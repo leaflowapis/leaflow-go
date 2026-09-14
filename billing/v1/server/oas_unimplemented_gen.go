@@ -122,6 +122,18 @@ func (UnimplementedHandler) GetAccountBalance(ctx context.Context, params GetAcc
 	return r, ht.ErrNotImplemented
 }
 
+// GetAccountProjectClosurePreview implements get-account-project-closure-preview operation.
+//
+// Lists outstanding orders, subscriptions, metering and unfinished operations. Reports the next action
+// and timing for each item. This read never performs cleanup or creates a closure request. Historical
+// invoices and account-level purchases are retained. Billing approval alone does not prove that
+// technical resources are absent.
+//
+// GET /account/v1/projects/{projectId}/closure-preview
+func (UnimplementedHandler) GetAccountProjectClosurePreview(ctx context.Context, params GetAccountProjectClosurePreviewParams) (r *ProjectClosurePreview, _ error) {
+	return r, ht.ErrNotImplemented
+}
+
 // GetBillingAccount implements get-billing-account operation.
 //
 // Get billing account.
@@ -190,6 +202,18 @@ func (UnimplementedHandler) GetOrderRefundQuote(ctx context.Context, params GetO
 //
 // GET /api/v1/projects/{projectId}/billing-account
 func (UnimplementedHandler) GetProjectBillingAccount(ctx context.Context, params GetProjectBillingAccountParams) (r *ProjectPayer, _ error) {
+	return r, ht.ErrNotImplemented
+}
+
+// GetProjectClosurePreview implements get-project-closure-preview operation.
+//
+// Lists outstanding orders, subscriptions, metering and unfinished operations. Reports the next action
+// and timing for each item. This read never performs cleanup or creates a closure request. Historical
+// invoices and account-level purchases are retained. Billing approval alone does not prove that
+// technical resources are absent.
+//
+// GET /api/v1/projects/{projectId}/closure-preview
+func (UnimplementedHandler) GetProjectClosurePreview(ctx context.Context, params GetProjectClosurePreviewParams) (r *ProjectClosurePreview, _ error) {
 	return r, ht.ErrNotImplemented
 }
 
@@ -296,6 +320,15 @@ func (UnimplementedHandler) ListCatalogProducts(ctx context.Context, params List
 //
 // GET /catalog/v1/rate-cards/{rateCardId}/rules
 func (UnimplementedHandler) ListCatalogRates(ctx context.Context, params ListCatalogRatesParams) (r ListCatalogRatesRes, _ error) {
+	return r, ht.ErrNotImplemented
+}
+
+// ListCommitments implements ListCommitments operation.
+//
+// List account commercial commitments.
+//
+// GET /account/v1/commitments
+func (UnimplementedHandler) ListCommitments(ctx context.Context, params ListCommitmentsParams) (r *CommitmentList, _ error) {
 	return r, ht.ErrNotImplemented
 }
 

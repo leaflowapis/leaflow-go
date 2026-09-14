@@ -337,6 +337,66 @@ func (e CodeRejection) Valid() bool {
 	}
 }
 
+// Defines values for CommitmentReleasePolicy.
+const (
+	ReleaseWithObligation CommitmentReleasePolicy = "release_with_obligation"
+	RetainUntilTerm       CommitmentReleasePolicy = "retain_until_term"
+)
+
+// Valid indicates whether the value is a known member of the CommitmentReleasePolicy enum.
+func (e CommitmentReleasePolicy) Valid() bool {
+	switch e {
+	case ReleaseWithObligation:
+		return true
+	case RetainUntilTerm:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for CommitmentStatus.
+const (
+	CommitmentStatusActive     CommitmentStatus = "active"
+	CommitmentStatusCompleted  CommitmentStatus = "completed"
+	CommitmentStatusDraft      CommitmentStatus = "draft"
+	CommitmentStatusTerminated CommitmentStatus = "terminated"
+)
+
+// Valid indicates whether the value is a known member of the CommitmentStatus enum.
+func (e CommitmentStatus) Valid() bool {
+	switch e {
+	case CommitmentStatusActive:
+		return true
+	case CommitmentStatusCompleted:
+		return true
+	case CommitmentStatusDraft:
+		return true
+	case CommitmentStatusTerminated:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for CommitmentType.
+const (
+	FixedAmount  CommitmentType = "fixed_amount"
+	MinimumSpend CommitmentType = "minimum_spend"
+)
+
+// Valid indicates whether the value is a known member of the CommitmentType enum.
+func (e CommitmentType) Valid() bool {
+	switch e {
+	case FixedAmount:
+		return true
+	case MinimumSpend:
+		return true
+	default:
+		return false
+	}
+}
+
 // Defines values for CreditGrantSourceType.
 const (
 	CreditGrantSourceTypeManual     CreditGrantSourceType = "manual"
@@ -619,6 +679,96 @@ func (e PaymentStatus) Valid() bool {
 	}
 }
 
+// Defines values for ProjectClosureItemActions.
+const (
+	CancelOrder        ProjectClosureItemActions = "cancel_order"
+	CancelSubscription ProjectClosureItemActions = "cancel_subscription"
+	ConfigureTerms     ProjectClosureItemActions = "configure_terms"
+	DisableAutoRenew   ProjectClosureItemActions = "disable_auto_renew"
+	ReleaseResource    ProjectClosureItemActions = "release_resource"
+	ResolveFailure     ProjectClosureItemActions = "resolve_failure"
+	SettleUsage        ProjectClosureItemActions = "settle_usage"
+	Wait               ProjectClosureItemActions = "wait"
+)
+
+// Valid indicates whether the value is a known member of the ProjectClosureItemActions enum.
+func (e ProjectClosureItemActions) Valid() bool {
+	switch e {
+	case CancelOrder:
+		return true
+	case CancelSubscription:
+		return true
+	case ConfigureTerms:
+		return true
+	case DisableAutoRenew:
+		return true
+	case ReleaseResource:
+		return true
+	case ResolveFailure:
+		return true
+	case SettleUsage:
+		return true
+	case Wait:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for ProjectClosureItemDisposition.
+const (
+	ActionRequired ProjectClosureItemDisposition = "action_required"
+	Blocked        ProjectClosureItemDisposition = "blocked"
+	Waiting        ProjectClosureItemDisposition = "waiting"
+)
+
+// Valid indicates whether the value is a known member of the ProjectClosureItemDisposition enum.
+func (e ProjectClosureItemDisposition) Valid() bool {
+	switch e {
+	case ActionRequired:
+		return true
+	case Blocked:
+		return true
+	case Waiting:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for ProjectClosureItemType.
+const (
+	ProjectClosureItemTypeActiveResource           ProjectClosureItemType = "active_resource"
+	ProjectClosureItemTypeCommitment               ProjectClosureItemType = "commitment"
+	ProjectClosureItemTypeOrder                    ProjectClosureItemType = "order"
+	ProjectClosureItemTypeResourceOperation        ProjectClosureItemType = "resource_operation"
+	ProjectClosureItemTypeSubscriptionCancellation ProjectClosureItemType = "subscription_cancellation"
+	ProjectClosureItemTypeSubscriptionItem         ProjectClosureItemType = "subscription_item"
+	ProjectClosureItemTypeUsageCharge              ProjectClosureItemType = "usage_charge"
+)
+
+// Valid indicates whether the value is a known member of the ProjectClosureItemType enum.
+func (e ProjectClosureItemType) Valid() bool {
+	switch e {
+	case ProjectClosureItemTypeActiveResource:
+		return true
+	case ProjectClosureItemTypeCommitment:
+		return true
+	case ProjectClosureItemTypeOrder:
+		return true
+	case ProjectClosureItemTypeResourceOperation:
+		return true
+	case ProjectClosureItemTypeSubscriptionCancellation:
+		return true
+	case ProjectClosureItemTypeSubscriptionItem:
+		return true
+	case ProjectClosureItemTypeUsageCharge:
+		return true
+	default:
+		return false
+	}
+}
+
 // Defines values for ProjectPayerStatus.
 const (
 	ProjectPayerStatusActive    ProjectPayerStatus = "active"
@@ -757,6 +907,24 @@ func (e RefundStatus) Valid() bool {
 	}
 }
 
+// Defines values for RefundPolicy.
+const (
+	RefundPolicyNone     RefundPolicy = "none"
+	RefundPolicyStandard RefundPolicy = "standard"
+)
+
+// Valid indicates whether the value is a known member of the RefundPolicy enum.
+func (e RefundPolicy) Valid() bool {
+	switch e {
+	case RefundPolicyNone:
+		return true
+	case RefundPolicyStandard:
+		return true
+	default:
+		return false
+	}
+}
+
 // Defines values for RefundQuoteDestination.
 const (
 	RefundQuoteDestinationBalance  RefundQuoteDestination = "balance"
@@ -823,6 +991,54 @@ func (e SubscriptionStatus) Valid() bool {
 	}
 }
 
+// Defines values for SubscriptionCancellationMode.
+const (
+	SubscriptionCancellationModeImmediate SubscriptionCancellationMode = "immediate"
+	SubscriptionCancellationModePeriodEnd SubscriptionCancellationMode = "period_end"
+)
+
+// Valid indicates whether the value is a known member of the SubscriptionCancellationMode enum.
+func (e SubscriptionCancellationMode) Valid() bool {
+	switch e {
+	case SubscriptionCancellationModeImmediate:
+		return true
+	case SubscriptionCancellationModePeriodEnd:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for SubscriptionCancellationStatus.
+const (
+	SubscriptionCancellationStatusCanceled  SubscriptionCancellationStatus = "canceled"
+	SubscriptionCancellationStatusCompleted SubscriptionCancellationStatus = "completed"
+	SubscriptionCancellationStatusFailed    SubscriptionCancellationStatus = "failed"
+	SubscriptionCancellationStatusReleasing SubscriptionCancellationStatus = "releasing"
+	SubscriptionCancellationStatusRequested SubscriptionCancellationStatus = "requested"
+	SubscriptionCancellationStatusScheduled SubscriptionCancellationStatus = "scheduled"
+)
+
+// Valid indicates whether the value is a known member of the SubscriptionCancellationStatus enum.
+func (e SubscriptionCancellationStatus) Valid() bool {
+	switch e {
+	case SubscriptionCancellationStatusCanceled:
+		return true
+	case SubscriptionCancellationStatusCompleted:
+		return true
+	case SubscriptionCancellationStatusFailed:
+		return true
+	case SubscriptionCancellationStatusReleasing:
+		return true
+	case SubscriptionCancellationStatusRequested:
+		return true
+	case SubscriptionCancellationStatusScheduled:
+		return true
+	default:
+		return false
+	}
+}
+
 // Defines values for SubscriptionItemStatus.
 const (
 	SubscriptionItemStatusActive     SubscriptionItemStatus = "active"
@@ -844,6 +1060,24 @@ func (e SubscriptionItemStatus) Valid() bool {
 	case SubscriptionItemStatusSuspended:
 		return true
 	case SubscriptionItemStatusTerminated:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for TerminationPolicy.
+const (
+	TerminationPolicyImmediate TerminationPolicy = "immediate"
+	TerminationPolicyPeriodEnd TerminationPolicy = "period_end"
+)
+
+// Valid indicates whether the value is a known member of the TerminationPolicy enum.
+func (e TerminationPolicy) Valid() bool {
+	switch e {
+	case TerminationPolicyImmediate:
+		return true
+	case TerminationPolicyPeriodEnd:
 		return true
 	default:
 		return false
@@ -1304,11 +1538,17 @@ type CatalogPrice struct {
 	// RateCardId For `rated` prices, the price list the rates are read from.
 	RateCardId *openapi_types.UUID `json:"rate_card_id,omitempty"`
 
+	// RefundPolicy none preserves paid amounts when fulfilled service ends. standard applies the documented refund window and change proration rules. Releasing unpaid holds or returning funds for failed fulfillment is separate.
+	RefundPolicy *RefundPolicy `json:"refund_policy,omitempty"`
+
 	// SetupFee A decimal string, in the currency stated alongside it.
 	SetupFee *Money `json:"setup_fee,omitempty"`
 
 	// Term For prepaid prices, how many periods one purchase covers.
 	Term *int `json:"term,omitempty"`
+
+	// TerminationPolicy Whether a fulfilled purchase may end immediately or only after its paid term. Does not grant a refund. When absent, the terms are not configured and termination requires review.
+	TerminationPolicy *TerminationPolicy `json:"termination_policy,omitempty"`
 
 	// Tiers Present for `tiered`, in ascending order.
 	Tiers []Tier `json:"tiers,omitempty"`
@@ -1530,6 +1770,60 @@ type CodeRequest struct {
 
 	// RenewalOf Subscription items being renewed, when testing a renewal.
 	RenewalOf []openapi_types.UUID `json:"renewal_of,omitempty"`
+}
+
+// Commitment Account-owned commercial obligation. Project removal does not waive payment. Minimum-spend activation requires a defined, reproducible eligibility policy; drafts do not authorize collection.
+type Commitment struct {
+	AcceptedAt               *time.Time              `json:"accepted_at,omitempty"`
+	AcceptedBy               *string                 `json:"accepted_by,omitempty"`
+	BillingAccountId         int                     `json:"billing_account_id"`
+	ContractId               *openapi_types.UUID     `json:"contract_id,omitempty"`
+	Currency                 string                  `json:"currency"`
+	Description              string                  `json:"description"`
+	EffectiveFrom            time.Time               `json:"effective_from"`
+	EffectiveTo              time.Time               `json:"effective_to"`
+	EligibilityPolicyVersion *string                 `json:"eligibility_policy_version,omitempty"`
+	Id                       openapi_types.UUID      `json:"id"`
+	OriginOrderItemId        *openapi_types.UUID     `json:"origin_order_item_id,omitempty"`
+	OriginProjectId          *openapi_types.UUID     `json:"origin_project_id,omitempty"`
+	Periods                  []CommitmentPeriod      `json:"periods"`
+	ReleasePolicy            CommitmentReleasePolicy `json:"release_policy"`
+	Status                   CommitmentStatus        `json:"status"`
+	TerminatedAt             *time.Time              `json:"terminated_at,omitempty"`
+	TerminationReason        *string                 `json:"termination_reason,omitempty"`
+	TermsReference           string                  `json:"terms_reference"`
+	Type                     CommitmentType          `json:"type"`
+}
+
+// CommitmentReleasePolicy defines model for Commitment.ReleasePolicy.
+type CommitmentReleasePolicy string
+
+// CommitmentStatus defines model for Commitment.Status.
+type CommitmentStatus string
+
+// CommitmentType defines model for Commitment.Type.
+type CommitmentType string
+
+// CommitmentList defines model for CommitmentList.
+type CommitmentList struct {
+	Items      []Commitment `json:"items"`
+	TotalCount int64        `json:"total_count"`
+}
+
+// CommitmentPeriod defines model for CommitmentPeriod.
+type CommitmentPeriod struct {
+	Amount         string              `json:"amount"`
+	AmountDue      *string             `json:"amount_due,omitempty"`
+	DueAt          time.Time           `json:"due_at"`
+	EligibleAmount *string             `json:"eligible_amount,omitempty"`
+	FinalizedAt    *time.Time          `json:"finalized_at,omitempty"`
+	Id             openapi_types.UUID  `json:"id"`
+	InvoiceItemId  *openapi_types.UUID `json:"invoice_item_id,omitempty"`
+	PeriodEnd      time.Time           `json:"period_end"`
+	PeriodStart    time.Time           `json:"period_start"`
+	Sequence       int                 `json:"sequence"`
+	WaivedAt       *time.Time          `json:"waived_at,omitempty"`
+	WaiverReason   *string             `json:"waiver_reason,omitempty"`
 }
 
 // CreditGrant defines model for CreditGrant.
@@ -2085,6 +2379,44 @@ type ProjectBindingList struct {
 	TotalCount *int64           `json:"total_count,omitempty"`
 }
 
+// ProjectClosureItem One outstanding Billing obligation. action_required identifies a supported next step, not authorization to destroy a resource. Items for the same resource must be considered together.
+type ProjectClosureItem struct {
+	Actions []ProjectClosureItemActions `json:"actions"`
+
+	// Cancellation A cancellation request for the original purchase. scheduled_for is the intended time; effective_at is the confirmed end of service. The request alone does not stop metering or issue a refund.
+	Cancellation          *SubscriptionCancellation     `json:"cancellation,omitempty"`
+	Currency              *string                       `json:"currency,omitempty"`
+	Disposition           ProjectClosureItemDisposition `json:"disposition"`
+	EarliestTerminationAt *time.Time                    `json:"earliest_termination_at,omitempty"`
+	Id                    openapi_types.UUID            `json:"id"`
+	ProductId             *openapi_types.UUID           `json:"product_id,omitempty"`
+	ReasonCode            string                        `json:"reason_code"`
+
+	// RefundAmount Known refund amount as a decimal string. Absent means a separate quote is required, not zero.
+	RefundAmount *string                `json:"refund_amount,omitempty"`
+	ResourceId   *string                `json:"resource_id,omitempty"`
+	Type         ProjectClosureItemType `json:"type"`
+}
+
+// ProjectClosureItemActions defines model for ProjectClosureItem.Actions.
+type ProjectClosureItemActions string
+
+// ProjectClosureItemDisposition defines model for ProjectClosureItem.Disposition.
+type ProjectClosureItemDisposition string
+
+// ProjectClosureItemType defines model for ProjectClosureItem.Type.
+type ProjectClosureItemType string
+
+// ProjectClosurePreview Read-only, paginated assessment. Does not cancel orders, stop renewals, refund payments or release resources. Concurrent orders or callbacks may change the result; execution must close admission and recheck.
+type ProjectClosurePreview struct {
+	// CanClose True only when the full Billing result, across all pages, has no outstanding obligations. Technical services must independently confirm that all resources are gone.
+	CanClose    bool                 `json:"can_close"`
+	EvaluatedAt time.Time            `json:"evaluated_at"`
+	Items       []ProjectClosureItem `json:"items"`
+	ProjectId   openapi_types.UUID   `json:"project_id"`
+	TotalCount  int64                `json:"total_count"`
+}
+
 // ProjectPayer A narrow view of the paying account, restricted to what a project member needs in order
 // to know whether the project's resources will keep running.
 type ProjectPayer struct {
@@ -2345,6 +2677,9 @@ type RefundList struct {
 	TotalCount *int64   `json:"total_count,omitempty"`
 }
 
+// RefundPolicy none preserves paid amounts when fulfilled service ends. standard applies the documented refund window and change proration rules. Releasing unpaid holds or returning funds for failed fulfillment is separate.
+type RefundPolicy string
+
 // RefundQuote What a full refund would return, and where each part of it would go.
 type RefundQuote struct {
 	Currency string `json:"currency"`
@@ -2481,6 +2816,29 @@ type Subscription struct {
 // appears in the list before anything under it is running.
 type SubscriptionStatus string
 
+// SubscriptionCancellation A cancellation request for the original purchase. scheduled_for is the intended time; effective_at is the confirmed end of service. The request alone does not stop metering or issue a refund.
+type SubscriptionCancellation struct {
+	CanceledAt            *time.Time                     `json:"canceled_at,omitempty"`
+	CompletedAt           *time.Time                     `json:"completed_at,omitempty"`
+	EffectiveAt           *time.Time                     `json:"effective_at,omitempty"`
+	FailureCode           *string                        `json:"failure_code,omitempty"`
+	FailureReason         *string                        `json:"failure_reason,omitempty"`
+	ForfeitRemainingValue bool                           `json:"forfeit_remaining_value"`
+	Id                    openapi_types.UUID             `json:"id"`
+	Mode                  SubscriptionCancellationMode   `json:"mode"`
+	ReleaseStartedAt      *time.Time                     `json:"release_started_at,omitempty"`
+	RequestedAt           time.Time                      `json:"requested_at"`
+	ScheduledFor          *time.Time                     `json:"scheduled_for,omitempty"`
+	Status                SubscriptionCancellationStatus `json:"status"`
+	SubscriptionItemId    openapi_types.UUID             `json:"subscription_item_id"`
+}
+
+// SubscriptionCancellationMode defines model for SubscriptionCancellation.Mode.
+type SubscriptionCancellationMode string
+
+// SubscriptionCancellationStatus defines model for SubscriptionCancellation.Status.
+type SubscriptionCancellationStatus string
+
 // SubscriptionItem defines model for SubscriptionItem.
 type SubscriptionItem struct {
 	AutoRenew *bool              `json:"auto_renew,omitempty"`
@@ -2518,6 +2876,9 @@ type SubscriptionList struct {
 	Items      []Subscription `json:"items"`
 	TotalCount *int64         `json:"total_count,omitempty"`
 }
+
+// TerminationPolicy Whether a fulfilled purchase may end immediately or only after its paid term. Does not grant a refund. When absent, the terms are not configured and termination requires review.
+type TerminationPolicy string
 
 // Tier defines model for Tier.
 type Tier struct {
@@ -2822,6 +3183,13 @@ type ListBillingAccountsParams struct {
 	PageSize *PageSize `form:"page_size,omitempty" json:"page_size,omitempty"`
 }
 
+// ListCommitmentsParams defines parameters for ListCommitments.
+type ListCommitmentsParams struct {
+	BillingAccountId int  `form:"billing_account_id" json:"billing_account_id"`
+	Page             *int `form:"page,omitempty" json:"page,omitempty"`
+	PageSize         *int `form:"page_size,omitempty" json:"page_size,omitempty"`
+}
+
 // ListCreditGrantsParams defines parameters for ListCreditGrants.
 type ListCreditGrantsParams struct {
 	// Page 1-based page number; the first page when omitted.
@@ -2927,6 +3295,12 @@ type ListPaidProjectsParams struct {
 	// PageSize How many per page, 100 at most.
 	PageSize         *PageSize `form:"page_size,omitempty" json:"page_size,omitempty"`
 	BillingAccountId *int64    `form:"billing_account_id,omitempty" json:"billing_account_id,omitempty"`
+}
+
+// GetAccountProjectClosurePreviewParams defines parameters for GetAccountProjectClosurePreview.
+type GetAccountProjectClosurePreviewParams struct {
+	Page     *int `form:"page,omitempty" json:"page,omitempty"`
+	PageSize *int `form:"page_size,omitempty" json:"page_size,omitempty"`
 }
 
 // ListRefundsParams defines parameters for ListRefunds.
@@ -3040,6 +3414,12 @@ type ListProjectAllowancesParams struct {
 
 	// Product Filter by ID or lookup key. A lookup key is scoped to the product.
 	Product *ObjectReference `json:"product,omitempty"`
+}
+
+// GetProjectClosurePreviewParams defines parameters for GetProjectClosurePreview.
+type GetProjectClosurePreviewParams struct {
+	Page     *int `form:"page,omitempty" json:"page,omitempty"`
+	PageSize *int `form:"page_size,omitempty" json:"page_size,omitempty"`
 }
 
 // ListProjectEntitlementsParams defines parameters for ListProjectEntitlements.
@@ -3480,6 +3860,11 @@ type ClientInterface interface {
 	// Corresponds with POST /account/v1/codes/redeem (the `RedeemCode` operationId).
 	RedeemCode(ctx context.Context, body RedeemCodeJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
 
+	// ListCommitments List account commercial commitments
+	//
+	// Corresponds with GET /account/v1/commitments (the `ListCommitments` operationId).
+	ListCommitments(ctx context.Context, params *ListCommitmentsParams, reqEditors ...RequestEditorFn) (*http.Response, error)
+
 	// ListCreditGrants List credit grants
 	//
 	// Each grant shows what remains and what it may be used for. Credit is spent before cash
@@ -3783,6 +4168,13 @@ type ClientInterface interface {
 	// Corresponds with POST /account/v1/projects/{projectId}/billing-account/settle (the `SettleProjectUsage` operationId).
 	SettleProjectUsage(ctx context.Context, projectId ProjectId, reqEditors ...RequestEditorFn) (*http.Response, error)
 
+	// GetAccountProjectClosurePreview Preview project closure
+	//
+	// Lists outstanding orders, subscriptions, metering and unfinished operations. Reports the next action and timing for each item. This read never performs cleanup or creates a closure request. Historical invoices and account-level purchases are retained. Billing approval alone does not prove that technical resources are absent.
+	//
+	// Corresponds with GET /account/v1/projects/{projectId}/closure-preview (the `GetAccountProjectClosurePreview` operationId).
+	GetAccountProjectClosurePreview(ctx context.Context, projectId openapi_types.UUID, params *GetAccountProjectClosurePreviewParams, reqEditors ...RequestEditorFn) (*http.Response, error)
+
 	// ListRefunds List refunds
 	//
 	// Corresponds with GET /account/v1/refunds (the `ListRefunds` operationId).
@@ -3955,6 +4347,13 @@ type ClientInterface interface {
 	//
 	// Corresponds with GET /api/v1/projects/{projectId}/billing-account (the `GetProjectBillingAccount` operationId).
 	GetProjectBillingAccount(ctx context.Context, projectId ProjectId, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// GetProjectClosurePreview Preview project closure
+	//
+	// Lists outstanding orders, subscriptions, metering and unfinished operations. Reports the next action and timing for each item. This read never performs cleanup or creates a closure request. Historical invoices and account-level purchases are retained. Billing approval alone does not prove that technical resources are absent.
+	//
+	// Corresponds with GET /api/v1/projects/{projectId}/closure-preview (the `GetProjectClosurePreview` operationId).
+	GetProjectClosurePreview(ctx context.Context, projectId openapi_types.UUID, params *GetProjectClosurePreviewParams, reqEditors ...RequestEditorFn) (*http.Response, error)
 
 	// ListProjectEntitlements List project entitlements
 	//
@@ -4400,6 +4799,21 @@ func (c *Client) RedeemCodeWithBody(ctx context.Context, contentType string, bod
 // Corresponds with POST /account/v1/codes/redeem (the `RedeemCode` operationId).
 func (c *Client) RedeemCode(ctx context.Context, body RedeemCodeJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
 	req, err := NewRedeemCodeRequest(c.Server, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+// ListCommitments List account commercial commitments
+//
+// Corresponds with GET /account/v1/commitments (the `ListCommitments` operationId).
+func (c *Client) ListCommitments(ctx context.Context, params *ListCommitmentsParams, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewListCommitmentsRequest(c.Server, params)
 	if err != nil {
 		return nil, err
 	}
@@ -4993,6 +5407,23 @@ func (c *Client) SettleProjectUsage(ctx context.Context, projectId ProjectId, re
 	return c.Client.Do(req)
 }
 
+// GetAccountProjectClosurePreview Preview project closure
+//
+// Lists outstanding orders, subscriptions, metering and unfinished operations. Reports the next action and timing for each item. This read never performs cleanup or creates a closure request. Historical invoices and account-level purchases are retained. Billing approval alone does not prove that technical resources are absent.
+//
+// Corresponds with GET /account/v1/projects/{projectId}/closure-preview (the `GetAccountProjectClosurePreview` operationId).
+func (c *Client) GetAccountProjectClosurePreview(ctx context.Context, projectId openapi_types.UUID, params *GetAccountProjectClosurePreviewParams, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewGetAccountProjectClosurePreviewRequest(c.Server, projectId, params)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
 // ListRefunds List refunds
 //
 // Corresponds with GET /account/v1/refunds (the `ListRefunds` operationId).
@@ -5336,6 +5767,23 @@ func (c *Client) ListProjectAllowances(ctx context.Context, projectId ProjectId,
 // Corresponds with GET /api/v1/projects/{projectId}/billing-account (the `GetProjectBillingAccount` operationId).
 func (c *Client) GetProjectBillingAccount(ctx context.Context, projectId ProjectId, reqEditors ...RequestEditorFn) (*http.Response, error) {
 	req, err := NewGetProjectBillingAccountRequest(c.Server, projectId)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+// GetProjectClosurePreview Preview project closure
+//
+// Lists outstanding orders, subscriptions, metering and unfinished operations. Reports the next action and timing for each item. This read never performs cleanup or creates a closure request. Historical invoices and account-level purchases are retained. Billing approval alone does not prove that technical resources are absent.
+//
+// Corresponds with GET /api/v1/projects/{projectId}/closure-preview (the `GetProjectClosurePreview` operationId).
+func (c *Client) GetProjectClosurePreview(ctx context.Context, projectId openapi_types.UUID, params *GetProjectClosurePreviewParams, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewGetProjectClosurePreviewRequest(c.Server, projectId, params)
 	if err != nil {
 		return nil, err
 	}
@@ -6292,6 +6740,80 @@ func NewRedeemCodeRequestWithBody(server string, contentType string, body io.Rea
 	}
 
 	req.Header.Add("Content-Type", contentType)
+
+	return req, nil
+}
+
+// NewListCommitmentsRequest constructs an http.Request for the ListCommitments method
+func NewListCommitmentsRequest(server string, params *ListCommitmentsParams) (*http.Request, error) {
+	var err error
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/account/v1/commitments")
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	if params != nil {
+		// queryValues collects non-styled parameters (passthrough, JSON)
+		// that are safe to round-trip through url.Values.Encode().
+		queryValues := queryURL.Query()
+		// rawQueryFragments collects pre-encoded query fragments from
+		// styled parameters, preserving literal commas as delimiters
+		// per the OpenAPI spec (e.g. "color=blue,black,brown").
+		var rawQueryFragments []string
+
+		if queryFrag, err := runtime.StyleParamWithOptions("form", true, "billing_account_id", params.BillingAccountId, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "integer", Format: ""}); err != nil {
+			return nil, err
+		} else {
+			for _, qp := range strings.Split(queryFrag, "&") {
+				rawQueryFragments = append(rawQueryFragments, qp)
+			}
+		}
+
+		if params.Page != nil {
+
+			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "page", *params.Page, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "integer", Format: ""}); err != nil {
+				return nil, err
+			} else {
+				for _, qp := range strings.Split(queryFrag, "&") {
+					rawQueryFragments = append(rawQueryFragments, qp)
+				}
+			}
+
+		}
+
+		if params.PageSize != nil {
+
+			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "page_size", *params.PageSize, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "integer", Format: ""}); err != nil {
+				return nil, err
+			} else {
+				for _, qp := range strings.Split(queryFrag, "&") {
+					rawQueryFragments = append(rawQueryFragments, qp)
+				}
+			}
+
+		}
+
+		if encoded := queryValues.Encode(); encoded != "" {
+			rawQueryFragments = append(rawQueryFragments, encoded)
+		}
+		queryURL.RawQuery = strings.Join(rawQueryFragments, "&")
+	}
+
+	req, err := http.NewRequest(http.MethodGet, queryURL.String(), nil)
+	if err != nil {
+		return nil, err
+	}
 
 	return req, nil
 }
@@ -7579,6 +8101,79 @@ func NewSettleProjectUsageRequest(server string, projectId ProjectId) (*http.Req
 	return req, nil
 }
 
+// NewGetAccountProjectClosurePreviewRequest constructs an http.Request for the GetAccountProjectClosurePreview method
+func NewGetAccountProjectClosurePreviewRequest(server string, projectId openapi_types.UUID, params *GetAccountProjectClosurePreviewParams) (*http.Request, error) {
+	var err error
+
+	var pathParam0 string
+
+	pathParam0, err = runtime.StyleParamWithOptions("simple", false, "projectId", projectId, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: "uuid"})
+	if err != nil {
+		return nil, err
+	}
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/account/v1/projects/%s/closure-preview", pathParam0)
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	if params != nil {
+		// queryValues collects non-styled parameters (passthrough, JSON)
+		// that are safe to round-trip through url.Values.Encode().
+		queryValues := queryURL.Query()
+		// rawQueryFragments collects pre-encoded query fragments from
+		// styled parameters, preserving literal commas as delimiters
+		// per the OpenAPI spec (e.g. "color=blue,black,brown").
+		var rawQueryFragments []string
+
+		if params.Page != nil {
+
+			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "page", *params.Page, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "integer", Format: ""}); err != nil {
+				return nil, err
+			} else {
+				for _, qp := range strings.Split(queryFrag, "&") {
+					rawQueryFragments = append(rawQueryFragments, qp)
+				}
+			}
+
+		}
+
+		if params.PageSize != nil {
+
+			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "page_size", *params.PageSize, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "integer", Format: ""}); err != nil {
+				return nil, err
+			} else {
+				for _, qp := range strings.Split(queryFrag, "&") {
+					rawQueryFragments = append(rawQueryFragments, qp)
+				}
+			}
+
+		}
+
+		if encoded := queryValues.Encode(); encoded != "" {
+			rawQueryFragments = append(rawQueryFragments, encoded)
+		}
+		queryURL.RawQuery = strings.Join(rawQueryFragments, "&")
+	}
+
+	req, err := http.NewRequest(http.MethodGet, queryURL.String(), nil)
+	if err != nil {
+		return nil, err
+	}
+
+	return req, nil
+}
+
 // NewListRefundsRequest constructs an http.Request for the ListRefunds method
 func NewListRefundsRequest(server string, params *ListRefundsParams) (*http.Request, error) {
 	var err error
@@ -8581,6 +9176,79 @@ func NewGetProjectBillingAccountRequest(server string, projectId ProjectId) (*ht
 	queryURL, err := serverURL.Parse(operationPath)
 	if err != nil {
 		return nil, err
+	}
+
+	req, err := http.NewRequest(http.MethodGet, queryURL.String(), nil)
+	if err != nil {
+		return nil, err
+	}
+
+	return req, nil
+}
+
+// NewGetProjectClosurePreviewRequest constructs an http.Request for the GetProjectClosurePreview method
+func NewGetProjectClosurePreviewRequest(server string, projectId openapi_types.UUID, params *GetProjectClosurePreviewParams) (*http.Request, error) {
+	var err error
+
+	var pathParam0 string
+
+	pathParam0, err = runtime.StyleParamWithOptions("simple", false, "projectId", projectId, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: "uuid"})
+	if err != nil {
+		return nil, err
+	}
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/api/v1/projects/%s/closure-preview", pathParam0)
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	if params != nil {
+		// queryValues collects non-styled parameters (passthrough, JSON)
+		// that are safe to round-trip through url.Values.Encode().
+		queryValues := queryURL.Query()
+		// rawQueryFragments collects pre-encoded query fragments from
+		// styled parameters, preserving literal commas as delimiters
+		// per the OpenAPI spec (e.g. "color=blue,black,brown").
+		var rawQueryFragments []string
+
+		if params.Page != nil {
+
+			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "page", *params.Page, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "integer", Format: ""}); err != nil {
+				return nil, err
+			} else {
+				for _, qp := range strings.Split(queryFrag, "&") {
+					rawQueryFragments = append(rawQueryFragments, qp)
+				}
+			}
+
+		}
+
+		if params.PageSize != nil {
+
+			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "page_size", *params.PageSize, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "integer", Format: ""}); err != nil {
+				return nil, err
+			} else {
+				for _, qp := range strings.Split(queryFrag, "&") {
+					rawQueryFragments = append(rawQueryFragments, qp)
+				}
+			}
+
+		}
+
+		if encoded := queryValues.Encode(); encoded != "" {
+			rawQueryFragments = append(rawQueryFragments, encoded)
+		}
+		queryURL.RawQuery = strings.Join(rawQueryFragments, "&")
 	}
 
 	req, err := http.NewRequest(http.MethodGet, queryURL.String(), nil)
@@ -10033,6 +10701,13 @@ type ClientWithResponsesInterface interface {
 	// Corresponds with POST /account/v1/codes/redeem (the `RedeemCode` operationId).
 	RedeemCodeWithResponse(ctx context.Context, body RedeemCodeJSONRequestBody, reqEditors ...RequestEditorFn) (*RedeemCodeResponse, error)
 
+	// ListCommitmentsWithResponse List account commercial commitments
+	//
+	// Returns a wrapper object for the known response body format(s).
+	//
+	// Corresponds with GET /account/v1/commitments (the `ListCommitments` operationId).
+	ListCommitmentsWithResponse(ctx context.Context, params *ListCommitmentsParams, reqEditors ...RequestEditorFn) (*ListCommitmentsResponse, error)
+
 	// ListCreditGrantsWithResponse List credit grants
 	//
 	// Each grant shows what remains and what it may be used for. Credit is spent before cash
@@ -10372,6 +11047,15 @@ type ClientWithResponsesInterface interface {
 	// Corresponds with POST /account/v1/projects/{projectId}/billing-account/settle (the `SettleProjectUsage` operationId).
 	SettleProjectUsageWithResponse(ctx context.Context, projectId ProjectId, reqEditors ...RequestEditorFn) (*SettleProjectUsageResponse, error)
 
+	// GetAccountProjectClosurePreviewWithResponse Preview project closure
+	//
+	// Lists outstanding orders, subscriptions, metering and unfinished operations. Reports the next action and timing for each item. This read never performs cleanup or creates a closure request. Historical invoices and account-level purchases are retained. Billing approval alone does not prove that technical resources are absent.
+	//
+	// Returns a wrapper object for the known response body format(s).
+	//
+	// Corresponds with GET /account/v1/projects/{projectId}/closure-preview (the `GetAccountProjectClosurePreview` operationId).
+	GetAccountProjectClosurePreviewWithResponse(ctx context.Context, projectId openapi_types.UUID, params *GetAccountProjectClosurePreviewParams, reqEditors ...RequestEditorFn) (*GetAccountProjectClosurePreviewResponse, error)
+
 	// ListRefundsWithResponse List refunds
 	//
 	// Returns a wrapper object for the known response body format(s).
@@ -10564,6 +11248,15 @@ type ClientWithResponsesInterface interface {
 	//
 	// Corresponds with GET /api/v1/projects/{projectId}/billing-account (the `GetProjectBillingAccount` operationId).
 	GetProjectBillingAccountWithResponse(ctx context.Context, projectId ProjectId, reqEditors ...RequestEditorFn) (*GetProjectBillingAccountResponse, error)
+
+	// GetProjectClosurePreviewWithResponse Preview project closure
+	//
+	// Lists outstanding orders, subscriptions, metering and unfinished operations. Reports the next action and timing for each item. This read never performs cleanup or creates a closure request. Historical invoices and account-level purchases are retained. Billing approval alone does not prove that technical resources are absent.
+	//
+	// Returns a wrapper object for the known response body format(s).
+	//
+	// Corresponds with GET /api/v1/projects/{projectId}/closure-preview (the `GetProjectClosurePreview` operationId).
+	GetProjectClosurePreviewWithResponse(ctx context.Context, projectId openapi_types.UUID, params *GetProjectClosurePreviewParams, reqEditors ...RequestEditorFn) (*GetProjectClosurePreviewResponse, error)
 
 	// ListProjectEntitlementsWithResponse List project entitlements
 	//
@@ -11232,6 +11925,54 @@ func (r RedeemCodeResponse) StatusCode() int {
 
 // ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
 func (r RedeemCodeResponse) ContentType() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Header.Get("Content-Type")
+	}
+	return ""
+}
+
+type ListCommitmentsResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	// JSON200 the response for an HTTP 200 `application/json` response
+	JSON200 *CommitmentList
+	// JSONDefault the response for an HTTP default `application/json` response
+	JSONDefault *Error
+}
+
+// GetJSON200 returns the response for an HTTP 200 `application/json` response
+func (r ListCommitmentsResponse) GetJSON200() *CommitmentList {
+	return r.JSON200
+}
+
+// GetJSONDefault returns the response for an HTTP default `application/json` response
+func (r ListCommitmentsResponse) GetJSONDefault() *Error {
+	return r.JSONDefault
+}
+
+// GetBody returns the raw response body bytes
+func (r ListCommitmentsResponse) GetBody() []byte {
+	return r.Body
+}
+
+// Status returns HTTPResponse.Status
+func (r ListCommitmentsResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r ListCommitmentsResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+// ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
+func (r ListCommitmentsResponse) ContentType() string {
 	if r.HTTPResponse != nil {
 		return r.HTTPResponse.Header.Get("Content-Type")
 	}
@@ -12328,6 +13069,54 @@ func (r SettleProjectUsageResponse) ContentType() string {
 	return ""
 }
 
+type GetAccountProjectClosurePreviewResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	// JSON200 the response for an HTTP 200 `application/json` response
+	JSON200 *ProjectClosurePreview
+	// JSONDefault the response for an HTTP default `application/json` response
+	JSONDefault *Error
+}
+
+// GetJSON200 returns the response for an HTTP 200 `application/json` response
+func (r GetAccountProjectClosurePreviewResponse) GetJSON200() *ProjectClosurePreview {
+	return r.JSON200
+}
+
+// GetJSONDefault returns the response for an HTTP default `application/json` response
+func (r GetAccountProjectClosurePreviewResponse) GetJSONDefault() *Error {
+	return r.JSONDefault
+}
+
+// GetBody returns the raw response body bytes
+func (r GetAccountProjectClosurePreviewResponse) GetBody() []byte {
+	return r.Body
+}
+
+// Status returns HTTPResponse.Status
+func (r GetAccountProjectClosurePreviewResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r GetAccountProjectClosurePreviewResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+// ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
+func (r GetAccountProjectClosurePreviewResponse) ContentType() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Header.Get("Content-Type")
+	}
+	return ""
+}
+
 type ListRefundsResponse struct {
 	Body         []byte
 	HTTPResponse *http.Response
@@ -12994,6 +13783,54 @@ func (r GetProjectBillingAccountResponse) StatusCode() int {
 
 // ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
 func (r GetProjectBillingAccountResponse) ContentType() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Header.Get("Content-Type")
+	}
+	return ""
+}
+
+type GetProjectClosurePreviewResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	// JSON200 the response for an HTTP 200 `application/json` response
+	JSON200 *ProjectClosurePreview
+	// JSONDefault the response for an HTTP default `application/json` response
+	JSONDefault *Error
+}
+
+// GetJSON200 returns the response for an HTTP 200 `application/json` response
+func (r GetProjectClosurePreviewResponse) GetJSON200() *ProjectClosurePreview {
+	return r.JSON200
+}
+
+// GetJSONDefault returns the response for an HTTP default `application/json` response
+func (r GetProjectClosurePreviewResponse) GetJSONDefault() *Error {
+	return r.JSONDefault
+}
+
+// GetBody returns the raw response body bytes
+func (r GetProjectClosurePreviewResponse) GetBody() []byte {
+	return r.Body
+}
+
+// Status returns HTTPResponse.Status
+func (r GetProjectClosurePreviewResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r GetProjectClosurePreviewResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+// ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
+func (r GetProjectClosurePreviewResponse) ContentType() string {
 	if r.HTTPResponse != nil {
 		return r.HTTPResponse.Header.Get("Content-Type")
 	}
@@ -14017,6 +14854,19 @@ func (c *ClientWithResponses) RedeemCodeWithResponse(ctx context.Context, body R
 	return ParseRedeemCodeResponse(rsp)
 }
 
+// ListCommitmentsWithResponse List account commercial commitments
+//
+// Returns a wrapper object for the known response body format(s).
+//
+// Corresponds with GET /account/v1/commitments (the `ListCommitments` operationId).
+func (c *ClientWithResponses) ListCommitmentsWithResponse(ctx context.Context, params *ListCommitmentsParams, reqEditors ...RequestEditorFn) (*ListCommitmentsResponse, error) {
+	rsp, err := c.ListCommitments(ctx, params, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseListCommitmentsResponse(rsp)
+}
+
 // ListCreditGrantsWithResponse List credit grants
 //
 // Each grant shows what remains and what it may be used for. Credit is spent before cash
@@ -14524,6 +15374,21 @@ func (c *ClientWithResponses) SettleProjectUsageWithResponse(ctx context.Context
 	return ParseSettleProjectUsageResponse(rsp)
 }
 
+// GetAccountProjectClosurePreviewWithResponse Preview project closure
+//
+// Lists outstanding orders, subscriptions, metering and unfinished operations. Reports the next action and timing for each item. This read never performs cleanup or creates a closure request. Historical invoices and account-level purchases are retained. Billing approval alone does not prove that technical resources are absent.
+//
+// Returns a wrapper object for the known response body format(s).
+//
+// Corresponds with GET /account/v1/projects/{projectId}/closure-preview (the `GetAccountProjectClosurePreview` operationId).
+func (c *ClientWithResponses) GetAccountProjectClosurePreviewWithResponse(ctx context.Context, projectId openapi_types.UUID, params *GetAccountProjectClosurePreviewParams, reqEditors ...RequestEditorFn) (*GetAccountProjectClosurePreviewResponse, error) {
+	rsp, err := c.GetAccountProjectClosurePreview(ctx, projectId, params, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseGetAccountProjectClosurePreviewResponse(rsp)
+}
+
 // ListRefundsWithResponse List refunds
 //
 // Returns a wrapper object for the known response body format(s).
@@ -14823,6 +15688,21 @@ func (c *ClientWithResponses) GetProjectBillingAccountWithResponse(ctx context.C
 		return nil, err
 	}
 	return ParseGetProjectBillingAccountResponse(rsp)
+}
+
+// GetProjectClosurePreviewWithResponse Preview project closure
+//
+// Lists outstanding orders, subscriptions, metering and unfinished operations. Reports the next action and timing for each item. This read never performs cleanup or creates a closure request. Historical invoices and account-level purchases are retained. Billing approval alone does not prove that technical resources are absent.
+//
+// Returns a wrapper object for the known response body format(s).
+//
+// Corresponds with GET /api/v1/projects/{projectId}/closure-preview (the `GetProjectClosurePreview` operationId).
+func (c *ClientWithResponses) GetProjectClosurePreviewWithResponse(ctx context.Context, projectId openapi_types.UUID, params *GetProjectClosurePreviewParams, reqEditors ...RequestEditorFn) (*GetProjectClosurePreviewResponse, error) {
+	rsp, err := c.GetProjectClosurePreview(ctx, projectId, params, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseGetProjectClosurePreviewResponse(rsp)
 }
 
 // ListProjectEntitlementsWithResponse List project entitlements
@@ -15438,6 +16318,39 @@ func ParseRedeemCodeResponse(rsp *http.Response) (*RedeemCodeResponse, error) {
 	switch {
 	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
 		var dest CodeRedeemResult
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && true:
+		var dest Error
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSONDefault = &dest
+
+	}
+
+	return response, nil
+}
+
+// ParseListCommitmentsResponse parses an HTTP response from a ListCommitmentsWithResponse call
+func ParseListCommitmentsResponse(rsp *http.Response) (*ListCommitmentsResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &ListCommitmentsResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest CommitmentList
 		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
 			return nil, err
 		}
@@ -16206,6 +17119,39 @@ func ParseSettleProjectUsageResponse(rsp *http.Response) (*SettleProjectUsageRes
 	return response, nil
 }
 
+// ParseGetAccountProjectClosurePreviewResponse parses an HTTP response from a GetAccountProjectClosurePreviewWithResponse call
+func ParseGetAccountProjectClosurePreviewResponse(rsp *http.Response) (*GetAccountProjectClosurePreviewResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &GetAccountProjectClosurePreviewResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest ProjectClosurePreview
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && true:
+		var dest Error
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSONDefault = &dest
+
+	}
+
+	return response, nil
+}
+
 // ParseListRefundsResponse parses an HTTP response from a ListRefundsWithResponse call
 func ParseListRefundsResponse(rsp *http.Response) (*ListRefundsResponse, error) {
 	bodyBytes, err := io.ReadAll(rsp.Body)
@@ -16651,6 +17597,39 @@ func ParseGetProjectBillingAccountResponse(rsp *http.Response) (*GetProjectBilli
 	switch {
 	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
 		var dest ProjectPayer
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && true:
+		var dest Error
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSONDefault = &dest
+
+	}
+
+	return response, nil
+}
+
+// ParseGetProjectClosurePreviewResponse parses an HTTP response from a GetProjectClosurePreviewWithResponse call
+func ParseGetProjectClosurePreviewResponse(rsp *http.Response) (*GetProjectClosurePreviewResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &GetProjectClosurePreviewResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest ProjectClosurePreview
 		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
 			return nil, err
 		}

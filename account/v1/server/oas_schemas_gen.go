@@ -1669,9 +1669,13 @@ func (s *ProjectAccessResource) SetProject(val ProjectResource) {
 
 // Ref: #/components/schemas/ProjectResource
 type ProjectResource struct {
-	BanReason string    `json:"ban_reason"`
-	CreatedAt time.Time `json:"created_at"`
-	CreatedBy string    `json:"created_by"`
+	// A read-only management lock. Running resources and billing remain unchanged. Only an operator can
+	// release it.
+	LockedAt   NilDateTime `json:"locked_at"`
+	LockReason string      `json:"lock_reason"`
+	BanReason  string      `json:"ban_reason"`
+	CreatedAt  time.Time   `json:"created_at"`
+	CreatedBy  string      `json:"created_by"`
 	// When the project was deleted.
 	DeletedAt   NilDateTime           `json:"deleted_at"`
 	Description string                `json:"description"`
@@ -1681,6 +1685,16 @@ type ProjectResource struct {
 	// Written for a reader; it takes part in no query.
 	StatusReason string    `json:"status_reason"`
 	UpdatedAt    time.Time `json:"updated_at"`
+}
+
+// GetLockedAt returns the value of LockedAt.
+func (s *ProjectResource) GetLockedAt() NilDateTime {
+	return s.LockedAt
+}
+
+// GetLockReason returns the value of LockReason.
+func (s *ProjectResource) GetLockReason() string {
+	return s.LockReason
 }
 
 // GetBanReason returns the value of BanReason.
@@ -1731,6 +1745,16 @@ func (s *ProjectResource) GetStatusReason() string {
 // GetUpdatedAt returns the value of UpdatedAt.
 func (s *ProjectResource) GetUpdatedAt() time.Time {
 	return s.UpdatedAt
+}
+
+// SetLockedAt sets the value of LockedAt.
+func (s *ProjectResource) SetLockedAt(val NilDateTime) {
+	s.LockedAt = val
+}
+
+// SetLockReason sets the value of LockReason.
+func (s *ProjectResource) SetLockReason(val string) {
+	s.LockReason = val
 }
 
 // SetBanReason sets the value of BanReason.

@@ -3523,6 +3523,18 @@ func (s *CatalogPrice) Encode(e *jx.Encoder) {
 // encodeFields encodes fields.
 func (s *CatalogPrice) encodeFields(e *jx.Encoder) {
 	{
+		if s.TerminationPolicy.Set {
+			e.FieldStart("termination_policy")
+			s.TerminationPolicy.Encode(e)
+		}
+	}
+	{
+		if s.RefundPolicy.Set {
+			e.FieldStart("refund_policy")
+			s.RefundPolicy.Encode(e)
+		}
+	}
+	{
 		if s.LookupKey.Set {
 			e.FieldStart("lookup_key")
 			s.LookupKey.Encode(e)
@@ -3640,26 +3652,28 @@ func (s *CatalogPrice) encodeFields(e *jx.Encoder) {
 	}
 }
 
-var jsonFieldsNameOfCatalogPrice = [19]string{
-	0:  "lookup_key",
-	1:  "product_id",
-	2:  "id",
-	3:  "plan_id",
-	4:  "currency",
-	5:  "type",
-	6:  "billing_scheme",
-	7:  "unit_amount",
-	8:  "tiers_mode",
-	9:  "tiers",
-	10: "rate_card_id",
-	11: "min_quantity",
-	12: "max_quantity",
-	13: "quantity_step",
-	14: "allowances",
-	15: "features",
-	16: "term",
-	17: "period",
-	18: "setup_fee",
+var jsonFieldsNameOfCatalogPrice = [21]string{
+	0:  "termination_policy",
+	1:  "refund_policy",
+	2:  "lookup_key",
+	3:  "product_id",
+	4:  "id",
+	5:  "plan_id",
+	6:  "currency",
+	7:  "type",
+	8:  "billing_scheme",
+	9:  "unit_amount",
+	10: "tiers_mode",
+	11: "tiers",
+	12: "rate_card_id",
+	13: "min_quantity",
+	14: "max_quantity",
+	15: "quantity_step",
+	16: "allowances",
+	17: "features",
+	18: "term",
+	19: "period",
+	20: "setup_fee",
 }
 
 // Decode decodes CatalogPrice from json.
@@ -3671,6 +3685,26 @@ func (s *CatalogPrice) Decode(d *jx.Decoder) error {
 
 	if err := d.ObjBytes(func(d *jx.Decoder, k []byte) error {
 		switch string(k) {
+		case "termination_policy":
+			if err := func() error {
+				s.TerminationPolicy.Reset()
+				if err := s.TerminationPolicy.Decode(d); err != nil {
+					return err
+				}
+				return nil
+			}(); err != nil {
+				return errors.Wrap(err, "decode field \"termination_policy\"")
+			}
+		case "refund_policy":
+			if err := func() error {
+				s.RefundPolicy.Reset()
+				if err := s.RefundPolicy.Decode(d); err != nil {
+					return err
+				}
+				return nil
+			}(); err != nil {
+				return errors.Wrap(err, "decode field \"refund_policy\"")
+			}
 		case "lookup_key":
 			if err := func() error {
 				s.LookupKey.Reset()
@@ -3692,7 +3726,7 @@ func (s *CatalogPrice) Decode(d *jx.Decoder) error {
 				return errors.Wrap(err, "decode field \"product_id\"")
 			}
 		case "id":
-			requiredBitSet[0] |= 1 << 2
+			requiredBitSet[0] |= 1 << 4
 			if err := func() error {
 				v, err := json.DecodeUUID(d)
 				s.ID = v
@@ -3704,7 +3738,7 @@ func (s *CatalogPrice) Decode(d *jx.Decoder) error {
 				return errors.Wrap(err, "decode field \"id\"")
 			}
 		case "plan_id":
-			requiredBitSet[0] |= 1 << 3
+			requiredBitSet[0] |= 1 << 5
 			if err := func() error {
 				v, err := json.DecodeUUID(d)
 				s.PlanID = v
@@ -3716,7 +3750,7 @@ func (s *CatalogPrice) Decode(d *jx.Decoder) error {
 				return errors.Wrap(err, "decode field \"plan_id\"")
 			}
 		case "currency":
-			requiredBitSet[0] |= 1 << 4
+			requiredBitSet[0] |= 1 << 6
 			if err := func() error {
 				v, err := d.Str()
 				s.Currency = string(v)
@@ -3728,7 +3762,7 @@ func (s *CatalogPrice) Decode(d *jx.Decoder) error {
 				return errors.Wrap(err, "decode field \"currency\"")
 			}
 		case "type":
-			requiredBitSet[0] |= 1 << 5
+			requiredBitSet[0] |= 1 << 7
 			if err := func() error {
 				if err := s.Type.Decode(d); err != nil {
 					return err
@@ -3738,7 +3772,7 @@ func (s *CatalogPrice) Decode(d *jx.Decoder) error {
 				return errors.Wrap(err, "decode field \"type\"")
 			}
 		case "billing_scheme":
-			requiredBitSet[0] |= 1 << 6
+			requiredBitSet[1] |= 1 << 0
 			if err := func() error {
 				if err := s.BillingScheme.Decode(d); err != nil {
 					return err
@@ -3898,8 +3932,8 @@ func (s *CatalogPrice) Decode(d *jx.Decoder) error {
 	// Validate required fields.
 	var failures []validate.FieldError
 	for i, mask := range [3]uint8{
-		0b01111100,
-		0b00000000,
+		0b11110000,
+		0b00000001,
 		0b00000000,
 	} {
 		if result := (requiredBitSet[i] & mask) ^ mask; result != 0 {
@@ -6015,6 +6049,945 @@ func (s *CodeRequest) MarshalJSON() ([]byte, error) {
 
 // UnmarshalJSON implements stdjson.Unmarshaler.
 func (s *CodeRequest) UnmarshalJSON(data []byte) error {
+	d := jx.DecodeBytes(data)
+	return s.Decode(d)
+}
+
+// Encode implements json.Marshaler.
+func (s *Commitment) Encode(e *jx.Encoder) {
+	e.ObjStart()
+	s.encodeFields(e)
+	e.ObjEnd()
+}
+
+// encodeFields encodes fields.
+func (s *Commitment) encodeFields(e *jx.Encoder) {
+	{
+		e.FieldStart("id")
+		json.EncodeUUID(e, s.ID)
+	}
+	{
+		e.FieldStart("billing_account_id")
+		e.Int(s.BillingAccountID)
+	}
+	{
+		e.FieldStart("currency")
+		e.Str(s.Currency)
+	}
+	{
+		e.FieldStart("type")
+		s.Type.Encode(e)
+	}
+	{
+		e.FieldStart("status")
+		s.Status.Encode(e)
+	}
+	{
+		e.FieldStart("description")
+		e.Str(s.Description)
+	}
+	{
+		e.FieldStart("terms_reference")
+		e.Str(s.TermsReference)
+	}
+	{
+		e.FieldStart("effective_from")
+		json.EncodeDateTime(e, s.EffectiveFrom)
+	}
+	{
+		e.FieldStart("effective_to")
+		json.EncodeDateTime(e, s.EffectiveTo)
+	}
+	{
+		e.FieldStart("release_policy")
+		s.ReleasePolicy.Encode(e)
+	}
+	{
+		if s.ContractID.Set {
+			e.FieldStart("contract_id")
+			s.ContractID.Encode(e)
+		}
+	}
+	{
+		if s.OriginOrderItemID.Set {
+			e.FieldStart("origin_order_item_id")
+			s.OriginOrderItemID.Encode(e)
+		}
+	}
+	{
+		if s.OriginProjectID.Set {
+			e.FieldStart("origin_project_id")
+			s.OriginProjectID.Encode(e)
+		}
+	}
+	{
+		if s.AcceptedAt.Set {
+			e.FieldStart("accepted_at")
+			s.AcceptedAt.Encode(e, json.EncodeDateTime)
+		}
+	}
+	{
+		if s.AcceptedBy.Set {
+			e.FieldStart("accepted_by")
+			s.AcceptedBy.Encode(e)
+		}
+	}
+	{
+		if s.EligibilityPolicyVersion.Set {
+			e.FieldStart("eligibility_policy_version")
+			s.EligibilityPolicyVersion.Encode(e)
+		}
+	}
+	{
+		if s.TerminatedAt.Set {
+			e.FieldStart("terminated_at")
+			s.TerminatedAt.Encode(e, json.EncodeDateTime)
+		}
+	}
+	{
+		if s.TerminationReason.Set {
+			e.FieldStart("termination_reason")
+			s.TerminationReason.Encode(e)
+		}
+	}
+	{
+		e.FieldStart("periods")
+		e.ArrStart()
+		for _, elem := range s.Periods {
+			elem.Encode(e)
+		}
+		e.ArrEnd()
+	}
+}
+
+var jsonFieldsNameOfCommitment = [19]string{
+	0:  "id",
+	1:  "billing_account_id",
+	2:  "currency",
+	3:  "type",
+	4:  "status",
+	5:  "description",
+	6:  "terms_reference",
+	7:  "effective_from",
+	8:  "effective_to",
+	9:  "release_policy",
+	10: "contract_id",
+	11: "origin_order_item_id",
+	12: "origin_project_id",
+	13: "accepted_at",
+	14: "accepted_by",
+	15: "eligibility_policy_version",
+	16: "terminated_at",
+	17: "termination_reason",
+	18: "periods",
+}
+
+// Decode decodes Commitment from json.
+func (s *Commitment) Decode(d *jx.Decoder) error {
+	if s == nil {
+		return errors.New("invalid: unable to decode Commitment to nil")
+	}
+	var requiredBitSet [3]uint8
+
+	if err := d.ObjBytes(func(d *jx.Decoder, k []byte) error {
+		switch string(k) {
+		case "id":
+			requiredBitSet[0] |= 1 << 0
+			if err := func() error {
+				v, err := json.DecodeUUID(d)
+				s.ID = v
+				if err != nil {
+					return err
+				}
+				return nil
+			}(); err != nil {
+				return errors.Wrap(err, "decode field \"id\"")
+			}
+		case "billing_account_id":
+			requiredBitSet[0] |= 1 << 1
+			if err := func() error {
+				v, err := d.Int()
+				s.BillingAccountID = int(v)
+				if err != nil {
+					return err
+				}
+				return nil
+			}(); err != nil {
+				return errors.Wrap(err, "decode field \"billing_account_id\"")
+			}
+		case "currency":
+			requiredBitSet[0] |= 1 << 2
+			if err := func() error {
+				v, err := d.Str()
+				s.Currency = string(v)
+				if err != nil {
+					return err
+				}
+				return nil
+			}(); err != nil {
+				return errors.Wrap(err, "decode field \"currency\"")
+			}
+		case "type":
+			requiredBitSet[0] |= 1 << 3
+			if err := func() error {
+				if err := s.Type.Decode(d); err != nil {
+					return err
+				}
+				return nil
+			}(); err != nil {
+				return errors.Wrap(err, "decode field \"type\"")
+			}
+		case "status":
+			requiredBitSet[0] |= 1 << 4
+			if err := func() error {
+				if err := s.Status.Decode(d); err != nil {
+					return err
+				}
+				return nil
+			}(); err != nil {
+				return errors.Wrap(err, "decode field \"status\"")
+			}
+		case "description":
+			requiredBitSet[0] |= 1 << 5
+			if err := func() error {
+				v, err := d.Str()
+				s.Description = string(v)
+				if err != nil {
+					return err
+				}
+				return nil
+			}(); err != nil {
+				return errors.Wrap(err, "decode field \"description\"")
+			}
+		case "terms_reference":
+			requiredBitSet[0] |= 1 << 6
+			if err := func() error {
+				v, err := d.Str()
+				s.TermsReference = string(v)
+				if err != nil {
+					return err
+				}
+				return nil
+			}(); err != nil {
+				return errors.Wrap(err, "decode field \"terms_reference\"")
+			}
+		case "effective_from":
+			requiredBitSet[0] |= 1 << 7
+			if err := func() error {
+				v, err := json.DecodeDateTime(d)
+				s.EffectiveFrom = v
+				if err != nil {
+					return err
+				}
+				return nil
+			}(); err != nil {
+				return errors.Wrap(err, "decode field \"effective_from\"")
+			}
+		case "effective_to":
+			requiredBitSet[1] |= 1 << 0
+			if err := func() error {
+				v, err := json.DecodeDateTime(d)
+				s.EffectiveTo = v
+				if err != nil {
+					return err
+				}
+				return nil
+			}(); err != nil {
+				return errors.Wrap(err, "decode field \"effective_to\"")
+			}
+		case "release_policy":
+			requiredBitSet[1] |= 1 << 1
+			if err := func() error {
+				if err := s.ReleasePolicy.Decode(d); err != nil {
+					return err
+				}
+				return nil
+			}(); err != nil {
+				return errors.Wrap(err, "decode field \"release_policy\"")
+			}
+		case "contract_id":
+			if err := func() error {
+				s.ContractID.Reset()
+				if err := s.ContractID.Decode(d); err != nil {
+					return err
+				}
+				return nil
+			}(); err != nil {
+				return errors.Wrap(err, "decode field \"contract_id\"")
+			}
+		case "origin_order_item_id":
+			if err := func() error {
+				s.OriginOrderItemID.Reset()
+				if err := s.OriginOrderItemID.Decode(d); err != nil {
+					return err
+				}
+				return nil
+			}(); err != nil {
+				return errors.Wrap(err, "decode field \"origin_order_item_id\"")
+			}
+		case "origin_project_id":
+			if err := func() error {
+				s.OriginProjectID.Reset()
+				if err := s.OriginProjectID.Decode(d); err != nil {
+					return err
+				}
+				return nil
+			}(); err != nil {
+				return errors.Wrap(err, "decode field \"origin_project_id\"")
+			}
+		case "accepted_at":
+			if err := func() error {
+				s.AcceptedAt.Reset()
+				if err := s.AcceptedAt.Decode(d, json.DecodeDateTime); err != nil {
+					return err
+				}
+				return nil
+			}(); err != nil {
+				return errors.Wrap(err, "decode field \"accepted_at\"")
+			}
+		case "accepted_by":
+			if err := func() error {
+				s.AcceptedBy.Reset()
+				if err := s.AcceptedBy.Decode(d); err != nil {
+					return err
+				}
+				return nil
+			}(); err != nil {
+				return errors.Wrap(err, "decode field \"accepted_by\"")
+			}
+		case "eligibility_policy_version":
+			if err := func() error {
+				s.EligibilityPolicyVersion.Reset()
+				if err := s.EligibilityPolicyVersion.Decode(d); err != nil {
+					return err
+				}
+				return nil
+			}(); err != nil {
+				return errors.Wrap(err, "decode field \"eligibility_policy_version\"")
+			}
+		case "terminated_at":
+			if err := func() error {
+				s.TerminatedAt.Reset()
+				if err := s.TerminatedAt.Decode(d, json.DecodeDateTime); err != nil {
+					return err
+				}
+				return nil
+			}(); err != nil {
+				return errors.Wrap(err, "decode field \"terminated_at\"")
+			}
+		case "termination_reason":
+			if err := func() error {
+				s.TerminationReason.Reset()
+				if err := s.TerminationReason.Decode(d); err != nil {
+					return err
+				}
+				return nil
+			}(); err != nil {
+				return errors.Wrap(err, "decode field \"termination_reason\"")
+			}
+		case "periods":
+			requiredBitSet[2] |= 1 << 2
+			if err := func() error {
+				s.Periods = make([]CommitmentPeriod, 0)
+				if err := d.Arr(func(d *jx.Decoder) error {
+					var elem CommitmentPeriod
+					if err := elem.Decode(d); err != nil {
+						return err
+					}
+					s.Periods = append(s.Periods, elem)
+					return nil
+				}); err != nil {
+					return err
+				}
+				return nil
+			}(); err != nil {
+				return errors.Wrap(err, "decode field \"periods\"")
+			}
+		default:
+			return d.Skip()
+		}
+		return nil
+	}); err != nil {
+		return errors.Wrap(err, "decode Commitment")
+	}
+	// Validate required fields.
+	var failures []validate.FieldError
+	for i, mask := range [3]uint8{
+		0b11111111,
+		0b00000011,
+		0b00000100,
+	} {
+		if result := (requiredBitSet[i] & mask) ^ mask; result != 0 {
+			// Mask only required fields and check equality to mask using XOR.
+			//
+			// If XOR result is not zero, result is not equal to expected, so some fields are missed.
+			// Bits of fields which would be set are actually bits of missed fields.
+			missed := bits.OnesCount8(result)
+			for bitN := 0; bitN < missed; bitN++ {
+				bitIdx := bits.TrailingZeros8(result)
+				fieldIdx := i*8 + bitIdx
+				var name string
+				if fieldIdx < len(jsonFieldsNameOfCommitment) {
+					name = jsonFieldsNameOfCommitment[fieldIdx]
+				} else {
+					name = strconv.Itoa(fieldIdx)
+				}
+				failures = append(failures, validate.FieldError{
+					Name:  name,
+					Error: validate.ErrFieldRequired,
+				})
+				// Reset bit.
+				result &^= 1 << bitIdx
+			}
+		}
+	}
+	if len(failures) > 0 {
+		return &validate.Error{Fields: failures}
+	}
+
+	return nil
+}
+
+// MarshalJSON implements stdjson.Marshaler.
+func (s *Commitment) MarshalJSON() ([]byte, error) {
+	e := jx.Encoder{}
+	s.Encode(&e)
+	return e.Bytes(), nil
+}
+
+// UnmarshalJSON implements stdjson.Unmarshaler.
+func (s *Commitment) UnmarshalJSON(data []byte) error {
+	d := jx.DecodeBytes(data)
+	return s.Decode(d)
+}
+
+// Encode implements json.Marshaler.
+func (s *CommitmentList) Encode(e *jx.Encoder) {
+	e.ObjStart()
+	s.encodeFields(e)
+	e.ObjEnd()
+}
+
+// encodeFields encodes fields.
+func (s *CommitmentList) encodeFields(e *jx.Encoder) {
+	{
+		e.FieldStart("items")
+		e.ArrStart()
+		for _, elem := range s.Items {
+			elem.Encode(e)
+		}
+		e.ArrEnd()
+	}
+	{
+		e.FieldStart("total_count")
+		e.Int64(s.TotalCount)
+	}
+}
+
+var jsonFieldsNameOfCommitmentList = [2]string{
+	0: "items",
+	1: "total_count",
+}
+
+// Decode decodes CommitmentList from json.
+func (s *CommitmentList) Decode(d *jx.Decoder) error {
+	if s == nil {
+		return errors.New("invalid: unable to decode CommitmentList to nil")
+	}
+	var requiredBitSet [1]uint8
+
+	if err := d.ObjBytes(func(d *jx.Decoder, k []byte) error {
+		switch string(k) {
+		case "items":
+			requiredBitSet[0] |= 1 << 0
+			if err := func() error {
+				s.Items = make([]Commitment, 0)
+				if err := d.Arr(func(d *jx.Decoder) error {
+					var elem Commitment
+					if err := elem.Decode(d); err != nil {
+						return err
+					}
+					s.Items = append(s.Items, elem)
+					return nil
+				}); err != nil {
+					return err
+				}
+				return nil
+			}(); err != nil {
+				return errors.Wrap(err, "decode field \"items\"")
+			}
+		case "total_count":
+			requiredBitSet[0] |= 1 << 1
+			if err := func() error {
+				v, err := d.Int64()
+				s.TotalCount = int64(v)
+				if err != nil {
+					return err
+				}
+				return nil
+			}(); err != nil {
+				return errors.Wrap(err, "decode field \"total_count\"")
+			}
+		default:
+			return d.Skip()
+		}
+		return nil
+	}); err != nil {
+		return errors.Wrap(err, "decode CommitmentList")
+	}
+	// Validate required fields.
+	var failures []validate.FieldError
+	for i, mask := range [1]uint8{
+		0b00000011,
+	} {
+		if result := (requiredBitSet[i] & mask) ^ mask; result != 0 {
+			// Mask only required fields and check equality to mask using XOR.
+			//
+			// If XOR result is not zero, result is not equal to expected, so some fields are missed.
+			// Bits of fields which would be set are actually bits of missed fields.
+			missed := bits.OnesCount8(result)
+			for bitN := 0; bitN < missed; bitN++ {
+				bitIdx := bits.TrailingZeros8(result)
+				fieldIdx := i*8 + bitIdx
+				var name string
+				if fieldIdx < len(jsonFieldsNameOfCommitmentList) {
+					name = jsonFieldsNameOfCommitmentList[fieldIdx]
+				} else {
+					name = strconv.Itoa(fieldIdx)
+				}
+				failures = append(failures, validate.FieldError{
+					Name:  name,
+					Error: validate.ErrFieldRequired,
+				})
+				// Reset bit.
+				result &^= 1 << bitIdx
+			}
+		}
+	}
+	if len(failures) > 0 {
+		return &validate.Error{Fields: failures}
+	}
+
+	return nil
+}
+
+// MarshalJSON implements stdjson.Marshaler.
+func (s *CommitmentList) MarshalJSON() ([]byte, error) {
+	e := jx.Encoder{}
+	s.Encode(&e)
+	return e.Bytes(), nil
+}
+
+// UnmarshalJSON implements stdjson.Unmarshaler.
+func (s *CommitmentList) UnmarshalJSON(data []byte) error {
+	d := jx.DecodeBytes(data)
+	return s.Decode(d)
+}
+
+// Encode implements json.Marshaler.
+func (s *CommitmentPeriod) Encode(e *jx.Encoder) {
+	e.ObjStart()
+	s.encodeFields(e)
+	e.ObjEnd()
+}
+
+// encodeFields encodes fields.
+func (s *CommitmentPeriod) encodeFields(e *jx.Encoder) {
+	{
+		e.FieldStart("id")
+		json.EncodeUUID(e, s.ID)
+	}
+	{
+		e.FieldStart("sequence")
+		e.Int(s.Sequence)
+	}
+	{
+		e.FieldStart("period_start")
+		json.EncodeDateTime(e, s.PeriodStart)
+	}
+	{
+		e.FieldStart("period_end")
+		json.EncodeDateTime(e, s.PeriodEnd)
+	}
+	{
+		e.FieldStart("due_at")
+		json.EncodeDateTime(e, s.DueAt)
+	}
+	{
+		e.FieldStart("amount")
+		e.Str(s.Amount)
+	}
+	{
+		if s.InvoiceItemID.Set {
+			e.FieldStart("invoice_item_id")
+			s.InvoiceItemID.Encode(e)
+		}
+	}
+	{
+		if s.FinalizedAt.Set {
+			e.FieldStart("finalized_at")
+			s.FinalizedAt.Encode(e, json.EncodeDateTime)
+		}
+	}
+	{
+		if s.EligibleAmount.Set {
+			e.FieldStart("eligible_amount")
+			s.EligibleAmount.Encode(e)
+		}
+	}
+	{
+		if s.AmountDue.Set {
+			e.FieldStart("amount_due")
+			s.AmountDue.Encode(e)
+		}
+	}
+	{
+		if s.WaivedAt.Set {
+			e.FieldStart("waived_at")
+			s.WaivedAt.Encode(e, json.EncodeDateTime)
+		}
+	}
+	{
+		if s.WaiverReason.Set {
+			e.FieldStart("waiver_reason")
+			s.WaiverReason.Encode(e)
+		}
+	}
+}
+
+var jsonFieldsNameOfCommitmentPeriod = [12]string{
+	0:  "id",
+	1:  "sequence",
+	2:  "period_start",
+	3:  "period_end",
+	4:  "due_at",
+	5:  "amount",
+	6:  "invoice_item_id",
+	7:  "finalized_at",
+	8:  "eligible_amount",
+	9:  "amount_due",
+	10: "waived_at",
+	11: "waiver_reason",
+}
+
+// Decode decodes CommitmentPeriod from json.
+func (s *CommitmentPeriod) Decode(d *jx.Decoder) error {
+	if s == nil {
+		return errors.New("invalid: unable to decode CommitmentPeriod to nil")
+	}
+	var requiredBitSet [2]uint8
+
+	if err := d.ObjBytes(func(d *jx.Decoder, k []byte) error {
+		switch string(k) {
+		case "id":
+			requiredBitSet[0] |= 1 << 0
+			if err := func() error {
+				v, err := json.DecodeUUID(d)
+				s.ID = v
+				if err != nil {
+					return err
+				}
+				return nil
+			}(); err != nil {
+				return errors.Wrap(err, "decode field \"id\"")
+			}
+		case "sequence":
+			requiredBitSet[0] |= 1 << 1
+			if err := func() error {
+				v, err := d.Int()
+				s.Sequence = int(v)
+				if err != nil {
+					return err
+				}
+				return nil
+			}(); err != nil {
+				return errors.Wrap(err, "decode field \"sequence\"")
+			}
+		case "period_start":
+			requiredBitSet[0] |= 1 << 2
+			if err := func() error {
+				v, err := json.DecodeDateTime(d)
+				s.PeriodStart = v
+				if err != nil {
+					return err
+				}
+				return nil
+			}(); err != nil {
+				return errors.Wrap(err, "decode field \"period_start\"")
+			}
+		case "period_end":
+			requiredBitSet[0] |= 1 << 3
+			if err := func() error {
+				v, err := json.DecodeDateTime(d)
+				s.PeriodEnd = v
+				if err != nil {
+					return err
+				}
+				return nil
+			}(); err != nil {
+				return errors.Wrap(err, "decode field \"period_end\"")
+			}
+		case "due_at":
+			requiredBitSet[0] |= 1 << 4
+			if err := func() error {
+				v, err := json.DecodeDateTime(d)
+				s.DueAt = v
+				if err != nil {
+					return err
+				}
+				return nil
+			}(); err != nil {
+				return errors.Wrap(err, "decode field \"due_at\"")
+			}
+		case "amount":
+			requiredBitSet[0] |= 1 << 5
+			if err := func() error {
+				v, err := d.Str()
+				s.Amount = string(v)
+				if err != nil {
+					return err
+				}
+				return nil
+			}(); err != nil {
+				return errors.Wrap(err, "decode field \"amount\"")
+			}
+		case "invoice_item_id":
+			if err := func() error {
+				s.InvoiceItemID.Reset()
+				if err := s.InvoiceItemID.Decode(d); err != nil {
+					return err
+				}
+				return nil
+			}(); err != nil {
+				return errors.Wrap(err, "decode field \"invoice_item_id\"")
+			}
+		case "finalized_at":
+			if err := func() error {
+				s.FinalizedAt.Reset()
+				if err := s.FinalizedAt.Decode(d, json.DecodeDateTime); err != nil {
+					return err
+				}
+				return nil
+			}(); err != nil {
+				return errors.Wrap(err, "decode field \"finalized_at\"")
+			}
+		case "eligible_amount":
+			if err := func() error {
+				s.EligibleAmount.Reset()
+				if err := s.EligibleAmount.Decode(d); err != nil {
+					return err
+				}
+				return nil
+			}(); err != nil {
+				return errors.Wrap(err, "decode field \"eligible_amount\"")
+			}
+		case "amount_due":
+			if err := func() error {
+				s.AmountDue.Reset()
+				if err := s.AmountDue.Decode(d); err != nil {
+					return err
+				}
+				return nil
+			}(); err != nil {
+				return errors.Wrap(err, "decode field \"amount_due\"")
+			}
+		case "waived_at":
+			if err := func() error {
+				s.WaivedAt.Reset()
+				if err := s.WaivedAt.Decode(d, json.DecodeDateTime); err != nil {
+					return err
+				}
+				return nil
+			}(); err != nil {
+				return errors.Wrap(err, "decode field \"waived_at\"")
+			}
+		case "waiver_reason":
+			if err := func() error {
+				s.WaiverReason.Reset()
+				if err := s.WaiverReason.Decode(d); err != nil {
+					return err
+				}
+				return nil
+			}(); err != nil {
+				return errors.Wrap(err, "decode field \"waiver_reason\"")
+			}
+		default:
+			return d.Skip()
+		}
+		return nil
+	}); err != nil {
+		return errors.Wrap(err, "decode CommitmentPeriod")
+	}
+	// Validate required fields.
+	var failures []validate.FieldError
+	for i, mask := range [2]uint8{
+		0b00111111,
+		0b00000000,
+	} {
+		if result := (requiredBitSet[i] & mask) ^ mask; result != 0 {
+			// Mask only required fields and check equality to mask using XOR.
+			//
+			// If XOR result is not zero, result is not equal to expected, so some fields are missed.
+			// Bits of fields which would be set are actually bits of missed fields.
+			missed := bits.OnesCount8(result)
+			for bitN := 0; bitN < missed; bitN++ {
+				bitIdx := bits.TrailingZeros8(result)
+				fieldIdx := i*8 + bitIdx
+				var name string
+				if fieldIdx < len(jsonFieldsNameOfCommitmentPeriod) {
+					name = jsonFieldsNameOfCommitmentPeriod[fieldIdx]
+				} else {
+					name = strconv.Itoa(fieldIdx)
+				}
+				failures = append(failures, validate.FieldError{
+					Name:  name,
+					Error: validate.ErrFieldRequired,
+				})
+				// Reset bit.
+				result &^= 1 << bitIdx
+			}
+		}
+	}
+	if len(failures) > 0 {
+		return &validate.Error{Fields: failures}
+	}
+
+	return nil
+}
+
+// MarshalJSON implements stdjson.Marshaler.
+func (s *CommitmentPeriod) MarshalJSON() ([]byte, error) {
+	e := jx.Encoder{}
+	s.Encode(&e)
+	return e.Bytes(), nil
+}
+
+// UnmarshalJSON implements stdjson.Unmarshaler.
+func (s *CommitmentPeriod) UnmarshalJSON(data []byte) error {
+	d := jx.DecodeBytes(data)
+	return s.Decode(d)
+}
+
+// Encode encodes CommitmentReleasePolicy as json.
+func (s CommitmentReleasePolicy) Encode(e *jx.Encoder) {
+	e.Str(string(s))
+}
+
+// Decode decodes CommitmentReleasePolicy from json.
+func (s *CommitmentReleasePolicy) Decode(d *jx.Decoder) error {
+	if s == nil {
+		return errors.New("invalid: unable to decode CommitmentReleasePolicy to nil")
+	}
+	v, err := d.StrBytes()
+	if err != nil {
+		return err
+	}
+	// Try to use constant string.
+	switch CommitmentReleasePolicy(v) {
+	case CommitmentReleasePolicyRetainUntilTerm:
+		*s = CommitmentReleasePolicyRetainUntilTerm
+	case CommitmentReleasePolicyReleaseWithObligation:
+		*s = CommitmentReleasePolicyReleaseWithObligation
+	default:
+		*s = CommitmentReleasePolicy(v)
+	}
+
+	return nil
+}
+
+// MarshalJSON implements stdjson.Marshaler.
+func (s CommitmentReleasePolicy) MarshalJSON() ([]byte, error) {
+	e := jx.Encoder{}
+	s.Encode(&e)
+	return e.Bytes(), nil
+}
+
+// UnmarshalJSON implements stdjson.Unmarshaler.
+func (s *CommitmentReleasePolicy) UnmarshalJSON(data []byte) error {
+	d := jx.DecodeBytes(data)
+	return s.Decode(d)
+}
+
+// Encode encodes CommitmentStatus as json.
+func (s CommitmentStatus) Encode(e *jx.Encoder) {
+	e.Str(string(s))
+}
+
+// Decode decodes CommitmentStatus from json.
+func (s *CommitmentStatus) Decode(d *jx.Decoder) error {
+	if s == nil {
+		return errors.New("invalid: unable to decode CommitmentStatus to nil")
+	}
+	v, err := d.StrBytes()
+	if err != nil {
+		return err
+	}
+	// Try to use constant string.
+	switch CommitmentStatus(v) {
+	case CommitmentStatusDraft:
+		*s = CommitmentStatusDraft
+	case CommitmentStatusActive:
+		*s = CommitmentStatusActive
+	case CommitmentStatusCompleted:
+		*s = CommitmentStatusCompleted
+	case CommitmentStatusTerminated:
+		*s = CommitmentStatusTerminated
+	default:
+		*s = CommitmentStatus(v)
+	}
+
+	return nil
+}
+
+// MarshalJSON implements stdjson.Marshaler.
+func (s CommitmentStatus) MarshalJSON() ([]byte, error) {
+	e := jx.Encoder{}
+	s.Encode(&e)
+	return e.Bytes(), nil
+}
+
+// UnmarshalJSON implements stdjson.Unmarshaler.
+func (s *CommitmentStatus) UnmarshalJSON(data []byte) error {
+	d := jx.DecodeBytes(data)
+	return s.Decode(d)
+}
+
+// Encode encodes CommitmentType as json.
+func (s CommitmentType) Encode(e *jx.Encoder) {
+	e.Str(string(s))
+}
+
+// Decode decodes CommitmentType from json.
+func (s *CommitmentType) Decode(d *jx.Decoder) error {
+	if s == nil {
+		return errors.New("invalid: unable to decode CommitmentType to nil")
+	}
+	v, err := d.StrBytes()
+	if err != nil {
+		return err
+	}
+	// Try to use constant string.
+	switch CommitmentType(v) {
+	case CommitmentTypeFixedAmount:
+		*s = CommitmentTypeFixedAmount
+	case CommitmentTypeMinimumSpend:
+		*s = CommitmentTypeMinimumSpend
+	default:
+		*s = CommitmentType(v)
+	}
+
+	return nil
+}
+
+// MarshalJSON implements stdjson.Marshaler.
+func (s CommitmentType) MarshalJSON() ([]byte, error) {
+	e := jx.Encoder{}
+	s.Encode(&e)
+	return e.Bytes(), nil
+}
+
+// UnmarshalJSON implements stdjson.Unmarshaler.
+func (s *CommitmentType) UnmarshalJSON(data []byte) error {
 	d := jx.DecodeBytes(data)
 	return s.Decode(d)
 }
@@ -10272,6 +11245,39 @@ func (s *OptRefundDestination) UnmarshalJSON(data []byte) error {
 	return s.Decode(d)
 }
 
+// Encode encodes RefundPolicy as json.
+func (o OptRefundPolicy) Encode(e *jx.Encoder) {
+	if !o.Set {
+		return
+	}
+	e.Str(string(o.Value))
+}
+
+// Decode decodes RefundPolicy from json.
+func (o *OptRefundPolicy) Decode(d *jx.Decoder) error {
+	if o == nil {
+		return errors.New("invalid: unable to decode OptRefundPolicy to nil")
+	}
+	o.Set = true
+	if err := o.Value.Decode(d); err != nil {
+		return err
+	}
+	return nil
+}
+
+// MarshalJSON implements stdjson.Marshaler.
+func (s OptRefundPolicy) MarshalJSON() ([]byte, error) {
+	e := jx.Encoder{}
+	s.Encode(&e)
+	return e.Bytes(), nil
+}
+
+// UnmarshalJSON implements stdjson.Unmarshaler.
+func (s *OptRefundPolicy) UnmarshalJSON(data []byte) error {
+	d := jx.DecodeBytes(data)
+	return s.Decode(d)
+}
+
 // Encode encodes string as json.
 func (o OptString) Encode(e *jx.Encoder) {
 	if !o.Set {
@@ -10303,6 +11309,72 @@ func (s OptString) MarshalJSON() ([]byte, error) {
 
 // UnmarshalJSON implements stdjson.Unmarshaler.
 func (s *OptString) UnmarshalJSON(data []byte) error {
+	d := jx.DecodeBytes(data)
+	return s.Decode(d)
+}
+
+// Encode encodes SubscriptionCancellation as json.
+func (o OptSubscriptionCancellation) Encode(e *jx.Encoder) {
+	if !o.Set {
+		return
+	}
+	o.Value.Encode(e)
+}
+
+// Decode decodes SubscriptionCancellation from json.
+func (o *OptSubscriptionCancellation) Decode(d *jx.Decoder) error {
+	if o == nil {
+		return errors.New("invalid: unable to decode OptSubscriptionCancellation to nil")
+	}
+	o.Set = true
+	if err := o.Value.Decode(d); err != nil {
+		return err
+	}
+	return nil
+}
+
+// MarshalJSON implements stdjson.Marshaler.
+func (s OptSubscriptionCancellation) MarshalJSON() ([]byte, error) {
+	e := jx.Encoder{}
+	s.Encode(&e)
+	return e.Bytes(), nil
+}
+
+// UnmarshalJSON implements stdjson.Unmarshaler.
+func (s *OptSubscriptionCancellation) UnmarshalJSON(data []byte) error {
+	d := jx.DecodeBytes(data)
+	return s.Decode(d)
+}
+
+// Encode encodes TerminationPolicy as json.
+func (o OptTerminationPolicy) Encode(e *jx.Encoder) {
+	if !o.Set {
+		return
+	}
+	e.Str(string(o.Value))
+}
+
+// Decode decodes TerminationPolicy from json.
+func (o *OptTerminationPolicy) Decode(d *jx.Decoder) error {
+	if o == nil {
+		return errors.New("invalid: unable to decode OptTerminationPolicy to nil")
+	}
+	o.Set = true
+	if err := o.Value.Decode(d); err != nil {
+		return err
+	}
+	return nil
+}
+
+// MarshalJSON implements stdjson.Marshaler.
+func (s OptTerminationPolicy) MarshalJSON() ([]byte, error) {
+	e := jx.Encoder{}
+	s.Encode(&e)
+	return e.Bytes(), nil
+}
+
+// UnmarshalJSON implements stdjson.Unmarshaler.
+func (s *OptTerminationPolicy) UnmarshalJSON(data []byte) error {
 	d := jx.DecodeBytes(data)
 	return s.Decode(d)
 }
@@ -13179,6 +14251,597 @@ func (s *ProjectBindingList) UnmarshalJSON(data []byte) error {
 }
 
 // Encode implements json.Marshaler.
+func (s *ProjectClosureItem) Encode(e *jx.Encoder) {
+	e.ObjStart()
+	s.encodeFields(e)
+	e.ObjEnd()
+}
+
+// encodeFields encodes fields.
+func (s *ProjectClosureItem) encodeFields(e *jx.Encoder) {
+	{
+		e.FieldStart("type")
+		s.Type.Encode(e)
+	}
+	{
+		e.FieldStart("id")
+		json.EncodeUUID(e, s.ID)
+	}
+	{
+		if s.ProductID.Set {
+			e.FieldStart("product_id")
+			s.ProductID.Encode(e)
+		}
+	}
+	{
+		if s.ResourceID.Set {
+			e.FieldStart("resource_id")
+			s.ResourceID.Encode(e)
+		}
+	}
+	{
+		e.FieldStart("disposition")
+		s.Disposition.Encode(e)
+	}
+	{
+		e.FieldStart("reason_code")
+		e.Str(s.ReasonCode)
+	}
+	{
+		e.FieldStart("actions")
+		e.ArrStart()
+		for _, elem := range s.Actions {
+			elem.Encode(e)
+		}
+		e.ArrEnd()
+	}
+	{
+		if s.EarliestTerminationAt.Set {
+			e.FieldStart("earliest_termination_at")
+			s.EarliestTerminationAt.Encode(e, json.EncodeDateTime)
+		}
+	}
+	{
+		if s.RefundAmount.Set {
+			e.FieldStart("refund_amount")
+			s.RefundAmount.Encode(e)
+		}
+	}
+	{
+		if s.Currency.Set {
+			e.FieldStart("currency")
+			s.Currency.Encode(e)
+		}
+	}
+	{
+		if s.Cancellation.Set {
+			e.FieldStart("cancellation")
+			s.Cancellation.Encode(e)
+		}
+	}
+}
+
+var jsonFieldsNameOfProjectClosureItem = [11]string{
+	0:  "type",
+	1:  "id",
+	2:  "product_id",
+	3:  "resource_id",
+	4:  "disposition",
+	5:  "reason_code",
+	6:  "actions",
+	7:  "earliest_termination_at",
+	8:  "refund_amount",
+	9:  "currency",
+	10: "cancellation",
+}
+
+// Decode decodes ProjectClosureItem from json.
+func (s *ProjectClosureItem) Decode(d *jx.Decoder) error {
+	if s == nil {
+		return errors.New("invalid: unable to decode ProjectClosureItem to nil")
+	}
+	var requiredBitSet [2]uint8
+
+	if err := d.ObjBytes(func(d *jx.Decoder, k []byte) error {
+		switch string(k) {
+		case "type":
+			requiredBitSet[0] |= 1 << 0
+			if err := func() error {
+				if err := s.Type.Decode(d); err != nil {
+					return err
+				}
+				return nil
+			}(); err != nil {
+				return errors.Wrap(err, "decode field \"type\"")
+			}
+		case "id":
+			requiredBitSet[0] |= 1 << 1
+			if err := func() error {
+				v, err := json.DecodeUUID(d)
+				s.ID = v
+				if err != nil {
+					return err
+				}
+				return nil
+			}(); err != nil {
+				return errors.Wrap(err, "decode field \"id\"")
+			}
+		case "product_id":
+			if err := func() error {
+				s.ProductID.Reset()
+				if err := s.ProductID.Decode(d); err != nil {
+					return err
+				}
+				return nil
+			}(); err != nil {
+				return errors.Wrap(err, "decode field \"product_id\"")
+			}
+		case "resource_id":
+			if err := func() error {
+				s.ResourceID.Reset()
+				if err := s.ResourceID.Decode(d); err != nil {
+					return err
+				}
+				return nil
+			}(); err != nil {
+				return errors.Wrap(err, "decode field \"resource_id\"")
+			}
+		case "disposition":
+			requiredBitSet[0] |= 1 << 4
+			if err := func() error {
+				if err := s.Disposition.Decode(d); err != nil {
+					return err
+				}
+				return nil
+			}(); err != nil {
+				return errors.Wrap(err, "decode field \"disposition\"")
+			}
+		case "reason_code":
+			requiredBitSet[0] |= 1 << 5
+			if err := func() error {
+				v, err := d.Str()
+				s.ReasonCode = string(v)
+				if err != nil {
+					return err
+				}
+				return nil
+			}(); err != nil {
+				return errors.Wrap(err, "decode field \"reason_code\"")
+			}
+		case "actions":
+			requiredBitSet[0] |= 1 << 6
+			if err := func() error {
+				s.Actions = make([]ProjectClosureItemActionsItem, 0)
+				if err := d.Arr(func(d *jx.Decoder) error {
+					var elem ProjectClosureItemActionsItem
+					if err := elem.Decode(d); err != nil {
+						return err
+					}
+					s.Actions = append(s.Actions, elem)
+					return nil
+				}); err != nil {
+					return err
+				}
+				return nil
+			}(); err != nil {
+				return errors.Wrap(err, "decode field \"actions\"")
+			}
+		case "earliest_termination_at":
+			if err := func() error {
+				s.EarliestTerminationAt.Reset()
+				if err := s.EarliestTerminationAt.Decode(d, json.DecodeDateTime); err != nil {
+					return err
+				}
+				return nil
+			}(); err != nil {
+				return errors.Wrap(err, "decode field \"earliest_termination_at\"")
+			}
+		case "refund_amount":
+			if err := func() error {
+				s.RefundAmount.Reset()
+				if err := s.RefundAmount.Decode(d); err != nil {
+					return err
+				}
+				return nil
+			}(); err != nil {
+				return errors.Wrap(err, "decode field \"refund_amount\"")
+			}
+		case "currency":
+			if err := func() error {
+				s.Currency.Reset()
+				if err := s.Currency.Decode(d); err != nil {
+					return err
+				}
+				return nil
+			}(); err != nil {
+				return errors.Wrap(err, "decode field \"currency\"")
+			}
+		case "cancellation":
+			if err := func() error {
+				s.Cancellation.Reset()
+				if err := s.Cancellation.Decode(d); err != nil {
+					return err
+				}
+				return nil
+			}(); err != nil {
+				return errors.Wrap(err, "decode field \"cancellation\"")
+			}
+		default:
+			return d.Skip()
+		}
+		return nil
+	}); err != nil {
+		return errors.Wrap(err, "decode ProjectClosureItem")
+	}
+	// Validate required fields.
+	var failures []validate.FieldError
+	for i, mask := range [2]uint8{
+		0b01110011,
+		0b00000000,
+	} {
+		if result := (requiredBitSet[i] & mask) ^ mask; result != 0 {
+			// Mask only required fields and check equality to mask using XOR.
+			//
+			// If XOR result is not zero, result is not equal to expected, so some fields are missed.
+			// Bits of fields which would be set are actually bits of missed fields.
+			missed := bits.OnesCount8(result)
+			for bitN := 0; bitN < missed; bitN++ {
+				bitIdx := bits.TrailingZeros8(result)
+				fieldIdx := i*8 + bitIdx
+				var name string
+				if fieldIdx < len(jsonFieldsNameOfProjectClosureItem) {
+					name = jsonFieldsNameOfProjectClosureItem[fieldIdx]
+				} else {
+					name = strconv.Itoa(fieldIdx)
+				}
+				failures = append(failures, validate.FieldError{
+					Name:  name,
+					Error: validate.ErrFieldRequired,
+				})
+				// Reset bit.
+				result &^= 1 << bitIdx
+			}
+		}
+	}
+	if len(failures) > 0 {
+		return &validate.Error{Fields: failures}
+	}
+
+	return nil
+}
+
+// MarshalJSON implements stdjson.Marshaler.
+func (s *ProjectClosureItem) MarshalJSON() ([]byte, error) {
+	e := jx.Encoder{}
+	s.Encode(&e)
+	return e.Bytes(), nil
+}
+
+// UnmarshalJSON implements stdjson.Unmarshaler.
+func (s *ProjectClosureItem) UnmarshalJSON(data []byte) error {
+	d := jx.DecodeBytes(data)
+	return s.Decode(d)
+}
+
+// Encode encodes ProjectClosureItemActionsItem as json.
+func (s ProjectClosureItemActionsItem) Encode(e *jx.Encoder) {
+	e.Str(string(s))
+}
+
+// Decode decodes ProjectClosureItemActionsItem from json.
+func (s *ProjectClosureItemActionsItem) Decode(d *jx.Decoder) error {
+	if s == nil {
+		return errors.New("invalid: unable to decode ProjectClosureItemActionsItem to nil")
+	}
+	v, err := d.StrBytes()
+	if err != nil {
+		return err
+	}
+	// Try to use constant string.
+	switch ProjectClosureItemActionsItem(v) {
+	case ProjectClosureItemActionsItemCancelOrder:
+		*s = ProjectClosureItemActionsItemCancelOrder
+	case ProjectClosureItemActionsItemWait:
+		*s = ProjectClosureItemActionsItemWait
+	case ProjectClosureItemActionsItemReleaseResource:
+		*s = ProjectClosureItemActionsItemReleaseResource
+	case ProjectClosureItemActionsItemCancelSubscription:
+		*s = ProjectClosureItemActionsItemCancelSubscription
+	case ProjectClosureItemActionsItemDisableAutoRenew:
+		*s = ProjectClosureItemActionsItemDisableAutoRenew
+	case ProjectClosureItemActionsItemSettleUsage:
+		*s = ProjectClosureItemActionsItemSettleUsage
+	case ProjectClosureItemActionsItemConfigureTerms:
+		*s = ProjectClosureItemActionsItemConfigureTerms
+	case ProjectClosureItemActionsItemResolveFailure:
+		*s = ProjectClosureItemActionsItemResolveFailure
+	default:
+		*s = ProjectClosureItemActionsItem(v)
+	}
+
+	return nil
+}
+
+// MarshalJSON implements stdjson.Marshaler.
+func (s ProjectClosureItemActionsItem) MarshalJSON() ([]byte, error) {
+	e := jx.Encoder{}
+	s.Encode(&e)
+	return e.Bytes(), nil
+}
+
+// UnmarshalJSON implements stdjson.Unmarshaler.
+func (s *ProjectClosureItemActionsItem) UnmarshalJSON(data []byte) error {
+	d := jx.DecodeBytes(data)
+	return s.Decode(d)
+}
+
+// Encode encodes ProjectClosureItemDisposition as json.
+func (s ProjectClosureItemDisposition) Encode(e *jx.Encoder) {
+	e.Str(string(s))
+}
+
+// Decode decodes ProjectClosureItemDisposition from json.
+func (s *ProjectClosureItemDisposition) Decode(d *jx.Decoder) error {
+	if s == nil {
+		return errors.New("invalid: unable to decode ProjectClosureItemDisposition to nil")
+	}
+	v, err := d.StrBytes()
+	if err != nil {
+		return err
+	}
+	// Try to use constant string.
+	switch ProjectClosureItemDisposition(v) {
+	case ProjectClosureItemDispositionActionRequired:
+		*s = ProjectClosureItemDispositionActionRequired
+	case ProjectClosureItemDispositionWaiting:
+		*s = ProjectClosureItemDispositionWaiting
+	case ProjectClosureItemDispositionBlocked:
+		*s = ProjectClosureItemDispositionBlocked
+	default:
+		*s = ProjectClosureItemDisposition(v)
+	}
+
+	return nil
+}
+
+// MarshalJSON implements stdjson.Marshaler.
+func (s ProjectClosureItemDisposition) MarshalJSON() ([]byte, error) {
+	e := jx.Encoder{}
+	s.Encode(&e)
+	return e.Bytes(), nil
+}
+
+// UnmarshalJSON implements stdjson.Unmarshaler.
+func (s *ProjectClosureItemDisposition) UnmarshalJSON(data []byte) error {
+	d := jx.DecodeBytes(data)
+	return s.Decode(d)
+}
+
+// Encode encodes ProjectClosureItemType as json.
+func (s ProjectClosureItemType) Encode(e *jx.Encoder) {
+	e.Str(string(s))
+}
+
+// Decode decodes ProjectClosureItemType from json.
+func (s *ProjectClosureItemType) Decode(d *jx.Decoder) error {
+	if s == nil {
+		return errors.New("invalid: unable to decode ProjectClosureItemType to nil")
+	}
+	v, err := d.StrBytes()
+	if err != nil {
+		return err
+	}
+	// Try to use constant string.
+	switch ProjectClosureItemType(v) {
+	case ProjectClosureItemTypeOrder:
+		*s = ProjectClosureItemTypeOrder
+	case ProjectClosureItemTypeSubscriptionItem:
+		*s = ProjectClosureItemTypeSubscriptionItem
+	case ProjectClosureItemTypeActiveResource:
+		*s = ProjectClosureItemTypeActiveResource
+	case ProjectClosureItemTypeResourceOperation:
+		*s = ProjectClosureItemTypeResourceOperation
+	case ProjectClosureItemTypeSubscriptionCancellation:
+		*s = ProjectClosureItemTypeSubscriptionCancellation
+	case ProjectClosureItemTypeUsageCharge:
+		*s = ProjectClosureItemTypeUsageCharge
+	case ProjectClosureItemTypeCommitment:
+		*s = ProjectClosureItemTypeCommitment
+	default:
+		*s = ProjectClosureItemType(v)
+	}
+
+	return nil
+}
+
+// MarshalJSON implements stdjson.Marshaler.
+func (s ProjectClosureItemType) MarshalJSON() ([]byte, error) {
+	e := jx.Encoder{}
+	s.Encode(&e)
+	return e.Bytes(), nil
+}
+
+// UnmarshalJSON implements stdjson.Unmarshaler.
+func (s *ProjectClosureItemType) UnmarshalJSON(data []byte) error {
+	d := jx.DecodeBytes(data)
+	return s.Decode(d)
+}
+
+// Encode implements json.Marshaler.
+func (s *ProjectClosurePreview) Encode(e *jx.Encoder) {
+	e.ObjStart()
+	s.encodeFields(e)
+	e.ObjEnd()
+}
+
+// encodeFields encodes fields.
+func (s *ProjectClosurePreview) encodeFields(e *jx.Encoder) {
+	{
+		e.FieldStart("project_id")
+		json.EncodeUUID(e, s.ProjectID)
+	}
+	{
+		e.FieldStart("evaluated_at")
+		json.EncodeDateTime(e, s.EvaluatedAt)
+	}
+	{
+		e.FieldStart("can_close")
+		e.Bool(s.CanClose)
+	}
+	{
+		e.FieldStart("items")
+		e.ArrStart()
+		for _, elem := range s.Items {
+			elem.Encode(e)
+		}
+		e.ArrEnd()
+	}
+	{
+		e.FieldStart("total_count")
+		e.Int64(s.TotalCount)
+	}
+}
+
+var jsonFieldsNameOfProjectClosurePreview = [5]string{
+	0: "project_id",
+	1: "evaluated_at",
+	2: "can_close",
+	3: "items",
+	4: "total_count",
+}
+
+// Decode decodes ProjectClosurePreview from json.
+func (s *ProjectClosurePreview) Decode(d *jx.Decoder) error {
+	if s == nil {
+		return errors.New("invalid: unable to decode ProjectClosurePreview to nil")
+	}
+	var requiredBitSet [1]uint8
+
+	if err := d.ObjBytes(func(d *jx.Decoder, k []byte) error {
+		switch string(k) {
+		case "project_id":
+			requiredBitSet[0] |= 1 << 0
+			if err := func() error {
+				v, err := json.DecodeUUID(d)
+				s.ProjectID = v
+				if err != nil {
+					return err
+				}
+				return nil
+			}(); err != nil {
+				return errors.Wrap(err, "decode field \"project_id\"")
+			}
+		case "evaluated_at":
+			requiredBitSet[0] |= 1 << 1
+			if err := func() error {
+				v, err := json.DecodeDateTime(d)
+				s.EvaluatedAt = v
+				if err != nil {
+					return err
+				}
+				return nil
+			}(); err != nil {
+				return errors.Wrap(err, "decode field \"evaluated_at\"")
+			}
+		case "can_close":
+			requiredBitSet[0] |= 1 << 2
+			if err := func() error {
+				v, err := d.Bool()
+				s.CanClose = bool(v)
+				if err != nil {
+					return err
+				}
+				return nil
+			}(); err != nil {
+				return errors.Wrap(err, "decode field \"can_close\"")
+			}
+		case "items":
+			requiredBitSet[0] |= 1 << 3
+			if err := func() error {
+				s.Items = make([]ProjectClosureItem, 0)
+				if err := d.Arr(func(d *jx.Decoder) error {
+					var elem ProjectClosureItem
+					if err := elem.Decode(d); err != nil {
+						return err
+					}
+					s.Items = append(s.Items, elem)
+					return nil
+				}); err != nil {
+					return err
+				}
+				return nil
+			}(); err != nil {
+				return errors.Wrap(err, "decode field \"items\"")
+			}
+		case "total_count":
+			requiredBitSet[0] |= 1 << 4
+			if err := func() error {
+				v, err := d.Int64()
+				s.TotalCount = int64(v)
+				if err != nil {
+					return err
+				}
+				return nil
+			}(); err != nil {
+				return errors.Wrap(err, "decode field \"total_count\"")
+			}
+		default:
+			return d.Skip()
+		}
+		return nil
+	}); err != nil {
+		return errors.Wrap(err, "decode ProjectClosurePreview")
+	}
+	// Validate required fields.
+	var failures []validate.FieldError
+	for i, mask := range [1]uint8{
+		0b00011111,
+	} {
+		if result := (requiredBitSet[i] & mask) ^ mask; result != 0 {
+			// Mask only required fields and check equality to mask using XOR.
+			//
+			// If XOR result is not zero, result is not equal to expected, so some fields are missed.
+			// Bits of fields which would be set are actually bits of missed fields.
+			missed := bits.OnesCount8(result)
+			for bitN := 0; bitN < missed; bitN++ {
+				bitIdx := bits.TrailingZeros8(result)
+				fieldIdx := i*8 + bitIdx
+				var name string
+				if fieldIdx < len(jsonFieldsNameOfProjectClosurePreview) {
+					name = jsonFieldsNameOfProjectClosurePreview[fieldIdx]
+				} else {
+					name = strconv.Itoa(fieldIdx)
+				}
+				failures = append(failures, validate.FieldError{
+					Name:  name,
+					Error: validate.ErrFieldRequired,
+				})
+				// Reset bit.
+				result &^= 1 << bitIdx
+			}
+		}
+	}
+	if len(failures) > 0 {
+		return &validate.Error{Fields: failures}
+	}
+
+	return nil
+}
+
+// MarshalJSON implements stdjson.Marshaler.
+func (s *ProjectClosurePreview) MarshalJSON() ([]byte, error) {
+	e := jx.Encoder{}
+	s.Encode(&e)
+	return e.Bytes(), nil
+}
+
+// UnmarshalJSON implements stdjson.Unmarshaler.
+func (s *ProjectClosurePreview) UnmarshalJSON(data []byte) error {
+	d := jx.DecodeBytes(data)
+	return s.Decode(d)
+}
+
+// Encode implements json.Marshaler.
 func (s *ProjectPayer) Encode(e *jx.Encoder) {
 	e.ObjStart()
 	s.encodeFields(e)
@@ -15358,6 +17021,46 @@ func (s *RefundList) UnmarshalJSON(data []byte) error {
 	return s.Decode(d)
 }
 
+// Encode encodes RefundPolicy as json.
+func (s RefundPolicy) Encode(e *jx.Encoder) {
+	e.Str(string(s))
+}
+
+// Decode decodes RefundPolicy from json.
+func (s *RefundPolicy) Decode(d *jx.Decoder) error {
+	if s == nil {
+		return errors.New("invalid: unable to decode RefundPolicy to nil")
+	}
+	v, err := d.StrBytes()
+	if err != nil {
+		return err
+	}
+	// Try to use constant string.
+	switch RefundPolicy(v) {
+	case RefundPolicyNone:
+		*s = RefundPolicyNone
+	case RefundPolicyStandard:
+		*s = RefundPolicyStandard
+	default:
+		*s = RefundPolicy(v)
+	}
+
+	return nil
+}
+
+// MarshalJSON implements stdjson.Marshaler.
+func (s RefundPolicy) MarshalJSON() ([]byte, error) {
+	e := jx.Encoder{}
+	s.Encode(&e)
+	return e.Bytes(), nil
+}
+
+// UnmarshalJSON implements stdjson.Unmarshaler.
+func (s *RefundPolicy) UnmarshalJSON(data []byte) error {
+	d := jx.DecodeBytes(data)
+	return s.Decode(d)
+}
+
 // Encode implements json.Marshaler.
 func (s *RefundQuote) Encode(e *jx.Encoder) {
 	e.ObjStart()
@@ -16798,6 +18501,391 @@ func (s *Subscription) UnmarshalJSON(data []byte) error {
 }
 
 // Encode implements json.Marshaler.
+func (s *SubscriptionCancellation) Encode(e *jx.Encoder) {
+	e.ObjStart()
+	s.encodeFields(e)
+	e.ObjEnd()
+}
+
+// encodeFields encodes fields.
+func (s *SubscriptionCancellation) encodeFields(e *jx.Encoder) {
+	{
+		e.FieldStart("id")
+		json.EncodeUUID(e, s.ID)
+	}
+	{
+		e.FieldStart("subscription_item_id")
+		json.EncodeUUID(e, s.SubscriptionItemID)
+	}
+	{
+		e.FieldStart("status")
+		s.Status.Encode(e)
+	}
+	{
+		e.FieldStart("mode")
+		s.Mode.Encode(e)
+	}
+	{
+		e.FieldStart("requested_at")
+		json.EncodeDateTime(e, s.RequestedAt)
+	}
+	{
+		if s.ScheduledFor.Set {
+			e.FieldStart("scheduled_for")
+			s.ScheduledFor.Encode(e, json.EncodeDateTime)
+		}
+	}
+	{
+		if s.EffectiveAt.Set {
+			e.FieldStart("effective_at")
+			s.EffectiveAt.Encode(e, json.EncodeDateTime)
+		}
+	}
+	{
+		if s.CompletedAt.Set {
+			e.FieldStart("completed_at")
+			s.CompletedAt.Encode(e, json.EncodeDateTime)
+		}
+	}
+	{
+		if s.ReleaseStartedAt.Set {
+			e.FieldStart("release_started_at")
+			s.ReleaseStartedAt.Encode(e, json.EncodeDateTime)
+		}
+	}
+	{
+		if s.CanceledAt.Set {
+			e.FieldStart("canceled_at")
+			s.CanceledAt.Encode(e, json.EncodeDateTime)
+		}
+	}
+	{
+		e.FieldStart("forfeit_remaining_value")
+		e.Bool(s.ForfeitRemainingValue)
+	}
+	{
+		if s.FailureCode.Set {
+			e.FieldStart("failure_code")
+			s.FailureCode.Encode(e)
+		}
+	}
+	{
+		if s.FailureReason.Set {
+			e.FieldStart("failure_reason")
+			s.FailureReason.Encode(e)
+		}
+	}
+}
+
+var jsonFieldsNameOfSubscriptionCancellation = [13]string{
+	0:  "id",
+	1:  "subscription_item_id",
+	2:  "status",
+	3:  "mode",
+	4:  "requested_at",
+	5:  "scheduled_for",
+	6:  "effective_at",
+	7:  "completed_at",
+	8:  "release_started_at",
+	9:  "canceled_at",
+	10: "forfeit_remaining_value",
+	11: "failure_code",
+	12: "failure_reason",
+}
+
+// Decode decodes SubscriptionCancellation from json.
+func (s *SubscriptionCancellation) Decode(d *jx.Decoder) error {
+	if s == nil {
+		return errors.New("invalid: unable to decode SubscriptionCancellation to nil")
+	}
+	var requiredBitSet [2]uint8
+
+	if err := d.ObjBytes(func(d *jx.Decoder, k []byte) error {
+		switch string(k) {
+		case "id":
+			requiredBitSet[0] |= 1 << 0
+			if err := func() error {
+				v, err := json.DecodeUUID(d)
+				s.ID = v
+				if err != nil {
+					return err
+				}
+				return nil
+			}(); err != nil {
+				return errors.Wrap(err, "decode field \"id\"")
+			}
+		case "subscription_item_id":
+			requiredBitSet[0] |= 1 << 1
+			if err := func() error {
+				v, err := json.DecodeUUID(d)
+				s.SubscriptionItemID = v
+				if err != nil {
+					return err
+				}
+				return nil
+			}(); err != nil {
+				return errors.Wrap(err, "decode field \"subscription_item_id\"")
+			}
+		case "status":
+			requiredBitSet[0] |= 1 << 2
+			if err := func() error {
+				if err := s.Status.Decode(d); err != nil {
+					return err
+				}
+				return nil
+			}(); err != nil {
+				return errors.Wrap(err, "decode field \"status\"")
+			}
+		case "mode":
+			requiredBitSet[0] |= 1 << 3
+			if err := func() error {
+				if err := s.Mode.Decode(d); err != nil {
+					return err
+				}
+				return nil
+			}(); err != nil {
+				return errors.Wrap(err, "decode field \"mode\"")
+			}
+		case "requested_at":
+			requiredBitSet[0] |= 1 << 4
+			if err := func() error {
+				v, err := json.DecodeDateTime(d)
+				s.RequestedAt = v
+				if err != nil {
+					return err
+				}
+				return nil
+			}(); err != nil {
+				return errors.Wrap(err, "decode field \"requested_at\"")
+			}
+		case "scheduled_for":
+			if err := func() error {
+				s.ScheduledFor.Reset()
+				if err := s.ScheduledFor.Decode(d, json.DecodeDateTime); err != nil {
+					return err
+				}
+				return nil
+			}(); err != nil {
+				return errors.Wrap(err, "decode field \"scheduled_for\"")
+			}
+		case "effective_at":
+			if err := func() error {
+				s.EffectiveAt.Reset()
+				if err := s.EffectiveAt.Decode(d, json.DecodeDateTime); err != nil {
+					return err
+				}
+				return nil
+			}(); err != nil {
+				return errors.Wrap(err, "decode field \"effective_at\"")
+			}
+		case "completed_at":
+			if err := func() error {
+				s.CompletedAt.Reset()
+				if err := s.CompletedAt.Decode(d, json.DecodeDateTime); err != nil {
+					return err
+				}
+				return nil
+			}(); err != nil {
+				return errors.Wrap(err, "decode field \"completed_at\"")
+			}
+		case "release_started_at":
+			if err := func() error {
+				s.ReleaseStartedAt.Reset()
+				if err := s.ReleaseStartedAt.Decode(d, json.DecodeDateTime); err != nil {
+					return err
+				}
+				return nil
+			}(); err != nil {
+				return errors.Wrap(err, "decode field \"release_started_at\"")
+			}
+		case "canceled_at":
+			if err := func() error {
+				s.CanceledAt.Reset()
+				if err := s.CanceledAt.Decode(d, json.DecodeDateTime); err != nil {
+					return err
+				}
+				return nil
+			}(); err != nil {
+				return errors.Wrap(err, "decode field \"canceled_at\"")
+			}
+		case "forfeit_remaining_value":
+			requiredBitSet[1] |= 1 << 2
+			if err := func() error {
+				v, err := d.Bool()
+				s.ForfeitRemainingValue = bool(v)
+				if err != nil {
+					return err
+				}
+				return nil
+			}(); err != nil {
+				return errors.Wrap(err, "decode field \"forfeit_remaining_value\"")
+			}
+		case "failure_code":
+			if err := func() error {
+				s.FailureCode.Reset()
+				if err := s.FailureCode.Decode(d); err != nil {
+					return err
+				}
+				return nil
+			}(); err != nil {
+				return errors.Wrap(err, "decode field \"failure_code\"")
+			}
+		case "failure_reason":
+			if err := func() error {
+				s.FailureReason.Reset()
+				if err := s.FailureReason.Decode(d); err != nil {
+					return err
+				}
+				return nil
+			}(); err != nil {
+				return errors.Wrap(err, "decode field \"failure_reason\"")
+			}
+		default:
+			return d.Skip()
+		}
+		return nil
+	}); err != nil {
+		return errors.Wrap(err, "decode SubscriptionCancellation")
+	}
+	// Validate required fields.
+	var failures []validate.FieldError
+	for i, mask := range [2]uint8{
+		0b00011111,
+		0b00000100,
+	} {
+		if result := (requiredBitSet[i] & mask) ^ mask; result != 0 {
+			// Mask only required fields and check equality to mask using XOR.
+			//
+			// If XOR result is not zero, result is not equal to expected, so some fields are missed.
+			// Bits of fields which would be set are actually bits of missed fields.
+			missed := bits.OnesCount8(result)
+			for bitN := 0; bitN < missed; bitN++ {
+				bitIdx := bits.TrailingZeros8(result)
+				fieldIdx := i*8 + bitIdx
+				var name string
+				if fieldIdx < len(jsonFieldsNameOfSubscriptionCancellation) {
+					name = jsonFieldsNameOfSubscriptionCancellation[fieldIdx]
+				} else {
+					name = strconv.Itoa(fieldIdx)
+				}
+				failures = append(failures, validate.FieldError{
+					Name:  name,
+					Error: validate.ErrFieldRequired,
+				})
+				// Reset bit.
+				result &^= 1 << bitIdx
+			}
+		}
+	}
+	if len(failures) > 0 {
+		return &validate.Error{Fields: failures}
+	}
+
+	return nil
+}
+
+// MarshalJSON implements stdjson.Marshaler.
+func (s *SubscriptionCancellation) MarshalJSON() ([]byte, error) {
+	e := jx.Encoder{}
+	s.Encode(&e)
+	return e.Bytes(), nil
+}
+
+// UnmarshalJSON implements stdjson.Unmarshaler.
+func (s *SubscriptionCancellation) UnmarshalJSON(data []byte) error {
+	d := jx.DecodeBytes(data)
+	return s.Decode(d)
+}
+
+// Encode encodes SubscriptionCancellationMode as json.
+func (s SubscriptionCancellationMode) Encode(e *jx.Encoder) {
+	e.Str(string(s))
+}
+
+// Decode decodes SubscriptionCancellationMode from json.
+func (s *SubscriptionCancellationMode) Decode(d *jx.Decoder) error {
+	if s == nil {
+		return errors.New("invalid: unable to decode SubscriptionCancellationMode to nil")
+	}
+	v, err := d.StrBytes()
+	if err != nil {
+		return err
+	}
+	// Try to use constant string.
+	switch SubscriptionCancellationMode(v) {
+	case SubscriptionCancellationModeImmediate:
+		*s = SubscriptionCancellationModeImmediate
+	case SubscriptionCancellationModePeriodEnd:
+		*s = SubscriptionCancellationModePeriodEnd
+	default:
+		*s = SubscriptionCancellationMode(v)
+	}
+
+	return nil
+}
+
+// MarshalJSON implements stdjson.Marshaler.
+func (s SubscriptionCancellationMode) MarshalJSON() ([]byte, error) {
+	e := jx.Encoder{}
+	s.Encode(&e)
+	return e.Bytes(), nil
+}
+
+// UnmarshalJSON implements stdjson.Unmarshaler.
+func (s *SubscriptionCancellationMode) UnmarshalJSON(data []byte) error {
+	d := jx.DecodeBytes(data)
+	return s.Decode(d)
+}
+
+// Encode encodes SubscriptionCancellationStatus as json.
+func (s SubscriptionCancellationStatus) Encode(e *jx.Encoder) {
+	e.Str(string(s))
+}
+
+// Decode decodes SubscriptionCancellationStatus from json.
+func (s *SubscriptionCancellationStatus) Decode(d *jx.Decoder) error {
+	if s == nil {
+		return errors.New("invalid: unable to decode SubscriptionCancellationStatus to nil")
+	}
+	v, err := d.StrBytes()
+	if err != nil {
+		return err
+	}
+	// Try to use constant string.
+	switch SubscriptionCancellationStatus(v) {
+	case SubscriptionCancellationStatusRequested:
+		*s = SubscriptionCancellationStatusRequested
+	case SubscriptionCancellationStatusScheduled:
+		*s = SubscriptionCancellationStatusScheduled
+	case SubscriptionCancellationStatusReleasing:
+		*s = SubscriptionCancellationStatusReleasing
+	case SubscriptionCancellationStatusFailed:
+		*s = SubscriptionCancellationStatusFailed
+	case SubscriptionCancellationStatusCompleted:
+		*s = SubscriptionCancellationStatusCompleted
+	case SubscriptionCancellationStatusCanceled:
+		*s = SubscriptionCancellationStatusCanceled
+	default:
+		*s = SubscriptionCancellationStatus(v)
+	}
+
+	return nil
+}
+
+// MarshalJSON implements stdjson.Marshaler.
+func (s SubscriptionCancellationStatus) MarshalJSON() ([]byte, error) {
+	e := jx.Encoder{}
+	s.Encode(&e)
+	return e.Bytes(), nil
+}
+
+// UnmarshalJSON implements stdjson.Unmarshaler.
+func (s *SubscriptionCancellationStatus) UnmarshalJSON(data []byte) error {
+	d := jx.DecodeBytes(data)
+	return s.Decode(d)
+}
+
+// Encode implements json.Marshaler.
 func (s *SubscriptionItem) Encode(e *jx.Encoder) {
 	e.ObjStart()
 	s.encodeFields(e)
@@ -17447,6 +19535,46 @@ func (s SubscriptionStatus) MarshalJSON() ([]byte, error) {
 
 // UnmarshalJSON implements stdjson.Unmarshaler.
 func (s *SubscriptionStatus) UnmarshalJSON(data []byte) error {
+	d := jx.DecodeBytes(data)
+	return s.Decode(d)
+}
+
+// Encode encodes TerminationPolicy as json.
+func (s TerminationPolicy) Encode(e *jx.Encoder) {
+	e.Str(string(s))
+}
+
+// Decode decodes TerminationPolicy from json.
+func (s *TerminationPolicy) Decode(d *jx.Decoder) error {
+	if s == nil {
+		return errors.New("invalid: unable to decode TerminationPolicy to nil")
+	}
+	v, err := d.StrBytes()
+	if err != nil {
+		return err
+	}
+	// Try to use constant string.
+	switch TerminationPolicy(v) {
+	case TerminationPolicyImmediate:
+		*s = TerminationPolicyImmediate
+	case TerminationPolicyPeriodEnd:
+		*s = TerminationPolicyPeriodEnd
+	default:
+		*s = TerminationPolicy(v)
+	}
+
+	return nil
+}
+
+// MarshalJSON implements stdjson.Marshaler.
+func (s TerminationPolicy) MarshalJSON() ([]byte, error) {
+	e := jx.Encoder{}
+	s.Encode(&e)
+	return e.Bytes(), nil
+}
+
+// UnmarshalJSON implements stdjson.Unmarshaler.
+func (s *TerminationPolicy) UnmarshalJSON(data []byte) error {
 	d := jx.DecodeBytes(data)
 	return s.Decode(d)
 }

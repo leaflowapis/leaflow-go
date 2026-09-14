@@ -1630,6 +1630,8 @@ func (*CatalogPlanListHeaders) listCatalogPlansRes() {}
 
 // Ref: #/components/schemas/CatalogPrice
 type CatalogPrice struct {
+	TerminationPolicy OptTerminationPolicy `json:"termination_policy"`
+	RefundPolicy      OptRefundPolicy      `json:"refund_policy"`
 	// External lookup alias within the service. Existing references use the price ID.
 	LookupKey OptString `json:"lookup_key"`
 	ProductID OptUUID   `json:"product_id"`
@@ -1670,6 +1672,16 @@ type CatalogPrice struct {
 	Term     OptInt                `json:"term"`
 	Period   OptCatalogPricePeriod `json:"period"`
 	SetupFee OptMoney              `json:"setup_fee"`
+}
+
+// GetTerminationPolicy returns the value of TerminationPolicy.
+func (s *CatalogPrice) GetTerminationPolicy() OptTerminationPolicy {
+	return s.TerminationPolicy
+}
+
+// GetRefundPolicy returns the value of RefundPolicy.
+func (s *CatalogPrice) GetRefundPolicy() OptRefundPolicy {
+	return s.RefundPolicy
 }
 
 // GetLookupKey returns the value of LookupKey.
@@ -1765,6 +1777,16 @@ func (s *CatalogPrice) GetPeriod() OptCatalogPricePeriod {
 // GetSetupFee returns the value of SetupFee.
 func (s *CatalogPrice) GetSetupFee() OptMoney {
 	return s.SetupFee
+}
+
+// SetTerminationPolicy sets the value of TerminationPolicy.
+func (s *CatalogPrice) SetTerminationPolicy(val OptTerminationPolicy) {
+	s.TerminationPolicy = val
+}
+
+// SetRefundPolicy sets the value of RefundPolicy.
+func (s *CatalogPrice) SetRefundPolicy(val OptRefundPolicy) {
+	s.RefundPolicy = val
 }
 
 // SetLookupKey sets the value of LookupKey.
@@ -3061,6 +3083,520 @@ func (s *CodeRequest) SetChanges(val []QuoteChange) {
 // SetRenewalOf sets the value of RenewalOf.
 func (s *CodeRequest) SetRenewalOf(val []uuid.UUID) {
 	s.RenewalOf = val
+}
+
+// Account-owned commercial obligation. Project removal does not waive payment. Minimum-spend
+// activation requires a defined, reproducible eligibility policy; drafts do not authorize collection.
+// Ref: #/components/schemas/Commitment
+type Commitment struct {
+	ID                       uuid.UUID               `json:"id"`
+	BillingAccountID         int                     `json:"billing_account_id"`
+	Currency                 string                  `json:"currency"`
+	Type                     CommitmentType          `json:"type"`
+	Status                   CommitmentStatus        `json:"status"`
+	Description              string                  `json:"description"`
+	TermsReference           string                  `json:"terms_reference"`
+	EffectiveFrom            time.Time               `json:"effective_from"`
+	EffectiveTo              time.Time               `json:"effective_to"`
+	ReleasePolicy            CommitmentReleasePolicy `json:"release_policy"`
+	ContractID               OptUUID                 `json:"contract_id"`
+	OriginOrderItemID        OptUUID                 `json:"origin_order_item_id"`
+	OriginProjectID          OptUUID                 `json:"origin_project_id"`
+	AcceptedAt               OptDateTime             `json:"accepted_at"`
+	AcceptedBy               OptString               `json:"accepted_by"`
+	EligibilityPolicyVersion OptString               `json:"eligibility_policy_version"`
+	TerminatedAt             OptDateTime             `json:"terminated_at"`
+	TerminationReason        OptString               `json:"termination_reason"`
+	Periods                  []CommitmentPeriod      `json:"periods"`
+}
+
+// GetID returns the value of ID.
+func (s *Commitment) GetID() uuid.UUID {
+	return s.ID
+}
+
+// GetBillingAccountID returns the value of BillingAccountID.
+func (s *Commitment) GetBillingAccountID() int {
+	return s.BillingAccountID
+}
+
+// GetCurrency returns the value of Currency.
+func (s *Commitment) GetCurrency() string {
+	return s.Currency
+}
+
+// GetType returns the value of Type.
+func (s *Commitment) GetType() CommitmentType {
+	return s.Type
+}
+
+// GetStatus returns the value of Status.
+func (s *Commitment) GetStatus() CommitmentStatus {
+	return s.Status
+}
+
+// GetDescription returns the value of Description.
+func (s *Commitment) GetDescription() string {
+	return s.Description
+}
+
+// GetTermsReference returns the value of TermsReference.
+func (s *Commitment) GetTermsReference() string {
+	return s.TermsReference
+}
+
+// GetEffectiveFrom returns the value of EffectiveFrom.
+func (s *Commitment) GetEffectiveFrom() time.Time {
+	return s.EffectiveFrom
+}
+
+// GetEffectiveTo returns the value of EffectiveTo.
+func (s *Commitment) GetEffectiveTo() time.Time {
+	return s.EffectiveTo
+}
+
+// GetReleasePolicy returns the value of ReleasePolicy.
+func (s *Commitment) GetReleasePolicy() CommitmentReleasePolicy {
+	return s.ReleasePolicy
+}
+
+// GetContractID returns the value of ContractID.
+func (s *Commitment) GetContractID() OptUUID {
+	return s.ContractID
+}
+
+// GetOriginOrderItemID returns the value of OriginOrderItemID.
+func (s *Commitment) GetOriginOrderItemID() OptUUID {
+	return s.OriginOrderItemID
+}
+
+// GetOriginProjectID returns the value of OriginProjectID.
+func (s *Commitment) GetOriginProjectID() OptUUID {
+	return s.OriginProjectID
+}
+
+// GetAcceptedAt returns the value of AcceptedAt.
+func (s *Commitment) GetAcceptedAt() OptDateTime {
+	return s.AcceptedAt
+}
+
+// GetAcceptedBy returns the value of AcceptedBy.
+func (s *Commitment) GetAcceptedBy() OptString {
+	return s.AcceptedBy
+}
+
+// GetEligibilityPolicyVersion returns the value of EligibilityPolicyVersion.
+func (s *Commitment) GetEligibilityPolicyVersion() OptString {
+	return s.EligibilityPolicyVersion
+}
+
+// GetTerminatedAt returns the value of TerminatedAt.
+func (s *Commitment) GetTerminatedAt() OptDateTime {
+	return s.TerminatedAt
+}
+
+// GetTerminationReason returns the value of TerminationReason.
+func (s *Commitment) GetTerminationReason() OptString {
+	return s.TerminationReason
+}
+
+// GetPeriods returns the value of Periods.
+func (s *Commitment) GetPeriods() []CommitmentPeriod {
+	return s.Periods
+}
+
+// SetID sets the value of ID.
+func (s *Commitment) SetID(val uuid.UUID) {
+	s.ID = val
+}
+
+// SetBillingAccountID sets the value of BillingAccountID.
+func (s *Commitment) SetBillingAccountID(val int) {
+	s.BillingAccountID = val
+}
+
+// SetCurrency sets the value of Currency.
+func (s *Commitment) SetCurrency(val string) {
+	s.Currency = val
+}
+
+// SetType sets the value of Type.
+func (s *Commitment) SetType(val CommitmentType) {
+	s.Type = val
+}
+
+// SetStatus sets the value of Status.
+func (s *Commitment) SetStatus(val CommitmentStatus) {
+	s.Status = val
+}
+
+// SetDescription sets the value of Description.
+func (s *Commitment) SetDescription(val string) {
+	s.Description = val
+}
+
+// SetTermsReference sets the value of TermsReference.
+func (s *Commitment) SetTermsReference(val string) {
+	s.TermsReference = val
+}
+
+// SetEffectiveFrom sets the value of EffectiveFrom.
+func (s *Commitment) SetEffectiveFrom(val time.Time) {
+	s.EffectiveFrom = val
+}
+
+// SetEffectiveTo sets the value of EffectiveTo.
+func (s *Commitment) SetEffectiveTo(val time.Time) {
+	s.EffectiveTo = val
+}
+
+// SetReleasePolicy sets the value of ReleasePolicy.
+func (s *Commitment) SetReleasePolicy(val CommitmentReleasePolicy) {
+	s.ReleasePolicy = val
+}
+
+// SetContractID sets the value of ContractID.
+func (s *Commitment) SetContractID(val OptUUID) {
+	s.ContractID = val
+}
+
+// SetOriginOrderItemID sets the value of OriginOrderItemID.
+func (s *Commitment) SetOriginOrderItemID(val OptUUID) {
+	s.OriginOrderItemID = val
+}
+
+// SetOriginProjectID sets the value of OriginProjectID.
+func (s *Commitment) SetOriginProjectID(val OptUUID) {
+	s.OriginProjectID = val
+}
+
+// SetAcceptedAt sets the value of AcceptedAt.
+func (s *Commitment) SetAcceptedAt(val OptDateTime) {
+	s.AcceptedAt = val
+}
+
+// SetAcceptedBy sets the value of AcceptedBy.
+func (s *Commitment) SetAcceptedBy(val OptString) {
+	s.AcceptedBy = val
+}
+
+// SetEligibilityPolicyVersion sets the value of EligibilityPolicyVersion.
+func (s *Commitment) SetEligibilityPolicyVersion(val OptString) {
+	s.EligibilityPolicyVersion = val
+}
+
+// SetTerminatedAt sets the value of TerminatedAt.
+func (s *Commitment) SetTerminatedAt(val OptDateTime) {
+	s.TerminatedAt = val
+}
+
+// SetTerminationReason sets the value of TerminationReason.
+func (s *Commitment) SetTerminationReason(val OptString) {
+	s.TerminationReason = val
+}
+
+// SetPeriods sets the value of Periods.
+func (s *Commitment) SetPeriods(val []CommitmentPeriod) {
+	s.Periods = val
+}
+
+// Ref: #/components/schemas/CommitmentList
+type CommitmentList struct {
+	Items      []Commitment `json:"items"`
+	TotalCount int64        `json:"total_count"`
+}
+
+// GetItems returns the value of Items.
+func (s *CommitmentList) GetItems() []Commitment {
+	return s.Items
+}
+
+// GetTotalCount returns the value of TotalCount.
+func (s *CommitmentList) GetTotalCount() int64 {
+	return s.TotalCount
+}
+
+// SetItems sets the value of Items.
+func (s *CommitmentList) SetItems(val []Commitment) {
+	s.Items = val
+}
+
+// SetTotalCount sets the value of TotalCount.
+func (s *CommitmentList) SetTotalCount(val int64) {
+	s.TotalCount = val
+}
+
+// Ref: #/components/schemas/CommitmentPeriod
+type CommitmentPeriod struct {
+	ID             uuid.UUID   `json:"id"`
+	Sequence       int         `json:"sequence"`
+	PeriodStart    time.Time   `json:"period_start"`
+	PeriodEnd      time.Time   `json:"period_end"`
+	DueAt          time.Time   `json:"due_at"`
+	Amount         string      `json:"amount"`
+	InvoiceItemID  OptUUID     `json:"invoice_item_id"`
+	FinalizedAt    OptDateTime `json:"finalized_at"`
+	EligibleAmount OptString   `json:"eligible_amount"`
+	AmountDue      OptString   `json:"amount_due"`
+	WaivedAt       OptDateTime `json:"waived_at"`
+	WaiverReason   OptString   `json:"waiver_reason"`
+}
+
+// GetID returns the value of ID.
+func (s *CommitmentPeriod) GetID() uuid.UUID {
+	return s.ID
+}
+
+// GetSequence returns the value of Sequence.
+func (s *CommitmentPeriod) GetSequence() int {
+	return s.Sequence
+}
+
+// GetPeriodStart returns the value of PeriodStart.
+func (s *CommitmentPeriod) GetPeriodStart() time.Time {
+	return s.PeriodStart
+}
+
+// GetPeriodEnd returns the value of PeriodEnd.
+func (s *CommitmentPeriod) GetPeriodEnd() time.Time {
+	return s.PeriodEnd
+}
+
+// GetDueAt returns the value of DueAt.
+func (s *CommitmentPeriod) GetDueAt() time.Time {
+	return s.DueAt
+}
+
+// GetAmount returns the value of Amount.
+func (s *CommitmentPeriod) GetAmount() string {
+	return s.Amount
+}
+
+// GetInvoiceItemID returns the value of InvoiceItemID.
+func (s *CommitmentPeriod) GetInvoiceItemID() OptUUID {
+	return s.InvoiceItemID
+}
+
+// GetFinalizedAt returns the value of FinalizedAt.
+func (s *CommitmentPeriod) GetFinalizedAt() OptDateTime {
+	return s.FinalizedAt
+}
+
+// GetEligibleAmount returns the value of EligibleAmount.
+func (s *CommitmentPeriod) GetEligibleAmount() OptString {
+	return s.EligibleAmount
+}
+
+// GetAmountDue returns the value of AmountDue.
+func (s *CommitmentPeriod) GetAmountDue() OptString {
+	return s.AmountDue
+}
+
+// GetWaivedAt returns the value of WaivedAt.
+func (s *CommitmentPeriod) GetWaivedAt() OptDateTime {
+	return s.WaivedAt
+}
+
+// GetWaiverReason returns the value of WaiverReason.
+func (s *CommitmentPeriod) GetWaiverReason() OptString {
+	return s.WaiverReason
+}
+
+// SetID sets the value of ID.
+func (s *CommitmentPeriod) SetID(val uuid.UUID) {
+	s.ID = val
+}
+
+// SetSequence sets the value of Sequence.
+func (s *CommitmentPeriod) SetSequence(val int) {
+	s.Sequence = val
+}
+
+// SetPeriodStart sets the value of PeriodStart.
+func (s *CommitmentPeriod) SetPeriodStart(val time.Time) {
+	s.PeriodStart = val
+}
+
+// SetPeriodEnd sets the value of PeriodEnd.
+func (s *CommitmentPeriod) SetPeriodEnd(val time.Time) {
+	s.PeriodEnd = val
+}
+
+// SetDueAt sets the value of DueAt.
+func (s *CommitmentPeriod) SetDueAt(val time.Time) {
+	s.DueAt = val
+}
+
+// SetAmount sets the value of Amount.
+func (s *CommitmentPeriod) SetAmount(val string) {
+	s.Amount = val
+}
+
+// SetInvoiceItemID sets the value of InvoiceItemID.
+func (s *CommitmentPeriod) SetInvoiceItemID(val OptUUID) {
+	s.InvoiceItemID = val
+}
+
+// SetFinalizedAt sets the value of FinalizedAt.
+func (s *CommitmentPeriod) SetFinalizedAt(val OptDateTime) {
+	s.FinalizedAt = val
+}
+
+// SetEligibleAmount sets the value of EligibleAmount.
+func (s *CommitmentPeriod) SetEligibleAmount(val OptString) {
+	s.EligibleAmount = val
+}
+
+// SetAmountDue sets the value of AmountDue.
+func (s *CommitmentPeriod) SetAmountDue(val OptString) {
+	s.AmountDue = val
+}
+
+// SetWaivedAt sets the value of WaivedAt.
+func (s *CommitmentPeriod) SetWaivedAt(val OptDateTime) {
+	s.WaivedAt = val
+}
+
+// SetWaiverReason sets the value of WaiverReason.
+func (s *CommitmentPeriod) SetWaiverReason(val OptString) {
+	s.WaiverReason = val
+}
+
+type CommitmentReleasePolicy string
+
+const (
+	CommitmentReleasePolicyRetainUntilTerm       CommitmentReleasePolicy = "retain_until_term"
+	CommitmentReleasePolicyReleaseWithObligation CommitmentReleasePolicy = "release_with_obligation"
+)
+
+// AllValues returns all CommitmentReleasePolicy values.
+func (CommitmentReleasePolicy) AllValues() []CommitmentReleasePolicy {
+	return []CommitmentReleasePolicy{
+		CommitmentReleasePolicyRetainUntilTerm,
+		CommitmentReleasePolicyReleaseWithObligation,
+	}
+}
+
+// MarshalText implements encoding.TextMarshaler.
+func (s CommitmentReleasePolicy) MarshalText() ([]byte, error) {
+	switch s {
+	case CommitmentReleasePolicyRetainUntilTerm:
+		return []byte(s), nil
+	case CommitmentReleasePolicyReleaseWithObligation:
+		return []byte(s), nil
+	default:
+		return nil, errors.Errorf("invalid value: %q", s)
+	}
+}
+
+// UnmarshalText implements encoding.TextUnmarshaler.
+func (s *CommitmentReleasePolicy) UnmarshalText(data []byte) error {
+	switch CommitmentReleasePolicy(data) {
+	case CommitmentReleasePolicyRetainUntilTerm:
+		*s = CommitmentReleasePolicyRetainUntilTerm
+		return nil
+	case CommitmentReleasePolicyReleaseWithObligation:
+		*s = CommitmentReleasePolicyReleaseWithObligation
+		return nil
+	default:
+		return errors.Errorf("invalid value: %q", data)
+	}
+}
+
+type CommitmentStatus string
+
+const (
+	CommitmentStatusDraft      CommitmentStatus = "draft"
+	CommitmentStatusActive     CommitmentStatus = "active"
+	CommitmentStatusCompleted  CommitmentStatus = "completed"
+	CommitmentStatusTerminated CommitmentStatus = "terminated"
+)
+
+// AllValues returns all CommitmentStatus values.
+func (CommitmentStatus) AllValues() []CommitmentStatus {
+	return []CommitmentStatus{
+		CommitmentStatusDraft,
+		CommitmentStatusActive,
+		CommitmentStatusCompleted,
+		CommitmentStatusTerminated,
+	}
+}
+
+// MarshalText implements encoding.TextMarshaler.
+func (s CommitmentStatus) MarshalText() ([]byte, error) {
+	switch s {
+	case CommitmentStatusDraft:
+		return []byte(s), nil
+	case CommitmentStatusActive:
+		return []byte(s), nil
+	case CommitmentStatusCompleted:
+		return []byte(s), nil
+	case CommitmentStatusTerminated:
+		return []byte(s), nil
+	default:
+		return nil, errors.Errorf("invalid value: %q", s)
+	}
+}
+
+// UnmarshalText implements encoding.TextUnmarshaler.
+func (s *CommitmentStatus) UnmarshalText(data []byte) error {
+	switch CommitmentStatus(data) {
+	case CommitmentStatusDraft:
+		*s = CommitmentStatusDraft
+		return nil
+	case CommitmentStatusActive:
+		*s = CommitmentStatusActive
+		return nil
+	case CommitmentStatusCompleted:
+		*s = CommitmentStatusCompleted
+		return nil
+	case CommitmentStatusTerminated:
+		*s = CommitmentStatusTerminated
+		return nil
+	default:
+		return errors.Errorf("invalid value: %q", data)
+	}
+}
+
+type CommitmentType string
+
+const (
+	CommitmentTypeFixedAmount  CommitmentType = "fixed_amount"
+	CommitmentTypeMinimumSpend CommitmentType = "minimum_spend"
+)
+
+// AllValues returns all CommitmentType values.
+func (CommitmentType) AllValues() []CommitmentType {
+	return []CommitmentType{
+		CommitmentTypeFixedAmount,
+		CommitmentTypeMinimumSpend,
+	}
+}
+
+// MarshalText implements encoding.TextMarshaler.
+func (s CommitmentType) MarshalText() ([]byte, error) {
+	switch s {
+	case CommitmentTypeFixedAmount:
+		return []byte(s), nil
+	case CommitmentTypeMinimumSpend:
+		return []byte(s), nil
+	default:
+		return nil, errors.Errorf("invalid value: %q", s)
+	}
+}
+
+// UnmarshalText implements encoding.TextUnmarshaler.
+func (s *CommitmentType) UnmarshalText(data []byte) error {
+	switch CommitmentType(data) {
+	case CommitmentTypeFixedAmount:
+		*s = CommitmentTypeFixedAmount
+		return nil
+	case CommitmentTypeMinimumSpend:
+		*s = CommitmentTypeMinimumSpend
+		return nil
+	default:
+		return errors.Errorf("invalid value: %q", data)
+	}
 }
 
 // Ref: #/components/schemas/CreditGrant
@@ -6619,6 +7155,52 @@ func (o OptRefundDestination) Or(d RefundDestination) RefundDestination {
 	return d
 }
 
+// NewOptRefundPolicy returns new OptRefundPolicy with value set to v.
+func NewOptRefundPolicy(v RefundPolicy) OptRefundPolicy {
+	return OptRefundPolicy{
+		Value: v,
+		Set:   true,
+	}
+}
+
+// OptRefundPolicy is optional RefundPolicy.
+type OptRefundPolicy struct {
+	Value RefundPolicy
+	Set   bool
+}
+
+// IsSet returns true if OptRefundPolicy was set.
+func (o OptRefundPolicy) IsSet() bool { return o.Set }
+
+// Reset unsets value.
+func (o *OptRefundPolicy) Reset() {
+	var v RefundPolicy
+	o.Value = v
+	o.Set = false
+}
+
+// SetTo sets value to v.
+func (o *OptRefundPolicy) SetTo(v RefundPolicy) {
+	o.Set = true
+	o.Value = v
+}
+
+// Get returns value and boolean that denotes whether value was set.
+func (o OptRefundPolicy) Get() (v RefundPolicy, ok bool) {
+	if !o.Set {
+		return v, false
+	}
+	return o.Value, true
+}
+
+// Or returns value if set, or given parameter if does not.
+func (o OptRefundPolicy) Or(d RefundPolicy) RefundPolicy {
+	if v, ok := o.Get(); ok {
+		return v
+	}
+	return d
+}
+
 // NewOptString returns new OptString with value set to v.
 func NewOptString(v string) OptString {
 	return OptString{
@@ -6659,6 +7241,98 @@ func (o OptString) Get() (v string, ok bool) {
 
 // Or returns value if set, or given parameter if does not.
 func (o OptString) Or(d string) string {
+	if v, ok := o.Get(); ok {
+		return v
+	}
+	return d
+}
+
+// NewOptSubscriptionCancellation returns new OptSubscriptionCancellation with value set to v.
+func NewOptSubscriptionCancellation(v SubscriptionCancellation) OptSubscriptionCancellation {
+	return OptSubscriptionCancellation{
+		Value: v,
+		Set:   true,
+	}
+}
+
+// OptSubscriptionCancellation is optional SubscriptionCancellation.
+type OptSubscriptionCancellation struct {
+	Value SubscriptionCancellation
+	Set   bool
+}
+
+// IsSet returns true if OptSubscriptionCancellation was set.
+func (o OptSubscriptionCancellation) IsSet() bool { return o.Set }
+
+// Reset unsets value.
+func (o *OptSubscriptionCancellation) Reset() {
+	var v SubscriptionCancellation
+	o.Value = v
+	o.Set = false
+}
+
+// SetTo sets value to v.
+func (o *OptSubscriptionCancellation) SetTo(v SubscriptionCancellation) {
+	o.Set = true
+	o.Value = v
+}
+
+// Get returns value and boolean that denotes whether value was set.
+func (o OptSubscriptionCancellation) Get() (v SubscriptionCancellation, ok bool) {
+	if !o.Set {
+		return v, false
+	}
+	return o.Value, true
+}
+
+// Or returns value if set, or given parameter if does not.
+func (o OptSubscriptionCancellation) Or(d SubscriptionCancellation) SubscriptionCancellation {
+	if v, ok := o.Get(); ok {
+		return v
+	}
+	return d
+}
+
+// NewOptTerminationPolicy returns new OptTerminationPolicy with value set to v.
+func NewOptTerminationPolicy(v TerminationPolicy) OptTerminationPolicy {
+	return OptTerminationPolicy{
+		Value: v,
+		Set:   true,
+	}
+}
+
+// OptTerminationPolicy is optional TerminationPolicy.
+type OptTerminationPolicy struct {
+	Value TerminationPolicy
+	Set   bool
+}
+
+// IsSet returns true if OptTerminationPolicy was set.
+func (o OptTerminationPolicy) IsSet() bool { return o.Set }
+
+// Reset unsets value.
+func (o *OptTerminationPolicy) Reset() {
+	var v TerminationPolicy
+	o.Value = v
+	o.Set = false
+}
+
+// SetTo sets value to v.
+func (o *OptTerminationPolicy) SetTo(v TerminationPolicy) {
+	o.Set = true
+	o.Value = v
+}
+
+// Get returns value and boolean that denotes whether value was set.
+func (o OptTerminationPolicy) Get() (v TerminationPolicy, ok bool) {
+	if !o.Set {
+		return v, false
+	}
+	return o.Value, true
+}
+
+// Or returns value if set, or given parameter if does not.
+func (o OptTerminationPolicy) Or(d TerminationPolicy) TerminationPolicy {
 	if v, ok := o.Get(); ok {
 		return v
 	}
@@ -8235,6 +8909,405 @@ func (s *ProjectBindingList) SetTotalCount(val OptInt64) {
 	s.TotalCount = val
 }
 
+// One outstanding Billing obligation. action_required identifies a supported next step, not
+// authorization to destroy a resource. Items for the same resource must be considered together.
+// Ref: #/components/schemas/ProjectClosureItem
+type ProjectClosureItem struct {
+	Type                  ProjectClosureItemType          `json:"type"`
+	ID                    uuid.UUID                       `json:"id"`
+	ProductID             OptUUID                         `json:"product_id"`
+	ResourceID            OptString                       `json:"resource_id"`
+	Disposition           ProjectClosureItemDisposition   `json:"disposition"`
+	ReasonCode            string                          `json:"reason_code"`
+	Actions               []ProjectClosureItemActionsItem `json:"actions"`
+	EarliestTerminationAt OptDateTime                     `json:"earliest_termination_at"`
+	// Known refund amount as a decimal string. Absent means a separate quote is required, not zero.
+	RefundAmount OptString                   `json:"refund_amount"`
+	Currency     OptString                   `json:"currency"`
+	Cancellation OptSubscriptionCancellation `json:"cancellation"`
+}
+
+// GetType returns the value of Type.
+func (s *ProjectClosureItem) GetType() ProjectClosureItemType {
+	return s.Type
+}
+
+// GetID returns the value of ID.
+func (s *ProjectClosureItem) GetID() uuid.UUID {
+	return s.ID
+}
+
+// GetProductID returns the value of ProductID.
+func (s *ProjectClosureItem) GetProductID() OptUUID {
+	return s.ProductID
+}
+
+// GetResourceID returns the value of ResourceID.
+func (s *ProjectClosureItem) GetResourceID() OptString {
+	return s.ResourceID
+}
+
+// GetDisposition returns the value of Disposition.
+func (s *ProjectClosureItem) GetDisposition() ProjectClosureItemDisposition {
+	return s.Disposition
+}
+
+// GetReasonCode returns the value of ReasonCode.
+func (s *ProjectClosureItem) GetReasonCode() string {
+	return s.ReasonCode
+}
+
+// GetActions returns the value of Actions.
+func (s *ProjectClosureItem) GetActions() []ProjectClosureItemActionsItem {
+	return s.Actions
+}
+
+// GetEarliestTerminationAt returns the value of EarliestTerminationAt.
+func (s *ProjectClosureItem) GetEarliestTerminationAt() OptDateTime {
+	return s.EarliestTerminationAt
+}
+
+// GetRefundAmount returns the value of RefundAmount.
+func (s *ProjectClosureItem) GetRefundAmount() OptString {
+	return s.RefundAmount
+}
+
+// GetCurrency returns the value of Currency.
+func (s *ProjectClosureItem) GetCurrency() OptString {
+	return s.Currency
+}
+
+// GetCancellation returns the value of Cancellation.
+func (s *ProjectClosureItem) GetCancellation() OptSubscriptionCancellation {
+	return s.Cancellation
+}
+
+// SetType sets the value of Type.
+func (s *ProjectClosureItem) SetType(val ProjectClosureItemType) {
+	s.Type = val
+}
+
+// SetID sets the value of ID.
+func (s *ProjectClosureItem) SetID(val uuid.UUID) {
+	s.ID = val
+}
+
+// SetProductID sets the value of ProductID.
+func (s *ProjectClosureItem) SetProductID(val OptUUID) {
+	s.ProductID = val
+}
+
+// SetResourceID sets the value of ResourceID.
+func (s *ProjectClosureItem) SetResourceID(val OptString) {
+	s.ResourceID = val
+}
+
+// SetDisposition sets the value of Disposition.
+func (s *ProjectClosureItem) SetDisposition(val ProjectClosureItemDisposition) {
+	s.Disposition = val
+}
+
+// SetReasonCode sets the value of ReasonCode.
+func (s *ProjectClosureItem) SetReasonCode(val string) {
+	s.ReasonCode = val
+}
+
+// SetActions sets the value of Actions.
+func (s *ProjectClosureItem) SetActions(val []ProjectClosureItemActionsItem) {
+	s.Actions = val
+}
+
+// SetEarliestTerminationAt sets the value of EarliestTerminationAt.
+func (s *ProjectClosureItem) SetEarliestTerminationAt(val OptDateTime) {
+	s.EarliestTerminationAt = val
+}
+
+// SetRefundAmount sets the value of RefundAmount.
+func (s *ProjectClosureItem) SetRefundAmount(val OptString) {
+	s.RefundAmount = val
+}
+
+// SetCurrency sets the value of Currency.
+func (s *ProjectClosureItem) SetCurrency(val OptString) {
+	s.Currency = val
+}
+
+// SetCancellation sets the value of Cancellation.
+func (s *ProjectClosureItem) SetCancellation(val OptSubscriptionCancellation) {
+	s.Cancellation = val
+}
+
+type ProjectClosureItemActionsItem string
+
+const (
+	ProjectClosureItemActionsItemCancelOrder        ProjectClosureItemActionsItem = "cancel_order"
+	ProjectClosureItemActionsItemWait               ProjectClosureItemActionsItem = "wait"
+	ProjectClosureItemActionsItemReleaseResource    ProjectClosureItemActionsItem = "release_resource"
+	ProjectClosureItemActionsItemCancelSubscription ProjectClosureItemActionsItem = "cancel_subscription"
+	ProjectClosureItemActionsItemDisableAutoRenew   ProjectClosureItemActionsItem = "disable_auto_renew"
+	ProjectClosureItemActionsItemSettleUsage        ProjectClosureItemActionsItem = "settle_usage"
+	ProjectClosureItemActionsItemConfigureTerms     ProjectClosureItemActionsItem = "configure_terms"
+	ProjectClosureItemActionsItemResolveFailure     ProjectClosureItemActionsItem = "resolve_failure"
+)
+
+// AllValues returns all ProjectClosureItemActionsItem values.
+func (ProjectClosureItemActionsItem) AllValues() []ProjectClosureItemActionsItem {
+	return []ProjectClosureItemActionsItem{
+		ProjectClosureItemActionsItemCancelOrder,
+		ProjectClosureItemActionsItemWait,
+		ProjectClosureItemActionsItemReleaseResource,
+		ProjectClosureItemActionsItemCancelSubscription,
+		ProjectClosureItemActionsItemDisableAutoRenew,
+		ProjectClosureItemActionsItemSettleUsage,
+		ProjectClosureItemActionsItemConfigureTerms,
+		ProjectClosureItemActionsItemResolveFailure,
+	}
+}
+
+// MarshalText implements encoding.TextMarshaler.
+func (s ProjectClosureItemActionsItem) MarshalText() ([]byte, error) {
+	switch s {
+	case ProjectClosureItemActionsItemCancelOrder:
+		return []byte(s), nil
+	case ProjectClosureItemActionsItemWait:
+		return []byte(s), nil
+	case ProjectClosureItemActionsItemReleaseResource:
+		return []byte(s), nil
+	case ProjectClosureItemActionsItemCancelSubscription:
+		return []byte(s), nil
+	case ProjectClosureItemActionsItemDisableAutoRenew:
+		return []byte(s), nil
+	case ProjectClosureItemActionsItemSettleUsage:
+		return []byte(s), nil
+	case ProjectClosureItemActionsItemConfigureTerms:
+		return []byte(s), nil
+	case ProjectClosureItemActionsItemResolveFailure:
+		return []byte(s), nil
+	default:
+		return nil, errors.Errorf("invalid value: %q", s)
+	}
+}
+
+// UnmarshalText implements encoding.TextUnmarshaler.
+func (s *ProjectClosureItemActionsItem) UnmarshalText(data []byte) error {
+	switch ProjectClosureItemActionsItem(data) {
+	case ProjectClosureItemActionsItemCancelOrder:
+		*s = ProjectClosureItemActionsItemCancelOrder
+		return nil
+	case ProjectClosureItemActionsItemWait:
+		*s = ProjectClosureItemActionsItemWait
+		return nil
+	case ProjectClosureItemActionsItemReleaseResource:
+		*s = ProjectClosureItemActionsItemReleaseResource
+		return nil
+	case ProjectClosureItemActionsItemCancelSubscription:
+		*s = ProjectClosureItemActionsItemCancelSubscription
+		return nil
+	case ProjectClosureItemActionsItemDisableAutoRenew:
+		*s = ProjectClosureItemActionsItemDisableAutoRenew
+		return nil
+	case ProjectClosureItemActionsItemSettleUsage:
+		*s = ProjectClosureItemActionsItemSettleUsage
+		return nil
+	case ProjectClosureItemActionsItemConfigureTerms:
+		*s = ProjectClosureItemActionsItemConfigureTerms
+		return nil
+	case ProjectClosureItemActionsItemResolveFailure:
+		*s = ProjectClosureItemActionsItemResolveFailure
+		return nil
+	default:
+		return errors.Errorf("invalid value: %q", data)
+	}
+}
+
+type ProjectClosureItemDisposition string
+
+const (
+	ProjectClosureItemDispositionActionRequired ProjectClosureItemDisposition = "action_required"
+	ProjectClosureItemDispositionWaiting        ProjectClosureItemDisposition = "waiting"
+	ProjectClosureItemDispositionBlocked        ProjectClosureItemDisposition = "blocked"
+)
+
+// AllValues returns all ProjectClosureItemDisposition values.
+func (ProjectClosureItemDisposition) AllValues() []ProjectClosureItemDisposition {
+	return []ProjectClosureItemDisposition{
+		ProjectClosureItemDispositionActionRequired,
+		ProjectClosureItemDispositionWaiting,
+		ProjectClosureItemDispositionBlocked,
+	}
+}
+
+// MarshalText implements encoding.TextMarshaler.
+func (s ProjectClosureItemDisposition) MarshalText() ([]byte, error) {
+	switch s {
+	case ProjectClosureItemDispositionActionRequired:
+		return []byte(s), nil
+	case ProjectClosureItemDispositionWaiting:
+		return []byte(s), nil
+	case ProjectClosureItemDispositionBlocked:
+		return []byte(s), nil
+	default:
+		return nil, errors.Errorf("invalid value: %q", s)
+	}
+}
+
+// UnmarshalText implements encoding.TextUnmarshaler.
+func (s *ProjectClosureItemDisposition) UnmarshalText(data []byte) error {
+	switch ProjectClosureItemDisposition(data) {
+	case ProjectClosureItemDispositionActionRequired:
+		*s = ProjectClosureItemDispositionActionRequired
+		return nil
+	case ProjectClosureItemDispositionWaiting:
+		*s = ProjectClosureItemDispositionWaiting
+		return nil
+	case ProjectClosureItemDispositionBlocked:
+		*s = ProjectClosureItemDispositionBlocked
+		return nil
+	default:
+		return errors.Errorf("invalid value: %q", data)
+	}
+}
+
+type ProjectClosureItemType string
+
+const (
+	ProjectClosureItemTypeOrder                    ProjectClosureItemType = "order"
+	ProjectClosureItemTypeSubscriptionItem         ProjectClosureItemType = "subscription_item"
+	ProjectClosureItemTypeActiveResource           ProjectClosureItemType = "active_resource"
+	ProjectClosureItemTypeResourceOperation        ProjectClosureItemType = "resource_operation"
+	ProjectClosureItemTypeSubscriptionCancellation ProjectClosureItemType = "subscription_cancellation"
+	ProjectClosureItemTypeUsageCharge              ProjectClosureItemType = "usage_charge"
+	ProjectClosureItemTypeCommitment               ProjectClosureItemType = "commitment"
+)
+
+// AllValues returns all ProjectClosureItemType values.
+func (ProjectClosureItemType) AllValues() []ProjectClosureItemType {
+	return []ProjectClosureItemType{
+		ProjectClosureItemTypeOrder,
+		ProjectClosureItemTypeSubscriptionItem,
+		ProjectClosureItemTypeActiveResource,
+		ProjectClosureItemTypeResourceOperation,
+		ProjectClosureItemTypeSubscriptionCancellation,
+		ProjectClosureItemTypeUsageCharge,
+		ProjectClosureItemTypeCommitment,
+	}
+}
+
+// MarshalText implements encoding.TextMarshaler.
+func (s ProjectClosureItemType) MarshalText() ([]byte, error) {
+	switch s {
+	case ProjectClosureItemTypeOrder:
+		return []byte(s), nil
+	case ProjectClosureItemTypeSubscriptionItem:
+		return []byte(s), nil
+	case ProjectClosureItemTypeActiveResource:
+		return []byte(s), nil
+	case ProjectClosureItemTypeResourceOperation:
+		return []byte(s), nil
+	case ProjectClosureItemTypeSubscriptionCancellation:
+		return []byte(s), nil
+	case ProjectClosureItemTypeUsageCharge:
+		return []byte(s), nil
+	case ProjectClosureItemTypeCommitment:
+		return []byte(s), nil
+	default:
+		return nil, errors.Errorf("invalid value: %q", s)
+	}
+}
+
+// UnmarshalText implements encoding.TextUnmarshaler.
+func (s *ProjectClosureItemType) UnmarshalText(data []byte) error {
+	switch ProjectClosureItemType(data) {
+	case ProjectClosureItemTypeOrder:
+		*s = ProjectClosureItemTypeOrder
+		return nil
+	case ProjectClosureItemTypeSubscriptionItem:
+		*s = ProjectClosureItemTypeSubscriptionItem
+		return nil
+	case ProjectClosureItemTypeActiveResource:
+		*s = ProjectClosureItemTypeActiveResource
+		return nil
+	case ProjectClosureItemTypeResourceOperation:
+		*s = ProjectClosureItemTypeResourceOperation
+		return nil
+	case ProjectClosureItemTypeSubscriptionCancellation:
+		*s = ProjectClosureItemTypeSubscriptionCancellation
+		return nil
+	case ProjectClosureItemTypeUsageCharge:
+		*s = ProjectClosureItemTypeUsageCharge
+		return nil
+	case ProjectClosureItemTypeCommitment:
+		*s = ProjectClosureItemTypeCommitment
+		return nil
+	default:
+		return errors.Errorf("invalid value: %q", data)
+	}
+}
+
+// Read-only, paginated assessment. Does not cancel orders, stop renewals, refund payments or release
+// resources. Concurrent orders or callbacks may change the result; execution must close admission and
+// recheck.
+// Ref: #/components/schemas/ProjectClosurePreview
+type ProjectClosurePreview struct {
+	ProjectID   uuid.UUID `json:"project_id"`
+	EvaluatedAt time.Time `json:"evaluated_at"`
+	// True only when the full Billing result, across all pages, has no outstanding obligations. Technical
+	// services must independently confirm that all resources are gone.
+	CanClose   bool                 `json:"can_close"`
+	Items      []ProjectClosureItem `json:"items"`
+	TotalCount int64                `json:"total_count"`
+}
+
+// GetProjectID returns the value of ProjectID.
+func (s *ProjectClosurePreview) GetProjectID() uuid.UUID {
+	return s.ProjectID
+}
+
+// GetEvaluatedAt returns the value of EvaluatedAt.
+func (s *ProjectClosurePreview) GetEvaluatedAt() time.Time {
+	return s.EvaluatedAt
+}
+
+// GetCanClose returns the value of CanClose.
+func (s *ProjectClosurePreview) GetCanClose() bool {
+	return s.CanClose
+}
+
+// GetItems returns the value of Items.
+func (s *ProjectClosurePreview) GetItems() []ProjectClosureItem {
+	return s.Items
+}
+
+// GetTotalCount returns the value of TotalCount.
+func (s *ProjectClosurePreview) GetTotalCount() int64 {
+	return s.TotalCount
+}
+
+// SetProjectID sets the value of ProjectID.
+func (s *ProjectClosurePreview) SetProjectID(val uuid.UUID) {
+	s.ProjectID = val
+}
+
+// SetEvaluatedAt sets the value of EvaluatedAt.
+func (s *ProjectClosurePreview) SetEvaluatedAt(val time.Time) {
+	s.EvaluatedAt = val
+}
+
+// SetCanClose sets the value of CanClose.
+func (s *ProjectClosurePreview) SetCanClose(val bool) {
+	s.CanClose = val
+}
+
+// SetItems sets the value of Items.
+func (s *ProjectClosurePreview) SetItems(val []ProjectClosureItem) {
+	s.Items = val
+}
+
+// SetTotalCount sets the value of TotalCount.
+func (s *ProjectClosurePreview) SetTotalCount(val int64) {
+	s.TotalCount = val
+}
+
 // A narrow view of the paying account, restricted to what a project member needs in order to know
 // whether the project's resources will keep running.
 // Ref: #/components/schemas/ProjectPayer
@@ -9366,6 +10439,51 @@ func (s *RefundList) SetTotalCount(val OptInt64) {
 	s.TotalCount = val
 }
 
+// None preserves paid amounts when fulfilled service ends. standard applies the documented refund
+// window and change proration rules. Releasing unpaid holds or returning funds for failed fulfillment
+// is separate.
+// Ref: #/components/schemas/RefundPolicy
+type RefundPolicy string
+
+const (
+	RefundPolicyNone     RefundPolicy = "none"
+	RefundPolicyStandard RefundPolicy = "standard"
+)
+
+// AllValues returns all RefundPolicy values.
+func (RefundPolicy) AllValues() []RefundPolicy {
+	return []RefundPolicy{
+		RefundPolicyNone,
+		RefundPolicyStandard,
+	}
+}
+
+// MarshalText implements encoding.TextMarshaler.
+func (s RefundPolicy) MarshalText() ([]byte, error) {
+	switch s {
+	case RefundPolicyNone:
+		return []byte(s), nil
+	case RefundPolicyStandard:
+		return []byte(s), nil
+	default:
+		return nil, errors.Errorf("invalid value: %q", s)
+	}
+}
+
+// UnmarshalText implements encoding.TextUnmarshaler.
+func (s *RefundPolicy) UnmarshalText(data []byte) error {
+	switch RefundPolicy(data) {
+	case RefundPolicyNone:
+		*s = RefundPolicyNone
+		return nil
+	case RefundPolicyStandard:
+		*s = RefundPolicyStandard
+		return nil
+	default:
+		return errors.Errorf("invalid value: %q", data)
+	}
+}
+
 // What a full refund would return, and where each part of it would go.
 // Ref: #/components/schemas/RefundQuote
 type RefundQuote struct {
@@ -10022,6 +11140,265 @@ func (s *Subscription) SetItemCount(val OptInt64) {
 	s.ItemCount = val
 }
 
+// A cancellation request for the original purchase. scheduled_for is the intended time; effective_at
+// is the confirmed end of service. The request alone does not stop metering or issue a refund.
+// Ref: #/components/schemas/SubscriptionCancellation
+type SubscriptionCancellation struct {
+	ID                    uuid.UUID                      `json:"id"`
+	SubscriptionItemID    uuid.UUID                      `json:"subscription_item_id"`
+	Status                SubscriptionCancellationStatus `json:"status"`
+	Mode                  SubscriptionCancellationMode   `json:"mode"`
+	RequestedAt           time.Time                      `json:"requested_at"`
+	ScheduledFor          OptDateTime                    `json:"scheduled_for"`
+	EffectiveAt           OptDateTime                    `json:"effective_at"`
+	CompletedAt           OptDateTime                    `json:"completed_at"`
+	ReleaseStartedAt      OptDateTime                    `json:"release_started_at"`
+	CanceledAt            OptDateTime                    `json:"canceled_at"`
+	ForfeitRemainingValue bool                           `json:"forfeit_remaining_value"`
+	FailureCode           OptString                      `json:"failure_code"`
+	FailureReason         OptString                      `json:"failure_reason"`
+}
+
+// GetID returns the value of ID.
+func (s *SubscriptionCancellation) GetID() uuid.UUID {
+	return s.ID
+}
+
+// GetSubscriptionItemID returns the value of SubscriptionItemID.
+func (s *SubscriptionCancellation) GetSubscriptionItemID() uuid.UUID {
+	return s.SubscriptionItemID
+}
+
+// GetStatus returns the value of Status.
+func (s *SubscriptionCancellation) GetStatus() SubscriptionCancellationStatus {
+	return s.Status
+}
+
+// GetMode returns the value of Mode.
+func (s *SubscriptionCancellation) GetMode() SubscriptionCancellationMode {
+	return s.Mode
+}
+
+// GetRequestedAt returns the value of RequestedAt.
+func (s *SubscriptionCancellation) GetRequestedAt() time.Time {
+	return s.RequestedAt
+}
+
+// GetScheduledFor returns the value of ScheduledFor.
+func (s *SubscriptionCancellation) GetScheduledFor() OptDateTime {
+	return s.ScheduledFor
+}
+
+// GetEffectiveAt returns the value of EffectiveAt.
+func (s *SubscriptionCancellation) GetEffectiveAt() OptDateTime {
+	return s.EffectiveAt
+}
+
+// GetCompletedAt returns the value of CompletedAt.
+func (s *SubscriptionCancellation) GetCompletedAt() OptDateTime {
+	return s.CompletedAt
+}
+
+// GetReleaseStartedAt returns the value of ReleaseStartedAt.
+func (s *SubscriptionCancellation) GetReleaseStartedAt() OptDateTime {
+	return s.ReleaseStartedAt
+}
+
+// GetCanceledAt returns the value of CanceledAt.
+func (s *SubscriptionCancellation) GetCanceledAt() OptDateTime {
+	return s.CanceledAt
+}
+
+// GetForfeitRemainingValue returns the value of ForfeitRemainingValue.
+func (s *SubscriptionCancellation) GetForfeitRemainingValue() bool {
+	return s.ForfeitRemainingValue
+}
+
+// GetFailureCode returns the value of FailureCode.
+func (s *SubscriptionCancellation) GetFailureCode() OptString {
+	return s.FailureCode
+}
+
+// GetFailureReason returns the value of FailureReason.
+func (s *SubscriptionCancellation) GetFailureReason() OptString {
+	return s.FailureReason
+}
+
+// SetID sets the value of ID.
+func (s *SubscriptionCancellation) SetID(val uuid.UUID) {
+	s.ID = val
+}
+
+// SetSubscriptionItemID sets the value of SubscriptionItemID.
+func (s *SubscriptionCancellation) SetSubscriptionItemID(val uuid.UUID) {
+	s.SubscriptionItemID = val
+}
+
+// SetStatus sets the value of Status.
+func (s *SubscriptionCancellation) SetStatus(val SubscriptionCancellationStatus) {
+	s.Status = val
+}
+
+// SetMode sets the value of Mode.
+func (s *SubscriptionCancellation) SetMode(val SubscriptionCancellationMode) {
+	s.Mode = val
+}
+
+// SetRequestedAt sets the value of RequestedAt.
+func (s *SubscriptionCancellation) SetRequestedAt(val time.Time) {
+	s.RequestedAt = val
+}
+
+// SetScheduledFor sets the value of ScheduledFor.
+func (s *SubscriptionCancellation) SetScheduledFor(val OptDateTime) {
+	s.ScheduledFor = val
+}
+
+// SetEffectiveAt sets the value of EffectiveAt.
+func (s *SubscriptionCancellation) SetEffectiveAt(val OptDateTime) {
+	s.EffectiveAt = val
+}
+
+// SetCompletedAt sets the value of CompletedAt.
+func (s *SubscriptionCancellation) SetCompletedAt(val OptDateTime) {
+	s.CompletedAt = val
+}
+
+// SetReleaseStartedAt sets the value of ReleaseStartedAt.
+func (s *SubscriptionCancellation) SetReleaseStartedAt(val OptDateTime) {
+	s.ReleaseStartedAt = val
+}
+
+// SetCanceledAt sets the value of CanceledAt.
+func (s *SubscriptionCancellation) SetCanceledAt(val OptDateTime) {
+	s.CanceledAt = val
+}
+
+// SetForfeitRemainingValue sets the value of ForfeitRemainingValue.
+func (s *SubscriptionCancellation) SetForfeitRemainingValue(val bool) {
+	s.ForfeitRemainingValue = val
+}
+
+// SetFailureCode sets the value of FailureCode.
+func (s *SubscriptionCancellation) SetFailureCode(val OptString) {
+	s.FailureCode = val
+}
+
+// SetFailureReason sets the value of FailureReason.
+func (s *SubscriptionCancellation) SetFailureReason(val OptString) {
+	s.FailureReason = val
+}
+
+type SubscriptionCancellationMode string
+
+const (
+	SubscriptionCancellationModeImmediate SubscriptionCancellationMode = "immediate"
+	SubscriptionCancellationModePeriodEnd SubscriptionCancellationMode = "period_end"
+)
+
+// AllValues returns all SubscriptionCancellationMode values.
+func (SubscriptionCancellationMode) AllValues() []SubscriptionCancellationMode {
+	return []SubscriptionCancellationMode{
+		SubscriptionCancellationModeImmediate,
+		SubscriptionCancellationModePeriodEnd,
+	}
+}
+
+// MarshalText implements encoding.TextMarshaler.
+func (s SubscriptionCancellationMode) MarshalText() ([]byte, error) {
+	switch s {
+	case SubscriptionCancellationModeImmediate:
+		return []byte(s), nil
+	case SubscriptionCancellationModePeriodEnd:
+		return []byte(s), nil
+	default:
+		return nil, errors.Errorf("invalid value: %q", s)
+	}
+}
+
+// UnmarshalText implements encoding.TextUnmarshaler.
+func (s *SubscriptionCancellationMode) UnmarshalText(data []byte) error {
+	switch SubscriptionCancellationMode(data) {
+	case SubscriptionCancellationModeImmediate:
+		*s = SubscriptionCancellationModeImmediate
+		return nil
+	case SubscriptionCancellationModePeriodEnd:
+		*s = SubscriptionCancellationModePeriodEnd
+		return nil
+	default:
+		return errors.Errorf("invalid value: %q", data)
+	}
+}
+
+type SubscriptionCancellationStatus string
+
+const (
+	SubscriptionCancellationStatusRequested SubscriptionCancellationStatus = "requested"
+	SubscriptionCancellationStatusScheduled SubscriptionCancellationStatus = "scheduled"
+	SubscriptionCancellationStatusReleasing SubscriptionCancellationStatus = "releasing"
+	SubscriptionCancellationStatusFailed    SubscriptionCancellationStatus = "failed"
+	SubscriptionCancellationStatusCompleted SubscriptionCancellationStatus = "completed"
+	SubscriptionCancellationStatusCanceled  SubscriptionCancellationStatus = "canceled"
+)
+
+// AllValues returns all SubscriptionCancellationStatus values.
+func (SubscriptionCancellationStatus) AllValues() []SubscriptionCancellationStatus {
+	return []SubscriptionCancellationStatus{
+		SubscriptionCancellationStatusRequested,
+		SubscriptionCancellationStatusScheduled,
+		SubscriptionCancellationStatusReleasing,
+		SubscriptionCancellationStatusFailed,
+		SubscriptionCancellationStatusCompleted,
+		SubscriptionCancellationStatusCanceled,
+	}
+}
+
+// MarshalText implements encoding.TextMarshaler.
+func (s SubscriptionCancellationStatus) MarshalText() ([]byte, error) {
+	switch s {
+	case SubscriptionCancellationStatusRequested:
+		return []byte(s), nil
+	case SubscriptionCancellationStatusScheduled:
+		return []byte(s), nil
+	case SubscriptionCancellationStatusReleasing:
+		return []byte(s), nil
+	case SubscriptionCancellationStatusFailed:
+		return []byte(s), nil
+	case SubscriptionCancellationStatusCompleted:
+		return []byte(s), nil
+	case SubscriptionCancellationStatusCanceled:
+		return []byte(s), nil
+	default:
+		return nil, errors.Errorf("invalid value: %q", s)
+	}
+}
+
+// UnmarshalText implements encoding.TextUnmarshaler.
+func (s *SubscriptionCancellationStatus) UnmarshalText(data []byte) error {
+	switch SubscriptionCancellationStatus(data) {
+	case SubscriptionCancellationStatusRequested:
+		*s = SubscriptionCancellationStatusRequested
+		return nil
+	case SubscriptionCancellationStatusScheduled:
+		*s = SubscriptionCancellationStatusScheduled
+		return nil
+	case SubscriptionCancellationStatusReleasing:
+		*s = SubscriptionCancellationStatusReleasing
+		return nil
+	case SubscriptionCancellationStatusFailed:
+		*s = SubscriptionCancellationStatusFailed
+		return nil
+	case SubscriptionCancellationStatusCompleted:
+		*s = SubscriptionCancellationStatusCompleted
+		return nil
+	case SubscriptionCancellationStatusCanceled:
+		*s = SubscriptionCancellationStatusCanceled
+		return nil
+	default:
+		return errors.Errorf("invalid value: %q", data)
+	}
+}
+
 // Ref: #/components/schemas/SubscriptionItem
 type SubscriptionItem struct {
 	ID             uuid.UUID `json:"id"`
@@ -10355,6 +11732,50 @@ func (s *SubscriptionStatus) UnmarshalText(data []byte) error {
 		return nil
 	case SubscriptionStatusTerminated:
 		*s = SubscriptionStatusTerminated
+		return nil
+	default:
+		return errors.Errorf("invalid value: %q", data)
+	}
+}
+
+// Whether a fulfilled purchase may end immediately or only after its paid term. Does not grant a
+// refund. When absent, the terms are not configured and termination requires review.
+// Ref: #/components/schemas/TerminationPolicy
+type TerminationPolicy string
+
+const (
+	TerminationPolicyImmediate TerminationPolicy = "immediate"
+	TerminationPolicyPeriodEnd TerminationPolicy = "period_end"
+)
+
+// AllValues returns all TerminationPolicy values.
+func (TerminationPolicy) AllValues() []TerminationPolicy {
+	return []TerminationPolicy{
+		TerminationPolicyImmediate,
+		TerminationPolicyPeriodEnd,
+	}
+}
+
+// MarshalText implements encoding.TextMarshaler.
+func (s TerminationPolicy) MarshalText() ([]byte, error) {
+	switch s {
+	case TerminationPolicyImmediate:
+		return []byte(s), nil
+	case TerminationPolicyPeriodEnd:
+		return []byte(s), nil
+	default:
+		return nil, errors.Errorf("invalid value: %q", s)
+	}
+}
+
+// UnmarshalText implements encoding.TextUnmarshaler.
+func (s *TerminationPolicy) UnmarshalText(data []byte) error {
+	switch TerminationPolicy(data) {
+	case TerminationPolicyImmediate:
+		*s = TerminationPolicyImmediate
+		return nil
+	case TerminationPolicyPeriodEnd:
+		*s = TerminationPolicyPeriodEnd
 		return nil
 	default:
 		return errors.Errorf("invalid value: %q", data)
