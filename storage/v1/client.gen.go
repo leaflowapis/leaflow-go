@@ -204,7 +204,6 @@ type DiskList struct {
 // DiskType defines model for DiskType.
 type DiskType struct {
 	AvailabilityZoneId openapi_types.UUID `json:"availability_zone_id"`
-	BillingPlanId      openapi_types.UUID `json:"billing_plan_id"`
 	ForSystem          bool               `json:"for_system"`
 	Id                 openapi_types.UUID `json:"id"`
 	LookupKey          string             `json:"lookup_key"`
@@ -212,6 +211,8 @@ type DiskType struct {
 	Media              DiskTypeMedia      `json:"media"`
 	MinSizeGb          int64              `json:"min_size_gb"`
 	Name               string             `json:"name"`
+	PlanId             openapi_types.UUID `json:"plan_id"`
+	ProductId          openapi_types.UUID `json:"product_id"`
 	RegionId           openapi_types.UUID `json:"region_id"`
 	StepGb             int64              `json:"step_gb"`
 }

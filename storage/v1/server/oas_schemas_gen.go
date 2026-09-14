@@ -595,7 +595,8 @@ type DiskType struct {
 	MaxSizeGB          int64         `json:"max_size_gb"`
 	StepGB             int64         `json:"step_gb"`
 	ForSystem          bool          `json:"for_system"`
-	BillingPlanID      uuid.UUID     `json:"billing_plan_id"`
+	ProductID          uuid.UUID     `json:"product_id"`
+	PlanID             uuid.UUID     `json:"plan_id"`
 }
 
 // GetID returns the value of ID.
@@ -648,9 +649,14 @@ func (s *DiskType) GetForSystem() bool {
 	return s.ForSystem
 }
 
-// GetBillingPlanID returns the value of BillingPlanID.
-func (s *DiskType) GetBillingPlanID() uuid.UUID {
-	return s.BillingPlanID
+// GetProductID returns the value of ProductID.
+func (s *DiskType) GetProductID() uuid.UUID {
+	return s.ProductID
+}
+
+// GetPlanID returns the value of PlanID.
+func (s *DiskType) GetPlanID() uuid.UUID {
+	return s.PlanID
 }
 
 // SetID sets the value of ID.
@@ -703,9 +709,14 @@ func (s *DiskType) SetForSystem(val bool) {
 	s.ForSystem = val
 }
 
-// SetBillingPlanID sets the value of BillingPlanID.
-func (s *DiskType) SetBillingPlanID(val uuid.UUID) {
-	s.BillingPlanID = val
+// SetProductID sets the value of ProductID.
+func (s *DiskType) SetProductID(val uuid.UUID) {
+	s.ProductID = val
+}
+
+// SetPlanID sets the value of PlanID.
+func (s *DiskType) SetPlanID(val uuid.UUID) {
+	s.PlanID = val
 }
 
 // Ref: #/components/schemas/DiskTypeList

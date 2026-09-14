@@ -1154,12 +1154,16 @@ func (s *DiskType) encodeFields(e *jx.Encoder) {
 		e.Bool(s.ForSystem)
 	}
 	{
-		e.FieldStart("billing_plan_id")
-		json.EncodeUUID(e, s.BillingPlanID)
+		e.FieldStart("product_id")
+		json.EncodeUUID(e, s.ProductID)
+	}
+	{
+		e.FieldStart("plan_id")
+		json.EncodeUUID(e, s.PlanID)
 	}
 }
 
-var jsonFieldsNameOfDiskType = [11]string{
+var jsonFieldsNameOfDiskType = [12]string{
 	0:  "id",
 	1:  "lookup_key",
 	2:  "name",
@@ -1170,7 +1174,8 @@ var jsonFieldsNameOfDiskType = [11]string{
 	7:  "max_size_gb",
 	8:  "step_gb",
 	9:  "for_system",
-	10: "billing_plan_id",
+	10: "product_id",
+	11: "plan_id",
 }
 
 // Decode decodes DiskType from json.
@@ -1300,17 +1305,29 @@ func (s *DiskType) Decode(d *jx.Decoder) error {
 			}(); err != nil {
 				return errors.Wrap(err, "decode field \"for_system\"")
 			}
-		case "billing_plan_id":
+		case "product_id":
 			requiredBitSet[1] |= 1 << 2
 			if err := func() error {
 				v, err := json.DecodeUUID(d)
-				s.BillingPlanID = v
+				s.ProductID = v
 				if err != nil {
 					return err
 				}
 				return nil
 			}(); err != nil {
-				return errors.Wrap(err, "decode field \"billing_plan_id\"")
+				return errors.Wrap(err, "decode field \"product_id\"")
+			}
+		case "plan_id":
+			requiredBitSet[1] |= 1 << 3
+			if err := func() error {
+				v, err := json.DecodeUUID(d)
+				s.PlanID = v
+				if err != nil {
+					return err
+				}
+				return nil
+			}(); err != nil {
+				return errors.Wrap(err, "decode field \"plan_id\"")
 			}
 		default:
 			return errors.Errorf("unexpected field %q", k)
@@ -1323,7 +1340,7 @@ func (s *DiskType) Decode(d *jx.Decoder) error {
 	var failures []validate.FieldError
 	for i, mask := range [2]uint8{
 		0b11111111,
-		0b00000111,
+		0b00001111,
 	} {
 		if result := (requiredBitSet[i] & mask) ^ mask; result != 0 {
 			// Mask only required fields and check equality to mask using XOR.
