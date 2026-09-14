@@ -108,6 +108,33 @@ func (e ResourceUsageState) Valid() bool {
 	}
 }
 
+// Defines values for TaskState.
+const (
+	Canceled  TaskState = "canceled"
+	Failed    TaskState = "failed"
+	Pending   TaskState = "pending"
+	Running   TaskState = "running"
+	Succeeded TaskState = "succeeded"
+)
+
+// Valid indicates whether the value is a known member of the TaskState enum.
+func (e TaskState) Valid() bool {
+	switch e {
+	case Canceled:
+		return true
+	case Failed:
+		return true
+	case Pending:
+		return true
+	case Running:
+		return true
+	case Succeeded:
+		return true
+	default:
+		return false
+	}
+}
+
 // Attachment defines model for Attachment.
 type Attachment struct {
 	// Consumer A resource identified within its owning service. The project is taken from the containing usage or request.
@@ -279,6 +306,24 @@ type ResourceUsageList struct {
 	// Pagination Pagination metadata for stable numbered pages. total_count is returned only when the operation can determine it without an unbounded scan.
 	Pagination OffsetPagination `json:"pagination"`
 }
+
+// Task A requested action and its outcome. Query it through the service that accepted the request, using the same project or administrator credentials. Only succeeded confirms completion. Stopping a wait does not cancel the action. Cancellation is available only where the action explicitly supports it.
+type Task struct {
+	CompletedAt *time.Time `json:"completed_at"`
+	CreatedAt   time.Time  `json:"created_at"`
+
+	// Error Terminal failure. Absent while work can still recover.
+	Error     *Error             `json:"error,omitempty"`
+	Id        openapi_types.UUID `json:"id"`
+	StartedAt *time.Time         `json:"started_at"`
+	State     TaskState          `json:"state"`
+
+	// Type Action requested from the owning service.
+	Type string `json:"type"`
+}
+
+// TaskState defines model for Task.State.
+type TaskState string
 
 // Cursor defines model for Cursor.
 type Cursor = string
