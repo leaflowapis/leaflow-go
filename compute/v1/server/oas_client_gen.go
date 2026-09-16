@@ -380,7 +380,10 @@ type Invoker interface {
 	// one of image_id, private_image_id or boot_disk_id is required, and exactly one of port_id or
 	// subnet_id. Existing ports, boot disks or floating IPs require count=1. Image boots require
 	// boot_disk; existing disks retain their own subscription. Instances, disks and public IPs keep their
-	// own subscription items on the same order.
+	// own subscription items on the same order. A request for several instances is all or nothing — if
+	// any instance cannot be created, every instance of that request is released and the order fails, so
+	// nothing is charged. Each instance is named after this request with a number appended, and each has
+	// its own task.
 	//
 	// POST /api/v1/instances
 	LaunchInstance(ctx context.Context, request *LaunchInstanceRequestBody) (*LaunchInstanceResponseBody, error)
@@ -6868,7 +6871,10 @@ func (c *Client) sendGetTask(ctx context.Context, params GetTaskParams) (res *Ta
 // one of image_id, private_image_id or boot_disk_id is required, and exactly one of port_id or
 // subnet_id. Existing ports, boot disks or floating IPs require count=1. Image boots require
 // boot_disk; existing disks retain their own subscription. Instances, disks and public IPs keep their
-// own subscription items on the same order.
+// own subscription items on the same order. A request for several instances is all or nothing — if
+// any instance cannot be created, every instance of that request is released and the order fails, so
+// nothing is charged. Each instance is named after this request with a number appended, and each has
+// its own task.
 //
 // POST /api/v1/instances
 func (c *Client) LaunchInstance(ctx context.Context, request *LaunchInstanceRequestBody) (*LaunchInstanceResponseBody, error) {
