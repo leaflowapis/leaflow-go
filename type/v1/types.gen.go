@@ -192,6 +192,17 @@ type IdlePolicy struct {
 	RetentionSeconds int64 `json:"retention_seconds"`
 }
 
+// Money A decimal string, in the currency stated alongside it.
+//
+// **The currency is not part of this type.** It is carried by a `currency` field next to the
+// amount, or by the account the amount belongs to. Reading an amount without that field is
+// reading a number with no unit.
+//
+// It is a string rather than a JSON number because a JSON number is a float in most parsers,
+// and a float loses precision on the first arithmetic. Nothing on this platform puts an amount
+// through a float.
+type Money = string
+
 // NamedIdentity Which object this is, together with what a person currently calls it.
 //
 // The name is for display. It is chosen by whoever owns the object, it changes, it is not unique
@@ -337,6 +348,16 @@ type Task struct {
 
 // TaskState defines model for Task.State.
 type TaskState string
+
+// Translations Text in other languages, keyed by BCP 47 language tag (`zh-Hans`, `en`, `ja`).
+//
+// When your locale is absent, use the plain field next to this one. **There is no fallback
+// chain**: a missing `zh-Hans` does not fall back to `zh`.
+//
+// Resolving server-side by `Accept-Language` is deliberately not done — the public catalogue is
+// cached and served from a CDN, and one cache serves every language only if the response does
+// not depend on the request's language.
+type Translations map[string]string
 
 // Cursor defines model for Cursor.
 type Cursor = string

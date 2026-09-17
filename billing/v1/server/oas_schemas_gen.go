@@ -12438,8 +12438,14 @@ func (s *TransactionType) UnmarshalText(data []byte) error {
 	}
 }
 
-// Names in other languages, keyed by BCP 47 language tag. Where your locale is absent, use the plain
-// `name`; there is no fallback between related tags.
+// Text in other languages, keyed by BCP 47 language tag (`zh-Hans`, `en`, `ja`).
+//
+// When your locale is absent, use the plain field next to this one. There is no fallback chain: a
+// missing `zh-Hans` does not fall back to `zh`.
+//
+// Resolving server-side by `Accept-Language` is deliberately not done — the public catalogue is
+// cached and served from a CDN, and one cache serves every language only if the response does not
+// depend on the request's language.
 // Ref: #/components/schemas/Translations
 type Translations map[string]string
 

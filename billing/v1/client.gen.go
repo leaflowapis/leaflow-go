@@ -1244,26 +1244,26 @@ func (e ListProjectSpendParamsGroupBy) Valid() bool {
 type AccountBalance struct {
 	// Accrued Metered usage priced this month but not yet invoiced. It is already committed even
 	// though no invoice exists for it yet.
-	Accrued          Money `json:"accrued"`
-	BillingAccountId int64 `json:"billing_account_id"`
+	Accrued          externalRef0.Money `json:"accrued"`
+	BillingAccountId int64              `json:"billing_account_id"`
 
 	// Cash Funds paid in and not yet spent. This is the part that can be refunded.
-	Cash Money `json:"cash"`
+	Cash externalRef0.Money `json:"cash"`
 
 	// Credit Granted credit. Spendable, but not withdrawable.
-	Credit   Money  `json:"credit"`
-	Currency string `json:"currency"`
+	Credit   externalRef0.Money `json:"credit"`
+	Currency string             `json:"currency"`
 
 	// Held Reserved by orders that have not completed.
-	Held Money `json:"held"`
+	Held externalRef0.Money `json:"held"`
 
 	// Spendable `cash` less `accrued` and `held` — what is actually available at checkout. It goes
 	// negative when usage has exceeded the balance. Credit and vouchers are shown
 	// separately because each can only pay for what it covers.
-	Spendable Money `json:"spendable"`
+	Spendable externalRef0.Money `json:"spendable"`
 
 	// Voucher Voucher balance, spendable within each voucher's own scope.
-	Voucher Money `json:"voucher"`
+	Voucher externalRef0.Money `json:"voucher"`
 }
 
 // ActiveResource A resource currently accruing charges by the second.
@@ -1303,7 +1303,15 @@ type Allocation struct {
 	AllocatedAt time.Time `json:"allocated_at"`
 
 	// Amount A decimal string, in the currency stated alongside it.
-	Amount     Money                `json:"amount"`
+	//
+	// **The currency is not part of this type.** It is carried by a `currency` field next to the
+	// amount, or by the account the amount belongs to. Reading an amount without that field is
+	// reading a number with no unit.
+	//
+	// It is a string rather than a JSON number because a JSON number is a float in most parsers,
+	// and a float loses precision on the first arithmetic. Nothing on this platform puts an amount
+	// through a float.
+	Amount     externalRef0.Money   `json:"amount"`
 	Currency   string               `json:"currency"`
 	Id         openapi_types.UUID   `json:"id"`
 	ReversedAt *time.Time           `json:"reversed_at,omitempty"`
@@ -1400,7 +1408,15 @@ type Applicability struct {
 	FirstPurchaseOnly *bool `json:"first_purchase_only,omitempty"`
 
 	// MinAmount A decimal string, in the currency stated alongside it.
-	MinAmount  *Money               `json:"min_amount,omitempty"`
+	//
+	// **The currency is not part of this type.** It is carried by a `currency` field next to the
+	// amount, or by the account the amount belongs to. Reading an amount without that field is
+	// reading a number with no unit.
+	//
+	// It is a string rather than a JSON number because a JSON number is a float in most parsers,
+	// and a float loses precision on the first arithmetic. Nothing on this platform puts an amount
+	// through a float.
+	MinAmount  *externalRef0.Money  `json:"min_amount,omitempty"`
 	Operations []PurchaseOperation  `json:"operations,omitempty"`
 	PlanIds    []openapi_types.UUID `json:"plan_ids,omitempty"`
 	PriceTypes []string             `json:"price_types,omitempty"`
@@ -1483,17 +1499,29 @@ type BillingAccountUpdate struct {
 type CatalogPlan struct {
 	Description *string `json:"description,omitempty"`
 
-	// DescriptionTranslations Names in other languages, keyed by BCP 47 language tag. Where your locale is absent, use
-	// the plain `name`; there is no fallback between related tags.
-	DescriptionTranslations *Translations      `json:"description_translations,omitempty"`
-	Id                      openapi_types.UUID `json:"id"`
-	LookupKey               string             `json:"lookup_key"`
-	Name                    string             `json:"name"`
+	// DescriptionTranslations Text in other languages, keyed by BCP 47 language tag (`zh-Hans`, `en`, `ja`).
+	//
+	// When your locale is absent, use the plain field next to this one. **There is no fallback
+	// chain**: a missing `zh-Hans` does not fall back to `zh`.
+	//
+	// Resolving server-side by `Accept-Language` is deliberately not done — the public catalogue is
+	// cached and served from a CDN, and one cache serves every language only if the response does
+	// not depend on the request's language.
+	DescriptionTranslations *externalRef0.Translations `json:"description_translations,omitempty"`
+	Id                      openapi_types.UUID         `json:"id"`
+	LookupKey               string                     `json:"lookup_key"`
+	Name                    string                     `json:"name"`
 
-	// NameTranslations Names in other languages, keyed by BCP 47 language tag. Where your locale is absent, use
-	// the plain `name`; there is no fallback between related tags.
-	NameTranslations *Translations      `json:"name_translations,omitempty"`
-	ProductId        openapi_types.UUID `json:"product_id"`
+	// NameTranslations Text in other languages, keyed by BCP 47 language tag (`zh-Hans`, `en`, `ja`).
+	//
+	// When your locale is absent, use the plain field next to this one. **There is no fallback
+	// chain**: a missing `zh-Hans` does not fall back to `zh`.
+	//
+	// Resolving server-side by `Accept-Language` is deliberately not done — the public catalogue is
+	// cached and served from a CDN, and one cache serves every language only if the response does
+	// not depend on the request's language.
+	NameTranslations *externalRef0.Translations `json:"name_translations,omitempty"`
+	ProductId        openapi_types.UUID         `json:"product_id"`
 }
 
 // CatalogPlanList defines model for CatalogPlanList.
@@ -1524,16 +1552,16 @@ type CatalogPrice struct {
 	//
 	// An order beyond it is refused with its own code, apart from the codes for running
 	// out of stock and for exceeding what the infrastructure allows.
-	MaxQuantity *Money `json:"max_quantity,omitempty"`
+	MaxQuantity *externalRef0.Money `json:"max_quantity,omitempty"`
 
 	// MinQuantity The smallest quantity that can be bought. Absent means no lower bound.
-	MinQuantity *Money              `json:"min_quantity,omitempty"`
+	MinQuantity *externalRef0.Money `json:"min_quantity,omitempty"`
 	Period      *CatalogPricePeriod `json:"period,omitempty"`
 	PlanId      openapi_types.UUID  `json:"plan_id"`
 	ProductId   *openapi_types.UUID `json:"product_id,omitempty"`
 
 	// QuantityStep Quantities must be a multiple of this. Absent means any quantity within the bounds.
-	QuantityStep *Money `json:"quantity_step,omitempty"`
+	QuantityStep *externalRef0.Money `json:"quantity_step,omitempty"`
 
 	// RateCardId For `rated` prices, the price list the rates are read from.
 	RateCardId *openapi_types.UUID `json:"rate_card_id,omitempty"`
@@ -1542,7 +1570,15 @@ type CatalogPrice struct {
 	RefundPolicy *RefundPolicy `json:"refund_policy,omitempty"`
 
 	// SetupFee A decimal string, in the currency stated alongside it.
-	SetupFee *Money `json:"setup_fee,omitempty"`
+	//
+	// **The currency is not part of this type.** It is carried by a `currency` field next to the
+	// amount, or by the account the amount belongs to. Reading an amount without that field is
+	// reading a number with no unit.
+	//
+	// It is a string rather than a JSON number because a JSON number is a float in most parsers,
+	// and a float loses precision on the first arithmetic. Nothing on this platform puts an amount
+	// through a float.
+	SetupFee *externalRef0.Money `json:"setup_fee,omitempty"`
 
 	// Term For prepaid prices, how many periods one purchase covers.
 	Term *int `json:"term,omitempty"`
@@ -1564,7 +1600,7 @@ type CatalogPrice struct {
 	Type CatalogPriceType `json:"type"`
 
 	// UnitAmount Present for `per_unit`.
-	UnitAmount *Money `json:"unit_amount,omitempty"`
+	UnitAmount *externalRef0.Money `json:"unit_amount,omitempty"`
 }
 
 // CatalogPriceBillingScheme How the amount is arrived at. `rated` means the rate depends on attributes such as
@@ -1594,16 +1630,28 @@ type CatalogPriceList struct {
 type CatalogProduct struct {
 	Description *string `json:"description,omitempty"`
 
-	// DescriptionTranslations Names in other languages, keyed by BCP 47 language tag. Where your locale is absent, use
-	// the plain `name`; there is no fallback between related tags.
-	DescriptionTranslations *Translations      `json:"description_translations,omitempty"`
-	Id                      openapi_types.UUID `json:"id"`
-	LookupKey               string             `json:"lookup_key"`
-	Name                    string             `json:"name"`
+	// DescriptionTranslations Text in other languages, keyed by BCP 47 language tag (`zh-Hans`, `en`, `ja`).
+	//
+	// When your locale is absent, use the plain field next to this one. **There is no fallback
+	// chain**: a missing `zh-Hans` does not fall back to `zh`.
+	//
+	// Resolving server-side by `Accept-Language` is deliberately not done — the public catalogue is
+	// cached and served from a CDN, and one cache serves every language only if the response does
+	// not depend on the request's language.
+	DescriptionTranslations *externalRef0.Translations `json:"description_translations,omitempty"`
+	Id                      openapi_types.UUID         `json:"id"`
+	LookupKey               string                     `json:"lookup_key"`
+	Name                    string                     `json:"name"`
 
-	// NameTranslations Names in other languages, keyed by BCP 47 language tag. Where your locale is absent, use
-	// the plain `name`; there is no fallback between related tags.
-	NameTranslations *Translations `json:"name_translations,omitempty"`
+	// NameTranslations Text in other languages, keyed by BCP 47 language tag (`zh-Hans`, `en`, `ja`).
+	//
+	// When your locale is absent, use the plain field next to this one. **There is no fallback
+	// chain**: a missing `zh-Hans` does not fall back to `zh`.
+	//
+	// Resolving server-side by `Accept-Language` is deliberately not done — the public catalogue is
+	// cached and served from a CDN, and one cache serves every language only if the response does
+	// not depend on the request's language.
+	NameTranslations *externalRef0.Translations `json:"name_translations,omitempty"`
 }
 
 // CatalogProductList defines model for CatalogProductList.
@@ -1630,7 +1678,7 @@ type CatalogRate struct {
 	Unit *string `json:"unit,omitempty"`
 
 	// UnitAmount Present for `per_unit`. Tiered rates carry their amounts on the tiers.
-	UnitAmount *Money `json:"unit_amount,omitempty"`
+	UnitAmount *externalRef0.Money `json:"unit_amount,omitempty"`
 
 	// UnitQuantity How many measured units one amount covers. An hourly rate on a per-second meter is
 	// `"3600"`.
@@ -1649,7 +1697,7 @@ type CatalogRateList struct {
 // CodePreview defines model for CodePreview.
 type CodePreview struct {
 	// Amount For a voucher, the amount it adds.
-	Amount *Money `json:"amount,omitempty"`
+	Amount *externalRef0.Money `json:"amount,omitempty"`
 
 	// Applicable Whether it applies to the purchase given in `lines`. Absent when no purchase was
 	// given.
@@ -1670,18 +1718,26 @@ type CodePreview struct {
 
 	// EstimatedDiscount What it would take off this purchase. An estimate: the amount is settled at the
 	// moment the order is placed.
-	EstimatedDiscount *Money `json:"estimated_discount,omitempty"`
+	EstimatedDiscount *externalRef0.Money `json:"estimated_discount,omitempty"`
 
 	// MaxDiscount A decimal string, in the currency stated alongside it.
-	MaxDiscount *Money  `json:"max_discount,omitempty"`
-	Name        *string `json:"name,omitempty"`
+	//
+	// **The currency is not part of this type.** It is carried by a `currency` field next to the
+	// amount, or by the account the amount belongs to. Reading an amount without that field is
+	// reading a number with no unit.
+	//
+	// It is a string rather than a JSON number because a JSON number is a float in most parsers,
+	// and a float loses precision on the first arithmetic. Nothing on this platform puts an amount
+	// through a float.
+	MaxDiscount *externalRef0.Money `json:"max_discount,omitempty"`
+	Name        *string             `json:"name,omitempty"`
 
 	// PercentOff For a percentage discount.
 	PercentOff *string `json:"percent_off,omitempty"`
 
 	// QualifyingAmount The total of the lines that match the restrictions. This is what the threshold is
 	// measured against, not the order total.
-	QualifyingAmount *Money `json:"qualifying_amount,omitempty"`
+	QualifyingAmount *externalRef0.Money `json:"qualifying_amount,omitempty"`
 
 	// Reason Why a code cannot be used. `none` when it can.
 	//
@@ -1693,7 +1749,7 @@ type CodePreview struct {
 
 	// Shortfall How much more of a qualifying purchase is needed to reach the threshold. `"0"` once
 	// it is met.
-	Shortfall *Money `json:"shortfall,omitempty"`
+	Shortfall *externalRef0.Money `json:"shortfall,omitempty"`
 
 	// Summary The terms in one sentence, ready to display — for example "Compute, new purchases
 	// only, from 100.00" or "No restriction on product or purchase type".
@@ -1720,7 +1776,15 @@ type CodeRedeem struct {
 // CodeRedeemResult defines model for CodeRedeemResult.
 type CodeRedeemResult struct {
 	// Amount A decimal string, in the currency stated alongside it.
-	Amount *Money `json:"amount,omitempty"`
+	//
+	// **The currency is not part of this type.** It is carried by a `currency` field next to the
+	// amount, or by the account the amount belongs to. Reading an amount without that field is
+	// reading a number with no unit.
+	//
+	// It is a string rather than a JSON number because a JSON number is a float in most parsers,
+	// and a float loses precision on the first arithmetic. Nothing on this platform puts an amount
+	// through a float.
+	Amount *externalRef0.Money `json:"amount,omitempty"`
 
 	// CreditGrantId For a voucher, the credit that was added.
 	CreditGrantId *openapi_types.UUID `json:"credit_grant_id,omitempty"`
@@ -1829,7 +1893,15 @@ type CommitmentPeriod struct {
 // CreditGrant defines model for CreditGrant.
 type CreditGrant struct {
 	// Amount A decimal string, in the currency stated alongside it.
-	Amount Money `json:"amount"`
+	//
+	// **The currency is not part of this type.** It is carried by a `currency` field next to the
+	// amount, or by the account the amount belongs to. Reading an amount without that field is
+	// reading a number with no unit.
+	//
+	// It is a string rather than a JSON number because a JSON number is a float in most parsers,
+	// and a float loses precision on the first arithmetic. Nothing on this platform puts an amount
+	// through a float.
+	Amount externalRef0.Money `json:"amount"`
 
 	// AppliesTo What this credit may pay for. No restrictions means anything on the account.
 	AppliesTo *Applicability `json:"applies_to,omitempty"`
@@ -1842,7 +1914,15 @@ type CreditGrant struct {
 	Name             string             `json:"name"`
 
 	// RemainingAmount A decimal string, in the currency stated alongside it.
-	RemainingAmount Money `json:"remaining_amount"`
+	//
+	// **The currency is not part of this type.** It is carried by a `currency` field next to the
+	// amount, or by the account the amount belongs to. Reading an amount without that field is
+	// reading a number with no unit.
+	//
+	// It is a string rather than a JSON number because a JSON number is a float in most parsers,
+	// and a float loses precision on the first arithmetic. Nothing on this platform puts an amount
+	// through a float.
+	RemainingAmount externalRef0.Money `json:"remaining_amount"`
 
 	// SourceType Where it came from. `voucher` was redeemed from a code and carries its own
 	// restrictions; `manual` was issued directly, typically to put something right.
@@ -1945,9 +2025,15 @@ type IncludedFeature struct {
 	IncludedQuantity *string `json:"included_quantity,omitempty"`
 	Name             string  `json:"name"`
 
-	// NameTranslations Names in other languages, keyed by BCP 47 language tag. Where your locale is absent, use
-	// the plain `name`; there is no fallback between related tags.
-	NameTranslations *Translations `json:"name_translations,omitempty"`
+	// NameTranslations Text in other languages, keyed by BCP 47 language tag (`zh-Hans`, `en`, `ja`).
+	//
+	// When your locale is absent, use the plain field next to this one. **There is no fallback
+	// chain**: a missing `zh-Hans` does not fall back to `zh`.
+	//
+	// Resolving server-side by `Accept-Language` is deliberately not done — the public catalogue is
+	// cached and served from a CDN, and one cache serves every language only if the response does
+	// not depend on the request's language.
+	NameTranslations *externalRef0.Translations `json:"name_translations,omitempty"`
 
 	// Unit The unit that quantity is counted in, such as `request`.
 	Unit *string `json:"unit,omitempty"`
@@ -1965,19 +2051,27 @@ type IncludedFeature struct {
 // Invoice defines model for Invoice.
 type Invoice struct {
 	// AmountPaid A decimal string, in the currency stated alongside it.
-	AmountPaid       *Money `json:"amount_paid,omitempty"`
-	BillingAccountId int64  `json:"billing_account_id"`
+	//
+	// **The currency is not part of this type.** It is carried by a `currency` field next to the
+	// amount, or by the account the amount belongs to. Reading an amount without that field is
+	// reading a number with no unit.
+	//
+	// It is a string rather than a JSON number because a JSON number is a float in most parsers,
+	// and a float loses precision on the first arithmetic. Nothing on this platform puts an amount
+	// through a float.
+	AmountPaid       *externalRef0.Money `json:"amount_paid,omitempty"`
+	BillingAccountId int64               `json:"billing_account_id"`
 
 	// CreditApplied Paid from credit or a voucher.
-	CreditApplied             *Money  `json:"credit_applied,omitempty"`
-	Currency                  string  `json:"currency"`
-	CustomerAddressCity       *string `json:"customer_address_city,omitempty"`
-	CustomerAddressCountry    *string `json:"customer_address_country,omitempty"`
-	CustomerAddressLine1      *string `json:"customer_address_line1,omitempty"`
-	CustomerAddressLine2      *string `json:"customer_address_line2,omitempty"`
-	CustomerAddressPostalCode *string `json:"customer_address_postal_code,omitempty"`
-	CustomerAddressState      *string `json:"customer_address_state,omitempty"`
-	CustomerEmail             *string `json:"customer_email,omitempty"`
+	CreditApplied             *externalRef0.Money `json:"credit_applied,omitempty"`
+	Currency                  string              `json:"currency"`
+	CustomerAddressCity       *string             `json:"customer_address_city,omitempty"`
+	CustomerAddressCountry    *string             `json:"customer_address_country,omitempty"`
+	CustomerAddressLine1      *string             `json:"customer_address_line1,omitempty"`
+	CustomerAddressLine2      *string             `json:"customer_address_line2,omitempty"`
+	CustomerAddressPostalCode *string             `json:"customer_address_postal_code,omitempty"`
+	CustomerAddressState      *string             `json:"customer_address_state,omitempty"`
+	CustomerEmail             *string             `json:"customer_email,omitempty"`
 
 	// CustomerName Who this was billed to, as recorded when the invoice was issued. Later changes to
 	// the account do not alter it.
@@ -1985,8 +2079,16 @@ type Invoice struct {
 	CustomerTaxId *string `json:"customer_tax_id,omitempty"`
 
 	// DiscountAmount A decimal string, in the currency stated alongside it.
-	DiscountAmount *Money             `json:"discount_amount,omitempty"`
-	Id             openapi_types.UUID `json:"id"`
+	//
+	// **The currency is not part of this type.** It is carried by a `currency` field next to the
+	// amount, or by the account the amount belongs to. Reading an amount without that field is
+	// reading a number with no unit.
+	//
+	// It is a string rather than a JSON number because a JSON number is a float in most parsers,
+	// and a float loses precision on the first arithmetic. Nothing on this platform puts an amount
+	// through a float.
+	DiscountAmount *externalRef0.Money `json:"discount_amount,omitempty"`
+	Id             openapi_types.UUID  `json:"id"`
 
 	// Number Numbered per account and per month.
 	Number string `json:"number"`
@@ -2001,13 +2103,29 @@ type Invoice struct {
 	Status      InvoiceStatus `json:"status"`
 
 	// Subtotal A decimal string, in the currency stated alongside it.
-	Subtotal *Money `json:"subtotal,omitempty"`
+	//
+	// **The currency is not part of this type.** It is carried by a `currency` field next to the
+	// amount, or by the account the amount belongs to. Reading an amount without that field is
+	// reading a number with no unit.
+	//
+	// It is a string rather than a JSON number because a JSON number is a float in most parsers,
+	// and a float loses precision on the first arithmetic. Nothing on this platform puts an amount
+	// through a float.
+	Subtotal *externalRef0.Money `json:"subtotal,omitempty"`
 
 	// TaxAmount A decimal string, in the currency stated alongside it.
-	TaxAmount *Money `json:"tax_amount,omitempty"`
+	//
+	// **The currency is not part of this type.** It is carried by a `currency` field next to the
+	// amount, or by the account the amount belongs to. Reading an amount without that field is
+	// reading a number with no unit.
+	//
+	// It is a string rather than a JSON number because a JSON number is a float in most parsers,
+	// and a float loses precision on the first arithmetic. Nothing on this platform puts an amount
+	// through a float.
+	TaxAmount *externalRef0.Money `json:"tax_amount,omitempty"`
 
 	// Total Subtotal less discount, plus tax, less credit applied.
-	Total Money `json:"total"`
+	Total externalRef0.Money `json:"total"`
 
 	// Type What produced it — metered usage for a period, a purchase, or a correction.
 	Type *InvoiceType `json:"type,omitempty"`
@@ -2019,8 +2137,16 @@ type InvoiceType string
 // InvoiceItem defines model for InvoiceItem.
 type InvoiceItem struct {
 	// Amount A decimal string, in the currency stated alongside it.
-	Amount   Money  `json:"amount"`
-	Currency string `json:"currency"`
+	//
+	// **The currency is not part of this type.** It is carried by a `currency` field next to the
+	// amount, or by the account the amount belongs to. Reading an amount without that field is
+	// reading a number with no unit.
+	//
+	// It is a string rather than a JSON number because a JSON number is a float in most parsers,
+	// and a float loses precision on the first arithmetic. Nothing on this platform puts an amount
+	// through a float.
+	Amount   externalRef0.Money `json:"amount"`
+	Currency string             `json:"currency"`
 
 	// DeductedQuantity The part covered by an included allowance, and therefore not charged.
 	DeductedQuantity *string `json:"deducted_quantity,omitempty"`
@@ -2050,7 +2176,15 @@ type InvoiceItem struct {
 	Unit              *string          `json:"unit,omitempty"`
 
 	// UnitAmount A decimal string, in the currency stated alongside it.
-	UnitAmount *Money `json:"unit_amount,omitempty"`
+	//
+	// **The currency is not part of this type.** It is carried by a `currency` field next to the
+	// amount, or by the account the amount belongs to. Reading an amount without that field is
+	// reading a number with no unit.
+	//
+	// It is a string rather than a JSON number because a JSON number is a float in most parsers,
+	// and a float loses precision on the first arithmetic. Nothing on this platform puts an amount
+	// through a float.
+	UnitAmount *externalRef0.Money `json:"unit_amount,omitempty"`
 }
 
 // InvoiceItemType defines model for InvoiceItem.Type.
@@ -2071,9 +2205,6 @@ type InvoiceList struct {
 // InvoiceStatus defines model for InvoiceStatus.
 type InvoiceStatus string
 
-// Money A decimal string, in the currency stated alongside it.
-type Money = string
-
 // ObjectIdentity defines model for ObjectIdentity.
 type ObjectIdentity struct {
 	Id        openapi_types.UUID `json:"id"`
@@ -2089,11 +2220,19 @@ type ObjectReference struct {
 // Order defines model for Order.
 type Order struct {
 	// Amount A decimal string, in the currency stated alongside it.
-	Amount Money `json:"amount"`
+	//
+	// **The currency is not part of this type.** It is carried by a `currency` field next to the
+	// amount, or by the account the amount belongs to. Reading an amount without that field is
+	// reading a number with no unit.
+	//
+	// It is a string rather than a JSON number because a JSON number is a float in most parsers,
+	// and a float loses precision on the first arithmetic. Nothing on this platform puts an amount
+	// through a float.
+	Amount externalRef0.Money `json:"amount"`
 
 	// AmountDue What is still outstanding. Zero once paid.
-	AmountDue        *Money `json:"amount_due,omitempty"`
-	BillingAccountId *int64 `json:"billing_account_id,omitempty"`
+	AmountDue        *externalRef0.Money `json:"amount_due,omitempty"`
+	BillingAccountId *int64              `json:"billing_account_id,omitempty"`
 
 	// ChangeEffective When a plan change takes effect. `none` on anything that is not a change.
 	//
@@ -2104,14 +2243,30 @@ type Order struct {
 	Currency        string                `json:"currency"`
 
 	// DiscountAmount A decimal string, in the currency stated alongside it.
-	DiscountAmount *Money `json:"discount_amount,omitempty"`
+	//
+	// **The currency is not part of this type.** It is carried by a `currency` field next to the
+	// amount, or by the account the amount belongs to. Reading an amount without that field is
+	// reading a number with no unit.
+	//
+	// It is a string rather than a JSON number because a JSON number is a float in most parsers,
+	// and a float loses precision on the first arithmetic. Nothing on this platform puts an amount
+	// through a float.
+	DiscountAmount *externalRef0.Money `json:"discount_amount,omitempty"`
 
 	// FulfillmentStartedAt When fulfillment began. Funds and sellable quota remain reserved until success or confirmed failure; this order can no longer be canceled.
 	FulfillmentStartedAt *time.Time `json:"fulfillment_started_at,omitempty"`
 
 	// GrossAmount A decimal string, in the currency stated alongside it.
-	GrossAmount *Money             `json:"gross_amount,omitempty"`
-	Id          openapi_types.UUID `json:"id"`
+	//
+	// **The currency is not part of this type.** It is carried by a `currency` field next to the
+	// amount, or by the account the amount belongs to. Reading an amount without that field is
+	// reading a number with no unit.
+	//
+	// It is a string rather than a JSON number because a JSON number is a float in most parsers,
+	// and a float loses precision on the first arithmetic. Nothing on this platform puts an amount
+	// through a float.
+	GrossAmount *externalRef0.Money `json:"gross_amount,omitempty"`
+	Id          openapi_types.UUID  `json:"id"`
 
 	// Items What was bought. Present on a single order and on every order in a list, so a list
 	// can be rendered without a further request per row.
@@ -2125,10 +2280,10 @@ type Order struct {
 	// rather than deducted from `amount`, so paying with granted credit gives back credit.
 	//
 	// Always "0" on a `period_end` change: nothing is left of the period at its end.
-	RefundableAmount *Money `json:"refundable_amount,omitempty"`
+	RefundableAmount *externalRef0.Money `json:"refundable_amount,omitempty"`
 
 	// RefundedAmount How much of `refundable_amount` has already gone back.
-	RefundedAmount *Money `json:"refunded_amount,omitempty"`
+	RefundedAmount *externalRef0.Money `json:"refunded_amount,omitempty"`
 
 	// ReservationExpiresAt The deadline to pay and begin fulfillment. Absent after fulfillment starts or the order
 	// ends. Once fulfillment starts, its reservations remain held until success or confirmed failure.
@@ -2159,14 +2314,38 @@ type OrderType string
 // OrderItem defines model for OrderItem.
 type OrderItem struct {
 	// Amount A decimal string, in the currency stated alongside it.
-	Amount   Money  `json:"amount"`
-	Currency string `json:"currency"`
+	//
+	// **The currency is not part of this type.** It is carried by a `currency` field next to the
+	// amount, or by the account the amount belongs to. Reading an amount without that field is
+	// reading a number with no unit.
+	//
+	// It is a string rather than a JSON number because a JSON number is a float in most parsers,
+	// and a float loses precision on the first arithmetic. Nothing on this platform puts an amount
+	// through a float.
+	Amount   externalRef0.Money `json:"amount"`
+	Currency string             `json:"currency"`
 
 	// DiscountAmount A decimal string, in the currency stated alongside it.
-	DiscountAmount *Money `json:"discount_amount,omitempty"`
+	//
+	// **The currency is not part of this type.** It is carried by a `currency` field next to the
+	// amount, or by the account the amount belongs to. Reading an amount without that field is
+	// reading a number with no unit.
+	//
+	// It is a string rather than a JSON number because a JSON number is a float in most parsers,
+	// and a float loses precision on the first arithmetic. Nothing on this platform puts an amount
+	// through a float.
+	DiscountAmount *externalRef0.Money `json:"discount_amount,omitempty"`
 
 	// GrossAmount A decimal string, in the currency stated alongside it.
-	GrossAmount *Money              `json:"gross_amount,omitempty"`
+	//
+	// **The currency is not part of this type.** It is carried by a `currency` field next to the
+	// amount, or by the account the amount belongs to. Reading an amount without that field is
+	// reading a number with no unit.
+	//
+	// It is a string rather than a JSON number because a JSON number is a float in most parsers,
+	// and a float loses precision on the first arithmetic. Nothing on this platform puts an amount
+	// through a float.
+	GrossAmount *externalRef0.Money `json:"gross_amount,omitempty"`
 	Id          openapi_types.UUID  `json:"id"`
 	OrderId     *openapi_types.UUID `json:"order_id,omitempty"`
 
@@ -2196,7 +2375,15 @@ type OrderItem struct {
 	TaxIncludedAmount *string `json:"tax_included_amount,omitempty"`
 
 	// UnitAmount A decimal string, in the currency stated alongside it.
-	UnitAmount *Money `json:"unit_amount,omitempty"`
+	//
+	// **The currency is not part of this type.** It is carried by a `currency` field next to the
+	// amount, or by the account the amount belongs to. Reading an amount without that field is
+	// reading a number with no unit.
+	//
+	// It is a string rather than a JSON number because a JSON number is a float in most parsers,
+	// and a float loses precision on the first arithmetic. Nothing on this platform puts an amount
+	// through a float.
+	UnitAmount *externalRef0.Money `json:"unit_amount,omitempty"`
 }
 
 // OrderItemPriceType The payment timing of the selected price.
@@ -2293,15 +2480,23 @@ type PaymentMethodSetupResult struct {
 type PaymentResult struct {
 	// AmountDue What is still outstanding. Zero once the payment succeeds. Unchanged while
 	// `processing`: nothing is collected until the provider confirms it.
-	AmountDue Money `json:"amount_due"`
+	AmountDue externalRef0.Money `json:"amount_due"`
 
 	// AmountPaid A decimal string, in the currency stated alongside it.
-	AmountPaid Money `json:"amount_paid"`
+	//
+	// **The currency is not part of this type.** It is carried by a `currency` field next to the
+	// amount, or by the account the amount belongs to. Reading an amount without that field is
+	// reading a number with no unit.
+	//
+	// It is a string rather than a JSON number because a JSON number is a float in most parsers,
+	// and a float loses precision on the first arithmetic. Nothing on this platform puts an amount
+	// through a float.
+	AmountPaid externalRef0.Money `json:"amount_paid"`
 
 	// BalanceApplied How much came from the account balance. Applied immediately, and released again if
 	// the rest of the payment fails, so a failed card does not leave part of the balance
 	// consumed against an unpaid invoice.
-	BalanceApplied *Money `json:"balance_applied,omitempty"`
+	BalanceApplied *externalRef0.Money `json:"balance_applied,omitempty"`
 
 	// CheckoutUrl Present with `requires_action`.
 	CheckoutUrl *string `json:"checkout_url,omitempty"`
@@ -2434,7 +2629,7 @@ type ProjectPayer struct {
 	// SpendableAmount What remains to be spent. It already accounts for this month's uninvoiced usage, so
 	// it is what will be available at checkout rather than the cash figure shown in the
 	// billing centre. It goes negative when usage has exceeded the balance.
-	SpendableAmount Money `json:"spendable_amount"`
+	SpendableAmount externalRef0.Money `json:"spendable_amount"`
 
 	// Status `active` — nothing is owed. `past_due` — the account owes money and resources are
 	// still running. `suspended` — resources have been stopped for non-payment.
@@ -2473,10 +2668,10 @@ type Quote struct {
 	// Null when any line could not be priced. What would be owed is not knowable then, and a
 	// total that silently left the unpriced lines out would read as a smaller bill rather than
 	// an incomplete one — the per-line `priced` flag is easy to skip, a missing total is not.
-	Total *Money `json:"total,omitempty"`
+	Total *externalRef0.Money `json:"total,omitempty"`
 
 	// TotalRefundable What would be returned in total.
-	TotalRefundable *Money `json:"total_refundable,omitempty"`
+	TotalRefundable *externalRef0.Money `json:"total_refundable,omitempty"`
 }
 
 // QuoteChange Estimate a change to a subscription item using a target plan or price.
@@ -2504,11 +2699,11 @@ type QuoteChangeResult struct {
 	Index    int    `json:"index"`
 
 	// NewCharge What the new configuration costs for the rest of that period.
-	NewCharge *Money `json:"new_charge,omitempty"`
+	NewCharge *externalRef0.Money `json:"new_charge,omitempty"`
 
 	// PayableNow What would be owed. Zero when the change reduces the price; the difference then
 	// appears in `refundable_amount`.
-	PayableNow Money `json:"payable_now"`
+	PayableNow externalRef0.Money `json:"payable_now"`
 
 	// PeriodEnd When the current period ends. A change does not move it; the next renewal is
 	// charged at the new price.
@@ -2521,18 +2716,18 @@ type QuoteChangeResult struct {
 	// RefundableAmount What would be returned. It goes back to the sources that originally paid rather
 	// than being offset against `payable_now`, so that a purchase made with credit is
 	// refunded as credit.
-	RefundableAmount   Money              `json:"refundable_amount"`
+	RefundableAmount   externalRef0.Money `json:"refundable_amount"`
 	SubscriptionItemId openapi_types.UUID `json:"subscription_item_id"`
 
 	// TaxAmount Tax included in the account quote. Absent in public catalogue estimates.
-	TaxAmount *Money `json:"tax_amount,omitempty"`
+	TaxAmount *externalRef0.Money `json:"tax_amount,omitempty"`
 
 	// TaxIncludedAmount Tax already included in the displayed price.
-	TaxIncludedAmount *Money `json:"tax_included_amount,omitempty"`
+	TaxIncludedAmount *externalRef0.Money `json:"tax_included_amount,omitempty"`
 
 	// UnusedCredit What remains unused of the period already paid for, valued at the price it was
 	// bought at rather than at today's price.
-	UnusedCredit *Money `json:"unused_credit,omitempty"`
+	UnusedCredit *externalRef0.Money `json:"unused_credit,omitempty"`
 }
 
 // QuoteLine Identify a price directly, or select a price for a plan. Lookup keys are scoped to the product. Account quotes apply applicable contract prices.
@@ -2578,8 +2773,8 @@ type QuoteLinePriceType string
 // QuoteLineResult defines model for QuoteLineResult.
 type QuoteLineResult struct {
 	// Amount Not rounded. Round only for display.
-	Amount   *Money `json:"amount,omitempty"`
-	Currency string `json:"currency"`
+	Amount   *externalRef0.Money `json:"amount,omitempty"`
+	Currency string              `json:"currency"`
 
 	// Index Which line of the request this answers.
 	Index    int     `json:"index"`
@@ -2601,13 +2796,21 @@ type QuoteLineResult struct {
 	Quantity *string `json:"quantity,omitempty"`
 
 	// TaxAmount Tax included in the account quote. Absent in public catalogue estimates.
-	TaxAmount *Money `json:"tax_amount,omitempty"`
+	TaxAmount *externalRef0.Money `json:"tax_amount,omitempty"`
 
 	// TaxIncludedAmount Tax already included in the displayed price.
-	TaxIncludedAmount *Money `json:"tax_included_amount,omitempty"`
+	TaxIncludedAmount *externalRef0.Money `json:"tax_included_amount,omitempty"`
 
 	// UnitAmount A decimal string, in the currency stated alongside it.
-	UnitAmount *Money `json:"unit_amount,omitempty"`
+	//
+	// **The currency is not part of this type.** It is carried by a `currency` field next to the
+	// amount, or by the account the amount belongs to. Reading an amount without that field is
+	// reading a number with no unit.
+	//
+	// It is a string rather than a JSON number because a JSON number is a float in most parsers,
+	// and a float loses precision on the first arithmetic. Nothing on this platform puts an amount
+	// through a float.
+	UnitAmount *externalRef0.Money `json:"unit_amount,omitempty"`
 
 	// UnpricedReason Why no price was found; `none` while `priced` is true.
 	//
@@ -2648,17 +2851,25 @@ type Refund struct {
 	//
 	// `settled_amount` is the amount put back against what was paid; the payer receives
 	// that less this.
-	FeeAmount *Money              `json:"fee_amount,omitempty"`
+	FeeAmount *externalRef0.Money `json:"fee_amount,omitempty"`
 	Id        openapi_types.UUID  `json:"id"`
 	InvoiceId *openapi_types.UUID `json:"invoice_id,omitempty"`
 	OrderId   *openapi_types.UUID `json:"order_id,omitempty"`
 	Reason    *string             `json:"reason,omitempty"`
 
 	// RequestedAmount A decimal string, in the currency stated alongside it.
-	RequestedAmount Money `json:"requested_amount"`
+	//
+	// **The currency is not part of this type.** It is carried by a `currency` field next to the
+	// amount, or by the account the amount belongs to. Reading an amount without that field is
+	// reading a number with no unit.
+	//
+	// It is a string rather than a JSON number because a JSON number is a float in most parsers,
+	// and a float loses precision on the first arithmetic. Nothing on this platform puts an amount
+	// through a float.
+	RequestedAmount externalRef0.Money `json:"requested_amount"`
 
 	// SettledAmount What has actually been returned.
-	SettledAmount *Money `json:"settled_amount,omitempty"`
+	SettledAmount *externalRef0.Money `json:"settled_amount,omitempty"`
 
 	// Status `pending` — accepted, not yet sent to the payment provider. `processing` — with the
 	// provider and awaiting its answer, which takes days for some methods. Neither is
@@ -2694,13 +2905,13 @@ type RefundQuote struct {
 
 	// FeeAmount Withheld from the cash part. Zero when `destination` is `balance`, and never taken
 	// out of credit or a voucher.
-	FeeAmount Money `json:"fee_amount"`
+	FeeAmount externalRef0.Money `json:"fee_amount"`
 
 	// NetAmount `refundable_amount` less `fee_amount`.
-	NetAmount Money `json:"net_amount"`
+	NetAmount externalRef0.Money `json:"net_amount"`
 
 	// RefundableAmount The most that can still be returned, before any fee.
-	RefundableAmount Money `json:"refundable_amount"`
+	RefundableAmount externalRef0.Money `json:"refundable_amount"`
 
 	// SelfServiceUntil The last moment a refund can be asked for here. Measured from when the purchase was
 	// paid for, not from today. Absent when this cannot be refunded without support at
@@ -2728,7 +2939,7 @@ type RefundRequest struct {
 	// More than what remains is refused rather than reduced to the remainder: a caller
 	// asking for more than it can have has miscounted, and quietly giving it less
 	// hides that.
-	Amount         *Money              `json:"amount,omitempty"`
+	Amount         *externalRef0.Money `json:"amount,omitempty"`
 	IdempotencyKey string              `json:"idempotency_key"`
 	InvoiceId      *openapi_types.UUID `json:"invoice_id,omitempty"`
 	OrderId        *openapi_types.UUID `json:"order_id,omitempty"`
@@ -2742,7 +2953,15 @@ type RefundRequest struct {
 // RefundSource defines model for RefundSource.
 type RefundSource struct {
 	// Amount A decimal string, in the currency stated alongside it.
-	Amount Money `json:"amount"`
+	//
+	// **The currency is not part of this type.** It is carried by a `currency` field next to the
+	// amount, or by the account the amount belongs to. Reading an amount without that field is
+	// reading a number with no unit.
+	//
+	// It is a string rather than a JSON number because a JSON number is a float in most parsers,
+	// and a float loses precision on the first arithmetic. Nothing on this platform puts an amount
+	// through a float.
+	Amount externalRef0.Money `json:"amount"`
 
 	// Type Where this part of the money came from, and therefore where it goes back to.
 	// Only `cash` can reach a card or a spendable balance; credit and vouchers return
@@ -2772,13 +2991,21 @@ type SettleResult struct {
 	InvoiceId *openapi_types.UUID `json:"invoice_id,omitempty"`
 
 	// InvoicedAmount Zero when there was nothing outstanding, in which case no invoice is created.
-	InvoicedAmount Money `json:"invoiced_amount"`
+	InvoicedAmount externalRef0.Money `json:"invoiced_amount"`
 }
 
 // SpendRow defines model for SpendRow.
 type SpendRow struct {
 	// Amount A decimal string, in the currency stated alongside it.
-	Amount   Money               `json:"amount"`
+	//
+	// **The currency is not part of this type.** It is carried by a `currency` field next to the
+	// amount, or by the account the amount belongs to. Reading an amount without that field is
+	// reading a number with no unit.
+	//
+	// It is a string rather than a JSON number because a JSON number is a float in most parsers,
+	// and a float loses precision on the first arithmetic. Nothing on this platform puts an amount
+	// through a float.
+	Amount   externalRef0.Money  `json:"amount"`
 	Currency string              `json:"currency"`
 	PlanId   *openapi_types.UUID `json:"plan_id,omitempty"`
 	PlanName *string             `json:"plan_name,omitempty"`
@@ -2794,8 +3021,8 @@ type SpendRowList struct {
 	Items    []SpendRow `json:"items"`
 
 	// Total The sum over the whole period, not only the page returned.
-	Total      Money  `json:"total"`
-	TotalCount *int64 `json:"total_count,omitempty"`
+	Total      externalRef0.Money `json:"total"`
+	TotalCount *int64             `json:"total_count,omitempty"`
 }
 
 // Subscription defines model for Subscription.
@@ -2886,10 +3113,18 @@ type TerminationPolicy string
 // Tier defines model for Tier.
 type Tier struct {
 	// FlatAmount Charged once when this band is reached, in addition to the per-unit amount.
-	FlatAmount *Money `json:"flat_amount,omitempty"`
+	FlatAmount *externalRef0.Money `json:"flat_amount,omitempty"`
 
 	// UnitAmount A decimal string, in the currency stated alongside it.
-	UnitAmount Money `json:"unit_amount"`
+	//
+	// **The currency is not part of this type.** It is carried by a `currency` field next to the
+	// amount, or by the account the amount belongs to. Reading an amount without that field is
+	// reading a number with no unit.
+	//
+	// It is a string rather than a JSON number because a JSON number is a float in most parsers,
+	// and a float loses precision on the first arithmetic. Nothing on this platform puts an amount
+	// through a float.
+	UnitAmount externalRef0.Money `json:"unit_amount"`
 
 	// UpTo The upper bound of this band. Null on the last band, which has no bound.
 	UpTo *string `json:"up_to,omitempty"`
@@ -2898,8 +3133,8 @@ type Tier struct {
 // TopUp defines model for TopUp.
 type TopUp struct {
 	// Amount What is credited to the account, in the account's own currency.
-	Amount           Money `json:"amount"`
-	BillingAccountId int64 `json:"billing_account_id"`
+	Amount           externalRef0.Money `json:"amount"`
+	BillingAccountId int64              `json:"billing_account_id"`
 
 	// CheckoutUrl Where the payer completes the payment. Absent once it has completed.
 	CheckoutUrl *string `json:"checkout_url,omitempty"`
@@ -2915,7 +3150,7 @@ type TopUp struct {
 
 	// PresentmentAmount What was charged, in `presentment_currency`. It will not equal `amount`, and it is
 	// the figure that appears on the payer's card or wallet statement.
-	PresentmentAmount *Money `json:"presentment_amount,omitempty"`
+	PresentmentAmount *externalRef0.Money `json:"presentment_amount,omitempty"`
 
 	// PresentmentCurrency The currency the payer was actually charged in, when the checkout page collected a
 	// local one. Absent when it was the same as the account's.
@@ -2929,7 +3164,7 @@ type TopUp struct {
 
 	// RemainingAmount How much of this top-up has not been spent yet. This is the part that can still be
 	// returned to where it was paid from.
-	RemainingAmount *Money `json:"remaining_amount,omitempty"`
+	RemainingAmount *externalRef0.Money `json:"remaining_amount,omitempty"`
 
 	// SettledAt When the funds arrived. Later than `created_at` — by days for a bank transfer — so
 	// reconciling against a statement uses this rather than the moment it was started.
@@ -2959,8 +3194,8 @@ type TopUpCreate struct {
 	// There is a minimum, which differs by currency. Below it the provider's fee
 	// exceeds the top-up itself, so such a payment costs more to accept than it brings.
 	// The minimum in force is returned with the rejection.
-	Amount           Money `json:"amount"`
-	BillingAccountId int64 `json:"billing_account_id"`
+	Amount           externalRef0.Money `json:"amount"`
+	BillingAccountId int64              `json:"billing_account_id"`
 
 	// IdempotencyKey Retrying with the same key returns the original top-up rather than starting a
 	// second one.
@@ -2982,7 +3217,7 @@ type TopUpList struct {
 // Transaction defines model for Transaction.
 type Transaction struct {
 	// Amount Signed. Positive increases the balance, negative reduces it.
-	Amount           Money               `json:"amount"`
+	Amount           externalRef0.Money  `json:"amount"`
 	BillingAccountId *int64              `json:"billing_account_id,omitempty"`
 	CreatedAt        time.Time           `json:"created_at"`
 	Currency         string              `json:"currency"`
@@ -3028,15 +3263,19 @@ type TransactionList struct {
 // charges and on invoices, and a reservation appears as an allocation.
 type TransactionType string
 
-// Translations Names in other languages, keyed by BCP 47 language tag. Where your locale is absent, use
-// the plain `name`; there is no fallback between related tags.
-type Translations map[string]string
-
 // UsageCharge defines model for UsageCharge.
 type UsageCharge struct {
 	// Amount A decimal string, in the currency stated alongside it.
-	Amount   *Money `json:"amount,omitempty"`
-	Currency string `json:"currency"`
+	//
+	// **The currency is not part of this type.** It is carried by a `currency` field next to the
+	// amount, or by the account the amount belongs to. Reading an amount without that field is
+	// reading a number with no unit.
+	//
+	// It is a string rather than a JSON number because a JSON number is a float in most parsers,
+	// and a float loses precision on the first arithmetic. Nothing on this platform puts an amount
+	// through a float.
+	Amount   *externalRef0.Money `json:"amount,omitempty"`
+	Currency string              `json:"currency"`
 
 	// DeductedQuantity How much of that was covered by an allowance.
 	DeductedQuantity *string `json:"deducted_quantity,omitempty"`
@@ -3062,7 +3301,15 @@ type UsageCharge struct {
 	Unit       *string `json:"unit,omitempty"`
 
 	// UnitAmount A decimal string, in the currency stated alongside it.
-	UnitAmount *Money `json:"unit_amount,omitempty"`
+	//
+	// **The currency is not part of this type.** It is carried by a `currency` field next to the
+	// amount, or by the account the amount belongs to. Reading an amount without that field is
+	// reading a number with no unit.
+	//
+	// It is a string rather than a JSON number because a JSON number is a float in most parsers,
+	// and a float loses precision on the first arithmetic. Nothing on this platform puts an amount
+	// through a float.
+	UnitAmount *externalRef0.Money `json:"unit_amount,omitempty"`
 
 	// WindowEnd Exclusive.
 	WindowEnd   time.Time `json:"window_end"`
