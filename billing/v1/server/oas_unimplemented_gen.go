@@ -194,9 +194,9 @@ func (UnimplementedHandler) GetOrderRefundQuote(ctx context.Context, params GetO
 
 // GetProjectBillingAccount implements get-project-billing-account operation.
 //
-// A deliberately narrow view: the payer's identity, its currency, and how much can still be spent.
-// Cards, invoices and transaction history are not included; they belong to the account owner and are
-// reached through `/account/v1/`.
+// Returns the payer's identity, its currency, and how much can still be spent. Cards, invoices and
+// transaction history are not included; they belong to the account owner and are reached through
+// `/account/v1/`.
 //
 // Returns 404 when no account pays for this project. Resources cannot be created in that state.
 //

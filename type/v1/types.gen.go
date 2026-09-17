@@ -163,12 +163,6 @@ type AttachmentList struct {
 	Pagination OffsetPagination `json:"pagination"`
 }
 
-// CatalogReference Specify exactly one of id or lookup_key. A lookup key is scoped to the product of the resource service.
-type CatalogReference struct {
-	Id        *openapi_types.UUID `json:"id,omitempty"`
-	LookupKey *string             `json:"lookup_key,omitempty"`
-}
-
 // CursorPagination Pagination metadata for keyset traversal. Pass next_cursor as cursor to read the following page; null means there is no following page.
 type CursorPagination struct {
 	NextCursor *string `json:"next_cursor,omitempty"`

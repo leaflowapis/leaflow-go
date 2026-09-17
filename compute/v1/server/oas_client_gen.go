@@ -537,8 +537,7 @@ type Invoker interface {
 	// Operates the instance directly from a browser and does not require the instance to be reachable over
 	// the network, which makes it usable when a network misconfiguration prevents login.
 	//
-	// The returned address is single-use and expires within minutes. Do not cache it; request a new one
-	// before each use.
+	// The returned address is single-use and expires within minutes. Request a new one before each use.
 	//
 	// POST /api/v1/instances/{instanceId}/console
 	OpenInstanceConsole(ctx context.Context, params OpenInstanceConsoleParams) (*ConsoleResponseBody, error)
@@ -10053,8 +10052,7 @@ func (c *Client) sendListSubnets(ctx context.Context, params ListSubnetsParams) 
 // Operates the instance directly from a browser and does not require the instance to be reachable over
 // the network, which makes it usable when a network misconfiguration prevents login.
 //
-// The returned address is single-use and expires within minutes. Do not cache it; request a new one
-// before each use.
+// The returned address is single-use and expires within minutes. Request a new one before each use.
 //
 // POST /api/v1/instances/{instanceId}/console
 func (c *Client) OpenInstanceConsole(ctx context.Context, params OpenInstanceConsoleParams) (*ConsoleResponseBody, error) {

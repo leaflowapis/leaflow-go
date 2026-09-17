@@ -719,8 +719,7 @@ func (UnimplementedHandler) ListSubnets(ctx context.Context, params ListSubnetsP
 // Operates the instance directly from a browser and does not require the instance to be reachable over
 // the network, which makes it usable when a network misconfiguration prevents login.
 //
-// The returned address is single-use and expires within minutes. Do not cache it; request a new one
-// before each use.
+// The returned address is single-use and expires within minutes. Request a new one before each use.
 //
 // POST /api/v1/instances/{instanceId}/console
 func (UnimplementedHandler) OpenInstanceConsole(ctx context.Context, params OpenInstanceConsoleParams) (r *ConsoleResponseBody, _ error) {

@@ -67,28 +67,6 @@ func (s *AllocateFloatingIPRequestBody) Validate() error {
 		})
 	}
 	if err := func() error {
-		if err := s.Price.Validate(); err != nil {
-			return err
-		}
-		return nil
-	}(); err != nil {
-		failures = append(failures, validate.FieldError{
-			Name:  "price",
-			Error: err,
-		})
-	}
-	if err := func() error {
-		if err := s.BandwidthPrice.Validate(); err != nil {
-			return err
-		}
-		return nil
-	}(); err != nil {
-		failures = append(failures, validate.FieldError{
-			Name:  "bandwidth_price",
-			Error: err,
-		})
-	}
-	if err := func() error {
 		if err := s.Order.Validate(); err != nil {
 			return err
 		}
@@ -254,48 +232,6 @@ func (s BackupResourceStatus) Validate() error {
 	}
 }
 
-func (s *CatalogReference) Validate() error {
-	if s == nil {
-		return validate.ErrNilPointer
-	}
-
-	var failures []validate.FieldError
-	if err := func() error {
-		if value, ok := s.LookupKey.Get(); ok {
-			if err := func() error {
-				if err := (validate.String{
-					MinLength:     1,
-					MinLengthSet:  true,
-					MaxLength:     128,
-					MaxLengthSet:  true,
-					Email:         false,
-					Hostname:      false,
-					Regex:         nil,
-					MinNumeric:    0,
-					MinNumericSet: false,
-					MaxNumeric:    0,
-					MaxNumericSet: false,
-				}).Validate(string(value)); err != nil {
-					return errors.Wrap(err, "string")
-				}
-				return nil
-			}(); err != nil {
-				return err
-			}
-		}
-		return nil
-	}(); err != nil {
-		failures = append(failures, validate.FieldError{
-			Name:  "lookup_key",
-			Error: err,
-		})
-	}
-	if len(failures) > 0 {
-		return &validate.Error{Fields: failures}
-	}
-	return nil
-}
-
 func (s *CreateBackupRequestBody) Validate() error {
 	if s == nil {
 		return validate.ErrNilPointer
@@ -322,17 +258,6 @@ func (s *CreateBackupRequestBody) Validate() error {
 	}(); err != nil {
 		failures = append(failures, validate.FieldError{
 			Name:  "name",
-			Error: err,
-		})
-	}
-	if err := func() error {
-		if err := s.Price.Validate(); err != nil {
-			return err
-		}
-		return nil
-	}(); err != nil {
-		failures = append(failures, validate.FieldError{
-			Name:  "price",
 			Error: err,
 		})
 	}
@@ -400,17 +325,6 @@ func (s *CreateDiskRequestBody) Validate() error {
 	}(); err != nil {
 		failures = append(failures, validate.FieldError{
 			Name:  "size_gb",
-			Error: err,
-		})
-	}
-	if err := func() error {
-		if err := s.Price.Validate(); err != nil {
-			return err
-		}
-		return nil
-	}(); err != nil {
-		failures = append(failures, validate.FieldError{
-			Name:  "price",
 			Error: err,
 		})
 	}
@@ -548,17 +462,6 @@ func (s *CreatePrivateImageRequestBody) Validate() error {
 	}(); err != nil {
 		failures = append(failures, validate.FieldError{
 			Name:  "name",
-			Error: err,
-		})
-	}
-	if err := func() error {
-		if err := s.Price.Validate(); err != nil {
-			return err
-		}
-		return nil
-	}(); err != nil {
-		failures = append(failures, validate.FieldError{
-			Name:  "price",
 			Error: err,
 		})
 	}
@@ -962,17 +865,6 @@ func (s *CreateSnapshotRequestBody) Validate() error {
 	}(); err != nil {
 		failures = append(failures, validate.FieldError{
 			Name:  "name",
-			Error: err,
-		})
-	}
-	if err := func() error {
-		if err := s.Price.Validate(); err != nil {
-			return err
-		}
-		return nil
-	}(); err != nil {
-		failures = append(failures, validate.FieldError{
-			Name:  "price",
 			Error: err,
 		})
 	}
@@ -2689,17 +2581,6 @@ func (s *LaunchInstanceRequestBody) Validate() error {
 		})
 	}
 	if err := func() error {
-		if err := s.Price.Validate(); err != nil {
-			return err
-		}
-		return nil
-	}(); err != nil {
-		failures = append(failures, validate.FieldError{
-			Name:  "price",
-			Error: err,
-		})
-	}
-	if err := func() error {
 		if value, ok := s.BootDisk.Get(); ok {
 			if err := func() error {
 				if err := value.Validate(); err != nil {
@@ -2768,17 +2649,6 @@ func (s *NewBootDisk) Validate() error {
 			Error: err,
 		})
 	}
-	if err := func() error {
-		if err := s.Price.Validate(); err != nil {
-			return err
-		}
-		return nil
-	}(); err != nil {
-		failures = append(failures, validate.FieldError{
-			Name:  "price",
-			Error: err,
-		})
-	}
 	if len(failures) > 0 {
 		return &validate.Error{Fields: failures}
 	}
@@ -2791,28 +2661,6 @@ func (s *NewFloatingIP) Validate() error {
 	}
 
 	var failures []validate.FieldError
-	if err := func() error {
-		if err := s.Price.Validate(); err != nil {
-			return err
-		}
-		return nil
-	}(); err != nil {
-		failures = append(failures, validate.FieldError{
-			Name:  "price",
-			Error: err,
-		})
-	}
-	if err := func() error {
-		if err := s.BandwidthPrice.Validate(); err != nil {
-			return err
-		}
-		return nil
-	}(); err != nil {
-		failures = append(failures, validate.FieldError{
-			Name:  "bandwidth_price",
-			Error: err,
-		})
-	}
 	if err := func() error {
 		if err := (validate.Int{
 			MinSet:        true,
@@ -4154,17 +4002,6 @@ func (s *ResizeDiskRequestBody) Validate() error {
 		})
 	}
 	if err := func() error {
-		if err := s.Price.Validate(); err != nil {
-			return err
-		}
-		return nil
-	}(); err != nil {
-		failures = append(failures, validate.FieldError{
-			Name:  "price",
-			Error: err,
-		})
-	}
-	if err := func() error {
 		if err := s.Order.Validate(); err != nil {
 			return err
 		}
@@ -4195,17 +4032,6 @@ func (s *ResizeInstanceRequestBody) Validate() error {
 	}(); err != nil {
 		failures = append(failures, validate.FieldError{
 			Name:  "order",
-			Error: err,
-		})
-	}
-	if err := func() error {
-		if err := s.Price.Validate(); err != nil {
-			return err
-		}
-		return nil
-	}(); err != nil {
-		failures = append(failures, validate.FieldError{
-			Name:  "price",
 			Error: err,
 		})
 	}
@@ -4269,17 +4095,6 @@ func (s *RestoreBackupRequestBody) Validate() error {
 	}(); err != nil {
 		failures = append(failures, validate.FieldError{
 			Name:  "size_gb",
-			Error: err,
-		})
-	}
-	if err := func() error {
-		if err := s.Price.Validate(); err != nil {
-			return err
-		}
-		return nil
-	}(); err != nil {
-		failures = append(failures, validate.FieldError{
-			Name:  "price",
 			Error: err,
 		})
 	}
@@ -4480,17 +4295,6 @@ func (s *SetBandwidthRequestBody) Validate() error {
 	}(); err != nil {
 		failures = append(failures, validate.FieldError{
 			Name:  "mbps",
-			Error: err,
-		})
-	}
-	if err := func() error {
-		if err := s.Price.Validate(); err != nil {
-			return err
-		}
-		return nil
-	}(); err != nil {
-		failures = append(failures, validate.FieldError{
-			Name:  "price",
 			Error: err,
 		})
 	}

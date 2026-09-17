@@ -27,12 +27,12 @@ type AllocateFloatingIPRequestBody struct {
 	//
 	// It is billed separately from the address, per Mbit/s-hour, and appears as its own line on the order.
 	// Changing it later goes through the bandwidth endpoint.
-	BandwidthMbps    int64            `json:"bandwidth_mbps"`
-	PrivateNetworkID uuid.UUID        `json:"private_network_id"`
-	Ipv4PoolID       uuid.UUID        `json:"ipv4_pool_id"`
-	Price            CatalogReference `json:"price"`
-	BandwidthPrice   CatalogReference `json:"bandwidth_price"`
-	Order            OrderOptions     `json:"order"`
+	BandwidthMbps    int64        `json:"bandwidth_mbps"`
+	PrivateNetworkID uuid.UUID    `json:"private_network_id"`
+	Ipv4PoolID       uuid.UUID    `json:"ipv4_pool_id"`
+	PriceID          uuid.UUID    `json:"price_id"`
+	BandwidthPriceID uuid.UUID    `json:"bandwidth_price_id"`
+	Order            OrderOptions `json:"order"`
 }
 
 // GetAddress returns the value of Address.
@@ -55,14 +55,14 @@ func (s *AllocateFloatingIPRequestBody) GetIpv4PoolID() uuid.UUID {
 	return s.Ipv4PoolID
 }
 
-// GetPrice returns the value of Price.
-func (s *AllocateFloatingIPRequestBody) GetPrice() CatalogReference {
-	return s.Price
+// GetPriceID returns the value of PriceID.
+func (s *AllocateFloatingIPRequestBody) GetPriceID() uuid.UUID {
+	return s.PriceID
 }
 
-// GetBandwidthPrice returns the value of BandwidthPrice.
-func (s *AllocateFloatingIPRequestBody) GetBandwidthPrice() CatalogReference {
-	return s.BandwidthPrice
+// GetBandwidthPriceID returns the value of BandwidthPriceID.
+func (s *AllocateFloatingIPRequestBody) GetBandwidthPriceID() uuid.UUID {
+	return s.BandwidthPriceID
 }
 
 // GetOrder returns the value of Order.
@@ -90,14 +90,14 @@ func (s *AllocateFloatingIPRequestBody) SetIpv4PoolID(val uuid.UUID) {
 	s.Ipv4PoolID = val
 }
 
-// SetPrice sets the value of Price.
-func (s *AllocateFloatingIPRequestBody) SetPrice(val CatalogReference) {
-	s.Price = val
+// SetPriceID sets the value of PriceID.
+func (s *AllocateFloatingIPRequestBody) SetPriceID(val uuid.UUID) {
+	s.PriceID = val
 }
 
-// SetBandwidthPrice sets the value of BandwidthPrice.
-func (s *AllocateFloatingIPRequestBody) SetBandwidthPrice(val CatalogReference) {
-	s.BandwidthPrice = val
+// SetBandwidthPriceID sets the value of BandwidthPriceID.
+func (s *AllocateFloatingIPRequestBody) SetBandwidthPriceID(val uuid.UUID) {
+	s.BandwidthPriceID = val
 }
 
 // SetOrder sets the value of Order.
@@ -494,34 +494,6 @@ func (s *BindFloatingIPRequestBody) SetPortAddressID(val uuid.UUID) {
 	s.PortAddressID = val
 }
 
-// Specify exactly one of id or lookup_key. A lookup key is scoped to the product of the resource
-// service.
-// Ref: #/components/schemas/CatalogReference
-type CatalogReference struct {
-	ID        OptUUID   `json:"id"`
-	LookupKey OptString `json:"lookup_key"`
-}
-
-// GetID returns the value of ID.
-func (s *CatalogReference) GetID() OptUUID {
-	return s.ID
-}
-
-// GetLookupKey returns the value of LookupKey.
-func (s *CatalogReference) GetLookupKey() OptString {
-	return s.LookupKey
-}
-
-// SetID sets the value of ID.
-func (s *CatalogReference) SetID(val OptUUID) {
-	s.ID = val
-}
-
-// SetLookupKey sets the value of LookupKey.
-func (s *CatalogReference) SetLookupKey(val OptString) {
-	s.LookupKey = val
-}
-
 // Ref: #/components/schemas/CommandResultResponseBody
 type CommandResultResponseBody struct {
 	// What the command exited with, 0 being success. Any other value is the command's own verdict and
@@ -620,10 +592,10 @@ func (s *ConsoleResponseBody) SetConsoleURL(val string) {
 
 // Ref: #/components/schemas/CreateBackupRequestBody
 type CreateBackupRequestBody struct {
-	DiskID uuid.UUID        `json:"disk_id"`
-	Name   string           `json:"name"`
-	Price  CatalogReference `json:"price"`
-	Order  OrderOptions     `json:"order"`
+	DiskID  uuid.UUID    `json:"disk_id"`
+	Name    string       `json:"name"`
+	PriceID uuid.UUID    `json:"price_id"`
+	Order   OrderOptions `json:"order"`
 }
 
 // GetDiskID returns the value of DiskID.
@@ -636,9 +608,9 @@ func (s *CreateBackupRequestBody) GetName() string {
 	return s.Name
 }
 
-// GetPrice returns the value of Price.
-func (s *CreateBackupRequestBody) GetPrice() CatalogReference {
-	return s.Price
+// GetPriceID returns the value of PriceID.
+func (s *CreateBackupRequestBody) GetPriceID() uuid.UUID {
+	return s.PriceID
 }
 
 // GetOrder returns the value of Order.
@@ -656,9 +628,9 @@ func (s *CreateBackupRequestBody) SetName(val string) {
 	s.Name = val
 }
 
-// SetPrice sets the value of Price.
-func (s *CreateBackupRequestBody) SetPrice(val CatalogReference) {
-	s.Price = val
+// SetPriceID sets the value of PriceID.
+func (s *CreateBackupRequestBody) SetPriceID(val uuid.UUID) {
+	s.PriceID = val
 }
 
 // SetOrder sets the value of Order.
@@ -673,9 +645,9 @@ type CreateDiskRequestBody struct {
 	Name       string    `json:"name"`
 	SizeGB     int64     `json:"size_gb"`
 	// Restore from this snapshot. When given, the capacity need only be no smaller than the snapshot.
-	SnapshotID OptUUID          `json:"snapshot_id"`
-	Price      CatalogReference `json:"price"`
-	Order      OrderOptions     `json:"order"`
+	SnapshotID OptUUID      `json:"snapshot_id"`
+	PriceID    uuid.UUID    `json:"price_id"`
+	Order      OrderOptions `json:"order"`
 }
 
 // GetDiskTypeID returns the value of DiskTypeID.
@@ -698,9 +670,9 @@ func (s *CreateDiskRequestBody) GetSnapshotID() OptUUID {
 	return s.SnapshotID
 }
 
-// GetPrice returns the value of Price.
-func (s *CreateDiskRequestBody) GetPrice() CatalogReference {
-	return s.Price
+// GetPriceID returns the value of PriceID.
+func (s *CreateDiskRequestBody) GetPriceID() uuid.UUID {
+	return s.PriceID
 }
 
 // GetOrder returns the value of Order.
@@ -728,9 +700,9 @@ func (s *CreateDiskRequestBody) SetSnapshotID(val OptUUID) {
 	s.SnapshotID = val
 }
 
-// SetPrice sets the value of Price.
-func (s *CreateDiskRequestBody) SetPrice(val CatalogReference) {
-	s.Price = val
+// SetPriceID sets the value of PriceID.
+func (s *CreateDiskRequestBody) SetPriceID(val uuid.UUID) {
+	s.PriceID = val
 }
 
 // SetOrder sets the value of Order.
@@ -791,10 +763,10 @@ func (s *CreatePortRequestBody) SetAddress(val OptString) {
 // Ref: #/components/schemas/CreatePrivateImageRequestBody
 type CreatePrivateImageRequestBody struct {
 	// Captured from the system disk of this instance; data disks are not included.
-	InstanceID uuid.UUID        `json:"instance_id"`
-	Name       string           `json:"name"`
-	Price      CatalogReference `json:"price"`
-	Order      OrderOptions     `json:"order"`
+	InstanceID uuid.UUID    `json:"instance_id"`
+	Name       string       `json:"name"`
+	PriceID    uuid.UUID    `json:"price_id"`
+	Order      OrderOptions `json:"order"`
 }
 
 // GetInstanceID returns the value of InstanceID.
@@ -807,9 +779,9 @@ func (s *CreatePrivateImageRequestBody) GetName() string {
 	return s.Name
 }
 
-// GetPrice returns the value of Price.
-func (s *CreatePrivateImageRequestBody) GetPrice() CatalogReference {
-	return s.Price
+// GetPriceID returns the value of PriceID.
+func (s *CreatePrivateImageRequestBody) GetPriceID() uuid.UUID {
+	return s.PriceID
 }
 
 // GetOrder returns the value of Order.
@@ -827,9 +799,9 @@ func (s *CreatePrivateImageRequestBody) SetName(val string) {
 	s.Name = val
 }
 
-// SetPrice sets the value of Price.
-func (s *CreatePrivateImageRequestBody) SetPrice(val CatalogReference) {
-	s.Price = val
+// SetPriceID sets the value of PriceID.
+func (s *CreatePrivateImageRequestBody) SetPriceID(val uuid.UUID) {
+	s.PriceID = val
 }
 
 // SetOrder sets the value of Order.
@@ -1120,10 +1092,10 @@ func (s *CreateSecurityRuleRequestBodyEthertype) UnmarshalText(data []byte) erro
 
 // Ref: #/components/schemas/CreateSnapshotRequestBody
 type CreateSnapshotRequestBody struct {
-	DiskID uuid.UUID        `json:"disk_id"`
-	Name   string           `json:"name"`
-	Price  CatalogReference `json:"price"`
-	Order  OrderOptions     `json:"order"`
+	DiskID  uuid.UUID    `json:"disk_id"`
+	Name    string       `json:"name"`
+	PriceID uuid.UUID    `json:"price_id"`
+	Order   OrderOptions `json:"order"`
 }
 
 // GetDiskID returns the value of DiskID.
@@ -1136,9 +1108,9 @@ func (s *CreateSnapshotRequestBody) GetName() string {
 	return s.Name
 }
 
-// GetPrice returns the value of Price.
-func (s *CreateSnapshotRequestBody) GetPrice() CatalogReference {
-	return s.Price
+// GetPriceID returns the value of PriceID.
+func (s *CreateSnapshotRequestBody) GetPriceID() uuid.UUID {
+	return s.PriceID
 }
 
 // GetOrder returns the value of Order.
@@ -1156,9 +1128,9 @@ func (s *CreateSnapshotRequestBody) SetName(val string) {
 	s.Name = val
 }
 
-// SetPrice sets the value of Price.
-func (s *CreateSnapshotRequestBody) SetPrice(val CatalogReference) {
-	s.Price = val
+// SetPriceID sets the value of PriceID.
+func (s *CreateSnapshotRequestBody) SetPriceID(val uuid.UUID) {
+	s.PriceID = val
 }
 
 // SetOrder sets the value of Order.
@@ -4267,7 +4239,7 @@ type LaunchInstanceRequestBody struct {
 	// Create the primary network interface in this subnet. Exactly one of this and `port_id`.
 	SubnetID   OptUUID          `json:"subnet_id"`
 	Order      OrderOptions     `json:"order"`
-	Price      CatalogReference `json:"price"`
+	PriceID    uuid.UUID        `json:"price_id"`
 	BootDisk   OptNewBootDisk   `json:"boot_disk"`
 	FloatingIP OptNewFloatingIP `json:"floating_ip"`
 }
@@ -4342,9 +4314,9 @@ func (s *LaunchInstanceRequestBody) GetOrder() OrderOptions {
 	return s.Order
 }
 
-// GetPrice returns the value of Price.
-func (s *LaunchInstanceRequestBody) GetPrice() CatalogReference {
-	return s.Price
+// GetPriceID returns the value of PriceID.
+func (s *LaunchInstanceRequestBody) GetPriceID() uuid.UUID {
+	return s.PriceID
 }
 
 // GetBootDisk returns the value of BootDisk.
@@ -4427,9 +4399,9 @@ func (s *LaunchInstanceRequestBody) SetOrder(val OrderOptions) {
 	s.Order = val
 }
 
-// SetPrice sets the value of Price.
-func (s *LaunchInstanceRequestBody) SetPrice(val CatalogReference) {
-	s.Price = val
+// SetPriceID sets the value of PriceID.
+func (s *LaunchInstanceRequestBody) SetPriceID(val uuid.UUID) {
+	s.PriceID = val
 }
 
 // SetBootDisk sets the value of BootDisk.
@@ -4473,10 +4445,10 @@ func (s *LaunchInstanceResponseBody) SetPassword(val NilString) {
 // with boot_disk_id.
 // Ref: #/components/schemas/NewBootDisk
 type NewBootDisk struct {
-	DiskTypeID         uuid.UUID        `json:"disk_type_id"`
-	SizeGB             int64            `json:"size_gb"`
-	Price              CatalogReference `json:"price"`
-	DeleteWithInstance OptBool          `json:"delete_with_instance"`
+	DiskTypeID         uuid.UUID `json:"disk_type_id"`
+	SizeGB             int64     `json:"size_gb"`
+	PriceID            uuid.UUID `json:"price_id"`
+	DeleteWithInstance OptBool   `json:"delete_with_instance"`
 }
 
 // GetDiskTypeID returns the value of DiskTypeID.
@@ -4489,9 +4461,9 @@ func (s *NewBootDisk) GetSizeGB() int64 {
 	return s.SizeGB
 }
 
-// GetPrice returns the value of Price.
-func (s *NewBootDisk) GetPrice() CatalogReference {
-	return s.Price
+// GetPriceID returns the value of PriceID.
+func (s *NewBootDisk) GetPriceID() uuid.UUID {
+	return s.PriceID
 }
 
 // GetDeleteWithInstance returns the value of DeleteWithInstance.
@@ -4509,9 +4481,9 @@ func (s *NewBootDisk) SetSizeGB(val int64) {
 	s.SizeGB = val
 }
 
-// SetPrice sets the value of Price.
-func (s *NewBootDisk) SetPrice(val CatalogReference) {
-	s.Price = val
+// SetPriceID sets the value of PriceID.
+func (s *NewBootDisk) SetPriceID(val uuid.UUID) {
+	s.PriceID = val
 }
 
 // SetDeleteWithInstance sets the value of DeleteWithInstance.
@@ -4522,20 +4494,20 @@ func (s *NewBootDisk) SetDeleteWithInstance(val OptBool) {
 // An address and bandwidth purchased in the same order. Mutually exclusive with floating_ip_id.
 // Ref: #/components/schemas/NewFloatingIP
 type NewFloatingIP struct {
-	Price          CatalogReference `json:"price"`
-	BandwidthPrice CatalogReference `json:"bandwidth_price"`
-	BandwidthMbps  int64            `json:"bandwidth_mbps"`
-	Ipv4PoolID     uuid.UUID        `json:"ipv4_pool_id"`
+	PriceID          uuid.UUID `json:"price_id"`
+	BandwidthPriceID uuid.UUID `json:"bandwidth_price_id"`
+	BandwidthMbps    int64     `json:"bandwidth_mbps"`
+	Ipv4PoolID       uuid.UUID `json:"ipv4_pool_id"`
 }
 
-// GetPrice returns the value of Price.
-func (s *NewFloatingIP) GetPrice() CatalogReference {
-	return s.Price
+// GetPriceID returns the value of PriceID.
+func (s *NewFloatingIP) GetPriceID() uuid.UUID {
+	return s.PriceID
 }
 
-// GetBandwidthPrice returns the value of BandwidthPrice.
-func (s *NewFloatingIP) GetBandwidthPrice() CatalogReference {
-	return s.BandwidthPrice
+// GetBandwidthPriceID returns the value of BandwidthPriceID.
+func (s *NewFloatingIP) GetBandwidthPriceID() uuid.UUID {
+	return s.BandwidthPriceID
 }
 
 // GetBandwidthMbps returns the value of BandwidthMbps.
@@ -4548,14 +4520,14 @@ func (s *NewFloatingIP) GetIpv4PoolID() uuid.UUID {
 	return s.Ipv4PoolID
 }
 
-// SetPrice sets the value of Price.
-func (s *NewFloatingIP) SetPrice(val CatalogReference) {
-	s.Price = val
+// SetPriceID sets the value of PriceID.
+func (s *NewFloatingIP) SetPriceID(val uuid.UUID) {
+	s.PriceID = val
 }
 
-// SetBandwidthPrice sets the value of BandwidthPrice.
-func (s *NewFloatingIP) SetBandwidthPrice(val CatalogReference) {
-	s.BandwidthPrice = val
+// SetBandwidthPriceID sets the value of BandwidthPriceID.
+func (s *NewFloatingIP) SetBandwidthPriceID(val uuid.UUID) {
+	s.BandwidthPriceID = val
 }
 
 // SetBandwidthMbps sets the value of BandwidthMbps.
@@ -7483,8 +7455,8 @@ type RegionResource struct {
 	// Display name for this place, shown to tenants (Hong Kong). It is the translatable one; the stable
 	// handle is code.
 	Name string `json:"name"`
-	// The region's code, the way the outside world names this place (hk-1). Stable and human-written; it
-	// is not an identifier for addressing — every endpoint takes ids.
+	// The region's code, the way the outside world names this place (hk-1). Stable and human-written;
+	// addressing is by id.
 	Code string    `json:"code"`
 	ID   uuid.UUID `json:"id"`
 }
@@ -7682,9 +7654,9 @@ func (s *ResetPasswordResponseBody) SetPassword(val string) {
 // Ref: #/components/schemas/ResizeDiskRequestBody
 type ResizeDiskRequestBody struct {
 	// Must be larger than the current capacity.
-	SizeGB int64            `json:"size_gb"`
-	Price  CatalogReference `json:"price"`
-	Order  OrderOptions     `json:"order"`
+	SizeGB  int64        `json:"size_gb"`
+	PriceID uuid.UUID    `json:"price_id"`
+	Order   OrderOptions `json:"order"`
 }
 
 // GetSizeGB returns the value of SizeGB.
@@ -7692,9 +7664,9 @@ func (s *ResizeDiskRequestBody) GetSizeGB() int64 {
 	return s.SizeGB
 }
 
-// GetPrice returns the value of Price.
-func (s *ResizeDiskRequestBody) GetPrice() CatalogReference {
-	return s.Price
+// GetPriceID returns the value of PriceID.
+func (s *ResizeDiskRequestBody) GetPriceID() uuid.UUID {
+	return s.PriceID
 }
 
 // GetOrder returns the value of Order.
@@ -7707,9 +7679,9 @@ func (s *ResizeDiskRequestBody) SetSizeGB(val int64) {
 	s.SizeGB = val
 }
 
-// SetPrice sets the value of Price.
-func (s *ResizeDiskRequestBody) SetPrice(val CatalogReference) {
-	s.Price = val
+// SetPriceID sets the value of PriceID.
+func (s *ResizeDiskRequestBody) SetPriceID(val uuid.UUID) {
+	s.PriceID = val
 }
 
 // SetOrder sets the value of Order.
@@ -7720,9 +7692,9 @@ func (s *ResizeDiskRequestBody) SetOrder(val OrderOptions) {
 // Ref: #/components/schemas/ResizeInstanceRequestBody
 type ResizeInstanceRequestBody struct {
 	// Must be in the same region and availability zone as the current instance type.
-	InstanceTypeID uuid.UUID        `json:"instance_type_id"`
-	Order          OrderOptions     `json:"order"`
-	Price          CatalogReference `json:"price"`
+	InstanceTypeID uuid.UUID    `json:"instance_type_id"`
+	Order          OrderOptions `json:"order"`
+	PriceID        uuid.UUID    `json:"price_id"`
 }
 
 // GetInstanceTypeID returns the value of InstanceTypeID.
@@ -7735,9 +7707,9 @@ func (s *ResizeInstanceRequestBody) GetOrder() OrderOptions {
 	return s.Order
 }
 
-// GetPrice returns the value of Price.
-func (s *ResizeInstanceRequestBody) GetPrice() CatalogReference {
-	return s.Price
+// GetPriceID returns the value of PriceID.
+func (s *ResizeInstanceRequestBody) GetPriceID() uuid.UUID {
+	return s.PriceID
 }
 
 // SetInstanceTypeID sets the value of InstanceTypeID.
@@ -7750,9 +7722,9 @@ func (s *ResizeInstanceRequestBody) SetOrder(val OrderOptions) {
 	s.Order = val
 }
 
-// SetPrice sets the value of Price.
-func (s *ResizeInstanceRequestBody) SetPrice(val CatalogReference) {
-	s.Price = val
+// SetPriceID sets the value of PriceID.
+func (s *ResizeInstanceRequestBody) SetPriceID(val uuid.UUID) {
+	s.PriceID = val
 }
 
 // Ref: #/components/schemas/RestoreBackupRequestBody
@@ -7762,9 +7734,9 @@ type RestoreBackupRequestBody struct {
 	DiskTypeID uuid.UUID `json:"disk_type_id"`
 	Name       string    `json:"name"`
 	// Matches the size of the backup when omitted. When given, it must not be smaller than the backup.
-	SizeGB OptInt64         `json:"size_gb"`
-	Price  CatalogReference `json:"price"`
-	Order  OrderOptions     `json:"order"`
+	SizeGB  OptInt64     `json:"size_gb"`
+	PriceID uuid.UUID    `json:"price_id"`
+	Order   OrderOptions `json:"order"`
 }
 
 // GetDiskTypeID returns the value of DiskTypeID.
@@ -7782,9 +7754,9 @@ func (s *RestoreBackupRequestBody) GetSizeGB() OptInt64 {
 	return s.SizeGB
 }
 
-// GetPrice returns the value of Price.
-func (s *RestoreBackupRequestBody) GetPrice() CatalogReference {
-	return s.Price
+// GetPriceID returns the value of PriceID.
+func (s *RestoreBackupRequestBody) GetPriceID() uuid.UUID {
+	return s.PriceID
 }
 
 // GetOrder returns the value of Order.
@@ -7807,9 +7779,9 @@ func (s *RestoreBackupRequestBody) SetSizeGB(val OptInt64) {
 	s.SizeGB = val
 }
 
-// SetPrice sets the value of Price.
-func (s *RestoreBackupRequestBody) SetPrice(val CatalogReference) {
-	s.Price = val
+// SetPriceID sets the value of PriceID.
+func (s *RestoreBackupRequestBody) SetPriceID(val uuid.UUID) {
+	s.PriceID = val
 }
 
 // SetOrder sets the value of Order.
@@ -8226,9 +8198,9 @@ func (s *SecurityRuleResourceEthertype) UnmarshalText(data []byte) error {
 // Ref: #/components/schemas/SetBandwidthRequestBody
 type SetBandwidthRequestBody struct {
 	// Applied to both directions.
-	Mbps  int64            `json:"mbps"`
-	Price CatalogReference `json:"price"`
-	Order OrderOptions     `json:"order"`
+	Mbps    int64        `json:"mbps"`
+	PriceID uuid.UUID    `json:"price_id"`
+	Order   OrderOptions `json:"order"`
 }
 
 // GetMbps returns the value of Mbps.
@@ -8236,9 +8208,9 @@ func (s *SetBandwidthRequestBody) GetMbps() int64 {
 	return s.Mbps
 }
 
-// GetPrice returns the value of Price.
-func (s *SetBandwidthRequestBody) GetPrice() CatalogReference {
-	return s.Price
+// GetPriceID returns the value of PriceID.
+func (s *SetBandwidthRequestBody) GetPriceID() uuid.UUID {
+	return s.PriceID
 }
 
 // GetOrder returns the value of Order.
@@ -8251,9 +8223,9 @@ func (s *SetBandwidthRequestBody) SetMbps(val int64) {
 	s.Mbps = val
 }
 
-// SetPrice sets the value of Price.
-func (s *SetBandwidthRequestBody) SetPrice(val CatalogReference) {
-	s.Price = val
+// SetPriceID sets the value of PriceID.
+func (s *SetBandwidthRequestBody) SetPriceID(val uuid.UUID) {
+	s.PriceID = val
 }
 
 // SetOrder sets the value of Order.
@@ -8876,7 +8848,7 @@ func (s *ZoneListResponseBody) SetItems(val []ZoneResource) {
 // Ref: #/components/schemas/ZoneResource
 type ZoneResource struct {
 	// Display name for this zone, shown to tenants (Hong Kong A). It is the translatable one; the stable
-	// handle is code. AWS has no equivalent — what it calls an Availability Zone name is our code.
+	// handle is code.
 	Name string `json:"name"`
 	// The zone's code within its region (hk-1-a). Stable and human-written; addressing is by id.
 	Code string    `json:"code"`

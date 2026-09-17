@@ -3056,9 +3056,9 @@ func (s *Server) handleGetOrderRefundQuoteRequest(args [1]string, argsEscaped bo
 
 // handleGetProjectBillingAccountRequest handles get-project-billing-account operation.
 //
-// A deliberately narrow view: the payer's identity, its currency, and how much can still be spent.
-// Cards, invoices and transaction history are not included; they belong to the account owner and are
-// reached through `/account/v1/`.
+// Returns the payer's identity, its currency, and how much can still be spent. Cards, invoices and
+// transaction history are not included; they belong to the account owner and are reached through
+// `/account/v1/`.
 //
 // Returns 404 when no account pays for this project. Resources cannot be created in that state.
 //
@@ -4473,17 +4473,17 @@ func (s *Server) handleListAllowancesRequest(args [0]string, argsEscaped bool, w
 					In:   "query",
 				}: params.BillingAccountID,
 				{
-					Name: "meter",
+					Name: "meter_id",
 					In:   "query",
-				}: params.Meter,
+				}: params.MeterID,
 				{
 					Name: "status",
 					In:   "query",
 				}: params.Status,
 				{
-					Name: "product",
+					Name: "product_id",
 					In:   "query",
-				}: params.Product,
+				}: params.ProductID,
 			},
 			Raw: r,
 		}
@@ -5351,9 +5351,9 @@ func (s *Server) handleListCatalogRatesRequest(args [1]string, argsEscaped bool,
 					In:   "header",
 				}: params.IfNoneMatch,
 				{
-					Name: "meter",
+					Name: "meter_id",
 					In:   "query",
-				}: params.Meter,
+				}: params.MeterID,
 				{
 					Name: "at",
 					In:   "query",
@@ -7694,13 +7694,13 @@ func (s *Server) handleListProjectAllowancesRequest(args [1]string, argsEscaped 
 					In:   "query",
 				}: params.PageSize,
 				{
-					Name: "meter",
+					Name: "meter_id",
 					In:   "query",
-				}: params.Meter,
+				}: params.MeterID,
 				{
-					Name: "product",
+					Name: "product_id",
 					In:   "query",
-				}: params.Product,
+				}: params.ProductID,
 				{
 					Name: "projectId",
 					In:   "path",
@@ -7914,9 +7914,9 @@ func (s *Server) handleListProjectEntitlementsRequest(args [1]string, argsEscape
 					In:   "query",
 				}: params.PageSize,
 				{
-					Name: "product",
+					Name: "product_id",
 					In:   "query",
-				}: params.Product,
+				}: params.ProductID,
 				{
 					Name: "projectId",
 					In:   "path",
@@ -8566,9 +8566,9 @@ func (s *Server) handleListProjectSpendRequest(args [1]string, argsEscaped bool,
 					In:   "query",
 				}: params.GroupBy,
 				{
-					Name: "product",
+					Name: "product_id",
 					In:   "query",
-				}: params.Product,
+				}: params.ProductID,
 				{
 					Name: "page",
 					In:   "query",
@@ -9211,13 +9211,13 @@ func (s *Server) handleListProjectUsageChargesRequest(args [1]string, argsEscape
 					In:   "query",
 				}: params.ResourceID,
 				{
-					Name: "product",
+					Name: "product_id",
 					In:   "query",
-				}: params.Product,
+				}: params.ProductID,
 				{
-					Name: "meter",
+					Name: "meter_id",
 					In:   "query",
-				}: params.Meter,
+				}: params.MeterID,
 				{
 					Name: "from",
 					In:   "query",
@@ -10504,9 +10504,9 @@ func (s *Server) handleListUsageChargesRequest(args [0]string, argsEscaped bool,
 					In:   "query",
 				}: params.ProjectID,
 				{
-					Name: "product",
+					Name: "product_id",
 					In:   "query",
-				}: params.Product,
+				}: params.ProductID,
 				{
 					Name: "resource_id",
 					In:   "query",

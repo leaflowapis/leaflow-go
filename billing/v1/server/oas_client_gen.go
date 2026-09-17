@@ -165,9 +165,9 @@ type Invoker interface {
 	GetOrderRefundQuote(ctx context.Context, params GetOrderRefundQuoteParams) (*RefundQuote, error)
 	// GetProjectBillingAccount invokes get-project-billing-account operation.
 	//
-	// A deliberately narrow view: the payer's identity, its currency, and how much can still be spent.
-	// Cards, invoices and transaction history are not included; they belong to the account owner and are
-	// reached through `/account/v1/`.
+	// Returns the payer's identity, its currency, and how much can still be spent. Cards, invoices and
+	// transaction history are not included; they belong to the account owner and are reached through
+	// `/account/v1/`.
 	//
 	// Returns 404 when no account pays for this project. Resources cannot be created in that state.
 	//
@@ -2569,9 +2569,9 @@ func (c *Client) sendGetOrderRefundQuote(ctx context.Context, params GetOrderRef
 
 // GetProjectBillingAccount invokes get-project-billing-account operation.
 //
-// A deliberately narrow view: the payer's identity, its currency, and how much can still be spent.
-// Cards, invoices and transaction history are not included; they belong to the account owner and are
-// reached through `/account/v1/`.
+// Returns the payer's identity, its currency, and how much can still be spent. Cards, invoices and
+// transaction history are not included; they belong to the account owner and are reached through
+// `/account/v1/`.
 //
 // Returns 404 when no account pays for this project. Resources cannot be created in that state.
 //
@@ -3665,16 +3665,16 @@ func (c *Client) sendListAllowances(ctx context.Context, params ListAllowancesPa
 		}
 	}
 	{
-		// Encode "meter" parameter.
+		// Encode "meter_id" parameter.
 		cfg := uri.QueryParameterEncodingConfig{
-			Name:    "meter",
-			Style:   uri.QueryStyleDeepObject,
+			Name:    "meter_id",
+			Style:   uri.QueryStyleForm,
 			Explode: true,
 		}
 
 		if err := q.EncodeParam(cfg, func(e uri.Encoder) error {
-			if val, ok := params.Meter.Get(); ok {
-				return val.EncodeURI(e)
+			if val, ok := params.MeterID.Get(); ok {
+				return e.EncodeValue(conv.UUIDToString(val))
 			}
 			return nil
 		}); err != nil {
@@ -3699,16 +3699,16 @@ func (c *Client) sendListAllowances(ctx context.Context, params ListAllowancesPa
 		}
 	}
 	{
-		// Encode "product" parameter.
+		// Encode "product_id" parameter.
 		cfg := uri.QueryParameterEncodingConfig{
-			Name:    "product",
-			Style:   uri.QueryStyleDeepObject,
+			Name:    "product_id",
+			Style:   uri.QueryStyleForm,
 			Explode: true,
 		}
 
 		if err := q.EncodeParam(cfg, func(e uri.Encoder) error {
-			if val, ok := params.Product.Get(); ok {
-				return val.EncodeURI(e)
+			if val, ok := params.ProductID.Get(); ok {
+				return e.EncodeValue(conv.UUIDToString(val))
 			}
 			return nil
 		}); err != nil {
@@ -4499,16 +4499,16 @@ func (c *Client) sendListCatalogRates(ctx context.Context, params ListCatalogRat
 		}
 	}
 	{
-		// Encode "meter" parameter.
+		// Encode "meter_id" parameter.
 		cfg := uri.QueryParameterEncodingConfig{
-			Name:    "meter",
-			Style:   uri.QueryStyleDeepObject,
+			Name:    "meter_id",
+			Style:   uri.QueryStyleForm,
 			Explode: true,
 		}
 
 		if err := q.EncodeParam(cfg, func(e uri.Encoder) error {
-			if val, ok := params.Meter.Get(); ok {
-				return val.EncodeURI(e)
+			if val, ok := params.MeterID.Get(); ok {
+				return e.EncodeValue(conv.UUIDToString(val))
 			}
 			return nil
 		}); err != nil {
@@ -6547,16 +6547,16 @@ func (c *Client) sendListProjectAllowances(ctx context.Context, params ListProje
 		}
 	}
 	{
-		// Encode "meter" parameter.
+		// Encode "meter_id" parameter.
 		cfg := uri.QueryParameterEncodingConfig{
-			Name:    "meter",
-			Style:   uri.QueryStyleDeepObject,
+			Name:    "meter_id",
+			Style:   uri.QueryStyleForm,
 			Explode: true,
 		}
 
 		if err := q.EncodeParam(cfg, func(e uri.Encoder) error {
-			if val, ok := params.Meter.Get(); ok {
-				return val.EncodeURI(e)
+			if val, ok := params.MeterID.Get(); ok {
+				return e.EncodeValue(conv.UUIDToString(val))
 			}
 			return nil
 		}); err != nil {
@@ -6564,16 +6564,16 @@ func (c *Client) sendListProjectAllowances(ctx context.Context, params ListProje
 		}
 	}
 	{
-		// Encode "product" parameter.
+		// Encode "product_id" parameter.
 		cfg := uri.QueryParameterEncodingConfig{
-			Name:    "product",
-			Style:   uri.QueryStyleDeepObject,
+			Name:    "product_id",
+			Style:   uri.QueryStyleForm,
 			Explode: true,
 		}
 
 		if err := q.EncodeParam(cfg, func(e uri.Encoder) error {
-			if val, ok := params.Product.Get(); ok {
-				return val.EncodeURI(e)
+			if val, ok := params.ProductID.Get(); ok {
+				return e.EncodeValue(conv.UUIDToString(val))
 			}
 			return nil
 		}); err != nil {
@@ -6755,16 +6755,16 @@ func (c *Client) sendListProjectEntitlements(ctx context.Context, params ListPro
 		}
 	}
 	{
-		// Encode "product" parameter.
+		// Encode "product_id" parameter.
 		cfg := uri.QueryParameterEncodingConfig{
-			Name:    "product",
-			Style:   uri.QueryStyleDeepObject,
+			Name:    "product_id",
+			Style:   uri.QueryStyleForm,
 			Explode: true,
 		}
 
 		if err := q.EncodeParam(cfg, func(e uri.Encoder) error {
-			if val, ok := params.Product.Get(); ok {
-				return val.EncodeURI(e)
+			if val, ok := params.ProductID.Get(); ok {
+				return e.EncodeValue(conv.UUIDToString(val))
 			}
 			return nil
 		}); err != nil {
@@ -7367,16 +7367,16 @@ func (c *Client) sendListProjectSpend(ctx context.Context, params ListProjectSpe
 		}
 	}
 	{
-		// Encode "product" parameter.
+		// Encode "product_id" parameter.
 		cfg := uri.QueryParameterEncodingConfig{
-			Name:    "product",
-			Style:   uri.QueryStyleDeepObject,
+			Name:    "product_id",
+			Style:   uri.QueryStyleForm,
 			Explode: true,
 		}
 
 		if err := q.EncodeParam(cfg, func(e uri.Encoder) error {
-			if val, ok := params.Product.Get(); ok {
-				return val.EncodeURI(e)
+			if val, ok := params.ProductID.Get(); ok {
+				return e.EncodeValue(conv.UUIDToString(val))
 			}
 			return nil
 		}); err != nil {
@@ -7963,16 +7963,16 @@ func (c *Client) sendListProjectUsageCharges(ctx context.Context, params ListPro
 		}
 	}
 	{
-		// Encode "product" parameter.
+		// Encode "product_id" parameter.
 		cfg := uri.QueryParameterEncodingConfig{
-			Name:    "product",
-			Style:   uri.QueryStyleDeepObject,
+			Name:    "product_id",
+			Style:   uri.QueryStyleForm,
 			Explode: true,
 		}
 
 		if err := q.EncodeParam(cfg, func(e uri.Encoder) error {
-			if val, ok := params.Product.Get(); ok {
-				return val.EncodeURI(e)
+			if val, ok := params.ProductID.Get(); ok {
+				return e.EncodeValue(conv.UUIDToString(val))
 			}
 			return nil
 		}); err != nil {
@@ -7980,16 +7980,16 @@ func (c *Client) sendListProjectUsageCharges(ctx context.Context, params ListPro
 		}
 	}
 	{
-		// Encode "meter" parameter.
+		// Encode "meter_id" parameter.
 		cfg := uri.QueryParameterEncodingConfig{
-			Name:    "meter",
-			Style:   uri.QueryStyleDeepObject,
+			Name:    "meter_id",
+			Style:   uri.QueryStyleForm,
 			Explode: true,
 		}
 
 		if err := q.EncodeParam(cfg, func(e uri.Encoder) error {
-			if val, ok := params.Meter.Get(); ok {
-				return val.EncodeURI(e)
+			if val, ok := params.MeterID.Get(); ok {
+				return e.EncodeValue(conv.UUIDToString(val))
 			}
 			return nil
 		}); err != nil {
@@ -9142,16 +9142,16 @@ func (c *Client) sendListUsageCharges(ctx context.Context, params ListUsageCharg
 		}
 	}
 	{
-		// Encode "product" parameter.
+		// Encode "product_id" parameter.
 		cfg := uri.QueryParameterEncodingConfig{
-			Name:    "product",
-			Style:   uri.QueryStyleDeepObject,
+			Name:    "product_id",
+			Style:   uri.QueryStyleForm,
 			Explode: true,
 		}
 
 		if err := q.EncodeParam(cfg, func(e uri.Encoder) error {
-			if val, ok := params.Product.Get(); ok {
-				return val.EncodeURI(e)
+			if val, ok := params.ProductID.Get(); ok {
+				return e.EncodeValue(conv.UUIDToString(val))
 			}
 			return nil
 		}); err != nil {

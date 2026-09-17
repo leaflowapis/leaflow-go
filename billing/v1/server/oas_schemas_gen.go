@@ -1497,7 +1497,6 @@ func (s *BillingAccountUpdate) SetTaxID(val OptString) {
 type CatalogPlan struct {
 	ID                      uuid.UUID       `json:"id"`
 	ProductID               uuid.UUID       `json:"product_id"`
-	LookupKey               string          `json:"lookup_key"`
 	Name                    string          `json:"name"`
 	NameTranslations        OptTranslations `json:"name_translations"`
 	Description             OptString       `json:"description"`
@@ -1512,11 +1511,6 @@ func (s *CatalogPlan) GetID() uuid.UUID {
 // GetProductID returns the value of ProductID.
 func (s *CatalogPlan) GetProductID() uuid.UUID {
 	return s.ProductID
-}
-
-// GetLookupKey returns the value of LookupKey.
-func (s *CatalogPlan) GetLookupKey() string {
-	return s.LookupKey
 }
 
 // GetName returns the value of Name.
@@ -1547,11 +1541,6 @@ func (s *CatalogPlan) SetID(val uuid.UUID) {
 // SetProductID sets the value of ProductID.
 func (s *CatalogPlan) SetProductID(val uuid.UUID) {
 	s.ProductID = val
-}
-
-// SetLookupKey sets the value of LookupKey.
-func (s *CatalogPlan) SetLookupKey(val string) {
-	s.LookupKey = val
 }
 
 // SetName sets the value of Name.
@@ -1632,12 +1621,10 @@ func (*CatalogPlanListHeaders) listCatalogPlansRes() {}
 type CatalogPrice struct {
 	TerminationPolicy OptTerminationPolicy `json:"termination_policy"`
 	RefundPolicy      OptRefundPolicy      `json:"refund_policy"`
-	// External lookup alias within the service. Existing references use the price ID.
-	LookupKey OptString `json:"lookup_key"`
-	ProductID OptUUID   `json:"product_id"`
-	ID        uuid.UUID `json:"id"`
-	PlanID    uuid.UUID `json:"plan_id"`
-	Currency  string    `json:"currency"`
+	ProductID         OptUUID              `json:"product_id"`
+	ID                uuid.UUID            `json:"id"`
+	PlanID            uuid.UUID            `json:"plan_id"`
+	Currency          string               `json:"currency"`
 	// `metered` charges for what is used, `prepaid` buys a period in advance, `one_time` charges once.
 	Type CatalogPriceType `json:"type"`
 	// How the amount is arrived at. `rated` means the rate depends on attributes such as region or machine
@@ -1682,11 +1669,6 @@ func (s *CatalogPrice) GetTerminationPolicy() OptTerminationPolicy {
 // GetRefundPolicy returns the value of RefundPolicy.
 func (s *CatalogPrice) GetRefundPolicy() OptRefundPolicy {
 	return s.RefundPolicy
-}
-
-// GetLookupKey returns the value of LookupKey.
-func (s *CatalogPrice) GetLookupKey() OptString {
-	return s.LookupKey
 }
 
 // GetProductID returns the value of ProductID.
@@ -1787,11 +1769,6 @@ func (s *CatalogPrice) SetTerminationPolicy(val OptTerminationPolicy) {
 // SetRefundPolicy sets the value of RefundPolicy.
 func (s *CatalogPrice) SetRefundPolicy(val OptRefundPolicy) {
 	s.RefundPolicy = val
-}
-
-// SetLookupKey sets the value of LookupKey.
-func (s *CatalogPrice) SetLookupKey(val OptString) {
-	s.LookupKey = val
 }
 
 // SetProductID sets the value of ProductID.
@@ -2147,7 +2124,6 @@ func (s *CatalogPriceType) UnmarshalText(data []byte) error {
 // Ref: #/components/schemas/CatalogProduct
 type CatalogProduct struct {
 	ID                      uuid.UUID       `json:"id"`
-	LookupKey               string          `json:"lookup_key"`
 	Name                    string          `json:"name"`
 	NameTranslations        OptTranslations `json:"name_translations"`
 	Description             OptString       `json:"description"`
@@ -2157,11 +2133,6 @@ type CatalogProduct struct {
 // GetID returns the value of ID.
 func (s *CatalogProduct) GetID() uuid.UUID {
 	return s.ID
-}
-
-// GetLookupKey returns the value of LookupKey.
-func (s *CatalogProduct) GetLookupKey() string {
-	return s.LookupKey
 }
 
 // GetName returns the value of Name.
@@ -2187,11 +2158,6 @@ func (s *CatalogProduct) GetDescriptionTranslations() OptTranslations {
 // SetID sets the value of ID.
 func (s *CatalogProduct) SetID(val uuid.UUID) {
 	s.ID = val
-}
-
-// SetLookupKey sets the value of LookupKey.
-func (s *CatalogProduct) SetLookupKey(val string) {
-	s.LookupKey = val
 }
 
 // SetName sets the value of Name.
@@ -3895,10 +3861,8 @@ type Entitlement struct {
 	// How much is left, as a decimal string. Meaningful only when `metered` is true. `"0"` once exhausted,
 	// never negative.
 	//
-	// This is the figure at the moment of the reply, and quantities are drawn down at settlement rather
-	// than on each call. It is suitable for display and for a soft warning, but it cannot enforce a strict
-	// limit: concurrent requests all see the same figure. A hard limit has to be counted by the service
-	// that owns the capability, in the same transaction as the operation it is limiting.
+	// The figure is accurate as of the reply. It is suitable for display and for a soft warning, and must
+	// not be used to enforce a strict limit.
 	RemainingQuantity OptString `json:"remaining_quantity"`
 	Unit              OptString `json:"unit"`
 	// When the subscription providing it ends. Absent for a metered subscription, which has no end date.
@@ -5290,10 +5254,12 @@ func (*NotModified) listCatalogPricesRes()   {}
 func (*NotModified) listCatalogProductsRes() {}
 func (*NotModified) listCatalogRatesRes()    {}
 
+// A catalog object inlined for display.
 // Ref: #/components/schemas/ObjectIdentity
 type ObjectIdentity struct {
-	ID        uuid.UUID `json:"id"`
-	LookupKey OptString `json:"lookup_key"`
+	ID               uuid.UUID       `json:"id"`
+	Name             string          `json:"name"`
+	NameTranslations OptTranslations `json:"name_translations"`
 }
 
 // GetID returns the value of ID.
@@ -5301,9 +5267,14 @@ func (s *ObjectIdentity) GetID() uuid.UUID {
 	return s.ID
 }
 
-// GetLookupKey returns the value of LookupKey.
-func (s *ObjectIdentity) GetLookupKey() OptString {
-	return s.LookupKey
+// GetName returns the value of Name.
+func (s *ObjectIdentity) GetName() string {
+	return s.Name
+}
+
+// GetNameTranslations returns the value of NameTranslations.
+func (s *ObjectIdentity) GetNameTranslations() OptTranslations {
+	return s.NameTranslations
 }
 
 // SetID sets the value of ID.
@@ -5311,36 +5282,14 @@ func (s *ObjectIdentity) SetID(val uuid.UUID) {
 	s.ID = val
 }
 
-// SetLookupKey sets the value of LookupKey.
-func (s *ObjectIdentity) SetLookupKey(val OptString) {
-	s.LookupKey = val
+// SetName sets the value of Name.
+func (s *ObjectIdentity) SetName(val string) {
+	s.Name = val
 }
 
-// Identify an object by ID or lookup key, exactly one. A lookup key requires the owning product.
-// Ref: #/components/schemas/ObjectReference
-type ObjectReference struct {
-	ID        OptUUID   `json:"id"`
-	LookupKey OptString `json:"lookup_key"`
-}
-
-// GetID returns the value of ID.
-func (s *ObjectReference) GetID() OptUUID {
-	return s.ID
-}
-
-// GetLookupKey returns the value of LookupKey.
-func (s *ObjectReference) GetLookupKey() OptString {
-	return s.LookupKey
-}
-
-// SetID sets the value of ID.
-func (s *ObjectReference) SetID(val OptUUID) {
-	s.ID = val
-}
-
-// SetLookupKey sets the value of LookupKey.
-func (s *ObjectReference) SetLookupKey(val OptString) {
-	s.LookupKey = val
+// SetNameTranslations sets the value of NameTranslations.
+func (s *ObjectIdentity) SetNameTranslations(val OptTranslations) {
+	s.NameTranslations = val
 }
 
 // NewOptActiveResourceDimensions returns new OptActiveResourceDimensions with value set to v.
@@ -6735,52 +6684,6 @@ func (o OptObjectIdentity) Get() (v ObjectIdentity, ok bool) {
 
 // Or returns value if set, or given parameter if does not.
 func (o OptObjectIdentity) Or(d ObjectIdentity) ObjectIdentity {
-	if v, ok := o.Get(); ok {
-		return v
-	}
-	return d
-}
-
-// NewOptObjectReference returns new OptObjectReference with value set to v.
-func NewOptObjectReference(v ObjectReference) OptObjectReference {
-	return OptObjectReference{
-		Value: v,
-		Set:   true,
-	}
-}
-
-// OptObjectReference is optional ObjectReference.
-type OptObjectReference struct {
-	Value ObjectReference
-	Set   bool
-}
-
-// IsSet returns true if OptObjectReference was set.
-func (o OptObjectReference) IsSet() bool { return o.Set }
-
-// Reset unsets value.
-func (o *OptObjectReference) Reset() {
-	var v ObjectReference
-	o.Value = v
-	o.Set = false
-}
-
-// SetTo sets value to v.
-func (o *OptObjectReference) SetTo(v ObjectReference) {
-	o.Set = true
-	o.Value = v
-}
-
-// Get returns value and boolean that denotes whether value was set.
-func (o OptObjectReference) Get() (v ObjectReference, ok bool) {
-	if !o.Set {
-		return v, false
-	}
-	return o.Value, true
-}
-
-// Or returns value if set, or given parameter if does not.
-func (o OptObjectReference) Or(d ObjectReference) ObjectReference {
 	if v, ok := o.Get(); ok {
 		return v
 	}
@@ -9599,9 +9502,9 @@ func (s *Quote) SetCurrency(val string) {
 // Ref: #/components/schemas/QuoteChange
 type QuoteChange struct {
 	// What is being changed.
-	SubscriptionItemID uuid.UUID          `json:"subscription_item_id"`
-	Price              OptObjectReference `json:"price"`
-	Plan               OptObjectReference `json:"plan"`
+	SubscriptionItemID uuid.UUID `json:"subscription_item_id"`
+	PriceID            OptUUID   `json:"price_id"`
+	PlanID             OptUUID   `json:"plan_id"`
 	// The new quantity. The current one is kept when omitted.
 	Quantity OptString `json:"quantity"`
 	// When the change would take effect. Defaults to now. Charging is split at this moment: before it at
@@ -9614,14 +9517,14 @@ func (s *QuoteChange) GetSubscriptionItemID() uuid.UUID {
 	return s.SubscriptionItemID
 }
 
-// GetPrice returns the value of Price.
-func (s *QuoteChange) GetPrice() OptObjectReference {
-	return s.Price
+// GetPriceID returns the value of PriceID.
+func (s *QuoteChange) GetPriceID() OptUUID {
+	return s.PriceID
 }
 
-// GetPlan returns the value of Plan.
-func (s *QuoteChange) GetPlan() OptObjectReference {
-	return s.Plan
+// GetPlanID returns the value of PlanID.
+func (s *QuoteChange) GetPlanID() OptUUID {
+	return s.PlanID
 }
 
 // GetQuantity returns the value of Quantity.
@@ -9639,14 +9542,14 @@ func (s *QuoteChange) SetSubscriptionItemID(val uuid.UUID) {
 	s.SubscriptionItemID = val
 }
 
-// SetPrice sets the value of Price.
-func (s *QuoteChange) SetPrice(val OptObjectReference) {
-	s.Price = val
+// SetPriceID sets the value of PriceID.
+func (s *QuoteChange) SetPriceID(val OptUUID) {
+	s.PriceID = val
 }
 
-// SetPlan sets the value of Plan.
-func (s *QuoteChange) SetPlan(val OptObjectReference) {
-	s.Plan = val
+// SetPlanID sets the value of PlanID.
+func (s *QuoteChange) SetPlanID(val OptUUID) {
+	s.PlanID = val
 }
 
 // SetQuantity sets the value of Quantity.
@@ -9807,14 +9710,14 @@ func (s *QuoteChangeResult) SetCurrency(val string) {
 	s.Currency = val
 }
 
-// Identify a price directly, or select a price for a plan. Lookup keys are scoped to the product.
-// Account quotes apply applicable contract prices.
+// Identify a price directly, or select a price for a plan. Account quotes apply applicable contract
+// prices.
 // Ref: #/components/schemas/QuoteLine
 type QuoteLine struct {
-	Price   OptObjectReference `json:"price"`
-	Product OptObjectReference `json:"product"`
-	Plan    OptObjectReference `json:"plan"`
-	Meter   OptObjectReference `json:"meter"`
+	PriceID   OptUUID `json:"price_id"`
+	ProductID OptUUID `json:"product_id"`
+	PlanID    OptUUID `json:"plan_id"`
+	MeterID   OptUUID `json:"meter_id"`
 	// The attributes the price depends on — region, instance type, token class.
 	//
 	// Required when the price draws its rates from a price list, which is how anything sold by region or
@@ -9835,24 +9738,24 @@ type QuoteLine struct {
 	DurationSeconds OptInt64 `json:"duration_seconds"`
 }
 
-// GetPrice returns the value of Price.
-func (s *QuoteLine) GetPrice() OptObjectReference {
-	return s.Price
+// GetPriceID returns the value of PriceID.
+func (s *QuoteLine) GetPriceID() OptUUID {
+	return s.PriceID
 }
 
-// GetProduct returns the value of Product.
-func (s *QuoteLine) GetProduct() OptObjectReference {
-	return s.Product
+// GetProductID returns the value of ProductID.
+func (s *QuoteLine) GetProductID() OptUUID {
+	return s.ProductID
 }
 
-// GetPlan returns the value of Plan.
-func (s *QuoteLine) GetPlan() OptObjectReference {
-	return s.Plan
+// GetPlanID returns the value of PlanID.
+func (s *QuoteLine) GetPlanID() OptUUID {
+	return s.PlanID
 }
 
-// GetMeter returns the value of Meter.
-func (s *QuoteLine) GetMeter() OptObjectReference {
-	return s.Meter
+// GetMeterID returns the value of MeterID.
+func (s *QuoteLine) GetMeterID() OptUUID {
+	return s.MeterID
 }
 
 // GetDimensions returns the value of Dimensions.
@@ -9880,24 +9783,24 @@ func (s *QuoteLine) GetDurationSeconds() OptInt64 {
 	return s.DurationSeconds
 }
 
-// SetPrice sets the value of Price.
-func (s *QuoteLine) SetPrice(val OptObjectReference) {
-	s.Price = val
+// SetPriceID sets the value of PriceID.
+func (s *QuoteLine) SetPriceID(val OptUUID) {
+	s.PriceID = val
 }
 
-// SetProduct sets the value of Product.
-func (s *QuoteLine) SetProduct(val OptObjectReference) {
-	s.Product = val
+// SetProductID sets the value of ProductID.
+func (s *QuoteLine) SetProductID(val OptUUID) {
+	s.ProductID = val
 }
 
-// SetPlan sets the value of Plan.
-func (s *QuoteLine) SetPlan(val OptObjectReference) {
-	s.Plan = val
+// SetPlanID sets the value of PlanID.
+func (s *QuoteLine) SetPlanID(val OptUUID) {
+	s.PlanID = val
 }
 
-// SetMeter sets the value of Meter.
-func (s *QuoteLine) SetMeter(val OptObjectReference) {
-	s.Meter = val
+// SetMeterID sets the value of MeterID.
+func (s *QuoteLine) SetMeterID(val OptUUID) {
+	s.MeterID = val
 }
 
 // SetDimensions sets the value of Dimensions.

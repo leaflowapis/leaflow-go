@@ -839,17 +839,13 @@ type AllocateFloatingIPRequestBody struct {
 	//
 	// It is billed separately from the address, per Mbit/s-hour, and appears as its own line on
 	// the order. Changing it later goes through the bandwidth endpoint.
-	BandwidthMbps int64 `json:"bandwidth_mbps"`
-
-	// BandwidthPrice Specify exactly one of id or lookup_key. A lookup key is scoped to the product of the resource service.
-	BandwidthPrice CatalogReference   `json:"bandwidth_price"`
-	Ipv4PoolId     openapi_types.UUID `json:"ipv4_pool_id"`
+	BandwidthMbps    int64              `json:"bandwidth_mbps"`
+	BandwidthPriceId openapi_types.UUID `json:"bandwidth_price_id"`
+	Ipv4PoolId       openapi_types.UUID `json:"ipv4_pool_id"`
 
 	// Order Reuse the same key for retries of the same purchase. Reusing it with a different request fails. Billing selects contract pricing, applies eligible grants and promotions, and owns payment challenges and expiry.
-	Order OrderOptions `json:"order"`
-
-	// Price Specify exactly one of id or lookup_key. A lookup key is scoped to the product of the resource service.
-	Price            CatalogReference   `json:"price"`
+	Order            OrderOptions       `json:"order"`
+	PriceId          openapi_types.UUID `json:"price_id"`
 	PrivateNetworkId openapi_types.UUID `json:"private_network_id"`
 }
 
@@ -909,9 +905,6 @@ type BindFloatingIPRequestBody struct {
 	PortAddressId openapi_types.UUID `json:"port_address_id"`
 }
 
-// CatalogReference Specify exactly one of id or lookup_key. A lookup key is scoped to the product of the resource service.
-type CatalogReference = externalRef0.CatalogReference
-
 // CommandResultResponseBody defines model for CommandResultResponseBody.
 type CommandResultResponseBody struct {
 	// ExitCode What the command exited with, 0 being success. Any other value is the command's own verdict and still arrives as a 200. Null when it was killed rather than exiting on its own, which includes the timeout — null is the absence of a verdict, not a successful one
@@ -944,10 +937,8 @@ type CreateBackupRequestBody struct {
 	Name   string             `json:"name"`
 
 	// Order Reuse the same key for retries of the same purchase. Reusing it with a different request fails. Billing selects contract pricing, applies eligible grants and promotions, and owns payment challenges and expiry.
-	Order OrderOptions `json:"order"`
-
-	// Price Specify exactly one of id or lookup_key. A lookup key is scoped to the product of the resource service.
-	Price CatalogReference `json:"price"`
+	Order   OrderOptions       `json:"order"`
+	PriceId openapi_types.UUID `json:"price_id"`
 }
 
 // CreateDiskRequestBody defines model for CreateDiskRequestBody.
@@ -957,11 +948,9 @@ type CreateDiskRequestBody struct {
 	Name       string             `json:"name"`
 
 	// Order Reuse the same key for retries of the same purchase. Reusing it with a different request fails. Billing selects contract pricing, applies eligible grants and promotions, and owns payment challenges and expiry.
-	Order OrderOptions `json:"order"`
-
-	// Price Specify exactly one of id or lookup_key. A lookup key is scoped to the product of the resource service.
-	Price  CatalogReference `json:"price"`
-	SizeGb int64            `json:"size_gb"`
+	Order   OrderOptions       `json:"order"`
+	PriceId openapi_types.UUID `json:"price_id"`
+	SizeGb  int64              `json:"size_gb"`
 
 	// SnapshotId Restore from this snapshot. When given, the capacity need only be no smaller than the snapshot
 	SnapshotId *openapi_types.UUID `json:"snapshot_id,omitempty"`
@@ -985,10 +974,8 @@ type CreatePrivateImageRequestBody struct {
 	Name       string             `json:"name"`
 
 	// Order Reuse the same key for retries of the same purchase. Reusing it with a different request fails. Billing selects contract pricing, applies eligible grants and promotions, and owns payment challenges and expiry.
-	Order OrderOptions `json:"order"`
-
-	// Price Specify exactly one of id or lookup_key. A lookup key is scoped to the product of the resource service.
-	Price CatalogReference `json:"price"`
+	Order   OrderOptions       `json:"order"`
+	PriceId openapi_types.UUID `json:"price_id"`
 }
 
 // CreatePrivateNetworkRequestBody defines model for CreatePrivateNetworkRequestBody.
@@ -1048,10 +1035,8 @@ type CreateSnapshotRequestBody struct {
 	Name   string             `json:"name"`
 
 	// Order Reuse the same key for retries of the same purchase. Reusing it with a different request fails. Billing selects contract pricing, applies eligible grants and promotions, and owns payment challenges and expiry.
-	Order OrderOptions `json:"order"`
-
-	// Price Specify exactly one of id or lookup_key. A lookup key is scoped to the product of the resource service.
-	Price CatalogReference `json:"price"`
+	Order   OrderOptions       `json:"order"`
+	PriceId openapi_types.UUID `json:"price_id"`
 }
 
 // CreateSubnetRequestBody defines model for CreateSubnetRequestBody.
@@ -1467,10 +1452,8 @@ type LaunchInstanceRequestBody struct {
 	Password *string `json:"password,omitempty"`
 
 	// PortId Use an existing network interface, which may already have a floating IP bound. Exactly one of this and `subnet_id`; only one instance can be created when it is used
-	PortId *openapi_types.UUID `json:"port_id,omitempty"`
-
-	// Price Specify exactly one of id or lookup_key. A lookup key is scoped to the product of the resource service.
-	Price CatalogReference `json:"price"`
+	PortId  *openapi_types.UUID `json:"port_id,omitempty"`
+	PriceId openapi_types.UUID  `json:"price_id"`
 
 	// PrivateImageId A private image. Exactly one of this, `image_id` and `boot_disk_id`
 	PrivateImageId *openapi_types.UUID `json:"private_image_id,omitempty"`
@@ -1499,22 +1482,16 @@ type LaunchInstanceResponseBody struct {
 type NewBootDisk struct {
 	DeleteWithInstance *bool              `json:"delete_with_instance,omitempty"`
 	DiskTypeId         openapi_types.UUID `json:"disk_type_id"`
-
-	// Price Specify exactly one of id or lookup_key. A lookup key is scoped to the product of the resource service.
-	Price  CatalogReference `json:"price"`
-	SizeGb int64            `json:"size_gb"`
+	PriceId            openapi_types.UUID `json:"price_id"`
+	SizeGb             int64              `json:"size_gb"`
 }
 
 // NewFloatingIP An address and bandwidth purchased in the same order. Mutually exclusive with floating_ip_id.
 type NewFloatingIP struct {
-	BandwidthMbps int64 `json:"bandwidth_mbps"`
-
-	// BandwidthPrice Specify exactly one of id or lookup_key. A lookup key is scoped to the product of the resource service.
-	BandwidthPrice CatalogReference   `json:"bandwidth_price"`
-	Ipv4PoolId     openapi_types.UUID `json:"ipv4_pool_id"`
-
-	// Price Specify exactly one of id or lookup_key. A lookup key is scoped to the product of the resource service.
-	Price CatalogReference `json:"price"`
+	BandwidthMbps    int64              `json:"bandwidth_mbps"`
+	BandwidthPriceId openapi_types.UUID `json:"bandwidth_price_id"`
+	Ipv4PoolId       openapi_types.UUID `json:"ipv4_pool_id"`
+	PriceId          openapi_types.UUID `json:"price_id"`
 }
 
 // NextFreeCidrResponseBody defines model for NextFreeCidrResponseBody.
@@ -1749,7 +1726,7 @@ type RegionListResponseBody struct {
 
 // RegionResource defines model for RegionResource.
 type RegionResource struct {
-	// Code The region's code, the way the outside world names this place (hk-1). Stable and human-written; it is not an identifier for addressing — every endpoint takes ids.
+	// Code The region's code, the way the outside world names this place (hk-1). Stable and human-written; addressing is by id.
 	Code string `json:"code"`
 
 	// CountryCode ISO 3166-1 alpha-2 country this region sits in. Two letters, uppercase.
@@ -1813,10 +1790,8 @@ type ResetPasswordResponseBody struct {
 // ResizeDiskRequestBody defines model for ResizeDiskRequestBody.
 type ResizeDiskRequestBody struct {
 	// Order Reuse the same key for retries of the same purchase. Reusing it with a different request fails. Billing selects contract pricing, applies eligible grants and promotions, and owns payment challenges and expiry.
-	Order OrderOptions `json:"order"`
-
-	// Price Specify exactly one of id or lookup_key. A lookup key is scoped to the product of the resource service.
-	Price CatalogReference `json:"price"`
+	Order   OrderOptions       `json:"order"`
+	PriceId openapi_types.UUID `json:"price_id"`
 
 	// SizeGb Must be larger than the current capacity
 	SizeGb int64 `json:"size_gb"`
@@ -1828,10 +1803,8 @@ type ResizeInstanceRequestBody struct {
 	InstanceTypeId openapi_types.UUID `json:"instance_type_id"`
 
 	// Order Reuse the same key for retries of the same purchase. Reusing it with a different request fails. Billing selects contract pricing, applies eligible grants and promotions, and owns payment challenges and expiry.
-	Order OrderOptions `json:"order"`
-
-	// Price Specify exactly one of id or lookup_key. A lookup key is scoped to the product of the resource service.
-	Price CatalogReference `json:"price"`
+	Order   OrderOptions       `json:"order"`
+	PriceId openapi_types.UUID `json:"price_id"`
 }
 
 // RestoreBackupRequestBody defines model for RestoreBackupRequestBody.
@@ -1841,10 +1814,8 @@ type RestoreBackupRequestBody struct {
 	Name       string             `json:"name"`
 
 	// Order Reuse the same key for retries of the same purchase. Reusing it with a different request fails. Billing selects contract pricing, applies eligible grants and promotions, and owns payment challenges and expiry.
-	Order OrderOptions `json:"order"`
-
-	// Price Specify exactly one of id or lookup_key. A lookup key is scoped to the product of the resource service.
-	Price CatalogReference `json:"price"`
+	Order   OrderOptions       `json:"order"`
+	PriceId openapi_types.UUID `json:"price_id"`
 
 	// SizeGb Matches the size of the backup when omitted. When given, it must not be smaller than the backup
 	SizeGb *int64 `json:"size_gb,omitempty"`
@@ -1930,10 +1901,8 @@ type SetBandwidthRequestBody struct {
 	Mbps int64 `json:"mbps"`
 
 	// Order Reuse the same key for retries of the same purchase. Reusing it with a different request fails. Billing selects contract pricing, applies eligible grants and promotions, and owns payment challenges and expiry.
-	Order OrderOptions `json:"order"`
-
-	// Price Specify exactly one of id or lookup_key. A lookup key is scoped to the product of the resource service.
-	Price CatalogReference `json:"price"`
+	Order   OrderOptions       `json:"order"`
+	PriceId openapi_types.UUID `json:"price_id"`
 }
 
 // SetInstanceLabelsRequestBody defines model for SetInstanceLabelsRequestBody.
@@ -2014,7 +1983,7 @@ type ZoneResource struct {
 	Code string             `json:"code"`
 	Id   openapi_types.UUID `json:"id"`
 
-	// Name Display name for this zone, shown to tenants (Hong Kong A). It is the translatable one; the stable handle is code. AWS has no equivalent — what it calls an Availability Zone name is our code.
+	// Name Display name for this zone, shown to tenants (Hong Kong A). It is the translatable one; the stable handle is code.
 	Name string `json:"name"`
 }
 
@@ -2826,7 +2795,7 @@ type ClientInterface interface {
 	//
 	// Operates the instance directly from a browser and does not require the instance to be reachable over the network, which makes it usable when a network misconfiguration prevents login.
 	//
-	// The returned address is single-use and expires within minutes. **Do not cache it**; request a new one before each use.
+	// The returned address is single-use and expires within minutes. Request a new one before each use.
 	//
 	// Corresponds with POST /api/v1/instances/{instanceId}/console (the `OpenInstanceConsole` operationId).
 	OpenInstanceConsole(ctx context.Context, instanceId openapi_types.UUID, reqEditors ...RequestEditorFn) (*http.Response, error)
@@ -4386,7 +4355,7 @@ func (c *Client) RunInstanceCommand(ctx context.Context, instanceId openapi_type
 //
 // Operates the instance directly from a browser and does not require the instance to be reachable over the network, which makes it usable when a network misconfiguration prevents login.
 //
-// The returned address is single-use and expires within minutes. **Do not cache it**; request a new one before each use.
+// The returned address is single-use and expires within minutes. Request a new one before each use.
 //
 // Corresponds with POST /api/v1/instances/{instanceId}/console (the `OpenInstanceConsole` operationId).
 func (c *Client) OpenInstanceConsole(ctx context.Context, instanceId openapi_types.UUID, reqEditors ...RequestEditorFn) (*http.Response, error) {
@@ -10685,7 +10654,7 @@ type ClientWithResponsesInterface interface {
 	//
 	// Operates the instance directly from a browser and does not require the instance to be reachable over the network, which makes it usable when a network misconfiguration prevents login.
 	//
-	// The returned address is single-use and expires within minutes. **Do not cache it**; request a new one before each use.
+	// The returned address is single-use and expires within minutes. Request a new one before each use.
 	//
 	// Returns a wrapper object for the known response body format(s).
 	//
@@ -16509,7 +16478,7 @@ func (c *ClientWithResponses) RunInstanceCommandWithResponse(ctx context.Context
 //
 // Operates the instance directly from a browser and does not require the instance to be reachable over the network, which makes it usable when a network misconfiguration prevents login.
 //
-// The returned address is single-use and expires within minutes. **Do not cache it**; request a new one before each use.
+// The returned address is single-use and expires within minutes. Request a new one before each use.
 //
 // Returns a wrapper object for the known response body format(s).
 //

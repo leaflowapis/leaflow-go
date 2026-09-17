@@ -42,12 +42,12 @@ func (s *AllocateFloatingIPRequestBody) encodeFields(e *jx.Encoder) {
 		json.EncodeUUID(e, s.Ipv4PoolID)
 	}
 	{
-		e.FieldStart("price")
-		s.Price.Encode(e)
+		e.FieldStart("price_id")
+		json.EncodeUUID(e, s.PriceID)
 	}
 	{
-		e.FieldStart("bandwidth_price")
-		s.BandwidthPrice.Encode(e)
+		e.FieldStart("bandwidth_price_id")
+		json.EncodeUUID(e, s.BandwidthPriceID)
 	}
 	{
 		e.FieldStart("order")
@@ -60,8 +60,8 @@ var jsonFieldsNameOfAllocateFloatingIPRequestBody = [7]string{
 	1: "bandwidth_mbps",
 	2: "private_network_id",
 	3: "ipv4_pool_id",
-	4: "price",
-	5: "bandwidth_price",
+	4: "price_id",
+	5: "bandwidth_price_id",
 	6: "order",
 }
 
@@ -120,25 +120,29 @@ func (s *AllocateFloatingIPRequestBody) Decode(d *jx.Decoder) error {
 			}(); err != nil {
 				return errors.Wrap(err, "decode field \"ipv4_pool_id\"")
 			}
-		case "price":
+		case "price_id":
 			requiredBitSet[0] |= 1 << 4
 			if err := func() error {
-				if err := s.Price.Decode(d); err != nil {
+				v, err := json.DecodeUUID(d)
+				s.PriceID = v
+				if err != nil {
 					return err
 				}
 				return nil
 			}(); err != nil {
-				return errors.Wrap(err, "decode field \"price\"")
+				return errors.Wrap(err, "decode field \"price_id\"")
 			}
-		case "bandwidth_price":
+		case "bandwidth_price_id":
 			requiredBitSet[0] |= 1 << 5
 			if err := func() error {
-				if err := s.BandwidthPrice.Decode(d); err != nil {
+				v, err := json.DecodeUUID(d)
+				s.BandwidthPriceID = v
+				if err != nil {
 					return err
 				}
 				return nil
 			}(); err != nil {
-				return errors.Wrap(err, "decode field \"bandwidth_price\"")
+				return errors.Wrap(err, "decode field \"bandwidth_price_id\"")
 			}
 		case "order":
 			requiredBitSet[0] |= 1 << 6
@@ -1119,97 +1123,6 @@ func (s *BindFloatingIPRequestBody) UnmarshalJSON(data []byte) error {
 }
 
 // Encode implements json.Marshaler.
-func (s *CatalogReference) Encode(e *jx.Encoder) {
-	e.ObjStart()
-	s.encodeFields(e)
-	e.ObjEnd()
-}
-
-// encodeFields encodes fields.
-func (s *CatalogReference) encodeFields(e *jx.Encoder) {
-	{
-		if s.ID.Set {
-			e.FieldStart("id")
-			s.ID.Encode(e)
-		}
-	}
-	{
-		if s.LookupKey.Set {
-			e.FieldStart("lookup_key")
-			s.LookupKey.Encode(e)
-		}
-	}
-}
-
-var jsonFieldsNameOfCatalogReference = [2]string{
-	0: "id",
-	1: "lookup_key",
-}
-
-// Decode decodes CatalogReference from json.
-func (s *CatalogReference) Decode(d *jx.Decoder) error {
-	if s == nil {
-		return errors.New("invalid: unable to decode CatalogReference to nil")
-	}
-	var propertiesCount int
-
-	if err := d.ObjBytes(func(d *jx.Decoder, k []byte) error {
-		propertiesCount++
-		switch string(k) {
-		case "id":
-			if err := func() error {
-				s.ID.Reset()
-				if err := s.ID.Decode(d); err != nil {
-					return err
-				}
-				return nil
-			}(); err != nil {
-				return errors.Wrap(err, "decode field \"id\"")
-			}
-		case "lookup_key":
-			if err := func() error {
-				s.LookupKey.Reset()
-				if err := s.LookupKey.Decode(d); err != nil {
-					return err
-				}
-				return nil
-			}(); err != nil {
-				return errors.Wrap(err, "decode field \"lookup_key\"")
-			}
-		default:
-			return errors.Errorf("unexpected field %q", k)
-		}
-		return nil
-	}); err != nil {
-		return errors.Wrap(err, "decode CatalogReference")
-	}
-	// Validate properties count.
-	if err := (validate.Object{
-		MinProperties:    1,
-		MinPropertiesSet: true,
-		MaxProperties:    1,
-		MaxPropertiesSet: true,
-	}).ValidateProperties(propertiesCount); err != nil {
-		return errors.Wrap(err, "object")
-	}
-
-	return nil
-}
-
-// MarshalJSON implements stdjson.Marshaler.
-func (s *CatalogReference) MarshalJSON() ([]byte, error) {
-	e := jx.Encoder{}
-	s.Encode(&e)
-	return e.Bytes(), nil
-}
-
-// UnmarshalJSON implements stdjson.Unmarshaler.
-func (s *CatalogReference) UnmarshalJSON(data []byte) error {
-	d := jx.DecodeBytes(data)
-	return s.Decode(d)
-}
-
-// Encode implements json.Marshaler.
 func (s *CommandResultResponseBody) Encode(e *jx.Encoder) {
 	e.ObjStart()
 	s.encodeFields(e)
@@ -1581,8 +1494,8 @@ func (s *CreateBackupRequestBody) encodeFields(e *jx.Encoder) {
 		e.Str(s.Name)
 	}
 	{
-		e.FieldStart("price")
-		s.Price.Encode(e)
+		e.FieldStart("price_id")
+		json.EncodeUUID(e, s.PriceID)
 	}
 	{
 		e.FieldStart("order")
@@ -1593,7 +1506,7 @@ func (s *CreateBackupRequestBody) encodeFields(e *jx.Encoder) {
 var jsonFieldsNameOfCreateBackupRequestBody = [4]string{
 	0: "disk_id",
 	1: "name",
-	2: "price",
+	2: "price_id",
 	3: "order",
 }
 
@@ -1630,15 +1543,17 @@ func (s *CreateBackupRequestBody) Decode(d *jx.Decoder) error {
 			}(); err != nil {
 				return errors.Wrap(err, "decode field \"name\"")
 			}
-		case "price":
+		case "price_id":
 			requiredBitSet[0] |= 1 << 2
 			if err := func() error {
-				if err := s.Price.Decode(d); err != nil {
+				v, err := json.DecodeUUID(d)
+				s.PriceID = v
+				if err != nil {
 					return err
 				}
 				return nil
 			}(); err != nil {
-				return errors.Wrap(err, "decode field \"price\"")
+				return errors.Wrap(err, "decode field \"price_id\"")
 			}
 		case "order":
 			requiredBitSet[0] |= 1 << 3
@@ -1734,8 +1649,8 @@ func (s *CreateDiskRequestBody) encodeFields(e *jx.Encoder) {
 		}
 	}
 	{
-		e.FieldStart("price")
-		s.Price.Encode(e)
+		e.FieldStart("price_id")
+		json.EncodeUUID(e, s.PriceID)
 	}
 	{
 		e.FieldStart("order")
@@ -1748,7 +1663,7 @@ var jsonFieldsNameOfCreateDiskRequestBody = [6]string{
 	1: "name",
 	2: "size_gb",
 	3: "snapshot_id",
-	4: "price",
+	4: "price_id",
 	5: "order",
 }
 
@@ -1807,15 +1722,17 @@ func (s *CreateDiskRequestBody) Decode(d *jx.Decoder) error {
 			}(); err != nil {
 				return errors.Wrap(err, "decode field \"snapshot_id\"")
 			}
-		case "price":
+		case "price_id":
 			requiredBitSet[0] |= 1 << 4
 			if err := func() error {
-				if err := s.Price.Decode(d); err != nil {
+				v, err := json.DecodeUUID(d)
+				s.PriceID = v
+				if err != nil {
 					return err
 				}
 				return nil
 			}(); err != nil {
-				return errors.Wrap(err, "decode field \"price\"")
+				return errors.Wrap(err, "decode field \"price_id\"")
 			}
 		case "order":
 			requiredBitSet[0] |= 1 << 5
@@ -2071,8 +1988,8 @@ func (s *CreatePrivateImageRequestBody) encodeFields(e *jx.Encoder) {
 		e.Str(s.Name)
 	}
 	{
-		e.FieldStart("price")
-		s.Price.Encode(e)
+		e.FieldStart("price_id")
+		json.EncodeUUID(e, s.PriceID)
 	}
 	{
 		e.FieldStart("order")
@@ -2083,7 +2000,7 @@ func (s *CreatePrivateImageRequestBody) encodeFields(e *jx.Encoder) {
 var jsonFieldsNameOfCreatePrivateImageRequestBody = [4]string{
 	0: "instance_id",
 	1: "name",
-	2: "price",
+	2: "price_id",
 	3: "order",
 }
 
@@ -2120,15 +2037,17 @@ func (s *CreatePrivateImageRequestBody) Decode(d *jx.Decoder) error {
 			}(); err != nil {
 				return errors.Wrap(err, "decode field \"name\"")
 			}
-		case "price":
+		case "price_id":
 			requiredBitSet[0] |= 1 << 2
 			if err := func() error {
-				if err := s.Price.Decode(d); err != nil {
+				v, err := json.DecodeUUID(d)
+				s.PriceID = v
+				if err != nil {
 					return err
 				}
 				return nil
 			}(); err != nil {
-				return errors.Wrap(err, "decode field \"price\"")
+				return errors.Wrap(err, "decode field \"price_id\"")
 			}
 		case "order":
 			requiredBitSet[0] |= 1 << 3
@@ -2878,8 +2797,8 @@ func (s *CreateSnapshotRequestBody) encodeFields(e *jx.Encoder) {
 		e.Str(s.Name)
 	}
 	{
-		e.FieldStart("price")
-		s.Price.Encode(e)
+		e.FieldStart("price_id")
+		json.EncodeUUID(e, s.PriceID)
 	}
 	{
 		e.FieldStart("order")
@@ -2890,7 +2809,7 @@ func (s *CreateSnapshotRequestBody) encodeFields(e *jx.Encoder) {
 var jsonFieldsNameOfCreateSnapshotRequestBody = [4]string{
 	0: "disk_id",
 	1: "name",
-	2: "price",
+	2: "price_id",
 	3: "order",
 }
 
@@ -2927,15 +2846,17 @@ func (s *CreateSnapshotRequestBody) Decode(d *jx.Decoder) error {
 			}(); err != nil {
 				return errors.Wrap(err, "decode field \"name\"")
 			}
-		case "price":
+		case "price_id":
 			requiredBitSet[0] |= 1 << 2
 			if err := func() error {
-				if err := s.Price.Decode(d); err != nil {
+				v, err := json.DecodeUUID(d)
+				s.PriceID = v
+				if err != nil {
 					return err
 				}
 				return nil
 			}(); err != nil {
-				return errors.Wrap(err, "decode field \"price\"")
+				return errors.Wrap(err, "decode field \"price_id\"")
 			}
 		case "order":
 			requiredBitSet[0] |= 1 << 3
@@ -8594,8 +8515,8 @@ func (s *LaunchInstanceRequestBody) encodeFields(e *jx.Encoder) {
 		s.Order.Encode(e)
 	}
 	{
-		e.FieldStart("price")
-		s.Price.Encode(e)
+		e.FieldStart("price_id")
+		json.EncodeUUID(e, s.PriceID)
 	}
 	{
 		if s.BootDisk.Set {
@@ -8626,7 +8547,7 @@ var jsonFieldsNameOfLaunchInstanceRequestBody = [17]string{
 	11: "security_group_ids",
 	12: "subnet_id",
 	13: "order",
-	14: "price",
+	14: "price_id",
 	15: "boot_disk",
 	16: "floating_ip",
 }
@@ -8785,15 +8706,17 @@ func (s *LaunchInstanceRequestBody) Decode(d *jx.Decoder) error {
 			}(); err != nil {
 				return errors.Wrap(err, "decode field \"order\"")
 			}
-		case "price":
+		case "price_id":
 			requiredBitSet[1] |= 1 << 6
 			if err := func() error {
-				if err := s.Price.Decode(d); err != nil {
+				v, err := json.DecodeUUID(d)
+				s.PriceID = v
+				if err != nil {
 					return err
 				}
 				return nil
 			}(); err != nil {
-				return errors.Wrap(err, "decode field \"price\"")
+				return errors.Wrap(err, "decode field \"price_id\"")
 			}
 		case "boot_disk":
 			if err := func() error {
@@ -9000,8 +8923,8 @@ func (s *NewBootDisk) encodeFields(e *jx.Encoder) {
 		e.Int64(s.SizeGB)
 	}
 	{
-		e.FieldStart("price")
-		s.Price.Encode(e)
+		e.FieldStart("price_id")
+		json.EncodeUUID(e, s.PriceID)
 	}
 	{
 		if s.DeleteWithInstance.Set {
@@ -9014,7 +8937,7 @@ func (s *NewBootDisk) encodeFields(e *jx.Encoder) {
 var jsonFieldsNameOfNewBootDisk = [4]string{
 	0: "disk_type_id",
 	1: "size_gb",
-	2: "price",
+	2: "price_id",
 	3: "delete_with_instance",
 }
 
@@ -9052,15 +8975,17 @@ func (s *NewBootDisk) Decode(d *jx.Decoder) error {
 			}(); err != nil {
 				return errors.Wrap(err, "decode field \"size_gb\"")
 			}
-		case "price":
+		case "price_id":
 			requiredBitSet[0] |= 1 << 2
 			if err := func() error {
-				if err := s.Price.Decode(d); err != nil {
+				v, err := json.DecodeUUID(d)
+				s.PriceID = v
+				if err != nil {
 					return err
 				}
 				return nil
 			}(); err != nil {
-				return errors.Wrap(err, "decode field \"price\"")
+				return errors.Wrap(err, "decode field \"price_id\"")
 			}
 		case "delete_with_instance":
 			if err := func() error {
@@ -9138,12 +9063,12 @@ func (s *NewFloatingIP) Encode(e *jx.Encoder) {
 // encodeFields encodes fields.
 func (s *NewFloatingIP) encodeFields(e *jx.Encoder) {
 	{
-		e.FieldStart("price")
-		s.Price.Encode(e)
+		e.FieldStart("price_id")
+		json.EncodeUUID(e, s.PriceID)
 	}
 	{
-		e.FieldStart("bandwidth_price")
-		s.BandwidthPrice.Encode(e)
+		e.FieldStart("bandwidth_price_id")
+		json.EncodeUUID(e, s.BandwidthPriceID)
 	}
 	{
 		e.FieldStart("bandwidth_mbps")
@@ -9156,8 +9081,8 @@ func (s *NewFloatingIP) encodeFields(e *jx.Encoder) {
 }
 
 var jsonFieldsNameOfNewFloatingIP = [4]string{
-	0: "price",
-	1: "bandwidth_price",
+	0: "price_id",
+	1: "bandwidth_price_id",
 	2: "bandwidth_mbps",
 	3: "ipv4_pool_id",
 }
@@ -9171,25 +9096,29 @@ func (s *NewFloatingIP) Decode(d *jx.Decoder) error {
 
 	if err := d.ObjBytes(func(d *jx.Decoder, k []byte) error {
 		switch string(k) {
-		case "price":
+		case "price_id":
 			requiredBitSet[0] |= 1 << 0
 			if err := func() error {
-				if err := s.Price.Decode(d); err != nil {
+				v, err := json.DecodeUUID(d)
+				s.PriceID = v
+				if err != nil {
 					return err
 				}
 				return nil
 			}(); err != nil {
-				return errors.Wrap(err, "decode field \"price\"")
+				return errors.Wrap(err, "decode field \"price_id\"")
 			}
-		case "bandwidth_price":
+		case "bandwidth_price_id":
 			requiredBitSet[0] |= 1 << 1
 			if err := func() error {
-				if err := s.BandwidthPrice.Decode(d); err != nil {
+				v, err := json.DecodeUUID(d)
+				s.BandwidthPriceID = v
+				if err != nil {
 					return err
 				}
 				return nil
 			}(); err != nil {
-				return errors.Wrap(err, "decode field \"bandwidth_price\"")
+				return errors.Wrap(err, "decode field \"bandwidth_price_id\"")
 			}
 		case "bandwidth_mbps":
 			requiredBitSet[0] |= 1 << 2
@@ -14994,8 +14923,8 @@ func (s *ResizeDiskRequestBody) encodeFields(e *jx.Encoder) {
 		e.Int64(s.SizeGB)
 	}
 	{
-		e.FieldStart("price")
-		s.Price.Encode(e)
+		e.FieldStart("price_id")
+		json.EncodeUUID(e, s.PriceID)
 	}
 	{
 		e.FieldStart("order")
@@ -15005,7 +14934,7 @@ func (s *ResizeDiskRequestBody) encodeFields(e *jx.Encoder) {
 
 var jsonFieldsNameOfResizeDiskRequestBody = [3]string{
 	0: "size_gb",
-	1: "price",
+	1: "price_id",
 	2: "order",
 }
 
@@ -15030,15 +14959,17 @@ func (s *ResizeDiskRequestBody) Decode(d *jx.Decoder) error {
 			}(); err != nil {
 				return errors.Wrap(err, "decode field \"size_gb\"")
 			}
-		case "price":
+		case "price_id":
 			requiredBitSet[0] |= 1 << 1
 			if err := func() error {
-				if err := s.Price.Decode(d); err != nil {
+				v, err := json.DecodeUUID(d)
+				s.PriceID = v
+				if err != nil {
 					return err
 				}
 				return nil
 			}(); err != nil {
-				return errors.Wrap(err, "decode field \"price\"")
+				return errors.Wrap(err, "decode field \"price_id\"")
 			}
 		case "order":
 			requiredBitSet[0] |= 1 << 2
@@ -15124,15 +15055,15 @@ func (s *ResizeInstanceRequestBody) encodeFields(e *jx.Encoder) {
 		s.Order.Encode(e)
 	}
 	{
-		e.FieldStart("price")
-		s.Price.Encode(e)
+		e.FieldStart("price_id")
+		json.EncodeUUID(e, s.PriceID)
 	}
 }
 
 var jsonFieldsNameOfResizeInstanceRequestBody = [3]string{
 	0: "instance_type_id",
 	1: "order",
-	2: "price",
+	2: "price_id",
 }
 
 // Decode decodes ResizeInstanceRequestBody from json.
@@ -15166,15 +15097,17 @@ func (s *ResizeInstanceRequestBody) Decode(d *jx.Decoder) error {
 			}(); err != nil {
 				return errors.Wrap(err, "decode field \"order\"")
 			}
-		case "price":
+		case "price_id":
 			requiredBitSet[0] |= 1 << 2
 			if err := func() error {
-				if err := s.Price.Decode(d); err != nil {
+				v, err := json.DecodeUUID(d)
+				s.PriceID = v
+				if err != nil {
 					return err
 				}
 				return nil
 			}(); err != nil {
-				return errors.Wrap(err, "decode field \"price\"")
+				return errors.Wrap(err, "decode field \"price_id\"")
 			}
 		default:
 			return errors.Errorf("unexpected field %q", k)
@@ -15256,8 +15189,8 @@ func (s *RestoreBackupRequestBody) encodeFields(e *jx.Encoder) {
 		}
 	}
 	{
-		e.FieldStart("price")
-		s.Price.Encode(e)
+		e.FieldStart("price_id")
+		json.EncodeUUID(e, s.PriceID)
 	}
 	{
 		e.FieldStart("order")
@@ -15269,7 +15202,7 @@ var jsonFieldsNameOfRestoreBackupRequestBody = [5]string{
 	0: "disk_type_id",
 	1: "name",
 	2: "size_gb",
-	3: "price",
+	3: "price_id",
 	4: "order",
 }
 
@@ -15316,15 +15249,17 @@ func (s *RestoreBackupRequestBody) Decode(d *jx.Decoder) error {
 			}(); err != nil {
 				return errors.Wrap(err, "decode field \"size_gb\"")
 			}
-		case "price":
+		case "price_id":
 			requiredBitSet[0] |= 1 << 3
 			if err := func() error {
-				if err := s.Price.Decode(d); err != nil {
+				v, err := json.DecodeUUID(d)
+				s.PriceID = v
+				if err != nil {
 					return err
 				}
 				return nil
 			}(); err != nil {
-				return errors.Wrap(err, "decode field \"price\"")
+				return errors.Wrap(err, "decode field \"price_id\"")
 			}
 		case "order":
 			requiredBitSet[0] |= 1 << 4
@@ -16612,8 +16547,8 @@ func (s *SetBandwidthRequestBody) encodeFields(e *jx.Encoder) {
 		e.Int64(s.Mbps)
 	}
 	{
-		e.FieldStart("price")
-		s.Price.Encode(e)
+		e.FieldStart("price_id")
+		json.EncodeUUID(e, s.PriceID)
 	}
 	{
 		e.FieldStart("order")
@@ -16623,7 +16558,7 @@ func (s *SetBandwidthRequestBody) encodeFields(e *jx.Encoder) {
 
 var jsonFieldsNameOfSetBandwidthRequestBody = [3]string{
 	0: "mbps",
-	1: "price",
+	1: "price_id",
 	2: "order",
 }
 
@@ -16648,15 +16583,17 @@ func (s *SetBandwidthRequestBody) Decode(d *jx.Decoder) error {
 			}(); err != nil {
 				return errors.Wrap(err, "decode field \"mbps\"")
 			}
-		case "price":
+		case "price_id":
 			requiredBitSet[0] |= 1 << 1
 			if err := func() error {
-				if err := s.Price.Decode(d); err != nil {
+				v, err := json.DecodeUUID(d)
+				s.PriceID = v
+				if err != nil {
 					return err
 				}
 				return nil
 			}(); err != nil {
-				return errors.Wrap(err, "decode field \"price\"")
+				return errors.Wrap(err, "decode field \"price_id\"")
 			}
 		case "order":
 			requiredBitSet[0] |= 1 << 2
