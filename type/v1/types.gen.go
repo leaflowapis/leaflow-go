@@ -192,6 +192,19 @@ type IdlePolicy struct {
 	RetentionSeconds int64 `json:"retention_seconds"`
 }
 
+// NamedIdentity Which object this is, together with what a person currently calls it.
+//
+// The name is for display. It is chosen by whoever owns the object, it changes, it is not unique
+// between objects, and it may be empty when nobody has named it yet — so it must not be used to
+// address, match or deduplicate anything. Addressing is by id.
+//
+// This differs from an identity carrying a lookup key: a lookup key is written once by an operator,
+// is unique, and can be used to fetch the object. A name cannot.
+type NamedIdentity struct {
+	Id   openapi_types.UUID `json:"id"`
+	Name string             `json:"name"`
+}
+
 // OffsetPagination Pagination metadata for stable numbered pages. total_count is returned only when the operation can determine it without an unbounded scan.
 type OffsetPagination struct {
 	Page       int64  `json:"page"`
@@ -327,6 +340,9 @@ type TaskState string
 
 // Cursor defines model for Cursor.
 type Cursor = string
+
+// Ids defines model for Ids.
+type Ids = string
 
 // Page defines model for Page.
 type Page = int64
