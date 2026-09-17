@@ -12039,26 +12039,24 @@ func (s *TopUpStatus) UnmarshalText(data []byte) error {
 	}
 }
 
+// A batch of money that has arrived in the account, and how much of it is still unspent.
+//
+// It says nothing about how the money got here — that is a top-up, which carries the gateway, the
+// checkout and the outcome. One top-up settles into one batch.
+//
+// Only settled money is here. Something still waiting on a gateway is a pending top-up.
 // Ref: #/components/schemas/Transaction
 type Transaction struct {
 	ID               uuid.UUID       `json:"id"`
 	BillingAccountID OptInt64        `json:"billing_account_id"`
 	Type             TransactionType `json:"type"`
-	// Signed. Positive increases the balance, negative reduces it.
-	Amount   Money  `json:"amount"`
-	Currency string `json:"currency"`
-	// Why the money moved, on a manual adjustment.
-	Reason    OptString  `json:"reason"`
-	InvoiceID OptNilUUID `json:"invoice_id"`
-	OrderID   OptNilUUID `json:"order_id"`
-	// `pending` is a payment still with the gateway. Only one may be pending against any one invoice or
-	// order.
-	//
-	// `failed` covers a payment the gateway refused and one the payer walked away from alike;
-	// `failure_reason` says which. There is no separate cancelled state, because what to do next is the
-	// same either way — start a new one.
-	Status    TransactionStatus `json:"status"`
-	CreatedAt time.Time         `json:"created_at"`
+	// Signed. Positive adds to the balance, negative takes from it.
+	Amount Money `json:"amount"`
+	// How much of this batch has not been spent yet. Zero on negative batches.
+	RemainingAmount Money     `json:"remaining_amount"`
+	Currency        string    `json:"currency"`
+	Reason          OptString `json:"reason"`
+	CreatedAt       time.Time `json:"created_at"`
 }
 
 // GetID returns the value of ID.
@@ -12081,6 +12079,11 @@ func (s *Transaction) GetAmount() Money {
 	return s.Amount
 }
 
+// GetRemainingAmount returns the value of RemainingAmount.
+func (s *Transaction) GetRemainingAmount() Money {
+	return s.RemainingAmount
+}
+
 // GetCurrency returns the value of Currency.
 func (s *Transaction) GetCurrency() string {
 	return s.Currency
@@ -12089,21 +12092,6 @@ func (s *Transaction) GetCurrency() string {
 // GetReason returns the value of Reason.
 func (s *Transaction) GetReason() OptString {
 	return s.Reason
-}
-
-// GetInvoiceID returns the value of InvoiceID.
-func (s *Transaction) GetInvoiceID() OptNilUUID {
-	return s.InvoiceID
-}
-
-// GetOrderID returns the value of OrderID.
-func (s *Transaction) GetOrderID() OptNilUUID {
-	return s.OrderID
-}
-
-// GetStatus returns the value of Status.
-func (s *Transaction) GetStatus() TransactionStatus {
-	return s.Status
 }
 
 // GetCreatedAt returns the value of CreatedAt.
@@ -12131,6 +12119,11 @@ func (s *Transaction) SetAmount(val Money) {
 	s.Amount = val
 }
 
+// SetRemainingAmount sets the value of RemainingAmount.
+func (s *Transaction) SetRemainingAmount(val Money) {
+	s.RemainingAmount = val
+}
+
 // SetCurrency sets the value of Currency.
 func (s *Transaction) SetCurrency(val string) {
 	s.Currency = val
@@ -12139,21 +12132,6 @@ func (s *Transaction) SetCurrency(val string) {
 // SetReason sets the value of Reason.
 func (s *Transaction) SetReason(val OptString) {
 	s.Reason = val
-}
-
-// SetInvoiceID sets the value of InvoiceID.
-func (s *Transaction) SetInvoiceID(val OptNilUUID) {
-	s.InvoiceID = val
-}
-
-// SetOrderID sets the value of OrderID.
-func (s *Transaction) SetOrderID(val OptNilUUID) {
-	s.OrderID = val
-}
-
-// SetStatus sets the value of Status.
-func (s *Transaction) SetStatus(val TransactionStatus) {
-	s.Status = val
 }
 
 // SetCreatedAt sets the value of CreatedAt.
@@ -12185,60 +12163,6 @@ func (s *TransactionList) SetItems(val []Transaction) {
 // SetTotalCount sets the value of TotalCount.
 func (s *TransactionList) SetTotalCount(val OptInt64) {
 	s.TotalCount = val
-}
-
-// `pending` is a payment still with the gateway. Only one may be pending against any one invoice or
-// order.
-//
-// `failed` covers a payment the gateway refused and one the payer walked away from alike;
-// `failure_reason` says which. There is no separate cancelled state, because what to do next is the
-// same either way — start a new one.
-type TransactionStatus string
-
-const (
-	TransactionStatusPending   TransactionStatus = "pending"
-	TransactionStatusSucceeded TransactionStatus = "succeeded"
-	TransactionStatusFailed    TransactionStatus = "failed"
-)
-
-// AllValues returns all TransactionStatus values.
-func (TransactionStatus) AllValues() []TransactionStatus {
-	return []TransactionStatus{
-		TransactionStatusPending,
-		TransactionStatusSucceeded,
-		TransactionStatusFailed,
-	}
-}
-
-// MarshalText implements encoding.TextMarshaler.
-func (s TransactionStatus) MarshalText() ([]byte, error) {
-	switch s {
-	case TransactionStatusPending:
-		return []byte(s), nil
-	case TransactionStatusSucceeded:
-		return []byte(s), nil
-	case TransactionStatusFailed:
-		return []byte(s), nil
-	default:
-		return nil, errors.Errorf("invalid value: %q", s)
-	}
-}
-
-// UnmarshalText implements encoding.TextUnmarshaler.
-func (s *TransactionStatus) UnmarshalText(data []byte) error {
-	switch TransactionStatus(data) {
-	case TransactionStatusPending:
-		*s = TransactionStatusPending
-		return nil
-	case TransactionStatusSucceeded:
-		*s = TransactionStatusSucceeded
-		return nil
-	case TransactionStatusFailed:
-		*s = TransactionStatusFailed
-		return nil
-	default:
-		return errors.Errorf("invalid value: %q", data)
-	}
 }
 
 // What moved the money. These are the events that change the account's cash balance.

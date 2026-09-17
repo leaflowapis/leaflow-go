@@ -34,6 +34,7 @@ const (
 	ListEarlierItemsOperation        OperationName = "ListEarlierItems"
 	ListFoldersOperation             OperationName = "ListFolders"
 	ListMemoriesOperation            OperationName = "ListMemories"
+	ListModelsOperation              OperationName = "ListModels"
 	ListPlatformsOperation           OperationName = "ListPlatforms"
 	ListSkillsOperation              OperationName = "ListSkills"
 	ListThreadsOperation             OperationName = "ListThreads"

@@ -1380,15 +1380,16 @@ type ContextResource struct {
 	// screenshot does anything, not whether the attach control exists. Hiding file upload on a text-only
 	// model takes away something that would have worked.
 	//
-	// An empty list is not a claim that the model reads nothing: it means this deployment has not stated
-	// the modalities, or the conversation names a model that has since been retired. Treat empty as
-	// unknown and keep the control, because hiding one for a reason nobody can see is worse than a refusal
-	// that says why.
+	// This describes the effective model, including a replacement chosen through fallback, rather than the
+	// saved preference. An empty list means no effective model is available to describe; it is not a claim
+	// that every model rejects files.
 	InputModalities []string `json:"inputModalities"`
-	Model           string   `json:"model"`
-	Used            NilInt64 `json:"used"`
-	WarnAt          int64    `json:"warnAt"`
-	Window          NilInt64 `json:"window"`
+	// The effective Canopy model id, matching the conversation summary's model. Null when no model can be
+	// selected; window and compactAt are then null and inputModalities is empty.
+	Model  NilString `json:"model"`
+	Used   NilInt64  `json:"used"`
+	WarnAt int64     `json:"warnAt"`
+	Window NilInt64  `json:"window"`
 }
 
 // GetCompactAt returns the value of CompactAt.
@@ -1402,7 +1403,7 @@ func (s *ContextResource) GetInputModalities() []string {
 }
 
 // GetModel returns the value of Model.
-func (s *ContextResource) GetModel() string {
+func (s *ContextResource) GetModel() NilString {
 	return s.Model
 }
 
@@ -1432,7 +1433,7 @@ func (s *ContextResource) SetInputModalities(val []string) {
 }
 
 // SetModel sets the value of Model.
-func (s *ContextResource) SetModel(val string) {
+func (s *ContextResource) SetModel(val NilString) {
 	s.Model = val
 }
 
@@ -1596,6 +1597,10 @@ func (s *CreateFolderRequestBody) SetName(val string) {
 type CreateThreadRequestBody struct {
 	// Absent uses the platform's default approval mode.
 	ApprovalMode OptCreateThreadRequestBodyApprovalMode `json:"approvalMode"`
+	// A Canopy model id to prefer. Omit or pass null to follow the platform default. Non-null requires
+	// allowModelSelection; a disallowed, retired or removed id falls back to the default without clearing
+	// the preference.
+	PreferredModelId OptNilString `json:"preferredModelId"`
 }
 
 // GetApprovalMode returns the value of ApprovalMode.
@@ -1603,9 +1608,19 @@ func (s *CreateThreadRequestBody) GetApprovalMode() OptCreateThreadRequestBodyAp
 	return s.ApprovalMode
 }
 
+// GetPreferredModelId returns the value of PreferredModelId.
+func (s *CreateThreadRequestBody) GetPreferredModelId() OptNilString {
+	return s.PreferredModelId
+}
+
 // SetApprovalMode sets the value of ApprovalMode.
 func (s *CreateThreadRequestBody) SetApprovalMode(val OptCreateThreadRequestBodyApprovalMode) {
 	s.ApprovalMode = val
+}
+
+// SetPreferredModelId sets the value of PreferredModelId.
+func (s *CreateThreadRequestBody) SetPreferredModelId(val OptNilString) {
+	s.PreferredModelId = val
 }
 
 // Absent uses the platform's default approval mode.
@@ -2368,7 +2383,9 @@ type ItemResource struct {
 	Presentation  OptNilPresentationResource   `json:"presentation"`
 	DurationMs    OptNilInt64                  `json:"durationMs"`
 	ID            string                       `json:"id"`
-	// The model that produced this entry. Null for messages the user sent.
+	// The Canopy model id that actually produced this entry, including after fallback. Never replaced by
+	// the conversation's preference or rewritten when the model is retired or removed from the allowlist.
+	// Null for messages the user sent.
 	Model     NilString          `json:"model"`
 	Namespace OptNilString       `json:"namespace"`
 	Ordinal   int64              `json:"ordinal"`
@@ -3174,6 +3191,196 @@ func (s *MessagePartData) init() MessagePartData {
 		*s = m
 	}
 	return m
+}
+
+// Ref: #/components/schemas/ModelListResponseBody
+type ModelListResponseBody struct {
+	// Whether users can set a non-null model preference. When false, hide the selector and use the
+	// platform default for new turns.
+	AllowModelSelection bool `json:"allowModelSelection"`
+	// The default Canopy model id, present in models when non-null. Null means no usable default is known
+	// from the current allowlist and capability snapshot; it does not report live provider health.
+	DefaultModelId NilString `json:"defaultModelId"`
+	// Allowed, usable Canopy choices, or only the default when selection is disabled. Empty is an empty
+	// array, never null.
+	Models []ModelResource `json:"models"`
+}
+
+// GetAllowModelSelection returns the value of AllowModelSelection.
+func (s *ModelListResponseBody) GetAllowModelSelection() bool {
+	return s.AllowModelSelection
+}
+
+// GetDefaultModelId returns the value of DefaultModelId.
+func (s *ModelListResponseBody) GetDefaultModelId() NilString {
+	return s.DefaultModelId
+}
+
+// GetModels returns the value of Models.
+func (s *ModelListResponseBody) GetModels() []ModelResource {
+	return s.Models
+}
+
+// SetAllowModelSelection sets the value of AllowModelSelection.
+func (s *ModelListResponseBody) SetAllowModelSelection(val bool) {
+	s.AllowModelSelection = val
+}
+
+// SetDefaultModelId sets the value of DefaultModelId.
+func (s *ModelListResponseBody) SetDefaultModelId(val NilString) {
+	s.DefaultModelId = val
+}
+
+// SetModels sets the value of Models.
+func (s *ModelListResponseBody) SetModels(val []ModelResource) {
+	s.Models = val
+}
+
+// A read-only view of a Canopy model. No model definition is created or edited through Assistant.
+// Ref: #/components/schemas/ModelResource
+type ModelResource struct {
+	// Canopy model id, used unchanged in settings, conversation preferences and inference. There is no
+	// second assistant model id.
+	ID string `json:"id"`
+	// The display_name maintained in Canopy.
+	DisplayName string `json:"displayName"`
+	// The context_length maintained in Canopy. The assistant reserves room for instructions, tools and an
+	// answer rather than using this entire window for history.
+	ContextWindow int64 `json:"contextWindow"`
+	// The max_output_tokens maintained in Canopy. Answer and summary budgets must respect this limit and
+	// the remaining context capacity.
+	MaxOutputTokens int64 `json:"maxOutputTokens"`
+	// Canopy supports_tools. Must be true before the model can be allowed for Assistant.
+	SupportsTools bool `json:"supportsTools"`
+	// Canopy supports_reasoning. False requires reasoning_effort to be omitted.
+	SupportsReasoning bool `json:"supportsReasoning"`
+	// Levels reported by Canopy reasoning_tiers. An empty list requires reasoning_effort to be omitted.
+	// List order does not imply reasoning strength.
+	ReasoningTiers []string `json:"reasoningTiers"`
+	// Contains text, and also image when Canopy reports supports_vision. Other attachments remain
+	// accessible through file tools.
+	InputModalities []ModelResourceInputModalitiesItem `json:"inputModalities"`
+}
+
+// GetID returns the value of ID.
+func (s *ModelResource) GetID() string {
+	return s.ID
+}
+
+// GetDisplayName returns the value of DisplayName.
+func (s *ModelResource) GetDisplayName() string {
+	return s.DisplayName
+}
+
+// GetContextWindow returns the value of ContextWindow.
+func (s *ModelResource) GetContextWindow() int64 {
+	return s.ContextWindow
+}
+
+// GetMaxOutputTokens returns the value of MaxOutputTokens.
+func (s *ModelResource) GetMaxOutputTokens() int64 {
+	return s.MaxOutputTokens
+}
+
+// GetSupportsTools returns the value of SupportsTools.
+func (s *ModelResource) GetSupportsTools() bool {
+	return s.SupportsTools
+}
+
+// GetSupportsReasoning returns the value of SupportsReasoning.
+func (s *ModelResource) GetSupportsReasoning() bool {
+	return s.SupportsReasoning
+}
+
+// GetReasoningTiers returns the value of ReasoningTiers.
+func (s *ModelResource) GetReasoningTiers() []string {
+	return s.ReasoningTiers
+}
+
+// GetInputModalities returns the value of InputModalities.
+func (s *ModelResource) GetInputModalities() []ModelResourceInputModalitiesItem {
+	return s.InputModalities
+}
+
+// SetID sets the value of ID.
+func (s *ModelResource) SetID(val string) {
+	s.ID = val
+}
+
+// SetDisplayName sets the value of DisplayName.
+func (s *ModelResource) SetDisplayName(val string) {
+	s.DisplayName = val
+}
+
+// SetContextWindow sets the value of ContextWindow.
+func (s *ModelResource) SetContextWindow(val int64) {
+	s.ContextWindow = val
+}
+
+// SetMaxOutputTokens sets the value of MaxOutputTokens.
+func (s *ModelResource) SetMaxOutputTokens(val int64) {
+	s.MaxOutputTokens = val
+}
+
+// SetSupportsTools sets the value of SupportsTools.
+func (s *ModelResource) SetSupportsTools(val bool) {
+	s.SupportsTools = val
+}
+
+// SetSupportsReasoning sets the value of SupportsReasoning.
+func (s *ModelResource) SetSupportsReasoning(val bool) {
+	s.SupportsReasoning = val
+}
+
+// SetReasoningTiers sets the value of ReasoningTiers.
+func (s *ModelResource) SetReasoningTiers(val []string) {
+	s.ReasoningTiers = val
+}
+
+// SetInputModalities sets the value of InputModalities.
+func (s *ModelResource) SetInputModalities(val []ModelResourceInputModalitiesItem) {
+	s.InputModalities = val
+}
+
+type ModelResourceInputModalitiesItem string
+
+const (
+	ModelResourceInputModalitiesItemText  ModelResourceInputModalitiesItem = "text"
+	ModelResourceInputModalitiesItemImage ModelResourceInputModalitiesItem = "image"
+)
+
+// AllValues returns all ModelResourceInputModalitiesItem values.
+func (ModelResourceInputModalitiesItem) AllValues() []ModelResourceInputModalitiesItem {
+	return []ModelResourceInputModalitiesItem{
+		ModelResourceInputModalitiesItemText,
+		ModelResourceInputModalitiesItemImage,
+	}
+}
+
+// MarshalText implements encoding.TextMarshaler.
+func (s ModelResourceInputModalitiesItem) MarshalText() ([]byte, error) {
+	switch s {
+	case ModelResourceInputModalitiesItemText:
+		return []byte(s), nil
+	case ModelResourceInputModalitiesItemImage:
+		return []byte(s), nil
+	default:
+		return nil, errors.Errorf("invalid value: %q", s)
+	}
+}
+
+// UnmarshalText implements encoding.TextUnmarshaler.
+func (s *ModelResourceInputModalitiesItem) UnmarshalText(data []byte) error {
+	switch ModelResourceInputModalitiesItem(data) {
+	case ModelResourceInputModalitiesItemText:
+		*s = ModelResourceInputModalitiesItemText
+		return nil
+	case ModelResourceInputModalitiesItemImage:
+		*s = ModelResourceInputModalitiesItemImage
+		return nil
+	default:
+		return errors.Errorf("invalid value: %q", data)
+	}
 }
 
 // NewNilDateTime returns new NilDateTime with value set to v.
@@ -6229,12 +6436,18 @@ type ThreadSummaryResource struct {
 	Archived     bool                              `json:"archived"`
 	CreatedAt    time.Time                         `json:"createdAt"`
 	// The folder this conversation is filed under, or null when it is in none.
-	FolderId  NilString `json:"folderId"`
-	ID        string    `json:"id"`
-	Model     string    `json:"model"`
-	Title     NilString `json:"title"`
-	Unread    bool      `json:"unread"`
-	UpdatedAt time.Time `json:"updatedAt"`
+	FolderId NilString `json:"folderId"`
+	ID       string    `json:"id"`
+	// The actual Canopy model id for the running turn, or the first candidate for the next turn when idle.
+	// Null when no model can be selected. This can differ from preferredModelId after fallback or while
+	// selection is disabled.
+	Model NilString `json:"model"`
+	// The saved preferred Canopy model id, independent of the model actually used. Null follows the
+	// platform default. Kept when selection is disabled, the model is removed, or a request falls back.
+	PreferredModelId NilString `json:"preferredModelId"`
+	Title            NilString `json:"title"`
+	Unread           bool      `json:"unread"`
+	UpdatedAt        time.Time `json:"updatedAt"`
 }
 
 // GetApprovalMode returns the value of ApprovalMode.
@@ -6263,8 +6476,13 @@ func (s *ThreadSummaryResource) GetID() string {
 }
 
 // GetModel returns the value of Model.
-func (s *ThreadSummaryResource) GetModel() string {
+func (s *ThreadSummaryResource) GetModel() NilString {
 	return s.Model
+}
+
+// GetPreferredModelId returns the value of PreferredModelId.
+func (s *ThreadSummaryResource) GetPreferredModelId() NilString {
+	return s.PreferredModelId
 }
 
 // GetTitle returns the value of Title.
@@ -6308,8 +6526,13 @@ func (s *ThreadSummaryResource) SetID(val string) {
 }
 
 // SetModel sets the value of Model.
-func (s *ThreadSummaryResource) SetModel(val string) {
+func (s *ThreadSummaryResource) SetModel(val NilString) {
 	s.Model = val
+}
+
+// SetPreferredModelId sets the value of PreferredModelId.
+func (s *ThreadSummaryResource) SetPreferredModelId(val NilString) {
+	s.PreferredModelId = val
 }
 
 // SetTitle sets the value of Title.
@@ -6705,6 +6928,14 @@ func (s *UpdateFolderRequestBody) SetName(val string) {
 type UpdateThreadRequestBody struct {
 	ApprovalMode OptUpdateThreadRequestBodyApprovalMode `json:"approvalMode"`
 	Archived     OptBool                                `json:"archived"`
+	// Switch this existing conversation's model. Omit to keep the preference; null clears it and follows
+	// the platform default; a string sets it for the next turn. The transcript is preserved and saving the
+	// preference does not start a turn.
+	//
+	// Non-null requires allowModelSelection. A disallowed, retired or removed Canopy id is retained and
+	// uses the default when needed. The preference can be changed while a turn is running or waiting, but
+	// that turn and messages queued into it keep their captured model choices.
+	PreferredModelId OptNilString `json:"preferredModelId"`
 	// File this conversation into a folder, or `null` to take it out of the one it is in. Omit the field
 	// to leave it where it is.
 	//
@@ -6732,6 +6963,11 @@ func (s *UpdateThreadRequestBody) GetArchived() OptBool {
 	return s.Archived
 }
 
+// GetPreferredModelId returns the value of PreferredModelId.
+func (s *UpdateThreadRequestBody) GetPreferredModelId() OptNilString {
+	return s.PreferredModelId
+}
+
 // GetFolderId returns the value of FolderId.
 func (s *UpdateThreadRequestBody) GetFolderId() OptNilString {
 	return s.FolderId
@@ -6750,6 +6986,11 @@ func (s *UpdateThreadRequestBody) SetApprovalMode(val OptUpdateThreadRequestBody
 // SetArchived sets the value of Archived.
 func (s *UpdateThreadRequestBody) SetArchived(val OptBool) {
 	s.Archived = val
+}
+
+// SetPreferredModelId sets the value of PreferredModelId.
+func (s *UpdateThreadRequestBody) SetPreferredModelId(val OptNilString) {
+	s.PreferredModelId = val
 }
 
 // SetFolderId sets the value of FolderId.

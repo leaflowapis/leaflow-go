@@ -439,6 +439,24 @@ func (e LoginResourceStatus) Valid() bool {
 	}
 }
 
+// Defines values for ModelResourceInputModalities.
+const (
+	ModelResourceInputModalitiesImage ModelResourceInputModalities = "image"
+	ModelResourceInputModalitiesText  ModelResourceInputModalities = "text"
+)
+
+// Valid indicates whether the value is a known member of the ModelResourceInputModalities enum.
+func (e ModelResourceInputModalities) Valid() bool {
+	switch e {
+	case ModelResourceInputModalitiesImage:
+		return true
+	case ModelResourceInputModalitiesText:
+		return true
+	default:
+		return false
+	}
+}
+
 // Defines values for PartResourceType.
 const (
 	PartResourceTypeFile PartResourceType = "file"
@@ -910,12 +928,14 @@ type ContextResource struct {
 	//
 	// This governs images and nothing else. Text and binary attachments reach every model: a small text file is placed inline, a large one is read on demand, and a binary is downloaded onto a cloud instance — none of which asks the model to see a picture. So this decides whether pasting a screenshot does anything, not whether the attach control exists. Hiding file upload on a text-only model takes away something that would have worked.
 	//
-	// An empty list is not a claim that the model reads nothing: it means this deployment has not stated the modalities, or the conversation names a model that has since been retired. Treat empty as unknown and keep the control, because hiding one for a reason nobody can see is worse than a refusal that says why.
+	// This describes the effective model, including a replacement chosen through fallback, rather than the saved preference. An empty list means no effective model is available to describe; it is not a claim that every model rejects files.
 	InputModalities []string `json:"inputModalities"`
-	Model           string   `json:"model"`
-	Used            *int64   `json:"used"`
-	WarnAt          int64    `json:"warnAt"`
-	Window          *int64   `json:"window"`
+
+	// Model The effective Canopy model id, matching the conversation summary's model. Null when no model can be selected; window and compactAt are then null and inputModalities is empty.
+	Model  *string `json:"model"`
+	Used   *int64  `json:"used"`
+	WarnAt int64   `json:"warnAt"`
+	Window *int64  `json:"window"`
 }
 
 // CreateChannelRequestBody defines model for CreateChannelRequestBody.
@@ -944,6 +964,9 @@ type CreateFolderRequestBody struct {
 type CreateThreadRequestBody struct {
 	// ApprovalMode Absent uses the platform's default approval mode
 	ApprovalMode *CreateThreadRequestBodyApprovalMode `json:"approvalMode,omitempty"`
+
+	// PreferredModelId A Canopy model id to prefer. Omit or pass null to follow the platform default. Non-null requires allowModelSelection; a disallowed, retired or removed id falls back to the default without clearing the preference.
+	PreferredModelId *string `json:"preferredModelId,omitempty"`
 }
 
 // CreateThreadRequestBodyApprovalMode Absent uses the platform's default approval mode
@@ -1077,7 +1100,7 @@ type ItemResource struct {
 	DurationMs    *int64              `json:"durationMs,omitempty"`
 	Id            string              `json:"id"`
 
-	// Model The model that produced this entry. Null for messages the user sent
+	// Model The Canopy model id that actually produced this entry, including after fallback. Never replaced by the conversation's preference or rewritten when the model is retired or removed from the allowlist. Null for messages the user sent.
 	Model     *string `json:"model"`
 	Namespace *string `json:"namespace,omitempty"`
 	Ordinal   int64   `json:"ordinal"`
@@ -1193,6 +1216,48 @@ type MessagePart struct {
 	Text *string `json:"text,omitempty"`
 	Type string  `json:"type"`
 }
+
+// ModelListResponseBody defines model for ModelListResponseBody.
+type ModelListResponseBody struct {
+	// AllowModelSelection Whether users can set a non-null model preference. When false, hide the selector and use the platform default for new turns.
+	AllowModelSelection bool `json:"allowModelSelection"`
+
+	// DefaultModelId The default Canopy model id, present in models when non-null. Null means no usable default is known from the current allowlist and capability snapshot; it does not report live provider health.
+	DefaultModelId *string `json:"defaultModelId"`
+
+	// Models Allowed, usable Canopy choices, or only the default when selection is disabled. Empty is an empty array, never null.
+	Models []ModelResource `json:"models"`
+}
+
+// ModelResource A read-only view of a Canopy model. No model definition is created or edited through Assistant.
+type ModelResource struct {
+	// ContextWindow The context_length maintained in Canopy. The assistant reserves room for instructions, tools and an answer rather than using this entire window for history.
+	ContextWindow int64 `json:"contextWindow"`
+
+	// DisplayName The display_name maintained in Canopy
+	DisplayName string `json:"displayName"`
+
+	// Id Canopy model id, used unchanged in settings, conversation preferences and inference. There is no second assistant model id.
+	Id string `json:"id"`
+
+	// InputModalities Contains text, and also image when Canopy reports supports_vision. Other attachments remain accessible through file tools.
+	InputModalities []ModelResourceInputModalities `json:"inputModalities"`
+
+	// MaxOutputTokens The max_output_tokens maintained in Canopy. Answer and summary budgets must respect this limit and the remaining context capacity.
+	MaxOutputTokens int64 `json:"maxOutputTokens"`
+
+	// ReasoningTiers Levels reported by Canopy reasoning_tiers. An empty list requires reasoning_effort to be omitted. List order does not imply reasoning strength.
+	ReasoningTiers []string `json:"reasoningTiers"`
+
+	// SupportsReasoning Canopy supports_reasoning. False requires reasoning_effort to be omitted.
+	SupportsReasoning bool `json:"supportsReasoning"`
+
+	// SupportsTools Canopy supports_tools. Must be true before the model can be allowed for Assistant.
+	SupportsTools bool `json:"supportsTools"`
+}
+
+// ModelResourceInputModalities defines model for ModelResource.InputModalities.
+type ModelResourceInputModalities string
 
 // PartResource defines model for PartResource.
 type PartResource struct {
@@ -1403,12 +1468,17 @@ type ThreadSummaryResource struct {
 	CreatedAt    time.Time                         `json:"createdAt"`
 
 	// FolderId The folder this conversation is filed under, or null when it is in none
-	FolderId  *string   `json:"folderId"`
-	Id        string    `json:"id"`
-	Model     string    `json:"model"`
-	Title     *string   `json:"title"`
-	Unread    bool      `json:"unread"`
-	UpdatedAt time.Time `json:"updatedAt"`
+	FolderId *string `json:"folderId"`
+	Id       string  `json:"id"`
+
+	// Model The actual Canopy model id for the running turn, or the first candidate for the next turn when idle. Null when no model can be selected. This can differ from preferredModelId after fallback or while selection is disabled.
+	Model *string `json:"model"`
+
+	// PreferredModelId The saved preferred Canopy model id, independent of the model actually used. Null follows the platform default. Kept when selection is disabled, the model is removed, or a request falls back.
+	PreferredModelId *string   `json:"preferredModelId"`
+	Title            *string   `json:"title"`
+	Unread           bool      `json:"unread"`
+	UpdatedAt        time.Time `json:"updatedAt"`
 }
 
 // ThreadSummaryResourceApprovalMode defines model for ThreadSummaryResource.ApprovalMode.
@@ -1480,6 +1550,11 @@ type UpdateThreadRequestBody struct {
 	//
 	// Filing does not move the conversation in the list. The order answers "which conversation has something new in it", and putting one away is not that.
 	FolderId *string `json:"folderId,omitempty"`
+
+	// PreferredModelId Switch this existing conversation's model. Omit to keep the preference; null clears it and follows the platform default; a string sets it for the next turn. The transcript is preserved and saving the preference does not start a turn.
+	//
+	// Non-null requires allowModelSelection. A disallowed, retired or removed Canopy id is retained and uses the default when needed. The preference can be changed while a turn is running or waiting, but that turn and messages queued into it keep their captured model choices.
+	PreferredModelId *string `json:"preferredModelId,omitempty"`
 
 	// Title Rename this conversation.
 	//
@@ -1982,6 +2057,17 @@ type ClientInterface interface {
 	// Corresponds with DELETE /api/v1/memories/{memory} (the `DeleteMemory` operationId).
 	DeleteMemory(ctx context.Context, memory string, reqEditors ...RequestEditorFn) (*http.Response, error)
 
+	// ListModels List assistant model choices
+	//
+	// Returns Canopy's models filtered by Assistant's saved allowlist and selection policy. There is no separately maintained assistant catalogue. The complete list is not paginated and is ordered by displayName, then id.
+	//
+	// When allowModelSelection is true, models contains allowed Canopy models that remain callable, support tools and have positive context and output limits. When false, only the default is returned if it meets those conditions. defaultModelId is null if no usable default is known. Disallowed, retired and incompatible models are omitted, while saved preferences may still reference them.
+	//
+	// This operation reads capabilities without making an inference request. It does not check live provider health or the inference key's model restrictions. If Canopy cannot be read and no usable cached snapshot exists, it returns 503 with code MODEL_CATALOG_UNAVAILABLE; a failed read is not an empty catalogue. An empty allowlist returns an empty list without needing Canopy. Supplier connection details and credentials are not returned.
+	//
+	// Corresponds with GET /api/v1/models (the `ListModels` operationId).
+	ListModels(ctx context.Context, reqEditors ...RequestEditorFn) (*http.Response, error)
+
 	// ListPlatforms List platforms that can be connected
 	//
 	// The instant messaging platforms that can currently be connected, along with the flow and the credential fields each one needs. The create-channel form is driven entirely by this response: setupMethod decides between a credential form and a QR flow, credentialFields is what to ask for, and secretSource decides whether there is a webhook secret field at all.
@@ -2077,12 +2163,20 @@ type ClientInterface interface {
 
 	// CreateThreadWithBody Create a conversation
 	//
+	// Omit preferredModelId or set it to null to follow the platform default. A non-null preference is accepted only while model selection is enabled; otherwise the request fails with 403 and code MODEL_SELECTION_DISABLED.
+	//
+	// A well-formed preference for a Canopy model that is no longer allowed or has been retired or removed is retained and uses the default when a turn starts. This also handles a catalogue change between displaying the selector and submitting the choice. Creating a conversation does not contact a model provider and remains possible when generation is unavailable.
+	//
 	// Takes any type of body and a specified content type.
 	//
 	// Corresponds with POST /api/v1/threads (the `CreateThread` operationId).
 	CreateThreadWithBody(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
 
 	// CreateThread Create a conversation
+	//
+	// Omit preferredModelId or set it to null to follow the platform default. A non-null preference is accepted only while model selection is enabled; otherwise the request fails with 403 and code MODEL_SELECTION_DISABLED.
+	//
+	// A well-formed preference for a Canopy model that is no longer allowed or has been retired or removed is retained and uses the default when a turn starts. This also handles a catalogue change between displaying the selector and submitting the choice. Creating a conversation does not contact a model provider and remains possible when generation is unavailable.
 	//
 	// Takes a body of the `application/json` content type.
 	//
@@ -2111,7 +2205,13 @@ type ClientInterface interface {
 
 	// UpdateThreadWithBody Update conversation settings
 	//
-	// Changes the title, the approval mode, and whether the conversation is archived. A change to the approval mode takes effect from the next turn; a turn already running keeps the settings it started with.
+	// Changes the title, folder, approval mode, model preference, and whether the conversation is archived. Approval and model preference changes take effect from the next turn; a turn already running keeps the settings it started with.
+	//
+	// Omit preferredModelId to leave the preference unchanged, or set it to null to follow the platform default. A non-null preference is accepted only while model selection is enabled; otherwise the whole request fails with 403 and code MODEL_SELECTION_DISABLED and none of its fields are changed. Clearing a preference remains allowed while selection is disabled. A well-formed preference for a disallowed, retired or removed Canopy model is retained and falls back to the default when used.
+	//
+	// Model switching is allowed on an existing conversation, including while a turn is generating or waiting for approval or an answer. The response immediately returns the saved preferredModelId, while model continues to identify the running turn's effective model until it finishes. Messages queued into that running turn also keep its captured model choices. The next turn uses the latest saved preference.
+	//
+	// Changing the preference does not create a new conversation, start a turn, call a model provider, clear the transcript, or rewrite historical model attribution. Before the next turn sends its first request to the selected model, the service checks that model's input capabilities and usable context budget. A switch to a smaller window may require compaction under the compaction policy above; saving the preference alone does not establish that the conversation fits.
 	//
 	// Archiving makes a conversation read-only: it stays in the list under "archived", stays readable, and the assistant can still find it when it searches past conversations — it just takes no new input. Unarchive it to continue. Archiving fails while a turn is running; stop it first.
 	//
@@ -2122,7 +2222,13 @@ type ClientInterface interface {
 
 	// UpdateThread Update conversation settings
 	//
-	// Changes the title, the approval mode, and whether the conversation is archived. A change to the approval mode takes effect from the next turn; a turn already running keeps the settings it started with.
+	// Changes the title, folder, approval mode, model preference, and whether the conversation is archived. Approval and model preference changes take effect from the next turn; a turn already running keeps the settings it started with.
+	//
+	// Omit preferredModelId to leave the preference unchanged, or set it to null to follow the platform default. A non-null preference is accepted only while model selection is enabled; otherwise the whole request fails with 403 and code MODEL_SELECTION_DISABLED and none of its fields are changed. Clearing a preference remains allowed while selection is disabled. A well-formed preference for a disallowed, retired or removed Canopy model is retained and falls back to the default when used.
+	//
+	// Model switching is allowed on an existing conversation, including while a turn is generating or waiting for approval or an answer. The response immediately returns the saved preferredModelId, while model continues to identify the running turn's effective model until it finishes. Messages queued into that running turn also keep its captured model choices. The next turn uses the latest saved preference.
+	//
+	// Changing the preference does not create a new conversation, start a turn, call a model provider, clear the transcript, or rewrite historical model attribution. Before the next turn sends its first request to the selected model, the service checks that model's input capabilities and usable context budget. A switch to a smaller window may require compaction under the compaction policy above; saving the preference alone does not establish that the conversation fits.
 	//
 	// Archiving makes a conversation read-only: it stays in the list under "archived", stays readable, and the assistant can still find it when it searches past conversations — it just takes no new input. Unarchive it to continue. Archiving fails while a turn is running; stop it first.
 	//
@@ -2779,6 +2885,27 @@ func (c *Client) DeleteMemory(ctx context.Context, memory string, reqEditors ...
 	return c.Client.Do(req)
 }
 
+// ListModels List assistant model choices
+//
+// Returns Canopy's models filtered by Assistant's saved allowlist and selection policy. There is no separately maintained assistant catalogue. The complete list is not paginated and is ordered by displayName, then id.
+//
+// When allowModelSelection is true, models contains allowed Canopy models that remain callable, support tools and have positive context and output limits. When false, only the default is returned if it meets those conditions. defaultModelId is null if no usable default is known. Disallowed, retired and incompatible models are omitted, while saved preferences may still reference them.
+//
+// This operation reads capabilities without making an inference request. It does not check live provider health or the inference key's model restrictions. If Canopy cannot be read and no usable cached snapshot exists, it returns 503 with code MODEL_CATALOG_UNAVAILABLE; a failed read is not an empty catalogue. An empty allowlist returns an empty list without needing Canopy. Supplier connection details and credentials are not returned.
+//
+// Corresponds with GET /api/v1/models (the `ListModels` operationId).
+func (c *Client) ListModels(ctx context.Context, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewListModelsRequest(c.Server)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
 // ListPlatforms List platforms that can be connected
 //
 // The instant messaging platforms that can currently be connected, along with the flow and the credential fields each one needs. The create-channel form is driven entirely by this response: setupMethod decides between a credential form and a QR flow, credentialFields is what to ask for, and secretSource decides whether there is a webhook secret field at all.
@@ -2964,6 +3091,10 @@ func (c *Client) ListThreads(ctx context.Context, params *ListThreadsParams, req
 
 // CreateThreadWithBody Create a conversation
 //
+// Omit preferredModelId or set it to null to follow the platform default. A non-null preference is accepted only while model selection is enabled; otherwise the request fails with 403 and code MODEL_SELECTION_DISABLED.
+//
+// A well-formed preference for a Canopy model that is no longer allowed or has been retired or removed is retained and uses the default when a turn starts. This also handles a catalogue change between displaying the selector and submitting the choice. Creating a conversation does not contact a model provider and remains possible when generation is unavailable.
+//
 // Takes any type of body and a specified content type.
 //
 // Corresponds with POST /api/v1/threads (the `CreateThread` operationId).
@@ -2980,6 +3111,10 @@ func (c *Client) CreateThreadWithBody(ctx context.Context, contentType string, b
 }
 
 // CreateThread Create a conversation
+//
+// Omit preferredModelId or set it to null to follow the platform default. A non-null preference is accepted only while model selection is enabled; otherwise the request fails with 403 and code MODEL_SELECTION_DISABLED.
+//
+// A well-formed preference for a Canopy model that is no longer allowed or has been retired or removed is retained and uses the default when a turn starts. This also handles a catalogue change between displaying the selector and submitting the choice. Creating a conversation does not contact a model provider and remains possible when generation is unavailable.
 //
 // Takes a body of the `application/json` content type.
 //
@@ -3038,7 +3173,13 @@ func (c *Client) GetThread(ctx context.Context, thread string, reqEditors ...Req
 
 // UpdateThreadWithBody Update conversation settings
 //
-// Changes the title, the approval mode, and whether the conversation is archived. A change to the approval mode takes effect from the next turn; a turn already running keeps the settings it started with.
+// Changes the title, folder, approval mode, model preference, and whether the conversation is archived. Approval and model preference changes take effect from the next turn; a turn already running keeps the settings it started with.
+//
+// Omit preferredModelId to leave the preference unchanged, or set it to null to follow the platform default. A non-null preference is accepted only while model selection is enabled; otherwise the whole request fails with 403 and code MODEL_SELECTION_DISABLED and none of its fields are changed. Clearing a preference remains allowed while selection is disabled. A well-formed preference for a disallowed, retired or removed Canopy model is retained and falls back to the default when used.
+//
+// Model switching is allowed on an existing conversation, including while a turn is generating or waiting for approval or an answer. The response immediately returns the saved preferredModelId, while model continues to identify the running turn's effective model until it finishes. Messages queued into that running turn also keep its captured model choices. The next turn uses the latest saved preference.
+//
+// Changing the preference does not create a new conversation, start a turn, call a model provider, clear the transcript, or rewrite historical model attribution. Before the next turn sends its first request to the selected model, the service checks that model's input capabilities and usable context budget. A switch to a smaller window may require compaction under the compaction policy above; saving the preference alone does not establish that the conversation fits.
 //
 // Archiving makes a conversation read-only: it stays in the list under "archived", stays readable, and the assistant can still find it when it searches past conversations — it just takes no new input. Unarchive it to continue. Archiving fails while a turn is running; stop it first.
 //
@@ -3059,7 +3200,13 @@ func (c *Client) UpdateThreadWithBody(ctx context.Context, thread string, conten
 
 // UpdateThread Update conversation settings
 //
-// Changes the title, the approval mode, and whether the conversation is archived. A change to the approval mode takes effect from the next turn; a turn already running keeps the settings it started with.
+// Changes the title, folder, approval mode, model preference, and whether the conversation is archived. Approval and model preference changes take effect from the next turn; a turn already running keeps the settings it started with.
+//
+// Omit preferredModelId to leave the preference unchanged, or set it to null to follow the platform default. A non-null preference is accepted only while model selection is enabled; otherwise the whole request fails with 403 and code MODEL_SELECTION_DISABLED and none of its fields are changed. Clearing a preference remains allowed while selection is disabled. A well-formed preference for a disallowed, retired or removed Canopy model is retained and falls back to the default when used.
+//
+// Model switching is allowed on an existing conversation, including while a turn is generating or waiting for approval or an answer. The response immediately returns the saved preferredModelId, while model continues to identify the running turn's effective model until it finishes. Messages queued into that running turn also keep its captured model choices. The next turn uses the latest saved preference.
+//
+// Changing the preference does not create a new conversation, start a turn, call a model provider, clear the transcript, or rewrite historical model attribution. Before the next turn sends its first request to the selected model, the service checks that model's input capabilities and usable context budget. A switch to a smaller window may require compaction under the compaction policy above; saving the preference alone does not establish that the conversation fits.
 //
 // Archiving makes a conversation read-only: it stays in the list under "archived", stays readable, and the assistant can still find it when it searches past conversations — it just takes no new input. Unarchive it to continue. Archiving fails while a turn is running; stop it first.
 //
@@ -4374,6 +4521,33 @@ func NewDeleteMemoryRequest(server string, memory string) (*http.Request, error)
 	return req, nil
 }
 
+// NewListModelsRequest constructs an http.Request for the ListModels method
+func NewListModelsRequest(server string) (*http.Request, error) {
+	var err error
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/api/v1/models")
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest(http.MethodGet, queryURL.String(), nil)
+	if err != nil {
+		return nil, err
+	}
+
+	return req, nil
+}
+
 // NewListPlatformsRequest constructs an http.Request for the ListPlatforms method
 func NewListPlatformsRequest(server string) (*http.Request, error) {
 	var err error
@@ -5565,6 +5739,19 @@ type ClientWithResponsesInterface interface {
 	// Corresponds with DELETE /api/v1/memories/{memory} (the `DeleteMemory` operationId).
 	DeleteMemoryWithResponse(ctx context.Context, memory string, reqEditors ...RequestEditorFn) (*DeleteMemoryResponse, error)
 
+	// ListModelsWithResponse List assistant model choices
+	//
+	// Returns Canopy's models filtered by Assistant's saved allowlist and selection policy. There is no separately maintained assistant catalogue. The complete list is not paginated and is ordered by displayName, then id.
+	//
+	// When allowModelSelection is true, models contains allowed Canopy models that remain callable, support tools and have positive context and output limits. When false, only the default is returned if it meets those conditions. defaultModelId is null if no usable default is known. Disallowed, retired and incompatible models are omitted, while saved preferences may still reference them.
+	//
+	// This operation reads capabilities without making an inference request. It does not check live provider health or the inference key's model restrictions. If Canopy cannot be read and no usable cached snapshot exists, it returns 503 with code MODEL_CATALOG_UNAVAILABLE; a failed read is not an empty catalogue. An empty allowlist returns an empty list without needing Canopy. Supplier connection details and credentials are not returned.
+	//
+	// Returns a wrapper object for the known response body format(s).
+	//
+	// Corresponds with GET /api/v1/models (the `ListModels` operationId).
+	ListModelsWithResponse(ctx context.Context, reqEditors ...RequestEditorFn) (*ListModelsResponse, error)
+
 	// ListPlatformsWithResponse List platforms that can be connected
 	//
 	// The instant messaging platforms that can currently be connected, along with the flow and the credential fields each one needs. The create-channel form is driven entirely by this response: setupMethod decides between a credential form and a QR flow, credentialFields is what to ask for, and secretSource decides whether there is a webhook secret field at all.
@@ -5670,12 +5857,20 @@ type ClientWithResponsesInterface interface {
 
 	// CreateThreadWithBodyWithResponse Create a conversation
 	//
+	// Omit preferredModelId or set it to null to follow the platform default. A non-null preference is accepted only while model selection is enabled; otherwise the request fails with 403 and code MODEL_SELECTION_DISABLED.
+	//
+	// A well-formed preference for a Canopy model that is no longer allowed or has been retired or removed is retained and uses the default when a turn starts. This also handles a catalogue change between displaying the selector and submitting the choice. Creating a conversation does not contact a model provider and remains possible when generation is unavailable.
+	//
 	// Takes any type of body and a specified content type, and returns a wrapper object for the known response body format(s).
 	//
 	// Corresponds with POST /api/v1/threads (the `CreateThread` operationId).
 	CreateThreadWithBodyWithResponse(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*CreateThreadResponse, error)
 
 	// CreateThreadWithResponse Create a conversation
+	//
+	// Omit preferredModelId or set it to null to follow the platform default. A non-null preference is accepted only while model selection is enabled; otherwise the request fails with 403 and code MODEL_SELECTION_DISABLED.
+	//
+	// A well-formed preference for a Canopy model that is no longer allowed or has been retired or removed is retained and uses the default when a turn starts. This also handles a catalogue change between displaying the selector and submitting the choice. Creating a conversation does not contact a model provider and remains possible when generation is unavailable.
 	//
 	// Takes a body of the `application/json` content type, and returns a wrapper object for the known response body format(s).
 	//
@@ -5708,7 +5903,13 @@ type ClientWithResponsesInterface interface {
 
 	// UpdateThreadWithBodyWithResponse Update conversation settings
 	//
-	// Changes the title, the approval mode, and whether the conversation is archived. A change to the approval mode takes effect from the next turn; a turn already running keeps the settings it started with.
+	// Changes the title, folder, approval mode, model preference, and whether the conversation is archived. Approval and model preference changes take effect from the next turn; a turn already running keeps the settings it started with.
+	//
+	// Omit preferredModelId to leave the preference unchanged, or set it to null to follow the platform default. A non-null preference is accepted only while model selection is enabled; otherwise the whole request fails with 403 and code MODEL_SELECTION_DISABLED and none of its fields are changed. Clearing a preference remains allowed while selection is disabled. A well-formed preference for a disallowed, retired or removed Canopy model is retained and falls back to the default when used.
+	//
+	// Model switching is allowed on an existing conversation, including while a turn is generating or waiting for approval or an answer. The response immediately returns the saved preferredModelId, while model continues to identify the running turn's effective model until it finishes. Messages queued into that running turn also keep its captured model choices. The next turn uses the latest saved preference.
+	//
+	// Changing the preference does not create a new conversation, start a turn, call a model provider, clear the transcript, or rewrite historical model attribution. Before the next turn sends its first request to the selected model, the service checks that model's input capabilities and usable context budget. A switch to a smaller window may require compaction under the compaction policy above; saving the preference alone does not establish that the conversation fits.
 	//
 	// Archiving makes a conversation read-only: it stays in the list under "archived", stays readable, and the assistant can still find it when it searches past conversations — it just takes no new input. Unarchive it to continue. Archiving fails while a turn is running; stop it first.
 	//
@@ -5719,7 +5920,13 @@ type ClientWithResponsesInterface interface {
 
 	// UpdateThreadWithResponse Update conversation settings
 	//
-	// Changes the title, the approval mode, and whether the conversation is archived. A change to the approval mode takes effect from the next turn; a turn already running keeps the settings it started with.
+	// Changes the title, folder, approval mode, model preference, and whether the conversation is archived. Approval and model preference changes take effect from the next turn; a turn already running keeps the settings it started with.
+	//
+	// Omit preferredModelId to leave the preference unchanged, or set it to null to follow the platform default. A non-null preference is accepted only while model selection is enabled; otherwise the whole request fails with 403 and code MODEL_SELECTION_DISABLED and none of its fields are changed. Clearing a preference remains allowed while selection is disabled. A well-formed preference for a disallowed, retired or removed Canopy model is retained and falls back to the default when used.
+	//
+	// Model switching is allowed on an existing conversation, including while a turn is generating or waiting for approval or an answer. The response immediately returns the saved preferredModelId, while model continues to identify the running turn's effective model until it finishes. Messages queued into that running turn also keep its captured model choices. The next turn uses the latest saved preference.
+	//
+	// Changing the preference does not create a new conversation, start a turn, call a model provider, clear the transcript, or rewrite historical model attribution. Before the next turn sends its first request to the selected model, the service checks that model's input capabilities and usable context budget. A switch to a smaller window may require compaction under the compaction policy above; saving the preference alone does not establish that the conversation fits.
 	//
 	// Archiving makes a conversation read-only: it stays in the list under "archived", stays readable, and the assistant can still find it when it searches past conversations — it just takes no new input. Unarchive it to continue. Archiving fails while a turn is running; stop it first.
 	//
@@ -6917,6 +7124,54 @@ func (r DeleteMemoryResponse) StatusCode() int {
 
 // ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
 func (r DeleteMemoryResponse) ContentType() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Header.Get("Content-Type")
+	}
+	return ""
+}
+
+type ListModelsResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	// JSON200 the response for an HTTP 200 `application/json` response
+	JSON200 *ModelListResponseBody
+	// JSONDefault the response for an HTTP default `application/json` response
+	JSONDefault *Error
+}
+
+// GetJSON200 returns the response for an HTTP 200 `application/json` response
+func (r ListModelsResponse) GetJSON200() *ModelListResponseBody {
+	return r.JSON200
+}
+
+// GetJSONDefault returns the response for an HTTP default `application/json` response
+func (r ListModelsResponse) GetJSONDefault() *Error {
+	return r.JSONDefault
+}
+
+// GetBody returns the raw response body bytes
+func (r ListModelsResponse) GetBody() []byte {
+	return r.Body
+}
+
+// Status returns HTTPResponse.Status
+func (r ListModelsResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r ListModelsResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+// ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
+func (r ListModelsResponse) ContentType() string {
 	if r.HTTPResponse != nil {
 		return r.HTTPResponse.Header.Get("Content-Type")
 	}
@@ -8288,6 +8543,25 @@ func (c *ClientWithResponses) DeleteMemoryWithResponse(ctx context.Context, memo
 	return ParseDeleteMemoryResponse(rsp)
 }
 
+// ListModelsWithResponse List assistant model choices
+//
+// Returns Canopy's models filtered by Assistant's saved allowlist and selection policy. There is no separately maintained assistant catalogue. The complete list is not paginated and is ordered by displayName, then id.
+//
+// When allowModelSelection is true, models contains allowed Canopy models that remain callable, support tools and have positive context and output limits. When false, only the default is returned if it meets those conditions. defaultModelId is null if no usable default is known. Disallowed, retired and incompatible models are omitted, while saved preferences may still reference them.
+//
+// This operation reads capabilities without making an inference request. It does not check live provider health or the inference key's model restrictions. If Canopy cannot be read and no usable cached snapshot exists, it returns 503 with code MODEL_CATALOG_UNAVAILABLE; a failed read is not an empty catalogue. An empty allowlist returns an empty list without needing Canopy. Supplier connection details and credentials are not returned.
+//
+// Returns a wrapper object for the known response body format(s).
+//
+// Corresponds with GET /api/v1/models (the `ListModels` operationId).
+func (c *ClientWithResponses) ListModelsWithResponse(ctx context.Context, reqEditors ...RequestEditorFn) (*ListModelsResponse, error) {
+	rsp, err := c.ListModels(ctx, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseListModelsResponse(rsp)
+}
+
 // ListPlatformsWithResponse List platforms that can be connected
 //
 // The instant messaging platforms that can currently be connected, along with the flow and the credential fields each one needs. The create-channel form is driven entirely by this response: setupMethod decides between a credential form and a QR flow, credentialFields is what to ask for, and secretSource decides whether there is a webhook secret field at all.
@@ -8447,6 +8721,10 @@ func (c *ClientWithResponses) ListThreadsWithResponse(ctx context.Context, param
 
 // CreateThreadWithBodyWithResponse Create a conversation
 //
+// Omit preferredModelId or set it to null to follow the platform default. A non-null preference is accepted only while model selection is enabled; otherwise the request fails with 403 and code MODEL_SELECTION_DISABLED.
+//
+// A well-formed preference for a Canopy model that is no longer allowed or has been retired or removed is retained and uses the default when a turn starts. This also handles a catalogue change between displaying the selector and submitting the choice. Creating a conversation does not contact a model provider and remains possible when generation is unavailable.
+//
 // Takes any type of body and a specified content type, and returns a wrapper object for the known response body format(s).
 //
 // Corresponds with POST /api/v1/threads (the `CreateThread` operationId).
@@ -8459,6 +8737,10 @@ func (c *ClientWithResponses) CreateThreadWithBodyWithResponse(ctx context.Conte
 }
 
 // CreateThreadWithResponse Create a conversation
+//
+// Omit preferredModelId or set it to null to follow the platform default. A non-null preference is accepted only while model selection is enabled; otherwise the request fails with 403 and code MODEL_SELECTION_DISABLED.
+//
+// A well-formed preference for a Canopy model that is no longer allowed or has been retired or removed is retained and uses the default when a turn starts. This also handles a catalogue change between displaying the selector and submitting the choice. Creating a conversation does not contact a model provider and remains possible when generation is unavailable.
 //
 // Takes a body of the `application/json` content type, and returns a wrapper object for the known response body format(s).
 //
@@ -8509,7 +8791,13 @@ func (c *ClientWithResponses) GetThreadWithResponse(ctx context.Context, thread 
 
 // UpdateThreadWithBodyWithResponse Update conversation settings
 //
-// Changes the title, the approval mode, and whether the conversation is archived. A change to the approval mode takes effect from the next turn; a turn already running keeps the settings it started with.
+// Changes the title, folder, approval mode, model preference, and whether the conversation is archived. Approval and model preference changes take effect from the next turn; a turn already running keeps the settings it started with.
+//
+// Omit preferredModelId to leave the preference unchanged, or set it to null to follow the platform default. A non-null preference is accepted only while model selection is enabled; otherwise the whole request fails with 403 and code MODEL_SELECTION_DISABLED and none of its fields are changed. Clearing a preference remains allowed while selection is disabled. A well-formed preference for a disallowed, retired or removed Canopy model is retained and falls back to the default when used.
+//
+// Model switching is allowed on an existing conversation, including while a turn is generating or waiting for approval or an answer. The response immediately returns the saved preferredModelId, while model continues to identify the running turn's effective model until it finishes. Messages queued into that running turn also keep its captured model choices. The next turn uses the latest saved preference.
+//
+// Changing the preference does not create a new conversation, start a turn, call a model provider, clear the transcript, or rewrite historical model attribution. Before the next turn sends its first request to the selected model, the service checks that model's input capabilities and usable context budget. A switch to a smaller window may require compaction under the compaction policy above; saving the preference alone does not establish that the conversation fits.
 //
 // Archiving makes a conversation read-only: it stays in the list under "archived", stays readable, and the assistant can still find it when it searches past conversations — it just takes no new input. Unarchive it to continue. Archiving fails while a turn is running; stop it first.
 //
@@ -8526,7 +8814,13 @@ func (c *ClientWithResponses) UpdateThreadWithBodyWithResponse(ctx context.Conte
 
 // UpdateThreadWithResponse Update conversation settings
 //
-// Changes the title, the approval mode, and whether the conversation is archived. A change to the approval mode takes effect from the next turn; a turn already running keeps the settings it started with.
+// Changes the title, folder, approval mode, model preference, and whether the conversation is archived. Approval and model preference changes take effect from the next turn; a turn already running keeps the settings it started with.
+//
+// Omit preferredModelId to leave the preference unchanged, or set it to null to follow the platform default. A non-null preference is accepted only while model selection is enabled; otherwise the whole request fails with 403 and code MODEL_SELECTION_DISABLED and none of its fields are changed. Clearing a preference remains allowed while selection is disabled. A well-formed preference for a disallowed, retired or removed Canopy model is retained and falls back to the default when used.
+//
+// Model switching is allowed on an existing conversation, including while a turn is generating or waiting for approval or an answer. The response immediately returns the saved preferredModelId, while model continues to identify the running turn's effective model until it finishes. Messages queued into that running turn also keep its captured model choices. The next turn uses the latest saved preference.
+//
+// Changing the preference does not create a new conversation, start a turn, call a model provider, clear the transcript, or rewrite historical model attribution. Before the next turn sends its first request to the selected model, the service checks that model's input capabilities and usable context budget. A switch to a smaller window may require compaction under the compaction policy above; saving the preference alone does not establish that the conversation fits.
 //
 // Archiving makes a conversation read-only: it stays in the list under "archived", stays readable, and the assistant can still find it when it searches past conversations — it just takes no new input. Unarchive it to continue. Archiving fails while a turn is running; stop it first.
 //
@@ -9488,6 +9782,39 @@ func ParseDeleteMemoryResponse(rsp *http.Response) (*DeleteMemoryResponse, error
 	switch {
 	case rsp.StatusCode == 204:
 		break // No content-type
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && true:
+		var dest Error
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSONDefault = &dest
+
+	}
+
+	return response, nil
+}
+
+// ParseListModelsResponse parses an HTTP response from a ListModelsWithResponse call
+func ParseListModelsResponse(rsp *http.Response) (*ListModelsResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &ListModelsResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest ModelListResponseBody
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
 
 	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && true:
 		var dest Error

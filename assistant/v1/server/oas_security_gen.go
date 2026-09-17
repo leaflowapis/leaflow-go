@@ -72,6 +72,7 @@ var operationRolesBearerAuth = map[string][]string{
 	ListEarlierItemsOperation:        []string{},
 	ListFoldersOperation:             []string{},
 	ListMemoriesOperation:            []string{},
+	ListModelsOperation:              []string{},
 	ListPlatformsOperation:           []string{},
 	ListSkillsOperation:              []string{},
 	ListThreadsOperation:             []string{},

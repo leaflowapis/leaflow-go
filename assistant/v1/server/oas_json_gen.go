@@ -2611,7 +2611,7 @@ func (s *ContextResource) encodeFields(e *jx.Encoder) {
 	}
 	{
 		e.FieldStart("model")
-		e.Str(s.Model)
+		s.Model.Encode(e)
 	}
 	{
 		e.FieldStart("used")
@@ -2678,9 +2678,7 @@ func (s *ContextResource) Decode(d *jx.Decoder) error {
 		case "model":
 			requiredBitSet[0] |= 1 << 2
 			if err := func() error {
-				v, err := d.Str()
-				s.Model = string(v)
-				if err != nil {
+				if err := s.Model.Decode(d); err != nil {
 					return err
 				}
 				return nil
@@ -3163,10 +3161,17 @@ func (s *CreateThreadRequestBody) encodeFields(e *jx.Encoder) {
 			s.ApprovalMode.Encode(e)
 		}
 	}
+	{
+		if s.PreferredModelId.Set {
+			e.FieldStart("preferredModelId")
+			s.PreferredModelId.Encode(e)
+		}
+	}
 }
 
-var jsonFieldsNameOfCreateThreadRequestBody = [1]string{
+var jsonFieldsNameOfCreateThreadRequestBody = [2]string{
 	0: "approvalMode",
+	1: "preferredModelId",
 }
 
 // Decode decodes CreateThreadRequestBody from json.
@@ -3186,6 +3191,16 @@ func (s *CreateThreadRequestBody) Decode(d *jx.Decoder) error {
 				return nil
 			}(); err != nil {
 				return errors.Wrap(err, "decode field \"approvalMode\"")
+			}
+		case "preferredModelId":
+			if err := func() error {
+				s.PreferredModelId.Reset()
+				if err := s.PreferredModelId.Decode(d); err != nil {
+					return err
+				}
+				return nil
+			}(); err != nil {
+				return errors.Wrap(err, "decode field \"preferredModelId\"")
 			}
 		default:
 			return errors.Errorf("unexpected field %q", k)
@@ -6449,6 +6464,421 @@ func (s MessagePartData) MarshalJSON() ([]byte, error) {
 
 // UnmarshalJSON implements stdjson.Unmarshaler.
 func (s *MessagePartData) UnmarshalJSON(data []byte) error {
+	d := jx.DecodeBytes(data)
+	return s.Decode(d)
+}
+
+// Encode implements json.Marshaler.
+func (s *ModelListResponseBody) Encode(e *jx.Encoder) {
+	e.ObjStart()
+	s.encodeFields(e)
+	e.ObjEnd()
+}
+
+// encodeFields encodes fields.
+func (s *ModelListResponseBody) encodeFields(e *jx.Encoder) {
+	{
+		e.FieldStart("allowModelSelection")
+		e.Bool(s.AllowModelSelection)
+	}
+	{
+		e.FieldStart("defaultModelId")
+		s.DefaultModelId.Encode(e)
+	}
+	{
+		e.FieldStart("models")
+		e.ArrStart()
+		for _, elem := range s.Models {
+			elem.Encode(e)
+		}
+		e.ArrEnd()
+	}
+}
+
+var jsonFieldsNameOfModelListResponseBody = [3]string{
+	0: "allowModelSelection",
+	1: "defaultModelId",
+	2: "models",
+}
+
+// Decode decodes ModelListResponseBody from json.
+func (s *ModelListResponseBody) Decode(d *jx.Decoder) error {
+	if s == nil {
+		return errors.New("invalid: unable to decode ModelListResponseBody to nil")
+	}
+	var requiredBitSet [1]uint8
+
+	if err := d.ObjBytes(func(d *jx.Decoder, k []byte) error {
+		switch string(k) {
+		case "allowModelSelection":
+			requiredBitSet[0] |= 1 << 0
+			if err := func() error {
+				v, err := d.Bool()
+				s.AllowModelSelection = bool(v)
+				if err != nil {
+					return err
+				}
+				return nil
+			}(); err != nil {
+				return errors.Wrap(err, "decode field \"allowModelSelection\"")
+			}
+		case "defaultModelId":
+			requiredBitSet[0] |= 1 << 1
+			if err := func() error {
+				if err := s.DefaultModelId.Decode(d); err != nil {
+					return err
+				}
+				return nil
+			}(); err != nil {
+				return errors.Wrap(err, "decode field \"defaultModelId\"")
+			}
+		case "models":
+			requiredBitSet[0] |= 1 << 2
+			if err := func() error {
+				s.Models = make([]ModelResource, 0)
+				if err := d.Arr(func(d *jx.Decoder) error {
+					var elem ModelResource
+					if err := elem.Decode(d); err != nil {
+						return err
+					}
+					s.Models = append(s.Models, elem)
+					return nil
+				}); err != nil {
+					return err
+				}
+				return nil
+			}(); err != nil {
+				return errors.Wrap(err, "decode field \"models\"")
+			}
+		default:
+			return errors.Errorf("unexpected field %q", k)
+		}
+		return nil
+	}); err != nil {
+		return errors.Wrap(err, "decode ModelListResponseBody")
+	}
+	// Validate required fields.
+	var failures []validate.FieldError
+	for i, mask := range [1]uint8{
+		0b00000111,
+	} {
+		if result := (requiredBitSet[i] & mask) ^ mask; result != 0 {
+			// Mask only required fields and check equality to mask using XOR.
+			//
+			// If XOR result is not zero, result is not equal to expected, so some fields are missed.
+			// Bits of fields which would be set are actually bits of missed fields.
+			missed := bits.OnesCount8(result)
+			for bitN := 0; bitN < missed; bitN++ {
+				bitIdx := bits.TrailingZeros8(result)
+				fieldIdx := i*8 + bitIdx
+				var name string
+				if fieldIdx < len(jsonFieldsNameOfModelListResponseBody) {
+					name = jsonFieldsNameOfModelListResponseBody[fieldIdx]
+				} else {
+					name = strconv.Itoa(fieldIdx)
+				}
+				failures = append(failures, validate.FieldError{
+					Name:  name,
+					Error: validate.ErrFieldRequired,
+				})
+				// Reset bit.
+				result &^= 1 << bitIdx
+			}
+		}
+	}
+	if len(failures) > 0 {
+		return &validate.Error{Fields: failures}
+	}
+
+	return nil
+}
+
+// MarshalJSON implements stdjson.Marshaler.
+func (s *ModelListResponseBody) MarshalJSON() ([]byte, error) {
+	e := jx.Encoder{}
+	s.Encode(&e)
+	return e.Bytes(), nil
+}
+
+// UnmarshalJSON implements stdjson.Unmarshaler.
+func (s *ModelListResponseBody) UnmarshalJSON(data []byte) error {
+	d := jx.DecodeBytes(data)
+	return s.Decode(d)
+}
+
+// Encode implements json.Marshaler.
+func (s *ModelResource) Encode(e *jx.Encoder) {
+	e.ObjStart()
+	s.encodeFields(e)
+	e.ObjEnd()
+}
+
+// encodeFields encodes fields.
+func (s *ModelResource) encodeFields(e *jx.Encoder) {
+	{
+		e.FieldStart("id")
+		e.Str(s.ID)
+	}
+	{
+		e.FieldStart("displayName")
+		e.Str(s.DisplayName)
+	}
+	{
+		e.FieldStart("contextWindow")
+		e.Int64(s.ContextWindow)
+	}
+	{
+		e.FieldStart("maxOutputTokens")
+		e.Int64(s.MaxOutputTokens)
+	}
+	{
+		e.FieldStart("supportsTools")
+		e.Bool(s.SupportsTools)
+	}
+	{
+		e.FieldStart("supportsReasoning")
+		e.Bool(s.SupportsReasoning)
+	}
+	{
+		e.FieldStart("reasoningTiers")
+		e.ArrStart()
+		for _, elem := range s.ReasoningTiers {
+			e.Str(elem)
+		}
+		e.ArrEnd()
+	}
+	{
+		e.FieldStart("inputModalities")
+		e.ArrStart()
+		for _, elem := range s.InputModalities {
+			elem.Encode(e)
+		}
+		e.ArrEnd()
+	}
+}
+
+var jsonFieldsNameOfModelResource = [8]string{
+	0: "id",
+	1: "displayName",
+	2: "contextWindow",
+	3: "maxOutputTokens",
+	4: "supportsTools",
+	5: "supportsReasoning",
+	6: "reasoningTiers",
+	7: "inputModalities",
+}
+
+// Decode decodes ModelResource from json.
+func (s *ModelResource) Decode(d *jx.Decoder) error {
+	if s == nil {
+		return errors.New("invalid: unable to decode ModelResource to nil")
+	}
+	var requiredBitSet [1]uint8
+
+	if err := d.ObjBytes(func(d *jx.Decoder, k []byte) error {
+		switch string(k) {
+		case "id":
+			requiredBitSet[0] |= 1 << 0
+			if err := func() error {
+				v, err := d.Str()
+				s.ID = string(v)
+				if err != nil {
+					return err
+				}
+				return nil
+			}(); err != nil {
+				return errors.Wrap(err, "decode field \"id\"")
+			}
+		case "displayName":
+			requiredBitSet[0] |= 1 << 1
+			if err := func() error {
+				v, err := d.Str()
+				s.DisplayName = string(v)
+				if err != nil {
+					return err
+				}
+				return nil
+			}(); err != nil {
+				return errors.Wrap(err, "decode field \"displayName\"")
+			}
+		case "contextWindow":
+			requiredBitSet[0] |= 1 << 2
+			if err := func() error {
+				v, err := d.Int64()
+				s.ContextWindow = int64(v)
+				if err != nil {
+					return err
+				}
+				return nil
+			}(); err != nil {
+				return errors.Wrap(err, "decode field \"contextWindow\"")
+			}
+		case "maxOutputTokens":
+			requiredBitSet[0] |= 1 << 3
+			if err := func() error {
+				v, err := d.Int64()
+				s.MaxOutputTokens = int64(v)
+				if err != nil {
+					return err
+				}
+				return nil
+			}(); err != nil {
+				return errors.Wrap(err, "decode field \"maxOutputTokens\"")
+			}
+		case "supportsTools":
+			requiredBitSet[0] |= 1 << 4
+			if err := func() error {
+				v, err := d.Bool()
+				s.SupportsTools = bool(v)
+				if err != nil {
+					return err
+				}
+				return nil
+			}(); err != nil {
+				return errors.Wrap(err, "decode field \"supportsTools\"")
+			}
+		case "supportsReasoning":
+			requiredBitSet[0] |= 1 << 5
+			if err := func() error {
+				v, err := d.Bool()
+				s.SupportsReasoning = bool(v)
+				if err != nil {
+					return err
+				}
+				return nil
+			}(); err != nil {
+				return errors.Wrap(err, "decode field \"supportsReasoning\"")
+			}
+		case "reasoningTiers":
+			requiredBitSet[0] |= 1 << 6
+			if err := func() error {
+				s.ReasoningTiers = make([]string, 0)
+				if err := d.Arr(func(d *jx.Decoder) error {
+					var elem string
+					v, err := d.Str()
+					elem = string(v)
+					if err != nil {
+						return err
+					}
+					s.ReasoningTiers = append(s.ReasoningTiers, elem)
+					return nil
+				}); err != nil {
+					return err
+				}
+				return nil
+			}(); err != nil {
+				return errors.Wrap(err, "decode field \"reasoningTiers\"")
+			}
+		case "inputModalities":
+			requiredBitSet[0] |= 1 << 7
+			if err := func() error {
+				s.InputModalities = make([]ModelResourceInputModalitiesItem, 0)
+				if err := d.Arr(func(d *jx.Decoder) error {
+					var elem ModelResourceInputModalitiesItem
+					if err := elem.Decode(d); err != nil {
+						return err
+					}
+					s.InputModalities = append(s.InputModalities, elem)
+					return nil
+				}); err != nil {
+					return err
+				}
+				return nil
+			}(); err != nil {
+				return errors.Wrap(err, "decode field \"inputModalities\"")
+			}
+		default:
+			return errors.Errorf("unexpected field %q", k)
+		}
+		return nil
+	}); err != nil {
+		return errors.Wrap(err, "decode ModelResource")
+	}
+	// Validate required fields.
+	var failures []validate.FieldError
+	for i, mask := range [1]uint8{
+		0b11111111,
+	} {
+		if result := (requiredBitSet[i] & mask) ^ mask; result != 0 {
+			// Mask only required fields and check equality to mask using XOR.
+			//
+			// If XOR result is not zero, result is not equal to expected, so some fields are missed.
+			// Bits of fields which would be set are actually bits of missed fields.
+			missed := bits.OnesCount8(result)
+			for bitN := 0; bitN < missed; bitN++ {
+				bitIdx := bits.TrailingZeros8(result)
+				fieldIdx := i*8 + bitIdx
+				var name string
+				if fieldIdx < len(jsonFieldsNameOfModelResource) {
+					name = jsonFieldsNameOfModelResource[fieldIdx]
+				} else {
+					name = strconv.Itoa(fieldIdx)
+				}
+				failures = append(failures, validate.FieldError{
+					Name:  name,
+					Error: validate.ErrFieldRequired,
+				})
+				// Reset bit.
+				result &^= 1 << bitIdx
+			}
+		}
+	}
+	if len(failures) > 0 {
+		return &validate.Error{Fields: failures}
+	}
+
+	return nil
+}
+
+// MarshalJSON implements stdjson.Marshaler.
+func (s *ModelResource) MarshalJSON() ([]byte, error) {
+	e := jx.Encoder{}
+	s.Encode(&e)
+	return e.Bytes(), nil
+}
+
+// UnmarshalJSON implements stdjson.Unmarshaler.
+func (s *ModelResource) UnmarshalJSON(data []byte) error {
+	d := jx.DecodeBytes(data)
+	return s.Decode(d)
+}
+
+// Encode encodes ModelResourceInputModalitiesItem as json.
+func (s ModelResourceInputModalitiesItem) Encode(e *jx.Encoder) {
+	e.Str(string(s))
+}
+
+// Decode decodes ModelResourceInputModalitiesItem from json.
+func (s *ModelResourceInputModalitiesItem) Decode(d *jx.Decoder) error {
+	if s == nil {
+		return errors.New("invalid: unable to decode ModelResourceInputModalitiesItem to nil")
+	}
+	v, err := d.StrBytes()
+	if err != nil {
+		return err
+	}
+	// Try to use constant string.
+	switch ModelResourceInputModalitiesItem(v) {
+	case ModelResourceInputModalitiesItemText:
+		*s = ModelResourceInputModalitiesItemText
+	case ModelResourceInputModalitiesItemImage:
+		*s = ModelResourceInputModalitiesItemImage
+	default:
+		*s = ModelResourceInputModalitiesItem(v)
+	}
+
+	return nil
+}
+
+// MarshalJSON implements stdjson.Marshaler.
+func (s ModelResourceInputModalitiesItem) MarshalJSON() ([]byte, error) {
+	e := jx.Encoder{}
+	s.Encode(&e)
+	return e.Bytes(), nil
+}
+
+// UnmarshalJSON implements stdjson.Unmarshaler.
+func (s *ModelResourceInputModalitiesItem) UnmarshalJSON(data []byte) error {
 	d := jx.DecodeBytes(data)
 	return s.Decode(d)
 }
@@ -10915,7 +11345,11 @@ func (s *ThreadSummaryResource) encodeFields(e *jx.Encoder) {
 	}
 	{
 		e.FieldStart("model")
-		e.Str(s.Model)
+		s.Model.Encode(e)
+	}
+	{
+		e.FieldStart("preferredModelId")
+		s.PreferredModelId.Encode(e)
 	}
 	{
 		e.FieldStart("title")
@@ -10931,16 +11365,17 @@ func (s *ThreadSummaryResource) encodeFields(e *jx.Encoder) {
 	}
 }
 
-var jsonFieldsNameOfThreadSummaryResource = [9]string{
+var jsonFieldsNameOfThreadSummaryResource = [10]string{
 	0: "approvalMode",
 	1: "archived",
 	2: "createdAt",
 	3: "folderId",
 	4: "id",
 	5: "model",
-	6: "title",
-	7: "unread",
-	8: "updatedAt",
+	6: "preferredModelId",
+	7: "title",
+	8: "unread",
+	9: "updatedAt",
 }
 
 // Decode decodes ThreadSummaryResource from json.
@@ -11011,17 +11446,25 @@ func (s *ThreadSummaryResource) Decode(d *jx.Decoder) error {
 		case "model":
 			requiredBitSet[0] |= 1 << 5
 			if err := func() error {
-				v, err := d.Str()
-				s.Model = string(v)
-				if err != nil {
+				if err := s.Model.Decode(d); err != nil {
 					return err
 				}
 				return nil
 			}(); err != nil {
 				return errors.Wrap(err, "decode field \"model\"")
 			}
-		case "title":
+		case "preferredModelId":
 			requiredBitSet[0] |= 1 << 6
+			if err := func() error {
+				if err := s.PreferredModelId.Decode(d); err != nil {
+					return err
+				}
+				return nil
+			}(); err != nil {
+				return errors.Wrap(err, "decode field \"preferredModelId\"")
+			}
+		case "title":
+			requiredBitSet[0] |= 1 << 7
 			if err := func() error {
 				if err := s.Title.Decode(d); err != nil {
 					return err
@@ -11031,7 +11474,7 @@ func (s *ThreadSummaryResource) Decode(d *jx.Decoder) error {
 				return errors.Wrap(err, "decode field \"title\"")
 			}
 		case "unread":
-			requiredBitSet[0] |= 1 << 7
+			requiredBitSet[1] |= 1 << 0
 			if err := func() error {
 				v, err := d.Bool()
 				s.Unread = bool(v)
@@ -11043,7 +11486,7 @@ func (s *ThreadSummaryResource) Decode(d *jx.Decoder) error {
 				return errors.Wrap(err, "decode field \"unread\"")
 			}
 		case "updatedAt":
-			requiredBitSet[1] |= 1 << 0
+			requiredBitSet[1] |= 1 << 1
 			if err := func() error {
 				v, err := json.DecodeDateTime(d)
 				s.UpdatedAt = v
@@ -11065,7 +11508,7 @@ func (s *ThreadSummaryResource) Decode(d *jx.Decoder) error {
 	var failures []validate.FieldError
 	for i, mask := range [2]uint8{
 		0b11111111,
-		0b00000001,
+		0b00000011,
 	} {
 		if result := (requiredBitSet[i] & mask) ^ mask; result != 0 {
 			// Mask only required fields and check equality to mask using XOR.
@@ -11934,6 +12377,12 @@ func (s *UpdateThreadRequestBody) encodeFields(e *jx.Encoder) {
 		}
 	}
 	{
+		if s.PreferredModelId.Set {
+			e.FieldStart("preferredModelId")
+			s.PreferredModelId.Encode(e)
+		}
+	}
+	{
 		if s.FolderId.Set {
 			e.FieldStart("folderId")
 			s.FolderId.Encode(e)
@@ -11947,11 +12396,12 @@ func (s *UpdateThreadRequestBody) encodeFields(e *jx.Encoder) {
 	}
 }
 
-var jsonFieldsNameOfUpdateThreadRequestBody = [4]string{
+var jsonFieldsNameOfUpdateThreadRequestBody = [5]string{
 	0: "approvalMode",
 	1: "archived",
-	2: "folderId",
-	3: "title",
+	2: "preferredModelId",
+	3: "folderId",
+	4: "title",
 }
 
 // Decode decodes UpdateThreadRequestBody from json.
@@ -11981,6 +12431,16 @@ func (s *UpdateThreadRequestBody) Decode(d *jx.Decoder) error {
 				return nil
 			}(); err != nil {
 				return errors.Wrap(err, "decode field \"archived\"")
+			}
+		case "preferredModelId":
+			if err := func() error {
+				s.PreferredModelId.Reset()
+				if err := s.PreferredModelId.Decode(d); err != nil {
+					return err
+				}
+				return nil
+			}(); err != nil {
+				return errors.Wrap(err, "decode field \"preferredModelId\"")
 			}
 		case "folderId":
 			if err := func() error {

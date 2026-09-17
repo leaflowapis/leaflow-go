@@ -1108,27 +1108,6 @@ func (e TopUpStatus) Valid() bool {
 	}
 }
 
-// Defines values for TransactionStatus.
-const (
-	TransactionStatusFailed    TransactionStatus = "failed"
-	TransactionStatusPending   TransactionStatus = "pending"
-	TransactionStatusSucceeded TransactionStatus = "succeeded"
-)
-
-// Valid indicates whether the value is a known member of the TransactionStatus enum.
-func (e TransactionStatus) Valid() bool {
-	switch e {
-	case TransactionStatusFailed:
-		return true
-	case TransactionStatusPending:
-		return true
-	case TransactionStatusSucceeded:
-		return true
-	default:
-		return false
-	}
-}
-
 // Defines values for TransactionType.
 const (
 	TransactionTypeAdjustment TransactionType = "adjustment"
@@ -3211,27 +3190,23 @@ type TopUpList struct {
 	TotalCount *int64  `json:"total_count,omitempty"`
 }
 
-// Transaction defines model for Transaction.
+// Transaction A batch of money that has arrived in the account, and how much of it is still unspent.
+//
+// It says nothing about how the money got here — that is a top-up, which carries the gateway,
+// the checkout and the outcome. One top-up settles into one batch.
+//
+// Only settled money is here. Something still waiting on a gateway is a pending top-up.
 type Transaction struct {
-	// Amount Signed. Positive increases the balance, negative reduces it.
-	Amount           externalRef0.Money  `json:"amount"`
-	BillingAccountId *int64              `json:"billing_account_id,omitempty"`
-	CreatedAt        time.Time           `json:"created_at"`
-	Currency         string              `json:"currency"`
-	Id               openapi_types.UUID  `json:"id"`
-	InvoiceId        *openapi_types.UUID `json:"invoice_id,omitempty"`
-	OrderId          *openapi_types.UUID `json:"order_id,omitempty"`
+	// Amount Signed. Positive adds to the balance, negative takes from it.
+	Amount           externalRef0.Money `json:"amount"`
+	BillingAccountId *int64             `json:"billing_account_id,omitempty"`
+	CreatedAt        time.Time          `json:"created_at"`
+	Currency         string             `json:"currency"`
+	Id               openapi_types.UUID `json:"id"`
+	Reason           *string            `json:"reason,omitempty"`
 
-	// Reason Why the money moved, on a manual adjustment.
-	Reason *string `json:"reason,omitempty"`
-
-	// Status `pending` is a payment still with the gateway. Only one may be pending against any
-	// one invoice or order.
-	//
-	// `failed` covers a payment the gateway refused and one the payer walked away from
-	// alike; `failure_reason` says which. There is no separate cancelled state, because
-	// what to do next is the same either way — start a new one.
-	Status TransactionStatus `json:"status"`
+	// RemainingAmount How much of this batch has not been spent yet. Zero on negative batches.
+	RemainingAmount externalRef0.Money `json:"remaining_amount"`
 
 	// Type What moved the money. These are the events that change the account's cash balance.
 	//
@@ -3239,14 +3214,6 @@ type Transaction struct {
 	// charges and on invoices, and a reservation appears as an allocation.
 	Type TransactionType `json:"type"`
 }
-
-// TransactionStatus `pending` is a payment still with the gateway. Only one may be pending against any
-// one invoice or order.
-//
-// `failed` covers a payment the gateway refused and one the payer walked away from
-// alike; `failure_reason` says which. There is no separate cancelled state, because
-// what to do next is the same either way — start a new one.
-type TransactionStatus string
 
 // TransactionList defines model for TransactionList.
 type TransactionList struct {

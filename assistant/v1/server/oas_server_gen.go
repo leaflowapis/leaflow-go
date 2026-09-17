@@ -65,7 +65,14 @@ type Handler interface {
 	CreateFolder(ctx context.Context, req *CreateFolderRequestBody) (*FolderResource, error)
 	// CreateThread implements create-thread operation.
 	//
-	// Create a conversation.
+	// Omit preferredModelId or set it to null to follow the platform default. A non-null preference is
+	// accepted only while model selection is enabled; otherwise the request fails with 403 and code
+	// MODEL_SELECTION_DISABLED.
+	//
+	// A well-formed preference for a Canopy model that is no longer allowed or has been retired or removed
+	// is retained and uses the default when a turn starts. This also handles a catalogue change between
+	// displaying the selector and submitting the choice. Creating a conversation does not contact a model
+	// provider and remains possible when generation is unavailable.
 	//
 	// POST /api/v1/threads
 	CreateThread(ctx context.Context, req *CreateThreadRequestBody) (*ThreadSummaryResource, error)
@@ -241,6 +248,25 @@ type Handler interface {
 	//
 	// GET /api/v1/memories
 	ListMemories(ctx context.Context) (*MemoryListResponseBody, error)
+	// ListModels implements list-models operation.
+	//
+	// Returns Canopy's models filtered by Assistant's saved allowlist and selection policy. There is no
+	// separately maintained assistant catalogue. The complete list is not paginated and is ordered by
+	// displayName, then id.
+	//
+	// When allowModelSelection is true, models contains allowed Canopy models that remain callable,
+	// support tools and have positive context and output limits. When false, only the default is returned
+	// if it meets those conditions. defaultModelId is null if no usable default is known. Disallowed,
+	// retired and incompatible models are omitted, while saved preferences may still reference them.
+	//
+	// This operation reads capabilities without making an inference request. It does not check live
+	// provider health or the inference key's model restrictions. If Canopy cannot be read and no usable
+	// cached snapshot exists, it returns 503 with code MODEL_CATALOG_UNAVAILABLE; a failed read is not an
+	// empty catalogue. An empty allowlist returns an empty list without needing Canopy. Supplier
+	// connection details and credentials are not returned.
+	//
+	// GET /api/v1/models
+	ListModels(ctx context.Context) (*ModelListResponseBody, error)
 	// ListPlatforms implements list-platforms operation.
 	//
 	// The instant messaging platforms that can currently be connected, along with the flow and the
@@ -354,9 +380,27 @@ type Handler interface {
 	UpdateFolder(ctx context.Context, req *UpdateFolderRequestBody, params UpdateFolderParams) (*FolderResource, error)
 	// UpdateThread implements update-thread operation.
 	//
-	// Changes the title, the approval mode, and whether the conversation is archived. A change to the
-	// approval mode takes effect from the next turn; a turn already running keeps the settings it started
-	// with.
+	// Changes the title, folder, approval mode, model preference, and whether the conversation is
+	// archived. Approval and model preference changes take effect from the next turn; a turn already
+	// running keeps the settings it started with.
+	//
+	// Omit preferredModelId to leave the preference unchanged, or set it to null to follow the platform
+	// default. A non-null preference is accepted only while model selection is enabled; otherwise the
+	// whole request fails with 403 and code MODEL_SELECTION_DISABLED and none of its fields are changed.
+	// Clearing a preference remains allowed while selection is disabled. A well-formed preference for a
+	// disallowed, retired or removed Canopy model is retained and falls back to the default when used.
+	//
+	// Model switching is allowed on an existing conversation, including while a turn is generating or
+	// waiting for approval or an answer. The response immediately returns the saved preferredModelId,
+	// while model continues to identify the running turn's effective model until it finishes. Messages
+	// queued into that running turn also keep its captured model choices. The next turn uses the latest
+	// saved preference.
+	//
+	// Changing the preference does not create a new conversation, start a turn, call a model provider,
+	// clear the transcript, or rewrite historical model attribution. Before the next turn sends its first
+	// request to the selected model, the service checks that model's input capabilities and usable context
+	// budget. A switch to a smaller window may require compaction under the compaction policy above;
+	// saving the preference alone does not establish that the conversation fits.
 	//
 	// Archiving makes a conversation read-only: it stays in the list under "archived", stays readable, and
 	// the assistant can still find it when it searches past conversations — it just takes no new input.
