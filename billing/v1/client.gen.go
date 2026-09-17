@@ -2843,19 +2843,11 @@ type Refund struct {
 	Currency         string    `json:"currency"`
 
 	// Destination Where the cash went.
-	Destination *RefundDestination `json:"destination,omitempty"`
-
-	// FeeAmount Withheld from what reaches the payer. It applies only to cash returned to a payment
-	// method, so it is zero when `destination` is `balance`, and it is never taken out of
-	// credit or a voucher.
-	//
-	// `settled_amount` is the amount put back against what was paid; the payer receives
-	// that less this.
-	FeeAmount *externalRef0.Money `json:"fee_amount,omitempty"`
-	Id        openapi_types.UUID  `json:"id"`
-	InvoiceId *openapi_types.UUID `json:"invoice_id,omitempty"`
-	OrderId   *openapi_types.UUID `json:"order_id,omitempty"`
-	Reason    *string             `json:"reason,omitempty"`
+	Destination *RefundDestination  `json:"destination,omitempty"`
+	Id          openapi_types.UUID  `json:"id"`
+	InvoiceId   *openapi_types.UUID `json:"invoice_id,omitempty"`
+	OrderId     *openapi_types.UUID `json:"order_id,omitempty"`
+	Reason      *string             `json:"reason,omitempty"`
 
 	// RequestedAmount A decimal string, in the currency stated alongside it.
 	//
@@ -2902,13 +2894,6 @@ type RefundQuote struct {
 	// with; `balance` credits the account instead, which is the answer whenever the cash
 	// came from more than one place or never went through a gateway at all.
 	Destination RefundQuoteDestination `json:"destination"`
-
-	// FeeAmount Withheld from the cash part. Zero when `destination` is `balance`, and never taken
-	// out of credit or a voucher.
-	FeeAmount externalRef0.Money `json:"fee_amount"`
-
-	// NetAmount `refundable_amount` less `fee_amount`.
-	NetAmount externalRef0.Money `json:"net_amount"`
 
 	// RefundableAmount The most that can still be returned, before any fee.
 	RefundableAmount externalRef0.Money `json:"refundable_amount"`

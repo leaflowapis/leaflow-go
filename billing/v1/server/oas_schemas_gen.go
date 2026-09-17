@@ -10248,12 +10248,7 @@ type Refund struct {
 	RequestedAmount  Money      `json:"requested_amount"`
 	// What has actually been returned.
 	SettledAmount OptMoney `json:"settled_amount"`
-	// Withheld from what reaches the payer. It applies only to cash returned to a payment method, so it is
-	// zero when `destination` is `balance`, and it is never taken out of credit or a voucher.
-	//
-	// `settled_amount` is the amount put back against what was paid; the payer receives that less this.
-	FeeAmount OptMoney `json:"fee_amount"`
-	Currency  string   `json:"currency"`
+	Currency      string   `json:"currency"`
 	// Where the cash went.
 	Destination OptRefundDestination `json:"destination"`
 	// `pending` — accepted, not yet sent to the payment gateway. `processing` — with the gateway and
@@ -10292,11 +10287,6 @@ func (s *Refund) GetRequestedAmount() Money {
 // GetSettledAmount returns the value of SettledAmount.
 func (s *Refund) GetSettledAmount() OptMoney {
 	return s.SettledAmount
-}
-
-// GetFeeAmount returns the value of FeeAmount.
-func (s *Refund) GetFeeAmount() OptMoney {
-	return s.FeeAmount
 }
 
 // GetCurrency returns the value of Currency.
@@ -10352,11 +10342,6 @@ func (s *Refund) SetRequestedAmount(val Money) {
 // SetSettledAmount sets the value of SettledAmount.
 func (s *Refund) SetSettledAmount(val OptMoney) {
 	s.SettledAmount = val
-}
-
-// SetFeeAmount sets the value of FeeAmount.
-func (s *Refund) SetFeeAmount(val OptMoney) {
-	s.FeeAmount = val
 }
 
 // SetCurrency sets the value of Currency.
@@ -10501,13 +10486,8 @@ func (s *RefundPolicy) UnmarshalText(data []byte) error {
 // Ref: #/components/schemas/RefundQuote
 type RefundQuote struct {
 	// The most that can still be returned, before any fee.
-	RefundableAmount Money `json:"refundable_amount"`
-	// Withheld from the cash part. Zero when `destination` is `balance`, and never taken out of credit or
-	// a voucher.
-	FeeAmount Money `json:"fee_amount"`
-	// `refundable_amount` less `fee_amount`.
-	NetAmount Money  `json:"net_amount"`
-	Currency  string `json:"currency"`
+	RefundableAmount Money  `json:"refundable_amount"`
+	Currency         string `json:"currency"`
 	// Where the cash part would go. `gateway` returns it to the method it was paid with; `balance` credits
 	// the account instead, which is the answer whenever the cash came from more than one place or never
 	// went through a gateway at all.
@@ -10526,16 +10506,6 @@ type RefundQuote struct {
 // GetRefundableAmount returns the value of RefundableAmount.
 func (s *RefundQuote) GetRefundableAmount() Money {
 	return s.RefundableAmount
-}
-
-// GetFeeAmount returns the value of FeeAmount.
-func (s *RefundQuote) GetFeeAmount() Money {
-	return s.FeeAmount
-}
-
-// GetNetAmount returns the value of NetAmount.
-func (s *RefundQuote) GetNetAmount() Money {
-	return s.NetAmount
 }
 
 // GetCurrency returns the value of Currency.
@@ -10561,16 +10531,6 @@ func (s *RefundQuote) GetSelfServiceUntil() OptNilDateTime {
 // SetRefundableAmount sets the value of RefundableAmount.
 func (s *RefundQuote) SetRefundableAmount(val Money) {
 	s.RefundableAmount = val
-}
-
-// SetFeeAmount sets the value of FeeAmount.
-func (s *RefundQuote) SetFeeAmount(val Money) {
-	s.FeeAmount = val
-}
-
-// SetNetAmount sets the value of NetAmount.
-func (s *RefundQuote) SetNetAmount(val Money) {
-	s.NetAmount = val
 }
 
 // SetCurrency sets the value of Currency.

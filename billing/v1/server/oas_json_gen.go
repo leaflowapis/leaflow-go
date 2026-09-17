@@ -16637,12 +16637,6 @@ func (s *Refund) encodeFields(e *jx.Encoder) {
 		}
 	}
 	{
-		if s.FeeAmount.Set {
-			e.FieldStart("fee_amount")
-			s.FeeAmount.Encode(e)
-		}
-	}
-	{
 		e.FieldStart("currency")
 		e.Str(s.Currency)
 	}
@@ -16668,19 +16662,18 @@ func (s *Refund) encodeFields(e *jx.Encoder) {
 	}
 }
 
-var jsonFieldsNameOfRefund = [12]string{
+var jsonFieldsNameOfRefund = [11]string{
 	0:  "id",
 	1:  "billing_account_id",
 	2:  "invoice_id",
 	3:  "order_id",
 	4:  "requested_amount",
 	5:  "settled_amount",
-	6:  "fee_amount",
-	7:  "currency",
-	8:  "destination",
-	9:  "status",
-	10: "reason",
-	11: "created_at",
+	6:  "currency",
+	7:  "destination",
+	8:  "status",
+	9:  "reason",
+	10: "created_at",
 }
 
 // Decode decodes Refund from json.
@@ -16754,18 +16747,8 @@ func (s *Refund) Decode(d *jx.Decoder) error {
 			}(); err != nil {
 				return errors.Wrap(err, "decode field \"settled_amount\"")
 			}
-		case "fee_amount":
-			if err := func() error {
-				s.FeeAmount.Reset()
-				if err := s.FeeAmount.Decode(d); err != nil {
-					return err
-				}
-				return nil
-			}(); err != nil {
-				return errors.Wrap(err, "decode field \"fee_amount\"")
-			}
 		case "currency":
-			requiredBitSet[0] |= 1 << 7
+			requiredBitSet[0] |= 1 << 6
 			if err := func() error {
 				v, err := d.Str()
 				s.Currency = string(v)
@@ -16787,7 +16770,7 @@ func (s *Refund) Decode(d *jx.Decoder) error {
 				return errors.Wrap(err, "decode field \"destination\"")
 			}
 		case "status":
-			requiredBitSet[1] |= 1 << 1
+			requiredBitSet[1] |= 1 << 0
 			if err := func() error {
 				if err := s.Status.Decode(d); err != nil {
 					return err
@@ -16807,7 +16790,7 @@ func (s *Refund) Decode(d *jx.Decoder) error {
 				return errors.Wrap(err, "decode field \"reason\"")
 			}
 		case "created_at":
-			requiredBitSet[1] |= 1 << 3
+			requiredBitSet[1] |= 1 << 2
 			if err := func() error {
 				v, err := json.DecodeDateTime(d)
 				s.CreatedAt = v
@@ -16828,8 +16811,8 @@ func (s *Refund) Decode(d *jx.Decoder) error {
 	// Validate required fields.
 	var failures []validate.FieldError
 	for i, mask := range [2]uint8{
-		0b10010001,
-		0b00001010,
+		0b01010001,
+		0b00000101,
 	} {
 		if result := (requiredBitSet[i] & mask) ^ mask; result != 0 {
 			// Mask only required fields and check equality to mask using XOR.
@@ -17092,14 +17075,6 @@ func (s *RefundQuote) encodeFields(e *jx.Encoder) {
 		s.RefundableAmount.Encode(e)
 	}
 	{
-		e.FieldStart("fee_amount")
-		s.FeeAmount.Encode(e)
-	}
-	{
-		e.FieldStart("net_amount")
-		s.NetAmount.Encode(e)
-	}
-	{
 		e.FieldStart("currency")
 		e.Str(s.Currency)
 	}
@@ -17123,14 +17098,12 @@ func (s *RefundQuote) encodeFields(e *jx.Encoder) {
 	}
 }
 
-var jsonFieldsNameOfRefundQuote = [7]string{
+var jsonFieldsNameOfRefundQuote = [5]string{
 	0: "refundable_amount",
-	1: "fee_amount",
-	2: "net_amount",
-	3: "currency",
-	4: "destination",
-	5: "sources",
-	6: "self_service_until",
+	1: "currency",
+	2: "destination",
+	3: "sources",
+	4: "self_service_until",
 }
 
 // Decode decodes RefundQuote from json.
@@ -17152,28 +17125,8 @@ func (s *RefundQuote) Decode(d *jx.Decoder) error {
 			}(); err != nil {
 				return errors.Wrap(err, "decode field \"refundable_amount\"")
 			}
-		case "fee_amount":
-			requiredBitSet[0] |= 1 << 1
-			if err := func() error {
-				if err := s.FeeAmount.Decode(d); err != nil {
-					return err
-				}
-				return nil
-			}(); err != nil {
-				return errors.Wrap(err, "decode field \"fee_amount\"")
-			}
-		case "net_amount":
-			requiredBitSet[0] |= 1 << 2
-			if err := func() error {
-				if err := s.NetAmount.Decode(d); err != nil {
-					return err
-				}
-				return nil
-			}(); err != nil {
-				return errors.Wrap(err, "decode field \"net_amount\"")
-			}
 		case "currency":
-			requiredBitSet[0] |= 1 << 3
+			requiredBitSet[0] |= 1 << 1
 			if err := func() error {
 				v, err := d.Str()
 				s.Currency = string(v)
@@ -17185,7 +17138,7 @@ func (s *RefundQuote) Decode(d *jx.Decoder) error {
 				return errors.Wrap(err, "decode field \"currency\"")
 			}
 		case "destination":
-			requiredBitSet[0] |= 1 << 4
+			requiredBitSet[0] |= 1 << 2
 			if err := func() error {
 				if err := s.Destination.Decode(d); err != nil {
 					return err
@@ -17195,7 +17148,7 @@ func (s *RefundQuote) Decode(d *jx.Decoder) error {
 				return errors.Wrap(err, "decode field \"destination\"")
 			}
 		case "sources":
-			requiredBitSet[0] |= 1 << 5
+			requiredBitSet[0] |= 1 << 3
 			if err := func() error {
 				s.Sources = make([]RefundSource, 0)
 				if err := d.Arr(func(d *jx.Decoder) error {
@@ -17232,7 +17185,7 @@ func (s *RefundQuote) Decode(d *jx.Decoder) error {
 	// Validate required fields.
 	var failures []validate.FieldError
 	for i, mask := range [1]uint8{
-		0b00111111,
+		0b00001111,
 	} {
 		if result := (requiredBitSet[i] & mask) ^ mask; result != 0 {
 			// Mask only required fields and check equality to mask using XOR.
