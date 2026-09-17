@@ -1750,10 +1750,14 @@ type RegionListResponseBody struct {
 // RegionResource defines model for RegionResource.
 type RegionResource struct {
 	// Code The region's code, the way the outside world names this place (hk-1). Stable and human-written; it is not an identifier for addressing — every endpoint takes ids.
-	Code        string             `json:"code"`
+	Code string `json:"code"`
+
+	// CountryCode ISO 3166-1 alpha-2 country this region sits in. Two letters, uppercase.
 	CountryCode string             `json:"country_code"`
 	Id          openapi_types.UUID `json:"id"`
-	Name        string             `json:"name"`
+
+	// Name Display name for this place, shown to tenants (Hong Kong). It is the translatable one; the stable handle is code.
+	Name string `json:"name"`
 }
 
 // RenameBackupRequestBody defines model for RenameBackupRequestBody.
@@ -2009,7 +2013,9 @@ type ZoneResource struct {
 	// Code The zone's code within its region (hk-1-a). Stable and human-written; addressing is by id.
 	Code string             `json:"code"`
 	Id   openapi_types.UUID `json:"id"`
-	Name string             `json:"name"`
+
+	// Name Display name for this zone, shown to tenants (Hong Kong A). It is the translatable one; the stable handle is code. AWS has no equivalent — what it calls an Availability Zone name is our code.
+	Name string `json:"name"`
 }
 
 // ListBackupsParams defines parameters for ListBackups.
