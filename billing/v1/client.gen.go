@@ -2439,7 +2439,7 @@ type PaymentMethod struct {
 	Id               openapi_types.UUID  `json:"id"`
 	IsDefault        bool                `json:"is_default"`
 	Last4            *string             `json:"last4,omitempty"`
-	PaymentGateway   *string             `json:"payment_gateway,omitempty"`
+	PaymentGateway   string              `json:"payment_gateway"`
 	Status           PaymentMethodStatus `json:"status"`
 }
 

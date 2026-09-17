@@ -8303,7 +8303,7 @@ func (s *PayTogetherRequest) SetIdempotencyKey(val OptString) {
 type PaymentMethod struct {
 	ID               uuid.UUID           `json:"id"`
 	BillingAccountID int64               `json:"billing_account_id"`
-	PaymentGateway   OptString           `json:"payment_gateway"`
+	PaymentGateway   string              `json:"payment_gateway"`
 	Brand            OptString           `json:"brand"`
 	Last4            OptString           `json:"last4"`
 	ExpMonth         OptNilInt           `json:"exp_month"`
@@ -8323,7 +8323,7 @@ func (s *PaymentMethod) GetBillingAccountID() int64 {
 }
 
 // GetPaymentGateway returns the value of PaymentGateway.
-func (s *PaymentMethod) GetPaymentGateway() OptString {
+func (s *PaymentMethod) GetPaymentGateway() string {
 	return s.PaymentGateway
 }
 
@@ -8368,7 +8368,7 @@ func (s *PaymentMethod) SetBillingAccountID(val int64) {
 }
 
 // SetPaymentGateway sets the value of PaymentGateway.
-func (s *PaymentMethod) SetPaymentGateway(val OptString) {
+func (s *PaymentMethod) SetPaymentGateway(val string) {
 	s.PaymentGateway = val
 }
 

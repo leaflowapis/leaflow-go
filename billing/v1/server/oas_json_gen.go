@@ -12969,10 +12969,8 @@ func (s *PaymentMethod) encodeFields(e *jx.Encoder) {
 		e.Int64(s.BillingAccountID)
 	}
 	{
-		if s.PaymentGateway.Set {
-			e.FieldStart("payment_gateway")
-			s.PaymentGateway.Encode(e)
-		}
+		e.FieldStart("payment_gateway")
+		e.Str(s.PaymentGateway)
 	}
 	{
 		if s.Brand.Set {
@@ -13054,9 +13052,11 @@ func (s *PaymentMethod) Decode(d *jx.Decoder) error {
 				return errors.Wrap(err, "decode field \"billing_account_id\"")
 			}
 		case "payment_gateway":
+			requiredBitSet[0] |= 1 << 2
 			if err := func() error {
-				s.PaymentGateway.Reset()
-				if err := s.PaymentGateway.Decode(d); err != nil {
+				v, err := d.Str()
+				s.PaymentGateway = string(v)
+				if err != nil {
 					return err
 				}
 				return nil
@@ -13135,7 +13135,7 @@ func (s *PaymentMethod) Decode(d *jx.Decoder) error {
 	// Validate required fields.
 	var failures []validate.FieldError
 	for i, mask := range [2]uint8{
-		0b10000011,
+		0b10000111,
 		0b00000001,
 	} {
 		if result := (requiredBitSet[i] & mask) ^ mask; result != 0 {
