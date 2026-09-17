@@ -1493,980 +1493,6 @@ func (s *BillingAccountUpdate) SetTaxID(val OptString) {
 	s.TaxID = val
 }
 
-// Ref: #/components/schemas/CatalogPlan
-type CatalogPlan struct {
-	ID                      uuid.UUID       `json:"id"`
-	ProductID               uuid.UUID       `json:"product_id"`
-	Name                    string          `json:"name"`
-	NameTranslations        OptTranslations `json:"name_translations"`
-	Description             OptString       `json:"description"`
-	DescriptionTranslations OptTranslations `json:"description_translations"`
-}
-
-// GetID returns the value of ID.
-func (s *CatalogPlan) GetID() uuid.UUID {
-	return s.ID
-}
-
-// GetProductID returns the value of ProductID.
-func (s *CatalogPlan) GetProductID() uuid.UUID {
-	return s.ProductID
-}
-
-// GetName returns the value of Name.
-func (s *CatalogPlan) GetName() string {
-	return s.Name
-}
-
-// GetNameTranslations returns the value of NameTranslations.
-func (s *CatalogPlan) GetNameTranslations() OptTranslations {
-	return s.NameTranslations
-}
-
-// GetDescription returns the value of Description.
-func (s *CatalogPlan) GetDescription() OptString {
-	return s.Description
-}
-
-// GetDescriptionTranslations returns the value of DescriptionTranslations.
-func (s *CatalogPlan) GetDescriptionTranslations() OptTranslations {
-	return s.DescriptionTranslations
-}
-
-// SetID sets the value of ID.
-func (s *CatalogPlan) SetID(val uuid.UUID) {
-	s.ID = val
-}
-
-// SetProductID sets the value of ProductID.
-func (s *CatalogPlan) SetProductID(val uuid.UUID) {
-	s.ProductID = val
-}
-
-// SetName sets the value of Name.
-func (s *CatalogPlan) SetName(val string) {
-	s.Name = val
-}
-
-// SetNameTranslations sets the value of NameTranslations.
-func (s *CatalogPlan) SetNameTranslations(val OptTranslations) {
-	s.NameTranslations = val
-}
-
-// SetDescription sets the value of Description.
-func (s *CatalogPlan) SetDescription(val OptString) {
-	s.Description = val
-}
-
-// SetDescriptionTranslations sets the value of DescriptionTranslations.
-func (s *CatalogPlan) SetDescriptionTranslations(val OptTranslations) {
-	s.DescriptionTranslations = val
-}
-
-// Ref: #/components/schemas/CatalogPlanList
-type CatalogPlanList struct {
-	Items      []CatalogPlan `json:"items"`
-	TotalCount OptInt64      `json:"total_count"`
-}
-
-// GetItems returns the value of Items.
-func (s *CatalogPlanList) GetItems() []CatalogPlan {
-	return s.Items
-}
-
-// GetTotalCount returns the value of TotalCount.
-func (s *CatalogPlanList) GetTotalCount() OptInt64 {
-	return s.TotalCount
-}
-
-// SetItems sets the value of Items.
-func (s *CatalogPlanList) SetItems(val []CatalogPlan) {
-	s.Items = val
-}
-
-// SetTotalCount sets the value of TotalCount.
-func (s *CatalogPlanList) SetTotalCount(val OptInt64) {
-	s.TotalCount = val
-}
-
-// CatalogPlanListHeaders wraps CatalogPlanList with response headers.
-type CatalogPlanListHeaders struct {
-	ETag     OptString
-	Response CatalogPlanList
-}
-
-// GetETag returns the value of ETag.
-func (s *CatalogPlanListHeaders) GetETag() OptString {
-	return s.ETag
-}
-
-// GetResponse returns the value of Response.
-func (s *CatalogPlanListHeaders) GetResponse() CatalogPlanList {
-	return s.Response
-}
-
-// SetETag sets the value of ETag.
-func (s *CatalogPlanListHeaders) SetETag(val OptString) {
-	s.ETag = val
-}
-
-// SetResponse sets the value of Response.
-func (s *CatalogPlanListHeaders) SetResponse(val CatalogPlanList) {
-	s.Response = val
-}
-
-func (*CatalogPlanListHeaders) listCatalogPlansRes() {}
-
-// Ref: #/components/schemas/CatalogPrice
-type CatalogPrice struct {
-	TerminationPolicy OptTerminationPolicy `json:"termination_policy"`
-	RefundPolicy      OptRefundPolicy      `json:"refund_policy"`
-	ProductID         OptUUID              `json:"product_id"`
-	ID                uuid.UUID            `json:"id"`
-	PlanID            uuid.UUID            `json:"plan_id"`
-	Currency          string               `json:"currency"`
-	// `metered` charges for what is used, `prepaid` buys a period in advance, `one_time` charges once.
-	Type CatalogPriceType `json:"type"`
-	// How the amount is arrived at. `rated` means the rate depends on attributes such as region or machine
-	// type, and is looked up on a price list.
-	BillingScheme CatalogPriceBillingScheme `json:"billing_scheme"`
-	// Present for `per_unit`.
-	UnitAmount OptMoney `json:"unit_amount"`
-	// `none` for a price that is not tiered, which is most of them.
-	//
-	// Otherwise `graduated` charges each band at its own rate, and `volume` charges everything at the rate
-	// of the band the total falls in.
-	TiersMode OptCatalogPriceTiersMode `json:"tiers_mode"`
-	// Present for `tiered`, in ascending order.
-	Tiers []Tier `json:"tiers"`
-	// For `rated` prices, the price list the rates are read from.
-	RateCardID OptUUID `json:"rate_card_id"`
-	// The smallest quantity that can be bought. Absent means no lower bound.
-	MinQuantity OptMoney `json:"min_quantity"`
-	// The largest quantity that can be bought. Absent means no upper bound.
-	//
-	// An order beyond it is refused with its own code, apart from the codes for running out of stock and
-	// for exceeding what the infrastructure allows.
-	MaxQuantity OptMoney `json:"max_quantity"`
-	// Quantities must be a multiple of this. Absent means any quantity within the bounds.
-	QuantityStep OptMoney `json:"quantity_step"`
-	// Quantities included when this price is bought — the traffic or requests that are used before
-	// anything is charged for.
-	Allowances []IncludedAllowance `json:"allowances"`
-	// Capabilities that buying this price makes available.
-	Features []IncludedFeature `json:"features"`
-	// For prepaid prices, how many periods one purchase covers.
-	Term     OptInt                `json:"term"`
-	Period   OptCatalogPricePeriod `json:"period"`
-	SetupFee OptMoney              `json:"setup_fee"`
-}
-
-// GetTerminationPolicy returns the value of TerminationPolicy.
-func (s *CatalogPrice) GetTerminationPolicy() OptTerminationPolicy {
-	return s.TerminationPolicy
-}
-
-// GetRefundPolicy returns the value of RefundPolicy.
-func (s *CatalogPrice) GetRefundPolicy() OptRefundPolicy {
-	return s.RefundPolicy
-}
-
-// GetProductID returns the value of ProductID.
-func (s *CatalogPrice) GetProductID() OptUUID {
-	return s.ProductID
-}
-
-// GetID returns the value of ID.
-func (s *CatalogPrice) GetID() uuid.UUID {
-	return s.ID
-}
-
-// GetPlanID returns the value of PlanID.
-func (s *CatalogPrice) GetPlanID() uuid.UUID {
-	return s.PlanID
-}
-
-// GetCurrency returns the value of Currency.
-func (s *CatalogPrice) GetCurrency() string {
-	return s.Currency
-}
-
-// GetType returns the value of Type.
-func (s *CatalogPrice) GetType() CatalogPriceType {
-	return s.Type
-}
-
-// GetBillingScheme returns the value of BillingScheme.
-func (s *CatalogPrice) GetBillingScheme() CatalogPriceBillingScheme {
-	return s.BillingScheme
-}
-
-// GetUnitAmount returns the value of UnitAmount.
-func (s *CatalogPrice) GetUnitAmount() OptMoney {
-	return s.UnitAmount
-}
-
-// GetTiersMode returns the value of TiersMode.
-func (s *CatalogPrice) GetTiersMode() OptCatalogPriceTiersMode {
-	return s.TiersMode
-}
-
-// GetTiers returns the value of Tiers.
-func (s *CatalogPrice) GetTiers() []Tier {
-	return s.Tiers
-}
-
-// GetRateCardID returns the value of RateCardID.
-func (s *CatalogPrice) GetRateCardID() OptUUID {
-	return s.RateCardID
-}
-
-// GetMinQuantity returns the value of MinQuantity.
-func (s *CatalogPrice) GetMinQuantity() OptMoney {
-	return s.MinQuantity
-}
-
-// GetMaxQuantity returns the value of MaxQuantity.
-func (s *CatalogPrice) GetMaxQuantity() OptMoney {
-	return s.MaxQuantity
-}
-
-// GetQuantityStep returns the value of QuantityStep.
-func (s *CatalogPrice) GetQuantityStep() OptMoney {
-	return s.QuantityStep
-}
-
-// GetAllowances returns the value of Allowances.
-func (s *CatalogPrice) GetAllowances() []IncludedAllowance {
-	return s.Allowances
-}
-
-// GetFeatures returns the value of Features.
-func (s *CatalogPrice) GetFeatures() []IncludedFeature {
-	return s.Features
-}
-
-// GetTerm returns the value of Term.
-func (s *CatalogPrice) GetTerm() OptInt {
-	return s.Term
-}
-
-// GetPeriod returns the value of Period.
-func (s *CatalogPrice) GetPeriod() OptCatalogPricePeriod {
-	return s.Period
-}
-
-// GetSetupFee returns the value of SetupFee.
-func (s *CatalogPrice) GetSetupFee() OptMoney {
-	return s.SetupFee
-}
-
-// SetTerminationPolicy sets the value of TerminationPolicy.
-func (s *CatalogPrice) SetTerminationPolicy(val OptTerminationPolicy) {
-	s.TerminationPolicy = val
-}
-
-// SetRefundPolicy sets the value of RefundPolicy.
-func (s *CatalogPrice) SetRefundPolicy(val OptRefundPolicy) {
-	s.RefundPolicy = val
-}
-
-// SetProductID sets the value of ProductID.
-func (s *CatalogPrice) SetProductID(val OptUUID) {
-	s.ProductID = val
-}
-
-// SetID sets the value of ID.
-func (s *CatalogPrice) SetID(val uuid.UUID) {
-	s.ID = val
-}
-
-// SetPlanID sets the value of PlanID.
-func (s *CatalogPrice) SetPlanID(val uuid.UUID) {
-	s.PlanID = val
-}
-
-// SetCurrency sets the value of Currency.
-func (s *CatalogPrice) SetCurrency(val string) {
-	s.Currency = val
-}
-
-// SetType sets the value of Type.
-func (s *CatalogPrice) SetType(val CatalogPriceType) {
-	s.Type = val
-}
-
-// SetBillingScheme sets the value of BillingScheme.
-func (s *CatalogPrice) SetBillingScheme(val CatalogPriceBillingScheme) {
-	s.BillingScheme = val
-}
-
-// SetUnitAmount sets the value of UnitAmount.
-func (s *CatalogPrice) SetUnitAmount(val OptMoney) {
-	s.UnitAmount = val
-}
-
-// SetTiersMode sets the value of TiersMode.
-func (s *CatalogPrice) SetTiersMode(val OptCatalogPriceTiersMode) {
-	s.TiersMode = val
-}
-
-// SetTiers sets the value of Tiers.
-func (s *CatalogPrice) SetTiers(val []Tier) {
-	s.Tiers = val
-}
-
-// SetRateCardID sets the value of RateCardID.
-func (s *CatalogPrice) SetRateCardID(val OptUUID) {
-	s.RateCardID = val
-}
-
-// SetMinQuantity sets the value of MinQuantity.
-func (s *CatalogPrice) SetMinQuantity(val OptMoney) {
-	s.MinQuantity = val
-}
-
-// SetMaxQuantity sets the value of MaxQuantity.
-func (s *CatalogPrice) SetMaxQuantity(val OptMoney) {
-	s.MaxQuantity = val
-}
-
-// SetQuantityStep sets the value of QuantityStep.
-func (s *CatalogPrice) SetQuantityStep(val OptMoney) {
-	s.QuantityStep = val
-}
-
-// SetAllowances sets the value of Allowances.
-func (s *CatalogPrice) SetAllowances(val []IncludedAllowance) {
-	s.Allowances = val
-}
-
-// SetFeatures sets the value of Features.
-func (s *CatalogPrice) SetFeatures(val []IncludedFeature) {
-	s.Features = val
-}
-
-// SetTerm sets the value of Term.
-func (s *CatalogPrice) SetTerm(val OptInt) {
-	s.Term = val
-}
-
-// SetPeriod sets the value of Period.
-func (s *CatalogPrice) SetPeriod(val OptCatalogPricePeriod) {
-	s.Period = val
-}
-
-// SetSetupFee sets the value of SetupFee.
-func (s *CatalogPrice) SetSetupFee(val OptMoney) {
-	s.SetupFee = val
-}
-
-// How the amount is arrived at. `rated` means the rate depends on attributes such as region or machine
-// type, and is looked up on a price list.
-type CatalogPriceBillingScheme string
-
-const (
-	CatalogPriceBillingSchemePerUnit CatalogPriceBillingScheme = "per_unit"
-	CatalogPriceBillingSchemeTiered  CatalogPriceBillingScheme = "tiered"
-	CatalogPriceBillingSchemeRated   CatalogPriceBillingScheme = "rated"
-)
-
-// AllValues returns all CatalogPriceBillingScheme values.
-func (CatalogPriceBillingScheme) AllValues() []CatalogPriceBillingScheme {
-	return []CatalogPriceBillingScheme{
-		CatalogPriceBillingSchemePerUnit,
-		CatalogPriceBillingSchemeTiered,
-		CatalogPriceBillingSchemeRated,
-	}
-}
-
-// MarshalText implements encoding.TextMarshaler.
-func (s CatalogPriceBillingScheme) MarshalText() ([]byte, error) {
-	switch s {
-	case CatalogPriceBillingSchemePerUnit:
-		return []byte(s), nil
-	case CatalogPriceBillingSchemeTiered:
-		return []byte(s), nil
-	case CatalogPriceBillingSchemeRated:
-		return []byte(s), nil
-	default:
-		return nil, errors.Errorf("invalid value: %q", s)
-	}
-}
-
-// UnmarshalText implements encoding.TextUnmarshaler.
-func (s *CatalogPriceBillingScheme) UnmarshalText(data []byte) error {
-	switch CatalogPriceBillingScheme(data) {
-	case CatalogPriceBillingSchemePerUnit:
-		*s = CatalogPriceBillingSchemePerUnit
-		return nil
-	case CatalogPriceBillingSchemeTiered:
-		*s = CatalogPriceBillingSchemeTiered
-		return nil
-	case CatalogPriceBillingSchemeRated:
-		*s = CatalogPriceBillingSchemeRated
-		return nil
-	default:
-		return errors.Errorf("invalid value: %q", data)
-	}
-}
-
-// Ref: #/components/schemas/CatalogPriceList
-type CatalogPriceList struct {
-	Items      []CatalogPrice `json:"items"`
-	TotalCount OptInt64       `json:"total_count"`
-}
-
-// GetItems returns the value of Items.
-func (s *CatalogPriceList) GetItems() []CatalogPrice {
-	return s.Items
-}
-
-// GetTotalCount returns the value of TotalCount.
-func (s *CatalogPriceList) GetTotalCount() OptInt64 {
-	return s.TotalCount
-}
-
-// SetItems sets the value of Items.
-func (s *CatalogPriceList) SetItems(val []CatalogPrice) {
-	s.Items = val
-}
-
-// SetTotalCount sets the value of TotalCount.
-func (s *CatalogPriceList) SetTotalCount(val OptInt64) {
-	s.TotalCount = val
-}
-
-// CatalogPriceListHeaders wraps CatalogPriceList with response headers.
-type CatalogPriceListHeaders struct {
-	ETag     OptString
-	Response CatalogPriceList
-}
-
-// GetETag returns the value of ETag.
-func (s *CatalogPriceListHeaders) GetETag() OptString {
-	return s.ETag
-}
-
-// GetResponse returns the value of Response.
-func (s *CatalogPriceListHeaders) GetResponse() CatalogPriceList {
-	return s.Response
-}
-
-// SetETag sets the value of ETag.
-func (s *CatalogPriceListHeaders) SetETag(val OptString) {
-	s.ETag = val
-}
-
-// SetResponse sets the value of Response.
-func (s *CatalogPriceListHeaders) SetResponse(val CatalogPriceList) {
-	s.Response = val
-}
-
-func (*CatalogPriceListHeaders) listCatalogPricesRes() {}
-
-type CatalogPricePeriod string
-
-const (
-	CatalogPricePeriodNone  CatalogPricePeriod = "none"
-	CatalogPricePeriodDay   CatalogPricePeriod = "day"
-	CatalogPricePeriodMonth CatalogPricePeriod = "month"
-	CatalogPricePeriodYear  CatalogPricePeriod = "year"
-)
-
-// AllValues returns all CatalogPricePeriod values.
-func (CatalogPricePeriod) AllValues() []CatalogPricePeriod {
-	return []CatalogPricePeriod{
-		CatalogPricePeriodNone,
-		CatalogPricePeriodDay,
-		CatalogPricePeriodMonth,
-		CatalogPricePeriodYear,
-	}
-}
-
-// MarshalText implements encoding.TextMarshaler.
-func (s CatalogPricePeriod) MarshalText() ([]byte, error) {
-	switch s {
-	case CatalogPricePeriodNone:
-		return []byte(s), nil
-	case CatalogPricePeriodDay:
-		return []byte(s), nil
-	case CatalogPricePeriodMonth:
-		return []byte(s), nil
-	case CatalogPricePeriodYear:
-		return []byte(s), nil
-	default:
-		return nil, errors.Errorf("invalid value: %q", s)
-	}
-}
-
-// UnmarshalText implements encoding.TextUnmarshaler.
-func (s *CatalogPricePeriod) UnmarshalText(data []byte) error {
-	switch CatalogPricePeriod(data) {
-	case CatalogPricePeriodNone:
-		*s = CatalogPricePeriodNone
-		return nil
-	case CatalogPricePeriodDay:
-		*s = CatalogPricePeriodDay
-		return nil
-	case CatalogPricePeriodMonth:
-		*s = CatalogPricePeriodMonth
-		return nil
-	case CatalogPricePeriodYear:
-		*s = CatalogPricePeriodYear
-		return nil
-	default:
-		return errors.Errorf("invalid value: %q", data)
-	}
-}
-
-// `none` for a price that is not tiered, which is most of them.
-//
-// Otherwise `graduated` charges each band at its own rate, and `volume` charges everything at the rate
-// of the band the total falls in.
-type CatalogPriceTiersMode string
-
-const (
-	CatalogPriceTiersModeNone      CatalogPriceTiersMode = "none"
-	CatalogPriceTiersModeGraduated CatalogPriceTiersMode = "graduated"
-	CatalogPriceTiersModeVolume    CatalogPriceTiersMode = "volume"
-)
-
-// AllValues returns all CatalogPriceTiersMode values.
-func (CatalogPriceTiersMode) AllValues() []CatalogPriceTiersMode {
-	return []CatalogPriceTiersMode{
-		CatalogPriceTiersModeNone,
-		CatalogPriceTiersModeGraduated,
-		CatalogPriceTiersModeVolume,
-	}
-}
-
-// MarshalText implements encoding.TextMarshaler.
-func (s CatalogPriceTiersMode) MarshalText() ([]byte, error) {
-	switch s {
-	case CatalogPriceTiersModeNone:
-		return []byte(s), nil
-	case CatalogPriceTiersModeGraduated:
-		return []byte(s), nil
-	case CatalogPriceTiersModeVolume:
-		return []byte(s), nil
-	default:
-		return nil, errors.Errorf("invalid value: %q", s)
-	}
-}
-
-// UnmarshalText implements encoding.TextUnmarshaler.
-func (s *CatalogPriceTiersMode) UnmarshalText(data []byte) error {
-	switch CatalogPriceTiersMode(data) {
-	case CatalogPriceTiersModeNone:
-		*s = CatalogPriceTiersModeNone
-		return nil
-	case CatalogPriceTiersModeGraduated:
-		*s = CatalogPriceTiersModeGraduated
-		return nil
-	case CatalogPriceTiersModeVolume:
-		*s = CatalogPriceTiersModeVolume
-		return nil
-	default:
-		return errors.Errorf("invalid value: %q", data)
-	}
-}
-
-// `metered` charges for what is used, `prepaid` buys a period in advance, `one_time` charges once.
-type CatalogPriceType string
-
-const (
-	CatalogPriceTypeMetered CatalogPriceType = "metered"
-	CatalogPriceTypePrepaid CatalogPriceType = "prepaid"
-	CatalogPriceTypeOneTime CatalogPriceType = "one_time"
-)
-
-// AllValues returns all CatalogPriceType values.
-func (CatalogPriceType) AllValues() []CatalogPriceType {
-	return []CatalogPriceType{
-		CatalogPriceTypeMetered,
-		CatalogPriceTypePrepaid,
-		CatalogPriceTypeOneTime,
-	}
-}
-
-// MarshalText implements encoding.TextMarshaler.
-func (s CatalogPriceType) MarshalText() ([]byte, error) {
-	switch s {
-	case CatalogPriceTypeMetered:
-		return []byte(s), nil
-	case CatalogPriceTypePrepaid:
-		return []byte(s), nil
-	case CatalogPriceTypeOneTime:
-		return []byte(s), nil
-	default:
-		return nil, errors.Errorf("invalid value: %q", s)
-	}
-}
-
-// UnmarshalText implements encoding.TextUnmarshaler.
-func (s *CatalogPriceType) UnmarshalText(data []byte) error {
-	switch CatalogPriceType(data) {
-	case CatalogPriceTypeMetered:
-		*s = CatalogPriceTypeMetered
-		return nil
-	case CatalogPriceTypePrepaid:
-		*s = CatalogPriceTypePrepaid
-		return nil
-	case CatalogPriceTypeOneTime:
-		*s = CatalogPriceTypeOneTime
-		return nil
-	default:
-		return errors.Errorf("invalid value: %q", data)
-	}
-}
-
-// Ref: #/components/schemas/CatalogProduct
-type CatalogProduct struct {
-	ID                      uuid.UUID       `json:"id"`
-	Name                    string          `json:"name"`
-	NameTranslations        OptTranslations `json:"name_translations"`
-	Description             OptString       `json:"description"`
-	DescriptionTranslations OptTranslations `json:"description_translations"`
-}
-
-// GetID returns the value of ID.
-func (s *CatalogProduct) GetID() uuid.UUID {
-	return s.ID
-}
-
-// GetName returns the value of Name.
-func (s *CatalogProduct) GetName() string {
-	return s.Name
-}
-
-// GetNameTranslations returns the value of NameTranslations.
-func (s *CatalogProduct) GetNameTranslations() OptTranslations {
-	return s.NameTranslations
-}
-
-// GetDescription returns the value of Description.
-func (s *CatalogProduct) GetDescription() OptString {
-	return s.Description
-}
-
-// GetDescriptionTranslations returns the value of DescriptionTranslations.
-func (s *CatalogProduct) GetDescriptionTranslations() OptTranslations {
-	return s.DescriptionTranslations
-}
-
-// SetID sets the value of ID.
-func (s *CatalogProduct) SetID(val uuid.UUID) {
-	s.ID = val
-}
-
-// SetName sets the value of Name.
-func (s *CatalogProduct) SetName(val string) {
-	s.Name = val
-}
-
-// SetNameTranslations sets the value of NameTranslations.
-func (s *CatalogProduct) SetNameTranslations(val OptTranslations) {
-	s.NameTranslations = val
-}
-
-// SetDescription sets the value of Description.
-func (s *CatalogProduct) SetDescription(val OptString) {
-	s.Description = val
-}
-
-// SetDescriptionTranslations sets the value of DescriptionTranslations.
-func (s *CatalogProduct) SetDescriptionTranslations(val OptTranslations) {
-	s.DescriptionTranslations = val
-}
-
-// Ref: #/components/schemas/CatalogProductList
-type CatalogProductList struct {
-	Items      []CatalogProduct `json:"items"`
-	TotalCount OptInt64         `json:"total_count"`
-}
-
-// GetItems returns the value of Items.
-func (s *CatalogProductList) GetItems() []CatalogProduct {
-	return s.Items
-}
-
-// GetTotalCount returns the value of TotalCount.
-func (s *CatalogProductList) GetTotalCount() OptInt64 {
-	return s.TotalCount
-}
-
-// SetItems sets the value of Items.
-func (s *CatalogProductList) SetItems(val []CatalogProduct) {
-	s.Items = val
-}
-
-// SetTotalCount sets the value of TotalCount.
-func (s *CatalogProductList) SetTotalCount(val OptInt64) {
-	s.TotalCount = val
-}
-
-// CatalogProductListHeaders wraps CatalogProductList with response headers.
-type CatalogProductListHeaders struct {
-	ETag     OptString
-	Response CatalogProductList
-}
-
-// GetETag returns the value of ETag.
-func (s *CatalogProductListHeaders) GetETag() OptString {
-	return s.ETag
-}
-
-// GetResponse returns the value of Response.
-func (s *CatalogProductListHeaders) GetResponse() CatalogProductList {
-	return s.Response
-}
-
-// SetETag sets the value of ETag.
-func (s *CatalogProductListHeaders) SetETag(val OptString) {
-	s.ETag = val
-}
-
-// SetResponse sets the value of Response.
-func (s *CatalogProductListHeaders) SetResponse(val CatalogProductList) {
-	s.Response = val
-}
-
-func (*CatalogProductListHeaders) listCatalogProductsRes() {}
-
-// Ref: #/components/schemas/CatalogRate
-type CatalogRate struct {
-	Meter ObjectIdentity `json:"meter"`
-	// The unit readings arrive in, such as `core-second`.
-	Unit OptString `json:"unit"`
-	// The attributes this rate applies to, such as region and machine type.
-	Dimensions   CatalogRateDimensions   `json:"dimensions"`
-	PricingModel CatalogRatePricingModel `json:"pricing_model"`
-	// Present for `per_unit`. Tiered rates carry their amounts on the tiers.
-	UnitAmount OptMoney `json:"unit_amount"`
-	// Present for `graduated` and `volume`, in ascending order.
-	Tiers []Tier `json:"tiers"`
-	// How many measured units one amount covers. An hourly rate on a per-second meter is `"3600"`.
-	UnitQuantity  OptString      `json:"unit_quantity"`
-	Currency      string         `json:"currency"`
-	EffectiveFrom time.Time      `json:"effective_from"`
-	EffectiveTo   OptNilDateTime `json:"effective_to"`
-}
-
-// GetMeter returns the value of Meter.
-func (s *CatalogRate) GetMeter() ObjectIdentity {
-	return s.Meter
-}
-
-// GetUnit returns the value of Unit.
-func (s *CatalogRate) GetUnit() OptString {
-	return s.Unit
-}
-
-// GetDimensions returns the value of Dimensions.
-func (s *CatalogRate) GetDimensions() CatalogRateDimensions {
-	return s.Dimensions
-}
-
-// GetPricingModel returns the value of PricingModel.
-func (s *CatalogRate) GetPricingModel() CatalogRatePricingModel {
-	return s.PricingModel
-}
-
-// GetUnitAmount returns the value of UnitAmount.
-func (s *CatalogRate) GetUnitAmount() OptMoney {
-	return s.UnitAmount
-}
-
-// GetTiers returns the value of Tiers.
-func (s *CatalogRate) GetTiers() []Tier {
-	return s.Tiers
-}
-
-// GetUnitQuantity returns the value of UnitQuantity.
-func (s *CatalogRate) GetUnitQuantity() OptString {
-	return s.UnitQuantity
-}
-
-// GetCurrency returns the value of Currency.
-func (s *CatalogRate) GetCurrency() string {
-	return s.Currency
-}
-
-// GetEffectiveFrom returns the value of EffectiveFrom.
-func (s *CatalogRate) GetEffectiveFrom() time.Time {
-	return s.EffectiveFrom
-}
-
-// GetEffectiveTo returns the value of EffectiveTo.
-func (s *CatalogRate) GetEffectiveTo() OptNilDateTime {
-	return s.EffectiveTo
-}
-
-// SetMeter sets the value of Meter.
-func (s *CatalogRate) SetMeter(val ObjectIdentity) {
-	s.Meter = val
-}
-
-// SetUnit sets the value of Unit.
-func (s *CatalogRate) SetUnit(val OptString) {
-	s.Unit = val
-}
-
-// SetDimensions sets the value of Dimensions.
-func (s *CatalogRate) SetDimensions(val CatalogRateDimensions) {
-	s.Dimensions = val
-}
-
-// SetPricingModel sets the value of PricingModel.
-func (s *CatalogRate) SetPricingModel(val CatalogRatePricingModel) {
-	s.PricingModel = val
-}
-
-// SetUnitAmount sets the value of UnitAmount.
-func (s *CatalogRate) SetUnitAmount(val OptMoney) {
-	s.UnitAmount = val
-}
-
-// SetTiers sets the value of Tiers.
-func (s *CatalogRate) SetTiers(val []Tier) {
-	s.Tiers = val
-}
-
-// SetUnitQuantity sets the value of UnitQuantity.
-func (s *CatalogRate) SetUnitQuantity(val OptString) {
-	s.UnitQuantity = val
-}
-
-// SetCurrency sets the value of Currency.
-func (s *CatalogRate) SetCurrency(val string) {
-	s.Currency = val
-}
-
-// SetEffectiveFrom sets the value of EffectiveFrom.
-func (s *CatalogRate) SetEffectiveFrom(val time.Time) {
-	s.EffectiveFrom = val
-}
-
-// SetEffectiveTo sets the value of EffectiveTo.
-func (s *CatalogRate) SetEffectiveTo(val OptNilDateTime) {
-	s.EffectiveTo = val
-}
-
-// The attributes this rate applies to, such as region and machine type.
-type CatalogRateDimensions map[string]string
-
-func (s *CatalogRateDimensions) init() CatalogRateDimensions {
-	m := *s
-	if m == nil {
-		m = map[string]string{}
-		*s = m
-	}
-	return m
-}
-
-// Ref: #/components/schemas/CatalogRateList
-type CatalogRateList struct {
-	Items      []CatalogRate `json:"items"`
-	TotalCount OptInt64      `json:"total_count"`
-}
-
-// GetItems returns the value of Items.
-func (s *CatalogRateList) GetItems() []CatalogRate {
-	return s.Items
-}
-
-// GetTotalCount returns the value of TotalCount.
-func (s *CatalogRateList) GetTotalCount() OptInt64 {
-	return s.TotalCount
-}
-
-// SetItems sets the value of Items.
-func (s *CatalogRateList) SetItems(val []CatalogRate) {
-	s.Items = val
-}
-
-// SetTotalCount sets the value of TotalCount.
-func (s *CatalogRateList) SetTotalCount(val OptInt64) {
-	s.TotalCount = val
-}
-
-// CatalogRateListHeaders wraps CatalogRateList with response headers.
-type CatalogRateListHeaders struct {
-	ETag     OptString
-	Response CatalogRateList
-}
-
-// GetETag returns the value of ETag.
-func (s *CatalogRateListHeaders) GetETag() OptString {
-	return s.ETag
-}
-
-// GetResponse returns the value of Response.
-func (s *CatalogRateListHeaders) GetResponse() CatalogRateList {
-	return s.Response
-}
-
-// SetETag sets the value of ETag.
-func (s *CatalogRateListHeaders) SetETag(val OptString) {
-	s.ETag = val
-}
-
-// SetResponse sets the value of Response.
-func (s *CatalogRateListHeaders) SetResponse(val CatalogRateList) {
-	s.Response = val
-}
-
-func (*CatalogRateListHeaders) listCatalogRatesRes() {}
-
-type CatalogRatePricingModel string
-
-const (
-	CatalogRatePricingModelPerUnit   CatalogRatePricingModel = "per_unit"
-	CatalogRatePricingModelGraduated CatalogRatePricingModel = "graduated"
-	CatalogRatePricingModelVolume    CatalogRatePricingModel = "volume"
-)
-
-// AllValues returns all CatalogRatePricingModel values.
-func (CatalogRatePricingModel) AllValues() []CatalogRatePricingModel {
-	return []CatalogRatePricingModel{
-		CatalogRatePricingModelPerUnit,
-		CatalogRatePricingModelGraduated,
-		CatalogRatePricingModelVolume,
-	}
-}
-
-// MarshalText implements encoding.TextMarshaler.
-func (s CatalogRatePricingModel) MarshalText() ([]byte, error) {
-	switch s {
-	case CatalogRatePricingModelPerUnit:
-		return []byte(s), nil
-	case CatalogRatePricingModelGraduated:
-		return []byte(s), nil
-	case CatalogRatePricingModelVolume:
-		return []byte(s), nil
-	default:
-		return nil, errors.Errorf("invalid value: %q", s)
-	}
-}
-
-// UnmarshalText implements encoding.TextUnmarshaler.
-func (s *CatalogRatePricingModel) UnmarshalText(data []byte) error {
-	switch CatalogRatePricingModel(data) {
-	case CatalogRatePricingModelPerUnit:
-		*s = CatalogRatePricingModelPerUnit
-		return nil
-	case CatalogRatePricingModelGraduated:
-		*s = CatalogRatePricingModelGraduated
-		return nil
-	case CatalogRatePricingModelVolume:
-		*s = CatalogRatePricingModelVolume
-		return nil
-	default:
-		return errors.Errorf("invalid value: %q", data)
-	}
-}
-
 // Ref: #/components/schemas/CodePreview
 type CodePreview struct {
 	// Whether the code itself is usable — it exists, has not expired, has not been used up, and matches
@@ -5249,10 +4275,10 @@ func (s *NotModified) SetETag(val OptString) {
 	s.ETag = val
 }
 
-func (*NotModified) listCatalogPlansRes()    {}
-func (*NotModified) listCatalogPricesRes()   {}
-func (*NotModified) listCatalogProductsRes() {}
-func (*NotModified) listCatalogRatesRes()    {}
+func (*NotModified) listPlansRes()    {}
+func (*NotModified) listPricesRes()   {}
+func (*NotModified) listProductsRes() {}
+func (*NotModified) listRatesRes()    {}
 
 // A catalog object inlined for display.
 // Ref: #/components/schemas/ObjectIdentity
@@ -5470,98 +4496,6 @@ func (o OptBool) Get() (v bool, ok bool) {
 
 // Or returns value if set, or given parameter if does not.
 func (o OptBool) Or(d bool) bool {
-	if v, ok := o.Get(); ok {
-		return v
-	}
-	return d
-}
-
-// NewOptCatalogPricePeriod returns new OptCatalogPricePeriod with value set to v.
-func NewOptCatalogPricePeriod(v CatalogPricePeriod) OptCatalogPricePeriod {
-	return OptCatalogPricePeriod{
-		Value: v,
-		Set:   true,
-	}
-}
-
-// OptCatalogPricePeriod is optional CatalogPricePeriod.
-type OptCatalogPricePeriod struct {
-	Value CatalogPricePeriod
-	Set   bool
-}
-
-// IsSet returns true if OptCatalogPricePeriod was set.
-func (o OptCatalogPricePeriod) IsSet() bool { return o.Set }
-
-// Reset unsets value.
-func (o *OptCatalogPricePeriod) Reset() {
-	var v CatalogPricePeriod
-	o.Value = v
-	o.Set = false
-}
-
-// SetTo sets value to v.
-func (o *OptCatalogPricePeriod) SetTo(v CatalogPricePeriod) {
-	o.Set = true
-	o.Value = v
-}
-
-// Get returns value and boolean that denotes whether value was set.
-func (o OptCatalogPricePeriod) Get() (v CatalogPricePeriod, ok bool) {
-	if !o.Set {
-		return v, false
-	}
-	return o.Value, true
-}
-
-// Or returns value if set, or given parameter if does not.
-func (o OptCatalogPricePeriod) Or(d CatalogPricePeriod) CatalogPricePeriod {
-	if v, ok := o.Get(); ok {
-		return v
-	}
-	return d
-}
-
-// NewOptCatalogPriceTiersMode returns new OptCatalogPriceTiersMode with value set to v.
-func NewOptCatalogPriceTiersMode(v CatalogPriceTiersMode) OptCatalogPriceTiersMode {
-	return OptCatalogPriceTiersMode{
-		Value: v,
-		Set:   true,
-	}
-}
-
-// OptCatalogPriceTiersMode is optional CatalogPriceTiersMode.
-type OptCatalogPriceTiersMode struct {
-	Value CatalogPriceTiersMode
-	Set   bool
-}
-
-// IsSet returns true if OptCatalogPriceTiersMode was set.
-func (o OptCatalogPriceTiersMode) IsSet() bool { return o.Set }
-
-// Reset unsets value.
-func (o *OptCatalogPriceTiersMode) Reset() {
-	var v CatalogPriceTiersMode
-	o.Value = v
-	o.Set = false
-}
-
-// SetTo sets value to v.
-func (o *OptCatalogPriceTiersMode) SetTo(v CatalogPriceTiersMode) {
-	o.Set = true
-	o.Value = v
-}
-
-// Get returns value and boolean that denotes whether value was set.
-func (o OptCatalogPriceTiersMode) Get() (v CatalogPriceTiersMode, ok bool) {
-	if !o.Set {
-		return v, false
-	}
-	return o.Value, true
-}
-
-// Or returns value if set, or given parameter if does not.
-func (o OptCatalogPriceTiersMode) Or(d CatalogPriceTiersMode) CatalogPriceTiersMode {
 	if v, ok := o.Get(); ok {
 		return v
 	}
@@ -6868,6 +5802,98 @@ func (o OptPayRequest) Get() (v PayRequest, ok bool) {
 
 // Or returns value if set, or given parameter if does not.
 func (o OptPayRequest) Or(d PayRequest) PayRequest {
+	if v, ok := o.Get(); ok {
+		return v
+	}
+	return d
+}
+
+// NewOptPricePeriod returns new OptPricePeriod with value set to v.
+func NewOptPricePeriod(v PricePeriod) OptPricePeriod {
+	return OptPricePeriod{
+		Value: v,
+		Set:   true,
+	}
+}
+
+// OptPricePeriod is optional PricePeriod.
+type OptPricePeriod struct {
+	Value PricePeriod
+	Set   bool
+}
+
+// IsSet returns true if OptPricePeriod was set.
+func (o OptPricePeriod) IsSet() bool { return o.Set }
+
+// Reset unsets value.
+func (o *OptPricePeriod) Reset() {
+	var v PricePeriod
+	o.Value = v
+	o.Set = false
+}
+
+// SetTo sets value to v.
+func (o *OptPricePeriod) SetTo(v PricePeriod) {
+	o.Set = true
+	o.Value = v
+}
+
+// Get returns value and boolean that denotes whether value was set.
+func (o OptPricePeriod) Get() (v PricePeriod, ok bool) {
+	if !o.Set {
+		return v, false
+	}
+	return o.Value, true
+}
+
+// Or returns value if set, or given parameter if does not.
+func (o OptPricePeriod) Or(d PricePeriod) PricePeriod {
+	if v, ok := o.Get(); ok {
+		return v
+	}
+	return d
+}
+
+// NewOptPriceTiersMode returns new OptPriceTiersMode with value set to v.
+func NewOptPriceTiersMode(v PriceTiersMode) OptPriceTiersMode {
+	return OptPriceTiersMode{
+		Value: v,
+		Set:   true,
+	}
+}
+
+// OptPriceTiersMode is optional PriceTiersMode.
+type OptPriceTiersMode struct {
+	Value PriceTiersMode
+	Set   bool
+}
+
+// IsSet returns true if OptPriceTiersMode was set.
+func (o OptPriceTiersMode) IsSet() bool { return o.Set }
+
+// Reset unsets value.
+func (o *OptPriceTiersMode) Reset() {
+	var v PriceTiersMode
+	o.Value = v
+	o.Set = false
+}
+
+// SetTo sets value to v.
+func (o *OptPriceTiersMode) SetTo(v PriceTiersMode) {
+	o.Set = true
+	o.Value = v
+}
+
+// Get returns value and boolean that denotes whether value was set.
+func (o OptPriceTiersMode) Get() (v PriceTiersMode, ok bool) {
+	if !o.Set {
+		return v, false
+	}
+	return o.Value, true
+}
+
+// Or returns value if set, or given parameter if does not.
+func (o OptPriceTiersMode) Or(d PriceTiersMode) PriceTiersMode {
 	if v, ok := o.Get(); ok {
 		return v
 	}
@@ -8704,6 +7730,747 @@ func (s *PaymentStatus) UnmarshalText(data []byte) error {
 	}
 }
 
+// Ref: #/components/schemas/Plan
+type Plan struct {
+	ID                      uuid.UUID       `json:"id"`
+	ProductID               uuid.UUID       `json:"product_id"`
+	Name                    string          `json:"name"`
+	NameTranslations        OptTranslations `json:"name_translations"`
+	Description             OptString       `json:"description"`
+	DescriptionTranslations OptTranslations `json:"description_translations"`
+}
+
+// GetID returns the value of ID.
+func (s *Plan) GetID() uuid.UUID {
+	return s.ID
+}
+
+// GetProductID returns the value of ProductID.
+func (s *Plan) GetProductID() uuid.UUID {
+	return s.ProductID
+}
+
+// GetName returns the value of Name.
+func (s *Plan) GetName() string {
+	return s.Name
+}
+
+// GetNameTranslations returns the value of NameTranslations.
+func (s *Plan) GetNameTranslations() OptTranslations {
+	return s.NameTranslations
+}
+
+// GetDescription returns the value of Description.
+func (s *Plan) GetDescription() OptString {
+	return s.Description
+}
+
+// GetDescriptionTranslations returns the value of DescriptionTranslations.
+func (s *Plan) GetDescriptionTranslations() OptTranslations {
+	return s.DescriptionTranslations
+}
+
+// SetID sets the value of ID.
+func (s *Plan) SetID(val uuid.UUID) {
+	s.ID = val
+}
+
+// SetProductID sets the value of ProductID.
+func (s *Plan) SetProductID(val uuid.UUID) {
+	s.ProductID = val
+}
+
+// SetName sets the value of Name.
+func (s *Plan) SetName(val string) {
+	s.Name = val
+}
+
+// SetNameTranslations sets the value of NameTranslations.
+func (s *Plan) SetNameTranslations(val OptTranslations) {
+	s.NameTranslations = val
+}
+
+// SetDescription sets the value of Description.
+func (s *Plan) SetDescription(val OptString) {
+	s.Description = val
+}
+
+// SetDescriptionTranslations sets the value of DescriptionTranslations.
+func (s *Plan) SetDescriptionTranslations(val OptTranslations) {
+	s.DescriptionTranslations = val
+}
+
+// Ref: #/components/schemas/PlanList
+type PlanList struct {
+	Items      []Plan   `json:"items"`
+	TotalCount OptInt64 `json:"total_count"`
+}
+
+// GetItems returns the value of Items.
+func (s *PlanList) GetItems() []Plan {
+	return s.Items
+}
+
+// GetTotalCount returns the value of TotalCount.
+func (s *PlanList) GetTotalCount() OptInt64 {
+	return s.TotalCount
+}
+
+// SetItems sets the value of Items.
+func (s *PlanList) SetItems(val []Plan) {
+	s.Items = val
+}
+
+// SetTotalCount sets the value of TotalCount.
+func (s *PlanList) SetTotalCount(val OptInt64) {
+	s.TotalCount = val
+}
+
+// PlanListHeaders wraps PlanList with response headers.
+type PlanListHeaders struct {
+	ETag     OptString
+	Response PlanList
+}
+
+// GetETag returns the value of ETag.
+func (s *PlanListHeaders) GetETag() OptString {
+	return s.ETag
+}
+
+// GetResponse returns the value of Response.
+func (s *PlanListHeaders) GetResponse() PlanList {
+	return s.Response
+}
+
+// SetETag sets the value of ETag.
+func (s *PlanListHeaders) SetETag(val OptString) {
+	s.ETag = val
+}
+
+// SetResponse sets the value of Response.
+func (s *PlanListHeaders) SetResponse(val PlanList) {
+	s.Response = val
+}
+
+func (*PlanListHeaders) listPlansRes() {}
+
+// Ref: #/components/schemas/Price
+type Price struct {
+	TerminationPolicy OptTerminationPolicy `json:"termination_policy"`
+	RefundPolicy      OptRefundPolicy      `json:"refund_policy"`
+	ProductID         OptUUID              `json:"product_id"`
+	ID                uuid.UUID            `json:"id"`
+	PlanID            uuid.UUID            `json:"plan_id"`
+	Currency          string               `json:"currency"`
+	// `metered` charges for what is used, `prepaid` buys a period in advance, `one_time` charges once.
+	Type PriceType `json:"type"`
+	// How the amount is arrived at. `rated` means the rate depends on attributes such as region or machine
+	// type, and is looked up on a price list.
+	BillingScheme PriceBillingScheme `json:"billing_scheme"`
+	// Present for `per_unit`.
+	UnitAmount OptMoney `json:"unit_amount"`
+	// `none` for a price that is not tiered, which is most of them.
+	//
+	// Otherwise `graduated` charges each band at its own rate, and `volume` charges everything at the rate
+	// of the band the total falls in.
+	TiersMode OptPriceTiersMode `json:"tiers_mode"`
+	// Present for `tiered`, in ascending order.
+	Tiers []Tier `json:"tiers"`
+	// For `rated` prices, the price list the rates are read from.
+	RateCardID OptUUID `json:"rate_card_id"`
+	// The smallest quantity that can be bought. Absent means no lower bound.
+	MinQuantity OptMoney `json:"min_quantity"`
+	// The largest quantity that can be bought. Absent means no upper bound.
+	//
+	// An order beyond it is refused with its own code, apart from the codes for running out of stock and
+	// for exceeding what the infrastructure allows.
+	MaxQuantity OptMoney `json:"max_quantity"`
+	// Quantities must be a multiple of this. Absent means any quantity within the bounds.
+	QuantityStep OptMoney `json:"quantity_step"`
+	// Quantities included when this price is bought — the traffic or requests that are used before
+	// anything is charged for.
+	Allowances []IncludedAllowance `json:"allowances"`
+	// Capabilities that buying this price makes available.
+	Features []IncludedFeature `json:"features"`
+	// For prepaid prices, how many periods one purchase covers.
+	Term     OptInt         `json:"term"`
+	Period   OptPricePeriod `json:"period"`
+	SetupFee OptMoney       `json:"setup_fee"`
+}
+
+// GetTerminationPolicy returns the value of TerminationPolicy.
+func (s *Price) GetTerminationPolicy() OptTerminationPolicy {
+	return s.TerminationPolicy
+}
+
+// GetRefundPolicy returns the value of RefundPolicy.
+func (s *Price) GetRefundPolicy() OptRefundPolicy {
+	return s.RefundPolicy
+}
+
+// GetProductID returns the value of ProductID.
+func (s *Price) GetProductID() OptUUID {
+	return s.ProductID
+}
+
+// GetID returns the value of ID.
+func (s *Price) GetID() uuid.UUID {
+	return s.ID
+}
+
+// GetPlanID returns the value of PlanID.
+func (s *Price) GetPlanID() uuid.UUID {
+	return s.PlanID
+}
+
+// GetCurrency returns the value of Currency.
+func (s *Price) GetCurrency() string {
+	return s.Currency
+}
+
+// GetType returns the value of Type.
+func (s *Price) GetType() PriceType {
+	return s.Type
+}
+
+// GetBillingScheme returns the value of BillingScheme.
+func (s *Price) GetBillingScheme() PriceBillingScheme {
+	return s.BillingScheme
+}
+
+// GetUnitAmount returns the value of UnitAmount.
+func (s *Price) GetUnitAmount() OptMoney {
+	return s.UnitAmount
+}
+
+// GetTiersMode returns the value of TiersMode.
+func (s *Price) GetTiersMode() OptPriceTiersMode {
+	return s.TiersMode
+}
+
+// GetTiers returns the value of Tiers.
+func (s *Price) GetTiers() []Tier {
+	return s.Tiers
+}
+
+// GetRateCardID returns the value of RateCardID.
+func (s *Price) GetRateCardID() OptUUID {
+	return s.RateCardID
+}
+
+// GetMinQuantity returns the value of MinQuantity.
+func (s *Price) GetMinQuantity() OptMoney {
+	return s.MinQuantity
+}
+
+// GetMaxQuantity returns the value of MaxQuantity.
+func (s *Price) GetMaxQuantity() OptMoney {
+	return s.MaxQuantity
+}
+
+// GetQuantityStep returns the value of QuantityStep.
+func (s *Price) GetQuantityStep() OptMoney {
+	return s.QuantityStep
+}
+
+// GetAllowances returns the value of Allowances.
+func (s *Price) GetAllowances() []IncludedAllowance {
+	return s.Allowances
+}
+
+// GetFeatures returns the value of Features.
+func (s *Price) GetFeatures() []IncludedFeature {
+	return s.Features
+}
+
+// GetTerm returns the value of Term.
+func (s *Price) GetTerm() OptInt {
+	return s.Term
+}
+
+// GetPeriod returns the value of Period.
+func (s *Price) GetPeriod() OptPricePeriod {
+	return s.Period
+}
+
+// GetSetupFee returns the value of SetupFee.
+func (s *Price) GetSetupFee() OptMoney {
+	return s.SetupFee
+}
+
+// SetTerminationPolicy sets the value of TerminationPolicy.
+func (s *Price) SetTerminationPolicy(val OptTerminationPolicy) {
+	s.TerminationPolicy = val
+}
+
+// SetRefundPolicy sets the value of RefundPolicy.
+func (s *Price) SetRefundPolicy(val OptRefundPolicy) {
+	s.RefundPolicy = val
+}
+
+// SetProductID sets the value of ProductID.
+func (s *Price) SetProductID(val OptUUID) {
+	s.ProductID = val
+}
+
+// SetID sets the value of ID.
+func (s *Price) SetID(val uuid.UUID) {
+	s.ID = val
+}
+
+// SetPlanID sets the value of PlanID.
+func (s *Price) SetPlanID(val uuid.UUID) {
+	s.PlanID = val
+}
+
+// SetCurrency sets the value of Currency.
+func (s *Price) SetCurrency(val string) {
+	s.Currency = val
+}
+
+// SetType sets the value of Type.
+func (s *Price) SetType(val PriceType) {
+	s.Type = val
+}
+
+// SetBillingScheme sets the value of BillingScheme.
+func (s *Price) SetBillingScheme(val PriceBillingScheme) {
+	s.BillingScheme = val
+}
+
+// SetUnitAmount sets the value of UnitAmount.
+func (s *Price) SetUnitAmount(val OptMoney) {
+	s.UnitAmount = val
+}
+
+// SetTiersMode sets the value of TiersMode.
+func (s *Price) SetTiersMode(val OptPriceTiersMode) {
+	s.TiersMode = val
+}
+
+// SetTiers sets the value of Tiers.
+func (s *Price) SetTiers(val []Tier) {
+	s.Tiers = val
+}
+
+// SetRateCardID sets the value of RateCardID.
+func (s *Price) SetRateCardID(val OptUUID) {
+	s.RateCardID = val
+}
+
+// SetMinQuantity sets the value of MinQuantity.
+func (s *Price) SetMinQuantity(val OptMoney) {
+	s.MinQuantity = val
+}
+
+// SetMaxQuantity sets the value of MaxQuantity.
+func (s *Price) SetMaxQuantity(val OptMoney) {
+	s.MaxQuantity = val
+}
+
+// SetQuantityStep sets the value of QuantityStep.
+func (s *Price) SetQuantityStep(val OptMoney) {
+	s.QuantityStep = val
+}
+
+// SetAllowances sets the value of Allowances.
+func (s *Price) SetAllowances(val []IncludedAllowance) {
+	s.Allowances = val
+}
+
+// SetFeatures sets the value of Features.
+func (s *Price) SetFeatures(val []IncludedFeature) {
+	s.Features = val
+}
+
+// SetTerm sets the value of Term.
+func (s *Price) SetTerm(val OptInt) {
+	s.Term = val
+}
+
+// SetPeriod sets the value of Period.
+func (s *Price) SetPeriod(val OptPricePeriod) {
+	s.Period = val
+}
+
+// SetSetupFee sets the value of SetupFee.
+func (s *Price) SetSetupFee(val OptMoney) {
+	s.SetupFee = val
+}
+
+// How the amount is arrived at. `rated` means the rate depends on attributes such as region or machine
+// type, and is looked up on a price list.
+type PriceBillingScheme string
+
+const (
+	PriceBillingSchemePerUnit PriceBillingScheme = "per_unit"
+	PriceBillingSchemeTiered  PriceBillingScheme = "tiered"
+	PriceBillingSchemeRated   PriceBillingScheme = "rated"
+)
+
+// AllValues returns all PriceBillingScheme values.
+func (PriceBillingScheme) AllValues() []PriceBillingScheme {
+	return []PriceBillingScheme{
+		PriceBillingSchemePerUnit,
+		PriceBillingSchemeTiered,
+		PriceBillingSchemeRated,
+	}
+}
+
+// MarshalText implements encoding.TextMarshaler.
+func (s PriceBillingScheme) MarshalText() ([]byte, error) {
+	switch s {
+	case PriceBillingSchemePerUnit:
+		return []byte(s), nil
+	case PriceBillingSchemeTiered:
+		return []byte(s), nil
+	case PriceBillingSchemeRated:
+		return []byte(s), nil
+	default:
+		return nil, errors.Errorf("invalid value: %q", s)
+	}
+}
+
+// UnmarshalText implements encoding.TextUnmarshaler.
+func (s *PriceBillingScheme) UnmarshalText(data []byte) error {
+	switch PriceBillingScheme(data) {
+	case PriceBillingSchemePerUnit:
+		*s = PriceBillingSchemePerUnit
+		return nil
+	case PriceBillingSchemeTiered:
+		*s = PriceBillingSchemeTiered
+		return nil
+	case PriceBillingSchemeRated:
+		*s = PriceBillingSchemeRated
+		return nil
+	default:
+		return errors.Errorf("invalid value: %q", data)
+	}
+}
+
+// Ref: #/components/schemas/PriceList
+type PriceList struct {
+	Items      []Price  `json:"items"`
+	TotalCount OptInt64 `json:"total_count"`
+}
+
+// GetItems returns the value of Items.
+func (s *PriceList) GetItems() []Price {
+	return s.Items
+}
+
+// GetTotalCount returns the value of TotalCount.
+func (s *PriceList) GetTotalCount() OptInt64 {
+	return s.TotalCount
+}
+
+// SetItems sets the value of Items.
+func (s *PriceList) SetItems(val []Price) {
+	s.Items = val
+}
+
+// SetTotalCount sets the value of TotalCount.
+func (s *PriceList) SetTotalCount(val OptInt64) {
+	s.TotalCount = val
+}
+
+// PriceListHeaders wraps PriceList with response headers.
+type PriceListHeaders struct {
+	ETag     OptString
+	Response PriceList
+}
+
+// GetETag returns the value of ETag.
+func (s *PriceListHeaders) GetETag() OptString {
+	return s.ETag
+}
+
+// GetResponse returns the value of Response.
+func (s *PriceListHeaders) GetResponse() PriceList {
+	return s.Response
+}
+
+// SetETag sets the value of ETag.
+func (s *PriceListHeaders) SetETag(val OptString) {
+	s.ETag = val
+}
+
+// SetResponse sets the value of Response.
+func (s *PriceListHeaders) SetResponse(val PriceList) {
+	s.Response = val
+}
+
+func (*PriceListHeaders) listPricesRes() {}
+
+type PricePeriod string
+
+const (
+	PricePeriodNone  PricePeriod = "none"
+	PricePeriodDay   PricePeriod = "day"
+	PricePeriodMonth PricePeriod = "month"
+	PricePeriodYear  PricePeriod = "year"
+)
+
+// AllValues returns all PricePeriod values.
+func (PricePeriod) AllValues() []PricePeriod {
+	return []PricePeriod{
+		PricePeriodNone,
+		PricePeriodDay,
+		PricePeriodMonth,
+		PricePeriodYear,
+	}
+}
+
+// MarshalText implements encoding.TextMarshaler.
+func (s PricePeriod) MarshalText() ([]byte, error) {
+	switch s {
+	case PricePeriodNone:
+		return []byte(s), nil
+	case PricePeriodDay:
+		return []byte(s), nil
+	case PricePeriodMonth:
+		return []byte(s), nil
+	case PricePeriodYear:
+		return []byte(s), nil
+	default:
+		return nil, errors.Errorf("invalid value: %q", s)
+	}
+}
+
+// UnmarshalText implements encoding.TextUnmarshaler.
+func (s *PricePeriod) UnmarshalText(data []byte) error {
+	switch PricePeriod(data) {
+	case PricePeriodNone:
+		*s = PricePeriodNone
+		return nil
+	case PricePeriodDay:
+		*s = PricePeriodDay
+		return nil
+	case PricePeriodMonth:
+		*s = PricePeriodMonth
+		return nil
+	case PricePeriodYear:
+		*s = PricePeriodYear
+		return nil
+	default:
+		return errors.Errorf("invalid value: %q", data)
+	}
+}
+
+// `none` for a price that is not tiered, which is most of them.
+//
+// Otherwise `graduated` charges each band at its own rate, and `volume` charges everything at the rate
+// of the band the total falls in.
+type PriceTiersMode string
+
+const (
+	PriceTiersModeNone      PriceTiersMode = "none"
+	PriceTiersModeGraduated PriceTiersMode = "graduated"
+	PriceTiersModeVolume    PriceTiersMode = "volume"
+)
+
+// AllValues returns all PriceTiersMode values.
+func (PriceTiersMode) AllValues() []PriceTiersMode {
+	return []PriceTiersMode{
+		PriceTiersModeNone,
+		PriceTiersModeGraduated,
+		PriceTiersModeVolume,
+	}
+}
+
+// MarshalText implements encoding.TextMarshaler.
+func (s PriceTiersMode) MarshalText() ([]byte, error) {
+	switch s {
+	case PriceTiersModeNone:
+		return []byte(s), nil
+	case PriceTiersModeGraduated:
+		return []byte(s), nil
+	case PriceTiersModeVolume:
+		return []byte(s), nil
+	default:
+		return nil, errors.Errorf("invalid value: %q", s)
+	}
+}
+
+// UnmarshalText implements encoding.TextUnmarshaler.
+func (s *PriceTiersMode) UnmarshalText(data []byte) error {
+	switch PriceTiersMode(data) {
+	case PriceTiersModeNone:
+		*s = PriceTiersModeNone
+		return nil
+	case PriceTiersModeGraduated:
+		*s = PriceTiersModeGraduated
+		return nil
+	case PriceTiersModeVolume:
+		*s = PriceTiersModeVolume
+		return nil
+	default:
+		return errors.Errorf("invalid value: %q", data)
+	}
+}
+
+// `metered` charges for what is used, `prepaid` buys a period in advance, `one_time` charges once.
+type PriceType string
+
+const (
+	PriceTypeMetered PriceType = "metered"
+	PriceTypePrepaid PriceType = "prepaid"
+	PriceTypeOneTime PriceType = "one_time"
+)
+
+// AllValues returns all PriceType values.
+func (PriceType) AllValues() []PriceType {
+	return []PriceType{
+		PriceTypeMetered,
+		PriceTypePrepaid,
+		PriceTypeOneTime,
+	}
+}
+
+// MarshalText implements encoding.TextMarshaler.
+func (s PriceType) MarshalText() ([]byte, error) {
+	switch s {
+	case PriceTypeMetered:
+		return []byte(s), nil
+	case PriceTypePrepaid:
+		return []byte(s), nil
+	case PriceTypeOneTime:
+		return []byte(s), nil
+	default:
+		return nil, errors.Errorf("invalid value: %q", s)
+	}
+}
+
+// UnmarshalText implements encoding.TextUnmarshaler.
+func (s *PriceType) UnmarshalText(data []byte) error {
+	switch PriceType(data) {
+	case PriceTypeMetered:
+		*s = PriceTypeMetered
+		return nil
+	case PriceTypePrepaid:
+		*s = PriceTypePrepaid
+		return nil
+	case PriceTypeOneTime:
+		*s = PriceTypeOneTime
+		return nil
+	default:
+		return errors.Errorf("invalid value: %q", data)
+	}
+}
+
+// Ref: #/components/schemas/Product
+type Product struct {
+	ID                      uuid.UUID       `json:"id"`
+	Name                    string          `json:"name"`
+	NameTranslations        OptTranslations `json:"name_translations"`
+	Description             OptString       `json:"description"`
+	DescriptionTranslations OptTranslations `json:"description_translations"`
+}
+
+// GetID returns the value of ID.
+func (s *Product) GetID() uuid.UUID {
+	return s.ID
+}
+
+// GetName returns the value of Name.
+func (s *Product) GetName() string {
+	return s.Name
+}
+
+// GetNameTranslations returns the value of NameTranslations.
+func (s *Product) GetNameTranslations() OptTranslations {
+	return s.NameTranslations
+}
+
+// GetDescription returns the value of Description.
+func (s *Product) GetDescription() OptString {
+	return s.Description
+}
+
+// GetDescriptionTranslations returns the value of DescriptionTranslations.
+func (s *Product) GetDescriptionTranslations() OptTranslations {
+	return s.DescriptionTranslations
+}
+
+// SetID sets the value of ID.
+func (s *Product) SetID(val uuid.UUID) {
+	s.ID = val
+}
+
+// SetName sets the value of Name.
+func (s *Product) SetName(val string) {
+	s.Name = val
+}
+
+// SetNameTranslations sets the value of NameTranslations.
+func (s *Product) SetNameTranslations(val OptTranslations) {
+	s.NameTranslations = val
+}
+
+// SetDescription sets the value of Description.
+func (s *Product) SetDescription(val OptString) {
+	s.Description = val
+}
+
+// SetDescriptionTranslations sets the value of DescriptionTranslations.
+func (s *Product) SetDescriptionTranslations(val OptTranslations) {
+	s.DescriptionTranslations = val
+}
+
+// Ref: #/components/schemas/ProductList
+type ProductList struct {
+	Items      []Product `json:"items"`
+	TotalCount OptInt64  `json:"total_count"`
+}
+
+// GetItems returns the value of Items.
+func (s *ProductList) GetItems() []Product {
+	return s.Items
+}
+
+// GetTotalCount returns the value of TotalCount.
+func (s *ProductList) GetTotalCount() OptInt64 {
+	return s.TotalCount
+}
+
+// SetItems sets the value of Items.
+func (s *ProductList) SetItems(val []Product) {
+	s.Items = val
+}
+
+// SetTotalCount sets the value of TotalCount.
+func (s *ProductList) SetTotalCount(val OptInt64) {
+	s.TotalCount = val
+}
+
+// ProductListHeaders wraps ProductList with response headers.
+type ProductListHeaders struct {
+	ETag     OptString
+	Response ProductList
+}
+
+// GetETag returns the value of ETag.
+func (s *ProductListHeaders) GetETag() OptString {
+	return s.ETag
+}
+
+// GetResponse returns the value of Response.
+func (s *ProductListHeaders) GetResponse() ProductList {
+	return s.Response
+}
+
+// SetETag sets the value of ETag.
+func (s *ProductListHeaders) SetETag(val OptString) {
+	s.ETag = val
+}
+
+// SetResponse sets the value of Response.
+func (s *ProductListHeaders) SetResponse(val ProductList) {
+	s.Response = val
+}
+
+func (*ProductListHeaders) listProductsRes() {}
+
 type ProjectAuth struct {
 	Token string
 	Roles []string
@@ -10140,6 +9907,239 @@ func (s *QuoteRequest) SetLines(val []QuoteLine) {
 // SetChanges sets the value of Changes.
 func (s *QuoteRequest) SetChanges(val []QuoteChange) {
 	s.Changes = val
+}
+
+// Ref: #/components/schemas/Rate
+type Rate struct {
+	Meter ObjectIdentity `json:"meter"`
+	// The unit readings arrive in, such as `core-second`.
+	Unit OptString `json:"unit"`
+	// The attributes this rate applies to, such as region and machine type.
+	Dimensions   RateDimensions   `json:"dimensions"`
+	PricingModel RatePricingModel `json:"pricing_model"`
+	// Present for `per_unit`. Tiered rates carry their amounts on the tiers.
+	UnitAmount OptMoney `json:"unit_amount"`
+	// Present for `graduated` and `volume`, in ascending order.
+	Tiers []Tier `json:"tiers"`
+	// How many measured units one amount covers. An hourly rate on a per-second meter is `"3600"`.
+	UnitQuantity  OptString      `json:"unit_quantity"`
+	Currency      string         `json:"currency"`
+	EffectiveFrom time.Time      `json:"effective_from"`
+	EffectiveTo   OptNilDateTime `json:"effective_to"`
+}
+
+// GetMeter returns the value of Meter.
+func (s *Rate) GetMeter() ObjectIdentity {
+	return s.Meter
+}
+
+// GetUnit returns the value of Unit.
+func (s *Rate) GetUnit() OptString {
+	return s.Unit
+}
+
+// GetDimensions returns the value of Dimensions.
+func (s *Rate) GetDimensions() RateDimensions {
+	return s.Dimensions
+}
+
+// GetPricingModel returns the value of PricingModel.
+func (s *Rate) GetPricingModel() RatePricingModel {
+	return s.PricingModel
+}
+
+// GetUnitAmount returns the value of UnitAmount.
+func (s *Rate) GetUnitAmount() OptMoney {
+	return s.UnitAmount
+}
+
+// GetTiers returns the value of Tiers.
+func (s *Rate) GetTiers() []Tier {
+	return s.Tiers
+}
+
+// GetUnitQuantity returns the value of UnitQuantity.
+func (s *Rate) GetUnitQuantity() OptString {
+	return s.UnitQuantity
+}
+
+// GetCurrency returns the value of Currency.
+func (s *Rate) GetCurrency() string {
+	return s.Currency
+}
+
+// GetEffectiveFrom returns the value of EffectiveFrom.
+func (s *Rate) GetEffectiveFrom() time.Time {
+	return s.EffectiveFrom
+}
+
+// GetEffectiveTo returns the value of EffectiveTo.
+func (s *Rate) GetEffectiveTo() OptNilDateTime {
+	return s.EffectiveTo
+}
+
+// SetMeter sets the value of Meter.
+func (s *Rate) SetMeter(val ObjectIdentity) {
+	s.Meter = val
+}
+
+// SetUnit sets the value of Unit.
+func (s *Rate) SetUnit(val OptString) {
+	s.Unit = val
+}
+
+// SetDimensions sets the value of Dimensions.
+func (s *Rate) SetDimensions(val RateDimensions) {
+	s.Dimensions = val
+}
+
+// SetPricingModel sets the value of PricingModel.
+func (s *Rate) SetPricingModel(val RatePricingModel) {
+	s.PricingModel = val
+}
+
+// SetUnitAmount sets the value of UnitAmount.
+func (s *Rate) SetUnitAmount(val OptMoney) {
+	s.UnitAmount = val
+}
+
+// SetTiers sets the value of Tiers.
+func (s *Rate) SetTiers(val []Tier) {
+	s.Tiers = val
+}
+
+// SetUnitQuantity sets the value of UnitQuantity.
+func (s *Rate) SetUnitQuantity(val OptString) {
+	s.UnitQuantity = val
+}
+
+// SetCurrency sets the value of Currency.
+func (s *Rate) SetCurrency(val string) {
+	s.Currency = val
+}
+
+// SetEffectiveFrom sets the value of EffectiveFrom.
+func (s *Rate) SetEffectiveFrom(val time.Time) {
+	s.EffectiveFrom = val
+}
+
+// SetEffectiveTo sets the value of EffectiveTo.
+func (s *Rate) SetEffectiveTo(val OptNilDateTime) {
+	s.EffectiveTo = val
+}
+
+// The attributes this rate applies to, such as region and machine type.
+type RateDimensions map[string]string
+
+func (s *RateDimensions) init() RateDimensions {
+	m := *s
+	if m == nil {
+		m = map[string]string{}
+		*s = m
+	}
+	return m
+}
+
+// Ref: #/components/schemas/RateList
+type RateList struct {
+	Items      []Rate   `json:"items"`
+	TotalCount OptInt64 `json:"total_count"`
+}
+
+// GetItems returns the value of Items.
+func (s *RateList) GetItems() []Rate {
+	return s.Items
+}
+
+// GetTotalCount returns the value of TotalCount.
+func (s *RateList) GetTotalCount() OptInt64 {
+	return s.TotalCount
+}
+
+// SetItems sets the value of Items.
+func (s *RateList) SetItems(val []Rate) {
+	s.Items = val
+}
+
+// SetTotalCount sets the value of TotalCount.
+func (s *RateList) SetTotalCount(val OptInt64) {
+	s.TotalCount = val
+}
+
+// RateListHeaders wraps RateList with response headers.
+type RateListHeaders struct {
+	ETag     OptString
+	Response RateList
+}
+
+// GetETag returns the value of ETag.
+func (s *RateListHeaders) GetETag() OptString {
+	return s.ETag
+}
+
+// GetResponse returns the value of Response.
+func (s *RateListHeaders) GetResponse() RateList {
+	return s.Response
+}
+
+// SetETag sets the value of ETag.
+func (s *RateListHeaders) SetETag(val OptString) {
+	s.ETag = val
+}
+
+// SetResponse sets the value of Response.
+func (s *RateListHeaders) SetResponse(val RateList) {
+	s.Response = val
+}
+
+func (*RateListHeaders) listRatesRes() {}
+
+type RatePricingModel string
+
+const (
+	RatePricingModelPerUnit   RatePricingModel = "per_unit"
+	RatePricingModelGraduated RatePricingModel = "graduated"
+	RatePricingModelVolume    RatePricingModel = "volume"
+)
+
+// AllValues returns all RatePricingModel values.
+func (RatePricingModel) AllValues() []RatePricingModel {
+	return []RatePricingModel{
+		RatePricingModelPerUnit,
+		RatePricingModelGraduated,
+		RatePricingModelVolume,
+	}
+}
+
+// MarshalText implements encoding.TextMarshaler.
+func (s RatePricingModel) MarshalText() ([]byte, error) {
+	switch s {
+	case RatePricingModelPerUnit:
+		return []byte(s), nil
+	case RatePricingModelGraduated:
+		return []byte(s), nil
+	case RatePricingModelVolume:
+		return []byte(s), nil
+	default:
+		return nil, errors.Errorf("invalid value: %q", s)
+	}
+}
+
+// UnmarshalText implements encoding.TextUnmarshaler.
+func (s *RatePricingModel) UnmarshalText(data []byte) error {
+	switch RatePricingModel(data) {
+	case RatePricingModelPerUnit:
+		*s = RatePricingModelPerUnit
+		return nil
+	case RatePricingModelGraduated:
+		*s = RatePricingModelGraduated
+		return nil
+	case RatePricingModelVolume:
+		*s = RatePricingModelVolume
+		return nil
+	default:
+		return errors.Errorf("invalid value: %q", data)
+	}
 }
 
 // Ref: #/components/schemas/Refund

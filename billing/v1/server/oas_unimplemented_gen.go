@@ -285,44 +285,6 @@ func (UnimplementedHandler) ListBillingAccounts(ctx context.Context, params List
 	return r, ht.ErrNotImplemented
 }
 
-// ListCatalogPlans implements list-catalog-plans operation.
-//
-// List catalog plans.
-//
-// GET /catalog/v1/products/{productId}/plans
-func (UnimplementedHandler) ListCatalogPlans(ctx context.Context, params ListCatalogPlansParams) (r ListCatalogPlansRes, _ error) {
-	return r, ht.ErrNotImplemented
-}
-
-// ListCatalogPrices implements list-catalog-prices operation.
-//
-// Public list prices only. An account holding a negotiated agreement may be charged less; it is never
-// charged more.
-//
-// GET /catalog/v1/plans/{planId}/prices
-func (UnimplementedHandler) ListCatalogPrices(ctx context.Context, params ListCatalogPricesParams) (r ListCatalogPricesRes, _ error) {
-	return r, ht.ErrNotImplemented
-}
-
-// ListCatalogProducts implements list-catalog-products operation.
-//
-// List catalog products.
-//
-// GET /catalog/v1/products
-func (UnimplementedHandler) ListCatalogProducts(ctx context.Context, params ListCatalogProductsParams) (r ListCatalogProductsRes, _ error) {
-	return r, ht.ErrNotImplemented
-}
-
-// ListCatalogRates implements list-catalog-rates operation.
-//
-// Only public price lists are readable here. A list written for a single agreement is not, and its
-// identifier cannot be used to reach it.
-//
-// GET /catalog/v1/rate-cards/{rateCardId}/rules
-func (UnimplementedHandler) ListCatalogRates(ctx context.Context, params ListCatalogRatesParams) (r ListCatalogRatesRes, _ error) {
-	return r, ht.ErrNotImplemented
-}
-
 // ListCommitments implements ListCommitments operation.
 //
 // List account commercial commitments.
@@ -407,6 +369,34 @@ func (UnimplementedHandler) ListPaidProjects(ctx context.Context, params ListPai
 //
 // GET /account/v1/payment-methods
 func (UnimplementedHandler) ListPaymentMethods(ctx context.Context, params ListPaymentMethodsParams) (r *PaymentMethodList, _ error) {
+	return r, ht.ErrNotImplemented
+}
+
+// ListPlans implements list-plans operation.
+//
+// List catalog plans.
+//
+// GET /catalog/v1/products/{productId}/plans
+func (UnimplementedHandler) ListPlans(ctx context.Context, params ListPlansParams) (r ListPlansRes, _ error) {
+	return r, ht.ErrNotImplemented
+}
+
+// ListPrices implements list-prices operation.
+//
+// Public list prices only. An account holding a negotiated agreement may be charged less; it is never
+// charged more.
+//
+// GET /catalog/v1/plans/{planId}/prices
+func (UnimplementedHandler) ListPrices(ctx context.Context, params ListPricesParams) (r ListPricesRes, _ error) {
+	return r, ht.ErrNotImplemented
+}
+
+// ListProducts implements list-products operation.
+//
+// List catalog products.
+//
+// GET /catalog/v1/products
+func (UnimplementedHandler) ListProducts(ctx context.Context, params ListProductsParams) (r ListProductsRes, _ error) {
 	return r, ht.ErrNotImplemented
 }
 
@@ -498,6 +488,16 @@ func (UnimplementedHandler) ListProjectSubscriptions(ctx context.Context, params
 //
 // GET /api/v1/projects/{projectId}/usage-charges
 func (UnimplementedHandler) ListProjectUsageCharges(ctx context.Context, params ListProjectUsageChargesParams) (r *UsageChargeList, _ error) {
+	return r, ht.ErrNotImplemented
+}
+
+// ListRates implements list-rates operation.
+//
+// Only public price lists are readable here. A list written for a single agreement is not, and its
+// identifier cannot be used to reach it.
+//
+// GET /catalog/v1/rate-cards/{rateCardId}/rules
+func (UnimplementedHandler) ListRates(ctx context.Context, params ListRatesParams) (r ListRatesRes, _ error) {
 	return r, ht.ErrNotImplemented
 }
 

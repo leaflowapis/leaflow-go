@@ -142,114 +142,6 @@ func (e BillingAccountStatus) Valid() bool {
 	}
 }
 
-// Defines values for CatalogPriceBillingScheme.
-const (
-	CatalogPriceBillingSchemePerUnit CatalogPriceBillingScheme = "per_unit"
-	CatalogPriceBillingSchemeRated   CatalogPriceBillingScheme = "rated"
-	CatalogPriceBillingSchemeTiered  CatalogPriceBillingScheme = "tiered"
-)
-
-// Valid indicates whether the value is a known member of the CatalogPriceBillingScheme enum.
-func (e CatalogPriceBillingScheme) Valid() bool {
-	switch e {
-	case CatalogPriceBillingSchemePerUnit:
-		return true
-	case CatalogPriceBillingSchemeRated:
-		return true
-	case CatalogPriceBillingSchemeTiered:
-		return true
-	default:
-		return false
-	}
-}
-
-// Defines values for CatalogPricePeriod.
-const (
-	CatalogPricePeriodDay   CatalogPricePeriod = "day"
-	CatalogPricePeriodMonth CatalogPricePeriod = "month"
-	CatalogPricePeriodNone  CatalogPricePeriod = "none"
-	CatalogPricePeriodYear  CatalogPricePeriod = "year"
-)
-
-// Valid indicates whether the value is a known member of the CatalogPricePeriod enum.
-func (e CatalogPricePeriod) Valid() bool {
-	switch e {
-	case CatalogPricePeriodDay:
-		return true
-	case CatalogPricePeriodMonth:
-		return true
-	case CatalogPricePeriodNone:
-		return true
-	case CatalogPricePeriodYear:
-		return true
-	default:
-		return false
-	}
-}
-
-// Defines values for CatalogPriceTiersMode.
-const (
-	CatalogPriceTiersModeGraduated CatalogPriceTiersMode = "graduated"
-	CatalogPriceTiersModeNone      CatalogPriceTiersMode = "none"
-	CatalogPriceTiersModeVolume    CatalogPriceTiersMode = "volume"
-)
-
-// Valid indicates whether the value is a known member of the CatalogPriceTiersMode enum.
-func (e CatalogPriceTiersMode) Valid() bool {
-	switch e {
-	case CatalogPriceTiersModeGraduated:
-		return true
-	case CatalogPriceTiersModeNone:
-		return true
-	case CatalogPriceTiersModeVolume:
-		return true
-	default:
-		return false
-	}
-}
-
-// Defines values for CatalogPriceType.
-const (
-	CatalogPriceTypeMetered CatalogPriceType = "metered"
-	CatalogPriceTypeOneTime CatalogPriceType = "one_time"
-	CatalogPriceTypePrepaid CatalogPriceType = "prepaid"
-)
-
-// Valid indicates whether the value is a known member of the CatalogPriceType enum.
-func (e CatalogPriceType) Valid() bool {
-	switch e {
-	case CatalogPriceTypeMetered:
-		return true
-	case CatalogPriceTypeOneTime:
-		return true
-	case CatalogPriceTypePrepaid:
-		return true
-	default:
-		return false
-	}
-}
-
-// Defines values for CatalogRatePricingModel.
-const (
-	CatalogRatePricingModelGraduated CatalogRatePricingModel = "graduated"
-	CatalogRatePricingModelPerUnit   CatalogRatePricingModel = "per_unit"
-	CatalogRatePricingModelVolume    CatalogRatePricingModel = "volume"
-)
-
-// Valid indicates whether the value is a known member of the CatalogRatePricingModel enum.
-func (e CatalogRatePricingModel) Valid() bool {
-	switch e {
-	case CatalogRatePricingModelGraduated:
-		return true
-	case CatalogRatePricingModelPerUnit:
-		return true
-	case CatalogRatePricingModelVolume:
-		return true
-	default:
-		return false
-	}
-}
-
 // Defines values for CodePreviewType.
 const (
 	CodePreviewTypeDiscount CodePreviewType = "discount"
@@ -679,6 +571,93 @@ func (e PaymentStatus) Valid() bool {
 	}
 }
 
+// Defines values for PriceBillingScheme.
+const (
+	PriceBillingSchemePerUnit PriceBillingScheme = "per_unit"
+	PriceBillingSchemeRated   PriceBillingScheme = "rated"
+	PriceBillingSchemeTiered  PriceBillingScheme = "tiered"
+)
+
+// Valid indicates whether the value is a known member of the PriceBillingScheme enum.
+func (e PriceBillingScheme) Valid() bool {
+	switch e {
+	case PriceBillingSchemePerUnit:
+		return true
+	case PriceBillingSchemeRated:
+		return true
+	case PriceBillingSchemeTiered:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for PricePeriod.
+const (
+	PricePeriodDay   PricePeriod = "day"
+	PricePeriodMonth PricePeriod = "month"
+	PricePeriodNone  PricePeriod = "none"
+	PricePeriodYear  PricePeriod = "year"
+)
+
+// Valid indicates whether the value is a known member of the PricePeriod enum.
+func (e PricePeriod) Valid() bool {
+	switch e {
+	case PricePeriodDay:
+		return true
+	case PricePeriodMonth:
+		return true
+	case PricePeriodNone:
+		return true
+	case PricePeriodYear:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for PriceTiersMode.
+const (
+	PriceTiersModeGraduated PriceTiersMode = "graduated"
+	PriceTiersModeNone      PriceTiersMode = "none"
+	PriceTiersModeVolume    PriceTiersMode = "volume"
+)
+
+// Valid indicates whether the value is a known member of the PriceTiersMode enum.
+func (e PriceTiersMode) Valid() bool {
+	switch e {
+	case PriceTiersModeGraduated:
+		return true
+	case PriceTiersModeNone:
+		return true
+	case PriceTiersModeVolume:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for PriceType.
+const (
+	PriceTypeMetered PriceType = "metered"
+	PriceTypeOneTime PriceType = "one_time"
+	PriceTypePrepaid PriceType = "prepaid"
+)
+
+// Valid indicates whether the value is a known member of the PriceType enum.
+func (e PriceType) Valid() bool {
+	switch e {
+	case PriceTypeMetered:
+		return true
+	case PriceTypeOneTime:
+		return true
+	case PriceTypePrepaid:
+		return true
+	default:
+		return false
+	}
+}
+
 // Defines values for ProjectClosureItemActions.
 const (
 	CancelOrder        ProjectClosureItemActions = "cancel_order"
@@ -859,6 +838,27 @@ func (e QuoteLineResultUnpricedReason) Valid() bool {
 	case QuoteLineResultUnpricedReasonNoRateCard:
 		return true
 	case QuoteLineResultUnpricedReasonNone:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for RatePricingModel.
+const (
+	RatePricingModelGraduated RatePricingModel = "graduated"
+	RatePricingModelPerUnit   RatePricingModel = "per_unit"
+	RatePricingModelVolume    RatePricingModel = "volume"
+)
+
+// Valid indicates whether the value is a known member of the RatePricingModel enum.
+func (e RatePricingModel) Valid() bool {
+	switch e {
+	case RatePricingModelGraduated:
+		return true
+	case RatePricingModelPerUnit:
+		return true
+	case RatePricingModelVolume:
 		return true
 	default:
 		return false
@@ -1221,19 +1221,19 @@ func (e ListCreditGrantsParamsStatus) Valid() bool {
 
 // Defines values for ListProjectSpendParamsGroupBy.
 const (
-	Plan     ListProjectSpendParamsGroupBy = "plan"
-	Product  ListProjectSpendParamsGroupBy = "product"
-	Resource ListProjectSpendParamsGroupBy = "resource"
+	ListProjectSpendParamsGroupByPlan     ListProjectSpendParamsGroupBy = "plan"
+	ListProjectSpendParamsGroupByProduct  ListProjectSpendParamsGroupBy = "product"
+	ListProjectSpendParamsGroupByResource ListProjectSpendParamsGroupBy = "resource"
 )
 
 // Valid indicates whether the value is a known member of the ListProjectSpendParamsGroupBy enum.
 func (e ListProjectSpendParamsGroupBy) Valid() bool {
 	switch e {
-	case Plan:
+	case ListProjectSpendParamsGroupByPlan:
 		return true
-	case Product:
+	case ListProjectSpendParamsGroupByProduct:
 		return true
-	case Resource:
+	case ListProjectSpendParamsGroupByResource:
 		return true
 	default:
 		return false
@@ -1503,202 +1503,6 @@ type BillingAccountUpdate struct {
 	LegalName         *string `json:"legal_name,omitempty"`
 	Name              *string `json:"name,omitempty"`
 	TaxId             *string `json:"tax_id,omitempty"`
-}
-
-// CatalogPlan defines model for CatalogPlan.
-type CatalogPlan struct {
-	Description *string `json:"description,omitempty"`
-
-	// DescriptionTranslations Text in other languages, keyed by BCP 47 language tag (`zh-Hans`, `en`, `ja`).
-	//
-	// When your locale is absent, use the plain field next to this one. **There is no fallback
-	// chain**: a missing `zh-Hans` does not fall back to `zh`.
-	//
-	// Resolving server-side by `Accept-Language` is deliberately not done — the public catalogue is
-	// cached and served from a CDN, and one cache serves every language only if the response does
-	// not depend on the request's language.
-	DescriptionTranslations *externalRef0.Translations `json:"description_translations,omitempty"`
-	Id                      openapi_types.UUID         `json:"id"`
-	Name                    string                     `json:"name"`
-
-	// NameTranslations Text in other languages, keyed by BCP 47 language tag (`zh-Hans`, `en`, `ja`).
-	//
-	// When your locale is absent, use the plain field next to this one. **There is no fallback
-	// chain**: a missing `zh-Hans` does not fall back to `zh`.
-	//
-	// Resolving server-side by `Accept-Language` is deliberately not done — the public catalogue is
-	// cached and served from a CDN, and one cache serves every language only if the response does
-	// not depend on the request's language.
-	NameTranslations *externalRef0.Translations `json:"name_translations,omitempty"`
-	ProductId        openapi_types.UUID         `json:"product_id"`
-}
-
-// CatalogPlanList defines model for CatalogPlanList.
-type CatalogPlanList struct {
-	Items      []CatalogPlan `json:"items"`
-	TotalCount *int64        `json:"total_count,omitempty"`
-}
-
-// CatalogPrice defines model for CatalogPrice.
-type CatalogPrice struct {
-	// Allowances Quantities included when this price is bought — the traffic or requests that are
-	// used before anything is charged for.
-	Allowances []IncludedAllowance `json:"allowances,omitempty"`
-
-	// BillingScheme How the amount is arrived at. `rated` means the rate depends on attributes such as
-	// region or machine type, and is looked up on a price list.
-	BillingScheme CatalogPriceBillingScheme `json:"billing_scheme"`
-	Currency      string                    `json:"currency"`
-
-	// Features Capabilities that buying this price makes available.
-	Features []IncludedFeature  `json:"features,omitempty"`
-	Id       openapi_types.UUID `json:"id"`
-
-	// MaxQuantity The largest quantity that can be bought. Absent means no upper bound.
-	//
-	// An order beyond it is refused with its own code, apart from the codes for running
-	// out of stock and for exceeding what the infrastructure allows.
-	MaxQuantity *externalRef0.Money `json:"max_quantity,omitempty"`
-
-	// MinQuantity The smallest quantity that can be bought. Absent means no lower bound.
-	MinQuantity *externalRef0.Money `json:"min_quantity,omitempty"`
-	Period      *CatalogPricePeriod `json:"period,omitempty"`
-	PlanId      openapi_types.UUID  `json:"plan_id"`
-	ProductId   *openapi_types.UUID `json:"product_id,omitempty"`
-
-	// QuantityStep Quantities must be a multiple of this. Absent means any quantity within the bounds.
-	QuantityStep *externalRef0.Money `json:"quantity_step,omitempty"`
-
-	// RateCardId For `rated` prices, the price list the rates are read from.
-	RateCardId *openapi_types.UUID `json:"rate_card_id,omitempty"`
-
-	// RefundPolicy none preserves paid amounts when fulfilled service ends. standard applies the documented refund window and change proration rules. Releasing unpaid holds or returning funds for failed fulfillment is separate.
-	RefundPolicy *RefundPolicy `json:"refund_policy,omitempty"`
-
-	// SetupFee A decimal string, in the currency stated alongside it.
-	//
-	// **The currency is not part of this type.** It is carried by a `currency` field next to the
-	// amount, or by the account the amount belongs to. Reading an amount without that field is
-	// reading a number with no unit.
-	//
-	// It is a string rather than a JSON number because a JSON number is a float in most parsers,
-	// and a float loses precision on the first arithmetic. Nothing on this platform puts an amount
-	// through a float.
-	SetupFee *externalRef0.Money `json:"setup_fee,omitempty"`
-
-	// Term For prepaid prices, how many periods one purchase covers.
-	Term *int `json:"term,omitempty"`
-
-	// TerminationPolicy Whether a fulfilled purchase may end immediately or only after its paid term. Does not grant a refund. When absent, the terms are not configured and termination requires review.
-	TerminationPolicy *TerminationPolicy `json:"termination_policy,omitempty"`
-
-	// Tiers Present for `tiered`, in ascending order.
-	Tiers []Tier `json:"tiers,omitempty"`
-
-	// TiersMode `none` for a price that is not tiered, which is most of them.
-	//
-	// Otherwise `graduated` charges each band at its own rate, and `volume` charges
-	// everything at the rate of the band the total falls in.
-	TiersMode *CatalogPriceTiersMode `json:"tiers_mode,omitempty"`
-
-	// Type `metered` charges for what is used, `prepaid` buys a period in advance, `one_time`
-	// charges once.
-	Type CatalogPriceType `json:"type"`
-
-	// UnitAmount Present for `per_unit`.
-	UnitAmount *externalRef0.Money `json:"unit_amount,omitempty"`
-}
-
-// CatalogPriceBillingScheme How the amount is arrived at. `rated` means the rate depends on attributes such as
-// region or machine type, and is looked up on a price list.
-type CatalogPriceBillingScheme string
-
-// CatalogPricePeriod defines model for CatalogPrice.Period.
-type CatalogPricePeriod string
-
-// CatalogPriceTiersMode `none` for a price that is not tiered, which is most of them.
-//
-// Otherwise `graduated` charges each band at its own rate, and `volume` charges
-// everything at the rate of the band the total falls in.
-type CatalogPriceTiersMode string
-
-// CatalogPriceType `metered` charges for what is used, `prepaid` buys a period in advance, `one_time`
-// charges once.
-type CatalogPriceType string
-
-// CatalogPriceList defines model for CatalogPriceList.
-type CatalogPriceList struct {
-	Items      []CatalogPrice `json:"items"`
-	TotalCount *int64         `json:"total_count,omitempty"`
-}
-
-// CatalogProduct defines model for CatalogProduct.
-type CatalogProduct struct {
-	Description *string `json:"description,omitempty"`
-
-	// DescriptionTranslations Text in other languages, keyed by BCP 47 language tag (`zh-Hans`, `en`, `ja`).
-	//
-	// When your locale is absent, use the plain field next to this one. **There is no fallback
-	// chain**: a missing `zh-Hans` does not fall back to `zh`.
-	//
-	// Resolving server-side by `Accept-Language` is deliberately not done — the public catalogue is
-	// cached and served from a CDN, and one cache serves every language only if the response does
-	// not depend on the request's language.
-	DescriptionTranslations *externalRef0.Translations `json:"description_translations,omitempty"`
-	Id                      openapi_types.UUID         `json:"id"`
-	Name                    string                     `json:"name"`
-
-	// NameTranslations Text in other languages, keyed by BCP 47 language tag (`zh-Hans`, `en`, `ja`).
-	//
-	// When your locale is absent, use the plain field next to this one. **There is no fallback
-	// chain**: a missing `zh-Hans` does not fall back to `zh`.
-	//
-	// Resolving server-side by `Accept-Language` is deliberately not done — the public catalogue is
-	// cached and served from a CDN, and one cache serves every language only if the response does
-	// not depend on the request's language.
-	NameTranslations *externalRef0.Translations `json:"name_translations,omitempty"`
-}
-
-// CatalogProductList defines model for CatalogProductList.
-type CatalogProductList struct {
-	Items      []CatalogProduct `json:"items"`
-	TotalCount *int64           `json:"total_count,omitempty"`
-}
-
-// CatalogRate defines model for CatalogRate.
-type CatalogRate struct {
-	Currency string `json:"currency"`
-
-	// Dimensions The attributes this rate applies to, such as region and machine type.
-	Dimensions    map[string]string `json:"dimensions"`
-	EffectiveFrom time.Time         `json:"effective_from"`
-	EffectiveTo   *time.Time        `json:"effective_to,omitempty"`
-
-	// Meter A catalog object inlined for display.
-	Meter        ObjectIdentity          `json:"meter"`
-	PricingModel CatalogRatePricingModel `json:"pricing_model"`
-
-	// Tiers Present for `graduated` and `volume`, in ascending order.
-	Tiers []Tier `json:"tiers,omitempty"`
-
-	// Unit The unit readings arrive in, such as `core-second`.
-	Unit *string `json:"unit,omitempty"`
-
-	// UnitAmount Present for `per_unit`. Tiered rates carry their amounts on the tiers.
-	UnitAmount *externalRef0.Money `json:"unit_amount,omitempty"`
-
-	// UnitQuantity How many measured units one amount covers. An hourly rate on a per-second meter is
-	// `"3600"`.
-	UnitQuantity *string `json:"unit_quantity,omitempty"`
-}
-
-// CatalogRatePricingModel defines model for CatalogRate.PricingModel.
-type CatalogRatePricingModel string
-
-// CatalogRateList defines model for CatalogRateList.
-type CatalogRateList struct {
-	Items      []CatalogRate `json:"items"`
-	TotalCount *int64        `json:"total_count,omitempty"`
 }
 
 // CodePreview defines model for CodePreview.
@@ -2579,6 +2383,166 @@ type PaymentResult struct {
 // gateway says so, never because this call returned.
 type PaymentStatus string
 
+// Plan defines model for Plan.
+type Plan struct {
+	Description *string `json:"description,omitempty"`
+
+	// DescriptionTranslations Text in other languages, keyed by BCP 47 language tag (`zh-Hans`, `en`, `ja`).
+	//
+	// When your locale is absent, use the plain field next to this one. **There is no fallback
+	// chain**: a missing `zh-Hans` does not fall back to `zh`.
+	//
+	// Resolving server-side by `Accept-Language` is deliberately not done — the public catalogue is
+	// cached and served from a CDN, and one cache serves every language only if the response does
+	// not depend on the request's language.
+	DescriptionTranslations *externalRef0.Translations `json:"description_translations,omitempty"`
+	Id                      openapi_types.UUID         `json:"id"`
+	Name                    string                     `json:"name"`
+
+	// NameTranslations Text in other languages, keyed by BCP 47 language tag (`zh-Hans`, `en`, `ja`).
+	//
+	// When your locale is absent, use the plain field next to this one. **There is no fallback
+	// chain**: a missing `zh-Hans` does not fall back to `zh`.
+	//
+	// Resolving server-side by `Accept-Language` is deliberately not done — the public catalogue is
+	// cached and served from a CDN, and one cache serves every language only if the response does
+	// not depend on the request's language.
+	NameTranslations *externalRef0.Translations `json:"name_translations,omitempty"`
+	ProductId        openapi_types.UUID         `json:"product_id"`
+}
+
+// PlanList defines model for PlanList.
+type PlanList struct {
+	Items      []Plan `json:"items"`
+	TotalCount *int64 `json:"total_count,omitempty"`
+}
+
+// Price defines model for Price.
+type Price struct {
+	// Allowances Quantities included when this price is bought — the traffic or requests that are
+	// used before anything is charged for.
+	Allowances []IncludedAllowance `json:"allowances,omitempty"`
+
+	// BillingScheme How the amount is arrived at. `rated` means the rate depends on attributes such as
+	// region or machine type, and is looked up on a price list.
+	BillingScheme PriceBillingScheme `json:"billing_scheme"`
+	Currency      string             `json:"currency"`
+
+	// Features Capabilities that buying this price makes available.
+	Features []IncludedFeature  `json:"features,omitempty"`
+	Id       openapi_types.UUID `json:"id"`
+
+	// MaxQuantity The largest quantity that can be bought. Absent means no upper bound.
+	//
+	// An order beyond it is refused with its own code, apart from the codes for running
+	// out of stock and for exceeding what the infrastructure allows.
+	MaxQuantity *externalRef0.Money `json:"max_quantity,omitempty"`
+
+	// MinQuantity The smallest quantity that can be bought. Absent means no lower bound.
+	MinQuantity *externalRef0.Money `json:"min_quantity,omitempty"`
+	Period      *PricePeriod        `json:"period,omitempty"`
+	PlanId      openapi_types.UUID  `json:"plan_id"`
+	ProductId   *openapi_types.UUID `json:"product_id,omitempty"`
+
+	// QuantityStep Quantities must be a multiple of this. Absent means any quantity within the bounds.
+	QuantityStep *externalRef0.Money `json:"quantity_step,omitempty"`
+
+	// RateCardId For `rated` prices, the price list the rates are read from.
+	RateCardId *openapi_types.UUID `json:"rate_card_id,omitempty"`
+
+	// RefundPolicy none preserves paid amounts when fulfilled service ends. standard applies the documented refund window and change proration rules. Releasing unpaid holds or returning funds for failed fulfillment is separate.
+	RefundPolicy *RefundPolicy `json:"refund_policy,omitempty"`
+
+	// SetupFee A decimal string, in the currency stated alongside it.
+	//
+	// **The currency is not part of this type.** It is carried by a `currency` field next to the
+	// amount, or by the account the amount belongs to. Reading an amount without that field is
+	// reading a number with no unit.
+	//
+	// It is a string rather than a JSON number because a JSON number is a float in most parsers,
+	// and a float loses precision on the first arithmetic. Nothing on this platform puts an amount
+	// through a float.
+	SetupFee *externalRef0.Money `json:"setup_fee,omitempty"`
+
+	// Term For prepaid prices, how many periods one purchase covers.
+	Term *int `json:"term,omitempty"`
+
+	// TerminationPolicy Whether a fulfilled purchase may end immediately or only after its paid term. Does not grant a refund. When absent, the terms are not configured and termination requires review.
+	TerminationPolicy *TerminationPolicy `json:"termination_policy,omitempty"`
+
+	// Tiers Present for `tiered`, in ascending order.
+	Tiers []Tier `json:"tiers,omitempty"`
+
+	// TiersMode `none` for a price that is not tiered, which is most of them.
+	//
+	// Otherwise `graduated` charges each band at its own rate, and `volume` charges
+	// everything at the rate of the band the total falls in.
+	TiersMode *PriceTiersMode `json:"tiers_mode,omitempty"`
+
+	// Type `metered` charges for what is used, `prepaid` buys a period in advance, `one_time`
+	// charges once.
+	Type PriceType `json:"type"`
+
+	// UnitAmount Present for `per_unit`.
+	UnitAmount *externalRef0.Money `json:"unit_amount,omitempty"`
+}
+
+// PriceBillingScheme How the amount is arrived at. `rated` means the rate depends on attributes such as
+// region or machine type, and is looked up on a price list.
+type PriceBillingScheme string
+
+// PricePeriod defines model for Price.Period.
+type PricePeriod string
+
+// PriceTiersMode `none` for a price that is not tiered, which is most of them.
+//
+// Otherwise `graduated` charges each band at its own rate, and `volume` charges
+// everything at the rate of the band the total falls in.
+type PriceTiersMode string
+
+// PriceType `metered` charges for what is used, `prepaid` buys a period in advance, `one_time`
+// charges once.
+type PriceType string
+
+// PriceList defines model for PriceList.
+type PriceList struct {
+	Items      []Price `json:"items"`
+	TotalCount *int64  `json:"total_count,omitempty"`
+}
+
+// Product defines model for Product.
+type Product struct {
+	Description *string `json:"description,omitempty"`
+
+	// DescriptionTranslations Text in other languages, keyed by BCP 47 language tag (`zh-Hans`, `en`, `ja`).
+	//
+	// When your locale is absent, use the plain field next to this one. **There is no fallback
+	// chain**: a missing `zh-Hans` does not fall back to `zh`.
+	//
+	// Resolving server-side by `Accept-Language` is deliberately not done — the public catalogue is
+	// cached and served from a CDN, and one cache serves every language only if the response does
+	// not depend on the request's language.
+	DescriptionTranslations *externalRef0.Translations `json:"description_translations,omitempty"`
+	Id                      openapi_types.UUID         `json:"id"`
+	Name                    string                     `json:"name"`
+
+	// NameTranslations Text in other languages, keyed by BCP 47 language tag (`zh-Hans`, `en`, `ja`).
+	//
+	// When your locale is absent, use the plain field next to this one. **There is no fallback
+	// chain**: a missing `zh-Hans` does not fall back to `zh`.
+	//
+	// Resolving server-side by `Accept-Language` is deliberately not done — the public catalogue is
+	// cached and served from a CDN, and one cache serves every language only if the response does
+	// not depend on the request's language.
+	NameTranslations *externalRef0.Translations `json:"name_translations,omitempty"`
+}
+
+// ProductList defines model for ProductList.
+type ProductList struct {
+	Items      []Product `json:"items"`
+	TotalCount *int64    `json:"total_count,omitempty"`
+}
+
 // ProjectBinding defines model for ProjectBinding.
 type ProjectBinding struct {
 	AccountName      *string            `json:"account_name,omitempty"`
@@ -2840,6 +2804,42 @@ type QuoteLineResultUnpricedReason string
 type QuoteRequest struct {
 	Changes []QuoteChange `json:"changes,omitempty"`
 	Lines   []QuoteLine   `json:"lines,omitempty"`
+}
+
+// Rate defines model for Rate.
+type Rate struct {
+	Currency string `json:"currency"`
+
+	// Dimensions The attributes this rate applies to, such as region and machine type.
+	Dimensions    map[string]string `json:"dimensions"`
+	EffectiveFrom time.Time         `json:"effective_from"`
+	EffectiveTo   *time.Time        `json:"effective_to,omitempty"`
+
+	// Meter A catalog object inlined for display.
+	Meter        ObjectIdentity   `json:"meter"`
+	PricingModel RatePricingModel `json:"pricing_model"`
+
+	// Tiers Present for `graduated` and `volume`, in ascending order.
+	Tiers []Tier `json:"tiers,omitempty"`
+
+	// Unit The unit readings arrive in, such as `core-second`.
+	Unit *string `json:"unit,omitempty"`
+
+	// UnitAmount Present for `per_unit`. Tiered rates carry their amounts on the tiers.
+	UnitAmount *externalRef0.Money `json:"unit_amount,omitempty"`
+
+	// UnitQuantity How many measured units one amount covers. An hourly rate on a per-second meter is
+	// `"3600"`.
+	UnitQuantity *string `json:"unit_quantity,omitempty"`
+}
+
+// RatePricingModel defines model for Rate.PricingModel.
+type RatePricingModel string
+
+// RateList defines model for RateList.
+type RateList struct {
+	Items      []Rate `json:"items"`
+	TotalCount *int64 `json:"total_count,omitempty"`
 }
 
 // Refund defines model for Refund.
@@ -3765,8 +3765,8 @@ type ListProjectUsageChargesParams struct {
 	To *To `form:"to,omitempty" json:"to,omitempty"`
 }
 
-// ListCatalogPricesParams defines parameters for ListCatalogPrices.
-type ListCatalogPricesParams struct {
+// ListPricesParams defines parameters for ListPrices.
+type ListPricesParams struct {
 	// Page 1-based page number; the first page when omitted.
 	Page *Page `form:"page,omitempty" json:"page,omitempty"`
 
@@ -3781,8 +3781,8 @@ type ListCatalogPricesParams struct {
 	IfNoneMatch *IfNoneMatch `json:"If-None-Match,omitempty"`
 }
 
-// ListCatalogProductsParams defines parameters for ListCatalogProducts.
-type ListCatalogProductsParams struct {
+// ListProductsParams defines parameters for ListProducts.
+type ListProductsParams struct {
 	// Page 1-based page number; the first page when omitted.
 	Page *Page `form:"page,omitempty" json:"page,omitempty"`
 
@@ -3796,8 +3796,8 @@ type ListCatalogProductsParams struct {
 	IfNoneMatch *IfNoneMatch `json:"If-None-Match,omitempty"`
 }
 
-// ListCatalogPlansParams defines parameters for ListCatalogPlans.
-type ListCatalogPlansParams struct {
+// ListPlansParams defines parameters for ListPlans.
+type ListPlansParams struct {
 	// Page 1-based page number; the first page when omitted.
 	Page *Page `form:"page,omitempty" json:"page,omitempty"`
 
@@ -3811,8 +3811,8 @@ type ListCatalogPlansParams struct {
 	IfNoneMatch *IfNoneMatch `json:"If-None-Match,omitempty"`
 }
 
-// ListCatalogRatesParams defines parameters for ListCatalogRates.
-type ListCatalogRatesParams struct {
+// ListRatesParams defines parameters for ListRates.
+type ListRatesParams struct {
 	// Page 1-based page number; the first page when omitted.
 	Page *Page `form:"page,omitempty" json:"page,omitempty"`
 
@@ -4736,31 +4736,31 @@ type ClientInterface interface {
 	// Corresponds with POST /catalog/v1/estimates (the `CreateEstimate` operationId).
 	CreateEstimate(ctx context.Context, body CreateEstimateJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
 
-	// ListCatalogPrices List catalog prices
+	// ListPrices List catalog prices
 	//
 	// Public list prices only. An account holding a negotiated agreement may be charged less;
 	// it is never charged more.
 	//
-	// Corresponds with GET /catalog/v1/plans/{planId}/prices (the `ListCatalogPrices` operationId).
-	ListCatalogPrices(ctx context.Context, planId PlanId, params *ListCatalogPricesParams, reqEditors ...RequestEditorFn) (*http.Response, error)
+	// Corresponds with GET /catalog/v1/plans/{planId}/prices (the `ListPrices` operationId).
+	ListPrices(ctx context.Context, planId PlanId, params *ListPricesParams, reqEditors ...RequestEditorFn) (*http.Response, error)
 
-	// ListCatalogProducts List catalog products
+	// ListProducts List catalog products
 	//
-	// Corresponds with GET /catalog/v1/products (the `ListCatalogProducts` operationId).
-	ListCatalogProducts(ctx context.Context, params *ListCatalogProductsParams, reqEditors ...RequestEditorFn) (*http.Response, error)
+	// Corresponds with GET /catalog/v1/products (the `ListProducts` operationId).
+	ListProducts(ctx context.Context, params *ListProductsParams, reqEditors ...RequestEditorFn) (*http.Response, error)
 
-	// ListCatalogPlans List catalog plans
+	// ListPlans List catalog plans
 	//
-	// Corresponds with GET /catalog/v1/products/{productId}/plans (the `ListCatalogPlans` operationId).
-	ListCatalogPlans(ctx context.Context, productId ProductId, params *ListCatalogPlansParams, reqEditors ...RequestEditorFn) (*http.Response, error)
+	// Corresponds with GET /catalog/v1/products/{productId}/plans (the `ListPlans` operationId).
+	ListPlans(ctx context.Context, productId ProductId, params *ListPlansParams, reqEditors ...RequestEditorFn) (*http.Response, error)
 
-	// ListCatalogRates List catalog rates
+	// ListRates List catalog rates
 	//
 	// Only public price lists are readable here. A list written for a single agreement is not,
 	// and its identifier cannot be used to reach it.
 	//
-	// Corresponds with GET /catalog/v1/rate-cards/{rateCardId}/rules (the `ListCatalogRates` operationId).
-	ListCatalogRates(ctx context.Context, rateCardId RateCardId, params *ListCatalogRatesParams, reqEditors ...RequestEditorFn) (*http.Response, error)
+	// Corresponds with GET /catalog/v1/rate-cards/{rateCardId}/rules (the `ListRates` operationId).
+	ListRates(ctx context.Context, rateCardId RateCardId, params *ListRatesParams, reqEditors ...RequestEditorFn) (*http.Response, error)
 }
 
 // ListAllocations List allocations
@@ -6315,14 +6315,14 @@ func (c *Client) CreateEstimate(ctx context.Context, body CreateEstimateJSONRequ
 	return c.Client.Do(req)
 }
 
-// ListCatalogPrices List catalog prices
+// ListPrices List catalog prices
 //
 // Public list prices only. An account holding a negotiated agreement may be charged less;
 // it is never charged more.
 //
-// Corresponds with GET /catalog/v1/plans/{planId}/prices (the `ListCatalogPrices` operationId).
-func (c *Client) ListCatalogPrices(ctx context.Context, planId PlanId, params *ListCatalogPricesParams, reqEditors ...RequestEditorFn) (*http.Response, error) {
-	req, err := NewListCatalogPricesRequest(c.Server, planId, params)
+// Corresponds with GET /catalog/v1/plans/{planId}/prices (the `ListPrices` operationId).
+func (c *Client) ListPrices(ctx context.Context, planId PlanId, params *ListPricesParams, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewListPricesRequest(c.Server, planId, params)
 	if err != nil {
 		return nil, err
 	}
@@ -6333,11 +6333,11 @@ func (c *Client) ListCatalogPrices(ctx context.Context, planId PlanId, params *L
 	return c.Client.Do(req)
 }
 
-// ListCatalogProducts List catalog products
+// ListProducts List catalog products
 //
-// Corresponds with GET /catalog/v1/products (the `ListCatalogProducts` operationId).
-func (c *Client) ListCatalogProducts(ctx context.Context, params *ListCatalogProductsParams, reqEditors ...RequestEditorFn) (*http.Response, error) {
-	req, err := NewListCatalogProductsRequest(c.Server, params)
+// Corresponds with GET /catalog/v1/products (the `ListProducts` operationId).
+func (c *Client) ListProducts(ctx context.Context, params *ListProductsParams, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewListProductsRequest(c.Server, params)
 	if err != nil {
 		return nil, err
 	}
@@ -6348,11 +6348,11 @@ func (c *Client) ListCatalogProducts(ctx context.Context, params *ListCatalogPro
 	return c.Client.Do(req)
 }
 
-// ListCatalogPlans List catalog plans
+// ListPlans List catalog plans
 //
-// Corresponds with GET /catalog/v1/products/{productId}/plans (the `ListCatalogPlans` operationId).
-func (c *Client) ListCatalogPlans(ctx context.Context, productId ProductId, params *ListCatalogPlansParams, reqEditors ...RequestEditorFn) (*http.Response, error) {
-	req, err := NewListCatalogPlansRequest(c.Server, productId, params)
+// Corresponds with GET /catalog/v1/products/{productId}/plans (the `ListPlans` operationId).
+func (c *Client) ListPlans(ctx context.Context, productId ProductId, params *ListPlansParams, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewListPlansRequest(c.Server, productId, params)
 	if err != nil {
 		return nil, err
 	}
@@ -6363,14 +6363,14 @@ func (c *Client) ListCatalogPlans(ctx context.Context, productId ProductId, para
 	return c.Client.Do(req)
 }
 
-// ListCatalogRates List catalog rates
+// ListRates List catalog rates
 //
 // Only public price lists are readable here. A list written for a single agreement is not,
 // and its identifier cannot be used to reach it.
 //
-// Corresponds with GET /catalog/v1/rate-cards/{rateCardId}/rules (the `ListCatalogRates` operationId).
-func (c *Client) ListCatalogRates(ctx context.Context, rateCardId RateCardId, params *ListCatalogRatesParams, reqEditors ...RequestEditorFn) (*http.Response, error) {
-	req, err := NewListCatalogRatesRequest(c.Server, rateCardId, params)
+// Corresponds with GET /catalog/v1/rate-cards/{rateCardId}/rules (the `ListRates` operationId).
+func (c *Client) ListRates(ctx context.Context, rateCardId RateCardId, params *ListRatesParams, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewListRatesRequest(c.Server, rateCardId, params)
 	if err != nil {
 		return nil, err
 	}
@@ -10358,8 +10358,8 @@ func NewCreateEstimateRequestWithBody(server string, contentType string, body io
 	return req, nil
 }
 
-// NewListCatalogPricesRequest constructs an http.Request for the ListCatalogPrices method
-func NewListCatalogPricesRequest(server string, planId PlanId, params *ListCatalogPricesParams) (*http.Request, error) {
+// NewListPricesRequest constructs an http.Request for the ListPrices method
+func NewListPricesRequest(server string, planId PlanId, params *ListPricesParams) (*http.Request, error) {
 	var err error
 
 	var pathParam0 string
@@ -10458,8 +10458,8 @@ func NewListCatalogPricesRequest(server string, planId PlanId, params *ListCatal
 	return req, nil
 }
 
-// NewListCatalogProductsRequest constructs an http.Request for the ListCatalogProducts method
-func NewListCatalogProductsRequest(server string, params *ListCatalogProductsParams) (*http.Request, error) {
+// NewListProductsRequest constructs an http.Request for the ListProducts method
+func NewListProductsRequest(server string, params *ListProductsParams) (*http.Request, error) {
 	var err error
 
 	serverURL, err := url.Parse(server)
@@ -10539,8 +10539,8 @@ func NewListCatalogProductsRequest(server string, params *ListCatalogProductsPar
 	return req, nil
 }
 
-// NewListCatalogPlansRequest constructs an http.Request for the ListCatalogPlans method
-func NewListCatalogPlansRequest(server string, productId ProductId, params *ListCatalogPlansParams) (*http.Request, error) {
+// NewListPlansRequest constructs an http.Request for the ListPlans method
+func NewListPlansRequest(server string, productId ProductId, params *ListPlansParams) (*http.Request, error) {
 	var err error
 
 	var pathParam0 string
@@ -10627,8 +10627,8 @@ func NewListCatalogPlansRequest(server string, productId ProductId, params *List
 	return req, nil
 }
 
-// NewListCatalogRatesRequest constructs an http.Request for the ListCatalogRates method
-func NewListCatalogRatesRequest(server string, rateCardId RateCardId, params *ListCatalogRatesParams) (*http.Request, error) {
+// NewListRatesRequest constructs an http.Request for the ListRates method
+func NewListRatesRequest(server string, rateCardId RateCardId, params *ListRatesParams) (*http.Request, error) {
 	var err error
 
 	var pathParam0 string
@@ -11655,39 +11655,39 @@ type ClientWithResponsesInterface interface {
 	// Corresponds with POST /catalog/v1/estimates (the `CreateEstimate` operationId).
 	CreateEstimateWithResponse(ctx context.Context, body CreateEstimateJSONRequestBody, reqEditors ...RequestEditorFn) (*CreateEstimateResponse, error)
 
-	// ListCatalogPricesWithResponse List catalog prices
+	// ListPricesWithResponse List catalog prices
 	//
 	// Public list prices only. An account holding a negotiated agreement may be charged less;
 	// it is never charged more.
 	//
 	// Returns a wrapper object for the known response body format(s).
 	//
-	// Corresponds with GET /catalog/v1/plans/{planId}/prices (the `ListCatalogPrices` operationId).
-	ListCatalogPricesWithResponse(ctx context.Context, planId PlanId, params *ListCatalogPricesParams, reqEditors ...RequestEditorFn) (*ListCatalogPricesResponse, error)
+	// Corresponds with GET /catalog/v1/plans/{planId}/prices (the `ListPrices` operationId).
+	ListPricesWithResponse(ctx context.Context, planId PlanId, params *ListPricesParams, reqEditors ...RequestEditorFn) (*ListPricesResponse, error)
 
-	// ListCatalogProductsWithResponse List catalog products
+	// ListProductsWithResponse List catalog products
 	//
 	// Returns a wrapper object for the known response body format(s).
 	//
-	// Corresponds with GET /catalog/v1/products (the `ListCatalogProducts` operationId).
-	ListCatalogProductsWithResponse(ctx context.Context, params *ListCatalogProductsParams, reqEditors ...RequestEditorFn) (*ListCatalogProductsResponse, error)
+	// Corresponds with GET /catalog/v1/products (the `ListProducts` operationId).
+	ListProductsWithResponse(ctx context.Context, params *ListProductsParams, reqEditors ...RequestEditorFn) (*ListProductsResponse, error)
 
-	// ListCatalogPlansWithResponse List catalog plans
+	// ListPlansWithResponse List catalog plans
 	//
 	// Returns a wrapper object for the known response body format(s).
 	//
-	// Corresponds with GET /catalog/v1/products/{productId}/plans (the `ListCatalogPlans` operationId).
-	ListCatalogPlansWithResponse(ctx context.Context, productId ProductId, params *ListCatalogPlansParams, reqEditors ...RequestEditorFn) (*ListCatalogPlansResponse, error)
+	// Corresponds with GET /catalog/v1/products/{productId}/plans (the `ListPlans` operationId).
+	ListPlansWithResponse(ctx context.Context, productId ProductId, params *ListPlansParams, reqEditors ...RequestEditorFn) (*ListPlansResponse, error)
 
-	// ListCatalogRatesWithResponse List catalog rates
+	// ListRatesWithResponse List catalog rates
 	//
 	// Only public price lists are readable here. A list written for a single agreement is not,
 	// and its identifier cannot be used to reach it.
 	//
 	// Returns a wrapper object for the known response body format(s).
 	//
-	// Corresponds with GET /catalog/v1/rate-cards/{rateCardId}/rules (the `ListCatalogRates` operationId).
-	ListCatalogRatesWithResponse(ctx context.Context, rateCardId RateCardId, params *ListCatalogRatesParams, reqEditors ...RequestEditorFn) (*ListCatalogRatesResponse, error)
+	// Corresponds with GET /catalog/v1/rate-cards/{rateCardId}/rules (the `ListRates` operationId).
+	ListRatesWithResponse(ctx context.Context, rateCardId RateCardId, params *ListRatesParams, reqEditors ...RequestEditorFn) (*ListRatesResponse, error)
 }
 
 type ListAllocationsResponse struct {
@@ -14604,46 +14604,46 @@ func (r CreateEstimateResponse) ContentType() string {
 	return ""
 }
 
-// ListCatalogPricesResponse200Headers the declared response headers of an HTTP 200 response for ListCatalogPrices
-type ListCatalogPricesResponse200Headers struct {
+// ListPricesResponse200Headers the declared response headers of an HTTP 200 response for ListPrices
+type ListPricesResponse200Headers struct {
 	ETag *string
 }
 
-// ListCatalogPricesResponse304Headers the declared response headers of an HTTP 304 response for ListCatalogPrices
-type ListCatalogPricesResponse304Headers struct {
+// ListPricesResponse304Headers the declared response headers of an HTTP 304 response for ListPrices
+type ListPricesResponse304Headers struct {
 	ETag *string
 }
 
-type ListCatalogPricesResponse struct {
+type ListPricesResponse struct {
 	Body         []byte
 	HTTPResponse *http.Response
 	// JSON200 the response for an HTTP 200 `application/json` response
-	JSON200 *CatalogPriceList
+	JSON200 *PriceList
 	// JSONDefault the response for an HTTP default `application/json` response
 	JSONDefault *Error
 	// Headers200 the parsed response headers for an HTTP 200 response
-	Headers200 *ListCatalogPricesResponse200Headers
+	Headers200 *ListPricesResponse200Headers
 	// Headers304 the parsed response headers for an HTTP 304 response
-	Headers304 *ListCatalogPricesResponse304Headers
+	Headers304 *ListPricesResponse304Headers
 }
 
 // GetJSON200 returns the response for an HTTP 200 `application/json` response
-func (r ListCatalogPricesResponse) GetJSON200() *CatalogPriceList {
+func (r ListPricesResponse) GetJSON200() *PriceList {
 	return r.JSON200
 }
 
 // GetJSONDefault returns the response for an HTTP default `application/json` response
-func (r ListCatalogPricesResponse) GetJSONDefault() *Error {
+func (r ListPricesResponse) GetJSONDefault() *Error {
 	return r.JSONDefault
 }
 
 // GetBody returns the raw response body bytes
-func (r ListCatalogPricesResponse) GetBody() []byte {
+func (r ListPricesResponse) GetBody() []byte {
 	return r.Body
 }
 
 // Status returns HTTPResponse.Status
-func (r ListCatalogPricesResponse) Status() string {
+func (r ListPricesResponse) Status() string {
 	if r.HTTPResponse != nil {
 		return r.HTTPResponse.Status
 	}
@@ -14651,7 +14651,7 @@ func (r ListCatalogPricesResponse) Status() string {
 }
 
 // StatusCode returns HTTPResponse.StatusCode
-func (r ListCatalogPricesResponse) StatusCode() int {
+func (r ListPricesResponse) StatusCode() int {
 	if r.HTTPResponse != nil {
 		return r.HTTPResponse.StatusCode
 	}
@@ -14659,53 +14659,53 @@ func (r ListCatalogPricesResponse) StatusCode() int {
 }
 
 // ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
-func (r ListCatalogPricesResponse) ContentType() string {
+func (r ListPricesResponse) ContentType() string {
 	if r.HTTPResponse != nil {
 		return r.HTTPResponse.Header.Get("Content-Type")
 	}
 	return ""
 }
 
-// ListCatalogProductsResponse200Headers the declared response headers of an HTTP 200 response for ListCatalogProducts
-type ListCatalogProductsResponse200Headers struct {
+// ListProductsResponse200Headers the declared response headers of an HTTP 200 response for ListProducts
+type ListProductsResponse200Headers struct {
 	ETag *string
 }
 
-// ListCatalogProductsResponse304Headers the declared response headers of an HTTP 304 response for ListCatalogProducts
-type ListCatalogProductsResponse304Headers struct {
+// ListProductsResponse304Headers the declared response headers of an HTTP 304 response for ListProducts
+type ListProductsResponse304Headers struct {
 	ETag *string
 }
 
-type ListCatalogProductsResponse struct {
+type ListProductsResponse struct {
 	Body         []byte
 	HTTPResponse *http.Response
 	// JSON200 the response for an HTTP 200 `application/json` response
-	JSON200 *CatalogProductList
+	JSON200 *ProductList
 	// JSONDefault the response for an HTTP default `application/json` response
 	JSONDefault *Error
 	// Headers200 the parsed response headers for an HTTP 200 response
-	Headers200 *ListCatalogProductsResponse200Headers
+	Headers200 *ListProductsResponse200Headers
 	// Headers304 the parsed response headers for an HTTP 304 response
-	Headers304 *ListCatalogProductsResponse304Headers
+	Headers304 *ListProductsResponse304Headers
 }
 
 // GetJSON200 returns the response for an HTTP 200 `application/json` response
-func (r ListCatalogProductsResponse) GetJSON200() *CatalogProductList {
+func (r ListProductsResponse) GetJSON200() *ProductList {
 	return r.JSON200
 }
 
 // GetJSONDefault returns the response for an HTTP default `application/json` response
-func (r ListCatalogProductsResponse) GetJSONDefault() *Error {
+func (r ListProductsResponse) GetJSONDefault() *Error {
 	return r.JSONDefault
 }
 
 // GetBody returns the raw response body bytes
-func (r ListCatalogProductsResponse) GetBody() []byte {
+func (r ListProductsResponse) GetBody() []byte {
 	return r.Body
 }
 
 // Status returns HTTPResponse.Status
-func (r ListCatalogProductsResponse) Status() string {
+func (r ListProductsResponse) Status() string {
 	if r.HTTPResponse != nil {
 		return r.HTTPResponse.Status
 	}
@@ -14713,7 +14713,7 @@ func (r ListCatalogProductsResponse) Status() string {
 }
 
 // StatusCode returns HTTPResponse.StatusCode
-func (r ListCatalogProductsResponse) StatusCode() int {
+func (r ListProductsResponse) StatusCode() int {
 	if r.HTTPResponse != nil {
 		return r.HTTPResponse.StatusCode
 	}
@@ -14721,53 +14721,53 @@ func (r ListCatalogProductsResponse) StatusCode() int {
 }
 
 // ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
-func (r ListCatalogProductsResponse) ContentType() string {
+func (r ListProductsResponse) ContentType() string {
 	if r.HTTPResponse != nil {
 		return r.HTTPResponse.Header.Get("Content-Type")
 	}
 	return ""
 }
 
-// ListCatalogPlansResponse200Headers the declared response headers of an HTTP 200 response for ListCatalogPlans
-type ListCatalogPlansResponse200Headers struct {
+// ListPlansResponse200Headers the declared response headers of an HTTP 200 response for ListPlans
+type ListPlansResponse200Headers struct {
 	ETag *string
 }
 
-// ListCatalogPlansResponse304Headers the declared response headers of an HTTP 304 response for ListCatalogPlans
-type ListCatalogPlansResponse304Headers struct {
+// ListPlansResponse304Headers the declared response headers of an HTTP 304 response for ListPlans
+type ListPlansResponse304Headers struct {
 	ETag *string
 }
 
-type ListCatalogPlansResponse struct {
+type ListPlansResponse struct {
 	Body         []byte
 	HTTPResponse *http.Response
 	// JSON200 the response for an HTTP 200 `application/json` response
-	JSON200 *CatalogPlanList
+	JSON200 *PlanList
 	// JSONDefault the response for an HTTP default `application/json` response
 	JSONDefault *Error
 	// Headers200 the parsed response headers for an HTTP 200 response
-	Headers200 *ListCatalogPlansResponse200Headers
+	Headers200 *ListPlansResponse200Headers
 	// Headers304 the parsed response headers for an HTTP 304 response
-	Headers304 *ListCatalogPlansResponse304Headers
+	Headers304 *ListPlansResponse304Headers
 }
 
 // GetJSON200 returns the response for an HTTP 200 `application/json` response
-func (r ListCatalogPlansResponse) GetJSON200() *CatalogPlanList {
+func (r ListPlansResponse) GetJSON200() *PlanList {
 	return r.JSON200
 }
 
 // GetJSONDefault returns the response for an HTTP default `application/json` response
-func (r ListCatalogPlansResponse) GetJSONDefault() *Error {
+func (r ListPlansResponse) GetJSONDefault() *Error {
 	return r.JSONDefault
 }
 
 // GetBody returns the raw response body bytes
-func (r ListCatalogPlansResponse) GetBody() []byte {
+func (r ListPlansResponse) GetBody() []byte {
 	return r.Body
 }
 
 // Status returns HTTPResponse.Status
-func (r ListCatalogPlansResponse) Status() string {
+func (r ListPlansResponse) Status() string {
 	if r.HTTPResponse != nil {
 		return r.HTTPResponse.Status
 	}
@@ -14775,7 +14775,7 @@ func (r ListCatalogPlansResponse) Status() string {
 }
 
 // StatusCode returns HTTPResponse.StatusCode
-func (r ListCatalogPlansResponse) StatusCode() int {
+func (r ListPlansResponse) StatusCode() int {
 	if r.HTTPResponse != nil {
 		return r.HTTPResponse.StatusCode
 	}
@@ -14783,53 +14783,53 @@ func (r ListCatalogPlansResponse) StatusCode() int {
 }
 
 // ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
-func (r ListCatalogPlansResponse) ContentType() string {
+func (r ListPlansResponse) ContentType() string {
 	if r.HTTPResponse != nil {
 		return r.HTTPResponse.Header.Get("Content-Type")
 	}
 	return ""
 }
 
-// ListCatalogRatesResponse200Headers the declared response headers of an HTTP 200 response for ListCatalogRates
-type ListCatalogRatesResponse200Headers struct {
+// ListRatesResponse200Headers the declared response headers of an HTTP 200 response for ListRates
+type ListRatesResponse200Headers struct {
 	ETag *string
 }
 
-// ListCatalogRatesResponse304Headers the declared response headers of an HTTP 304 response for ListCatalogRates
-type ListCatalogRatesResponse304Headers struct {
+// ListRatesResponse304Headers the declared response headers of an HTTP 304 response for ListRates
+type ListRatesResponse304Headers struct {
 	ETag *string
 }
 
-type ListCatalogRatesResponse struct {
+type ListRatesResponse struct {
 	Body         []byte
 	HTTPResponse *http.Response
 	// JSON200 the response for an HTTP 200 `application/json` response
-	JSON200 *CatalogRateList
+	JSON200 *RateList
 	// JSONDefault the response for an HTTP default `application/json` response
 	JSONDefault *Error
 	// Headers200 the parsed response headers for an HTTP 200 response
-	Headers200 *ListCatalogRatesResponse200Headers
+	Headers200 *ListRatesResponse200Headers
 	// Headers304 the parsed response headers for an HTTP 304 response
-	Headers304 *ListCatalogRatesResponse304Headers
+	Headers304 *ListRatesResponse304Headers
 }
 
 // GetJSON200 returns the response for an HTTP 200 `application/json` response
-func (r ListCatalogRatesResponse) GetJSON200() *CatalogRateList {
+func (r ListRatesResponse) GetJSON200() *RateList {
 	return r.JSON200
 }
 
 // GetJSONDefault returns the response for an HTTP default `application/json` response
-func (r ListCatalogRatesResponse) GetJSONDefault() *Error {
+func (r ListRatesResponse) GetJSONDefault() *Error {
 	return r.JSONDefault
 }
 
 // GetBody returns the raw response body bytes
-func (r ListCatalogRatesResponse) GetBody() []byte {
+func (r ListRatesResponse) GetBody() []byte {
 	return r.Body
 }
 
 // Status returns HTTPResponse.Status
-func (r ListCatalogRatesResponse) Status() string {
+func (r ListRatesResponse) Status() string {
 	if r.HTTPResponse != nil {
 		return r.HTTPResponse.Status
 	}
@@ -14837,7 +14837,7 @@ func (r ListCatalogRatesResponse) Status() string {
 }
 
 // StatusCode returns HTTPResponse.StatusCode
-func (r ListCatalogRatesResponse) StatusCode() int {
+func (r ListRatesResponse) StatusCode() int {
 	if r.HTTPResponse != nil {
 		return r.HTTPResponse.StatusCode
 	}
@@ -14845,7 +14845,7 @@ func (r ListCatalogRatesResponse) StatusCode() int {
 }
 
 // ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
-func (r ListCatalogRatesResponse) ContentType() string {
+func (r ListRatesResponse) ContentType() string {
 	if r.HTTPResponse != nil {
 		return r.HTTPResponse.Header.Get("Content-Type")
 	}
@@ -16186,62 +16186,62 @@ func (c *ClientWithResponses) CreateEstimateWithResponse(ctx context.Context, bo
 	return ParseCreateEstimateResponse(rsp)
 }
 
-// ListCatalogPricesWithResponse List catalog prices
+// ListPricesWithResponse List catalog prices
 //
 // Public list prices only. An account holding a negotiated agreement may be charged less;
 // it is never charged more.
 //
 // Returns a wrapper object for the known response body format(s).
 //
-// Corresponds with GET /catalog/v1/plans/{planId}/prices (the `ListCatalogPrices` operationId).
-func (c *ClientWithResponses) ListCatalogPricesWithResponse(ctx context.Context, planId PlanId, params *ListCatalogPricesParams, reqEditors ...RequestEditorFn) (*ListCatalogPricesResponse, error) {
-	rsp, err := c.ListCatalogPrices(ctx, planId, params, reqEditors...)
+// Corresponds with GET /catalog/v1/plans/{planId}/prices (the `ListPrices` operationId).
+func (c *ClientWithResponses) ListPricesWithResponse(ctx context.Context, planId PlanId, params *ListPricesParams, reqEditors ...RequestEditorFn) (*ListPricesResponse, error) {
+	rsp, err := c.ListPrices(ctx, planId, params, reqEditors...)
 	if err != nil {
 		return nil, err
 	}
-	return ParseListCatalogPricesResponse(rsp)
+	return ParseListPricesResponse(rsp)
 }
 
-// ListCatalogProductsWithResponse List catalog products
+// ListProductsWithResponse List catalog products
 //
 // Returns a wrapper object for the known response body format(s).
 //
-// Corresponds with GET /catalog/v1/products (the `ListCatalogProducts` operationId).
-func (c *ClientWithResponses) ListCatalogProductsWithResponse(ctx context.Context, params *ListCatalogProductsParams, reqEditors ...RequestEditorFn) (*ListCatalogProductsResponse, error) {
-	rsp, err := c.ListCatalogProducts(ctx, params, reqEditors...)
+// Corresponds with GET /catalog/v1/products (the `ListProducts` operationId).
+func (c *ClientWithResponses) ListProductsWithResponse(ctx context.Context, params *ListProductsParams, reqEditors ...RequestEditorFn) (*ListProductsResponse, error) {
+	rsp, err := c.ListProducts(ctx, params, reqEditors...)
 	if err != nil {
 		return nil, err
 	}
-	return ParseListCatalogProductsResponse(rsp)
+	return ParseListProductsResponse(rsp)
 }
 
-// ListCatalogPlansWithResponse List catalog plans
+// ListPlansWithResponse List catalog plans
 //
 // Returns a wrapper object for the known response body format(s).
 //
-// Corresponds with GET /catalog/v1/products/{productId}/plans (the `ListCatalogPlans` operationId).
-func (c *ClientWithResponses) ListCatalogPlansWithResponse(ctx context.Context, productId ProductId, params *ListCatalogPlansParams, reqEditors ...RequestEditorFn) (*ListCatalogPlansResponse, error) {
-	rsp, err := c.ListCatalogPlans(ctx, productId, params, reqEditors...)
+// Corresponds with GET /catalog/v1/products/{productId}/plans (the `ListPlans` operationId).
+func (c *ClientWithResponses) ListPlansWithResponse(ctx context.Context, productId ProductId, params *ListPlansParams, reqEditors ...RequestEditorFn) (*ListPlansResponse, error) {
+	rsp, err := c.ListPlans(ctx, productId, params, reqEditors...)
 	if err != nil {
 		return nil, err
 	}
-	return ParseListCatalogPlansResponse(rsp)
+	return ParseListPlansResponse(rsp)
 }
 
-// ListCatalogRatesWithResponse List catalog rates
+// ListRatesWithResponse List catalog rates
 //
 // Only public price lists are readable here. A list written for a single agreement is not,
 // and its identifier cannot be used to reach it.
 //
 // Returns a wrapper object for the known response body format(s).
 //
-// Corresponds with GET /catalog/v1/rate-cards/{rateCardId}/rules (the `ListCatalogRates` operationId).
-func (c *ClientWithResponses) ListCatalogRatesWithResponse(ctx context.Context, rateCardId RateCardId, params *ListCatalogRatesParams, reqEditors ...RequestEditorFn) (*ListCatalogRatesResponse, error) {
-	rsp, err := c.ListCatalogRates(ctx, rateCardId, params, reqEditors...)
+// Corresponds with GET /catalog/v1/rate-cards/{rateCardId}/rules (the `ListRates` operationId).
+func (c *ClientWithResponses) ListRatesWithResponse(ctx context.Context, rateCardId RateCardId, params *ListRatesParams, reqEditors ...RequestEditorFn) (*ListRatesResponse, error) {
+	rsp, err := c.ListRates(ctx, rateCardId, params, reqEditors...)
 	if err != nil {
 		return nil, err
 	}
-	return ParseListCatalogRatesResponse(rsp)
+	return ParseListRatesResponse(rsp)
 }
 
 // ParseListAllocationsResponse parses an HTTP response from a ListAllocationsWithResponse call
@@ -18249,22 +18249,22 @@ func ParseCreateEstimateResponse(rsp *http.Response) (*CreateEstimateResponse, e
 	return response, nil
 }
 
-// ParseListCatalogPricesResponse parses an HTTP response from a ListCatalogPricesWithResponse call
-func ParseListCatalogPricesResponse(rsp *http.Response) (*ListCatalogPricesResponse, error) {
+// ParseListPricesResponse parses an HTTP response from a ListPricesWithResponse call
+func ParseListPricesResponse(rsp *http.Response) (*ListPricesResponse, error) {
 	bodyBytes, err := io.ReadAll(rsp.Body)
 	defer func() { _ = rsp.Body.Close() }()
 	if err != nil {
 		return nil, err
 	}
 
-	response := &ListCatalogPricesResponse{
+	response := &ListPricesResponse{
 		Body:         bodyBytes,
 		HTTPResponse: rsp,
 	}
 
 	switch {
 	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
-		var dest CatalogPriceList
+		var dest PriceList
 		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
 			return nil, err
 		}
@@ -18284,7 +18284,7 @@ func ParseListCatalogPricesResponse(rsp *http.Response) (*ListCatalogPricesRespo
 
 	switch {
 	case rsp.StatusCode == 200:
-		var headers ListCatalogPricesResponse200Headers
+		var headers ListPricesResponse200Headers
 		if values := rsp.Header.Values("ETag"); len(values) > 0 {
 			var value string
 			if err := runtime.BindStyledParameterWithOptions("simple", "ETag", values[0], &value, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""}); err != nil {
@@ -18294,7 +18294,7 @@ func ParseListCatalogPricesResponse(rsp *http.Response) (*ListCatalogPricesRespo
 		}
 		response.Headers200 = &headers
 	case rsp.StatusCode == 304:
-		var headers ListCatalogPricesResponse304Headers
+		var headers ListPricesResponse304Headers
 		if values := rsp.Header.Values("ETag"); len(values) > 0 {
 			var value string
 			if err := runtime.BindStyledParameterWithOptions("simple", "ETag", values[0], &value, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""}); err != nil {
@@ -18308,22 +18308,22 @@ func ParseListCatalogPricesResponse(rsp *http.Response) (*ListCatalogPricesRespo
 	return response, nil
 }
 
-// ParseListCatalogProductsResponse parses an HTTP response from a ListCatalogProductsWithResponse call
-func ParseListCatalogProductsResponse(rsp *http.Response) (*ListCatalogProductsResponse, error) {
+// ParseListProductsResponse parses an HTTP response from a ListProductsWithResponse call
+func ParseListProductsResponse(rsp *http.Response) (*ListProductsResponse, error) {
 	bodyBytes, err := io.ReadAll(rsp.Body)
 	defer func() { _ = rsp.Body.Close() }()
 	if err != nil {
 		return nil, err
 	}
 
-	response := &ListCatalogProductsResponse{
+	response := &ListProductsResponse{
 		Body:         bodyBytes,
 		HTTPResponse: rsp,
 	}
 
 	switch {
 	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
-		var dest CatalogProductList
+		var dest ProductList
 		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
 			return nil, err
 		}
@@ -18343,7 +18343,7 @@ func ParseListCatalogProductsResponse(rsp *http.Response) (*ListCatalogProductsR
 
 	switch {
 	case rsp.StatusCode == 200:
-		var headers ListCatalogProductsResponse200Headers
+		var headers ListProductsResponse200Headers
 		if values := rsp.Header.Values("ETag"); len(values) > 0 {
 			var value string
 			if err := runtime.BindStyledParameterWithOptions("simple", "ETag", values[0], &value, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""}); err != nil {
@@ -18353,7 +18353,7 @@ func ParseListCatalogProductsResponse(rsp *http.Response) (*ListCatalogProductsR
 		}
 		response.Headers200 = &headers
 	case rsp.StatusCode == 304:
-		var headers ListCatalogProductsResponse304Headers
+		var headers ListProductsResponse304Headers
 		if values := rsp.Header.Values("ETag"); len(values) > 0 {
 			var value string
 			if err := runtime.BindStyledParameterWithOptions("simple", "ETag", values[0], &value, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""}); err != nil {
@@ -18367,22 +18367,22 @@ func ParseListCatalogProductsResponse(rsp *http.Response) (*ListCatalogProductsR
 	return response, nil
 }
 
-// ParseListCatalogPlansResponse parses an HTTP response from a ListCatalogPlansWithResponse call
-func ParseListCatalogPlansResponse(rsp *http.Response) (*ListCatalogPlansResponse, error) {
+// ParseListPlansResponse parses an HTTP response from a ListPlansWithResponse call
+func ParseListPlansResponse(rsp *http.Response) (*ListPlansResponse, error) {
 	bodyBytes, err := io.ReadAll(rsp.Body)
 	defer func() { _ = rsp.Body.Close() }()
 	if err != nil {
 		return nil, err
 	}
 
-	response := &ListCatalogPlansResponse{
+	response := &ListPlansResponse{
 		Body:         bodyBytes,
 		HTTPResponse: rsp,
 	}
 
 	switch {
 	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
-		var dest CatalogPlanList
+		var dest PlanList
 		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
 			return nil, err
 		}
@@ -18402,7 +18402,7 @@ func ParseListCatalogPlansResponse(rsp *http.Response) (*ListCatalogPlansRespons
 
 	switch {
 	case rsp.StatusCode == 200:
-		var headers ListCatalogPlansResponse200Headers
+		var headers ListPlansResponse200Headers
 		if values := rsp.Header.Values("ETag"); len(values) > 0 {
 			var value string
 			if err := runtime.BindStyledParameterWithOptions("simple", "ETag", values[0], &value, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""}); err != nil {
@@ -18412,7 +18412,7 @@ func ParseListCatalogPlansResponse(rsp *http.Response) (*ListCatalogPlansRespons
 		}
 		response.Headers200 = &headers
 	case rsp.StatusCode == 304:
-		var headers ListCatalogPlansResponse304Headers
+		var headers ListPlansResponse304Headers
 		if values := rsp.Header.Values("ETag"); len(values) > 0 {
 			var value string
 			if err := runtime.BindStyledParameterWithOptions("simple", "ETag", values[0], &value, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""}); err != nil {
@@ -18426,22 +18426,22 @@ func ParseListCatalogPlansResponse(rsp *http.Response) (*ListCatalogPlansRespons
 	return response, nil
 }
 
-// ParseListCatalogRatesResponse parses an HTTP response from a ListCatalogRatesWithResponse call
-func ParseListCatalogRatesResponse(rsp *http.Response) (*ListCatalogRatesResponse, error) {
+// ParseListRatesResponse parses an HTTP response from a ListRatesWithResponse call
+func ParseListRatesResponse(rsp *http.Response) (*ListRatesResponse, error) {
 	bodyBytes, err := io.ReadAll(rsp.Body)
 	defer func() { _ = rsp.Body.Close() }()
 	if err != nil {
 		return nil, err
 	}
 
-	response := &ListCatalogRatesResponse{
+	response := &ListRatesResponse{
 		Body:         bodyBytes,
 		HTTPResponse: rsp,
 	}
 
 	switch {
 	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
-		var dest CatalogRateList
+		var dest RateList
 		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
 			return nil, err
 		}
@@ -18461,7 +18461,7 @@ func ParseListCatalogRatesResponse(rsp *http.Response) (*ListCatalogRatesRespons
 
 	switch {
 	case rsp.StatusCode == 200:
-		var headers ListCatalogRatesResponse200Headers
+		var headers ListRatesResponse200Headers
 		if values := rsp.Header.Values("ETag"); len(values) > 0 {
 			var value string
 			if err := runtime.BindStyledParameterWithOptions("simple", "ETag", values[0], &value, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""}); err != nil {
@@ -18471,7 +18471,7 @@ func ParseListCatalogRatesResponse(rsp *http.Response) (*ListCatalogRatesRespons
 		}
 		response.Headers200 = &headers
 	case rsp.StatusCode == 304:
-		var headers ListCatalogRatesResponse304Headers
+		var headers ListRatesResponse304Headers
 		if values := rsp.Header.Values("ETag"); len(values) > 0 {
 			var value string
 			if err := runtime.BindStyledParameterWithOptions("simple", "ETag", values[0], &value, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""}); err != nil {

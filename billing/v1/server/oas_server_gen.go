@@ -211,32 +211,6 @@ type Handler interface {
 	//
 	// GET /account/v1/billing-accounts
 	ListBillingAccounts(ctx context.Context, params ListBillingAccountsParams) (*BillingAccountList, error)
-	// ListCatalogPlans implements list-catalog-plans operation.
-	//
-	// List catalog plans.
-	//
-	// GET /catalog/v1/products/{productId}/plans
-	ListCatalogPlans(ctx context.Context, params ListCatalogPlansParams) (ListCatalogPlansRes, error)
-	// ListCatalogPrices implements list-catalog-prices operation.
-	//
-	// Public list prices only. An account holding a negotiated agreement may be charged less; it is never
-	// charged more.
-	//
-	// GET /catalog/v1/plans/{planId}/prices
-	ListCatalogPrices(ctx context.Context, params ListCatalogPricesParams) (ListCatalogPricesRes, error)
-	// ListCatalogProducts implements list-catalog-products operation.
-	//
-	// List catalog products.
-	//
-	// GET /catalog/v1/products
-	ListCatalogProducts(ctx context.Context, params ListCatalogProductsParams) (ListCatalogProductsRes, error)
-	// ListCatalogRates implements list-catalog-rates operation.
-	//
-	// Only public price lists are readable here. A list written for a single agreement is not, and its
-	// identifier cannot be used to reach it.
-	//
-	// GET /catalog/v1/rate-cards/{rateCardId}/rules
-	ListCatalogRates(ctx context.Context, params ListCatalogRatesParams) (ListCatalogRatesRes, error)
 	// ListCommitments implements ListCommitments operation.
 	//
 	// List account commercial commitments.
@@ -297,6 +271,25 @@ type Handler interface {
 	//
 	// GET /account/v1/payment-methods
 	ListPaymentMethods(ctx context.Context, params ListPaymentMethodsParams) (*PaymentMethodList, error)
+	// ListPlans implements list-plans operation.
+	//
+	// List catalog plans.
+	//
+	// GET /catalog/v1/products/{productId}/plans
+	ListPlans(ctx context.Context, params ListPlansParams) (ListPlansRes, error)
+	// ListPrices implements list-prices operation.
+	//
+	// Public list prices only. An account holding a negotiated agreement may be charged less; it is never
+	// charged more.
+	//
+	// GET /catalog/v1/plans/{planId}/prices
+	ListPrices(ctx context.Context, params ListPricesParams) (ListPricesRes, error)
+	// ListProducts implements list-products operation.
+	//
+	// List catalog products.
+	//
+	// GET /catalog/v1/products
+	ListProducts(ctx context.Context, params ListProductsParams) (ListProductsRes, error)
 	// ListProjectActiveResources implements list-project-active-resources operation.
 	//
 	// A resource that is running but does not appear here is not being charged for.
@@ -361,6 +354,13 @@ type Handler interface {
 	//
 	// GET /api/v1/projects/{projectId}/usage-charges
 	ListProjectUsageCharges(ctx context.Context, params ListProjectUsageChargesParams) (*UsageChargeList, error)
+	// ListRates implements list-rates operation.
+	//
+	// Only public price lists are readable here. A list written for a single agreement is not, and its
+	// identifier cannot be used to reach it.
+	//
+	// GET /catalog/v1/rate-cards/{rateCardId}/rules
+	ListRates(ctx context.Context, params ListRatesParams) (ListRatesRes, error)
 	// ListRefunds implements list-refunds operation.
 	//
 	// List refunds.
