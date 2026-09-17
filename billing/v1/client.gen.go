@@ -867,8 +867,8 @@ func (e QuoteLineResultUnpricedReason) Valid() bool {
 
 // Defines values for RefundDestination.
 const (
-	RefundDestinationBalance  RefundDestination = "balance"
-	RefundDestinationProvider RefundDestination = "provider"
+	RefundDestinationBalance RefundDestination = "balance"
+	RefundDestinationGateway RefundDestination = "gateway"
 )
 
 // Valid indicates whether the value is a known member of the RefundDestination enum.
@@ -876,7 +876,7 @@ func (e RefundDestination) Valid() bool {
 	switch e {
 	case RefundDestinationBalance:
 		return true
-	case RefundDestinationProvider:
+	case RefundDestinationGateway:
 		return true
 	default:
 		return false
@@ -927,8 +927,8 @@ func (e RefundPolicy) Valid() bool {
 
 // Defines values for RefundQuoteDestination.
 const (
-	RefundQuoteDestinationBalance  RefundQuoteDestination = "balance"
-	RefundQuoteDestinationProvider RefundQuoteDestination = "provider"
+	RefundQuoteDestinationBalance RefundQuoteDestination = "balance"
+	RefundQuoteDestinationGateway RefundQuoteDestination = "gateway"
 )
 
 // Valid indicates whether the value is a known member of the RefundQuoteDestination enum.
@@ -936,7 +936,7 @@ func (e RefundQuoteDestination) Valid() bool {
 	switch e {
 	case RefundQuoteDestinationBalance:
 		return true
-	case RefundQuoteDestinationProvider:
+	case RefundQuoteDestinationGateway:
 		return true
 	default:
 		return false
@@ -2404,7 +2404,7 @@ type OrderList struct {
 // OrderState defines model for OrderState.
 type OrderState string
 
-// PayRequest Safe to call again. While an attempt is still with the payment provider, calling this
+// PayRequest Safe to call again. While an attempt is still with the payment gateway, calling this
 // returns that attempt rather than starting a second one, so a customer who reloads the
 // page is not charged twice.
 //
@@ -2422,7 +2422,7 @@ type PayRequest struct {
 // PayTogetherRequest Name at least one invoice or order. They must all belong to the same account and share
 // its currency; anything else is refused rather than partly paid.
 type PayTogetherRequest struct {
-	// IdempotencyKey Required when the provider is involved, because that is where the money moves. The
+	// IdempotencyKey Required when the gateway is involved, because that is where the money moves. The
 	// same key returns the same checkout address instead of opening a second one.
 	IdempotencyKey *string              `json:"idempotency_key,omitempty"`
 	InvoiceIds     []openapi_types.UUID `json:"invoice_ids,omitempty"`
@@ -2439,7 +2439,7 @@ type PaymentMethod struct {
 	Id               openapi_types.UUID  `json:"id"`
 	IsDefault        bool                `json:"is_default"`
 	Last4            *string             `json:"last4,omitempty"`
-	Provider         string              `json:"provider"`
+	PaymentGateway   *string             `json:"payment_gateway,omitempty"`
 	Status           PaymentMethodStatus `json:"status"`
 }
 
@@ -2458,20 +2458,20 @@ type PaymentMethodSetup struct {
 	ReturnUrl        *string `json:"return_url,omitempty"`
 }
 
-// PaymentMethodSetupResult What the payment provider's browser library needs in order to collect a card. There is
+// PaymentMethodSetupResult What the payment gateway's browser library needs in order to collect a card. There is
 // no address to redirect to: the form is rendered in the page, and the card goes straight
-// from the browser to the provider.
+// from the browser to the gateway.
 type PaymentMethodSetupResult struct {
-	// ClientSecret Authorises this one attempt with the provider, and nothing else. Pass it to the
-	// provider's library; it is not an API credential and grants no access here.
+	// ClientSecret Authorises this one attempt with the gateway, and nothing else. Pass it to the
+	// gateway's library; it is not an API credential and grants no access here.
 	ClientSecret string     `json:"client_secret"`
 	ExpiresAt    *time.Time `json:"expires_at,omitempty"`
 
-	// PublishableKey The provider's public key to initialise its library with. It differs between test
+	// PublishableKey The gateway's public key to initialise its library with. It differs between test
 	// and live, so read it from here rather than compiling it in.
 	PublishableKey string `json:"publishable_key"`
 
-	// SetupId The provider's identifier for this attempt. Use it to tell a reloaded page apart
+	// SetupId The gateway's identifier for this attempt. Use it to tell a reloaded page apart
 	// from a second attempt.
 	SetupId string `json:"setup_id"`
 }
@@ -2479,7 +2479,7 @@ type PaymentMethodSetupResult struct {
 // PaymentResult defines model for PaymentResult.
 type PaymentResult struct {
 	// AmountDue What is still outstanding. Zero once the payment succeeds. Unchanged while
-	// `processing`: nothing is collected until the provider confirms it.
+	// `processing`: nothing is collected until the gateway confirms it.
 	AmountDue externalRef0.Money `json:"amount_due"`
 
 	// AmountPaid A decimal string, in the currency stated alongside it.
@@ -2520,7 +2520,7 @@ type PaymentResult struct {
 	// retry in a loop.
 	Retriable *bool `json:"retriable,omitempty"`
 
-	// RetryAfter The earliest sensible moment to try again. Present when the provider asked for a
+	// RetryAfter The earliest sensible moment to try again. Present when the gateway asked for a
 	// wait.
 	RetryAfter *time.Time `json:"retry_after,omitempty"`
 
@@ -2528,7 +2528,7 @@ type PaymentResult struct {
 	//
 	// `succeeded` — collected in full. Nothing further is owed.
 	//
-	// `processing` — submitted to the payment provider and awaiting its answer. **Do not
+	// `processing` — submitted to the payment gateway and awaiting its answer. **Do not
 	// submit it again**; poll the invoice or order, or wait to be notified. Some methods take
 	// minutes and a few take days.
 	//
@@ -2538,8 +2538,8 @@ type PaymentResult struct {
 	// `failed` — this attempt did not go through. `failure_reason` says why, and paying again
 	// starts a fresh attempt.
 	//
-	// The provider's own answer is what decides: an attempt is only `succeeded` once the
-	// provider says so, never because this call returned.
+	// The gateway's own answer is what decides: an attempt is only `succeeded` once the
+	// gateway says so, never because this call returned.
 	Status PaymentStatus `json:"status"`
 }
 
@@ -2547,7 +2547,7 @@ type PaymentResult struct {
 //
 // `succeeded` — collected in full. Nothing further is owed.
 //
-// `processing` — submitted to the payment provider and awaiting its answer. **Do not
+// `processing` — submitted to the payment gateway and awaiting its answer. **Do not
 // submit it again**; poll the invoice or order, or wait to be notified. Some methods take
 // minutes and a few take days.
 //
@@ -2557,8 +2557,8 @@ type PaymentResult struct {
 // `failed` — this attempt did not go through. `failure_reason` says why, and paying again
 // starts a fresh attempt.
 //
-// The provider's own answer is what decides: an attempt is only `succeeded` once the
-// provider says so, never because this call returned.
+// The gateway's own answer is what decides: an attempt is only `succeeded` once the
+// gateway says so, never because this call returned.
 type PaymentStatus string
 
 // ProjectBinding defines model for ProjectBinding.
@@ -2871,8 +2871,8 @@ type Refund struct {
 	// SettledAmount What has actually been returned.
 	SettledAmount *externalRef0.Money `json:"settled_amount,omitempty"`
 
-	// Status `pending` — accepted, not yet sent to the payment provider. `processing` — with the
-	// provider and awaiting its answer, which takes days for some methods. Neither is
+	// Status `pending` — accepted, not yet sent to the payment gateway. `processing` — with the
+	// gateway and awaiting its answer, which takes days for some methods. Neither is
 	// final, and neither means the money has moved.
 	Status RefundStatus `json:"status"`
 }
@@ -2880,8 +2880,8 @@ type Refund struct {
 // RefundDestination Where the cash went.
 type RefundDestination string
 
-// RefundStatus `pending` — accepted, not yet sent to the payment provider. `processing` — with the
-// provider and awaiting its answer, which takes days for some methods. Neither is
+// RefundStatus `pending` — accepted, not yet sent to the payment gateway. `processing` — with the
+// gateway and awaiting its answer, which takes days for some methods. Neither is
 // final, and neither means the money has moved.
 type RefundStatus string
 
@@ -2898,9 +2898,9 @@ type RefundPolicy string
 type RefundQuote struct {
 	Currency string `json:"currency"`
 
-	// Destination Where the cash part would go. `provider` returns it to the method it was paid
+	// Destination Where the cash part would go. `gateway` returns it to the method it was paid
 	// with; `balance` credits the account instead, which is the answer whenever the cash
-	// came from more than one place or never went through a provider at all.
+	// came from more than one place or never went through a gateway at all.
 	Destination RefundQuoteDestination `json:"destination"`
 
 	// FeeAmount Withheld from the cash part. Zero when `destination` is `balance`, and never taken
@@ -2926,9 +2926,9 @@ type RefundQuote struct {
 	Sources []RefundSource `json:"sources"`
 }
 
-// RefundQuoteDestination Where the cash part would go. `provider` returns it to the method it was paid
+// RefundQuoteDestination Where the cash part would go. `gateway` returns it to the method it was paid
 // with; `balance` credits the account instead, which is the answer whenever the cash
-// came from more than one place or never went through a provider at all.
+// came from more than one place or never went through a gateway at all.
 type RefundQuoteDestination string
 
 // RefundRequest Name exactly one of the three targets. Naming none leaves the amount undecided;
@@ -3148,6 +3148,9 @@ type TopUp struct {
 	FailureReason *string            `json:"failure_reason,omitempty"`
 	Id            openapi_types.UUID `json:"id"`
 
+	// PaymentGateway Which payment gateway collected it.
+	PaymentGateway *string `json:"payment_gateway,omitempty"`
+
 	// PresentmentAmount What was charged, in `presentment_currency`. It will not equal `amount`, and it is
 	// the figure that appears on the payer's card or wallet statement.
 	PresentmentAmount *externalRef0.Money `json:"presentment_amount,omitempty"`
@@ -3155,9 +3158,6 @@ type TopUp struct {
 	// PresentmentCurrency The currency the payer was actually charged in, when the checkout page collected a
 	// local one. Absent when it was the same as the account's.
 	PresentmentCurrency *string `json:"presentment_currency,omitempty"`
-
-	// Provider Which payment provider collected it.
-	Provider *string `json:"provider,omitempty"`
 
 	// PublishableKey Provider publishable key used with client_secret.
 	PublishableKey *string `json:"publishable_key,omitempty"`
@@ -3171,14 +3171,14 @@ type TopUp struct {
 	// Absent until the payment completes.
 	SettledAt *time.Time `json:"settled_at,omitempty"`
 
-	// Status `pending` until the payment provider confirms. The balance increases on `succeeded`.
+	// Status `pending` until the payment gateway confirms. The balance increases on `succeeded`.
 	//
 	// A checkout the payer abandoned ends up `failed` too, with `failure_reason` saying
 	// so. Nothing was charged in that case.
 	Status TopUpStatus `json:"status"`
 }
 
-// TopUpStatus `pending` until the payment provider confirms. The balance increases on `succeeded`.
+// TopUpStatus `pending` until the payment gateway confirms. The balance increases on `succeeded`.
 //
 // A checkout the payer abandoned ends up `failed` too, with `failure_reason` saying
 // so. Nothing was charged in that case.
@@ -3188,10 +3188,10 @@ type TopUpStatus string
 type TopUpCreate struct {
 	// Amount In the account's currency, and no finer than that currency's smallest unit:
 	// two decimals for most, none for the yen. A finer amount is refused here rather
-	// than at the checkout page, where the payer would see the provider's own wording
+	// than at the checkout page, where the payer would see the gateway's own wording
 	// instead of an explanation.
 	//
-	// There is a minimum, which differs by currency. Below it the provider's fee
+	// There is a minimum, which differs by currency. Below it the gateway's fee
 	// exceeds the top-up itself, so such a payment costs more to accept than it brings.
 	// The minimum in force is returned with the rejection.
 	Amount           externalRef0.Money `json:"amount"`
@@ -3228,10 +3228,10 @@ type Transaction struct {
 	// Reason Why the money moved, on a manual adjustment.
 	Reason *string `json:"reason,omitempty"`
 
-	// Status `pending` is a payment still with the provider. Only one may be pending against any
+	// Status `pending` is a payment still with the gateway. Only one may be pending against any
 	// one invoice or order.
 	//
-	// `failed` covers a payment the provider refused and one the payer walked away from
+	// `failed` covers a payment the gateway refused and one the payer walked away from
 	// alike; `failure_reason` says which. There is no separate cancelled state, because
 	// what to do next is the same either way — start a new one.
 	Status TransactionStatus `json:"status"`
@@ -3243,10 +3243,10 @@ type Transaction struct {
 	Type TransactionType `json:"type"`
 }
 
-// TransactionStatus `pending` is a payment still with the provider. Only one may be pending against any
+// TransactionStatus `pending` is a payment still with the gateway. Only one may be pending against any
 // one invoice or order.
 //
-// `failed` covers a payment the provider refused and one the payer walked away from
+// `failed` covers a payment the gateway refused and one the payer walked away from
 // alike; `failure_reason` says which. There is no separate cancelled state, because
 // what to do next is the same either way — start a new one.
 type TransactionStatus string
@@ -4155,8 +4155,8 @@ type ClientInterface interface {
 	// Applies the account balance first, then charges the remainder to a payment method. Give
 	// `payment_method_id` to choose one, or omit it to use the default.
 	//
-	// Returns a checkout address when the provider requires the cardholder to confirm the
-	// payment; the invoice is marked paid once the provider confirms it.
+	// Returns a checkout address when the gateway requires the cardholder to confirm the
+	// payment; the invoice is marked paid once the gateway confirms it.
 	//
 	// Calling this on an invoice that is already paid returns the invoice unchanged.
 	//
@@ -4170,8 +4170,8 @@ type ClientInterface interface {
 	// Applies the account balance first, then charges the remainder to a payment method. Give
 	// `payment_method_id` to choose one, or omit it to use the default.
 	//
-	// Returns a checkout address when the provider requires the cardholder to confirm the
-	// payment; the invoice is marked paid once the provider confirms it.
+	// Returns a checkout address when the gateway requires the cardholder to confirm the
+	// payment; the invoice is marked paid once the gateway confirms it.
 	//
 	// Calling this on an invoice that is already paid returns the invoice unchanged.
 	//
@@ -4272,8 +4272,8 @@ type ClientInterface interface {
 
 	// CreatePaymentMethodSetupWithBody Create payment method setup
 	//
-	// Returns what is needed to hand the browser over to the payment provider's own card
-	// form. Nothing is charged, and the method appears in the list once the provider
+	// Returns what is needed to hand the browser over to the payment gateway's own card
+	// form. Nothing is charged, and the method appears in the list once the gateway
 	// confirms it.
 	//
 	// Card numbers are never sent to or stored by this service.
@@ -4285,8 +4285,8 @@ type ClientInterface interface {
 
 	// CreatePaymentMethodSetup Create payment method setup
 	//
-	// Returns what is needed to hand the browser over to the payment provider's own card
-	// form. Nothing is charged, and the method appears in the list once the provider
+	// Returns what is needed to hand the browser over to the payment gateway's own card
+	// form. Nothing is charged, and the method appears in the list once the gateway
 	// confirms it.
 	//
 	// Card numbers are never sent to or stored by this service.
@@ -4316,9 +4316,9 @@ type ClientInterface interface {
 	//
 	// The balance is not split across the two cases: either it covers the whole total and
 	// everything is settled from it, or it is left untouched and the full total is collected
-	// through the provider. It is never partly spent against an unpaid remainder.
+	// through the gateway. It is never partly spent against an unpaid remainder.
 	//
-	// When the provider is needed, this returns a checkout address and settles nothing.
+	// When the gateway is needed, this returns a checkout address and settles nothing.
 	// Call it again once the payment has landed — the balance then covers the total and the
 	// same call settles everything.
 	//
@@ -4337,9 +4337,9 @@ type ClientInterface interface {
 	//
 	// The balance is not split across the two cases: either it covers the whole total and
 	// everything is settled from it, or it is left untouched and the full total is collected
-	// through the provider. It is never partly spent against an unpaid remainder.
+	// through the gateway. It is never partly spent against an unpaid remainder.
 	//
-	// When the provider is needed, this returns a checkout address and settles nothing.
+	// When the gateway is needed, this returns a checkout address and settles nothing.
 	// Call it again once the payment has landed — the balance then covers the total and the
 	// same call settles everything.
 	//
@@ -4529,7 +4529,7 @@ type ClientInterface interface {
 
 	// CreateTopUpWithBody Create top up
 	//
-	// Returns a checkout address. The balance increases when the payment provider confirms the
+	// Returns a checkout address. The balance increases when the payment gateway confirms the
 	// payment, which may be after this call returns.
 	//
 	// The amount is in the account's currency. A checkout page may present a local currency;
@@ -4542,7 +4542,7 @@ type ClientInterface interface {
 
 	// CreateTopUp Create top up
 	//
-	// Returns a checkout address. The balance increases when the payment provider confirms the
+	// Returns a checkout address. The balance increases when the payment gateway confirms the
 	// payment, which may be after this call returns.
 	//
 	// The amount is in the account's currency. A checkout page may present a local currency;
@@ -5164,8 +5164,8 @@ func (c *Client) ListInvoiceItems(ctx context.Context, invoiceId InvoiceId, para
 // Applies the account balance first, then charges the remainder to a payment method. Give
 // `payment_method_id` to choose one, or omit it to use the default.
 //
-// Returns a checkout address when the provider requires the cardholder to confirm the
-// payment; the invoice is marked paid once the provider confirms it.
+// Returns a checkout address when the gateway requires the cardholder to confirm the
+// payment; the invoice is marked paid once the gateway confirms it.
 //
 // Calling this on an invoice that is already paid returns the invoice unchanged.
 //
@@ -5189,8 +5189,8 @@ func (c *Client) PayInvoiceWithBody(ctx context.Context, invoiceId InvoiceId, co
 // Applies the account balance first, then charges the remainder to a payment method. Give
 // `payment_method_id` to choose one, or omit it to use the default.
 //
-// Returns a checkout address when the provider requires the cardholder to confirm the
-// payment; the invoice is marked paid once the provider confirms it.
+// Returns a checkout address when the gateway requires the cardholder to confirm the
+// payment; the invoice is marked paid once the gateway confirms it.
 //
 // Calling this on an invoice that is already paid returns the invoice unchanged.
 //
@@ -5391,8 +5391,8 @@ func (c *Client) ListPaymentMethods(ctx context.Context, params *ListPaymentMeth
 
 // CreatePaymentMethodSetupWithBody Create payment method setup
 //
-// Returns what is needed to hand the browser over to the payment provider's own card
-// form. Nothing is charged, and the method appears in the list once the provider
+// Returns what is needed to hand the browser over to the payment gateway's own card
+// form. Nothing is charged, and the method appears in the list once the gateway
 // confirms it.
 //
 // Card numbers are never sent to or stored by this service.
@@ -5414,8 +5414,8 @@ func (c *Client) CreatePaymentMethodSetupWithBody(ctx context.Context, contentTy
 
 // CreatePaymentMethodSetup Create payment method setup
 //
-// Returns what is needed to hand the browser over to the payment provider's own card
-// form. Nothing is charged, and the method appears in the list once the provider
+// Returns what is needed to hand the browser over to the payment gateway's own card
+// form. Nothing is charged, and the method appears in the list once the gateway
 // confirms it.
 //
 // Card numbers are never sent to or stored by this service.
@@ -5475,9 +5475,9 @@ func (c *Client) SetDefaultPaymentMethod(ctx context.Context, paymentMethodId Pa
 //
 // The balance is not split across the two cases: either it covers the whole total and
 // everything is settled from it, or it is left untouched and the full total is collected
-// through the provider. It is never partly spent against an unpaid remainder.
+// through the gateway. It is never partly spent against an unpaid remainder.
 //
-// When the provider is needed, this returns a checkout address and settles nothing.
+// When the gateway is needed, this returns a checkout address and settles nothing.
 // Call it again once the payment has landed — the balance then covers the total and the
 // same call settles everything.
 //
@@ -5506,9 +5506,9 @@ func (c *Client) PayTogetherWithBody(ctx context.Context, contentType string, bo
 //
 // The balance is not split across the two cases: either it covers the whole total and
 // everything is settled from it, or it is left untouched and the full total is collected
-// through the provider. It is never partly spent against an unpaid remainder.
+// through the gateway. It is never partly spent against an unpaid remainder.
 //
-// When the provider is needed, this returns a checkout address and settles nothing.
+// When the gateway is needed, this returns a checkout address and settles nothing.
 // Call it again once the payment has landed — the balance then covers the total and the
 // same call settles everything.
 //
@@ -5878,7 +5878,7 @@ func (c *Client) ListTopUps(ctx context.Context, params *ListTopUpsParams, reqEd
 
 // CreateTopUpWithBody Create top up
 //
-// Returns a checkout address. The balance increases when the payment provider confirms the
+// Returns a checkout address. The balance increases when the payment gateway confirms the
 // payment, which may be after this call returns.
 //
 // The amount is in the account's currency. A checkout page may present a local currency;
@@ -5901,7 +5901,7 @@ func (c *Client) CreateTopUpWithBody(ctx context.Context, contentType string, bo
 
 // CreateTopUp Create top up
 //
-// Returns a checkout address. The balance increases when the payment provider confirms the
+// Returns a checkout address. The balance increases when the payment gateway confirms the
 // payment, which may be after this call returns.
 //
 // The amount is in the account's currency. A checkout page may present a local currency;
@@ -11008,8 +11008,8 @@ type ClientWithResponsesInterface interface {
 	// Applies the account balance first, then charges the remainder to a payment method. Give
 	// `payment_method_id` to choose one, or omit it to use the default.
 	//
-	// Returns a checkout address when the provider requires the cardholder to confirm the
-	// payment; the invoice is marked paid once the provider confirms it.
+	// Returns a checkout address when the gateway requires the cardholder to confirm the
+	// payment; the invoice is marked paid once the gateway confirms it.
 	//
 	// Calling this on an invoice that is already paid returns the invoice unchanged.
 	//
@@ -11023,8 +11023,8 @@ type ClientWithResponsesInterface interface {
 	// Applies the account balance first, then charges the remainder to a payment method. Give
 	// `payment_method_id` to choose one, or omit it to use the default.
 	//
-	// Returns a checkout address when the provider requires the cardholder to confirm the
-	// payment; the invoice is marked paid once the provider confirms it.
+	// Returns a checkout address when the gateway requires the cardholder to confirm the
+	// payment; the invoice is marked paid once the gateway confirms it.
 	//
 	// Calling this on an invoice that is already paid returns the invoice unchanged.
 	//
@@ -11139,8 +11139,8 @@ type ClientWithResponsesInterface interface {
 
 	// CreatePaymentMethodSetupWithBodyWithResponse Create payment method setup
 	//
-	// Returns what is needed to hand the browser over to the payment provider's own card
-	// form. Nothing is charged, and the method appears in the list once the provider
+	// Returns what is needed to hand the browser over to the payment gateway's own card
+	// form. Nothing is charged, and the method appears in the list once the gateway
 	// confirms it.
 	//
 	// Card numbers are never sent to or stored by this service.
@@ -11152,8 +11152,8 @@ type ClientWithResponsesInterface interface {
 
 	// CreatePaymentMethodSetupWithResponse Create payment method setup
 	//
-	// Returns what is needed to hand the browser over to the payment provider's own card
-	// form. Nothing is charged, and the method appears in the list once the provider
+	// Returns what is needed to hand the browser over to the payment gateway's own card
+	// form. Nothing is charged, and the method appears in the list once the gateway
 	// confirms it.
 	//
 	// Card numbers are never sent to or stored by this service.
@@ -11187,9 +11187,9 @@ type ClientWithResponsesInterface interface {
 	//
 	// The balance is not split across the two cases: either it covers the whole total and
 	// everything is settled from it, or it is left untouched and the full total is collected
-	// through the provider. It is never partly spent against an unpaid remainder.
+	// through the gateway. It is never partly spent against an unpaid remainder.
 	//
-	// When the provider is needed, this returns a checkout address and settles nothing.
+	// When the gateway is needed, this returns a checkout address and settles nothing.
 	// Call it again once the payment has landed — the balance then covers the total and the
 	// same call settles everything.
 	//
@@ -11208,9 +11208,9 @@ type ClientWithResponsesInterface interface {
 	//
 	// The balance is not split across the two cases: either it covers the whole total and
 	// everything is settled from it, or it is left untouched and the full total is collected
-	// through the provider. It is never partly spent against an unpaid remainder.
+	// through the gateway. It is never partly spent against an unpaid remainder.
 	//
-	// When the provider is needed, this returns a checkout address and settles nothing.
+	// When the gateway is needed, this returns a checkout address and settles nothing.
 	// Call it again once the payment has landed — the balance then covers the total and the
 	// same call settles everything.
 	//
@@ -11418,7 +11418,7 @@ type ClientWithResponsesInterface interface {
 
 	// CreateTopUpWithBodyWithResponse Create top up
 	//
-	// Returns a checkout address. The balance increases when the payment provider confirms the
+	// Returns a checkout address. The balance increases when the payment gateway confirms the
 	// payment, which may be after this call returns.
 	//
 	// The amount is in the account's currency. A checkout page may present a local currency;
@@ -11431,7 +11431,7 @@ type ClientWithResponsesInterface interface {
 
 	// CreateTopUpWithResponse Create top up
 	//
-	// Returns a checkout address. The balance increases when the payment provider confirms the
+	// Returns a checkout address. The balance increases when the payment gateway confirms the
 	// payment, which may be after this call returns.
 	//
 	// The amount is in the account's currency. A checkout page may present a local currency;
@@ -15197,8 +15197,8 @@ func (c *ClientWithResponses) ListInvoiceItemsWithResponse(ctx context.Context, 
 // Applies the account balance first, then charges the remainder to a payment method. Give
 // `payment_method_id` to choose one, or omit it to use the default.
 //
-// Returns a checkout address when the provider requires the cardholder to confirm the
-// payment; the invoice is marked paid once the provider confirms it.
+// Returns a checkout address when the gateway requires the cardholder to confirm the
+// payment; the invoice is marked paid once the gateway confirms it.
 //
 // Calling this on an invoice that is already paid returns the invoice unchanged.
 //
@@ -15218,8 +15218,8 @@ func (c *ClientWithResponses) PayInvoiceWithBodyWithResponse(ctx context.Context
 // Applies the account balance first, then charges the remainder to a payment method. Give
 // `payment_method_id` to choose one, or omit it to use the default.
 //
-// Returns a checkout address when the provider requires the cardholder to confirm the
-// payment; the invoice is marked paid once the provider confirms it.
+// Returns a checkout address when the gateway requires the cardholder to confirm the
+// payment; the invoice is marked paid once the gateway confirms it.
 //
 // Calling this on an invoice that is already paid returns the invoice unchanged.
 //
@@ -15394,8 +15394,8 @@ func (c *ClientWithResponses) ListPaymentMethodsWithResponse(ctx context.Context
 
 // CreatePaymentMethodSetupWithBodyWithResponse Create payment method setup
 //
-// Returns what is needed to hand the browser over to the payment provider's own card
-// form. Nothing is charged, and the method appears in the list once the provider
+// Returns what is needed to hand the browser over to the payment gateway's own card
+// form. Nothing is charged, and the method appears in the list once the gateway
 // confirms it.
 //
 // Card numbers are never sent to or stored by this service.
@@ -15413,8 +15413,8 @@ func (c *ClientWithResponses) CreatePaymentMethodSetupWithBodyWithResponse(ctx c
 
 // CreatePaymentMethodSetupWithResponse Create payment method setup
 //
-// Returns what is needed to hand the browser over to the payment provider's own card
-// form. Nothing is charged, and the method appears in the list once the provider
+// Returns what is needed to hand the browser over to the payment gateway's own card
+// form. Nothing is charged, and the method appears in the list once the gateway
 // confirms it.
 //
 // Card numbers are never sent to or stored by this service.
@@ -15466,9 +15466,9 @@ func (c *ClientWithResponses) SetDefaultPaymentMethodWithResponse(ctx context.Co
 //
 // The balance is not split across the two cases: either it covers the whole total and
 // everything is settled from it, or it is left untouched and the full total is collected
-// through the provider. It is never partly spent against an unpaid remainder.
+// through the gateway. It is never partly spent against an unpaid remainder.
 //
-// When the provider is needed, this returns a checkout address and settles nothing.
+// When the gateway is needed, this returns a checkout address and settles nothing.
 // Call it again once the payment has landed — the balance then covers the total and the
 // same call settles everything.
 //
@@ -15493,9 +15493,9 @@ func (c *ClientWithResponses) PayTogetherWithBodyWithResponse(ctx context.Contex
 //
 // The balance is not split across the two cases: either it covers the whole total and
 // everything is settled from it, or it is left untouched and the full total is collected
-// through the provider. It is never partly spent against an unpaid remainder.
+// through the gateway. It is never partly spent against an unpaid remainder.
 //
-// When the provider is needed, this returns a checkout address and settles nothing.
+// When the gateway is needed, this returns a checkout address and settles nothing.
 // Call it again once the payment has landed — the balance then covers the total and the
 // same call settles everything.
 //
@@ -15811,7 +15811,7 @@ func (c *ClientWithResponses) ListTopUpsWithResponse(ctx context.Context, params
 
 // CreateTopUpWithBodyWithResponse Create top up
 //
-// Returns a checkout address. The balance increases when the payment provider confirms the
+// Returns a checkout address. The balance increases when the payment gateway confirms the
 // payment, which may be after this call returns.
 //
 // The amount is in the account's currency. A checkout page may present a local currency;
@@ -15830,7 +15830,7 @@ func (c *ClientWithResponses) CreateTopUpWithBodyWithResponse(ctx context.Contex
 
 // CreateTopUpWithResponse Create top up
 //
-// Returns a checkout address. The balance increases when the payment provider confirms the
+// Returns a checkout address. The balance increases when the payment gateway confirms the
 // payment, which may be after this call returns.
 //
 // The amount is in the account's currency. A checkout page may present a local currency;

@@ -3649,7 +3649,7 @@ func (s RefundDestination) Validate() error {
 	switch s {
 	case "balance":
 		return nil
-	case "provider":
+	case "gateway":
 		return nil
 	default:
 		return errors.Errorf("invalid value: %v", s)
@@ -3762,7 +3762,7 @@ func (s RefundQuoteDestination) Validate() error {
 	switch s {
 	case "balance":
 		return nil
-	case "provider":
+	case "gateway":
 		return nil
 	default:
 		return errors.Errorf("invalid value: %v", s)

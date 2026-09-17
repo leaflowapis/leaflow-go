@@ -8203,7 +8203,7 @@ func (s *OrderType) UnmarshalText(data []byte) error {
 	}
 }
 
-// Safe to call again. While an attempt is still with the payment provider, calling this returns that
+// Safe to call again. While an attempt is still with the payment gateway, calling this returns that
 // attempt rather than starting a second one, so a customer who reloads the page is not charged twice.
 //
 // A new attempt is started only once the previous one has failed.
@@ -8254,7 +8254,7 @@ type PayTogetherRequest struct {
 	InvoiceIds []uuid.UUID `json:"invoice_ids"`
 	OrderIds   []uuid.UUID `json:"order_ids"`
 	ReturnURL  OptString   `json:"return_url"`
-	// Required when the provider is involved, because that is where the money moves. The same key returns
+	// Required when the gateway is involved, because that is where the money moves. The same key returns
 	// the same checkout address instead of opening a second one.
 	IdempotencyKey OptString `json:"idempotency_key"`
 }
@@ -8303,7 +8303,7 @@ func (s *PayTogetherRequest) SetIdempotencyKey(val OptString) {
 type PaymentMethod struct {
 	ID               uuid.UUID           `json:"id"`
 	BillingAccountID int64               `json:"billing_account_id"`
-	Provider         string              `json:"provider"`
+	PaymentGateway   OptString           `json:"payment_gateway"`
 	Brand            OptString           `json:"brand"`
 	Last4            OptString           `json:"last4"`
 	ExpMonth         OptNilInt           `json:"exp_month"`
@@ -8322,9 +8322,9 @@ func (s *PaymentMethod) GetBillingAccountID() int64 {
 	return s.BillingAccountID
 }
 
-// GetProvider returns the value of Provider.
-func (s *PaymentMethod) GetProvider() string {
-	return s.Provider
+// GetPaymentGateway returns the value of PaymentGateway.
+func (s *PaymentMethod) GetPaymentGateway() OptString {
+	return s.PaymentGateway
 }
 
 // GetBrand returns the value of Brand.
@@ -8367,9 +8367,9 @@ func (s *PaymentMethod) SetBillingAccountID(val int64) {
 	s.BillingAccountID = val
 }
 
-// SetProvider sets the value of Provider.
-func (s *PaymentMethod) SetProvider(val string) {
-	s.Provider = val
+// SetPaymentGateway sets the value of PaymentGateway.
+func (s *PaymentMethod) SetPaymentGateway(val OptString) {
+	s.PaymentGateway = val
 }
 
 // SetBrand sets the value of Brand.
@@ -8454,18 +8454,18 @@ func (s *PaymentMethodSetup) SetReturnURL(val OptString) {
 	s.ReturnURL = val
 }
 
-// What the payment provider's browser library needs in order to collect a card. There is no address to
+// What the payment gateway's browser library needs in order to collect a card. There is no address to
 // redirect to: the form is rendered in the page, and the card goes straight from the browser to the
-// provider.
+// gateway.
 // Ref: #/components/schemas/PaymentMethodSetupResult
 type PaymentMethodSetupResult struct {
-	// The provider's identifier for this attempt. Use it to tell a reloaded page apart from a second
+	// The gateway's identifier for this attempt. Use it to tell a reloaded page apart from a second
 	// attempt.
 	SetupID string `json:"setup_id"`
-	// Authorises this one attempt with the provider, and nothing else. Pass it to the provider's library;
-	// it is not an API credential and grants no access here.
+	// Authorises this one attempt with the gateway, and nothing else. Pass it to the gateway's library; it
+	// is not an API credential and grants no access here.
 	ClientSecret string `json:"client_secret"`
-	// The provider's public key to initialise its library with. It differs between test and live, so read
+	// The gateway's public key to initialise its library with. It differs between test and live, so read
 	// it from here rather than compiling it in.
 	PublishableKey string      `json:"publishable_key"`
 	ExpiresAt      OptDateTime `json:"expires_at"`
@@ -8567,7 +8567,7 @@ type PaymentResult struct {
 	Status           PaymentStatus `json:"status"`
 	AmountPaid       Money         `json:"amount_paid"`
 	// What is still outstanding. Zero once the payment succeeds. Unchanged while `processing`: nothing is
-	// collected until the provider confirms it.
+	// collected until the gateway confirms it.
 	AmountDue Money  `json:"amount_due"`
 	Currency  string `json:"currency"`
 	// How much came from the account balance. Applied immediately, and released again if the rest of the
@@ -8583,7 +8583,7 @@ type PaymentResult struct {
 	// Whether paying again is worth attempting. False for a refusal that will keep happening — a closed
 	// account, an amount over a limit — so that a client does not retry in a loop.
 	Retriable OptBool `json:"retriable"`
-	// The earliest sensible moment to try again. Present when the provider asked for a wait.
+	// The earliest sensible moment to try again. Present when the gateway asked for a wait.
 	RetryAfter    OptNilDateTime `json:"retry_after"`
 	InvoiceID     OptNilUUID     `json:"invoice_id"`
 	OrderID       OptNilUUID     `json:"order_id"`
@@ -8734,7 +8734,7 @@ func (s *PaymentResult) SetFailureReason(val OptString) {
 //
 // `succeeded` — collected in full. Nothing further is owed.
 //
-// `processing` — submitted to the payment provider and awaiting its answer. Do not submit it again;
+// `processing` — submitted to the payment gateway and awaiting its answer. Do not submit it again;
 // poll the invoice or order, or wait to be notified. Some methods take minutes and a few take days.
 //
 // `requires_action` — the payer has to finish it at `checkout_url`, typically by confirming with
@@ -8743,7 +8743,7 @@ func (s *PaymentResult) SetFailureReason(val OptString) {
 // `failed` — this attempt did not go through. `failure_reason` says why, and paying again starts a
 // fresh attempt.
 //
-// The provider's own answer is what decides: an attempt is only `succeeded` once the provider says so,
+// The gateway's own answer is what decides: an attempt is only `succeeded` once the gateway says so,
 // never because this call returned.
 // Ref: #/components/schemas/PaymentStatus
 type PaymentStatus string
@@ -10256,7 +10256,7 @@ type Refund struct {
 	Currency  string   `json:"currency"`
 	// Where the cash went.
 	Destination OptRefundDestination `json:"destination"`
-	// `pending` — accepted, not yet sent to the payment provider. `processing` — with the provider and
+	// `pending` — accepted, not yet sent to the payment gateway. `processing` — with the gateway and
 	// awaiting its answer, which takes days for some methods. Neither is final, and neither means the
 	// money has moved.
 	Status    RefundStatus `json:"status"`
@@ -10388,15 +10388,15 @@ func (s *Refund) SetCreatedAt(val time.Time) {
 type RefundDestination string
 
 const (
-	RefundDestinationBalance  RefundDestination = "balance"
-	RefundDestinationProvider RefundDestination = "provider"
+	RefundDestinationBalance RefundDestination = "balance"
+	RefundDestinationGateway RefundDestination = "gateway"
 )
 
 // AllValues returns all RefundDestination values.
 func (RefundDestination) AllValues() []RefundDestination {
 	return []RefundDestination{
 		RefundDestinationBalance,
-		RefundDestinationProvider,
+		RefundDestinationGateway,
 	}
 }
 
@@ -10405,7 +10405,7 @@ func (s RefundDestination) MarshalText() ([]byte, error) {
 	switch s {
 	case RefundDestinationBalance:
 		return []byte(s), nil
-	case RefundDestinationProvider:
+	case RefundDestinationGateway:
 		return []byte(s), nil
 	default:
 		return nil, errors.Errorf("invalid value: %q", s)
@@ -10418,8 +10418,8 @@ func (s *RefundDestination) UnmarshalText(data []byte) error {
 	case RefundDestinationBalance:
 		*s = RefundDestinationBalance
 		return nil
-	case RefundDestinationProvider:
-		*s = RefundDestinationProvider
+	case RefundDestinationGateway:
+		*s = RefundDestinationGateway
 		return nil
 	default:
 		return errors.Errorf("invalid value: %q", data)
@@ -10508,9 +10508,9 @@ type RefundQuote struct {
 	// `refundable_amount` less `fee_amount`.
 	NetAmount Money  `json:"net_amount"`
 	Currency  string `json:"currency"`
-	// Where the cash part would go. `provider` returns it to the method it was paid with; `balance`
-	// credits the account instead, which is the answer whenever the cash came from more than one place or
-	// never went through a provider at all.
+	// Where the cash part would go. `gateway` returns it to the method it was paid with; `balance` credits
+	// the account instead, which is the answer whenever the cash came from more than one place or never
+	// went through a gateway at all.
 	Destination RefundQuoteDestination `json:"destination"`
 	// How `refundable_amount` splits by where the money came from. The amounts sum to it.
 	//
@@ -10593,21 +10593,21 @@ func (s *RefundQuote) SetSelfServiceUntil(val OptNilDateTime) {
 	s.SelfServiceUntil = val
 }
 
-// Where the cash part would go. `provider` returns it to the method it was paid with; `balance`
-// credits the account instead, which is the answer whenever the cash came from more than one place or
-// never went through a provider at all.
+// Where the cash part would go. `gateway` returns it to the method it was paid with; `balance` credits
+// the account instead, which is the answer whenever the cash came from more than one place or never
+// went through a gateway at all.
 type RefundQuoteDestination string
 
 const (
-	RefundQuoteDestinationBalance  RefundQuoteDestination = "balance"
-	RefundQuoteDestinationProvider RefundQuoteDestination = "provider"
+	RefundQuoteDestinationBalance RefundQuoteDestination = "balance"
+	RefundQuoteDestinationGateway RefundQuoteDestination = "gateway"
 )
 
 // AllValues returns all RefundQuoteDestination values.
 func (RefundQuoteDestination) AllValues() []RefundQuoteDestination {
 	return []RefundQuoteDestination{
 		RefundQuoteDestinationBalance,
-		RefundQuoteDestinationProvider,
+		RefundQuoteDestinationGateway,
 	}
 }
 
@@ -10616,7 +10616,7 @@ func (s RefundQuoteDestination) MarshalText() ([]byte, error) {
 	switch s {
 	case RefundQuoteDestinationBalance:
 		return []byte(s), nil
-	case RefundQuoteDestinationProvider:
+	case RefundQuoteDestinationGateway:
 		return []byte(s), nil
 	default:
 		return nil, errors.Errorf("invalid value: %q", s)
@@ -10629,8 +10629,8 @@ func (s *RefundQuoteDestination) UnmarshalText(data []byte) error {
 	case RefundQuoteDestinationBalance:
 		*s = RefundQuoteDestinationBalance
 		return nil
-	case RefundQuoteDestinationProvider:
-		*s = RefundQuoteDestinationProvider
+	case RefundQuoteDestinationGateway:
+		*s = RefundQuoteDestinationGateway
 		return nil
 	default:
 		return errors.Errorf("invalid value: %q", data)
@@ -10792,7 +10792,7 @@ func (s *RefundSourceType) UnmarshalText(data []byte) error {
 	}
 }
 
-// `pending` — accepted, not yet sent to the payment provider. `processing` — with the provider and
+// `pending` — accepted, not yet sent to the payment gateway. `processing` — with the gateway and
 // awaiting its answer, which takes days for some methods. Neither is final, and neither means the
 // money has moved.
 type RefundStatus string
@@ -11844,13 +11844,13 @@ type TopUp struct {
 	// How much of this top-up has not been spent yet. This is the part that can still be returned to where
 	// it was paid from.
 	RemainingAmount OptMoney `json:"remaining_amount"`
-	// `pending` until the payment provider confirms. The balance increases on `succeeded`.
+	// `pending` until the payment gateway confirms. The balance increases on `succeeded`.
 	//
 	// A checkout the payer abandoned ends up `failed` too, with `failure_reason` saying so. Nothing was
 	// charged in that case.
 	Status TopUpStatus `json:"status"`
-	// Which payment provider collected it.
-	Provider OptString `json:"provider"`
+	// Which payment gateway collected it.
+	PaymentGateway OptString `json:"payment_gateway"`
 	// The currency the payer was actually charged in, when the checkout page collected a local one. Absent
 	// when it was the same as the account's.
 	PresentmentCurrency OptString `json:"presentment_currency"`
@@ -11902,9 +11902,9 @@ func (s *TopUp) GetStatus() TopUpStatus {
 	return s.Status
 }
 
-// GetProvider returns the value of Provider.
-func (s *TopUp) GetProvider() OptString {
-	return s.Provider
+// GetPaymentGateway returns the value of PaymentGateway.
+func (s *TopUp) GetPaymentGateway() OptString {
+	return s.PaymentGateway
 }
 
 // GetPresentmentCurrency returns the value of PresentmentCurrency.
@@ -11977,9 +11977,9 @@ func (s *TopUp) SetStatus(val TopUpStatus) {
 	s.Status = val
 }
 
-// SetProvider sets the value of Provider.
-func (s *TopUp) SetProvider(val OptString) {
-	s.Provider = val
+// SetPaymentGateway sets the value of PaymentGateway.
+func (s *TopUp) SetPaymentGateway(val OptString) {
+	s.PaymentGateway = val
 }
 
 // SetPresentmentCurrency sets the value of PresentmentCurrency.
@@ -12027,11 +12027,11 @@ type TopUpCreate struct {
 	BillingAccountID int64 `json:"billing_account_id"`
 	// In the account's currency, and no finer than that currency's smallest unit: two decimals for most,
 	// none for the yen. A finer amount is refused here rather than at the checkout page, where the payer
-	// would see the provider's own wording instead of an explanation.
+	// would see the gateway's own wording instead of an explanation.
 	//
-	// There is a minimum, which differs by currency. Below it the provider's fee exceeds the top-up
-	// itself, so such a payment costs more to accept than it brings. The minimum in force is returned with
-	// the rejection.
+	// There is a minimum, which differs by currency. Below it the gateway's fee exceeds the top-up itself,
+	// so such a payment costs more to accept than it brings. The minimum in force is returned with the
+	// rejection.
 	Amount Money `json:"amount"`
 	// Charge a saved method instead of opening a checkout page.
 	PaymentMethodID OptUUID `json:"payment_method_id"`
@@ -12117,7 +12117,7 @@ func (s *TopUpList) SetTotalCount(val OptInt64) {
 	s.TotalCount = val
 }
 
-// `pending` until the payment provider confirms. The balance increases on `succeeded`.
+// `pending` until the payment gateway confirms. The balance increases on `succeeded`.
 //
 // A checkout the payer abandoned ends up `failed` too, with `failure_reason` saying so. Nothing was
 // charged in that case.
@@ -12188,10 +12188,10 @@ type Transaction struct {
 	Reason    OptString  `json:"reason"`
 	InvoiceID OptNilUUID `json:"invoice_id"`
 	OrderID   OptNilUUID `json:"order_id"`
-	// `pending` is a payment still with the provider. Only one may be pending against any one invoice or
+	// `pending` is a payment still with the gateway. Only one may be pending against any one invoice or
 	// order.
 	//
-	// `failed` covers a payment the provider refused and one the payer walked away from alike;
+	// `failed` covers a payment the gateway refused and one the payer walked away from alike;
 	// `failure_reason` says which. There is no separate cancelled state, because what to do next is the
 	// same either way — start a new one.
 	Status    TransactionStatus `json:"status"`
@@ -12324,10 +12324,10 @@ func (s *TransactionList) SetTotalCount(val OptInt64) {
 	s.TotalCount = val
 }
 
-// `pending` is a payment still with the provider. Only one may be pending against any one invoice or
+// `pending` is a payment still with the gateway. Only one may be pending against any one invoice or
 // order.
 //
-// `failed` covers a payment the provider refused and one the payer walked away from alike;
+// `failed` covers a payment the gateway refused and one the payer walked away from alike;
 // `failure_reason` says which. There is no separate cancelled state, because what to do next is the
 // same either way — start a new one.
 type TransactionStatus string

@@ -56,8 +56,8 @@ func (UnimplementedHandler) CreateEstimate(ctx context.Context, req *EstimateReq
 
 // CreatePaymentMethodSetup implements create-payment-method-setup operation.
 //
-// Returns what is needed to hand the browser over to the payment provider's own card form. Nothing is
-// charged, and the method appears in the list once the provider confirms it.
+// Returns what is needed to hand the browser over to the payment gateway's own card form. Nothing is
+// charged, and the method appears in the list once the gateway confirms it.
 //
 // Card numbers are never sent to or stored by this service.
 //
@@ -83,7 +83,7 @@ func (UnimplementedHandler) CreateProjectQuote(ctx context.Context, req *QuoteRe
 
 // CreateTopUp implements create-top-up operation.
 //
-// Returns a checkout address. The balance increases when the payment provider confirms the payment,
+// Returns a checkout address. The balance increases when the payment gateway confirms the payment,
 // which may be after this call returns.
 //
 // The amount is in the account's currency. A checkout page may present a local currency; the amount
@@ -561,8 +561,8 @@ func (UnimplementedHandler) ListUsageCharges(ctx context.Context, params ListUsa
 // Applies the account balance first, then charges the remainder to a payment method. Give
 // `payment_method_id` to choose one, or omit it to use the default.
 //
-// Returns a checkout address when the provider requires the cardholder to confirm the payment; the
-// invoice is marked paid once the provider confirms it.
+// Returns a checkout address when the gateway requires the cardholder to confirm the payment; the
+// invoice is marked paid once the gateway confirms it.
 //
 // Calling this on an invoice that is already paid returns the invoice unchanged.
 //
@@ -589,10 +589,10 @@ func (UnimplementedHandler) PayOrder(ctx context.Context, req OptPayRequest, par
 // not a state this can leave behind.
 //
 // The balance is not split across the two cases: either it covers the whole total and everything is
-// settled from it, or it is left untouched and the full total is collected through the provider. It is
+// settled from it, or it is left untouched and the full total is collected through the gateway. It is
 // never partly spent against an unpaid remainder.
 //
-// When the provider is needed, this returns a checkout address and settles nothing. Call it again once
+// When the gateway is needed, this returns a checkout address and settles nothing. Call it again once
 // the payment has landed — the balance then covers the total and the same call settles everything.
 //
 // Anything already paid is skipped rather than refused, so a repeated call after a partial success is

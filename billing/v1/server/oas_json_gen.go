@@ -12969,8 +12969,10 @@ func (s *PaymentMethod) encodeFields(e *jx.Encoder) {
 		e.Int64(s.BillingAccountID)
 	}
 	{
-		e.FieldStart("provider")
-		e.Str(s.Provider)
+		if s.PaymentGateway.Set {
+			e.FieldStart("payment_gateway")
+			s.PaymentGateway.Encode(e)
+		}
 	}
 	{
 		if s.Brand.Set {
@@ -13009,7 +13011,7 @@ func (s *PaymentMethod) encodeFields(e *jx.Encoder) {
 var jsonFieldsNameOfPaymentMethod = [9]string{
 	0: "id",
 	1: "billing_account_id",
-	2: "provider",
+	2: "payment_gateway",
 	3: "brand",
 	4: "last4",
 	5: "exp_month",
@@ -13051,17 +13053,15 @@ func (s *PaymentMethod) Decode(d *jx.Decoder) error {
 			}(); err != nil {
 				return errors.Wrap(err, "decode field \"billing_account_id\"")
 			}
-		case "provider":
-			requiredBitSet[0] |= 1 << 2
+		case "payment_gateway":
 			if err := func() error {
-				v, err := d.Str()
-				s.Provider = string(v)
-				if err != nil {
+				s.PaymentGateway.Reset()
+				if err := s.PaymentGateway.Decode(d); err != nil {
 					return err
 				}
 				return nil
 			}(); err != nil {
-				return errors.Wrap(err, "decode field \"provider\"")
+				return errors.Wrap(err, "decode field \"payment_gateway\"")
 			}
 		case "brand":
 			if err := func() error {
@@ -13135,7 +13135,7 @@ func (s *PaymentMethod) Decode(d *jx.Decoder) error {
 	// Validate required fields.
 	var failures []validate.FieldError
 	for i, mask := range [2]uint8{
-		0b10000111,
+		0b10000011,
 		0b00000001,
 	} {
 		if result := (requiredBitSet[i] & mask) ^ mask; result != 0 {
@@ -16893,8 +16893,8 @@ func (s *RefundDestination) Decode(d *jx.Decoder) error {
 	switch RefundDestination(v) {
 	case RefundDestinationBalance:
 		*s = RefundDestinationBalance
-	case RefundDestinationProvider:
-		*s = RefundDestinationProvider
+	case RefundDestinationGateway:
+		*s = RefundDestinationGateway
 	default:
 		*s = RefundDestination(v)
 	}
@@ -17296,8 +17296,8 @@ func (s *RefundQuoteDestination) Decode(d *jx.Decoder) error {
 	switch RefundQuoteDestination(v) {
 	case RefundQuoteDestinationBalance:
 		*s = RefundQuoteDestinationBalance
-	case RefundQuoteDestinationProvider:
-		*s = RefundQuoteDestinationProvider
+	case RefundQuoteDestinationGateway:
+		*s = RefundQuoteDestinationGateway
 	default:
 		*s = RefundQuoteDestination(v)
 	}
@@ -19760,9 +19760,9 @@ func (s *TopUp) encodeFields(e *jx.Encoder) {
 		s.Status.Encode(e)
 	}
 	{
-		if s.Provider.Set {
-			e.FieldStart("provider")
-			s.Provider.Encode(e)
+		if s.PaymentGateway.Set {
+			e.FieldStart("payment_gateway")
+			s.PaymentGateway.Encode(e)
 		}
 	}
 	{
@@ -19820,7 +19820,7 @@ var jsonFieldsNameOfTopUp = [15]string{
 	3:  "currency",
 	4:  "remaining_amount",
 	5:  "status",
-	6:  "provider",
+	6:  "payment_gateway",
 	7:  "presentment_currency",
 	8:  "presentment_amount",
 	9:  "failure_reason",
@@ -19906,15 +19906,15 @@ func (s *TopUp) Decode(d *jx.Decoder) error {
 			}(); err != nil {
 				return errors.Wrap(err, "decode field \"status\"")
 			}
-		case "provider":
+		case "payment_gateway":
 			if err := func() error {
-				s.Provider.Reset()
-				if err := s.Provider.Decode(d); err != nil {
+				s.PaymentGateway.Reset()
+				if err := s.PaymentGateway.Decode(d); err != nil {
 					return err
 				}
 				return nil
 			}(); err != nil {
-				return errors.Wrap(err, "decode field \"provider\"")
+				return errors.Wrap(err, "decode field \"payment_gateway\"")
 			}
 		case "presentment_currency":
 			if err := func() error {
