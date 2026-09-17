@@ -1912,7 +1912,6 @@ type DiskTypeResource struct {
 	ThroughputAtMaxSize NilInt64                         `json:"throughput_at_max_size"`
 	ProductID           NilUUID                          `json:"product_id"`
 	PlanID              NilUUID                          `json:"plan_id"`
-	LookupKey           string                           `json:"lookup_key"`
 	NameTranslations    DiskTypeResourceNameTranslations `json:"name_translations"`
 	SnapshotPlanID      NilUUID                          `json:"snapshot_plan_id"`
 	BackupPlanID        NilUUID                          `json:"backup_plan_id"`
@@ -1987,11 +1986,6 @@ func (s *DiskTypeResource) GetProductID() NilUUID {
 // GetPlanID returns the value of PlanID.
 func (s *DiskTypeResource) GetPlanID() NilUUID {
 	return s.PlanID
-}
-
-// GetLookupKey returns the value of LookupKey.
-func (s *DiskTypeResource) GetLookupKey() string {
-	return s.LookupKey
 }
 
 // GetNameTranslations returns the value of NameTranslations.
@@ -2082,11 +2076,6 @@ func (s *DiskTypeResource) SetProductID(val NilUUID) {
 // SetPlanID sets the value of PlanID.
 func (s *DiskTypeResource) SetPlanID(val NilUUID) {
 	s.PlanID = val
-}
-
-// SetLookupKey sets the value of LookupKey.
-func (s *DiskTypeResource) SetLookupKey(val string) {
-	s.LookupKey = val
 }
 
 // SetNameTranslations sets the value of NameTranslations.
@@ -2866,7 +2855,6 @@ type IPv4PoolResource struct {
 	ID              uuid.UUID `json:"id"`
 	RegionID        uuid.UUID `json:"region_id"`
 	Name            string    `json:"name"`
-	LookupKey       string    `json:"lookup_key"`
 	PlanID          NilUUID   `json:"plan_id"`
 	BandwidthPlanID NilUUID   `json:"bandwidth_plan_id"`
 }
@@ -2884,11 +2872,6 @@ func (s *IPv4PoolResource) GetRegionID() uuid.UUID {
 // GetName returns the value of Name.
 func (s *IPv4PoolResource) GetName() string {
 	return s.Name
-}
-
-// GetLookupKey returns the value of LookupKey.
-func (s *IPv4PoolResource) GetLookupKey() string {
-	return s.LookupKey
 }
 
 // GetPlanID returns the value of PlanID.
@@ -2914,11 +2897,6 @@ func (s *IPv4PoolResource) SetRegionID(val uuid.UUID) {
 // SetName sets the value of Name.
 func (s *IPv4PoolResource) SetName(val string) {
 	s.Name = val
-}
-
-// SetLookupKey sets the value of LookupKey.
-func (s *IPv4PoolResource) SetLookupKey(val string) {
-	s.LookupKey = val
 }
 
 // SetPlanID sets the value of PlanID.
@@ -3080,8 +3058,7 @@ type ImageResource struct {
 	OsVersion     string    `json:"os_version"`
 	RegionID      uuid.UUID `json:"region_id"`
 	// False means a new password can only be set by rebuilding an instance created from this image.
-	SupportsPasswordReset bool      `json:"supports_password_reset"`
-	LookupKey             OptString `json:"lookup_key"`
+	SupportsPasswordReset bool `json:"supports_password_reset"`
 }
 
 // GetArchitecture returns the value of Architecture.
@@ -3134,11 +3111,6 @@ func (s *ImageResource) GetSupportsPasswordReset() bool {
 	return s.SupportsPasswordReset
 }
 
-// GetLookupKey returns the value of LookupKey.
-func (s *ImageResource) GetLookupKey() OptString {
-	return s.LookupKey
-}
-
 // SetArchitecture sets the value of Architecture.
 func (s *ImageResource) SetArchitecture(val string) {
 	s.Architecture = val
@@ -3187,11 +3159,6 @@ func (s *ImageResource) SetRegionID(val uuid.UUID) {
 // SetSupportsPasswordReset sets the value of SupportsPasswordReset.
 func (s *ImageResource) SetSupportsPasswordReset(val bool) {
 	s.SupportsPasswordReset = val
-}
-
-// SetLookupKey sets the value of LookupKey.
-func (s *ImageResource) SetLookupKey(val OptString) {
-	s.LookupKey = val
 }
 
 // Ref: #/components/schemas/InstanceListResponseBody
@@ -4099,7 +4066,6 @@ type InstanceTypeResource struct {
 	Vcpus              int64                                `json:"vcpus"`
 	ProductID          NilUUID                              `json:"product_id"`
 	PlanID             NilUUID                              `json:"plan_id"`
-	LookupKey          string                               `json:"lookup_key"`
 	NameTranslations   InstanceTypeResourceNameTranslations `json:"name_translations"`
 }
 
@@ -4166,11 +4132,6 @@ func (s *InstanceTypeResource) GetProductID() NilUUID {
 // GetPlanID returns the value of PlanID.
 func (s *InstanceTypeResource) GetPlanID() NilUUID {
 	return s.PlanID
-}
-
-// GetLookupKey returns the value of LookupKey.
-func (s *InstanceTypeResource) GetLookupKey() string {
-	return s.LookupKey
 }
 
 // GetNameTranslations returns the value of NameTranslations.
@@ -4241,11 +4202,6 @@ func (s *InstanceTypeResource) SetProductID(val NilUUID) {
 // SetPlanID sets the value of PlanID.
 func (s *InstanceTypeResource) SetPlanID(val NilUUID) {
 	s.PlanID = val
-}
-
-// SetLookupKey sets the value of LookupKey.
-func (s *InstanceTypeResource) SetLookupKey(val string) {
-	s.LookupKey = val
 }
 
 // SetNameTranslations sets the value of NameTranslations.

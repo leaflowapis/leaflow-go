@@ -4370,10 +4370,6 @@ func (s *DiskTypeResource) encodeFields(e *jx.Encoder) {
 		s.PlanID.Encode(e)
 	}
 	{
-		e.FieldStart("lookup_key")
-		e.Str(s.LookupKey)
-	}
-	{
 		e.FieldStart("name_translations")
 		s.NameTranslations.Encode(e)
 	}
@@ -4391,7 +4387,7 @@ func (s *DiskTypeResource) encodeFields(e *jx.Encoder) {
 	}
 }
 
-var jsonFieldsNameOfDiskTypeResource = [19]string{
+var jsonFieldsNameOfDiskTypeResource = [18]string{
 	0:  "availability_zone_id",
 	1:  "id",
 	2:  "iops_at_min_size",
@@ -4406,11 +4402,10 @@ var jsonFieldsNameOfDiskTypeResource = [19]string{
 	11: "throughput_at_max_size",
 	12: "product_id",
 	13: "plan_id",
-	14: "lookup_key",
-	15: "name_translations",
-	16: "snapshot_plan_id",
-	17: "backup_plan_id",
-	18: "private_image_plan_id",
+	14: "name_translations",
+	15: "snapshot_plan_id",
+	16: "backup_plan_id",
+	17: "private_image_plan_id",
 }
 
 // Decode decodes DiskTypeResource from json.
@@ -4576,20 +4571,8 @@ func (s *DiskTypeResource) Decode(d *jx.Decoder) error {
 			}(); err != nil {
 				return errors.Wrap(err, "decode field \"plan_id\"")
 			}
-		case "lookup_key":
-			requiredBitSet[1] |= 1 << 6
-			if err := func() error {
-				v, err := d.Str()
-				s.LookupKey = string(v)
-				if err != nil {
-					return err
-				}
-				return nil
-			}(); err != nil {
-				return errors.Wrap(err, "decode field \"lookup_key\"")
-			}
 		case "name_translations":
-			requiredBitSet[1] |= 1 << 7
+			requiredBitSet[1] |= 1 << 6
 			if err := func() error {
 				if err := s.NameTranslations.Decode(d); err != nil {
 					return err
@@ -4599,7 +4582,7 @@ func (s *DiskTypeResource) Decode(d *jx.Decoder) error {
 				return errors.Wrap(err, "decode field \"name_translations\"")
 			}
 		case "snapshot_plan_id":
-			requiredBitSet[2] |= 1 << 0
+			requiredBitSet[1] |= 1 << 7
 			if err := func() error {
 				if err := s.SnapshotPlanID.Decode(d); err != nil {
 					return err
@@ -4609,7 +4592,7 @@ func (s *DiskTypeResource) Decode(d *jx.Decoder) error {
 				return errors.Wrap(err, "decode field \"snapshot_plan_id\"")
 			}
 		case "backup_plan_id":
-			requiredBitSet[2] |= 1 << 1
+			requiredBitSet[2] |= 1 << 0
 			if err := func() error {
 				if err := s.BackupPlanID.Decode(d); err != nil {
 					return err
@@ -4619,7 +4602,7 @@ func (s *DiskTypeResource) Decode(d *jx.Decoder) error {
 				return errors.Wrap(err, "decode field \"backup_plan_id\"")
 			}
 		case "private_image_plan_id":
-			requiredBitSet[2] |= 1 << 2
+			requiredBitSet[2] |= 1 << 1
 			if err := func() error {
 				if err := s.PrivateImagePlanID.Decode(d); err != nil {
 					return err
@@ -4640,7 +4623,7 @@ func (s *DiskTypeResource) Decode(d *jx.Decoder) error {
 	for i, mask := range [3]uint8{
 		0b11111111,
 		0b11111111,
-		0b00000111,
+		0b00000011,
 	} {
 		if result := (requiredBitSet[i] & mask) ^ mask; result != 0 {
 			// Mask only required fields and check equality to mask using XOR.
@@ -6051,10 +6034,6 @@ func (s *IPv4PoolResource) encodeFields(e *jx.Encoder) {
 		e.Str(s.Name)
 	}
 	{
-		e.FieldStart("lookup_key")
-		e.Str(s.LookupKey)
-	}
-	{
 		e.FieldStart("plan_id")
 		s.PlanID.Encode(e)
 	}
@@ -6064,13 +6043,12 @@ func (s *IPv4PoolResource) encodeFields(e *jx.Encoder) {
 	}
 }
 
-var jsonFieldsNameOfIPv4PoolResource = [6]string{
+var jsonFieldsNameOfIPv4PoolResource = [5]string{
 	0: "id",
 	1: "region_id",
 	2: "name",
-	3: "lookup_key",
-	4: "plan_id",
-	5: "bandwidth_plan_id",
+	3: "plan_id",
+	4: "bandwidth_plan_id",
 }
 
 // Decode decodes IPv4PoolResource from json.
@@ -6118,20 +6096,8 @@ func (s *IPv4PoolResource) Decode(d *jx.Decoder) error {
 			}(); err != nil {
 				return errors.Wrap(err, "decode field \"name\"")
 			}
-		case "lookup_key":
-			requiredBitSet[0] |= 1 << 3
-			if err := func() error {
-				v, err := d.Str()
-				s.LookupKey = string(v)
-				if err != nil {
-					return err
-				}
-				return nil
-			}(); err != nil {
-				return errors.Wrap(err, "decode field \"lookup_key\"")
-			}
 		case "plan_id":
-			requiredBitSet[0] |= 1 << 4
+			requiredBitSet[0] |= 1 << 3
 			if err := func() error {
 				if err := s.PlanID.Decode(d); err != nil {
 					return err
@@ -6141,7 +6107,7 @@ func (s *IPv4PoolResource) Decode(d *jx.Decoder) error {
 				return errors.Wrap(err, "decode field \"plan_id\"")
 			}
 		case "bandwidth_plan_id":
-			requiredBitSet[0] |= 1 << 5
+			requiredBitSet[0] |= 1 << 4
 			if err := func() error {
 				if err := s.BandwidthPlanID.Decode(d); err != nil {
 					return err
@@ -6160,7 +6126,7 @@ func (s *IPv4PoolResource) Decode(d *jx.Decoder) error {
 	// Validate required fields.
 	var failures []validate.FieldError
 	for i, mask := range [1]uint8{
-		0b00111111,
+		0b00011111,
 	} {
 		if result := (requiredBitSet[i] & mask) ^ mask; result != 0 {
 			// Mask only required fields and check equality to mask using XOR.
@@ -6582,26 +6548,19 @@ func (s *ImageResource) encodeFields(e *jx.Encoder) {
 		e.FieldStart("supports_password_reset")
 		e.Bool(s.SupportsPasswordReset)
 	}
-	{
-		if s.LookupKey.Set {
-			e.FieldStart("lookup_key")
-			s.LookupKey.Encode(e)
-		}
-	}
 }
 
-var jsonFieldsNameOfImageResource = [11]string{
-	0:  "architecture",
-	1:  "id",
-	2:  "login_username",
-	3:  "min_disk_gb",
-	4:  "min_ram_mb",
-	5:  "name",
-	6:  "os_family",
-	7:  "os_version",
-	8:  "region_id",
-	9:  "supports_password_reset",
-	10: "lookup_key",
+var jsonFieldsNameOfImageResource = [10]string{
+	0: "architecture",
+	1: "id",
+	2: "login_username",
+	3: "min_disk_gb",
+	4: "min_ram_mb",
+	5: "name",
+	6: "os_family",
+	7: "os_version",
+	8: "region_id",
+	9: "supports_password_reset",
 }
 
 // Decode decodes ImageResource from json.
@@ -6732,16 +6691,6 @@ func (s *ImageResource) Decode(d *jx.Decoder) error {
 				return nil
 			}(); err != nil {
 				return errors.Wrap(err, "decode field \"supports_password_reset\"")
-			}
-		case "lookup_key":
-			if err := func() error {
-				s.LookupKey.Reset()
-				if err := s.LookupKey.Decode(d); err != nil {
-					return err
-				}
-				return nil
-			}(); err != nil {
-				return errors.Wrap(err, "decode field \"lookup_key\"")
 			}
 		default:
 			return errors.Errorf("unexpected field %q", k)
@@ -8255,16 +8204,12 @@ func (s *InstanceTypeResource) encodeFields(e *jx.Encoder) {
 		s.PlanID.Encode(e)
 	}
 	{
-		e.FieldStart("lookup_key")
-		e.Str(s.LookupKey)
-	}
-	{
 		e.FieldStart("name_translations")
 		s.NameTranslations.Encode(e)
 	}
 }
 
-var jsonFieldsNameOfInstanceTypeResource = [15]string{
+var jsonFieldsNameOfInstanceTypeResource = [14]string{
 	0:  "availability_zone_id",
 	1:  "id",
 	2:  "max_bandwidth_mbps",
@@ -8278,8 +8223,7 @@ var jsonFieldsNameOfInstanceTypeResource = [15]string{
 	10: "vcpus",
 	11: "product_id",
 	12: "plan_id",
-	13: "lookup_key",
-	14: "name_translations",
+	13: "name_translations",
 }
 
 // Decode decodes InstanceTypeResource from json.
@@ -8439,20 +8383,8 @@ func (s *InstanceTypeResource) Decode(d *jx.Decoder) error {
 			}(); err != nil {
 				return errors.Wrap(err, "decode field \"plan_id\"")
 			}
-		case "lookup_key":
-			requiredBitSet[1] |= 1 << 5
-			if err := func() error {
-				v, err := d.Str()
-				s.LookupKey = string(v)
-				if err != nil {
-					return err
-				}
-				return nil
-			}(); err != nil {
-				return errors.Wrap(err, "decode field \"lookup_key\"")
-			}
 		case "name_translations":
-			requiredBitSet[1] |= 1 << 6
+			requiredBitSet[1] |= 1 << 5
 			if err := func() error {
 				if err := s.NameTranslations.Decode(d); err != nil {
 					return err
@@ -8472,7 +8404,7 @@ func (s *InstanceTypeResource) Decode(d *jx.Decoder) error {
 	var failures []validate.FieldError
 	for i, mask := range [2]uint8{
 		0b11111111,
-		0b01111111,
+		0b00111111,
 	} {
 		if result := (requiredBitSet[i] & mask) ^ mask; result != 0 {
 			// Mask only required fields and check equality to mask using XOR.

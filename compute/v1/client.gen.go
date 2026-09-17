@@ -1152,7 +1152,6 @@ type DiskTypeResource struct {
 	// range. The exact figure for the size actually bought appears on the disk itself once it
 	// exists.
 	IopsAtMinSize      *int64                `json:"iops_at_min_size"`
-	LookupKey          string                `json:"lookup_key"`
 	MaxSizeGb          int64                 `json:"max_size_gb"`
 	Media              DiskTypeResourceMedia `json:"media"`
 	MinSizeGb          int64                 `json:"min_size_gb"`
@@ -1246,7 +1245,6 @@ type IPv4PoolListResponseBody struct {
 type IPv4PoolResource struct {
 	BandwidthPlanId *openapi_types.UUID `json:"bandwidth_plan_id"`
 	Id              openapi_types.UUID  `json:"id"`
-	LookupKey       string              `json:"lookup_key"`
 	Name            string              `json:"name"`
 	PlanId          *openapi_types.UUID `json:"plan_id"`
 	RegionId        openapi_types.UUID  `json:"region_id"`
@@ -1280,7 +1278,6 @@ type ImageResource struct {
 
 	// LoginUsername The account this image lets you log in as. The password set at creation belongs to this account
 	LoginUsername string             `json:"login_username"`
-	LookupKey     *string            `json:"lookup_key,omitempty"`
 	MinDiskGb     int64              `json:"min_disk_gb"`
 	MinRamMb      int64              `json:"min_ram_mb"`
 	Name          string             `json:"name"`
@@ -1395,7 +1392,6 @@ type InstanceTypeListResponseBody struct {
 type InstanceTypeResource struct {
 	AvailabilityZoneId openapi_types.UUID `json:"availability_zone_id"`
 	Id                 openapi_types.UUID `json:"id"`
-	LookupKey          string             `json:"lookup_key"`
 
 	// MaxBandwidthMbps The most public bandwidth a machine of this type may be given, in Mbps. Asking for more
 	// when creating a machine, or raising a bound address past it, is refused.
