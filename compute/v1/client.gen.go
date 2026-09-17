@@ -1749,9 +1749,10 @@ type RegionListResponseBody struct {
 
 // RegionResource defines model for RegionResource.
 type RegionResource struct {
+	// Code The region's code, the way the outside world names this place (hk-1). Stable and human-written; it is not an identifier for addressing — every endpoint takes ids.
+	Code        string             `json:"code"`
 	CountryCode string             `json:"country_code"`
 	Id          openapi_types.UUID `json:"id"`
-	LookupKey   string             `json:"lookup_key"`
 	Name        string             `json:"name"`
 }
 
@@ -2005,9 +2006,10 @@ type ZoneListResponseBody struct {
 
 // ZoneResource defines model for ZoneResource.
 type ZoneResource struct {
-	Id        openapi_types.UUID `json:"id"`
-	LookupKey string             `json:"lookup_key"`
-	Name      string             `json:"name"`
+	// Code The zone's code within its region (hk-1-a). Stable and human-written; addressing is by id.
+	Code string             `json:"code"`
+	Id   openapi_types.UUID `json:"id"`
+	Name string             `json:"name"`
 }
 
 // ListBackupsParams defines parameters for ListBackups.

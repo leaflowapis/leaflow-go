@@ -7478,10 +7478,12 @@ func (s *RegionListResponseBody) SetItems(val []RegionResource) {
 
 // Ref: #/components/schemas/RegionResource
 type RegionResource struct {
-	CountryCode string    `json:"country_code"`
-	Name        string    `json:"name"`
-	LookupKey   string    `json:"lookup_key"`
-	ID          uuid.UUID `json:"id"`
+	CountryCode string `json:"country_code"`
+	Name        string `json:"name"`
+	// The region's code, the way the outside world names this place (hk-1). Stable and human-written; it
+	// is not an identifier for addressing — every endpoint takes ids.
+	Code string    `json:"code"`
+	ID   uuid.UUID `json:"id"`
 }
 
 // GetCountryCode returns the value of CountryCode.
@@ -7494,9 +7496,9 @@ func (s *RegionResource) GetName() string {
 	return s.Name
 }
 
-// GetLookupKey returns the value of LookupKey.
-func (s *RegionResource) GetLookupKey() string {
-	return s.LookupKey
+// GetCode returns the value of Code.
+func (s *RegionResource) GetCode() string {
+	return s.Code
 }
 
 // GetID returns the value of ID.
@@ -7514,9 +7516,9 @@ func (s *RegionResource) SetName(val string) {
 	s.Name = val
 }
 
-// SetLookupKey sets the value of LookupKey.
-func (s *RegionResource) SetLookupKey(val string) {
-	s.LookupKey = val
+// SetCode sets the value of Code.
+func (s *RegionResource) SetCode(val string) {
+	s.Code = val
 }
 
 // SetID sets the value of ID.
@@ -8870,9 +8872,10 @@ func (s *ZoneListResponseBody) SetItems(val []ZoneResource) {
 
 // Ref: #/components/schemas/ZoneResource
 type ZoneResource struct {
-	Name      string    `json:"name"`
-	LookupKey string    `json:"lookup_key"`
-	ID        uuid.UUID `json:"id"`
+	Name string `json:"name"`
+	// The zone's code within its region (hk-1-a). Stable and human-written; addressing is by id.
+	Code string    `json:"code"`
+	ID   uuid.UUID `json:"id"`
 }
 
 // GetName returns the value of Name.
@@ -8880,9 +8883,9 @@ func (s *ZoneResource) GetName() string {
 	return s.Name
 }
 
-// GetLookupKey returns the value of LookupKey.
-func (s *ZoneResource) GetLookupKey() string {
-	return s.LookupKey
+// GetCode returns the value of Code.
+func (s *ZoneResource) GetCode() string {
+	return s.Code
 }
 
 // GetID returns the value of ID.
@@ -8895,9 +8898,9 @@ func (s *ZoneResource) SetName(val string) {
 	s.Name = val
 }
 
-// SetLookupKey sets the value of LookupKey.
-func (s *ZoneResource) SetLookupKey(val string) {
-	s.LookupKey = val
+// SetCode sets the value of Code.
+func (s *ZoneResource) SetCode(val string) {
+	s.Code = val
 }
 
 // SetID sets the value of ID.

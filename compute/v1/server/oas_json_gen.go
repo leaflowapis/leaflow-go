@@ -14003,8 +14003,8 @@ func (s *RegionResource) encodeFields(e *jx.Encoder) {
 		e.Str(s.Name)
 	}
 	{
-		e.FieldStart("lookup_key")
-		e.Str(s.LookupKey)
+		e.FieldStart("code")
+		e.Str(s.Code)
 	}
 	{
 		e.FieldStart("id")
@@ -14015,7 +14015,7 @@ func (s *RegionResource) encodeFields(e *jx.Encoder) {
 var jsonFieldsNameOfRegionResource = [4]string{
 	0: "country_code",
 	1: "name",
-	2: "lookup_key",
+	2: "code",
 	3: "id",
 }
 
@@ -14052,17 +14052,17 @@ func (s *RegionResource) Decode(d *jx.Decoder) error {
 			}(); err != nil {
 				return errors.Wrap(err, "decode field \"name\"")
 			}
-		case "lookup_key":
+		case "code":
 			requiredBitSet[0] |= 1 << 2
 			if err := func() error {
 				v, err := d.Str()
-				s.LookupKey = string(v)
+				s.Code = string(v)
 				if err != nil {
 					return err
 				}
 				return nil
 			}(); err != nil {
-				return errors.Wrap(err, "decode field \"lookup_key\"")
+				return errors.Wrap(err, "decode field \"code\"")
 			}
 		case "id":
 			requiredBitSet[0] |= 1 << 3
@@ -18204,8 +18204,8 @@ func (s *ZoneResource) encodeFields(e *jx.Encoder) {
 		e.Str(s.Name)
 	}
 	{
-		e.FieldStart("lookup_key")
-		e.Str(s.LookupKey)
+		e.FieldStart("code")
+		e.Str(s.Code)
 	}
 	{
 		e.FieldStart("id")
@@ -18215,7 +18215,7 @@ func (s *ZoneResource) encodeFields(e *jx.Encoder) {
 
 var jsonFieldsNameOfZoneResource = [3]string{
 	0: "name",
-	1: "lookup_key",
+	1: "code",
 	2: "id",
 }
 
@@ -18240,17 +18240,17 @@ func (s *ZoneResource) Decode(d *jx.Decoder) error {
 			}(); err != nil {
 				return errors.Wrap(err, "decode field \"name\"")
 			}
-		case "lookup_key":
+		case "code":
 			requiredBitSet[0] |= 1 << 1
 			if err := func() error {
 				v, err := d.Str()
-				s.LookupKey = string(v)
+				s.Code = string(v)
 				if err != nil {
 					return err
 				}
 				return nil
 			}(); err != nil {
-				return errors.Wrap(err, "decode field \"lookup_key\"")
+				return errors.Wrap(err, "decode field \"code\"")
 			}
 		case "id":
 			requiredBitSet[0] |= 1 << 2
