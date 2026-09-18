@@ -3385,7 +3385,7 @@ func (s *Refund) Validate() error {
 
 	var failures []validate.FieldError
 	if err := func() error {
-		if value, ok := s.Destination.Get(); ok {
+		if value, ok := s.CashDestination.Get(); ok {
 			if err := func() error {
 				if err := value.Validate(); err != nil {
 					return err
@@ -3398,7 +3398,7 @@ func (s *Refund) Validate() error {
 		return nil
 	}(); err != nil {
 		failures = append(failures, validate.FieldError{
-			Name:  "destination",
+			Name:  "cash_destination",
 			Error: err,
 		})
 	}
@@ -3419,7 +3419,7 @@ func (s *Refund) Validate() error {
 	return nil
 }
 
-func (s RefundDestination) Validate() error {
+func (s RefundCashDestination) Validate() error {
 	switch s {
 	case "balance":
 		return nil
@@ -3488,13 +3488,13 @@ func (s *RefundQuote) Validate() error {
 
 	var failures []validate.FieldError
 	if err := func() error {
-		if err := s.Destination.Validate(); err != nil {
+		if err := s.CashDestination.Validate(); err != nil {
 			return err
 		}
 		return nil
 	}(); err != nil {
 		failures = append(failures, validate.FieldError{
-			Name:  "destination",
+			Name:  "cash_destination",
 			Error: err,
 		})
 	}
@@ -3532,7 +3532,7 @@ func (s *RefundQuote) Validate() error {
 	return nil
 }
 
-func (s RefundQuoteDestination) Validate() error {
+func (s RefundQuoteCashDestination) Validate() error {
 	switch s {
 	case "balance":
 		return nil

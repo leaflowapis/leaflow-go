@@ -6038,38 +6038,38 @@ func (o OptQuoteLineResultUnpricedReason) Or(d QuoteLineResultUnpricedReason) Qu
 	return d
 }
 
-// NewOptRefundDestination returns new OptRefundDestination with value set to v.
-func NewOptRefundDestination(v RefundDestination) OptRefundDestination {
-	return OptRefundDestination{
+// NewOptRefundCashDestination returns new OptRefundCashDestination with value set to v.
+func NewOptRefundCashDestination(v RefundCashDestination) OptRefundCashDestination {
+	return OptRefundCashDestination{
 		Value: v,
 		Set:   true,
 	}
 }
 
-// OptRefundDestination is optional RefundDestination.
-type OptRefundDestination struct {
-	Value RefundDestination
+// OptRefundCashDestination is optional RefundCashDestination.
+type OptRefundCashDestination struct {
+	Value RefundCashDestination
 	Set   bool
 }
 
-// IsSet returns true if OptRefundDestination was set.
-func (o OptRefundDestination) IsSet() bool { return o.Set }
+// IsSet returns true if OptRefundCashDestination was set.
+func (o OptRefundCashDestination) IsSet() bool { return o.Set }
 
 // Reset unsets value.
-func (o *OptRefundDestination) Reset() {
-	var v RefundDestination
+func (o *OptRefundCashDestination) Reset() {
+	var v RefundCashDestination
 	o.Value = v
 	o.Set = false
 }
 
 // SetTo sets value to v.
-func (o *OptRefundDestination) SetTo(v RefundDestination) {
+func (o *OptRefundCashDestination) SetTo(v RefundCashDestination) {
 	o.Set = true
 	o.Value = v
 }
 
 // Get returns value and boolean that denotes whether value was set.
-func (o OptRefundDestination) Get() (v RefundDestination, ok bool) {
+func (o OptRefundCashDestination) Get() (v RefundCashDestination, ok bool) {
 	if !o.Set {
 		return v, false
 	}
@@ -6077,7 +6077,7 @@ func (o OptRefundDestination) Get() (v RefundDestination, ok bool) {
 }
 
 // Or returns value if set, or given parameter if does not.
-func (o OptRefundDestination) Or(d RefundDestination) RefundDestination {
+func (o OptRefundCashDestination) Or(d RefundCashDestination) RefundCashDestination {
 	if v, ok := o.Get(); ok {
 		return v
 	}
@@ -10153,7 +10153,7 @@ type Refund struct {
 	SettledAmount OptMoney `json:"settled_amount"`
 	Currency      string   `json:"currency"`
 	// Where the cash went.
-	Destination OptRefundDestination `json:"destination"`
+	CashDestination OptRefundCashDestination `json:"cash_destination"`
 	// `pending` — accepted, not yet sent to the payment gateway. `processing` — with the gateway and
 	// awaiting its answer, which takes days for some methods. Neither is final, and neither means the
 	// money has moved.
@@ -10197,9 +10197,9 @@ func (s *Refund) GetCurrency() string {
 	return s.Currency
 }
 
-// GetDestination returns the value of Destination.
-func (s *Refund) GetDestination() OptRefundDestination {
-	return s.Destination
+// GetCashDestination returns the value of CashDestination.
+func (s *Refund) GetCashDestination() OptRefundCashDestination {
+	return s.CashDestination
 }
 
 // GetStatus returns the value of Status.
@@ -10252,9 +10252,9 @@ func (s *Refund) SetCurrency(val string) {
 	s.Currency = val
 }
 
-// SetDestination sets the value of Destination.
-func (s *Refund) SetDestination(val OptRefundDestination) {
-	s.Destination = val
+// SetCashDestination sets the value of CashDestination.
+func (s *Refund) SetCashDestination(val OptRefundCashDestination) {
+	s.CashDestination = val
 }
 
 // SetStatus sets the value of Status.
@@ -10273,27 +10273,27 @@ func (s *Refund) SetCreatedAt(val time.Time) {
 }
 
 // Where the cash went.
-type RefundDestination string
+type RefundCashDestination string
 
 const (
-	RefundDestinationBalance RefundDestination = "balance"
-	RefundDestinationGateway RefundDestination = "gateway"
+	RefundCashDestinationBalance RefundCashDestination = "balance"
+	RefundCashDestinationGateway RefundCashDestination = "gateway"
 )
 
-// AllValues returns all RefundDestination values.
-func (RefundDestination) AllValues() []RefundDestination {
-	return []RefundDestination{
-		RefundDestinationBalance,
-		RefundDestinationGateway,
+// AllValues returns all RefundCashDestination values.
+func (RefundCashDestination) AllValues() []RefundCashDestination {
+	return []RefundCashDestination{
+		RefundCashDestinationBalance,
+		RefundCashDestinationGateway,
 	}
 }
 
 // MarshalText implements encoding.TextMarshaler.
-func (s RefundDestination) MarshalText() ([]byte, error) {
+func (s RefundCashDestination) MarshalText() ([]byte, error) {
 	switch s {
-	case RefundDestinationBalance:
+	case RefundCashDestinationBalance:
 		return []byte(s), nil
-	case RefundDestinationGateway:
+	case RefundCashDestinationGateway:
 		return []byte(s), nil
 	default:
 		return nil, errors.Errorf("invalid value: %q", s)
@@ -10301,13 +10301,13 @@ func (s RefundDestination) MarshalText() ([]byte, error) {
 }
 
 // UnmarshalText implements encoding.TextUnmarshaler.
-func (s *RefundDestination) UnmarshalText(data []byte) error {
-	switch RefundDestination(data) {
-	case RefundDestinationBalance:
-		*s = RefundDestinationBalance
+func (s *RefundCashDestination) UnmarshalText(data []byte) error {
+	switch RefundCashDestination(data) {
+	case RefundCashDestinationBalance:
+		*s = RefundCashDestinationBalance
 		return nil
-	case RefundDestinationGateway:
-		*s = RefundDestinationGateway
+	case RefundCashDestinationGateway:
+		*s = RefundCashDestinationGateway
 		return nil
 	default:
 		return errors.Errorf("invalid value: %q", data)
@@ -10394,7 +10394,7 @@ type RefundQuote struct {
 	// Where the cash part would go. `gateway` returns it to the method it was paid with; `balance` credits
 	// the account instead, which is the answer whenever the cash came from more than one place or never
 	// went through a gateway at all.
-	Destination RefundQuoteDestination `json:"destination"`
+	CashDestination RefundQuoteCashDestination `json:"cash_destination"`
 	// How `refundable_amount` splits by where the money came from. The amounts sum to it.
 	//
 	// Show this rather than a single figure. A part returned as credit or as a voucher does not appear on
@@ -10416,9 +10416,9 @@ func (s *RefundQuote) GetCurrency() string {
 	return s.Currency
 }
 
-// GetDestination returns the value of Destination.
-func (s *RefundQuote) GetDestination() RefundQuoteDestination {
-	return s.Destination
+// GetCashDestination returns the value of CashDestination.
+func (s *RefundQuote) GetCashDestination() RefundQuoteCashDestination {
+	return s.CashDestination
 }
 
 // GetSources returns the value of Sources.
@@ -10441,9 +10441,9 @@ func (s *RefundQuote) SetCurrency(val string) {
 	s.Currency = val
 }
 
-// SetDestination sets the value of Destination.
-func (s *RefundQuote) SetDestination(val RefundQuoteDestination) {
-	s.Destination = val
+// SetCashDestination sets the value of CashDestination.
+func (s *RefundQuote) SetCashDestination(val RefundQuoteCashDestination) {
+	s.CashDestination = val
 }
 
 // SetSources sets the value of Sources.
@@ -10459,27 +10459,27 @@ func (s *RefundQuote) SetSelfServiceUntil(val OptNilDateTime) {
 // Where the cash part would go. `gateway` returns it to the method it was paid with; `balance` credits
 // the account instead, which is the answer whenever the cash came from more than one place or never
 // went through a gateway at all.
-type RefundQuoteDestination string
+type RefundQuoteCashDestination string
 
 const (
-	RefundQuoteDestinationBalance RefundQuoteDestination = "balance"
-	RefundQuoteDestinationGateway RefundQuoteDestination = "gateway"
+	RefundQuoteCashDestinationBalance RefundQuoteCashDestination = "balance"
+	RefundQuoteCashDestinationGateway RefundQuoteCashDestination = "gateway"
 )
 
-// AllValues returns all RefundQuoteDestination values.
-func (RefundQuoteDestination) AllValues() []RefundQuoteDestination {
-	return []RefundQuoteDestination{
-		RefundQuoteDestinationBalance,
-		RefundQuoteDestinationGateway,
+// AllValues returns all RefundQuoteCashDestination values.
+func (RefundQuoteCashDestination) AllValues() []RefundQuoteCashDestination {
+	return []RefundQuoteCashDestination{
+		RefundQuoteCashDestinationBalance,
+		RefundQuoteCashDestinationGateway,
 	}
 }
 
 // MarshalText implements encoding.TextMarshaler.
-func (s RefundQuoteDestination) MarshalText() ([]byte, error) {
+func (s RefundQuoteCashDestination) MarshalText() ([]byte, error) {
 	switch s {
-	case RefundQuoteDestinationBalance:
+	case RefundQuoteCashDestinationBalance:
 		return []byte(s), nil
-	case RefundQuoteDestinationGateway:
+	case RefundQuoteCashDestinationGateway:
 		return []byte(s), nil
 	default:
 		return nil, errors.Errorf("invalid value: %q", s)
@@ -10487,13 +10487,13 @@ func (s RefundQuoteDestination) MarshalText() ([]byte, error) {
 }
 
 // UnmarshalText implements encoding.TextUnmarshaler.
-func (s *RefundQuoteDestination) UnmarshalText(data []byte) error {
-	switch RefundQuoteDestination(data) {
-	case RefundQuoteDestinationBalance:
-		*s = RefundQuoteDestinationBalance
+func (s *RefundQuoteCashDestination) UnmarshalText(data []byte) error {
+	switch RefundQuoteCashDestination(data) {
+	case RefundQuoteCashDestinationBalance:
+		*s = RefundQuoteCashDestinationBalance
 		return nil
-	case RefundQuoteDestinationGateway:
-		*s = RefundQuoteDestinationGateway
+	case RefundQuoteCashDestinationGateway:
+		*s = RefundQuoteCashDestinationGateway
 		return nil
 	default:
 		return errors.Errorf("invalid value: %q", data)

@@ -9244,18 +9244,18 @@ func (s *OptQuoteLineResultUnpricedReason) UnmarshalJSON(data []byte) error {
 	return s.Decode(d)
 }
 
-// Encode encodes RefundDestination as json.
-func (o OptRefundDestination) Encode(e *jx.Encoder) {
+// Encode encodes RefundCashDestination as json.
+func (o OptRefundCashDestination) Encode(e *jx.Encoder) {
 	if !o.Set {
 		return
 	}
 	e.Str(string(o.Value))
 }
 
-// Decode decodes RefundDestination from json.
-func (o *OptRefundDestination) Decode(d *jx.Decoder) error {
+// Decode decodes RefundCashDestination from json.
+func (o *OptRefundCashDestination) Decode(d *jx.Decoder) error {
 	if o == nil {
-		return errors.New("invalid: unable to decode OptRefundDestination to nil")
+		return errors.New("invalid: unable to decode OptRefundCashDestination to nil")
 	}
 	o.Set = true
 	if err := o.Value.Decode(d); err != nil {
@@ -9265,14 +9265,14 @@ func (o *OptRefundDestination) Decode(d *jx.Decoder) error {
 }
 
 // MarshalJSON implements stdjson.Marshaler.
-func (s OptRefundDestination) MarshalJSON() ([]byte, error) {
+func (s OptRefundCashDestination) MarshalJSON() ([]byte, error) {
 	e := jx.Encoder{}
 	s.Encode(&e)
 	return e.Bytes(), nil
 }
 
 // UnmarshalJSON implements stdjson.Unmarshaler.
-func (s *OptRefundDestination) UnmarshalJSON(data []byte) error {
+func (s *OptRefundCashDestination) UnmarshalJSON(data []byte) error {
 	d := jx.DecodeBytes(data)
 	return s.Decode(d)
 }
@@ -16483,9 +16483,9 @@ func (s *Refund) encodeFields(e *jx.Encoder) {
 		e.Str(s.Currency)
 	}
 	{
-		if s.Destination.Set {
-			e.FieldStart("destination")
-			s.Destination.Encode(e)
+		if s.CashDestination.Set {
+			e.FieldStart("cash_destination")
+			s.CashDestination.Encode(e)
 		}
 	}
 	{
@@ -16512,7 +16512,7 @@ var jsonFieldsNameOfRefund = [11]string{
 	4:  "requested_amount",
 	5:  "settled_amount",
 	6:  "currency",
-	7:  "destination",
+	7:  "cash_destination",
 	8:  "status",
 	9:  "reason",
 	10: "created_at",
@@ -16601,15 +16601,15 @@ func (s *Refund) Decode(d *jx.Decoder) error {
 			}(); err != nil {
 				return errors.Wrap(err, "decode field \"currency\"")
 			}
-		case "destination":
+		case "cash_destination":
 			if err := func() error {
-				s.Destination.Reset()
-				if err := s.Destination.Decode(d); err != nil {
+				s.CashDestination.Reset()
+				if err := s.CashDestination.Decode(d); err != nil {
 					return err
 				}
 				return nil
 			}(); err != nil {
-				return errors.Wrap(err, "decode field \"destination\"")
+				return errors.Wrap(err, "decode field \"cash_destination\"")
 			}
 		case "status":
 			requiredBitSet[1] |= 1 << 0
@@ -16700,42 +16700,42 @@ func (s *Refund) UnmarshalJSON(data []byte) error {
 	return s.Decode(d)
 }
 
-// Encode encodes RefundDestination as json.
-func (s RefundDestination) Encode(e *jx.Encoder) {
+// Encode encodes RefundCashDestination as json.
+func (s RefundCashDestination) Encode(e *jx.Encoder) {
 	e.Str(string(s))
 }
 
-// Decode decodes RefundDestination from json.
-func (s *RefundDestination) Decode(d *jx.Decoder) error {
+// Decode decodes RefundCashDestination from json.
+func (s *RefundCashDestination) Decode(d *jx.Decoder) error {
 	if s == nil {
-		return errors.New("invalid: unable to decode RefundDestination to nil")
+		return errors.New("invalid: unable to decode RefundCashDestination to nil")
 	}
 	v, err := d.StrBytes()
 	if err != nil {
 		return err
 	}
 	// Try to use constant string.
-	switch RefundDestination(v) {
-	case RefundDestinationBalance:
-		*s = RefundDestinationBalance
-	case RefundDestinationGateway:
-		*s = RefundDestinationGateway
+	switch RefundCashDestination(v) {
+	case RefundCashDestinationBalance:
+		*s = RefundCashDestinationBalance
+	case RefundCashDestinationGateway:
+		*s = RefundCashDestinationGateway
 	default:
-		*s = RefundDestination(v)
+		*s = RefundCashDestination(v)
 	}
 
 	return nil
 }
 
 // MarshalJSON implements stdjson.Marshaler.
-func (s RefundDestination) MarshalJSON() ([]byte, error) {
+func (s RefundCashDestination) MarshalJSON() ([]byte, error) {
 	e := jx.Encoder{}
 	s.Encode(&e)
 	return e.Bytes(), nil
 }
 
 // UnmarshalJSON implements stdjson.Unmarshaler.
-func (s *RefundDestination) UnmarshalJSON(data []byte) error {
+func (s *RefundCashDestination) UnmarshalJSON(data []byte) error {
 	d := jx.DecodeBytes(data)
 	return s.Decode(d)
 }
@@ -16921,8 +16921,8 @@ func (s *RefundQuote) encodeFields(e *jx.Encoder) {
 		e.Str(s.Currency)
 	}
 	{
-		e.FieldStart("destination")
-		s.Destination.Encode(e)
+		e.FieldStart("cash_destination")
+		s.CashDestination.Encode(e)
 	}
 	{
 		e.FieldStart("sources")
@@ -16943,7 +16943,7 @@ func (s *RefundQuote) encodeFields(e *jx.Encoder) {
 var jsonFieldsNameOfRefundQuote = [5]string{
 	0: "refundable_amount",
 	1: "currency",
-	2: "destination",
+	2: "cash_destination",
 	3: "sources",
 	4: "self_service_until",
 }
@@ -16979,15 +16979,15 @@ func (s *RefundQuote) Decode(d *jx.Decoder) error {
 			}(); err != nil {
 				return errors.Wrap(err, "decode field \"currency\"")
 			}
-		case "destination":
+		case "cash_destination":
 			requiredBitSet[0] |= 1 << 2
 			if err := func() error {
-				if err := s.Destination.Decode(d); err != nil {
+				if err := s.CashDestination.Decode(d); err != nil {
 					return err
 				}
 				return nil
 			}(); err != nil {
-				return errors.Wrap(err, "decode field \"destination\"")
+				return errors.Wrap(err, "decode field \"cash_destination\"")
 			}
 		case "sources":
 			requiredBitSet[0] |= 1 << 3
@@ -17073,42 +17073,42 @@ func (s *RefundQuote) UnmarshalJSON(data []byte) error {
 	return s.Decode(d)
 }
 
-// Encode encodes RefundQuoteDestination as json.
-func (s RefundQuoteDestination) Encode(e *jx.Encoder) {
+// Encode encodes RefundQuoteCashDestination as json.
+func (s RefundQuoteCashDestination) Encode(e *jx.Encoder) {
 	e.Str(string(s))
 }
 
-// Decode decodes RefundQuoteDestination from json.
-func (s *RefundQuoteDestination) Decode(d *jx.Decoder) error {
+// Decode decodes RefundQuoteCashDestination from json.
+func (s *RefundQuoteCashDestination) Decode(d *jx.Decoder) error {
 	if s == nil {
-		return errors.New("invalid: unable to decode RefundQuoteDestination to nil")
+		return errors.New("invalid: unable to decode RefundQuoteCashDestination to nil")
 	}
 	v, err := d.StrBytes()
 	if err != nil {
 		return err
 	}
 	// Try to use constant string.
-	switch RefundQuoteDestination(v) {
-	case RefundQuoteDestinationBalance:
-		*s = RefundQuoteDestinationBalance
-	case RefundQuoteDestinationGateway:
-		*s = RefundQuoteDestinationGateway
+	switch RefundQuoteCashDestination(v) {
+	case RefundQuoteCashDestinationBalance:
+		*s = RefundQuoteCashDestinationBalance
+	case RefundQuoteCashDestinationGateway:
+		*s = RefundQuoteCashDestinationGateway
 	default:
-		*s = RefundQuoteDestination(v)
+		*s = RefundQuoteCashDestination(v)
 	}
 
 	return nil
 }
 
 // MarshalJSON implements stdjson.Marshaler.
-func (s RefundQuoteDestination) MarshalJSON() ([]byte, error) {
+func (s RefundQuoteCashDestination) MarshalJSON() ([]byte, error) {
 	e := jx.Encoder{}
 	s.Encode(&e)
 	return e.Bytes(), nil
 }
 
 // UnmarshalJSON implements stdjson.Unmarshaler.
-func (s *RefundQuoteDestination) UnmarshalJSON(data []byte) error {
+func (s *RefundQuoteCashDestination) UnmarshalJSON(data []byte) error {
 	d := jx.DecodeBytes(data)
 	return s.Decode(d)
 }

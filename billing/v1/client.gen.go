@@ -865,18 +865,18 @@ func (e RatePricingModel) Valid() bool {
 	}
 }
 
-// Defines values for RefundDestination.
+// Defines values for RefundCashDestination.
 const (
-	RefundDestinationBalance RefundDestination = "balance"
-	RefundDestinationGateway RefundDestination = "gateway"
+	RefundCashDestinationBalance RefundCashDestination = "balance"
+	RefundCashDestinationGateway RefundCashDestination = "gateway"
 )
 
-// Valid indicates whether the value is a known member of the RefundDestination enum.
-func (e RefundDestination) Valid() bool {
+// Valid indicates whether the value is a known member of the RefundCashDestination enum.
+func (e RefundCashDestination) Valid() bool {
 	switch e {
-	case RefundDestinationBalance:
+	case RefundCashDestinationBalance:
 		return true
-	case RefundDestinationGateway:
+	case RefundCashDestinationGateway:
 		return true
 	default:
 		return false
@@ -925,18 +925,18 @@ func (e RefundPolicy) Valid() bool {
 	}
 }
 
-// Defines values for RefundQuoteDestination.
+// Defines values for RefundQuoteCashDestination.
 const (
-	RefundQuoteDestinationBalance RefundQuoteDestination = "balance"
-	RefundQuoteDestinationGateway RefundQuoteDestination = "gateway"
+	RefundQuoteCashDestinationBalance RefundQuoteCashDestination = "balance"
+	RefundQuoteCashDestinationGateway RefundQuoteCashDestination = "gateway"
 )
 
-// Valid indicates whether the value is a known member of the RefundQuoteDestination enum.
-func (e RefundQuoteDestination) Valid() bool {
+// Valid indicates whether the value is a known member of the RefundQuoteCashDestination enum.
+func (e RefundQuoteCashDestination) Valid() bool {
 	switch e {
-	case RefundQuoteDestinationBalance:
+	case RefundQuoteCashDestinationBalance:
 		return true
-	case RefundQuoteDestinationGateway:
+	case RefundQuoteCashDestinationGateway:
 		return true
 	default:
 		return false
@@ -2823,16 +2823,16 @@ type RateList struct {
 
 // Refund defines model for Refund.
 type Refund struct {
-	BillingAccountId *int64    `json:"billing_account_id,omitempty"`
-	CreatedAt        time.Time `json:"created_at"`
-	Currency         string    `json:"currency"`
+	BillingAccountId *int64 `json:"billing_account_id,omitempty"`
 
-	// Destination Where the cash went.
-	Destination *RefundDestination  `json:"destination,omitempty"`
-	Id          openapi_types.UUID  `json:"id"`
-	InvoiceId   *openapi_types.UUID `json:"invoice_id,omitempty"`
-	OrderId     *openapi_types.UUID `json:"order_id,omitempty"`
-	Reason      *string             `json:"reason,omitempty"`
+	// CashDestination Where the cash went.
+	CashDestination *RefundCashDestination `json:"cash_destination,omitempty"`
+	CreatedAt       time.Time              `json:"created_at"`
+	Currency        string                 `json:"currency"`
+	Id              openapi_types.UUID     `json:"id"`
+	InvoiceId       *openapi_types.UUID    `json:"invoice_id,omitempty"`
+	OrderId         *openapi_types.UUID    `json:"order_id,omitempty"`
+	Reason          *string                `json:"reason,omitempty"`
 
 	// RequestedAmount A decimal string, in the currency stated alongside it.
 	//
@@ -2854,8 +2854,8 @@ type Refund struct {
 	Status RefundStatus `json:"status"`
 }
 
-// RefundDestination Where the cash went.
-type RefundDestination string
+// RefundCashDestination Where the cash went.
+type RefundCashDestination string
 
 // RefundStatus `pending` — accepted, not yet sent to the payment gateway. `processing` — with the
 // gateway and awaiting its answer, which takes days for some methods. Neither is
@@ -2873,12 +2873,11 @@ type RefundPolicy string
 
 // RefundQuote What a full refund would return, and where each part of it would go.
 type RefundQuote struct {
-	Currency string `json:"currency"`
-
-	// Destination Where the cash part would go. `gateway` returns it to the method it was paid
+	// CashDestination Where the cash part would go. `gateway` returns it to the method it was paid
 	// with; `balance` credits the account instead, which is the answer whenever the cash
 	// came from more than one place or never went through a gateway at all.
-	Destination RefundQuoteDestination `json:"destination"`
+	CashDestination RefundQuoteCashDestination `json:"cash_destination"`
+	Currency        string                     `json:"currency"`
 
 	// RefundableAmount The most that can still be returned, before any fee.
 	RefundableAmount externalRef0.Money `json:"refundable_amount"`
@@ -2896,10 +2895,10 @@ type RefundQuote struct {
 	Sources []RefundSource `json:"sources"`
 }
 
-// RefundQuoteDestination Where the cash part would go. `gateway` returns it to the method it was paid
+// RefundQuoteCashDestination Where the cash part would go. `gateway` returns it to the method it was paid
 // with; `balance` credits the account instead, which is the answer whenever the cash
 // came from more than one place or never went through a gateway at all.
-type RefundQuoteDestination string
+type RefundQuoteCashDestination string
 
 // RefundRequest Name exactly one of the three targets. Naming none leaves the amount undecided;
 // naming two leaves it ambiguous, and both would have to be resolved by guessing.
