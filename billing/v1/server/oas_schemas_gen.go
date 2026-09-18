@@ -51,12 +51,12 @@ type AccountBalance struct {
 	// Metered usage priced this month but not yet invoiced. It is already committed even though no invoice
 	// exists for it yet.
 	Accrued Money `json:"accrued"`
-	// Granted credit. Spendable, but not withdrawable.
-	Credit Money `json:"credit"`
-	// Voucher balance, spendable within each voucher's own scope.
-	Voucher Money `json:"voucher"`
+	// Granted funds still unspent, vouchers included. Spendable within whatever each grant covers, and
+	// never withdrawable. Individual grants are listed separately, which is where a single voucher's
+	// remaining amount is read.
+	Granted Money `json:"granted"`
 	// `cash` less `accrued` and `held` — what is actually available at checkout. It goes negative when
-	// usage has exceeded the balance. Credit and vouchers are shown separately because each can only pay
+	// usage has exceeded the balance. Granted funds are shown separately because each grant can only pay
 	// for what it covers.
 	Spendable Money `json:"spendable"`
 }
@@ -86,14 +86,9 @@ func (s *AccountBalance) GetAccrued() Money {
 	return s.Accrued
 }
 
-// GetCredit returns the value of Credit.
-func (s *AccountBalance) GetCredit() Money {
-	return s.Credit
-}
-
-// GetVoucher returns the value of Voucher.
-func (s *AccountBalance) GetVoucher() Money {
-	return s.Voucher
+// GetGranted returns the value of Granted.
+func (s *AccountBalance) GetGranted() Money {
+	return s.Granted
 }
 
 // GetSpendable returns the value of Spendable.
@@ -126,14 +121,9 @@ func (s *AccountBalance) SetAccrued(val Money) {
 	s.Accrued = val
 }
 
-// SetCredit sets the value of Credit.
-func (s *AccountBalance) SetCredit(val Money) {
-	s.Credit = val
-}
-
-// SetVoucher sets the value of Voucher.
-func (s *AccountBalance) SetVoucher(val Money) {
-	s.Voucher = val
+// SetGranted sets the value of Granted.
+func (s *AccountBalance) SetGranted(val Money) {
+	s.Granted = val
 }
 
 // SetSpendable sets the value of Spendable.

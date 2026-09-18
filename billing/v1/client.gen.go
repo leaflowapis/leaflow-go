@@ -1227,22 +1227,21 @@ type AccountBalance struct {
 	BillingAccountId int64              `json:"billing_account_id"`
 
 	// Cash Funds paid in and not yet spent. This is the part that can be refunded.
-	Cash externalRef0.Money `json:"cash"`
-
-	// Credit Granted credit. Spendable, but not withdrawable.
-	Credit   externalRef0.Money `json:"credit"`
+	Cash     externalRef0.Money `json:"cash"`
 	Currency string             `json:"currency"`
+
+	// Granted Granted funds still unspent, vouchers included. Spendable within whatever each grant
+	// covers, and never withdrawable. Individual grants are listed separately, which is
+	// where a single voucher's remaining amount is read.
+	Granted externalRef0.Money `json:"granted"`
 
 	// Held Reserved by orders that have not completed.
 	Held externalRef0.Money `json:"held"`
 
 	// Spendable `cash` less `accrued` and `held` — what is actually available at checkout. It goes
-	// negative when usage has exceeded the balance. Credit and vouchers are shown
-	// separately because each can only pay for what it covers.
+	// negative when usage has exceeded the balance. Granted funds are shown separately
+	// because each grant can only pay for what it covers.
 	Spendable externalRef0.Money `json:"spendable"`
-
-	// Voucher Voucher balance, spendable within each voucher's own scope.
-	Voucher externalRef0.Money `json:"voucher"`
 }
 
 // ActiveResource A resource currently accruing charges by the second.
