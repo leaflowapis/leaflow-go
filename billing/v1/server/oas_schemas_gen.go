@@ -973,20 +973,20 @@ func (s *AllowanceStatus) UnmarshalText(data []byte) error {
 // A line qualifies when it satisfies every field that is set. `min_amount` is then measured against
 // the qualifying lines only, not the order total.
 //
-// An entry listed under `excluded_*` never qualifies, even when another field includes it.
+// Entries carry the name to show for them, so that what a credit covers can be displayed without
+// looking each one up.
 // Ref: #/components/schemas/Applicability
 type Applicability struct {
-	ProductIds         []uuid.UUID         `json:"product_ids"`
-	ExcludedProductIds []uuid.UUID         `json:"excluded_product_ids"`
-	PlanIds            []uuid.UUID         `json:"plan_ids"`
-	ExcludedPlanIds    []uuid.UUID         `json:"excluded_plan_ids"`
-	PriceIds           []uuid.UUID         `json:"price_ids"`
-	ExcludedPriceIds   []uuid.UUID         `json:"excluded_price_ids"`
-	PriceTypes         []string            `json:"price_types"`
-	Operations         []PurchaseOperation `json:"operations"`
+	Products   []ScopeEntry        `json:"products"`
+	Plans      []ScopeEntry        `json:"plans"`
+	Prices     []ScopePriceEntry   `json:"prices"`
+	PriceTypes []string            `json:"price_types"`
+	Operations []PurchaseOperation `json:"operations"`
 	// Restricted to your first purchase of a covered product.
-	FirstPurchaseOnly OptBool  `json:"first_purchase_only"`
-	MinAmount         OptMoney `json:"min_amount"`
+	FirstPurchaseOnly OptBool `json:"first_purchase_only"`
+	// The threshold, measured against the qualifying lines. In the currency of whatever carries these
+	// terms.
+	MinAmount OptMoney `json:"min_amount"`
 	// The shortest term a purchase may have, in months. A purchase with no term, such as metered usage,
 	// never qualifies while this is set.
 	MinTermMonths OptInt `json:"min_term_months"`
@@ -994,34 +994,19 @@ type Applicability struct {
 	MaxTermMonths OptInt `json:"max_term_months"`
 }
 
-// GetProductIds returns the value of ProductIds.
-func (s *Applicability) GetProductIds() []uuid.UUID {
-	return s.ProductIds
+// GetProducts returns the value of Products.
+func (s *Applicability) GetProducts() []ScopeEntry {
+	return s.Products
 }
 
-// GetExcludedProductIds returns the value of ExcludedProductIds.
-func (s *Applicability) GetExcludedProductIds() []uuid.UUID {
-	return s.ExcludedProductIds
+// GetPlans returns the value of Plans.
+func (s *Applicability) GetPlans() []ScopeEntry {
+	return s.Plans
 }
 
-// GetPlanIds returns the value of PlanIds.
-func (s *Applicability) GetPlanIds() []uuid.UUID {
-	return s.PlanIds
-}
-
-// GetExcludedPlanIds returns the value of ExcludedPlanIds.
-func (s *Applicability) GetExcludedPlanIds() []uuid.UUID {
-	return s.ExcludedPlanIds
-}
-
-// GetPriceIds returns the value of PriceIds.
-func (s *Applicability) GetPriceIds() []uuid.UUID {
-	return s.PriceIds
-}
-
-// GetExcludedPriceIds returns the value of ExcludedPriceIds.
-func (s *Applicability) GetExcludedPriceIds() []uuid.UUID {
-	return s.ExcludedPriceIds
+// GetPrices returns the value of Prices.
+func (s *Applicability) GetPrices() []ScopePriceEntry {
+	return s.Prices
 }
 
 // GetPriceTypes returns the value of PriceTypes.
@@ -1054,34 +1039,19 @@ func (s *Applicability) GetMaxTermMonths() OptInt {
 	return s.MaxTermMonths
 }
 
-// SetProductIds sets the value of ProductIds.
-func (s *Applicability) SetProductIds(val []uuid.UUID) {
-	s.ProductIds = val
+// SetProducts sets the value of Products.
+func (s *Applicability) SetProducts(val []ScopeEntry) {
+	s.Products = val
 }
 
-// SetExcludedProductIds sets the value of ExcludedProductIds.
-func (s *Applicability) SetExcludedProductIds(val []uuid.UUID) {
-	s.ExcludedProductIds = val
+// SetPlans sets the value of Plans.
+func (s *Applicability) SetPlans(val []ScopeEntry) {
+	s.Plans = val
 }
 
-// SetPlanIds sets the value of PlanIds.
-func (s *Applicability) SetPlanIds(val []uuid.UUID) {
-	s.PlanIds = val
-}
-
-// SetExcludedPlanIds sets the value of ExcludedPlanIds.
-func (s *Applicability) SetExcludedPlanIds(val []uuid.UUID) {
-	s.ExcludedPlanIds = val
-}
-
-// SetPriceIds sets the value of PriceIds.
-func (s *Applicability) SetPriceIds(val []uuid.UUID) {
-	s.PriceIds = val
-}
-
-// SetExcludedPriceIds sets the value of ExcludedPriceIds.
-func (s *Applicability) SetExcludedPriceIds(val []uuid.UUID) {
-	s.ExcludedPriceIds = val
+// SetPrices sets the value of Prices.
+func (s *Applicability) SetPrices(val []ScopePriceEntry) {
+	s.Prices = val
 }
 
 // SetPriceTypes sets the value of PriceTypes.
@@ -1553,6 +1523,78 @@ func (s *BillingAccountUpdate) SetAddressCountry(val OptString) {
 func (s *BillingAccountUpdate) SetTaxID(val OptString) {
 	s.TaxID = val
 }
+
+// One sellable thing at one price: the plan, and the price it is sold at in the currency you asked
+// for.
+//
+// Listing plans and then asking for each plan's prices returns the same information, but one request
+// per plan. This flattens the two levels, so that a price list renders from a single request.
+//
+// A plan appears once per price, so a plan sold monthly and yearly appears twice.
+// Ref: #/components/schemas/CatalogItem
+type CatalogItem struct {
+	Product ObjectIdentity `json:"product"`
+	Plan    ObjectIdentity `json:"plan"`
+	Price   Price          `json:"price"`
+}
+
+// GetProduct returns the value of Product.
+func (s *CatalogItem) GetProduct() ObjectIdentity {
+	return s.Product
+}
+
+// GetPlan returns the value of Plan.
+func (s *CatalogItem) GetPlan() ObjectIdentity {
+	return s.Plan
+}
+
+// GetPrice returns the value of Price.
+func (s *CatalogItem) GetPrice() Price {
+	return s.Price
+}
+
+// SetProduct sets the value of Product.
+func (s *CatalogItem) SetProduct(val ObjectIdentity) {
+	s.Product = val
+}
+
+// SetPlan sets the value of Plan.
+func (s *CatalogItem) SetPlan(val ObjectIdentity) {
+	s.Plan = val
+}
+
+// SetPrice sets the value of Price.
+func (s *CatalogItem) SetPrice(val Price) {
+	s.Price = val
+}
+
+// Ref: #/components/schemas/CatalogItemList
+type CatalogItemList struct {
+	Items      []CatalogItem `json:"items"`
+	TotalCount OptInt64      `json:"total_count"`
+}
+
+// GetItems returns the value of Items.
+func (s *CatalogItemList) GetItems() []CatalogItem {
+	return s.Items
+}
+
+// GetTotalCount returns the value of TotalCount.
+func (s *CatalogItemList) GetTotalCount() OptInt64 {
+	return s.TotalCount
+}
+
+// SetItems sets the value of Items.
+func (s *CatalogItemList) SetItems(val []CatalogItem) {
+	s.Items = val
+}
+
+// SetTotalCount sets the value of TotalCount.
+func (s *CatalogItemList) SetTotalCount(val OptInt64) {
+	s.TotalCount = val
+}
+
+func (*CatalogItemList) listCatalogItemsRes() {}
 
 // Ref: #/components/schemas/CodePreview
 type CodePreview struct {
@@ -3136,6 +3178,21 @@ func (s *EstimateRequest) SetLines(val []QuoteLine) {
 	s.Lines = val
 }
 
+// GetCatalogPlanNotModified is response for GetCatalogPlan operation.
+type GetCatalogPlanNotModified struct{}
+
+func (*GetCatalogPlanNotModified) getCatalogPlanRes() {}
+
+// GetCatalogPriceNotModified is response for GetCatalogPrice operation.
+type GetCatalogPriceNotModified struct{}
+
+func (*GetCatalogPriceNotModified) getCatalogPriceRes() {}
+
+// GetCatalogProductNotModified is response for GetCatalogProduct operation.
+type GetCatalogProductNotModified struct{}
+
+func (*GetCatalogProductNotModified) getCatalogProductRes() {}
+
 // Ref: #/components/schemas/IncludedAllowance
 type IncludedAllowance struct {
 	// Allowed values for selected meter dimensions, such as region or storage class. Every specified
@@ -4174,6 +4231,59 @@ func (s *ListAllowancesStatus) UnmarshalText(data []byte) error {
 	}
 }
 
+// ListCatalogItemsNotModified is response for ListCatalogItems operation.
+type ListCatalogItemsNotModified struct{}
+
+func (*ListCatalogItemsNotModified) listCatalogItemsRes() {}
+
+type ListCatalogItemsType string
+
+const (
+	ListCatalogItemsTypeMetered ListCatalogItemsType = "metered"
+	ListCatalogItemsTypePrepaid ListCatalogItemsType = "prepaid"
+	ListCatalogItemsTypeOneTime ListCatalogItemsType = "one_time"
+)
+
+// AllValues returns all ListCatalogItemsType values.
+func (ListCatalogItemsType) AllValues() []ListCatalogItemsType {
+	return []ListCatalogItemsType{
+		ListCatalogItemsTypeMetered,
+		ListCatalogItemsTypePrepaid,
+		ListCatalogItemsTypeOneTime,
+	}
+}
+
+// MarshalText implements encoding.TextMarshaler.
+func (s ListCatalogItemsType) MarshalText() ([]byte, error) {
+	switch s {
+	case ListCatalogItemsTypeMetered:
+		return []byte(s), nil
+	case ListCatalogItemsTypePrepaid:
+		return []byte(s), nil
+	case ListCatalogItemsTypeOneTime:
+		return []byte(s), nil
+	default:
+		return nil, errors.Errorf("invalid value: %q", s)
+	}
+}
+
+// UnmarshalText implements encoding.TextUnmarshaler.
+func (s *ListCatalogItemsType) UnmarshalText(data []byte) error {
+	switch ListCatalogItemsType(data) {
+	case ListCatalogItemsTypeMetered:
+		*s = ListCatalogItemsTypeMetered
+		return nil
+	case ListCatalogItemsTypePrepaid:
+		*s = ListCatalogItemsTypePrepaid
+		return nil
+	case ListCatalogItemsTypeOneTime:
+		*s = ListCatalogItemsTypeOneTime
+		return nil
+	default:
+		return errors.Errorf("invalid value: %q", data)
+	}
+}
+
 type ListCreditGrantsStatus string
 
 const (
@@ -5113,6 +5223,52 @@ func (o OptListAllowancesStatus) Get() (v ListAllowancesStatus, ok bool) {
 
 // Or returns value if set, or given parameter if does not.
 func (o OptListAllowancesStatus) Or(d ListAllowancesStatus) ListAllowancesStatus {
+	if v, ok := o.Get(); ok {
+		return v
+	}
+	return d
+}
+
+// NewOptListCatalogItemsType returns new OptListCatalogItemsType with value set to v.
+func NewOptListCatalogItemsType(v ListCatalogItemsType) OptListCatalogItemsType {
+	return OptListCatalogItemsType{
+		Value: v,
+		Set:   true,
+	}
+}
+
+// OptListCatalogItemsType is optional ListCatalogItemsType.
+type OptListCatalogItemsType struct {
+	Value ListCatalogItemsType
+	Set   bool
+}
+
+// IsSet returns true if OptListCatalogItemsType was set.
+func (o OptListCatalogItemsType) IsSet() bool { return o.Set }
+
+// Reset unsets value.
+func (o *OptListCatalogItemsType) Reset() {
+	var v ListCatalogItemsType
+	o.Value = v
+	o.Set = false
+}
+
+// SetTo sets value to v.
+func (o *OptListCatalogItemsType) SetTo(v ListCatalogItemsType) {
+	o.Set = true
+	o.Value = v
+}
+
+// Get returns value and boolean that denotes whether value was set.
+func (o OptListCatalogItemsType) Get() (v ListCatalogItemsType, ok bool) {
+	if !o.Set {
+		return v, false
+	}
+	return o.Value, true
+}
+
+// Or returns value if set, or given parameter if does not.
+func (o OptListCatalogItemsType) Or(d ListCatalogItemsType) ListCatalogItemsType {
 	if v, ok := o.Get(); ok {
 		return v
 	}
@@ -6143,6 +6299,98 @@ func (o OptRefundPolicy) Get() (v RefundPolicy, ok bool) {
 
 // Or returns value if set, or given parameter if does not.
 func (o OptRefundPolicy) Or(d RefundPolicy) RefundPolicy {
+	if v, ok := o.Get(); ok {
+		return v
+	}
+	return d
+}
+
+// NewOptScopePriceEntryPeriod returns new OptScopePriceEntryPeriod with value set to v.
+func NewOptScopePriceEntryPeriod(v ScopePriceEntryPeriod) OptScopePriceEntryPeriod {
+	return OptScopePriceEntryPeriod{
+		Value: v,
+		Set:   true,
+	}
+}
+
+// OptScopePriceEntryPeriod is optional ScopePriceEntryPeriod.
+type OptScopePriceEntryPeriod struct {
+	Value ScopePriceEntryPeriod
+	Set   bool
+}
+
+// IsSet returns true if OptScopePriceEntryPeriod was set.
+func (o OptScopePriceEntryPeriod) IsSet() bool { return o.Set }
+
+// Reset unsets value.
+func (o *OptScopePriceEntryPeriod) Reset() {
+	var v ScopePriceEntryPeriod
+	o.Value = v
+	o.Set = false
+}
+
+// SetTo sets value to v.
+func (o *OptScopePriceEntryPeriod) SetTo(v ScopePriceEntryPeriod) {
+	o.Set = true
+	o.Value = v
+}
+
+// Get returns value and boolean that denotes whether value was set.
+func (o OptScopePriceEntryPeriod) Get() (v ScopePriceEntryPeriod, ok bool) {
+	if !o.Set {
+		return v, false
+	}
+	return o.Value, true
+}
+
+// Or returns value if set, or given parameter if does not.
+func (o OptScopePriceEntryPeriod) Or(d ScopePriceEntryPeriod) ScopePriceEntryPeriod {
+	if v, ok := o.Get(); ok {
+		return v
+	}
+	return d
+}
+
+// NewOptScopePriceEntryType returns new OptScopePriceEntryType with value set to v.
+func NewOptScopePriceEntryType(v ScopePriceEntryType) OptScopePriceEntryType {
+	return OptScopePriceEntryType{
+		Value: v,
+		Set:   true,
+	}
+}
+
+// OptScopePriceEntryType is optional ScopePriceEntryType.
+type OptScopePriceEntryType struct {
+	Value ScopePriceEntryType
+	Set   bool
+}
+
+// IsSet returns true if OptScopePriceEntryType was set.
+func (o OptScopePriceEntryType) IsSet() bool { return o.Set }
+
+// Reset unsets value.
+func (o *OptScopePriceEntryType) Reset() {
+	var v ScopePriceEntryType
+	o.Value = v
+	o.Set = false
+}
+
+// SetTo sets value to v.
+func (o *OptScopePriceEntryType) SetTo(v ScopePriceEntryType) {
+	o.Set = true
+	o.Value = v
+}
+
+// Get returns value and boolean that denotes whether value was set.
+func (o OptScopePriceEntryType) Get() (v ScopePriceEntryType, ok bool) {
+	if !o.Set {
+		return v, false
+	}
+	return o.Value, true
+}
+
+// Or returns value if set, or given parameter if does not.
+func (o OptScopePriceEntryType) Or(d ScopePriceEntryType) ScopePriceEntryType {
 	if v, ok := o.Get(); ok {
 		return v
 	}
@@ -7819,6 +8067,8 @@ func (s *Plan) SetDescriptionTranslations(val OptTranslations) {
 	s.DescriptionTranslations = val
 }
 
+func (*Plan) getCatalogPlanRes() {}
+
 // Ref: #/components/schemas/PlanList
 type PlanList struct {
 	Items      []Plan   `json:"items"`
@@ -8116,6 +8366,8 @@ func (s *Price) SetPeriod(val OptPricePeriod) {
 func (s *Price) SetSetupFee(val OptMoney) {
 	s.SetupFee = val
 }
+
+func (*Price) getCatalogPriceRes() {}
 
 // How the amount is arrived at. `rated` means the rate depends on attributes such as region or machine
 // type, and is looked up on a price list.
@@ -8435,6 +8687,8 @@ func (s *Product) SetDescription(val OptString) {
 func (s *Product) SetDescriptionTranslations(val OptTranslations) {
 	s.DescriptionTranslations = val
 }
+
+func (*Product) getCatalogProductRes() {}
 
 // Ref: #/components/schemas/ProductList
 type ProductList struct {
@@ -10785,6 +11039,245 @@ func (s *RenewRequest) SetReturnURL(val OptString) {
 // SetIdempotencyKey sets the value of IdempotencyKey.
 func (s *RenewRequest) SetIdempotencyKey(val string) {
 	s.IdempotencyKey = val
+}
+
+// One catalogue entry named by a scope, with the name to show for it.
+//
+// `excluded` marks an entry the scope rules out: it never qualifies, even when another field includes
+// it.
+// Ref: #/components/schemas/ScopeEntry
+type ScopeEntry struct {
+	ID               uuid.UUID       `json:"id"`
+	Name             OptString       `json:"name"`
+	NameTranslations OptTranslations `json:"name_translations"`
+	Excluded         bool            `json:"excluded"`
+}
+
+// GetID returns the value of ID.
+func (s *ScopeEntry) GetID() uuid.UUID {
+	return s.ID
+}
+
+// GetName returns the value of Name.
+func (s *ScopeEntry) GetName() OptString {
+	return s.Name
+}
+
+// GetNameTranslations returns the value of NameTranslations.
+func (s *ScopeEntry) GetNameTranslations() OptTranslations {
+	return s.NameTranslations
+}
+
+// GetExcluded returns the value of Excluded.
+func (s *ScopeEntry) GetExcluded() bool {
+	return s.Excluded
+}
+
+// SetID sets the value of ID.
+func (s *ScopeEntry) SetID(val uuid.UUID) {
+	s.ID = val
+}
+
+// SetName sets the value of Name.
+func (s *ScopeEntry) SetName(val OptString) {
+	s.Name = val
+}
+
+// SetNameTranslations sets the value of NameTranslations.
+func (s *ScopeEntry) SetNameTranslations(val OptTranslations) {
+	s.NameTranslations = val
+}
+
+// SetExcluded sets the value of Excluded.
+func (s *ScopeEntry) SetExcluded(val bool) {
+	s.Excluded = val
+}
+
+// One price named by a scope. Prices have no name, so the terms are given instead — a scope limited
+// to a price is usually limiting to one billing period.
+// Ref: #/components/schemas/ScopePriceEntry
+type ScopePriceEntry struct {
+	ID       uuid.UUID                `json:"id"`
+	Currency OptString                `json:"currency"`
+	Type     OptScopePriceEntryType   `json:"type"`
+	Period   OptScopePriceEntryPeriod `json:"period"`
+	// How many periods one purchase covers.
+	Term       OptInt   `json:"term"`
+	UnitAmount OptMoney `json:"unit_amount"`
+	Excluded   bool     `json:"excluded"`
+}
+
+// GetID returns the value of ID.
+func (s *ScopePriceEntry) GetID() uuid.UUID {
+	return s.ID
+}
+
+// GetCurrency returns the value of Currency.
+func (s *ScopePriceEntry) GetCurrency() OptString {
+	return s.Currency
+}
+
+// GetType returns the value of Type.
+func (s *ScopePriceEntry) GetType() OptScopePriceEntryType {
+	return s.Type
+}
+
+// GetPeriod returns the value of Period.
+func (s *ScopePriceEntry) GetPeriod() OptScopePriceEntryPeriod {
+	return s.Period
+}
+
+// GetTerm returns the value of Term.
+func (s *ScopePriceEntry) GetTerm() OptInt {
+	return s.Term
+}
+
+// GetUnitAmount returns the value of UnitAmount.
+func (s *ScopePriceEntry) GetUnitAmount() OptMoney {
+	return s.UnitAmount
+}
+
+// GetExcluded returns the value of Excluded.
+func (s *ScopePriceEntry) GetExcluded() bool {
+	return s.Excluded
+}
+
+// SetID sets the value of ID.
+func (s *ScopePriceEntry) SetID(val uuid.UUID) {
+	s.ID = val
+}
+
+// SetCurrency sets the value of Currency.
+func (s *ScopePriceEntry) SetCurrency(val OptString) {
+	s.Currency = val
+}
+
+// SetType sets the value of Type.
+func (s *ScopePriceEntry) SetType(val OptScopePriceEntryType) {
+	s.Type = val
+}
+
+// SetPeriod sets the value of Period.
+func (s *ScopePriceEntry) SetPeriod(val OptScopePriceEntryPeriod) {
+	s.Period = val
+}
+
+// SetTerm sets the value of Term.
+func (s *ScopePriceEntry) SetTerm(val OptInt) {
+	s.Term = val
+}
+
+// SetUnitAmount sets the value of UnitAmount.
+func (s *ScopePriceEntry) SetUnitAmount(val OptMoney) {
+	s.UnitAmount = val
+}
+
+// SetExcluded sets the value of Excluded.
+func (s *ScopePriceEntry) SetExcluded(val bool) {
+	s.Excluded = val
+}
+
+type ScopePriceEntryPeriod string
+
+const (
+	ScopePriceEntryPeriodNone  ScopePriceEntryPeriod = "none"
+	ScopePriceEntryPeriodDay   ScopePriceEntryPeriod = "day"
+	ScopePriceEntryPeriodMonth ScopePriceEntryPeriod = "month"
+	ScopePriceEntryPeriodYear  ScopePriceEntryPeriod = "year"
+)
+
+// AllValues returns all ScopePriceEntryPeriod values.
+func (ScopePriceEntryPeriod) AllValues() []ScopePriceEntryPeriod {
+	return []ScopePriceEntryPeriod{
+		ScopePriceEntryPeriodNone,
+		ScopePriceEntryPeriodDay,
+		ScopePriceEntryPeriodMonth,
+		ScopePriceEntryPeriodYear,
+	}
+}
+
+// MarshalText implements encoding.TextMarshaler.
+func (s ScopePriceEntryPeriod) MarshalText() ([]byte, error) {
+	switch s {
+	case ScopePriceEntryPeriodNone:
+		return []byte(s), nil
+	case ScopePriceEntryPeriodDay:
+		return []byte(s), nil
+	case ScopePriceEntryPeriodMonth:
+		return []byte(s), nil
+	case ScopePriceEntryPeriodYear:
+		return []byte(s), nil
+	default:
+		return nil, errors.Errorf("invalid value: %q", s)
+	}
+}
+
+// UnmarshalText implements encoding.TextUnmarshaler.
+func (s *ScopePriceEntryPeriod) UnmarshalText(data []byte) error {
+	switch ScopePriceEntryPeriod(data) {
+	case ScopePriceEntryPeriodNone:
+		*s = ScopePriceEntryPeriodNone
+		return nil
+	case ScopePriceEntryPeriodDay:
+		*s = ScopePriceEntryPeriodDay
+		return nil
+	case ScopePriceEntryPeriodMonth:
+		*s = ScopePriceEntryPeriodMonth
+		return nil
+	case ScopePriceEntryPeriodYear:
+		*s = ScopePriceEntryPeriodYear
+		return nil
+	default:
+		return errors.Errorf("invalid value: %q", data)
+	}
+}
+
+type ScopePriceEntryType string
+
+const (
+	ScopePriceEntryTypeMetered ScopePriceEntryType = "metered"
+	ScopePriceEntryTypePrepaid ScopePriceEntryType = "prepaid"
+	ScopePriceEntryTypeOneTime ScopePriceEntryType = "one_time"
+)
+
+// AllValues returns all ScopePriceEntryType values.
+func (ScopePriceEntryType) AllValues() []ScopePriceEntryType {
+	return []ScopePriceEntryType{
+		ScopePriceEntryTypeMetered,
+		ScopePriceEntryTypePrepaid,
+		ScopePriceEntryTypeOneTime,
+	}
+}
+
+// MarshalText implements encoding.TextMarshaler.
+func (s ScopePriceEntryType) MarshalText() ([]byte, error) {
+	switch s {
+	case ScopePriceEntryTypeMetered:
+		return []byte(s), nil
+	case ScopePriceEntryTypePrepaid:
+		return []byte(s), nil
+	case ScopePriceEntryTypeOneTime:
+		return []byte(s), nil
+	default:
+		return nil, errors.Errorf("invalid value: %q", s)
+	}
+}
+
+// UnmarshalText implements encoding.TextUnmarshaler.
+func (s *ScopePriceEntryType) UnmarshalText(data []byte) error {
+	switch ScopePriceEntryType(data) {
+	case ScopePriceEntryTypeMetered:
+		*s = ScopePriceEntryTypeMetered
+		return nil
+	case ScopePriceEntryTypePrepaid:
+		*s = ScopePriceEntryTypePrepaid
+		return nil
+	case ScopePriceEntryTypeOneTime:
+		*s = ScopePriceEntryTypeOneTime
+		return nil
+	default:
+		return errors.Errorf("invalid value: %q", data)
+	}
 }
 
 // Ref: #/components/schemas/SettleResult

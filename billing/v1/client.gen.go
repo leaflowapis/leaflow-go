@@ -931,6 +931,51 @@ func (e RefundSourceType) Valid() bool {
 	}
 }
 
+// Defines values for ScopePriceEntryPeriod.
+const (
+	ScopePriceEntryPeriodDay   ScopePriceEntryPeriod = "day"
+	ScopePriceEntryPeriodMonth ScopePriceEntryPeriod = "month"
+	ScopePriceEntryPeriodNone  ScopePriceEntryPeriod = "none"
+	ScopePriceEntryPeriodYear  ScopePriceEntryPeriod = "year"
+)
+
+// Valid indicates whether the value is a known member of the ScopePriceEntryPeriod enum.
+func (e ScopePriceEntryPeriod) Valid() bool {
+	switch e {
+	case ScopePriceEntryPeriodDay:
+		return true
+	case ScopePriceEntryPeriodMonth:
+		return true
+	case ScopePriceEntryPeriodNone:
+		return true
+	case ScopePriceEntryPeriodYear:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for ScopePriceEntryType.
+const (
+	ScopePriceEntryTypeMetered ScopePriceEntryType = "metered"
+	ScopePriceEntryTypeOneTime ScopePriceEntryType = "one_time"
+	ScopePriceEntryTypePrepaid ScopePriceEntryType = "prepaid"
+)
+
+// Valid indicates whether the value is a known member of the ScopePriceEntryType enum.
+func (e ScopePriceEntryType) Valid() bool {
+	switch e {
+	case ScopePriceEntryTypeMetered:
+		return true
+	case ScopePriceEntryTypeOneTime:
+		return true
+	case ScopePriceEntryTypePrepaid:
+		return true
+	default:
+		return false
+	}
+}
+
 // Defines values for SubscriptionStatus.
 const (
 	SubscriptionStatusActive     SubscriptionStatus = "active"
@@ -1186,6 +1231,27 @@ func (e ListProjectSpendParamsGroupBy) Valid() bool {
 	}
 }
 
+// Defines values for ListCatalogItemsParamsType.
+const (
+	ListCatalogItemsParamsTypeMetered ListCatalogItemsParamsType = "metered"
+	ListCatalogItemsParamsTypeOneTime ListCatalogItemsParamsType = "one_time"
+	ListCatalogItemsParamsTypePrepaid ListCatalogItemsParamsType = "prepaid"
+)
+
+// Valid indicates whether the value is a known member of the ListCatalogItemsParamsType enum.
+func (e ListCatalogItemsParamsType) Valid() bool {
+	switch e {
+	case ListCatalogItemsParamsTypeMetered:
+		return true
+	case ListCatalogItemsParamsTypeOneTime:
+		return true
+	case ListCatalogItemsParamsTypePrepaid:
+		return true
+	default:
+		return false
+	}
+}
+
 // AccountBalance defines model for AccountBalance.
 type AccountBalance struct {
 	// Accrued Metered usage priced this month but not yet invoiced. It is already committed even
@@ -1359,37 +1425,27 @@ type AllowanceList struct {
 // A line qualifies when it satisfies every field that is set. `min_amount` is then
 // measured against **the qualifying lines only**, not the order total.
 //
-// An entry listed under `excluded_*` never qualifies, even when another field includes it.
+// Entries carry the name to show for them, so that what a credit covers can be displayed
+// without looking each one up.
 type Applicability struct {
-	ExcludedPlanIds    []openapi_types.UUID `json:"excluded_plan_ids,omitempty"`
-	ExcludedPriceIds   []openapi_types.UUID `json:"excluded_price_ids,omitempty"`
-	ExcludedProductIds []openapi_types.UUID `json:"excluded_product_ids,omitempty"`
-
 	// FirstPurchaseOnly Restricted to your first purchase of a covered product.
 	FirstPurchaseOnly *bool `json:"first_purchase_only,omitempty"`
 
 	// MaxTermMonths The longest term a purchase may have, in months.
 	MaxTermMonths *int `json:"max_term_months,omitempty"`
 
-	// MinAmount A decimal string, in the currency stated alongside it.
-	//
-	// **The currency is not part of this type.** It is carried by a `currency` field next to the
-	// amount, or by the account the amount belongs to. Reading an amount without that field is
-	// reading a number with no unit.
-	//
-	// It is a string rather than a JSON number because a JSON number is a float in most parsers,
-	// and a float loses precision on the first arithmetic. Nothing on this platform puts an amount
-	// through a float.
+	// MinAmount The threshold, measured against the qualifying lines. In the currency of whatever
+	// carries these terms.
 	MinAmount *externalRef0.Money `json:"min_amount,omitempty"`
 
 	// MinTermMonths The shortest term a purchase may have, in months. A purchase with no term, such as
 	// metered usage, never qualifies while this is set.
-	MinTermMonths *int                 `json:"min_term_months,omitempty"`
-	Operations    []PurchaseOperation  `json:"operations,omitempty"`
-	PlanIds       []openapi_types.UUID `json:"plan_ids,omitempty"`
-	PriceIds      []openapi_types.UUID `json:"price_ids,omitempty"`
-	PriceTypes    []string             `json:"price_types,omitempty"`
-	ProductIds    []openapi_types.UUID `json:"product_ids,omitempty"`
+	MinTermMonths *int                `json:"min_term_months,omitempty"`
+	Operations    []PurchaseOperation `json:"operations,omitempty"`
+	Plans         []ScopeEntry        `json:"plans,omitempty"`
+	PriceTypes    []string            `json:"price_types,omitempty"`
+	Prices        []ScopePriceEntry   `json:"prices,omitempty"`
+	Products      []ScopeEntry        `json:"products,omitempty"`
 }
 
 // AutoRenewSet defines model for AutoRenewSet.
@@ -1462,6 +1518,29 @@ type BillingAccountUpdate struct {
 	LegalName         *string `json:"legal_name,omitempty"`
 	Name              *string `json:"name,omitempty"`
 	TaxId             *string `json:"tax_id,omitempty"`
+}
+
+// CatalogItem One sellable thing at one price: the plan, and the price it is sold at in the currency
+// you asked for.
+//
+// Listing plans and then asking for each plan's prices returns the same information, but
+// one request per plan. This flattens the two levels, so that a price list renders from a
+// single request.
+//
+// A plan appears once per price, so a plan sold monthly and yearly appears twice.
+type CatalogItem struct {
+	// Plan A catalog object inlined for display.
+	Plan  ObjectIdentity `json:"plan"`
+	Price Price          `json:"price"`
+
+	// Product A catalog object inlined for display.
+	Product ObjectIdentity `json:"product"`
+}
+
+// CatalogItemList defines model for CatalogItemList.
+type CatalogItemList struct {
+	Items      []CatalogItem `json:"items"`
+	TotalCount *int64        `json:"total_count,omitempty"`
 }
 
 // CodePreview defines model for CodePreview.
@@ -2948,6 +3027,56 @@ type RenewRequest struct {
 	UseBalance *bool   `json:"use_balance,omitempty"`
 }
 
+// ScopeEntry One catalogue entry named by a scope, with the name to show for it.
+//
+// `excluded` marks an entry the scope rules out: it never qualifies, even when another
+// field includes it.
+type ScopeEntry struct {
+	Excluded bool               `json:"excluded"`
+	Id       openapi_types.UUID `json:"id"`
+	Name     *string            `json:"name,omitempty"`
+
+	// NameTranslations Text in other languages, keyed by BCP 47 language tag (`zh-Hans`, `en`, `ja`).
+	//
+	// When your locale is absent, use the plain field next to this one. **There is no fallback
+	// chain**: a missing `zh-Hans` does not fall back to `zh`.
+	//
+	// Resolving server-side by `Accept-Language` is deliberately not done — the public catalogue is
+	// cached and served from a CDN, and one cache serves every language only if the response does
+	// not depend on the request's language.
+	NameTranslations *externalRef0.Translations `json:"name_translations,omitempty"`
+}
+
+// ScopePriceEntry One price named by a scope. Prices have no name, so the terms are given instead —
+// a scope limited to a price is usually limiting to one billing period.
+type ScopePriceEntry struct {
+	Currency *string                `json:"currency,omitempty"`
+	Excluded bool                   `json:"excluded"`
+	Id       openapi_types.UUID     `json:"id"`
+	Period   *ScopePriceEntryPeriod `json:"period,omitempty"`
+
+	// Term How many periods one purchase covers.
+	Term *int                 `json:"term,omitempty"`
+	Type *ScopePriceEntryType `json:"type,omitempty"`
+
+	// UnitAmount A decimal string, in the currency stated alongside it.
+	//
+	// **The currency is not part of this type.** It is carried by a `currency` field next to the
+	// amount, or by the account the amount belongs to. Reading an amount without that field is
+	// reading a number with no unit.
+	//
+	// It is a string rather than a JSON number because a JSON number is a float in most parsers,
+	// and a float loses precision on the first arithmetic. Nothing on this platform puts an amount
+	// through a float.
+	UnitAmount *externalRef0.Money `json:"unit_amount,omitempty"`
+}
+
+// ScopePriceEntryPeriod defines model for ScopePriceEntry.Period.
+type ScopePriceEntryPeriod string
+
+// ScopePriceEntryType defines model for ScopePriceEntry.Type.
+type ScopePriceEntryType string
+
 // SettleResult defines model for SettleResult.
 type SettleResult struct {
 	Currency  string              `json:"currency"`
@@ -3737,6 +3866,40 @@ type ListProjectUsageChargesParams struct {
 	To *To `form:"to,omitempty" json:"to,omitempty"`
 }
 
+// ListCatalogItemsParams defines parameters for ListCatalogItems.
+type ListCatalogItemsParams struct {
+	// Page 1-based page number; the first page when omitted.
+	Page *Page `form:"page,omitempty" json:"page,omitempty"`
+
+	// PageSize How many per page, 100 at most.
+	PageSize *PageSize `form:"page_size,omitempty" json:"page_size,omitempty"`
+
+	// Currency ISO 4217, three uppercase letters.
+	Currency  string              `form:"currency" json:"currency"`
+	ProductId *openapi_types.UUID `form:"product_id,omitempty" json:"product_id,omitempty"`
+
+	// Type Narrows to one payment timing.
+	Type *ListCatalogItemsParamsType `form:"type,omitempty" json:"type,omitempty"`
+
+	// IfNoneMatch The `ETag` from an earlier reply. When the catalogue has not changed since, the
+	// answer is `304` with no body.
+	//
+	// Send it on every catalogue read. An unchanged catalogue is answered without a body.
+	IfNoneMatch *IfNoneMatch `json:"If-None-Match,omitempty"`
+}
+
+// ListCatalogItemsParamsType defines parameters for ListCatalogItems.
+type ListCatalogItemsParamsType string
+
+// GetCatalogPlanParams defines parameters for GetCatalogPlan.
+type GetCatalogPlanParams struct {
+	// IfNoneMatch The `ETag` from an earlier reply. When the catalogue has not changed since, the
+	// answer is `304` with no body.
+	//
+	// Send it on every catalogue read. An unchanged catalogue is answered without a body.
+	IfNoneMatch *IfNoneMatch `json:"If-None-Match,omitempty"`
+}
+
 // ListPricesParams defines parameters for ListPrices.
 type ListPricesParams struct {
 	// Page 1-based page number; the first page when omitted.
@@ -3753,6 +3916,15 @@ type ListPricesParams struct {
 	IfNoneMatch *IfNoneMatch `json:"If-None-Match,omitempty"`
 }
 
+// GetCatalogPriceParams defines parameters for GetCatalogPrice.
+type GetCatalogPriceParams struct {
+	// IfNoneMatch The `ETag` from an earlier reply. When the catalogue has not changed since, the
+	// answer is `304` with no body.
+	//
+	// Send it on every catalogue read. An unchanged catalogue is answered without a body.
+	IfNoneMatch *IfNoneMatch `json:"If-None-Match,omitempty"`
+}
+
 // ListProductsParams defines parameters for ListProducts.
 type ListProductsParams struct {
 	// Page 1-based page number; the first page when omitted.
@@ -3761,6 +3933,15 @@ type ListProductsParams struct {
 	// PageSize How many per page, 100 at most.
 	PageSize *PageSize `form:"page_size,omitempty" json:"page_size,omitempty"`
 
+	// IfNoneMatch The `ETag` from an earlier reply. When the catalogue has not changed since, the
+	// answer is `304` with no body.
+	//
+	// Send it on every catalogue read. An unchanged catalogue is answered without a body.
+	IfNoneMatch *IfNoneMatch `json:"If-None-Match,omitempty"`
+}
+
+// GetCatalogProductParams defines parameters for GetCatalogProduct.
+type GetCatalogProductParams struct {
 	// IfNoneMatch The `ETag` from an earlier reply. When the catalogue has not changed since, the
 	// answer is `304` with no body.
 	//
@@ -4687,6 +4868,27 @@ type ClientInterface interface {
 	// Corresponds with POST /catalog/v1/estimates (the `CreateEstimate` operationId).
 	CreateEstimate(ctx context.Context, body CreateEstimateJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
 
+	// ListCatalogItems List what is on sale, with prices
+	//
+	// Every sellable thing and what it costs, in one request. A plan appears once per price.
+	//
+	// `currency` is required: a plan has a price in each currency it is sold in, so "what does
+	// this cost" has no answer without one.
+	//
+	// Retired prices are left out. Existing subscriptions still reference them, so this is not
+	// the place to look up what an existing purchase is paying.
+	//
+	// Corresponds with GET /catalog/v1/items (the `ListCatalogItems` operationId).
+	ListCatalogItems(ctx context.Context, params *ListCatalogItemsParams, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// GetCatalogPlan Get a sellable item
+	//
+	// Resolves a stored identifier into something that can be displayed. Returns items that are
+	// no longer on sale: an existing purchase still refers to one.
+	//
+	// Corresponds with GET /catalog/v1/plans/{planId} (the `GetCatalogPlan` operationId).
+	GetCatalogPlan(ctx context.Context, planId openapi_types.UUID, params *GetCatalogPlanParams, reqEditors ...RequestEditorFn) (*http.Response, error)
+
 	// ListPrices List catalog prices
 	//
 	// Public list prices only. An account holding a negotiated agreement may be charged less;
@@ -4695,10 +4897,26 @@ type ClientInterface interface {
 	// Corresponds with GET /catalog/v1/plans/{planId}/prices (the `ListPrices` operationId).
 	ListPrices(ctx context.Context, planId PlanId, params *ListPricesParams, reqEditors ...RequestEditorFn) (*http.Response, error)
 
+	// GetCatalogPrice Get a price
+	//
+	// Returns retired prices. An existing subscription still bills at the price it was bought
+	// at, so this is how to show what that purchase is paying.
+	//
+	// Corresponds with GET /catalog/v1/prices/{priceId} (the `GetCatalogPrice` operationId).
+	GetCatalogPrice(ctx context.Context, priceId openapi_types.UUID, params *GetCatalogPriceParams, reqEditors ...RequestEditorFn) (*http.Response, error)
+
 	// ListProducts List catalog products
 	//
 	// Corresponds with GET /catalog/v1/products (the `ListProducts` operationId).
 	ListProducts(ctx context.Context, params *ListProductsParams, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// GetCatalogProduct Get a service
+	//
+	// Resolves an identifier that was stored elsewhere — on an order line, an invoice line, or
+	// the terms of a credit — into something that can be displayed.
+	//
+	// Corresponds with GET /catalog/v1/products/{productId} (the `GetCatalogProduct` operationId).
+	GetCatalogProduct(ctx context.Context, productId openapi_types.UUID, params *GetCatalogProductParams, reqEditors ...RequestEditorFn) (*http.Response, error)
 
 	// ListPlans List catalog plans
 	//
@@ -6238,6 +6456,47 @@ func (c *Client) CreateEstimate(ctx context.Context, body CreateEstimateJSONRequ
 	return c.Client.Do(req)
 }
 
+// ListCatalogItems List what is on sale, with prices
+//
+// Every sellable thing and what it costs, in one request. A plan appears once per price.
+//
+// `currency` is required: a plan has a price in each currency it is sold in, so "what does
+// this cost" has no answer without one.
+//
+// Retired prices are left out. Existing subscriptions still reference them, so this is not
+// the place to look up what an existing purchase is paying.
+//
+// Corresponds with GET /catalog/v1/items (the `ListCatalogItems` operationId).
+func (c *Client) ListCatalogItems(ctx context.Context, params *ListCatalogItemsParams, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewListCatalogItemsRequest(c.Server, params)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+// GetCatalogPlan Get a sellable item
+//
+// Resolves a stored identifier into something that can be displayed. Returns items that are
+// no longer on sale: an existing purchase still refers to one.
+//
+// Corresponds with GET /catalog/v1/plans/{planId} (the `GetCatalogPlan` operationId).
+func (c *Client) GetCatalogPlan(ctx context.Context, planId openapi_types.UUID, params *GetCatalogPlanParams, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewGetCatalogPlanRequest(c.Server, planId, params)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
 // ListPrices List catalog prices
 //
 // Public list prices only. An account holding a negotiated agreement may be charged less;
@@ -6256,11 +6515,47 @@ func (c *Client) ListPrices(ctx context.Context, planId PlanId, params *ListPric
 	return c.Client.Do(req)
 }
 
+// GetCatalogPrice Get a price
+//
+// Returns retired prices. An existing subscription still bills at the price it was bought
+// at, so this is how to show what that purchase is paying.
+//
+// Corresponds with GET /catalog/v1/prices/{priceId} (the `GetCatalogPrice` operationId).
+func (c *Client) GetCatalogPrice(ctx context.Context, priceId openapi_types.UUID, params *GetCatalogPriceParams, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewGetCatalogPriceRequest(c.Server, priceId, params)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
 // ListProducts List catalog products
 //
 // Corresponds with GET /catalog/v1/products (the `ListProducts` operationId).
 func (c *Client) ListProducts(ctx context.Context, params *ListProductsParams, reqEditors ...RequestEditorFn) (*http.Response, error) {
 	req, err := NewListProductsRequest(c.Server, params)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+// GetCatalogProduct Get a service
+//
+// Resolves an identifier that was stored elsewhere — on an order line, an invoice line, or
+// the terms of a credit — into something that can be displayed.
+//
+// Corresponds with GET /catalog/v1/products/{productId} (the `GetCatalogProduct` operationId).
+func (c *Client) GetCatalogProduct(ctx context.Context, productId openapi_types.UUID, params *GetCatalogProductParams, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewGetCatalogProductRequest(c.Server, productId, params)
 	if err != nil {
 		return nil, err
 	}
@@ -10319,6 +10614,168 @@ func NewCreateEstimateRequestWithBody(server string, contentType string, body io
 	return req, nil
 }
 
+// NewListCatalogItemsRequest constructs an http.Request for the ListCatalogItems method
+func NewListCatalogItemsRequest(server string, params *ListCatalogItemsParams) (*http.Request, error) {
+	var err error
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/catalog/v1/items")
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	if params != nil {
+		// queryValues collects non-styled parameters (passthrough, JSON)
+		// that are safe to round-trip through url.Values.Encode().
+		queryValues := queryURL.Query()
+		// rawQueryFragments collects pre-encoded query fragments from
+		// styled parameters, preserving literal commas as delimiters
+		// per the OpenAPI spec (e.g. "color=blue,black,brown").
+		var rawQueryFragments []string
+
+		if params.Page != nil {
+
+			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "page", *params.Page, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "integer", Format: "int32"}); err != nil {
+				return nil, err
+			} else {
+				for _, qp := range strings.Split(queryFrag, "&") {
+					rawQueryFragments = append(rawQueryFragments, qp)
+				}
+			}
+
+		}
+
+		if params.PageSize != nil {
+
+			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "page_size", *params.PageSize, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "integer", Format: "int32"}); err != nil {
+				return nil, err
+			} else {
+				for _, qp := range strings.Split(queryFrag, "&") {
+					rawQueryFragments = append(rawQueryFragments, qp)
+				}
+			}
+
+		}
+
+		if queryFrag, err := runtime.StyleParamWithOptions("form", true, "currency", params.Currency, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "string", Format: ""}); err != nil {
+			return nil, err
+		} else {
+			for _, qp := range strings.Split(queryFrag, "&") {
+				rawQueryFragments = append(rawQueryFragments, qp)
+			}
+		}
+
+		if params.ProductId != nil {
+
+			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "product_id", *params.ProductId, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "string", Format: "uuid"}); err != nil {
+				return nil, err
+			} else {
+				for _, qp := range strings.Split(queryFrag, "&") {
+					rawQueryFragments = append(rawQueryFragments, qp)
+				}
+			}
+
+		}
+
+		if params.Type != nil {
+
+			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "type", *params.Type, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			} else {
+				for _, qp := range strings.Split(queryFrag, "&") {
+					rawQueryFragments = append(rawQueryFragments, qp)
+				}
+			}
+
+		}
+
+		if encoded := queryValues.Encode(); encoded != "" {
+			rawQueryFragments = append(rawQueryFragments, encoded)
+		}
+		queryURL.RawQuery = strings.Join(rawQueryFragments, "&")
+	}
+
+	req, err := http.NewRequest(http.MethodGet, queryURL.String(), nil)
+	if err != nil {
+		return nil, err
+	}
+
+	if params != nil {
+
+		if params.IfNoneMatch != nil {
+			var headerParam0 string
+
+			headerParam0, err = runtime.StyleParamWithOptions("simple", false, "If-None-Match", *params.IfNoneMatch, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationHeader, Type: "string", Format: ""})
+			if err != nil {
+				return nil, err
+			}
+
+			req.Header.Set("If-None-Match", headerParam0)
+		}
+
+	}
+
+	return req, nil
+}
+
+// NewGetCatalogPlanRequest constructs an http.Request for the GetCatalogPlan method
+func NewGetCatalogPlanRequest(server string, planId openapi_types.UUID, params *GetCatalogPlanParams) (*http.Request, error) {
+	var err error
+
+	var pathParam0 string
+
+	pathParam0, err = runtime.StyleParamWithOptions("simple", false, "planId", planId, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: "uuid"})
+	if err != nil {
+		return nil, err
+	}
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/catalog/v1/plans/%s", pathParam0)
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest(http.MethodGet, queryURL.String(), nil)
+	if err != nil {
+		return nil, err
+	}
+
+	if params != nil {
+
+		if params.IfNoneMatch != nil {
+			var headerParam0 string
+
+			headerParam0, err = runtime.StyleParamWithOptions("simple", false, "If-None-Match", *params.IfNoneMatch, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationHeader, Type: "string", Format: ""})
+			if err != nil {
+				return nil, err
+			}
+
+			req.Header.Set("If-None-Match", headerParam0)
+		}
+
+	}
+
+	return req, nil
+}
+
 // NewListPricesRequest constructs an http.Request for the ListPrices method
 func NewListPricesRequest(server string, planId PlanId, params *ListPricesParams) (*http.Request, error) {
 	var err error
@@ -10419,6 +10876,55 @@ func NewListPricesRequest(server string, planId PlanId, params *ListPricesParams
 	return req, nil
 }
 
+// NewGetCatalogPriceRequest constructs an http.Request for the GetCatalogPrice method
+func NewGetCatalogPriceRequest(server string, priceId openapi_types.UUID, params *GetCatalogPriceParams) (*http.Request, error) {
+	var err error
+
+	var pathParam0 string
+
+	pathParam0, err = runtime.StyleParamWithOptions("simple", false, "priceId", priceId, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: "uuid"})
+	if err != nil {
+		return nil, err
+	}
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/catalog/v1/prices/%s", pathParam0)
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest(http.MethodGet, queryURL.String(), nil)
+	if err != nil {
+		return nil, err
+	}
+
+	if params != nil {
+
+		if params.IfNoneMatch != nil {
+			var headerParam0 string
+
+			headerParam0, err = runtime.StyleParamWithOptions("simple", false, "If-None-Match", *params.IfNoneMatch, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationHeader, Type: "string", Format: ""})
+			if err != nil {
+				return nil, err
+			}
+
+			req.Header.Set("If-None-Match", headerParam0)
+		}
+
+	}
+
+	return req, nil
+}
+
 // NewListProductsRequest constructs an http.Request for the ListProducts method
 func NewListProductsRequest(server string, params *ListProductsParams) (*http.Request, error) {
 	var err error
@@ -10475,6 +10981,55 @@ func NewListProductsRequest(server string, params *ListProductsParams) (*http.Re
 			rawQueryFragments = append(rawQueryFragments, encoded)
 		}
 		queryURL.RawQuery = strings.Join(rawQueryFragments, "&")
+	}
+
+	req, err := http.NewRequest(http.MethodGet, queryURL.String(), nil)
+	if err != nil {
+		return nil, err
+	}
+
+	if params != nil {
+
+		if params.IfNoneMatch != nil {
+			var headerParam0 string
+
+			headerParam0, err = runtime.StyleParamWithOptions("simple", false, "If-None-Match", *params.IfNoneMatch, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationHeader, Type: "string", Format: ""})
+			if err != nil {
+				return nil, err
+			}
+
+			req.Header.Set("If-None-Match", headerParam0)
+		}
+
+	}
+
+	return req, nil
+}
+
+// NewGetCatalogProductRequest constructs an http.Request for the GetCatalogProduct method
+func NewGetCatalogProductRequest(server string, productId openapi_types.UUID, params *GetCatalogProductParams) (*http.Request, error) {
+	var err error
+
+	var pathParam0 string
+
+	pathParam0, err = runtime.StyleParamWithOptions("simple", false, "productId", productId, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: "uuid"})
+	if err != nil {
+		return nil, err
+	}
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/catalog/v1/products/%s", pathParam0)
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
 	}
 
 	req, err := http.NewRequest(http.MethodGet, queryURL.String(), nil)
@@ -11600,6 +12155,31 @@ type ClientWithResponsesInterface interface {
 	// Corresponds with POST /catalog/v1/estimates (the `CreateEstimate` operationId).
 	CreateEstimateWithResponse(ctx context.Context, body CreateEstimateJSONRequestBody, reqEditors ...RequestEditorFn) (*CreateEstimateResponse, error)
 
+	// ListCatalogItemsWithResponse List what is on sale, with prices
+	//
+	// Every sellable thing and what it costs, in one request. A plan appears once per price.
+	//
+	// `currency` is required: a plan has a price in each currency it is sold in, so "what does
+	// this cost" has no answer without one.
+	//
+	// Retired prices are left out. Existing subscriptions still reference them, so this is not
+	// the place to look up what an existing purchase is paying.
+	//
+	// Returns a wrapper object for the known response body format(s).
+	//
+	// Corresponds with GET /catalog/v1/items (the `ListCatalogItems` operationId).
+	ListCatalogItemsWithResponse(ctx context.Context, params *ListCatalogItemsParams, reqEditors ...RequestEditorFn) (*ListCatalogItemsResponse, error)
+
+	// GetCatalogPlanWithResponse Get a sellable item
+	//
+	// Resolves a stored identifier into something that can be displayed. Returns items that are
+	// no longer on sale: an existing purchase still refers to one.
+	//
+	// Returns a wrapper object for the known response body format(s).
+	//
+	// Corresponds with GET /catalog/v1/plans/{planId} (the `GetCatalogPlan` operationId).
+	GetCatalogPlanWithResponse(ctx context.Context, planId openapi_types.UUID, params *GetCatalogPlanParams, reqEditors ...RequestEditorFn) (*GetCatalogPlanResponse, error)
+
 	// ListPricesWithResponse List catalog prices
 	//
 	// Public list prices only. An account holding a negotiated agreement may be charged less;
@@ -11610,12 +12190,32 @@ type ClientWithResponsesInterface interface {
 	// Corresponds with GET /catalog/v1/plans/{planId}/prices (the `ListPrices` operationId).
 	ListPricesWithResponse(ctx context.Context, planId PlanId, params *ListPricesParams, reqEditors ...RequestEditorFn) (*ListPricesResponse, error)
 
+	// GetCatalogPriceWithResponse Get a price
+	//
+	// Returns retired prices. An existing subscription still bills at the price it was bought
+	// at, so this is how to show what that purchase is paying.
+	//
+	// Returns a wrapper object for the known response body format(s).
+	//
+	// Corresponds with GET /catalog/v1/prices/{priceId} (the `GetCatalogPrice` operationId).
+	GetCatalogPriceWithResponse(ctx context.Context, priceId openapi_types.UUID, params *GetCatalogPriceParams, reqEditors ...RequestEditorFn) (*GetCatalogPriceResponse, error)
+
 	// ListProductsWithResponse List catalog products
 	//
 	// Returns a wrapper object for the known response body format(s).
 	//
 	// Corresponds with GET /catalog/v1/products (the `ListProducts` operationId).
 	ListProductsWithResponse(ctx context.Context, params *ListProductsParams, reqEditors ...RequestEditorFn) (*ListProductsResponse, error)
+
+	// GetCatalogProductWithResponse Get a service
+	//
+	// Resolves an identifier that was stored elsewhere — on an order line, an invoice line, or
+	// the terms of a credit — into something that can be displayed.
+	//
+	// Returns a wrapper object for the known response body format(s).
+	//
+	// Corresponds with GET /catalog/v1/products/{productId} (the `GetCatalogProduct` operationId).
+	GetCatalogProductWithResponse(ctx context.Context, productId openapi_types.UUID, params *GetCatalogProductParams, reqEditors ...RequestEditorFn) (*GetCatalogProductResponse, error)
 
 	// ListPlansWithResponse List catalog plans
 	//
@@ -14549,6 +15149,102 @@ func (r CreateEstimateResponse) ContentType() string {
 	return ""
 }
 
+type ListCatalogItemsResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	// JSON200 the response for an HTTP 200 `application/json` response
+	JSON200 *CatalogItemList
+	// JSONDefault the response for an HTTP default `application/json` response
+	JSONDefault *Error
+}
+
+// GetJSON200 returns the response for an HTTP 200 `application/json` response
+func (r ListCatalogItemsResponse) GetJSON200() *CatalogItemList {
+	return r.JSON200
+}
+
+// GetJSONDefault returns the response for an HTTP default `application/json` response
+func (r ListCatalogItemsResponse) GetJSONDefault() *Error {
+	return r.JSONDefault
+}
+
+// GetBody returns the raw response body bytes
+func (r ListCatalogItemsResponse) GetBody() []byte {
+	return r.Body
+}
+
+// Status returns HTTPResponse.Status
+func (r ListCatalogItemsResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r ListCatalogItemsResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+// ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
+func (r ListCatalogItemsResponse) ContentType() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Header.Get("Content-Type")
+	}
+	return ""
+}
+
+type GetCatalogPlanResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	// JSON200 the response for an HTTP 200 `application/json` response
+	JSON200 *Plan
+	// JSONDefault the response for an HTTP default `application/json` response
+	JSONDefault *Error
+}
+
+// GetJSON200 returns the response for an HTTP 200 `application/json` response
+func (r GetCatalogPlanResponse) GetJSON200() *Plan {
+	return r.JSON200
+}
+
+// GetJSONDefault returns the response for an HTTP default `application/json` response
+func (r GetCatalogPlanResponse) GetJSONDefault() *Error {
+	return r.JSONDefault
+}
+
+// GetBody returns the raw response body bytes
+func (r GetCatalogPlanResponse) GetBody() []byte {
+	return r.Body
+}
+
+// Status returns HTTPResponse.Status
+func (r GetCatalogPlanResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r GetCatalogPlanResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+// ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
+func (r GetCatalogPlanResponse) ContentType() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Header.Get("Content-Type")
+	}
+	return ""
+}
+
 // ListPricesResponse200Headers the declared response headers of an HTTP 200 response for ListPrices
 type ListPricesResponse200Headers struct {
 	ETag *string
@@ -14611,6 +15307,54 @@ func (r ListPricesResponse) ContentType() string {
 	return ""
 }
 
+type GetCatalogPriceResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	// JSON200 the response for an HTTP 200 `application/json` response
+	JSON200 *Price
+	// JSONDefault the response for an HTTP default `application/json` response
+	JSONDefault *Error
+}
+
+// GetJSON200 returns the response for an HTTP 200 `application/json` response
+func (r GetCatalogPriceResponse) GetJSON200() *Price {
+	return r.JSON200
+}
+
+// GetJSONDefault returns the response for an HTTP default `application/json` response
+func (r GetCatalogPriceResponse) GetJSONDefault() *Error {
+	return r.JSONDefault
+}
+
+// GetBody returns the raw response body bytes
+func (r GetCatalogPriceResponse) GetBody() []byte {
+	return r.Body
+}
+
+// Status returns HTTPResponse.Status
+func (r GetCatalogPriceResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r GetCatalogPriceResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+// ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
+func (r GetCatalogPriceResponse) ContentType() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Header.Get("Content-Type")
+	}
+	return ""
+}
+
 // ListProductsResponse200Headers the declared response headers of an HTTP 200 response for ListProducts
 type ListProductsResponse200Headers struct {
 	ETag *string
@@ -14667,6 +15411,54 @@ func (r ListProductsResponse) StatusCode() int {
 
 // ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
 func (r ListProductsResponse) ContentType() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Header.Get("Content-Type")
+	}
+	return ""
+}
+
+type GetCatalogProductResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	// JSON200 the response for an HTTP 200 `application/json` response
+	JSON200 *Product
+	// JSONDefault the response for an HTTP default `application/json` response
+	JSONDefault *Error
+}
+
+// GetJSON200 returns the response for an HTTP 200 `application/json` response
+func (r GetCatalogProductResponse) GetJSON200() *Product {
+	return r.JSON200
+}
+
+// GetJSONDefault returns the response for an HTTP default `application/json` response
+func (r GetCatalogProductResponse) GetJSONDefault() *Error {
+	return r.JSONDefault
+}
+
+// GetBody returns the raw response body bytes
+func (r GetCatalogProductResponse) GetBody() []byte {
+	return r.Body
+}
+
+// Status returns HTTPResponse.Status
+func (r GetCatalogProductResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r GetCatalogProductResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+// ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
+func (r GetCatalogProductResponse) ContentType() string {
 	if r.HTTPResponse != nil {
 		return r.HTTPResponse.Header.Get("Content-Type")
 	}
@@ -16109,6 +16901,43 @@ func (c *ClientWithResponses) CreateEstimateWithResponse(ctx context.Context, bo
 	return ParseCreateEstimateResponse(rsp)
 }
 
+// ListCatalogItemsWithResponse List what is on sale, with prices
+//
+// Every sellable thing and what it costs, in one request. A plan appears once per price.
+//
+// `currency` is required: a plan has a price in each currency it is sold in, so "what does
+// this cost" has no answer without one.
+//
+// Retired prices are left out. Existing subscriptions still reference them, so this is not
+// the place to look up what an existing purchase is paying.
+//
+// Returns a wrapper object for the known response body format(s).
+//
+// Corresponds with GET /catalog/v1/items (the `ListCatalogItems` operationId).
+func (c *ClientWithResponses) ListCatalogItemsWithResponse(ctx context.Context, params *ListCatalogItemsParams, reqEditors ...RequestEditorFn) (*ListCatalogItemsResponse, error) {
+	rsp, err := c.ListCatalogItems(ctx, params, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseListCatalogItemsResponse(rsp)
+}
+
+// GetCatalogPlanWithResponse Get a sellable item
+//
+// Resolves a stored identifier into something that can be displayed. Returns items that are
+// no longer on sale: an existing purchase still refers to one.
+//
+// Returns a wrapper object for the known response body format(s).
+//
+// Corresponds with GET /catalog/v1/plans/{planId} (the `GetCatalogPlan` operationId).
+func (c *ClientWithResponses) GetCatalogPlanWithResponse(ctx context.Context, planId openapi_types.UUID, params *GetCatalogPlanParams, reqEditors ...RequestEditorFn) (*GetCatalogPlanResponse, error) {
+	rsp, err := c.GetCatalogPlan(ctx, planId, params, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseGetCatalogPlanResponse(rsp)
+}
+
 // ListPricesWithResponse List catalog prices
 //
 // Public list prices only. An account holding a negotiated agreement may be charged less;
@@ -16125,6 +16954,22 @@ func (c *ClientWithResponses) ListPricesWithResponse(ctx context.Context, planId
 	return ParseListPricesResponse(rsp)
 }
 
+// GetCatalogPriceWithResponse Get a price
+//
+// Returns retired prices. An existing subscription still bills at the price it was bought
+// at, so this is how to show what that purchase is paying.
+//
+// Returns a wrapper object for the known response body format(s).
+//
+// Corresponds with GET /catalog/v1/prices/{priceId} (the `GetCatalogPrice` operationId).
+func (c *ClientWithResponses) GetCatalogPriceWithResponse(ctx context.Context, priceId openapi_types.UUID, params *GetCatalogPriceParams, reqEditors ...RequestEditorFn) (*GetCatalogPriceResponse, error) {
+	rsp, err := c.GetCatalogPrice(ctx, priceId, params, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseGetCatalogPriceResponse(rsp)
+}
+
 // ListProductsWithResponse List catalog products
 //
 // Returns a wrapper object for the known response body format(s).
@@ -16136,6 +16981,22 @@ func (c *ClientWithResponses) ListProductsWithResponse(ctx context.Context, para
 		return nil, err
 	}
 	return ParseListProductsResponse(rsp)
+}
+
+// GetCatalogProductWithResponse Get a service
+//
+// Resolves an identifier that was stored elsewhere — on an order line, an invoice line, or
+// the terms of a credit — into something that can be displayed.
+//
+// Returns a wrapper object for the known response body format(s).
+//
+// Corresponds with GET /catalog/v1/products/{productId} (the `GetCatalogProduct` operationId).
+func (c *ClientWithResponses) GetCatalogProductWithResponse(ctx context.Context, productId openapi_types.UUID, params *GetCatalogProductParams, reqEditors ...RequestEditorFn) (*GetCatalogProductResponse, error) {
+	rsp, err := c.GetCatalogProduct(ctx, productId, params, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseGetCatalogProductResponse(rsp)
 }
 
 // ListPlansWithResponse List catalog plans
@@ -18172,6 +19033,78 @@ func ParseCreateEstimateResponse(rsp *http.Response) (*CreateEstimateResponse, e
 	return response, nil
 }
 
+// ParseListCatalogItemsResponse parses an HTTP response from a ListCatalogItemsWithResponse call
+func ParseListCatalogItemsResponse(rsp *http.Response) (*ListCatalogItemsResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &ListCatalogItemsResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest CatalogItemList
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
+
+	case rsp.StatusCode == 304:
+		break // No content-type
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && true:
+		var dest Error
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSONDefault = &dest
+
+	}
+
+	return response, nil
+}
+
+// ParseGetCatalogPlanResponse parses an HTTP response from a GetCatalogPlanWithResponse call
+func ParseGetCatalogPlanResponse(rsp *http.Response) (*GetCatalogPlanResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &GetCatalogPlanResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest Plan
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
+
+	case rsp.StatusCode == 304:
+		break // No content-type
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && true:
+		var dest Error
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSONDefault = &dest
+
+	}
+
+	return response, nil
+}
+
 // ParseListPricesResponse parses an HTTP response from a ListPricesWithResponse call
 func ParseListPricesResponse(rsp *http.Response) (*ListPricesResponse, error) {
 	bodyBytes, err := io.ReadAll(rsp.Body)
@@ -18231,6 +19164,42 @@ func ParseListPricesResponse(rsp *http.Response) (*ListPricesResponse, error) {
 	return response, nil
 }
 
+// ParseGetCatalogPriceResponse parses an HTTP response from a GetCatalogPriceWithResponse call
+func ParseGetCatalogPriceResponse(rsp *http.Response) (*GetCatalogPriceResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &GetCatalogPriceResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest Price
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
+
+	case rsp.StatusCode == 304:
+		break // No content-type
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && true:
+		var dest Error
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSONDefault = &dest
+
+	}
+
+	return response, nil
+}
+
 // ParseListProductsResponse parses an HTTP response from a ListProductsWithResponse call
 func ParseListProductsResponse(rsp *http.Response) (*ListProductsResponse, error) {
 	bodyBytes, err := io.ReadAll(rsp.Body)
@@ -18285,6 +19254,42 @@ func ParseListProductsResponse(rsp *http.Response) (*ListProductsResponse, error
 			headers.ETag = &value
 		}
 		response.Headers304 = &headers
+	}
+
+	return response, nil
+}
+
+// ParseGetCatalogProductResponse parses an HTTP response from a GetCatalogProductWithResponse call
+func ParseGetCatalogProductResponse(rsp *http.Response) (*GetCatalogProductResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &GetCatalogProductResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest Product
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
+
+	case rsp.StatusCode == 304:
+		break // No content-type
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && true:
+		var dest Error
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSONDefault = &dest
+
 	}
 
 	return response, nil

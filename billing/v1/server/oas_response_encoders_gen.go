@@ -150,6 +150,78 @@ func encodeGetBillingAccountResponse(response *BillingAccount, w http.ResponseWr
 	return nil
 }
 
+func encodeGetCatalogPlanResponse(response GetCatalogPlanRes, w http.ResponseWriter, span trace.Span) error {
+	switch response := response.(type) {
+	case *Plan:
+		w.Header().Set("Content-Type", "application/json; charset=utf-8")
+		w.WriteHeader(200)
+
+		e := new(jx.Encoder)
+		response.Encode(e)
+		if _, err := e.WriteTo(w); err != nil {
+			return errors.Wrap(err, "write")
+		}
+
+		return nil
+
+	case *GetCatalogPlanNotModified:
+		w.WriteHeader(304)
+
+		return nil
+
+	default:
+		return errors.Errorf("unexpected response type: %T", response)
+	}
+}
+
+func encodeGetCatalogPriceResponse(response GetCatalogPriceRes, w http.ResponseWriter, span trace.Span) error {
+	switch response := response.(type) {
+	case *Price:
+		w.Header().Set("Content-Type", "application/json; charset=utf-8")
+		w.WriteHeader(200)
+
+		e := new(jx.Encoder)
+		response.Encode(e)
+		if _, err := e.WriteTo(w); err != nil {
+			return errors.Wrap(err, "write")
+		}
+
+		return nil
+
+	case *GetCatalogPriceNotModified:
+		w.WriteHeader(304)
+
+		return nil
+
+	default:
+		return errors.Errorf("unexpected response type: %T", response)
+	}
+}
+
+func encodeGetCatalogProductResponse(response GetCatalogProductRes, w http.ResponseWriter, span trace.Span) error {
+	switch response := response.(type) {
+	case *Product:
+		w.Header().Set("Content-Type", "application/json; charset=utf-8")
+		w.WriteHeader(200)
+
+		e := new(jx.Encoder)
+		response.Encode(e)
+		if _, err := e.WriteTo(w); err != nil {
+			return errors.Wrap(err, "write")
+		}
+
+		return nil
+
+	case *GetCatalogProductNotModified:
+		w.WriteHeader(304)
+
+		return nil
+
+	default:
+		return errors.Errorf("unexpected response type: %T", response)
+	}
+}
+
 func encodeGetInvoiceResponse(response *Invoice, w http.ResponseWriter, span trace.Span) error {
 	w.Header().Set("Content-Type", "application/json; charset=utf-8")
 	w.WriteHeader(200)
@@ -317,6 +389,30 @@ func encodeListBillingAccountsResponse(response *BillingAccountList, w http.Resp
 	}
 
 	return nil
+}
+
+func encodeListCatalogItemsResponse(response ListCatalogItemsRes, w http.ResponseWriter, span trace.Span) error {
+	switch response := response.(type) {
+	case *CatalogItemList:
+		w.Header().Set("Content-Type", "application/json; charset=utf-8")
+		w.WriteHeader(200)
+
+		e := new(jx.Encoder)
+		response.Encode(e)
+		if _, err := e.WriteTo(w); err != nil {
+			return errors.Wrap(err, "write")
+		}
+
+		return nil
+
+	case *ListCatalogItemsNotModified:
+		w.WriteHeader(304)
+
+		return nil
+
+	default:
+		return errors.Errorf("unexpected response type: %T", response)
+	}
 }
 
 func encodeListCommitmentsResponse(response *CommitmentList, w http.ResponseWriter, span trace.Span) error {

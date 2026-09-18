@@ -143,6 +143,36 @@ func (UnimplementedHandler) GetBillingAccount(ctx context.Context, params GetBil
 	return r, ht.ErrNotImplemented
 }
 
+// GetCatalogPlan implements get-catalog-plan operation.
+//
+// Resolves a stored identifier into something that can be displayed. Returns items that are no longer
+// on sale: an existing purchase still refers to one.
+//
+// GET /catalog/v1/plans/{planId}
+func (UnimplementedHandler) GetCatalogPlan(ctx context.Context, params GetCatalogPlanParams) (r GetCatalogPlanRes, _ error) {
+	return r, ht.ErrNotImplemented
+}
+
+// GetCatalogPrice implements get-catalog-price operation.
+//
+// Returns retired prices. An existing subscription still bills at the price it was bought at, so this
+// is how to show what that purchase is paying.
+//
+// GET /catalog/v1/prices/{priceId}
+func (UnimplementedHandler) GetCatalogPrice(ctx context.Context, params GetCatalogPriceParams) (r GetCatalogPriceRes, _ error) {
+	return r, ht.ErrNotImplemented
+}
+
+// GetCatalogProduct implements get-catalog-product operation.
+//
+// Resolves an identifier that was stored elsewhere — on an order line, an invoice line, or the terms
+// of a credit — into something that can be displayed.
+//
+// GET /catalog/v1/products/{productId}
+func (UnimplementedHandler) GetCatalogProduct(ctx context.Context, params GetCatalogProductParams) (r GetCatalogProductRes, _ error) {
+	return r, ht.ErrNotImplemented
+}
+
 // GetInvoice implements get-invoice operation.
 //
 // Get invoice.
@@ -292,6 +322,21 @@ func (UnimplementedHandler) ListAllowances(ctx context.Context, params ListAllow
 //
 // GET /account/v1/billing-accounts
 func (UnimplementedHandler) ListBillingAccounts(ctx context.Context, params ListBillingAccountsParams) (r *BillingAccountList, _ error) {
+	return r, ht.ErrNotImplemented
+}
+
+// ListCatalogItems implements list-catalog-items operation.
+//
+// Every sellable thing and what it costs, in one request. A plan appears once per price.
+//
+// `currency` is required: a plan has a price in each currency it is sold in, so "what does this cost"
+// has no answer without one.
+//
+// Retired prices are left out. Existing subscriptions still reference them, so this is not the place
+// to look up what an existing purchase is paying.
+//
+// GET /catalog/v1/items
+func (UnimplementedHandler) ListCatalogItems(ctx context.Context, params ListCatalogItemsParams) (r ListCatalogItemsRes, _ error) {
 	return r, ht.ErrNotImplemented
 }
 
