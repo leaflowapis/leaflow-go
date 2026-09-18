@@ -17406,10 +17406,8 @@ func (s *RefundSourceType) Decode(d *jx.Decoder) error {
 	switch RefundSourceType(v) {
 	case RefundSourceTypeCash:
 		*s = RefundSourceTypeCash
-	case RefundSourceTypeCredit:
-		*s = RefundSourceTypeCredit
-	case RefundSourceTypeVoucher:
-		*s = RefundSourceTypeVoucher
+	case RefundSourceTypeGranted:
+		*s = RefundSourceTypeGranted
 	default:
 		*s = RefundSourceType(v)
 	}

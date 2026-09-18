@@ -10569,8 +10569,9 @@ func (s *RefundRequest) SetIdempotencyKey(val string) {
 
 // Ref: #/components/schemas/RefundSource
 type RefundSource struct {
-	// Where this part of the money came from, and therefore where it goes back to. Only `cash` can reach a
-	// card or a spendable balance; credit and vouchers return to themselves and never become cash.
+	// Where this part of the money came from, and therefore where it returns to. Only `cash` can reach a
+	// card or a spendable balance. Granted funds return to the grant that issued them and never become
+	// cash.
 	Type   RefundSourceType `json:"type"`
 	Amount Money            `json:"amount"`
 }
@@ -10595,22 +10596,21 @@ func (s *RefundSource) SetAmount(val Money) {
 	s.Amount = val
 }
 
-// Where this part of the money came from, and therefore where it goes back to. Only `cash` can reach a
-// card or a spendable balance; credit and vouchers return to themselves and never become cash.
+// Where this part of the money came from, and therefore where it returns to. Only `cash` can reach a
+// card or a spendable balance. Granted funds return to the grant that issued them and never become
+// cash.
 type RefundSourceType string
 
 const (
 	RefundSourceTypeCash    RefundSourceType = "cash"
-	RefundSourceTypeCredit  RefundSourceType = "credit"
-	RefundSourceTypeVoucher RefundSourceType = "voucher"
+	RefundSourceTypeGranted RefundSourceType = "granted"
 )
 
 // AllValues returns all RefundSourceType values.
 func (RefundSourceType) AllValues() []RefundSourceType {
 	return []RefundSourceType{
 		RefundSourceTypeCash,
-		RefundSourceTypeCredit,
-		RefundSourceTypeVoucher,
+		RefundSourceTypeGranted,
 	}
 }
 
@@ -10619,9 +10619,7 @@ func (s RefundSourceType) MarshalText() ([]byte, error) {
 	switch s {
 	case RefundSourceTypeCash:
 		return []byte(s), nil
-	case RefundSourceTypeCredit:
-		return []byte(s), nil
-	case RefundSourceTypeVoucher:
+	case RefundSourceTypeGranted:
 		return []byte(s), nil
 	default:
 		return nil, errors.Errorf("invalid value: %q", s)
@@ -10634,11 +10632,8 @@ func (s *RefundSourceType) UnmarshalText(data []byte) error {
 	case RefundSourceTypeCash:
 		*s = RefundSourceTypeCash
 		return nil
-	case RefundSourceTypeCredit:
-		*s = RefundSourceTypeCredit
-		return nil
-	case RefundSourceTypeVoucher:
-		*s = RefundSourceTypeVoucher
+	case RefundSourceTypeGranted:
+		*s = RefundSourceTypeGranted
 		return nil
 	default:
 		return errors.Errorf("invalid value: %q", data)

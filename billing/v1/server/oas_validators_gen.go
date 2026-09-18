@@ -3628,9 +3628,7 @@ func (s RefundSourceType) Validate() error {
 	switch s {
 	case "cash":
 		return nil
-	case "credit":
-		return nil
-	case "voucher":
+	case "granted":
 		return nil
 	default:
 		return errors.Errorf("invalid value: %v", s)

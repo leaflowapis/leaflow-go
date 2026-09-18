@@ -945,19 +945,16 @@ func (e RefundQuoteCashDestination) Valid() bool {
 
 // Defines values for RefundSourceType.
 const (
-	RefundSourceTypeCash    RefundSourceType = "cash"
-	RefundSourceTypeCredit  RefundSourceType = "credit"
-	RefundSourceTypeVoucher RefundSourceType = "voucher"
+	Cash    RefundSourceType = "cash"
+	Granted RefundSourceType = "granted"
 )
 
 // Valid indicates whether the value is a known member of the RefundSourceType enum.
 func (e RefundSourceType) Valid() bool {
 	switch e {
-	case RefundSourceTypeCash:
+	case Cash:
 		return true
-	case RefundSourceTypeCredit:
-		return true
-	case RefundSourceTypeVoucher:
+	case Granted:
 		return true
 	default:
 		return false
@@ -2931,15 +2928,15 @@ type RefundSource struct {
 	// through a float.
 	Amount externalRef0.Money `json:"amount"`
 
-	// Type Where this part of the money came from, and therefore where it goes back to.
-	// Only `cash` can reach a card or a spendable balance; credit and vouchers return
-	// to themselves and never become cash.
+	// Type Where this part of the money came from, and therefore where it returns to. Only
+	// `cash` can reach a card or a spendable balance. Granted funds return to the grant
+	// that issued them and never become cash.
 	Type RefundSourceType `json:"type"`
 }
 
-// RefundSourceType Where this part of the money came from, and therefore where it goes back to.
-// Only `cash` can reach a card or a spendable balance; credit and vouchers return
-// to themselves and never become cash.
+// RefundSourceType Where this part of the money came from, and therefore where it returns to. Only
+// `cash` can reach a card or a spendable balance. Granted funds return to the grant
+// that issued them and never become cash.
 type RefundSourceType string
 
 // RenewRequest defines model for RenewRequest.
