@@ -8857,7 +8857,7 @@ const (
 	ProjectClosureItemTypeOrder                    ProjectClosureItemType = "order"
 	ProjectClosureItemTypeSubscriptionItem         ProjectClosureItemType = "subscription_item"
 	ProjectClosureItemTypeActiveResource           ProjectClosureItemType = "active_resource"
-	ProjectClosureItemTypeResourceOperation        ProjectClosureItemType = "resource_operation"
+	ProjectClosureItemTypeJob                      ProjectClosureItemType = "job"
 	ProjectClosureItemTypeSubscriptionCancellation ProjectClosureItemType = "subscription_cancellation"
 	ProjectClosureItemTypeUsageCharge              ProjectClosureItemType = "usage_charge"
 	ProjectClosureItemTypeCommitment               ProjectClosureItemType = "commitment"
@@ -8869,7 +8869,7 @@ func (ProjectClosureItemType) AllValues() []ProjectClosureItemType {
 		ProjectClosureItemTypeOrder,
 		ProjectClosureItemTypeSubscriptionItem,
 		ProjectClosureItemTypeActiveResource,
-		ProjectClosureItemTypeResourceOperation,
+		ProjectClosureItemTypeJob,
 		ProjectClosureItemTypeSubscriptionCancellation,
 		ProjectClosureItemTypeUsageCharge,
 		ProjectClosureItemTypeCommitment,
@@ -8885,7 +8885,7 @@ func (s ProjectClosureItemType) MarshalText() ([]byte, error) {
 		return []byte(s), nil
 	case ProjectClosureItemTypeActiveResource:
 		return []byte(s), nil
-	case ProjectClosureItemTypeResourceOperation:
+	case ProjectClosureItemTypeJob:
 		return []byte(s), nil
 	case ProjectClosureItemTypeSubscriptionCancellation:
 		return []byte(s), nil
@@ -8910,8 +8910,8 @@ func (s *ProjectClosureItemType) UnmarshalText(data []byte) error {
 	case ProjectClosureItemTypeActiveResource:
 		*s = ProjectClosureItemTypeActiveResource
 		return nil
-	case ProjectClosureItemTypeResourceOperation:
-		*s = ProjectClosureItemTypeResourceOperation
+	case ProjectClosureItemTypeJob:
+		*s = ProjectClosureItemTypeJob
 		return nil
 	case ProjectClosureItemTypeSubscriptionCancellation:
 		*s = ProjectClosureItemTypeSubscriptionCancellation

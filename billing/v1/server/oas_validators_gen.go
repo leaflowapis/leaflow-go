@@ -2958,7 +2958,7 @@ func (s ProjectClosureItemType) Validate() error {
 		return nil
 	case "active_resource":
 		return nil
-	case "resource_operation":
+	case "job":
 		return nil
 	case "subscription_cancellation":
 		return nil

@@ -719,8 +719,8 @@ func (e ProjectClosureItemDisposition) Valid() bool {
 const (
 	ProjectClosureItemTypeActiveResource           ProjectClosureItemType = "active_resource"
 	ProjectClosureItemTypeCommitment               ProjectClosureItemType = "commitment"
+	ProjectClosureItemTypeJob                      ProjectClosureItemType = "job"
 	ProjectClosureItemTypeOrder                    ProjectClosureItemType = "order"
-	ProjectClosureItemTypeResourceOperation        ProjectClosureItemType = "resource_operation"
 	ProjectClosureItemTypeSubscriptionCancellation ProjectClosureItemType = "subscription_cancellation"
 	ProjectClosureItemTypeSubscriptionItem         ProjectClosureItemType = "subscription_item"
 	ProjectClosureItemTypeUsageCharge              ProjectClosureItemType = "usage_charge"
@@ -733,9 +733,9 @@ func (e ProjectClosureItemType) Valid() bool {
 		return true
 	case ProjectClosureItemTypeCommitment:
 		return true
-	case ProjectClosureItemTypeOrder:
+	case ProjectClosureItemTypeJob:
 		return true
-	case ProjectClosureItemTypeResourceOperation:
+	case ProjectClosureItemTypeOrder:
 		return true
 	case ProjectClosureItemTypeSubscriptionCancellation:
 		return true

@@ -14022,8 +14022,8 @@ func (s *ProjectClosureItemType) Decode(d *jx.Decoder) error {
 		*s = ProjectClosureItemTypeSubscriptionItem
 	case ProjectClosureItemTypeActiveResource:
 		*s = ProjectClosureItemTypeActiveResource
-	case ProjectClosureItemTypeResourceOperation:
-		*s = ProjectClosureItemTypeResourceOperation
+	case ProjectClosureItemTypeJob:
+		*s = ProjectClosureItemTypeJob
 	case ProjectClosureItemTypeSubscriptionCancellation:
 		*s = ProjectClosureItemTypeSubscriptionCancellation
 	case ProjectClosureItemTypeUsageCharge:
