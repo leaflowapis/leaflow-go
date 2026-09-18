@@ -4027,6 +4027,10 @@ func (s *Server) handleListAccountDiscountsRequest(args [0]string, argsEscaped b
 					Name: "page_size",
 					In:   "query",
 				}: params.PageSize,
+				{
+					Name: "billing_account_id",
+					In:   "query",
+				}: params.BillingAccountID,
 			},
 			Raw: r,
 		}

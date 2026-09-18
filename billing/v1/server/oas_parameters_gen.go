@@ -1376,6 +1376,8 @@ type ListAccountDiscountsParams struct {
 	Page OptInt32 `json:",omitempty,omitzero"`
 	// How many per page, 100 at most.
 	PageSize OptInt32 `json:",omitempty,omitzero"`
+	// Restrict to one of your accounts. All of them when omitted.
+	BillingAccountID OptInt64 `json:",omitempty,omitzero"`
 }
 
 func unpackListAccountDiscountsParams(packed middleware.Parameters) (params ListAccountDiscountsParams) {
@@ -1395,6 +1397,15 @@ func unpackListAccountDiscountsParams(packed middleware.Parameters) (params List
 		}
 		if v, ok := packed[key]; ok {
 			params.PageSize = v.(OptInt32)
+		}
+	}
+	{
+		key := middleware.ParameterKey{
+			Name: "billing_account_id",
+			In:   "query",
+		}
+		if v, ok := packed[key]; ok {
+			params.BillingAccountID = v.(OptInt64)
 		}
 	}
 	return params
@@ -1530,6 +1541,47 @@ func decodeListAccountDiscountsParams(args [0]string, argsEscaped bool, r *http.
 	}(); err != nil {
 		return params, &ogenerrors.DecodeParamError{
 			Name: "page_size",
+			In:   "query",
+			Err:  err,
+		}
+	}
+	// Decode query: billing_account_id.
+	if err := func() error {
+		cfg := uri.QueryParameterDecodingConfig{
+			Name:    "billing_account_id",
+			Style:   uri.QueryStyleForm,
+			Explode: true,
+		}
+
+		if err := q.HasParam(cfg); err == nil {
+			if err := q.DecodeParam(cfg, func(d uri.Decoder) error {
+				var paramsDotBillingAccountIDVal int64
+				if err := func() error {
+					val, err := d.DecodeValue()
+					if err != nil {
+						return err
+					}
+
+					c, err := conv.ToInt64(val)
+					if err != nil {
+						return err
+					}
+
+					paramsDotBillingAccountIDVal = c
+					return nil
+				}(); err != nil {
+					return err
+				}
+				params.BillingAccountID.SetTo(paramsDotBillingAccountIDVal)
+				return nil
+			}); err != nil {
+				return err
+			}
+		}
+		return nil
+	}(); err != nil {
+		return params, &ogenerrors.DecodeParamError{
+			Name: "billing_account_id",
 			In:   "query",
 			Err:  err,
 		}
