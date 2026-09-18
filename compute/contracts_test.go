@@ -7,20 +7,22 @@ import (
 	computev1server "github.com/leaflowapis/leaflow-go/compute/v1/server"
 )
 
-func TestPriceReferenceRequiresExactlyOneSelector(t *testing.T) {
+// Ordering names a price by id. The selector object it used to take was removed when compute
+// started taking a price id, and this pins the id being required and being a uuid: a request
+// without one would otherwise reach billing with nothing to price.
+func TestLaunchRequiresAPriceID(t *testing.T) {
+	const rest = `"name":"example","instance_type_id":"018f0310-650f-7425-927e-11d0af2fcb1f","order":{"idempotency_key":"purchase-123"}`
 	for _, test := range []struct {
 		name, payload string
 		valid         bool
 	}{
-		{"id", `{"id":"018f0310-650f-7425-927e-11d0af2fcb1f"}`, true},
-		{"lookup", `{"lookup_key":"standard-metered"}`, true},
-		{"empty", `{}`, false},
-		{"ambiguous", `{"id":"018f0310-650f-7425-927e-11d0af2fcb1f","lookup_key":"standard-metered"}`, false},
-		{"empty lookup", `{"lookup_key":""}`, false},
-		{"legacy key", `{"price_key":"standard-metered"}`, false},
+		{"id", `{` + rest + `,"price_id":"018f0310-650f-7425-927e-11d0af2fcb1f"}`, true},
+		{"missing", `{` + rest + `}`, false},
+		{"not a uuid", `{` + rest + `,"price_id":"standard-metered"}`, false},
+		{"retired selector", `{` + rest + `,"price":{"lookup_key":"standard-metered"}}`, false},
 	} {
 		t.Run(test.name, func(t *testing.T) {
-			var value computev1server.CatalogReference
+			var value computev1server.LaunchInstanceRequestBody
 			err := json.Unmarshal([]byte(test.payload), &value)
 			if err == nil {
 				err = value.Validate()
@@ -56,7 +58,7 @@ func TestOrderFundingRequiresDecimalStrings(t *testing.T) {
 }
 
 func TestLaunchRejectsRetiredPaymentFields(t *testing.T) {
-	const body = `{"name":"example","instance_type_id":"018f0310-650f-7425-927e-11d0af2fcb1f","order":{"idempotency_key":"purchase-123"},"price":{"lookup_key":"standard-metered"}`
+	const body = `{"name":"example","instance_type_id":"018f0310-650f-7425-927e-11d0af2fcb1f","order":{"idempotency_key":"purchase-123"},"price_id":"018f0310-650f-7425-927e-11d0af2fcb1f"`
 	for _, field := range []string{`"term":"P1M"`, `"payment_method":"online"`, `"promotion_code":"old"`} {
 		var value computev1server.LaunchInstanceRequestBody
 		if err := json.Unmarshal([]byte(body+","+field+"}"), &value); err == nil {
