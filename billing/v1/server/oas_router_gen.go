@@ -183,22 +183,22 @@ var (
 		"POST": "Content-Type",
 	}
 	rn53AllowedHeaders = map[string]string{
-		"GET": "Authorization,If-None-Match",
+		"GET": "If-None-Match",
 	}
 	rn27AllowedHeaders = map[string]string{
-		"GET": "Authorization,If-None-Match",
+		"GET": "If-None-Match",
 	}
 	rn66AllowedHeaders = map[string]string{
 		"GET": "If-None-Match",
 	}
 	rn30AllowedHeaders = map[string]string{
-		"GET": "Authorization,If-None-Match",
+		"GET": "If-None-Match",
 	}
 	rn67AllowedHeaders = map[string]string{
 		"GET": "If-None-Match",
 	}
 	rn33AllowedHeaders = map[string]string{
-		"GET": "Authorization,If-None-Match",
+		"GET": "If-None-Match",
 	}
 	rn65AllowedHeaders = map[string]string{
 		"GET": "If-None-Match",
