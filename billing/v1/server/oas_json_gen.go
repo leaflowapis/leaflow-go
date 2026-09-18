@@ -2025,10 +2025,50 @@ func (s *Applicability) encodeFields(e *jx.Encoder) {
 		}
 	}
 	{
+		if s.ExcludedProductIds != nil {
+			e.FieldStart("excluded_product_ids")
+			e.ArrStart()
+			for _, elem := range s.ExcludedProductIds {
+				json.EncodeUUID(e, elem)
+			}
+			e.ArrEnd()
+		}
+	}
+	{
 		if s.PlanIds != nil {
 			e.FieldStart("plan_ids")
 			e.ArrStart()
 			for _, elem := range s.PlanIds {
+				json.EncodeUUID(e, elem)
+			}
+			e.ArrEnd()
+		}
+	}
+	{
+		if s.ExcludedPlanIds != nil {
+			e.FieldStart("excluded_plan_ids")
+			e.ArrStart()
+			for _, elem := range s.ExcludedPlanIds {
+				json.EncodeUUID(e, elem)
+			}
+			e.ArrEnd()
+		}
+	}
+	{
+		if s.PriceIds != nil {
+			e.FieldStart("price_ids")
+			e.ArrStart()
+			for _, elem := range s.PriceIds {
+				json.EncodeUUID(e, elem)
+			}
+			e.ArrEnd()
+		}
+	}
+	{
+		if s.ExcludedPriceIds != nil {
+			e.FieldStart("excluded_price_ids")
+			e.ArrStart()
+			for _, elem := range s.ExcludedPriceIds {
 				json.EncodeUUID(e, elem)
 			}
 			e.ArrEnd()
@@ -2066,15 +2106,33 @@ func (s *Applicability) encodeFields(e *jx.Encoder) {
 			s.MinAmount.Encode(e)
 		}
 	}
+	{
+		if s.MinTermMonths.Set {
+			e.FieldStart("min_term_months")
+			s.MinTermMonths.Encode(e)
+		}
+	}
+	{
+		if s.MaxTermMonths.Set {
+			e.FieldStart("max_term_months")
+			s.MaxTermMonths.Encode(e)
+		}
+	}
 }
 
-var jsonFieldsNameOfApplicability = [6]string{
-	0: "product_ids",
-	1: "plan_ids",
-	2: "price_types",
-	3: "operations",
-	4: "first_purchase_only",
-	5: "min_amount",
+var jsonFieldsNameOfApplicability = [12]string{
+	0:  "product_ids",
+	1:  "excluded_product_ids",
+	2:  "plan_ids",
+	3:  "excluded_plan_ids",
+	4:  "price_ids",
+	5:  "excluded_price_ids",
+	6:  "price_types",
+	7:  "operations",
+	8:  "first_purchase_only",
+	9:  "min_amount",
+	10: "min_term_months",
+	11: "max_term_months",
 }
 
 // Decode decodes Applicability from json.
@@ -2104,6 +2162,25 @@ func (s *Applicability) Decode(d *jx.Decoder) error {
 			}(); err != nil {
 				return errors.Wrap(err, "decode field \"product_ids\"")
 			}
+		case "excluded_product_ids":
+			if err := func() error {
+				s.ExcludedProductIds = make([]uuid.UUID, 0)
+				if err := d.Arr(func(d *jx.Decoder) error {
+					var elem uuid.UUID
+					v, err := json.DecodeUUID(d)
+					elem = v
+					if err != nil {
+						return err
+					}
+					s.ExcludedProductIds = append(s.ExcludedProductIds, elem)
+					return nil
+				}); err != nil {
+					return err
+				}
+				return nil
+			}(); err != nil {
+				return errors.Wrap(err, "decode field \"excluded_product_ids\"")
+			}
 		case "plan_ids":
 			if err := func() error {
 				s.PlanIds = make([]uuid.UUID, 0)
@@ -2122,6 +2199,63 @@ func (s *Applicability) Decode(d *jx.Decoder) error {
 				return nil
 			}(); err != nil {
 				return errors.Wrap(err, "decode field \"plan_ids\"")
+			}
+		case "excluded_plan_ids":
+			if err := func() error {
+				s.ExcludedPlanIds = make([]uuid.UUID, 0)
+				if err := d.Arr(func(d *jx.Decoder) error {
+					var elem uuid.UUID
+					v, err := json.DecodeUUID(d)
+					elem = v
+					if err != nil {
+						return err
+					}
+					s.ExcludedPlanIds = append(s.ExcludedPlanIds, elem)
+					return nil
+				}); err != nil {
+					return err
+				}
+				return nil
+			}(); err != nil {
+				return errors.Wrap(err, "decode field \"excluded_plan_ids\"")
+			}
+		case "price_ids":
+			if err := func() error {
+				s.PriceIds = make([]uuid.UUID, 0)
+				if err := d.Arr(func(d *jx.Decoder) error {
+					var elem uuid.UUID
+					v, err := json.DecodeUUID(d)
+					elem = v
+					if err != nil {
+						return err
+					}
+					s.PriceIds = append(s.PriceIds, elem)
+					return nil
+				}); err != nil {
+					return err
+				}
+				return nil
+			}(); err != nil {
+				return errors.Wrap(err, "decode field \"price_ids\"")
+			}
+		case "excluded_price_ids":
+			if err := func() error {
+				s.ExcludedPriceIds = make([]uuid.UUID, 0)
+				if err := d.Arr(func(d *jx.Decoder) error {
+					var elem uuid.UUID
+					v, err := json.DecodeUUID(d)
+					elem = v
+					if err != nil {
+						return err
+					}
+					s.ExcludedPriceIds = append(s.ExcludedPriceIds, elem)
+					return nil
+				}); err != nil {
+					return err
+				}
+				return nil
+			}(); err != nil {
+				return errors.Wrap(err, "decode field \"excluded_price_ids\"")
 			}
 		case "price_types":
 			if err := func() error {
@@ -2178,6 +2312,26 @@ func (s *Applicability) Decode(d *jx.Decoder) error {
 				return nil
 			}(); err != nil {
 				return errors.Wrap(err, "decode field \"min_amount\"")
+			}
+		case "min_term_months":
+			if err := func() error {
+				s.MinTermMonths.Reset()
+				if err := s.MinTermMonths.Decode(d); err != nil {
+					return err
+				}
+				return nil
+			}(); err != nil {
+				return errors.Wrap(err, "decode field \"min_term_months\"")
+			}
+		case "max_term_months":
+			if err := func() error {
+				s.MaxTermMonths.Reset()
+				if err := s.MaxTermMonths.Decode(d); err != nil {
+					return err
+				}
+				return nil
+			}(); err != nil {
+				return errors.Wrap(err, "decode field \"max_term_months\"")
 			}
 		default:
 			return d.Skip()
@@ -3546,10 +3700,14 @@ func (s *CodeRejection) Decode(d *jx.Decoder) error {
 		*s = CodeRejectionProductNotCovered
 	case CodeRejectionPlanNotCovered:
 		*s = CodeRejectionPlanNotCovered
+	case CodeRejectionPriceNotCovered:
+		*s = CodeRejectionPriceNotCovered
 	case CodeRejectionPriceTypeNotCovered:
 		*s = CodeRejectionPriceTypeNotCovered
 	case CodeRejectionOperationNotCovered:
 		*s = CodeRejectionOperationNotCovered
+	case CodeRejectionTermNotCovered:
+		*s = CodeRejectionTermNotCovered
 	case CodeRejectionNotFirstPurchase:
 		*s = CodeRejectionNotFirstPurchase
 	case CodeRejectionBelowMinimum:

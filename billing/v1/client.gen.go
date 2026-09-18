@@ -155,8 +155,10 @@ const (
 	CodeRejectionNotYetValid         CodeRejection = "not_yet_valid"
 	CodeRejectionOperationNotCovered CodeRejection = "operation_not_covered"
 	CodeRejectionPlanNotCovered      CodeRejection = "plan_not_covered"
+	CodeRejectionPriceNotCovered     CodeRejection = "price_not_covered"
 	CodeRejectionPriceTypeNotCovered CodeRejection = "price_type_not_covered"
 	CodeRejectionProductNotCovered   CodeRejection = "product_not_covered"
+	CodeRejectionTermNotCovered      CodeRejection = "term_not_covered"
 )
 
 // Valid indicates whether the value is a known member of the CodeRejection enum.
@@ -184,9 +186,13 @@ func (e CodeRejection) Valid() bool {
 		return true
 	case CodeRejectionPlanNotCovered:
 		return true
+	case CodeRejectionPriceNotCovered:
+		return true
 	case CodeRejectionPriceTypeNotCovered:
 		return true
 	case CodeRejectionProductNotCovered:
+		return true
+	case CodeRejectionTermNotCovered:
 		return true
 	default:
 		return false
@@ -1352,9 +1358,18 @@ type AllowanceList struct {
 //
 // A line qualifies when it satisfies every field that is set. `min_amount` is then
 // measured against **the qualifying lines only**, not the order total.
+//
+// An entry listed under `excluded_*` never qualifies, even when another field includes it.
 type Applicability struct {
+	ExcludedPlanIds    []openapi_types.UUID `json:"excluded_plan_ids,omitempty"`
+	ExcludedPriceIds   []openapi_types.UUID `json:"excluded_price_ids,omitempty"`
+	ExcludedProductIds []openapi_types.UUID `json:"excluded_product_ids,omitempty"`
+
 	// FirstPurchaseOnly Restricted to your first purchase of a covered product.
 	FirstPurchaseOnly *bool `json:"first_purchase_only,omitempty"`
+
+	// MaxTermMonths The longest term a purchase may have, in months.
+	MaxTermMonths *int `json:"max_term_months,omitempty"`
 
 	// MinAmount A decimal string, in the currency stated alongside it.
 	//
@@ -1365,11 +1380,16 @@ type Applicability struct {
 	// It is a string rather than a JSON number because a JSON number is a float in most parsers,
 	// and a float loses precision on the first arithmetic. Nothing on this platform puts an amount
 	// through a float.
-	MinAmount  *externalRef0.Money  `json:"min_amount,omitempty"`
-	Operations []PurchaseOperation  `json:"operations,omitempty"`
-	PlanIds    []openapi_types.UUID `json:"plan_ids,omitempty"`
-	PriceTypes []string             `json:"price_types,omitempty"`
-	ProductIds []openapi_types.UUID `json:"product_ids,omitempty"`
+	MinAmount *externalRef0.Money `json:"min_amount,omitempty"`
+
+	// MinTermMonths The shortest term a purchase may have, in months. A purchase with no term, such as
+	// metered usage, never qualifies while this is set.
+	MinTermMonths *int                 `json:"min_term_months,omitempty"`
+	Operations    []PurchaseOperation  `json:"operations,omitempty"`
+	PlanIds       []openapi_types.UUID `json:"plan_ids,omitempty"`
+	PriceIds      []openapi_types.UUID `json:"price_ids,omitempty"`
+	PriceTypes    []string             `json:"price_types,omitempty"`
+	ProductIds    []openapi_types.UUID `json:"product_ids,omitempty"`
 }
 
 // AutoRenewSet defines model for AutoRenewSet.
@@ -1458,6 +1478,9 @@ type CodePreview struct {
 	// `operation_not_covered` means the code is limited to certain purchase actions — a
 	// first-purchase code presented for a renewal, for example.
 	//
+	// `term_not_covered` means the code is limited to certain term lengths. A purchase with
+	// no term, such as metered usage, is reported the same way.
+	//
 	// `below_minimum` is accompanied by `shortfall`.
 	ApplicableReason *CodeRejection `json:"applicable_reason,omitempty"`
 
@@ -1494,6 +1517,9 @@ type CodePreview struct {
 	// `operation_not_covered` means the code is limited to certain purchase actions — a
 	// first-purchase code presented for a renewal, for example.
 	//
+	// `term_not_covered` means the code is limited to certain term lengths. A purchase with
+	// no term, such as metered usage, is reported the same way.
+	//
 	// `below_minimum` is accompanied by `shortfall`.
 	Reason *CodeRejection `json:"reason,omitempty"`
 
@@ -1516,6 +1542,9 @@ type CodePreview struct {
 //
 // `operation_not_covered` means the code is limited to certain purchase actions — a
 // first-purchase code presented for a renewal, for example.
+//
+// `term_not_covered` means the code is limited to certain term lengths. A purchase with
+// no term, such as metered usage, is reported the same way.
 //
 // `below_minimum` is accompanied by `shortfall`.
 type CodeRejection string

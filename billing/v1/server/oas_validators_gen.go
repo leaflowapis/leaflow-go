@@ -1022,9 +1022,13 @@ func (s CodeRejection) Validate() error {
 		return nil
 	case "plan_not_covered":
 		return nil
+	case "price_not_covered":
+		return nil
 	case "price_type_not_covered":
 		return nil
 	case "operation_not_covered":
+		return nil
+	case "term_not_covered":
 		return nil
 	case "not_first_purchase":
 		return nil

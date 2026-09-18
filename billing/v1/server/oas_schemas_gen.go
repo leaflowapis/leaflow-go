@@ -972,15 +972,26 @@ func (s *AllowanceStatus) UnmarshalText(data []byte) error {
 //
 // A line qualifies when it satisfies every field that is set. `min_amount` is then measured against
 // the qualifying lines only, not the order total.
+//
+// An entry listed under `excluded_*` never qualifies, even when another field includes it.
 // Ref: #/components/schemas/Applicability
 type Applicability struct {
-	ProductIds []uuid.UUID         `json:"product_ids"`
-	PlanIds    []uuid.UUID         `json:"plan_ids"`
-	PriceTypes []string            `json:"price_types"`
-	Operations []PurchaseOperation `json:"operations"`
+	ProductIds         []uuid.UUID         `json:"product_ids"`
+	ExcludedProductIds []uuid.UUID         `json:"excluded_product_ids"`
+	PlanIds            []uuid.UUID         `json:"plan_ids"`
+	ExcludedPlanIds    []uuid.UUID         `json:"excluded_plan_ids"`
+	PriceIds           []uuid.UUID         `json:"price_ids"`
+	ExcludedPriceIds   []uuid.UUID         `json:"excluded_price_ids"`
+	PriceTypes         []string            `json:"price_types"`
+	Operations         []PurchaseOperation `json:"operations"`
 	// Restricted to your first purchase of a covered product.
 	FirstPurchaseOnly OptBool  `json:"first_purchase_only"`
 	MinAmount         OptMoney `json:"min_amount"`
+	// The shortest term a purchase may have, in months. A purchase with no term, such as metered usage,
+	// never qualifies while this is set.
+	MinTermMonths OptInt `json:"min_term_months"`
+	// The longest term a purchase may have, in months.
+	MaxTermMonths OptInt `json:"max_term_months"`
 }
 
 // GetProductIds returns the value of ProductIds.
@@ -988,9 +999,29 @@ func (s *Applicability) GetProductIds() []uuid.UUID {
 	return s.ProductIds
 }
 
+// GetExcludedProductIds returns the value of ExcludedProductIds.
+func (s *Applicability) GetExcludedProductIds() []uuid.UUID {
+	return s.ExcludedProductIds
+}
+
 // GetPlanIds returns the value of PlanIds.
 func (s *Applicability) GetPlanIds() []uuid.UUID {
 	return s.PlanIds
+}
+
+// GetExcludedPlanIds returns the value of ExcludedPlanIds.
+func (s *Applicability) GetExcludedPlanIds() []uuid.UUID {
+	return s.ExcludedPlanIds
+}
+
+// GetPriceIds returns the value of PriceIds.
+func (s *Applicability) GetPriceIds() []uuid.UUID {
+	return s.PriceIds
+}
+
+// GetExcludedPriceIds returns the value of ExcludedPriceIds.
+func (s *Applicability) GetExcludedPriceIds() []uuid.UUID {
+	return s.ExcludedPriceIds
 }
 
 // GetPriceTypes returns the value of PriceTypes.
@@ -1013,14 +1044,44 @@ func (s *Applicability) GetMinAmount() OptMoney {
 	return s.MinAmount
 }
 
+// GetMinTermMonths returns the value of MinTermMonths.
+func (s *Applicability) GetMinTermMonths() OptInt {
+	return s.MinTermMonths
+}
+
+// GetMaxTermMonths returns the value of MaxTermMonths.
+func (s *Applicability) GetMaxTermMonths() OptInt {
+	return s.MaxTermMonths
+}
+
 // SetProductIds sets the value of ProductIds.
 func (s *Applicability) SetProductIds(val []uuid.UUID) {
 	s.ProductIds = val
 }
 
+// SetExcludedProductIds sets the value of ExcludedProductIds.
+func (s *Applicability) SetExcludedProductIds(val []uuid.UUID) {
+	s.ExcludedProductIds = val
+}
+
 // SetPlanIds sets the value of PlanIds.
 func (s *Applicability) SetPlanIds(val []uuid.UUID) {
 	s.PlanIds = val
+}
+
+// SetExcludedPlanIds sets the value of ExcludedPlanIds.
+func (s *Applicability) SetExcludedPlanIds(val []uuid.UUID) {
+	s.ExcludedPlanIds = val
+}
+
+// SetPriceIds sets the value of PriceIds.
+func (s *Applicability) SetPriceIds(val []uuid.UUID) {
+	s.PriceIds = val
+}
+
+// SetExcludedPriceIds sets the value of ExcludedPriceIds.
+func (s *Applicability) SetExcludedPriceIds(val []uuid.UUID) {
+	s.ExcludedPriceIds = val
 }
 
 // SetPriceTypes sets the value of PriceTypes.
@@ -1041,6 +1102,16 @@ func (s *Applicability) SetFirstPurchaseOnly(val OptBool) {
 // SetMinAmount sets the value of MinAmount.
 func (s *Applicability) SetMinAmount(val OptMoney) {
 	s.MinAmount = val
+}
+
+// SetMinTermMonths sets the value of MinTermMonths.
+func (s *Applicability) SetMinTermMonths(val OptInt) {
+	s.MinTermMonths = val
+}
+
+// SetMaxTermMonths sets the value of MaxTermMonths.
+func (s *Applicability) SetMaxTermMonths(val OptInt) {
+	s.MaxTermMonths = val
 }
 
 // Ref: #/components/schemas/AutoRenewSet
@@ -1671,6 +1742,9 @@ func (s *CodePreview) SetEstimatedDiscount(val OptMoney) {
 // `operation_not_covered` means the code is limited to certain purchase actions — a first-purchase
 // code presented for a renewal, for example.
 //
+// `term_not_covered` means the code is limited to certain term lengths. A purchase with no term, such
+// as metered usage, is reported the same way.
+//
 // `below_minimum` is accompanied by `shortfall`.
 // Ref: #/components/schemas/CodeRejection
 type CodeRejection string
@@ -1685,8 +1759,10 @@ const (
 	CodeRejectionCurrencyMismatch    CodeRejection = "currency_mismatch"
 	CodeRejectionProductNotCovered   CodeRejection = "product_not_covered"
 	CodeRejectionPlanNotCovered      CodeRejection = "plan_not_covered"
+	CodeRejectionPriceNotCovered     CodeRejection = "price_not_covered"
 	CodeRejectionPriceTypeNotCovered CodeRejection = "price_type_not_covered"
 	CodeRejectionOperationNotCovered CodeRejection = "operation_not_covered"
+	CodeRejectionTermNotCovered      CodeRejection = "term_not_covered"
 	CodeRejectionNotFirstPurchase    CodeRejection = "not_first_purchase"
 	CodeRejectionBelowMinimum        CodeRejection = "below_minimum"
 )
@@ -1703,8 +1779,10 @@ func (CodeRejection) AllValues() []CodeRejection {
 		CodeRejectionCurrencyMismatch,
 		CodeRejectionProductNotCovered,
 		CodeRejectionPlanNotCovered,
+		CodeRejectionPriceNotCovered,
 		CodeRejectionPriceTypeNotCovered,
 		CodeRejectionOperationNotCovered,
+		CodeRejectionTermNotCovered,
 		CodeRejectionNotFirstPurchase,
 		CodeRejectionBelowMinimum,
 	}
@@ -1731,9 +1809,13 @@ func (s CodeRejection) MarshalText() ([]byte, error) {
 		return []byte(s), nil
 	case CodeRejectionPlanNotCovered:
 		return []byte(s), nil
+	case CodeRejectionPriceNotCovered:
+		return []byte(s), nil
 	case CodeRejectionPriceTypeNotCovered:
 		return []byte(s), nil
 	case CodeRejectionOperationNotCovered:
+		return []byte(s), nil
+	case CodeRejectionTermNotCovered:
 		return []byte(s), nil
 	case CodeRejectionNotFirstPurchase:
 		return []byte(s), nil
@@ -1774,11 +1856,17 @@ func (s *CodeRejection) UnmarshalText(data []byte) error {
 	case CodeRejectionPlanNotCovered:
 		*s = CodeRejectionPlanNotCovered
 		return nil
+	case CodeRejectionPriceNotCovered:
+		*s = CodeRejectionPriceNotCovered
+		return nil
 	case CodeRejectionPriceTypeNotCovered:
 		*s = CodeRejectionPriceTypeNotCovered
 		return nil
 	case CodeRejectionOperationNotCovered:
 		*s = CodeRejectionOperationNotCovered
+		return nil
+	case CodeRejectionTermNotCovered:
+		*s = CodeRejectionTermNotCovered
 		return nil
 	case CodeRejectionNotFirstPurchase:
 		*s = CodeRejectionNotFirstPurchase
