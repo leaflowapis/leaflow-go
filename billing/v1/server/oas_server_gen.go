@@ -443,15 +443,6 @@ type Handler interface {
 	//
 	// POST /account/v1/codes/preview
 	PreviewCode(ctx context.Context, req *CodeRequest) (*CodePreview, error)
-	// RedeemCode implements redeem-code operation.
-	//
-	// A voucher code adds credit to the account. A discount code records the entitlement, which is then
-	// applied to the next qualifying purchase.
-	//
-	// A code that has already been redeemed by this account is refused rather than redeemed a second time.
-	//
-	// POST /account/v1/codes/redeem
-	RedeemCode(ctx context.Context, req *CodeRedeem) (*CodeRedeemResult, error)
 	// RenewSubscriptionItem implements renew-subscription-item operation.
 	//
 	// Extends the paid period from its current end, not from today, so renewing early does not shorten

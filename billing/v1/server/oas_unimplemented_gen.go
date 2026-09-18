@@ -613,18 +613,6 @@ func (UnimplementedHandler) PreviewCode(ctx context.Context, req *CodeRequest) (
 	return r, ht.ErrNotImplemented
 }
 
-// RedeemCode implements redeem-code operation.
-//
-// A voucher code adds credit to the account. A discount code records the entitlement, which is then
-// applied to the next qualifying purchase.
-//
-// A code that has already been redeemed by this account is refused rather than redeemed a second time.
-//
-// POST /account/v1/codes/redeem
-func (UnimplementedHandler) RedeemCode(ctx context.Context, req *CodeRedeem) (r *CodeRedeemResult, _ error) {
-	return r, ht.ErrNotImplemented
-}
-
 // RenewSubscriptionItem implements renew-subscription-item operation.
 //
 // Extends the paid period from its current end, not from today, so renewing early does not shorten

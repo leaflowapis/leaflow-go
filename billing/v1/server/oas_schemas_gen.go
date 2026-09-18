@@ -1489,9 +1489,8 @@ type CodePreview struct {
 	// the account's currency. It says nothing about a particular purchase; `applicable` does.
 	Valid  bool             `json:"valid"`
 	Reason OptCodeRejection `json:"reason"`
-	Type   CodePreviewType  `json:"type"`
 	Name   OptString        `json:"name"`
-	// For a voucher, the amount it adds.
+	// For a fixed-amount discount.
 	Amount OptMoney `json:"amount"`
 	// For a percentage discount.
 	PercentOff  OptString `json:"percent_off"`
@@ -1525,11 +1524,6 @@ func (s *CodePreview) GetValid() bool {
 // GetReason returns the value of Reason.
 func (s *CodePreview) GetReason() OptCodeRejection {
 	return s.Reason
-}
-
-// GetType returns the value of Type.
-func (s *CodePreview) GetType() CodePreviewType {
-	return s.Type
 }
 
 // GetName returns the value of Name.
@@ -1607,11 +1601,6 @@ func (s *CodePreview) SetReason(val OptCodeRejection) {
 	s.Reason = val
 }
 
-// SetType sets the value of Type.
-func (s *CodePreview) SetType(val CodePreviewType) {
-	s.Type = val
-}
-
 // SetName sets the value of Name.
 func (s *CodePreview) SetName(val OptString) {
 	s.Name = val
@@ -1675,187 +1664,6 @@ func (s *CodePreview) SetShortfall(val OptMoney) {
 // SetEstimatedDiscount sets the value of EstimatedDiscount.
 func (s *CodePreview) SetEstimatedDiscount(val OptMoney) {
 	s.EstimatedDiscount = val
-}
-
-type CodePreviewType string
-
-const (
-	CodePreviewTypeVoucher  CodePreviewType = "voucher"
-	CodePreviewTypeDiscount CodePreviewType = "discount"
-)
-
-// AllValues returns all CodePreviewType values.
-func (CodePreviewType) AllValues() []CodePreviewType {
-	return []CodePreviewType{
-		CodePreviewTypeVoucher,
-		CodePreviewTypeDiscount,
-	}
-}
-
-// MarshalText implements encoding.TextMarshaler.
-func (s CodePreviewType) MarshalText() ([]byte, error) {
-	switch s {
-	case CodePreviewTypeVoucher:
-		return []byte(s), nil
-	case CodePreviewTypeDiscount:
-		return []byte(s), nil
-	default:
-		return nil, errors.Errorf("invalid value: %q", s)
-	}
-}
-
-// UnmarshalText implements encoding.TextUnmarshaler.
-func (s *CodePreviewType) UnmarshalText(data []byte) error {
-	switch CodePreviewType(data) {
-	case CodePreviewTypeVoucher:
-		*s = CodePreviewTypeVoucher
-		return nil
-	case CodePreviewTypeDiscount:
-		*s = CodePreviewTypeDiscount
-		return nil
-	default:
-		return errors.Errorf("invalid value: %q", data)
-	}
-}
-
-// Ref: #/components/schemas/CodeRedeem
-type CodeRedeem struct {
-	BillingAccountID int64  `json:"billing_account_id"`
-	Code             string `json:"code"`
-	IdempotencyKey   string `json:"idempotency_key"`
-}
-
-// GetBillingAccountID returns the value of BillingAccountID.
-func (s *CodeRedeem) GetBillingAccountID() int64 {
-	return s.BillingAccountID
-}
-
-// GetCode returns the value of Code.
-func (s *CodeRedeem) GetCode() string {
-	return s.Code
-}
-
-// GetIdempotencyKey returns the value of IdempotencyKey.
-func (s *CodeRedeem) GetIdempotencyKey() string {
-	return s.IdempotencyKey
-}
-
-// SetBillingAccountID sets the value of BillingAccountID.
-func (s *CodeRedeem) SetBillingAccountID(val int64) {
-	s.BillingAccountID = val
-}
-
-// SetCode sets the value of Code.
-func (s *CodeRedeem) SetCode(val string) {
-	s.Code = val
-}
-
-// SetIdempotencyKey sets the value of IdempotencyKey.
-func (s *CodeRedeem) SetIdempotencyKey(val string) {
-	s.IdempotencyKey = val
-}
-
-// Ref: #/components/schemas/CodeRedeemResult
-type CodeRedeemResult struct {
-	Type CodeRedeemResultType `json:"type"`
-	// For a voucher, the credit that was added.
-	CreditGrantID OptNilUUID `json:"credit_grant_id"`
-	Amount        OptMoney   `json:"amount"`
-	Currency      OptString  `json:"currency"`
-	// For a discount, what will happen — it is applied to the next qualifying purchase rather than added
-	// to the balance.
-	Message OptString `json:"message"`
-}
-
-// GetType returns the value of Type.
-func (s *CodeRedeemResult) GetType() CodeRedeemResultType {
-	return s.Type
-}
-
-// GetCreditGrantID returns the value of CreditGrantID.
-func (s *CodeRedeemResult) GetCreditGrantID() OptNilUUID {
-	return s.CreditGrantID
-}
-
-// GetAmount returns the value of Amount.
-func (s *CodeRedeemResult) GetAmount() OptMoney {
-	return s.Amount
-}
-
-// GetCurrency returns the value of Currency.
-func (s *CodeRedeemResult) GetCurrency() OptString {
-	return s.Currency
-}
-
-// GetMessage returns the value of Message.
-func (s *CodeRedeemResult) GetMessage() OptString {
-	return s.Message
-}
-
-// SetType sets the value of Type.
-func (s *CodeRedeemResult) SetType(val CodeRedeemResultType) {
-	s.Type = val
-}
-
-// SetCreditGrantID sets the value of CreditGrantID.
-func (s *CodeRedeemResult) SetCreditGrantID(val OptNilUUID) {
-	s.CreditGrantID = val
-}
-
-// SetAmount sets the value of Amount.
-func (s *CodeRedeemResult) SetAmount(val OptMoney) {
-	s.Amount = val
-}
-
-// SetCurrency sets the value of Currency.
-func (s *CodeRedeemResult) SetCurrency(val OptString) {
-	s.Currency = val
-}
-
-// SetMessage sets the value of Message.
-func (s *CodeRedeemResult) SetMessage(val OptString) {
-	s.Message = val
-}
-
-type CodeRedeemResultType string
-
-const (
-	CodeRedeemResultTypeVoucher  CodeRedeemResultType = "voucher"
-	CodeRedeemResultTypeDiscount CodeRedeemResultType = "discount"
-)
-
-// AllValues returns all CodeRedeemResultType values.
-func (CodeRedeemResultType) AllValues() []CodeRedeemResultType {
-	return []CodeRedeemResultType{
-		CodeRedeemResultTypeVoucher,
-		CodeRedeemResultTypeDiscount,
-	}
-}
-
-// MarshalText implements encoding.TextMarshaler.
-func (s CodeRedeemResultType) MarshalText() ([]byte, error) {
-	switch s {
-	case CodeRedeemResultTypeVoucher:
-		return []byte(s), nil
-	case CodeRedeemResultTypeDiscount:
-		return []byte(s), nil
-	default:
-		return nil, errors.Errorf("invalid value: %q", s)
-	}
-}
-
-// UnmarshalText implements encoding.TextUnmarshaler.
-func (s *CodeRedeemResultType) UnmarshalText(data []byte) error {
-	switch CodeRedeemResultType(data) {
-	case CodeRedeemResultTypeVoucher:
-		*s = CodeRedeemResultTypeVoucher
-		return nil
-	case CodeRedeemResultTypeDiscount:
-		*s = CodeRedeemResultTypeDiscount
-		return nil
-	default:
-		return errors.Errorf("invalid value: %q", data)
-	}
 }
 
 // Why a code cannot be used. `none` when it can.

@@ -142,42 +142,6 @@ func (e BillingAccountStatus) Valid() bool {
 	}
 }
 
-// Defines values for CodePreviewType.
-const (
-	CodePreviewTypeDiscount CodePreviewType = "discount"
-	CodePreviewTypeVoucher  CodePreviewType = "voucher"
-)
-
-// Valid indicates whether the value is a known member of the CodePreviewType enum.
-func (e CodePreviewType) Valid() bool {
-	switch e {
-	case CodePreviewTypeDiscount:
-		return true
-	case CodePreviewTypeVoucher:
-		return true
-	default:
-		return false
-	}
-}
-
-// Defines values for CodeRedeemResultType.
-const (
-	CodeRedeemResultTypeDiscount CodeRedeemResultType = "discount"
-	CodeRedeemResultTypeVoucher  CodeRedeemResultType = "voucher"
-)
-
-// Valid indicates whether the value is a known member of the CodeRedeemResultType enum.
-func (e CodeRedeemResultType) Valid() bool {
-	switch e {
-	case CodeRedeemResultTypeDiscount:
-		return true
-	case CodeRedeemResultTypeVoucher:
-		return true
-	default:
-		return false
-	}
-}
-
 // Defines values for CodeRejection.
 const (
 	CodeRejectionAlreadyRedeemed     CodeRejection = "already_redeemed"
@@ -291,22 +255,22 @@ func (e CommitmentType) Valid() bool {
 
 // Defines values for CreditGrantSourceType.
 const (
-	CreditGrantSourceTypeManual     CreditGrantSourceType = "manual"
-	CreditGrantSourceTypeMembership CreditGrantSourceType = "membership"
-	CreditGrantSourceTypePromotion  CreditGrantSourceType = "promotion"
-	CreditGrantSourceTypeVoucher    CreditGrantSourceType = "voucher"
+	Manual     CreditGrantSourceType = "manual"
+	Membership CreditGrantSourceType = "membership"
+	Promotion  CreditGrantSourceType = "promotion"
+	Voucher    CreditGrantSourceType = "voucher"
 )
 
 // Valid indicates whether the value is a known member of the CreditGrantSourceType enum.
 func (e CreditGrantSourceType) Valid() bool {
 	switch e {
-	case CreditGrantSourceTypeManual:
+	case Manual:
 		return true
-	case CreditGrantSourceTypeMembership:
+	case Membership:
 		return true
-	case CreditGrantSourceTypePromotion:
+	case Promotion:
 		return true
-	case CreditGrantSourceTypeVoucher:
+	case Voucher:
 		return true
 	default:
 		return false
@@ -1482,7 +1446,7 @@ type BillingAccountUpdate struct {
 
 // CodePreview defines model for CodePreview.
 type CodePreview struct {
-	// Amount For a voucher, the amount it adds.
+	// Amount For a fixed-amount discount.
 	Amount *externalRef0.Money `json:"amount,omitempty"`
 
 	// Applicable Whether it applies to the purchase given in `lines`. Absent when no purchase was
@@ -1539,8 +1503,7 @@ type CodePreview struct {
 
 	// Summary The terms in one sentence, ready to display — for example "Compute, new purchases
 	// only, from 100.00" or "No restriction on product or purchase type".
-	Summary *string         `json:"summary,omitempty"`
-	Type    CodePreviewType `json:"type"`
+	Summary *string `json:"summary,omitempty"`
 
 	// Valid Whether the code itself is usable — it exists, has not expired, has not been used
 	// up, and matches the account's currency. It says nothing about a particular
@@ -1548,42 +1511,6 @@ type CodePreview struct {
 	Valid      bool       `json:"valid"`
 	ValidUntil *time.Time `json:"valid_until,omitempty"`
 }
-
-// CodePreviewType defines model for CodePreview.Type.
-type CodePreviewType string
-
-// CodeRedeem defines model for CodeRedeem.
-type CodeRedeem struct {
-	BillingAccountId int64  `json:"billing_account_id"`
-	Code             string `json:"code"`
-	IdempotencyKey   string `json:"idempotency_key"`
-}
-
-// CodeRedeemResult defines model for CodeRedeemResult.
-type CodeRedeemResult struct {
-	// Amount A decimal string, in the currency stated alongside it.
-	//
-	// **The currency is not part of this type.** It is carried by a `currency` field next to the
-	// amount, or by the account the amount belongs to. Reading an amount without that field is
-	// reading a number with no unit.
-	//
-	// It is a string rather than a JSON number because a JSON number is a float in most parsers,
-	// and a float loses precision on the first arithmetic. Nothing on this platform puts an amount
-	// through a float.
-	Amount *externalRef0.Money `json:"amount,omitempty"`
-
-	// CreditGrantId For a voucher, the credit that was added.
-	CreditGrantId *openapi_types.UUID `json:"credit_grant_id,omitempty"`
-	Currency      *string             `json:"currency,omitempty"`
-
-	// Message For a discount, what will happen — it is applied to the next qualifying purchase
-	// rather than added to the balance.
-	Message *string              `json:"message,omitempty"`
-	Type    CodeRedeemResultType `json:"type"`
-}
-
-// CodeRedeemResultType defines model for CodeRedeemResult.Type.
-type CodeRedeemResultType string
 
 // CodeRejection Why a code cannot be used. `none` when it can.
 //
@@ -3803,9 +3730,6 @@ type UpdateBillingAccountJSONRequestBody = BillingAccountUpdate
 // PreviewCodeJSONRequestBody defines body for PreviewCode for application/json ContentType.
 type PreviewCodeJSONRequestBody = CodeRequest
 
-// RedeemCodeJSONRequestBody defines body for RedeemCode for application/json ContentType.
-type RedeemCodeJSONRequestBody = CodeRedeem
-
 // PayInvoiceJSONRequestBody defines body for PayInvoice for application/json ContentType.
 type PayInvoiceJSONRequestBody = PayRequest
 
@@ -4034,32 +3958,6 @@ type ClientInterface interface {
 	//
 	// Corresponds with POST /account/v1/codes/preview (the `PreviewCode` operationId).
 	PreviewCode(ctx context.Context, body PreviewCodeJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
-
-	// RedeemCodeWithBody Redeem code
-	//
-	// A voucher code adds credit to the account. A discount code records the entitlement, which
-	// is then applied to the next qualifying purchase.
-	//
-	// A code that has already been redeemed by this account is refused rather than redeemed a
-	// second time.
-	//
-	// Takes any type of body and a specified content type.
-	//
-	// Corresponds with POST /account/v1/codes/redeem (the `RedeemCode` operationId).
-	RedeemCodeWithBody(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
-
-	// RedeemCode Redeem code
-	//
-	// A voucher code adds credit to the account. A discount code records the entitlement, which
-	// is then applied to the next qualifying purchase.
-	//
-	// A code that has already been redeemed by this account is refused rather than redeemed a
-	// second time.
-	//
-	// Takes a body of the `application/json` content type.
-	//
-	// Corresponds with POST /account/v1/codes/redeem (the `RedeemCode` operationId).
-	RedeemCode(ctx context.Context, body RedeemCodeJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
 
 	// ListCommitments List account commercial commitments
 	//
@@ -4954,52 +4852,6 @@ func (c *Client) PreviewCodeWithBody(ctx context.Context, contentType string, bo
 // Corresponds with POST /account/v1/codes/preview (the `PreviewCode` operationId).
 func (c *Client) PreviewCode(ctx context.Context, body PreviewCodeJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
 	req, err := NewPreviewCodeRequest(c.Server, body)
-	if err != nil {
-		return nil, err
-	}
-	req = req.WithContext(ctx)
-	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
-		return nil, err
-	}
-	return c.Client.Do(req)
-}
-
-// RedeemCodeWithBody Redeem code
-//
-// A voucher code adds credit to the account. A discount code records the entitlement, which
-// is then applied to the next qualifying purchase.
-//
-// A code that has already been redeemed by this account is refused rather than redeemed a
-// second time.
-//
-// Takes any type of body and a specified content type.
-//
-// Corresponds with POST /account/v1/codes/redeem (the `RedeemCode` operationId).
-func (c *Client) RedeemCodeWithBody(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
-	req, err := NewRedeemCodeRequestWithBody(c.Server, contentType, body)
-	if err != nil {
-		return nil, err
-	}
-	req = req.WithContext(ctx)
-	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
-		return nil, err
-	}
-	return c.Client.Do(req)
-}
-
-// RedeemCode Redeem code
-//
-// A voucher code adds credit to the account. A discount code records the entitlement, which
-// is then applied to the next qualifying purchase.
-//
-// A code that has already been redeemed by this account is refused rather than redeemed a
-// second time.
-//
-// Takes a body of the `application/json` content type.
-//
-// Corresponds with POST /account/v1/codes/redeem (the `RedeemCode` operationId).
-func (c *Client) RedeemCode(ctx context.Context, body RedeemCodeJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
-	req, err := NewRedeemCodeRequest(c.Server, body)
 	if err != nil {
 		return nil, err
 	}
@@ -6886,46 +6738,6 @@ func NewPreviewCodeRequestWithBody(server string, contentType string, body io.Re
 	}
 
 	operationPath := fmt.Sprintf("/account/v1/codes/preview")
-	if operationPath[0] == '/' {
-		operationPath = "." + operationPath
-	}
-
-	queryURL, err := serverURL.Parse(operationPath)
-	if err != nil {
-		return nil, err
-	}
-
-	req, err := http.NewRequest(http.MethodPost, queryURL.String(), body)
-	if err != nil {
-		return nil, err
-	}
-
-	req.Header.Add("Content-Type", contentType)
-
-	return req, nil
-}
-
-// NewRedeemCodeRequest calls the generic RedeemCode builder with application/json body
-func NewRedeemCodeRequest(server string, body RedeemCodeJSONRequestBody) (*http.Request, error) {
-	var bodyReader io.Reader
-	buf, err := json.Marshal(body)
-	if err != nil {
-		return nil, err
-	}
-	bodyReader = bytes.NewReader(buf)
-	return NewRedeemCodeRequestWithBody(server, "application/json", bodyReader)
-}
-
-// NewRedeemCodeRequestWithBody constructs an http.Request for the RedeemCode method, with any body, and a specified content type
-func NewRedeemCodeRequestWithBody(server string, contentType string, body io.Reader) (*http.Request, error) {
-	var err error
-
-	serverURL, err := url.Parse(server)
-	if err != nil {
-		return nil, err
-	}
-
-	operationPath := fmt.Sprintf("/account/v1/codes/redeem")
 	if operationPath[0] == '/' {
 		operationPath = "." + operationPath
 	}
@@ -10876,32 +10688,6 @@ type ClientWithResponsesInterface interface {
 	// Corresponds with POST /account/v1/codes/preview (the `PreviewCode` operationId).
 	PreviewCodeWithResponse(ctx context.Context, body PreviewCodeJSONRequestBody, reqEditors ...RequestEditorFn) (*PreviewCodeResponse, error)
 
-	// RedeemCodeWithBodyWithResponse Redeem code
-	//
-	// A voucher code adds credit to the account. A discount code records the entitlement, which
-	// is then applied to the next qualifying purchase.
-	//
-	// A code that has already been redeemed by this account is refused rather than redeemed a
-	// second time.
-	//
-	// Takes any type of body and a specified content type, and returns a wrapper object for the known response body format(s).
-	//
-	// Corresponds with POST /account/v1/codes/redeem (the `RedeemCode` operationId).
-	RedeemCodeWithBodyWithResponse(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*RedeemCodeResponse, error)
-
-	// RedeemCodeWithResponse Redeem code
-	//
-	// A voucher code adds credit to the account. A discount code records the entitlement, which
-	// is then applied to the next qualifying purchase.
-	//
-	// A code that has already been redeemed by this account is refused rather than redeemed a
-	// second time.
-	//
-	// Takes a body of the `application/json` content type, and returns a wrapper object for the known response body format(s).
-	//
-	// Corresponds with POST /account/v1/codes/redeem (the `RedeemCode` operationId).
-	RedeemCodeWithResponse(ctx context.Context, body RedeemCodeJSONRequestBody, reqEditors ...RequestEditorFn) (*RedeemCodeResponse, error)
-
 	// ListCommitmentsWithResponse List account commercial commitments
 	//
 	// Returns a wrapper object for the known response body format(s).
@@ -12078,54 +11864,6 @@ func (r PreviewCodeResponse) StatusCode() int {
 
 // ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
 func (r PreviewCodeResponse) ContentType() string {
-	if r.HTTPResponse != nil {
-		return r.HTTPResponse.Header.Get("Content-Type")
-	}
-	return ""
-}
-
-type RedeemCodeResponse struct {
-	Body         []byte
-	HTTPResponse *http.Response
-	// JSON200 the response for an HTTP 200 `application/json` response
-	JSON200 *CodeRedeemResult
-	// JSONDefault the response for an HTTP default `application/json` response
-	JSONDefault *Error
-}
-
-// GetJSON200 returns the response for an HTTP 200 `application/json` response
-func (r RedeemCodeResponse) GetJSON200() *CodeRedeemResult {
-	return r.JSON200
-}
-
-// GetJSONDefault returns the response for an HTTP default `application/json` response
-func (r RedeemCodeResponse) GetJSONDefault() *Error {
-	return r.JSONDefault
-}
-
-// GetBody returns the raw response body bytes
-func (r RedeemCodeResponse) GetBody() []byte {
-	return r.Body
-}
-
-// Status returns HTTPResponse.Status
-func (r RedeemCodeResponse) Status() string {
-	if r.HTTPResponse != nil {
-		return r.HTTPResponse.Status
-	}
-	return http.StatusText(0)
-}
-
-// StatusCode returns HTTPResponse.StatusCode
-func (r RedeemCodeResponse) StatusCode() int {
-	if r.HTTPResponse != nil {
-		return r.HTTPResponse.StatusCode
-	}
-	return 0
-}
-
-// ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
-func (r RedeemCodeResponse) ContentType() string {
 	if r.HTTPResponse != nil {
 		return r.HTTPResponse.Header.Get("Content-Type")
 	}
@@ -15017,44 +14755,6 @@ func (c *ClientWithResponses) PreviewCodeWithResponse(ctx context.Context, body 
 	return ParsePreviewCodeResponse(rsp)
 }
 
-// RedeemCodeWithBodyWithResponse Redeem code
-//
-// A voucher code adds credit to the account. A discount code records the entitlement, which
-// is then applied to the next qualifying purchase.
-//
-// A code that has already been redeemed by this account is refused rather than redeemed a
-// second time.
-//
-// Takes any type of body and a specified content type, and returns a wrapper object for the known response body format(s).
-//
-// Corresponds with POST /account/v1/codes/redeem (the `RedeemCode` operationId).
-func (c *ClientWithResponses) RedeemCodeWithBodyWithResponse(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*RedeemCodeResponse, error) {
-	rsp, err := c.RedeemCodeWithBody(ctx, contentType, body, reqEditors...)
-	if err != nil {
-		return nil, err
-	}
-	return ParseRedeemCodeResponse(rsp)
-}
-
-// RedeemCodeWithResponse Redeem code
-//
-// A voucher code adds credit to the account. A discount code records the entitlement, which
-// is then applied to the next qualifying purchase.
-//
-// A code that has already been redeemed by this account is refused rather than redeemed a
-// second time.
-//
-// Takes a body of the `application/json` content type, and returns a wrapper object for the known response body format(s).
-//
-// Corresponds with POST /account/v1/codes/redeem (the `RedeemCode` operationId).
-func (c *ClientWithResponses) RedeemCodeWithResponse(ctx context.Context, body RedeemCodeJSONRequestBody, reqEditors ...RequestEditorFn) (*RedeemCodeResponse, error) {
-	rsp, err := c.RedeemCode(ctx, body, reqEditors...)
-	if err != nil {
-		return nil, err
-	}
-	return ParseRedeemCodeResponse(rsp)
-}
-
 // ListCommitmentsWithResponse List account commercial commitments
 //
 // Returns a wrapper object for the known response body format(s).
@@ -16486,39 +16186,6 @@ func ParsePreviewCodeResponse(rsp *http.Response) (*PreviewCodeResponse, error) 
 	switch {
 	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
 		var dest CodePreview
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSON200 = &dest
-
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && true:
-		var dest Error
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSONDefault = &dest
-
-	}
-
-	return response, nil
-}
-
-// ParseRedeemCodeResponse parses an HTTP response from a RedeemCodeWithResponse call
-func ParseRedeemCodeResponse(rsp *http.Response) (*RedeemCodeResponse, error) {
-	bodyBytes, err := io.ReadAll(rsp.Body)
-	defer func() { _ = rsp.Body.Close() }()
-	if err != nil {
-		return nil, err
-	}
-
-	response := &RedeemCodeResponse{
-		Body:         bodyBytes,
-		HTTPResponse: rsp,
-	}
-
-	switch {
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
-		var dest CodeRedeemResult
 		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
 			return nil, err
 		}
