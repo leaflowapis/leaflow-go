@@ -275,18 +275,6 @@ func (UnimplementedHandler) ListAccountDiscounts(ctx context.Context, params Lis
 	return r, ht.ErrNotImplemented
 }
 
-// ListAllocations implements list-allocations operation.
-//
-// Give `source_id` to follow one top-up or grant through to everything it paid for. Give `target_id`
-// to see which sources paid for one line of an invoice.
-//
-// Give `source_type` on its own to separate what cash paid for from what granted credit paid for.
-//
-// GET /account/v1/allocations
-func (UnimplementedHandler) ListAllocations(ctx context.Context, params ListAllocationsParams) (r *AllocationList, _ error) {
-	return r, ht.ErrNotImplemented
-}
-
 // ListAllowanceConsumptions implements list-allowance-consumptions operation.
 //
 // Each entry names the charge it covered, so the granted amount, what has been used and what remains

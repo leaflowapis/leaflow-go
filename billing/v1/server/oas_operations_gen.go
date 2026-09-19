@@ -29,7 +29,6 @@ const (
 	GetProjectOrderOperation                 OperationName = "GetProjectOrder"
 	GetTopUpOperation                        OperationName = "GetTopUp"
 	ListAccountDiscountsOperation            OperationName = "ListAccountDiscounts"
-	ListAllocationsOperation                 OperationName = "ListAllocations"
 	ListAllowanceConsumptionsOperation       OperationName = "ListAllowanceConsumptions"
 	ListAllowancesOperation                  OperationName = "ListAllowances"
 	ListBillingAccountsOperation             OperationName = "ListBillingAccounts"

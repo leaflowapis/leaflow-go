@@ -37,45 +37,6 @@ func (e ActiveResourceStatus) Valid() bool {
 	}
 }
 
-// Defines values for AllocationSourceType.
-const (
-	AllocationSourceTypeCreditGrant AllocationSourceType = "credit_grant"
-	AllocationSourceTypeTransaction AllocationSourceType = "transaction"
-)
-
-// Valid indicates whether the value is a known member of the AllocationSourceType enum.
-func (e AllocationSourceType) Valid() bool {
-	switch e {
-	case AllocationSourceTypeCreditGrant:
-		return true
-	case AllocationSourceTypeTransaction:
-		return true
-	default:
-		return false
-	}
-}
-
-// Defines values for AllocationTargetType.
-const (
-	AllocationTargetTypeHold        AllocationTargetType = "hold"
-	AllocationTargetTypeInvoiceItem AllocationTargetType = "invoice_item"
-	AllocationTargetTypeOrderItem   AllocationTargetType = "order_item"
-)
-
-// Valid indicates whether the value is a known member of the AllocationTargetType enum.
-func (e AllocationTargetType) Valid() bool {
-	switch e {
-	case AllocationTargetTypeHold:
-		return true
-	case AllocationTargetTypeInvoiceItem:
-		return true
-	case AllocationTargetTypeOrderItem:
-		return true
-	default:
-		return false
-	}
-}
-
 // Defines values for AllowanceSourceType.
 const (
 	Included    AllowanceSourceType = "included"
@@ -1123,24 +1084,6 @@ func (e TransactionType) Valid() bool {
 	}
 }
 
-// Defines values for ListAllocationsParamsSourceType.
-const (
-	ListAllocationsParamsSourceTypeCreditGrant ListAllocationsParamsSourceType = "credit_grant"
-	ListAllocationsParamsSourceTypeTransaction ListAllocationsParamsSourceType = "transaction"
-)
-
-// Valid indicates whether the value is a known member of the ListAllocationsParamsSourceType enum.
-func (e ListAllocationsParamsSourceType) Valid() bool {
-	switch e {
-	case ListAllocationsParamsSourceTypeCreditGrant:
-		return true
-	case ListAllocationsParamsSourceTypeTransaction:
-		return true
-	default:
-		return false
-	}
-}
-
 // Defines values for ListAllowancesParamsStatus.
 const (
 	ListAllowancesParamsStatusActive   ListAllowancesParamsStatus = "active"
@@ -1235,24 +1178,21 @@ func (e ListCatalogItemsParamsType) Valid() bool {
 type AccountBalance struct {
 	// Accrued Metered usage priced this month but not yet invoiced. It is already committed even
 	// though no invoice exists for it yet.
-	Accrued          externalRef0.Money `json:"accrued"`
+	Accrued externalRef0.Money `json:"accrued"`
+
+	// Balance Funds paid in and not yet spent. This is the part that can be refunded. It goes negative when the account owes.
+	Balance          externalRef0.Money `json:"balance"`
 	BillingAccountId int64              `json:"billing_account_id"`
 
-	// Cash Funds paid in and not yet spent. This is the part that can be refunded.
-	Cash     externalRef0.Money `json:"cash"`
-	Currency string             `json:"currency"`
-
-	// Granted Granted funds still unspent, vouchers included. Spendable within whatever each grant
+	// Credits Granted funds still unspent, vouchers included. Spendable within whatever each grant
 	// covers, and never withdrawable. Individual grants are listed separately, which is
 	// where a single voucher's remaining amount is read.
-	Granted externalRef0.Money `json:"granted"`
+	Credits  externalRef0.Money `json:"credits"`
+	Currency string             `json:"currency"`
 
-	// Held Reserved by orders that have not completed.
-	Held externalRef0.Money `json:"held"`
-
-	// Spendable `cash` less `accrued` and `held` — what is actually available at checkout. It goes
-	// negative when usage has exceeded the balance. Granted funds are shown separately
-	// because each grant can only pay for what it covers.
+	// Spendable `balance` less `accrued` — what is actually available at checkout. It goes negative
+	// when usage has exceeded the balance. Credits are shown separately because each grant
+	// can only pay for what it covers.
 	Spendable externalRef0.Money `json:"spendable"`
 }
 
@@ -1290,41 +1230,6 @@ type ActiveResourceStatus string
 type ActiveResourceList struct {
 	Items      []ActiveResource `json:"items"`
 	TotalCount *int64           `json:"total_count,omitempty"`
-}
-
-// Allocation defines model for Allocation.
-type Allocation struct {
-	AllocatedAt time.Time `json:"allocated_at"`
-
-	// Amount A decimal string, in the currency stated alongside it.
-	//
-	// **The currency is not part of this type.** It is carried by a `currency` field next to the
-	// amount, or by the account the amount belongs to. Reading an amount without that field is
-	// reading a number with no unit.
-	//
-	// It is a string rather than a JSON number because a JSON number is a float in most parsers,
-	// and a float loses precision on the first arithmetic. Nothing on this platform puts an amount
-	// through a float.
-	Amount     externalRef0.Money   `json:"amount"`
-	Currency   string               `json:"currency"`
-	Id         openapi_types.UUID   `json:"id"`
-	ReversedAt *time.Time           `json:"reversed_at,omitempty"`
-	SourceId   openapi_types.UUID   `json:"source_id"`
-	SourceType AllocationSourceType `json:"source_type"`
-	TargetId   openapi_types.UUID   `json:"target_id"`
-	TargetType AllocationTargetType `json:"target_type"`
-}
-
-// AllocationSourceType defines model for Allocation.SourceType.
-type AllocationSourceType string
-
-// AllocationTargetType defines model for Allocation.TargetType.
-type AllocationTargetType string
-
-// AllocationList defines model for AllocationList.
-type AllocationList struct {
-	Items      []Allocation `json:"items"`
-	TotalCount *int64       `json:"total_count,omitempty"`
 }
 
 // Allowance defines model for Allowance.
@@ -3301,8 +3206,8 @@ type Transaction struct {
 
 	// Type What moved the money. These are the events that change the account's cash balance.
 	//
-	// Charges for usage and amounts reserved by orders are not here: usage appears among the
-	// charges and on invoices, and a reservation appears as an allocation.
+	// Charges for usage are not here: they appear among the charges and on invoices. Nor is
+	// what an order drew from the balance — the order itself records that.
 	Type TransactionType `json:"type"`
 }
 
@@ -3314,8 +3219,8 @@ type TransactionList struct {
 
 // TransactionType What moved the money. These are the events that change the account's cash balance.
 //
-// Charges for usage and amounts reserved by orders are not here: usage appears among the
-// charges and on invoices, and a reservation appears as an allocation.
+// Charges for usage are not here: they appear among the charges and on invoices. Nor is
+// what an order drew from the balance — the order itself records that.
 type TransactionType string
 
 // UsageCharge defines model for UsageCharge.
@@ -3431,26 +3336,6 @@ type To = time.Time
 
 // ToRequired defines model for ToRequired.
 type ToRequired = time.Time
-
-// ListAllocationsParams defines parameters for ListAllocations.
-type ListAllocationsParams struct {
-	// Page 1-based page number; the first page when omitted.
-	Page *Page `form:"page,omitempty" json:"page,omitempty"`
-
-	// PageSize How many per page, 100 at most.
-	PageSize *PageSize `form:"page_size,omitempty" json:"page_size,omitempty"`
-
-	// BillingAccountId Restrict to one of your accounts. All of them when omitted.
-	BillingAccountId *AccountIdQuery `form:"billing_account_id,omitempty" json:"billing_account_id,omitempty"`
-
-	// SourceType `transaction` is money paid in, `credit_grant` is granted credit or a voucher.
-	SourceType *ListAllocationsParamsSourceType `form:"source_type,omitempty" json:"source_type,omitempty"`
-	SourceId   *openapi_types.UUID              `form:"source_id,omitempty" json:"source_id,omitempty"`
-	TargetId   *openapi_types.UUID              `form:"target_id,omitempty" json:"target_id,omitempty"`
-}
-
-// ListAllocationsParamsSourceType defines parameters for ListAllocations.
-type ListAllocationsParamsSourceType string
 
 // ListAllowancesParams defines parameters for ListAllowances.
 type ListAllowancesParams struct {
@@ -4065,17 +3950,6 @@ func WithRequestEditorFn(fn RequestEditorFn) ClientOption {
 
 // The interface specification for the client above.
 type ClientInterface interface {
-
-	// ListAllocations List allocations
-	//
-	// Give `source_id` to follow one top-up or grant through to everything it paid for. Give
-	// `target_id` to see which sources paid for one line of an invoice.
-	//
-	// Give `source_type` on its own to separate what cash paid for from what granted credit
-	// paid for.
-	//
-	// Corresponds with GET /account/v1/allocations (the `ListAllocations` operationId).
-	ListAllocations(ctx context.Context, params *ListAllocationsParams, reqEditors ...RequestEditorFn) (*http.Response, error)
 
 	// ListAllowances List allowances
 	//
@@ -4899,27 +4773,6 @@ type ClientInterface interface {
 	//
 	// Corresponds with GET /catalog/v1/rate-cards/{rateCardId}/rules (the `ListRates` operationId).
 	ListRates(ctx context.Context, rateCardId RateCardId, params *ListRatesParams, reqEditors ...RequestEditorFn) (*http.Response, error)
-}
-
-// ListAllocations List allocations
-//
-// Give `source_id` to follow one top-up or grant through to everything it paid for. Give
-// `target_id` to see which sources paid for one line of an invoice.
-//
-// Give `source_type` on its own to separate what cash paid for from what granted credit
-// paid for.
-//
-// Corresponds with GET /account/v1/allocations (the `ListAllocations` operationId).
-func (c *Client) ListAllocations(ctx context.Context, params *ListAllocationsParams, reqEditors ...RequestEditorFn) (*http.Response, error) {
-	req, err := NewListAllocationsRequest(c.Server, params)
-	if err != nil {
-		return nil, err
-	}
-	req = req.WithContext(ctx)
-	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
-		return nil, err
-	}
-	return c.Client.Do(req)
 }
 
 // ListAllowances List allowances
@@ -6573,120 +6426,6 @@ func (c *Client) ListRates(ctx context.Context, rateCardId RateCardId, params *L
 		return nil, err
 	}
 	return c.Client.Do(req)
-}
-
-// NewListAllocationsRequest constructs an http.Request for the ListAllocations method
-func NewListAllocationsRequest(server string, params *ListAllocationsParams) (*http.Request, error) {
-	var err error
-
-	serverURL, err := url.Parse(server)
-	if err != nil {
-		return nil, err
-	}
-
-	operationPath := fmt.Sprintf("/account/v1/allocations")
-	if operationPath[0] == '/' {
-		operationPath = "." + operationPath
-	}
-
-	queryURL, err := serverURL.Parse(operationPath)
-	if err != nil {
-		return nil, err
-	}
-
-	if params != nil {
-		// queryValues collects non-styled parameters (passthrough, JSON)
-		// that are safe to round-trip through url.Values.Encode().
-		queryValues := queryURL.Query()
-		// rawQueryFragments collects pre-encoded query fragments from
-		// styled parameters, preserving literal commas as delimiters
-		// per the OpenAPI spec (e.g. "color=blue,black,brown").
-		var rawQueryFragments []string
-
-		if params.Page != nil {
-
-			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "page", *params.Page, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "integer", Format: "int32"}); err != nil {
-				return nil, err
-			} else {
-				for _, qp := range strings.Split(queryFrag, "&") {
-					rawQueryFragments = append(rawQueryFragments, qp)
-				}
-			}
-
-		}
-
-		if params.PageSize != nil {
-
-			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "page_size", *params.PageSize, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "integer", Format: "int32"}); err != nil {
-				return nil, err
-			} else {
-				for _, qp := range strings.Split(queryFrag, "&") {
-					rawQueryFragments = append(rawQueryFragments, qp)
-				}
-			}
-
-		}
-
-		if params.BillingAccountId != nil {
-
-			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "billing_account_id", *params.BillingAccountId, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "integer", Format: "int64"}); err != nil {
-				return nil, err
-			} else {
-				for _, qp := range strings.Split(queryFrag, "&") {
-					rawQueryFragments = append(rawQueryFragments, qp)
-				}
-			}
-
-		}
-
-		if params.SourceType != nil {
-
-			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "source_type", *params.SourceType, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "string", Format: ""}); err != nil {
-				return nil, err
-			} else {
-				for _, qp := range strings.Split(queryFrag, "&") {
-					rawQueryFragments = append(rawQueryFragments, qp)
-				}
-			}
-
-		}
-
-		if params.SourceId != nil {
-
-			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "source_id", *params.SourceId, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "string", Format: "uuid"}); err != nil {
-				return nil, err
-			} else {
-				for _, qp := range strings.Split(queryFrag, "&") {
-					rawQueryFragments = append(rawQueryFragments, qp)
-				}
-			}
-
-		}
-
-		if params.TargetId != nil {
-
-			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "target_id", *params.TargetId, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "string", Format: "uuid"}); err != nil {
-				return nil, err
-			} else {
-				for _, qp := range strings.Split(queryFrag, "&") {
-					rawQueryFragments = append(rawQueryFragments, qp)
-				}
-			}
-
-		}
-
-		if encoded := queryValues.Encode(); encoded != "" {
-			rawQueryFragments = append(rawQueryFragments, encoded)
-		}
-		queryURL.RawQuery = strings.Join(rawQueryFragments, "&")
-	}
-
-	req, err := http.NewRequest(http.MethodGet, queryURL.String(), nil)
-	if err != nil {
-		return nil, err
-	}
-
-	return req, nil
 }
 
 // NewListAllowancesRequest constructs an http.Request for the ListAllowances method
@@ -11235,19 +10974,6 @@ func WithBaseURL(baseURL string) ClientOption {
 // ClientWithResponsesInterface is the interface specification for the client with responses above.
 type ClientWithResponsesInterface interface {
 
-	// ListAllocationsWithResponse List allocations
-	//
-	// Give `source_id` to follow one top-up or grant through to everything it paid for. Give
-	// `target_id` to see which sources paid for one line of an invoice.
-	//
-	// Give `source_type` on its own to separate what cash paid for from what granted credit
-	// paid for.
-	//
-	// Returns a wrapper object for the known response body format(s).
-	//
-	// Corresponds with GET /account/v1/allocations (the `ListAllocations` operationId).
-	ListAllocationsWithResponse(ctx context.Context, params *ListAllocationsParams, reqEditors ...RequestEditorFn) (*ListAllocationsResponse, error)
-
 	// ListAllowancesWithResponse List allowances
 	//
 	// A quantity rather than an amount of money: bytes, seconds or tokens that are used before
@@ -12176,54 +11902,6 @@ type ClientWithResponsesInterface interface {
 	//
 	// Corresponds with GET /catalog/v1/rate-cards/{rateCardId}/rules (the `ListRates` operationId).
 	ListRatesWithResponse(ctx context.Context, rateCardId RateCardId, params *ListRatesParams, reqEditors ...RequestEditorFn) (*ListRatesResponse, error)
-}
-
-type ListAllocationsResponse struct {
-	Body         []byte
-	HTTPResponse *http.Response
-	// JSON200 the response for an HTTP 200 `application/json` response
-	JSON200 *AllocationList
-	// JSONDefault the response for an HTTP default `application/json` response
-	JSONDefault *Error
-}
-
-// GetJSON200 returns the response for an HTTP 200 `application/json` response
-func (r ListAllocationsResponse) GetJSON200() *AllocationList {
-	return r.JSON200
-}
-
-// GetJSONDefault returns the response for an HTTP default `application/json` response
-func (r ListAllocationsResponse) GetJSONDefault() *Error {
-	return r.JSONDefault
-}
-
-// GetBody returns the raw response body bytes
-func (r ListAllocationsResponse) GetBody() []byte {
-	return r.Body
-}
-
-// Status returns HTTPResponse.Status
-func (r ListAllocationsResponse) Status() string {
-	if r.HTTPResponse != nil {
-		return r.HTTPResponse.Status
-	}
-	return http.StatusText(0)
-}
-
-// StatusCode returns HTTPResponse.StatusCode
-func (r ListAllocationsResponse) StatusCode() int {
-	if r.HTTPResponse != nil {
-		return r.HTTPResponse.StatusCode
-	}
-	return 0
-}
-
-// ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
-func (r ListAllocationsResponse) ContentType() string {
-	if r.HTTPResponse != nil {
-		return r.HTTPResponse.Header.Get("Content-Type")
-	}
-	return ""
 }
 
 type ListAllowancesResponse struct {
@@ -15532,25 +15210,6 @@ func (r ListRatesResponse) ContentType() string {
 	return ""
 }
 
-// ListAllocationsWithResponse List allocations
-//
-// Give `source_id` to follow one top-up or grant through to everything it paid for. Give
-// `target_id` to see which sources paid for one line of an invoice.
-//
-// Give `source_type` on its own to separate what cash paid for from what granted credit
-// paid for.
-//
-// Returns a wrapper object for the known response body format(s).
-//
-// Corresponds with GET /account/v1/allocations (the `ListAllocations` operationId).
-func (c *ClientWithResponses) ListAllocationsWithResponse(ctx context.Context, params *ListAllocationsParams, reqEditors ...RequestEditorFn) (*ListAllocationsResponse, error) {
-	rsp, err := c.ListAllocations(ctx, params, reqEditors...)
-	if err != nil {
-		return nil, err
-	}
-	return ParseListAllocationsResponse(rsp)
-}
-
 // ListAllowancesWithResponse List allowances
 //
 // A quantity rather than an amount of money: bytes, seconds or tokens that are used before
@@ -16976,39 +16635,6 @@ func (c *ClientWithResponses) ListRatesWithResponse(ctx context.Context, rateCar
 		return nil, err
 	}
 	return ParseListRatesResponse(rsp)
-}
-
-// ParseListAllocationsResponse parses an HTTP response from a ListAllocationsWithResponse call
-func ParseListAllocationsResponse(rsp *http.Response) (*ListAllocationsResponse, error) {
-	bodyBytes, err := io.ReadAll(rsp.Body)
-	defer func() { _ = rsp.Body.Close() }()
-	if err != nil {
-		return nil, err
-	}
-
-	response := &ListAllocationsResponse{
-		Body:         bodyBytes,
-		HTTPResponse: rsp,
-	}
-
-	switch {
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
-		var dest AllocationList
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSON200 = &dest
-
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && true:
-		var dest Error
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSONDefault = &dest
-
-	}
-
-	return response, nil
 }
 
 // ParseListAllowancesResponse parses an HTTP response from a ListAllowancesWithResponse call

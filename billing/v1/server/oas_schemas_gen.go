@@ -44,20 +44,19 @@ func (s *AccountAuth) SetRoles(val []string) {
 type AccountBalance struct {
 	BillingAccountID int64  `json:"billing_account_id"`
 	Currency         string `json:"currency"`
-	// Funds paid in and not yet spent. This is the part that can be refunded.
-	Cash Money `json:"cash"`
-	// Reserved by orders that have not completed.
-	Held Money `json:"held"`
+	// Funds paid in and not yet spent. This is the part that can be refunded. It goes negative when the
+	// account owes.
+	Balance Money `json:"balance"`
 	// Metered usage priced this month but not yet invoiced. It is already committed even though no invoice
 	// exists for it yet.
 	Accrued Money `json:"accrued"`
 	// Granted funds still unspent, vouchers included. Spendable within whatever each grant covers, and
 	// never withdrawable. Individual grants are listed separately, which is where a single voucher's
 	// remaining amount is read.
-	Granted Money `json:"granted"`
-	// `cash` less `accrued` and `held` — what is actually available at checkout. It goes negative when
-	// usage has exceeded the balance. Granted funds are shown separately because each grant can only pay
-	// for what it covers.
+	Credits Money `json:"credits"`
+	// `balance` less `accrued` — what is actually available at checkout. It goes negative when usage has
+	// exceeded the balance. Credits are shown separately because each grant can only pay for what it
+	// covers.
 	Spendable Money `json:"spendable"`
 }
 
@@ -71,14 +70,9 @@ func (s *AccountBalance) GetCurrency() string {
 	return s.Currency
 }
 
-// GetCash returns the value of Cash.
-func (s *AccountBalance) GetCash() Money {
-	return s.Cash
-}
-
-// GetHeld returns the value of Held.
-func (s *AccountBalance) GetHeld() Money {
-	return s.Held
+// GetBalance returns the value of Balance.
+func (s *AccountBalance) GetBalance() Money {
+	return s.Balance
 }
 
 // GetAccrued returns the value of Accrued.
@@ -86,9 +80,9 @@ func (s *AccountBalance) GetAccrued() Money {
 	return s.Accrued
 }
 
-// GetGranted returns the value of Granted.
-func (s *AccountBalance) GetGranted() Money {
-	return s.Granted
+// GetCredits returns the value of Credits.
+func (s *AccountBalance) GetCredits() Money {
+	return s.Credits
 }
 
 // GetSpendable returns the value of Spendable.
@@ -106,14 +100,9 @@ func (s *AccountBalance) SetCurrency(val string) {
 	s.Currency = val
 }
 
-// SetCash sets the value of Cash.
-func (s *AccountBalance) SetCash(val Money) {
-	s.Cash = val
-}
-
-// SetHeld sets the value of Held.
-func (s *AccountBalance) SetHeld(val Money) {
-	s.Held = val
+// SetBalance sets the value of Balance.
+func (s *AccountBalance) SetBalance(val Money) {
+	s.Balance = val
 }
 
 // SetAccrued sets the value of Accrued.
@@ -121,9 +110,9 @@ func (s *AccountBalance) SetAccrued(val Money) {
 	s.Accrued = val
 }
 
-// SetGranted sets the value of Granted.
-func (s *AccountBalance) SetGranted(val Money) {
-	s.Granted = val
+// SetCredits sets the value of Credits.
+func (s *AccountBalance) SetCredits(val Money) {
+	s.Credits = val
 }
 
 // SetSpendable sets the value of Spendable.
@@ -333,224 +322,6 @@ func (s *ActiveResourceStatus) UnmarshalText(data []byte) error {
 		return nil
 	case ActiveResourceStatusSuspended:
 		*s = ActiveResourceStatusSuspended
-		return nil
-	default:
-		return errors.Errorf("invalid value: %q", data)
-	}
-}
-
-// Ref: #/components/schemas/Allocation
-type Allocation struct {
-	ID          uuid.UUID            `json:"id"`
-	SourceType  AllocationSourceType `json:"source_type"`
-	SourceID    uuid.UUID            `json:"source_id"`
-	TargetType  AllocationTargetType `json:"target_type"`
-	TargetID    uuid.UUID            `json:"target_id"`
-	Amount      Money                `json:"amount"`
-	Currency    string               `json:"currency"`
-	AllocatedAt time.Time            `json:"allocated_at"`
-	ReversedAt  OptNilDateTime       `json:"reversed_at"`
-}
-
-// GetID returns the value of ID.
-func (s *Allocation) GetID() uuid.UUID {
-	return s.ID
-}
-
-// GetSourceType returns the value of SourceType.
-func (s *Allocation) GetSourceType() AllocationSourceType {
-	return s.SourceType
-}
-
-// GetSourceID returns the value of SourceID.
-func (s *Allocation) GetSourceID() uuid.UUID {
-	return s.SourceID
-}
-
-// GetTargetType returns the value of TargetType.
-func (s *Allocation) GetTargetType() AllocationTargetType {
-	return s.TargetType
-}
-
-// GetTargetID returns the value of TargetID.
-func (s *Allocation) GetTargetID() uuid.UUID {
-	return s.TargetID
-}
-
-// GetAmount returns the value of Amount.
-func (s *Allocation) GetAmount() Money {
-	return s.Amount
-}
-
-// GetCurrency returns the value of Currency.
-func (s *Allocation) GetCurrency() string {
-	return s.Currency
-}
-
-// GetAllocatedAt returns the value of AllocatedAt.
-func (s *Allocation) GetAllocatedAt() time.Time {
-	return s.AllocatedAt
-}
-
-// GetReversedAt returns the value of ReversedAt.
-func (s *Allocation) GetReversedAt() OptNilDateTime {
-	return s.ReversedAt
-}
-
-// SetID sets the value of ID.
-func (s *Allocation) SetID(val uuid.UUID) {
-	s.ID = val
-}
-
-// SetSourceType sets the value of SourceType.
-func (s *Allocation) SetSourceType(val AllocationSourceType) {
-	s.SourceType = val
-}
-
-// SetSourceID sets the value of SourceID.
-func (s *Allocation) SetSourceID(val uuid.UUID) {
-	s.SourceID = val
-}
-
-// SetTargetType sets the value of TargetType.
-func (s *Allocation) SetTargetType(val AllocationTargetType) {
-	s.TargetType = val
-}
-
-// SetTargetID sets the value of TargetID.
-func (s *Allocation) SetTargetID(val uuid.UUID) {
-	s.TargetID = val
-}
-
-// SetAmount sets the value of Amount.
-func (s *Allocation) SetAmount(val Money) {
-	s.Amount = val
-}
-
-// SetCurrency sets the value of Currency.
-func (s *Allocation) SetCurrency(val string) {
-	s.Currency = val
-}
-
-// SetAllocatedAt sets the value of AllocatedAt.
-func (s *Allocation) SetAllocatedAt(val time.Time) {
-	s.AllocatedAt = val
-}
-
-// SetReversedAt sets the value of ReversedAt.
-func (s *Allocation) SetReversedAt(val OptNilDateTime) {
-	s.ReversedAt = val
-}
-
-// Ref: #/components/schemas/AllocationList
-type AllocationList struct {
-	Items      []Allocation `json:"items"`
-	TotalCount OptInt64     `json:"total_count"`
-}
-
-// GetItems returns the value of Items.
-func (s *AllocationList) GetItems() []Allocation {
-	return s.Items
-}
-
-// GetTotalCount returns the value of TotalCount.
-func (s *AllocationList) GetTotalCount() OptInt64 {
-	return s.TotalCount
-}
-
-// SetItems sets the value of Items.
-func (s *AllocationList) SetItems(val []Allocation) {
-	s.Items = val
-}
-
-// SetTotalCount sets the value of TotalCount.
-func (s *AllocationList) SetTotalCount(val OptInt64) {
-	s.TotalCount = val
-}
-
-type AllocationSourceType string
-
-const (
-	AllocationSourceTypeTransaction AllocationSourceType = "transaction"
-	AllocationSourceTypeCreditGrant AllocationSourceType = "credit_grant"
-)
-
-// AllValues returns all AllocationSourceType values.
-func (AllocationSourceType) AllValues() []AllocationSourceType {
-	return []AllocationSourceType{
-		AllocationSourceTypeTransaction,
-		AllocationSourceTypeCreditGrant,
-	}
-}
-
-// MarshalText implements encoding.TextMarshaler.
-func (s AllocationSourceType) MarshalText() ([]byte, error) {
-	switch s {
-	case AllocationSourceTypeTransaction:
-		return []byte(s), nil
-	case AllocationSourceTypeCreditGrant:
-		return []byte(s), nil
-	default:
-		return nil, errors.Errorf("invalid value: %q", s)
-	}
-}
-
-// UnmarshalText implements encoding.TextUnmarshaler.
-func (s *AllocationSourceType) UnmarshalText(data []byte) error {
-	switch AllocationSourceType(data) {
-	case AllocationSourceTypeTransaction:
-		*s = AllocationSourceTypeTransaction
-		return nil
-	case AllocationSourceTypeCreditGrant:
-		*s = AllocationSourceTypeCreditGrant
-		return nil
-	default:
-		return errors.Errorf("invalid value: %q", data)
-	}
-}
-
-type AllocationTargetType string
-
-const (
-	AllocationTargetTypeHold        AllocationTargetType = "hold"
-	AllocationTargetTypeOrderItem   AllocationTargetType = "order_item"
-	AllocationTargetTypeInvoiceItem AllocationTargetType = "invoice_item"
-)
-
-// AllValues returns all AllocationTargetType values.
-func (AllocationTargetType) AllValues() []AllocationTargetType {
-	return []AllocationTargetType{
-		AllocationTargetTypeHold,
-		AllocationTargetTypeOrderItem,
-		AllocationTargetTypeInvoiceItem,
-	}
-}
-
-// MarshalText implements encoding.TextMarshaler.
-func (s AllocationTargetType) MarshalText() ([]byte, error) {
-	switch s {
-	case AllocationTargetTypeHold:
-		return []byte(s), nil
-	case AllocationTargetTypeOrderItem:
-		return []byte(s), nil
-	case AllocationTargetTypeInvoiceItem:
-		return []byte(s), nil
-	default:
-		return nil, errors.Errorf("invalid value: %q", s)
-	}
-}
-
-// UnmarshalText implements encoding.TextUnmarshaler.
-func (s *AllocationTargetType) UnmarshalText(data []byte) error {
-	switch AllocationTargetType(data) {
-	case AllocationTargetTypeHold:
-		*s = AllocationTargetTypeHold
-		return nil
-	case AllocationTargetTypeOrderItem:
-		*s = AllocationTargetTypeOrderItem
-		return nil
-	case AllocationTargetTypeInvoiceItem:
-		*s = AllocationTargetTypeInvoiceItem
 		return nil
 	default:
 		return errors.Errorf("invalid value: %q", data)
@@ -3621,47 +3392,6 @@ func (s *InvoiceType) UnmarshalText(data []byte) error {
 	}
 }
 
-type ListAllocationsSourceType string
-
-const (
-	ListAllocationsSourceTypeTransaction ListAllocationsSourceType = "transaction"
-	ListAllocationsSourceTypeCreditGrant ListAllocationsSourceType = "credit_grant"
-)
-
-// AllValues returns all ListAllocationsSourceType values.
-func (ListAllocationsSourceType) AllValues() []ListAllocationsSourceType {
-	return []ListAllocationsSourceType{
-		ListAllocationsSourceTypeTransaction,
-		ListAllocationsSourceTypeCreditGrant,
-	}
-}
-
-// MarshalText implements encoding.TextMarshaler.
-func (s ListAllocationsSourceType) MarshalText() ([]byte, error) {
-	switch s {
-	case ListAllocationsSourceTypeTransaction:
-		return []byte(s), nil
-	case ListAllocationsSourceTypeCreditGrant:
-		return []byte(s), nil
-	default:
-		return nil, errors.Errorf("invalid value: %q", s)
-	}
-}
-
-// UnmarshalText implements encoding.TextUnmarshaler.
-func (s *ListAllocationsSourceType) UnmarshalText(data []byte) error {
-	switch ListAllocationsSourceType(data) {
-	case ListAllocationsSourceTypeTransaction:
-		*s = ListAllocationsSourceTypeTransaction
-		return nil
-	case ListAllocationsSourceTypeCreditGrant:
-		*s = ListAllocationsSourceTypeCreditGrant
-		return nil
-	default:
-		return errors.Errorf("invalid value: %q", data)
-	}
-}
-
 type ListAllowancesStatus string
 
 const (
@@ -4617,52 +4347,6 @@ func (o OptInvoiceType) Get() (v InvoiceType, ok bool) {
 
 // Or returns value if set, or given parameter if does not.
 func (o OptInvoiceType) Or(d InvoiceType) InvoiceType {
-	if v, ok := o.Get(); ok {
-		return v
-	}
-	return d
-}
-
-// NewOptListAllocationsSourceType returns new OptListAllocationsSourceType with value set to v.
-func NewOptListAllocationsSourceType(v ListAllocationsSourceType) OptListAllocationsSourceType {
-	return OptListAllocationsSourceType{
-		Value: v,
-		Set:   true,
-	}
-}
-
-// OptListAllocationsSourceType is optional ListAllocationsSourceType.
-type OptListAllocationsSourceType struct {
-	Value ListAllocationsSourceType
-	Set   bool
-}
-
-// IsSet returns true if OptListAllocationsSourceType was set.
-func (o OptListAllocationsSourceType) IsSet() bool { return o.Set }
-
-// Reset unsets value.
-func (o *OptListAllocationsSourceType) Reset() {
-	var v ListAllocationsSourceType
-	o.Value = v
-	o.Set = false
-}
-
-// SetTo sets value to v.
-func (o *OptListAllocationsSourceType) SetTo(v ListAllocationsSourceType) {
-	o.Set = true
-	o.Value = v
-}
-
-// Get returns value and boolean that denotes whether value was set.
-func (o OptListAllocationsSourceType) Get() (v ListAllocationsSourceType, ok bool) {
-	if !o.Set {
-		return v, false
-	}
-	return o.Value, true
-}
-
-// Or returns value if set, or given parameter if does not.
-func (o OptListAllocationsSourceType) Or(d ListAllocationsSourceType) ListAllocationsSourceType {
 	if v, ok := o.Get(); ok {
 		return v
 	}
@@ -12418,8 +12102,8 @@ func (s *TransactionList) SetTotalCount(val OptInt64) {
 
 // What moved the money. These are the events that change the account's cash balance.
 //
-// Charges for usage and amounts reserved by orders are not here: usage appears among the charges and
-// on invoices, and a reservation appears as an allocation.
+// Charges for usage are not here: they appear among the charges and on invoices. Nor is what an order
+// drew from the balance — the order itself records that.
 // Ref: #/components/schemas/TransactionType
 type TransactionType string
 

@@ -64,7 +64,6 @@ var operationRolesAccountAuth = map[string][]string{
 	GetOrderRefundQuoteOperation:             []string{},
 	GetTopUpOperation:                        []string{},
 	ListAccountDiscountsOperation:            []string{},
-	ListAllocationsOperation:                 []string{},
 	ListAllowanceConsumptionsOperation:       []string{},
 	ListAllowancesOperation:                  []string{},
 	ListBillingAccountsOperation:             []string{},

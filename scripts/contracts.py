@@ -22,8 +22,9 @@ def fetch(remote: str, destination: pathlib.Path) -> str:
     """把契约取到 destination，返回取到的 commit。"""
     ref = REF_FILE.read_text(encoding="utf-8").strip() if REF_FILE.exists() else "main"
     shutil.rmtree(destination, ignore_errors=True)
-    subprocess.run(["git", "clone", "--quiet", "--no-tags", remote, str(destination)],
-                   check=True)
+    # 带上 tags：CONTRACTS_REF 收 commit sha 也收 tag，而 --no-tags 下 checkout 一个 tag
+    # 报的是「pathspec 不匹配」——那句话指向拼错的分支名，不指向这个选项。
+    subprocess.run(["git", "clone", "--quiet", remote, str(destination)], check=True)
     subprocess.run(["git", "-C", str(destination), "checkout", "--quiet", ref], check=True)
     got = subprocess.run(["git", "-C", str(destination), "rev-parse", "HEAD"],
                          check=True, capture_output=True, text=True).stdout.strip()
