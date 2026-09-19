@@ -428,6 +428,17 @@ type Invoker interface {
 	//
 	// GET /account/v1/refunds
 	ListRefunds(ctx context.Context, params ListRefundsParams) (*RefundList, error)
+	// ListRenewalPrices invokes list-renewal-prices operation.
+	//
+	// Every term on offer with what it costs, in one request: a renewal form needs the whole ladder to
+	// render, and asking once per term is a request per row.
+	//
+	// Prices agreed for this account are reflected. The term this item already bills at is marked
+	// `current`: renewing for it is not affected by a later price change, while any other term is bought
+	// at today's price.
+	//
+	// GET /account/v1/subscription-items/{itemId}/renewal-prices
+	ListRenewalPrices(ctx context.Context, params ListRenewalPricesParams) (*RenewalPriceList, error)
 	// ListSubscriptionItems invokes list-subscription-items operation.
 	//
 	// List subscription items.
@@ -8992,6 +9003,143 @@ func (c *Client) sendListRefunds(ctx context.Context, params ListRefundsParams) 
 
 	stage = "DecodeResponse"
 	result, err := decodeListRefundsResponse(resp)
+	if err != nil {
+		return res, errors.Wrap(err, "decode response")
+	}
+
+	return result, nil
+}
+
+// ListRenewalPrices invokes list-renewal-prices operation.
+//
+// Every term on offer with what it costs, in one request: a renewal form needs the whole ladder to
+// render, and asking once per term is a request per row.
+//
+// Prices agreed for this account are reflected. The term this item already bills at is marked
+// `current`: renewing for it is not affected by a later price change, while any other term is bought
+// at today's price.
+//
+// GET /account/v1/subscription-items/{itemId}/renewal-prices
+func (c *Client) ListRenewalPrices(ctx context.Context, params ListRenewalPricesParams) (*RenewalPriceList, error) {
+	res, err := c.sendListRenewalPrices(ctx, params)
+	return res, err
+}
+
+func (c *Client) sendListRenewalPrices(ctx context.Context, params ListRenewalPricesParams) (res *RenewalPriceList, err error) {
+	otelAttrs := []attribute.KeyValue{
+		otelogen.OperationID("list-renewal-prices"),
+		semconv.HTTPRequestMethodKey.String("GET"),
+		semconv.URLTemplateKey.String("/account/v1/subscription-items/{itemId}/renewal-prices"),
+	}
+	otelAttrs = append(otelAttrs, c.cfg.Attributes...)
+
+	// Run stopwatch.
+	startTime := time.Now()
+	defer func() {
+		// Use floating point division here for higher precision (instead of Millisecond method).
+		elapsedDuration := time.Since(startTime)
+		c.duration.Record(ctx, float64(elapsedDuration)/float64(time.Millisecond), metric.WithAttributes(otelAttrs...))
+	}()
+
+	// Increment request counter.
+	c.requests.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
+
+	// Start a span for this request.
+	ctx, span := c.cfg.Tracer.Start(ctx, ListRenewalPricesOperation,
+		trace.WithAttributes(otelAttrs...),
+		clientSpanKind,
+	)
+	// Track stage for error reporting.
+	var stage string
+	defer func() {
+		if err != nil {
+			span.RecordError(err)
+			span.SetStatus(codes.Error, stage)
+			c.errors.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
+		}
+		span.End()
+	}()
+
+	stage = "BuildURL"
+	u := uri.Clone(c.requestURL(ctx))
+	var pathParts [3]string
+	pathParts[0] = "/account/v1/subscription-items/"
+	{
+		// Encode "itemId" parameter.
+		e := uri.NewPathEncoder(uri.PathEncoderConfig{
+			Param:   "itemId",
+			Style:   uri.PathStyleSimple,
+			Explode: false,
+		})
+		if err := func() error {
+			return e.EncodeValue(conv.UUIDToString(params.ItemId))
+		}(); err != nil {
+			return res, errors.Wrap(err, "encode path")
+		}
+		encoded, err := e.Result()
+		if err != nil {
+			return res, errors.Wrap(err, "encode path")
+		}
+		pathParts[1] = encoded
+	}
+	pathParts[2] = "/renewal-prices"
+	uri.AddPathParts(u, pathParts[:]...)
+
+	stage = "EncodeRequest"
+	r, err := ht.NewRequest(ctx, "GET", u)
+	if err != nil {
+		return res, errors.Wrap(err, "create request")
+	}
+
+	{
+		type bitset = [1]uint8
+		var satisfied bitset
+		{
+			stage = "Security:AccountAuth"
+			switch err := c.securityAccountAuth(ctx, ListRenewalPricesOperation, r); {
+			case err == nil: // if NO error
+				satisfied[0] |= 1 << 0
+			case errors.Is(err, ogenerrors.ErrSkipClientSecurity):
+				// Skip this security.
+			default:
+				return res, errors.Wrap(err, "security \"AccountAuth\"")
+			}
+		}
+
+		if ok := func() bool {
+		nextRequirement:
+			for _, requirement := range []bitset{
+				{0b00000001},
+			} {
+				for i, mask := range requirement {
+					if satisfied[i]&mask != mask {
+						continue nextRequirement
+					}
+				}
+				return true
+			}
+			return false
+		}(); !ok {
+			return res, ogenerrors.ErrSecurityRequirementIsNotSatisfied
+		}
+	}
+
+	stage = "SendRequest"
+	resp, err := c.cfg.Client.Do(r)
+	if err != nil {
+		return res, errors.Wrap(err, "do request")
+	}
+	body := resp.Body
+	defer func() {
+		// Drain the body to EOF before closing, so the underlying
+		// connection can be reused by the Transport regardless of the
+		// response status code. See https://github.com/ogen-go/ogen/issues/1670.
+		_, _ = io.Copy(io.Discard, body)
+		_ = body.Close()
+	}()
+
+	stage = "DecodeResponse"
+	result, err := decodeListRenewalPricesResponse(resp)
 	if err != nil {
 		return res, errors.Wrap(err, "decode response")
 	}

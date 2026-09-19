@@ -57,6 +57,7 @@ const (
 	ListProjectUsageChargesOperation         OperationName = "ListProjectUsageCharges"
 	ListRatesOperation                       OperationName = "ListRates"
 	ListRefundsOperation                     OperationName = "ListRefunds"
+	ListRenewalPricesOperation               OperationName = "ListRenewalPrices"
 	ListSubscriptionItemsOperation           OperationName = "ListSubscriptionItems"
 	ListSubscriptionsOperation               OperationName = "ListSubscriptions"
 	ListTopUpsOperation                      OperationName = "ListTopUps"

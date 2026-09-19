@@ -931,6 +931,48 @@ func (e RefundSourceType) Valid() bool {
 	}
 }
 
+// Defines values for RenewRequestPeriod.
+const (
+	RenewRequestPeriodDay   RenewRequestPeriod = "day"
+	RenewRequestPeriodMonth RenewRequestPeriod = "month"
+	RenewRequestPeriodYear  RenewRequestPeriod = "year"
+)
+
+// Valid indicates whether the value is a known member of the RenewRequestPeriod enum.
+func (e RenewRequestPeriod) Valid() bool {
+	switch e {
+	case RenewRequestPeriodDay:
+		return true
+	case RenewRequestPeriodMonth:
+		return true
+	case RenewRequestPeriodYear:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for RenewalPricePeriod.
+const (
+	RenewalPricePeriodDay   RenewalPricePeriod = "day"
+	RenewalPricePeriodMonth RenewalPricePeriod = "month"
+	RenewalPricePeriodYear  RenewalPricePeriod = "year"
+)
+
+// Valid indicates whether the value is a known member of the RenewalPricePeriod enum.
+func (e RenewalPricePeriod) Valid() bool {
+	switch e {
+	case RenewalPricePeriodDay:
+		return true
+	case RenewalPricePeriodMonth:
+		return true
+	case RenewalPricePeriodYear:
+		return true
+	default:
+		return false
+	}
+}
+
 // Defines values for ScopePriceEntryPeriod.
 const (
 	ScopePriceEntryPeriodDay   ScopePriceEntryPeriod = "day"
@@ -3021,10 +3063,54 @@ type RenewRequest struct {
 	IdempotencyKey  string              `json:"idempotency_key"`
 	PaymentMethodId *openapi_types.UUID `json:"payment_method_id,omitempty"`
 
-	// Periods How many further periods to buy.
-	Periods    *int    `json:"periods,omitempty"`
-	ReturnUrl  *string `json:"return_url,omitempty"`
-	UseBalance *bool   `json:"use_balance,omitempty"`
+	// Period The unit `term` counts in.
+	Period *RenewRequestPeriod `json:"period,omitempty"`
+
+	// Periods How many further periods to buy, each at the price this item already bills at.
+	//
+	// Buying twelve monthly periods is not the same as buying one yearly term: a longer
+	// term is usually sold at a lower price, and that price is only reached by naming the
+	// term. Use `term` and `period` for that.
+	Periods   *int    `json:"periods,omitempty"`
+	ReturnUrl *string `json:"return_url,omitempty"`
+
+	// Term Renew for a term of this length instead, at the price currently sold for it. Give
+	// `period` with it.
+	//
+	// Leaving both out renews at the price this item already bills at, which a later price
+	// change does not affect. Naming a term that differs from the current one is a fresh
+	// choice, so it is bought at today's price. Naming the current term changes nothing.
+	//
+	// List the terms on offer with the renewal prices operation.
+	Term       *int  `json:"term,omitempty"`
+	UseBalance *bool `json:"use_balance,omitempty"`
+}
+
+// RenewRequestPeriod The unit `term` counts in.
+type RenewRequestPeriod string
+
+// RenewalPrice defines model for RenewalPrice.
+type RenewalPrice struct {
+	// Amount What renewing for this term costs, for the quantity held.
+	Amount   *externalRef0.Money `json:"amount,omitempty"`
+	Currency *string             `json:"currency,omitempty"`
+
+	// Current The term this item already bills at. Renewing for it uses the price bought
+	// originally, so a later price change does not affect it.
+	Current bool               `json:"current"`
+	Period  RenewalPricePeriod `json:"period"`
+	PriceId openapi_types.UUID `json:"price_id"`
+
+	// Term How many periods one renewal covers.
+	Term int `json:"term"`
+}
+
+// RenewalPricePeriod defines model for RenewalPrice.Period.
+type RenewalPricePeriod string
+
+// RenewalPriceList defines model for RenewalPriceList.
+type RenewalPriceList struct {
+	Items []RenewalPrice `json:"items"`
 }
 
 // ScopeEntry One catalogue entry named by a scope, with the name to show for it.
@@ -4638,6 +4724,18 @@ type ClientInterface interface {
 	// Corresponds with POST /account/v1/subscription-items/{itemId}/renew (the `RenewSubscriptionItem` operationId).
 	RenewSubscriptionItem(ctx context.Context, itemId ItemId, body RenewSubscriptionItemJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
 
+	// ListRenewalPrices List the terms this item can be renewed for
+	//
+	// Every term on offer with what it costs, in one request: a renewal form needs the whole
+	// ladder to render, and asking once per term is a request per row.
+	//
+	// Prices agreed for this account are reflected. The term this item already bills at is
+	// marked `current`: renewing for it is not affected by a later price change, while any
+	// other term is bought at today's price.
+	//
+	// Corresponds with GET /account/v1/subscription-items/{itemId}/renewal-prices (the `ListRenewalPrices` operationId).
+	ListRenewalPrices(ctx context.Context, itemId openapi_types.UUID, reqEditors ...RequestEditorFn) (*http.Response, error)
+
 	// ListSubscriptions List subscriptions
 	//
 	// Corresponds with GET /account/v1/subscriptions (the `ListSubscriptions` operationId).
@@ -5966,6 +6064,28 @@ func (c *Client) RenewSubscriptionItemWithBody(ctx context.Context, itemId ItemI
 // Corresponds with POST /account/v1/subscription-items/{itemId}/renew (the `RenewSubscriptionItem` operationId).
 func (c *Client) RenewSubscriptionItem(ctx context.Context, itemId ItemId, body RenewSubscriptionItemJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
 	req, err := NewRenewSubscriptionItemRequest(c.Server, itemId, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+// ListRenewalPrices List the terms this item can be renewed for
+//
+// Every term on offer with what it costs, in one request: a renewal form needs the whole
+// ladder to render, and asking once per term is a request per row.
+//
+// Prices agreed for this account are reflected. The term this item already bills at is
+// marked `current`: renewing for it is not affected by a later price change, while any
+// other term is bought at today's price.
+//
+// Corresponds with GET /account/v1/subscription-items/{itemId}/renewal-prices (the `ListRenewalPrices` operationId).
+func (c *Client) ListRenewalPrices(ctx context.Context, itemId openapi_types.UUID, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewListRenewalPricesRequest(c.Server, itemId)
 	if err != nil {
 		return nil, err
 	}
@@ -8983,6 +9103,40 @@ func NewRenewSubscriptionItemRequestWithBody(server string, itemId ItemId, conte
 	return req, nil
 }
 
+// NewListRenewalPricesRequest constructs an http.Request for the ListRenewalPrices method
+func NewListRenewalPricesRequest(server string, itemId openapi_types.UUID) (*http.Request, error) {
+	var err error
+
+	var pathParam0 string
+
+	pathParam0, err = runtime.StyleParamWithOptions("simple", false, "itemId", itemId, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: "uuid"})
+	if err != nil {
+		return nil, err
+	}
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/account/v1/subscription-items/%s/renewal-prices", pathParam0)
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest(http.MethodGet, queryURL.String(), nil)
+	if err != nil {
+		return nil, err
+	}
+
+	return req, nil
+}
+
 // NewListSubscriptionsRequest constructs an http.Request for the ListSubscriptions method
 func NewListSubscriptionsRequest(server string, params *ListSubscriptionsParams) (*http.Request, error) {
 	var err error
@@ -11891,6 +12045,20 @@ type ClientWithResponsesInterface interface {
 	// Corresponds with POST /account/v1/subscription-items/{itemId}/renew (the `RenewSubscriptionItem` operationId).
 	RenewSubscriptionItemWithResponse(ctx context.Context, itemId ItemId, body RenewSubscriptionItemJSONRequestBody, reqEditors ...RequestEditorFn) (*RenewSubscriptionItemResponse, error)
 
+	// ListRenewalPricesWithResponse List the terms this item can be renewed for
+	//
+	// Every term on offer with what it costs, in one request: a renewal form needs the whole
+	// ladder to render, and asking once per term is a request per row.
+	//
+	// Prices agreed for this account are reflected. The term this item already bills at is
+	// marked `current`: renewing for it is not affected by a later price change, while any
+	// other term is bought at today's price.
+	//
+	// Returns a wrapper object for the known response body format(s).
+	//
+	// Corresponds with GET /account/v1/subscription-items/{itemId}/renewal-prices (the `ListRenewalPrices` operationId).
+	ListRenewalPricesWithResponse(ctx context.Context, itemId openapi_types.UUID, reqEditors ...RequestEditorFn) (*ListRenewalPricesResponse, error)
+
 	// ListSubscriptionsWithResponse List subscriptions
 	//
 	// Returns a wrapper object for the known response body format(s).
@@ -14135,6 +14303,54 @@ func (r RenewSubscriptionItemResponse) StatusCode() int {
 
 // ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
 func (r RenewSubscriptionItemResponse) ContentType() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Header.Get("Content-Type")
+	}
+	return ""
+}
+
+type ListRenewalPricesResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	// JSON200 the response for an HTTP 200 `application/json` response
+	JSON200 *RenewalPriceList
+	// JSONDefault the response for an HTTP default `application/json` response
+	JSONDefault *Error
+}
+
+// GetJSON200 returns the response for an HTTP 200 `application/json` response
+func (r ListRenewalPricesResponse) GetJSON200() *RenewalPriceList {
+	return r.JSON200
+}
+
+// GetJSONDefault returns the response for an HTTP default `application/json` response
+func (r ListRenewalPricesResponse) GetJSONDefault() *Error {
+	return r.JSONDefault
+}
+
+// GetBody returns the raw response body bytes
+func (r ListRenewalPricesResponse) GetBody() []byte {
+	return r.Body
+}
+
+// Status returns HTTPResponse.Status
+func (r ListRenewalPricesResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r ListRenewalPricesResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+// ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
+func (r ListRenewalPricesResponse) ContentType() string {
 	if r.HTTPResponse != nil {
 		return r.HTTPResponse.Header.Get("Content-Type")
 	}
@@ -16487,6 +16703,26 @@ func (c *ClientWithResponses) RenewSubscriptionItemWithResponse(ctx context.Cont
 	return ParseRenewSubscriptionItemResponse(rsp)
 }
 
+// ListRenewalPricesWithResponse List the terms this item can be renewed for
+//
+// Every term on offer with what it costs, in one request: a renewal form needs the whole
+// ladder to render, and asking once per term is a request per row.
+//
+// Prices agreed for this account are reflected. The term this item already bills at is
+// marked `current`: renewing for it is not affected by a later price change, while any
+// other term is bought at today's price.
+//
+// Returns a wrapper object for the known response body format(s).
+//
+// Corresponds with GET /account/v1/subscription-items/{itemId}/renewal-prices (the `ListRenewalPrices` operationId).
+func (c *ClientWithResponses) ListRenewalPricesWithResponse(ctx context.Context, itemId openapi_types.UUID, reqEditors ...RequestEditorFn) (*ListRenewalPricesResponse, error) {
+	rsp, err := c.ListRenewalPrices(ctx, itemId, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseListRenewalPricesResponse(rsp)
+}
+
 // ListSubscriptionsWithResponse List subscriptions
 //
 // Returns a wrapper object for the known response body format(s).
@@ -18323,6 +18559,39 @@ func ParseRenewSubscriptionItemResponse(rsp *http.Response) (*RenewSubscriptionI
 	switch {
 	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
 		var dest PaymentResult
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && true:
+		var dest Error
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSONDefault = &dest
+
+	}
+
+	return response, nil
+}
+
+// ParseListRenewalPricesResponse parses an HTTP response from a ListRenewalPricesWithResponse call
+func ParseListRenewalPricesResponse(rsp *http.Response) (*ListRenewalPricesResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &ListRenewalPricesResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest RenewalPriceList
 		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
 			return nil, err
 		}

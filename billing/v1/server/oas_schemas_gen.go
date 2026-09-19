@@ -6305,6 +6305,52 @@ func (o OptRefundPolicy) Or(d RefundPolicy) RefundPolicy {
 	return d
 }
 
+// NewOptRenewRequestPeriod returns new OptRenewRequestPeriod with value set to v.
+func NewOptRenewRequestPeriod(v RenewRequestPeriod) OptRenewRequestPeriod {
+	return OptRenewRequestPeriod{
+		Value: v,
+		Set:   true,
+	}
+}
+
+// OptRenewRequestPeriod is optional RenewRequestPeriod.
+type OptRenewRequestPeriod struct {
+	Value RenewRequestPeriod
+	Set   bool
+}
+
+// IsSet returns true if OptRenewRequestPeriod was set.
+func (o OptRenewRequestPeriod) IsSet() bool { return o.Set }
+
+// Reset unsets value.
+func (o *OptRenewRequestPeriod) Reset() {
+	var v RenewRequestPeriod
+	o.Value = v
+	o.Set = false
+}
+
+// SetTo sets value to v.
+func (o *OptRenewRequestPeriod) SetTo(v RenewRequestPeriod) {
+	o.Set = true
+	o.Value = v
+}
+
+// Get returns value and boolean that denotes whether value was set.
+func (o OptRenewRequestPeriod) Get() (v RenewRequestPeriod, ok bool) {
+	if !o.Set {
+		return v, false
+	}
+	return o.Value, true
+}
+
+// Or returns value if set, or given parameter if does not.
+func (o OptRenewRequestPeriod) Or(d RenewRequestPeriod) RenewRequestPeriod {
+	if v, ok := o.Get(); ok {
+		return v
+	}
+	return d
+}
+
 // NewOptScopePriceEntryPeriod returns new OptScopePriceEntryPeriod with value set to v.
 func NewOptScopePriceEntryPeriod(v ScopePriceEntryPeriod) OptScopePriceEntryPeriod {
 	return OptScopePriceEntryPeriod{
@@ -10983,17 +11029,41 @@ func (s *RefundStatus) UnmarshalText(data []byte) error {
 
 // Ref: #/components/schemas/RenewRequest
 type RenewRequest struct {
-	// How many further periods to buy.
-	Periods         OptInt    `json:"periods"`
-	PaymentMethodID OptUUID   `json:"payment_method_id"`
-	UseBalance      OptBool   `json:"use_balance"`
-	ReturnURL       OptString `json:"return_url"`
-	IdempotencyKey  string    `json:"idempotency_key"`
+	// How many further periods to buy, each at the price this item already bills at.
+	//
+	// Buying twelve monthly periods is not the same as buying one yearly term: a longer term is usually
+	// sold at a lower price, and that price is only reached by naming the term. Use `term` and `period`
+	// for that.
+	Periods OptInt `json:"periods"`
+	// Renew for a term of this length instead, at the price currently sold for it. Give `period` with it.
+	//
+	// Leaving both out renews at the price this item already bills at, which a later price change does not
+	// affect. Naming a term that differs from the current one is a fresh choice, so it is bought at
+	// today's price. Naming the current term changes nothing.
+	//
+	// List the terms on offer with the renewal prices operation.
+	Term OptInt `json:"term"`
+	// The unit `term` counts in.
+	Period          OptRenewRequestPeriod `json:"period"`
+	PaymentMethodID OptUUID               `json:"payment_method_id"`
+	UseBalance      OptBool               `json:"use_balance"`
+	ReturnURL       OptString             `json:"return_url"`
+	IdempotencyKey  string                `json:"idempotency_key"`
 }
 
 // GetPeriods returns the value of Periods.
 func (s *RenewRequest) GetPeriods() OptInt {
 	return s.Periods
+}
+
+// GetTerm returns the value of Term.
+func (s *RenewRequest) GetTerm() OptInt {
+	return s.Term
+}
+
+// GetPeriod returns the value of Period.
+func (s *RenewRequest) GetPeriod() OptRenewRequestPeriod {
+	return s.Period
 }
 
 // GetPaymentMethodID returns the value of PaymentMethodID.
@@ -11021,6 +11091,16 @@ func (s *RenewRequest) SetPeriods(val OptInt) {
 	s.Periods = val
 }
 
+// SetTerm sets the value of Term.
+func (s *RenewRequest) SetTerm(val OptInt) {
+	s.Term = val
+}
+
+// SetPeriod sets the value of Period.
+func (s *RenewRequest) SetPeriod(val OptRenewRequestPeriod) {
+	s.Period = val
+}
+
 // SetPaymentMethodID sets the value of PaymentMethodID.
 func (s *RenewRequest) SetPaymentMethodID(val OptUUID) {
 	s.PaymentMethodID = val
@@ -11039,6 +11119,192 @@ func (s *RenewRequest) SetReturnURL(val OptString) {
 // SetIdempotencyKey sets the value of IdempotencyKey.
 func (s *RenewRequest) SetIdempotencyKey(val string) {
 	s.IdempotencyKey = val
+}
+
+// The unit `term` counts in.
+type RenewRequestPeriod string
+
+const (
+	RenewRequestPeriodDay   RenewRequestPeriod = "day"
+	RenewRequestPeriodMonth RenewRequestPeriod = "month"
+	RenewRequestPeriodYear  RenewRequestPeriod = "year"
+)
+
+// AllValues returns all RenewRequestPeriod values.
+func (RenewRequestPeriod) AllValues() []RenewRequestPeriod {
+	return []RenewRequestPeriod{
+		RenewRequestPeriodDay,
+		RenewRequestPeriodMonth,
+		RenewRequestPeriodYear,
+	}
+}
+
+// MarshalText implements encoding.TextMarshaler.
+func (s RenewRequestPeriod) MarshalText() ([]byte, error) {
+	switch s {
+	case RenewRequestPeriodDay:
+		return []byte(s), nil
+	case RenewRequestPeriodMonth:
+		return []byte(s), nil
+	case RenewRequestPeriodYear:
+		return []byte(s), nil
+	default:
+		return nil, errors.Errorf("invalid value: %q", s)
+	}
+}
+
+// UnmarshalText implements encoding.TextUnmarshaler.
+func (s *RenewRequestPeriod) UnmarshalText(data []byte) error {
+	switch RenewRequestPeriod(data) {
+	case RenewRequestPeriodDay:
+		*s = RenewRequestPeriodDay
+		return nil
+	case RenewRequestPeriodMonth:
+		*s = RenewRequestPeriodMonth
+		return nil
+	case RenewRequestPeriodYear:
+		*s = RenewRequestPeriodYear
+		return nil
+	default:
+		return errors.Errorf("invalid value: %q", data)
+	}
+}
+
+// Ref: #/components/schemas/RenewalPrice
+type RenewalPrice struct {
+	PriceID uuid.UUID `json:"price_id"`
+	// How many periods one renewal covers.
+	Term   int                `json:"term"`
+	Period RenewalPricePeriod `json:"period"`
+	// What renewing for this term costs, for the quantity held.
+	Amount   OptMoney  `json:"amount"`
+	Currency OptString `json:"currency"`
+	// The term this item already bills at. Renewing for it uses the price bought originally, so a later
+	// price change does not affect it.
+	Current bool `json:"current"`
+}
+
+// GetPriceID returns the value of PriceID.
+func (s *RenewalPrice) GetPriceID() uuid.UUID {
+	return s.PriceID
+}
+
+// GetTerm returns the value of Term.
+func (s *RenewalPrice) GetTerm() int {
+	return s.Term
+}
+
+// GetPeriod returns the value of Period.
+func (s *RenewalPrice) GetPeriod() RenewalPricePeriod {
+	return s.Period
+}
+
+// GetAmount returns the value of Amount.
+func (s *RenewalPrice) GetAmount() OptMoney {
+	return s.Amount
+}
+
+// GetCurrency returns the value of Currency.
+func (s *RenewalPrice) GetCurrency() OptString {
+	return s.Currency
+}
+
+// GetCurrent returns the value of Current.
+func (s *RenewalPrice) GetCurrent() bool {
+	return s.Current
+}
+
+// SetPriceID sets the value of PriceID.
+func (s *RenewalPrice) SetPriceID(val uuid.UUID) {
+	s.PriceID = val
+}
+
+// SetTerm sets the value of Term.
+func (s *RenewalPrice) SetTerm(val int) {
+	s.Term = val
+}
+
+// SetPeriod sets the value of Period.
+func (s *RenewalPrice) SetPeriod(val RenewalPricePeriod) {
+	s.Period = val
+}
+
+// SetAmount sets the value of Amount.
+func (s *RenewalPrice) SetAmount(val OptMoney) {
+	s.Amount = val
+}
+
+// SetCurrency sets the value of Currency.
+func (s *RenewalPrice) SetCurrency(val OptString) {
+	s.Currency = val
+}
+
+// SetCurrent sets the value of Current.
+func (s *RenewalPrice) SetCurrent(val bool) {
+	s.Current = val
+}
+
+// Ref: #/components/schemas/RenewalPriceList
+type RenewalPriceList struct {
+	Items []RenewalPrice `json:"items"`
+}
+
+// GetItems returns the value of Items.
+func (s *RenewalPriceList) GetItems() []RenewalPrice {
+	return s.Items
+}
+
+// SetItems sets the value of Items.
+func (s *RenewalPriceList) SetItems(val []RenewalPrice) {
+	s.Items = val
+}
+
+type RenewalPricePeriod string
+
+const (
+	RenewalPricePeriodDay   RenewalPricePeriod = "day"
+	RenewalPricePeriodMonth RenewalPricePeriod = "month"
+	RenewalPricePeriodYear  RenewalPricePeriod = "year"
+)
+
+// AllValues returns all RenewalPricePeriod values.
+func (RenewalPricePeriod) AllValues() []RenewalPricePeriod {
+	return []RenewalPricePeriod{
+		RenewalPricePeriodDay,
+		RenewalPricePeriodMonth,
+		RenewalPricePeriodYear,
+	}
+}
+
+// MarshalText implements encoding.TextMarshaler.
+func (s RenewalPricePeriod) MarshalText() ([]byte, error) {
+	switch s {
+	case RenewalPricePeriodDay:
+		return []byte(s), nil
+	case RenewalPricePeriodMonth:
+		return []byte(s), nil
+	case RenewalPricePeriodYear:
+		return []byte(s), nil
+	default:
+		return nil, errors.Errorf("invalid value: %q", s)
+	}
+}
+
+// UnmarshalText implements encoding.TextUnmarshaler.
+func (s *RenewalPricePeriod) UnmarshalText(data []byte) error {
+	switch RenewalPricePeriod(data) {
+	case RenewalPricePeriodDay:
+		*s = RenewalPricePeriodDay
+		return nil
+	case RenewalPricePeriodMonth:
+		*s = RenewalPricePeriodMonth
+		return nil
+	case RenewalPricePeriodYear:
+		*s = RenewalPricePeriodYear
+		return nil
+	default:
+		return errors.Errorf("invalid value: %q", data)
+	}
 }
 
 // One catalogue entry named by a scope, with the name to show for it.

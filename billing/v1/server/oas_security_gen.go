@@ -78,6 +78,7 @@ var operationRolesAccountAuth = map[string][]string{
 	ListPaidProjectsOperation:                []string{},
 	ListPaymentMethodsOperation:              []string{},
 	ListRefundsOperation:                     []string{},
+	ListRenewalPricesOperation:               []string{},
 	ListSubscriptionItemsOperation:           []string{},
 	ListSubscriptionsOperation:               []string{},
 	ListTopUpsOperation:                      []string{},

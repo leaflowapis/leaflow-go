@@ -565,6 +565,20 @@ func (UnimplementedHandler) ListRefunds(ctx context.Context, params ListRefundsP
 	return r, ht.ErrNotImplemented
 }
 
+// ListRenewalPrices implements list-renewal-prices operation.
+//
+// Every term on offer with what it costs, in one request: a renewal form needs the whole ladder to
+// render, and asking once per term is a request per row.
+//
+// Prices agreed for this account are reflected. The term this item already bills at is marked
+// `current`: renewing for it is not affected by a later price change, while any other term is bought
+// at today's price.
+//
+// GET /account/v1/subscription-items/{itemId}/renewal-prices
+func (UnimplementedHandler) ListRenewalPrices(ctx context.Context, params ListRenewalPricesParams) (r *RenewalPriceList, _ error) {
+	return r, ht.ErrNotImplemented
+}
+
 // ListSubscriptionItems implements list-subscription-items operation.
 //
 // List subscription items.
