@@ -340,15 +340,6 @@ func (UnimplementedHandler) ListCatalogItems(ctx context.Context, params ListCat
 	return r, ht.ErrNotImplemented
 }
 
-// ListCommitments implements ListCommitments operation.
-//
-// List account commercial commitments.
-//
-// GET /account/v1/commitments
-func (UnimplementedHandler) ListCommitments(ctx context.Context, params ListCommitmentsParams) (r *CommitmentList, _ error) {
-	return r, ht.ErrNotImplemented
-}
-
 // ListCreditGrants implements list-credit-grants operation.
 //
 // Each grant shows what remains and what it may be used for. Credit is spent before cash and cannot be

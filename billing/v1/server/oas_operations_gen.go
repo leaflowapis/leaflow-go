@@ -34,7 +34,6 @@ const (
 	ListAllowancesOperation                  OperationName = "ListAllowances"
 	ListBillingAccountsOperation             OperationName = "ListBillingAccounts"
 	ListCatalogItemsOperation                OperationName = "ListCatalogItems"
-	ListCommitmentsOperation                 OperationName = "ListCommitments"
 	ListCreditGrantsOperation                OperationName = "ListCreditGrants"
 	ListEntitlementsOperation                OperationName = "ListEntitlements"
 	ListInvoiceItemsOperation                OperationName = "ListInvoiceItems"

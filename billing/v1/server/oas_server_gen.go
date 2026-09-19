@@ -251,12 +251,6 @@ type Handler interface {
 	//
 	// GET /catalog/v1/items
 	ListCatalogItems(ctx context.Context, params ListCatalogItemsParams) (ListCatalogItemsRes, error)
-	// ListCommitments implements ListCommitments operation.
-	//
-	// List account commercial commitments.
-	//
-	// GET /account/v1/commitments
-	ListCommitments(ctx context.Context, params ListCommitmentsParams) (*CommitmentList, error)
 	// ListCreditGrants implements list-credit-grants operation.
 	//
 	// Each grant shows what remains and what it may be used for. Credit is spent before cash and cannot be

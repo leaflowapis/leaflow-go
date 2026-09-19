@@ -199,66 +199,6 @@ func (e CodeRejection) Valid() bool {
 	}
 }
 
-// Defines values for CommitmentReleasePolicy.
-const (
-	ReleaseWithObligation CommitmentReleasePolicy = "release_with_obligation"
-	RetainUntilTerm       CommitmentReleasePolicy = "retain_until_term"
-)
-
-// Valid indicates whether the value is a known member of the CommitmentReleasePolicy enum.
-func (e CommitmentReleasePolicy) Valid() bool {
-	switch e {
-	case ReleaseWithObligation:
-		return true
-	case RetainUntilTerm:
-		return true
-	default:
-		return false
-	}
-}
-
-// Defines values for CommitmentStatus.
-const (
-	CommitmentStatusActive     CommitmentStatus = "active"
-	CommitmentStatusCompleted  CommitmentStatus = "completed"
-	CommitmentStatusDraft      CommitmentStatus = "draft"
-	CommitmentStatusTerminated CommitmentStatus = "terminated"
-)
-
-// Valid indicates whether the value is a known member of the CommitmentStatus enum.
-func (e CommitmentStatus) Valid() bool {
-	switch e {
-	case CommitmentStatusActive:
-		return true
-	case CommitmentStatusCompleted:
-		return true
-	case CommitmentStatusDraft:
-		return true
-	case CommitmentStatusTerminated:
-		return true
-	default:
-		return false
-	}
-}
-
-// Defines values for CommitmentType.
-const (
-	FixedAmount  CommitmentType = "fixed_amount"
-	MinimumSpend CommitmentType = "minimum_spend"
-)
-
-// Valid indicates whether the value is a known member of the CommitmentType enum.
-func (e CommitmentType) Valid() bool {
-	switch e {
-	case FixedAmount:
-		return true
-	case MinimumSpend:
-		return true
-	default:
-		return false
-	}
-}
-
 // Defines values for CreditGrantSourceType.
 const (
 	Manual     CreditGrantSourceType = "manual"
@@ -688,7 +628,6 @@ func (e ProjectClosureItemDisposition) Valid() bool {
 // Defines values for ProjectClosureItemType.
 const (
 	ProjectClosureItemTypeActiveResource           ProjectClosureItemType = "active_resource"
-	ProjectClosureItemTypeCommitment               ProjectClosureItemType = "commitment"
 	ProjectClosureItemTypeJob                      ProjectClosureItemType = "job"
 	ProjectClosureItemTypeOrder                    ProjectClosureItemType = "order"
 	ProjectClosureItemTypeSubscriptionCancellation ProjectClosureItemType = "subscription_cancellation"
@@ -700,8 +639,6 @@ const (
 func (e ProjectClosureItemType) Valid() bool {
 	switch e {
 	case ProjectClosureItemTypeActiveResource:
-		return true
-	case ProjectClosureItemTypeCommitment:
 		return true
 	case ProjectClosureItemTypeJob:
 		return true
@@ -1697,60 +1634,6 @@ type CodeRequest struct {
 
 	// RenewalOf Subscription items being renewed, when testing a renewal.
 	RenewalOf []openapi_types.UUID `json:"renewal_of,omitempty"`
-}
-
-// Commitment Account-owned commercial obligation. Project removal does not waive payment. Minimum-spend activation requires a defined, reproducible eligibility policy; drafts do not authorize collection.
-type Commitment struct {
-	AcceptedAt               *time.Time              `json:"accepted_at,omitempty"`
-	AcceptedBy               *string                 `json:"accepted_by,omitempty"`
-	BillingAccountId         int                     `json:"billing_account_id"`
-	ContractId               *openapi_types.UUID     `json:"contract_id,omitempty"`
-	Currency                 string                  `json:"currency"`
-	Description              string                  `json:"description"`
-	EffectiveFrom            time.Time               `json:"effective_from"`
-	EffectiveTo              time.Time               `json:"effective_to"`
-	EligibilityPolicyVersion *string                 `json:"eligibility_policy_version,omitempty"`
-	Id                       openapi_types.UUID      `json:"id"`
-	OriginOrderItemId        *openapi_types.UUID     `json:"origin_order_item_id,omitempty"`
-	OriginProjectId          *openapi_types.UUID     `json:"origin_project_id,omitempty"`
-	Periods                  []CommitmentPeriod      `json:"periods"`
-	ReleasePolicy            CommitmentReleasePolicy `json:"release_policy"`
-	Status                   CommitmentStatus        `json:"status"`
-	TerminatedAt             *time.Time              `json:"terminated_at,omitempty"`
-	TerminationReason        *string                 `json:"termination_reason,omitempty"`
-	TermsReference           string                  `json:"terms_reference"`
-	Type                     CommitmentType          `json:"type"`
-}
-
-// CommitmentReleasePolicy defines model for Commitment.ReleasePolicy.
-type CommitmentReleasePolicy string
-
-// CommitmentStatus defines model for Commitment.Status.
-type CommitmentStatus string
-
-// CommitmentType defines model for Commitment.Type.
-type CommitmentType string
-
-// CommitmentList defines model for CommitmentList.
-type CommitmentList struct {
-	Items      []Commitment `json:"items"`
-	TotalCount int64        `json:"total_count"`
-}
-
-// CommitmentPeriod defines model for CommitmentPeriod.
-type CommitmentPeriod struct {
-	Amount         string              `json:"amount"`
-	AmountDue      *string             `json:"amount_due,omitempty"`
-	DueAt          time.Time           `json:"due_at"`
-	EligibleAmount *string             `json:"eligible_amount,omitempty"`
-	FinalizedAt    *time.Time          `json:"finalized_at,omitempty"`
-	Id             openapi_types.UUID  `json:"id"`
-	InvoiceItemId  *openapi_types.UUID `json:"invoice_item_id,omitempty"`
-	PeriodEnd      time.Time           `json:"period_end"`
-	PeriodStart    time.Time           `json:"period_start"`
-	Sequence       int                 `json:"sequence"`
-	WaivedAt       *time.Time          `json:"waived_at,omitempty"`
-	WaiverReason   *string             `json:"waiver_reason,omitempty"`
 }
 
 // CreditGrant defines model for CreditGrant.
@@ -2802,7 +2685,7 @@ type QuoteChangeResult struct {
 	UnusedCredit *externalRef0.Money `json:"unused_credit,omitempty"`
 }
 
-// QuoteLine Identify a price directly, or select a price for a plan. Account quotes apply applicable contract prices.
+// QuoteLine Identify a price directly, or select a price for a plan.
 type QuoteLine struct {
 	// BillingPeriod For prepaid items, such as `1_month` or `1_year`. Required when the item is offered
 	// for more than one period.
@@ -3607,13 +3490,6 @@ type ListBillingAccountsParams struct {
 	PageSize *PageSize `form:"page_size,omitempty" json:"page_size,omitempty"`
 }
 
-// ListCommitmentsParams defines parameters for ListCommitments.
-type ListCommitmentsParams struct {
-	BillingAccountId int  `form:"billing_account_id" json:"billing_account_id"`
-	Page             *int `form:"page,omitempty" json:"page,omitempty"`
-	PageSize         *int `form:"page_size,omitempty" json:"page_size,omitempty"`
-}
-
 // ListCreditGrantsParams defines parameters for ListCreditGrants.
 type ListCreditGrantsParams struct {
 	// Page 1-based page number; the first page when omitted.
@@ -4308,11 +4184,6 @@ type ClientInterface interface {
 	//
 	// Corresponds with POST /account/v1/codes/preview (the `PreviewCode` operationId).
 	PreviewCode(ctx context.Context, body PreviewCodeJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
-
-	// ListCommitments List account commercial commitments
-	//
-	// Corresponds with GET /account/v1/commitments (the `ListCommitments` operationId).
-	ListCommitments(ctx context.Context, params *ListCommitmentsParams, reqEditors ...RequestEditorFn) (*http.Response, error)
 
 	// ListCreditGrants List credit grants
 	//
@@ -5259,21 +5130,6 @@ func (c *Client) PreviewCodeWithBody(ctx context.Context, contentType string, bo
 // Corresponds with POST /account/v1/codes/preview (the `PreviewCode` operationId).
 func (c *Client) PreviewCode(ctx context.Context, body PreviewCodeJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
 	req, err := NewPreviewCodeRequest(c.Server, body)
-	if err != nil {
-		return nil, err
-	}
-	req = req.WithContext(ctx)
-	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
-		return nil, err
-	}
-	return c.Client.Do(req)
-}
-
-// ListCommitments List account commercial commitments
-//
-// Corresponds with GET /account/v1/commitments (the `ListCommitments` operationId).
-func (c *Client) ListCommitments(ctx context.Context, params *ListCommitmentsParams, reqEditors ...RequestEditorFn) (*http.Response, error) {
-	req, err := NewListCommitmentsRequest(c.Server, params)
 	if err != nil {
 		return nil, err
 	}
@@ -7277,80 +7133,6 @@ func NewPreviewCodeRequestWithBody(server string, contentType string, body io.Re
 	}
 
 	req.Header.Add("Content-Type", contentType)
-
-	return req, nil
-}
-
-// NewListCommitmentsRequest constructs an http.Request for the ListCommitments method
-func NewListCommitmentsRequest(server string, params *ListCommitmentsParams) (*http.Request, error) {
-	var err error
-
-	serverURL, err := url.Parse(server)
-	if err != nil {
-		return nil, err
-	}
-
-	operationPath := fmt.Sprintf("/account/v1/commitments")
-	if operationPath[0] == '/' {
-		operationPath = "." + operationPath
-	}
-
-	queryURL, err := serverURL.Parse(operationPath)
-	if err != nil {
-		return nil, err
-	}
-
-	if params != nil {
-		// queryValues collects non-styled parameters (passthrough, JSON)
-		// that are safe to round-trip through url.Values.Encode().
-		queryValues := queryURL.Query()
-		// rawQueryFragments collects pre-encoded query fragments from
-		// styled parameters, preserving literal commas as delimiters
-		// per the OpenAPI spec (e.g. "color=blue,black,brown").
-		var rawQueryFragments []string
-
-		if queryFrag, err := runtime.StyleParamWithOptions("form", true, "billing_account_id", params.BillingAccountId, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "integer", Format: ""}); err != nil {
-			return nil, err
-		} else {
-			for _, qp := range strings.Split(queryFrag, "&") {
-				rawQueryFragments = append(rawQueryFragments, qp)
-			}
-		}
-
-		if params.Page != nil {
-
-			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "page", *params.Page, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "integer", Format: ""}); err != nil {
-				return nil, err
-			} else {
-				for _, qp := range strings.Split(queryFrag, "&") {
-					rawQueryFragments = append(rawQueryFragments, qp)
-				}
-			}
-
-		}
-
-		if params.PageSize != nil {
-
-			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "page_size", *params.PageSize, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "integer", Format: ""}); err != nil {
-				return nil, err
-			} else {
-				for _, qp := range strings.Split(queryFrag, "&") {
-					rawQueryFragments = append(rawQueryFragments, qp)
-				}
-			}
-
-		}
-
-		if encoded := queryValues.Encode(); encoded != "" {
-			rawQueryFragments = append(rawQueryFragments, encoded)
-		}
-		queryURL.RawQuery = strings.Join(rawQueryFragments, "&")
-	}
-
-	req, err := http.NewRequest(http.MethodGet, queryURL.String(), nil)
-	if err != nil {
-		return nil, err
-	}
 
 	return req, nil
 }
@@ -11584,13 +11366,6 @@ type ClientWithResponsesInterface interface {
 	// Corresponds with POST /account/v1/codes/preview (the `PreviewCode` operationId).
 	PreviewCodeWithResponse(ctx context.Context, body PreviewCodeJSONRequestBody, reqEditors ...RequestEditorFn) (*PreviewCodeResponse, error)
 
-	// ListCommitmentsWithResponse List account commercial commitments
-	//
-	// Returns a wrapper object for the known response body format(s).
-	//
-	// Corresponds with GET /account/v1/commitments (the `ListCommitments` operationId).
-	ListCommitmentsWithResponse(ctx context.Context, params *ListCommitmentsParams, reqEditors ...RequestEditorFn) (*ListCommitmentsResponse, error)
-
 	// ListCreditGrantsWithResponse List credit grants
 	//
 	// Each grant shows what remains and what it may be used for. Credit is spent before cash
@@ -12829,54 +12604,6 @@ func (r PreviewCodeResponse) StatusCode() int {
 
 // ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
 func (r PreviewCodeResponse) ContentType() string {
-	if r.HTTPResponse != nil {
-		return r.HTTPResponse.Header.Get("Content-Type")
-	}
-	return ""
-}
-
-type ListCommitmentsResponse struct {
-	Body         []byte
-	HTTPResponse *http.Response
-	// JSON200 the response for an HTTP 200 `application/json` response
-	JSON200 *CommitmentList
-	// JSONDefault the response for an HTTP default `application/json` response
-	JSONDefault *Error
-}
-
-// GetJSON200 returns the response for an HTTP 200 `application/json` response
-func (r ListCommitmentsResponse) GetJSON200() *CommitmentList {
-	return r.JSON200
-}
-
-// GetJSONDefault returns the response for an HTTP default `application/json` response
-func (r ListCommitmentsResponse) GetJSONDefault() *Error {
-	return r.JSONDefault
-}
-
-// GetBody returns the raw response body bytes
-func (r ListCommitmentsResponse) GetBody() []byte {
-	return r.Body
-}
-
-// Status returns HTTPResponse.Status
-func (r ListCommitmentsResponse) Status() string {
-	if r.HTTPResponse != nil {
-		return r.HTTPResponse.Status
-	}
-	return http.StatusText(0)
-}
-
-// StatusCode returns HTTPResponse.StatusCode
-func (r ListCommitmentsResponse) StatusCode() int {
-	if r.HTTPResponse != nil {
-		return r.HTTPResponse.StatusCode
-	}
-	return 0
-}
-
-// ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
-func (r ListCommitmentsResponse) ContentType() string {
 	if r.HTTPResponse != nil {
 		return r.HTTPResponse.Header.Get("Content-Type")
 	}
@@ -16008,19 +15735,6 @@ func (c *ClientWithResponses) PreviewCodeWithResponse(ctx context.Context, body 
 	return ParsePreviewCodeResponse(rsp)
 }
 
-// ListCommitmentsWithResponse List account commercial commitments
-//
-// Returns a wrapper object for the known response body format(s).
-//
-// Corresponds with GET /account/v1/commitments (the `ListCommitments` operationId).
-func (c *ClientWithResponses) ListCommitmentsWithResponse(ctx context.Context, params *ListCommitmentsParams, reqEditors ...RequestEditorFn) (*ListCommitmentsResponse, error) {
-	rsp, err := c.ListCommitments(ctx, params, reqEditors...)
-	if err != nil {
-		return nil, err
-	}
-	return ParseListCommitmentsResponse(rsp)
-}
-
 // ListCreditGrantsWithResponse List credit grants
 //
 // Each grant shows what remains and what it may be used for. Credit is spent before cash
@@ -17544,39 +17258,6 @@ func ParsePreviewCodeResponse(rsp *http.Response) (*PreviewCodeResponse, error) 
 	switch {
 	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
 		var dest CodePreview
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSON200 = &dest
-
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && true:
-		var dest Error
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSONDefault = &dest
-
-	}
-
-	return response, nil
-}
-
-// ParseListCommitmentsResponse parses an HTTP response from a ListCommitmentsWithResponse call
-func ParseListCommitmentsResponse(rsp *http.Response) (*ListCommitmentsResponse, error) {
-	bodyBytes, err := io.ReadAll(rsp.Body)
-	defer func() { _ = rsp.Body.Close() }()
-	if err != nil {
-		return nil, err
-	}
-
-	response := &ListCommitmentsResponse{
-		Body:         bodyBytes,
-		HTTPResponse: rsp,
-	}
-
-	switch {
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
-		var dest CommitmentList
 		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
 			return nil, err
 		}
