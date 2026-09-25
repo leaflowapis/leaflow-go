@@ -7354,10 +7354,15 @@ type PaymentResult struct {
 	Action         OptPaymentAction `json:"action"`
 	// Whether paying again is worth attempting. False for a refusal that will keep happening — a closed
 	// account, an amount over a limit — so that a client does not retry in a loop.
-	Retriable     OptBool    `json:"retriable"`
-	InvoiceID     OptNilUUID `json:"invoice_id"`
-	OrderID       OptNilUUID `json:"order_id"`
-	FailureReason OptString  `json:"failure_reason"`
+	Retriable OptBool    `json:"retriable"`
+	InvoiceID OptNilUUID `json:"invoice_id"`
+	OrderID   OptNilUUID `json:"order_id"`
+	// Why the payment did not go through. Present with `failed`. For a declined gateway payment the value
+	// is the gateway's own code, passed on unchanged: the card issuer's decline code when there is one
+	// (Stripe's decline_code, such as insufficient_funds or lost_card), otherwise the gateway's error code
+	// (Stripe's code, such as card_declined, expired_card or payment_intent_authentication_failure).
+	// Clients map it to their own wording and treat an unknown value as a generic decline.
+	FailureReason OptString `json:"failure_reason"`
 }
 
 // GetTransactions returns the value of Transactions.
@@ -7526,7 +7531,9 @@ func (*PaymentResult) renewSubscriptionRes() {}
 //
 // succeeded means payment is complete. processing means confirmation is pending; poll the invoice or
 // order rather than submitting another payment. requires_action means the customer must complete the
-// supplied action. failed means the attempt did not succeed and failure_reason explains the outcome.
+// supplied action. failed means the attempt did not succeed and failure_reason explains the outcome; a
+// declined gateway payment is withdrawn at the gateway, and paying again starts a new payment with the
+// same or another method.
 // Ref: #/components/schemas/PaymentStatus
 type PaymentStatus string
 
@@ -11567,9 +11574,10 @@ type TopUp struct {
 	RemainingAmount OptMoney `json:"remaining_amount"`
 	// `pending` until the payment gateway reaches a result. The balance increases on `succeeded`.
 	//
-	// `failed` means the gateway declined the payment. `canceled` means the attempt was withdrawn without
-	// collecting money; `cancellation_reason` says why. Unknown gateway outcomes remain `pending`, and a
-	// browser redirect is not proof of payment.
+	// `failed` means the gateway declined the payment. A declined attempt ends the top-up at once and the
+	// payment is withdrawn at the gateway; to pay another way, create a new top-up. `canceled` means the
+	// attempt was withdrawn without collecting money; `cancellation_reason` says why. Unknown gateway
+	// outcomes remain `pending`, and a browser redirect is not proof of payment.
 	//
 	// `failed` and `canceled` are final. If the gateway nevertheless collects payment for such an attempt,
 	// the amount is credited as a separate `succeeded` top-up.
@@ -11586,7 +11594,11 @@ type TopUp struct {
 	// What was charged, in `presentment_currency`. It will not equal `amount`, and it is the figure that
 	// appears on the customer's card or wallet statement.
 	PresentmentAmount OptMoney `json:"presentment_amount"`
-	// Why the gateway declined it. Present with `failed`.
+	// Why the gateway declined it. Present with `failed`. The value is the gateway's own code, passed on
+	// unchanged: the card issuer's decline code when there is one (Stripe's decline_code, such as
+	// insufficient_funds or lost_card), otherwise the gateway's error code (Stripe's code, such as
+	// card_declined, expired_card or payment_intent_authentication_failure). Clients map it to their own
+	// wording and treat an unknown value as a generic decline.
 	FailureReason OptString `json:"failure_reason"`
 	// The customer's next step while the top-up is `pending` and the gateway still awaits them. Returned
 	// by create-top-up and get-top-up as the gateway currently reports it; absent from list-top-ups and
@@ -11882,9 +11894,10 @@ func (s *TopUpList) SetTotalCount(val OptInt64) {
 
 // `pending` until the payment gateway reaches a result. The balance increases on `succeeded`.
 //
-// `failed` means the gateway declined the payment. `canceled` means the attempt was withdrawn without
-// collecting money; `cancellation_reason` says why. Unknown gateway outcomes remain `pending`, and a
-// browser redirect is not proof of payment.
+// `failed` means the gateway declined the payment. A declined attempt ends the top-up at once and the
+// payment is withdrawn at the gateway; to pay another way, create a new top-up. `canceled` means the
+// attempt was withdrawn without collecting money; `cancellation_reason` says why. Unknown gateway
+// outcomes remain `pending`, and a browser redirect is not proof of payment.
 //
 // `failed` and `canceled` are final. If the gateway nevertheless collects payment for such an attempt,
 // the amount is credited as a separate `succeeded` top-up.
@@ -11954,14 +11967,18 @@ type Transaction struct {
 	CreditGrant   OptObjectIdentity `json:"credit_grant"`
 	RefundID      OptUUID           `json:"refund_id"`
 	// `failed` means the operation did not succeed; for a gateway payment, that the gateway declined it.
-	// `canceled` means a gateway payment was withdrawn without collecting money; an invoice it was meant
-	// to pay remains open for another payment.
+	// `canceled` means a gateway payment was withdrawn without collecting money. After either, an invoice
+	// the payment was meant to pay remains open for another payment.
 	Status OptTransactionStatus `json:"status"`
 	// Why the payment was withdrawn. Present with `canceled`.
 	CancellationReason OptPaymentCancellationReason `json:"cancellation_reason"`
 	PaymentGateway     OptString                    `json:"payment_gateway"`
 	MethodType         OptString                    `json:"method_type"`
-	// Why it failed. Present with `failed`.
+	// Why it failed. Present with `failed`. For a declined gateway payment the value is the gateway's own
+	// code, passed on unchanged: the card issuer's decline code when there is one (Stripe's decline_code,
+	// such as insufficient_funds or lost_card), otherwise the gateway's error code (Stripe's code, such as
+	// card_declined, expired_card or payment_intent_authentication_failure). Clients map it to their own
+	// wording and treat an unknown value as a generic decline.
 	FailureReason    OptString       `json:"failure_reason"`
 	SettledAt        OptDateTime     `json:"settled_at"`
 	ID               uuid.UUID       `json:"id"`
@@ -12193,8 +12210,8 @@ func (s *TransactionList) SetTotalCount(val OptInt64) {
 }
 
 // `failed` means the operation did not succeed; for a gateway payment, that the gateway declined it.
-// `canceled` means a gateway payment was withdrawn without collecting money; an invoice it was meant
-// to pay remains open for another payment.
+// `canceled` means a gateway payment was withdrawn without collecting money. After either, an invoice
+// the payment was meant to pay remains open for another payment.
 type TransactionStatus string
 
 const (

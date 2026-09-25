@@ -2114,7 +2114,14 @@ type PaymentResult struct {
 	// CreditApplied Credit grants applied to this invoice. Not a payment from the balance and not withdrawable.
 	CreditApplied *externalRef0.Money `json:"credit_applied,omitempty"`
 	Currency      string              `json:"currency"`
-	FailureReason *string             `json:"failure_reason,omitempty"`
+
+	// FailureReason Why the payment did not go through. Present with `failed`. For a declined gateway payment the
+	// value is the gateway's own code, passed on unchanged: the card issuer's decline code when
+	// there is one (Stripe's decline_code, such as insufficient_funds or lost_card), otherwise the
+	// gateway's error code (Stripe's code, such as card_declined, expired_card or
+	// payment_intent_authentication_failure). Clients map it to their own wording and treat an
+	// unknown value as a generic decline.
+	FailureReason *string `json:"failure_reason,omitempty"`
 
 	// GatewayAmount The remaining amount submitted to the selected payment gateway.
 	GatewayAmount  *externalRef0.Money `json:"gateway_amount,omitempty"`
@@ -2132,7 +2139,9 @@ type PaymentResult struct {
 	//
 	// succeeded means payment is complete. processing means confirmation is pending; poll the invoice or
 	// order rather than submitting another payment. requires_action means the customer must complete the
-	// supplied action. failed means the attempt did not succeed and failure_reason explains the outcome.
+	// supplied action. failed means the attempt did not succeed and failure_reason explains the outcome; a
+	// declined gateway payment is withdrawn at the gateway, and paying again starts a new payment with the
+	// same or another method.
 	Status PaymentStatus `json:"status"`
 
 	// TransactionId The gateway transaction, when one is involved. Balance and credit-grant payments are separate transactions.
@@ -2144,7 +2153,9 @@ type PaymentResult struct {
 //
 // succeeded means payment is complete. processing means confirmation is pending; poll the invoice or
 // order rather than submitting another payment. requires_action means the customer must complete the
-// supplied action. failed means the attempt did not succeed and failure_reason explains the outcome.
+// supplied action. failed means the attempt did not succeed and failure_reason explains the outcome; a
+// declined gateway payment is withdrawn at the gateway, and paying again starts a new payment with the
+// same or another method.
 type PaymentStatus string
 
 // Plan defines model for Plan.
@@ -2844,7 +2855,11 @@ type TopUp struct {
 	CreatedAt          time.Time                  `json:"created_at"`
 	Currency           string                     `json:"currency"`
 
-	// FailureReason Why the gateway declined it. Present with `failed`.
+	// FailureReason Why the gateway declined it. Present with `failed`. The value is the gateway's own code,
+	// passed on unchanged: the card issuer's decline code when there is one (Stripe's decline_code,
+	// such as insufficient_funds or lost_card), otherwise the gateway's error code (Stripe's code,
+	// such as card_declined, expired_card or payment_intent_authentication_failure). Clients map it
+	// to their own wording and treat an unknown value as a generic decline.
 	FailureReason *string            `json:"failure_reason,omitempty"`
 	Id            openapi_types.UUID `json:"id"`
 
@@ -2873,9 +2888,11 @@ type TopUp struct {
 
 	// Status `pending` until the payment gateway reaches a result. The balance increases on `succeeded`.
 	//
-	// `failed` means the gateway declined the payment. `canceled` means the attempt was withdrawn
-	// without collecting money; `cancellation_reason` says why. Unknown gateway outcomes remain
-	// `pending`, and a browser redirect is not proof of payment.
+	// `failed` means the gateway declined the payment. A declined attempt ends the top-up at once
+	// and the payment is withdrawn at the gateway; to pay another way, create a new top-up.
+	// `canceled` means the attempt was withdrawn without collecting money; `cancellation_reason`
+	// says why. Unknown gateway outcomes remain `pending`, and a browser redirect is not proof of
+	// payment.
 	//
 	// `failed` and `canceled` are final. If the gateway nevertheless collects payment for such an
 	// attempt, the amount is credited as a separate `succeeded` top-up.
@@ -2884,9 +2901,11 @@ type TopUp struct {
 
 // TopUpStatus `pending` until the payment gateway reaches a result. The balance increases on `succeeded`.
 //
-// `failed` means the gateway declined the payment. `canceled` means the attempt was withdrawn
-// without collecting money; `cancellation_reason` says why. Unknown gateway outcomes remain
-// `pending`, and a browser redirect is not proof of payment.
+// `failed` means the gateway declined the payment. A declined attempt ends the top-up at once
+// and the payment is withdrawn at the gateway; to pay another way, create a new top-up.
+// `canceled` means the attempt was withdrawn without collecting money; `cancellation_reason`
+// says why. Unknown gateway outcomes remain `pending`, and a browser redirect is not proof of
+// payment.
 //
 // `failed` and `canceled` are final. If the gateway nevertheless collects payment for such an
 // attempt, the amount is credited as a separate `succeeded` top-up.
@@ -2942,7 +2961,12 @@ type Transaction struct {
 	CreditGrantId *openapi_types.UUID `json:"credit_grant_id,omitempty"`
 	Currency      string              `json:"currency"`
 
-	// FailureReason Why it failed. Present with `failed`.
+	// FailureReason Why it failed. Present with `failed`. For a declined gateway payment the value is the
+	// gateway's own code, passed on unchanged: the card issuer's decline code when there is one
+	// (Stripe's decline_code, such as insufficient_funds or lost_card), otherwise the gateway's
+	// error code (Stripe's code, such as card_declined, expired_card or
+	// payment_intent_authentication_failure). Clients map it to their own wording and treat an
+	// unknown value as a generic decline.
 	FailureReason  *string             `json:"failure_reason,omitempty"`
 	Id             openapi_types.UUID  `json:"id"`
 	InvoiceId      *openapi_types.UUID `json:"invoice_id,omitempty"`
@@ -2955,9 +2979,9 @@ type Transaction struct {
 	RemainingAmount externalRef0.Money `json:"remaining_amount"`
 	SettledAt       *time.Time         `json:"settled_at,omitempty"`
 
-	// Status `failed` means the operation did not succeed; for a gateway payment, that the gateway declined it.
-	// `canceled` means a gateway payment was withdrawn without collecting money; an invoice it was meant
-	// to pay remains open for another payment.
+	// Status `failed` means the operation did not succeed; for a gateway payment, that the gateway declined
+	// it. `canceled` means a gateway payment was withdrawn without collecting money. After either,
+	// an invoice the payment was meant to pay remains open for another payment.
 	Status        *TransactionStatus  `json:"status,omitempty"`
 	TransactionId *openapi_types.UUID `json:"transaction_id,omitempty"`
 
@@ -2965,9 +2989,9 @@ type Transaction struct {
 	Type TransactionType `json:"type"`
 }
 
-// TransactionStatus `failed` means the operation did not succeed; for a gateway payment, that the gateway declined it.
-// `canceled` means a gateway payment was withdrawn without collecting money; an invoice it was meant
-// to pay remains open for another payment.
+// TransactionStatus `failed` means the operation did not succeed; for a gateway payment, that the gateway declined
+// it. `canceled` means a gateway payment was withdrawn without collecting money. After either,
+// an invoice the payment was meant to pay remains open for another payment.
 type TransactionStatus string
 
 // TransactionList defines model for TransactionList.
