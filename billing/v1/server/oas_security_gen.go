@@ -46,7 +46,6 @@ func findAuthorization(h http.Header, prefix string) (string, bool) {
 var operationRolesScopedTokenAuth = map[string][]string{
 	CreateProjectQuoteOperation:         []string{},
 	GetProjectBillingAccountOperation:   []string{},
-	GetProjectClosurePreviewOperation:   []string{},
 	GetProjectOrderOperation:            []string{},
 	ListProjectActiveResourcesOperation: []string{},
 	ListProjectAllowancesOperation:      []string{},

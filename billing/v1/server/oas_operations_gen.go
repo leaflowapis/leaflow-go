@@ -8,7 +8,6 @@ type OperationName = string
 const (
 	CreateProjectQuoteOperation         OperationName = "CreateProjectQuote"
 	GetProjectBillingAccountOperation   OperationName = "GetProjectBillingAccount"
-	GetProjectClosurePreviewOperation   OperationName = "GetProjectClosurePreview"
 	GetProjectOrderOperation            OperationName = "GetProjectOrder"
 	ListProjectActiveResourcesOperation OperationName = "ListProjectActiveResources"
 	ListProjectAllowancesOperation      OperationName = "ListProjectAllowances"

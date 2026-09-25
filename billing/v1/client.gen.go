@@ -325,87 +325,6 @@ func (e ProjectBillingAccountStatus) Valid() bool {
 	}
 }
 
-// Defines values for ProjectClosureItemActions.
-const (
-	CancelOrder        ProjectClosureItemActions = "cancel_order"
-	CancelSubscription ProjectClosureItemActions = "cancel_subscription"
-	ConfigureTerms     ProjectClosureItemActions = "configure_terms"
-	DisableAutoRenew   ProjectClosureItemActions = "disable_auto_renew"
-	ReleaseResource    ProjectClosureItemActions = "release_resource"
-	ResolveFailure     ProjectClosureItemActions = "resolve_failure"
-	Wait               ProjectClosureItemActions = "wait"
-)
-
-// Valid indicates whether the value is a known member of the ProjectClosureItemActions enum.
-func (e ProjectClosureItemActions) Valid() bool {
-	switch e {
-	case CancelOrder:
-		return true
-	case CancelSubscription:
-		return true
-	case ConfigureTerms:
-		return true
-	case DisableAutoRenew:
-		return true
-	case ReleaseResource:
-		return true
-	case ResolveFailure:
-		return true
-	case Wait:
-		return true
-	default:
-		return false
-	}
-}
-
-// Defines values for ProjectClosureItemDisposition.
-const (
-	ActionRequired ProjectClosureItemDisposition = "action_required"
-	Blocked        ProjectClosureItemDisposition = "blocked"
-	Waiting        ProjectClosureItemDisposition = "waiting"
-)
-
-// Valid indicates whether the value is a known member of the ProjectClosureItemDisposition enum.
-func (e ProjectClosureItemDisposition) Valid() bool {
-	switch e {
-	case ActionRequired:
-		return true
-	case Blocked:
-		return true
-	case Waiting:
-		return true
-	default:
-		return false
-	}
-}
-
-// Defines values for ProjectClosureItemType.
-const (
-	ProjectClosureItemTypeActiveResource      ProjectClosureItemType = "active_resource"
-	ProjectClosureItemTypeCancellationRequest ProjectClosureItemType = "cancellation_request"
-	ProjectClosureItemTypeJob                 ProjectClosureItemType = "job"
-	ProjectClosureItemTypeOrder               ProjectClosureItemType = "order"
-	ProjectClosureItemTypeSubscription        ProjectClosureItemType = "subscription"
-)
-
-// Valid indicates whether the value is a known member of the ProjectClosureItemType enum.
-func (e ProjectClosureItemType) Valid() bool {
-	switch e {
-	case ProjectClosureItemTypeActiveResource:
-		return true
-	case ProjectClosureItemTypeCancellationRequest:
-		return true
-	case ProjectClosureItemTypeJob:
-		return true
-	case ProjectClosureItemTypeOrder:
-		return true
-	case ProjectClosureItemTypeSubscription:
-		return true
-	default:
-		return false
-	}
-}
-
 // Defines values for QuoteLineInterval.
 const (
 	QuoteLineIntervalDay   QuoteLineInterval = "day"
@@ -1088,46 +1007,6 @@ type ProjectBillingAccount struct {
 // still running. `suspended` — resources have been stopped for non-payment.
 type ProjectBillingAccountStatus string
 
-// ProjectClosureItem One purchase, metered resource or resource operation that has not finished. action_required identifies a supported next step, not authorization to destroy a resource. Items for the same resource must be considered together.
-type ProjectClosureItem struct {
-	Actions []ProjectClosureItemActions `json:"actions"`
-
-	// Cancellation A cancellation request for the original purchase. scheduled_at is the intended time; effective_at is the confirmed end of service. The request alone does not stop metering or issue a refund.
-	Cancellation          *CancellationRequest          `json:"cancellation,omitempty"`
-	Currency              *string                       `json:"currency,omitempty"`
-	Disposition           ProjectClosureItemDisposition `json:"disposition"`
-	EarliestTerminationAt *time.Time                    `json:"earliest_termination_at,omitempty"`
-	Id                    openapi_types.UUID            `json:"id"`
-
-	// ProductId Immutable platform service identifier, such as compute, canopy or assistant.
-	ProductId  *ProductID `json:"product_id,omitempty"`
-	ReasonCode string     `json:"reason_code"`
-
-	// RefundAmount Known refund amount as a decimal string. Absent means a separate quote is required, not zero.
-	RefundAmount *string                `json:"refund_amount,omitempty"`
-	ResourceId   *string                `json:"resource_id,omitempty"`
-	Type         ProjectClosureItemType `json:"type"`
-}
-
-// ProjectClosureItemActions defines model for ProjectClosureItem.Actions.
-type ProjectClosureItemActions string
-
-// ProjectClosureItemDisposition defines model for ProjectClosureItem.Disposition.
-type ProjectClosureItemDisposition string
-
-// ProjectClosureItemType defines model for ProjectClosureItem.Type.
-type ProjectClosureItemType string
-
-// ProjectClosurePreview Read-only, paginated assessment. Does not cancel orders, stop renewals, refund payments or release resources. Concurrent orders or callbacks may change the result; execution must close admission and recheck.
-type ProjectClosurePreview struct {
-	// CanClose True only when the full Billing result, across all pages, has no outstanding items. Technical services must independently confirm that all resources are gone.
-	CanClose    bool                 `json:"can_close"`
-	EvaluatedAt time.Time            `json:"evaluated_at"`
-	Items       []ProjectClosureItem `json:"items"`
-	ProjectId   openapi_types.UUID   `json:"project_id"`
-	TotalCount  int64                `json:"total_count"`
-}
-
 // Quote defines model for Quote.
 type Quote struct {
 	Currency string               `json:"currency"`
@@ -1521,12 +1400,6 @@ type ListProjectAllowancesParams struct {
 	ProductId *ProductID          `form:"product_id,omitempty" json:"product_id,omitempty"`
 }
 
-// GetProjectClosurePreviewParams defines parameters for GetProjectClosurePreview.
-type GetProjectClosurePreviewParams struct {
-	Page     *int `form:"page,omitempty" json:"page,omitempty"`
-	PageSize *int `form:"page_size,omitempty" json:"page_size,omitempty"`
-}
-
 // ListProjectEntitlementsParams defines parameters for ListProjectEntitlements.
 type ListProjectEntitlementsParams struct {
 	// Page 1-based page number; the first page when omitted.
@@ -1724,13 +1597,6 @@ type ClientInterface interface {
 	// Corresponds with GET /api/v1/projects/{projectId}/billing-account (the `GetProjectBillingAccount` operationId).
 	GetProjectBillingAccount(ctx context.Context, projectId ProjectId, reqEditors ...RequestEditorFn) (*http.Response, error)
 
-	// GetProjectClosurePreview Preview project closure
-	//
-	// Lists outstanding orders, subscriptions, metering and unfinished operations. Reports the next action and timing for each item. This read never performs cleanup or creates a closure request. Charges already incurred remain owed by the billing account that was linked when they occurred and do not prevent closure. Historical invoices and account-level purchases are retained. Billing approval alone does not prove that technical resources are absent.
-	//
-	// Corresponds with GET /api/v1/projects/{projectId}/closure-preview (the `GetProjectClosurePreview` operationId).
-	GetProjectClosurePreview(ctx context.Context, projectId openapi_types.UUID, params *GetProjectClosurePreviewParams, reqEditors ...RequestEditorFn) (*http.Response, error)
-
 	// ListProjectEntitlements List project entitlements
 	//
 	// Includes capabilities bought for this project and those the project's billing account holds at
@@ -1892,23 +1758,6 @@ func (c *Client) ListProjectAllowances(ctx context.Context, projectId ProjectId,
 // Corresponds with GET /api/v1/projects/{projectId}/billing-account (the `GetProjectBillingAccount` operationId).
 func (c *Client) GetProjectBillingAccount(ctx context.Context, projectId ProjectId, reqEditors ...RequestEditorFn) (*http.Response, error) {
 	req, err := NewGetProjectBillingAccountRequest(c.Server, projectId)
-	if err != nil {
-		return nil, err
-	}
-	req = req.WithContext(ctx)
-	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
-		return nil, err
-	}
-	return c.Client.Do(req)
-}
-
-// GetProjectClosurePreview Preview project closure
-//
-// Lists outstanding orders, subscriptions, metering and unfinished operations. Reports the next action and timing for each item. This read never performs cleanup or creates a closure request. Charges already incurred remain owed by the billing account that was linked when they occurred and do not prevent closure. Historical invoices and account-level purchases are retained. Billing approval alone does not prove that technical resources are absent.
-//
-// Corresponds with GET /api/v1/projects/{projectId}/closure-preview (the `GetProjectClosurePreview` operationId).
-func (c *Client) GetProjectClosurePreview(ctx context.Context, projectId openapi_types.UUID, params *GetProjectClosurePreviewParams, reqEditors ...RequestEditorFn) (*http.Response, error) {
-	req, err := NewGetProjectClosurePreviewRequest(c.Server, projectId, params)
 	if err != nil {
 		return nil, err
 	}
@@ -2348,79 +2197,6 @@ func NewGetProjectBillingAccountRequest(server string, projectId ProjectId) (*ht
 	queryURL, err := serverURL.Parse(operationPath)
 	if err != nil {
 		return nil, err
-	}
-
-	req, err := http.NewRequest(http.MethodGet, queryURL.String(), nil)
-	if err != nil {
-		return nil, err
-	}
-
-	return req, nil
-}
-
-// NewGetProjectClosurePreviewRequest constructs an http.Request for the GetProjectClosurePreview method
-func NewGetProjectClosurePreviewRequest(server string, projectId openapi_types.UUID, params *GetProjectClosurePreviewParams) (*http.Request, error) {
-	var err error
-
-	var pathParam0 string
-
-	pathParam0, err = runtime.StyleParamWithOptions("simple", false, "projectId", projectId, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: "uuid"})
-	if err != nil {
-		return nil, err
-	}
-
-	serverURL, err := url.Parse(server)
-	if err != nil {
-		return nil, err
-	}
-
-	operationPath := fmt.Sprintf("/api/v1/projects/%s/closure-preview", pathParam0)
-	if operationPath[0] == '/' {
-		operationPath = "." + operationPath
-	}
-
-	queryURL, err := serverURL.Parse(operationPath)
-	if err != nil {
-		return nil, err
-	}
-
-	if params != nil {
-		// queryValues collects non-styled parameters (passthrough, JSON)
-		// that are safe to round-trip through url.Values.Encode().
-		queryValues := queryURL.Query()
-		// rawQueryFragments collects pre-encoded query fragments from
-		// styled parameters, preserving literal commas as delimiters
-		// per the OpenAPI spec (e.g. "color=blue,black,brown").
-		var rawQueryFragments []string
-
-		if params.Page != nil {
-
-			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "page", *params.Page, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "integer", Format: ""}); err != nil {
-				return nil, err
-			} else {
-				for _, qp := range strings.Split(queryFrag, "&") {
-					rawQueryFragments = append(rawQueryFragments, qp)
-				}
-			}
-
-		}
-
-		if params.PageSize != nil {
-
-			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "page_size", *params.PageSize, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "integer", Format: ""}); err != nil {
-				return nil, err
-			} else {
-				for _, qp := range strings.Split(queryFrag, "&") {
-					rawQueryFragments = append(rawQueryFragments, qp)
-				}
-			}
-
-		}
-
-		if encoded := queryValues.Encode(); encoded != "" {
-			rawQueryFragments = append(rawQueryFragments, encoded)
-		}
-		queryURL.RawQuery = strings.Join(rawQueryFragments, "&")
 	}
 
 	req, err := http.NewRequest(http.MethodGet, queryURL.String(), nil)
@@ -3255,15 +3031,6 @@ type ClientWithResponsesInterface interface {
 	// Corresponds with GET /api/v1/projects/{projectId}/billing-account (the `GetProjectBillingAccount` operationId).
 	GetProjectBillingAccountWithResponse(ctx context.Context, projectId ProjectId, reqEditors ...RequestEditorFn) (*GetProjectBillingAccountResponse, error)
 
-	// GetProjectClosurePreviewWithResponse Preview project closure
-	//
-	// Lists outstanding orders, subscriptions, metering and unfinished operations. Reports the next action and timing for each item. This read never performs cleanup or creates a closure request. Charges already incurred remain owed by the billing account that was linked when they occurred and do not prevent closure. Historical invoices and account-level purchases are retained. Billing approval alone does not prove that technical resources are absent.
-	//
-	// Returns a wrapper object for the known response body format(s).
-	//
-	// Corresponds with GET /api/v1/projects/{projectId}/closure-preview (the `GetProjectClosurePreview` operationId).
-	GetProjectClosurePreviewWithResponse(ctx context.Context, projectId openapi_types.UUID, params *GetProjectClosurePreviewParams, reqEditors ...RequestEditorFn) (*GetProjectClosurePreviewResponse, error)
-
 	// ListProjectEntitlementsWithResponse List project entitlements
 	//
 	// Includes capabilities bought for this project and those the project's billing account holds at
@@ -3530,54 +3297,6 @@ func (r GetProjectBillingAccountResponse) StatusCode() int {
 
 // ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
 func (r GetProjectBillingAccountResponse) ContentType() string {
-	if r.HTTPResponse != nil {
-		return r.HTTPResponse.Header.Get("Content-Type")
-	}
-	return ""
-}
-
-type GetProjectClosurePreviewResponse struct {
-	Body         []byte
-	HTTPResponse *http.Response
-	// JSON200 the response for an HTTP 200 `application/json` response
-	JSON200 *ProjectClosurePreview
-	// JSONDefault the response for an HTTP default `application/json` response
-	JSONDefault *Error
-}
-
-// GetJSON200 returns the response for an HTTP 200 `application/json` response
-func (r GetProjectClosurePreviewResponse) GetJSON200() *ProjectClosurePreview {
-	return r.JSON200
-}
-
-// GetJSONDefault returns the response for an HTTP default `application/json` response
-func (r GetProjectClosurePreviewResponse) GetJSONDefault() *Error {
-	return r.JSONDefault
-}
-
-// GetBody returns the raw response body bytes
-func (r GetProjectClosurePreviewResponse) GetBody() []byte {
-	return r.Body
-}
-
-// Status returns HTTPResponse.Status
-func (r GetProjectClosurePreviewResponse) Status() string {
-	if r.HTTPResponse != nil {
-		return r.HTTPResponse.Status
-	}
-	return http.StatusText(0)
-}
-
-// StatusCode returns HTTPResponse.StatusCode
-func (r GetProjectClosurePreviewResponse) StatusCode() int {
-	if r.HTTPResponse != nil {
-		return r.HTTPResponse.StatusCode
-	}
-	return 0
-}
-
-// ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
-func (r GetProjectClosurePreviewResponse) ContentType() string {
 	if r.HTTPResponse != nil {
 		return r.HTTPResponse.Header.Get("Content-Type")
 	}
@@ -4067,21 +3786,6 @@ func (c *ClientWithResponses) GetProjectBillingAccountWithResponse(ctx context.C
 	return ParseGetProjectBillingAccountResponse(rsp)
 }
 
-// GetProjectClosurePreviewWithResponse Preview project closure
-//
-// Lists outstanding orders, subscriptions, metering and unfinished operations. Reports the next action and timing for each item. This read never performs cleanup or creates a closure request. Charges already incurred remain owed by the billing account that was linked when they occurred and do not prevent closure. Historical invoices and account-level purchases are retained. Billing approval alone does not prove that technical resources are absent.
-//
-// Returns a wrapper object for the known response body format(s).
-//
-// Corresponds with GET /api/v1/projects/{projectId}/closure-preview (the `GetProjectClosurePreview` operationId).
-func (c *ClientWithResponses) GetProjectClosurePreviewWithResponse(ctx context.Context, projectId openapi_types.UUID, params *GetProjectClosurePreviewParams, reqEditors ...RequestEditorFn) (*GetProjectClosurePreviewResponse, error) {
-	rsp, err := c.GetProjectClosurePreview(ctx, projectId, params, reqEditors...)
-	if err != nil {
-		return nil, err
-	}
-	return ParseGetProjectClosurePreviewResponse(rsp)
-}
-
 // ListProjectEntitlementsWithResponse List project entitlements
 //
 // Includes capabilities bought for this project and those the project's billing account holds at
@@ -4357,39 +4061,6 @@ func ParseGetProjectBillingAccountResponse(rsp *http.Response) (*GetProjectBilli
 	switch {
 	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
 		var dest ProjectBillingAccount
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSON200 = &dest
-
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && true:
-		var dest Error
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSONDefault = &dest
-
-	}
-
-	return response, nil
-}
-
-// ParseGetProjectClosurePreviewResponse parses an HTTP response from a GetProjectClosurePreviewWithResponse call
-func ParseGetProjectClosurePreviewResponse(rsp *http.Response) (*GetProjectClosurePreviewResponse, error) {
-	bodyBytes, err := io.ReadAll(rsp.Body)
-	defer func() { _ = rsp.Body.Close() }()
-	if err != nil {
-		return nil, err
-	}
-
-	response := &GetProjectClosurePreviewResponse{
-		Body:         bodyBytes,
-		HTTPResponse: rsp,
-	}
-
-	switch {
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
-		var dest ProjectClosurePreview
 		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
 			return nil, err
 		}

@@ -102,19 +102,6 @@ func (UnimplementedHandler) GetAccountBalance(ctx context.Context, params GetAcc
 	return r, ht.ErrNotImplemented
 }
 
-// GetAccountProjectClosurePreview implements get-account-project-closure-preview operation.
-//
-// Lists outstanding orders, subscriptions, metering and unfinished operations. Reports the next action
-// and timing for each item. This read never performs cleanup or creates a closure request. Charges
-// already incurred remain owed by the billing account that was linked when they occurred and do not
-// prevent closure. Historical invoices and account-level purchases are retained. Billing approval
-// alone does not prove that technical resources are absent.
-//
-// GET /account/v1/projects/{projectId}/closure-preview
-func (UnimplementedHandler) GetAccountProjectClosurePreview(ctx context.Context, params GetAccountProjectClosurePreviewParams) (r *ProjectClosurePreview, _ error) {
-	return r, ht.ErrNotImplemented
-}
-
 // GetBillingAccount implements get-billing-account operation.
 //
 // Get billing account.
