@@ -976,7 +976,7 @@ type CreateBackupRequestBody struct {
 
 // CreateDiskRequestBody defines model for CreateDiskRequestBody.
 type CreateDiskRequestBody struct {
-	// DiskTypeId A disk type currently on sale. A withdrawn one is rejected even though its identifier still resolves
+	// DiskTypeId A data disk type currently on sale, one whose `for_system` is false. A withdrawn one is rejected even though its identifier still resolves
 	DiskTypeId openapi_types.UUID `json:"disk_type_id"`
 	Name       string             `json:"name"`
 
@@ -1167,7 +1167,10 @@ type DiskTypeListResponseBody struct {
 type DiskTypeResource struct {
 	AvailabilityZoneId openapi_types.UUID  `json:"availability_zone_id"`
 	BackupPlanId       *openapi_types.UUID `json:"backup_plan_id"`
-	Id                 openapi_types.UUID  `json:"id"`
+
+	// ForSystem True for a system disk type, the one chosen as `boot_disk.disk_type_id` when creating an instance from an image. A system disk type cannot be used to create a data disk, and a data disk type cannot be used for a system disk.
+	ForSystem bool               `json:"for_system"`
+	Id        openapi_types.UUID `json:"id"`
 
 	// IopsAtMaxSize IOPS a disk of `max_size_gb` gets. Null when this type is not rate-limited
 	IopsAtMaxSize *int64 `json:"iops_at_max_size"`
@@ -1525,10 +1528,12 @@ type LaunchInstanceResponseBody struct {
 
 // NewBootDisk A system disk purchased in the same order. Required when booting from an image; mutually exclusive with boot_disk_id.
 type NewBootDisk struct {
-	DeleteWithInstance *bool              `json:"delete_with_instance,omitempty"`
-	DiskTypeId         openapi_types.UUID `json:"disk_type_id"`
-	PriceId            openapi_types.UUID `json:"price_id"`
-	SizeGb             int64              `json:"size_gb"`
+	DeleteWithInstance *bool `json:"delete_with_instance,omitempty"`
+
+	// DiskTypeId A system disk type on sale in the availability zone of the instance, one whose `for_system` is true
+	DiskTypeId openapi_types.UUID `json:"disk_type_id"`
+	PriceId    openapi_types.UUID `json:"price_id"`
+	SizeGb     int64              `json:"size_gb"`
 }
 
 // NewFloatingIP An address and bandwidth purchased in the same order. Mutually exclusive with floating_ip_id.
@@ -1882,7 +1887,7 @@ type ResizeInstanceRequestBody struct {
 
 // RestoreBackupRequestBody defines model for RestoreBackupRequestBody.
 type RestoreBackupRequestBody struct {
-	// DiskTypeId May differ from the availability zone of the source disk, but must be in the same region. It has to be on sale — restoring creates a new disk, so a withdrawn type is rejected here as well
+	// DiskTypeId May differ from the availability zone of the source disk, but must be in the same region. It has to be a data disk type on sale — restoring creates a new data disk, so a withdrawn type or a system disk type is rejected here as well
 	DiskTypeId openapi_types.UUID `json:"disk_type_id"`
 	Name       string             `json:"name"`
 
@@ -2080,6 +2085,9 @@ type DeleteBackupParams struct {
 // ListDiskTypesParams defines parameters for ListDiskTypes.
 type ListDiskTypesParams struct {
 	RegionId openapi_types.UUID `form:"region_id" json:"region_id"`
+
+	// ForSystem `true` lists only system disk types and `false` only data disk types. Both are listed when omitted.
+	ForSystem *bool `form:"for_system,omitempty" json:"for_system,omitempty"`
 }
 
 // ListDisksParams defines parameters for ListDisks.
@@ -2552,7 +2560,7 @@ type ClientInterface interface {
 
 	// ListDiskTypes List disk types on sale
 	//
-	// Only disk types currently on sale are listed. A withdrawn one disappears from here and can no longer be bought, while the disks already on it keep working and can still be resized.
+	// Only disk types currently on sale are listed, both system disk types and data disk types; `for_system` narrows the list to one of the two. A withdrawn one disappears from here and can no longer be bought, while the disks already on it keep working and can still be resized.
 	//
 	// Corresponds with GET /api/v1/disk-types (the `ListDiskTypes` operationId).
 	ListDiskTypes(ctx context.Context, params *ListDiskTypesParams, reqEditors ...RequestEditorFn) (*http.Response, error)
@@ -3907,7 +3915,7 @@ func (c *Client) RestoreBackup(ctx context.Context, backupId openapi_types.UUID,
 
 // ListDiskTypes List disk types on sale
 //
-// Only disk types currently on sale are listed. A withdrawn one disappears from here and can no longer be bought, while the disks already on it keep working and can still be resized.
+// Only disk types currently on sale are listed, both system disk types and data disk types; `for_system` narrows the list to one of the two. A withdrawn one disappears from here and can no longer be bought, while the disks already on it keep working and can still be resized.
 //
 // Corresponds with GET /api/v1/disk-types (the `ListDiskTypes` operationId).
 func (c *Client) ListDiskTypes(ctx context.Context, params *ListDiskTypesParams, reqEditors ...RequestEditorFn) (*http.Response, error) {
@@ -6631,6 +6639,18 @@ func NewListDiskTypesRequest(server string, params *ListDiskTypesParams) (*http.
 			for _, qp := range strings.Split(queryFrag, "&") {
 				rawQueryFragments = append(rawQueryFragments, qp)
 			}
+		}
+
+		if params.ForSystem != nil {
+
+			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "for_system", *params.ForSystem, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "boolean", Format: ""}); err != nil {
+				return nil, err
+			} else {
+				for _, qp := range strings.Split(queryFrag, "&") {
+					rawQueryFragments = append(rawQueryFragments, qp)
+				}
+			}
+
 		}
 
 		if encoded := queryValues.Encode(); encoded != "" {
@@ -10965,7 +10985,7 @@ type ClientWithResponsesInterface interface {
 
 	// ListDiskTypesWithResponse List disk types on sale
 	//
-	// Only disk types currently on sale are listed. A withdrawn one disappears from here and can no longer be bought, while the disks already on it keep working and can still be resized.
+	// Only disk types currently on sale are listed, both system disk types and data disk types; `for_system` narrows the list to one of the two. A withdrawn one disappears from here and can no longer be bought, while the disks already on it keep working and can still be resized.
 	//
 	// Returns a wrapper object for the known response body format(s).
 	//
@@ -17193,7 +17213,7 @@ func (c *ClientWithResponses) RestoreBackupWithResponse(ctx context.Context, bac
 
 // ListDiskTypesWithResponse List disk types on sale
 //
-// Only disk types currently on sale are listed. A withdrawn one disappears from here and can no longer be bought, while the disks already on it keep working and can still be resized.
+// Only disk types currently on sale are listed, both system disk types and data disk types; `for_system` narrows the list to one of the two. A withdrawn one disappears from here and can no longer be bought, while the disks already on it keep working and can still be resized.
 //
 // Returns a wrapper object for the known response body format(s).
 //

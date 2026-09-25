@@ -453,8 +453,9 @@ type Handler interface {
 	ListBackups(ctx context.Context, params ListBackupsParams) (*BackupListResponseBody, error)
 	// ListDiskTypes implements list-disk-types operation.
 	//
-	// Only disk types currently on sale are listed. A withdrawn one disappears from here and can no longer
-	// be bought, while the disks already on it keep working and can still be resized.
+	// Only disk types currently on sale are listed, both system disk types and data disk types;
+	// `for_system` narrows the list to one of the two. A withdrawn one disappears from here and can no
+	// longer be bought, while the disks already on it keep working and can still be resized.
 	//
 	// GET /api/v1/disk-types
 	ListDiskTypes(ctx context.Context, params ListDiskTypesParams) (*DiskTypeListResponseBody, error)

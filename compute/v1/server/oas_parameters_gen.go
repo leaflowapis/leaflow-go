@@ -3734,6 +3734,8 @@ func decodeListBackupsParams(args [0]string, argsEscaped bool, r *http.Request) 
 // ListDiskTypesParams is parameters of list-disk-types operation.
 type ListDiskTypesParams struct {
 	RegionID uuid.UUID
+	// `true` lists only system disk types and `false` only data disk types. Both are listed when omitted.
+	ForSystem OptBool `json:",omitempty,omitzero"`
 }
 
 func unpackListDiskTypesParams(packed middleware.Parameters) (params ListDiskTypesParams) {
@@ -3743,6 +3745,15 @@ func unpackListDiskTypesParams(packed middleware.Parameters) (params ListDiskTyp
 			In:   "query",
 		}
 		params.RegionID = packed[key].(uuid.UUID)
+	}
+	{
+		key := middleware.ParameterKey{
+			Name: "for_system",
+			In:   "query",
+		}
+		if v, ok := packed[key]; ok {
+			params.ForSystem = v.(OptBool)
+		}
 	}
 	return params
 }
@@ -3781,6 +3792,47 @@ func decodeListDiskTypesParams(args [0]string, argsEscaped bool, r *http.Request
 	}(); err != nil {
 		return params, &ogenerrors.DecodeParamError{
 			Name: "region_id",
+			In:   "query",
+			Err:  err,
+		}
+	}
+	// Decode query: for_system.
+	if err := func() error {
+		cfg := uri.QueryParameterDecodingConfig{
+			Name:    "for_system",
+			Style:   uri.QueryStyleForm,
+			Explode: true,
+		}
+
+		if err := q.HasParam(cfg); err == nil {
+			if err := q.DecodeParam(cfg, func(d uri.Decoder) error {
+				var paramsDotForSystemVal bool
+				if err := func() error {
+					val, err := d.DecodeValue()
+					if err != nil {
+						return err
+					}
+
+					c, err := conv.ToBool(val)
+					if err != nil {
+						return err
+					}
+
+					paramsDotForSystemVal = c
+					return nil
+				}(); err != nil {
+					return err
+				}
+				params.ForSystem.SetTo(paramsDotForSystemVal)
+				return nil
+			}); err != nil {
+				return err
+			}
+		}
+		return nil
+	}(); err != nil {
+		return params, &ogenerrors.DecodeParamError{
+			Name: "for_system",
 			In:   "query",
 			Err:  err,
 		}

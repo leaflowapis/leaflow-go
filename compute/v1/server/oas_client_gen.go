@@ -474,8 +474,9 @@ type Invoker interface {
 	ListBackups(ctx context.Context, params ListBackupsParams) (*BackupListResponseBody, error)
 	// ListDiskTypes invokes list-disk-types operation.
 	//
-	// Only disk types currently on sale are listed. A withdrawn one disappears from here and can no longer
-	// be bought, while the disks already on it keep working and can still be resized.
+	// Only disk types currently on sale are listed, both system disk types and data disk types;
+	// `for_system` narrows the list to one of the two. A withdrawn one disappears from here and can no
+	// longer be bought, while the disks already on it keep working and can still be resized.
 	//
 	// GET /api/v1/disk-types
 	ListDiskTypes(ctx context.Context, params ListDiskTypesParams) (*DiskTypeListResponseBody, error)
@@ -7927,8 +7928,9 @@ func (c *Client) sendListBackups(ctx context.Context, params ListBackupsParams) 
 
 // ListDiskTypes invokes list-disk-types operation.
 //
-// Only disk types currently on sale are listed. A withdrawn one disappears from here and can no longer
-// be bought, while the disks already on it keep working and can still be resized.
+// Only disk types currently on sale are listed, both system disk types and data disk types;
+// `for_system` narrows the list to one of the two. A withdrawn one disappears from here and can no
+// longer be bought, while the disks already on it keep working and can still be resized.
 //
 // GET /api/v1/disk-types
 func (c *Client) ListDiskTypes(ctx context.Context, params ListDiskTypesParams) (*DiskTypeListResponseBody, error) {
@@ -7989,6 +7991,23 @@ func (c *Client) sendListDiskTypes(ctx context.Context, params ListDiskTypesPara
 
 		if err := q.EncodeParam(cfg, func(e uri.Encoder) error {
 			return e.EncodeValue(conv.UUIDToString(params.RegionID))
+		}); err != nil {
+			return res, errors.Wrap(err, "encode query")
+		}
+	}
+	{
+		// Encode "for_system" parameter.
+		cfg := uri.QueryParameterEncodingConfig{
+			Name:    "for_system",
+			Style:   uri.QueryStyleForm,
+			Explode: true,
+		}
+
+		if err := q.EncodeParam(cfg, func(e uri.Encoder) error {
+			if val, ok := params.ForSystem.Get(); ok {
+				return e.EncodeValue(conv.BoolToString(val))
+			}
+			return nil
 		}); err != nil {
 			return res, errors.Wrap(err, "encode query")
 		}

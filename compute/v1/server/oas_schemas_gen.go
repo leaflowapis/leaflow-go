@@ -615,7 +615,8 @@ func (s *CreateBackupRequestBody) SetOrder(val OrderOptions) {
 
 // Ref: #/components/schemas/CreateDiskRequestBody
 type CreateDiskRequestBody struct {
-	// A disk type currently on sale. A withdrawn one is rejected even though its identifier still resolves.
+	// A data disk type currently on sale, one whose `for_system` is false. A withdrawn one is rejected
+	// even though its identifier still resolves.
 	DiskTypeID uuid.UUID `json:"disk_type_id"`
 	Name       string    `json:"name"`
 	SizeGB     int64     `json:"size_gb"`
@@ -1883,6 +1884,10 @@ func (s *DiskTypeListResponseBody) SetItems(val []DiskTypeResource) {
 type DiskTypeResource struct {
 	AvailabilityZoneID uuid.UUID `json:"availability_zone_id"`
 	ID                 uuid.UUID `json:"id"`
+	// True for a system disk type, the one chosen as `boot_disk.disk_type_id` when creating an instance
+	// from an image. A system disk type cannot be used to create a data disk, and a data disk type cannot
+	// be used for a system disk.
+	ForSystem bool `json:"for_system"`
 	// IOPS a disk of `min_size_gb` gets. Null when this type is not rate-limited.
 	//
 	// Performance grows with capacity, so this and `iops_at_max_size` are the two ends of the range. The
@@ -1921,6 +1926,11 @@ func (s *DiskTypeResource) GetAvailabilityZoneID() uuid.UUID {
 // GetID returns the value of ID.
 func (s *DiskTypeResource) GetID() uuid.UUID {
 	return s.ID
+}
+
+// GetForSystem returns the value of ForSystem.
+func (s *DiskTypeResource) GetForSystem() bool {
+	return s.ForSystem
 }
 
 // GetIopsAtMinSize returns the value of IopsAtMinSize.
@@ -2006,6 +2016,11 @@ func (s *DiskTypeResource) SetAvailabilityZoneID(val uuid.UUID) {
 // SetID sets the value of ID.
 func (s *DiskTypeResource) SetID(val uuid.UUID) {
 	s.ID = val
+}
+
+// SetForSystem sets the value of ForSystem.
+func (s *DiskTypeResource) SetForSystem(val bool) {
+	s.ForSystem = val
 }
 
 // SetIopsAtMinSize sets the value of IopsAtMinSize.
@@ -4480,6 +4495,7 @@ func (*LaunchInstanceResponseBody) launchInstanceRes() {}
 // with boot_disk_id.
 // Ref: #/components/schemas/NewBootDisk
 type NewBootDisk struct {
+	// A system disk type on sale in the availability zone of the instance, one whose `for_system` is true.
 	DiskTypeID         uuid.UUID `json:"disk_type_id"`
 	SizeGB             int64     `json:"size_gb"`
 	PriceID            uuid.UUID `json:"price_id"`
@@ -8004,7 +8020,8 @@ func (s *ResizeInstanceRequestBody) SetPriceID(val uuid.UUID) {
 // Ref: #/components/schemas/RestoreBackupRequestBody
 type RestoreBackupRequestBody struct {
 	// May differ from the availability zone of the source disk, but must be in the same region. It has to
-	// be on sale — restoring creates a new disk, so a withdrawn type is rejected here as well.
+	// be a data disk type on sale — restoring creates a new data disk, so a withdrawn type or a system
+	// disk type is rejected here as well.
 	DiskTypeID uuid.UUID `json:"disk_type_id"`
 	Name       string    `json:"name"`
 	// Matches the size of the backup when omitted. When given, it must not be smaller than the backup.

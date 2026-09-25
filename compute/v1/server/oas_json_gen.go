@@ -4390,6 +4390,10 @@ func (s *DiskTypeResource) encodeFields(e *jx.Encoder) {
 		json.EncodeUUID(e, s.ID)
 	}
 	{
+		e.FieldStart("for_system")
+		e.Bool(s.ForSystem)
+	}
+	{
 		e.FieldStart("iops_at_min_size")
 		s.IopsAtMinSize.Encode(e)
 	}
@@ -4451,24 +4455,25 @@ func (s *DiskTypeResource) encodeFields(e *jx.Encoder) {
 	}
 }
 
-var jsonFieldsNameOfDiskTypeResource = [17]string{
+var jsonFieldsNameOfDiskTypeResource = [18]string{
 	0:  "availability_zone_id",
 	1:  "id",
-	2:  "iops_at_min_size",
-	3:  "iops_at_max_size",
-	4:  "max_size_gb",
-	5:  "media",
-	6:  "min_size_gb",
-	7:  "name",
-	8:  "region_id",
-	9:  "step_gb",
-	10: "throughput_at_min_size",
-	11: "throughput_at_max_size",
-	12: "product_id",
-	13: "plan_id",
-	14: "snapshot_plan_id",
-	15: "backup_plan_id",
-	16: "private_image_plan_id",
+	2:  "for_system",
+	3:  "iops_at_min_size",
+	4:  "iops_at_max_size",
+	5:  "max_size_gb",
+	6:  "media",
+	7:  "min_size_gb",
+	8:  "name",
+	9:  "region_id",
+	10: "step_gb",
+	11: "throughput_at_min_size",
+	12: "throughput_at_max_size",
+	13: "product_id",
+	14: "plan_id",
+	15: "snapshot_plan_id",
+	16: "backup_plan_id",
+	17: "private_image_plan_id",
 }
 
 // Decode decodes DiskTypeResource from json.
@@ -4504,8 +4509,20 @@ func (s *DiskTypeResource) Decode(d *jx.Decoder) error {
 			}(); err != nil {
 				return errors.Wrap(err, "decode field \"id\"")
 			}
-		case "iops_at_min_size":
+		case "for_system":
 			requiredBitSet[0] |= 1 << 2
+			if err := func() error {
+				v, err := d.Bool()
+				s.ForSystem = bool(v)
+				if err != nil {
+					return err
+				}
+				return nil
+			}(); err != nil {
+				return errors.Wrap(err, "decode field \"for_system\"")
+			}
+		case "iops_at_min_size":
+			requiredBitSet[0] |= 1 << 3
 			if err := func() error {
 				if err := s.IopsAtMinSize.Decode(d); err != nil {
 					return err
@@ -4515,7 +4532,7 @@ func (s *DiskTypeResource) Decode(d *jx.Decoder) error {
 				return errors.Wrap(err, "decode field \"iops_at_min_size\"")
 			}
 		case "iops_at_max_size":
-			requiredBitSet[0] |= 1 << 3
+			requiredBitSet[0] |= 1 << 4
 			if err := func() error {
 				if err := s.IopsAtMaxSize.Decode(d); err != nil {
 					return err
@@ -4525,7 +4542,7 @@ func (s *DiskTypeResource) Decode(d *jx.Decoder) error {
 				return errors.Wrap(err, "decode field \"iops_at_max_size\"")
 			}
 		case "max_size_gb":
-			requiredBitSet[0] |= 1 << 4
+			requiredBitSet[0] |= 1 << 5
 			if err := func() error {
 				v, err := d.Int64()
 				s.MaxSizeGB = int64(v)
@@ -4537,7 +4554,7 @@ func (s *DiskTypeResource) Decode(d *jx.Decoder) error {
 				return errors.Wrap(err, "decode field \"max_size_gb\"")
 			}
 		case "media":
-			requiredBitSet[0] |= 1 << 5
+			requiredBitSet[0] |= 1 << 6
 			if err := func() error {
 				if err := s.Media.Decode(d); err != nil {
 					return err
@@ -4547,7 +4564,7 @@ func (s *DiskTypeResource) Decode(d *jx.Decoder) error {
 				return errors.Wrap(err, "decode field \"media\"")
 			}
 		case "min_size_gb":
-			requiredBitSet[0] |= 1 << 6
+			requiredBitSet[0] |= 1 << 7
 			if err := func() error {
 				v, err := d.Int64()
 				s.MinSizeGB = int64(v)
@@ -4559,7 +4576,7 @@ func (s *DiskTypeResource) Decode(d *jx.Decoder) error {
 				return errors.Wrap(err, "decode field \"min_size_gb\"")
 			}
 		case "name":
-			requiredBitSet[0] |= 1 << 7
+			requiredBitSet[1] |= 1 << 0
 			if err := func() error {
 				v, err := d.Str()
 				s.Name = string(v)
@@ -4571,7 +4588,7 @@ func (s *DiskTypeResource) Decode(d *jx.Decoder) error {
 				return errors.Wrap(err, "decode field \"name\"")
 			}
 		case "region_id":
-			requiredBitSet[1] |= 1 << 0
+			requiredBitSet[1] |= 1 << 1
 			if err := func() error {
 				v, err := json.DecodeUUID(d)
 				s.RegionID = v
@@ -4583,7 +4600,7 @@ func (s *DiskTypeResource) Decode(d *jx.Decoder) error {
 				return errors.Wrap(err, "decode field \"region_id\"")
 			}
 		case "step_gb":
-			requiredBitSet[1] |= 1 << 1
+			requiredBitSet[1] |= 1 << 2
 			if err := func() error {
 				v, err := d.Int64()
 				s.StepGB = int64(v)
@@ -4595,7 +4612,7 @@ func (s *DiskTypeResource) Decode(d *jx.Decoder) error {
 				return errors.Wrap(err, "decode field \"step_gb\"")
 			}
 		case "throughput_at_min_size":
-			requiredBitSet[1] |= 1 << 2
+			requiredBitSet[1] |= 1 << 3
 			if err := func() error {
 				if err := s.ThroughputAtMinSize.Decode(d); err != nil {
 					return err
@@ -4605,7 +4622,7 @@ func (s *DiskTypeResource) Decode(d *jx.Decoder) error {
 				return errors.Wrap(err, "decode field \"throughput_at_min_size\"")
 			}
 		case "throughput_at_max_size":
-			requiredBitSet[1] |= 1 << 3
+			requiredBitSet[1] |= 1 << 4
 			if err := func() error {
 				if err := s.ThroughputAtMaxSize.Decode(d); err != nil {
 					return err
@@ -4615,7 +4632,7 @@ func (s *DiskTypeResource) Decode(d *jx.Decoder) error {
 				return errors.Wrap(err, "decode field \"throughput_at_max_size\"")
 			}
 		case "product_id":
-			requiredBitSet[1] |= 1 << 4
+			requiredBitSet[1] |= 1 << 5
 			if err := func() error {
 				if err := s.ProductID.Decode(d); err != nil {
 					return err
@@ -4625,7 +4642,7 @@ func (s *DiskTypeResource) Decode(d *jx.Decoder) error {
 				return errors.Wrap(err, "decode field \"product_id\"")
 			}
 		case "plan_id":
-			requiredBitSet[1] |= 1 << 5
+			requiredBitSet[1] |= 1 << 6
 			if err := func() error {
 				if err := s.PlanID.Decode(d); err != nil {
 					return err
@@ -4635,7 +4652,7 @@ func (s *DiskTypeResource) Decode(d *jx.Decoder) error {
 				return errors.Wrap(err, "decode field \"plan_id\"")
 			}
 		case "snapshot_plan_id":
-			requiredBitSet[1] |= 1 << 6
+			requiredBitSet[1] |= 1 << 7
 			if err := func() error {
 				if err := s.SnapshotPlanID.Decode(d); err != nil {
 					return err
@@ -4645,7 +4662,7 @@ func (s *DiskTypeResource) Decode(d *jx.Decoder) error {
 				return errors.Wrap(err, "decode field \"snapshot_plan_id\"")
 			}
 		case "backup_plan_id":
-			requiredBitSet[1] |= 1 << 7
+			requiredBitSet[2] |= 1 << 0
 			if err := func() error {
 				if err := s.BackupPlanID.Decode(d); err != nil {
 					return err
@@ -4655,7 +4672,7 @@ func (s *DiskTypeResource) Decode(d *jx.Decoder) error {
 				return errors.Wrap(err, "decode field \"backup_plan_id\"")
 			}
 		case "private_image_plan_id":
-			requiredBitSet[2] |= 1 << 0
+			requiredBitSet[2] |= 1 << 1
 			if err := func() error {
 				if err := s.PrivateImagePlanID.Decode(d); err != nil {
 					return err
@@ -4676,7 +4693,7 @@ func (s *DiskTypeResource) Decode(d *jx.Decoder) error {
 	for i, mask := range [3]uint8{
 		0b11111111,
 		0b11111111,
-		0b00000001,
+		0b00000011,
 	} {
 		if result := (requiredBitSet[i] & mask) ^ mask; result != 0 {
 			// Mask only required fields and check equality to mask using XOR.
