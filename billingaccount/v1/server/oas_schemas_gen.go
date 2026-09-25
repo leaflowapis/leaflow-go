@@ -53,6 +53,11 @@ type AccountBalance struct {
 	// of balance. credit_groups describes currently valid credit by permitted use; a positive credits
 	// balance does not imply that due is zero.
 	Credits Money `json:"credits"`
+	// Balance plus credits, the sum shown as the account's funds. Credits count at their recorded
+	// remaining amount, including restricted grants that only pay for what they allow, so total is an
+	// upper bound of what the account can pay with rather than a withdrawable amount. due is reported
+	// separately and is not subtracted.
+	Total Money `json:"total"`
 	// Currently valid, unspent credit grouped by permitted use. Restrictions and validity dates determine
 	// which charges a group can cover, so these groups are not a general spendable balance and may differ
 	// from the recorded credits total.
@@ -83,6 +88,11 @@ func (s *AccountBalance) GetCredits() Money {
 	return s.Credits
 }
 
+// GetTotal returns the value of Total.
+func (s *AccountBalance) GetTotal() Money {
+	return s.Total
+}
+
 // GetCreditGroups returns the value of CreditGroups.
 func (s *AccountBalance) GetCreditGroups() []CreditGroup {
 	return s.CreditGroups
@@ -111,6 +121,11 @@ func (s *AccountBalance) SetBalance(val Money) {
 // SetCredits sets the value of Credits.
 func (s *AccountBalance) SetCredits(val Money) {
 	s.Credits = val
+}
+
+// SetTotal sets the value of Total.
+func (s *AccountBalance) SetTotal(val Money) {
+	s.Total = val
 }
 
 // SetCreditGroups sets the value of CreditGroups.

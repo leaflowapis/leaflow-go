@@ -1211,6 +1211,11 @@ type AccountBalance struct {
 	// charged, and issued usage invoices still unpaid. The account is in arrears while this
 	// is above zero. Topping up pays it on the next collection.
 	Due externalRef0.Money `json:"due"`
+
+	// Total balance plus credits, the sum shown as the account's funds. Credits count at their recorded remaining
+	// amount, including restricted grants that only pay for what they allow, so total is an upper bound of what
+	// the account can pay with rather than a withdrawable amount. due is reported separately and is not subtracted.
+	Total externalRef0.Money `json:"total"`
 }
 
 // AccountIdentity defines model for AccountIdentity.

@@ -40,6 +40,10 @@ func (s *AccountBalance) encodeFields(e *jx.Encoder) {
 		s.Credits.Encode(e)
 	}
 	{
+		e.FieldStart("total")
+		s.Total.Encode(e)
+	}
+	{
 		e.FieldStart("credit_groups")
 		e.ArrStart()
 		for _, elem := range s.CreditGroups {
@@ -53,13 +57,14 @@ func (s *AccountBalance) encodeFields(e *jx.Encoder) {
 	}
 }
 
-var jsonFieldsNameOfAccountBalance = [6]string{
+var jsonFieldsNameOfAccountBalance = [7]string{
 	0: "billing_account_id",
 	1: "currency",
 	2: "balance",
 	3: "credits",
-	4: "credit_groups",
-	5: "due",
+	4: "total",
+	5: "credit_groups",
+	6: "due",
 }
 
 // Decode decodes AccountBalance from json.
@@ -115,8 +120,18 @@ func (s *AccountBalance) Decode(d *jx.Decoder) error {
 			}(); err != nil {
 				return errors.Wrap(err, "decode field \"credits\"")
 			}
-		case "credit_groups":
+		case "total":
 			requiredBitSet[0] |= 1 << 4
+			if err := func() error {
+				if err := s.Total.Decode(d); err != nil {
+					return err
+				}
+				return nil
+			}(); err != nil {
+				return errors.Wrap(err, "decode field \"total\"")
+			}
+		case "credit_groups":
+			requiredBitSet[0] |= 1 << 5
 			if err := func() error {
 				s.CreditGroups = make([]CreditGroup, 0)
 				if err := d.Arr(func(d *jx.Decoder) error {
@@ -134,7 +149,7 @@ func (s *AccountBalance) Decode(d *jx.Decoder) error {
 				return errors.Wrap(err, "decode field \"credit_groups\"")
 			}
 		case "due":
-			requiredBitSet[0] |= 1 << 5
+			requiredBitSet[0] |= 1 << 6
 			if err := func() error {
 				if err := s.Due.Decode(d); err != nil {
 					return err
@@ -153,7 +168,7 @@ func (s *AccountBalance) Decode(d *jx.Decoder) error {
 	// Validate required fields.
 	var failures []validate.FieldError
 	for i, mask := range [1]uint8{
-		0b00111111,
+		0b01111111,
 	} {
 		if result := (requiredBitSet[i] & mask) ^ mask; result != 0 {
 			// Mask only required fields and check equality to mask using XOR.
