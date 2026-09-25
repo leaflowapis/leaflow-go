@@ -1212,6 +1212,11 @@ type AccountBalance struct {
 	// is above zero. Topping up pays it on the next collection.
 	Due externalRef0.Money `json:"due"`
 
+	// RestrictedCredits The part of currently valid credit that only pays for what its restrictions allow, such as a single
+	// service, a billing type or a first purchase. The rest of the valid credit pays for anything on the account.
+	// Included in credits and therefore in total.
+	RestrictedCredits externalRef0.Money `json:"restricted_credits"`
+
 	// Total balance plus credits, the sum shown as the account's funds. Credits count at their recorded remaining
 	// amount, including restricted grants that only pay for what they allow, so total is an upper bound of what
 	// the account can pay with rather than a withdrawable amount. due is reported separately and is not subtracted.

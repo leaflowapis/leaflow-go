@@ -58,6 +58,10 @@ type AccountBalance struct {
 	// upper bound of what the account can pay with rather than a withdrawable amount. due is reported
 	// separately and is not subtracted.
 	Total Money `json:"total"`
+	// The part of currently valid credit that only pays for what its restrictions allow, such as a single
+	// service, a billing type or a first purchase. The rest of the valid credit pays for anything on the
+	// account. Included in credits and therefore in total.
+	RestrictedCredits Money `json:"restricted_credits"`
 	// Currently valid, unspent credit grouped by permitted use. Restrictions and validity dates determine
 	// which charges a group can cover, so these groups are not a general spendable balance and may differ
 	// from the recorded credits total.
@@ -93,6 +97,11 @@ func (s *AccountBalance) GetTotal() Money {
 	return s.Total
 }
 
+// GetRestrictedCredits returns the value of RestrictedCredits.
+func (s *AccountBalance) GetRestrictedCredits() Money {
+	return s.RestrictedCredits
+}
+
 // GetCreditGroups returns the value of CreditGroups.
 func (s *AccountBalance) GetCreditGroups() []CreditGroup {
 	return s.CreditGroups
@@ -126,6 +135,11 @@ func (s *AccountBalance) SetCredits(val Money) {
 // SetTotal sets the value of Total.
 func (s *AccountBalance) SetTotal(val Money) {
 	s.Total = val
+}
+
+// SetRestrictedCredits sets the value of RestrictedCredits.
+func (s *AccountBalance) SetRestrictedCredits(val Money) {
+	s.RestrictedCredits = val
 }
 
 // SetCreditGroups sets the value of CreditGroups.
