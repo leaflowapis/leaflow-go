@@ -2575,7 +2575,7 @@ type ClientInterface interface {
 	//
 	// The disk is created in the availability zone of the selected disk type, and an instance must reside in the same zone to attach it. Choosing the disk type therefore determines the zone.
 	//
-	// A disk type that has been withdrawn is rejected with `DISK_TYPE_RETIRED`, even though its identifier still resolves. Withdrawn types stop appearing in the disk type listing; disks already bought on one keep working and can still be resized.
+	// A disk type that is off sale is rejected with `DISK_TYPE_OFF_SALE`, even though its identifier still resolves. Types that are off sale do not appear in the disk type listing; disks already bought on one keep working and can still be resized.
 	//
 	// Replays return HTTP 201 for the original operation. See the idempotency conventions for conflicts and terminal outcomes.
 	//
@@ -2588,7 +2588,7 @@ type ClientInterface interface {
 	//
 	// The disk is created in the availability zone of the selected disk type, and an instance must reside in the same zone to attach it. Choosing the disk type therefore determines the zone.
 	//
-	// A disk type that has been withdrawn is rejected with `DISK_TYPE_RETIRED`, even though its identifier still resolves. Withdrawn types stop appearing in the disk type listing; disks already bought on one keep working and can still be resized.
+	// A disk type that is off sale is rejected with `DISK_TYPE_OFF_SALE`, even though its identifier still resolves. Types that are off sale do not appear in the disk type listing; disks already bought on one keep working and can still be resized.
 	//
 	// Replays return HTTP 201 for the original operation. See the idempotency conventions for conflicts and terminal outcomes.
 	//
@@ -3960,7 +3960,7 @@ func (c *Client) ListDisks(ctx context.Context, params *ListDisksParams, reqEdit
 //
 // The disk is created in the availability zone of the selected disk type, and an instance must reside in the same zone to attach it. Choosing the disk type therefore determines the zone.
 //
-// A disk type that has been withdrawn is rejected with `DISK_TYPE_RETIRED`, even though its identifier still resolves. Withdrawn types stop appearing in the disk type listing; disks already bought on one keep working and can still be resized.
+// A disk type that is off sale is rejected with `DISK_TYPE_OFF_SALE`, even though its identifier still resolves. Types that are off sale do not appear in the disk type listing; disks already bought on one keep working and can still be resized.
 //
 // Replays return HTTP 201 for the original operation. See the idempotency conventions for conflicts and terminal outcomes.
 //
@@ -3983,7 +3983,7 @@ func (c *Client) CreateDiskWithBody(ctx context.Context, contentType string, bod
 //
 // The disk is created in the availability zone of the selected disk type, and an instance must reside in the same zone to attach it. Choosing the disk type therefore determines the zone.
 //
-// A disk type that has been withdrawn is rejected with `DISK_TYPE_RETIRED`, even though its identifier still resolves. Withdrawn types stop appearing in the disk type listing; disks already bought on one keep working and can still be resized.
+// A disk type that is off sale is rejected with `DISK_TYPE_OFF_SALE`, even though its identifier still resolves. Types that are off sale do not appear in the disk type listing; disks already bought on one keep working and can still be resized.
 //
 // Replays return HTTP 201 for the original operation. See the idempotency conventions for conflicts and terminal outcomes.
 //
@@ -10994,7 +10994,7 @@ type ClientWithResponsesInterface interface {
 	//
 	// The disk is created in the availability zone of the selected disk type, and an instance must reside in the same zone to attach it. Choosing the disk type therefore determines the zone.
 	//
-	// A disk type that has been withdrawn is rejected with `DISK_TYPE_RETIRED`, even though its identifier still resolves. Withdrawn types stop appearing in the disk type listing; disks already bought on one keep working and can still be resized.
+	// A disk type that is off sale is rejected with `DISK_TYPE_OFF_SALE`, even though its identifier still resolves. Types that are off sale do not appear in the disk type listing; disks already bought on one keep working and can still be resized.
 	//
 	// Replays return HTTP 201 for the original operation. See the idempotency conventions for conflicts and terminal outcomes.
 	//
@@ -11007,7 +11007,7 @@ type ClientWithResponsesInterface interface {
 	//
 	// The disk is created in the availability zone of the selected disk type, and an instance must reside in the same zone to attach it. Choosing the disk type therefore determines the zone.
 	//
-	// A disk type that has been withdrawn is rejected with `DISK_TYPE_RETIRED`, even though its identifier still resolves. Withdrawn types stop appearing in the disk type listing; disks already bought on one keep working and can still be resized.
+	// A disk type that is off sale is rejected with `DISK_TYPE_OFF_SALE`, even though its identifier still resolves. Types that are off sale do not appear in the disk type listing; disks already bought on one keep working and can still be resized.
 	//
 	// Replays return HTTP 201 for the original operation. See the idempotency conventions for conflicts and terminal outcomes.
 	//
@@ -17240,7 +17240,7 @@ func (c *ClientWithResponses) ListDisksWithResponse(ctx context.Context, params 
 //
 // The disk is created in the availability zone of the selected disk type, and an instance must reside in the same zone to attach it. Choosing the disk type therefore determines the zone.
 //
-// A disk type that has been withdrawn is rejected with `DISK_TYPE_RETIRED`, even though its identifier still resolves. Withdrawn types stop appearing in the disk type listing; disks already bought on one keep working and can still be resized.
+// A disk type that is off sale is rejected with `DISK_TYPE_OFF_SALE`, even though its identifier still resolves. Types that are off sale do not appear in the disk type listing; disks already bought on one keep working and can still be resized.
 //
 // Replays return HTTP 201 for the original operation. See the idempotency conventions for conflicts and terminal outcomes.
 //
@@ -17259,7 +17259,7 @@ func (c *ClientWithResponses) CreateDiskWithBodyWithResponse(ctx context.Context
 //
 // The disk is created in the availability zone of the selected disk type, and an instance must reside in the same zone to attach it. Choosing the disk type therefore determines the zone.
 //
-// A disk type that has been withdrawn is rejected with `DISK_TYPE_RETIRED`, even though its identifier still resolves. Withdrawn types stop appearing in the disk type listing; disks already bought on one keep working and can still be resized.
+// A disk type that is off sale is rejected with `DISK_TYPE_OFF_SALE`, even though its identifier still resolves. Types that are off sale do not appear in the disk type listing; disks already bought on one keep working and can still be resized.
 //
 // Replays return HTTP 201 for the original operation. See the idempotency conventions for conflicts and terminal outcomes.
 //
