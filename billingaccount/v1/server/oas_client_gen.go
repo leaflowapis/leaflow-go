@@ -197,6 +197,13 @@ type Invoker interface {
 	//
 	// GET /account/v1/credit-grants
 	ListCreditGrants(ctx context.Context, params ListCreditGrantsParams) (*CreditGrantList, error)
+	// ListCurrencies invokes list-currencies operation.
+	//
+	// The currencies a new billing account can be opened in. A retired currency is not listed, although
+	// accounts already opened in it keep working. Not paged: the set is a few rows.
+	//
+	// GET /account/v1/currencies
+	ListCurrencies(ctx context.Context) (*CurrencyList, error)
 	// ListEntitlements invokes list-entitlements operation.
 	//
 	// Capabilities that come with what has been bought. A capability that is not held simply does not
@@ -3597,6 +3604,120 @@ func (c *Client) sendListCreditGrants(ctx context.Context, params ListCreditGran
 
 	stage = "DecodeResponse"
 	result, err := decodeListCreditGrantsResponse(resp)
+	if err != nil {
+		return res, errors.Wrap(err, "decode response")
+	}
+
+	return result, nil
+}
+
+// ListCurrencies invokes list-currencies operation.
+//
+// The currencies a new billing account can be opened in. A retired currency is not listed, although
+// accounts already opened in it keep working. Not paged: the set is a few rows.
+//
+// GET /account/v1/currencies
+func (c *Client) ListCurrencies(ctx context.Context) (*CurrencyList, error) {
+	res, err := c.sendListCurrencies(ctx)
+	return res, err
+}
+
+func (c *Client) sendListCurrencies(ctx context.Context) (res *CurrencyList, err error) {
+	otelAttrs := []attribute.KeyValue{
+		otelogen.OperationID("list-currencies"),
+		semconv.HTTPRequestMethodKey.String("GET"),
+		semconv.URLTemplateKey.String("/account/v1/currencies"),
+	}
+	otelAttrs = append(otelAttrs, c.cfg.Attributes...)
+
+	// Run stopwatch.
+	startTime := time.Now()
+	defer func() {
+		// Use floating point division here for higher precision (instead of Millisecond method).
+		elapsedDuration := time.Since(startTime)
+		c.duration.Record(ctx, float64(elapsedDuration)/float64(time.Millisecond), metric.WithAttributes(otelAttrs...))
+	}()
+
+	// Increment request counter.
+	c.requests.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
+
+	// Start a span for this request.
+	ctx, span := c.cfg.Tracer.Start(ctx, ListCurrenciesOperation,
+		trace.WithAttributes(otelAttrs...),
+		clientSpanKind,
+	)
+	// Track stage for error reporting.
+	var stage string
+	defer func() {
+		if err != nil {
+			span.RecordError(err)
+			span.SetStatus(codes.Error, stage)
+			c.errors.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
+		}
+		span.End()
+	}()
+
+	stage = "BuildURL"
+	u := uri.Clone(c.requestURL(ctx))
+	var pathParts [1]string
+	pathParts[0] = "/account/v1/currencies"
+	uri.AddPathParts(u, pathParts[:]...)
+
+	stage = "EncodeRequest"
+	r, err := ht.NewRequest(ctx, "GET", u)
+	if err != nil {
+		return res, errors.Wrap(err, "create request")
+	}
+
+	{
+		type bitset = [1]uint8
+		var satisfied bitset
+		{
+			stage = "Security:AccessTokenAuth"
+			switch err := c.securityAccessTokenAuth(ctx, ListCurrenciesOperation, r); {
+			case err == nil: // if NO error
+				satisfied[0] |= 1 << 0
+			case errors.Is(err, ogenerrors.ErrSkipClientSecurity):
+				// Skip this security.
+			default:
+				return res, errors.Wrap(err, "security \"AccessTokenAuth\"")
+			}
+		}
+
+		if ok := func() bool {
+		nextRequirement:
+			for _, requirement := range []bitset{
+				{0b00000001},
+			} {
+				for i, mask := range requirement {
+					if satisfied[i]&mask != mask {
+						continue nextRequirement
+					}
+				}
+				return true
+			}
+			return false
+		}(); !ok {
+			return res, ogenerrors.ErrSecurityRequirementIsNotSatisfied
+		}
+	}
+
+	stage = "SendRequest"
+	resp, err := c.cfg.Client.Do(r)
+	if err != nil {
+		return res, errors.Wrap(err, "do request")
+	}
+	body := resp.Body
+	defer func() {
+		// Drain the body to EOF before closing, so the underlying
+		// connection can be reused by the Transport regardless of the
+		// response status code. See https://github.com/ogen-go/ogen/issues/1670.
+		_, _ = io.Copy(io.Discard, body)
+		_ = body.Close()
+	}()
+
+	stage = "DecodeResponse"
+	result, err := decodeListCurrenciesResponse(resp)
 	if err != nil {
 		return res, errors.Wrap(err, "decode response")
 	}

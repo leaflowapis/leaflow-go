@@ -29,6 +29,7 @@ const (
 	ListBillingAccountProjectsOperation  OperationName = "ListBillingAccountProjects"
 	ListBillingAccountsOperation         OperationName = "ListBillingAccounts"
 	ListCreditGrantsOperation            OperationName = "ListCreditGrants"
+	ListCurrenciesOperation              OperationName = "ListCurrencies"
 	ListEntitlementsOperation            OperationName = "ListEntitlements"
 	ListInvoiceItemsOperation            OperationName = "ListInvoiceItems"
 	ListInvoicesOperation                OperationName = "ListInvoices"

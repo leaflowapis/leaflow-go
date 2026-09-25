@@ -399,6 +399,19 @@ func encodeListCreditGrantsResponse(response *CreditGrantList, w http.ResponseWr
 	return nil
 }
 
+func encodeListCurrenciesResponse(response *CurrencyList, w http.ResponseWriter, span trace.Span) error {
+	w.Header().Set("Content-Type", "application/json; charset=utf-8")
+	w.WriteHeader(200)
+
+	e := new(jx.Encoder)
+	response.Encode(e)
+	if _, err := e.WriteTo(w); err != nil {
+		return errors.Wrap(err, "write")
+	}
+
+	return nil
+}
+
 func encodeListEntitlementsResponse(response *EntitlementList, w http.ResponseWriter, span trace.Span) error {
 	w.Header().Set("Content-Type", "application/json; charset=utf-8")
 	w.WriteHeader(200)

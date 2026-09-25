@@ -176,6 +176,13 @@ type Handler interface {
 	//
 	// GET /account/v1/credit-grants
 	ListCreditGrants(ctx context.Context, params ListCreditGrantsParams) (*CreditGrantList, error)
+	// ListCurrencies implements list-currencies operation.
+	//
+	// The currencies a new billing account can be opened in. A retired currency is not listed, although
+	// accounts already opened in it keep working. Not paged: the set is a few rows.
+	//
+	// GET /account/v1/currencies
+	ListCurrencies(ctx context.Context) (*CurrencyList, error)
 	// ListEntitlements implements list-entitlements operation.
 	//
 	// Capabilities that come with what has been bought. A capability that is not held simply does not

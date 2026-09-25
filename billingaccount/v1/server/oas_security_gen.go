@@ -56,6 +56,7 @@ var operationRolesAccessTokenAuth = map[string][]string{
 	ListBillingAccountProjectsOperation:  []string{},
 	ListBillingAccountsOperation:         []string{},
 	ListCreditGrantsOperation:            []string{},
+	ListCurrenciesOperation:              []string{},
 	ListEntitlementsOperation:            []string{},
 	ListInvoiceItemsOperation:            []string{},
 	ListInvoicesOperation:                []string{},

@@ -1444,6 +1444,24 @@ type CreditGroup struct {
 	AppliesTo Applicability `json:"applies_to"`
 }
 
+// Currency A currency a billing account can be opened in.
+type Currency struct {
+	// Code ISO 4217 alpha-3, uppercase.
+	Code string `json:"code"`
+
+	// Exponent Decimal places of the currency, the ISO 4217 minor unit.
+	Exponent int32 `json:"exponent"`
+
+	// MinimumTopUp The smallest top-up accepted. Zero means no lower bound.
+	MinimumTopUp externalRef0.Money `json:"minimum_top_up"`
+	Name         string             `json:"name"`
+}
+
+// CurrencyList defines model for CurrencyList.
+type CurrencyList struct {
+	Items []Currency `json:"items"`
+}
+
 // Discount A coupon held on this account. It applies at checkout without a code.
 type Discount struct {
 	// Amount Fixed discount or per-unit interval price override for this account currency.
@@ -3526,6 +3544,14 @@ type ClientInterface interface {
 	// Corresponds with GET /account/v1/credit-grants (the `ListCreditGrants` operationId).
 	ListCreditGrants(ctx context.Context, params *ListCreditGrantsParams, reqEditors ...RequestEditorFn) (*http.Response, error)
 
+	// ListCurrencies List currencies accounts can be opened in
+	//
+	// The currencies a new billing account can be opened in. A retired currency is not listed,
+	// although accounts already opened in it keep working. Not paged: the set is a few rows.
+	//
+	// Corresponds with GET /account/v1/currencies (the `ListCurrencies` operationId).
+	ListCurrencies(ctx context.Context, reqEditors ...RequestEditorFn) (*http.Response, error)
+
 	// ListAccountDiscounts List the coupons held on this account
 	//
 	// Coupons placed on the account directly, which apply at checkout without a code being
@@ -4181,6 +4207,24 @@ func (c *Client) CancelCancellationRequest(ctx context.Context, cancellationRequ
 // Corresponds with GET /account/v1/credit-grants (the `ListCreditGrants` operationId).
 func (c *Client) ListCreditGrants(ctx context.Context, params *ListCreditGrantsParams, reqEditors ...RequestEditorFn) (*http.Response, error) {
 	req, err := NewListCreditGrantsRequest(c.Server, params)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+// ListCurrencies List currencies accounts can be opened in
+//
+// The currencies a new billing account can be opened in. A retired currency is not listed,
+// although accounts already opened in it keep working. Not paged: the set is a few rows.
+//
+// Corresponds with GET /account/v1/currencies (the `ListCurrencies` operationId).
+func (c *Client) ListCurrencies(ctx context.Context, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewListCurrenciesRequest(c.Server)
 	if err != nil {
 		return nil, err
 	}
@@ -5642,6 +5686,33 @@ func NewListCreditGrantsRequest(server string, params *ListCreditGrantsParams) (
 			rawQueryFragments = append(rawQueryFragments, encoded)
 		}
 		queryURL.RawQuery = strings.Join(rawQueryFragments, "&")
+	}
+
+	req, err := http.NewRequest(http.MethodGet, queryURL.String(), nil)
+	if err != nil {
+		return nil, err
+	}
+
+	return req, nil
+}
+
+// NewListCurrenciesRequest constructs an http.Request for the ListCurrencies method
+func NewListCurrenciesRequest(server string) (*http.Request, error) {
+	var err error
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/account/v1/currencies")
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
 	}
 
 	req, err := http.NewRequest(http.MethodGet, queryURL.String(), nil)
@@ -8443,6 +8514,16 @@ type ClientWithResponsesInterface interface {
 	// Corresponds with GET /account/v1/credit-grants (the `ListCreditGrants` operationId).
 	ListCreditGrantsWithResponse(ctx context.Context, params *ListCreditGrantsParams, reqEditors ...RequestEditorFn) (*ListCreditGrantsResponse, error)
 
+	// ListCurrenciesWithResponse List currencies accounts can be opened in
+	//
+	// The currencies a new billing account can be opened in. A retired currency is not listed,
+	// although accounts already opened in it keep working. Not paged: the set is a few rows.
+	//
+	// Returns a wrapper object for the known response body format(s).
+	//
+	// Corresponds with GET /account/v1/currencies (the `ListCurrencies` operationId).
+	ListCurrenciesWithResponse(ctx context.Context, reqEditors ...RequestEditorFn) (*ListCurrenciesResponse, error)
+
 	// ListAccountDiscountsWithResponse List the coupons held on this account
 	//
 	// Coupons placed on the account directly, which apply at checkout without a code being
@@ -9390,6 +9471,54 @@ func (r ListCreditGrantsResponse) StatusCode() int {
 
 // ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
 func (r ListCreditGrantsResponse) ContentType() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Header.Get("Content-Type")
+	}
+	return ""
+}
+
+type ListCurrenciesResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	// JSON200 the response for an HTTP 200 `application/json` response
+	JSON200 *CurrencyList
+	// JSONDefault the response for an HTTP default `application/json` response
+	JSONDefault *Error
+}
+
+// GetJSON200 returns the response for an HTTP 200 `application/json` response
+func (r ListCurrenciesResponse) GetJSON200() *CurrencyList {
+	return r.JSON200
+}
+
+// GetJSONDefault returns the response for an HTTP default `application/json` response
+func (r ListCurrenciesResponse) GetJSONDefault() *Error {
+	return r.JSONDefault
+}
+
+// GetBody returns the raw response body bytes
+func (r ListCurrenciesResponse) GetBody() []byte {
+	return r.Body
+}
+
+// Status returns HTTPResponse.Status
+func (r ListCurrenciesResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r ListCurrenciesResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+// ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
+func (r ListCurrenciesResponse) ContentType() string {
 	if r.HTTPResponse != nil {
 		return r.HTTPResponse.Header.Get("Content-Type")
 	}
@@ -11617,6 +11746,22 @@ func (c *ClientWithResponses) ListCreditGrantsWithResponse(ctx context.Context, 
 	return ParseListCreditGrantsResponse(rsp)
 }
 
+// ListCurrenciesWithResponse List currencies accounts can be opened in
+//
+// The currencies a new billing account can be opened in. A retired currency is not listed,
+// although accounts already opened in it keep working. Not paged: the set is a few rows.
+//
+// Returns a wrapper object for the known response body format(s).
+//
+// Corresponds with GET /account/v1/currencies (the `ListCurrencies` operationId).
+func (c *ClientWithResponses) ListCurrenciesWithResponse(ctx context.Context, reqEditors ...RequestEditorFn) (*ListCurrenciesResponse, error) {
+	rsp, err := c.ListCurrencies(ctx, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseListCurrenciesResponse(rsp)
+}
+
 // ListAccountDiscountsWithResponse List the coupons held on this account
 //
 // Coupons placed on the account directly, which apply at checkout without a code being
@@ -12723,6 +12868,39 @@ func ParseListCreditGrantsResponse(rsp *http.Response) (*ListCreditGrantsRespons
 	switch {
 	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
 		var dest CreditGrantList
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && true:
+		var dest Error
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSONDefault = &dest
+
+	}
+
+	return response, nil
+}
+
+// ParseListCurrenciesResponse parses an HTTP response from a ListCurrenciesWithResponse call
+func ParseListCurrenciesResponse(rsp *http.Response) (*ListCurrenciesResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &ListCurrenciesResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest CurrencyList
 		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
 			return nil, err
 		}

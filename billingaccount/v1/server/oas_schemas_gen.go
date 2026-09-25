@@ -1599,6 +1599,73 @@ func (s *CreditGroup) SetAmount(val Money) {
 	s.Amount = val
 }
 
+// A currency a billing account can be opened in.
+// Ref: #/components/schemas/Currency
+type Currency struct {
+	// ISO 4217 alpha-3, uppercase.
+	Code string `json:"code"`
+	// Decimal places of the currency, the ISO 4217 minor unit.
+	Exponent int32  `json:"exponent"`
+	Name     string `json:"name"`
+	// The smallest top-up accepted. Zero means no lower bound.
+	MinimumTopUp Money `json:"minimum_top_up"`
+}
+
+// GetCode returns the value of Code.
+func (s *Currency) GetCode() string {
+	return s.Code
+}
+
+// GetExponent returns the value of Exponent.
+func (s *Currency) GetExponent() int32 {
+	return s.Exponent
+}
+
+// GetName returns the value of Name.
+func (s *Currency) GetName() string {
+	return s.Name
+}
+
+// GetMinimumTopUp returns the value of MinimumTopUp.
+func (s *Currency) GetMinimumTopUp() Money {
+	return s.MinimumTopUp
+}
+
+// SetCode sets the value of Code.
+func (s *Currency) SetCode(val string) {
+	s.Code = val
+}
+
+// SetExponent sets the value of Exponent.
+func (s *Currency) SetExponent(val int32) {
+	s.Exponent = val
+}
+
+// SetName sets the value of Name.
+func (s *Currency) SetName(val string) {
+	s.Name = val
+}
+
+// SetMinimumTopUp sets the value of MinimumTopUp.
+func (s *Currency) SetMinimumTopUp(val Money) {
+	s.MinimumTopUp = val
+}
+
+// Ref: #/components/schemas/CurrencyList
+type CurrencyList struct {
+	Items []Currency `json:"items"`
+}
+
+// GetItems returns the value of Items.
+func (s *CurrencyList) GetItems() []Currency {
+	return s.Items
+}
+
+// SetItems sets the value of Items.
+func (s *CurrencyList) SetItems(val []Currency) {
+	s.Items = val
+}
+
 // DeletePaymentMethodNoContent is response for DeletePaymentMethod operation.
 type DeletePaymentMethodNoContent struct{}
 
