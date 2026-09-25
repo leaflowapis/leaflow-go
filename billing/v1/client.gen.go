@@ -1023,6 +1023,13 @@ type Quote struct {
 }
 
 // QuoteLine Identify a price directly, or select a price for a plan. For each resource give its ID or lookup key, never both. Lookup keys require product_id.
+//
+// A line that gives a meter, `dimensions` or `duration_seconds` estimates usage and is
+// priced only at a postpaid price. Such a line is refused with HTTP 400
+// `BILLING_PURCHASE_INVALID` when `price_type` is `prepaid` or `one_time`, or when the price
+// it names is not postpaid; `meta.field` is `price_type`, `price_id` or `price_lookup_key`
+// accordingly. When the plan has no postpaid price, the line is returned unpriced with
+// `no_price`.
 type QuoteLine struct {
 	// Dimensions The attributes the price depends on — region, instance type, token class.
 	//
@@ -1035,7 +1042,8 @@ type QuoteLine struct {
 	Dimensions map[string]string `json:"dimensions,omitempty"`
 
 	// DurationSeconds For metered items, how long to price for. This allows an estimate such as "about
-	// this much per month" to be shown before anything exists.
+	// this much per month" to be shown before anything exists. The priced quantity is
+	// `quantity` multiplied by this duration.
 	DurationSeconds *int64              `json:"duration_seconds,omitempty"`
 	Interval        *QuoteLineInterval  `json:"interval,omitempty"`
 	IntervalCount   *int                `json:"interval_count,omitempty"`
@@ -1082,7 +1090,10 @@ type QuoteLineResult struct {
 	//
 	// When false, `price_id`, `unit_amount` and `amount` are absent and
 	// `unpriced_reason` states what is missing.
-	Priced   bool    `json:"priced"`
+	Priced bool `json:"priced"`
+
+	// Quantity The quantity actually priced. When `duration_seconds` is given, it is the requested
+	// `quantity` multiplied by that duration.
 	Quantity *string `json:"quantity,omitempty"`
 
 	// TaxAmount Tax included in the account quote. Absent in public catalogue estimates.

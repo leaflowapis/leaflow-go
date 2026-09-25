@@ -9425,6 +9425,12 @@ func (s *Quote) SetCurrency(val string) {
 
 // Identify a price directly, or select a price for a plan. For each resource give its ID or lookup
 // key, never both. Lookup keys require product_id.
+//
+// A line that gives a meter, `dimensions` or `duration_seconds` estimates usage and is priced only at
+// a postpaid price. Such a line is refused with HTTP 400 `BILLING_PURCHASE_INVALID` when `price_type`
+// is `prepaid` or `one_time`, or when the price it names is not postpaid; `meta.field` is
+// `price_type`, `price_id` or `price_lookup_key` accordingly. When the plan has no postpaid price, the
+// line is returned unpriced with `no_price`.
 // Ref: #/components/schemas/QuoteLine
 type QuoteLine struct {
 	PriceLookupKey OptString    `json:"price_lookup_key"`
@@ -9449,7 +9455,8 @@ type QuoteLine struct {
 	IntervalCount OptInt                `json:"interval_count"`
 	Quantity      string                `json:"quantity"`
 	// For metered items, how long to price for. This allows an estimate such as "about this much per
-	// month" to be shown before anything exists.
+	// month" to be shown before anything exists. The priced quantity is `quantity` multiplied by this
+	// duration.
 	DurationSeconds OptInt64 `json:"duration_seconds"`
 }
 
@@ -9734,7 +9741,9 @@ type QuoteLineResult struct {
 	PriceID    OptUUID   `json:"price_id"`
 	PlanName   OptString `json:"plan_name"`
 	UnitAmount OptMoney  `json:"unit_amount"`
-	Quantity   OptString `json:"quantity"`
+	// The quantity actually priced. When `duration_seconds` is given, it is the requested `quantity`
+	// multiplied by that duration.
+	Quantity OptString `json:"quantity"`
 	// Not rounded. Round only for display.
 	Amount   OptMoney `json:"amount"`
 	Currency string   `json:"currency"`
