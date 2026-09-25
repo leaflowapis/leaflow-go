@@ -5,12 +5,15 @@
 #
 # 每个服务一个模块，仓库根不存在模块，`go build ./...` 在根目录不做任何事。逐模块编译由 find
 # 展开，不写死服务名单：新增服务时若遗漏，表现为该模块从未被编译而流水线为绿。
+#
+# 子包也是模块（billing/catalog），比服务多一层，tag 带两段前缀（billing/catalog/v0.1.0）。
+# tags 的过滤用 **：单个 * 不匹配斜杠，两段前缀的 tag 会不触发任何检查而照常可被 go get。
 name: ci
 
 on:
   push:
     branches: [main]
-    tags: ['*/v*']
+    tags: ['**/v*']
   pull_request:
 
 jobs:
@@ -48,11 +51,13 @@ jobs:
         run: |
           if [[ "$GITHUB_REF_TYPE" == "tag" ]]; then
             module="${GITHUB_REF_NAME%/v*}"
-            [[ "$module" =~ ^[a-z][a-z0-9_-]*$ ]] && test -f "$module/go.mod"
+            [[ "$module" =~ ^[a-z][a-z0-9_-]*(/[a-z][a-z0-9_-]*)?$ ]] && test -f "$module/go.mod"
             modules=("$module")
           else
             modules=()
-            for file in */go.mod; do modules+=("${file%/go.mod}"); done
+            for file in */go.mod */*/go.mod; do
+              [[ -f "$file" ]] && modules+=("${file%/go.mod}")
+            done
           fi
           for module in "${modules[@]}"; do
             echo "── $module"

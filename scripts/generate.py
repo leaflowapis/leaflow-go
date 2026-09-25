@@ -5,6 +5,13 @@
         → go/<服务>/<版本>/client.gen.go          package <服务><版本>
         → go/<服务>/<版本>/server/server.gen.go   package <服务><版本>server
 
+    openapi/<服务>/<子包>/<版本>/openapi.yaml
+        → go/<服务>/<子包>/<版本>/client.gen.go   package <服务><子包><版本>
+
+一个服务按职能分成几组接口时，每组是一个子包，也是一个独立的模块（billing/catalog）。包名把
+路径各段连起来，不只取最后一段：billing/account 若叫 accountv1，就与 account 服务的包同名，
+两者在同一个文件里并排出现时只能靠 import 别名区分。
+
 一个服务一个契约文件。它一度按 OpenAPI 的节点类型拆过（paths/ 加 schemas/，一个 schema 一个
 文件），compute 拆出 74 个三十来行的文件——形式上模块化，实际是把「改一个接口」变成在十几个
 文件之间跳。哪天某个服务真的长到难受了再单独给它拆。
@@ -272,7 +279,7 @@ def write_shared_contract(scratch):
 
 def main():
     contracts.fetch(CONTRACTS_REMOTE, CONTRACTS_ROOT)
-    specs = sorted(CONTRACTS.glob("*/*/openapi.yaml"))
+    specs = sorted(CONTRACTS.glob("**/openapi.yaml"))
     if not specs:
         sys.exit(f"{CONTRACTS} 下一份契约都没有")
 
@@ -290,9 +297,10 @@ def main():
         write_module("type")
 
         for contract in specs:
-            version = contract.parent.name
-            service = contract.parent.parent.name
-            package = f"{service}{version}"
+            parts = contract.parent.relative_to(CONTRACTS).parts
+            version = parts[-1]
+            service = "/".join(parts[:-1])
+            package = "".join(parts[:-1]) + version
             out = ROOT / service / version
 
             # 生成前先删干净。覆盖式生成留得下垃圾：改一个 schema 的名字，旧那份代码没人删，
@@ -300,13 +308,15 @@ def main():
             # v0.1.0 → v0.2.0 那次重命名留下了 584 个没人要的文件。
             shutil.rmtree(out, ignore_errors=True)
 
-            # 相对路径按契约文件自己的位置算：<服务>/<版本>/openapi.yaml 到共用类型是 ../../
-            mapping = {f"../../{spec}": SHARED_PACKAGE for spec in SHARED_SPECS}
+            # 相对路径按契约文件自己的位置算：<服务>/<版本>/openapi.yaml 到共用类型是 ../../，
+            # 子包多一层。
+            mapping = {os.path.relpath(CONTRACTS / spec, contract.parent): SHARED_PACKAGE
+                       for spec in SHARED_SPECS}
             # 客户端两套都由 oapi-codegen 出：外部用户装的是它，而 ogen 的客户端形状不同——
             # 换掉是对下游的破坏性改动，和服务端那件事无关，不该被它捎带着做。
             codegen(contract, package, out / "client.gen.go", CLIENT_GENERATE, scratch, mapping)
 
-            write_defaults(contract, service, package, out)
+            write_defaults(contract, service.replace("/", " "), package, out)
 
             ogen.generate(contract, f"{package}server", out / "server")
 
