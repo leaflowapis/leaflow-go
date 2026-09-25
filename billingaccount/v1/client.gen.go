@@ -436,6 +436,24 @@ func (e PaymentActionType) Valid() bool {
 	}
 }
 
+// Defines values for PaymentCancellationReason.
+const (
+	Abandoned           PaymentCancellationReason = "abandoned"
+	RequestedByCustomer PaymentCancellationReason = "requested_by_customer"
+)
+
+// Valid indicates whether the value is a known member of the PaymentCancellationReason enum.
+func (e PaymentCancellationReason) Valid() bool {
+	switch e {
+	case Abandoned:
+		return true
+	case RequestedByCustomer:
+		return true
+	default:
+		return false
+	}
+}
+
 // Defines values for PaymentMethodStatus.
 const (
 	PaymentMethodStatusActive  PaymentMethodStatus = "active"
@@ -1029,6 +1047,7 @@ func (e TerminationPolicy) Valid() bool {
 
 // Defines values for TopUpStatus.
 const (
+	TopUpStatusCanceled  TopUpStatus = "canceled"
 	TopUpStatusFailed    TopUpStatus = "failed"
 	TopUpStatusPending   TopUpStatus = "pending"
 	TopUpStatusSucceeded TopUpStatus = "succeeded"
@@ -1037,6 +1056,8 @@ const (
 // Valid indicates whether the value is a known member of the TopUpStatus enum.
 func (e TopUpStatus) Valid() bool {
 	switch e {
+	case TopUpStatusCanceled:
+		return true
 	case TopUpStatusFailed:
 		return true
 	case TopUpStatusPending:
@@ -1050,6 +1071,7 @@ func (e TopUpStatus) Valid() bool {
 
 // Defines values for TransactionStatus.
 const (
+	TransactionStatusCanceled  TransactionStatus = "canceled"
 	TransactionStatusFailed    TransactionStatus = "failed"
 	TransactionStatusPending   TransactionStatus = "pending"
 	TransactionStatusSucceeded TransactionStatus = "succeeded"
@@ -1058,6 +1080,8 @@ const (
 // Valid indicates whether the value is a known member of the TransactionStatus enum.
 func (e TransactionStatus) Valid() bool {
 	switch e {
+	case TransactionStatusCanceled:
+		return true
 	case TransactionStatusFailed:
 		return true
 	case TransactionStatusPending:
@@ -1983,6 +2007,10 @@ type PaymentAction struct {
 // PaymentActionType defines model for PaymentAction.Type.
 type PaymentActionType string
 
+// PaymentCancellationReason Why a gateway payment was withdrawn. `abandoned` means the customer did not complete it within the time
+// allowed for payment. `requested_by_customer` means the customer canceled it.
+type PaymentCancellationReason string
+
 // PaymentMethod defines model for PaymentMethod.
 type PaymentMethod struct {
 	BillingAccountId int64               `json:"billing_account_id"`
@@ -2024,6 +2052,29 @@ type PaymentMethodSetupResult struct {
 	// SetupId The gateway's identifier for this attempt. Use it to tell a reloaded page apart
 	// from a second attempt.
 	SetupId string `json:"setup_id"`
+}
+
+// PaymentOption A payment gateway that accepts payment in the account's currency, with the methods it accepts.
+type PaymentOption struct {
+	Methods []PaymentOptionMethod `json:"methods"`
+
+	// PaymentGateway The value to send as `payment_gateway`.
+	PaymentGateway string `json:"payment_gateway"`
+}
+
+// PaymentOptionList defines model for PaymentOptionList.
+type PaymentOptionList struct {
+	Items []PaymentOption `json:"items"`
+}
+
+// PaymentOptionMethod defines model for PaymentOptionMethod.
+type PaymentOptionMethod struct {
+	// MethodType The value to send as `method_type`, such as card, wechat_pay or alipay.
+	MethodType string `json:"method_type"`
+
+	// Reusable Whether a method of this type can be saved with create-payment-method-setup and charged later
+	// without the customer present. Methods that are not reusable are paid anew each time.
+	Reusable bool `json:"reusable"`
 }
 
 // PaymentResult defines model for PaymentResult.
@@ -2758,16 +2809,21 @@ type Tier struct {
 type TopUp struct {
 	Account AccountIdentity `json:"account"`
 
-	// Action Present when the original top-up still needs customer interaction. Completing it does not replace confirmation of receipt.
+	// Action The customer's next step while the top-up is `pending` and the gateway still awaits them. Returned
+	// by create-top-up and get-top-up as the gateway currently reports it; absent from list-top-ups and
+	// once the top-up has a result. Completing it does not replace confirmation of receipt.
 	Action *PaymentAction `json:"action,omitempty"`
 
 	// Amount What is credited to the account, in the account's own currency.
 	Amount           externalRef0.Money `json:"amount"`
 	BillingAccountId int64              `json:"billing_account_id"`
-	CreatedAt        time.Time          `json:"created_at"`
-	Currency         string             `json:"currency"`
 
-	// FailureReason Why it did not go through. Present with `failed`.
+	// CancellationReason Why the top-up was withdrawn. Present with `canceled`.
+	CancellationReason *PaymentCancellationReason `json:"cancellation_reason,omitempty"`
+	CreatedAt          time.Time                  `json:"created_at"`
+	Currency           string                     `json:"currency"`
+
+	// FailureReason Why the gateway declined it. Present with `failed`.
 	FailureReason *string            `json:"failure_reason,omitempty"`
 	Id            openapi_types.UUID `json:"id"`
 
@@ -2794,17 +2850,25 @@ type TopUp struct {
 	// Absent until the payment completes.
 	SettledAt *time.Time `json:"settled_at,omitempty"`
 
-	// Status `pending` until the payment gateway confirms. The balance increases on `succeeded`.
+	// Status `pending` until the payment gateway reaches a result. The balance increases on `succeeded`.
 	//
-	// Unknown channel outcomes remain pending. Failed means the channel has confirmed that
-	// this attempt did not collect money; a browser redirect is not proof of payment.
+	// `failed` means the gateway declined the payment. `canceled` means the attempt was withdrawn
+	// without collecting money; `cancellation_reason` says why. Unknown gateway outcomes remain
+	// `pending`, and a browser redirect is not proof of payment.
+	//
+	// `failed` and `canceled` are final. If the gateway nevertheless collects payment for such an
+	// attempt, the amount is credited as a separate `succeeded` top-up.
 	Status TopUpStatus `json:"status"`
 }
 
-// TopUpStatus `pending` until the payment gateway confirms. The balance increases on `succeeded`.
+// TopUpStatus `pending` until the payment gateway reaches a result. The balance increases on `succeeded`.
 //
-// Unknown channel outcomes remain pending. Failed means the channel has confirmed that
-// this attempt did not collect money; a browser redirect is not proof of payment.
+// `failed` means the gateway declined the payment. `canceled` means the attempt was withdrawn
+// without collecting money; `cancellation_reason` says why. Unknown gateway outcomes remain
+// `pending`, and a browser redirect is not proof of payment.
+//
+// `failed` and `canceled` are final. If the gateway nevertheless collects payment for such an
+// attempt, the amount is credited as a separate `succeeded` top-up.
 type TopUpStatus string
 
 // TopUpCreate defines model for TopUpCreate.
@@ -2847,12 +2911,17 @@ type Transaction struct {
 	// Amount Signed. Positive adds to the balance, negative takes from it.
 	Amount           externalRef0.Money `json:"amount"`
 	BillingAccountId *int64             `json:"billing_account_id,omitempty"`
-	CreatedAt        time.Time          `json:"created_at"`
+
+	// CancellationReason Why the payment was withdrawn. Present with `canceled`.
+	CancellationReason *PaymentCancellationReason `json:"cancellation_reason,omitempty"`
+	CreatedAt          time.Time                  `json:"created_at"`
 
 	// CreditGrant A catalog object inlined for display.
-	CreditGrant    *ObjectIdentity     `json:"credit_grant,omitempty"`
-	CreditGrantId  *openapi_types.UUID `json:"credit_grant_id,omitempty"`
-	Currency       string              `json:"currency"`
+	CreditGrant   *ObjectIdentity     `json:"credit_grant,omitempty"`
+	CreditGrantId *openapi_types.UUID `json:"credit_grant_id,omitempty"`
+	Currency      string              `json:"currency"`
+
+	// FailureReason Why it failed. Present with `failed`.
 	FailureReason  *string             `json:"failure_reason,omitempty"`
 	Id             openapi_types.UUID  `json:"id"`
 	InvoiceId      *openapi_types.UUID `json:"invoice_id,omitempty"`
@@ -2862,16 +2931,22 @@ type Transaction struct {
 	RefundId       *openapi_types.UUID `json:"refund_id,omitempty"`
 
 	// RemainingAmount How much of this batch has not been spent yet. Zero on negative batches.
-	RemainingAmount externalRef0.Money  `json:"remaining_amount"`
-	SettledAt       *time.Time          `json:"settled_at,omitempty"`
-	Status          *TransactionStatus  `json:"status,omitempty"`
-	TransactionId   *openapi_types.UUID `json:"transaction_id,omitempty"`
+	RemainingAmount externalRef0.Money `json:"remaining_amount"`
+	SettledAt       *time.Time         `json:"settled_at,omitempty"`
+
+	// Status `failed` means the operation did not succeed; for a gateway payment, that the gateway declined it.
+	// `canceled` means a gateway payment was withdrawn without collecting money; an invoice it was meant
+	// to pay remains open for another payment.
+	Status        *TransactionStatus  `json:"status,omitempty"`
+	TransactionId *openapi_types.UUID `json:"transaction_id,omitempty"`
 
 	// Type topup adds to the balance; payment settles an invoice; refund returns original funds; payout withdraws from the balance; adjustment changes the balance with an audit reason.
 	Type TransactionType `json:"type"`
 }
 
-// TransactionStatus defines model for Transaction.Status.
+// TransactionStatus `failed` means the operation did not succeed; for a gateway payment, that the gateway declined it.
+// `canceled` means a gateway payment was withdrawn without collecting money; an invoice it was meant
+// to pay remains open for another payment.
 type TransactionStatus string
 
 // TransactionList defines model for TransactionList.
@@ -3524,6 +3599,16 @@ type ClientInterface interface {
 	// Corresponds with GET /account/v1/billing-accounts/{accountId}/balance (the `GetAccountBalance` operationId).
 	GetAccountBalance(ctx context.Context, accountId AccountId, reqEditors ...RequestEditorFn) (*http.Response, error)
 
+	// ListPaymentOptions List payment options
+	//
+	// Lists the payment gateways and methods that currently accept payment in this account's currency, the
+	// preferred gateway first. Top-ups and invoice payments must name a gateway and method listed here;
+	// others are refused. An empty list means no online payment is available for this account. Not paged: the
+	// set is a few rows.
+	//
+	// Corresponds with GET /account/v1/billing-accounts/{accountId}/payment-options (the `ListPaymentOptions` operationId).
+	ListPaymentOptions(ctx context.Context, accountId AccountId, reqEditors ...RequestEditorFn) (*http.Response, error)
+
 	// GetCancellationRequest Get cancellation request
 	//
 	// Corresponds with GET /account/v1/cancellation-requests/{cancellationRequestId} (the `GetCancellationRequest` operationId).
@@ -3868,7 +3953,8 @@ type ClientInterface interface {
 
 	// ListTopUps List top ups
 	//
-	// Lists only the authenticated user's top-ups. Includes pending and failed attempts; no invoice is created for a top-up.
+	// Lists only the authenticated user's top-ups. Includes pending, failed and canceled attempts; no invoice is
+	// created for a top-up. Items carry no `action`; read a pending top-up with get-top-up to continue its payment.
 	//
 	// Corresponds with GET /account/v1/top-ups (the `ListTopUps` operationId).
 	ListTopUps(ctx context.Context, params *ListTopUpsParams, reqEditors ...RequestEditorFn) (*http.Response, error)
@@ -3897,10 +3983,32 @@ type ClientInterface interface {
 
 	// GetTopUp Get top up
 	//
-	// Reads a top-up owned by the authenticated user, including its outcome and the part of it not yet spent. It is not an invoice.
+	// Reads a top-up owned by the authenticated user, including its outcome and the part of it not yet spent.
+	// It is not an invoice.
+	//
+	// While the top-up is pending, the answer includes the customer's next step as the payment gateway
+	// currently reports it, so that a payment interrupted by a closed page can be continued. When the gateway
+	// cannot be reached, the top-up is returned without `action`; read it again later.
 	//
 	// Corresponds with GET /account/v1/top-ups/{topUpId} (the `GetTopUp` operationId).
 	GetTopUp(ctx context.Context, topUpId openapi_types.UUID, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// CancelTopUp Cancel top up
+	//
+	// Withdraws a pending top-up owned by the authenticated user at the payment gateway. It becomes
+	// `canceled` with `cancellation_reason` `requested_by_customer`, and no money is collected for it. Canceling a
+	// top-up that is already canceled returns it unchanged.
+	//
+	// If the gateway has already collected the payment, nothing is withdrawn and the top-up is returned
+	// as `succeeded` with the balance increased. Check `status` in the answer rather than assuming the
+	// cancellation took effect.
+	//
+	// Fails with 409 and BILLING_TOPUP_NOT_CANCELABLE when the top-up has already succeeded or failed,
+	// with `status` naming that outcome, and while the gateway is processing the payment and can no
+	// longer withdraw it, with `status` set to `pending`; read the top-up again later in that case.
+	//
+	// Corresponds with POST /account/v1/top-ups/{topUpId}/cancel (the `CancelTopUp` operationId).
+	CancelTopUp(ctx context.Context, topUpId openapi_types.UUID, reqEditors ...RequestEditorFn) (*http.Response, error)
 
 	// ListTransactions List transactions
 	//
@@ -4157,6 +4265,26 @@ func (c *Client) UpdateBillingAccount(ctx context.Context, accountId AccountId, 
 // Corresponds with GET /account/v1/billing-accounts/{accountId}/balance (the `GetAccountBalance` operationId).
 func (c *Client) GetAccountBalance(ctx context.Context, accountId AccountId, reqEditors ...RequestEditorFn) (*http.Response, error) {
 	req, err := NewGetAccountBalanceRequest(c.Server, accountId)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+// ListPaymentOptions List payment options
+//
+// Lists the payment gateways and methods that currently accept payment in this account's currency, the
+// preferred gateway first. Top-ups and invoice payments must name a gateway and method listed here;
+// others are refused. An empty list means no online payment is available for this account. Not paged: the
+// set is a few rows.
+//
+// Corresponds with GET /account/v1/billing-accounts/{accountId}/payment-options (the `ListPaymentOptions` operationId).
+func (c *Client) ListPaymentOptions(ctx context.Context, accountId AccountId, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewListPaymentOptionsRequest(c.Server, accountId)
 	if err != nil {
 		return nil, err
 	}
@@ -4901,7 +5029,8 @@ func (c *Client) ListRenewalPrices(ctx context.Context, subscriptionId openapi_t
 
 // ListTopUps List top ups
 //
-// Lists only the authenticated user's top-ups. Includes pending and failed attempts; no invoice is created for a top-up.
+// Lists only the authenticated user's top-ups. Includes pending, failed and canceled attempts; no invoice is
+// created for a top-up. Items carry no `action`; read a pending top-up with get-top-up to continue its payment.
 //
 // Corresponds with GET /account/v1/top-ups (the `ListTopUps` operationId).
 func (c *Client) ListTopUps(ctx context.Context, params *ListTopUpsParams, reqEditors ...RequestEditorFn) (*http.Response, error) {
@@ -4960,11 +5089,43 @@ func (c *Client) CreateTopUp(ctx context.Context, body CreateTopUpJSONRequestBod
 
 // GetTopUp Get top up
 //
-// Reads a top-up owned by the authenticated user, including its outcome and the part of it not yet spent. It is not an invoice.
+// Reads a top-up owned by the authenticated user, including its outcome and the part of it not yet spent.
+// It is not an invoice.
+//
+// While the top-up is pending, the answer includes the customer's next step as the payment gateway
+// currently reports it, so that a payment interrupted by a closed page can be continued. When the gateway
+// cannot be reached, the top-up is returned without `action`; read it again later.
 //
 // Corresponds with GET /account/v1/top-ups/{topUpId} (the `GetTopUp` operationId).
 func (c *Client) GetTopUp(ctx context.Context, topUpId openapi_types.UUID, reqEditors ...RequestEditorFn) (*http.Response, error) {
 	req, err := NewGetTopUpRequest(c.Server, topUpId)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+// CancelTopUp Cancel top up
+//
+// Withdraws a pending top-up owned by the authenticated user at the payment gateway. It becomes
+// `canceled` with `cancellation_reason` `requested_by_customer`, and no money is collected for it. Canceling a
+// top-up that is already canceled returns it unchanged.
+//
+// If the gateway has already collected the payment, nothing is withdrawn and the top-up is returned
+// as `succeeded` with the balance increased. Check `status` in the answer rather than assuming the
+// cancellation took effect.
+//
+// Fails with 409 and BILLING_TOPUP_NOT_CANCELABLE when the top-up has already succeeded or failed,
+// with `status` naming that outcome, and while the gateway is processing the payment and can no
+// longer withdraw it, with `status` set to `pending`; read the top-up again later in that case.
+//
+// Corresponds with POST /account/v1/top-ups/{topUpId}/cancel (the `CancelTopUp` operationId).
+func (c *Client) CancelTopUp(ctx context.Context, topUpId openapi_types.UUID, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewCancelTopUpRequest(c.Server, topUpId)
 	if err != nil {
 		return nil, err
 	}
@@ -5521,6 +5682,40 @@ func NewGetAccountBalanceRequest(server string, accountId AccountId) (*http.Requ
 	}
 
 	operationPath := fmt.Sprintf("/account/v1/billing-accounts/%s/balance", pathParam0)
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest(http.MethodGet, queryURL.String(), nil)
+	if err != nil {
+		return nil, err
+	}
+
+	return req, nil
+}
+
+// NewListPaymentOptionsRequest constructs an http.Request for the ListPaymentOptions method
+func NewListPaymentOptionsRequest(server string, accountId AccountId) (*http.Request, error) {
+	var err error
+
+	var pathParam0 string
+
+	pathParam0, err = runtime.StyleParamWithOptions("simple", false, "accountId", accountId, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "integer", Format: "int64"})
+	if err != nil {
+		return nil, err
+	}
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/account/v1/billing-accounts/%s/payment-options", pathParam0)
 	if operationPath[0] == '/' {
 		operationPath = "." + operationPath
 	}
@@ -7426,6 +7621,40 @@ func NewGetTopUpRequest(server string, topUpId openapi_types.UUID) (*http.Reques
 	return req, nil
 }
 
+// NewCancelTopUpRequest constructs an http.Request for the CancelTopUp method
+func NewCancelTopUpRequest(server string, topUpId openapi_types.UUID) (*http.Request, error) {
+	var err error
+
+	var pathParam0 string
+
+	pathParam0, err = runtime.StyleParamWithOptions("simple", false, "topUpId", topUpId, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: "uuid"})
+	if err != nil {
+		return nil, err
+	}
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/account/v1/top-ups/%s/cancel", pathParam0)
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest(http.MethodPost, queryURL.String(), nil)
+	if err != nil {
+		return nil, err
+	}
+
+	return req, nil
+}
+
 // NewListTransactionsRequest constructs an http.Request for the ListTransactions method
 func NewListTransactionsRequest(server string, params *ListTransactionsParams) (*http.Request, error) {
 	var err error
@@ -8488,6 +8717,18 @@ type ClientWithResponsesInterface interface {
 	// Corresponds with GET /account/v1/billing-accounts/{accountId}/balance (the `GetAccountBalance` operationId).
 	GetAccountBalanceWithResponse(ctx context.Context, accountId AccountId, reqEditors ...RequestEditorFn) (*GetAccountBalanceResponse, error)
 
+	// ListPaymentOptionsWithResponse List payment options
+	//
+	// Lists the payment gateways and methods that currently accept payment in this account's currency, the
+	// preferred gateway first. Top-ups and invoice payments must name a gateway and method listed here;
+	// others are refused. An empty list means no online payment is available for this account. Not paged: the
+	// set is a few rows.
+	//
+	// Returns a wrapper object for the known response body format(s).
+	//
+	// Corresponds with GET /account/v1/billing-accounts/{accountId}/payment-options (the `ListPaymentOptions` operationId).
+	ListPaymentOptionsWithResponse(ctx context.Context, accountId AccountId, reqEditors ...RequestEditorFn) (*ListPaymentOptionsResponse, error)
+
 	// GetCancellationRequestWithResponse Get cancellation request
 	//
 	// Returns a wrapper object for the known response body format(s).
@@ -8878,7 +9119,8 @@ type ClientWithResponsesInterface interface {
 
 	// ListTopUpsWithResponse List top ups
 	//
-	// Lists only the authenticated user's top-ups. Includes pending and failed attempts; no invoice is created for a top-up.
+	// Lists only the authenticated user's top-ups. Includes pending, failed and canceled attempts; no invoice is
+	// created for a top-up. Items carry no `action`; read a pending top-up with get-top-up to continue its payment.
 	//
 	// Returns a wrapper object for the known response body format(s).
 	//
@@ -8909,12 +9151,36 @@ type ClientWithResponsesInterface interface {
 
 	// GetTopUpWithResponse Get top up
 	//
-	// Reads a top-up owned by the authenticated user, including its outcome and the part of it not yet spent. It is not an invoice.
+	// Reads a top-up owned by the authenticated user, including its outcome and the part of it not yet spent.
+	// It is not an invoice.
+	//
+	// While the top-up is pending, the answer includes the customer's next step as the payment gateway
+	// currently reports it, so that a payment interrupted by a closed page can be continued. When the gateway
+	// cannot be reached, the top-up is returned without `action`; read it again later.
 	//
 	// Returns a wrapper object for the known response body format(s).
 	//
 	// Corresponds with GET /account/v1/top-ups/{topUpId} (the `GetTopUp` operationId).
 	GetTopUpWithResponse(ctx context.Context, topUpId openapi_types.UUID, reqEditors ...RequestEditorFn) (*GetTopUpResponse, error)
+
+	// CancelTopUpWithResponse Cancel top up
+	//
+	// Withdraws a pending top-up owned by the authenticated user at the payment gateway. It becomes
+	// `canceled` with `cancellation_reason` `requested_by_customer`, and no money is collected for it. Canceling a
+	// top-up that is already canceled returns it unchanged.
+	//
+	// If the gateway has already collected the payment, nothing is withdrawn and the top-up is returned
+	// as `succeeded` with the balance increased. Check `status` in the answer rather than assuming the
+	// cancellation took effect.
+	//
+	// Fails with 409 and BILLING_TOPUP_NOT_CANCELABLE when the top-up has already succeeded or failed,
+	// with `status` naming that outcome, and while the gateway is processing the payment and can no
+	// longer withdraw it, with `status` set to `pending`; read the top-up again later in that case.
+	//
+	// Returns a wrapper object for the known response body format(s).
+	//
+	// Corresponds with POST /account/v1/top-ups/{topUpId}/cancel (the `CancelTopUp` operationId).
+	CancelTopUpWithResponse(ctx context.Context, topUpId openapi_types.UUID, reqEditors ...RequestEditorFn) (*CancelTopUpResponse, error)
 
 	// ListTransactionsWithResponse List transactions
 	//
@@ -9327,6 +9593,54 @@ func (r GetAccountBalanceResponse) StatusCode() int {
 
 // ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
 func (r GetAccountBalanceResponse) ContentType() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Header.Get("Content-Type")
+	}
+	return ""
+}
+
+type ListPaymentOptionsResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	// JSON200 the response for an HTTP 200 `application/json` response
+	JSON200 *PaymentOptionList
+	// JSONDefault the response for an HTTP default `application/json` response
+	JSONDefault *Error
+}
+
+// GetJSON200 returns the response for an HTTP 200 `application/json` response
+func (r ListPaymentOptionsResponse) GetJSON200() *PaymentOptionList {
+	return r.JSON200
+}
+
+// GetJSONDefault returns the response for an HTTP default `application/json` response
+func (r ListPaymentOptionsResponse) GetJSONDefault() *Error {
+	return r.JSONDefault
+}
+
+// GetBody returns the raw response body bytes
+func (r ListPaymentOptionsResponse) GetBody() []byte {
+	return r.Body
+}
+
+// Status returns HTTPResponse.Status
+func (r ListPaymentOptionsResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r ListPaymentOptionsResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+// ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
+func (r ListPaymentOptionsResponse) ContentType() string {
 	if r.HTTPResponse != nil {
 		return r.HTTPResponse.Header.Get("Content-Type")
 	}
@@ -10958,6 +11272,61 @@ func (r GetTopUpResponse) ContentType() string {
 	return ""
 }
 
+type CancelTopUpResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	// JSON200 the response for an HTTP 200 `application/json` response
+	JSON200 *TopUp
+	// JSON409 the response for an HTTP 409 `application/json` response
+	JSON409 *Error
+	// JSONDefault the response for an HTTP default `application/json` response
+	JSONDefault *Error
+}
+
+// GetJSON200 returns the response for an HTTP 200 `application/json` response
+func (r CancelTopUpResponse) GetJSON200() *TopUp {
+	return r.JSON200
+}
+
+// GetJSON409 returns the response for an HTTP 409 `application/json` response
+func (r CancelTopUpResponse) GetJSON409() *Error {
+	return r.JSON409
+}
+
+// GetJSONDefault returns the response for an HTTP default `application/json` response
+func (r CancelTopUpResponse) GetJSONDefault() *Error {
+	return r.JSONDefault
+}
+
+// GetBody returns the raw response body bytes
+func (r CancelTopUpResponse) GetBody() []byte {
+	return r.Body
+}
+
+// Status returns HTTPResponse.Status
+func (r CancelTopUpResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r CancelTopUpResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+// ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
+func (r CancelTopUpResponse) ContentType() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Header.Get("Content-Type")
+	}
+	return ""
+}
+
 type ListTransactionsResponse struct {
 	Body         []byte
 	HTTPResponse *http.Response
@@ -11702,6 +12071,24 @@ func (c *ClientWithResponses) GetAccountBalanceWithResponse(ctx context.Context,
 	return ParseGetAccountBalanceResponse(rsp)
 }
 
+// ListPaymentOptionsWithResponse List payment options
+//
+// Lists the payment gateways and methods that currently accept payment in this account's currency, the
+// preferred gateway first. Top-ups and invoice payments must name a gateway and method listed here;
+// others are refused. An empty list means no online payment is available for this account. Not paged: the
+// set is a few rows.
+//
+// Returns a wrapper object for the known response body format(s).
+//
+// Corresponds with GET /account/v1/billing-accounts/{accountId}/payment-options (the `ListPaymentOptions` operationId).
+func (c *ClientWithResponses) ListPaymentOptionsWithResponse(ctx context.Context, accountId AccountId, reqEditors ...RequestEditorFn) (*ListPaymentOptionsResponse, error) {
+	rsp, err := c.ListPaymentOptions(ctx, accountId, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseListPaymentOptionsResponse(rsp)
+}
+
 // GetCancellationRequestWithResponse Get cancellation request
 //
 // Returns a wrapper object for the known response body format(s).
@@ -12326,7 +12713,8 @@ func (c *ClientWithResponses) ListRenewalPricesWithResponse(ctx context.Context,
 
 // ListTopUpsWithResponse List top ups
 //
-// Lists only the authenticated user's top-ups. Includes pending and failed attempts; no invoice is created for a top-up.
+// Lists only the authenticated user's top-ups. Includes pending, failed and canceled attempts; no invoice is
+// created for a top-up. Items carry no `action`; read a pending top-up with get-top-up to continue its payment.
 //
 // Returns a wrapper object for the known response body format(s).
 //
@@ -12375,7 +12763,12 @@ func (c *ClientWithResponses) CreateTopUpWithResponse(ctx context.Context, body 
 
 // GetTopUpWithResponse Get top up
 //
-// Reads a top-up owned by the authenticated user, including its outcome and the part of it not yet spent. It is not an invoice.
+// Reads a top-up owned by the authenticated user, including its outcome and the part of it not yet spent.
+// It is not an invoice.
+//
+// While the top-up is pending, the answer includes the customer's next step as the payment gateway
+// currently reports it, so that a payment interrupted by a closed page can be continued. When the gateway
+// cannot be reached, the top-up is returned without `action`; read it again later.
 //
 // Returns a wrapper object for the known response body format(s).
 //
@@ -12386,6 +12779,31 @@ func (c *ClientWithResponses) GetTopUpWithResponse(ctx context.Context, topUpId 
 		return nil, err
 	}
 	return ParseGetTopUpResponse(rsp)
+}
+
+// CancelTopUpWithResponse Cancel top up
+//
+// Withdraws a pending top-up owned by the authenticated user at the payment gateway. It becomes
+// `canceled` with `cancellation_reason` `requested_by_customer`, and no money is collected for it. Canceling a
+// top-up that is already canceled returns it unchanged.
+//
+// If the gateway has already collected the payment, nothing is withdrawn and the top-up is returned
+// as `succeeded` with the balance increased. Check `status` in the answer rather than assuming the
+// cancellation took effect.
+//
+// Fails with 409 and BILLING_TOPUP_NOT_CANCELABLE when the top-up has already succeeded or failed,
+// with `status` naming that outcome, and while the gateway is processing the payment and can no
+// longer withdraw it, with `status` set to `pending`; read the top-up again later in that case.
+//
+// Returns a wrapper object for the known response body format(s).
+//
+// Corresponds with POST /account/v1/top-ups/{topUpId}/cancel (the `CancelTopUp` operationId).
+func (c *ClientWithResponses) CancelTopUpWithResponse(ctx context.Context, topUpId openapi_types.UUID, reqEditors ...RequestEditorFn) (*CancelTopUpResponse, error) {
+	rsp, err := c.CancelTopUp(ctx, topUpId, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseCancelTopUpResponse(rsp)
 }
 
 // ListTransactionsWithResponse List transactions
@@ -12769,6 +13187,39 @@ func ParseGetAccountBalanceResponse(rsp *http.Response) (*GetAccountBalanceRespo
 	switch {
 	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
 		var dest AccountBalance
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && true:
+		var dest Error
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSONDefault = &dest
+
+	}
+
+	return response, nil
+}
+
+// ParseListPaymentOptionsResponse parses an HTTP response from a ListPaymentOptionsWithResponse call
+func ParseListPaymentOptionsResponse(rsp *http.Response) (*ListPaymentOptionsResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &ListPaymentOptionsResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest PaymentOptionList
 		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
 			return nil, err
 		}
@@ -13894,6 +14345,46 @@ func ParseGetTopUpResponse(rsp *http.Response) (*GetTopUpResponse, error) {
 			return nil, err
 		}
 		response.JSON200 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && true:
+		var dest Error
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSONDefault = &dest
+
+	}
+
+	return response, nil
+}
+
+// ParseCancelTopUpResponse parses an HTTP response from a CancelTopUpWithResponse call
+func ParseCancelTopUpResponse(rsp *http.Response) (*CancelTopUpResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &CancelTopUpResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest TopUp
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 409:
+		var dest Error
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON409 = &dest
 
 	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && true:
 		var dest Error

@@ -2135,6 +2135,7 @@ func (s *Error) SetStatus(val int64) {
 	s.Status = val
 }
 
+func (*Error) cancelTopUpRes()       {}
 func (*Error) renewSubscriptionRes() {}
 
 // What a given `code` carries alongside the message. The keys depend on the code, and a client that
@@ -4791,6 +4792,52 @@ func (o OptPaymentAction) Or(d PaymentAction) PaymentAction {
 	return d
 }
 
+// NewOptPaymentCancellationReason returns new OptPaymentCancellationReason with value set to v.
+func NewOptPaymentCancellationReason(v PaymentCancellationReason) OptPaymentCancellationReason {
+	return OptPaymentCancellationReason{
+		Value: v,
+		Set:   true,
+	}
+}
+
+// OptPaymentCancellationReason is optional PaymentCancellationReason.
+type OptPaymentCancellationReason struct {
+	Value PaymentCancellationReason
+	Set   bool
+}
+
+// IsSet returns true if OptPaymentCancellationReason was set.
+func (o OptPaymentCancellationReason) IsSet() bool { return o.Set }
+
+// Reset unsets value.
+func (o *OptPaymentCancellationReason) Reset() {
+	var v PaymentCancellationReason
+	o.Value = v
+	o.Set = false
+}
+
+// SetTo sets value to v.
+func (o *OptPaymentCancellationReason) SetTo(v PaymentCancellationReason) {
+	o.Set = true
+	o.Value = v
+}
+
+// Get returns value and boolean that denotes whether value was set.
+func (o OptPaymentCancellationReason) Get() (v PaymentCancellationReason, ok bool) {
+	if !o.Set {
+		return v, false
+	}
+	return o.Value, true
+}
+
+// Or returns value if set, or given parameter if does not.
+func (o OptPaymentCancellationReason) Or(d PaymentCancellationReason) PaymentCancellationReason {
+	if v, ok := o.Get(); ok {
+		return v
+	}
+	return d
+}
+
 // NewOptPriceTiersMode returns new OptPriceTiersMode with value set to v.
 func NewOptPriceTiersMode(v PriceTiersMode) OptPriceTiersMode {
 	return OptPriceTiersMode{
@@ -6890,6 +6937,50 @@ func (s *PaymentActionType) UnmarshalText(data []byte) error {
 	}
 }
 
+// Why a gateway payment was withdrawn. `abandoned` means the customer did not complete it within the
+// time allowed for payment. `requested_by_customer` means the customer canceled it.
+// Ref: #/components/schemas/PaymentCancellationReason
+type PaymentCancellationReason string
+
+const (
+	PaymentCancellationReasonAbandoned           PaymentCancellationReason = "abandoned"
+	PaymentCancellationReasonRequestedByCustomer PaymentCancellationReason = "requested_by_customer"
+)
+
+// AllValues returns all PaymentCancellationReason values.
+func (PaymentCancellationReason) AllValues() []PaymentCancellationReason {
+	return []PaymentCancellationReason{
+		PaymentCancellationReasonAbandoned,
+		PaymentCancellationReasonRequestedByCustomer,
+	}
+}
+
+// MarshalText implements encoding.TextMarshaler.
+func (s PaymentCancellationReason) MarshalText() ([]byte, error) {
+	switch s {
+	case PaymentCancellationReasonAbandoned:
+		return []byte(s), nil
+	case PaymentCancellationReasonRequestedByCustomer:
+		return []byte(s), nil
+	default:
+		return nil, errors.Errorf("invalid value: %q", s)
+	}
+}
+
+// UnmarshalText implements encoding.TextUnmarshaler.
+func (s *PaymentCancellationReason) UnmarshalText(data []byte) error {
+	switch PaymentCancellationReason(data) {
+	case PaymentCancellationReasonAbandoned:
+		*s = PaymentCancellationReasonAbandoned
+		return nil
+	case PaymentCancellationReasonRequestedByCustomer:
+		*s = PaymentCancellationReasonRequestedByCustomer
+		return nil
+	default:
+		return errors.Errorf("invalid value: %q", data)
+	}
+}
+
 // Ref: #/components/schemas/PaymentMethod
 type PaymentMethod struct {
 	ID               uuid.UUID           `json:"id"`
@@ -7136,6 +7227,78 @@ func (s *PaymentMethodStatus) UnmarshalText(data []byte) error {
 	default:
 		return errors.Errorf("invalid value: %q", data)
 	}
+}
+
+// A payment gateway that accepts payment in the account's currency, with the methods it accepts.
+// Ref: #/components/schemas/PaymentOption
+type PaymentOption struct {
+	// The value to send as `payment_gateway`.
+	PaymentGateway string                `json:"payment_gateway"`
+	Methods        []PaymentOptionMethod `json:"methods"`
+}
+
+// GetPaymentGateway returns the value of PaymentGateway.
+func (s *PaymentOption) GetPaymentGateway() string {
+	return s.PaymentGateway
+}
+
+// GetMethods returns the value of Methods.
+func (s *PaymentOption) GetMethods() []PaymentOptionMethod {
+	return s.Methods
+}
+
+// SetPaymentGateway sets the value of PaymentGateway.
+func (s *PaymentOption) SetPaymentGateway(val string) {
+	s.PaymentGateway = val
+}
+
+// SetMethods sets the value of Methods.
+func (s *PaymentOption) SetMethods(val []PaymentOptionMethod) {
+	s.Methods = val
+}
+
+// Ref: #/components/schemas/PaymentOptionList
+type PaymentOptionList struct {
+	Items []PaymentOption `json:"items"`
+}
+
+// GetItems returns the value of Items.
+func (s *PaymentOptionList) GetItems() []PaymentOption {
+	return s.Items
+}
+
+// SetItems sets the value of Items.
+func (s *PaymentOptionList) SetItems(val []PaymentOption) {
+	s.Items = val
+}
+
+// Ref: #/components/schemas/PaymentOptionMethod
+type PaymentOptionMethod struct {
+	// The value to send as `method_type`, such as card, wechat_pay or alipay.
+	MethodType string `json:"method_type"`
+	// Whether a method of this type can be saved with create-payment-method-setup and charged later
+	// without the customer present. Methods that are not reusable are paid anew each time.
+	Reusable bool `json:"reusable"`
+}
+
+// GetMethodType returns the value of MethodType.
+func (s *PaymentOptionMethod) GetMethodType() string {
+	return s.MethodType
+}
+
+// GetReusable returns the value of Reusable.
+func (s *PaymentOptionMethod) GetReusable() bool {
+	return s.Reusable
+}
+
+// SetMethodType sets the value of MethodType.
+func (s *PaymentOptionMethod) SetMethodType(val string) {
+	s.MethodType = val
+}
+
+// SetReusable sets the value of Reusable.
+func (s *PaymentOptionMethod) SetReusable(val bool) {
+	s.Reusable = val
 }
 
 // Ref: #/components/schemas/PaymentResult
@@ -11364,11 +11527,17 @@ type TopUp struct {
 	// The part of this top-up still held in the balance. Pending refunds and payouts can temporarily
 	// reserve part of it; it is not a promise that the whole amount is immediately withdrawable.
 	RemainingAmount OptMoney `json:"remaining_amount"`
-	// `pending` until the payment gateway confirms. The balance increases on `succeeded`.
+	// `pending` until the payment gateway reaches a result. The balance increases on `succeeded`.
 	//
-	// Unknown channel outcomes remain pending. Failed means the channel has confirmed that this attempt
-	// did not collect money; a browser redirect is not proof of payment.
+	// `failed` means the gateway declined the payment. `canceled` means the attempt was withdrawn without
+	// collecting money; `cancellation_reason` says why. Unknown gateway outcomes remain `pending`, and a
+	// browser redirect is not proof of payment.
+	//
+	// `failed` and `canceled` are final. If the gateway nevertheless collects payment for such an attempt,
+	// the amount is credited as a separate `succeeded` top-up.
 	Status TopUpStatus `json:"status"`
+	// Why the top-up was withdrawn. Present with `canceled`.
+	CancellationReason OptPaymentCancellationReason `json:"cancellation_reason"`
 	// Which payment gateway collected it.
 	PaymentGateway OptString `json:"payment_gateway"`
 	// The selected payment method, such as card, wechat_pay or alipay.
@@ -11379,10 +11548,11 @@ type TopUp struct {
 	// What was charged, in `presentment_currency`. It will not equal `amount`, and it is the figure that
 	// appears on the customer's card or wallet statement.
 	PresentmentAmount OptMoney `json:"presentment_amount"`
-	// Why it did not go through. Present with `failed`.
+	// Why the gateway declined it. Present with `failed`.
 	FailureReason OptString `json:"failure_reason"`
-	// Present when the original top-up still needs customer interaction. Completing it does not replace
-	// confirmation of receipt.
+	// The customer's next step while the top-up is `pending` and the gateway still awaits them. Returned
+	// by create-top-up and get-top-up as the gateway currently reports it; absent from list-top-ups and
+	// once the top-up has a result. Completing it does not replace confirmation of receipt.
 	Action    OptPaymentAction `json:"action"`
 	CreatedAt time.Time        `json:"created_at"`
 	// When the funds arrived. Later than `created_at` — by days for a bank transfer — so reconciling
@@ -11424,6 +11594,11 @@ func (s *TopUp) GetRemainingAmount() OptMoney {
 // GetStatus returns the value of Status.
 func (s *TopUp) GetStatus() TopUpStatus {
 	return s.Status
+}
+
+// GetCancellationReason returns the value of CancellationReason.
+func (s *TopUp) GetCancellationReason() OptPaymentCancellationReason {
+	return s.CancellationReason
 }
 
 // GetPaymentGateway returns the value of PaymentGateway.
@@ -11501,6 +11676,11 @@ func (s *TopUp) SetStatus(val TopUpStatus) {
 	s.Status = val
 }
 
+// SetCancellationReason sets the value of CancellationReason.
+func (s *TopUp) SetCancellationReason(val OptPaymentCancellationReason) {
+	s.CancellationReason = val
+}
+
 // SetPaymentGateway sets the value of PaymentGateway.
 func (s *TopUp) SetPaymentGateway(val OptString) {
 	s.PaymentGateway = val
@@ -11540,6 +11720,8 @@ func (s *TopUp) SetCreatedAt(val time.Time) {
 func (s *TopUp) SetSettledAt(val OptNilDateTime) {
 	s.SettledAt = val
 }
+
+func (*TopUp) cancelTopUpRes() {}
 
 // Ref: #/components/schemas/TopUpCreate
 type TopUpCreate struct {
@@ -11660,16 +11842,21 @@ func (s *TopUpList) SetTotalCount(val OptInt64) {
 	s.TotalCount = val
 }
 
-// `pending` until the payment gateway confirms. The balance increases on `succeeded`.
+// `pending` until the payment gateway reaches a result. The balance increases on `succeeded`.
 //
-// Unknown channel outcomes remain pending. Failed means the channel has confirmed that this attempt
-// did not collect money; a browser redirect is not proof of payment.
+// `failed` means the gateway declined the payment. `canceled` means the attempt was withdrawn without
+// collecting money; `cancellation_reason` says why. Unknown gateway outcomes remain `pending`, and a
+// browser redirect is not proof of payment.
+//
+// `failed` and `canceled` are final. If the gateway nevertheless collects payment for such an attempt,
+// the amount is credited as a separate `succeeded` top-up.
 type TopUpStatus string
 
 const (
 	TopUpStatusPending   TopUpStatus = "pending"
 	TopUpStatusSucceeded TopUpStatus = "succeeded"
 	TopUpStatusFailed    TopUpStatus = "failed"
+	TopUpStatusCanceled  TopUpStatus = "canceled"
 )
 
 // AllValues returns all TopUpStatus values.
@@ -11678,6 +11865,7 @@ func (TopUpStatus) AllValues() []TopUpStatus {
 		TopUpStatusPending,
 		TopUpStatusSucceeded,
 		TopUpStatusFailed,
+		TopUpStatusCanceled,
 	}
 }
 
@@ -11689,6 +11877,8 @@ func (s TopUpStatus) MarshalText() ([]byte, error) {
 	case TopUpStatusSucceeded:
 		return []byte(s), nil
 	case TopUpStatusFailed:
+		return []byte(s), nil
+	case TopUpStatusCanceled:
 		return []byte(s), nil
 	default:
 		return nil, errors.Errorf("invalid value: %q", s)
@@ -11707,6 +11897,9 @@ func (s *TopUpStatus) UnmarshalText(data []byte) error {
 	case TopUpStatusFailed:
 		*s = TopUpStatusFailed
 		return nil
+	case TopUpStatusCanceled:
+		*s = TopUpStatusCanceled
+		return nil
 	default:
 		return errors.Errorf("invalid value: %q", data)
 	}
@@ -11717,19 +11910,25 @@ func (s *TopUpStatus) UnmarshalText(data []byte) error {
 // distinct from credit-grant payments.
 // Ref: #/components/schemas/Transaction
 type Transaction struct {
-	InvoiceID        OptUUID              `json:"invoice_id"`
-	TransactionID    OptUUID              `json:"transaction_id"`
-	CreditGrantID    OptUUID              `json:"credit_grant_id"`
-	CreditGrant      OptObjectIdentity    `json:"credit_grant"`
-	RefundID         OptUUID              `json:"refund_id"`
-	Status           OptTransactionStatus `json:"status"`
-	PaymentGateway   OptString            `json:"payment_gateway"`
-	MethodType       OptString            `json:"method_type"`
-	FailureReason    OptString            `json:"failure_reason"`
-	SettledAt        OptDateTime          `json:"settled_at"`
-	ID               uuid.UUID            `json:"id"`
-	BillingAccountID OptInt64             `json:"billing_account_id"`
-	Type             TransactionType      `json:"type"`
+	InvoiceID     OptUUID           `json:"invoice_id"`
+	TransactionID OptUUID           `json:"transaction_id"`
+	CreditGrantID OptUUID           `json:"credit_grant_id"`
+	CreditGrant   OptObjectIdentity `json:"credit_grant"`
+	RefundID      OptUUID           `json:"refund_id"`
+	// `failed` means the operation did not succeed; for a gateway payment, that the gateway declined it.
+	// `canceled` means a gateway payment was withdrawn without collecting money; an invoice it was meant
+	// to pay remains open for another payment.
+	Status OptTransactionStatus `json:"status"`
+	// Why the payment was withdrawn. Present with `canceled`.
+	CancellationReason OptPaymentCancellationReason `json:"cancellation_reason"`
+	PaymentGateway     OptString                    `json:"payment_gateway"`
+	MethodType         OptString                    `json:"method_type"`
+	// Why it failed. Present with `failed`.
+	FailureReason    OptString       `json:"failure_reason"`
+	SettledAt        OptDateTime     `json:"settled_at"`
+	ID               uuid.UUID       `json:"id"`
+	BillingAccountID OptInt64        `json:"billing_account_id"`
+	Type             TransactionType `json:"type"`
 	// Signed. Positive adds to the balance, negative takes from it.
 	Amount Money `json:"amount"`
 	// How much of this batch has not been spent yet. Zero on negative batches.
@@ -11767,6 +11966,11 @@ func (s *Transaction) GetRefundID() OptUUID {
 // GetStatus returns the value of Status.
 func (s *Transaction) GetStatus() OptTransactionStatus {
 	return s.Status
+}
+
+// GetCancellationReason returns the value of CancellationReason.
+func (s *Transaction) GetCancellationReason() OptPaymentCancellationReason {
+	return s.CancellationReason
 }
 
 // GetPaymentGateway returns the value of PaymentGateway.
@@ -11859,6 +12063,11 @@ func (s *Transaction) SetStatus(val OptTransactionStatus) {
 	s.Status = val
 }
 
+// SetCancellationReason sets the value of CancellationReason.
+func (s *Transaction) SetCancellationReason(val OptPaymentCancellationReason) {
+	s.CancellationReason = val
+}
+
 // SetPaymentGateway sets the value of PaymentGateway.
 func (s *Transaction) SetPaymentGateway(val OptString) {
 	s.PaymentGateway = val
@@ -11945,12 +12154,16 @@ func (s *TransactionList) SetTotalCount(val OptInt64) {
 	s.TotalCount = val
 }
 
+// `failed` means the operation did not succeed; for a gateway payment, that the gateway declined it.
+// `canceled` means a gateway payment was withdrawn without collecting money; an invoice it was meant
+// to pay remains open for another payment.
 type TransactionStatus string
 
 const (
 	TransactionStatusPending   TransactionStatus = "pending"
 	TransactionStatusSucceeded TransactionStatus = "succeeded"
 	TransactionStatusFailed    TransactionStatus = "failed"
+	TransactionStatusCanceled  TransactionStatus = "canceled"
 )
 
 // AllValues returns all TransactionStatus values.
@@ -11959,6 +12172,7 @@ func (TransactionStatus) AllValues() []TransactionStatus {
 		TransactionStatusPending,
 		TransactionStatusSucceeded,
 		TransactionStatusFailed,
+		TransactionStatusCanceled,
 	}
 }
 
@@ -11970,6 +12184,8 @@ func (s TransactionStatus) MarshalText() ([]byte, error) {
 	case TransactionStatusSucceeded:
 		return []byte(s), nil
 	case TransactionStatusFailed:
+		return []byte(s), nil
+	case TransactionStatusCanceled:
 		return []byte(s), nil
 	default:
 		return nil, errors.Errorf("invalid value: %q", s)
@@ -11987,6 +12203,9 @@ func (s *TransactionStatus) UnmarshalText(data []byte) error {
 		return nil
 	case TransactionStatusFailed:
 		*s = TransactionStatusFailed
+		return nil
+	case TransactionStatusCanceled:
+		*s = TransactionStatusCanceled
 		return nil
 	default:
 		return errors.Errorf("invalid value: %q", data)

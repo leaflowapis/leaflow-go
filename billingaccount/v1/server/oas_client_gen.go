@@ -35,6 +35,22 @@ type Invoker interface {
 	//
 	// POST /account/v1/cancellation-requests/{cancellationRequestId}/cancel
 	CancelCancellationRequest(ctx context.Context, params CancelCancellationRequestParams) (*CancellationRequest, error)
+	// CancelTopUp invokes cancel-top-up operation.
+	//
+	// Withdraws a pending top-up owned by the authenticated user at the payment gateway. It becomes
+	// `canceled` with `cancellation_reason` `requested_by_customer`, and no money is collected for it.
+	// Canceling a top-up that is already canceled returns it unchanged.
+	//
+	// If the gateway has already collected the payment, nothing is withdrawn and the top-up is returned as
+	// `succeeded` with the balance increased. Check `status` in the answer rather than assuming the
+	// cancellation took effect.
+	//
+	// Fails with 409 and BILLING_TOPUP_NOT_CANCELABLE when the top-up has already succeeded or failed,
+	// with `status` naming that outcome, and while the gateway is processing the payment and can no longer
+	// withdraw it, with `status` set to `pending`; read the top-up again later in that case.
+	//
+	// POST /account/v1/top-ups/{topUpId}/cancel
+	CancelTopUp(ctx context.Context, params CancelTopUpParams) (CancelTopUpRes, error)
 	// CreateBillingAccount invokes create-billing-account operation.
 	//
 	// The currency is chosen here and cannot be changed afterwards. Everything charged to the account —
@@ -157,6 +173,10 @@ type Invoker interface {
 	// Reads a top-up owned by the authenticated user, including its outcome and the part of it not yet
 	// spent. It is not an invoice.
 	//
+	// While the top-up is pending, the answer includes the customer's next step as the payment gateway
+	// currently reports it, so that a payment interrupted by a closed page can be continued. When the
+	// gateway cannot be reached, the top-up is returned without `action`; read it again later.
+	//
 	// GET /account/v1/top-ups/{topUpId}
 	GetTopUp(ctx context.Context, params GetTopUpParams) (*TopUp, error)
 	// ListAccountDiscounts invokes list-account-discounts operation.
@@ -245,6 +265,15 @@ type Invoker interface {
 	//
 	// GET /account/v1/payment-methods
 	ListPaymentMethods(ctx context.Context, params ListPaymentMethodsParams) (*PaymentMethodList, error)
+	// ListPaymentOptions invokes list-payment-options operation.
+	//
+	// Lists the payment gateways and methods that currently accept payment in this account's currency, the
+	// preferred gateway first. Top-ups and invoice payments must name a gateway and method listed here;
+	// others are refused. An empty list means no online payment is available for this account. Not paged:
+	// the set is a few rows.
+	//
+	// GET /account/v1/billing-accounts/{accountId}/payment-options
+	ListPaymentOptions(ctx context.Context, params ListPaymentOptionsParams) (*PaymentOptionList, error)
 	// ListPlans invokes list-plans operation.
 	//
 	// List catalog plans.
@@ -305,8 +334,9 @@ type Invoker interface {
 	ListSubscriptions(ctx context.Context, params ListSubscriptionsParams) (*SubscriptionList, error)
 	// ListTopUps invokes list-top-ups operation.
 	//
-	// Lists only the authenticated user's top-ups. Includes pending and failed attempts; no invoice is
-	// created for a top-up.
+	// Lists only the authenticated user's top-ups. Includes pending, failed and canceled attempts; no
+	// invoice is created for a top-up. Items carry no `action`; read a pending top-up with get-top-up to
+	// continue its payment.
 	//
 	// GET /account/v1/top-ups
 	ListTopUps(ctx context.Context, params ListTopUpsParams) (*TopUpList, error)
@@ -585,6 +615,148 @@ func (c *Client) sendCancelCancellationRequest(ctx context.Context, params Cance
 
 	stage = "DecodeResponse"
 	result, err := decodeCancelCancellationRequestResponse(resp)
+	if err != nil {
+		return res, errors.Wrap(err, "decode response")
+	}
+
+	return result, nil
+}
+
+// CancelTopUp invokes cancel-top-up operation.
+//
+// Withdraws a pending top-up owned by the authenticated user at the payment gateway. It becomes
+// `canceled` with `cancellation_reason` `requested_by_customer`, and no money is collected for it.
+// Canceling a top-up that is already canceled returns it unchanged.
+//
+// If the gateway has already collected the payment, nothing is withdrawn and the top-up is returned as
+// `succeeded` with the balance increased. Check `status` in the answer rather than assuming the
+// cancellation took effect.
+//
+// Fails with 409 and BILLING_TOPUP_NOT_CANCELABLE when the top-up has already succeeded or failed,
+// with `status` naming that outcome, and while the gateway is processing the payment and can no longer
+// withdraw it, with `status` set to `pending`; read the top-up again later in that case.
+//
+// POST /account/v1/top-ups/{topUpId}/cancel
+func (c *Client) CancelTopUp(ctx context.Context, params CancelTopUpParams) (CancelTopUpRes, error) {
+	res, err := c.sendCancelTopUp(ctx, params)
+	return res, err
+}
+
+func (c *Client) sendCancelTopUp(ctx context.Context, params CancelTopUpParams) (res CancelTopUpRes, err error) {
+	otelAttrs := []attribute.KeyValue{
+		otelogen.OperationID("cancel-top-up"),
+		semconv.HTTPRequestMethodKey.String("POST"),
+		semconv.URLTemplateKey.String("/account/v1/top-ups/{topUpId}/cancel"),
+	}
+	otelAttrs = append(otelAttrs, c.cfg.Attributes...)
+
+	// Run stopwatch.
+	startTime := time.Now()
+	defer func() {
+		// Use floating point division here for higher precision (instead of Millisecond method).
+		elapsedDuration := time.Since(startTime)
+		c.duration.Record(ctx, float64(elapsedDuration)/float64(time.Millisecond), metric.WithAttributes(otelAttrs...))
+	}()
+
+	// Increment request counter.
+	c.requests.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
+
+	// Start a span for this request.
+	ctx, span := c.cfg.Tracer.Start(ctx, CancelTopUpOperation,
+		trace.WithAttributes(otelAttrs...),
+		clientSpanKind,
+	)
+	// Track stage for error reporting.
+	var stage string
+	defer func() {
+		if err != nil {
+			span.RecordError(err)
+			span.SetStatus(codes.Error, stage)
+			c.errors.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
+		}
+		span.End()
+	}()
+
+	stage = "BuildURL"
+	u := uri.Clone(c.requestURL(ctx))
+	var pathParts [3]string
+	pathParts[0] = "/account/v1/top-ups/"
+	{
+		// Encode "topUpId" parameter.
+		e := uri.NewPathEncoder(uri.PathEncoderConfig{
+			Param:   "topUpId",
+			Style:   uri.PathStyleSimple,
+			Explode: false,
+		})
+		if err := func() error {
+			return e.EncodeValue(conv.UUIDToString(params.TopUpId))
+		}(); err != nil {
+			return res, errors.Wrap(err, "encode path")
+		}
+		encoded, err := e.Result()
+		if err != nil {
+			return res, errors.Wrap(err, "encode path")
+		}
+		pathParts[1] = encoded
+	}
+	pathParts[2] = "/cancel"
+	uri.AddPathParts(u, pathParts[:]...)
+
+	stage = "EncodeRequest"
+	r, err := ht.NewRequest(ctx, "POST", u)
+	if err != nil {
+		return res, errors.Wrap(err, "create request")
+	}
+
+	{
+		type bitset = [1]uint8
+		var satisfied bitset
+		{
+			stage = "Security:AccessTokenAuth"
+			switch err := c.securityAccessTokenAuth(ctx, CancelTopUpOperation, r); {
+			case err == nil: // if NO error
+				satisfied[0] |= 1 << 0
+			case errors.Is(err, ogenerrors.ErrSkipClientSecurity):
+				// Skip this security.
+			default:
+				return res, errors.Wrap(err, "security \"AccessTokenAuth\"")
+			}
+		}
+
+		if ok := func() bool {
+		nextRequirement:
+			for _, requirement := range []bitset{
+				{0b00000001},
+			} {
+				for i, mask := range requirement {
+					if satisfied[i]&mask != mask {
+						continue nextRequirement
+					}
+				}
+				return true
+			}
+			return false
+		}(); !ok {
+			return res, ogenerrors.ErrSecurityRequirementIsNotSatisfied
+		}
+	}
+
+	stage = "SendRequest"
+	resp, err := c.cfg.Client.Do(r)
+	if err != nil {
+		return res, errors.Wrap(err, "do request")
+	}
+	body := resp.Body
+	defer func() {
+		// Drain the body to EOF before closing, so the underlying
+		// connection can be reused by the Transport regardless of the
+		// response status code. See https://github.com/ogen-go/ogen/issues/1670.
+		_, _ = io.Copy(io.Discard, body)
+		_ = body.Close()
+	}()
+
+	stage = "DecodeResponse"
+	result, err := decodeCancelTopUpResponse(resp)
 	if err != nil {
 		return res, errors.Wrap(err, "decode response")
 	}
@@ -2581,6 +2753,10 @@ func (c *Client) sendGetSubscription(ctx context.Context, params GetSubscription
 //
 // Reads a top-up owned by the authenticated user, including its outcome and the part of it not yet
 // spent. It is not an invoice.
+//
+// While the top-up is pending, the answer includes the customer's next step as the payment gateway
+// currently reports it, so that a payment interrupted by a closed page can be continued. When the
+// gateway cannot be reached, the top-up is returned without `action`; read it again later.
 //
 // GET /account/v1/top-ups/{topUpId}
 func (c *Client) GetTopUp(ctx context.Context, params GetTopUpParams) (*TopUp, error) {
@@ -4878,6 +5054,141 @@ func (c *Client) sendListPaymentMethods(ctx context.Context, params ListPaymentM
 	return result, nil
 }
 
+// ListPaymentOptions invokes list-payment-options operation.
+//
+// Lists the payment gateways and methods that currently accept payment in this account's currency, the
+// preferred gateway first. Top-ups and invoice payments must name a gateway and method listed here;
+// others are refused. An empty list means no online payment is available for this account. Not paged:
+// the set is a few rows.
+//
+// GET /account/v1/billing-accounts/{accountId}/payment-options
+func (c *Client) ListPaymentOptions(ctx context.Context, params ListPaymentOptionsParams) (*PaymentOptionList, error) {
+	res, err := c.sendListPaymentOptions(ctx, params)
+	return res, err
+}
+
+func (c *Client) sendListPaymentOptions(ctx context.Context, params ListPaymentOptionsParams) (res *PaymentOptionList, err error) {
+	otelAttrs := []attribute.KeyValue{
+		otelogen.OperationID("list-payment-options"),
+		semconv.HTTPRequestMethodKey.String("GET"),
+		semconv.URLTemplateKey.String("/account/v1/billing-accounts/{accountId}/payment-options"),
+	}
+	otelAttrs = append(otelAttrs, c.cfg.Attributes...)
+
+	// Run stopwatch.
+	startTime := time.Now()
+	defer func() {
+		// Use floating point division here for higher precision (instead of Millisecond method).
+		elapsedDuration := time.Since(startTime)
+		c.duration.Record(ctx, float64(elapsedDuration)/float64(time.Millisecond), metric.WithAttributes(otelAttrs...))
+	}()
+
+	// Increment request counter.
+	c.requests.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
+
+	// Start a span for this request.
+	ctx, span := c.cfg.Tracer.Start(ctx, ListPaymentOptionsOperation,
+		trace.WithAttributes(otelAttrs...),
+		clientSpanKind,
+	)
+	// Track stage for error reporting.
+	var stage string
+	defer func() {
+		if err != nil {
+			span.RecordError(err)
+			span.SetStatus(codes.Error, stage)
+			c.errors.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
+		}
+		span.End()
+	}()
+
+	stage = "BuildURL"
+	u := uri.Clone(c.requestURL(ctx))
+	var pathParts [3]string
+	pathParts[0] = "/account/v1/billing-accounts/"
+	{
+		// Encode "accountId" parameter.
+		e := uri.NewPathEncoder(uri.PathEncoderConfig{
+			Param:   "accountId",
+			Style:   uri.PathStyleSimple,
+			Explode: false,
+		})
+		if err := func() error {
+			return e.EncodeValue(conv.Int64ToString(params.AccountId))
+		}(); err != nil {
+			return res, errors.Wrap(err, "encode path")
+		}
+		encoded, err := e.Result()
+		if err != nil {
+			return res, errors.Wrap(err, "encode path")
+		}
+		pathParts[1] = encoded
+	}
+	pathParts[2] = "/payment-options"
+	uri.AddPathParts(u, pathParts[:]...)
+
+	stage = "EncodeRequest"
+	r, err := ht.NewRequest(ctx, "GET", u)
+	if err != nil {
+		return res, errors.Wrap(err, "create request")
+	}
+
+	{
+		type bitset = [1]uint8
+		var satisfied bitset
+		{
+			stage = "Security:AccessTokenAuth"
+			switch err := c.securityAccessTokenAuth(ctx, ListPaymentOptionsOperation, r); {
+			case err == nil: // if NO error
+				satisfied[0] |= 1 << 0
+			case errors.Is(err, ogenerrors.ErrSkipClientSecurity):
+				// Skip this security.
+			default:
+				return res, errors.Wrap(err, "security \"AccessTokenAuth\"")
+			}
+		}
+
+		if ok := func() bool {
+		nextRequirement:
+			for _, requirement := range []bitset{
+				{0b00000001},
+			} {
+				for i, mask := range requirement {
+					if satisfied[i]&mask != mask {
+						continue nextRequirement
+					}
+				}
+				return true
+			}
+			return false
+		}(); !ok {
+			return res, ogenerrors.ErrSecurityRequirementIsNotSatisfied
+		}
+	}
+
+	stage = "SendRequest"
+	resp, err := c.cfg.Client.Do(r)
+	if err != nil {
+		return res, errors.Wrap(err, "do request")
+	}
+	body := resp.Body
+	defer func() {
+		// Drain the body to EOF before closing, so the underlying
+		// connection can be reused by the Transport regardless of the
+		// response status code. See https://github.com/ogen-go/ogen/issues/1670.
+		_, _ = io.Copy(io.Discard, body)
+		_ = body.Close()
+	}()
+
+	stage = "DecodeResponse"
+	result, err := decodeListPaymentOptionsResponse(resp)
+	if err != nil {
+		return res, errors.Wrap(err, "decode response")
+	}
+
+	return result, nil
+}
+
 // ListPlans invokes list-plans operation.
 //
 // List catalog plans.
@@ -6224,8 +6535,9 @@ func (c *Client) sendListSubscriptions(ctx context.Context, params ListSubscript
 
 // ListTopUps invokes list-top-ups operation.
 //
-// Lists only the authenticated user's top-ups. Includes pending and failed attempts; no invoice is
-// created for a top-up.
+// Lists only the authenticated user's top-ups. Includes pending, failed and canceled attempts; no
+// invoice is created for a top-up. Items carry no `action`; read a pending top-up with get-top-up to
+// continue its payment.
 //
 // GET /account/v1/top-ups
 func (c *Client) ListTopUps(ctx context.Context, params ListTopUpsParams) (*TopUpList, error) {

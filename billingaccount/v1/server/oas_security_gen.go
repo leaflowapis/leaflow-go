@@ -38,6 +38,7 @@ func findAuthorization(h http.Header, prefix string) (string, bool) {
 // operationRolesAccessTokenAuth is a private map storing roles per operation.
 var operationRolesAccessTokenAuth = map[string][]string{
 	CancelCancellationRequestOperation:   []string{},
+	CancelTopUpOperation:                 []string{},
 	CreateBillingAccountOperation:        []string{},
 	CreateCancellationRequestOperation:   []string{},
 	CreatePaymentMethodSetupOperation:    []string{},
@@ -63,6 +64,7 @@ var operationRolesAccessTokenAuth = map[string][]string{
 	ListOrderItemsOperation:              []string{},
 	ListOrdersOperation:                  []string{},
 	ListPaymentMethodsOperation:          []string{},
+	ListPaymentOptionsOperation:          []string{},
 	ListRefundsOperation:                 []string{},
 	ListRenewalPricesOperation:           []string{},
 	ListSubscriptionsOperation:           []string{},

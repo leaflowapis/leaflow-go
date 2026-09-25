@@ -22,6 +22,25 @@ func (UnimplementedHandler) CancelCancellationRequest(ctx context.Context, param
 	return r, ht.ErrNotImplemented
 }
 
+// CancelTopUp implements cancel-top-up operation.
+//
+// Withdraws a pending top-up owned by the authenticated user at the payment gateway. It becomes
+// `canceled` with `cancellation_reason` `requested_by_customer`, and no money is collected for it.
+// Canceling a top-up that is already canceled returns it unchanged.
+//
+// If the gateway has already collected the payment, nothing is withdrawn and the top-up is returned as
+// `succeeded` with the balance increased. Check `status` in the answer rather than assuming the
+// cancellation took effect.
+//
+// Fails with 409 and BILLING_TOPUP_NOT_CANCELABLE when the top-up has already succeeded or failed,
+// with `status` naming that outcome, and while the gateway is processing the payment and can no longer
+// withdraw it, with `status` set to `pending`; read the top-up again later in that case.
+//
+// POST /account/v1/top-ups/{topUpId}/cancel
+func (UnimplementedHandler) CancelTopUp(ctx context.Context, params CancelTopUpParams) (r CancelTopUpRes, _ error) {
+	return r, ht.ErrNotImplemented
+}
+
 // CreateBillingAccount implements create-billing-account operation.
 //
 // The currency is chosen here and cannot be changed afterwards. Everything charged to the account —
@@ -192,6 +211,10 @@ func (UnimplementedHandler) GetSubscription(ctx context.Context, params GetSubsc
 // Reads a top-up owned by the authenticated user, including its outcome and the part of it not yet
 // spent. It is not an invoice.
 //
+// While the top-up is pending, the answer includes the customer's next step as the payment gateway
+// currently reports it, so that a payment interrupted by a closed page can be continued. When the
+// gateway cannot be reached, the top-up is returned without `action`; read it again later.
+//
 // GET /account/v1/top-ups/{topUpId}
 func (UnimplementedHandler) GetTopUp(ctx context.Context, params GetTopUpParams) (r *TopUp, _ error) {
 	return r, ht.ErrNotImplemented
@@ -319,6 +342,18 @@ func (UnimplementedHandler) ListPaymentMethods(ctx context.Context, params ListP
 	return r, ht.ErrNotImplemented
 }
 
+// ListPaymentOptions implements list-payment-options operation.
+//
+// Lists the payment gateways and methods that currently accept payment in this account's currency, the
+// preferred gateway first. Top-ups and invoice payments must name a gateway and method listed here;
+// others are refused. An empty list means no online payment is available for this account. Not paged:
+// the set is a few rows.
+//
+// GET /account/v1/billing-accounts/{accountId}/payment-options
+func (UnimplementedHandler) ListPaymentOptions(ctx context.Context, params ListPaymentOptionsParams) (r *PaymentOptionList, _ error) {
+	return r, ht.ErrNotImplemented
+}
+
 // ListPlans implements list-plans operation.
 //
 // List catalog plans.
@@ -403,8 +438,9 @@ func (UnimplementedHandler) ListSubscriptions(ctx context.Context, params ListSu
 
 // ListTopUps implements list-top-ups operation.
 //
-// Lists only the authenticated user's top-ups. Includes pending and failed attempts; no invoice is
-// created for a top-up.
+// Lists only the authenticated user's top-ups. Includes pending, failed and canceled attempts; no
+// invoice is created for a top-up. Items carry no `action`; read a pending top-up with get-top-up to
+// continue its payment.
 //
 // GET /account/v1/top-ups
 func (UnimplementedHandler) ListTopUps(ctx context.Context, params ListTopUpsParams) (r *TopUpList, _ error) {

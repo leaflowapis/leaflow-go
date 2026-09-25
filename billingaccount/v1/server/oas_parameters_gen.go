@@ -81,6 +81,71 @@ func decodeCancelCancellationRequestParams(args [1]string, argsEscaped bool, r *
 	return params, nil
 }
 
+// CancelTopUpParams is parameters of cancel-top-up operation.
+type CancelTopUpParams struct {
+	TopUpId uuid.UUID
+}
+
+func unpackCancelTopUpParams(packed middleware.Parameters) (params CancelTopUpParams) {
+	{
+		key := middleware.ParameterKey{
+			Name: "topUpId",
+			In:   "path",
+		}
+		params.TopUpId = packed[key].(uuid.UUID)
+	}
+	return params
+}
+
+func decodeCancelTopUpParams(args [1]string, argsEscaped bool, r *http.Request) (params CancelTopUpParams, _ error) {
+	// Decode path: topUpId.
+	if err := func() error {
+		param := args[0]
+		if argsEscaped {
+			unescaped, err := url.PathUnescape(args[0])
+			if err != nil {
+				return errors.Wrap(err, "unescape path")
+			}
+			param = unescaped
+		}
+		if len(param) > 0 {
+			d := uri.NewPathDecoder(uri.PathDecoderConfig{
+				Param:   "topUpId",
+				Value:   param,
+				Style:   uri.PathStyleSimple,
+				Explode: false,
+			})
+
+			if err := func() error {
+				val, err := d.DecodeValue()
+				if err != nil {
+					return err
+				}
+
+				c, err := conv.ToUUID(val)
+				if err != nil {
+					return err
+				}
+
+				params.TopUpId = c
+				return nil
+			}(); err != nil {
+				return err
+			}
+		} else {
+			return validate.ErrFieldRequired
+		}
+		return nil
+	}(); err != nil {
+		return params, &ogenerrors.DecodeParamError{
+			Name: "topUpId",
+			In:   "path",
+			Err:  err,
+		}
+	}
+	return params, nil
+}
+
 // CreateCancellationRequestParams is parameters of create-cancellation-request operation.
 type CreateCancellationRequestParams struct {
 	SubscriptionId uuid.UUID
@@ -4153,6 +4218,71 @@ func decodeListPaymentMethodsParams(args [0]string, argsEscaped bool, r *http.Re
 		return params, &ogenerrors.DecodeParamError{
 			Name: "billing_account_id",
 			In:   "query",
+			Err:  err,
+		}
+	}
+	return params, nil
+}
+
+// ListPaymentOptionsParams is parameters of list-payment-options operation.
+type ListPaymentOptionsParams struct {
+	AccountId int64
+}
+
+func unpackListPaymentOptionsParams(packed middleware.Parameters) (params ListPaymentOptionsParams) {
+	{
+		key := middleware.ParameterKey{
+			Name: "accountId",
+			In:   "path",
+		}
+		params.AccountId = packed[key].(int64)
+	}
+	return params
+}
+
+func decodeListPaymentOptionsParams(args [1]string, argsEscaped bool, r *http.Request) (params ListPaymentOptionsParams, _ error) {
+	// Decode path: accountId.
+	if err := func() error {
+		param := args[0]
+		if argsEscaped {
+			unescaped, err := url.PathUnescape(args[0])
+			if err != nil {
+				return errors.Wrap(err, "unescape path")
+			}
+			param = unescaped
+		}
+		if len(param) > 0 {
+			d := uri.NewPathDecoder(uri.PathDecoderConfig{
+				Param:   "accountId",
+				Value:   param,
+				Style:   uri.PathStyleSimple,
+				Explode: false,
+			})
+
+			if err := func() error {
+				val, err := d.DecodeValue()
+				if err != nil {
+					return err
+				}
+
+				c, err := conv.ToInt64(val)
+				if err != nil {
+					return err
+				}
+
+				params.AccountId = c
+				return nil
+			}(); err != nil {
+				return err
+			}
+		} else {
+			return validate.ErrFieldRequired
+		}
+		return nil
+	}(); err != nil {
+		return params, &ogenerrors.DecodeParamError{
+			Name: "accountId",
+			In:   "path",
 			Err:  err,
 		}
 	}
